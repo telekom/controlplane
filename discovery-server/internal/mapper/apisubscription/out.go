@@ -6,7 +6,7 @@ package apisubscription
 
 import (
 	"context"
-	"strings"
+	"net/url"
 
 	openapi_types "github.com/oapi-codegen/runtime/types"
 
@@ -123,6 +123,7 @@ func mapGatewayUrl(ctx context.Context, in *apiv1.ApiSubscription, out *api.ApiS
 	if err != nil || zone == nil {
 		return
 	}
+
 	out.GatewayUrl = joinURL(gatewayBaseUrl(zone, in.HasFailover()), in.Spec.ApiBasePath)
 }
 
@@ -175,21 +176,28 @@ func mapApproval(ctx context.Context, in *apiv1.ApiSubscription, out *api.ApiSub
 	}
 }
 
-// joinURL concatenates a base URL and a path, ensuring exactly one "/" between them.
-// TODO: use url.JoinPath(base, path)
 func joinURL(base, path string) string {
-	return strings.TrimRight(base, "/") + "/" + strings.TrimLeft(path, "/")
+	if base == "" {
+		return ""
+	}
+	joined, err := url.JoinPath(base, path)
+	if err != nil {
+		return ""
+	}
+	return joined
 }
 
 // gatewayBaseUrl returns the appropriate gateway base URL for a zone.
-// When failover is enabled, it selects the ConsumerFailover preset URL;
-// otherwise it falls back to the default URL from Status.Links.
 func gatewayBaseUrl(zone *adminv1.Zone, failover bool) string {
+	var preset *adminv1.Preset
+	var err error
 	if failover {
-		preset, err := zone.SelectGatewayPreset(adminv1.FeatureConsumerFailover)
-		if err == nil {
-			return preset.GetDefaultUrl()
-		}
+		preset, err = zone.Spec.SelectPreset(adminv1.GatewayTypeAPI, adminv1.FeatureConsumerFailover)
+	} else {
+		preset, err = zone.Spec.GetDefaultPreset()
 	}
-	return zone.Status.Links.Url
+	if err != nil {
+		return ""
+	}
+	return preset.GetDefaultURL()
 }

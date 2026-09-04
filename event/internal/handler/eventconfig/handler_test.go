@@ -112,24 +112,42 @@ func makeReadyZone() *adminv1.Zone {
 			Namespace: "default",
 		},
 		Spec: adminv1.ZoneSpec{
-			Gateway: adminv1.GatewayConfig{
-				Presets: []adminv1.GatewayConfigPreset{{
-					Name:    "default",
-					Default: true,
-					Urls: []adminv1.UrlConfig{{
-						Hostname: "gateway.example.com",
-						Port:     443,
-						Scheme:   "https",
-					}},
+			Presets: []adminv1.Preset{{
+				Name:    "event",
+				Type:    adminv1.GatewayTypeEvent,
+				Default: true,
+				Urls: []adminv1.UrlConfig{{
+					Hostname: "gateway.example.com",
+					Port:     443,
+					Scheme:   "https",
 				}},
-			},
+			}, {
+				Name:    "api",
+				Type:    adminv1.GatewayTypeAPI,
+				Default: true,
+				Urls: []adminv1.UrlConfig{{
+					Hostname: "gateway.example.com",
+					Port:     443,
+					Scheme:   "https",
+				}},
+			}},
 		},
 		Status: adminv1.ZoneStatus{
 			Namespace: "default",
-			Gateway: &ctypes.ObjectRef{
-				Name:      "gw",
-				Namespace: "default",
-			},
+			Presets: []adminv1.PresetStatus{{
+				Name:       "event",
+				GatewayRef: &ctypes.ObjectRef{Name: "gw", Namespace: "default"},
+			}, {
+				Name:       "api",
+				GatewayRef: &ctypes.ObjectRef{Name: "gw", Namespace: "default"},
+			}},
+			Gateways: []adminv1.GatewayStatus{{
+				Name: "default",
+				Gateway: &ctypes.ObjectRef{
+					Name:      "gw",
+					Namespace: "default",
+				},
+			}},
 			InternalIdentityRealm: &ctypes.ObjectRef{
 				Name:      "test-realm",
 				Namespace: "default",

@@ -516,10 +516,14 @@ var _ = Describe("Remote Organisation Flow", Ordered, func() {
 			By("Creating the RemoteOrganisation")
 			remoteOrganisation = CreateRemoteOrganisation(remoteOrgId, remoteZoneName)
 			By("Creating the remote zone")
-			CreateZone(remoteZoneName)
+			remoteZone := CreateZone(remoteZoneName)
+			remoteZone.Status.RealmName = remoteZoneName + "-realm"
+			Expect(k8sClient.Status().Update(ctx, remoteZone)).To(Succeed())
 
 			By("Creating the consumer zone")
-			CreateZone(consumerZoneName)
+			consumerZone := CreateZone(consumerZoneName)
+			consumerZone.Status.RealmName = consumerZoneName + "-realm"
+			Expect(k8sClient.Status().Update(ctx, consumerZone)).To(Succeed())
 
 			By("Creating the Application")
 			CreateApplication(appName)
@@ -626,6 +630,9 @@ var _ = Describe("Remote Organisation Flow", Ordered, func() {
 
 				g.Expect(apiSubscription.Status.Route.Name).To(Equal("apisubctrl-remotetest-v1"))
 				g.Expect(apiSubscription.Status.Route.Namespace).To(Equal("test--consumer-zone"))
+				route := &gatewayapi.Route{}
+				g.Expect(k8sClient.Get(ctx, apiSubscription.Status.Route.K8s(), route)).To(Succeed())
+				g.Expect(route.Spec.Security.RealmName).To(Equal("consumer-zone-realm"))
 			}, timeout, interval).Should(Succeed())
 		})
 	})

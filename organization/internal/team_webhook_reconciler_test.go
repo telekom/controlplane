@@ -94,25 +94,28 @@ var _ = Describe("Team Reconciler, Group Reconciler and Team Webhook", Ordered, 
 					Type: adminv1.ManagedRouteTypeTeamAPI,
 				}}},
 				Visibility: adminv1.ZoneVisibilityWorld,
-				Gateway: adminv1.GatewayConfig{
+				Gateways: []adminv1.GatewayConfig{{
+					Name: "default",
 					Admin: adminv1.GatewayAdminConfig{
 						Url: "http://gateway-admin.test.local:8001",
 					},
-					Presets: []adminv1.GatewayConfigPreset{{
-						Name:    "default",
-						Default: true,
-						Urls: []adminv1.UrlConfig{{
-							Hostname: "gateway.test.local",
-							BasePath: "/",
-						}},
+				}}, Presets: []adminv1.Preset{{
+					Name:       "default",
+					Type:       adminv1.GatewayTypeAPI,
+					Default:    true,
+					GatewayRef: "default", IdentityProviderRef: "default",
+					Urls: []adminv1.UrlConfig{{
+						Hostname: "gateway.test.local",
+						BasePath: "/",
 					}},
-				},
-				IdentityProvider: adminv1.IdentityProviderConfig{
-					Url: "http://idp.test.local:8080",
+				}},
+				IdentityProviders: []adminv1.IdentityProviderConfig{{
+					Name:     "default",
+					TokenUrl: "http://idp.test.local:8080",
 					Admin: adminv1.IdentityProviderAdminConfig{
 						Url: ptr.To("http://idp-admin.test.local:8080"),
 					},
-				},
+				}},
 			},
 		}
 
@@ -121,15 +124,13 @@ var _ = Describe("Team Reconciler, Group Reconciler and Team Webhook", Ordered, 
 				Name:      "team-api-identity-realm",
 				Namespace: testNamespace,
 			},
-			Gateway: &types.ObjectRef{
-				Name:      "team-api-gateway-realm",
-				Namespace: testNamespace,
-			},
-			Links: adminv1.Links{
+			Presets: []adminv1.PresetStatus{{Name: "default", GatewayRef: &types.ObjectRef{
+				Name: "team-api-gateway-realm", Namespace: testNamespace,
+			}, Links: adminv1.Links{
 				Url:       "https://example.org",
 				Issuer:    "https://example.org/issuer",
 				LmsIssuer: "https://example.org/lms-issuer",
-			},
+			}}},
 		}
 
 		BeforeAll(func() {

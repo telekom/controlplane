@@ -126,30 +126,37 @@ func makeReadyZoneWithAiGateway(name string) *adminv1.Zone {
 			Namespace: "default",
 		},
 		Spec: adminv1.ZoneSpec{
-			AiGateway: &adminv1.AiGatewayConfig{
-				Presets: []adminv1.GatewayConfigPreset{
-					{
-						Name:    "default",
-						Default: true,
-						Urls: []adminv1.UrlConfig{
-							{Hostname: "ai-gateway.example.com", Port: 443, Scheme: "https"},
-						},
+			Gateways: []adminv1.GatewayConfig{
+				{Name: "ai"},
+			},
+			Presets: []adminv1.Preset{
+				{
+					Name:       "default",
+					Type:       adminv1.GatewayTypeAI,
+					Default:    true,
+					GatewayRef: "ai",
+					Urls: []adminv1.UrlConfig{
+						{Hostname: "ai-gateway.example.com", Port: 443, Scheme: "https"},
+					},
+				},
+				// Every zone needs an API preset as its representative profile; agentic
+				// selection never resolves through it.
+				{
+					Name:       "api-default",
+					Type:       adminv1.GatewayTypeAPI,
+					Default:    true,
+					GatewayRef: "ai",
+					Urls: []adminv1.UrlConfig{
+						{Hostname: "ai-gateway.example.com", Port: 443, Scheme: "https"},
 					},
 				},
 			},
 		},
 		Status: adminv1.ZoneStatus{
 			Namespace: "default",
-			AiGateway: &ctypes.ObjectRef{
-				Name:      "ai-gateway",
-				Namespace: "default",
-			},
-			Links: adminv1.Links{
-				Issuer: "https://issuer.example.com",
-			},
-			Features: []adminv1.Feature{
-				{Name: adminv1.FeatureAiGateway, Enabled: true},
-			},
+			Presets: []adminv1.PresetStatus{{Name: "default", GatewayRef: &ctypes.ObjectRef{
+				Name: "ai-gateway", Namespace: "default",
+			}, Links: adminv1.Links{Issuer: "https://issuer.example.com"}}},
 		},
 	}
 	meta.SetStatusCondition(&z.Status.Conditions, metav1.Condition{

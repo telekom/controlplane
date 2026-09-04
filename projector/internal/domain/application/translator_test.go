@@ -111,6 +111,34 @@ var _ = Describe("Application Translator", func() {
 			Expect(data.ClientID).To(BeNil())
 		})
 
+		It("should populate TokenURL from Status.TokenUrl", func() {
+			obj := &appv1.Application{
+				Spec: appv1.ApplicationSpec{
+					Team: "platform--narvi",
+					Zone: commontypes.ObjectRef{Name: "caas"},
+				},
+				Status: appv1.ApplicationStatus{TokenUrl: "https://identity.example.com/token"},
+			}
+
+			data, err := t.Translate(context.Background(), obj)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(data.TokenURL).ToNot(BeNil())
+			Expect(*data.TokenURL).To(Equal("https://identity.example.com/token"))
+		})
+
+		It("should set TokenURL to nil when Status.TokenUrl is empty", func() {
+			obj := &appv1.Application{
+				Spec: appv1.ApplicationSpec{
+					Team: "platform--narvi",
+					Zone: commontypes.ObjectRef{Name: "caas"},
+				},
+			}
+
+			data, err := t.Translate(context.Background(), obj)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(data.TokenURL).To(BeNil())
+		})
+
 		It("should derive UNKNOWN status when no conditions are set", func() {
 			obj := &appv1.Application{
 				ObjectMeta: metav1.ObjectMeta{

@@ -13,7 +13,6 @@ import (
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	"github.com/telekom/controlplane/common/pkg/config"
-	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
 )
@@ -53,6 +52,10 @@ func CreateVoyagerRoute(
 	if err != nil {
 		return nil, err
 	}
+	gatewayRef, err := gatewayRef(zone)
+	if err != nil {
+		return nil, err
+	}
 
 	upstream, err := parseUpstream(eventConfig.Spec.Local.VoyagerApiUrl)
 	if err != nil {
@@ -79,7 +82,7 @@ func CreateVoyagerRoute(
 			config.BuildLabelKey("type"): "voyager",
 		}
 		route.Spec = gatewayapi.RouteSpec{
-			GatewayRef: *zone.Status.Gateway,
+			GatewayRef: *gatewayRef,
 			Type:       gatewayapi.RouteTypePrimary,
 			Backend:    gatewayapi.Backend{Upstreams: []gatewayapi.Upstream{upstream}},
 			Hostnames:  meshHostnames,
@@ -115,14 +118,18 @@ func CreateProxyLocalVoyagerRoute(
 	if err != nil {
 		return nil, err
 	}
-
-	targetPreset, err := targetZone.Spec.Gateway.GetDefaultPreset()
+	sourceGatewayRef, err := gatewayRef(sourceZone)
 	if err != nil {
-		return nil, ctrlerrors.BlockedErrorf("target zone %q has no default preset: %s", targetZone.Name, err)
+		return nil, err
+	}
+
+	tgtPreset, err := targetPreset(targetZone)
+	if err != nil {
+		return nil, err
 	}
 
 	// Upstream: target zone's gateway Voyager path (the target's primary Route).
-	upstream, err := gatewayUpstream(targetPreset, makeVoyagerRoutePath(targetZone.Name))
+	upstream, err := gatewayUpstream(tgtPreset, makeVoyagerRoutePath(targetZone.Name))
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create upstream for proxy local voyager Route")
 	}
@@ -147,7 +154,7 @@ func CreateProxyLocalVoyagerRoute(
 			config.BuildLabelKey("type"): "voyager",
 		}
 		route.Spec = gatewayapi.RouteSpec{
-			GatewayRef: *sourceZone.Status.Gateway,
+			GatewayRef: *sourceGatewayRef,
 			Type:       gatewayapi.RouteTypeProxy,
 			Backend:    gatewayapi.Backend{Upstreams: []gatewayapi.Upstream{upstream}},
 			Hostnames:  meshHostnames,

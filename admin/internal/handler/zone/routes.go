@@ -25,7 +25,6 @@ func reconcileInternalRoutes(ctx context.Context, hc *HandlingContext) error {
 	// Reset status fields related to team API routes to avoid stale data if routes are removed from spec
 	hc.Zone.Status.TeamApiIdentityRealm = nil
 	hc.Zone.Status.ManagedRoutes = nil
-	hc.Zone.Status.Links.TeamIssuer = ""
 
 	if hc.Zone.Spec.ManagedRoutes != nil {
 		if err := reconcileTeamApiIdentityRealm(ctx, hc); err != nil {
@@ -61,24 +60,12 @@ func reconcileTeamApiIdentityRealm(ctx context.Context, hc *HandlingContext) err
 	hc.TeamApiIdentityRealm = teamApiIdentityRealm
 	hc.Zone.Status.TeamApiIdentityRealm = types.ObjectRefFromObject(teamApiIdentityRealm)
 
-	// Derive TeamIssuer from identity provider URL + team identity realm name
-	teamIssuer, err := url.JoinPath(hc.Zone.Spec.IdentityProvider.Url, "auth/realms/", teamApiIdentityRealm.Name)
-	if err != nil {
-		return ctrlerrors.BlockedErrorf("cannot build team issuer URL: %s", err)
-	}
-	hc.Zone.Status.Links.TeamIssuer = teamIssuer
-
 	return nil
 }
 
 // reconcileManagedRoutes creates the gateway routes defined in the zone spec.
 // All managed routes use the default gateway preset for hostname and path resolution.
 func reconcileManagedRoutes(ctx context.Context, hc *HandlingContext) error {
-	defaultPreset, err := hc.Zone.Spec.Gateway.GetDefaultPreset()
-	if err != nil {
-		return ctrlerrors.BlockedErrorf("managed routes require a default preset but none was found: %s", err)
-	}
-
 	// Partition routes by type
 	var teamAPIRoutes, proxyRoutes []adminv1.ManagedRouteConfig
 	for _, r := range hc.Zone.Spec.ManagedRoutes.Routes {
@@ -94,7 +81,7 @@ func reconcileManagedRoutes(ctx context.Context, hc *HandlingContext) error {
 
 	// TeamAPI routes: authenticated with disabled access control
 	for _, routeConfig := range teamAPIRoutes {
-		route, err := createManagedRoute(ctx, hc, routeConfig, defaultPreset, !EnablePassThrough)
+		route, err := createManagedRoute(ctx, hc, routeConfig, hc.DefaultPreset, !EnablePassThrough)
 		if err != nil {
 			return err
 		}
@@ -103,7 +90,7 @@ func reconcileManagedRoutes(ctx context.Context, hc *HandlingContext) error {
 
 	// Proxy routes: full passthrough without authentication
 	for _, routeConfig := range proxyRoutes {
-		route, err := createManagedRoute(ctx, hc, routeConfig, defaultPreset, EnablePassThrough)
+		route, err := createManagedRoute(ctx, hc, routeConfig, hc.DefaultPreset, EnablePassThrough)
 		if err != nil {
 			return err
 		}
@@ -114,12 +101,16 @@ func reconcileManagedRoutes(ctx context.Context, hc *HandlingContext) error {
 }
 
 // createManagedRoute creates a single gateway route for a managed route configuration.
-func createManagedRoute(ctx context.Context, hc *HandlingContext, routeConfig adminv1.ManagedRouteConfig, preset *adminv1.GatewayConfigPreset, passThrough bool) (*gatewayapi.Route, error) {
+func createManagedRoute(ctx context.Context, hc *HandlingContext, routeConfig adminv1.ManagedRouteConfig, preset *adminv1.Preset, passThrough bool) (*gatewayapi.Route, error) {
 	c := cclient.ClientFromContextOrDie(ctx)
+	gateway := hc.Gateways[preset.GatewayRef]
+	if gateway == nil {
+		return nil, ctrlerrors.BlockedErrorf("cannot resolve gateway %q for preset %q", preset.GatewayRef, preset.Name)
+	}
 
 	route := &gatewayapi.Route{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      hc.Gateway.Name + "--" + naming.ForGatewayRoute(routeConfig),
+			Name:      gateway.Name + "--" + naming.ForGatewayRoute(routeConfig),
 			Namespace: hc.Namespace.Name,
 		},
 	}
@@ -130,6 +121,7 @@ func createManagedRoute(ctx context.Context, hc *HandlingContext, routeConfig ad
 		}
 		route.Labels[cconfig.EnvironmentLabelKey] = hc.Environment.Name
 		route.Labels[cconfig.BuildLabelKey(zoneLabelName)] = hc.Zone.Name
+		route.Labels[cconfig.DomainLabelKey] = domainName
 		route.Labels[cconfig.OwnerUidLabelKey] = string(hc.Zone.GetUID())
 
 		upstreamUrl, err := url.Parse(routeConfig.Url)
@@ -147,7 +139,7 @@ func createManagedRoute(ctx context.Context, hc *HandlingContext, routeConfig ad
 
 		route.Spec = gatewayapi.RouteSpec{
 			Type:        gatewayapi.RouteTypePrimary,
-			GatewayRef:  *types.ObjectRefFromObject(hc.Gateway),
+			GatewayRef:  *types.ObjectRefFromObject(gateway),
 			Backend:     gatewayapi.Backend{Upstreams: []gatewayapi.Upstream{upstream}},
 			Hostnames:   hostnames,
 			Paths:       paths,
@@ -157,16 +149,24 @@ func createManagedRoute(ctx context.Context, hc *HandlingContext, routeConfig ad
 
 		if !passThrough {
 			// Derive trusted issuer from the identity provider URL and team API identity realm
-			trustedIssuer, issuerErr := url.JoinPath(hc.Zone.Spec.IdentityProvider.Url, "auth/realms/", hc.TeamApiIdentityRealm.Name)
+			idp, idpErr := hc.Zone.Spec.GetIdentityProviderByName(preset.IdentityProviderRef)
+			if idpErr != nil {
+				return ctrlerrors.BlockedErrorf("cannot resolve identity provider for route %s: %s", routeConfig.Name, idpErr)
+			}
+			hostname, hostnameErr := issuerHostname(idp)
+			if hostnameErr != nil {
+				return ctrlerrors.BlockedErrorf("cannot resolve trusted issuer hostname for route %s: %s", routeConfig.Name, hostnameErr)
+			}
+			trustedIssuer, issuerErr := url.JoinPath("https://"+hostname, "auth/realms/", hc.TeamApiIdentityRealm.Name)
 			if issuerErr != nil {
 				return ctrlerrors.BlockedErrorf("cannot build trusted issuer URL for route %s: %s", routeConfig.Name, issuerErr)
 			}
 			route.Spec.Security = gatewayapi.Security{
 				DisableAccessControl: true,
 				TrustedIssuers:       []string{trustedIssuer},
-				RealmName:            hc.TeamApiIdentityRealm.Name,
 			}
 		}
+		route.Spec.Security.RealmName = hc.Zone.Status.RealmName
 
 		return nil
 	}

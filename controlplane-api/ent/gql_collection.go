@@ -985,6 +985,11 @@ func (_q *ApplicationQuery) collectField(ctx context.Context, oneNode bool, opCt
 				selectedFields = append(selectedFields, application.FieldClientSecret)
 				fieldSeen[application.FieldClientSecret] = struct{}{}
 			}
+		case "tokenURL":
+			if _, ok := fieldSeen[application.FieldTokenURL]; !ok {
+				selectedFields = append(selectedFields, application.FieldTokenURL)
+				fieldSeen[application.FieldTokenURL] = struct{}{}
+			}
 		case "rotatedClientSecret":
 			if _, ok := fieldSeen[application.FieldRotatedClientSecret]; !ok {
 				selectedFields = append(selectedFields, application.FieldRotatedClientSecret)

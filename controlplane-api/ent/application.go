@@ -43,6 +43,8 @@ type Application struct {
 	ClientID *string `json:"client_id,omitempty"`
 	// ClientSecret holds the value of the "client_secret" field.
 	ClientSecret *string `json:"client_secret,omitempty"`
+	// TokenURL holds the value of the "token_url" field.
+	TokenURL *string `json:"token_url,omitempty"`
 	// RotatedClientSecret holds the value of the "rotated_client_secret" field.
 	RotatedClientSecret *string `json:"rotated_client_secret,omitempty"`
 	// RotatedExpiresAt holds the value of the "rotated_expires_at" field.
@@ -173,7 +175,7 @@ func (*Application) scanValues(columns []string) ([]any, error) {
 			values[i] = new([]byte)
 		case application.FieldID:
 			values[i] = new(sql.NullInt64)
-		case application.FieldStatusPhase, application.FieldStatusMessage, application.FieldEnvironment, application.FieldNamespace, application.FieldName, application.FieldClientID, application.FieldClientSecret, application.FieldRotatedClientSecret, application.FieldSecretRotationPhase, application.FieldSecretRotationMessage, application.FieldPermissionsURL:
+		case application.FieldStatusPhase, application.FieldStatusMessage, application.FieldEnvironment, application.FieldNamespace, application.FieldName, application.FieldClientID, application.FieldClientSecret, application.FieldTokenURL, application.FieldRotatedClientSecret, application.FieldSecretRotationPhase, application.FieldSecretRotationMessage, application.FieldPermissionsURL:
 			values[i] = new(sql.NullString)
 		case application.FieldCreatedAt, application.FieldLastModifiedAt, application.FieldRotatedExpiresAt, application.FieldCurrentExpiresAt:
 			values[i] = new(sql.NullTime)
@@ -260,6 +262,13 @@ func (_m *Application) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.ClientSecret = new(string)
 				*_m.ClientSecret = value.String
+			}
+		case application.FieldTokenURL:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field token_url", values[i])
+			} else if value.Valid {
+				_m.TokenURL = new(string)
+				*_m.TokenURL = value.String
 			}
 		case application.FieldRotatedClientSecret:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -437,6 +446,11 @@ func (_m *Application) String() string {
 	builder.WriteString(", ")
 	if v := _m.ClientSecret; v != nil {
 		builder.WriteString("client_secret=")
+		builder.WriteString(*v)
+	}
+	builder.WriteString(", ")
+	if v := _m.TokenURL; v != nil {
+		builder.WriteString("token_url=")
 		builder.WriteString(*v)
 	}
 	builder.WriteString(", ")

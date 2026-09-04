@@ -198,30 +198,33 @@ func NewZone(name, environment string) *adminv1.Zone {
 		},
 		Spec: adminv1.ZoneSpec{
 			Visibility: adminv1.ZoneVisibilityWorld,
-			Gateway: adminv1.GatewayConfig{
+			Gateways: []adminv1.GatewayConfig{{Name: "default",
 				Admin: adminv1.GatewayAdminConfig{
 					Url: "http://gateway-admin.test.local:8001",
 				},
-				Presets: []adminv1.GatewayConfigPreset{
-					{
-						Name:    "default",
-						Default: true,
-						Urls: []adminv1.UrlConfig{
-							{
-								Hostname: "gateway.test.local",
-								Scheme:   "https",
-								BasePath: "/",
-							},
+			}},
+			Presets: []adminv1.Preset{
+				{
+					Name:                "default",
+					Type:                adminv1.GatewayTypeAPI,
+					Default:             true,
+					GatewayRef:          "default",
+					IdentityProviderRef: "default",
+					Urls: []adminv1.UrlConfig{
+						{
+							Hostname: "gateway.test.local",
+							Scheme:   "https",
+							BasePath: "/",
 						},
 					},
 				},
 			},
-			IdentityProvider: adminv1.IdentityProviderConfig{
-				Url: "http://idp.test.local:8080",
+			IdentityProviders: []adminv1.IdentityProviderConfig{{Name: "default",
+				TokenUrl: "http://idp.test.local:8080",
 				Admin: adminv1.IdentityProviderAdminConfig{
 					Url: ptr.To("http://idp-admin.test.local:8080"),
 				},
-			},
+			}},
 		},
 	}
 }

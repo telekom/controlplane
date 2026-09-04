@@ -210,8 +210,12 @@ func init() {
 	applicationDescClientSecret := applicationFields[2].Descriptor()
 	// application.ClientSecretValidator is a validator for the "client_secret" field. It is called by the builders before save.
 	application.ClientSecretValidator = applicationDescClientSecret.Validators[0].(func(string) error)
+	// applicationDescTokenURL is the schema descriptor for token_url field.
+	applicationDescTokenURL := applicationFields[3].Descriptor()
+	// application.TokenURLValidator is a validator for the "token_url" field. It is called by the builders before save.
+	application.TokenURLValidator = applicationDescTokenURL.Validators[0].(func(string) error)
 	// applicationDescRotatedClientSecret is the schema descriptor for rotated_client_secret field.
-	applicationDescRotatedClientSecret := applicationFields[3].Descriptor()
+	applicationDescRotatedClientSecret := applicationFields[4].Descriptor()
 	// application.RotatedClientSecretValidator is a validator for the "rotated_client_secret" field. It is called by the builders before save.
 	application.RotatedClientSecretValidator = applicationDescRotatedClientSecret.Validators[0].(func(string) error)
 	approvalMixin := schema.Approval{}.Mixin()

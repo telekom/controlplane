@@ -223,21 +223,30 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 	if err != nil {
 		return errors.Wrapf(err, "failed to get subscription zone %s", apiSub.Spec.Zone.Name)
 	}
-	apiSub.Status.IdpIssuer = zone.Status.Links.Issuer
-
-	var preset *adminapi.GatewayConfigPreset
+	var preset *adminapi.Preset
 	if apiSub.HasFailover() {
-		// fallback to default preset if no failover preset is found
-		preset, _ = zone.SelectGatewayPreset(adminapi.FeatureConsumerFailover) //nolint:errcheck // fallback to default preset below
+		// Only "this zone offers no API failover profile" may fall back to the default preset.
+		// A malformed or ambiguous selection must block: falling back would write standard
+		// endpoints into the status while the rest of the pipeline provisions failover.
+		selected, selErr := zone.Spec.SelectPreset(adminapi.GatewayTypeAPI, adminapi.FeatureConsumerFailover)
+		if selErr != nil && !stderrors.Is(selErr, adminapi.ErrNoMatchingPreset) {
+			return errors.Wrapf(selErr, "failed to select failover preset for zone %s", apiSub.Spec.Zone.Name)
+		}
+		preset = selected
 	}
 	if preset == nil {
 		// always fallback to default preset
-		preset, err = zone.GetDefaultGatewayPreset()
+		preset, err = zone.Spec.GetDefaultPreset()
 	}
 	if err != nil {
 		return errors.Wrapf(err, "failed to select gateway preset for zone %s", apiSub.Spec.Zone.Name)
 	}
-	apiSub.Status.GatewayUrl, err = url.JoinPath(preset.GetDefaultUrl(), apiSub.Spec.ApiBasePath)
+	presetStatus, statusErr := zone.Status.GetPreset(preset.Name)
+	if statusErr != nil {
+		return errors.Wrapf(statusErr, "failed to get preset status for zone %s", apiSub.Spec.Zone.Name)
+	}
+	apiSub.Status.IdpIssuer = presetStatus.Links.Issuer
+	apiSub.Status.GatewayUrl, err = url.JoinPath(preset.GetDefaultURL(), apiSub.Spec.ApiBasePath)
 	if err != nil {
 		return errors.Wrapf(err, "failed to construct gateway URL for zone %s", apiSub.Spec.Zone.Name)
 	}

@@ -1197,3 +1197,25 @@ var _ = Describe("FindCrossZoneCallbackSubscriptions", func() {
 		Expect(result[1].Name).To(Equal("sub-2"))
 	})
 })
+
+// ---------- EventPresetStatus ----------
+
+var _ = Describe("EventPresetStatus", func() {
+	It("resolves the Event preset rather than the API default", func() {
+		zone := makeZone("dp1", "dp1-ns")
+
+		status, err := util.EventPresetStatus(zone)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(status.Name).To(Equal("event"))
+	})
+
+	It("returns a BlockedError naming the missing Event preset for an API-only zone", func() {
+		zone := makeZoneNoPreset("dp1", "dp1-ns")
+
+		status, err := util.EventPresetStatus(zone)
+		Expect(status).To(BeNil())
+		Expect(unwrapAll(err)).To(Satisfy(isBlockedError))
+		Expect(err.Error()).To(ContainSubstring(`zone "dp1" has no Event preset`))
+		Expect(err.Error()).To(ContainSubstring(`no preset of type "Event" exists`))
+	})
+})

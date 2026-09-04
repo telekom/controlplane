@@ -60,21 +60,38 @@ metadata:
 spec:
   # Who can reach APIs in this zone: World (public) or Enterprise (internal)
   visibility: Enterprise
-  gateway:
-    admin:
-      url: https://my-gateway-admin.example.com/admin-api
-    presets:
-      - name: default
-        default: true
-        urls:
-          - hostname: my-gateway.example.com
-            basePath: /
-  identityProvider:
-    url: https://my-idp.example.com/
-    admin:
-      clientId: admin-cli
-      userName: admin
-      password: somePassword
+  identityProviders:
+    - name: primary
+      url: https://my-idp.example.com/
+      issuerHostname: my-idp.example.com
+      admin:
+        clientId: admin-cli
+        userName: admin
+        password: somePassword
+  gateways:
+    - name: standard
+      admin:
+        identityProviderRef: primary
+        url: https://my-gateway-admin.example.com/admin-api
+  presets:
+    # Every preset declares the kind of traffic it routes. At least one API
+    # preset is required; add an Event preset if the zone does event routing.
+    - name: default
+      type: API
+      default: true
+      gatewayRef: standard
+      identityProviderRef: primary
+      urls:
+        - hostname: my-gateway.example.com
+          basePath: /
+    - name: events
+      type: Event
+      default: true
+      gatewayRef: standard
+      identityProviderRef: primary
+      urls:
+        - hostname: my-gateway.example.com
+          basePath: /
   redis:
     host: my-redis-host
     port: 6379

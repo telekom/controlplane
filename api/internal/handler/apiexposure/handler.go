@@ -210,8 +210,16 @@ func (h *ApiExposureHandler) manageProxyRoutes(ctx context.Context, apiExp *apia
 		if err != nil {
 			return errors.Wrapf(err, "failed to get zone %s for LMS issuer collection", subscriberZoneRef.Name)
 		}
-		if subscriberZone.Status.Links.LmsIssuer != "" {
-			state.AddCrossZoneLmsIssuer(subscriberZoneRef, subscriberZone.Status.Links.LmsIssuer)
+		preset, presetErr := subscriberZone.Spec.GetDefaultPreset()
+		if presetErr != nil {
+			return errors.Wrapf(presetErr, "failed to get default preset for zone %s", subscriberZoneRef.Name)
+		}
+		presetStatus, presetErr := subscriberZone.Status.GetPreset(preset.Name)
+		if presetErr != nil {
+			return errors.Wrapf(presetErr, "failed to get default preset status for zone %s", subscriberZoneRef.Name)
+		}
+		if presetStatus.Links.LmsIssuer != "" {
+			state.AddCrossZoneLmsIssuer(subscriberZoneRef, presetStatus.Links.LmsIssuer)
 		}
 
 		if subscriberZoneRef.Equals(&apiExp.Spec.Zone) {
@@ -231,7 +239,7 @@ func (h *ApiExposureHandler) manageProxyRoutes(ctx context.Context, apiExp *apia
 		logger.V(1).Info("Creating/updating proxy route for subscriber zone", "zone", subscriberZoneRef.Name)
 
 		options := []util.CreateRouteOption{
-			util.WithRealmName(state.realmName),
+			util.WithRealmName(subscriberZone.Status.RealmName),
 			util.WithOwner(apiExp),
 		}
 
@@ -246,7 +254,7 @@ func (h *ApiExposureHandler) manageProxyRoutes(ctx context.Context, apiExp *apia
 
 		// Consumer failover enrichment: add all failover hostnames, paths, and IDP issuers
 		// We need to check if the subscriber zone has the consumer failover feature enabled
-		if state.hasConsumerFailover && subscriberZone.IsFeatureEnabled(adminv1.FeatureConsumerFailover) {
+		if state.hasConsumerFailover && subscriberZone.Spec.FeaturesSupported(adminv1.GatewayTypeAPI, adminv1.FeatureConsumerFailover) {
 			options = append(options,
 				util.WithAdditionalHostnames(state.consumerFailoverHosts...),
 				util.WithAdditionalPaths(state.consumerFailoverPaths...),
@@ -292,14 +300,14 @@ func (h *ApiExposureHandler) createFailoverRoutes(ctx context.Context, apiExp *a
 		}
 
 		options := []util.CreateRouteOption{
-			util.WithRealmName(state.realmName),
+			util.WithRealmName(providerFailoverZone.Status.RealmName),
 			util.WithOwner(apiExp),
 		}
 
 		// If the provider failover zone has the ConsumerFailover feature enabled, enrich the failover route with all consumer failover hostnames, paths, and issuers.
 		// This is necessary because we skipped the route creation in the previous loop.
 		// We need to check this explicitly as consumer-failover-zones and provider-failover-zones could be disjoint sets.
-		if state.hasConsumerFailover && providerFailoverZone.IsFeatureEnabled(adminv1.FeatureConsumerFailover) {
+		if state.hasConsumerFailover && providerFailoverZone.Spec.FeaturesSupported(adminv1.GatewayTypeAPI, adminv1.FeatureConsumerFailover) {
 			options = append(options,
 				util.WithAdditionalHostnames(state.consumerFailoverHosts...),
 				util.WithAdditionalPaths(state.consumerFailoverPaths...),
@@ -348,7 +356,7 @@ func (h *ApiExposureHandler) collectCrossZoneSubscriberZones(apiExp *apiapi.ApiE
 func (h *ApiExposureHandler) collectConsumerFailoverEnrichment(ctx context.Context, apiExp *apiapi.ApiExposure, state *routingState, allRelevantZones []types.ObjectRef) ([]types.ObjectRef, error) {
 	logger := log.FromContext(ctx)
 
-	availableFailoverZones, err := util.FindAllZonesWithFeatureEnabled(ctx, adminv1.FeatureConsumerFailover)
+	availableFailoverZones, err := util.FindAllZonesWithFeatureEnabled(ctx, adminv1.GatewayTypeAPI, adminv1.FeatureConsumerFailover)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find zones with consumer failover feature enabled for apiExposure: %s", apiExp.Name)
 	}
@@ -360,7 +368,7 @@ func (h *ApiExposureHandler) collectConsumerFailoverEnrichment(ctx context.Conte
 	logger.V(1).Info("Collecting consumer failover enrichment from eligible zones", "count", len(availableFailoverZones))
 
 	for _, zone := range availableFailoverZones {
-		preset, err := zone.SelectGatewayPreset(adminv1.FeatureConsumerFailover)
+		preset, err := zone.Spec.SelectPreset(adminv1.GatewayTypeAPI, adminv1.FeatureConsumerFailover)
 		if err != nil {
 			return nil, ctrlerrors.BlockedErrorf("Zone %q does not have a gateway preset with consumer failover feature enabled", zone.Name)
 		}
@@ -368,7 +376,11 @@ func (h *ApiExposureHandler) collectConsumerFailoverEnrichment(ctx context.Conte
 		hosts, paths := preset.ResolveHostnamesAndPaths(apiExp.Spec.ApiBasePath)
 		state.consumerFailoverHosts = append(state.consumerFailoverHosts, hosts...)
 		state.consumerFailoverPaths = append(state.consumerFailoverPaths, paths...)
-		state.consumerFailoverIssuers = append(state.consumerFailoverIssuers, zone.Status.Links.Issuer)
+		presetStatus, err := zone.Status.GetPreset(preset.Name)
+		if err != nil {
+			return nil, ctrlerrors.BlockedErrorf("Zone %q does not have status for consumer failover preset %q", zone.Name, preset.Name)
+		}
+		state.consumerFailoverIssuers = append(state.consumerFailoverIssuers, presetStatus.Links.Issuer)
 
 		if apiExp.Spec.Zone.Equals(zone) {
 			// return here to avoid adding the exposure zone itself to the list of allRelevantZones, which is only for proxy routes
@@ -406,12 +418,20 @@ func (h *ApiExposureHandler) createRealRoute(ctx context.Context, apiExp *apiapi
 	// feature enabled. Only then may its real route accept other
 	// zones' failover hostnames and trust their home-zone IDP issuers directly. Mirrors the
 	// per-zone gating applied to proxy/provider-failover routes in manageProxyRoutes.
-	exposureZoneHasFailover := state.exposureZone.IsFeatureEnabled(adminv1.FeatureConsumerFailover)
+	exposureZoneHasFailover := state.exposureZone.Spec.FeaturesSupported(adminv1.GatewayTypeAPI, adminv1.FeatureConsumerFailover)
 
 	// Build TrustedIssuers for the real route
 	var trustedIssuers []string
-	if state.hasLocalSubs && state.exposureZone.Status.Links.Issuer != "" {
-		trustedIssuers = append(trustedIssuers, state.exposureZone.Status.Links.Issuer)
+	exposurePreset, err := state.exposureZone.Spec.GetDefaultPreset()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get exposure zone default preset")
+	}
+	exposurePresetStatus, err := state.exposureZone.Status.GetPreset(exposurePreset.Name)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get exposure zone default preset status")
+	}
+	if state.hasLocalSubs && exposurePresetStatus.Links.Issuer != "" {
+		trustedIssuers = append(trustedIssuers, exposurePresetStatus.Links.Issuer)
 	}
 	trustedIssuers = append(trustedIssuers, state.CrossZoneLmsIssuers()...)
 	if exposureZoneHasFailover {

@@ -54,9 +54,21 @@ By default, the current platform setup uses:
 
 When creating the Zone resource in the Control Plane, you provide the connection details for exactly these zone-local instances (gateway + IDP). This keeps each zone self-contained and allows different zones to use separate runtime endpoints if needed.
 
+### Zone Readiness and Sub-Resource Events
+
+A Zone becomes `Ready` only after its initial managed sub-resources are ready. After that first successful provisioning, readiness is latched: later child updates or failures do not make the Zone not ready, and changing the Zone spec does not reset the latch.
+
+During initial provisioning, the Admin operator creates the identity provider and identity realms first. It waits until all three report `Ready=True` before creating the clients, gateway resources, and routes that depend on them. While waiting, the Zone reports `Ready=False` with reason `SubResourceNotReady` and names the resource that is not ready. Once initial provisioning is complete, this check no longer blocks later updates.
+
+The Admin operator records a Warning event on the Zone for each managed sub-resource observed as not ready during reconciliation. Inspect these events to identify current child failures:
+
+```bash
+kubectl describe zone <name> -n <environment>
+```
+
 ### Creating a Zone
 
-A Zone references the gateway and identity provider to use, along with optional Redis configuration and visibility settings:
+A Zone references the gateways and identity provider to use, along with optional Redis configuration and visibility settings:
 
 ```yaml
 apiVersion: admin.cp.ei.telekom.de/v1
@@ -66,21 +78,28 @@ metadata:
   namespace: dev
 spec:
   visibility: World
-  gateway:
-    admin:
-      url: https://gateway-admin.example.com
-    presets:
-      - name: default
-        default: true
-        urls:
-          - hostname: api.dataplane1.example.com
-            basePath: /
-  identityProvider:
-    url: https://idp.example.com
-    admin:
-      clientId: admin-client
-      userName: admin
-      password: <your-idp-admin-password>
+  gateways:
+    - name: standard
+      admin:
+        identityProviderRef: primary
+        url: https://gateway-admin.example.com
+  identityProviders:
+    - name: primary
+      issuerHostname: idp.example.com
+      admin:
+        url: https://idp.example.com/auth/admin/realms
+        clientId: admin-client
+        userName: admin
+        password: <your-idp-admin-password>
+  presets:
+    - name: default
+      type: API
+      default: true
+      gatewayRef: standard
+      identityProviderRef: primary
+      urls:
+        - hostname: api.dataplane1.example.com
+          basePath: /
   redis:
     host: redis.example.com
     port: 6379
@@ -88,22 +107,93 @@ spec:
     enableTLS: true
 ```
 
+### Traffic Types
+
+Every entry in `spec.presets` declares which kind of traffic it routes through its required `type`:
+
+| Type | Serves |
+| ---- | ------ |
+| `API` | Synchronous API traffic: exposures, subscriptions and proxy routes. |
+| `AI` | Agentic traffic: MCP servers and agent cards. |
+| `Event` | Asynchronous event traffic. |
+
+A preset has exactly one type. A gateway has no type of its own — it serves the union of the
+types of the presets that reference it. To send different traffic kinds to different gateway
+instances, point their presets at different gateways:
+
+```yaml
+  # Excerpt: spec.gateways and spec.presets only. Preset urls and
+  # identityProviderRef are omitted for brevity; both are required.
+  gateways:
+    - name: standard
+      admin:
+        identityProviderRef: primary
+        url: https://gateway-admin.example.com
+    - name: ai
+      admin:
+        identityProviderRef: primary
+        url: https://ai-gateway-admin.example.com
+  presets:
+    - name: default
+      type: API
+      default: true
+      gatewayRef: standard
+    - name: events
+      type: Event
+      default: true
+      gatewayRef: standard
+    - name: ai
+      type: AI
+      default: true
+      gatewayRef: ai
+```
+
+Here `standard` serves API and Event traffic because two presets of those types reference it,
+while `ai` serves only AI traffic.
+
+When the Control Plane needs a preset for a traffic kind — for example an AI Gateway route — it
+selects among the presets of that type only. The default matching preset is preferred; if none is
+marked as default, the first matching preset in the list is used.
+
+Features configured on the Zone are inherited by every preset. A preset can override an inherited
+feature by declaring the same name, including explicitly disabling it.
+
+#### Rules the webhook enforces
+
+A Zone is rejected at admission unless:
+
+- **At least one `API` preset exists.** The API type carries the zone's representative profile
+  and is used by every caller that has no traffic type of its own.
+- **At most one preset per type is `default`.** Without one, list order determines the fallback.
+- **Features may be configured on the Zone or any preset.** Preset values override inherited Zone
+  values.
+- **Every gateway is referenced by at least one preset.** An unreferenced gateway would still
+  provision a Gateway, an admin client and a consumer for traffic that can never reach it.
+
+:::note
+Because a gateway's types are derived from its presets, adding a preset of a new type to an
+existing gateway is enough to make that gateway serve the new traffic kind — no change to the
+gateway entry is needed.
+:::
+
 :::caution
 Credential values (`clientSecret`, `password`, etc.) should not be committed to version control. See [Zone Secrets](#zone-secrets) below for how the Control Plane onboards these values automatically — in most cases you can leave them empty or use a secret reference instead of a clear-text value.
 :::
 
 ### Gateway Admin Access
 
-To configure routes at runtime, the Control Plane needs to authenticate against your gateway's **admin API**. The `gateway.admin` block holds this connection:
+To configure routes at runtime, the Control Plane needs to authenticate against your gateway's **admin API**. The `admin` block on each gateway holds this connection:
 
 ```yaml
-gateway:
-  admin:
-    url: https://gateway-admin.example.com
-    # clientSecret is optional — see below
+gateways:
+  - name: standard
+    admin:
+      identityProviderRef: primary
+      url: https://gateway-admin.example.com
+      # clientSecret is optional — see below
 ```
 
-You only need to provide the `url`. To handle authentication, the Control Plane automatically provisions a dedicated identity client (the `rover` client, described below) and generates its secret. If you want to set the client's secret yourself, provide `clientSecret`; otherwise it is generated for you.
+You only need to provide the `url` and `identityProviderRef`. To handle authentication, the Control Plane automatically provisions a dedicated identity client (the `rover` client, described below) and generates its secret. If you want to set the client's secret yourself, provide `clientSecret`; otherwise it is generated for you.
 
 #### The `rover` realm and client
 
@@ -230,6 +320,16 @@ Every `EventConfig` describes one of two kinds of zone, and you must set **exact
 
 - **Local zone** (`local:`) — a zone that runs its own event backend (Horizon). This is the common case.
 - **Proxy zone** (`proxy:`) — a zone that runs *no* event backend of its own and forwards all publish, subscribe, and configuration traffic to a target zone. See [Proxy zones](#proxy-zones) below.
+
+:::caution Every zone that routes events needs an `Event`-typed preset
+A zone that routes events must declare a preset with `type: Event` in `spec.presets`. The
+admission webhook does **not** enforce this — a zone without one is accepted, and the failure
+only appears when the `EventConfig` is reconciled.
+
+In a full mesh this break is not local. Every meshed peer must have an `Event`-typed preset: a
+single zone missing it blocks event reconciliation in *every* peer, not just in itself. Migrate
+all meshed zones together; migrating them one at a time does not converge.
+:::
 
 ### Creating an `EventConfig` for a local zone
 

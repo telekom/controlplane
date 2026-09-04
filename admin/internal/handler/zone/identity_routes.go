@@ -7,6 +7,8 @@ package zone
 import (
 	"context"
 	"fmt"
+	"path"
+	"slices"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -55,31 +57,36 @@ const jumperIdentityPort int32 = 8081
 // createIdentityRoutes creates the OIDC identity routes (issuer, certs, discovery) for
 // the default identity realm and, if configured, the team-api identity realm.
 // These passthrough routes allow external consumers to discover JWKS keys and validate
-// last-mile-security tokens issued by this zone's gateway.
+// last-mile-security tokens. They are a per-gateway concern, so every gateway gets them.
 func createIdentityRoutes(ctx context.Context, hc *HandlingContext) error {
-	defaultPreset, err := hc.Zone.Spec.Gateway.GetDefaultPreset()
-	if err != nil {
-		return ctrlerrors.BlockedErrorf("cannot resolve default gateway preset for identity routes: %s", err)
-	}
-
 	// World-visible zones prefix identity routes with /spacegate to avoid path conflicts
 	var pathPrefix string
 	if hc.Zone.Spec.Visibility == adminv1.ZoneVisibilityWorld {
 		pathPrefix = spacegatePathPrefix
 	}
 
-	// Create routes for the default identity realm
-	for _, cfg := range identityRouteConfigs {
-		if err := createIdentityRoute(ctx, hc, hc.DefaultIdentityRealm.Name, cfg, defaultPreset, pathPrefix); err != nil {
-			return err
-		}
+	realms := []string{hc.DefaultIdentityRealm.Name}
+	if hc.TeamApiIdentityRealm != nil {
+		realms = append(realms, hc.TeamApiIdentityRealm.Name)
 	}
 
-	// Create routes for the team-api identity realm if it was set up
-	if hc.TeamApiIdentityRealm != nil {
-		for _, cfg := range identityRouteConfigs {
-			if err := createIdentityRoute(ctx, hc, hc.TeamApiIdentityRealm.Name, cfg, defaultPreset, pathPrefix); err != nil {
-				return err
+	for i := range hc.Zone.Spec.Gateways {
+		gatewayName := hc.Zone.Spec.Gateways[i].Name
+		gateway := hc.Gateways[gatewayName]
+		if gateway == nil {
+			return ctrlerrors.BlockedErrorf("cannot resolve gateway %q", gatewayName)
+		}
+		// Every hostname routed through this gateway must resolve OIDC metadata,
+		// so the route covers the union of its presets' hostnames and base paths.
+		hostnames, basePaths := gatewayHostnamesAndBasePaths(&hc.Zone.Spec, gatewayName)
+		if len(hostnames) == 0 {
+			return ctrlerrors.BlockedErrorf("gateway %q has no preset hostnames", gatewayName)
+		}
+		for _, realmName := range realms {
+			for _, cfg := range identityRouteConfigs {
+				if err := createIdentityRoute(ctx, hc, realmName, cfg, gateway, hostnames, basePaths, pathPrefix); err != nil {
+					return err
+				}
 			}
 		}
 	}
@@ -87,13 +94,36 @@ func createIdentityRoutes(ctx context.Context, hc *HandlingContext) error {
 	return nil
 }
 
+// gatewayHostnamesAndBasePaths returns the distinct hostnames and distinct base paths
+// of every preset using a gateway. Kong matches any host against any path, so the two
+// lists are independent; the union keeps every advertised LmsIssuer resolvable.
+func gatewayHostnamesAndBasePaths(spec *adminv1.ZoneSpec, gatewayName string) (hostnames, basePaths []string) {
+	for i := range spec.Presets {
+		preset := &spec.Presets[i]
+		if preset.GatewayRef != gatewayName {
+			continue
+		}
+		for _, u := range preset.Urls {
+			if !slices.Contains(hostnames, u.Hostname) {
+				hostnames = append(hostnames, u.Hostname)
+			}
+			if !slices.Contains(basePaths, u.BasePath) {
+				basePaths = append(basePaths, u.BasePath)
+			}
+		}
+	}
+	slices.Sort(hostnames)
+	slices.Sort(basePaths)
+	return hostnames, basePaths
+}
+
 // createIdentityRoute creates a single passthrough route that exposes an OIDC endpoint
 // through the gateway, proxying to the Jumper identity container.
-func createIdentityRoute(ctx context.Context, hc *HandlingContext, realmName string, cfg identityRouteConfig, preset *adminv1.GatewayConfigPreset, pathPrefix string) error {
+func createIdentityRoute(ctx context.Context, hc *HandlingContext, realmName string, cfg identityRouteConfig, gateway *gatewayapi.Gateway, hostnames, basePaths []string, pathPrefix string) error {
 	c := cclient.ClientFromContextOrDie(ctx)
 
 	// Route name: gateway--<realmName>--<suffix>
-	routeName := hc.Gateway.Name + "--" + realmName + "--" + cfg.suffix
+	routeName := gateway.Name + "--" + realmName + "--" + cfg.suffix
 
 	route := &gatewayapi.Route{
 		ObjectMeta: metav1.ObjectMeta{
@@ -108,6 +138,7 @@ func createIdentityRoute(ctx context.Context, hc *HandlingContext, realmName str
 		}
 		route.Labels[cconfig.EnvironmentLabelKey] = hc.Environment.Name
 		route.Labels[cconfig.BuildLabelKey(zoneLabelName)] = hc.Zone.Name
+		route.Labels[cconfig.DomainLabelKey] = domainName
 		route.Labels[cconfig.OwnerUidLabelKey] = string(hc.Zone.GetUID())
 
 		// Construct the downstream path with optional spacegate prefix
@@ -115,7 +146,12 @@ func createIdentityRoute(ctx context.Context, hc *HandlingContext, realmName str
 		if pathPrefix != "" {
 			downstreamPath = pathPrefix + downstreamPath
 		}
-		hostnames, paths := preset.ResolveHostnamesAndPaths(downstreamPath)
+		// Identity routes are served under every base path the gateway's presets use,
+		// so each preset's advertised LmsIssuer resolves.
+		paths := make([]string, 0, len(basePaths))
+		for _, basePath := range basePaths {
+			paths = append(paths, path.Join(basePath, downstreamPath))
+		}
 
 		// Upstream: Jumper identity container on port 8081
 		upstream := gatewayapi.Upstream{
@@ -126,12 +162,13 @@ func createIdentityRoute(ctx context.Context, hc *HandlingContext, realmName str
 		}
 
 		route.Spec = gatewayapi.RouteSpec{
-			GatewayRef:  *types.ObjectRefFromObject(hc.Gateway),
+			GatewayRef:  *types.ObjectRefFromObject(gateway),
 			Type:        gatewayapi.RouteTypePrimary,
 			Backend:     gatewayapi.Backend{Upstreams: []gatewayapi.Upstream{upstream}},
 			Hostnames:   hostnames,
 			Paths:       paths,
 			PassThrough: true,
+			Security:    gatewayapi.Security{RealmName: hc.Zone.Status.RealmName},
 		}
 
 		return nil

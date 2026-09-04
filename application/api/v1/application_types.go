@@ -106,6 +106,8 @@ type ApplicationStatus struct {
 	Conditions   []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
 	ClientId     string             `json:"clientId"`
 	ClientSecret string             `json:"clientSecret"`
+	// +optional
+	TokenUrl string `json:"tokenUrl,omitempty"`
 
 	// RotatedClientSecret holds the secret-manager reference to the previous client secret
 	// during a graceful secret rotation grace period. Empty when no rotation is in progress.

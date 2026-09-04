@@ -79,28 +79,39 @@ func makeReadyZone() *adminv1.Zone {
 			Namespace: "default",
 		},
 		Spec: adminv1.ZoneSpec{
-			Gateway: adminv1.GatewayConfig{
-				Presets: []adminv1.GatewayConfigPreset{{
-					Name:    "default",
-					Default: true,
-					Urls: []adminv1.UrlConfig{{
-						Hostname: "gateway.example.com",
-						Port:     443,
-						Scheme:   "https",
-					}},
+			Presets: []adminv1.Preset{{
+				Name:    "event",
+				Type:    adminv1.GatewayTypeEvent,
+				Default: true,
+				Urls: []adminv1.UrlConfig{{
+					Hostname: "gateway.example.com",
+					Port:     443,
+					Scheme:   "https",
 				}},
-			},
+			}, {
+				Name:    "api",
+				Type:    adminv1.GatewayTypeAPI,
+				Default: true,
+				Urls: []adminv1.UrlConfig{{
+					Hostname: "gateway.example.com",
+					Port:     443,
+					Scheme:   "https",
+				}},
+			}},
 		},
 		Status: adminv1.ZoneStatus{
 			Namespace: "default",
-			Gateway: &ctypes.ObjectRef{
+			RealmName: "provider-realm",
+			Presets: []adminv1.PresetStatus{{Name: "event", GatewayRef: &ctypes.ObjectRef{
 				Name:      "gw",
 				Namespace: "default",
-			},
-			Links: adminv1.Links{
+			}, Links: adminv1.Links{
 				Issuer:    "https://idp.test-zone.example.com",
 				LmsIssuer: "https://lms.test-zone.example.com",
-			},
+			}}, {Name: "api", GatewayRef: &ctypes.ObjectRef{
+				Name:      "gw",
+				Namespace: "default",
+			}}},
 		},
 	}
 	meta.SetStatusCondition(&z.Status.Conditions, metav1.Condition{
@@ -187,13 +198,22 @@ func makeReadyApplication() *applicationv1.Application {
 	return app
 }
 
+// eventPresetStatus resolves the Event preset's status by name, so fixtures never depend
+// on the order the presets happen to be listed in.
+func eventPresetStatus(zone *adminv1.Zone) *adminv1.PresetStatus {
+	status, err := zone.Status.GetPreset("event")
+	Expect(err).NotTo(HaveOccurred())
+	return status
+}
+
 // makeReadyTargetZone builds the ready local zone that a proxy zone forwards to.
 func makeReadyTargetZone() *adminv1.Zone {
 	z := makeReadyZone()
 	z.Name = "target-zone"
 	z.Status.Namespace = "target-ns"
-	z.Status.Gateway = &ctypes.ObjectRef{Name: "target-gw", Namespace: "default"}
-	z.Status.Links = adminv1.Links{
+	targetStatus := eventPresetStatus(z)
+	targetStatus.GatewayRef = &ctypes.ObjectRef{Name: "target-gw", Namespace: "default"}
+	targetStatus.Links = adminv1.Links{
 		Issuer:    "https://idp.target-zone.example.com",
 		LmsIssuer: "https://lms.target-zone.example.com",
 	}
@@ -604,7 +624,7 @@ var _ = Describe("EventExposureHandler", func() {
 		It("should return error when CreateSSERoute fails", func() {
 			et := makeReadyEventType()
 			zone := makeReadyZone()
-			zone.Spec.Gateway.Presets = nil // no default preset → CreateSSERoute returns BlockedError
+			zone.Spec.Presets = nil // no default preset → CreateSSERoute returns BlockedError
 			ec := makeReadyEventConfig()
 			es := makeReadyEventStore()
 			app := makeReadyApplication()
@@ -660,6 +680,59 @@ var _ = Describe("EventExposureHandler", func() {
 			Expect(processingCond).ToNot(BeNil())
 			Expect(processingCond.Status).To(Equal(metav1.ConditionFalse))
 			Expect(processingCond.Reason).To(Equal("Done"))
+		})
+
+		It("should use each route-owning zone realm for cross-zone SSE routes", func() {
+			et := makeReadyEventType()
+			providerZone := makeReadyZone()
+			subscriberZone := makeReadyZone()
+			subscriberZone.Name = "subscriber-zone"
+			subscriberZone.Status.Namespace = "subscriber-ns"
+			subscriberZone.Status.RealmName = "subscriber-realm"
+			eventPresetStatus(subscriberZone).GatewayRef.Namespace = "subscriber-ns"
+			ec := makeReadyEventConfig()
+
+			mockListEventTypes([]eventv1.EventType{et})
+			mockListEventExposures([]eventv1.EventExposure{})
+			mockGetZone(providerZone)
+			mockListEventConfigs([]eventv1.EventConfig{ec}, 2)
+			mockGetEventStore(makeReadyEventStore())
+			mockGetApplication(makeReadyApplication())
+			mockCreateOrUpdatePublisher(controllerutil.OperationResultCreated, nil)
+			subscription := eventv1.EventSubscription{
+				Spec: eventv1.EventSubscriptionSpec{
+					EventType: obj.Spec.EventType,
+					Delivery:  eventv1.Delivery{Type: eventv1.DeliveryTypeServerSentEvent},
+					Zone:      ctypes.ObjectRef{Name: "subscriber-zone", Namespace: "default"},
+				},
+				Status: eventv1.EventSubscriptionStatus{Conditions: []metav1.Condition{{
+					Type: "ApprovalGranted", Status: metav1.ConditionTrue, Reason: "Approved",
+				}}},
+			}
+			mockListEventSubscriptions([]eventv1.EventSubscription{subscription})
+			fakeClient.EXPECT().
+				Get(ctx, k8stypes.NamespacedName{Name: "subscriber-zone", Namespace: "default"}, mock.AnythingOfType("*v1.Zone")).
+				Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
+					*out.(*adminv1.Zone) = *subscriberZone
+				}).Return(nil).Once()
+
+			var proxyRoute, primaryRoute gatewayv1.Route
+			fakeClient.EXPECT().CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Route"), mock.Anything).
+				Run(func(_ context.Context, route client.Object, mutate controllerutil.MutateFn) {
+					_ = mutate()
+					proxyRoute = *route.(*gatewayv1.Route)
+				}).Return(controllerutil.OperationResultCreated, nil).Once()
+			fakeClient.EXPECT().CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Route"), mock.Anything).
+				Run(func(_ context.Context, route client.Object, mutate controllerutil.MutateFn) {
+					_ = mutate()
+					primaryRoute = *route.(*gatewayv1.Route)
+				}).Return(controllerutil.OperationResultCreated, nil).Once()
+			mockCleanup(0, nil)
+			fakeClient.EXPECT().AllReady().Return(true).Once()
+
+			Expect(h.CreateOrUpdate(ctx, obj)).To(Succeed())
+			Expect(proxyRoute.Spec.Security.RealmName).To(Equal("subscriber-realm"))
+			Expect(primaryRoute.Spec.Security.RealmName).To(Equal("provider-realm"))
 		})
 
 		It("should not panic and route via backend zone when exposure zone is a proxy zone", func() {

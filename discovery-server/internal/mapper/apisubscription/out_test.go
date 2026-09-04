@@ -29,9 +29,12 @@ func TestJoinURL(t *testing.T) {
 		path string
 		want string
 	}{
+		{base: "", path: "/a", want: ""},
 		{base: "https://gw.example", path: "/a", want: "https://gw.example/a"},
 		{base: "https://gw.example/", path: "a", want: "https://gw.example/a"},
 		{base: "https://gw.example/", path: "/a", want: "https://gw.example/a"},
+		{base: "https://gw.example/base?tenant=one", path: "../a", want: "https://gw.example/a?tenant=one"},
+		{base: "https://gw.example/%", path: "a", want: ""},
 	}
 
 	for _, tt := range tests {
@@ -60,23 +63,23 @@ func TestMapResponse_ResolvedReferences(t *testing.T) {
 	zonePrimary.Name = "dataplane1"
 	zonePrimary.Namespace = "poc"
 	zonePrimary.Status.Namespace = "dp1-ns"
-	zonePrimary.Status.Links.Url = "https://gw-primary-default.example/"
-	zonePrimary.Spec.Gateway.Presets = []adminv1.GatewayConfigPreset{{
-		Name:     "failover",
+	zonePrimary.Spec.Gateways = []adminv1.GatewayConfig{{Name: "standard"}}
+	zonePrimary.Spec.Presets = []adminv1.Preset{{
+		Name: "failover", Type: adminv1.GatewayTypeAPI, GatewayRef: "standard",
 		Urls:     []adminv1.UrlConfig{{Hostname: "gw-primary.example", Scheme: "https"}},
 		Features: []adminv1.Feature{{Name: adminv1.FeatureConsumerFailover, Enabled: true}},
-	}}
+	}, {Name: "default", Type: adminv1.GatewayTypeAPI, GatewayRef: "standard", Default: true, Urls: []adminv1.UrlConfig{{Hostname: "gw-primary-default.example", Scheme: "https"}}}}
 
 	zoneFailover := &adminv1.Zone{}
 	zoneFailover.Name = "dataplane2"
 	zoneFailover.Namespace = "poc"
 	zoneFailover.Status.Namespace = "dp2-ns"
-	zoneFailover.Status.Links.Url = "https://gw-failover-default.example/"
-	zoneFailover.Spec.Gateway.Presets = []adminv1.GatewayConfigPreset{{
-		Name:     "failover",
+	zoneFailover.Spec.Gateways = []adminv1.GatewayConfig{{Name: "standard"}}
+	zoneFailover.Spec.Presets = []adminv1.Preset{{
+		Name: "failover", Type: adminv1.GatewayTypeAPI, GatewayRef: "standard",
 		Urls:     []adminv1.UrlConfig{{Hostname: "gw-failover.example", Scheme: "https"}},
 		Features: []adminv1.Feature{{Name: adminv1.FeatureConsumerFailover, Enabled: true}},
-	}}
+	}, {Name: "default", Type: adminv1.GatewayTypeAPI, GatewayRef: "standard", Default: true, Urls: []adminv1.UrlConfig{{Hostname: "gw-failover-default.example", Scheme: "https"}}}}
 
 	app := &applicationv1.Application{}
 	app.Name = "my-app"
@@ -170,7 +173,10 @@ func TestMapResponse_NoApprovalReference(t *testing.T) {
 	zone := &adminv1.Zone{}
 	zone.Name = "dataplane1"
 	zone.Namespace = "poc"
-	zone.Status.Links.Url = "https://gw-primary.example/"
+	zone.Spec.Gateways = []adminv1.GatewayConfig{{Name: "standard"}}
+	zone.Spec.Presets = []adminv1.Preset{{
+		Name: "default", Type: adminv1.GatewayTypeAPI, GatewayRef: "standard", Default: true, Urls: []adminv1.UrlConfig{{Hostname: "gw-primary.example", Scheme: "https"}},
+	}}
 
 	app := &applicationv1.Application{}
 	app.Name = "my-app"

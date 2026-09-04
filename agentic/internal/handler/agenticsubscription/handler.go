@@ -96,7 +96,7 @@ func (h *AgenticSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *ag
 	if err != nil {
 		return err
 	}
-	if !subscriberZone.IsFeatureEnabled(adminv1.FeatureAiGateway) {
+	if !subscriberZone.Spec.FeaturesSupported(adminv1.GatewayTypeAI) {
 		obj.SetCondition(condition.NewNotReadyCondition("AiGatewayNotSupported",
 			"Subscriber zone "+subscriberZone.Name+" does not support the AI Gateway feature"))
 		return ctrlerrors.BlockedErrorf("subscriber zone %q does not support the AI Gateway feature", subscriberZone.Name)

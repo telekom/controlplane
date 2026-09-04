@@ -4110,6 +4110,7 @@ type ApplicationMutation struct {
 	name                     *string
 	client_id                *string
 	client_secret            *string
+	token_url                *string
 	rotated_client_secret    *string
 	rotated_expires_at       *time.Time
 	current_expires_at       *time.Time
@@ -4628,6 +4629,55 @@ func (m *ApplicationMutation) ClientSecretCleared() bool {
 func (m *ApplicationMutation) ResetClientSecret() {
 	m.client_secret = nil
 	delete(m.clearedFields, application.FieldClientSecret)
+}
+
+// SetTokenURL sets the "token_url" field.
+func (m *ApplicationMutation) SetTokenURL(s string) {
+	m.token_url = &s
+}
+
+// TokenURL returns the value of the "token_url" field in the mutation.
+func (m *ApplicationMutation) TokenURL() (r string, exists bool) {
+	v := m.token_url
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTokenURL returns the old "token_url" field's value of the Application entity.
+// If the Application object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ApplicationMutation) OldTokenURL(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTokenURL is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTokenURL requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTokenURL: %w", err)
+	}
+	return oldValue.TokenURL, nil
+}
+
+// ClearTokenURL clears the value of the "token_url" field.
+func (m *ApplicationMutation) ClearTokenURL() {
+	m.token_url = nil
+	m.clearedFields[application.FieldTokenURL] = struct{}{}
+}
+
+// TokenURLCleared returns if the "token_url" field was cleared in this mutation.
+func (m *ApplicationMutation) TokenURLCleared() bool {
+	_, ok := m.clearedFields[application.FieldTokenURL]
+	return ok
+}
+
+// ResetTokenURL resets all changes to the "token_url" field.
+func (m *ApplicationMutation) ResetTokenURL() {
+	m.token_url = nil
+	delete(m.clearedFields, application.FieldTokenURL)
 }
 
 // SetRotatedClientSecret sets the "rotated_client_secret" field.
@@ -5392,7 +5442,7 @@ func (m *ApplicationMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *ApplicationMutation) Fields() []string {
-	fields := make([]string, 0, 17)
+	fields := make([]string, 0, 18)
 	if m.created_at != nil {
 		fields = append(fields, application.FieldCreatedAt)
 	}
@@ -5419,6 +5469,9 @@ func (m *ApplicationMutation) Fields() []string {
 	}
 	if m.client_secret != nil {
 		fields = append(fields, application.FieldClientSecret)
+	}
+	if m.token_url != nil {
+		fields = append(fields, application.FieldTokenURL)
 	}
 	if m.rotated_client_secret != nil {
 		fields = append(fields, application.FieldRotatedClientSecret)
@@ -5470,6 +5523,8 @@ func (m *ApplicationMutation) Field(name string) (ent.Value, bool) {
 		return m.ClientID()
 	case application.FieldClientSecret:
 		return m.ClientSecret()
+	case application.FieldTokenURL:
+		return m.TokenURL()
 	case application.FieldRotatedClientSecret:
 		return m.RotatedClientSecret()
 	case application.FieldRotatedExpiresAt:
@@ -5513,6 +5568,8 @@ func (m *ApplicationMutation) OldField(ctx context.Context, name string) (ent.Va
 		return m.OldClientID(ctx)
 	case application.FieldClientSecret:
 		return m.OldClientSecret(ctx)
+	case application.FieldTokenURL:
+		return m.OldTokenURL(ctx)
 	case application.FieldRotatedClientSecret:
 		return m.OldRotatedClientSecret(ctx)
 	case application.FieldRotatedExpiresAt:
@@ -5600,6 +5657,13 @@ func (m *ApplicationMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetClientSecret(v)
+		return nil
+	case application.FieldTokenURL:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTokenURL(v)
 		return nil
 	case application.FieldRotatedClientSecret:
 		v, ok := value.(string)
@@ -5702,6 +5766,9 @@ func (m *ApplicationMutation) ClearedFields() []string {
 	if m.FieldCleared(application.FieldClientSecret) {
 		fields = append(fields, application.FieldClientSecret)
 	}
+	if m.FieldCleared(application.FieldTokenURL) {
+		fields = append(fields, application.FieldTokenURL)
+	}
 	if m.FieldCleared(application.FieldRotatedClientSecret) {
 		fields = append(fields, application.FieldRotatedClientSecret)
 	}
@@ -5751,6 +5818,9 @@ func (m *ApplicationMutation) ClearField(name string) error {
 		return nil
 	case application.FieldClientSecret:
 		m.ClearClientSecret()
+		return nil
+	case application.FieldTokenURL:
+		m.ClearTokenURL()
 		return nil
 	case application.FieldRotatedClientSecret:
 		m.ClearRotatedClientSecret()
@@ -5807,6 +5877,9 @@ func (m *ApplicationMutation) ResetField(name string) error {
 		return nil
 	case application.FieldClientSecret:
 		m.ResetClientSecret()
+		return nil
+	case application.FieldTokenURL:
+		m.ResetTokenURL()
 		return nil
 	case application.FieldRotatedClientSecret:
 		m.ResetRotatedClientSecret()

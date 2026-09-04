@@ -6,24 +6,25 @@ package zone
 
 import (
 	"context"
+	"errors"
+	"fmt"
+	"net/http"
+	"time"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/meta"
+	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
-	"github.com/telekom/controlplane/admin/internal/handler/util/naming"
-	"github.com/telekom/controlplane/admin/internal/handler/util/urls"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
-	cconfig "github.com/telekom/controlplane/common/pkg/config"
-	ctrlerrors "github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	"github.com/telekom/controlplane/common/pkg/handler"
-	"github.com/telekom/controlplane/common/pkg/types"
-	"github.com/telekom/controlplane/common/pkg/util/labelutil"
-	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
+	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 )
 
 const (
 	zoneLabelName = "zone"
+	domainName    = "admin"
 
 	// spacegatePathPrefix is the downstream path prefix added to all identity
 	// routes (issuer, certs, discovery) when a zone's visibility is World.
@@ -39,10 +40,22 @@ const (
 var _ handler.Handler[*adminv1.Zone] = &ZoneHandler{}
 
 // ZoneHandler implements the Handler interface for Zone resources.
-type ZoneHandler struct{}
+type ZoneHandler struct {
+	HTTPClient *http.Client
+}
+
+func (h *ZoneHandler) httpClient() *http.Client {
+	if h.HTTPClient != nil {
+		return h.HTTPClient
+	}
+	return &http.Client{Timeout: 10 * time.Second}
+}
 
 func (h *ZoneHandler) CreateOrUpdate(ctx context.Context, obj *adminv1.Zone) error {
-	hc, err := newHandlingContext(ctx, obj)
+	c := cclient.ClientFromContextOrDie(ctx)
+	cclient.EnableFeature(c, cclient.CollectSubResources)
+
+	hc, err := newHandlingContext(ctx, obj, h.httpClient())
 	if err != nil {
 		return err
 	}
@@ -51,24 +64,41 @@ func (h *ZoneHandler) CreateOrUpdate(ctx context.Context, obj *adminv1.Zone) err
 		createIdentityProvider,
 		createDefaultIdentityRealm,
 		createInternalIdentityRealm,
-		createGatewayAdminClient,
-		createGateway,
-		createGatewayConsumer,
-		reconcileAiGateway,
+		// Everything below references a realm that must already exist in the
+		// identity provider, which rejects clients and tokens for a realm that
+		// is not active yet.
+		waitForSubResources,
+		populateRealmName,
+		reconcileGateways,
 		reconcileInternalRoutes,
 		createIdentityRoutes,
 		cleanupStaleRoutes,
-		populateLinks,
-		populateRealmName,
+		populatePresetStatus,
 	}
 
 	for _, step := range steps {
-		if err := step(ctx, hc); err != nil {
+		err := step(ctx, hc)
+		if errors.Is(err, errWaitingForSubResources) {
+			if reportErr := reportNotReadySubResources(ctx, obj); reportErr != nil {
+				return reportErr
+			}
+			obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonSubResourceNotReady, err.Error()))
+			return nil
+		}
+		if err != nil {
 			return err
 		}
 	}
 
-	c := cclient.ClientFromContextOrDie(ctx)
+	if err := reportNotReadySubResources(ctx, obj); err != nil {
+		return err
+	}
+
+	if meta.IsStatusConditionTrue(obj.GetConditions(), condition.ConditionTypeReady) {
+		obj.SetCondition(condition.NewReadyCondition(condition.ReasonProvisioned, "Zone has been provisioned"))
+		obj.SetCondition(condition.NewDoneProcessingCondition("Zone has been provisioned"))
+		return nil
+	}
 
 	if c.AnyChanged() {
 		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonProvisioning, "At least one sub-resource has been created or updated"))
@@ -86,70 +116,52 @@ func (h *ZoneHandler) CreateOrUpdate(ctx context.Context, obj *adminv1.Zone) err
 	return nil
 }
 
-// reconcileAiGateway creates the AI Gateway resource for the zone when the
-// feature is enabled and configured, otherwise clears the status and feature flag.
-func reconcileAiGateway(ctx context.Context, hc *HandlingContext) error {
-	if !cconfig.FeatureAiGateway.IsEnabled() || hc.Zone.Spec.AiGateway == nil {
-		hc.Zone.Status.AiGateway = nil
-		hc.Zone.ManageFeature(adminv1.FeatureAiGateway, false)
+// errWaitingForSubResources halts the step pipeline without failing the
+// reconciliation. The remaining steps run once the sub-resources are ready.
+var errWaitingForSubResources = errors.New("waiting for sub-resources")
+
+// waitForSubResources is a barrier step: it stops the pipeline until every
+// sub-resource created by the preceding steps reports Ready=True.
+//
+// It is a no-op once the zone has been provisioned, because zone readiness is
+// latched: a sub-resource degrading later must not stall the remaining steps.
+func waitForSubResources(ctx context.Context, hc *HandlingContext) error {
+	if meta.IsStatusConditionTrue(hc.Zone.GetConditions(), condition.ConditionTypeReady) {
 		return nil
 	}
 
 	c := cclient.ClientFromContextOrDie(ctx)
-
-	gateway := &gatewayapi.Gateway{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      labelutil.NormalizeValue(naming.ForAiGateway()),
-			Namespace: labelutil.NormalizeValue(hc.Namespace.Name),
-		},
+	for _, sub := range cclient.SubResources(c) {
+		if meta.IsStatusConditionTrue(sub.GetConditions(), condition.ConditionTypeReady) {
+			continue
+		}
+		gvk, err := apiutil.GVKForObject(sub, c.Scheme())
+		if err != nil {
+			return fmt.Errorf("determining sub-resource kind: %w", err)
+		}
+		return fmt.Errorf("%w: %s %s/%s is not ready yet", errWaitingForSubResources,
+			gvk.Kind, sub.GetNamespace(), sub.GetName())
 	}
 
-	mutator := func() error {
-		if gateway.Labels == nil {
-			gateway.Labels = make(map[string]string)
-		}
-		gateway.Labels[cconfig.EnvironmentLabelKey] = hc.Environment.Name
-		gateway.Labels[cconfig.BuildLabelKey(zoneLabelName)] = hc.Zone.Name
+	return nil
+}
 
-		clientId := naming.ForGatewayAdminClientId()
-		if hc.Zone.Spec.AiGateway.Admin.ClientId != nil {
-			clientId = *hc.Zone.Spec.AiGateway.Admin.ClientId
-		}
+// reportNotReadySubResources emits an event for every sub-resource the scoped
+// client observed with Ready=False.
+func reportNotReadySubResources(ctx context.Context, obj *adminv1.Zone) error {
+	c := cclient.ClientFromContextOrDie(ctx)
+	recorder := contextutil.RecorderFromContextOrDie(ctx)
 
-		clientSecret := ""
-		if hc.Zone.Spec.AiGateway.Admin.ClientSecret != nil {
-			clientSecret = *hc.Zone.Spec.AiGateway.Admin.ClientSecret
+	for _, child := range cclient.NotReadyObjects(c) {
+		gvk, err := apiutil.GVKForObject(child, c.Scheme())
+		if err != nil {
+			return fmt.Errorf("determining sub-resource kind: %w", err)
 		}
-
-		gateway.Spec = gatewayapi.GatewaySpec{
-			Admin: gatewayapi.AdminConfig{
-				ClientId:     clientId,
-				ClientSecret: clientSecret,
-				IssuerUrl:    urls.ForGatewayAdminIssuerUrl(hc.Zone.Spec.IdentityProvider.Url),
-				Url:          hc.Zone.Spec.AiGateway.Admin.Url,
-			},
-		}
-
-		if hc.Zone.Spec.Redis != nil {
-			gateway.Spec.Redis = &gatewayapi.RedisConfig{
-				Host:      hc.Zone.Spec.Redis.Host,
-				Port:      hc.Zone.Spec.Redis.Port,
-				Password:  hc.Zone.Spec.Redis.Password,
-				EnableTLS: hc.Zone.Spec.Redis.EnableTLS,
-			}
-		}
-
-		return nil
+		ready := meta.FindStatusCondition(child.GetConditions(), condition.ConditionTypeReady)
+		recorder.Eventf(obj, corev1.EventTypeWarning, condition.ReasonSubResourceNotReady,
+			"Sub-resource %s %s/%s is not ready: %s: %s",
+			gvk.Kind, child.GetNamespace(), child.GetName(), ready.Reason, ready.Message)
 	}
-
-	_, err := c.CreateOrUpdate(ctx, gateway, mutator)
-	if err != nil {
-		return ctrlerrors.RetryableErrorf("failed to create or update AI Gateway %s in zone %s: %s", gateway.Name, hc.Zone.Name, err)
-	}
-
-	hc.AiGateway = gateway
-	hc.Zone.Status.AiGateway = types.ObjectRefFromObject(gateway)
-	hc.Zone.EnableFeature(adminv1.FeatureAiGateway)
 	return nil
 }
 

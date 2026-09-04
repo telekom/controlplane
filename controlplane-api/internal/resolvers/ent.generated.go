@@ -52,6 +52,7 @@ type ApiSubscriptionResolver interface {
 }
 type ApplicationResolver interface {
 	ClientSecret(ctx context.Context, obj *ent.Application) (*string, error)
+
 	RotatedClientSecret(ctx context.Context, obj *ent.Application) (*string, error)
 
 	OwnerTeam(ctx context.Context, obj *ent.Application) (*model.TeamInfo, error)
@@ -3129,6 +3130,29 @@ func (ec *executionContext) _Application_clientSecret(ctx context.Context, field
 }
 func (ec *executionContext) fieldContext_Application_clientSecret(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	return graphql.NewScalarFieldContext("Application", field, true, true, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _Application_tokenURL(ctx context.Context, field graphql.CollectedField, obj *ent.Application) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Application_tokenURL(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.TokenURL, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *string) graphql.Marshaler {
+			return ec.marshalOString2ᚖstring(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_Application_tokenURL(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("Application", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
 func (ec *executionContext) _Application_rotatedClientSecret(ctx context.Context, field graphql.CollectedField, obj *ent.Application) (ret graphql.Marshaler) {
@@ -11829,7 +11853,7 @@ func (ec *executionContext) unmarshalInputApplicationWhereInput(ctx context.Cont
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "lastModifiedAt", "lastModifiedAtNEQ", "lastModifiedAtIn", "lastModifiedAtNotIn", "lastModifiedAtGT", "lastModifiedAtGTE", "lastModifiedAtLT", "lastModifiedAtLTE", "statusPhase", "statusPhaseNEQ", "statusPhaseIn", "statusPhaseNotIn", "statusPhaseIsNil", "statusPhaseNotNil", "statusMessage", "statusMessageNEQ", "statusMessageIn", "statusMessageNotIn", "statusMessageGT", "statusMessageGTE", "statusMessageLT", "statusMessageLTE", "statusMessageContains", "statusMessageHasPrefix", "statusMessageHasSuffix", "statusMessageIsNil", "statusMessageNotNil", "statusMessageEqualFold", "statusMessageContainsFold", "environment", "environmentNEQ", "environmentIn", "environmentNotIn", "environmentGT", "environmentGTE", "environmentLT", "environmentLTE", "environmentContains", "environmentHasPrefix", "environmentHasSuffix", "environmentIsNil", "environmentNotNil", "environmentEqualFold", "environmentContainsFold", "namespace", "namespaceNEQ", "namespaceIn", "namespaceNotIn", "namespaceGT", "namespaceGTE", "namespaceLT", "namespaceLTE", "namespaceContains", "namespaceHasPrefix", "namespaceHasSuffix", "namespaceEqualFold", "namespaceContainsFold", "name", "nameNEQ", "nameIn", "nameNotIn", "nameGT", "nameGTE", "nameLT", "nameLTE", "nameContains", "nameHasPrefix", "nameHasSuffix", "nameEqualFold", "nameContainsFold", "clientID", "clientIDNEQ", "clientIDIn", "clientIDNotIn", "clientIDGT", "clientIDGTE", "clientIDLT", "clientIDLTE", "clientIDContains", "clientIDHasPrefix", "clientIDHasSuffix", "clientIDIsNil", "clientIDNotNil", "clientIDEqualFold", "clientIDContainsFold", "rotatedExpiresAt", "rotatedExpiresAtNEQ", "rotatedExpiresAtIn", "rotatedExpiresAtNotIn", "rotatedExpiresAtGT", "rotatedExpiresAtGTE", "rotatedExpiresAtLT", "rotatedExpiresAtLTE", "rotatedExpiresAtIsNil", "rotatedExpiresAtNotNil", "currentExpiresAt", "currentExpiresAtNEQ", "currentExpiresAtIn", "currentExpiresAtNotIn", "currentExpiresAtGT", "currentExpiresAtGTE", "currentExpiresAtLT", "currentExpiresAtLTE", "currentExpiresAtIsNil", "currentExpiresAtNotNil", "secretRotationPhase", "secretRotationPhaseNEQ", "secretRotationPhaseIn", "secretRotationPhaseNotIn", "secretRotationMessage", "secretRotationMessageNEQ", "secretRotationMessageIn", "secretRotationMessageNotIn", "secretRotationMessageGT", "secretRotationMessageGTE", "secretRotationMessageLT", "secretRotationMessageLTE", "secretRotationMessageContains", "secretRotationMessageHasPrefix", "secretRotationMessageHasSuffix", "secretRotationMessageIsNil", "secretRotationMessageNotNil", "secretRotationMessageEqualFold", "secretRotationMessageContainsFold", "hasZone", "hasZoneWith", "hasOwnerTeam", "hasOwnerTeamWith", "hasExposedApis", "hasExposedApisWith", "hasSubscribedApis", "hasSubscribedApisWith", "hasExposedEvents", "hasExposedEventsWith", "hasSubscribedEvents", "hasSubscribedEventsWith", "hasPermissionSet", "hasPermissionSetWith"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "lastModifiedAt", "lastModifiedAtNEQ", "lastModifiedAtIn", "lastModifiedAtNotIn", "lastModifiedAtGT", "lastModifiedAtGTE", "lastModifiedAtLT", "lastModifiedAtLTE", "statusPhase", "statusPhaseNEQ", "statusPhaseIn", "statusPhaseNotIn", "statusPhaseIsNil", "statusPhaseNotNil", "statusMessage", "statusMessageNEQ", "statusMessageIn", "statusMessageNotIn", "statusMessageGT", "statusMessageGTE", "statusMessageLT", "statusMessageLTE", "statusMessageContains", "statusMessageHasPrefix", "statusMessageHasSuffix", "statusMessageIsNil", "statusMessageNotNil", "statusMessageEqualFold", "statusMessageContainsFold", "environment", "environmentNEQ", "environmentIn", "environmentNotIn", "environmentGT", "environmentGTE", "environmentLT", "environmentLTE", "environmentContains", "environmentHasPrefix", "environmentHasSuffix", "environmentIsNil", "environmentNotNil", "environmentEqualFold", "environmentContainsFold", "namespace", "namespaceNEQ", "namespaceIn", "namespaceNotIn", "namespaceGT", "namespaceGTE", "namespaceLT", "namespaceLTE", "namespaceContains", "namespaceHasPrefix", "namespaceHasSuffix", "namespaceEqualFold", "namespaceContainsFold", "name", "nameNEQ", "nameIn", "nameNotIn", "nameGT", "nameGTE", "nameLT", "nameLTE", "nameContains", "nameHasPrefix", "nameHasSuffix", "nameEqualFold", "nameContainsFold", "clientID", "clientIDNEQ", "clientIDIn", "clientIDNotIn", "clientIDGT", "clientIDGTE", "clientIDLT", "clientIDLTE", "clientIDContains", "clientIDHasPrefix", "clientIDHasSuffix", "clientIDIsNil", "clientIDNotNil", "clientIDEqualFold", "clientIDContainsFold", "tokenURL", "tokenURLNEQ", "tokenURLIn", "tokenURLNotIn", "tokenURLGT", "tokenURLGTE", "tokenURLLT", "tokenURLLTE", "tokenURLContains", "tokenURLHasPrefix", "tokenURLHasSuffix", "tokenURLIsNil", "tokenURLNotNil", "tokenURLEqualFold", "tokenURLContainsFold", "rotatedExpiresAt", "rotatedExpiresAtNEQ", "rotatedExpiresAtIn", "rotatedExpiresAtNotIn", "rotatedExpiresAtGT", "rotatedExpiresAtGTE", "rotatedExpiresAtLT", "rotatedExpiresAtLTE", "rotatedExpiresAtIsNil", "rotatedExpiresAtNotNil", "currentExpiresAt", "currentExpiresAtNEQ", "currentExpiresAtIn", "currentExpiresAtNotIn", "currentExpiresAtGT", "currentExpiresAtGTE", "currentExpiresAtLT", "currentExpiresAtLTE", "currentExpiresAtIsNil", "currentExpiresAtNotNil", "secretRotationPhase", "secretRotationPhaseNEQ", "secretRotationPhaseIn", "secretRotationPhaseNotIn", "secretRotationMessage", "secretRotationMessageNEQ", "secretRotationMessageIn", "secretRotationMessageNotIn", "secretRotationMessageGT", "secretRotationMessageGTE", "secretRotationMessageLT", "secretRotationMessageLTE", "secretRotationMessageContains", "secretRotationMessageHasPrefix", "secretRotationMessageHasSuffix", "secretRotationMessageIsNil", "secretRotationMessageNotNil", "secretRotationMessageEqualFold", "secretRotationMessageContainsFold", "hasZone", "hasZoneWith", "hasOwnerTeam", "hasOwnerTeamWith", "hasExposedApis", "hasExposedApisWith", "hasSubscribedApis", "hasSubscribedApisWith", "hasExposedEvents", "hasExposedEventsWith", "hasSubscribedEvents", "hasSubscribedEventsWith", "hasPermissionSet", "hasPermissionSetWith"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -12564,6 +12588,111 @@ func (ec *executionContext) unmarshalInputApplicationWhereInput(ctx context.Cont
 				return it, err
 			}
 			it.ClientIDContainsFold = data
+		case "tokenURL":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tokenURL"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TokenURL = data
+		case "tokenURLNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tokenURLNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TokenURLNEQ = data
+		case "tokenURLIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tokenURLIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TokenURLIn = data
+		case "tokenURLNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tokenURLNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TokenURLNotIn = data
+		case "tokenURLGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tokenURLGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TokenURLGT = data
+		case "tokenURLGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tokenURLGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TokenURLGTE = data
+		case "tokenURLLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tokenURLLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TokenURLLT = data
+		case "tokenURLLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tokenURLLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TokenURLLTE = data
+		case "tokenURLContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tokenURLContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TokenURLContains = data
+		case "tokenURLHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tokenURLHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TokenURLHasPrefix = data
+		case "tokenURLHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tokenURLHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TokenURLHasSuffix = data
+		case "tokenURLIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tokenURLIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TokenURLIsNil = data
+		case "tokenURLNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tokenURLNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TokenURLNotNil = data
+		case "tokenURLEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tokenURLEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TokenURLEqualFold = data
+		case "tokenURLContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tokenURLContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TokenURLContainsFold = data
 		case "rotatedExpiresAt":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("rotatedExpiresAt"))
 			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
@@ -22455,6 +22584,11 @@ func (ec *executionContext) _Application(ctx context.Context, sel ast.SelectionS
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "tokenURL":
+			out.Values[i] = ec._Application_tokenURL(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		case "rotatedClientSecret":
 			field := field
 

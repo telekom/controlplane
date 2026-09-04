@@ -50,7 +50,7 @@ var _ = Describe("CreateSSERoute", func() {
 		}
 	})
 
-	It("should return BlockedError when zone has no default preset", func() {
+	It("should return BlockedError when zone has no Event preset", func() {
 		zoneNoPreset := makeZoneNoPreset("zone-a", "zone-a-ns")
 
 		route, err := util.CreateSSERoute(ctx, "de.telekom.test.v1", zoneNoPreset, eventConfig)
@@ -58,7 +58,7 @@ var _ = Describe("CreateSSERoute", func() {
 		Expect(route).To(BeNil())
 		rootCause := unwrapAll(err)
 		Expect(rootCause).To(Satisfy(isBlockedError))
-		Expect(err.Error()).To(ContainSubstring("has no default preset"))
+		Expect(err.Error()).To(ContainSubstring("has no Event preset"))
 	})
 
 	It("should return BlockedError when zone has no gateway reference in status", func() {
@@ -269,7 +269,7 @@ var _ = Describe("CreateSSEProxyRoute", func() {
 		providerZone = makeZone("zone-prov", "zone-prov-ns")
 	})
 
-	It("should return BlockedError when subscriber zone has no default preset", func() {
+	It("should return BlockedError when subscriber zone has no Event preset", func() {
 		subNoPreset := makeZoneNoPreset("zone-sub", "zone-sub-ns")
 
 		route, err := util.CreateSSEProxyRoute(ctx, "de.telekom.test.v1", subNoPreset, providerZone)
@@ -277,7 +277,7 @@ var _ = Describe("CreateSSEProxyRoute", func() {
 		Expect(route).To(BeNil())
 		rootCause := unwrapAll(err)
 		Expect(rootCause).To(Satisfy(isBlockedError))
-		Expect(err.Error()).To(ContainSubstring("has no default preset"))
+		Expect(err.Error()).To(ContainSubstring("has no Event preset"))
 	})
 
 	It("should return BlockedError when subscriber zone has no gateway reference", func() {
@@ -291,7 +291,7 @@ var _ = Describe("CreateSSEProxyRoute", func() {
 		Expect(err.Error()).To(ContainSubstring("has no gateway reference in status"))
 	})
 
-	It("should return BlockedError when provider zone has no default preset", func() {
+	It("should return BlockedError when provider zone has no Event preset", func() {
 		provNoPreset := makeZoneNoPreset("zone-prov", "zone-prov-ns")
 
 		route, err := util.CreateSSEProxyRoute(ctx, "de.telekom.test.v1", subscriberZone, provNoPreset)
@@ -300,7 +300,7 @@ var _ = Describe("CreateSSEProxyRoute", func() {
 		rootCause := unwrapAll(err)
 		Expect(rootCause).To(Satisfy(isBlockedError))
 		Expect(err.Error()).To(ContainSubstring("target zone"))
-		Expect(err.Error()).To(ContainSubstring("has no default preset"))
+		Expect(err.Error()).To(ContainSubstring("has no Event preset"))
 	})
 
 	It("should create SSE proxy route successfully", func() {
