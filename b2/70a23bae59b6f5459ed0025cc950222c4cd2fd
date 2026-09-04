@@ -1,0 +1,38 @@
+admin/api/v1/zone_types.go
+  s_9a1412030e4e7a::t_1981abb2878071 30-31,428,431,435-439,467,470-471,489,491,508,514,516-517,540,552,561,571,576,772,775
+  s_9a1412030e4e7a::t_f6e29671794a64 34-35,440-452
+  h_0f030e7424553c 767-770,773-774,776,778
+application/internal/handler/application/handler.go
+  s_9a1412030e4e7a::t_9bfe36a0378362 281-285
+  s_9a1412030e4e7a::t_1981abb2878071 137
+admin/internal/webhook/v1/zone_validator_test.go
+  s_9a1412030e4e7a::t_d1a2d42f69970d 122,134-166,334,350-354
+  s_9a1412030e4e7a::t_1aba285d2a66b6 355-357
+admin/api/v1/zone_types_test.go
+  s_9a1412030e4e7a::t_d1a2d42f69970d 66,69-71,74,76,82-84,197,204-223,238
+docs/docs/admin-journey/environments-and-zones.md
+  s_9a1412030e4e7a::t_0145925e5b2841 155-159,167-169
+admin/internal/webhook/v1/zone_validator.go
+  s_9a1412030e4e7a::t_1981abb2878071 54,99,115,134,169,193,195,229,238
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "b270a23bae59b6f5459ed0025cc950222c4cd2fd",
+  "prompts": {},
+  "humans": {
+    "h_0f030e7424553c": {
+      "author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  },
+  "sessions": {
+    "s_9a1412030e4e7a": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f948e3248ffeXZMynalMi1j5Ue",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
