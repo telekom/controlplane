@@ -62,11 +62,66 @@ func mapExposure(in *api.Exposure, out *roverv1.Exposure) error {
 
 		out.Agentic = mapAiExposure(aiExp)
 
+	case "file":
+		fileExp, err := in.AsFileExposure()
+		if err != nil {
+			return errors.Wrap(err, "failed to convert to FileExposure")
+		}
+
+		out.File = mapFileExposure(fileExp)
+
 	default:
 		return errors.Errorf("unknown exposure type: %s", expType)
 	}
 
 	return nil
+}
+
+func mapFileExposure(in api.FileExposure) *roverv1.FileExposure {
+	out := &roverv1.FileExposure{
+		FileType:   in.FileType,
+		Visibility: toRoverVisibility(in.Visibility),
+		PublicKeys: mapPublicKeys(in.PublicKeys),
+		Approval: roverv1.Approval{
+			Strategy:     toRoverApprovalStrategy(in.Approval),
+			TrustedTeams: mapTrustedTeamList(in.TrustedTeams),
+		},
+	}
+
+	return out
+}
+
+func mapTrustedTeamList(in []api.TrustedTeam) []roverv1.TrustedTeam {
+	if in == nil {
+		return nil
+	}
+
+	out := make([]roverv1.TrustedTeam, len(in))
+	for i, team := range in {
+		parts := strings.Split(team.Team, "--")
+		if len(parts) != 2 {
+			continue // invalid team format, skip
+		}
+		out[i] = roverv1.TrustedTeam{
+			Group: parts[0],
+			Team:  parts[1],
+		}
+	}
+	return out
+}
+
+func mapPublicKeys(in []api.PublicKey) []roverv1.PublicKey {
+	if len(in) == 0 {
+		return nil
+	}
+	out := make([]roverv1.PublicKey, len(in))
+	for i, key := range in {
+		out[i] = roverv1.PublicKey{
+			Label: key.Label,
+			Key:   key.Key,
+		}
+	}
+	return out
 }
 
 func mapApiExposure(in api.ApiExposure) *roverv1.ApiExposure {

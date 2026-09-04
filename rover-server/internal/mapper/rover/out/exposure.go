@@ -52,10 +52,39 @@ func mapExposure(in *roverv1.Exposure, out *api.Exposure) error {
 			return errors.Wrap(err, "failed to map ai exposure")
 		}
 
+	} else if in.File != nil {
+		if err := out.FromFileExposure(mapFileExposure(in.File)); err != nil {
+			return errors.Wrap(err, "failed to map file exposure")
+		}
+
 	} else {
 		return errors.Errorf("unknown exposure type: %s", in.Type())
 	}
 	return nil
+}
+
+func mapFileExposure(in *roverv1.FileExposure) api.FileExposure {
+	return api.FileExposure{
+		FileType:     in.FileType,
+		Visibility:   toApiVisibility(in.Visibility),
+		PublicKeys:   mapPublicKeys(in.PublicKeys),
+		Approval:     toApiApprovalStrategy(in.Approval.Strategy),
+		TrustedTeams: mapTrustedTeamList(in.Approval.TrustedTeams),
+	}
+}
+
+func mapPublicKeys(in []roverv1.PublicKey) []api.PublicKey {
+	if len(in) == 0 {
+		return nil
+	}
+	out := make([]api.PublicKey, len(in))
+	for i, key := range in {
+		out[i] = api.PublicKey{
+			Label: key.Label,
+			Key:   key.Key,
+		}
+	}
+	return out
 }
 
 func mapApiExposure(in *roverv1.ApiExposure) (api.ApiExposure, error) {
@@ -356,6 +385,20 @@ func mapExposureTransformation(in *roverv1.ApiExposure, out *api.ApiExposure) {
 	if len(in.Transformation.Request.Headers.Remove) > 0 {
 		out.RemoveHeaders = in.Transformation.Request.Headers.Remove
 	}
+}
+
+func mapTrustedTeamList(in []roverv1.TrustedTeam) []api.TrustedTeam {
+	if in == nil {
+		return nil
+	}
+
+	out := make([]api.TrustedTeam, len(in))
+	for i, team := range in {
+		out[i] = api.TrustedTeam{
+			Team: team.Group + "--" + team.Team,
+		}
+	}
+	return out
 }
 
 func mapTrustedTeams(in *roverv1.ApiExposure, out *api.ApiExposure) {
