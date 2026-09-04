@@ -143,15 +143,16 @@ func (c *scopedClientImpl) setChanged(res controllerutil.OperationResult) {
 	}
 }
 
-// setReady will set the current client to not ready if the object is not ready
-// If any object is not ready, the client will be marked as not ready
+// setReady will set the current client to not ready if the object is not ready.
+// An object is considered ready only when it carries an explicit Ready=True
+// condition. Missing or False conditions both mark the client as not ready.
 func (c *scopedClientImpl) setReady(obj client.Object) {
 	if !c.ready || obj == nil {
 		return
 	}
 
 	if cobj, ok := obj.(types.Object); ok {
-		if meta.IsStatusConditionFalse(cobj.GetConditions(), condition.ConditionTypeReady) {
+		if !meta.IsStatusConditionTrue(cobj.GetConditions(), condition.ConditionTypeReady) {
 			c.ready = false
 		}
 	}

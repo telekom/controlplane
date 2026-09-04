@@ -709,6 +709,37 @@ var _ = Describe("ListenerHandler", func() {
 					Delete(ctx, mock.AnythingOfType("*v1.Subscriber"), mock.Anything).
 					Return(nil).Once()
 
+				// After deleteAllOwnedChildren, resolvePublisherNamespace is called.
+				// Status refs are nil — fall back to owner-labelled children. Return
+				// one RouteListener so the namespace is resolved without topology.
+				fakeClient.EXPECT().
+					List(ctx, mock.AnythingOfType("*v1.RouteListenerList"), mock.Anything).
+					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+						*list.(*gatewayv1.RouteListenerList) = gatewayv1.RouteListenerList{
+							Items: []gatewayv1.RouteListener{
+								{ObjectMeta: metav1.ObjectMeta{Name: "old-rl", Namespace: listenerZoneStatus}},
+							},
+						}
+					}).
+					Return(nil).Once()
+				fakeClient.EXPECT().
+					List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
+					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+						*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{}
+					}).
+					Return(nil).Once()
+
+				// cleanupGenericPublisherIfOrphaned: no Subscribers reference the Publisher.
+				fakeClient.EXPECT().
+					List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
+					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+						*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{}
+					}).
+					Return(nil).Once()
+				fakeClient.EXPECT().
+					Delete(ctx, mock.AnythingOfType("*v1.Publisher"), mock.Anything).
+					Return(nil).Once()
+
 				err := h.CreateOrUpdate(ctx, listener)
 				Expect(err).ToNot(HaveOccurred())
 
@@ -1142,6 +1173,42 @@ var _ = Describe("ListenerHandler", func() {
 			})
 		})
 
+		Context("runtime filter guard", func() {
+			It("should block when requestFilter is set", func() {
+				listener := newListener()
+				listener.Spec.ApiListener.RequestFilter = &spectrev1.ListenerFilter{
+					Trigger: map[string]string{"key": "value"},
+				}
+				mockGetConsumerApp(makeConsumerApp())
+				mockGetProviderApp(makeProviderApp())
+				mockGetSpectreApp(makeSpectreAppPtr())
+				mockGetZone()
+				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
+				mockGetEventStore(makeListenerEventStore())
+
+				err := h.CreateOrUpdate(ctx, listener)
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("requestFilter is not yet implemented"))
+			})
+
+			It("should block when responseFilter is set", func() {
+				listener := newListener()
+				listener.Spec.ApiListener.ResponseFilter = &spectrev1.ListenerFilter{
+					Payload: []string{"$.data"},
+				}
+				mockGetConsumerApp(makeConsumerApp())
+				mockGetProviderApp(makeProviderApp())
+				mockGetSpectreApp(makeSpectreAppPtr())
+				mockGetZone()
+				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
+				mockGetEventStore(makeListenerEventStore())
+
+				err := h.CreateOrUpdate(ctx, listener)
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("responseFilter is not yet implemented"))
+			})
+		})
+
 		Context("unsupported route modes", func() {
 			It("should block with pass-through route and NOT create ApprovalRequest or children", func() {
 				listener := newListener()
@@ -1165,6 +1232,33 @@ var _ = Describe("ListenerHandler", func() {
 					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
 						*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{}
 					}).
+					Return(nil).Once()
+
+				// resolvePublisherNamespace: topology fallback.
+				fakeClient.EXPECT().
+					List(ctx, mock.AnythingOfType("*v1.RouteListenerList"), mock.Anything).
+					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+						*list.(*gatewayv1.RouteListenerList) = gatewayv1.RouteListenerList{}
+					}).
+					Return(nil).Once()
+				fakeClient.EXPECT().
+					List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
+					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+						*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{}
+					}).
+					Return(nil).Once()
+				mockGetConsumerApp(makeConsumerApp())
+				mockGetZone()
+
+				// cleanupGenericPublisherIfOrphaned: no Subscribers reference the Publisher.
+				fakeClient.EXPECT().
+					List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
+					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+						*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{}
+					}).
+					Return(nil).Once()
+				fakeClient.EXPECT().
+					Delete(ctx, mock.AnythingOfType("*v1.Publisher"), mock.Anything).
 					Return(nil).Once()
 
 				err := h.CreateOrUpdate(ctx, listener)
@@ -1197,6 +1291,33 @@ var _ = Describe("ListenerHandler", func() {
 					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
 						*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{}
 					}).
+					Return(nil).Once()
+
+				// resolvePublisherNamespace: topology fallback.
+				fakeClient.EXPECT().
+					List(ctx, mock.AnythingOfType("*v1.RouteListenerList"), mock.Anything).
+					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+						*list.(*gatewayv1.RouteListenerList) = gatewayv1.RouteListenerList{}
+					}).
+					Return(nil).Once()
+				fakeClient.EXPECT().
+					List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
+					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+						*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{}
+					}).
+					Return(nil).Once()
+				mockGetConsumerApp(makeConsumerApp())
+				mockGetZone()
+
+				// cleanupGenericPublisherIfOrphaned: no Subscribers reference the Publisher.
+				fakeClient.EXPECT().
+					List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
+					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+						*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{}
+					}).
+					Return(nil).Once()
+				fakeClient.EXPECT().
+					Delete(ctx, mock.AnythingOfType("*v1.Publisher"), mock.Anything).
 					Return(nil).Once()
 
 				err := h.CreateOrUpdate(ctx, listener)
@@ -1250,6 +1371,36 @@ var _ = Describe("ListenerHandler", func() {
 					Return(nil).Once()
 				fakeClient.EXPECT().
 					Delete(ctx, mock.AnythingOfType("*v1.Subscriber"), mock.Anything).
+					Return(nil).Once()
+
+				// resolvePublisherNamespace: status refs nil — label-list returns one
+				// RouteListener so namespace resolves without topology.
+				fakeClient.EXPECT().
+					List(ctx, mock.AnythingOfType("*v1.RouteListenerList"), mock.Anything).
+					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+						*list.(*gatewayv1.RouteListenerList) = gatewayv1.RouteListenerList{
+							Items: []gatewayv1.RouteListener{
+								{ObjectMeta: metav1.ObjectMeta{Name: "old-rl", Namespace: listenerZoneStatus}},
+							},
+						}
+					}).
+					Return(nil).Once()
+				fakeClient.EXPECT().
+					List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
+					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+						*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{}
+					}).
+					Return(nil).Once()
+
+				// cleanupGenericPublisherIfOrphaned: no Subscribers reference the Publisher.
+				fakeClient.EXPECT().
+					List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
+					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+						*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{}
+					}).
+					Return(nil).Once()
+				fakeClient.EXPECT().
+					Delete(ctx, mock.AnythingOfType("*v1.Publisher"), mock.Anything).
 					Return(nil).Once()
 
 				err := h.CreateOrUpdate(ctx, listener)

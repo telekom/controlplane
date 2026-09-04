@@ -116,6 +116,16 @@ func (h *ListenerHandler) CreateOrUpdate(ctx context.Context, listener *spectrev
 	}
 	apiBasePath := listener.Spec.ApiListener.ApiBasePath
 
+	// Step 5.1: Reject filters at runtime — the webhook already blocks them via
+	// CEL, but a direct API write or future webhook bypass must not silently
+	// provision resources for unimplemented filter logic.
+	if listener.Spec.ApiListener.RequestFilter != nil {
+		return ctrlerrors.BlockedErrorf("requestFilter is not yet implemented")
+	}
+	if listener.Spec.ApiListener.ResponseFilter != nil {
+		return ctrlerrors.BlockedErrorf("responseFilter is not yet implemented")
+	}
+
 	// Step 5.5: Resolve the gateway Route early so unsupported modes
 	// (pass-through, failover) are rejected before creating approvals.
 	route, err := h.findRouteByPath(ctx, listeningZone.Status.Namespace, apiBasePath)
@@ -138,6 +148,16 @@ func (h *ListenerHandler) CreateOrUpdate(ctx context.Context, listener *spectrev
 		}
 		listener.Status.RouteListener = nil
 		listener.Status.EventSubscriptions = nil
+
+		zoneNamespace, err := h.resolvePublisherNamespace(ctx, listener)
+		if err != nil {
+			return errors.Wrap(err, "failed to resolve publisher namespace for route-mode rejection")
+		}
+		if zoneNamespace != "" {
+			if err := h.cleanupGenericPublisherIfOrphaned(ctx, zoneNamespace); err != nil {
+				return errors.Wrap(err, "failed to check orphaned generic Publisher")
+			}
+		}
 
 		mode := "pass-through"
 		if route.Spec.Traffic.Failover != nil {
@@ -179,6 +199,16 @@ func (h *ListenerHandler) CreateOrUpdate(ctx context.Context, listener *spectrev
 		}
 		listener.Status.RouteListener = nil
 		listener.Status.EventSubscriptions = nil
+
+		zoneNamespace, err := h.resolvePublisherNamespace(ctx, listener)
+		if err != nil {
+			return errors.Wrap(err, "failed to resolve publisher namespace after denial")
+		}
+		if zoneNamespace != "" {
+			if err := h.cleanupGenericPublisherIfOrphaned(ctx, zoneNamespace); err != nil {
+				return errors.Wrap(err, "failed to check orphaned generic Publisher")
+			}
+		}
 		return nil
 
 	case builder.ApprovalResultPending:

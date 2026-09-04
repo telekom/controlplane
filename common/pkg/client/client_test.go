@@ -304,8 +304,9 @@ var _ = Describe("Client", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			Expect(scopedClient.AnyChanged()).To(BeTrue())
-			// defaults as no conditions set
-			Expect(scopedClient.AllReady()).To(BeTrue())
+			// A freshly created object has no conditions, so AllReady must be false —
+			// the absence of a Ready=True condition means the child is not confirmed ready.
+			Expect(scopedClient.AllReady()).To(BeFalse())
 		})
 	})
 })
