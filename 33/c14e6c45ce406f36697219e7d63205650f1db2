@@ -1,0 +1,335 @@
+event/internal/handler/eventexposure/collect_issuers_test.go
+  s_7b21489fa43269::t_92fbd680ebacbf 23,26,47-49
+  s_7b21489fa43269::t_8ddd30558c1e9a 19-22,24-25,27,45-46,54,57-58
+rover/internal/webhook/v1/webhook_suite_test.go
+  s_d580e3e0135b87::t_64f2a064c741a7 201,209
+docs/docs/admin-journey/first-steps.md
+  s_06ba95c1e23679::t_e17c373348ad66 63-94
+event/internal/handler/eventconfig/handler_test.go
+  s_7b21489fa43269::t_db10f80dd8745c 116-126,138-141
+api/internal/controller/apiexposure_controller_test.go
+  s_d580e3e0135b87::t_f85cfd6934f8cc 43
+  s_d580e3e0135b87::t_bf79ba6a3bb7c0 51
+application/internal/handler/application/handler.go
+  h_0f030e7424553c 268
+  s_d580e3e0135b87::t_e926e3318fab1c 243-246
+  s_5a3e1731107367::t_cfc3310acd1155 134-136
+  s_d580e3e0135b87::t_5b22e6dfedd6db 277-281
+  s_5a3e1731107367::t_dc43da8ba425f8 282-285
+  s_d580e3e0135b87::t_0ac619697a8af9 266-267,269-276,286-310
+  s_d580e3e0135b87::t_1e55120c6b9f4d 181-183
+  s_d580e3e0135b87::t_b29f2d90547648 11
+  s_abd9e4d61bd5f7::t_3cd9544c8b1b46 131
+  s_d580e3e0135b87::t_1b7abdd089e929 197-198
+  s_d580e3e0135b87::t_ad670e1d6bd647 241-242,248,254
+api/internal/controller/apisubscription_controller_failover_test.go
+  s_d580e3e0135b87::t_b93ad281f398e0 71,282,742,904,1298
+install/overlays/local/resources/.gitignore
+  s_06ba95c1e23679::t_80e76106e57f2e 13-14
+organization/internal/handler/team/handler/gateway_consumer/build_test.go
+  s_d580e3e0135b87::t_4828bf3d516b39 55,75
+event/internal/handler/util/getters.go
+  s_7b21489fa43269::t_4d19618da13ad8 54-55,57,59,63
+  s_7b21489fa43269::t_7197e867bf384f 53,56
+event/internal/handler/eventexposure/handler.go
+  s_7b21489fa43269::t_7197e867bf384f 161,259,290,299
+admin/api/v1/zone_types_test.go
+  s_e1a9ba861689a1::t_ed12bafd149d51 93-94
+  s_e1a9ba861689a1::t_0e2bc76d2a7d3b 83-84
+  s_e1a9ba861689a1::t_ac3141fdf5970a 129,131,133,137-141,143-151
+  s_e1a9ba861689a1::t_bdb3021ddb642c 154
+  s_e1a9ba861689a1::t_d72dbd6f6a70d8 43,49-50,52-54,60,62-65,109-110,112-126
+  s_7b21489fa43269::t_dd87c97a0ad71c 51,55-57,217
+  s_e1a9ba861689a1::t_92f5fefd22b639 25-26,30-32
+  s_e1a9ba861689a1::t_db2570cfc64fa2 66-68,70-71,74,77,80-82,85-92,95-108
+  s_e1a9ba861689a1::t_905754d70c14c9 181
+  s_5a3e1731107367::t_09f1063f702e94 157,160
+  s_e1a9ba861689a1::t_9bc40ba111f083 162-163,170,180,190
+event/internal/handler/util/callback_route_test.go
+  s_7b21489fa43269::t_a20221269166d5 81,83-95,100
+  s_7b21489fa43269::t_e1c9e5c2d2505d 120,128,247,255,269,277
+  s_7b21489fa43269::t_0398e67f33c815 29-39,44-47,51-54,59-60,65-67,71,76,78-80
+  s_7b21489fa43269::t_76be09e058cd86 82
+agentic/internal/handler/agenticexposure/handler_test.go
+  s_d580e3e0135b87::t_36a3d708beda7c 88,93-104
+agentic/internal/handler/agenticsubscription/handler_test.go
+  s_d580e3e0135b87::t_36a3d708beda7c 130,135-146
+docs/docs/admin-journey/features/failover.md
+  s_d580e3e0135b87::t_0a225ac9ec5c71 82,95
+  s_d580e3e0135b87::t_f7357648d7477d 50,58,77
+  s_5a3e1731107367::t_a8d5ff01860bed 76,81,83-94,97
+docs/docs/admin-journey/environments-and-zones.md
+  s_d580e3e0135b87::t_2208bf65861dc0 110,112,120-122,136-148,151-173,176-178
+  s_d580e3e0135b87::t_8010815d84c80f 96
+  s_d580e3e0135b87::t_7fc71442c32e16 125-126
+  s_5a3e1731107367::t_ac00c877ccae04 326-335
+api/internal/handler/apiexposure/handler_test.go
+  s_d580e3e0135b87::t_335a23b216b12c 85-88,93
+  s_d580e3e0135b87::t_f5932691f952b3 105,107
+projector/internal/domain/zone/zone_integration_test.go
+  s_7b21489fa43269::t_271f92125592f2 92,123
+organization/internal/webhook/v1/mutator/mutate_test.go
+  s_d580e3e0135b87::t_cdfc35ea556efc 33
+  s_d580e3e0135b87::t_fe51b7bd6488f4 27
+event/internal/handler/eventconfig/handler.go
+  s_7b21489fa43269::t_7197e867bf384f 325,380,399,464,545,728,758,772
+projector/internal/domain/zone/translator.go
+  s_7b21489fa43269::t_3e4e958a8b3254 11
+  s_7b21489fa43269::t_0af8d22113cf46 33-45,50-53
+permission/internal/controller/permissionset_controller_test.go
+  s_d580e3e0135b87::t_9549a4ec4358dd 162,169
+admin/config/crd/bases/admin.cp.ei.telekom.de_zones.yaml
+  s_5a3e1731107367::t_673841e8e82bb7 144
+  s_e1a9ba861689a1::t_6391b4051e9651 352-360,414,417,600-612
+organization/internal/webhook/v1/team_webhook_test.go
+  s_d580e3e0135b87::t_cdfc35ea556efc 60
+  s_d580e3e0135b87::t_fe51b7bd6488f4 54
+event/internal/handler/util/voyager_route_test.go
+  s_7b21489fa43269::t_e1c9e5c2d2505d 58,66,199,207,221,229,308,315,328,335
+admin/internal/webhook/v1/zone_validator_test.go
+  s_5a3e1731107367::t_e1244f15eff373 160-163,165-174,176-178
+  s_e1a9ba861689a1::t_f562a82f50b6a9 39
+  s_7b2c7549677ab4::t_f1bc5606930f25 119-131,133-157,179,183-184
+  s_e1a9ba861689a1::t_38cbea90506d95 77
+  s_7b2c7549677ab4::t_95497ae82eaee1 58-59,62-65,68-71
+  s_7b2c7549677ab4::t_498735a13b156e 182,185-190
+  s_7b2c7549677ab4::t_6eaf92ef2f8171 293-296,302-303
+  s_7b2c7549677ab4::t_4d02bc6ba78abf 61,67
+  s_7b2c7549677ab4::t_32f27e58ef736a 60,66,132,181,196,198,207,209,226,228,238,240,301
+  s_7b2c7549677ab4::t_ddb4a7988f42d0 180
+rover-server/internal/mapper/applicationinfo/out_test.go
+  s_d580e3e0135b87::t_a65e9de1f815fb 126
+  s_d580e3e0135b87::t_4828bf3d516b39 326,522,572,622,654,689,719
+  s_d580e3e0135b87::t_b41ec95e237b38 361-362,364-365
+rover-server/test/mocks/data/zone.json
+  s_d580e3e0135b87::t_64d41b6a98b6c8 14
+api/internal/handler/apisubscription/handler.go
+  s_5a3e1731107367::t_7ccf7ada481027 228-231,233-235
+  s_5a3e1731107367::t_80b612619677d8 232
+projector/internal/domain/zone/translator_test.go
+  s_7b21489fa43269::t_32e0936cea6c82 66-70
+  s_7b21489fa43269::t_271f92125592f2 56,98,119,143
+event/internal/handler/util/sse_route_test.go
+  s_7b21489fa43269::t_e1c9e5c2d2505d 53,61,272,280,294,303
+event/internal/handler/util/voyager_route.go
+  s_7b21489fa43269::t_1f0347448b4db8 126,128,132
+admin/internal/webhook/v1/zone_validator.go
+  s_7b2c7549677ab4::t_7e418ca96bf8b8 60,169-175
+  s_7b2c7549677ab4::t_c16c60b5e7c113 32,38,45-59
+  s_7b2c7549677ab4::t_e52c321d11be80 11
+  s_7b2c7549677ab4::t_5792c2aa60be4c 198-199,201,208,215,224-226,230
+  s_7b2c7549677ab4::t_f5c170f06c2905 176-178
+  s_7b2c7549677ab4::t_43cc5aa18f8256 163-168,179-197,200,202-207,209-214,216-223,227-229,231-267
+  s_7b2c7549677ab4::t_cee7bca540128d 61
+admin/api/v1/zz_generated.deepcopy.go
+  s_e1a9ba861689a1::t_6391b4051e9651 188-192
+organization/internal/team_webhook_reconciler_test.go
+  s_d580e3e0135b87::t_cdfc35ea556efc 104
+  s_d580e3e0135b87::t_fe51b7bd6488f4 98
+event/internal/handler/eventexposure/handler_test.go
+  s_7b21489fa43269::t_d15a12cc9c1798 201-208,214-216,692
+  s_7b21489fa43269::t_3860e4015d50ce 83-93,105,111-113
+admin/internal/handler/zone/identity_routes.go
+  s_acec7fc955c4af::t_64d91bc2e02543 80-81,83,87,97-100,109-111,116-119,122
+  s_acec7fc955c4af::t_5b9048a65a7673 149-154
+  s_acec7fc955c4af::t_41d76bbb6083a2 60,68-70,73-79,82,84-86,88-89,101-108,112-115
+  s_acec7fc955c4af::t_02c4713bd9b112 11
+  s_acec7fc955c4af::t_01b19aaa1eb80c 10
+docs/docs/architecture/agentic.mdx
+  s_d580e3e0135b87::t_824e9414b46180 111-112,115-118,124-133,145-146,150
+  s_d580e3e0135b87::t_53efed1a10525d 108,135-136,144,147-149
+api/internal/handler/util_proxy_route_test.go
+  s_d580e3e0135b87::t_bf79ba6a3bb7c0 46
+  s_d580e3e0135b87::t_f85cfd6934f8cc 38
+event/internal/handler/util/shared_route.go
+  s_7b21489fa43269::t_193df53a7c3d4c 200
+  s_7b21489fa43269::t_250a99b14477cc 152,156,158,167,172,174
+  s_7b21489fa43269::t_7197e867bf384f 195
+event/internal/handler/util/publish_route.go
+  s_7b21489fa43269::t_14e36ae02e4a41 116,118
+  s_7b21489fa43269::t_e3fbb5f6ed9d5b 123
+event/internal/handler/eventconfig/collect_issuers_test.go
+  s_7b21489fa43269::t_92fbd680ebacbf 23,26,47-49
+  s_7b21489fa43269::t_8ddd30558c1e9a 19-22,24-25,27,45-46,54,57-58
+event/internal/handler/util/getters_test.go
+  s_7b21489fa43269::t_7197e867bf384f 1201,1203,1207,1215
+  s_7b21489fa43269::t_f55db2dad0b2d1 1219
+  s_7b21489fa43269::t_d0fc6675903da3 1200,1202,1204-1206,1208-1214,1216-1218,1220-1221
+discovery-server/internal/mapper/apisubscription/out_test.go
+  s_d580e3e0135b87::t_b41ec95e237b38 66,68,71,77,79,82,176,178
+admin/config/samples/admin_v1_zone.yaml
+  s_a4e7fcbf6c8df4::t_2796e9a96d41f2 50,60,72-81,83-84
+discovery-server/test/mocks/data/zone.json
+  s_d580e3e0135b87::t_b45471762d096d 15
+admin/api/Makefile
+  s_a4e7fcbf6c8df4::t_fca2c0772e397b 5
+install/overlays/local/resources/admin/zones/dataplane2.example.yaml
+  s_a4e7fcbf6c8df4::t_6bbce9c682173a 15-38
+event/internal/handler/util/publish_route_test.go
+  s_7b21489fa43269::t_de0c34ab0e97a8 205,210
+  s_7b21489fa43269::t_e1c9e5c2d2505d 56,64,235,243,246,254
+application/internal/handler/application/handler_test.go
+  s_d580e3e0135b87::t_5482831fca1e18 718,720-723,726
+  s_d580e3e0135b87::t_2e4ff94165e472 66-67
+  s_d580e3e0135b87::t_25f42c06f0d226 856-875,878-906,927-948
+  s_d580e3e0135b87::t_e9679acdef7649 796-801
+  s_d580e3e0135b87::t_5576da8188d8aa 208-210
+  s_d580e3e0135b87::t_ce91c620b3ecb2 824-826,830-838
+  s_d580e3e0135b87::t_9006e0a266dd31 876-877
+  s_d580e3e0135b87::t_e54d4ffdb9ddb9 322-323,325-336,340-341
+  s_5a3e1731107367::t_182b138ce77453 267-274,276,279-280
+  s_d580e3e0135b87::t_b8287044d38ee8 908-923,925-926
+  h_0f030e7424553c 924
+  s_d580e3e0135b87::t_2463285b1a1d13 379-381
+  s_d580e3e0135b87::t_02c13f06276ef3 228-229,231-233
+  s_abd9e4d61bd5f7::t_3cd9544c8b1b46 266,275,277-278,794,802-804,813,820,827-829,907
+  s_d580e3e0135b87::t_436d72ed6c54a4 387
+admin/internal/controller/zone_controller_test.go
+  s_e1a9ba861689a1::t_a377387dd77e45 52,60
+admin/internal/handler/zone/handler_test.go
+  s_acec7fc955c4af::t_daa8208b96b525 139-141,144
+  s_e1a9ba861689a1::t_51e60eb54f4247 47,50
+  s_acec7fc955c4af::t_f9810a9d77c4bf 99-137,145-146
+  s_acec7fc955c4af::t_e60c3c1f82e54d 138,142-143
+  s_acec7fc955c4af::t_c67f24bc48f745 147-169
+  s_acec7fc955c4af::t_6afbd1c28de3e0 280-281
+  s_e1a9ba861689a1::t_498c5d7f514dad 51
+  s_acec7fc955c4af::t_4901310de65874 279
+admin/internal/handler/zone/suite_test.go
+  s_e1a9ba861689a1::t_f342d43f0381b0 147,156
+organization/internal/controller/team_controller_test.go
+  s_d580e3e0135b87::t_fe51b7bd6488f4 90,596
+  s_d580e3e0135b87::t_cdfc35ea556efc 97,603
+application/internal/controller/application_controller_test.go
+  s_d580e3e0135b87::t_c42a7fb1d4d2e5 158,165,176-182,187-188
+  s_abd9e4d61bd5f7::t_3cd9544c8b1b46 274,284,341,353
+  s_d580e3e0135b87::t_16c4f5f7a1f0c0 54,59,62,67,78-89,94-95
+install/overlays/local/resources/admin/zones/dataplane1.example.yaml
+  s_a4e7fcbf6c8df4::t_6eeae1a062d31d 15-38
+  s_73ff9c1f9a2b40::t_a2cec8aff38160 39-48
+admin/internal/handler/zone/oidc_test.go
+  s_e1a9ba861689a1::t_63b2fd4dfa9f95 127,129
+  s_7b2c7549677ab4::t_231aeb48638540 130
+admin/internal/handler/zone/gateway.go
+  s_acec7fc955c4af::t_3568eeb729552b 49-50
+  s_acec7fc955c4af::t_323d8ac73085b0 149,152-153,156-157
+  s_acec7fc955c4af::t_568f00bbd33894 144-145,148,150-151,154-155,158
+  s_acec7fc955c4af::t_aa91a4bcee5223 146-147
+  s_acec7fc955c4af::t_0ccc15c6cf002c 10
+admin/api/v1/zone_types.go
+  s_e1a9ba861689a1::t_0d0c8b8f288ccd 22-47
+  s_e1a9ba861689a1::t_4b98f3608acf32 452-454,457,459-462,485,489-490,497-498,500,512,525,527,538-539,542-543,545,555-559,562-565,575,578
+  s_e1a9ba861689a1::t_885e2ede1d3585 463-469,472-474,486-488,491-496,513-515,526,528-529,531,540-541,544,547-548,550-554,585-586
+  s_e1a9ba861689a1::t_287eb4742636be 264
+  s_7b21489fa43269::t_b4c4d9c43da911 532-537
+  s_7b21489fa43269::t_a55c5eb31c77e1 475-484,501-502,523-524
+  s_e1a9ba861689a1::t_d217cdbd13497a 427-429,431
+  s_e1a9ba861689a1::t_cd308ba4589309 640-644
+  s_e1a9ba861689a1::t_27592605a3a8d0 196-199
+  s_e1a9ba861689a1::t_8396fecae2608c 456
+  s_e1a9ba861689a1::t_02a3968ffd44b9 588-593
+  s_e1a9ba861689a1::t_8c298a4b3c6339 530
+  s_e1a9ba861689a1::t_a4104193829389 371
+  s_7b21489fa43269::t_99a97076e02799 595-596
+  s_e1a9ba861689a1::t_152f2a792a596f 549
+  s_5a3e1731107367::t_47ed37158f7962 573-574,587
+  s_7b21489fa43269::t_9084faf194f751 568-569
+  s_5a3e1731107367::t_80961d99b63082 361
+admin/internal/webhook/v1/zone_webhook_test.go
+  s_e1a9ba861689a1::t_003c90d0dd1e38 86,94
+  s_e1a9ba861689a1::t_b0772f9d199669 238,254
+  s_e1a9ba861689a1::t_e6df6885d7e09f 350
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "33c14e6c45ce406f36697219e7d63205650f1db2",
+  "prompts": {},
+  "humans": {
+    "h_0f030e7424553c": {
+      "author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  },
+  "sessions": {
+    "s_06ba95c1e23679": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f976500c6ffe9sNPj5kOxNIDnG",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_5a3e1731107367": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f9756fd9fffeuiRrq2VtZhmjNP",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_73ff9c1f9a2b40": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f9787bf83ffeYFeIvIn694I4NL",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_7b21489fa43269": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f97f7392cffeq8VbQB6I13ql11",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_7b2c7549677ab4": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f989b72b7ffely1RgDeGqGz8x3",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_a4e7fcbf6c8df4": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f97cf7d5effeEINh9KcnkQwYO6",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_abd9e4d61bd5f7": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f94c3bab1ffeTrMmdGkjx6yOAK",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_acec7fc955c4af": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f98899b74ffeEt8S4Yvu3sDhjq",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_d580e3e0135b87": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f98776e07ffe93B41P9cab120c",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_e1a9ba861689a1": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f98bf9895ffeNloA9LNgUHAzqu",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
