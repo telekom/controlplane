@@ -19,6 +19,7 @@ import (
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
+	"github.com/telekom/controlplane/common/pkg/condition"
 	cc "github.com/telekom/controlplane/common/pkg/controller"
 	ctypes "github.com/telekom/controlplane/common/pkg/types"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
@@ -569,12 +570,32 @@ var _ = Describe("Integration: Two-Tier Reconcile Cycle", Ordered, func() {
 				g.Expect(rpSub.Spec.Trigger.SelectionFilter.Attributes["kind"]).To(Equal("RESPONSE"))
 			}, testTimeout, testInterval).Should(Succeed())
 
+			By("Setting children Ready (no downstream controllers in envtest)")
+			// RouteListener
+			rlList := &gatewayv1.RouteListenerList{}
+			Eventually(func(g Gomega) {
+				g.Expect(directClient.List(ctx, rlList, client.InNamespace(zoneStatusNs))).To(Succeed())
+				g.Expect(rlList.Items).NotTo(BeEmpty())
+			}, testTimeout, testInterval).Should(Succeed())
+			for i := range rlList.Items {
+				rl := &rlList.Items[i]
+				rl.SetCondition(condition.NewReadyCondition(condition.ReasonProvisioned, "ready"))
+				Expect(directClient.Status().Update(ctx, rl)).To(Succeed())
+			}
+			// Bridge Subscribers
+			rqSub.SetCondition(condition.NewReadyCondition(condition.ReasonProvisioned, "ready"))
+			Expect(directClient.Status().Update(ctx, rqSub)).To(Succeed())
+			rpSub.SetCondition(condition.NewReadyCondition(condition.ReasonProvisioned, "ready"))
+			Expect(directClient.Status().Update(ctx, rpSub)).To(Succeed())
+
 			By("Verifying Listener status is updated")
 			updatedListener := &spectrev1.Listener{}
-			Expect(directClient.Get(ctx, listenerNN, updatedListener)).To(Succeed())
-			Expect(updatedListener.Status.RouteListener).NotTo(BeNil())
-			Expect(updatedListener.Status.EventSubscriptions).To(HaveLen(2))
-			Expect(updatedListener.Status.ProviderApproval).NotTo(BeNil())
+			Eventually(func(g Gomega) {
+				g.Expect(directClient.Get(ctx, listenerNN, updatedListener)).To(Succeed())
+				g.Expect(updatedListener.Status.RouteListener).NotTo(BeNil())
+				g.Expect(updatedListener.Status.EventSubscriptions).To(HaveLen(2))
+				g.Expect(updatedListener.Status.ProviderApproval).NotTo(BeNil())
+			}, testTimeout, testInterval).Should(Succeed())
 		})
 	})
 
