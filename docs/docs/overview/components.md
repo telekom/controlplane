@@ -97,7 +97,8 @@ Domain operators are the core building blocks of the Control Plane. Each operato
 | [Gateway](../architecture/gateway.mdx) | Configures the API Gateway at runtime — routes, consumers, rate limiting, load balancing, and failover. |
 | [Identity](../architecture/identity.mdx) | Manages identity providers, realms, and service-account clients through Keycloak. Provides authentication and authorization for all platform interactions. |
 | [Event](../architecture/event.mdx) | Handles event publishing and subscribing, including cross-zone meshing. An optional feature that bridges user configuration (Rover) with the PubSub runtime. |
-| [PubSub](../architecture/pubsub.mdx) | The runtime configuration layer for publish/subscribe messaging via Horizon. Managed exclusively by the Event domain. |
+| [Spectre](../architecture/spectre.mdx) | Manages application listeners that bridge API traffic into the Horizon event backbone. A peer to the Event domain — both create PubSub resources. |
+| [PubSub](../architecture/pubsub.mdx) | The runtime configuration layer for publish/subscribe messaging via Horizon. Managed by the Event and Spectre domains. |
 
 ## Services
 

@@ -28,6 +28,7 @@ import (
 	permissionv1 "github.com/telekom/controlplane/permission/api/v1"
 	rover "github.com/telekom/controlplane/rover/api/v1"
 	rover_handler "github.com/telekom/controlplane/rover/internal/handler/rover"
+	spectrev1 "github.com/telekom/controlplane/spectre/api/v1"
 )
 
 // RoverReconciler reconciles a Rover object
@@ -61,6 +62,9 @@ type RoverReconciler struct {
 
 // +kubebuilder:rbac:groups=application.cp.ei.telekom.de,resources=applications,verbs=get;list;watch;create;update;patch;delete
 
+// +kubebuilder:rbac:groups=spectre.cp.ei.telekom.de,resources=spectreapplications,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=spectre.cp.ei.telekom.de,resources=listeners,verbs=get;list;watch;create;update;patch;delete
+
 func (r *RoverReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	return r.Controller.Reconcile(ctx, req, &rover.Rover{})
 }
@@ -90,6 +94,11 @@ func (r *RoverReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	if cconfig.FeatureAiGateway.IsEnabled() {
 		b = b.Owns(&agenticv1.AgenticExposure{}, owns).
 			Owns(&agenticv1.AgenticSubscription{}, owns)
+	}
+
+	if cconfig.FeatureSpectre.IsEnabled() {
+		b = b.Owns(&spectrev1.SpectreApplication{}, owns).
+			Owns(&spectrev1.Listener{}, owns)
 	}
 
 	b = b.Watches(&organizationv1.Team{},

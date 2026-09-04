@@ -25,6 +25,7 @@ Users interact with the Rover domain through three paths:
 - **Application domain** — Creates Application resources.
 - **API domain** — Creates Api, ApiExposure, and ApiSubscription resources.
 - **Event domain** — Creates EventExposure and EventSubscription resources.
+- **Spectre domain** — `spec.listeners` entries create Listener CRs, which the Spectre operator reconciles into PubSub Subscribers, RouteListeners, and Approvals.
 - **Gateway domain** — Configures traffic management settings.
 - **Identity domain** — Configures authentication settings.
 - **Approval domain** — Integrates approval requirements for exposures.
