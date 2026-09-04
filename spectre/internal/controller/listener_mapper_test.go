@@ -23,6 +23,7 @@ import (
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
+	identityv1 "github.com/telekom/controlplane/identity/api/v1"
 	pubsubv1 "github.com/telekom/controlplane/pubsub/api/v1"
 	spectrev1 "github.com/telekom/controlplane/spectre/api/v1"
 	"github.com/telekom/controlplane/spectre/internal/handler"
@@ -440,6 +441,90 @@ var _ = Describe("Listener Mapper Tests", Ordered, func() {
 				},
 			}
 			reqs := reconciler.mapGenericPublisherToListeners(ctx, pub)
+			Expect(reqs).To(BeEmpty())
+		})
+	})
+
+	Describe("mapRealmToListeners", func() {
+		It("should match when Realm is referenced by a Zone containing the consumer Application", func() {
+			// Create a Zone with status.identityRealm pointing at our realm.
+			zone := &adminv1.Zone{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "zone-a",
+					Namespace: mapNs,
+					Labels:    map[string]string{envLabelKey: mapEnv},
+				},
+				Spec: adminv1.ZoneSpec{
+					IdentityProvider: adminv1.IdentityProviderConfig{
+						Url:   "http://id.local",
+						Admin: adminv1.IdentityProviderAdminConfig{ClientId: "a", UserName: "a", Password: "a"},
+					},
+					Gateway: adminv1.GatewayConfig{
+						Admin: adminv1.GatewayAdminConfig{Url: "http://gw.local"},
+						Presets: []adminv1.GatewayConfigPreset{{
+							Name: "default", Default: true,
+							Urls: []adminv1.UrlConfig{{Hostname: "gw.test.local", BasePath: "/"}},
+						}},
+					},
+					Visibility: adminv1.ZoneVisibilityWorld,
+				},
+			}
+			Expect(client.IgnoreAlreadyExists(directClient.Create(ctx, zone))).To(Succeed())
+
+			// Set status.identityRealm with valid Links URIs.
+			Eventually(func(g Gomega) {
+				fetched := &adminv1.Zone{}
+				g.Expect(directClient.Get(ctx, client.ObjectKeyFromObject(zone), fetched)).To(Succeed())
+				fetched.Status.IdentityRealm = &ctypes.ObjectRef{Name: "mapper-realm", Namespace: mapNs}
+				fetched.Status.Namespace = zoneNs
+				fetched.Status.Links = adminv1.Links{
+					Url:       "http://gw.test.local",
+					Issuer:    "http://id.local/realms/mapper-env",
+					LmsIssuer: "http://id.local/realms/mapper-env-lms",
+				}
+				g.Expect(directClient.Status().Update(ctx, fetched)).To(Succeed())
+			}, testTimeout, testInterval).Should(Succeed())
+
+			Eventually(func(g Gomega) {
+				cached := &adminv1.Zone{}
+				g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(zone), cached)).To(Succeed())
+				g.Expect(cached.Status.IdentityRealm).NotTo(BeNil())
+			}, testTimeout, testInterval).Should(Succeed())
+
+			realm := &identityv1.Realm{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "mapper-realm",
+					Namespace: mapNs,
+					Labels:    map[string]string{envLabelKey: mapEnv},
+				},
+			}
+			reqs := reconciler.mapRealmToListeners(ctx, realm)
+			Expect(reqs).To(ContainElement(reconcile.Request{
+				NamespacedName: types.NamespacedName{Name: "mapper-listener", Namespace: mapNs},
+			}))
+		})
+
+		It("should not match when Realm is not referenced by any Zone", func() {
+			realm := &identityv1.Realm{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "unreferenced-realm",
+					Namespace: mapNs,
+					Labels:    map[string]string{envLabelKey: mapEnv},
+				},
+			}
+			reqs := reconciler.mapRealmToListeners(ctx, realm)
+			Expect(reqs).To(BeEmpty())
+		})
+
+		It("should not match when Realm is in a different environment", func() {
+			realm := &identityv1.Realm{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "mapper-realm",
+					Namespace: mapNs,
+					Labels:    map[string]string{envLabelKey: "other-env"},
+				},
+			}
+			reqs := reconciler.mapRealmToListeners(ctx, realm)
 			Expect(reqs).To(BeEmpty())
 		})
 	})

@@ -228,7 +228,10 @@ func (r *SpectreApplicationReconciler) mapZoneToSpectreApplications(
 }
 
 // mapEventConfigToSpectreApplications maps an EventConfig change to
-// SpectreApplications in the same zone.
+// SpectreApplications in the same zone. It also handles the proxy case:
+// when the changed EventConfig belongs to a backend zone, any proxy
+// EventConfig whose spec.proxy.targetZone references that backend zone
+// is followed, and SpectreApplications in those proxy zones are enqueued.
 func (r *SpectreApplicationReconciler) mapEventConfigToSpectreApplications(
 	ctx context.Context,
 	obj client.Object,
@@ -247,11 +250,31 @@ func (r *SpectreApplicationReconciler) mapEventConfigToSpectreApplications(
 		return nil
 	}
 
+	// Collect zones to match: the EventConfig's own zone, plus any proxy
+	// zones whose target points at this EventConfig's zone.
 	zoneRef := types.NamespacedName{Name: ec.Spec.Zone.Name, Namespace: ec.Spec.Zone.Namespace}
+	zoneRefs := map[types.NamespacedName]struct{}{zoneRef: {}}
+
+	ecList := &eventv1.EventConfigList{}
+	if err := r.List(ctx, ecList, client.MatchingLabels{
+		cconfig.EnvironmentLabelKey: ec.Labels[cconfig.EnvironmentLabelKey],
+	}); err != nil {
+		logger.Error(err, "Failed to list EventConfigs for proxy resolution")
+	} else {
+		for i := range ecList.Items {
+			proxy := &ecList.Items[i]
+			if proxy.IsProxy() && proxy.Spec.Proxy.TargetZone.Name == zoneRef.Name && proxy.Spec.Proxy.TargetZone.Namespace == zoneRef.Namespace {
+				proxyZone := types.NamespacedName{Name: proxy.Spec.Zone.Name, Namespace: proxy.Spec.Zone.Namespace}
+				zoneRefs[proxyZone] = struct{}{}
+			}
+		}
+	}
+
 	appRefs := make(map[types.NamespacedName]struct{})
 	for i := range appList.Items {
 		a := &appList.Items[i]
-		if a.Spec.Zone.Name == zoneRef.Name && a.Spec.Zone.Namespace == zoneRef.Namespace {
+		appZone := types.NamespacedName{Name: a.Spec.Zone.Name, Namespace: a.Spec.Zone.Namespace}
+		if _, ok := zoneRefs[appZone]; ok {
 			appRefs[types.NamespacedName{Name: a.Name, Namespace: a.Namespace}] = struct{}{}
 		}
 	}

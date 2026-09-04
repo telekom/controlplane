@@ -29,6 +29,7 @@ import (
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
+	identityv1 "github.com/telekom/controlplane/identity/api/v1"
 	pubsubv1 "github.com/telekom/controlplane/pubsub/api/v1"
 	spectrev1 "github.com/telekom/controlplane/spectre/api/v1"
 	"github.com/telekom/controlplane/spectre/internal/handler"
@@ -121,6 +122,12 @@ func (r *ListenerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Watches(
 			&eventv1.EventConfig{},
 			crhandler.EnqueueRequestsFromMapFunc(r.mapEventConfigToListeners),
+			builder.WithPredicates(cc.Count("listener", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
+		).
+		// Realms — IssuerUrl changes affect RouteListener gateway credentials.
+		Watches(
+			&identityv1.Realm{},
+			crhandler.EnqueueRequestsFromMapFunc(r.mapRealmToListeners),
 			builder.WithPredicates(cc.Count("listener", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
 		).
 		// EventStores — readiness changes unblock parents.
@@ -442,6 +449,93 @@ func (r *ListenerReconciler) mapGenericPublisherToListeners(
 		reqs = append(reqs, reconcile.Request{
 			NamespacedName: client.ObjectKeyFromObject(&list.Items[i]),
 		})
+	}
+
+	return reqs
+}
+
+// mapRealmToListeners maps a Realm change to Listeners that depend on it
+// via the Zone's status.identityRealm. A Realm change (e.g. IssuerUrl
+// update) affects RouteListener gateway credentials for all Listeners
+// whose Applications are in Zones referencing that Realm.
+func (r *ListenerReconciler) mapRealmToListeners(
+	ctx context.Context,
+	obj client.Object,
+) []reconcile.Request {
+	logger := log.FromContext(ctx)
+	realm, ok := obj.(*identityv1.Realm)
+	if !ok {
+		return nil
+	}
+
+	realmRef := types.NamespacedName{Name: realm.Name, Namespace: realm.Namespace}
+
+	// Find Zones whose status.identityRealm references this Realm.
+	zoneList := &adminv1.ZoneList{}
+	if err := r.List(ctx, zoneList, client.MatchingLabels{
+		cconfig.EnvironmentLabelKey: realm.Labels[cconfig.EnvironmentLabelKey],
+	}); err != nil {
+		logger.Error(err, "Failed to list Zones for Realm")
+		return nil
+	}
+
+	zoneRefs := make(map[types.NamespacedName]struct{})
+	for i := range zoneList.Items {
+		z := &zoneList.Items[i]
+		if z.Status.IdentityRealm != nil &&
+			z.Status.IdentityRealm.Name == realmRef.Name &&
+			z.Status.IdentityRealm.Namespace == realmRef.Namespace {
+			zoneRefs[types.NamespacedName{Name: z.Name, Namespace: z.Namespace}] = struct{}{}
+		}
+	}
+
+	if len(zoneRefs) == 0 {
+		return nil
+	}
+
+	// Find Applications in those Zones.
+	appList := &applicationv1.ApplicationList{}
+	if err := r.List(ctx, appList, client.MatchingLabels{
+		cconfig.EnvironmentLabelKey: realm.Labels[cconfig.EnvironmentLabelKey],
+	}); err != nil {
+		logger.Error(err, "Failed to list Applications for Realm")
+		return nil
+	}
+
+	appRefs := make(map[types.NamespacedName]struct{})
+	for i := range appList.Items {
+		a := &appList.Items[i]
+		appZone := types.NamespacedName{Name: a.Spec.Zone.Name, Namespace: a.Spec.Zone.Namespace}
+		if _, ok := zoneRefs[appZone]; ok {
+			appRefs[types.NamespacedName{Name: a.Name, Namespace: a.Namespace}] = struct{}{}
+		}
+	}
+
+	if len(appRefs) == 0 {
+		return nil
+	}
+
+	// Find Listeners whose consumer or provider is in those Applications.
+	list := &spectrev1.ListenerList{}
+	if err := r.List(ctx, list, client.MatchingLabels{
+		cconfig.EnvironmentLabelKey: realm.Labels[cconfig.EnvironmentLabelKey],
+	}); err != nil {
+		logger.Error(err, "Failed to list Listeners for Realm")
+		return nil
+	}
+
+	var reqs []reconcile.Request
+	for i := range list.Items {
+		l := &list.Items[i]
+		consRef := types.NamespacedName{Name: l.Spec.Consumer.Name, Namespace: l.Spec.Consumer.Namespace}
+		provRef := types.NamespacedName{Name: l.Spec.Provider.Name, Namespace: l.Spec.Provider.Namespace}
+		if _, ok := appRefs[consRef]; ok {
+			reqs = append(reqs, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(l)})
+			continue
+		}
+		if _, ok := appRefs[provRef]; ok {
+			reqs = append(reqs, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(l)})
+		}
 	}
 
 	return reqs

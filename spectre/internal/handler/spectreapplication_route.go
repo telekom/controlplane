@@ -16,6 +16,7 @@ import (
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
+	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	ctypes "github.com/telekom/controlplane/common/pkg/types"
@@ -88,6 +89,10 @@ func resolveSSEBackendZone(ctx context.Context, zone *adminv1.Zone, eventConfig 
 	targetZone := &adminv1.Zone{}
 	if err := c.Get(ctx, targetRef.K8s(), targetZone); err != nil {
 		return nil, nil, ctrlerrors.BlockedErrorf("target zone %q not found: %v", targetRef.String(), err)
+	}
+
+	if err := condition.EnsureReady(targetZone); err != nil {
+		return nil, nil, ctrlerrors.BlockedErrorf("target zone %q is not ready", targetRef.String())
 	}
 
 	targetConfig, err := util.GetEventConfig(ctx, targetZone)
