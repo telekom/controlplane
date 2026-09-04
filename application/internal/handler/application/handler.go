@@ -134,7 +134,7 @@ func consumerFailoverTokenURL(zone *admin.Zone) (string, error) {
 		if !slices.Contains(consumerTrafficTypes, preset.Type) {
 			continue
 		}
-		if !preset.SupportsFeatures([]admin.FeatureName{admin.FeatureConsumerFailover}) {
+		if !zone.Spec.PresetSupportsFeatures(preset, admin.FeatureConsumerFailover) {
 			continue
 		}
 		status, err := zone.Status.GetPreset(preset.Name)
@@ -278,11 +278,11 @@ var consumerTrafficTypes = []admin.GatewayType{admin.GatewayTypeAPI, admin.Gatew
 // block rather than silently narrow the result.
 //
 // The rule is written as "only ErrNoMatchingPreset may be skipped" rather than a list of
-// errors that block, so any sentinel added later blocks by default. ErrAmbiguousPreset and
-// ErrNoDefaultPreset are therefore covered without being named, but they are unreachable here:
-// MatchingGateways is a union over a type, so it never calls SelectPreset and never inspects
-// Default. A Zone violating those invariants can exist — it is over-provisioned here rather
-// than blocked. Admission is the only thing preventing that state.
+// errors that block, so any sentinel added later blocks by default. ErrAmbiguousPreset is
+// therefore covered without being named, but is unreachable here: MatchingGateways is a union
+// over a type, so it never calls SelectPreset or inspects defaults. A Zone violating that
+// invariant can exist — it is over-provisioned here rather than blocked. Admission is the only
+// thing preventing that state.
 func consumerGateways(zone *admin.Zone, features ...admin.FeatureName) ([]*admin.GatewayConfig, error) {
 	gatewaysByName := make(map[string]*admin.GatewayConfig)
 	for _, gatewayType := range consumerTrafficTypes {

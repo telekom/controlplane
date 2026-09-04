@@ -27,19 +27,13 @@ var (
 	// never wrap a malformed request or a misconfigured zone.
 	ErrNoMatchingPreset = errors.New("no matching preset")
 
-	// ErrInvalidFeatures means the request itself is malformed: a feature is unknown, or is
-	// zone-scoped and not enabled. Callers must not skip on it — the caller, not the zone,
-	// is at fault.
+	// ErrInvalidFeatures means the request itself contains an unknown feature. Callers must
+	// not skip on it — the caller, not the zone, is at fault.
 	ErrInvalidFeatures = errors.New("invalid features")
 
-	// ErrAmbiguousPreset means the zone is misconfigured: several presets of one traffic type
-	// are marked default, or several carry the same enabled feature, so selection cannot be
-	// single-valued. Callers must not skip on it; surface it as a blocking error.
+	// ErrAmbiguousPreset means several presets of one traffic type are marked default.
+	// Callers must not skip on it; surface it as a blocking error.
 	ErrAmbiguousPreset = errors.New("ambiguous preset")
-
-	// ErrNoDefaultPreset means presets of the requested traffic type exist but none is marked
-	// default. The zone is misconfigured, so callers must not skip on it.
-	ErrNoDefaultPreset = errors.New("no default preset")
 
 	// ErrNoPresetFound means no preset exists with the requested name. It belongs to lookup by
 	// name, not to selection.
@@ -431,22 +425,31 @@ func (s *ZoneSpec) GetDefaultPreset() (*Preset, error) {
 	return s.SelectPreset(GatewayTypeAPI)
 }
 
-func (s *ZoneSpec) validateFeatures(features []FeatureName) ([]FeatureName, []string) {
+func (s *ZoneSpec) validateFeatures(features []FeatureName) []string {
 	var problems []string
-	presetFeatures := make([]FeatureName, 0, len(features))
 	for _, feature := range features {
-		switch FeatureScopeOf(feature) {
-		case FeatureScopeZone:
-			if !supportsFeatures(s.Features, feature) {
-				problems = append(problems, fmt.Sprintf("zone feature %q is not enabled", feature))
-			}
-		case FeatureScopePreset:
-			presetFeatures = append(presetFeatures, feature)
-		default:
+		if !IsKnownFeature(feature) {
 			problems = append(problems, fmt.Sprintf("feature %q is unknown", feature))
 		}
 	}
-	return presetFeatures, problems
+	return problems
+}
+
+// PresetSupportsFeatures applies preset values over the zone's feature defaults.
+func (s *ZoneSpec) PresetSupportsFeatures(preset *Preset, featureNames ...FeatureName) bool {
+	for _, name := range featureNames {
+		enabled := supportsFeatures(s.Features, name)
+		for _, feature := range preset.Features {
+			if strings.EqualFold(string(feature.Name), string(name)) {
+				enabled = feature.Enabled
+				break
+			}
+		}
+		if !enabled {
+			return false
+		}
+	}
+	return true
 }
 
 // presetsOfType returns the presets serving one traffic type, in spec order.
@@ -461,11 +464,11 @@ func (s *ZoneSpec) presetsOfType(gatewayType GatewayType) []*Preset {
 }
 
 // explainMissingFeatures reports which requested features no preset of the type enables.
-func (s *ZoneSpec) explainMissingFeatures(gatewayType GatewayType, presetFeatures []FeatureName) []string {
+func (s *ZoneSpec) explainMissingFeatures(gatewayType GatewayType, features []FeatureName) []string {
 	candidates := s.presetsOfType(gatewayType)
 	var problems []string
-	for _, feature := range presetFeatures {
-		if !slices.ContainsFunc(candidates, func(p *Preset) bool { return supportsFeatures(p.Features, feature) }) {
+	for _, feature := range features {
+		if !slices.ContainsFunc(candidates, func(p *Preset) bool { return s.PresetSupportsFeatures(p, feature) }) {
 			problems = append(problems, fmt.Sprintf("feature %q is not enabled on any %q preset", feature, gatewayType))
 		}
 	}
@@ -483,11 +486,9 @@ func selectionScope(gatewayType GatewayType, features []FeatureName) string {
 }
 
 // SelectPreset returns the single routing profile for a traffic type and feature set.
-// The webhook is expected to guarantee one feature-free default per type and at most one
-// preset per enabled preset-scoped feature per type; both invariants are re-checked here
-// rather than silently resolved by spec order, because a violation is a misconfiguration.
+// An explicit default wins; without one, spec order decides.
 func (s *ZoneSpec) SelectPreset(gatewayType GatewayType, features ...FeatureName) (*Preset, error) {
-	presetFeatures, problems := s.validateFeatures(features)
+	problems := s.validateFeatures(features)
 	// A malformed request and an unavailable capability are different classes: callers use the
 	// sentinel to tell "this zone does not offer it, skip" from "this is misconfigured, block".
 	sentinel := ErrNoMatchingPreset
@@ -504,17 +505,16 @@ func (s *ZoneSpec) SelectPreset(gatewayType GatewayType, features ...FeatureName
 
 	var matches []*Preset
 	for _, preset := range candidates {
-		if preset.SupportsFeatures(presetFeatures) {
+		if s.PresetSupportsFeatures(preset, features...) {
 			matches = append(matches, preset)
 		}
 	}
 
 	if len(matches) == 0 {
-		missing := s.explainMissingFeatures(gatewayType, presetFeatures)
+		missing := s.explainMissingFeatures(gatewayType, features)
 		problems = append(problems, missing...)
-		if len(missing) == 0 && len(presetFeatures) > 1 {
-			// ponytail: unreachable while ConsumerFailover is the only preset-scoped feature,
-			// but required so we never return (nil, nil) once a second one exists.
+		if len(missing) == 0 && len(features) > 1 {
+			// ponytail: only needed when separate presets enable parts of a requested combination.
 			problems = append(problems, "requested features are enabled on different presets, but only one preset can be used at a time")
 		}
 	}
@@ -522,20 +522,6 @@ func (s *ZoneSpec) SelectPreset(gatewayType GatewayType, features ...FeatureName
 	if len(problems) > 0 {
 		return nil, fmt.Errorf("%w: %s: %s",
 			sentinel, selectionScope(gatewayType, features), strings.Join(problems, "; "))
-	}
-
-	if len(presetFeatures) > 0 {
-		if len(matches) > 1 {
-			return nil, fmt.Errorf("%w: features %v are enabled on %d presets of type %q; exactly one is required",
-				ErrAmbiguousPreset, presetFeatures, len(matches), gatewayType)
-		}
-		if len(matches) == 0 {
-			// Unreachable: explainMissingFeatures shares supportsFeatures, so an
-			// unsatisfied feature always yields a problem above. Guarded anyway
-			// because the invariant spans two functions and this would panic.
-			return nil, fmt.Errorf("%w: %s", ErrNoMatchingPreset, selectionScope(gatewayType, features))
-		}
-		return matches[0], nil
 	}
 
 	var defaults []*Preset
@@ -551,7 +537,7 @@ func (s *ZoneSpec) SelectPreset(gatewayType GatewayType, features ...FeatureName
 	if len(defaults) == 1 {
 		return defaults[0], nil
 	}
-	return nil, fmt.Errorf("%w: no default preset for gateway type %q", ErrNoDefaultPreset, gatewayType)
+	return matches[0], nil
 }
 
 func (s *ZoneSpec) FeaturesSupported(gatewayType GatewayType, features ...FeatureName) bool {
@@ -563,7 +549,7 @@ func (s *ZoneSpec) FeaturesSupported(gatewayType GatewayType, features ...Featur
 // feature set. Selection is single-valued, but callers provision per physical gateway,
 // so the result is deduplicated and sorted for a stable status.
 func (s *ZoneSpec) MatchingGateways(gatewayType GatewayType, features ...FeatureName) ([]*GatewayConfig, error) {
-	presetFeatures, problems := s.validateFeatures(features)
+	problems := s.validateFeatures(features)
 	if len(problems) > 0 {
 		return nil, fmt.Errorf("%w: %s: %s",
 			ErrInvalidFeatures, selectionScope(gatewayType, features), strings.Join(problems, "; "))
@@ -572,7 +558,7 @@ func (s *ZoneSpec) MatchingGateways(gatewayType GatewayType, features ...Feature
 	gatewaysByName := make(map[string]*GatewayConfig)
 	candidates := s.presetsOfType(gatewayType)
 	for _, preset := range candidates {
-		if !preset.SupportsFeatures(presetFeatures) {
+		if !s.PresetSupportsFeatures(preset, features...) {
 			continue
 		}
 		gateway, err := s.GetGateway(preset.GatewayRef)
@@ -582,13 +568,12 @@ func (s *ZoneSpec) MatchingGateways(gatewayType GatewayType, features ...Feature
 		gatewaysByName[gateway.Name] = gateway
 	}
 	if len(gatewaysByName) == 0 {
-		problems = s.explainMissingFeatures(gatewayType, presetFeatures)
+		problems = s.explainMissingFeatures(gatewayType, features)
 		if len(problems) == 0 {
 			if len(candidates) == 0 {
 				problems = append(problems, fmt.Sprintf("no preset of type %q exists", gatewayType))
 			} else {
-				// ponytail: unreachable while ConsumerFailover is the only preset-scoped feature,
-				// but required so the reason is never a false "no preset of this type exists".
+				// ponytail: only needed when separate presets enable parts of a requested combination.
 				problems = append(problems, "requested features are enabled on different presets, but only one preset can be used at a time")
 			}
 		}
@@ -779,23 +764,18 @@ const (
 	FeatureRateLimiting FeatureName = "RateLimiting"
 )
 
-type FeatureScope string
+var explicitlyKnownFeatures = []FeatureName{
+	FeatureBasicAuth,
+	FeatureConsumerFailover,
+}
 
-const (
-	FeatureScopeUnknown FeatureScope = ""
-	FeatureScopeZone    FeatureScope = "Zone"
-	FeatureScopePreset  FeatureScope = "Preset"
-)
-
-func FeatureScopeOf(feature FeatureName) FeatureScope {
-	switch feature {
-	case FeatureBasicAuth:
-		return FeatureScopeZone
-	case FeatureConsumerFailover:
-		return FeatureScopePreset
-	default:
-		return FeatureScopeUnknown
+func IsKnownFeature(feature FeatureName) bool {
+	for _, known := range explicitlyKnownFeatures {
+		if strings.EqualFold(string(feature), string(known)) {
+			return true
+		}
 	}
+	return false
 }
 
 type Feature struct {

@@ -51,7 +51,7 @@ func failoverWarnings(zone *adminv1.Zone) admission.Warnings {
 		if preset.Type == adminv1.GatewayTypeAPI {
 			continue
 		}
-		if preset.SupportsFeatures([]adminv1.FeatureName{adminv1.FeatureConsumerFailover}) {
+		if zone.Spec.PresetSupportsFeatures(preset, adminv1.FeatureConsumerFailover) {
 			warnings = append(warnings, "preset "+strconv.Quote(preset.Name)+" enables ConsumerFailover for gateway type "+
 				strconv.Quote(string(preset.Type))+", but failover routing is currently implemented for API traffic only")
 		}
@@ -96,7 +96,7 @@ func validateZoneFields(zone *adminv1.Zone) field.ErrorList { //nolint:gocyclo /
 	}
 
 	failoverTokenURL := ""
-	errs = append(errs, validateFeatures(specPath.Child("features"), zone.Spec.Features, adminv1.FeatureScopeZone)...)
+	errs = append(errs, validateFeatures(specPath.Child("features"), zone.Spec.Features)...)
 	for i := range zone.Spec.Presets {
 		preset := &zone.Spec.Presets[i]
 		presetPath := specPath.Child("presets").Index(i)
@@ -112,7 +112,7 @@ func validateZoneFields(zone *adminv1.Zone) field.ErrorList { //nolint:gocyclo /
 			errs = append(errs, validateTokenURL(presetPath.Child("tokenUrl"), preset.TokenUrl)...)
 		}
 		// API and AI failover presets share the zone's identity client and therefore one token URL.
-		if preset.SupportsFeatures([]adminv1.FeatureName{adminv1.FeatureConsumerFailover}) {
+		if zone.Spec.PresetSupportsFeatures(preset, adminv1.FeatureConsumerFailover) {
 			effectiveTokenURL := preset.TokenUrl
 			if effectiveTokenURL == "" {
 				effectiveTokenURL = identityProviderTokenURL
@@ -131,7 +131,7 @@ func validateZoneFields(zone *adminv1.Zone) field.ErrorList { //nolint:gocyclo /
 			errs = append(errs, validateHostname(urlPath.Child("hostname"), preset.Urls[j].Hostname)...)
 			errs = append(errs, validateBasePath(urlPath.Child("basePath"), preset.Urls[j].BasePath)...)
 		}
-		errs = append(errs, validateFeatures(presetPath.Child("features"), preset.Features, adminv1.FeatureScopePreset)...)
+		errs = append(errs, validateFeatures(presetPath.Child("features"), preset.Features)...)
 	}
 	for i := range zone.Spec.Gateways {
 		gateway := &zone.Spec.Gateways[i]
@@ -166,27 +166,16 @@ func validateZoneFields(zone *adminv1.Zone) field.ErrorList { //nolint:gocyclo /
 	return errs
 }
 
-// enabledFeature is a preset-scoped feature that a preset turns on, carrying its index in
-// the preset's feature list so an error can point at the entry rather than the whole list.
-type enabledFeature struct {
-	name  adminv1.FeatureName
-	index int
-}
-
-// validatePresetTypes enforces the per-type preset rules that make selection single-valued:
-// one feature-free default per type, every other preset carrying at least one enabled
-// preset-scoped feature, and no enabled feature repeated within a type.
+// validatePresetTypes rejects multiple defaults for one traffic type.
 func validatePresetTypes(zone *adminv1.Zone) field.ErrorList {
 	presetsPath := field.NewPath("spec", "presets")
 	var errs field.ErrorList
 
 	defaults := make(map[adminv1.GatewayType]int)
-	featureOwners := make(map[adminv1.GatewayType]map[adminv1.FeatureName]string)
 	types := make([]adminv1.GatewayType, 0, len(zone.Spec.Presets))
 
 	for i := range zone.Spec.Presets {
 		preset := &zone.Spec.Presets[i]
-		presetPath := presetsPath.Index(i)
 		if preset.Type == "" {
 			// The API server rejects this; skip so the remaining rules stay meaningful.
 			continue
@@ -195,46 +184,15 @@ func validatePresetTypes(zone *adminv1.Zone) field.ErrorList {
 			types = append(types, preset.Type)
 		}
 
-		var enabled []enabledFeature
-		for j, feature := range preset.Features {
-			if feature.Enabled && adminv1.FeatureScopeOf(feature.Name) == adminv1.FeatureScopePreset {
-				enabled = append(enabled, enabledFeature{name: feature.Name, index: j})
-			}
-		}
-
 		if preset.Default {
 			defaults[preset.Type]++
-			if len(enabled) > 0 {
-				errs = append(errs, field.Invalid(presetPath.Child("features"), preset.Features,
-					"default preset must not enable preset-scoped features, otherwise normal traffic uses a feature profile"))
-			}
-			continue
-		}
-
-		if len(enabled) == 0 {
-			errs = append(errs, field.Invalid(presetPath.Child("features"), preset.Features,
-				"a non-default preset must enable at least one preset-scoped feature, otherwise it can never be selected"))
-		}
-		for _, feature := range enabled {
-			owners, ok := featureOwners[preset.Type]
-			if !ok {
-				owners = make(map[adminv1.FeatureName]string)
-				featureOwners[preset.Type] = owners
-			}
-			if owner, found := owners[feature.name]; found {
-				errs = append(errs, field.Duplicate(presetPath.Child("features").Index(feature.index).Child("name"),
-					"feature "+strconv.Quote(string(feature.name))+" is already enabled on preset "+strconv.Quote(owner)+
-						" for gateway type "+strconv.Quote(string(preset.Type))))
-				continue
-			}
-			owners[feature.name] = preset.Name
 		}
 	}
 
 	for _, gatewayType := range types {
-		if defaults[gatewayType] != 1 {
+		if defaults[gatewayType] > 1 {
 			errs = append(errs, field.Invalid(presetsPath, defaults[gatewayType],
-				"exactly one default preset is required for gateway type "+strconv.Quote(string(gatewayType))))
+				"at most one default preset is allowed for gateway type "+strconv.Quote(string(gatewayType))))
 		}
 	}
 
@@ -268,7 +226,7 @@ func validateGatewayReferences(zone *adminv1.Zone) field.ErrorList {
 	return errs
 }
 
-func validateFeatures(path *field.Path, features []adminv1.Feature, expected adminv1.FeatureScope) field.ErrorList {
+func validateFeatures(path *field.Path, features []adminv1.Feature) field.ErrorList {
 	seen := make(map[adminv1.FeatureName]struct{}, len(features))
 	var errs field.ErrorList
 	for i, feature := range features {
@@ -277,12 +235,8 @@ func validateFeatures(path *field.Path, features []adminv1.Feature, expected adm
 			errs = append(errs, field.Duplicate(featurePath, "duplicate feature "+strconv.Quote(string(feature.Name))))
 		}
 		seen[feature.Name] = struct{}{}
-		scope := adminv1.FeatureScopeOf(feature.Name)
-		switch {
-		case scope == adminv1.FeatureScopeUnknown:
+		if !adminv1.IsKnownFeature(feature.Name) {
 			errs = append(errs, field.Invalid(featurePath, feature.Name, "unknown feature"))
-		case scope != expected:
-			errs = append(errs, field.Invalid(featurePath, feature.Name, strings.ToLower(string(scope))+"-scoped feature cannot be configured at "+strings.ToLower(string(expected))+" scope"))
 		}
 	}
 	return errs

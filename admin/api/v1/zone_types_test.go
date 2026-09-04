@@ -63,25 +63,25 @@ var _ = Describe("Zone preset resolution", func() {
 		Expect(err).To(MatchError(ContainSubstring(`feature "ConsumerFailover" is not enabled on any "AI" preset`)))
 	})
 
-	It("reports a traffic type whose presets have no default", func() {
+	It("uses the first preset of a type when none is default", func() {
 		spec := zoneSpec()
 		spec.Presets[2].Default = false
-		_, err := spec.SelectPreset(GatewayTypeAI)
-		Expect(err).To(MatchError(ContainSubstring(`no default preset for gateway type "AI"`)))
-		Expect(errors.Is(err, ErrNoDefaultPreset)).To(BeTrue())
+		preset, err := spec.SelectPreset(GatewayTypeAI)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(preset.Name).To(Equal("ai"))
 	})
 
-	It("rejects a type whose presets ambiguously match a feature", func() {
+	It("prefers the default when several presets match a feature", func() {
 		spec := zoneSpec()
+		spec.Presets[0].Features = []Feature{{Name: FeatureConsumerFailover, Enabled: true}}
 		spec.Presets = append(spec.Presets, Preset{
 			Name: "second-failover", Type: GatewayTypeAPI, GatewayRef: "standard", IdentityProviderRef: "primary",
 			Features: []Feature{{Name: FeatureConsumerFailover, Enabled: true}},
 		})
 
-		_, err := spec.SelectPreset(GatewayTypeAPI, FeatureConsumerFailover)
-		Expect(err).To(MatchError(ContainSubstring(`are enabled on 2 presets of type "API"; exactly one is required`)))
-		Expect(errors.Is(err, ErrAmbiguousPreset)).To(BeTrue())
-		Expect(errors.Is(err, ErrNoMatchingPreset)).To(BeFalse())
+		preset, err := spec.SelectPreset(GatewayTypeAPI, FeatureConsumerFailover)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(preset.Name).To(Equal("default"))
 	})
 
 	It("rejects a type carrying more than one default preset", func() {
@@ -194,11 +194,31 @@ var _ = Describe("Zone preset resolution", func() {
 		Expect(gateways).To(BeNil())
 	})
 
-	It("returns the default preset for zone-only features", func() {
+	It("inherits zone features", func() {
 		preset, err := zoneSpec().SelectPreset(GatewayTypeAPI, FeatureBasicAuth)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(preset.Name).To(Equal("default"))
 		Expect(zoneSpec().FeaturesSupported(GatewayTypeAPI, FeatureBasicAuth)).To(BeTrue())
+	})
+
+	It("allows presets to override inherited features", func() {
+		spec := zoneSpec()
+		spec.Presets[0].Features = []Feature{{Name: FeatureBasicAuth, Enabled: false}}
+		spec.Presets[1].Features = append(spec.Presets[1].Features, Feature{Name: FeatureBasicAuth, Enabled: true})
+
+		preset, err := spec.SelectPreset(GatewayTypeAPI, FeatureBasicAuth)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(preset.Name).To(Equal("failover"))
+	})
+
+	It("allows a preset to enable a zone-disabled feature", func() {
+		spec := zoneSpec()
+		spec.Features[0].Enabled = false
+		spec.Presets[0].Features = []Feature{{Name: FeatureBasicAuth, Enabled: true}}
+
+		preset, err := spec.SelectPreset(GatewayTypeAPI, FeatureBasicAuth)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(preset.Name).To(Equal("default"))
 	})
 
 	It("combines zone and preset features", func() {
@@ -215,7 +235,7 @@ var _ = Describe("Zone preset resolution", func() {
 
 		_, err := spec.SelectPreset(GatewayTypeAPI, FeatureBasicAuth, FeatureName("Unknown"), FeatureConsumerFailover)
 		Expect(err).To(MatchError(ContainSubstring(`feature combination [BasicAuth Unknown ConsumerFailover] for gateway type "API"`)))
-		Expect(err).To(MatchError(ContainSubstring(`zone feature "BasicAuth" is not enabled`)))
+		Expect(err).To(MatchError(ContainSubstring(`feature "BasicAuth" is not enabled on any "API" preset`)))
 		Expect(err).To(MatchError(ContainSubstring(`feature "Unknown" is unknown`)))
 		Expect(err).To(MatchError(ContainSubstring(`feature "ConsumerFailover" is not enabled on any "API" preset`)))
 	})

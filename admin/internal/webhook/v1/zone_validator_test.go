@@ -109,7 +109,6 @@ var _ = Describe("Zone validation", func() {
 			Expect(err).To(MatchError(ContainSubstring(message)))
 			Expect(apierrors.IsInvalid(err)).To(BeTrue())
 		},
-		Entry("no default", func(z *adminv1.Zone) { z.Spec.Presets[0].Default = false }, "exactly one default preset"),
 		Entry("missing gateway", func(z *adminv1.Zone) { z.Spec.Presets[0].GatewayRef = "missing" }, "gatewayRef"),
 		Entry("missing runtime IDP", func(z *adminv1.Zone) { z.Spec.Presets[0].IdentityProviderRef = "missing" }, "identityProviderRef"),
 		Entry("missing admin IDP", func(z *adminv1.Zone) { z.Spec.Gateways[0].Admin.IdentityProviderRef = "missing" }, "identityProviderRef"),
@@ -120,41 +119,49 @@ var _ = Describe("Zone validation", func() {
 			extra := z.Spec.Presets[0]
 			extra.Name = "second-default"
 			z.Spec.Presets = append(z.Spec.Presets, extra)
-		}, "exactly one default preset is required for gateway type \"API\""),
-		Entry("type without a default", func(z *adminv1.Zone) {
-			z.Spec.Presets = append(z.Spec.Presets, adminv1.Preset{
-				Name: "ai", Type: adminv1.GatewayTypeAI, GatewayRef: "standard", IdentityProviderRef: "primary",
-				Urls:     []adminv1.UrlConfig{{Hostname: "ai.example.com", BasePath: "/"}},
-				Features: []adminv1.Feature{{Name: adminv1.FeatureConsumerFailover, Enabled: true}},
-			})
-		}, "exactly one default preset is required for gateway type \"AI\""),
+		}, "at most one default preset is allowed for gateway type \"API\""),
 		Entry("no API preset at all", func(z *adminv1.Zone) {
 			z.Spec.Presets = []adminv1.Preset{aiDefaultPreset()}
 		}, "is required: it is the zone's representative profile"),
-		Entry("default preset enabling a feature", func(z *adminv1.Zone) {
-			z.Spec.Presets[0].Features = []adminv1.Feature{{Name: adminv1.FeatureConsumerFailover, Enabled: true}}
-		}, "default preset must not enable preset-scoped features"),
-		Entry("non-default preset without an enabled feature", func(z *adminv1.Zone) {
-			z.Spec.Presets = append(z.Spec.Presets, adminv1.Preset{
-				Name: "spare", Type: adminv1.GatewayTypeAPI, GatewayRef: "standard", IdentityProviderRef: "primary",
-				Urls: []adminv1.UrlConfig{{Hostname: "spare.example.com", BasePath: "/"}},
-			})
-		}, "must enable at least one preset-scoped feature"),
-		Entry("duplicate feature within one type", func(z *adminv1.Zone) {
-			for _, name := range []string{"failover-a", "failover-b"} {
-				z.Spec.Presets = append(z.Spec.Presets, adminv1.Preset{
-					Name: name, Type: adminv1.GatewayTypeAPI, GatewayRef: "standard", IdentityProviderRef: "primary",
-					Urls:     []adminv1.UrlConfig{{Hostname: name + ".example.com", BasePath: "/"}},
-					Features: []adminv1.Feature{{Name: adminv1.FeatureConsumerFailover, Enabled: true}},
-				})
-			}
-		}, "already enabled on preset"),
 		Entry("gateway referenced by no preset", func(z *adminv1.Zone) {
 			z.Spec.Gateways = append(z.Spec.Gateways, adminv1.GatewayConfig{
 				Name:  "orphan",
 				Admin: adminv1.GatewayAdminConfig{IdentityProviderRef: "primary", Url: "https://orphan.example.com/admin-api"},
 			})
 		}, "is not referenced by any preset"),
+	)
+
+	DescribeTable("accepts flexible defaults and feature placement",
+		func(mutate func(*adminv1.Zone)) {
+			zone := validZone()
+			mutate(zone)
+
+			warnings, err := validator.ValidateCreate(ctx, zone)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(warnings).To(BeEmpty())
+		},
+		Entry("no default", func(z *adminv1.Zone) { z.Spec.Presets[0].Default = false }),
+		Entry("type without a default", func(z *adminv1.Zone) {
+			preset := aiDefaultPreset()
+			preset.Default = false
+			z.Spec.Presets = append(z.Spec.Presets, preset)
+		}),
+		Entry("default with a feature", func(z *adminv1.Zone) {
+			z.Spec.Presets[0].Features = []adminv1.Feature{{Name: adminv1.FeatureBasicAuth, Enabled: true}}
+		}),
+		Entry("featureless non-default", func(z *adminv1.Zone) {
+			preset := defaultPreset("spare")
+			preset.Default = false
+			z.Spec.Presets = append(z.Spec.Presets, preset)
+		}),
+		Entry("same feature on multiple presets", func(z *adminv1.Zone) {
+			z.Spec.Presets[0].Features = []adminv1.Feature{{Name: adminv1.FeatureBasicAuth, Enabled: true}}
+			z.Spec.Presets[1].Features = append(z.Spec.Presets[1].Features, adminv1.Feature{Name: adminv1.FeatureBasicAuth, Enabled: true})
+		}),
+		Entry("preset overrides zone feature", func(z *adminv1.Zone) {
+			z.Spec.Features = []adminv1.Feature{{Name: adminv1.FeatureBasicAuth, Enabled: false}}
+			z.Spec.Presets[0].Features = []adminv1.Feature{{Name: adminv1.FeatureBasicAuth, Enabled: true}}
+		}),
 	)
 
 	// A preset with an empty Type is the shape of a Zone stored before Preset.Type existed.
@@ -324,24 +331,27 @@ var _ = Describe("Zone validation", func() {
 		}, "duplicate identity provider name"),
 	)
 
-	DescribeTable("rejects invalid feature placement",
+	DescribeTable("rejects invalid features",
 		func(mutate func(*adminv1.Zone), message string) {
 			zone := validZone()
 			mutate(zone)
 			_, err := validator.ValidateCreate(ctx, zone)
 			Expect(err).To(MatchError(ContainSubstring(message)))
 		},
-		Entry("zone feature on preset", func(z *adminv1.Zone) {
-			z.Spec.Presets[0].Features = []adminv1.Feature{{Name: adminv1.FeatureBasicAuth, Enabled: true}}
-		}, "zone-scoped"),
-		Entry("preset feature on zone", func(z *adminv1.Zone) {
-			z.Spec.Features = []adminv1.Feature{{Name: adminv1.FeatureConsumerFailover, Enabled: true}}
-		}, "preset-scoped"),
 		Entry("unknown zone feature", func(z *adminv1.Zone) {
 			z.Spec.Features = []adminv1.Feature{{Name: adminv1.FeatureName("Unknown"), Enabled: true}}
 		}, "unknown feature"),
 		Entry("duplicate zone feature", func(z *adminv1.Zone) {
 			z.Spec.Features = []adminv1.Feature{
+				{Name: adminv1.FeatureBasicAuth, Enabled: true},
+				{Name: adminv1.FeatureBasicAuth, Enabled: false},
+			}
+		}, "duplicate feature"),
+		Entry("unknown preset feature", func(z *adminv1.Zone) {
+			z.Spec.Presets[0].Features = []adminv1.Feature{{Name: adminv1.FeatureName("Unknown"), Enabled: true}}
+		}, "unknown feature"),
+		Entry("duplicate preset feature", func(z *adminv1.Zone) {
+			z.Spec.Presets[0].Features = []adminv1.Feature{
 				{Name: adminv1.FeatureBasicAuth, Enabled: true},
 				{Name: adminv1.FeatureBasicAuth, Enabled: false},
 			}

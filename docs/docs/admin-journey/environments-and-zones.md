@@ -152,9 +152,11 @@ Here `standard` serves API and Event traffic because two presets of those types 
 while `ai` serves only AI traffic.
 
 When the Control Plane needs a preset for a traffic kind — for example an AI Gateway route — it
-selects among the presets of that type only. Selection is single-valued: the default preset of
-that type is used, unless the caller requests a feature, in which case the preset enabling that
-feature is used.
+selects among the presets of that type only. The default matching preset is preferred; if none is
+marked as default, the first matching preset in the list is used.
+
+Features configured on the Zone are inherited by every preset. A preset can override an inherited
+feature by declaring the same name, including explicitly disabling it.
 
 #### Rules the webhook enforces
 
@@ -162,13 +164,9 @@ A Zone is rejected at admission unless:
 
 - **At least one `API` preset exists.** The API type carries the zone's representative profile
   and is used by every caller that has no traffic type of its own.
-- **Exactly one preset per present type is `default`.** If a zone has AI presets, exactly one of
-  them must be the AI default. Types you do not use need no preset at all.
-- **A default preset enables no preset-scoped features**, so ordinary traffic never accidentally
-  runs under a feature profile.
-- **A non-default preset enables at least one preset-scoped feature**, otherwise it can never be
-  selected.
-- **A preset-scoped feature is enabled at most once per type**, so selection stays unambiguous.
+- **At most one preset per type is `default`.** Without one, list order determines the fallback.
+- **Features may be configured on the Zone or any preset.** Preset values override inherited Zone
+  values.
 - **Every gateway is referenced by at least one preset.** An unreferenced gateway would still
   provision a Gateway, an admin client and a consumer for traffic that can never reach it.
 
