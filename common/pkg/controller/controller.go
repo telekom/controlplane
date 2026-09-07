@@ -8,6 +8,7 @@ import (
 	"context"
 	"errors"
 	"reflect"
+	"strings"
 
 	apiequality "k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -37,6 +38,7 @@ type Controller[T common_types.Object] interface {
 var _ Controller[common_types.Object] = &ControllerImpl[common_types.Object]{}
 
 func NewController[T common_types.Object](h handler.Handler[T], c client.Client, recorder record.EventRecorder) Controller[T] {
+	c = client.WithFieldOwner(c, fieldOwnerFor[T]())
 	return &ControllerImpl[T]{
 		Client: c,
 		Scheme: c.Scheme(),
@@ -44,6 +46,14 @@ func NewController[T common_types.Object](h handler.Handler[T], c client.Client,
 		Recorder: recorder,
 		Handler:  h,
 	}
+}
+
+func fieldOwnerFor[T common_types.Object]() string {
+	t := reflect.TypeFor[T]()
+	if t.Kind() == reflect.Pointer {
+		t = t.Elem()
+	}
+	return strings.ToLower(t.Name()) + "-controller"
 }
 
 type ControllerImpl[T common_types.Object] struct {
