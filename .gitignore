@@ -23,3 +23,4 @@ allure-report
 allure-results
 debug-results
 *.log
+.superpowers/

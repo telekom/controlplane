@@ -22,6 +22,7 @@ import (
 	"github.com/telekom/controlplane/common/pkg/types"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	"github.com/telekom/controlplane/event/internal/handler/util"
+	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
 	pubsubv1 "github.com/telekom/controlplane/pubsub/api/v1"
 )
@@ -54,48 +55,30 @@ func (h *EventConfigHandler) CreateOrUpdate(ctx context.Context, obj *eventv1.Ev
 		meshCfg = &eventv1.MeshConfig{FullMesh: true}
 	}
 
-	// --- Identity Clients ---
+	// --- Identity Clients / EventStore, then Routes ---
+	//
+	// Routes are derived from the Zone and the EventConfig spec alone; they never
+	// read Status.AdminClient, Status.MeshClient or Status.EventStore. Running
+	// both halves as one fail-fast chain meant a single unusable client name
+	// froze route rendering for the whole zone, so each is attempted every pass.
 
-	// Proxy zones have no admin client of their own; their EventStore authenticates
-	// to the target zone's configuration backend using the target's admin client.
-	var adminClient *identityv1.Client
-	var adminTokenUrl string
-	if obj.IsProxy() {
-		obj.Status.AdminClient = nil
-	} else {
-		adminClient, adminTokenUrl, err = h.resolveAndCreateAdminClient(ctx, obj, myZone)
-		if err != nil {
-			return err
-		}
-		obj.Status.AdminClient = eventv1.NewObservedObjectRef(adminClient)
-		logger.V(1).Info("identity AdminClient created/updated", "client", adminClient.Name)
+	backendErr := h.reconcileEventBackend(ctx, obj, myZone, meshCfg)
+	if backendErr != nil {
+		logger.V(0).Info("Event backend reconciliation failed; continuing with Routes",
+			"error", backendErr.Error())
 	}
 
-	meshClient, err := h.resolveAndCreateMeshClient(ctx, obj, myZone, meshCfg)
-	if err != nil {
-		return err
-	}
-	obj.Status.MeshClient = eventv1.NewObservedObjectRef(meshClient)
-	logger.V(1).Info("identity MeshClient created/updated", "client", meshClient.Name)
+	routeErr := h.createRoutes(ctx, obj, myZone, meshCfg)
 
-	// --- EventStore ---
-
-	var eventStore *pubsubv1.EventStore
-	if obj.IsProxy() {
-		eventStore, err = h.createProxyEventStore(ctx, obj)
-	} else {
-		eventStore, err = h.createEventStore(ctx, obj, adminClient, adminTokenUrl)
-	}
-	if err != nil {
-		return errors.Wrap(err, "failed to create EventStore")
-	}
-	obj.Status.EventStore = types.ObjectRefFromObject(eventStore)
-	logger.V(1).Info("EventStore created/updated", "eventStore", eventStore.Name)
-
-	// --- Routes ---
-
-	if routeErr := h.createRoutes(ctx, obj, myZone, meshCfg); routeErr != nil {
+	// The Route error wins when both fail. Routes are the half that must converge
+	// fastest, so their error class has to decide the requeue cadence: a Blocked
+	// backend error would otherwise mask a retryable Route failure, because
+	// ctrlerrors.HandleError tests Blocked first and stops requeueing on it.
+	if routeErr != nil {
 		return routeErr
+	}
+	if backendErr != nil {
+		return backendErr
 	}
 
 	// --- Finalize status conditions ---
@@ -121,6 +104,60 @@ func (h *EventConfigHandler) CreateOrUpdate(ctx context.Context, obj *eventv1.Ev
 
 	obj.SetCondition(condition.NewReadyCondition(condition.ReasonProvisioned, "EventConfig has been provisioned"))
 	obj.SetCondition(condition.NewDoneProcessingCondition("EventConfig has been provisioned"))
+
+	return nil
+}
+
+// reconcileEventBackend provisions the identity Clients, the callback gateway
+// Consumer and the EventStore. This is the half of the reconciliation that route
+// rendering does not depend on; the chain inside it stays fail-fast because the
+// EventStore needs the admin client.
+func (h *EventConfigHandler) reconcileEventBackend(ctx context.Context, obj *eventv1.EventConfig, myZone *adminv1.Zone, meshCfg *eventv1.MeshConfig) error {
+	logger := log.FromContext(ctx)
+
+	// Proxy zones have no admin client of their own; their EventStore authenticates
+	// to the target zone's configuration backend using the target's admin client.
+	var adminClient *identityv1.Client
+	var adminTokenUrl string
+	var err error
+	if obj.IsProxy() {
+		obj.Status.AdminClient = nil
+	} else {
+		adminClient, adminTokenUrl, err = h.resolveAndCreateAdminClient(ctx, obj, myZone)
+		if err != nil {
+			return err
+		}
+		obj.Status.AdminClient = eventv1.NewObservedObjectRef(adminClient)
+		logger.V(1).Info("identity AdminClient created/updated", "client", adminClient.Name)
+	}
+
+	meshClient, err := h.resolveAndCreateMeshClient(ctx, obj, myZone, meshCfg)
+	if err != nil {
+		return err
+	}
+	obj.Status.MeshClient = eventv1.NewObservedObjectRef(meshClient)
+	logger.V(1).Info("identity MeshClient created/updated", "client", meshClient.Name)
+
+	// The callback Route's ACL allows the mesh client, and the gateway's JWT
+	// plugin resolves the token's client to a gateway Consumer with
+	// consumer_match_ignore_not_found disabled. The identity Client above only
+	// mints the token, so without a matching Consumer every callback is rejected
+	// before the ACL is evaluated.
+	if consumerErr := h.createCallbackConsumer(ctx, obj, myZone, meshCfg.Client.ClientId); consumerErr != nil {
+		return consumerErr
+	}
+
+	var eventStore *pubsubv1.EventStore
+	if obj.IsProxy() {
+		eventStore, err = h.createProxyEventStore(ctx, obj)
+	} else {
+		eventStore, err = h.createEventStore(ctx, obj, adminClient, adminTokenUrl)
+	}
+	if err != nil {
+		return errors.Wrap(err, "failed to create EventStore")
+	}
+	obj.Status.EventStore = types.ObjectRefFromObject(eventStore)
+	logger.V(1).Info("EventStore created/updated", "eventStore", eventStore.Name)
 
 	return nil
 }
@@ -237,6 +274,53 @@ func (h *EventConfigHandler) resolveAndCreateMeshClient(ctx context.Context, obj
 	return identityClient, nil
 }
 
+// createCallbackConsumer creates or updates the gateway Consumer that the
+// callback Route's ACL allows. An identity Client only mints the token; the
+// gateway resolves that token's client to a Consumer, so both are required for
+// callback delivery to be authorised.
+// The clientId must match the name the callback Route's ACL allows, which is
+// why both read EventConfig.spec.mesh.client.clientId rather than the constant.
+func (h *EventConfigHandler) createCallbackConsumer(ctx context.Context, obj *eventv1.EventConfig, zone *adminv1.Zone, clientId string) error {
+	c := cclient.ClientFromContextOrDie(ctx)
+
+	if zone.Status.Gateway == nil {
+		return ctrlerrors.BlockedErrorf("Zone %q does not have a gateway yet", zone.Name)
+	}
+
+	if clientId == "" {
+		clientId = util.CallbackClientName
+	}
+
+	consumer := &gatewayapi.Consumer{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      clientId,
+			Namespace: obj.Namespace,
+		},
+	}
+
+	mutator := func() error {
+		if err := controllerutil.SetControllerReference(obj, consumer, c.Scheme()); err != nil {
+			return errors.Wrap(err, "failed to set controller reference")
+		}
+
+		consumer.Labels = map[string]string{
+			config.DomainLabelKey: "event",
+		}
+
+		consumer.Spec = gatewayapi.ConsumerSpec{
+			Gateway: *zone.Status.Gateway,
+			Name:    clientId,
+		}
+		return nil
+	}
+
+	if _, err := c.CreateOrUpdate(ctx, consumer, mutator); err != nil {
+		return errors.Wrapf(err, "failed to create or update gateway Consumer %s", clientId)
+	}
+
+	return nil
+}
+
 // createIdentityClient is a utility function to create or update an identityv1.Client resource for a given EventConfig and ClientConfig.
 func (h *EventConfigHandler) createIdentityClient(ctx context.Context, obj *eventv1.EventConfig, clientCfg *eventv1.ClientConfig) (*identityv1.Client, error) {
 	c := cclient.ClientFromContextOrDie(ctx)
@@ -334,6 +418,7 @@ func (h *EventConfigHandler) createCallbackRoutes(ctx context.Context, obj *even
 		util.WithOwner(obj),
 		util.WithTrustedIssuers(proxyTrustedIssuers),
 		util.WithRealmName(realmName),
+		util.WithCallbackConsumer(meshCfg.Client.ClientId),
 	)
 	if err != nil {
 		return errors.Wrap(err, "failed to create callback proxy Routes")
@@ -358,6 +443,7 @@ func (h *EventConfigHandler) createCallbackRoutes(ctx context.Context, obj *even
 		util.WithProxyTarget(isProxyTarget),
 		util.WithTrustedIssuers(primaryTrustedIssuers),
 		util.WithRealmName(realmName),
+		util.WithCallbackConsumer(meshCfg.Client.ClientId),
 	)
 	if err != nil {
 		return errors.Wrap(err, "failed to create callback Route for own zone")

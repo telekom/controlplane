@@ -186,12 +186,17 @@
       "agentic",
       "api",
       "application",
+      "approval",
       "common",
       "common-server",
       "event",
+      "gateway",
+      "identity",
       "organization",
       "permission",
-      "secret-manager"
+      "pubsub",
+      "secret-manager",
+      "spectre"
     ]
   },
   "rover-ctl": {
@@ -217,6 +222,21 @@
     "path": "secret-manager",
     "depends_on": [
       "common-server"
+    ]
+  },
+  "spectre": {
+    "path": "spectre",
+    "depends_on": [
+      "admin",
+      "application",
+      "approval",
+      "common",
+      "common-server",
+      "event",
+      "gateway",
+      "identity",
+      "pubsub",
+      "secret-manager"
     ]
   },
   "tools-snapshotter": {

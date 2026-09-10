@@ -35,6 +35,7 @@ import (
 	webhookv1 "github.com/telekom/controlplane/rover/internal/webhook/v1"
 	secretsapi "github.com/telekom/controlplane/secret-manager/api"
 	secretmetrics "github.com/telekom/controlplane/secret-manager/api/metrics"
+	spectrev1 "github.com/telekom/controlplane/spectre/api/v1"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
@@ -64,6 +65,9 @@ func init() {
 	}
 	if cconfig.FeatureAiGateway.IsEnabled() {
 		utilruntime.Must(agenticv1.AddToScheme(scheme))
+	}
+	if cconfig.FeatureSpectre.IsEnabled() {
+		utilruntime.Must(spectrev1.AddToScheme(scheme))
 	}
 	// +kubebuilder:scaffold:scheme
 }

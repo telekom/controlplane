@@ -241,6 +241,23 @@ var _ = Describe("EventConfigHandler", func() {
 			Return(nil).Times(times)
 	}
 
+	// mockRouteRenderingReachable allows the Route half of the reconcile to run
+	// after a backend failure. Routes no longer abort when the identity/EventStore
+	// chain fails, so specs asserting a backend error must tolerate the Route
+	// calls that follow.
+	mockRouteRenderingReachable := func() {
+		fakeClient.EXPECT().Scheme().Return(testScheme).Maybe()
+		fakeClient.EXPECT().
+			List(ctx, mock.AnythingOfType("*v1.EventConfigList")).
+			Return(nil).Maybe()
+		fakeClient.EXPECT().
+			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Route"), mock.Anything).
+			Run(func(_ context.Context, _ client.Object, mutate controllerutil.MutateFn) {
+				_ = mutate()
+			}).
+			Return(controllerutil.OperationResultCreated, nil).Maybe()
+	}
+
 	// mockListEventConfigsError sets up a mock for c.List that returns an error.
 	mockListEventConfigsError := func(err error) {
 		fakeClient.EXPECT().
@@ -258,6 +275,17 @@ var _ = Describe("EventConfigHandler", func() {
 	mockCreateOrUpdateCallbackRoute := func(result controllerutil.OperationResult, err error) {
 		fakeClient.EXPECT().
 			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Route"), mock.Anything).
+			Run(func(_ context.Context, obj client.Object, mutate controllerutil.MutateFn) {
+				_ = mutate()
+			}).
+			Return(result, err).Once()
+	}
+
+	// mockCreateOrUpdateCallbackConsumer sets up a mock for the gateway Consumer
+	// that the callback Route's ACL allows.
+	mockCreateOrUpdateCallbackConsumer := func(result controllerutil.OperationResult, err error) {
+		fakeClient.EXPECT().
+			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Consumer"), mock.Anything).
 			Run(func(_ context.Context, obj client.Object, mutate controllerutil.MutateFn) {
 				_ = mutate()
 			}).
@@ -294,6 +322,7 @@ var _ = Describe("EventConfigHandler", func() {
 		mockGetZone(zone, 1)   // fetched once at the top of CreateOrUpdate
 		mockGetRealm(realm, 2) // admin + mesh
 		mockCreateOrUpdateClient(controllerutil.OperationResultCreated, nil, 2)
+		mockCreateOrUpdateCallbackConsumer(controllerutil.OperationResultCreated, nil)
 		mockCreateOrUpdateEventStore(controllerutil.OperationResultCreated, nil)
 		mockListEventConfigs([]eventv1.EventConfig{}, 3) // callback + voyager + publish (proxy-source lookup)
 		mockCreateOrUpdateCallbackRoute(controllerutil.OperationResultCreated, nil)
@@ -329,6 +358,7 @@ var _ = Describe("EventConfigHandler", func() {
 		})
 
 		It("should return BlockedError when Realm is not found", func() {
+			mockRouteRenderingReachable()
 			zone := makeReadyZone()
 			mockGetZone(zone, 1)
 
@@ -346,6 +376,7 @@ var _ = Describe("EventConfigHandler", func() {
 		})
 
 		It("should return error when Realm Get fails", func() {
+			mockRouteRenderingReachable()
 			zone := makeReadyZone()
 			mockGetZone(zone, 1)
 			mockGetRealmError(fmt.Errorf("connection refused"))
@@ -358,6 +389,7 @@ var _ = Describe("EventConfigHandler", func() {
 		})
 
 		It("should return error when admin identity Client creation fails", func() {
+			mockRouteRenderingReachable()
 			zone := makeReadyZone()
 			realm := makeReadyRealm()
 			mockGetZone(zone, 1)
@@ -374,6 +406,7 @@ var _ = Describe("EventConfigHandler", func() {
 		})
 
 		It("should return error when mesh identity Client creation fails", func() {
+			mockRouteRenderingReachable()
 			zone := makeReadyZone()
 			realm := makeReadyRealm()
 			mockGetZone(zone, 1)
@@ -396,12 +429,14 @@ var _ = Describe("EventConfigHandler", func() {
 		})
 
 		It("should return error when EventStore creation fails", func() {
+			mockRouteRenderingReachable()
 			zone := makeReadyZone()
 			realm := makeReadyRealm()
 			mockGetZone(zone, 1)
 			mockGetRealm(realm, 2)
 			mockScheme()
 			mockCreateOrUpdateClient(controllerutil.OperationResultCreated, nil, 2)
+			mockCreateOrUpdateCallbackConsumer(controllerutil.OperationResultCreated, nil)
 			mockCreateOrUpdateEventStore(controllerutil.OperationResultNone, fmt.Errorf("eventstore error"))
 
 			err := h.CreateOrUpdate(ctx, obj)
@@ -418,6 +453,7 @@ var _ = Describe("EventConfigHandler", func() {
 			mockGetRealm(realm, 2)
 			mockScheme()
 			mockCreateOrUpdateClient(controllerutil.OperationResultCreated, nil, 2)
+			mockCreateOrUpdateCallbackConsumer(controllerutil.OperationResultCreated, nil)
 			mockCreateOrUpdateEventStore(controllerutil.OperationResultCreated, nil)
 			mockListEventConfigsError(fmt.Errorf("list failed"))
 
@@ -435,6 +471,7 @@ var _ = Describe("EventConfigHandler", func() {
 			mockGetRealm(realm, 2)
 			mockScheme()
 			mockCreateOrUpdateClient(controllerutil.OperationResultCreated, nil, 2)
+			mockCreateOrUpdateCallbackConsumer(controllerutil.OperationResultCreated, nil)
 			mockCreateOrUpdateEventStore(controllerutil.OperationResultCreated, nil)
 
 			// Callback routes succeed
@@ -459,6 +496,7 @@ var _ = Describe("EventConfigHandler", func() {
 			mockGetZone(zone, 1)
 			mockGetRealm(realm, 2)
 			mockCreateOrUpdateClient(controllerutil.OperationResultCreated, nil, 2)
+			mockCreateOrUpdateCallbackConsumer(controllerutil.OperationResultCreated, nil)
 			mockCreateOrUpdateEventStore(controllerutil.OperationResultCreated, nil)
 			mockListEventConfigs([]eventv1.EventConfig{}, 3)
 			mockCreateOrUpdateCallbackRoute(controllerutil.OperationResultCreated, nil)
@@ -483,6 +521,7 @@ var _ = Describe("EventConfigHandler", func() {
 			mockGetZone(zone, 1)
 			mockGetRealm(realm, 2)
 			mockCreateOrUpdateClient(controllerutil.OperationResultCreated, nil, 2)
+			mockCreateOrUpdateCallbackConsumer(controllerutil.OperationResultCreated, nil)
 			mockCreateOrUpdateEventStore(controllerutil.OperationResultCreated, nil)
 			mockListEventConfigs([]eventv1.EventConfig{}, 3)
 			mockCreateOrUpdateCallbackRoute(controllerutil.OperationResultCreated, nil)
@@ -496,6 +535,7 @@ var _ = Describe("EventConfigHandler", func() {
 		})
 
 		It("should return BlockedError when zone has no InternalIdentityRealm and admin realm is empty", func() {
+			mockRouteRenderingReachable()
 			obj.Spec.Local.Admin.Client.Realm = ctypes.ObjectRef{}
 			zone := makeReadyZone()
 			zone.Status.InternalIdentityRealm = nil
@@ -509,6 +549,7 @@ var _ = Describe("EventConfigHandler", func() {
 		})
 
 		It("should return BlockedError when zone has no IdentityRealm and mesh realm is empty", func() {
+			mockRouteRenderingReachable()
 			obj.Spec.Mesh.Client.Realm = ctypes.ObjectRef{}
 			zone := makeReadyZone()
 			zone.Status.IdentityRealm = nil

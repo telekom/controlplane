@@ -52,6 +52,9 @@ func (r *RouteReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Watches(&gatewayv1.ConsumeRoute{},
 			handler.EnqueueRequestsFromMapFunc(r.mapConsumeRouteToRoute),
 			builder.WithPredicates(cc.Count("route", cc.RoleWatches, predicate.GenerationChangedPredicate{}, SkipInitialListPredicate{}))).
+		Watches(&gatewayv1.RouteListener{},
+			handler.EnqueueRequestsFromMapFunc(r.mapRouteListenerToRoute),
+			builder.WithPredicates(cc.Count("route", cc.RoleWatches, predicate.GenerationChangedPredicate{}, SkipInitialListPredicate{}))).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
 			RateLimiter:             cc.NewRateLimiter(),
@@ -69,6 +72,21 @@ func (r *RouteReconciler) mapConsumeRouteToRoute(ctx context.Context, obj client
 	// get the Route
 	route := &gatewayv1.Route{}
 	if err := r.Get(ctx, consumeRoute.Spec.Route.K8s(), route); err != nil {
+		return nil
+	}
+
+	return []reconcile.Request{{NamespacedName: client.ObjectKey{Name: route.Name, Namespace: route.Namespace}}}
+}
+
+func (r *RouteReconciler) mapRouteListenerToRoute(ctx context.Context, obj client.Object) []reconcile.Request {
+	routeListener, ok := obj.(*gatewayv1.RouteListener)
+	if !ok {
+		return nil
+	}
+
+	// The RouteListener's spec.route references the Route it attaches to.
+	route := &gatewayv1.Route{}
+	if err := r.Get(ctx, routeListener.Spec.Route.K8s(), route); err != nil {
 		return nil
 	}
 

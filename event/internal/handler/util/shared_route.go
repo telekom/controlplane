@@ -70,8 +70,12 @@ type Options struct {
 
 	// ExtraConsumers are additional client names appended to the route's
 	// DefaultConsumers regardless of IsProxyTarget. Callback routes use this to
-	// always trust the Horizon callback client (CallbackClientName).
+	// always trust the Horizon callback client.
 	ExtraConsumers []string
+
+	// callbackConsumerSet records that WithCallbackConsumer was applied, so the
+	// default is not appended on top of a caller-supplied client name.
+	callbackConsumerSet bool
 
 	// TrustedIssuers is the list of trusted token issuers for this route.
 	// For primary routes: includes the zone's IDP issuer + LMS issuers from proxy zones.
@@ -98,11 +102,35 @@ func WithProxyTarget(isProxyTarget bool) Option {
 }
 
 // WithCallbackConsumer marks the route as a callback route, so the Horizon
-// callback client (CallbackClientName) is added to its DefaultConsumers.
-func WithCallbackConsumer() Option {
-	return func(o *Options) {
-		o.ExtraConsumers = append(o.ExtraConsumers, CallbackClientName)
+// callback client is added to its DefaultConsumers.
+//
+// clientId must be the same value the gateway Consumer is created with, which
+// is EventConfig.spec.mesh.client.clientId. That field is only defaulted to
+// CallbackClientName, so hardcoding the constant here would leave the ACL
+// naming a Consumer that does not exist whenever the field is set explicitly.
+// Pass an empty string to fall back to the default.
+func WithCallbackConsumer(clientId string) Option {
+	if clientId == "" {
+		clientId = CallbackClientName
 	}
+	return func(o *Options) {
+		o.callbackConsumerSet = true
+		o.ExtraConsumers = append(o.ExtraConsumers, clientId)
+	}
+}
+
+// withCallbackConsumerUnlessSet appends the default callback consumer only when
+// the caller did not already supply one, so a caller-provided clientId is never
+// shadowed by the constant.
+func withCallbackConsumerUnlessSet(opts []Option) []Option {
+	probe := &Options{}
+	for _, opt := range opts {
+		opt(probe)
+	}
+	if probe.callbackConsumerSet {
+		return opts
+	}
+	return append(opts, WithCallbackConsumer(""))
 }
 
 // WithTrustedIssuers sets the trusted token issuers for the route.
