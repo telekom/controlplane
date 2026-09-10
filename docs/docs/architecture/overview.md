@@ -100,3 +100,4 @@ Each domain is described in detail on its own page:
 | [PubSub](./pubsub.mdx) | Runtime layer for publish/subscribe messaging |
 | [Secret Manager](./secret-manager.mdx) | Centralized secret storage, references, and retrieval |
 | [ControlPlane API & Projector](./controlplane-api.mdx) | Read-only external access layer (CQRS) for the UI |
+| [SFTP](./sftp.mdx) | SFTP service provisioning and SSH public key synchronization |

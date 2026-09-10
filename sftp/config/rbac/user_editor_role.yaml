@@ -1,0 +1,31 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# permissions for end users to edit users.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/name: sftp
+    app.kubernetes.io/managed-by: kustomize
+  name: user-editor-role
+rules:
+- apiGroups:
+  - sftp.cp.ei.telekom.de
+  resources:
+  - users
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - sftp.cp.ei.telekom.de
+  resources:
+  - users/status
+  verbs:
+  - get
