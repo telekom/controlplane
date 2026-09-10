@@ -97,6 +97,39 @@ func mapEventExposureInfo(exposure *ent.EventExposure, app *ent.Application, tea
 	}
 }
 
+func mapAgenticExposureInfo(exposure *ent.AgenticExposure, app *ent.Application, team *ent.Team, group *ent.Group) *model.AgenticExposureInfo {
+	return &model.AgenticExposureInfo{
+		ID:         exposure.ID,
+		BasePath:   exposure.BasePath,
+		Visibility: string(exposure.Visibility),
+		Variant:    string(exposure.Variant),
+		Active:     exposure.Active,
+		Traffic:    &exposure.Traffic,
+		ApprovalConfig: model.ApprovalConfig{
+			Strategy:     exposure.ApprovalConfig.Strategy,
+			TrustedTeams: exposure.ApprovalConfig.TrustedTeams,
+		},
+		OwnerApplicationName: app.Name,
+		OwnerTeam:            mapTeamInfo(team, group),
+	}
+}
+
+func mapAgenticSubscriptionInfo(sub *ent.AgenticSubscription, app *ent.Application, team *ent.Team, group *ent.Group) *model.AgenticSubscriptionInfo {
+	var statusPhase *string
+	if sub.StatusPhase != nil {
+		s := string(*sub.StatusPhase)
+		statusPhase = &s
+	}
+	return &model.AgenticSubscriptionInfo{
+		ID:                   sub.ID,
+		BasePath:             sub.BasePath,
+		StatusPhase:          statusPhase,
+		StatusMessage:        sub.StatusMessage,
+		OwnerApplicationName: app.Name,
+		OwnerTeam:            mapTeamInfo(team, group),
+	}
+}
+
 // loadOwnerChain traverses subscription → owner application → team → group.
 // Used by both API and event subscription info loaders.
 func loadOwnerChain(ctx context.Context, ownerQuery interface {
@@ -155,4 +188,22 @@ func loadEventExposureInfo(ctx context.Context, exposure *ent.EventExposure) (*m
 		return nil, fmt.Errorf("event exposure %d: %w", exposure.ID, err)
 	}
 	return mapEventExposureInfo(exposure, app, team, group), nil
+}
+
+// loadAgenticSubscriptionInfo loads the full owner chain for an agentic subscription and maps it to AgenticSubscriptionInfo.
+func loadAgenticSubscriptionInfo(ctx context.Context, sub *ent.AgenticSubscription) (*model.AgenticSubscriptionInfo, error) {
+	app, team, group, err := loadOwnerChain(ctx, sub.QueryOwner())
+	if err != nil {
+		return nil, fmt.Errorf("agentic subscription %d: %w", sub.ID, err)
+	}
+	return mapAgenticSubscriptionInfo(sub, app, team, group), nil
+}
+
+// loadAgenticExposureInfo loads the full owner chain for an agentic exposure and maps it to AgenticExposureInfo.
+func loadAgenticExposureInfo(ctx context.Context, exposure *ent.AgenticExposure) (*model.AgenticExposureInfo, error) {
+	app, team, group, err := loadOwnerChain(ctx, exposure.QueryOwner())
+	if err != nil {
+		return nil, fmt.Errorf("agentic exposure %d: %w", exposure.ID, err)
+	}
+	return mapAgenticExposureInfo(exposure, app, team, group), nil
 }

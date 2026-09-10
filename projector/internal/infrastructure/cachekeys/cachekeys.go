@@ -114,6 +114,57 @@ func ActiveEventType(eventType string) (entityType, lookupKey string) {
 	return "eventtype_active", eventType
 }
 
+// McpServer returns the cache key components for an McpServer catalogue
+// entity. Base paths are unique per team (composite unique index on
+// base_path + owner), so both are required.
+func McpServer(basePath, teamName string) (entityType, lookupKey string) {
+	return "mcpserver", basePath + ":" + teamName
+}
+
+// ActiveMcpServer returns the cache key components for the cluster-wide
+// active McpServer for a given base path. Only one McpServer is active at a
+// time per base path (oldest-wins), so the team is not part of the key.
+func ActiveMcpServer(basePath string) (entityType, lookupKey string) {
+	return "mcpserver_active", basePath
+}
+
+// AgentCard returns the cache key components for an AgentCard catalogue
+// entity. Base paths are unique per team (composite unique index on
+// base_path + owner), so both are required.
+func AgentCard(basePath, teamName string) (entityType, lookupKey string) {
+	return "agentcard", basePath + ":" + teamName
+}
+
+// ActiveAgentCard returns the cache key components for the cluster-wide
+// active AgentCard for a given base path. Only one AgentCard is active at a
+// time per base path (oldest-wins), so the team is not part of the key.
+func ActiveAgentCard(basePath string) (entityType, lookupKey string) {
+	return "agentcard_active", basePath
+}
+
+// AgenticExposure returns the cache key components for an AgenticExposure
+// entity identified by base path, application name, and team name. Base
+// paths are unique per application, and applications per team, so all three
+// are required.
+func AgenticExposure(basePath, appName, teamName string) (entityType, lookupKey string) {
+	return "agenticexposure", basePath + ":" + appName + ":" + teamName
+}
+
+// AgenticExposureByBasePath returns the cache key components for an
+// AgenticExposure entity looked up by base path alone. Uses a "bp:" prefix to
+// avoid collisions with the full composite key used by [AgenticExposure].
+func AgenticExposureByBasePath(basePath string) (entityType, lookupKey string) {
+	return "agenticexposure", "bp:" + basePath
+}
+
+// AgenticSubscriptionMeta returns the cache key components for an
+// AgenticSubscription entity looked up by its Kubernetes metadata
+// (namespace + name). This enables Approval/ApprovalRequest to resolve the
+// parent subscription FK from a spec.target reference.
+func AgenticSubscriptionMeta(namespace, name string) (entityType, lookupKey string) {
+	return "agenticsubscription", "meta:" + namespace + ":" + name
+}
+
 // PermissionSet returns the cache key components for a PermissionSet entity
 // identified by its owning application name and team name. PermissionSet is
 // 1:1 with Application, so the pair uniquely identifies it.

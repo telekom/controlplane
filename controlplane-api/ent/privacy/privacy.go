@@ -113,6 +113,78 @@ func DenyMutationOperationRule(op ent.Op) MutationRule {
 	return OnMutationOperation(rule, op)
 }
 
+// The AgentCardQueryRuleFunc type is an adapter to allow the use of ordinary
+// functions as a query rule.
+type AgentCardQueryRuleFunc func(context.Context, *ent.AgentCardQuery) error
+
+// EvalQuery return f(ctx, q).
+func (f AgentCardQueryRuleFunc) EvalQuery(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.AgentCardQuery); ok {
+		return f(ctx, q)
+	}
+	return Denyf("ent/privacy: unexpected query type %T, expect *ent.AgentCardQuery", q)
+}
+
+// The AgentCardMutationRuleFunc type is an adapter to allow the use of ordinary
+// functions as a mutation rule.
+type AgentCardMutationRuleFunc func(context.Context, *ent.AgentCardMutation) error
+
+// EvalMutation calls f(ctx, m).
+func (f AgentCardMutationRuleFunc) EvalMutation(ctx context.Context, m ent.Mutation) error {
+	if m, ok := m.(*ent.AgentCardMutation); ok {
+		return f(ctx, m)
+	}
+	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.AgentCardMutation", m)
+}
+
+// The AgenticExposureQueryRuleFunc type is an adapter to allow the use of ordinary
+// functions as a query rule.
+type AgenticExposureQueryRuleFunc func(context.Context, *ent.AgenticExposureQuery) error
+
+// EvalQuery return f(ctx, q).
+func (f AgenticExposureQueryRuleFunc) EvalQuery(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.AgenticExposureQuery); ok {
+		return f(ctx, q)
+	}
+	return Denyf("ent/privacy: unexpected query type %T, expect *ent.AgenticExposureQuery", q)
+}
+
+// The AgenticExposureMutationRuleFunc type is an adapter to allow the use of ordinary
+// functions as a mutation rule.
+type AgenticExposureMutationRuleFunc func(context.Context, *ent.AgenticExposureMutation) error
+
+// EvalMutation calls f(ctx, m).
+func (f AgenticExposureMutationRuleFunc) EvalMutation(ctx context.Context, m ent.Mutation) error {
+	if m, ok := m.(*ent.AgenticExposureMutation); ok {
+		return f(ctx, m)
+	}
+	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.AgenticExposureMutation", m)
+}
+
+// The AgenticSubscriptionQueryRuleFunc type is an adapter to allow the use of ordinary
+// functions as a query rule.
+type AgenticSubscriptionQueryRuleFunc func(context.Context, *ent.AgenticSubscriptionQuery) error
+
+// EvalQuery return f(ctx, q).
+func (f AgenticSubscriptionQueryRuleFunc) EvalQuery(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.AgenticSubscriptionQuery); ok {
+		return f(ctx, q)
+	}
+	return Denyf("ent/privacy: unexpected query type %T, expect *ent.AgenticSubscriptionQuery", q)
+}
+
+// The AgenticSubscriptionMutationRuleFunc type is an adapter to allow the use of ordinary
+// functions as a mutation rule.
+type AgenticSubscriptionMutationRuleFunc func(context.Context, *ent.AgenticSubscriptionMutation) error
+
+// EvalMutation calls f(ctx, m).
+func (f AgenticSubscriptionMutationRuleFunc) EvalMutation(ctx context.Context, m ent.Mutation) error {
+	if m, ok := m.(*ent.AgenticSubscriptionMutation); ok {
+		return f(ctx, m)
+	}
+	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.AgenticSubscriptionMutation", m)
+}
+
 // The ApiQueryRuleFunc type is an adapter to allow the use of ordinary
 // functions as a query rule.
 type ApiQueryRuleFunc func(context.Context, *ent.APIQuery) error
@@ -351,6 +423,30 @@ func (f GroupMutationRuleFunc) EvalMutation(ctx context.Context, m ent.Mutation)
 		return f(ctx, m)
 	}
 	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.GroupMutation", m)
+}
+
+// The McpServerQueryRuleFunc type is an adapter to allow the use of ordinary
+// functions as a query rule.
+type McpServerQueryRuleFunc func(context.Context, *ent.McpServerQuery) error
+
+// EvalQuery return f(ctx, q).
+func (f McpServerQueryRuleFunc) EvalQuery(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.McpServerQuery); ok {
+		return f(ctx, q)
+	}
+	return Denyf("ent/privacy: unexpected query type %T, expect *ent.McpServerQuery", q)
+}
+
+// The McpServerMutationRuleFunc type is an adapter to allow the use of ordinary
+// functions as a mutation rule.
+type McpServerMutationRuleFunc func(context.Context, *ent.McpServerMutation) error
+
+// EvalMutation calls f(ctx, m).
+func (f McpServerMutationRuleFunc) EvalMutation(ctx context.Context, m ent.Mutation) error {
+	if m, ok := m.(*ent.McpServerMutation); ok {
+		return f(ctx, m)
+	}
+	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.McpServerMutation", m)
 }
 
 // The MemberQueryRuleFunc type is an adapter to allow the use of ordinary

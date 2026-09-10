@@ -12,6 +12,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
+	"github.com/telekom/controlplane/projector/internal/domain/agentcard"
 	"github.com/telekom/controlplane/projector/internal/domain/eventtype"
 	"github.com/telekom/controlplane/projector/internal/domain/group"
 	"github.com/telekom/controlplane/projector/internal/domain/permissionset"
@@ -38,18 +39,21 @@ var _ = Describe("registerSchemesAndModules", func() {
 	var (
 		originalPermission bool
 		originalPubSub     bool
+		originalAiGateway  bool
 		baseModules        []module.Module
 	)
 
 	BeforeEach(func() {
 		originalPermission = cconfig.FeaturePermission.IsEnabled()
 		originalPubSub = cconfig.FeaturePubSub.IsEnabled()
+		originalAiGateway = cconfig.FeatureAiGateway.IsEnabled()
 		baseModules = []module.Module{zone.Module, group.Module, team.Module}
 	})
 
 	AfterEach(func() {
 		cconfig.SetFeatureEnabled(cconfig.FeaturePermission, originalPermission)
 		cconfig.SetFeatureEnabled(cconfig.FeaturePubSub, originalPubSub)
+		cconfig.SetFeatureEnabled(cconfig.FeatureAiGateway, originalAiGateway)
 	})
 
 	It("should not register the permissionset module when FeaturePermission is disabled", func() {
@@ -69,10 +73,29 @@ var _ = Describe("registerSchemesAndModules", func() {
 		Expect(moduleNames(result)).To(ContainElement(permissionset.Module.Name()))
 	})
 
+	It("should not register the agentic modules when FeatureAiGateway is disabled", func() {
+		cconfig.SetFeatureEnabled(cconfig.FeatureAiGateway, false)
+
+		result := registerSchemesAndModules(runtime.NewScheme(), append([]module.Module{}, baseModules...))
+
+		Expect(moduleNames(result)).NotTo(ContainElement(agentcard.Module.Name()))
+	})
+
+	It("should register the agentic modules when FeatureAiGateway is enabled", func() {
+		cconfig.SetFeatureEnabled(cconfig.FeatureAiGateway, true)
+
+		result := registerSchemesAndModules(runtime.NewScheme(), append([]module.Module{}, baseModules...))
+
+		Expect(moduleNames(result)).To(ContainElements(
+			"mcpserver", "agentcard", "agenticexposure", "agenticsubscription",
+		))
+	})
+
 	DescribeTable("feature flag matrix",
-		func(pubSubEnabled, permissionEnabled bool) {
+		func(pubSubEnabled, permissionEnabled, aiGatewayEnabled bool) {
 			cconfig.SetFeatureEnabled(cconfig.FeaturePubSub, pubSubEnabled)
 			cconfig.SetFeatureEnabled(cconfig.FeaturePermission, permissionEnabled)
+			cconfig.SetFeatureEnabled(cconfig.FeatureAiGateway, aiGatewayEnabled)
 
 			result := registerSchemesAndModules(runtime.NewScheme(), baseModules)
 
@@ -92,13 +115,20 @@ var _ = Describe("registerSchemesAndModules", func() {
 				Expect(names).NotTo(ContainElement(permissionset.Module.Name()))
 			}
 
+			if aiGatewayEnabled {
+				Expect(names).To(ContainElement(agentcard.Module.Name()))
+			} else {
+				Expect(names).NotTo(ContainElement(agentcard.Module.Name()))
+			}
+
 			// baseModules must not be mutated by the append inside registerSchemesAndModules.
 			Expect(baseModules).To(HaveLen(3))
 			Expect(moduleNames(baseModules)).To(Equal([]string{zone.Module.Name(), group.Module.Name(), team.Module.Name()}))
 		},
-		Entry("both disabled", false, false),
-		Entry("pubsub only", true, false),
-		Entry("permission only", false, true),
-		Entry("both enabled", true, true),
+		Entry("all disabled", false, false, false),
+		Entry("pubsub only", true, false, false),
+		Entry("permission only", false, true, false),
+		Entry("ai_gateway only", false, false, true),
+		Entry("all enabled", true, true, true),
 	)
 })

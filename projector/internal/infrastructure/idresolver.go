@@ -14,6 +14,9 @@ import (
 	"golang.org/x/sync/singleflight"
 
 	"github.com/telekom/controlplane/controlplane-api/ent"
+	entagentcard "github.com/telekom/controlplane/controlplane-api/ent/agentcard"
+	"github.com/telekom/controlplane/controlplane-api/ent/agenticexposure"
+	"github.com/telekom/controlplane/controlplane-api/ent/agenticsubscription"
 	entapi "github.com/telekom/controlplane/controlplane-api/ent/api"
 	"github.com/telekom/controlplane/controlplane-api/ent/apiexposure"
 	"github.com/telekom/controlplane/controlplane-api/ent/apisubscription"
@@ -22,6 +25,7 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/eventsubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventtype"
 	entgroup "github.com/telekom/controlplane/controlplane-api/ent/group"
+	entmcpserver "github.com/telekom/controlplane/controlplane-api/ent/mcpserver"
 	"github.com/telekom/controlplane/controlplane-api/ent/permissionset"
 	"github.com/telekom/controlplane/controlplane-api/ent/team"
 	"github.com/telekom/controlplane/controlplane-api/ent/zone"
@@ -630,4 +634,235 @@ func (r *IDResolver) FindPermissionSetIDByApplicationOwner(ctx context.Context, 
 		r.cache.Set(et, lk, permissionSet.ID)
 		return permissionSet.ID, nil
 	})
+}
+
+// FindMcpServerID looks up the DB primary key for an McpServer catalogue entry
+// by base path and team name. Base paths are unique per team (composite
+// unique index on base_path + owner), so both are required.
+// Returns ErrEntityNotFound (wrapped) if no matching row exists.
+func (r *IDResolver) FindMcpServerID(ctx context.Context, basePath, teamName string) (int, error) {
+	et, lk := cachekeys.McpServer(basePath, teamName)
+	fullKey := et + ":" + lk
+	return r.resolve(ctx, et, lk, fmt.Sprintf("mcp_server %q (team %q)", basePath, teamName), func() (int, error) {
+		m, err := r.client.McpServer.Query().
+			Where(
+				entmcpserver.BasePathEQ(basePath),
+				entmcpserver.HasOwnerWith(team.NameEQ(teamName)),
+			).
+			Only(ctx)
+		if err != nil {
+			if ent.IsNotFound(err) {
+				r.setNegCache(fullKey)
+				metrics.IDResolverLookups.WithLabelValues(et, metrics.ResultDBMiss).Inc()
+				return 0, fmt.Errorf("mcp_server %q (team %q): %w", basePath, teamName, ErrEntityNotFound)
+			}
+			return 0, fmt.Errorf("find mcp_server %q (team %q): %w", basePath, teamName, err)
+		}
+		r.clearNegCache(fullKey)
+		metrics.IDResolverLookups.WithLabelValues(et, metrics.ResultDBHit).Inc()
+		r.cache.Set(et, lk, m.ID)
+		return m.ID, nil
+	})
+}
+
+// FindActiveMcpServerID looks up the DB primary key for the cluster-wide
+// active McpServer for a given base path. Only one McpServer is active at a
+// time per base path (oldest-wins), so the lookup is team-independent.
+// Returns ErrEntityNotFound (wrapped) if no active McpServer exists.
+func (r *IDResolver) FindActiveMcpServerID(ctx context.Context, basePath string) (int, error) {
+	et, lk := cachekeys.ActiveMcpServer(basePath)
+	fullKey := et + ":" + lk
+	return r.resolve(ctx, et, lk, fmt.Sprintf("active mcp_server %q", basePath), func() (int, error) {
+		m, err := r.client.McpServer.Query().
+			Where(
+				entmcpserver.BasePathEQ(basePath),
+				entmcpserver.ActiveEQ(true),
+			).
+			Only(ctx)
+		if err != nil {
+			if ent.IsNotFound(err) {
+				r.setNegCache(fullKey)
+				metrics.IDResolverLookups.WithLabelValues(et, metrics.ResultDBMiss).Inc()
+				return 0, fmt.Errorf("active mcp_server %q: %w", basePath, ErrEntityNotFound)
+			}
+			return 0, fmt.Errorf("find active mcp_server %q: %w", basePath, err)
+		}
+		r.clearNegCache(fullKey)
+		metrics.IDResolverLookups.WithLabelValues(et, metrics.ResultDBHit).Inc()
+		r.cache.Set(et, lk, m.ID)
+		return m.ID, nil
+	})
+}
+
+// FindAgentCardID looks up the DB primary key for an AgentCard catalogue entry
+// by base path and team name. Base paths are unique per team (composite
+// unique index on base_path + owner), so both are required.
+// Returns ErrEntityNotFound (wrapped) if no matching row exists.
+func (r *IDResolver) FindAgentCardID(ctx context.Context, basePath, teamName string) (int, error) {
+	et, lk := cachekeys.AgentCard(basePath, teamName)
+	fullKey := et + ":" + lk
+	return r.resolve(ctx, et, lk, fmt.Sprintf("agent_card %q (team %q)", basePath, teamName), func() (int, error) {
+		a, err := r.client.AgentCard.Query().
+			Where(
+				entagentcard.BasePathEQ(basePath),
+				entagentcard.HasOwnerWith(team.NameEQ(teamName)),
+			).
+			Only(ctx)
+		if err != nil {
+			if ent.IsNotFound(err) {
+				r.setNegCache(fullKey)
+				metrics.IDResolverLookups.WithLabelValues(et, metrics.ResultDBMiss).Inc()
+				return 0, fmt.Errorf("agent_card %q (team %q): %w", basePath, teamName, ErrEntityNotFound)
+			}
+			return 0, fmt.Errorf("find agent_card %q (team %q): %w", basePath, teamName, err)
+		}
+		r.clearNegCache(fullKey)
+		metrics.IDResolverLookups.WithLabelValues(et, metrics.ResultDBHit).Inc()
+		r.cache.Set(et, lk, a.ID)
+		return a.ID, nil
+	})
+}
+
+// FindActiveAgentCardID looks up the DB primary key for the cluster-wide
+// active AgentCard for a given base path. Only one AgentCard is active at a
+// time per base path (oldest-wins), so the lookup is team-independent.
+// Returns ErrEntityNotFound (wrapped) if no active AgentCard exists.
+func (r *IDResolver) FindActiveAgentCardID(ctx context.Context, basePath string) (int, error) {
+	et, lk := cachekeys.ActiveAgentCard(basePath)
+	fullKey := et + ":" + lk
+	return r.resolve(ctx, et, lk, fmt.Sprintf("active agent_card %q", basePath), func() (int, error) {
+		a, err := r.client.AgentCard.Query().
+			Where(
+				entagentcard.BasePathEQ(basePath),
+				entagentcard.ActiveEQ(true),
+			).
+			Only(ctx)
+		if err != nil {
+			if ent.IsNotFound(err) {
+				r.setNegCache(fullKey)
+				metrics.IDResolverLookups.WithLabelValues(et, metrics.ResultDBMiss).Inc()
+				return 0, fmt.Errorf("active agent_card %q: %w", basePath, ErrEntityNotFound)
+			}
+			return 0, fmt.Errorf("find active agent_card %q: %w", basePath, err)
+		}
+		r.clearNegCache(fullKey)
+		metrics.IDResolverLookups.WithLabelValues(et, metrics.ResultDBHit).Inc()
+		r.cache.Set(et, lk, a.ID)
+		return a.ID, nil
+	})
+}
+
+// FindAgenticExposureID looks up the DB primary key for an AgenticExposure by
+// base path, application name, and team name. Base paths are unique per
+// application, and applications per team, so all three are required.
+// Returns ErrEntityNotFound (wrapped) if no matching row exists.
+func (r *IDResolver) FindAgenticExposureID(ctx context.Context, basePath, appName, teamName string) (int, error) {
+	et, lk := cachekeys.AgenticExposure(basePath, appName, teamName)
+	fullKey := et + ":" + lk
+	return r.resolve(ctx, et, lk, fmt.Sprintf("agentic_exposure %q (app %q, team %q)", basePath, appName, teamName), func() (int, error) {
+		exposure, err := r.client.AgenticExposure.Query().
+			Where(
+				agenticexposure.BasePathEQ(basePath),
+				agenticexposure.HasOwnerWith(
+					application.NameEQ(appName),
+					application.HasOwnerTeamWith(team.NameEQ(teamName)),
+				),
+			).
+			Only(ctx)
+		if err != nil {
+			if ent.IsNotFound(err) {
+				r.setNegCache(fullKey)
+				metrics.IDResolverLookups.WithLabelValues(et, metrics.ResultDBMiss).Inc()
+				return 0, fmt.Errorf("agentic_exposure %q (app %q, team %q): %w", basePath, appName, teamName, ErrEntityNotFound)
+			}
+			return 0, fmt.Errorf("find agentic_exposure %q (app %q, team %q): %w", basePath, appName, teamName, err)
+		}
+		r.clearNegCache(fullKey)
+		metrics.IDResolverLookups.WithLabelValues(et, metrics.ResultDBHit).Inc()
+		r.cache.Set(et, lk, exposure.ID)
+		return exposure.ID, nil
+	})
+}
+
+// FindAgenticExposureByBasePath looks up the DB primary key for an
+// AgenticExposure by base path alone (without requiring the owning
+// application or team name). This is needed by AgenticSubscription because
+// the CR does not carry target app/team information. Only active exposures
+// are matched — multiple exposures may share the same base path, but only one
+// can be active at a time.
+//
+// Uses a separate cache key prefix ("bp:") to avoid collisions with the full
+// (basePath, appName, teamName) composite key used by FindAgenticExposureID.
+// Returns ErrEntityNotFound (wrapped) if no matching active row exists.
+func (r *IDResolver) FindAgenticExposureByBasePath(ctx context.Context, basePath string) (int, error) {
+	et, lk := cachekeys.AgenticExposureByBasePath(basePath)
+	fullKey := et + ":" + lk
+	return r.resolve(ctx, et, lk, fmt.Sprintf("agentic_exposure basePath %q", basePath), func() (int, error) {
+		exposure, err := r.client.AgenticExposure.Query().
+			Where(agenticexposure.BasePathEQ(basePath)).
+			Where(agenticexposure.ActiveEQ(true)).
+			First(ctx)
+		if err != nil {
+			if ent.IsNotFound(err) {
+				r.setNegCache(fullKey)
+				metrics.IDResolverLookups.WithLabelValues(et, metrics.ResultDBMiss).Inc()
+				return 0, fmt.Errorf("agentic_exposure basePath %q: %w", basePath, ErrEntityNotFound)
+			}
+			return 0, fmt.Errorf("find agentic_exposure basePath %q: %w", basePath, err)
+		}
+		r.clearNegCache(fullKey)
+		metrics.IDResolverLookups.WithLabelValues(et, metrics.ResultDBHit).Inc()
+		r.cache.Set(et, lk, exposure.ID)
+		return exposure.ID, nil
+	})
+}
+
+// FindAgenticSubscriptionByMeta looks up the DB primary key for an
+// AgenticSubscription by its Kubernetes metadata (namespace + name). The
+// (namespace, name) pair forms a unique composite index, so at most one row
+// can match.
+// Returns ErrEntityNotFound (wrapped) if no matching row exists.
+func (r *IDResolver) FindAgenticSubscriptionByMeta(ctx context.Context, namespace, name string) (int, error) {
+	et, lk := cachekeys.AgenticSubscriptionMeta(namespace, name)
+	fullKey := et + ":" + lk
+	return r.resolve(ctx, et, lk, fmt.Sprintf("agentic_subscription %s/%s", namespace, name), func() (int, error) {
+		sub, err := r.client.AgenticSubscription.Query().
+			Where(
+				agenticsubscription.NamespaceEQ(namespace),
+				agenticsubscription.NameEQ(name),
+			).
+			Only(ctx)
+		if err != nil {
+			if ent.IsNotFound(err) {
+				r.setNegCache(fullKey)
+				metrics.IDResolverLookups.WithLabelValues(et, metrics.ResultDBMiss).Inc()
+				return 0, fmt.Errorf("agentic_subscription %s/%s: %w", namespace, name, ErrEntityNotFound)
+			}
+			return 0, fmt.Errorf("find agentic_subscription %s/%s: %w", namespace, name, err)
+		}
+		r.clearNegCache(fullKey)
+		metrics.IDResolverLookups.WithLabelValues(et, metrics.ResultDBHit).Inc()
+		r.cache.Set(et, lk, sub.ID)
+		return sub.ID, nil
+	})
+}
+
+// EvictAgenticSubscription removes the cached DB primary key for an
+// AgenticSubscription identified by namespace + name. This is called when a
+// FK constraint violation indicates the cached ID is stale (e.g. the
+// referenced row was deleted and re-created with a different ID).
+func (r *IDResolver) EvictAgenticSubscription(namespace, name string) {
+	et, lk := cachekeys.AgenticSubscriptionMeta(namespace, name)
+	r.cache.Del(et, lk)
+	r.clearNegCache(et + ":" + lk)
+}
+
+// EvictAgenticExposureByBasePath removes the cached DB primary key for an
+// AgenticExposure identified by base path. Called when a FK constraint
+// violation indicates the cached exposure ID is stale (e.g. the exposure row
+// was deleted out from under a subscription that still had it cached).
+func (r *IDResolver) EvictAgenticExposureByBasePath(basePath string) {
+	et, lk := cachekeys.AgenticExposureByBasePath(basePath)
+	r.cache.Del(et, lk)
+	r.clearNegCache(et + ":" + lk)
 }

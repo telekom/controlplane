@@ -14,6 +14,8 @@ import (
 	"sync/atomic"
 
 	"github.com/99designs/gqlgen/graphql"
+	"github.com/telekom/controlplane/controlplane-api/ent/agenticexposure"
+	"github.com/telekom/controlplane/controlplane-api/ent/agenticsubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/apiexposure"
 	"github.com/telekom/controlplane/controlplane-api/ent/apisubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/approval"
@@ -26,6 +28,13 @@ import (
 
 // region    ************************** generated!.gotpl **************************
 
+type AgenticExposureInfoResolver interface {
+	Visibility(ctx context.Context, obj *model.AgenticExposureInfo) (agenticexposure.Visibility, error)
+	Variant(ctx context.Context, obj *model.AgenticExposureInfo) (agenticexposure.Variant, error)
+}
+type AgenticSubscriptionInfoResolver interface {
+	StatusPhase(ctx context.Context, obj *model.AgenticSubscriptionInfo) (*agenticsubscription.StatusPhase, error)
+}
 type ApiExposureInfoResolver interface {
 	Visibility(ctx context.Context, obj *model.ApiExposureInfo) (apiexposure.Visibility, error)
 
@@ -81,6 +90,616 @@ type SelectionFilterResolver interface {
 // endregion ***************************** args.gotpl *****************************
 
 // region    **************************** field.gotpl *****************************
+
+func (ec *executionContext) _AgenticExposureInfo_id(ctx context.Context, field graphql.CollectedField, obj *model.AgenticExposureInfo) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_AgenticExposureInfo_id(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ID, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v int) graphql.Marshaler {
+			return ec.marshalNID2int(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_AgenticExposureInfo_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("AgenticExposureInfo", field, false, false, errors.New("field of type ID does not have child fields"))
+}
+
+func (ec *executionContext) _AgenticExposureInfo_basePath(ctx context.Context, field graphql.CollectedField, obj *model.AgenticExposureInfo) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_AgenticExposureInfo_basePath(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.BasePath, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_AgenticExposureInfo_basePath(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("AgenticExposureInfo", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _AgenticExposureInfo_visibility(ctx context.Context, field graphql.CollectedField, obj *model.AgenticExposureInfo) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_AgenticExposureInfo_visibility(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return ec.Resolvers.AgenticExposureInfo().Visibility(ctx, obj)
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v agenticexposure.Visibility) graphql.Marshaler {
+			return ec.marshalNAgenticExposureVisibility2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋagenticexposureᚐVisibility(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_AgenticExposureInfo_visibility(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("AgenticExposureInfo", field, true, true, errors.New("field of type AgenticExposureVisibility does not have child fields"))
+}
+
+func (ec *executionContext) _AgenticExposureInfo_variant(ctx context.Context, field graphql.CollectedField, obj *model.AgenticExposureInfo) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_AgenticExposureInfo_variant(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return ec.Resolvers.AgenticExposureInfo().Variant(ctx, obj)
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v agenticexposure.Variant) graphql.Marshaler {
+			return ec.marshalNAgenticExposureVariant2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋagenticexposureᚐVariant(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_AgenticExposureInfo_variant(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("AgenticExposureInfo", field, true, true, errors.New("field of type AgenticExposureVariant does not have child fields"))
+}
+
+func (ec *executionContext) _AgenticExposureInfo_active(ctx context.Context, field graphql.CollectedField, obj *model.AgenticExposureInfo) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_AgenticExposureInfo_active(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Active, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *bool) graphql.Marshaler {
+			return ec.marshalOBoolean2ᚖbool(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_AgenticExposureInfo_active(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("AgenticExposureInfo", field, false, false, errors.New("field of type Boolean does not have child fields"))
+}
+
+func (ec *executionContext) _AgenticExposureInfo_approvalConfig(ctx context.Context, field graphql.CollectedField, obj *model.AgenticExposureInfo) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_AgenticExposureInfo_approvalConfig(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ApprovalConfig, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v model.ApprovalConfig) graphql.Marshaler {
+			return ec.marshalNApprovalConfig2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐApprovalConfig(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_AgenticExposureInfo_approvalConfig(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AgenticExposureInfo",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_ApprovalConfig(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AgenticExposureInfo_traffic(ctx context.Context, field graphql.CollectedField, obj *model.AgenticExposureInfo) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_AgenticExposureInfo_traffic(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Traffic, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.Traffic) graphql.Marshaler {
+			return ec.marshalOTraffic2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐTraffic(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_AgenticExposureInfo_traffic(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AgenticExposureInfo",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_Traffic(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AgenticExposureInfo_ownerApplicationName(ctx context.Context, field graphql.CollectedField, obj *model.AgenticExposureInfo) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_AgenticExposureInfo_ownerApplicationName(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.OwnerApplicationName, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_AgenticExposureInfo_ownerApplicationName(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("AgenticExposureInfo", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _AgenticExposureInfo_ownerTeam(ctx context.Context, field graphql.CollectedField, obj *model.AgenticExposureInfo) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_AgenticExposureInfo_ownerTeam(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.OwnerTeam, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.TeamInfo) graphql.Marshaler {
+			return ec.marshalNTeamInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐTeamInfo(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_AgenticExposureInfo_ownerTeam(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AgenticExposureInfo",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_TeamInfo(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AgenticExposureSecurity_m2m(ctx context.Context, field graphql.CollectedField, obj *model.AgenticExposureSecurity) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_AgenticExposureSecurity_m2m(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.M2M, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.Machine2MachineAuthentication) graphql.Marshaler {
+			return ec.marshalOMachine2MachineAuthentication2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐMachine2MachineAuthentication(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_AgenticExposureSecurity_m2m(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AgenticExposureSecurity",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_Machine2MachineAuthentication(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AgenticHeaderTransformation_remove(ctx context.Context, field graphql.CollectedField, obj *model.AgenticHeaderTransformation) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_AgenticHeaderTransformation_remove(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Remove, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []string) graphql.Marshaler {
+			return ec.marshalOString2ᚕstringᚄ(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_AgenticHeaderTransformation_remove(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("AgenticHeaderTransformation", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _AgenticHeaderTransformation_add(ctx context.Context, field graphql.CollectedField, obj *model.AgenticHeaderTransformation) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_AgenticHeaderTransformation_add(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Add, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []string) graphql.Marshaler {
+			return ec.marshalOString2ᚕstringᚄ(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_AgenticHeaderTransformation_add(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("AgenticHeaderTransformation", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _AgenticRequestResponseTransformation_headers(ctx context.Context, field graphql.CollectedField, obj *model.AgenticRequestResponseTransformation) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_AgenticRequestResponseTransformation_headers(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Headers, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v model.AgenticHeaderTransformation) graphql.Marshaler {
+			return ec.marshalNAgenticHeaderTransformation2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐAgenticHeaderTransformation(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_AgenticRequestResponseTransformation_headers(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AgenticRequestResponseTransformation",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_AgenticHeaderTransformation(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AgenticSubscriberFailover_enabled(ctx context.Context, field graphql.CollectedField, obj *model.AgenticSubscriberFailover) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_AgenticSubscriberFailover_enabled(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Enabled, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v bool) graphql.Marshaler {
+			return ec.marshalNBoolean2bool(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_AgenticSubscriberFailover_enabled(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("AgenticSubscriberFailover", field, false, false, errors.New("field of type Boolean does not have child fields"))
+}
+
+func (ec *executionContext) _AgenticSubscriberTraffic_failover(ctx context.Context, field graphql.CollectedField, obj *model.AgenticSubscriberTraffic) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_AgenticSubscriberTraffic_failover(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Failover, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.AgenticSubscriberFailover) graphql.Marshaler {
+			return ec.marshalOAgenticSubscriberFailover2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐAgenticSubscriberFailover(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_AgenticSubscriberTraffic_failover(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AgenticSubscriberTraffic",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_AgenticSubscriberFailover(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AgenticSubscriptionInfo_id(ctx context.Context, field graphql.CollectedField, obj *model.AgenticSubscriptionInfo) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_AgenticSubscriptionInfo_id(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ID, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v int) graphql.Marshaler {
+			return ec.marshalNID2int(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_AgenticSubscriptionInfo_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("AgenticSubscriptionInfo", field, false, false, errors.New("field of type ID does not have child fields"))
+}
+
+func (ec *executionContext) _AgenticSubscriptionInfo_basePath(ctx context.Context, field graphql.CollectedField, obj *model.AgenticSubscriptionInfo) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_AgenticSubscriptionInfo_basePath(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.BasePath, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_AgenticSubscriptionInfo_basePath(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("AgenticSubscriptionInfo", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _AgenticSubscriptionInfo_statusPhase(ctx context.Context, field graphql.CollectedField, obj *model.AgenticSubscriptionInfo) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_AgenticSubscriptionInfo_statusPhase(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return ec.Resolvers.AgenticSubscriptionInfo().StatusPhase(ctx, obj)
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *agenticsubscription.StatusPhase) graphql.Marshaler {
+			return ec.marshalOAgenticSubscriptionStatusPhase2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋagenticsubscriptionᚐStatusPhase(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_AgenticSubscriptionInfo_statusPhase(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("AgenticSubscriptionInfo", field, true, true, errors.New("field of type AgenticSubscriptionStatusPhase does not have child fields"))
+}
+
+func (ec *executionContext) _AgenticSubscriptionInfo_statusMessage(ctx context.Context, field graphql.CollectedField, obj *model.AgenticSubscriptionInfo) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_AgenticSubscriptionInfo_statusMessage(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.StatusMessage, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *string) graphql.Marshaler {
+			return ec.marshalOString2ᚖstring(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_AgenticSubscriptionInfo_statusMessage(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("AgenticSubscriptionInfo", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _AgenticSubscriptionInfo_ownerApplicationName(ctx context.Context, field graphql.CollectedField, obj *model.AgenticSubscriptionInfo) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_AgenticSubscriptionInfo_ownerApplicationName(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.OwnerApplicationName, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_AgenticSubscriptionInfo_ownerApplicationName(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("AgenticSubscriptionInfo", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _AgenticSubscriptionInfo_ownerTeam(ctx context.Context, field graphql.CollectedField, obj *model.AgenticSubscriptionInfo) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_AgenticSubscriptionInfo_ownerTeam(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.OwnerTeam, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.TeamInfo) graphql.Marshaler {
+			return ec.marshalNTeamInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐTeamInfo(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_AgenticSubscriptionInfo_ownerTeam(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AgenticSubscriptionInfo",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_TeamInfo(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AgenticSubscriptionSecurity_m2m(ctx context.Context, field graphql.CollectedField, obj *model.AgenticSubscriptionSecurity) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_AgenticSubscriptionSecurity_m2m(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.M2M, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.SubscriberMachine2MachineAuthentication) graphql.Marshaler {
+			return ec.marshalOSubscriberMachine2MachineAuthentication2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐSubscriberMachine2MachineAuthentication(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_AgenticSubscriptionSecurity_m2m(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AgenticSubscriptionSecurity",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_SubscriberMachine2MachineAuthentication(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AgenticTransformation_request(ctx context.Context, field graphql.CollectedField, obj *model.AgenticTransformation) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_AgenticTransformation_request(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Request, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v model.AgenticRequestResponseTransformation) graphql.Marshaler {
+			return ec.marshalNAgenticRequestResponseTransformation2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐAgenticRequestResponseTransformation(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_AgenticTransformation_request(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AgenticTransformation",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_AgenticRequestResponseTransformation(ctx, field)
+		},
+	}
+	return fc, nil
+}
 
 func (ec *executionContext) _ApiCategory_name(ctx context.Context, field graphql.CollectedField, obj *model1.APICategory) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
@@ -2954,6 +3573,13 @@ func (ec *executionContext) _SubscriptionInfo(ctx context.Context, sel ast.Selec
 			return graphql.Null
 		}
 		return ec._ApiSubscriptionInfo(ctx, sel, obj)
+	case model.AgenticSubscriptionInfo:
+		return ec._AgenticSubscriptionInfo(ctx, sel, &obj)
+	case *model.AgenticSubscriptionInfo:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._AgenticSubscriptionInfo(ctx, sel, obj)
 	default:
 		if typedObj, ok := obj.(graphql.Marshaler); ok {
 			return typedObj
@@ -2966,6 +3592,517 @@ func (ec *executionContext) _SubscriptionInfo(ctx context.Context, sel ast.Selec
 // endregion ************************** interface.gotpl ***************************
 
 // region    **************************** object.gotpl ****************************
+
+var agenticExposureInfoImplementors = []string{"AgenticExposureInfo"}
+
+func (ec *executionContext) _AgenticExposureInfo(ctx context.Context, sel ast.SelectionSet, obj *model.AgenticExposureInfo) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, agenticExposureInfoImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AgenticExposureInfo")
+		case "id":
+			out.Values[i] = ec._AgenticExposureInfo_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "basePath":
+			out.Values[i] = ec._AgenticExposureInfo_basePath(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "visibility":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AgenticExposureInfo_visibility(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.IsDeferred() {
+				deferredFieldSet.AddField(field)
+				fieldIndex := len(deferredFieldSet.Values) - 1
+				deferredFieldSet.Concurrently(fieldIndex, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, deferredFieldSet)
+				})
+
+				for _, deferrable := range field.Deferrables {
+					view, ok := deferLabelToView[deferrable.Label]
+					if !ok {
+						view = deferredFieldSet.NewView()
+						deferLabelToView[deferrable.Label] = view
+					}
+					view.AddIndices(fieldIndex)
+				}
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "variant":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AgenticExposureInfo_variant(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.IsDeferred() {
+				deferredFieldSet.AddField(field)
+				fieldIndex := len(deferredFieldSet.Values) - 1
+				deferredFieldSet.Concurrently(fieldIndex, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, deferredFieldSet)
+				})
+
+				for _, deferrable := range field.Deferrables {
+					view, ok := deferLabelToView[deferrable.Label]
+					if !ok {
+						view = deferredFieldSet.NewView()
+						deferLabelToView[deferrable.Label] = view
+					}
+					view.AddIndices(fieldIndex)
+				}
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "active":
+			out.Values[i] = ec._AgenticExposureInfo_active(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "approvalConfig":
+			out.Values[i] = ec._AgenticExposureInfo_approvalConfig(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "traffic":
+			out.Values[i] = ec._AgenticExposureInfo_traffic(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "ownerApplicationName":
+			out.Values[i] = ec._AgenticExposureInfo_ownerApplicationName(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "ownerTeam":
+			out.Values[i] = ec._AgenticExposureInfo_ownerTeam(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
+
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
+
+	return out
+}
+
+var agenticExposureSecurityImplementors = []string{"AgenticExposureSecurity"}
+
+func (ec *executionContext) _AgenticExposureSecurity(ctx context.Context, sel ast.SelectionSet, obj *model.AgenticExposureSecurity) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, agenticExposureSecurityImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AgenticExposureSecurity")
+		case "m2m":
+			out.Values[i] = ec._AgenticExposureSecurity_m2m(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
+
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
+
+	return out
+}
+
+var agenticHeaderTransformationImplementors = []string{"AgenticHeaderTransformation"}
+
+func (ec *executionContext) _AgenticHeaderTransformation(ctx context.Context, sel ast.SelectionSet, obj *model.AgenticHeaderTransformation) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, agenticHeaderTransformationImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AgenticHeaderTransformation")
+		case "remove":
+			out.Values[i] = ec._AgenticHeaderTransformation_remove(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
+		case "add":
+			out.Values[i] = ec._AgenticHeaderTransformation_add(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
+
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
+
+	return out
+}
+
+var agenticRequestResponseTransformationImplementors = []string{"AgenticRequestResponseTransformation"}
+
+func (ec *executionContext) _AgenticRequestResponseTransformation(ctx context.Context, sel ast.SelectionSet, obj *model.AgenticRequestResponseTransformation) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, agenticRequestResponseTransformationImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AgenticRequestResponseTransformation")
+		case "headers":
+			out.Values[i] = ec._AgenticRequestResponseTransformation_headers(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
+
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
+
+	return out
+}
+
+var agenticSubscriberFailoverImplementors = []string{"AgenticSubscriberFailover"}
+
+func (ec *executionContext) _AgenticSubscriberFailover(ctx context.Context, sel ast.SelectionSet, obj *model.AgenticSubscriberFailover) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, agenticSubscriberFailoverImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AgenticSubscriberFailover")
+		case "enabled":
+			out.Values[i] = ec._AgenticSubscriberFailover_enabled(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
+
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
+
+	return out
+}
+
+var agenticSubscriberTrafficImplementors = []string{"AgenticSubscriberTraffic"}
+
+func (ec *executionContext) _AgenticSubscriberTraffic(ctx context.Context, sel ast.SelectionSet, obj *model.AgenticSubscriberTraffic) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, agenticSubscriberTrafficImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AgenticSubscriberTraffic")
+		case "failover":
+			out.Values[i] = ec._AgenticSubscriberTraffic_failover(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
+
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
+
+	return out
+}
+
+var agenticSubscriptionInfoImplementors = []string{"AgenticSubscriptionInfo", "SubscriptionInfo"}
+
+func (ec *executionContext) _AgenticSubscriptionInfo(ctx context.Context, sel ast.SelectionSet, obj *model.AgenticSubscriptionInfo) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, agenticSubscriptionInfoImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AgenticSubscriptionInfo")
+		case "id":
+			out.Values[i] = ec._AgenticSubscriptionInfo_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "basePath":
+			out.Values[i] = ec._AgenticSubscriptionInfo_basePath(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "statusPhase":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AgenticSubscriptionInfo_statusPhase(ctx, field, obj)
+				if res == graphql.RequiredNull {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.IsDeferred() {
+				deferredFieldSet.AddField(field)
+				fieldIndex := len(deferredFieldSet.Values) - 1
+				deferredFieldSet.Concurrently(fieldIndex, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, deferredFieldSet)
+				})
+
+				for _, deferrable := range field.Deferrables {
+					view, ok := deferLabelToView[deferrable.Label]
+					if !ok {
+						view = deferredFieldSet.NewView()
+						deferLabelToView[deferrable.Label] = view
+					}
+					view.AddIndices(fieldIndex)
+				}
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "statusMessage":
+			out.Values[i] = ec._AgenticSubscriptionInfo_statusMessage(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "ownerApplicationName":
+			out.Values[i] = ec._AgenticSubscriptionInfo_ownerApplicationName(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "ownerTeam":
+			out.Values[i] = ec._AgenticSubscriptionInfo_ownerTeam(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
+
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
+
+	return out
+}
+
+var agenticSubscriptionSecurityImplementors = []string{"AgenticSubscriptionSecurity"}
+
+func (ec *executionContext) _AgenticSubscriptionSecurity(ctx context.Context, sel ast.SelectionSet, obj *model.AgenticSubscriptionSecurity) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, agenticSubscriptionSecurityImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AgenticSubscriptionSecurity")
+		case "m2m":
+			out.Values[i] = ec._AgenticSubscriptionSecurity_m2m(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
+
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
+
+	return out
+}
+
+var agenticTransformationImplementors = []string{"AgenticTransformation"}
+
+func (ec *executionContext) _AgenticTransformation(ctx context.Context, sel ast.SelectionSet, obj *model.AgenticTransformation) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, agenticTransformationImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AgenticTransformation")
+		case "request":
+			out.Values[i] = ec._AgenticTransformation_request(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
+
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
+
+	return out
+}
 
 var apiCategoryImplementors = []string{"ApiCategory"}
 
@@ -5346,6 +6483,40 @@ func (ec *executionContext) _Upstream(ctx context.Context, sel ast.SelectionSet,
 
 // region    ***************************** type.gotpl *****************************
 
+func (ec *executionContext) marshalNAgenticHeaderTransformation2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐAgenticHeaderTransformation(ctx context.Context, sel ast.SelectionSet, v model.AgenticHeaderTransformation) graphql.Marshaler {
+	return ec._AgenticHeaderTransformation(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAgenticRequestResponseTransformation2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐAgenticRequestResponseTransformation(ctx context.Context, sel ast.SelectionSet, v model.AgenticRequestResponseTransformation) graphql.Marshaler {
+	return ec._AgenticRequestResponseTransformation(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAgenticSubscriptionInfo2ᚕᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐAgenticSubscriptionInfoᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.AgenticSubscriptionInfo) graphql.Marshaler {
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNAgenticSubscriptionInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐAgenticSubscriptionInfo(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNAgenticSubscriptionInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐAgenticSubscriptionInfo(ctx context.Context, sel ast.SelectionSet, v *model.AgenticSubscriptionInfo) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._AgenticSubscriptionInfo(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNApiCategory2ᚕᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐAPICategoryᚄ(ctx context.Context, sel ast.SelectionSet, v []*model1.APICategory) graphql.Marshaler {
 	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
 		fc := graphql.GetFieldContext(ctx)
@@ -5582,6 +6753,36 @@ func (ec *executionContext) marshalNUpstream2ᚕgithubᚗcomᚋtelekomᚋcontrol
 	}
 
 	return ret
+}
+
+func (ec *executionContext) marshalOAgenticExposureInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐAgenticExposureInfo(ctx context.Context, sel ast.SelectionSet, v *model.AgenticExposureInfo) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._AgenticExposureInfo(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOAgenticExposureSecurity2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐAgenticExposureSecurity(ctx context.Context, sel ast.SelectionSet, v model.AgenticExposureSecurity) graphql.Marshaler {
+	return ec._AgenticExposureSecurity(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalOAgenticSubscriberFailover2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐAgenticSubscriberFailover(ctx context.Context, sel ast.SelectionSet, v *model.AgenticSubscriberFailover) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._AgenticSubscriberFailover(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOAgenticSubscriberTraffic2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐAgenticSubscriberTraffic(ctx context.Context, sel ast.SelectionSet, v model.AgenticSubscriberTraffic) graphql.Marshaler {
+	return ec._AgenticSubscriberTraffic(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalOAgenticSubscriptionSecurity2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐAgenticSubscriptionSecurity(ctx context.Context, sel ast.SelectionSet, v model.AgenticSubscriptionSecurity) graphql.Marshaler {
+	return ec._AgenticSubscriptionSecurity(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalOAgenticTransformation2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐAgenticTransformation(ctx context.Context, sel ast.SelectionSet, v model.AgenticTransformation) graphql.Marshaler {
+	return ec._AgenticTransformation(ctx, sel, &v)
 }
 
 func (ec *executionContext) marshalOApiExposureInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐApiExposureInfo(ctx context.Context, sel ast.SelectionSet, v *model.ApiExposureInfo) graphql.Marshaler {

@@ -12,6 +12,42 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent"
 )
 
+// The AgentCardFunc type is an adapter to allow the use of ordinary
+// function as AgentCard mutator.
+type AgentCardFunc func(context.Context, *ent.AgentCardMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f AgentCardFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.AgentCardMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.AgentCardMutation", m)
+}
+
+// The AgenticExposureFunc type is an adapter to allow the use of ordinary
+// function as AgenticExposure mutator.
+type AgenticExposureFunc func(context.Context, *ent.AgenticExposureMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f AgenticExposureFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.AgenticExposureMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.AgenticExposureMutation", m)
+}
+
+// The AgenticSubscriptionFunc type is an adapter to allow the use of ordinary
+// function as AgenticSubscription mutator.
+type AgenticSubscriptionFunc func(context.Context, *ent.AgenticSubscriptionMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f AgenticSubscriptionFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.AgenticSubscriptionMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.AgenticSubscriptionMutation", m)
+}
+
 // The ApiFunc type is an adapter to allow the use of ordinary
 // function as Api mutator.
 type ApiFunc func(context.Context, *ent.APIMutation) (ent.Value, error)
@@ -130,6 +166,18 @@ func (f GroupFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error
 		return f(ctx, mv)
 	}
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.GroupMutation", m)
+}
+
+// The McpServerFunc type is an adapter to allow the use of ordinary
+// function as McpServer mutator.
+type McpServerFunc func(context.Context, *ent.McpServerMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f McpServerFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.McpServerMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.McpServerMutation", m)
 }
 
 // The MemberFunc type is an adapter to allow the use of ordinary

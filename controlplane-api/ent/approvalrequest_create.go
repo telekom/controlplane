@@ -14,6 +14,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/telekom/controlplane/controlplane-api/ent/agenticsubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/apisubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/approvalrequest"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventsubscription"
@@ -216,6 +217,25 @@ func (_c *ApprovalRequestCreate) SetNillableEventSubscriptionID(id *int) *Approv
 // SetEventSubscription sets the "event_subscription" edge to the EventSubscription entity.
 func (_c *ApprovalRequestCreate) SetEventSubscription(v *EventSubscription) *ApprovalRequestCreate {
 	return _c.SetEventSubscriptionID(v.ID)
+}
+
+// SetAgenticSubscriptionID sets the "agentic_subscription" edge to the AgenticSubscription entity by ID.
+func (_c *ApprovalRequestCreate) SetAgenticSubscriptionID(id int) *ApprovalRequestCreate {
+	_c.mutation.SetAgenticSubscriptionID(id)
+	return _c
+}
+
+// SetNillableAgenticSubscriptionID sets the "agentic_subscription" edge to the AgenticSubscription entity by ID if the given value is not nil.
+func (_c *ApprovalRequestCreate) SetNillableAgenticSubscriptionID(id *int) *ApprovalRequestCreate {
+	if id != nil {
+		_c = _c.SetAgenticSubscriptionID(*id)
+	}
+	return _c
+}
+
+// SetAgenticSubscription sets the "agentic_subscription" edge to the AgenticSubscription entity.
+func (_c *ApprovalRequestCreate) SetAgenticSubscription(v *AgenticSubscription) *ApprovalRequestCreate {
+	return _c.SetAgenticSubscriptionID(v.ID)
 }
 
 // Mutation returns the ApprovalRequestMutation object of the builder.
@@ -477,6 +497,23 @@ func (_c *ApprovalRequestCreate) createSpec() (*ApprovalRequest, *sqlgraph.Creat
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_node.event_subscription_approval_requests = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.AgenticSubscriptionIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   approvalrequest.AgenticSubscriptionTable,
+			Columns: []string{approvalrequest.AgenticSubscriptionColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(agenticsubscription.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.agentic_subscription_approval_requests = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

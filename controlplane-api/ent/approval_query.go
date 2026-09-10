@@ -15,6 +15,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/telekom/controlplane/controlplane-api/ent/agenticsubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/apisubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/approval"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventsubscription"
@@ -24,15 +25,16 @@ import (
 // ApprovalQuery is the builder for querying Approval entities.
 type ApprovalQuery struct {
 	config
-	ctx                   *QueryContext
-	order                 []approval.OrderOption
-	inters                []Interceptor
-	predicates            []predicate.Approval
-	withAPISubscription   *ApiSubscriptionQuery
-	withEventSubscription *EventSubscriptionQuery
-	withFKs               bool
-	modifiers             []func(*sql.Selector)
-	loadTotal             []func(context.Context, []*Approval) error
+	ctx                     *QueryContext
+	order                   []approval.OrderOption
+	inters                  []Interceptor
+	predicates              []predicate.Approval
+	withAPISubscription     *ApiSubscriptionQuery
+	withEventSubscription   *EventSubscriptionQuery
+	withAgenticSubscription *AgenticSubscriptionQuery
+	withFKs                 bool
+	modifiers               []func(*sql.Selector)
+	loadTotal               []func(context.Context, []*Approval) error
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -106,6 +108,28 @@ func (_q *ApprovalQuery) QueryEventSubscription() *EventSubscriptionQuery {
 			sqlgraph.From(approval.Table, approval.FieldID, selector),
 			sqlgraph.To(eventsubscription.Table, eventsubscription.FieldID),
 			sqlgraph.Edge(sqlgraph.O2O, true, approval.EventSubscriptionTable, approval.EventSubscriptionColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryAgenticSubscription chains the current query on the "agentic_subscription" edge.
+func (_q *ApprovalQuery) QueryAgenticSubscription() *AgenticSubscriptionQuery {
+	query := (&AgenticSubscriptionClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(approval.Table, approval.FieldID, selector),
+			sqlgraph.To(agenticsubscription.Table, agenticsubscription.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, true, approval.AgenticSubscriptionTable, approval.AgenticSubscriptionColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -300,13 +324,14 @@ func (_q *ApprovalQuery) Clone() *ApprovalQuery {
 		return nil
 	}
 	return &ApprovalQuery{
-		config:                _q.config,
-		ctx:                   _q.ctx.Clone(),
-		order:                 append([]approval.OrderOption{}, _q.order...),
-		inters:                append([]Interceptor{}, _q.inters...),
-		predicates:            append([]predicate.Approval{}, _q.predicates...),
-		withAPISubscription:   _q.withAPISubscription.Clone(),
-		withEventSubscription: _q.withEventSubscription.Clone(),
+		config:                  _q.config,
+		ctx:                     _q.ctx.Clone(),
+		order:                   append([]approval.OrderOption{}, _q.order...),
+		inters:                  append([]Interceptor{}, _q.inters...),
+		predicates:              append([]predicate.Approval{}, _q.predicates...),
+		withAPISubscription:     _q.withAPISubscription.Clone(),
+		withEventSubscription:   _q.withEventSubscription.Clone(),
+		withAgenticSubscription: _q.withAgenticSubscription.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
@@ -332,6 +357,17 @@ func (_q *ApprovalQuery) WithEventSubscription(opts ...func(*EventSubscriptionQu
 		opt(query)
 	}
 	_q.withEventSubscription = query
+	return _q
+}
+
+// WithAgenticSubscription tells the query-builder to eager-load the nodes that are connected to
+// the "agentic_subscription" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *ApprovalQuery) WithAgenticSubscription(opts ...func(*AgenticSubscriptionQuery)) *ApprovalQuery {
+	query := (&AgenticSubscriptionClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withAgenticSubscription = query
 	return _q
 }
 
@@ -420,12 +456,13 @@ func (_q *ApprovalQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*App
 		nodes       = []*Approval{}
 		withFKs     = _q.withFKs
 		_spec       = _q.querySpec()
-		loadedTypes = [2]bool{
+		loadedTypes = [3]bool{
 			_q.withAPISubscription != nil,
 			_q.withEventSubscription != nil,
+			_q.withAgenticSubscription != nil,
 		}
 	)
-	if _q.withAPISubscription != nil || _q.withEventSubscription != nil {
+	if _q.withAPISubscription != nil || _q.withEventSubscription != nil || _q.withAgenticSubscription != nil {
 		withFKs = true
 	}
 	if withFKs {
@@ -461,6 +498,12 @@ func (_q *ApprovalQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*App
 	if query := _q.withEventSubscription; query != nil {
 		if err := _q.loadEventSubscription(ctx, query, nodes, nil,
 			func(n *Approval, e *EventSubscription) { n.Edges.EventSubscription = e }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withAgenticSubscription; query != nil {
+		if err := _q.loadAgenticSubscription(ctx, query, nodes, nil,
+			func(n *Approval, e *AgenticSubscription) { n.Edges.AgenticSubscription = e }); err != nil {
 			return nil, err
 		}
 	}
@@ -529,6 +572,38 @@ func (_q *ApprovalQuery) loadEventSubscription(ctx context.Context, query *Event
 		nodes, ok := nodeids[n.ID]
 		if !ok {
 			return fmt.Errorf(`unexpected foreign-key "event_subscription_approval" returned %v`, n.ID)
+		}
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
+	}
+	return nil
+}
+func (_q *ApprovalQuery) loadAgenticSubscription(ctx context.Context, query *AgenticSubscriptionQuery, nodes []*Approval, init func(*Approval), assign func(*Approval, *AgenticSubscription)) error {
+	ids := make([]int, 0, len(nodes))
+	nodeids := make(map[int][]*Approval)
+	for i := range nodes {
+		if nodes[i].agentic_subscription_approval == nil {
+			continue
+		}
+		fk := *nodes[i].agentic_subscription_approval
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	query.Where(agenticsubscription.IDIn(ids...))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nodeids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "agentic_subscription_approval" returned %v`, n.ID)
 		}
 		for i := range nodes {
 			assign(nodes[i], n)

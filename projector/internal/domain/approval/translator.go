@@ -34,7 +34,7 @@ var _ runtime.Translator[*approvalv1.Approval, *ApprovalData, ApprovalKey] = (*T
 
 // isSupportedTargetKind returns true if the target kind is one we can resolve.
 func isSupportedTargetKind(kind string) bool {
-	return kind == TargetKindAPISubscription || kind == TargetKindEventSubscription
+	return kind == TargetKindAPISubscription || kind == TargetKindEventSubscription || kind == TargetKindAgenticSubscription
 }
 
 // ShouldSkip returns true if the Approval CR lacks the required fields for
@@ -47,10 +47,13 @@ func (t *Translator) ShouldSkip(obj *approvalv1.Approval) (bool, string) {
 		return true, "spec.action is empty"
 	}
 	if !isSupportedTargetKind(obj.Spec.Target.TypeMeta.Kind) {
-		return true, "spec.target.kind is not ApiSubscription or EventSubscription"
+		return true, "spec.target.kind is not ApiSubscription, EventSubscription, or AgenticSubscription"
 	}
 	if !cconfig.FeaturePubSub.IsEnabled() && obj.Spec.Target.TypeMeta.Kind == TargetKindEventSubscription {
 		return true, "pubsub feature is disabled"
+	}
+	if !cconfig.FeatureAiGateway.IsEnabled() && obj.Spec.Target.TypeMeta.Kind == TargetKindAgenticSubscription {
+		return true, "ai_gateway feature is disabled"
 	}
 
 	if obj.Spec.Decider.TeamName == "" {

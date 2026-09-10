@@ -28,6 +28,7 @@ require (
 
 require (
 	github.com/telekom/controlplane/admin/api v0.0.0
+	github.com/telekom/controlplane/agentic/api v0.0.0
 	github.com/telekom/controlplane/api/api v0.0.0
 	github.com/telekom/controlplane/application/api v0.0.0
 	github.com/telekom/controlplane/approval/api v0.0.0
@@ -41,6 +42,7 @@ require (
 
 replace (
 	github.com/telekom/controlplane/admin/api => ../admin/api
+	github.com/telekom/controlplane/agentic/api => ../agentic/api
 	github.com/telekom/controlplane/api/api => ../api/api
 	github.com/telekom/controlplane/application/api => ../application/api
 	github.com/telekom/controlplane/approval/api => ../approval/api

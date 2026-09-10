@@ -37,6 +37,12 @@ type SeedData struct {
 	EventSubscription  *ent.EventSubscription
 
 	PermissionSetAlpha *ent.PermissionSet
+
+	McpServerAlpha         *ent.McpServer
+	AgenticExposureAlpha   *ent.AgenticExposure
+	AgenticSubscription    *ent.AgenticSubscription
+	AgenticApproval        *ent.Approval
+	AgenticApprovalRequest *ent.ApprovalRequest
 }
 
 // SeedStandard creates a standard set of test data covering all entity types.
@@ -128,6 +134,51 @@ func SeedStandard(client *ent.Client) *SeedData {
 			{Role: "admin", Resource: "orders", Actions: []string{"read", "write"}},
 		}).
 		SetOwnerApplication(s.AppAlpha).
+		Save(ctx))
+
+	// MCP server owned by team-alpha, exposed by app-alpha
+	s.McpServerAlpha = must(client.McpServer.Create().
+		SetNamespace("default").
+		SetBasePath("/mcp-alpha").
+		SetVersion("1.0.0").
+		SetName("mcp-alpha").
+		SetOwner(s.TeamAlpha).
+		Save(ctx))
+	s.AgenticExposureAlpha = must(client.AgenticExposure.Create().
+		SetNamespace("default").
+		SetBasePath("/mcp-alpha").
+		SetOwner(s.AppAlpha).
+		SetMcpServer(s.McpServerAlpha).
+		SetActive(true).
+		Save(ctx))
+
+	// Agentic subscription: app-beta subscribes to agentic-exposure-alpha (cross-team)
+	s.AgenticSubscription = must(client.AgenticSubscription.Create().
+		SetNamespace("default").
+		SetName("agenticsub-alpha").
+		SetBasePath("/mcp-alpha").
+		SetOwner(s.AppBeta).
+		SetTarget(s.AgenticExposureAlpha).
+		Save(ctx))
+
+	// Approval + ApprovalRequest on that agentic subscription
+	s.AgenticApproval = must(client.Approval.Create().
+		SetNamespace("prod").
+		SetName("agenticsubscription--agenticsub-alpha").
+		SetAction("ALLOW").
+		SetRequester(model.RequesterInfo{TeamName: "team-beta"}).
+		SetDecider(model.DeciderInfo{TeamName: "team-alpha"}).
+		SetDeciderTeamName("team-alpha").
+		SetAgenticSubscription(s.AgenticSubscription).
+		Save(ctx))
+	s.AgenticApprovalRequest = must(client.ApprovalRequest.Create().
+		SetNamespace("prod").
+		SetName("agenticsubscription--agenticsub-alpha--req-1").
+		SetAction("ALLOW").
+		SetRequester(model.RequesterInfo{TeamName: "team-beta"}).
+		SetDecider(model.DeciderInfo{TeamName: "team-alpha"}).
+		SetDeciderTeamName("team-alpha").
+		SetAgenticSubscription(s.AgenticSubscription).
 		Save(ctx))
 
 	return s

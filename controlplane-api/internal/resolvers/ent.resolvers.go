@@ -49,6 +49,33 @@ func (r *queryResolver) Nodes(ctx context.Context, ids []int) ([]ent.Noder, erro
 	return r.client.Noders(ctx, ids)
 }
 
+// AgentCards is the resolver for the agentCards field.
+func (r *queryResolver) AgentCards(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.AgentCardOrder, where *ent.AgentCardWhereInput) (*ent.AgentCardConnection, error) {
+	return r.client.AgentCard.Query().
+		Paginate(ctx, after, first, before, last,
+			ent.WithAgentCardOrder(orderBy),
+			ent.WithAgentCardFilter(where.Filter),
+		)
+}
+
+// AgenticExposures is the resolver for the agenticExposures field.
+func (r *queryResolver) AgenticExposures(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.AgenticExposureOrder, where *ent.AgenticExposureWhereInput) (*ent.AgenticExposureConnection, error) {
+	return r.client.AgenticExposure.Query().
+		Paginate(ctx, after, first, before, last,
+			ent.WithAgenticExposureOrder(orderBy),
+			ent.WithAgenticExposureFilter(where.Filter),
+		)
+}
+
+// AgenticSubscriptions is the resolver for the agenticSubscriptions field.
+func (r *queryResolver) AgenticSubscriptions(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.AgenticSubscriptionOrder, where *ent.AgenticSubscriptionWhereInput) (*ent.AgenticSubscriptionConnection, error) {
+	return r.client.AgenticSubscription.Query().
+		Paginate(ctx, after, first, before, last,
+			ent.WithAgenticSubscriptionOrder(orderBy),
+			ent.WithAgenticSubscriptionFilter(where.Filter),
+		)
+}
+
 // Apis is the resolver for the apis field.
 func (r *queryResolver) Apis(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.ApiOrder, where *ent.ApiWhereInput) (*ent.ApiConnection, error) {
 	return r.client.Api.Query().
@@ -130,6 +157,15 @@ func (r *queryResolver) EventTypes(ctx context.Context, after *entgql.Cursor[int
 		)
 }
 
+// McpServers is the resolver for the mcpServers field.
+func (r *queryResolver) McpServers(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.McpServerOrder, where *ent.McpServerWhereInput) (*ent.McpServerConnection, error) {
+	return r.client.McpServer.Query().
+		Paginate(ctx, after, first, before, last,
+			ent.WithMcpServerOrder(orderBy),
+			ent.WithMcpServerFilter(where.Filter),
+		)
+}
+
 // PermissionSets is the resolver for the permissionSets field.
 func (r *queryResolver) PermissionSets(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.PermissionSetOrder, where *ent.PermissionSetWhereInput) (*ent.PermissionSetConnection, error) {
 	return r.client.PermissionSet.Query().
@@ -158,6 +194,17 @@ func (r *queryResolver) Zones(ctx context.Context) ([]*ent.Zone, error) {
 // Returns masked value for obfuscated callers.
 func (r *teamResolver) TeamToken(ctx context.Context, obj *ent.Team) (*string, error) {
 	return r.secrets.Resolve(ctx, obj.TeamToken, "teamToken")
+}
+
+// AgentCard returns AgentCardResolver implementation.
+func (r *Resolver) AgentCard() AgentCardResolver { return &agentCardResolver{r} }
+
+// AgenticExposure returns AgenticExposureResolver implementation.
+func (r *Resolver) AgenticExposure() AgenticExposureResolver { return &agenticExposureResolver{r} }
+
+// AgenticSubscription returns AgenticSubscriptionResolver implementation.
+func (r *Resolver) AgenticSubscription() AgenticSubscriptionResolver {
+	return &agenticSubscriptionResolver{r}
 }
 
 // Api returns ApiResolver implementation.
@@ -189,6 +236,9 @@ func (r *Resolver) EventSubscription() EventSubscriptionResolver {
 // EventType returns EventTypeResolver implementation.
 func (r *Resolver) EventType() EventTypeResolver { return &eventTypeResolver{r} }
 
+// McpServer returns McpServerResolver implementation.
+func (r *Resolver) McpServer() McpServerResolver { return &mcpServerResolver{r} }
+
 // Query returns QueryResolver implementation.
 func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 
@@ -199,16 +249,20 @@ func (r *Resolver) Team() TeamResolver { return &teamResolver{r} }
 func (r *Resolver) Zone() ZoneResolver { return &zoneResolver{r} }
 
 type (
-	apiResolver               struct{ *Resolver }
-	apiExposureResolver       struct{ *Resolver }
-	apiSubscriptionResolver   struct{ *Resolver }
-	applicationResolver       struct{ *Resolver }
-	approvalResolver          struct{ *Resolver }
-	approvalRequestResolver   struct{ *Resolver }
-	eventExposureResolver     struct{ *Resolver }
-	eventSubscriptionResolver struct{ *Resolver }
-	eventTypeResolver         struct{ *Resolver }
-	queryResolver             struct{ *Resolver }
-	teamResolver              struct{ *Resolver }
-	zoneResolver              struct{ *Resolver }
+	agentCardResolver           struct{ *Resolver }
+	agenticExposureResolver     struct{ *Resolver }
+	agenticSubscriptionResolver struct{ *Resolver }
+	apiResolver                 struct{ *Resolver }
+	apiExposureResolver         struct{ *Resolver }
+	apiSubscriptionResolver     struct{ *Resolver }
+	applicationResolver         struct{ *Resolver }
+	approvalResolver            struct{ *Resolver }
+	approvalRequestResolver     struct{ *Resolver }
+	eventExposureResolver       struct{ *Resolver }
+	eventSubscriptionResolver   struct{ *Resolver }
+	eventTypeResolver           struct{ *Resolver }
+	mcpServerResolver           struct{ *Resolver }
+	queryResolver               struct{ *Resolver }
+	teamResolver                struct{ *Resolver }
+	zoneResolver                struct{ *Resolver }
 )
