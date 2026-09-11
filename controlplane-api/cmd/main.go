@@ -112,6 +112,7 @@ func main() {
 	// context downstream), so this only wires the logger.
 	jwtOpts := func(jc security.JWTConfig) security.SecurityOpts {
 		opts := jc.ToSecurityOpts()
+		opts.DisableGlobalGuard = true
 		opts.Log = log.WithName("security")
 		opts.BusinessContextOpts = append(opts.BusinessContextOpts, security.WithLog(log.WithName("security")))
 		return opts
