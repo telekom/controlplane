@@ -5,26 +5,28 @@
 package controller
 
 import (
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"github.com/stretchr/testify/mock"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/ptr"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/types"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
-	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
-	"github.com/telekom/controlplane/secret-manager/api"
-	"github.com/telekom/controlplane/secret-manager/api/fake"
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/api/meta"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
+	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
 	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
 	"github.com/telekom/controlplane/organization/internal/secret"
+	"github.com/telekom/controlplane/secret-manager/api"
+	"github.com/telekom/controlplane/secret-manager/api/fake"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 func NewGroupForTeam(teamObj *organizationv1.Team) *organizationv1.Group {
@@ -65,7 +67,6 @@ func NewTeam(name, group string, members []organizationv1.Member) *organizationv
 }
 
 var _ = Describe("Team Controller", Ordered, func() {
-
 	var secretManagerMock *fake.MockSecretManager
 
 	Context("Zone with TeamApis is available", Ordered, func() {
@@ -78,12 +79,32 @@ var _ = Describe("Team Controller", Ordered, func() {
 				},
 			},
 			Spec: adminv1.ZoneSpec{
-				TeamApis: &adminv1.TeamApiConfig{Apis: []adminv1.ApiConfig{{
+				ManagedRoutes: &adminv1.ManagedRoutesConfig{Routes: []adminv1.ManagedRouteConfig{{
 					Name: "team-api-1",
 					Path: "/teamAPI",
 					Url:  "http://example.org",
+					Type: adminv1.ManagedRouteTypeTeamAPI,
 				}}},
 				Visibility: adminv1.ZoneVisibilityWorld,
+				Gateway: adminv1.GatewayConfig{
+					Admin: adminv1.GatewayAdminConfig{
+						Url: "http://gateway-admin.test.local:8001",
+					},
+					Presets: []adminv1.GatewayConfigPreset{{
+						Name:    "default",
+						Default: true,
+						Urls: []adminv1.UrlConfig{{
+							Hostname: "gateway.test.local",
+							BasePath: "/",
+						}},
+					}},
+				},
+				IdentityProvider: adminv1.IdentityProviderConfig{
+					Url: "http://idp.test.local:8080",
+					Admin: adminv1.IdentityProviderAdminConfig{
+						Url: ptr.To("http://idp-admin.test.local:8080"),
+					},
+				},
 			},
 		}
 
@@ -92,7 +113,7 @@ var _ = Describe("Team Controller", Ordered, func() {
 				Name:      "team-api-identity-realm",
 				Namespace: testNamespace,
 			},
-			TeamApiGatewayRealm: &types.ObjectRef{
+			Gateway: &types.ObjectRef{
 				Name:      "team-api-gateway-realm",
 				Namespace: testNamespace,
 			},
@@ -114,7 +135,6 @@ var _ = Describe("Team Controller", Ordered, func() {
 			By("Checking if the zone is status is updated")
 			err = k8sClient.Get(ctx, client.ObjectKeyFromObject(zone), zone)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(zone.Status.TeamApiGatewayRealm).NotTo(BeNil())
 			Expect(zone.Status.TeamApiIdentityRealm).NotTo(BeNil())
 
 			By("Mocking Secret Manager")
@@ -135,11 +155,14 @@ var _ = Describe("Team Controller", Ordered, func() {
 			var err error
 			var team *organizationv1.Team
 			var group *organizationv1.Group
-			const teamName = "team-alpha"
-			const groupName = "group-alpha"
-			const expectedTeamNamespaceName = testEnvironment + "--" + groupName + "--" + teamName
+			var teamName string
+			var groupName string
+			var expectedTeamNamespaceName string
 
 			BeforeAll(func() {
+				teamName = randName("team-alpha")
+				groupName = randName("group-alpha")
+				expectedTeamNamespaceName = testEnvironment + "--" + groupName + "--" + teamName
 				By("Initializing the Team & Group")
 				team = NewTeam(teamName, groupName, []organizationv1.Member{{Email: testMail, Name: "member"}})
 				group = NewGroupForTeam(team)
@@ -147,7 +170,7 @@ var _ = Describe("Team Controller", Ordered, func() {
 
 			AfterAll(func() {
 				By("Gathering references")
-				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(team), team)
+				err = k8sClient.Get(ctx, client.ObjectKeyFromObject(team), team)
 				Expect(err).NotTo(HaveOccurred())
 
 				By("Tearing down the Teams & Groups")
@@ -157,13 +180,9 @@ var _ = Describe("Team Controller", Ordered, func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				Eventually(func(g Gomega) {
-					By("Checking if the identity client has been deleted")
-					err = k8sClient.Get(ctx, team.Status.IdentityClientRef.K8s(), &identityv1.Client{})
-					g.Expect(errors.IsNotFound(err)).To(BeTrue())
-
 					By("Checking if the Team namespace is being terminated")
 					ns := newNamespaceObj(team.Status.Namespace)
-					err := k8sClient.Get(ctx, client.ObjectKeyFromObject(ns), ns)
+					err = k8sClient.Get(ctx, client.ObjectKeyFromObject(ns), ns)
 					// EnvTest does not support namespace deletion. See: https://book.kubebuilder.io/reference/envtest.html#namespace-usage-limitation
 					g.Expect(err).NotTo(HaveOccurred())
 					g.Expect(isNamespaceTerminating(ns.Status)).To(BeTrue())
@@ -172,9 +191,9 @@ var _ = Describe("Team Controller", Ordered, func() {
 					err = k8sClient.Get(ctx, team.Status.GatewayConsumerRef.K8s(), &gatewayv1.Consumer{})
 					g.Expect(errors.IsNotFound(err)).To(BeTrue())
 
-					By("Checking identity client deletion")
-					err = k8sClient.Get(ctx, team.Status.IdentityClientRef.K8s(), &identityv1.Client{})
-					g.Expect(errors.IsNotFound(err)).To(BeTrue())
+					// Identity client deletion is handled by K8s garbage collection via owner reference.
+					// EnvTest does not run the GC controller, so we skip this assertion here.
+					// Owner reference correctness is verified in the main test.
 
 					By("Checking notification channel deletion")
 					err = k8sClient.Get(ctx, team.Status.NotificationChannelRef.K8s(), &notificationv1.NotificationChannel{})
@@ -194,7 +213,7 @@ var _ = Describe("Team Controller", Ordered, func() {
 				By("Checking if the Team is ready")
 				Eventually(func(g Gomega) {
 					By("Getting the latest version of team object")
-					err := k8sClient.Get(ctx, client.ObjectKeyFromObject(team), team)
+					err = k8sClient.Get(ctx, client.ObjectKeyFromObject(team), team)
 					g.Expect(err).NotTo(HaveOccurred())
 					ExpectObjConditionToBeReady(g, team)
 
@@ -213,10 +232,10 @@ var _ = Describe("Team Controller", Ordered, func() {
 					}))
 
 					By("Checking the team identity client ref")
-					g.Expect(team.Status.IdentityClientRef.String()).To(Equal(expectedTeamNamespaceName + "/" + groupName + "--" + teamName + "--team-user"))
+					g.Expect(team.Status.IdentityClientRef.String()).To(Equal(testNamespace + "/" + groupName + "--" + teamName + "--team-user"))
 
 					By("Checking the team identity client object")
-					var identityClient = &identityv1.Client{}
+					identityClient := &identityv1.Client{}
 					g.Expect(k8sClient.Get(ctx, team.Status.IdentityClientRef.K8s(), identityClient)).NotTo(HaveOccurred())
 
 					By("Checking the team identity client object spec")
@@ -237,16 +256,21 @@ var _ = Describe("Team Controller", Ordered, func() {
 						config.EnvironmentLabelKey: testEnvironment,
 					}))
 
+					By("Checking the team identity client owner reference")
+					g.Expect(identityClient.GetOwnerReferences()).To(HaveLen(1))
+					g.Expect(identityClient.GetOwnerReferences()[0].Name).To(Equal(team.GetName()))
+					g.Expect(identityClient.GetOwnerReferences()[0].UID).To(Equal(team.GetUID()))
+
 					By("Checking the team gateway consumer ref")
 					g.Expect(team.Status.GatewayConsumerRef.String()).To(Equal(expectedTeamNamespaceName + "/" + groupName + "--" + teamName + "--team-user"))
 
 					By("Checking the team gateway consumer object")
-					var gatewayConsumer = &gatewayv1.Consumer{}
+					gatewayConsumer := &gatewayv1.Consumer{}
 					g.Expect(k8sClient.Get(ctx, team.Status.GatewayConsumerRef.K8s(), gatewayConsumer)).NotTo(HaveOccurred())
 
 					By("Checking the team gateway consumer object spec")
 					g.Expect(gatewayConsumer.Spec).To(BeEquivalentTo(gatewayv1.ConsumerSpec{
-						Realm: types.ObjectRef{
+						Gateway: types.ObjectRef{
 							Name:      "team-api-gateway-realm",
 							Namespace: "default",
 							UID:       "",
@@ -264,7 +288,7 @@ var _ = Describe("Team Controller", Ordered, func() {
 					g.Expect(team.Status.NotificationChannelRef.String()).To(Equal(expectedTeamNamespaceName + "/" + groupName + "--" + teamName + "--mail"))
 
 					By("Checking the notification channel object")
-					var notificationChannel = &notificationv1.NotificationChannel{}
+					notificationChannel := &notificationv1.NotificationChannel{}
 					g.Expect(k8sClient.Get(ctx, team.Status.NotificationChannelRef.K8s(), notificationChannel)).NotTo(HaveOccurred())
 
 					By("Checking the notification channel email config")
@@ -278,16 +302,15 @@ var _ = Describe("Team Controller", Ordered, func() {
 
 					By("Checking onboarding notification was created")
 					g.Expect(team.Status.NotificationsRef["onboarded"]).NotTo(BeNil())
-					var onboardingNotification = &notificationv1.Notification{}
+					onboardingNotification := &notificationv1.Notification{}
 					g.Expect(k8sClient.Get(ctx, team.Status.NotificationsRef["onboarded"].K8s(), onboardingNotification)).NotTo(HaveOccurred())
 					g.Expect(onboardingNotification.Spec.Purpose).To(Equal("onboarded"))
 
 					By("Checking token rotation notification was created")
 					g.Expect(team.Status.NotificationsRef["token-rotated"]).NotTo(BeNil())
-					var tokenNotification = &notificationv1.Notification{}
+					tokenNotification := &notificationv1.Notification{}
 					g.Expect(k8sClient.Get(ctx, team.Status.NotificationsRef["token-rotated"].K8s(), tokenNotification)).NotTo(HaveOccurred())
 					g.Expect(tokenNotification.Spec.Purpose).To(Equal("token-rotated"))
-
 				}, timeout, interval).Should(Succeed())
 
 				By("Updating team members to trigger member change notification")
@@ -311,7 +334,7 @@ var _ = Describe("Team Controller", Ordered, func() {
 					g.Expect(team.Status.NotificationsRef["team-members-changed"]).NotTo(BeNil())
 					g.Expect(team.Status.NotificationsRef["team-members-changed"]).NotTo(Equal(originalMemberChangeRef))
 
-					var memberChangeNotification = &notificationv1.Notification{}
+					memberChangeNotification := &notificationv1.Notification{}
 					g.Expect(k8sClient.Get(ctx, team.Status.NotificationsRef["team-members-changed"].K8s(), memberChangeNotification)).NotTo(HaveOccurred())
 					g.Expect(memberChangeNotification.Spec.Purpose).To(Equal("team-members-changed"))
 				}, timeout, interval).Should(Succeed())
@@ -345,29 +368,33 @@ var _ = Describe("Team Controller", Ordered, func() {
 				By("Checking if the Team is ready")
 				Eventually(func(g Gomega) {
 					By("Getting the latest version of team object")
-					err := k8sClient.Get(ctx, client.ObjectKeyFromObject(team), team)
+					err = k8sClient.Get(ctx, client.ObjectKeyFromObject(team), team)
 					g.Expect(err).NotTo(HaveOccurred())
 					ExpectObjConditionToBeReady(g, team)
 				}, timeout, interval).Should(Succeed())
 
 				By("housekeeping the referred idp-c object in advance to keep env clean")
-				var identityClient = &identityv1.Client{}
+				identityClient := &identityv1.Client{}
 				Expect(team.Status.IdentityClientRef).NotTo(BeNil())
 				err = k8sClient.Get(ctx, team.Status.IdentityClientRef.K8s(), identityClient)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(k8sClient.Delete(ctx, identityClient)).NotTo(HaveOccurred())
 
 				By("housekeeping the referred gw-c object in advance to keep env clean")
-				var gatewayConsumer = &gatewayv1.Consumer{}
+				gatewayConsumer := &gatewayv1.Consumer{}
 				err = k8sClient.Get(ctx, team.Status.GatewayConsumerRef.K8s(), gatewayConsumer)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(k8sClient.Delete(ctx, gatewayConsumer)).NotTo(HaveOccurred())
 
 				By("Modifying the team status to remove refs")
-				team.Status.IdentityClientRef = nil
-				team.Status.GatewayConsumerRef = nil
-				err = k8sClient.Status().Update(ctx, team)
-				Expect(err).NotTo(HaveOccurred())
+				Eventually(func(g Gomega) {
+					err = k8sClient.Get(ctx, client.ObjectKeyFromObject(team), team)
+					g.Expect(err).NotTo(HaveOccurred())
+					team.Status.IdentityClientRef = nil
+					team.Status.GatewayConsumerRef = nil
+					err = k8sClient.Status().Update(ctx, team)
+					g.Expect(err).NotTo(HaveOccurred())
+				}, timeout, interval).Should(Succeed())
 
 				By("By deleting the team which points to non-existing idp-c and gw-c")
 				err := k8sClient.Delete(ctx, team)
@@ -381,7 +408,6 @@ var _ = Describe("Team Controller", Ordered, func() {
 					g.Expect(err).NotTo(HaveOccurred())
 					g.Expect(isNamespaceTerminating(ns.Status)).To(BeTrue())
 				}, timeout, interval).Should(Succeed())
-
 			})
 		})
 		Context("Deleting teams with refs pointing to objects that doesn't exist anymore", func() {
@@ -412,20 +438,20 @@ var _ = Describe("Team Controller", Ordered, func() {
 				By("Checking if the Team is ready")
 				Eventually(func(g Gomega) {
 					By("Getting the latest version of team object")
-					err := k8sClient.Get(ctx, client.ObjectKeyFromObject(team), team)
+					err = k8sClient.Get(ctx, client.ObjectKeyFromObject(team), team)
 					g.Expect(err).NotTo(HaveOccurred())
 					ExpectObjConditionToBeReady(g, team)
 				}, timeout, interval).Should(Succeed())
 
 				By("delete idp-c")
-				var identityClient = &identityv1.Client{}
+				identityClient := &identityv1.Client{}
 				Expect(team.Status.IdentityClientRef).NotTo(BeNil())
 				err = k8sClient.Get(ctx, team.Status.IdentityClientRef.K8s(), identityClient)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(k8sClient.Delete(ctx, identityClient)).NotTo(HaveOccurred())
 
 				By("delete gw-c")
-				var gatewayConsumer = &gatewayv1.Consumer{}
+				gatewayConsumer := &gatewayv1.Consumer{}
 				err = k8sClient.Get(ctx, team.Status.GatewayConsumerRef.K8s(), gatewayConsumer)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(k8sClient.Delete(ctx, gatewayConsumer)).NotTo(HaveOccurred())
@@ -444,7 +470,6 @@ var _ = Describe("Team Controller", Ordered, func() {
 					g.Expect(err).NotTo(HaveOccurred())
 					g.Expect(isNamespaceTerminating(ns.Status)).To(BeTrue())
 				}, timeout, interval).Should(Succeed())
-
 			})
 		})
 		Context("Reject a invalid teams", func() {
@@ -564,6 +589,25 @@ var _ = Describe("Team Controller", Ordered, func() {
 			},
 			Spec: adminv1.ZoneSpec{
 				Visibility: adminv1.ZoneVisibilityWorld,
+				Gateway: adminv1.GatewayConfig{
+					Admin: adminv1.GatewayAdminConfig{
+						Url: "http://gateway-admin.test.local:8001",
+					},
+					Presets: []adminv1.GatewayConfigPreset{{
+						Name:    "default",
+						Default: true,
+						Urls: []adminv1.UrlConfig{{
+							Hostname: "gateway.test.local",
+							BasePath: "/",
+						}},
+					}},
+				},
+				IdentityProvider: adminv1.IdentityProviderConfig{
+					Url: "http://idp.test.local:8080",
+					Admin: adminv1.IdentityProviderAdminConfig{
+						Url: ptr.To("http://idp-admin.test.local:8080"),
+					},
+				},
 			},
 		}
 
@@ -574,7 +618,6 @@ var _ = Describe("Team Controller", Ordered, func() {
 			By("Checking if the zone realm refs are nil")
 			err = k8sClient.Get(ctx, client.ObjectKeyFromObject(zone), zone)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(zone.Status.TeamApiGatewayRealm).To(BeNil())
 			Expect(zone.Status.TeamApiIdentityRealm).To(BeNil())
 		})
 
@@ -587,11 +630,14 @@ var _ = Describe("Team Controller", Ordered, func() {
 			var err error
 			var team *organizationv1.Team
 			var group *organizationv1.Group
-			const teamName = "team-alpha"
-			const groupName = "group-alpha"
-			const expectedTeamNamespaceName = testEnvironment + "--" + groupName + "--" + teamName
+			var teamName string
+			var groupName string
+			var expectedTeamNamespaceName string
 
 			BeforeAll(func() {
+				teamName = randName("team-alpha")
+				groupName = randName("group-alpha")
+				expectedTeamNamespaceName = testEnvironment + "--" + groupName + "--" + teamName
 				By("Initializing the Team & Group")
 				team = NewTeam(teamName, groupName, []organizationv1.Member{{Email: testMail, Name: "member"}})
 				group = NewGroupForTeam(team)
@@ -599,7 +645,7 @@ var _ = Describe("Team Controller", Ordered, func() {
 
 			AfterAll(func() {
 				By("Gathering references")
-				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(team), team)
+				err = k8sClient.Get(ctx, client.ObjectKeyFromObject(team), team)
 				Expect(err).NotTo(HaveOccurred())
 
 				By("Tearing down the Teams & Groups")
@@ -611,7 +657,7 @@ var _ = Describe("Team Controller", Ordered, func() {
 				Eventually(func(g Gomega) {
 					By("Checking if the Team namespace is being terminated")
 					ns := newNamespaceObj(team.Status.Namespace)
-					err := k8sClient.Get(ctx, client.ObjectKeyFromObject(ns), ns)
+					err = k8sClient.Get(ctx, client.ObjectKeyFromObject(ns), ns)
 					// EnvTest does not support namespace deletion. See: https://book.kubebuilder.io/reference/envtest.html#namespace-usage-limitation
 					g.Expect(err).NotTo(HaveOccurred())
 					g.Expect(isNamespaceTerminating(ns.Status)).To(BeTrue())
@@ -634,8 +680,8 @@ var _ = Describe("Team Controller", Ordered, func() {
 					readyCondition := meta.FindStatusCondition(team.GetConditions(), condition.ConditionTypeReady)
 					g.Expect(readyCondition).NotTo(BeNil())
 					g.Expect(readyCondition.Status).To(Equal(metav1.ConditionFalse))
-					g.Expect(readyCondition.Reason).To(Equal("ErrorOccurred"))
-					g.Expect(readyCondition.Message).To(ContainSubstring("found no zone with team apis"))
+					g.Expect(readyCondition.Reason).To(Equal(condition.ReasonError))
+					g.Expect(readyCondition.Message).To(ContainSubstring("no zone with managed routes found"))
 
 					By("Checking the team namespace in status")
 					g.Expect(team.Status.Namespace).To(Equal(expectedTeamNamespaceName))
@@ -643,7 +689,6 @@ var _ = Describe("Team Controller", Ordered, func() {
 			})
 		})
 	})
-
 })
 
 func isNamespaceTerminating(namespaceStatus corev1.NamespaceStatus) bool {

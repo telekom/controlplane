@@ -5,17 +5,17 @@
 package controller
 
 import (
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-	"github.com/telekom/controlplane/common/pkg/condition"
-	"github.com/telekom/controlplane/common/pkg/config"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
+	"github.com/telekom/controlplane/common/pkg/condition"
+	"github.com/telekom/controlplane/common/pkg/config"
 	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 const (
@@ -39,17 +39,21 @@ func NewGroup(name, displayName string) *organizationv1.Group {
 }
 
 var _ = Describe("Group Controller", Ordered, func() {
-
 	const groupNamePrefix = "group-controller-"
 	var groupObj *organizationv1.Group
 	var teamAlphaObj, teamBetaObj *organizationv1.Team
 
 	Context("Creating Group without team", Ordered, func() {
-
 		AfterEach(func() {
 			By("Tearing down the Group")
 			err := k8sClient.DeleteAllOf(ctx, &organizationv1.Group{}, client.InNamespace(testEnvironment))
 			Expect(err).NotTo(HaveOccurred())
+			By("Waiting for all groups to be fully deleted")
+			Eventually(func(g Gomega) {
+				groupList := &organizationv1.GroupList{}
+				g.Expect(k8sClient.List(ctx, groupList, client.InNamespace(testEnvironment))).To(Succeed())
+				g.Expect(groupList.Items).To(BeEmpty())
+			}, timeout, interval).Should(Succeed())
 		})
 
 		It("should be ready", func() {
@@ -66,7 +70,6 @@ var _ = Describe("Group Controller", Ordered, func() {
 				readyCondition := meta.FindStatusCondition(groupObj.Status.Conditions, condition.ConditionTypeReady)
 				g.Expect(readyCondition).NotTo(BeNil())
 				g.Expect(readyCondition.Status).To(Equal(metav1.ConditionTrue))
-
 			}, timeout, interval).Should(Succeed())
 		})
 		It("should be able to receive groupList", func() {

@@ -8,6 +8,7 @@ import (
 	"context"
 	"slices"
 
+	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	"github.com/telekom/controlplane/gateway/internal/features"
@@ -35,8 +36,15 @@ func (f *RateLimitFeature) Priority() int {
 }
 
 func (f *RateLimitFeature) IsUsed(ctx context.Context, builder features.FeaturesBuilder) bool {
+	logger := logr.FromContextOrDiscard(ctx)
 	route, ok := builder.GetRoute()
 	if !ok {
+		return false
+	}
+
+	gateway := builder.GetGateway()
+	if gateway.Spec.Redis == nil {
+		logger.Info("Redis configuration is missing in gateway spec, skipping rate-limiting feature")
 		return false
 	}
 
@@ -50,7 +58,7 @@ func (f *RateLimitFeature) IsUsed(ctx context.Context, builder features.Features
 		return consumer.Spec.Route.Equals(route) && consumer.HasTrafficRateLimit()
 	})
 
-	return route.HasRateLimit() || anyConsumerHasRateLimiting
+	return HasRateLimit(route) || anyConsumerHasRateLimiting
 }
 
 func (f *RateLimitFeature) Apply(ctx context.Context, builder features.FeaturesBuilder) (err error) {
@@ -59,7 +67,7 @@ func (f *RateLimitFeature) Apply(ctx context.Context, builder features.FeaturesB
 		return features.ErrNoRoute
 	}
 
-	if !route.IsProxy() && route.HasRateLimit() {
+	if !route.IsProxy() && HasRateLimit(route) {
 		// If this is a primary-route, we need to apply the rate-limiting plugin for the provider-side
 
 		rateLimitPlugin := builder.RateLimitPluginRoute()
@@ -98,7 +106,7 @@ func (f *RateLimitFeature) Apply(ctx context.Context, builder features.FeaturesB
 
 			// If this is a primary-route, we need to apply the provider rate-limiting config
 			// to the consumer rate-limiting plugin as well.
-			if !route.IsProxy() && route.HasRateLimit() {
+			if !route.IsProxy() && HasRateLimit(route) {
 				rateLimitPlugin.Config.Limits.Service = &plugin.LimitConfig{
 					Second: route.Spec.Traffic.RateLimit.Limits.Second,
 					Minute: route.Spec.Traffic.RateLimit.Limits.Minute,
@@ -108,7 +116,7 @@ func (f *RateLimitFeature) Apply(ctx context.Context, builder features.FeaturesB
 				rateLimitPlugin = setOptions(rateLimitPlugin,
 					&route.Spec.Traffic.RateLimit.Options,
 				)
-			} else if route.HasRateLimit() {
+			} else if HasRateLimit(route) {
 				rateLimitPlugin = setOptions(rateLimitPlugin, &route.Spec.Traffic.RateLimit.Options)
 			}
 		}
@@ -118,6 +126,9 @@ func (f *RateLimitFeature) Apply(ctx context.Context, builder features.FeaturesB
 }
 
 func setCommonConfigs(ctx context.Context, rateLimitPlugin *plugin.RateLimitPlugin, gateway *gatewayv1.Gateway) error {
+	if gateway.Spec.Redis == nil {
+		return errors.New("gateway redis configuration is missing")
+	}
 	rateLimitPlugin.Config.Policy = plugin.PolicyRedis
 	redisPassword, err := secretManagerApi.Get(ctx, gateway.Spec.Redis.Password)
 	if err != nil {

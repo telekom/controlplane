@@ -58,6 +58,13 @@ spec:
             - --health-probe-bind-address=:8081
           image: ghcr.io/telekom/controlplane/organization:stable
           name: manager
+          envFrom:
+            - configMapRef:
+                name: controlplane-env
+                optional: true
+            - configMapRef:
+                name: organization-env
+                optional: true
           ports: []
           securityContext:
             allowPrivilegeEscalation: false
@@ -81,10 +88,10 @@ spec:
           resources:
             limits:
               cpu: 500m
-              memory: 128Mi
+              memory: 1Gi
             requests:
-              cpu: 10m
-              memory: 64Mi
+              cpu: 30m
+              memory: 128Mi
           volumeMounts: []
       volumes: []
       serviceAccountName: controller-manager

@@ -2,21 +2,23 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+//nolint:dupl // kubebuilder controller scaffolding is structurally identical across CRD types
 package controller
 
 import (
 	"context"
 
-	cconfig "github.com/telekom/controlplane/common/pkg/config"
-	cc "github.com/telekom/controlplane/common/pkg/controller"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	remoteorg_handler "github.com/telekom/controlplane/admin/internal/handler/remoteorganization"
+	cconfig "github.com/telekom/controlplane/common/pkg/config"
+	cc "github.com/telekom/controlplane/common/pkg/controller"
 )
 
 // RemoteOrganizationReconciler reconciles a RemoteOrganization object
@@ -45,7 +47,7 @@ func (r *RemoteOrganizationReconciler) SetupWithManager(mgr ctrl.Manager) error 
 	r.Controller = cc.NewController(&remoteorg_handler.RemoteOrganizationHandler{}, r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&adminv1.RemoteOrganization{}).
+		For(&adminv1.RemoteOrganization{}, builder.WithPredicates(cc.Count("remoteorganization", cc.RoleFor))).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
 			RateLimiter:             cc.NewRateLimiter(),

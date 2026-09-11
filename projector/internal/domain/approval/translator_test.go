@@ -1,0 +1,652 @@
+// Copyright 2026 Deutsche Telekom IT GmbH
+//
+// SPDX-License-Identifier: Apache-2.0
+
+package approval_test
+
+import (
+	"context"
+	"time"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+
+	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
+	cconfig "github.com/telekom/controlplane/common/pkg/config"
+	ctypes "github.com/telekom/controlplane/common/pkg/types"
+	"github.com/telekom/controlplane/controlplane-api/pkg/model"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	k8stypes "k8s.io/apimachinery/pkg/types"
+
+	"github.com/telekom/controlplane/projector/internal/domain/approval"
+)
+
+var _ = Describe("Approval Translator", func() {
+	var t approval.Translator
+
+	Describe("ShouldSkip", func() {
+		It("should skip when target name is empty", func() {
+			obj := &approvalv1.Approval{
+				Spec: approvalv1.ApprovalSpec{
+					Action: "subscribe",
+					Target: ctypes.TypedObjectRef{
+						TypeMeta:  metav1.TypeMeta{Kind: "ApiSubscription"},
+						ObjectRef: ctypes.ObjectRef{Name: ""},
+					},
+				},
+			}
+			skip, reason := t.ShouldSkip(obj)
+			Expect(skip).To(BeTrue())
+			Expect(reason).To(ContainSubstring("target.name"))
+		})
+
+		It("should skip when action is empty", func() {
+			obj := &approvalv1.Approval{
+				Spec: approvalv1.ApprovalSpec{
+					Action: "",
+					Target: ctypes.TypedObjectRef{
+						TypeMeta:  metav1.TypeMeta{Kind: "ApiSubscription"},
+						ObjectRef: ctypes.ObjectRef{Name: "my-sub"},
+					},
+				},
+			}
+			skip, reason := t.ShouldSkip(obj)
+			Expect(skip).To(BeTrue())
+			Expect(reason).To(ContainSubstring("action"))
+		})
+
+		It("should skip when target kind is unsupported", func() {
+			obj := &approvalv1.Approval{
+				Spec: approvalv1.ApprovalSpec{
+					Action: "subscribe",
+					Target: ctypes.TypedObjectRef{
+						TypeMeta:  metav1.TypeMeta{Kind: "OtherKind"},
+						ObjectRef: ctypes.ObjectRef{Name: "my-sub"},
+					},
+				},
+			}
+			skip, reason := t.ShouldSkip(obj)
+			Expect(skip).To(BeTrue())
+			Expect(reason).To(ContainSubstring("ApiSubscription or EventSubscription"))
+		})
+
+		It("should not skip a valid Approval CR targeting ApiSubscription", func() {
+			obj := &approvalv1.Approval{
+				Spec: approvalv1.ApprovalSpec{
+					Action: "subscribe",
+					Target: ctypes.TypedObjectRef{
+						TypeMeta:  metav1.TypeMeta{Kind: "ApiSubscription"},
+						ObjectRef: ctypes.ObjectRef{Name: "my-sub"},
+					},
+					Decider: approvalv1.Decider{TeamName: "some-team"},
+				},
+			}
+			skip, reason := t.ShouldSkip(obj)
+			Expect(skip).To(BeFalse())
+			Expect(reason).To(BeEmpty())
+		})
+
+		It("should not skip a valid Approval CR targeting EventSubscription", func() {
+			cconfig.SetFeatureEnabled(cconfig.FeaturePubSub, true)
+			defer cconfig.SetFeatureEnabled(cconfig.FeaturePubSub, false)
+
+			obj := &approvalv1.Approval{
+				Spec: approvalv1.ApprovalSpec{
+					Action: "subscribe",
+					Target: ctypes.TypedObjectRef{
+						TypeMeta:  metav1.TypeMeta{Kind: "EventSubscription"},
+						ObjectRef: ctypes.ObjectRef{Name: "my-event-sub"},
+					},
+					Decider: approvalv1.Decider{TeamName: "some-team"},
+				},
+			}
+			skip, reason := t.ShouldSkip(obj)
+			Expect(skip).To(BeFalse())
+			Expect(reason).To(BeEmpty())
+		})
+		It("should skip EventSubscription target when pubsub feature is disabled", func() {
+			cconfig.SetFeatureEnabled(cconfig.FeaturePubSub, false)
+
+			obj := &approvalv1.Approval{
+				Spec: approvalv1.ApprovalSpec{
+					Action: "subscribe",
+					Target: ctypes.TypedObjectRef{
+						TypeMeta:  metav1.TypeMeta{Kind: "EventSubscription"},
+						ObjectRef: ctypes.ObjectRef{Name: "my-event-sub"},
+					},
+					Decider: approvalv1.Decider{TeamName: "some-team"},
+				},
+			}
+			skip, reason := t.ShouldSkip(obj)
+			Expect(skip).To(BeTrue())
+			Expect(reason).To(ContainSubstring("pubsub feature is disabled"))
+		})
+
+		It("should not skip ApiSubscription target when pubsub feature is disabled", func() {
+			cconfig.SetFeatureEnabled(cconfig.FeaturePubSub, false)
+
+			obj := &approvalv1.Approval{
+				Spec: approvalv1.ApprovalSpec{
+					Action: "subscribe",
+					Target: ctypes.TypedObjectRef{
+						TypeMeta:  metav1.TypeMeta{Kind: "ApiSubscription"},
+						ObjectRef: ctypes.ObjectRef{Name: "my-sub"},
+					},
+					Decider: approvalv1.Decider{TeamName: "some-team"},
+				},
+			}
+			skip, reason := t.ShouldSkip(obj)
+			Expect(skip).To(BeFalse())
+			Expect(reason).To(BeEmpty())
+		})
+	})
+
+	Describe("Translate", func() {
+		It("should populate all fields from the CR targeting ApiSubscription", func() {
+			reason := "need access"
+			obj := &approvalv1.Approval{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "apisubscription--my-sub",
+					Namespace: "prod--platform--narvi",
+					Labels: map[string]string{
+						"cp.ei.telekom.de/environment": "prod",
+					},
+				},
+				Spec: approvalv1.ApprovalSpec{
+					Action:   "subscribe",
+					Strategy: approvalv1.ApprovalStrategyFourEyes,
+					State:    approvalv1.ApprovalStateGranted,
+					Target: ctypes.TypedObjectRef{
+						TypeMeta: metav1.TypeMeta{Kind: "ApiSubscription"},
+						ObjectRef: ctypes.ObjectRef{
+							Namespace: "prod--platform--narvi",
+							Name:      "my-sub",
+						},
+					},
+					Requester: approvalv1.Requester{
+						TeamName:  "narvi",
+						TeamEmail: "narvi@example.com",
+						Reason:    reason,
+						ApplicationRef: &ctypes.TypedObjectRef{
+							ObjectRef: ctypes.ObjectRef{Name: "consumer-app"},
+						},
+					},
+					Decider: approvalv1.Decider{
+						TeamName:  "provider-team",
+						TeamEmail: "provider@example.com",
+					},
+					Decisions: []approvalv1.Decision{
+						{Name: "Alice", Email: "alice@example.com", Comment: "approved"},
+					},
+				},
+				Status: approvalv1.ApprovalStatus{
+					Conditions: []metav1.Condition{
+						{
+							Type:    "Ready",
+							Status:  metav1.ConditionTrue,
+							Message: "approval granted",
+						},
+					},
+					AvailableTransitions: approvalv1.AvailableTransitions{
+						{Action: approvalv1.ApprovalActionSuspend, To: approvalv1.ApprovalStateSuspended},
+					},
+				},
+			}
+
+			data, err := t.Translate(context.Background(), obj)
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(data.Meta.Namespace).To(Equal("prod--platform--narvi"))
+			Expect(data.Meta.Name).To(Equal("apisubscription--my-sub"))
+			Expect(data.Meta.Environment).To(Equal("prod"))
+			Expect(data.StatusPhase).To(Equal("READY"))
+			Expect(data.StatusMessage).To(Equal("approval granted"))
+			Expect(data.State).To(Equal("GRANTED"))
+			Expect(data.Action).To(Equal("subscribe"))
+			Expect(data.Strategy).To(Equal("FOUR_EYES"))
+			Expect(data.TargetKind).To(Equal("ApiSubscription"))
+			Expect(data.Requester.TeamName).To(Equal("narvi"))
+			Expect(data.Requester.TeamEmail).To(Equal("narvi@example.com"))
+			Expect(*data.Requester.Reason).To(Equal("need access"))
+			Expect(*data.Requester.ApplicationName).To(Equal("consumer-app"))
+			Expect(data.Decider.TeamName).To(Equal("provider-team"))
+			Expect(*data.Decider.TeamEmail).To(Equal("provider@example.com"))
+			Expect(data.Decisions).To(HaveLen(1))
+			Expect(data.Decisions[0].Name).To(Equal("Alice"))
+			Expect(*data.Decisions[0].Email).To(Equal("alice@example.com"))
+			Expect(*data.Decisions[0].Comment).To(Equal("approved"))
+			Expect(data.AvailableTransitions).To(HaveLen(1))
+			Expect(data.AvailableTransitions[0].Action).To(Equal("Suspend"))
+			Expect(data.AvailableTransitions[0].ToState).To(Equal("Suspended"))
+			Expect(data.SubscriptionNamespace).To(Equal("prod--platform--narvi"))
+			Expect(data.SubscriptionName).To(Equal("my-sub"))
+		})
+
+		It("should set TargetKind to EventSubscription when target kind is EventSubscription", func() {
+			obj := &approvalv1.Approval{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "eventsubscription--my-event-sub",
+					Namespace: "prod--platform--narvi",
+					Labels: map[string]string{
+						"cp.ei.telekom.de/environment": "prod",
+					},
+				},
+				Spec: approvalv1.ApprovalSpec{
+					Action:   "subscribe",
+					Strategy: approvalv1.ApprovalStrategySimple,
+					State:    approvalv1.ApprovalStatePending,
+					Target: ctypes.TypedObjectRef{
+						TypeMeta: metav1.TypeMeta{Kind: "EventSubscription"},
+						ObjectRef: ctypes.ObjectRef{
+							Namespace: "prod--platform--narvi",
+							Name:      "my-event-sub",
+						},
+					},
+					Requester: approvalv1.Requester{TeamName: "narvi"},
+					Decider:   approvalv1.Decider{TeamName: "provider"},
+				},
+			}
+
+			data, err := t.Translate(context.Background(), obj)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(data.TargetKind).To(Equal("EventSubscription"))
+			Expect(data.SubscriptionNamespace).To(Equal("prod--platform--narvi"))
+			Expect(data.SubscriptionName).To(Equal("my-event-sub"))
+		})
+
+		It("should fall back to own namespace when target namespace is empty", func() {
+			obj := &approvalv1.Approval{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "apisubscription--my-sub",
+					Namespace: "prod--platform--narvi",
+				},
+				Spec: approvalv1.ApprovalSpec{
+					Action:   "subscribe",
+					Strategy: approvalv1.ApprovalStrategyAuto,
+					State:    approvalv1.ApprovalStatePending,
+					Target: ctypes.TypedObjectRef{
+						TypeMeta:  metav1.TypeMeta{Kind: "ApiSubscription"},
+						ObjectRef: ctypes.ObjectRef{Name: "my-sub"},
+					},
+					Requester: approvalv1.Requester{TeamName: "narvi"},
+					Decider:   approvalv1.Decider{TeamName: "provider"},
+				},
+			}
+
+			data, err := t.Translate(context.Background(), obj)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(data.SubscriptionNamespace).To(Equal("prod--platform--narvi"))
+		})
+
+		It("should return empty decisions slice when no decisions", func() {
+			obj := &approvalv1.Approval{
+				ObjectMeta: metav1.ObjectMeta{Name: "a", Namespace: "ns"},
+				Spec: approvalv1.ApprovalSpec{
+					Action:   "subscribe",
+					Strategy: approvalv1.ApprovalStrategyAuto,
+					State:    approvalv1.ApprovalStatePending,
+					Target: ctypes.TypedObjectRef{
+						TypeMeta:  metav1.TypeMeta{Kind: "ApiSubscription"},
+						ObjectRef: ctypes.ObjectRef{Name: "sub"},
+					},
+					Requester: approvalv1.Requester{TeamName: "t"},
+					Decider:   approvalv1.Decider{TeamName: "d"},
+				},
+			}
+
+			data, err := t.Translate(context.Background(), obj)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(data.Decisions).To(Equal([]model.Decision{}))
+			Expect(data.AvailableTransitions).To(Equal([]model.AvailableTransition{}))
+		})
+
+		It("should translate ExpiresAt when set", func() {
+			expiresTime := time.Date(2026, 7, 15, 12, 0, 0, 0, time.UTC)
+			obj := &approvalv1.Approval{
+				ObjectMeta: metav1.ObjectMeta{Name: "a", Namespace: "ns"},
+				Spec: approvalv1.ApprovalSpec{
+					Action:   "subscribe",
+					Strategy: approvalv1.ApprovalStrategyAuto,
+					State:    approvalv1.ApprovalStateGranted,
+					Target: ctypes.TypedObjectRef{
+						TypeMeta:  metav1.TypeMeta{Kind: "ApiSubscription"},
+						ObjectRef: ctypes.ObjectRef{Name: "sub"},
+					},
+					Requester: approvalv1.Requester{TeamName: "t"},
+					Decider:   approvalv1.Decider{TeamName: "d"},
+				},
+				Status: approvalv1.ApprovalStatus{
+					ExpiresAt: &metav1.Time{Time: expiresTime},
+				},
+			}
+
+			data, err := t.Translate(context.Background(), obj)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(data.ExpiresAt).NotTo(BeNil())
+			Expect(*data.ExpiresAt).To(Equal(expiresTime))
+		})
+
+		It("should populate AccessScopes from requester properties", func() {
+			req := approvalv1.Requester{TeamName: "t"}
+			Expect(req.SetProperties(map[string]any{"scopes": []string{"read", "write"}})).To(Succeed())
+
+			obj := &approvalv1.Approval{
+				ObjectMeta: metav1.ObjectMeta{Name: "a", Namespace: "ns"},
+				Spec: approvalv1.ApprovalSpec{
+					Action:   "subscribe",
+					Strategy: approvalv1.ApprovalStrategyAuto,
+					State:    approvalv1.ApprovalStatePending,
+					Target: ctypes.TypedObjectRef{
+						TypeMeta:  metav1.TypeMeta{Kind: "ApiSubscription"},
+						ObjectRef: ctypes.ObjectRef{Name: "sub"},
+					},
+					Requester: req,
+					Decider:   approvalv1.Decider{TeamName: "d"},
+				},
+			}
+
+			data, err := t.Translate(context.Background(), obj)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(data.AccessScopes).To(Equal([]string{"read", "write"}))
+		})
+
+		It("should leave AccessScopes empty when no properties are set", func() {
+			obj := &approvalv1.Approval{
+				ObjectMeta: metav1.ObjectMeta{Name: "a", Namespace: "ns"},
+				Spec: approvalv1.ApprovalSpec{
+					Action:   "subscribe",
+					Strategy: approvalv1.ApprovalStrategyAuto,
+					State:    approvalv1.ApprovalStatePending,
+					Target: ctypes.TypedObjectRef{
+						TypeMeta:  metav1.TypeMeta{Kind: "ApiSubscription"},
+						ObjectRef: ctypes.ObjectRef{Name: "sub"},
+					},
+					Requester: approvalv1.Requester{TeamName: "t"},
+					Decider:   approvalv1.Decider{TeamName: "d"},
+				},
+			}
+
+			data, err := t.Translate(context.Background(), obj)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(data.AccessScopes).To(BeEmpty())
+		})
+
+		It("should return an error when requester properties are malformed", func() {
+			obj := &approvalv1.Approval{
+				ObjectMeta: metav1.ObjectMeta{Name: "bad-approval", Namespace: "ns"},
+				Spec: approvalv1.ApprovalSpec{
+					Action:   "subscribe",
+					Strategy: approvalv1.ApprovalStrategyAuto,
+					State:    approvalv1.ApprovalStatePending,
+					Target: ctypes.TypedObjectRef{
+						TypeMeta:  metav1.TypeMeta{Kind: "ApiSubscription"},
+						ObjectRef: ctypes.ObjectRef{Name: "sub"},
+					},
+					Requester: approvalv1.Requester{
+						TeamName:   "t",
+						Properties: runtime.RawExtension{Raw: []byte("{not-json")},
+					},
+					Decider: approvalv1.Decider{TeamName: "d"},
+				},
+			}
+
+			_, err := t.Translate(context.Background(), obj)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("bad-approval"))
+		})
+
+		It("should return nil ExpiresAt when status.expiresAt is nil", func() {
+			obj := &approvalv1.Approval{
+				ObjectMeta: metav1.ObjectMeta{Name: "a", Namespace: "ns"},
+				Spec: approvalv1.ApprovalSpec{
+					Action:   "subscribe",
+					Strategy: approvalv1.ApprovalStrategyAuto,
+					State:    approvalv1.ApprovalStatePending,
+					Target: ctypes.TypedObjectRef{
+						TypeMeta:  metav1.TypeMeta{Kind: "ApiSubscription"},
+						ObjectRef: ctypes.ObjectRef{Name: "sub"},
+					},
+					Requester: approvalv1.Requester{TeamName: "t"},
+					Decider:   approvalv1.Decider{TeamName: "d"},
+				},
+			}
+
+			data, err := t.Translate(context.Background(), obj)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(data.ExpiresAt).To(BeNil())
+		})
+	})
+
+	Describe("Strategy mapping", func() {
+		newObj := func(strategy approvalv1.ApprovalStrategy) *approvalv1.Approval {
+			return &approvalv1.Approval{
+				ObjectMeta: metav1.ObjectMeta{Name: "a", Namespace: "ns"},
+				Spec: approvalv1.ApprovalSpec{
+					Action:   "subscribe",
+					Strategy: strategy,
+					State:    approvalv1.ApprovalStatePending,
+					Target: ctypes.TypedObjectRef{
+						TypeMeta:  metav1.TypeMeta{Kind: "ApiSubscription"},
+						ObjectRef: ctypes.ObjectRef{Name: "sub"},
+					},
+					Requester: approvalv1.Requester{TeamName: "t"},
+					Decider:   approvalv1.Decider{TeamName: "d"},
+				},
+			}
+		}
+
+		It("should map Auto to AUTO", func() {
+			data, err := t.Translate(context.Background(), newObj(approvalv1.ApprovalStrategyAuto))
+			Expect(err).NotTo(HaveOccurred())
+			Expect(data.Strategy).To(Equal("AUTO"))
+		})
+
+		It("should map Simple to SIMPLE", func() {
+			data, err := t.Translate(context.Background(), newObj(approvalv1.ApprovalStrategySimple))
+			Expect(err).NotTo(HaveOccurred())
+			Expect(data.Strategy).To(Equal("SIMPLE"))
+		})
+
+		It("should map FourEyes to FOUR_EYES", func() {
+			data, err := t.Translate(context.Background(), newObj(approvalv1.ApprovalStrategyFourEyes))
+			Expect(err).NotTo(HaveOccurred())
+			Expect(data.Strategy).To(Equal("FOUR_EYES"))
+		})
+	})
+
+	Describe("State mapping", func() {
+		newObj := func(state approvalv1.ApprovalState) *approvalv1.Approval {
+			return &approvalv1.Approval{
+				ObjectMeta: metav1.ObjectMeta{Name: "a", Namespace: "ns"},
+				Spec: approvalv1.ApprovalSpec{
+					Action:   "subscribe",
+					Strategy: approvalv1.ApprovalStrategyAuto,
+					State:    state,
+					Target: ctypes.TypedObjectRef{
+						TypeMeta:  metav1.TypeMeta{Kind: "ApiSubscription"},
+						ObjectRef: ctypes.ObjectRef{Name: "sub"},
+					},
+					Requester: approvalv1.Requester{TeamName: "t"},
+					Decider:   approvalv1.Decider{TeamName: "d"},
+				},
+			}
+		}
+
+		It("should map Pending to PENDING", func() {
+			data, err := t.Translate(context.Background(), newObj(approvalv1.ApprovalStatePending))
+			Expect(err).NotTo(HaveOccurred())
+			Expect(data.State).To(Equal("PENDING"))
+		})
+
+		It("should map Granted to GRANTED", func() {
+			data, err := t.Translate(context.Background(), newObj(approvalv1.ApprovalStateGranted))
+			Expect(err).NotTo(HaveOccurred())
+			Expect(data.State).To(Equal("GRANTED"))
+		})
+
+		It("should map Rejected to REJECTED", func() {
+			data, err := t.Translate(context.Background(), newObj(approvalv1.ApprovalStateRejected))
+			Expect(err).NotTo(HaveOccurred())
+			Expect(data.State).To(Equal("REJECTED"))
+		})
+
+		It("should map Suspended to SUSPENDED", func() {
+			data, err := t.Translate(context.Background(), newObj(approvalv1.ApprovalStateSuspended))
+			Expect(err).NotTo(HaveOccurred())
+			Expect(data.State).To(Equal("SUSPENDED"))
+		})
+
+		It("should map Semigranted to SEMIGRANTED", func() {
+			data, err := t.Translate(context.Background(), newObj(approvalv1.ApprovalStateSemigranted))
+			Expect(err).NotTo(HaveOccurred())
+			Expect(data.State).To(Equal("SEMIGRANTED"))
+		})
+	})
+
+	Describe("AvailableTransitions filtering", func() {
+		newObj := func(transitions approvalv1.AvailableTransitions) *approvalv1.Approval {
+			return &approvalv1.Approval{
+				ObjectMeta: metav1.ObjectMeta{Name: "a", Namespace: "ns"},
+				Spec: approvalv1.ApprovalSpec{
+					Action:   "subscribe",
+					Strategy: approvalv1.ApprovalStrategySimple,
+					State:    approvalv1.ApprovalStateGranted,
+					Target: ctypes.TypedObjectRef{
+						TypeMeta:  metav1.TypeMeta{Kind: "ApiSubscription"},
+						ObjectRef: ctypes.ObjectRef{Name: "sub"},
+					},
+					Requester: approvalv1.Requester{TeamName: "t"},
+					Decider:   approvalv1.Decider{TeamName: "d"},
+				},
+				Status: approvalv1.ApprovalStatus{
+					AvailableTransitions: transitions,
+				},
+			}
+		}
+
+		It("should filter out Expired transitions", func() {
+			obj := newObj(approvalv1.AvailableTransitions{
+				{Action: approvalv1.ApprovalActionSuspend, To: approvalv1.ApprovalStateSuspended},
+				{Action: approvalv1.ApprovalActionExpire, To: approvalv1.ApprovalStateExpired},
+				{Action: approvalv1.ApprovalActionDeny, To: approvalv1.ApprovalStateRejected},
+			})
+
+			data, err := t.Translate(context.Background(), obj)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(data.AvailableTransitions).To(HaveLen(2))
+			Expect(data.AvailableTransitions).To(ConsistOf(
+				model.AvailableTransition{Action: "Suspend", ToState: "Suspended"},
+				model.AvailableTransition{Action: "Deny", ToState: "Rejected"},
+			))
+		})
+
+		It("should return empty slice when only Expired is available", func() {
+			obj := newObj(approvalv1.AvailableTransitions{
+				{Action: approvalv1.ApprovalActionExpire, To: approvalv1.ApprovalStateExpired},
+			})
+
+			data, err := t.Translate(context.Background(), obj)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(data.AvailableTransitions).To(Equal([]model.AvailableTransition{}))
+		})
+
+		It("should pass through non-Expired transitions unchanged", func() {
+			obj := newObj(approvalv1.AvailableTransitions{
+				{Action: approvalv1.ApprovalActionSuspend, To: approvalv1.ApprovalStateSuspended},
+			})
+
+			data, err := t.Translate(context.Background(), obj)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(data.AvailableTransitions).To(HaveLen(1))
+			Expect(data.AvailableTransitions[0]).To(Equal(
+				model.AvailableTransition{Action: "Suspend", ToState: "Suspended"},
+			))
+		})
+	})
+
+	Describe("KeyFromObject", func() {
+		It("should derive all key fields from the live object", func() {
+			obj := &approvalv1.Approval{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "apisubscription--my-sub",
+					Namespace: "prod--platform--narvi",
+				},
+				Spec: approvalv1.ApprovalSpec{
+					Action: "subscribe",
+					Target: ctypes.TypedObjectRef{
+						TypeMeta: metav1.TypeMeta{Kind: "ApiSubscription"},
+						ObjectRef: ctypes.ObjectRef{
+							Namespace: "prod--platform--narvi",
+							Name:      "my-sub",
+						},
+					},
+				},
+			}
+
+			key := t.KeyFromObject(obj)
+			Expect(key.Namespace).To(Equal("prod--platform--narvi"))
+			Expect(key.Name).To(Equal("apisubscription--my-sub"))
+			Expect(key.SubscriptionNamespace).To(Equal("prod--platform--narvi"))
+			Expect(key.SubscriptionName).To(Equal("my-sub"))
+		})
+
+		It("should fall back to own namespace when target namespace is empty", func() {
+			obj := &approvalv1.Approval{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "apisubscription--my-sub",
+					Namespace: "prod--platform--narvi",
+				},
+				Spec: approvalv1.ApprovalSpec{
+					Action: "subscribe",
+					Target: ctypes.TypedObjectRef{
+						TypeMeta:  metav1.TypeMeta{Kind: "ApiSubscription"},
+						ObjectRef: ctypes.ObjectRef{Name: "my-sub"},
+					},
+				},
+			}
+
+			key := t.KeyFromObject(obj)
+			Expect(key.SubscriptionNamespace).To(Equal("prod--platform--narvi"))
+		})
+	})
+
+	Describe("KeyFromDelete", func() {
+		It("should derive from lastKnown when available", func() {
+			lastKnown := &approvalv1.Approval{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "apisubscription--my-sub",
+					Namespace: "prod--platform--narvi",
+				},
+				Spec: approvalv1.ApprovalSpec{
+					Action: "subscribe",
+					Target: ctypes.TypedObjectRef{
+						TypeMeta: metav1.TypeMeta{Kind: "ApiSubscription"},
+						ObjectRef: ctypes.ObjectRef{
+							Namespace: "prod--platform--narvi",
+							Name:      "my-sub",
+						},
+					},
+				},
+			}
+
+			req := k8stypes.NamespacedName{Namespace: "prod--platform--narvi", Name: "apisubscription--my-sub"}
+			key, err := t.KeyFromDelete(req, lastKnown)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(key.Namespace).To(Equal("prod--platform--narvi"))
+			Expect(key.Name).To(Equal("apisubscription--my-sub"))
+			Expect(key.SubscriptionNamespace).To(Equal("prod--platform--narvi"))
+			Expect(key.SubscriptionName).To(Equal("my-sub"))
+		})
+
+		It("should use namespace+name fallback when lastKnown is nil", func() {
+			req := k8stypes.NamespacedName{Namespace: "prod--platform--narvi", Name: "apisubscription--my-sub"}
+			key, err := t.KeyFromDelete(req, nil)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(key.Namespace).To(Equal("prod--platform--narvi"))
+			Expect(key.Name).To(Equal("apisubscription--my-sub"))
+			Expect(key.SubscriptionNamespace).To(BeEmpty())
+			Expect(key.SubscriptionName).To(BeEmpty())
+		})
+	})
+})

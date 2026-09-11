@@ -4,11 +4,44 @@
 
 package v1
 
+import "strconv"
+
+type Upstream struct {
+	Weight int32 `json:"weight,omitempty"`
+
+	Scheme string `json:"scheme"`
+
+	Hostname string `json:"hostname"`
+
+	Port int32 `json:"port"`
+
+	Path string `json:"path"`
+}
+
+func (t Upstream) Url() string {
+	return t.Scheme + "://" + t.Hostname + ":" + strconv.Itoa(int(t.Port)) + t.Path
+}
+
+func (t Upstream) GetScheme() string {
+	return t.Scheme
+}
+func (t Upstream) GetHostname() string {
+	return t.Hostname
+}
+func (t Upstream) GetPort() int {
+	return int(t.Port)
+}
+func (t Upstream) GetPath() string {
+	return t.Path
+}
+
 type Traffic struct {
 	Failover  *Failover  `json:"failover,omitempty"`
 	RateLimit *RateLimit `json:"rateLimit,omitempty"`
 
 	CircuitBreaker *CircuitBreaker `json:"circuitBreaker,omitempty"`
+
+	DynamicUpstream *DynamicUpstream `json:"dynamicUpstream,omitempty"`
 }
 
 type ConsumeRouteTraffic struct {
@@ -24,9 +57,17 @@ type CircuitBreaker struct {
 }
 
 type Failover struct {
-	TargetZoneName string     `json:"targetZoneName"`
-	Upstreams      []Upstream `json:"upstreams"`
-	Security       *Security  `json:"security,omitempty"`
+	TargetZoneName string           `json:"targetZoneName"`
+	Targets        []FailoverTarget `json:"targets"`
+	Security       Security         `json:"security,omitempty"`
+}
+
+// FailoverTarget pairs an upstream with the zone it belongs to.
+// ZoneName is used by the gateway jumper to health-check the zone before routing.
+// An empty ZoneName means unconditional fallback (last resort).
+type FailoverTarget struct {
+	ZoneName string `json:"zoneName,omitempty"`
+	Upstream `json:",inline"`
 }
 
 // RateLimit defines rate limits for different time windows
@@ -64,4 +105,16 @@ type RateLimitOptions struct {
 	// FaultTolerant defines if the rate limit plugin should be fault tolerant, if gateway is not able to access the config store
 	// +kubebuilder:default=true
 	FaultTolerant bool `json:"faultTolerant,omitempty"`
+}
+
+// DynamicUpstream configures runtime upstream URL resolution.
+// When set, the gateway resolves the actual upstream target from a
+// request query parameter instead of using the static upstream.
+type DynamicUpstream struct {
+	// QueryParameter is the name of the query parameter containing the target URL.
+	// The parameter will be removed from the forwarded request.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:Pattern=`^[a-zA-Z0-9_-]+$`
+	QueryParameter string `json:"queryParameter"`
 }

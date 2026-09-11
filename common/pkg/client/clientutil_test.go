@@ -5,15 +5,14 @@
 package client
 
 import (
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Client Util Tests", func() {
-
 	// my faked clientObject which only contains the necessary UID field
 	fakeClientObject := &unstructured.Unstructured{
 		Object: map[string]interface{}{
@@ -25,7 +24,6 @@ var _ = Describe("Client Util Tests", func() {
 
 	Context("OwnedBy function", func() {
 		It("should return correct listOptions", func() {
-
 			listOptions := OwnedBy(fakeClientObject)
 			Expect(listOptions).To(HaveLen(1))
 			Expect(listOptions[0].(client.MatchingFields)[".metadata.controller"]).To(Equal("12345"))
@@ -34,11 +32,9 @@ var _ = Describe("Client Util Tests", func() {
 
 	Context("OwnedByLabel function", func() {
 		It("should return correct listOptions", func() {
-
 			listOptions := OwnedByLabel(fakeClientObject)
 			Expect(listOptions).To(HaveLen(1))
 			Expect(listOptions[0].(client.MatchingLabels)["cp.ei.telekom.de/owner.uid"]).To(Equal("12345"))
 		})
 	})
-
 })

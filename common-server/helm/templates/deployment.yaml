@@ -74,7 +74,7 @@ spec:
             readOnly: true
           {{- end }}
           {{- if and .Values.secretmanager.enabled .Values.secretmanager.trustmanager.enabled }}
-          - name: trust-bundle
+          - name: controlplane-trust-bundle
             mountPath: /var/run/secrets/trust-bundle
             readOnly: true
           {{- end }}
@@ -107,7 +107,7 @@ spec:
                 audience: secret-manager
         {{- end }}
         {{- if and .Values.secretmanager.enabled .Values.secretmanager.trustmanager.enabled }}
-        - name: trust-bundle
+        - name: controlplane-trust-bundle
           configMap:
-            name: secret-manager-trust-bundle
+            name: controlplane-trust-bundle
         {{- end }}

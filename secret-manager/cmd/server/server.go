@@ -7,23 +7,22 @@ package main
 import (
 	"context"
 	"flag"
-	"fmt"
 	"os"
+	"strconv"
 	"time"
 
-	k8s "github.com/telekom/controlplane/common-server/pkg/server/middleware/kubernetes"
-	"github.com/telekom/controlplane/common-server/pkg/util"
+	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/go-logr/logr"
 	"github.com/go-logr/zapr"
+	"github.com/gofiber/fiber/v2"
 	"github.com/pkg/errors"
 	cs "github.com/telekom/controlplane/common-server/pkg/server"
-	"github.com/telekom/controlplane/common-server/pkg/server/serve"
 	"github.com/telekom/controlplane/secret-manager/cmd/server/config"
 	"github.com/telekom/controlplane/secret-manager/internal/api"
 	"github.com/telekom/controlplane/secret-manager/internal/handler"
 	"github.com/telekom/controlplane/secret-manager/pkg/backend/cache"
-	v2 "github.com/telekom/controlplane/secret-manager/pkg/backend/cache/v2"
+	"github.com/telekom/controlplane/secret-manager/pkg/backend/cache/metrics"
 	"github.com/telekom/controlplane/secret-manager/pkg/backend/conjur"
 	"github.com/telekom/controlplane/secret-manager/pkg/backend/conjur/bouncer"
 	"github.com/telekom/controlplane/secret-manager/pkg/backend/kubernetes"
@@ -39,20 +38,12 @@ const (
 
 var (
 	logLevel    string
-	disableTls  bool
-	tlsCert     string
-	tlsKey      string
-	address     string
 	configFile  string
 	backendType string
 )
 
 func init() {
 	flag.StringVar(&logLevel, "loglevel", "info", "log level")
-	flag.BoolVar(&disableTls, "disable-tls", false, "disable TLS")
-	flag.StringVar(&tlsCert, "tls-cert", "/etc/tls/tls.crt", "path to TLS certificate")
-	flag.StringVar(&tlsKey, "tls-key", "/etc/tls/tls.key", "path to TLS key")
-	flag.StringVar(&address, "address", ":8443", "server address")
 	flag.StringVar(&configFile, "configfile", "", "path to config file")
 	flag.StringVar(&backendType, "backend", "", "backend type (kubernetes, conjur)")
 }
@@ -81,37 +72,48 @@ func newController(ctx context.Context, cfg *config.ServerConfig) (c controller.
 	if cfg.Backend.Type == "" {
 		cfg.Backend.Type = "kubernetes"
 	}
-	cacheDuration, err := time.ParseDuration(cfg.Backend.GetDefault("cache_duration", "10s"))
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to parse cache duration")
-	}
 
 	shouldCache := cfg.Backend.GetDefault("disable_cache", "false") != trueStr
-	if shouldCache {
-		log.V(1).Info("enabling cache", "duration", cacheDuration.String())
-	} else {
+	if !shouldCache {
 		log.V(1).Info("cache is disabled")
 	}
 
-	cacheV2 := cfg.Backend.GetDefault("use_cache_v2", "false") == trueStr
-
 	switch cfg.Backend.Type {
 	case "conjur":
+		bouncer.RegisterMetrics(prometheus.DefaultRegisterer)
+
 		conjurWriteApi := conjur.NewConjurApiMetrics(conjur.NewWriteApiOrDie())
 		conjurReadApi := conjur.NewConjurApiMetrics(conjur.NewReadOnlyApiOrDie())
 
-		backend := conjur.NewBackend(conjurWriteApi, conjurReadApi)
+		conjurBackend := conjur.NewBackend(conjurWriteApi, conjurReadApi)
+		conjurBackend.WithBouncer(bouncer.NewLocker("secret-write"))
+
 		if shouldCache {
-			if cacheV2 {
-				log.V(1).Info("using v2 cache implementation")
-				backend = v2.NewCachedBackend(backend, cacheDuration)
-			} else {
-				backend = cache.NewCachedBackend(backend, cacheDuration)
+			cacheDuration, err := time.ParseDuration(cfg.Backend.GetDefault("cache_duration", "10s"))
+			if err != nil {
+				return nil, errors.Wrap(err, "failed to parse cache duration")
 			}
+			cacheMaxCostStr := cfg.Backend.GetDefault("cache_max_cost_mb", "100")
+			cacheMaxCostMb, err := strconv.ParseInt(cacheMaxCostStr, 10, 0)
+			if err != nil {
+				return nil, errors.Wrap(err, "failed to parse cache max cost")
+			}
+			cacheMaxCostBytes := cacheMaxCostMb << 20 // convert MB to bytes
+			log.V(1).Info("cache is enabled", "duration", cacheDuration.String(), "max_cost_mb", cacheMaxCostMb)
+
+			cachedBackend := cache.NewCachedBackend(conjurBackend,
+				cache.WithTTL(cacheDuration),
+				cache.WithMaxCost(cacheMaxCostBytes),
+			)
+			metrics.RegisterMetrics(prometheus.DefaultRegisterer, cachedBackend.CacheSizeBytes)
+			onboarder := conjur.NewOnboarder(conjurWriteApi, cachedBackend)
+			onboarder.WithBouncer(bouncer.NewLocker("secret-onboard"))
+			c = controller.NewController(cachedBackend, onboarder)
+		} else {
+			onboarder := conjur.NewOnboarder(conjurWriteApi, conjurBackend)
+			onboarder.WithBouncer(bouncer.NewLocker("secret-onboard"))
+			c = controller.NewController(conjurBackend, onboarder)
 		}
-		onboarder := conjur.NewOnboarder(conjurWriteApi, backend)
-		onboarder.WithBouncer(bouncer.NewDefaultLocker())
-		c = controller.NewController(backend, onboarder)
 
 	case "kubernetes":
 		k8sClient, err := kubernetes.NewCachedClient(ctx, ctrlr.GetConfigOrDie())
@@ -119,9 +121,6 @@ func newController(ctx context.Context, cfg *config.ServerConfig) (c controller.
 			return nil, errors.Wrap(err, "failed to create kubernetes client")
 		}
 		backend := kubernetes.NewBackend(k8sClient)
-		if shouldCache {
-			backend = cache.NewCachedBackend(backend, cacheDuration)
-		}
 		onboarder := kubernetes.NewOnboarder(k8sClient)
 		c = controller.NewController(backend, onboarder)
 
@@ -148,52 +147,42 @@ func main() {
 	}
 
 	appCfg := cs.NewAppConfig()
-	appCfg.CtxLog = &log
+	appCfg.CtxLog = log
 	appCfg.ErrorHandler = handler.ErrorHandler
-	app := cs.NewAppWithConfig(appCfg)
 
-	probesCtrl := cs.NewProbesController()
-	probesCtrl.Register(app, cs.ControllerOpts{})
+	h := api.NewStrictHandler(handler.NewHandler(ctrl), nil)
 
-	apiGroup := app.Group("/api")
-	handler := api.NewStrictHandler(handler.NewHandler(ctrl), nil)
-
-	if cfg.Security.Enabled {
-		opts := []k8s.KubernetesAuthOption{
-			k8s.WithAudience("secret-manager"),
-			k8s.WithTrustedIssuers(cfg.Security.TrustedIssuers...),
-			k8s.WithJWKSetURLs(cfg.Security.JWKSetURLs...),
-			k8s.WithAccessConfig(cfg.Security.AccessConfig...),
-		}
-		if util.IsRunningInCluster() {
-			log.Info("🔑 Running in cluster")
-			opts = append(opts, k8s.WithInClusterIssuer())
-		}
-		apiGroup.Use(k8s.NewKubernetesAuthz(opts...))
+	// Pure-k8s server: adminContext=false (handlers don't read BusinessContext);
+	// internal=true yields K8sFamily with open access (empty accessConfig = any
+	// authenticated in-cluster SA). A k8s block with no issuer auto-uses the
+	// in-cluster issuer.
+	lc := cfg.Listeners.Internal
+	if lc == nil {
+		log.Error(errors.New("no internal listener configured"), "secret-manager requires listeners.internal")
+		os.Exit(1)
+	}
+	family, err := cs.FamilyFromListenerConfig(*lc, nil, cs.WithInternal())
+	if err != nil {
+		log.Error(err, "failed to build security family for internal listener", "address", lc.Address)
+		os.Exit(1)
 	}
 
-	api.RegisterHandlersWithOptions(apiGroup, handler, api.FiberServerOptions{})
+	ms := &cs.MultiServer{
+		AppConfig: appCfg,
+		TLS:       cfg.TLS.ToServerTLS(),
+		Listeners: cs.Listeners{
+			Internal: &cs.Listener{Address: lc.Address, Family: family},
+		},
+		Register: func(router fiber.Router, guard fiber.Handler) {
+			apiGroup := router.Group("/api")
+			api.RegisterHandlersWithOptions(apiGroup, h, api.FiberServerOptions{})
+		},
+	}
 
-	go func() {
-		if disableTls {
-			fmt.Println("⚠️\tUsing HTTP instead of HTTPS. This is not secure.")
-			if err := app.Listen(address); err != nil {
-				log.Error(err, "failed to start server")
-				os.Exit(1)
-			}
-			return
-		}
-
-		ctx = logr.NewContext(ctx, log.WithName("server"))
-		if err := serve.ServeTLS(ctx, app, address, tlsCert, tlsKey); err != nil {
-			log.Error(err, "failed to start server")
-			os.Exit(1)
-		}
-	}()
-
-	<-ctx.Done()
+	ctx = logr.NewContext(ctx, log.WithName("server"))
+	if err := ms.Run(ctx); err != nil {
+		log.Error(err, "server exited with error")
+		os.Exit(1)
+	}
 	log.Info("shutting down server...")
-	if err := app.Shutdown(); err != nil {
-		log.Error(err, "failed to shutdown server")
-	}
 }

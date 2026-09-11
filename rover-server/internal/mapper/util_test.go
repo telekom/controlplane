@@ -6,9 +6,11 @@ package mapper
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -78,4 +80,104 @@ func TestParseResourceId_InvalidContext_ReturnsError(t *testing.T) {
 
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "Security context not found")
+}
+
+// --- New tests for ParseResourceId and ValidateResourceIdInfo ---
+
+func securityContext(env string) context.Context {
+	bCtx := &security.BusinessContext{
+		Environment: env,
+	}
+	return security.ToContext(context.Background(), bCtx)
+}
+
+func TestParseResourceId_ValidResourceId(t *testing.T) {
+	ctx := securityContext("prod")
+
+	info, err := ParseResourceId(ctx, "group--team--my-resource")
+
+	assert.NoError(t, err)
+	assert.Equal(t, "group--team--my-resource", info.ResourceId)
+	assert.Equal(t, "prod", info.Environment)
+	assert.Equal(t, "group--team", info.Namespace)
+	assert.Equal(t, "my-resource", info.Name)
+}
+
+func TestParseResourceId_InvalidFormat(t *testing.T) {
+	ctx := securityContext("prod")
+
+	_, err := ParseResourceId(ctx, "invalid-no-separator")
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "Invalid resourceId format")
+}
+
+func TestParseResourceId_NameTooShort(t *testing.T) {
+	ctx := securityContext("prod")
+
+	_, err := ParseResourceId(ctx, "group--team--x")
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "ResourceId must be in format")
+}
+
+func TestParseResourceId_NameTooLong(t *testing.T) {
+	ctx := securityContext("prod")
+	longName := strings.Repeat("a", MaxNameLength+1)
+
+	_, err := ParseResourceId(ctx, "group--team--"+longName)
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "ResourceId must be in format")
+}
+
+func TestValidateResourceIdInfo_ValidName(t *testing.T) {
+	info := ResourceIdInfo{
+		ResourceId:  "group--team--my-resource",
+		Environment: "prod",
+		Namespace:   "group--team",
+		Name:        "my-resource",
+	}
+
+	err := ValidateResourceIdInfo(info)
+
+	assert.NoError(t, err)
+}
+
+func TestValidateResourceIdInfo_NameTooShort(t *testing.T) {
+	info := ResourceIdInfo{
+		Name: "x",
+	}
+
+	err := ValidateResourceIdInfo(info)
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "ResourceId must be in format")
+}
+
+func TestValidateResourceIdInfo_NameTooLong(t *testing.T) {
+	info := ResourceIdInfo{
+		Name: strings.Repeat("a", MaxNameLength+1),
+	}
+
+	err := ValidateResourceIdInfo(info)
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "ResourceId must be in format")
+}
+
+func TestValidateResourceIdInfo_ExactMinLength(t *testing.T) {
+	info := ResourceIdInfo{Name: "ab"}
+
+	err := ValidateResourceIdInfo(info)
+
+	assert.NoError(t, err)
+}
+
+func TestValidateResourceIdInfo_ExactMaxLength(t *testing.T) {
+	info := ResourceIdInfo{Name: strings.Repeat("a", MaxNameLength)}
+
+	err := ValidateResourceIdInfo(info)
+
+	assert.NoError(t, err)
 }

@@ -12,7 +12,7 @@
 [Subscription Security Mapper mapSubscriptionSecurity must map OAuth2 client credentials correctly - 1]
 &v1.SubscriberSecurity{
     M2M: &v1.SubscriberMachine2MachineAuthentication{
-        Client: &v1.OAuth2ClientCredentials{ClientId:"client-id", ClientSecret:"client-secret", ClientKey:"client-key"},
+        Client: &v1.OAuth2ClientCredentials{ClientId:"client-id", ClientSecret:"client-secret", ClientKey:"client-key", RefreshToken:"refreshToken"},
         Basic:  (*v1.BasicAuthCredentials)(nil),
         Scopes: nil,
     },
@@ -42,7 +42,7 @@
 [Subscription Security Mapper mapSubscriptionSecurity must map combined OAuth2 configuration correctly - 1]
 &v1.SubscriberSecurity{
     M2M: &v1.SubscriberMachine2MachineAuthentication{
-        Client: &v1.OAuth2ClientCredentials{ClientId:"client-id", ClientSecret:"client-secret", ClientKey:""},
+        Client: &v1.OAuth2ClientCredentials{ClientId:"client-id", ClientSecret:"client-secret", ClientKey:"", RefreshToken:""},
         Basic:  (*v1.BasicAuthCredentials)(nil),
         Scopes: {"read", "write"},
     },

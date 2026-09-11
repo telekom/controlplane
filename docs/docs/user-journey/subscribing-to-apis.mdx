@@ -1,0 +1,79 @@
+---
+sidebar_position: 4
+---
+
+# Subscribing to APIs
+
+:::warning Prerequisites
+Before subscribing to an API, the API must already be **exposed** by another team. The provider must have completed both the specification registration and the API exposure. See [Exposing APIs](./exposing-apis.mdx) for details on the full exposure process.
+:::
+
+Subscribing to an API grants your application access to an API exposed by another team. The subscription process is managed through Rover files and may require approval depending on the API provider's configuration.
+
+## Defining an API Subscription
+
+API subscriptions are declared in the `subscriptions` section of your Rover file:
+
+```yaml
+apiVersion: tcp.ei.telekom.de/v1
+kind: Rover
+metadata:
+  name: frontend-app
+spec:
+  zone: dataplane1
+  subscriptions:
+    - type: api
+      basePath: /checkout/v1
+```
+
+### Key Fields
+
+| Field | Description |
+| ----- | ----------- |
+| `basePath` | The base path of the API you want to subscribe to. This must match an existing exposed API. |
+
+## What Happens When You Subscribe
+
+When you apply a Rover file with an API subscription, the Control Plane:
+
+1. Creates an **ApiSubscription** resource linking your application to the target API
+2. The ApiSubscription handler verifies that both the **Api** resource and an active **ApiExposure** exist for the requested base path
+3. Creates an **Approval** resource (if the API requires approval)
+4. Waits for approval to be granted (for `simple` or `foureyes` strategies)
+5. Once approved, creates a **Gateway ConsumeRoute** that grants your application access to the API through the gateway
+
+:::caution
+If no active Api resource or ApiExposure exists for the requested base path, your subscription will remain in a pending state. Verify that the API provider has completed both the specification registration and the exposure.
+:::
+
+:::note
+If the API uses the `auto` approval strategy, access is granted immediately. For `simple` or `foureyes` strategies, you will need to wait for the API provider to approve your request. See [Approvals](./approvals.mdx) for details.
+:::
+
+## API & Event Features
+
+Beyond the basic subscription, you can customize your API subscription with additional features such as failover and security.
+
+:::tip
+See [API & Event Features](./features/overview.mdx) for the full list of features and detailed configuration examples.
+:::
+
+| Feature | Description |
+| ------- | ----------- |
+| [Failover](./features/traffic-management.mdx#failover) | Define fallback zones to try when the primary provider zone is unavailable. |
+| [Security](./features/security.mdx) | Provide your own OAuth2 or basic authentication credentials instead of using platform-managed identity. |
+
+## Checking Subscription Status
+
+You can check the status of your subscriptions using Rover-CTL:
+
+```bash
+roverctl get-info
+```
+
+The output will show the status of each subscription, including whether it is pending approval, granted, or rejected. See the [Rover-CTL CLI Reference](../reference/roverctl/) for more commands and options.
+
+## Next Steps
+
+- [Subscribing to Events](./subscribing-to-events.mdx) — Subscribe to events published by other teams
+- [Approvals](./approvals.mdx) — Understand how approval workflows work

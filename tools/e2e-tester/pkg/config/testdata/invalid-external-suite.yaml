@@ -1,0 +1,8 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+description: "Invalid external test suite - missing cases"
+environments:
+  - "test-env"
+cases: []

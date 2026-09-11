@@ -1,0 +1,51 @@
+{
+  "apiVersion": "approval.cp.ei.telekom.de/v1",
+  "kind": "Approval",
+  "metadata": {
+    "name": "apisubscription--my-app--eni-distr-v1",
+    "namespace": "poc--eni--hyperion",
+    "generation": 1,
+    "creationTimestamp": "2025-01-15T10:00:00Z"
+  },
+  "spec": {
+    "action": "allow",
+    "strategy": "Simple",
+    "state": "Granted",
+    "decisions": [
+      {
+        "name": "admin",
+        "email": "admin@telekom.de",
+        "comment": "Approved for testing"
+      }
+    ],
+    "target": {
+      "kind": "ApiSubscription",
+      "name": "my-app--eni-distr-v1",
+      "namespace": "poc--eni--hyperion"
+    },
+    "requester": {
+      "teamName": "hyperion",
+      "teamEmail": "hyperion@telekom.de"
+    }
+  },
+  "status": {
+    "conditions": [
+      {
+        "type": "Ready",
+        "status": "True",
+        "reason": "Granted",
+        "message": "Approval granted",
+        "lastTransitionTime": "2025-01-15T10:01:00Z",
+        "observedGeneration": 1
+      },
+      {
+        "type": "Processing",
+        "status": "False",
+        "reason": "Done",
+        "message": "Approval granted",
+        "lastTransitionTime": "2025-01-15T10:01:00Z",
+        "observedGeneration": 1
+      }
+    ]
+  }
+}

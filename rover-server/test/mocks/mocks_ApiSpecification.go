@@ -5,6 +5,8 @@
 package mocks
 
 import (
+	"strings"
+
 	"github.com/onsi/ginkgo/v2"
 	"github.com/stretchr/testify/mock"
 	"github.com/telekom/controlplane/common-server/pkg/problems"
@@ -12,13 +14,13 @@ import (
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 )
 
-func NewApiSpecificationStoreMock(testing ginkgo.FullGinkgoTInterface) store.ObjectStore[*roverv1.ApiSpecification] {
+func NewAPISpecificationStoreMock(testing ginkgo.FullGinkgoTInterface) store.ObjectStore[*roverv1.ApiSpecification] {
 	mockStore := NewMockObjectStore[*roverv1.ApiSpecification](testing)
-	ConfigureApiSpecificationStoreMock(testing, mockStore)
+	ConfigureAPISpecificationStoreMock(testing, mockStore)
 	return mockStore
 }
 
-func ConfigureApiSpecificationStoreMock(testing ginkgo.FullGinkgoTInterface, mockedStore *MockObjectStore[*roverv1.ApiSpecification]) {
+func ConfigureAPISpecificationStoreMock(testing ginkgo.FullGinkgoTInterface, mockedStore *MockObjectStore[*roverv1.ApiSpecification]) {
 	configureApiSpecification(testing, mockedStore)
 	configureNotFound(mockedStore)
 }
@@ -36,12 +38,25 @@ func configureApiSpecification(testing ginkgo.FullGinkgoTInterface, mockedStore 
 		}),
 	).Return(apiSpecification, nil).Maybe()
 
+	// List with a prefix that matches our test data (eni/hyperion)
 	mockedStore.EXPECT().List(
 		mock.AnythingOfType("*context.valueCtx"),
-		mock.Anything,
+		mock.MatchedBy(func(opts store.ListOpts) bool {
+			return opts.Prefix != "" && strings.HasPrefix("poc--eni--hyperion/", opts.Prefix)
+		}),
 	).Return(
 		&store.ListResponse[*roverv1.ApiSpecification]{
 			Items: []*roverv1.ApiSpecification{apiSpecification}}, nil).Maybe()
+
+	// List with a prefix that does NOT match our test data (e.g., different team)
+	mockedStore.EXPECT().List(
+		mock.AnythingOfType("*context.valueCtx"),
+		mock.MatchedBy(func(opts store.ListOpts) bool {
+			return opts.Prefix != "" && !strings.HasPrefix("poc--eni--hyperion/", opts.Prefix)
+		}),
+	).Return(
+		&store.ListResponse[*roverv1.ApiSpecification]{
+			Items: []*roverv1.ApiSpecification{}}, nil).Maybe()
 
 	mockedStore.EXPECT().Delete(
 		mock.AnythingOfType("*context.valueCtx"),

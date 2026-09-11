@@ -13,3 +13,8 @@ packages:
     interfaces:
       SecretManager:
         config:
+  github.com/telekom/controlplane/secret-manager/api/gen:
+    config:
+    interfaces:
+      ClientWithResponsesInterface:
+        config:

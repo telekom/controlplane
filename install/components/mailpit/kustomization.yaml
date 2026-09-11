@@ -1,0 +1,17 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Kustomize Component that deploys an in-cluster Mailpit SMTP mock server.
+# This is intended for development and testing. Mailpit captures all outgoing
+# emails and provides a web UI to inspect them.
+# In production environments you would skip this component and configure the
+# notification controller to use a real SMTP relay instead.
+
+apiVersion: kustomize.config.k8s.io/v1alpha1
+kind: Component
+
+namespace: controlplane-system
+
+resources:
+  - mailpit.yaml

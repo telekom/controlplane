@@ -51,6 +51,7 @@ func init() {
 	registerDefaults()
 	registerEnvs()
 	Parse()
+	logFeatureStates()
 }
 
 func registerDefaults() {
@@ -81,4 +82,8 @@ func Parse() {
 	LabelKeyPrefix = viper.GetString(configKeyLabelKeyPrefix)
 
 	FinalizerName = LabelKeyPrefix + "/" + FinalizerSuffix
+
+	for f := range features {
+		features[f] = viper.GetBool(f.Path())
+	}
 }

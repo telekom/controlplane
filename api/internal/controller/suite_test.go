@@ -13,24 +13,25 @@ import (
 	"testing"
 	"time"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
-	"github.com/telekom/controlplane/common/pkg/test/mock"
-	ctrl "sigs.k8s.io/controller-runtime"
-
 	apiv1 "github.com/telekom/controlplane/api/api/v1"
 	"github.com/telekom/controlplane/api/internal/handler/remoteapisubscription/syncer"
+	"github.com/telekom/controlplane/common/pkg/config"
+	"github.com/telekom/controlplane/common/pkg/test/mock"
+	organizationapi "github.com/telekom/controlplane/organization/api/v1"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -40,15 +41,26 @@ import (
 const (
 	timeout         = 2 * time.Second
 	interval        = 100 * time.Millisecond
-	testNamespace   = "default"
 	testEnvironment = "test"
+	testGroup       = "dev"
+	testTeamName    = "api"
+	testCategory    = organizationapi.TeamCategoryCustomer
 )
 
-var cfg *rest.Config
-var k8sClient client.Client
-var testEnv *envtest.Environment
-var ctx context.Context
-var cancel context.CancelFunc
+var testNamespace string
+
+func init() {
+	// testNamespace is constructed using the convention: <environment>--<group>--<team>
+	testNamespace = testEnvironment + "--" + testGroup + "--" + testTeamName
+}
+
+var (
+	cfg       *rest.Config
+	k8sClient client.Client
+	testEnv   *envtest.Environment
+	ctx       context.Context
+	cancel    context.CancelFunc
+)
 
 var syncerFactoryMock = syncer.NewSyncerFactoryMock()
 
@@ -73,6 +85,7 @@ var _ = BeforeSuite(func() {
 			filepath.Join("..", "..", "..", "admin", "config", "crd", "bases"),
 			filepath.Join("..", "..", "..", "gateway", "config", "crd", "bases"),
 			filepath.Join("..", "..", "..", "identity", "config", "crd", "bases"),
+			filepath.Join("..", "..", "..", "organization", "config", "crd", "bases"),
 		),
 		ErrorIfCRDPathMissing: true,
 		BinaryAssetsDirectory: filepath.Join("..", "..", "bin", "k8s",
@@ -148,14 +161,69 @@ var _ = BeforeSuite(func() {
 	By("Creating the environment namespace")
 	CreateNamespace(testEnvironment)
 
+	By("Creating the test group and team")
+	CreateTestGroup()
+	CreateTestTeam()
+
+	By("Creating the test namespace")
+	CreateNamespace(testNamespace)
+
+	By("Creating the test API category")
+	CreateTestApiCategory()
+
 	go func() {
 		defer GinkgoRecover()
 		err = k8sManager.Start(ctx)
 		Expect(err).ToNot(HaveOccurred(), "failed to run manager")
 	}()
+
+	By("Waiting for informer caches to sync")
+	Expect(k8sManager.GetCache().WaitForCacheSync(ctx)).To(BeTrue())
 })
 
 var _ = AfterSuite(func() {
+	By("cleaning up all test resources before shutdown")
+	cleanupCtx, cleanupCancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cleanupCancel()
+
+	// Delete in dependency order: subscriptions → exposures → apis → categories
+	for _, obj := range []client.Object{
+		&apiv1.ApiSubscription{},
+		&apiv1.RemoteApiSubscription{},
+		&apiv1.ApiExposure{},
+		&apiv1.Api{},
+		&apiv1.ApiCategory{},
+	} {
+		_ = k8sClient.DeleteAllOf(cleanupCtx, obj, client.InNamespace(testNamespace))
+	}
+	// Also clean up resources in the "default" namespace
+	for _, obj := range []client.Object{
+		&apiv1.ApiSubscription{},
+		&apiv1.RemoteApiSubscription{},
+		&apiv1.ApiExposure{},
+		&apiv1.Api{},
+		&apiv1.ApiCategory{},
+	} {
+		_ = k8sClient.DeleteAllOf(cleanupCtx, obj, client.InNamespace("default"))
+	}
+
+	By("waiting for resources to be fully deleted")
+	Eventually(func() int {
+		total := 0
+		for _, ns := range []string{testNamespace, "default"} {
+			subs := &apiv1.ApiSubscriptionList{}
+			_ = k8sClient.List(cleanupCtx, subs, client.InNamespace(ns))
+			total += len(subs.Items)
+			exps := &apiv1.ApiExposureList{}
+			_ = k8sClient.List(cleanupCtx, exps, client.InNamespace(ns))
+			total += len(exps.Items)
+			apis := &apiv1.ApiList{}
+			_ = k8sClient.List(cleanupCtx, apis, client.InNamespace(ns))
+			total += len(apis.Items)
+		}
+		return total
+	}, 20*time.Second, 200*time.Millisecond).Should(Equal(0))
+
 	By("tearing down the test environment")
 	cancel()
 	err := testEnv.Stop()
@@ -169,4 +237,72 @@ func CreateNamespace(name string) {
 		},
 	}
 	Expect(k8sClient.Create(ctx, ns)).To(Succeed())
+}
+
+func CreateTestGroup() *organizationapi.Group {
+	group := &organizationapi.Group{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      testGroup,
+			Namespace: testEnvironment,
+			Labels: map[string]string{
+				config.EnvironmentLabelKey: testEnvironment,
+			},
+		},
+		Spec: organizationapi.GroupSpec{
+			DisplayName: "Test Group",
+			Description: "Test group for API tests",
+		},
+	}
+	Expect(k8sClient.Create(ctx, group)).To(Succeed())
+	return group
+}
+
+func CreateTestTeam() *organizationapi.Team {
+	team := &organizationapi.Team{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      organizationapi.TeamResourceName(testGroup, testTeamName),
+			Namespace: testEnvironment,
+			Labels: map[string]string{
+				config.EnvironmentLabelKey: testEnvironment,
+			},
+		},
+		Spec: organizationapi.TeamSpec{
+			Name:     testTeamName,
+			Group:    testGroup,
+			Email:    "test-team@example.com",
+			Category: testCategory,
+			Members: []organizationapi.Member{
+				{
+					Name:  "Test User",
+					Email: "test@example.com",
+				},
+			},
+		},
+	}
+	Expect(k8sClient.Create(ctx, team)).To(Succeed())
+	return team
+}
+
+func CreateTestApiCategory() *apiv1.ApiCategory {
+	apiCat := &apiv1.ApiCategory{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "other",
+			Namespace: testNamespace,
+			Labels: map[string]string{
+				config.EnvironmentLabelKey: testEnvironment,
+			},
+		},
+		Spec: apiv1.ApiCategorySpec{
+			LabelValue:  "other",
+			Active:      true,
+			Description: "Other category for testing",
+			AllowTeams: &apiv1.AllowTeamsConfig{
+				Categories: []string{string(organizationapi.TeamCategoryCustomer)},
+				Names:      []string{},
+			},
+			MustHaveGroupPrefix: false,
+		},
+	}
+	Expect(k8sClient.Create(ctx, apiCat)).To(Succeed())
+	return apiCat
 }

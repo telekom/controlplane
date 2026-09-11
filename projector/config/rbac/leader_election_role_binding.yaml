@@ -1,0 +1,19 @@
+# Copyright 2026 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  labels:
+    app.kubernetes.io/name: projector
+    app.kubernetes.io/managed-by: kustomize
+  name: projector-leader-election-rolebinding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: projector-leader-election-role
+subjects:
+- kind: ServiceAccount
+  name: projector-controller-manager
+  namespace: system

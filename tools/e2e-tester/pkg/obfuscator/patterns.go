@@ -52,6 +52,25 @@ var (
 			Pattern: `irisClientSecret: .*`,
 			Replace: "irisClientSecret: OBFUSCATED",
 		},
+		{
+			Pattern: `trd_.+`,
+			Replace: "trd_OBFUSCATED",
+		},
+
+		// YAML-style uid field: uid: <value>
+		{
+			Pattern: `\buid:\s*\S+`,
+			Replace: "uid: uid_OBFUSCATED",
+		},
+		// JSON-style uid field: "uid": "<value>"
+		{
+			Pattern: `"uid"\s*:\s*"[^"]*"`,
+			Replace: `"uid":"uid_OBFUSCATED"`,
+		},
+		{
+			Pattern: "traceId.*",
+			Replace: "traceId_OBFUSCATED",
+		},
 	}
 )
 

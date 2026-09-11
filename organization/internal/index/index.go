@@ -8,19 +8,19 @@ import (
 	"context"
 	"os"
 
-	adminv1 "github.com/telekom/controlplane/admin/api/v1"
-	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	adminv1 "github.com/telekom/controlplane/admin/api/v1"
+	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
 )
 
 const (
-	FieldSpecGroup    = "spec.group"
-	FieldSpecTeamApis = "spec.teamApis"
+	FieldSpecGroup         = "spec.group"
+	FieldSpecManagedRoutes = "spec.managedRoutes"
 )
 
 func RegisterIndicesOrDie(ctx context.Context, mgr ctrl.Manager) {
-
 	// Index the team by the group it refers to
 	filterTeamGroup := func(obj client.Object) []string {
 		team, ok := obj.(*organizationv1.Team)
@@ -36,11 +36,14 @@ func RegisterIndicesOrDie(ctx context.Context, mgr ctrl.Manager) {
 			return nil
 		}
 
-		if zone.Spec.TeamApis == nil {
-			return []string{"false"}
-		} else {
-			return []string{"true"}
+		if zone.Spec.ManagedRoutes != nil {
+			for _, r := range zone.Spec.ManagedRoutes.Routes {
+				if r.Type == adminv1.ManagedRouteTypeTeamAPI {
+					return []string{"true"}
+				}
+			}
 		}
+		return []string{"false"}
 	}
 
 	err := mgr.GetFieldIndexer().IndexField(ctx, &organizationv1.Team{}, FieldSpecGroup, filterTeamGroup)
@@ -49,9 +52,9 @@ func RegisterIndicesOrDie(ctx context.Context, mgr ctrl.Manager) {
 		os.Exit(1)
 	}
 
-	err = mgr.GetFieldIndexer().IndexField(ctx, &adminv1.Zone{}, FieldSpecTeamApis, filterZoneWithTeamRealmInfos)
+	err = mgr.GetFieldIndexer().IndexField(ctx, &adminv1.Zone{}, FieldSpecManagedRoutes, filterZoneWithTeamRealmInfos)
 	if err != nil {
-		ctrl.Log.Error(err, "unable to create fieldIndex for zone", "FieldIndex", FieldSpecTeamApis)
+		ctrl.Log.Error(err, "unable to create fieldIndex for zone", "FieldIndex", FieldSpecManagedRoutes)
 		os.Exit(1)
 	}
 }

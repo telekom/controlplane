@@ -17,16 +17,24 @@ fmt: ## Run go fmt against code.
 vet: ## Run go vet against code.
 	go vet ./...
 
+.PHONY: generate
+generate: ## Generate JSON schemas.
+	go generate ./tools/...
+
 ##@ Build
 
 .PHONY: build
-build: fmt vet ## Run go build against code.
+build: generate fmt vet ## Run go build against code.
 	mkdir -p bin
 	go build -ldflags="-X 'main.version=$(VERSION)' -X 'main.buildTime=$(BUILD_TIME)' -X 'main.gitCommit=$(GIT_COMMIT)' -X 'main.goVersion=$(shell go version)'" -trimpath -mod=readonly -o bin/e2e-tester main.go
 
+# Packages to test and measure coverage for
+TEST_PACKAGES = ./pkg/...
+COVER_PACKAGES = ./pkg/...
+
 .PHONY: test
-test: fmt vet ## Run tests.
-	go test $$(go list ./... | grep -v /test) -coverprofile cover.out -mod=readonly -race -json 2>&1 | tee gotest.log | gotestfmt
+test: generate fmt vet ## Run tests.
+	gotestsum --format pkgname --junitfile junit.xml --jsonfile gotest.log -- $(TEST_PACKAGES) -coverprofile cover.out --coverpkg $(COVER_PACKAGES) -mod=readonly -race
 
 .PHONY: install
 install: build 

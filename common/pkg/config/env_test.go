@@ -8,9 +8,10 @@ import (
 	"os"
 	"time"
 
+	"github.com/spf13/viper"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/spf13/viper"
 )
 
 var _ = Describe("Config Env Tests", func() {
@@ -123,7 +124,6 @@ var _ = Describe("Config Env Tests", func() {
 				"DEFAULT_NAMESPACE":         "test-namespace-from-env",
 				"DEFAULT_ENVIRONMENT":       "test-env-from-env",
 				"LABEL_KEY_PREFIX":          "test.prefix.from.env",
-				"FINALIZER_SUFFIX":          "test-finalizer-from-env",
 				"JITTER_FACTOR":             "0.6",
 				"MAX_BACKOFF":               "4m",
 				"MAX_CONCURRENT_RECONCILES": "7",

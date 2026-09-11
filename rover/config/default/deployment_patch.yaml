@@ -25,13 +25,13 @@
 - op: add
   path: /spec/template/spec/volumes/0
   value:
-    name: trust-bundle
+    name: controlplane-trust-bundle
     configMap:
-      name: secret-manager-trust-bundle
+      name: controlplane-trust-bundle
 
 - op: add
   path: /spec/template/spec/containers/0/volumeMounts/-
   value:
-    name: trust-bundle
+    name: controlplane-trust-bundle
     mountPath: /var/run/secrets/trust-bundle
     readOnly: true

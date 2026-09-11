@@ -24,6 +24,11 @@ func (s *Server) GetAllEventSpecifications(c *fiber.Ctx) error {
 		return server.ReturnWithProblem(c, nil, err)
 	}
 
+	res.UnderscoreLinks.Self = buildCursorUrl(c.BaseURL(), c.Path(), res.UnderscoreLinks.Self)
+	if res.UnderscoreLinks.Next != "" {
+		res.UnderscoreLinks.Next = buildCursorUrl(c.BaseURL(), c.Path(), res.UnderscoreLinks.Next)
+	}
+
 	return c.JSON(res)
 }
 

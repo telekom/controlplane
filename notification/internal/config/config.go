@@ -5,14 +5,14 @@
 package config
 
 import (
-	"github.com/pkg/errors"
-	"github.com/spf13/viper"
 	"strings"
 	"time"
+
+	"github.com/pkg/errors"
+	"github.com/spf13/viper"
 )
 
 type NotificationHousekeepingConfig struct {
-
 	// TTLMonthsAfterFinished specifies how many months should the notification be kept in the system if it was successfully handled (all channels sent without error)
 	TTLMonthsAfterFinished int32 `json:"ttlMonthsAfterFinished,omitempty"`
 }

@@ -6,17 +6,18 @@ package controller
 
 import (
 	"context"
-	"github.com/telekom/controlplane/notification/internal/config"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	cc "github.com/telekom/controlplane/common/pkg/controller"
 	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
+	"github.com/telekom/controlplane/notification/internal/config"
 	"github.com/telekom/controlplane/notification/internal/handler"
 )
 
@@ -47,7 +48,7 @@ func (r *NotificationChannelReconciler) SetupWithManager(mgr ctrl.Manager) error
 	}, r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&notificationv1.NotificationChannel{}).
+		For(&notificationv1.NotificationChannel{}, builder.WithPredicates(cc.Count("notificationchannel", cc.RoleFor))).
 		Named("notificationchannel").
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,

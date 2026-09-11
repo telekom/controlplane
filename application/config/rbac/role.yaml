@@ -8,6 +8,14 @@ metadata:
   name: manager-role
 rules:
 - apiGroups:
+  - ""
+  - events.k8s.io
+  resources:
+  - events
+  verbs:
+  - create
+  - patch
+- apiGroups:
   - admin.cp.ei.telekom.de
   resources:
   - zones
@@ -41,13 +49,6 @@ rules:
   - get
   - patch
   - update
-- apiGroups:
-  - ""
-  resources:
-  - events
-  verbs:
-  - create
-  - patch
 - apiGroups:
   - gateway.cp.ei.telekom.de
   resources:
@@ -87,4 +88,24 @@ rules:
   verbs:
   - get
   - list
+  - watch
+- apiGroups:
+  - notification.cp.ei.telekom.de
+  resources:
+  - notificationchannels
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - notification.cp.ei.telekom.de
+  resources:
+  - notifications
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
   - watch

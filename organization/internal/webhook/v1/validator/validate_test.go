@@ -8,9 +8,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
 )
 
 func TestValidateTeamName(t *testing.T) {

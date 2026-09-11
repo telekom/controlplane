@@ -1,0 +1,233 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+schema: "*.graphql"
+
+exec:
+  layout: follow-schema
+  package: resolvers
+  filename_template: "{name}.generated.go"
+  dir: internal/resolvers
+
+resolver:
+  layout: follow-schema
+  package: resolvers
+  filename_template: "{name}.resolvers.go"
+  dir: internal/resolvers
+
+model:
+  filename: internal/resolvers/model/models.generated.go
+  package: model
+
+autobind:
+  - github.com/99designs/gqlgen/graphql/introspection
+  - github.com/telekom/controlplane/controlplane-api/ent
+  - github.com/telekom/controlplane/controlplane-api/ent/api
+  - github.com/telekom/controlplane/controlplane-api/ent/team
+  - github.com/telekom/controlplane/controlplane-api/ent/application
+  - github.com/telekom/controlplane/controlplane-api/ent/apiexposure
+  - github.com/telekom/controlplane/controlplane-api/ent/apisubscription
+  - github.com/telekom/controlplane/controlplane-api/ent/eventexposure
+  - github.com/telekom/controlplane/controlplane-api/ent/eventsubscription
+  - github.com/telekom/controlplane/controlplane-api/ent/eventtype
+
+models:
+  ID:
+    model:
+      - github.com/99designs/gqlgen/graphql.IntID
+  CreateTeamInput:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.CreateTeamInput
+  UpdateTeamInput:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.UpdateTeamInput
+  MemberInput:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.MemberInput
+  DecisionInput:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.DecisionInput
+  MutationError:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.MutationError
+  CreateTeamPayload:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.CreateTeamPayload
+  UpdateTeamPayload:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.UpdateTeamPayload
+  AddTeamMemberPayload:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.AddTeamMemberPayload
+  RemoveTeamMemberPayload:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.RemoveTeamMemberPayload
+  RotateTeamTokenPayload:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.RotateTeamTokenPayload
+  RotateApplicationSecretPayload:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.RotateApplicationSecretPayload
+  DecideApprovalRequestPayload:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.DecideApprovalRequestPayload
+  DecideApprovalPayload:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.DecideApprovalPayload
+  DeleteTeamInput:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.DeleteTeamInput
+  DeleteTeamPayload:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.DeleteTeamPayload
+  CreateGroupInput:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.CreateGroupInput
+  UpdateGroupInput:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.UpdateGroupInput
+  DeleteGroupInput:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.DeleteGroupInput
+  CreateGroupPayload:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.CreateGroupPayload
+  UpdateGroupPayload:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.UpdateGroupPayload
+  DeleteGroupPayload:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.DeleteGroupPayload
+  Node:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/ent.Noder
+  TeamInfo:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/pkg/model.TeamInfo
+  Upstream:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/pkg/model.Upstream
+  Permission:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/pkg/model.Permission
+  ApprovalConfig:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/pkg/model.ApprovalConfig
+  RequesterInfo:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/pkg/model.RequesterInfo
+  DeciderInfo:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/pkg/model.DeciderInfo
+  Decision:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/pkg/model.Decision
+  AvailableTransition:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/pkg/model.AvailableTransition
+  Application:
+    fields:
+      clientSecret:
+        resolver: true
+      rotatedClientSecret:
+        resolver: true
+  ExternalId:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/pkg/model.ExternalId
+  IpRestrictions:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/pkg/model.IpRestrictions
+  Team:
+    fields:
+      teamToken:
+        resolver: true
+  ApiExposureInfo:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/pkg/model.ApiExposureInfo
+  ApiSubscriptionInfo:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/pkg/model.ApiSubscriptionInfo
+  EventSubscriptionInfo:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/pkg/model.EventSubscriptionInfo
+  EventExposureInfo:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/pkg/model.EventExposureInfo
+  # Security
+  ApiExposureSecurity:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/pkg/model.ApiExposureSecurity
+  ApiSubscriptionSecurity:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/pkg/model.ApiSubscriptionSecurity
+  Machine2MachineAuthentication:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/pkg/model.Machine2MachineAuthentication
+  SubscriberMachine2MachineAuthentication:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/pkg/model.SubscriberMachine2MachineAuthentication
+  ExternalIdentityProvider:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/pkg/model.ExternalIdentityProvider
+  BasicAuthCredentials:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/pkg/model.BasicAuthCredentials
+    fields: 
+      password:
+        resolver: true
+  OAuth2ClientCredentials:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/pkg/model.OAuth2ClientCredentials
+    fields:
+      clientSecret:
+        resolver: true
+      clientKey:
+        resolver: true
+# Traffic
+  Traffic:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/pkg/model.Traffic
+  ApiSubscriptionTraffic:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/pkg/model.ApiSubscriptionTraffic
+  RateLimit:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/pkg/model.RateLimit
+  RateLimitConfig:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/pkg/model.RateLimitConfig
+  Limits:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/pkg/model.Limits
+  RateLimitOptions:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/pkg/model.RateLimitOptions
+  SubscriberRateLimits:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/pkg/model.SubscriberRateLimits
+  SubscriberRateLimitDefaults:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/pkg/model.SubscriberRateLimitDefaults
+  RateLimitOverrides:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/pkg/model.RateLimitOverrides 
+  Failover:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/pkg/model.Failover 
+  # EventScope Types
+  EventScope:
+    model:
+     - github.com/telekom/controlplane/controlplane-api/pkg/model.EventScope
+  EventTrigger:
+    model:
+     - github.com/telekom/controlplane/controlplane-api/pkg/model.EventTrigger
+  ResponseFilter:
+    model:
+     - github.com/telekom/controlplane/controlplane-api/pkg/model.ResponseFilter
+  SelectionFilter:
+    model:
+     - github.com/telekom/controlplane/controlplane-api/pkg/model.SelectionFilter
+  EventDelivery:
+    model:
+     - github.com/telekom/controlplane/controlplane-api/pkg/model.EventDelivery

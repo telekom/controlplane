@@ -19,9 +19,11 @@ import (
 type Member struct {
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=100
 	Name string `json:"name"`
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=320
 	// +kubebuilder:validation:Format=email
 	Email string `json:"email"`
 }
@@ -44,6 +46,15 @@ type TeamSpec struct {
 	// +kubebuilder:validation:Pattern=^[a-z0-9]+(-?[a-z0-9]+)*$
 	Name string `json:"name"`
 
+	// DisplayName is the name of the team, that should be displayed in UI if available
+	// +kubebuilder:validation:Optional
+	DisplayName string `json:"displayName,omitempty"`
+
+	// Description of a team
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:MaxLength=256
+	Description string `json:"description,omitempty"`
+
 	// Group is the group of the team
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MinLength=1
@@ -58,6 +69,12 @@ type TeamSpec struct {
 
 	// Members is the members of the team
 	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:MaxItems=50
+	// +kubebuilder:validation:XValidation:rule="self.all(e, self.filter(x, x.email.lowerAscii() == e.email.lowerAscii()).size() == 1)",message="member email addresses must be unique (case-insensitive)"
+	// +listType=map
+	// +listMapKey=email
+	// +patchStrategy=merge
+	// +patchMergeKey=email
 	Members []Member `json:"members"`
 
 	// Secret for the teamToken and passed towards the identity client.
@@ -147,6 +164,18 @@ func init() {
 	SchemeBuilder.Register(&Team{}, &TeamList{})
 }
 
+// TeamResourceName returns the canonical Team CRD name: <group>--<team>.
+func TeamResourceName(group, team string) string {
+	return group + "--" + team
+}
+
+// TeamNamespace returns the canonical per-team namespace: <environment>--<fullTeamName>,
+// where fullTeamName is the Team CRD's metadata.name (i.e. "<group>--<team>").
+// Namespaces matching this convention are parseable via FindTeamForNamespace.
+func TeamNamespace(environment, fullTeamName string) string {
+	return environment + "--" + fullTeamName
+}
+
 // FindTeamForNamespace finds the team for the given namespace.
 // The namespace must follow the naming convention <environment>--<group>--<team>.
 func FindTeamForNamespace(ctx context.Context, namespace string) (*Team, error) {
@@ -163,7 +192,7 @@ func FindTeamForNamespace(ctx context.Context, namespace string) (*Team, error) 
 	team := &Team{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: parts[0],
-			Name:      parts[1] + "--" + parts[2],
+			Name:      TeamResourceName(parts[1], parts[2]),
 		},
 	}
 

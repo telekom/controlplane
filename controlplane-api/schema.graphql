@@ -1,0 +1,367 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Hand-written types that ent/entgql cannot auto-generate.
+# The ent-generated schema is in ent.graphql.
+
+# Reduced team information for cross-tenant contexts.
+
+scalar Map
+
+type TeamInfo {
+  id: ID!
+  name: String!
+  "Group name for display"
+  groupName: String!
+  email: String
+  displayName: String
+  description: String
+}
+
+type Upstream {
+  url: String!
+  weight: Int!
+}
+
+"A single role-resource-actions grant within a PermissionSet."
+type Permission {
+  role: String!
+  resource: String!
+  actions: [String!]!
+}
+
+type ApprovalConfig {
+  strategy: ApprovalStrategy!
+  trustedTeams: [String!]!
+}
+
+type RequesterInfo {
+  teamName: String!
+  teamEmail: String!
+  reason: String
+  applicationName: String
+}
+
+type ExternalId {
+  Id: String!
+  Schema: String!
+}
+
+type IpRestrictions {
+  Allow: [String!]
+  Deny: [String!]
+}
+
+type DeciderInfo {
+  teamName: String!
+  teamEmail: String
+}
+
+type Decision {
+  name: String!
+  email: String
+  comment: String
+  timestamp: String
+  resultingState: ApprovalState
+}
+
+type AvailableTransition {
+  action: ApprovalAction!
+  toState: ApprovalState!
+}
+
+type EventScope {
+  name: String!
+  trigger: EventTrigger!
+}
+
+type EventTrigger {
+  responseFilter: ResponseFilter
+  selectionFilter: SelectionFilter
+}
+
+enum ResponseFilterMode {
+  INCLUDE
+  EXCLUDE
+}
+
+type ResponseFilter {
+  paths: [String]!
+  mode: ResponseFilterMode 
+}
+
+type SelectionFilter {
+  attributes: Map
+  expression: String!
+}
+
+type EventDelivery {
+  payload: PayloadType!
+  eventRetentionTime: String!
+  circuitBreakerOptOut: Boolean!
+  retryableStatusCodes: [Int!]
+  redeliveriesPerSecond: Int
+  enforceGetHttpRequestMethodForHealthCheck: Boolean!
+}
+
+enum PayloadType {
+  DATA
+  DATA_REF
+}
+
+enum ApiExposureFeature {
+  BASIC_AUTH
+  CIRCUIT_BREAKER
+  CUSTOM_SCOPES
+  EXTERNAL_IDP
+  FAILOVER
+  HEADER_TRANSFORMATION
+  LAST_MILE_SECURITY
+  LOAD_BALANCING
+  RATE_LIMIT
+}
+
+enum ApprovalAction {
+  ALLOW
+  DENY
+  SUSPEND
+  RESUME
+}
+
+# -- Cross-tenant reduced types --
+# These types terminate graph traversal at tenant boundaries.
+# They expose only safe scalar fields and the owning team/application name.
+
+"Reduced API exposure for cross-tenant contexts (e.g., subscription target)."
+type ApiExposureInfo {
+  id: ID!
+  basePath: String!
+  visibility: ApiExposureVisibility!
+  active: Boolean
+  apiVersion: String
+  features: [ApiExposureFeature!]!
+  approvalConfig: ApprovalConfig!
+  traffic: Traffic 
+  "Application name that owns this exposure"
+  ownerApplicationName: String!
+  "Owning team (reduced view)"
+  ownerTeam: TeamInfo!
+}
+
+# Security
+
+enum TokenRequestMethod {
+  client_secret_basic
+  client_secret_post
+}
+
+type BasicAuthCredentials {
+  username: String!
+  password: String!
+}
+
+type OAuth2ClientCredentials {
+  clientId: String!
+  clientSecret: String
+  clientKey: String
+}
+
+type ExternalIdentityProvider {
+  tokenEndpoint: String!
+  tokenRequest: TokenRequestMethod
+  grantType: String
+  basic: BasicAuthCredentials
+  client: OAuth2ClientCredentials
+}
+
+type Machine2MachineAuthentication {
+  externalIDP: ExternalIdentityProvider
+  basic: BasicAuthCredentials
+  scopes: [String!]
+}
+
+type SubscriberMachine2MachineAuthentication {
+  client: OAuth2ClientCredentials
+  basic: BasicAuthCredentials
+  scopes: [String!]
+}
+
+type ApiExposureSecurity {
+  m2m: Machine2MachineAuthentication
+}
+
+type ApiSubscriptionSecurity {
+  m2m: SubscriberMachine2MachineAuthentication
+}
+
+# Traffic 
+
+type Limits {
+  second: Int
+  minute: Int
+  hour: Int
+}
+
+type RateLimitOptions {
+  hideClientHeaders: Boolean
+  faultTolerant: Boolean
+}
+
+type RateLimitConfig {
+  limits: Limits!
+  options: RateLimitOptions
+}
+
+type SubscriberRateLimitDefaults {
+  limits: Limits!
+}
+
+type RateLimitOverrides {
+  subscriber: String!
+  limits: Limits!
+}
+
+type SubscriberRateLimits {
+  default: SubscriberRateLimitDefaults
+  overrides: [RateLimitOverrides!]
+}
+
+type RateLimit {
+  provider: RateLimitConfig
+  subscriberRateLimit: SubscriberRateLimits
+}
+
+type Failover {
+  zones: [String!]
+}
+
+type Traffic {
+  failover: Failover
+  rateLimit: RateLimit
+}
+
+type ApiSubscriptionTraffic {
+  providerLimits: Limits
+  subscriberLimits: Limits
+}
+
+"Reduced API subscription for cross-tenant contexts (e.g., exposure subscribers)."
+type ApiSubscriptionInfo {
+  id: ID!
+  basePath: String!
+  statusPhase: ApiSubscriptionStatusPhase
+  statusMessage: String
+  "Application name that owns this subscription"
+  ownerApplicationName: String!
+  "Owning team (reduced view)"
+  ownerTeam: TeamInfo!
+}
+
+"Reduced event subscription for cross-tenant contexts (e.g., exposure subscribers)."
+type EventSubscriptionInfo {
+  id: ID!
+  eventType: String!
+  deliveryType: EventSubscriptionDeliveryType!
+  statusPhase: EventSubscriptionStatusPhase
+  statusMessage: String
+  "Application name that owns this subscription"
+  ownerApplicationName: String!
+  "Owning team (reduced view)"
+  ownerTeam: TeamInfo!
+}
+
+"Reduced event exposure for cross-tenant contexts (e.g., subscription target)."
+type EventExposureInfo {
+  id: ID!
+  eventType: String!
+  visibility: EventExposureVisibility!
+  active: Boolean
+  approvalConfig: ApprovalConfig!
+  "Application name that owns this exposure"
+  ownerApplicationName: String!
+  "Owning team (reduced view)"
+  ownerTeam: TeamInfo!
+}
+
+# -- Cross-tenant edge overrides --
+
+extend type Application {
+  "Owning team (reduced view for cross-tenant safety)"
+  ownerTeam: TeamInfo!
+}
+
+extend type Zone {
+  "Token endpoint URL derived from the issuer URL. Returns null if no issuer URL is set."
+  tokenURL: String @goField(forceResolver: true)
+}
+
+extend type ApiSubscription {
+  "Target exposure (reduced view — cross-tenant boundary). Null when the target API is not yet exposed."
+  target: ApiExposureInfo @goField(forceResolver: true)
+}
+
+extend type ApiExposure {
+  "Subscriptions to this exposure (reduced view — cross-tenant boundary)"
+  subscriptions: [ApiSubscriptionInfo!]! @goField(forceResolver: true)
+}
+
+extend type EventSubscription {
+  "Target exposure (reduced view — cross-tenant boundary). Null when the target event is not yet exposed."
+  target: EventExposureInfo @goField(forceResolver: true)
+}
+
+extend type EventExposure {
+  "Subscriptions to this exposure (reduced view — cross-tenant boundary)"
+  subscriptions: [EventSubscriptionInfo!]! @goField(forceResolver: true)
+}
+
+"A subscription related to an approval — either an API or event subscription."
+union SubscriptionInfo = ApiSubscriptionInfo | EventSubscriptionInfo
+
+extend type Approval {
+  "Related subscription (reduced view — cross-tenant boundary)"
+  subscription: SubscriptionInfo! @goField(forceResolver: true)
+}
+
+extend type ApprovalRequest {
+  "Related subscription (reduced view — cross-tenant boundary)"
+  subscription: SubscriptionInfo! @goField(forceResolver: true)
+  "The corresponding approval, if one exists (traverses via the related subscription)"
+  approval: Approval @goField(forceResolver: true)
+}
+
+# -- Catalogue extensions --
+
+extend type Api {
+  "URL to download the OpenAPI specification from the file-manager. Null if no specification is associated."
+  specificationUrl: String @goField(forceResolver: true)
+  "The currently active exposure of this API, or null if no exposure is active."
+  activeExposure: ApiExposureInfo @goField(forceResolver: true)
+  "The team that owns this API."
+  owner: TeamInfo! @goField(forceResolver: true)
+}
+
+extend type EventType {
+  "URL to download the JSON schema from the file-manager. Null if no specification is associated."
+  specificationUrl: String @goField(forceResolver: true)
+  "The currently active exposure of this event type, or null if no exposure is active."
+  activeExposure: EventExposureInfo @goField(forceResolver: true)
+  "The team that owns this event type."
+  owner: TeamInfo! @goField(forceResolver: true)
+}
+
+extend type Query {
+  "Returns all distinct API categories currently in use."
+  apiCategories: [ApiCategory!]! @goField(forceResolver: true)
+
+  "Returns all groups visible to the current viewer."
+  groups(where: GroupWhereInput): [Group!]! @goField(forceResolver: true)
+}
+
+"A category that APIs can be classified under."
+type ApiCategory {
+  "The category identifier/name."
+  name: String!
+}
+

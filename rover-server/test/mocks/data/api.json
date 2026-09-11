@@ -1,0 +1,39 @@
+{
+  "apiVersion": "api.cp.ei.telekom.de/v1",
+  "kind": "Api",
+  "metadata": {
+    "name": "eni-admin-operator-test-v1",
+    "namespace": "poc--eni--hyperion",
+    "ownerReferences": [
+      {
+        "apiVersion": "rover.cp.ei.telekom.de/v1",
+        "kind": "ApiSpecification",
+        "name": "eni-distr-v1",
+        "uid": "549badcc-18b6-48ac-a8ce-b3242523d827"
+      }
+    ]
+  },
+  "spec": {
+    "version": "1.0.0",
+    "basePath": "/eni/admin-operator-test/v1",
+    "category": "other",
+    "xVendor": false
+  },
+  "status": {
+    "active": true,
+    "conditions": [
+      {
+        "type": "Ready",
+        "status": "True",
+        "reason": "Provisioned",
+        "message": "API is ready"
+      },
+      {
+        "type": "Processing",
+        "status": "False",
+        "reason": "Done",
+        "message": "API created"
+      }
+    ]
+  }
+}

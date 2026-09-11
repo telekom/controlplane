@@ -78,6 +78,7 @@ var _ = Describe("Plugin", func() {
 			Expect(actual).To(Equal(&JumperConfig{
 				OAuth:     map[ConsumerId]OauthCredentials{},
 				BasicAuth: map[ConsumerId]BasicAuthCredentials{},
+				Claims:    map[ConsumerId][]Claim{},
 				// LoadBalancing is optional and not set by default
 			}))
 

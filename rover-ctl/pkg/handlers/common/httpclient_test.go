@@ -141,3 +141,99 @@ var _ = Describe("HttpClient", func() {
 		common.NewAuthorizedHttpClient = origFunc
 	})
 })
+
+var _ = Describe("WithStaticHeaders", func() {
+	It("should add static headers to outgoing requests", func() {
+		mockClient := new(mocks.MockHttpDoer)
+		mockClient.EXPECT().Do(mock.AnythingOfType("*http.Request")).RunAndReturn(
+			func(req *http.Request) (*http.Response, error) {
+				// Verify headers were set
+				Expect(req.Header.Get("X-Custom-Header")).To(Equal("custom-value"))
+				Expect(req.Header.Get("User-Agent")).To(Equal("test-agent/1.0"))
+				return &http.Response{StatusCode: 200, Body: http.NoBody}, nil
+			},
+		)
+
+		client := common.WithStaticHeaders(mockClient, http.Header{
+			"X-Custom-Header": []string{"custom-value"},
+			"User-Agent":      []string{"test-agent/1.0"},
+		})
+
+		req, err := http.NewRequest("GET", "http://example.com", nil)
+		Expect(err).NotTo(HaveOccurred())
+
+		resp, err := client.Do(req)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(resp.StatusCode).To(Equal(200))
+	})
+
+	It("should override existing headers using Set semantics", func() {
+		mockClient := new(mocks.MockHttpDoer)
+		mockClient.EXPECT().Do(mock.AnythingOfType("*http.Request")).RunAndReturn(
+			func(req *http.Request) (*http.Response, error) {
+				// The static header should have overwritten the pre-existing one
+				Expect(req.Header.Values("Authorization")).To(HaveLen(1))
+				Expect(req.Header.Get("Authorization")).To(Equal("Bearer static-token"))
+				return &http.Response{StatusCode: 200, Body: http.NoBody}, nil
+			},
+		)
+
+		client := common.WithStaticHeaders(mockClient, http.Header{
+			"Authorization": []string{"Bearer static-token"},
+		})
+
+		req, err := http.NewRequest("GET", "http://example.com", nil)
+		Expect(err).NotTo(HaveOccurred())
+		// Pre-set a header that should be overwritten
+		req.Header.Set("Authorization", "Bearer old-token")
+
+		resp, err := client.Do(req)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(resp.StatusCode).To(Equal(200))
+	})
+
+	It("should work when wrapping another static header client", func() {
+		mockClient := new(mocks.MockHttpDoer)
+		mockClient.EXPECT().Do(mock.AnythingOfType("*http.Request")).RunAndReturn(
+			func(req *http.Request) (*http.Response, error) {
+				// Both layers of headers should be present
+				Expect(req.Header.Get("Authorization")).To(Equal("Bearer my-token"))
+				Expect(req.Header.Get("User-Agent")).To(Equal("test-agent/2.0"))
+				return &http.Response{StatusCode: 200, Body: http.NoBody}, nil
+			},
+		)
+
+		// First layer: Authorization
+		innerClient := common.WithStaticHeaders(mockClient, http.Header{
+			"Authorization": []string{"Bearer my-token"},
+		})
+
+		// Second layer: User-Agent (wraps the first)
+		outerClient := common.WithStaticHeaders(innerClient, http.Header{
+			"User-Agent": []string{"test-agent/2.0"},
+		})
+
+		req, err := http.NewRequest("GET", "http://example.com", nil)
+		Expect(err).NotTo(HaveOccurred())
+
+		resp, err := outerClient.Do(req)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(resp.StatusCode).To(Equal(200))
+	})
+
+	It("should propagate errors from the inner client", func() {
+		mockClient := new(mocks.MockHttpDoer)
+		expectedErr := http.ErrAbortHandler
+		mockClient.EXPECT().Do(mock.AnythingOfType("*http.Request")).Return(nil, expectedErr)
+
+		client := common.WithStaticHeaders(mockClient, http.Header{
+			"User-Agent": []string{"test-agent/1.0"},
+		})
+
+		req, err := http.NewRequest("GET", "http://example.com", nil)
+		Expect(err).NotTo(HaveOccurred())
+
+		_, err = client.Do(req)
+		Expect(err).To(MatchError(expectedErr))
+	})
+})

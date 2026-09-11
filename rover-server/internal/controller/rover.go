@@ -6,15 +6,18 @@ package controller
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/go-logr/logr"
 	"github.com/gofiber/fiber/v2"
-	"github.com/google/uuid"
+	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	"github.com/telekom/controlplane/common-server/pkg/problems"
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
 	"github.com/telekom/controlplane/common-server/pkg/store"
+	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/config"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
+	"k8s.io/apimachinery/pkg/api/meta"
 
 	"github.com/telekom/controlplane/rover-server/internal/api"
 	"github.com/telekom/controlplane/rover-server/internal/mapper"
@@ -24,19 +27,23 @@ import (
 	"github.com/telekom/controlplane/rover-server/internal/mapper/status"
 	"github.com/telekom/controlplane/rover-server/internal/server"
 	s "github.com/telekom/controlplane/rover-server/pkg/store"
+
+	secrets "github.com/telekom/controlplane/secret-manager/api"
 )
 
 var _ server.RoverController = &RoverController{}
 
 type RoverController struct {
+	stores      *s.Stores
 	Store       store.ObjectStore[*roverv1.Rover]
 	SecretStore store.ObjectStore[*roverv1.Rover]
 }
 
-func NewRoverController() *RoverController {
+func NewRoverController(stores *s.Stores) *RoverController {
 	return &RoverController{
-		Store:       s.RoverStore,
-		SecretStore: s.RoverSecretStore,
+		stores:      stores,
+		Store:       stores.RoverStore,
+		SecretStore: stores.RoverSecretStore,
 	}
 }
 
@@ -84,13 +91,14 @@ func (r *RoverController) Get(ctx context.Context, resourceId string) (res api.R
 		return res, err
 	}
 
-	return out.MapRoverResponse(ctx, rover)
+	return out.MapResponse(ctx, rover, r.stores)
 }
 
 // GetAll implements server.RoverController.
 func (r *RoverController) GetAll(ctx context.Context, params api.GetAllRoversParams) (*api.RoverListResponse, error) {
 	listOpts := store.NewListOpts()
 	listOpts.Cursor = params.Cursor
+	store.EnforcePrefix(security.PrefixFromContext(ctx), &listOpts)
 
 	objList, err := r.SecretStore.List(ctx, listOpts)
 	if err != nil {
@@ -98,8 +106,8 @@ func (r *RoverController) GetAll(ctx context.Context, params api.GetAllRoversPar
 	}
 
 	list := make([]api.RoverResponse, 0, len(objList.Items))
-	for _, r := range objList.Items {
-		roverResponse, err := out.MapRoverResponse(ctx, r)
+	for _, item := range objList.Items {
+		roverResponse, err := out.MapResponse(ctx, item, r.stores)
 		if err != nil {
 			return nil, problems.InternalServerError("Failed to map resource", err.Error())
 		}
@@ -124,10 +132,21 @@ func (r *RoverController) Update(ctx context.Context, resourceId string, req api
 
 	obj, err := in.MapRequest(&req, id)
 	if err != nil {
-		return res, err
+		if problems.IsValidationError(err) {
+			return res, err
+		}
+		return res, problems.BadRequest(err.Error())
 	}
 	EnsureLabelsOrDie(ctx, obj)
 	obj.Labels[config.BuildLabelKey("application")] = id.Name
+
+	if err := r.guardPubSubFeature(ctx, req, config.FeaturePubSub.IsEnabled()); err != nil {
+		return res, err
+	}
+
+	if err := r.guardAiGatewayFeature(ctx, req, config.FeatureAiGateway.IsEnabled()); err != nil {
+		return res, err
+	}
 
 	err = r.Store.CreateOrReplace(ctx, obj)
 	if err != nil {
@@ -153,7 +172,7 @@ func (r *RoverController) GetStatus(ctx context.Context, resourceId string) (res
 		return res, err
 	}
 
-	return status.MapRoverResponse(ctx, rover)
+	return status.MapRoverResponse(ctx, rover, r.stores)
 }
 
 // GetApplicationInfo implements server.RoverController.
@@ -176,7 +195,7 @@ func (r *RoverController) GetApplicationInfo(ctx context.Context, resourceId str
 		return res, err
 	}
 
-	appInfo, err := applicationinfo.MapApplicationInfo(ctx, rover)
+	appInfo, err := applicationinfo.MapApplicationInfo(ctx, rover, r.stores)
 	if err != nil {
 		return res, problems.InternalServerError("Failed to map resource", err.Error())
 	}
@@ -202,16 +221,28 @@ func (r *RoverController) GetApplicationsInfo(ctx context.Context, params api.Ge
 	}
 
 	listOpts := store.NewListOpts()
-	store.EnforcePrefix(bCtx.Environment+"--"+bCtx.Group+"--"+bCtx.Team, &listOpts)
+	store.EnforcePrefix(security.PrefixFromContext(ctx), &listOpts)
 	objList, err := r.Store.List(ctx, listOpts)
 	if err != nil {
 		return res, err
 	}
 
+	// Build a set of requested names for efficient lookup
+	nameFilter := make(map[string]struct{}, len(params.Names))
+	for _, n := range params.Names {
+		nameFilter[n] = struct{}{}
+	}
+
 	list := make([]api.ApplicationInfo, 0, len(objList.Items))
-	for _, r := range objList.Items {
-		logr.FromContextOrDiscard(ctx).Info("GetApplicationsInfo", "name", r.Name)
-		applicationInfo, err := applicationinfo.MapApplicationInfo(ctx, r)
+	for _, rover := range objList.Items {
+		// If names filter is provided, skip rovers not in the list
+		if len(nameFilter) > 0 {
+			if _, ok := nameFilter[rover.Name]; !ok {
+				continue
+			}
+		}
+		logr.FromContextOrDiscard(ctx).Info("GetApplicationsInfo", "name", rover.Name)
+		applicationInfo, err := applicationinfo.MapApplicationInfo(ctx, rover, r.stores)
 		if err != nil {
 			return res, problems.InternalServerError("Failed to map resource", err.Error())
 		}
@@ -228,7 +259,69 @@ func (r *RoverController) GetApplicationsInfo(ctx context.Context, params api.Ge
 
 }
 
-func (r *RoverController) ResetRoverSecret(ctx context.Context, resourceId string) (res api.RoverSecretResponse, err error) {
+func (r *RoverController) ResetRoverSecret(ctx context.Context, resourceId string) (res api.RoverSecretRotationAcceptedResponse, err error) {
+	id, err := mapper.ParseResourceId(ctx, resourceId)
+	if err != nil {
+		return res, err
+	}
+	logger := logr.FromContextOrDiscard(ctx).WithName("reset-secret").WithValues("namespace", id.Namespace, "name", id.Name)
+
+	ns := id.Environment + "--" + id.Namespace
+	rover, err := r.Store.Get(ctx, ns, id.Name)
+	if err != nil {
+		if problems.IsNotFound(err) {
+			return res, problems.NotFound(resourceId)
+		}
+		return res, err
+	}
+
+	if rover.Status.Application == nil {
+		return res, problems.BadRequest("Application not found or not fully processed. Try again later.")
+	}
+	app, err := r.stores.ApplicationStore.Get(ctx, rover.Status.Application.Namespace, rover.Status.Application.Name)
+	if err != nil {
+		if problems.IsNotFound(err) {
+			return res, problems.NotFound(resourceId)
+		}
+		return res, err
+	}
+
+	// Check if a rotation is already in progress for the current generation
+	rotationCond := meta.FindStatusCondition(app.Status.Conditions, applicationv1.SecretRotationConditionType)
+	rotationInProgress := rotationCond != nil && rotationCond.Reason == applicationv1.SecretRotationReasonInProgress
+	isStale := rotationCond != nil && rotationCond.ObservedGeneration < app.GetGeneration()
+	if rotationInProgress && !isStale {
+		return res, problems.Builder().
+			Title("Secret rotation already in progress").
+			Detail("A secret rotation is already in progress for this application. Please wait for it to complete before initiating a new one.").
+			Status(409).
+			Build()
+	}
+
+	logger.Info("Initiating secret rotation")
+
+	// Set spec.secret to the rotate keyword; the admission webhook handles
+	// graceful vs non-graceful based on zone configuration.
+	app.Spec.Secret = secrets.KeywordRotate
+	if err := r.stores.ApplicationStore.CreateOrReplace(ctx, app); err != nil {
+		return res, err
+	}
+
+	logger.Info("Secret rotation initiated")
+
+	return api.RoverSecretRotationAcceptedResponse{
+		ClientId: app.Status.ClientId,
+		Message:  "Secret rotation initiated. Use the status link to track convergence.",
+		UnderscoreLinks: struct {
+			Status string `json:"status"`
+		}{
+			Status: fmt.Sprintf("/rovers/%s/secret/status", resourceId),
+		},
+	}, nil
+}
+
+// GetSecretRotationStatus returns the current secret rotation status for an application.
+func (r *RoverController) GetSecretRotationStatus(ctx context.Context, resourceId string) (res api.RoverSecretRotationStatusResponse, err error) {
 	id, err := mapper.ParseResourceId(ctx, resourceId)
 	if err != nil {
 		return res, err
@@ -243,23 +336,141 @@ func (r *RoverController) ResetRoverSecret(ctx context.Context, resourceId strin
 		return res, err
 	}
 
-	newClientSecret := uuid.NewString()
-	rover.Spec.ClientSecret = newClientSecret
-	if err := r.Store.CreateOrReplace(ctx, rover); err != nil {
-		return res, err
-	}
-
 	if rover.Status.Application == nil {
 		return res, problems.BadRequest("Application not found or not fully processed. Try again later.")
 	}
-	app, err := s.ApplicationStore.Get(ctx, rover.Status.Application.Namespace, rover.Status.Application.Name)
+	app, err := r.stores.ApplicationSecretStore.Get(ctx, rover.Status.Application.Namespace, rover.Status.Application.Name)
 	if err != nil {
+		if problems.IsNotFound(err) {
+			return res, problems.NotFound(resourceId)
+		}
 		return res, err
 	}
 
-	return api.RoverSecretResponse{
-		Id:     app.Status.ClientId,
-		Secret: newClientSecret,
-	}, nil
+	if !condition.IsReady(app) {
+		return api.RoverSecretRotationStatusResponse{
+			ProcessingState: api.ProcessingStateProcessing,
+			OverallStatus:   api.OverallStatusProcessing,
+		}, nil
+	}
 
+	rotationCond := meta.FindStatusCondition(app.Status.Conditions, applicationv1.SecretRotationConditionType)
+
+	processingState := api.ProcessingStateDone
+	overallStatus := api.OverallStatusComplete
+	if rotationCond != nil {
+		isStale := rotationCond != nil && rotationCond.ObservedGeneration < app.GetGeneration()
+
+		switch {
+		case isStale:
+			// Condition is stale — controller hasn't reconciled the current generation yet
+			processingState = api.ProcessingStatePending
+			overallStatus = api.OverallStatusPending
+		case rotationCond.Reason == applicationv1.SecretRotationReasonInProgress:
+			processingState = api.ProcessingStateProcessing
+			overallStatus = api.OverallStatusProcessing
+		case rotationCond.Reason == applicationv1.SecretRotationReasonSuccess:
+			processingState = api.ProcessingStateDone
+			overallStatus = api.OverallStatusComplete
+		}
+	}
+
+	res = api.RoverSecretRotationStatusResponse{
+		ClientId:            app.Status.ClientId,
+		ProcessingState:     processingState,
+		OverallStatus:       overallStatus,
+		ClientSecret:        app.Status.ClientSecret,
+		RotatedClientSecret: app.Status.RotatedClientSecret,
+	}
+
+	if app.Status.RotatedExpiresAt != nil {
+		res.RotatedExpiresAt = app.Status.RotatedExpiresAt.Time.UTC()
+	}
+	if app.Status.CurrentExpiresAt != nil {
+		res.CurrentExpiresAt = app.Status.CurrentExpiresAt.Time.UTC()
+	}
+
+	return res, nil
+}
+
+func (r *RoverController) guardPubSubFeature(ctx context.Context, res api.RoverUpdateRequest, isEnabled bool) problems.Problem {
+	if isEnabled {
+		return nil
+	}
+
+	fields := []problems.Field{}
+
+	for i, e := range res.Exposures {
+		d, err := e.Discriminator()
+		if err != nil {
+			continue
+		}
+		if d == "event" {
+			fields = append(fields, problems.Field{
+				Field:  fmt.Sprintf("exposures[%d]", i),
+				Detail: "Pub/Sub features are not enabled, but the request contains an event exposure",
+			})
+		}
+	}
+
+	for i, s := range res.Subscriptions {
+		d, err := s.Discriminator()
+		if err != nil {
+			continue
+		}
+		if d == "event" {
+			fields = append(fields, problems.Field{
+				Field:  fmt.Sprintf("exposures[%d]", i),
+				Detail: "Pub/Sub features are not enabled, but the request contains an event exposure",
+			})
+		}
+	}
+
+	if len(fields) > 0 {
+		msg := "The request contains Pub/Sub features, but this feature is not enabled on the server."
+		return problems.Builder().Detail(msg).Title("Feature has not been enabled").Status(400).Fields(fields...).Build()
+	}
+
+	return nil
+}
+
+func (r *RoverController) guardAiGatewayFeature(ctx context.Context, res api.RoverUpdateRequest, isEnabled bool) problems.Problem {
+	if isEnabled {
+		return nil
+	}
+
+	fields := []problems.Field{}
+
+	for i, e := range res.Exposures {
+		d, err := e.Discriminator()
+		if err != nil {
+			continue
+		}
+		if d == "ai" {
+			fields = append(fields, problems.Field{
+				Field:  fmt.Sprintf("exposures[%d]", i),
+				Detail: "AI Gateway features are not enabled, but the request contains an AI exposure",
+			})
+		}
+	}
+
+	for i, s := range res.Subscriptions {
+		d, err := s.Discriminator()
+		if err != nil {
+			continue
+		}
+		if d == "ai" {
+			fields = append(fields, problems.Field{
+				Field:  fmt.Sprintf("subscriptions[%d]", i),
+				Detail: "AI Gateway features are not enabled, but the request contains an AI subscription",
+			})
+		}
+	}
+
+	if len(fields) > 0 {
+		msg := "The request contains AI Gateway features, but this feature is not enabled on the server."
+		return problems.Builder().Detail(msg).Title("Feature has not been enabled").Status(400).Fields(fields...).Build()
+	}
+
+	return nil
 }

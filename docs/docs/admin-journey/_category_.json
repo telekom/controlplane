@@ -1,0 +1,9 @@
+{
+  "label": "Admin Journey",
+  "position": 2,
+  "collapsed": false,
+  "link": null,
+  "customProps": {
+    "description": "Set up, configure, and operate the Control Plane as a platform administrator."
+  }
+}

@@ -1,0 +1,122 @@
+// Copyright 2026 Deutsche Telekom IT GmbH
+//
+// SPDX-License-Identifier: Apache-2.0
+
+package cachekeys
+
+// Zone returns the cache key components for a Zone entity.
+// Zone names are globally unique, so the name alone is the lookup key.
+func Zone(name string) (entityType, lookupKey string) {
+	return "zone", name
+}
+
+// Group returns the cache key components for a Group entity.
+// Group names are globally unique, so the name alone is the lookup key.
+func Group(name string) (entityType, lookupKey string) {
+	return "group", name
+}
+
+// Team returns the cache key components for a Team entity.
+// Team names are globally unique, so the name alone is the lookup key.
+func Team(name string) (entityType, lookupKey string) {
+	return "team", name
+}
+
+// Application returns the cache key components for an Application entity.
+// Application names are unique per team (composite unique index on
+// name + owner_team), so both are required.
+func Application(name, teamName string) (entityType, lookupKey string) {
+	return "application", name + ":" + teamName
+}
+
+// APIExposure returns the cache key components for an ApiExposure entity
+// identified by base path, application name, and team name.
+// Base paths are unique per application, and applications per team,
+// so all three are required.
+func APIExposure(basePath, appName, teamName string) (entityType, lookupKey string) {
+	return "apiexposure", basePath + ":" + appName + ":" + teamName
+}
+
+// APIExposureByBasePath returns the cache key components for an ApiExposure
+// entity looked up by base path alone. Uses a "bp:" prefix to avoid collisions
+// with the full composite key used by [APIExposure].
+func APIExposureByBasePath(basePath string) (entityType, lookupKey string) {
+	return "apiexposure", "bp:" + basePath
+}
+
+// APISubscriptionMeta returns the cache key components for an ApiSubscription
+// entity looked up by its Kubernetes metadata (namespace + name). This enables
+// Approval/ApprovalRequest to resolve the parent subscription FK from a
+// spec.target reference.
+func APISubscriptionMeta(namespace, name string) (entityType, lookupKey string) {
+	return "apisubscription", "meta:" + namespace + ":" + name
+}
+
+// Approval returns the cache key components for an Approval entity,
+// keyed by the Approval CR's Kubernetes namespace and name.
+func Approval(namespace, name string) (entityType, lookupKey string) {
+	return "approval", namespace + ":" + name
+}
+
+// ApprovalRequest returns the cache key components for an ApprovalRequest
+// entity, keyed by the ApprovalRequest CR's Kubernetes namespace and name.
+func ApprovalRequest(namespace, name string) (entityType, lookupKey string) {
+	return "approvalrequest", namespace + ":" + name
+}
+
+// EventExposure returns the cache key components for an EventExposure entity
+// identified by event type, application name, and team name.
+// Event types are unique per application, and applications per team,
+// so all three are required.
+func EventExposure(eventType, appName, teamName string) (entityType, lookupKey string) {
+	return "eventexposure", eventType + ":" + appName + ":" + teamName
+}
+
+// EventExposureByEventType returns the cache key components for an
+// EventExposure entity looked up by event type alone. Uses an "et:" prefix
+// to avoid collisions with the full composite key used by [EventExposure].
+func EventExposureByEventType(eventType string) (entityType, lookupKey string) {
+	return "eventexposure", "et:" + eventType
+}
+
+// EventSubscriptionMeta returns the cache key components for an
+// EventSubscription entity looked up by its Kubernetes metadata
+// (namespace + name).
+func EventSubscriptionMeta(namespace, name string) (entityType, lookupKey string) {
+	return "eventsubscription", "meta:" + namespace + ":" + name
+}
+
+// Api returns the cache key components for an Api catalogue entity.
+// Api base paths are unique per team (composite unique index on
+// base_path + owner), so both are required.
+func Api(basePath, teamName string) (entityType, lookupKey string) {
+	return "api", basePath + ":" + teamName
+}
+
+// ActiveApi returns the cache key components for the cluster-wide active Api
+// for a given base path. Only one Api is active at a time per base path
+// (oldest-wins), so the team is not part of the key.
+func ActiveApi(basePath string) (entityType, lookupKey string) {
+	return "api_active", basePath
+}
+
+// EventTypeDef returns the cache key components for an EventType catalogue
+// entity. Event type identifiers are unique per team (composite unique index
+// on event_type + owner), so both are required.
+func EventTypeDef(eventType, teamName string) (entityType, lookupKey string) {
+	return "eventtype", eventType + ":" + teamName
+}
+
+// ActiveEventType returns the cache key components for the cluster-wide active
+// EventType for a given type identifier. Only one EventType is active at a time
+// per type string (oldest-wins), so the team is not part of the key.
+func ActiveEventType(eventType string) (entityType, lookupKey string) {
+	return "eventtype_active", eventType
+}
+
+// PermissionSet returns the cache key components for a PermissionSet entity
+// identified by its owning application name and team name. PermissionSet is
+// 1:1 with Application, so the pair uniquely identifies it.
+func PermissionSet(appName, teamName string) (entityType, lookupKey string) {
+	return "permissionset", appName + ":" + teamName
+}

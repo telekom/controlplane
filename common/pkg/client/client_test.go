@@ -8,23 +8,22 @@ import (
 	"context"
 	"fmt"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/test"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Client", func() {
-
-	var (
-		templ = test.NewObject(name, namespace)
-	)
+	templ := test.NewObject(name, namespace)
 
 	Context("NewScopedClient", func() {
 		It("should return a new ScopedClientImpl", func() {
@@ -73,7 +72,6 @@ var _ = Describe("Client", func() {
 				Expect(err).NotTo(HaveOccurred())
 				Expect(res).To(Equal(controllerutil.OperationResultCreated))
 				Expect(obj.GetLabels()).To(HaveKeyWithValue(config.EnvironmentLabelKey, "test"))
-
 			})
 
 			It("should update the object", func() {
@@ -94,11 +92,9 @@ var _ = Describe("Client", func() {
 				Expect(res).To(Equal(controllerutil.OperationResultUpdated))
 				Expect(obj.GetLabels()).To(HaveKeyWithValue(config.BuildLabelKey("test"), "test"))
 				Expect(scopedClient.AnyChanged()).To(BeTrue())
-
 			})
 
 			It("should return an error if CreateOrUpdate fails", func() {
-
 				obj := templ.DeepCopy()
 
 				mutator := func() error {
@@ -107,12 +103,10 @@ var _ = Describe("Client", func() {
 
 				_, err := scopedClient.CreateOrUpdate(ctx, obj, mutator)
 				Expect(err.Error()).To(Equal("failed to create or update object test: force error"))
-
 			})
 		})
 
 		Context("Get", func() {
-
 			AfterEach(func() {
 				Expect(k8sClient.Delete(ctx, templ.DeepCopy())).To(Succeed())
 			})
@@ -137,7 +131,6 @@ var _ = Describe("Client", func() {
 			})
 
 			It("should return the object", func() {
-
 				obj := templ.DeepCopy()
 				obj.GetLabels()[config.EnvironmentLabelKey] = environment
 
@@ -146,12 +139,10 @@ var _ = Describe("Client", func() {
 				err := scopedClient.Get(ctx, client.ObjectKey{Name: name, Namespace: namespace}, obj)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(obj).ToNot(BeNil())
-
 			})
 		})
 
 		Context("Delete", func() {
-
 			AfterEach(func() {
 				err := k8sClient.Delete(ctx, templ.DeepCopy())
 				Expect(client.IgnoreNotFound(err)).To(Succeed())
@@ -176,17 +167,14 @@ var _ = Describe("Client", func() {
 				err := scopedClient.Delete(ctx, obj)
 				Expect(err).NotTo(HaveOccurred())
 			})
-
 		})
 
 		Context("List", func() {
-
 			AfterEach(func() {
 				Expect(k8sClient.DeleteAllOf(ctx, &test.TestResource{}, client.InNamespace(namespace))).To(Succeed())
 			})
 
 			It("should only return objects that belong to the environment", func() {
-
 				obj := templ.DeepCopy()
 				obj.GetLabels()[config.EnvironmentLabelKey] = environment
 
@@ -202,7 +190,6 @@ var _ = Describe("Client", func() {
 				Expect(err).NotTo(HaveOccurred())
 				Expect(list.Items).To(HaveLen(1))
 				Expect(list.Items[0].Name).To(Equal("test"))
-
 			})
 		})
 	})
@@ -233,7 +220,6 @@ var _ = Describe("Client", func() {
 		})
 
 		It("should delete all objects that are not in the desired state", func() {
-
 			listOpts := []client.ListOption{}
 
 			list := &test.TestResourceList{}
@@ -253,7 +239,6 @@ var _ = Describe("Client", func() {
 	})
 
 	Context("StateInfo", func() {
-
 		var (
 			ctx          context.Context
 			scopedClient ScopedClient

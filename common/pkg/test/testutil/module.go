@@ -54,7 +54,7 @@ func GetCrdPaths(modPathRE string) (paths []string, err error) {
 }
 
 func getCrdPaths(goModFilePath, modPathRE string) (paths []string, err error) {
-	content, err := os.ReadFile(goModFilePath)
+	content, err := os.ReadFile(goModFilePath) //nolint:gosec // G304: file path is constructed from go.mod parsing, not user input
 	if err != nil {
 		return nil, errors.Wrap(err, fmt.Sprintf("failed to read '%s'", goModFilePath))
 	}
@@ -88,7 +88,7 @@ func getCrdPaths(goModFilePath, modPathRE string) (paths []string, err error) {
 			continue
 		}
 
-		crdFilepath := filepath.Join(goPath, "pkg/mod", fmt.Sprintf("%s@%s", req.Mod.Path, req.Mod.Version), PkgModCrdsSubpath)
+		crdFilepath := filepath.Join(goPath, "pkg", "mod", fmt.Sprintf("%s@%s", req.Mod.Path, req.Mod.Version), PkgModCrdsSubpath)
 		paths = append(paths, crdFilepath)
 	}
 	return paths, nil

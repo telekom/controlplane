@@ -45,10 +45,9 @@ var _ = Describe("StatusEval", func() {
 	})
 
 	Describe("IsSuccess", func() {
-		Context("when status is complete and processing is done", func() {
+		Context("when status is complete", func() {
 			It("should return true", func() {
 				status.OverallStatus = "complete"
-				status.ProcessingState = "done"
 				Expect(eval.IsSuccess()).To(BeTrue())
 			})
 		})
@@ -56,15 +55,13 @@ var _ = Describe("StatusEval", func() {
 		Context("when overall status is not complete", func() {
 			It("should return false", func() {
 				status.OverallStatus = "pending"
-				status.ProcessingState = "done"
 				Expect(eval.IsSuccess()).To(BeFalse())
 			})
 		})
 
-		Context("when processing state is not done", func() {
+		Context("when overall status is blocked", func() {
 			It("should return false", func() {
-				status.OverallStatus = "complete"
-				status.ProcessingState = "processing"
+				status.OverallStatus = "blocked"
 				Expect(eval.IsSuccess()).To(BeFalse())
 			})
 		})
@@ -103,16 +100,23 @@ var _ = Describe("StatusEval", func() {
 	})
 
 	Describe("IsProcessed", func() {
-		Context("when processing state is done", func() {
+		Context("when overall status is complete", func() {
 			It("should return true", func() {
-				status.ProcessingState = "done"
+				status.OverallStatus = "complete"
 				Expect(eval.IsProcessed()).To(BeTrue())
 			})
 		})
 
-		Context("when processing state is not done", func() {
+		Context("when overall status is blocked", func() {
+			It("should return true", func() {
+				status.OverallStatus = "blocked"
+				Expect(eval.IsProcessed()).To(BeTrue())
+			})
+		})
+
+		Context("when overall status is processing", func() {
 			It("should return false", func() {
-				status.ProcessingState = "processing"
+				status.OverallStatus = "processing"
 				Expect(eval.IsProcessed()).To(BeFalse())
 			})
 		})
@@ -128,7 +132,7 @@ var _ = Describe("StatusEval", func() {
 				// Verify output contains expected elements for console format
 				output := buf.String()
 				Expect(output).To(ContainSubstring("Resource: Test/test-resource"))
-				Expect(output).To(ContainSubstring("Status: complete | Processing: done"))
+				Expect(output).To(ContainSubstring("Status: complete"))
 				Expect(output).To(ContainSubstring("✅ Operation completed successfully"))
 			})
 		})
@@ -147,7 +151,6 @@ var _ = Describe("StatusEval", func() {
 
 				Expect(jsonOutput).To(HaveKeyWithValue("resource", "Test/test-resource"))
 				Expect(jsonOutput).To(HaveKeyWithValue("status", "complete"))
-				Expect(jsonOutput).To(HaveKeyWithValue("processingState", "done"))
 				Expect(jsonOutput).To(HaveKeyWithValue("success", true))
 			})
 		})
@@ -296,7 +299,6 @@ var _ = Describe("StatusEval", func() {
 				// Verify the structure
 				Expect(result).To(HaveKeyWithValue("resource", "Test/test-resource"))
 				Expect(result).To(HaveKeyWithValue("status", "complete"))
-				Expect(result).To(HaveKeyWithValue("processingState", "done"))
 				Expect(result).To(HaveKey("errors"))
 				Expect(result).To(HaveKey("warnings"))
 				Expect(result).To(HaveKey("info"))

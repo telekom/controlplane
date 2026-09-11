@@ -26,12 +26,7 @@
      }
     ],
     "processingState": "done",
-    "state": "blocked",
-    "warnings": [
-     {
-      "message": "Atleast one sub-resource is being processed"
-     }
-    ]
+    "state": "blocked"
    },
    "subscriptions": [
     {
@@ -72,12 +67,7 @@
      }
     ],
     "processingState": "done",
-    "state": "blocked",
-    "warnings": [
-     {
-      "message": "Atleast one sub-resource is being processed"
-     }
-    ]
+    "state": "blocked"
    },
    "subscriptions": [
     {
@@ -118,12 +108,7 @@
      }
     ],
     "processingState": "done",
-    "state": "blocked",
-    "warnings": [
-     {
-      "message": "Atleast one sub-resource is being processed"
-     }
-    ]
+    "state": "blocked"
    },
    "subscriptions": [
     {
@@ -164,12 +149,7 @@
      }
     ],
     "processingState": "done",
-    "state": "blocked",
-    "warnings": [
-     {
-      "message": "Atleast one sub-resource is being processed"
-     }
-    ]
+    "state": "blocked"
    },
    "subscriptions": [
     {
@@ -204,12 +184,7 @@
    }
   ],
   "processingState": "done",
-  "state": "blocked",
-  "warnings": [
-   {
-    "message": "Atleast one sub-resource is being processed"
-   }
-  ]
+  "state": "blocked"
  },
  "subscriptions": [
   {
@@ -262,14 +237,24 @@
    "irisIssuerUrl": "https://iris-distcp1-dataplane1.dev.dhei.telekom.de/auth/realms/poc",
    "irisTokenEndpointUrl": "https://iris-distcp1-dataplane1.dev.dhei.telekom.de/auth/realms/poc/protocol/openid-connect/token",
    "name": "rover-local-sub",
+   "secretInfo": {
+    "clientSecret": "abcdefghijklmnop"
+   },
    "stargateIssuerUrl": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de:443/auth/realms/poc",
-   "stargatePublishEventUrl": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de/horizon/events/v1",
    "stargateUrl": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de/",
    "status": "blocked",
    "subscriptions": [
     {
-     "basePath": "",
+     "basePath": "/eni/distr/v1",
      "type": "api"
+    },
+    {
+     "deliveryType": "ServerSentEvent",
+     "eventType": "de.telekom.eni.quickstart.v1",
+     "horizonSubscriptionId": "horizon-sub-456",
+     "horizonSubscriptionUrl": "https://sse.example.com/events/horizon-sub-456",
+     "payloadType": "Data",
+     "type": "event"
     }
    ],
    "variables": null,
@@ -334,14 +319,24 @@
    "irisIssuerUrl": "https://iris-distcp1-dataplane1.dev.dhei.telekom.de/auth/realms/poc",
    "irisTokenEndpointUrl": "https://iris-distcp1-dataplane1.dev.dhei.telekom.de/auth/realms/poc/protocol/openid-connect/token",
    "name": "rover-local-sub",
+   "secretInfo": {
+    "clientSecret": "abcdefghijklmnop"
+   },
    "stargateIssuerUrl": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de:443/auth/realms/poc",
-   "stargatePublishEventUrl": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de/horizon/events/v1",
    "stargateUrl": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de/",
    "status": "blocked",
    "subscriptions": [
     {
-     "basePath": "",
+     "basePath": "/eni/distr/v1",
      "type": "api"
+    },
+    {
+     "deliveryType": "ServerSentEvent",
+     "eventType": "de.telekom.eni.quickstart.v1",
+     "horizonSubscriptionId": "horizon-sub-456",
+     "horizonSubscriptionUrl": "https://sse.example.com/events/horizon-sub-456",
+     "payloadType": "Data",
+     "type": "event"
     }
    ],
    "variables": null,
@@ -365,9 +360,71 @@
 }
 ---
 
+[Rover Controller Get all rover applications info should filter applications by names query parameter - 1]
+{
+ "applications": [
+  {
+   "errors": [
+    {
+     "cause": "Approval is either rejected or suspended",
+     "message": "ApiSubscription 'poc--eni--hyperion/rover-local-sub--eni-distr-v1' is not ready",
+     "resource": {
+      "apiVersion": "api.cp.ei.telekom.de/v1",
+      "kind": "ApiSubscription",
+      "name": "rover-local-sub--eni-distr-v1",
+      "namespace": "poc--eni--hyperion"
+     }
+    }
+   ],
+   "exposures": [
+    {
+     "approval": "Simple",
+     "basePath": "/eni/distr/v1",
+     "type": "api",
+     "upstream": "https://httpbin.org/anything",
+     "visibility": "World"
+    }
+   ],
+   "infos": null,
+   "irisClientId": "hyperion--rover-local-sub",
+   "irisClientSecret": "abcdefghijklmnop",
+   "irisIssuerUrl": "https://iris-distcp1-dataplane1.dev.dhei.telekom.de/auth/realms/poc",
+   "irisTokenEndpointUrl": "https://iris-distcp1-dataplane1.dev.dhei.telekom.de/auth/realms/poc/protocol/openid-connect/token",
+   "name": "rover-local-sub",
+   "secretInfo": {
+    "clientSecret": "abcdefghijklmnop"
+   },
+   "stargateIssuerUrl": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de:443/auth/realms/poc",
+   "stargateUrl": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de/",
+   "status": "blocked",
+   "subscriptions": [
+    {
+     "basePath": "/eni/distr/v1",
+     "type": "api"
+    },
+    {
+     "deliveryType": "ServerSentEvent",
+     "eventType": "de.telekom.eni.quickstart.v1",
+     "horizonSubscriptionId": "horizon-sub-456",
+     "horizonSubscriptionUrl": "https://sse.example.com/events/horizon-sub-456",
+     "payloadType": "Data",
+     "type": "event"
+    }
+   ],
+   "variables": null,
+   "warnings": null,
+   "zone": "dataplane1"
+  }
+ ],
+ "environment": "poc",
+ "hub": "eni",
+ "team": "hyperion"
+}
+---
+
 [Rover Controller Get rover status should return the status of a rover successfully - 1]
 {
- "createdAt": "2025-09-18T10:39:44+02:00",
+ "createdAt": "2025-09-18T08:39:44Z",
  "errors": [
   {
    "cause": "NoApproval",
@@ -382,7 +439,7 @@
   }
  ],
  "overallStatus": "blocked",
- "processedAt": "2025-10-08T09:16:40+02:00",
+ "processedAt": "2025-10-08T07:16:40Z",
  "processingState": "done",
  "state": "blocked"
 }
@@ -420,7 +477,7 @@
 
 [Rover Controller Create rover resource should fail to create a rover with invalid input - 1]
 {
- "detail": "multiple errors encountered: Error at \"/zone\": property \"zone\" is missing\nSchema:\n  {\n    \"properties\": {\n      \"authentication\": {\n        \"$ref\": \"#/components/schemas/Authentication\"\n      },\n      \"exposures\": {\n        \"items\": {\n          \"$ref\": \"#/components/schemas/Exposure\"\n        },\n        \"type\": \"array\"\n      },\n      \"icto\": {\n        \"example\": \"icto-12345\",\n        \"pattern\": \"^icto-[0-9]+$\",\n        \"type\": \"string\"\n      },\n      \"id\": {\n        \"example\": \"hub42--team2--myapp\",\n        \"readOnly\": true,\n        \"type\": \"string\"\n      },\n      \"ipRestrictions\": {\n        \"$ref\": \"#/components/schemas/IpRestrictions\"\n      },\n      \"status\": {\n        \"$ref\": \"#/components/schemas/Status\"\n      },\n      \"subscriptions\": {\n        \"items\": {\n          \"$ref\": \"#/components/schemas/Subscription\"\n        },\n        \"type\": \"array\"\n      },\n      \"zone\": {\n        \"example\": \"aws\",\n        \"type\": \"string\"\n      }\n    },\n    \"required\": [\n      \"zone\"\n    ],\n    \"type\": \"object\"\n  }\n\nValue:\n  {\n    \"invalidField\": \"invalidValue\"\n  }\n",
+ "detail": "multiple errors encountered: Error at \"/zone\": property \"zone\" is missing\nSchema:\n  {\n    \"properties\": {\n      \"authentication\": {\n        \"$ref\": \"#/components/schemas/Authentication\"\n      },\n      \"authorization\": {\n        \"items\": {\n          \"$ref\": \"#/components/schemas/AuthorizationInfo\"\n        },\n        \"type\": \"array\"\n      },\n      \"exposures\": {\n        \"items\": {\n          \"$ref\": \"#/components/schemas/Exposure\"\n        },\n        \"type\": \"array\"\n      },\n      \"failoverEnabled\": {\n        \"description\": \"Configures the DTC failover for consumers\",\n        \"type\": \"boolean\"\n      },\n      \"icto\": {\n        \"example\": \"icto-12345\",\n        \"pattern\": \"^icto-[0-9]+$\",\n        \"type\": \"string\"\n      },\n      \"id\": {\n        \"example\": \"hub42--team2--myapp\",\n        \"readOnly\": true,\n        \"type\": \"string\"\n      },\n      \"ipRestrictions\": {\n        \"$ref\": \"#/components/schemas/IpRestrictions\"\n      },\n      \"psiid\": {\n        \"description\": \"PSI system number identifier attached to this application\",\n        \"example\": \"PSI-103596\",\n        \"pattern\": \"^PSI-[0-9]{6}$\",\n        \"type\": \"string\"\n      },\n      \"status\": {\n        \"$ref\": \"#/components/schemas/Status\"\n      },\n      \"subscriptions\": {\n        \"items\": {\n          \"$ref\": \"#/components/schemas/Subscription\"\n        },\n        \"type\": \"array\"\n      },\n      \"zone\": {\n        \"example\": \"aws\",\n        \"type\": \"string\"\n      }\n    },\n    \"required\": [\n      \"zone\"\n    ],\n    \"type\": \"object\"\n  }\n\nValue:\n  {\n    \"invalidField\": \"invalidValue\"\n  }\n",
  "instance": "",
  "status": 400,
  "title": "Bad Request",
@@ -449,12 +506,7 @@
    }
   ],
   "processingState": "done",
-  "state": "blocked",
-  "warnings": [
-   {
-    "message": "Atleast one sub-resource is being processed"
-   }
-  ]
+  "state": "blocked"
  },
  "subscriptions": [
   {
@@ -496,10 +548,79 @@
 }
 ---
 
+[Rover Controller Update rover resource should accept clientAuthMethod BASIC as produced by rover-ctl - 1]
+{
+ "exposures": [
+  {
+   "approval": "SIMPLE",
+   "basePath": "/eni/distr/v1",
+   "type": "api",
+   "upstream": "https://httpbin.org/anything",
+   "visibility": "WORLD"
+  }
+ ],
+ "id": "eni--hyperion--rover-local-sub",
+ "name": "rover-local-sub",
+ "status": {
+  "errors": [
+   {
+    "cause": "NoApproval",
+    "message": "Approval is either rejected or suspended"
+   }
+  ],
+  "processingState": "done",
+  "state": "blocked"
+ },
+ "subscriptions": [
+  {
+   "basePath": "/eni/distr/v1",
+   "type": "api"
+  }
+ ],
+ "zone": "dataplane1"
+}
+---
+
+[Rover Controller Update rover resource should accept clientAuthMethod POST as produced by rover-ctl - 1]
+{
+ "exposures": [
+  {
+   "approval": "SIMPLE",
+   "basePath": "/eni/distr/v1",
+   "type": "api",
+   "upstream": "https://httpbin.org/anything",
+   "visibility": "WORLD"
+  }
+ ],
+ "id": "eni--hyperion--rover-local-sub",
+ "name": "rover-local-sub",
+ "status": {
+  "errors": [
+   {
+    "cause": "NoApproval",
+    "message": "Approval is either rejected or suspended"
+   }
+  ],
+  "processingState": "done",
+  "state": "blocked"
+ },
+ "subscriptions": [
+  {
+   "basePath": "/eni/distr/v1",
+   "type": "api"
+  }
+ ],
+ "zone": "dataplane1"
+}
+---
+
 [Rover Controller Reset rover secret should reset the rover secret successfully - 1]
 {
- "id": "hyperion--rover-local-sub",
- "secret": "<Any value>"
+ "_links": {
+  "status": "/rovers/eni--hyperion--rover-local-sub/secret/status"
+ },
+ "clientId": "hyperion--rover-local-sub",
+ "message": "Secret rotation initiated. Use the status link to track convergence."
 }
 ---
 
@@ -514,6 +635,632 @@
 ---
 
 [Rover Controller Reset rover secret should fail to reset the secret from a different team - 1]
+{
+ "detail": "Access to requested resource not allowed",
+ "instance": "",
+ "status": 403,
+ "title": "Access Denied",
+ "type": "Forbidden"
+}
+---
+
+[ApiChangelog Controller Get ApiChangelog resource should return the ApiChangelog successfully - 1]
+{
+ "basePath": "/eni/test/api/v1",
+ "id": "eni--hyperion--eni-test-api",
+ "items": [
+  {
+   "date": "2024-03-15",
+   "description": "Security fixes and performance improvements",
+   "version": "1.2.3"
+  },
+  {
+   "date": "2024-01-10",
+   "description": "Initial release",
+   "version": "1.0.0",
+   "versionUrl": "https://example.com/releases/v1.0.0"
+  }
+ ],
+ "name": "eni-test-api",
+ "status": {
+  "processingState": "done",
+  "state": "complete"
+ }
+}
+---
+
+[ApiChangelog Controller Get ApiChangelog resource should fail to get a non-existent ApiChangelog - 1]
+{
+ "detail": "Resource eni--hyperion--nonexistent not found",
+ "instance": "",
+ "status": 404,
+ "title": "Not found",
+ "type": "NotFound"
+}
+---
+
+[ApiChangelog Controller Get ApiChangelog resource should fail to get an ApiChangelog from a different team - 1]
+{
+ "detail": "Access to requested resource not allowed",
+ "instance": "",
+ "status": 403,
+ "title": "Access Denied",
+ "type": "Forbidden"
+}
+---
+
+[ApiChangelog Controller GetAll ApiChangelogs resource should return all ApiChangelogs successfully - 1]
+{
+ "_links": {
+  "next": "",
+  "self": "http://example.com/apichangelogs?cursor="
+ },
+ "items": [
+  {
+   "basePath": "/eni/test/api/v1",
+   "id": "eni--hyperion--eni-test-api",
+   "items": [
+    {
+     "date": "2024-03-15",
+     "description": "Security fixes and performance improvements",
+     "version": "1.2.3"
+    },
+    {
+     "date": "2024-01-10",
+     "description": "Initial release",
+     "version": "1.0.0",
+     "versionUrl": "https://example.com/releases/v1.0.0"
+    }
+   ],
+   "name": "eni-test-api",
+   "status": {
+    "processingState": "done",
+    "state": "complete"
+   }
+  }
+ ]
+}
+---
+
+[ApiChangelog Controller GetAll ApiChangelogs resource should return an empty list if no ApiChangelogs exist - 1]
+{
+ "_links": {
+  "next": "",
+  "self": "http://example.com/apichangelogs?cursor="
+ }
+}
+---
+
+[ApiChangelog Controller Update ApiChangelog resource should update the ApiChangelog successfully - 1]
+{
+ "basePath": "/eni/test-api/v1",
+ "id": "eni--hyperion--eni-test-api",
+ "items": [
+  {
+   "date": "2024-03-15",
+   "description": "Security fixes and performance improvements",
+   "version": "1.2.3"
+  },
+  {
+   "date": "2024-01-10",
+   "description": "Initial release",
+   "version": "1.0.0",
+   "versionUrl": "https://example.com/releases/v1.0.0"
+  }
+ ],
+ "name": "eni-test-api",
+ "status": {
+  "processingState": "pending",
+  "state": "none",
+  "warnings": [
+   {
+    "message": "No conditions found"
+   }
+  ]
+ }
+}
+---
+
+[ApiChangelog Controller Update ApiChangelog resource should fail to update an ApiChangelog from a different team - 1]
+{
+ "detail": "Access to requested resource not allowed",
+ "instance": "",
+ "status": 403,
+ "title": "Access Denied",
+ "type": "Forbidden"
+}
+---
+
+[ApiChangelog Controller Update ApiChangelog resource should reject empty basePath - 1]
+{
+ "detail": "basePath must not be empty",
+ "instance": "",
+ "status": 400,
+ "title": "Bad Request",
+ "type": "BadRequest"
+}
+---
+
+[ApiChangelog Controller Update ApiChangelog resource should reject empty items array - 1]
+{
+ "detail": "multiple errors encountered: Error at \"/items\": minimum number of items is 1\nSchema:\n  {\n    \"description\": \"List of changelog version entries\",\n    \"items\": {\n      \"$ref\": \"#/components/schemas/ApiChangelogItem\"\n    },\n    \"minItems\": 1,\n    \"type\": \"array\"\n  }\n\nValue:\n  []\n",
+ "instance": "",
+ "status": 400,
+ "title": "Bad Request",
+ "type": "BadRequest"
+}
+---
+
+[ApiChangelog Controller Update ApiChangelog resource should reject mismatched basePath and resourceId - 1]
+{
+ "detail": "basePath /eni/different-api/v1 does not match resource ID eni--hyperion--eni-test-api",
+ "instance": "",
+ "status": 400,
+ "title": "Bad Request",
+ "type": "BadRequest"
+}
+---
+
+[ApiChangelog Controller Delete ApiChangelog resource should fail to delete a non-existent ApiChangelog - 1]
+{
+ "detail": "Resource eni--hyperion--nonexistent not found",
+ "instance": "",
+ "status": 404,
+ "title": "Not found",
+ "type": "NotFound"
+}
+---
+
+[ApiChangelog Controller Delete ApiChangelog resource should fail to delete an ApiChangelog from a different team - 1]
+{
+ "detail": "Access to requested resource not allowed",
+ "instance": "",
+ "status": 403,
+ "title": "Access Denied",
+ "type": "Forbidden"
+}
+---
+
+[ApiChangelog Controller GetStatus ApiChangelog resource should return the status of the ApiChangelog successfully - 1]
+{
+ "overallStatus": "complete",
+ "processingState": "done",
+ "state": "complete"
+}
+---
+
+[ApiChangelog Controller GetStatus ApiChangelog resource should fail to get the status of a non-existent ApiChangelog - 1]
+{
+ "detail": "Resource eni--hyperion--nonexistent not found",
+ "instance": "",
+ "status": 404,
+ "title": "Not found",
+ "type": "NotFound"
+}
+---
+
+[ApiChangelog Controller GetStatus ApiChangelog resource should fail to get the status of an ApiChangelog from a different team - 1]
+{
+ "detail": "Access to requested resource not allowed",
+ "instance": "",
+ "status": 403,
+ "title": "Access Denied",
+ "type": "Forbidden"
+}
+---
+
+[Roadmap Controller Get ApiRoadmap resource should return the ApiRoadmap successfully - 1]
+{
+ "basePath": "/eni/test/api/v1",
+ "id": "eni--hyperion--eni-test-api",
+ "items": [
+  {
+   "date": "Q1 2024",
+   "description": "Initial release with core features",
+   "title": "MVP Release",
+   "titleUrl": "https://example.com/mvp"
+  },
+  {
+   "date": "Q2 2024",
+   "description": "Optimize response times",
+   "title": "Performance Improvements"
+  }
+ ],
+ "name": "eni-test-api",
+ "status": {
+  "processingState": "done",
+  "state": "complete"
+ }
+}
+---
+
+[Roadmap Controller Get ApiRoadmap resource should fail to get a non-existent ApiRoadmap - 1]
+{
+ "detail": "Resource eni--hyperion--nonexistent not found",
+ "instance": "",
+ "status": 404,
+ "title": "Not found",
+ "type": "NotFound"
+}
+---
+
+[Roadmap Controller Get ApiRoadmap resource should fail to get an ApiRoadmap from a different team - 1]
+{
+ "detail": "Access to requested resource not allowed",
+ "instance": "",
+ "status": 403,
+ "title": "Access Denied",
+ "type": "Forbidden"
+}
+---
+
+[Roadmap Controller GetAll ApiRoadmaps resource should return all ApiRoadmaps successfully - 1]
+{
+ "_links": {
+  "next": "",
+  "self": "http://example.com/apiroadmaps?cursor="
+ },
+ "items": [
+  {
+   "basePath": "/eni/test/api/v1",
+   "id": "eni--hyperion--eni-test-api",
+   "items": [
+    {
+     "date": "Q1 2024",
+     "description": "Initial release with core features",
+     "title": "MVP Release",
+     "titleUrl": "https://example.com/mvp"
+    },
+    {
+     "date": "Q2 2024",
+     "description": "Optimize response times",
+     "title": "Performance Improvements"
+    }
+   ],
+   "name": "eni-test-api",
+   "status": {
+    "processingState": "done",
+    "state": "complete"
+   }
+  }
+ ]
+}
+---
+
+[Roadmap Controller GetAll ApiRoadmaps resource should return an empty list if no ApiRoadmaps exist - 1]
+{
+ "_links": {
+  "next": "",
+  "self": "http://example.com/apiroadmaps?cursor="
+ },
+ "items": []
+}
+---
+
+[Roadmap Controller Update ApiRoadmap resource should update the ApiRoadmap successfully - 1]
+{
+ "basePath": "/eni/test-api/v1",
+ "id": "eni--hyperion--eni-test-api",
+ "items": [
+  {
+   "date": "Q1 2024",
+   "description": "Initial release with core features",
+   "title": "MVP Release",
+   "titleUrl": "https://example.com/mvp"
+  },
+  {
+   "date": "Q2 2024",
+   "description": "Optimize response times",
+   "title": "Performance Improvements"
+  }
+ ],
+ "name": "eni-test-api",
+ "status": {
+  "processingState": "pending",
+  "state": "none",
+  "warnings": [
+   {
+    "message": "No conditions found"
+   }
+  ]
+ }
+}
+---
+
+[Roadmap Controller Update ApiRoadmap resource should fail to update an ApiRoadmap from a different team - 1]
+{
+ "detail": "Access to requested resource not allowed",
+ "instance": "",
+ "status": 403,
+ "title": "Access Denied",
+ "type": "Forbidden"
+}
+---
+
+[Roadmap Controller Delete ApiRoadmap resource should fail to delete a non-existent ApiRoadmap - 1]
+{
+ "detail": "Resource eni--hyperion--nonexistent not found",
+ "instance": "",
+ "status": 404,
+ "title": "Not found",
+ "type": "NotFound"
+}
+---
+
+[Roadmap Controller Delete ApiRoadmap resource should fail to delete an ApiRoadmap from a different team - 1]
+{
+ "detail": "Access to requested resource not allowed",
+ "instance": "",
+ "status": 403,
+ "title": "Access Denied",
+ "type": "Forbidden"
+}
+---
+
+[Roadmap Controller GetStatus ApiRoadmap resource should return the status of the ApiRoadmap successfully - 1]
+{
+ "overallStatus": "complete",
+ "processingState": "done",
+ "state": "complete"
+}
+---
+
+[Roadmap Controller GetStatus ApiRoadmap resource should fail to get the status of a non-existent ApiRoadmap - 1]
+{
+ "detail": "Resource eni--hyperion--nonexistent not found",
+ "instance": "",
+ "status": 404,
+ "title": "Not found",
+ "type": "NotFound"
+}
+---
+
+[Roadmap Controller GetStatus ApiRoadmap resource should fail to get the status of an ApiRoadmap from a different team - 1]
+{
+ "detail": "Access to requested resource not allowed",
+ "instance": "",
+ "status": 403,
+ "title": "Access Denied",
+ "type": "Forbidden"
+}
+---
+
+[GetSecretRotationStatus HTTP endpoint integration should return 200 with correct response for a ready application - 1]
+{
+ "clientId": "hyperion--rover-local-sub",
+ "clientSecret": "abcdefghijklmnop",
+ "overallStatus": "complete",
+ "processingState": "done"
+}
+---
+
+[EventSpecification Controller Get EventSpecification resource should return the EventSpecification successfully - 1]
+{
+ "description": "Horizon demo provider",
+ "id": "eni--hyperion--tardis-horizon-demo-cetus-v1",
+ "specification": {
+  "properties": {
+   "id": {
+    "type": "string"
+   }
+  },
+  "type": "object"
+ },
+ "status": {
+  "processingState": "done",
+  "state": "complete"
+ },
+ "type": "tardis.horizon.demo.cetus.v1",
+ "version": "1.0.0"
+}
+---
+
+[EventSpecification Controller Get EventSpecification resource should fail to get a non-existent EventSpecification - 1]
+{
+ "detail": "Resource eni--hyperion--blabla not found",
+ "instance": "",
+ "status": 404,
+ "title": "Not found",
+ "type": "NotFound"
+}
+---
+
+[EventSpecification Controller Get EventSpecification resource should fail to get an EventSpecification from a different team - 1]
+{
+ "detail": "Access to requested resource not allowed",
+ "instance": "",
+ "status": 403,
+ "title": "Access Denied",
+ "type": "Forbidden"
+}
+---
+
+[EventSpecification Controller GetAll EventSpecifications resource should return all EventSpecifications successfully - 1]
+{
+ "_links": {
+  "next": "",
+  "self": "http://example.com/eventspecifications?cursor="
+ },
+ "items": [
+  {
+   "description": "Horizon demo provider",
+   "id": "eni--hyperion--tardis-horizon-demo-cetus-v1",
+   "specification": {
+    "properties": {
+     "id": {
+      "type": "string"
+     }
+    },
+    "type": "object"
+   },
+   "status": {
+    "processingState": "done",
+    "state": "complete"
+   },
+   "type": "tardis.horizon.demo.cetus.v1",
+   "version": "1.0.0"
+  }
+ ]
+}
+---
+
+[EventSpecification Controller GetAll EventSpecifications resource should return all EventSpecifications successfully - 2]
+{
+ "_links": {
+  "next": "",
+  "self": "http://example.com/eventspecifications?cursor="
+ },
+ "items": [
+  {
+   "description": "Horizon demo provider",
+   "id": "eni--hyperion--tardis-horizon-demo-cetus-v1",
+   "specification": {
+    "properties": {
+     "id": {
+      "type": "string"
+     }
+    },
+    "type": "object"
+   },
+   "status": {
+    "processingState": "done",
+    "state": "complete"
+   },
+   "type": "tardis.horizon.demo.cetus.v1",
+   "version": "1.0.0"
+  }
+ ]
+}
+---
+
+[EventSpecification Controller GetAll EventSpecifications resource should return an empty list if no EventSpecifications exist - 1]
+{
+ "_links": {
+  "next": "",
+  "self": "http://example.com/eventspecifications?cursor="
+ },
+ "items": [
+  {
+   "description": "Horizon demo provider",
+   "id": "eni--hyperion--tardis-horizon-demo-cetus-v1",
+   "specification": {
+    "properties": {
+     "id": {
+      "type": "string"
+     }
+    },
+    "type": "object"
+   },
+   "status": {
+    "processingState": "done",
+    "state": "complete"
+   },
+   "type": "tardis.horizon.demo.cetus.v1",
+   "version": "1.0.0"
+  }
+ ]
+}
+---
+
+[EventSpecification Controller GetAll EventSpecifications resource should return an empty list if no EventSpecifications exist - 2]
+{
+ "_links": {
+  "next": "",
+  "self": "http://example.com/eventspecifications?cursor="
+ },
+ "items": [
+  {
+   "description": "Horizon demo provider",
+   "id": "eni--hyperion--tardis-horizon-demo-cetus-v1",
+   "specification": {
+    "properties": {
+     "id": {
+      "type": "string"
+     }
+    },
+    "type": "object"
+   },
+   "status": {
+    "processingState": "done",
+    "state": "complete"
+   },
+   "type": "tardis.horizon.demo.cetus.v1",
+   "version": "1.0.0"
+  }
+ ]
+}
+---
+
+[EventSpecification Controller Delete EventSpecification resource should fail to delete a non-existent EventSpecification - 1]
+{
+ "detail": "Resource eni--hyperion--blabla not found",
+ "instance": "",
+ "status": 404,
+ "title": "Not found",
+ "type": "NotFound"
+}
+---
+
+[EventSpecification Controller Delete EventSpecification resource should fail to delete an EventSpecification from a different team - 1]
+{
+ "detail": "Access to requested resource not allowed",
+ "instance": "",
+ "status": 403,
+ "title": "Access Denied",
+ "type": "Forbidden"
+}
+---
+
+[EventSpecification Controller GetStatus EventSpecification resource should return the status of the EventSpecification successfully - 1]
+{
+ "overallStatus": "complete",
+ "processingState": "done",
+ "state": "complete"
+}
+---
+
+[EventSpecification Controller GetStatus EventSpecification resource should fail to get the status of a non-existent EventSpecification - 1]
+{
+ "detail": "Resource eni--hyperion--blabla not found",
+ "instance": "",
+ "status": 404,
+ "title": "Not found",
+ "type": "NotFound"
+}
+---
+
+[EventSpecification Controller GetStatus EventSpecification resource should fail to get the status of an EventSpecification from a different team - 1]
+{
+ "detail": "Access to requested resource not allowed",
+ "instance": "",
+ "status": 403,
+ "title": "Access Denied",
+ "type": "Forbidden"
+}
+---
+
+[EventSpecification Controller Update EventSpecification resource should update the EventSpecification successfully - 1]
+{
+ "description": "Horizon demo provider",
+ "id": "eni--hyperion--tardis-horizon-demo-cetus-v1",
+ "specification": {
+  "properties": {
+   "id": {
+    "type": "string"
+   }
+  },
+  "type": "object"
+ },
+ "status": {
+  "processingState": "done",
+  "state": "complete"
+ },
+ "type": "tardis.horizon.demo.cetus.v1",
+ "version": "1.0.0"
+}
+---
+
+[EventSpecification Controller Update EventSpecification resource should fail to update an EventSpecification from a different team - 1]
 {
  "detail": "Access to requested resource not allowed",
  "instance": "",
@@ -640,63 +1387,7 @@
   "next": "",
   "self": "http://example.com/apispecifications?cursor="
  },
- "items": [
-  {
-   "category": "other",
-   "id": "eni--hyperion--eni-distr-v1",
-   "name": "eni-distr-v1",
-   "specification": {
-    "info": {
-     "title": "Rover API",
-     "version": "1.0.0"
-    },
-    "openapi": "3.0.0",
-    "servers": [
-     {
-      "url": "http://rover-api.com/eni/distr/v1"
-     }
-    ]
-   },
-   "status": {
-    "processingState": "done",
-    "state": "complete"
-   },
-   "vendorApi": false
-  }
- ]
-}
----
-
-[ApiSpecification Controller GetAll ApiSpecifications resource should return an empty list if no ApiSpecifications exist - 2]
-{
- "_links": {
-  "next": "",
-  "self": "http://example.com/apispecifications?cursor="
- },
- "items": [
-  {
-   "category": "other",
-   "id": "eni--hyperion--eni-distr-v1",
-   "name": "eni-distr-v1",
-   "specification": {
-    "info": {
-     "title": "Rover API",
-     "version": "1.0.0"
-    },
-    "openapi": "3.0.0",
-    "servers": [
-     {
-      "url": "http://rover-api.com/eni/distr/v1"
-     }
-    ]
-   },
-   "status": {
-    "processingState": "done",
-    "state": "complete"
-   },
-   "vendorApi": false
-  }
- ]
+ "items": []
 }
 ---
 
@@ -773,16 +1464,6 @@
 }
 ---
 
-[ApiSpecification Controller Update ApiSpecification resource should fail to update a non-existent ApiSpecification - 1]
-{
- "detail": "Resource eni--hyperion--not-there-v1 not found",
- "instance": "",
- "status": 404,
- "title": "Not found",
- "type": "NotFound"
-}
----
-
 [ApiSpecification Controller Update ApiSpecification resource should fail to update an ApiSpecification from a different team - 1]
 {
  "detail": "Access to requested resource not allowed",
@@ -790,5 +1471,150 @@
  "status": 403,
  "title": "Access Denied",
  "type": "Forbidden"
+}
+---
+
+[Rover Controller Update rover resource should apply defaults before the controller persists the rover - 1]
+{
+ "exposures": [
+  {
+   "approval": "SIMPLE",
+   "basePath": "/eni/distr/v1",
+   "type": "api",
+   "upstream": "https://httpbin.org/anything",
+   "visibility": "WORLD"
+  }
+ ],
+ "id": "eni--hyperion--rover-local-sub",
+ "name": "rover-local-sub",
+ "status": {
+  "errors": [
+   {
+    "cause": "NoApproval",
+    "message": "Approval is either rejected or suspended"
+   }
+  ],
+  "processingState": "done",
+  "state": "blocked"
+ },
+ "subscriptions": [
+  {
+   "basePath": "/eni/distr/v1",
+   "type": "api"
+  }
+ ],
+ "zone": "dataplane1"
+}
+---
+
+[Resources Controller GetAll resources should return aggregated resources for a group token - 1]
+{
+ "_links": {
+  "next": "",
+  "self": "http://example.com/resources?cursor="
+ },
+ "items": [
+  {
+   "apiVersion": "rover.cp.ei.telekom.de/v1",
+   "kind": "Rover",
+   "name": "rover-local-sub",
+   "namespace": "poc--eni--hyperion",
+   "path": "/rovers/rover-local-sub"
+  },
+  {
+   "apiVersion": "rover.cp.ei.telekom.de/v1",
+   "kind": "ApiSpecification",
+   "name": "eni-distr-v1",
+   "namespace": "poc--eni--hyperion",
+   "path": "/apispecifications/eni-distr-v1"
+  },
+  {
+   "apiVersion": "rover.cp.ei.telekom.de/v1",
+   "kind": "EventSpecification",
+   "name": "tardis-horizon-demo-cetus-v1",
+   "namespace": "poc--eni--hyperion",
+   "path": "/eventspecifications/tardis-horizon-demo-cetus-v1"
+  },
+  {
+   "apiVersion": "rover.cp.ei.telekom.de/v1",
+   "kind": "Roadmap",
+   "name": "eni-test-api",
+   "namespace": "poc--eni--hyperion",
+   "path": "/apiroadmaps/eni-test-api"
+  },
+  {
+   "apiVersion": "rover.cp.ei.telekom.de/v1",
+   "kind": "ApiChangelog",
+   "name": "eni-test-api",
+   "namespace": "poc--eni--hyperion",
+   "path": "/apichangelogs/eni-test-api"
+  }
+ ]
+}
+---
+
+[Resources Controller GetAll resources should return aggregated resources for a team token - 1]
+{
+ "_links": {
+  "next": "",
+  "self": "http://example.com/resources?cursor="
+ },
+ "items": [
+  {
+   "apiVersion": "rover.cp.ei.telekom.de/v1",
+   "kind": "Rover",
+   "name": "rover-local-sub",
+   "namespace": "poc--eni--hyperion",
+   "path": "/rovers/rover-local-sub"
+  },
+  {
+   "apiVersion": "rover.cp.ei.telekom.de/v1",
+   "kind": "ApiSpecification",
+   "name": "eni-distr-v1",
+   "namespace": "poc--eni--hyperion",
+   "path": "/apispecifications/eni-distr-v1"
+  },
+  {
+   "apiVersion": "rover.cp.ei.telekom.de/v1",
+   "kind": "EventSpecification",
+   "name": "tardis-horizon-demo-cetus-v1",
+   "namespace": "poc--eni--hyperion",
+   "path": "/eventspecifications/tardis-horizon-demo-cetus-v1"
+  },
+  {
+   "apiVersion": "rover.cp.ei.telekom.de/v1",
+   "kind": "Roadmap",
+   "name": "eni-test-api",
+   "namespace": "poc--eni--hyperion",
+   "path": "/apiroadmaps/eni-test-api"
+  },
+  {
+   "apiVersion": "rover.cp.ei.telekom.de/v1",
+   "kind": "ApiChangelog",
+   "name": "eni-test-api",
+   "namespace": "poc--eni--hyperion",
+   "path": "/apichangelogs/eni-test-api"
+  }
+ ]
+}
+---
+
+[Resources Controller GetAll resources should return an empty list for a team with no resources - 1]
+{
+ "_links": {
+  "next": "",
+  "self": "http://example.com/resources?cursor="
+ },
+ "items": null
+}
+---
+
+[Resources Controller GetAll resources should filter results when prefix query param is provided - 1]
+{
+ "_links": {
+  "next": "",
+  "self": "http://example.com/resources?cursor="
+ },
+ "items": null
 }
 ---

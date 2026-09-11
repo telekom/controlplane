@@ -9,13 +9,13 @@ import (
 
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	cc "github.com/telekom/controlplane/common/pkg/controller"
-	"github.com/telekom/controlplane/common/pkg/types"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -48,13 +48,10 @@ func (r *RouteReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Controller = cc.NewController(&routehandler.RouteHandler{}, r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&gatewayv1.Route{}).
-		Watches(&gatewayv1.Realm{},
-			handler.EnqueueRequestsFromMapFunc(r.mapRealmToRoute),
-			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{})).
+		For(&gatewayv1.Route{}, builder.WithPredicates(cc.Count("route", cc.RoleFor))).
 		Watches(&gatewayv1.ConsumeRoute{},
 			handler.EnqueueRequestsFromMapFunc(r.mapConsumeRouteToRoute),
-			builder.WithPredicates(predicate.GenerationChangedPredicate{})).
+			builder.WithPredicates(cc.Count("route", cc.RoleWatches, predicate.GenerationChangedPredicate{}, SkipInitialListPredicate{}))).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
 			RateLimiter:             cc.NewRateLimiter(),
@@ -78,34 +75,6 @@ func (r *RouteReconciler) mapConsumeRouteToRoute(ctx context.Context, obj client
 	return []reconcile.Request{{NamespacedName: client.ObjectKey{Name: route.Name, Namespace: route.Namespace}}}
 }
 
-func (r *RouteReconciler) mapRealmToRoute(ctx context.Context, obj client.Object) []reconcile.Request {
-	// ensure its actually a Realm
-	realm, ok := obj.(*gatewayv1.Realm)
-	if !ok {
-		return nil
-	}
-	if realm.Labels == nil {
-		return nil
-	}
+type SkipInitialListPredicate struct{ predicate.Funcs }
 
-	listOpts := []client.ListOption{
-		client.MatchingFields{
-			IndexFieldSpecRealm: types.ObjectRefFromObject(realm).String(),
-		},
-		client.MatchingLabels{
-			cconfig.EnvironmentLabelKey: realm.Labels[cconfig.EnvironmentLabelKey],
-		},
-	}
-
-	list := gatewayv1.RouteList{}
-	if err := r.List(ctx, &list, listOpts...); err != nil {
-		return nil
-	}
-
-	requests := make([]reconcile.Request, len(list.Items))
-	for i, item := range list.Items {
-		requests[i] = reconcile.Request{NamespacedName: client.ObjectKey{Name: item.Name, Namespace: item.Namespace}}
-	}
-
-	return requests
-}
+func (SkipInitialListPredicate) Create(e event.CreateEvent) bool { return !e.IsInInitialList }

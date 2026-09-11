@@ -5,7 +5,7 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: server-role
+  name: rover-server-role
 rules:
 - apiGroups:
   - admin.cp.ei.telekom.de
@@ -18,9 +18,21 @@ rules:
 - apiGroups:
   - api.cp.ei.telekom.de
   resources:
+  - apicategories
   - apiexposures
   - apis
   - apisubscriptions
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - event.cp.ei.telekom.de
+  resources:
+  - eventconfigs
+  - eventtypes
+  - eventsubscriptions
+  - eventexposures
   verbs:
   - get
   - list
@@ -32,6 +44,8 @@ rules:
   verbs:
   - get
   - list
+  - patch
+  - update
   - watch
 - apiGroups:
   - organization.cp.ei.telekom.de
@@ -44,8 +58,7 @@ rules:
 - apiGroups:
   - rover.cp.ei.telekom.de
   resources:
-  - apispecifications
-  - rovers
+  - "*"
   verbs:
   - create
   - delete
@@ -53,4 +66,17 @@ rules:
   - list
   - patch
   - update
+  - watch
+- apiGroups:
+  - agentic.cp.ei.telekom.de
+  resources:
+  - mcpservers
+  - mcpexposures
+  - mcpsubscriptions
+  - agentcards
+  - agenticexposures
+  - agenticsubscriptions
+  verbs:
+  - get
+  - list
   - watch

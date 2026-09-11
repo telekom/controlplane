@@ -1,0 +1,34 @@
+# SPDX-FileCopyrightText: 2026 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Adds namespace to all resources.
+namespace: controlplane-system
+
+# Value of this field is prepended to the
+# names of all resources, e.g. a deployment named
+# "controller-manager" becomes "agentic-controller-manager".
+namePrefix: agentic-
+
+# Labels to add to all resources and selectors.
+labels:
+- includeSelectors: true
+  pairs:
+    domain: agentic
+  fields:
+    - path: spec/selector/matchLabels
+      create: true
+      kind: ServiceMonitor
+      group: monitoring.coreos.com
+
+resources:
+- ../crd
+- ../rbac
+- ../manager
+- ../prometheus
+- metrics_service.yaml
+
+patches:
+- path: manager_metrics_patch.yaml
+  target:
+    kind: Deployment

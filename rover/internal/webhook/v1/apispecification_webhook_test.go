@@ -6,27 +6,27 @@ package v1
 
 import (
 	"context"
+	"errors"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	apiv1 "github.com/telekom/controlplane/api/api/v1"
 	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/types"
 	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("ApiSpecification Webhook", func() {
-
 	Context("Validating", func() {
+		ctx := context.Background()
+		environment := "test"
 
-		var ctx = context.Background()
-		var environment = "test"
-
-		var NewApiSpecificationValidatorMock = func(teamGroup, teamName string) *ApiSpecificationCustomValidator {
+		NewApiSpecificationValidatorMock := func(teamGroup, teamName string) *ApiSpecificationCustomValidator {
 			apiCategoriesList := &apiv1.ApiCategoryList{
 				Items: []apiv1.ApiCategory{
 					{
@@ -87,7 +87,6 @@ var _ = Describe("ApiSpecification Webhook", func() {
 					return apiCategoriesList, nil
 				},
 			}
-
 		}
 
 		It("should block when the environment label is missing", func() {
@@ -113,7 +112,8 @@ var _ = Describe("ApiSpecification Webhook", func() {
 			Expect(warnings).To(BeNil())
 			Expect(apierrors.IsInvalid(err)).To(BeTrue(), "Expected an Invalid error")
 
-			statusErr, ok := err.(*apierrors.StatusError)
+			statusErr := &apierrors.StatusError{}
+			ok := errors.As(err, &statusErr)
 			Expect(ok).To(BeTrue(), "Expected a StatusError, got: %T", err)
 			Expect(statusErr.ErrStatus.Details.Causes).To(HaveLen(1))
 			Expect(statusErr.ErrStatus.Details.Causes[0].Field).To(Equal("metadata.labels.cp.ei.telekom.de/environment"))
@@ -147,7 +147,8 @@ var _ = Describe("ApiSpecification Webhook", func() {
 			Expect(warnings).To(BeNil())
 			Expect(apierrors.IsInvalid(err)).To(BeTrue(), "Expected an Invalid error")
 
-			statusErr, ok := err.(*apierrors.StatusError)
+			statusErr := &apierrors.StatusError{}
+			ok := errors.As(err, &statusErr)
 			Expect(ok).To(BeTrue(), "Expected a StatusError, got: %T", err)
 			Expect(statusErr.ErrStatus.Details.Causes).To(HaveLen(1))
 			Expect(statusErr.ErrStatus.Details.Causes[0].Field).To(Equal("spec.category"))
@@ -181,7 +182,8 @@ var _ = Describe("ApiSpecification Webhook", func() {
 			Expect(warnings).To(BeNil())
 			Expect(apierrors.IsInvalid(err)).To(BeTrue(), "Expected an Invalid error")
 
-			statusErr, ok := err.(*apierrors.StatusError)
+			statusErr := &apierrors.StatusError{}
+			ok := errors.As(err, &statusErr)
 			Expect(ok).To(BeTrue(), "Expected a StatusError, got: %T", err)
 			Expect(statusErr.ErrStatus.Details.Causes).To(HaveLen(1))
 			Expect(statusErr.ErrStatus.Details.Causes[0].Field).To(Equal("spec.basePath"))
@@ -215,7 +217,8 @@ var _ = Describe("ApiSpecification Webhook", func() {
 			Expect(warnings).To(BeNil())
 			Expect(apierrors.IsInvalid(err)).To(BeTrue(), "Expected an Invalid error")
 
-			statusErr, ok := err.(*apierrors.StatusError)
+			statusErr := &apierrors.StatusError{}
+			ok := errors.As(err, &statusErr)
 			Expect(ok).To(BeTrue(), "Expected a StatusError, got: %T", err)
 			Expect(statusErr.ErrStatus.Details.Causes).To(HaveLen(1))
 			Expect(statusErr.ErrStatus.Details.Causes[0].Field).To(Equal("spec.category"))
@@ -304,7 +307,6 @@ var _ = Describe("ApiSpecification Webhook", func() {
 			By("expecting no error")
 			Expect(err).NotTo(HaveOccurred())
 			Expect(warnings).To(BeNil())
-
 		})
 
 		It("should block when the Team is not allowed", func() {
@@ -334,7 +336,8 @@ var _ = Describe("ApiSpecification Webhook", func() {
 			Expect(warnings).To(BeNil())
 			Expect(apierrors.IsInvalid(err)).To(BeTrue(), "Expected an Invalid error")
 
-			statusErr, ok := err.(*apierrors.StatusError)
+			statusErr := &apierrors.StatusError{}
+			ok := errors.As(err, &statusErr)
 			Expect(ok).To(BeTrue(), "Expected a StatusError, got: %T", err)
 			Expect(statusErr.ErrStatus.Details.Causes).To(HaveLen(2))
 			Expect(statusErr.ErrStatus.Details.Causes[0].Field).To(Equal("spec.category"))
@@ -342,8 +345,6 @@ var _ = Describe("ApiSpecification Webhook", func() {
 
 			Expect(statusErr.ErrStatus.Details.Causes[1].Field).To(Equal("spec.category"))
 			Expect(statusErr.ErrStatus.Details.Causes[1].Message).To(ContainSubstring(`ApiCategory "not-allowed-api-category" is not allowed for team name "my-group--my-team"`))
-
 		})
 	})
-
 })

@@ -9,12 +9,13 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+
 	adminapi "github.com/telekom/controlplane/admin/api/v1"
 	"github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	"github.com/telekom/controlplane/common/pkg/types"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
 func GetRemoteOrganization(ctx context.Context, ref types.ObjectRef) (*adminapi.RemoteOrganization, error) {

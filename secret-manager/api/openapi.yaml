@@ -348,47 +348,17 @@ components:
       content:
         application/json:
           schema:
-            type: object
-            required:
-              - secrets
-            properties:
-              secrets:
-                type: array
-                description: A list of secrets to be created or updated for the environment
-                minItems: 0
-                maxItems: 10
-                items:
-                  $ref: '#/components/schemas/NamedSecret'
+            $ref: '#/components/schemas/EnvironmentWriteRequest'
     TeamWriteRequest:
       content:
         application/json:
           schema:
-            type: object
-            required:
-              - secrets
-            properties:
-              secrets:
-                type: array
-                description: A list of secrets to be created or updated for the team
-                minItems: 0
-                maxItems: 10
-                items:
-                  $ref: '#/components/schemas/NamedSecret'
+            $ref: '#/components/schemas/TeamWriteRequest'
     ApplicationWriteRequest:
       content:
         application/json:
           schema:
-            type: object
-            required:
-              - secrets
-            properties:
-              secrets:
-                type: array
-                minItems: 0
-                maxItems: 10
-                description: A list of secrets to be created or updated for the application
-                items:
-                  $ref: '#/components/schemas/NamedSecret'
+            $ref: '#/components/schemas/ApplicationWriteRequest'
 
   schemas:
     ApiProblem:
@@ -436,6 +406,59 @@ components:
         value:
           type: string
           description: The value of the secret
+    WriteStrategy:
+      type: string
+      enum:
+        - merge
+        - replace
+      default: replace
+      description: |
+        The strategy defines how the provided secrets should be applied.
+        With "merge", the provided secrets will be merged with the existing secrets. With "replace",
+        the provided secrets will replace the existing secrets.
+        If not provided, "replace" will be used as default strategy.
+    EnvironmentWriteRequest:
+      type: object
+      required:
+        - secrets
+      properties:
+        strategy:
+          $ref: '#/components/schemas/WriteStrategy'
+        secrets:
+          type: array
+          description: A list of secrets to be created or updated for the environment
+          minItems: 0
+          maxItems: 10
+          items:
+            $ref: '#/components/schemas/NamedSecret'
+    TeamWriteRequest:
+      type: object
+      required:
+        - secrets
+      properties:
+        strategy:
+          $ref: '#/components/schemas/WriteStrategy'
+        secrets:
+          type: array
+          description: A list of secrets to be created or updated for the team
+          minItems: 0
+          maxItems: 10
+          items:
+            $ref: '#/components/schemas/NamedSecret'
+    ApplicationWriteRequest:
+      type: object
+      required:
+        - secrets
+      properties:
+        strategy:
+          $ref: '#/components/schemas/WriteStrategy'
+        secrets:
+          type: array
+          description: A list of secrets to be created or updated for the application
+          minItems: 0
+          maxItems: 10
+          items:
+            $ref: '#/components/schemas/NamedSecret'
     ListSecretItem:
       type: object
       required:

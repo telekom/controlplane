@@ -6,9 +6,11 @@ package v1
 
 import (
 	"encoding/json"
+
 	ctypes "github.com/telekom/controlplane/common/pkg/types"
 
 	"github.com/pkg/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -20,6 +22,12 @@ const (
 	ApprovalStrategyFourEyes ApprovalStrategy = "FourEyes"
 )
 
+// SystemDecisionName is the name used for decisions made by the system (auto-approval, expiration, etc.).
+const SystemDecisionName = "System"
+
+// AutoApprovedComment is the comment added to auto-approved ApprovalRequests.
+const AutoApprovedComment = "Auto-approved: The approval strategy does not require manual review."
+
 type ApprovalAction string
 
 const (
@@ -27,6 +35,7 @@ const (
 	ApprovalActionDeny    ApprovalAction = "Deny"
 	ApprovalActionSuspend ApprovalAction = "Suspend"
 	ApprovalActionResume  ApprovalAction = "Resume"
+	ApprovalActionExpire  ApprovalAction = "Expire"
 )
 
 func (a ApprovalAction) String() string {
@@ -123,4 +132,14 @@ type Decision struct {
 
 	// Comment provided by the person making the decision
 	Comment string `json:"comment,omitempty"`
+
+	// Timestamp of when the decision was made
+	// +optional
+	Timestamp *metav1.Time `json:"timestamp,omitempty"`
+
+	// ResultingState is the state the resource transitioned to as a result of this decision.
+	// Automatically set by the defaulting webhook to match Spec.State when not provided.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Enum=Pending;Semigranted;Granted;Rejected;Suspended;Expired
+	ResultingState ApprovalState `json:"resultingState"`
 }

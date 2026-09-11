@@ -79,7 +79,7 @@ Example of the JWT token structure:
 	{
 		"env": "dev",
 		"clientId": "group--team--user",
-		"scopes": "group:team:read group:team:write",
+		"scope": "group:team:read group:team:write",
 
 		# These are used by the JWT middleware
 		"operation": "GET",
@@ -131,14 +131,14 @@ func NewBusinessCtxMiddleware(mwOpts BusinessContextOpts) fiber.Handler {
 		}
 
 		var scopes []string
-		if scopesClaim, pErr := DecodeValue(mwOpts.ValuesDecoders, claims, "scopes"); pErr == nil {
+		if scopesClaim, pErr := DecodeValue(mwOpts.ValuesDecoders, claims, "scope"); pErr == nil {
 			scopes = strings.Split(scopesClaim, " ")
 
 		} else if mwOpts.DefaultScope != "" {
 			scopes = defaultScopes
 
 		} else {
-			return c.Status(invalidCtx.Code()).JSON(invalidCtxField("scopes"), "application/problem+json")
+			return c.Status(invalidCtx.Code()).JSON(invalidCtxField("scope"), "application/problem+json")
 		}
 
 		clientType, err := DetermineClientType(scopes, scopePrefix)
@@ -244,7 +244,7 @@ func DetermineClientType(scopes []string, prefix string) (ClientType, error) {
 		switch parts[len(parts)-2] {
 		case string(ClientTypeTeam):
 			return ClientTypeTeam, nil
-		case string(ClientTypeGroup):
+		case string(ClientTypeGroup), "hub": // Deprecated alias for already-issued tokens.
 			return ClientTypeGroup, nil
 		case string(ClientTypeAdmin):
 			return ClientTypeAdmin, nil

@@ -1,4 +1,4 @@
-// Copyright 2025 Deutsche Telekom IT GmbH
+// Copyright 2026 Deutsche Telekom IT GmbH
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -22,6 +22,51 @@ type MockSecretId_Expecter struct {
 
 func (_m *MockSecretId) EXPECT() *MockSecretId_Expecter {
 	return &MockSecretId_Expecter{mock: &_m.Mock}
+}
+
+// CacheKey provides a mock function with no fields
+func (_m *MockSecretId) CacheKey() string {
+	ret := _m.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for CacheKey")
+	}
+
+	var r0 string
+	if rf, ok := ret.Get(0).(func() string); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+
+	return r0
+}
+
+// MockSecretId_CacheKey_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CacheKey'
+type MockSecretId_CacheKey_Call struct {
+	*mock.Call
+}
+
+// CacheKey is a helper method to define mock.On call
+func (_e *MockSecretId_Expecter) CacheKey() *MockSecretId_CacheKey_Call {
+	return &MockSecretId_CacheKey_Call{Call: _e.mock.On("CacheKey")}
+}
+
+func (_c *MockSecretId_CacheKey_Call) Run(run func()) *MockSecretId_CacheKey_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *MockSecretId_CacheKey_Call) Return(_a0 string) *MockSecretId_CacheKey_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *MockSecretId_CacheKey_Call) RunAndReturn(run func() string) *MockSecretId_CacheKey_Call {
+	_c.Call.Return(run)
+	return _c
 }
 
 // Copy provides a mock function with no fields
@@ -112,6 +157,53 @@ func (_c *MockSecretId_Env_Call) Return(_a0 string) *MockSecretId_Env_Call {
 }
 
 func (_c *MockSecretId_Env_Call) RunAndReturn(run func() string) *MockSecretId_Env_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// ParentId provides a mock function with no fields
+func (_m *MockSecretId) ParentId() backend.SecretId {
+	ret := _m.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for ParentId")
+	}
+
+	var r0 backend.SecretId
+	if rf, ok := ret.Get(0).(func() backend.SecretId); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(backend.SecretId)
+		}
+	}
+
+	return r0
+}
+
+// MockSecretId_ParentId_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ParentId'
+type MockSecretId_ParentId_Call struct {
+	*mock.Call
+}
+
+// ParentId is a helper method to define mock.On call
+func (_e *MockSecretId_Expecter) ParentId() *MockSecretId_ParentId_Call {
+	return &MockSecretId_ParentId_Call{Call: _e.mock.On("ParentId")}
+}
+
+func (_c *MockSecretId_ParentId_Call) Run(run func()) *MockSecretId_ParentId_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *MockSecretId_ParentId_Call) Return(_a0 backend.SecretId) *MockSecretId_ParentId_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *MockSecretId_ParentId_Call) RunAndReturn(run func() backend.SecretId) *MockSecretId_ParentId_Call {
 	_c.Call.Return(run)
 	return _c
 }

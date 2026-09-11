@@ -15,6 +15,10 @@ var _ = Describe("Cache Metrics", Ordered, func() {
 	Context("Register Metrics", Ordered, func() {
 
 		It("should record cache hits", func() {
+
+			RegisterMetrics(prometheus.DefaultRegisterer, func() float64 {
+				return 0
+			})
 			// Record a cache hit
 			RecordCacheHit("get", "")
 
@@ -95,25 +99,6 @@ var _ = Describe("Cache Metrics", Ordered, func() {
 
 			Expect(expiredFound).To(BeTrue(), "Expected miss metric with 'expired' reason not found")
 			Expect(notFoundFound).To(BeTrue(), "Expected miss metric with 'not_found' reason not found")
-		})
-
-		It("should register metrics only once", func() {
-			// Call RegisterMetrics multiple times
-			registerMetrics(prometheus.DefaultRegisterer)
-			registerMetrics(prometheus.DefaultRegisterer)
-			registerMetrics(prometheus.DefaultRegisterer)
-
-			metrics, err := prometheus.DefaultGatherer.Gather()
-			Expect(err).NotTo(HaveOccurred())
-
-			// Count our metric
-			count := 0
-			for _, m := range metrics {
-				if m.GetName() == "cache_access_total" {
-					count++
-				}
-			}
-			Expect(count).To(Equal(1), "Metric should be registered exactly once")
 		})
 
 	})

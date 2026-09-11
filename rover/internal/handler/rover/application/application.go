@@ -6,27 +6,25 @@ package application
 
 import (
 	"context"
-	"fmt"
+	"slices"
 
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	"sigs.k8s.io/controller-runtime/pkg/log"
 
+	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	"github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/config"
+	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
-
-	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 )
 
 func HandleApplication(ctx context.Context, c client.JanitorClient, owner *roverv1.Rover) error {
-	log := log.FromContext(ctx)
 	environment := contextutil.EnvFromContextOrDie(ctx)
 	zoneRef := types.ObjectRef{
 		Name:      owner.Spec.Zone,
@@ -41,26 +39,29 @@ func HandleApplication(ctx context.Context, c client.JanitorClient, owner *rover
 	}
 
 	team, err := organizationv1.FindTeamForObject(ctx, owner)
-	if err != nil && apierrors.IsNotFound(err) {
-		log.Info(fmt.Sprintf("Team not found for application %s, err: %v", owner.Name, err))
-	} else if err != nil {
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			return ctrlerrors.BlockedErrorf("team not found for application %s", owner.Name)
+		}
 		return err
 	}
 
-	needsClient := len(owner.Spec.Subscriptions) > 0
-	var subscriberFailoverZones []types.ObjectRef
+	// If the Application publishes any events, we need to create a client for it, even if it doesn't have any subscriptions.
+	// This is because the client is needed to access the publish-route
+	hasAnyEventExposures := slices.ContainsFunc(owner.Spec.Exposures, func(ex roverv1.Exposure) bool {
+		return ex.Type() == roverv1.TypeEvent
+	})
+
+	needsClient := len(owner.Spec.Subscriptions) > 0 || hasAnyEventExposures
+
+	var hasAnySubscriptionFailoverEnabled bool
 	if needsClient {
 		for _, subscription := range owner.Spec.Subscriptions {
-			switch subscription.Type() {
-			case roverv1.TypeApi:
-				if subscription.Api.Traffic.Failover != nil {
-					for _, zoneName := range subscription.Api.Traffic.Failover.Zones {
-						zoneRef := types.ObjectRef{
-							Name:      zoneName,
-							Namespace: environment,
-						}
-						subscriberFailoverZones = append(subscriberFailoverZones, zoneRef)
-					}
+			if subscription.Type() == roverv1.TypeApi {
+				failoverConfig := subscription.Api.Traffic.Failover
+				if failoverConfig != nil && failoverConfig.Enabled {
+					hasAnySubscriptionFailoverEnabled = true
+					break
 				}
 			}
 		}
@@ -73,9 +74,15 @@ func HandleApplication(ctx context.Context, c client.JanitorClient, owner *rover
 			config.BuildLabelKey("team"):        labelutil.NormalizeValue(team.Name),
 		}
 
-		err := controllerutil.SetControllerReference(owner, application, c.Scheme())
-		if err != nil {
-			return errors.Wrap(err, "failed to set controller reference")
+		if refErr := controllerutil.SetControllerReference(owner, application, c.Scheme()); refErr != nil {
+			return errors.Wrap(refErr, "failed to set controller reference")
+		}
+
+		// Preserve existing Application secret on updates (write-once);
+		// only bootstrap from Rover on initial creation.
+		secretToApply := application.Spec.Secret
+		if secretToApply == "" {
+			secretToApply = owner.Spec.ClientSecret
 		}
 
 		application.Spec = applicationv1.ApplicationSpec{
@@ -84,8 +91,11 @@ func HandleApplication(ctx context.Context, c client.JanitorClient, owner *rover
 			Zone:          zoneRef,
 			NeedsClient:   needsClient,
 			NeedsConsumer: needsClient,
-			Secret:        owner.Spec.ClientSecret,
-			FailoverZones: subscriberFailoverZones,
+			Secret:        secretToApply,
+			Failover: applicationv1.Failover{
+				Enabled: hasAnySubscriptionFailoverEnabled,
+			},
+			RotatedSecret: application.Spec.RotatedSecret,
 		}
 
 		if owner.Spec.IpRestrictions != nil {
@@ -95,6 +105,15 @@ func HandleApplication(ctx context.Context, c client.JanitorClient, owner *rover
 					Deny:  owner.Spec.IpRestrictions.Deny,
 				},
 			}
+		}
+
+		if len(owner.Spec.ExternalIds) > 0 {
+			application.Spec.ExternalIds = make([]applicationv1.ExternalId, len(owner.Spec.ExternalIds))
+			for i, eid := range owner.Spec.ExternalIds {
+				application.Spec.ExternalIds[i] = applicationv1.ExternalId{Scheme: eid.Scheme, Id: eid.Id}
+			}
+		} else {
+			application.Spec.ExternalIds = nil
 		}
 
 		return nil

@@ -41,6 +41,10 @@ type StateInfoContainer interface {
 	GetErrors() []StatusInfo
 	GetInfo() []StatusInfo
 	GetWarnings() []StatusInfo
+
+	HasErrors() bool
+	HasWarnings() bool
+	HasInfo() bool
 }
 
 /*
@@ -80,12 +84,13 @@ const (
 	ProcessingStateDone       ProcessingState = "done"
 )
 
-type ObjectStatus interface {
-	StateInfoContainer
+type StatusContainer interface {
 	GetOverallStatus() OverallStatus
 	GetProcessingState() ProcessingState
-	HasErrors() bool
-	HasWarnings() bool
-	HasInfo() bool
 	IsGone() bool
+}
+
+type ObjectStatus interface {
+	StateInfoContainer
+	StatusContainer
 }

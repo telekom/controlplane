@@ -219,5 +219,44 @@ spec:
 				Expect(stderr.String()).To(ContainSubstring("failed to get rover handler"))
 			})
 		})
+
+		Context("when getting info for all resources (no name or file)", func() {
+			BeforeEach(func() {
+				// Prepare mock response for InfoMany
+				infoListResponse := map[string]any{
+					"applications": []map[string]any{
+						{
+							"name":   "rover-a",
+							"status": "Running",
+						},
+						{
+							"name":   "rover-b",
+							"status": "Pending",
+						},
+					},
+				}
+
+				mockHandler.EXPECT().Priority().Return(100).Maybe()
+				mockHandler.EXPECT().InfoMany(mock.AnythingOfType("*context.valueCtx"), []string(nil)).Return(infoListResponse, nil).Once()
+			})
+
+			It("should get info for all resources successfully", func() {
+				// No --name or --file flags
+				cmd.SetArgs([]string{})
+
+				// Run the command
+				err := cmd.Execute()
+
+				// Verify no error
+				Expect(err).NotTo(HaveOccurred())
+
+				// Verify output contains expected information
+				Expect(stdout.String()).To(ContainSubstring("rover-a"))
+				Expect(stdout.String()).To(ContainSubstring("rover-b"))
+
+				// Verify mock expectations
+				mockHandler.AssertExpectations(GinkgoT())
+			})
+		})
 	})
 })

@@ -1,0 +1,149 @@
+/**
+ * Custom CSS for Control Plane documentation.
+ * Deutsche Telekom / Magenta brand color scheme.
+ *
+ * Uses Infima CSS framework variables.
+ * @see https://docusaurus.io/docs/styling-layout#styling-your-site-with-infima
+ */
+
+/* ───────────────────────────────────────────────
+   Light mode
+   ─────────────────────────────────────────────── */
+:root {
+  /* Telekom Magenta primary palette */
+  --ifm-color-primary: #e20074;
+  --ifm-color-primary-dark: #cb0068;
+  --ifm-color-primary-darker: #bf0062;
+  --ifm-color-primary-darkest: #9e0051;
+  --ifm-color-primary-light: #f90080;
+  --ifm-color-primary-lighter: #ff1a8f;
+  --ifm-color-primary-lightest: #ff4da8;
+
+  /* Typography & code */
+  --ifm-code-font-size: 95%;
+  --ifm-font-family-base: system-ui, -apple-system, 'Segoe UI', Roboto,
+    Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji';
+  --ifm-heading-font-weight: 700;
+
+  /* Layout */
+  --ifm-global-radius: 0.375rem;
+
+  /* Code highlighting */
+  --docusaurus-highlighted-code-line-bg: rgba(226, 0, 116, 0.08);
+
+  /* Navbar */
+  --ifm-navbar-background-color: #ffffff;
+  --ifm-navbar-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+
+  /* Footer */
+  --ifm-footer-background-color: #1a1a1a;
+  --ifm-footer-color: #ffffff;
+  --ifm-footer-link-color: #cccccc;
+  --ifm-footer-link-hover-color: #ff4da8;
+}
+
+/* ───────────────────────────────────────────────
+   Dark mode
+   ─────────────────────────────────────────────── */
+[data-theme='dark'] {
+  /* Lighter magenta shades for dark backgrounds */
+  --ifm-color-primary: #f74da5;
+  --ifm-color-primary-dark: #f52793;
+  --ifm-color-primary-darker: #f4148a;
+  --ifm-color-primary-darkest: #d4046f;
+  --ifm-color-primary-light: #f973b7;
+  --ifm-color-primary-lighter: #fa86c0;
+  --ifm-color-primary-lightest: #fdb9da;
+
+  --docusaurus-highlighted-code-line-bg: rgba(247, 77, 165, 0.15);
+
+  --ifm-navbar-background-color: #1a1a1a;
+  --ifm-footer-background-color: #111111;
+  --ifm-footer-link-hover-color: #f973b7;
+
+  --ifm-background-color: #121212;
+  --ifm-background-surface-color: #1e1e1e;
+}
+
+/* ───────────────────────────────────────────────
+   Hero banner
+   ─────────────────────────────────────────────── */
+.hero--primary {
+  --ifm-hero-background-color: #e20074;
+  --ifm-hero-text-color: #ffffff;
+  background: linear-gradient(135deg, #e20074 0%, #b3005c 100%);
+}
+
+.hero--primary .button--secondary {
+  color: #e20074;
+  background-color: #ffffff;
+  border-color: #ffffff;
+}
+
+.hero--primary .button--secondary:hover {
+  color: #ffffff;
+  background-color: transparent;
+  border-color: #ffffff;
+}
+
+[data-theme='dark'] .hero--primary {
+  background: linear-gradient(135deg, #c10063 0%, #8b004a 100%);
+}
+
+/* ───────────────────────────────────────────────
+   Links
+   ─────────────────────────────────────────────── */
+a {
+  text-decoration-skip-ink: auto;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+/* ───────────────────────────────────────────────
+   Sidebar active indicator
+   ─────────────────────────────────────────────── */
+.menu__link--active:not(.menu__link--sublist) {
+  border-left: 3px solid var(--ifm-color-primary);
+  padding-left: calc(var(--ifm-menu-link-padding-horizontal) - 3px);
+}
+
+/* ───────────────────────────────────────────────
+   Admonition accent colors (keep magenta)
+   ─────────────────────────────────────────────── */
+.theme-admonition-tip {
+  --ifm-alert-border-left-color: #e20074;
+}
+
+/* ───────────────────────────────────────────────
+   Table styling
+   ─────────────────────────────────────────────── */
+table th {
+  background-color: rgba(226, 0, 116, 0.06);
+}
+
+[data-theme='dark'] table th {
+  background-color: rgba(247, 77, 165, 0.1);
+}
+
+/* ───────────────────────────────────────────────
+   Scrollbar (Webkit)
+   ─────────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 4px;
+}
+
+[data-theme='dark'] ::-webkit-scrollbar-thumb {
+  background: #444;
+}

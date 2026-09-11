@@ -13,9 +13,10 @@ import (
 	"github.com/telekom/controlplane/rover-server/internal/api"
 	"github.com/telekom/controlplane/rover-server/internal/mapper"
 	"github.com/telekom/controlplane/rover-server/internal/mapper/status"
+	"github.com/telekom/controlplane/rover-server/pkg/store"
 )
 
-func MapRoverResponse(ctx context.Context, in *roverv1.Rover) (res api.RoverResponse, err error) {
+func MapResponse(ctx context.Context, in *roverv1.Rover, stores *store.Stores) (res api.RoverResponse, err error) {
 	tmp := api.Rover{}
 	if err = MapRover(in, &tmp); err != nil {
 		return res, err
@@ -27,7 +28,7 @@ func MapRoverResponse(ctx context.Context, in *roverv1.Rover) (res api.RoverResp
 
 	res.Name = in.Name
 	res.Id = mapper.MakeResourceId(in)
-	res.Status = status.MapRoverStatus(ctx, in)
+	res.Status, err = status.MapRoverStatus(ctx, in, stores)
 
 	return
 }
@@ -42,7 +43,40 @@ func MapRover(in *roverv1.Rover, out *api.Rover) error {
 	}
 
 	out.Zone = in.Spec.Zone
+	scalars := mapper.RoverExternalIdsToScalars(in.Spec.ExternalIds)
+	out.Psiid = scalars.Psiid
+	out.Icto = scalars.Icto
+	mapAuthentication(in, out)
+
+	// Consumer Failover
+	if in.HasFailoverEnabledOnAnySubscription() {
+		out.FailoverEnabled = true
+	}
+
 	return nil
+}
+
+// tokenRequestToAPI maps rover CRD tokenRequest values to rover-server API enum values.
+var tokenRequestToAPI = map[roverv1.TokenRequestMethod]api.AuthenticationClientAuthMethod{
+	roverv1.TokenRequestClientSecretBasic: api.AuthenticationClientAuthMethodBASIC,
+	roverv1.TokenRequestClientSecretPost:  api.AuthenticationClientAuthMethodPOST,
+}
+
+func mapAuthentication(in *roverv1.Rover, out *api.Rover) {
+	if in.Spec.Authentication == nil || in.Spec.Authentication.M2M == nil {
+		return
+	}
+	tokenRequest := in.Spec.Authentication.M2M.TokenRequest
+	if tokenRequest == "" {
+		return
+	}
+	method, ok := tokenRequestToAPI[tokenRequest]
+	if !ok {
+		return
+	}
+	out.Authentication = api.Authentication{
+		ClientAuthMethod: method,
+	}
 }
 
 func mapExposures(in *roverv1.Rover, out *api.Rover) error {

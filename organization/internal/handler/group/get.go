@@ -8,13 +8,13 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/pkg/errors"
+	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
 	"github.com/telekom/controlplane/organization/internal/index"
-	"k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 func GetGroupByName(ctx context.Context, groupName string) (*organizationv1.Group, error) {
@@ -24,7 +24,7 @@ func GetGroupByName(ctx context.Context, groupName string) (*organizationv1.Grou
 
 	err := k8sClient.Get(ctx, types.NamespacedName{Name: groupName, Namespace: env}, group)
 	if err != nil {
-		return nil, errors.Wrap(err, fmt.Sprintf("failed to get group '%s' in namespace (env) '%s'", groupName, env))
+		return nil, fmt.Errorf("failed to get group '%s' in namespace (env) '%s': %w", groupName, env, err)
 	}
 	return group, nil
 }
@@ -35,7 +35,7 @@ func GetTeamsForGroup(ctx context.Context, groupObj *organizationv1.Group) (*org
 	teamList := &organizationv1.TeamList{}
 	err := clientFromContext.List(ctx, teamList, client.MatchingFields{index.FieldSpecGroup: groupObj.GetName()})
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to list teams")
+		return nil, fmt.Errorf("failed to list teams: %w", err)
 	}
 
 	return teamList, nil

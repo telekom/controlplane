@@ -1,0 +1,113 @@
+// Copyright 2025 Deutsche Telekom IT GmbH
+//
+// SPDX-License-Identifier: Apache-2.0
+
+package config
+
+import (
+	"fmt"
+
+	commonconfig "github.com/telekom/controlplane/common-server/pkg/config"
+	cserver "github.com/telekom/controlplane/common-server/pkg/server"
+	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
+)
+
+type ServerConfig struct {
+	commonconfig.BaseConfig `mapstructure:",squash"`
+	Database                DatabaseConfig    `mapstructure:"database"`
+	GraphQL                 GraphQLConfig     `mapstructure:"graphql"`
+	Kubernetes              KubernetesConfig  `mapstructure:"kubernetes"`
+	FileManager             FileManagerConfig `mapstructure:"fileManager"`
+	RoverServer             RoverServerConfig `mapstructure:"roverServer"`
+}
+
+type KubernetesConfig struct {
+	Enabled     bool   `mapstructure:"enabled"`
+	Kubeconfig  string `mapstructure:"kubeconfig"`  // optional, defaults to in-cluster config
+	Environment string `mapstructure:"environment"` // environment scope for the scoped client
+}
+
+type DatabaseConfig struct {
+	URL string `mapstructure:"url"`
+}
+
+type GraphQLConfig struct {
+	PlaygroundEnabled bool `mapstructure:"playgroundEnabled"`
+}
+
+// FileManagerConfig holds the configuration for constructing specification
+// download URLs. The BaseURL is the root URL of the file-manager service.
+type FileManagerConfig struct {
+	BaseURL string `mapstructure:"baseUrl"`
+}
+
+// RoverServerConfig holds the configuration for the rover-server integration
+// used for team resource pre-deletion checks.
+type RoverServerConfig struct {
+	BaseURL       string `mapstructure:"baseUrl"`
+	TokenFilePath string `mapstructure:"tokenFilePath"`
+	CaFilePath    string `mapstructure:"caFilePath"`
+}
+
+func DefaultConfig() *ServerConfig {
+	return &ServerConfig{
+		Database: DatabaseConfig{
+			URL: "postgres://controlplane:controlplane@localhost:5432/controlplane?sslmode=disable",
+		},
+		GraphQL: GraphQLConfig{
+			PlaygroundEnabled: true,
+		},
+		BaseConfig: commonconfig.BaseConfig{
+			Log: commonconfig.LogConfig{
+				Level: "debug",
+			},
+			// Default TLS cert/key paths. A tls block in the config file
+			// overrides these; empty cert/key downgrades to plain HTTP (dev only).
+			TLS: &cserver.TLSFileConfig{
+				Cert: "/etc/tls/tls.crt",
+				Key:  "/etc/tls/tls.key",
+			},
+			// External JWT listener on :8443 (secure by default) plus an
+			// internal k8s listener on :9443 for in-cluster callers. Empty
+			// accessConfig = any authenticated in-cluster SA; in-cluster issuer
+			// auto-discovered.
+			Listeners: commonconfig.ListenersConfig{
+				External: &cserver.ListenerConfig{
+					Address: ":8443",
+					JWT: &security.JWTConfig{
+						Mode: security.ModeJWT,
+					},
+				},
+				Internal: &cserver.ListenerConfig{
+					Address: ":9443",
+					K8s: &cserver.K8sConfig{
+						Audience: "controlplane-api",
+					},
+				},
+			},
+		},
+		Kubernetes: KubernetesConfig{
+			Enabled:     true,
+			Environment: "poc", // TODO: for now, this is fine. Needs to be refined later
+		},
+		FileManager: FileManagerConfig{
+			BaseURL: "file-manager.controlplane-system.svc",
+		},
+		RoverServer: RoverServerConfig{
+			BaseURL:       "https://rover-server-service.controlplane-system.svc.cluster.local:9443",
+			TokenFilePath: "/var/run/secrets/rover/token",
+			CaFilePath:    "/var/run/secrets/trust-bundle/trust-bundle.pem",
+		},
+	}
+}
+
+// GetConfigOrDie loads the server configuration from an optional YAML file,
+// overlaid with environment variables, on top of DefaultConfig, then validates
+// the listener config fail-closed.
+func GetConfigOrDie(filepath string) *ServerConfig {
+	cfg := commonconfig.LoadOrDie(filepath, DefaultConfig())
+	if err := cfg.Listeners.Validate(); err != nil {
+		panic(fmt.Errorf("validating listeners config: %w", err))
+	}
+	return cfg
+}

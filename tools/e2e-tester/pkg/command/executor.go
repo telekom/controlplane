@@ -17,6 +17,10 @@ import (
 	"go.uber.org/zap"
 )
 
+const (
+	roverTokenEnvKey = "ROVER_TOKEN"
+)
+
 // ExecuteResult contains the result of a command execution
 type ExecuteResult struct {
 	ExitCode int
@@ -53,9 +57,7 @@ func (e *RoverCtlExecutor) Execute(ctx context.Context, cmdStr string, params ma
 		zap.String("environment", e.environment.Name))
 
 	// Set up environment variables
-	if e.environment.Token != "" {
-		cmd.Env = append(cmd.Env, fmt.Sprintf("ROVER_TOKEN=%s", e.environment.Token))
-	}
+	cmd.Env = append(cmd.Env, buildCommandEnv(e.environment, roverTokenEnvKey)...)
 
 	// Capture stdout and stderr
 	var stdout, stderr bytes.Buffer
@@ -89,6 +91,10 @@ func (e *RoverCtlExecutor) Execute(ctx context.Context, cmdStr string, params ma
 
 // CreateSnapshot creates a CommandSnapshot from a command execution
 func (e *RoverCtlExecutor) CreateSnapshot(cmdStr string, result *ExecuteResult, envName string, suiteName string, caseIndex string, caseName string) *snapshot.CommandSnapshot {
+
+	if envName == "" {
+		envName = e.environment.Name
+	}
 
 	id := snapshot.MakeSnapshotID(suiteName, envName, caseIndex, caseName)
 

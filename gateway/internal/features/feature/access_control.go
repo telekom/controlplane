@@ -6,10 +6,10 @@ package feature
 
 import (
 	"context"
-	"slices"
 
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	"github.com/telekom/controlplane/gateway/internal/features"
+	"github.com/telekom/controlplane/gateway/pkg/kong/client/plugin"
 )
 
 var _ features.Feature = &AccessControlFeature{}
@@ -35,8 +35,7 @@ func (f *AccessControlFeature) IsUsed(ctx context.Context, builder features.Feat
 	if !ok {
 		return false
 	}
-	hasIssuerDefined := len(route.Spec.Downstreams) > 0 && route.Spec.Downstreams[0].IssuerUrl != ""
-	return hasIssuerDefined
+	return len(route.GetTrustedIssuers()) > 0
 }
 
 func (f *AccessControlFeature) Apply(ctx context.Context, builder features.FeaturesBuilder) (err error) {
@@ -44,22 +43,20 @@ func (f *AccessControlFeature) Apply(ctx context.Context, builder features.Featu
 	if !ok {
 		return features.ErrNoRoute
 	}
-	hasIssuer := slices.ContainsFunc(route.Spec.Downstreams, func(downstream gatewayv1.Downstream) bool {
-		return downstream.IssuerUrl != ""
-	})
+	hasIssuer := len(route.GetTrustedIssuers()) > 0
 	if hasIssuer {
 		// This will initialize the JWT-Plugin and set the issuer URLs of the downstreams
 		builder.JwtPlugin()
 	}
 
 	// If access control is disabled, we skip the ACL plugin setup
-	if route.Spec.Security != nil && route.Spec.Security.DisableAccessControl {
+	if route.Spec.Security.DisableAccessControl {
 		return nil
 	}
 
 	aclPlugin := builder.AclPlugin()
-	aclPlugin.Config.Allow.Add("gateway")
-	for _, defaultConsumer := range builder.GetRealm().Spec.DefaultConsumers {
+
+	for _, defaultConsumer := range route.Spec.Security.DefaultConsumers {
 		aclPlugin.Config.Allow.Add(defaultConsumer)
 	}
 
@@ -68,6 +65,13 @@ func (f *AccessControlFeature) Apply(ctx context.Context, builder features.Featu
 			// Only add allowed consumers that actually belong to this specific route
 			aclPlugin.Config.Allow.Add(consumer.Spec.ConsumerName)
 		}
+	}
+
+	// If no consumers were added, use a sentinel group to deny all traffic.
+	// Kong requires the ACL allow list to be non-empty; this placeholder ensures
+	// the plugin is accepted while no real consumer can match it.
+	if aclPlugin.Config.Allow.Empty() {
+		aclPlugin.Config.Allow.Add(plugin.DenyAllGroup)
 	}
 
 	return nil

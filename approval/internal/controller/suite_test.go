@@ -12,12 +12,11 @@ import (
 	"testing"
 	"time"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -25,13 +24,14 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
+	"github.com/telekom/controlplane/approval/internal/config"
 	"github.com/telekom/controlplane/common/pkg/test"
 	"github.com/telekom/controlplane/common/pkg/test/mock"
 	"github.com/telekom/controlplane/common/pkg/test/testutil"
 	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
-	ctrl "sigs.k8s.io/controller-runtime"
 
-	crscheme "sigs.k8s.io/controller-runtime/pkg/scheme"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -39,17 +39,19 @@ import (
 // http://onsi.github.io/ginkgo/ to learn more about Ginkgo.
 
 const (
-	timeout         = -1
+	timeout         = 5 * time.Second
 	interval        = 200 * time.Millisecond
 	testNamespace   = "default"
 	testEnvironment = "test"
 )
 
-var cfg *rest.Config
-var k8sClient client.Client
-var testEnv *envtest.Environment
-var ctx context.Context
-var cancel context.CancelFunc
+var (
+	cfg       *rest.Config
+	k8sClient client.Client
+	testEnv   *envtest.Environment
+	ctx       context.Context
+	cancel    context.CancelFunc
+)
 
 func TestControllers(t *testing.T) {
 	RegisterFailHandler(Fail)
@@ -64,12 +66,12 @@ var _ = BeforeSuite(func() {
 
 	ctx, cancel = context.WithCancel(context.TODO())
 
-	err = (&crscheme.Builder{
-		GroupVersion: schema.GroupVersion{
-			Group:   "testgroup.cp.ei.telekom.de",
-			Version: "v1",
-		},
-	}).Register(&test.TestResource{}, &test.TestResourceList{}).AddToScheme(scheme.Scheme)
+	gv := schema.GroupVersion{
+		Group:   "testgroup.cp.ei.telekom.de",
+		Version: "v1",
+	}
+	scheme.Scheme.AddKnownTypes(gv, &test.TestResource{}, &test.TestResourceList{})
+	metav1.AddToGroupVersion(scheme.Scheme, gv)
 
 	Expect(err).NotTo(HaveOccurred())
 
@@ -79,7 +81,8 @@ var _ = BeforeSuite(func() {
 		CRDDirectoryPaths: []string{
 			filepath.Join("..", "..", "..", "common", "pkg", "test", "testdata", "crds"),
 			filepath.Join("..", "..", "..", "notification", "config", "crd", "bases"),
-			filepath.Join("..", "..", "config", "crd", "bases")},
+			filepath.Join("..", "..", "config", "crd", "bases"),
+		},
 		ErrorIfCRDPathMissing: true,
 
 		// The BinaryAssetsDirectory is only required if you want to run the tests directly
@@ -88,7 +91,7 @@ var _ = BeforeSuite(func() {
 		// Note that you must have the required binaries setup under the bin directory to perform
 		// the tests directly. When we run make test it will be setup and used automatically.
 		BinaryAssetsDirectory: filepath.Join("..", "..", "bin", "k8s",
-			fmt.Sprintf("1.31.0-%s-%s", runtime.GOOS, runtime.GOARCH)),
+			fmt.Sprintf("1.32.0-%s-%s", runtime.GOOS, runtime.GOARCH)),
 	}
 
 	// cfg is defined in this file globally.
@@ -118,10 +121,21 @@ var _ = BeforeSuite(func() {
 	})
 	Expect(err).ToNot(HaveOccurred())
 
+	err = (&ApprovalExpirationReconciler{
+		Client:   k8sManager.GetClient(),
+		Scheme:   k8sManager.GetScheme(),
+		Recorder: &mock.EventRecorder{},
+	}).SetupWithManager(k8sManager)
+	Expect(err).ToNot(HaveOccurred())
+
 	err = (&ApprovalReconciler{
 		Client:   k8sManager.GetClient(),
 		Scheme:   k8sManager.GetScheme(),
 		Recorder: &mock.EventRecorder{},
+		ExpirationConfig: &config.ExpirationConfig{
+			ExpirationDuration: 12 * 30 * 24 * time.Hour, // 12 months
+			DefaultThresholds:  nil,
+		},
 	}).SetupWithManager(k8sManager)
 
 	Expect(err).ToNot(HaveOccurred())

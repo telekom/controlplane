@@ -19,14 +19,20 @@ type OnboardResponse struct {
 
 type ControllerOptions struct {
 	SecretValues map[string]string
+	Strategy     backend.WriteStrategy
 }
 
 func (o ControllerOptions) AsBackendOptions() ([]backend.OnboardOption, error) {
+	var opts []backend.OnboardOption
+
+	if o.Strategy != "" {
+		opts = append(opts, backend.WithStrategy(o.Strategy))
+	}
+
 	if len(o.SecretValues) == 0 {
-		return nil, nil
+		return opts, nil
 	}
 	fieldErrs := map[string]string{}
-	opts := make([]backend.OnboardOption, 0, len(o.SecretValues))
 	for key, value := range o.SecretValues {
 		if value == "" {
 			fieldErrs[key] = "value must not be empty"
@@ -46,6 +52,13 @@ type OnboardOption func(*ControllerOptions)
 func WithSecretValues(secrets map[string]string) OnboardOption {
 	return func(opts *ControllerOptions) {
 		opts.SecretValues = secrets
+	}
+}
+
+// WithStrategy sets the write strategy ("merge" or "replace").
+func WithStrategy(strategy backend.WriteStrategy) OnboardOption {
+	return func(opts *ControllerOptions) {
+		opts.Strategy = strategy
 	}
 }
 

@@ -1,0 +1,37 @@
+// Copyright 2026 Deutsche Telekom IT GmbH
+//
+// SPDX-License-Identifier: Apache-2.0
+
+package v0
+
+import (
+	"context"
+
+	"github.com/telekom/controlplane/rover-ctl/pkg/handlers/common"
+	"github.com/telekom/controlplane/rover-ctl/pkg/types"
+)
+
+// McpSpecHandler is a specialized handler for McpSpecification resources
+type McpSpecHandler struct {
+	*common.BaseHandler
+}
+
+func NewMcpSpecHandlerInstance() *McpSpecHandler {
+	handler := &McpSpecHandler{
+		BaseHandler: common.NewBaseHandler("tcp.ei.telekom.de/v1", "McpSpecification", "mcpspecifications", 10).WithValidation(common.ValidateObjectName),
+	}
+
+	handler.AddHook(common.PreRequestHook, PatchMcpSpecificationRequest)
+	return handler
+}
+
+func PatchMcpSpecificationRequest(ctx context.Context, obj types.Object) error {
+	if obj == nil {
+		return nil
+	}
+	content := map[string]any{
+		"specification": obj.GetContent(),
+	}
+	obj.SetContent(content)
+	return nil
+}

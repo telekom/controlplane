@@ -7,6 +7,8 @@ package backend
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
+	"maps"
 	"strings"
 )
 
@@ -24,7 +26,7 @@ func GetSubPath(secretPath string) string {
 	if len(parts) > 1 {
 		return parts[1]
 	}
-	return ""
+	return NoSubPath
 }
 
 func GetPath(secretPath string) string {
@@ -33,4 +35,29 @@ func GetPath(secretPath string) string {
 		return parts[0]
 	}
 	return secretPath
+}
+
+// ShallowMergeJSON attempts to shallow-merge two JSON object strings.
+// If both current and incoming are valid JSON objects, it merges incoming keys
+// into current (incoming keys overwrite, existing keys not in incoming are preserved).
+// Returns the merged JSON string and true if merging was performed,
+// or the incoming value and false if either value is not a JSON object.
+func ShallowMergeJSON(current, incoming string) (string, bool) {
+	var currentMap map[string]json.RawMessage
+	if err := json.Unmarshal([]byte(current), &currentMap); err != nil {
+		return incoming, false
+	}
+	var incomingMap map[string]json.RawMessage
+	if err := json.Unmarshal([]byte(incoming), &incomingMap); err != nil {
+		return incoming, false
+	}
+
+	// Shallow merge: incoming keys overwrite, existing keys are preserved
+	maps.Copy(currentMap, incomingMap)
+
+	merged, err := json.Marshal(currentMap)
+	if err != nil {
+		return incoming, false
+	}
+	return string(merged), true
 }

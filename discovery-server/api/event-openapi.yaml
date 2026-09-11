@@ -1,0 +1,1055 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+openapi: 3.0.3
+info:
+  title: Event Api
+  description: >
+    API of the TARDIS control plane for the eventing domain. With this API, you
+    can manage your EventExposures and EventSubscriptions, and browse
+    registered EventTypes.
+
+
+    This is a **read-only** API. You can only read the resources.
+
+    For creating and updating resources, you may use the Rover-API.
+
+
+    **Important:**
+
+    - You may use this API by subscribing to it by using the usual process.
+
+    You **do not** need to add `scopes` as the default scope is set to
+    `tardis:user:read`.
+
+    If you require more permissions, please contact the TARDIS team.
+
+
+    - This is a Team-API and may be used by any team using TARDIS.
+
+    In the future, you can simply use your Team-credentials to access this API.
+  contact:
+    name: TARDIS
+    url: https://developer.telekom.de/docs/src/tardis_customer_handbook/support/
+    email: FMB_TARDIS_Support@telekom.de
+  version: 2.0.0
+  x-api-category: TARDIS
+servers:
+  - url: https://api.telekom.de/event/v2
+security:
+  - OAuth2:
+      - tardis:admin:all
+tags:
+  - name: EventType
+    description: |
+      An EventType is a registry entry representing a known event type. It
+      serves as the canonical reference that both EventExposures and
+      EventSubscriptions point to. EventTypes are identified by a dot-separated
+      identifier (e.g. "de.telekom.eni.quickstart.v1").
+  - name: EventExposure
+    description: |
+      With an EventExposure you declare that your application publishes events
+      of a specific type. This makes the events available for subscription by
+      other applications. Each exposure is scoped to a zone and can define
+      visibility, approval strategy, and publisher-side scopes with filtering.
+  - name: EventSubscription
+    description: |
+      An EventSubscription declares that your application wants to receive
+      events of a specific type. You can configure the delivery mechanism
+      (callback or server-sent events), payload format, and subscriber-side
+      filtering criteria.
+paths:
+  # ──────────────────────────────────────────────
+  #  EventType
+  # ──────────────────────────────────────────────
+  /eventtypes:
+    get:
+      tags:
+        - EventType
+      summary: Find all EventTypes
+      description: |
+        Find all registered EventTypes without any restrictions. 
+        This operation is global and not scoped to a specific application or team.
+      operationId: getAllEventTypes
+      parameters:
+        - $ref: 'common.yaml#/components/parameters/Limit'
+        - $ref: 'common.yaml#/components/parameters/Offset'
+        - $ref: 'common.yaml#/components/parameters/Sort'
+      responses:
+        '200':
+          description: OK
+          headers:
+            X-Total-Count:
+              $ref: 'common.yaml#/components/headers/XTotalCount'
+            X-Result-Count:
+              $ref: 'common.yaml#/components/headers/XResultCount'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventTypeListResponse'
+        '400':
+          $ref: 'common.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: 'common.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: 'common.yaml#/components/responses/Forbidden'
+        '415':
+          $ref: 'common.yaml#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: 'common.yaml#/components/responses/ServerError'
+      security:
+        - OAuth2:
+            - tardis:admin:all
+            - tardis:admin:read
+            - tardis:admin:obfuscated
+            - tardis:supervisor:read
+            - tardis:hub:all
+            - tardis:hub:read
+            - tardis:hub:obfuscated
+            - tardis:team:all
+            - tardis:team:read
+            - tardis:team:obfuscated
+            - tardis:user:all
+            - tardis:user:read
+             - tardis:user:obfuscated
+  /eventtypes/{eventTypeId}:
+    get:
+      tags:
+        - EventType
+      summary: Find an existing EventType
+      description: Find an existing EventType by its complete identifier
+      operationId: getEventType
+      parameters:
+        - name: eventTypeId
+          description: >
+            The complete identifier of the EventType (e.g.
+            "de-telekom-eni-quickstart-v1--1-0-0")
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventTypeResponse'
+        '400':
+          $ref: 'common.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: 'common.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: 'common.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: 'common.yaml#/components/responses/NotFound'
+        '415':
+          $ref: 'common.yaml#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: 'common.yaml#/components/responses/ServerError'
+      security:
+        - OAuth2:
+            - tardis:admin:all
+            - tardis:admin:read
+            - tardis:admin:obfuscated
+            - tardis:supervisor:read
+            - tardis:hub:all
+            - tardis:hub:read
+            - tardis:hub:obfuscated
+            - tardis:team:all
+            - tardis:team:read
+            - tardis:team:obfuscated
+            - tardis:user:all
+            - tardis:user:read
+            - tardis:user:obfuscated
+  /eventtypes/{eventTypeId}/status:
+    get:
+      tags:
+        - EventType
+      summary: Find an existing EventType and return its status
+      description: Find an existing EventType and return its status
+      operationId: getEventTypeStatus
+      parameters:
+        - name: eventTypeId
+          description: >
+            The complete identifier of the EventType (e.g.
+            "de-telekom-eni-quickstart-v1--1-0-0")
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: 'common.yaml#/components/schemas/ResourceStatusResponse'
+        '400':
+          $ref: 'common.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: 'common.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: 'common.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: 'common.yaml#/components/responses/NotFound'
+        '415':
+          $ref: 'common.yaml#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: 'common.yaml#/components/responses/ServerError'
+      security:
+        - OAuth2:
+            - tardis:admin:all
+            - tardis:admin:read
+            - tardis:admin:obfuscated
+            - tardis:supervisor:read
+            - tardis:hub:all
+            - tardis:hub:read
+            - tardis:hub:obfuscated
+            - tardis:team:all
+            - tardis:team:read
+            - tardis:team:obfuscated
+            - tardis:user:all
+            - tardis:user:read
+            - tardis:user:obfuscated
+  /eventtypes/{eventTypeName}/active:
+    get:
+      tags:
+        - EventType
+      summary: Find the active EventType for a given name
+      description: >
+        Returns the currently active EventType for the given resource name.
+        This operation is global and not scoped to a specific application or team.
+      operationId: getActiveEventType
+      parameters:
+        - name: eventTypeName
+          description: >
+            The resource name of the EventType (dot-separated identifier
+            converted to hyphens, e.g. "de-telekom-eni-quickstart-v1")
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventTypeResponse'
+        '400':
+          $ref: 'common.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: 'common.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: 'common.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: 'common.yaml#/components/responses/NotFound'
+        '415':
+          $ref: 'common.yaml#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: 'common.yaml#/components/responses/ServerError'
+      security:
+        - OAuth2:
+            - tardis:admin:all
+            - tardis:admin:read
+            - tardis:admin:obfuscated
+            - tardis:supervisor:read
+            - tardis:hub:all
+            - tardis:hub:read
+            - tardis:hub:obfuscated
+            - tardis:team:all
+            - tardis:team:read
+            - tardis:team:obfuscated
+            - tardis:user:all
+            - tardis:user:read
+            - tardis:user:obfuscated
+  # ──────────────────────────────────────────────
+  #  EventExposure
+  # ──────────────────────────────────────────────
+  /applications/{applicationId}/eventexposures:
+    get:
+      tags:
+        - EventExposure
+      summary: Find all EventExposures
+      description: Find all EventExposures of this application
+      operationId: getAllEventExposures
+      parameters:
+        - $ref: 'common.yaml#/components/parameters/ApplicationId'
+        - $ref: 'common.yaml#/components/parameters/Limit'
+        - $ref: 'common.yaml#/components/parameters/Offset'
+        - $ref: 'common.yaml#/components/parameters/Sort'
+      responses:
+        '200':
+          description: OK
+          headers:
+            X-Total-Count:
+              $ref: 'common.yaml#/components/headers/XTotalCount'
+            X-Result-Count:
+              $ref: 'common.yaml#/components/headers/XResultCount'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventExposureListResponse'
+        '400':
+          $ref: 'common.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: 'common.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: 'common.yaml#/components/responses/Forbidden'
+        '415':
+          $ref: 'common.yaml#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: 'common.yaml#/components/responses/ServerError'
+      security:
+        - OAuth2:
+            - tardis:admin:all
+            - tardis:admin:read
+            - tardis:admin:obfuscated
+            - tardis:supervisor:read
+            - tardis:hub:all
+            - tardis:hub:read
+            - tardis:hub:obfuscated
+            - tardis:team:all
+            - tardis:team:read
+            - tardis:team:obfuscated
+            - tardis:user:all
+            - tardis:user:read
+             - tardis:user:obfuscated
+  /applications/{applicationId}/eventexposures/{eventExposureName}:
+    get:
+      tags:
+        - EventExposure
+      summary: Find an existing EventExposure
+      description: Find an existing EventExposure
+      operationId: getEventExposure
+      parameters:
+        - $ref: 'common.yaml#/components/parameters/ApplicationId'
+        - name: eventExposureName
+          description: The name of the EventExposure
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventExposureResponse'
+        '400':
+          $ref: 'common.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: 'common.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: 'common.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: 'common.yaml#/components/responses/NotFound'
+        '415':
+          $ref: 'common.yaml#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: 'common.yaml#/components/responses/ServerError'
+      security:
+        - OAuth2:
+            - tardis:admin:all
+            - tardis:admin:read
+            - tardis:admin:obfuscated
+            - tardis:supervisor:read
+            - tardis:hub:all
+            - tardis:hub:read
+            - tardis:hub:obfuscated
+            - tardis:team:all
+            - tardis:team:read
+            - tardis:team:obfuscated
+            - tardis:user:all
+            - tardis:user:read
+             - tardis:user:obfuscated
+  /applications/{applicationId}/eventexposures/{eventExposureName}/status:
+    get:
+      tags:
+        - EventExposure
+      summary: Find an existing EventExposure and return its status
+      description: Find an existing EventExposure and return its status
+      operationId: getEventExposureStatus
+      parameters:
+        - $ref: 'common.yaml#/components/parameters/ApplicationId'
+        - name: eventExposureName
+          description: The name of the EventExposure
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: 'common.yaml#/components/schemas/ResourceStatusResponse'
+        '400':
+          $ref: 'common.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: 'common.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: 'common.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: 'common.yaml#/components/responses/NotFound'
+        '415':
+          $ref: 'common.yaml#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: 'common.yaml#/components/responses/ServerError'
+      security:
+        - OAuth2:
+            - tardis:admin:all
+            - tardis:admin:read
+            - tardis:admin:obfuscated
+            - tardis:supervisor:read
+            - tardis:hub:all
+            - tardis:hub:read
+            - tardis:hub:obfuscated
+            - tardis:team:all
+            - tardis:team:read
+            - tardis:team:obfuscated
+            - tardis:user:all
+            - tardis:user:read
+            - tardis:user:obfuscated
+  /applications/{applicationId}/eventexposures/{eventExposureName}/eventsubscriptions:
+    get:
+      tags:
+        - EventExposure
+      summary: Find all EventSubscriptions of this EventExposure
+      description: Find all EventSubscriptions that subscribe to this EventExposure
+      operationId: getAllExposureEventSubscriptions
+      parameters:
+        - $ref: 'common.yaml#/components/parameters/ApplicationId'
+        - name: eventExposureName
+          description: The name of the EventExposure
+          in: path
+          required: true
+          schema:
+            type: string
+        - $ref: 'common.yaml#/components/parameters/Limit'
+        - $ref: 'common.yaml#/components/parameters/Offset'
+        - $ref: 'common.yaml#/components/parameters/Sort'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventSubscriptionListResponse'
+        '400':
+          $ref: 'common.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: 'common.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: 'common.yaml#/components/responses/Forbidden'
+        '415':
+          $ref: 'common.yaml#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: 'common.yaml#/components/responses/ServerError'
+      security:
+        - OAuth2:
+            - tardis:admin:all
+            - tardis:admin:read
+            - tardis:admin:obfuscated
+            - tardis:supervisor:read
+            - tardis:hub:all
+            - tardis:hub:read
+            - tardis:hub:obfuscated
+            - tardis:team:all
+            - tardis:team:read
+            - tardis:team:obfuscated
+            - tardis:user:all
+            - tardis:user:read
+            - tardis:user:obfuscated
+  # ──────────────────────────────────────────────
+  #  EventSubscription
+  # ──────────────────────────────────────────────
+  /applications/{applicationId}/eventsubscriptions:
+    get:
+      tags:
+        - EventSubscription
+      summary: Find all EventSubscriptions
+      description: Find all EventSubscriptions of this application
+      operationId: getAllEventSubscriptions
+      parameters:
+        - $ref: 'common.yaml#/components/parameters/ApplicationId'
+        - $ref: 'common.yaml#/components/parameters/Limit'
+        - $ref: 'common.yaml#/components/parameters/Offset'
+        - $ref: 'common.yaml#/components/parameters/Sort'
+      responses:
+        '200':
+          description: OK
+          headers:
+            X-Total-Count:
+              $ref: 'common.yaml#/components/headers/XTotalCount'
+            X-Result-Count:
+              $ref: 'common.yaml#/components/headers/XResultCount'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventSubscriptionListResponse'
+        '400':
+          $ref: 'common.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: 'common.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: 'common.yaml#/components/responses/Forbidden'
+        '415':
+          $ref: 'common.yaml#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: 'common.yaml#/components/responses/ServerError'
+      security:
+        - OAuth2:
+            - tardis:admin:all
+            - tardis:admin:read
+            - tardis:admin:obfuscated
+            - tardis:supervisor:read
+            - tardis:hub:all
+            - tardis:hub:read
+            - tardis:hub:obfuscated
+            - tardis:team:all
+            - tardis:team:read
+            - tardis:team:obfuscated
+            - tardis:user:all
+            - tardis:user:read
+             - tardis:user:obfuscated
+  /applications/{applicationId}/eventsubscriptions/{eventSubscriptionName}:
+    get:
+      tags:
+        - EventSubscription
+      summary: Find an existing EventSubscription
+      description: Find an existing EventSubscription
+      operationId: getEventSubscription
+      parameters:
+        - $ref: 'common.yaml#/components/parameters/ApplicationId'
+        - name: eventSubscriptionName
+          description: The name of the EventSubscription
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventSubscriptionResponse'
+        '400':
+          $ref: 'common.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: 'common.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: 'common.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: 'common.yaml#/components/responses/NotFound'
+        '415':
+          $ref: 'common.yaml#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: 'common.yaml#/components/responses/ServerError'
+      security:
+        - OAuth2:
+            - tardis:admin:all
+            - tardis:admin:read
+            - tardis:admin:obfuscated
+            - tardis:supervisor:read
+            - tardis:hub:all
+            - tardis:hub:read
+            - tardis:hub:obfuscated
+            - tardis:team:all
+            - tardis:team:read
+            - tardis:team:obfuscated
+            - tardis:user:all
+            - tardis:user:read
+             - tardis:user:obfuscated
+  /applications/{applicationId}/eventsubscriptions/{eventSubscriptionName}/status:
+    get:
+      tags:
+        - EventSubscription
+      summary: Find an existing EventSubscription and return its status
+      description: Find an existing EventSubscription and return its status
+      operationId: getEventSubscriptionStatus
+      parameters:
+        - $ref: 'common.yaml#/components/parameters/ApplicationId'
+        - name: eventSubscriptionName
+          description: The name of the EventSubscription
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: 'common.yaml#/components/schemas/ResourceStatusResponse'
+        '400':
+          $ref: 'common.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: 'common.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: 'common.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: 'common.yaml#/components/responses/NotFound'
+        '415':
+          $ref: 'common.yaml#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: 'common.yaml#/components/responses/ServerError'
+      security:
+        - OAuth2:
+            - tardis:admin:all
+            - tardis:admin:read
+            - tardis:admin:obfuscated
+            - tardis:supervisor:read
+            - tardis:hub:all
+            - tardis:hub:read
+            - tardis:hub:obfuscated
+            - tardis:team:all
+            - tardis:team:read
+            - tardis:team:obfuscated
+            - tardis:user:all
+            - tardis:user:read
+            - tardis:user:obfuscated
+# ════════════════════════════════════════════════
+#  Components — Event-specific schemas only
+# ════════════════════════════════════════════════
+components:
+  schemas:
+    # ── Event-domain enums ─────────────────────
+    # Renamed from Visibility → EventVisibility (PascalCase values differ from stargate's UPPERCASE)
+    EventVisibility:
+      enum:
+        - World
+        - Zone
+        - Enterprise
+      type: string
+      description: |
+        Defines who can see and subscribe to an exposed event.
+        Maps to EventExposureSpec.Visibility in the EventExposure CR.
+    # Renamed from ApprovalStrategy → EventApprovalStrategy (PascalCase values differ from stargate's UPPERCASE)
+    EventApprovalStrategy:
+      enum:
+        - Auto
+        - Simple
+        - FourEyes
+      type: string
+      description: |
+        Defines the approval mode for event subscriptions.
+        Maps to EventExposureSpec.Approval.Strategy in the EventExposure CR.
+    DeliveryType:
+      enum:
+        - Callback
+        - ServerSentEvent
+      type: string
+      description: |
+        Defines how events are delivered to subscribers.
+        Maps to EventSubscriptionSpec.Delivery.Type in the EventSubscription CR.
+    PayloadType:
+      enum:
+        - Data
+        - DataRef
+      type: string
+      description: |
+        Defines the event payload format.
+        Maps to EventSubscriptionSpec.Delivery.Payload in the EventSubscription CR.
+    ResponseFilterMode:
+      enum:
+        - Include
+        - Exclude
+      type: string
+      description: Controls whether the response filter includes or excludes the specified fields.
+    # ── Event-domain models ────────────────────
+    EventApproval:
+      type: object
+      description: |
+        Configures how subscriptions to this event are approved.
+        Maps to EventExposureSpec.Approval in the EventExposure CR.
+      properties:
+        strategy:
+          $ref: '#/components/schemas/EventApprovalStrategy'
+          description: Defines the approval mode. Defaults to Auto.
+        trustedTeams:
+          type: array
+          description: >
+            Teams that are trusted for auto-approval of subscriptions.
+            By default your own team is trusted.
+          items:
+            type: string
+          maxItems: 10
+          example:
+            - eni--hyperion
+    ResponseFilter:
+      type: object
+      description: Controls which fields are included or excluded from the event payload.
+      properties:
+        paths:
+          type: array
+          description: JSON paths to include or exclude from the event payload.
+          items:
+            type: string
+          example:
+            - $.data.orderId
+            - $.data.status
+        mode:
+          $ref: '#/components/schemas/ResponseFilterMode'
+    SelectionFilter:
+      type: object
+      description: Defines criteria for selecting which events are delivered.
+      properties:
+        attributes:
+          type: object
+          description: >
+            Simple key-value equality matches on CloudEvents attributes.
+            All entries are AND-ed together.
+          additionalProperties:
+            type: string
+          example:
+            source: de.telekom.eni.quickstart
+            type: de.telekom.eni.quickstart.v1
+        expression:
+          type: object
+          description: >
+            Arbitrary JSON filter expression tree using logical operators
+            (and, or) and comparisons (eq, ge, gt, le, lt, ne). Passed
+            through to the configuration backend without structural validation.
+          additionalProperties: true
+    EventTrigger:
+      type: object
+      description: |
+        Defines filtering criteria for event delivery.
+        Maps to EventTrigger in the EventExposure/EventSubscription CR.
+      properties:
+        responseFilter:
+          $ref: '#/components/schemas/ResponseFilter'
+        selectionFilter:
+          $ref: '#/components/schemas/SelectionFilter'
+    EventScope:
+      type: object
+      description: |
+        A named scope with publisher-side trigger filtering.
+        Scopes allow publishers to partition their events and apply filters.
+        Maps to EventExposureSpec.Scopes[] in the EventExposure CR.
+      required:
+        - name
+        - trigger
+      properties:
+        name:
+          type: string
+          description: Unique identifier for this scope.
+          minLength: 1
+          example: high-priority
+        trigger:
+          $ref: '#/components/schemas/EventTrigger'
+    Delivery:
+      type: object
+      description: |
+        Configures how events are delivered to the subscriber.
+        Maps to EventSubscriptionSpec.Delivery in the EventSubscription CR.
+      required:
+        - type
+      properties:
+        type:
+          $ref: '#/components/schemas/DeliveryType'
+        payload:
+          $ref: '#/components/schemas/PayloadType'
+        callback:
+          type: string
+          format: uri
+          description: >
+            URL where events are delivered. Required when type is "Callback",
+            must not be set for "ServerSentEvent".
+          example: https://myapp.example.com/events/callback
+        eventRetentionTime:
+          type: string
+          description: How long events are retained for this subscriber.
+          example: 7d
+        circuitBreakerOptOut:
+          type: boolean
+          description: Disables the circuit breaker for this subscription.
+          default: false
+        retryableStatusCodes:
+          type: array
+          description: HTTP status codes that should trigger a retry.
+          items:
+            type: integer
+          example:
+            - 502
+            - 503
+            - 504
+        redeliveriesPerSecond:
+          type: integer
+          description: Limits the rate of event redeliveries.
+          example: 10
+        enforceGetHttpRequestMethodForHealthCheck:
+          type: boolean
+          description: Forces GET for health check probes instead of HEAD.
+          default: false
+    EventSubscriptionApproval:
+      type: object
+      readOnly: true
+      description: Approval status of the event subscription.
+      properties:
+        status:
+          type: string
+          example: granted
+        comment:
+          type: string
+          example: trusted team
+        decider:
+          type: string
+          example: hyperion@telekom.de
+        timestamp:
+          type: string
+          format: date-time
+          example: '2022-09-28T16:05:46.384Z'
+    # ── EventType ──────────────────────────────
+    EventType:
+      type: object
+      description: |
+        Registry entry for a known event type. Serves as the canonical reference
+        that both EventExposure and EventSubscription point to.
+        Maps to EventTypeSpec in the EventType CR.
+      properties:
+        type:
+          type: string
+          description: >
+            Dot-separated event type identifier (e.g. "de.telekom.eni.quickstart.v1").
+            The last segment must be a version prefix matching the major version.
+          pattern: '^[a-z0-9]+(\.[a-z0-9]+)*$'
+          minLength: 1
+          maxLength: 253
+          example: de.telekom.eni.quickstart.v1
+        version:
+          type: string
+          description: >
+            Version of the event type specification (e.g. "1.0.0"). The major
+            version must match the version suffix in the type field.
+          pattern: '^\d+.*$'
+          example: 1.0.0
+        description:
+          type: string
+          description: Human-readable summary of this event type.
+          example: Quickstart events for the ENI platform
+        specification:
+          type: string
+          description: >
+            File ID reference from the file manager for the optional JSON schema
+            that describes the event payload.
+    EventTypeResponse:
+      type: object
+      readOnly: true
+      required:
+        - name
+        - type
+        - version
+      allOf:
+        - $ref: '#/components/schemas/EventType'
+        - properties:
+            id:
+              type: string
+              readOnly: true
+              description: >
+                The complete resource identifier of the EventType
+              example: eni--hyperion--de-telekom-eni-quickstart-v1
+            name:
+              type: string
+              readOnly: true
+              description: >
+                Resource name (dot-to-hyphen conversion of type, e.g.
+                "de-telekom-eni-quickstart-v1").
+              example: de-telekom-eni-quickstart-v1
+            active:
+              type: boolean
+              readOnly: true
+              description: >
+                Whether this EventType is the active singleton for its type
+                string. When multiple EventTypes exist for the same type, only
+                the oldest non-deleted one is active.
+            status:
+              $ref: 'common.yaml#/components/schemas/Status'
+    EventTypeListResponse:
+      properties:
+        paging:
+          $ref: 'common.yaml#/components/schemas/Paging'
+        _links:
+          $ref: 'common.yaml#/components/schemas/Links'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/EventTypeResponse'
+    # ── EventExposure ──────────────────────────
+    EventExposure:
+      type: object
+      description: |
+        Declaration that an application publishes events of a specific type.
+        Maps to EventExposureSpec in the EventExposure CR.
+      properties:
+        eventType:
+          type: string
+          description: >
+            Dot-separated event type identifier (e.g. "de.telekom.eni.quickstart.v1").
+            References the EventType CR.
+          minLength: 1
+          example: de.telekom.eni.quickstart.v1
+        visibility:
+          $ref: '#/components/schemas/EventVisibility'
+        approval:
+          $ref: '#/components/schemas/EventApproval'
+        scopes:
+          type: array
+          description: >
+            Named scopes with optional publisher-side trigger filtering.
+            Maps to EventExposureSpec.Scopes in the EventExposure CR.
+          items:
+            $ref: '#/components/schemas/EventScope'
+        additionalPublisherIds:
+          type: array
+          description: >
+            Additional application IDs allowed to publish to the same event type.
+            Maps to EventExposureSpec.AdditionalPublisherIds in the EventExposure CR.
+          items:
+            type: string
+          example:
+            - hub42--team2--secondary-publisher
+    EventExposureResponse:
+      type: object
+      readOnly: true
+      required:
+        - name
+        - zone
+        - eventType
+        - visibility
+      allOf:
+        - $ref: '#/components/schemas/EventExposure'
+        - properties:
+            name:
+              type: string
+              readOnly: true
+              example: de-telekom-eni-quickstart-v1
+            zone:
+              type: string
+              readOnly: true
+              description: >
+                The zone where this event is exposed.
+                Maps to EventExposureSpec.Zone in the EventExposure CR.
+            active:
+              type: boolean
+              readOnly: true
+              description: >
+                Whether this exposure is the active one for its event type.
+                Maps to EventExposureStatus.Active.
+            sseUrls:
+              type: object
+              readOnly: true
+              description: >
+                Maps zone names to SSE endpoint URLs for this exposure.
+                Maps to EventExposureStatus.SseURLs.
+              additionalProperties:
+                type: string
+              example:
+                aws: https://stargate-playground.live.dhei.telekom.de/sse/eni/quickstart/v1
+            callbackURL:
+              type: string
+              readOnly: true
+              description: >
+                URL of the callback gateway in the provider zone.
+                Maps to EventExposureStatus.CallbackURL.
+              example: https://stargate-playground.live.dhei.telekom.de/callback/eni/quickstart/v1
+            status:
+              $ref: 'common.yaml#/components/schemas/Status'
+            application:
+              $ref: 'common.yaml#/components/schemas/ApplicationRef'
+            team:
+              $ref: 'common.yaml#/components/schemas/TeamRef'
+    EventExposureListResponse:
+      properties:
+        paging:
+          $ref: 'common.yaml#/components/schemas/Paging'
+        _links:
+          $ref: 'common.yaml#/components/schemas/Links'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/EventExposureResponse'
+    # ── EventSubscription ──────────────────────
+    EventSubscription:
+      type: object
+      description: |
+        Declaration that an application subscribes to events of a specific type.
+        Maps to EventSubscriptionSpec in the EventSubscription CR.
+      properties:
+        eventType:
+          type: string
+          description: >
+            Dot-separated event type identifier (e.g. "de.telekom.eni.quickstart.v1").
+            References the EventType CR.
+          minLength: 1
+          example: de.telekom.eni.quickstart.v1
+        delivery:
+          $ref: '#/components/schemas/Delivery'
+        trigger:
+          $ref: '#/components/schemas/EventTrigger'
+        scopes:
+          type: array
+          description: >
+            Selects which publisher-defined scopes to subscribe to. Must match
+            scope names defined on the corresponding EventExposure.
+            Maps to EventSubscriptionSpec.Scopes in the EventSubscription CR.
+          items:
+            type: string
+          example:
+            - high-priority
+    EventSubscriptionResponse:
+      type: object
+      readOnly: true
+      allOf:
+        - $ref: '#/components/schemas/EventSubscription'
+        - properties:
+            name:
+              type: string
+              readOnly: true
+              example: de-telekom-eni-quickstart-v1
+            zone:
+              type: string
+              readOnly: true
+              description: >
+                The zone where this subscription is placed.
+                Maps to EventSubscriptionSpec.Zone in the EventSubscription CR.
+            url:
+              type: string
+              readOnly: true
+              description: >
+                SSE endpoint URL for this subscription. Set when delivery type
+                is ServerSentEvent.
+                Maps to EventSubscriptionStatus.URL.
+              example: https://stargate-playground.live.dhei.telekom.de/sse/eni/quickstart/v1
+            subscriptionId:
+              type: string
+              readOnly: true
+              description: >
+                Unique identifier of the subscriber. Set when delivery type
+                is ServerSentEvent.
+                Maps to EventSubscriptionStatus.SubscriptionId.
+            status:
+              $ref: 'common.yaml#/components/schemas/Status'
+            application:
+              $ref: 'common.yaml#/components/schemas/ApplicationRef'
+            team:
+              $ref: 'common.yaml#/components/schemas/TeamRef'
+            approval:
+              $ref: '#/components/schemas/EventSubscriptionApproval'
+    EventSubscriptionListResponse:
+      properties:
+        paging:
+          $ref: 'common.yaml#/components/schemas/Paging'
+        _links:
+          $ref: 'common.yaml#/components/schemas/Links'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/EventSubscriptionResponse'

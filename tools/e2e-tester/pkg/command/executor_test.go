@@ -99,7 +99,7 @@ func TestExecutor_CreateSnapshot(t *testing.T) {
 	suiteName := "test-suite"
 	caseIndex := "0"
 	caseName := "test-case"
-	snapshot := executor.CreateSnapshot(cmdStr, execResult, "", suiteName, caseIndex, caseName)
+	snapshot := executor.CreateSnapshot(cmdStr, execResult, environment.Name, suiteName, caseIndex, caseName)
 
 	// Verify snapshot
 	if snapshot.Id == "" {
@@ -119,5 +119,61 @@ func TestExecutor_CreateSnapshot(t *testing.T) {
 	}
 	if snapshot.Output.Environment != environment.Name {
 		t.Errorf("Expected environment to be '%s', but got '%s'", environment.Name, snapshot.Output.Environment)
+	}
+}
+
+func TestExecutor_Execute_PassesEnvironmentVariables(t *testing.T) {
+	roverCtlConfig := config.RoverCtlConfig{
+		Binary: "env",
+	}
+	environment := config.Environments{
+		Name:  "test-env",
+		Token: "test-token",
+		Variables: []config.Variable{
+			{Name: "CUSTOM_VAR", Value: "custom-value"},
+		},
+	}
+
+	executor := NewExecutor(roverCtlConfig, environment)
+
+	result, err := executor.Execute(context.Background(), "", nil)
+	if err != nil {
+		t.Fatalf("Expected no error but got: %v", err)
+	}
+
+	if !strings.Contains(result.Stdout, "ROVER_TOKEN=test-token") {
+		t.Fatalf("Expected rover token in environment, got %q", result.Stdout)
+	}
+
+	if !strings.Contains(result.Stdout, "CUSTOM_VAR=custom-value") {
+		t.Fatalf("Expected custom variable in environment, got %q", result.Stdout)
+	}
+}
+
+func TestSnapshotExecutor_Execute_PassesEnvironmentVariables(t *testing.T) {
+	snapshotterConfig := config.SnapshotterConfig{
+		Binary: "env",
+	}
+	environment := config.Environments{
+		Name:  "test-env",
+		Token: "test-token",
+		Variables: []config.Variable{
+			{Name: "CUSTOM_VAR", Value: "custom-value"},
+		},
+	}
+
+	executor := NewSnapshotExecutor(snapshotterConfig, environment)
+
+	result, err := executor.Execute(context.Background(), "", nil)
+	if err != nil {
+		t.Fatalf("Expected no error but got: %v", err)
+	}
+
+	if !strings.Contains(result.Stdout, "SNAPSHOTTER_TOKEN=test-token") {
+		t.Fatalf("Expected snapshotter token in environment, got %q", result.Stdout)
+	}
+
+	if !strings.Contains(result.Stdout, "CUSTOM_VAR=custom-value") {
+		t.Fatalf("Expected custom variable in environment, got %q", result.Stdout)
 	}
 }

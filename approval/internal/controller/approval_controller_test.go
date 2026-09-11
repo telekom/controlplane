@@ -7,23 +7,23 @@ package controller
 import (
 	"context"
 	"encoding/json"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-	ctypes "github.com/telekom/controlplane/common/pkg/types"
-	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
+
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
-	"k8s.io/apimachinery/pkg/types"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/config"
+	ctypes "github.com/telekom/controlplane/common/pkg/types"
+	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Approval Controller", Ordered, func() {
-
 	const resourceName = "test-resource"
 
 	ctx := context.Background()
@@ -72,8 +72,10 @@ var _ = Describe("Approval Controller", Ordered, func() {
 	}
 
 	properties := map[string]any{
-		"basePath": "/eni/distr/v1",
-		"scopes":   "read",
+		"basePath":      "/eni/distr/v1",
+		"scopes":        "read",
+		"resource_type": "API",
+		"resource_name": "/eni/distr/v1",
 	}
 
 	err := requester.SetProperties(properties)
@@ -99,6 +101,7 @@ var _ = Describe("Approval Controller", Ordered, func() {
 					Requester: requester,
 					Target:    resource,
 					Decider:   decider,
+					Action:    "subscribe",
 				},
 			}
 			Expect(k8sClient.Create(ctx, resource)).To(Succeed())
@@ -125,7 +128,6 @@ var _ = Describe("Approval Controller", Ordered, func() {
 	})
 
 	It("should successfully reconcile the created resource", func() {
-
 		Eventually(func(g Gomega) {
 			err := k8sClient.Get(ctx, typeNamespacedName, approval)
 
@@ -133,9 +135,7 @@ var _ = Describe("Approval Controller", Ordered, func() {
 			g.Expect(approval.Spec.State).To(BeEquivalentTo("Pending"))
 			g.Expect(approval.Spec.Strategy).To(BeEquivalentTo("Auto"))
 			g.Expect(approval.Spec.Requester.TeamName).To(BeEquivalentTo("test--requester"))
-
 		}, timeout, interval).Should(Succeed())
-
 	})
 
 	It("should successfully reconcile the granted approval", func() {
@@ -146,7 +146,7 @@ var _ = Describe("Approval Controller", Ordered, func() {
 			"Done", "Approved")
 
 		By("Checking the notifications")
-		var grantedApproval = &approvalv1.Approval{}
+		grantedApproval := &approvalv1.Approval{}
 		err := k8sClient.Get(ctx, typeNamespacedName, grantedApproval)
 		Expect(err).NotTo(HaveOccurred())
 
@@ -155,28 +155,28 @@ var _ = Describe("Approval Controller", Ordered, func() {
 
 		By("Validating the decider notification")
 		deciderNotificationRef := types.NamespacedName{
-			Name:      "approval--subscription--updated--decider--test-resource--559f5f87c",
+			Name:      "approval--subscribe--updated--decider--test-resource--5954bd5945",
 			Namespace: "default",
 		}
 
 		deciderNotification := &notificationv1.Notification{}
 		err = k8sClient.Get(ctx, deciderNotificationRef, deciderNotification)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(deciderNotification.Spec.Purpose).To(Equal("approval--subscription--updated--decider"))
+		Expect(deciderNotification.Spec.Purpose).To(Equal("approval--subscribe--updated--decider"))
 		Expect(deciderNotification.Spec.Properties).NotTo(BeNil())
 
 		By("Validating the requester notification")
 		requesterNotificationRef := types.NamespacedName{
-			Name:      "approval--subscription--updated--requester--test-resource--7f57689449",
+			Name:      "approval--subscribe--updated--requester--test-resource--869df78585",
 			Namespace: "default",
 		}
 
 		requesterNotification := &notificationv1.Notification{}
 		err = k8sClient.Get(ctx, requesterNotificationRef, requesterNotification)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(requesterNotification.Spec.Purpose).To(Equal("approval--subscription--updated--requester"))
+		Expect(requesterNotification.Spec.Purpose).To(Equal("approval--subscribe--updated--requester"))
 		Expect(requesterNotification.Spec.Properties).NotTo(BeNil())
-		ExpectJSONEqual(requesterNotification.Spec.Properties.Raw, []byte(`{ "requester_team": "requester", "scopes": "read", "state_new": "Granted", "decider_application": "decider-app-name", "decider_group": "test", "environment": "test", "requester_application": "requester-app-name", "requester_group": "test", "state_old": "Pending", "basepath": "/eni/distr/v1", "decider_team": "decider" }`))
+		ExpectJSONEqual(requesterNotification.Spec.Properties.Raw, []byte(`{ "requester_team": "requester", "scopes": "read", "state_new": "Granted", "decider_application": "decider-app-name", "decider_group": "test", "environment": "test", "requester_application": "requester-app-name", "requester_group": "test", "state_old": "Pending", "basepath": "/eni/distr/v1", "decider_team": "decider", "resource_name": "/eni/distr/v1", "resource_type": "API"}`))
 	})
 
 	It("should successfully reconcile the rejected approval", func() {
@@ -185,7 +185,6 @@ var _ = Describe("Approval Controller", Ordered, func() {
 			metav1.ConditionFalse, metav1.ConditionFalse,
 			"Approval rejected", "Approval has been rejected",
 			"Done", "Rejected")
-
 	})
 
 	It("should successfully reconcile the suspended approval", func() {
@@ -194,7 +193,14 @@ var _ = Describe("Approval Controller", Ordered, func() {
 			metav1.ConditionTrue, metav1.ConditionTrue,
 			"Approval is suspended", "Approval is suspended",
 			"Suspended", "Suspended")
+	})
 
+	It("should successfully reconcile the semigranted approval", func() {
+		By("Semigranted")
+		checkApprovalStatus(typeNamespacedName, approvalv1.ApprovalStateSemigranted,
+			metav1.ConditionTrue, metav1.ConditionFalse,
+			"Approval partially granted, awaiting second approval", "Approval has been partially granted",
+			"Semigranted", "Semigranted")
 	})
 })
 
@@ -230,7 +236,6 @@ func checkApprovalStatus(typeNamespacedName types.NamespacedName, state approval
 		g.Expect(readyCondition.Reason).To(Equal(expectedReadyReason))
 		g.Expect(readyCondition.Status).To(Equal(expectedReadyStatus))
 		g.Expect(readyCondition.Message).To(Equal(expectedReadyMessage))
-
 	}, timeout, interval).Should(Succeed())
 }
 

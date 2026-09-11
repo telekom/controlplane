@@ -6,16 +6,17 @@ package ctrlerrors
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
-	"github.com/pkg/errors"
-	"github.com/telekom/controlplane/common/pkg/condition"
-	"github.com/telekom/controlplane/common/pkg/config"
-	"github.com/telekom/controlplane/common/pkg/types"
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+
+	"github.com/telekom/controlplane/common/pkg/condition"
+	"github.com/telekom/controlplane/common/pkg/config"
+	"github.com/telekom/controlplane/common/pkg/types"
 )
 
 type BlockedError interface {
@@ -35,64 +36,67 @@ type RetryableWithDelayError interface {
 }
 
 // HandleError analyzes the given error and updates the object's conditions accordingly.
-// It returns a boolean indicating whether the object's conditions were updated and a reconcile.Result
-// that suggests whether to requeue the reconciliation and after what duration.
-func HandleError(ctx context.Context, obj types.Object, err error, recorder record.EventRecorder) (bool, reconcile.Result) {
-	rootCauseErr := errors.Cause(err)
-
-	if be, ok := rootCauseErr.(BlockedError); ok && be.IsBlocked() {
-		recordError(ctx, obj, rootCauseErr, "Blocked", recorder)
-		updatd := obj.SetCondition(condition.NewBlockedCondition(rootCauseErr.Error()))
-		return updatd, reconcile.Result{
+// It uses errors.As to unwrap the error chain, which supports both pkg/errors.Wrap and
+// standard fmt.Errorf %w wrapping.
+// It returns whether conditions were updated, a result for explicit delayed retries, and an error
+// for controller-runtime's rate-limited retry queue.
+func HandleError(ctx context.Context, obj types.Object, err error, recorder record.EventRecorder) (bool, reconcile.Result, error) {
+	var be BlockedError
+	if errors.As(err, &be) && be.IsBlocked() {
+		log.FromContext(ctx).WithName("controller.error-handler").V(0).Info("Handling error", "reason", "Blocked", "error", be.Error())
+		recordError(obj, be, "Blocked", recorder)
+		updated := obj.SetCondition(condition.NewBlockedCondition(be.Error()))
+		return updated, reconcile.Result{
 			// Its blocked but we still want to recheck later
 			// However, with the longer interval for normal requeues
 			RequeueAfter: config.RequeueWithJitter(),
-		}
+		}, nil
 	}
 
-	if re, ok := rootCauseErr.(RetryableWithDelayError); ok {
-		recordError(ctx, obj, rootCauseErr, "Retryable", recorder)
-		if re.IsRetryable() {
-			deley := re.RetryDelay()
-			if deley <= 0 {
-				deley = config.RetryWithJitterOnError()
+	var rde RetryableWithDelayError
+	if errors.As(err, &rde) {
+		recordError(obj, rde, "Retryable", recorder)
+		if rde.IsRetryable() {
+			delay := rde.RetryDelay()
+			if delay <= 0 {
+				return false, reconcile.Result{}, err
 			}
-			return false, reconcile.Result{RequeueAfter: config.Jitter(deley)}
+			log.FromContext(ctx).WithName("controller.error-handler").V(0).Info("Handling error", "reason", "Retryable", "error", rde.Error())
+			return false, reconcile.Result{RequeueAfter: config.Jitter(delay)}, nil
 		} else {
-			return false, reconcile.Result{}
+			log.FromContext(ctx).WithName("controller.error-handler").V(0).Info("Handling error", "reason", "Retryable", "error", rde.Error())
+			return false, reconcile.Result{}, nil
 		}
 	}
 
-	if re, ok := rootCauseErr.(RetryableError); ok {
-		recordError(ctx, obj, rootCauseErr, "Retryable", recorder)
+	var re RetryableError
+	if errors.As(err, &re) {
+		recordError(obj, re, "Retryable", recorder)
 		if re.IsRetryable() {
-			return false, reconcile.Result{RequeueAfter: config.RetryWithJitterOnError()}
+			return false, reconcile.Result{}, err
 		} else {
-			return false, reconcile.Result{}
+			// Not retryable, treat as Blocked
+			log.FromContext(ctx).WithName("controller.error-handler").V(0).Info("Handling error", "reason", "Retryable", "error", re.Error())
+			return false, reconcile.Result{RequeueAfter: config.RequeueWithJitter()}, nil
 		}
 	}
 
-	recordError(ctx, obj, rootCauseErr, "Unknown", recorder)
-	return false, reconcile.Result{RequeueAfter: config.RetryWithJitterOnError()}
+	recordError(obj, err, "Unknown", recorder)
+	return false, reconcile.Result{}, err
 }
 
-func recordError(ctx context.Context, obj types.Object, err error, reason string, recorder record.EventRecorder) {
-	log := log.FromContext(ctx).WithName("controller.error-handler")
-	if reason == "Unknown" {
-		log.Error(err, "Handling error", "reason", reason)
-	} else {
-		log.V(0).Info("Handling error", "reason", reason, "error", err.Error())
-	}
-
+func recordError(obj types.Object, err error, reason string, recorder record.EventRecorder) {
 	if err != nil && recorder != nil {
 		recorder.Event(obj, "Warning", reason, err.Error())
 	}
 }
 
-var _ error = &CtrlError{}
-var _ BlockedError = &CtrlError{}
-var _ RetryableError = &CtrlError{}
-var _ RetryableWithDelayError = &CtrlError{}
+var (
+	_ error                   = &CtrlError{}
+	_ BlockedError            = &CtrlError{}
+	_ RetryableError          = &CtrlError{}
+	_ RetryableWithDelayError = &CtrlError{}
+)
 
 type CtrlError struct {
 	msg        string

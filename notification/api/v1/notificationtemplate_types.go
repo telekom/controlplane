@@ -37,6 +37,30 @@ type NotificationTemplateSpec struct {
 	// +kubebuilder:pruning:PreserveUnknownFields
 	// +kubebuilder:validation:Schemaless
 	Schema runtime.RawExtension `json:"schema"`
+
+	// Attachments defines file attachments to include when sending this notification.
+	// Each attachment is rendered as a Go template against the notification properties.
+	// +optional
+	Attachments []AttachmentTemplate `json:"attachments,omitempty"`
+}
+
+// AttachmentTemplate defines a single templated file attachment.
+type AttachmentTemplate struct {
+	// Filename is the name of the attached file (e.g. "invite.ics").
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
+	Filename string `json:"filename"`
+
+	// ContentType is the MIME type (e.g. "text/calendar; charset=utf-8").
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
+	ContentType string `json:"contentType"`
+
+	// Template is the Go text/template for the file content,
+	// rendered against the notification's properties.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
+	Template string `json:"template"`
 }
 
 // NotificationTemplateStatus defines the observed state of NotificationTemplate.

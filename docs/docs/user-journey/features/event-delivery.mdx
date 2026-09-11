@@ -1,0 +1,158 @@
+---
+sidebar_position: 4
+---
+
+# Event Delivery
+
+Event delivery features let you customize how events are delivered to your application when subscribing to an event type. These settings control the delivery method, payload format, retry behavior, and more.
+
+**Applies to:** Event Subscription
+
+## Delivery Type
+
+The Control Plane supports two methods for delivering events to your application:
+
+- **Callback** — The platform pushes events to a URL endpoint you specify. Your service receives an HTTP POST request for each event.
+- **Server-Sent Events** — Your service opens a persistent connection and receives events as a stream in real time.
+
+### Callback Delivery
+
+```yaml
+subscriptions:
+  - type: event
+    eventType: de.telekom.orders.created.v1
+    deliveryType: callback
+    payloadType: Data
+    callback: https://analytics.internal:8080/events
+```
+
+### Server-Sent Events Delivery
+
+```yaml
+subscriptions:
+  - type: event
+    eventType: de.telekom.orders.created.v1
+    deliveryType: server_sent_event
+    payloadType: Data
+```
+
+:::note
+When using `server_sent_event` delivery, you do not need to specify a `callback` URL. Your application connects to the platform's SSE endpoint to receive events.
+:::
+
+## Payload Type
+
+The payload type controls how the event data is included in the delivery:
+
+| Value | Description |
+| ----- | ----------- |
+| `Data` | The full event payload is delivered inline with the event notification. This is the default and most common option. |
+| `DataRef` | A reference (URL) to the event payload is delivered instead of the full data. Your application then fetches the payload separately. This is useful for very large event payloads. |
+
+```yaml
+subscriptions:
+  - type: event
+    eventType: de.telekom.orders.created.v1
+    deliveryType: callback
+    payloadType: DataRef
+    callback: https://analytics.internal:8080/events
+```
+
+---
+
+## Advanced Delivery Settings
+
+Beyond the basic delivery type and payload format, you can fine-tune how events are delivered, retried, and managed.
+
+### Event Retention Time
+
+By default, events are retained for 7 days. You can lower this duration if your application only needs recent events.
+
+```yaml
+subscriptions:
+  - type: event
+    eventType: de.telekom.orders.created.v1
+    deliveryType: callback
+    payloadType: Data
+    callback: https://analytics.internal:8080/events
+    eventRetentionTime: "3d"
+```
+
+### Circuit Breaker Opt-Out
+
+The event delivery system includes a built-in circuit breaker that stops delivering events if your application is consistently failing to process them. If your application handles failures internally and you want to receive events regardless, you can opt out.
+
+```yaml
+subscriptions:
+  - type: event
+    eventType: de.telekom.orders.created.v1
+    deliveryType: callback
+    payloadType: Data
+    callback: https://analytics.internal:8080/events
+    circuitBreakerOptOut: true
+```
+
+:::caution
+Opting out of the circuit breaker means your application will continue to receive events even during outages. Make sure your application can handle a backlog of unprocessed events.
+:::
+
+### Retryable Status Codes
+
+By default, the platform retries event delivery for standard transient HTTP errors. You can customize which HTTP status codes should trigger a retry.
+
+```yaml
+subscriptions:
+  - type: event
+    eventType: de.telekom.orders.created.v1
+    deliveryType: callback
+    payloadType: Data
+    callback: https://analytics.internal:8080/events
+    retryableStatusCodes:
+      - 429
+      - 502
+      - 503
+      - 504
+```
+
+### Redelivery Rate
+
+When events need to be redelivered (after a temporary failure), you can control how fast they are sent. This prevents your application from being overwhelmed by a burst of retried events.
+
+```yaml
+subscriptions:
+  - type: event
+    eventType: de.telekom.orders.created.v1
+    deliveryType: callback
+    payloadType: Data
+    callback: https://analytics.internal:8080/events
+    redeliveriesPerSecond: 5
+```
+
+### Health Check Method
+
+The platform periodically checks whether your callback endpoint is healthy. By default, it uses an HTTP `HEAD` request. If your application does not support `HEAD` requests on the callback URL, you can force the platform to use `GET` instead.
+
+```yaml
+subscriptions:
+  - type: event
+    eventType: de.telekom.orders.created.v1
+    deliveryType: callback
+    payloadType: Data
+    callback: https://analytics.internal:8080/events
+    enforceGetHttpRequestMethodForHealthCheck: true
+```
+
+---
+
+## All Delivery Settings
+
+| Field | Description | Default |
+| ----- | ----------- | ------- |
+| `deliveryType` | How events are delivered: `callback` or `server_sent_event`. | *Required* |
+| `payloadType` | How the event payload is included: `Data` (inline) or `DataRef` (reference URL). | *Required* |
+| `callback` | The URL where events are delivered. Required for `callback` delivery, must not be set for `server_sent_event`. | — |
+| `eventRetentionTime` | How long events are retained for this subscription. | `7d` |
+| `circuitBreakerOptOut` | Set to `true` to disable the circuit breaker for this subscription. | `false` |
+| `retryableStatusCodes` | HTTP status codes that should trigger a redelivery attempt. | Platform default |
+| `redeliveriesPerSecond` | Maximum number of event redeliveries per second. Minimum: `1`. | Platform default |
+| `enforceGetHttpRequestMethodForHealthCheck` | Set to `true` to use `GET` instead of `HEAD` for health checks. | `false` |

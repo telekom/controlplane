@@ -8,15 +8,18 @@ import (
 	"context"
 	"os"
 
+	ctrl "sigs.k8s.io/controller-runtime"
+
+	agenticv1 "github.com/telekom/controlplane/agentic/api/v1"
 	apiapi "github.com/telekom/controlplane/api/api/v1"
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
+	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/controller/index"
-
-	ctrl "sigs.k8s.io/controller-runtime"
+	eventv1 "github.com/telekom/controlplane/event/api/v1"
+	permissionv1 "github.com/telekom/controlplane/permission/api/v1"
 )
 
 func RegisterIndicesOrDie(ctx context.Context, mgr ctrl.Manager) {
-
 	err := index.SetOwnerIndex(ctx, mgr.GetFieldIndexer(), &apiapi.Api{})
 	if err != nil {
 		ctrl.Log.Error(err, "unable to create ownerIndex Api")
@@ -39,4 +42,42 @@ func RegisterIndicesOrDie(ctx context.Context, mgr ctrl.Manager) {
 		os.Exit(1)
 	}
 
+	if cconfig.FeaturePubSub.IsEnabled() {
+		err = index.SetOwnerIndex(ctx, mgr.GetFieldIndexer(), &eventv1.EventExposure{})
+		if err != nil {
+			ctrl.Log.Error(err, "unable to create ownerIndex for EventExposure")
+			os.Exit(1)
+		}
+		err = index.SetOwnerIndex(ctx, mgr.GetFieldIndexer(), &eventv1.EventSubscription{})
+		if err != nil {
+			ctrl.Log.Error(err, "unable to create ownerIndex for EventSubscription")
+			os.Exit(1)
+		}
+		err = index.SetOwnerIndex(ctx, mgr.GetFieldIndexer(), &eventv1.EventType{})
+		if err != nil {
+			ctrl.Log.Error(err, "unable to create ownerIndex for EventType")
+			os.Exit(1)
+		}
+	}
+
+	if cconfig.FeaturePermission.IsEnabled() {
+		err = index.SetOwnerIndex(ctx, mgr.GetFieldIndexer(), &permissionv1.PermissionSet{})
+		if err != nil {
+			ctrl.Log.Error(err, "unable to create ownerIndex for PermissionSet")
+			os.Exit(1)
+		}
+	}
+
+	if cconfig.FeatureAiGateway.IsEnabled() {
+		err = index.SetOwnerIndex(ctx, mgr.GetFieldIndexer(), &agenticv1.AgenticExposure{})
+		if err != nil {
+			ctrl.Log.Error(err, "unable to create ownerIndex for AgenticExposure")
+			os.Exit(1)
+		}
+		err = index.SetOwnerIndex(ctx, mgr.GetFieldIndexer(), &agenticv1.AgenticSubscription{})
+		if err != nil {
+			ctrl.Log.Error(err, "unable to create ownerIndex for AgenticSubscription")
+			os.Exit(1)
+		}
+	}
 }

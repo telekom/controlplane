@@ -53,6 +53,7 @@ var _ = Describe("Subscription Security Mapper (Out)", func() {
 							ClientId:     "client-id",
 							ClientSecret: "client-secret",
 							ClientKey:    "client-key",
+							RefreshToken: "refreshToken",
 						},
 					},
 				},
@@ -70,6 +71,7 @@ var _ = Describe("Subscription Security Mapper (Out)", func() {
 			Expect(oauth2.ClientId).To(Equal("client-id"))
 			Expect(oauth2.ClientSecret).To(Equal("client-secret"))
 			Expect(oauth2.ClientKey).To(Equal("client-key"))
+			Expect(oauth2.RefreshToken).To(Equal("refreshToken"))
 			snaps.MatchSnapshot(GinkgoT(), oauth2)
 		})
 

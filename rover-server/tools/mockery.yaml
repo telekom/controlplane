@@ -7,6 +7,7 @@ mockname: "Mock{{.InterfaceName}}"
 dir: "../test/mocks"
 outpkg: "mocks"
 filename: "mock_{{.InterfaceName}}.go"
+boilerplate-file: ../../hack/boilerplate.go.txt
 packages:
   github.com/telekom/controlplane/common-server/pkg/store:
     # place your package-specific config here

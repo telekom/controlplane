@@ -7,20 +7,19 @@ package controller_test
 import (
 	"context"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
 
 	"github.com/telekom/controlplane/file-manager/pkg/backend"
 	"github.com/telekom/controlplane/file-manager/pkg/controller"
 	"github.com/telekom/controlplane/file-manager/test/mocks"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("DeleteController", func() {
-
 	Context("Delete controller", func() {
-
-		var mockedBackend = &mocks.MockFileDeleter{}
+		mockedBackend := &mocks.MockFileDeleter{}
 
 		It("Should delete files successfully", func() {
 			ctx := context.Background()
@@ -105,7 +104,5 @@ var _ = Describe("DeleteController", func() {
 			Expect(err.Error()).To(ContainSubstring("InvalidFileId"))
 			Expect(err.Error()).To(ContainSubstring("poc----file.txt"))
 		})
-
 	})
-
 })

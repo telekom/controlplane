@@ -18,7 +18,7 @@ func newMockProperties(props map[string]string) Properties {
 	return &mockProperties{props: props}
 }
 
-func (m *mockProperties) GetDefault(key string, defaultValue string) string {
+func (m *mockProperties) GetDefault(key, defaultValue string) string {
 	if val, ok := m.props[key]; ok {
 		return val
 	}

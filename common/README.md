@@ -156,43 +156,7 @@ Environment variables provide a flexible way to configure operators in Kubernete
 The environment variables follow the naming convention defined in [./pkg/config/config.go](./pkg/config/config.go),
 mapping from internal configuration keys to uppercase environment variable names.
 
-For Kubernetes deployments, you can use Kustomize's configMapGenerator to provide environment variables to the operators:
-
-```yaml
-configMapGenerator:
-  - name: admin-env-config
-    namespace: admin-system
-    behavior: create
-    options:
-      disableNameSuffixHash: true
-    envs:
-      - config/admin.cnf
-```
-
-And then mount these environment variables in your deployment:
-
-```yaml
-patches:
-  - target:
-      kind: Deployment
-      name: admin-controller-manager
-      namespace: admin-system
-    patch: |-
-      - op: add
-        path: /spec/template/spec/containers/0/envFrom
-        value:
-          - configMapRef:
-              name: admin-env-config
-```
-
-The `admin.cnf` file should contain the environment variables in key-value pairs:
-```text
-REQUEUE_AFTER_ON_ERROR=1m
-REQUEUE_AFTER=30m
-JITTER_FACTOR=0.9
-MAX_BACKOFF=3m
-MAX_CONCURRENT_RECONCILES=3
-```
+Applications own their shipped defaults. For Kubernetes configuration precedence, global and component ConfigMaps, Kustomize hashing, and Secret handling, see [Creating a custom overlay](https://telekom.github.io/controlplane/docs/admin-journey/installation#creating-a-custom-overlay).
 
 ## Getting Started
 
@@ -232,3 +196,31 @@ func (r *MyResourceReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 All your business logic should be implemented in the `MyResourceHandler` struct (see [example](./pkg/handler/nop.go)). The controller will take care of the rest.
 Additionally, your resource `MyResource` must implement the `Object` interface. 
 
+## Controller source event metrics
+
+`controlplane_controller_source_events_total{controller,role,source,verb,result}`
+counts every event delivered to a controller, attributed to the watch that
+produced it. `role` is `for`, `owns` or `watches`; `source` is the Kind of the
+watched object; `verb` is `create`, `update`, `delete` or `generic`; `result` is
+`passed` or `filtered` depending on whether that watch's own predicates admitted
+the event.
+
+Wire it into a watch with `controller.Count`, passing any filtering predicates as
+trailing arguments rather than listing them alongside it:
+
+```go
+For(&gatewayv1.Route{}, builder.WithPredicates(cc.Count("route", cc.RoleFor))).
+Watches(&gatewayv1.ConsumeRoute{},
+    handler.EnqueueRequestsFromMapFunc(r.mapConsumeRouteToRoute),
+    builder.WithPredicates(cc.Count("route", cc.RoleWatches, predicate.GenerationChangedPredicate{})))
+```
+
+Passing predicates to `Count` rather than beside it is what makes `result`
+meaningful: `Count` sees the filtering decision and records it, instead of
+counting events the controller then discards.
+
+The `controller` argument must be the primary Kind lowercased ("route", not
+"route-controller"), matching how controller-runtime labels its own metrics.
+
+Query `result="passed"` for the traffic that actually drives reconciles, and the
+`filtered` share to see how much noise a watch's predicates are absorbing.

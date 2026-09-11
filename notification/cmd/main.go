@@ -7,15 +7,10 @@ package main
 import (
 	"crypto/tls"
 	"flag"
-	"github.com/pkg/errors"
-	"github.com/telekom/controlplane/notification/internal/templatecache"
 	"os"
 	"path/filepath"
 
-	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
-	// to ensure that exec-entrypoint and run can make use of them.
-	_ "k8s.io/client-go/plugin/pkg/client/auth"
-
+	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -27,10 +22,14 @@ import (
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
-	notificationsconfig "github.com/telekom/controlplane/notification/internal/config"
-
 	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
+	notificationsconfig "github.com/telekom/controlplane/notification/internal/config"
 	"github.com/telekom/controlplane/notification/internal/controller"
+	"github.com/telekom/controlplane/notification/internal/templatecache"
+
+	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
+	// to ensure that exec-entrypoint and run can make use of them.
+	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -46,7 +45,6 @@ func init() {
 	// +kubebuilder:scaffold:scheme
 }
 
-// nolint:gocyclo
 func main() {
 	var metricsAddr string
 	var metricsCertPath, metricsCertName, metricsCertKey string
@@ -114,17 +112,17 @@ func main() {
 	// Initial webhook TLS options
 	webhookTLSOpts := tlsOpts
 
-	if len(webhookCertPath) > 0 {
+	if webhookCertPath != "" {
 		setupLog.Info("Initializing webhook certificate watcher using provided certificates",
 			"webhook-cert-path", webhookCertPath, "webhook-cert-name", webhookCertName, "webhook-cert-key", webhookCertKey)
 
-		var err error
-		webhookCertWatcher, err = certwatcher.New(
+		var certErr error
+		webhookCertWatcher, certErr = certwatcher.New(
 			filepath.Join(webhookCertPath, webhookCertName),
 			filepath.Join(webhookCertPath, webhookCertKey),
 		)
-		if err != nil {
-			setupLog.Error(err, "Failed to initialize webhook certificate watcher")
+		if certErr != nil {
+			setupLog.Error(certErr, "Failed to initialize webhook certificate watcher")
 			os.Exit(1)
 		}
 
@@ -163,17 +161,17 @@ func main() {
 	// - [METRICS-WITH-CERTS] at config/default/kustomization.yaml to generate and use certificates
 	// managed by cert-manager for the metrics server.
 	// - [PROMETHEUS-WITH-CERTS] at config/prometheus/kustomization.yaml for TLS certification.
-	if len(metricsCertPath) > 0 {
+	if metricsCertPath != "" {
 		setupLog.Info("Initializing metrics certificate watcher using provided certificates",
 			"metrics-cert-path", metricsCertPath, "metrics-cert-name", metricsCertName, "metrics-cert-key", metricsCertKey)
 
-		var err error
-		metricsCertWatcher, err = certwatcher.New(
+		var certErr error
+		metricsCertWatcher, certErr = certwatcher.New(
 			filepath.Join(metricsCertPath, metricsCertName),
 			filepath.Join(metricsCertPath, metricsCertKey),
 		)
-		if err != nil {
-			setupLog.Error(err, "to initialize metrics certificate watcher", "error", err)
+		if certErr != nil {
+			setupLog.Error(certErr, "failed to initialize metrics certificate watcher")
 			os.Exit(1)
 		}
 

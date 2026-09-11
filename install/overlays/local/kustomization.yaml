@@ -1,0 +1,131 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Local development overlay.
+# References controller configs from local filesystem paths and pins images to 'latest'.
+# Includes the eventing subsystem (event + pubsub) by default.
+#
+# Usage:
+#   kubectl apply -k install/overlays/local
+
+# Parent-generated ConfigMaps must share the workload namespace for name-reference hashing.
+namespace: controlplane-system
+
+resources:
+  - ../../bundle
+  - ../../../controlplane-api/config/default
+  - ../../../projector/config/default
+
+components:
+  - ../../components/eventing
+  - ../../components/database
+  - ../../components/mailpit
+  - ../../components/rustfs
+
+configMapGenerator:
+  - name: controlplane-env
+    envs:
+      - global-config.env
+  - name: secret-manager-config
+    behavior: replace
+    files:
+      - config.yaml=secret-manager-config.yaml
+  - name: secret-manager-env
+    literals: []
+
+  - name: file-manager-config
+    behavior: replace
+    files:
+      - config.yaml=file-manager-config.yaml
+
+  - name: file-manager-env
+    literals: []
+
+  - name: rover-server-env
+    literals:
+      - LOG_LEVEL=info
+      # Local dev: mock auth (no real issuers). Env keys map to the nested
+      # config paths (listeners.external.jwt.*). For a real deployment set
+      # mode=jwt and supply comma-separated issuers:
+      #   LISTENERS_EXTERNAL_JWT_TRUSTEDISSUERS=https://a,https://b
+      - LISTENERS_EXTERNAL_JWT_MODE=mock
+      - LISTENERS_EXTERNAL_JWT_LMS_BASEPATH=""
+
+  - name: controlplane-api-config
+    behavior: replace
+    files:
+      - config.yaml=controlplane-api-config.yaml
+
+  - name: notification-env
+    literals:
+      - SMTPCONNECTION_HOST=mailpit
+      - SMTPCONNECTION_PORT=1025
+      - SMTPSENDER_DEFAULTFROM=noreply@controlplane.local
+      - SMTPSENDER_DEFAULTNAME="Control Plane"
+      - SMTPSENDER_DRYRUN=false
+
+patches:
+  # All deployments: use IfNotPresent for local images.
+  - target:
+      kind: Deployment
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/imagePullPolicy
+        value: IfNotPresent
+  # Give File Manager the local RustFS credentials under the names supported by
+  # its S3 client.
+  - target:
+      kind: Deployment
+      name: file-manager
+    patch: |-
+      - op: add
+        path: /spec/template/spec/containers/0/env/-
+        value:
+          name: MINIO_ROOT_USER
+          valueFrom:
+            secretKeyRef:
+              name: rustfs-credentials
+              key: RUSTFS_ACCESS_KEY
+      - op: add
+        path: /spec/template/spec/containers/0/env/-
+        value:
+          name: MINIO_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: rustfs-credentials
+              key: RUSTFS_SECRET_KEY
+
+images:
+  - name: ghcr.io/telekom/controlplane/approval
+    newTag: latest
+  - name: ghcr.io/telekom/controlplane/gateway
+    newTag: latest
+  - name: ghcr.io/telekom/controlplane/identity
+    newTag: latest
+  - name: ghcr.io/telekom/controlplane/secret-manager
+    newTag: latest
+  - name: ghcr.io/telekom/controlplane/file-manager
+    newTag: latest
+  - name: ghcr.io/telekom/controlplane/rover
+    newTag: latest
+  - name: ghcr.io/telekom/controlplane/application
+    newTag: latest
+  - name: ghcr.io/telekom/controlplane/api
+    newTag: latest
+  - name: ghcr.io/telekom/controlplane/organization
+    newTag: latest
+  - name: ghcr.io/telekom/controlplane/admin
+    newTag: latest
+  - name: ghcr.io/telekom/controlplane/rover-server
+    newTag: latest
+  - name: ghcr.io/telekom/controlplane/notification
+    newTag: latest
+  - name: ghcr.io/telekom/controlplane/projector
+    newTag: latest
+  - name: ghcr.io/telekom/controlplane/event
+    newTag: latest
+  - name: ghcr.io/telekom/controlplane/pubsub
+    newTag: latest
+  - name: ghcr.io/telekom/controlplane/controlplane-api
+    newTag: latest

@@ -1,0 +1,46 @@
+---
+sidebar_position: 12
+---
+
+# PubSub Domain
+
+:::info Optional Feature
+The PubSub domain is part of the optional Event feature. It is managed exclusively by the Event domain — users do not interact with PubSub resources directly.
+:::
+
+The PubSub domain provides the runtime configuration layer for publish/subscribe messaging. It acts as a thin bridge between the Control Plane and the **Horizon** runtime component, translating Kubernetes custom resources into REST API calls that configure the external messaging system.
+
+## Custom Resources
+
+<CRDReference domain="pubsub" />
+
+## Dependency Chain
+
+Resources in the PubSub domain follow a strict dependency chain:
+
+```
+EventStore  ◀── Publisher  ◀── Subscriber
+   (zone)        (app)         (subscription)
+```
+
+- A **Subscriber** can only be created if its **Publisher** is ready.
+- A **Publisher** can only be created if its **EventStore** is ready.
+- An **EventStore** is created by the Event domain when an **EventConfig** is applied.
+
+## Domain Interactions
+
+- **Event domain** — All PubSub resources are created and owned by the Event domain:
+  - EventConfig → EventStore
+  - EventExposure → Publisher
+  - EventSubscription → Subscriber
+- **Horizon (external)** — The Subscriber controller makes REST API calls to the Horizon Configuration Backend to register and deregister subscriptions.
+
+:::note
+The PubSub domain is intentionally self-contained. It does not import API types from other Control Plane domains, making it possible to replace the Horizon runtime with a different messaging backend in the future.
+:::
+
+## Related Pages
+
+- [Architecture: Event Domain](./event.mdx)
+- [User Journey: Exposing Events](../user-journey/exposing-events.mdx)
+- [User Journey: Subscribing to Events](../user-journey/subscribing-to-events.mdx)

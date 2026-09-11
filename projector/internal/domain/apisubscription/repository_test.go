@@ -1,0 +1,719 @@
+// Copyright 2026 Deutsche Telekom IT GmbH
+//
+// SPDX-License-Identifier: Apache-2.0
+
+package apisubscription_test
+
+import (
+	"context"
+	"errors"
+	"fmt"
+
+	"entgo.io/ent/privacy"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+
+	_ "github.com/mattn/go-sqlite3"
+	"github.com/telekom/controlplane/controlplane-api/ent"
+	entapiexposure "github.com/telekom/controlplane/controlplane-api/ent/apiexposure"
+	entapisub "github.com/telekom/controlplane/controlplane-api/ent/apisubscription"
+	"github.com/telekom/controlplane/controlplane-api/ent/enttest"
+	_ "github.com/telekom/controlplane/controlplane-api/ent/runtime"
+	"github.com/telekom/controlplane/controlplane-api/ent/zone"
+	"github.com/telekom/controlplane/controlplane-api/pkg/model"
+
+	"github.com/telekom/controlplane/projector/internal/domain/apisubscription"
+	"github.com/telekom/controlplane/projector/internal/domain/shared"
+	"github.com/telekom/controlplane/projector/internal/infrastructure"
+	"github.com/telekom/controlplane/projector/internal/runtime"
+)
+
+// mockSubscriptionDeps implements apisubscription.APISubscriptionDeps for testing.
+type mockSubscriptionDeps struct {
+	appIDs      map[string]int // key: "appName:teamName"
+	exposureIDs map[string]int // key: basePath
+	appErr      error          // if non-nil, FindApplicationID always returns this error
+}
+
+func (m *mockSubscriptionDeps) FindApplicationID(_ context.Context, name, teamName string) (int, error) {
+	if m.appErr != nil {
+		return 0, m.appErr
+	}
+	key := name + ":" + teamName
+	if id, ok := m.appIDs[key]; ok {
+		return id, nil
+	}
+	return 0, fmt.Errorf("application %q (team %q): %w", name, teamName, infrastructure.ErrEntityNotFound)
+}
+
+func (m *mockSubscriptionDeps) FindAPIExposureByBasePath(_ context.Context, basePath string) (int, error) {
+	if id, ok := m.exposureIDs[basePath]; ok {
+		return id, nil
+	}
+	return 0, fmt.Errorf("api_exposure basePath %q: %w", basePath, infrastructure.ErrEntityNotFound)
+}
+
+func (m *mockSubscriptionDeps) EvictAPIExposureByBasePath(basePath string) {
+	delete(m.exposureIDs, basePath)
+}
+
+var _ = Describe("ApiSubscription Repository", func() {
+	var (
+		client     *ent.Client
+		cache      *infrastructure.EdgeCache
+		deps       *mockSubscriptionDeps
+		repo       *apisubscription.Repository
+		ctx        context.Context
+		appID      int
+		exposureID int
+	)
+
+	BeforeEach(func() {
+		ctx = privacy.DecisionContext(context.Background(), privacy.Allow)
+		var err error
+		cache, err = infrastructure.NewEdgeCache(100_000, 10<<20, 64)
+		Expect(err).NotTo(HaveOccurred())
+		client = enttest.Open(GinkgoT(), "sqlite3", "file:ent?mode=memory&_fk=1")
+
+		// Seed Zone → Team → Application → ApiExposure dependency chain.
+		z, err := client.Zone.Create().
+			SetName("caas").
+			SetVisibility(zone.VisibilityEnterprise).
+			Save(ctx)
+		Expect(err).NotTo(HaveOccurred())
+
+		t, err := client.Team.Create().
+			SetName("platform--narvi").
+			SetEmail("narvi@example.com").
+			SetNamespace("platform--narvi").
+			Save(ctx)
+		Expect(err).NotTo(HaveOccurred())
+
+		app, err := client.Application.Create().
+			SetName("consumer-app").
+			SetNamespace("platform--narvi").
+			SetClientID("platform--narvi--consumer-app").
+			SetOwnerTeamID(t.ID).
+			SetZoneID(z.ID).
+			Save(ctx)
+		Expect(err).NotTo(HaveOccurred())
+		appID = app.ID
+
+		// Seed a target ApiExposure for a different application (provider).
+		providerApp, err := client.Application.Create().
+			SetName("provider-app").
+			SetNamespace("platform--narvi").
+			SetOwnerTeamID(t.ID).
+			SetZoneID(z.ID).
+			Save(ctx)
+		Expect(err).NotTo(HaveOccurred())
+
+		exposure, err := client.ApiExposure.Create().
+			SetBasePath("/api/v1/users").
+			SetNamespace("platform--narvi").
+			SetVisibility(entapiexposure.VisibilityWorld).
+			SetActive(true).
+			SetFeatures([]string{}).
+			SetOwnerID(providerApp.ID).
+			Save(ctx)
+		Expect(err).NotTo(HaveOccurred())
+		exposureID = exposure.ID
+
+		deps = &mockSubscriptionDeps{
+			appIDs:      map[string]int{"consumer-app:platform--narvi": appID},
+			exposureIDs: map[string]int{"/api/v1/users": exposureID},
+		}
+
+		repo = apisubscription.NewRepository(client, cache, deps)
+	})
+
+	AfterEach(func() {
+		_ = client.Close()
+		cache.Close()
+	})
+
+	baseData := func() *apisubscription.APISubscriptionData {
+		return &apisubscription.APISubscriptionData{
+			Meta: shared.Metadata{
+				Namespace:   "prod--platform--narvi",
+				Name:        "my-subscription",
+				Environment: "prod",
+			},
+			StatusPhase:   "READY",
+			StatusMessage: "subscription active",
+			BasePath:      "/api/v1/users",
+			M2MAuthMethod: "OAUTH2_CLIENT",
+			Security: &model.ApiSubscriptionSecurity{
+				M2M: &model.SubscriberMachine2MachineAuthentication{
+					Client: &model.OAuth2ClientCredentials{
+						ClientId: "my-client-id",
+					},
+					Scopes: []string{"read", "write"},
+				},
+			},
+			OwnerAppName:   "consumer-app",
+			OwnerTeamName:  "platform--narvi",
+			TargetBasePath: "/api/v1/users",
+			TargetAppName:  "",
+			TargetTeamName: "",
+		}
+	}
+
+	Describe("Upsert", func() {
+		It("should create a new subscription with valid target exposure FK", func() {
+			data := baseData()
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			// Verify the subscription was created.
+			sub, err := client.ApiSubscription.Query().
+				Where(
+					entapisub.BasePathEQ("/api/v1/users"),
+					entapisub.HasOwnerWith(),
+				).
+				Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(sub.BasePath).To(Equal("/api/v1/users"))
+			Expect(sub.M2mAuthMethod.String()).To(Equal("OAUTH2_CLIENT"))
+			Expect(sub.StatusPhase.String()).To(Equal("READY"))
+			Expect(*sub.StatusMessage).To(Equal("subscription active"))
+
+			// Verify target FK is set.
+			targetFK := sub.Edges.Target
+			// Query edges to check target.
+			sub2, err := client.ApiSubscription.Query().
+				Where(entapisub.IDEQ(sub.ID)).
+				WithTarget().
+				Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			_ = targetFK // edges not loaded in first query
+			Expect(sub2.Edges.Target).NotTo(BeNil())
+			Expect(sub2.Edges.Target.ID).To(Equal(exposureID))
+		})
+
+		It("should create a subscription with nil target FK when exposure is missing", func() {
+			// Override deps so exposure lookup fails.
+			missingDeps := &mockSubscriptionDeps{
+				appIDs:      map[string]int{"consumer-app:platform--narvi": appID},
+				exposureIDs: map[string]int{}, // empty — no exposure found
+			}
+			repo = apisubscription.NewRepository(client, cache, missingDeps)
+
+			data := baseData()
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			// Verify target FK is nil.
+			sub, err := client.ApiSubscription.Query().
+				Where(entapisub.BasePathEQ("/api/v1/users")).
+				WithTarget().
+				Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(sub.Edges.Target).To(BeNil())
+		})
+
+		It("should return ErrDependencyMissing when owner application is missing", func() {
+			missingDeps := &mockSubscriptionDeps{
+				appIDs:      map[string]int{}, // empty — no app found
+				exposureIDs: map[string]int{},
+			}
+			repo = apisubscription.NewRepository(client, cache, missingDeps)
+
+			data := baseData()
+			err := repo.Upsert(ctx, data)
+			Expect(err).To(HaveOccurred())
+			Expect(errors.Is(err, runtime.ErrDependencyMissing)).To(BeTrue())
+		})
+
+		It("should propagate non-ErrEntityNotFound errors from FindApplicationID", func() {
+			dbErr := errors.New("connection refused")
+			failDeps := &mockSubscriptionDeps{
+				appIDs:      map[string]int{},
+				exposureIDs: map[string]int{},
+				appErr:      dbErr,
+			}
+			failRepo := apisubscription.NewRepository(client, cache, failDeps)
+
+			data := baseData()
+			err := failRepo.Upsert(ctx, data)
+			Expect(err).To(HaveOccurred())
+			Expect(runtime.IsDependencyMissing(err)).To(BeFalse())
+			Expect(errors.Is(err, dbErr)).To(BeTrue())
+		})
+
+		It("should clear target FK when target exposure is removed", func() {
+			// First upsert with target.
+			data := baseData()
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			// Verify first subscription exists with target.
+			sub1, err := client.ApiSubscription.Query().
+				Where(entapisub.BasePathEQ("/api/v1/users")).
+				WithTarget().
+				Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(sub1.Edges.Target).NotTo(BeNil())
+			originalID := sub1.ID
+
+			// Second upsert with no target (exposure gone).
+			missingDeps := &mockSubscriptionDeps{
+				appIDs:      map[string]int{"consumer-app:platform--narvi": appID},
+				exposureIDs: map[string]int{}, // empty — target removed
+			}
+			repo = apisubscription.NewRepository(client, cache, missingDeps)
+
+			data2 := baseData()
+			data2.StatusMessage = "waiting for target"
+			Expect(repo.Upsert(ctx, data2)).To(Succeed())
+
+			// Verify only one subscription exists.
+			subs, err := client.ApiSubscription.Query().
+				Where(entapisub.BasePathEQ("/api/v1/users")).
+				All(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(subs).To(HaveLen(1))
+			Expect(*subs[0].StatusMessage).To(Equal("waiting for target"))
+
+			// Verify the row was updated in-place (same ID, no delete+recreate).
+			Expect(subs[0].ID).To(Equal(originalID))
+
+			// Verify target FK is now nil.
+			sub2, err := client.ApiSubscription.Query().
+				Where(entapisub.BasePathEQ("/api/v1/users")).
+				WithTarget().
+				Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(sub2.Edges.Target).To(BeNil())
+		})
+
+		It("should update an existing subscription on conflict", func() {
+			data := baseData()
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			// Update status.
+			data.StatusPhase = "ERROR"
+			data.StatusMessage = "failed to connect"
+			data.M2MAuthMethod = "BASIC_AUTH"
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			sub, err := client.ApiSubscription.Query().
+				Where(entapisub.BasePathEQ("/api/v1/users")).
+				Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(sub.StatusPhase.String()).To(Equal("ERROR"))
+			Expect(*sub.StatusMessage).To(Equal("failed to connect"))
+			Expect(sub.M2mAuthMethod.String()).To(Equal("BASIC_AUTH"))
+		})
+
+		It("should update security-derived fields on upsert conflict", func() {
+			data := baseData()
+			// baseData has M2MAuthMethod=OAUTH2_CLIENT with Security.M2M.Client set — aligned.
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			sub, err := client.ApiSubscription.Query().
+				Where(entapisub.BasePathEQ("/api/v1/users")).
+				Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(sub.M2mAuthMethod.String()).To(Equal("OAUTH2_CLIENT"))
+
+			// Change to BASIC_AUTH — align Security accordingly.
+			data.M2MAuthMethod = "BASIC_AUTH"
+			data.Security = &model.ApiSubscriptionSecurity{
+				M2M: &model.SubscriberMachine2MachineAuthentication{
+					Basic: &model.BasicAuthCredentials{
+						Username: "test-user",
+						Password: "test-dummy-pass",
+					},
+					Scopes: []string{"admin"},
+				},
+			}
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			sub, err = client.ApiSubscription.Query().
+				Where(entapisub.BasePathEQ("/api/v1/users")).
+				Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(sub.M2mAuthMethod.String()).To(Equal("BASIC_AUTH"))
+
+			// Clear security — set to NONE with nil Security.
+			data.M2MAuthMethod = "NONE"
+			data.Security = nil
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			sub, err = client.ApiSubscription.Query().
+				Where(entapisub.BasePathEQ("/api/v1/users")).
+				Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(sub.M2mAuthMethod.String()).To(Equal("NONE"))
+			Expect(sub.Security).To(BeNil())
+		})
+
+		It("should update from BASIC_AUTH to OAUTH2_CLIENT on upsert conflict", func() {
+			data := baseData()
+			data.M2MAuthMethod = "BASIC_AUTH"
+			data.Security = &model.ApiSubscriptionSecurity{
+				M2M: &model.SubscriberMachine2MachineAuthentication{
+					Basic: &model.BasicAuthCredentials{
+						Username: "test-user",
+						Password: "test-dummy-pass",
+					},
+					Scopes: []string{"read"},
+				},
+			}
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			sub, err := client.ApiSubscription.Query().
+				Where(entapisub.BasePathEQ("/api/v1/users")).
+				Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(sub.M2mAuthMethod.String()).To(Equal("BASIC_AUTH"))
+
+			// Switch to OAUTH2_CLIENT.
+			data.M2MAuthMethod = "OAUTH2_CLIENT"
+			data.Security = &model.ApiSubscriptionSecurity{
+				M2M: &model.SubscriberMachine2MachineAuthentication{
+					Client: &model.OAuth2ClientCredentials{
+						ClientId: "new-client-id",
+					},
+					Scopes: []string{"read", "write"},
+				},
+			}
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			sub, err = client.ApiSubscription.Query().
+				Where(entapisub.BasePathEQ("/api/v1/users")).
+				Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(sub.M2mAuthMethod.String()).To(Equal("OAUTH2_CLIENT"))
+		})
+
+		It("should return an error when the cached target exposure ID is stale", func() {
+			// Cached exposure ID points to a row that does not exist. On a
+			// Postgres backend this surfaces as an FK violation (23503) which
+			// the repository maps to ErrDependencyMissing after evicting the
+			// stale cache entry (see IsFKViolation + fkTargetExposure).
+			// ponytail: the repo test harness is SQLite, whose FK error is not
+			// a *pgconn.PgError, so the pg-specific remap branch cannot fire
+			// here; the constraint-name matching itself is unit-tested in
+			// infrastructure/errors_test.go. We assert the stale ID is not
+			// silently persisted.
+			staleDeps := &mockSubscriptionDeps{
+				appIDs:      map[string]int{"consumer-app:platform--narvi": appID},
+				exposureIDs: map[string]int{"/api/v1/users": exposureID + 9999}, // nonexistent
+			}
+			repo = apisubscription.NewRepository(client, cache, staleDeps)
+
+			err := repo.Upsert(ctx, baseData())
+			Expect(err).To(HaveOccurred())
+
+			// The bad target FK must not have been persisted.
+			count, err := client.ApiSubscription.Query().
+				Where(entapisub.BasePathEQ("/api/v1/users")).
+				Count(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(count).To(Equal(0))
+		})
+
+		It("should maintain meta cache entry", func() {
+			data := baseData()
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+			cache.Wait()
+
+			// Verify meta cache key.
+			metaKey := "meta:prod--platform--narvi:my-subscription"
+			metaID, metaOK := cache.Get("apisubscription", metaKey)
+			Expect(metaOK).To(BeTrue())
+			Expect(metaID).To(BeNumerically(">", 0))
+		})
+	})
+
+	Describe("Upsert rate limit traffic", func() {
+		// setExposureTraffic overwrites the seeded target exposure's traffic config.
+		setExposureTraffic := func(traffic model.Traffic) {
+			Expect(client.ApiExposure.UpdateOneID(exposureID).
+				SetTraffic(traffic).
+				Exec(ctx)).To(Succeed())
+		}
+
+		querySubTraffic := func() *model.ApiSubscriptionTraffic {
+			sub, err := client.ApiSubscription.Query().
+				Where(entapisub.BasePathEQ("/api/v1/users")).
+				Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			return sub.Traffic
+		}
+
+		It("should leave traffic nil when the exposure has no rate limit config", func() {
+			// Seeded exposure has empty Traffic (RateLimit nil).
+			Expect(repo.Upsert(ctx, baseData())).To(Succeed())
+			Expect(querySubTraffic()).To(BeNil())
+		})
+
+		It("should apply provider limits when only provider rate limits are configured", func() {
+			setExposureTraffic(model.Traffic{
+				RateLimit: &model.RateLimit{
+					Provider: &model.RateLimitConfig{
+						Limits: model.Limits{Second: 50},
+					},
+				},
+			})
+
+			Expect(repo.Upsert(ctx, baseData())).To(Succeed())
+
+			traffic := querySubTraffic()
+			Expect(traffic).NotTo(BeNil())
+			Expect(traffic.SubscriberLimits).To(BeNil())
+			Expect(traffic.ProviderLimits).NotTo(BeNil())
+			Expect(*traffic.ProviderLimits).To(Equal(model.Limits{Second: 50}))
+		})
+
+		It("should apply the default subscriber limits when no override matches", func() {
+			setExposureTraffic(model.Traffic{
+				RateLimit: &model.RateLimit{
+					SubscriberRateLimit: &model.SubscriberRateLimits{
+						Default: &model.SubscriberRateLimitDefaults{
+							Limits: model.Limits{Second: 10, Minute: 100, Hour: 1000},
+						},
+					},
+				},
+			})
+
+			Expect(repo.Upsert(ctx, baseData())).To(Succeed())
+
+			traffic := querySubTraffic()
+			Expect(traffic).NotTo(BeNil())
+			Expect(traffic.ProviderLimits).To(BeNil())
+			Expect(traffic.SubscriberLimits).NotTo(BeNil())
+			Expect(*traffic.SubscriberLimits).To(Equal(model.Limits{Second: 10, Minute: 100, Hour: 1000}))
+		})
+
+		It("should prefer a matching subscriber override over the default", func() {
+			setExposureTraffic(model.Traffic{
+				RateLimit: &model.RateLimit{
+					SubscriberRateLimit: &model.SubscriberRateLimits{
+						Default: &model.SubscriberRateLimitDefaults{
+							Limits: model.Limits{Second: 10, Minute: 100, Hour: 1000},
+						},
+						Overrides: []model.RateLimitOverrides{
+							{Subscriber: "other-subscription", Limits: model.Limits{Second: 1}},
+							{Subscriber: "platform--narvi--consumer-app", Limits: model.Limits{Second: 5, Minute: 50, Hour: 500}},
+						},
+					},
+				},
+			})
+
+			Expect(repo.Upsert(ctx, baseData())).To(Succeed())
+
+			traffic := querySubTraffic()
+			Expect(traffic).NotTo(BeNil())
+			Expect(traffic.ProviderLimits).To(BeNil())
+			Expect(traffic.SubscriberLimits).NotTo(BeNil())
+			Expect(*traffic.SubscriberLimits).To(Equal(model.Limits{Second: 5, Minute: 50, Hour: 500}))
+		})
+
+		It("should apply the default when overrides exist but none match the subscriber", func() {
+			setExposureTraffic(model.Traffic{
+				RateLimit: &model.RateLimit{
+					SubscriberRateLimit: &model.SubscriberRateLimits{
+						Default: &model.SubscriberRateLimitDefaults{
+							Limits: model.Limits{Second: 10, Minute: 100, Hour: 1000},
+						},
+						Overrides: []model.RateLimitOverrides{
+							{Subscriber: "other-team--other-app", Limits: model.Limits{Second: 1}},
+							{Subscriber: "another-team--another-app", Limits: model.Limits{Second: 2}},
+						},
+					},
+				},
+			})
+
+			Expect(repo.Upsert(ctx, baseData())).To(Succeed())
+
+			traffic := querySubTraffic()
+			Expect(traffic).NotTo(BeNil())
+			Expect(traffic.ProviderLimits).To(BeNil())
+			Expect(traffic.SubscriberLimits).NotTo(BeNil())
+			Expect(*traffic.SubscriberLimits).To(Equal(model.Limits{Second: 10, Minute: 100, Hour: 1000}))
+		})
+
+		It("should apply an override even when no default is configured", func() {
+			setExposureTraffic(model.Traffic{
+				RateLimit: &model.RateLimit{
+					SubscriberRateLimit: &model.SubscriberRateLimits{
+						Overrides: []model.RateLimitOverrides{
+							{Subscriber: "platform--narvi--consumer-app", Limits: model.Limits{Second: 7}},
+						},
+					},
+				},
+			})
+
+			Expect(repo.Upsert(ctx, baseData())).To(Succeed())
+
+			traffic := querySubTraffic()
+			Expect(traffic).NotTo(BeNil())
+			Expect(traffic.ProviderLimits).To(BeNil())
+			Expect(traffic.SubscriberLimits).NotTo(BeNil())
+			Expect(*traffic.SubscriberLimits).To(Equal(model.Limits{Second: 7}))
+		})
+
+		It("should apply both subscriber and provider limits when both are configured", func() {
+			setExposureTraffic(model.Traffic{
+				RateLimit: &model.RateLimit{
+					Provider: &model.RateLimitConfig{
+						Limits: model.Limits{Second: 50, Minute: 500, Hour: 5000},
+					},
+					SubscriberRateLimit: &model.SubscriberRateLimits{
+						Default: &model.SubscriberRateLimitDefaults{
+							Limits: model.Limits{Second: 10, Minute: 100, Hour: 1000},
+						},
+					},
+				},
+			})
+
+			Expect(repo.Upsert(ctx, baseData())).To(Succeed())
+
+			traffic := querySubTraffic()
+			Expect(traffic).NotTo(BeNil())
+			Expect(traffic.SubscriberLimits).NotTo(BeNil())
+			Expect(*traffic.SubscriberLimits).To(Equal(model.Limits{Second: 10, Minute: 100, Hour: 1000}))
+			Expect(traffic.ProviderLimits).NotTo(BeNil())
+			Expect(*traffic.ProviderLimits).To(Equal(model.Limits{Second: 50, Minute: 500, Hour: 5000}))
+		})
+
+		It("should apply provider limits alongside a matching subscriber override", func() {
+			setExposureTraffic(model.Traffic{
+				RateLimit: &model.RateLimit{
+					Provider: &model.RateLimitConfig{
+						Limits: model.Limits{Second: 50},
+					},
+					SubscriberRateLimit: &model.SubscriberRateLimits{
+						Default: &model.SubscriberRateLimitDefaults{
+							Limits: model.Limits{Second: 10},
+						},
+						Overrides: []model.RateLimitOverrides{
+							{Subscriber: "platform--narvi--consumer-app", Limits: model.Limits{Second: 5}},
+						},
+					},
+				},
+			})
+
+			Expect(repo.Upsert(ctx, baseData())).To(Succeed())
+
+			traffic := querySubTraffic()
+			Expect(traffic).NotTo(BeNil())
+			Expect(traffic.SubscriberLimits).NotTo(BeNil())
+			Expect(*traffic.SubscriberLimits).To(Equal(model.Limits{Second: 5}))
+			Expect(traffic.ProviderLimits).NotTo(BeNil())
+			Expect(*traffic.ProviderLimits).To(Equal(model.Limits{Second: 50}))
+		})
+
+		It("should leave traffic nil when only a non-matching override exists", func() {
+			setExposureTraffic(model.Traffic{
+				RateLimit: &model.RateLimit{
+					SubscriberRateLimit: &model.SubscriberRateLimits{
+						Overrides: []model.RateLimitOverrides{
+							{Subscriber: "other-subscription", Limits: model.Limits{Second: 3}},
+						},
+					},
+				},
+			})
+
+			Expect(repo.Upsert(ctx, baseData())).To(Succeed())
+			Expect(querySubTraffic()).To(BeNil())
+		})
+
+		It("should leave traffic nil when the target exposure is missing", func() {
+			missingDeps := &mockSubscriptionDeps{
+				appIDs:      map[string]int{"consumer-app:platform--narvi": appID},
+				exposureIDs: map[string]int{}, // no exposure resolved
+			}
+			repo = apisubscription.NewRepository(client, cache, missingDeps)
+
+			Expect(repo.Upsert(ctx, baseData())).To(Succeed())
+			Expect(querySubTraffic()).To(BeNil())
+		})
+
+		// Client ids are assigned asynchronously; during that window an override
+		// keyed by the id can't match, so the subscriber falls back to the default.
+		// Acceptable: the subscription only reaches Ready once the app has a client
+		// id, and that Ready transition re-projects it with the correct override.
+		It("should apply the default when the owner client id is unresolved despite a matching override", func() {
+			// Clear the owner's client id to simulate the async-assignment window.
+			Expect(client.Application.UpdateOneID(appID).ClearClientID().Exec(ctx)).To(Succeed())
+
+			setExposureTraffic(model.Traffic{
+				RateLimit: &model.RateLimit{
+					SubscriberRateLimit: &model.SubscriberRateLimits{
+						Default: &model.SubscriberRateLimitDefaults{Limits: model.Limits{Second: 10}},
+						Overrides: []model.RateLimitOverrides{
+							{Subscriber: "platform--narvi--consumer-app", Limits: model.Limits{Second: 5}},
+						},
+					},
+				},
+			})
+
+			Expect(repo.Upsert(ctx, baseData())).To(Succeed())
+
+			// An unresolved (nil) client id cannot match the override → default applies.
+			traffic := querySubTraffic()
+			Expect(traffic).NotTo(BeNil())
+			Expect(*traffic.SubscriberLimits).To(Equal(model.Limits{Second: 10}))
+		})
+	})
+
+	Describe("Delete", func() {
+		It("should delete an existing subscription and clean meta cache entry", func() {
+			data := baseData()
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			key := apisubscription.APISubscriptionKey{
+				BasePath:      "/api/v1/users",
+				OwnerAppName:  "consumer-app",
+				OwnerTeamName: "platform--narvi",
+				Namespace:     "prod--platform--narvi",
+				Name:          "my-subscription",
+			}
+			Expect(repo.Delete(ctx, key)).To(Succeed())
+
+			// Verify deleted from DB.
+			count, err := client.ApiSubscription.Query().
+				Where(entapisub.BasePathEQ("/api/v1/users")).
+				Count(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(count).To(Equal(0))
+
+			// Verify meta cache cleaned.
+			_, ok := cache.Get("apisubscription", "meta:prod--platform--narvi:my-subscription")
+			Expect(ok).To(BeFalse())
+		})
+
+		It("should be idempotent — deleting a non-existent subscription succeeds", func() {
+			key := apisubscription.APISubscriptionKey{
+				BasePath:      "/api/v1/nonexistent",
+				OwnerAppName:  "consumer-app",
+				OwnerTeamName: "platform--narvi",
+				Namespace:     "ns",
+				Name:          "n",
+			}
+			Expect(repo.Delete(ctx, key)).To(Succeed())
+		})
+
+		It("should not clean meta cache when namespace/name are empty", func() {
+			data := baseData()
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+			cache.Wait()
+
+			// Delete without namespace/name — simulates best-effort fallback.
+			key := apisubscription.APISubscriptionKey{
+				BasePath:      "/api/v1/users",
+				OwnerAppName:  "consumer-app",
+				OwnerTeamName: "platform--narvi",
+				Namespace:     "",
+				Name:          "",
+			}
+			Expect(repo.Delete(ctx, key)).To(Succeed())
+
+			// Meta cache is NOT cleaned (namespace/name empty).
+			metaID, metaOK := cache.Get("apisubscription", "meta:prod--platform--narvi:my-subscription")
+			Expect(metaOK).To(BeTrue())
+			Expect(metaID).To(BeNumerically(">", 0))
+		})
+	})
+})

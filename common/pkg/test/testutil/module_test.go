@@ -13,7 +13,6 @@ import (
 )
 
 var _ = Describe("Module", func() {
-
 	Context("FindNextGoModPath", func() {
 		It("should find the go.mod file", func() {
 			path, err := findNextFileMatch("go.mod")
@@ -47,5 +46,4 @@ var _ = Describe("Module", func() {
 			Expect(paths[0]).To(MatchRegexp(expectedPattern))
 		})
 	})
-
 })

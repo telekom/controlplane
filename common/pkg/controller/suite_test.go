@@ -32,7 +32,6 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
-	crscheme "sigs.k8s.io/controller-runtime/pkg/scheme"
 )
 
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
@@ -80,12 +79,12 @@ var _ = BeforeSuite(func() {
 
 	ctx, cancel = context.WithCancel(context.TODO())
 
-	err = (&crscheme.Builder{
-		GroupVersion: schema.GroupVersion{
-			Group:   "testgroup.cp.ei.telekom.de",
-			Version: "v1",
-		},
-	}).Register(&test.TestResource{}, &test.TestResourceList{}).AddToScheme(scheme.Scheme)
+	gv := schema.GroupVersion{
+		Group:   "testgroup.cp.ei.telekom.de",
+		Version: "v1",
+	}
+	scheme.Scheme.AddKnownTypes(gv, &test.TestResource{}, &test.TestResourceList{})
+	metav1.AddToGroupVersion(scheme.Scheme, gv)
 
 	Expect(err).NotTo(HaveOccurred())
 

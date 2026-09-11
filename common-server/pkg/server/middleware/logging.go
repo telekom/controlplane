@@ -7,6 +7,7 @@ package middleware
 import (
 	"io"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -24,6 +25,7 @@ const (
 type LoggerOpts struct {
 	Output io.Writer
 	Format LogFormat
+	Debug  bool
 }
 
 type LoggerOption func(*LoggerOpts)
@@ -34,7 +36,13 @@ func WithOutput(w io.Writer) LoggerOption {
 	}
 }
 
-const jsonFormat = `{"time":"${time}","ip":"${ip}","host":"${host}","method":"${method}","path":"${path}","status":${status},"latency":"${latency}","queryParams":"${queryParams}", "cid": "${cid}"}` + "\n"
+func WithDebug(debug bool) LoggerOption {
+	return func(o *LoggerOpts) {
+		o.Debug = debug
+	}
+}
+
+const jsonFormat = `{"time":"${time}","ip":"${ip}","host":"${host}","method":"${method}","path":"${path}","status":${status},"latency":${latency},"ua":"${ua}","queryParams":"${queryParams}","cid":"${cid}"}` + "\n"
 
 var formats = map[LogFormat]string{
 	LogFormatJSON: jsonFormat,
@@ -48,10 +56,15 @@ var logCorrelationId = func(output logger.Buffer, c *fiber.Ctx, _ *logger.Data, 
 	return output.WriteString(cid.(string))
 }
 
+func requestLatencySeconds(output logger.Buffer, _ *fiber.Ctx, data *logger.Data, _ string) (int, error) {
+	return output.WriteString(strconv.FormatFloat(data.Stop.Sub(data.Start).Seconds(), 'f', 6, 64))
+}
+
 func NewLogger(opts ...LoggerOption) fiber.Handler {
 	o := &LoggerOpts{
 		Output: os.Stderr,
 		Format: LogFormatJSON,
+		Debug:  false,
 	}
 	for _, opt := range opts {
 		opt(o)
@@ -60,19 +73,20 @@ func NewLogger(opts ...LoggerOption) fiber.Handler {
 	return logger.New(logger.Config{
 		Output: o.Output,
 		CustomTags: map[string]logger.LogFunc{
-			"cid": logCorrelationId,
+			"cid":     logCorrelationId,
+			"latency": requestLatencySeconds,
 		},
 		Format:       formats[o.Format],
 		TimeFormat:   time.RFC3339,
 		TimeZone:     "UTC",
 		TimeInterval: 500 * time.Millisecond,
 		Next: func(c *fiber.Ctx) bool {
-			return c.Path() == "/healthz" || c.Path() == "/readyz"
+			return !o.Debug && (c.Path() == "/healthz" || c.Path() == "/readyz" || c.Path() == "/metrics")
 		},
 	})
 }
 
-func NewContextLogger(log *logr.Logger) fiber.Handler {
+func NewContextLogger(log logr.Logger) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		ctx := c.UserContext()
 		cid := uuid.NewString()

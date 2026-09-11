@@ -1,0 +1,59 @@
+{
+  "name": "controlplane-docs",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "docusaurus": "docusaurus",
+    "start": "node scripts/generate-cli-docs.mjs && node scripts/generate-crd-data.mjs && node scripts/generate-crd-schemas.mjs && docusaurus start",
+    "build": "node scripts/generate-cli-docs.mjs && node scripts/generate-crd-data.mjs && node scripts/generate-crd-schemas.mjs && docusaurus build",
+    "swizzle": "docusaurus swizzle",
+    "deploy": "docusaurus deploy",
+    "clear": "docusaurus clear",
+    "serve": "docusaurus serve",
+    "test": "node --test scripts/*.test.mjs",
+    "write-translations": "docusaurus write-translations",
+    "write-heading-ids": "docusaurus write-heading-ids",
+    "typecheck": "tsc",
+    "generate-cli-docs": "node scripts/generate-cli-docs.mjs",
+    "generate-crd-data": "node scripts/generate-crd-data.mjs",
+    "generate-crd-schemas": "node scripts/generate-crd-schemas.mjs"
+  },
+  "dependencies": {
+    "@docusaurus/core": "^3.10.2",
+    "@docusaurus/faster": "^3.10.2",
+    "@docusaurus/preset-classic": "^3.10.2",
+    "@docusaurus/theme-mermaid": "^3.10.2",
+    "@easyops-cn/docusaurus-search-local": "^0.55.3",
+    "@mdx-js/react": "^3.0.0",
+    "clsx": "^2.0.0",
+    "docusaurus-plugin-image-zoom": "^3.0.1",
+    "js-yaml": "^5.4.1",
+    "prism-react-renderer": "^2.3.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
+  },
+  "devDependencies": {
+    "@docusaurus/module-type-aliases": "^3.10.1",
+    "@docusaurus/tsconfig": "^3.10.2",
+    "@docusaurus/types": "^3.10.1",
+    "typescript": "~7.0.2"
+  },
+  "browserslist": {
+    "production": [
+      ">0.5%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 3 chrome version",
+      "last 3 firefox version",
+      "last 5 safari version"
+    ]
+  },
+  "engines": {
+    "node": ">=20.0"
+  },
+  "overrides": {
+    "serialize-javascript": "^7.0.5"
+  }
+}

@@ -1,0 +1,320 @@
+
+[ApiSubscription Controller GET /applications/:applicationId/apisubscriptions should list API subscriptions with different scopes team scope - 1]
+{
+ "_links": {
+  "first": "/applications/eni--hyperion--my-app/apisubscriptions?offset=0&limit=20",
+  "last": "/applications/eni--hyperion--my-app/apisubscriptions?offset=0&limit=20",
+  "self": "/applications/eni--hyperion--my-app/apisubscriptions?offset=0&limit=20"
+ },
+ "items": [
+  {
+   "application": {
+    "name": "my-app"
+   },
+   "approval": {
+    "comment": "Approved for testing",
+    "decider": "admin@telekom.de",
+    "status": "Granted"
+   },
+   "basePath": "/eni/distr/v1",
+   "gatewayUrl": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de/eni/distr/v1",
+   "name": "eni-distr-v1",
+   "security": {
+    "password": "subscriber-secret-password",
+    "type": "basicAuth",
+    "username": "subscriber-user"
+   },
+   "status": "<Any value>",
+   "team": {
+    "email": "hyperion@telekom.de",
+    "hub": "eni",
+    "name": "hyperion"
+   },
+   "zone": "dataplane1"
+  }
+ ],
+ "paging": {
+  "last_page": 1,
+  "page": 1,
+  "total": 1
+ }
+}
+---
+
+[ApiSubscription Controller GET /applications/:applicationId/apisubscriptions should list API subscriptions with different scopes group scope - 1]
+{
+ "_links": {
+  "first": "/applications/eni--hyperion--my-app/apisubscriptions?offset=0&limit=20",
+  "last": "/applications/eni--hyperion--my-app/apisubscriptions?offset=0&limit=20",
+  "self": "/applications/eni--hyperion--my-app/apisubscriptions?offset=0&limit=20"
+ },
+ "items": [
+  {
+   "application": {
+    "name": "my-app"
+   },
+   "approval": {
+    "comment": "Approved for testing",
+    "decider": "admin@telekom.de",
+    "status": "Granted"
+   },
+   "basePath": "/eni/distr/v1",
+   "gatewayUrl": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de/eni/distr/v1",
+   "name": "eni-distr-v1",
+   "security": {
+    "password": "subscriber-secret-password",
+    "type": "basicAuth",
+    "username": "subscriber-user"
+   },
+   "status": "<Any value>",
+   "team": {
+    "email": "hyperion@telekom.de",
+    "hub": "eni",
+    "name": "hyperion"
+   },
+   "zone": "dataplane1"
+  }
+ ],
+ "paging": {
+  "last_page": 1,
+  "page": 1,
+  "total": 1
+ }
+}
+---
+
+[ApiSubscription Controller GET /applications/:applicationId/apisubscriptions should list API subscriptions with different scopes admin scope - 1]
+{
+ "_links": {
+  "first": "/applications/eni--hyperion--my-app/apisubscriptions?offset=0&limit=20",
+  "last": "/applications/eni--hyperion--my-app/apisubscriptions?offset=0&limit=20",
+  "self": "/applications/eni--hyperion--my-app/apisubscriptions?offset=0&limit=20"
+ },
+ "items": [
+  {
+   "application": {
+    "name": "my-app"
+   },
+   "approval": {
+    "comment": "Approved for testing",
+    "decider": "admin@telekom.de",
+    "status": "Granted"
+   },
+   "basePath": "/eni/distr/v1",
+   "gatewayUrl": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de/eni/distr/v1",
+   "name": "eni-distr-v1",
+   "security": {
+    "password": "subscriber-secret-password",
+    "type": "basicAuth",
+    "username": "subscriber-user"
+   },
+   "status": "<Any value>",
+   "team": {
+    "email": "hyperion@telekom.de",
+    "hub": "eni",
+    "name": "hyperion"
+   },
+   "zone": "dataplane1"
+  }
+ ],
+ "paging": {
+  "last_page": 1,
+  "page": 1,
+  "total": 1
+ }
+}
+---
+
+[ApiSubscription Controller GET /applications/:applicationId/apisubscriptions should list API subscriptions with different scopes obfuscated scope - 1]
+{
+ "_links": {
+  "first": "/applications/eni--hyperion--my-app/apisubscriptions?offset=0&limit=20",
+  "last": "/applications/eni--hyperion--my-app/apisubscriptions?offset=0&limit=20",
+  "self": "/applications/eni--hyperion--my-app/apisubscriptions?offset=0&limit=20"
+ },
+ "items": [
+  {
+   "application": {
+    "name": "my-app"
+   },
+   "approval": {
+    "comment": "Approved for testing",
+    "decider": "admin@telekom.de",
+    "status": "Granted"
+   },
+   "basePath": "/eni/distr/v1",
+   "gatewayUrl": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de/eni/distr/v1",
+   "name": "eni-distr-v1",
+   "security": {
+    "password": "**********",
+    "type": "basicAuth",
+    "username": "subscriber-user"
+   },
+   "status": "<Any value>",
+   "team": {
+    "email": "hyperion@telekom.de",
+    "hub": "eni",
+    "name": "hyperion"
+   },
+   "zone": "dataplane1"
+  }
+ ],
+ "paging": {
+  "last_page": 1,
+  "page": 1,
+  "total": 1
+ }
+}
+---
+
+[ApiSubscription Controller GET /applications/:applicationId/apisubscriptions/:apiSubscriptionName should return a single API subscription with different scopes team scope - 1]
+{
+ "application": {
+  "name": "my-app"
+ },
+ "approval": {
+  "comment": "Approved for testing",
+  "decider": "admin@telekom.de",
+  "status": "Granted"
+ },
+ "basePath": "/eni/distr/v1",
+ "gatewayUrl": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de/eni/distr/v1",
+ "name": "eni-distr-v1",
+ "security": {
+  "password": "subscriber-secret-password",
+  "type": "basicAuth",
+  "username": "subscriber-user"
+ },
+ "status": "<Any value>",
+ "team": {
+  "email": "hyperion@telekom.de",
+  "hub": "eni",
+  "name": "hyperion"
+ },
+ "zone": "dataplane1"
+}
+---
+
+[ApiSubscription Controller GET /applications/:applicationId/apisubscriptions/:apiSubscriptionName should return a single API subscription with different scopes group scope - 1]
+{
+ "application": {
+  "name": "my-app"
+ },
+ "approval": {
+  "comment": "Approved for testing",
+  "decider": "admin@telekom.de",
+  "status": "Granted"
+ },
+ "basePath": "/eni/distr/v1",
+ "gatewayUrl": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de/eni/distr/v1",
+ "name": "eni-distr-v1",
+ "security": {
+  "password": "subscriber-secret-password",
+  "type": "basicAuth",
+  "username": "subscriber-user"
+ },
+ "status": "<Any value>",
+ "team": {
+  "email": "hyperion@telekom.de",
+  "hub": "eni",
+  "name": "hyperion"
+ },
+ "zone": "dataplane1"
+}
+---
+
+[ApiSubscription Controller GET /applications/:applicationId/apisubscriptions/:apiSubscriptionName should return a single API subscription with different scopes admin scope - 1]
+{
+ "application": {
+  "name": "my-app"
+ },
+ "approval": {
+  "comment": "Approved for testing",
+  "decider": "admin@telekom.de",
+  "status": "Granted"
+ },
+ "basePath": "/eni/distr/v1",
+ "gatewayUrl": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de/eni/distr/v1",
+ "name": "eni-distr-v1",
+ "security": {
+  "password": "subscriber-secret-password",
+  "type": "basicAuth",
+  "username": "subscriber-user"
+ },
+ "status": "<Any value>",
+ "team": {
+  "email": "hyperion@telekom.de",
+  "hub": "eni",
+  "name": "hyperion"
+ },
+ "zone": "dataplane1"
+}
+---
+
+[ApiSubscription Controller GET /applications/:applicationId/apisubscriptions/:apiSubscriptionName should return a single API subscription with different scopes obfuscated scope - 1]
+{
+ "application": {
+  "name": "my-app"
+ },
+ "approval": {
+  "comment": "Approved for testing",
+  "decider": "admin@telekom.de",
+  "status": "Granted"
+ },
+ "basePath": "/eni/distr/v1",
+ "gatewayUrl": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de/eni/distr/v1",
+ "name": "eni-distr-v1",
+ "security": {
+  "password": "**********",
+  "type": "basicAuth",
+  "username": "subscriber-user"
+ },
+ "status": "<Any value>",
+ "team": {
+  "email": "hyperion@telekom.de",
+  "hub": "eni",
+  "name": "hyperion"
+ },
+ "zone": "dataplane1"
+}
+---
+
+[ApiSubscription Controller GET /applications/:applicationId/apisubscriptions/:apiSubscriptionName/status should return API subscription status with different scopes team scope - 1]
+{
+ "createdAt": "<Any value>",
+ "overallStatus": "complete",
+ "processedAt": "<Any value>",
+ "processingState": "done",
+ "state": "complete"
+}
+---
+
+[ApiSubscription Controller GET /applications/:applicationId/apisubscriptions/:apiSubscriptionName/status should return API subscription status with different scopes group scope - 1]
+{
+ "createdAt": "<Any value>",
+ "overallStatus": "complete",
+ "processedAt": "<Any value>",
+ "processingState": "done",
+ "state": "complete"
+}
+---
+
+[ApiSubscription Controller GET /applications/:applicationId/apisubscriptions/:apiSubscriptionName/status should return API subscription status with different scopes admin scope - 1]
+{
+ "createdAt": "<Any value>",
+ "overallStatus": "complete",
+ "processedAt": "<Any value>",
+ "processingState": "done",
+ "state": "complete"
+}
+---
+
+[ApiSubscription Controller GET /applications/:applicationId/apisubscriptions/:apiSubscriptionName/status should return API subscription status with different scopes obfuscated scope - 1]
+{
+ "createdAt": "<Any value>",
+ "overallStatus": "complete",
+ "processedAt": "<Any value>",
+ "processingState": "done",
+ "state": "complete"
+}
+---

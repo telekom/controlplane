@@ -25,7 +25,7 @@ func init() {
 	flag.StringVar(&environment, "env", "poc", "Environment")
 	flag.StringVar(&group, "group", "eni", "Group")
 	flag.StringVar(&team, "team", "hyperion", "Team")
-	flag.StringVar(&rawScopes, "scopes", "", "Scopes")
+	flag.StringVar(&rawScopes, "scope", "", "Scope")
 }
 
 func main() {

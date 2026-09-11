@@ -12,9 +12,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-var (
-	ControllerIndexKey = ".metadata.controller"
-)
+var ControllerIndexKey = ".metadata.controller"
 
 // SetOwnerIndex sets the owner index for the given object.
 func SetOwnerIndex(ctx context.Context, indexer client.FieldIndexer, ownedObj client.Object) error {

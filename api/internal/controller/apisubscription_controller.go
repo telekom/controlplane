@@ -13,7 +13,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
-	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
@@ -21,14 +20,13 @@ import (
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	apiapi "github.com/telekom/controlplane/api/api/v1"
+	"github.com/telekom/controlplane/api/internal/handler/apisubscription"
 	applicationapi "github.com/telekom/controlplane/application/api/v1"
 	approvalapi "github.com/telekom/controlplane/approval/api/v1"
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	cc "github.com/telekom/controlplane/common/pkg/controller"
+	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
-	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
-
-	"github.com/telekom/controlplane/api/internal/handler/apisubscription"
 )
 
 // ApiSubscriptionReconciler reconciles a ApiSubscription object
@@ -52,11 +50,10 @@ type ApiSubscriptionReconciler struct {
 // +kubebuilder:rbac:groups=approval.cp.ei.telekom.de,resources=approvals,verbs=get;list;watch
 // +kubebuilder:rbac:groups=admin.cp.ei.telekom.de,resources=zones,verbs=get;list;watch
 // +kubebuilder:rbac:groups=admin.cp.ei.telekom.de,resources=zones/status,verbs=get
-// +kubebuilder:rbac:groups=gateway.cp.ei.telekom.de,resources=realms,verbs=get;list;watch
 // +kubebuilder:rbac:groups=gateway.cp.ei.telekom.de,resources=routes,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=gateway.cp.ei.telekom.de,resources=consumeroutes,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=identity.cp.ei.telekom.de,resources=clients,verbs=get;list;watch
 // +kubebuilder:rbac:groups=application.cp.ei.telekom.de,resources=applications,verbs=get;list;watch
+// +kubebuilder:rbac:groups=organization.cp.ei.telekom.de,resources=teams,verbs=get;list;watch
 
 func (r *ApiSubscriptionReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	return r.Controller.Reconcile(ctx, req, new(apiapi.ApiSubscription))
@@ -68,159 +65,186 @@ func (r *ApiSubscriptionReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Controller = cc.NewController(&apisubscription.ApiSubscriptionHandler{}, r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&apiapi.ApiSubscription{}, builder.WithPredicates(predicate.ResourceVersionChangedPredicate{})).
-		Owns(&approvalapi.ApprovalRequest{}).
-		Owns(&approvalapi.Approval{}).
-		Owns(&gatewayapi.ConsumeRoute{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
-		Owns(&apiapi.RemoteApiSubscription{}).
+		For(&apiapi.ApiSubscription{}, builder.WithPredicates(cc.Count("apisubscription", cc.RoleFor, predicate.ResourceVersionChangedPredicate{}))).
+		Owns(&approvalapi.ApprovalRequest{}, builder.WithPredicates(cc.Count("apisubscription", cc.RoleOwns))).
+		Owns(&approvalapi.Approval{}, builder.WithPredicates(cc.Count("apisubscription", cc.RoleOwns))).
+		Owns(&gatewayapi.ConsumeRoute{}, builder.WithPredicates(cc.Count("apisubscription", cc.RoleOwns, predicate.GenerationChangedPredicate{}))).
+		Owns(&apiapi.RemoteApiSubscription{}, builder.WithPredicates(cc.Count("apisubscription", cc.RoleOwns))).
 		Watches(&apiapi.Api{},
 			handler.EnqueueRequestsFromMapFunc(r.MapApiToApiSubscription),
-			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
+			builder.WithPredicates(cc.Count("apisubscription", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
 		).
 		Watches(&apiapi.ApiExposure{},
 			handler.EnqueueRequestsFromMapFunc(r.MapApiExposureToApiSubscription),
-			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
+			builder.WithPredicates(cc.Count("apisubscription", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
 		).
 		Watches(&applicationapi.Application{},
 			handler.EnqueueRequestsFromMapFunc(r.MapApplicationToApiSubscription),
-			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
+			builder.WithPredicates(cc.Count("apisubscription", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
 		).
-		Watches(&gatewayv1.Route{},
+		Watches(&gatewayapi.Route{},
 			handler.EnqueueRequestsFromMapFunc(r.MapRouteToApiSubscription),
-			builder.WithPredicates(DeleteOnlyPredicate{}),
-		).
-		Watches(&gatewayv1.ConsumeRoute{},
-			handler.EnqueueRequestsFromMapFunc(r.MapConsumeRouteToApiSubscription),
-			builder.WithPredicates(DeleteOnlyPredicate{}),
+			builder.WithPredicates(cc.Count("apisubscription", cc.RoleWatches, cc.DeleteOnlyPredicate{})),
 		).
 		Watches(&adminv1.Zone{},
 			handler.EnqueueRequestsFromMapFunc(r.MapZoneToApiSubscription),
-			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
+			builder.WithPredicates(cc.Count("apisubscription", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
 		).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
-			RateLimiter:             cc.NewRateLimiter()}).
+			RateLimiter:             cc.NewRateLimiter(),
+		}).
 		Complete(r)
 }
 
+//nolint:dupl // controller map helpers intentionally mirror each other
 func (r *ApiSubscriptionReconciler) MapApiToApiSubscription(ctx context.Context, obj client.Object) []reconcile.Request {
-	log := log.FromContext(ctx)
+	logger := log.FromContext(ctx)
 
-	api, ok := obj.(*apiapi.Api)
+	apiObj, ok := obj.(*apiapi.Api)
 	if !ok {
-		log.Info("object is not an API")
+		logger.Info("object is not an API")
 		return nil
 	}
 
 	list := &apiapi.ApiSubscriptionList{}
-	err := r.Client.List(ctx, list, client.MatchingLabels{
-		cconfig.EnvironmentLabelKey: api.Labels[cconfig.EnvironmentLabelKey],
-		apiapi.BasePathLabelKey:     api.Labels[apiapi.BasePathLabelKey],
+	err := r.List(ctx, list, client.MatchingLabels{
+		cconfig.EnvironmentLabelKey: apiObj.Labels[cconfig.EnvironmentLabelKey],
+		apiapi.BasePathLabelKey:     apiObj.Labels[apiapi.BasePathLabelKey],
 	})
 	if err != nil {
-		log.Error(err, "failed to list API-Subscriptions")
+		logger.Error(err, "failed to list API-Subscriptions")
 		return nil
 	}
 
 	reqs := make([]reconcile.Request, 0, len(list.Items))
-	for _, item := range list.Items {
-		if api.UID == item.UID {
+	for i := range list.Items {
+		item := &list.Items[i]
+		if apiObj.UID == item.UID {
 			continue
 		}
-		reqs = append(reqs, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(&item)})
+		reqs = append(reqs, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(item)})
 	}
 
 	return reqs
 }
 
 func (r *ApiSubscriptionReconciler) MapApiExposureToApiSubscription(ctx context.Context, obj client.Object) []reconcile.Request {
-	log := log.FromContext(ctx)
+	logger := log.FromContext(ctx)
 
 	apiExposure, ok := obj.(*apiapi.ApiExposure)
 	if !ok {
-		log.Info("object is not an API-Exposure")
+		logger.Info("object is not an API-Exposure")
 		return nil
 	}
 
 	list := &apiapi.ApiSubscriptionList{}
-	err := r.Client.List(ctx, list, client.MatchingLabels{
+	err := r.List(ctx, list, client.MatchingLabels{
 		cconfig.EnvironmentLabelKey: apiExposure.Labels[cconfig.EnvironmentLabelKey],
 		apiapi.BasePathLabelKey:     apiExposure.Labels[apiapi.BasePathLabelKey],
 	})
 	if err != nil {
-		log.Error(err, "failed to list API-Subscriptions")
+		logger.Error(err, "failed to list API-Subscriptions")
 		return nil
 	}
 
 	reqs := make([]reconcile.Request, 0, len(list.Items))
-	for _, item := range list.Items {
-		if apiExposure.UID == item.UID {
+	for i := range list.Items {
+		item := &list.Items[i]
+		if apiExposure.Spec.ApiBasePath != item.Spec.ApiBasePath {
 			continue
 		}
-		reqs = append(reqs, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(&item)})
+		reqs = append(reqs, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(item)})
 	}
 
 	return reqs
 }
 
 func (r *ApiSubscriptionReconciler) MapApplicationToApiSubscription(ctx context.Context, obj client.Object) []reconcile.Request {
-	log := log.FromContext(ctx)
+	logger := log.FromContext(ctx)
 
 	application, ok := obj.(*applicationapi.Application)
 	if !ok {
-		log.Info("object is not an Application")
+		logger.Info("object is not an Application")
 		return nil
 	}
 
 	list := &apiapi.ApiSubscriptionList{}
-	err := r.Client.List(ctx, list, client.MatchingLabels{
+	err := r.List(ctx, list, client.MatchingLabels{
 		cconfig.EnvironmentLabelKey:          application.Labels[cconfig.EnvironmentLabelKey],
-		cconfig.BuildLabelKey("application"): application.Labels[cconfig.BuildLabelKey("application")],
+		cconfig.BuildLabelKey("application"): labelutil.NormalizeLabelValue(application.Name),
 	}, client.InNamespace(application.Namespace))
 	if err != nil {
-		log.Error(err, "failed to list API-Subscriptions")
+		logger.Error(err, "failed to list API-Subscriptions")
 		return nil
 	}
 
 	reqs := make([]reconcile.Request, 0, len(list.Items))
-	for _, item := range list.Items {
-		reqs = append(reqs, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(&item)})
+	for i := range list.Items {
+		item := &list.Items[i]
+		reqs = append(reqs, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(item)})
 	}
 
 	return reqs
 }
 
+// MapRouteToApiSubscription enqueues ApiSubscriptions when a Route they reference is deleted.
+// Routes live in zone namespaces; we use basepath + environment labels to find affected subscriptions.
+//
+//nolint:dupl // controller map helpers intentionally mirror each other across exposure/subscription
 func (r *ApiSubscriptionReconciler) MapRouteToApiSubscription(ctx context.Context, obj client.Object) []reconcile.Request {
-	return nil
+	logger := log.FromContext(ctx)
+	route, ok := obj.(*gatewayapi.Route)
+	if !ok {
+		return nil
+	}
+
+	basePathLabel := route.Labels[apiapi.BasePathLabelKey]
+	if basePathLabel == "" {
+		return nil
+	}
+
+	list := &apiapi.ApiSubscriptionList{}
+	err := r.List(ctx, list, client.MatchingLabels{
+		cconfig.EnvironmentLabelKey: route.Labels[cconfig.EnvironmentLabelKey],
+		apiapi.BasePathLabelKey:     basePathLabel,
+	})
+	if err != nil {
+		logger.Error(err, "failed to list API-Subscriptions for Route")
+		return nil
+	}
+
+	reqs := make([]reconcile.Request, 0, len(list.Items))
+	for i := range list.Items {
+		reqs = append(reqs, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(&list.Items[i])})
+	}
+	return reqs
 }
 
-func (r *ApiSubscriptionReconciler) MapConsumeRouteToApiSubscription(ctx context.Context, obj client.Object) []reconcile.Request {
-	return nil
-}
-
+// MapZoneToApiSubscription enqueues ApiSubscriptions that reference a changed Zone.
+// This ensures subscriptions react to zone readiness or visibility changes.
 func (r *ApiSubscriptionReconciler) MapZoneToApiSubscription(ctx context.Context, obj client.Object) []reconcile.Request {
-	return nil
-}
+	logger := log.FromContext(ctx)
+	zone, ok := obj.(*adminv1.Zone)
+	if !ok {
+		return nil
+	}
 
-var _ predicate.Predicate = DeleteOnlyPredicate{}
+	list := &apiapi.ApiSubscriptionList{}
+	err := r.List(ctx, list, client.MatchingLabels{
+		cconfig.EnvironmentLabelKey:   zone.Labels[cconfig.EnvironmentLabelKey],
+		cconfig.BuildLabelKey("zone"): labelutil.NormalizeLabelValue(zone.Name),
+	})
+	if err != nil {
+		logger.Error(err, "failed to list API-Subscriptions for Zone")
+		return nil
+	}
 
-// DeleteOnlyPredicate implements a predicate that only processes DELETE events
-type DeleteOnlyPredicate struct {
-	predicate.Funcs
-}
-
-func (DeleteOnlyPredicate) Create(e event.CreateEvent) bool {
-	return false
-}
-
-func (DeleteOnlyPredicate) Delete(e event.DeleteEvent) bool {
-	return true
-}
-
-func (DeleteOnlyPredicate) Update(e event.UpdateEvent) bool {
-	return false
-}
-
-func (DeleteOnlyPredicate) Generic(e event.GenericEvent) bool {
-	return false
+	reqs := make([]reconcile.Request, 0, len(list.Items))
+	for i := range list.Items {
+		if list.Items[i].Spec.Zone.Name == zone.Name {
+			reqs = append(reqs, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(&list.Items[i])})
+		}
+	}
+	return reqs
 }

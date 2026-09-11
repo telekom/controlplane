@@ -6,7 +6,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.16.1
+    controller-gen.kubebuilder.io/version: v0.20.1
   name: approvalrequests.approval.cp.ei.telekom.de
 spec:
   group: approval.cp.ei.telekom.de
@@ -103,6 +103,7 @@ spec:
                     type: string
                 type: object
               decisions:
+                default: []
                 description: Decisions contains information about who or what changed
                   this approval
                 items:
@@ -116,8 +117,25 @@ spec:
                     name:
                       description: Name of the person making the decision
                       type: string
+                    resultingState:
+                      description: |-
+                        ResultingState is the state the resource transitioned to as a result of this decision.
+                        Automatically set by the defaulting webhook to match Spec.State when not provided.
+                      enum:
+                      - Pending
+                      - Semigranted
+                      - Granted
+                      - Rejected
+                      - Suspended
+                      - Expired
+                      type: string
+                    timestamp:
+                      description: Timestamp of when the decision was made
+                      format: date-time
+                      type: string
                   required:
                   - name
+                  - resultingState
                   type: object
                 type: array
               requester:
@@ -230,6 +248,7 @@ spec:
                 type: object
             required:
             - action
+            - decisions
             - requester
             - state
             - strategy

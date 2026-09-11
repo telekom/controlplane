@@ -1,0 +1,9 @@
+{
+  "label": "User Journey",
+  "position": 3,
+  "collapsed": false,
+  "link": null,
+  "customProps": {
+    "description": "Use the Control Plane to manage APIs, events, and applications in self-service."
+  }
+}

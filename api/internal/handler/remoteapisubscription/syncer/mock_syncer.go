@@ -12,8 +12,7 @@ import (
 
 const NOT_UPDATED = false
 
-type SyncerClientMock struct {
-}
+type SyncerClientMock struct{}
 
 func NewSyncerFactoryMock() SyncerClientFactory[*apiv1.RemoteApiSubscription] {
 	return &syncerFactory[*apiv1.RemoteApiSubscription]{

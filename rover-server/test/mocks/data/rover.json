@@ -46,6 +46,12 @@
         "namespace": "poc--eni--hyperion"
       }
     ],
+    "eventSubscriptions": [
+      {
+        "name": "rover-local-sub--de-telekom-eni-quickstart-v1",
+        "namespace": "poc--eni--hyperion"
+      }
+    ],
     "application": {
       "name": "rover-local-sub",
       "namespace": "poc--eni--hyperion"

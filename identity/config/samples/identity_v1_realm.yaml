@@ -6,13 +6,20 @@ apiVersion: identity.cp.ei.telekom.de/v1
 kind: Realm
 metadata:
   labels:
-    app.kubernetes.io/name: realm-germany
+    app.kubernetes.io/name: realm-scopes-test
     app.kubernetes.io/managed-by: kustomize
     cp.ei.telekom.de/zone: dataplane1
     cp.ei.telekom.de/environment: poc
-  name: realm-germany
-  namespace: default
+  name: realm-scopes-test
+  namespace: poc--dataplane1
 spec:
   identityProvider:
-    name: idp-germany
-    namespace: default
+    name: dataplane1
+    namespace: poc--dataplane1
+  claims:
+    - name: groups
+      value: "realm:realm-scopes-test"
+    - name: country
+      value: "germany"
+    - name: organization
+      value: "telekom"

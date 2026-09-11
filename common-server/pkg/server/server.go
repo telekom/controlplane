@@ -67,11 +67,12 @@ func (s *Server) RegisterController(controller Controller, opts ControllerOpts) 
 
 type AppConfig struct {
 	fiber.Config
-	CtxLog        *logr.Logger
+	CtxLog        logr.Logger
 	EnableLogging bool
 	EnableMetrics bool
 	EnableCors    bool
 	Timeout       time.Duration
+	Debug         bool
 }
 
 func NewAppConfig() AppConfig {
@@ -91,6 +92,7 @@ func NewAppConfig() AppConfig {
 		EnableMetrics: true,
 		EnableCors:    false,
 		Timeout:       10 * time.Second,
+		Debug:         false,
 	}
 }
 
@@ -100,10 +102,11 @@ func NewAppWithConfig(cfg AppConfig) *fiber.App {
 		EnableStackTrace: true,
 	}))
 	if cfg.EnableLogging {
-		if cfg.CtxLog != nil {
+		if cfg.CtxLog.Enabled() {
+			// TODO: in the future use the otel integration here
 			app.Use(middleware.NewContextLogger(cfg.CtxLog))
 		}
-		app.Use(middleware.NewLogger())
+		app.Use(middleware.NewLogger(middleware.WithDebug(cfg.Debug)))
 	}
 	if cfg.EnableCors {
 		app.Use(cors.New(cors.Config{

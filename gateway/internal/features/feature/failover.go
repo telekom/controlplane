@@ -7,7 +7,6 @@ package feature
 import (
 	"context"
 
-	"github.com/pkg/errors"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	"github.com/telekom/controlplane/gateway/internal/features"
@@ -39,7 +38,7 @@ func (f *FailoverFeature) IsUsed(ctx context.Context, builder features.FeaturesB
 	if !ok {
 		return false
 	}
-	return route.Spec.Traffic.Failover != nil && len(route.Spec.Traffic.Failover.Upstreams) > 0
+	return route.Spec.Traffic.Failover != nil && len(route.Spec.Traffic.Failover.Targets) > 0
 }
 
 func (f *FailoverFeature) Apply(ctx context.Context, builder features.FeaturesBuilder) (err error) {
@@ -56,45 +55,47 @@ func (f *FailoverFeature) Apply(ctx context.Context, builder features.FeaturesBu
 
 	// This is the proxy upstream that should be used in all non-failover cases (primary upstream).
 	// The target is the zone where the API is exposed on.
-	upstream := route.Spec.Upstreams[0]
+	upstream := route.Spec.Backend.Upstreams[0]
 	proxyRoutingCfg := &plugin.RoutingConfig{
 		RemoteApiUrl:   upstream.Url(),
 		ApiBasePath:    upstream.Path,
-		Realm:          route.Spec.Realm.Name,
-		Issuer:         upstream.IssuerUrl,
-		ClientId:       upstream.ClientId,
-		ClientSecret:   upstream.ClientSecret,
+		Realm:          route.Spec.Security.RealmName,
 		Environment:    envName,
 		TargetZoneName: failover.TargetZoneName, // The zone where the API is exposed on
-		JumperConfig:   nil,                     // JumperConfig ist not needed for the proxy routing config
+		JumperConfig:   nil,                     // JumperConfig is not needed for the proxy routing config
+		Mesh:           true,                    // proxy to upstream
 	}
 	routingConfigs.Add(proxyRoutingCfg)
 
-	// The failover upstreams are used if the Jumper has determined that the primary upstream is not available.
+	// The failover targets are used if the Jumper has determined that the primary upstream is not available.
 	// It does so by checking the health of the TargetZoneName using the ZoneHealthCheckService.
 
-	hasLoadbalancing := len(failover.Upstreams) > 1
-	hasFailoverSecurity := route.HasFailoverSecurity()
-	IsFailoverSecondary := route.IsFailoverSecondary()
-
-	jumperCfg := builder.JumperConfig()
-	routingCfg := &plugin.RoutingConfig{
-		JumperConfig: jumperCfg,
-		Realm:        route.Spec.Realm.Name,
-		Environment:  envName,
+	hasFailoverSecurity := HasFailoverSecurity(route)
+	isFailoverSecondary := route.Spec.Type == gatewayv1.RouteTypeSecondary
+	failoverRealm := route.Spec.Traffic.Failover.Security.RealmName
+	if failoverRealm == "" {
+		failoverRealm = route.Spec.Security.RealmName
 	}
-	routingConfigs.Add(routingCfg)
 
-	if IsFailoverSecondary {
-		// This route is a failover secondary route. This means that its failover-upstream is the real primary upstream.
+	if isFailoverSecondary {
+		// This route is a failover secondary route. Its failover targets are the real backend upstreams.
+		// We need to copy the jumperConfig so that we have the same configuration as the primary route.
+		jumperCfg := builder.JumperConfig()
+		jumperCfg.Mesh = false // In failover-secondary routes, the jumper should not route to other zones.
+		routingCfg := &plugin.RoutingConfig{
+			JumperConfig: jumperCfg,
+			Realm:        failoverRealm,
+			Environment:  envName,
+			Mesh:         false,
+		}
+		routingConfigs.Add(routingCfg)
+
+		hasLoadbalancing := len(failover.Targets) > 1
 		if hasLoadbalancing {
-			// In addition, the real primary upstream is a loadbalancing upstream.
-			routingCfg.LoadBalancing = mapToLoadBalancingServers(failover.Upstreams)
-
+			routingCfg.LoadBalancing = mapFailoverTargetsToLoadBalancingServers(failover.Targets)
 		} else {
-			// The real primary upstream is a single failover upstream.
-			routingCfg.RemoteApiUrl = failover.Upstreams[0].Url()
-			routingCfg.ApiBasePath = failover.Upstreams[0].Path
+			routingCfg.RemoteApiUrl = failover.Targets[0].Upstream.Url()
+			routingCfg.ApiBasePath = failover.Targets[0].Upstream.Path
 		}
 
 		// Because (per default) the ExternalIDP feature will set this header, we need to remove it here
@@ -105,18 +106,20 @@ func (f *FailoverFeature) Apply(ctx context.Context, builder features.FeaturesBu
 		}
 
 	} else {
-		if hasLoadbalancing {
-			return errors.New("loadbalancing is not supported for proxy routes that are not failover secondary routes")
+		// This is a proxy route. Each failover target is a secondary zone's gateway.
+		// The jumper iterates the list and picks the first one whose zone is healthy.
+		for _, target := range failover.Targets {
+			routingCfg := &plugin.RoutingConfig{
+				Realm:          failoverRealm,
+				Environment:    envName,
+				RemoteApiUrl:   target.Upstream.Url(),
+				ApiBasePath:    target.Upstream.Path,
+				TargetZoneName: target.ZoneName,
+				JumperConfig:   nil,  // JumperConfig is not needed for the failover target routing config
+				Mesh:           true, // proxy to upstream
+			}
+			routingConfigs.Add(routingCfg)
 		}
-
-		// This route is not a failover secondary route. It is a proxy route that proxies to the secondary failover upstream.
-		failoverUpstream := failover.Upstreams[0]
-		routingCfg.RemoteApiUrl = failoverUpstream.Url()
-		routingCfg.ApiBasePath = failoverUpstream.Path
-		routingCfg.Issuer = failoverUpstream.IssuerUrl
-		routingCfg.ClientId = failoverUpstream.ClientId
-		routingCfg.ClientSecret = failoverUpstream.ClientSecret
-		routingCfg.TargetZoneName = "" // No target zone for failover upstreams
 	}
 
 	return nil

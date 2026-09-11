@@ -1,0 +1,36 @@
+---
+sidebar_position: 6
+---
+
+# Rover Domain
+
+The Rover domain is the primary user-facing entry point for the Control Plane. Users define their API exposures, subscriptions, and event configurations in a declarative **Rover file**, and the operator translates them into resources across multiple other domains.
+
+## Custom Resources
+
+<CRDReference domain="rover" />
+
+## Entry Points
+
+Users interact with the Rover domain through three paths:
+
+| Path | Description |
+| ---- | ----------- |
+| **Rover-CTL** | Command-line tool. Reads a local Rover file and sends it to the Rover Server. |
+| **Rover Server** | REST API. Validates the configuration, uploads specifications to the File Manager, obfuscates secrets through the Secret Manager, and creates the Rover resource in Kubernetes. |
+| **Direct kubectl** | Apply a Rover resource directly to the Kubernetes API (for advanced users or automation). |
+
+## Domain Interactions
+
+- **Application domain** — Creates Application resources.
+- **API domain** — Creates Api, ApiExposure, and ApiSubscription resources.
+- **Event domain** — Creates EventExposure and EventSubscription resources.
+- **Gateway domain** — Configures traffic management settings.
+- **Identity domain** — Configures authentication settings.
+- **Approval domain** — Integrates approval requirements for exposures.
+
+## Related Pages
+
+- [User Journey: Onboarding](../user-journey/onboarding.md)
+- [User Journey: Exposing APIs](../user-journey/exposing-apis.mdx)
+- [User Journey: Subscribing to APIs](../user-journey/subscribing-to-apis.mdx)

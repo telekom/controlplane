@@ -6,8 +6,10 @@ package secrets
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
+	"github.com/bytedance/sonic"
 	"github.com/pkg/errors"
 	"github.com/tidwall/sjson"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -59,7 +61,20 @@ func (o *Obfuscator) ReplaceAll(ctx context.Context, obj any, jsonPaths []string
 		return u, nil
 	}
 
-	return nil, errors.New("unsupported type")
+	b, err := sonic.Marshal(obj)
+	if err == nil {
+		b, err = o.ReplaceAllFromBytes(ctx, b, jsonPaths)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to obfuscate from json")
+		}
+		err = sonic.Unmarshal(b, &obj)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to unmarshal obfuscated json")
+		}
+		return obj, nil
+	}
+
+	return nil, fmt.Errorf("unsupported type %T", obj)
 }
 
 func (o *Obfuscator) ReplaceAllFromBytes(ctx context.Context, b []byte, jsonPaths []string) ([]byte, error) {

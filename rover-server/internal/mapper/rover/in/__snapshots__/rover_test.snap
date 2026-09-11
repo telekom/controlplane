@@ -6,6 +6,7 @@
     Spec:       v1.RoverSpec{
         Zone:           "zone",
         IpRestrictions: (*v1.IpRestrictions)(nil),
+        Authentication: (*v1.RoverAuthentication)(nil),
         ClientSecret:   "",
         Exposures:      {
             {
@@ -23,7 +24,8 @@
                     Traffic:        &v1.Traffic{},
                     Security:       (*v1.Security)(nil),
                 },
-                Event: (*v1.EventExposure)(nil),
+                Event:   (*v1.EventExposure)(nil),
+                Agentic: (*v1.AgenticExposure)(nil),
             },
         },
         Subscriptions: {
@@ -35,9 +37,12 @@
                     Traffic:        v1.SubscriberTraffic{},
                     Security:       (*v1.SubscriberSecurity)(nil),
                 },
-                Event: (*v1.EventSubscription)(nil),
+                Event:   (*v1.EventSubscription)(nil),
+                Agentic: (*v1.AgenticSubscription)(nil),
             },
         },
+        Permissions: nil,
+        ExternalIds: nil,
     },
     Status: v1.RoverStatus{},
 }
@@ -50,6 +55,7 @@
     Spec:       v1.RoverSpec{
         Zone:           "",
         IpRestrictions: (*v1.IpRestrictions)(nil),
+        Authentication: (*v1.RoverAuthentication)(nil),
         ClientSecret:   "",
         Exposures:      {
             {
@@ -67,10 +73,13 @@
                     Traffic:        &v1.Traffic{},
                     Security:       (*v1.Security)(nil),
                 },
-                Event: (*v1.EventExposure)(nil),
+                Event:   (*v1.EventExposure)(nil),
+                Agentic: (*v1.AgenticExposure)(nil),
             },
         },
         Subscriptions: nil,
+        Permissions:   nil,
+        ExternalIds:   nil,
     },
     Status: v1.RoverStatus{},
 }
@@ -83,6 +92,7 @@
     Spec:       v1.RoverSpec{
         Zone:           "",
         IpRestrictions: (*v1.IpRestrictions)(nil),
+        Authentication: (*v1.RoverAuthentication)(nil),
         ClientSecret:   "",
         Exposures:      nil,
         Subscriptions:  {
@@ -94,9 +104,12 @@
                     Traffic:        v1.SubscriberTraffic{},
                     Security:       (*v1.SubscriberSecurity)(nil),
                 },
-                Event: (*v1.EventSubscription)(nil),
+                Event:   (*v1.EventSubscription)(nil),
+                Agentic: (*v1.AgenticSubscription)(nil),
             },
         },
+        Permissions: nil,
+        ExternalIds: nil,
     },
     Status: v1.RoverStatus{},
 }
@@ -125,6 +138,7 @@
     Spec: v1.RoverSpec{
         Zone:           "zone",
         IpRestrictions: (*v1.IpRestrictions)(nil),
+        Authentication: (*v1.RoverAuthentication)(nil),
         ClientSecret:   "",
         Exposures:      {
             {
@@ -142,7 +156,8 @@
                     Traffic:        &v1.Traffic{},
                     Security:       (*v1.Security)(nil),
                 },
-                Event: (*v1.EventExposure)(nil),
+                Event:   (*v1.EventExposure)(nil),
+                Agentic: (*v1.AgenticExposure)(nil),
             },
         },
         Subscriptions: {
@@ -154,9 +169,12 @@
                     Traffic:        v1.SubscriberTraffic{},
                     Security:       (*v1.SubscriberSecurity)(nil),
                 },
-                Event: (*v1.EventSubscription)(nil),
+                Event:   (*v1.EventSubscription)(nil),
+                Agentic: (*v1.AgenticSubscription)(nil),
             },
         },
+        Permissions: nil,
+        ExternalIds: nil,
     },
     Status: v1.RoverStatus{},
 }
@@ -210,6 +228,7 @@
     Spec: v1.RoverSpec{
         Zone:           "zone",
         IpRestrictions: (*v1.IpRestrictions)(nil),
+        Authentication: (*v1.RoverAuthentication)(nil),
         ClientSecret:   "",
         Exposures:      {
             {
@@ -227,7 +246,8 @@
                     Traffic:        &v1.Traffic{},
                     Security:       (*v1.Security)(nil),
                 },
-                Event: (*v1.EventExposure)(nil),
+                Event:   (*v1.EventExposure)(nil),
+                Agentic: (*v1.AgenticExposure)(nil),
             },
         },
         Subscriptions: {
@@ -239,9 +259,12 @@
                     Traffic:        v1.SubscriberTraffic{},
                     Security:       (*v1.SubscriberSecurity)(nil),
                 },
-                Event: (*v1.EventSubscription)(nil),
+                Event:   (*v1.EventSubscription)(nil),
+                Agentic: (*v1.AgenticSubscription)(nil),
             },
         },
+        Permissions: nil,
+        ExternalIds: nil,
     },
     Status: v1.RoverStatus{},
 }
@@ -270,6 +293,7 @@
     Spec: v1.RoverSpec{
         Zone:           "zone",
         IpRestrictions: (*v1.IpRestrictions)(nil),
+        Authentication: (*v1.RoverAuthentication)(nil),
         ClientSecret:   "supersecret",
         Exposures:      {
             {
@@ -287,7 +311,8 @@
                     Traffic:        &v1.Traffic{},
                     Security:       (*v1.Security)(nil),
                 },
-                Event: (*v1.EventExposure)(nil),
+                Event:   (*v1.EventExposure)(nil),
+                Agentic: (*v1.AgenticExposure)(nil),
             },
         },
         Subscriptions: {
@@ -299,9 +324,109 @@
                     Traffic:        v1.SubscriberTraffic{},
                     Security:       (*v1.SubscriberSecurity)(nil),
                 },
-                Event: (*v1.EventSubscription)(nil),
+                Event:   (*v1.EventSubscription)(nil),
+                Agentic: (*v1.AgenticSubscription)(nil),
             },
         },
+        Permissions: nil,
+        ExternalIds: nil,
+    },
+    Status: v1.RoverStatus{},
+}
+---
+
+[Rover Mapper MapPermissions must map permissions in flat format - 1]
+&v1.Rover{
+    TypeMeta:   v1.TypeMeta{},
+    ObjectMeta: v1.ObjectMeta{},
+    Spec:       v1.RoverSpec{
+        Zone:           "",
+        IpRestrictions: (*v1.IpRestrictions)(nil),
+        Authentication: (*v1.RoverAuthentication)(nil),
+        ClientSecret:   "",
+        Exposures:      nil,
+        Subscriptions:  nil,
+        Permissions:    {
+            {
+                Resource: "stargate:payment:v1",
+                Role:     "admin",
+                Actions:  {"read", "write"},
+                Entries:  nil,
+            },
+        },
+        ExternalIds: nil,
+    },
+    Status: v1.RoverStatus{},
+}
+---
+
+[Rover Mapper MapPermissions must map permissions in resource-oriented format - 1]
+&v1.Rover{
+    TypeMeta:   v1.TypeMeta{},
+    ObjectMeta: v1.ObjectMeta{},
+    Spec:       v1.RoverSpec{
+        Zone:           "",
+        IpRestrictions: (*v1.IpRestrictions)(nil),
+        Authentication: (*v1.RoverAuthentication)(nil),
+        ClientSecret:   "",
+        Exposures:      nil,
+        Subscriptions:  nil,
+        Permissions:    {
+            {
+                Resource: "stargate:payment:v1",
+                Role:     "",
+                Actions:  nil,
+                Entries:  {
+                    {
+                        Role:     "admin",
+                        Resource: "",
+                        Actions:  {"read", "write", "delete"},
+                    },
+                    {
+                        Role:     "viewer",
+                        Resource: "",
+                        Actions:  {"read"},
+                    },
+                },
+            },
+        },
+        ExternalIds: nil,
+    },
+    Status: v1.RoverStatus{},
+}
+---
+
+[Rover Mapper MapPermissions must map permissions in role-oriented format - 1]
+&v1.Rover{
+    TypeMeta:   v1.TypeMeta{},
+    ObjectMeta: v1.ObjectMeta{},
+    Spec:       v1.RoverSpec{
+        Zone:           "",
+        IpRestrictions: (*v1.IpRestrictions)(nil),
+        Authentication: (*v1.RoverAuthentication)(nil),
+        ClientSecret:   "",
+        Exposures:      nil,
+        Subscriptions:  nil,
+        Permissions:    {
+            {
+                Resource: "",
+                Role:     "admin",
+                Actions:  nil,
+                Entries:  {
+                    {
+                        Role:     "",
+                        Resource: "stargate:payment:v1",
+                        Actions:  {"read", "write"},
+                    },
+                    {
+                        Role:     "",
+                        Resource: "stargate:billing:v1",
+                        Actions:  {"read", "write"},
+                    },
+                },
+            },
+        },
+        ExternalIds: nil,
     },
     Status: v1.RoverStatus{},
 }

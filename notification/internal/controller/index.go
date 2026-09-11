@@ -7,14 +7,16 @@ package controller
 import (
 	"context"
 	"fmt"
-	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
-	"k8s.io/apimachinery/pkg/types"
 	"os"
+	"strings"
+
+	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	"strings"
+
+	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
 )
 
 const (
@@ -23,15 +25,18 @@ const (
 )
 
 func RegisterIndecesOrDie(ctx context.Context, mgr ctrl.Manager) {
-
 	// Index Notifications by each channel reference
 	if err := mgr.GetFieldIndexer().IndexField(
 		ctx,
 		&notificationv1.Notification{},
-		IndexFieldSpecChannelRefs, // this is a *virtual* field name for your index
+		IndexFieldSpecChannelRefs, // virtual field name for the index
 		func(obj client.Object) []string {
-			n := obj.(*notificationv1.Notification)
-			var keys []string
+			n, ok := obj.(*notificationv1.Notification)
+			if !ok {
+				return nil
+			}
+			// index key is "namespace/name"
+			keys := make([]string, 0, len(n.Spec.Channels))
 			for _, ch := range n.Spec.Channels {
 				// We'll use "namespace/name" as the key
 				keys = append(keys, fmt.Sprintf("%s/%s", ch.Namespace, ch.Name))
@@ -47,15 +52,17 @@ func RegisterIndecesOrDie(ctx context.Context, mgr ctrl.Manager) {
 	if err := mgr.GetFieldIndexer().IndexField(
 		ctx,
 		&notificationv1.Notification{},
-		IndexFieldSpecTemplateNames, // this is a *virtual* field name for your index
+		IndexFieldSpecTemplateNames, // virtual field name for the index
 		func(obj client.Object) []string {
-			n := obj.(*notificationv1.Notification)
-			var keys []string
+			n, ok := obj.(*notificationv1.Notification)
+			if !ok {
+				return nil
+			}
+			// index key is the constructed template name: "<purpose>--<channelType>"
+			keys := make([]string, 0, len(n.Spec.Channels))
 			for _, ch := range n.Spec.Channels {
-
 				parts := strings.Split(ch.Name, "--")
 				channelType := parts[len(parts)-1]
-
 				// We'll construct the template name as the key
 				keys = append(keys, fmt.Sprintf("%s--%s", n.Spec.Purpose, channelType))
 			}
@@ -68,23 +75,26 @@ func RegisterIndecesOrDie(ctx context.Context, mgr ctrl.Manager) {
 }
 
 func (r *NotificationReconciler) MapChannelToNotification(ctx context.Context, obj client.Object) []reconcile.Request {
-	log := log.FromContext(ctx)
+	logger := log.FromContext(ctx)
 
-	ch := obj.(*notificationv1.NotificationChannel)
+	ch, ok := obj.(*notificationv1.NotificationChannel)
+	if !ok {
+		return nil
+	}
 	channelKey := fmt.Sprintf("%s/%s", ch.Namespace, ch.Name)
 
 	var notifications notificationv1.NotificationList
-	if err := r.Client.List(ctx, &notifications, client.MatchingFields{IndexFieldSpecChannelRefs: channelKey}); err != nil {
-		log.Error(err, "Failed to list notification channels")
+	if err := r.List(ctx, &notifications, client.MatchingFields{IndexFieldSpecChannelRefs: channelKey}); err != nil {
+		logger.Error(err, "Failed to list notification channels")
 		return nil
 	}
 
 	requests := make([]reconcile.Request, 0, len(notifications.Items))
-	for _, n := range notifications.Items {
+	for i := range notifications.Items {
 		requests = append(requests, reconcile.Request{
 			NamespacedName: types.NamespacedName{
-				Namespace: n.Namespace,
-				Name:      n.Name,
+				Namespace: notifications.Items[i].Namespace,
+				Name:      notifications.Items[i].Name,
 			},
 		})
 	}
@@ -93,22 +103,25 @@ func (r *NotificationReconciler) MapChannelToNotification(ctx context.Context, o
 }
 
 func (r *NotificationReconciler) MapTemplateToNotification(ctx context.Context, obj client.Object) []reconcile.Request {
-	log := log.FromContext(ctx)
+	logger := log.FromContext(ctx)
 
-	template := obj.(*notificationv1.NotificationTemplate)
+	template, ok := obj.(*notificationv1.NotificationTemplate)
+	if !ok {
+		return nil
+	}
 
 	var notifications notificationv1.NotificationList
-	if err := r.Client.List(ctx, &notifications, client.MatchingFields{IndexFieldSpecTemplateNames: template.Name}); err != nil {
-		log.Error(err, "Failed to list notification templates")
+	if err := r.List(ctx, &notifications, client.MatchingFields{IndexFieldSpecTemplateNames: template.Name}); err != nil {
+		logger.Error(err, "Failed to list notification templates")
 		return nil
 	}
 
 	requests := make([]reconcile.Request, 0, len(notifications.Items))
-	for _, n := range notifications.Items {
+	for i := range notifications.Items {
 		requests = append(requests, reconcile.Request{
 			NamespacedName: types.NamespacedName{
-				Namespace: n.Namespace,
-				Name:      n.Name,
+				Namespace: notifications.Items[i].Namespace,
+				Name:      notifications.Items[i].Name,
 			},
 		})
 	}

@@ -6,18 +6,19 @@ package controller
 
 import (
 	"context"
+
+	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
+
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/config"
-	"k8s.io/apimachinery/pkg/api/meta"
-	"k8s.io/apimachinery/pkg/runtime"
+	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
-
-	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
 )
 
 var _ = Describe("NotificationTemplate Controller", func() {
@@ -72,7 +73,7 @@ var _ = Describe("NotificationTemplate Controller", func() {
 			Eventually(func(g Gomega) {
 				template := &notificationv1.NotificationTemplate{}
 				err := k8sClient.Get(ctx, typeNamespacedName, template)
-				g.Expect(err).To(BeNil())
+				g.Expect(err).ToNot(HaveOccurred())
 
 				g.Expect(template.Spec.Purpose).To(Equal("ApiSubscriptionApproved"))
 				g.Expect(template.Spec.ChannelType).To(Equal("Email"))

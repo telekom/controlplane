@@ -1,0 +1,117 @@
+---
+sidebar_position: 3
+---
+
+# Exposing APIs
+
+Exposing an API is a two-step process. First, you register your API specification so the platform knows about your API. Then, you declare the exposure in a Rover file to configure routing and access control. Both steps are applied in the same way using `roverctl apply`.
+
+:::tip Prerequisites
+Your team must be onboarded before you can expose APIs. See [Applications](./applications.mdx) for details on how the platform identifies your team and application.
+:::
+
+## Step 1: Register Your API Specification
+
+Before exposing an API, you must register its OpenAPI specification. This creates an **Api** resource in the Control Plane, which serves as the central reference for your API's metadata (title, version, category, and base path).
+
+The specification file is the OpenAPI document itself. Rover-CTL automatically detects it as an API specification based on the `openapi` or `swagger` field and extracts the name from the base path.
+
+```yaml title="checkout-spec.yaml"
+openapi: 3.0.0
+info:
+  title: Checkout API
+  version: 1.0.0
+  x-api-category: OTHER
+servers:
+  - url: http://localhost:8080/checkout/v1
+    description: Local server for testing
+paths:
+  /orders:
+    get:
+      summary: List orders
+      responses:
+        '200':
+          description: Successful response
+```
+
+Apply the specification:
+
+```bash
+roverctl apply -f checkout-spec.yaml
+```
+
+### What Happens
+
+The ApiSpecification handler processes your specification and creates an **Api** resource. This resource stores the API's metadata — including its base path, version, and category — and makes the API discoverable in the platform. The specification content is stored in the **File Manager** for later retrieval.
+
+## Step 2: Expose the API in Your Rover
+
+Once the API specification is registered, you can declare the exposure in your Rover file. The `basePath` in your exposure must match the base path registered in Step 1.
+
+```yaml title="rover.yaml"
+apiVersion: tcp.ei.telekom.de/v1
+kind: Rover
+metadata:
+  name: checkout-service
+spec:
+  zone: dataplane1
+  exposures:
+    - type: api
+      visibility: ENTERPRISE
+      basePath: /checkout/v1
+      upstream: https://checkout.internal:8080
+      approval: SIMPLE
+```
+
+Apply the Rover file:
+
+```bash
+roverctl apply -f rover.yaml
+```
+
+### Key Fields
+
+| Field | Description |
+| ----- | ----------- |
+| `basePath` | The public API path. Must match an existing Api resource and be unique across the platform. This is how consumers will reach your API. |
+| `upstream` | The internal URL where your service is running. The gateway proxies incoming requests to this address. |
+| `approval` | The approval strategy for subscription requests: `auto`, `simple`, or `foureyes`. See [Approvals](./approvals.mdx). |
+
+### What Happens
+
+When you apply the Rover file, the Control Plane:
+
+1. Creates an **Application** resource for your service (if it does not already exist)
+2. Creates an **ApiExposure** linking your application to the Api resource
+3. The ApiExposure handler verifies that the **Api** resource exists (created in Step 1) and configures a **Gateway Route** that proxies traffic from the base path to your upstream
+
+:::caution
+If the Api resource does not exist (i.e., the specification was not registered in Step 1), the ApiExposure will remain in a pending state until the specification is applied.
+:::
+
+The API is now discoverable by other teams and ready to receive subscription requests.
+
+## API & Event Features
+
+Beyond the basic exposure configuration, you can customize your API with additional features such as rate limiting, load balancing, failover, circuit breakers, security, and header removal.
+
+:::tip
+See [API & Event Features](./features/overview.mdx) for the full list of features and detailed configuration examples.
+:::
+
+Here is a quick overview of what is available for API exposures:
+
+| Feature | Description |
+| ------- | ----------- |
+| [Rate Limiting](./features/traffic-management.mdx#rate-limiting) | Limit the number of requests per second, minute, or hour — for the API as a whole or per consumer. |
+| [Load Balancing](./features/traffic-management.mdx#load-balancing) | Distribute traffic across multiple backend servers with weighted routing. |
+| [Failover](./features/traffic-management.mdx#failover) | Route traffic to backup zones when the primary zone is unavailable. |
+| [Circuit Breaker](./features/traffic-management.mdx#circuit-breaker) | Automatically stop requests to failing backends to prevent cascading failures. |
+| [Security](./features/security.mdx) | Configure OAuth2, basic authentication, or custom scopes for provider-side M2M auth. |
+| [Header Removal](./features/security.mdx#header-removal) | Strip specific HTTP headers before forwarding requests to your backend. |
+
+## Next Steps
+
+- [Exposing Events](./exposing-events.mdx) — Publish events for other teams to consume
+- [Subscribing to APIs](./subscribing-to-apis.mdx) — Learn how other teams can consume your API
+- [Approvals](./approvals.mdx) — Understand how approval workflows protect your APIs

@@ -1,0 +1,22 @@
+---
+sidebar_position: 8
+---
+
+# Notification Domain
+
+The Notification domain handles the creation, formatting, and delivery of notifications within the Control Plane. It supports multiple delivery channels and uses admin-defined templates so that notification content can be customized without changing application code.
+
+## Custom Resources
+
+<CRDReference domain="notification" />
+
+## Domain Interactions
+
+- **Organization domain** — Automatically creates a NotificationChannel for each team.
+- **Approval domain** — Creates Notification resources for approval lifecycle events.
+- **All domains** — Any domain can trigger notifications by creating Notification resources.
+
+## Related Pages
+
+- [Admin Journey: Notification Templates](../admin-journey/notification-templates.md)
+- [Architecture: Approval Domain](./approval.mdx)

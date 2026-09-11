@@ -12,12 +12,12 @@ import (
 var auto = fsm.Transitions{}
 
 var simple = fsm.Transitions{
-	{Action: v1.ApprovalActionAllow, Src: []v1.ApprovalState{v1.ApprovalStatePending}, Dst: v1.ApprovalStateGranted},
+	{Action: v1.ApprovalActionAllow, Src: []v1.ApprovalState{v1.ApprovalStatePending, v1.ApprovalStateRejected}, Dst: v1.ApprovalStateGranted},
 	{Action: v1.ApprovalActionDeny, Src: []v1.ApprovalState{v1.ApprovalStatePending}, Dst: v1.ApprovalStateRejected},
 }
 
 var fourEyes = fsm.Transitions{
-	{Action: v1.ApprovalActionAllow, Src: []v1.ApprovalState{v1.ApprovalStatePending}, Dst: v1.ApprovalStateSemigranted},
+	{Action: v1.ApprovalActionAllow, Src: []v1.ApprovalState{v1.ApprovalStatePending, v1.ApprovalStateRejected}, Dst: v1.ApprovalStateSemigranted},
 	{Action: v1.ApprovalActionDeny, Src: []v1.ApprovalState{v1.ApprovalStatePending, v1.ApprovalStateSemigranted}, Dst: v1.ApprovalStateRejected},
 	{Action: v1.ApprovalActionAllow, Src: []v1.ApprovalState{v1.ApprovalStateSemigranted}, Dst: v1.ApprovalStateGranted},
 }

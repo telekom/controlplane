@@ -19,7 +19,7 @@ var _ = Describe("Exposure Traffic Mapper", func() {
 			// Given
 			input := &roverv1.ApiExposure{
 				Traffic: &roverv1.Traffic{
-					Failover: &roverv1.Failover{
+					Failover: &roverv1.ProviderFailover{
 						Zones: []string{"zone1", "zone2"},
 					},
 				},

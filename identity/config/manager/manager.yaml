@@ -45,19 +45,23 @@ spec:
       #               - linux
       securityContext:
         runAsNonRoot: true
-        # TODO(user): For common cases that do not require escalating privileges
-        # it is recommended to ensure that all your Pods/Containers are restrictive.
+        # Requires Kubernetes >= 1.19 or OpenShift >= 4.11.
         # More info: https://kubernetes.io/docs/concepts/security/pod-security-standards/#restricted
-        # Please uncomment the following code if your project does NOT have to work on old Kubernetes
-        # versions < 1.19 or on vendors versions which do NOT support this field by default (i.e. Openshift < 4.11 ).
-        # seccompProfile:
-        #   type: RuntimeDefault
+        seccompProfile:
+          type: RuntimeDefault
       containers:
       - args:
           - --leader-elect
           - --health-probe-bind-address=:8081
         image: ghcr.io/telekom/controlplane/identity:stable
         name: manager
+        envFrom:
+          - configMapRef:
+              name: controlplane-env
+              optional: true
+          - configMapRef:
+              name: identity-env
+              optional: true
         securityContext:
           allowPrivilegeEscalation: false
           capabilities:
@@ -80,10 +84,10 @@ spec:
         resources:
           limits:
             cpu: 500m
-            memory: 128Mi
+            memory: 1Gi
           requests:
-            cpu: 10m
-            memory: 64Mi
+            cpu: 30m
+            memory: 128Mi
         volumeMounts: []
       serviceAccountName: controller-manager
       terminationGracePeriodSeconds: 10

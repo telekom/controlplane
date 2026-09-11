@@ -6,9 +6,7 @@ package v0
 
 import (
 	"context"
-	"encoding/json"
 	"maps"
-	"net/http"
 
 	"github.com/pkg/errors"
 	"github.com/telekom/controlplane/rover-ctl/pkg/handlers/common"
@@ -32,6 +30,10 @@ func NewRoverHandlerInstance() *RoverHandler {
 }
 
 func PatchRoverRequest(ctx context.Context, obj types.Object) error {
+	if obj == nil {
+		return nil
+	}
+
 	content := obj.GetContent()
 	spec, ok := content["spec"].(map[string]any)
 	if !ok {
@@ -63,12 +65,46 @@ func PatchRoverRequest(ctx context.Context, obj types.Object) error {
 		}
 	}
 
+	PatchAuthentication(spec)
+
 	obj.SetContent(spec)
 	return nil
 }
 
+// PatchAuthentication restructures spec.authentication.m2m.clientAuthMethod
+// into spec.authentication.clientAuthMethod for the rover-server API format.
+// The server performs fuzzy matching on the value, so no normalization is needed here.
+func PatchAuthentication(spec map[string]any) {
+	auth, exists := spec["authentication"]
+	if !exists {
+		return
+	}
+	authMap, ok := auth.(map[string]any)
+	if !ok {
+		return
+	}
+
+	m2m, exists := authMap["m2m"]
+	if !exists {
+		return
+	}
+	m2mMap, ok := m2m.(map[string]any)
+	if !ok {
+		return
+	}
+
+	clientAuthMethod, exists := m2mMap["clientAuthMethod"]
+	if !exists {
+		return
+	}
+
+	spec["authentication"] = map[string]any{
+		"clientAuthMethod": clientAuthMethod,
+	}
+}
+
 func PatchExposures(exposures []any) []map[string]any {
-	if exposures == nil || len(exposures) == 0 {
+	if len(exposures) == 0 {
 		return nil
 	}
 	exposuresMaps := make([]map[string]any, len(exposures))
@@ -80,11 +116,13 @@ func PatchExposures(exposures []any) []map[string]any {
 		exposuresMaps[i] = exposureMap
 	}
 	for i, exposure := range exposuresMaps {
-		if _, exist := exposure["basePath"]; exist {
-			exposuresMaps[i]["type"] = "api"
-		} else if _, exist := exposure["eventType"]; exist {
-			exposuresMaps[i]["type"] = "event"
-		} // TODO: add more types as needed
+		if _, hasExplicitType := exposure["type"]; !hasExplicitType {
+			if _, exist := exposure["basePath"]; exist {
+				exposuresMaps[i]["type"] = "api"
+			} else if _, exist := exposure["eventType"]; exist {
+				exposuresMaps[i]["type"] = "event"
+			}
+		}
 		security, exist := exposure["security"]
 		if exist {
 			PatchSecurity(security)
@@ -95,7 +133,7 @@ func PatchExposures(exposures []any) []map[string]any {
 }
 
 func PatchSubscriptions(subscriptions []any) []map[string]any {
-	if subscriptions == nil || len(subscriptions) == 0 {
+	if len(subscriptions) == 0 {
 		return nil
 	}
 	subscriptionsMaps := make([]map[string]any, len(subscriptions))
@@ -107,10 +145,12 @@ func PatchSubscriptions(subscriptions []any) []map[string]any {
 		subscriptionsMaps[i] = subscriptionMap
 	}
 	for i, subscription := range subscriptionsMaps {
-		if _, exist := subscription["basePath"]; exist {
-			subscriptionsMaps[i]["type"] = "api"
-		} else if _, exist := subscription["port"]; exist {
-			subscriptionsMaps[i]["type"] = "port"
+		if _, hasExplicitType := subscription["type"]; !hasExplicitType {
+			if _, exist := subscription["basePath"]; exist {
+				subscriptionsMaps[i]["type"] = "api"
+			} else if _, exist := subscription["eventType"]; exist {
+				subscriptionsMaps[i]["type"] = "event"
+			}
 		}
 		security, exist := subscription["security"]
 		if exist {
@@ -157,27 +197,4 @@ func PatchSecurity(security any) {
 		securityMap["type"] = "oauth2"
 		return
 	}
-}
-
-func (h *RoverHandler) ResetSecret(ctx context.Context, name string) (clientId string, clientSecret string, err error) {
-	token := h.Setup(ctx)
-	url := h.GetRequestUrl(token.Group, token.Team, name, "secret")
-
-	resp, err := h.SendRequest(ctx, nil, http.MethodPatch, url)
-	if err != nil {
-		return "", "", err
-	}
-	defer resp.Body.Close()
-
-	err = common.CheckResponseCode(resp, http.StatusOK, http.StatusAccepted)
-	if err != nil {
-		return "", "", err
-	}
-
-	var response map[string]string
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		return "", "", errors.Wrap(err, "failed to parse response")
-	}
-
-	return response["clientId"], response["secret"], nil
 }

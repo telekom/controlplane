@@ -20,6 +20,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	kconfig "sigs.k8s.io/controller-runtime/pkg/client/config"
 
+	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	accesstoken "github.com/telekom/controlplane/common-server/pkg/client/token"
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
@@ -82,12 +83,24 @@ func main() {
 	}
 
 	zoneName := application.Spec.Zone.Name
-	realmName := environment // per convention, the realm name is the same as the environment name
+	zoneNamespace := application.Spec.Zone.Namespace
+
+	// Fetch the Zone to resolve the zone namespace for the Route lookup
+	zone := &adminv1.Zone{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      zoneName,
+			Namespace: zoneNamespace,
+		},
+	}
+	err = k8sClient.Get(ctx, client.ObjectKeyFromObject(zone), zone)
+	if err != nil {
+		panic(errors.Wrapf(err, "failed to get Zone %s in namespace %s", zoneName, zoneNamespace))
+	}
 
 	route := &gatewayv1.Route{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      realmName + "--" + labelutil.NormalizeValue(basePath),
-			Namespace: environment + "--" + zoneName, // zone namespace
+			Namespace: zone.Status.Namespace,
+			Name:      labelutil.NormalizeValue(basePath),
 		},
 	}
 
@@ -98,8 +111,14 @@ func main() {
 
 	clientId := application.Status.ClientId
 	clientSecret := application.Status.ClientSecret
-	tokenUrl := route.Spec.Downstreams[0].IssuerUrl + "/protocol/openid-connect/token"
-	url := route.Spec.Downstreams[0].Url() + "/anything"
+
+	var tokenUrl string
+	if len(route.Spec.Security.TrustedIssuers) > 0 {
+		tokenUrl = route.Spec.Security.TrustedIssuers[0] + "/protocol/openid-connect/token"
+	} else {
+		panic("Route has no trusted issuers configured")
+	}
+	url := "https://" + route.Spec.Hostnames[0] + route.Spec.Paths[0] + "/anything"
 
 	makeRequest(ctx, url, tokenUrl, clientId, clientSecret)
 
@@ -114,6 +133,10 @@ func newClient(cfg *rest.Config) (client.Client, error) {
 	err = applicationv1.AddToScheme(scheme)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to add application scheme")
+	}
+	err = adminv1.AddToScheme(scheme)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to add admin scheme")
 	}
 
 	k8sClient, err := client.New(cfg, client.Options{Scheme: scheme})

@@ -9,15 +9,20 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/base64"
+	"fmt"
 	"io"
+	"strings"
 
+	"github.com/go-logr/logr"
 	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/log"
 	"github.com/pkg/errors"
+	apiv1 "github.com/telekom/controlplane/api/api/v1"
 	"github.com/telekom/controlplane/common-server/pkg/problems"
+	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
 	"github.com/telekom/controlplane/common-server/pkg/store"
 	filesapi "github.com/telekom/controlplane/file-manager/api"
 	"github.com/telekom/controlplane/rover-server/internal/file"
+	"github.com/telekom/controlplane/rover-server/internal/oaslint"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 	"gopkg.in/yaml.v3"
 
@@ -33,12 +38,18 @@ import (
 var _ server.ApiSpecificationController = &ApiSpecificationController{}
 
 type ApiSpecificationController struct {
-	Store store.ObjectStore[*roverv1.ApiSpecification]
+	stores *s.Stores
+	Store  store.ObjectStore[*roverv1.ApiSpecification]
+
+	// Linter handles OAS linting operations. If nil, linting is disabled.
+	Linter oaslint.Linter
 }
 
-func NewApiSpecificationController() *ApiSpecificationController {
+func NewApiSpecificationController(stores *s.Stores, linter oaslint.Linter) *ApiSpecificationController {
 	return &ApiSpecificationController{
-		Store: s.ApiSpecificationStore,
+		stores: stores,
+		Store:  stores.APISpecificationStore,
+		Linter: linter,
 	}
 }
 
@@ -47,7 +58,7 @@ func (a *ApiSpecificationController) Create(ctx context.Context, req api.ApiSpec
 	// Important Hint: This is a declarative API. The client should not create an ApiSpecification, but only use
 	// the PUT method. This is similar to how kubernetes works.
 	// The main use case for the rover API will be to enable the usage of roverctl
-	log.Infof("ApiSpecification: Create not implemented. ApiSpecification is: %+v", req)
+	logr.FromContextOrDiscard(ctx).Info("ApiSpecification: Create not implemented", "request", req)
 	return api.ApiSpecificationResponse{},
 		fiber.NewError(fiber.StatusNotImplemented, "Create not implemented")
 }
@@ -115,13 +126,14 @@ func (a *ApiSpecificationController) Get(ctx context.Context, resourceId string)
 		return res, err
 	}
 
-	return out.MapResponse(apiSpec, m)
+	return out.MapResponse(ctx, apiSpec, m, a.stores)
 }
 
 // GetAll implements server.ApiSpecificationController.
 func (a *ApiSpecificationController) GetAll(ctx context.Context, params api.GetAllApiSpecificationsParams) (*api.ApiSpecificationListResponse, error) {
 	listOpts := store.NewListOpts()
 	listOpts.Cursor = params.Cursor
+	store.EnforcePrefix(security.PrefixFromContext(ctx), &listOpts)
 
 	objList, err := a.Store.List(ctx, listOpts)
 	if err != nil {
@@ -149,7 +161,7 @@ func (a *ApiSpecificationController) GetAll(ctx context.Context, params api.GetA
 		if err != nil {
 			return nil, problems.InternalServerError("Failed to marshal resource", err.Error())
 		}
-		resp, err := out.MapResponse(apiSpec, m)
+		resp, err := out.MapResponse(ctx, apiSpec, m, a.stores)
 		if err != nil {
 			return nil, problems.InternalServerError("Failed to map resource", err.Error())
 		}
@@ -182,6 +194,28 @@ func (a *ApiSpecificationController) Update(ctx context.Context, resourceId stri
 	var apiSpec *roverv1.ApiSpecification
 	apiSpec, err = in.ParseSpecification(ctx, string(specMarshaled))
 	if err != nil {
+		return res, err
+	}
+
+	// Fetch the ApiCategory list once for both validation and linting config lookup.
+	categoryList := a.fetchApiCategories(ctx)
+
+	// Validate the API category against the known ApiCategories.
+	if catErr := a.validateApiCategoryFromList(categoryList, apiSpec.Spec.Category); catErr != nil {
+		return res, catErr
+	}
+
+	// Early return: spec content unchanged.
+	_, same, hashErr := a.isHashEqual(ctx, id, specMarshaled)
+	if hashErr != nil {
+		return res, hashErr
+	}
+	if same {
+		return a.Get(ctx, resourceId)
+	}
+
+	// Lint before uploading or storing; reject immediately on failure.
+	if err := a.checkAndLintSpec(ctx, apiSpec, categoryList, specMarshaled); err != nil {
 		return res, err
 	}
 
@@ -220,7 +254,98 @@ func (a *ApiSpecificationController) GetStatus(ctx context.Context, resourceId s
 		return res, err
 	}
 
-	return status.MapApiSpecificationResponse(ctx, apiSpec)
+	return status.MapAPISpecificationResponse(ctx, apiSpec, a.stores)
+}
+
+// fetchApiCategories fetches all ApiCategories from the store. Returns nil if the store is not configured.
+func (a *ApiSpecificationController) fetchApiCategories(ctx context.Context) *apiv1.ApiCategoryList {
+	if a.stores.APICategoryStore == nil {
+		return nil
+	}
+	listOpts := store.NewListOpts()
+	categoryList, err := a.stores.APICategoryStore.List(ctx, listOpts)
+	if err != nil {
+		logr.FromContextOrDiscard(ctx).Info("Failed to list ApiCategories", "error", err)
+		return nil
+	}
+	if len(categoryList.Items) == 0 {
+		logr.FromContextOrDiscard(ctx).Info("No ApiCategories found")
+		return nil
+	}
+
+	result := &apiv1.ApiCategoryList{Items: make([]apiv1.ApiCategory, 0, len(categoryList.Items))}
+	for _, item := range categoryList.Items {
+		result.Items = append(result.Items, *item)
+	}
+	return result
+}
+
+// validateApiCategoryFromList validates that the given category is a known and active ApiCategory
+// using a pre-fetched list. If the list is nil, validation is skipped.
+func (a *ApiSpecificationController) validateApiCategoryFromList(categoryList *apiv1.ApiCategoryList, category string) error {
+	if categoryList == nil {
+		return nil
+	}
+
+	found, ok := categoryList.FindByLabelValue(category)
+	if !ok {
+		allowedLabels := strings.Join(categoryList.AllowedLabelValues(), ", ")
+		return problems.BadRequest(
+			fmt.Sprintf("ApiCategory %q not found. Allowed values are: [%s]", category, allowedLabels))
+	}
+
+	if !found.Spec.Active {
+		return problems.BadRequest(
+			fmt.Sprintf("ApiCategory %q is not active", category))
+	}
+
+	return nil
+}
+
+// checkAndLintSpec resolves the matching ApiCategory from the list and runs OAS linting.
+// Linting is skipped when no ApiCategories exist in the cluster (categoryList is nil)
+// or when the spec's category is not found in the list.
+func (a *ApiSpecificationController) checkAndLintSpec(ctx context.Context, apiSpec *roverv1.ApiSpecification, categoryList *apiv1.ApiCategoryList, specMarshaled []byte) error {
+	if categoryList == nil || len(categoryList.Items) == 0 {
+		return nil
+	}
+
+	apiCategory, ok := categoryList.FindByLabelValue(apiSpec.Spec.Category)
+	if !ok {
+		return problems.BadRequest(fmt.Sprintf("Invalid ApiCategory %q", apiSpec.Spec.Category))
+	}
+
+	return a.lintSpec(ctx, apiSpec, apiCategory, specMarshaled)
+}
+
+// lintSpec performs OAS linting for the given spec before it is persisted.
+// Returns an error (as a Problem) if linting blocks or the linter is unreachable in block mode.
+func (a *ApiSpecificationController) lintSpec(ctx context.Context, apiSpec *roverv1.ApiSpecification, apiCategory *apiv1.ApiCategory, specMarshaled []byte) error {
+	if a.Linter == nil {
+		return nil
+	}
+
+	categoryEnforcesBlock := apiCategory != nil &&
+		apiCategory.Spec.Linting != nil &&
+		apiCategory.Spec.Linting.Mode == apiv1.LintingModeBlock
+
+	outcome, err := a.Linter.Lint(ctx, apiSpec, apiCategory, bytes.NewReader(specMarshaled))
+	if err != nil && categoryEnforcesBlock {
+		logr.FromContextOrDiscard(ctx).Error(err, "OAS service failed", "namespace", apiSpec.Namespace, "name", apiSpec.Name)
+		return problems.InternalServerError(
+			"OAS linting is currently unavailable. Please try again later.",
+			"The linting service could not be reached. Your API specification was not saved.",
+		)
+	}
+	if outcome == oaslint.Blocked {
+		msg := "OAS linting did not pass"
+		if apiSpec.Spec.Lint != nil && apiSpec.Spec.Lint.Message != "" {
+			msg = fmt.Sprintf("%s: %s", msg, apiSpec.Spec.Lint.Message)
+		}
+		return problems.BadRequest(msg)
+	}
+
+	return nil
 }
 
 func (a *ApiSpecificationController) uploadFile(ctx context.Context, specMarshaled []byte, id mapper.ResourceIdInfo) (*filesapi.FileUploadResponse, error) {
@@ -228,25 +353,10 @@ func (a *ApiSpecificationController) uploadFile(ctx context.Context, specMarshal
 		return nil, errors.New("input api specification has length 0 or nil")
 	}
 
-	localHash, same, err := a.isHashEqual(ctx, id, specMarshaled)
-	if err != nil {
-		return nil, err
-	}
-
 	fileId := generateFileId(id)
 	fileContentType := "application/yaml"
 
-	resp := &filesapi.FileUploadResponse{
-		FileHash:    localHash,
-		FileId:      fileId,
-		ContentType: fileContentType,
-	}
-
-	if !same {
-		resp, err = file.GetFileManager().UploadFile(ctx, fileId, fileContentType, bytes.NewReader(specMarshaled))
-	}
-
-	return resp, err
+	return file.GetFileManager().UploadFile(ctx, fileId, fileContentType, bytes.NewReader(specMarshaled))
 }
 
 // isHashEqual checks if the hash of the data is the same as the hash of the api specification in the store.
@@ -261,10 +371,14 @@ func (a *ApiSpecificationController) isHashEqual(ctx context.Context, id mapper.
 		return "", false, err
 	}
 
+	hash := computeHash(data)
+	return hash, hash == apiSpec.Spec.Hash, nil
+}
+
+func computeHash(data []byte) string {
 	hasher := sha256.New()
 	hasher.Write(data)
-	hash := base64.StdEncoding.EncodeToString(hasher.Sum(nil))
-	return hash, hash == apiSpec.Spec.Hash, nil
+	return base64.StdEncoding.EncodeToString(hasher.Sum(nil))
 }
 
 func (a *ApiSpecificationController) downloadFile(ctx context.Context, fileId string) (io.Reader, error) {

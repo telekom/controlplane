@@ -6,14 +6,19 @@ package in
 
 import (
 	"github.com/pkg/errors"
-	"github.com/spf13/viper"
 	"github.com/telekom/controlplane/common/pkg/config"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/telekom/controlplane/common-server/pkg/problems"
 	"github.com/telekom/controlplane/rover-server/internal/api"
 	"github.com/telekom/controlplane/rover-server/internal/mapper"
 )
+
+// MigrationActive controls whether the client secret is copied through on
+// mapping. Set once at startup from config; defaults off.
+// ponytail: package var over threading cfg through every MapRequest caller.
+var MigrationActive bool
 
 func MapRequest(in *api.RoverUpdateRequest, id mapper.ResourceIdInfo) (res *roverv1.Rover, err error) {
 	res = &roverv1.Rover{
@@ -35,18 +40,24 @@ func MapRequest(in *api.RoverUpdateRequest, id mapper.ResourceIdInfo) (res *rove
 	}
 
 	apiRover := &api.Rover{
-		Authentication: in.Authentication,
-		Exposures:      in.Exposures,
-		Icto:           in.Icto,
-		IpRestrictions: in.IpRestrictions,
-		Subscriptions:  in.Subscriptions,
-		Zone:           in.Zone,
+		Authentication:  in.Authentication,
+		Authorization:   in.Authorization,
+		Exposures:       in.Exposures,
+		Icto:            in.Icto,
+		Psiid:           in.Psiid,
+		IpRestrictions:  in.IpRestrictions,
+		Subscriptions:   in.Subscriptions,
+		Zone:            in.Zone,
+		FailoverEnabled: in.FailoverEnabled,
 	}
 	if err = MapRover(apiRover, res); err != nil {
+		if problems.IsValidationError(err) {
+			return res, err
+		}
 		return res, errors.Wrap(err, "failed to map rover")
 	}
 
-	if viper.GetBool("migration.active") {
+	if MigrationActive {
 		res.Spec.ClientSecret = in.ClientSecret
 	}
 	return
@@ -61,12 +72,28 @@ func MapRover(in *api.Rover, out *roverv1.Rover) error {
 		return err
 	}
 
+	if err := mapPermissions(in, out); err != nil {
+		return err
+	}
+
 	out.Spec.Zone = in.Zone
 	if len(in.IpRestrictions.Allow) > 0 {
 		out.Spec.IpRestrictions = &roverv1.IpRestrictions{
 			Allow: in.IpRestrictions.Allow,
 		}
 	}
+
+	out.Spec.ExternalIds = mapper.RoverScalarsToExternalIds(mapper.ExternalIdScalars{
+		Psiid: in.Psiid,
+		Icto:  in.Icto,
+	})
+	mapAuthentication(in, out)
+
+	// Consumer Failover
+	if in.FailoverEnabled {
+		out.EnableFailoverOnAllSubscriptions()
+	}
+
 	return nil
 }
 
@@ -87,10 +114,79 @@ func mapExposures(in *api.Rover, out *roverv1.Rover) error {
 func mapSubscriptions(in *api.Rover, out *roverv1.Rover) error {
 	out.Spec.Subscriptions = make([]roverv1.Subscription, len(in.Subscriptions))
 	for i := range out.Spec.Subscriptions {
+		if err := validateSubscription(&in.Subscriptions[i]); err != nil {
+			return err
+		}
 		err := mapSubscription(&in.Subscriptions[i], &out.Spec.Subscriptions[i])
 		if err != nil {
 			return errors.Wrap(err, "failed to map subscription")
 		}
 	}
 	return nil
+}
+
+func mapPermissions(in *api.Rover, out *roverv1.Rover) error {
+	if len(in.Authorization) == 0 {
+		return nil
+	}
+
+	out.Spec.Permissions = make([]roverv1.Permission, len(in.Authorization))
+	for i := range in.Authorization {
+		auth := &in.Authorization[i]
+		outPerm := &out.Spec.Permissions[i]
+
+		// Map direct fields (flat format)
+		if auth.Resource != "" {
+			outPerm.Resource = auth.Resource
+		}
+		if auth.Role != "" {
+			outPerm.Role = auth.Role
+		}
+		if len(auth.Actions) > 0 {
+			outPerm.Actions = auth.Actions
+		}
+
+		// Map nested permissions (resource-oriented format)
+		if len(auth.Permissions) > 0 {
+			outPerm.Entries = make([]roverv1.PermissionEntry, len(auth.Permissions))
+			for j := range auth.Permissions {
+				perm := &auth.Permissions[j]
+				outEntry := &outPerm.Entries[j]
+
+				if perm.Resource != "" {
+					outEntry.Resource = perm.Resource
+				}
+				if perm.Role != "" {
+					outEntry.Role = perm.Role
+				}
+				if len(perm.Actions) > 0 {
+					outEntry.Actions = perm.Actions
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
+// clientAuthMethodToCRD maps rover-server API enum values to rover CRD tokenRequest values.
+var clientAuthMethodToCRD = map[api.AuthenticationClientAuthMethod]roverv1.TokenRequestMethod{
+	api.AuthenticationClientAuthMethodBASIC: roverv1.TokenRequestClientSecretBasic,
+	api.AuthenticationClientAuthMethodPOST:  roverv1.TokenRequestClientSecretPost,
+}
+
+func mapAuthentication(in *api.Rover, out *roverv1.Rover) {
+	method := FuzzyMatchClientAuthMethod(string(in.Authentication.ClientAuthMethod))
+	if method == "" {
+		return
+	}
+	tokenRequest, ok := clientAuthMethodToCRD[method]
+	if !ok {
+		return
+	}
+	out.Spec.Authentication = &roverv1.RoverAuthentication{
+		M2M: &roverv1.RoverM2MAuthentication{
+			TokenRequest: tokenRequest,
+		},
+	}
 }

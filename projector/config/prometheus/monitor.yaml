@@ -1,0 +1,22 @@
+# Copyright 2026 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Prometheus Monitor Service (Metrics)
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  labels:
+    control-plane: controller-manager
+    app.kubernetes.io/name: projector
+    app.kubernetes.io/managed-by: kustomize
+  name: projector-controller-manager-metrics-monitor
+  namespace: system
+spec:
+  endpoints:
+    - path: /metrics
+      port: http-metrics
+      scheme: http
+  selector:
+    matchLabels:
+      control-plane: controller-manager

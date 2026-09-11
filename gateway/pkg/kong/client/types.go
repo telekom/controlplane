@@ -29,8 +29,10 @@ type CustomRoute interface {
 	SetTargetsId(string)
 	GetTargetsId() string
 	GetName() string
-	GetHost() string
-	GetPath() string
+	GetHostnames() []string
+	GetPaths() []string
+	GetRequestBuffering() bool
+	GetResponseBuffering() bool
 }
 
 type CustomConsumer interface {
@@ -40,7 +42,7 @@ type CustomConsumer interface {
 
 type Upstream interface {
 	GetScheme() string
-	GetHost() string
+	GetHostname() string
 	GetPort() int
 	GetPath() string
 }
@@ -86,7 +88,7 @@ func (u *CustomUpstream) GetScheme() string {
 	return u.Scheme
 }
 
-func (u *CustomUpstream) GetHost() string {
+func (u *CustomUpstream) GetHostname() string {
 	return u.Host
 }
 

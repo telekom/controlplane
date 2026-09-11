@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -32,22 +33,82 @@ var (
 	envFilter    string
 )
 
-func main() {
-	rootCmd := &cobra.Command{
+var (
+	cfg config.Config
+
+	runCmd = &cobra.Command{
+		Use:   "run",
+		Short: "Run the end-to-end tests",
+		Long:  `Executes the end-to-end tests as per the provided configuration.`,
+		Run: func(cmd *cobra.Command, args []string) {
+
+			var reporter report.Reporter = report.NewConsoleReporter(os.Stderr, verboseMode)
+
+			// Create and run the test runner
+			r := runner.NewRunner(&cfg, runner.RunnerOptions{
+				UpdateMode:     updateMode,
+				ContinueOnFail: continueFlag,
+				SnapshotsDir:   snapshotsDir,
+				SuiteFilter:    suiteFilter,
+				EnvFilter:      envFilter,
+				Reporter:       reporter,
+			})
+
+			result, err := r.Run(cmd.Context())
+			if err != nil {
+				zap.L().Fatal("Test execution failed", zap.Error(err))
+			}
+
+			// Exit with code 1 if there were failures
+			if result.TotalFailed > 0 || result.TotalErrors > 0 {
+				os.Exit(1)
+			}
+		},
+	}
+
+	verifyCmd = &cobra.Command{
+		Use:   "verify",
+		Short: "Verify the end-to-end tests",
+		Long:  `Verifies the configuration and setup for the end-to-end tests without executing them.`,
+		Run: func(cmd *cobra.Command, args []string) {
+			// Count total test cases across all suites
+			totalCases := 0
+			for _, suite := range cfg.Suites {
+				totalCases += len(suite.Cases)
+			}
+
+			zap.L().Info("Verification completed successfully. Configuration is valid.",
+				zap.Int("suites", len(cfg.Suites)),
+				zap.Int("cases", totalCases),
+				zap.Int("environments", len(cfg.Environments)),
+			)
+		},
+	}
+
+	rootCmd = &cobra.Command{
 		Use:   "e2e-tester",
 		Short: "End-to-End Testing Suite for rover-ctl",
 		Long: `A testing suite for rover-ctl commands that executes
 commands, captures outputs, and compares them with expected snapshots.`,
+
 		Run: func(cmd *cobra.Command, args []string) {
+			runCmd.Run(cmd, args)
+		},
+
+		PersistentPostRun: func(cmd *cobra.Command, args []string) {
+			logger.Sync()
+		},
+
+		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			// Initialize global logger
 			if err := logger.Initialize(logLevel, devMode); err != nil {
 				fmt.Fprintf(os.Stderr, "Error initializing logger: %v\n", err)
 				os.Exit(1)
 			}
-			defer logger.Sync()
 			// Setup signal handling
 			ctx, cancel := context.WithCancel(context.Background())
-			defer cancel()
+
+			cmd.SetContext(ctx)
 
 			sigCh := make(chan os.Signal, 1)
 			signal.Notify(sigCh, os.Interrupt)
@@ -64,37 +125,34 @@ commands, captures outputs, and compares them with expected snapshots.`,
 				zap.L().Fatal("Error loading config", zap.Error(err))
 			}
 
-			var cfg config.Config
 			if err := viper.Unmarshal(&cfg); err != nil {
 				zap.L().Fatal("Error parsing config", zap.Error(err))
 			}
 
-			// Set verbose mode from flag
-			cfg.Verbose = verboseMode
-			var reporter report.Reporter = report.NewConsoleReporter(os.Stderr, verboseMode)
-
-			// Create and run the test runner
-			r := runner.NewRunner(&cfg, runner.RunnerOptions{
-				UpdateMode:     updateMode,
-				ContinueOnFail: continueFlag,
-				SnapshotsDir:   snapshotsDir,
-				SuiteFilter:    suiteFilter,
-				EnvFilter:      envFilter,
-				Reporter:       reporter,
-			})
-
-			result, err := r.Run(ctx)
-			if err != nil {
-				zap.L().Fatal("Test execution failed", zap.Error(err))
-			}
-
-			// Exit with code 1 if there were failures
-			if result.TotalFailed > 0 || result.TotalErrors > 0 {
+			// Validate configuration (initial)
+			if err := cfg.Validate(); err != nil {
+				cmd.ErrOrStderr().Write(fmt.Appendf(nil, "%v\n", err))
 				os.Exit(1)
 			}
+
+			configDir := filepath.Dir(viper.ConfigFileUsed())
+			if err := cfg.LoadExternalSuites(configDir); err != nil {
+				zap.L().Fatal("Error loading test suites", zap.Error(err))
+			}
+
+			// Validate configuration (after loading suites)
+			if err := cfg.Validate(); err != nil {
+				cmd.ErrOrStderr().Write(fmt.Appendf(nil, "%v\n", err))
+				os.Exit(1)
+			}
+
+			// Set verbose mode from flag
+			cfg.Verbose = verboseMode
 		},
 	}
+)
 
+func main() {
 	// Add flags
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is e2e-test-config.yaml)")
 	rootCmd.PersistentFlags().BoolVar(&updateMode, "update", false, "update snapshots instead of comparing")
@@ -108,8 +166,9 @@ commands, captures outputs, and compares them with expected snapshots.`,
 	rootCmd.PersistentFlags().StringVar(&suiteFilter, "suite", "", "run only the specified test suite (by name)")
 	rootCmd.PersistentFlags().StringVar(&envFilter, "env", "", "run tests only in the specified environment (by name)")
 
-	// These flags can be used together to run a specific suite in a specific environment
-	// Additionally, suites can specify an environment in the config file using the 'environment' field
+	// Add commands
+	rootCmd.AddCommand(runCmd)
+	rootCmd.AddCommand(verifyCmd)
 
 	// Execute
 	if err := rootCmd.Execute(); err != nil {

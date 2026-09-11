@@ -95,7 +95,7 @@ type ComparisonResult struct {
 // CompareSnapshots compares two command snapshots and returns the differences
 func (m *Manager) CompareSnapshots(expected, actual *CommandSnapshot) *ComparisonResult {
 
-	zap.L().Debug("Comparing snapshots", zap.String("spected", expected.ID()), zap.String("actual", actual.ID()))
+	zap.L().Debug("Comparing snapshots", zap.String("expected", expected.ID()), zap.String("actual", actual.ID()))
 	// Use the diffmatcher to compare snapshots
 	result := diffmatcher.Compare(expected, actual)
 

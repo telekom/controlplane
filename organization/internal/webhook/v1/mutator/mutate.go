@@ -13,16 +13,15 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
-	"github.com/telekom/controlplane/organization/internal/handler/team/handler/identity_client"
-	"github.com/telekom/controlplane/organization/internal/index"
-	"k8s.io/apimachinery/pkg/util/uuid"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	organisationv1 "github.com/telekom/controlplane/organization/api/v1"
+	"github.com/telekom/controlplane/organization/internal/handler/team/handler/identity_client"
+	"github.com/telekom/controlplane/organization/internal/index"
 	"github.com/telekom/controlplane/organization/internal/secret"
 	secretsapi "github.com/telekom/controlplane/secret-manager/api"
-	"k8s.io/apimachinery/pkg/api/errors"
 )
 
 func wrapCommunicationError(err error, purposeOfCommunication string) error {
@@ -34,19 +33,24 @@ func MutateSecret(ctx context.Context, env string, teamObj *organisationv1.Team,
 	var availableSecrets map[string]string
 	var clientSecret string
 
-	if !secretsapi.IsRef(teamObj.Spec.Secret) {
-		log.V(1).Info("spec.secret is not a reference, generating new secret")
-		if strings.EqualFold(teamObj.Spec.Secret, secret.KeywordRotate) || teamObj.Spec.Secret == "" {
-			// generate new secret
-			clientSecret = string(uuid.NewUUID())
-		} else {
-			// use provided secret
-			clientSecret = teamObj.Spec.Secret
-		}
-	} else {
+	if secretsapi.IsRef(teamObj.Spec.Secret) {
 		log.V(1).Info("spec.secret is already a reference, nothing to do")
 		return nil
 	}
+
+	log.V(1).Info("spec.secret is not a reference, generating new secret")
+	if strings.EqualFold(teamObj.Spec.Secret, secret.KeywordRotate) || teamObj.Spec.Secret == "" {
+		// generate new secret
+		var err error
+		clientSecret, err = secretsapi.GenerateSecret()
+		if err != nil {
+			return fmt.Errorf("unable to generate new client secret: %w", err)
+		}
+	} else {
+		// use provided secret
+		clientSecret = teamObj.Spec.Secret
+	}
+
 	clientSecretValue, teamToken, err := generateNewToken(env, teamObj, zoneObj, clientSecret)
 	if err != nil {
 		return fmt.Errorf("unable to generate team token: %w", err)
@@ -97,7 +101,6 @@ func generateNewToken(env string, teamObj *organisationv1.Team, zoneObj *adminv1
 		}, teamObj.Spec.Group, teamObj.Spec.Name)
 
 	return clientSecret, teamToken, err
-
 }
 
 func GetZoneObjWithTeamInfo(ctx context.Context, k8sClient client.Client) (*adminv1.Zone, error) {
@@ -108,7 +111,7 @@ func GetZoneObjWithTeamInfo(ctx context.Context, k8sClient client.Client) (*admi
 		return nil, errors.NewInternalError(fmt.Errorf("k8sClient is nil"))
 	}
 
-	err := k8sClient.List(ctx, zoneList, client.MatchingFields{index.FieldSpecTeamApis: "true"})
+	err := k8sClient.List(ctx, zoneList, client.MatchingFields{index.FieldSpecManagedRoutes: "true"})
 	if err != nil {
 		return nil, errors.NewInternalError(err)
 	}
@@ -118,7 +121,7 @@ func GetZoneObjWithTeamInfo(ctx context.Context, k8sClient client.Client) (*admi
 		if !ok {
 			continue
 		}
-		if zoneObj.Spec.TeamApis != nil {
+		if zoneObj.Spec.ManagedRoutes != nil {
 			teamApiZone = zoneObj.DeepCopy()
 			break
 		}

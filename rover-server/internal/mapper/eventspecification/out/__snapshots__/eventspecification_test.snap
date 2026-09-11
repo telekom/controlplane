@@ -1,0 +1,38 @@
+
+[EventSpecificationResponse Mapper MapResponse must map an EventSpecification CRD to an EventSpecificationResponse correctly - 1]
+{
+ "description": "Horizon demo provider",
+ "id": "eni--hyperion--tardis-horizon-demo-cetus-v1",
+ "specification": {
+  "properties": {
+   "id": {
+    "type": "string"
+   }
+  },
+  "type": "object"
+ },
+ "status": {
+  "processingState": "done",
+  "state": "complete"
+ },
+ "type": "tardis.horizon.demo.cetus.v1",
+ "version": "1.0.0"
+}
+---
+
+[EventSpecificationResponse Mapper MapResponse must return an error if the input EventSpecification CRD is nil - 1]
+api.EventSpecificationResponse{}
+---
+
+[EventSpecificationResponse Mapper MapResponse must omit specification from response when specContent is nil - 1]
+{
+ "description": "Horizon demo provider",
+ "id": "eni--hyperion--tardis-horizon-demo-cetus-v1",
+ "status": {
+  "processingState": "done",
+  "state": "complete"
+ },
+ "type": "tardis.horizon.demo.cetus.v1",
+ "version": "1.0.0"
+}
+---

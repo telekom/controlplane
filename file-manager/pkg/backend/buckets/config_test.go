@@ -70,4 +70,43 @@ func TestConfigOptions(t *testing.T) {
 		WithCredentials(creds)(config)
 		assert.Equal(t, creds, config.Credentials)
 	})
+
+	t.Run("WithInsecureSkipTLS true", func(t *testing.T) {
+		config := &BucketConfig{}
+		WithInsecureSkipTLS(true)(config)
+		assert.True(t, config.InsecureSkipTLS)
+	})
+
+	t.Run("WithInsecureSkipTLS false", func(t *testing.T) {
+		config := &BucketConfig{}
+		WithInsecureSkipTLS(false)(config)
+		assert.False(t, config.InsecureSkipTLS)
+	})
+}
+
+func TestInsecureSkipTLS_ClientCreation(t *testing.T) {
+	creds := credentials.NewStaticV4("test-access", "test-secret", "")
+
+	t.Run("default is secure (TLS enabled)", func(t *testing.T) {
+		config, err := NewBucketConfig(
+			WithEndpoint("localhost:9000"),
+			WithBucketName("test-bucket"),
+			WithCredentials(creds),
+		)
+		assert.NoError(t, err)
+		assert.False(t, config.InsecureSkipTLS)
+		assert.NotNil(t, config.Client)
+	})
+
+	t.Run("insecure skip TLS creates client successfully", func(t *testing.T) {
+		config, err := NewBucketConfig(
+			WithEndpoint("localhost:9000"),
+			WithBucketName("test-bucket"),
+			WithCredentials(creds),
+			WithInsecureSkipTLS(true),
+		)
+		assert.NoError(t, err)
+		assert.True(t, config.InsecureSkipTLS)
+		assert.NotNil(t, config.Client)
+	})
 }

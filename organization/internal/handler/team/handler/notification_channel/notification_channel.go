@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/rs/zerolog/log"
+
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
@@ -22,8 +23,7 @@ import (
 
 const separator = "--"
 
-type NotificationChannelHandler struct {
-}
+type NotificationChannelHandler struct{}
 
 var _ handler.ObjectHandler = &NotificationChannelHandler{}
 
@@ -34,7 +34,7 @@ func (n NotificationChannelHandler) Delete(ctx context.Context, owner *organizat
 }
 
 func (n NotificationChannelHandler) CreateOrUpdate(ctx context.Context, owner *organizationv1.Team) error {
-	log := log.Ctx(ctx)
+	logger := log.Ctx(ctx)
 	k8sClient := cclient.ClientFromContextOrDie(ctx)
 	channelObj := buildNotificationChannelObj(owner)
 
@@ -47,9 +47,7 @@ func (n NotificationChannelHandler) CreateOrUpdate(ctx context.Context, owner *o
 		}
 		recipientsMails[len(recipientsMails)-1] = owner.Spec.Email
 
-		slices.SortStableFunc(recipientsMails, func(a, b string) int {
-			return strings.Compare(a, b)
-		})
+		slices.SortStableFunc(recipientsMails, strings.Compare)
 
 		channelObj.Spec = notificationv1.NotificationChannelSpec{
 			Email: &notificationv1.EmailConfig{
@@ -73,7 +71,7 @@ func (n NotificationChannelHandler) CreateOrUpdate(ctx context.Context, owner *o
 		owner.Status.NotificationsRef = make(map[string]*types.ObjectRef)
 	}
 	if err := n.sendNotifications(ctx, owner); err != nil {
-		log.Err(err).Msg("failed to send notifications")
+		logger.Err(err).Msg("failed to send notifications")
 	}
 
 	return nil
@@ -191,7 +189,7 @@ func (n NotificationChannelHandler) Identifier() string {
 	return "notification-channel"
 }
 
-func hasTeamTokenChanged(old string, new string) bool {
+func hasTeamTokenChanged(old, newVal string) bool {
 	// notification name is token-rotated--<tokenHash>--<specHash>
 
 	// split by delimiter
@@ -200,7 +198,7 @@ func hasTeamTokenChanged(old string, new string) bool {
 		return false
 	}
 
-	newParts := strings.Split(new, separator)
+	newParts := strings.Split(newVal, separator)
 	if len(newParts) < 2 {
 		return false
 	}

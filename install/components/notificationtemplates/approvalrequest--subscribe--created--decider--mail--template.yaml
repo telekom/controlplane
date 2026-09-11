@@ -1,0 +1,118 @@
+# Copyright 2026 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: notification.cp.ei.telekom.de/v1
+kind: NotificationTemplate
+metadata:
+  labels:
+    app.kubernetes.io/managed-by: kustomize
+  name: approvalrequest--subscribe--created--decider--mail
+spec:
+  purpose: approvalrequest--subscribe--created--decider
+  channelType: Email
+  subjectTemplate: "[{{.environment}}][Approval] New subscription request of your {{.resource_type}} {{.resource_name}} for team {{.requester_team}}({{.requester_group}})"
+  template: |
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Approval Request - Control Plane</title>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                color: #333;
+                background-color: #f9f9f9;
+                line-height: 1.6;
+            }
+
+            .content {
+                max-width: 700px;
+                margin: auto;
+                background-color: #fff;
+                padding: 20px;
+                border-top: 10px solid #e20074;
+                border-bottom: 10px solid #e20074;
+            }
+
+            h1, h2 {
+                margin: 0 0 10px;
+            }
+
+            h2 span.highlight {
+                font-style: italic;
+                color: #e20074;
+            }
+
+            .header-table td {
+                vertical-align: middle;
+            }
+
+            a {
+                color: #e20074;
+                text-decoration: none;
+            }
+
+            a:hover {
+                text-decoration: underline;
+            }
+        </style>
+    </head>
+    <body>
+    <div class="content">
+        <table class="header-table" width="100%">
+            <tr>
+                <td width="120" style="text-align: center;">
+                    <img width="120" height="120" src="https://raw.githubusercontent.com/telekom/controlplane/main/docs/static/img/eni-tardis-small.png" alt="TARDIS Logo">
+                </td>
+                <td>
+                    <div style="margin-left: 24px;">
+                        <h2 style="color:#e20074; margin:0 0 4px;">Control Plane</h2>
+                        <h1 style="margin:0;">Approval Request</h1>
+                    </div>
+                </td>
+            </tr>
+        </table>
+
+        <!-- Summary box -->
+        <table cellpadding="0" cellspacing="0" style="width:100%; border-collapse:collapse; margin:20px 0; border-left:4px solid #e20074; background:#fdf0f5;">
+            <tr>
+                <td style="padding:12px 16px;">
+                    <table cellpadding="0" cellspacing="0" style="width:100%; border-collapse:collapse;">
+                        <tr>
+                            <td style="padding:4px 0;"><strong>Environment:</strong> {{.environment}}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding:4px 0;"><strong>Resource:</strong> {{.resource_type}} <span style="color:#e20074; font-weight:bold;">{{.resource_name}}</span></td>
+                        </tr>
+                        <tr>
+                            <td style="padding:4px 0;"><strong>Status:</strong> {{.state_new}}</td>
+                        </tr>
+                        {{if eq .resource_type "API"}}<tr>
+                            <td style="padding:4px 0;"><strong>OAuth Scopes:</strong> {{.scopes}}</td>
+                        </tr>{{end}}
+                    </table>
+                </td>
+            </tr>
+        </table>
+
+        <p>Hello team {{.decider_team}},</p>
+
+        <p>
+            You received a new subscription request for your <strong>{{.resource_type}}</strong> <strong>{{.resource_name}}</strong> that is exposed by your application <strong>{{.decider_application}}</strong>.
+        </p>
+
+        <p>
+            Application <strong>{{.requester_application}}</strong> of team <strong>{{.requester_team}}</strong> from group <strong>{{.requester_group}}</strong> needs access.
+        </p>
+
+        <p>Please grant or reject the request via your platform portal.</p>
+
+        <!-- Footer -->
+        <hr style="border:none; border-top:1px solid #ddd; margin:24px 0;">
+        <p style="margin:0;">Best regards,<br><strong>Control Plane Team</strong></p>
+        <p style="color:#999; font-size:12px; margin-top:12px;">This is an automated notification. Please do not reply to this email.</p>
+    </div>
+    </body>
+    </html>

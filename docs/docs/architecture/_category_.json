@@ -1,0 +1,9 @@
+{
+  "label": "Architecture",
+  "position": 5,
+  "collapsed": true,
+  "link": null,
+  "customProps": {
+    "description": "Understand how the Control Plane is designed and how its domains interact."
+  }
+}

@@ -5,10 +5,11 @@
 package gateway_consumer
 
 import (
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	organisationv1 "github.com/telekom/controlplane/organization/api/v1"
 	"github.com/telekom/controlplane/organization/internal/handler/team/handler"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const TeamNameSuffix = "team-user"

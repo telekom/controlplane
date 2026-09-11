@@ -6,23 +6,19 @@ package v1
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/go-logr/logr"
-	"github.com/telekom/controlplane/organization/internal/webhook/v1/mutator"
-	"github.com/telekom/controlplane/organization/internal/webhook/v1/validator"
-	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
-	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
+	commoncontroller "github.com/telekom/controlplane/common/pkg/controller"
 	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
+	"github.com/telekom/controlplane/organization/internal/webhook/v1/mutator"
+	"github.com/telekom/controlplane/organization/internal/webhook/v1/validator"
 )
 
-// nolint:unused
 // log is for logging in this package.
 var teamLog = logf.Log.WithName("team-resource").WithValues("apiVersion", "organization.cp.ei.telekom.de/v1", "kind", "Team")
 
@@ -32,7 +28,7 @@ const (
 
 // SetupTeamWebhookWithManager registers the webhook for Team in the manager.
 func SetupTeamWebhookWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewWebhookManagedBy(mgr).For(&organizationv1.Team{}).
+	return ctrl.NewWebhookManagedBy(mgr, &organizationv1.Team{}).
 		WithValidator(&TeamCustomValidator{}).
 		WithDefaulter(&TeamCustomDefaulter{mgr.GetClient()}).
 		Complete()
@@ -45,17 +41,17 @@ func setupLog(ctx context.Context, obj client.Object) (context.Context, logr.Log
 
 // +kubebuilder:webhook:path=/mutate-organization-cp-ei-telekom-de-v1-team,mutating=true,failurePolicy=fail,sideEffects=None,groups=organization.cp.ei.telekom.de,resources=teams,verbs=create;update;delete,versions=v1,name=mteam-v1.kb.io,admissionReviewVersions=v1
 
-var _ webhook.CustomDefaulter = &TeamCustomDefaulter{}
+var _ admission.Defaulter[*organizationv1.Team] = &TeamCustomDefaulter{}
 
 type TeamCustomDefaulter struct {
 	client client.Client
 }
 
-func (t TeamCustomDefaulter) Default(ctx context.Context, obj runtime.Object) error {
-	teamObj, ok := obj.(*organizationv1.Team)
-	if !ok {
-		return errors.NewInternalError(fmt.Errorf("unable to convert object to team object"))
+func (t TeamCustomDefaulter) Default(ctx context.Context, teamObj *organizationv1.Team) error {
+	if commoncontroller.IsBeingDeleted(teamObj) {
+		return nil
 	}
+
 	ctx, log := setupLog(ctx, teamObj)
 	log.Info("defaulting team")
 
@@ -84,31 +80,27 @@ func (t TeamCustomDefaulter) Default(ctx context.Context, obj runtime.Object) er
 // NOTE: The +kubebuilder:object:generate=false marker prevents controller-gen from generating DeepCopy methods,
 // as this struct is used only for temporary operations and does not need to be deeply copied.
 
-var _ webhook.CustomValidator = &TeamCustomValidator{}
+var _ admission.Validator[*organizationv1.Team] = &TeamCustomValidator{}
 
 type TeamCustomValidator struct{}
 
 // ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type Team.
-func (v *TeamCustomValidator) ValidateCreate(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
-	return v.validateCreateOrUpdate(ctx, obj)
+func (v *TeamCustomValidator) ValidateCreate(ctx context.Context, teamObj *organizationv1.Team) (admission.Warnings, error) {
+	return v.validateCreateOrUpdate(ctx, teamObj)
 }
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type Team.
-func (v *TeamCustomValidator) ValidateUpdate(ctx context.Context, _, newObj runtime.Object) (admission.Warnings, error) {
-	return v.validateCreateOrUpdate(ctx, newObj)
+func (v *TeamCustomValidator) ValidateUpdate(ctx context.Context, _, teamObj *organizationv1.Team) (admission.Warnings, error) {
+	return v.validateCreateOrUpdate(ctx, teamObj)
 }
 
 // ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type Team.
-func (v *TeamCustomValidator) ValidateDelete(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
+func (v *TeamCustomValidator) ValidateDelete(ctx context.Context, teamObj *organizationv1.Team) (admission.Warnings, error) {
 	return nil, nil
 }
 
-func (v *TeamCustomValidator) validateCreateOrUpdate(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
-	teamObj, ok := obj.(*organizationv1.Team)
-	if !ok {
-		return nil, fmt.Errorf("unable to convert object to team object")
-	}
-	ctx, log := setupLog(ctx, teamObj)
+func (v *TeamCustomValidator) validateCreateOrUpdate(ctx context.Context, teamObj *organizationv1.Team) (admission.Warnings, error) {
+	_, log := setupLog(ctx, teamObj)
 	log.Info("validating team")
 
 	err := validator.ValidateTeamName(teamObj)

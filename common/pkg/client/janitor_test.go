@@ -7,19 +7,20 @@ package client
 import (
 	"context"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-	"github.com/telekom/controlplane/common/pkg/config"
-	"github.com/telekom/controlplane/common/pkg/test"
-	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+
+	"github.com/telekom/controlplane/common/pkg/config"
+	"github.com/telekom/controlplane/common/pkg/test"
+	"github.com/telekom/controlplane/common/pkg/util/contextutil"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("JanitorClient", func() {
-
 	var (
 		ctx   context.Context
 		jc    *janitorClient
@@ -44,18 +45,14 @@ var _ = Describe("JanitorClient", func() {
 	})
 
 	Context("NewClient", func() {
-
 		It("should return a new JanitorImpl", func() {
 			t := NewJanitorClient(NewScopedClient(k8sClient, environment))
 			Expect(t).To(BeAssignableToTypeOf(&janitorClient{}))
 		})
-
 	})
 
 	Context("Cleanup", func() {
-
 		It("should update the state", func() {
-
 			obj := templ.DeepCopy()
 
 			_, err := jc.CreateOrUpdate(ctx, obj, DoNothing())
@@ -67,7 +64,6 @@ var _ = Describe("JanitorClient", func() {
 			}, map[client.ObjectKey]bool{
 				{Namespace: "default", Name: "test"}: true,
 			}))
-
 		})
 
 		It("should create a resource and add it to the desired state", func() {
@@ -106,7 +102,6 @@ var _ = Describe("JanitorClient", func() {
 	})
 
 	Context("Wrap", func() {
-
 		It("should delete object that were not created in the Wrap function", func() {
 			undesiredObj := templ.DeepCopy()
 			undesiredObj.SetName("undesired")
@@ -117,7 +112,6 @@ var _ = Describe("JanitorClient", func() {
 			objList := test.NewObjectList()
 
 			deleted, err := jc.Wrap(ctx, objList, []client.ListOption{client.InNamespace(namespace)}, func(c ScopedClient) bool {
-
 				res, err := c.CreateOrUpdate(ctx, obj, DoNothing())
 				Expect(err).ToNot(HaveOccurred())
 				Expect(res).To(Equal(controllerutil.OperationResultCreated))
@@ -158,7 +152,6 @@ var _ = Describe("JanitorClient", func() {
 	})
 
 	Context("CleanupAll", func() {
-
 		It("should delete all objects", func() {
 			undesiredObj := templ.DeepCopy()
 			undesiredObj.SetName("undesired")
@@ -181,7 +174,6 @@ var _ = Describe("JanitorClient", func() {
 	})
 
 	Context("AddKnownTypeToState", func() {
-
 		It("should add a known type to the state", func() {
 			jc.Reset()
 			jc.AddKnownTypeToState(templ.DeepCopy())

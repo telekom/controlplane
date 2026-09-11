@@ -81,3 +81,50 @@ func TestErrTooManyRequests(t *testing.T) {
 	assert.Equal(t, TypeErrTooManyRequests, backendErr.Type)
 	assert.True(t, IsTooManyRequestsErr(backendErr))
 }
+
+func TestBackendErrorCode(t *testing.T) {
+	tests := []struct {
+		name     string
+		errType  string
+		expected int
+	}{
+		{"NotFound returns 404", TypeErrNotFound, 404},
+		{"InvalidFileId returns 400", TypeErrInvalidFileId, 400},
+		{"InvalidChecksum returns 400", TypeErrInvalidChecksum, 400},
+		{"InvalidContentType returns 400", TypeErrInvalidContentType, 400},
+		{"FileExists returns 409", TypeErrFileExists, 409},
+		{"TooManyRequests returns 429", TypeErrTooManyRequests, 429},
+		{"ClientInitialization returns 500", TypeErrClientInitialization, 500},
+		{"UploadFailed returns 500", TypeErrUploadFailed, 500},
+		{"DownloadFailed returns 500", TypeErrDownloadFailed, 500},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := NewBackendError("file-id", fmt.Errorf("test"), tt.errType)
+			assert.Equal(t, tt.expected, err.Code())
+		})
+	}
+}
+
+func TestBackendErrorCodeDefaultFallback(t *testing.T) {
+	// Unknown type without StatusCode set should default to 500
+	err := NewBackendError("file-id", fmt.Errorf("test"), "UnknownType")
+	assert.Equal(t, 500, err.Code())
+}
+
+func TestBackendErrorCodeWithStatusCode(t *testing.T) {
+	// Unknown type with explicit StatusCode should use that value
+	err := NewBackendError("file-id", fmt.Errorf("test"), "CustomType").WithStatusCode(503)
+	assert.Equal(t, 503, err.Code())
+}
+
+func TestWithStatusCode(t *testing.T) {
+	err := NewBackendError("file-id", fmt.Errorf("test"), "SomeType")
+	assert.Equal(t, 0, err.StatusCode)
+
+	result := err.WithStatusCode(418)
+	assert.Equal(t, 418, err.StatusCode)
+	// WithStatusCode returns the same pointer for chaining
+	assert.Equal(t, err, result)
+}

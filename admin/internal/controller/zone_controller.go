@@ -7,8 +7,7 @@ package controller
 import (
 	"context"
 
-	cconfig "github.com/telekom/controlplane/common/pkg/config"
-	cc "github.com/telekom/controlplane/common/pkg/controller"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -21,7 +20,8 @@ import (
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	zone_handler "github.com/telekom/controlplane/admin/internal/handler/zone"
-	corev1 "k8s.io/api/core/v1"
+	cconfig "github.com/telekom/controlplane/common/pkg/config"
+	cc "github.com/telekom/controlplane/common/pkg/controller"
 )
 
 // ZoneReconciler reconciles a Zone object
@@ -45,7 +45,6 @@ type ZoneReconciler struct {
 // +kubebuilder:rbac:groups=identity.cp.ei.telekom.de,resources=realms,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=identity.cp.ei.telekom.de,resources=clients,verbs=get;list;watch;create;update;patch;delete
 
-// +kubebuilder:rbac:groups=gateway.cp.ei.telekom.de,resources=realms,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=gateway.cp.ei.telekom.de,resources=consumers,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=gateway.cp.ei.telekom.de,resources=gateways,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=gateway.cp.ei.telekom.de,resources=routes,verbs=get;list;watch;create;update;patch;delete
@@ -60,12 +59,12 @@ func (r *ZoneReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Controller = cc.NewController(&zone_handler.ZoneHandler{}, r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&adminv1.Zone{}).
+		For(&adminv1.Zone{}, builder.WithPredicates(cc.Count("zone", cc.RoleFor))).
 		Watches(&adminv1.Environment{},
 			handler.EnqueueRequestsFromMapFunc(r.mapEnvironmentToZone),
-			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
+			builder.WithPredicates(cc.Count("zone", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
 		).
-		Owns(&corev1.Namespace{}).
+		Owns(&corev1.Namespace{}, builder.WithPredicates(cc.Count("zone", cc.RoleOwns))).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
 			RateLimiter:             cc.NewRateLimiter(),
@@ -86,8 +85,8 @@ func (r *ZoneReconciler) mapEnvironmentToZone(ctx context.Context, obj client.Ob
 	}
 
 	requests := make([]reconcile.Request, 0, len(list.Items))
-	for _, zone := range list.Items {
-		requests = append(requests, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(&zone)})
+	for i := range list.Items {
+		requests = append(requests, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(&list.Items[i])})
 	}
 
 	return requests

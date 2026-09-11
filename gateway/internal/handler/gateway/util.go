@@ -34,9 +34,11 @@ func GetGatewayByRef(ctx context.Context, ref types.ObjectRef, resolveSecrets bo
 			return false, nil, errors.Wrap(err, "failed to get gateway client secret")
 		}
 
-		gateway.Spec.Redis.Password, err = secrets.Get(ctx, gateway.Spec.Redis.Password)
-		if err != nil {
-			return false, nil, errors.Wrap(err, "failed to get gateway redis password")
+		if gateway.Spec.Redis != nil {
+			gateway.Spec.Redis.Password, err = secrets.Get(ctx, gateway.Spec.Redis.Password)
+			if err != nil {
+				return false, nil, errors.Wrap(err, "failed to get gateway redis password")
+			}
 		}
 	}
 

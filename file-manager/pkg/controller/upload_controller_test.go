@@ -6,21 +6,20 @@ package controller_test
 
 import (
 	"context"
+	"io"
 	"strings"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
+
 	"github.com/telekom/controlplane/file-manager/pkg/controller"
 	"github.com/telekom/controlplane/file-manager/test/mocks"
 
-	"io"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("UploadController", func() {
-
 	Context("Upload controller", func() {
-
 		var mockedBackend *mocks.MockFileUploader
 		BeforeEach(func() {
 			mockedBackend = &mocks.MockFileUploader{}
@@ -31,13 +30,13 @@ var _ = Describe("UploadController", func() {
 			ctrl := controller.NewUploadController(mockedBackend)
 
 			var reader io.Reader = strings.NewReader("test content")
-			var backendMetadata = make(map[string]string)
+			backendMetadata := make(map[string]string)
 			backendMetadata["X-File-Content-Type"] = "application/octet-stream"
 			backendMetadata["X-File-Checksum"] = "test-checksum"
 
 			mockedBackend.EXPECT().UploadFile(any(ctx), "poc--eni--hyperion--my-test-file", reader, backendMetadata).Return("poc--eni--hyperion--my-test-file", nil)
 
-			var callMetadata = make(map[string]string)
+			callMetadata := make(map[string]string)
 			callMetadata["X-File-Content-Type"] = "application/octet-stream"
 			callMetadata["X-File-Checksum"] = "test-checksum"
 
@@ -52,14 +51,14 @@ var _ = Describe("UploadController", func() {
 			ctrl := controller.NewUploadController(mockedBackend)
 
 			var reader io.Reader = strings.NewReader("test content")
-			var backendMetadata = make(map[string]string)
+			backendMetadata := make(map[string]string)
 			backendMetadata["X-File-Checksum"] = "test-checksum"
 			backendMetadata["X-File-Content-Type"] = "application/octet-stream"
 			backendMetadata["X-File-Content-Type-Source"] = "auto-detected"
 
 			mockedBackend.EXPECT().UploadFile(any(ctx), "poc--eni--hyperion--my-test-file", reader, backendMetadata).Return("poc--eni--hyperion--my-test-file", nil)
 
-			var callMetadata = make(map[string]string)
+			callMetadata := make(map[string]string)
 			callMetadata["X-File-Checksum"] = "test-checksum"
 
 			file, err := ctrl.UploadFile(ctx, "poc--eni--hyperion--my-test-file", reader, callMetadata)
@@ -73,14 +72,14 @@ var _ = Describe("UploadController", func() {
 			ctrl := controller.NewUploadController(mockedBackend)
 
 			var reader io.Reader = strings.NewReader("test content")
-			var backendMetadata = make(map[string]string)
+			backendMetadata := make(map[string]string)
 			backendMetadata["X-File-Checksum"] = "test-checksum"
 			backendMetadata["X-File-Content-Type"] = "text/plain; charset=utf-8"
 			backendMetadata["X-File-Content-Type-Source"] = "auto-detected"
 
 			mockedBackend.EXPECT().UploadFile(any(ctx), "poc--eni--hyperion--my-test-file.txt", reader, backendMetadata).Return("poc--eni--hyperion--my-test-file.txt", nil)
 
-			var callMetadata = make(map[string]string)
+			callMetadata := make(map[string]string)
 			callMetadata["X-File-Checksum"] = "test-checksum"
 
 			file, err := ctrl.UploadFile(ctx, "poc--eni--hyperion--my-test-file.txt", reader, callMetadata)
@@ -95,7 +94,7 @@ var _ = Describe("UploadController", func() {
 
 			var reader io.Reader = strings.NewReader("test content")
 
-			var callMetadata = make(map[string]string)
+			callMetadata := make(map[string]string)
 			callMetadata["X-File-Checksum"] = "test-checksum"
 
 			file, err := ctrl.UploadFile(ctx, "i-dont-need-coffee", reader, callMetadata)
@@ -111,7 +110,7 @@ var _ = Describe("UploadController", func() {
 
 			var reader io.Reader = nil
 
-			var callMetadata = make(map[string]string)
+			callMetadata := make(map[string]string)
 			callMetadata["X-File-Checksum"] = "test-checksum"
 
 			file, err := ctrl.UploadFile(ctx, "poc--eni--hyperion--my-test-file", reader, callMetadata)
@@ -126,14 +125,14 @@ var _ = Describe("UploadController", func() {
 			ctrl := controller.NewUploadController(mockedBackend)
 
 			var reader io.Reader = strings.NewReader("test content")
-			var backendMetadata = make(map[string]string)
+			backendMetadata := make(map[string]string)
 			backendMetadata["X-File-Checksum"] = "test-checksum"
 			backendMetadata["X-File-Content-Type"] = "application/octet-stream"
 			backendMetadata["X-File-Content-Type-Source"] = "auto-detected"
 
 			mockedBackend.EXPECT().UploadFile(any(ctx), "poc--eni--hyperion--my-test-file", reader, backendMetadata).Return("", errors.New("this is a test error message"))
 
-			var callMetadata = make(map[string]string)
+			callMetadata := make(map[string]string)
 			callMetadata["X-File-Checksum"] = "test-checksum"
 
 			file, err := ctrl.UploadFile(ctx, "poc--eni--hyperion--my-test-file", reader, callMetadata)
@@ -142,7 +141,5 @@ var _ = Describe("UploadController", func() {
 			Expect(err.Error()).To(Equal("this is a test error message"))
 			Expect(file).To(BeEmpty())
 		})
-
 	})
-
 })

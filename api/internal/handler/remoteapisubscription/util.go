@@ -9,13 +9,14 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+
 	adminapi "github.com/telekom/controlplane/admin/api/v1"
 	apiapi "github.com/telekom/controlplane/api/api/v1"
 	approvalapi "github.com/telekom/controlplane/approval/api/v1"
 	"github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/types"
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
 func CalculateRemoteOrgZone(remoteOrg *adminapi.RemoteOrganization) types.ObjectRef {
@@ -44,7 +45,7 @@ func fillApprovalInfo(ctx context.Context, obj *apiapi.RemoteApiSubscription, ap
 		ApprovalState: approval.Spec.State.String(),
 		Message:       "", // todo - resolve later, should be taken from decisions
 	}
-	return
+	return err
 }
 
 func fillApprovalRequestInfo(ctx context.Context, obj *apiapi.RemoteApiSubscription, apiSubscription *apiapi.ApiSubscription) (err error) {
@@ -58,7 +59,7 @@ func fillApprovalRequestInfo(ctx context.Context, obj *apiapi.RemoteApiSubscript
 	err = c.Get(ctx, apiSubscription.Status.ApprovalRequest.K8s(), approvalRequest)
 	if err != nil {
 		if !apierrors.IsNotFound(err) {
-			return errors.Wrapf(err, "failed to get approval %s", apiSubscription.Status.Approval.Name)
+			return errors.Wrapf(err, "failed to get approval request %s", apiSubscription.Status.ApprovalRequest.Name)
 		}
 		return nil
 	}
@@ -66,7 +67,7 @@ func fillApprovalRequestInfo(ctx context.Context, obj *apiapi.RemoteApiSubscript
 		ApprovalState: approvalRequest.Spec.State.String(),
 		Message:       "", // todo - resolve later, should be taken from decisions
 	}
-	return
+	return err
 }
 
 func fillRouteInfo(ctx context.Context, obj *apiapi.RemoteApiSubscription, apiSubscription *apiapi.ApiSubscription) (err error) {
@@ -83,7 +84,9 @@ func fillRouteInfo(ctx context.Context, obj *apiapi.RemoteApiSubscription, apiSu
 		}
 		return nil
 	}
-	// TODO: This is shit. What if we have multiple downstreams? Why is it like this?
-	obj.Status.GatewayUrl = "https://" + downstreamRoute.Spec.Downstreams[0].Host + downstreamRoute.Spec.Downstreams[0].Path
-	return
+	// Derive the gateway URL from the route's hostnames and paths
+	if len(downstreamRoute.Spec.Hostnames) > 0 && len(downstreamRoute.Spec.Paths) > 0 {
+		obj.Status.GatewayUrl = "https://" + downstreamRoute.Spec.Hostnames[0] + downstreamRoute.Spec.Paths[0]
+	}
+	return nil
 }

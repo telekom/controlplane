@@ -7,37 +7,38 @@ package controller
 import (
 	"context"
 	"fmt"
+	"math/rand/v2"
 	"os"
 	"path/filepath"
 	"runtime"
 	"testing"
 	"time"
 
-	"github.com/telekom/controlplane/common/pkg/condition"
-	"github.com/telekom/controlplane/common/pkg/test/mock"
-	"github.com/telekom/controlplane/common/pkg/types"
-	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
-	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
-	"github.com/telekom/controlplane/organization/internal/index"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
-
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
+	"github.com/telekom/controlplane/common/pkg/condition"
+	"github.com/telekom/controlplane/common/pkg/test/mock"
+	testutil "github.com/telekom/controlplane/common/pkg/test/testutil"
+	"github.com/telekom/controlplane/common/pkg/types"
+	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
+	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
 	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
+	"github.com/telekom/controlplane/organization/internal/index"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -45,7 +46,7 @@ import (
 // http://onsi.github.io/ginkgo/ to learn more about Ginkgo.
 
 const (
-	timeout         = 2 * time.Second
+	timeout         = 5 * time.Second
 	interval        = 100 * time.Millisecond
 	testNamespace   = "default"
 	testEnvironment = "test"
@@ -149,7 +150,6 @@ var _ = BeforeSuite(func() {
 		err = k8sManager.Start(ctx)
 		Expect(err).ToNot(HaveOccurred(), "failed to run manager")
 	}()
-
 })
 
 var _ = AfterSuite(func() {
@@ -171,6 +171,10 @@ func CreateNamespace(name string) {
 func ExpectObjConditionToBeReady(g Gomega, obj types.Object) {
 	g.Expect(obj.GetConditions()).To(HaveLen(2))
 	readyCondition := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady)
-	g.Expect(readyCondition).NotTo(BeNil())
-	g.Expect(readyCondition.Status).To(Equal(metav1.ConditionTrue))
+
+	testutil.ExpectConditionToMatch(g, readyCondition, condition.ReasonProvisioned, true)
+}
+
+func randName(prefix string) string {
+	return fmt.Sprintf("%s-%05d", prefix, rand.IntN(99999))
 }

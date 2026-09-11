@@ -1,0 +1,200 @@
+# Copyright 2026 Deutsche Telekom AG
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Generic "package" component: builds a container image with Ko and scans
+# it with Trivy for a single Go module.
+#
+# Intentionally has no internal dependency on component-build.yaml's jobs -
+# the caller (ci.yaml) is responsible for only invoking this workflow after
+# the corresponding build-component run has succeeded, via `needs:`. This
+# keeps the two components independently reusable/testable.
+
+name: "Package Component"
+
+on:
+  workflow_call:
+    inputs:
+      module:
+        description: "The Go module to process"
+        required: true
+        type: string
+      name:
+        description: "Name of the module for display purposes"
+        required: true
+        type: string
+      ko_build_path:
+        description: "Path to the main package for ko build (e.g., cmd/main.go or ./cmd/server)"
+        required: false
+        type: string
+        default: "cmd/main.go"
+      github_repository:
+        description: "GitHub repository (owner/repo), e.g., github.repository."
+        required: false
+        type: string
+        default: ${{ github.repository }}
+      container_registry:
+        description: "Container registry HOST ONLY (no path), e.g., ghcr.io or artifactory.example.com. Used for docker/login-action and Trivy's registry auth. When set to a non-GHCR registry, registry_username/registry_password secrets are required for login."
+        required: false
+        type: string
+        default: "ghcr.io"
+      image_repository:
+        description: "Optional full override for the KO_DOCKER_REPO image path (registry host + full repo path), bypassing the default '<container_registry>/<github_repository>/<name>' convention used for GHCR. Use this when the target registry's path structure doesn't match GHCR's org/repo/module layout (e.g. an internal Artifactory registry with a different path convention). Leave empty to use the default convention."
+        required: false
+        type: string
+        default: ""
+      base_image:
+        description: "Optional base image reference (registry/repo:tag) to use instead of the default in .ko.yaml. Passed to ko as KO_DEFAULTBASEIMAGE. Leave empty to use the default from .ko.yaml."
+        required: false
+        type: string
+        default: ""
+      image_tags:
+        description: "Comma-separated list of tags to apply to the built image. If empty, GITHUB_HEAD_REF_SLUG or latest will be used."
+        required: false
+        type: string
+        default: ${{ github.event_name == 'schedule' && 'nightly' || '' }}
+
+    secrets:
+      registry_username:
+        description: "Username for logging in to container_registry, when it is not ghcr.io (which uses the built-in GITHUB_TOKEN keychain automatically). Also used by Trivy to pull the built image for scanning."
+        required: false
+      registry_password:
+        description: "Password/token for logging in to container_registry, when it is not ghcr.io. Also used by Trivy to pull the built image for scanning."
+        required: false
+
+    outputs:
+      image_digest:
+        description: "Image digest from the build image step"
+        value: ${{ jobs.build.outputs.image_digest }}
+      image_repository:
+        description: "The effective image repository (registry host + path) the built image was pushed to"
+        value: ${{ jobs.build.outputs.image_repository }}
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: "Build Image for ${{ inputs.name }}"
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image_digest: ${{ steps.build_image_ko_step.outputs.digest }}
+      repo_lower: ${{ steps.repo_lower.outputs.repo }}
+      image_repository: ${{ steps.resolve_image_repository.outputs.image_repository }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 1
+
+      - name: Setup Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: "${{ inputs.module }}/go.mod"
+          cache: false
+
+      - name: Restore Go Cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ inputs.module }}-${{ hashFiles(format('{0}/go.sum', inputs.module)) }}
+          restore-keys: |
+            ${{ runner.os }}-go-${{ inputs.module }}-
+
+      - name: Setup Ko
+        uses: ko-build/setup-ko@61b4d1d396f5b2e7d6bb6fefdce3dc38d1a13445 # v0.10
+
+      - name: Inject slug vars
+        uses: rlespinasse/github-slug-action@ef93b2ea4b6405d06fd8684fc3ff795d262ecae8 # v5.7.0
+
+      - name: Convert repository to lowercase
+        id: repo_lower
+        shell: bash
+        run: |
+          REPO_LOWER=$(echo "${{ inputs.github_repository }}/${{ inputs.name }}" | tr '[:upper:]' '[:lower:]')
+          echo "repo=${REPO_LOWER}" >> $GITHUB_OUTPUT
+
+      - name: Resolve effective image repository
+        id: resolve_image_repository
+        shell: bash
+        run: |
+          if [ -n "${{ inputs.image_repository }}" ]; then
+            IMAGE_REPOSITORY="${{ inputs.image_repository }}"
+          else
+            IMAGE_REPOSITORY="${{ inputs.container_registry }}/${{ steps.repo_lower.outputs.repo }}"
+          fi
+          echo "image_repository=${IMAGE_REPOSITORY}" >> $GITHUB_OUTPUT
+
+      - name: Log in to container registry
+        # ghcr.io is authenticated automatically by ko's built-in GitHub
+        # Actions keychain (using the ambient GITHUB_TOKEN), so this step is
+        # skipped for the default registry. Any other registry (e.g. an
+        # internal Artifactory) needs an explicit login using the
+        # registry_username/registry_password secrets.
+        if: ${{ inputs.container_registry != 'ghcr.io' }}
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ${{ inputs.container_registry }}
+          username: ${{ secrets.registry_username }}
+          password: ${{ secrets.registry_password }}
+
+      - name: Build and Push Image with Ko
+        id: build_image_ko_step
+        shell: bash
+        working-directory: ${{ inputs.module }}
+        env:
+          KO_DOCKER_REPO: ${{ steps.resolve_image_repository.outputs.image_repository }}
+          KO_CONFIG_PATH: ${{ github.workspace }}/.ko.yaml
+          KO_DEFAULTBASEIMAGE: ${{ inputs.base_image }}
+        run: |
+          # Unlike goreleaser's `kos` pipe (which embeds ko as a library and
+          # ignores this env var), the `ko` CLI invoked directly below does
+          # honor KO_DEFAULTBASEIMAGE.
+          # An empty value is safely ignored by ko, falling back to
+          # KO_CONFIG_PATH's defaultBaseImage.
+          if [ -n "${KO_DEFAULTBASEIMAGE}" ]; then
+            echo "Using custom KO_DEFAULTBASEIMAGE: ${KO_DEFAULTBASEIMAGE}"
+          fi
+
+          effective_tags=""
+          if [ -n "${{ inputs.image_tags }}" ]; then
+            effective_tags="${{ inputs.image_tags }}"
+          else
+            effective_tags="${GITHUB_HEAD_REF_SLUG:-latest}"
+          fi
+
+          echo "Building with tags: $effective_tags"
+          echo "Using KO_DOCKER_REPO: ${KO_DOCKER_REPO}"
+          export VERSION=$(git describe --tags --always --dirty || echo 'develop')
+          export BUILD_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+          output=$(ko build ${{ inputs.ko_build_path }} --bare --tags "$effective_tags")
+          echo "Ko output: $output"
+          digest=$(echo "$output" | grep -o 'sha256:[a-f0-9]\{64\}')
+          echo "digest=$digest" >> $GITHUB_OUTPUT
+          echo "image_ref=${KO_DOCKER_REPO}@${digest}" >> $GITHUB_OUTPUT
+
+  image_scan:
+    name: "Image Vulnerability Scan for ${{ inputs.name }}"
+    needs: [build]
+    runs-on: ubuntu-latest
+    steps:
+      # No checkout or Go setup needed if only running Trivy on a remote image.
+      # For ghcr.io, Trivy uses the ambient GITHUB_TOKEN automatically; other
+      # registries (e.g. an internal Artifactory) need explicit credentials,
+      # since this job runs independently of the `build` job's login step.
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        env:
+          TRIVY_USERNAME: ${{ inputs.container_registry != 'ghcr.io' && secrets.registry_username || '' }}
+          TRIVY_PASSWORD: ${{ inputs.container_registry != 'ghcr.io' && secrets.registry_password || '' }}
+        with:
+          image-ref: ${{ needs.build.outputs.image_repository }}@${{ needs.build.outputs.image_digest }}
+          exit-code: "1"
+          vuln-type: "os,library"
+          severity: "CRITICAL,HIGH"

@@ -6,7 +6,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.16.1
+    controller-gen.kubebuilder.io/version: v0.20.1
   name: rovers.rover.cp.ei.telekom.de
 spec:
   group: rover.cp.ei.telekom.de
@@ -49,6 +49,26 @@ spec:
           spec:
             description: Spec defines the desired state of the Rover resource
             properties:
+              authentication:
+                description: Authentication defines the authentication configuration
+                  for this application
+                properties:
+                  m2m:
+                    description: M2M defines machine-to-machine authentication settings
+                      for the application
+                    properties:
+                      tokenRequest:
+                        default: client_secret_basic
+                        description: |-
+                          TokenRequest configures the token endpoint authentication method (RFC 7591)
+                          This feature is currently only documented but not parsed towards the application and identity domain as it is still in discussion whether
+                          this should will be enforced for IDPs.
+                        enum:
+                        - client_secret_basic
+                        - client_secret_post
+                        type: string
+                    type: object
+                type: object
               clientSecret:
                 description: |-
                   ClientSecret is the secret used for client authentication
@@ -60,7 +80,463 @@ spec:
                 items:
                   description: Exposure defines a service that is exposed by this
                     Rover
+                  maxProperties: 1
+                  minProperties: 1
                   properties:
+                    agentic:
+                      description: Agentic defines an Agentic(MCP or agent) server
+                        exposure configuration
+                      properties:
+                        approval:
+                          description: Approval defines the approval workflow for
+                            subscriptions to this MCP server
+                          properties:
+                            strategy:
+                              default: Simple
+                              description: Strategy defines the approval process required
+                                for this API
+                              enum:
+                              - Auto
+                              - Simple
+                              - FourEyes
+                              type: string
+                            trustedTeams:
+                              description: |-
+                                TrustedTeams identifies teams that are trusted for approving this API
+                                Per default your own team is trusted
+                              items:
+                                description: TrustedTeam identifies a team that is
+                                  trusted for approvals
+                                properties:
+                                  group:
+                                    description: Group identifies the organizational
+                                      group for this trusted team
+                                    minLength: 1
+                                    type: string
+                                  team:
+                                    description: Team identifies the specific team
+                                      within the group
+                                    minLength: 1
+                                    type: string
+                                required:
+                                - group
+                                - team
+                                type: object
+                              maxItems: 10
+                              minItems: 0
+                              type: array
+                          required:
+                          - strategy
+                          type: object
+                        basePath:
+                          description: BasePath is the base path of the MCP server
+                            endpoint (must start with /)
+                          pattern: ^/[a-z0-9-/]+$
+                          type: string
+                        security:
+                          description: Security defines optional security configuration
+                          properties:
+                            m2m:
+                              description: M2M defines machine-to-machine authentication
+                                configuration
+                              properties:
+                                basic:
+                                  description: Basic defines basic authentication
+                                    configuration
+                                  properties:
+                                    password:
+                                      description: Password for basic authentication
+                                      maxLength: 256
+                                      minLength: 1
+                                      type: string
+                                    username:
+                                      description: Username for basic authentication
+                                      maxLength: 256
+                                      minLength: 1
+                                      type: string
+                                  required:
+                                  - password
+                                  - username
+                                  type: object
+                                claims:
+                                  description: |-
+                                    Claims defines token claims that must be present in the token reaching the upstream.
+                                    Only valid on the platform-managed LMS token.
+                                  properties:
+                                    aud:
+                                      description: Aud defines the audience claim
+                                      properties:
+                                        value:
+                                          description: Value is a literal claim value
+                                            provided by the user
+                                          maxLength: 256
+                                          minLength: 1
+                                          type: string
+                                        valueFrom:
+                                          description: ValueFrom is a predefined source
+                                            resolved into the claim value
+                                          enum:
+                                          - ProviderClientId
+                                          - ConsumerClientId
+                                          - BasePath
+                                          type: string
+                                      type: object
+                                      x-kubernetes-validations:
+                                      - message: exactly one of value or valueFrom
+                                          must be set
+                                        rule: has(self.value) != has(self.valueFrom)
+                                  type: object
+                                externalIDP:
+                                  description: ExternalIDP defines external identity
+                                    provider configuration
+                                  properties:
+                                    basic:
+                                      description: Basic defines basic auth credentials
+                                        for the OAuth2 token request
+                                      properties:
+                                        password:
+                                          description: Password for basic authentication
+                                          maxLength: 256
+                                          minLength: 1
+                                          type: string
+                                        username:
+                                          description: Username for basic authentication
+                                          maxLength: 256
+                                          minLength: 1
+                                          type: string
+                                      required:
+                                      - password
+                                      - username
+                                      type: object
+                                    client:
+                                      description: Client defines client credentials
+                                        for the OAuth2 token request
+                                      properties:
+                                        clientId:
+                                          description: ClientId identifies the client
+                                            for OAuth2 client credentials flow
+                                          maxLength: 256
+                                          type: string
+                                        clientKey:
+                                          description: ClientKey is the private key
+                                            associated with the client ID
+                                          maxLength: 8192
+                                          type: string
+                                        clientSecret:
+                                          description: ClientSecret is the secret
+                                            associated with the client ID
+                                          maxLength: 512
+                                          type: string
+                                        refreshToken:
+                                          description: |-
+                                            RefreshToken is an OAuth2 refresh token used to obtain new access tokens
+                                            without requiring re-authentication. Used with the refresh_token grant type.
+                                          type: string
+                                      type: object
+                                      x-kubernetes-validations:
+                                      - message: ClientSecret and ClientKey cannot
+                                          be used together
+                                        rule: 'self == null || (has(self.clientKey)
+                                          ? (!has(self.clientSecret)) : true)'
+                                      - message: At least one of clientSecret or clientKey
+                                          must be provided
+                                        rule: self == null || has(self.clientSecret)
+                                          || has(self.clientKey)
+                                    grantType:
+                                      description: GrantType defines the OAuth2 grant
+                                        type to use for the token request
+                                      enum:
+                                      - client_credentials
+                                      - authorization_code
+                                      - password
+                                      - refresh_token
+                                      type: string
+                                    tokenEndpoint:
+                                      description: TokenEndpoint is the URL for the
+                                        OAuth2 token endpoint
+                                      format: uri
+                                      maxLength: 2048
+                                      type: string
+                                    tokenRequest:
+                                      description: TokenRequest configures the token
+                                        endpoint authentication method (RFC 7591)
+                                      enum:
+                                      - client_secret_basic
+                                      - client_secret_post
+                                      type: string
+                                  required:
+                                  - grantType
+                                  - tokenEndpoint
+                                  - tokenRequest
+                                  type: object
+                                  x-kubernetes-validations:
+                                  - message: Only one of basic or client credentials
+                                      can be provided (XOR relationship)
+                                    rule: self == null || !has(self.basic) || !has(self.client)
+                                scopes:
+                                  description: Scopes defines additional OAuth2 scopes
+                                    that are added to the LMS token
+                                  items:
+                                    maxLength: 256
+                                    type: string
+                                  maxItems: 10
+                                  type: array
+                              type: object
+                              x-kubernetes-validations:
+                              - message: ExternalIDP and basic authentication cannot
+                                  be used together
+                                rule: 'self == null || (has(self.externalIDP) ? (!has(self.basic))
+                                  : true)'
+                              - message: Scopes and basic authentication cannot be
+                                  used together
+                                rule: 'self == null || (has(self.scopes) ? (!has(self.basic))
+                                  : true)'
+                              - message: At least one of externalIDP, basic, scopes,
+                                  or claims must be provided
+                                rule: self == null || has(self.externalIDP) || has(self.basic)
+                                  || has(self.scopes) || has(self.claims)
+                              - message: Claims require the platform-managed token
+                                  and cannot be used with an external IDP or basic
+                                  authentication
+                                rule: self == null || !has(self.claims) || (!has(self.externalIDP)
+                                  && !has(self.basic))
+                          type: object
+                        traffic:
+                          description: Traffic defines optional traffic management
+                            configuration
+                          properties:
+                            circuitBreaker:
+                              description: CircuitBreaker defines the Kong circuit
+                                breaker configuration
+                              properties:
+                                enabled:
+                                  default: false
+                                  description: CircuitBreaker flags if the Kong circuit
+                                    breaker feature should be used
+                                  type: boolean
+                              type: object
+                            failover:
+                              description: Failover defines disaster recovery configuration
+                                for this API
+                              properties:
+                                zones:
+                                  description: Zones is a list of zone names to use
+                                    for failover if the primary zone is unavailable
+                                  items:
+                                    type: string
+                                  maxItems: 10
+                                  type: array
+                              type: object
+                            loadBalancing:
+                              description: LoadBalancing defines how traffic is distributed
+                                among multiple upstream servers
+                              properties:
+                                strategy:
+                                  default: RoundRobin
+                                  description: Strategy defines the algorithm used
+                                    for distributing traffic (RoundRobin, LeastConnections)
+                                  enum:
+                                  - RoundRobin
+                                  - LeastConnections
+                                  type: string
+                              type: object
+                            rateLimit:
+                              description: RateLimit defines request rate limiting
+                                for this API
+                              properties:
+                                consumers:
+                                  description: Consumers defines rate limits applied
+                                    to API consumers (clients)
+                                  properties:
+                                    default:
+                                      description: Default defines the rate limit
+                                        applied to all consumers not specifically
+                                        overridden
+                                      properties:
+                                        limits:
+                                          description: Limits defines the actual rate
+                                            limit values for different time windows
+                                          properties:
+                                            hour:
+                                              description: Hour defines the maximum
+                                                number of requests allowed per hour
+                                              minimum: 0
+                                              type: integer
+                                            minute:
+                                              description: Minute defines the maximum
+                                                number of requests allowed per minute
+                                              minimum: 0
+                                              type: integer
+                                            second:
+                                              description: Second defines the maximum
+                                                number of requests allowed per second
+                                              minimum: 0
+                                              type: integer
+                                          type: object
+                                      required:
+                                      - limits
+                                      type: object
+                                    overrides:
+                                      description: Overrides defines consumer-specific
+                                        rate limits
+                                      items:
+                                        properties:
+                                          consumer:
+                                            minLength: 1
+                                            type: string
+                                          limits:
+                                            description: Limits defines the actual
+                                              rate limit values for different time
+                                              windows
+                                            properties:
+                                              hour:
+                                                description: Hour defines the maximum
+                                                  number of requests allowed per hour
+                                                minimum: 0
+                                                type: integer
+                                              minute:
+                                                description: Minute defines the maximum
+                                                  number of requests allowed per minute
+                                                minimum: 0
+                                                type: integer
+                                              second:
+                                                description: Second defines the maximum
+                                                  number of requests allowed per second
+                                                minimum: 0
+                                                type: integer
+                                            type: object
+                                        required:
+                                        - consumer
+                                        - limits
+                                        type: object
+                                      maxItems: 10
+                                      type: array
+                                  type: object
+                                provider:
+                                  description: Provider defines rate limits applied
+                                    by the API provider (owner)
+                                  properties:
+                                    limits:
+                                      description: Limits defines the actual rate
+                                        limit values for different time windows
+                                      properties:
+                                        hour:
+                                          description: Hour defines the maximum number
+                                            of requests allowed per hour
+                                          minimum: 0
+                                          type: integer
+                                        minute:
+                                          description: Minute defines the maximum
+                                            number of requests allowed per minute
+                                          minimum: 0
+                                          type: integer
+                                        second:
+                                          description: Second defines the maximum
+                                            number of requests allowed per second
+                                          minimum: 0
+                                          type: integer
+                                      type: object
+                                    options:
+                                      description: RateLimitOptions defines additional
+                                        configuration options for rate limiting
+                                      properties:
+                                        faultTolerant:
+                                          default: true
+                                          description: FaultTolerant defines if the
+                                            rate limit plugin should be fault tolerant,
+                                            if gateway is not able to access the config
+                                            store
+                                          type: boolean
+                                        hideClientHeaders:
+                                          default: false
+                                          description: HideClientHeaders hides additional
+                                            client headers which give information
+                                            about the rate-limit, reset and remaining
+                                            requests for consumers if set to true.
+                                          type: boolean
+                                      type: object
+                                  type: object
+                              type: object
+                          type: object
+                        transformation:
+                          description: Transformation defines optional request/response
+                            transformations
+                          properties:
+                            request:
+                              description: Request defines transformations applied
+                                to incoming API requests
+                              properties:
+                                headers:
+                                  description: Headers defines HTTP header modifications
+                                    for requests
+                                  properties:
+                                    add:
+                                      description: Add is a list of HTTP headers to
+                                        add to the request/response
+                                      items:
+                                        type: string
+                                      maxItems: 5
+                                      minItems: 1
+                                      type: array
+                                    remove:
+                                      description: Remove is a list of HTTP header
+                                        names to remove
+                                      items:
+                                        type: string
+                                      maxItems: 5
+                                      minItems: 1
+                                      type: array
+                                  type: object
+                              type: object
+                          type: object
+                        upstreams:
+                          description: Upstreams defines the backend MCP server endpoints
+                          items:
+                            description: Upstream defines a backend service endpoint
+                              for an API
+                            properties:
+                              url:
+                                description: URL is the endpoint URL for the backend
+                                  service
+                                format: uri
+                                type: string
+                              weight:
+                                default: 1
+                                description: Weight defines the load balancing weight
+                                  for this upstream (when multiple upstreams)
+                                maximum: 100
+                                minimum: 1
+                                type: integer
+                            required:
+                            - url
+                            type: object
+                          maxItems: 12
+                          minItems: 1
+                          type: array
+                        variant:
+                          default: MCP
+                          description: Variant defines the MCP exposure variant
+                          enum:
+                          - MCP
+                          - TELECONTEXTMCP
+                          - AGENT
+                          type: string
+                        visibility:
+                          default: Enterprise
+                          description: Visibility defines who can see and subscribe
+                            to this MCP server
+                          enum:
+                          - World
+                          - Zone
+                          - Enterprise
+                          type: string
+                      required:
+                      - approval
+                      - basePath
+                      - upstreams
+                      - variant
+                      - visibility
+                      type: object
                     api:
                       description: Api defines an API-based service exposure configuration
                       properties:
@@ -124,15 +600,45 @@ spec:
                                   properties:
                                     password:
                                       description: Password for basic authentication
+                                      maxLength: 256
                                       minLength: 1
                                       type: string
                                     username:
                                       description: Username for basic authentication
+                                      maxLength: 256
                                       minLength: 1
                                       type: string
                                   required:
                                   - password
                                   - username
+                                  type: object
+                                claims:
+                                  description: |-
+                                    Claims defines token claims that must be present in the token reaching the upstream.
+                                    Only valid on the platform-managed LMS token.
+                                  properties:
+                                    aud:
+                                      description: Aud defines the audience claim
+                                      properties:
+                                        value:
+                                          description: Value is a literal claim value
+                                            provided by the user
+                                          maxLength: 256
+                                          minLength: 1
+                                          type: string
+                                        valueFrom:
+                                          description: ValueFrom is a predefined source
+                                            resolved into the claim value
+                                          enum:
+                                          - ProviderClientId
+                                          - ConsumerClientId
+                                          - BasePath
+                                          type: string
+                                      type: object
+                                      x-kubernetes-validations:
+                                      - message: exactly one of value or valueFrom
+                                          must be set
+                                        rule: has(self.value) != has(self.valueFrom)
                                   type: object
                                 externalIDP:
                                   description: ExternalIDP defines external identity
@@ -144,10 +650,12 @@ spec:
                                       properties:
                                         password:
                                           description: Password for basic authentication
+                                          maxLength: 256
                                           minLength: 1
                                           type: string
                                         username:
                                           description: Username for basic authentication
+                                          maxLength: 256
                                           minLength: 1
                                           type: string
                                       required:
@@ -161,14 +669,22 @@ spec:
                                         clientId:
                                           description: ClientId identifies the client
                                             for OAuth2 client credentials flow
+                                          maxLength: 256
                                           type: string
                                         clientKey:
                                           description: ClientKey is the private key
                                             associated with the client ID
+                                          maxLength: 8192
                                           type: string
                                         clientSecret:
                                           description: ClientSecret is the secret
                                             associated with the client ID
+                                          maxLength: 512
+                                          type: string
+                                        refreshToken:
+                                          description: |-
+                                            RefreshToken is an OAuth2 refresh token used to obtain new access tokens
+                                            without requiring re-authentication. Used with the refresh_token grant type.
                                           type: string
                                       type: object
                                       x-kubernetes-validations:
@@ -187,21 +703,25 @@ spec:
                                       - client_credentials
                                       - authorization_code
                                       - password
+                                      - refresh_token
                                       type: string
                                     tokenEndpoint:
                                       description: TokenEndpoint is the URL for the
                                         OAuth2 token endpoint
                                       format: uri
+                                      maxLength: 2048
                                       type: string
                                     tokenRequest:
-                                      description: TokenRequest is the type of token
-                                        request, "body" or "header"
+                                      description: TokenRequest configures the token
+                                        endpoint authentication method (RFC 7591)
                                       enum:
-                                      - body
-                                      - header
+                                      - client_secret_basic
+                                      - client_secret_post
                                       type: string
                                   required:
+                                  - grantType
                                   - tokenEndpoint
+                                  - tokenRequest
                                   type: object
                                   x-kubernetes-validations:
                                   - message: Only one of basic or client credentials
@@ -211,6 +731,7 @@ spec:
                                   description: Scopes defines additional OAuth2 scopes
                                     that are added to the LMS token
                                   items:
+                                    maxLength: 256
                                     type: string
                                   maxItems: 10
                                   type: array
@@ -224,10 +745,15 @@ spec:
                                   used together
                                 rule: 'self == null || (has(self.scopes) ? (!has(self.basic))
                                   : true)'
-                              - message: At least one of externalIDP, basic, or scopes
-                                  must be provided
+                              - message: At least one of externalIDP, basic, scopes,
+                                  or claims must be provided
                                 rule: self == null || has(self.externalIDP) || has(self.basic)
-                                  || has(self.scopes)
+                                  || has(self.scopes) || has(self.claims)
+                              - message: Claims require the platform-managed token
+                                  and cannot be used with an external IDP or basic
+                                  authentication
+                                rule: self == null || !has(self.claims) || (!has(self.externalIDP)
+                                  && !has(self.basic))
                           type: object
                         traffic:
                           description: Traffic defines optional traffic management
@@ -460,22 +986,168 @@ spec:
                     event:
                       description: Event defines an Event-based service exposure configuration
                       properties:
+                        additionalPublisherIds:
+                          description: AdditionalPublisherIds allows multiple application
+                            IDs to publish to the same event type
+                          items:
+                            type: string
+                          type: array
+                        approval:
+                          description: Approval defines the approval workflow required
+                            for subscriptions to this event
+                          properties:
+                            strategy:
+                              default: Simple
+                              description: Strategy defines the approval process required
+                                for this API
+                              enum:
+                              - Auto
+                              - Simple
+                              - FourEyes
+                              type: string
+                            trustedTeams:
+                              description: |-
+                                TrustedTeams identifies teams that are trusted for approving this API
+                                Per default your own team is trusted
+                              items:
+                                description: TrustedTeam identifies a team that is
+                                  trusted for approvals
+                                properties:
+                                  group:
+                                    description: Group identifies the organizational
+                                      group for this trusted team
+                                    minLength: 1
+                                    type: string
+                                  team:
+                                    description: Team identifies the specific team
+                                      within the group
+                                    minLength: 1
+                                    type: string
+                                required:
+                                - group
+                                - team
+                                type: object
+                              maxItems: 10
+                              minItems: 0
+                              type: array
+                          required:
+                          - strategy
+                          type: object
                         eventType:
                           description: EventType identifies the type of event that
-                            is published
+                            is published (e.g. "de.telekom.eni.quickstart.v1")
                           minLength: 1
                           type: string
+                        scopes:
+                          description: Scopes defines named scopes with optional publisher-side
+                            trigger filtering
+                          items:
+                            description: |-
+                              EventScope defines a named scope with required trigger-based filtering for event exposure.
+                              Scopes allow publishers to partition their events and apply publisher-side filters.
+                              Each scope must define a trigger that specifies which events belong to it.
+                            properties:
+                              name:
+                                description: Name is the unique identifier for this
+                                  scope.
+                                minLength: 1
+                                type: string
+                              trigger:
+                                description: |-
+                                  Trigger defines publisher-side filtering criteria for this scope.
+                                  Every scope must define a trigger.
+                                properties:
+                                  responseFilter:
+                                    description: ResponseFilter controls payload shaping
+                                      (which fields to return).
+                                    properties:
+                                      mode:
+                                        default: Include
+                                        description: Mode controls whether the listed
+                                          paths are included or excluded.
+                                        enum:
+                                        - Include
+                                        - Exclude
+                                        type: string
+                                      paths:
+                                        description: Paths lists the JSON paths to
+                                          include or exclude from the event payload.
+                                        items:
+                                          type: string
+                                        type: array
+                                    type: object
+                                  selectionFilter:
+                                    description: SelectionFilter controls event matching
+                                      (which events to deliver).
+                                    properties:
+                                      attributes:
+                                        additionalProperties:
+                                          type: string
+                                        description: |-
+                                          Attributes defines simple key-value equality matches on CloudEvents attributes.
+                                          All entries are AND-ed together.
+                                        type: object
+                                      expression:
+                                        description: |-
+                                          Expression contains an arbitrary JSON filter expression tree
+                                          using logical operators (and, or) and comparisons (eq, ge, gt, le, lt, ne)
+                                          that is passed through to the configuration backend without structural validation.
+                                        x-kubernetes-preserve-unknown-fields: true
+                                    type: object
+                                type: object
+                            required:
+                            - name
+                            - trigger
+                            type: object
+                          type: array
+                        visibility:
+                          default: Enterprise
+                          description: Visibility defines who can see and subscribe
+                            to this event
+                          enum:
+                          - World
+                          - Zone
+                          - Enterprise
+                          type: string
                       required:
+                      - approval
                       - eventType
+                      - visibility
                       type: object
                   type: object
-                  x-kubernetes-validations:
-                  - message: At least one of api or event must be specified
-                    rule: self == null || has(self.api) || has(self.event)
-                  - message: Only one of api or event can be specified (XOR relationship)
-                    rule: self == null || (!has(self.api) && has(self.event)) || (has(self.api)
-                      && !has(self.event))
+                maxItems: 150
                 type: array
+              externalIds:
+                description: |-
+                  ExternalIds carries business identifiers (e.g. PSI, ICTO) attached to this
+                  Rover. Each entry is tagged with a scheme. Format and presence are validated
+                  per-zone via the zone's ExternalIdPolicies.
+                items:
+                  description: ExternalId is a scheme-tagged business identifier.
+                  properties:
+                    id:
+                      description: |-
+                        Id is the raw identifier value. Per-scheme format rules are applied by the
+                        zone's ExternalIdPolicies at admission time.
+                      maxLength: 128
+                      minLength: 1
+                      type: string
+                    scheme:
+                      description: Scheme names the identifier system (e.g. "psi",
+                        "icto").
+                      maxLength: 32
+                      minLength: 1
+                      pattern: ^[a-z][a-z0-9]*$
+                      type: string
+                  required:
+                  - id
+                  - scheme
+                  type: object
+                maxItems: 16
+                type: array
+                x-kubernetes-list-map-keys:
+                - scheme
+                x-kubernetes-list-type: map
               ipRestrictions:
                 description: IpRestrictions defines IP-based access restrictions for
                   the entire Application
@@ -484,6 +1156,7 @@ spec:
                     description: Allow is a list of IP addresses or CIDR ranges that
                       are allowed access
                     items:
+                      maxLength: 43
                       type: string
                     maxItems: 10
                     minItems: 0
@@ -495,6 +1168,7 @@ spec:
                     description: Deny is a list of IP addresses or CIDR ranges that
                       are denied access
                     items:
+                      maxLength: 43
                       type: string
                     maxItems: 10
                     minItems: 0
@@ -503,12 +1177,223 @@ spec:
                     - message: All items must be valid IP addresses or CIDR notations
                       rule: self.all(x, isCIDR(x) || isIP(x))
                 type: object
+              permissions:
+                description: Permissions defines role-based access control permissions
+                  for this application
+                items:
+                  description: |-
+                    Permission defines a permission rule. Supports 3 formats:
+                    1. Resource-oriented: resource + entries (role/actions list)
+                    2. Role-oriented: role + entries (resource/actions list)
+                    3. Flat: role + resource + actions directly
+
+                    NOTE: Additional validation for nested entries[] is done in the webhook (rover/internal/webhook/v1/rover_webhook.go)
+                    rather than CEL due to cost budget constraints. CEL rules with .all() iteration over entries arrays would exceed
+                    the Kubernetes validation cost budget by over 40x. The webhook validates that:
+                    - When resource is set (resource-oriented), all entries must have non-empty role
+                    - When role is set (role-oriented), all entries must have non-empty resource
+                  properties:
+                    actions:
+                      description: Actions lists the allowed actions (used only in
+                        flat format)
+                      items:
+                        type: string
+                      maxItems: 50
+                      minItems: 1
+                      type: array
+                    entries:
+                      description: Entries lists role-resource-action tuples (used
+                        in resource-oriented and role-oriented formats)
+                      items:
+                        description: PermissionEntry defines a single permission entry
+                          within a Permission
+                        properties:
+                          actions:
+                            description: Actions lists the allowed actions for this
+                              role-resource combination
+                            items:
+                              type: string
+                            maxItems: 50
+                            minItems: 1
+                            type: array
+                          resource:
+                            description: Resource is the resource identifier (used
+                              when parent Permission has role set)
+                            type: string
+                          role:
+                            description: Role is the role identifier (used when parent
+                              Permission has resource set)
+                            type: string
+                        required:
+                        - actions
+                        type: object
+                      maxItems: 50
+                      minItems: 1
+                      type: array
+                    resource:
+                      description: Resource is the resource identifier being protected
+                        (used in resource-oriented and flat formats)
+                      maxLength: 256
+                      type: string
+                    role:
+                      description: Role is the role identifier (used in role-oriented
+                        and flat formats)
+                      maxLength: 256
+                      type: string
+                  type: object
+                  x-kubernetes-validations:
+                  - message: Must provide either entries list or all of (resource,
+                      role, actions)
+                    rule: has(self.entries) || (has(self.resource) && has(self.role)
+                      && has(self.actions))
+                  - message: Cannot specify both entries and actions
+                    rule: '!has(self.entries) || !has(self.actions)'
+                maxItems: 150
+                type: array
               subscriptions:
                 description: Subscriptions is a list of APIs and Events that this
                   Rover consumes from providers
                 items:
                   description: Subscription defines a service that this Rover consumes
+                  maxProperties: 1
+                  minProperties: 1
                   properties:
+                    agentic:
+                      description: Agentic defines an Agentic(MCP or agent) server
+                        subscription configuration
+                      properties:
+                        basePath:
+                          description: BasePath is the base path of the MCP server
+                            to subscribe to (must start with /)
+                          pattern: ^/[a-z0-9-/]+$
+                          type: string
+                        security:
+                          description: Security defines optional security configuration
+                          properties:
+                            m2m:
+                              description: M2M defines machine-to-machine authentication
+                                configuration
+                              properties:
+                                basic:
+                                  description: Basic defines basic authentication
+                                    configuration
+                                  properties:
+                                    password:
+                                      description: Password for basic authentication
+                                      maxLength: 256
+                                      minLength: 1
+                                      type: string
+                                    username:
+                                      description: Username for basic authentication
+                                      maxLength: 256
+                                      minLength: 1
+                                      type: string
+                                  required:
+                                  - password
+                                  - username
+                                  type: object
+                                client:
+                                  description: Client defines client credentials for
+                                    OAuth2
+                                  properties:
+                                    clientId:
+                                      description: ClientId identifies the client
+                                        for OAuth2 client credentials flow
+                                      maxLength: 256
+                                      type: string
+                                    clientKey:
+                                      description: ClientKey is the private key associated
+                                        with the client ID
+                                      maxLength: 8192
+                                      type: string
+                                    clientSecret:
+                                      description: ClientSecret is the secret associated
+                                        with the client ID
+                                      maxLength: 512
+                                      type: string
+                                    refreshToken:
+                                      description: |-
+                                        RefreshToken is an OAuth2 refresh token used to obtain new access tokens
+                                        without requiring re-authentication. Used with the refresh_token grant type.
+                                      type: string
+                                  type: object
+                                  x-kubernetes-validations:
+                                  - message: ClientSecret and ClientKey cannot be
+                                      used together
+                                    rule: 'self == null || (has(self.clientKey) ?
+                                      (!has(self.clientSecret)) : true)'
+                                  - message: At least one of clientSecret or clientKey
+                                      must be provided
+                                    rule: self == null || has(self.clientSecret) ||
+                                      has(self.clientKey)
+                                scopes:
+                                  description: Scopes defines additional OAuth2 scopes
+                                    that are added to the LMS token
+                                  items:
+                                    maxLength: 256
+                                    type: string
+                                  maxItems: 10
+                                  type: array
+                              type: object
+                              x-kubernetes-validations:
+                              - message: Client and basic authentication cannot be
+                                  used together
+                                rule: 'self == null || (has(self.client) ? (!has(self.basic))
+                                  : true)'
+                              - message: At least one of client, basic, or scopes
+                                  must be provided
+                                rule: self == null || has(self.client) || has(self.basic)
+                                  || has(self.scopes)
+                          type: object
+                        traffic:
+                          description: Traffic defines optional traffic management
+                            configuration
+                          properties:
+                            failover:
+                              description: Failover defines disaster recovery configuration
+                                for this API
+                              properties:
+                                enabled:
+                                  description: |-
+                                    Enabled flags this Subscription to use the ConsumerFailover feature
+                                    This will automatically detect eligible zones and setup the access
+                                  type: boolean
+                              type: object
+                          type: object
+                        transformation:
+                          description: Transformation defines optional request/response
+                            transformations
+                          properties:
+                            request:
+                              description: Request defines transformations applied
+                                to incoming API requests
+                              properties:
+                                headers:
+                                  description: Headers defines HTTP header modifications
+                                    for requests
+                                  properties:
+                                    add:
+                                      description: Add is a list of HTTP headers to
+                                        add to the request/response
+                                      items:
+                                        type: string
+                                      maxItems: 5
+                                      minItems: 1
+                                      type: array
+                                    remove:
+                                      description: Remove is a list of HTTP header
+                                        names to remove
+                                      items:
+                                        type: string
+                                      maxItems: 5
+                                      minItems: 1
+                                      type: array
+                                  type: object
+                              type: object
+                          type: object
+                      required:
+                      - basePath
+                      type: object
                     api:
                       description: Api defines an API-based service subscription configuration
                       properties:
@@ -536,10 +1421,12 @@ spec:
                                   properties:
                                     password:
                                       description: Password for basic authentication
+                                      maxLength: 256
                                       minLength: 1
                                       type: string
                                     username:
                                       description: Username for basic authentication
+                                      maxLength: 256
                                       minLength: 1
                                       type: string
                                   required:
@@ -553,14 +1440,22 @@ spec:
                                     clientId:
                                       description: ClientId identifies the client
                                         for OAuth2 client credentials flow
+                                      maxLength: 256
                                       type: string
                                     clientKey:
                                       description: ClientKey is the private key associated
                                         with the client ID
+                                      maxLength: 8192
                                       type: string
                                     clientSecret:
                                       description: ClientSecret is the secret associated
                                         with the client ID
+                                      maxLength: 512
+                                      type: string
+                                    refreshToken:
+                                      description: |-
+                                        RefreshToken is an OAuth2 refresh token used to obtain new access tokens
+                                        without requiring re-authentication. Used with the refresh_token grant type.
                                       type: string
                                   type: object
                                   x-kubernetes-validations:
@@ -576,6 +1471,7 @@ spec:
                                   description: Scopes defines additional OAuth2 scopes
                                     that are added to the LMS token
                                   items:
+                                    maxLength: 256
                                     type: string
                                   maxItems: 10
                                   type: array
@@ -598,13 +1494,11 @@ spec:
                               description: Failover defines disaster recovery configuration
                                 for this API
                               properties:
-                                zones:
-                                  description: Zones is a list of zone names to use
-                                    for failover if the primary zone is unavailable
-                                  items:
-                                    type: string
-                                  maxItems: 10
-                                  type: array
+                                enabled:
+                                  description: |-
+                                    Enabled flags this Subscription to use the ConsumerFailover feature
+                                    This will automatically detect eligible zones and setup the access
+                                  type: boolean
                               type: object
                           type: object
                         transformation:
@@ -645,21 +1539,122 @@ spec:
                       description: Event defines an Event-based service subscription
                         configuration
                       properties:
+                        delivery:
+                          description: Delivery configures how events are delivered
+                            to the subscriber
+                          properties:
+                            callback:
+                              description: |-
+                                Callback is the URL where events are delivered.
+                                Required when type is "callback", must not be set for "ServerSentEvent".
+                              format: uri
+                              type: string
+                            circuitBreakerOptOut:
+                              description: CircuitBreakerOptOut disables the circuit
+                                breaker for this subscription.
+                              type: boolean
+                            enforceGetHttpRequestMethodForHealthCheck:
+                              description: EnforceGetHttpRequestMethodForHealthCheck
+                                forces GET for health check probes instead of HEAD.
+                              type: boolean
+                            eventRetentionTime:
+                              description: EventRetentionTime defines how long events
+                                are retained for this subscriber.
+                              format: duration
+                              type: string
+                            payload:
+                              default: Data
+                              description: Payload defines the event payload format.
+                              enum:
+                              - Data
+                              - DataRef
+                              type: string
+                            redeliveriesPerSecond:
+                              description: RedeliveriesPerSecond limits the rate of
+                                event redeliveries.
+                              type: integer
+                            retryableStatusCodes:
+                              description: RetryableStatusCodes defines HTTP status
+                                codes that should trigger a retry.
+                              items:
+                                type: integer
+                              type: array
+                            type:
+                              default: Callback
+                              description: Type defines the delivery mechanism.
+                              enum:
+                              - Callback
+                              - ServerSentEvent
+                              type: string
+                          required:
+                          - payload
+                          - type
+                          type: object
+                          x-kubernetes-validations:
+                          - message: callback is required for deliveryType 'Callback'
+                              and must not be set for 'ServerSentEvent'
+                            rule: 'self.type == ''Callback'' ? self.callback != ""
+                              : !has(self.callback)'
                         eventType:
                           description: EventType identifies the type of event to subscribe
-                            to
+                            to (e.g. "de.telekom.eni.quickstart.v1")
                           minLength: 1
                           type: string
+                        scopes:
+                          description: |-
+                            Scopes selects which publisher-defined scopes to subscribe to
+                            Must match scope names defined on the corresponding EventExposure
+                          items:
+                            type: string
+                          type: array
+                        trigger:
+                          description: Trigger defines subscriber-side filtering criteria
+                            for event delivery
+                          properties:
+                            responseFilter:
+                              description: ResponseFilter controls payload shaping
+                                (which fields to return).
+                              properties:
+                                mode:
+                                  default: Include
+                                  description: Mode controls whether the listed paths
+                                    are included or excluded.
+                                  enum:
+                                  - Include
+                                  - Exclude
+                                  type: string
+                                paths:
+                                  description: Paths lists the JSON paths to include
+                                    or exclude from the event payload.
+                                  items:
+                                    type: string
+                                  type: array
+                              type: object
+                            selectionFilter:
+                              description: SelectionFilter controls event matching
+                                (which events to deliver).
+                              properties:
+                                attributes:
+                                  additionalProperties:
+                                    type: string
+                                  description: |-
+                                    Attributes defines simple key-value equality matches on CloudEvents attributes.
+                                    All entries are AND-ed together.
+                                  type: object
+                                expression:
+                                  description: |-
+                                    Expression contains an arbitrary JSON filter expression tree
+                                    using logical operators (and, or) and comparisons (eq, ge, gt, le, lt, ne)
+                                    that is passed through to the configuration backend without structural validation.
+                                  x-kubernetes-preserve-unknown-fields: true
+                              type: object
+                          type: object
                       required:
+                      - delivery
                       - eventType
                       type: object
                   type: object
-                  x-kubernetes-validations:
-                  - message: At least one of api or event must be specified
-                    rule: self == null || has(self.api) || has(self.event)
-                  - message: Only one of api or event can be specified (XOR relationship)
-                    rule: (has(self.api) && !has(self.event)) || (!has(self.api) &&
-                      has(self.event))
+                maxItems: 150
                 type: array
               zone:
                 description: Zone identifies the deployment zone for this Rover resource
@@ -671,6 +1666,52 @@ spec:
           status:
             description: Status contains the observed state of the Rover resource
             properties:
+              aiExposures:
+                description: AgenticExposures are references to AgenticExposure resources
+                  created by this Rover
+                items:
+                  description: |-
+                    ObjectRef is a reference to a Kubernetes object
+                    It is similar to types.NamespacedName but has the required json tags for serialization
+                  properties:
+                    name:
+                      type: string
+                    namespace:
+                      type: string
+                    uid:
+                      description: |-
+                        UID is a type that holds unique ID values, including UUIDs.  Because we
+                        don't ONLY use UUIDs, this is an alias to string.  Being a type captures
+                        intent and helps make sure that UIDs and names do not get conflated.
+                      type: string
+                  required:
+                  - name
+                  - namespace
+                  type: object
+                type: array
+              aiSubscriptions:
+                description: AgenticSubscriptions are references to AgenticSubscription
+                  resources created by this Rover
+                items:
+                  description: |-
+                    ObjectRef is a reference to a Kubernetes object
+                    It is similar to types.NamespacedName but has the required json tags for serialization
+                  properties:
+                    name:
+                      type: string
+                    namespace:
+                      type: string
+                    uid:
+                      description: |-
+                        UID is a type that holds unique ID values, including UUIDs.  Because we
+                        don't ONLY use UUIDs, this is an alias to string.  Being a type captures
+                        intent and helps make sure that UIDs and names do not get conflated.
+                      type: string
+                  required:
+                  - name
+                  - namespace
+                  type: object
+                type: array
               apiExposures:
                 description: ApiExposures are references to ApiExposure resources
                   created by this Rover
@@ -796,6 +1837,75 @@ spec:
                 x-kubernetes-list-map-keys:
                 - type
                 x-kubernetes-list-type: map
+              eventExposures:
+                description: EventExposures are references to EventExposure resources
+                  created by this Rover
+                items:
+                  description: |-
+                    ObjectRef is a reference to a Kubernetes object
+                    It is similar to types.NamespacedName but has the required json tags for serialization
+                  properties:
+                    name:
+                      type: string
+                    namespace:
+                      type: string
+                    uid:
+                      description: |-
+                        UID is a type that holds unique ID values, including UUIDs.  Because we
+                        don't ONLY use UUIDs, this is an alias to string.  Being a type captures
+                        intent and helps make sure that UIDs and names do not get conflated.
+                      type: string
+                  required:
+                  - name
+                  - namespace
+                  type: object
+                type: array
+              eventSubscriptions:
+                description: EventSubscriptions are references to EventSubscription
+                  resources created by this Rover
+                items:
+                  description: |-
+                    ObjectRef is a reference to a Kubernetes object
+                    It is similar to types.NamespacedName but has the required json tags for serialization
+                  properties:
+                    name:
+                      type: string
+                    namespace:
+                      type: string
+                    uid:
+                      description: |-
+                        UID is a type that holds unique ID values, including UUIDs.  Because we
+                        don't ONLY use UUIDs, this is an alias to string.  Being a type captures
+                        intent and helps make sure that UIDs and names do not get conflated.
+                      type: string
+                  required:
+                  - name
+                  - namespace
+                  type: object
+                type: array
+              permissionSets:
+                description: PermissionSets are references to PermissionSet resources
+                  created by this Rover
+                items:
+                  description: |-
+                    ObjectRef is a reference to a Kubernetes object
+                    It is similar to types.NamespacedName but has the required json tags for serialization
+                  properties:
+                    name:
+                      type: string
+                    namespace:
+                      type: string
+                    uid:
+                      description: |-
+                        UID is a type that holds unique ID values, including UUIDs.  Because we
+                        don't ONLY use UUIDs, this is an alias to string.  Being a type captures
+                        intent and helps make sure that UIDs and names do not get conflated.
+                      type: string
+                  required:
+                  - name
+                  - namespace
+                  type: object
+                type: array
             type: object
         required:
         - spec

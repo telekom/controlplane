@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/telekom/controlplane/refs/heads/main/tools/e2e-tester/schemas/suitecontent.schema.json",
+  "properties": {
+    "description": {
+      "type": "string"
+    },
+    "cases": {
+      "items": {
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string",
+            "description": "Optional description of the test case purpose"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "roverctl",
+              "snapshot"
+            ],
+            "description": "Command type: \"roverctl\" (default) or \"snapshot\""
+          },
+          "run_policy": {
+            "type": "string",
+            "description": "Execution policy: \"RunOnSuccess\" (default), \"FailFast\", \"Always\" (case-insensitive)"
+          },
+          "command": {
+            "type": "string"
+          },
+          "compare": {
+            "type": "boolean"
+          },
+          "environment": {
+            "type": "string",
+            "description": "Optional environment to run this case in"
+          },
+          "params": {
+            "additionalProperties": true,
+            "type": "object",
+            "description": "Optional type-specific parameters for future extensibility"
+          },
+          "wait_before": {
+            "type": "string",
+            "format": "duration",
+            "description": "Optional wait time before executing the case"
+          },
+          "wait_after": {
+            "type": "string",
+            "format": "duration",
+            "description": "Optional wait time after executing the case"
+          },
+          "selector": {
+            "type": "string",
+            "description": "YAML path selector for output processing"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "command"
+        ]
+      },
+      "type": "array"
+    },
+    "environments": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    }
+  },
+  "type": "object",
+  "required": [
+    "cases"
+  ],
+  "title": "SuiteContent",
+  "description": "+schema:inline SuiteContent represents the content of a test suite and is only used for schema generation"
+}

@@ -10,6 +10,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// DisableSecretRotationAnnotation is the annotation key used to opt a Client
+// out of graceful secret rotation. When set to "true", rotation is disabled.
+// By default (annotation absent or any other value), rotation is enabled.
+const DisableSecretRotationAnnotation = "identity.cp.ei.telekom.de/disable-secret-rotation"
+
 // ClientSpec defines the desired state of Client
 type ClientSpec struct {
 	Realm        *types.ObjectRef `json:"realm"`
@@ -19,7 +24,28 @@ type ClientSpec struct {
 
 // ClientStatus defines the observed state of Client
 type ClientStatus struct {
+	// ClientUid is the unique identifier of the client in Keycloak. It is immutable and assigned by Keycloak upon client creation.
+	ClientUid string `json:"clientUid,omitempty"`
+
+	// IssuerUrl is the URL of the Keycloak realm's OpenID Connect issuer, which clients can use for authentication and token retrieval.
 	IssuerUrl string `json:"issuerUrl"`
+	// RotatedClientSecret holds the previous client secret during a graceful
+	// rotation grace period. Empty when no rotation is in progress.
+	// +optional
+	RotatedClientSecret string `json:"rotatedClientSecret,omitempty"`
+
+	// RotatedSecretExpiresAt indicates when the rotated (old) secret will
+	// stop being accepted. Nil when no rotation is in progress.
+	// +optional
+	RotatedSecretExpiresAt *metav1.Time `json:"rotatedSecretExpiresAt,omitempty"`
+
+	// SecretExpiresAt indicates when the current client secret will be
+	// auto-expired by Keycloak's secret-rotation executor. Only populated
+	// when secretRotation is enabled and the referenced Realm has a
+	// SecretRotation config. Nil if the creation timestamp is unavailable
+	// or the Realm has no SecretRotation configuration.
+	// +optional
+	SecretExpiresAt *metav1.Time `json:"secretExpiresAt,omitempty"`
 	// +listType=map
 	// +listMapKey=type
 	// +patchStrategy=merge
@@ -41,6 +67,13 @@ type Client struct {
 }
 
 var _ types.Object = &Client{}
+
+// SupportsSecretRotation returns true when the client supports graceful secret
+// rotation. Rotation is enabled by default; it is disabled only when the
+// DisableSecretRotationAnnotation annotation is set to "true".
+func (c *Client) SupportsSecretRotation() bool {
+	return c.Annotations[DisableSecretRotationAnnotation] != "true"
+}
 
 func (e *Client) GetConditions() []metav1.Condition {
 	return e.Status.Conditions

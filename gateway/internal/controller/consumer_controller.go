@@ -15,11 +15,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
-	"sigs.k8s.io/controller-runtime/pkg/handler"
-	"sigs.k8s.io/controller-runtime/pkg/predicate"
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	"github.com/telekom/controlplane/common/pkg/types"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	consumer_handler "github.com/telekom/controlplane/gateway/internal/handler/consumer"
 )
@@ -48,45 +44,10 @@ func (r *ConsumerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Controller = cc.NewController(&consumer_handler.ConsumerHandler{}, r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&gatewayv1.Consumer{}).
-		Watches(&gatewayv1.Realm{},
-			handler.EnqueueRequestsFromMapFunc(r.mapRealmToConsumer),
-			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{})).
+		For(&gatewayv1.Consumer{}, builder.WithPredicates(cc.Count("consumer", cc.RoleFor))).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
 			RateLimiter:             cc.NewRateLimiter(),
 		}).
 		Complete(r)
-}
-
-func (r *ConsumerReconciler) mapRealmToConsumer(ctx context.Context, obj client.Object) []reconcile.Request {
-	// ensure its actually a Realm
-	realm, ok := obj.(*gatewayv1.Realm)
-	if !ok {
-		return nil
-	}
-	if realm.Labels == nil {
-		return nil
-	}
-
-	listOpts := []client.ListOption{
-		client.MatchingFields{
-			IndexFieldSpecRealm: types.ObjectRefFromObject(realm).String(),
-		},
-		client.MatchingLabels{
-			cconfig.EnvironmentLabelKey: realm.Labels[cconfig.EnvironmentLabelKey],
-		},
-	}
-
-	list := gatewayv1.ConsumerList{}
-	if err := r.List(ctx, &list, listOpts...); err != nil {
-		return nil
-	}
-
-	requests := make([]reconcile.Request, len(list.Items))
-	for i, item := range list.Items {
-		requests[i] = reconcile.Request{NamespacedName: client.ObjectKey{Name: item.Name, Namespace: item.Namespace}}
-	}
-
-	return requests
 }

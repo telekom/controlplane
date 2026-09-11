@@ -1,0 +1,199 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# GraphQL operations for the organization-server facade.
+# These call CP API to fetch/mutate hubs (groups) and teams.
+
+# --- Hub (Group) Queries ---
+
+query ListGroups {
+  groups {
+    id
+    name
+    displayName
+    description
+    teams {
+      id
+      name
+    }
+  }
+}
+
+query GetGroup($where: GroupWhereInput) {
+  groups(where: $where) {
+    id
+    name
+    displayName
+    description
+  }
+}
+
+# --- Team Queries ---
+
+query ListTeams($where: TeamWhereInput) {
+  teams(first: 1000, where: $where) {
+    edges {
+      node {
+        id
+        createdAt
+        lastModifiedAt
+        statusPhase
+        statusMessage
+        name
+        email
+        teamToken
+        group {
+          name
+        }
+        members {
+          name
+          email
+        }
+      }
+    }
+  }
+}
+
+query GetTeam($where: TeamWhereInput) {
+  teams(first: 1, where: $where) {
+    edges {
+      node {
+        id
+        createdAt
+        lastModifiedAt
+        statusPhase
+        statusMessage
+        name
+        email
+        teamToken
+        group {
+          name
+        }
+        members {
+          name
+          email
+        }
+      }
+    }
+  }
+}
+
+# --- Hub (Group) Mutations ---
+
+mutation CreateGroup($input: CreateGroupInput!) {
+  createGroup(input: $input) {
+    group {
+      id
+      name
+      displayName
+      description
+    }
+    errors {
+      code
+      message
+    }
+  }
+}
+
+mutation UpdateGroup($input: UpdateGroupInput!) {
+  updateGroup(input: $input) {
+    group {
+      id
+      name
+      displayName
+      description
+    }
+    errors {
+      code
+      message
+    }
+  }
+}
+
+mutation DeleteGroup($input: DeleteGroupInput!) {
+  deleteGroup(input: $input) {
+    accepted
+    errors {
+      code
+      message
+    }
+  }
+}
+
+# --- Team Mutations ---
+
+mutation CreateTeam($input: CreateTeamInput!) {
+  createTeam(input: $input) {
+    team {
+      id
+      createdAt
+      lastModifiedAt
+      statusPhase
+      statusMessage
+      name
+      email
+      teamToken
+      group {
+        name
+      }
+      members {
+        name
+        email
+      }
+    }
+    errors {
+      code
+      message
+    }
+  }
+}
+
+mutation UpdateTeam($input: UpdateTeamInput!) {
+  updateTeam(input: $input) {
+    team {
+      id
+      createdAt
+      lastModifiedAt
+      statusPhase
+      statusMessage
+      name
+      email
+      teamToken
+      group {
+        name
+      }
+      members {
+        name
+        email
+      }
+    }
+    errors {
+      code
+      message
+    }
+  }
+}
+
+mutation DeleteTeam($input: DeleteTeamInput!) {
+  deleteTeam(input: $input) {
+    accepted
+    errors {
+      code
+      message
+    }
+  }
+}
+
+mutation RotateTeamToken($teamId: ID!) {
+  rotateTeamToken(teamId: $teamId) {
+    team {
+      id
+      teamToken
+    }
+    errors {
+      code
+      message
+    }
+  }
+}

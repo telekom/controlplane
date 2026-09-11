@@ -5,12 +5,12 @@
 # SPDX-License-Identifier: Apache-2.0
 
 # This script should only be run in a CI environment when a new release is created.
-# It will update the install-files to point to the newly released version.
-# See `.releaserc.mjs` for more information on how its integrated with semantic-release.
+# It updates the install overlay references to the newly released version.
+# See `.releaserc.mjs` for integration with semantic-release.
 
 set -e
 
-KUSTOMIZATION_FILE="install/kustomization.yaml"
+KUSTOMIZATION_FILE="install/overlays/default/kustomization.yaml"
 NEXT_VERSION="$1"
 if [ -z "$NEXT_VERSION" ]; then
   echo "Usage: $0 <next-version>"

@@ -1,0 +1,28 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Kustomize Component that deploys an in-cluster PostgreSQL instance.
+# This is intended for development and testing. In production environments
+# you would typically skip this component and point DATABASE_URL at a
+# managed database service instead.
+
+apiVersion: kustomize.config.k8s.io/v1alpha1
+kind: Component
+
+namespace: controlplane-system
+
+resources:
+  - postgres.yaml
+
+secretGenerator:
+  - name: controlplane-db
+    options:
+      disableNameSuffixHash: true
+    # WARNING: These credentials are for local development and testing only.
+    # Do NOT use these values in production. Replace with your own secure
+    # credentials or point DATABASE_URL at a managed database service.
+    literals:
+      - url=postgres://controlplane:controlplane@controlplane-postgres:5432/controlplane?sslmode=disable
+      - username=controlplane
+      - password=controlplane

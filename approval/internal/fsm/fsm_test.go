@@ -11,7 +11,6 @@ import (
 )
 
 var _ = Describe("Approval Finite State Machine", func() {
-
 	exampleTransitions := Transitions{
 		{Action: ApprovalActionAllow, Src: []ApprovalState{ApprovalStatePending}, Dst: ApprovalStateSemigranted},
 		{Action: ApprovalActionDeny, Src: []ApprovalState{ApprovalStatePending, ApprovalStateGranted, ApprovalStateSemigranted}, Dst: ApprovalStateRejected},
@@ -67,5 +66,4 @@ var _ = Describe("Approval Finite State Machine", func() {
 		Expect(fsm.CanTransition(ApprovalActionDeny, ApprovalStateGranted)).To(BeTrue())
 		Expect(fsm.CanTransition(ApprovalActionAllow, ApprovalStateGranted)).To(BeFalse())
 	})
-
 })

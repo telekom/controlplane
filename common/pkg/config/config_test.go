@@ -13,11 +13,9 @@ import (
 
 var _ = Describe("Config Test", func() {
 	BeforeEach(func() {
-
 	})
 
 	Context("RetryNWithJitterOnError", func() {
-
 		It("should return a time.Duration that jitters", func() {
 			var lastDelay time.Duration
 			for i := 0; i < 10; i++ {
@@ -30,7 +28,6 @@ var _ = Describe("Config Test", func() {
 	})
 
 	Context("RequestWithJitter", func() {
-
 		It("should return a time.Duration that jitters", func() {
 			var lastDelay time.Duration
 			for i := 0; i < 10; i++ {
@@ -41,5 +38,4 @@ var _ = Describe("Config Test", func() {
 			}
 		})
 	})
-
 })

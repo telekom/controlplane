@@ -11,7 +11,7 @@ type Traffic struct {
 	LoadBalancing *LoadBalancing `json:"loadBalancing,omitempty"`
 	// Failover defines disaster recovery configuration for this API
 	// +kubebuilder:validation:Optional
-	Failover *Failover `json:"failover,omitempty"`
+	Failover *ProviderFailover `json:"failover,omitempty"`
 	// RateLimit defines request rate limiting for this API
 	// +kubebuilder:validation:Optional
 	RateLimit *RateLimit `json:"rateLimit,omitempty"`
@@ -29,7 +29,14 @@ type CircuitBreaker struct {
 type SubscriberTraffic struct {
 	// Failover defines disaster recovery configuration for this API
 	// +kubebuilder:validation:Optional
-	Failover *Failover `json:"failover,omitempty"`
+	Failover *SubscriberFailover `json:"failover,omitempty"`
+}
+
+// SubscriberFailover defines failover configuration for disaster recovery
+type SubscriberFailover struct {
+	// Enabled flags this Subscription to use the ConsumerFailover feature
+	// This will automatically detect eligible zones and setup the access
+	Enabled bool `json:"enabled,omitempty"`
 }
 
 // LoadBalancing defines load balancing strategy for multiple upstreams
@@ -51,8 +58,8 @@ const (
 	LoadBalancingLeastConnections LoadBalancingStrategy = "LeastConnections"
 )
 
-// Failover defines failover configuration for disaster recovery
-type Failover struct {
+// ProviderFailover defines failover configuration for disaster recovery
+type ProviderFailover struct {
 	// Zones is a list of zone names to use for failover if the primary zone is unavailable
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:MaxItems=10

@@ -10,11 +10,13 @@ import (
 	"net/http"
 	"net/http/httptest"
 
-	"github.com/gkampitakis/go-snaps/match"
 	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security/mock"
+	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 
 	"github.com/telekom/controlplane/rover-server/internal/api"
+	"github.com/telekom/controlplane/rover-server/test/mocks"
 )
 
 var _ = Describe("Rover Controller", func() {
@@ -91,6 +93,24 @@ var _ = Describe("Rover Controller", func() {
 			responseGroup, err := ExecuteRequest(req, groupToken)
 			ExpectStatusWithBody(responseGroup, err, http.StatusBadRequest, "application/problem+json")
 		})
+
+		It("should filter applications by names query parameter", func() {
+			req := httptest.NewRequest(http.MethodGet, "/rovers/info?names=rover-local-sub", nil)
+			responseTeam, err := ExecuteRequestWithToken(req, teamToken)
+			ExpectStatusOk(responseTeam, err)
+		})
+
+		It("should return empty list when names filter matches no rovers", func() {
+			req := httptest.NewRequest(http.MethodGet, "/rovers/info?names=nonexistent", nil)
+			responseTeam, err := ExecuteRequestWithToken(req, teamToken)
+			Expect(err).To(BeNil())
+			Expect(responseTeam.StatusCode).To(Equal(http.StatusOK))
+
+			var resp api.RoverInfoResponse
+			err = json.NewDecoder(responseTeam.Body).Decode(&resp)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(resp.Applications).To(BeEmpty())
+		})
 	})
 
 	Context("Get rover status", func() {
@@ -159,6 +179,37 @@ var _ = Describe("Rover Controller", func() {
 	})
 
 	Context("Update rover resource", func() {
+		It("should apply defaults before the controller persists the rover", func() {
+			body := map[string]any{
+				"zone":           "dataplane1",
+				"authentication": map[string]any{},
+				"exposures": []map[string]any{{
+					"type":     "api",
+					"basePath": "/test",
+					"upstream": "https://example.com",
+				}},
+			}
+			jsonBody, err := json.Marshal(body)
+			Expect(err).NotTo(HaveOccurred())
+
+			roverStore := stores.RoverStore.(*mocks.MockObjectStore[*roverv1.Rover])
+			callsBefore := len(roverStore.Calls)
+			req := httptest.NewRequest(http.MethodPut, "/rovers/eni--hyperion--rover-local-sub", bytes.NewReader(jsonBody))
+			responseGroup, err := ExecuteRequest(req, groupToken)
+			ExpectStatusWithBody(responseGroup, err, http.StatusAccepted, "application/json")
+
+			var persisted *roverv1.Rover
+			for _, call := range roverStore.Calls[callsBefore:] {
+				if call.Method == "CreateOrReplace" {
+					persisted = call.Arguments.Get(1).(*roverv1.Rover)
+				}
+			}
+			Expect(persisted).NotTo(BeNil())
+			Expect(persisted.Spec.Authentication).To(BeNil())
+			Expect(persisted.Spec.Exposures[0].Api.Approval.Strategy).To(Equal(roverv1.ApprovalStrategySimple))
+			Expect(persisted.Spec.Exposures[0].Api.Visibility).To(Equal(roverv1.VisibilityEnterprise))
+		})
+
 		It("should update a rover successfully", func() {
 			body := api.RoverUpdateRequest{
 				Zone: "dataplane1",
@@ -202,13 +253,39 @@ var _ = Describe("Rover Controller", func() {
 			responseGroup, err := ExecuteRequest(req, groupToken)
 			ExpectStatusWithBody(responseGroup, err, http.StatusForbidden, "application/problem+json")
 		})
+
+		It("should accept clientAuthMethod BASIC as produced by rover-ctl", func() {
+			body := api.RoverUpdateRequest{
+				Zone: "dataplane1",
+				Authentication: api.Authentication{
+					ClientAuthMethod: api.AuthenticationClientAuthMethodBASIC,
+				},
+			}
+			jsonBody, _ := json.Marshal(body)
+			req := httptest.NewRequest(http.MethodPut, "/rovers/eni--hyperion--rover-local-sub", bytes.NewReader(jsonBody))
+			responseGroup, err := ExecuteRequest(req, groupToken)
+			ExpectStatusWithBody(responseGroup, err, http.StatusAccepted, "application/json")
+		})
+
+		It("should accept clientAuthMethod POST as produced by rover-ctl", func() {
+			body := api.RoverUpdateRequest{
+				Zone: "dataplane1",
+				Authentication: api.Authentication{
+					ClientAuthMethod: api.AuthenticationClientAuthMethodPOST,
+				},
+			}
+			jsonBody, _ := json.Marshal(body)
+			req := httptest.NewRequest(http.MethodPut, "/rovers/eni--hyperion--rover-local-sub", bytes.NewReader(jsonBody))
+			responseGroup, err := ExecuteRequest(req, groupToken)
+			ExpectStatusWithBody(responseGroup, err, http.StatusAccepted, "application/json")
+		})
 	})
 
 	Context("Reset rover secret", func() {
 		It("should reset the rover secret successfully", func() {
 			req := httptest.NewRequest(http.MethodPatch, "/rovers/eni--hyperion--rover-local-sub/secret", nil)
 			responseGroup, err := ExecuteRequest(req, groupToken)
-			ExpectStatusWithBody(responseGroup, err, http.StatusAccepted, "application/json", match.Any("secret"))
+			ExpectStatusWithBody(responseGroup, err, http.StatusAccepted, "application/json")
 		})
 
 		It("should fail to reset the secret for a non-existent rover", func() {

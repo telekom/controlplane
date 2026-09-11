@@ -4,8 +4,6 @@
 
 resources:
 - certificate.yaml
-# Only if trust-manager is installed, see https://cert-manager.io/docs/trust/trust-manager
-- bundle.yaml
 
 configurations:
 - kustomizeconfig.yaml

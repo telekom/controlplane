@@ -7,6 +7,7 @@ mockname: "Mock{{.InterfaceName}}"
 dir: "../test/mocks"
 outpkg: "mocks"
 filename: "mock_{{.InterfaceName}}.go"
+boilerplate-file: ../../hack/boilerplate.go.txt
 packages:
   github.com/telekom/controlplane/rover-ctl/pkg/handlers/common:
     config:
@@ -24,4 +25,9 @@ packages:
     config:
     interfaces:
       ResetSecretHandler:
+        config:
+  github.com/telekom/controlplane/rover-ctl/pkg/commands/get-secret:
+    config:
+    interfaces:
+      SecretStatusHandler:
         config:

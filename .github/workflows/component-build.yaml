@@ -1,0 +1,265 @@
+# Copyright 2026 Deutsche Telekom AG
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Generic "build" component: static checks, unit tests/coverage, and
+# source vulnerability scanning for a single Go module. Does not build or
+# publish a container image - see component-package-build.yaml for that.
+#
+# Called from ci.yaml's dynamically-scoped matrix (see
+# .github/scripts/select-scope.sh) as well as directly for modules that need
+# special-cased flags.
+
+name: "Build Component"
+
+on:
+  workflow_call:
+    inputs:
+      module:
+        description: "The Go module to process"
+        required: true
+        type: string
+      name:
+        description: "Name of the module for display purposes"
+        required: true
+        type: string
+      run_check_generated_files:
+        description: "Set to true to run checks for generated files"
+        required: false
+        type: boolean
+        default: false
+      run_tests:
+        description: "Set to true to run unit tests and code coverage"
+        required: false
+        type: boolean
+        default: true
+      allow_tests_failure:
+        description: "Set to true to allow tests to fail without failing the job"
+        required: false
+        type: boolean
+        default: false
+      run_vulnerability_check:
+        description: "Set to true to run govulncheck"
+        required: false
+        type: boolean
+        default: true
+      run_lint:
+        description: "Set to true to run golangci-lint"
+        required: false
+        type: boolean
+        default: true
+      lint_fail_on_issues:
+        description: "Set to true to fail the build when golangci-lint finds issues"
+        required: false
+        type: boolean
+        default: false
+      coverage_threshold:
+        description: "Minimum coverage percentage required. Set to 0 to disable."
+        required: false
+        type: number
+        default: 70
+
+permissions:
+  contents: read
+
+jobs:
+  static_checks:
+    name: "Static Checks for ${{ inputs.name }}"
+    if: ${{ inputs.run_lint || inputs.run_check_generated_files }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 1
+
+      - name: Setup Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: "${{ inputs.module }}/go.mod"
+          cache: false # Using a separate cache step
+
+      - name: Restore Go Cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ inputs.module }}-${{ hashFiles(format('{0}/go.sum', inputs.module)) }}
+          restore-keys: |
+            ${{ runner.os }}-go-${{ inputs.module }}-
+
+      - name: Check Generated Files
+        if: ${{ inputs.run_check_generated_files }}
+        shell: bash
+        working-directory: ${{ inputs.module }}
+        run: |
+          make manifests
+          make generate
+          git diff --exit-code -- . ':!go.sum' ':!go.mod'
+
+      - name: Run golangci-lint
+        if: ${{ inputs.run_lint }}
+        uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
+        with:
+          version: v2.11
+          working-directory: ${{ inputs.module }}
+          # `config verify` downloads the JSON schema from golangci-lint.run on every run,
+          # which frequently times out and fails the job.
+          verify: false
+          args: --timeout 5m --issues-exit-code=${{ inputs.lint_fail_on_issues && '1' || '0' }} --config ${{ github.workspace }}/.golangci.yml
+
+  tests:
+    name: "Tests & Coverage for ${{ inputs.name }}"
+    if: ${{ inputs.run_tests }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write
+      pull-requests: write
+    outputs:
+      test_reports_artifact_id: ${{ steps.upload_test_reports_artifact_step.outputs.artifact-id }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 1
+
+      - name: Setup Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: "${{ inputs.module }}/go.mod"
+          cache: false # Using a separate cache step
+
+      - name: Restore Go Cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ inputs.module }}-${{ hashFiles(format('{0}/go.sum', inputs.module)) }}
+          restore-keys: |
+            ${{ runner.os }}-go-${{ inputs.module }}-
+
+      - name: Install gotestsum
+        run: go install gotest.tools/gotestsum@v1.13.0 # h1:+Lh454O9mu9AMG1APV4o0y7oDYKyik/3kBOiCqiEpRo=
+
+      - name: Build and test module
+        shell: bash
+        working-directory: ${{ inputs.module }}
+        env:
+          ENVTEST_K8S_VERSION: "1.32.0"
+        run: make test
+        continue-on-error: ${{ inputs.allow_tests_failure }}
+
+      - name: Coverage summary
+        if: ${{ always() }}
+        shell: bash
+        working-directory: ${{ inputs.module }}
+        run: |
+          if [ -f cover.out ]; then
+            total=$(go tool cover -func=cover.out | awk '/^total:/ {print $NF}')
+            echo "**Coverage for ${{ inputs.name }}:** ${total}" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Check coverage threshold
+        if: ${{ always() }}
+        shell: bash
+        working-directory: ${{ inputs.module }}
+        env:
+          COVERAGE_THRESHOLD: ${{ inputs.coverage_threshold }}
+        run: |
+          if [ ! -f cover.out ]; then
+            echo "::warning::No coverage file found"
+            exit 0
+          fi
+          total=$(go tool cover -func=cover.out | awk '/^total:/ {print $NF}' | tr -d '%')
+          echo "Total coverage: ${total}% (threshold: ${COVERAGE_THRESHOLD}%)"
+          if [ "$(echo "${total} < ${COVERAGE_THRESHOLD}" | bc -l)" -eq 1 ]; then
+            echo "::error::Coverage ${total}% is below threshold ${COVERAGE_THRESHOLD}%"
+            exit 1
+          fi
+
+      - name: Upload test reports
+        id: upload_test_reports_artifact_step
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ${{ inputs.name }}-test-report
+          path: |
+            ${{ inputs.module }}/cover.out
+            ${{ inputs.module }}/junit.xml
+            ${{ inputs.module }}/**/ginkgo-junit.xml
+            ${{ inputs.module }}/gotest.log
+
+      - name: Publish test report
+        if: ${{ always() && (github.event_name == 'pull_request') }}
+        uses: dorny/test-reporter@a43b3a5f7366b97d083190328d2c652e1a8b6aa2 # v3.0.0
+        continue-on-error: ${{ inputs.allow_tests_failure }}
+        with:
+          name: "Test Results (${{ inputs.name }})"
+          path: "${{ inputs.module }}/**/ginkgo-junit.xml,${{ inputs.module }}/junit.xml"
+          reporter: java-junit
+
+  source_scan:
+    name: "Source Vulnerability Scan for ${{ inputs.name }}"
+    if: ${{ inputs.run_vulnerability_check }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Setup Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: "${{ inputs.module }}/go.mod"
+          cache: false
+
+      - name: Restore Go Cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ inputs.module }}-${{ hashFiles(format('{0}/go.sum', inputs.module)) }}
+          restore-keys: |
+            ${{ runner.os }}-go-${{ inputs.module }}-
+
+      - name: Run govulncheck
+        uses: golang/govulncheck-action@032d45514ae346b1db93c04b0c90b841c370344f # unreleased, includes fix for golang/go#75908
+        with:
+          go-package: ./...
+          work-dir: ${{ inputs.module }}
+
+  report_status:
+    name: "Report Build Status for ${{ inputs.name }}"
+    # Always runs, even if one of the jobs above failed or was skipped, so
+    # the caller can reliably tell whether *this specific module* is safe
+    # to package. GitHub Actions matrix jobs don't expose per-item `needs`
+    # outputs to a downstream job, so the caller (ci.yaml) fans this result
+    # back in via a status-marker artifact instead of a job output.
+    needs: [static_checks, tests, source_scan]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Determine status
+        id: status
+        shell: bash
+        run: |
+          ok=true
+          for r in "${{ needs.static_checks.result }}" "${{ needs.tests.result }}" "${{ needs.source_scan.result }}"; do
+            if [ "$r" = "failure" ] || [ "$r" = "cancelled" ]; then
+              ok=false
+            fi
+          done
+          echo "$ok" > status.txt
+
+      - name: Upload build status marker
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: build-status-${{ inputs.name }}
+          path: status.txt
+          retention-days: 1

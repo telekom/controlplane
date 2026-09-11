@@ -1,0 +1,23 @@
+# Copyright 2026 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Shared API specification for the failover demos (demo-pf.sh and demo-cf.sh).
+# Rover-CTL auto-detects this as an ApiSpecification via the `openapi` field and
+# derives the Api name from the server base path. Both demos expose/subscribe to
+# this same base path, so it must be registered (roverctl apply) before the Rover.
+openapi: 3.0.0
+info:
+  title: Failover Demo API
+  version: 1.0.0
+  x-api-category: Other
+servers:
+  - url: https://httpbin.org/eni/failover-demo/v1
+    description: Failover demo backend
+paths:
+  /anything:
+    get:
+      summary: Echo endpoint
+      responses:
+        '200':
+          description: Successful response

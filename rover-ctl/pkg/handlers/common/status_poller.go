@@ -6,6 +6,7 @@ package common
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -20,10 +21,16 @@ type StatusHandler interface {
 type StatusEvalFunc func(ctx context.Context, status types.ObjectStatus) (continuePolling bool, err error)
 
 var defaultStatusEvalFunc StatusEvalFunc = func(_ context.Context, status types.ObjectStatus) (continuePolling bool, err error) {
-	if status.GetProcessingState() == "done" {
+	switch status.GetOverallStatus() {
+	case types.OverallStatusFailed:
+		return false, fmt.Errorf("resource processing failed")
+	case types.OverallStatusComplete, types.OverallStatusDone:
 		return false, nil
+	case types.OverallStatusBlocked:
+		return false, nil // system cannot progress without external action
+	default:
+		return true, nil // processing, pending, none, invalid → keep polling
 	}
-	return true, nil
 }
 
 type StatusPoller struct {
@@ -55,18 +62,21 @@ func (p *StatusPoller) Start(ctx context.Context, name string) (types.ObjectStat
 	ticker := time.NewTicker(p.interval)
 	defer ticker.Stop()
 
+	var lastStatus types.ObjectStatus
+
 	for {
 		select {
 		case <-ctx.Done():
-			return nil, ctx.Err()
+			return lastStatus, ctx.Err()
 		case <-ticker.C:
 			status, err := p.handler.Status(ctx, name)
 			if err != nil {
-				return nil, err
+				return lastStatus, err
 			}
+			lastStatus = status
 			continuePolling, err := p.evalFunc(ctx, status)
 			if err != nil {
-				return nil, err
+				return lastStatus, err
 			}
 			if !continuePolling {
 				return status, nil

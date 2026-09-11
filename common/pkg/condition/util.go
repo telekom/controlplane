@@ -7,9 +7,10 @@ package condition
 import (
 	"fmt"
 
-	"github.com/telekom/controlplane/common/pkg/types"
-
 	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/telekom/controlplane/common/pkg/types"
 )
 
 // EnsureReady returns an error if the provided obj is not ready
@@ -20,4 +21,16 @@ func EnsureReady(obj types.Object) error {
 		return fmt.Errorf("%s '%s/%s' is not ready", obj.GetObjectKind().GroupVersionKind().Kind, obj.GetNamespace(), obj.GetName())
 	}
 	return nil
+}
+
+// IsReady returns true if the provided obj is ready, false otherwise
+// An object is considered ready if it has a condition of type Ready with status True and the observed generation matches the actual generation of the object
+func IsReady(obj types.Object) bool {
+	readyCond := meta.FindStatusCondition(obj.GetConditions(), ConditionTypeReady)
+	if readyCond == nil {
+		return false
+	}
+	actualGen := obj.GetGeneration()
+	observedGen := readyCond.ObservedGeneration
+	return readyCond.Status == metav1.ConditionTrue && observedGen == actualGen
 }

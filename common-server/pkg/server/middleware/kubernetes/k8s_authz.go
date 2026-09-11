@@ -46,10 +46,10 @@ func (ats AccessTypeSet) Has(at AccessType) bool {
 }
 
 type ServiceAccessConfig struct {
-	ServiceAccountName string       `yaml:"service_account_name" json:"service_account_name"`
-	DeploymentName     string       `yaml:"deployment_name" json:"deployment_name"`
-	Namespace          string       `yaml:"namespace" json:"namespace"`
-	AllowedAccess      []AccessType `yaml:"allowed_access" json:"allowed_access"`
+	ServiceAccountName string       `yaml:"service_account_name" json:"service_account_name" mapstructure:"service_account_name"`
+	DeploymentName     string       `yaml:"deployment_name" json:"deployment_name" mapstructure:"deployment_name"`
+	Namespace          string       `yaml:"namespace" json:"namespace" mapstructure:"namespace"`
+	AllowedAccess      []AccessType `yaml:"allowed_access" json:"allowed_access" mapstructure:"allowed_access"`
 	allowedAccessSet   AccessTypeSet
 }
 

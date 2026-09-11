@@ -49,22 +49,31 @@ func (f *LastMileSecurityFeature) Apply(ctx context.Context, builder features.Fe
 	if !ok {
 		return features.ErrNoRoute
 	}
-	realm := builder.GetRealm()
+
 	envName := contextutil.EnvFromContextOrDie(ctx)
 
 	rtpPlugin := builder.RequestTransformerPlugin()
 
 	builder.SetUpstream(client.NewUpstreamOrDie(plugin.LocalhostProxyUrl))
 
+	// We could use append here but then in a cross-CP mesh scenario we would have multiple headers like "realm1,realm2"
+	// Add them if they are not present yet
+	rtpPlugin.Config.Add.
+		AddHeader("environment", envName).
+		AddHeader("realm", route.Spec.Security.RealmName)
+	// Ensure that we replace any existing headers in case they were already set
+	rtpPlugin.Config.Replace.
+		AddHeader("environment", envName).
+		AddHeader("realm", route.Spec.Security.RealmName)
+
 	if route.IsProxy() {
 		// Proxy Route
-
-		upstream := route.Spec.Upstreams[0]
 		rtpPlugin.Config.Append.
-			AddHeader("issuer", upstream.IssuerUrl).
-			AddHeader("client_id", upstream.ClientId).
-			AddHeader("client_secret", upstream.ClientSecret).
-			AddHeader("remote_api_url", CreateRemoteApiUrl(route))
+			AddHeader("remote_api_url", CreateRemoteApiUrl(route)).
+			AddHeader("issuer", "mock-issuer") // TODO: this needs to be removed after talking to the gateway team about it
+
+		jumperCfg := builder.JumperConfig()
+		jumperCfg.Mesh = true
 
 	} else {
 		// Real Route
@@ -76,29 +85,19 @@ func (f *LastMileSecurityFeature) Apply(ctx context.Context, builder features.Fe
 
 		rtpPlugin.Config.Append.
 			AddHeader("remote_api_url", CreateRemoteApiUrl(route)).
-			AddHeader("api_base_path", route.Spec.Upstreams[0].Path).
+			AddHeader("api_base_path", route.Spec.Backend.Upstreams[0].Path).
 			AddHeader("access_token_forwarding", "false")
-
-		// We could use append here but then in a cross-CP mesh scenario we would have multiple headers like "realm1,realm2"
-		// Add them if they are not present yet
-		rtpPlugin.Config.Add.
-			AddHeader("environment", envName).
-			AddHeader("realm", realm.Name)
-		// Ensure that we replace any existing headers in case they were already set
-		rtpPlugin.Config.Replace.
-			AddHeader("environment", envName).
-			AddHeader("realm", realm.Name)
 	}
 
 	return nil
 }
 
 func CreateRemoteApiUrl(route *gatewayv1.Route) string {
-	upstream := route.Spec.Upstreams[0]
+	upstream := route.Spec.Backend.Upstreams[0]
 
-	result := upstream.Host
+	result := upstream.Hostname
 	if upstream.Port != 0 {
-		result = result + ":" + strconv.Itoa(upstream.Port)
+		result = result + ":" + strconv.Itoa(int(upstream.Port))
 	}
 	result = result + upstream.Path
 

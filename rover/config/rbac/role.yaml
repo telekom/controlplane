@@ -8,12 +8,34 @@ metadata:
   name: manager-role
 rules:
 - apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
+  - patch
+- apiGroups:
   - admin.cp.ei.telekom.de
   resources:
   - zones
   verbs:
   - get
   - list
+  - watch
+- apiGroups:
+  - agentic.cp.ei.telekom.de
+  resources:
+  - agentcards
+  - agenticexposures
+  - agenticsubscriptions
+  - mcpservers
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
   - watch
 - apiGroups:
   - api.cp.ei.telekom.de
@@ -50,12 +72,27 @@ rules:
   - update
   - watch
 - apiGroups:
-  - ""
+  - event.cp.ei.telekom.de
   resources:
-  - events
+  - eventconfigs
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - event.cp.ei.telekom.de
+  resources:
+  - eventexposures
+  - eventsubscriptions
+  - eventtypes
   verbs:
   - create
+  - delete
+  - get
+  - list
   - patch
+  - update
+  - watch
 - apiGroups:
   - organization.cp.ei.telekom.de
   resources:
@@ -65,9 +102,26 @@ rules:
   - list
   - watch
 - apiGroups:
+  - permission.cp.ei.telekom.de
+  resources:
+  - permissionsets
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
   - rover.cp.ei.telekom.de
   resources:
+  - agentspecifications
+  - apichangelogs
   - apispecifications
+  - eventspecifications
+  - mcpspecifications
+  - roadmaps
   - rovers
   verbs:
   - create
@@ -80,14 +134,24 @@ rules:
 - apiGroups:
   - rover.cp.ei.telekom.de
   resources:
+  - agentspecifications/finalizers
+  - apichangelogs/finalizers
   - apispecifications/finalizers
+  - eventspecifications/finalizers
+  - mcpspecifications/finalizers
+  - roadmaps/finalizers
   - rovers/finalizers
   verbs:
   - update
 - apiGroups:
   - rover.cp.ei.telekom.de
   resources:
+  - agentspecifications/status
+  - apichangelogs/status
   - apispecifications/status
+  - eventspecifications/status
+  - mcpspecifications/status
+  - roadmaps/status
   - rovers/status
   verbs:
   - get

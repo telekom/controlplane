@@ -6,7 +6,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.16.1
+    controller-gen.kubebuilder.io/version: v0.20.1
   name: realms.identity.cp.ei.telekom.de
 spec:
   group: identity.cp.ei.telekom.de
@@ -42,6 +42,45 @@ spec:
           spec:
             description: RealmSpec defines the desired state of Realm
             properties:
+              claims:
+                description: |-
+                  Claims defines claims that are added to all tokens issued for
+                  clients in this realm. Each claim can be a static value
+                  (HardcodedClaim) or derived from a Keycloak session note
+                  (SessionNote). The controller manages a dedicated Keycloak
+                  client scope with protocol mappers for each claim.
+                items:
+                  description: |-
+                    ClaimConfig defines a claim that is added to all tokens issued for
+                    clients in this realm.
+                  properties:
+                    name:
+                      description: Name is the claim name as it appears in the token
+                        (e.g. "team", "env").
+                      minLength: 1
+                      type: string
+                    type:
+                      default: HardcodedClaim
+                      description: |-
+                        Type selects the protocol mapper used for this claim.
+                        Defaults to HardcodedClaim when omitted.
+                      enum:
+                      - HardcodedClaim
+                      - SessionNote
+                      type: string
+                    value:
+                      description: |-
+                        Value is the static claim value written into every token.
+                        Only used for HardcodedClaim; ignored for SessionNote (which
+                        reads the value from the Keycloak session note keyed by Name).
+                      type: string
+                  required:
+                  - name
+                  type: object
+                type: array
+                x-kubernetes-list-map-keys:
+                - name
+                x-kubernetes-list-type: map
               identityProvider:
                 description: |-
                   ObjectRef is a reference to a Kubernetes object
@@ -60,6 +99,44 @@ spec:
                 required:
                 - name
                 - namespace
+                type: object
+              secretRotation:
+                description: |-
+                  SecretRotation configures the Keycloak client-secret rotation policy
+                  for this realm. When set, the controller ensures a client-policy
+                  profile + policy with the given grace period exists in Keycloak.
+                  When nil, the controller does not manage rotation policy.
+                properties:
+                  expirationPeriod:
+                    description: |-
+                      ExpirationPeriod is how long a client secret is valid before it must
+                      be rotated, specified as a duration string (e.g. "696h", "2505600s").
+                      Maps to Keycloak's "expiration-period".
+                    type: string
+                  gracePeriod:
+                    description: |-
+                      GracePeriod is how long the old client secret remains valid after
+                      rotation, specified as a duration string (e.g. "1h", "300s", "30m").
+                      Maps to Keycloak's "rotated-expiration-period".
+                    type: string
+                  remainingRotationPeriod:
+                    description: |-
+                      RemainingRotationPeriod is the window before secret expiry during
+                      which rotation is allowed, specified as a duration string (e.g. "240h", "864000s").
+                      Maps to Keycloak's "remaining-rotation-period".
+
+                      Keycloak blocks rotation attempts that fall outside this window. For
+                      example, if ExpirationPeriod is 29 days and RemainingRotationPeriod
+                      is 10 days, rotation is only permitted in the last 10 days before
+                      expiry. Setting RemainingRotationPeriod equal to ExpirationPeriod
+                      allows rotation at any time (recommended, since the controller
+                      drives rotation externally rather than relying on Keycloak's
+                      expiration timer).
+                    type: string
+                required:
+                - expirationPeriod
+                - gracePeriod
+                - remainingRotationPeriod
                 type: object
             required:
             - identityProvider

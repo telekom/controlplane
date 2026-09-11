@@ -128,24 +128,29 @@ func (p *ObjectParser) parseDirectory(dirPath string) error {
 func (p *ObjectParser) parseFile(filePath string) error {
 	ext := strings.ToLower(filepath.Ext(filePath))
 
-	file, err := os.OpenFile(filePath, os.O_RDONLY, 0o644)
+	fileContent, err := os.ReadFile(filePath)
 	if err != nil {
 		return errors.Wrap(err, "failed to read file "+filePath)
 	}
-	defer file.Close()
+
+	content, err := SubstitutePlaceholders(string(fileContent))
+	if err != nil {
+		return errors.Wrap(err, "failed to substitute placeholders in "+filePath)
+	}
+
+	reader := strings.NewReader(content)
 
 	switch ext {
 	case ".yaml", ".yml":
-		return p.parseYAML(file)
+		return p.parseYAML(reader, filePath)
 	case ".json":
-		return p.parseJSON(file)
+		return p.parseJSON(reader, filePath)
 	default:
 		return errors.New("unsupported file extension " + ext)
 	}
-
 }
 
-func (p *ObjectParser) parseYAML(r io.Reader) error {
+func (p *ObjectParser) parseYAML(r io.Reader, filename string) error {
 	var decodeOpts []yaml.DecodeOption
 	if p.validator != nil {
 		decodeOpts = append(decodeOpts, yaml.Strict(), yaml.Validator(p.validator))
@@ -153,7 +158,7 @@ func (p *ObjectParser) parseYAML(r io.Reader) error {
 	decoder := yaml.NewDecoder(r, decodeOpts...)
 	for {
 		obj := new(types.UnstructuredObject)
-		obj.SetProperty("filename", r.(*os.File).Name())
+		obj.SetProperty("filename", filename)
 
 		err := decoder.Decode(obj)
 		if err != nil {
@@ -173,7 +178,7 @@ func (p *ObjectParser) parseYAML(r io.Reader) error {
 
 }
 
-func (p *ObjectParser) parseJSON(r io.Reader) error {
+func (p *ObjectParser) parseJSON(r io.Reader, filename string) error {
 	content := make(map[string]any)
 	err := json.NewDecoder(r).Decode(&content)
 	if err != nil {
@@ -183,7 +188,7 @@ func (p *ObjectParser) parseJSON(r io.Reader) error {
 	obj := &types.UnstructuredObject{
 		Content: content,
 	}
-	obj.SetProperty("filename", r.(*os.File).Name())
+	obj.SetProperty("filename", filename)
 
 	if p.validator != nil {
 		if err := p.validator.Struct(obj); err != nil {

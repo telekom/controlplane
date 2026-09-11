@@ -19,7 +19,7 @@ func GetRouteByRef(ctx context.Context, ref types.ObjectRef) (bool, *v1.Route, e
 	client, _ := client.ClientFromContext(ctx)
 
 	route := &v1.Route{}
-	err := client.Get(context.Background(), ref.K8s(), route)
+	err := client.Get(ctx, ref.K8s(), route)
 	if err != nil {
 		return false, nil, errors.Wrap(err, "failed to get route")
 	}

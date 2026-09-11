@@ -5,8 +5,9 @@
 package apiexposure
 
 import (
-	apiv1 "github.com/telekom/controlplane/api/api/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	apiv1 "github.com/telekom/controlplane/api/api/v1"
 )
 
 // NewApiCondition creates a condition indicating whether the corresponding API exists and is active.

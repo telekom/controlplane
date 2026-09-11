@@ -6,15 +6,22 @@ package applicationinfo
 
 import (
 	"context"
+	"net/url"
+	"strings"
 
 	"github.com/pkg/errors"
+	adminv1 "github.com/telekom/controlplane/admin/api/v1"
+	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/types"
+	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/telekom/controlplane/rover-server/internal/api"
+	"github.com/telekom/controlplane/rover-server/internal/mapper"
 	"github.com/telekom/controlplane/rover-server/internal/mapper/status"
 	"github.com/telekom/controlplane/rover-server/pkg/store"
 )
@@ -24,49 +31,76 @@ const (
 	HorizonPublishEventPathSuffix = "horizon/events/v1"
 )
 
-func WriteStatus(obj types.Object, appInfo *api.ApplicationInfo, err error) {
+// ResourceRefFromObject builds an api.ResourceRef from a non-nil types.Object.
+func ResourceRefFromObject(obj types.Object) api.ResourceRef {
 	gvk := obj.GetObjectKind().GroupVersionKind()
-	ready := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady)
-	appInfo.Errors = append(appInfo.Errors, api.Problem{
-		Resource: api.ResourceRef{
-			ApiVersion: gvk.GroupVersion().String(),
-			Kind:       gvk.Kind,
-			Name:       obj.GetName(),
-			Namespace:  obj.GetNamespace(),
-		},
-		Message: err.Error(),
-		Cause:   ready.Message,
-	})
+	return ResourceRefFromGVK(gvk, obj.GetNamespace(), obj.GetName())
+}
 
+// ResourceRefFromGVK builds an api.ResourceRef when only the GVK and object coordinates are known.
+func ResourceRefFromGVK(gvk schema.GroupVersionKind, namespace, name string) api.ResourceRef {
+	return api.ResourceRef{
+		ApiVersion: gvk.GroupVersion().String(),
+		Kind:       gvk.Kind,
+		Name:       name,
+		Namespace:  namespace,
+	}
+}
+
+// WriteStatus records an error for a resource that failed readiness checks.
+// The object must be non-nil; use WriteStatusWithRef when the object may be nil.
+func WriteStatus(obj types.Object, appInfo *api.ApplicationInfo, err error) {
+	ref := ResourceRefFromObject(obj)
+	ready := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady)
+	cause := ""
+	if ready != nil {
+		cause = ready.Message
+	}
+	appInfo.Errors = append(appInfo.Errors, api.Problem{
+		Resource: ref,
+		Message:  err.Error(),
+		Cause:    cause,
+	})
 	appInfo.Status = status.CompareAndReturn(appInfo.Status, status.GetOverallStatus(obj.GetConditions()))
 }
 
-func MapApplicationInfo(ctx context.Context, rover *roverv1.Rover) (*api.ApplicationInfo, error) {
+// WriteStatusWithRef records an error for a resource using an explicit ResourceRef.
+// Use this when the object may be nil (e.g. store returned not-found).
+func WriteStatusWithRef(ref api.ResourceRef, appInfo *api.ApplicationInfo, err error) {
+	appInfo.Errors = append(appInfo.Errors, api.Problem{
+		Resource: ref,
+		Message:  err.Error(),
+	})
+}
+
+func MapApplicationInfo(ctx context.Context, rover *roverv1.Rover, stores *store.Stores) (*api.ApplicationInfo, error) {
 	if rover == nil {
 		return nil, errors.New("input rover is nil")
 	}
+	scalars := mapper.RoverExternalIdsToScalars(rover.Spec.ExternalIds)
 	appInfo := &api.ApplicationInfo{
-		Name: rover.Name,
-		Zone: rover.Spec.Zone,
+		Name:  rover.Name,
+		Zone:  rover.Spec.Zone,
+		Psiid: scalars.Psiid,
 	}
 
-	if err := FillApplicationInfo(ctx, rover, appInfo); err != nil {
+	if err := FillApplicationInfo(ctx, rover, appInfo, stores); err != nil {
 		return nil, errors.Wrap(err, "failed to fill application info")
 	}
-	if err := FillSubscriptionInfo(ctx, rover, appInfo); err != nil {
+	if err := FillSubscriptionInfo(ctx, rover, appInfo, stores); err != nil {
 		return nil, errors.Wrap(err, "failed to fill subscription info")
 	}
-	if err := FillExposureInfo(ctx, rover, appInfo); err != nil {
+	if err := FillExposureInfo(ctx, rover, appInfo, stores); err != nil {
 		return nil, errors.Wrap(err, "failed to fill exposure info")
 	}
-	// ... fill other info
+	if err := FillChevronInfo(ctx, rover, appInfo, stores); err != nil {
+		return nil, errors.Wrap(err, "failed to fill chevron info")
+	}
 
 	return appInfo, nil
 }
 
-func FillApplicationInfo(ctx context.Context, rover *roverv1.Rover, appInfo *api.ApplicationInfo) error {
-	appStore := store.ApplicationSecretStore
-
+func FillApplicationInfo(ctx context.Context, rover *roverv1.Rover, appInfo *api.ApplicationInfo, stores *store.Stores) error {
 	if rover == nil || rover.Status.Application == nil {
 		return errors.New("rover resource is not processed and does not contain an application")
 	}
@@ -74,35 +108,52 @@ func FillApplicationInfo(ctx context.Context, rover *roverv1.Rover, appInfo *api
 		return errors.New("input applicationInfo is nil")
 	}
 
-	app, err := appStore.Get(ctx, rover.Status.Application.Namespace, rover.Status.Application.Name)
+	app, err := stores.ApplicationSecretStore.Get(ctx, rover.Status.Application.Namespace, rover.Status.Application.Name)
 	if err != nil {
-		WriteStatus(app, appInfo, err)
+		_, gvk := stores.ApplicationSecretStore.Info()
+		WriteStatusWithRef(ResourceRefFromGVK(gvk, rover.Status.Application.Namespace, rover.Status.Application.Name), appInfo, err)
 		return errors.Wrap(err, "failed to get application")
 	}
 
-	zoneStore := store.ZoneStore
-	zone, err := zoneStore.Get(ctx, rover.Labels[config.EnvironmentLabelKey], rover.Spec.Zone)
+	zone, err := stores.ZoneStore.Get(ctx, rover.Labels[config.EnvironmentLabelKey], rover.Spec.Zone)
 	if err != nil {
-		if zone != nil {
-			WriteStatus(zone, appInfo, err)
-		}
+		_, gvk := stores.ZoneStore.Info()
+		WriteStatusWithRef(ResourceRefFromGVK(gvk, rover.Labels[config.EnvironmentLabelKey], rover.Spec.Zone), appInfo, err)
 		return errors.Wrap(err, "failed to get zone")
 	}
 
 	appInfo.IrisClientId = app.Status.ClientId
 	appInfo.IrisClientSecret = app.Status.ClientSecret
-	appInfo.IrisIssuerUrl = zone.Status.Links.Issuer
-	appInfo.IrisTokenEndpointUrl = appInfo.IrisIssuerUrl + IrisTokenEndpointSuffix
+	appInfo.SecretInfo = api.SecretInfo{
+		ClientSecret:        app.Status.ClientSecret,
+		RotatedClientSecret: app.Status.RotatedClientSecret,
+	}
+	if app.Status.RotatedExpiresAt != nil {
+		appInfo.SecretInfo.RotatedExpiresAt = app.Status.RotatedExpiresAt.Time.UTC()
+	}
+	if app.Status.CurrentExpiresAt != nil {
+		appInfo.SecretInfo.CurrentExpiresAt = app.Status.CurrentExpiresAt.Time.UTC()
+	}
 
+	appInfo.IrisIssuerUrl = zone.Status.Links.Issuer
 	appInfo.StargateIssuerUrl = zone.Status.Links.LmsIssuer
+	appInfo.IrisTokenEndpointUrl = appInfo.IrisIssuerUrl + IrisTokenEndpointSuffix
 	appInfo.StargateUrl = zone.Status.Links.Url
-	appInfo.StargatePublishEventUrl = zone.Status.Links.Url + HorizonPublishEventPathSuffix
+
+	if rover.HasFailoverEnabledOnAnySubscription() {
+		appInfo.FailoverEnabled = true
+		// If failover is active for this Application, we need to overwrite the StargateUrl with the new failover URL
+		preset, err := zone.SelectGatewayPreset(adminv1.FeatureConsumerFailover)
+		if err == nil {
+			appInfo.StargateUrl = preset.GetDefaultUrl()
+		}
+	}
 
 	appInfo.Status = status.GetOverallStatus(rover.Status.Conditions)
 	return nil
 }
 
-func FillSubscriptionInfo(ctx context.Context, rover *roverv1.Rover, appInfo *api.ApplicationInfo) error {
+func FillSubscriptionInfo(ctx context.Context, rover *roverv1.Rover, appInfo *api.ApplicationInfo, stores *store.Stores) error {
 	if rover == nil {
 		return errors.New("input rover is nil")
 	}
@@ -110,13 +161,15 @@ func FillSubscriptionInfo(ctx context.Context, rover *roverv1.Rover, appInfo *ap
 		return errors.New("input applicationInfo is nil")
 	}
 
-	apiSubStore := store.ApiSubscriptionStore
+	totalSubs := len(rover.Status.ApiSubscriptions) + len(rover.Status.EventSubscriptions) + len(rover.Status.AgenticSubscriptions)
+	appInfo.Subscriptions = make([]api.SubscriptionInfo, 0, totalSubs)
 
-	appInfo.Subscriptions = make([]api.SubscriptionInfo, len(rover.Status.ApiSubscriptions))
-	for i, sub := range rover.Status.ApiSubscriptions {
-		apiSub, err := apiSubStore.Get(ctx, sub.Namespace, sub.Name)
+	// Map API subscriptions
+	for _, sub := range rover.Status.ApiSubscriptions {
+		apiSub, err := stores.APISubscriptionStore.Get(ctx, sub.Namespace, sub.Name)
 		if err != nil {
-			WriteStatus(apiSub, appInfo, err)
+			_, gvk := stores.APISubscriptionStore.Info()
+			WriteStatusWithRef(ResourceRefFromGVK(gvk, sub.Namespace, sub.Name), appInfo, err)
 			continue
 		}
 
@@ -132,13 +185,61 @@ func FillSubscriptionInfo(ctx context.Context, rover *roverv1.Rover, appInfo *ap
 			return errors.Wrap(err, "failed to convert api subscription info")
 		}
 
-		appInfo.Subscriptions[i] = subInfo
+		appInfo.Subscriptions = append(appInfo.Subscriptions, subInfo)
+	}
+
+	// Map event subscriptions
+	for _, sub := range rover.Status.EventSubscriptions {
+		eventSub, err := stores.EventSubscriptionStore.Get(ctx, sub.Namespace, sub.Name)
+		if err != nil {
+			_, gvk := stores.EventSubscriptionStore.Info()
+			WriteStatusWithRef(ResourceRefFromGVK(gvk, sub.Namespace, sub.Name), appInfo, err)
+			continue
+		}
+
+		if err := condition.EnsureReady(eventSub); err != nil {
+			WriteStatus(eventSub, appInfo, err)
+		}
+
+		subInfo := api.SubscriptionInfo{}
+		eventSubInfo := mapEventSubscriptionInfo(eventSub)
+		eventSubInfo.HorizonSubscriptionId = eventSub.Status.SubscriptionId
+		eventSubInfo.HorizonSubscriptionUrl = eventSub.Status.URL
+		if err := subInfo.FromEventSubscriptionInfo(eventSubInfo); err != nil {
+			return errors.Wrap(err, "failed to convert event subscription info")
+		}
+
+		appInfo.Subscriptions = append(appInfo.Subscriptions, subInfo)
+
+	}
+
+	// Map AI subscriptions
+	for _, sub := range rover.Status.AgenticSubscriptions {
+		agenticSub, err := stores.AgenticSubscriptionStore.Get(ctx, sub.Namespace, sub.Name)
+		if err != nil {
+			_, gvk := stores.AgenticSubscriptionStore.Info()
+			WriteStatusWithRef(ResourceRefFromGVK(gvk, sub.Namespace, sub.Name), appInfo, err)
+			continue
+		}
+
+		if err := condition.EnsureReady(agenticSub); err != nil {
+			WriteStatus(agenticSub, appInfo, err)
+		}
+
+		subInfo := api.SubscriptionInfo{}
+		aiSubInfo := api.AiSubscriptionInfo{
+			BasePath: agenticSub.Spec.BasePath,
+		}
+		if err := subInfo.FromAiSubscriptionInfo(aiSubInfo); err != nil {
+			return errors.Wrap(err, "failed to convert ai subscription info")
+		}
+
+		appInfo.Subscriptions = append(appInfo.Subscriptions, subInfo)
 	}
 
 	return nil
 }
-
-func FillExposureInfo(ctx context.Context, rover *roverv1.Rover, appInfo *api.ApplicationInfo) error {
+func FillExposureInfo(ctx context.Context, rover *roverv1.Rover, appInfo *api.ApplicationInfo, stores *store.Stores) error {
 	if rover == nil {
 		return errors.New("input rover is nil")
 	}
@@ -146,13 +247,30 @@ func FillExposureInfo(ctx context.Context, rover *roverv1.Rover, appInfo *api.Ap
 		return errors.New("input applicationInfo is nil")
 	}
 
-	apiExpStore := store.ApiExposureStore
+	totalExps := len(rover.Status.ApiExposures) + len(rover.Status.EventExposures) + len(rover.Status.AgenticExposures)
+	appInfo.Exposures = make([]api.ExposureInfo, 0, totalExps)
 
-	appInfo.Exposures = make([]api.ExposureInfo, len(rover.Status.ApiExposures))
-	for i, exp := range rover.Status.ApiExposures {
-		apiExp, err := apiExpStore.Get(ctx, exp.Namespace, exp.Name)
+	if err := fillAPIExposures(ctx, rover, appInfo, stores); err != nil {
+		return err
+	}
+	if err := fillEventExposures(ctx, rover, appInfo, stores); err != nil {
+		return err
+	}
+	if err := fillAiExposures(ctx, rover, appInfo, stores); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// fillAPIExposures fetches each API exposure referenced by the Rover status,
+// validates its readiness, and appends it to appInfo.Exposures.
+func fillAPIExposures(ctx context.Context, rover *roverv1.Rover, appInfo *api.ApplicationInfo, stores *store.Stores) error {
+	for _, exp := range rover.Status.ApiExposures {
+		apiExp, err := stores.APIExposureStore.Get(ctx, exp.Namespace, exp.Name)
 		if err != nil {
-			WriteStatus(apiExp, appInfo, err)
+			_, gvk := stores.APIExposureStore.Info()
+			WriteStatusWithRef(ResourceRefFromGVK(gvk, exp.Namespace, exp.Name), appInfo, err)
 			continue
 		}
 
@@ -171,7 +289,192 @@ func FillExposureInfo(ctx context.Context, rover *roverv1.Rover, appInfo *api.Ap
 			return errors.Wrap(err, "failed to convert api exposure info")
 		}
 
-		appInfo.Exposures[i] = expInfo
+		appInfo.Exposures = append(appInfo.Exposures, expInfo)
+	}
+	return nil
+}
+
+// fillEventExposures fetches each event exposure referenced by the Rover status,
+// validates its readiness, and appends it to appInfo.Exposures.
+func fillEventExposures(ctx context.Context, rover *roverv1.Rover, appInfo *api.ApplicationInfo, stores *store.Stores) error {
+	for _, exp := range rover.Status.EventExposures {
+		eventExp, err := stores.EventExposureStore.Get(ctx, exp.Namespace, exp.Name)
+		if err != nil {
+			_, gvk := stores.EventExposureStore.Info()
+			WriteStatusWithRef(ResourceRefFromGVK(gvk, exp.Namespace, exp.Name), appInfo, err)
+			continue
+		}
+
+		if err := condition.EnsureReady(eventExp); err != nil {
+			WriteStatus(eventExp, appInfo, err)
+		}
+
+		// All event exposures in a zone share the same publish URL.
+		if appInfo.StargatePublishEventUrl == "" && eventExp.Status.PublishURL != "" {
+			appInfo.StargatePublishEventUrl = eventExp.Status.PublishURL
+		}
+
+		expInfo := api.ExposureInfo{}
+		eventExpInfo := mapEventExposureInfo(eventExp)
+		if err := expInfo.FromEventExposureInfo(eventExpInfo); err != nil {
+			return errors.Wrap(err, "failed to convert event exposure info")
+		}
+
+		appInfo.Exposures = append(appInfo.Exposures, expInfo)
+	}
+	return nil
+}
+
+// fillAiExposures fetches each AI/MCP exposure referenced by the Rover status,
+// validates its readiness, and appends it to appInfo.Exposures.
+func fillAiExposures(ctx context.Context, rover *roverv1.Rover, appInfo *api.ApplicationInfo, stores *store.Stores) error {
+	for _, exp := range rover.Status.AgenticExposures {
+		agenticExp, err := stores.AgenticExposureStore.Get(ctx, exp.Namespace, exp.Name)
+		if err != nil {
+			_, gvk := stores.AgenticExposureStore.Info()
+			WriteStatusWithRef(ResourceRefFromGVK(gvk, exp.Namespace, exp.Name), appInfo, err)
+			continue
+		}
+
+		if err := condition.EnsureReady(agenticExp); err != nil {
+			WriteStatus(agenticExp, appInfo, err)
+		}
+
+		expInfo := api.ExposureInfo{}
+		aiExpInfo := api.AiExposureInfo{
+			BasePath:   agenticExp.Spec.BasePath,
+			Variant:    api.AiExposureInfoVariant(agenticExp.Spec.Variant),
+			Approval:   api.ApprovalStrategy(agenticExp.Spec.Approval.Strategy),
+			Visibility: api.Visibility(agenticExp.Spec.Visibility),
+		}
+		if len(agenticExp.Spec.Upstreams) > 0 {
+			aiExpInfo.Upstream = agenticExp.Spec.Upstreams[0].Url
+		}
+		if err := expInfo.FromAiExposureInfo(aiExpInfo); err != nil {
+			return errors.Wrap(err, "failed to convert ai exposure info")
+		}
+
+		appInfo.Exposures = append(appInfo.Exposures, expInfo)
+	}
+	return nil
+}
+
+// mapEventSubscriptionInfo maps an event domain EventSubscription to the API's EventSubscriptionInfo.
+// Only core identifying fields are mapped, matching the pattern of the API subscription info mapper.
+func mapEventSubscriptionInfo(in *eventv1.EventSubscription) api.EventSubscriptionInfo {
+	return api.EventSubscriptionInfo{
+		EventType:    in.Spec.EventType,
+		DeliveryType: string(in.Spec.Delivery.Type),
+		PayloadType:  string(in.Spec.Delivery.Payload),
+		Type:         "event",
+	}
+}
+
+// mapEventExposureInfo maps an event domain EventExposure to the API's EventExposureInfo.
+// Only core identifying fields are mapped, matching the pattern of the API exposure info mapper.
+func mapEventExposureInfo(in *eventv1.EventExposure) api.EventExposureInfo {
+	return api.EventExposureInfo{
+		EventType:  in.Spec.EventType,
+		Visibility: toApiVisibilityFromEvent(in.Spec.Visibility),
+		Approval:   toApiApprovalStrategyFromEvent(in.Spec.Approval.Strategy),
+		Type:       "event",
+	}
+}
+
+// toApiVisibilityFromEvent converts event domain Visibility to API Visibility.
+func toApiVisibilityFromEvent(visibility eventv1.Visibility) api.Visibility {
+	switch visibility {
+	case eventv1.VisibilityWorld:
+		return api.WORLD
+	case eventv1.VisibilityZone:
+		return api.ZONE
+	case eventv1.VisibilityEnterprise:
+		return api.ENTERPRISE
+	default:
+		return api.Visibility(strings.ToUpper(string(visibility)))
+	}
+}
+
+// toApiApprovalStrategyFromEvent converts event domain ApprovalStrategy to API ApprovalStrategy.
+func toApiApprovalStrategyFromEvent(strategy eventv1.ApprovalStrategy) api.ApprovalStrategy {
+	switch strategy {
+	case eventv1.ApprovalStrategyAuto:
+		return api.AUTO
+	case eventv1.ApprovalStrategySimple:
+		return api.SIMPLE
+	case eventv1.ApprovalStrategyFourEyes:
+		return api.FOUREYES
+	default:
+		return api.ApprovalStrategy(strings.ToUpper(string(strategy)))
+	}
+}
+
+// FillChevronInfo populates Chevron permission-related fields in ApplicationInfo
+// when the Rover has permissions configured.
+func FillChevronInfo(ctx context.Context, rover *roverv1.Rover, appInfo *api.ApplicationInfo, stores *store.Stores) error {
+	// Only populate chevron info if permissions are configured
+	if len(rover.Spec.Permissions) == 0 {
+		return nil
+	}
+
+	bCtx, ok := security.FromContext(ctx)
+	if !ok {
+		return nil
+	}
+
+	zone, err := stores.ZoneStore.Get(ctx, bCtx.Environment, rover.Spec.Zone)
+	if err != nil {
+		return errors.Wrap(err, "failed to get zone for chevron info")
+	}
+
+	// Chevron URL from zone status links + application query param
+	if zone.Status.Links.PermissionsUrl != "" {
+		// Parse base URL to properly handle existing query params
+		chevronURL, err := url.Parse(zone.Status.Links.PermissionsUrl)
+		if err != nil {
+			return errors.Wrap(err, "failed to parse permissions URL")
+		}
+
+		// Get existing query params or create new
+		queryParams := chevronURL.Query()
+		// Set application param with proper URL encoding
+		queryParams.Set("application", appInfo.IrisClientId)
+		chevronURL.RawQuery = queryParams.Encode()
+
+		appInfo.ChevronUrl = chevronURL.String()
+		appInfo.ChevronApplication = appInfo.IrisClientId
+
+		// Add variables
+		appInfo.Variables = append(appInfo.Variables, api.Data{
+			Name:  "tardis.chevron.url",
+			Value: appInfo.ChevronUrl,
+		})
+		appInfo.Variables = append(appInfo.Variables, api.Data{
+			Name:  "tardis.chevron.application",
+			Value: appInfo.ChevronApplication,
+		})
+
+		// Copy permission rules to external authorization format
+		appInfo.Authorization = make([]api.AuthorizationInfo, 0, len(rover.Spec.Permissions))
+		for _, perm := range rover.Spec.Permissions {
+			authInfo := api.AuthorizationInfo{
+				Resource: perm.Resource,
+				Role:     perm.Role,
+				Actions:  perm.Actions,
+			}
+			if len(perm.Entries) > 0 {
+				perms := make([]api.AuthorizationPermissionInfo, 0, len(perm.Entries))
+				for _, entry := range perm.Entries {
+					perms = append(perms, api.AuthorizationPermissionInfo{
+						Resource: entry.Resource,
+						Role:     entry.Role,
+						Actions:  entry.Actions,
+					})
+				}
+				authInfo.Permissions = perms
+			}
+			appInfo.Authorization = append(appInfo.Authorization, authInfo)
+		}
 	}
 
 	return nil

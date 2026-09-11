@@ -65,7 +65,7 @@ func FromString(raw string) (id ConjurSecretId, err error) {
 	if id.env == "" {
 		return id, backend.ErrInvalidSecretId(raw)
 	}
-	if id.app != "" && id.team == "" {
+	if id.app != backend.NoApp && id.team == backend.NoTeam {
 		return id, backend.ErrInvalidSecretId(raw)
 	}
 
@@ -84,7 +84,7 @@ func (c ConjurSecretId) VariableId() string {
 	// We just get the first part of the path as this is the secret-name
 	// The other parts are the subpath
 	path := strings.SplitN(c.path, "/", 2)[0]
-	if c.team == "" {
+	if c.team == backend.NoTeam {
 		str := strings.Join([]string{RootPolicyPath, c.env, path}, "/")
 		return clean(str)
 	}
@@ -109,6 +109,24 @@ func (c ConjurSecretId) CopyWithChecksum(checksum string) ConjurSecretId {
 
 func (c ConjurSecretId) Copy() backend.SecretId {
 	return Copy(c)
+}
+
+// CacheKey returns a stable cache key without the checksum.
+// This ensures the same logical secret always maps to the same cache entry
+// regardless of value changes.
+func (c ConjurSecretId) CacheKey() string {
+	return strings.Join([]string{c.env, c.team, c.app, c.path}, backend.Separator)
+}
+
+func (c ConjurSecretId) ParentId() backend.SecretId {
+	parentPath := c.Path()
+	if parentPath == "" {
+		return c
+	}
+	parentId := Copy(c)
+	parentId.path = parentPath
+	parentId.Raw = strings.Join([]string{parentId.env, parentId.team, parentId.app, parentId.path, backend.NoChecksum}, backend.Separator)
+	return parentId
 }
 
 func clean(id string) string {

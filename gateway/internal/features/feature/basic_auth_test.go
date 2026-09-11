@@ -1,4 +1,4 @@
-// Copyright 2025 Deutsche Telekom IT GmbH
+// Copyright 2026 Deutsche Telekom IT GmbH
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -6,382 +6,453 @@ package feature_test
 
 import (
 	"context"
+	"fmt"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
+	"github.com/telekom/controlplane/gateway/internal/features"
 	"github.com/telekom/controlplane/gateway/internal/features/feature"
-	featuresmock "github.com/telekom/controlplane/gateway/internal/features/mock"
+	featmock "github.com/telekom/controlplane/gateway/internal/features/mock"
 	"github.com/telekom/controlplane/gateway/pkg/kong/client/plugin"
-	"go.uber.org/mock/gomock"
+	secretManagerApi "github.com/telekom/controlplane/secret-manager/api"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var _ = Describe("BasicAuthFeature", func() {
 
-	It("should return the correct feature type", func() {
-		Expect(feature.InstanceBasicAuthFeature.Name()).To(Equal(gatewayv1.FeatureTypeBasicAuth))
+	var (
+		ctx     context.Context
+		f       *feature.BasicAuthFeature
+		builder *featmock.MockFeaturesBuilder
+	)
+
+	BeforeEach(func() {
+		ctx = context.Background()
+		f = feature.InstanceBasicAuthFeature
+		builder = featmock.NewMockFeaturesBuilder(GinkgoT())
 	})
 
-	It("should have the correct priority", func() {
-		Expect(feature.InstanceBasicAuthFeature.Priority()).To(Equal(10))
-	})
-
-	Context("with mocked feature builder", func() {
-		var ctrl *gomock.Controller
-		var mockFeatureBuilder *featuresmock.MockFeaturesBuilder
-
-		BeforeEach(func() {
-
-			ctrl = gomock.NewController(GinkgoT())
-			mockFeatureBuilder = featuresmock.NewMockFeaturesBuilder(ctrl)
+	Describe("Name()", func() {
+		It("returns FeatureTypeBasicAuth", func() {
+			Expect(f.Name()).To(Equal(gatewayv1.FeatureTypeBasicAuth))
 		})
+	})
 
-		Context("IsUsed", func() {
-			It("should not be used when route has PassThrough=true", func() {
+	Describe("Priority()", func() {
+		It("returns 10", func() {
+			Expect(f.Priority()).To(Equal(10))
+		})
+	})
+
+	Describe("IsUsed()", func() {
+		Context("when primary route has basic auth in security", func() {
+			It("returns true", func() {
 				route := &gatewayv1.Route{
 					Spec: gatewayv1.RouteSpec{
+						Type:        gatewayv1.RouteTypePrimary,
+						PassThrough: false,
+						Traffic:     gatewayv1.Traffic{},
+						Security: gatewayv1.Security{
+							M2M: &gatewayv1.Machine2MachineAuthentication{
+								Basic: &gatewayv1.BasicAuthCredentials{
+									Username: "user",
+									Password: "pass",
+								},
+							},
+						},
+					},
+				}
+				builder.EXPECT().GetRoute().Return(route, true)
+
+				Expect(f.IsUsed(ctx, builder)).To(BeTrue())
+			})
+		})
+
+		Context("when route has failover security with basic auth", func() {
+			It("returns true", func() {
+				route := &gatewayv1.Route{
+					Spec: gatewayv1.RouteSpec{
+						Type:        gatewayv1.RouteTypeProxy,
+						PassThrough: false,
+						Traffic: gatewayv1.Traffic{
+							Failover: &gatewayv1.Failover{
+								TargetZoneName: "zone-b",
+								Security: gatewayv1.Security{
+									M2M: &gatewayv1.Machine2MachineAuthentication{
+										Basic: &gatewayv1.BasicAuthCredentials{
+											Username: "failover-user",
+											Password: "failover-pass",
+										},
+									},
+								},
+							},
+						},
+					},
+				}
+				builder.EXPECT().GetRoute().Return(route, true)
+
+				Expect(f.IsUsed(ctx, builder)).To(BeTrue())
+			})
+		})
+
+		Context("when consumer has basic auth", func() {
+			It("returns true", func() {
+				route := &gatewayv1.Route{
+					Spec: gatewayv1.RouteSpec{
+						Type:        gatewayv1.RouteTypePrimary,
+						PassThrough: false,
+						Traffic:     gatewayv1.Traffic{},
+						Security:    gatewayv1.Security{},
+					},
+				}
+				consumers := []*gatewayv1.ConsumeRoute{
+					{
+						Spec: gatewayv1.ConsumeRouteSpec{
+							ConsumerName: "consumer-a",
+							Security: &gatewayv1.ConsumeRouteSecurity{
+								M2M: &gatewayv1.ConsumerMachine2MachineAuthentication{
+									Basic: &gatewayv1.BasicAuthCredentials{
+										Username: "consumer-user",
+										Password: "consumer-pass",
+									},
+								},
+							},
+						},
+					},
+				}
+				builder.EXPECT().GetRoute().Return(route, true)
+				builder.EXPECT().GetAllowedConsumers().Return(consumers)
+
+				Expect(f.IsUsed(ctx, builder)).To(BeTrue())
+			})
+		})
+
+		Context("when route is passthrough", func() {
+			It("returns false", func() {
+				route := &gatewayv1.Route{
+					Spec: gatewayv1.RouteSpec{
+						Type:        gatewayv1.RouteTypePrimary,
 						PassThrough: true,
-						Security: &gatewayv1.Security{
+						Traffic:     gatewayv1.Traffic{},
+						Security: gatewayv1.Security{
 							M2M: &gatewayv1.Machine2MachineAuthentication{
 								Basic: &gatewayv1.BasicAuthCredentials{
-									Username: "testuser",
-									Password: "testpass",
+									Username: "user",
+									Password: "pass",
 								},
 							},
 						},
 					},
 				}
-				mockFeatureBuilder.EXPECT().GetRoute().Return(route, true).AnyTimes()
-				Expect(feature.InstanceBasicAuthFeature.IsUsed(context.Background(), mockFeatureBuilder)).To(BeFalse())
-			})
+				builder.EXPECT().GetRoute().Return(route, true)
 
-			It("should not be used when route is a proxy and not failover", func() {
-				route := &gatewayv1.Route{
-					Spec: gatewayv1.RouteSpec{
-						PassThrough: false,
-						Upstreams: []gatewayv1.Upstream{
-							{
-								IssuerUrl: "https://issuer.example.com", // Having an issuer makes it a proxy route
-							},
-						},
-						Security: &gatewayv1.Security{
-							M2M: &gatewayv1.Machine2MachineAuthentication{
-								Basic: &gatewayv1.BasicAuthCredentials{
-									Username: "testuser",
-									Password: "testpass",
-								},
-							},
-						},
-					},
-				}
-				mockFeatureBuilder.EXPECT().GetRoute().Return(route, true).AnyTimes()
-				Expect(feature.InstanceBasicAuthFeature.IsUsed(context.Background(), mockFeatureBuilder)).To(BeFalse())
-			})
-
-			It("should be used when route has basic auth in primary security", func() {
-				route := &gatewayv1.Route{
-					Spec: gatewayv1.RouteSpec{
-						PassThrough: false,
-						Security: &gatewayv1.Security{
-							M2M: &gatewayv1.Machine2MachineAuthentication{
-								Basic: &gatewayv1.BasicAuthCredentials{
-									Username: "testuser",
-									Password: "testpass",
-								},
-							},
-						},
-					},
-				}
-				mockFeatureBuilder.EXPECT().GetRoute().Return(route, true).AnyTimes()
-				Expect(feature.InstanceBasicAuthFeature.IsUsed(context.Background(), mockFeatureBuilder)).To(BeTrue())
-			})
-
-			It("should be used when route has basic auth in failover security", func() {
-				route := &gatewayv1.Route{
-					Spec: gatewayv1.RouteSpec{
-						PassThrough: false,
-						Traffic: gatewayv1.Traffic{
-							Failover: &gatewayv1.Failover{
-								Security: &gatewayv1.Security{
-									M2M: &gatewayv1.Machine2MachineAuthentication{
-										Basic: &gatewayv1.BasicAuthCredentials{
-											Username: "testuser",
-											Password: "testpass",
-										},
-									},
-								},
-							},
-						},
-					},
-				}
-				mockFeatureBuilder.EXPECT().GetRoute().Return(route, true).AnyTimes()
-				Expect(feature.InstanceBasicAuthFeature.IsUsed(context.Background(), mockFeatureBuilder)).To(BeTrue())
-			})
-
-			It("should not be used when no basic auth is configured", func() {
-				route := &gatewayv1.Route{
-					Spec: gatewayv1.RouteSpec{
-						PassThrough: false,
-						Security: &gatewayv1.Security{
-							M2M: &gatewayv1.Machine2MachineAuthentication{
-								// No basic auth configured, only scopes
-								Scopes: []string{"scope1", "scope2"},
-							},
-						},
-					},
-				}
-				mockFeatureBuilder.EXPECT().GetRoute().Return(route, true).AnyTimes()
-				mockFeatureBuilder.EXPECT().GetAllowedConsumers().Return(nil).Times(1)
-				Expect(feature.InstanceBasicAuthFeature.IsUsed(context.Background(), mockFeatureBuilder)).To(BeFalse())
-			})
-
-			It("should be used when any allowed consumer has basic auth", func() {
-				route := &gatewayv1.Route{
-					Spec: gatewayv1.RouteSpec{
-						PassThrough: false,
-					},
-				}
-
-				consumer := &gatewayv1.ConsumeRoute{
-					Spec: gatewayv1.ConsumeRouteSpec{
-						Security: &gatewayv1.ConsumeRouteSecurity{
-							M2M: &gatewayv1.ConsumerMachine2MachineAuthentication{
-								Basic: &gatewayv1.BasicAuthCredentials{
-									Username: "consumeruser",
-									Password: "consumerpass",
-								},
-							},
-						},
-					},
-				}
-
-				mockFeatureBuilder.EXPECT().GetRoute().Return(route, true).Times(1)
-				mockFeatureBuilder.EXPECT().GetAllowedConsumers().Return([]*gatewayv1.ConsumeRoute{consumer}).Times(1)
-
-				Expect(feature.InstanceBasicAuthFeature.IsUsed(context.Background(), mockFeatureBuilder)).To(BeTrue())
+				Expect(f.IsUsed(ctx, builder)).To(BeFalse())
 			})
 		})
 
-		Context("Apply", func() {
-			It("should apply basic auth credentials from primary route security", func() {
-				// Setup
-				jumperConfig := plugin.NewJumperConfig()
+		Context("when route is proxy type (no basic auth check on consumers)", func() {
+			It("returns false", func() {
 				route := &gatewayv1.Route{
 					Spec: gatewayv1.RouteSpec{
+						Type:        gatewayv1.RouteTypeProxy,
 						PassThrough: false,
-						Security: &gatewayv1.Security{
-							M2M: &gatewayv1.Machine2MachineAuthentication{
-								Basic: &gatewayv1.BasicAuthCredentials{
-									Username: "testuser",
-									Password: "testpass",
+						Traffic:     gatewayv1.Traffic{},
+						Security:    gatewayv1.Security{},
+					},
+				}
+				builder.EXPECT().GetRoute().Return(route, true)
+
+				Expect(f.IsUsed(ctx, builder)).To(BeFalse())
+			})
+		})
+
+		Context("when no route in builder", func() {
+			It("returns false", func() {
+				builder.EXPECT().GetRoute().Return(nil, false)
+
+				Expect(f.IsUsed(ctx, builder)).To(BeFalse())
+			})
+		})
+	})
+
+	Describe("Apply()", func() {
+		Context("happy path", func() {
+			Context("when route has basic auth configured", func() {
+				It("populates default key in BasicAuth map", func() {
+					route := &gatewayv1.Route{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "test-route",
+							Namespace: "test-ns",
+						},
+						Spec: gatewayv1.RouteSpec{
+							Type:    gatewayv1.RouteTypePrimary,
+							Traffic: gatewayv1.Traffic{},
+							Security: gatewayv1.Security{
+								M2M: &gatewayv1.Machine2MachineAuthentication{
+									Basic: &gatewayv1.BasicAuthCredentials{
+										Username: "route-user",
+										Password: "route-pass",
+									},
 								},
 							},
 						},
-					},
-				}
+					}
+					jumperConfig := plugin.NewJumperConfig()
 
-				mockFeatureBuilder.EXPECT().JumperConfig().Return(jumperConfig)
-				mockFeatureBuilder.EXPECT().GetRoute().Return(route, true).AnyTimes()
-				mockFeatureBuilder.EXPECT().GetAllowedConsumers().Return([]*gatewayv1.ConsumeRoute{})
+					builder.EXPECT().GetRoute().Return(route, true)
+					builder.EXPECT().JumperConfig().Return(jumperConfig)
+					builder.EXPECT().GetAllowedConsumers().Return([]*gatewayv1.ConsumeRoute{})
 
-				// Execute
-				err := feature.InstanceBasicAuthFeature.Apply(context.Background(), mockFeatureBuilder)
+					err := f.Apply(ctx, builder)
+					Expect(err).ToNot(HaveOccurred())
 
-				// Verify
-				Expect(err).ToNot(HaveOccurred())
-				defaultCreds := jumperConfig.BasicAuth[plugin.ConsumerId(feature.DefaultProviderKey)]
-				Expect(defaultCreds.Username).To(Equal("testuser"))
-				Expect(defaultCreds.Password).To(Equal("testpass"))
+					creds, exists := jumperConfig.BasicAuth[feature.DefaultProviderKey]
+					Expect(exists).To(BeTrue())
+					Expect(creds.Username).To(Equal("route-user"))
+					Expect(creds.Password).To(Equal("route-pass"))
+				})
 			})
 
-			It("should apply basic auth credentials from failover security", func() {
-				// Setup
-				jumperConfig := plugin.NewJumperConfig()
-				route := &gatewayv1.Route{
-					Spec: gatewayv1.RouteSpec{
-						PassThrough: false,
-						Traffic: gatewayv1.Traffic{
-							Failover: &gatewayv1.Failover{
-								Security: &gatewayv1.Security{
-									M2M: &gatewayv1.Machine2MachineAuthentication{
+			Context("when consumer has basic auth configured", func() {
+				It("populates consumer key in BasicAuth map", func() {
+					route := &gatewayv1.Route{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "test-route",
+							Namespace: "test-ns",
+						},
+						Spec: gatewayv1.RouteSpec{
+							Type:    gatewayv1.RouteTypePrimary,
+							Traffic: gatewayv1.Traffic{},
+							Security: gatewayv1.Security{
+								RealmName: "test-realm",
+							},
+						},
+					}
+					jumperConfig := plugin.NewJumperConfig()
+
+					consumers := []*gatewayv1.ConsumeRoute{
+						{
+							Spec: gatewayv1.ConsumeRouteSpec{
+								ConsumerName: "consumer-basic",
+								Security: &gatewayv1.ConsumeRouteSecurity{
+									M2M: &gatewayv1.ConsumerMachine2MachineAuthentication{
 										Basic: &gatewayv1.BasicAuthCredentials{
-											Username: "failoveruser",
-											Password: "failoverpass",
+											Username: "consumer-user",
+											Password: "consumer-pass",
 										},
 									},
 								},
 							},
 						},
-					},
-				}
+					}
 
-				mockFeatureBuilder.EXPECT().JumperConfig().Return(jumperConfig)
-				mockFeatureBuilder.EXPECT().GetRoute().Return(route, true).AnyTimes()
-				mockFeatureBuilder.EXPECT().GetAllowedConsumers().Return([]*gatewayv1.ConsumeRoute{})
+					builder.EXPECT().GetRoute().Return(route, true)
+					builder.EXPECT().JumperConfig().Return(jumperConfig)
+					builder.EXPECT().GetAllowedConsumers().Return(consumers)
 
-				// Execute
-				err := feature.InstanceBasicAuthFeature.Apply(context.Background(), mockFeatureBuilder)
+					err := f.Apply(ctx, builder)
+					Expect(err).ToNot(HaveOccurred())
 
-				// Verify
-				Expect(err).ToNot(HaveOccurred())
-				defaultCreds := jumperConfig.BasicAuth[plugin.ConsumerId(feature.DefaultProviderKey)]
-				Expect(defaultCreds.Username).To(Equal("failoveruser"))
-				Expect(defaultCreds.Password).To(Equal("failoverpass"))
+					creds, exists := jumperConfig.BasicAuth[plugin.ConsumerId("consumer-basic")]
+					Expect(exists).To(BeTrue())
+					Expect(creds.Username).To(Equal("consumer-user"))
+					Expect(creds.Password).To(Equal("consumer-pass"))
+				})
 			})
 
-			It("should apply basic auth credentials for allowed consumers", func() {
-				// Setup
-				jumperConfig := plugin.NewJumperConfig()
-				route := &gatewayv1.Route{
-					Spec: gatewayv1.RouteSpec{
-						PassThrough: false,
-						Security: &gatewayv1.Security{
-							M2M: &gatewayv1.Machine2MachineAuthentication{
-								Basic: &gatewayv1.BasicAuthCredentials{
-									Username: "routeuser",
-									Password: "routepass",
+			Context("when failover security overrides primary security", func() {
+				It("uses failover credentials", func() {
+					route := &gatewayv1.Route{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "failover-route",
+							Namespace: "test-ns",
+						},
+						Spec: gatewayv1.RouteSpec{
+							Type: gatewayv1.RouteTypeSecondary,
+							Traffic: gatewayv1.Traffic{
+								Failover: &gatewayv1.Failover{
+									TargetZoneName: "zone-b",
+									Security: gatewayv1.Security{
+										M2M: &gatewayv1.Machine2MachineAuthentication{
+											Basic: &gatewayv1.BasicAuthCredentials{
+												Username: "failover-user",
+												Password: "failover-pass",
+											},
+										},
+									},
+								},
+							},
+							Security: gatewayv1.Security{
+								M2M: &gatewayv1.Machine2MachineAuthentication{
+									Basic: &gatewayv1.BasicAuthCredentials{
+										Username: "primary-user",
+										Password: "primary-pass",
+									},
 								},
 							},
 						},
-					},
-				}
+					}
+					jumperConfig := plugin.NewJumperConfig()
 
-				consumer1 := &gatewayv1.ConsumeRoute{
-					Spec: gatewayv1.ConsumeRouteSpec{
-						ConsumerName: "consumer1",
-						Security: &gatewayv1.ConsumeRouteSecurity{
-							M2M: &gatewayv1.ConsumerMachine2MachineAuthentication{
-								Basic: &gatewayv1.BasicAuthCredentials{
-									Username: "consumer1user",
-									Password: "consumer1pass",
-								},
-							},
-						},
-					},
-				}
+					builder.EXPECT().GetRoute().Return(route, true)
+					builder.EXPECT().JumperConfig().Return(jumperConfig)
+					builder.EXPECT().GetAllowedConsumers().Return([]*gatewayv1.ConsumeRoute{})
 
-				consumer2 := &gatewayv1.ConsumeRoute{
-					Spec: gatewayv1.ConsumeRouteSpec{
-						ConsumerName: "consumer2",
-						Security: &gatewayv1.ConsumeRouteSecurity{
-							M2M: &gatewayv1.ConsumerMachine2MachineAuthentication{
-								// No basic auth for consumer2
-							},
-						},
-					},
-				}
+					err := f.Apply(ctx, builder)
+					Expect(err).ToNot(HaveOccurred())
 
-				mockFeatureBuilder.EXPECT().JumperConfig().Return(jumperConfig)
-				mockFeatureBuilder.EXPECT().GetRoute().Return(route, true).AnyTimes()
-				mockFeatureBuilder.EXPECT().GetAllowedConsumers().Return([]*gatewayv1.ConsumeRoute{consumer1, consumer2})
+					// Failover credentials should be used, not primary
+					creds, exists := jumperConfig.BasicAuth[feature.DefaultProviderKey]
+					Expect(exists).To(BeTrue())
+					Expect(creds.Username).To(Equal("failover-user"))
+					Expect(creds.Password).To(Equal("failover-pass"))
+				})
+			})
+		})
 
-				// Execute
-				err := feature.InstanceBasicAuthFeature.Apply(context.Background(), mockFeatureBuilder)
+		Context("error handling", func() {
+			Context("when no route in builder", func() {
+				It("returns ErrNoRoute", func() {
+					jumperConfig := plugin.NewJumperConfig()
+					builder.EXPECT().JumperConfig().Return(jumperConfig)
+					builder.EXPECT().GetRoute().Return(nil, false)
 
-				// Verify
-				Expect(err).ToNot(HaveOccurred())
-
-				// Check default provider creds
-				defaultCreds := jumperConfig.BasicAuth[plugin.ConsumerId(feature.DefaultProviderKey)]
-				Expect(defaultCreds.Username).To(Equal("routeuser"))
-				Expect(defaultCreds.Password).To(Equal("routepass"))
-
-				// Check consumer1 creds
-				consumer1Creds := jumperConfig.BasicAuth[plugin.ConsumerId("consumer1")]
-				Expect(consumer1Creds.Username).To(Equal("consumer1user"))
-				Expect(consumer1Creds.Password).To(Equal("consumer1pass"))
-
-				// Consumer2 should not have basic auth creds
-				_, hasConsumer2Creds := jumperConfig.BasicAuth[plugin.ConsumerId("consumer2")]
-				Expect(hasConsumer2Creds).To(BeFalse())
+					err := f.Apply(ctx, builder)
+					Expect(err).To(MatchError(features.ErrNoRoute))
+				})
 			})
 
-			It("should apply basic auth credentials for consumer only configuration", func() {
-				// Setup
-				jumperConfig := plugin.NewJumperConfig()
-				route := &gatewayv1.Route{
-					Spec: gatewayv1.RouteSpec{
-						PassThrough: false,
-						Security:    nil,
-					},
-				}
+			Context("when secret manager fails for route password", func() {
+				It("returns a wrapped error", func() {
+					originalGet := secretManagerApi.Get
+					defer func() { secretManagerApi.Get = originalGet }()
+					secretManagerApi.Get = func(_ context.Context, _ string) (string, error) {
+						return "", fmt.Errorf("secret manager unavailable")
+					}
 
-				consumer := &gatewayv1.ConsumeRoute{
-					Spec: gatewayv1.ConsumeRouteSpec{
-						ConsumerName: "consumer",
-						Security: &gatewayv1.ConsumeRouteSecurity{
-							M2M: &gatewayv1.ConsumerMachine2MachineAuthentication{
-								Basic: &gatewayv1.BasicAuthCredentials{
-									Username: "consumeruser",
-									Password: "consumerpass",
+					route := &gatewayv1.Route{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "test-route",
+							Namespace: "test-ns",
+						},
+						Spec: gatewayv1.RouteSpec{
+							Type:    gatewayv1.RouteTypePrimary,
+							Traffic: gatewayv1.Traffic{},
+							Security: gatewayv1.Security{
+								M2M: &gatewayv1.Machine2MachineAuthentication{
+									Basic: &gatewayv1.BasicAuthCredentials{
+										Username: "user",
+										Password: "$<secret-ref>",
+									},
 								},
 							},
 						},
-					},
-				}
+					}
+					jumperConfig := plugin.NewJumperConfig()
 
-				mockFeatureBuilder.EXPECT().JumperConfig().Return(jumperConfig)
-				mockFeatureBuilder.EXPECT().GetRoute().Return(route, true).AnyTimes()
-				mockFeatureBuilder.EXPECT().GetAllowedConsumers().Return([]*gatewayv1.ConsumeRoute{consumer})
+					builder.EXPECT().GetRoute().Return(route, true)
+					builder.EXPECT().JumperConfig().Return(jumperConfig)
 
-				// Execute
-				err := feature.InstanceBasicAuthFeature.Apply(context.Background(), mockFeatureBuilder)
-
-				// Verify
-				Expect(err).ToNot(HaveOccurred())
-
-				// Check consumer creds
-				consumerCreds := jumperConfig.BasicAuth[plugin.ConsumerId("consumer")]
-				Expect(consumerCreds.Username).To(Equal("consumeruser"))
-				Expect(consumerCreds.Password).To(Equal("consumerpass"))
-
-				// Default provider should not have creds
-				_, hasDefaultCreds := jumperConfig.BasicAuth[plugin.ConsumerId(feature.DefaultProviderKey)]
-				Expect(hasDefaultCreds).To(BeFalse())
+					err := f.Apply(ctx, builder)
+					Expect(err).To(HaveOccurred())
+					Expect(err.Error()).To(ContainSubstring("cannot get basic auth password for route test-route"))
+					Expect(err.Error()).To(ContainSubstring("secret manager unavailable"))
+				})
 			})
 
-			It("should skip consumers with nil security", func() {
-				// Setup
-				jumperConfig := plugin.NewJumperConfig()
-				route := &gatewayv1.Route{
-					Spec: gatewayv1.RouteSpec{
-						PassThrough: false,
-						Security: &gatewayv1.Security{
-							M2M: &gatewayv1.Machine2MachineAuthentication{
-								Basic: &gatewayv1.BasicAuthCredentials{
-									Username: "routeuser",
-									Password: "routepass",
+			Context("when secret manager fails for consumer password", func() {
+				It("returns a wrapped error", func() {
+					originalGet := secretManagerApi.Get
+					defer func() { secretManagerApi.Get = originalGet }()
+					secretManagerApi.Get = func(_ context.Context, ref string) (string, error) {
+						if ref == "$<consumer-secret-ref>" {
+							return "", fmt.Errorf("consumer password fetch failed")
+						}
+						return ref, nil
+					}
+
+					route := &gatewayv1.Route{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "test-route",
+							Namespace: "test-ns",
+						},
+						Spec: gatewayv1.RouteSpec{
+							Type:    gatewayv1.RouteTypePrimary,
+							Traffic: gatewayv1.Traffic{},
+							Security: gatewayv1.Security{
+								RealmName: "test-realm",
+							},
+						},
+					}
+					jumperConfig := plugin.NewJumperConfig()
+
+					consumers := []*gatewayv1.ConsumeRoute{
+						{
+							Spec: gatewayv1.ConsumeRouteSpec{
+								ConsumerName: "failing-consumer",
+								Security: &gatewayv1.ConsumeRouteSecurity{
+									M2M: &gatewayv1.ConsumerMachine2MachineAuthentication{
+										Basic: &gatewayv1.BasicAuthCredentials{
+											Username: "consumer-user",
+											Password: "$<consumer-secret-ref>",
+										},
+									},
 								},
 							},
 						},
-					},
-				}
+					}
 
-				consumer1 := &gatewayv1.ConsumeRoute{
-					Spec: gatewayv1.ConsumeRouteSpec{
-						ConsumerName: "consumer1",
-						Security:     nil, // Nil security
-					},
-				}
+					builder.EXPECT().GetRoute().Return(route, true)
+					builder.EXPECT().JumperConfig().Return(jumperConfig)
+					builder.EXPECT().GetAllowedConsumers().Return(consumers)
 
-				mockFeatureBuilder.EXPECT().JumperConfig().Return(jumperConfig)
-				mockFeatureBuilder.EXPECT().GetRoute().Return(route, true).AnyTimes()
-				mockFeatureBuilder.EXPECT().GetAllowedConsumers().Return([]*gatewayv1.ConsumeRoute{consumer1})
+					err := f.Apply(ctx, builder)
+					Expect(err).To(HaveOccurred())
+					Expect(err.Error()).To(ContainSubstring("cannot get basic auth password for consumer failing-consumer"))
+					Expect(err.Error()).To(ContainSubstring("consumer password fetch failed"))
+				})
+			})
+		})
 
-				// Execute
-				err := feature.InstanceBasicAuthFeature.Apply(context.Background(), mockFeatureBuilder)
+		Context("edge cases", func() {
+			Context("when consumer has nil security", func() {
+				It("skips the consumer without error", func() {
+					route := &gatewayv1.Route{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "test-route",
+							Namespace: "test-ns",
+						},
+						Spec: gatewayv1.RouteSpec{
+							Type:    gatewayv1.RouteTypePrimary,
+							Traffic: gatewayv1.Traffic{},
+							Security: gatewayv1.Security{
+								RealmName: "test-realm",
+							},
+						},
+					}
+					jumperConfig := plugin.NewJumperConfig()
 
-				// Verify
-				Expect(err).ToNot(HaveOccurred())
+					consumers := []*gatewayv1.ConsumeRoute{
+						{
+							Spec: gatewayv1.ConsumeRouteSpec{
+								ConsumerName: "no-security-consumer",
+								// Security is nil
+							},
+						},
+					}
 
-				// Check default provider creds
-				defaultCreds := jumperConfig.BasicAuth[plugin.ConsumerId(feature.DefaultProviderKey)]
-				Expect(defaultCreds.Username).To(Equal("routeuser"))
-				Expect(defaultCreds.Password).To(Equal("routepass"))
+					builder.EXPECT().GetRoute().Return(route, true)
+					builder.EXPECT().JumperConfig().Return(jumperConfig)
+					builder.EXPECT().GetAllowedConsumers().Return(consumers)
 
-				// Consumer1 should not have basic auth creds
-				_, hasConsumer1Creds := jumperConfig.BasicAuth[plugin.ConsumerId("consumer1")]
-				Expect(hasConsumer1Creds).To(BeFalse())
+					err := f.Apply(ctx, builder)
+					Expect(err).ToNot(HaveOccurred())
+
+					// No entries should be added for the consumer
+					Expect(jumperConfig.BasicAuth).To(BeEmpty())
+				})
 			})
 		})
 	})

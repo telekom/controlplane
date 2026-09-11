@@ -28,7 +28,7 @@ var _ = Describe("Middleware", func() {
 			var buffer = bytes.NewBuffer(nil)
 
 			app := fiber.New()
-			app.Use(middleware.NewContextLogger(&GinkgoLogr))
+			app.Use(middleware.NewContextLogger(GinkgoLogr))
 			app.Use(middleware.NewLogger(middleware.WithOutput(buffer)))
 			req := httptest.NewRequest("GET", "/", nil)
 			res, err := app.Test(req)

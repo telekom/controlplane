@@ -15,6 +15,7 @@ const (
 	FeatureTypeBasicAuth            FeatureType = "BasicAuth"
 	FeatureTypeIpRestriction        FeatureType = "IpRestriction"
 	FeatureTypeCircuitBreaker       FeatureType = "CircuitBreaker"
+	FeatureTypeDynamicUpstream      FeatureType = "DynamicUpstream"
 )
 
 // Dependent Features
@@ -22,6 +23,7 @@ const (
 	FeatureTypeLastMileSecurity FeatureType = "LastMileSecurity" // depends on AccessControl
 	FeatureTypeExternalIDP      FeatureType = "ExternalIDP"      // depends on LastMileSecurity
 	FeatureTypeCustomScopes     FeatureType = "CustomScopes"     // depends on LastMileSecurity
+	FeatureTypeClaims           FeatureType = "Claims"           // depends on LastMileSecurity
 	FeatureTypeLoadBalancing    FeatureType = "LoadBalancing"    // depends on LastMileSecurity
 	FeatureTypeFailover         FeatureType = "Failover"         // depends on LastMileSecurity
 )

@@ -19,6 +19,10 @@ import (
 	"go.uber.org/zap"
 )
 
+const (
+	snapshotterTokenEnvKey = "SNAPSHOTTER_TOKEN" // #nosec G101 -- Environment variable key name, not a credential.
+)
+
 // SnapshotExecutor handles executing snapshotter commands and capturing their outputs
 type SnapshotExecutor struct {
 	snapshotterConfig config.SnapshotterConfig
@@ -61,9 +65,7 @@ func (e *SnapshotExecutor) Execute(ctx context.Context, cmdStr string, params ma
 		cmd = exec.CommandContext(ctx, "sh", "-c", fullCmd)
 
 		// Set up environment variables
-		if e.environment.Token != "" {
-			cmd.Env = append(cmd.Env, fmt.Sprintf("SNAPSHOTTER_TOKEN=%s", e.environment.Token))
-		}
+		cmd.Env = append(cmd.Env, buildCommandEnv(e.environment, snapshotterTokenEnvKey)...)
 	}
 
 	// Log the full command details for debugging

@@ -1,0 +1,8 @@
+# Copyright 2026 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+## Append samples of your project ##
+resources:
+- permission_v1_permissionset.yaml
+# +kubebuilder:scaffold:manifestskustomizesamples

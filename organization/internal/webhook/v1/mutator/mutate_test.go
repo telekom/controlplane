@@ -11,19 +11,31 @@ import (
 
 	"github.com/stretchr/testify/mock"
 
-	. "github.com/onsi/gomega"
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
 	"github.com/telekom/controlplane/organization/internal/secret"
 	"github.com/telekom/controlplane/secret-manager/api"
 	"github.com/telekom/controlplane/secret-manager/api/fake"
+
+	. "github.com/onsi/gomega"
 )
 
 func TestMutateSecret(t *testing.T) {
-
 	zone := &adminv1.Zone{
 		Spec: adminv1.ZoneSpec{
-			Gateway:          adminv1.GatewayConfig{Url: "https://example.com/gateway"},
+			Gateway: adminv1.GatewayConfig{
+				Admin: adminv1.GatewayAdminConfig{
+					Url: "https://example.com/gateway",
+				},
+				Presets: []adminv1.GatewayConfigPreset{{
+					Name:    "default",
+					Default: true,
+					Urls: []adminv1.UrlConfig{{
+						Hostname: "example.com",
+						BasePath: "/gateway",
+					}},
+				}},
+			},
 			IdentityProvider: adminv1.IdentityProviderConfig{Url: "https://example.com/identity"},
 		},
 	}

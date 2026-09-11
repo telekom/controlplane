@@ -66,7 +66,7 @@ func NewMockAccessToken(env, group, team string, scopes []string) string {
 	claims := jwt.MapClaims{
 		"env":      env,
 		"clientId": fmt.Sprintf("%s--%s--%s", group, team, "user"),
-		"scopes":   strings.Join(scopes, " "),
+		"scope":    strings.Join(scopes, " "),
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodNone, claims)

@@ -2,22 +2,23 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package controller // nolint: dupl
+package controller
 
 import (
 	"context"
 
-	cconfig "github.com/telekom/controlplane/common/pkg/config"
-	cc "github.com/telekom/controlplane/common/pkg/controller"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
-
+	"github.com/telekom/controlplane/approval/internal/config"
 	approval_handler "github.com/telekom/controlplane/approval/internal/handler/approval"
+	cconfig "github.com/telekom/controlplane/common/pkg/config"
+	cc "github.com/telekom/controlplane/common/pkg/controller"
 )
 
 // ApprovalReconciler reconciles a Approval object
@@ -25,6 +26,8 @@ type ApprovalReconciler struct {
 	client.Client
 	Scheme   *runtime.Scheme
 	Recorder record.EventRecorder
+
+	ExpirationConfig *config.ExpirationConfig
 
 	cc.Controller[*approvalv1.Approval]
 }
@@ -43,10 +46,11 @@ func (r *ApprovalReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 // SetupWithManager sets up the controller with the Manager.
 func (r *ApprovalReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Recorder = mgr.GetEventRecorderFor("approval-controller")
-	r.Controller = cc.NewController(&approval_handler.ApprovalHandler{}, r.Client, r.Recorder)
+	r.Controller = cc.NewController(approval_handler.NewHandler(r.ExpirationConfig), r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&approvalv1.Approval{}).
+		For(&approvalv1.Approval{}, builder.WithPredicates(cc.Count("approval", cc.RoleFor))).
+		Owns(&approvalv1.ApprovalExpiration{}, builder.WithPredicates(cc.Count("approval", cc.RoleOwns))).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
 			RateLimiter:             cc.NewRateLimiter(),

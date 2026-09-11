@@ -1,0 +1,196 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Shared types
+# ──────────────────────────────────────────────────────────────────────────────
+
+type MutationError {
+  code: ErrorCode!
+  message: String!
+  field: String
+}
+
+enum ErrorCode {
+  NOT_FOUND
+  FORBIDDEN
+  CONFLICT
+  VALIDATION_FAILED
+  PRECONDITION_FAILED
+}
+
+input MemberInput {
+  name: String!
+  email: String!
+}
+
+input DecisionInput {
+  action: ApprovalAction!
+  "Optional comment from the decider"
+  comment: String
+}
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Team mutations
+# ──────────────────────────────────────────────────────────────────────────────
+
+input CreateTeamInput {
+  environment: String!
+  group: String!
+  name: String!
+  email: String!
+  members: [MemberInput!]!
+  displayName: String
+  description: String
+}
+
+input UpdateTeamInput {
+  teamId: ID!
+  email: String
+  displayName: String
+  description: String
+}
+
+input DeleteTeamInput {
+  teamId: ID!
+}
+
+type CreateTeamPayload {
+  team: Team
+  accepted: Boolean!
+  errors: [MutationError!]!
+}
+
+type UpdateTeamPayload {
+  team: Team
+  accepted: Boolean!
+  errors: [MutationError!]!
+}
+
+type DeleteTeamPayload {
+  accepted: Boolean!
+  errors: [MutationError!]!
+}
+
+type AddTeamMemberPayload {
+  team: Team
+  errors: [MutationError!]!
+}
+
+type RemoveTeamMemberPayload {
+  team: Team
+  errors: [MutationError!]!
+}
+
+type RotateTeamTokenPayload {
+  team: Team
+  accepted: Boolean!
+  errors: [MutationError!]!
+}
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Group mutations
+# ──────────────────────────────────────────────────────────────────────────────
+
+input CreateGroupInput {
+  environment: String!
+  name: String!
+  displayName: String!
+  description: String
+}
+
+input UpdateGroupInput {
+  groupId: ID!
+  displayName: String
+  description: String
+}
+
+input DeleteGroupInput {
+  groupId: ID!
+}
+
+type CreateGroupPayload {
+  group: Group
+  accepted: Boolean!
+  errors: [MutationError!]!
+}
+
+type UpdateGroupPayload {
+  group: Group
+  accepted: Boolean!
+  errors: [MutationError!]!
+}
+
+type DeleteGroupPayload {
+  accepted: Boolean!
+  errors: [MutationError!]!
+}
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Application mutations
+# ──────────────────────────────────────────────────────────────────────────────
+
+type RotateApplicationSecretPayload {
+  application: Application
+  accepted: Boolean!
+  errors: [MutationError!]!
+}
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Approval mutations
+# ──────────────────────────────────────────────────────────────────────────────
+
+type DecideApprovalRequestPayload {
+  approvalRequest: ApprovalRequest
+  accepted: Boolean!
+  errors: [MutationError!]!
+}
+
+type DecideApprovalPayload {
+  approval: Approval
+  accepted: Boolean!
+  errors: [MutationError!]!
+}
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Mutation type
+# ──────────────────────────────────────────────────────────────────────────────
+
+type Mutation {
+  "Create a new Team in Kubernetes"
+  createTeam(input: CreateTeamInput!): CreateTeamPayload!
+
+  "Update team metadata (email, description, displayName). Does not manage members."
+  updateTeam(input: UpdateTeamInput!): UpdateTeamPayload!
+
+  "Delete a Team. Fails if the team still has resources (Rovers, ApiSpecs, etc.)."
+  deleteTeam(input: DeleteTeamInput!): DeleteTeamPayload!
+
+  "Add a member to a team. Takes effect immediately."
+  addTeamMember(teamId: ID!, member: MemberInput!): AddTeamMemberPayload!
+
+  "Remove a member from a team by email. Takes effect immediately."
+  removeTeamMember(teamId: ID!, memberEmail: String!): RemoveTeamMemberPayload!
+
+  "Rotate the token for a team. Triggers async secret regeneration."
+  rotateTeamToken(teamId: ID!): RotateTeamTokenPayload!
+
+  "Rotate the client secret for an application. Triggers async secret regeneration."
+  rotateApplicationSecret(applicationId: ID!): RotateApplicationSecretPayload!
+
+  "Create a new Group in Kubernetes"
+  createGroup(input: CreateGroupInput!): CreateGroupPayload!
+
+  "Update group metadata (displayName, description)."
+  updateGroup(input: UpdateGroupInput!): UpdateGroupPayload!
+
+  "Delete a Group. Fails if the group still has teams."
+  deleteGroup(input: DeleteGroupInput!): DeleteGroupPayload!
+
+  "Decide on an ApprovalRequest (approve or deny initial access)."
+  decideApprovalRequest(approvalRequestId: ID!, input: DecisionInput!): DecideApprovalRequestPayload!
+
+  "Decide on an existing Approval (suspend, resume, deny, or re-allow ongoing access)."
+  decideApproval(approvalId: ID!, input: DecisionInput!): DecideApprovalPayload!
+}

@@ -38,7 +38,7 @@ func (f *CustomScopesFeature) IsUsed(ctx context.Context, builder features.Featu
 	}
 	notPassThrough := !route.Spec.PassThrough
 	isPrimaryRoute := !route.IsProxy()
-	isFailoverSecondary := route.IsFailoverSecondary()
+	isFailoverSecondary := route.Spec.Type == gatewayv1.RouteTypeSecondary
 
 	return notPassThrough && (isPrimaryRoute || isFailoverSecondary)
 }
@@ -57,7 +57,7 @@ func (f *CustomScopesFeature) Apply(ctx context.Context, builder features.Featur
 
 	// Default scopes
 	// If the route has a security configuration with default M2M scopes, we add them to the JumperConfig
-	if route.Spec.Security != nil && route.Spec.Security.M2M != nil {
+	if route.Spec.Security.M2M != nil {
 		if len(route.Spec.Security.M2M.Scopes) > 0 {
 			// Join scopes with a space, as Kong expects a single string with space-separated scopes
 			jumperConfig.OAuth[plugin.ConsumerId(DefaultProviderKey)] = plugin.OauthCredentials{

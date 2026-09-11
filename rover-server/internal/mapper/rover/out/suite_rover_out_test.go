@@ -10,16 +10,21 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/stretchr/testify/mock"
+	storeLib "github.com/telekom/controlplane/common-server/pkg/store"
 	"github.com/telekom/controlplane/common/pkg/condition"
+	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/telekom/controlplane/rover-server/pkg/store"
 	"github.com/telekom/controlplane/rover-server/test/mocks"
 )
 
 var (
-	rover *roverv1.Rover
+	rover  *roverv1.Rover
+	stores *store.Stores
 
 	apiExposure = roverv1.ApiExposure{
 		Approval: roverv1.Approval{
@@ -47,8 +52,9 @@ var (
 	}
 )
 
+type ContextKey string
+
 var ctx context.Context
-var cancel context.CancelFunc
 
 func TestMapper(t *testing.T) {
 	RegisterFailHandler(Fail)
@@ -56,13 +62,26 @@ func TestMapper(t *testing.T) {
 }
 
 var _ = BeforeSuite(func() {
-	rover = mocks.GetRover(GinkgoT(), mocks.RoverFileName)
-	ctx, cancel = context.WithCancel(context.TODO())
-})
+	ctx = context.WithValue(context.TODO(), ContextKey("test"), "test")
 
-var _ = AfterSuite(func() {
-	By("tearing down the test environment")
-	cancel()
+	stores = &store.Stores{}
+
+	// Initialize mock stores for sub-resource staleness checks used by MapRoverStatus.
+	stores.APISubscriptionStore = mocks.NewAPISubscriptionStoreMock(GinkgoT())
+	stores.APIExposureStore = mocks.NewAPIExposureStoreMock(GinkgoT())
+	stores.ApplicationStore = mocks.NewApplicationStoreMock(GinkgoT())
+
+	eventExposureMock := mocks.NewMockObjectStore[*eventv1.EventExposure](GinkgoT())
+	eventExposureMock.EXPECT().List(mock.Anything, mock.Anything).Return(
+		&storeLib.ListResponse[*eventv1.EventExposure]{Items: []*eventv1.EventExposure{}}, nil).Maybe()
+	stores.EventExposureStore = eventExposureMock
+
+	eventSubscriptionMock := mocks.NewMockObjectStore[*eventv1.EventSubscription](GinkgoT())
+	eventSubscriptionMock.EXPECT().List(mock.Anything, mock.Anything).Return(
+		&storeLib.ListResponse[*eventv1.EventSubscription]{Items: []*eventv1.EventSubscription{}}, nil).Maybe()
+	stores.EventSubscriptionStore = eventSubscriptionMock
+
+	rover = mocks.GetRover(GinkgoT(), mocks.RoverFileName)
 })
 
 func GetRoverWithReadyCondition(rover *roverv1.Rover) *roverv1.Rover {

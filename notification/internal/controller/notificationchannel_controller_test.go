@@ -6,17 +6,18 @@ package controller
 
 import (
 	"context"
-	"github.com/telekom/controlplane/common/pkg/condition"
-	"github.com/telekom/controlplane/common/pkg/config"
-	"k8s.io/apimachinery/pkg/api/meta"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
+	"github.com/telekom/controlplane/common/pkg/condition"
+	"github.com/telekom/controlplane/common/pkg/config"
 	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("NotificationChannel Controller", func() {
@@ -44,7 +45,6 @@ var _ = Describe("NotificationChannel Controller", func() {
 						},
 					},
 					Spec: notificationv1.NotificationChannelSpec{
-
 						Email: &notificationv1.EmailConfig{
 							Recipients:     []string{"test@test.com"},
 							Authentication: nil,
@@ -70,7 +70,7 @@ var _ = Describe("NotificationChannel Controller", func() {
 			Eventually(func(g Gomega) {
 				channel := &notificationv1.NotificationChannel{}
 				err := k8sClient.Get(ctx, typeNamespacedName, channel)
-				g.Expect(err).To(BeNil())
+				g.Expect(err).ToNot(HaveOccurred())
 
 				g.Expect(channel.Spec.Email).ToNot(BeNil())
 				g.Expect(channel.Spec.Ignore).To(ContainElement("thisPurpose"))

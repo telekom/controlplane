@@ -8,14 +8,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var (
-	approved = metav1.Condition{
-		Type:    "Approved",
-		Status:  metav1.ConditionTrue,
-		Reason:  "Granted",
-		Message: "Request has been granted",
-	}
-)
+var approved = metav1.Condition{
+	Type:    "Approved",
+	Status:  metav1.ConditionTrue,
+	Reason:  "Granted",
+	Message: "Request has been granted",
+}
 
 func NewApprovedCondition() metav1.Condition {
 	return approved
@@ -45,5 +43,14 @@ func NewPendingCondition() metav1.Condition {
 		Status:  metav1.ConditionFalse,
 		Reason:  "Pending",
 		Message: "Request is pending",
+	}
+}
+
+func NewSemigrantedCondition() metav1.Condition {
+	return metav1.Condition{
+		Type:    "Approved",
+		Status:  metav1.ConditionFalse,
+		Reason:  "Semigranted",
+		Message: "Request has been partially approved, awaiting second approval",
 	}
 }

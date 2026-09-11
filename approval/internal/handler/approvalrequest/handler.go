@@ -6,29 +6,29 @@ package approvalrequest
 
 import (
 	"context"
+
 	"github.com/pkg/errors"
-	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
-	approval_condition "github.com/telekom/controlplane/approval/internal/condition"
-	"github.com/telekom/controlplane/approval/internal/handler/util"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
+	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
+	"github.com/telekom/controlplane/approval/api/v1/builder"
+	approval_condition "github.com/telekom/controlplane/approval/internal/condition"
+	"github.com/telekom/controlplane/approval/internal/handler/util"
 	"github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/handler"
 	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
-
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 )
 
 var _ handler.Handler[*approvalv1.ApprovalRequest] = &ApprovalRequestHandler{}
 
-type ApprovalRequestHandler struct {
-}
+type ApprovalRequestHandler struct{}
 
 func (h *ApprovalRequestHandler) CreateOrUpdate(ctx context.Context, approvalReq *approvalv1.ApprovalRequest) error {
-	log := log.FromContext(ctx)
+	logger := log.FromContext(ctx)
 
 	// handle the notifications first
 	err := handleNotifications(ctx, approvalReq)
@@ -42,7 +42,7 @@ func (h *ApprovalRequestHandler) CreateOrUpdate(ctx context.Context, approvalReq
 	approvalReq.Status.LastState = approvalReq.Spec.State
 
 	if approvalReq.Spec.Strategy == approvalv1.ApprovalStrategyAuto {
-		log.Info("ApprovalRequest is auto approved")
+		logger.Info("ApprovalRequest is auto approved")
 		if approvalReq.Spec.State != approvalv1.ApprovalStateGranted { // TODO: move this to validation webhook
 			approvalReq.SetCondition(condition.NewBlockedCondition("Request is auto approved and should be granted"))
 			return nil
@@ -58,26 +58,32 @@ func (h *ApprovalRequestHandler) CreateOrUpdate(ctx context.Context, approvalReq
 	switch approvalReq.Spec.State {
 
 	case approvalv1.ApprovalStateGranted:
-		log.Info("ApprovalRequest has been approved")
+		logger.Info("ApprovalRequest has been approved")
 		err := handleGranted(ctx, approvalReq)
 		if err != nil {
 			return errors.Wrap(err, "failed to handle granted approval")
 		}
 
+	case approvalv1.ApprovalStateSemigranted:
+		logger.Info("ApprovalRequest has been partially approved")
+		approvalReq.SetCondition(approval_condition.NewSemigrantedCondition())
+		approvalReq.SetCondition(condition.NewProcessingCondition("Semigranted", "Request partially approved, awaiting second approval"))
+		approvalReq.SetCondition(condition.NewNotReadyCondition("Semigranted", "Request has been partially approved"))
+
 	case approvalv1.ApprovalStateRejected:
-		log.Info("ApprovalRequest has been rejected")
+		logger.Info("ApprovalRequest has been rejected")
 		approvalReq.SetCondition(approval_condition.NewRejectedCondition())
 		approvalReq.SetCondition(condition.NewDoneProcessingCondition("Request rejected"))
 		approvalReq.SetCondition(condition.NewNotReadyCondition("Rejected", "Request has been rejected"))
 
 	case approvalv1.ApprovalStatePending:
-		log.Info("ApprovalRequest is still pending")
+		logger.Info("ApprovalRequest is still pending")
 		approvalReq.SetCondition(approval_condition.NewPendingCondition())
-		approvalReq.SetCondition(condition.NewProcessingCondition("ApprovalPending", "Request is pending"))
+		approvalReq.SetCondition(condition.NewProcessingCondition(builder.ReasonApprovalPending, "Request is pending"))
 		approvalReq.SetCondition(condition.NewNotReadyCondition("Pending", "Request is pending"))
 
 	default:
-		log.Info("ApprovalRequest is in an unknown state")
+		logger.Info("ApprovalRequest is in an unknown state")
 		approvalReq.SetCondition(condition.NewBlockedCondition("Request is in an unknown state"))
 		approvalReq.SetCondition(condition.NewNotReadyCondition("Invalid", "Request is in an unknown state"))
 	}
@@ -92,6 +98,10 @@ func (h *ApprovalRequestHandler) Delete(ctx context.Context, approvalReq *approv
 func shouldNotifyRequester(approvalRequest *approvalv1.ApprovalRequest) bool {
 	// currently only the decider is notified about this
 	if approvalRequest.Spec.State == approvalv1.ApprovalStatePending {
+		return false
+	}
+	// Semigranted is an intermediate state; only deciders need to know
+	if approvalRequest.Spec.State == approvalv1.ApprovalStateSemigranted {
 		return false
 	}
 
@@ -109,7 +119,7 @@ func handleNotifications(ctx context.Context, approvalReq *approvalv1.ApprovalRe
 	)
 
 	var scenario util.NotificationScenario
-	if approvalReq.ObjectMeta.GetGeneration() == 1 {
+	if approvalReq.GetGeneration() == 1 {
 		scenario = util.NotificationScenarioCreated
 	} else {
 		scenario = util.NotificationScenarioUpdated
@@ -125,8 +135,8 @@ func handleNotifications(ctx context.Context, approvalReq *approvalv1.ApprovalRe
 		Decider:                &approvalReq.Spec.Decider,
 		Scenario:               scenario,
 		Actor:                  util.ActorDecider,
+		Action:                 approvalReq.Spec.Action,
 	})
-
 	if err != nil {
 		return errors.Wrapf(err, "Failed to send notification to decider %q while handling approval request %+v", approvalReq.Spec.Decider.TeamName, approvalReq)
 	}
@@ -143,6 +153,7 @@ func handleNotifications(ctx context.Context, approvalReq *approvalv1.ApprovalRe
 			Decider:                &approvalReq.Spec.Decider,
 			Scenario:               scenario,
 			Actor:                  util.ActorRequester,
+			Action:                 approvalReq.Spec.Action,
 		})
 		if err != nil {
 			return errors.Wrapf(err, "Failed to send notification to requester %q while handling approval request %+v", approvalReq.Spec.Requester.TeamName, approvalReq)
@@ -154,18 +165,18 @@ func handleNotifications(ctx context.Context, approvalReq *approvalv1.ApprovalRe
 }
 
 func handleGranted(ctx context.Context, approvalReq *approvalv1.ApprovalRequest) error {
-	log := log.FromContext(ctx)
+	logger := log.FromContext(ctx)
 	c := client.ClientFromContextOrDie(ctx)
 
 	approvalObj := newApprovalFromApprovalRequest(approvalReq)
 
 	mutate := func() error {
 		if approvalObj.Spec.ApprovedRequest != nil && approvalObj.Spec.ApprovedRequest.Name == approvalReq.Name {
-			log.Info("Approval has already been processed for this request")
+			logger.Info("Approval has already been processed for this request")
 			return nil
 		}
 
-		setControllerReferenceForRef(approvalObj, approvalReq.Spec.Target)
+		setControllerReferenceForRef(approvalObj, &approvalReq.Spec.Target)
 
 		approvalObj.Spec = approvalv1.ApprovalSpec{
 			Strategy: approvalReq.Spec.Strategy,
@@ -179,6 +190,12 @@ func handleGranted(ctx context.Context, approvalReq *approvalv1.ApprovalRequest)
 
 			ApprovedRequest: types.ObjectRefFromObject(approvalReq),
 		}
+
+		approvalv1.SetApprovalLabels(approvalObj, approvalReq.Spec.Target,
+			approvalReq.Spec.Requester.TeamName,
+			approvalReq.Spec.Decider.TeamName,
+			approvalReq.Spec.Action,
+			string(approvalReq.Spec.Strategy))
 
 		return nil
 	}
@@ -198,7 +215,7 @@ func handleGranted(ctx context.Context, approvalReq *approvalv1.ApprovalRequest)
 	return nil
 }
 
-func setControllerReferenceForRef(obj types.Object, objRef types.TypedObjectRef) {
+func setControllerReferenceForRef(obj types.Object, objRef *types.TypedObjectRef) {
 	gvk := objRef.GroupVersionKind()
 	ref := metav1.OwnerReference{
 		APIVersion:         gvk.GroupVersion().String(),

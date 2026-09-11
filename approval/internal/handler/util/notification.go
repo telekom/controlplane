@@ -8,8 +8,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/pkg/errors"
 	"strings"
+
+	"github.com/pkg/errors"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
 	"github.com/telekom/controlplane/common/pkg/types"
@@ -17,7 +19,6 @@ import (
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
 	"github.com/telekom/controlplane/notification/api/v1/builder"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type NotificationScenario string
@@ -37,10 +38,20 @@ const (
 	TemplatePlaceholderRequesterApplication = "requester_application"
 
 	TemplatePlaceholderEnvironment = "environment"
-	TemplatePlaceholderBasepath    = "basepath"
-	TemplatePlaceholderStateOld    = "state_old"
-	TemplatePlaceholderStateNew    = "state_new"
-	TemplatePlaceholderScopes      = "scopes"
+
+	// TemplatePlaceholderResourceName represents the resource, if the resourceType is api, then resourceName is the basepath
+	TemplatePlaceholderResourceName = "resource_name"
+
+	// TemplatePlaceholderResourceType can be api/event
+	TemplatePlaceholderResourceType = "resource_type"
+
+	TemplatePlaceholderStateOld = "state_old"
+	TemplatePlaceholderStateNew = "state_new"
+	TemplatePlaceholderScopes   = "scopes"
+
+	TemplatePlaceholderExpirationDate = "expiration_date"
+	TemplatePlaceholderDaysRemaining  = "days_remaining"
+	TemplatePlaceholderIsExpired      = "is_expired"
 )
 
 type Actor string
@@ -60,6 +71,15 @@ type NotificationData struct {
 	Decider                *approvalv1.Decider
 	Scenario               NotificationScenario
 	Actor                  Actor
+	Action                 string
+}
+
+// ReminderNotificationData extends NotificationData with expiration-specific fields.
+type ReminderNotificationData struct {
+	NotificationData
+	ExpirationDate string
+	DaysRemaining  string
+	IsExpired      bool
 }
 
 func extractDecider(decider *approvalv1.Decider) (map[string]any, error) {
@@ -78,7 +98,6 @@ func extractDecider(decider *approvalv1.Decider) (map[string]any, error) {
 }
 
 func extractRequester(requester *approvalv1.Requester) (map[string]any, error) {
-
 	requesterPropertiesMap := map[string]any{}
 
 	if requester.Properties.Size() != 0 {
@@ -88,8 +107,9 @@ func extractRequester(requester *approvalv1.Requester) (map[string]any, error) {
 		}
 	}
 
-	// basepath
-	// the property is already present from the original requester properties
+	// resource_type and resource_name are set directly by the subscription
+	// handler that creates the ApprovalRequest (api/event/mcp), so they flow
+	// through as ordinary properties.
 
 	// scopes
 	if requesterPropertiesMap[TemplatePlaceholderScopes] == nil {
@@ -133,15 +153,16 @@ func SendNotification(ctx context.Context, data *NotificationData) (*types.Objec
 		properties[strings.ToLower(k)] = v
 	}
 
-	// let's build the purpose <ownerKind>--<targetKind>--<scenario>--<actor>
-	// example: approvalrequest--apisubscription--created--decider
+	// let's build the purpose <ownerKind>--<approvalAction>--<scenario>--<actor>
+	// example: approvalrequest--subscribe--created--decider
 	purposeStringBuilder := strings.Builder{}
 	// owner kind
 	purposeStringBuilder.WriteString(data.Owner.GetObjectKind().GroupVersionKind().Kind)
 	purposeStringBuilder.WriteString(DELIMITER)
 
 	// target kind
-	purposeStringBuilder.WriteString(data.Target.GetKind())
+	// uses the approval/approvalRequest action - for example "subscribe"
+	purposeStringBuilder.WriteString(data.Action)
 	purposeStringBuilder.WriteString(DELIMITER)
 
 	// scenario
@@ -193,10 +214,73 @@ func initializeProperties() map[string]any {
 
 	// other
 	properties[TemplatePlaceholderEnvironment] = defaultValue
-	properties[TemplatePlaceholderBasepath] = defaultValue
+	properties[TemplatePlaceholderResourceName] = defaultValue
+	properties[TemplatePlaceholderResourceType] = defaultValue
 	properties[TemplatePlaceholderStateOld] = defaultValue
 	properties[TemplatePlaceholderStateNew] = defaultValue
 	properties[TemplatePlaceholderScopes] = defaultValue
+	// Note: Expiration fields (ExpirationDate, DaysRemaining, IsExpired) are only
+	// initialized in SendReminderNotification, not for regular notifications
 
 	return properties
+}
+
+// SendReminderNotification sends an expiration reminder notification.
+func SendReminderNotification(ctx context.Context, data *ReminderNotificationData) (*types.ObjectRef, error) {
+	properties := initializeProperties()
+
+	properties[TemplatePlaceholderEnvironment] = contextutil.EnvFromContextOrDie(ctx)
+	properties[TemplatePlaceholderStateNew] = data.StateNew
+	properties[TemplatePlaceholderStateOld] = data.StateOld
+	properties[TemplatePlaceholderExpirationDate] = data.ExpirationDate
+	properties[TemplatePlaceholderDaysRemaining] = data.DaysRemaining
+	properties[TemplatePlaceholderIsExpired] = data.IsExpired
+
+	requesterMap, err := extractRequester(data.Requester)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed to extract requester data")
+	}
+	for k, v := range requesterMap {
+		properties[strings.ToLower(k)] = v
+	}
+
+	deciderMap, err := extractDecider(data.Decider)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed to extract decider data")
+	}
+	for k, v := range deciderMap {
+		properties[strings.ToLower(k)] = v
+	}
+
+	// purpose: <ownerKind-lowercased>--<action>--reminder--<actor>
+	// example: approvalexpiration--subscribe--reminder--decider
+	purposeStringBuilder := strings.Builder{}
+	purposeStringBuilder.WriteString(strings.ToLower(data.Owner.GetObjectKind().GroupVersionKind().Kind))
+	purposeStringBuilder.WriteString(DELIMITER)
+	purposeStringBuilder.WriteString(data.Action)
+	purposeStringBuilder.WriteString(DELIMITER)
+	purposeStringBuilder.WriteString("reminder")
+	purposeStringBuilder.WriteString(DELIMITER)
+	purposeStringBuilder.WriteString(string(data.Actor))
+	purpose := purposeStringBuilder.String()
+
+	nameStringBuilder := strings.Builder{}
+	nameStringBuilder.WriteString(purpose)
+	nameStringBuilder.WriteString(DELIMITER)
+	nameStringBuilder.WriteString(data.Target.GetName())
+	name := nameStringBuilder.String()
+
+	notificationBuilder := builder.New().
+		WithOwner(data.Owner).
+		WithSender(notificationv1.SenderTypeSystem, "ApprovalService").
+		WithDefaultChannels(ctx, data.SendToChannelNamespace).
+		WithPurpose(strings.ToLower(purpose)).
+		WithName(labelutil.NormalizeNameValue(name)).
+		WithProperties(properties)
+
+	notification, err := notificationBuilder.Send(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return types.ObjectRefFromObject(notification), nil
 }

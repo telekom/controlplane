@@ -5,12 +5,13 @@
 package validator
 
 import (
-	"github.com/telekom/controlplane/common/pkg/controller"
-	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/telekom/controlplane/common/pkg/controller"
+	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
 )
 
 const separator = "--"

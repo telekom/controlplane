@@ -2,22 +2,22 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package controller // nolint: dupl
+package controller
 
 import (
 	"context"
 
-	cconfig "github.com/telekom/controlplane/common/pkg/config"
-	cc "github.com/telekom/controlplane/common/pkg/controller"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
-
 	approvalreq_handler "github.com/telekom/controlplane/approval/internal/handler/approvalrequest"
+	cconfig "github.com/telekom/controlplane/common/pkg/config"
+	cc "github.com/telekom/controlplane/common/pkg/controller"
 )
 
 // ApprovalRequestReconciler reconciles a ApprovalRequest object
@@ -46,7 +46,7 @@ func (r *ApprovalRequestReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Controller = cc.NewController(&approvalreq_handler.ApprovalRequestHandler{}, r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&approvalv1.ApprovalRequest{}).
+		For(&approvalv1.ApprovalRequest{}, builder.WithPredicates(cc.Count("approvalrequest", cc.RoleFor))).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
 			RateLimiter:             cc.NewRateLimiter(),

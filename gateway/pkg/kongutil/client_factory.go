@@ -6,6 +6,8 @@ package kongutil
 
 import (
 	"context"
+	"crypto/sha256"
+	"fmt"
 	"net/http"
 	"net/url"
 	"sync"
@@ -63,22 +65,46 @@ var (
 	tokenUrlPath = "/protocol/openid-connect/token"
 
 	clientCache      = make(map[string]client.KongClient)
+	urlToKey         = make(map[string]string) // AdminUrl -> current cache key for stale eviction
 	clientCacheMutex sync.Mutex
 )
+
+// cacheKey produces a SHA-256 hex digest of all connection parameters.
+// When any parameter (including the secret) changes, the key changes,
+// causing an automatic cache miss and fresh client creation.
+func cacheKey(gwCfg GatewayAdminConfig) string {
+	h := sha256.New()
+	_, _ = fmt.Fprintf(h, "%s\x00%s\x00%s\x00%s",
+		gwCfg.AdminUrl(), gwCfg.AdminClientId(),
+		gwCfg.AdminClientSecret(), gwCfg.AdminIssuer())
+	return fmt.Sprintf("%x", h.Sum(nil))
+}
 
 var GetClientFor = func(gwCfg GatewayAdminConfig) (client.KongClient, error) {
 	clientCacheMutex.Lock()
 	defer clientCacheMutex.Unlock()
-	if client, ok := clientCache[gwCfg.AdminUrl()]; ok {
-		return client, nil
+
+	key := cacheKey(gwCfg)
+
+	if c, ok := clientCache[key]; ok {
+		return c, nil
 	}
+
 	apiClient, err := NewClientFor(gwCfg)
 	if err != nil {
 		return nil, err
 	}
 	c := client.NewKongClient(apiClient)
-	clientCache[gwCfg.AdminUrl()] = c
-	return c, err
+
+	// Evict stale entry for the same URL (previous credentials).
+	adminUrl := gwCfg.AdminUrl()
+	if oldKey, ok := urlToKey[adminUrl]; ok && oldKey != key {
+		delete(clientCache, oldKey)
+	}
+	urlToKey[adminUrl] = key
+	clientCache[key] = c
+
+	return c, nil
 }
 
 var NewClientFor = func(gwCfg GatewayAdminConfig) (kong.ClientWithResponsesInterface, error) {

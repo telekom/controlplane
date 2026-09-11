@@ -11,8 +11,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"slices"
-	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -27,6 +27,11 @@ type HandlerHookStage string
 const (
 	PreRequestHook  HandlerHookStage = "pre-request"
 	PostRequestHook HandlerHookStage = "post-request"
+)
+
+var (
+	// NoBody can be used for requests that do not require a body
+	NoBody types.Object = nil
 )
 
 type HttpDoer interface {
@@ -67,10 +72,12 @@ func NewBaseHandler(apiVersion, kind, resource string, priority int) *BaseHandle
 		logger:     log.L().WithName(fmt.Sprintf("%s-handler", resource)),
 		Hooks:      make(map[HandlerHookStage][]func(ctx context.Context, obj types.Object) error),
 	}
-	handler.applyStatusPoller = NewStatusPoller(handler, nil, 30*time.Second, 1*time.Second)
+	pollInterval := viper.GetDuration("poll.interval")
+	statusTimeout := viper.GetDuration("timeout.status")
+	handler.applyStatusPoller = NewStatusPoller(handler, nil, statusTimeout, pollInterval)
 	handler.deleteStatusPoller = NewStatusPoller(handler, func(ctx context.Context, status types.ObjectStatus) (continuePolling bool, err error) {
 		return !status.IsGone(), nil
-	}, 30*time.Second, 1*time.Second)
+	}, statusTimeout, pollInterval)
 
 	return handler
 }
@@ -83,12 +90,34 @@ func (h *BaseHandler) WithValidation(validateFunc func(obj types.Object) error) 
 
 func (h *BaseHandler) Setup(ctx context.Context) *config.Token {
 	token := config.FromContextOrDie(ctx)
+
 	if h.httpClient == nil {
-		h.httpClient = NewAuthorizedHttpClient(ctx, token.TokenUrl, token.ClientId, token.ClientSecret)
+		version := viper.GetString("version.semver")
+		userAgentValue := fmt.Sprintf("rover-ctl/%s", version)
+
+		// Check for local access token (only used for testing)
+		localAccessToken := viper.GetString("access.token")
+		if localAccessToken != "" {
+			h.logger.V(1).Info("Using local access token for testing")
+			localClient := newHttpClient()
+			h.httpClient = WithStaticHeaders(localClient, http.Header{
+				"Authorization": []string{"Bearer " + localAccessToken},
+			})
+
+		} else {
+			h.httpClient = NewAuthorizedHttpClient(ctx, token.TokenUrl, token.ClientId, token.ClientSecret)
+		}
+
+		staticHeaders := http.Header{
+			"User-Agent": []string{userAgentValue},
+		}
+		h.httpClient = WithStaticHeaders(h.httpClient, staticHeaders)
 	}
+
 	if h.serverURL == "" {
 		h.serverURL = token.ServerUrl
 	}
+
 	return token
 }
 
@@ -180,8 +209,7 @@ func (h *BaseHandler) Get(ctx context.Context, name string) (any, error) {
 	token := h.Setup(ctx)
 	url := h.GetRequestUrl(token.Group, token.Team, name)
 
-	// Send the request (no obj, so no hooks will be executed)
-	resp, err := h.SendRequest(ctx, nil, http.MethodGet, url)
+	resp, err := h.SendRequest(ctx, NoBody, http.MethodGet, url)
 	if err != nil {
 		return nil, err
 	}
@@ -233,8 +261,7 @@ func (h *BaseHandler) ListWithCursor(ctx context.Context, cursor string) (*ListR
 		url += "?cursor=" + cursor
 	}
 
-	// Send the request (no obj, so no hooks will be executed)
-	resp, err := h.SendRequest(ctx, nil, http.MethodGet, url)
+	resp, err := h.SendRequest(ctx, NoBody, http.MethodGet, url)
 	if err != nil {
 		return nil, err
 	}
@@ -259,8 +286,7 @@ func (h *BaseHandler) Status(ctx context.Context, name string) (types.ObjectStat
 	token := h.Setup(ctx)
 	url := h.GetRequestUrl(token.Group, token.Team, name, "status")
 
-	// Send the request (no obj, so no hooks will be executed)
-	resp, err := h.SendRequest(ctx, nil, http.MethodGet, url)
+	resp, err := h.SendRequest(ctx, NoBody, http.MethodGet, url)
 	if err != nil {
 		return nil, err
 	}
@@ -296,8 +322,30 @@ func (h *BaseHandler) Info(ctx context.Context, name string) (any, error) {
 	token := h.Setup(ctx)
 	url := h.GetRequestUrl(token.Group, token.Team, name, "info")
 
-	// Send the request (no obj, so no hooks will be executed)
-	resp, err := h.SendRequest(ctx, nil, http.MethodGet, url)
+	return h.execInfoRequest(ctx, url)
+}
+
+func (h *BaseHandler) InfoMany(ctx context.Context, names []string) (any, error) {
+	if !h.SupportsInfo {
+		return nil, errors.Errorf("info operation is not supported for %s", h.Resource)
+	}
+	token := h.Setup(ctx)
+	reqUrl := h.GetRequestUrl(token.Group, token.Team, "", "info")
+	if len(names) > 0 {
+		params := url.Values{}
+		for _, name := range names {
+			params.Add("names", name)
+		}
+		reqUrl += "?" + params.Encode()
+	}
+
+	return h.execInfoRequest(ctx, reqUrl)
+}
+
+func (h *BaseHandler) execInfoRequest(ctx context.Context, url string) (any, error) {
+	h.logger.V(1).Info("Executing info request", "url", url)
+
+	resp, err := h.SendRequest(ctx, NoBody, http.MethodGet, url)
 	if err != nil {
 		return nil, err
 	}
@@ -339,11 +387,8 @@ func (h *BaseHandler) RunHooks(stage HandlerHookStage, ctx context.Context, obj 
 // SendRequest handles common request operations including running hooks
 func (h *BaseHandler) SendRequest(ctx context.Context, obj types.Object, method, url string) (*http.Response, error) {
 
-	// Run pre-request hooks if object is provided
-	if obj != nil {
-		if err := h.RunHooks(PreRequestHook, ctx, obj); err != nil {
-			return nil, err
-		}
+	if err := h.RunHooks(PreRequestHook, ctx, obj); err != nil {
+		return nil, err
 	}
 
 	var body io.ReadWriter
@@ -382,11 +427,8 @@ func (h *BaseHandler) SendRequest(ctx context.Context, obj types.Object, method,
 
 	h.logger.V(1).Info("Received response", "status", resp.Status)
 
-	// Run post-request hooks if object is provided
-	if obj != nil {
-		if err := h.RunHooks(PostRequestHook, ctx, obj); err != nil {
-			return nil, err
-		}
+	if err := h.RunHooks(PostRequestHook, ctx, obj); err != nil {
+		return nil, err
 	}
 
 	return resp, nil
@@ -396,7 +438,7 @@ func (h *BaseHandler) WaitForReady(ctx context.Context, name string) (types.Obje
 	h.logger.Info("Waiting for readiness", "name", name)
 	status, err := h.applyStatusPoller.Start(ctx, name)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to wait for readiness")
+		return status, errors.Wrap(err, "failed to wait for readiness")
 	}
 
 	return status, nil
@@ -406,7 +448,7 @@ func (h *BaseHandler) WaitForDeleted(ctx context.Context, name string) (types.Ob
 	h.logger.Info("Waiting for deletion", "name", name)
 	status, err := h.deleteStatusPoller.Start(ctx, name)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to wait for deletion")
+		return status, errors.Wrap(err, "failed to wait for deletion")
 	}
 
 	return status, nil
@@ -422,7 +464,8 @@ func CheckResponseCode(resp *http.Response, expectedCodes ...int) error {
 	}
 
 	apiErr := &ApiError{}
-	if err := json.Unmarshal(body, apiErr); err != nil {
+	err = json.Unmarshal(body, apiErr)
+	if err != nil || apiErr.Title == "" {
 		return &ApiError{
 			Type:     "UnknownError",
 			Status:   resp.StatusCode,

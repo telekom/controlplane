@@ -8,6 +8,7 @@
 resources:
 - bases/approval.cp.ei.telekom.de_approvals.yaml
 - bases/approval.cp.ei.telekom.de_approvalrequests.yaml
+- bases/approval.cp.ei.telekom.de_approvalexpirations.yaml
 # +kubebuilder:scaffold:crdkustomizeresource
 
 patches:

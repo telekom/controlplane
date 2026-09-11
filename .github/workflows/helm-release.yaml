@@ -17,20 +17,22 @@ on:
         type: string
     
 permissions:
-  packages: write
   contents: read
 
 jobs:
   publish-helm-chart:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
 
       - name: Setup Helm
-        uses: azure/setup-helm@v4
+        uses: azure/setup-helm@9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310 # v5.0.1
         with:
           version: 'latest'
         env:
@@ -45,7 +47,7 @@ jobs:
           helm lint ${{ inputs.chart_path }}
 
       - name: Inject slug vars
-        uses: rlespinasse/github-slug-action@v5
+        uses: rlespinasse/github-slug-action@ef93b2ea4b6405d06fd8684fc3ff795d262ecae8 # v5.7.0
 
       - name: Extract Version Information
         id: version

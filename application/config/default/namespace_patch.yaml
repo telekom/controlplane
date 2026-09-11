@@ -1,0 +1,8 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# This patch is only needed when you want to use the network policy
+- op: add
+  path: /metadata/labels/cp.ei.telekom.de~1secret-manager
+  value: "enabled"

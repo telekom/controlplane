@@ -1,0 +1,8 @@
+# Copyright 2026 Deutsche Telekom AG
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Required for controlplane-api network access.
+- op: add
+  path: /metadata/labels/cp.ei.telekom.de~1controlplane-api
+  value: "enabled"

@@ -6,44 +6,129 @@ package controller
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 
 	. "github.com/onsi/ginkgo/v2"
-
+	"github.com/stretchr/testify/mock"
+	fileApi "github.com/telekom/controlplane/file-manager/api"
 	"github.com/telekom/controlplane/rover-server/internal/api"
 )
 
+// TODO: fix the unit-tests. Use Once() or Twice() for mocks
+
 var _ = Describe("EventSpecification Controller", func() {
-	Context("GetAll EventSpecifications", func() {
-		It("should return StatusNotImplemented", func() {
-			req := httptest.NewRequest(http.MethodGet, "/eventspecifications", nil)
-			ExpectStatusNotImplemented(ExecuteRequest(req, groupToken))
-			ExpectStatusNotImplemented(ExecuteRequest(req, teamToken))
-		})
-	})
+
+	specJson := `{"type":"object","properties":{"id":{"type":"string"}}}`
+
 	Context("Get EventSpecification resource", func() {
-		It("should return StatusNotImplemented", func() {
-			req := httptest.NewRequest(http.MethodGet, "/eventspecifications/eni--hyperion--horizon-local-sub", nil)
-			ExpectStatusNotImplemented(ExecuteRequest(req, groupToken))
+		It("should return the EventSpecification successfully", func() {
+			mockFileManager.EXPECT().DownloadFile(mock.Anything, "eventRandomId", mock.Anything).
+				RunAndReturn(func(_ context.Context, _ string, w io.Writer) (*fileApi.FileDownloadResponse, error) {
+
+					w.Write([]byte(specJson))
+
+					return &fileApi.FileDownloadResponse{
+						FileHash:    "randomHash",
+						ContentType: "application/json",
+					}, nil
+				})
+			req := httptest.NewRequest(http.MethodGet, "/eventspecifications/eni--hyperion--tardis-horizon-demo-cetus-v1", nil)
+			responseGroup, err := ExecuteRequest(req, groupToken)
+			ExpectStatusWithBody(responseGroup, err, http.StatusOK, "application/json")
+		})
+
+		It("should fail to get a non-existent EventSpecification", func() {
+			req := httptest.NewRequest(http.MethodGet, "/eventspecifications/eni--hyperion--blabla", nil)
+			responseGroup, err := ExecuteRequest(req, groupToken)
+			ExpectStatusWithBody(responseGroup, err, http.StatusNotFound, "application/problem+json")
+		})
+
+		It("should fail to get an EventSpecification from a different team", func() {
+			req := httptest.NewRequest(http.MethodGet, "/eventspecifications/other--team--tardis-horizon-demo-cetus-v1", nil)
+			responseGroup, err := ExecuteRequest(req, groupToken)
+			ExpectStatusWithBody(responseGroup, err, http.StatusForbidden, "application/problem+json")
 		})
 	})
-	Context("GetStatus EventSpecification resource", func() {
-		It("should return StatusNotImplemented", func() {
-			req := httptest.NewRequest(http.MethodGet, "/eventspecifications/eni--hyperion--horizon-local-sub/status", nil)
-			ExpectStatusNotImplemented(ExecuteRequest(req, groupToken))
+
+	Context("GetAll EventSpecifications resource", func() {
+		It("should return all EventSpecifications successfully", func() {
+			mockFileManager.EXPECT().DownloadFile(mock.Anything, "eventRandomId", mock.Anything).
+				RunAndReturn(func(_ context.Context, _ string, w io.Writer) (*fileApi.FileDownloadResponse, error) {
+
+					w.Write([]byte(specJson))
+
+					return &fileApi.FileDownloadResponse{
+						FileHash:    "randomHash",
+						ContentType: "application/json",
+					}, nil
+				})
+
+			req := httptest.NewRequest(http.MethodGet, "/eventspecifications", nil)
+			responseGroup, err := ExecuteRequest(req, groupToken)
+			ExpectStatusWithBody(responseGroup, err, http.StatusOK, "application/json")
+
+			responseTeam, err := ExecuteRequest(req, teamToken)
+			ExpectStatusWithBody(responseTeam, err, http.StatusOK, "application/json")
+		})
+
+		It("should return an empty list if no EventSpecifications exist", func() {
+			req := httptest.NewRequest(http.MethodGet, "/eventspecifications", nil)
+			responseGroup, err := ExecuteRequest(req, groupToken)
+			ExpectStatusWithBody(responseGroup, err, http.StatusOK, "application/json")
+
+			responseTeam, err := ExecuteRequest(req, teamToken)
+			ExpectStatusWithBody(responseTeam, err, http.StatusOK, "application/json")
 		})
 	})
+
 	Context("Delete EventSpecification resource", func() {
-		It("should return StatusNotImplemented", func() {
-			req := httptest.NewRequest(http.MethodDelete, "/eventspecifications/eni--hyperion--horizon-local-sub", nil)
-			ExpectStatusNotImplemented(ExecuteRequest(req, groupToken))
+		It("should delete the EventSpecification successfully", func() {
+			mockFileManager.EXPECT().DeleteFile(mock.Anything, mock.Anything).Return(nil)
+			req := httptest.NewRequest(http.MethodDelete, "/eventspecifications/eni--hyperion--tardis-horizon-demo-cetus-v1", nil)
+			responseGroup, err := ExecuteRequest(req, groupToken)
+			ExpectStatus(responseGroup, err, http.StatusNoContent, "")
+		})
+
+		It("should fail to delete a non-existent EventSpecification", func() {
+			mockFileManager.EXPECT().DeleteFile(mock.Anything, mock.Anything).Return(nil)
+			req := httptest.NewRequest(http.MethodDelete, "/eventspecifications/eni--hyperion--blabla", nil)
+			responseGroup, err := ExecuteRequest(req, groupToken)
+			ExpectStatusWithBody(responseGroup, err, http.StatusNotFound, "application/problem+json")
+		})
+
+		It("should fail to delete an EventSpecification from a different team", func() {
+			req := httptest.NewRequest(http.MethodDelete, "/eventspecifications/other--team--tardis-horizon-demo-cetus-v1", nil)
+			responseGroup, err := ExecuteRequest(req, groupToken)
+			ExpectStatusWithBody(responseGroup, err, http.StatusForbidden, "application/problem+json")
 		})
 	})
+
+	Context("GetStatus EventSpecification resource", func() {
+		It("should return the status of the EventSpecification successfully", func() {
+			req := httptest.NewRequest(http.MethodGet, "/eventspecifications/eni--hyperion--tardis-horizon-demo-cetus-v1/status", nil)
+			responseGroup, err := ExecuteRequest(req, groupToken)
+			ExpectStatusWithBody(responseGroup, err, http.StatusOK, "application/json")
+		})
+
+		It("should fail to get the status of a non-existent EventSpecification", func() {
+			req := httptest.NewRequest(http.MethodGet, "/eventspecifications/eni--hyperion--blabla/status", nil)
+			responseGroup, err := ExecuteRequest(req, groupToken)
+			ExpectStatusWithBody(responseGroup, err, http.StatusNotFound, "application/problem+json")
+		})
+
+		It("should fail to get the status of an EventSpecification from a different team", func() {
+			req := httptest.NewRequest(http.MethodGet, "/eventspecifications/other--team--tardis-horizon-demo-cetus-v1/status", nil)
+			responseGroup, err := ExecuteRequest(req, groupToken)
+			ExpectStatusWithBody(responseGroup, err, http.StatusForbidden, "application/problem+json")
+		})
+	})
+
 	Context("Create EventSpecification resource", func() {
 		It("should return StatusNotImplemented", func() {
-			// Create a request with a JSON body
 			var eventSpecification, _ = json.Marshal(api.EventSpecificationCreateRequest{
 				Category:    "SYSTEM",
 				Description: "Horizon demo provider",
@@ -55,17 +140,49 @@ var _ = Describe("EventSpecification Controller", func() {
 			ExpectStatusNotImplemented(ExecuteRequest(req, teamToken))
 		})
 	})
+
 	Context("Update EventSpecification resource", func() {
-		It("should return StatusNotImplemented", func() {
-			// Create a request with a JSON body
+		It("should update the EventSpecification successfully", func() {
 			var eventSpecification, _ = json.Marshal(api.EventSpecification{
 				Category:    "SYSTEM",
 				Description: "Horizon demo provider",
 				Type:        "tardis.horizon.demo.cetus.v1",
 				Version:     "1.0.0",
+				Specification: map[string]interface{}{
+					"type": "object",
+					"properties": map[string]interface{}{
+						"id": map[string]interface{}{
+							"type": "string",
+						},
+					},
+				},
 			})
-			req := httptest.NewRequest(http.MethodPut, "/eventspecifications/eni--hyperion--horizon-local-sub", bytes.NewReader(eventSpecification))
-			ExpectStatusNotImplemented(ExecuteRequest(req, groupToken))
+
+			mockFileManager.EXPECT().UploadFile(mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(
+				&fileApi.FileUploadResponse{
+					FileHash:    "randomHash",
+					FileId:      "randomId",
+					ContentType: "application/json",
+				}, nil)
+
+			req := httptest.NewRequest(http.MethodPut, "/eventspecifications/eni--hyperion--tardis-horizon-demo-cetus-v1",
+				bytes.NewReader(eventSpecification))
+
+			responseGroup, err := ExecuteRequest(req, groupToken)
+			ExpectStatusWithBody(responseGroup, err, http.StatusAccepted, "application/json")
+		})
+
+		It("should fail to update an EventSpecification from a different team", func() {
+			var eventSpecification, _ = json.Marshal(api.EventSpecification{
+				Category:    "SYSTEM",
+				Description: "Horizon demo provider",
+				Type:        "tardis.horizon.demo.other.v1",
+				Version:     "1.0.0",
+			})
+			req := httptest.NewRequest(http.MethodPut, "/eventspecifications/other--team--tardis-horizon-demo-other-v1",
+				bytes.NewReader(eventSpecification))
+			responseGroup, err := ExecuteRequest(req, groupToken)
+			ExpectStatusWithBody(responseGroup, err, http.StatusForbidden, "application/problem+json")
 		})
 	})
 })

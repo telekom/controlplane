@@ -1563,6 +1563,130 @@
         }
       ]
     },
+    "/{realm}/client-policies/policies": {
+      "get": {
+        "tags": [
+          "Realms Admin"
+        ],
+        "summary": "Get client policies",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "include-global-policies",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "2XX": {
+            "description": "success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientPoliciesRepresentation"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Realms Admin"
+        ],
+        "summary": "Update client policies",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClientPoliciesRepresentation"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "2XX": {
+            "description": "success"
+          }
+        }
+      },
+      "parameters": [
+        {
+          "in": "path",
+          "name": "realm",
+          "description": "realm name (not id!)",
+          "required": true,
+          "schema": {
+            "type": "string"
+          },
+          "style": "simple"
+        }
+      ]
+    },
+    "/{realm}/client-policies/profiles": {
+      "get": {
+        "tags": [
+          "Realms Admin"
+        ],
+        "summary": "Get client profiles",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "include-global-profiles",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "2XX": {
+            "description": "success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientProfilesRepresentation"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Realms Admin"
+        ],
+        "summary": "Update client profiles",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClientProfilesRepresentation"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "2XX": {
+            "description": "success"
+          }
+        }
+      },
+      "parameters": [
+        {
+          "in": "path",
+          "name": "realm",
+          "description": "realm name (not id!)",
+          "required": true,
+          "schema": {
+            "type": "string"
+          },
+          "style": "simple"
+        }
+      ]
+    },
     "/{realm}/client-registration-policy/providers": {
       "get": {
         "tags": [
@@ -3169,6 +3293,59 @@
                 }
               }
             }
+          }
+        }
+      },
+      "parameters": [
+        {
+          "in": "path",
+          "name": "realm",
+          "description": "realm name (not id!)",
+          "required": true,
+          "schema": {
+            "type": "string"
+          },
+          "style": "simple"
+        },
+        {
+          "in": "path",
+          "name": "id",
+          "description": "id of client (not client-id)",
+          "required": true,
+          "schema": {
+            "type": "string"
+          },
+          "style": "simple"
+        }
+      ]
+    },
+    "/{realm}/clients/{id}/client-secret/rotated": {
+      "get": {
+        "tags": [
+          "Clients"
+        ],
+        "summary": "Get the rotated client secret",
+        "responses": {
+          "2XX": {
+            "description": "success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CredentialRepresentation"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Clients"
+        ],
+        "summary": "Invalidate the rotated secret for the client",
+        "responses": {
+          "2XX": {
+            "description": "success"
           }
         }
       },
@@ -11242,6 +11419,109 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/RoleRepresentation"
+            }
+          }
+        }
+      },
+      "ClientPoliciesRepresentation": {
+        "type": "object",
+        "properties": {
+          "policies": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ClientPolicyRepresentation"
+            }
+          },
+          "globalPolicies": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ClientPolicyRepresentation"
+            }
+          }
+        }
+      },
+      "ClientPolicyConditionRepresentation": {
+        "type": "object",
+        "properties": {
+          "condition": {
+            "type": "string"
+          },
+          "configuration": {
+            "description": "Configuration settings as a JSON object",
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      },
+      "ClientPolicyExecutorRepresentation": {
+        "type": "object",
+        "properties": {
+          "executor": {
+            "type": "string"
+          },
+          "configuration": {
+            "description": "Configuration settings as a JSON object",
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      },
+      "ClientPolicyRepresentation": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "conditions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ClientPolicyConditionRepresentation"
+            }
+          },
+          "profiles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "ClientProfileRepresentation": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "executors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ClientPolicyExecutorRepresentation"
+            }
+          }
+        }
+      },
+      "ClientProfilesRepresentation": {
+        "type": "object",
+        "properties": {
+          "profiles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ClientProfileRepresentation"
+            }
+          },
+          "globalProfiles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ClientProfileRepresentation"
             }
           }
         }

@@ -8,14 +8,14 @@ import (
 	"context"
 	"os"
 
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	apiapi "github.com/telekom/controlplane/api/api/v1"
 	applicationapi "github.com/telekom/controlplane/application/api/v1"
 	approvalapi "github.com/telekom/controlplane/approval/api/v1"
 	"github.com/telekom/controlplane/common/pkg/controller/index"
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	ctrl "sigs.k8s.io/controller-runtime"
 )
 
 func RegisterIndecesOrDie(ctx context.Context, mgr ctrl.Manager) {
@@ -49,6 +49,23 @@ func RegisterIndecesOrDie(ctx context.Context, mgr ctrl.Manager) {
 		IndexField(ctx, &apiapi.ApiExposure{}, "status.active", filterStatusActiveOnApiExposure)
 	if err != nil {
 		ctrl.Log.Error(err, "unable to create fieldIndex for ApiExposure", "FieldIndex", "status.active")
+		os.Exit(1)
+	}
+
+	filterApiCategoryLabelValue := func(obj client.Object) []string {
+		apiCategory, ok := obj.(*apiapi.ApiCategory)
+		if !ok {
+			return nil
+		}
+		if apiCategory.Spec.LabelValue == "" {
+			return nil
+		}
+		return []string{apiCategory.Spec.LabelValue}
+	}
+	err = mgr.GetFieldIndexer().
+		IndexField(ctx, &apiapi.ApiCategory{}, "spec.labelValue", filterApiCategoryLabelValue)
+	if err != nil {
+		ctrl.Log.Error(err, "unable to create fieldIndex for ApiCategory", "FieldIndex", "spec.labelValue")
 		os.Exit(1)
 	}
 
@@ -87,5 +104,4 @@ func RegisterIndecesOrDie(ctx context.Context, mgr ctrl.Manager) {
 		ctrl.Log.Error(err, "unable to create field-indexer")
 		os.Exit(1)
 	}
-
 }

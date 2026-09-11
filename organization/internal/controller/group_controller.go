@@ -7,15 +7,17 @@ package controller
 import (
 	"context"
 
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/tools/record"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
+
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	cc "github.com/telekom/controlplane/common/pkg/controller"
 	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
 	handler "github.com/telekom/controlplane/organization/internal/handler/group"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/tools/record"
-	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller"
 )
 
 // GroupReconciler reconciles a Group object
@@ -41,7 +43,7 @@ func (r *GroupReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Controller = cc.NewController(&handler.GroupHandler{}, r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&organizationv1.Group{}).
+		For(&organizationv1.Group{}, builder.WithPredicates(cc.Count("group", cc.RoleFor))).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
 			RateLimiter:             cc.NewRateLimiter(),

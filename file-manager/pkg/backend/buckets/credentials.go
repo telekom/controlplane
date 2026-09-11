@@ -9,11 +9,13 @@ import (
 
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/pkg/errors"
+
 	accesstoken "github.com/telekom/controlplane/common-server/pkg/client/token"
 )
 
 type CredentialProvider string
 
+//nolint:gosec // G101: path constants, not credentials
 const (
 	CredentialProviderEnvMinio       CredentialProvider = "env-minio"
 	CredentialProviderSTSWebIdentity CredentialProvider = "sts-web-identity"
@@ -21,13 +23,13 @@ const (
 )
 
 type Properties interface {
-	GetDefault(key string, defaultValue string) string
+	GetDefault(key, defaultValue string) string
 	Get(key string) string
 }
 
 type propertiesMap map[string]string
 
-func (p propertiesMap) GetDefault(key string, defaultValue string) string {
+func (p propertiesMap) GetDefault(key, defaultValue string) string {
 	value, exists := p[key]
 	if !exists {
 		return defaultValue
@@ -54,7 +56,11 @@ func WithProperty(key, value string) CredentialOption {
 		if o.properties == nil {
 			o.properties = propertiesMap{}
 		}
-		o.properties.(propertiesMap)[key] = value
+		pm, ok := o.properties.(propertiesMap)
+		if !ok {
+			return
+		}
+		pm[key] = value
 	}
 }
 

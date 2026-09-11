@@ -5,18 +5,19 @@
 package controller
 
 import (
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-	adminapi "github.com/telekom/controlplane/admin/api/v1"
+	"k8s.io/apimachinery/pkg/api/meta"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	apiapi "github.com/telekom/controlplane/api/api/v1"
-	apiv1 "github.com/telekom/controlplane/api/api/v1"
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	approvalapi "github.com/telekom/controlplane/approval/api/v1"
+	approvalbuilder "github.com/telekom/controlplane/approval/api/v1/builder"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/test/testutil"
 	"github.com/telekom/controlplane/common/pkg/types"
-	"k8s.io/apimachinery/pkg/api/meta"
-	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 func createTeam(teamName, groupName, env string) types.ObjectRef {
@@ -27,6 +28,8 @@ func createTeam(teamName, groupName, env string) types.ObjectRef {
 }
 
 // Helper function to create an application with a specific team and verify it exists
+//
+//nolint:unparam // helper return is kept for callers that need the created app later.
 func setupAppWithTeam(appName, teamName string) *applicationv1.Application {
 	app := CreateApplication(appName)
 	app.Spec.Team = teamName
@@ -48,7 +51,7 @@ func verifyApprovalStrategy(subscription *apiapi.ApiSubscription, expectedStrate
 		// Get the latest subscription status
 		err := k8sClient.Get(ctx, client.ObjectKeyFromObject(subscription), subscription)
 		g.Expect(err).ToNot(HaveOccurred())
-		testutil.ExpectConditionToBeFalse(g, meta.FindStatusCondition(subscription.GetConditions(), condition.ConditionTypeReady), "ApprovalPending")
+		testutil.ExpectConditionToBeFalse(g, meta.FindStatusCondition(subscription.GetConditions(), condition.ConditionTypeReady), approvalbuilder.ReasonApprovalPending)
 
 		g.Expect(subscription.Status.ApprovalRequest).ToNot(BeNil())
 
@@ -63,23 +66,19 @@ func verifyApprovalStrategy(subscription *apiapi.ApiSubscription, expectedStrate
 }
 
 var _ = Describe("ApiSubscription Controller with Trusted Teams", Ordered, func() {
-	var apiBasePath = "/apiexpctrl/trustedteams/v1"
-	var zoneName = "apiexp-trustedteams"
+	apiBasePath := "/apiexpctrl/trustedteams/v1"
+	zoneName := "apiexp-trustedteams"
 
-	var apiExposure *apiv1.ApiExposure
-	var api *apiv1.Api
-	var zone *adminapi.Zone
+	var apiExposure *apiapi.ApiExposure
+	var api *apiapi.Api
 	var team1, team2, team3 types.ObjectRef
 
-	var apiExpAppName = "api-exposure-app"
+	apiExpAppName := "api-exposure-app"
 	var apiExpApplication *applicationv1.Application
 
 	BeforeAll(func() {
 		By("Creating the Zone")
-		zone = CreateZone(zoneName)
-
-		By("Creating the Gateway")
-		CreateRealm(testEnvironment, zone.Name)
+		CreateZone(zoneName)
 
 		By("Creating Teams")
 		team1 = createTeam("team1", "group1", testEnvironment)
@@ -108,7 +107,7 @@ var _ = Describe("ApiSubscription Controller with Trusted Teams", Ordered, func(
 		It("should create ApiExposure with trusted teams correctly", func() {
 			By("Creating an ApiExposure with trusted teams")
 			apiExposure = NewApiExposure(apiBasePath, zoneName, apiExpAppName)
-			apiExposure.Spec.Approval = apiv1.Approval{
+			apiExposure.Spec.Approval = apiapi.Approval{
 				Strategy: apiapi.ApprovalStrategyFourEyes,
 				TrustedTeams: []string{
 					team1.GetName(), team2.GetName(),
@@ -209,7 +208,7 @@ var _ = Describe("ApiSubscription Controller with Trusted Teams", Ordered, func(
 
 			By("Verifying the ApiExposure was updated with new trusted teams")
 			Eventually(func(g Gomega) {
-				updatedExposure := &apiv1.ApiExposure{}
+				updatedExposure := &apiapi.ApiExposure{}
 				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(apiExposure), updatedExposure)
 				g.Expect(err).ToNot(HaveOccurred())
 
@@ -219,17 +218,17 @@ var _ = Describe("ApiSubscription Controller with Trusted Teams", Ordered, func(
 					updatedExposure.Spec.Approval.TrustedTeams[1],
 				}
 				g.Expect(teamNames).To(ConsistOf("group1--team1", "group3--team3"))
+
+				By("Checking that subscriptions were reprocessed after trusted teams update")
+				// Team1 should remain auto-approved
+				verifyApprovalStrategy(team1Sub, approvalapi.ApprovalStrategyAuto)
+
+				// Team2 should stay approved
+				verifyApprovalStrategy(team2Sub, approvalapi.ApprovalStrategyAuto)
+
+				// Team3 should now be auto-approved
+				verifyApprovalStrategy(team3Sub, approvalapi.ApprovalStrategyAuto)
 			}, timeout*3, interval).Should(Succeed())
-
-			By("Checking that subscriptions were reprocessed after trusted teams update")
-			// Team1 should remain auto-approved
-			verifyApprovalStrategy(team1Sub, approvalapi.ApprovalStrategyAuto)
-
-			// Team2 should stay approved
-			verifyApprovalStrategy(team2Sub, approvalapi.ApprovalStrategyAuto)
-
-			// Team3 should now be auto-approved
-			verifyApprovalStrategy(team3Sub, approvalapi.ApprovalStrategyAuto)
 		})
 	})
 })

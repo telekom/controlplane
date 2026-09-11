@@ -1,0 +1,34 @@
+{
+  "apiVersion": "rover.cp.ei.telekom.de/v1",
+  "kind": "EventSpecification",
+  "metadata": {
+    "name": "tardis-horizon-demo-cetus-v1",
+    "namespace": "poc--eni--hyperion"
+  },
+  "spec": {
+    "type": "tardis.horizon.demo.cetus.v1",
+    "version": "1.0.0",
+    "description": "Horizon demo provider",
+    "specification": "eventRandomId"
+  },
+  "status": {
+    "eventType": {
+      "name": "tardis-horizon-demo-cetus-v1",
+      "namespace": "poc--eni--hyperion"
+    },
+    "conditions": [
+      {
+        "type": "Ready",
+        "status": "True",
+        "reason": "Provisioned",
+        "message": "EventSpecification is ready"
+      },
+      {
+        "type": "Processing",
+        "status": "False",
+        "reason": "Done",
+        "message": "EventSpecification created"
+      }
+    ]
+  }
+}

@@ -7,11 +7,10 @@ package controller
 import (
 	"context"
 
-	cconfig "github.com/telekom/controlplane/common/pkg/config"
-	cc "github.com/telekom/controlplane/common/pkg/controller"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 
@@ -19,6 +18,8 @@ import (
 	"github.com/telekom/controlplane/api/internal/handler/remoteapisubscription"
 	"github.com/telekom/controlplane/api/internal/handler/remoteapisubscription/syncer"
 	applicationapi "github.com/telekom/controlplane/application/api/v1"
+	cconfig "github.com/telekom/controlplane/common/pkg/config"
+	cc "github.com/telekom/controlplane/common/pkg/controller"
 )
 
 // RemoteApiSubscriptionReconciler reconciles a RemoteApiSubscription object
@@ -51,13 +52,13 @@ func (r *RemoteApiSubscriptionReconciler) SetupWithManager(mgr ctrl.Manager, syn
 	r.Controller = cc.NewController(handler, r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&apiapi.RemoteApiSubscription{}).
+		For(&apiapi.RemoteApiSubscription{}, builder.WithPredicates(cc.Count("remoteapisubscription", cc.RoleFor))).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
 			RateLimiter:             cc.NewRateLimiter(),
 		}).
-		Owns(&apiapi.ApiSubscription{}).
-		Owns(&applicationapi.Application{}).
+		Owns(&apiapi.ApiSubscription{}, builder.WithPredicates(cc.Count("remoteapisubscription", cc.RoleOwns))).
+		Owns(&applicationapi.Application{}, builder.WithPredicates(cc.Count("remoteapisubscription", cc.RoleOwns))).
 		// Watch Routes
 		Complete(r)
 }

@@ -8,6 +8,9 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+
 	apiapi "github.com/telekom/controlplane/api/api/v1"
 	"github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
@@ -15,16 +18,26 @@ import (
 	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
 var _ handler.Handler[*roverv1.ApiSpecification] = (*ApiSpecificationHandler)(nil)
 
+// ApiSpecificationHandler reconciles ApiSpecification resources.
+// Linting is enforced by rover-server at upload time; specs that fail linting
+// in block mode are rejected and never stored in the cluster.
+// This handler creates the downstream Api resource unconditionally.
 type ApiSpecificationHandler struct{}
 
 func (h *ApiSpecificationHandler) CreateOrUpdate(ctx context.Context, apiSpec *roverv1.ApiSpecification) error {
+	return h.createOrUpdateApi(ctx, apiSpec)
+}
 
+func (h *ApiSpecificationHandler) Delete(_ context.Context, _ *roverv1.ApiSpecification) error {
+	return nil
+}
+
+// createOrUpdateApi contains the Api resource creation logic.
+func (h *ApiSpecificationHandler) createOrUpdateApi(ctx context.Context, apiSpec *roverv1.ApiSpecification) error {
 	c := client.ClientFromContextOrDie(ctx)
 	name := roverv1.MakeName(apiSpec)
 
@@ -48,11 +61,12 @@ func (h *ApiSpecificationHandler) CreateOrUpdate(ctx context.Context, apiSpec *r
 		}
 
 		api.Spec = apiapi.ApiSpec{
-			Version:      apiSpec.Spec.Version,
-			BasePath:     apiSpec.Spec.BasePath,
-			Category:     apiSpec.Spec.Category,
-			Oauth2Scopes: apiSpec.Spec.Oauth2Scopes,
-			XVendor:      apiSpec.Spec.XVendor,
+			Version:       apiSpec.Spec.Version,
+			BasePath:      apiSpec.Spec.BasePath,
+			Category:      apiSpec.Spec.Category,
+			Oauth2Scopes:  apiSpec.Spec.Oauth2Scopes,
+			XVendor:       apiSpec.Spec.XVendor,
+			Specification: apiSpec.Spec.Specification,
 		}
 
 		return nil
@@ -64,17 +78,12 @@ func (h *ApiSpecificationHandler) CreateOrUpdate(ctx context.Context, apiSpec *r
 	}
 
 	if c.AnyChanged() {
-		apiSpec.SetCondition(condition.NewProcessingCondition("Provisioning", "API updated"))
-		apiSpec.SetCondition(condition.NewNotReadyCondition("Provisioning", "API is not ready"))
-
+		apiSpec.SetCondition(condition.NewProcessingCondition(condition.ReasonProvisioning, "API updated"))
+		apiSpec.SetCondition(condition.NewNotReadyCondition(condition.ReasonProvisioning, "API is not ready"))
 	} else {
 		apiSpec.SetCondition(condition.NewDoneProcessingCondition("API created"))
-		apiSpec.SetCondition(condition.NewReadyCondition("Provisioned", "API is ready"))
+		apiSpec.SetCondition(condition.NewReadyCondition(condition.ReasonProvisioned, "API is ready"))
 	}
 
-	return nil
-}
-
-func (h *ApiSpecificationHandler) Delete(ctx context.Context, obj *roverv1.ApiSpecification) error {
 	return nil
 }

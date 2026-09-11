@@ -8,7 +8,7 @@ import (
 	"github.com/gkampitakis/go-snaps/snaps"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/spf13/viper"
+	"github.com/telekom/controlplane/rover-server/internal/api"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 )
 
@@ -59,6 +59,168 @@ var _ = Describe("Rover Mapper", func() {
 		})
 	})
 
+	Context("MapPermissions", func() {
+		It("must map permissions in flat format", func() {
+			input := apiRover
+			input.Authorization = []api.AuthorizationInfo{
+				{
+					Resource: "stargate:payment:v1",
+					Role:     "admin",
+					Actions:  []string{"read", "write"},
+				},
+			}
+			out := &roverv1.Rover{}
+
+			err := mapPermissions(input, out)
+
+			Expect(err).To(BeNil())
+			snaps.MatchSnapshot(GinkgoT(), out)
+		})
+
+		It("must map permissions in resource-oriented format", func() {
+			input := apiRover
+			input.Authorization = []api.AuthorizationInfo{
+				{
+					Resource: "stargate:payment:v1",
+					Permissions: []api.AuthorizationPermissionInfo{
+						{
+							Role:    "admin",
+							Actions: []string{"read", "write", "delete"},
+						},
+						{
+							Role:    "viewer",
+							Actions: []string{"read"},
+						},
+					},
+				},
+			}
+			out := &roverv1.Rover{}
+
+			err := mapPermissions(input, out)
+
+			Expect(err).To(BeNil())
+			snaps.MatchSnapshot(GinkgoT(), out)
+		})
+
+		It("must map permissions in role-oriented format", func() {
+			input := apiRover
+			input.Authorization = []api.AuthorizationInfo{
+				{
+					Role: "admin",
+					Permissions: []api.AuthorizationPermissionInfo{
+						{
+							Resource: "stargate:payment:v1",
+							Actions:  []string{"read", "write"},
+						},
+						{
+							Resource: "stargate:billing:v1",
+							Actions:  []string{"read", "write"},
+						},
+					},
+				},
+			}
+			out := &roverv1.Rover{}
+
+			err := mapPermissions(input, out)
+
+			Expect(err).To(BeNil())
+			snaps.MatchSnapshot(GinkgoT(), out)
+		})
+
+		It("must handle empty permissions", func() {
+			input := apiRover
+			input.Authorization = []api.AuthorizationInfo{}
+			out := &roverv1.Rover{}
+
+			err := mapPermissions(input, out)
+
+			Expect(err).To(BeNil())
+			Expect(out.Spec.Permissions).To(BeEmpty())
+		})
+	})
+
+	Context("MapAuthentication", func() {
+		It("must map BASIC to client_secret_basic in CRD", func() {
+			input := &api.Rover{
+				Zone: "zone",
+				Authentication: api.Authentication{
+					ClientAuthMethod: api.AuthenticationClientAuthMethodBASIC,
+				},
+			}
+			output := &roverv1.Rover{}
+
+			err := MapRover(input, output)
+
+			Expect(err).ToNot(HaveOccurred())
+			Expect(output.Spec.Authentication).ToNot(BeNil())
+			Expect(output.Spec.Authentication.M2M).ToNot(BeNil())
+			Expect(output.Spec.Authentication.M2M.TokenRequest).To(Equal(roverv1.TokenRequestClientSecretBasic))
+		})
+
+		It("must map POST to client_secret_post in CRD", func() {
+			input := &api.Rover{
+				Zone: "zone",
+				Authentication: api.Authentication{
+					ClientAuthMethod: api.AuthenticationClientAuthMethodPOST,
+				},
+			}
+			output := &roverv1.Rover{}
+
+			err := MapRover(input, output)
+
+			Expect(err).ToNot(HaveOccurred())
+			Expect(output.Spec.Authentication).ToNot(BeNil())
+			Expect(output.Spec.Authentication.M2M).ToNot(BeNil())
+			Expect(output.Spec.Authentication.M2M.TokenRequest).To(Equal(roverv1.TokenRequestClientSecretPost))
+		})
+
+		It("must not set authentication when clientAuthMethod is empty", func() {
+			input := &api.Rover{
+				Zone: "zone",
+			}
+			output := &roverv1.Rover{}
+
+			err := MapRover(input, output)
+
+			Expect(err).ToNot(HaveOccurred())
+			Expect(output.Spec.Authentication).To(BeNil())
+		})
+
+		It("must fuzzy-match 'basic' to client_secret_basic in CRD", func() {
+			input := &api.Rover{
+				Zone: "zone",
+				Authentication: api.Authentication{
+					ClientAuthMethod: "basic",
+				},
+			}
+			output := &roverv1.Rover{}
+
+			err := MapRover(input, output)
+
+			Expect(err).ToNot(HaveOccurred())
+			Expect(output.Spec.Authentication).ToNot(BeNil())
+			Expect(output.Spec.Authentication.M2M).ToNot(BeNil())
+			Expect(output.Spec.Authentication.M2M.TokenRequest).To(Equal(roverv1.TokenRequestClientSecretBasic))
+		})
+
+		It("must fuzzy-match 'body' to client_secret_post in CRD", func() {
+			input := &api.Rover{
+				Zone: "zone",
+				Authentication: api.Authentication{
+					ClientAuthMethod: "body",
+				},
+			}
+			output := &roverv1.Rover{}
+
+			err := MapRover(input, output)
+
+			Expect(err).ToNot(HaveOccurred())
+			Expect(output.Spec.Authentication).ToNot(BeNil())
+			Expect(output.Spec.Authentication.M2M).ToNot(BeNil())
+			Expect(output.Spec.Authentication.M2M.TokenRequest).To(Equal(roverv1.TokenRequestClientSecretPost))
+		})
+	})
+
 	Context("MapRequest", func() {
 		It("must map a RoverUpdateRequest to a Rover correctly", func() {
 			output, err := MapRequest(roverUpdateRequest, resourceIdInfo)
@@ -90,7 +252,8 @@ var _ = Describe("Rover Mapper", func() {
 			Expect(output).ToNot(BeNil())
 			snaps.MatchSnapshot(GinkgoT(), output)
 
-			viper.Set("migration.active", true)
+			MigrationActive = true
+			defer func() { MigrationActive = false }()
 
 			output, err = MapRequest(input, resourceIdInfo)
 
@@ -100,5 +263,28 @@ var _ = Describe("Rover Mapper", func() {
 			snaps.MatchSnapshot(GinkgoT(), output)
 		})
 
+	})
+
+	Context("ExternalIds translation", func() {
+		It("packs psiid + icto scalars into the internal ExternalIds list", func() {
+			input := &api.Rover{
+				Zone:  "zone",
+				Psiid: "PSI-103596",
+				Icto:  "icto-12345",
+			}
+			output := &roverv1.Rover{}
+			Expect(MapRover(input, output)).To(Succeed())
+			Expect(output.Spec.ExternalIds).To(ConsistOf(
+				roverv1.ExternalId{Scheme: "psi", Id: "PSI-103596"},
+				roverv1.ExternalId{Scheme: "icto", Id: "icto-12345"},
+			))
+		})
+
+		It("produces no ExternalIds when all scalars are empty", func() {
+			input := &api.Rover{Zone: "zone"}
+			output := &roverv1.Rover{}
+			Expect(MapRover(input, output)).To(Succeed())
+			Expect(output.Spec.ExternalIds).To(BeNil())
+		})
 	})
 })

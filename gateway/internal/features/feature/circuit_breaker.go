@@ -7,8 +7,8 @@ package feature
 import (
 	"context"
 	"fmt"
+
 	"github.com/go-logr/logr"
-	"github.com/pkg/errors"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	"github.com/telekom/controlplane/gateway/internal/features"
@@ -161,10 +161,10 @@ func handleApply(ctx context.Context, builder features.FeaturesBuilder, route *g
 
 	upstreamResponse, err := kongAdminApi.UpsertUpstreamWithResponse(ctx, upstreamName, upstreamBody)
 	if err != nil {
-		return errors.Wrap(err, "failed to create upstream")
+		return fmt.Errorf("failed to create upstream: %w", err)
 	}
 	if err := client.CheckStatusCode(upstreamResponse, 200); err != nil {
-		return errors.Wrap(fmt.Errorf("error body from kong admin api: %s", string(upstreamResponse.Body)), "failed to create upstream")
+		return fmt.Errorf("failed to create upstream (%d): %s: %w", upstreamResponse.StatusCode(), string(upstreamResponse.Body), err)
 	}
 	route.SetUpstreamId(*upstreamResponse.JSON200.Id)
 
@@ -184,10 +184,10 @@ func handleApply(ctx context.Context, builder features.FeaturesBuilder, route *g
 	// this is a special case with the kong admin API - this endpoint /upstreams/:upstreamName/targets actually accepts multiple POST requests, so this is not a mistake
 	targetsResponse, err := kongAdminApi.CreateTargetForUpstreamWithResponse(ctx, upstreamName, targetsBody)
 	if err != nil {
-		return errors.Wrap(err, "failed to create targets for upstream")
+		return fmt.Errorf("failed to create targets for upstream: %w", err)
 	}
 	if err := client.CheckStatusCode(targetsResponse, 200, 201); err != nil {
-		return errors.Wrap(fmt.Errorf("error body from kong admin api: %s", string(targetsResponse.Body)), "failed to create targets for upstream")
+		return fmt.Errorf("failed to create targets for upstream (%d): %s: %w", targetsResponse.StatusCode(), string(targetsResponse.Body), err)
 	}
 	route.SetTargetsId(*targetsResponse.JSON200.Id)
 

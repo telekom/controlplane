@@ -4,3 +4,11 @@
 
 resources:
 - monitor.yaml
+
+# [PROMETHEUS-WITH-CERTS] Uncomment to make Prometheus verify the metrics
+# endpoint's TLS cert (from the cert-manager-managed rover-server-cert secret)
+# instead of skipping verification.
+#patches:
+#  - path: monitor_tls_patch.yaml
+#    target:
+#      kind: ServiceMonitor

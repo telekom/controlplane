@@ -8,9 +8,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestBuildGatewayConsumer(t *testing.T) {

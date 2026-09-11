@@ -6,34 +6,36 @@ package util
 
 import (
 	"context"
+	"fmt"
 
-	"github.com/pkg/errors"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
+	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	"github.com/telekom/controlplane/organization/internal/index"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 func GetZoneObjWithTeamInfo(ctx context.Context) (*adminv1.Zone, error) {
-	var teamApiZone *adminv1.Zone = nil
 	zoneList := &adminv1.ZoneList{}
 	clientFromContext := cclient.ClientFromContextOrDie(ctx)
 
-	err := clientFromContext.List(ctx, zoneList, client.MatchingFields{index.FieldSpecTeamApis: "true"})
+	err := clientFromContext.List(ctx, zoneList, client.MatchingFields{index.FieldSpecManagedRoutes: "true"})
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to list zones")
+		return nil, fmt.Errorf("failed to list zones: %w", err)
 	}
 
-	for _, zone := range zoneList.GetItems() {
-		if zone.(*adminv1.Zone).Spec.TeamApis != nil {
-			teamApiZone = zone.(*adminv1.Zone).DeepCopy()
-			break
+	switch len(zoneList.Items) {
+	case 0:
+		return nil, ctrlerrors.BlockedErrorf("no zone with managed routes found")
+	case 1:
+		zone := zoneList.Items[0]
+		if zone.Spec.ManagedRoutes == nil {
+			return nil, ctrlerrors.BlockedErrorf("no zone with managed routes found")
 		}
+		return &zone, nil
+	default:
+		// multiple zones with managed routes found, this should not happen in a properly configured cluster
+		return nil, ctrlerrors.BlockedErrorf("multiple zones with managed routes found")
 	}
-
-	if teamApiZone == nil {
-		return nil, errors.New("found no zone with team apis")
-	}
-
-	return teamApiZone, nil
 }

@@ -41,4 +41,10 @@ func setDefaults() {
 	// Authentication defaults
 	viper.SetDefault("token", "") // ROVER_TOKEN
 	viper.SetDefault(ConfigKeyTokenURL, "")
+	viper.SetDefault("access.token", "") // ROVER_ACCESS_TOKEN (used only for local testing)
+
+	// Polling defaults
+	viper.SetDefault("timeout.status", "30s")         // ROVER_TIMEOUT_STATUS
+	viper.SetDefault("timeout.secretRotation", "30s") // ROVER_TIMEOUT_SECRET_ROTATION
+	viper.SetDefault("poll.interval", "1s")           // ROVER_POLL_INTERVAL
 }

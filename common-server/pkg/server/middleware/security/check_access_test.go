@@ -5,6 +5,7 @@
 package security
 
 import (
+	"context"
 	"io"
 	"net/http/httptest"
 	"strings"
@@ -672,7 +673,7 @@ func TestCheckAccess(t *testing.T) {
 					AccessToken:    mock.NewMockAccessToken("test", "group", "team", nil),
 					ResourcePath:   "group--team--rover-id",
 					ExpectedStatus: 200,
-					ExpectedBody:   "prefix:test--group--team--/, group:group, team:team",
+					ExpectedBody:   "prefix:test--group--team/, group:group, team:team",
 					Description:    "Valid token with group and team, matching namespace",
 				},
 				{
@@ -688,7 +689,7 @@ func TestCheckAccess(t *testing.T) {
 					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"team:obfuscated"}),
 					ResourcePath:   "group--team--rover-id",
 					ExpectedStatus: 200,
-					ExpectedBody:   "prefix:test--group--team--/, group:group, team:team",
+					ExpectedBody:   "prefix:test--group--team/, group:group, team:team",
 					Description:    "Valid token with obfuscated team scope, matching namespace",
 				},
 				{
@@ -813,7 +814,7 @@ func TestCheckAccess(t *testing.T) {
 					AccessToken:    mock.NewMockAccessToken("test", "group", "team", nil),
 					ResourcePath:   "",
 					ExpectedStatus: 200,
-					ExpectedBody:   "prefix:test--group--team--/, group:group, team:team",
+					ExpectedBody:   "prefix:test--group--team/, group:group, team:team",
 					Description:    "Valid token with group and team, no namespace",
 				},
 				{
@@ -845,7 +846,7 @@ func TestCheckAccess(t *testing.T) {
 					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"team:all"}),
 					ResourcePath:   "",
 					ExpectedStatus: 200,
-					ExpectedBody:   "prefix:test--group--team--/, group:group, team:team",
+					ExpectedBody:   "prefix:test--group--team/, group:group, team:team",
 					Description:    "[POST] Valid token with team all scope, no namespace",
 				},
 			},
@@ -1193,6 +1194,49 @@ func TestCheckAccessOpts(t *testing.T) {
 			b, _ := io.ReadAll(res.Body)
 			if !cmp(string(b), testCase.ExpectedBody) {
 				t.Fatalf("%s: Expected body '%s', got '%s'", testCase.Description, testCase.ExpectedBody, string(b))
+			}
+		})
+	}
+}
+
+func TestPrefixFromContext(t *testing.T) {
+	tests := []struct {
+		name     string
+		ctx      context.Context
+		expected string
+	}{
+		{
+			name:     "returns prefix when set in context",
+			ctx:      context.WithValue(context.Background(), prefixKey, "test--group--team/"),
+			expected: "test--group--team/",
+		},
+		{
+			name:     "returns empty string when no prefix in context",
+			ctx:      context.Background(),
+			expected: "",
+		},
+		{
+			name:     "returns empty string when prefix is non-string type",
+			ctx:      context.WithValue(context.Background(), prefixKey, 12345),
+			expected: "",
+		},
+		{
+			name:     "returns admin-level prefix",
+			ctx:      context.WithValue(context.Background(), prefixKey, "test--"),
+			expected: "test--",
+		},
+		{
+			name:     "returns group-level prefix",
+			ctx:      context.WithValue(context.Background(), prefixKey, "test--group--"),
+			expected: "test--group--",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := PrefixFromContext(tt.ctx)
+			if result != tt.expected {
+				t.Errorf("PrefixFromContext() = %q, want %q", result, tt.expected)
 			}
 		})
 	}

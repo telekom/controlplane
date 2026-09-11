@@ -7,12 +7,17 @@ package conjur_test
 import (
 	"context"
 	"fmt"
+	"sync"
+	"sync/atomic"
+	"time"
 
 	"github.com/cyberark/conjur-api-go/conjurapi/response"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/stretchr/testify/mock"
 	"github.com/telekom/controlplane/secret-manager/pkg/backend"
 	"github.com/telekom/controlplane/secret-manager/pkg/backend/conjur"
+	"github.com/telekom/controlplane/secret-manager/pkg/backend/conjur/bouncer"
 	"github.com/telekom/controlplane/secret-manager/test/mocks"
 )
 
@@ -80,7 +85,7 @@ var _ = Describe("Conjur Backend", func() {
 		It("should fail with an invalid-checkum error", func() {
 			ctx := context.Background()
 			value := "my-secret-value"
-			conjurBackend := conjur.NewBackend(writeAPI, readAPI).(*conjur.ConjurBackend)
+			conjurBackend := conjur.NewBackend(writeAPI, readAPI)
 			conjurBackend.MustMatchChecksum = true
 
 			readAPI.EXPECT().RetrieveSecret("controlplane/test/my-team/my-app/clientSecret").Return([]byte(value), nil).Times(1)
@@ -209,6 +214,122 @@ var _ = Describe("Conjur Backend", func() {
 
 		})
 
+		Context("Strategy", func() {
+
+			It("replace strategy should overwrite JSON value entirely", func() {
+				ctx := context.Background()
+				conjurBackend := conjur.NewBackend(writeAPI, readAPI)
+
+				existing := `{"key1":"value1","key2":"value2"}`
+				incoming := `{"key1":"updated"}`
+
+				readAPI.EXPECT().RetrieveSecret("controlplane/test/my-team/my-app/externalSecrets").Return([]byte(existing), nil).Times(1)
+				writeAPI.EXPECT().AddSecret("controlplane/test/my-team/my-app/externalSecrets", incoming).Return(nil).Times(1)
+
+				secretId := conjur.New("test", "my-team", "my-app", "externalSecrets", "")
+				secretValue := backend.String(incoming)
+
+				res, err := conjurBackend.Set(ctx, secretId, secretValue, backend.WithWriteStrategy(backend.StrategyReplace))
+				Expect(err).ToNot(HaveOccurred())
+				Expect(res).ToNot(BeNil())
+			})
+
+			It("merge strategy should shallow-merge JSON objects", func() {
+				ctx := context.Background()
+				conjurBackend := conjur.NewBackend(writeAPI, readAPI)
+
+				existing := `{"key1":"value1","key2":"value2"}`
+				incoming := `{"key1":"updated","key3":"new"}`
+
+				readAPI.EXPECT().RetrieveSecret("controlplane/test/my-team/my-app/externalSecrets").Return([]byte(existing), nil).Times(1)
+				// Merged result: key1=updated (overwritten), key2=value2 (preserved), key3=new (added)
+				// json.Marshal produces keys in sorted order
+				writeAPI.EXPECT().AddSecret("controlplane/test/my-team/my-app/externalSecrets", `{"key1":"updated","key2":"value2","key3":"new"}`).Return(nil).Times(1)
+
+				secretId := conjur.New("test", "my-team", "my-app", "externalSecrets", "")
+				secretValue := backend.String(incoming)
+
+				res, err := conjurBackend.Set(ctx, secretId, secretValue, backend.WithWriteStrategy(backend.StrategyMerge))
+				Expect(err).ToNot(HaveOccurred())
+				Expect(res).ToNot(BeNil())
+			})
+
+			It("merge strategy should preserve existing keys not in incoming JSON", func() {
+				ctx := context.Background()
+				conjurBackend := conjur.NewBackend(writeAPI, readAPI)
+
+				existing := `{"secret1":"topsecret","secret2":"ineedcoffee"}`
+				incoming := `{"secret1":"newsecret"}`
+
+				readAPI.EXPECT().RetrieveSecret("controlplane/test/my-team/my-app/externalSecrets").Return([]byte(existing), nil).Times(1)
+				// Merged: secret1=newsecret, secret2=ineedcoffee (preserved)
+				// json.Marshal produces keys in sorted order
+				writeAPI.EXPECT().AddSecret("controlplane/test/my-team/my-app/externalSecrets", `{"secret1":"newsecret","secret2":"ineedcoffee"}`).Return(nil).Times(1)
+
+				secretId := conjur.New("test", "my-team", "my-app", "externalSecrets", "")
+				secretValue := backend.String(incoming)
+
+				res, err := conjurBackend.Set(ctx, secretId, secretValue, backend.WithWriteStrategy(backend.StrategyMerge))
+				Expect(err).ToNot(HaveOccurred())
+				Expect(res).ToNot(BeNil())
+			})
+
+			It("merge strategy should overwrite plain strings (non-JSON)", func() {
+				ctx := context.Background()
+				conjurBackend := conjur.NewBackend(writeAPI, readAPI)
+
+				existing := "old-secret"
+				incoming := "new-secret"
+
+				readAPI.EXPECT().RetrieveSecret("controlplane/test/my-team/my-app/clientSecret").Return([]byte(existing), nil).Times(1)
+				writeAPI.EXPECT().AddSecret("controlplane/test/my-team/my-app/clientSecret", incoming).Return(nil).Times(1)
+
+				secretId := conjur.New("test", "my-team", "my-app", "clientSecret", "")
+				secretValue := backend.String(incoming)
+
+				res, err := conjurBackend.Set(ctx, secretId, secretValue, backend.WithWriteStrategy(backend.StrategyMerge))
+				Expect(err).ToNot(HaveOccurred())
+				Expect(res).ToNot(BeNil())
+			})
+
+			It("default (no strategy) should overwrite value directly", func() {
+				ctx := context.Background()
+				conjurBackend := conjur.NewBackend(writeAPI, readAPI)
+
+				existing := `{"key1":"value1","key2":"value2"}`
+				incoming := `{"key1":"updated"}`
+
+				readAPI.EXPECT().RetrieveSecret("controlplane/test/my-team/my-app/externalSecrets").Return([]byte(existing), nil).Times(1)
+				writeAPI.EXPECT().AddSecret("controlplane/test/my-team/my-app/externalSecrets", incoming).Return(nil).Times(1)
+
+				secretId := conjur.New("test", "my-team", "my-app", "externalSecrets", "")
+				secretValue := backend.String(incoming)
+
+				// No strategy = replace (default)
+				res, err := conjurBackend.Set(ctx, secretId, secretValue)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(res).ToNot(BeNil())
+			})
+
+			It("merge strategy with identical JSON values should not write", func() {
+				ctx := context.Background()
+				conjurBackend := conjur.NewBackend(writeAPI, readAPI)
+
+				existing := `{"key1":"value1"}`
+				incoming := `{"key1":"value1"}`
+
+				readAPI.EXPECT().RetrieveSecret("controlplane/test/my-team/my-app/externalSecrets").Return([]byte(existing), nil).Times(1)
+				// No AddSecret call expected — value unchanged after merge
+
+				secretId := conjur.New("test", "my-team", "my-app", "externalSecrets", "")
+				secretValue := backend.String(incoming)
+
+				res, err := conjurBackend.Set(ctx, secretId, secretValue, backend.WithWriteStrategy(backend.StrategyMerge))
+				Expect(err).ToNot(HaveOccurred())
+				Expect(res).ToNot(BeNil())
+			})
+		})
+
 	})
 
 	Context("Delete", func() {
@@ -222,6 +343,83 @@ var _ = Describe("Conjur Backend", func() {
 			secretId := conjur.New("test", "my-team", "my-app", "clientSecret", "checksum")
 			err := conjurBackend.Delete(ctx, secretId)
 			Expect(err).ToNot(HaveOccurred())
+		})
+	})
+
+	Context("Concurrent Set with Bouncer", func() {
+
+		It("should serialize concurrent Set calls on the same variable", func() {
+			ctx := context.Background()
+			const concurrency = 10
+			const variableId = "controlplane/test/my-team/my-app/clientSecret"
+
+			// Simulate a Conjur variable as an atomic value
+			var storedValue atomic.Value
+			storedValue.Store("initial-value")
+
+			// Track the order of writes to verify serialization
+			var writeOrder []string
+			var writeOrderMu sync.Mutex
+
+			// Create mocks that simulate real Conjur read-modify-write behavior
+			// with timing delays to expose any race conditions
+			writeAPIConcurrent := mocks.NewMockConjurAPI(GinkgoT())
+			readAPIConcurrent := mocks.NewMockConjurAPI(GinkgoT())
+
+			readAPIConcurrent.EXPECT().RetrieveSecret(variableId).RunAndReturn(
+				func(id string) ([]byte, error) {
+					// Small delay to widen the race window
+					time.Sleep(time.Millisecond)
+					return []byte(storedValue.Load().(string)), nil
+				},
+			)
+
+			writeAPIConcurrent.EXPECT().AddSecret(variableId, mock.Anything).RunAndReturn(
+				func(id string, value string) error {
+					// Small delay to widen the race window
+					time.Sleep(time.Millisecond)
+					storedValue.Store(value)
+					writeOrderMu.Lock()
+					writeOrder = append(writeOrder, value)
+					writeOrderMu.Unlock()
+					return nil
+				},
+			)
+
+			// Create backend WITH bouncer
+			locker := bouncer.NewLocker("test-secret-write")
+			conjurBackend := conjur.NewBackend(writeAPIConcurrent, readAPIConcurrent).WithBouncer(locker)
+
+			errs := make(chan error, concurrency)
+			var wg sync.WaitGroup
+			wg.Add(concurrency)
+
+			for i := 0; i < concurrency; i++ {
+				go func(idx int) {
+					defer wg.Done()
+					defer GinkgoRecover()
+					secretId := conjur.New("test", "my-team", "my-app", "clientSecret", "")
+					secretValue := backend.String(fmt.Sprintf("value-%d", idx))
+					_, err := conjurBackend.Set(ctx, secretId, secretValue)
+					errs <- err
+				}(i)
+			}
+
+			wg.Wait()
+			close(errs)
+
+			for err := range errs {
+				Expect(err).ToNot(HaveOccurred())
+			}
+
+			// All writes should have completed (serialized by bouncer)
+			writeOrderMu.Lock()
+			defer writeOrderMu.Unlock()
+			Expect(writeOrder).To(HaveLen(concurrency))
+
+			// The final stored value should match the last write
+			finalValue := storedValue.Load().(string)
+			Expect(finalValue).To(Equal(writeOrder[len(writeOrder)-1]))
 		})
 	})
 })

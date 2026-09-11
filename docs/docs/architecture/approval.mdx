@@ -1,0 +1,61 @@
+---
+sidebar_position: 7
+---
+
+# Approval Domain
+
+The Approval domain provides configurable approval workflows for API and event subscriptions. It supports multiple approval strategies, tracks state through a finite state machine, and integrates with the Notification domain to keep all parties informed.
+
+## Custom Resources
+
+<CRDReference domain="approval" />
+
+## Approval Strategies
+
+### Auto
+
+The subscription is approved immediately. No human intervention is required.
+
+```
+Created ──▶ Granted
+```
+
+### Simple
+
+A single approver from the provider team must grant the request.
+
+```
+Created ──▶ Pending ──▶ Granted
+                    └──▶ Rejected
+```
+
+### FourEyes
+
+Two separate approvers from the provider team must independently grant the request (dual-control principle).
+
+```
+Created ──▶ Pending ──▶ SemiGranted ──▶ Granted
+                    └──▶ Rejected
+```
+
+## Trusted Teams
+
+API and event providers can designate specific teams as **trusted**. When a trusted team subscribes, the approval is granted automatically regardless of the configured strategy. This is useful for pre-authorized internal services.
+
+## Notifications
+
+The Approval domain creates Notification resources at key points in the lifecycle:
+
+- **Request created** — Provider team is notified of a new subscription request
+- **State changed** — Both parties are notified when an approval is granted, rejected, or suspended
+
+## Domain Interactions
+
+- **API domain** — ApiSubscription resources trigger approval creation.
+- **Event domain** — EventSubscription resources trigger approval creation.
+- **Notification domain** — Approval lifecycle events create notifications.
+
+## Related Pages
+
+- [User Journey: Approvals](../user-journey/approvals.mdx)
+- [Architecture: API Domain](./api.mdx)
