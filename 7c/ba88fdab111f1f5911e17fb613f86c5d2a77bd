@@ -1,0 +1,94 @@
+organization-server/cmd/main.go
+  s_bd2f436b7b7a9f::t_ba7c6df7f11d5e 88
+controlplane-api/internal/graphql/controller.go
+  s_b1d412d208eeb0::t_efded14a8dc536 40
+common-server/pkg/server/middleware/security/security.go
+  s_6930080c76ece0::t_7450bb29f62c78 40
+  s_bd2f436b7b7a9f::t_a2a55b128c23d2 41,49,56,60,71,75,80-86
+controlplane-api/internal/graphql/controller_test.go
+  s_b1d412d208eeb0::t_b134236ca6253f 37
+  s_b1d412d208eeb0::t_216e72a588ede3 55,57,60-63
+  s_5e21552335709a::t_c527fa8821bd9a 8-18,34-36,38-40,42-54,56,58-59,64
+  s_5e21552335709a::t_9b6e67be075606 21-31
+  s_5e21552335709a::t_ba41b2fa3ebcd9 32-33
+common-server/pkg/server/predefined.go
+  s_bd2f436b7b7a9f::t_9b4270c0384e86 64,68,72,76
+organization-server/internal/server/server.go
+  s_bd2f436b7b7a9f::t_ba7c6df7f11d5e 36
+common-server/pkg/server/multiport_test.go
+  s_bd2f436b7b7a9f::t_c74607f82fab45 12,23,120-124,126-148,155-160
+  s_b1d412d208eeb0::t_b134236ca6253f 125
+  s_5e21552335709a::t_c527fa8821bd9a 149-154,161
+  s_bd2f436b7b7a9f::t_ba7c6df7f11d5e 168,183,230,237,260,268
+  s_5e21552335709a::t_d0e04e2c84110b 162-163
+common-server/pkg/server/family.go
+  s_bd2f436b7b7a9f::t_a2a55b128c23d2 14-16,22,35,52
+  s_b1d412d208eeb0::t_b134236ca6253f 18-20
+file-manager/cmd/server/server.go
+  s_bd2f436b7b7a9f::t_ba7c6df7f11d5e 163
+rover-server/internal/server/server.go
+  s_bd2f436b7b7a9f::t_ba7c6df7f11d5e 128
+discovery-server/internal/server/server.go
+  s_bd2f436b7b7a9f::t_ba7c6df7f11d5e 102
+secret-manager/cmd/server/server.go
+  s_bd2f436b7b7a9f::t_ba7c6df7f11d5e 176
+common-server/pkg/server/multiport.go
+  s_bd2f436b7b7a9f::t_a2a55b128c23d2 56-57,122,182-183,185-186
+discovery-server/internal/server/deprecated.go
+  s_bd2f436b7b7a9f::t_fc120cbb590840 18,31-33,36-38,41-43,46,49,52-54,57-59
+controlplane-api/cmd/main.go
+  s_b1d412d208eeb0::t_b134236ca6253f 115
+common-server/pkg/server/tree/controller.go
+  s_bd2f436b7b7a9f::t_9b4270c0384e86 31,33
+common-server/pkg/server/resource.go
+  s_bd2f436b7b7a9f::t_9b4270c0384e86 46,49-50,53,56,59
+docs/docs/admin-journey/controlplane-api.md
+  s_5e21552335709a::t_4de8bffeebbb0a 290
+common-server/pkg/server/config/controller.go
+  s_bd2f436b7b7a9f::t_9b4270c0384e86 67,69
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "7cba88fdab111f1f5911e17fb613f86c5d2a77bd",
+  "prompts": {},
+  "humans": {
+    "h_0f030e7424553c": {
+      "author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  },
+  "sessions": {
+    "s_5e21552335709a": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f6fd552b9ffehLrbKM6zLPH8ZX",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_6930080c76ece0": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f703203b1ffeCxPr3WMOdWIpLn",
+        "model": "gpt-5.6-terra"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_b1d412d208eeb0": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f6fdab593ffe9jqt3oQeD87XyY",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_bd2f436b7b7a9f": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f7010a9f6ffelA0hMOQ5gNfV19",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
