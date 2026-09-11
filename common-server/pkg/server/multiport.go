@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"slices"
 	"sync"
 
 	"github.com/go-logr/logr"
@@ -183,7 +184,7 @@ func closeListeners(listeners []net.Listener) error {
 // uniformly whether or not the family uses per-route guards. Servers use
 // it in their RegisterFunc: router.Add(method, path, Guarded(guard, h)...).
 func Guarded(guard []fiber.Handler, h fiber.Handler) []fiber.Handler {
-	return append(guard, h)
+	return slices.Concat(guard, []fiber.Handler{h})
 }
 
 // FamilyFromListenerConfig selects the family from the single present family

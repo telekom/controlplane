@@ -182,6 +182,17 @@ var _ = Describe("Guarded", func() {
 		g := func(c *fiber.Ctx) error { return nil }
 		Expect(server.Guarded([]fiber.Handler{g}, h)).To(HaveLen(2))
 	})
+
+	It("returns independent handler chains", func() {
+		guard := make([]fiber.Handler, 1, 2)
+		guard[0] = h
+		called := 0
+		first := server.Guarded(guard, func(c *fiber.Ctx) error { called = 1; return nil })
+		server.Guarded(guard, func(c *fiber.Ctx) error { called = 2; return nil })
+
+		Expect(first[1](nil)).To(Succeed())
+		Expect(called).To(Equal(1))
+	})
 })
 
 var _ = Describe("Synthetic admin BusinessContext", func() {
