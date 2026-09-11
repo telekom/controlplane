@@ -64,9 +64,9 @@ func NewConfigController(log logr.Logger, stores ...StoreInfo) *ConfigController
 }
 
 func (r *ConfigController) Register(router fiber.Router, opts server.ControllerOpts) {
-	checkAccess := security.ConfigureSecurity(router, opts.Security)
+	guard := security.ConfigureSecurity(router, opts.Security)
 
-	router.Get("/config", checkAccess, r.GetConfig)
+	router.Get("/config", server.Guarded(guard, r.GetConfig)...)
 }
 
 func (r *ConfigController) GetConfig(c *fiber.Ctx) error {
