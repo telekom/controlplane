@@ -90,5 +90,25 @@ var _ = Describe("EventConfig Controller", func() {
 			})
 			Expect(err).NotTo(HaveOccurred())
 		})
+
+		It("persists, replaces, and clears the optional Horizon environment overwrite", func() {
+			resource := &eventv1.EventConfig{}
+			Expect(k8sClient.Get(ctx, typeNamespacedName, resource)).To(Succeed())
+
+			resource.Spec.OverwriteEnvironmentName = "legacy-horizon"
+			Expect(k8sClient.Update(ctx, resource)).To(Succeed())
+			Expect(k8sClient.Get(ctx, typeNamespacedName, resource)).To(Succeed())
+			Expect(resource.Spec.OverwriteEnvironmentName).To(Equal("legacy-horizon"))
+
+			resource.Spec.OverwriteEnvironmentName = "replacement"
+			Expect(k8sClient.Update(ctx, resource)).To(Succeed())
+			Expect(k8sClient.Get(ctx, typeNamespacedName, resource)).To(Succeed())
+			Expect(resource.Spec.OverwriteEnvironmentName).To(Equal("replacement"))
+
+			resource.Spec.OverwriteEnvironmentName = ""
+			Expect(k8sClient.Update(ctx, resource)).To(Succeed())
+			Expect(k8sClient.Get(ctx, typeNamespacedName, resource)).To(Succeed())
+			Expect(resource.Spec.OverwriteEnvironmentName).To(BeEmpty())
+		})
 	})
 })
