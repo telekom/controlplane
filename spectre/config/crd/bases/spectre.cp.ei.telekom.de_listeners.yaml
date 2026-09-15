@@ -76,11 +76,6 @@ spec:
                 required:
                 - apiBasePath
                 type: object
-                x-kubernetes-validations:
-                - message: requestFilter is not yet supported
-                  rule: '!has(self.requestFilter)'
-                - message: responseFilter is not yet supported
-                  rule: '!has(self.responseFilter)'
               application:
                 description: Application references the owning SpectreApplication
                   (set by the rover producer).

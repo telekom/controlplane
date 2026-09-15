@@ -1204,28 +1204,14 @@ var _ = Describe("ListenerHandler", func() {
 			})
 		})
 
-		Context("runtime filter guard", func() {
-			It("should block when requestFilter is set", func() {
+		Context("when listener has filters", func() {
+			It("should map requestFilter trigger to SelectionFilter and responseFilter payload to ResponseFilter", func() {
 				listener := newListener()
 				listener.Spec.ApiListener.RequestFilter = &spectrev1.ListenerFilter{
-					Trigger: map[string]string{"key": "value"},
+					Trigger: map[string]string{"method": "POST"},
 				}
-				mockGetConsumerApp(makeConsumerApp())
-				mockGetProviderApp(makeProviderApp())
-				mockGetSpectreApp(makeSpectreAppPtr())
-				mockGetZone()
-				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
-				mockGetEventStore(makeListenerEventStore())
-
-				err := h.CreateOrUpdate(ctx, listener)
-				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(ContainSubstring("requestFilter is not yet implemented"))
-			})
-
-			It("should block when responseFilter is set", func() {
-				listener := newListener()
 				listener.Spec.ApiListener.ResponseFilter = &spectrev1.ListenerFilter{
-					Payload: []string{"$.data"},
+					Payload: []string{"body.name", "body.status"},
 				}
 				mockGetConsumerApp(makeConsumerApp())
 				mockGetProviderApp(makeProviderApp())
@@ -1233,10 +1219,52 @@ var _ = Describe("ListenerHandler", func() {
 				mockGetZone()
 				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
 				mockGetEventStore(makeListenerEventStore())
+				mockListRoutes()
+				mockNoStaleChildren()
+				mockApprovalGranted()
+				mockCreateOrUpdatePublisher()
+				mockGetRealm()
+				mockCreateOrUpdateRouteListener()
+
+				var capturedSubs []*pubsubv1.Subscriber
+				fakeClient.EXPECT().
+					CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Subscriber"), mock.Anything).
+					Run(func(_ context.Context, obj client.Object, mutate controllerutil.MutateFn) {
+						_ = mutate()
+						sub := obj.(*pubsubv1.Subscriber)
+						capturedSubs = append(capturedSubs, sub.DeepCopy())
+					}).
+					Return(controllerutil.OperationResultCreated, nil).Times(2)
+
+				mockJanitorCleanup()
+				fakeClient.EXPECT().AnyChanged().Return(false).Once()
+				fakeClient.EXPECT().AllReady().Return(true).Once()
+				mockListenerReadinessChecks()
 
 				err := h.CreateOrUpdate(ctx, listener)
-				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(ContainSubstring("responseFilter is not yet implemented"))
+				Expect(err).ToNot(HaveOccurred())
+
+				Expect(capturedSubs).To(HaveLen(2))
+
+				// Request subscriber: user trigger entries merged with fixed attrs.
+				rqSub := capturedSubs[0]
+				Expect(rqSub.Spec.Trigger.SelectionFilter.Attributes["kind"]).To(Equal("REQUEST"))
+				Expect(rqSub.Spec.Trigger.SelectionFilter.Attributes["issue"]).To(Equal(testApiBasePath))
+				Expect(rqSub.Spec.Trigger.SelectionFilter.Attributes["consumer"]).To(Equal(consumerClientId))
+				Expect(rqSub.Spec.Trigger.SelectionFilter.Attributes["provider"]).To(Equal(providerClientId))
+				Expect(rqSub.Spec.Trigger.SelectionFilter.Attributes["method"]).To(Equal("POST"))
+				Expect(rqSub.Spec.Trigger.ResponseFilter).To(BeNil())
+
+				// Response subscriber: payload entries mapped with payload. prefix.
+				rpSub := capturedSubs[1]
+				Expect(rpSub.Spec.Trigger.SelectionFilter.Attributes["kind"]).To(Equal("RESPONSE"))
+				Expect(rpSub.Spec.Trigger.SelectionFilter.Attributes["issue"]).To(Equal(testApiBasePath))
+				Expect(rpSub.Spec.Trigger.SelectionFilter.Attributes["consumer"]).To(Equal(consumerClientId))
+				Expect(rpSub.Spec.Trigger.SelectionFilter.Attributes["provider"]).To(Equal(providerClientId))
+				Expect(rpSub.Spec.Trigger.SelectionFilter.Attributes).ToNot(HaveKey("method"))
+				Expect(rpSub.Spec.Trigger.ResponseFilter).ToNot(BeNil())
+				Expect(rpSub.Spec.Trigger.ResponseFilter.Paths).To(Equal([]string{"payload.body.name", "payload.body.status"}))
+				Expect(rpSub.Spec.Trigger.ResponseFilter.Mode).To(Equal(pubsubv1.ResponseFilterModeInclude))
 			})
 		})
 

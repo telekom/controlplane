@@ -201,13 +201,6 @@ func (r *RoverValidator) validateListeners(ctx context.Context, valErr *cerrors.
 			valErr.AddInvalidError(listenerPath.Child("eventType"), listener.EventType, "event listeners are not yet supported")
 		}
 
-		// Filters are not yet supported
-		if listener.RequestFilter != nil {
-			valErr.AddInvalidError(listenerPath.Child("requestFilter"), "", "requestFilter is not yet supported")
-		}
-		if listener.ResponseFilter != nil {
-			valErr.AddInvalidError(listenerPath.Child("responseFilter"), "", "responseFilter is not yet supported")
-		}
 		if listener.EventFilter != nil {
 			valErr.AddInvalidError(listenerPath.Child("eventFilter"), "", "eventFilter is not yet supported")
 		}

@@ -26,8 +26,6 @@ type ListenerSpec struct {
 }
 
 // ApiListener configures a listener that proxies API requests.
-// +kubebuilder:validation:XValidation:rule="!has(self.requestFilter)",message="requestFilter is not yet supported"
-// +kubebuilder:validation:XValidation:rule="!has(self.responseFilter)",message="responseFilter is not yet supported"
 type ApiListener struct {
 	ApiBasePath string `json:"apiBasePath"`
 	// +optional

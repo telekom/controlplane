@@ -7,6 +7,7 @@ package handler
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
@@ -27,21 +28,21 @@ const maxLabelValueLen = 63
 // approval grant. Two Listeners with different intents must not share the
 // same approval — a grant for one does not cover the other.
 type authorizationIntent struct {
-	ConsumerName      string
-	ConsumerNamespace string
-	ConsumerUID       string
-	ProviderName      string
-	ProviderNamespace string
-	ProviderUID       string
-	ApplicationName   string
-	ApplicationNs     string
-	ApiBasePath       string
-	CaptureRequest    bool
-	CaptureResponse   bool
-	DeliveryType      string
-	CallbackTarget    string
-	RequestFilter     bool
-	ResponseFilter    bool
+	ConsumerName       string
+	ConsumerNamespace  string
+	ConsumerUID        string
+	ProviderName       string
+	ProviderNamespace  string
+	ProviderUID        string
+	ApplicationName    string
+	ApplicationNs      string
+	ApiBasePath        string
+	CaptureRequest     bool
+	CaptureResponse    bool
+	DeliveryType       string
+	CallbackTarget     string
+	RequestFilterJSON  string
+	ResponseFilterJSON string
 }
 
 // buildAuthorizationIntent constructs the canonical intent from resolved
@@ -70,8 +71,16 @@ func buildAuthorizationIntent(
 		intent.ApiBasePath = listener.Spec.ApiListener.ApiBasePath
 		intent.CaptureRequest = true
 		intent.CaptureResponse = true
-		intent.RequestFilter = listener.Spec.ApiListener.RequestFilter != nil
-		intent.ResponseFilter = listener.Spec.ApiListener.ResponseFilter != nil
+		if listener.Spec.ApiListener.RequestFilter != nil {
+			if data, err := json.Marshal(listener.Spec.ApiListener.RequestFilter); err == nil {
+				intent.RequestFilterJSON = string(data)
+			}
+		}
+		if listener.Spec.ApiListener.ResponseFilter != nil {
+			if data, err := json.Marshal(listener.Spec.ApiListener.ResponseFilter); err == nil {
+				intent.ResponseFilterJSON = string(data)
+			}
+		}
 	}
 
 	return intent
@@ -102,8 +111,8 @@ func (a *authorizationIntent) fingerprint() string {
 		{"captureResponse", fmt.Sprintf("%t", a.CaptureResponse)},
 		{"deliveryType", a.DeliveryType},
 		{"callbackTarget", a.CallbackTarget},
-		{"requestFilter", fmt.Sprintf("%t", a.RequestFilter)},
-		{"responseFilter", fmt.Sprintf("%t", a.ResponseFilter)},
+		{"requestFilter", filterFingerprintValue(a.RequestFilterJSON)},
+		{"responseFilter", filterFingerprintValue(a.ResponseFilterJSON)},
 	}
 
 	for _, f := range fields {
@@ -130,13 +139,31 @@ func (a *authorizationIntent) approvalProperties() map[string]any {
 		"captureRequest":      a.CaptureRequest,
 		"captureResponse":     a.CaptureResponse,
 		"deliveryType":        a.DeliveryType,
-		"requestFilter":       a.RequestFilter,
-		"responseFilter":      a.ResponseFilter,
+		"requestFilter":       filterPropertyValue(a.RequestFilterJSON),
+		"responseFilter":      filterPropertyValue(a.ResponseFilterJSON),
 	}
 	if a.CallbackTarget != "" {
 		props["callbackTarget"] = a.CallbackTarget
 	}
 	return props
+}
+
+// filterFingerprintValue returns "false" for an empty string (backward-compat
+// with the old boolean fingerprint) or the JSON content otherwise.
+func filterFingerprintValue(jsonStr string) string {
+	if jsonStr == "" {
+		return "false"
+	}
+	return jsonStr
+}
+
+// filterPropertyValue returns false (bool) when no filter is set, or the JSON
+// string when one is present — for human-readable approval properties.
+func filterPropertyValue(jsonStr string) any {
+	if jsonStr == "" {
+		return false
+	}
+	return jsonStr
 }
 
 // isStaleChild returns true if the resource's fingerprint label is missing

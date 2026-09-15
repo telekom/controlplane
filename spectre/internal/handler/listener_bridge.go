@@ -65,12 +65,12 @@ func (h *ListenerHandler) ensureBridgeSubscribers(
 	providerId string,
 	fingerprint string,
 ) ([]ctypes.ObjectRef, error) {
-	rqSub, err := h.ensureBridgeSubscriber(ctx, listener, publisher, appId, callbackURL, apiBasePath, consumerId, providerId, "rq", "REQUEST", fingerprint)
+	rqSub, err := h.ensureBridgeSubscriber(ctx, listener, publisher, appId, callbackURL, apiBasePath, consumerId, providerId, "rq", "REQUEST", fingerprint, listener.Spec.ApiListener.RequestFilter)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to ensure bridge subscriber (rq)")
 	}
 
-	rpSub, err := h.ensureBridgeSubscriber(ctx, listener, publisher, appId, callbackURL, apiBasePath, consumerId, providerId, "rp", "RESPONSE", fingerprint)
+	rpSub, err := h.ensureBridgeSubscriber(ctx, listener, publisher, appId, callbackURL, apiBasePath, consumerId, providerId, "rp", "RESPONSE", fingerprint, listener.Spec.ApiListener.ResponseFilter)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to ensure bridge subscriber (rp)")
 	}
@@ -93,6 +93,7 @@ func (h *ListenerHandler) ensureBridgeSubscriber(
 	kindSuffix string,
 	kindValue string,
 	fingerprint string,
+	filter *spectrev1.ListenerFilter,
 ) (*pubsubv1.Subscriber, error) {
 	c := cclient.ClientFromContextOrDie(ctx)
 
@@ -123,16 +124,7 @@ func (h *ListenerHandler) ensureBridgeSubscriber(
 				Payload:  pubsubv1.PayloadTypeData,
 				Callback: gatewayCallback,
 			},
-			Trigger: &pubsubv1.Trigger{
-				SelectionFilter: &pubsubv1.SelectionFilter{
-					Attributes: map[string]string{
-						"issue":    apiBasePath,
-						"consumer": consumerId,
-						"provider": providerId,
-						"kind":     kindValue,
-					},
-				},
-			},
+			Trigger: buildBridgeTrigger(filter, apiBasePath, consumerId, providerId, kindValue),
 		}
 		return nil
 	}

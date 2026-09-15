@@ -210,6 +210,69 @@ var _ = Describe("authorization fingerprint", func() {
 		Expect(fp1).ToNot(Equal(fp2))
 	})
 
+	It("should produce same fingerprint for nil filters as before implementation", func() {
+		// No filters set — RequestFilterJSON and ResponseFilterJSON are "",
+		// which maps to "false" in the hash via filterFingerprintValue,
+		// matching the old bool-false behavior.
+		intent := buildAuthorizationIntent(listener, consumerApp, providerApp, spectreApp)
+		Expect(intent.RequestFilterJSON).To(Equal(""))
+		Expect(intent.ResponseFilterJSON).To(Equal(""))
+		Expect(filterFingerprintValue("")).To(Equal("false"))
+	})
+
+	It("should change when request filter content changes", func() {
+		listener.Spec.ApiListener.RequestFilter = &spectrev1.ListenerFilter{
+			Trigger: map[string]string{"a": "b"},
+		}
+		fp1 := baseFingerprint()
+		listener.Spec.ApiListener.RequestFilter = &spectrev1.ListenerFilter{
+			Trigger: map[string]string{"a": "c"},
+		}
+		fp2 := baseFingerprint()
+		Expect(fp1).ToNot(Equal(fp2))
+	})
+
+	It("should change when response filter payload changes", func() {
+		listener.Spec.ApiListener.ResponseFilter = &spectrev1.ListenerFilter{
+			Payload: []string{"x"},
+		}
+		fp1 := baseFingerprint()
+		listener.Spec.ApiListener.ResponseFilter = &spectrev1.ListenerFilter{
+			Payload: []string{"y"},
+		}
+		fp2 := baseFingerprint()
+		Expect(fp1).ToNot(Equal(fp2))
+	})
+
+	It("should not depend on trigger map key ordering", func() {
+		listener.Spec.ApiListener.RequestFilter = &spectrev1.ListenerFilter{
+			Trigger: map[string]string{"a": "1", "b": "2"},
+		}
+		fp1 := baseFingerprint()
+		listener.Spec.ApiListener.RequestFilter = &spectrev1.ListenerFilter{
+			Trigger: map[string]string{"b": "2", "a": "1"},
+		}
+		fp2 := baseFingerprint()
+		Expect(fp1).To(Equal(fp2))
+	})
+
+	It("should expose filter JSON in approval properties", func() {
+		listener.Spec.ApiListener.RequestFilter = &spectrev1.ListenerFilter{
+			Trigger: map[string]string{"key": "val"},
+		}
+		intent := buildAuthorizationIntent(listener, consumerApp, providerApp, spectreApp)
+		props := intent.approvalProperties()
+		Expect(props["requestFilter"]).To(BeAssignableToTypeOf(""))
+		Expect(props["requestFilter"]).To(ContainSubstring("key"))
+	})
+
+	It("should expose false for approval properties when filter is nil", func() {
+		intent := buildAuthorizationIntent(listener, consumerApp, providerApp, spectreApp)
+		props := intent.approvalProperties()
+		Expect(props["requestFilter"]).To(Equal(false))
+		Expect(props["responseFilter"]).To(Equal(false))
+	})
+
 	Describe("isStaleChild", func() {
 		It("should return true when fingerprint label is missing", func() {
 			labels := map[string]string{"cp.ei.telekom.de/owner.uid": "uid-001"}

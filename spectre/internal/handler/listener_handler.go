@@ -116,16 +116,6 @@ func (h *ListenerHandler) CreateOrUpdate(ctx context.Context, listener *spectrev
 	}
 	apiBasePath := listener.Spec.ApiListener.ApiBasePath
 
-	// Step 5.1: Reject filters at runtime — the webhook already blocks them via
-	// CEL, but a direct API write or future webhook bypass must not silently
-	// provision resources for unimplemented filter logic.
-	if listener.Spec.ApiListener.RequestFilter != nil {
-		return ctrlerrors.BlockedErrorf("requestFilter is not yet implemented")
-	}
-	if listener.Spec.ApiListener.ResponseFilter != nil {
-		return ctrlerrors.BlockedErrorf("responseFilter is not yet implemented")
-	}
-
 	// Step 5.5: Resolve the gateway Route early so unsupported modes
 	// (pass-through, failover) are rejected before creating approvals.
 	route, err := h.findRouteByPath(ctx, listeningZone.Status.Namespace, apiBasePath)
