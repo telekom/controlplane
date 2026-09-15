@@ -37,6 +37,8 @@ type SecurityOpts struct {
 	// Use the ModeJWT or ModeMock constants.
 	Mode Mode
 	Log  logr.Logger
+	// DisableGlobalGuard requires protected routes to apply the returned middleware chain explicitly.
+	DisableGlobalGuard bool
 
 	JWTOpts             []Option[*JWTOpts]
 	BusinessContextOpts []Option[*BusinessContextOpts]
@@ -44,17 +46,18 @@ type SecurityOpts struct {
 }
 
 // ConfigureSecurity configures the security middlewares based on SecurityOpts.Mode.
-// It returns the checkAccess middleware to be applied on individual routes.
+// It returns the security middleware chain to be applied on guarded routes.
 //
 // Mode behaviour:
 //   - ModeJWT ("jwt")  — Full JWT validation against trusted issuers. Panics if no trusted issuers are configured.
 //   - ModeMock ("mock") — JWT parsed without signature validation. Logs a prominent warning.
 //
 // Panics on any other Mode value (including empty string).
-func ConfigureSecurity(router fiber.Router, opts SecurityOpts) fiber.Handler {
+func ConfigureSecurity(router fiber.Router, opts SecurityOpts) []fiber.Handler {
 	busCtx := NewBusinessCtxMiddlewareWithOpts(opts.BusinessContextOpts...)
 	checkAccess := NewCheckAccessMiddlewareWithOpts(opts.CheckAccessOpts...)
 
+	var auth fiber.Handler
 	switch opts.Mode {
 	case ModeJWT:
 		jwtOpts := &JWTOpts{}
@@ -65,17 +68,20 @@ func ConfigureSecurity(router fiber.Router, opts SecurityOpts) fiber.Handler {
 			panic("security.mode=jwt requires at least one trustedIssuer — configure security.trustedIssuers or set security.mode=mock for integration testing")
 		}
 		opts.Log.Info("🔒 Security mode: JWT validation enabled")
-		router.Use(NewJWTWithOpts(opts.JWTOpts...))
-		router.Use(busCtx)
-		return checkAccess
+		auth = NewJWTWithOpts(opts.JWTOpts...)
 
 	case ModeMock:
 		opts.Log.Info("⚠️  Security mode: mock — JWT signatures NOT validated. DO NOT USE IN PRODUCTION.")
-		router.Use(mock.NewJWTMock())
-		router.Use(busCtx)
-		return checkAccess
+		auth = mock.NewJWTMock()
 
 	default:
 		panic(fmt.Sprintf("invalid security.mode: %q (must be one of: mock, jwt)", opts.Mode))
 	}
+
+	if opts.DisableGlobalGuard {
+		return []fiber.Handler{auth, busCtx, checkAccess}
+	}
+	router.Use(auth)
+	router.Use(busCtx)
+	return []fiber.Handler{checkAccess}
 }

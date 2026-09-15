@@ -33,7 +33,7 @@ func New(ctrl *controller.Controller, log logr.Logger) *Server {
 }
 
 // RegisterRoutes registers all REST endpoints on the given Fiber router group.
-func (s *Server) RegisterRoutes(router fiber.Router, guard fiber.Handler) {
+func (s *Server) RegisterRoutes(router fiber.Router, guard []fiber.Handler) {
 	router.Add(fiber.MethodPost, "/hubs", append(cserver.Guarded(guard, adminCreateOnly), s.CreateHub)...)
 	router.Add(fiber.MethodGet, "/hubs", cserver.Guarded(guard, s.ListHubs)...)
 	router.Add(fiber.MethodGet, "/hubs/:hub", cserver.Guarded(guard, s.GetHub)...)

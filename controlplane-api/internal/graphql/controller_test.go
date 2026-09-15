@@ -5,29 +5,60 @@
 package graphql
 
 import (
-	"testing"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+
+	"github.com/gofiber/fiber/v2"
+
+	cserver "github.com/telekom/controlplane/common-server/pkg/server"
+	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
 )
 
-func Test_decodeHeader(t *testing.T) {
-	tests := []struct {
-		name  string
-		input string
-		want  string
-	}{
-		{"plain ASCII", "John Doe", "John Doe"},
-		{"encoded space", "John%20Doe", "John Doe"},
-		{"encoded non-ASCII", "John%20D%C3%B6e", "John Döe"},
-		{"fully encoded email", "user%40example.com", "user@example.com"},
-		{"empty string", "", ""},
-		{"invalid encoding falls back", "%zz-invalid", "%zz-invalid"},
-		{"encoded comma-separated roles", "role%20one,role%20two", "role one,role two"},
+var _ = DescribeTable("decodeHeader",
+	func(input, expected string) {
+		Expect(decodeHeader(input)).To(Equal(expected))
+	},
+	Entry("plain ASCII", "John Doe", "John Doe"),
+	Entry("encoded space", "John%20Doe", "John Doe"),
+	Entry("encoded non-ASCII", "John%20D%C3%B6e", "John Döe"),
+	Entry("fully encoded email", "user%40example.com", "user@example.com"),
+	Entry("empty string", "", ""),
+	Entry("invalid encoding falls back", "%zz-invalid", "%zz-invalid"),
+	Entry("encoded comma-separated roles", "role%20one,role%20two", "role one,role two"),
+)
+
+var _ = Describe("Controller routes", func() {
+	newApp := func(playground bool) *fiber.App {
+		app := fiber.New()
+		opts := security.SecurityOpts{Mode: security.ModeMock, DisableGlobalGuard: true}
+		guard := cserver.JWTFamily(opts)(app)
+		NewController(nil, playground).RegisterRoutes(app, guard)
+		return app
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := decodeHeader(tt.input)
-			if got != tt.want {
-				t.Errorf("decodeHeader(%q) = %q, want %q", tt.input, got, tt.want)
-			}
-		})
-	}
-}
+
+	It("serves the enabled playground without authentication", func() {
+		resp, err := newApp(true).Test(httptest.NewRequest(http.MethodGet, "/graphql", nil))
+		Expect(err).NotTo(HaveOccurred())
+		Expect(resp.StatusCode).To(Equal(http.StatusOK))
+	})
+
+	It("does not expose a disabled playground", func() {
+		resp, err := newApp(false).Test(httptest.NewRequest(http.MethodGet, "/graphql", nil))
+		Expect(err).NotTo(HaveOccurred())
+		Expect(resp.StatusCode).To(Equal(http.StatusNotFound))
+	})
+
+	DescribeTable("requires authentication for GraphQL queries", func(method string) {
+		body := strings.NewReader(`{"query":"{ __schema { queryType { name } } }"}`)
+		resp, err := newApp(true).Test(httptest.NewRequest(method, "/graphql/query", body))
+		Expect(err).NotTo(HaveOccurred())
+		Expect(resp.StatusCode).To(Equal(http.StatusUnauthorized))
+	},
+		Entry("over GET", http.MethodGet),
+		Entry("over POST", http.MethodPost),
+	)
+})

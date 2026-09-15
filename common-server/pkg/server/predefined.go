@@ -61,19 +61,19 @@ func (r *PredefinedController) OnlyFindMatch() bool {
 func (r *PredefinedController) Register(router fiber.Router, opts ControllerOpts) {
 	r.ApiPrefix = opts.Prefix
 	prefix := "/" + r.Name
-	checkAccess := security.ConfigureSecurity(router, opts.Security)
+	guard := security.ConfigureSecurity(router, opts.Security)
 
 	if r.OnlyFilter() && opts.IsAllowed("GET") {
 		r.log.V(1).Info("registering list handler", "prefix", prefix)
-		router.Get(prefix, checkAccess, r.NewListHandler(r.Filters))
+		router.Get(prefix, Guarded(guard, r.NewListHandler(r.Filters))...)
 	}
 	if r.OnlyPatch() && opts.IsAllowed("PATCH") {
 		r.log.V(1).Info("registering patch handler", "prefix", prefix)
-		router.Patch(prefix+"/:namespace/:name", checkAccess, r.NewPatchHandler(r.Patches))
+		router.Patch(prefix+"/:namespace/:name", Guarded(guard, r.NewPatchHandler(r.Patches))...)
 	}
 	if r.OnlyFindMatch() && opts.IsAllowed("PATCH") {
 		r.log.V(1).Info("registering find match handler", "prefix", prefix)
-		router.Patch(prefix, checkAccess, r.FindMatchHandler(r.Filters, r.Patches))
+		router.Patch(prefix, Guarded(guard, r.FindMatchHandler(r.Filters, r.Patches))...)
 	}
 }
 

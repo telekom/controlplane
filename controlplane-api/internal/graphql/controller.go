@@ -37,7 +37,7 @@ func NewController(srv *handler.Server, enablePlayground bool) *Controller {
 // (from the listener's security family) to /query. It fits the MultiServer
 // RegisterFunc signature. The playground is registered separately and left
 // unauthenticated (see RegisterPlayground).
-func (c *Controller) RegisterRoutes(router fiber.Router, guard fiber.Handler) {
+func (c *Controller) RegisterRoutes(router fiber.Router, guard []fiber.Handler) {
 	c.RegisterPlayground(router, "/graphql")
 	gqlHandler := httpHandlerWithUserContext(c.srv)
 	group := router.Group("/graphql")
