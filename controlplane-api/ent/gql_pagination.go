@@ -17,6 +17,9 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/errcode"
+	"github.com/telekom/controlplane/controlplane-api/ent/agentcard"
+	"github.com/telekom/controlplane/controlplane-api/ent/agenticexposure"
+	"github.com/telekom/controlplane/controlplane-api/ent/agenticsubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/api"
 	"github.com/telekom/controlplane/controlplane-api/ent/apiexposure"
 	"github.com/telekom/controlplane/controlplane-api/ent/apisubscription"
@@ -27,6 +30,7 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/eventsubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventtype"
 	"github.com/telekom/controlplane/controlplane-api/ent/group"
+	"github.com/telekom/controlplane/controlplane-api/ent/mcpserver"
 	"github.com/telekom/controlplane/controlplane-api/ent/member"
 	"github.com/telekom/controlplane/controlplane-api/ent/permissionset"
 	"github.com/telekom/controlplane/controlplane-api/ent/team"
@@ -112,6 +116,948 @@ func paginateLimit(first, last *int) int {
 		limit = *last + 1
 	}
 	return limit
+}
+
+// AgentCardEdge is the edge representation of AgentCard.
+type AgentCardEdge struct {
+	Node   *AgentCard `json:"node"`
+	Cursor Cursor     `json:"cursor"`
+}
+
+// AgentCardConnection is the connection containing edges to AgentCard.
+type AgentCardConnection struct {
+	Edges      []*AgentCardEdge `json:"edges"`
+	PageInfo   PageInfo         `json:"pageInfo"`
+	TotalCount int              `json:"totalCount"`
+}
+
+func (c *AgentCardConnection) build(nodes []*AgentCard, pager *agentcardPager, after *Cursor, first *int, before *Cursor, last *int) {
+	c.PageInfo.HasNextPage = before != nil
+	c.PageInfo.HasPreviousPage = after != nil
+	if first != nil && *first+1 == len(nodes) {
+		c.PageInfo.HasNextPage = true
+		nodes = nodes[:len(nodes)-1]
+	} else if last != nil && *last+1 == len(nodes) {
+		c.PageInfo.HasPreviousPage = true
+		nodes = nodes[:len(nodes)-1]
+	}
+	var nodeAt func(int) *AgentCard
+	if last != nil {
+		n := len(nodes) - 1
+		nodeAt = func(i int) *AgentCard {
+			return nodes[n-i]
+		}
+	} else {
+		nodeAt = func(i int) *AgentCard {
+			return nodes[i]
+		}
+	}
+	c.Edges = make([]*AgentCardEdge, len(nodes))
+	for i := range nodes {
+		node := nodeAt(i)
+		c.Edges[i] = &AgentCardEdge{
+			Node:   node,
+			Cursor: pager.toCursor(node),
+		}
+	}
+	if l := len(c.Edges); l > 0 {
+		c.PageInfo.StartCursor = &c.Edges[0].Cursor
+		c.PageInfo.EndCursor = &c.Edges[l-1].Cursor
+	}
+	if c.TotalCount == 0 {
+		c.TotalCount = len(nodes)
+	}
+}
+
+// AgentCardPaginateOption enables pagination customization.
+type AgentCardPaginateOption func(*agentcardPager) error
+
+// WithAgentCardOrder configures pagination ordering.
+func WithAgentCardOrder(order *AgentCardOrder) AgentCardPaginateOption {
+	if order == nil {
+		order = DefaultAgentCardOrder
+	}
+	o := *order
+	return func(pager *agentcardPager) error {
+		if err := o.Direction.Validate(); err != nil {
+			return err
+		}
+		if o.Field == nil {
+			o.Field = DefaultAgentCardOrder.Field
+		}
+		pager.order = &o
+		return nil
+	}
+}
+
+// WithAgentCardFilter configures pagination filter.
+func WithAgentCardFilter(filter func(*AgentCardQuery) (*AgentCardQuery, error)) AgentCardPaginateOption {
+	return func(pager *agentcardPager) error {
+		if filter == nil {
+			return errors.New("AgentCardQuery filter cannot be nil")
+		}
+		pager.filter = filter
+		return nil
+	}
+}
+
+type agentcardPager struct {
+	reverse bool
+	order   *AgentCardOrder
+	filter  func(*AgentCardQuery) (*AgentCardQuery, error)
+}
+
+func newAgentCardPager(opts []AgentCardPaginateOption, reverse bool) (*agentcardPager, error) {
+	pager := &agentcardPager{reverse: reverse}
+	for _, opt := range opts {
+		if err := opt(pager); err != nil {
+			return nil, err
+		}
+	}
+	if pager.order == nil {
+		pager.order = DefaultAgentCardOrder
+	}
+	return pager, nil
+}
+
+func (p *agentcardPager) applyFilter(query *AgentCardQuery) (*AgentCardQuery, error) {
+	if p.filter != nil {
+		return p.filter(query)
+	}
+	return query, nil
+}
+
+func (p *agentcardPager) toCursor(_m *AgentCard) Cursor {
+	return p.order.Field.toCursor(_m)
+}
+
+func (p *agentcardPager) applyCursors(query *AgentCardQuery, after, before *Cursor) (*AgentCardQuery, error) {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	for _, predicate := range entgql.CursorsPredicate(after, before, DefaultAgentCardOrder.Field.column, p.order.Field.column, direction) {
+		query = query.Where(predicate)
+	}
+	return query, nil
+}
+
+func (p *agentcardPager) applyOrder(query *AgentCardQuery) *AgentCardQuery {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	query = query.Order(p.order.Field.toTerm(direction.OrderTermOption()))
+	if p.order.Field != DefaultAgentCardOrder.Field {
+		query = query.Order(DefaultAgentCardOrder.Field.toTerm(direction.OrderTermOption()))
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return query
+}
+
+func (p *agentcardPager) orderExpr(query *AgentCardQuery) sql.Querier {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return sql.ExprFunc(func(b *sql.Builder) {
+		b.Ident(p.order.Field.column).Pad().WriteString(string(direction))
+		if p.order.Field != DefaultAgentCardOrder.Field {
+			b.Comma().Ident(DefaultAgentCardOrder.Field.column).Pad().WriteString(string(direction))
+		}
+	})
+}
+
+// Paginate executes the query and returns a relay based cursor connection to AgentCard.
+func (_m *AgentCardQuery) Paginate(
+	ctx context.Context, after *Cursor, first *int,
+	before *Cursor, last *int, opts ...AgentCardPaginateOption,
+) (*AgentCardConnection, error) {
+	if err := validateFirstLast(first, last); err != nil {
+		return nil, err
+	}
+	pager, err := newAgentCardPager(opts, last != nil)
+	if err != nil {
+		return nil, err
+	}
+	if _m, err = pager.applyFilter(_m); err != nil {
+		return nil, err
+	}
+	conn := &AgentCardConnection{Edges: []*AgentCardEdge{}}
+	ignoredEdges := !hasCollectedField(ctx, edgesField)
+	if hasCollectedField(ctx, totalCountField) || hasCollectedField(ctx, pageInfoField) {
+		hasPagination := after != nil || first != nil || before != nil || last != nil
+		if hasPagination || ignoredEdges {
+			c := _m.Clone()
+			c.ctx.Fields = nil
+			if conn.TotalCount, err = c.Count(ctx); err != nil {
+				return nil, err
+			}
+			conn.PageInfo.HasNextPage = first != nil && conn.TotalCount > 0
+			conn.PageInfo.HasPreviousPage = last != nil && conn.TotalCount > 0
+		}
+	}
+	if ignoredEdges || (first != nil && *first == 0) || (last != nil && *last == 0) {
+		return conn, nil
+	}
+	if _m, err = pager.applyCursors(_m, after, before); err != nil {
+		return nil, err
+	}
+	limit := paginateLimit(first, last)
+	if limit != 0 {
+		_m.Limit(limit)
+	}
+	if field := collectedField(ctx, edgesField, nodeField); field != nil {
+		if err := _m.collectField(ctx, limit == 1, graphql.GetOperationContext(ctx), *field, []string{edgesField, nodeField}); err != nil {
+			return nil, err
+		}
+	}
+	_m = pager.applyOrder(_m)
+	nodes, err := _m.All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	conn.build(nodes, pager, after, first, before, last)
+	return conn, nil
+}
+
+var (
+	// AgentCardOrderFieldCreatedAt orders AgentCard by created_at.
+	AgentCardOrderFieldCreatedAt = &AgentCardOrderField{
+		Value: func(_m *AgentCard) (ent.Value, error) {
+			return _m.CreatedAt, nil
+		},
+		column: agentcard.FieldCreatedAt,
+		toTerm: agentcard.ByCreatedAt,
+		toCursor: func(_m *AgentCard) Cursor {
+			return Cursor{
+				ID:    _m.ID,
+				Value: _m.CreatedAt,
+			}
+		},
+	}
+	// AgentCardOrderFieldLastModifiedAt orders AgentCard by last_modified_at.
+	AgentCardOrderFieldLastModifiedAt = &AgentCardOrderField{
+		Value: func(_m *AgentCard) (ent.Value, error) {
+			return _m.LastModifiedAt, nil
+		},
+		column: agentcard.FieldLastModifiedAt,
+		toTerm: agentcard.ByLastModifiedAt,
+		toCursor: func(_m *AgentCard) Cursor {
+			return Cursor{
+				ID:    _m.ID,
+				Value: _m.LastModifiedAt,
+			}
+		},
+	}
+)
+
+// String implement fmt.Stringer interface.
+func (f AgentCardOrderField) String() string {
+	var str string
+	switch f.column {
+	case AgentCardOrderFieldCreatedAt.column:
+		str = "CREATED_AT"
+	case AgentCardOrderFieldLastModifiedAt.column:
+		str = "LAST_MODIFIED_AT"
+	}
+	return str
+}
+
+// MarshalGQL implements graphql.Marshaler interface.
+func (f AgentCardOrderField) MarshalGQL(w io.Writer) {
+	io.WriteString(w, strconv.Quote(f.String()))
+}
+
+// UnmarshalGQL implements graphql.Unmarshaler interface.
+func (f *AgentCardOrderField) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("AgentCardOrderField %T must be a string", v)
+	}
+	switch str {
+	case "CREATED_AT":
+		*f = *AgentCardOrderFieldCreatedAt
+	case "LAST_MODIFIED_AT":
+		*f = *AgentCardOrderFieldLastModifiedAt
+	default:
+		return fmt.Errorf("%s is not a valid AgentCardOrderField", str)
+	}
+	return nil
+}
+
+// AgentCardOrderField defines the ordering field of AgentCard.
+type AgentCardOrderField struct {
+	// Value extracts the ordering value from the given AgentCard.
+	Value    func(*AgentCard) (ent.Value, error)
+	column   string // field or computed.
+	toTerm   func(...sql.OrderTermOption) agentcard.OrderOption
+	toCursor func(*AgentCard) Cursor
+}
+
+// AgentCardOrder defines the ordering of AgentCard.
+type AgentCardOrder struct {
+	Direction OrderDirection       `json:"direction"`
+	Field     *AgentCardOrderField `json:"field"`
+}
+
+// DefaultAgentCardOrder is the default ordering of AgentCard.
+var DefaultAgentCardOrder = &AgentCardOrder{
+	Direction: entgql.OrderDirectionAsc,
+	Field: &AgentCardOrderField{
+		Value: func(_m *AgentCard) (ent.Value, error) {
+			return _m.ID, nil
+		},
+		column: agentcard.FieldID,
+		toTerm: agentcard.ByID,
+		toCursor: func(_m *AgentCard) Cursor {
+			return Cursor{ID: _m.ID}
+		},
+	},
+}
+
+// ToEdge converts AgentCard into AgentCardEdge.
+func (_m *AgentCard) ToEdge(order *AgentCardOrder) *AgentCardEdge {
+	if order == nil {
+		order = DefaultAgentCardOrder
+	}
+	return &AgentCardEdge{
+		Node:   _m,
+		Cursor: order.Field.toCursor(_m),
+	}
+}
+
+// AgenticExposureEdge is the edge representation of AgenticExposure.
+type AgenticExposureEdge struct {
+	Node   *AgenticExposure `json:"node"`
+	Cursor Cursor           `json:"cursor"`
+}
+
+// AgenticExposureConnection is the connection containing edges to AgenticExposure.
+type AgenticExposureConnection struct {
+	Edges      []*AgenticExposureEdge `json:"edges"`
+	PageInfo   PageInfo               `json:"pageInfo"`
+	TotalCount int                    `json:"totalCount"`
+}
+
+func (c *AgenticExposureConnection) build(nodes []*AgenticExposure, pager *agenticexposurePager, after *Cursor, first *int, before *Cursor, last *int) {
+	c.PageInfo.HasNextPage = before != nil
+	c.PageInfo.HasPreviousPage = after != nil
+	if first != nil && *first+1 == len(nodes) {
+		c.PageInfo.HasNextPage = true
+		nodes = nodes[:len(nodes)-1]
+	} else if last != nil && *last+1 == len(nodes) {
+		c.PageInfo.HasPreviousPage = true
+		nodes = nodes[:len(nodes)-1]
+	}
+	var nodeAt func(int) *AgenticExposure
+	if last != nil {
+		n := len(nodes) - 1
+		nodeAt = func(i int) *AgenticExposure {
+			return nodes[n-i]
+		}
+	} else {
+		nodeAt = func(i int) *AgenticExposure {
+			return nodes[i]
+		}
+	}
+	c.Edges = make([]*AgenticExposureEdge, len(nodes))
+	for i := range nodes {
+		node := nodeAt(i)
+		c.Edges[i] = &AgenticExposureEdge{
+			Node:   node,
+			Cursor: pager.toCursor(node),
+		}
+	}
+	if l := len(c.Edges); l > 0 {
+		c.PageInfo.StartCursor = &c.Edges[0].Cursor
+		c.PageInfo.EndCursor = &c.Edges[l-1].Cursor
+	}
+	if c.TotalCount == 0 {
+		c.TotalCount = len(nodes)
+	}
+}
+
+// AgenticExposurePaginateOption enables pagination customization.
+type AgenticExposurePaginateOption func(*agenticexposurePager) error
+
+// WithAgenticExposureOrder configures pagination ordering.
+func WithAgenticExposureOrder(order *AgenticExposureOrder) AgenticExposurePaginateOption {
+	if order == nil {
+		order = DefaultAgenticExposureOrder
+	}
+	o := *order
+	return func(pager *agenticexposurePager) error {
+		if err := o.Direction.Validate(); err != nil {
+			return err
+		}
+		if o.Field == nil {
+			o.Field = DefaultAgenticExposureOrder.Field
+		}
+		pager.order = &o
+		return nil
+	}
+}
+
+// WithAgenticExposureFilter configures pagination filter.
+func WithAgenticExposureFilter(filter func(*AgenticExposureQuery) (*AgenticExposureQuery, error)) AgenticExposurePaginateOption {
+	return func(pager *agenticexposurePager) error {
+		if filter == nil {
+			return errors.New("AgenticExposureQuery filter cannot be nil")
+		}
+		pager.filter = filter
+		return nil
+	}
+}
+
+type agenticexposurePager struct {
+	reverse bool
+	order   *AgenticExposureOrder
+	filter  func(*AgenticExposureQuery) (*AgenticExposureQuery, error)
+}
+
+func newAgenticExposurePager(opts []AgenticExposurePaginateOption, reverse bool) (*agenticexposurePager, error) {
+	pager := &agenticexposurePager{reverse: reverse}
+	for _, opt := range opts {
+		if err := opt(pager); err != nil {
+			return nil, err
+		}
+	}
+	if pager.order == nil {
+		pager.order = DefaultAgenticExposureOrder
+	}
+	return pager, nil
+}
+
+func (p *agenticexposurePager) applyFilter(query *AgenticExposureQuery) (*AgenticExposureQuery, error) {
+	if p.filter != nil {
+		return p.filter(query)
+	}
+	return query, nil
+}
+
+func (p *agenticexposurePager) toCursor(_m *AgenticExposure) Cursor {
+	return p.order.Field.toCursor(_m)
+}
+
+func (p *agenticexposurePager) applyCursors(query *AgenticExposureQuery, after, before *Cursor) (*AgenticExposureQuery, error) {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	for _, predicate := range entgql.CursorsPredicate(after, before, DefaultAgenticExposureOrder.Field.column, p.order.Field.column, direction) {
+		query = query.Where(predicate)
+	}
+	return query, nil
+}
+
+func (p *agenticexposurePager) applyOrder(query *AgenticExposureQuery) *AgenticExposureQuery {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	query = query.Order(p.order.Field.toTerm(direction.OrderTermOption()))
+	if p.order.Field != DefaultAgenticExposureOrder.Field {
+		query = query.Order(DefaultAgenticExposureOrder.Field.toTerm(direction.OrderTermOption()))
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return query
+}
+
+func (p *agenticexposurePager) orderExpr(query *AgenticExposureQuery) sql.Querier {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return sql.ExprFunc(func(b *sql.Builder) {
+		b.Ident(p.order.Field.column).Pad().WriteString(string(direction))
+		if p.order.Field != DefaultAgenticExposureOrder.Field {
+			b.Comma().Ident(DefaultAgenticExposureOrder.Field.column).Pad().WriteString(string(direction))
+		}
+	})
+}
+
+// Paginate executes the query and returns a relay based cursor connection to AgenticExposure.
+func (_m *AgenticExposureQuery) Paginate(
+	ctx context.Context, after *Cursor, first *int,
+	before *Cursor, last *int, opts ...AgenticExposurePaginateOption,
+) (*AgenticExposureConnection, error) {
+	if err := validateFirstLast(first, last); err != nil {
+		return nil, err
+	}
+	pager, err := newAgenticExposurePager(opts, last != nil)
+	if err != nil {
+		return nil, err
+	}
+	if _m, err = pager.applyFilter(_m); err != nil {
+		return nil, err
+	}
+	conn := &AgenticExposureConnection{Edges: []*AgenticExposureEdge{}}
+	ignoredEdges := !hasCollectedField(ctx, edgesField)
+	if hasCollectedField(ctx, totalCountField) || hasCollectedField(ctx, pageInfoField) {
+		hasPagination := after != nil || first != nil || before != nil || last != nil
+		if hasPagination || ignoredEdges {
+			c := _m.Clone()
+			c.ctx.Fields = nil
+			if conn.TotalCount, err = c.Count(ctx); err != nil {
+				return nil, err
+			}
+			conn.PageInfo.HasNextPage = first != nil && conn.TotalCount > 0
+			conn.PageInfo.HasPreviousPage = last != nil && conn.TotalCount > 0
+		}
+	}
+	if ignoredEdges || (first != nil && *first == 0) || (last != nil && *last == 0) {
+		return conn, nil
+	}
+	if _m, err = pager.applyCursors(_m, after, before); err != nil {
+		return nil, err
+	}
+	limit := paginateLimit(first, last)
+	if limit != 0 {
+		_m.Limit(limit)
+	}
+	if field := collectedField(ctx, edgesField, nodeField); field != nil {
+		if err := _m.collectField(ctx, limit == 1, graphql.GetOperationContext(ctx), *field, []string{edgesField, nodeField}); err != nil {
+			return nil, err
+		}
+	}
+	_m = pager.applyOrder(_m)
+	nodes, err := _m.All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	conn.build(nodes, pager, after, first, before, last)
+	return conn, nil
+}
+
+var (
+	// AgenticExposureOrderFieldCreatedAt orders AgenticExposure by created_at.
+	AgenticExposureOrderFieldCreatedAt = &AgenticExposureOrderField{
+		Value: func(_m *AgenticExposure) (ent.Value, error) {
+			return _m.CreatedAt, nil
+		},
+		column: agenticexposure.FieldCreatedAt,
+		toTerm: agenticexposure.ByCreatedAt,
+		toCursor: func(_m *AgenticExposure) Cursor {
+			return Cursor{
+				ID:    _m.ID,
+				Value: _m.CreatedAt,
+			}
+		},
+	}
+	// AgenticExposureOrderFieldLastModifiedAt orders AgenticExposure by last_modified_at.
+	AgenticExposureOrderFieldLastModifiedAt = &AgenticExposureOrderField{
+		Value: func(_m *AgenticExposure) (ent.Value, error) {
+			return _m.LastModifiedAt, nil
+		},
+		column: agenticexposure.FieldLastModifiedAt,
+		toTerm: agenticexposure.ByLastModifiedAt,
+		toCursor: func(_m *AgenticExposure) Cursor {
+			return Cursor{
+				ID:    _m.ID,
+				Value: _m.LastModifiedAt,
+			}
+		},
+	}
+)
+
+// String implement fmt.Stringer interface.
+func (f AgenticExposureOrderField) String() string {
+	var str string
+	switch f.column {
+	case AgenticExposureOrderFieldCreatedAt.column:
+		str = "CREATED_AT"
+	case AgenticExposureOrderFieldLastModifiedAt.column:
+		str = "LAST_MODIFIED_AT"
+	}
+	return str
+}
+
+// MarshalGQL implements graphql.Marshaler interface.
+func (f AgenticExposureOrderField) MarshalGQL(w io.Writer) {
+	io.WriteString(w, strconv.Quote(f.String()))
+}
+
+// UnmarshalGQL implements graphql.Unmarshaler interface.
+func (f *AgenticExposureOrderField) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("AgenticExposureOrderField %T must be a string", v)
+	}
+	switch str {
+	case "CREATED_AT":
+		*f = *AgenticExposureOrderFieldCreatedAt
+	case "LAST_MODIFIED_AT":
+		*f = *AgenticExposureOrderFieldLastModifiedAt
+	default:
+		return fmt.Errorf("%s is not a valid AgenticExposureOrderField", str)
+	}
+	return nil
+}
+
+// AgenticExposureOrderField defines the ordering field of AgenticExposure.
+type AgenticExposureOrderField struct {
+	// Value extracts the ordering value from the given AgenticExposure.
+	Value    func(*AgenticExposure) (ent.Value, error)
+	column   string // field or computed.
+	toTerm   func(...sql.OrderTermOption) agenticexposure.OrderOption
+	toCursor func(*AgenticExposure) Cursor
+}
+
+// AgenticExposureOrder defines the ordering of AgenticExposure.
+type AgenticExposureOrder struct {
+	Direction OrderDirection             `json:"direction"`
+	Field     *AgenticExposureOrderField `json:"field"`
+}
+
+// DefaultAgenticExposureOrder is the default ordering of AgenticExposure.
+var DefaultAgenticExposureOrder = &AgenticExposureOrder{
+	Direction: entgql.OrderDirectionAsc,
+	Field: &AgenticExposureOrderField{
+		Value: func(_m *AgenticExposure) (ent.Value, error) {
+			return _m.ID, nil
+		},
+		column: agenticexposure.FieldID,
+		toTerm: agenticexposure.ByID,
+		toCursor: func(_m *AgenticExposure) Cursor {
+			return Cursor{ID: _m.ID}
+		},
+	},
+}
+
+// ToEdge converts AgenticExposure into AgenticExposureEdge.
+func (_m *AgenticExposure) ToEdge(order *AgenticExposureOrder) *AgenticExposureEdge {
+	if order == nil {
+		order = DefaultAgenticExposureOrder
+	}
+	return &AgenticExposureEdge{
+		Node:   _m,
+		Cursor: order.Field.toCursor(_m),
+	}
+}
+
+// AgenticSubscriptionEdge is the edge representation of AgenticSubscription.
+type AgenticSubscriptionEdge struct {
+	Node   *AgenticSubscription `json:"node"`
+	Cursor Cursor               `json:"cursor"`
+}
+
+// AgenticSubscriptionConnection is the connection containing edges to AgenticSubscription.
+type AgenticSubscriptionConnection struct {
+	Edges      []*AgenticSubscriptionEdge `json:"edges"`
+	PageInfo   PageInfo                   `json:"pageInfo"`
+	TotalCount int                        `json:"totalCount"`
+}
+
+func (c *AgenticSubscriptionConnection) build(nodes []*AgenticSubscription, pager *agenticsubscriptionPager, after *Cursor, first *int, before *Cursor, last *int) {
+	c.PageInfo.HasNextPage = before != nil
+	c.PageInfo.HasPreviousPage = after != nil
+	if first != nil && *first+1 == len(nodes) {
+		c.PageInfo.HasNextPage = true
+		nodes = nodes[:len(nodes)-1]
+	} else if last != nil && *last+1 == len(nodes) {
+		c.PageInfo.HasPreviousPage = true
+		nodes = nodes[:len(nodes)-1]
+	}
+	var nodeAt func(int) *AgenticSubscription
+	if last != nil {
+		n := len(nodes) - 1
+		nodeAt = func(i int) *AgenticSubscription {
+			return nodes[n-i]
+		}
+	} else {
+		nodeAt = func(i int) *AgenticSubscription {
+			return nodes[i]
+		}
+	}
+	c.Edges = make([]*AgenticSubscriptionEdge, len(nodes))
+	for i := range nodes {
+		node := nodeAt(i)
+		c.Edges[i] = &AgenticSubscriptionEdge{
+			Node:   node,
+			Cursor: pager.toCursor(node),
+		}
+	}
+	if l := len(c.Edges); l > 0 {
+		c.PageInfo.StartCursor = &c.Edges[0].Cursor
+		c.PageInfo.EndCursor = &c.Edges[l-1].Cursor
+	}
+	if c.TotalCount == 0 {
+		c.TotalCount = len(nodes)
+	}
+}
+
+// AgenticSubscriptionPaginateOption enables pagination customization.
+type AgenticSubscriptionPaginateOption func(*agenticsubscriptionPager) error
+
+// WithAgenticSubscriptionOrder configures pagination ordering.
+func WithAgenticSubscriptionOrder(order *AgenticSubscriptionOrder) AgenticSubscriptionPaginateOption {
+	if order == nil {
+		order = DefaultAgenticSubscriptionOrder
+	}
+	o := *order
+	return func(pager *agenticsubscriptionPager) error {
+		if err := o.Direction.Validate(); err != nil {
+			return err
+		}
+		if o.Field == nil {
+			o.Field = DefaultAgenticSubscriptionOrder.Field
+		}
+		pager.order = &o
+		return nil
+	}
+}
+
+// WithAgenticSubscriptionFilter configures pagination filter.
+func WithAgenticSubscriptionFilter(filter func(*AgenticSubscriptionQuery) (*AgenticSubscriptionQuery, error)) AgenticSubscriptionPaginateOption {
+	return func(pager *agenticsubscriptionPager) error {
+		if filter == nil {
+			return errors.New("AgenticSubscriptionQuery filter cannot be nil")
+		}
+		pager.filter = filter
+		return nil
+	}
+}
+
+type agenticsubscriptionPager struct {
+	reverse bool
+	order   *AgenticSubscriptionOrder
+	filter  func(*AgenticSubscriptionQuery) (*AgenticSubscriptionQuery, error)
+}
+
+func newAgenticSubscriptionPager(opts []AgenticSubscriptionPaginateOption, reverse bool) (*agenticsubscriptionPager, error) {
+	pager := &agenticsubscriptionPager{reverse: reverse}
+	for _, opt := range opts {
+		if err := opt(pager); err != nil {
+			return nil, err
+		}
+	}
+	if pager.order == nil {
+		pager.order = DefaultAgenticSubscriptionOrder
+	}
+	return pager, nil
+}
+
+func (p *agenticsubscriptionPager) applyFilter(query *AgenticSubscriptionQuery) (*AgenticSubscriptionQuery, error) {
+	if p.filter != nil {
+		return p.filter(query)
+	}
+	return query, nil
+}
+
+func (p *agenticsubscriptionPager) toCursor(_m *AgenticSubscription) Cursor {
+	return p.order.Field.toCursor(_m)
+}
+
+func (p *agenticsubscriptionPager) applyCursors(query *AgenticSubscriptionQuery, after, before *Cursor) (*AgenticSubscriptionQuery, error) {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	for _, predicate := range entgql.CursorsPredicate(after, before, DefaultAgenticSubscriptionOrder.Field.column, p.order.Field.column, direction) {
+		query = query.Where(predicate)
+	}
+	return query, nil
+}
+
+func (p *agenticsubscriptionPager) applyOrder(query *AgenticSubscriptionQuery) *AgenticSubscriptionQuery {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	query = query.Order(p.order.Field.toTerm(direction.OrderTermOption()))
+	if p.order.Field != DefaultAgenticSubscriptionOrder.Field {
+		query = query.Order(DefaultAgenticSubscriptionOrder.Field.toTerm(direction.OrderTermOption()))
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return query
+}
+
+func (p *agenticsubscriptionPager) orderExpr(query *AgenticSubscriptionQuery) sql.Querier {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return sql.ExprFunc(func(b *sql.Builder) {
+		b.Ident(p.order.Field.column).Pad().WriteString(string(direction))
+		if p.order.Field != DefaultAgenticSubscriptionOrder.Field {
+			b.Comma().Ident(DefaultAgenticSubscriptionOrder.Field.column).Pad().WriteString(string(direction))
+		}
+	})
+}
+
+// Paginate executes the query and returns a relay based cursor connection to AgenticSubscription.
+func (_m *AgenticSubscriptionQuery) Paginate(
+	ctx context.Context, after *Cursor, first *int,
+	before *Cursor, last *int, opts ...AgenticSubscriptionPaginateOption,
+) (*AgenticSubscriptionConnection, error) {
+	if err := validateFirstLast(first, last); err != nil {
+		return nil, err
+	}
+	pager, err := newAgenticSubscriptionPager(opts, last != nil)
+	if err != nil {
+		return nil, err
+	}
+	if _m, err = pager.applyFilter(_m); err != nil {
+		return nil, err
+	}
+	conn := &AgenticSubscriptionConnection{Edges: []*AgenticSubscriptionEdge{}}
+	ignoredEdges := !hasCollectedField(ctx, edgesField)
+	if hasCollectedField(ctx, totalCountField) || hasCollectedField(ctx, pageInfoField) {
+		hasPagination := after != nil || first != nil || before != nil || last != nil
+		if hasPagination || ignoredEdges {
+			c := _m.Clone()
+			c.ctx.Fields = nil
+			if conn.TotalCount, err = c.Count(ctx); err != nil {
+				return nil, err
+			}
+			conn.PageInfo.HasNextPage = first != nil && conn.TotalCount > 0
+			conn.PageInfo.HasPreviousPage = last != nil && conn.TotalCount > 0
+		}
+	}
+	if ignoredEdges || (first != nil && *first == 0) || (last != nil && *last == 0) {
+		return conn, nil
+	}
+	if _m, err = pager.applyCursors(_m, after, before); err != nil {
+		return nil, err
+	}
+	limit := paginateLimit(first, last)
+	if limit != 0 {
+		_m.Limit(limit)
+	}
+	if field := collectedField(ctx, edgesField, nodeField); field != nil {
+		if err := _m.collectField(ctx, limit == 1, graphql.GetOperationContext(ctx), *field, []string{edgesField, nodeField}); err != nil {
+			return nil, err
+		}
+	}
+	_m = pager.applyOrder(_m)
+	nodes, err := _m.All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	conn.build(nodes, pager, after, first, before, last)
+	return conn, nil
+}
+
+var (
+	// AgenticSubscriptionOrderFieldCreatedAt orders AgenticSubscription by created_at.
+	AgenticSubscriptionOrderFieldCreatedAt = &AgenticSubscriptionOrderField{
+		Value: func(_m *AgenticSubscription) (ent.Value, error) {
+			return _m.CreatedAt, nil
+		},
+		column: agenticsubscription.FieldCreatedAt,
+		toTerm: agenticsubscription.ByCreatedAt,
+		toCursor: func(_m *AgenticSubscription) Cursor {
+			return Cursor{
+				ID:    _m.ID,
+				Value: _m.CreatedAt,
+			}
+		},
+	}
+	// AgenticSubscriptionOrderFieldLastModifiedAt orders AgenticSubscription by last_modified_at.
+	AgenticSubscriptionOrderFieldLastModifiedAt = &AgenticSubscriptionOrderField{
+		Value: func(_m *AgenticSubscription) (ent.Value, error) {
+			return _m.LastModifiedAt, nil
+		},
+		column: agenticsubscription.FieldLastModifiedAt,
+		toTerm: agenticsubscription.ByLastModifiedAt,
+		toCursor: func(_m *AgenticSubscription) Cursor {
+			return Cursor{
+				ID:    _m.ID,
+				Value: _m.LastModifiedAt,
+			}
+		},
+	}
+)
+
+// String implement fmt.Stringer interface.
+func (f AgenticSubscriptionOrderField) String() string {
+	var str string
+	switch f.column {
+	case AgenticSubscriptionOrderFieldCreatedAt.column:
+		str = "CREATED_AT"
+	case AgenticSubscriptionOrderFieldLastModifiedAt.column:
+		str = "LAST_MODIFIED_AT"
+	}
+	return str
+}
+
+// MarshalGQL implements graphql.Marshaler interface.
+func (f AgenticSubscriptionOrderField) MarshalGQL(w io.Writer) {
+	io.WriteString(w, strconv.Quote(f.String()))
+}
+
+// UnmarshalGQL implements graphql.Unmarshaler interface.
+func (f *AgenticSubscriptionOrderField) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("AgenticSubscriptionOrderField %T must be a string", v)
+	}
+	switch str {
+	case "CREATED_AT":
+		*f = *AgenticSubscriptionOrderFieldCreatedAt
+	case "LAST_MODIFIED_AT":
+		*f = *AgenticSubscriptionOrderFieldLastModifiedAt
+	default:
+		return fmt.Errorf("%s is not a valid AgenticSubscriptionOrderField", str)
+	}
+	return nil
+}
+
+// AgenticSubscriptionOrderField defines the ordering field of AgenticSubscription.
+type AgenticSubscriptionOrderField struct {
+	// Value extracts the ordering value from the given AgenticSubscription.
+	Value    func(*AgenticSubscription) (ent.Value, error)
+	column   string // field or computed.
+	toTerm   func(...sql.OrderTermOption) agenticsubscription.OrderOption
+	toCursor func(*AgenticSubscription) Cursor
+}
+
+// AgenticSubscriptionOrder defines the ordering of AgenticSubscription.
+type AgenticSubscriptionOrder struct {
+	Direction OrderDirection                 `json:"direction"`
+	Field     *AgenticSubscriptionOrderField `json:"field"`
+}
+
+// DefaultAgenticSubscriptionOrder is the default ordering of AgenticSubscription.
+var DefaultAgenticSubscriptionOrder = &AgenticSubscriptionOrder{
+	Direction: entgql.OrderDirectionAsc,
+	Field: &AgenticSubscriptionOrderField{
+		Value: func(_m *AgenticSubscription) (ent.Value, error) {
+			return _m.ID, nil
+		},
+		column: agenticsubscription.FieldID,
+		toTerm: agenticsubscription.ByID,
+		toCursor: func(_m *AgenticSubscription) Cursor {
+			return Cursor{ID: _m.ID}
+		},
+	},
+}
+
+// ToEdge converts AgenticSubscription into AgenticSubscriptionEdge.
+func (_m *AgenticSubscription) ToEdge(order *AgenticSubscriptionOrder) *AgenticSubscriptionEdge {
+	if order == nil {
+		order = DefaultAgenticSubscriptionOrder
+	}
+	return &AgenticSubscriptionEdge{
+		Node:   _m,
+		Cursor: order.Field.toCursor(_m),
+	}
 }
 
 // ApiEdge is the edge representation of Api.
@@ -3310,6 +4256,320 @@ func (_m *Group) ToEdge(order *GroupOrder) *GroupEdge {
 		order = DefaultGroupOrder
 	}
 	return &GroupEdge{
+		Node:   _m,
+		Cursor: order.Field.toCursor(_m),
+	}
+}
+
+// McpServerEdge is the edge representation of McpServer.
+type McpServerEdge struct {
+	Node   *McpServer `json:"node"`
+	Cursor Cursor     `json:"cursor"`
+}
+
+// McpServerConnection is the connection containing edges to McpServer.
+type McpServerConnection struct {
+	Edges      []*McpServerEdge `json:"edges"`
+	PageInfo   PageInfo         `json:"pageInfo"`
+	TotalCount int              `json:"totalCount"`
+}
+
+func (c *McpServerConnection) build(nodes []*McpServer, pager *mcpserverPager, after *Cursor, first *int, before *Cursor, last *int) {
+	c.PageInfo.HasNextPage = before != nil
+	c.PageInfo.HasPreviousPage = after != nil
+	if first != nil && *first+1 == len(nodes) {
+		c.PageInfo.HasNextPage = true
+		nodes = nodes[:len(nodes)-1]
+	} else if last != nil && *last+1 == len(nodes) {
+		c.PageInfo.HasPreviousPage = true
+		nodes = nodes[:len(nodes)-1]
+	}
+	var nodeAt func(int) *McpServer
+	if last != nil {
+		n := len(nodes) - 1
+		nodeAt = func(i int) *McpServer {
+			return nodes[n-i]
+		}
+	} else {
+		nodeAt = func(i int) *McpServer {
+			return nodes[i]
+		}
+	}
+	c.Edges = make([]*McpServerEdge, len(nodes))
+	for i := range nodes {
+		node := nodeAt(i)
+		c.Edges[i] = &McpServerEdge{
+			Node:   node,
+			Cursor: pager.toCursor(node),
+		}
+	}
+	if l := len(c.Edges); l > 0 {
+		c.PageInfo.StartCursor = &c.Edges[0].Cursor
+		c.PageInfo.EndCursor = &c.Edges[l-1].Cursor
+	}
+	if c.TotalCount == 0 {
+		c.TotalCount = len(nodes)
+	}
+}
+
+// McpServerPaginateOption enables pagination customization.
+type McpServerPaginateOption func(*mcpserverPager) error
+
+// WithMcpServerOrder configures pagination ordering.
+func WithMcpServerOrder(order *McpServerOrder) McpServerPaginateOption {
+	if order == nil {
+		order = DefaultMcpServerOrder
+	}
+	o := *order
+	return func(pager *mcpserverPager) error {
+		if err := o.Direction.Validate(); err != nil {
+			return err
+		}
+		if o.Field == nil {
+			o.Field = DefaultMcpServerOrder.Field
+		}
+		pager.order = &o
+		return nil
+	}
+}
+
+// WithMcpServerFilter configures pagination filter.
+func WithMcpServerFilter(filter func(*McpServerQuery) (*McpServerQuery, error)) McpServerPaginateOption {
+	return func(pager *mcpserverPager) error {
+		if filter == nil {
+			return errors.New("McpServerQuery filter cannot be nil")
+		}
+		pager.filter = filter
+		return nil
+	}
+}
+
+type mcpserverPager struct {
+	reverse bool
+	order   *McpServerOrder
+	filter  func(*McpServerQuery) (*McpServerQuery, error)
+}
+
+func newMcpServerPager(opts []McpServerPaginateOption, reverse bool) (*mcpserverPager, error) {
+	pager := &mcpserverPager{reverse: reverse}
+	for _, opt := range opts {
+		if err := opt(pager); err != nil {
+			return nil, err
+		}
+	}
+	if pager.order == nil {
+		pager.order = DefaultMcpServerOrder
+	}
+	return pager, nil
+}
+
+func (p *mcpserverPager) applyFilter(query *McpServerQuery) (*McpServerQuery, error) {
+	if p.filter != nil {
+		return p.filter(query)
+	}
+	return query, nil
+}
+
+func (p *mcpserverPager) toCursor(_m *McpServer) Cursor {
+	return p.order.Field.toCursor(_m)
+}
+
+func (p *mcpserverPager) applyCursors(query *McpServerQuery, after, before *Cursor) (*McpServerQuery, error) {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	for _, predicate := range entgql.CursorsPredicate(after, before, DefaultMcpServerOrder.Field.column, p.order.Field.column, direction) {
+		query = query.Where(predicate)
+	}
+	return query, nil
+}
+
+func (p *mcpserverPager) applyOrder(query *McpServerQuery) *McpServerQuery {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	query = query.Order(p.order.Field.toTerm(direction.OrderTermOption()))
+	if p.order.Field != DefaultMcpServerOrder.Field {
+		query = query.Order(DefaultMcpServerOrder.Field.toTerm(direction.OrderTermOption()))
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return query
+}
+
+func (p *mcpserverPager) orderExpr(query *McpServerQuery) sql.Querier {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return sql.ExprFunc(func(b *sql.Builder) {
+		b.Ident(p.order.Field.column).Pad().WriteString(string(direction))
+		if p.order.Field != DefaultMcpServerOrder.Field {
+			b.Comma().Ident(DefaultMcpServerOrder.Field.column).Pad().WriteString(string(direction))
+		}
+	})
+}
+
+// Paginate executes the query and returns a relay based cursor connection to McpServer.
+func (_m *McpServerQuery) Paginate(
+	ctx context.Context, after *Cursor, first *int,
+	before *Cursor, last *int, opts ...McpServerPaginateOption,
+) (*McpServerConnection, error) {
+	if err := validateFirstLast(first, last); err != nil {
+		return nil, err
+	}
+	pager, err := newMcpServerPager(opts, last != nil)
+	if err != nil {
+		return nil, err
+	}
+	if _m, err = pager.applyFilter(_m); err != nil {
+		return nil, err
+	}
+	conn := &McpServerConnection{Edges: []*McpServerEdge{}}
+	ignoredEdges := !hasCollectedField(ctx, edgesField)
+	if hasCollectedField(ctx, totalCountField) || hasCollectedField(ctx, pageInfoField) {
+		hasPagination := after != nil || first != nil || before != nil || last != nil
+		if hasPagination || ignoredEdges {
+			c := _m.Clone()
+			c.ctx.Fields = nil
+			if conn.TotalCount, err = c.Count(ctx); err != nil {
+				return nil, err
+			}
+			conn.PageInfo.HasNextPage = first != nil && conn.TotalCount > 0
+			conn.PageInfo.HasPreviousPage = last != nil && conn.TotalCount > 0
+		}
+	}
+	if ignoredEdges || (first != nil && *first == 0) || (last != nil && *last == 0) {
+		return conn, nil
+	}
+	if _m, err = pager.applyCursors(_m, after, before); err != nil {
+		return nil, err
+	}
+	limit := paginateLimit(first, last)
+	if limit != 0 {
+		_m.Limit(limit)
+	}
+	if field := collectedField(ctx, edgesField, nodeField); field != nil {
+		if err := _m.collectField(ctx, limit == 1, graphql.GetOperationContext(ctx), *field, []string{edgesField, nodeField}); err != nil {
+			return nil, err
+		}
+	}
+	_m = pager.applyOrder(_m)
+	nodes, err := _m.All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	conn.build(nodes, pager, after, first, before, last)
+	return conn, nil
+}
+
+var (
+	// McpServerOrderFieldCreatedAt orders McpServer by created_at.
+	McpServerOrderFieldCreatedAt = &McpServerOrderField{
+		Value: func(_m *McpServer) (ent.Value, error) {
+			return _m.CreatedAt, nil
+		},
+		column: mcpserver.FieldCreatedAt,
+		toTerm: mcpserver.ByCreatedAt,
+		toCursor: func(_m *McpServer) Cursor {
+			return Cursor{
+				ID:    _m.ID,
+				Value: _m.CreatedAt,
+			}
+		},
+	}
+	// McpServerOrderFieldLastModifiedAt orders McpServer by last_modified_at.
+	McpServerOrderFieldLastModifiedAt = &McpServerOrderField{
+		Value: func(_m *McpServer) (ent.Value, error) {
+			return _m.LastModifiedAt, nil
+		},
+		column: mcpserver.FieldLastModifiedAt,
+		toTerm: mcpserver.ByLastModifiedAt,
+		toCursor: func(_m *McpServer) Cursor {
+			return Cursor{
+				ID:    _m.ID,
+				Value: _m.LastModifiedAt,
+			}
+		},
+	}
+)
+
+// String implement fmt.Stringer interface.
+func (f McpServerOrderField) String() string {
+	var str string
+	switch f.column {
+	case McpServerOrderFieldCreatedAt.column:
+		str = "CREATED_AT"
+	case McpServerOrderFieldLastModifiedAt.column:
+		str = "LAST_MODIFIED_AT"
+	}
+	return str
+}
+
+// MarshalGQL implements graphql.Marshaler interface.
+func (f McpServerOrderField) MarshalGQL(w io.Writer) {
+	io.WriteString(w, strconv.Quote(f.String()))
+}
+
+// UnmarshalGQL implements graphql.Unmarshaler interface.
+func (f *McpServerOrderField) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("McpServerOrderField %T must be a string", v)
+	}
+	switch str {
+	case "CREATED_AT":
+		*f = *McpServerOrderFieldCreatedAt
+	case "LAST_MODIFIED_AT":
+		*f = *McpServerOrderFieldLastModifiedAt
+	default:
+		return fmt.Errorf("%s is not a valid McpServerOrderField", str)
+	}
+	return nil
+}
+
+// McpServerOrderField defines the ordering field of McpServer.
+type McpServerOrderField struct {
+	// Value extracts the ordering value from the given McpServer.
+	Value    func(*McpServer) (ent.Value, error)
+	column   string // field or computed.
+	toTerm   func(...sql.OrderTermOption) mcpserver.OrderOption
+	toCursor func(*McpServer) Cursor
+}
+
+// McpServerOrder defines the ordering of McpServer.
+type McpServerOrder struct {
+	Direction OrderDirection       `json:"direction"`
+	Field     *McpServerOrderField `json:"field"`
+}
+
+// DefaultMcpServerOrder is the default ordering of McpServer.
+var DefaultMcpServerOrder = &McpServerOrder{
+	Direction: entgql.OrderDirectionAsc,
+	Field: &McpServerOrderField{
+		Value: func(_m *McpServer) (ent.Value, error) {
+			return _m.ID, nil
+		},
+		column: mcpserver.FieldID,
+		toTerm: mcpserver.ByID,
+		toCursor: func(_m *McpServer) Cursor {
+			return Cursor{ID: _m.ID}
+		},
+	},
+}
+
+// ToEdge converts McpServer into McpServerEdge.
+func (_m *McpServer) ToEdge(order *McpServerOrder) *McpServerEdge {
+	if order == nil {
+		order = DefaultMcpServerOrder
+	}
+	return &McpServerEdge{
 		Node:   _m,
 		Cursor: order.Field.toCursor(_m),
 	}

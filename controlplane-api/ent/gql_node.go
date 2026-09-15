@@ -17,6 +17,9 @@ import (
 	"entgo.io/ent/dialect/sql/schema"
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/hashicorp/go-multierror"
+	"github.com/telekom/controlplane/controlplane-api/ent/agentcard"
+	"github.com/telekom/controlplane/controlplane-api/ent/agenticexposure"
+	"github.com/telekom/controlplane/controlplane-api/ent/agenticsubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/api"
 	"github.com/telekom/controlplane/controlplane-api/ent/apiexposure"
 	"github.com/telekom/controlplane/controlplane-api/ent/apisubscription"
@@ -27,6 +30,7 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/eventsubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventtype"
 	"github.com/telekom/controlplane/controlplane-api/ent/group"
+	"github.com/telekom/controlplane/controlplane-api/ent/mcpserver"
 	"github.com/telekom/controlplane/controlplane-api/ent/member"
 	"github.com/telekom/controlplane/controlplane-api/ent/permissionset"
 	"github.com/telekom/controlplane/controlplane-api/ent/team"
@@ -38,6 +42,21 @@ import (
 type Noder interface {
 	IsNode()
 }
+
+var agentcardImplementors = []string{"AgentCard", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*AgentCard) IsNode() {}
+
+var agenticexposureImplementors = []string{"AgenticExposure", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*AgenticExposure) IsNode() {}
+
+var agenticsubscriptionImplementors = []string{"AgenticSubscription", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*AgenticSubscription) IsNode() {}
 
 var apiImplementors = []string{"Api", "Node"}
 
@@ -88,6 +107,11 @@ var groupImplementors = []string{"Group", "Node"}
 
 // IsNode implements the Node interface check for GQLGen.
 func (*Group) IsNode() {}
+
+var mcpserverImplementors = []string{"McpServer", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*McpServer) IsNode() {}
 
 var memberImplementors = []string{"Member", "Node"}
 
@@ -167,6 +191,33 @@ func (c *Client) Noder(ctx context.Context, id int, opts ...NodeOption) (_ Noder
 
 func (c *Client) noder(ctx context.Context, table string, id int) (Noder, error) {
 	switch table {
+	case agentcard.Table:
+		query := c.AgentCard.Query().
+			Where(agentcard.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, agentcardImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
+	case agenticexposure.Table:
+		query := c.AgenticExposure.Query().
+			Where(agenticexposure.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, agenticexposureImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
+	case agenticsubscription.Table:
+		query := c.AgenticSubscription.Query().
+			Where(agenticsubscription.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, agenticsubscriptionImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
 	case api.Table:
 		query := c.Api.Query().
 			Where(api.ID(id))
@@ -253,6 +304,15 @@ func (c *Client) noder(ctx context.Context, table string, id int) (Noder, error)
 			Where(group.ID(id))
 		if fc := graphql.GetFieldContext(ctx); fc != nil {
 			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, groupImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
+	case mcpserver.Table:
+		query := c.McpServer.Query().
+			Where(mcpserver.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, mcpserverImplementors...); err != nil {
 				return nil, err
 			}
 		}
@@ -366,6 +426,54 @@ func (c *Client) noders(ctx context.Context, table string, ids []int) ([]Noder, 
 		idmap[id] = append(idmap[id], &noders[i])
 	}
 	switch table {
+	case agentcard.Table:
+		query := c.AgentCard.Query().
+			Where(agentcard.IDIn(ids...))
+		query, err := query.CollectFields(ctx, agentcardImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case agenticexposure.Table:
+		query := c.AgenticExposure.Query().
+			Where(agenticexposure.IDIn(ids...))
+		query, err := query.CollectFields(ctx, agenticexposureImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case agenticsubscription.Table:
+		query := c.AgenticSubscription.Query().
+			Where(agenticsubscription.IDIn(ids...))
+		query, err := query.CollectFields(ctx, agenticsubscriptionImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
 	case api.Table:
 		query := c.Api.Query().
 			Where(api.IDIn(ids...))
@@ -514,6 +622,22 @@ func (c *Client) noders(ctx context.Context, table string, ids []int) ([]Noder, 
 		query := c.Group.Query().
 			Where(group.IDIn(ids...))
 		query, err := query.CollectFields(ctx, groupImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case mcpserver.Table:
+		query := c.McpServer.Query().
+			Where(mcpserver.IDIn(ids...))
+		query, err := query.CollectFields(ctx, mcpserverImplementors...)
 		if err != nil {
 			return nil, err
 		}

@@ -15,6 +15,9 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"github.com/telekom/controlplane/controlplane-api/ent/agentcard"
+	"github.com/telekom/controlplane/controlplane-api/ent/agenticexposure"
+	"github.com/telekom/controlplane/controlplane-api/ent/agenticsubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/api"
 	"github.com/telekom/controlplane/controlplane-api/ent/apiexposure"
 	"github.com/telekom/controlplane/controlplane-api/ent/apisubscription"
@@ -25,6 +28,7 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/eventsubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventtype"
 	"github.com/telekom/controlplane/controlplane-api/ent/group"
+	"github.com/telekom/controlplane/controlplane-api/ent/mcpserver"
 	"github.com/telekom/controlplane/controlplane-api/ent/member"
 	"github.com/telekom/controlplane/controlplane-api/ent/permissionset"
 	"github.com/telekom/controlplane/controlplane-api/ent/team"
@@ -89,20 +93,24 @@ var (
 func checkColumn(t, c string) error {
 	initCheck.Do(func() {
 		columnCheck = sql.NewColumnCheck(map[string]func(string) bool{
-			api.Table:               api.ValidColumn,
-			apiexposure.Table:       apiexposure.ValidColumn,
-			apisubscription.Table:   apisubscription.ValidColumn,
-			application.Table:       application.ValidColumn,
-			approval.Table:          approval.ValidColumn,
-			approvalrequest.Table:   approvalrequest.ValidColumn,
-			eventexposure.Table:     eventexposure.ValidColumn,
-			eventsubscription.Table: eventsubscription.ValidColumn,
-			eventtype.Table:         eventtype.ValidColumn,
-			group.Table:             group.ValidColumn,
-			member.Table:            member.ValidColumn,
-			permissionset.Table:     permissionset.ValidColumn,
-			team.Table:              team.ValidColumn,
-			zone.Table:              zone.ValidColumn,
+			agentcard.Table:           agentcard.ValidColumn,
+			agenticexposure.Table:     agenticexposure.ValidColumn,
+			agenticsubscription.Table: agenticsubscription.ValidColumn,
+			api.Table:                 api.ValidColumn,
+			apiexposure.Table:         apiexposure.ValidColumn,
+			apisubscription.Table:     apisubscription.ValidColumn,
+			application.Table:         application.ValidColumn,
+			approval.Table:            approval.ValidColumn,
+			approvalrequest.Table:     approvalrequest.ValidColumn,
+			eventexposure.Table:       eventexposure.ValidColumn,
+			eventsubscription.Table:   eventsubscription.ValidColumn,
+			eventtype.Table:           eventtype.ValidColumn,
+			group.Table:               group.ValidColumn,
+			mcpserver.Table:           mcpserver.ValidColumn,
+			member.Table:              member.ValidColumn,
+			permissionset.Table:       permissionset.ValidColumn,
+			team.Table:                team.ValidColumn,
+			zone.Table:                zone.ValidColumn,
 		})
 	})
 	return columnCheck(t, c)

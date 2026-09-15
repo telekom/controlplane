@@ -9,6 +9,15 @@ import (
 	"entgo.io/ent/dialect/sql"
 )
 
+// AgentCard is the predicate function for agentcard builders.
+type AgentCard func(*sql.Selector)
+
+// AgenticExposure is the predicate function for agenticexposure builders.
+type AgenticExposure func(*sql.Selector)
+
+// AgenticSubscription is the predicate function for agenticsubscription builders.
+type AgenticSubscription func(*sql.Selector)
+
 // Api is the predicate function for api builders.
 type Api func(*sql.Selector)
 
@@ -38,6 +47,9 @@ type EventType func(*sql.Selector)
 
 // Group is the predicate function for group builders.
 type Group func(*sql.Selector)
+
+// McpServer is the predicate function for mcpserver builders.
+type McpServer func(*sql.Selector)
 
 // Member is the predicate function for member builders.
 type Member func(*sql.Selector)
