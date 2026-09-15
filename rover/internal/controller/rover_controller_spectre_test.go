@@ -119,6 +119,15 @@ var _ = Describe("Rover Controller Spectre Watch", Ordered, func() {
 		if providerTeam != nil {
 			_ = k8sClient.Delete(ctx, providerTeam)
 		}
+
+		By("Cleanup consumer Team")
+		if team != nil {
+			_ = k8sClient.Delete(ctx, team)
+			Eventually(func() bool {
+				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(team), &organizationv1.Team{})
+				return errors.IsNotFound(err)
+			}, spectreTimeout, interval).Should(BeTrue())
+		}
 	})
 
 	Context("Spectre child readiness triggers Rover re-reconciliation", func() {
