@@ -8,6 +8,7 @@ import (
 	"context"
 
 	"github.com/stretchr/testify/mock"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -66,7 +67,7 @@ var _ = Describe("Rover Controller - Trusted Teams", Ordered, func() {
 			Expect(k8sClient.Delete(ctx, resource)).To(Succeed())
 			Eventually(func(g Gomega) {
 				err := k8sClient.Get(ctx, typeNamespacedName, resource)
-				g.Expect(client.IgnoreNotFound(err)).To(Succeed())
+				g.Expect(apierrors.IsNotFound(err)).To(BeTrue())
 			}, timeout, interval).Should(Succeed())
 		}
 	})

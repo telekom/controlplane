@@ -5,8 +5,6 @@
 package controller
 
 import (
-	"context"
-
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -25,8 +23,6 @@ import (
 var _ = Describe("Subscriber Controller", func() {
 	Context("When reconciling a resource", func() {
 		const resourceName = "test-resource"
-
-		ctx := context.Background()
 
 		typeNamespacedName := types.NamespacedName{
 			Name:      resourceName,

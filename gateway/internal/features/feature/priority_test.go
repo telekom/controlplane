@@ -44,6 +44,8 @@ var _ = Describe("Feature Priority Ordering", func() {
 			features.Feature(feature.InstanceDynamicUpstreamFeature), 101),
 		Entry("LoadBalancing has priority 102",
 			features.Feature(feature.InstanceLoadBalancingFeature), 102),
+		Entry("RouteListener has priority 103",
+			features.Feature(feature.InstanceRouteListenerFeature), 103),
 		Entry("Failover has priority 109",
 			features.Feature(feature.InstanceFailoverFeature), 109),
 		Entry("CircuitBreaker has priority 110",
@@ -84,6 +86,7 @@ var _ = Describe("Feature Priority Ordering", func() {
 		allFeatures := []features.Feature{
 			feature.InstanceCircuitBreakerFeature,
 			feature.InstanceFailoverFeature,
+			feature.InstanceRouteListenerFeature,
 			feature.InstanceLoadBalancingFeature,
 			feature.InstanceDynamicUpstreamFeature,
 			feature.InstanceLastMileSecurityFeature,
@@ -128,12 +131,16 @@ var _ = Describe("Feature Priority Ordering", func() {
 		Expect(allFeatures[11].Priority()).To(Equal(102))
 		Expect(allFeatures[11].Name()).To(Equal(feature.InstanceLoadBalancingFeature.Name()))
 
+		// Priority 103: RouteListener
+		Expect(allFeatures[12].Priority()).To(Equal(103))
+		Expect(allFeatures[12].Name()).To(Equal(feature.InstanceRouteListenerFeature.Name()))
+
 		// Priority 109: Failover
-		Expect(allFeatures[12].Priority()).To(Equal(109))
-		Expect(allFeatures[12].Name()).To(Equal(feature.InstanceFailoverFeature.Name()))
+		Expect(allFeatures[13].Priority()).To(Equal(109))
+		Expect(allFeatures[13].Name()).To(Equal(feature.InstanceFailoverFeature.Name()))
 
 		// Priority 110: CircuitBreaker
-		Expect(allFeatures[13].Priority()).To(Equal(110))
-		Expect(allFeatures[13].Name()).To(Equal(feature.InstanceCircuitBreakerFeature.Name()))
+		Expect(allFeatures[14].Priority()).To(Equal(110))
+		Expect(allFeatures[14].Name()).To(Equal(feature.InstanceCircuitBreakerFeature.Name()))
 	})
 })

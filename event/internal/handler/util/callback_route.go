@@ -35,7 +35,7 @@ func CreateProxyCallbackRoute(
 ) (*gatewayapi.Route, error) {
 	return buildCrossZoneProxyRoute(ctx, sourceZone, targetZone, "callback",
 		makeCallbackRouteName(targetZone.Name), makeCallbackRoutePath(targetZone.Name), false,
-		append(opts, WithCallbackConsumer())...)
+		withCallbackConsumerUnlessSet(opts)...)
 }
 
 // CreateCallbackRoute creates a Route for sending callback events to subscribers
@@ -47,12 +47,11 @@ func CreateCallbackRoute(
 	opts ...Option,
 ) (*gatewayapi.Route, error) {
 	options := &Options{}
-	for _, opt := range opts {
-		opt(options)
-	}
 	// Callback routes always trust the Horizon callback client, regardless of
 	// whether they are also a cross-zone proxy target.
-	WithCallbackConsumer()(options)
+	for _, opt := range withCallbackConsumerUnlessSet(opts) {
+		opt(options)
+	}
 
 	preset, err := resolvePreset(zone)
 	if err != nil {

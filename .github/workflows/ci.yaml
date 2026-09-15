@@ -223,7 +223,14 @@ jobs:
   package:
     name: "Package (${{ matrix.name }})"
     needs: collect_build_status
-    if: ${{ fromJSON(needs.collect_build_status.outputs.package_matrix)[0] != null }}
+    # Keep successful modules packageable after another module fails.
+    # The collector still excludes modules whose own checks failed.
+    if: >-
+      ${{
+        !cancelled() &&
+        needs.collect_build_status.result == 'success' &&
+        fromJSON(needs.collect_build_status.outputs.package_matrix || '[]')[0] != null
+      }}
     strategy:
       fail-fast: false
       max-parallel: 8
@@ -275,7 +282,13 @@ jobs:
   rover_ctl_package:
     name: "Package (rover-ctl)"
     needs: collect_build_status
-    if: ${{ needs.collect_build_status.outputs.rover_ctl_ready == 'true' }}
+    # As above, opt out of the implicit success() check on ancestors.
+    if: >-
+      ${{
+        !cancelled() &&
+        needs.collect_build_status.result == 'success' &&
+        needs.collect_build_status.outputs.rover_ctl_ready == 'true'
+      }}
     uses: ./.github/workflows/component-package-build.yaml
     with:
       name: rover-ctl
