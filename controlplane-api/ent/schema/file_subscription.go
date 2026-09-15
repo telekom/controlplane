@@ -63,7 +63,6 @@ func (FileSubscription) Edges() []ent.Edge {
 		edge.To("approval_requests", ApprovalRequest.Type).
 			Annotations(entsql.OnDelete(entsql.Cascade)),
 	}
-
 }
 
 func (FileSubscription) Annotations() []schema.Annotation {
