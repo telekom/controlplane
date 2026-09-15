@@ -112,6 +112,8 @@ func main() {
 	// context downstream), so this only wires the logger.
 	jwtOpts := func(jc security.JWTConfig) security.SecurityOpts {
 		opts := jc.ToSecurityOpts()
+		// DisableGlobalGuard is set to true so graphql-playground can remain public.
+		// All other routes must be secured with an explicit per-route Guard.
 		opts.DisableGlobalGuard = true
 		opts.Log = log.WithName("security")
 		opts.BusinessContextOpts = append(opts.BusinessContextOpts, security.WithLog(log.WithName("security")))
