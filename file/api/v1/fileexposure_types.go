@@ -25,7 +25,7 @@ type FileExposureSpec struct {
 
 	// Provider identifies the providing application.
 	// +kubebuilder:validation:Required
-	Provider ctypes.ObjectRef `json:"provider"`
+	Provider ctypes.TypedObjectRef `json:"provider"`
 
 	// Zone identifies the zone where this file exposure is provided.
 	// +kubebuilder:validation:Required
