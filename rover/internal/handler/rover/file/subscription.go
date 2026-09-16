@@ -49,6 +49,13 @@ func HandleSubscription(ctx context.Context, c client.JanitorClient, owner *rove
 			SFTP: &filev1.FileSFTP{
 				PublicKeys: mapPublicKeys(sub.PublicKeys),
 			},
+			Requestor: types.TypedObjectRef{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "Application",
+					APIVersion: "application.cp.ei.telekom.de/v1",
+				},
+				ObjectRef: *owner.Status.Application,
+			},
 		}
 		return nil
 	}
