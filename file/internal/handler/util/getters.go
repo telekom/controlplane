@@ -25,16 +25,20 @@ const (
 	identityClientNamePrefix = "sftp-api"
 )
 
-func GetFileType(ctx context.Context, ref types.ObjectRef) (*filev1.FileType, error) {
+func GetFileType(ctx context.Context, name string) (*filev1.FileType, error) {
 	c := cclient.ClientFromContextOrDie(ctx)
-	fileType := &filev1.FileType{}
-	if err := c.Get(ctx, ref.K8s(), fileType); err != nil {
+	list := &filev1.FileTypeList{}
+	if err := c.List(ctx, list, client.MatchingFields{index.FileTypeName: name}); err != nil {
 		if apierrors.IsNotFound(errors.Cause(err)) {
-			return nil, ctrlerrors.BlockedErrorf("FileType %q not found", ref.String())
+			return nil, ctrlerrors.BlockedErrorf("FileType %q not found", name)
 		}
-		return nil, fmt.Errorf("failed to get FileType %q: %w", ref.String(), err)
+		return nil, fmt.Errorf("failed to get FileType %q: %w", name, err)
 	}
-	return fileType, nil
+	if len(list.Items) != 1 {
+		return nil, ctrlerrors.BlockedErrorf("expected exactly one FileType with name %q, but found %d", name, len(list.Items))
+	}
+
+	return &list.Items[0], nil
 }
 
 func GetChildResourceRef(obj *filev1.ZoneServiceConfig) types.ObjectRef {
@@ -63,14 +67,13 @@ func GetZoneServiceConfig(ctx context.Context, ref *types.ObjectRef) (*filev1.Zo
 	return zoneServiceConfig, nil
 }
 
-func FindFileExposuresForFileType(ctx context.Context, fileType *types.ObjectRef) ([]filev1.FileExposure, error) {
+func FindFileExposuresForFileType(ctx context.Context, fileTypeName string) ([]filev1.FileExposure, error) {
 	c := cclient.ClientFromContextOrDie(ctx)
 	list := &filev1.FileExposureList{}
 	if err := c.List(ctx, list,
-		client.InNamespace(fileType.Namespace),
-		client.MatchingFields{index.FieldSpecFileTypeOnExposure: fileType.Name},
+		client.MatchingFields{index.FieldSpecFileTypeOnExposure: fileTypeName},
 	); err != nil {
-		return nil, fmt.Errorf("failed to list FileExposures for FileType %q: %w", fileType.Name, err)
+		return nil, fmt.Errorf("failed to list FileExposures for FileType %q: %w", fileTypeName, err)
 	}
 
 	exposures := make([]filev1.FileExposure, len(list.Items))
@@ -87,8 +90,8 @@ func FindFileExposuresForFileType(ctx context.Context, fileType *types.ObjectRef
 	return exposures, nil
 }
 
-func FindActiveFileExposure(ctx context.Context, fileType *types.ObjectRef) (*filev1.FileExposure, bool, error) {
-	exposures, err := FindFileExposuresForFileType(ctx, fileType)
+func FindActiveFileExposure(ctx context.Context, fileTypeName string) (*filev1.FileExposure, bool, error) {
+	exposures, err := FindFileExposuresForFileType(ctx, fileTypeName)
 	if err != nil {
 		return nil, false, err
 	}

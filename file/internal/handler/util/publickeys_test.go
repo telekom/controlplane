@@ -13,7 +13,6 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	k8stypes "k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
@@ -191,18 +190,16 @@ var _ = Describe("Getters", func() {
 	}
 
 	Describe("GetFileType", func() {
-		ref := types.ObjectRef{Name: testFTName, Namespace: testNS}
-
 		It("returns the FileType on success", func() {
 			ctx, mc := newCtx()
 			mc.EXPECT().
-				Get(mock.Anything, ref.K8s(), mock.AnythingOfType("*v1.FileType")).
-				Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
-					out.(*filev1.FileType).Name = testFTName
+				List(mock.Anything, mock.AnythingOfType("*v1.FileTypeList"), mock.Anything).
+				Run(func(_ context.Context, out client.ObjectList, _ ...client.ListOption) {
+					out.(*filev1.FileTypeList).Items = []filev1.FileType{{ObjectMeta: metav1.ObjectMeta{Name: testFTName}}}
 				}).
 				Return(nil).Once()
 
-			ft, err := GetFileType(ctx, ref)
+			ft, err := GetFileType(ctx, testFTName)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(ft.Name).To(Equal(testFTName))
 		})
@@ -210,11 +207,12 @@ var _ = Describe("Getters", func() {
 		It("returns a BlockedError when the FileType is not found", func() {
 			ctx, mc := newCtx()
 			mc.EXPECT().
-				Get(mock.Anything, ref.K8s(), mock.AnythingOfType("*v1.FileType")).
-				Return(apierrors.NewNotFound(schema.GroupResource{Group: filev1.GroupVersion.Group, Resource: "filetypes"}, testFTName)).
+				List(mock.Anything, mock.AnythingOfType("*v1.FileTypeList"), mock.Anything).
+				Run(func(_ context.Context, _ client.ObjectList, _ ...client.ListOption) {}).
+				Return(nil).
 				Once()
 
-			_, err := GetFileType(ctx, ref)
+			_, err := GetFileType(ctx, testFTName)
 			var blocked ctrlerrors.BlockedError
 			Expect(errors.As(err, &blocked)).To(BeTrue())
 		})
@@ -222,10 +220,10 @@ var _ = Describe("Getters", func() {
 		It("returns a wrapped error on unexpected Get failure", func() {
 			ctx, mc := newCtx()
 			mc.EXPECT().
-				Get(mock.Anything, ref.K8s(), mock.AnythingOfType("*v1.FileType")).
+				List(mock.Anything, mock.AnythingOfType("*v1.FileTypeList"), mock.Anything).
 				Return(fmt.Errorf("timeout")).Once()
 
-			_, err := GetFileType(ctx, ref)
+			_, err := GetFileType(ctx, testFTName)
 			Expect(err).To(MatchError(ContainSubstring("timeout")))
 		})
 	})
@@ -283,8 +281,6 @@ var _ = Describe("Getters", func() {
 	})
 
 	Describe("FindActiveFileExposure", func() {
-		ftRef := &types.ObjectRef{Name: testFTName, Namespace: testNS}
-
 		It("returns false when no exposures exist", func() {
 			ctx, mc := newCtx()
 			mc.EXPECT().
@@ -294,7 +290,7 @@ var _ = Describe("Getters", func() {
 				}).
 				Return(nil).Once()
 
-			_, found, err := FindActiveFileExposure(ctx, ftRef)
+			_, found, err := FindActiveFileExposure(ctx, testFTName)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(found).To(BeFalse())
 		})
@@ -324,7 +320,7 @@ var _ = Describe("Getters", func() {
 				}).
 				Return(nil).Once()
 
-			active, found, err := FindActiveFileExposure(ctx, ftRef)
+			active, found, err := FindActiveFileExposure(ctx, testFTName)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(found).To(BeTrue())
 			Expect(active.Name).To(Equal("older"))
@@ -336,7 +332,7 @@ var _ = Describe("Getters", func() {
 				List(mock.Anything, mock.AnythingOfType("*v1.FileExposureList"), mock.Anything, mock.Anything).
 				Return(fmt.Errorf("list failed")).Once()
 
-			_, _, err := FindActiveFileExposure(ctx, ftRef)
+			_, _, err := FindActiveFileExposure(ctx, testFTName)
 			Expect(err).To(MatchError(ContainSubstring("list failed")))
 		})
 	})

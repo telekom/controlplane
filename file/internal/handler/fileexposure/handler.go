@@ -27,22 +27,19 @@ type FileExposureHandler struct{}
 func (h *FileExposureHandler) CreateOrUpdate(ctx context.Context, obj *filev1.FileExposure) error {
 	c := cclient.ClientFromContextOrDie(ctx)
 
-	fileTypeRef := types.ObjectRef{Namespace: obj.Namespace, Name: obj.Spec.FileType}
-
-	activeExposure, found, err := util.FindActiveFileExposure(ctx, &fileTypeRef)
+	activeExposure, found, err := util.FindActiveFileExposure(ctx, obj.Spec.FileType)
 	if err != nil {
 		return err
 	}
 
 	if found && activeExposure.UID != obj.UID {
 		obj.Status.Active = false
-		obj.Status.FileTypeRef = &fileTypeRef
 		obj.SetCondition(condition.NewNotReadyCondition("FileExposureAlreadyExists", "Another FileExposure already provides this FileType"))
 		obj.SetCondition(condition.NewBlockedCondition("FileExposure will be processed when the active FileExposure is deleted"))
 		return nil
 	}
 
-	fileType, err := util.GetFileType(ctx, fileTypeRef)
+	fileType, err := util.GetFileType(ctx, obj.Spec.FileType)
 	if err != nil {
 		return err
 	}
@@ -77,9 +74,7 @@ func (h *FileExposureHandler) CreateOrUpdate(ctx context.Context, obj *filev1.Fi
 }
 
 func (h *FileExposureHandler) Delete(ctx context.Context, obj *filev1.FileExposure) error {
-	fileTypeRef := types.ObjectRef{Namespace: obj.Namespace, Name: obj.Spec.FileType}
-
-	activeExposure, found, err := util.FindActiveFileExposure(ctx, &fileTypeRef)
+	activeExposure, found, err := util.FindActiveFileExposure(ctx, obj.Spec.FileType)
 	if err != nil {
 		return err
 	}

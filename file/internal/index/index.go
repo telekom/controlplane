@@ -25,6 +25,8 @@ const (
 	FieldSpecFileTypeOnSubscription = "spec.fileType.subscription"
 	// FieldSpecZoneOnZoneServiceConfig indexes ZoneServiceConfigs by their spec.zone (namespace/name).
 	FieldSpecZoneOnZoneServiceConfig = "spec.zone.zoneserviceconfig"
+	// FileTypeName indexes FileTypes by their name.
+	FileTypeName = "metadata.name"
 )
 
 func RegisterIndicesOrDie(ctx context.Context, mgr ctrl.Manager) {
@@ -74,6 +76,17 @@ func RegisterIndicesOrDie(ctx context.Context, mgr ctrl.Manager) {
 		return []string{config.Spec.Zone.String()}
 	}); err != nil {
 		ctrl.Log.Error(err, "unable to create fieldIndex for ZoneServiceConfig", "field", FieldSpecZoneOnZoneServiceConfig)
+		os.Exit(1)
+	}
+
+	if err := mgr.GetFieldIndexer().IndexField(ctx, &filev1.FileType{}, FileTypeName, func(obj client.Object) []string {
+		fileType, ok := obj.(*filev1.FileType)
+		if !ok {
+			return nil
+		}
+		return []string{fileType.Name}
+	}); err != nil {
+		ctrl.Log.Error(err, "unable to create fieldIndex for FileType", "field", FileTypeName)
 		os.Exit(1)
 	}
 }
