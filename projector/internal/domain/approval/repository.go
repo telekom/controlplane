@@ -159,7 +159,7 @@ func (r *Repository) Upsert(ctx context.Context, data *ApprovalData) error {
 	if upsertErr != nil {
 		if infrastructure.IsFKViolation(upsertErr, "") {
 			r.evictSubscriptionCache(data)
-			return runtime.WrapDependencyMissing(targetKindLabel(data.TargetKind),
+			return runtime.WrapDependencyMissing(dependencyKind(data.TargetKind),
 				data.SubscriptionNamespace+"/"+data.SubscriptionName)
 		}
 		return fmt.Errorf("upsert approval %s/%s (sub %s/%s): %w",
@@ -187,7 +187,7 @@ func (r *Repository) Upsert(ctx context.Context, data *ApprovalData) error {
 	if err := update.Exec(ctx); err != nil {
 		if infrastructure.IsFKViolation(err, "") {
 			r.evictSubscriptionCache(data)
-			return runtime.WrapDependencyMissing(targetKindLabel(data.TargetKind),
+			return runtime.WrapDependencyMissing(dependencyKind(data.TargetKind),
 				data.SubscriptionNamespace+"/"+data.SubscriptionName)
 		}
 		return fmt.Errorf("update subscription FK for approval %d (%s/%s): %w",

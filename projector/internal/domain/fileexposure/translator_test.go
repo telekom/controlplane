@@ -40,7 +40,7 @@ var _ = Describe("FileExposure Translator", func() {
 					},
 				},
 				Spec: filev1.FileExposureSpec{
-					Provider: "sftp",
+					Variant:  "sftp",
 					FileType: "invoice",
 					Zone: &commontypes.ObjectRef{
 						Name:      "caas",

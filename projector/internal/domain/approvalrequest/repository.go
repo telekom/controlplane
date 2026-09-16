@@ -146,7 +146,6 @@ func (r *Repository) Upsert(ctx context.Context, data *ApprovalRequestData) erro
 		create = create.SetEventSubscriptionID(subID)
 	case TargetKindAgenticSubscription:
 		create = create.SetAgenticSubscriptionID(subID)
-	default:
 	case TargetKindFileSubscription:
 		create = create.SetFileSubscriptionID(subID)
 	default:
