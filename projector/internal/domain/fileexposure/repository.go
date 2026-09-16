@@ -92,10 +92,6 @@ func (r *Repository) Upsert(ctx context.Context, data *FileExposureData) error {
 		SetZoneID(zoneID).
 		SetNillableFileTypeDefID(fileTypeDefID)
 
-	if data.Provider != nil {
-		create.SetProvider(*data.Provider)
-	}
-
 	exposureID, upsertErr := create.
 		OnConflictColumns(entfileexposure.FieldFileType, entfileexposure.OwnerColumn).
 		Update(func(u *ent.FileExposureUpsert) {
@@ -108,11 +104,6 @@ func (r *Repository) Upsert(ctx context.Context, data *FileExposureData) error {
 			u.SetStatusMessage(data.StatusMessage)
 			u.SetEnvironment(data.Meta.Environment)
 			u.SetNamespace(data.Meta.Namespace)
-			if data.Provider != nil {
-				u.SetProvider(*data.Provider)
-			} else {
-				u.ClearProvider()
-			}
 		}).
 		ID(ctx)
 	if upsertErr != nil {

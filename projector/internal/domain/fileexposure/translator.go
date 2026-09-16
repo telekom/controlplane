@@ -35,8 +35,6 @@ func (t *Translator) ShouldSkip(obj *filev1.FileExposure) (bool, string) {
 func (t *Translator) Translate(_ context.Context, obj *filev1.FileExposure) (*FileExposureData, error) {
 	phase, message := shared.StatusFromConditions(obj.Status.Conditions)
 
-	ownerAppName := obj.Labels[applicationLabelKey]
-
 	publicKeys := []string{}
 	if obj.Spec.SFTP != nil {
 		for i := range obj.Spec.SFTP.PublicKeys {
@@ -48,6 +46,7 @@ func (t *Translator) Translate(_ context.Context, obj *filev1.FileExposure) (*Fi
 		Meta:           shared.NewMetadata(obj.Namespace, obj.Name, obj.Labels),
 		StatusPhase:    phase,
 		StatusMessage:  message,
+		Variant:        obj.Spec.Variant,
 		Visibility:     strings.ToUpper(string(obj.Spec.Visibility)),
 		Active:         isActiveExposure(obj),
 		Zone:           obj.Spec.Zone.Name,
@@ -56,7 +55,7 @@ func (t *Translator) Translate(_ context.Context, obj *filev1.FileExposure) (*Fi
 			Strategy:     shared.MapApprovalStrategy(string(obj.Spec.Approval.Strategy)),
 			TrustedTeams: obj.Spec.Approval.TrustedTeams,
 		},
-		AppName:        ownerAppName,
+		AppName:        obj.Spec.Provider.Name,
 		TeamName:       shared.TeamNameFromNamespace(obj.Namespace),
 		TargetFileType: obj.Spec.FileType,
 	}, nil

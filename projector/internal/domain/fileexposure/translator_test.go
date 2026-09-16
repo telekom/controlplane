@@ -52,6 +52,11 @@ var _ = Describe("FileExposure Translator", func() {
 						Strategy:     filev1.ApprovalStrategyFourEyes,
 						TrustedTeams: []string{"team-a"},
 					},
+					Provider: commontypes.TypedObjectRef{
+						ObjectRef: commontypes.ObjectRef{
+							Name: "provider-app",
+						},
+					},
 				},
 				Status: filev1.FileExposureStatus{Conditions: []metav1.Condition{{Type: "Ready", Status: metav1.ConditionTrue, Message: "ok"}}},
 			}
@@ -59,9 +64,7 @@ var _ = Describe("FileExposure Translator", func() {
 			data, err := t.Translate(context.Background(), obj)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(data.TargetFileType).To(Equal("invoice"))
-			Expect(data.Provider).NotTo(BeNil())
-			Expect(*data.Provider).To(Equal("sftp"))
-			Expect(data.AppName).To(Equal("label-app"))
+			Expect(data.AppName).To(Equal("provider-app"))
 			Expect(data.TeamName).To(Equal("platform--narvi"))
 			Expect(data.Visibility).To(Equal("ENTERPRISE"))
 			Expect(data.StatusPhase).To(Equal("READY"))
@@ -85,14 +88,18 @@ var _ = Describe("FileExposure Translator", func() {
 					FileType:   "orders",
 					Zone:       &commontypes.ObjectRef{Name: "caas"},
 					Visibility: filev1.VisibilityWorld,
+					Provider: commontypes.TypedObjectRef{
+						ObjectRef: commontypes.ObjectRef{
+							Name: "provider-app",
+						},
+					},
 				},
 				Status: filev1.FileExposureStatus{Conditions: []metav1.Condition{{Type: "Ready", Status: metav1.ConditionFalse, Reason: "FileExposureAlreadyExists", Message: "duplicate"}}},
 			}
 
 			data, err := t.Translate(context.Background(), obj)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(data.AppName).To(Equal("label-app"))
-			Expect(data.Provider).To(BeNil())
+			Expect(data.AppName).To(Equal("provider-app"))
 			Expect(data.Active).To(BeFalse())
 			Expect(data.Visibility).To(Equal("WORLD"))
 		})
