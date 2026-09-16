@@ -75,6 +75,23 @@ spec:
               fileType:
                 description: FileType references the FileType to being expose.
                 type: string
+              provider:
+                description: Provider identifies the providing application.
+                properties:
+                  name:
+                    type: string
+                  namespace:
+                    type: string
+                  uid:
+                    description: |-
+                      UID is a type that holds unique ID values, including UUIDs.  Because we
+                      don't ONLY use UUIDs, this is an alias to string.  Being a type captures
+                      intent and helps make sure that UIDs and names do not get conflated.
+                    type: string
+                required:
+                - name
+                - namespace
+                type: object
               sftp:
                 description: SFTP configures provider-side SFTP access for this file
                   exposure.
@@ -131,6 +148,7 @@ spec:
                 type: object
             required:
             - fileType
+            - provider
             - variant
             - visibility
             - zone

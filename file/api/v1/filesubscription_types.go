@@ -9,6 +9,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/telekom/controlplane/common/pkg/types"
+	ctypes "github.com/telekom/controlplane/common/pkg/types"
 )
 
 // FileSubscriptionSpec defines a consumer-side subscription to a file type.
@@ -24,6 +25,14 @@ type FileSubscriptionSpec struct {
 	// SFTP configures consumer-side SFTP access for this file subscription.
 	// +kubebuilder:validation:Optional
 	SFTP *FileSFTP `json:"sftp,omitempty"`
+
+	// Requestor identifies the application requesting access.
+	Requestor Requestor `json:"requestor"`
+}
+
+// Requestor identifies the requesting application.
+type Requestor struct {
+	Application ctypes.ObjectRef `json:"application"`
 }
 
 // FileSubscriptionStatus defines the observed state of FileSubscription.

@@ -9,6 +9,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/telekom/controlplane/common/pkg/types"
+	ctypes "github.com/telekom/controlplane/common/pkg/types"
 )
 
 // FileExposureSpec defines a provider-side file exposure.
@@ -21,6 +22,10 @@ type FileExposureSpec struct {
 	// +kubebuilder:validation:Required
 	// FileType references the FileType to being expose.
 	FileType string `json:"fileType"`
+
+	// Provider identifies the providing application.
+	// +kubebuilder:validation:Required
+	Provider ctypes.ObjectRef `json:"provider"`
 
 	// Zone identifies the zone where this file exposure is provided.
 	// +kubebuilder:validation:Required
