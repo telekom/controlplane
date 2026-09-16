@@ -270,6 +270,8 @@ jobs:
     # unconditionally in release.yaml.
     if: needs.rover-ctl-base-image-changes.outputs.changed == 'true'
     uses: ./.github/workflows/rover-ctl-base-image.yaml
+    with:
+      push: false
     secrets: inherit
 
   rover_ctl_package:
@@ -330,7 +332,7 @@ jobs:
           registry: ${{ vars.REGISTRY_HOST }}
           username: ${{ secrets.ARTIFACTORY_O28M_PUSH_USER }} # TODO: create this secret
           password: ${{ secrets.ARTIFACTORY_O28M_PUSH_TOKEN }} # TODO: create this secret
-      - name: Build and push combined roverctl image
+      - name: Build combined roverctl image
         # Layers the plain roverctl binary (just built/pushed to GHCR by the
         # rover_ctl_package job above, referenced by immutable digest) onto the
         # Artifactory bash/jq/yq base image - see rover-ctl/Dockerfile.
@@ -342,7 +344,9 @@ jobs:
         uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
         with:
           context: rover-ctl
-          push: true
+          # The final combined image is published to Artifactory only by
+          # release.yaml. CI still builds it to validate the Dockerfile.
+          push: false
           build-args: |
             ROVERCTL_IMAGE=${{ needs.rover_ctl_package.outputs.image_repository }}@${{ needs.rover_ctl_package.outputs.image_digest }}
             ROVERCTL_BASE_IMAGE=${{ vars.REGISTRY_HOST }}/${{ vars.REGISTRY_ROVERCTL_BASE_REPO }}:${{ vars.ROVERCTL_BASE_IMAGE_TAG }}

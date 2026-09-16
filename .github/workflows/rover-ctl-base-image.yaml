@@ -36,7 +36,19 @@ name: "Rover-CTL Base Image"
 
 on:
   workflow_call:
+    inputs:
+      push:
+        description: "Push the base image to Artifactory"
+        required: false
+        type: boolean
+        default: false
   workflow_dispatch:
+    inputs:
+      push:
+        description: "Push the base image to Artifactory"
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -68,7 +80,7 @@ jobs:
         with:
           context: rover-ctl
           file: rover-ctl/Dockerfile.base
-          push: true
+          push: ${{ inputs.push }}
           tags: |
             ${{ vars.REGISTRY_HOST }}/${{ vars.REGISTRY_ROVERCTL_BASE_REPO }}:latest
             ${{ vars.REGISTRY_HOST }}/${{ vars.REGISTRY_ROVERCTL_BASE_REPO }}:${{ vars.ROVERCTL_BASE_IMAGE_TAG }}
