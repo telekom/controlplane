@@ -4,12 +4,10 @@
 
 name: "Rover-CTL Base Image"
 
-# Builds and pushes rover-ctl/Dockerfile.base (bash/jq/yq bundled alongside
-# roverctl) to the internal Artifactory Docker registry.
+# Builds rover-ctl/Dockerfile.base (bash/jq/yq bundled alongside roverctl),
+# optionally pushing it to the internal Artifactory Docker registry.
 #
 # Invoked (via workflow_call) by:
-#   - ci.yaml: only when rover-ctl/Dockerfile.base changed in the current
-#     push/PR (see the `rover-ctl-base-image-changes` job there).
 #   - release.yaml: unconditionally, before every release.
 #
 # Also directly runnable via workflow_dispatch (Actions tab > "Rover-CTL Base
