@@ -13,7 +13,6 @@ import (
 	k8smeta "k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	k8stypes "k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
@@ -91,12 +90,12 @@ func mockListExposures(mockClient *fake.MockJanitorClient, exposures []filev1.Fi
 		Return(nil).Once()
 }
 
-// mockGetFileType sets up c.Get to return the given FileType.
-func mockGetFileType(mockClient *fake.MockJanitorClient, ft *filev1.FileType) {
+// mockListFileType sets up c.List to return the given FileType.
+func mockListFileType(mockClient *fake.MockJanitorClient, ft *filev1.FileType) {
 	mockClient.EXPECT().
-		Get(mock.Anything, k8stypes.NamespacedName{Name: testFileTypeName, Namespace: testNamespace}, mock.AnythingOfType("*v1.FileType")).
-		Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
-			*out.(*filev1.FileType) = *ft
+		List(mock.Anything, mock.AnythingOfType("*v1.FileTypeList"), mock.Anything, mock.Anything).
+		Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+			*list.(*filev1.FileTypeList) = filev1.FileTypeList{Items: []filev1.FileType{*ft}}
 		}).
 		Return(nil).Once()
 }
@@ -133,7 +132,7 @@ var _ = Describe("FileExposureHandler", func() {
 			err := handler.CreateOrUpdate(ctx, exposure)
 
 			Expect(err).NotTo(HaveOccurred())
-			Expect(exposure.Status.FileTypeRef).NotTo(BeNil())
+			Expect(exposure.Status.FileTypeRef).To(BeNil())
 			Expect(k8smeta.IsStatusConditionFalse(exposure.Status.Conditions, condition.ConditionTypeReady)).To(BeTrue())
 			ready := k8smeta.FindStatusCondition(exposure.Status.Conditions, condition.ConditionTypeReady)
 			Expect(ready.Reason).To(Equal("FileExposureAlreadyExists"))
@@ -145,8 +144,9 @@ var _ = Describe("FileExposureHandler", func() {
 
 			mockListExposures(mockClient, []filev1.FileExposure{*exposure})
 			mockClient.EXPECT().
-				Get(mock.Anything, k8stypes.NamespacedName{Name: testFileTypeName, Namespace: testNamespace}, mock.AnythingOfType("*v1.FileType")).
-				Return(apierrors.NewNotFound(schema.GroupResource{Group: filev1.GroupVersion.Group, Resource: "filetypes"}, testFileTypeName)).
+				List(mock.Anything, mock.AnythingOfType("*v1.FileTypeList"), mock.Anything, mock.Anything).
+				Run(func(_ context.Context, _ client.ObjectList, _ ...client.ListOption) {}).
+				Return(nil).
 				Once()
 
 			err := handler.CreateOrUpdate(ctx, exposure)
@@ -173,7 +173,7 @@ var _ = Describe("FileExposureHandler", func() {
 			ctx, mockClient := newTestContext()
 
 			mockListExposures(mockClient, []filev1.FileExposure{*exposure})
-			mockGetFileType(mockClient, testFileType())
+			mockListFileType(mockClient, testFileType())
 			// empty ZoneServiceConfig list → "expected exactly one" error
 			mockListZoneServiceConfigs(mockClient, nil)
 
@@ -188,7 +188,7 @@ var _ = Describe("FileExposureHandler", func() {
 			ctx, mockClient := newTestContext()
 
 			mockListExposures(mockClient, []filev1.FileExposure{*exposure})
-			mockGetFileType(mockClient, testFileType())
+			mockListFileType(mockClient, testFileType())
 			mockListZoneServiceConfigs(mockClient, []filev1.ZoneServiceConfig{*testZoneServiceConfig()})
 			mockClient.EXPECT().
 				CreateOrUpdate(mock.Anything, mock.AnythingOfType("*v1.Instance"), mock.Anything).
@@ -210,7 +210,7 @@ var _ = Describe("FileExposureHandler", func() {
 			ctx, mockClient := newTestContext()
 
 			mockListExposures(mockClient, []filev1.FileExposure{*exposure})
-			mockGetFileType(mockClient, testFileType())
+			mockListFileType(mockClient, testFileType())
 			mockListZoneServiceConfigs(mockClient, []filev1.ZoneServiceConfig{*testZoneServiceConfig()})
 			mockClient.EXPECT().
 				CreateOrUpdate(mock.Anything, mock.AnythingOfType("*v1.Instance"), mock.Anything).
@@ -231,7 +231,7 @@ var _ = Describe("FileExposureHandler", func() {
 			ctx, mockClient := newTestContext()
 
 			mockListExposures(mockClient, []filev1.FileExposure{*exposure})
-			mockGetFileType(mockClient, testFileType())
+			mockListFileType(mockClient, testFileType())
 			mockListZoneServiceConfigs(mockClient, []filev1.ZoneServiceConfig{*testZoneServiceConfig()})
 			mockClient.EXPECT().
 				CreateOrUpdate(mock.Anything, mock.AnythingOfType("*v1.Instance"), mock.Anything).

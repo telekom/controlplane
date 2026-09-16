@@ -125,8 +125,9 @@ var _ = Describe("FileSubscriptionHandler", func() {
 			ctx, mockClient := newTestContext()
 
 			mockClient.EXPECT().
-				Get(mock.Anything, k8stypes.NamespacedName{Name: testFileTypeName, Namespace: testNamespace}, mock.AnythingOfType("*v1.FileType")).
-				Return(apierrors.NewNotFound(schema.GroupResource{Group: filev1.GroupVersion.Group, Resource: "filetypes"}, testFileTypeName)).
+				List(mock.Anything, mock.AnythingOfType("*v1.FileTypeList"), mock.Anything).
+				Run(func(_ context.Context, _ client.ObjectList, _ ...client.ListOption) {}).
+				Return(nil).
 				Once()
 
 			err := handler.CreateOrUpdate(ctx, sub)
@@ -143,9 +144,9 @@ var _ = Describe("FileSubscriptionHandler", func() {
 			ftNoExposure := testFileType()
 			ftNoExposure.Status.FileExposureRef = nil
 			mockClient.EXPECT().
-				Get(mock.Anything, k8stypes.NamespacedName{Name: testFileTypeName, Namespace: testNamespace}, mock.AnythingOfType("*v1.FileType")).
-				Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
-					*out.(*filev1.FileType) = *ftNoExposure
+				List(mock.Anything, mock.AnythingOfType("*v1.FileTypeList"), mock.Anything).
+				Run(func(_ context.Context, out client.ObjectList, _ ...client.ListOption) {
+					out.(*filev1.FileTypeList).Items = []filev1.FileType{*ftNoExposure}
 				}).
 				Return(nil).Once()
 
@@ -162,9 +163,9 @@ var _ = Describe("FileSubscriptionHandler", func() {
 			ctx, mockClient := newTestContext()
 
 			mockClient.EXPECT().
-				Get(mock.Anything, k8stypes.NamespacedName{Name: testFileTypeName, Namespace: testNamespace}, mock.AnythingOfType("*v1.FileType")).
-				Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
-					*out.(*filev1.FileType) = *testFileType()
+				List(mock.Anything, mock.AnythingOfType("*v1.FileTypeList"), mock.Anything).
+				Run(func(_ context.Context, out client.ObjectList, _ ...client.ListOption) {
+					out.(*filev1.FileTypeList).Items = []filev1.FileType{*testFileType()}
 				}).
 				Return(nil).Once()
 			mockClient.EXPECT().
@@ -188,9 +189,9 @@ var _ = Describe("FileSubscriptionHandler", func() {
 			exposureZoneA.Spec.Zone = &types.ObjectRef{Name: "zone-a", Namespace: testNamespace}
 
 			mockClient.EXPECT().
-				Get(mock.Anything, k8stypes.NamespacedName{Name: testFileTypeName, Namespace: testNamespace}, mock.AnythingOfType("*v1.FileType")).
-				Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
-					*out.(*filev1.FileType) = *testFileType()
+				List(mock.Anything, mock.AnythingOfType("*v1.FileTypeList"), mock.Anything).
+				Run(func(_ context.Context, out client.ObjectList, _ ...client.ListOption) {
+					out.(*filev1.FileTypeList).Items = []filev1.FileType{*testFileType()}
 				}).
 				Return(nil).Once()
 			mockClient.EXPECT().
@@ -215,9 +216,9 @@ var _ = Describe("FileSubscriptionHandler", func() {
 			exposure := testFileExposure()
 
 			mockClient.EXPECT().
-				Get(mock.Anything, k8stypes.NamespacedName{Name: testFileTypeName, Namespace: testNamespace}, mock.AnythingOfType("*v1.FileType")).
-				Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
-					*out.(*filev1.FileType) = *testFileType()
+				List(mock.Anything, mock.AnythingOfType("*v1.FileTypeList"), mock.Anything).
+				Run(func(_ context.Context, out client.ObjectList, _ ...client.ListOption) {
+					out.(*filev1.FileTypeList).Items = []filev1.FileType{*testFileType()}
 				}).
 				Return(nil).Once()
 			mockClient.EXPECT().
@@ -272,9 +273,9 @@ var _ = Describe("FileSubscriptionHandler", func() {
 			}
 
 			mockClient.EXPECT().
-				Get(mock.Anything, k8stypes.NamespacedName{Name: testFileTypeName, Namespace: testNamespace}, mock.AnythingOfType("*v1.FileType")).
-				Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
-					*out.(*filev1.FileType) = *testFileType()
+				List(mock.Anything, mock.AnythingOfType("*v1.FileTypeList"), mock.Anything).
+				Run(func(_ context.Context, out client.ObjectList, _ ...client.ListOption) {
+					out.(*filev1.FileTypeList).Items = []filev1.FileType{*testFileType()}
 				}).
 				Return(nil).Once()
 			mockClient.EXPECT().
@@ -314,9 +315,9 @@ var _ = Describe("FileSubscriptionHandler", func() {
 			ctx, mockClient := newTestContext()
 
 			mockClient.EXPECT().
-				Get(mock.Anything, k8stypes.NamespacedName{Name: testFileTypeName, Namespace: testNamespace}, mock.AnythingOfType("*v1.FileType")).
-				Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
-					*out.(*filev1.FileType) = *testFileType()
+				List(mock.Anything, mock.AnythingOfType("*v1.FileTypeList"), mock.Anything).
+				Run(func(_ context.Context, out client.ObjectList, _ ...client.ListOption) {
+					out.(*filev1.FileTypeList).Items = []filev1.FileType{*testFileType()}
 				}).
 				Return(nil).Once()
 			mockClient.EXPECT().
@@ -340,9 +341,9 @@ var _ = Describe("FileSubscriptionHandler", func() {
 			}
 
 			mockClient.EXPECT().
-				Get(mock.Anything, k8stypes.NamespacedName{Name: testFileTypeName, Namespace: testNamespace}, mock.AnythingOfType("*v1.FileType")).
-				Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
-					*out.(*filev1.FileType) = *testFileType()
+				List(mock.Anything, mock.AnythingOfType("*v1.FileTypeList"), mock.Anything).
+				Run(func(_ context.Context, out client.ObjectList, _ ...client.ListOption) {
+					out.(*filev1.FileTypeList).Items = []filev1.FileType{*testFileType()}
 				}).
 				Return(nil).Once()
 			mockClient.EXPECT().
@@ -388,9 +389,9 @@ var _ = Describe("FileSubscriptionHandler", func() {
 			}
 
 			mockClient.EXPECT().
-				Get(mock.Anything, k8stypes.NamespacedName{Name: testFileTypeName, Namespace: testNamespace}, mock.AnythingOfType("*v1.FileType")).
-				Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
-					*out.(*filev1.FileType) = *testFileType()
+				List(mock.Anything, mock.AnythingOfType("*v1.FileTypeList"), mock.Anything).
+				Run(func(_ context.Context, out client.ObjectList, _ ...client.ListOption) {
+					out.(*filev1.FileTypeList).Items = []filev1.FileType{*testFileType()}
 				}).
 				Return(nil).Once()
 			mockClient.EXPECT().
@@ -433,9 +434,9 @@ var _ = Describe("FileSubscriptionHandler", func() {
 			}
 
 			mockClient.EXPECT().
-				Get(mock.Anything, k8stypes.NamespacedName{Name: testFileTypeName, Namespace: testNamespace}, mock.AnythingOfType("*v1.FileType")).
-				Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
-					*out.(*filev1.FileType) = *testFileType()
+				List(mock.Anything, mock.AnythingOfType("*v1.FileTypeList"), mock.Anything).
+				Run(func(_ context.Context, out client.ObjectList, _ ...client.ListOption) {
+					out.(*filev1.FileTypeList).Items = []filev1.FileType{*testFileType()}
 				}).
 				Return(nil).Once()
 			mockClient.EXPECT().
@@ -480,9 +481,9 @@ var _ = Describe("FileSubscriptionHandler", func() {
 			}
 
 			mockClient.EXPECT().
-				Get(mock.Anything, k8stypes.NamespacedName{Name: testFileTypeName, Namespace: testNamespace}, mock.AnythingOfType("*v1.FileType")).
-				Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
-					*out.(*filev1.FileType) = *testFileType()
+				List(mock.Anything, mock.AnythingOfType("*v1.FileTypeList"), mock.Anything).
+				Run(func(_ context.Context, out client.ObjectList, _ ...client.ListOption) {
+					out.(*filev1.FileTypeList).Items = []filev1.FileType{*testFileType()}
 				}).
 				Return(nil).Once()
 			mockClient.EXPECT().

@@ -32,7 +32,7 @@ func (h *FileSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *filev
 	logger := log.FromContext(ctx)
 	c := cclient.ClientFromContextOrDie(ctx)
 
-	fileType, err := util.GetFileType(ctx, types.ObjectRef{Namespace: obj.Namespace, Name: obj.Spec.FileType})
+	fileType, err := util.GetFileType(ctx, obj.Spec.FileType)
 	if err != nil {
 		return err
 	}

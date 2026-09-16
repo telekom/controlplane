@@ -22,7 +22,7 @@ type FileTypeHandler struct{}
 func (h *FileTypeHandler) CreateOrUpdate(ctx context.Context, obj *filev1.FileType) error {
 	c := cclient.ClientFromContextOrDie(ctx)
 
-	activeExposure, found, err := util.FindActiveFileExposure(ctx, types.ObjectRefFromObject(obj))
+	activeExposure, found, err := util.FindActiveFileExposure(ctx, obj.Name)
 	if err != nil {
 		return err
 	}
