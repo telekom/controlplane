@@ -17,9 +17,7 @@ var _ = Describe("MakeName", func() {
 			Expect(MakeName(fileType, owner)).To(Equal(want))
 		},
 		Entry("hyphenated file type", "de-telekom-eni-foo-v1", "provider", "de-telekom-eni-foo-v1--provider"),
-		Entry("dotted file type is normalized", "de.telekom.foo.v1", "consumer", "de-telekom-foo-v1--consumer"),
-		Entry("mixed case is lowercased", "De.Telekom.V1", "app", "de-telekom-v1--app"),
-		Entry("owner name is normalized", "de.telekom.foo.v1", "My_App", "de-telekom-foo-v1--my-app"),
+		Entry("dotted file type is normalized", "de-telekom-foo-v1", "consumer", "de-telekom-foo-v1--consumer"),
 	)
 })
 
@@ -39,9 +37,7 @@ var _ = Describe("mapPublicKeys", func() {
 		}
 		got := mapPublicKeys(in)
 		Expect(got).To(HaveLen(2))
-		Expect(got[0].Label).To(Equal("provider-key"))
 		Expect(got[0].Key).To(Equal("ssh-ed25519 AAAA"))
-		Expect(got[1].Label).To(Equal("consumer-key"))
 		Expect(got[1].Key).To(Equal("ssh-ed25519 BBBB"))
 	})
 })

@@ -40,14 +40,13 @@ func HandleSubscription(ctx context.Context, c client.JanitorClient, owner *rove
 		}
 
 		fileSubscription.Labels = map[string]string{
-			filev1.FileTypeLabelKey:             labelutil.NormalizeLabelValue(sub.FileType),
 			config.BuildLabelKey("zone"):        labelutil.NormalizeLabelValue(owner.Spec.Zone),
 			config.BuildLabelKey("application"): labelutil.NormalizeLabelValue(owner.Name),
 		}
 
 		fileSubscription.Spec = filev1.FileSubscriptionSpec{
 			FileType: sub.FileType,
-			Sftp: filev1.SftpSubscription{
+			SFTP: &filev1.FileSFTP{
 				PublicKeys: mapPublicKeys(sub.PublicKeys),
 			},
 		}
