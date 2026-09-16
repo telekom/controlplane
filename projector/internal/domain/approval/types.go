@@ -48,21 +48,10 @@ type ApprovalData struct {
 	Decider              model.DeciderInfo
 	Decisions            []model.Decision
 	AvailableTransitions []model.AvailableTransition
-<<<<<<< HEAD
 	// TargetKind indicates whether the approval targets an ApiSubscription,
-	// EventSubscription, or AgenticSubscription. Used by the repository to
+	// EventSubscription, FileSubscription or AgenticSubscription. Used by the repository to
 	// resolve the correct FK.
-	TargetKind string // "ApiSubscription", "EventSubscription", or "AgenticSubscription"
-||||||| parent of 14154c94 (update approvals with filesubscription kind)
-	// TargetKind indicates whether the approval targets an ApiSubscription
-	// or EventSubscription. Used by the repository to resolve the correct FK.
-	TargetKind string // "ApiSubscription" or "EventSubscription"
-=======
-	// TargetKind indicates whether the approval targets an ApiSubscription,
-	// EventSubscription, or FileSubscription. Used by the repository to
-	// resolve the correct FK.
-	TargetKind string // "ApiSubscription", "EventSubscription", or "FileSubscription"
->>>>>>> 14154c94 (update approvals with filesubscription kind)
+	TargetKind string // "ApiSubscription", "EventSubscription", "FileSubscription" or "AgenticSubscription"
 	// Subscription reference via spec.target (k8s namespace + name).
 	SubscriptionNamespace string
 	SubscriptionName      string

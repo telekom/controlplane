@@ -37,11 +37,6 @@ func (t *Translator) Translate(_ context.Context, obj *filev1.FileExposure) (*Fi
 
 	ownerAppName := obj.Labels[applicationLabelKey]
 
-	var provider *string
-	if obj.Spec.Provider != "" {
-		provider = &obj.Spec.Provider
-	}
-
 	publicKeys := []string{}
 	if obj.Spec.SFTP != nil {
 		for i := range obj.Spec.SFTP.PublicKeys {
@@ -53,7 +48,6 @@ func (t *Translator) Translate(_ context.Context, obj *filev1.FileExposure) (*Fi
 		Meta:           shared.NewMetadata(obj.Namespace, obj.Name, obj.Labels),
 		StatusPhase:    phase,
 		StatusMessage:  message,
-		Provider:       provider,
 		Visibility:     strings.ToUpper(string(obj.Spec.Visibility)),
 		Active:         isActiveExposure(obj),
 		Zone:           obj.Spec.Zone.Name,
