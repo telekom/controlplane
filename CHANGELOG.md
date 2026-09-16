@@ -1,3 +1,17 @@
+# [0.25.0](https://github.com/telekom/controlplane/compare/v0.24.1...v0.25.0) (2026-09-16)
+
+
+### Bug Fixes
+
+* **agentic:** correct seccomp-profile ([#657](https://github.com/telekom/controlplane/issues/657)) ([a58c04d](https://github.com/telekom/controlplane/commit/a58c04d818458ec912908b50c84a12696900e83e))
+* **common-server:** add listener bind to prevent blocking on multiport setup ([#648](https://github.com/telekom/controlplane/issues/648)) ([b8507ca](https://github.com/telekom/controlplane/commit/b8507cac6b0aae8c7d212ea8a89ec212f69f4757))
+
+
+### Features
+
+* **agentic-cpapi:** agnetic CRs are projected and prepared for qgl ([#625](https://github.com/telekom/controlplane/issues/625)) ([c0fda07](https://github.com/telekom/controlplane/commit/c0fda07eefbbfa3a15ba89cf667ca7752a59ff58))
+* **controlplane-api:** expose GraphQL playground publicly ([#654](https://github.com/telekom/controlplane/issues/654)) ([76c2e1c](https://github.com/telekom/controlplane/commit/76c2e1c302d0e2d20003686a69dcc06be8dc2285))
+
 ## [0.24.1](https://github.com/telekom/controlplane/compare/v0.24.0...v0.24.1) (2026-09-04)
 
 
