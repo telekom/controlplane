@@ -158,6 +158,7 @@ var _ = Describe("Api Repository", func() {
 				TeamName:    "platform--narvi",
 			}
 			Expect(repo.Upsert(ctx, data)).To(Succeed())
+			cache.Wait()
 
 			resolver := infrastructure.NewIDResolver(client, cache)
 			id, err := resolver.FindActiveApiID(ctx, "/api/weather/v1")
@@ -178,6 +179,7 @@ var _ = Describe("Api Repository", func() {
 
 			data.Active = false
 			Expect(repo.Upsert(ctx, data)).To(Succeed())
+			cache.Wait()
 
 			resolver := infrastructure.NewIDResolver(client, cache)
 			_, err := resolver.FindActiveApiID(ctx, "/api/weather/v1")

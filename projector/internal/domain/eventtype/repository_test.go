@@ -156,6 +156,7 @@ var _ = Describe("EventType Repository", func() {
 				TeamName:    "platform--narvi",
 			}
 			Expect(repo.Upsert(ctx, data)).To(Succeed())
+			cache.Wait()
 
 			resolver := infrastructure.NewIDResolver(client, cache)
 			id, err := resolver.FindActiveEventTypeID(ctx, "weather.forecast.updated")
@@ -176,6 +177,7 @@ var _ = Describe("EventType Repository", func() {
 
 			data.Active = false
 			Expect(repo.Upsert(ctx, data)).To(Succeed())
+			cache.Wait()
 
 			resolver := infrastructure.NewIDResolver(client, cache)
 			_, err := resolver.FindActiveEventTypeID(ctx, "weather.forecast.updated")

@@ -168,6 +168,7 @@ var _ = Describe("AgentCard Repository", func() {
 				TeamName:    "platform--narvi",
 			}
 			Expect(repo.Upsert(ctx, data)).To(Succeed())
+			cache.Wait()
 
 			resolver := infrastructure.NewIDResolver(client, cache)
 			id, err := resolver.FindActiveAgentCardID(ctx, "/agent/weather/v1")
@@ -189,6 +190,7 @@ var _ = Describe("AgentCard Repository", func() {
 
 			data.Active = false
 			Expect(repo.Upsert(ctx, data)).To(Succeed())
+			cache.Wait()
 
 			resolver := infrastructure.NewIDResolver(client, cache)
 			_, err := resolver.FindActiveAgentCardID(ctx, "/agent/weather/v1")

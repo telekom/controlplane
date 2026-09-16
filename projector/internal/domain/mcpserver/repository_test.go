@@ -168,6 +168,7 @@ var _ = Describe("McpServer Repository", func() {
 				TeamName:    "platform--narvi",
 			}
 			Expect(repo.Upsert(ctx, data)).To(Succeed())
+			cache.Wait()
 
 			resolver := infrastructure.NewIDResolver(client, cache)
 			id, err := resolver.FindActiveMcpServerID(ctx, "/mcp/weather/v1")
@@ -189,6 +190,7 @@ var _ = Describe("McpServer Repository", func() {
 
 			data.Active = false
 			Expect(repo.Upsert(ctx, data)).To(Succeed())
+			cache.Wait()
 
 			resolver := infrastructure.NewIDResolver(client, cache)
 			_, err := resolver.FindActiveMcpServerID(ctx, "/mcp/weather/v1")
