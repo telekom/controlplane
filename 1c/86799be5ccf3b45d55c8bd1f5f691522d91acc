@@ -1,0 +1,22 @@
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "1c86799be5ccf3b45d55c8bd1f5f691522d91acc",
+  "prompts": {},
+  "humans": {
+    "h_052be7cb63ce69": {
+      "author": "Niklas Beilmann <niklas.beilmann@telekom.de>"
+    }
+  },
+  "sessions": {
+    "s_e36533b3721d0f": {
+      "agent_id": {
+        "tool": "github-copilot",
+        "id": "2802bf4f-172e-4ef8-ad13-36c5ea47e334",
+        "model": "gpt-5.3-codex"
+      },
+      "human_author": "Niklas Beilmann <niklas.beilmann@telekom.de>"
+    }
+  }
+}
