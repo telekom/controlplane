@@ -47,14 +47,8 @@ func (h *FileSpecificationHandler) CreateOrUpdate(ctx context.Context, fileSpec 
 			return errors.Wrap(err, "failed to set controller reference")
 		}
 
-		fileType.Labels = map[string]string{
-			filev1.FileTypeLabelKey: labelutil.NormalizeLabelValue(fileSpec.Name),
-		}
-
 		fileType.Spec = filev1.FileTypeSpec{
-			Type:          fileSpec.Name,
-			Description:   fileSpec.Spec.Description,
-			Specification: fileSpec.Spec.Specification,
+			Description: fileSpec.Spec.Description,
 		}
 		return nil
 	}
