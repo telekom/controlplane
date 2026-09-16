@@ -131,12 +131,10 @@ var _ = Describe("FileExposure Repository", func() {
 
 	Describe("Upsert", func() {
 		It("should create file exposure and set optional file type edge", func() {
-			provider := "provider-app"
 			data := &fileexposure.FileExposureData{
 				Meta:           shared.NewMetadata("prod--platform--narvi", "exp-a", nil),
 				StatusPhase:    "READY",
 				StatusMessage:  "ok",
-				Provider:       &provider,
 				Visibility:     "ENTERPRISE",
 				Active:         true,
 				Zone:           "caas",

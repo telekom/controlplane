@@ -26,7 +26,7 @@ type FileExposureData struct {
 	Meta           shared.Metadata
 	StatusPhase    string // "READY", "PENDING", "ERROR", "UNKNOWN"
 	StatusMessage  string
-	Provider       *string
+	Variant        string // "sftp", "http", etc.
 	Visibility     string // "WORLD", "ZONE", "ENTERPRISE"
 	Active         bool
 	Zone           string
