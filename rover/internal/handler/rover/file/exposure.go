@@ -58,6 +58,13 @@ func HandleExposure(ctx context.Context, c client.JanitorClient, owner *roverv1.
 			SFTP: &filev1.FileSFTP{
 				PublicKeys: mapPublicKeys(exp.PublicKeys),
 			},
+			Provider: types.TypedObjectRef{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "Application",
+					APIVersion: "application.cp.ei.telekom.de/v1",
+				},
+				ObjectRef: *owner.Status.Application,
+			},
 			Zone: &zoneRef,
 		}
 		return nil
