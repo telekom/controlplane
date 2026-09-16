@@ -19,87 +19,175 @@ import (
 
 // Features is the resolver for the features field.
 func (r *apiExposureResolver) Features(ctx context.Context, obj *ent.ApiExposure) ([]model.APIExposureFeature, error) {
-	panic(fmt.Errorf("not implemented: Features - features"))
+	result := make([]model.APIExposureFeature, len(obj.Features))
+	for i, f := range obj.Features {
+		result[i] = model.APIExposureFeature(f)
+	}
+	return result, nil
 }
 
 // ClientSecret is the resolver for the clientSecret field.
+// Resolves secret references just-in-time from the secret manager.
+// Returns masked value for obfuscated callers.
 func (r *applicationResolver) ClientSecret(ctx context.Context, obj *ent.Application) (*string, error) {
-	panic(fmt.Errorf("not implemented: ClientSecret - clientSecret"))
+	return r.secrets.Resolve(ctx, obj.ClientSecret, "clientSecret")
 }
 
 // RotatedClientSecret is the resolver for the rotatedClientSecret field.
+// Resolves secret references just-in-time from the secret manager.
+// Returns masked value for obfuscated callers.
 func (r *applicationResolver) RotatedClientSecret(ctx context.Context, obj *ent.Application) (*string, error) {
-	panic(fmt.Errorf("not implemented: RotatedClientSecret - rotatedClientSecret"))
+	return r.secrets.Resolve(ctx, obj.RotatedClientSecret, "rotatedClientSecret")
 }
 
 // Node is the resolver for the node field.
 func (r *queryResolver) Node(ctx context.Context, id int) (ent.Noder, error) {
-	panic(fmt.Errorf("not implemented: Node - node"))
+	return r.client.Noder(ctx, id)
 }
 
 // Nodes is the resolver for the nodes field.
 func (r *queryResolver) Nodes(ctx context.Context, ids []int) ([]ent.Noder, error) {
-	panic(fmt.Errorf("not implemented: Nodes - nodes"))
+	return r.client.Noders(ctx, ids)
 }
 
 // AgentCards is the resolver for the agentCards field.
 func (r *queryResolver) AgentCards(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.AgentCardOrder, where *ent.AgentCardWhereInput) (*ent.AgentCardConnection, error) {
-	panic(fmt.Errorf("not implemented: AgentCards - agentCards"))
+	return r.client.AgentCard.Query().
+		Paginate(ctx, after, first, before, last,
+			ent.WithAgentCardOrder(orderBy),
+			ent.WithAgentCardFilter(where.Filter),
+		)
 }
 
 // AgenticExposures is the resolver for the agenticExposures field.
 func (r *queryResolver) AgenticExposures(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.AgenticExposureOrder, where *ent.AgenticExposureWhereInput) (*ent.AgenticExposureConnection, error) {
-	panic(fmt.Errorf("not implemented: AgenticExposures - agenticExposures"))
+	return r.client.AgenticExposure.Query().
+		Paginate(ctx, after, first, before, last,
+			ent.WithAgenticExposureOrder(orderBy),
+			ent.WithAgenticExposureFilter(where.Filter),
+		)
 }
 
 // AgenticSubscriptions is the resolver for the agenticSubscriptions field.
 func (r *queryResolver) AgenticSubscriptions(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.AgenticSubscriptionOrder, where *ent.AgenticSubscriptionWhereInput) (*ent.AgenticSubscriptionConnection, error) {
-	panic(fmt.Errorf("not implemented: AgenticSubscriptions - agenticSubscriptions"))
+	return r.client.AgenticSubscription.Query().
+		Paginate(ctx, after, first, before, last,
+			ent.WithAgenticSubscriptionOrder(orderBy),
+			ent.WithAgenticSubscriptionFilter(where.Filter),
+		)
 }
 
 // Apis is the resolver for the apis field.
 func (r *queryResolver) Apis(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.ApiOrder, where *ent.ApiWhereInput) (*ent.ApiConnection, error) {
-	panic(fmt.Errorf("not implemented: Apis - apis"))
+	return r.client.Api.Query().
+		Paginate(ctx, after, first, before, last,
+			ent.WithApiOrder(orderBy),
+			ent.WithApiFilter(where.Filter),
+		)
 }
 
 // APIExposures is the resolver for the apiExposures field.
 func (r *queryResolver) APIExposures(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.ApiExposureOrder, where *ent.ApiExposureWhereInput) (*ent.ApiExposureConnection, error) {
-	panic(fmt.Errorf("not implemented: APIExposures - apiExposures"))
+	return r.client.ApiExposure.Query().
+		Paginate(ctx, after, first, before, last,
+			ent.WithApiExposureOrder(orderBy),
+			ent.WithApiExposureFilter(where.Filter),
+		)
 }
 
 // APISubscriptions is the resolver for the apiSubscriptions field.
 func (r *queryResolver) APISubscriptions(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.ApiSubscriptionOrder, where *ent.ApiSubscriptionWhereInput) (*ent.ApiSubscriptionConnection, error) {
-	panic(fmt.Errorf("not implemented: APISubscriptions - apiSubscriptions"))
+	return r.client.ApiSubscription.Query().
+		Paginate(ctx, after, first, before, last,
+			ent.WithApiSubscriptionOrder(orderBy),
+			ent.WithApiSubscriptionFilter(where.Filter),
+		)
 }
 
 // Applications is the resolver for the applications field.
 func (r *queryResolver) Applications(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy []*ent.ApplicationOrder, where *ent.ApplicationWhereInput) (*ent.ApplicationConnection, error) {
-	panic(fmt.Errorf("not implemented: Applications - applications"))
+	return r.client.Application.Query().
+		Paginate(ctx, after, first, before, last,
+			ent.WithApplicationOrder(orderBy),
+			ent.WithApplicationFilter(where.Filter),
+		)
 }
 
 // Approvals is the resolver for the approvals field.
 func (r *queryResolver) Approvals(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy []*ent.ApprovalOrder, where *ent.ApprovalWhereInput) (*ent.ApprovalConnection, error) {
-	panic(fmt.Errorf("not implemented: Approvals - approvals"))
+	return r.client.Approval.Query().
+		Paginate(ctx, after, first, before, last,
+			ent.WithApprovalOrder(orderBy),
+			ent.WithApprovalFilter(where.Filter),
+		)
 }
 
 // ApprovalRequests is the resolver for the approvalRequests field.
 func (r *queryResolver) ApprovalRequests(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy []*ent.ApprovalRequestOrder, where *ent.ApprovalRequestWhereInput) (*ent.ApprovalRequestConnection, error) {
-	panic(fmt.Errorf("not implemented: ApprovalRequests - approvalRequests"))
+	return r.client.ApprovalRequest.Query().
+		Paginate(ctx, after, first, before, last,
+			ent.WithApprovalRequestOrder(orderBy),
+			ent.WithApprovalRequestFilter(where.Filter),
+		)
 }
 
 // EventExposures is the resolver for the eventExposures field.
 func (r *queryResolver) EventExposures(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.EventExposureOrder, where *ent.EventExposureWhereInput) (*ent.EventExposureConnection, error) {
-	panic(fmt.Errorf("not implemented: EventExposures - eventExposures"))
+	return r.client.EventExposure.Query().
+		Paginate(ctx, after, first, before, last,
+			ent.WithEventExposureOrder(orderBy),
+			ent.WithEventExposureFilter(where.Filter),
+		)
 }
 
 // EventSubscriptions is the resolver for the eventSubscriptions field.
 func (r *queryResolver) EventSubscriptions(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.EventSubscriptionOrder, where *ent.EventSubscriptionWhereInput) (*ent.EventSubscriptionConnection, error) {
-	panic(fmt.Errorf("not implemented: EventSubscriptions - eventSubscriptions"))
+	return r.client.EventSubscription.Query().
+		Paginate(ctx, after, first, before, last,
+			ent.WithEventSubscriptionOrder(orderBy),
+			ent.WithEventSubscriptionFilter(where.Filter),
+		)
 }
 
 // EventTypes is the resolver for the eventTypes field.
 func (r *queryResolver) EventTypes(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.EventTypeOrder, where *ent.EventTypeWhereInput) (*ent.EventTypeConnection, error) {
-	panic(fmt.Errorf("not implemented: EventTypes - eventTypes"))
+	return r.client.EventType.Query().
+		Paginate(ctx, after, first, before, last,
+			ent.WithEventTypeOrder(orderBy),
+			ent.WithEventTypeFilter(where.Filter),
+		)
+}
+
+// McpServers is the resolver for the mcpServers field.
+func (r *queryResolver) McpServers(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.McpServerOrder, where *ent.McpServerWhereInput) (*ent.McpServerConnection, error) {
+	return r.client.McpServer.Query().
+		Paginate(ctx, after, first, before, last,
+			ent.WithMcpServerOrder(orderBy),
+			ent.WithMcpServerFilter(where.Filter),
+		)
+}
+
+// PermissionSets is the resolver for the permissionSets field.
+func (r *queryResolver) PermissionSets(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.PermissionSetOrder, where *ent.PermissionSetWhereInput) (*ent.PermissionSetConnection, error) {
+	return r.client.PermissionSet.Query().
+		Paginate(ctx, after, first, before, last,
+			ent.WithPermissionSetOrder(orderBy),
+			ent.WithPermissionSetFilter(where.Filter),
+		)
+}
+
+// Teams is the resolver for the teams field.
+func (r *queryResolver) Teams(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy []*ent.TeamOrder, where *ent.TeamWhereInput) (*ent.TeamConnection, error) {
+	return r.client.Team.Query().
+		Paginate(ctx, after, first, before, last,
+			ent.WithTeamOrder(orderBy),
+			ent.WithTeamFilter(where.Filter),
+		)
+}
+
+// Zones is the resolver for the zones field.
+func (r *queryResolver) Zones(ctx context.Context) ([]*ent.Zone, error) {
+	return r.client.Zone.Query().All(ctx)
 }
 
 // FileExposures is the resolver for the fileExposures field.
@@ -117,29 +205,11 @@ func (r *queryResolver) FileTypes(ctx context.Context, after *entgql.Cursor[int]
 	panic(fmt.Errorf("not implemented: FileTypes - fileTypes"))
 }
 
-// McpServers is the resolver for the mcpServers field.
-func (r *queryResolver) McpServers(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.McpServerOrder, where *ent.McpServerWhereInput) (*ent.McpServerConnection, error) {
-	panic(fmt.Errorf("not implemented: McpServers - mcpServers"))
-}
-
-// PermissionSets is the resolver for the permissionSets field.
-func (r *queryResolver) PermissionSets(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.PermissionSetOrder, where *ent.PermissionSetWhereInput) (*ent.PermissionSetConnection, error) {
-	panic(fmt.Errorf("not implemented: PermissionSets - permissionSets"))
-}
-
-// Teams is the resolver for the teams field.
-func (r *queryResolver) Teams(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy []*ent.TeamOrder, where *ent.TeamWhereInput) (*ent.TeamConnection, error) {
-	panic(fmt.Errorf("not implemented: Teams - teams"))
-}
-
-// Zones is the resolver for the zones field.
-func (r *queryResolver) Zones(ctx context.Context) ([]*ent.Zone, error) {
-	panic(fmt.Errorf("not implemented: Zones - zones"))
-}
-
 // TeamToken is the resolver for the teamToken field.
+// Resolves secret references just-in-time from the secret manager.
+// Returns masked value for obfuscated callers.
 func (r *teamResolver) TeamToken(ctx context.Context, obj *ent.Team) (*string, error) {
-	panic(fmt.Errorf("not implemented: TeamToken - teamToken"))
+	return r.secrets.Resolve(ctx, obj.TeamToken, "teamToken")
 }
 
 // AgentCard returns AgentCardResolver implementation.
