@@ -26,13 +26,8 @@ type FileSubscriptionSpec struct {
 	// +kubebuilder:validation:Optional
 	SFTP *FileSFTP `json:"sftp,omitempty"`
 
-	// Requestor identifies the application requesting access.
-	Requestor Requestor `json:"requestor"`
-}
-
-// Requestor identifies the requesting application.
-type Requestor struct {
-	Application ctypes.ObjectRef `json:"application"`
+	// Requestor identifies the consuming application.
+	Requestor ctypes.TypedObjectRef `json:"requestor"`
 }
 
 // FileSubscriptionStatus defines the observed state of FileSubscription.
