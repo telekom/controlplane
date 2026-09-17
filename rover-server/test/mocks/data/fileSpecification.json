@@ -3,17 +3,17 @@
   "kind": "FileSpecification",
   "metadata": {
     "name": "demo-invoices-v1",
-    "namespace": "poc--eni--galatea"
+    "namespace": "poc--eni--hyperion"
   },
   "spec": {
-    "type": "demo.invoices.v1",
+    "type": "demo-invoices-v1",
     "version": "1.0.0",
-    "description": "used for dds integration demo"
+    "description": "used for sftp integration demo"
   },
   "status": {
     "fileType": {
       "name": "demo-invoices-v1",
-      "namespace": "poc--eni--galatea"
+      "namespace": "poc--eni--hyperion"
     },
     "conditions": [
       {

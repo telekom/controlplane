@@ -1621,13 +1621,13 @@
 
 [FileSpecification Controller Get FileSpecification resource should return the FileSpecification successfully - 1]
 {
- "description": "used for dds integration demo",
+ "description": "used for sftp integration demo",
  "id": "eni--hyperion--demo-invoices-v1",
  "status": {
   "processingState": "done",
   "state": "complete"
  },
- "type": "demo.invoices.v1",
+ "type": "demo-invoices-v1",
  "version": "1.0.0"
 }
 ---
@@ -1660,19 +1660,19 @@
  },
  "items": [
   {
-   "description": "used for dds integration demo",
+   "description": "used for sftp integration demo",
    "id": "eni--hyperion--demo-invoices-v1",
    "status": {
     "processingState": "done",
     "state": "complete"
    },
-   "type": "demo.invoices.v1",
+   "type": "demo-invoices-v1",
    "version": "1.0.0"
   }
  ]
 }
 ---
-
+    "type": "demo-invoices-v1",
 [FileSpecification Controller GetAll FileSpecifications resource should return all FileSpecifications successfully - 2]
 {
  "_links": {
@@ -1681,19 +1681,19 @@
  },
  "items": [
   {
-   "description": "used for dds integration demo",
+   "description": "used for sftp integration demo",
    "id": "eni--hyperion--demo-invoices-v1",
    "status": {
     "processingState": "done",
     "state": "complete"
    },
-   "type": "demo.invoices.v1",
+   "type": "demo-invoices-v1",
    "version": "1.0.0"
   }
  ]
 }
 ---
-
+    "type": "demo-invoices-v1",
 [FileSpecification Controller GetAll FileSpecifications resource should return an empty list if no FileSpecifications exist - 1]
 {
  "_links": {
@@ -1702,19 +1702,19 @@
  },
  "items": [
   {
-   "description": "used for dds integration demo",
+   "description": "used for sftp integration demo",
    "id": "eni--hyperion--demo-invoices-v1",
    "status": {
     "processingState": "done",
     "state": "complete"
    },
-   "type": "demo.invoices.v1",
+   "type": "demo-invoices-v1",
    "version": "1.0.0"
   }
  ]
 }
 ---
-
+    "type": "demo-invoices-v1",
 [FileSpecification Controller GetAll FileSpecifications resource should return an empty list if no FileSpecifications exist - 2]
 {
  "_links": {
@@ -1723,19 +1723,19 @@
  },
  "items": [
   {
-   "description": "used for dds integration demo",
+   "description": "used for sftp integration demo",
    "id": "eni--hyperion--demo-invoices-v1",
    "status": {
     "processingState": "done",
     "state": "complete"
    },
-   "type": "demo.invoices.v1",
+   "type": "demo-invoices-v1",
    "version": "1.0.0"
   }
  ]
 }
 ---
-
+    "type": "demo-invoices-v1",
 [FileSpecification Controller Delete FileSpecification resource should fail to delete a non-existent FileSpecification - 1]
 {
  "detail": "Resource eni--hyperion--blabla not found",
@@ -1786,13 +1786,13 @@
 
 [FileSpecification Controller Update FileSpecification resource should update the FileSpecification successfully - 1]
 {
- "description": "used for dds integration demo",
+ "description": "used for sftp integration demo",
  "id": "eni--hyperion--demo-invoices-v1",
  "status": {
   "processingState": "done",
   "state": "complete"
  },
- "type": "demo.invoices.v1",
+ "type": "demo-invoices-v1",
  "version": "1.0.0"
 }
 ---

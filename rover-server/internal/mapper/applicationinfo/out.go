@@ -487,9 +487,9 @@ func mapFileExposureInfo(in *filev1.FileExposure) api.FileExposureInfo {
 		}
 	}
 
-	info.PublicKeys = make([]api.PublicKey, 0, len(in.Spec.Sftp.PublicKeys))
-	for _, key := range in.Spec.Sftp.PublicKeys {
-		info.PublicKeys = append(info.PublicKeys, api.PublicKey{Label: key.Label, Key: key.Key})
+	info.PublicKeys = make([]api.PublicKey, 0, len(in.Spec.SFTP.PublicKeys))
+	for _, key := range in.Spec.SFTP.PublicKeys {
+		info.PublicKeys = append(info.PublicKeys, api.PublicKey{Key: key.Key})
 	}
 
 	return info
@@ -503,9 +503,9 @@ func mapFileSubscriptionInfo(in *filev1.FileSubscription) api.FileSubscriptionIn
 		Type:     "file",
 	}
 
-	info.PublicKeys = make([]api.PublicKey, 0, len(in.Spec.Sftp.PublicKeys))
-	for _, key := range in.Spec.Sftp.PublicKeys {
-		info.PublicKeys = append(info.PublicKeys, api.PublicKey{Label: key.Label, Key: key.Key})
+	info.PublicKeys = make([]api.PublicKey, 0, len(in.Spec.SFTP.PublicKeys))
+	for _, key := range in.Spec.SFTP.PublicKeys {
+		info.PublicKeys = append(info.PublicKeys, api.PublicKey{Key: key.Key})
 	}
 
 	return info

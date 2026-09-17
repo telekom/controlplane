@@ -16,15 +16,15 @@ import (
 
 var (
 	fileSpecification = api.FileSpecification{
-		Type:        "demo.invoices.v1",
+		Type:        "demo-invoices-v1",
 		Version:     "1.0.0",
-		Description: "used for dds integration demo",
+		Description: "used for sftp integration demo",
 	}
 
 	resourceIdInfo = mapper.ResourceIdInfo{
 		Name:        "demo-invoices-v1",
 		Environment: "poc",
-		Namespace:   "eni--galatea",
+		Namespace:   "eni--hyperion",
 	}
 )
 
