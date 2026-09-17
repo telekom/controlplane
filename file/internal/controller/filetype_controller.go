@@ -7,6 +7,7 @@ package controller
 import (
 	"context"
 
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -21,6 +22,7 @@ import (
 	cc "github.com/telekom/controlplane/common/pkg/controller"
 	filev1 "github.com/telekom/controlplane/file/api/v1"
 	filetype_handler "github.com/telekom/controlplane/file/internal/handler/filetype"
+	"github.com/telekom/controlplane/file/internal/handler/util"
 )
 
 // FileTypeReconciler reconciles a FileType object.
@@ -71,9 +73,17 @@ func (r *FileTypeReconciler) MapFileExposureToFileType(ctx context.Context, obj 
 		return nil
 	}
 
-	key := client.ObjectKeyFromObject(obj)
-	key.Name = exposure.Spec.FileType
+	fileType, err := util.GetFileType(ctx, exposure.Spec.FileType)
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			return nil
+		}
+
+		ctrl.LoggerFrom(ctx).Error(err, "failed to obtain filetype")
+		return nil
+	}
+
 	return []reconcile.Request{{
-		NamespacedName: key,
+		NamespacedName: client.ObjectKeyFromObject(fileType),
 	}}
 }
