@@ -52,7 +52,6 @@ listeners:
 		Expect(cfg.Log.Level).To(Equal("info"))
 		Expect(cfg.Log.Encoding).To(Equal("json"))
 		Expect(cfg.Database.Filepath).To(Equal(""))
-		Expect(cfg.Database.ReduceMemory).To(BeFalse())
 		Expect(cfg.Migration.Active).To(BeFalse())
 	})
 })

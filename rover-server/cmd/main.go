@@ -39,7 +39,7 @@ func main() {
 	rootCtx := logr.NewContext(context.Background(), log.Log)
 
 	stores := store.NewStores(rootCtx, kconfig.GetConfigOrDie(),
-		inmemory.DatabaseOpts{Filepath: cfg.Database.Filepath, ReduceMemory: cfg.Database.ReduceMemory},
+		inmemory.DatabaseOpts{Filepath: cfg.Database.Filepath},
 		inmemory.InformerOpts{DisableCache: cfg.Informer.DisableCache},
 	)
 
