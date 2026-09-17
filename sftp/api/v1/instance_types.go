@@ -35,18 +35,6 @@ type InstanceStatus struct {
 	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
 }
 
-// InstanceUserStatus contains the Instance-observed status for a User.
-type InstanceUserStatus struct {
-	// Namespace is the namespace of the User.
-	Namespace string `json:"namespace"`
-
-	// Name is the name of the User.
-	Name string `json:"name"`
-
-	// ProcessingCondition is the User Processing condition observed by the Instance reconciliation.
-	ProcessingCondition metav1.Condition `json:"processingCondition"`
-}
-
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="SFTPServiceConfig",type="string",JSONPath=".spec.sftpServiceConfigRef.name"
