@@ -47,14 +47,14 @@ func (r *ConsumeRouteReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Controller = cc.NewController(&consumeroute_handler.ConsumeRouteHandler{}, r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&gatewayv1.ConsumeRoute{}, builder.WithPredicates(cc.Count("consumeroute", cc.RoleFor))).
+		For(&gatewayv1.ConsumeRoute{}, builder.WithPredicates(cc.Count("consumeroute", cc.RoleFor, predicate.GenerationChangedPredicate{}))).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
 			RateLimiter:             cc.NewRateLimiter(),
 		}).
 		Watches(&gatewayv1.Route{},
 			handler.EnqueueRequestsFromMapFunc(r.mapRouteToConsumeRoute),
-			builder.WithPredicates(cc.Count("consumeroute", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}, SkipInitialListPredicate{}))).
+			builder.WithPredicates(cc.Count("consumeroute", cc.RoleWatches, RouteRelevantForConsumeRoutePredicate{}, SkipInitialListPredicate{}))).
 		Complete(r)
 }
 
