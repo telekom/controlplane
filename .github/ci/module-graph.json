@@ -203,6 +203,7 @@
       "common",
       "common-server",
       "event",
+      "file",
       "organization",
       "permission",
       "secret-manager"
@@ -222,6 +223,7 @@
       "common",
       "common-server",
       "event",
+      "file",
       "file-manager",
       "rover",
       "secret-manager"
