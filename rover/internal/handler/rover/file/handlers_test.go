@@ -17,6 +17,7 @@ import (
 
 	commonclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/config"
+	ctypes "github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	filev1 "github.com/telekom/controlplane/file/api/v1"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
@@ -45,6 +46,11 @@ var _ = Describe("File Exposure/Subscription Handlers", func() {
 		return &roverv1.Rover{
 			ObjectMeta: metav1.ObjectMeta{Name: "my-app", Namespace: "default"},
 			Spec:       roverv1.RoverSpec{Zone: testZone},
+			Status: roverv1.RoverStatus{
+				Application: &ctypes.ObjectRef{
+					Name: "application",
+				},
+			},
 		}
 	}
 
