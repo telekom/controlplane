@@ -11,13 +11,17 @@ import (
 	"sync"
 	"time"
 
+	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/clientcredentials"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
+	cHTTPClient "github.com/telekom/controlplane/common-server/pkg/client"
 	secretsapi "github.com/telekom/controlplane/secret-manager/api"
 	sftpv1 "github.com/telekom/controlplane/sftp/api/v1"
 )
+
+var defaultClient = cHTTPClient.NewBaseHttpClient(cHTTPClient.WithClientName("cp.ei.telekom.de/sftp-controller-manager"))
 
 // HTTPServiceFactory manages HTTP services configured from SFTPServiceConfig resources.
 type HTTPServiceFactory struct {
@@ -124,9 +128,11 @@ func clientConfigFor(ctx context.Context, sftpServiceConfig *sftpv1.SFTPServiceC
 		return Config{}, err
 	}
 
+	clientCtx := context.WithValue(context.Background(), oauth2.HTTPClient, defaultClient)
+
 	cfg := Config{
 		Endpoint:   endpointURL,
-		HTTPClient: oauth2Config.Client(context.Background()),
+		HTTPClient: oauth2Config.Client(clientCtx),
 		Generation: sftpServiceConfig.Generation,
 	}
 
