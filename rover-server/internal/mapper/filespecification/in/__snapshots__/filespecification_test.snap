@@ -5,7 +5,7 @@
     ObjectMeta: v1.ObjectMeta{
         Name:                       "demo-invoices-v1",
         GenerateName:               "",
-        Namespace:                  "poc--eni--galatea",
+        Namespace:                  "poc--eni--hyperion",
         SelfLink:                   "",
         UID:                        "",
         ResourceVersion:            "",
@@ -19,7 +19,7 @@
         Finalizers:                 nil,
         ManagedFields:              nil,
     },
-    Spec:   v1.FileSpecificationSpec{Type:"demo.invoices.v1", Version:"1.0.0", Description:"used for dds integration demo", Specification:"", StorageType:""},
+    Spec:   v1.FileSpecificationSpec{Type:"demo-invoices-v1", Version:"1.0.0", Description:"used for sftp integration demo", Specification:"", StorageType:""},
     Status: v1.FileSpecificationStatus{},
 }
 ---

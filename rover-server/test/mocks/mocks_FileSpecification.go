@@ -31,18 +31,18 @@ func configureFileSpecification(testing ginkgo.FullGinkgoTInterface, mockedStore
 	mockedStore.EXPECT().Get(
 		mock.AnythingOfType("*context.valueCtx"),
 		mock.MatchedBy(func(s string) bool {
-			return s == "poc--eni--galatea"
+			return s == "poc--eni--hyperion"
 		}),
 		mock.MatchedBy(func(s string) bool {
 			return s == "demo-invoices-v1"
 		}),
 	).Return(fileSpecification, nil).Maybe()
 
-	// List with a prefix that matches our test data (eni/galatea)
+	// List with a prefix that matches our test data (eni/hyperion)
 	mockedStore.EXPECT().List(
 		mock.AnythingOfType("*context.valueCtx"),
 		mock.MatchedBy(func(opts store.ListOpts) bool {
-			return opts.Prefix != "" && strings.HasPrefix("poc--eni--galatea/", opts.Prefix)
+			return opts.Prefix != "" && strings.HasPrefix("poc--eni--hyperion/", opts.Prefix)
 		}),
 	).Return(
 		&store.ListResponse[*roverv1.FileSpecification]{
@@ -61,7 +61,7 @@ func configureFileSpecification(testing ginkgo.FullGinkgoTInterface, mockedStore
 	mockedStore.EXPECT().Delete(
 		mock.AnythingOfType("*context.valueCtx"),
 		mock.MatchedBy(func(s string) bool {
-			return s == "poc--eni--galatea"
+			return s == "poc--eni--hyperion"
 		}),
 		mock.MatchedBy(func(s string) bool {
 			return s == "demo-invoices-v1"

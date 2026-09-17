@@ -99,8 +99,8 @@ var _ = Describe("FileSpecification Controller", func() {
 	Context("Create FileSpecification resource", func() {
 		It("should return StatusNotImplemented", func() {
 			var fileSpecification, _ = json.Marshal(api.FileSpecificationCreateRequest{
-				Description: "used for dds integration demo",
-				Type:        "demo.invoices.v1",
+				Description: "used for sftp integration demo",
+				Type:        "demo-invoices-v1",
 				Version:     "1.0.0",
 			})
 			req := httptest.NewRequest(http.MethodPost, "/filespecifications", bytes.NewReader(fileSpecification))
@@ -112,8 +112,8 @@ var _ = Describe("FileSpecification Controller", func() {
 	Context("Update FileSpecification resource", func() {
 		It("should update the FileSpecification successfully", func() {
 			var fileSpecification, _ = json.Marshal(api.FileSpecification{
-				Description: "used for dds integration demo",
-				Type:        "demo.invoices.v1",
+				Description: "used for sftp integration demo",
+				Type:        "demo-invoices-v1",
 				Version:     "1.0.0",
 			})
 
@@ -126,8 +126,8 @@ var _ = Describe("FileSpecification Controller", func() {
 
 		It("should fail to update a FileSpecification from a different team", func() {
 			var fileSpecification, _ = json.Marshal(api.FileSpecification{
-				Description: "used for dds integration demo",
-				Type:        "demo.other.v1",
+				Description: "used for sftp integration demo",
+				Type:        "demo-other-v1",
 				Version:     "1.0.0",
 			})
 			req := httptest.NewRequest(http.MethodPut, "/filespecifications/other--team--demo-other-v1",

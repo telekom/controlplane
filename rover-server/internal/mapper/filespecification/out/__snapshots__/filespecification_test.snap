@@ -1,13 +1,13 @@
 
 [FileSpecificationResponse Mapper MapResponse must map a FileSpecification CRD to a FileSpecificationResponse correctly - 1]
 {
- "description": "used for dds integration demo",
- "id": "eni--galatea--demo-invoices-v1",
+ "description": "used for sftp integration demo",
+ "id": "eni--hyperion--demo-invoices-v1",
  "status": {
   "processingState": "done",
   "state": "complete"
  },
- "type": "demo.invoices.v1",
+ "type": "demo-invoices-v1",
  "version": "1.0.0"
 }
 ---
