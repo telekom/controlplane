@@ -29,6 +29,7 @@ func (h *FileTypeHandler) CreateOrUpdate(ctx context.Context, obj *filev1.FileTy
 	if !found {
 		obj.Status.Active = false
 		obj.Status.FileExposureRef = nil
+		obj.Status.SFTPInstance = nil
 		obj.SetCondition(condition.NewNotReadyCondition("FileExposureNotFound", "No FileExposure found for this FileType"))
 		obj.SetCondition(condition.NewBlockedCondition("FileType will be processed when a FileExposure is registered"))
 		return nil
@@ -42,7 +43,7 @@ func (h *FileTypeHandler) CreateOrUpdate(ctx context.Context, obj *filev1.FileTy
 	obj.Status.FileExposureRef = types.ObjectRefFromObject(activeExposure)
 	obj.Status.SFTPInstance = &types.ObjectRef{
 		Name:      obj.Name,
-		Namespace: obj.Namespace,
+		Namespace: activeExposure.Namespace,
 	}
 
 	if !c.AllReady() {
