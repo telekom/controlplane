@@ -18,6 +18,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	cclient "github.com/telekom/controlplane/common/pkg/client"
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	cc "github.com/telekom/controlplane/common/pkg/controller"
 	filev1 "github.com/telekom/controlplane/file/api/v1"
@@ -72,6 +73,8 @@ func (r *FileTypeReconciler) MapFileExposureToFileType(ctx context.Context, obj 
 	if !ok {
 		return nil
 	}
+
+	ctx = cclient.WithClient(ctx, cclient.NewJanitorClient(cclient.NewScopedClient(r.Client, exposure.Labels[cconfig.EnvironmentLabelKey])))
 
 	fileType, err := util.GetFileType(ctx, exposure.Spec.FileType)
 	if err != nil {
