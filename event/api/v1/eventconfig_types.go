@@ -105,6 +105,11 @@ type EventConfigSpec struct {
 	// Zone references the Zone for which this EventConfig applies.
 	Zone ctypes.ObjectRef `json:"zone"`
 
+	// OverwriteEnvironmentName overrides the environment name sent to Horizon.
+	// If omitted or empty, the Control Plane environment from context is used.
+	// +optional
+	OverwriteEnvironmentName string `json:"overwriteEnvironmentName,omitempty"`
+
 	// Local configures a zone that runs its own event backend (Horizon).
 	// Mutually exclusive with Proxy.
 	// +optional

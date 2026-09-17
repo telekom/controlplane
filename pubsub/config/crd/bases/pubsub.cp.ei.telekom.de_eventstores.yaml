@@ -58,6 +58,12 @@ spec:
                   with the configuration backend.
                 minLength: 1
                 type: string
+              overwriteEnvironmentName:
+                description: |-
+                  OverwriteEnvironmentName is the environment name used for Horizon subscription operations.
+                  Event-managed stores contain the value resolved from their owning EventConfig. Empty values
+                  on legacy or standalone stores fall back to the Control Plane environment at use time.
+                type: string
               tokenUrl:
                 description: TokenUrl is the OAuth2 token endpoint for authenticating
                   with the configuration backend.
