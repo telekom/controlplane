@@ -361,7 +361,7 @@ func (r *applicationResolver) OwnerTeam(ctx context.Context, obj *ent.Applicatio
 }
 
 // Subscription is the resolver for the subscription field.
-// Returns the related subscription as a SubscriptionInfo union (ApiSubscriptionInfo or EventSubscriptionInfo).
+// Returns the related API, event, or agentic subscription as SubscriptionInfo.
 func (r *approvalResolver) Subscription(ctx context.Context, obj *ent.Approval) (gqlmodel.SubscriptionInfo, error) {
 	// SystemContext: The subscription belongs to the requesting tenant, but the
 	// traversal path (approval → subscription → owner) crosses privacy boundaries.
@@ -413,7 +413,7 @@ func (r *approvalConfigResolver) Strategy(ctx context.Context, obj *model.Approv
 }
 
 // Subscription is the resolver for the subscription field.
-// Returns the related subscription as a SubscriptionInfo union (ApiSubscriptionInfo or EventSubscriptionInfo).
+// Returns the related API, event, or agentic subscription as SubscriptionInfo.
 func (r *approvalRequestResolver) Subscription(ctx context.Context, obj *ent.ApprovalRequest) (gqlmodel.SubscriptionInfo, error) {
 	// SystemContext: Same rationale as approvalResolver.Subscription — the traversal
 	// path crosses privacy boundaries; reduced Info types limit exposure.

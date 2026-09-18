@@ -6513,7 +6513,16 @@ func (ec *executionContext) _Approval_subscription(ctx context.Context, field gr
 	)
 }
 func (ec *executionContext) fieldContext_Approval_subscription(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	return graphql.NewScalarFieldContext("Approval", field, true, true, errors.New("field of type SubscriptionInfo does not have child fields"))
+	fc = &graphql.FieldContext{
+		Object:     "Approval",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("FieldContext.Child cannot be called on type INTERFACE")
+		},
+	}
+	return fc, nil
 }
 
 func (ec *executionContext) _ApprovalConnection_edges(ctx context.Context, field graphql.CollectedField, obj *ent.ApprovalConnection) (ret graphql.Marshaler) {
@@ -7105,7 +7114,16 @@ func (ec *executionContext) _ApprovalRequest_subscription(ctx context.Context, f
 	)
 }
 func (ec *executionContext) fieldContext_ApprovalRequest_subscription(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	return graphql.NewScalarFieldContext("ApprovalRequest", field, true, true, errors.New("field of type SubscriptionInfo does not have child fields"))
+	fc = &graphql.FieldContext{
+		Object:     "ApprovalRequest",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("FieldContext.Child cannot be called on type INTERFACE")
+		},
+	}
+	return fc, nil
 }
 
 func (ec *executionContext) _ApprovalRequest_approval(ctx context.Context, field graphql.CollectedField, obj *ent.ApprovalRequest) (ret graphql.Marshaler) {

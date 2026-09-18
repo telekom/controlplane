@@ -3862,22 +3862,16 @@ func (ec *executionContext) _SubscriptionInfo(ctx context.Context, sel ast.Selec
 	switch obj := (obj).(type) {
 	case nil:
 		return graphql.Null
-	case model.EventSubscriptionInfo:
-		return ec._EventSubscriptionInfo(ctx, sel, &obj)
 	case *model.EventSubscriptionInfo:
 		if obj == nil {
 			return graphql.Null
 		}
 		return ec._EventSubscriptionInfo(ctx, sel, obj)
-	case model.ApiSubscriptionInfo:
-		return ec._ApiSubscriptionInfo(ctx, sel, &obj)
 	case *model.ApiSubscriptionInfo:
 		if obj == nil {
 			return graphql.Null
 		}
 		return ec._ApiSubscriptionInfo(ctx, sel, obj)
-	case model.AgenticSubscriptionInfo:
-		return ec._AgenticSubscriptionInfo(ctx, sel, &obj)
 	case *model.AgenticSubscriptionInfo:
 		if obj == nil {
 			return graphql.Null

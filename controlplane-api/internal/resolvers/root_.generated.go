@@ -10539,8 +10539,14 @@ type ApiSubscriptionTraffic {
   subscriberLimits: Limits
 }
 
+"Common ownership fields for reduced subscription views."
+interface SubscriptionInfo {
+  id: ID!
+  ownerApplication: ApplicationInfo!
+}
+
 "Reduced API subscription for cross-tenant contexts (e.g., exposure subscribers)."
-type ApiSubscriptionInfo {
+type ApiSubscriptionInfo implements SubscriptionInfo {
   id: ID!
   basePath: String!
   statusPhase: ApiSubscriptionStatusPhase
@@ -10554,7 +10560,7 @@ type ApiSubscriptionInfo {
 }
 
 "Reduced event subscription for cross-tenant contexts (e.g., exposure subscribers)."
-type EventSubscriptionInfo {
+type EventSubscriptionInfo implements SubscriptionInfo {
   id: ID!
   eventType: String!
   deliveryType: EventSubscriptionDeliveryType!
@@ -10601,7 +10607,7 @@ type AgenticExposureInfo {
 }
 
 "Reduced agentic subscription for cross-tenant contexts (e.g., exposure subscribers)."
-type AgenticSubscriptionInfo {
+type AgenticSubscriptionInfo implements SubscriptionInfo {
   id: ID!
   basePath: String!
   statusPhase: AgenticSubscriptionStatusPhase
@@ -10655,9 +10661,6 @@ extend type AgenticExposure {
   "Subscriptions to this exposure (reduced view — cross-tenant boundary)"
   subscriptions: [AgenticSubscriptionInfo!]! @goField(forceResolver: true)
 }
-
-"A subscription related to an approval — either an API, event, or agentic subscription."
-union SubscriptionInfo = ApiSubscriptionInfo | EventSubscriptionInfo | AgenticSubscriptionInfo
 
 extend type Approval {
   "Related subscription (reduced view — cross-tenant boundary)"
@@ -10722,7 +10725,6 @@ type ApiCategory {
   "The category identifier/name."
   name: String!
 }
-
 `, BuiltIn: false},
 }
 var parsedSchema = gqlparser.MustLoadSchema(sources...)

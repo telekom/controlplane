@@ -48,6 +48,10 @@ type ApiSubscriptionInfo struct {
 
 func (ApiSubscriptionInfo) IsSubscriptionInfo() {}
 
+func (s *ApiSubscriptionInfo) GetID() int { return s.ID }
+
+func (s *ApiSubscriptionInfo) GetOwnerApplication() *ApplicationInfo { return s.OwnerApplication }
+
 // EventSubscriptionInfo provides a reduced cross-tenant safe view of an event subscription.
 // No navigable edges — traversal terminates here.
 type EventSubscriptionInfo struct {
@@ -62,6 +66,10 @@ type EventSubscriptionInfo struct {
 }
 
 func (EventSubscriptionInfo) IsSubscriptionInfo() {}
+
+func (s *EventSubscriptionInfo) GetID() int { return s.ID }
+
+func (s *EventSubscriptionInfo) GetOwnerApplication() *ApplicationInfo { return s.OwnerApplication }
 
 // EventExposureInfo provides a reduced cross-tenant safe view of an event exposure.
 // No navigable edges — traversal terminates here.
@@ -104,3 +112,7 @@ type AgenticSubscriptionInfo struct {
 }
 
 func (AgenticSubscriptionInfo) IsSubscriptionInfo() {}
+
+func (s *AgenticSubscriptionInfo) GetID() int { return s.ID }
+
+func (s *AgenticSubscriptionInfo) GetOwnerApplication() *ApplicationInfo { return s.OwnerApplication }
