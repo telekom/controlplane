@@ -20,6 +20,7 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/apiexposure"
 	"github.com/telekom/controlplane/controlplane-api/ent/apisubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/application"
+	"github.com/telekom/controlplane/controlplane-api/ent/listener"
 	"github.com/telekom/controlplane/controlplane-api/ent/predicate"
 )
 
@@ -33,10 +34,12 @@ type ApiExposureQuery struct {
 	withOwner              *ApplicationQuery
 	withAPI                *APIQuery
 	withSubscriptions      *ApiSubscriptionQuery
+	withListeners          *ListenerQuery
 	withFKs                bool
 	modifiers              []func(*sql.Selector)
 	loadTotal              []func(context.Context, []*ApiExposure) error
 	withNamedSubscriptions map[string]*ApiSubscriptionQuery
+	withNamedListeners     map[string]*ListenerQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -132,6 +135,28 @@ func (_q *ApiExposureQuery) QuerySubscriptions() *ApiSubscriptionQuery {
 			sqlgraph.From(apiexposure.Table, apiexposure.FieldID, selector),
 			sqlgraph.To(apisubscription.Table, apisubscription.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, true, apiexposure.SubscriptionsTable, apiexposure.SubscriptionsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryListeners chains the current query on the "listeners" edge.
+func (_q *ApiExposureQuery) QueryListeners() *ListenerQuery {
+	query := (&ListenerClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(apiexposure.Table, apiexposure.FieldID, selector),
+			sqlgraph.To(listener.Table, listener.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, apiexposure.ListenersTable, apiexposure.ListenersColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -334,6 +359,7 @@ func (_q *ApiExposureQuery) Clone() *ApiExposureQuery {
 		withOwner:         _q.withOwner.Clone(),
 		withAPI:           _q.withAPI.Clone(),
 		withSubscriptions: _q.withSubscriptions.Clone(),
+		withListeners:     _q.withListeners.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
@@ -370,6 +396,17 @@ func (_q *ApiExposureQuery) WithSubscriptions(opts ...func(*ApiSubscriptionQuery
 		opt(query)
 	}
 	_q.withSubscriptions = query
+	return _q
+}
+
+// WithListeners tells the query-builder to eager-load the nodes that are connected to
+// the "listeners" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *ApiExposureQuery) WithListeners(opts ...func(*ListenerQuery)) *ApiExposureQuery {
+	query := (&ListenerClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withListeners = query
 	return _q
 }
 
@@ -458,10 +495,11 @@ func (_q *ApiExposureQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*
 		nodes       = []*ApiExposure{}
 		withFKs     = _q.withFKs
 		_spec       = _q.querySpec()
-		loadedTypes = [3]bool{
+		loadedTypes = [4]bool{
 			_q.withOwner != nil,
 			_q.withAPI != nil,
 			_q.withSubscriptions != nil,
+			_q.withListeners != nil,
 		}
 	)
 	if _q.withOwner != nil || _q.withAPI != nil {
@@ -510,10 +548,24 @@ func (_q *ApiExposureQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*
 			return nil, err
 		}
 	}
+	if query := _q.withListeners; query != nil {
+		if err := _q.loadListeners(ctx, query, nodes,
+			func(n *ApiExposure) { n.Edges.Listeners = []*Listener{} },
+			func(n *ApiExposure, e *Listener) { n.Edges.Listeners = append(n.Edges.Listeners, e) }); err != nil {
+			return nil, err
+		}
+	}
 	for name, query := range _q.withNamedSubscriptions {
 		if err := _q.loadSubscriptions(ctx, query, nodes,
 			func(n *ApiExposure) { n.appendNamedSubscriptions(name) },
 			func(n *ApiExposure, e *ApiSubscription) { n.appendNamedSubscriptions(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedListeners {
+		if err := _q.loadListeners(ctx, query, nodes,
+			func(n *ApiExposure) { n.appendNamedListeners(name) },
+			func(n *ApiExposure, e *Listener) { n.appendNamedListeners(name, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -620,6 +672,37 @@ func (_q *ApiExposureQuery) loadSubscriptions(ctx context.Context, query *ApiSub
 	}
 	return nil
 }
+func (_q *ApiExposureQuery) loadListeners(ctx context.Context, query *ListenerQuery, nodes []*ApiExposure, init func(*ApiExposure), assign func(*ApiExposure, *Listener)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int]*ApiExposure)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.Listener(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(apiexposure.ListenersColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.api_exposure_listeners
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "api_exposure_listeners" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "api_exposure_listeners" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
 
 func (_q *ApiExposureQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := _q.querySpec()
@@ -716,6 +799,20 @@ func (_q *ApiExposureQuery) WithNamedSubscriptions(name string, opts ...func(*Ap
 		_q.withNamedSubscriptions = make(map[string]*ApiSubscriptionQuery)
 	}
 	_q.withNamedSubscriptions[name] = query
+	return _q
+}
+
+// WithNamedListeners tells the query-builder to eager-load the nodes that are connected to the "listeners"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *ApiExposureQuery) WithNamedListeners(name string, opts ...func(*ListenerQuery)) *ApiExposureQuery {
+	query := (&ListenerClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedListeners == nil {
+		_q.withNamedListeners = make(map[string]*ListenerQuery)
+	}
+	_q.withNamedListeners[name] = query
 	return _q
 }
 

@@ -22,6 +22,7 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/eventsubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/fileexposure"
 	"github.com/telekom/controlplane/controlplane-api/ent/filesubscription"
+	"github.com/telekom/controlplane/controlplane-api/ent/listener"
 	"github.com/telekom/controlplane/controlplane-api/ent/member"
 	"github.com/telekom/controlplane/controlplane-api/ent/permissionset"
 	"github.com/telekom/controlplane/controlplane-api/ent/privacy"
@@ -76,6 +77,20 @@ func TeamFilterInterceptor() ent.Interceptor {
 					application.HasOwnerTeamWith(team.NameIn(teams...)),
 				))
 
+			case *entgen.ListenerQuery:
+				q.Where(listener.Or(
+					listener.HasSubscriptionWith(
+						apisubscription.HasOwnerWith(
+							application.HasOwnerTeamWith(team.NameIn(teams...)),
+						),
+					),
+					listener.HasExposureWith(
+						apiexposure.HasOwnerWith(
+							application.HasOwnerTeamWith(team.NameIn(teams...)),
+						),
+					),
+				))
+
 			case *entgen.ApprovalQuery:
 				q.Where(approval.Or(
 					approval.HasAPISubscriptionWith(
@@ -122,6 +137,20 @@ func TeamFilterInterceptor() ent.Interceptor {
 					approval.HasFileSubscriptionWith(
 						filesubscription.HasTargetWith(
 							fileexposure.HasOwnerWith(
+								application.HasOwnerTeamWith(team.NameIn(teams...)),
+							),
+						),
+					),
+					approval.HasListenerWith(
+						listener.HasSubscriptionWith(
+							apisubscription.HasOwnerWith(
+								application.HasOwnerTeamWith(team.NameIn(teams...)),
+							),
+						),
+					),
+					approval.HasListenerWith(
+						listener.HasExposureWith(
+							apiexposure.HasOwnerWith(
 								application.HasOwnerTeamWith(team.NameIn(teams...)),
 							),
 						),
@@ -174,6 +203,20 @@ func TeamFilterInterceptor() ent.Interceptor {
 					approvalrequest.HasFileSubscriptionWith(
 						filesubscription.HasTargetWith(
 							fileexposure.HasOwnerWith(
+								application.HasOwnerTeamWith(team.NameIn(teams...)),
+							),
+						),
+					),
+					approvalrequest.HasListenerWith(
+						listener.HasSubscriptionWith(
+							apisubscription.HasOwnerWith(
+								application.HasOwnerTeamWith(team.NameIn(teams...)),
+							),
+						),
+					),
+					approvalrequest.HasListenerWith(
+						listener.HasExposureWith(
+							apiexposure.HasOwnerWith(
 								application.HasOwnerTeamWith(team.NameIn(teams...)),
 							),
 						),

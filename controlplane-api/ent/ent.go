@@ -31,6 +31,7 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/filesubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/filetype"
 	"github.com/telekom/controlplane/controlplane-api/ent/group"
+	"github.com/telekom/controlplane/controlplane-api/ent/listener"
 	"github.com/telekom/controlplane/controlplane-api/ent/mcpserver"
 	"github.com/telekom/controlplane/controlplane-api/ent/member"
 	"github.com/telekom/controlplane/controlplane-api/ent/permissionset"
@@ -112,6 +113,7 @@ func checkColumn(t, c string) error {
 			filesubscription.Table:    filesubscription.ValidColumn,
 			filetype.Table:            filetype.ValidColumn,
 			group.Table:               group.ValidColumn,
+			listener.Table:            listener.ValidColumn,
 			mcpserver.Table:           mcpserver.ValidColumn,
 			member.Table:              member.ValidColumn,
 			permissionset.Table:       permissionset.ValidColumn,
