@@ -60,6 +60,8 @@ const (
 	EdgeEventSubscription = "event_subscription"
 	// EdgeAgenticSubscription holds the string denoting the agentic_subscription edge name in mutations.
 	EdgeAgenticSubscription = "agentic_subscription"
+	// EdgeListener holds the string denoting the listener edge name in mutations.
+	EdgeListener = "listener"
 	// Table holds the table name of the approvalrequest in the database.
 	Table = "approval_requests"
 	// APISubscriptionTable is the table that holds the api_subscription relation/edge.
@@ -83,6 +85,13 @@ const (
 	AgenticSubscriptionInverseTable = "agentic_subscriptions"
 	// AgenticSubscriptionColumn is the table column denoting the agentic_subscription relation/edge.
 	AgenticSubscriptionColumn = "agentic_subscription_approval_requests"
+	// ListenerTable is the table that holds the listener relation/edge.
+	ListenerTable = "approval_requests"
+	// ListenerInverseTable is the table name for the Listener entity.
+	// It exists in this package in order to avoid circular dependency with the "listener" package.
+	ListenerInverseTable = "listeners"
+	// ListenerColumn is the table column denoting the listener relation/edge.
+	ListenerColumn = "listener_approval_requests"
 )
 
 // Columns holds all SQL columns for approvalrequest fields.
@@ -112,6 +121,7 @@ var ForeignKeys = []string{
 	"agentic_subscription_approval_requests",
 	"api_subscription_approval_requests",
 	"event_subscription_approval_requests",
+	"listener_approval_requests",
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -318,6 +328,13 @@ func ByAgenticSubscriptionField(field string, opts ...sql.OrderTermOption) Order
 		sqlgraph.OrderByNeighborTerms(s, newAgenticSubscriptionStep(), sql.OrderByField(field, opts...))
 	}
 }
+
+// ByListenerField orders the results by listener field.
+func ByListenerField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newListenerStep(), sql.OrderByField(field, opts...))
+	}
+}
 func newAPISubscriptionStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -337,6 +354,13 @@ func newAgenticSubscriptionStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(AgenticSubscriptionInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.M2O, true, AgenticSubscriptionTable, AgenticSubscriptionColumn),
+	)
+}
+func newListenerStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(ListenerInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, true, ListenerTable, ListenerColumn),
 	)
 }
 

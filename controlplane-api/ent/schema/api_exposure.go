@@ -7,6 +7,7 @@ package schema
 import (
 	"entgo.io/contrib/entgql"
 	"entgo.io/ent"
+	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/schema"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
@@ -79,6 +80,8 @@ func (ApiExposure) Edges() []ent.Edge {
 		edge.From("subscriptions", ApiSubscription.Type).
 			Ref("target").
 			Annotations(entgql.Skip(entgql.SkipType)),
+		edge.To("listeners", Listener.Type).
+			Annotations(entgql.Skip(entgql.SkipType|entgql.SkipWhereInput), entsql.OnDelete(entsql.Cascade)),
 	}
 }
 

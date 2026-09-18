@@ -58,6 +58,8 @@ const (
 	EdgeAPI = "api"
 	// EdgeSubscriptions holds the string denoting the subscriptions edge name in mutations.
 	EdgeSubscriptions = "subscriptions"
+	// EdgeListeners holds the string denoting the listeners edge name in mutations.
+	EdgeListeners = "listeners"
 	// Table holds the table name of the apiexposure in the database.
 	Table = "api_exposures"
 	// OwnerTable is the table that holds the owner relation/edge.
@@ -81,6 +83,13 @@ const (
 	SubscriptionsInverseTable = "api_subscriptions"
 	// SubscriptionsColumn is the table column denoting the subscriptions relation/edge.
 	SubscriptionsColumn = "api_subscription_target"
+	// ListenersTable is the table that holds the listeners relation/edge.
+	ListenersTable = "listeners"
+	// ListenersInverseTable is the table name for the Listener entity.
+	// It exists in this package in order to avoid circular dependency with the "listener" package.
+	ListenersInverseTable = "listeners"
+	// ListenersColumn is the table column denoting the listeners relation/edge.
+	ListenersColumn = "api_exposure_listeners"
 )
 
 // Columns holds all SQL columns for apiexposure fields.
@@ -290,6 +299,20 @@ func BySubscriptions(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newSubscriptionsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// ByListenersCount orders the results by listeners count.
+func ByListenersCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newListenersStep(), opts...)
+	}
+}
+
+// ByListeners orders the results by listeners terms.
+func ByListeners(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newListenersStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
 func newOwnerStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -309,6 +332,13 @@ func newSubscriptionsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(SubscriptionsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, true, SubscriptionsTable, SubscriptionsColumn),
+	)
+}
+func newListenersStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(ListenersInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, ListenersTable, ListenersColumn),
 	)
 }
 

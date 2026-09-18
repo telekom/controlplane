@@ -94,6 +94,26 @@ func (_u *APIUpdate) SetNillableNamespace(v *string) *APIUpdate {
 	return _u
 }
 
+// SetName sets the "name" field.
+func (_u *APIUpdate) SetName(v string) *APIUpdate {
+	_u.mutation.SetName(v)
+	return _u
+}
+
+// SetNillableName sets the "name" field if the given value is not nil.
+func (_u *APIUpdate) SetNillableName(v *string) *APIUpdate {
+	if v != nil {
+		_u.SetName(*v)
+	}
+	return _u
+}
+
+// ClearName clears the value of the "name" field.
+func (_u *APIUpdate) ClearName() *APIUpdate {
+	_u.mutation.ClearName()
+	return _u
+}
+
 // SetBasePath sets the "base_path" field.
 func (_u *APIUpdate) SetBasePath(v string) *APIUpdate {
 	_u.mutation.SetBasePath(v)
@@ -366,6 +386,12 @@ func (_u *APIUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.Namespace(); ok {
 		_spec.SetField(api.FieldNamespace, field.TypeString, value)
 	}
+	if value, ok := _u.mutation.Name(); ok {
+		_spec.SetField(api.FieldName, field.TypeString, value)
+	}
+	if _u.mutation.NameCleared() {
+		_spec.ClearField(api.FieldName, field.TypeString)
+	}
 	if value, ok := _u.mutation.BasePath(); ok {
 		_spec.SetField(api.FieldBasePath, field.TypeString, value)
 	}
@@ -552,6 +578,26 @@ func (_u *APIUpdateOne) SetNillableNamespace(v *string) *APIUpdateOne {
 	if v != nil {
 		_u.SetNamespace(*v)
 	}
+	return _u
+}
+
+// SetName sets the "name" field.
+func (_u *APIUpdateOne) SetName(v string) *APIUpdateOne {
+	_u.mutation.SetName(v)
+	return _u
+}
+
+// SetNillableName sets the "name" field if the given value is not nil.
+func (_u *APIUpdateOne) SetNillableName(v *string) *APIUpdateOne {
+	if v != nil {
+		_u.SetName(*v)
+	}
+	return _u
+}
+
+// ClearName clears the value of the "name" field.
+func (_u *APIUpdateOne) ClearName() *APIUpdateOne {
+	_u.mutation.ClearName()
 	return _u
 }
 
@@ -856,6 +902,12 @@ func (_u *APIUpdateOne) sqlSave(ctx context.Context) (_node *Api, err error) {
 	}
 	if value, ok := _u.mutation.Namespace(); ok {
 		_spec.SetField(api.FieldNamespace, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.Name(); ok {
+		_spec.SetField(api.FieldName, field.TypeString, value)
+	}
+	if _u.mutation.NameCleared() {
+		_spec.ClearField(api.FieldName, field.TypeString)
 	}
 	if value, ok := _u.mutation.BasePath(); ok {
 		_spec.SetField(api.FieldBasePath, field.TypeString, value)

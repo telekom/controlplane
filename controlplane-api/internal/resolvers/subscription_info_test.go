@@ -36,6 +36,7 @@ var (
 	_ gqlmodel.SubscriptionInfo = (*gqlmodel.ApiSubscriptionInfo)(nil)
 	_ gqlmodel.SubscriptionInfo = (*gqlmodel.EventSubscriptionInfo)(nil)
 	_ gqlmodel.SubscriptionInfo = (*gqlmodel.AgenticSubscriptionInfo)(nil)
+	_ gqlmodel.SubscriptionInfo = (*gqlmodel.ListenerInfo)(nil)
 )
 
 var _ = Describe("SubscriptionInfo", func() {
@@ -63,7 +64,7 @@ var _ = Describe("SubscriptionInfo", func() {
 		for _, typ := range possibleTypes {
 			implementors = append(implementors, typ.Name)
 		}
-		Expect(implementors).To(ConsistOf("ApiSubscriptionInfo", "EventSubscriptionInfo", "AgenticSubscriptionInfo"))
+		Expect(implementors).To(ConsistOf("ApiSubscriptionInfo", "EventSubscriptionInfo", "AgenticSubscriptionInfo", "ListenerInfo"))
 		Expect(schema.Types).NotTo(HaveKey("OwnedSubscriptionInfo"))
 		for _, name := range []string{"Approval", "ApprovalRequest"} {
 			Expect(schema.Types[name].Fields.ForName("subscription").Type.String()).To(Equal("SubscriptionInfo!"))
@@ -149,7 +150,7 @@ var _ = Describe("SubscriptionInfo", func() {
 				}
 				Expect(json.Unmarshal(recorder.Body.Bytes(), &response)).To(Succeed())
 				Expect(response.Errors).To(BeEmpty())
-				Expect(response.Data.Approvals.Edges).To(HaveLen(3))
+				Expect(response.Data.Approvals.Edges).To(HaveLen(4))
 				for _, edge := range response.Data.Approvals.Edges {
 					owner := edge.Node.Subscription.OwnerApplication
 					Expect(owner.ID).To(Equal(strconv.Itoa(seed.AppBeta.ID)))
@@ -175,6 +176,7 @@ var _ = Describe("SubscriptionInfo", func() {
 							... on ApiSubscriptionInfo { basePath }
 							... on EventSubscriptionInfo { eventType }
 							... on AgenticSubscriptionInfo { basePath }
+							... on ListenerInfo { resourceName }
 						} } }
 					}
 				} %s`, field, selection, fragment)
@@ -192,6 +194,7 @@ var _ = Describe("SubscriptionInfo", func() {
 					ID               string
 					BasePath         string
 					EventType        string
+					ResourceName     string
 					OwnerApplication struct{ ID, Name string }
 				}
 				var response struct {
@@ -208,8 +211,9 @@ var _ = Describe("SubscriptionInfo", func() {
 					"ApiSubscriptionInfo":     {ID: strconv.Itoa(seed.Subscription.ID), BasePath: "/alpha"},
 					"EventSubscriptionInfo":   {ID: strconv.Itoa(seed.EventSubscription.ID), EventType: "order.created"},
 					"AgenticSubscriptionInfo": {ID: strconv.Itoa(seed.AgenticSubscription.ID), BasePath: "/mcp-alpha"},
+					"ListenerInfo":            {ID: strconv.Itoa(seed.ListenerReady.ID), ResourceName: "api-alpha"},
 				}
-				Expect(response.Data[field].Edges).To(HaveLen(3))
+				Expect(response.Data[field].Edges).To(HaveLen(4))
 				for _, edge := range response.Data[field].Edges {
 					actual := edge.Node.Subscription
 					Expect(expected).To(HaveKey(actual.Typename))

@@ -30,6 +30,11 @@ type ApplicationInfo {
   ownerTeam: TeamInfo!
 }
 
+type ListenerFilter {
+  trigger: Map @goField(forceResolver: true)
+  payload: [String!]! @goField(forceResolver: true)
+}
+
 type Upstream {
   url: String!
   weight: Int!
@@ -99,7 +104,7 @@ enum ResponseFilterMode {
 
 type ResponseFilter {
   paths: [String]!
-  mode: ResponseFilterMode 
+  mode: ResponseFilterMode
 }
 
 type SelectionFilter {
@@ -153,7 +158,7 @@ type ApiExposureInfo {
   apiVersion: String
   features: [ApiExposureFeature!]!
   approvalConfig: ApprovalConfig!
-  traffic: Traffic 
+  traffic: Traffic
   "Application name that owns this exposure"
   ownerApplicationName: String! @deprecated(reason: "Use ownerApplication.name instead.")
   "Owning team (reduced view)"
@@ -231,7 +236,7 @@ type AgenticTransformation {
   request: AgenticRequestResponseTransformation!
 }
 
-# Traffic 
+# Traffic
 
 type Limits {
   second: Int
@@ -312,6 +317,17 @@ type ApiSubscriptionInfo implements SubscriptionInfo {
   ownerApplication: ApplicationInfo!
 }
 
+"Reduced Listener information used by exposure, subscription, and approval relationships."
+type ListenerInfo implements SubscriptionInfo {
+  id: ID!
+  resourceName: String!
+  approved: Boolean!
+  consumer: ApplicationInfo!
+  provider: ApplicationInfo!
+  "Consumer application that owns this Listener (reduced view)"
+  ownerApplication: ApplicationInfo!
+}
+
 "Reduced event subscription for cross-tenant contexts (e.g., exposure subscribers)."
 type EventSubscriptionInfo implements SubscriptionInfo {
   id: ID!
@@ -378,6 +394,14 @@ type AgenticSubscriptionInfo implements SubscriptionInfo {
 extend type Application {
   "Owning team (reduced view for cross-tenant safety)"
   ownerTeam: TeamInfo!
+  "All Listeners owned by this consumer application, including non-ready Listeners."
+  listeners(
+    after: Cursor
+    first: Int
+    before: Cursor
+    last: Int
+    where: ListenerWhereInput
+  ): ListenerConnection! @goField(forceResolver: true)
 }
 
 extend type Zone {
@@ -388,11 +412,29 @@ extend type Zone {
 extend type ApiSubscription {
   "Target exposure (reduced view — cross-tenant boundary). Null when the target API is not yet exposed."
   target: ApiExposureInfo @goField(forceResolver: true)
+  "Ready Listeners attached to this subscription."
+  listeners: [ListenerInfo!]! @goField(forceResolver: true)
 }
 
 extend type ApiExposure {
   "Subscriptions to this exposure (reduced view — cross-tenant boundary)"
   subscriptions: [ApiSubscriptionInfo!]! @goField(forceResolver: true)
+  "Ready Listeners attached to this exposure."
+  listeners: [ListenerInfo!]! @goField(forceResolver: true)
+}
+
+extend type Listener {
+  resourceName: String! @goField(forceResolver: true)
+  approved: Boolean! @goField(forceResolver: true)
+  apiBasePath: String! @goField(forceResolver: true)
+  requestFilter: ListenerFilter @goField(forceResolver: true)
+  responseFilter: ListenerFilter @goField(forceResolver: true)
+  application: ApplicationInfo! @goField(forceResolver: true)
+  consumer: ApplicationInfo! @goField(forceResolver: true)
+  provider: ApplicationInfo! @goField(forceResolver: true)
+  subscription: ApiSubscriptionInfo! @goField(forceResolver: true)
+  exposure: ApiExposureInfo! @goField(forceResolver: true)
+  providerApproval: Approval @goField(forceResolver: true)
 }
 
 extend type EventSubscription {
@@ -416,11 +458,13 @@ extend type AgenticExposure {
 }
 
 extend type Approval {
+  # TODO: Rename subscription to target in a future breaking schema revision.
   "Related subscription (reduced view — cross-tenant boundary)"
   subscription: SubscriptionInfo! @goField(forceResolver: true)
 }
 
 extend type ApprovalRequest {
+  # TODO: Rename subscription to target in a future breaking schema revision.
   "Related subscription (reduced view — cross-tenant boundary)"
   subscription: SubscriptionInfo! @goField(forceResolver: true)
   "The corresponding approval, if one exists (traverses via the related subscription)"

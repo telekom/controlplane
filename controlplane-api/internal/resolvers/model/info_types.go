@@ -19,6 +19,22 @@ type ApplicationInfo struct {
 	OwnerTeam   *pkgmodel.TeamInfo    `json:"ownerTeam"`
 }
 
+// ListenerInfo provides a reduced cross-tenant safe view of a Listener.
+type ListenerInfo struct {
+	ID               int              `json:"id"`
+	ResourceName     string           `json:"resourceName"`
+	Approved         bool             `json:"approved"`
+	Consumer         *ApplicationInfo `json:"consumer"`
+	Provider         *ApplicationInfo `json:"provider"`
+	OwnerApplication *ApplicationInfo `json:"ownerApplication"`
+}
+
+func (ListenerInfo) IsSubscriptionInfo() {}
+
+func (s *ListenerInfo) GetID() int { return s.ID }
+
+func (s *ListenerInfo) GetOwnerApplication() *ApplicationInfo { return s.OwnerApplication }
+
 // ApiExposureInfo provides a reduced cross-tenant safe view of an API exposure.
 // No navigable edges — traversal terminates here.
 type ApiExposureInfo struct {

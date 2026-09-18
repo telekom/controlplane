@@ -70,6 +70,8 @@ func (ApiSubscription) Edges() []ent.Edge {
 			Unique(),
 		edge.To("approval_requests", ApprovalRequest.Type).
 			Annotations(entsql.OnDelete(entsql.Cascade)),
+		edge.To("listeners", Listener.Type).
+			Annotations(entgql.Skip(entgql.SkipType|entgql.SkipWhereInput), entsql.OnDelete(entsql.Cascade)),
 	}
 }
 
