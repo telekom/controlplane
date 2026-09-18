@@ -8,7 +8,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
+	"time"
 
+	"github.com/stretchr/testify/mock"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -160,12 +163,110 @@ var _ = Describe("PublisherHandler", func() {
 	})
 
 	Describe("Delete", func() {
-		It("should return nil", func() {
+		It("should block deletion while a live Subscriber references the Publisher", func() {
 			obj := newPublisher()
+
+			fakeClient.EXPECT().
+				List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
+				Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+					sl := list.(*pubsubv1.SubscriberList)
+					sl.Items = []pubsubv1.Subscriber{
+						{
+							ObjectMeta: metav1.ObjectMeta{Name: "sub-1", Namespace: "default"},
+							Spec: pubsubv1.SubscriberSpec{
+								Publisher: ctypes.ObjectRef{Name: "test-publisher", Namespace: "default"},
+							},
+						},
+					}
+				}).
+				Return(nil)
+
+			err := handler.Delete(ctx, obj)
+
+			Expect(err).To(HaveOccurred())
+			var rde ctrlerrors.RetryableWithDelayError
+			Expect(errors.As(err, &rde)).To(BeTrue())
+			Expect(rde.RetryDelay()).To(Equal(2 * time.Second))
+		})
+
+		It("should block deletion while a terminating Subscriber references the Publisher", func() {
+			obj := newPublisher()
+			now := metav1.Now()
+
+			fakeClient.EXPECT().
+				List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
+				Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+					sl := list.(*pubsubv1.SubscriberList)
+					sl.Items = []pubsubv1.Subscriber{
+						{
+							ObjectMeta: metav1.ObjectMeta{
+								Name:              "sub-terminating",
+								Namespace:         "default",
+								DeletionTimestamp: &now,
+								Finalizers:        []string{"pubsub.cp.ei.telekom.de/finalizer"},
+							},
+							Spec: pubsubv1.SubscriberSpec{
+								Publisher: ctypes.ObjectRef{Name: "test-publisher", Namespace: "default"},
+							},
+						},
+					}
+				}).
+				Return(nil)
+
+			err := handler.Delete(ctx, obj)
+
+			Expect(err).To(HaveOccurred())
+			var rde ctrlerrors.RetryableWithDelayError
+			Expect(errors.As(err, &rde)).To(BeTrue())
+		})
+
+		It("should allow deletion when no Subscriber references the Publisher", func() {
+			obj := newPublisher()
+
+			fakeClient.EXPECT().
+				List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
+				Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+					sl := list.(*pubsubv1.SubscriberList)
+					sl.Items = nil
+				}).
+				Return(nil)
 
 			err := handler.Delete(ctx, obj)
 
 			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("should distinguish same-named Publishers in different namespaces", func() {
+			obj := newPublisher()
+			obj.Namespace = "team-a"
+
+			fakeClient.EXPECT().
+				List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.MatchedBy(func(opt client.MatchingFields) bool {
+					val, ok := opt["subscriberPublisherIndex"]
+					return ok && strings.Contains(val, "team-a/test-publisher")
+				})).
+				Run(func(_ context.Context, list client.ObjectList, opts ...client.ListOption) {
+					sl := list.(*pubsubv1.SubscriberList)
+					sl.Items = nil
+				}).
+				Return(nil)
+
+			err := handler.Delete(ctx, obj)
+
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("should return error when listing Subscribers fails", func() {
+			obj := newPublisher()
+
+			fakeClient.EXPECT().
+				List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
+				Return(fmt.Errorf("connection refused"))
+
+			err := handler.Delete(ctx, obj)
+
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("failed to list Subscribers"))
 		})
 	})
 })

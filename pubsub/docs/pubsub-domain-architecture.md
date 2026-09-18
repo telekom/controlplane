@@ -15,6 +15,7 @@ flowchart TB
     %% ── Styling ──────────────────────────────────────────────
     classDef pubsubCls fill:#ef5350,color:#fff,stroke:#c62828,stroke-width:2px
     classDef eventCls fill:#4a90d9,color:#fff,stroke:#2c5f8a,stroke-width:2px
+    classDef spectreCls fill:#7e57c2,color:#fff,stroke:#512da8,stroke-width:2px
     classDef backendCls fill:#78909c,color:#fff,stroke:#455a64,stroke-width:2px,stroke-dasharray: 5 5
 
     %% ── Event Domain (upstream creator) ─────────────────────
@@ -23,6 +24,13 @@ flowchart TB
         EventConfig["EventConfig"]:::eventCls
         EventExposure["EventExposure"]:::eventCls
         EventSubscription["EventSubscription"]:::eventCls
+    end
+
+    %% ── Spectre Domain (peer upstream creator) ──────────────
+    subgraph spectre["Spectre Domain"]
+        direction TB
+        SpectreApp["SpectreApplication"]:::spectreCls
+        Listener["Listener"]:::spectreCls
     end
 
     %% ── PubSub Domain (center) ──────────────────────────────
@@ -47,6 +55,10 @@ flowchart TB
     EventConfig -- "creates / owns" --> EventStore
     EventExposure -- "creates / owns" --> Publisher
     EventSubscription -- "creates / owns" --> Subscriber
+
+    %% ── Spectre Domain creates PubSub resources ─────────────
+    SpectreApp -- "creates / owns" --> Publisher
+    Listener -- "creates / owns" --> Subscriber
 
     %% ── Subscriber calls external backend ───────────────────
     Subscriber -- "PUT subscription" --> SubscriptionAPI
@@ -111,7 +123,7 @@ Validates that the referenced EventStore exists and is ready, then sets status c
 | **External calls** | None (TODO: future config backend registration) |
 | **Status fields** | `conditions` |
 
-The Publisher is created and owned by the **Event domain's `EventExposure` controller**.
+The Publisher is created and owned by either the **Event domain's `EventExposure` controller** or the **Spectre domain's `SpectreApplication` handler**.
 
 ### Subscriber Controller
 
@@ -125,7 +137,7 @@ The most complex controller. Resolves the Publisher and EventStore chain, genera
 | **External calls** | `PUT /subscriber.horizon.telekom.de/v1/subscriptions/{id}` (create/update), `DELETE .../{id}` (delete) |
 | **Status fields** | `conditions`, `subscriptionId` |
 
-The Subscriber is created and owned by the **Event domain's `EventSubscription` controller**.
+The Subscriber is created and owned by either the **Event domain's `EventSubscription` controller** or the **Spectre domain's `Listener` handler**.
 
 #### External REST API Details
 
@@ -162,13 +174,17 @@ The payload is a Kubernetes-style resource envelope:
 
 ## Upstream Domains (Who Creates PubSub Resources)
 
-The PubSub domain does **not** create resources in other domains. All three PubSub CRDs are created exclusively by the **Event domain**:
+The PubSub domain does **not** create resources in other domains. PubSub CRDs are created by the **Event** and **Spectre** domains:
 
-| PubSub Resource | Created by | Event Controller |
+| PubSub Resource | Created by | Controller |
 |---|---|---|
 | `EventStore` | Event domain | `EventConfig` controller |
 | `Publisher` | Event domain | `EventExposure` controller |
+| `Publisher` | Spectre domain | `SpectreApplication` handler |
 | `Subscriber` | Event domain | `EventSubscription` controller |
+| `Subscriber` | Spectre domain | `Listener` handler |
+
+EventStore is created exclusively by EventConfig. Spectre reads it but does not own or modify it.
 
 ## Registered Schemes
 
@@ -178,4 +194,4 @@ The PubSub operator registers only **1 domain** scheme (plus the base client-go 
 |---|---|---|
 | **PubSub** | `pubsub.cp.ei.telekom.de` | EventStore, Publisher, Subscriber |
 
-The PubSub operator is intentionally self-contained -- it does not import or register API types from any other domain. Cross-domain orchestration is handled by the Event domain, which creates PubSub resources as owned children.
+The PubSub operator is intentionally self-contained -- it does not import or register API types from any other domain. Cross-domain orchestration is handled by the Event and Spectre domains, which create PubSub resources as owned children.

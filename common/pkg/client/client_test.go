@@ -304,7 +304,8 @@ var _ = Describe("Client", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			Expect(scopedClient.AnyChanged()).To(BeTrue())
-			// defaults as no conditions set
+			// AllReady uses IsStatusConditionFalse, so objects with no conditions
+			// are treated as ready. Handlers guard against this gap explicitly.
 			Expect(scopedClient.AllReady()).To(BeTrue())
 		})
 	})

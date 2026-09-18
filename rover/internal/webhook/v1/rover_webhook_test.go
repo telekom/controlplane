@@ -1332,6 +1332,50 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 		})
 	})
 
+	Context("Listener consumer validation", func() {
+		It("should reject a listener whose consumer does not match the Rover name", func() {
+			cconfig.FeatureSpectre = cconfig.NewFeature("spectre", true)
+			defer func() { cconfig.FeatureSpectre = cconfig.NewFeature("spectre", false) }()
+
+			roverWithListener := roverObj.DeepCopy()
+			roverWithListener.Spec.Listeners = []roverv1.RoverListener{
+				{
+					Consumer:    "some-other-app",
+					Provider:    "provider-app",
+					ApiBasePath: "/api/v1",
+				},
+			}
+			// Use callback delivery to bypass EventConfig lookup (not registered in test scheme).
+			roverWithListener.Spec.ListenerSubscription = &roverv1.ListenerSubscription{
+				DeliveryType: "callback",
+				Callback:     "https://callback.example.com/events",
+			}
+			warnings, err := validator.ValidateCreateOrUpdate(ctx, roverWithListener)
+			assertValidationFailedWith(warnings, err, fmt.Sprintf("listener consumer must equal the Rover name %q", roverWithListener.Name))
+		})
+
+		It("should accept a listener whose consumer matches the Rover name", func() {
+			cconfig.FeatureSpectre = cconfig.NewFeature("spectre", true)
+			defer func() { cconfig.FeatureSpectre = cconfig.NewFeature("spectre", false) }()
+
+			roverWithListener := roverObj.DeepCopy()
+			roverWithListener.Spec.Listeners = []roverv1.RoverListener{
+				{
+					Consumer:    roverWithListener.Name,
+					Provider:    "provider-app",
+					ApiBasePath: "/api/v1",
+				},
+			}
+			roverWithListener.Spec.ListenerSubscription = &roverv1.ListenerSubscription{
+				DeliveryType: "callback",
+				Callback:     "https://callback.example.com/events",
+			}
+			warnings, err := validator.ValidateCreateOrUpdate(ctx, roverWithListener)
+			Expect(warnings).To(BeNil())
+			Expect(err).ToNot(HaveOccurred())
+		})
+	})
+
 	Context("External IDs validation", func() {
 		var zoneWithPolicies *adminv1.Zone
 
