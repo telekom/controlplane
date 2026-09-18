@@ -202,13 +202,18 @@
       "agentic",
       "api",
       "application",
+      "approval",
       "common",
       "common-server",
       "event",
       "file",
+      "gateway",
+      "identity",
       "organization",
       "permission",
-      "secret-manager"
+      "pubsub",
+      "secret-manager",
+      "spectre"
     ]
   },
   "rover-ctl": {
@@ -243,6 +248,21 @@
     "depends_on": [
       "common",
       "common-server",
+      "secret-manager"
+    ]
+  },
+  "spectre": {
+    "path": "spectre",
+    "depends_on": [
+      "admin",
+      "application",
+      "approval",
+      "common",
+      "common-server",
+      "event",
+      "gateway",
+      "identity",
+      "pubsub",
       "secret-manager"
     ]
   },

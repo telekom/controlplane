@@ -32,6 +32,7 @@ The server also normalizes the environment, team, and group labels to lowercase,
 - **API domain** — Creates Api, ApiExposure, and ApiSubscription resources.
 - **Event domain** — Creates EventExposure and EventSubscription resources.
 - **File domain (SFTP)** — Creates the SFTP user (shared space) from a `FileSpecification` and registers producer/consumer SSH public keys for `fileType` exposures and subscriptions. Gated behind the `file` feature flag.
+- **Spectre domain** — `spec.listeners` entries create Listener CRs, which the Spectre operator reconciles into PubSub Subscribers, RouteListeners, and Approvals.
 - **Gateway domain** — Configures traffic management settings.
 - **Identity domain** — Configures authentication settings.
 - **Approval domain** — Integrates approval requirements for exposures.
