@@ -452,7 +452,7 @@ PR Created/Updated
    ├─ Collect Build Status
    ├─ Package (matrix, directly-changed + packageable + built-ok modules only)
    │  └─ Build Image / Image Scan
-   ├─ Rover-CTL Base Image (if rover-ctl/Dockerfile.base changed)
+   ├─ Rover-CTL Combined Image (local base build, no Artifactory push)
    └─ CI Summary (single required status check)
 ├─ Docs Build (if docs changed)
 └─ Dependabot Tidy (if dependabot PR)
@@ -464,7 +464,7 @@ Push to Main
 ├─ REUSE Compliance Check
 ├─ Scorecard Analysis
 ├─ CI Workflow (mode=maximum, all modules)
-│  └─ Rover-CTL Base Image (if rover-ctl/Dockerfile.base changed)
+│  └─ Rover-CTL Combined Image (local base build, no Artifactory push)
 ├─ CodeQL Analysis (repo-wide, single database)
 └─ Docs Deploy (if docs changed)
 ```

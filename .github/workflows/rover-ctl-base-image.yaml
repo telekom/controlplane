@@ -67,6 +67,7 @@ jobs:
         # `secrets:` input block) works both when this workflow is run
         # standalone via workflow_dispatch, and when called via
         # workflow_call by a caller using `secrets: inherit`.
+        if: ${{ inputs.push }}
         uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
           registry: ${{ vars.REGISTRY_HOST }}
