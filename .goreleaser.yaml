@@ -226,6 +226,15 @@ builds:
     goarch:
       - amd64
       - arm64
+  - id: file
+    dir: file
+    main: cmd/file-operator/main.go
+    binary: file
+    goos:
+      - linux
+    goarch:
+      - amd64
+      - arm64
 archives:
   - id: rover-ctl
     ids: [rover-ctl]
@@ -700,6 +709,25 @@ kos:
     working_dir: sftp/cmd/sftp-operator
     repositories:
       - ghcr.io/telekom/controlplane/sftp-operator
+    labels:
+      org.opencontainers.image.authors: "Deutsche Telekom IT GmbH <opensource@telekom.de>"
+      org.opencontainers.image.url: "https://developer.telekom.de/"
+      org.opencontainers.image.source: https://github.com/telekom/controlplane
+      org.opencontainers.image.version: "{{.Version}}"
+      org.opencontainers.image.revision: "{{.FullCommit}}"
+      org.opencontainers.image.licenses: "Apache-2.0"
+    user: 65532:65532
+    tags:
+      - latest
+      - "{{.Tag}}"
+      - "{{if not .Prerelease}}stable{{end}}"
+    bare: true
+  - id: file
+    build: file
+    main: .
+    working_dir: file/cmd/file-operator
+    repositories:
+      - ghcr.io/telekom/controlplane/file
     labels:
       org.opencontainers.image.authors: "Deutsche Telekom IT GmbH <opensource@telekom.de>"
       org.opencontainers.image.url: "https://developer.telekom.de/"
