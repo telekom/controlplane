@@ -154,7 +154,10 @@ type ApiExposureStatus struct {
 // +kubebuilder:subresource:status
 
 // ApiExposure is the Schema for the apiexposures API
+// +kubebuilder:printcolumn:name="Visibility",type="string",JSONPath=".spec.visibility",description="Who can see and subscribe to this API"
+// +kubebuilder:printcolumn:name="Zone",type="string",JSONPath=".spec.zone.name",description="Zone the API is exposed in"
 // +kubebuilder:printcolumn:name="Active",type="boolean",JSONPath=".status.active",description="Indicates if the API is active"
+// +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 type ApiExposure struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
