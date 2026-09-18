@@ -70,6 +70,43 @@ var _ = Describe("Approval Builder", Ordered, func() {
 		"scopes":   "read",
 	}
 
+	Describe("WithLabels", func() {
+		It("should add labels to the generated ApprovalRequest", func() {
+			err := requester.SetProperties(properties)
+			Expect(err).NotTo(HaveOccurred())
+
+			jclient := cclient.NewJanitorClient(cclient.NewScopedClient(k8sm.GetClient(), testEnvironment))
+			owner := test.NewObject("apisub", testNamespace)
+			owner.SetUID(types.UID("99d819b2-7dcb-41dd-abac-415719674737"))
+			owner.SetLabels(map[string]string{
+				config.EnvironmentLabelKey: testEnvironment,
+			})
+
+			builder := NewApprovalBuilder(jclient, owner)
+			labels := map[string]string{
+				"example.com/team": "platform",
+				"example.com/tier": "critical",
+			}
+
+			builder.WithHashValue(requester.Properties)
+			builder.WithRequester(requester)
+			builder.WithLabels(labels)
+
+			result, err := builder.Build(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result).To(Equal(ApprovalResultPending))
+
+			generatedRequest := &approvalv1.ApprovalRequest{}
+			err = k8sClient.Get(ctx, client.ObjectKey{
+				Name:      builder.GetApprovalRequest().Name,
+				Namespace: testNamespace,
+			}, generatedRequest)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(generatedRequest.Labels).To(HaveKeyWithValue("example.com/team", "platform"))
+			Expect(generatedRequest.Labels).To(HaveKeyWithValue("example.com/tier", "critical"))
+		})
+	})
+
 	AfterEach(func() {
 		By("Deleting the ApprovalRequest")
 		_ = k8sClient.DeleteAllOf(ctx, &approvalv1.ApprovalRequest{}, client.InNamespace(testNamespace))

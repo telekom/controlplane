@@ -49,6 +49,7 @@ type ApprovalBuilder interface {
 	WithStrategy(strategy v1.ApprovalStrategy) ApprovalBuilder
 	WithDecider(decider *v1.Decider) ApprovalBuilder
 	WithAction(action string) ApprovalBuilder
+	WithLabels(labels map[string]string) ApprovalBuilder
 	WithTrustedRequesters(trustedRequesters []string) ApprovalBuilder
 	Build(ctx context.Context) (ApprovalResult, error)
 
@@ -65,6 +66,7 @@ type approvalBuilder struct {
 	Owner             types.Object
 	Request           *v1.ApprovalRequest
 	Approval          *v1.Approval
+	Labels            map[string]string
 	TrustedRequesters []string
 
 	hashValue any
@@ -137,6 +139,11 @@ func (b *approvalBuilder) WithAction(action string) ApprovalBuilder {
 	return b
 }
 
+func (b *approvalBuilder) WithLabels(labels map[string]string) ApprovalBuilder {
+	b.Labels = labels
+	return b
+}
+
 // Build will trigger the approval process and return the result
 // Prioritization of results:
 // 1. If the Approval is rejected or suspended --> Denied (must delete all child resources)
@@ -167,6 +174,14 @@ func (b *approvalBuilder) Build(ctx context.Context) (finalResult ApprovalResult
 
 		if err := controllerutil.SetControllerReference(b.Owner, approvalReq, b.Client.Scheme()); err != nil {
 			return errors.Wrap(err, "failed to set controller reference")
+		}
+
+		if len(approvalReq.Labels) == 0 {
+			approvalReq.Labels = make(map[string]string, len(b.Labels))
+		}
+
+		for k, v := range b.Labels {
+			approvalReq.Labels[k] = v
 		}
 
 		// Apply desired spec fields from the builder
