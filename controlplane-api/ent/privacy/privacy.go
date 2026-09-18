@@ -353,6 +353,30 @@ func (f GroupMutationRuleFunc) EvalMutation(ctx context.Context, m ent.Mutation)
 	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.GroupMutation", m)
 }
 
+// The ListenerQueryRuleFunc type is an adapter to allow the use of ordinary
+// functions as a query rule.
+type ListenerQueryRuleFunc func(context.Context, *ent.ListenerQuery) error
+
+// EvalQuery return f(ctx, q).
+func (f ListenerQueryRuleFunc) EvalQuery(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.ListenerQuery); ok {
+		return f(ctx, q)
+	}
+	return Denyf("ent/privacy: unexpected query type %T, expect *ent.ListenerQuery", q)
+}
+
+// The ListenerMutationRuleFunc type is an adapter to allow the use of ordinary
+// functions as a mutation rule.
+type ListenerMutationRuleFunc func(context.Context, *ent.ListenerMutation) error
+
+// EvalMutation calls f(ctx, m).
+func (f ListenerMutationRuleFunc) EvalMutation(ctx context.Context, m ent.Mutation) error {
+	if m, ok := m.(*ent.ListenerMutation); ok {
+		return f(ctx, m)
+	}
+	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.ListenerMutation", m)
+}
+
 // The MemberQueryRuleFunc type is an adapter to allow the use of ordinary
 // functions as a query rule.
 type MemberQueryRuleFunc func(context.Context, *ent.MemberQuery) error

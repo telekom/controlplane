@@ -28,6 +28,7 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/eventsubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventtype"
 	"github.com/telekom/controlplane/controlplane-api/ent/group"
+	"github.com/telekom/controlplane/controlplane-api/ent/listener"
 	"github.com/telekom/controlplane/controlplane-api/ent/member"
 	"github.com/telekom/controlplane/controlplane-api/ent/permissionset"
 	"github.com/telekom/controlplane/controlplane-api/ent/team"
@@ -59,6 +60,8 @@ type Client struct {
 	EventType *EventTypeClient
 	// Group is the client for interacting with the Group builders.
 	Group *GroupClient
+	// Listener is the client for interacting with the Listener builders.
+	Listener *ListenerClient
 	// Member is the client for interacting with the Member builders.
 	Member *MemberClient
 	// PermissionSet is the client for interacting with the PermissionSet builders.
@@ -90,6 +93,7 @@ func (c *Client) init() {
 	c.EventSubscription = NewEventSubscriptionClient(c.config)
 	c.EventType = NewEventTypeClient(c.config)
 	c.Group = NewGroupClient(c.config)
+	c.Listener = NewListenerClient(c.config)
 	c.Member = NewMemberClient(c.config)
 	c.PermissionSet = NewPermissionSetClient(c.config)
 	c.Team = NewTeamClient(c.config)
@@ -196,6 +200,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		EventSubscription: NewEventSubscriptionClient(cfg),
 		EventType:         NewEventTypeClient(cfg),
 		Group:             NewGroupClient(cfg),
+		Listener:          NewListenerClient(cfg),
 		Member:            NewMemberClient(cfg),
 		PermissionSet:     NewPermissionSetClient(cfg),
 		Team:              NewTeamClient(cfg),
@@ -229,6 +234,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		EventSubscription: NewEventSubscriptionClient(cfg),
 		EventType:         NewEventTypeClient(cfg),
 		Group:             NewGroupClient(cfg),
+		Listener:          NewListenerClient(cfg),
 		Member:            NewMemberClient(cfg),
 		PermissionSet:     NewPermissionSetClient(cfg),
 		Team:              NewTeamClient(cfg),
@@ -264,7 +270,7 @@ func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
 		c.Api, c.ApiExposure, c.ApiSubscription, c.Application, c.Approval,
 		c.ApprovalRequest, c.EventExposure, c.EventSubscription, c.EventType, c.Group,
-		c.Member, c.PermissionSet, c.Team, c.Zone,
+		c.Listener, c.Member, c.PermissionSet, c.Team, c.Zone,
 	} {
 		n.Use(hooks...)
 	}
@@ -276,7 +282,7 @@ func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
 		c.Api, c.ApiExposure, c.ApiSubscription, c.Application, c.Approval,
 		c.ApprovalRequest, c.EventExposure, c.EventSubscription, c.EventType, c.Group,
-		c.Member, c.PermissionSet, c.Team, c.Zone,
+		c.Listener, c.Member, c.PermissionSet, c.Team, c.Zone,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -305,6 +311,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.EventType.mutate(ctx, m)
 	case *GroupMutation:
 		return c.Group.mutate(ctx, m)
+	case *ListenerMutation:
+		return c.Listener.mutate(ctx, m)
 	case *MemberMutation:
 		return c.Member.mutate(ctx, m)
 	case *PermissionSetMutation:
@@ -640,6 +648,22 @@ func (c *ApiExposureClient) QuerySubscriptions(_m *ApiExposure) *ApiSubscription
 	return query
 }
 
+// QueryListeners queries the listeners edge of a ApiExposure.
+func (c *ApiExposureClient) QueryListeners(_m *ApiExposure) *ListenerQuery {
+	query := (&ListenerClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(apiexposure.Table, apiexposure.FieldID, id),
+			sqlgraph.To(listener.Table, listener.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, apiexposure.ListenersTable, apiexposure.ListenersColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *ApiExposureClient) Hooks() []Hook {
 	hooks := c.hooks.ApiExposure
@@ -847,6 +871,22 @@ func (c *ApiSubscriptionClient) QueryApprovalRequests(_m *ApiSubscription) *Appr
 			sqlgraph.From(apisubscription.Table, apisubscription.FieldID, id),
 			sqlgraph.To(approvalrequest.Table, approvalrequest.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, apisubscription.ApprovalRequestsTable, apisubscription.ApprovalRequestsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryListeners queries the listeners edge of a ApiSubscription.
+func (c *ApiSubscriptionClient) QueryListeners(_m *ApiSubscription) *ListenerQuery {
+	query := (&ListenerClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(apisubscription.Table, apisubscription.FieldID, id),
+			sqlgraph.To(listener.Table, listener.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, apisubscription.ListenersTable, apisubscription.ListenersColumn),
 		)
 		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
@@ -1266,6 +1306,22 @@ func (c *ApprovalClient) QueryEventSubscription(_m *Approval) *EventSubscription
 	return query
 }
 
+// QueryListener queries the listener edge of a Approval.
+func (c *ApprovalClient) QueryListener(_m *Approval) *ListenerQuery {
+	query := (&ListenerClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(approval.Table, approval.FieldID, id),
+			sqlgraph.To(listener.Table, listener.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, true, approval.ListenerTable, approval.ListenerColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *ApprovalClient) Hooks() []Hook {
 	hooks := c.hooks.Approval
@@ -1425,6 +1481,22 @@ func (c *ApprovalRequestClient) QueryEventSubscription(_m *ApprovalRequest) *Eve
 			sqlgraph.From(approvalrequest.Table, approvalrequest.FieldID, id),
 			sqlgraph.To(eventsubscription.Table, eventsubscription.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, approvalrequest.EventSubscriptionTable, approvalrequest.EventSubscriptionColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryListener queries the listener edge of a ApprovalRequest.
+func (c *ApprovalRequestClient) QueryListener(_m *ApprovalRequest) *ListenerQuery {
+	query := (&ListenerClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(approvalrequest.Table, approvalrequest.FieldID, id),
+			sqlgraph.To(listener.Table, listener.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, approvalrequest.ListenerTable, approvalrequest.ListenerColumn),
 		)
 		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
@@ -2154,6 +2226,204 @@ func (c *GroupClient) mutate(ctx context.Context, m *GroupMutation) (Value, erro
 	}
 }
 
+// ListenerClient is a client for the Listener schema.
+type ListenerClient struct {
+	config
+}
+
+// NewListenerClient returns a client for the Listener from the given config.
+func NewListenerClient(c config) *ListenerClient {
+	return &ListenerClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `listener.Hooks(f(g(h())))`.
+func (c *ListenerClient) Use(hooks ...Hook) {
+	c.hooks.Listener = append(c.hooks.Listener, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `listener.Intercept(f(g(h())))`.
+func (c *ListenerClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Listener = append(c.inters.Listener, interceptors...)
+}
+
+// Create returns a builder for creating a Listener entity.
+func (c *ListenerClient) Create() *ListenerCreate {
+	mutation := newListenerMutation(c.config, OpCreate)
+	return &ListenerCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Listener entities.
+func (c *ListenerClient) CreateBulk(builders ...*ListenerCreate) *ListenerCreateBulk {
+	return &ListenerCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *ListenerClient) MapCreateBulk(slice any, setFunc func(*ListenerCreate, int)) *ListenerCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &ListenerCreateBulk{err: fmt.Errorf("calling to ListenerClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*ListenerCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &ListenerCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Listener.
+func (c *ListenerClient) Update() *ListenerUpdate {
+	mutation := newListenerMutation(c.config, OpUpdate)
+	return &ListenerUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *ListenerClient) UpdateOne(_m *Listener) *ListenerUpdateOne {
+	mutation := newListenerMutation(c.config, OpUpdateOne, withListener(_m))
+	return &ListenerUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *ListenerClient) UpdateOneID(id int) *ListenerUpdateOne {
+	mutation := newListenerMutation(c.config, OpUpdateOne, withListenerID(id))
+	return &ListenerUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Listener.
+func (c *ListenerClient) Delete() *ListenerDelete {
+	mutation := newListenerMutation(c.config, OpDelete)
+	return &ListenerDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *ListenerClient) DeleteOne(_m *Listener) *ListenerDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *ListenerClient) DeleteOneID(id int) *ListenerDeleteOne {
+	builder := c.Delete().Where(listener.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &ListenerDeleteOne{builder}
+}
+
+// Query returns a query builder for Listener.
+func (c *ListenerClient) Query() *ListenerQuery {
+	return &ListenerQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeListener},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a Listener entity by its id.
+func (c *ListenerClient) Get(ctx context.Context, id int) (*Listener, error) {
+	return c.Query().Where(listener.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *ListenerClient) GetX(ctx context.Context, id int) *Listener {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QuerySubscription queries the subscription edge of a Listener.
+func (c *ListenerClient) QuerySubscription(_m *Listener) *ApiSubscriptionQuery {
+	query := (&ApiSubscriptionClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(listener.Table, listener.FieldID, id),
+			sqlgraph.To(apisubscription.Table, apisubscription.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, listener.SubscriptionTable, listener.SubscriptionColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryExposure queries the exposure edge of a Listener.
+func (c *ListenerClient) QueryExposure(_m *Listener) *ApiExposureQuery {
+	query := (&ApiExposureClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(listener.Table, listener.FieldID, id),
+			sqlgraph.To(apiexposure.Table, apiexposure.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, listener.ExposureTable, listener.ExposureColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryProviderApproval queries the provider_approval edge of a Listener.
+func (c *ListenerClient) QueryProviderApproval(_m *Listener) *ApprovalQuery {
+	query := (&ApprovalClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(listener.Table, listener.FieldID, id),
+			sqlgraph.To(approval.Table, approval.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, false, listener.ProviderApprovalTable, listener.ProviderApprovalColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryApprovalRequests queries the approval_requests edge of a Listener.
+func (c *ListenerClient) QueryApprovalRequests(_m *Listener) *ApprovalRequestQuery {
+	query := (&ApprovalRequestClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(listener.Table, listener.FieldID, id),
+			sqlgraph.To(approvalrequest.Table, approvalrequest.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, listener.ApprovalRequestsTable, listener.ApprovalRequestsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *ListenerClient) Hooks() []Hook {
+	hooks := c.hooks.Listener
+	return append(hooks[:len(hooks):len(hooks)], listener.Hooks[:]...)
+}
+
+// Interceptors returns the client interceptors.
+func (c *ListenerClient) Interceptors() []Interceptor {
+	return c.inters.Listener
+}
+
+func (c *ListenerClient) mutate(ctx context.Context, m *ListenerMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&ListenerCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&ListenerUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&ListenerUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&ListenerDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown Listener mutation op: %q", m.Op())
+	}
+}
+
 // MemberClient is a client for the Member schema.
 type MemberClient struct {
 	config
@@ -2822,12 +3092,12 @@ func (c *ZoneClient) mutate(ctx context.Context, m *ZoneMutation) (Value, error)
 type (
 	hooks struct {
 		Api, ApiExposure, ApiSubscription, Application, Approval, ApprovalRequest,
-		EventExposure, EventSubscription, EventType, Group, Member, PermissionSet,
-		Team, Zone []ent.Hook
+		EventExposure, EventSubscription, EventType, Group, Listener, Member,
+		PermissionSet, Team, Zone []ent.Hook
 	}
 	inters struct {
 		Api, ApiExposure, ApiSubscription, Application, Approval, ApprovalRequest,
-		EventExposure, EventSubscription, EventType, Group, Member, PermissionSet,
-		Team, Zone []ent.Interceptor
+		EventExposure, EventSubscription, EventType, Group, Listener, Member,
+		PermissionSet, Team, Zone []ent.Interceptor
 	}
 )

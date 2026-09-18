@@ -6,7 +6,14 @@ package testutil
 
 import (
 	"github.com/telekom/controlplane/controlplane-api/ent"
+	"github.com/telekom/controlplane/controlplane-api/ent/approval"
+	"github.com/telekom/controlplane/controlplane-api/ent/listener"
 	"github.com/telekom/controlplane/controlplane-api/pkg/model"
+)
+
+const (
+	teamAlpha = "team-alpha"
+	teamBeta  = "team-beta"
 )
 
 // SeedData holds references to all entities created by SeedStandard.
@@ -24,11 +31,16 @@ type SeedData struct {
 
 	ExposureAlpha *ent.ApiExposure
 	ExposureBeta  *ent.ApiExposure
+	APIAlpha      *ent.Api
 
 	Subscription *ent.ApiSubscription
 
-	Approval        *ent.Approval
-	ApprovalRequest *ent.ApprovalRequest
+	Approval                *ent.Approval
+	ApprovalRequest         *ent.ApprovalRequest
+	ListenerApproval        *ent.Approval
+	ListenerApprovalRequest *ent.ApprovalRequest
+	ListenerReady           *ent.Listener
+	ListenerPending         *ent.Listener
 
 	MemberAlpha *ent.Member
 	MemberBeta  *ent.Member
@@ -52,9 +64,9 @@ func SeedStandard(client *ent.Client) *SeedData {
 
 	// Teams
 	s.TeamAlpha = must(client.Team.Create().
-		SetNamespace("default").SetName("team-alpha").SetEmail("alpha@test.dev").SetGroup(s.GroupA).Save(ctx))
+		SetNamespace("default").SetName(teamAlpha).SetEmail("alpha@test.dev").SetGroup(s.GroupA).Save(ctx))
 	s.TeamBeta = must(client.Team.Create().
-		SetNamespace("default").SetName("team-beta").SetEmail("beta@test.dev").SetGroup(s.GroupB).Save(ctx))
+		SetNamespace("default").SetName(teamBeta).SetEmail("beta@test.dev").SetGroup(s.GroupB).Save(ctx))
 
 	// Members
 	s.MemberAlpha = must(client.Member.Create().
@@ -71,8 +83,10 @@ func SeedStandard(client *ent.Client) *SeedData {
 		SetOwnerTeam(s.TeamBeta).SetZone(s.ZoneEU).Save(ctx))
 
 	// API Exposures
+	s.APIAlpha = must(client.Api.Create().
+		SetNamespace("default").SetName("api-alpha").SetBasePath("/alpha").SetVersion("v1").SetOwner(s.TeamAlpha).Save(ctx))
 	s.ExposureAlpha = must(client.ApiExposure.Create().
-		SetNamespace("default").SetBasePath("/alpha").SetOwner(s.AppAlpha).Save(ctx))
+		SetNamespace("default").SetBasePath("/alpha").SetOwner(s.AppAlpha).SetAPI(s.APIAlpha).Save(ctx))
 	s.ExposureBeta = must(client.ApiExposure.Create().
 		SetNamespace("default").SetBasePath("/beta").SetOwner(s.AppBeta).Save(ctx))
 
@@ -90,19 +104,57 @@ func SeedStandard(client *ent.Client) *SeedData {
 		SetNamespace("prod").
 		SetName("apisubscription--sub-alpha").
 		SetAction("ALLOW").
-		SetRequester(model.RequesterInfo{TeamName: "team-beta"}).
-		SetDecider(model.DeciderInfo{TeamName: "team-alpha"}).
-		SetDeciderTeamName("team-alpha").
+		SetRequester(model.RequesterInfo{TeamName: teamBeta}).
+		SetDecider(model.DeciderInfo{TeamName: teamAlpha}).
+		SetDeciderTeamName(teamAlpha).
 		SetAPISubscription(s.Subscription).
 		Save(ctx))
 	s.ApprovalRequest = must(client.ApprovalRequest.Create().
 		SetNamespace("prod").
 		SetName("apisubscription--sub-alpha--req-1").
 		SetAction("ALLOW").
-		SetRequester(model.RequesterInfo{TeamName: "team-beta"}).
-		SetDecider(model.DeciderInfo{TeamName: "team-alpha"}).
-		SetDeciderTeamName("team-alpha").
+		SetRequester(model.RequesterInfo{TeamName: teamBeta}).
+		SetDecider(model.DeciderInfo{TeamName: teamAlpha}).
+		SetDeciderTeamName(teamAlpha).
 		SetAPISubscription(s.Subscription).
+		Save(ctx))
+
+	s.ListenerReady = must(client.Listener.Create().
+		SetNamespace("default").
+		SetName("listener-ready").
+		SetAPIBasePath("/alpha").
+		SetStatusPhase(listener.StatusPhaseReady).
+		SetRequestFilter(&model.ListenerFilter{Trigger: map[string]string{"method": "GET"}, Payload: []string{"request.id"}}).
+		SetResponseFilter(&model.ListenerFilter{Payload: []string{"response.id"}}).
+		SetSubscription(s.Subscription).
+		SetExposure(s.ExposureAlpha).
+		Save(ctx))
+	s.ListenerPending = must(client.Listener.Create().
+		SetNamespace("default").
+		SetName("listener-pending").
+		SetAPIBasePath("/alpha").
+		SetStatusPhase(listener.StatusPhasePending).
+		SetSubscription(s.Subscription).
+		SetExposure(s.ExposureAlpha).
+		Save(ctx))
+	s.ListenerApproval = must(client.Approval.Create().
+		SetNamespace("prod").
+		SetName("listener--listener-ready").
+		SetAction("ALLOW").
+		SetState(approval.StateGranted).
+		SetRequester(model.RequesterInfo{TeamName: teamBeta}).
+		SetDecider(model.DeciderInfo{TeamName: teamAlpha}).
+		SetDeciderTeamName(teamAlpha).
+		SetListener(s.ListenerReady).
+		Save(ctx))
+	s.ListenerApprovalRequest = must(client.ApprovalRequest.Create().
+		SetNamespace("prod").
+		SetName("listener--listener-ready--req-1").
+		SetAction("ALLOW").
+		SetRequester(model.RequesterInfo{TeamName: teamBeta}).
+		SetDecider(model.DeciderInfo{TeamName: teamAlpha}).
+		SetDeciderTeamName(teamAlpha).
+		SetListener(s.ListenerReady).
 		Save(ctx))
 
 	// Event Exposures

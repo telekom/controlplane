@@ -24,6 +24,7 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/eventsubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventtype"
 	"github.com/telekom/controlplane/controlplane-api/ent/group"
+	"github.com/telekom/controlplane/controlplane-api/ent/listener"
 	"github.com/telekom/controlplane/controlplane-api/ent/member"
 	"github.com/telekom/controlplane/controlplane-api/ent/permissionset"
 	"github.com/telekom/controlplane/controlplane-api/ent/predicate"
@@ -51,6 +52,7 @@ const (
 	TypeEventSubscription = "EventSubscription"
 	TypeEventType         = "EventType"
 	TypeGroup             = "Group"
+	TypeListener          = "Listener"
 	TypeMember            = "Member"
 	TypePermissionSet     = "PermissionSet"
 	TypeTeam              = "Team"
@@ -68,6 +70,7 @@ type APIMutation struct {
 	status_phase        *api.StatusPhase
 	status_message      *string
 	namespace           *string
+	name                *string
 	base_path           *string
 	version             *string
 	category            *string
@@ -389,6 +392,55 @@ func (m *APIMutation) OldNamespace(ctx context.Context) (v string, err error) {
 // ResetNamespace resets all changes to the "namespace" field.
 func (m *APIMutation) ResetNamespace() {
 	m.namespace = nil
+}
+
+// SetName sets the "name" field.
+func (m *APIMutation) SetName(s string) {
+	m.name = &s
+}
+
+// Name returns the value of the "name" field in the mutation.
+func (m *APIMutation) Name() (r string, exists bool) {
+	v := m.name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldName returns the old "name" field's value of the Api entity.
+// If the Api object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *APIMutation) OldName(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldName: %w", err)
+	}
+	return oldValue.Name, nil
+}
+
+// ClearName clears the value of the "name" field.
+func (m *APIMutation) ClearName() {
+	m.name = nil
+	m.clearedFields[api.FieldName] = struct{}{}
+}
+
+// NameCleared returns if the "name" field was cleared in this mutation.
+func (m *APIMutation) NameCleared() bool {
+	_, ok := m.clearedFields[api.FieldName]
+	return ok
+}
+
+// ResetName resets all changes to the "name" field.
+func (m *APIMutation) ResetName() {
+	m.name = nil
+	delete(m.clearedFields, api.FieldName)
 }
 
 // SetBasePath sets the "base_path" field.
@@ -825,7 +877,7 @@ func (m *APIMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *APIMutation) Fields() []string {
-	fields := make([]string, 0, 12)
+	fields := make([]string, 0, 13)
 	if m.created_at != nil {
 		fields = append(fields, api.FieldCreatedAt)
 	}
@@ -840,6 +892,9 @@ func (m *APIMutation) Fields() []string {
 	}
 	if m.namespace != nil {
 		fields = append(fields, api.FieldNamespace)
+	}
+	if m.name != nil {
+		fields = append(fields, api.FieldName)
 	}
 	if m.base_path != nil {
 		fields = append(fields, api.FieldBasePath)
@@ -880,6 +935,8 @@ func (m *APIMutation) Field(name string) (ent.Value, bool) {
 		return m.StatusMessage()
 	case api.FieldNamespace:
 		return m.Namespace()
+	case api.FieldName:
+		return m.Name()
 	case api.FieldBasePath:
 		return m.BasePath()
 	case api.FieldVersion:
@@ -913,6 +970,8 @@ func (m *APIMutation) OldField(ctx context.Context, name string) (ent.Value, err
 		return m.OldStatusMessage(ctx)
 	case api.FieldNamespace:
 		return m.OldNamespace(ctx)
+	case api.FieldName:
+		return m.OldName(ctx)
 	case api.FieldBasePath:
 		return m.OldBasePath(ctx)
 	case api.FieldVersion:
@@ -970,6 +1029,13 @@ func (m *APIMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetNamespace(v)
+		return nil
+	case api.FieldName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetName(v)
 		return nil
 	case api.FieldBasePath:
 		v, ok := value.(string)
@@ -1056,6 +1122,9 @@ func (m *APIMutation) ClearedFields() []string {
 	if m.FieldCleared(api.FieldStatusMessage) {
 		fields = append(fields, api.FieldStatusMessage)
 	}
+	if m.FieldCleared(api.FieldName) {
+		fields = append(fields, api.FieldName)
+	}
 	if m.FieldCleared(api.FieldCategory) {
 		fields = append(fields, api.FieldCategory)
 	}
@@ -1084,6 +1153,9 @@ func (m *APIMutation) ClearField(name string) error {
 		return nil
 	case api.FieldStatusMessage:
 		m.ClearStatusMessage()
+		return nil
+	case api.FieldName:
+		m.ClearName()
 		return nil
 	case api.FieldCategory:
 		m.ClearCategory()
@@ -1116,6 +1188,9 @@ func (m *APIMutation) ResetField(name string) error {
 		return nil
 	case api.FieldNamespace:
 		m.ResetNamespace()
+		return nil
+	case api.FieldName:
+		m.ResetName()
 		return nil
 	case api.FieldBasePath:
 		m.ResetBasePath()
@@ -1275,6 +1350,9 @@ type ApiExposureMutation struct {
 	subscriptions        map[int]struct{}
 	removedsubscriptions map[int]struct{}
 	clearedsubscriptions bool
+	listeners            map[int]struct{}
+	removedlisteners     map[int]struct{}
+	clearedlisteners     bool
 	done                 bool
 	oldValue             func(context.Context) (*ApiExposure, error)
 	predicates           []predicate.ApiExposure
@@ -2171,6 +2249,60 @@ func (m *ApiExposureMutation) ResetSubscriptions() {
 	m.removedsubscriptions = nil
 }
 
+// AddListenerIDs adds the "listeners" edge to the Listener entity by ids.
+func (m *ApiExposureMutation) AddListenerIDs(ids ...int) {
+	if m.listeners == nil {
+		m.listeners = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.listeners[ids[i]] = struct{}{}
+	}
+}
+
+// ClearListeners clears the "listeners" edge to the Listener entity.
+func (m *ApiExposureMutation) ClearListeners() {
+	m.clearedlisteners = true
+}
+
+// ListenersCleared reports if the "listeners" edge to the Listener entity was cleared.
+func (m *ApiExposureMutation) ListenersCleared() bool {
+	return m.clearedlisteners
+}
+
+// RemoveListenerIDs removes the "listeners" edge to the Listener entity by IDs.
+func (m *ApiExposureMutation) RemoveListenerIDs(ids ...int) {
+	if m.removedlisteners == nil {
+		m.removedlisteners = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.listeners, ids[i])
+		m.removedlisteners[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedListeners returns the removed IDs of the "listeners" edge to the Listener entity.
+func (m *ApiExposureMutation) RemovedListenersIDs() (ids []int) {
+	for id := range m.removedlisteners {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ListenersIDs returns the "listeners" edge IDs in the mutation.
+func (m *ApiExposureMutation) ListenersIDs() (ids []int) {
+	for id := range m.listeners {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetListeners resets all changes to the "listeners" edge.
+func (m *ApiExposureMutation) ResetListeners() {
+	m.listeners = nil
+	m.clearedlisteners = false
+	m.removedlisteners = nil
+}
+
 // Where appends a list predicates to the ApiExposureMutation builder.
 func (m *ApiExposureMutation) Where(ps ...predicate.ApiExposure) {
 	m.predicates = append(m.predicates, ps...)
@@ -2587,7 +2719,7 @@ func (m *ApiExposureMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *ApiExposureMutation) AddedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 4)
 	if m.owner != nil {
 		edges = append(edges, apiexposure.EdgeOwner)
 	}
@@ -2596,6 +2728,9 @@ func (m *ApiExposureMutation) AddedEdges() []string {
 	}
 	if m.subscriptions != nil {
 		edges = append(edges, apiexposure.EdgeSubscriptions)
+	}
+	if m.listeners != nil {
+		edges = append(edges, apiexposure.EdgeListeners)
 	}
 	return edges
 }
@@ -2618,15 +2753,24 @@ func (m *ApiExposureMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case apiexposure.EdgeListeners:
+		ids := make([]ent.Value, 0, len(m.listeners))
+		for id := range m.listeners {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *ApiExposureMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 4)
 	if m.removedsubscriptions != nil {
 		edges = append(edges, apiexposure.EdgeSubscriptions)
+	}
+	if m.removedlisteners != nil {
+		edges = append(edges, apiexposure.EdgeListeners)
 	}
 	return edges
 }
@@ -2641,13 +2785,19 @@ func (m *ApiExposureMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case apiexposure.EdgeListeners:
+		ids := make([]ent.Value, 0, len(m.removedlisteners))
+		for id := range m.removedlisteners {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *ApiExposureMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 4)
 	if m.clearedowner {
 		edges = append(edges, apiexposure.EdgeOwner)
 	}
@@ -2656,6 +2806,9 @@ func (m *ApiExposureMutation) ClearedEdges() []string {
 	}
 	if m.clearedsubscriptions {
 		edges = append(edges, apiexposure.EdgeSubscriptions)
+	}
+	if m.clearedlisteners {
+		edges = append(edges, apiexposure.EdgeListeners)
 	}
 	return edges
 }
@@ -2670,6 +2823,8 @@ func (m *ApiExposureMutation) EdgeCleared(name string) bool {
 		return m.clearedapi
 	case apiexposure.EdgeSubscriptions:
 		return m.clearedsubscriptions
+	case apiexposure.EdgeListeners:
+		return m.clearedlisteners
 	}
 	return false
 }
@@ -2700,6 +2855,9 @@ func (m *ApiExposureMutation) ResetEdge(name string) error {
 		return nil
 	case apiexposure.EdgeSubscriptions:
 		m.ResetSubscriptions()
+		return nil
+	case apiexposure.EdgeListeners:
+		m.ResetListeners()
 		return nil
 	}
 	return fmt.Errorf("unknown ApiExposure edge %s", name)
@@ -2736,6 +2894,9 @@ type ApiSubscriptionMutation struct {
 	approval_requests        map[int]struct{}
 	removedapproval_requests map[int]struct{}
 	clearedapproval_requests bool
+	listeners                map[int]struct{}
+	removedlisteners         map[int]struct{}
+	clearedlisteners         bool
 	done                     bool
 	oldValue                 func(context.Context) (*ApiSubscription, error)
 	predicates               []predicate.ApiSubscription
@@ -3574,6 +3735,60 @@ func (m *ApiSubscriptionMutation) ResetApprovalRequests() {
 	m.removedapproval_requests = nil
 }
 
+// AddListenerIDs adds the "listeners" edge to the Listener entity by ids.
+func (m *ApiSubscriptionMutation) AddListenerIDs(ids ...int) {
+	if m.listeners == nil {
+		m.listeners = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.listeners[ids[i]] = struct{}{}
+	}
+}
+
+// ClearListeners clears the "listeners" edge to the Listener entity.
+func (m *ApiSubscriptionMutation) ClearListeners() {
+	m.clearedlisteners = true
+}
+
+// ListenersCleared reports if the "listeners" edge to the Listener entity was cleared.
+func (m *ApiSubscriptionMutation) ListenersCleared() bool {
+	return m.clearedlisteners
+}
+
+// RemoveListenerIDs removes the "listeners" edge to the Listener entity by IDs.
+func (m *ApiSubscriptionMutation) RemoveListenerIDs(ids ...int) {
+	if m.removedlisteners == nil {
+		m.removedlisteners = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.listeners, ids[i])
+		m.removedlisteners[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedListeners returns the removed IDs of the "listeners" edge to the Listener entity.
+func (m *ApiSubscriptionMutation) RemovedListenersIDs() (ids []int) {
+	for id := range m.removedlisteners {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ListenersIDs returns the "listeners" edge IDs in the mutation.
+func (m *ApiSubscriptionMutation) ListenersIDs() (ids []int) {
+	for id := range m.listeners {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetListeners resets all changes to the "listeners" edge.
+func (m *ApiSubscriptionMutation) ResetListeners() {
+	m.listeners = nil
+	m.clearedlisteners = false
+	m.removedlisteners = nil
+}
+
 // Where appends a list predicates to the ApiSubscriptionMutation builder.
 func (m *ApiSubscriptionMutation) Where(ps ...predicate.ApiSubscription) {
 	m.predicates = append(m.predicates, ps...)
@@ -3933,7 +4148,7 @@ func (m *ApiSubscriptionMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *ApiSubscriptionMutation) AddedEdges() []string {
-	edges := make([]string, 0, 5)
+	edges := make([]string, 0, 6)
 	if m.owner != nil {
 		edges = append(edges, apisubscription.EdgeOwner)
 	}
@@ -3948,6 +4163,9 @@ func (m *ApiSubscriptionMutation) AddedEdges() []string {
 	}
 	if m.approval_requests != nil {
 		edges = append(edges, apisubscription.EdgeApprovalRequests)
+	}
+	if m.listeners != nil {
+		edges = append(edges, apisubscription.EdgeListeners)
 	}
 	return edges
 }
@@ -3980,18 +4198,27 @@ func (m *ApiSubscriptionMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case apisubscription.EdgeListeners:
+		ids := make([]ent.Value, 0, len(m.listeners))
+		for id := range m.listeners {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *ApiSubscriptionMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 5)
+	edges := make([]string, 0, 6)
 	if m.removedfailover_zones != nil {
 		edges = append(edges, apisubscription.EdgeFailoverZones)
 	}
 	if m.removedapproval_requests != nil {
 		edges = append(edges, apisubscription.EdgeApprovalRequests)
+	}
+	if m.removedlisteners != nil {
+		edges = append(edges, apisubscription.EdgeListeners)
 	}
 	return edges
 }
@@ -4012,13 +4239,19 @@ func (m *ApiSubscriptionMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case apisubscription.EdgeListeners:
+		ids := make([]ent.Value, 0, len(m.removedlisteners))
+		for id := range m.removedlisteners {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *ApiSubscriptionMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 5)
+	edges := make([]string, 0, 6)
 	if m.clearedowner {
 		edges = append(edges, apisubscription.EdgeOwner)
 	}
@@ -4033,6 +4266,9 @@ func (m *ApiSubscriptionMutation) ClearedEdges() []string {
 	}
 	if m.clearedapproval_requests {
 		edges = append(edges, apisubscription.EdgeApprovalRequests)
+	}
+	if m.clearedlisteners {
+		edges = append(edges, apisubscription.EdgeListeners)
 	}
 	return edges
 }
@@ -4051,6 +4287,8 @@ func (m *ApiSubscriptionMutation) EdgeCleared(name string) bool {
 		return m.clearedapproval
 	case apisubscription.EdgeApprovalRequests:
 		return m.clearedapproval_requests
+	case apisubscription.EdgeListeners:
+		return m.clearedlisteners
 	}
 	return false
 }
@@ -4090,6 +4328,9 @@ func (m *ApiSubscriptionMutation) ResetEdge(name string) error {
 		return nil
 	case apisubscription.EdgeApprovalRequests:
 		m.ResetApprovalRequests()
+		return nil
+	case apisubscription.EdgeListeners:
+		m.ResetListeners()
 		return nil
 	}
 	return fmt.Errorf("unknown ApiSubscription edge %s", name)
@@ -6083,6 +6324,8 @@ type ApprovalMutation struct {
 	clearedapi_subscription     bool
 	event_subscription          *int
 	clearedevent_subscription   bool
+	listener                    *int
+	clearedlistener             bool
 	done                        bool
 	oldValue                    func(context.Context) (*Approval, error)
 	predicates                  []predicate.Approval
@@ -7001,6 +7244,45 @@ func (m *ApprovalMutation) ResetEventSubscription() {
 	m.clearedevent_subscription = false
 }
 
+// SetListenerID sets the "listener" edge to the Listener entity by id.
+func (m *ApprovalMutation) SetListenerID(id int) {
+	m.listener = &id
+}
+
+// ClearListener clears the "listener" edge to the Listener entity.
+func (m *ApprovalMutation) ClearListener() {
+	m.clearedlistener = true
+}
+
+// ListenerCleared reports if the "listener" edge to the Listener entity was cleared.
+func (m *ApprovalMutation) ListenerCleared() bool {
+	return m.clearedlistener
+}
+
+// ListenerID returns the "listener" edge ID in the mutation.
+func (m *ApprovalMutation) ListenerID() (id int, exists bool) {
+	if m.listener != nil {
+		return *m.listener, true
+	}
+	return
+}
+
+// ListenerIDs returns the "listener" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// ListenerID instead. It exists only for internal usage by the builders.
+func (m *ApprovalMutation) ListenerIDs() (ids []int) {
+	if id := m.listener; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetListener resets all changes to the "listener" edge.
+func (m *ApprovalMutation) ResetListener() {
+	m.listener = nil
+	m.clearedlistener = false
+}
+
 // Where appends a list predicates to the ApprovalMutation builder.
 func (m *ApprovalMutation) Where(ps ...predicate.Approval) {
 	m.predicates = append(m.predicates, ps...)
@@ -7445,12 +7727,15 @@ func (m *ApprovalMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *ApprovalMutation) AddedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.api_subscription != nil {
 		edges = append(edges, approval.EdgeAPISubscription)
 	}
 	if m.event_subscription != nil {
 		edges = append(edges, approval.EdgeEventSubscription)
+	}
+	if m.listener != nil {
+		edges = append(edges, approval.EdgeListener)
 	}
 	return edges
 }
@@ -7467,13 +7752,17 @@ func (m *ApprovalMutation) AddedIDs(name string) []ent.Value {
 		if id := m.event_subscription; id != nil {
 			return []ent.Value{*id}
 		}
+	case approval.EdgeListener:
+		if id := m.listener; id != nil {
+			return []ent.Value{*id}
+		}
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *ApprovalMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	return edges
 }
 
@@ -7485,12 +7774,15 @@ func (m *ApprovalMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *ApprovalMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.clearedapi_subscription {
 		edges = append(edges, approval.EdgeAPISubscription)
 	}
 	if m.clearedevent_subscription {
 		edges = append(edges, approval.EdgeEventSubscription)
+	}
+	if m.clearedlistener {
+		edges = append(edges, approval.EdgeListener)
 	}
 	return edges
 }
@@ -7503,6 +7795,8 @@ func (m *ApprovalMutation) EdgeCleared(name string) bool {
 		return m.clearedapi_subscription
 	case approval.EdgeEventSubscription:
 		return m.clearedevent_subscription
+	case approval.EdgeListener:
+		return m.clearedlistener
 	}
 	return false
 }
@@ -7517,6 +7811,9 @@ func (m *ApprovalMutation) ClearEdge(name string) error {
 	case approval.EdgeEventSubscription:
 		m.ClearEventSubscription()
 		return nil
+	case approval.EdgeListener:
+		m.ClearListener()
+		return nil
 	}
 	return fmt.Errorf("unknown Approval unique edge %s", name)
 }
@@ -7530,6 +7827,9 @@ func (m *ApprovalMutation) ResetEdge(name string) error {
 		return nil
 	case approval.EdgeEventSubscription:
 		m.ResetEventSubscription()
+		return nil
+	case approval.EdgeListener:
+		m.ResetListener()
 		return nil
 	}
 	return fmt.Errorf("unknown Approval edge %s", name)
@@ -7565,6 +7865,8 @@ type ApprovalRequestMutation struct {
 	clearedapi_subscription     bool
 	event_subscription          *int
 	clearedevent_subscription   bool
+	listener                    *int
+	clearedlistener             bool
 	done                        bool
 	oldValue                    func(context.Context) (*ApprovalRequest, error)
 	predicates                  []predicate.ApprovalRequest
@@ -8434,6 +8736,45 @@ func (m *ApprovalRequestMutation) ResetEventSubscription() {
 	m.clearedevent_subscription = false
 }
 
+// SetListenerID sets the "listener" edge to the Listener entity by id.
+func (m *ApprovalRequestMutation) SetListenerID(id int) {
+	m.listener = &id
+}
+
+// ClearListener clears the "listener" edge to the Listener entity.
+func (m *ApprovalRequestMutation) ClearListener() {
+	m.clearedlistener = true
+}
+
+// ListenerCleared reports if the "listener" edge to the Listener entity was cleared.
+func (m *ApprovalRequestMutation) ListenerCleared() bool {
+	return m.clearedlistener
+}
+
+// ListenerID returns the "listener" edge ID in the mutation.
+func (m *ApprovalRequestMutation) ListenerID() (id int, exists bool) {
+	if m.listener != nil {
+		return *m.listener, true
+	}
+	return
+}
+
+// ListenerIDs returns the "listener" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// ListenerID instead. It exists only for internal usage by the builders.
+func (m *ApprovalRequestMutation) ListenerIDs() (ids []int) {
+	if id := m.listener; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetListener resets all changes to the "listener" edge.
+func (m *ApprovalRequestMutation) ResetListener() {
+	m.listener = nil
+	m.clearedlistener = false
+}
+
 // Where appends a list predicates to the ApprovalRequestMutation builder.
 func (m *ApprovalRequestMutation) Where(ps ...predicate.ApprovalRequest) {
 	m.predicates = append(m.predicates, ps...)
@@ -8855,12 +9196,15 @@ func (m *ApprovalRequestMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *ApprovalRequestMutation) AddedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.api_subscription != nil {
 		edges = append(edges, approvalrequest.EdgeAPISubscription)
 	}
 	if m.event_subscription != nil {
 		edges = append(edges, approvalrequest.EdgeEventSubscription)
+	}
+	if m.listener != nil {
+		edges = append(edges, approvalrequest.EdgeListener)
 	}
 	return edges
 }
@@ -8877,13 +9221,17 @@ func (m *ApprovalRequestMutation) AddedIDs(name string) []ent.Value {
 		if id := m.event_subscription; id != nil {
 			return []ent.Value{*id}
 		}
+	case approvalrequest.EdgeListener:
+		if id := m.listener; id != nil {
+			return []ent.Value{*id}
+		}
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *ApprovalRequestMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	return edges
 }
 
@@ -8895,12 +9243,15 @@ func (m *ApprovalRequestMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *ApprovalRequestMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.clearedapi_subscription {
 		edges = append(edges, approvalrequest.EdgeAPISubscription)
 	}
 	if m.clearedevent_subscription {
 		edges = append(edges, approvalrequest.EdgeEventSubscription)
+	}
+	if m.clearedlistener {
+		edges = append(edges, approvalrequest.EdgeListener)
 	}
 	return edges
 }
@@ -8913,6 +9264,8 @@ func (m *ApprovalRequestMutation) EdgeCleared(name string) bool {
 		return m.clearedapi_subscription
 	case approvalrequest.EdgeEventSubscription:
 		return m.clearedevent_subscription
+	case approvalrequest.EdgeListener:
+		return m.clearedlistener
 	}
 	return false
 }
@@ -8927,6 +9280,9 @@ func (m *ApprovalRequestMutation) ClearEdge(name string) error {
 	case approvalrequest.EdgeEventSubscription:
 		m.ClearEventSubscription()
 		return nil
+	case approvalrequest.EdgeListener:
+		m.ClearListener()
+		return nil
 	}
 	return fmt.Errorf("unknown ApprovalRequest unique edge %s", name)
 }
@@ -8940,6 +9296,9 @@ func (m *ApprovalRequestMutation) ResetEdge(name string) error {
 		return nil
 	case approvalrequest.EdgeEventSubscription:
 		m.ResetEventSubscription()
+		return nil
+	case approvalrequest.EdgeListener:
+		m.ResetListener()
 		return nil
 	}
 	return fmt.Errorf("unknown ApprovalRequest edge %s", name)
@@ -13359,6 +13718,1186 @@ func (m *GroupMutation) ResetEdge(name string) error {
 		return nil
 	}
 	return fmt.Errorf("unknown Group edge %s", name)
+}
+
+// ListenerMutation represents an operation that mutates the Listener nodes in the graph.
+type ListenerMutation struct {
+	config
+	op                       Op
+	typ                      string
+	id                       *int
+	created_at               *time.Time
+	last_modified_at         *time.Time
+	status_phase             *listener.StatusPhase
+	status_message           *string
+	environment              *string
+	namespace                *string
+	name                     *string
+	api_base_path            *string
+	request_filter           **model.ListenerFilter
+	response_filter          **model.ListenerFilter
+	clearedFields            map[string]struct{}
+	subscription             *int
+	clearedsubscription      bool
+	exposure                 *int
+	clearedexposure          bool
+	provider_approval        *int
+	clearedprovider_approval bool
+	approval_requests        map[int]struct{}
+	removedapproval_requests map[int]struct{}
+	clearedapproval_requests bool
+	done                     bool
+	oldValue                 func(context.Context) (*Listener, error)
+	predicates               []predicate.Listener
+}
+
+var _ ent.Mutation = (*ListenerMutation)(nil)
+
+// listenerOption allows management of the mutation configuration using functional options.
+type listenerOption func(*ListenerMutation)
+
+// newListenerMutation creates new mutation for the Listener entity.
+func newListenerMutation(c config, op Op, opts ...listenerOption) *ListenerMutation {
+	m := &ListenerMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeListener,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withListenerID sets the ID field of the mutation.
+func withListenerID(id int) listenerOption {
+	return func(m *ListenerMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *Listener
+		)
+		m.oldValue = func(ctx context.Context) (*Listener, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().Listener.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withListener sets the old Listener of the mutation.
+func withListener(node *Listener) listenerOption {
+	return func(m *ListenerMutation) {
+		m.oldValue = func(context.Context) (*Listener, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m ListenerMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m ListenerMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *ListenerMutation) ID() (id int, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *ListenerMutation) IDs(ctx context.Context) ([]int, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().Listener.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *ListenerMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *ListenerMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the Listener entity.
+// If the Listener object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ListenerMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *ListenerMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetLastModifiedAt sets the "last_modified_at" field.
+func (m *ListenerMutation) SetLastModifiedAt(t time.Time) {
+	m.last_modified_at = &t
+}
+
+// LastModifiedAt returns the value of the "last_modified_at" field in the mutation.
+func (m *ListenerMutation) LastModifiedAt() (r time.Time, exists bool) {
+	v := m.last_modified_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLastModifiedAt returns the old "last_modified_at" field's value of the Listener entity.
+// If the Listener object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ListenerMutation) OldLastModifiedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLastModifiedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLastModifiedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLastModifiedAt: %w", err)
+	}
+	return oldValue.LastModifiedAt, nil
+}
+
+// ResetLastModifiedAt resets all changes to the "last_modified_at" field.
+func (m *ListenerMutation) ResetLastModifiedAt() {
+	m.last_modified_at = nil
+}
+
+// SetStatusPhase sets the "status_phase" field.
+func (m *ListenerMutation) SetStatusPhase(lp listener.StatusPhase) {
+	m.status_phase = &lp
+}
+
+// StatusPhase returns the value of the "status_phase" field in the mutation.
+func (m *ListenerMutation) StatusPhase() (r listener.StatusPhase, exists bool) {
+	v := m.status_phase
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStatusPhase returns the old "status_phase" field's value of the Listener entity.
+// If the Listener object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ListenerMutation) OldStatusPhase(ctx context.Context) (v *listener.StatusPhase, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStatusPhase is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStatusPhase requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStatusPhase: %w", err)
+	}
+	return oldValue.StatusPhase, nil
+}
+
+// ClearStatusPhase clears the value of the "status_phase" field.
+func (m *ListenerMutation) ClearStatusPhase() {
+	m.status_phase = nil
+	m.clearedFields[listener.FieldStatusPhase] = struct{}{}
+}
+
+// StatusPhaseCleared returns if the "status_phase" field was cleared in this mutation.
+func (m *ListenerMutation) StatusPhaseCleared() bool {
+	_, ok := m.clearedFields[listener.FieldStatusPhase]
+	return ok
+}
+
+// ResetStatusPhase resets all changes to the "status_phase" field.
+func (m *ListenerMutation) ResetStatusPhase() {
+	m.status_phase = nil
+	delete(m.clearedFields, listener.FieldStatusPhase)
+}
+
+// SetStatusMessage sets the "status_message" field.
+func (m *ListenerMutation) SetStatusMessage(s string) {
+	m.status_message = &s
+}
+
+// StatusMessage returns the value of the "status_message" field in the mutation.
+func (m *ListenerMutation) StatusMessage() (r string, exists bool) {
+	v := m.status_message
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStatusMessage returns the old "status_message" field's value of the Listener entity.
+// If the Listener object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ListenerMutation) OldStatusMessage(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStatusMessage is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStatusMessage requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStatusMessage: %w", err)
+	}
+	return oldValue.StatusMessage, nil
+}
+
+// ClearStatusMessage clears the value of the "status_message" field.
+func (m *ListenerMutation) ClearStatusMessage() {
+	m.status_message = nil
+	m.clearedFields[listener.FieldStatusMessage] = struct{}{}
+}
+
+// StatusMessageCleared returns if the "status_message" field was cleared in this mutation.
+func (m *ListenerMutation) StatusMessageCleared() bool {
+	_, ok := m.clearedFields[listener.FieldStatusMessage]
+	return ok
+}
+
+// ResetStatusMessage resets all changes to the "status_message" field.
+func (m *ListenerMutation) ResetStatusMessage() {
+	m.status_message = nil
+	delete(m.clearedFields, listener.FieldStatusMessage)
+}
+
+// SetEnvironment sets the "environment" field.
+func (m *ListenerMutation) SetEnvironment(s string) {
+	m.environment = &s
+}
+
+// Environment returns the value of the "environment" field in the mutation.
+func (m *ListenerMutation) Environment() (r string, exists bool) {
+	v := m.environment
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEnvironment returns the old "environment" field's value of the Listener entity.
+// If the Listener object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ListenerMutation) OldEnvironment(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEnvironment is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEnvironment requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEnvironment: %w", err)
+	}
+	return oldValue.Environment, nil
+}
+
+// ClearEnvironment clears the value of the "environment" field.
+func (m *ListenerMutation) ClearEnvironment() {
+	m.environment = nil
+	m.clearedFields[listener.FieldEnvironment] = struct{}{}
+}
+
+// EnvironmentCleared returns if the "environment" field was cleared in this mutation.
+func (m *ListenerMutation) EnvironmentCleared() bool {
+	_, ok := m.clearedFields[listener.FieldEnvironment]
+	return ok
+}
+
+// ResetEnvironment resets all changes to the "environment" field.
+func (m *ListenerMutation) ResetEnvironment() {
+	m.environment = nil
+	delete(m.clearedFields, listener.FieldEnvironment)
+}
+
+// SetNamespace sets the "namespace" field.
+func (m *ListenerMutation) SetNamespace(s string) {
+	m.namespace = &s
+}
+
+// Namespace returns the value of the "namespace" field in the mutation.
+func (m *ListenerMutation) Namespace() (r string, exists bool) {
+	v := m.namespace
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldNamespace returns the old "namespace" field's value of the Listener entity.
+// If the Listener object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ListenerMutation) OldNamespace(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldNamespace is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldNamespace requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldNamespace: %w", err)
+	}
+	return oldValue.Namespace, nil
+}
+
+// ResetNamespace resets all changes to the "namespace" field.
+func (m *ListenerMutation) ResetNamespace() {
+	m.namespace = nil
+}
+
+// SetName sets the "name" field.
+func (m *ListenerMutation) SetName(s string) {
+	m.name = &s
+}
+
+// Name returns the value of the "name" field in the mutation.
+func (m *ListenerMutation) Name() (r string, exists bool) {
+	v := m.name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldName returns the old "name" field's value of the Listener entity.
+// If the Listener object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ListenerMutation) OldName(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldName: %w", err)
+	}
+	return oldValue.Name, nil
+}
+
+// ResetName resets all changes to the "name" field.
+func (m *ListenerMutation) ResetName() {
+	m.name = nil
+}
+
+// SetAPIBasePath sets the "api_base_path" field.
+func (m *ListenerMutation) SetAPIBasePath(s string) {
+	m.api_base_path = &s
+}
+
+// APIBasePath returns the value of the "api_base_path" field in the mutation.
+func (m *ListenerMutation) APIBasePath() (r string, exists bool) {
+	v := m.api_base_path
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAPIBasePath returns the old "api_base_path" field's value of the Listener entity.
+// If the Listener object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ListenerMutation) OldAPIBasePath(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAPIBasePath is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAPIBasePath requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAPIBasePath: %w", err)
+	}
+	return oldValue.APIBasePath, nil
+}
+
+// ResetAPIBasePath resets all changes to the "api_base_path" field.
+func (m *ListenerMutation) ResetAPIBasePath() {
+	m.api_base_path = nil
+}
+
+// SetRequestFilter sets the "request_filter" field.
+func (m *ListenerMutation) SetRequestFilter(mf *model.ListenerFilter) {
+	m.request_filter = &mf
+}
+
+// RequestFilter returns the value of the "request_filter" field in the mutation.
+func (m *ListenerMutation) RequestFilter() (r *model.ListenerFilter, exists bool) {
+	v := m.request_filter
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRequestFilter returns the old "request_filter" field's value of the Listener entity.
+// If the Listener object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ListenerMutation) OldRequestFilter(ctx context.Context) (v *model.ListenerFilter, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRequestFilter is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRequestFilter requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRequestFilter: %w", err)
+	}
+	return oldValue.RequestFilter, nil
+}
+
+// ClearRequestFilter clears the value of the "request_filter" field.
+func (m *ListenerMutation) ClearRequestFilter() {
+	m.request_filter = nil
+	m.clearedFields[listener.FieldRequestFilter] = struct{}{}
+}
+
+// RequestFilterCleared returns if the "request_filter" field was cleared in this mutation.
+func (m *ListenerMutation) RequestFilterCleared() bool {
+	_, ok := m.clearedFields[listener.FieldRequestFilter]
+	return ok
+}
+
+// ResetRequestFilter resets all changes to the "request_filter" field.
+func (m *ListenerMutation) ResetRequestFilter() {
+	m.request_filter = nil
+	delete(m.clearedFields, listener.FieldRequestFilter)
+}
+
+// SetResponseFilter sets the "response_filter" field.
+func (m *ListenerMutation) SetResponseFilter(mf *model.ListenerFilter) {
+	m.response_filter = &mf
+}
+
+// ResponseFilter returns the value of the "response_filter" field in the mutation.
+func (m *ListenerMutation) ResponseFilter() (r *model.ListenerFilter, exists bool) {
+	v := m.response_filter
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldResponseFilter returns the old "response_filter" field's value of the Listener entity.
+// If the Listener object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ListenerMutation) OldResponseFilter(ctx context.Context) (v *model.ListenerFilter, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldResponseFilter is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldResponseFilter requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldResponseFilter: %w", err)
+	}
+	return oldValue.ResponseFilter, nil
+}
+
+// ClearResponseFilter clears the value of the "response_filter" field.
+func (m *ListenerMutation) ClearResponseFilter() {
+	m.response_filter = nil
+	m.clearedFields[listener.FieldResponseFilter] = struct{}{}
+}
+
+// ResponseFilterCleared returns if the "response_filter" field was cleared in this mutation.
+func (m *ListenerMutation) ResponseFilterCleared() bool {
+	_, ok := m.clearedFields[listener.FieldResponseFilter]
+	return ok
+}
+
+// ResetResponseFilter resets all changes to the "response_filter" field.
+func (m *ListenerMutation) ResetResponseFilter() {
+	m.response_filter = nil
+	delete(m.clearedFields, listener.FieldResponseFilter)
+}
+
+// SetSubscriptionID sets the "subscription" edge to the ApiSubscription entity by id.
+func (m *ListenerMutation) SetSubscriptionID(id int) {
+	m.subscription = &id
+}
+
+// ClearSubscription clears the "subscription" edge to the ApiSubscription entity.
+func (m *ListenerMutation) ClearSubscription() {
+	m.clearedsubscription = true
+}
+
+// SubscriptionCleared reports if the "subscription" edge to the ApiSubscription entity was cleared.
+func (m *ListenerMutation) SubscriptionCleared() bool {
+	return m.clearedsubscription
+}
+
+// SubscriptionID returns the "subscription" edge ID in the mutation.
+func (m *ListenerMutation) SubscriptionID() (id int, exists bool) {
+	if m.subscription != nil {
+		return *m.subscription, true
+	}
+	return
+}
+
+// SubscriptionIDs returns the "subscription" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// SubscriptionID instead. It exists only for internal usage by the builders.
+func (m *ListenerMutation) SubscriptionIDs() (ids []int) {
+	if id := m.subscription; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetSubscription resets all changes to the "subscription" edge.
+func (m *ListenerMutation) ResetSubscription() {
+	m.subscription = nil
+	m.clearedsubscription = false
+}
+
+// SetExposureID sets the "exposure" edge to the ApiExposure entity by id.
+func (m *ListenerMutation) SetExposureID(id int) {
+	m.exposure = &id
+}
+
+// ClearExposure clears the "exposure" edge to the ApiExposure entity.
+func (m *ListenerMutation) ClearExposure() {
+	m.clearedexposure = true
+}
+
+// ExposureCleared reports if the "exposure" edge to the ApiExposure entity was cleared.
+func (m *ListenerMutation) ExposureCleared() bool {
+	return m.clearedexposure
+}
+
+// ExposureID returns the "exposure" edge ID in the mutation.
+func (m *ListenerMutation) ExposureID() (id int, exists bool) {
+	if m.exposure != nil {
+		return *m.exposure, true
+	}
+	return
+}
+
+// ExposureIDs returns the "exposure" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// ExposureID instead. It exists only for internal usage by the builders.
+func (m *ListenerMutation) ExposureIDs() (ids []int) {
+	if id := m.exposure; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetExposure resets all changes to the "exposure" edge.
+func (m *ListenerMutation) ResetExposure() {
+	m.exposure = nil
+	m.clearedexposure = false
+}
+
+// SetProviderApprovalID sets the "provider_approval" edge to the Approval entity by id.
+func (m *ListenerMutation) SetProviderApprovalID(id int) {
+	m.provider_approval = &id
+}
+
+// ClearProviderApproval clears the "provider_approval" edge to the Approval entity.
+func (m *ListenerMutation) ClearProviderApproval() {
+	m.clearedprovider_approval = true
+}
+
+// ProviderApprovalCleared reports if the "provider_approval" edge to the Approval entity was cleared.
+func (m *ListenerMutation) ProviderApprovalCleared() bool {
+	return m.clearedprovider_approval
+}
+
+// ProviderApprovalID returns the "provider_approval" edge ID in the mutation.
+func (m *ListenerMutation) ProviderApprovalID() (id int, exists bool) {
+	if m.provider_approval != nil {
+		return *m.provider_approval, true
+	}
+	return
+}
+
+// ProviderApprovalIDs returns the "provider_approval" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// ProviderApprovalID instead. It exists only for internal usage by the builders.
+func (m *ListenerMutation) ProviderApprovalIDs() (ids []int) {
+	if id := m.provider_approval; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetProviderApproval resets all changes to the "provider_approval" edge.
+func (m *ListenerMutation) ResetProviderApproval() {
+	m.provider_approval = nil
+	m.clearedprovider_approval = false
+}
+
+// AddApprovalRequestIDs adds the "approval_requests" edge to the ApprovalRequest entity by ids.
+func (m *ListenerMutation) AddApprovalRequestIDs(ids ...int) {
+	if m.approval_requests == nil {
+		m.approval_requests = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.approval_requests[ids[i]] = struct{}{}
+	}
+}
+
+// ClearApprovalRequests clears the "approval_requests" edge to the ApprovalRequest entity.
+func (m *ListenerMutation) ClearApprovalRequests() {
+	m.clearedapproval_requests = true
+}
+
+// ApprovalRequestsCleared reports if the "approval_requests" edge to the ApprovalRequest entity was cleared.
+func (m *ListenerMutation) ApprovalRequestsCleared() bool {
+	return m.clearedapproval_requests
+}
+
+// RemoveApprovalRequestIDs removes the "approval_requests" edge to the ApprovalRequest entity by IDs.
+func (m *ListenerMutation) RemoveApprovalRequestIDs(ids ...int) {
+	if m.removedapproval_requests == nil {
+		m.removedapproval_requests = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.approval_requests, ids[i])
+		m.removedapproval_requests[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedApprovalRequests returns the removed IDs of the "approval_requests" edge to the ApprovalRequest entity.
+func (m *ListenerMutation) RemovedApprovalRequestsIDs() (ids []int) {
+	for id := range m.removedapproval_requests {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ApprovalRequestsIDs returns the "approval_requests" edge IDs in the mutation.
+func (m *ListenerMutation) ApprovalRequestsIDs() (ids []int) {
+	for id := range m.approval_requests {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetApprovalRequests resets all changes to the "approval_requests" edge.
+func (m *ListenerMutation) ResetApprovalRequests() {
+	m.approval_requests = nil
+	m.clearedapproval_requests = false
+	m.removedapproval_requests = nil
+}
+
+// Where appends a list predicates to the ListenerMutation builder.
+func (m *ListenerMutation) Where(ps ...predicate.Listener) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the ListenerMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *ListenerMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.Listener, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *ListenerMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *ListenerMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (Listener).
+func (m *ListenerMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *ListenerMutation) Fields() []string {
+	fields := make([]string, 0, 10)
+	if m.created_at != nil {
+		fields = append(fields, listener.FieldCreatedAt)
+	}
+	if m.last_modified_at != nil {
+		fields = append(fields, listener.FieldLastModifiedAt)
+	}
+	if m.status_phase != nil {
+		fields = append(fields, listener.FieldStatusPhase)
+	}
+	if m.status_message != nil {
+		fields = append(fields, listener.FieldStatusMessage)
+	}
+	if m.environment != nil {
+		fields = append(fields, listener.FieldEnvironment)
+	}
+	if m.namespace != nil {
+		fields = append(fields, listener.FieldNamespace)
+	}
+	if m.name != nil {
+		fields = append(fields, listener.FieldName)
+	}
+	if m.api_base_path != nil {
+		fields = append(fields, listener.FieldAPIBasePath)
+	}
+	if m.request_filter != nil {
+		fields = append(fields, listener.FieldRequestFilter)
+	}
+	if m.response_filter != nil {
+		fields = append(fields, listener.FieldResponseFilter)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *ListenerMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case listener.FieldCreatedAt:
+		return m.CreatedAt()
+	case listener.FieldLastModifiedAt:
+		return m.LastModifiedAt()
+	case listener.FieldStatusPhase:
+		return m.StatusPhase()
+	case listener.FieldStatusMessage:
+		return m.StatusMessage()
+	case listener.FieldEnvironment:
+		return m.Environment()
+	case listener.FieldNamespace:
+		return m.Namespace()
+	case listener.FieldName:
+		return m.Name()
+	case listener.FieldAPIBasePath:
+		return m.APIBasePath()
+	case listener.FieldRequestFilter:
+		return m.RequestFilter()
+	case listener.FieldResponseFilter:
+		return m.ResponseFilter()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *ListenerMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case listener.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case listener.FieldLastModifiedAt:
+		return m.OldLastModifiedAt(ctx)
+	case listener.FieldStatusPhase:
+		return m.OldStatusPhase(ctx)
+	case listener.FieldStatusMessage:
+		return m.OldStatusMessage(ctx)
+	case listener.FieldEnvironment:
+		return m.OldEnvironment(ctx)
+	case listener.FieldNamespace:
+		return m.OldNamespace(ctx)
+	case listener.FieldName:
+		return m.OldName(ctx)
+	case listener.FieldAPIBasePath:
+		return m.OldAPIBasePath(ctx)
+	case listener.FieldRequestFilter:
+		return m.OldRequestFilter(ctx)
+	case listener.FieldResponseFilter:
+		return m.OldResponseFilter(ctx)
+	}
+	return nil, fmt.Errorf("unknown Listener field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *ListenerMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case listener.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case listener.FieldLastModifiedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLastModifiedAt(v)
+		return nil
+	case listener.FieldStatusPhase:
+		v, ok := value.(listener.StatusPhase)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStatusPhase(v)
+		return nil
+	case listener.FieldStatusMessage:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStatusMessage(v)
+		return nil
+	case listener.FieldEnvironment:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEnvironment(v)
+		return nil
+	case listener.FieldNamespace:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetNamespace(v)
+		return nil
+	case listener.FieldName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetName(v)
+		return nil
+	case listener.FieldAPIBasePath:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAPIBasePath(v)
+		return nil
+	case listener.FieldRequestFilter:
+		v, ok := value.(*model.ListenerFilter)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRequestFilter(v)
+		return nil
+	case listener.FieldResponseFilter:
+		v, ok := value.(*model.ListenerFilter)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetResponseFilter(v)
+		return nil
+	}
+	return fmt.Errorf("unknown Listener field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *ListenerMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *ListenerMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *ListenerMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown Listener numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *ListenerMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(listener.FieldStatusPhase) {
+		fields = append(fields, listener.FieldStatusPhase)
+	}
+	if m.FieldCleared(listener.FieldStatusMessage) {
+		fields = append(fields, listener.FieldStatusMessage)
+	}
+	if m.FieldCleared(listener.FieldEnvironment) {
+		fields = append(fields, listener.FieldEnvironment)
+	}
+	if m.FieldCleared(listener.FieldRequestFilter) {
+		fields = append(fields, listener.FieldRequestFilter)
+	}
+	if m.FieldCleared(listener.FieldResponseFilter) {
+		fields = append(fields, listener.FieldResponseFilter)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *ListenerMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *ListenerMutation) ClearField(name string) error {
+	switch name {
+	case listener.FieldStatusPhase:
+		m.ClearStatusPhase()
+		return nil
+	case listener.FieldStatusMessage:
+		m.ClearStatusMessage()
+		return nil
+	case listener.FieldEnvironment:
+		m.ClearEnvironment()
+		return nil
+	case listener.FieldRequestFilter:
+		m.ClearRequestFilter()
+		return nil
+	case listener.FieldResponseFilter:
+		m.ClearResponseFilter()
+		return nil
+	}
+	return fmt.Errorf("unknown Listener nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *ListenerMutation) ResetField(name string) error {
+	switch name {
+	case listener.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case listener.FieldLastModifiedAt:
+		m.ResetLastModifiedAt()
+		return nil
+	case listener.FieldStatusPhase:
+		m.ResetStatusPhase()
+		return nil
+	case listener.FieldStatusMessage:
+		m.ResetStatusMessage()
+		return nil
+	case listener.FieldEnvironment:
+		m.ResetEnvironment()
+		return nil
+	case listener.FieldNamespace:
+		m.ResetNamespace()
+		return nil
+	case listener.FieldName:
+		m.ResetName()
+		return nil
+	case listener.FieldAPIBasePath:
+		m.ResetAPIBasePath()
+		return nil
+	case listener.FieldRequestFilter:
+		m.ResetRequestFilter()
+		return nil
+	case listener.FieldResponseFilter:
+		m.ResetResponseFilter()
+		return nil
+	}
+	return fmt.Errorf("unknown Listener field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *ListenerMutation) AddedEdges() []string {
+	edges := make([]string, 0, 4)
+	if m.subscription != nil {
+		edges = append(edges, listener.EdgeSubscription)
+	}
+	if m.exposure != nil {
+		edges = append(edges, listener.EdgeExposure)
+	}
+	if m.provider_approval != nil {
+		edges = append(edges, listener.EdgeProviderApproval)
+	}
+	if m.approval_requests != nil {
+		edges = append(edges, listener.EdgeApprovalRequests)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *ListenerMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case listener.EdgeSubscription:
+		if id := m.subscription; id != nil {
+			return []ent.Value{*id}
+		}
+	case listener.EdgeExposure:
+		if id := m.exposure; id != nil {
+			return []ent.Value{*id}
+		}
+	case listener.EdgeProviderApproval:
+		if id := m.provider_approval; id != nil {
+			return []ent.Value{*id}
+		}
+	case listener.EdgeApprovalRequests:
+		ids := make([]ent.Value, 0, len(m.approval_requests))
+		for id := range m.approval_requests {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *ListenerMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 4)
+	if m.removedapproval_requests != nil {
+		edges = append(edges, listener.EdgeApprovalRequests)
+	}
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *ListenerMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case listener.EdgeApprovalRequests:
+		ids := make([]ent.Value, 0, len(m.removedapproval_requests))
+		for id := range m.removedapproval_requests {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *ListenerMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 4)
+	if m.clearedsubscription {
+		edges = append(edges, listener.EdgeSubscription)
+	}
+	if m.clearedexposure {
+		edges = append(edges, listener.EdgeExposure)
+	}
+	if m.clearedprovider_approval {
+		edges = append(edges, listener.EdgeProviderApproval)
+	}
+	if m.clearedapproval_requests {
+		edges = append(edges, listener.EdgeApprovalRequests)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *ListenerMutation) EdgeCleared(name string) bool {
+	switch name {
+	case listener.EdgeSubscription:
+		return m.clearedsubscription
+	case listener.EdgeExposure:
+		return m.clearedexposure
+	case listener.EdgeProviderApproval:
+		return m.clearedprovider_approval
+	case listener.EdgeApprovalRequests:
+		return m.clearedapproval_requests
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *ListenerMutation) ClearEdge(name string) error {
+	switch name {
+	case listener.EdgeSubscription:
+		m.ClearSubscription()
+		return nil
+	case listener.EdgeExposure:
+		m.ClearExposure()
+		return nil
+	case listener.EdgeProviderApproval:
+		m.ClearProviderApproval()
+		return nil
+	}
+	return fmt.Errorf("unknown Listener unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *ListenerMutation) ResetEdge(name string) error {
+	switch name {
+	case listener.EdgeSubscription:
+		m.ResetSubscription()
+		return nil
+	case listener.EdgeExposure:
+		m.ResetExposure()
+		return nil
+	case listener.EdgeProviderApproval:
+		m.ResetProviderApproval()
+		return nil
+	case listener.EdgeApprovalRequests:
+		m.ResetApprovalRequests()
+		return nil
+	}
+	return fmt.Errorf("unknown Listener edge %s", name)
 }
 
 // MemberMutation represents an operation that mutates the Member nodes in the graph.

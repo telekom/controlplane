@@ -31,6 +31,7 @@ autobind:
   - github.com/telekom/controlplane/controlplane-api/ent/eventexposure
   - github.com/telekom/controlplane/controlplane-api/ent/eventsubscription
   - github.com/telekom/controlplane/controlplane-api/ent/eventtype
+  - github.com/telekom/controlplane/controlplane-api/ent/listener
 
 models:
   ID:
@@ -105,6 +106,15 @@ models:
   TeamInfo:
     model:
       - github.com/telekom/controlplane/controlplane-api/pkg/model.TeamInfo
+  ApplicationInfo:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/pkg/model.ApplicationInfo
+  ListenerInfo:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/pkg/model.ListenerInfo
+  ListenerFilter:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/pkg/model.ListenerFilter
   Upstream:
     model:
       - github.com/telekom/controlplane/controlplane-api/pkg/model.Upstream

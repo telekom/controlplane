@@ -16,6 +16,7 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/apisubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/approval"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventsubscription"
+	"github.com/telekom/controlplane/controlplane-api/ent/listener"
 	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 )
 
@@ -63,6 +64,7 @@ type Approval struct {
 	Edges                       ApprovalEdges `json:"edges"`
 	api_subscription_approval   *int
 	event_subscription_approval *int
+	listener_provider_approval  *int
 	selectValues                sql.SelectValues
 }
 
@@ -72,9 +74,11 @@ type ApprovalEdges struct {
 	APISubscription *ApiSubscription `json:"api_subscription,omitempty"`
 	// EventSubscription holds the value of the event_subscription edge.
 	EventSubscription *EventSubscription `json:"event_subscription,omitempty"`
+	// Listener holds the value of the listener edge.
+	Listener *Listener `json:"listener,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [2]bool
+	loadedTypes [3]bool
 }
 
 // APISubscriptionOrErr returns the APISubscription value or an error if the edge
@@ -99,6 +103,17 @@ func (e ApprovalEdges) EventSubscriptionOrErr() (*EventSubscription, error) {
 	return nil, &NotLoadedError{edge: "event_subscription"}
 }
 
+// ListenerOrErr returns the Listener value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e ApprovalEdges) ListenerOrErr() (*Listener, error) {
+	if e.Listener != nil {
+		return e.Listener, nil
+	} else if e.loadedTypes[2] {
+		return nil, &NotFoundError{label: listener.Label}
+	}
+	return nil, &NotLoadedError{edge: "listener"}
+}
+
 // scanValues returns the types for scanning values from sql.Rows.
 func (*Approval) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
@@ -115,6 +130,8 @@ func (*Approval) scanValues(columns []string) ([]any, error) {
 		case approval.ForeignKeys[0]: // api_subscription_approval
 			values[i] = new(sql.NullInt64)
 		case approval.ForeignKeys[1]: // event_subscription_approval
+			values[i] = new(sql.NullInt64)
+		case approval.ForeignKeys[2]: // listener_provider_approval
 			values[i] = new(sql.NullInt64)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -267,6 +284,13 @@ func (_m *Approval) assignValues(columns []string, values []any) error {
 				_m.event_subscription_approval = new(int)
 				*_m.event_subscription_approval = int(value.Int64)
 			}
+		case approval.ForeignKeys[2]:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for edge-field listener_provider_approval", value)
+			} else if value.Valid {
+				_m.listener_provider_approval = new(int)
+				*_m.listener_provider_approval = int(value.Int64)
+			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
 		}
@@ -288,6 +312,11 @@ func (_m *Approval) QueryAPISubscription() *ApiSubscriptionQuery {
 // QueryEventSubscription queries the "event_subscription" edge of the Approval entity.
 func (_m *Approval) QueryEventSubscription() *EventSubscriptionQuery {
 	return NewApprovalClient(_m.config).QueryEventSubscription(_m)
+}
+
+// QueryListener queries the "listener" edge of the Approval entity.
+func (_m *Approval) QueryListener() *ListenerQuery {
+	return NewApprovalClient(_m.config).QueryListener(_m)
 }
 
 // Update returns a builder for updating this Approval.

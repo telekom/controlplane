@@ -19,6 +19,7 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/application"
 	"github.com/telekom/controlplane/controlplane-api/ent/approval"
 	"github.com/telekom/controlplane/controlplane-api/ent/approvalrequest"
+	"github.com/telekom/controlplane/controlplane-api/ent/listener"
 	"github.com/telekom/controlplane/controlplane-api/ent/predicate"
 	"github.com/telekom/controlplane/controlplane-api/ent/zone"
 	"github.com/telekom/controlplane/controlplane-api/pkg/model"
@@ -282,6 +283,21 @@ func (_u *ApiSubscriptionUpdate) AddApprovalRequests(v ...*ApprovalRequest) *Api
 	return _u.AddApprovalRequestIDs(ids...)
 }
 
+// AddListenerIDs adds the "listeners" edge to the Listener entity by IDs.
+func (_u *ApiSubscriptionUpdate) AddListenerIDs(ids ...int) *ApiSubscriptionUpdate {
+	_u.mutation.AddListenerIDs(ids...)
+	return _u
+}
+
+// AddListeners adds the "listeners" edges to the Listener entity.
+func (_u *ApiSubscriptionUpdate) AddListeners(v ...*Listener) *ApiSubscriptionUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddListenerIDs(ids...)
+}
+
 // Mutation returns the ApiSubscriptionMutation object of the builder.
 func (_u *ApiSubscriptionUpdate) Mutation() *ApiSubscriptionMutation {
 	return _u.mutation
@@ -345,6 +361,27 @@ func (_u *ApiSubscriptionUpdate) RemoveApprovalRequests(v ...*ApprovalRequest) *
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveApprovalRequestIDs(ids...)
+}
+
+// ClearListeners clears all "listeners" edges to the Listener entity.
+func (_u *ApiSubscriptionUpdate) ClearListeners() *ApiSubscriptionUpdate {
+	_u.mutation.ClearListeners()
+	return _u
+}
+
+// RemoveListenerIDs removes the "listeners" edge to Listener entities by IDs.
+func (_u *ApiSubscriptionUpdate) RemoveListenerIDs(ids ...int) *ApiSubscriptionUpdate {
+	_u.mutation.RemoveListenerIDs(ids...)
+	return _u
+}
+
+// RemoveListeners removes "listeners" edges to Listener entities.
+func (_u *ApiSubscriptionUpdate) RemoveListeners(v ...*Listener) *ApiSubscriptionUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveListenerIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -662,6 +699,51 @@ func (_u *ApiSubscriptionUpdate) sqlSave(ctx context.Context) (_node int, err er
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if _u.mutation.ListenersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   apisubscription.ListenersTable,
+			Columns: []string{apisubscription.ListenersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(listener.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedListenersIDs(); len(nodes) > 0 && !_u.mutation.ListenersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   apisubscription.ListenersTable,
+			Columns: []string{apisubscription.ListenersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(listener.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.ListenersIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   apisubscription.ListenersTable,
+			Columns: []string{apisubscription.ListenersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(listener.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{apisubscription.Label}
@@ -927,6 +1009,21 @@ func (_u *ApiSubscriptionUpdateOne) AddApprovalRequests(v ...*ApprovalRequest) *
 	return _u.AddApprovalRequestIDs(ids...)
 }
 
+// AddListenerIDs adds the "listeners" edge to the Listener entity by IDs.
+func (_u *ApiSubscriptionUpdateOne) AddListenerIDs(ids ...int) *ApiSubscriptionUpdateOne {
+	_u.mutation.AddListenerIDs(ids...)
+	return _u
+}
+
+// AddListeners adds the "listeners" edges to the Listener entity.
+func (_u *ApiSubscriptionUpdateOne) AddListeners(v ...*Listener) *ApiSubscriptionUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddListenerIDs(ids...)
+}
+
 // Mutation returns the ApiSubscriptionMutation object of the builder.
 func (_u *ApiSubscriptionUpdateOne) Mutation() *ApiSubscriptionMutation {
 	return _u.mutation
@@ -990,6 +1087,27 @@ func (_u *ApiSubscriptionUpdateOne) RemoveApprovalRequests(v ...*ApprovalRequest
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveApprovalRequestIDs(ids...)
+}
+
+// ClearListeners clears all "listeners" edges to the Listener entity.
+func (_u *ApiSubscriptionUpdateOne) ClearListeners() *ApiSubscriptionUpdateOne {
+	_u.mutation.ClearListeners()
+	return _u
+}
+
+// RemoveListenerIDs removes the "listeners" edge to Listener entities by IDs.
+func (_u *ApiSubscriptionUpdateOne) RemoveListenerIDs(ids ...int) *ApiSubscriptionUpdateOne {
+	_u.mutation.RemoveListenerIDs(ids...)
+	return _u
+}
+
+// RemoveListeners removes "listeners" edges to Listener entities.
+func (_u *ApiSubscriptionUpdateOne) RemoveListeners(v ...*Listener) *ApiSubscriptionUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveListenerIDs(ids...)
 }
 
 // Where appends a list predicates to the ApiSubscriptionUpdate builder.
@@ -1330,6 +1448,51 @@ func (_u *ApiSubscriptionUpdateOne) sqlSave(ctx context.Context) (_node *ApiSubs
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(approvalrequest.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.ListenersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   apisubscription.ListenersTable,
+			Columns: []string{apisubscription.ListenersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(listener.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedListenersIDs(); len(nodes) > 0 && !_u.mutation.ListenersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   apisubscription.ListenersTable,
+			Columns: []string{apisubscription.ListenersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(listener.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.ListenersIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   apisubscription.ListenersTable,
+			Columns: []string{apisubscription.ListenersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(listener.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

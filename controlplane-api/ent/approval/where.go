@@ -779,6 +779,29 @@ func HasEventSubscriptionWith(preds ...predicate.EventSubscription) predicate.Ap
 	})
 }
 
+// HasListener applies the HasEdge predicate on the "listener" edge.
+func HasListener() predicate.Approval {
+	return predicate.Approval(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, true, ListenerTable, ListenerColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasListenerWith applies the HasEdge predicate on the "listener" edge with a given conditions (other predicates).
+func HasListenerWith(preds ...predicate.Listener) predicate.Approval {
+	return predicate.Approval(func(s *sql.Selector) {
+		step := newListenerStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.Approval) predicate.Approval {
 	return predicate.Approval(sql.AndPredicates(predicates...))

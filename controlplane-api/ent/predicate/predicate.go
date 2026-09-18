@@ -39,6 +39,9 @@ type EventType func(*sql.Selector)
 // Group is the predicate function for group builders.
 type Group func(*sql.Selector)
 
+// Listener is the predicate function for listener builders.
+type Listener func(*sql.Selector)
+
 // Member is the predicate function for member builders.
 type Member func(*sql.Selector)
 
