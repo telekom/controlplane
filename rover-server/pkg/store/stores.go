@@ -17,6 +17,7 @@ import (
 	"github.com/telekom/controlplane/common-server/pkg/store/secrets"
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
+	filev1 "github.com/telekom/controlplane/file/api/v1"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 	secretsapi "github.com/telekom/controlplane/secret-manager/api"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -43,6 +44,9 @@ type Stores struct {
 
 	EventSpecificationStore store.ObjectStore[*roverv1.EventSpecification]
 	EventTypeStore          store.ObjectStore[*eventv1.EventType]
+	FileSpecificationStore  store.ObjectStore[*roverv1.FileSpecification]
+	FileExposureStore       store.ObjectStore[*filev1.FileExposure]
+	FileSubscriptionStore   store.ObjectStore[*filev1.FileSubscription]
 	EventExposureStore      store.ObjectStore[*eventv1.EventExposure]
 	EventSubscriptionStore  store.ObjectStore[*eventv1.EventSubscription]
 	ZoneStore               store.ObjectStore[*adminv1.Zone]
@@ -108,6 +112,16 @@ func NewStores(ctx context.Context, cfg *rest.Config, db inmemory.DatabaseOpts, 
 		s.EventExposureStore = noop.NewStore[*eventv1.EventExposure](eventv1.GroupVersion.WithResource("eventexposures"), eventv1.GroupVersion.WithKind("EventExposure"))
 		s.EventSubscriptionStore = noop.NewStore[*eventv1.EventSubscription](eventv1.GroupVersion.WithResource("eventsubscriptions"), eventv1.GroupVersion.WithKind("EventSubscription"))
 		s.EventConfigStore = noop.NewStore[*eventv1.EventConfig](eventv1.GroupVersion.WithResource("eventconfigs"), eventv1.GroupVersion.WithKind("EventConfig"))
+	}
+
+	if cconfig.FeatureFile.IsEnabled() {
+		s.FileSpecificationStore = NewOrDie[*roverv1.FileSpecification](ctx, dynamicClient, roverv1.GroupVersion.WithResource("filespecifications"), roverv1.GroupVersion.WithKind("FileSpecification"), db, informer)
+		s.FileExposureStore = NewOrDie[*filev1.FileExposure](ctx, dynamicClient, filev1.GroupVersion.WithResource("fileexposures"), filev1.GroupVersion.WithKind("FileExposure"), db, informer)
+		s.FileSubscriptionStore = NewOrDie[*filev1.FileSubscription](ctx, dynamicClient, filev1.GroupVersion.WithResource("filesubscriptions"), filev1.GroupVersion.WithKind("FileSubscription"), db, informer)
+	} else {
+		s.FileSpecificationStore = noop.NewStore[*roverv1.FileSpecification](roverv1.GroupVersion.WithResource("filespecifications"), roverv1.GroupVersion.WithKind("FileSpecification"))
+		s.FileExposureStore = noop.NewStore[*filev1.FileExposure](filev1.GroupVersion.WithResource("fileexposures"), filev1.GroupVersion.WithKind("FileExposure"))
+		s.FileSubscriptionStore = noop.NewStore[*filev1.FileSubscription](filev1.GroupVersion.WithResource("filesubscriptions"), filev1.GroupVersion.WithKind("FileSubscription"))
 	}
 
 	s.ApiChangelogStore = NewOrDie[*roverv1.ApiChangelog](ctx, dynamicClient, roverv1.GroupVersion.WithResource("apichangelogs"), roverv1.GroupVersion.WithKind("ApiChangelog"), db, informer)

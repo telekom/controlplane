@@ -59,6 +59,7 @@ func main() {
 		Rovers:              controller.NewRoverController(stores),
 		Roadmaps:            controller.NewRoadmapController(stores),
 		EventSpecifications: controller.NewEventSpecificationController(stores),
+		FileSpecifications:  controller.NewFileSpecificationController(stores),
 		ApiChangelogs:       controller.NewApiChangelogController(stores),
 		McpSpecifications:   controller.NewMcpSpecificationController(stores),
 		AgentSpecifications: controller.NewAgentSpecificationController(stores),
