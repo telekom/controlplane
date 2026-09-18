@@ -5,8 +5,6 @@
 package util
 
 import (
-	"k8s.io/apimachinery/pkg/labels"
-
 	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
@@ -28,11 +26,4 @@ func DomainLabel() map[string]string {
 	return map[string]string{
 		config.DomainLabelKey: "file",
 	}
-}
-
-// FileTypeLabelSelector returns a selector matching resources labeled for the given FileType name.
-func FileTypeLabelSelector(fileTypeName string) labels.Selector {
-	return labels.SelectorFromSet(labels.Set{
-		filev1.FileTypeNameLabelKey: labelutil.NormalizeLabelValue(fileTypeName),
-	})
 }

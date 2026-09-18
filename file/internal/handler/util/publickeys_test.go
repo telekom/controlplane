@@ -16,6 +16,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
+	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/client/fake"
 	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
@@ -230,9 +231,18 @@ var _ = Describe("Getters", func() {
 
 	Describe("GetZoneServiceConfig", func() {
 		zoneRef := &types.ObjectRef{Name: testZoneName, Namespace: testNS}
+		mockGetZone := func(mc *fake.MockJanitorClient) {
+			mc.EXPECT().
+				Get(mock.Anything, zoneRef.K8s(), mock.AnythingOfType("*v1.Zone")).
+				Run(func(_ context.Context, _ client.ObjectKey, out client.Object, _ ...client.GetOption) {
+					out.(*adminv1.Zone).Status.Namespace = testZoneNS
+				}).
+				Return(nil).Once()
+		}
 
 		It("returns a BlockedError when no ZoneServiceConfig is found", func() {
 			ctx, mc := newCtx()
+			mockGetZone(mc)
 			mc.EXPECT().
 				List(mock.Anything, mock.AnythingOfType("*v1.ZoneServiceConfigList"), mock.Anything, mock.Anything).
 				Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
@@ -247,6 +257,7 @@ var _ = Describe("Getters", func() {
 
 		It("returns error when list has more than one result", func() {
 			ctx, mc := newCtx()
+			mockGetZone(mc)
 			mc.EXPECT().
 				List(mock.Anything, mock.AnythingOfType("*v1.ZoneServiceConfigList"), mock.Anything, mock.Anything).
 				Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
@@ -263,6 +274,7 @@ var _ = Describe("Getters", func() {
 
 		It("returns the ZoneServiceConfig when exactly one is found", func() {
 			ctx, mc := newCtx()
+			mockGetZone(mc)
 			mc.EXPECT().
 				List(mock.Anything, mock.AnythingOfType("*v1.ZoneServiceConfigList"), mock.Anything, mock.Anything).
 				Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {

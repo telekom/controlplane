@@ -14,6 +14,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	"github.com/telekom/controlplane/common/pkg/types"
@@ -48,19 +49,25 @@ func GetChildResourceRef(obj *filev1.ZoneServiceConfig) types.ObjectRef {
 	}
 }
 
-func GetZoneServiceConfig(ctx context.Context, ref *types.ObjectRef) (*filev1.ZoneServiceConfig, error) {
+func GetZoneServiceConfig(ctx context.Context, zoneRef *types.ObjectRef) (*filev1.ZoneServiceConfig, error) {
 	c := cclient.ClientFromContextOrDie(ctx)
+
+	zoneNamespace, err := FetchZoneNamespace(ctx, zoneRef)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get zone namespace for %q: %w", zoneRef.String(), err)
+	}
+
 	list := &filev1.ZoneServiceConfigList{}
-	err := c.List(ctx, list, client.InNamespace(GetZoneNamespace(ref)), client.MatchingFields{index.FieldSpecZoneOnZoneServiceConfig: ref.String()})
+	err = c.List(ctx, list, client.InNamespace(zoneNamespace), client.MatchingFields{index.FieldSpecZoneOnZoneServiceConfig: zoneRef.String()})
 	if err != nil {
 		if apierrors.IsNotFound(errors.Cause(err)) {
-			return nil, ctrlerrors.BlockedErrorf("ZoneServiceConfig %q not found", ref.String())
+			return nil, ctrlerrors.BlockedErrorf("ZoneServiceConfig %q not found", zoneRef.String())
 		}
-		return nil, fmt.Errorf("failed to get ZoneServiceConfig %q: %w", ref.String(), err)
+		return nil, fmt.Errorf("failed to get ZoneServiceConfig %q: %w", zoneRef.String(), err)
 	}
 
 	if len(list.Items) != 1 {
-		return nil, ctrlerrors.BlockedErrorf("expected exactly one ZoneServiceConfig for zone %q, but found %d", ref.String(), len(list.Items))
+		return nil, ctrlerrors.BlockedErrorf("expected exactly one ZoneServiceConfig for zone %q, but found %d", zoneRef.String(), len(list.Items))
 	}
 
 	zoneServiceConfig := &list.Items[0]
@@ -108,6 +115,13 @@ func GetPublicKeysFromSFTP(sftp *filev1.FileSFTP) []filev1.SSHPublicKeySpec {
 	return sftp.PublicKeys
 }
 
-func GetZoneNamespace(ref *types.ObjectRef) string {
-	return ref.Namespace + "--" + ref.Name
+func FetchZoneNamespace(ctx context.Context, ref *types.ObjectRef) (string, error) {
+	c := cclient.ClientFromContextOrDie(ctx)
+	zone := &adminv1.Zone{}
+	err := c.Get(ctx, ref.K8s(), zone)
+	if err != nil {
+		return "", err
+	}
+
+	return zone.Status.Namespace, nil
 }

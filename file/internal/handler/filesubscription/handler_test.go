@@ -155,7 +155,7 @@ var _ = Describe("FileSubscriptionHandler", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(k8smeta.IsStatusConditionFalse(sub.Status.Conditions, condition.ConditionTypeReady)).To(BeTrue())
 			ready := k8smeta.FindStatusCondition(sub.Status.Conditions, condition.ConditionTypeReady)
-			Expect(ready.Reason).To(Equal("FileExposureNotFound"))
+			Expect(ready.Reason).To(Equal(condition.ReasonPreconditionNotMet))
 		})
 
 		It("blocks when the active FileExposure is not found", func() {
@@ -242,12 +242,6 @@ var _ = Describe("FileSubscriptionHandler", func() {
 				Get(mock.Anything, mock.Anything, mock.AnythingOfType("*v1.Approval")).
 				Return(apierrors.NewNotFound(schema.GroupResource{Group: approvalv1.GroupVersion.Group, Resource: "approvals"}, "any")).
 				Once()
-			// On Pending: deleteSubscriberUser is called → Delete on User (tolerates NotFound)
-			mockClient.EXPECT().
-				Delete(mock.Anything, mock.AnythingOfType("*v1.User")).
-				Return(apierrors.NewNotFound(schema.GroupResource{Group: sftpv1.GroupVersion.Group, Resource: "users"}, "any")).
-				Once()
-
 			err := handler.CreateOrUpdate(ctx, sub)
 
 			Expect(err).NotTo(HaveOccurred())
@@ -365,61 +359,12 @@ var _ = Describe("FileSubscriptionHandler", func() {
 					*out.(*approvalv1.Approval) = *deniedApproval
 				}).
 				Return(nil).Once()
-			mockClient.EXPECT().
-				Delete(mock.Anything, mock.AnythingOfType("*v1.User")).
-				Return(nil).Once()
-
 			err := handler.CreateOrUpdate(ctx, sub)
 
 			Expect(err).NotTo(HaveOccurred())
 			ready := k8smeta.FindStatusCondition(sub.Status.Conditions, condition.ConditionTypeReady)
 			Expect(ready).NotTo(BeNil())
 			Expect(ready.Reason).To(Equal("ApprovalDenied"))
-		})
-
-		It("returns error when subscriber User cleanup fails after approval denial", func() {
-			sub := testSubscription()
-			ctx, mockClient := newTestContext()
-			testScheme := buildScheme()
-
-			exposure := testFileExposure()
-			deniedApproval := &approvalv1.Approval{
-				ObjectMeta: metav1.ObjectMeta{Name: "any", Namespace: testNamespace},
-				Spec:       approvalv1.ApprovalSpec{State: approvalv1.ApprovalStateRejected},
-			}
-
-			mockClient.EXPECT().
-				List(mock.Anything, mock.AnythingOfType("*v1.FileTypeList"), mock.Anything).
-				Run(func(_ context.Context, out client.ObjectList, _ ...client.ListOption) {
-					out.(*filev1.FileTypeList).Items = []filev1.FileType{*testFileType()}
-				}).
-				Return(nil).Once()
-			mockClient.EXPECT().
-				Get(mock.Anything, k8stypes.NamespacedName{Name: testExposureName, Namespace: testNamespace}, mock.AnythingOfType("*v1.FileExposure")).
-				Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
-					*out.(*filev1.FileExposure) = *exposure
-				}).
-				Return(nil).Once()
-			mockClient.EXPECT().Scheme().Return(testScheme).Maybe()
-			mockClient.EXPECT().
-				CreateOrUpdate(mock.Anything, mock.AnythingOfType("*v1.ApprovalRequest"), mock.Anything).
-				Return(controllerutil.OperationResultNone, nil).Once()
-			mockClient.EXPECT().
-				Cleanup(mock.Anything, mock.AnythingOfType("*v1.ApprovalRequestList"), mock.Anything).
-				Return(0, nil).Once()
-			mockClient.EXPECT().
-				Get(mock.Anything, mock.Anything, mock.AnythingOfType("*v1.Approval")).
-				Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
-					*out.(*approvalv1.Approval) = *deniedApproval
-				}).
-				Return(nil).Once()
-			mockClient.EXPECT().
-				Delete(mock.Anything, mock.AnythingOfType("*v1.User")).
-				Return(fmt.Errorf("delete failed")).Once()
-
-			err := handler.CreateOrUpdate(ctx, sub)
-
-			Expect(err).To(MatchError(ContainSubstring("delete failed")))
 		})
 
 		It("sets Processing condition when child resources are not yet ready after sync", func() {
@@ -560,11 +505,6 @@ var _ = Describe("FileSubscriptionHandler", func() {
 
 var _ = Describe("filesubscription helpers", func() {
 	Describe("subscriptionZoneName", func() {
-		It("returns empty string when Zone is nil", func() {
-			sub := &filev1.FileSubscription{}
-			Expect(subscriptionZoneName(sub)).To(Equal(""))
-		})
-
 		It("returns the zone name when Zone is set", func() {
 			sub := testSubscription()
 			Expect(subscriptionZoneName(sub)).To(Equal(testZoneName))

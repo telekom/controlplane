@@ -79,11 +79,9 @@ func testZoneServiceConfig() *filev1.ZoneServiceConfig {
 			Labels:    map[string]string{cconfig.EnvironmentLabelKey: testEnv},
 		},
 		Spec: filev1.ZoneServiceConfigSpec{
-			API: adminv1.ManagedRouteConfig{
-				Name: "sftp-api",
+			API: filev1.ManagedRouteConfig{
 				Path: testAPIPath,
 				Url:  testAPIURL,
-				Type: adminv1.ManagedRouteTypeTeamAPI,
 			},
 			Zone: &types.ObjectRef{Name: testZoneName, Namespace: testEnv},
 		},
@@ -201,7 +199,7 @@ var _ = Describe("ZoneServiceConfigHandler", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(k8smeta.IsStatusConditionFalse(obj.Status.Conditions, condition.ConditionTypeReady)).To(BeTrue())
 			ready := k8smeta.FindStatusCondition(obj.Status.Conditions, condition.ConditionTypeReady)
-			Expect(ready.Reason).To(Equal("ZoneNotReady"))
+			Expect(ready.Reason).To(Equal(condition.ReasonPreconditionNotMet))
 		})
 
 		It("blocks when Zone has no InternalIdentityRealm", func() {

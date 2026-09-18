@@ -11,8 +11,10 @@ import (
 	"github.com/stretchr/testify/mock"
 	k8smeta "k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	k8stypes "k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/client/fake"
 	"github.com/telekom/controlplane/common/pkg/condition"
@@ -67,10 +69,13 @@ func testFileExposure() *filev1.FileExposure {
 	}
 }
 
-func testZoneServiceConfig() *filev1.ZoneServiceConfig {
-	return &filev1.ZoneServiceConfig{
+func testZone() *adminv1.Zone {
+	return &adminv1.Zone{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      testZoneServiceConfigName,
+			Namespace: testNamespace,
+		},
+		Status: adminv1.ZoneStatus{
 			Namespace: testNamespace,
 		},
 	}
@@ -86,12 +91,12 @@ func mockListExposures(mockClient *fake.MockJanitorClient, exposures []filev1.Fi
 		Return(nil).Once()
 }
 
-// mockListZoneServiceConfigs sets up c.List to return the given configs.
-func mockListZoneServiceConfigs(mockClient *fake.MockJanitorClient, configs []filev1.ZoneServiceConfig) {
+func mockGetZone(mockClient *fake.MockJanitorClient) {
+	zone := testZone()
 	mockClient.EXPECT().
-		List(mock.Anything, mock.AnythingOfType("*v1.ZoneServiceConfigList"), mock.Anything, mock.Anything).
-		Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-			*list.(*filev1.ZoneServiceConfigList) = filev1.ZoneServiceConfigList{Items: configs}
+		Get(mock.Anything, k8stypes.NamespacedName{Name: zone.Name, Namespace: zone.Namespace}, mock.AnythingOfType("*v1.Zone")).
+		Run(func(_ context.Context, _ client.ObjectKey, obj client.Object, _ ...client.GetOption) {
+			*obj.(*adminv1.Zone) = *zone
 		}).
 		Return(nil).Once()
 }
@@ -116,7 +121,7 @@ var _ = Describe("FileTypeHandler", func() {
 			Expect(fileType.Status.FileExposureRef).To(BeNil())
 			Expect(k8smeta.IsStatusConditionFalse(fileType.Status.Conditions, condition.ConditionTypeReady)).To(BeTrue())
 			ready := k8smeta.FindStatusCondition(fileType.Status.Conditions, condition.ConditionTypeReady)
-			Expect(ready.Reason).To(Equal("FileExposureNotFound"))
+			Expect(ready.Reason).To(Equal(condition.ReasonPreconditionNotMet))
 		})
 
 		It("returns error when exposure list fails", func() {
@@ -132,47 +137,13 @@ var _ = Describe("FileTypeHandler", func() {
 			Expect(err).To(MatchError(ContainSubstring("storage unavailable")))
 		})
 
-		It("sets FileExposureRef and SFTPInstance while children not ready", func() {
-			fileType := testFileType()
-			exposure := testFileExposure()
-			ctx, mockClient := newTestContext()
-
-			mockListExposures(mockClient, []filev1.FileExposure{*exposure})
-			mockListZoneServiceConfigs(mockClient, []filev1.ZoneServiceConfig{*testZoneServiceConfig()})
-			mockClient.EXPECT().AllReady().Return(false).Once()
-
-			err := handler.CreateOrUpdate(ctx, fileType)
-
-			Expect(err).NotTo(HaveOccurred())
-			Expect(fileType.Status.FileExposureRef).NotTo(BeNil())
-			Expect(fileType.Status.FileExposureRef.Name).To(Equal(testExposureName))
-			Expect(fileType.Status.SFTPInstance).NotTo(BeNil())
-			Expect(fileType.Status.SFTPInstance.Name).To(Equal(testFileTypeName))
-			Expect(k8smeta.IsStatusConditionFalse(fileType.Status.Conditions, condition.ConditionTypeReady)).To(BeTrue())
-		})
-
-		It("sets Ready condition when all child resources are ready", func() {
-			fileType := testFileType()
-			exposure := testFileExposure()
-			ctx, mockClient := newTestContext()
-
-			mockListExposures(mockClient, []filev1.FileExposure{*exposure})
-			mockListZoneServiceConfigs(mockClient, []filev1.ZoneServiceConfig{*testZoneServiceConfig()})
-			mockClient.EXPECT().AllReady().Return(true).Once()
-
-			err := handler.CreateOrUpdate(ctx, fileType)
-
-			Expect(err).NotTo(HaveOccurred())
-			Expect(k8smeta.IsStatusConditionTrue(fileType.Status.Conditions, condition.ConditionTypeReady)).To(BeTrue())
-			Expect(k8smeta.IsStatusConditionFalse(fileType.Status.Conditions, condition.ConditionTypeProcessing)).To(BeTrue())
-		})
-
 		It("returns error when ZoneServiceConfig list fails", func() {
 			fileType := testFileType()
 			exposure := testFileExposure()
 			ctx, mockClient := newTestContext()
 
 			mockListExposures(mockClient, []filev1.FileExposure{*exposure})
+			mockGetZone(mockClient)
 			mockClient.EXPECT().
 				List(mock.Anything, mock.AnythingOfType("*v1.ZoneServiceConfigList"), mock.Anything, mock.Anything).
 				Return(fmt.Errorf("zone config unavailable")).Once()

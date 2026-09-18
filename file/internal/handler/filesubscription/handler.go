@@ -38,7 +38,7 @@ func (h *FileSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *filev
 	}
 
 	if fileType.Status.FileExposureRef == nil {
-		obj.SetCondition(condition.NewNotReadyCondition("FileExposureNotFound", "No active FileExposure found for this FileType"))
+		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet, "No active FileExposure found for this FileType"))
 		obj.SetCondition(condition.NewBlockedCondition("FileSubscription will be processed when a FileExposure is registered"))
 		return nil
 	}
@@ -46,7 +46,7 @@ func (h *FileSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *filev
 	activeExposure := &filev1.FileExposure{}
 	if err = c.Get(ctx, fileType.Status.FileExposureRef.K8s(), activeExposure); err != nil {
 		if apierrors.IsNotFound(errors.Cause(err)) {
-			obj.SetCondition(condition.NewNotReadyCondition("FileExposureNotFound", "No active FileExposure found for this FileType"))
+			obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet, "No active FileExposure found for this FileType"))
 			obj.SetCondition(condition.NewBlockedCondition("FileSubscription will be processed when a FileExposure is registered"))
 			return nil
 		}
@@ -54,7 +54,7 @@ func (h *FileSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *filev
 	}
 
 	if !visibilityAllowsSubscription(activeExposure, obj) {
-		obj.SetCondition(condition.NewNotReadyCondition("VisibilityConstraintViolation", "FileExposure and FileSubscription visibility combination is not allowed"))
+		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet, "FileExposure and FileSubscription visibility combination is not allowed"))
 		return ctrlerrors.BlockedErrorf("FileSubscription is blocked by FileExposure visibility")
 	}
 
@@ -67,22 +67,18 @@ func (h *FileSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *filev
 	switch res {
 	case builder.ApprovalResultRequestDenied:
 		logger.Info("ApprovalRequest was denied - deleting subscriber SFTP User")
-		obj.SetCondition(condition.NewNotReadyCondition("ApprovalRequestDenied", "ApprovalRequest has been denied"))
+		obj.SetCondition(condition.NewNotReadyCondition(builder.ReasonApprovalDenied, "ApprovalRequest has been denied"))
 		obj.SetCondition(condition.NewDoneProcessingCondition("ApprovalRequest has been denied"))
-		return h.deleteSubscriberUser(ctx, obj)
+		return nil
 	case builder.ApprovalResultPending:
 		logger.Info("Approval is pending - waiting for approval")
-		obj.SetCondition(condition.NewNotReadyCondition("ApprovalPending", "Waiting for approval decision"))
+		obj.SetCondition(condition.NewNotReadyCondition(builder.ReasonApprovalPending, "Waiting for approval decision"))
 		obj.SetCondition(condition.NewBlockedCondition("Waiting for approval decision"))
-		return h.deleteSubscriberUser(ctx, obj)
+		return nil
 	case builder.ApprovalResultDenied:
 		logger.Info("Approval was denied - deleting subscriber SFTP User")
-		obj.SetCondition(condition.NewNotReadyCondition("ApprovalDenied", "Approval has been denied"))
+		obj.SetCondition(condition.NewNotReadyCondition(builder.ReasonApprovalDenied, "Approval has been denied"))
 		obj.SetCondition(condition.NewDoneProcessingCondition("Approval has been denied"))
-		if cleanupErr := h.deleteSubscriberUser(ctx, obj); cleanupErr != nil {
-			return fmt.Errorf("unable to cleanup SFTP User for FileSubscription %q in namespace %q: %w",
-				obj.Name, obj.Namespace, cleanupErr)
-		}
 		return nil
 	case builder.ApprovalResultGranted:
 		logger.Info("Approval is granted - continuing with provisioning")
@@ -96,8 +92,8 @@ func (h *FileSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *filev
 	}
 
 	if !c.AllReady() {
-		obj.SetCondition(condition.NewNotReadyCondition("ChildResourcesNotReady", "One or more child resources are not yet ready"))
-		obj.SetCondition(condition.NewProcessingCondition("ChildResourcesNotReady", "Waiting for child resources"))
+		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet, "One or more child resources are not yet ready"))
+		obj.SetCondition(condition.NewProcessingCondition(condition.ReasonPreconditionNotMet, "Waiting for child resources"))
 		return nil
 	}
 
@@ -117,7 +113,7 @@ func (h *FileSubscriptionHandler) ensureApproval(ctx context.Context, obj *filev
 
 	requester := &approvalapi.Requester{
 		TeamName:       teamNameFromNamespace(obj.Namespace),
-		ApplicationRef: types.TypedObjectRefFromObject(obj, c.Scheme()),
+		ApplicationRef: &obj.Spec.Requestor,
 		Reason: fmt.Sprintf("Team %s requested subscription to file type %s from zone %s",
 			obj.Namespace, fileType.Name, subscriptionZoneName(obj)),
 	}
@@ -130,7 +126,7 @@ func (h *FileSubscriptionHandler) ensureApproval(ctx context.Context, obj *filev
 
 	decider := &approvalapi.Decider{
 		TeamName:       teamNameFromNamespace(activeExposure.Namespace),
-		ApplicationRef: types.TypedObjectRefFromObject(activeExposure, c.Scheme()),
+		ApplicationRef: &activeExposure.Spec.Provider,
 	}
 
 	approvalBuilder := builder.NewApprovalBuilder(c, obj)
@@ -192,9 +188,6 @@ func approvalProperties(subscription *filev1.FileSubscription) map[string]any {
 }
 
 func subscriptionZoneName(subscription *filev1.FileSubscription) string {
-	if subscription.Spec.Zone == nil {
-		return ""
-	}
 	return subscription.Spec.Zone.Name
 }
 

@@ -13,7 +13,6 @@ import (
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	cc "github.com/telekom/controlplane/common/pkg/controller"
 	ctypes "github.com/telekom/controlplane/common/pkg/types"
 	filev1 "github.com/telekom/controlplane/file/api/v1"
@@ -46,11 +45,9 @@ var _ = Describe("ZoneServiceConfig Controller", func() {
 					},
 					Spec: filev1.ZoneServiceConfigSpec{
 						Zone: &ctypes.ObjectRef{Name: "test-zone", Namespace: "default"},
-						API: adminv1.ManagedRouteConfig{
-							Name: "test-api",
+						API: filev1.ManagedRouteConfig{
 							Path: "/test",
 							Url:  "https://sftp.example.com",
-							Type: adminv1.ManagedRouteTypeProxy,
 						},
 						Service: &filev1.ServiceEndpoint{
 							Host: "sftp.internal",
