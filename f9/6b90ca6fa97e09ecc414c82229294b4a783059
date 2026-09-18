@@ -1,0 +1,48 @@
+controlplane-api/internal/resolvers/subscription_info_test.go
+  s_c0f102917cc557::t_72259af6ff4154 1-161
+controlplane-api/internal/resolvers/model/info_types.go
+  s_6dfd3f5510ac92::t_0f0ee0e6f15a5b 51,53,70,72,116,118
+  s_6dfd3f5510ac92::t_81459f6529b30c 52,54,71,73,115,117
+controlplane-api/internal/resolvers/root_.generated.go
+  s_6dfd3f5510ac92::t_81c90e97db613b 10542-10547,10549,10563,10610
+controlplane-api/internal/resolvers/schema.resolvers.go
+  s_c0f102917cc557::t_72259af6ff4154 364,416
+controlplane-api/schema.graphql
+  s_c0f102917cc557::t_72259af6ff4154 295,301,315,362
+  s_6dfd3f5510ac92::t_81459f6529b30c 294,296-299
+controlplane-api/internal/resolvers/mapper_test.go
+  s_c0f102917cc557::t_72259af6ff4154 154,185
+docs/docs/architecture/controlplane-api.mdx
+  s_c0f102917cc557::t_72259af6ff4154 169-188
+controlplane-api/internal/resolvers/model/models.generated.go
+  s_6dfd3f5510ac92::t_954142d447fd78 15
+  s_c0f102917cc557::t_3d995ec53bef56 18-19
+controlplane-api/internal/resolvers/schema_resolvers_agentic_test.go
+  s_c0f102917cc557::t_72259af6ff4154 262,293
+controlplane-api/internal/resolvers/ent.generated.go
+  s_c0f102917cc557::t_19b5a62c078ce6 6516-6525,7117-7126
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "f96b90ca6fa97e09ecc414c82229294b4a783059",
+  "prompts": {},
+  "sessions": {
+    "s_6dfd3f5510ac92": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f4adf57bdffeqYnPCdkRiP75G1",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_c0f102917cc557": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f4acf8bccffeXIWgxtFkw0Ck34",
+        "model": "gpt-6-astra"
+      },
+      "human_author": null
+    }
+  }
+}
