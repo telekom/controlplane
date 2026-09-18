@@ -143,7 +143,16 @@ var _ = Describe("WithProxyTarget", func() {
 var _ = Describe("WithCallbackConsumer", func() {
 	It("should append the callback client to ExtraConsumers", func() {
 		opts := &util.Options{}
-		util.WithCallbackConsumer()(opts)
+		util.WithCallbackConsumer("")(opts)
 		Expect(opts.ExtraConsumers).To(ContainElement(util.CallbackClientName))
+	})
+
+	// The ACL must name whichever client the gateway Consumer is created with,
+	// which is EventConfig.spec.mesh.client.clientId when it is set explicitly.
+	It("should append a caller-supplied client instead of the default", func() {
+		opts := &util.Options{}
+		util.WithCallbackConsumer("my-mesh-client")(opts)
+		Expect(opts.ExtraConsumers).To(ContainElement("my-mesh-client"))
+		Expect(opts.ExtraConsumers).ToNot(ContainElement(util.CallbackClientName))
 	})
 })

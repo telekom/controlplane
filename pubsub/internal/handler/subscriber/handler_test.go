@@ -397,6 +397,37 @@ var _ = Describe("SubscriberHandler", func() {
 			Expect(err.Error()).To(ContainSubstring("failed to resolve EventStore"))
 		})
 
+		It("should complete cleanup when Publisher is terminating but still exists", func() {
+			obj := newTestSubscriber()
+			now := metav1.Now()
+			publisher := newTestPublisher()
+			publisher.DeletionTimestamp = &now
+			publisher.Finalizers = []string{"pubsub.cp.ei.telekom.de/finalizer"}
+			eventStore := newTestEventStore()
+
+			fakeClient.EXPECT().
+				Get(ctx, types.NamespacedName{Name: "test-publisher", Namespace: "default"}, mock.AnythingOfType("*v1.Publisher")).
+				Run(func(_ context.Context, _ types.NamespacedName, out client.Object, _ ...client.GetOption) {
+					*out.(*pubsubv1.Publisher) = *publisher
+				}).
+				Return(nil)
+
+			fakeClient.EXPECT().
+				Get(ctx, types.NamespacedName{Name: "test-eventstore", Namespace: "default"}, mock.AnythingOfType("*v1.EventStore")).
+				Run(func(_ context.Context, _ types.NamespacedName, out client.Object, _ ...client.GetOption) {
+					*out.(*pubsubv1.EventStore) = *eventStore
+				}).
+				Return(nil)
+
+			configSvcMock.EXPECT().
+				DeleteSubscription(ctx, mock.AnythingOfType("string"), mock.AnythingOfType("service.SubscriptionResource")).
+				Return(nil)
+
+			err := handler.Delete(ctx, obj)
+
+			Expect(err).ToNot(HaveOccurred())
+		})
+
 		It("should return error when DeleteSubscription fails", func() {
 			obj := newTestSubscriber()
 			publisher := newTestPublisher()

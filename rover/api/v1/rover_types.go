@@ -38,6 +38,10 @@ type RoverStatus struct {
 	AgenticExposures []types.ObjectRef `json:"aiExposures,omitempty"`
 	// AgenticSubscriptions are references to AgenticSubscription resources created by this Rover
 	AgenticSubscriptions []types.ObjectRef `json:"aiSubscriptions,omitempty"`
+	// SpectreApplications are references to SpectreApplication CRs created by this Rover
+	SpectreApplications []types.ObjectRef `json:"spectreApplications,omitempty"`
+	// SpectreListeners are references to Listener CRs created by this Rover
+	SpectreListeners []types.ObjectRef `json:"spectreListeners,omitempty"`
 }
 
 //+kubebuilder:object:root=true
@@ -151,6 +155,14 @@ type RoverSpec struct {
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:MaxItems=150
 	Subscriptions []Subscription `json:"subscriptions,omitempty"`
+
+	// Listeners is a list of API traffic listeners
+	// +kubebuilder:validation:Optional
+	Listeners []RoverListener `json:"listeners,omitempty"`
+
+	// ListenerSubscription configures how listener events are delivered
+	// +kubebuilder:validation:Optional
+	ListenerSubscription *ListenerSubscription `json:"listenerSubscription,omitempty"`
 
 	// Permissions defines role-based access control permissions for this application
 	// +kubebuilder:validation:Optional

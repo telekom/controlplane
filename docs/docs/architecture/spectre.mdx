@@ -1,0 +1,55 @@
+---
+sidebar_position: 13
+---
+
+# Spectre Domain
+
+:::info Optional Feature
+The Spectre domain requires an active EventConfig in the zone. It is a peer to the Event domain — both create PubSub resources, while users interact only through Rover files.
+:::
+
+The Spectre domain manages application listeners that bridge external API traffic into the Horizon event backbone. A listener watches a specific API path and forwards matching requests as events, enabling event-driven reactions to API calls without modifying the API provider.
+
+## Custom Resources
+
+| CRD | Purpose |
+|---|---|
+| **SpectreApplication** | Groups all listeners for one application. Creates the shared generic Publisher and Approval. |
+| **Listener** | Represents a single consumer-to-provider binding for an API path. Creates a Subscriber and RouteListener. |
+
+## Ownership Model
+
+Event and Spectre are **peer business-logic domains**. PubSub is a shared Horizon runtime adapter — not exclusively managed by either domain.
+
+| PubSub Resource | Created by |
+|---|---|
+| EventStore | Event domain (EventConfig) |
+| Publisher | Event domain (EventExposure) **and** Spectre domain (SpectreApplication) |
+| Subscriber | Event domain (EventSubscription) **and** Spectre domain (Listener) |
+
+Users do not create PubSub resources directly. EventStore ownership is unchanged — Spectre only reads it.
+
+## Domain Interactions
+
+- **PubSub domain** — SpectreApplication creates Publishers; Listener creates Subscribers. Both read the zone's EventStore.
+- **Gateway domain** — Listener creates RouteListener resources to expose listener endpoints. Reads existing Route resources for service path resolution.
+- **Approval domain** — SpectreApplication creates Approvals that capture consumer, provider, path, delivery mode, callback, and filters.
+- **Event domain** — Reads EventConfig for zone configuration and the gateway callback URL.
+- **Application domain** — Reads Application resources for consumer and provider metadata.
+- **Rover domain** — Rover files with `spec.listeners` trigger creation of Listener CRs.
+
+## Current Limitations
+
+- **Pass-through and failover listeners** are rejected.
+- **SSE delivery** is local-zone-only until cross-zone proxy routes are implemented for Spectre listeners.
+- **Callback traffic** is Gateway-mediated via `EventConfig.Status.CallbackURL`.
+
+## Internal Event Types
+
+Spectre uses the `de.telekom.ei.listener*` namespace for its internal event types, constructed automatically from the application ID. These names cannot be claimed by ordinary EventType admission.
+
+## Related Pages
+
+- [Architecture: Event Domain](./event.mdx)
+- [Architecture: PubSub Domain](./pubsub.mdx)
+- [Architecture: Gateway Domain](./gateway.mdx)

@@ -27,11 +27,13 @@ import (
 
 	apiapi "github.com/telekom/controlplane/api/api/v1"
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
+	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/test/mock"
 	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 	secretsapi "github.com/telekom/controlplane/secret-manager/api"
 	secretsapifake "github.com/telekom/controlplane/secret-manager/api/fake"
+	spectrev1 "github.com/telekom/controlplane/spectre/api/v1"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -81,6 +83,7 @@ var _ = BeforeSuite(func() {
 			filepath.Join("..", "..", "..", "api", "config", "crd", "bases"),
 			filepath.Join("..", "..", "..", "application", "config", "crd", "bases"),
 			filepath.Join("..", "..", "..", "organization", "config", "crd", "bases"),
+			filepath.Join("..", "..", "..", "spectre", "config", "crd", "bases"),
 		),
 		// CRDDirectoryPaths: append(
 		//	testutil.GetCrdPathsOrDie("github.com/telekom/controlplane/(api|application|organization)/api"),
@@ -107,6 +110,12 @@ var _ = BeforeSuite(func() {
 
 	err = organizationv1.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
+
+	err = spectrev1.AddToScheme(scheme.Scheme)
+	Expect(err).NotTo(HaveOccurred())
+
+	// Enable Spectre feature before manager setup so Owns watches are registered
+	config.SetFeatureEnabled(config.FeatureSpectre, true)
 
 	// +kubebuilder:scaffold:scheme
 
