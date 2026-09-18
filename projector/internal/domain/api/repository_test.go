@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package agentcard_test
+package api_test
 
 import (
 	"context"
@@ -12,11 +12,10 @@ import (
 	"entgo.io/ent/privacy"
 
 	"github.com/telekom/controlplane/controlplane-api/ent"
-	entagentcard "github.com/telekom/controlplane/controlplane-api/ent/agentcard"
-	entagenticexposure "github.com/telekom/controlplane/controlplane-api/ent/agenticexposure"
+	entapi "github.com/telekom/controlplane/controlplane-api/ent/api"
 	"github.com/telekom/controlplane/controlplane-api/ent/enttest"
 	"github.com/telekom/controlplane/controlplane-api/ent/zone"
-	"github.com/telekom/controlplane/projector/internal/domain/agentcard"
+	"github.com/telekom/controlplane/projector/internal/domain/api"
 	"github.com/telekom/controlplane/projector/internal/domain/shared"
 	"github.com/telekom/controlplane/projector/internal/infrastructure"
 	"github.com/telekom/controlplane/projector/internal/runtime"
@@ -28,13 +27,13 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-// mockAgentCardDeps implements agentcard.AgentCardDeps for testing.
-type mockAgentCardDeps struct {
+// mockApiDeps implements api.ApiDeps for testing.
+type mockApiDeps struct {
 	teamIDs map[string]int // key: team name
 	teamErr error          // if non-nil, FindTeamID always returns this error
 }
 
-func (m *mockAgentCardDeps) FindTeamID(_ context.Context, name string) (int, error) {
+func (m *mockApiDeps) FindTeamID(_ context.Context, name string) (int, error) {
 	if m.teamErr != nil {
 		return 0, m.teamErr
 	}
@@ -44,12 +43,12 @@ func (m *mockAgentCardDeps) FindTeamID(_ context.Context, name string) (int, err
 	return 0, fmt.Errorf("team %q: %w", name, infrastructure.ErrEntityNotFound)
 }
 
-var _ = Describe("AgentCard Repository", func() {
+var _ = Describe("Api Repository", func() {
 	var (
 		client *ent.Client
 		cache  *infrastructure.EdgeCache
-		deps   *mockAgentCardDeps
-		repo   *agentcard.Repository
+		deps   *mockApiDeps
+		repo   *api.Repository
 		ctx    context.Context
 		teamID int
 	)
@@ -69,10 +68,10 @@ var _ = Describe("AgentCard Repository", func() {
 		Expect(err).NotTo(HaveOccurred())
 		teamID = tm.ID
 
-		deps = &mockAgentCardDeps{
+		deps = &mockApiDeps{
 			teamIDs: map[string]int{"platform--narvi": teamID},
 		}
-		repo = agentcard.NewRepository(client, cache, deps)
+		repo = api.NewRepository(client, cache, deps)
 	})
 
 	AfterEach(func() {
@@ -81,15 +80,13 @@ var _ = Describe("AgentCard Repository", func() {
 	})
 
 	Describe("Upsert", func() {
-		It("should create an agent_card with valid deps", func() {
-			data := &agentcard.AgentCardData{
-				Meta:          shared.NewMetadata("prod--platform--narvi", "card-weather-v1", nil),
+		It("should create an api with valid deps", func() {
+			data := &api.ApiData{
+				Meta:          shared.NewMetadata("prod--platform--narvi", "api-weather-v1", nil),
 				StatusPhase:   "READY",
 				StatusMessage: "ok",
-				BasePath:      "/agent/weather/v1",
+				BasePath:      "/api/weather/v1",
 				Version:       "1.0.0",
-				Name:          "weather-agent",
-				Description:   "Weather agent card",
 				Category:      "g-api",
 				Oauth2Scopes:  []string{"scope-a"},
 				Active:        true,
@@ -97,31 +94,28 @@ var _ = Describe("AgentCard Repository", func() {
 			}
 			Expect(repo.Upsert(ctx, data)).To(Succeed())
 
-			card, err := client.AgentCard.Query().
-				Where(entagentcard.BasePathEQ("/agent/weather/v1")).
+			a, err := client.Api.Query().
+				Where(entapi.BasePathEQ("/api/weather/v1")).
 				Only(ctx)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(card.BasePath).To(Equal("/agent/weather/v1"))
-			Expect(card.Version).To(Equal("1.0.0"))
-			Expect(card.Name).To(Equal("weather-agent"))
-			Expect(card.Description).To(Equal("Weather agent card"))
-			Expect(card.Category).To(Equal("g-api"))
-			Expect(card.Oauth2Scopes).To(Equal([]string{"scope-a"}))
-			Expect(card.Active).To(BeTrue())
+			Expect(a.BasePath).To(Equal("/api/weather/v1"))
+			Expect(a.Version).To(Equal("1.0.0"))
+			Expect(a.Category).To(Equal("g-api"))
+			Expect(a.Oauth2Scopes).To(Equal([]string{"scope-a"}))
+			Expect(a.Active).To(BeTrue())
 
-			owner, err := card.QueryOwner().Only(ctx)
+			owner, err := a.QueryOwner().Only(ctx)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(owner.ID).To(Equal(teamID))
 		})
 
 		It("should return ErrDependencyMissing when the owner Team is missing", func() {
 			deps.teamIDs = map[string]int{}
-			data := &agentcard.AgentCardData{
-				Meta:        shared.NewMetadata("prod--platform--narvi", "card-weather-v1", nil),
+			data := &api.ApiData{
+				Meta:        shared.NewMetadata("prod--platform--narvi", "api-weather-v1", nil),
 				StatusPhase: "READY",
-				BasePath:    "/agent/weather/v1",
+				BasePath:    "/api/weather/v1",
 				Version:     "1.0.0",
-				Name:        "weather-agent",
 				TeamName:    "platform--narvi",
 			}
 			err := repo.Upsert(ctx, data)
@@ -129,41 +123,37 @@ var _ = Describe("AgentCard Repository", func() {
 			Expect(runtime.IsDependencyMissing(err)).To(BeTrue())
 		})
 
-		It("should update an existing agent_card on conflict", func() {
-			data := &agentcard.AgentCardData{
-				Meta:        shared.NewMetadata("prod--platform--narvi", "card-weather-v1", nil),
+		It("should update an existing api on conflict", func() {
+			data := &api.ApiData{
+				Meta:        shared.NewMetadata("prod--platform--narvi", "api-weather-v1", nil),
 				StatusPhase: "READY",
-				BasePath:    "/agent/weather/v1",
+				BasePath:    "/api/weather/v1",
 				Version:     "1.0.0",
-				Name:        "weather-agent",
 				Active:      true,
 				TeamName:    "platform--narvi",
 			}
 			Expect(repo.Upsert(ctx, data)).To(Succeed())
 
 			data.Version = "2.0.0"
-			data.Name = "weather-agent-v2"
 			Expect(repo.Upsert(ctx, data)).To(Succeed())
 
-			count, err := client.AgentCard.Query().Count(ctx)
+			count, err := client.Api.Query().Count(ctx)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(count).To(Equal(1))
 
-			card, err := client.AgentCard.Query().
-				Where(entagentcard.BasePathEQ("/agent/weather/v1")).
+			a, err := client.Api.Query().
+				Where(entapi.BasePathEQ("/api/weather/v1")).
 				Only(ctx)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(card.Version).To(Equal("2.0.0"))
-			Expect(card.Name).To(Equal("weather-agent-v2"))
+			Expect(a.Version).To(Equal("2.0.0"))
 		})
 
-		It("should set the active-agent-card cache entry when active", func() {
-			data := &agentcard.AgentCardData{
-				Meta:        shared.NewMetadata("prod--platform--narvi", "card-weather-v1", nil),
+		It("should set the active-api cache entry when active", func() {
+			data := &api.ApiData{
+				Meta:        shared.NewMetadata("prod--platform--narvi", "api-weather-v1", nil),
 				StatusPhase: "READY",
-				BasePath:    "/agent/weather/v1",
+				BasePath:    "/api/weather/v1",
 				Version:     "1.0.0",
-				Name:        "weather-agent",
 				Active:      true,
 				TeamName:    "platform--narvi",
 			}
@@ -171,18 +161,17 @@ var _ = Describe("AgentCard Repository", func() {
 			cache.Wait()
 
 			resolver := infrastructure.NewIDResolver(client, cache)
-			id, err := resolver.FindActiveAgentCardID(ctx, "/agent/weather/v1")
+			id, err := resolver.FindActiveApiID(ctx, "/api/weather/v1")
 			Expect(err).NotTo(HaveOccurred())
 			Expect(id).To(BeNumerically(">", 0))
 		})
 
-		It("should clear the active-agent-card cache entry when inactive", func() {
-			data := &agentcard.AgentCardData{
-				Meta:        shared.NewMetadata("prod--platform--narvi", "card-weather-v1", nil),
+		It("should clear the active-api cache entry when inactive", func() {
+			data := &api.ApiData{
+				Meta:        shared.NewMetadata("prod--platform--narvi", "api-weather-v1", nil),
 				StatusPhase: "READY",
-				BasePath:    "/agent/weather/v1",
+				BasePath:    "/api/weather/v1",
 				Version:     "1.0.0",
-				Name:        "weather-agent",
 				Active:      true,
 				TeamName:    "platform--narvi",
 			}
@@ -193,11 +182,11 @@ var _ = Describe("AgentCard Repository", func() {
 			cache.Wait()
 
 			resolver := infrastructure.NewIDResolver(client, cache)
-			_, err := resolver.FindActiveAgentCardID(ctx, "/agent/weather/v1")
+			_, err := resolver.FindActiveApiID(ctx, "/api/weather/v1")
 			Expect(errors.Is(err, infrastructure.ErrEntityNotFound)).To(BeTrue())
 		})
 
-		It("should back-link orphaned AgenticExposures projected before the agent_card", func() {
+		It("should back-link orphaned ApiExposures projected before the api", func() {
 			// Seed an Application (owner) via Zone → Team → Application.
 			z, err := client.Zone.Create().
 				SetName("caas").
@@ -212,37 +201,35 @@ var _ = Describe("AgentCard Repository", func() {
 				Save(ctx)
 			Expect(err).NotTo(HaveOccurred())
 
-			// AgenticExposure created first, before its AgentCard exists → stored
-			// with a NULL agent_card FK (the create-order race).
-			exp, err := client.AgenticExposure.Create().
-				SetBasePath("/agent/weather/v1").
+			// ApiExposure created first, before its Api exists → stored with a
+			// NULL api FK (the create-order race).
+			exp, err := client.ApiExposure.Create().
+				SetBasePath("/api/weather/v1").
 				SetNamespace("prod--platform--narvi").
-				SetVariant(entagenticexposure.VariantAgent).
 				SetActive(true).
 				SetOwnerID(app.ID).
 				Save(ctx)
 			Expect(err).NotTo(HaveOccurred())
-			_, err = exp.QueryAgentCard().Only(ctx)
+			_, err = exp.QueryAPI().Only(ctx)
 			Expect(ent.IsNotFound(err)).To(BeTrue())
 
-			// AgentCard appears later → should adopt the orphaned exposure.
-			data := &agentcard.AgentCardData{
-				Meta:        shared.NewMetadata("prod--platform--narvi", "card-weather-v1", nil),
+			// Api appears later → should adopt the orphaned exposure.
+			data := &api.ApiData{
+				Meta:        shared.NewMetadata("prod--platform--narvi", "api-weather-v1", nil),
 				StatusPhase: "READY",
-				BasePath:    "/agent/weather/v1",
+				BasePath:    "/api/weather/v1",
 				Version:     "1.0.0",
-				Name:        "weather-agent",
 				Active:      true,
 				TeamName:    "platform--narvi",
 			}
 			Expect(repo.Upsert(ctx, data)).To(Succeed())
 
-			card, err := exp.QueryAgentCard().Only(ctx)
+			linked, err := exp.QueryAPI().Only(ctx)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(card.BasePath).To(Equal("/agent/weather/v1"))
+			Expect(linked.BasePath).To(Equal("/api/weather/v1"))
 		})
 
-		It("should not back-link AgenticExposures with a different variant", func() {
+		It("should not back-link ApiExposures when the Api is inactive", func() {
 			z, err := client.Zone.Create().
 				SetName("caas").
 				SetVisibility(zone.VisibilityEnterprise).
@@ -256,58 +243,55 @@ var _ = Describe("AgentCard Repository", func() {
 				Save(ctx)
 			Expect(err).NotTo(HaveOccurred())
 
-			exp, err := client.AgenticExposure.Create().
-				SetBasePath("/agent/weather/v1").
+			exp, err := client.ApiExposure.Create().
+				SetBasePath("/api/weather/v1").
 				SetNamespace("prod--platform--narvi").
-				SetVariant(entagenticexposure.VariantMcp).
 				SetActive(true).
 				SetOwnerID(app.ID).
 				Save(ctx)
 			Expect(err).NotTo(HaveOccurred())
 
-			data := &agentcard.AgentCardData{
-				Meta:        shared.NewMetadata("prod--platform--narvi", "card-weather-v1", nil),
+			data := &api.ApiData{
+				Meta:        shared.NewMetadata("prod--platform--narvi", "api-weather-v1", nil),
 				StatusPhase: "READY",
-				BasePath:    "/agent/weather/v1",
+				BasePath:    "/api/weather/v1",
 				Version:     "1.0.0",
-				Name:        "weather-agent",
-				Active:      true,
+				Active:      false,
 				TeamName:    "platform--narvi",
 			}
 			Expect(repo.Upsert(ctx, data)).To(Succeed())
 
-			_, err = exp.QueryAgentCard().Only(ctx)
+			_, err = exp.QueryAPI().Only(ctx)
 			Expect(ent.IsNotFound(err)).To(BeTrue())
 		})
 	})
 
 	Describe("Delete", func() {
 		It("should be idempotent when the entity does not exist", func() {
-			key := agentcard.AgentCardKey{BasePath: "/agent/missing", TeamName: "platform--narvi"}
+			key := api.ApiKey{BasePath: "/api/missing", TeamName: "platform--narvi"}
 			Expect(repo.Delete(ctx, key)).To(Succeed())
 		})
 
-		It("should delete an existing agent_card by base path and team name", func() {
-			data := &agentcard.AgentCardData{
-				Meta:        shared.NewMetadata("prod--platform--narvi", "card-weather-v1", nil),
+		It("should delete an existing api by base path and team name", func() {
+			data := &api.ApiData{
+				Meta:        shared.NewMetadata("prod--platform--narvi", "api-weather-v1", nil),
 				StatusPhase: "READY",
-				BasePath:    "/agent/weather/v1",
+				BasePath:    "/api/weather/v1",
 				Version:     "1.0.0",
-				Name:        "weather-agent",
 				Active:      true,
 				TeamName:    "platform--narvi",
 			}
 			Expect(repo.Upsert(ctx, data)).To(Succeed())
 
-			key := agentcard.AgentCardKey{BasePath: "/agent/weather/v1", TeamName: "platform--narvi"}
+			key := api.ApiKey{BasePath: "/api/weather/v1", TeamName: "platform--narvi"}
 			Expect(repo.Delete(ctx, key)).To(Succeed())
 
-			count, err := client.AgentCard.Query().Count(ctx)
+			count, err := client.Api.Query().Count(ctx)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(count).To(Equal(0))
 
 			resolver := infrastructure.NewIDResolver(client, cache)
-			_, err = resolver.FindActiveAgentCardID(ctx, "/agent/weather/v1")
+			_, err = resolver.FindActiveApiID(ctx, "/api/weather/v1")
 			Expect(errors.Is(err, infrastructure.ErrEntityNotFound)).To(BeTrue())
 		})
 	})

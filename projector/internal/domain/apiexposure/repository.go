@@ -140,6 +140,22 @@ func (r *Repository) Upsert(ctx context.Context, data *APIExposureData) error {
 			data.BasePath, data.AppName, data.TeamName, upsertErr)
 	}
 
+	// Explicitly set/clear the catalogue FK. Api is an edge, not a field, so an
+	// unresolved apiID is not included in UpdateNewValues()'s ON CONFLICT SET
+	// clause — without this, a previously-linked api_id would stay stale once
+	// the Api becomes inactive/removed (the exposure CR is re-reconciled via the
+	// Api watch, but Status.Active is untouched by that path).
+	update := r.client.ApiExposure.UpdateOneID(exposureID)
+	if apiID != nil {
+		update = update.SetAPIID(*apiID)
+	} else {
+		update = update.ClearAPI()
+	}
+	if err := update.Exec(ctx); err != nil {
+		return fmt.Errorf("update catalogue FK for api_exposure %d (%q, app %q, team %q): %w",
+			exposureID, data.BasePath, data.AppName, data.TeamName, err)
+	}
+
 	et, lk := cachekeys.APIExposure(data.BasePath, data.AppName, data.TeamName)
 	r.cache.Set(et, lk, exposureID)
 

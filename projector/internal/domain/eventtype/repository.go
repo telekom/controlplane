@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/telekom/controlplane/controlplane-api/ent"
+	"github.com/telekom/controlplane/controlplane-api/ent/eventexposure"
 	enteventtype "github.com/telekom/controlplane/controlplane-api/ent/eventtype"
 	"github.com/telekom/controlplane/controlplane-api/ent/team"
 	"github.com/telekom/controlplane/projector/internal/infrastructure"
@@ -93,10 +94,26 @@ func (r *Repository) Upsert(ctx context.Context, data *EventTypeData) error {
 	r.cache.Set(et, lk, eventTypeID)
 
 	// Update the active-eventtype cache entry so that EventExposure FK resolution
-	// can find the active EventType by type string alone.
+	// can find the active EventType by type string alone, and back-link any
+	// EventExposures that were projected before this EventType existed. An
+	// EventExposure targets the active EventType by event type string (see
+	// FindActiveEventTypeID). If the exposure was reconciled first, it was
+	// stored with a NULL event_type_def FK and nothing re-links it when the
+	// EventType later becomes active — the exposure CR is not re-reconciled.
 	if data.Active {
 		aet, alk := cachekeys.ActiveEventType(data.EventType)
 		r.cache.Set(aet, alk, eventTypeID)
+
+		if _, err := r.client.EventExposure.Update().
+			Where(
+				eventexposure.EventTypeEQ(data.EventType),
+				eventexposure.ActiveEQ(true),
+				eventexposure.Not(eventexposure.HasEventTypeDef()),
+			).
+			SetEventTypeDefID(eventTypeID).
+			Save(ctx); err != nil {
+			return fmt.Errorf("back-link event_exposures to event_type %q: %w", data.EventType, err)
+		}
 	} else {
 		aet, alk := cachekeys.ActiveEventType(data.EventType)
 		r.cache.Del(aet, alk)
