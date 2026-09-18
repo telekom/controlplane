@@ -16,6 +16,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
+	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/client/fake"
 	"github.com/telekom/controlplane/common/pkg/condition"
@@ -110,6 +111,15 @@ func mockListZoneServiceConfigs(mockClient *fake.MockJanitorClient, configs []fi
 		Return(nil).Once()
 }
 
+func mockGetZone(mockClient *fake.MockJanitorClient) {
+	mockClient.EXPECT().
+		Get(mock.Anything, client.ObjectKey{Name: testZoneServiceConfigName, Namespace: testNamespace}, mock.AnythingOfType("*v1.Zone")).
+		Run(func(_ context.Context, _ client.ObjectKey, out client.Object, _ ...client.GetOption) {
+			out.(*adminv1.Zone).Status.Namespace = testNamespace
+		}).
+		Return(nil).Once()
+}
+
 var _ = Describe("FileExposureHandler", func() {
 	var handler *FileExposureHandler
 
@@ -135,7 +145,7 @@ var _ = Describe("FileExposureHandler", func() {
 			Expect(exposure.Status.FileTypeRef).To(BeNil())
 			Expect(k8smeta.IsStatusConditionFalse(exposure.Status.Conditions, condition.ConditionTypeReady)).To(BeTrue())
 			ready := k8smeta.FindStatusCondition(exposure.Status.Conditions, condition.ConditionTypeReady)
-			Expect(ready.Reason).To(Equal("FileExposureAlreadyExists"))
+			Expect(ready.Reason).To(Equal(condition.ReasonPreconditionNotMet))
 		})
 
 		It("blocks when FileType is not found", func() {
@@ -174,6 +184,7 @@ var _ = Describe("FileExposureHandler", func() {
 
 			mockListExposures(mockClient, []filev1.FileExposure{*exposure})
 			mockListFileType(mockClient, testFileType())
+			mockGetZone(mockClient)
 			// empty ZoneServiceConfig list → "expected exactly one" error
 			mockListZoneServiceConfigs(mockClient, nil)
 
@@ -189,6 +200,7 @@ var _ = Describe("FileExposureHandler", func() {
 
 			mockListExposures(mockClient, []filev1.FileExposure{*exposure})
 			mockListFileType(mockClient, testFileType())
+			mockGetZone(mockClient)
 			mockListZoneServiceConfigs(mockClient, []filev1.ZoneServiceConfig{*testZoneServiceConfig()})
 			mockClient.EXPECT().
 				CreateOrUpdate(mock.Anything, mock.AnythingOfType("*v1.Instance"), mock.Anything).
@@ -211,6 +223,7 @@ var _ = Describe("FileExposureHandler", func() {
 
 			mockListExposures(mockClient, []filev1.FileExposure{*exposure})
 			mockListFileType(mockClient, testFileType())
+			mockGetZone(mockClient)
 			mockListZoneServiceConfigs(mockClient, []filev1.ZoneServiceConfig{*testZoneServiceConfig()})
 			mockClient.EXPECT().
 				CreateOrUpdate(mock.Anything, mock.AnythingOfType("*v1.Instance"), mock.Anything).
@@ -232,6 +245,7 @@ var _ = Describe("FileExposureHandler", func() {
 
 			mockListExposures(mockClient, []filev1.FileExposure{*exposure})
 			mockListFileType(mockClient, testFileType())
+			mockGetZone(mockClient)
 			mockListZoneServiceConfigs(mockClient, []filev1.ZoneServiceConfig{*testZoneServiceConfig()})
 			mockClient.EXPECT().
 				CreateOrUpdate(mock.Anything, mock.AnythingOfType("*v1.Instance"), mock.Anything).

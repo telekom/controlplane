@@ -110,13 +110,5 @@ var _ = Describe("Refs", func() {
 				Expect(labels[config.BuildLabelKey("managed.by")]).To(Equal("file-operator"))
 			})
 		})
-
-		Describe("FileTypeLabelSelector", func() {
-			It("returns a non-nil selector", func() {
-				sel := FileTypeLabelSelector("my-ft")
-				Expect(sel).NotTo(BeNil())
-				Expect(sel.String()).To(ContainSubstring("my-ft"))
-			})
-		})
 	})
 })

@@ -8,7 +8,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	"github.com/telekom/controlplane/common/pkg/types"
 )
 
@@ -16,15 +15,15 @@ import (
 // A ZoneServiceConfig must use the same name and namespace as its admin Zone.
 type ZoneServiceConfigSpec struct {
 	// +kubebuilder:validation:Required
-	API adminv1.ManagedRouteConfig `json:"api"`
+	API ManagedRouteConfig `json:"api"`
 
 	// Service is the internal SFTP service endpoint.
 	// +kubebuilder:validation:Optional
-	Service *ServiceEndpoint `json:"service"`
+	Service *ServiceEndpoint `json:"service,omitempty"`
 
 	// ServiceExternal is the externally reachable SFTP service endpoint.
 	// +kubebuilder:validation:Optional
-	ServiceExternal *ServiceEndpoint `json:"serviceExternal"`
+	ServiceExternal *ServiceEndpoint `json:"serviceExternal,omitempty"`
 
 	// Zone identifies the zone where this file exposure is provided.
 	// +kubebuilder:validation:Required
@@ -44,6 +43,17 @@ type ServiceEndpoint struct {
 	// +kubebuilder:validation:Minimum=1
 	// +kubebuilder:validation:Maximum=65535
 	Port int32 `json:"port"`
+}
+
+type ManagedRouteConfig struct {
+	// Path is the path of the route exposed on the gateway.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Pattern=`^/.*$`
+	Path string `json:"path"`
+	// Url is the upstream URL of the route.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Format=uri
+	Url string `json:"url"`
 }
 
 // ZoneServiceConfigStatus defines the observed state of ZoneServiceConfig.

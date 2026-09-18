@@ -16,6 +16,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
+	cclient "github.com/telekom/controlplane/common/pkg/client"
+	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	filev1 "github.com/telekom/controlplane/file/api/v1"
 	"github.com/telekom/controlplane/file/internal/handler/util"
 )
@@ -65,7 +67,17 @@ func (v *ZoneServiceConfigValidator) ValidateCreateOrUpdate(ctx context.Context,
 	var allErrs field.ErrorList
 	var warnings admission.Warnings
 
-	namespace := util.GetZoneNamespace(obj.Spec.Zone)
+	ctx = cclient.WithClient(ctx, cclient.NewJanitorClient(cclient.NewScopedClient(v.client, obj.Labels[cconfig.EnvironmentLabelKey])))
+
+	namespace, err := util.FetchZoneNamespace(ctx, obj.Spec.Zone)
+	if err != nil {
+		allErrs = append(allErrs, field.Invalid(
+			field.NewPath("spec").Child("zone"),
+			obj.Spec.Zone.String(),
+			fmt.Sprintf("failed to fetch zone namespace: %v", err),
+		))
+	}
+
 	if obj.Name != obj.Spec.Zone.Name || obj.Namespace != namespace {
 		allErrs = append(allErrs, field.Invalid(
 			field.NewPath("metadata").Child("name"),

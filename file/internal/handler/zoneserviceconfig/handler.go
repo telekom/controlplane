@@ -49,7 +49,7 @@ func (h *ZoneServiceConfigHandler) CreateOrUpdate(ctx context.Context, obj *file
 	}
 
 	if !condition.IsReady(zone) {
-		obj.SetCondition(condition.NewNotReadyCondition("ZoneNotReady", "Zone is not ready"))
+		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet, "Zone is not ready"))
 		obj.SetCondition(condition.NewBlockedCondition("Waiting for Zone to be ready"))
 		return nil
 	}
@@ -86,8 +86,8 @@ func (h *ZoneServiceConfigHandler) CreateOrUpdate(ctx context.Context, obj *file
 	}
 
 	if !c.AllReady() {
-		obj.SetCondition(condition.NewNotReadyCondition("ChildResourcesNotReady", "One or more child resources are not yet ready"))
-		obj.SetCondition(condition.NewProcessingCondition("ChildResourcesNotReady", "Waiting for child resources"))
+		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonSubResourceNotReady, "One or more child resources are not yet ready"))
+		obj.SetCondition(condition.NewProcessingCondition(condition.ReasonSubResourceNotReady, "Waiting for child resources"))
 		return nil
 	}
 
@@ -121,8 +121,8 @@ func (h *ZoneServiceConfigHandler) CreateOrUpdate(ctx context.Context, obj *file
 	obj.Status.SFTPServiceConfigRef = types.ObjectRefFromObject(sftpConfig)
 
 	if !c.AllReady() {
-		obj.SetCondition(condition.NewNotReadyCondition("ChildResourcesNotReady", "One or more child resources are not yet ready"))
-		obj.SetCondition(condition.NewProcessingCondition("ChildResourcesNotReady", "Waiting for child resources"))
+		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonSubResourceNotReady, "One or more child resources are not yet ready"))
+		obj.SetCondition(condition.NewProcessingCondition(condition.ReasonSubResourceNotReady, "Waiting for child resources"))
 		return nil
 	}
 

@@ -7,7 +7,6 @@ module github.com/telekom/controlplane/file/api
 go 1.26.6
 
 require (
-	github.com/telekom/controlplane/admin/api v0.0.0
 	github.com/telekom/controlplane/common v0.0.0
 	k8s.io/apimachinery v0.37.0
 	sigs.k8s.io/controller-runtime v0.24.1
@@ -61,7 +60,4 @@ require (
 	sigs.k8s.io/yaml v1.6.0 // indirect
 )
 
-replace (
-	github.com/telekom/controlplane/admin/api => ../../admin/api
-	github.com/telekom/controlplane/common => ../../common
-)
+replace github.com/telekom/controlplane/common => ../../common

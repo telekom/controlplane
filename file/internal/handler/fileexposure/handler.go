@@ -34,7 +34,7 @@ func (h *FileExposureHandler) CreateOrUpdate(ctx context.Context, obj *filev1.Fi
 
 	if found && activeExposure.UID != obj.UID {
 		obj.Status.Active = false
-		obj.SetCondition(condition.NewNotReadyCondition("FileExposureAlreadyExists", "Another FileExposure already provides this FileType"))
+		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet, "Another FileExposure already provides this FileType"))
 		obj.SetCondition(condition.NewBlockedCondition("FileExposure will be processed when the active FileExposure is deleted"))
 		return nil
 	}
@@ -62,8 +62,8 @@ func (h *FileExposureHandler) CreateOrUpdate(ctx context.Context, obj *filev1.Fi
 	obj.Status.FileTypeRef = types.ObjectRefFromObject(fileType)
 
 	if !c.AllReady() {
-		obj.SetCondition(condition.NewNotReadyCondition("ChildResourcesNotReady", "One or more child resources are not yet ready"))
-		obj.SetCondition(condition.NewProcessingCondition("ChildResourcesNotReady", "Waiting for child resources"))
+		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonSubResourceNotReady, "One or more child resources are not yet ready"))
+		obj.SetCondition(condition.NewProcessingCondition(condition.ReasonSubResourceNotReady, "Waiting for child resources"))
 		return nil
 	}
 
