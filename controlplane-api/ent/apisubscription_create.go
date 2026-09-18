@@ -19,6 +19,7 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/application"
 	"github.com/telekom/controlplane/controlplane-api/ent/approval"
 	"github.com/telekom/controlplane/controlplane-api/ent/approvalrequest"
+	"github.com/telekom/controlplane/controlplane-api/ent/listener"
 	"github.com/telekom/controlplane/controlplane-api/ent/zone"
 	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 )
@@ -236,6 +237,21 @@ func (_c *ApiSubscriptionCreate) AddApprovalRequests(v ...*ApprovalRequest) *Api
 		ids[i] = v[i].ID
 	}
 	return _c.AddApprovalRequestIDs(ids...)
+}
+
+// AddListenerIDs adds the "listeners" edge to the Listener entity by IDs.
+func (_c *ApiSubscriptionCreate) AddListenerIDs(ids ...int) *ApiSubscriptionCreate {
+	_c.mutation.AddListenerIDs(ids...)
+	return _c
+}
+
+// AddListeners adds the "listeners" edges to the Listener entity.
+func (_c *ApiSubscriptionCreate) AddListeners(v ...*Listener) *ApiSubscriptionCreate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddListenerIDs(ids...)
 }
 
 // Mutation returns the ApiSubscriptionMutation object of the builder.
@@ -494,6 +510,22 @@ func (_c *ApiSubscriptionCreate) createSpec() (*ApiSubscription, *sqlgraph.Creat
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(approvalrequest.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.ListenersIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   apisubscription.ListenersTable,
+			Columns: []string{apisubscription.ListenersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(listener.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

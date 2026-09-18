@@ -89,6 +89,20 @@ func (_c *APICreate) SetNamespace(v string) *APICreate {
 	return _c
 }
 
+// SetName sets the "name" field.
+func (_c *APICreate) SetName(v string) *APICreate {
+	_c.mutation.SetName(v)
+	return _c
+}
+
+// SetNillableName sets the "name" field if the given value is not nil.
+func (_c *APICreate) SetNillableName(v *string) *APICreate {
+	if v != nil {
+		_c.SetName(*v)
+	}
+	return _c
+}
+
 // SetBasePath sets the "base_path" field.
 func (_c *APICreate) SetBasePath(v string) *APICreate {
 	_c.mutation.SetBasePath(v)
@@ -344,6 +358,10 @@ func (_c *APICreate) createSpec() (*Api, *sqlgraph.CreateSpec) {
 		_spec.SetField(api.FieldNamespace, field.TypeString, value)
 		_node.Namespace = value
 	}
+	if value, ok := _c.mutation.Name(); ok {
+		_spec.SetField(api.FieldName, field.TypeString, value)
+		_node.Name = &value
+	}
 	if value, ok := _c.mutation.BasePath(); ok {
 		_spec.SetField(api.FieldBasePath, field.TypeString, value)
 		_node.BasePath = value
@@ -514,6 +532,24 @@ func (u *ApiUpsert) SetNamespace(v string) *ApiUpsert {
 // UpdateNamespace sets the "namespace" field to the value that was provided on create.
 func (u *ApiUpsert) UpdateNamespace() *ApiUpsert {
 	u.SetExcluded(api.FieldNamespace)
+	return u
+}
+
+// SetName sets the "name" field.
+func (u *ApiUpsert) SetName(v string) *ApiUpsert {
+	u.Set(api.FieldName, v)
+	return u
+}
+
+// UpdateName sets the "name" field to the value that was provided on create.
+func (u *ApiUpsert) UpdateName() *ApiUpsert {
+	u.SetExcluded(api.FieldName)
+	return u
+}
+
+// ClearName clears the value of the "name" field.
+func (u *ApiUpsert) ClearName() *ApiUpsert {
+	u.SetNull(api.FieldName)
 	return u
 }
 
@@ -731,6 +767,27 @@ func (u *ApiUpsertOne) SetNamespace(v string) *ApiUpsertOne {
 func (u *ApiUpsertOne) UpdateNamespace() *ApiUpsertOne {
 	return u.Update(func(s *ApiUpsert) {
 		s.UpdateNamespace()
+	})
+}
+
+// SetName sets the "name" field.
+func (u *ApiUpsertOne) SetName(v string) *ApiUpsertOne {
+	return u.Update(func(s *ApiUpsert) {
+		s.SetName(v)
+	})
+}
+
+// UpdateName sets the "name" field to the value that was provided on create.
+func (u *ApiUpsertOne) UpdateName() *ApiUpsertOne {
+	return u.Update(func(s *ApiUpsert) {
+		s.UpdateName()
+	})
+}
+
+// ClearName clears the value of the "name" field.
+func (u *ApiUpsertOne) ClearName() *ApiUpsertOne {
+	return u.Update(func(s *ApiUpsert) {
+		s.ClearName()
 	})
 }
 
@@ -1131,6 +1188,27 @@ func (u *ApiUpsertBulk) SetNamespace(v string) *ApiUpsertBulk {
 func (u *ApiUpsertBulk) UpdateNamespace() *ApiUpsertBulk {
 	return u.Update(func(s *ApiUpsert) {
 		s.UpdateNamespace()
+	})
+}
+
+// SetName sets the "name" field.
+func (u *ApiUpsertBulk) SetName(v string) *ApiUpsertBulk {
+	return u.Update(func(s *ApiUpsert) {
+		s.SetName(v)
+	})
+}
+
+// UpdateName sets the "name" field to the value that was provided on create.
+func (u *ApiUpsertBulk) UpdateName() *ApiUpsertBulk {
+	return u.Update(func(s *ApiUpsert) {
+		s.UpdateName()
+	})
+}
+
+// ClearName clears the value of the "name" field.
+func (u *ApiUpsertBulk) ClearName() *ApiUpsertBulk {
+	return u.Update(func(s *ApiUpsert) {
+		s.ClearName()
 	})
 }
 

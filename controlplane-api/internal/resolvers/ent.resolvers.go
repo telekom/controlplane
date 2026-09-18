@@ -10,10 +10,13 @@ package resolvers
 
 import (
 	"context"
+	"fmt"
 
 	"entgo.io/contrib/entgql"
 	"github.com/telekom/controlplane/controlplane-api/ent"
+	"github.com/telekom/controlplane/controlplane-api/ent/listener"
 	"github.com/telekom/controlplane/controlplane-api/internal/resolvers/model"
+	"github.com/telekom/controlplane/controlplane-api/internal/viewer"
 )
 
 // Features is the resolver for the features field.
@@ -130,6 +133,43 @@ func (r *queryResolver) EventTypes(ctx context.Context, after *entgql.Cursor[int
 		)
 }
 
+// Listeners is the resolver for the listeners field.
+func (r *queryResolver) Listeners(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy []*ent.ListenerOrder, where *ent.ListenerWhereInput) (*ent.ListenerConnection, error) {
+	connection, err := r.client.Listener.Query().
+		Paginate(ctx, after, first, before, last,
+			ent.WithListenerOrder(orderBy),
+			ent.WithListenerFilter(where.Filter),
+		)
+	if err != nil {
+		return nil, err
+	}
+	if len(connection.Edges) == 0 {
+		return connection, nil
+	}
+	ids := make([]int, len(connection.Edges))
+	for i, edge := range connection.Edges {
+		ids[i] = edge.Node.ID
+	}
+	loaded, err := withListenerInfo(r.client.Listener.Query()).
+		Where(listener.IDIn(ids...)).
+		All(viewer.SystemContext(ctx))
+	if err != nil {
+		return nil, fmt.Errorf("loading listener relationships: %w", err)
+	}
+	byID := make(map[int]*ent.Listener, len(loaded))
+	for _, loadedListener := range loaded {
+		byID[loadedListener.ID] = loadedListener
+	}
+	for _, edge := range connection.Edges {
+		loadedListener, ok := byID[edge.Node.ID]
+		if !ok {
+			return nil, fmt.Errorf("loading listener %d relationships: listener not found", edge.Node.ID)
+		}
+		edge.Node = loadedListener
+	}
+	return connection, nil
+}
+
 // PermissionSets is the resolver for the permissionSets field.
 func (r *queryResolver) PermissionSets(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.PermissionSetOrder, where *ent.PermissionSetWhereInput) (*ent.PermissionSetConnection, error) {
 	return r.client.PermissionSet.Query().
@@ -189,6 +229,9 @@ func (r *Resolver) EventSubscription() EventSubscriptionResolver {
 // EventType returns EventTypeResolver implementation.
 func (r *Resolver) EventType() EventTypeResolver { return &eventTypeResolver{r} }
 
+// Listener returns ListenerResolver implementation.
+func (r *Resolver) Listener() ListenerResolver { return &listenerResolver{r} }
+
 // Query returns QueryResolver implementation.
 func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 
@@ -208,6 +251,7 @@ type (
 	eventExposureResolver     struct{ *Resolver }
 	eventSubscriptionResolver struct{ *Resolver }
 	eventTypeResolver         struct{ *Resolver }
+	listenerResolver          struct{ *Resolver }
 	queryResolver             struct{ *Resolver }
 	teamResolver              struct{ *Resolver }
 	zoneResolver              struct{ *Resolver }

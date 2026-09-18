@@ -20,6 +20,7 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/eventsubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventtype"
 	"github.com/telekom/controlplane/controlplane-api/ent/group"
+	"github.com/telekom/controlplane/controlplane-api/ent/listener"
 	"github.com/telekom/controlplane/controlplane-api/ent/member"
 	"github.com/telekom/controlplane/controlplane-api/ent/permissionset"
 	"github.com/telekom/controlplane/controlplane-api/ent/predicate"
@@ -2965,6 +2966,10 @@ type ApprovalWhereInput struct {
 	// "event_subscription" edge predicates.
 	HasEventSubscription     *bool                          `json:"hasEventSubscription,omitempty"`
 	HasEventSubscriptionWith []*EventSubscriptionWhereInput `json:"hasEventSubscriptionWith,omitempty"`
+
+	// "listener" edge predicates.
+	HasListener     *bool                 `json:"hasListener,omitempty"`
+	HasListenerWith []*ListenerWhereInput `json:"hasListenerWith,omitempty"`
 }
 
 // AddPredicates adds custom predicates to the where input to be used during the filtering phase.
@@ -3465,6 +3470,24 @@ func (i *ApprovalWhereInput) P() (predicate.Approval, error) {
 		}
 		predicates = append(predicates, approval.HasEventSubscriptionWith(with...))
 	}
+	if i.HasListener != nil {
+		p := approval.HasListener()
+		if !*i.HasListener {
+			p = approval.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasListenerWith) > 0 {
+		with := make([]predicate.Listener, 0, len(i.HasListenerWith))
+		for _, w := range i.HasListenerWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasListenerWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, approval.HasListenerWith(with...))
+	}
 	switch len(predicates) {
 	case 0:
 		return nil, ErrEmptyApprovalWhereInput
@@ -3633,6 +3656,10 @@ type ApprovalRequestWhereInput struct {
 	// "event_subscription" edge predicates.
 	HasEventSubscription     *bool                          `json:"hasEventSubscription,omitempty"`
 	HasEventSubscriptionWith []*EventSubscriptionWhereInput `json:"hasEventSubscriptionWith,omitempty"`
+
+	// "listener" edge predicates.
+	HasListener     *bool                 `json:"hasListener,omitempty"`
+	HasListenerWith []*ListenerWhereInput `json:"hasListenerWith,omitempty"`
 }
 
 // AddPredicates adds custom predicates to the where input to be used during the filtering phase.
@@ -4102,6 +4129,24 @@ func (i *ApprovalRequestWhereInput) P() (predicate.ApprovalRequest, error) {
 			with = append(with, p)
 		}
 		predicates = append(predicates, approvalrequest.HasEventSubscriptionWith(with...))
+	}
+	if i.HasListener != nil {
+		p := approvalrequest.HasListener()
+		if !*i.HasListener {
+			p = approvalrequest.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasListenerWith) > 0 {
+		with := make([]predicate.Listener, 0, len(i.HasListenerWith))
+		for _, w := range i.HasListenerWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasListenerWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, approvalrequest.HasListenerWith(with...))
 	}
 	switch len(predicates) {
 	case 0:
@@ -6502,6 +6547,456 @@ func (i *GroupWhereInput) P() (predicate.Group, error) {
 		return predicates[0], nil
 	default:
 		return group.And(predicates...), nil
+	}
+}
+
+// ListenerWhereInput represents a where input for filtering Listener queries.
+type ListenerWhereInput struct {
+	Predicates []predicate.Listener  `json:"-"`
+	Not        *ListenerWhereInput   `json:"not,omitempty"`
+	Or         []*ListenerWhereInput `json:"or,omitempty"`
+	And        []*ListenerWhereInput `json:"and,omitempty"`
+
+	// "id" field predicates.
+	ID      *int  `json:"id,omitempty"`
+	IDNEQ   *int  `json:"idNEQ,omitempty"`
+	IDIn    []int `json:"idIn,omitempty"`
+	IDNotIn []int `json:"idNotIn,omitempty"`
+	IDGT    *int  `json:"idGT,omitempty"`
+	IDGTE   *int  `json:"idGTE,omitempty"`
+	IDLT    *int  `json:"idLT,omitempty"`
+	IDLTE   *int  `json:"idLTE,omitempty"`
+
+	// "created_at" field predicates.
+	CreatedAt      *time.Time  `json:"createdAt,omitempty"`
+	CreatedAtNEQ   *time.Time  `json:"createdAtNEQ,omitempty"`
+	CreatedAtIn    []time.Time `json:"createdAtIn,omitempty"`
+	CreatedAtNotIn []time.Time `json:"createdAtNotIn,omitempty"`
+	CreatedAtGT    *time.Time  `json:"createdAtGT,omitempty"`
+	CreatedAtGTE   *time.Time  `json:"createdAtGTE,omitempty"`
+	CreatedAtLT    *time.Time  `json:"createdAtLT,omitempty"`
+	CreatedAtLTE   *time.Time  `json:"createdAtLTE,omitempty"`
+
+	// "last_modified_at" field predicates.
+	LastModifiedAt      *time.Time  `json:"lastModifiedAt,omitempty"`
+	LastModifiedAtNEQ   *time.Time  `json:"lastModifiedAtNEQ,omitempty"`
+	LastModifiedAtIn    []time.Time `json:"lastModifiedAtIn,omitempty"`
+	LastModifiedAtNotIn []time.Time `json:"lastModifiedAtNotIn,omitempty"`
+	LastModifiedAtGT    *time.Time  `json:"lastModifiedAtGT,omitempty"`
+	LastModifiedAtGTE   *time.Time  `json:"lastModifiedAtGTE,omitempty"`
+	LastModifiedAtLT    *time.Time  `json:"lastModifiedAtLT,omitempty"`
+	LastModifiedAtLTE   *time.Time  `json:"lastModifiedAtLTE,omitempty"`
+
+	// "status_phase" field predicates.
+	StatusPhase       *listener.StatusPhase  `json:"statusPhase,omitempty"`
+	StatusPhaseNEQ    *listener.StatusPhase  `json:"statusPhaseNEQ,omitempty"`
+	StatusPhaseIn     []listener.StatusPhase `json:"statusPhaseIn,omitempty"`
+	StatusPhaseNotIn  []listener.StatusPhase `json:"statusPhaseNotIn,omitempty"`
+	StatusPhaseIsNil  bool                   `json:"statusPhaseIsNil,omitempty"`
+	StatusPhaseNotNil bool                   `json:"statusPhaseNotNil,omitempty"`
+
+	// "status_message" field predicates.
+	StatusMessage             *string  `json:"statusMessage,omitempty"`
+	StatusMessageNEQ          *string  `json:"statusMessageNEQ,omitempty"`
+	StatusMessageIn           []string `json:"statusMessageIn,omitempty"`
+	StatusMessageNotIn        []string `json:"statusMessageNotIn,omitempty"`
+	StatusMessageGT           *string  `json:"statusMessageGT,omitempty"`
+	StatusMessageGTE          *string  `json:"statusMessageGTE,omitempty"`
+	StatusMessageLT           *string  `json:"statusMessageLT,omitempty"`
+	StatusMessageLTE          *string  `json:"statusMessageLTE,omitempty"`
+	StatusMessageContains     *string  `json:"statusMessageContains,omitempty"`
+	StatusMessageHasPrefix    *string  `json:"statusMessageHasPrefix,omitempty"`
+	StatusMessageHasSuffix    *string  `json:"statusMessageHasSuffix,omitempty"`
+	StatusMessageIsNil        bool     `json:"statusMessageIsNil,omitempty"`
+	StatusMessageNotNil       bool     `json:"statusMessageNotNil,omitempty"`
+	StatusMessageEqualFold    *string  `json:"statusMessageEqualFold,omitempty"`
+	StatusMessageContainsFold *string  `json:"statusMessageContainsFold,omitempty"`
+
+	// "environment" field predicates.
+	Environment             *string  `json:"environment,omitempty"`
+	EnvironmentNEQ          *string  `json:"environmentNEQ,omitempty"`
+	EnvironmentIn           []string `json:"environmentIn,omitempty"`
+	EnvironmentNotIn        []string `json:"environmentNotIn,omitempty"`
+	EnvironmentGT           *string  `json:"environmentGT,omitempty"`
+	EnvironmentGTE          *string  `json:"environmentGTE,omitempty"`
+	EnvironmentLT           *string  `json:"environmentLT,omitempty"`
+	EnvironmentLTE          *string  `json:"environmentLTE,omitempty"`
+	EnvironmentContains     *string  `json:"environmentContains,omitempty"`
+	EnvironmentHasPrefix    *string  `json:"environmentHasPrefix,omitempty"`
+	EnvironmentHasSuffix    *string  `json:"environmentHasSuffix,omitempty"`
+	EnvironmentIsNil        bool     `json:"environmentIsNil,omitempty"`
+	EnvironmentNotNil       bool     `json:"environmentNotNil,omitempty"`
+	EnvironmentEqualFold    *string  `json:"environmentEqualFold,omitempty"`
+	EnvironmentContainsFold *string  `json:"environmentContainsFold,omitempty"`
+
+	// "namespace" field predicates.
+	Namespace             *string  `json:"namespace,omitempty"`
+	NamespaceNEQ          *string  `json:"namespaceNEQ,omitempty"`
+	NamespaceIn           []string `json:"namespaceIn,omitempty"`
+	NamespaceNotIn        []string `json:"namespaceNotIn,omitempty"`
+	NamespaceGT           *string  `json:"namespaceGT,omitempty"`
+	NamespaceGTE          *string  `json:"namespaceGTE,omitempty"`
+	NamespaceLT           *string  `json:"namespaceLT,omitempty"`
+	NamespaceLTE          *string  `json:"namespaceLTE,omitempty"`
+	NamespaceContains     *string  `json:"namespaceContains,omitempty"`
+	NamespaceHasPrefix    *string  `json:"namespaceHasPrefix,omitempty"`
+	NamespaceHasSuffix    *string  `json:"namespaceHasSuffix,omitempty"`
+	NamespaceEqualFold    *string  `json:"namespaceEqualFold,omitempty"`
+	NamespaceContainsFold *string  `json:"namespaceContainsFold,omitempty"`
+
+	// "name" field predicates.
+	Name             *string  `json:"name,omitempty"`
+	NameNEQ          *string  `json:"nameNEQ,omitempty"`
+	NameIn           []string `json:"nameIn,omitempty"`
+	NameNotIn        []string `json:"nameNotIn,omitempty"`
+	NameGT           *string  `json:"nameGT,omitempty"`
+	NameGTE          *string  `json:"nameGTE,omitempty"`
+	NameLT           *string  `json:"nameLT,omitempty"`
+	NameLTE          *string  `json:"nameLTE,omitempty"`
+	NameContains     *string  `json:"nameContains,omitempty"`
+	NameHasPrefix    *string  `json:"nameHasPrefix,omitempty"`
+	NameHasSuffix    *string  `json:"nameHasSuffix,omitempty"`
+	NameEqualFold    *string  `json:"nameEqualFold,omitempty"`
+	NameContainsFold *string  `json:"nameContainsFold,omitempty"`
+}
+
+// AddPredicates adds custom predicates to the where input to be used during the filtering phase.
+func (i *ListenerWhereInput) AddPredicates(predicates ...predicate.Listener) {
+	i.Predicates = append(i.Predicates, predicates...)
+}
+
+// Filter applies the ListenerWhereInput filter on the ListenerQuery builder.
+func (i *ListenerWhereInput) Filter(q *ListenerQuery) (*ListenerQuery, error) {
+	if i == nil {
+		return q, nil
+	}
+	p, err := i.P()
+	if err != nil {
+		if err == ErrEmptyListenerWhereInput {
+			return q, nil
+		}
+		return nil, err
+	}
+	return q.Where(p), nil
+}
+
+// ErrEmptyListenerWhereInput is returned in case the ListenerWhereInput is empty.
+var ErrEmptyListenerWhereInput = errors.New("ent: empty predicate ListenerWhereInput")
+
+// P returns a predicate for filtering listeners.
+// An error is returned if the input is empty or invalid.
+func (i *ListenerWhereInput) P() (predicate.Listener, error) {
+	var predicates []predicate.Listener
+	if i.Not != nil {
+		p, err := i.Not.P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'not'", err)
+		}
+		predicates = append(predicates, listener.Not(p))
+	}
+	switch n := len(i.Or); {
+	case n == 1:
+		p, err := i.Or[0].P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'or'", err)
+		}
+		predicates = append(predicates, p)
+	case n > 1:
+		or := make([]predicate.Listener, 0, n)
+		for _, w := range i.Or {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'or'", err)
+			}
+			or = append(or, p)
+		}
+		predicates = append(predicates, listener.Or(or...))
+	}
+	switch n := len(i.And); {
+	case n == 1:
+		p, err := i.And[0].P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'and'", err)
+		}
+		predicates = append(predicates, p)
+	case n > 1:
+		and := make([]predicate.Listener, 0, n)
+		for _, w := range i.And {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'and'", err)
+			}
+			and = append(and, p)
+		}
+		predicates = append(predicates, listener.And(and...))
+	}
+	predicates = append(predicates, i.Predicates...)
+	if i.ID != nil {
+		predicates = append(predicates, listener.IDEQ(*i.ID))
+	}
+	if i.IDNEQ != nil {
+		predicates = append(predicates, listener.IDNEQ(*i.IDNEQ))
+	}
+	if len(i.IDIn) > 0 {
+		predicates = append(predicates, listener.IDIn(i.IDIn...))
+	}
+	if len(i.IDNotIn) > 0 {
+		predicates = append(predicates, listener.IDNotIn(i.IDNotIn...))
+	}
+	if i.IDGT != nil {
+		predicates = append(predicates, listener.IDGT(*i.IDGT))
+	}
+	if i.IDGTE != nil {
+		predicates = append(predicates, listener.IDGTE(*i.IDGTE))
+	}
+	if i.IDLT != nil {
+		predicates = append(predicates, listener.IDLT(*i.IDLT))
+	}
+	if i.IDLTE != nil {
+		predicates = append(predicates, listener.IDLTE(*i.IDLTE))
+	}
+	if i.CreatedAt != nil {
+		predicates = append(predicates, listener.CreatedAtEQ(*i.CreatedAt))
+	}
+	if i.CreatedAtNEQ != nil {
+		predicates = append(predicates, listener.CreatedAtNEQ(*i.CreatedAtNEQ))
+	}
+	if len(i.CreatedAtIn) > 0 {
+		predicates = append(predicates, listener.CreatedAtIn(i.CreatedAtIn...))
+	}
+	if len(i.CreatedAtNotIn) > 0 {
+		predicates = append(predicates, listener.CreatedAtNotIn(i.CreatedAtNotIn...))
+	}
+	if i.CreatedAtGT != nil {
+		predicates = append(predicates, listener.CreatedAtGT(*i.CreatedAtGT))
+	}
+	if i.CreatedAtGTE != nil {
+		predicates = append(predicates, listener.CreatedAtGTE(*i.CreatedAtGTE))
+	}
+	if i.CreatedAtLT != nil {
+		predicates = append(predicates, listener.CreatedAtLT(*i.CreatedAtLT))
+	}
+	if i.CreatedAtLTE != nil {
+		predicates = append(predicates, listener.CreatedAtLTE(*i.CreatedAtLTE))
+	}
+	if i.LastModifiedAt != nil {
+		predicates = append(predicates, listener.LastModifiedAtEQ(*i.LastModifiedAt))
+	}
+	if i.LastModifiedAtNEQ != nil {
+		predicates = append(predicates, listener.LastModifiedAtNEQ(*i.LastModifiedAtNEQ))
+	}
+	if len(i.LastModifiedAtIn) > 0 {
+		predicates = append(predicates, listener.LastModifiedAtIn(i.LastModifiedAtIn...))
+	}
+	if len(i.LastModifiedAtNotIn) > 0 {
+		predicates = append(predicates, listener.LastModifiedAtNotIn(i.LastModifiedAtNotIn...))
+	}
+	if i.LastModifiedAtGT != nil {
+		predicates = append(predicates, listener.LastModifiedAtGT(*i.LastModifiedAtGT))
+	}
+	if i.LastModifiedAtGTE != nil {
+		predicates = append(predicates, listener.LastModifiedAtGTE(*i.LastModifiedAtGTE))
+	}
+	if i.LastModifiedAtLT != nil {
+		predicates = append(predicates, listener.LastModifiedAtLT(*i.LastModifiedAtLT))
+	}
+	if i.LastModifiedAtLTE != nil {
+		predicates = append(predicates, listener.LastModifiedAtLTE(*i.LastModifiedAtLTE))
+	}
+	if i.StatusPhase != nil {
+		predicates = append(predicates, listener.StatusPhaseEQ(*i.StatusPhase))
+	}
+	if i.StatusPhaseNEQ != nil {
+		predicates = append(predicates, listener.StatusPhaseNEQ(*i.StatusPhaseNEQ))
+	}
+	if len(i.StatusPhaseIn) > 0 {
+		predicates = append(predicates, listener.StatusPhaseIn(i.StatusPhaseIn...))
+	}
+	if len(i.StatusPhaseNotIn) > 0 {
+		predicates = append(predicates, listener.StatusPhaseNotIn(i.StatusPhaseNotIn...))
+	}
+	if i.StatusPhaseIsNil {
+		predicates = append(predicates, listener.StatusPhaseIsNil())
+	}
+	if i.StatusPhaseNotNil {
+		predicates = append(predicates, listener.StatusPhaseNotNil())
+	}
+	if i.StatusMessage != nil {
+		predicates = append(predicates, listener.StatusMessageEQ(*i.StatusMessage))
+	}
+	if i.StatusMessageNEQ != nil {
+		predicates = append(predicates, listener.StatusMessageNEQ(*i.StatusMessageNEQ))
+	}
+	if len(i.StatusMessageIn) > 0 {
+		predicates = append(predicates, listener.StatusMessageIn(i.StatusMessageIn...))
+	}
+	if len(i.StatusMessageNotIn) > 0 {
+		predicates = append(predicates, listener.StatusMessageNotIn(i.StatusMessageNotIn...))
+	}
+	if i.StatusMessageGT != nil {
+		predicates = append(predicates, listener.StatusMessageGT(*i.StatusMessageGT))
+	}
+	if i.StatusMessageGTE != nil {
+		predicates = append(predicates, listener.StatusMessageGTE(*i.StatusMessageGTE))
+	}
+	if i.StatusMessageLT != nil {
+		predicates = append(predicates, listener.StatusMessageLT(*i.StatusMessageLT))
+	}
+	if i.StatusMessageLTE != nil {
+		predicates = append(predicates, listener.StatusMessageLTE(*i.StatusMessageLTE))
+	}
+	if i.StatusMessageContains != nil {
+		predicates = append(predicates, listener.StatusMessageContains(*i.StatusMessageContains))
+	}
+	if i.StatusMessageHasPrefix != nil {
+		predicates = append(predicates, listener.StatusMessageHasPrefix(*i.StatusMessageHasPrefix))
+	}
+	if i.StatusMessageHasSuffix != nil {
+		predicates = append(predicates, listener.StatusMessageHasSuffix(*i.StatusMessageHasSuffix))
+	}
+	if i.StatusMessageIsNil {
+		predicates = append(predicates, listener.StatusMessageIsNil())
+	}
+	if i.StatusMessageNotNil {
+		predicates = append(predicates, listener.StatusMessageNotNil())
+	}
+	if i.StatusMessageEqualFold != nil {
+		predicates = append(predicates, listener.StatusMessageEqualFold(*i.StatusMessageEqualFold))
+	}
+	if i.StatusMessageContainsFold != nil {
+		predicates = append(predicates, listener.StatusMessageContainsFold(*i.StatusMessageContainsFold))
+	}
+	if i.Environment != nil {
+		predicates = append(predicates, listener.EnvironmentEQ(*i.Environment))
+	}
+	if i.EnvironmentNEQ != nil {
+		predicates = append(predicates, listener.EnvironmentNEQ(*i.EnvironmentNEQ))
+	}
+	if len(i.EnvironmentIn) > 0 {
+		predicates = append(predicates, listener.EnvironmentIn(i.EnvironmentIn...))
+	}
+	if len(i.EnvironmentNotIn) > 0 {
+		predicates = append(predicates, listener.EnvironmentNotIn(i.EnvironmentNotIn...))
+	}
+	if i.EnvironmentGT != nil {
+		predicates = append(predicates, listener.EnvironmentGT(*i.EnvironmentGT))
+	}
+	if i.EnvironmentGTE != nil {
+		predicates = append(predicates, listener.EnvironmentGTE(*i.EnvironmentGTE))
+	}
+	if i.EnvironmentLT != nil {
+		predicates = append(predicates, listener.EnvironmentLT(*i.EnvironmentLT))
+	}
+	if i.EnvironmentLTE != nil {
+		predicates = append(predicates, listener.EnvironmentLTE(*i.EnvironmentLTE))
+	}
+	if i.EnvironmentContains != nil {
+		predicates = append(predicates, listener.EnvironmentContains(*i.EnvironmentContains))
+	}
+	if i.EnvironmentHasPrefix != nil {
+		predicates = append(predicates, listener.EnvironmentHasPrefix(*i.EnvironmentHasPrefix))
+	}
+	if i.EnvironmentHasSuffix != nil {
+		predicates = append(predicates, listener.EnvironmentHasSuffix(*i.EnvironmentHasSuffix))
+	}
+	if i.EnvironmentIsNil {
+		predicates = append(predicates, listener.EnvironmentIsNil())
+	}
+	if i.EnvironmentNotNil {
+		predicates = append(predicates, listener.EnvironmentNotNil())
+	}
+	if i.EnvironmentEqualFold != nil {
+		predicates = append(predicates, listener.EnvironmentEqualFold(*i.EnvironmentEqualFold))
+	}
+	if i.EnvironmentContainsFold != nil {
+		predicates = append(predicates, listener.EnvironmentContainsFold(*i.EnvironmentContainsFold))
+	}
+	if i.Namespace != nil {
+		predicates = append(predicates, listener.NamespaceEQ(*i.Namespace))
+	}
+	if i.NamespaceNEQ != nil {
+		predicates = append(predicates, listener.NamespaceNEQ(*i.NamespaceNEQ))
+	}
+	if len(i.NamespaceIn) > 0 {
+		predicates = append(predicates, listener.NamespaceIn(i.NamespaceIn...))
+	}
+	if len(i.NamespaceNotIn) > 0 {
+		predicates = append(predicates, listener.NamespaceNotIn(i.NamespaceNotIn...))
+	}
+	if i.NamespaceGT != nil {
+		predicates = append(predicates, listener.NamespaceGT(*i.NamespaceGT))
+	}
+	if i.NamespaceGTE != nil {
+		predicates = append(predicates, listener.NamespaceGTE(*i.NamespaceGTE))
+	}
+	if i.NamespaceLT != nil {
+		predicates = append(predicates, listener.NamespaceLT(*i.NamespaceLT))
+	}
+	if i.NamespaceLTE != nil {
+		predicates = append(predicates, listener.NamespaceLTE(*i.NamespaceLTE))
+	}
+	if i.NamespaceContains != nil {
+		predicates = append(predicates, listener.NamespaceContains(*i.NamespaceContains))
+	}
+	if i.NamespaceHasPrefix != nil {
+		predicates = append(predicates, listener.NamespaceHasPrefix(*i.NamespaceHasPrefix))
+	}
+	if i.NamespaceHasSuffix != nil {
+		predicates = append(predicates, listener.NamespaceHasSuffix(*i.NamespaceHasSuffix))
+	}
+	if i.NamespaceEqualFold != nil {
+		predicates = append(predicates, listener.NamespaceEqualFold(*i.NamespaceEqualFold))
+	}
+	if i.NamespaceContainsFold != nil {
+		predicates = append(predicates, listener.NamespaceContainsFold(*i.NamespaceContainsFold))
+	}
+	if i.Name != nil {
+		predicates = append(predicates, listener.NameEQ(*i.Name))
+	}
+	if i.NameNEQ != nil {
+		predicates = append(predicates, listener.NameNEQ(*i.NameNEQ))
+	}
+	if len(i.NameIn) > 0 {
+		predicates = append(predicates, listener.NameIn(i.NameIn...))
+	}
+	if len(i.NameNotIn) > 0 {
+		predicates = append(predicates, listener.NameNotIn(i.NameNotIn...))
+	}
+	if i.NameGT != nil {
+		predicates = append(predicates, listener.NameGT(*i.NameGT))
+	}
+	if i.NameGTE != nil {
+		predicates = append(predicates, listener.NameGTE(*i.NameGTE))
+	}
+	if i.NameLT != nil {
+		predicates = append(predicates, listener.NameLT(*i.NameLT))
+	}
+	if i.NameLTE != nil {
+		predicates = append(predicates, listener.NameLTE(*i.NameLTE))
+	}
+	if i.NameContains != nil {
+		predicates = append(predicates, listener.NameContains(*i.NameContains))
+	}
+	if i.NameHasPrefix != nil {
+		predicates = append(predicates, listener.NameHasPrefix(*i.NameHasPrefix))
+	}
+	if i.NameHasSuffix != nil {
+		predicates = append(predicates, listener.NameHasSuffix(*i.NameHasSuffix))
+	}
+	if i.NameEqualFold != nil {
+		predicates = append(predicates, listener.NameEqualFold(*i.NameEqualFold))
+	}
+	if i.NameContainsFold != nil {
+		predicates = append(predicates, listener.NameContainsFold(*i.NameContainsFold))
+	}
+
+	switch len(predicates) {
+	case 0:
+		return nil, ErrEmptyListenerWhereInput
+	case 1:
+		return predicates[0], nil
+	default:
+		return listener.And(predicates...), nil
 	}
 }
 

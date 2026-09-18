@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"sort"
 
+	"entgo.io/contrib/entgql"
 	"github.com/go-logr/logr"
 	"github.com/telekom/controlplane/controlplane-api/ent"
 	"github.com/telekom/controlplane/controlplane-api/ent/api"
@@ -21,6 +22,7 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/approval"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventexposure"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventsubscription"
+	"github.com/telekom/controlplane/controlplane-api/ent/listener"
 	gqlmodel "github.com/telekom/controlplane/controlplane-api/internal/resolvers/model"
 	"github.com/telekom/controlplane/controlplane-api/internal/viewer"
 	"github.com/telekom/controlplane/controlplane-api/pkg/model"
@@ -128,6 +130,17 @@ func (r *apiExposureResolver) Subscriptions(ctx context.Context, obj *ent.ApiExp
 	return result, nil
 }
 
+// Listeners is the resolver for the listeners field.
+func (r *apiExposureResolver) Listeners(ctx context.Context, obj *ent.ApiExposure) ([]*model.ListenerInfo, error) {
+	listeners, err := withListenerInfo(obj.QueryListeners()).
+		Where(listener.StatusPhaseEQ(listener.StatusPhaseReady)).
+		All(viewer.SystemContext(ctx))
+	if err != nil {
+		return nil, fmt.Errorf("loading listeners for api exposure %d: %w", obj.ID, err)
+	}
+	return mapListenerInfos(listeners)
+}
+
 // Visibility is the resolver for the visibility field.
 func (r *apiExposureInfoResolver) Visibility(ctx context.Context, obj *model.ApiExposureInfo) (apiexposure.Visibility, error) {
 	return apiexposure.Visibility(obj.Visibility), nil
@@ -158,6 +171,17 @@ func (r *apiSubscriptionResolver) Target(ctx context.Context, obj *ent.ApiSubscr
 	}
 
 	return loadApiExposureInfo(sysCtx, exposure)
+}
+
+// Listeners is the resolver for the listeners field.
+func (r *apiSubscriptionResolver) Listeners(ctx context.Context, obj *ent.ApiSubscription) ([]*model.ListenerInfo, error) {
+	listeners, err := withListenerInfo(obj.QueryListeners()).
+		Where(listener.StatusPhaseEQ(listener.StatusPhaseReady)).
+		All(viewer.SystemContext(ctx))
+	if err != nil {
+		return nil, fmt.Errorf("loading listeners for api subscription %d: %w", obj.ID, err)
+	}
+	return mapListenerInfos(listeners)
 }
 
 // StatusPhase is the resolver for the statusPhase field.
@@ -196,6 +220,12 @@ func (r *applicationResolver) OwnerTeam(ctx context.Context, obj *ent.Applicatio
 	return mapTeamInfo(team, group), nil
 }
 
+// Listeners is the resolver for the listeners field.
+func (r *applicationResolver) Listeners(ctx context.Context, obj *ent.Application, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, where *ent.ListenerWhereInput) (*ent.ListenerConnection, error) {
+	return withListenerInfo(obj.QuerySubscribedApis().QueryListeners()).
+		Paginate(viewer.SystemContext(ctx), after, first, before, last, ent.WithListenerFilter(where.Filter))
+}
+
 // Subscription is the resolver for the subscription field.
 // Returns the related subscription as a SubscriptionInfo union (ApiSubscriptionInfo or EventSubscriptionInfo).
 func (r *approvalResolver) Subscription(ctx context.Context, obj *ent.Approval) (gqlmodel.SubscriptionInfo, error) {
@@ -226,6 +256,17 @@ func (r *approvalResolver) Subscription(ctx context.Context, obj *ent.Approval) 
 	}
 	if eventSub != nil {
 		return loadEventSubscriptionInfo(sysCtx, eventSub)
+	}
+
+	listenerTarget, err := obj.Edges.ListenerOrErr()
+	if ent.IsNotLoaded(err) {
+		listenerTarget, err = obj.QueryListener().Only(sysCtx)
+	}
+	if err != nil && !ent.IsNotFound(err) {
+		return nil, fmt.Errorf("loading listener for approval %d: %w", obj.ID, err)
+	}
+	if listenerTarget != nil {
+		return loadListenerInfo(sysCtx, r.client, listenerTarget)
 	}
 
 	return nil, fmt.Errorf("approval %d has no related subscription", obj.ID)
@@ -268,6 +309,17 @@ func (r *approvalRequestResolver) Subscription(ctx context.Context, obj *ent.App
 		return loadEventSubscriptionInfo(sysCtx, eventSub)
 	}
 
+	listenerTarget, err := obj.Edges.ListenerOrErr()
+	if ent.IsNotLoaded(err) {
+		listenerTarget, err = obj.QueryListener().Only(sysCtx)
+	}
+	if err != nil && !ent.IsNotFound(err) {
+		return nil, fmt.Errorf("loading listener for approval request %d: %w", obj.ID, err)
+	}
+	if listenerTarget != nil {
+		return loadListenerInfo(sysCtx, r.client, listenerTarget)
+	}
+
 	return nil, fmt.Errorf("approval request %d has no related subscription", obj.ID)
 }
 
@@ -292,6 +344,24 @@ func (r *approvalRequestResolver) Approval(ctx context.Context, obj *ent.Approva
 			return nil, fmt.Errorf("loading approval for api subscription %d: %w", apiSub.ID, err)
 		}
 		return appr, nil
+	}
+
+	listenerTarget, listenerErr := obj.Edges.ListenerOrErr()
+	if ent.IsNotLoaded(listenerErr) {
+		listenerTarget, listenerErr = obj.QueryListener().Only(ctx)
+	}
+	if listenerErr != nil && !ent.IsNotFound(listenerErr) {
+		return nil, fmt.Errorf("loading listener for approval request %d: %w", obj.ID, listenerErr)
+	}
+	if listenerTarget != nil {
+		providerApproval, err := listenerTarget.QueryProviderApproval().Only(ctx)
+		if ent.IsNotFound(err) {
+			return nil, nil
+		}
+		if err != nil {
+			return nil, fmt.Errorf("loading provider approval for listener %d: %w", listenerTarget.ID, err)
+		}
+		return providerApproval, nil
 	}
 
 	// Fall back to event subscription path.
@@ -508,6 +578,165 @@ func (r *externalIdentityProviderResolver) TokenRequest(ctx context.Context, obj
 	return &m, nil
 }
 
+// ResourceName is the resolver for the resourceName field.
+func (r *listenerResolver) ResourceName(ctx context.Context, obj *ent.Listener) (string, error) {
+	sysCtx := viewer.SystemContext(ctx)
+	exposure, err := obj.Edges.ExposureOrErr()
+	if ent.IsNotLoaded(err) {
+		exposure, err = obj.QueryExposure().Only(sysCtx)
+	}
+	if err != nil {
+		return "", fmt.Errorf("loading exposure for listener %d: %w", obj.ID, err)
+	}
+	apiDefinition, err := exposure.Edges.APIOrErr()
+	if ent.IsNotLoaded(err) {
+		apiDefinition, err = exposure.QueryAPI().Only(sysCtx)
+	}
+	if err != nil {
+		return "", fmt.Errorf("loading api for listener %d: %w", obj.ID, err)
+	}
+	if apiDefinition.Name == nil || *apiDefinition.Name == "" {
+		return "", fmt.Errorf("listener %d references api %d without a projected kubernetes name", obj.ID, apiDefinition.ID)
+	}
+	return *apiDefinition.Name, nil
+}
+
+// Approved is the resolver for the approved field.
+func (r *listenerResolver) Approved(ctx context.Context, obj *ent.Listener) (bool, error) {
+	providerApproval, err := obj.Edges.ProviderApprovalOrErr()
+	if ent.IsNotLoaded(err) {
+		providerApproval, err = obj.QueryProviderApproval().Only(viewer.SystemContext(ctx))
+	}
+	if ent.IsNotFound(err) {
+		return false, nil
+	}
+	if err != nil {
+		return false, fmt.Errorf("loading provider approval for listener %d: %w", obj.ID, err)
+	}
+	return providerApproval.State == approval.StateGranted, nil
+}
+
+// APIBasePath is the resolver for the apiBasePath field.
+func (r *listenerResolver) APIBasePath(ctx context.Context, obj *ent.Listener) (string, error) {
+	return obj.APIBasePath, nil
+}
+
+// RequestFilter is the resolver for the requestFilter field.
+func (r *listenerResolver) RequestFilter(ctx context.Context, obj *ent.Listener) (*model.ListenerFilter, error) {
+	return obj.RequestFilter, nil
+}
+
+// ResponseFilter is the resolver for the responseFilter field.
+func (r *listenerResolver) ResponseFilter(ctx context.Context, obj *ent.Listener) (*model.ListenerFilter, error) {
+	return obj.ResponseFilter, nil
+}
+
+// Application is the resolver for the application field.
+func (r *listenerResolver) Application(ctx context.Context, obj *ent.Listener) (*model.ApplicationInfo, error) {
+	return r.Listener().Consumer(ctx, obj)
+}
+
+// Consumer is the resolver for the consumer field.
+func (r *listenerResolver) Consumer(ctx context.Context, obj *ent.Listener) (*model.ApplicationInfo, error) {
+	sysCtx := viewer.SystemContext(ctx)
+	subscription, err := obj.Edges.SubscriptionOrErr()
+	if ent.IsNotLoaded(err) {
+		subscription, err = obj.QuerySubscription().Only(sysCtx)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("loading subscription for listener %d: %w", obj.ID, err)
+	}
+	application, err := subscription.Edges.OwnerOrErr()
+	if ent.IsNotLoaded(err) {
+		application, err = subscription.QueryOwner().Only(sysCtx)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("loading consumer application for listener %d: %w", obj.ID, err)
+	}
+	return loadApplicationInfo(sysCtx, application)
+}
+
+// Provider is the resolver for the provider field.
+func (r *listenerResolver) Provider(ctx context.Context, obj *ent.Listener) (*model.ApplicationInfo, error) {
+	sysCtx := viewer.SystemContext(ctx)
+	exposure, err := obj.Edges.ExposureOrErr()
+	if ent.IsNotLoaded(err) {
+		exposure, err = obj.QueryExposure().Only(sysCtx)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("loading exposure for listener %d: %w", obj.ID, err)
+	}
+	application, err := exposure.Edges.OwnerOrErr()
+	if ent.IsNotLoaded(err) {
+		application, err = exposure.QueryOwner().Only(sysCtx)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("loading provider application for listener %d: %w", obj.ID, err)
+	}
+	return loadApplicationInfo(sysCtx, application)
+}
+
+// Subscription is the resolver for the subscription field.
+func (r *listenerResolver) Subscription(ctx context.Context, obj *ent.Listener) (*model.ApiSubscriptionInfo, error) {
+	sysCtx := viewer.SystemContext(ctx)
+	subscription, err := obj.Edges.SubscriptionOrErr()
+	if ent.IsNotLoaded(err) {
+		subscription, err = obj.QuerySubscription().Only(sysCtx)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("loading subscription for listener %d: %w", obj.ID, err)
+	}
+	return loadApiSubscriptionInfo(sysCtx, subscription)
+}
+
+// Exposure is the resolver for the exposure field.
+func (r *listenerResolver) Exposure(ctx context.Context, obj *ent.Listener) (*model.ApiExposureInfo, error) {
+	sysCtx := viewer.SystemContext(ctx)
+	exposure, err := obj.Edges.ExposureOrErr()
+	if ent.IsNotLoaded(err) {
+		exposure, err = obj.QueryExposure().Only(sysCtx)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("loading exposure for listener %d: %w", obj.ID, err)
+	}
+	return loadApiExposureInfo(sysCtx, exposure)
+}
+
+// ProviderApproval is the resolver for the providerApproval field.
+func (r *listenerResolver) ProviderApproval(ctx context.Context, obj *ent.Listener) (*ent.Approval, error) {
+	providerApproval, err := obj.Edges.ProviderApprovalOrErr()
+	if ent.IsNotLoaded(err) {
+		providerApproval, err = obj.QueryProviderApproval().Only(ctx)
+	}
+	if ent.IsNotFound(err) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("loading provider approval for listener %d: %w", obj.ID, err)
+	}
+	return providerApproval, nil
+}
+
+// Trigger is the resolver for the trigger field.
+func (r *listenerFilterResolver) Trigger(ctx context.Context, obj *model.ListenerFilter) (map[string]any, error) {
+	if obj.Trigger == nil {
+		return nil, nil
+	}
+	trigger := make(map[string]any, len(obj.Trigger))
+	for key, value := range obj.Trigger {
+		trigger[key] = value
+	}
+	return trigger, nil
+}
+
+// Payload is the resolver for the payload field.
+func (r *listenerFilterResolver) Payload(ctx context.Context, obj *model.ListenerFilter) ([]string, error) {
+	if obj.Payload == nil {
+		return []string{}, nil
+	}
+	return obj.Payload, nil
+}
+
 // ClientSecret is the resolver for the clientSecret field.
 func (r *oAuth2ClientCredentialsResolver) ClientSecret(ctx context.Context, obj *model.OAuth2ClientCredentials) (*string, error) {
 	return r.secrets.Resolve(ctx, obj.ClientSecret, "clientSecret")
@@ -630,6 +859,9 @@ func (r *Resolver) ExternalIdentityProvider() ExternalIdentityProviderResolver {
 	return &externalIdentityProviderResolver{r}
 }
 
+// ListenerFilter returns ListenerFilterResolver implementation.
+func (r *Resolver) ListenerFilter() ListenerFilterResolver { return &listenerFilterResolver{r} }
+
 // OAuth2ClientCredentials returns OAuth2ClientCredentialsResolver implementation.
 func (r *Resolver) OAuth2ClientCredentials() OAuth2ClientCredentialsResolver {
 	return &oAuth2ClientCredentialsResolver{r}
@@ -653,6 +885,7 @@ type (
 	eventSubscriptionInfoResolver    struct{ *Resolver }
 	externalIdResolver               struct{ *Resolver }
 	externalIdentityProviderResolver struct{ *Resolver }
+	listenerFilterResolver           struct{ *Resolver }
 	oAuth2ClientCredentialsResolver  struct{ *Resolver }
 	responseFilterResolver           struct{ *Resolver }
 	selectionFilterResolver          struct{ *Resolver }

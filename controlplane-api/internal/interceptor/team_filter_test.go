@@ -50,6 +50,11 @@ var _ = Describe("TeamFilterInterceptor", func() {
 			Expect(teams).To(HaveLen(2))
 		})
 
+		It("should deny Listener queries without a viewer", func() {
+			_, err := client.Listener.Query().All(context.Background())
+			Expect(err).To(HaveOccurred())
+		})
+
 		It("should pass through without filtering", func() {
 			// AllowContext bypasses privacy (which would deny empty teams in production).
 			ctx := viewer.NewContext(testutil.AllowContext(), &viewer.Viewer{Teams: []string{}})
@@ -91,11 +96,15 @@ var _ = Describe("TeamFilterInterceptor", func() {
 			Entry("approvals", func(ctx context.Context) (int, error) {
 				r, e := client.Approval.Query().All(ctx)
 				return len(r), e
-			}, 1),
+			}, 2),
 			Entry("approval requests", func(ctx context.Context) (int, error) {
 				r, e := client.ApprovalRequest.Query().All(ctx)
 				return len(r), e
-			}, 1),
+			}, 2),
+			Entry("listeners", func(ctx context.Context) (int, error) {
+				r, e := client.Listener.Query().All(ctx)
+				return len(r), e
+			}, 2),
 			Entry("members", func(ctx context.Context) (int, error) {
 				r, e := client.Member.Query().All(ctx)
 				return len(r), e
@@ -147,11 +156,15 @@ var _ = Describe("TeamFilterInterceptor", func() {
 			Entry("approvals (team-alpha is target provider)", func(ctx context.Context) (int, error) {
 				r, e := client.Approval.Query().All(ctx)
 				return len(r), e
-			}, 1),
+			}, 2),
 			Entry("approval requests (team-alpha is target provider)", func(ctx context.Context) (int, error) {
 				r, e := client.ApprovalRequest.Query().All(ctx)
 				return len(r), e
-			}, 1),
+			}, 2),
+			Entry("listeners (team-alpha is provider)", func(ctx context.Context) (int, error) {
+				r, e := client.Listener.Query().All(ctx)
+				return len(r), e
+			}, 2),
 			Entry("members", func(ctx context.Context) (int, error) {
 				r, e := client.Member.Query().All(ctx)
 				return len(r), e
@@ -223,6 +236,10 @@ var _ = Describe("TeamFilterInterceptor", func() {
 				r, e := client.ApiSubscription.Query().All(ctx)
 				return len(r), e
 			}, 1),
+			Entry("listeners", func(ctx context.Context) (int, error) {
+				r, e := client.Listener.Query().All(ctx)
+				return len(r), e
+			}, 2),
 			Entry("event exposures", func(ctx context.Context) (int, error) {
 				r, e := client.EventExposure.Query().All(ctx)
 				return len(r), e
@@ -236,6 +253,44 @@ var _ = Describe("TeamFilterInterceptor", func() {
 				return len(r), e
 			}, 1),
 		)
+	})
+
+	Context("when viewer is the Listener consumer", func() {
+		BeforeEach(func() { seed() })
+
+		It("should see Listeners and Listener approval workflows", func() {
+			ctx := viewerCtx(&viewer.Viewer{Teams: []string{"team-beta"}})
+			listeners, err := client.Listener.Query().All(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(listeners).To(HaveLen(2))
+
+			approvals, err := client.Approval.Query().All(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(approvals).To(HaveLen(2))
+
+			requests, err := client.ApprovalRequest.Query().All(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(requests).To(HaveLen(2))
+		})
+	})
+
+	Context("when viewer is unrelated to the Listener", func() {
+		BeforeEach(func() { seed() })
+
+		It("should not see Listeners or approval workflows", func() {
+			ctx := viewerCtx(&viewer.Viewer{Teams: []string{"team-gamma"}})
+			listeners, err := client.Listener.Query().All(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(listeners).To(BeEmpty())
+
+			approvals, err := client.Approval.Query().All(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(approvals).To(BeEmpty())
+
+			requests, err := client.ApprovalRequest.Query().All(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(requests).To(BeEmpty())
+		})
 	})
 
 	Context("public entities (no team filtering)", func() {

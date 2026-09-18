@@ -18,6 +18,7 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/apiexposure"
 	"github.com/telekom/controlplane/controlplane-api/ent/apisubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/application"
+	"github.com/telekom/controlplane/controlplane-api/ent/listener"
 	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 )
 
@@ -250,6 +251,21 @@ func (_c *ApiExposureCreate) AddSubscriptions(v ...*ApiSubscription) *ApiExposur
 		ids[i] = v[i].ID
 	}
 	return _c.AddSubscriptionIDs(ids...)
+}
+
+// AddListenerIDs adds the "listeners" edge to the Listener entity by IDs.
+func (_c *ApiExposureCreate) AddListenerIDs(ids ...int) *ApiExposureCreate {
+	_c.mutation.AddListenerIDs(ids...)
+	return _c
+}
+
+// AddListeners adds the "listeners" edges to the Listener entity.
+func (_c *ApiExposureCreate) AddListeners(v ...*Listener) *ApiExposureCreate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddListenerIDs(ids...)
 }
 
 // Mutation returns the ApiExposureMutation object of the builder.
@@ -505,6 +521,22 @@ func (_c *ApiExposureCreate) createSpec() (*ApiExposure, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(apisubscription.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.ListenersIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   apiexposure.ListenersTable,
+			Columns: []string{apiexposure.ListenersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(listener.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

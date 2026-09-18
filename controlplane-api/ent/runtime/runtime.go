@@ -19,6 +19,7 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/eventsubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventtype"
 	"github.com/telekom/controlplane/controlplane-api/ent/group"
+	"github.com/telekom/controlplane/controlplane-api/ent/listener"
 	"github.com/telekom/controlplane/controlplane-api/ent/member"
 	"github.com/telekom/controlplane/controlplane-api/ent/permissionset"
 	"github.com/telekom/controlplane/controlplane-api/ent/schema"
@@ -65,19 +66,19 @@ func init() {
 	// api.NamespaceValidator is a validator for the "namespace" field. It is called by the builders before save.
 	api.NamespaceValidator = apiDescNamespace.Validators[0].(func(string) error)
 	// apiDescBasePath is the schema descriptor for base_path field.
-	apiDescBasePath := apiFields[0].Descriptor()
+	apiDescBasePath := apiFields[1].Descriptor()
 	// api.BasePathValidator is a validator for the "base_path" field. It is called by the builders before save.
 	api.BasePathValidator = apiDescBasePath.Validators[0].(func(string) error)
 	// apiDescVersion is the schema descriptor for version field.
-	apiDescVersion := apiFields[1].Descriptor()
+	apiDescVersion := apiFields[2].Descriptor()
 	// api.VersionValidator is a validator for the "version" field. It is called by the builders before save.
 	api.VersionValidator = apiDescVersion.Validators[0].(func(string) error)
 	// apiDescXVendor is the schema descriptor for x_vendor field.
-	apiDescXVendor := apiFields[4].Descriptor()
+	apiDescXVendor := apiFields[5].Descriptor()
 	// api.DefaultXVendor holds the default value on creation for the x_vendor field.
 	api.DefaultXVendor = apiDescXVendor.Default.(bool)
 	// apiDescActive is the schema descriptor for active field.
-	apiDescActive := apiFields[6].Descriptor()
+	apiDescActive := apiFields[7].Descriptor()
 	// api.DefaultActive holds the default value on creation for the active field.
 	api.DefaultActive = apiDescActive.Default.(bool)
 	apiexposureMixin := schema.ApiExposure{}.Mixin()
@@ -474,6 +475,44 @@ func init() {
 	groupDescDescription := groupFields[2].Descriptor()
 	// group.DefaultDescription holds the default value on creation for the description field.
 	group.DefaultDescription = groupDescDescription.Default.(string)
+	listenerMixin := schema.Listener{}.Mixin()
+	listener.Policy = privacy.NewPolicies(listenerMixin[0], schema.Listener{})
+	listener.Hooks[0] = func(next ent.Mutator) ent.Mutator {
+		return ent.MutateFunc(func(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+			if err := listener.Policy.EvalMutation(ctx, m); err != nil {
+				return nil, err
+			}
+			return next.Mutate(ctx, m)
+		})
+	}
+	listenerMixinFields1 := listenerMixin[1].Fields()
+	_ = listenerMixinFields1
+	listenerMixinFields4 := listenerMixin[4].Fields()
+	_ = listenerMixinFields4
+	listenerFields := schema.Listener{}.Fields()
+	_ = listenerFields
+	// listenerDescCreatedAt is the schema descriptor for created_at field.
+	listenerDescCreatedAt := listenerMixinFields1[0].Descriptor()
+	// listener.DefaultCreatedAt holds the default value on creation for the created_at field.
+	listener.DefaultCreatedAt = listenerDescCreatedAt.Default.(func() time.Time)
+	// listenerDescLastModifiedAt is the schema descriptor for last_modified_at field.
+	listenerDescLastModifiedAt := listenerMixinFields1[1].Descriptor()
+	// listener.DefaultLastModifiedAt holds the default value on creation for the last_modified_at field.
+	listener.DefaultLastModifiedAt = listenerDescLastModifiedAt.Default.(func() time.Time)
+	// listener.UpdateDefaultLastModifiedAt holds the default value on update for the last_modified_at field.
+	listener.UpdateDefaultLastModifiedAt = listenerDescLastModifiedAt.UpdateDefault.(func() time.Time)
+	// listenerDescNamespace is the schema descriptor for namespace field.
+	listenerDescNamespace := listenerMixinFields4[0].Descriptor()
+	// listener.NamespaceValidator is a validator for the "namespace" field. It is called by the builders before save.
+	listener.NamespaceValidator = listenerDescNamespace.Validators[0].(func(string) error)
+	// listenerDescName is the schema descriptor for name field.
+	listenerDescName := listenerMixinFields4[1].Descriptor()
+	// listener.NameValidator is a validator for the "name" field. It is called by the builders before save.
+	listener.NameValidator = listenerDescName.Validators[0].(func(string) error)
+	// listenerDescAPIBasePath is the schema descriptor for api_base_path field.
+	listenerDescAPIBasePath := listenerFields[0].Descriptor()
+	// listener.APIBasePathValidator is a validator for the "api_base_path" field. It is called by the builders before save.
+	listener.APIBasePathValidator = listenerDescAPIBasePath.Validators[0].(func(string) error)
 	memberMixin := schema.Member{}.Mixin()
 	member.Policy = privacy.NewPolicies(memberMixin[0], schema.Member{})
 	member.Hooks[0] = func(next ent.Mutator) ent.Mutator {

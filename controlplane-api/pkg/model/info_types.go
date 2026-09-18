@@ -4,6 +4,24 @@
 
 package model
 
+// ApplicationInfo provides a reduced cross-tenant safe view of an application.
+type ApplicationInfo struct {
+	ID        int       `json:"id"`
+	Name      string    `json:"name"`
+	OwnerTeam *TeamInfo `json:"ownerTeam"`
+}
+
+// ListenerInfo provides a reduced cross-tenant safe view of a Listener.
+type ListenerInfo struct {
+	ID           int              `json:"id"`
+	ResourceName string           `json:"resourceName"`
+	Approved     bool             `json:"approved"`
+	Consumer     *ApplicationInfo `json:"consumer"`
+	Provider     *ApplicationInfo `json:"provider"`
+}
+
+func (ListenerInfo) IsSubscriptionInfo() {}
+
 // ApiExposureInfo provides a reduced cross-tenant safe view of an API exposure.
 // No navigable edges — traversal terminates here.
 type ApiExposureInfo struct {

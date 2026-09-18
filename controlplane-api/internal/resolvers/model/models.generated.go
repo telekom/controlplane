@@ -12,7 +12,7 @@ import (
 	"strconv"
 )
 
-// A subscription related to an approval — either an API or event subscription.
+// The API subscription, event subscription, or Listener related to an approval workflow.
 type SubscriptionInfo interface {
 	IsSubscriptionInfo()
 }
