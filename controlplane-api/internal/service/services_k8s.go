@@ -596,7 +596,7 @@ func (s *approvalK8sService) DecideApprovalRequest(ctx context.Context, ref Reso
 
 	_, updateErr := s.client.CreateOrUpdate(ctx, ar, func() error {
 		ar.Spec.State = targetState
-		ar.Spec.Decisions = append(ar.Spec.Decisions, decision)
+		ar.AppendDecision(decision)
 		return nil
 	})
 	if updateErr != nil {
@@ -651,7 +651,7 @@ func (s *approvalK8sService) DecideApproval(ctx context.Context, ref ResourceRef
 
 	_, updateErr := s.client.CreateOrUpdate(ctx, approval, func() error {
 		approval.Spec.State = targetState
-		approval.Spec.Decisions = append(approval.Spec.Decisions, decision)
+		approval.AppendDecision(decision)
 		return nil
 	})
 	if updateErr != nil {

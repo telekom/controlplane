@@ -38,6 +38,12 @@ Created ──▶ Pending ──▶ SemiGranted ──▶ Granted
                     └──▶ Rejected
 ```
 
+## Decision history
+
+Every state change records a decision in `spec.decisions` on the Approval and the ApprovalRequest. The list is a rolling window: only the **5 most recent decisions** are retained. When a sixth decision is recorded, the oldest one is dropped automatically by the admission webhook, so no client needs to trim the list itself. Decisions beyond that window are not preserved anywhere.
+
+FourEyes validation is unaffected by this, because it only inspects the **two most recent decisions** to confirm that they were made by different people.
+
 ## Trusted Teams
 
 API and event providers can designate specific teams as **trusted**. When a trusted team subscribes, the approval is granted automatically regardless of the configured strategy. This is useful for pre-authorized internal services.
@@ -48,6 +54,8 @@ The Approval domain creates Notification resources at key points in the lifecycl
 
 - **Request created** — Provider team is notified of a new subscription request
 - **State changed** — Both parties are notified when an approval is granted, rejected, or suspended
+
+Notification names are deterministic, so the same notification can be produced by several reconciles. Each Notification is therefore referenced at most once in `status.notificationRefs`.
 
 ## Domain Interactions
 
