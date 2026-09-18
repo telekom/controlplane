@@ -27,7 +27,10 @@ type ApprovalRequestSpec struct {
 	Decider Decider `json:"decider,omitempty"`
 
 	// Decisions contains information about who or what changed this approval
+	// Only the most recent MaxDecisions entries are retained; older ones are
+	// dropped by the mutating webhook.
 	// +kubebuilder:default={}
+	// +kubebuilder:validation:MaxItems=5
 	Decisions []Decision `json:"decisions"`
 
 	// Strategy defines the strategy that was used to approve the request
@@ -59,7 +62,12 @@ type ApprovalRequestStatus struct {
 	// +kubebuilder:default=Pending
 	LastState ApprovalState `json:"lastState,omitempty"`
 
-	// NotificationRefs is a reference to the notifications that were sent for this approval request
+	// NotificationRefs is a reference to the notifications that were sent for this approval request.
+	// Each notification appears at most once (keyed by namespace and name).
+	// +listType=map
+	// +listMapKey=namespace
+	// +listMapKey=name
+	// +optional
 	NotificationRefs []types.ObjectRef `json:"notificationRefs,omitempty"`
 }
 
@@ -69,6 +77,7 @@ type ApprovalRequestStatus struct {
 // ApprovalRequest is the Schema for the approvalrequests API
 // +kubebuilder:printcolumn:name="State",type="string",JSONPath=".spec.state",description="The state of the approval"
 // +kubebuilder:printcolumn:name="Strategy",type="string",JSONPath=".spec.strategy",description="The strategy used to approve the request"
+// +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 type ApprovalRequest struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -89,6 +98,13 @@ func (ar *ApprovalRequest) SetCondition(condition metav1.Condition) bool {
 
 func (ar *ApprovalRequest) StateChanged() bool {
 	return ar.Status.LastState != ar.Spec.State
+}
+
+// AppendDecision records a decision and keeps the list within MaxDecisions.
+// The mutating webhook enforces the same bound server-side; this helper keeps
+// the object in its final shape client-side.
+func (ar *ApprovalRequest) AppendDecision(d Decision) {
+	ar.Spec.Decisions = TrimDecisions(append(ar.Spec.Decisions, d))
 }
 
 // NewApprovalRequest returns a new ApprovalRequest object.

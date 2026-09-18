@@ -18,10 +18,21 @@ spec:
   scope: Namespaced
   versions:
   - additionalPrinterColumns:
+    - description: Who can see and subscribe to this API
+      jsonPath: .spec.visibility
+      name: Visibility
+      type: string
+    - description: Zone the API is exposed in
+      jsonPath: .spec.zone.name
+      name: Zone
+      type: string
     - description: Indicates if the API is active
       jsonPath: .status.active
       name: Active
       type: boolean
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
     name: v1
     schema:
       openAPIV3Schema:

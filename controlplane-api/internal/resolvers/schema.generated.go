@@ -14,6 +14,7 @@ import (
 	"sync/atomic"
 
 	"github.com/99designs/gqlgen/graphql"
+	"github.com/telekom/controlplane/controlplane-api/ent"
 	"github.com/telekom/controlplane/controlplane-api/ent/agenticexposure"
 	"github.com/telekom/controlplane/controlplane-api/ent/agenticsubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/apiexposure"
@@ -21,8 +22,8 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/approval"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventexposure"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventsubscription"
-	model1 "github.com/telekom/controlplane/controlplane-api/internal/resolvers/model"
-	"github.com/telekom/controlplane/controlplane-api/pkg/model"
+	"github.com/telekom/controlplane/controlplane-api/internal/resolvers/model"
+	model1 "github.com/telekom/controlplane/controlplane-api/pkg/model"
 	"github.com/vektah/gqlparser/v2/ast"
 )
 
@@ -38,26 +39,26 @@ type AgenticSubscriptionInfoResolver interface {
 type ApiExposureInfoResolver interface {
 	Visibility(ctx context.Context, obj *model.ApiExposureInfo) (apiexposure.Visibility, error)
 
-	Features(ctx context.Context, obj *model.ApiExposureInfo) ([]model1.APIExposureFeature, error)
+	Features(ctx context.Context, obj *model.ApiExposureInfo) ([]model.APIExposureFeature, error)
 }
 type ApiSubscriptionInfoResolver interface {
 	StatusPhase(ctx context.Context, obj *model.ApiSubscriptionInfo) (*apisubscription.StatusPhase, error)
 }
 type ApprovalConfigResolver interface {
-	Strategy(ctx context.Context, obj *model.ApprovalConfig) (approval.Strategy, error)
+	Strategy(ctx context.Context, obj *model1.ApprovalConfig) (approval.Strategy, error)
 }
 type AvailableTransitionResolver interface {
-	Action(ctx context.Context, obj *model.AvailableTransition) (model1.ApprovalAction, error)
-	ToState(ctx context.Context, obj *model.AvailableTransition) (approval.State, error)
+	Action(ctx context.Context, obj *model1.AvailableTransition) (model.ApprovalAction, error)
+	ToState(ctx context.Context, obj *model1.AvailableTransition) (approval.State, error)
 }
 type BasicAuthCredentialsResolver interface {
-	Password(ctx context.Context, obj *model.BasicAuthCredentials) (string, error)
+	Password(ctx context.Context, obj *model1.BasicAuthCredentials) (string, error)
 }
 type DecisionResolver interface {
-	ResultingState(ctx context.Context, obj *model.Decision) (*approval.State, error)
+	ResultingState(ctx context.Context, obj *model1.Decision) (*approval.State, error)
 }
 type EventDeliveryResolver interface {
-	Payload(ctx context.Context, obj *model.EventDelivery) (model1.PayloadType, error)
+	Payload(ctx context.Context, obj *model1.EventDelivery) (model.PayloadType, error)
 }
 type EventExposureInfoResolver interface {
 	Visibility(ctx context.Context, obj *model.EventExposureInfo) (eventexposure.Visibility, error)
@@ -67,20 +68,20 @@ type EventSubscriptionInfoResolver interface {
 	StatusPhase(ctx context.Context, obj *model.EventSubscriptionInfo) (*eventsubscription.StatusPhase, error)
 }
 type ExternalIdResolver interface {
-	Schema(ctx context.Context, obj *model.ExternalId) (string, error)
+	Schema(ctx context.Context, obj *model1.ExternalId) (string, error)
 }
 type ExternalIdentityProviderResolver interface {
-	TokenRequest(ctx context.Context, obj *model.ExternalIdentityProvider) (*model1.TokenRequestMethod, error)
+	TokenRequest(ctx context.Context, obj *model1.ExternalIdentityProvider) (*model.TokenRequestMethod, error)
 }
 type OAuth2ClientCredentialsResolver interface {
-	ClientSecret(ctx context.Context, obj *model.OAuth2ClientCredentials) (*string, error)
-	ClientKey(ctx context.Context, obj *model.OAuth2ClientCredentials) (*string, error)
+	ClientSecret(ctx context.Context, obj *model1.OAuth2ClientCredentials) (*string, error)
+	ClientKey(ctx context.Context, obj *model1.OAuth2ClientCredentials) (*string, error)
 }
 type ResponseFilterResolver interface {
-	Mode(ctx context.Context, obj *model.ResponseFilter) (*model1.ResponseFilterMode, error)
+	Mode(ctx context.Context, obj *model1.ResponseFilter) (*model.ResponseFilterMode, error)
 }
 type SelectionFilterResolver interface {
-	Attributes(ctx context.Context, obj *model.SelectionFilter) (map[string]any, error)
+	Attributes(ctx context.Context, obj *model1.SelectionFilter) (map[string]any, error)
 }
 
 // endregion ************************** generated!.gotpl **************************
@@ -218,7 +219,7 @@ func (ec *executionContext) _AgenticExposureInfo_approvalConfig(ctx context.Cont
 			return obj.ApprovalConfig, nil
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v model.ApprovalConfig) graphql.Marshaler {
+		func(ctx context.Context, selections ast.SelectionSet, v model1.ApprovalConfig) graphql.Marshaler {
 			return ec.marshalNApprovalConfig2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐApprovalConfig(ctx, selections, v)
 		},
 		true,
@@ -250,7 +251,7 @@ func (ec *executionContext) _AgenticExposureInfo_traffic(ctx context.Context, fi
 			return obj.Traffic, nil
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v *model.Traffic) graphql.Marshaler {
+		func(ctx context.Context, selections ast.SelectionSet, v *model1.Traffic) graphql.Marshaler {
 			return ec.marshalOTraffic2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐTraffic(ctx, selections, v)
 		},
 		true,
@@ -305,7 +306,7 @@ func (ec *executionContext) _AgenticExposureInfo_ownerTeam(ctx context.Context, 
 			return obj.OwnerTeam, nil
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v *model.TeamInfo) graphql.Marshaler {
+		func(ctx context.Context, selections ast.SelectionSet, v *model1.TeamInfo) graphql.Marshaler {
 			return ec.marshalNTeamInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐTeamInfo(ctx, selections, v)
 		},
 		true,
@@ -325,7 +326,39 @@ func (ec *executionContext) fieldContext_AgenticExposureInfo_ownerTeam(_ context
 	return fc, nil
 }
 
-func (ec *executionContext) _AgenticExposureSecurity_m2m(ctx context.Context, field graphql.CollectedField, obj *model.AgenticExposureSecurity) (ret graphql.Marshaler) {
+func (ec *executionContext) _AgenticExposureInfo_ownerApplication(ctx context.Context, field graphql.CollectedField, obj *model.AgenticExposureInfo) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_AgenticExposureInfo_ownerApplication(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.OwnerApplication, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.ApplicationInfo) graphql.Marshaler {
+			return ec.marshalNApplicationInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐApplicationInfo(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_AgenticExposureInfo_ownerApplication(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AgenticExposureInfo",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_ApplicationInfo(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AgenticExposureSecurity_m2m(ctx context.Context, field graphql.CollectedField, obj *model1.AgenticExposureSecurity) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
@@ -337,7 +370,7 @@ func (ec *executionContext) _AgenticExposureSecurity_m2m(ctx context.Context, fi
 			return obj.M2M, nil
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v *model.Machine2MachineAuthentication) graphql.Marshaler {
+		func(ctx context.Context, selections ast.SelectionSet, v *model1.Machine2MachineAuthentication) graphql.Marshaler {
 			return ec.marshalOMachine2MachineAuthentication2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐMachine2MachineAuthentication(ctx, selections, v)
 		},
 		true,
@@ -357,7 +390,7 @@ func (ec *executionContext) fieldContext_AgenticExposureSecurity_m2m(_ context.C
 	return fc, nil
 }
 
-func (ec *executionContext) _AgenticHeaderTransformation_remove(ctx context.Context, field graphql.CollectedField, obj *model.AgenticHeaderTransformation) (ret graphql.Marshaler) {
+func (ec *executionContext) _AgenticHeaderTransformation_remove(ctx context.Context, field graphql.CollectedField, obj *model1.AgenticHeaderTransformation) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
@@ -380,7 +413,7 @@ func (ec *executionContext) fieldContext_AgenticHeaderTransformation_remove(_ co
 	return graphql.NewScalarFieldContext("AgenticHeaderTransformation", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
-func (ec *executionContext) _AgenticHeaderTransformation_add(ctx context.Context, field graphql.CollectedField, obj *model.AgenticHeaderTransformation) (ret graphql.Marshaler) {
+func (ec *executionContext) _AgenticHeaderTransformation_add(ctx context.Context, field graphql.CollectedField, obj *model1.AgenticHeaderTransformation) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
@@ -403,7 +436,7 @@ func (ec *executionContext) fieldContext_AgenticHeaderTransformation_add(_ conte
 	return graphql.NewScalarFieldContext("AgenticHeaderTransformation", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
-func (ec *executionContext) _AgenticRequestResponseTransformation_headers(ctx context.Context, field graphql.CollectedField, obj *model.AgenticRequestResponseTransformation) (ret graphql.Marshaler) {
+func (ec *executionContext) _AgenticRequestResponseTransformation_headers(ctx context.Context, field graphql.CollectedField, obj *model1.AgenticRequestResponseTransformation) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
@@ -415,7 +448,7 @@ func (ec *executionContext) _AgenticRequestResponseTransformation_headers(ctx co
 			return obj.Headers, nil
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v model.AgenticHeaderTransformation) graphql.Marshaler {
+		func(ctx context.Context, selections ast.SelectionSet, v model1.AgenticHeaderTransformation) graphql.Marshaler {
 			return ec.marshalNAgenticHeaderTransformation2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐAgenticHeaderTransformation(ctx, selections, v)
 		},
 		true,
@@ -435,7 +468,7 @@ func (ec *executionContext) fieldContext_AgenticRequestResponseTransformation_he
 	return fc, nil
 }
 
-func (ec *executionContext) _AgenticSubscriberFailover_enabled(ctx context.Context, field graphql.CollectedField, obj *model.AgenticSubscriberFailover) (ret graphql.Marshaler) {
+func (ec *executionContext) _AgenticSubscriberFailover_enabled(ctx context.Context, field graphql.CollectedField, obj *model1.AgenticSubscriberFailover) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
@@ -458,7 +491,7 @@ func (ec *executionContext) fieldContext_AgenticSubscriberFailover_enabled(_ con
 	return graphql.NewScalarFieldContext("AgenticSubscriberFailover", field, false, false, errors.New("field of type Boolean does not have child fields"))
 }
 
-func (ec *executionContext) _AgenticSubscriberTraffic_failover(ctx context.Context, field graphql.CollectedField, obj *model.AgenticSubscriberTraffic) (ret graphql.Marshaler) {
+func (ec *executionContext) _AgenticSubscriberTraffic_failover(ctx context.Context, field graphql.CollectedField, obj *model1.AgenticSubscriberTraffic) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
@@ -470,7 +503,7 @@ func (ec *executionContext) _AgenticSubscriberTraffic_failover(ctx context.Conte
 			return obj.Failover, nil
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v *model.AgenticSubscriberFailover) graphql.Marshaler {
+		func(ctx context.Context, selections ast.SelectionSet, v *model1.AgenticSubscriberFailover) graphql.Marshaler {
 			return ec.marshalOAgenticSubscriberFailover2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐAgenticSubscriberFailover(ctx, selections, v)
 		},
 		true,
@@ -617,7 +650,7 @@ func (ec *executionContext) _AgenticSubscriptionInfo_ownerTeam(ctx context.Conte
 			return obj.OwnerTeam, nil
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v *model.TeamInfo) graphql.Marshaler {
+		func(ctx context.Context, selections ast.SelectionSet, v *model1.TeamInfo) graphql.Marshaler {
 			return ec.marshalNTeamInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐTeamInfo(ctx, selections, v)
 		},
 		true,
@@ -637,7 +670,39 @@ func (ec *executionContext) fieldContext_AgenticSubscriptionInfo_ownerTeam(_ con
 	return fc, nil
 }
 
-func (ec *executionContext) _AgenticSubscriptionSecurity_m2m(ctx context.Context, field graphql.CollectedField, obj *model.AgenticSubscriptionSecurity) (ret graphql.Marshaler) {
+func (ec *executionContext) _AgenticSubscriptionInfo_ownerApplication(ctx context.Context, field graphql.CollectedField, obj *model.AgenticSubscriptionInfo) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_AgenticSubscriptionInfo_ownerApplication(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.OwnerApplication, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.ApplicationInfo) graphql.Marshaler {
+			return ec.marshalNApplicationInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐApplicationInfo(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_AgenticSubscriptionInfo_ownerApplication(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AgenticSubscriptionInfo",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_ApplicationInfo(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AgenticSubscriptionSecurity_m2m(ctx context.Context, field graphql.CollectedField, obj *model1.AgenticSubscriptionSecurity) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
@@ -649,7 +714,7 @@ func (ec *executionContext) _AgenticSubscriptionSecurity_m2m(ctx context.Context
 			return obj.M2M, nil
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v *model.SubscriberMachine2MachineAuthentication) graphql.Marshaler {
+		func(ctx context.Context, selections ast.SelectionSet, v *model1.SubscriberMachine2MachineAuthentication) graphql.Marshaler {
 			return ec.marshalOSubscriberMachine2MachineAuthentication2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐSubscriberMachine2MachineAuthentication(ctx, selections, v)
 		},
 		true,
@@ -669,7 +734,7 @@ func (ec *executionContext) fieldContext_AgenticSubscriptionSecurity_m2m(_ conte
 	return fc, nil
 }
 
-func (ec *executionContext) _AgenticTransformation_request(ctx context.Context, field graphql.CollectedField, obj *model.AgenticTransformation) (ret graphql.Marshaler) {
+func (ec *executionContext) _AgenticTransformation_request(ctx context.Context, field graphql.CollectedField, obj *model1.AgenticTransformation) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
@@ -681,7 +746,7 @@ func (ec *executionContext) _AgenticTransformation_request(ctx context.Context, 
 			return obj.Request, nil
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v model.AgenticRequestResponseTransformation) graphql.Marshaler {
+		func(ctx context.Context, selections ast.SelectionSet, v model1.AgenticRequestResponseTransformation) graphql.Marshaler {
 			return ec.marshalNAgenticRequestResponseTransformation2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐAgenticRequestResponseTransformation(ctx, selections, v)
 		},
 		true,
@@ -701,7 +766,7 @@ func (ec *executionContext) fieldContext_AgenticTransformation_request(_ context
 	return fc, nil
 }
 
-func (ec *executionContext) _ApiCategory_name(ctx context.Context, field graphql.CollectedField, obj *model1.APICategory) (ret graphql.Marshaler) {
+func (ec *executionContext) _ApiCategory_name(ctx context.Context, field graphql.CollectedField, obj *model.APICategory) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
@@ -851,7 +916,7 @@ func (ec *executionContext) _ApiExposureInfo_features(ctx context.Context, field
 			return ec.Resolvers.ApiExposureInfo().Features(ctx, obj)
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v []model1.APIExposureFeature) graphql.Marshaler {
+		func(ctx context.Context, selections ast.SelectionSet, v []model.APIExposureFeature) graphql.Marshaler {
 			return ec.marshalNApiExposureFeature2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐAPIExposureFeatureᚄ(ctx, selections, v)
 		},
 		true,
@@ -874,7 +939,7 @@ func (ec *executionContext) _ApiExposureInfo_approvalConfig(ctx context.Context,
 			return obj.ApprovalConfig, nil
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v model.ApprovalConfig) graphql.Marshaler {
+		func(ctx context.Context, selections ast.SelectionSet, v model1.ApprovalConfig) graphql.Marshaler {
 			return ec.marshalNApprovalConfig2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐApprovalConfig(ctx, selections, v)
 		},
 		true,
@@ -906,7 +971,7 @@ func (ec *executionContext) _ApiExposureInfo_traffic(ctx context.Context, field 
 			return obj.Traffic, nil
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v *model.Traffic) graphql.Marshaler {
+		func(ctx context.Context, selections ast.SelectionSet, v *model1.Traffic) graphql.Marshaler {
 			return ec.marshalOTraffic2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐTraffic(ctx, selections, v)
 		},
 		true,
@@ -961,7 +1026,7 @@ func (ec *executionContext) _ApiExposureInfo_ownerTeam(ctx context.Context, fiel
 			return obj.OwnerTeam, nil
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v *model.TeamInfo) graphql.Marshaler {
+		func(ctx context.Context, selections ast.SelectionSet, v *model1.TeamInfo) graphql.Marshaler {
 			return ec.marshalNTeamInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐTeamInfo(ctx, selections, v)
 		},
 		true,
@@ -981,7 +1046,39 @@ func (ec *executionContext) fieldContext_ApiExposureInfo_ownerTeam(_ context.Con
 	return fc, nil
 }
 
-func (ec *executionContext) _ApiExposureSecurity_m2m(ctx context.Context, field graphql.CollectedField, obj *model.ApiExposureSecurity) (ret graphql.Marshaler) {
+func (ec *executionContext) _ApiExposureInfo_ownerApplication(ctx context.Context, field graphql.CollectedField, obj *model.ApiExposureInfo) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ApiExposureInfo_ownerApplication(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.OwnerApplication, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.ApplicationInfo) graphql.Marshaler {
+			return ec.marshalNApplicationInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐApplicationInfo(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_ApiExposureInfo_ownerApplication(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ApiExposureInfo",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_ApplicationInfo(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ApiExposureSecurity_m2m(ctx context.Context, field graphql.CollectedField, obj *model1.ApiExposureSecurity) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
@@ -993,7 +1090,7 @@ func (ec *executionContext) _ApiExposureSecurity_m2m(ctx context.Context, field 
 			return obj.M2M, nil
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v *model.Machine2MachineAuthentication) graphql.Marshaler {
+		func(ctx context.Context, selections ast.SelectionSet, v *model1.Machine2MachineAuthentication) graphql.Marshaler {
 			return ec.marshalOMachine2MachineAuthentication2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐMachine2MachineAuthentication(ctx, selections, v)
 		},
 		true,
@@ -1140,7 +1237,7 @@ func (ec *executionContext) _ApiSubscriptionInfo_ownerTeam(ctx context.Context, 
 			return obj.OwnerTeam, nil
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v *model.TeamInfo) graphql.Marshaler {
+		func(ctx context.Context, selections ast.SelectionSet, v *model1.TeamInfo) graphql.Marshaler {
 			return ec.marshalNTeamInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐTeamInfo(ctx, selections, v)
 		},
 		true,
@@ -1160,7 +1257,39 @@ func (ec *executionContext) fieldContext_ApiSubscriptionInfo_ownerTeam(_ context
 	return fc, nil
 }
 
-func (ec *executionContext) _ApiSubscriptionSecurity_m2m(ctx context.Context, field graphql.CollectedField, obj *model.ApiSubscriptionSecurity) (ret graphql.Marshaler) {
+func (ec *executionContext) _ApiSubscriptionInfo_ownerApplication(ctx context.Context, field graphql.CollectedField, obj *model.ApiSubscriptionInfo) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ApiSubscriptionInfo_ownerApplication(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.OwnerApplication, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.ApplicationInfo) graphql.Marshaler {
+			return ec.marshalNApplicationInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐApplicationInfo(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_ApiSubscriptionInfo_ownerApplication(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ApiSubscriptionInfo",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_ApplicationInfo(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ApiSubscriptionSecurity_m2m(ctx context.Context, field graphql.CollectedField, obj *model1.ApiSubscriptionSecurity) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
@@ -1172,7 +1301,7 @@ func (ec *executionContext) _ApiSubscriptionSecurity_m2m(ctx context.Context, fi
 			return obj.M2M, nil
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v *model.SubscriberMachine2MachineAuthentication) graphql.Marshaler {
+		func(ctx context.Context, selections ast.SelectionSet, v *model1.SubscriberMachine2MachineAuthentication) graphql.Marshaler {
 			return ec.marshalOSubscriberMachine2MachineAuthentication2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐSubscriberMachine2MachineAuthentication(ctx, selections, v)
 		},
 		true,
@@ -1192,7 +1321,7 @@ func (ec *executionContext) fieldContext_ApiSubscriptionSecurity_m2m(_ context.C
 	return fc, nil
 }
 
-func (ec *executionContext) _ApiSubscriptionTraffic_providerLimits(ctx context.Context, field graphql.CollectedField, obj *model.ApiSubscriptionTraffic) (ret graphql.Marshaler) {
+func (ec *executionContext) _ApiSubscriptionTraffic_providerLimits(ctx context.Context, field graphql.CollectedField, obj *model1.ApiSubscriptionTraffic) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
@@ -1204,7 +1333,7 @@ func (ec *executionContext) _ApiSubscriptionTraffic_providerLimits(ctx context.C
 			return obj.ProviderLimits, nil
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v *model.Limits) graphql.Marshaler {
+		func(ctx context.Context, selections ast.SelectionSet, v *model1.Limits) graphql.Marshaler {
 			return ec.marshalOLimits2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐLimits(ctx, selections, v)
 		},
 		true,
@@ -1224,7 +1353,7 @@ func (ec *executionContext) fieldContext_ApiSubscriptionTraffic_providerLimits(_
 	return fc, nil
 }
 
-func (ec *executionContext) _ApiSubscriptionTraffic_subscriberLimits(ctx context.Context, field graphql.CollectedField, obj *model.ApiSubscriptionTraffic) (ret graphql.Marshaler) {
+func (ec *executionContext) _ApiSubscriptionTraffic_subscriberLimits(ctx context.Context, field graphql.CollectedField, obj *model1.ApiSubscriptionTraffic) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
@@ -1236,7 +1365,7 @@ func (ec *executionContext) _ApiSubscriptionTraffic_subscriberLimits(ctx context
 			return obj.SubscriberLimits, nil
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v *model.Limits) graphql.Marshaler {
+		func(ctx context.Context, selections ast.SelectionSet, v *model1.Limits) graphql.Marshaler {
 			return ec.marshalOLimits2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐLimits(ctx, selections, v)
 		},
 		true,
@@ -1256,7 +1385,117 @@ func (ec *executionContext) fieldContext_ApiSubscriptionTraffic_subscriberLimits
 	return fc, nil
 }
 
-func (ec *executionContext) _ApprovalConfig_strategy(ctx context.Context, field graphql.CollectedField, obj *model.ApprovalConfig) (ret graphql.Marshaler) {
+func (ec *executionContext) _ApplicationInfo_id(ctx context.Context, field graphql.CollectedField, obj *model.ApplicationInfo) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ApplicationInfo_id(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ID, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v int) graphql.Marshaler {
+			return ec.marshalNID2int(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_ApplicationInfo_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("ApplicationInfo", field, false, false, errors.New("field of type ID does not have child fields"))
+}
+
+func (ec *executionContext) _ApplicationInfo_name(ctx context.Context, field graphql.CollectedField, obj *model.ApplicationInfo) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ApplicationInfo_name(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Name, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_ApplicationInfo_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("ApplicationInfo", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _ApplicationInfo_zone(ctx context.Context, field graphql.CollectedField, obj *model.ApplicationInfo) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ApplicationInfo_zone(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Zone, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *ent.Zone) graphql.Marshaler {
+			return ec.marshalNZone2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐZone(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_ApplicationInfo_zone(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ApplicationInfo",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_Zone(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ApplicationInfo_ownerTeam(ctx context.Context, field graphql.CollectedField, obj *model.ApplicationInfo) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ApplicationInfo_ownerTeam(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.OwnerTeam, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model1.TeamInfo) graphql.Marshaler {
+			return ec.marshalNTeamInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐTeamInfo(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_ApplicationInfo_ownerTeam(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ApplicationInfo",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_TeamInfo(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ApprovalConfig_strategy(ctx context.Context, field graphql.CollectedField, obj *model1.ApprovalConfig) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
@@ -1279,7 +1518,7 @@ func (ec *executionContext) fieldContext_ApprovalConfig_strategy(_ context.Conte
 	return graphql.NewScalarFieldContext("ApprovalConfig", field, true, true, errors.New("field of type ApprovalStrategy does not have child fields"))
 }
 
-func (ec *executionContext) _ApprovalConfig_trustedTeams(ctx context.Context, field graphql.CollectedField, obj *model.ApprovalConfig) (ret graphql.Marshaler) {
+func (ec *executionContext) _ApprovalConfig_trustedTeams(ctx context.Context, field graphql.CollectedField, obj *model1.ApprovalConfig) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
@@ -1302,7 +1541,7 @@ func (ec *executionContext) fieldContext_ApprovalConfig_trustedTeams(_ context.C
 	return graphql.NewScalarFieldContext("ApprovalConfig", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
-func (ec *executionContext) _AvailableTransition_action(ctx context.Context, field graphql.CollectedField, obj *model.AvailableTransition) (ret graphql.Marshaler) {
+func (ec *executionContext) _AvailableTransition_action(ctx context.Context, field graphql.CollectedField, obj *model1.AvailableTransition) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
@@ -1314,7 +1553,7 @@ func (ec *executionContext) _AvailableTransition_action(ctx context.Context, fie
 			return ec.Resolvers.AvailableTransition().Action(ctx, obj)
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v model1.ApprovalAction) graphql.Marshaler {
+		func(ctx context.Context, selections ast.SelectionSet, v model.ApprovalAction) graphql.Marshaler {
 			return ec.marshalNApprovalAction2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐApprovalAction(ctx, selections, v)
 		},
 		true,
@@ -1325,7 +1564,7 @@ func (ec *executionContext) fieldContext_AvailableTransition_action(_ context.Co
 	return graphql.NewScalarFieldContext("AvailableTransition", field, true, true, errors.New("field of type ApprovalAction does not have child fields"))
 }
 
-func (ec *executionContext) _AvailableTransition_toState(ctx context.Context, field graphql.CollectedField, obj *model.AvailableTransition) (ret graphql.Marshaler) {
+func (ec *executionContext) _AvailableTransition_toState(ctx context.Context, field graphql.CollectedField, obj *model1.AvailableTransition) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
@@ -1348,7 +1587,7 @@ func (ec *executionContext) fieldContext_AvailableTransition_toState(_ context.C
 	return graphql.NewScalarFieldContext("AvailableTransition", field, true, true, errors.New("field of type ApprovalState does not have child fields"))
 }
 
-func (ec *executionContext) _BasicAuthCredentials_username(ctx context.Context, field graphql.CollectedField, obj *model.BasicAuthCredentials) (ret graphql.Marshaler) {
+func (ec *executionContext) _BasicAuthCredentials_username(ctx context.Context, field graphql.CollectedField, obj *model1.BasicAuthCredentials) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
@@ -1371,7 +1610,7 @@ func (ec *executionContext) fieldContext_BasicAuthCredentials_username(_ context
 	return graphql.NewScalarFieldContext("BasicAuthCredentials", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
-func (ec *executionContext) _BasicAuthCredentials_password(ctx context.Context, field graphql.CollectedField, obj *model.BasicAuthCredentials) (ret graphql.Marshaler) {
+func (ec *executionContext) _BasicAuthCredentials_password(ctx context.Context, field graphql.CollectedField, obj *model1.BasicAuthCredentials) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
@@ -1394,7 +1633,7 @@ func (ec *executionContext) fieldContext_BasicAuthCredentials_password(_ context
 	return graphql.NewScalarFieldContext("BasicAuthCredentials", field, true, true, errors.New("field of type String does not have child fields"))
 }
 
-func (ec *executionContext) _DeciderInfo_teamName(ctx context.Context, field graphql.CollectedField, obj *model.DeciderInfo) (ret graphql.Marshaler) {
+func (ec *executionContext) _DeciderInfo_teamName(ctx context.Context, field graphql.CollectedField, obj *model1.DeciderInfo) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
@@ -1417,7 +1656,7 @@ func (ec *executionContext) fieldContext_DeciderInfo_teamName(_ context.Context,
 	return graphql.NewScalarFieldContext("DeciderInfo", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
-func (ec *executionContext) _DeciderInfo_teamEmail(ctx context.Context, field graphql.CollectedField, obj *model.DeciderInfo) (ret graphql.Marshaler) {
+func (ec *executionContext) _DeciderInfo_teamEmail(ctx context.Context, field graphql.CollectedField, obj *model1.DeciderInfo) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
@@ -1440,7 +1679,7 @@ func (ec *executionContext) fieldContext_DeciderInfo_teamEmail(_ context.Context
 	return graphql.NewScalarFieldContext("DeciderInfo", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
-func (ec *executionContext) _Decision_name(ctx context.Context, field graphql.CollectedField, obj *model.Decision) (ret graphql.Marshaler) {
+func (ec *executionContext) _Decision_name(ctx context.Context, field graphql.CollectedField, obj *model1.Decision) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
@@ -1463,7 +1702,7 @@ func (ec *executionContext) fieldContext_Decision_name(_ context.Context, field 
 	return graphql.NewScalarFieldContext("Decision", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
-func (ec *executionContext) _Decision_email(ctx context.Context, field graphql.CollectedField, obj *model.Decision) (ret graphql.Marshaler) {
+func (ec *executionContext) _Decision_email(ctx context.Context, field graphql.CollectedField, obj *model1.Decision) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
@@ -1486,7 +1725,7 @@ func (ec *executionContext) fieldContext_Decision_email(_ context.Context, field
 	return graphql.NewScalarFieldContext("Decision", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
-func (ec *executionContext) _Decision_comment(ctx context.Context, field graphql.CollectedField, obj *model.Decision) (ret graphql.Marshaler) {
+func (ec *executionContext) _Decision_comment(ctx context.Context, field graphql.CollectedField, obj *model1.Decision) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
@@ -1509,7 +1748,7 @@ func (ec *executionContext) fieldContext_Decision_comment(_ context.Context, fie
 	return graphql.NewScalarFieldContext("Decision", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
-func (ec *executionContext) _Decision_timestamp(ctx context.Context, field graphql.CollectedField, obj *model.Decision) (ret graphql.Marshaler) {
+func (ec *executionContext) _Decision_timestamp(ctx context.Context, field graphql.CollectedField, obj *model1.Decision) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
@@ -1532,7 +1771,7 @@ func (ec *executionContext) fieldContext_Decision_timestamp(_ context.Context, f
 	return graphql.NewScalarFieldContext("Decision", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
-func (ec *executionContext) _Decision_resultingState(ctx context.Context, field graphql.CollectedField, obj *model.Decision) (ret graphql.Marshaler) {
+func (ec *executionContext) _Decision_resultingState(ctx context.Context, field graphql.CollectedField, obj *model1.Decision) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
@@ -1555,7 +1794,7 @@ func (ec *executionContext) fieldContext_Decision_resultingState(_ context.Conte
 	return graphql.NewScalarFieldContext("Decision", field, true, true, errors.New("field of type ApprovalState does not have child fields"))
 }
 
-func (ec *executionContext) _EventDelivery_payload(ctx context.Context, field graphql.CollectedField, obj *model.EventDelivery) (ret graphql.Marshaler) {
+func (ec *executionContext) _EventDelivery_payload(ctx context.Context, field graphql.CollectedField, obj *model1.EventDelivery) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
@@ -1567,7 +1806,7 @@ func (ec *executionContext) _EventDelivery_payload(ctx context.Context, field gr
 			return ec.Resolvers.EventDelivery().Payload(ctx, obj)
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v model1.PayloadType) graphql.Marshaler {
+		func(ctx context.Context, selections ast.SelectionSet, v model.PayloadType) graphql.Marshaler {
 			return ec.marshalNPayloadType2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐPayloadType(ctx, selections, v)
 		},
 		true,
@@ -1578,7 +1817,7 @@ func (ec *executionContext) fieldContext_EventDelivery_payload(_ context.Context
 	return graphql.NewScalarFieldContext("EventDelivery", field, true, true, errors.New("field of type PayloadType does not have child fields"))
 }
 
-func (ec *executionContext) _EventDelivery_eventRetentionTime(ctx context.Context, field graphql.CollectedField, obj *model.EventDelivery) (ret graphql.Marshaler) {
+func (ec *executionContext) _EventDelivery_eventRetentionTime(ctx context.Context, field graphql.CollectedField, obj *model1.EventDelivery) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
@@ -1601,7 +1840,7 @@ func (ec *executionContext) fieldContext_EventDelivery_eventRetentionTime(_ cont
 	return graphql.NewScalarFieldContext("EventDelivery", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
-func (ec *executionContext) _EventDelivery_circuitBreakerOptOut(ctx context.Context, field graphql.CollectedField, obj *model.EventDelivery) (ret graphql.Marshaler) {
+func (ec *executionContext) _EventDelivery_circuitBreakerOptOut(ctx context.Context, field graphql.CollectedField, obj *model1.EventDelivery) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
@@ -1624,7 +1863,7 @@ func (ec *executionContext) fieldContext_EventDelivery_circuitBreakerOptOut(_ co
 	return graphql.NewScalarFieldContext("EventDelivery", field, false, false, errors.New("field of type Boolean does not have child fields"))
 }
 
-func (ec *executionContext) _EventDelivery_retryableStatusCodes(ctx context.Context, field graphql.CollectedField, obj *model.EventDelivery) (ret graphql.Marshaler) {
+func (ec *executionContext) _EventDelivery_retryableStatusCodes(ctx context.Context, field graphql.CollectedField, obj *model1.EventDelivery) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
@@ -1647,7 +1886,7 @@ func (ec *executionContext) fieldContext_EventDelivery_retryableStatusCodes(_ co
 	return graphql.NewScalarFieldContext("EventDelivery", field, false, false, errors.New("field of type Int does not have child fields"))
 }
 
-func (ec *executionContext) _EventDelivery_redeliveriesPerSecond(ctx context.Context, field graphql.CollectedField, obj *model.EventDelivery) (ret graphql.Marshaler) {
+func (ec *executionContext) _EventDelivery_redeliveriesPerSecond(ctx context.Context, field graphql.CollectedField, obj *model1.EventDelivery) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
@@ -1670,7 +1909,7 @@ func (ec *executionContext) fieldContext_EventDelivery_redeliveriesPerSecond(_ c
 	return graphql.NewScalarFieldContext("EventDelivery", field, false, false, errors.New("field of type Int does not have child fields"))
 }
 
-func (ec *executionContext) _EventDelivery_enforceGetHttpRequestMethodForHealthCheck(ctx context.Context, field graphql.CollectedField, obj *model.EventDelivery) (ret graphql.Marshaler) {
+func (ec *executionContext) _EventDelivery_enforceGetHttpRequestMethodForHealthCheck(ctx context.Context, field graphql.CollectedField, obj *model1.EventDelivery) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
@@ -1797,7 +2036,7 @@ func (ec *executionContext) _EventExposureInfo_approvalConfig(ctx context.Contex
 			return obj.ApprovalConfig, nil
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v model.ApprovalConfig) graphql.Marshaler {
+		func(ctx context.Context, selections ast.SelectionSet, v model1.ApprovalConfig) graphql.Marshaler {
 			return ec.marshalNApprovalConfig2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐApprovalConfig(ctx, selections, v)
 		},
 		true,
@@ -1852,7 +2091,7 @@ func (ec *executionContext) _EventExposureInfo_ownerTeam(ctx context.Context, fi
 			return obj.OwnerTeam, nil
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v *model.TeamInfo) graphql.Marshaler {
+		func(ctx context.Context, selections ast.SelectionSet, v *model1.TeamInfo) graphql.Marshaler {
 			return ec.marshalNTeamInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐTeamInfo(ctx, selections, v)
 		},
 		true,
@@ -1872,7 +2111,39 @@ func (ec *executionContext) fieldContext_EventExposureInfo_ownerTeam(_ context.C
 	return fc, nil
 }
 
-func (ec *executionContext) _EventScope_name(ctx context.Context, field graphql.CollectedField, obj *model.EventScope) (ret graphql.Marshaler) {
+func (ec *executionContext) _EventExposureInfo_ownerApplication(ctx context.Context, field graphql.CollectedField, obj *model.EventExposureInfo) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_EventExposureInfo_ownerApplication(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.OwnerApplication, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.ApplicationInfo) graphql.Marshaler {
+			return ec.marshalNApplicationInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐApplicationInfo(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_EventExposureInfo_ownerApplication(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "EventExposureInfo",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_ApplicationInfo(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _EventScope_name(ctx context.Context, field graphql.CollectedField, obj *model1.EventScope) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
@@ -1895,7 +2166,7 @@ func (ec *executionContext) fieldContext_EventScope_name(_ context.Context, fiel
 	return graphql.NewScalarFieldContext("EventScope", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
-func (ec *executionContext) _EventScope_trigger(ctx context.Context, field graphql.CollectedField, obj *model.EventScope) (ret graphql.Marshaler) {
+func (ec *executionContext) _EventScope_trigger(ctx context.Context, field graphql.CollectedField, obj *model1.EventScope) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
@@ -1907,7 +2178,7 @@ func (ec *executionContext) _EventScope_trigger(ctx context.Context, field graph
 			return obj.Trigger, nil
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v model.EventTrigger) graphql.Marshaler {
+		func(ctx context.Context, selections ast.SelectionSet, v model1.EventTrigger) graphql.Marshaler {
 			return ec.marshalNEventTrigger2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐEventTrigger(ctx, selections, v)
 		},
 		true,
@@ -2077,7 +2348,7 @@ func (ec *executionContext) _EventSubscriptionInfo_ownerTeam(ctx context.Context
 			return obj.OwnerTeam, nil
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v *model.TeamInfo) graphql.Marshaler {
+		func(ctx context.Context, selections ast.SelectionSet, v *model1.TeamInfo) graphql.Marshaler {
 			return ec.marshalNTeamInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐTeamInfo(ctx, selections, v)
 		},
 		true,
@@ -2097,7 +2368,39 @@ func (ec *executionContext) fieldContext_EventSubscriptionInfo_ownerTeam(_ conte
 	return fc, nil
 }
 
-func (ec *executionContext) _EventTrigger_responseFilter(ctx context.Context, field graphql.CollectedField, obj *model.EventTrigger) (ret graphql.Marshaler) {
+func (ec *executionContext) _EventSubscriptionInfo_ownerApplication(ctx context.Context, field graphql.CollectedField, obj *model.EventSubscriptionInfo) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_EventSubscriptionInfo_ownerApplication(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.OwnerApplication, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.ApplicationInfo) graphql.Marshaler {
+			return ec.marshalNApplicationInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐApplicationInfo(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_EventSubscriptionInfo_ownerApplication(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "EventSubscriptionInfo",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_ApplicationInfo(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _EventTrigger_responseFilter(ctx context.Context, field graphql.CollectedField, obj *model1.EventTrigger) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
@@ -2109,7 +2412,7 @@ func (ec *executionContext) _EventTrigger_responseFilter(ctx context.Context, fi
 			return obj.ResponseFilter, nil
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v *model.ResponseFilter) graphql.Marshaler {
+		func(ctx context.Context, selections ast.SelectionSet, v *model1.ResponseFilter) graphql.Marshaler {
 			return ec.marshalOResponseFilter2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐResponseFilter(ctx, selections, v)
 		},
 		true,
@@ -2129,7 +2432,7 @@ func (ec *executionContext) fieldContext_EventTrigger_responseFilter(_ context.C
 	return fc, nil
 }
 
-func (ec *executionContext) _EventTrigger_selectionFilter(ctx context.Context, field graphql.CollectedField, obj *model.EventTrigger) (ret graphql.Marshaler) {
+func (ec *executionContext) _EventTrigger_selectionFilter(ctx context.Context, field graphql.CollectedField, obj *model1.EventTrigger) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
@@ -2141,7 +2444,7 @@ func (ec *executionContext) _EventTrigger_selectionFilter(ctx context.Context, f
 			return obj.SelectionFilter, nil
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v *model.SelectionFilter) graphql.Marshaler {
+		func(ctx context.Context, selections ast.SelectionSet, v *model1.SelectionFilter) graphql.Marshaler {
 			return ec.marshalOSelectionFilter2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐSelectionFilter(ctx, selections, v)
 		},
 		true,
@@ -2161,7 +2464,7 @@ func (ec *executionContext) fieldContext_EventTrigger_selectionFilter(_ context.
 	return fc, nil
 }
 
-func (ec *executionContext) _ExternalId_Id(ctx context.Context, field graphql.CollectedField, obj *model.ExternalId) (ret graphql.Marshaler) {
+func (ec *executionContext) _ExternalId_Id(ctx context.Context, field graphql.CollectedField, obj *model1.ExternalId) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
@@ -2184,7 +2487,7 @@ func (ec *executionContext) fieldContext_ExternalId_Id(_ context.Context, field 
 	return graphql.NewScalarFieldContext("ExternalId", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
-func (ec *executionContext) _ExternalId_Schema(ctx context.Context, field graphql.CollectedField, obj *model.ExternalId) (ret graphql.Marshaler) {
+func (ec *executionContext) _ExternalId_Schema(ctx context.Context, field graphql.CollectedField, obj *model1.ExternalId) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
@@ -2207,7 +2510,7 @@ func (ec *executionContext) fieldContext_ExternalId_Schema(_ context.Context, fi
 	return graphql.NewScalarFieldContext("ExternalId", field, true, true, errors.New("field of type String does not have child fields"))
 }
 
-func (ec *executionContext) _ExternalIdentityProvider_tokenEndpoint(ctx context.Context, field graphql.CollectedField, obj *model.ExternalIdentityProvider) (ret graphql.Marshaler) {
+func (ec *executionContext) _ExternalIdentityProvider_tokenEndpoint(ctx context.Context, field graphql.CollectedField, obj *model1.ExternalIdentityProvider) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
@@ -2230,7 +2533,7 @@ func (ec *executionContext) fieldContext_ExternalIdentityProvider_tokenEndpoint(
 	return graphql.NewScalarFieldContext("ExternalIdentityProvider", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
-func (ec *executionContext) _ExternalIdentityProvider_tokenRequest(ctx context.Context, field graphql.CollectedField, obj *model.ExternalIdentityProvider) (ret graphql.Marshaler) {
+func (ec *executionContext) _ExternalIdentityProvider_tokenRequest(ctx context.Context, field graphql.CollectedField, obj *model1.ExternalIdentityProvider) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
@@ -2242,7 +2545,7 @@ func (ec *executionContext) _ExternalIdentityProvider_tokenRequest(ctx context.C
 			return ec.Resolvers.ExternalIdentityProvider().TokenRequest(ctx, obj)
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v *model1.TokenRequestMethod) graphql.Marshaler {
+		func(ctx context.Context, selections ast.SelectionSet, v *model.TokenRequestMethod) graphql.Marshaler {
 			return ec.marshalOTokenRequestMethod2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐTokenRequestMethod(ctx, selections, v)
 		},
 		true,
@@ -2253,7 +2556,7 @@ func (ec *executionContext) fieldContext_ExternalIdentityProvider_tokenRequest(_
 	return graphql.NewScalarFieldContext("ExternalIdentityProvider", field, true, true, errors.New("field of type TokenRequestMethod does not have child fields"))
 }
 
-func (ec *executionContext) _ExternalIdentityProvider_grantType(ctx context.Context, field graphql.CollectedField, obj *model.ExternalIdentityProvider) (ret graphql.Marshaler) {
+func (ec *executionContext) _ExternalIdentityProvider_grantType(ctx context.Context, field graphql.CollectedField, obj *model1.ExternalIdentityProvider) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
@@ -2276,7 +2579,7 @@ func (ec *executionContext) fieldContext_ExternalIdentityProvider_grantType(_ co
 	return graphql.NewScalarFieldContext("ExternalIdentityProvider", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
-func (ec *executionContext) _ExternalIdentityProvider_basic(ctx context.Context, field graphql.CollectedField, obj *model.ExternalIdentityProvider) (ret graphql.Marshaler) {
+func (ec *executionContext) _ExternalIdentityProvider_basic(ctx context.Context, field graphql.CollectedField, obj *model1.ExternalIdentityProvider) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
@@ -2288,7 +2591,7 @@ func (ec *executionContext) _ExternalIdentityProvider_basic(ctx context.Context,
 			return obj.Basic, nil
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v *model.BasicAuthCredentials) graphql.Marshaler {
+		func(ctx context.Context, selections ast.SelectionSet, v *model1.BasicAuthCredentials) graphql.Marshaler {
 			return ec.marshalOBasicAuthCredentials2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐBasicAuthCredentials(ctx, selections, v)
 		},
 		true,
@@ -2308,7 +2611,7 @@ func (ec *executionContext) fieldContext_ExternalIdentityProvider_basic(_ contex
 	return fc, nil
 }
 
-func (ec *executionContext) _ExternalIdentityProvider_client(ctx context.Context, field graphql.CollectedField, obj *model.ExternalIdentityProvider) (ret graphql.Marshaler) {
+func (ec *executionContext) _ExternalIdentityProvider_client(ctx context.Context, field graphql.CollectedField, obj *model1.ExternalIdentityProvider) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
@@ -2320,7 +2623,7 @@ func (ec *executionContext) _ExternalIdentityProvider_client(ctx context.Context
 			return obj.Client, nil
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v *model.OAuth2ClientCredentials) graphql.Marshaler {
+		func(ctx context.Context, selections ast.SelectionSet, v *model1.OAuth2ClientCredentials) graphql.Marshaler {
 			return ec.marshalOOAuth2ClientCredentials2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐOAuth2ClientCredentials(ctx, selections, v)
 		},
 		true,
@@ -2340,7 +2643,7 @@ func (ec *executionContext) fieldContext_ExternalIdentityProvider_client(_ conte
 	return fc, nil
 }
 
-func (ec *executionContext) _Failover_zones(ctx context.Context, field graphql.CollectedField, obj *model.Failover) (ret graphql.Marshaler) {
+func (ec *executionContext) _Failover_zones(ctx context.Context, field graphql.CollectedField, obj *model1.Failover) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
@@ -2363,7 +2666,7 @@ func (ec *executionContext) fieldContext_Failover_zones(_ context.Context, field
 	return graphql.NewScalarFieldContext("Failover", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
-func (ec *executionContext) _IpRestrictions_Allow(ctx context.Context, field graphql.CollectedField, obj *model.IpRestrictions) (ret graphql.Marshaler) {
+func (ec *executionContext) _IpRestrictions_Allow(ctx context.Context, field graphql.CollectedField, obj *model1.IpRestrictions) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
@@ -2386,7 +2689,7 @@ func (ec *executionContext) fieldContext_IpRestrictions_Allow(_ context.Context,
 	return graphql.NewScalarFieldContext("IpRestrictions", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
-func (ec *executionContext) _IpRestrictions_Deny(ctx context.Context, field graphql.CollectedField, obj *model.IpRestrictions) (ret graphql.Marshaler) {
+func (ec *executionContext) _IpRestrictions_Deny(ctx context.Context, field graphql.CollectedField, obj *model1.IpRestrictions) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
@@ -2409,7 +2712,7 @@ func (ec *executionContext) fieldContext_IpRestrictions_Deny(_ context.Context, 
 	return graphql.NewScalarFieldContext("IpRestrictions", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
-func (ec *executionContext) _Limits_second(ctx context.Context, field graphql.CollectedField, obj *model.Limits) (ret graphql.Marshaler) {
+func (ec *executionContext) _Limits_second(ctx context.Context, field graphql.CollectedField, obj *model1.Limits) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
@@ -2432,7 +2735,7 @@ func (ec *executionContext) fieldContext_Limits_second(_ context.Context, field 
 	return graphql.NewScalarFieldContext("Limits", field, false, false, errors.New("field of type Int does not have child fields"))
 }
 
-func (ec *executionContext) _Limits_minute(ctx context.Context, field graphql.CollectedField, obj *model.Limits) (ret graphql.Marshaler) {
+func (ec *executionContext) _Limits_minute(ctx context.Context, field graphql.CollectedField, obj *model1.Limits) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
@@ -2455,7 +2758,7 @@ func (ec *executionContext) fieldContext_Limits_minute(_ context.Context, field 
 	return graphql.NewScalarFieldContext("Limits", field, false, false, errors.New("field of type Int does not have child fields"))
 }
 
-func (ec *executionContext) _Limits_hour(ctx context.Context, field graphql.CollectedField, obj *model.Limits) (ret graphql.Marshaler) {
+func (ec *executionContext) _Limits_hour(ctx context.Context, field graphql.CollectedField, obj *model1.Limits) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
@@ -2478,7 +2781,7 @@ func (ec *executionContext) fieldContext_Limits_hour(_ context.Context, field gr
 	return graphql.NewScalarFieldContext("Limits", field, false, false, errors.New("field of type Int does not have child fields"))
 }
 
-func (ec *executionContext) _Machine2MachineAuthentication_externalIDP(ctx context.Context, field graphql.CollectedField, obj *model.Machine2MachineAuthentication) (ret graphql.Marshaler) {
+func (ec *executionContext) _Machine2MachineAuthentication_externalIDP(ctx context.Context, field graphql.CollectedField, obj *model1.Machine2MachineAuthentication) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
@@ -2490,7 +2793,7 @@ func (ec *executionContext) _Machine2MachineAuthentication_externalIDP(ctx conte
 			return obj.ExternalIDP, nil
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v *model.ExternalIdentityProvider) graphql.Marshaler {
+		func(ctx context.Context, selections ast.SelectionSet, v *model1.ExternalIdentityProvider) graphql.Marshaler {
 			return ec.marshalOExternalIdentityProvider2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐExternalIdentityProvider(ctx, selections, v)
 		},
 		true,
@@ -2510,7 +2813,7 @@ func (ec *executionContext) fieldContext_Machine2MachineAuthentication_externalI
 	return fc, nil
 }
 
-func (ec *executionContext) _Machine2MachineAuthentication_basic(ctx context.Context, field graphql.CollectedField, obj *model.Machine2MachineAuthentication) (ret graphql.Marshaler) {
+func (ec *executionContext) _Machine2MachineAuthentication_basic(ctx context.Context, field graphql.CollectedField, obj *model1.Machine2MachineAuthentication) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
@@ -2522,7 +2825,7 @@ func (ec *executionContext) _Machine2MachineAuthentication_basic(ctx context.Con
 			return obj.Basic, nil
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v *model.BasicAuthCredentials) graphql.Marshaler {
+		func(ctx context.Context, selections ast.SelectionSet, v *model1.BasicAuthCredentials) graphql.Marshaler {
 			return ec.marshalOBasicAuthCredentials2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐBasicAuthCredentials(ctx, selections, v)
 		},
 		true,
@@ -2542,7 +2845,7 @@ func (ec *executionContext) fieldContext_Machine2MachineAuthentication_basic(_ c
 	return fc, nil
 }
 
-func (ec *executionContext) _Machine2MachineAuthentication_scopes(ctx context.Context, field graphql.CollectedField, obj *model.Machine2MachineAuthentication) (ret graphql.Marshaler) {
+func (ec *executionContext) _Machine2MachineAuthentication_scopes(ctx context.Context, field graphql.CollectedField, obj *model1.Machine2MachineAuthentication) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
@@ -2565,7 +2868,7 @@ func (ec *executionContext) fieldContext_Machine2MachineAuthentication_scopes(_ 
 	return graphql.NewScalarFieldContext("Machine2MachineAuthentication", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
-func (ec *executionContext) _OAuth2ClientCredentials_clientId(ctx context.Context, field graphql.CollectedField, obj *model.OAuth2ClientCredentials) (ret graphql.Marshaler) {
+func (ec *executionContext) _OAuth2ClientCredentials_clientId(ctx context.Context, field graphql.CollectedField, obj *model1.OAuth2ClientCredentials) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
@@ -2588,7 +2891,7 @@ func (ec *executionContext) fieldContext_OAuth2ClientCredentials_clientId(_ cont
 	return graphql.NewScalarFieldContext("OAuth2ClientCredentials", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
-func (ec *executionContext) _OAuth2ClientCredentials_clientSecret(ctx context.Context, field graphql.CollectedField, obj *model.OAuth2ClientCredentials) (ret graphql.Marshaler) {
+func (ec *executionContext) _OAuth2ClientCredentials_clientSecret(ctx context.Context, field graphql.CollectedField, obj *model1.OAuth2ClientCredentials) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
@@ -2611,7 +2914,7 @@ func (ec *executionContext) fieldContext_OAuth2ClientCredentials_clientSecret(_ 
 	return graphql.NewScalarFieldContext("OAuth2ClientCredentials", field, true, true, errors.New("field of type String does not have child fields"))
 }
 
-func (ec *executionContext) _OAuth2ClientCredentials_clientKey(ctx context.Context, field graphql.CollectedField, obj *model.OAuth2ClientCredentials) (ret graphql.Marshaler) {
+func (ec *executionContext) _OAuth2ClientCredentials_clientKey(ctx context.Context, field graphql.CollectedField, obj *model1.OAuth2ClientCredentials) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
@@ -2634,7 +2937,7 @@ func (ec *executionContext) fieldContext_OAuth2ClientCredentials_clientKey(_ con
 	return graphql.NewScalarFieldContext("OAuth2ClientCredentials", field, true, true, errors.New("field of type String does not have child fields"))
 }
 
-func (ec *executionContext) _Permission_role(ctx context.Context, field graphql.CollectedField, obj *model.Permission) (ret graphql.Marshaler) {
+func (ec *executionContext) _Permission_role(ctx context.Context, field graphql.CollectedField, obj *model1.Permission) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
@@ -2657,7 +2960,7 @@ func (ec *executionContext) fieldContext_Permission_role(_ context.Context, fiel
 	return graphql.NewScalarFieldContext("Permission", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
-func (ec *executionContext) _Permission_resource(ctx context.Context, field graphql.CollectedField, obj *model.Permission) (ret graphql.Marshaler) {
+func (ec *executionContext) _Permission_resource(ctx context.Context, field graphql.CollectedField, obj *model1.Permission) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
@@ -2680,7 +2983,7 @@ func (ec *executionContext) fieldContext_Permission_resource(_ context.Context, 
 	return graphql.NewScalarFieldContext("Permission", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
-func (ec *executionContext) _Permission_actions(ctx context.Context, field graphql.CollectedField, obj *model.Permission) (ret graphql.Marshaler) {
+func (ec *executionContext) _Permission_actions(ctx context.Context, field graphql.CollectedField, obj *model1.Permission) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
@@ -2703,7 +3006,7 @@ func (ec *executionContext) fieldContext_Permission_actions(_ context.Context, f
 	return graphql.NewScalarFieldContext("Permission", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
-func (ec *executionContext) _RateLimit_provider(ctx context.Context, field graphql.CollectedField, obj *model.RateLimit) (ret graphql.Marshaler) {
+func (ec *executionContext) _RateLimit_provider(ctx context.Context, field graphql.CollectedField, obj *model1.RateLimit) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
@@ -2715,7 +3018,7 @@ func (ec *executionContext) _RateLimit_provider(ctx context.Context, field graph
 			return obj.Provider, nil
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v *model.RateLimitConfig) graphql.Marshaler {
+		func(ctx context.Context, selections ast.SelectionSet, v *model1.RateLimitConfig) graphql.Marshaler {
 			return ec.marshalORateLimitConfig2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐRateLimitConfig(ctx, selections, v)
 		},
 		true,
@@ -2735,7 +3038,7 @@ func (ec *executionContext) fieldContext_RateLimit_provider(_ context.Context, f
 	return fc, nil
 }
 
-func (ec *executionContext) _RateLimit_subscriberRateLimit(ctx context.Context, field graphql.CollectedField, obj *model.RateLimit) (ret graphql.Marshaler) {
+func (ec *executionContext) _RateLimit_subscriberRateLimit(ctx context.Context, field graphql.CollectedField, obj *model1.RateLimit) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
@@ -2747,7 +3050,7 @@ func (ec *executionContext) _RateLimit_subscriberRateLimit(ctx context.Context, 
 			return obj.SubscriberRateLimit, nil
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v *model.SubscriberRateLimits) graphql.Marshaler {
+		func(ctx context.Context, selections ast.SelectionSet, v *model1.SubscriberRateLimits) graphql.Marshaler {
 			return ec.marshalOSubscriberRateLimits2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐSubscriberRateLimits(ctx, selections, v)
 		},
 		true,
@@ -2767,7 +3070,7 @@ func (ec *executionContext) fieldContext_RateLimit_subscriberRateLimit(_ context
 	return fc, nil
 }
 
-func (ec *executionContext) _RateLimitConfig_limits(ctx context.Context, field graphql.CollectedField, obj *model.RateLimitConfig) (ret graphql.Marshaler) {
+func (ec *executionContext) _RateLimitConfig_limits(ctx context.Context, field graphql.CollectedField, obj *model1.RateLimitConfig) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
@@ -2779,7 +3082,7 @@ func (ec *executionContext) _RateLimitConfig_limits(ctx context.Context, field g
 			return obj.Limits, nil
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v model.Limits) graphql.Marshaler {
+		func(ctx context.Context, selections ast.SelectionSet, v model1.Limits) graphql.Marshaler {
 			return ec.marshalNLimits2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐLimits(ctx, selections, v)
 		},
 		true,
@@ -2799,7 +3102,7 @@ func (ec *executionContext) fieldContext_RateLimitConfig_limits(_ context.Contex
 	return fc, nil
 }
 
-func (ec *executionContext) _RateLimitConfig_options(ctx context.Context, field graphql.CollectedField, obj *model.RateLimitConfig) (ret graphql.Marshaler) {
+func (ec *executionContext) _RateLimitConfig_options(ctx context.Context, field graphql.CollectedField, obj *model1.RateLimitConfig) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
@@ -2811,7 +3114,7 @@ func (ec *executionContext) _RateLimitConfig_options(ctx context.Context, field 
 			return obj.Options, nil
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v model.RateLimitOptions) graphql.Marshaler {
+		func(ctx context.Context, selections ast.SelectionSet, v model1.RateLimitOptions) graphql.Marshaler {
 			return ec.marshalORateLimitOptions2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐRateLimitOptions(ctx, selections, v)
 		},
 		true,
@@ -2831,7 +3134,7 @@ func (ec *executionContext) fieldContext_RateLimitConfig_options(_ context.Conte
 	return fc, nil
 }
 
-func (ec *executionContext) _RateLimitOptions_hideClientHeaders(ctx context.Context, field graphql.CollectedField, obj *model.RateLimitOptions) (ret graphql.Marshaler) {
+func (ec *executionContext) _RateLimitOptions_hideClientHeaders(ctx context.Context, field graphql.CollectedField, obj *model1.RateLimitOptions) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
@@ -2854,7 +3157,7 @@ func (ec *executionContext) fieldContext_RateLimitOptions_hideClientHeaders(_ co
 	return graphql.NewScalarFieldContext("RateLimitOptions", field, false, false, errors.New("field of type Boolean does not have child fields"))
 }
 
-func (ec *executionContext) _RateLimitOptions_faultTolerant(ctx context.Context, field graphql.CollectedField, obj *model.RateLimitOptions) (ret graphql.Marshaler) {
+func (ec *executionContext) _RateLimitOptions_faultTolerant(ctx context.Context, field graphql.CollectedField, obj *model1.RateLimitOptions) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
@@ -2877,7 +3180,7 @@ func (ec *executionContext) fieldContext_RateLimitOptions_faultTolerant(_ contex
 	return graphql.NewScalarFieldContext("RateLimitOptions", field, false, false, errors.New("field of type Boolean does not have child fields"))
 }
 
-func (ec *executionContext) _RateLimitOverrides_subscriber(ctx context.Context, field graphql.CollectedField, obj *model.RateLimitOverrides) (ret graphql.Marshaler) {
+func (ec *executionContext) _RateLimitOverrides_subscriber(ctx context.Context, field graphql.CollectedField, obj *model1.RateLimitOverrides) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
@@ -2900,7 +3203,7 @@ func (ec *executionContext) fieldContext_RateLimitOverrides_subscriber(_ context
 	return graphql.NewScalarFieldContext("RateLimitOverrides", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
-func (ec *executionContext) _RateLimitOverrides_limits(ctx context.Context, field graphql.CollectedField, obj *model.RateLimitOverrides) (ret graphql.Marshaler) {
+func (ec *executionContext) _RateLimitOverrides_limits(ctx context.Context, field graphql.CollectedField, obj *model1.RateLimitOverrides) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
@@ -2912,7 +3215,7 @@ func (ec *executionContext) _RateLimitOverrides_limits(ctx context.Context, fiel
 			return obj.Limits, nil
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v model.Limits) graphql.Marshaler {
+		func(ctx context.Context, selections ast.SelectionSet, v model1.Limits) graphql.Marshaler {
 			return ec.marshalNLimits2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐLimits(ctx, selections, v)
 		},
 		true,
@@ -2932,7 +3235,7 @@ func (ec *executionContext) fieldContext_RateLimitOverrides_limits(_ context.Con
 	return fc, nil
 }
 
-func (ec *executionContext) _RequesterInfo_teamName(ctx context.Context, field graphql.CollectedField, obj *model.RequesterInfo) (ret graphql.Marshaler) {
+func (ec *executionContext) _RequesterInfo_teamName(ctx context.Context, field graphql.CollectedField, obj *model1.RequesterInfo) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
@@ -2955,7 +3258,7 @@ func (ec *executionContext) fieldContext_RequesterInfo_teamName(_ context.Contex
 	return graphql.NewScalarFieldContext("RequesterInfo", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
-func (ec *executionContext) _RequesterInfo_teamEmail(ctx context.Context, field graphql.CollectedField, obj *model.RequesterInfo) (ret graphql.Marshaler) {
+func (ec *executionContext) _RequesterInfo_teamEmail(ctx context.Context, field graphql.CollectedField, obj *model1.RequesterInfo) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
@@ -2978,7 +3281,7 @@ func (ec *executionContext) fieldContext_RequesterInfo_teamEmail(_ context.Conte
 	return graphql.NewScalarFieldContext("RequesterInfo", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
-func (ec *executionContext) _RequesterInfo_reason(ctx context.Context, field graphql.CollectedField, obj *model.RequesterInfo) (ret graphql.Marshaler) {
+func (ec *executionContext) _RequesterInfo_reason(ctx context.Context, field graphql.CollectedField, obj *model1.RequesterInfo) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
@@ -3001,7 +3304,7 @@ func (ec *executionContext) fieldContext_RequesterInfo_reason(_ context.Context,
 	return graphql.NewScalarFieldContext("RequesterInfo", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
-func (ec *executionContext) _RequesterInfo_applicationName(ctx context.Context, field graphql.CollectedField, obj *model.RequesterInfo) (ret graphql.Marshaler) {
+func (ec *executionContext) _RequesterInfo_applicationName(ctx context.Context, field graphql.CollectedField, obj *model1.RequesterInfo) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
@@ -3024,7 +3327,7 @@ func (ec *executionContext) fieldContext_RequesterInfo_applicationName(_ context
 	return graphql.NewScalarFieldContext("RequesterInfo", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
-func (ec *executionContext) _ResponseFilter_paths(ctx context.Context, field graphql.CollectedField, obj *model.ResponseFilter) (ret graphql.Marshaler) {
+func (ec *executionContext) _ResponseFilter_paths(ctx context.Context, field graphql.CollectedField, obj *model1.ResponseFilter) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
@@ -3047,7 +3350,7 @@ func (ec *executionContext) fieldContext_ResponseFilter_paths(_ context.Context,
 	return graphql.NewScalarFieldContext("ResponseFilter", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
-func (ec *executionContext) _ResponseFilter_mode(ctx context.Context, field graphql.CollectedField, obj *model.ResponseFilter) (ret graphql.Marshaler) {
+func (ec *executionContext) _ResponseFilter_mode(ctx context.Context, field graphql.CollectedField, obj *model1.ResponseFilter) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
@@ -3059,7 +3362,7 @@ func (ec *executionContext) _ResponseFilter_mode(ctx context.Context, field grap
 			return ec.Resolvers.ResponseFilter().Mode(ctx, obj)
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v *model1.ResponseFilterMode) graphql.Marshaler {
+		func(ctx context.Context, selections ast.SelectionSet, v *model.ResponseFilterMode) graphql.Marshaler {
 			return ec.marshalOResponseFilterMode2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐResponseFilterMode(ctx, selections, v)
 		},
 		true,
@@ -3070,7 +3373,7 @@ func (ec *executionContext) fieldContext_ResponseFilter_mode(_ context.Context, 
 	return graphql.NewScalarFieldContext("ResponseFilter", field, true, true, errors.New("field of type ResponseFilterMode does not have child fields"))
 }
 
-func (ec *executionContext) _SelectionFilter_attributes(ctx context.Context, field graphql.CollectedField, obj *model.SelectionFilter) (ret graphql.Marshaler) {
+func (ec *executionContext) _SelectionFilter_attributes(ctx context.Context, field graphql.CollectedField, obj *model1.SelectionFilter) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
@@ -3093,7 +3396,7 @@ func (ec *executionContext) fieldContext_SelectionFilter_attributes(_ context.Co
 	return graphql.NewScalarFieldContext("SelectionFilter", field, true, true, errors.New("field of type Map does not have child fields"))
 }
 
-func (ec *executionContext) _SelectionFilter_expression(ctx context.Context, field graphql.CollectedField, obj *model.SelectionFilter) (ret graphql.Marshaler) {
+func (ec *executionContext) _SelectionFilter_expression(ctx context.Context, field graphql.CollectedField, obj *model1.SelectionFilter) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
@@ -3116,7 +3419,7 @@ func (ec *executionContext) fieldContext_SelectionFilter_expression(_ context.Co
 	return graphql.NewScalarFieldContext("SelectionFilter", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
-func (ec *executionContext) _SubscriberMachine2MachineAuthentication_client(ctx context.Context, field graphql.CollectedField, obj *model.SubscriberMachine2MachineAuthentication) (ret graphql.Marshaler) {
+func (ec *executionContext) _SubscriberMachine2MachineAuthentication_client(ctx context.Context, field graphql.CollectedField, obj *model1.SubscriberMachine2MachineAuthentication) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
@@ -3128,7 +3431,7 @@ func (ec *executionContext) _SubscriberMachine2MachineAuthentication_client(ctx 
 			return obj.Client, nil
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v *model.OAuth2ClientCredentials) graphql.Marshaler {
+		func(ctx context.Context, selections ast.SelectionSet, v *model1.OAuth2ClientCredentials) graphql.Marshaler {
 			return ec.marshalOOAuth2ClientCredentials2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐOAuth2ClientCredentials(ctx, selections, v)
 		},
 		true,
@@ -3148,7 +3451,7 @@ func (ec *executionContext) fieldContext_SubscriberMachine2MachineAuthentication
 	return fc, nil
 }
 
-func (ec *executionContext) _SubscriberMachine2MachineAuthentication_basic(ctx context.Context, field graphql.CollectedField, obj *model.SubscriberMachine2MachineAuthentication) (ret graphql.Marshaler) {
+func (ec *executionContext) _SubscriberMachine2MachineAuthentication_basic(ctx context.Context, field graphql.CollectedField, obj *model1.SubscriberMachine2MachineAuthentication) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
@@ -3160,7 +3463,7 @@ func (ec *executionContext) _SubscriberMachine2MachineAuthentication_basic(ctx c
 			return obj.Basic, nil
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v *model.BasicAuthCredentials) graphql.Marshaler {
+		func(ctx context.Context, selections ast.SelectionSet, v *model1.BasicAuthCredentials) graphql.Marshaler {
 			return ec.marshalOBasicAuthCredentials2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐBasicAuthCredentials(ctx, selections, v)
 		},
 		true,
@@ -3180,7 +3483,7 @@ func (ec *executionContext) fieldContext_SubscriberMachine2MachineAuthentication
 	return fc, nil
 }
 
-func (ec *executionContext) _SubscriberMachine2MachineAuthentication_scopes(ctx context.Context, field graphql.CollectedField, obj *model.SubscriberMachine2MachineAuthentication) (ret graphql.Marshaler) {
+func (ec *executionContext) _SubscriberMachine2MachineAuthentication_scopes(ctx context.Context, field graphql.CollectedField, obj *model1.SubscriberMachine2MachineAuthentication) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
@@ -3203,7 +3506,7 @@ func (ec *executionContext) fieldContext_SubscriberMachine2MachineAuthentication
 	return graphql.NewScalarFieldContext("SubscriberMachine2MachineAuthentication", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
-func (ec *executionContext) _SubscriberRateLimitDefaults_limits(ctx context.Context, field graphql.CollectedField, obj *model.SubscriberRateLimitDefaults) (ret graphql.Marshaler) {
+func (ec *executionContext) _SubscriberRateLimitDefaults_limits(ctx context.Context, field graphql.CollectedField, obj *model1.SubscriberRateLimitDefaults) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
@@ -3215,7 +3518,7 @@ func (ec *executionContext) _SubscriberRateLimitDefaults_limits(ctx context.Cont
 			return obj.Limits, nil
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v model.Limits) graphql.Marshaler {
+		func(ctx context.Context, selections ast.SelectionSet, v model1.Limits) graphql.Marshaler {
 			return ec.marshalNLimits2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐLimits(ctx, selections, v)
 		},
 		true,
@@ -3235,7 +3538,7 @@ func (ec *executionContext) fieldContext_SubscriberRateLimitDefaults_limits(_ co
 	return fc, nil
 }
 
-func (ec *executionContext) _SubscriberRateLimits_default(ctx context.Context, field graphql.CollectedField, obj *model.SubscriberRateLimits) (ret graphql.Marshaler) {
+func (ec *executionContext) _SubscriberRateLimits_default(ctx context.Context, field graphql.CollectedField, obj *model1.SubscriberRateLimits) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
@@ -3247,7 +3550,7 @@ func (ec *executionContext) _SubscriberRateLimits_default(ctx context.Context, f
 			return obj.Default, nil
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v *model.SubscriberRateLimitDefaults) graphql.Marshaler {
+		func(ctx context.Context, selections ast.SelectionSet, v *model1.SubscriberRateLimitDefaults) graphql.Marshaler {
 			return ec.marshalOSubscriberRateLimitDefaults2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐSubscriberRateLimitDefaults(ctx, selections, v)
 		},
 		true,
@@ -3267,7 +3570,7 @@ func (ec *executionContext) fieldContext_SubscriberRateLimits_default(_ context.
 	return fc, nil
 }
 
-func (ec *executionContext) _SubscriberRateLimits_overrides(ctx context.Context, field graphql.CollectedField, obj *model.SubscriberRateLimits) (ret graphql.Marshaler) {
+func (ec *executionContext) _SubscriberRateLimits_overrides(ctx context.Context, field graphql.CollectedField, obj *model1.SubscriberRateLimits) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
@@ -3279,7 +3582,7 @@ func (ec *executionContext) _SubscriberRateLimits_overrides(ctx context.Context,
 			return obj.Overrides, nil
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v []model.RateLimitOverrides) graphql.Marshaler {
+		func(ctx context.Context, selections ast.SelectionSet, v []model1.RateLimitOverrides) graphql.Marshaler {
 			return ec.marshalORateLimitOverrides2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐRateLimitOverridesᚄ(ctx, selections, v)
 		},
 		true,
@@ -3299,7 +3602,7 @@ func (ec *executionContext) fieldContext_SubscriberRateLimits_overrides(_ contex
 	return fc, nil
 }
 
-func (ec *executionContext) _TeamInfo_id(ctx context.Context, field graphql.CollectedField, obj *model.TeamInfo) (ret graphql.Marshaler) {
+func (ec *executionContext) _TeamInfo_id(ctx context.Context, field graphql.CollectedField, obj *model1.TeamInfo) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
@@ -3322,7 +3625,7 @@ func (ec *executionContext) fieldContext_TeamInfo_id(_ context.Context, field gr
 	return graphql.NewScalarFieldContext("TeamInfo", field, false, false, errors.New("field of type ID does not have child fields"))
 }
 
-func (ec *executionContext) _TeamInfo_name(ctx context.Context, field graphql.CollectedField, obj *model.TeamInfo) (ret graphql.Marshaler) {
+func (ec *executionContext) _TeamInfo_name(ctx context.Context, field graphql.CollectedField, obj *model1.TeamInfo) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
@@ -3345,7 +3648,7 @@ func (ec *executionContext) fieldContext_TeamInfo_name(_ context.Context, field 
 	return graphql.NewScalarFieldContext("TeamInfo", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
-func (ec *executionContext) _TeamInfo_groupName(ctx context.Context, field graphql.CollectedField, obj *model.TeamInfo) (ret graphql.Marshaler) {
+func (ec *executionContext) _TeamInfo_groupName(ctx context.Context, field graphql.CollectedField, obj *model1.TeamInfo) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
@@ -3368,7 +3671,7 @@ func (ec *executionContext) fieldContext_TeamInfo_groupName(_ context.Context, f
 	return graphql.NewScalarFieldContext("TeamInfo", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
-func (ec *executionContext) _TeamInfo_email(ctx context.Context, field graphql.CollectedField, obj *model.TeamInfo) (ret graphql.Marshaler) {
+func (ec *executionContext) _TeamInfo_email(ctx context.Context, field graphql.CollectedField, obj *model1.TeamInfo) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
@@ -3391,7 +3694,7 @@ func (ec *executionContext) fieldContext_TeamInfo_email(_ context.Context, field
 	return graphql.NewScalarFieldContext("TeamInfo", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
-func (ec *executionContext) _TeamInfo_displayName(ctx context.Context, field graphql.CollectedField, obj *model.TeamInfo) (ret graphql.Marshaler) {
+func (ec *executionContext) _TeamInfo_displayName(ctx context.Context, field graphql.CollectedField, obj *model1.TeamInfo) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
@@ -3414,7 +3717,7 @@ func (ec *executionContext) fieldContext_TeamInfo_displayName(_ context.Context,
 	return graphql.NewScalarFieldContext("TeamInfo", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
-func (ec *executionContext) _TeamInfo_description(ctx context.Context, field graphql.CollectedField, obj *model.TeamInfo) (ret graphql.Marshaler) {
+func (ec *executionContext) _TeamInfo_description(ctx context.Context, field graphql.CollectedField, obj *model1.TeamInfo) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
@@ -3437,7 +3740,7 @@ func (ec *executionContext) fieldContext_TeamInfo_description(_ context.Context,
 	return graphql.NewScalarFieldContext("TeamInfo", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
-func (ec *executionContext) _Traffic_failover(ctx context.Context, field graphql.CollectedField, obj *model.Traffic) (ret graphql.Marshaler) {
+func (ec *executionContext) _Traffic_failover(ctx context.Context, field graphql.CollectedField, obj *model1.Traffic) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
@@ -3449,7 +3752,7 @@ func (ec *executionContext) _Traffic_failover(ctx context.Context, field graphql
 			return obj.Failover, nil
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v *model.Failover) graphql.Marshaler {
+		func(ctx context.Context, selections ast.SelectionSet, v *model1.Failover) graphql.Marshaler {
 			return ec.marshalOFailover2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐFailover(ctx, selections, v)
 		},
 		true,
@@ -3469,7 +3772,7 @@ func (ec *executionContext) fieldContext_Traffic_failover(_ context.Context, fie
 	return fc, nil
 }
 
-func (ec *executionContext) _Traffic_rateLimit(ctx context.Context, field graphql.CollectedField, obj *model.Traffic) (ret graphql.Marshaler) {
+func (ec *executionContext) _Traffic_rateLimit(ctx context.Context, field graphql.CollectedField, obj *model1.Traffic) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
@@ -3481,7 +3784,7 @@ func (ec *executionContext) _Traffic_rateLimit(ctx context.Context, field graphq
 			return obj.RateLimit, nil
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v *model.RateLimit) graphql.Marshaler {
+		func(ctx context.Context, selections ast.SelectionSet, v *model1.RateLimit) graphql.Marshaler {
 			return ec.marshalORateLimit2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐRateLimit(ctx, selections, v)
 		},
 		true,
@@ -3501,7 +3804,7 @@ func (ec *executionContext) fieldContext_Traffic_rateLimit(_ context.Context, fi
 	return fc, nil
 }
 
-func (ec *executionContext) _Upstream_url(ctx context.Context, field graphql.CollectedField, obj *model.Upstream) (ret graphql.Marshaler) {
+func (ec *executionContext) _Upstream_url(ctx context.Context, field graphql.CollectedField, obj *model1.Upstream) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
@@ -3524,7 +3827,7 @@ func (ec *executionContext) fieldContext_Upstream_url(_ context.Context, field g
 	return graphql.NewScalarFieldContext("Upstream", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
-func (ec *executionContext) _Upstream_weight(ctx context.Context, field graphql.CollectedField, obj *model.Upstream) (ret graphql.Marshaler) {
+func (ec *executionContext) _Upstream_weight(ctx context.Context, field graphql.CollectedField, obj *model1.Upstream) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
@@ -3555,26 +3858,20 @@ func (ec *executionContext) fieldContext_Upstream_weight(_ context.Context, fiel
 
 // region    ************************** interface.gotpl ***************************
 
-func (ec *executionContext) _SubscriptionInfo(ctx context.Context, sel ast.SelectionSet, obj model1.SubscriptionInfo) graphql.Marshaler {
+func (ec *executionContext) _SubscriptionInfo(ctx context.Context, sel ast.SelectionSet, obj model.SubscriptionInfo) graphql.Marshaler {
 	switch obj := (obj).(type) {
 	case nil:
 		return graphql.Null
-	case model.EventSubscriptionInfo:
-		return ec._EventSubscriptionInfo(ctx, sel, &obj)
 	case *model.EventSubscriptionInfo:
 		if obj == nil {
 			return graphql.Null
 		}
 		return ec._EventSubscriptionInfo(ctx, sel, obj)
-	case model.ApiSubscriptionInfo:
-		return ec._ApiSubscriptionInfo(ctx, sel, &obj)
 	case *model.ApiSubscriptionInfo:
 		if obj == nil {
 			return graphql.Null
 		}
 		return ec._ApiSubscriptionInfo(ctx, sel, obj)
-	case model.AgenticSubscriptionInfo:
-		return ec._AgenticSubscriptionInfo(ctx, sel, &obj)
 	case *model.AgenticSubscriptionInfo:
 		if obj == nil {
 			return graphql.Null
@@ -3716,6 +4013,11 @@ func (ec *executionContext) _AgenticExposureInfo(ctx context.Context, sel ast.Se
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "ownerApplication":
+			out.Values[i] = ec._AgenticExposureInfo_ownerApplication(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -3739,7 +4041,7 @@ func (ec *executionContext) _AgenticExposureInfo(ctx context.Context, sel ast.Se
 
 var agenticExposureSecurityImplementors = []string{"AgenticExposureSecurity"}
 
-func (ec *executionContext) _AgenticExposureSecurity(ctx context.Context, sel ast.SelectionSet, obj *model.AgenticExposureSecurity) graphql.Marshaler {
+func (ec *executionContext) _AgenticExposureSecurity(ctx context.Context, sel ast.SelectionSet, obj *model1.AgenticExposureSecurity) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, agenticExposureSecurityImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -3777,7 +4079,7 @@ func (ec *executionContext) _AgenticExposureSecurity(ctx context.Context, sel as
 
 var agenticHeaderTransformationImplementors = []string{"AgenticHeaderTransformation"}
 
-func (ec *executionContext) _AgenticHeaderTransformation(ctx context.Context, sel ast.SelectionSet, obj *model.AgenticHeaderTransformation) graphql.Marshaler {
+func (ec *executionContext) _AgenticHeaderTransformation(ctx context.Context, sel ast.SelectionSet, obj *model1.AgenticHeaderTransformation) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, agenticHeaderTransformationImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -3820,7 +4122,7 @@ func (ec *executionContext) _AgenticHeaderTransformation(ctx context.Context, se
 
 var agenticRequestResponseTransformationImplementors = []string{"AgenticRequestResponseTransformation"}
 
-func (ec *executionContext) _AgenticRequestResponseTransformation(ctx context.Context, sel ast.SelectionSet, obj *model.AgenticRequestResponseTransformation) graphql.Marshaler {
+func (ec *executionContext) _AgenticRequestResponseTransformation(ctx context.Context, sel ast.SelectionSet, obj *model1.AgenticRequestResponseTransformation) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, agenticRequestResponseTransformationImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -3858,7 +4160,7 @@ func (ec *executionContext) _AgenticRequestResponseTransformation(ctx context.Co
 
 var agenticSubscriberFailoverImplementors = []string{"AgenticSubscriberFailover"}
 
-func (ec *executionContext) _AgenticSubscriberFailover(ctx context.Context, sel ast.SelectionSet, obj *model.AgenticSubscriberFailover) graphql.Marshaler {
+func (ec *executionContext) _AgenticSubscriberFailover(ctx context.Context, sel ast.SelectionSet, obj *model1.AgenticSubscriberFailover) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, agenticSubscriberFailoverImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -3896,7 +4198,7 @@ func (ec *executionContext) _AgenticSubscriberFailover(ctx context.Context, sel 
 
 var agenticSubscriberTrafficImplementors = []string{"AgenticSubscriberTraffic"}
 
-func (ec *executionContext) _AgenticSubscriberTraffic(ctx context.Context, sel ast.SelectionSet, obj *model.AgenticSubscriberTraffic) graphql.Marshaler {
+func (ec *executionContext) _AgenticSubscriberTraffic(ctx context.Context, sel ast.SelectionSet, obj *model1.AgenticSubscriberTraffic) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, agenticSubscriberTrafficImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -4007,6 +4309,11 @@ func (ec *executionContext) _AgenticSubscriptionInfo(ctx context.Context, sel as
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "ownerApplication":
+			out.Values[i] = ec._AgenticSubscriptionInfo_ownerApplication(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -4030,7 +4337,7 @@ func (ec *executionContext) _AgenticSubscriptionInfo(ctx context.Context, sel as
 
 var agenticSubscriptionSecurityImplementors = []string{"AgenticSubscriptionSecurity"}
 
-func (ec *executionContext) _AgenticSubscriptionSecurity(ctx context.Context, sel ast.SelectionSet, obj *model.AgenticSubscriptionSecurity) graphql.Marshaler {
+func (ec *executionContext) _AgenticSubscriptionSecurity(ctx context.Context, sel ast.SelectionSet, obj *model1.AgenticSubscriptionSecurity) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, agenticSubscriptionSecurityImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -4068,7 +4375,7 @@ func (ec *executionContext) _AgenticSubscriptionSecurity(ctx context.Context, se
 
 var agenticTransformationImplementors = []string{"AgenticTransformation"}
 
-func (ec *executionContext) _AgenticTransformation(ctx context.Context, sel ast.SelectionSet, obj *model.AgenticTransformation) graphql.Marshaler {
+func (ec *executionContext) _AgenticTransformation(ctx context.Context, sel ast.SelectionSet, obj *model1.AgenticTransformation) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, agenticTransformationImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -4106,7 +4413,7 @@ func (ec *executionContext) _AgenticTransformation(ctx context.Context, sel ast.
 
 var apiCategoryImplementors = []string{"ApiCategory"}
 
-func (ec *executionContext) _ApiCategory(ctx context.Context, sel ast.SelectionSet, obj *model1.APICategory) graphql.Marshaler {
+func (ec *executionContext) _ApiCategory(ctx context.Context, sel ast.SelectionSet, obj *model.APICategory) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, apiCategoryImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -4270,6 +4577,11 @@ func (ec *executionContext) _ApiExposureInfo(ctx context.Context, sel ast.Select
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "ownerApplication":
+			out.Values[i] = ec._ApiExposureInfo_ownerApplication(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -4293,7 +4605,7 @@ func (ec *executionContext) _ApiExposureInfo(ctx context.Context, sel ast.Select
 
 var apiExposureSecurityImplementors = []string{"ApiExposureSecurity"}
 
-func (ec *executionContext) _ApiExposureSecurity(ctx context.Context, sel ast.SelectionSet, obj *model.ApiExposureSecurity) graphql.Marshaler {
+func (ec *executionContext) _ApiExposureSecurity(ctx context.Context, sel ast.SelectionSet, obj *model1.ApiExposureSecurity) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, apiExposureSecurityImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -4404,6 +4716,11 @@ func (ec *executionContext) _ApiSubscriptionInfo(ctx context.Context, sel ast.Se
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "ownerApplication":
+			out.Values[i] = ec._ApiSubscriptionInfo_ownerApplication(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -4427,7 +4744,7 @@ func (ec *executionContext) _ApiSubscriptionInfo(ctx context.Context, sel ast.Se
 
 var apiSubscriptionSecurityImplementors = []string{"ApiSubscriptionSecurity"}
 
-func (ec *executionContext) _ApiSubscriptionSecurity(ctx context.Context, sel ast.SelectionSet, obj *model.ApiSubscriptionSecurity) graphql.Marshaler {
+func (ec *executionContext) _ApiSubscriptionSecurity(ctx context.Context, sel ast.SelectionSet, obj *model1.ApiSubscriptionSecurity) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, apiSubscriptionSecurityImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -4465,7 +4782,7 @@ func (ec *executionContext) _ApiSubscriptionSecurity(ctx context.Context, sel as
 
 var apiSubscriptionTrafficImplementors = []string{"ApiSubscriptionTraffic"}
 
-func (ec *executionContext) _ApiSubscriptionTraffic(ctx context.Context, sel ast.SelectionSet, obj *model.ApiSubscriptionTraffic) graphql.Marshaler {
+func (ec *executionContext) _ApiSubscriptionTraffic(ctx context.Context, sel ast.SelectionSet, obj *model1.ApiSubscriptionTraffic) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, apiSubscriptionTrafficImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -4506,9 +4823,62 @@ func (ec *executionContext) _ApiSubscriptionTraffic(ctx context.Context, sel ast
 	return out
 }
 
+var applicationInfoImplementors = []string{"ApplicationInfo"}
+
+func (ec *executionContext) _ApplicationInfo(ctx context.Context, sel ast.SelectionSet, obj *model.ApplicationInfo) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, applicationInfoImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ApplicationInfo")
+		case "id":
+			out.Values[i] = ec._ApplicationInfo_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "name":
+			out.Values[i] = ec._ApplicationInfo_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "zone":
+			out.Values[i] = ec._ApplicationInfo_zone(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "ownerTeam":
+			out.Values[i] = ec._ApplicationInfo_ownerTeam(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
+
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
+
+	return out
+}
+
 var approvalConfigImplementors = []string{"ApprovalConfig"}
 
-func (ec *executionContext) _ApprovalConfig(ctx context.Context, sel ast.SelectionSet, obj *model.ApprovalConfig) graphql.Marshaler {
+func (ec *executionContext) _ApprovalConfig(ctx context.Context, sel ast.SelectionSet, obj *model1.ApprovalConfig) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, approvalConfigImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -4584,7 +4954,7 @@ func (ec *executionContext) _ApprovalConfig(ctx context.Context, sel ast.Selecti
 
 var availableTransitionImplementors = []string{"AvailableTransition"}
 
-func (ec *executionContext) _AvailableTransition(ctx context.Context, sel ast.SelectionSet, obj *model.AvailableTransition) graphql.Marshaler {
+func (ec *executionContext) _AvailableTransition(ctx context.Context, sel ast.SelectionSet, obj *model1.AvailableTransition) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, availableTransitionImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -4693,7 +5063,7 @@ func (ec *executionContext) _AvailableTransition(ctx context.Context, sel ast.Se
 
 var basicAuthCredentialsImplementors = []string{"BasicAuthCredentials"}
 
-func (ec *executionContext) _BasicAuthCredentials(ctx context.Context, sel ast.SelectionSet, obj *model.BasicAuthCredentials) graphql.Marshaler {
+func (ec *executionContext) _BasicAuthCredentials(ctx context.Context, sel ast.SelectionSet, obj *model1.BasicAuthCredentials) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, basicAuthCredentialsImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -4769,7 +5139,7 @@ func (ec *executionContext) _BasicAuthCredentials(ctx context.Context, sel ast.S
 
 var deciderInfoImplementors = []string{"DeciderInfo"}
 
-func (ec *executionContext) _DeciderInfo(ctx context.Context, sel ast.SelectionSet, obj *model.DeciderInfo) graphql.Marshaler {
+func (ec *executionContext) _DeciderInfo(ctx context.Context, sel ast.SelectionSet, obj *model1.DeciderInfo) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, deciderInfoImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -4812,7 +5182,7 @@ func (ec *executionContext) _DeciderInfo(ctx context.Context, sel ast.SelectionS
 
 var decisionImplementors = []string{"Decision"}
 
-func (ec *executionContext) _Decision(ctx context.Context, sel ast.SelectionSet, obj *model.Decision) graphql.Marshaler {
+func (ec *executionContext) _Decision(ctx context.Context, sel ast.SelectionSet, obj *model1.Decision) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, decisionImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -4903,7 +5273,7 @@ func (ec *executionContext) _Decision(ctx context.Context, sel ast.SelectionSet,
 
 var eventDeliveryImplementors = []string{"EventDelivery"}
 
-func (ec *executionContext) _EventDelivery(ctx context.Context, sel ast.SelectionSet, obj *model.EventDelivery) graphql.Marshaler {
+func (ec *executionContext) _EventDelivery(ctx context.Context, sel ast.SelectionSet, obj *model1.EventDelivery) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, eventDeliveryImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -5077,6 +5447,11 @@ func (ec *executionContext) _EventExposureInfo(ctx context.Context, sel ast.Sele
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "ownerApplication":
+			out.Values[i] = ec._EventExposureInfo_ownerApplication(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -5100,7 +5475,7 @@ func (ec *executionContext) _EventExposureInfo(ctx context.Context, sel ast.Sele
 
 var eventScopeImplementors = []string{"EventScope"}
 
-func (ec *executionContext) _EventScope(ctx context.Context, sel ast.SelectionSet, obj *model.EventScope) graphql.Marshaler {
+func (ec *executionContext) _EventScope(ctx context.Context, sel ast.SelectionSet, obj *model1.EventScope) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, eventScopeImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -5254,6 +5629,11 @@ func (ec *executionContext) _EventSubscriptionInfo(ctx context.Context, sel ast.
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "ownerApplication":
+			out.Values[i] = ec._EventSubscriptionInfo_ownerApplication(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -5277,7 +5657,7 @@ func (ec *executionContext) _EventSubscriptionInfo(ctx context.Context, sel ast.
 
 var eventTriggerImplementors = []string{"EventTrigger"}
 
-func (ec *executionContext) _EventTrigger(ctx context.Context, sel ast.SelectionSet, obj *model.EventTrigger) graphql.Marshaler {
+func (ec *executionContext) _EventTrigger(ctx context.Context, sel ast.SelectionSet, obj *model1.EventTrigger) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, eventTriggerImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -5320,7 +5700,7 @@ func (ec *executionContext) _EventTrigger(ctx context.Context, sel ast.Selection
 
 var externalIdImplementors = []string{"ExternalId"}
 
-func (ec *executionContext) _ExternalId(ctx context.Context, sel ast.SelectionSet, obj *model.ExternalId) graphql.Marshaler {
+func (ec *executionContext) _ExternalId(ctx context.Context, sel ast.SelectionSet, obj *model1.ExternalId) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, externalIdImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -5396,7 +5776,7 @@ func (ec *executionContext) _ExternalId(ctx context.Context, sel ast.SelectionSe
 
 var externalIdentityProviderImplementors = []string{"ExternalIdentityProvider"}
 
-func (ec *executionContext) _ExternalIdentityProvider(ctx context.Context, sel ast.SelectionSet, obj *model.ExternalIdentityProvider) graphql.Marshaler {
+func (ec *executionContext) _ExternalIdentityProvider(ctx context.Context, sel ast.SelectionSet, obj *model1.ExternalIdentityProvider) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, externalIdentityProviderImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -5487,7 +5867,7 @@ func (ec *executionContext) _ExternalIdentityProvider(ctx context.Context, sel a
 
 var failoverImplementors = []string{"Failover"}
 
-func (ec *executionContext) _Failover(ctx context.Context, sel ast.SelectionSet, obj *model.Failover) graphql.Marshaler {
+func (ec *executionContext) _Failover(ctx context.Context, sel ast.SelectionSet, obj *model1.Failover) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, failoverImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -5525,7 +5905,7 @@ func (ec *executionContext) _Failover(ctx context.Context, sel ast.SelectionSet,
 
 var ipRestrictionsImplementors = []string{"IpRestrictions"}
 
-func (ec *executionContext) _IpRestrictions(ctx context.Context, sel ast.SelectionSet, obj *model.IpRestrictions) graphql.Marshaler {
+func (ec *executionContext) _IpRestrictions(ctx context.Context, sel ast.SelectionSet, obj *model1.IpRestrictions) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, ipRestrictionsImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -5568,7 +5948,7 @@ func (ec *executionContext) _IpRestrictions(ctx context.Context, sel ast.Selecti
 
 var limitsImplementors = []string{"Limits"}
 
-func (ec *executionContext) _Limits(ctx context.Context, sel ast.SelectionSet, obj *model.Limits) graphql.Marshaler {
+func (ec *executionContext) _Limits(ctx context.Context, sel ast.SelectionSet, obj *model1.Limits) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, limitsImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -5616,7 +5996,7 @@ func (ec *executionContext) _Limits(ctx context.Context, sel ast.SelectionSet, o
 
 var machine2MachineAuthenticationImplementors = []string{"Machine2MachineAuthentication"}
 
-func (ec *executionContext) _Machine2MachineAuthentication(ctx context.Context, sel ast.SelectionSet, obj *model.Machine2MachineAuthentication) graphql.Marshaler {
+func (ec *executionContext) _Machine2MachineAuthentication(ctx context.Context, sel ast.SelectionSet, obj *model1.Machine2MachineAuthentication) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, machine2MachineAuthenticationImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -5664,7 +6044,7 @@ func (ec *executionContext) _Machine2MachineAuthentication(ctx context.Context, 
 
 var oAuth2ClientCredentialsImplementors = []string{"OAuth2ClientCredentials"}
 
-func (ec *executionContext) _OAuth2ClientCredentials(ctx context.Context, sel ast.SelectionSet, obj *model.OAuth2ClientCredentials) graphql.Marshaler {
+func (ec *executionContext) _OAuth2ClientCredentials(ctx context.Context, sel ast.SelectionSet, obj *model1.OAuth2ClientCredentials) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, oAuth2ClientCredentialsImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -5778,7 +6158,7 @@ func (ec *executionContext) _OAuth2ClientCredentials(ctx context.Context, sel as
 
 var permissionImplementors = []string{"Permission"}
 
-func (ec *executionContext) _Permission(ctx context.Context, sel ast.SelectionSet, obj *model.Permission) graphql.Marshaler {
+func (ec *executionContext) _Permission(ctx context.Context, sel ast.SelectionSet, obj *model1.Permission) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, permissionImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -5826,7 +6206,7 @@ func (ec *executionContext) _Permission(ctx context.Context, sel ast.SelectionSe
 
 var rateLimitImplementors = []string{"RateLimit"}
 
-func (ec *executionContext) _RateLimit(ctx context.Context, sel ast.SelectionSet, obj *model.RateLimit) graphql.Marshaler {
+func (ec *executionContext) _RateLimit(ctx context.Context, sel ast.SelectionSet, obj *model1.RateLimit) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, rateLimitImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -5869,7 +6249,7 @@ func (ec *executionContext) _RateLimit(ctx context.Context, sel ast.SelectionSet
 
 var rateLimitConfigImplementors = []string{"RateLimitConfig"}
 
-func (ec *executionContext) _RateLimitConfig(ctx context.Context, sel ast.SelectionSet, obj *model.RateLimitConfig) graphql.Marshaler {
+func (ec *executionContext) _RateLimitConfig(ctx context.Context, sel ast.SelectionSet, obj *model1.RateLimitConfig) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, rateLimitConfigImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -5912,7 +6292,7 @@ func (ec *executionContext) _RateLimitConfig(ctx context.Context, sel ast.Select
 
 var rateLimitOptionsImplementors = []string{"RateLimitOptions"}
 
-func (ec *executionContext) _RateLimitOptions(ctx context.Context, sel ast.SelectionSet, obj *model.RateLimitOptions) graphql.Marshaler {
+func (ec *executionContext) _RateLimitOptions(ctx context.Context, sel ast.SelectionSet, obj *model1.RateLimitOptions) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, rateLimitOptionsImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -5955,7 +6335,7 @@ func (ec *executionContext) _RateLimitOptions(ctx context.Context, sel ast.Selec
 
 var rateLimitOverridesImplementors = []string{"RateLimitOverrides"}
 
-func (ec *executionContext) _RateLimitOverrides(ctx context.Context, sel ast.SelectionSet, obj *model.RateLimitOverrides) graphql.Marshaler {
+func (ec *executionContext) _RateLimitOverrides(ctx context.Context, sel ast.SelectionSet, obj *model1.RateLimitOverrides) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, rateLimitOverridesImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -5998,7 +6378,7 @@ func (ec *executionContext) _RateLimitOverrides(ctx context.Context, sel ast.Sel
 
 var requesterInfoImplementors = []string{"RequesterInfo"}
 
-func (ec *executionContext) _RequesterInfo(ctx context.Context, sel ast.SelectionSet, obj *model.RequesterInfo) graphql.Marshaler {
+func (ec *executionContext) _RequesterInfo(ctx context.Context, sel ast.SelectionSet, obj *model1.RequesterInfo) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, requesterInfoImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -6051,7 +6431,7 @@ func (ec *executionContext) _RequesterInfo(ctx context.Context, sel ast.Selectio
 
 var responseFilterImplementors = []string{"ResponseFilter"}
 
-func (ec *executionContext) _ResponseFilter(ctx context.Context, sel ast.SelectionSet, obj *model.ResponseFilter) graphql.Marshaler {
+func (ec *executionContext) _ResponseFilter(ctx context.Context, sel ast.SelectionSet, obj *model1.ResponseFilter) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, responseFilterImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -6127,7 +6507,7 @@ func (ec *executionContext) _ResponseFilter(ctx context.Context, sel ast.Selecti
 
 var selectionFilterImplementors = []string{"SelectionFilter"}
 
-func (ec *executionContext) _SelectionFilter(ctx context.Context, sel ast.SelectionSet, obj *model.SelectionFilter) graphql.Marshaler {
+func (ec *executionContext) _SelectionFilter(ctx context.Context, sel ast.SelectionSet, obj *model1.SelectionFilter) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, selectionFilterImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -6203,7 +6583,7 @@ func (ec *executionContext) _SelectionFilter(ctx context.Context, sel ast.Select
 
 var subscriberMachine2MachineAuthenticationImplementors = []string{"SubscriberMachine2MachineAuthentication"}
 
-func (ec *executionContext) _SubscriberMachine2MachineAuthentication(ctx context.Context, sel ast.SelectionSet, obj *model.SubscriberMachine2MachineAuthentication) graphql.Marshaler {
+func (ec *executionContext) _SubscriberMachine2MachineAuthentication(ctx context.Context, sel ast.SelectionSet, obj *model1.SubscriberMachine2MachineAuthentication) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, subscriberMachine2MachineAuthenticationImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -6251,7 +6631,7 @@ func (ec *executionContext) _SubscriberMachine2MachineAuthentication(ctx context
 
 var subscriberRateLimitDefaultsImplementors = []string{"SubscriberRateLimitDefaults"}
 
-func (ec *executionContext) _SubscriberRateLimitDefaults(ctx context.Context, sel ast.SelectionSet, obj *model.SubscriberRateLimitDefaults) graphql.Marshaler {
+func (ec *executionContext) _SubscriberRateLimitDefaults(ctx context.Context, sel ast.SelectionSet, obj *model1.SubscriberRateLimitDefaults) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, subscriberRateLimitDefaultsImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -6289,7 +6669,7 @@ func (ec *executionContext) _SubscriberRateLimitDefaults(ctx context.Context, se
 
 var subscriberRateLimitsImplementors = []string{"SubscriberRateLimits"}
 
-func (ec *executionContext) _SubscriberRateLimits(ctx context.Context, sel ast.SelectionSet, obj *model.SubscriberRateLimits) graphql.Marshaler {
+func (ec *executionContext) _SubscriberRateLimits(ctx context.Context, sel ast.SelectionSet, obj *model1.SubscriberRateLimits) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, subscriberRateLimitsImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -6332,7 +6712,7 @@ func (ec *executionContext) _SubscriberRateLimits(ctx context.Context, sel ast.S
 
 var teamInfoImplementors = []string{"TeamInfo"}
 
-func (ec *executionContext) _TeamInfo(ctx context.Context, sel ast.SelectionSet, obj *model.TeamInfo) graphql.Marshaler {
+func (ec *executionContext) _TeamInfo(ctx context.Context, sel ast.SelectionSet, obj *model1.TeamInfo) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, teamInfoImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -6395,7 +6775,7 @@ func (ec *executionContext) _TeamInfo(ctx context.Context, sel ast.SelectionSet,
 
 var trafficImplementors = []string{"Traffic"}
 
-func (ec *executionContext) _Traffic(ctx context.Context, sel ast.SelectionSet, obj *model.Traffic) graphql.Marshaler {
+func (ec *executionContext) _Traffic(ctx context.Context, sel ast.SelectionSet, obj *model1.Traffic) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, trafficImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -6438,7 +6818,7 @@ func (ec *executionContext) _Traffic(ctx context.Context, sel ast.SelectionSet, 
 
 var upstreamImplementors = []string{"Upstream"}
 
-func (ec *executionContext) _Upstream(ctx context.Context, sel ast.SelectionSet, obj *model.Upstream) graphql.Marshaler {
+func (ec *executionContext) _Upstream(ctx context.Context, sel ast.SelectionSet, obj *model1.Upstream) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, upstreamImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -6483,19 +6863,19 @@ func (ec *executionContext) _Upstream(ctx context.Context, sel ast.SelectionSet,
 
 // region    ***************************** type.gotpl *****************************
 
-func (ec *executionContext) marshalNAgenticHeaderTransformation2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐAgenticHeaderTransformation(ctx context.Context, sel ast.SelectionSet, v model.AgenticHeaderTransformation) graphql.Marshaler {
+func (ec *executionContext) marshalNAgenticHeaderTransformation2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐAgenticHeaderTransformation(ctx context.Context, sel ast.SelectionSet, v model1.AgenticHeaderTransformation) graphql.Marshaler {
 	return ec._AgenticHeaderTransformation(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNAgenticRequestResponseTransformation2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐAgenticRequestResponseTransformation(ctx context.Context, sel ast.SelectionSet, v model.AgenticRequestResponseTransformation) graphql.Marshaler {
+func (ec *executionContext) marshalNAgenticRequestResponseTransformation2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐAgenticRequestResponseTransformation(ctx context.Context, sel ast.SelectionSet, v model1.AgenticRequestResponseTransformation) graphql.Marshaler {
 	return ec._AgenticRequestResponseTransformation(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNAgenticSubscriptionInfo2ᚕᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐAgenticSubscriptionInfoᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.AgenticSubscriptionInfo) graphql.Marshaler {
+func (ec *executionContext) marshalNAgenticSubscriptionInfo2ᚕᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐAgenticSubscriptionInfoᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.AgenticSubscriptionInfo) graphql.Marshaler {
 	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
 		fc := graphql.GetFieldContext(ctx)
 		fc.Result = &v[i]
-		return ec.marshalNAgenticSubscriptionInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐAgenticSubscriptionInfo(ctx, sel, v[i])
+		return ec.marshalNAgenticSubscriptionInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐAgenticSubscriptionInfo(ctx, sel, v[i])
 	})
 
 	for _, e := range ret {
@@ -6507,7 +6887,7 @@ func (ec *executionContext) marshalNAgenticSubscriptionInfo2ᚕᚖgithubᚗcom�
 	return ret
 }
 
-func (ec *executionContext) marshalNAgenticSubscriptionInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐAgenticSubscriptionInfo(ctx context.Context, sel ast.SelectionSet, v *model.AgenticSubscriptionInfo) graphql.Marshaler {
+func (ec *executionContext) marshalNAgenticSubscriptionInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐAgenticSubscriptionInfo(ctx context.Context, sel ast.SelectionSet, v *model.AgenticSubscriptionInfo) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
@@ -6517,7 +6897,7 @@ func (ec *executionContext) marshalNAgenticSubscriptionInfo2ᚖgithubᚗcomᚋte
 	return ec._AgenticSubscriptionInfo(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNApiCategory2ᚕᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐAPICategoryᚄ(ctx context.Context, sel ast.SelectionSet, v []*model1.APICategory) graphql.Marshaler {
+func (ec *executionContext) marshalNApiCategory2ᚕᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐAPICategoryᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.APICategory) graphql.Marshaler {
 	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
 		fc := graphql.GetFieldContext(ctx)
 		fc.Result = &v[i]
@@ -6533,7 +6913,7 @@ func (ec *executionContext) marshalNApiCategory2ᚕᚖgithubᚗcomᚋtelekomᚋc
 	return ret
 }
 
-func (ec *executionContext) marshalNApiCategory2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐAPICategory(ctx context.Context, sel ast.SelectionSet, v *model1.APICategory) graphql.Marshaler {
+func (ec *executionContext) marshalNApiCategory2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐAPICategory(ctx context.Context, sel ast.SelectionSet, v *model.APICategory) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
@@ -6543,20 +6923,20 @@ func (ec *executionContext) marshalNApiCategory2ᚖgithubᚗcomᚋtelekomᚋcont
 	return ec._ApiCategory(ctx, sel, v)
 }
 
-func (ec *executionContext) unmarshalNApiExposureFeature2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐAPIExposureFeature(ctx context.Context, v any) (model1.APIExposureFeature, error) {
-	var res model1.APIExposureFeature
+func (ec *executionContext) unmarshalNApiExposureFeature2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐAPIExposureFeature(ctx context.Context, v any) (model.APIExposureFeature, error) {
+	var res model.APIExposureFeature
 	err := res.UnmarshalGQL(v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) marshalNApiExposureFeature2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐAPIExposureFeature(ctx context.Context, sel ast.SelectionSet, v model1.APIExposureFeature) graphql.Marshaler {
+func (ec *executionContext) marshalNApiExposureFeature2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐAPIExposureFeature(ctx context.Context, sel ast.SelectionSet, v model.APIExposureFeature) graphql.Marshaler {
 	return v
 }
 
-func (ec *executionContext) unmarshalNApiExposureFeature2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐAPIExposureFeatureᚄ(ctx context.Context, v any) ([]model1.APIExposureFeature, error) {
+func (ec *executionContext) unmarshalNApiExposureFeature2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐAPIExposureFeatureᚄ(ctx context.Context, v any) ([]model.APIExposureFeature, error) {
 	vSlice := graphql.CoerceList(v)
 	var err error
-	res := make([]model1.APIExposureFeature, len(vSlice))
+	res := make([]model.APIExposureFeature, len(vSlice))
 	for i := range vSlice {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
 		res[i], err = ec.unmarshalNApiExposureFeature2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐAPIExposureFeature(ctx, vSlice[i])
@@ -6567,7 +6947,7 @@ func (ec *executionContext) unmarshalNApiExposureFeature2ᚕgithubᚗcomᚋtelek
 	return res, nil
 }
 
-func (ec *executionContext) marshalNApiExposureFeature2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐAPIExposureFeatureᚄ(ctx context.Context, sel ast.SelectionSet, v []model1.APIExposureFeature) graphql.Marshaler {
+func (ec *executionContext) marshalNApiExposureFeature2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐAPIExposureFeatureᚄ(ctx context.Context, sel ast.SelectionSet, v []model.APIExposureFeature) graphql.Marshaler {
 	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
 		fc := graphql.GetFieldContext(ctx)
 		fc.Result = &v[i]
@@ -6583,11 +6963,11 @@ func (ec *executionContext) marshalNApiExposureFeature2ᚕgithubᚗcomᚋtelekom
 	return ret
 }
 
-func (ec *executionContext) marshalNApiSubscriptionInfo2ᚕᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐApiSubscriptionInfoᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.ApiSubscriptionInfo) graphql.Marshaler {
+func (ec *executionContext) marshalNApiSubscriptionInfo2ᚕᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐApiSubscriptionInfoᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.ApiSubscriptionInfo) graphql.Marshaler {
 	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
 		fc := graphql.GetFieldContext(ctx)
 		fc.Result = &v[i]
-		return ec.marshalNApiSubscriptionInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐApiSubscriptionInfo(ctx, sel, v[i])
+		return ec.marshalNApiSubscriptionInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐApiSubscriptionInfo(ctx, sel, v[i])
 	})
 
 	for _, e := range ret {
@@ -6599,7 +6979,7 @@ func (ec *executionContext) marshalNApiSubscriptionInfo2ᚕᚖgithubᚗcomᚋtel
 	return ret
 }
 
-func (ec *executionContext) marshalNApiSubscriptionInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐApiSubscriptionInfo(ctx context.Context, sel ast.SelectionSet, v *model.ApiSubscriptionInfo) graphql.Marshaler {
+func (ec *executionContext) marshalNApiSubscriptionInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐApiSubscriptionInfo(ctx context.Context, sel ast.SelectionSet, v *model.ApiSubscriptionInfo) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
@@ -6609,33 +6989,43 @@ func (ec *executionContext) marshalNApiSubscriptionInfo2ᚖgithubᚗcomᚋteleko
 	return ec._ApiSubscriptionInfo(ctx, sel, v)
 }
 
-func (ec *executionContext) unmarshalNApprovalAction2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐApprovalAction(ctx context.Context, v any) (model1.ApprovalAction, error) {
-	var res model1.ApprovalAction
+func (ec *executionContext) marshalNApplicationInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐApplicationInfo(ctx context.Context, sel ast.SelectionSet, v *model.ApplicationInfo) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._ApplicationInfo(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNApprovalAction2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐApprovalAction(ctx context.Context, v any) (model.ApprovalAction, error) {
+	var res model.ApprovalAction
 	err := res.UnmarshalGQL(v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) marshalNApprovalAction2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐApprovalAction(ctx context.Context, sel ast.SelectionSet, v model1.ApprovalAction) graphql.Marshaler {
+func (ec *executionContext) marshalNApprovalAction2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐApprovalAction(ctx context.Context, sel ast.SelectionSet, v model.ApprovalAction) graphql.Marshaler {
 	return v
 }
 
-func (ec *executionContext) marshalNApprovalConfig2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐApprovalConfig(ctx context.Context, sel ast.SelectionSet, v model.ApprovalConfig) graphql.Marshaler {
+func (ec *executionContext) marshalNApprovalConfig2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐApprovalConfig(ctx context.Context, sel ast.SelectionSet, v model1.ApprovalConfig) graphql.Marshaler {
 	return ec._ApprovalConfig(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNAvailableTransition2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐAvailableTransition(ctx context.Context, sel ast.SelectionSet, v model.AvailableTransition) graphql.Marshaler {
+func (ec *executionContext) marshalNAvailableTransition2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐAvailableTransition(ctx context.Context, sel ast.SelectionSet, v model1.AvailableTransition) graphql.Marshaler {
 	return ec._AvailableTransition(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNDeciderInfo2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐDeciderInfo(ctx context.Context, sel ast.SelectionSet, v model.DeciderInfo) graphql.Marshaler {
+func (ec *executionContext) marshalNDeciderInfo2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐDeciderInfo(ctx context.Context, sel ast.SelectionSet, v model1.DeciderInfo) graphql.Marshaler {
 	return ec._DeciderInfo(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNDecision2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐDecision(ctx context.Context, sel ast.SelectionSet, v model.Decision) graphql.Marshaler {
+func (ec *executionContext) marshalNDecision2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐDecision(ctx context.Context, sel ast.SelectionSet, v model1.Decision) graphql.Marshaler {
 	return ec._Decision(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNDecision2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐDecisionᚄ(ctx context.Context, sel ast.SelectionSet, v []model.Decision) graphql.Marshaler {
+func (ec *executionContext) marshalNDecision2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐDecisionᚄ(ctx context.Context, sel ast.SelectionSet, v []model1.Decision) graphql.Marshaler {
 	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
 		fc := graphql.GetFieldContext(ctx)
 		fc.Result = &v[i]
@@ -6651,15 +7041,15 @@ func (ec *executionContext) marshalNDecision2ᚕgithubᚗcomᚋtelekomᚋcontrol
 	return ret
 }
 
-func (ec *executionContext) marshalNEventDelivery2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐEventDelivery(ctx context.Context, sel ast.SelectionSet, v model.EventDelivery) graphql.Marshaler {
+func (ec *executionContext) marshalNEventDelivery2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐEventDelivery(ctx context.Context, sel ast.SelectionSet, v model1.EventDelivery) graphql.Marshaler {
 	return ec._EventDelivery(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNEventSubscriptionInfo2ᚕᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐEventSubscriptionInfoᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.EventSubscriptionInfo) graphql.Marshaler {
+func (ec *executionContext) marshalNEventSubscriptionInfo2ᚕᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐEventSubscriptionInfoᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.EventSubscriptionInfo) graphql.Marshaler {
 	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
 		fc := graphql.GetFieldContext(ctx)
 		fc.Result = &v[i]
-		return ec.marshalNEventSubscriptionInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐEventSubscriptionInfo(ctx, sel, v[i])
+		return ec.marshalNEventSubscriptionInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐEventSubscriptionInfo(ctx, sel, v[i])
 	})
 
 	for _, e := range ret {
@@ -6671,7 +7061,7 @@ func (ec *executionContext) marshalNEventSubscriptionInfo2ᚕᚖgithubᚗcomᚋt
 	return ret
 }
 
-func (ec *executionContext) marshalNEventSubscriptionInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐEventSubscriptionInfo(ctx context.Context, sel ast.SelectionSet, v *model.EventSubscriptionInfo) graphql.Marshaler {
+func (ec *executionContext) marshalNEventSubscriptionInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐEventSubscriptionInfo(ctx context.Context, sel ast.SelectionSet, v *model.EventSubscriptionInfo) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
@@ -6681,37 +7071,37 @@ func (ec *executionContext) marshalNEventSubscriptionInfo2ᚖgithubᚗcomᚋtele
 	return ec._EventSubscriptionInfo(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNEventTrigger2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐEventTrigger(ctx context.Context, sel ast.SelectionSet, v model.EventTrigger) graphql.Marshaler {
+func (ec *executionContext) marshalNEventTrigger2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐEventTrigger(ctx context.Context, sel ast.SelectionSet, v model1.EventTrigger) graphql.Marshaler {
 	return ec._EventTrigger(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNExternalId2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐExternalId(ctx context.Context, sel ast.SelectionSet, v model.ExternalId) graphql.Marshaler {
+func (ec *executionContext) marshalNExternalId2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐExternalId(ctx context.Context, sel ast.SelectionSet, v model1.ExternalId) graphql.Marshaler {
 	return ec._ExternalId(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNLimits2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐLimits(ctx context.Context, sel ast.SelectionSet, v model.Limits) graphql.Marshaler {
+func (ec *executionContext) marshalNLimits2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐLimits(ctx context.Context, sel ast.SelectionSet, v model1.Limits) graphql.Marshaler {
 	return ec._Limits(ctx, sel, &v)
 }
 
-func (ec *executionContext) unmarshalNPayloadType2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐPayloadType(ctx context.Context, v any) (model1.PayloadType, error) {
-	var res model1.PayloadType
+func (ec *executionContext) unmarshalNPayloadType2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐPayloadType(ctx context.Context, v any) (model.PayloadType, error) {
+	var res model.PayloadType
 	err := res.UnmarshalGQL(v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) marshalNPayloadType2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐPayloadType(ctx context.Context, sel ast.SelectionSet, v model1.PayloadType) graphql.Marshaler {
+func (ec *executionContext) marshalNPayloadType2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐPayloadType(ctx context.Context, sel ast.SelectionSet, v model.PayloadType) graphql.Marshaler {
 	return v
 }
 
-func (ec *executionContext) marshalNRateLimitOverrides2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐRateLimitOverrides(ctx context.Context, sel ast.SelectionSet, v model.RateLimitOverrides) graphql.Marshaler {
+func (ec *executionContext) marshalNRateLimitOverrides2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐRateLimitOverrides(ctx context.Context, sel ast.SelectionSet, v model1.RateLimitOverrides) graphql.Marshaler {
 	return ec._RateLimitOverrides(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNRequesterInfo2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐRequesterInfo(ctx context.Context, sel ast.SelectionSet, v model.RequesterInfo) graphql.Marshaler {
+func (ec *executionContext) marshalNRequesterInfo2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐRequesterInfo(ctx context.Context, sel ast.SelectionSet, v model1.RequesterInfo) graphql.Marshaler {
 	return ec._RequesterInfo(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNSubscriptionInfo2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐSubscriptionInfo(ctx context.Context, sel ast.SelectionSet, v model1.SubscriptionInfo) graphql.Marshaler {
+func (ec *executionContext) marshalNSubscriptionInfo2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐSubscriptionInfo(ctx context.Context, sel ast.SelectionSet, v model.SubscriptionInfo) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
@@ -6721,11 +7111,11 @@ func (ec *executionContext) marshalNSubscriptionInfo2githubᚗcomᚋtelekomᚋco
 	return ec._SubscriptionInfo(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNTeamInfo2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐTeamInfo(ctx context.Context, sel ast.SelectionSet, v model.TeamInfo) graphql.Marshaler {
+func (ec *executionContext) marshalNTeamInfo2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐTeamInfo(ctx context.Context, sel ast.SelectionSet, v model1.TeamInfo) graphql.Marshaler {
 	return ec._TeamInfo(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNTeamInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐTeamInfo(ctx context.Context, sel ast.SelectionSet, v *model.TeamInfo) graphql.Marshaler {
+func (ec *executionContext) marshalNTeamInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐTeamInfo(ctx context.Context, sel ast.SelectionSet, v *model1.TeamInfo) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
@@ -6735,11 +7125,11 @@ func (ec *executionContext) marshalNTeamInfo2ᚖgithubᚗcomᚋtelekomᚋcontrol
 	return ec._TeamInfo(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNUpstream2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐUpstream(ctx context.Context, sel ast.SelectionSet, v model.Upstream) graphql.Marshaler {
+func (ec *executionContext) marshalNUpstream2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐUpstream(ctx context.Context, sel ast.SelectionSet, v model1.Upstream) graphql.Marshaler {
 	return ec._Upstream(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNUpstream2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐUpstreamᚄ(ctx context.Context, sel ast.SelectionSet, v []model.Upstream) graphql.Marshaler {
+func (ec *executionContext) marshalNUpstream2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐUpstreamᚄ(ctx context.Context, sel ast.SelectionSet, v []model1.Upstream) graphql.Marshaler {
 	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
 		fc := graphql.GetFieldContext(ctx)
 		fc.Result = &v[i]
@@ -6755,62 +7145,62 @@ func (ec *executionContext) marshalNUpstream2ᚕgithubᚗcomᚋtelekomᚋcontrol
 	return ret
 }
 
-func (ec *executionContext) marshalOAgenticExposureInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐAgenticExposureInfo(ctx context.Context, sel ast.SelectionSet, v *model.AgenticExposureInfo) graphql.Marshaler {
+func (ec *executionContext) marshalOAgenticExposureInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐAgenticExposureInfo(ctx context.Context, sel ast.SelectionSet, v *model.AgenticExposureInfo) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
 	return ec._AgenticExposureInfo(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalOAgenticExposureSecurity2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐAgenticExposureSecurity(ctx context.Context, sel ast.SelectionSet, v model.AgenticExposureSecurity) graphql.Marshaler {
+func (ec *executionContext) marshalOAgenticExposureSecurity2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐAgenticExposureSecurity(ctx context.Context, sel ast.SelectionSet, v model1.AgenticExposureSecurity) graphql.Marshaler {
 	return ec._AgenticExposureSecurity(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalOAgenticSubscriberFailover2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐAgenticSubscriberFailover(ctx context.Context, sel ast.SelectionSet, v *model.AgenticSubscriberFailover) graphql.Marshaler {
+func (ec *executionContext) marshalOAgenticSubscriberFailover2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐAgenticSubscriberFailover(ctx context.Context, sel ast.SelectionSet, v *model1.AgenticSubscriberFailover) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
 	return ec._AgenticSubscriberFailover(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalOAgenticSubscriberTraffic2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐAgenticSubscriberTraffic(ctx context.Context, sel ast.SelectionSet, v model.AgenticSubscriberTraffic) graphql.Marshaler {
+func (ec *executionContext) marshalOAgenticSubscriberTraffic2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐAgenticSubscriberTraffic(ctx context.Context, sel ast.SelectionSet, v model1.AgenticSubscriberTraffic) graphql.Marshaler {
 	return ec._AgenticSubscriberTraffic(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalOAgenticSubscriptionSecurity2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐAgenticSubscriptionSecurity(ctx context.Context, sel ast.SelectionSet, v model.AgenticSubscriptionSecurity) graphql.Marshaler {
+func (ec *executionContext) marshalOAgenticSubscriptionSecurity2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐAgenticSubscriptionSecurity(ctx context.Context, sel ast.SelectionSet, v model1.AgenticSubscriptionSecurity) graphql.Marshaler {
 	return ec._AgenticSubscriptionSecurity(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalOAgenticTransformation2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐAgenticTransformation(ctx context.Context, sel ast.SelectionSet, v model.AgenticTransformation) graphql.Marshaler {
+func (ec *executionContext) marshalOAgenticTransformation2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐAgenticTransformation(ctx context.Context, sel ast.SelectionSet, v model1.AgenticTransformation) graphql.Marshaler {
 	return ec._AgenticTransformation(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalOApiExposureInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐApiExposureInfo(ctx context.Context, sel ast.SelectionSet, v *model.ApiExposureInfo) graphql.Marshaler {
+func (ec *executionContext) marshalOApiExposureInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐApiExposureInfo(ctx context.Context, sel ast.SelectionSet, v *model.ApiExposureInfo) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
 	return ec._ApiExposureInfo(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalOApiExposureSecurity2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐApiExposureSecurity(ctx context.Context, sel ast.SelectionSet, v model.ApiExposureSecurity) graphql.Marshaler {
+func (ec *executionContext) marshalOApiExposureSecurity2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐApiExposureSecurity(ctx context.Context, sel ast.SelectionSet, v model1.ApiExposureSecurity) graphql.Marshaler {
 	return ec._ApiExposureSecurity(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalOApiSubscriptionSecurity2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐApiSubscriptionSecurity(ctx context.Context, sel ast.SelectionSet, v *model.ApiSubscriptionSecurity) graphql.Marshaler {
+func (ec *executionContext) marshalOApiSubscriptionSecurity2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐApiSubscriptionSecurity(ctx context.Context, sel ast.SelectionSet, v *model1.ApiSubscriptionSecurity) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
 	return ec._ApiSubscriptionSecurity(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalOApiSubscriptionTraffic2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐApiSubscriptionTraffic(ctx context.Context, sel ast.SelectionSet, v *model.ApiSubscriptionTraffic) graphql.Marshaler {
+func (ec *executionContext) marshalOApiSubscriptionTraffic2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐApiSubscriptionTraffic(ctx context.Context, sel ast.SelectionSet, v *model1.ApiSubscriptionTraffic) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
 	return ec._ApiSubscriptionTraffic(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalOAvailableTransition2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐAvailableTransitionᚄ(ctx context.Context, sel ast.SelectionSet, v []model.AvailableTransition) graphql.Marshaler {
+func (ec *executionContext) marshalOAvailableTransition2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐAvailableTransitionᚄ(ctx context.Context, sel ast.SelectionSet, v []model1.AvailableTransition) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
@@ -6829,25 +7219,25 @@ func (ec *executionContext) marshalOAvailableTransition2ᚕgithubᚗcomᚋteleko
 	return ret
 }
 
-func (ec *executionContext) marshalOBasicAuthCredentials2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐBasicAuthCredentials(ctx context.Context, sel ast.SelectionSet, v *model.BasicAuthCredentials) graphql.Marshaler {
+func (ec *executionContext) marshalOBasicAuthCredentials2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐBasicAuthCredentials(ctx context.Context, sel ast.SelectionSet, v *model1.BasicAuthCredentials) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
 	return ec._BasicAuthCredentials(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalOEventExposureInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐEventExposureInfo(ctx context.Context, sel ast.SelectionSet, v *model.EventExposureInfo) graphql.Marshaler {
+func (ec *executionContext) marshalOEventExposureInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐEventExposureInfo(ctx context.Context, sel ast.SelectionSet, v *model.EventExposureInfo) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
 	return ec._EventExposureInfo(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalOEventScope2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐEventScope(ctx context.Context, sel ast.SelectionSet, v model.EventScope) graphql.Marshaler {
+func (ec *executionContext) marshalOEventScope2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐEventScope(ctx context.Context, sel ast.SelectionSet, v model1.EventScope) graphql.Marshaler {
 	return ec._EventScope(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalOEventScope2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐEventScope(ctx context.Context, sel ast.SelectionSet, v []model.EventScope) graphql.Marshaler {
+func (ec *executionContext) marshalOEventScope2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐEventScope(ctx context.Context, sel ast.SelectionSet, v []model1.EventScope) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
@@ -6860,14 +7250,14 @@ func (ec *executionContext) marshalOEventScope2ᚕgithubᚗcomᚋtelekomᚋcontr
 	return ret
 }
 
-func (ec *executionContext) marshalOEventTrigger2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐEventTrigger(ctx context.Context, sel ast.SelectionSet, v *model.EventTrigger) graphql.Marshaler {
+func (ec *executionContext) marshalOEventTrigger2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐEventTrigger(ctx context.Context, sel ast.SelectionSet, v *model1.EventTrigger) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
 	return ec._EventTrigger(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalOExternalId2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐExternalIdᚄ(ctx context.Context, sel ast.SelectionSet, v []model.ExternalId) graphql.Marshaler {
+func (ec *executionContext) marshalOExternalId2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐExternalIdᚄ(ctx context.Context, sel ast.SelectionSet, v []model1.ExternalId) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
@@ -6886,32 +7276,32 @@ func (ec *executionContext) marshalOExternalId2ᚕgithubᚗcomᚋtelekomᚋcontr
 	return ret
 }
 
-func (ec *executionContext) marshalOExternalIdentityProvider2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐExternalIdentityProvider(ctx context.Context, sel ast.SelectionSet, v *model.ExternalIdentityProvider) graphql.Marshaler {
+func (ec *executionContext) marshalOExternalIdentityProvider2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐExternalIdentityProvider(ctx context.Context, sel ast.SelectionSet, v *model1.ExternalIdentityProvider) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
 	return ec._ExternalIdentityProvider(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalOFailover2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐFailover(ctx context.Context, sel ast.SelectionSet, v *model.Failover) graphql.Marshaler {
+func (ec *executionContext) marshalOFailover2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐFailover(ctx context.Context, sel ast.SelectionSet, v *model1.Failover) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
 	return ec._Failover(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalOIpRestrictions2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐIpRestrictions(ctx context.Context, sel ast.SelectionSet, v model.IpRestrictions) graphql.Marshaler {
+func (ec *executionContext) marshalOIpRestrictions2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐIpRestrictions(ctx context.Context, sel ast.SelectionSet, v model1.IpRestrictions) graphql.Marshaler {
 	return ec._IpRestrictions(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalOLimits2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐLimits(ctx context.Context, sel ast.SelectionSet, v *model.Limits) graphql.Marshaler {
+func (ec *executionContext) marshalOLimits2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐLimits(ctx context.Context, sel ast.SelectionSet, v *model1.Limits) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
 	return ec._Limits(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalOMachine2MachineAuthentication2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐMachine2MachineAuthentication(ctx context.Context, sel ast.SelectionSet, v *model.Machine2MachineAuthentication) graphql.Marshaler {
+func (ec *executionContext) marshalOMachine2MachineAuthentication2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐMachine2MachineAuthentication(ctx context.Context, sel ast.SelectionSet, v *model1.Machine2MachineAuthentication) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
@@ -6936,18 +7326,18 @@ func (ec *executionContext) marshalOMap2map(ctx context.Context, sel ast.Selecti
 	return res
 }
 
-func (ec *executionContext) marshalOOAuth2ClientCredentials2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐOAuth2ClientCredentials(ctx context.Context, sel ast.SelectionSet, v *model.OAuth2ClientCredentials) graphql.Marshaler {
+func (ec *executionContext) marshalOOAuth2ClientCredentials2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐOAuth2ClientCredentials(ctx context.Context, sel ast.SelectionSet, v *model1.OAuth2ClientCredentials) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
 	return ec._OAuth2ClientCredentials(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalOPermission2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐPermission(ctx context.Context, sel ast.SelectionSet, v model.Permission) graphql.Marshaler {
+func (ec *executionContext) marshalOPermission2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐPermission(ctx context.Context, sel ast.SelectionSet, v model1.Permission) graphql.Marshaler {
 	return ec._Permission(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalOPermission2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐPermission(ctx context.Context, sel ast.SelectionSet, v []model.Permission) graphql.Marshaler {
+func (ec *executionContext) marshalOPermission2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐPermission(ctx context.Context, sel ast.SelectionSet, v []model1.Permission) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
@@ -6960,25 +7350,25 @@ func (ec *executionContext) marshalOPermission2ᚕgithubᚗcomᚋtelekomᚋcontr
 	return ret
 }
 
-func (ec *executionContext) marshalORateLimit2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐRateLimit(ctx context.Context, sel ast.SelectionSet, v *model.RateLimit) graphql.Marshaler {
+func (ec *executionContext) marshalORateLimit2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐRateLimit(ctx context.Context, sel ast.SelectionSet, v *model1.RateLimit) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
 	return ec._RateLimit(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalORateLimitConfig2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐRateLimitConfig(ctx context.Context, sel ast.SelectionSet, v *model.RateLimitConfig) graphql.Marshaler {
+func (ec *executionContext) marshalORateLimitConfig2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐRateLimitConfig(ctx context.Context, sel ast.SelectionSet, v *model1.RateLimitConfig) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
 	return ec._RateLimitConfig(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalORateLimitOptions2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐRateLimitOptions(ctx context.Context, sel ast.SelectionSet, v model.RateLimitOptions) graphql.Marshaler {
+func (ec *executionContext) marshalORateLimitOptions2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐRateLimitOptions(ctx context.Context, sel ast.SelectionSet, v model1.RateLimitOptions) graphql.Marshaler {
 	return ec._RateLimitOptions(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalORateLimitOverrides2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐRateLimitOverridesᚄ(ctx context.Context, sel ast.SelectionSet, v []model.RateLimitOverrides) graphql.Marshaler {
+func (ec *executionContext) marshalORateLimitOverrides2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐRateLimitOverridesᚄ(ctx context.Context, sel ast.SelectionSet, v []model1.RateLimitOverrides) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
@@ -6997,78 +7387,78 @@ func (ec *executionContext) marshalORateLimitOverrides2ᚕgithubᚗcomᚋtelekom
 	return ret
 }
 
-func (ec *executionContext) marshalOResponseFilter2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐResponseFilter(ctx context.Context, sel ast.SelectionSet, v *model.ResponseFilter) graphql.Marshaler {
+func (ec *executionContext) marshalOResponseFilter2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐResponseFilter(ctx context.Context, sel ast.SelectionSet, v *model1.ResponseFilter) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
 	return ec._ResponseFilter(ctx, sel, v)
 }
 
-func (ec *executionContext) unmarshalOResponseFilterMode2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐResponseFilterMode(ctx context.Context, v any) (*model1.ResponseFilterMode, error) {
+func (ec *executionContext) unmarshalOResponseFilterMode2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐResponseFilterMode(ctx context.Context, v any) (*model.ResponseFilterMode, error) {
 	if v == nil {
 		return nil, nil
 	}
-	var res = new(model1.ResponseFilterMode)
+	var res = new(model.ResponseFilterMode)
 	err := res.UnmarshalGQL(v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) marshalOResponseFilterMode2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐResponseFilterMode(ctx context.Context, sel ast.SelectionSet, v *model1.ResponseFilterMode) graphql.Marshaler {
+func (ec *executionContext) marshalOResponseFilterMode2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐResponseFilterMode(ctx context.Context, sel ast.SelectionSet, v *model.ResponseFilterMode) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
 	return v
 }
 
-func (ec *executionContext) marshalOSelectionFilter2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐSelectionFilter(ctx context.Context, sel ast.SelectionSet, v *model.SelectionFilter) graphql.Marshaler {
+func (ec *executionContext) marshalOSelectionFilter2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐSelectionFilter(ctx context.Context, sel ast.SelectionSet, v *model1.SelectionFilter) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
 	return ec._SelectionFilter(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalOSubscriberMachine2MachineAuthentication2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐSubscriberMachine2MachineAuthentication(ctx context.Context, sel ast.SelectionSet, v *model.SubscriberMachine2MachineAuthentication) graphql.Marshaler {
+func (ec *executionContext) marshalOSubscriberMachine2MachineAuthentication2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐSubscriberMachine2MachineAuthentication(ctx context.Context, sel ast.SelectionSet, v *model1.SubscriberMachine2MachineAuthentication) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
 	return ec._SubscriberMachine2MachineAuthentication(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalOSubscriberRateLimitDefaults2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐSubscriberRateLimitDefaults(ctx context.Context, sel ast.SelectionSet, v *model.SubscriberRateLimitDefaults) graphql.Marshaler {
+func (ec *executionContext) marshalOSubscriberRateLimitDefaults2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐSubscriberRateLimitDefaults(ctx context.Context, sel ast.SelectionSet, v *model1.SubscriberRateLimitDefaults) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
 	return ec._SubscriberRateLimitDefaults(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalOSubscriberRateLimits2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐSubscriberRateLimits(ctx context.Context, sel ast.SelectionSet, v *model.SubscriberRateLimits) graphql.Marshaler {
+func (ec *executionContext) marshalOSubscriberRateLimits2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐSubscriberRateLimits(ctx context.Context, sel ast.SelectionSet, v *model1.SubscriberRateLimits) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
 	return ec._SubscriberRateLimits(ctx, sel, v)
 }
 
-func (ec *executionContext) unmarshalOTokenRequestMethod2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐTokenRequestMethod(ctx context.Context, v any) (*model1.TokenRequestMethod, error) {
+func (ec *executionContext) unmarshalOTokenRequestMethod2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐTokenRequestMethod(ctx context.Context, v any) (*model.TokenRequestMethod, error) {
 	if v == nil {
 		return nil, nil
 	}
-	var res = new(model1.TokenRequestMethod)
+	var res = new(model.TokenRequestMethod)
 	err := res.UnmarshalGQL(v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) marshalOTokenRequestMethod2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐTokenRequestMethod(ctx context.Context, sel ast.SelectionSet, v *model1.TokenRequestMethod) graphql.Marshaler {
+func (ec *executionContext) marshalOTokenRequestMethod2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐTokenRequestMethod(ctx context.Context, sel ast.SelectionSet, v *model.TokenRequestMethod) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
 	return v
 }
 
-func (ec *executionContext) marshalOTraffic2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐTraffic(ctx context.Context, sel ast.SelectionSet, v model.Traffic) graphql.Marshaler {
+func (ec *executionContext) marshalOTraffic2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐTraffic(ctx context.Context, sel ast.SelectionSet, v model1.Traffic) graphql.Marshaler {
 	return ec._Traffic(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalOTraffic2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐTraffic(ctx context.Context, sel ast.SelectionSet, v *model.Traffic) graphql.Marshaler {
+func (ec *executionContext) marshalOTraffic2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐTraffic(ctx context.Context, sel ast.SelectionSet, v *model1.Traffic) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}

@@ -109,6 +109,10 @@ func shouldNotifyRequester(approvalRequest *approvalv1.ApprovalRequest) bool {
 }
 
 func handleNotifications(ctx context.Context, approvalReq *approvalv1.ApprovalRequest) error {
+	// Normalise first: the list is a map-typed list keyed on namespace and name,
+	// so objects persisted with duplicates must be healed before the next status write.
+	approvalReq.Status.NotificationRefs = util.DedupRefs(approvalReq.Status.NotificationRefs)
+
 	// no change in status - nothing to notify about
 	if approvalReq.Spec.State == approvalReq.Status.LastState {
 		return nil
@@ -140,7 +144,7 @@ func handleNotifications(ctx context.Context, approvalReq *approvalv1.ApprovalRe
 	if err != nil {
 		return errors.Wrapf(err, "Failed to send notification to decider %q while handling approval request %+v", approvalReq.Spec.Decider.TeamName, approvalReq)
 	}
-	approvalReq.Status.NotificationRefs = append(approvalReq.Status.NotificationRefs, *notificationRef)
+	approvalReq.Status.NotificationRefs = util.AppendUniqueRef(approvalReq.Status.NotificationRefs, *notificationRef)
 
 	// if relevant notify the requester
 	if shouldNotifyRequester(approvalReq) {
@@ -158,7 +162,7 @@ func handleNotifications(ctx context.Context, approvalReq *approvalv1.ApprovalRe
 		if err != nil {
 			return errors.Wrapf(err, "Failed to send notification to requester %q while handling approval request %+v", approvalReq.Spec.Requester.TeamName, approvalReq)
 		}
-		approvalReq.Status.NotificationRefs = append(approvalReq.Status.NotificationRefs, *notificationRef)
+		approvalReq.Status.NotificationRefs = util.AppendUniqueRef(approvalReq.Status.NotificationRefs, *notificationRef)
 	}
 
 	return nil

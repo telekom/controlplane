@@ -26,6 +26,9 @@ spec:
       jsonPath: .spec.strategy
       name: Strategy
       type: string
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
     name: v1
     schema:
       openAPIV3Schema:
@@ -122,8 +125,10 @@ spec:
                 type: object
               decisions:
                 default: []
-                description: Decisions contains information about who or what changed
-                  this approval
+                description: |-
+                  Decisions contains information about who or what changed this approval
+                  Only the most recent MaxDecisions entries are retained; older ones are
+                  dropped by the mutating webhook.
                 items:
                   properties:
                     comment:
@@ -155,6 +160,7 @@ spec:
                   - name
                   - resultingState
                   type: object
+                maxItems: 5
                 type: array
               requester:
                 description: Requester contains the information about the entity that
@@ -364,8 +370,9 @@ spec:
                 - Expired
                 type: string
               notificationRefs:
-                description: NotificationRefs is a reference to the notifications
-                  that were sent for this approval request
+                description: |-
+                  NotificationRefs is a reference to the notifications that were sent for this approval request.
+                  Each notification appears at most once (keyed by namespace and name).
                 items:
                   description: |-
                     ObjectRef is a reference to a Kubernetes object
@@ -386,6 +393,10 @@ spec:
                   - namespace
                   type: object
                 type: array
+                x-kubernetes-list-map-keys:
+                - namespace
+                - name
+                x-kubernetes-list-type: map
             type: object
         type: object
     served: true

@@ -9,10 +9,10 @@ import (
 
 	"github.com/telekom/controlplane/controlplane-api/ent"
 	"github.com/telekom/controlplane/controlplane-api/internal/resolvers"
+	gqlmodel "github.com/telekom/controlplane/controlplane-api/internal/resolvers/model"
 	"github.com/telekom/controlplane/controlplane-api/internal/service"
 	"github.com/telekom/controlplane/controlplane-api/internal/testutil"
 	"github.com/telekom/controlplane/controlplane-api/internal/viewer"
-	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -122,6 +122,7 @@ var _ = Describe("McpServer resolvers", func() {
 		Expect(info.OwnerApplicationName).To(Equal("app-alpha"))
 		Expect(info.OwnerTeam).NotTo(BeNil())
 		Expect(info.OwnerTeam.Name).To(Equal("team-alpha"))
+		expectOwnerApplication(info.OwnerApplication, s.AppAlpha.ID, "app-alpha", "team-alpha", "group-a")
 	})
 
 	It("should return nil when no active exposure exists", func() {
@@ -201,6 +202,7 @@ var _ = Describe("AgenticExposure.Subscriptions resolver (cross-tenant)", func()
 		Expect(subs[0].OwnerApplicationName).To(Equal("app-beta"))
 		Expect(subs[0].OwnerTeam).NotTo(BeNil())
 		Expect(subs[0].OwnerTeam.Name).To(Equal("team-beta"))
+		expectOwnerApplication(subs[0].OwnerApplication, s.AppBeta.ID, "app-beta", "team-beta", "group-b")
 	})
 })
 
@@ -230,6 +232,7 @@ var _ = Describe("AgenticSubscription.Target resolver (cross-tenant)", func() {
 		Expect(info.OwnerApplicationName).To(Equal("app-alpha"))
 		Expect(info.OwnerTeam).NotTo(BeNil())
 		Expect(info.OwnerTeam.Name).To(Equal("team-alpha"))
+		expectOwnerApplication(info.OwnerApplication, s.AppAlpha.ID, "app-alpha", "team-alpha", "group-a")
 	})
 })
 
@@ -255,11 +258,12 @@ var _ = Describe("Approval.AgenticSubscription resolver (cross-tenant)", func() 
 		info, err := r.Approval().Subscription(ctx, s.AgenticApproval)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(info).NotTo(BeNil())
-		agenticInfo, ok := info.(*model.AgenticSubscriptionInfo)
-		Expect(ok).To(BeTrue(), "expected AgenticSubscriptionInfo union member")
+		agenticInfo, ok := info.(*gqlmodel.AgenticSubscriptionInfo)
+		Expect(ok).To(BeTrue(), "expected AgenticSubscriptionInfo implementation")
 		Expect(agenticInfo.BasePath).To(Equal("/mcp-alpha"))
 		Expect(agenticInfo.OwnerApplicationName).To(Equal("app-beta"))
 		Expect(agenticInfo.OwnerTeam.Name).To(Equal("team-beta"))
+		expectOwnerApplication(agenticInfo.OwnerApplication, s.AppBeta.ID, "app-beta", "team-beta", "group-b")
 	})
 })
 
@@ -285,11 +289,12 @@ var _ = Describe("ApprovalRequest.AgenticSubscription resolver (cross-tenant)", 
 		info, err := r.ApprovalRequest().Subscription(ctx, s.AgenticApprovalRequest)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(info).NotTo(BeNil())
-		agenticInfo, ok := info.(*model.AgenticSubscriptionInfo)
-		Expect(ok).To(BeTrue(), "expected AgenticSubscriptionInfo union member")
+		agenticInfo, ok := info.(*gqlmodel.AgenticSubscriptionInfo)
+		Expect(ok).To(BeTrue(), "expected AgenticSubscriptionInfo implementation")
 		Expect(agenticInfo.BasePath).To(Equal("/mcp-alpha"))
 		Expect(agenticInfo.OwnerApplicationName).To(Equal("app-beta"))
 		Expect(agenticInfo.OwnerTeam.Name).To(Equal("team-beta"))
+		expectOwnerApplication(agenticInfo.OwnerApplication, s.AppBeta.ID, "app-beta", "team-beta", "group-b")
 	})
 
 	It("should resolve the approval from an approval request", func() {
@@ -305,13 +310,13 @@ var _ = Describe("AgenticExposureInfo resolvers", func() {
 	r := resolvers.NewResolver(nil, service.Services{}, nil, "")
 
 	It("should convert visibility string to enum", func() {
-		v, err := r.AgenticExposureInfo().Visibility(context.TODO(), &model.AgenticExposureInfo{Visibility: "WORLD"})
+		v, err := r.AgenticExposureInfo().Visibility(context.TODO(), &gqlmodel.AgenticExposureInfo{Visibility: "WORLD"})
 		Expect(err).NotTo(HaveOccurred())
 		Expect(string(v)).To(Equal("WORLD"))
 	})
 
 	It("should convert variant string to enum", func() {
-		v, err := r.AgenticExposureInfo().Variant(context.TODO(), &model.AgenticExposureInfo{Variant: "AGENT"})
+		v, err := r.AgenticExposureInfo().Variant(context.TODO(), &gqlmodel.AgenticExposureInfo{Variant: "AGENT"})
 		Expect(err).NotTo(HaveOccurred())
 		Expect(string(v)).To(Equal("AGENT"))
 	})
@@ -322,14 +327,14 @@ var _ = Describe("AgenticSubscriptionInfo.StatusPhase resolver", func() {
 
 	It("should convert status phase string to enum", func() {
 		sp := "READY"
-		phase, err := r.AgenticSubscriptionInfo().StatusPhase(context.TODO(), &model.AgenticSubscriptionInfo{StatusPhase: &sp})
+		phase, err := r.AgenticSubscriptionInfo().StatusPhase(context.TODO(), &gqlmodel.AgenticSubscriptionInfo{StatusPhase: &sp})
 		Expect(err).NotTo(HaveOccurred())
 		Expect(phase).NotTo(BeNil())
 		Expect(string(*phase)).To(Equal("READY"))
 	})
 
 	It("should return nil for nil status phase", func() {
-		phase, err := r.AgenticSubscriptionInfo().StatusPhase(context.TODO(), &model.AgenticSubscriptionInfo{})
+		phase, err := r.AgenticSubscriptionInfo().StatusPhase(context.TODO(), &gqlmodel.AgenticSubscriptionInfo{})
 		Expect(err).NotTo(HaveOccurred())
 		Expect(phase).To(BeNil())
 	})

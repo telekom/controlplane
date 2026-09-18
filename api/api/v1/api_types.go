@@ -42,7 +42,9 @@ type ApiStatus struct {
 // +kubebuilder:subresource:status
 
 // Api is the Schema for the apis API
+// +kubebuilder:printcolumn:name="Version",type="string",JSONPath=".spec.version",description="The version of the API"
 // +kubebuilder:printcolumn:name="Active",type="boolean",JSONPath=".status.active",description="Indicates if the API is active"
+// +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 type Api struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

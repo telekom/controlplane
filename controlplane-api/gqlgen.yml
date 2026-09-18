@@ -105,6 +105,9 @@ models:
   TeamInfo:
     model:
       - github.com/telekom/controlplane/controlplane-api/pkg/model.TeamInfo
+  ApplicationInfo:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.ApplicationInfo
   Upstream:
     model:
       - github.com/telekom/controlplane/controlplane-api/pkg/model.Upstream
@@ -144,22 +147,22 @@ models:
         resolver: true
   ApiExposureInfo:
     model:
-      - github.com/telekom/controlplane/controlplane-api/pkg/model.ApiExposureInfo
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.ApiExposureInfo
   ApiSubscriptionInfo:
     model:
-      - github.com/telekom/controlplane/controlplane-api/pkg/model.ApiSubscriptionInfo
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.ApiSubscriptionInfo
   EventSubscriptionInfo:
     model:
-      - github.com/telekom/controlplane/controlplane-api/pkg/model.EventSubscriptionInfo
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.EventSubscriptionInfo
   EventExposureInfo:
     model:
-      - github.com/telekom/controlplane/controlplane-api/pkg/model.EventExposureInfo
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.EventExposureInfo
   AgenticExposureInfo:
     model:
-      - github.com/telekom/controlplane/controlplane-api/pkg/model.AgenticExposureInfo
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.AgenticExposureInfo
   AgenticSubscriptionInfo:
     model:
-      - github.com/telekom/controlplane/controlplane-api/pkg/model.AgenticSubscriptionInfo
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.AgenticSubscriptionInfo
   # Security
   ApiExposureSecurity:
     model:

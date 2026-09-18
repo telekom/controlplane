@@ -8,7 +8,9 @@ import (
 	"context"
 
 	"github.com/telekom/controlplane/controlplane-api/ent"
+	"github.com/telekom/controlplane/controlplane-api/ent/zone"
 	"github.com/telekom/controlplane/controlplane-api/internal/resolvers"
+	gqlmodel "github.com/telekom/controlplane/controlplane-api/internal/resolvers/model"
 	"github.com/telekom/controlplane/controlplane-api/internal/service"
 	"github.com/telekom/controlplane/controlplane-api/internal/testutil"
 	"github.com/telekom/controlplane/controlplane-api/internal/viewer"
@@ -17,6 +19,21 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
+
+// expectOwnerApplication asserts the reduced ApplicationInfo view mirrors the
+// deprecated ownerApplicationName/ownerTeam fields and carries the zone.
+func expectOwnerApplication(app *gqlmodel.ApplicationInfo, wantID int, wantName, wantTeam, wantGroup string) {
+	GinkgoHelper()
+	Expect(app).NotTo(BeNil())
+	Expect(app.ID).To(Equal(wantID))
+	Expect(app.Name).To(Equal(wantName))
+	Expect(app.Zone).NotTo(BeNil())
+	Expect(app.Zone.Name).To(Equal("zone-eu"))
+	Expect(app.Zone.Visibility).To(Equal(zone.VisibilityEnterprise))
+	Expect(app.OwnerTeam).NotTo(BeNil())
+	Expect(app.OwnerTeam.Name).To(Equal(wantTeam))
+	Expect(app.OwnerTeam.GroupName).To(Equal(wantGroup))
+}
 
 var _ = Describe("Subscriptions resolver (cross-tenant)", func() {
 	var (
@@ -45,6 +62,7 @@ var _ = Describe("Subscriptions resolver (cross-tenant)", func() {
 		Expect(subs[0].OwnerTeam).NotTo(BeNil())
 		Expect(subs[0].OwnerTeam.Name).To(Equal("team-beta"))
 		Expect(subs[0].OwnerTeam.GroupName).To(Equal("group-b"))
+		expectOwnerApplication(subs[0].OwnerApplication, s.AppBeta.ID, "app-beta", "team-beta", "group-b")
 	})
 
 	It("should return empty list when no subscriptions exist", func() {
@@ -102,6 +120,7 @@ var _ = Describe("Target resolver (cross-tenant)", func() {
 		Expect(info.OwnerTeam).NotTo(BeNil())
 		Expect(info.OwnerTeam.Name).To(Equal("team-alpha"))
 		Expect(info.OwnerTeam.GroupName).To(Equal("group-a"))
+		expectOwnerApplication(info.OwnerApplication, s.AppAlpha.ID, "app-alpha", "team-alpha", "group-a")
 		Expect(info.Traffic.RateLimit.SubscriberRateLimit.Overrides[0].Subscriber).To(Equal("team-beta"))
 		Expect(info.Traffic.RateLimit.SubscriberRateLimit.Overrides[0].Limits.Second).To(Equal(2))
 		Expect(info.Traffic.RateLimit.SubscriberRateLimit.Overrides[0].Limits.Minute).To(Equal(2))
@@ -131,11 +150,12 @@ var _ = Describe("Approval.APISubscription resolver (cross-tenant)", func() {
 		info, err := r.Approval().Subscription(ctx, s.Approval)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(info).NotTo(BeNil())
-		apiInfo, ok := info.(*model.ApiSubscriptionInfo)
-		Expect(ok).To(BeTrue(), "expected ApiSubscriptionInfo union member")
+		apiInfo, ok := info.(*gqlmodel.ApiSubscriptionInfo)
+		Expect(ok).To(BeTrue(), "expected ApiSubscriptionInfo implementation")
 		Expect(apiInfo.BasePath).To(Equal("/alpha"))
 		Expect(apiInfo.OwnerApplicationName).To(Equal("app-beta"))
 		Expect(apiInfo.OwnerTeam.Name).To(Equal("team-beta"))
+		expectOwnerApplication(apiInfo.OwnerApplication, s.AppBeta.ID, "app-beta", "team-beta", "group-b")
 	})
 })
 
@@ -161,11 +181,12 @@ var _ = Describe("ApprovalRequest.APISubscription resolver (cross-tenant)", func
 		info, err := r.ApprovalRequest().Subscription(ctx, s.ApprovalRequest)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(info).NotTo(BeNil())
-		apiInfo, ok := info.(*model.ApiSubscriptionInfo)
-		Expect(ok).To(BeTrue(), "expected ApiSubscriptionInfo union member")
+		apiInfo, ok := info.(*gqlmodel.ApiSubscriptionInfo)
+		Expect(ok).To(BeTrue(), "expected ApiSubscriptionInfo implementation")
 		Expect(apiInfo.BasePath).To(Equal("/alpha"))
 		Expect(apiInfo.OwnerApplicationName).To(Equal("app-beta"))
 		Expect(apiInfo.OwnerTeam.Name).To(Equal("team-beta"))
+		expectOwnerApplication(apiInfo.OwnerApplication, s.AppBeta.ID, "app-beta", "team-beta", "group-b")
 	})
 })
 
@@ -173,13 +194,13 @@ var _ = Describe("ApiExposureInfo resolvers", func() {
 	r := resolvers.NewResolver(nil, service.Services{}, nil, "")
 
 	It("should convert visibility string to enum", func() {
-		v, err := r.ApiExposureInfo().Visibility(context.TODO(), &model.ApiExposureInfo{Visibility: "WORLD"})
+		v, err := r.ApiExposureInfo().Visibility(context.TODO(), &gqlmodel.ApiExposureInfo{Visibility: "WORLD"})
 		Expect(err).NotTo(HaveOccurred())
 		Expect(string(v)).To(Equal("WORLD"))
 	})
 
 	It("should convert feature strings to enum array", func() {
-		features, err := r.ApiExposureInfo().Features(context.TODO(), &model.ApiExposureInfo{
+		features, err := r.ApiExposureInfo().Features(context.TODO(), &gqlmodel.ApiExposureInfo{
 			Features: []string{"BASIC_AUTH", "CIRCUIT_BREAKER"},
 		})
 		Expect(err).NotTo(HaveOccurred())
@@ -189,7 +210,7 @@ var _ = Describe("ApiExposureInfo resolvers", func() {
 	})
 
 	It("should return empty features for nil list", func() {
-		features, err := r.ApiExposureInfo().Features(context.TODO(), &model.ApiExposureInfo{})
+		features, err := r.ApiExposureInfo().Features(context.TODO(), &gqlmodel.ApiExposureInfo{})
 		Expect(err).NotTo(HaveOccurred())
 		Expect(features).To(BeEmpty())
 	})
@@ -222,6 +243,7 @@ var _ = Describe("EventExposure.Subscriptions resolver (cross-tenant)", func() {
 		Expect(subs[0].OwnerTeam).NotTo(BeNil())
 		Expect(subs[0].OwnerTeam.Name).To(Equal("team-beta"))
 		Expect(subs[0].OwnerTeam.GroupName).To(Equal("group-b"))
+		expectOwnerApplication(subs[0].OwnerApplication, s.AppBeta.ID, "app-beta", "team-beta", "group-b")
 	})
 })
 
@@ -252,6 +274,7 @@ var _ = Describe("EventSubscription.Target resolver (cross-tenant)", func() {
 		Expect(info.OwnerTeam).NotTo(BeNil())
 		Expect(info.OwnerTeam.Name).To(Equal("team-alpha"))
 		Expect(info.OwnerTeam.GroupName).To(Equal("group-a"))
+		expectOwnerApplication(info.OwnerApplication, s.AppAlpha.ID, "app-alpha", "team-alpha", "group-a")
 	})
 })
 
@@ -259,7 +282,7 @@ var _ = Describe("EventExposureInfo.Visibility resolver", func() {
 	r := resolvers.NewResolver(nil, service.Services{}, nil, "")
 
 	It("should convert visibility string to enum", func() {
-		v, err := r.EventExposureInfo().Visibility(context.TODO(), &model.EventExposureInfo{Visibility: "WORLD"})
+		v, err := r.EventExposureInfo().Visibility(context.TODO(), &gqlmodel.EventExposureInfo{Visibility: "WORLD"})
 		Expect(err).NotTo(HaveOccurred())
 		Expect(string(v)).To(Equal("WORLD"))
 	})
@@ -270,14 +293,14 @@ var _ = Describe("ApiSubscriptionInfo.StatusPhase resolver", func() {
 
 	It("should convert status phase string to enum", func() {
 		sp := "SUBSCRIBED"
-		phase, err := r.ApiSubscriptionInfo().StatusPhase(context.TODO(), &model.ApiSubscriptionInfo{StatusPhase: &sp})
+		phase, err := r.ApiSubscriptionInfo().StatusPhase(context.TODO(), &gqlmodel.ApiSubscriptionInfo{StatusPhase: &sp})
 		Expect(err).NotTo(HaveOccurred())
 		Expect(phase).NotTo(BeNil())
 		Expect(string(*phase)).To(Equal("SUBSCRIBED"))
 	})
 
 	It("should return nil for nil status phase", func() {
-		phase, err := r.ApiSubscriptionInfo().StatusPhase(context.TODO(), &model.ApiSubscriptionInfo{})
+		phase, err := r.ApiSubscriptionInfo().StatusPhase(context.TODO(), &gqlmodel.ApiSubscriptionInfo{})
 		Expect(err).NotTo(HaveOccurred())
 		Expect(phase).To(BeNil())
 	})
