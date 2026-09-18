@@ -55,7 +55,7 @@ The Approval domain creates Notification resources at key points in the lifecycl
 - **Request created** — Provider team is notified of a new subscription request
 - **State changed** — Both parties are notified when an approval is granted, rejected, or suspended
 
-Notification names are deterministic, so the same notification can be produced by several reconciles. Each Notification is therefore referenced at most once in `status.notificationRefs`.
+Notification names are deterministic, so the same notification can be produced by several reconciles. Each Notification is therefore referenced at most once in `status.notificationRefs`. The field is a map-typed list keyed on `namespace` and `name`, so uniqueness is enforced by the CRD schema; the controllers normalise any duplicates left over from older objects before their next status write.
 
 ## Domain Interactions
 

@@ -164,7 +164,11 @@ For approvals and approval requests, the isolation uses an **OR** rule: a resour
 
 #### Cross-Tenant Safety
 
-When navigating relationships that cross team boundaries (for example, from a subscription to the target exposure owned by another team), the API returns **reduced types** (`TeamInfo`, `ApiExposureInfo`, `ApiSubscriptionInfo`, `AgenticExposureInfo`, `AgenticSubscriptionInfo`) that expose only safe, non-sensitive fields. This prevents data leakage through graph traversal.
+When navigating relationships that cross team boundaries (for example, from a subscription to the target exposure owned by another team), the API returns **reduced types** (`TeamInfo`, `ApplicationInfo`, `ApiExposureInfo`, `ApiSubscriptionInfo`, `EventExposureInfo`, `EventSubscriptionInfo`, `AgenticExposureInfo`, `AgenticSubscriptionInfo`) that expose only safe, non-sensitive fields. This prevents data leakage through graph traversal.
+
+:::note Deprecation
+On the six `*Info` types, `ownerApplicationName` and `ownerTeam` are **deprecated** in favour of the nested `ownerApplication` field. Use `ownerApplication.name` and `ownerApplication.ownerTeam` instead. The deprecated fields are still populated today but will be removed in a future release.
+:::
 
 ### Authentication
 

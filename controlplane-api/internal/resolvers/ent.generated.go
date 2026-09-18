@@ -34,8 +34,8 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/permissionset"
 	"github.com/telekom/controlplane/controlplane-api/ent/team"
 	"github.com/telekom/controlplane/controlplane-api/ent/zone"
-	model1 "github.com/telekom/controlplane/controlplane-api/internal/resolvers/model"
-	"github.com/telekom/controlplane/controlplane-api/pkg/model"
+	"github.com/telekom/controlplane/controlplane-api/internal/resolvers/model"
+	model1 "github.com/telekom/controlplane/controlplane-api/pkg/model"
 	"github.com/vektah/gqlparser/v2/ast"
 )
 
@@ -44,7 +44,7 @@ import (
 type AgentCardResolver interface {
 	SpecificationURL(ctx context.Context, obj *ent.AgentCard) (*string, error)
 	ActiveExposure(ctx context.Context, obj *ent.AgentCard) (*model.AgenticExposureInfo, error)
-	Owner(ctx context.Context, obj *ent.AgentCard) (*model.TeamInfo, error)
+	Owner(ctx context.Context, obj *ent.AgentCard) (*model1.TeamInfo, error)
 }
 type AgenticExposureResolver interface {
 	Subscriptions(ctx context.Context, obj *ent.AgenticExposure) ([]*model.AgenticSubscriptionInfo, error)
@@ -55,10 +55,10 @@ type AgenticSubscriptionResolver interface {
 type ApiResolver interface {
 	SpecificationURL(ctx context.Context, obj *ent.Api) (*string, error)
 	ActiveExposure(ctx context.Context, obj *ent.Api) (*model.ApiExposureInfo, error)
-	Owner(ctx context.Context, obj *ent.Api) (*model.TeamInfo, error)
+	Owner(ctx context.Context, obj *ent.Api) (*model1.TeamInfo, error)
 }
 type ApiExposureResolver interface {
-	Features(ctx context.Context, obj *ent.ApiExposure) ([]model1.APIExposureFeature, error)
+	Features(ctx context.Context, obj *ent.ApiExposure) ([]model.APIExposureFeature, error)
 
 	Subscriptions(ctx context.Context, obj *ent.ApiExposure) ([]*model.ApiSubscriptionInfo, error)
 }
@@ -69,13 +69,13 @@ type ApplicationResolver interface {
 	ClientSecret(ctx context.Context, obj *ent.Application) (*string, error)
 	RotatedClientSecret(ctx context.Context, obj *ent.Application) (*string, error)
 
-	OwnerTeam(ctx context.Context, obj *ent.Application) (*model.TeamInfo, error)
+	OwnerTeam(ctx context.Context, obj *ent.Application) (*model1.TeamInfo, error)
 }
 type ApprovalResolver interface {
-	Subscription(ctx context.Context, obj *ent.Approval) (model1.SubscriptionInfo, error)
+	Subscription(ctx context.Context, obj *ent.Approval) (model.SubscriptionInfo, error)
 }
 type ApprovalRequestResolver interface {
-	Subscription(ctx context.Context, obj *ent.ApprovalRequest) (model1.SubscriptionInfo, error)
+	Subscription(ctx context.Context, obj *ent.ApprovalRequest) (model.SubscriptionInfo, error)
 	Approval(ctx context.Context, obj *ent.ApprovalRequest) (*ent.Approval, error)
 }
 type EventExposureResolver interface {
@@ -87,12 +87,12 @@ type EventSubscriptionResolver interface {
 type EventTypeResolver interface {
 	SpecificationURL(ctx context.Context, obj *ent.EventType) (*string, error)
 	ActiveExposure(ctx context.Context, obj *ent.EventType) (*model.EventExposureInfo, error)
-	Owner(ctx context.Context, obj *ent.EventType) (*model.TeamInfo, error)
+	Owner(ctx context.Context, obj *ent.EventType) (*model1.TeamInfo, error)
 }
 type McpServerResolver interface {
 	SpecificationURL(ctx context.Context, obj *ent.McpServer) (*string, error)
 	ActiveExposure(ctx context.Context, obj *ent.McpServer) (*model.AgenticExposureInfo, error)
-	Owner(ctx context.Context, obj *ent.McpServer) (*model.TeamInfo, error)
+	Owner(ctx context.Context, obj *ent.McpServer) (*model1.TeamInfo, error)
 }
 type QueryResolver interface {
 	Node(ctx context.Context, id int) (ent.Noder, error)
@@ -113,7 +113,7 @@ type QueryResolver interface {
 	PermissionSets(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.PermissionSetOrder, where *ent.PermissionSetWhereInput) (*ent.PermissionSetConnection, error)
 	Teams(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy []*ent.TeamOrder, where *ent.TeamWhereInput) (*ent.TeamConnection, error)
 	Zones(ctx context.Context) ([]*ent.Zone, error)
-	APICategories(ctx context.Context) ([]*model1.APICategory, error)
+	APICategories(ctx context.Context) ([]*model.APICategory, error)
 	Groups(ctx context.Context, where *ent.GroupWhereInput) ([]*ent.Group, error)
 }
 type TeamResolver interface {
@@ -1926,7 +1926,7 @@ func (ec *executionContext) _AgentCard_activeExposure(ctx context.Context, field
 		},
 		nil,
 		func(ctx context.Context, selections ast.SelectionSet, v *model.AgenticExposureInfo) graphql.Marshaler {
-			return ec.marshalOAgenticExposureInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐAgenticExposureInfo(ctx, selections, v)
+			return ec.marshalOAgenticExposureInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐAgenticExposureInfo(ctx, selections, v)
 		},
 		true,
 		false,
@@ -1957,7 +1957,7 @@ func (ec *executionContext) _AgentCard_owner(ctx context.Context, field graphql.
 			return ec.Resolvers.AgentCard().Owner(ctx, obj)
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v *model.TeamInfo) graphql.Marshaler {
+		func(ctx context.Context, selections ast.SelectionSet, v *model1.TeamInfo) graphql.Marshaler {
 			return ec.marshalNTeamInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐTeamInfo(ctx, selections, v)
 		},
 		true,
@@ -2384,7 +2384,7 @@ func (ec *executionContext) _AgenticExposure_upstreams(ctx context.Context, fiel
 			return obj.Upstreams, nil
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v []model.Upstream) graphql.Marshaler {
+		func(ctx context.Context, selections ast.SelectionSet, v []model1.Upstream) graphql.Marshaler {
 			return ec.marshalNUpstream2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐUpstreamᚄ(ctx, selections, v)
 		},
 		true,
@@ -2416,7 +2416,7 @@ func (ec *executionContext) _AgenticExposure_approvalConfig(ctx context.Context,
 			return obj.ApprovalConfig, nil
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v model.ApprovalConfig) graphql.Marshaler {
+		func(ctx context.Context, selections ast.SelectionSet, v model1.ApprovalConfig) graphql.Marshaler {
 			return ec.marshalNApprovalConfig2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐApprovalConfig(ctx, selections, v)
 		},
 		true,
@@ -2448,7 +2448,7 @@ func (ec *executionContext) _AgenticExposure_security(ctx context.Context, field
 			return obj.Security, nil
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v model.AgenticExposureSecurity) graphql.Marshaler {
+		func(ctx context.Context, selections ast.SelectionSet, v model1.AgenticExposureSecurity) graphql.Marshaler {
 			return ec.marshalOAgenticExposureSecurity2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐAgenticExposureSecurity(ctx, selections, v)
 		},
 		true,
@@ -2480,7 +2480,7 @@ func (ec *executionContext) _AgenticExposure_traffic(ctx context.Context, field 
 			return obj.Traffic, nil
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v model.Traffic) graphql.Marshaler {
+		func(ctx context.Context, selections ast.SelectionSet, v model1.Traffic) graphql.Marshaler {
 			return ec.marshalOTraffic2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐTraffic(ctx, selections, v)
 		},
 		true,
@@ -2512,7 +2512,7 @@ func (ec *executionContext) _AgenticExposure_transformation(ctx context.Context,
 			return obj.Transformation, nil
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v model.AgenticTransformation) graphql.Marshaler {
+		func(ctx context.Context, selections ast.SelectionSet, v model1.AgenticTransformation) graphql.Marshaler {
 			return ec.marshalOAgenticTransformation2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐAgenticTransformation(ctx, selections, v)
 		},
 		true,
@@ -2641,7 +2641,7 @@ func (ec *executionContext) _AgenticExposure_subscriptions(ctx context.Context, 
 		},
 		nil,
 		func(ctx context.Context, selections ast.SelectionSet, v []*model.AgenticSubscriptionInfo) graphql.Marshaler {
-			return ec.marshalNAgenticSubscriptionInfo2ᚕᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐAgenticSubscriptionInfoᚄ(ctx, selections, v)
+			return ec.marshalNAgenticSubscriptionInfo2ᚕᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐAgenticSubscriptionInfoᚄ(ctx, selections, v)
 		},
 		true,
 		true,
@@ -3021,7 +3021,7 @@ func (ec *executionContext) _AgenticSubscription_security(ctx context.Context, f
 			return obj.Security, nil
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v model.AgenticSubscriptionSecurity) graphql.Marshaler {
+		func(ctx context.Context, selections ast.SelectionSet, v model1.AgenticSubscriptionSecurity) graphql.Marshaler {
 			return ec.marshalOAgenticSubscriptionSecurity2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐAgenticSubscriptionSecurity(ctx, selections, v)
 		},
 		true,
@@ -3053,7 +3053,7 @@ func (ec *executionContext) _AgenticSubscription_traffic(ctx context.Context, fi
 			return obj.Traffic, nil
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v model.AgenticSubscriberTraffic) graphql.Marshaler {
+		func(ctx context.Context, selections ast.SelectionSet, v model1.AgenticSubscriberTraffic) graphql.Marshaler {
 			return ec.marshalOAgenticSubscriberTraffic2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐAgenticSubscriberTraffic(ctx, selections, v)
 		},
 		true,
@@ -3182,7 +3182,7 @@ func (ec *executionContext) _AgenticSubscription_target(ctx context.Context, fie
 		},
 		nil,
 		func(ctx context.Context, selections ast.SelectionSet, v *model.AgenticExposureInfo) graphql.Marshaler {
-			return ec.marshalOAgenticExposureInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐAgenticExposureInfo(ctx, selections, v)
+			return ec.marshalOAgenticExposureInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐAgenticExposureInfo(ctx, selections, v)
 		},
 		true,
 		false,
@@ -3655,7 +3655,7 @@ func (ec *executionContext) _Api_activeExposure(ctx context.Context, field graph
 		},
 		nil,
 		func(ctx context.Context, selections ast.SelectionSet, v *model.ApiExposureInfo) graphql.Marshaler {
-			return ec.marshalOApiExposureInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐApiExposureInfo(ctx, selections, v)
+			return ec.marshalOApiExposureInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐApiExposureInfo(ctx, selections, v)
 		},
 		true,
 		false,
@@ -3686,7 +3686,7 @@ func (ec *executionContext) _Api_owner(ctx context.Context, field graphql.Collec
 			return ec.Resolvers.Api().Owner(ctx, obj)
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v *model.TeamInfo) graphql.Marshaler {
+		func(ctx context.Context, selections ast.SelectionSet, v *model1.TeamInfo) graphql.Marshaler {
 			return ec.marshalNTeamInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐTeamInfo(ctx, selections, v)
 		},
 		true,
@@ -4090,7 +4090,7 @@ func (ec *executionContext) _ApiExposure_features(ctx context.Context, field gra
 			return ec.Resolvers.ApiExposure().Features(ctx, obj)
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v []model1.APIExposureFeature) graphql.Marshaler {
+		func(ctx context.Context, selections ast.SelectionSet, v []model.APIExposureFeature) graphql.Marshaler {
 			return ec.marshalNApiExposureFeature2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐAPIExposureFeatureᚄ(ctx, selections, v)
 		},
 		true,
@@ -4113,7 +4113,7 @@ func (ec *executionContext) _ApiExposure_upstreams(ctx context.Context, field gr
 			return obj.Upstreams, nil
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v []model.Upstream) graphql.Marshaler {
+		func(ctx context.Context, selections ast.SelectionSet, v []model1.Upstream) graphql.Marshaler {
 			return ec.marshalNUpstream2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐUpstreamᚄ(ctx, selections, v)
 		},
 		true,
@@ -4145,7 +4145,7 @@ func (ec *executionContext) _ApiExposure_security(ctx context.Context, field gra
 			return obj.Security, nil
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v model.ApiExposureSecurity) graphql.Marshaler {
+		func(ctx context.Context, selections ast.SelectionSet, v model1.ApiExposureSecurity) graphql.Marshaler {
 			return ec.marshalOApiExposureSecurity2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐApiExposureSecurity(ctx, selections, v)
 		},
 		true,
@@ -4177,7 +4177,7 @@ func (ec *executionContext) _ApiExposure_traffic(ctx context.Context, field grap
 			return obj.Traffic, nil
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v model.Traffic) graphql.Marshaler {
+		func(ctx context.Context, selections ast.SelectionSet, v model1.Traffic) graphql.Marshaler {
 			return ec.marshalOTraffic2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐTraffic(ctx, selections, v)
 		},
 		true,
@@ -4209,7 +4209,7 @@ func (ec *executionContext) _ApiExposure_approvalConfig(ctx context.Context, fie
 			return obj.ApprovalConfig, nil
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v model.ApprovalConfig) graphql.Marshaler {
+		func(ctx context.Context, selections ast.SelectionSet, v model1.ApprovalConfig) graphql.Marshaler {
 			return ec.marshalNApprovalConfig2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐApprovalConfig(ctx, selections, v)
 		},
 		true,
@@ -4329,7 +4329,7 @@ func (ec *executionContext) _ApiExposure_subscriptions(ctx context.Context, fiel
 		},
 		nil,
 		func(ctx context.Context, selections ast.SelectionSet, v []*model.ApiSubscriptionInfo) graphql.Marshaler {
-			return ec.marshalNApiSubscriptionInfo2ᚕᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐApiSubscriptionInfoᚄ(ctx, selections, v)
+			return ec.marshalNApiSubscriptionInfo2ᚕᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐApiSubscriptionInfoᚄ(ctx, selections, v)
 		},
 		true,
 		true,
@@ -4755,7 +4755,7 @@ func (ec *executionContext) _ApiSubscription_security(ctx context.Context, field
 			return obj.Security, nil
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v *model.ApiSubscriptionSecurity) graphql.Marshaler {
+		func(ctx context.Context, selections ast.SelectionSet, v *model1.ApiSubscriptionSecurity) graphql.Marshaler {
 			return ec.marshalOApiSubscriptionSecurity2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐApiSubscriptionSecurity(ctx, selections, v)
 		},
 		true,
@@ -4787,7 +4787,7 @@ func (ec *executionContext) _ApiSubscription_traffic(ctx context.Context, field 
 			return obj.Traffic, nil
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v *model.ApiSubscriptionTraffic) graphql.Marshaler {
+		func(ctx context.Context, selections ast.SelectionSet, v *model1.ApiSubscriptionTraffic) graphql.Marshaler {
 			return ec.marshalOApiSubscriptionTraffic2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐApiSubscriptionTraffic(ctx, selections, v)
 		},
 		true,
@@ -4948,7 +4948,7 @@ func (ec *executionContext) _ApiSubscription_target(ctx context.Context, field g
 		},
 		nil,
 		func(ctx context.Context, selections ast.SelectionSet, v *model.ApiExposureInfo) graphql.Marshaler {
-			return ec.marshalOApiExposureInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐApiExposureInfo(ctx, selections, v)
+			return ec.marshalOApiExposureInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐApiExposureInfo(ctx, selections, v)
 		},
 		true,
 		false,
@@ -5466,7 +5466,7 @@ func (ec *executionContext) _Application_externalIds(ctx context.Context, field 
 			return obj.ExternalIds, nil
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v []model.ExternalId) graphql.Marshaler {
+		func(ctx context.Context, selections ast.SelectionSet, v []model1.ExternalId) graphql.Marshaler {
 			return ec.marshalOExternalId2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐExternalIdᚄ(ctx, selections, v)
 		},
 		true,
@@ -5498,7 +5498,7 @@ func (ec *executionContext) _Application_ipRestrictions(ctx context.Context, fie
 			return obj.IPRestrictions, nil
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v model.IpRestrictions) graphql.Marshaler {
+		func(ctx context.Context, selections ast.SelectionSet, v model1.IpRestrictions) graphql.Marshaler {
 			return ec.marshalOIpRestrictions2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐIpRestrictions(ctx, selections, v)
 		},
 		true,
@@ -5881,7 +5881,7 @@ func (ec *executionContext) _Application_ownerTeam(ctx context.Context, field gr
 			return ec.Resolvers.Application().OwnerTeam(ctx, obj)
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v *model.TeamInfo) graphql.Marshaler {
+		func(ctx context.Context, selections ast.SelectionSet, v *model1.TeamInfo) graphql.Marshaler {
 			return ec.marshalNTeamInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐTeamInfo(ctx, selections, v)
 		},
 		true,
@@ -6262,7 +6262,7 @@ func (ec *executionContext) _Approval_requester(ctx context.Context, field graph
 			return obj.Requester, nil
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v model.RequesterInfo) graphql.Marshaler {
+		func(ctx context.Context, selections ast.SelectionSet, v model1.RequesterInfo) graphql.Marshaler {
 			return ec.marshalNRequesterInfo2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐRequesterInfo(ctx, selections, v)
 		},
 		true,
@@ -6294,7 +6294,7 @@ func (ec *executionContext) _Approval_decider(ctx context.Context, field graphql
 			return obj.Decider, nil
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v model.DeciderInfo) graphql.Marshaler {
+		func(ctx context.Context, selections ast.SelectionSet, v model1.DeciderInfo) graphql.Marshaler {
 			return ec.marshalNDeciderInfo2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐDeciderInfo(ctx, selections, v)
 		},
 		true,
@@ -6349,7 +6349,7 @@ func (ec *executionContext) _Approval_decisions(ctx context.Context, field graph
 			return obj.Decisions, nil
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v []model.Decision) graphql.Marshaler {
+		func(ctx context.Context, selections ast.SelectionSet, v []model1.Decision) graphql.Marshaler {
 			return ec.marshalNDecision2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐDecisionᚄ(ctx, selections, v)
 		},
 		true,
@@ -6381,7 +6381,7 @@ func (ec *executionContext) _Approval_availableTransitions(ctx context.Context, 
 			return obj.AvailableTransitions, nil
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v []model.AvailableTransition) graphql.Marshaler {
+		func(ctx context.Context, selections ast.SelectionSet, v []model1.AvailableTransition) graphql.Marshaler {
 			return ec.marshalOAvailableTransition2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐAvailableTransitionᚄ(ctx, selections, v)
 		},
 		true,
@@ -6505,7 +6505,7 @@ func (ec *executionContext) _Approval_subscription(ctx context.Context, field gr
 			return ec.Resolvers.Approval().Subscription(ctx, obj)
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v model1.SubscriptionInfo) graphql.Marshaler {
+		func(ctx context.Context, selections ast.SelectionSet, v model.SubscriptionInfo) graphql.Marshaler {
 			return ec.marshalNSubscriptionInfo2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐSubscriptionInfo(ctx, selections, v)
 		},
 		true,
@@ -6877,7 +6877,7 @@ func (ec *executionContext) _ApprovalRequest_requester(ctx context.Context, fiel
 			return obj.Requester, nil
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v model.RequesterInfo) graphql.Marshaler {
+		func(ctx context.Context, selections ast.SelectionSet, v model1.RequesterInfo) graphql.Marshaler {
 			return ec.marshalNRequesterInfo2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐRequesterInfo(ctx, selections, v)
 		},
 		true,
@@ -6909,7 +6909,7 @@ func (ec *executionContext) _ApprovalRequest_decider(ctx context.Context, field 
 			return obj.Decider, nil
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v model.DeciderInfo) graphql.Marshaler {
+		func(ctx context.Context, selections ast.SelectionSet, v model1.DeciderInfo) graphql.Marshaler {
 			return ec.marshalNDeciderInfo2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐDeciderInfo(ctx, selections, v)
 		},
 		true,
@@ -6964,7 +6964,7 @@ func (ec *executionContext) _ApprovalRequest_decisions(ctx context.Context, fiel
 			return obj.Decisions, nil
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v []model.Decision) graphql.Marshaler {
+		func(ctx context.Context, selections ast.SelectionSet, v []model1.Decision) graphql.Marshaler {
 			return ec.marshalNDecision2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐDecisionᚄ(ctx, selections, v)
 		},
 		true,
@@ -6996,7 +6996,7 @@ func (ec *executionContext) _ApprovalRequest_availableTransitions(ctx context.Co
 			return obj.AvailableTransitions, nil
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v []model.AvailableTransition) graphql.Marshaler {
+		func(ctx context.Context, selections ast.SelectionSet, v []model1.AvailableTransition) graphql.Marshaler {
 			return ec.marshalOAvailableTransition2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐAvailableTransitionᚄ(ctx, selections, v)
 		},
 		true,
@@ -7097,7 +7097,7 @@ func (ec *executionContext) _ApprovalRequest_subscription(ctx context.Context, f
 			return ec.Resolvers.ApprovalRequest().Subscription(ctx, obj)
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v model1.SubscriptionInfo) graphql.Marshaler {
+		func(ctx context.Context, selections ast.SelectionSet, v model.SubscriptionInfo) graphql.Marshaler {
 			return ec.marshalNSubscriptionInfo2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐSubscriptionInfo(ctx, selections, v)
 		},
 		true,
@@ -7524,7 +7524,7 @@ func (ec *executionContext) _EventExposure_eventScopes(ctx context.Context, fiel
 			return obj.EventScopes, nil
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v []model.EventScope) graphql.Marshaler {
+		func(ctx context.Context, selections ast.SelectionSet, v []model1.EventScope) graphql.Marshaler {
 			return ec.marshalOEventScope2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐEventScope(ctx, selections, v)
 		},
 		true,
@@ -7579,7 +7579,7 @@ func (ec *executionContext) _EventExposure_approvalConfig(ctx context.Context, f
 			return obj.ApprovalConfig, nil
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v model.ApprovalConfig) graphql.Marshaler {
+		func(ctx context.Context, selections ast.SelectionSet, v model1.ApprovalConfig) graphql.Marshaler {
 			return ec.marshalNApprovalConfig2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐApprovalConfig(ctx, selections, v)
 		},
 		true,
@@ -7676,7 +7676,7 @@ func (ec *executionContext) _EventExposure_subscriptions(ctx context.Context, fi
 		},
 		nil,
 		func(ctx context.Context, selections ast.SelectionSet, v []*model.EventSubscriptionInfo) graphql.Marshaler {
-			return ec.marshalNEventSubscriptionInfo2ᚕᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐEventSubscriptionInfoᚄ(ctx, selections, v)
+			return ec.marshalNEventSubscriptionInfo2ᚕᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐEventSubscriptionInfoᚄ(ctx, selections, v)
 		},
 		true,
 		true,
@@ -8079,7 +8079,7 @@ func (ec *executionContext) _EventSubscription_trigger(ctx context.Context, fiel
 			return obj.Trigger, nil
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v *model.EventTrigger) graphql.Marshaler {
+		func(ctx context.Context, selections ast.SelectionSet, v *model1.EventTrigger) graphql.Marshaler {
 			return ec.marshalOEventTrigger2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐEventTrigger(ctx, selections, v)
 		},
 		true,
@@ -8111,7 +8111,7 @@ func (ec *executionContext) _EventSubscription_delivery(ctx context.Context, fie
 			return obj.Delivery, nil
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v model.EventDelivery) graphql.Marshaler {
+		func(ctx context.Context, selections ast.SelectionSet, v model1.EventDelivery) graphql.Marshaler {
 			return ec.marshalNEventDelivery2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐEventDelivery(ctx, selections, v)
 		},
 		true,
@@ -8309,7 +8309,7 @@ func (ec *executionContext) _EventSubscription_target(ctx context.Context, field
 		},
 		nil,
 		func(ctx context.Context, selections ast.SelectionSet, v *model.EventExposureInfo) graphql.Marshaler {
-			return ec.marshalOEventExposureInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐEventExposureInfo(ctx, selections, v)
+			return ec.marshalOEventExposureInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐEventExposureInfo(ctx, selections, v)
 		},
 		true,
 		false,
@@ -8736,7 +8736,7 @@ func (ec *executionContext) _EventType_activeExposure(ctx context.Context, field
 		},
 		nil,
 		func(ctx context.Context, selections ast.SelectionSet, v *model.EventExposureInfo) graphql.Marshaler {
-			return ec.marshalOEventExposureInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐEventExposureInfo(ctx, selections, v)
+			return ec.marshalOEventExposureInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐEventExposureInfo(ctx, selections, v)
 		},
 		true,
 		false,
@@ -8767,7 +8767,7 @@ func (ec *executionContext) _EventType_owner(ctx context.Context, field graphql.
 			return ec.Resolvers.EventType().Owner(ctx, obj)
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v *model.TeamInfo) graphql.Marshaler {
+		func(ctx context.Context, selections ast.SelectionSet, v *model1.TeamInfo) graphql.Marshaler {
 			return ec.marshalNTeamInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐTeamInfo(ctx, selections, v)
 		},
 		true,
@@ -9434,7 +9434,7 @@ func (ec *executionContext) _McpServer_activeExposure(ctx context.Context, field
 		},
 		nil,
 		func(ctx context.Context, selections ast.SelectionSet, v *model.AgenticExposureInfo) graphql.Marshaler {
-			return ec.marshalOAgenticExposureInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐAgenticExposureInfo(ctx, selections, v)
+			return ec.marshalOAgenticExposureInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐAgenticExposureInfo(ctx, selections, v)
 		},
 		true,
 		false,
@@ -9465,7 +9465,7 @@ func (ec *executionContext) _McpServer_owner(ctx context.Context, field graphql.
 			return ec.Resolvers.McpServer().Owner(ctx, obj)
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v *model.TeamInfo) graphql.Marshaler {
+		func(ctx context.Context, selections ast.SelectionSet, v *model1.TeamInfo) graphql.Marshaler {
 			return ec.marshalNTeamInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐTeamInfo(ctx, selections, v)
 		},
 		true,
@@ -10016,7 +10016,7 @@ func (ec *executionContext) _PermissionSet_permissions(ctx context.Context, fiel
 			return obj.Permissions, nil
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v []model.Permission) graphql.Marshaler {
+		func(ctx context.Context, selections ast.SelectionSet, v []model1.Permission) graphql.Marshaler {
 			return ec.marshalOPermission2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐPermission(ctx, selections, v)
 		},
 		true,
@@ -10970,7 +10970,7 @@ func (ec *executionContext) _Query_apiCategories(ctx context.Context, field grap
 			return ec.Resolvers.Query().APICategories(ctx)
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v []*model1.APICategory) graphql.Marshaler {
+		func(ctx context.Context, selections ast.SelectionSet, v []*model.APICategory) graphql.Marshaler {
 			return ec.marshalNApiCategory2ᚕᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐAPICategoryᚄ(ctx, selections, v)
 		},
 		true,
