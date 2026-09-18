@@ -35,12 +35,14 @@ For a more detailed view of the internal workings of the Horizon components, ple
 
 ## Usage
 
-This domain is fully configured through the Event Domain, which means that users do not interact with the PubSub Domain directly. 
-Instead, they create `EventExposure` and `EventSubscription` resources in the Event Domain, which then creates the necessary resources in the PubSub Domain.
-The PubSub Domain then interacts with the Horizon runtime component to create the necessary topics and subscriptions based on the configurations set in the Event Domain.
+This domain is configured through the Event and Spectre domains — users do not interact with PubSub resources directly.
+The Event domain creates Publishers (via EventExposure) and Subscribers (via EventSubscription).
+The Spectre domain creates Publishers (via SpectreApplication) and Subscribers (via Listener).
+EventStore is created exclusively by EventConfig; Spectre reads it but does not own it.
 
 ## References
 
 - Runtime Component: [Horizon Documentation](https://github.com/telekom/pubsub-horizon)
-- Parent Domain which does most of the heavy lifting: [Event Domain](../event/README.md)
+- Event Domain: [Event Documentation](../event/README.md)
+- Spectre Domain: [Spectre Documentation](../spectre/README.md)
 

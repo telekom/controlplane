@@ -80,6 +80,52 @@ func (_c *MockFeaturesBuilder_AclPlugin_Call) RunAndReturn(run func() *plugin.Ac
 	return _c
 }
 
+// AddRouteListeners provides a mock function with given fields: _a0
+func (_m *MockFeaturesBuilder) AddRouteListeners(_a0 ...*v1.RouteListener) {
+	_va := make([]interface{}, len(_a0))
+	for _i := range _a0 {
+		_va[_i] = _a0[_i]
+	}
+	var _ca []interface{}
+	_ca = append(_ca, _va...)
+	_m.Called(_ca...)
+}
+
+// MockFeaturesBuilder_AddRouteListeners_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'AddRouteListeners'
+type MockFeaturesBuilder_AddRouteListeners_Call struct {
+	*mock.Call
+}
+
+// AddRouteListeners is a helper method to define mock.On call
+//   - _a0 ...*v1.RouteListener
+func (_e *MockFeaturesBuilder_Expecter) AddRouteListeners(_a0 ...interface{}) *MockFeaturesBuilder_AddRouteListeners_Call {
+	return &MockFeaturesBuilder_AddRouteListeners_Call{Call: _e.mock.On("AddRouteListeners",
+		append([]interface{}{}, _a0...)...)}
+}
+
+func (_c *MockFeaturesBuilder_AddRouteListeners_Call) Run(run func(_a0 ...*v1.RouteListener)) *MockFeaturesBuilder_AddRouteListeners_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		variadicArgs := make([]*v1.RouteListener, len(args)-0)
+		for i, a := range args[0:] {
+			if a != nil {
+				variadicArgs[i] = a.(*v1.RouteListener)
+			}
+		}
+		run(variadicArgs...)
+	})
+	return _c
+}
+
+func (_c *MockFeaturesBuilder_AddRouteListeners_Call) Return() *MockFeaturesBuilder_AddRouteListeners_Call {
+	_c.Call.Return()
+	return _c
+}
+
+func (_c *MockFeaturesBuilder_AddRouteListeners_Call) RunAndReturn(run func(...*v1.RouteListener)) *MockFeaturesBuilder_AddRouteListeners_Call {
+	_c.Run(run)
+	return _c
+}
+
 // AddAllowedConsumers provides a mock function with given fields: _a0
 func (_m *MockFeaturesBuilder) AddAllowedConsumers(_a0 ...*v1.ConsumeRoute) {
 	_va := make([]interface{}, len(_a0))
@@ -445,6 +491,53 @@ func (_c *MockFeaturesBuilder_GetKongClient_Call) Return(_a0 client.KongClient) 
 }
 
 func (_c *MockFeaturesBuilder_GetKongClient_Call) RunAndReturn(run func() client.KongClient) *MockFeaturesBuilder_GetKongClient_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// GetRouteListeners provides a mock function with no fields
+func (_m *MockFeaturesBuilder) GetRouteListeners() []*v1.RouteListener {
+	ret := _m.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetRouteListeners")
+	}
+
+	var r0 []*v1.RouteListener
+	if rf, ok := ret.Get(0).(func() []*v1.RouteListener); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]*v1.RouteListener)
+		}
+	}
+
+	return r0
+}
+
+// MockFeaturesBuilder_GetRouteListeners_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetRouteListeners'
+type MockFeaturesBuilder_GetRouteListeners_Call struct {
+	*mock.Call
+}
+
+// GetRouteListeners is a helper method to define mock.On call
+func (_e *MockFeaturesBuilder_Expecter) GetRouteListeners() *MockFeaturesBuilder_GetRouteListeners_Call {
+	return &MockFeaturesBuilder_GetRouteListeners_Call{Call: _e.mock.On("GetRouteListeners")}
+}
+
+func (_c *MockFeaturesBuilder_GetRouteListeners_Call) Run(run func()) *MockFeaturesBuilder_GetRouteListeners_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *MockFeaturesBuilder_GetRouteListeners_Call) Return(_a0 []*v1.RouteListener) *MockFeaturesBuilder_GetRouteListeners_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *MockFeaturesBuilder_GetRouteListeners_Call) RunAndReturn(run func() []*v1.RouteListener) *MockFeaturesBuilder_GetRouteListeners_Call {
 	_c.Call.Return(run)
 	return _c
 }

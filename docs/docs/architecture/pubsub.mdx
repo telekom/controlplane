@@ -5,7 +5,7 @@ sidebar_position: 12
 # PubSub Domain
 
 :::info Optional Feature
-The PubSub domain is part of the optional Event feature. It is managed exclusively by the Event domain — users do not interact with PubSub resources directly.
+The PubSub domain is part of the optional Event feature. It is managed by the Event and Spectre domains — users do not interact with PubSub resources directly.
 :::
 
 The PubSub domain provides the runtime configuration layer for publish/subscribe messaging. It acts as a thin bridge between the Control Plane and the **Horizon** runtime component, translating Kubernetes custom resources into REST API calls that configure the external messaging system.
@@ -29,11 +29,16 @@ EventStore  ◀── Publisher  ◀── Subscriber
 
 ## Domain Interactions
 
-- **Event domain** — All PubSub resources are created and owned by the Event domain:
+- **Event domain** — Creates PubSub resources as part of the event publishing/subscribing lifecycle:
   - EventConfig → EventStore
   - EventExposure → Publisher
   - EventSubscription → Subscriber
+- **Spectre domain** — Creates PubSub resources for application listeners:
+  - SpectreApplication → Publisher
+  - Listener → Subscriber
 - **Horizon (external)** — The Subscriber controller makes REST API calls to the Horizon Configuration Backend to register and deregister subscriptions.
+
+EventStore is created exclusively by EventConfig. Spectre reads it but does not own or modify it.
 
 :::note
 The PubSub domain is intentionally self-contained. It does not import API types from other Control Plane domains, making it possible to replace the Horizon runtime with a different messaging backend in the future.
@@ -42,5 +47,6 @@ The PubSub domain is intentionally self-contained. It does not import API types 
 ## Related Pages
 
 - [Architecture: Event Domain](./event.mdx)
+- [Architecture: Spectre Domain](./spectre.mdx)
 - [User Journey: Exposing Events](../user-journey/exposing-events.mdx)
 - [User Journey: Subscribing to Events](../user-journey/subscribing-to-events.mdx)

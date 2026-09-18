@@ -50,6 +50,7 @@ var (
 	FeatureFileManager   Feature = NewFeature("file_manager", true)   // File Manager feature enabled by default
 	FeatureAiGateway     Feature = NewFeature("ai_gateway", false)    // AI Gateway (MCP) feature disabled by default
 	FeatureFile          Feature = NewFeature("file", false)          // File feature disabled by default
+	FeatureSpectre       Feature = NewFeature("spectre", false)       // Spectre listener feature disabled by default
 )
 
 // SetFeatureEnabled sets the enabled state for a feature. Intended for tests.
