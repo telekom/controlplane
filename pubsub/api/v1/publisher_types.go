@@ -13,7 +13,8 @@ import (
 
 // PublisherSpec defines the desired state of Publisher.
 // Publisher represents a registered event publisher in the configuration backend.
-// It is created by the EventExposure handler in the event domain.
+// It is created by the EventExposure handler in the event domain or by the
+// SpectreApplication handler in the spectre domain.
 type PublisherSpec struct {
 	// EventStore references the EventStore CR that provides configuration connection details.
 	EventStore ctypes.ObjectRef `json:"eventStore"`
@@ -54,7 +55,8 @@ type PublisherStatus struct {
 
 // Publisher is the Schema for the publishers API.
 // It represents an event publisher registration in the configuration backend.
-// Publisher resources are created and managed by the EventExposure handler in the event domain.
+// Publisher resources are created and managed by the EventExposure handler in the event domain
+// or by the SpectreApplication handler in the spectre domain.
 type Publisher struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

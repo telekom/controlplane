@@ -71,52 +71,37 @@ func (h *EventConfigHandler) CreateOrUpdate(ctx context.Context, obj *eventv1.Ev
 		meshCfg = &eventv1.MeshConfig{FullMesh: true}
 	}
 
-	// --- Identity Clients ---
+	// --- Identity Clients / EventStore, then Routes ---
+	//
+	// Routes are derived from the Zone and the EventConfig spec alone; they never
+	// read Status.AdminClient, Status.MeshClient or Status.EventStore. Running
+	// both halves as one fail-fast chain meant a single unusable client name
+	// froze route rendering for the whole zone, so each is attempted every pass.
 
-	// Proxy zones have no admin client of their own; their EventStore authenticates
-	// to the target zone's configuration backend using the target's admin client.
-	var adminClient *identityv1.Client
-	var adminTokenUrl string
-	if obj.IsProxy() {
-		obj.Status.AdminClient = nil
-	} else {
-		adminClient, adminTokenUrl, err = h.resolveAndCreateAdminClient(ctx, obj, myZone)
-		if err != nil {
-			return err
-		}
-		obj.Status.AdminClient = eventv1.NewObservedObjectRef(adminClient)
-		logger.V(1).Info("identity AdminClient created/updated", "client", adminClient.Name)
+	// The callback ACL must name the mesh client, resolved here exactly as
+	// resolveAndCreateMeshClient does so the Routes do not wait on the backend.
+	callbackClientId := cmp.Or(meshCfg.Client.ClientId, util.CallbackClientName)
+	if callbackClientId == gatewayv1.GatewayConsumerName {
+		return ctrlerrors.BlockedErrorf("mesh client ID %q is reserved for the zone gateway Consumer", callbackClientId)
 	}
 
-	meshClient, err := h.resolveAndCreateMeshClient(ctx, obj, myZone, meshCfg)
-	if err != nil {
-		return err
-	}
-	obj.Status.MeshClient = eventv1.NewObservedObjectRef(meshClient)
-	logger.V(1).Info("identity MeshClient created/updated", "client", meshClient.Name)
-
-	if err = h.createCallbackConsumer(ctx, obj, myZone, meshClient.Spec.ClientId); err != nil {
-		return errors.Wrap(err, "failed to create callback gateway Consumer")
+	backendErr := h.reconcileEventBackend(ctx, obj, myZone, meshCfg)
+	if backendErr != nil {
+		logger.V(0).Info("Event backend reconciliation failed; continuing with Routes",
+			"error", backendErr.Error())
 	}
 
-	// --- EventStore ---
+	routeErr := h.createRoutes(ctx, obj, myZone, meshCfg, callbackClientId)
 
-	var eventStore *pubsubv1.EventStore
-	if obj.IsProxy() {
-		eventStore, err = h.createProxyEventStore(ctx, obj)
-	} else {
-		eventStore, err = h.createEventStore(ctx, obj, adminClient, adminTokenUrl)
-	}
-	if err != nil {
-		return errors.Wrap(err, "failed to create EventStore")
-	}
-	obj.Status.EventStore = types.ObjectRefFromObject(eventStore)
-	logger.V(1).Info("EventStore created/updated", "eventStore", eventStore.Name)
-
-	// --- Routes ---
-
-	if routeErr := h.createRoutes(ctx, obj, myZone, meshCfg, meshClient.Spec.ClientId); routeErr != nil {
+	// The Route error wins when both fail. Routes are the half that must converge
+	// fastest, so their error class has to decide the requeue cadence: a Blocked
+	// backend error would otherwise mask a retryable Route failure, because
+	// ctrlerrors.HandleError tests Blocked first and stops requeueing on it.
+	if routeErr != nil {
 		return routeErr
+	}
+	if backendErr != nil {
+		return backendErr
 	}
 
 	// --- Finalize status conditions ---
@@ -142,6 +127,55 @@ func (h *EventConfigHandler) CreateOrUpdate(ctx context.Context, obj *eventv1.Ev
 
 	obj.SetCondition(condition.NewReadyCondition(condition.ReasonProvisioned, "EventConfig has been provisioned"))
 	obj.SetCondition(condition.NewDoneProcessingCondition("EventConfig has been provisioned"))
+
+	return nil
+}
+
+// reconcileEventBackend provisions the identity Clients, the callback gateway
+// Consumer and the EventStore. This is the half of the reconciliation that route
+// rendering does not depend on; the chain inside it stays fail-fast because the
+// EventStore needs the admin client.
+func (h *EventConfigHandler) reconcileEventBackend(ctx context.Context, obj *eventv1.EventConfig, myZone *adminv1.Zone, meshCfg *eventv1.MeshConfig) error {
+	logger := log.FromContext(ctx)
+
+	// Proxy zones have no admin client of their own; their EventStore authenticates
+	// to the target zone's configuration backend using the target's admin client.
+	var adminClient *identityv1.Client
+	var adminTokenUrl string
+	var err error
+	if obj.IsProxy() {
+		obj.Status.AdminClient = nil
+	} else {
+		adminClient, adminTokenUrl, err = h.resolveAndCreateAdminClient(ctx, obj, myZone)
+		if err != nil {
+			return err
+		}
+		obj.Status.AdminClient = eventv1.NewObservedObjectRef(adminClient)
+		logger.V(1).Info("identity AdminClient created/updated", "client", adminClient.Name)
+	}
+
+	meshClient, err := h.resolveAndCreateMeshClient(ctx, obj, myZone, meshCfg)
+	if err != nil {
+		return err
+	}
+	obj.Status.MeshClient = eventv1.NewObservedObjectRef(meshClient)
+	logger.V(1).Info("identity MeshClient created/updated", "client", meshClient.Name)
+
+	if err = h.createCallbackConsumer(ctx, obj, myZone, meshClient.Spec.ClientId); err != nil {
+		return errors.Wrap(err, "failed to create callback gateway Consumer")
+	}
+
+	var eventStore *pubsubv1.EventStore
+	if obj.IsProxy() {
+		eventStore, err = h.createProxyEventStore(ctx, obj)
+	} else {
+		eventStore, err = h.createEventStore(ctx, obj, adminClient, adminTokenUrl)
+	}
+	if err != nil {
+		return errors.Wrap(err, "failed to create EventStore")
+	}
+	obj.Status.EventStore = types.ObjectRefFromObject(eventStore)
+	logger.V(1).Info("EventStore created/updated", "eventStore", eventStore.Name)
 
 	return nil
 }
