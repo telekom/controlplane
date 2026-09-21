@@ -78,6 +78,8 @@ type ApiSubscriptionStatus struct {
 // +kubebuilder:subresource:status
 
 // ApiSubscription is the Schema for the apisubscriptions API
+// +kubebuilder:printcolumn:name="Zone",type="string",JSONPath=".spec.zone.name",description="Zone the API is subscribed from"
+// +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 type ApiSubscription struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

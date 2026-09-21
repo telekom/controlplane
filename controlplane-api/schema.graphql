@@ -19,6 +19,17 @@ type TeamInfo {
   description: String
 }
 
+"Reduced application information for cross-tenant contexts."
+type ApplicationInfo {
+  id: ID!
+  name: String!
+  externalIds: [ExternalId!]
+  "Zone the application is deployed in"
+  zone: Zone!
+  "Team that owns the application (reduced view)"
+  ownerTeam: TeamInfo!
+}
+
 type Upstream {
   url: String!
   weight: Int!
@@ -144,9 +155,11 @@ type ApiExposureInfo {
   approvalConfig: ApprovalConfig!
   traffic: Traffic 
   "Application name that owns this exposure"
-  ownerApplicationName: String!
+  ownerApplicationName: String! @deprecated(reason: "Use ownerApplication.name instead.")
   "Owning team (reduced view)"
-  ownerTeam: TeamInfo!
+  ownerTeam: TeamInfo! @deprecated(reason: "Use ownerApplication.ownerTeam instead.")
+  "Owning application (reduced view)"
+  ownerApplication: ApplicationInfo!
 }
 
 # Security
@@ -279,29 +292,39 @@ type ApiSubscriptionTraffic {
   subscriberLimits: Limits
 }
 
+"Common ownership fields for reduced subscription views."
+interface SubscriptionInfo {
+  id: ID!
+  ownerApplication: ApplicationInfo!
+}
+
 "Reduced API subscription for cross-tenant contexts (e.g., exposure subscribers)."
-type ApiSubscriptionInfo {
+type ApiSubscriptionInfo implements SubscriptionInfo {
   id: ID!
   basePath: String!
   statusPhase: ApiSubscriptionStatusPhase
   statusMessage: String
   "Application name that owns this subscription"
-  ownerApplicationName: String!
+  ownerApplicationName: String! @deprecated(reason: "Use ownerApplication.name instead.")
   "Owning team (reduced view)"
-  ownerTeam: TeamInfo!
+  ownerTeam: TeamInfo! @deprecated(reason: "Use ownerApplication.ownerTeam instead.")
+  "Owning application (reduced view)"
+  ownerApplication: ApplicationInfo!
 }
 
 "Reduced event subscription for cross-tenant contexts (e.g., exposure subscribers)."
-type EventSubscriptionInfo {
+type EventSubscriptionInfo implements SubscriptionInfo {
   id: ID!
   eventType: String!
   deliveryType: EventSubscriptionDeliveryType!
   statusPhase: EventSubscriptionStatusPhase
   statusMessage: String
   "Application name that owns this subscription"
-  ownerApplicationName: String!
+  ownerApplicationName: String! @deprecated(reason: "Use ownerApplication.name instead.")
   "Owning team (reduced view)"
-  ownerTeam: TeamInfo!
+  ownerTeam: TeamInfo! @deprecated(reason: "Use ownerApplication.ownerTeam instead.")
+  "Owning application (reduced view)"
+  ownerApplication: ApplicationInfo!
 }
 
 "Reduced event exposure for cross-tenant contexts (e.g., subscription target)."
@@ -312,9 +335,11 @@ type EventExposureInfo {
   active: Boolean
   approvalConfig: ApprovalConfig!
   "Application name that owns this exposure"
-  ownerApplicationName: String!
+  ownerApplicationName: String! @deprecated(reason: "Use ownerApplication.name instead.")
   "Owning team (reduced view)"
-  ownerTeam: TeamInfo!
+  ownerTeam: TeamInfo! @deprecated(reason: "Use ownerApplication.ownerTeam instead.")
+  "Owning application (reduced view)"
+  ownerApplication: ApplicationInfo!
 }
 
 "Reduced agentic exposure for cross-tenant contexts (e.g., subscription target)."
@@ -327,21 +352,25 @@ type AgenticExposureInfo {
   approvalConfig: ApprovalConfig!
   traffic: Traffic
   "Application name that owns this exposure"
-  ownerApplicationName: String!
+  ownerApplicationName: String! @deprecated(reason: "Use ownerApplication.name instead.")
   "Owning team (reduced view)"
-  ownerTeam: TeamInfo!
+  ownerTeam: TeamInfo! @deprecated(reason: "Use ownerApplication.ownerTeam instead.")
+  "Owning application (reduced view)"
+  ownerApplication: ApplicationInfo!
 }
 
 "Reduced agentic subscription for cross-tenant contexts (e.g., exposure subscribers)."
-type AgenticSubscriptionInfo {
+type AgenticSubscriptionInfo implements SubscriptionInfo {
   id: ID!
   basePath: String!
   statusPhase: AgenticSubscriptionStatusPhase
   statusMessage: String
   "Application name that owns this subscription"
-  ownerApplicationName: String!
+  ownerApplicationName: String! @deprecated(reason: "Use ownerApplication.name instead.")
   "Owning team (reduced view)"
-  ownerTeam: TeamInfo!
+  ownerTeam: TeamInfo! @deprecated(reason: "Use ownerApplication.ownerTeam instead.")
+  "Owning application (reduced view)"
+  ownerApplication: ApplicationInfo!
 }
 
 # -- Cross-tenant edge overrides --
@@ -385,9 +414,6 @@ extend type AgenticExposure {
   "Subscriptions to this exposure (reduced view — cross-tenant boundary)"
   subscriptions: [AgenticSubscriptionInfo!]! @goField(forceResolver: true)
 }
-
-"A subscription related to an approval — either an API, event, or agentic subscription."
-union SubscriptionInfo = ApiSubscriptionInfo | EventSubscriptionInfo | AgenticSubscriptionInfo
 
 extend type Approval {
   "Related subscription (reduced view — cross-tenant boundary)"
@@ -452,4 +478,3 @@ type ApiCategory {
   "The category identifier/name."
   name: String!
 }
-

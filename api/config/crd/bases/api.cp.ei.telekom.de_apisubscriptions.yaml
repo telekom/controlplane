@@ -17,7 +17,15 @@ spec:
     singular: apisubscription
   scope: Namespaced
   versions:
-  - name: v1
+  - additionalPrinterColumns:
+    - description: Zone the API is subscribed from
+      jsonPath: .spec.zone.name
+      name: Zone
+      type: string
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    name: v1
     schema:
       openAPIV3Schema:
         description: ApiSubscription is the Schema for the apisubscriptions API

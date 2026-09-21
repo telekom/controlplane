@@ -164,7 +164,31 @@ For approvals and approval requests, the isolation uses an **OR** rule: a resour
 
 #### Cross-Tenant Safety
 
-When navigating relationships that cross team boundaries (for example, from a subscription to the target exposure owned by another team), the API returns **reduced types** (`TeamInfo`, `ApiExposureInfo`, `ApiSubscriptionInfo`, `AgenticExposureInfo`, `AgenticSubscriptionInfo`) that expose only safe, non-sensitive fields. This prevents data leakage through graph traversal.
+When navigating relationships that cross team boundaries (for example, from a subscription to the target exposure owned by another team), the API returns **reduced types** (`TeamInfo`, `ApplicationInfo`, `ApiExposureInfo`, `ApiSubscriptionInfo`, `EventExposureInfo`, `EventSubscriptionInfo`, `AgenticExposureInfo`, `AgenticSubscriptionInfo`) that expose only safe, non-sensitive fields. This prevents data leakage through graph traversal.
+
+`Approval.subscription` and `ApprovalRequest.subscription` return the non-null `SubscriptionInfo` interface, implemented by `ApiSubscriptionInfo`, `EventSubscriptionInfo`, and `AgenticSubscriptionInfo`. Select the common fields `id: ID!` and `ownerApplication: ApplicationInfo!` directly or through a fragment on `SubscriptionInfo`. Use concrete fragments for variant-specific fields:
+
+```graphql
+query {
+  approvals {
+    edges {
+      node {
+        subscription {
+          id
+          ownerApplication { id name }
+          ... on ApiSubscriptionInfo { basePath }
+          ... on EventSubscriptionInfo { eventType }
+          ... on AgenticSubscriptionInfo { basePath }
+        }
+      }
+    }
+  }
+}
+```
+
+:::note Deprecation
+On the six `*Info` types, `ownerApplicationName` and `ownerTeam` are **deprecated** in favour of the nested `ownerApplication` field. Use `ownerApplication.name` and `ownerApplication.ownerTeam` instead. The deprecated fields are still populated today but will be removed in a future release.
+:::
 
 ### Authentication
 
