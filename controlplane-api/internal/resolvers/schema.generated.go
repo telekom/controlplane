@@ -1431,6 +1431,38 @@ func (ec *executionContext) fieldContext_ApplicationInfo_name(_ context.Context,
 	return graphql.NewScalarFieldContext("ApplicationInfo", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
+func (ec *executionContext) _ApplicationInfo_externalIds(ctx context.Context, field graphql.CollectedField, obj *model.ApplicationInfo) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ApplicationInfo_externalIds(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ExternalIds, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []model1.ExternalId) graphql.Marshaler {
+			return ec.marshalOExternalId2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐExternalIdᚄ(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_ApplicationInfo_externalIds(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ApplicationInfo",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_ExternalId(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _ApplicationInfo_zone(ctx context.Context, field graphql.CollectedField, obj *model.ApplicationInfo) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -4843,6 +4875,11 @@ func (ec *executionContext) _ApplicationInfo(ctx context.Context, sel ast.Select
 		case "name":
 			out.Values[i] = ec._ApplicationInfo_name(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "externalIds":
+			out.Values[i] = ec._ApplicationInfo_externalIds(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
 				out.Invalids++
 			}
 		case "zone":

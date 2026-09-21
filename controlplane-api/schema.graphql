@@ -23,6 +23,7 @@ type TeamInfo {
 type ApplicationInfo {
   id: ID!
   name: String!
+  externalIds: [ExternalId!]
   "Zone the application is deployed in"
   zone: Zone!
   "Team that owns the application (reduced view)"

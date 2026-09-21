@@ -393,10 +393,11 @@ type ComplexityRoot struct {
 	}
 
 	ApplicationInfo struct {
-		ID        func(childComplexity int) int
-		Name      func(childComplexity int) int
-		OwnerTeam func(childComplexity int) int
-		Zone      func(childComplexity int) int
+		ExternalIds func(childComplexity int) int
+		ID          func(childComplexity int) int
+		Name        func(childComplexity int) int
+		OwnerTeam   func(childComplexity int) int
+		Zone        func(childComplexity int) int
 	}
 
 	Approval struct {
@@ -2343,6 +2344,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.ApplicationEdge.Node(childComplexity), true
 
+	case "ApplicationInfo.externalIds":
+		if e.ComplexityRoot.ApplicationInfo.ExternalIds == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApplicationInfo.ExternalIds(childComplexity), true
 	case "ApplicationInfo.id":
 		if e.ComplexityRoot.ApplicationInfo.ID == nil {
 			break
@@ -10271,6 +10278,7 @@ type TeamInfo {
 type ApplicationInfo {
   id: ID!
   name: String!
+  externalIds: [ExternalId!]
   "Zone the application is deployed in"
   zone: Zone!
   "Team that owns the application (reduced view)"
@@ -11391,6 +11399,8 @@ func (ec *executionContext) childFields_ApplicationInfo(ctx context.Context, fie
 		return ec.fieldContext_ApplicationInfo_id(ctx, field)
 	case "name":
 		return ec.fieldContext_ApplicationInfo_name(ctx, field)
+	case "externalIds":
+		return ec.fieldContext_ApplicationInfo_externalIds(ctx, field)
 	case "zone":
 		return ec.fieldContext_ApplicationInfo_zone(ctx, field)
 	case "ownerTeam":

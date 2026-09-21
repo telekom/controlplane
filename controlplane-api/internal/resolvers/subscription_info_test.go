@@ -6,6 +6,7 @@ package resolvers_test
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -19,11 +20,13 @@ import (
 
 	"github.com/telekom/controlplane/controlplane-api/ent"
 	"github.com/telekom/controlplane/controlplane-api/ent/enttest"
+	"github.com/telekom/controlplane/controlplane-api/internal/interceptor"
 	"github.com/telekom/controlplane/controlplane-api/internal/resolvers"
 	gqlmodel "github.com/telekom/controlplane/controlplane-api/internal/resolvers/model"
 	"github.com/telekom/controlplane/controlplane-api/internal/service"
 	"github.com/telekom/controlplane/controlplane-api/internal/testutil"
 	"github.com/telekom/controlplane/controlplane-api/internal/viewer"
+	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -36,6 +39,18 @@ var (
 )
 
 var _ = Describe("SubscriptionInfo", func() {
+	It("exposes application external IDs without sensitive direct application fields", func() {
+		schema := resolvers.NewExecutableSchema(resolvers.Config{}).Schema()
+		applicationInfo := schema.Types["ApplicationInfo"]
+		field := applicationInfo.Fields.ForName("externalIds")
+		Expect(field).NotTo(BeNil())
+		Expect(field.Type.String()).To(Equal("[ExternalId!]"))
+		Expect(field.Type.String()).To(Equal(schema.Types["Application"].Fields.ForName("externalIds").Type.String()))
+		for _, name := range []string{"clientID", "clientSecret", "permissionSet", "exposedApis", "subscribedApis"} {
+			Expect(applicationInfo.Fields.ForName(name)).To(BeNil(), name)
+		}
+	})
+
 	It("exposes only common ownership fields and preserves approval subscription field types", func() {
 		schema := resolvers.NewExecutableSchema(resolvers.Config{}).Schema()
 		subscription := schema.Types["SubscriptionInfo"]
@@ -65,6 +80,7 @@ var _ = Describe("SubscriptionInfo", func() {
 		BeforeEach(func() {
 			// GraphQL resolves sibling fields concurrently, so connections must share the in-memory database.
 			db = enttest.Open(GinkgoT(), "sqlite3", "file:subscriptions?mode=memory&cache=shared&_fk=1")
+			db.Intercept(interceptor.TeamFilterInterceptor())
 			seed = testutil.SeedStandard(db)
 			ctx := testutil.AllowContext()
 			_, err := db.Approval.Create().
@@ -86,6 +102,68 @@ var _ = Describe("SubscriptionInfo", func() {
 		AfterEach(func() {
 			Expect(db.Close()).To(Succeed())
 		})
+
+		DescribeTable("returns persisted external IDs through a reduced cross-tenant application view",
+			func(ids []model.ExternalId, expectedJSON string) {
+				if ids != nil {
+					_, err := db.Application.UpdateOne(seed.AppBeta).SetExternalIds(ids).Save(testutil.AllowContext())
+					Expect(err).NotTo(HaveOccurred())
+				}
+				body, err := json.Marshal(map[string]string{"query": `{
+					approvals {
+						edges { node { subscription {
+							ownerApplication { id externalIds { Id Schema } }
+						} } }
+					}
+					applications { edges { node { id } } }
+				}`})
+				Expect(err).NotTo(HaveOccurred())
+				req := httptest.NewRequest(http.MethodPost, "/graphql", bytes.NewReader(body))
+				req.Header.Set("Content-Type", "application/json")
+				req = req.WithContext(viewer.NewContext(context.Background(), &viewer.Viewer{
+					Teams: []string{seed.TeamAlpha.Name},
+				}))
+				recorder := httptest.NewRecorder()
+				server.ServeHTTP(recorder, req)
+				Expect(recorder.Code).To(Equal(http.StatusOK), recorder.Body.String())
+
+				var response struct {
+					Data struct {
+						Approvals struct {
+							Edges []struct {
+								Node struct {
+									Subscription struct {
+										OwnerApplication struct {
+											ID          string
+											ExternalIds json.RawMessage
+										}
+									}
+								}
+							}
+						}
+						Applications struct {
+							Edges []struct{ Node struct{ ID string } }
+						}
+					}
+					Errors gqlerror.List
+				}
+				Expect(json.Unmarshal(recorder.Body.Bytes(), &response)).To(Succeed())
+				Expect(response.Errors).To(BeEmpty())
+				Expect(response.Data.Approvals.Edges).To(HaveLen(3))
+				for _, edge := range response.Data.Approvals.Edges {
+					owner := edge.Node.Subscription.OwnerApplication
+					Expect(owner.ID).To(Equal(strconv.Itoa(seed.AppBeta.ID)))
+					Expect(string(owner.ExternalIds)).To(MatchJSON(expectedJSON))
+				}
+				Expect(response.Data.Applications.Edges).To(HaveLen(1))
+				Expect(response.Data.Applications.Edges[0].Node.ID).To(Equal(strconv.Itoa(seed.AppAlpha.ID)))
+			},
+			Entry("populated IDs retain their values and order",
+				[]model.ExternalId{{Id: "z-123", Scheme: "inventory"}, {Id: "a-456", Scheme: "catalog"}},
+				`[{"Id":"z-123","Schema":"inventory"},{"Id":"a-456","Schema":"catalog"}]`),
+			Entry("absent IDs serialize as null", []model.ExternalId(nil), `null`),
+			Entry("explicitly empty IDs serialize as an empty array", []model.ExternalId{}, `[]`),
+		)
 
 		DescribeTable("resolves common fields for every implementation alongside concrete fragments",
 			func(field, selection, fragment string) {

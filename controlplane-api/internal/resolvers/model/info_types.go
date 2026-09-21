@@ -10,12 +10,13 @@ import (
 )
 
 // ApplicationInfo provides a reduced cross-tenant safe view of an application.
-// No navigable edges — traversal terminates here.
+// Its zone remains navigable under the caller's normal viewer filtering.
 type ApplicationInfo struct {
-	ID        int                `json:"id"`
-	Name      string             `json:"name"`
-	Zone      *ent.Zone          `json:"zone"`
-	OwnerTeam *pkgmodel.TeamInfo `json:"ownerTeam"`
+	ID          int                   `json:"id"`
+	Name        string                `json:"name"`
+	ExternalIds []pkgmodel.ExternalId `json:"externalIds,omitempty"`
+	Zone        *ent.Zone             `json:"zone"`
+	OwnerTeam   *pkgmodel.TeamInfo    `json:"ownerTeam"`
 }
 
 // ApiExposureInfo provides a reduced cross-tenant safe view of an API exposure.
