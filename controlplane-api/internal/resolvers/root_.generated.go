@@ -2417,7 +2417,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Approval.Environment(childComplexity), true
-	case "Approval.expiresat":
+	case "Approval.expiresAt":
 		if e.ComplexityRoot.Approval.ExpiresAt == nil {
 			break
 		}
@@ -6932,7 +6932,7 @@ type Approval implements Node {
   """
   requestedScopes: [String!]
   name: String!
-  expiresat: Time @goField(name: "ExpiresAt", forceResolver: false)
+  expiresAt: Time
   state: ApprovalState!
 }
 """
@@ -7449,18 +7449,18 @@ input ApprovalWhereInput {
   nameEqualFold: String
   nameContainsFold: String
   """
-  expiresAt field predicates
+  expires_at field predicates
   """
-  expiresat: Time
-  expiresatNEQ: Time
-  expiresatIn: [Time!]
-  expiresatNotIn: [Time!]
-  expiresatGT: Time
-  expiresatGTE: Time
-  expiresatLT: Time
-  expiresatLTE: Time
-  expiresatIsNil: Boolean
-  expiresatNotNil: Boolean
+  expiresAt: Time
+  expiresAtNEQ: Time
+  expiresAtIn: [Time!]
+  expiresAtNotIn: [Time!]
+  expiresAtGT: Time
+  expiresAtGTE: Time
+  expiresAtLT: Time
+  expiresAtLTE: Time
+  expiresAtIsNil: Boolean
+  expiresAtNotNil: Boolean
   """
   state field predicates
   """
@@ -10200,13 +10200,17 @@ type RotateApplicationSecretPayload {
 # ──────────────────────────────────────────────────────────────────────────────
 
 type DecideApprovalRequestPayload {
+  "The ApprovalRequest projection read before the command. Query again to observe the resulting state."
   approvalRequest: ApprovalRequest
+  "Whether the command was accepted. This does not confirm that reconciliation and projection are complete."
   accepted: Boolean!
   errors: [MutationError!]!
 }
 
 type DecideApprovalPayload {
+  "The Approval projection read before the command. Query again to observe the resulting state."
   approval: Approval
+  "Whether the command was accepted. This does not confirm that reconciliation and projection are complete."
   accepted: Boolean!
   errors: [MutationError!]!
 }
@@ -11443,8 +11447,8 @@ func (ec *executionContext) childFields_Approval(ctx context.Context, field grap
 		return ec.fieldContext_Approval_requestedScopes(ctx, field)
 	case "name":
 		return ec.fieldContext_Approval_name(ctx, field)
-	case "expiresat":
-		return ec.fieldContext_Approval_expiresat(ctx, field)
+	case "expiresAt":
+		return ec.fieldContext_Approval_expiresAt(ctx, field)
 	case "state":
 		return ec.fieldContext_Approval_state(ctx, field)
 	case "subscription":

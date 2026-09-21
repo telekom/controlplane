@@ -52,7 +52,7 @@ const (
 	FieldRequestedScopes = "requested_scopes"
 	// FieldName holds the string denoting the name field in the database.
 	FieldName = "name"
-	// FieldExpiresAt holds the string denoting the expiresat field in the database.
+	// FieldExpiresAt holds the string denoting the expires_at field in the database.
 	FieldExpiresAt = "expires_at"
 	// FieldState holds the string denoting the state field in the database.
 	FieldState = "state"
@@ -298,7 +298,7 @@ func ByName(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldName, opts...).ToFunc()
 }
 
-// ByExpiresAt orders the results by the expiresAt field.
+// ByExpiresAt orders the results by the expires_at field.
 func ByExpiresAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldExpiresAt, opts...).ToFunc()
 }

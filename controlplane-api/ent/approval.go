@@ -55,8 +55,8 @@ type Approval struct {
 	RequestedScopes []string `json:"requested_scopes,omitempty"`
 	// Name holds the value of the "name" field.
 	Name string `json:"name,omitempty"`
-	// ExpiresAt holds the value of the "expiresAt" field.
-	ExpiresAt *time.Time `json:"expiresAt,omitempty"`
+	// ExpiresAt holds the value of the "expires_at" field.
+	ExpiresAt *time.Time `json:"expires_at,omitempty"`
 	// State holds the value of the "state" field.
 	State approval.State `json:"state,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -259,7 +259,7 @@ func (_m *Approval) assignValues(columns []string, values []any) error {
 			}
 		case approval.FieldExpiresAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
-				return fmt.Errorf("unexpected type %T for field expiresAt", values[i])
+				return fmt.Errorf("unexpected type %T for field expires_at", values[i])
 			} else if value.Valid {
 				_m.ExpiresAt = new(time.Time)
 				*_m.ExpiresAt = value.Time
@@ -394,7 +394,7 @@ func (_m *Approval) String() string {
 	builder.WriteString(_m.Name)
 	builder.WriteString(", ")
 	if v := _m.ExpiresAt; v != nil {
-		builder.WriteString("expiresAt=")
+		builder.WriteString("expires_at=")
 		builder.WriteString(v.Format(time.ANSIC))
 	}
 	builder.WriteString(", ")

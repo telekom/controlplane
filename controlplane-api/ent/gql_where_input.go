@@ -4908,17 +4908,17 @@ type ApprovalWhereInput struct {
 	NameEqualFold    *string  `json:"nameEqualFold,omitempty"`
 	NameContainsFold *string  `json:"nameContainsFold,omitempty"`
 
-	// "expiresAt" field predicates.
-	ExpiresAt       *time.Time  `json:"expiresat,omitempty"`
-	ExpiresAtNEQ    *time.Time  `json:"expiresatNEQ,omitempty"`
-	ExpiresAtIn     []time.Time `json:"expiresatIn,omitempty"`
-	ExpiresAtNotIn  []time.Time `json:"expiresatNotIn,omitempty"`
-	ExpiresAtGT     *time.Time  `json:"expiresatGT,omitempty"`
-	ExpiresAtGTE    *time.Time  `json:"expiresatGTE,omitempty"`
-	ExpiresAtLT     *time.Time  `json:"expiresatLT,omitempty"`
-	ExpiresAtLTE    *time.Time  `json:"expiresatLTE,omitempty"`
-	ExpiresAtIsNil  bool        `json:"expiresatIsNil,omitempty"`
-	ExpiresAtNotNil bool        `json:"expiresatNotNil,omitempty"`
+	// "expires_at" field predicates.
+	ExpiresAt       *time.Time  `json:"expiresAt,omitempty"`
+	ExpiresAtNEQ    *time.Time  `json:"expiresAtNEQ,omitempty"`
+	ExpiresAtIn     []time.Time `json:"expiresAtIn,omitempty"`
+	ExpiresAtNotIn  []time.Time `json:"expiresAtNotIn,omitempty"`
+	ExpiresAtGT     *time.Time  `json:"expiresAtGT,omitempty"`
+	ExpiresAtGTE    *time.Time  `json:"expiresAtGTE,omitempty"`
+	ExpiresAtLT     *time.Time  `json:"expiresAtLT,omitempty"`
+	ExpiresAtLTE    *time.Time  `json:"expiresAtLTE,omitempty"`
+	ExpiresAtIsNil  bool        `json:"expiresAtIsNil,omitempty"`
+	ExpiresAtNotNil bool        `json:"expiresAtNotNil,omitempty"`
 
 	// "state" field predicates.
 	State      *approval.State  `json:"state,omitempty"`

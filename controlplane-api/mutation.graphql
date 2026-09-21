@@ -142,13 +142,17 @@ type RotateApplicationSecretPayload {
 # ──────────────────────────────────────────────────────────────────────────────
 
 type DecideApprovalRequestPayload {
+  "The ApprovalRequest projection read before the command. Query again to observe the resulting state."
   approvalRequest: ApprovalRequest
+  "Whether the command was accepted. This does not confirm that reconciliation and projection are complete."
   accepted: Boolean!
   errors: [MutationError!]!
 }
 
 type DecideApprovalPayload {
+  "The Approval projection read before the command. Query again to observe the resulting state."
   approval: Approval
+  "Whether the command was accepted. This does not confirm that reconciliation and projection are complete."
   accepted: Boolean!
   errors: [MutationError!]!
 }
