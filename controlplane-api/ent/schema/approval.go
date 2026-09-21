@@ -35,7 +35,7 @@ func (Approval) Fields() []ent.Field {
 	return []ent.Field{
 		field.Text("name").
 			NotEmpty(),
-		field.Time("expiresAt").
+		field.Time("expires_at").
 			Optional().
 			Nillable(),
 		field.Enum("state").

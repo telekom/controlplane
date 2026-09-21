@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
@@ -195,7 +196,6 @@ func mapDecider(d approvalv1.Decider) model.DeciderInfo {
 
 // mapDecisions converts a slice of CR Decision to model Decision DTOs.
 // String fields are converted to *string where the model uses pointers.
-// Timestamp and ResultingState are left nil since they do not exist on the CR.
 func mapDecisions(decisions []approvalv1.Decision) []model.Decision {
 	if len(decisions) == 0 {
 		return []model.Decision{}
@@ -211,6 +211,14 @@ func mapDecisions(decisions []approvalv1.Decision) []model.Decision {
 		if d.Comment != "" {
 			result[i].Comment = &d.Comment
 		}
+		if d.Timestamp != nil {
+			timestamp := d.Timestamp.UTC().Format(time.RFC3339)
+			result[i].Timestamp = &timestamp
+		}
+		if d.ResultingState != "" {
+			resultingState := mapState(d.ResultingState.String())
+			result[i].ResultingState = &resultingState
+		}
 	}
 	return result
 }
@@ -224,8 +232,8 @@ func mapAvailableTransitions(transitions approvalv1.AvailableTransitions) []mode
 	result := make([]model.AvailableTransition, len(transitions))
 	for i, at := range transitions {
 		result[i] = model.AvailableTransition{
-			Action:  string(at.Action),
-			ToState: string(at.To),
+			Action:  strings.ToUpper(at.Action.String()),
+			ToState: mapState(at.To.String()),
 		}
 	}
 	return result

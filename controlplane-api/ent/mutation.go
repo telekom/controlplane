@@ -10194,7 +10194,7 @@ type ApprovalMutation struct {
 	requested_scopes            *[]string
 	appendrequested_scopes      []string
 	name                        *string
-	expiresAt                   *time.Time
+	expires_at                  *time.Time
 	state                       *approval.State
 	clearedFields               map[string]struct{}
 	api_subscription            *int
@@ -10958,21 +10958,21 @@ func (m *ApprovalMutation) ResetName() {
 	m.name = nil
 }
 
-// SetExpiresAt sets the "expiresAt" field.
+// SetExpiresAt sets the "expires_at" field.
 func (m *ApprovalMutation) SetExpiresAt(t time.Time) {
-	m.expiresAt = &t
+	m.expires_at = &t
 }
 
-// ExpiresAt returns the value of the "expiresAt" field in the mutation.
+// ExpiresAt returns the value of the "expires_at" field in the mutation.
 func (m *ApprovalMutation) ExpiresAt() (r time.Time, exists bool) {
-	v := m.expiresAt
+	v := m.expires_at
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldExpiresAt returns the old "expiresAt" field's value of the Approval entity.
+// OldExpiresAt returns the old "expires_at" field's value of the Approval entity.
 // If the Approval object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
 func (m *ApprovalMutation) OldExpiresAt(ctx context.Context) (v *time.Time, err error) {
@@ -10989,21 +10989,21 @@ func (m *ApprovalMutation) OldExpiresAt(ctx context.Context) (v *time.Time, err 
 	return oldValue.ExpiresAt, nil
 }
 
-// ClearExpiresAt clears the value of the "expiresAt" field.
+// ClearExpiresAt clears the value of the "expires_at" field.
 func (m *ApprovalMutation) ClearExpiresAt() {
-	m.expiresAt = nil
+	m.expires_at = nil
 	m.clearedFields[approval.FieldExpiresAt] = struct{}{}
 }
 
-// ExpiresAtCleared returns if the "expiresAt" field was cleared in this mutation.
+// ExpiresAtCleared returns if the "expires_at" field was cleared in this mutation.
 func (m *ApprovalMutation) ExpiresAtCleared() bool {
 	_, ok := m.clearedFields[approval.FieldExpiresAt]
 	return ok
 }
 
-// ResetExpiresAt resets all changes to the "expiresAt" field.
+// ResetExpiresAt resets all changes to the "expires_at" field.
 func (m *ApprovalMutation) ResetExpiresAt() {
-	m.expiresAt = nil
+	m.expires_at = nil
 	delete(m.clearedFields, approval.FieldExpiresAt)
 }
 
@@ -11240,7 +11240,7 @@ func (m *ApprovalMutation) Fields() []string {
 	if m.name != nil {
 		fields = append(fields, approval.FieldName)
 	}
-	if m.expiresAt != nil {
+	if m.expires_at != nil {
 		fields = append(fields, approval.FieldExpiresAt)
 	}
 	if m.state != nil {
