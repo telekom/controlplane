@@ -5,6 +5,7 @@
 package parser
 
 import (
+	"bytes"
 	"encoding/json"
 	"io"
 	"iter"
@@ -18,6 +19,8 @@ import (
 	"github.com/telekom/controlplane/rover-ctl/pkg/cmderrors"
 	"github.com/telekom/controlplane/rover-ctl/pkg/log"
 	"github.com/telekom/controlplane/rover-ctl/pkg/types"
+	"golang.org/x/text/encoding/unicode"
+	"golang.org/x/text/transform"
 )
 
 type HookStage string
@@ -133,7 +136,16 @@ func (p *ObjectParser) parseFile(filePath string) error {
 		return errors.Wrap(err, "failed to read file "+filePath)
 	}
 
-	content, err := SubstitutePlaceholders(string(fileContent))
+	decodedReader := transform.NewReader(
+		bytes.NewReader(fileContent),
+		unicode.BOMOverride(unicode.UTF8.NewDecoder()),
+	)
+	decodedContent, err := io.ReadAll(decodedReader)
+	if err != nil {
+		return errors.Wrap(err, "failed to decode content in "+filePath)
+	}
+
+	content, err := SubstitutePlaceholders(string(decodedContent))
 	if err != nil {
 		return errors.Wrap(err, "failed to substitute placeholders in "+filePath)
 	}
