@@ -8,6 +8,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"time"
 
@@ -341,9 +342,13 @@ var _ = Describe("Approval ExpiresAt", func() {
 		Expect(err).NotTo(HaveOccurred())
 		schema := string(data)
 
-		Expect(schema).To(ContainSubstring("expiresAt: Time"))
-		Expect(schema).To(ContainSubstring("expiresAtNEQ: Time"))
-		Expect(schema).NotTo(ContainSubstring("expiresat"))
+		approvalBlock := regexp.MustCompile(`(?s)type Approval implements Node \{.*?\n\}`).FindString(schema)
+		approvalWhereBlock := regexp.MustCompile(`(?s)input ApprovalWhereInput \{.*?\n\}`).FindString(schema)
+
+		Expect(approvalBlock).To(MatchRegexp(`(?m)^  expiresAt: Time$`))
+		Expect(approvalWhereBlock).To(MatchRegexp(`(?m)^  expiresAtNEQ: Time$`))
+		Expect(approvalBlock).NotTo(ContainSubstring("expiresat"))
+		Expect(approvalWhereBlock).NotTo(ContainSubstring("expiresat"))
 	})
 
 	It("should persist and retrieve ExpiresAt", func() {
