@@ -27,7 +27,13 @@ import (
 
 var _ handler.Handler[*approvalv1.ApprovalRequest] = &ApprovalRequestHandler{}
 
-type ApprovalRequestHandler struct{}
+type ApprovalRequestHandler struct {
+	// Reader is an uncached API reader for source-liveness checks during grant
+	// materialization. Using the manager's cached client here would risk reading
+	// stale data when a source request has been deleted and recreated between
+	// cache syncs.
+	Reader ctrlclient.Reader
+}
 
 func (h *ApprovalRequestHandler) CreateOrUpdate(ctx context.Context, approvalReq *approvalv1.ApprovalRequest) error {
 	logger := log.FromContext(ctx)
@@ -50,7 +56,7 @@ func (h *ApprovalRequestHandler) CreateOrUpdate(ctx context.Context, approvalReq
 			return nil
 		}
 
-		err := handleGranted(ctx, approvalReq)
+		err := h.handleGranted(ctx, approvalReq)
 		if err != nil {
 			return errors.Wrap(err, "failed to handle granted approval")
 		}
@@ -61,7 +67,7 @@ func (h *ApprovalRequestHandler) CreateOrUpdate(ctx context.Context, approvalReq
 
 	case approvalv1.ApprovalStateGranted:
 		logger.Info("ApprovalRequest has been approved")
-		err := handleGranted(ctx, approvalReq)
+		err := h.handleGranted(ctx, approvalReq)
 		if err != nil {
 			return errors.Wrap(err, "failed to handle granted approval")
 		}
@@ -168,7 +174,7 @@ func handleNotifications(ctx context.Context, approvalReq *approvalv1.ApprovalRe
 	return nil
 }
 
-func handleGranted(ctx context.Context, approvalReq *approvalv1.ApprovalRequest) error {
+func (h *ApprovalRequestHandler) handleGranted(ctx context.Context, approvalReq *approvalv1.ApprovalRequest) error {
 	logger := log.FromContext(ctx)
 	c := client.ClientFromContextOrDie(ctx)
 
@@ -215,9 +221,11 @@ func handleGranted(ctx context.Context, approvalReq *approvalv1.ApprovalRequest)
 			// Scoped request with same name but different UID — proceed to rebind.
 		}
 
-		// Re-read the source AR to verify it is still the current live request.
+		// Re-read the source AR via the uncached API reader to verify it is still
+		// the current live request. The manager's cached client could serve stale
+		// data if the source was deleted and recreated between cache syncs.
 		freshAR := &approvalv1.ApprovalRequest{}
-		if err := c.Get(ctx, ctrlclient.ObjectKeyFromObject(approvalReq), freshAR); err != nil {
+		if err := h.Reader.Get(ctx, ctrlclient.ObjectKeyFromObject(approvalReq), freshAR); err != nil {
 			return fmt.Errorf("re-reading source request: %w", err)
 		}
 		if freshAR.UID != approvalReq.UID {
