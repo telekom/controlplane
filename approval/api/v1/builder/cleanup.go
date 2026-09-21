@@ -69,10 +69,15 @@ func cleanupScopedRequests(
 			"approvalKey", arKey,
 			"desiredName", desired.Name)
 
+		// Snapshot identity before Delete — ScopedClient.Delete re-reads into ar,
+		// so taking &ar.UID would match the refreshed object, not the validated one.
+		uid := ar.UID
+		resourceVersion := ar.ResourceVersion
+
 		delOpts := &client.DeleteOptions{
 			Preconditions: &metav1.Preconditions{
-				UID:             &ar.UID,
-				ResourceVersion: &ar.ResourceVersion,
+				UID:             &uid,
+				ResourceVersion: &resourceVersion,
 			},
 		}
 		if err := c.Delete(ctx, ar, delOpts); err != nil {
