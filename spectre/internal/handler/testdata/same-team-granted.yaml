@@ -1,0 +1,173 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+# Phase 0 upgrade snapshot: same-team, granted, Auto strategy.
+# Baseline ref: feat/spectre @ b2186921 (pre-dual-gate).
+#
+# This fixture represents the complete persisted-state graph for a Listener
+# that was approved by the same team (Auto strategy) and fully provisioned:
+#   Listener -> SpectreApplication -> Approval + ApprovalRequest
+#
+# Symbolic UIDs (e.g. "uid-listener-granted") are replaced with real API-assigned
+# UIDs by the loader test. All cross-references use these symbolic UIDs.
+---
+apiVersion: spectre.cp.ei.telekom.de/v1
+kind: Listener
+metadata:
+  name: fixture-listener
+  namespace: fixture-team
+  uid: uid-listener-granted
+  labels:
+    cp.ei.telekom.de/environment: fixture-env
+spec:
+  consumer:
+    apiVersion: application.cp.ei.telekom.de/v1
+    kind: Application
+    name: consumer-app
+    namespace: fixture-team
+  provider:
+    apiVersion: application.cp.ei.telekom.de/v1
+    kind: Application
+    name: provider-app
+    namespace: fixture-team
+  application:
+    name: sa-consumer-app
+    namespace: fixture-team
+  apiListener:
+    apiBasePath: /api/v1/fixture
+status:
+  conditions:
+    - type: Ready
+      status: "True"
+      reason: Granted
+      message: "Approval has been granted"
+      lastTransitionTime: "2025-01-01T00:00:00Z"
+    - type: Processing
+      status: "False"
+      reason: Done
+      message: "Processing complete"
+      lastTransitionTime: "2025-01-01T00:00:00Z"
+  providerApproval:
+    name: listener--fixture-listener
+    namespace: fixture-team
+---
+apiVersion: spectre.cp.ei.telekom.de/v1
+kind: SpectreApplication
+metadata:
+  name: sa-consumer-app
+  namespace: fixture-team
+  uid: uid-spectreapp-granted
+  labels:
+    cp.ei.telekom.de/environment: fixture-env
+spec:
+  application:
+    apiVersion: application.cp.ei.telekom.de/v1
+    kind: Application
+    name: consumer-app
+    namespace: fixture-team
+  deliveryType: server_sent_event
+status:
+  id: "fixture-team--consumer-app"
+---
+apiVersion: approval.cp.ei.telekom.de/v1
+kind: Approval
+metadata:
+  name: listener--fixture-listener
+  namespace: fixture-team
+  uid: uid-approval-granted
+  labels:
+    cp.ei.telekom.de/environment: fixture-env
+  ownerReferences:
+    - apiVersion: spectre.cp.ei.telekom.de/v1
+      kind: Listener
+      name: fixture-listener
+      uid: uid-listener-granted
+      controller: true
+      blockOwnerDeletion: true
+spec:
+  action: listen-provider
+  target:
+    apiVersion: spectre.cp.ei.telekom.de/v1
+    kind: Listener
+    name: fixture-listener
+    namespace: fixture-team
+    uid: uid-listener-granted
+  requester:
+    teamName: "fixture-team"
+    teamEmail: "fixture@test.com"
+    applicationRef:
+      apiVersion: application.cp.ei.telekom.de/v1
+      kind: Application
+      name: consumer-app
+      namespace: fixture-team
+  decider:
+    teamName: "fixture-team"
+    teamEmail: "fixture@test.com"
+    applicationRef:
+      apiVersion: application.cp.ei.telekom.de/v1
+      kind: Application
+      name: provider-app
+      namespace: fixture-team
+  decisions:
+    - name: System
+      comment: "Auto-approved: The approval strategy does not require manual review."
+      resultingState: Granted
+  strategy: Auto
+  state: Granted
+  approvedRequest:
+    name: fixture-listener--fixture-ar-hash
+    namespace: fixture-team
+status:
+  lastState: Pending
+---
+apiVersion: approval.cp.ei.telekom.de/v1
+kind: ApprovalRequest
+metadata:
+  name: fixture-listener--fixture-ar-hash
+  namespace: fixture-team
+  uid: uid-ar-granted
+  labels:
+    cp.ei.telekom.de/environment: fixture-env
+  ownerReferences:
+    - apiVersion: spectre.cp.ei.telekom.de/v1
+      kind: Listener
+      name: fixture-listener
+      uid: uid-listener-granted
+      controller: true
+      blockOwnerDeletion: true
+spec:
+  action: listen-provider
+  target:
+    apiVersion: spectre.cp.ei.telekom.de/v1
+    kind: Listener
+    name: fixture-listener
+    namespace: fixture-team
+    uid: uid-listener-granted
+  requester:
+    teamName: "fixture-team"
+    teamEmail: "fixture@test.com"
+    applicationRef:
+      apiVersion: application.cp.ei.telekom.de/v1
+      kind: Application
+      name: consumer-app
+      namespace: fixture-team
+  decider:
+    teamName: "fixture-team"
+    teamEmail: "fixture@test.com"
+    applicationRef:
+      apiVersion: application.cp.ei.telekom.de/v1
+      kind: Application
+      name: provider-app
+      namespace: fixture-team
+  decisions:
+    - name: System
+      comment: "Auto-approved: The approval strategy does not require manual review."
+      resultingState: Granted
+  strategy: Auto
+  state: Granted
+status:
+  lastState: Pending
+  approval:
+    name: listener--fixture-listener
+    namespace: fixture-team
