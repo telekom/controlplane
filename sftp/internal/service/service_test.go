@@ -44,7 +44,7 @@ var _ = Describe("HTTPService", func() {
 
 		baseURL = baseURL.JoinPath(testBasePath)
 
-		svc, err := NewHTTPService(Config{Endpoint: baseURL})
+		svc, err := NewHTTPService(Config{HTTPClient: http.DefaultClient, Endpoint: baseURL})
 		Expect(err).NotTo(HaveOccurred())
 
 		err = svc.CreateOrUpdateSFTPUser(context.Background(), RoverSftpUserModel{
@@ -74,7 +74,7 @@ var _ = Describe("HTTPService", func() {
 
 		baseURL = baseURL.JoinPath(testBasePath)
 
-		svc, err := NewHTTPService(Config{Endpoint: baseURL})
+		svc, err := NewHTTPService(Config{HTTPClient: http.DefaultClient, Endpoint: baseURL})
 		Expect(err).NotTo(HaveOccurred())
 
 		err = svc.UpdatePublicKeysForSFTPUser(context.Background(), "cetus--team--files", "client-123", ClientPublicKeyMap{
@@ -107,7 +107,7 @@ var _ = Describe("HTTPService", func() {
 
 		baseURL = baseURL.JoinPath(testBasePath)
 
-		svc, err := NewHTTPService(Config{Endpoint: baseURL})
+		svc, err := NewHTTPService(Config{HTTPClient: http.DefaultClient, Endpoint: baseURL})
 		Expect(err).NotTo(HaveOccurred())
 
 		err = svc.DeleteSFTPUser(context.Background(), "cetus--team--files")
@@ -127,7 +127,7 @@ var _ = Describe("HTTPService", func() {
 
 		baseURL = baseURL.JoinPath(testBasePath)
 
-		svc, err := NewHTTPService(Config{Endpoint: baseURL})
+		svc, err := NewHTTPService(Config{HTTPClient: http.DefaultClient, Endpoint: baseURL})
 		Expect(err).NotTo(HaveOccurred())
 
 		err = svc.DeleteSFTPUser(context.Background(), "bad-user")
@@ -151,7 +151,7 @@ var _ = Describe("HTTPService", func() {
 
 		baseURL = baseURL.JoinPath(testBasePath)
 
-		svc, err := NewHTTPService(Config{Endpoint: baseURL})
+		svc, err := NewHTTPService(Config{HTTPClient: http.DefaultClient, Endpoint: baseURL})
 		Expect(err).NotTo(HaveOccurred())
 
 		err = svc.DeleteSFTPUser(context.Background(), "bad-user")
