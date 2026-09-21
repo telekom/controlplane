@@ -617,8 +617,12 @@ var _ = Describe("ApprovalRequest Controller", func() {
 			}, timeout, interval).Should(Succeed())
 		})
 
-		It("creates two independent Approvals for different keys on the same target", func() {
-			By("Creating separate source resources for each keyed AR to avoid notification collisions")
+		// NOTE: This test uses different source resources per gate because the notification name
+// does not include approvalKey — two keyed ARs on the SAME target with the same action
+// would collide on notification ownership. This is a known framework limitation (not a
+// Spectre blocker because Spectre uses distinct actions: listen-provider / listen-consumer).
+It("creates two independent Approvals for different keys on different targets", func() {
+			By("Creating separate source resources for each keyed AR (notification names lack approvalKey)")
 			srcA := test.NewObject("scoped-dual-a-src", testNamespace)
 			srcA.SetLabels(map[string]string{
 				config.EnvironmentLabelKey: testEnvironment,
