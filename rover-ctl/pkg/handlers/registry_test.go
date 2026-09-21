@@ -166,7 +166,7 @@ var _ = Describe("Registry", func() {
 
 				// Verify Rover handler is registered
 				roverHandler, roverErr := handlers.GetHandler("Rover", "tcp.ei.telekom.de/v1")
-				fileSpecHandler, fileSpecErr := handlers.GetHandler("FileSpecification", "rover.cp.ei.telekom.de/v1")
+				fileSpecHandler, fileSpecErr := handlers.GetHandler("FileSpecification", "tcp.ei.telekom.de/v1")
 
 				// Verify both handlers are registered
 				Expect(apiSpecErr).NotTo(HaveOccurred())
