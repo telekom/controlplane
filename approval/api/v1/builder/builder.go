@@ -300,7 +300,7 @@ func (b *approvalBuilder) Build(ctx context.Context) (finalResult ApprovalResult
 
 	if res != controllerutil.OperationResultNone {
 		log.V(2).Info("ApprovalRequest reconciled", "operation", res)
-		b.Owner.SetCondition(newApprovalGrantedCondition(v1.ApprovalStatePending, "ApprovalRequest has been created or updated"))
+		b.Owner.SetCondition(newKeyedApprovalGrantedCondition(b.approvalKey, v1.ApprovalStatePending, "ApprovalRequest has been created or updated"))
 	}
 
 	// Cleanup stale requests — scoped cleanup partitions by approvalKey.
@@ -337,12 +337,12 @@ func (b *approvalBuilder) Build(ctx context.Context) (finalResult ApprovalResult
 
 		if isDenied {
 			log.V(1).Info("Approval is rejected or suspended and must not be provisioned")
-			b.Owner.SetCondition(newApprovalGrantedCondition(b.Approval.Spec.State, "Approval has been rejected or suspended"))
+			b.Owner.SetCondition(newKeyedApprovalGrantedCondition(b.approvalKey, b.Approval.Spec.State, "Approval has been rejected or suspended"))
 			return ApprovalResultDenied, nil
 		}
 		if isDeniedAndExpired {
 			log.V(1).Info("Approval expired from suspended state and must not be provisioned")
-			b.Owner.SetCondition(newApprovalGrantedCondition(b.Approval.Spec.State, "Approval has expired"))
+			b.Owner.SetCondition(newKeyedApprovalGrantedCondition(b.approvalKey, b.Approval.Spec.State, "Approval has expired"))
 			return ApprovalResultDenied, nil
 		}
 	}
@@ -350,14 +350,14 @@ func (b *approvalBuilder) Build(ctx context.Context) (finalResult ApprovalResult
 	// Priority 2: Check if ApprovalRequest is rejected (only if Approval didn't deny)
 	if approvalReq.Spec.State == v1.ApprovalStateRejected {
 		log.V(1).Info("ApprovalRequest is rejected")
-		b.Owner.SetCondition(newApprovalGrantedCondition(v1.ApprovalStateRejected, "ApprovalRequest has been rejected"))
+		b.Owner.SetCondition(newKeyedApprovalGrantedCondition(b.approvalKey, v1.ApprovalStateRejected, "ApprovalRequest has been rejected"))
 		return ApprovalResultRequestDenied, nil
 	}
 
 	// Priority 3: If Approval doesn't exist --> Pending
 	if !approvalExists {
 		log.Info("Approval does not exist")
-		b.Owner.SetCondition(newApprovalGrantedCondition(v1.ApprovalStatePending, "Approval does not exist yet"))
+		b.Owner.SetCondition(newKeyedApprovalGrantedCondition(b.approvalKey, v1.ApprovalStatePending, "Approval does not exist yet"))
 		return ApprovalResultPending, nil
 	}
 
@@ -366,12 +366,12 @@ func (b *approvalBuilder) Build(ctx context.Context) (finalResult ApprovalResult
 	if b.approvalKey != "" {
 		if !b.isScopedGrantBound(approvalReq) {
 			log.V(1).Info("Scoped Approval grant is not bound to this request")
-			b.Owner.SetCondition(newApprovalGrantedCondition(v1.ApprovalStatePending, "Approval is not bound to the current ApprovalRequest"))
+			b.Owner.SetCondition(newKeyedApprovalGrantedCondition(b.approvalKey, v1.ApprovalStatePending, "Approval is not bound to the current ApprovalRequest"))
 			return ApprovalResultPending, nil
 		}
 	} else if b.Approval.Spec.ApprovedRequest != nil && !b.Approval.Spec.ApprovedRequest.Equals(approvalReq) {
 		log.V(1).Info("Approval is not for this request. Returning early")
-		b.Owner.SetCondition(newApprovalGrantedCondition(v1.ApprovalStatePending, "Approval is not for the current ApprovalRequest"))
+		b.Owner.SetCondition(newKeyedApprovalGrantedCondition(b.approvalKey, v1.ApprovalStatePending, "Approval is not for the current ApprovalRequest"))
 		return ApprovalResultPending, nil
 	}
 
@@ -381,12 +381,12 @@ func (b *approvalBuilder) Build(ctx context.Context) (finalResult ApprovalResult
 	// Priority 4: Approval is granted
 	if b.Approval.Spec.State == v1.ApprovalStateGranted {
 		log.V(2).Info("Approval is granted")
-		b.Owner.SetCondition(newApprovalGrantedCondition(v1.ApprovalStateGranted, "Approval has been granted"))
+		b.Owner.SetCondition(newKeyedApprovalGrantedCondition(b.approvalKey, v1.ApprovalStateGranted, "Approval has been granted"))
 		return ApprovalResultGranted, nil
 	}
 	if isGrantedAndExpired {
 		log.V(2).Info("Approval expired from granted state, treating as granted")
-		b.Owner.SetCondition(newApprovalGrantedCondition(v1.ApprovalStateGranted, "Approval has expired but was previously granted"))
+		b.Owner.SetCondition(newKeyedApprovalGrantedCondition(b.approvalKey, v1.ApprovalStateGranted, "Approval has expired but was previously granted"))
 		return ApprovalResultGranted, nil
 	}
 	// Fallback, but should not be reached
