@@ -116,6 +116,8 @@ var (
 		{Name: "namespace", Type: field.TypeString, Size: 2147483647},
 		{Name: "name", Type: field.TypeString, Size: 2147483647},
 		{Name: "base_path", Type: field.TypeString, Size: 2147483647},
+		{Name: "gateway_url", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "idp_issuer", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "security", Type: field.TypeJSON, Nullable: true},
 		{Name: "traffic", Type: field.TypeJSON, Nullable: true},
 		{Name: "agentic_subscription_target", Type: field.TypeInt, Nullable: true},
@@ -129,13 +131,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "agentic_subscriptions_agentic_exposures_target",
-				Columns:    []*schema.Column{AgenticSubscriptionsColumns[11]},
+				Columns:    []*schema.Column{AgenticSubscriptionsColumns[13]},
 				RefColumns: []*schema.Column{AgenticExposuresColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "agentic_subscriptions_applications_subscribed_agentics",
-				Columns:    []*schema.Column{AgenticSubscriptionsColumns[12]},
+				Columns:    []*schema.Column{AgenticSubscriptionsColumns[14]},
 				RefColumns: []*schema.Column{ApplicationsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -149,7 +151,7 @@ var (
 			{
 				Name:    "agenticsubscription_base_path_application_subscribed_agentics",
 				Unique:  true,
-				Columns: []*schema.Column{AgenticSubscriptionsColumns[8], AgenticSubscriptionsColumns[12]},
+				Columns: []*schema.Column{AgenticSubscriptionsColumns[8], AgenticSubscriptionsColumns[14]},
 			},
 		},
 	}

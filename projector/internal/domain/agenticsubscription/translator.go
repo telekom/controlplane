@@ -69,6 +69,8 @@ func (t *Translator) Translate(_ context.Context, obj *agenticv1.AgenticSubscrip
 		StatusPhase:    phase,
 		StatusMessage:  message,
 		BasePath:       obj.Spec.BasePath,
+		GatewayUrl:     obj.Status.GatewayUrl,
+		IdpIssuer:      obj.Status.IdpIssuer,
 		Security:       security,
 		Traffic:        traffic,
 		OwnerAppName:   obj.Spec.Requestor.Application.Name,

@@ -47,6 +47,11 @@ When an **McpExposure** is reconciled, the Agentic operator provisions gateway R
 | **Primary** route | Always — one per exposure | Provider's zone namespace |
 | **Proxy** route | For each zone with an approved cross-zone subscription | Subscriber's zone namespace, upstream = provider zone's AI Gateway |
 
+After approval, an `AgenticSubscription` publishes the path-specific AI Gateway
+URL and the subscriber zone's identity-provider issuer in its status. The
+Projector persists both values and exposes them as `gatewayURL` and `idpIssuer`
+on the GraphQL `AgenticSubscription` type.
+
 ### Cross-Zone Meshing
 
 When subscribers exist in a different zone than the exposure, the operator creates a proxy Route in the subscriber's zone. That proxy gateway stamps a **Last-Mile-Security (LMS) token** when forwarding traffic to the provider zone. The primary route therefore adds the subscriber zone's `LmsIssuer` to its `TrustedIssuers` so that forwarded requests are accepted.

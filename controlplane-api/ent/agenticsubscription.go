@@ -41,6 +41,10 @@ type AgenticSubscription struct {
 	Name string `json:"name,omitempty"`
 	// BasePath holds the value of the "base_path" field.
 	BasePath string `json:"base_path,omitempty"`
+	// GatewayURL holds the value of the "gateway_url" field.
+	GatewayURL *string `json:"gateway_url,omitempty"`
+	// IdpIssuer holds the value of the "idp_issuer" field.
+	IdpIssuer *string `json:"idp_issuer,omitempty"`
 	// Security holds the value of the "security" field.
 	Security model.AgenticSubscriptionSecurity `json:"security,omitempty"`
 	// Traffic holds the value of the "traffic" field.
@@ -123,7 +127,7 @@ func (*AgenticSubscription) scanValues(columns []string) ([]any, error) {
 			values[i] = new([]byte)
 		case agenticsubscription.FieldID:
 			values[i] = new(sql.NullInt64)
-		case agenticsubscription.FieldStatusPhase, agenticsubscription.FieldStatusMessage, agenticsubscription.FieldEnvironment, agenticsubscription.FieldNamespace, agenticsubscription.FieldName, agenticsubscription.FieldBasePath:
+		case agenticsubscription.FieldStatusPhase, agenticsubscription.FieldStatusMessage, agenticsubscription.FieldEnvironment, agenticsubscription.FieldNamespace, agenticsubscription.FieldName, agenticsubscription.FieldBasePath, agenticsubscription.FieldGatewayURL, agenticsubscription.FieldIdpIssuer:
 			values[i] = new(sql.NullString)
 		case agenticsubscription.FieldCreatedAt, agenticsubscription.FieldLastModifiedAt:
 			values[i] = new(sql.NullTime)
@@ -202,6 +206,20 @@ func (_m *AgenticSubscription) assignValues(columns []string, values []any) erro
 				return fmt.Errorf("unexpected type %T for field base_path", values[i])
 			} else if value.Valid {
 				_m.BasePath = value.String
+			}
+		case agenticsubscription.FieldGatewayURL:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field gateway_url", values[i])
+			} else if value.Valid {
+				_m.GatewayURL = new(string)
+				*_m.GatewayURL = value.String
+			}
+		case agenticsubscription.FieldIdpIssuer:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field idp_issuer", values[i])
+			} else if value.Valid {
+				_m.IdpIssuer = new(string)
+				*_m.IdpIssuer = value.String
 			}
 		case agenticsubscription.FieldSecurity:
 			if value, ok := values[i].(*[]byte); !ok {
@@ -318,6 +336,16 @@ func (_m *AgenticSubscription) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("base_path=")
 	builder.WriteString(_m.BasePath)
+	builder.WriteString(", ")
+	if v := _m.GatewayURL; v != nil {
+		builder.WriteString("gateway_url=")
+		builder.WriteString(*v)
+	}
+	builder.WriteString(", ")
+	if v := _m.IdpIssuer; v != nil {
+		builder.WriteString("idp_issuer=")
+		builder.WriteString(*v)
+	}
 	builder.WriteString(", ")
 	builder.WriteString("security=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Security))

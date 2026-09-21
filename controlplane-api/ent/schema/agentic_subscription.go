@@ -37,6 +37,12 @@ func (AgenticSubscription) Fields() []ent.Field {
 	return []ent.Field{
 		field.Text("base_path").
 			NotEmpty(),
+		field.Text("gateway_url").
+			Optional().
+			Nillable(),
+		field.Text("idp_issuer").
+			Optional().
+			Nillable(),
 		field.JSON("security", model.AgenticSubscriptionSecurity{}).
 			Optional().
 			Annotations(entgql.Skip(entgql.SkipWhereInput)),

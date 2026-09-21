@@ -35,6 +35,13 @@ var _ = Describe("Root query resolvers for agentic entities", func() {
 		client.Close()
 	})
 
+	It("should expose gateway and IDP issuer fields on agentic subscriptions", func() {
+		schema := resolvers.NewExecutableSchema(resolvers.Config{}).Schema()
+		subscription := schema.Types["AgenticSubscription"]
+		Expect(subscription.Fields.ForName("gatewayURL").Type.String()).To(Equal("String"))
+		Expect(subscription.Fields.ForName("idpIssuer").Type.String()).To(Equal("String"))
+	})
+
 	It("should paginate mcpServers without panicking", func() {
 		ctx := testutil.AllowContext()
 		conn, err := r.Query().McpServers(ctx, nil, nil, nil, nil, nil, nil)

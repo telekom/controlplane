@@ -175,7 +175,9 @@ type ComplexityRoot struct {
 		BasePath         func(childComplexity int) int
 		CreatedAt        func(childComplexity int) int
 		Environment      func(childComplexity int) int
+		GatewayURL       func(childComplexity int) int
 		ID               func(childComplexity int) int
+		IdpIssuer        func(childComplexity int) int
 		LastModifiedAt   func(childComplexity int) int
 		Name             func(childComplexity int) int
 		Namespace        func(childComplexity int) int
@@ -1414,12 +1416,24 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.AgenticSubscription.Environment(childComplexity), true
+	case "AgenticSubscription.gatewayURL":
+		if e.ComplexityRoot.AgenticSubscription.GatewayURL == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgenticSubscription.GatewayURL(childComplexity), true
 	case "AgenticSubscription.id":
 		if e.ComplexityRoot.AgenticSubscription.ID == nil {
 			break
 		}
 
 		return e.ComplexityRoot.AgenticSubscription.ID(childComplexity), true
+	case "AgenticSubscription.idpIssuer":
+		if e.ComplexityRoot.AgenticSubscription.IdpIssuer == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgenticSubscription.IdpIssuer(childComplexity), true
 	case "AgenticSubscription.lastModifiedAt":
 		if e.ComplexityRoot.AgenticSubscription.LastModifiedAt == nil {
 			break
@@ -5410,6 +5424,8 @@ type AgenticSubscription implements Node {
   namespace: String!
   name: String!
   basePath: String!
+  gatewayURL: String
+  idpIssuer: String
   security: AgenticSubscriptionSecurity
   traffic: AgenticSubscriberTraffic
   owner: Application!
@@ -5609,6 +5625,42 @@ input AgenticSubscriptionWhereInput {
   basePathHasSuffix: String
   basePathEqualFold: String
   basePathContainsFold: String
+  """
+  gateway_url field predicates
+  """
+  gatewayURL: String
+  gatewayURLNEQ: String
+  gatewayURLIn: [String!]
+  gatewayURLNotIn: [String!]
+  gatewayURLGT: String
+  gatewayURLGTE: String
+  gatewayURLLT: String
+  gatewayURLLTE: String
+  gatewayURLContains: String
+  gatewayURLHasPrefix: String
+  gatewayURLHasSuffix: String
+  gatewayURLIsNil: Boolean
+  gatewayURLNotNil: Boolean
+  gatewayURLEqualFold: String
+  gatewayURLContainsFold: String
+  """
+  idp_issuer field predicates
+  """
+  idpIssuer: String
+  idpIssuerNEQ: String
+  idpIssuerIn: [String!]
+  idpIssuerNotIn: [String!]
+  idpIssuerGT: String
+  idpIssuerGTE: String
+  idpIssuerLT: String
+  idpIssuerLTE: String
+  idpIssuerContains: String
+  idpIssuerHasPrefix: String
+  idpIssuerHasSuffix: String
+  idpIssuerIsNil: Boolean
+  idpIssuerNotNil: Boolean
+  idpIssuerEqualFold: String
+  idpIssuerContainsFold: String
   """
   owner edge predicates
   """
@@ -10967,6 +11019,10 @@ func (ec *executionContext) childFields_AgenticSubscription(ctx context.Context,
 		return ec.fieldContext_AgenticSubscription_name(ctx, field)
 	case "basePath":
 		return ec.fieldContext_AgenticSubscription_basePath(ctx, field)
+	case "gatewayURL":
+		return ec.fieldContext_AgenticSubscription_gatewayURL(ctx, field)
+	case "idpIssuer":
+		return ec.fieldContext_AgenticSubscription_idpIssuer(ctx, field)
 	case "security":
 		return ec.fieldContext_AgenticSubscription_security(ctx, field)
 	case "traffic":

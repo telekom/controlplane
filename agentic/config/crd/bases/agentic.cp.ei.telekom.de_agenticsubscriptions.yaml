@@ -311,6 +311,13 @@ spec:
                 - name
                 - namespace
                 type: object
+              gatewayUrl:
+                description: GatewayUrl is the AI Gateway URL used for the subscription.
+                type: string
+              idpIssuer:
+                description: IdpIssuer is the issuer of the identity provider used
+                  for authentication.
+                type: string
             type: object
         type: object
     served: true

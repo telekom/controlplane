@@ -61,6 +61,14 @@ type AgenticSubscriptionStatus struct {
 	// ApprovalRequest references the ApprovalRequest CR for this subscription.
 	// +optional
 	ApprovalRequest *ctypes.ObjectRef `json:"approvalRequest,omitempty"`
+
+	// IdpIssuer is the issuer of the identity provider used for authentication.
+	// +optional
+	IdpIssuer string `json:"idpIssuer,omitempty"`
+
+	// GatewayUrl is the AI Gateway URL used for the subscription.
+	// +optional
+	GatewayUrl string `json:"gatewayUrl,omitempty"`
 }
 
 // +kubebuilder:object:root=true
