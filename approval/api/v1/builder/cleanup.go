@@ -81,9 +81,13 @@ func cleanupScopedRequests(
 			},
 		}
 		if err := c.Delete(ctx, ar, delOpts); err != nil {
-			if apierrors.IsNotFound(err) || apierrors.IsConflict(err) {
+			if apierrors.IsNotFound(err) {
 				continue
 			}
+			// Conflict means the stale request's identity changed between our
+			// list and the delete — the obsolete object may still exist. Surface
+			// the error so the caller retries rather than silently leaving a
+			// stale request behind.
 			return deleted, errors.Wrapf(err, "deleting stale approval-request %s", ar.Name)
 		}
 		deleted++
