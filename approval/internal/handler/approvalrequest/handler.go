@@ -6,6 +6,7 @@ package approvalrequest
 
 import (
 	"context"
+	"fmt"
 	"maps"
 
 	"github.com/pkg/errors"
@@ -173,15 +174,50 @@ func handleGranted(ctx context.Context, approvalReq *approvalv1.ApprovalRequest)
 	logger := log.FromContext(ctx)
 	c := client.ClientFromContextOrDie(ctx)
 
-	approvalObj := newApprovalFromApprovalRequest(approvalReq)
+	approvalObj, err := newApprovalFromApprovalRequest(approvalReq)
+	if err != nil {
+		return errors.Wrap(err, "failed to derive approval name")
+	}
+
+	isKeyed := approvalReq.Spec.ApprovalKey != ""
 
 	mutate := func() error {
+		// For scoped Approvals that already exist, validate identity and protect revocations.
+		if isKeyed && approvalObj.UID != "" {
+			if approvalObj.Spec.ApprovalKey != approvalReq.Spec.ApprovalKey {
+				return fmt.Errorf("scoped approval %s: approvalKey mismatch: existing %q != request %q",
+					approvalObj.Name, approvalObj.Spec.ApprovalKey, approvalReq.Spec.ApprovalKey)
+			}
+			if !approvalv1.ScopedIdentityMatch(approvalObj.Spec.Target, approvalReq.Spec.Target,
+				approvalObj.Spec.ApprovalKey, approvalReq.Spec.ApprovalKey) {
+				return fmt.Errorf("scoped approval %s: target identity mismatch", approvalObj.Name)
+			}
+
+			// Preserve active revocations: do not overwrite Rejected/Suspended with a new grant.
+			isRevoked := approvalObj.Spec.State == approvalv1.ApprovalStateRejected ||
+				approvalObj.Spec.State == approvalv1.ApprovalStateSuspended
+			isExpiredFromSuspended := approvalObj.Spec.State == approvalv1.ApprovalStateExpired &&
+				approvalObj.Status.LastState == approvalv1.ApprovalStateSuspended
+			if isRevoked || isExpiredFromSuspended {
+				logger.Info("Scoped approval is revoked; preserving revocation",
+					"state", approvalObj.Spec.State)
+				return nil
+			}
+		}
+
 		if approvalObj.Spec.ApprovedRequest != nil && approvalObj.Spec.ApprovedRequest.Name == approvalReq.Name {
+			// Already processed for this request; repair metadata only.
+			if isKeyed {
+				approvalv1.SetApprovalKeyLabel(approvalObj, approvalReq.Spec.ApprovalKey)
+			}
 			logger.Info("Approval has already been processed for this request")
 			return nil
 		}
 
-		setControllerReferenceForRef(approvalObj, &approvalReq.Spec.Target)
+		// Set controller owner reference only when creating (no existing refs).
+		if len(approvalObj.GetOwnerReferences()) == 0 {
+			setControllerReferenceForRef(approvalObj, &approvalReq.Spec.Target)
+		}
 
 		approvalObj.Spec = approvalv1.ApprovalSpec{
 			Strategy: approvalReq.Spec.Strategy,
@@ -194,15 +230,23 @@ func handleGranted(ctx context.Context, approvalReq *approvalv1.ApprovalRequest)
 			Decisions: approvalReq.Spec.Decisions,
 
 			ApprovedRequest: types.ObjectRefFromObject(approvalReq),
+			ApprovalKey:     approvalReq.Spec.ApprovalKey,
 		}
 
 		// copy labels from approval request.
 		approvalObj.Labels = maps.Clone(approvalReq.Labels)
+		// Spec-derived labels always reflect the request spec, never a copied value.
+		approvalv1.SetApprovalLabels(approvalObj, approvalReq.Spec.Target,
+			approvalReq.Spec.Requester.TeamName,
+			approvalReq.Spec.Decider.TeamName,
+			approvalReq.Spec.Action,
+			string(approvalReq.Spec.Strategy))
+		approvalv1.SetApprovalKeyLabel(approvalObj, approvalReq.Spec.ApprovalKey)
 
 		return nil
 	}
 
-	_, err := c.CreateOrUpdate(ctx, approvalObj, mutate)
+	_, err = c.CreateOrUpdate(ctx, approvalObj, mutate)
 	if err != nil {
 		return errors.Wrap(err, "failed to create or update approval")
 	}
@@ -231,12 +275,22 @@ func setControllerReferenceForRef(obj types.Object, objRef *types.TypedObjectRef
 	obj.SetOwnerReferences(append(obj.GetOwnerReferences(), ref))
 }
 
-func newApprovalFromApprovalRequest(approvalReq *approvalv1.ApprovalRequest) *approvalv1.Approval {
+func newApprovalFromApprovalRequest(approvalReq *approvalv1.ApprovalRequest) (*approvalv1.Approval, error) {
+	name := approvalv1.ApprovalName(approvalReq.Spec.Target.Kind, approvalReq.Spec.Target.Name)
+
+	if approvalReq.Spec.ApprovalKey != "" {
+		scopedName, err := approvalv1.ScopedApprovalName(approvalReq.Spec.Target, approvalReq.Spec.ApprovalKey)
+		if err != nil {
+			return nil, fmt.Errorf("computing scoped approval name: %w", err)
+		}
+		name = scopedName
+	}
+
 	return &approvalv1.Approval{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      approvalv1.ApprovalName(approvalReq.Spec.Target.Kind, approvalReq.Spec.Target.Name),
+			Name:      name,
 			Namespace: approvalReq.Namespace,
 		},
 		Spec: approvalv1.ApprovalSpec{},
-	}
+	}, nil
 }
