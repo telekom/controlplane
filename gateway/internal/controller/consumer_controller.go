@@ -45,7 +45,8 @@ func (r *ConsumerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Controller = cc.NewController(&consumer_handler.ConsumerHandler{}, r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&gatewayv1.Consumer{}, builder.WithPredicates(cc.Count("consumer", cc.RoleFor, predicate.GenerationChangedPredicate{}))).
+		For(&gatewayv1.Consumer{}, builder.WithPredicates(cc.Count("consumer", cc.RoleFor,
+			predicate.Or(predicate.GenerationChangedPredicate{}, predicate.LabelChangedPredicate{})))).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
 			RateLimiter:             cc.NewRateLimiter(),

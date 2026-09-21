@@ -14,14 +14,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 )
 
-// SkipInitialListPredicate drops the synthetic create events the informer emits
-// for the objects already present when the cache is first filled. Those objects
-// are reconciled by the periodic requeue anyway, so admitting them only makes
-// every restart pay a full resync burst.
-type SkipInitialListPredicate struct{ predicate.Funcs }
-
-func (SkipInitialListPredicate) Create(e event.CreateEvent) bool { return !e.IsInInitialList }
-
 // RouteRelevantForConsumeRoutePredicate admits a Route update to the
 // ConsumeRoute controller only when a field the ConsumeRoute handler actually
 // reads has changed: the Ready condition and Status.Consumers.

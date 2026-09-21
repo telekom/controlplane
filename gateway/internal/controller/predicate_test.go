@@ -107,15 +107,3 @@ var _ = Describe("RouteRelevantForConsumeRoutePredicate", func() {
 		})
 	})
 })
-
-var _ = Describe("SkipInitialListPredicate", func() {
-	p := SkipInitialListPredicate{}
-
-	It("drops the synthetic creates of the initial cache sync", func() {
-		Expect(p.Create(event.CreateEvent{Object: readyRoute(true), IsInInitialList: true})).To(BeFalse())
-	})
-
-	It("admits a real create", func() {
-		Expect(p.Create(event.CreateEvent{Object: readyRoute(true)})).To(BeTrue())
-	})
-})
