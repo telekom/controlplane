@@ -159,6 +159,124 @@ var _ = Describe("CacheKeys", func() {
 		})
 	})
 
+	// --- McpServer ---
+
+	Describe("McpServer", func() {
+		It("returns the correct entity type and composite key", func() {
+			et, lk := cachekeys.McpServer("/mcp/v1", "hyperion")
+			Expect(et).To(Equal("mcpserver"))
+			Expect(lk).To(Equal("/mcp/v1:hyperion"))
+		})
+
+		It("produces different keys for different teams", func() {
+			_, lk1 := cachekeys.McpServer("/mcp/v1", "team-a")
+			_, lk2 := cachekeys.McpServer("/mcp/v1", "team-b")
+			Expect(lk1).NotTo(Equal(lk2))
+		})
+	})
+
+	// --- ActiveMcpServer ---
+
+	Describe("ActiveMcpServer", func() {
+		It("returns the correct entity type and lookup key", func() {
+			et, lk := cachekeys.ActiveMcpServer("/mcp/v1")
+			Expect(et).To(Equal("mcpserver_active"))
+			Expect(lk).To(Equal("/mcp/v1"))
+		})
+
+		It("does not collide with McpServer key", func() {
+			etActive, _ := cachekeys.ActiveMcpServer("/mcp/v1")
+			etFull, _ := cachekeys.McpServer("/mcp/v1", "team")
+			Expect(etActive).NotTo(Equal(etFull))
+		})
+	})
+
+	// --- AgentCard ---
+
+	Describe("AgentCard", func() {
+		It("returns the correct entity type and composite key", func() {
+			et, lk := cachekeys.AgentCard("/agent/v1", "hyperion")
+			Expect(et).To(Equal("agentcard"))
+			Expect(lk).To(Equal("/agent/v1:hyperion"))
+		})
+
+		It("produces different keys for different teams", func() {
+			_, lk1 := cachekeys.AgentCard("/agent/v1", "team-a")
+			_, lk2 := cachekeys.AgentCard("/agent/v1", "team-b")
+			Expect(lk1).NotTo(Equal(lk2))
+		})
+	})
+
+	// --- ActiveAgentCard ---
+
+	Describe("ActiveAgentCard", func() {
+		It("returns the correct entity type and lookup key", func() {
+			et, lk := cachekeys.ActiveAgentCard("/agent/v1")
+			Expect(et).To(Equal("agentcard_active"))
+			Expect(lk).To(Equal("/agent/v1"))
+		})
+
+		It("does not collide with AgentCard key", func() {
+			etActive, _ := cachekeys.ActiveAgentCard("/agent/v1")
+			etFull, _ := cachekeys.AgentCard("/agent/v1", "team")
+			Expect(etActive).NotTo(Equal(etFull))
+		})
+	})
+
+	// --- AgenticExposure ---
+
+	Describe("AgenticExposure", func() {
+		It("returns the correct entity type and composite key", func() {
+			et, lk := cachekeys.AgenticExposure("/mcp/v1", "my-app", "hyperion")
+			Expect(et).To(Equal("agenticexposure"))
+			Expect(lk).To(Equal("/mcp/v1:my-app:hyperion"))
+		})
+
+		It("produces different keys for different base paths", func() {
+			_, lk1 := cachekeys.AgenticExposure("/mcp/v1", "app", "team")
+			_, lk2 := cachekeys.AgenticExposure("/mcp/v2", "app", "team")
+			Expect(lk1).NotTo(Equal(lk2))
+		})
+
+		It("produces different keys for different apps", func() {
+			_, lk1 := cachekeys.AgenticExposure("/mcp/v1", "app-a", "team")
+			_, lk2 := cachekeys.AgenticExposure("/mcp/v1", "app-b", "team")
+			Expect(lk1).NotTo(Equal(lk2))
+		})
+	})
+
+	// --- AgenticExposureByBasePath ---
+
+	Describe("AgenticExposureByBasePath", func() {
+		It("returns agenticexposure entity type with bp: prefix", func() {
+			et, lk := cachekeys.AgenticExposureByBasePath("/mcp/v1")
+			Expect(et).To(Equal("agenticexposure"))
+			Expect(lk).To(Equal("bp:/mcp/v1"))
+		})
+
+		It("does not collide with full AgenticExposure key", func() {
+			_, lk1 := cachekeys.AgenticExposureByBasePath("/mcp/v1")
+			_, lk2 := cachekeys.AgenticExposure("/mcp/v1", "app", "team")
+			Expect(lk1).NotTo(Equal(lk2))
+		})
+	})
+
+	// --- AgenticSubscriptionMeta ---
+
+	Describe("AgenticSubscriptionMeta", func() {
+		It("returns the correct entity type and meta-prefixed key", func() {
+			et, lk := cachekeys.AgenticSubscriptionMeta("default", "my-sub")
+			Expect(et).To(Equal("agenticsubscription"))
+			Expect(lk).To(Equal("meta:default:my-sub"))
+		})
+
+		It("produces different keys for different namespaces", func() {
+			_, lk1 := cachekeys.AgenticSubscriptionMeta("ns-a", "sub")
+			_, lk2 := cachekeys.AgenticSubscriptionMeta("ns-b", "sub")
+			Expect(lk1).NotTo(Equal(lk2))
+		})
+	})
+
 	// --- Edge cases ---
 
 	Describe("Edge cases", func() {

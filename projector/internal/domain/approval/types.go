@@ -4,9 +4,9 @@
 
 // Package approval implements the Approval resource module for the projector
 // operator. Approval is a Level 4 entity with a required FK dependency
-// on ApiSubscription or EventSubscription (determined by TargetKind). It uses
-// namespace+name as the unique conflict key and resolves the subscription FK
-// via cache-based meta-key lookup.
+// on ApiSubscription, EventSubscription, or AgenticSubscription (determined
+// by TargetKind). It uses namespace+name as the unique conflict key and
+// resolves the subscription FK via cache-based meta-key lookup.
 package approval
 
 import (
@@ -18,8 +18,9 @@ import (
 
 // TargetKind constants for FK resolution.
 const (
-	TargetKindAPISubscription   = "ApiSubscription"
-	TargetKindEventSubscription = "EventSubscription"
+	TargetKindAPISubscription     = "ApiSubscription"
+	TargetKindEventSubscription   = "EventSubscription"
+	TargetKindAgenticSubscription = "AgenticSubscription"
 )
 
 // ApprovalKey is the composite identity key for Approval entities.
@@ -46,9 +47,10 @@ type ApprovalData struct {
 	Decider              model.DeciderInfo
 	Decisions            []model.Decision
 	AvailableTransitions []model.AvailableTransition
-	// TargetKind indicates whether the approval targets an ApiSubscription
-	// or EventSubscription. Used by the repository to resolve the correct FK.
-	TargetKind string // "ApiSubscription" or "EventSubscription"
+	// TargetKind indicates whether the approval targets an ApiSubscription,
+	// EventSubscription, or AgenticSubscription. Used by the repository to
+	// resolve the correct FK.
+	TargetKind string // "ApiSubscription", "EventSubscription", or "AgenticSubscription"
 	// Subscription reference via spec.target (k8s namespace + name).
 	SubscriptionNamespace string
 	SubscriptionName      string

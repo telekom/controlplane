@@ -15,6 +15,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/dialect/sql/sqljson"
 	"entgo.io/ent/schema/field"
+	"github.com/telekom/controlplane/controlplane-api/ent/agenticsubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/apisubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/approval"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventsubscription"
@@ -319,6 +320,25 @@ func (_u *ApprovalUpdate) SetEventSubscription(v *EventSubscription) *ApprovalUp
 	return _u.SetEventSubscriptionID(v.ID)
 }
 
+// SetAgenticSubscriptionID sets the "agentic_subscription" edge to the AgenticSubscription entity by ID.
+func (_u *ApprovalUpdate) SetAgenticSubscriptionID(id int) *ApprovalUpdate {
+	_u.mutation.SetAgenticSubscriptionID(id)
+	return _u
+}
+
+// SetNillableAgenticSubscriptionID sets the "agentic_subscription" edge to the AgenticSubscription entity by ID if the given value is not nil.
+func (_u *ApprovalUpdate) SetNillableAgenticSubscriptionID(id *int) *ApprovalUpdate {
+	if id != nil {
+		_u = _u.SetAgenticSubscriptionID(*id)
+	}
+	return _u
+}
+
+// SetAgenticSubscription sets the "agentic_subscription" edge to the AgenticSubscription entity.
+func (_u *ApprovalUpdate) SetAgenticSubscription(v *AgenticSubscription) *ApprovalUpdate {
+	return _u.SetAgenticSubscriptionID(v.ID)
+}
+
 // Mutation returns the ApprovalMutation object of the builder.
 func (_u *ApprovalUpdate) Mutation() *ApprovalMutation {
 	return _u.mutation
@@ -333,6 +353,12 @@ func (_u *ApprovalUpdate) ClearAPISubscription() *ApprovalUpdate {
 // ClearEventSubscription clears the "event_subscription" edge to the EventSubscription entity.
 func (_u *ApprovalUpdate) ClearEventSubscription() *ApprovalUpdate {
 	_u.mutation.ClearEventSubscription()
+	return _u
+}
+
+// ClearAgenticSubscription clears the "agentic_subscription" edge to the AgenticSubscription entity.
+func (_u *ApprovalUpdate) ClearAgenticSubscription() *ApprovalUpdate {
+	_u.mutation.ClearAgenticSubscription()
 	return _u
 }
 
@@ -562,6 +588,35 @@ func (_u *ApprovalUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(eventsubscription.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.AgenticSubscriptionCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: true,
+			Table:   approval.AgenticSubscriptionTable,
+			Columns: []string{approval.AgenticSubscriptionColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(agenticsubscription.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.AgenticSubscriptionIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: true,
+			Table:   approval.AgenticSubscriptionTable,
+			Columns: []string{approval.AgenticSubscriptionColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(agenticsubscription.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {
@@ -873,6 +928,25 @@ func (_u *ApprovalUpdateOne) SetEventSubscription(v *EventSubscription) *Approva
 	return _u.SetEventSubscriptionID(v.ID)
 }
 
+// SetAgenticSubscriptionID sets the "agentic_subscription" edge to the AgenticSubscription entity by ID.
+func (_u *ApprovalUpdateOne) SetAgenticSubscriptionID(id int) *ApprovalUpdateOne {
+	_u.mutation.SetAgenticSubscriptionID(id)
+	return _u
+}
+
+// SetNillableAgenticSubscriptionID sets the "agentic_subscription" edge to the AgenticSubscription entity by ID if the given value is not nil.
+func (_u *ApprovalUpdateOne) SetNillableAgenticSubscriptionID(id *int) *ApprovalUpdateOne {
+	if id != nil {
+		_u = _u.SetAgenticSubscriptionID(*id)
+	}
+	return _u
+}
+
+// SetAgenticSubscription sets the "agentic_subscription" edge to the AgenticSubscription entity.
+func (_u *ApprovalUpdateOne) SetAgenticSubscription(v *AgenticSubscription) *ApprovalUpdateOne {
+	return _u.SetAgenticSubscriptionID(v.ID)
+}
+
 // Mutation returns the ApprovalMutation object of the builder.
 func (_u *ApprovalUpdateOne) Mutation() *ApprovalMutation {
 	return _u.mutation
@@ -887,6 +961,12 @@ func (_u *ApprovalUpdateOne) ClearAPISubscription() *ApprovalUpdateOne {
 // ClearEventSubscription clears the "event_subscription" edge to the EventSubscription entity.
 func (_u *ApprovalUpdateOne) ClearEventSubscription() *ApprovalUpdateOne {
 	_u.mutation.ClearEventSubscription()
+	return _u
+}
+
+// ClearAgenticSubscription clears the "agentic_subscription" edge to the AgenticSubscription entity.
+func (_u *ApprovalUpdateOne) ClearAgenticSubscription() *ApprovalUpdateOne {
+	_u.mutation.ClearAgenticSubscription()
 	return _u
 }
 
@@ -1146,6 +1226,35 @@ func (_u *ApprovalUpdateOne) sqlSave(ctx context.Context) (_node *Approval, err 
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(eventsubscription.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.AgenticSubscriptionCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: true,
+			Table:   approval.AgenticSubscriptionTable,
+			Columns: []string{approval.AgenticSubscriptionColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(agenticsubscription.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.AgenticSubscriptionIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: true,
+			Table:   approval.AgenticSubscriptionTable,
+			Columns: []string{approval.AgenticSubscriptionColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(agenticsubscription.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

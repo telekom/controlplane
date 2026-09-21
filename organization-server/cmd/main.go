@@ -85,7 +85,7 @@ func main() {
 			External: buildListener(cfg.Listeners.External, false),
 			Internal: buildListener(cfg.Listeners.Internal, true),
 		},
-		Register: func(router fiber.Router, guard fiber.Handler) {
+		Register: func(router fiber.Router, guard []fiber.Handler) {
 			srv.RegisterRoutes(router.Group("/organization/v1"), guard)
 		},
 	}

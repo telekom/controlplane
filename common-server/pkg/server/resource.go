@@ -43,20 +43,20 @@ func (r *ResourceController) SetXInfoHeaders(c *fiber.Ctx) {
 
 func (r *ResourceController) Register(router fiber.Router, opts ControllerOpts) {
 	r.ApiPrefix = opts.Prefix
-	checkAccess := security.ConfigureSecurity(router, opts.Security)
+	guard := security.ConfigureSecurity(router, opts.Security)
 
 	if opts.IsAllowed("GET") {
-		router.Get("/:namespace/:name", checkAccess, r.Read)
-		router.Get("/", checkAccess, r.List)
+		router.Get("/:namespace/:name", Guarded(guard, r.Read)...)
+		router.Get("/", Guarded(guard, r.List)...)
 	}
 	if opts.IsAllowed("PATCH") {
-		router.Patch("/:namespace/:name", checkAccess, r.Patch)
+		router.Patch("/:namespace/:name", Guarded(guard, r.Patch)...)
 	}
 	if opts.IsAllowed("DELETE") {
-		router.Delete("/:namespace/:name", checkAccess, r.Delete)
+		router.Delete("/:namespace/:name", Guarded(guard, r.Delete)...)
 	}
 	if opts.IsAllowed("POST") {
-		router.Post("/", checkAccess, r.CreateOrUpdate)
+		router.Post("/", Guarded(guard, r.CreateOrUpdate)...)
 	}
 }
 

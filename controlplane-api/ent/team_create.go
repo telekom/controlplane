@@ -14,10 +14,12 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/telekom/controlplane/controlplane-api/ent/agentcard"
 	"github.com/telekom/controlplane/controlplane-api/ent/api"
 	"github.com/telekom/controlplane/controlplane-api/ent/application"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventtype"
 	"github.com/telekom/controlplane/controlplane-api/ent/group"
+	"github.com/telekom/controlplane/controlplane-api/ent/mcpserver"
 	"github.com/telekom/controlplane/controlplane-api/ent/member"
 	"github.com/telekom/controlplane/controlplane-api/ent/team"
 )
@@ -251,6 +253,36 @@ func (_c *TeamCreate) AddEventTypes(v ...*EventType) *TeamCreate {
 		ids[i] = v[i].ID
 	}
 	return _c.AddEventTypeIDs(ids...)
+}
+
+// AddMcpServerIDs adds the "mcp_servers" edge to the McpServer entity by IDs.
+func (_c *TeamCreate) AddMcpServerIDs(ids ...int) *TeamCreate {
+	_c.mutation.AddMcpServerIDs(ids...)
+	return _c
+}
+
+// AddMcpServers adds the "mcp_servers" edges to the McpServer entity.
+func (_c *TeamCreate) AddMcpServers(v ...*McpServer) *TeamCreate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddMcpServerIDs(ids...)
+}
+
+// AddAgentCardIDs adds the "agent_cards" edge to the AgentCard entity by IDs.
+func (_c *TeamCreate) AddAgentCardIDs(ids ...int) *TeamCreate {
+	_c.mutation.AddAgentCardIDs(ids...)
+	return _c
+}
+
+// AddAgentCards adds the "agent_cards" edges to the AgentCard entity.
+func (_c *TeamCreate) AddAgentCards(v ...*AgentCard) *TeamCreate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddAgentCardIDs(ids...)
 }
 
 // Mutation returns the TeamMutation object of the builder.
@@ -505,6 +537,38 @@ func (_c *TeamCreate) createSpec() (*Team, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(eventtype.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.McpServersIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   team.McpServersTable,
+			Columns: []string{team.McpServersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(mcpserver.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.AgentCardsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   team.AgentCardsTable,
+			Columns: []string{team.AgentCardsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(agentcard.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

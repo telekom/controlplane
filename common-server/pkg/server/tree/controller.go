@@ -28,9 +28,9 @@ func NewResourceTreeController(store store.ObjectStore[*unstructured.Unstructure
 }
 
 func (r *ResourceTreeController) Register(router fiber.Router, opts server.ControllerOpts) {
-	checkAccess := security.ConfigureSecurity(router, opts.Security)
+	guard := security.ConfigureSecurity(router, opts.Security)
 
-	router.Get("/:namespace/:name/tree", checkAccess, r.GetTree)
+	router.Get("/:namespace/:name/tree", server.Guarded(guard, r.GetTree)...)
 }
 
 func (r *ResourceTreeController) GetTree(c *fiber.Ctx) error {

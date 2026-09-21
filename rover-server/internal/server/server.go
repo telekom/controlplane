@@ -125,7 +125,7 @@ type Server struct {
 	Resources           ResourcesController
 }
 
-func (s *Server) RegisterRoutes(router fiber.Router, guard fiber.Handler) {
+func (s *Server) RegisterRoutes(router fiber.Router, guard []fiber.Handler) {
 	swagger, err := api.GetSwagger()
 	if err != nil {
 		panic(errors.Wrap(err, "failed to get swagger"))

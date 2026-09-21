@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"slices"
 	"sync"
 
 	"github.com/go-logr/logr"
@@ -53,8 +54,8 @@ func (l Listeners) present() []*Listener {
 }
 
 // RegisterFunc registers the identical route set onto one app's router,
-// attaching guard to each route (guard may be nil).
-type RegisterFunc func(router fiber.Router, guard fiber.Handler)
+// attaching the guard chain to each guarded route (guard may be nil).
+type RegisterFunc func(router fiber.Router, guard []fiber.Handler)
 
 // MultiServer serves the same route set on N ports, one *fiber.App per port,
 // each running its own independently-chosen security family. All TLS listeners
@@ -119,7 +120,7 @@ func (m *MultiServer) Run(ctx context.Context) error {
 		// Probes are unauthenticated and identical on every port.
 		NewProbesController().Register(app, ControllerOpts{})
 
-		// The family installs its middleware and returns the per-route guard.
+		// The family installs middleware and returns the per-route guard chain.
 		guard := l.Family(app)
 
 		// The same route set on every port.
@@ -179,14 +180,11 @@ func closeListeners(listeners []net.Listener) error {
 	return errors.Join(closeErrs...)
 }
 
-// Guarded prepends guard to h when guard is non-nil, so a route registration
-// works uniformly whether or not the family uses a per-route guard. Servers use
+// Guarded prepends the guard chain to h, so a route registration works
+// uniformly whether or not the family uses per-route guards. Servers use
 // it in their RegisterFunc: router.Add(method, path, Guarded(guard, h)...).
-func Guarded(guard, h fiber.Handler) []fiber.Handler {
-	if guard == nil {
-		return []fiber.Handler{h}
-	}
-	return []fiber.Handler{guard, h}
+func Guarded(guard []fiber.Handler, h fiber.Handler) []fiber.Handler {
+	return slices.Concat(guard, []fiber.Handler{h})
 }
 
 // FamilyFromListenerConfig selects the family from the single present family

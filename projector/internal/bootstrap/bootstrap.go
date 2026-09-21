@@ -27,6 +27,7 @@ import (
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
+	agenticv1 "github.com/telekom/controlplane/agentic/api/v1"
 	apiv1 "github.com/telekom/controlplane/api/api/v1"
 	appv1 "github.com/telekom/controlplane/application/api/v1"
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
@@ -39,6 +40,9 @@ import (
 	permissionv1 "github.com/telekom/controlplane/permission/api/v1"
 
 	"github.com/telekom/controlplane/projector/internal/config"
+	"github.com/telekom/controlplane/projector/internal/domain/agentcard"
+	"github.com/telekom/controlplane/projector/internal/domain/agenticexposure"
+	"github.com/telekom/controlplane/projector/internal/domain/agenticsubscription"
 	"github.com/telekom/controlplane/projector/internal/domain/api"
 	"github.com/telekom/controlplane/projector/internal/domain/apiexposure"
 	"github.com/telekom/controlplane/projector/internal/domain/apisubscription"
@@ -49,6 +53,7 @@ import (
 	"github.com/telekom/controlplane/projector/internal/domain/eventsubscription"
 	"github.com/telekom/controlplane/projector/internal/domain/eventtype"
 	"github.com/telekom/controlplane/projector/internal/domain/group"
+	"github.com/telekom/controlplane/projector/internal/domain/mcpserver"
 	"github.com/telekom/controlplane/projector/internal/domain/permissionset"
 	"github.com/telekom/controlplane/projector/internal/domain/team"
 	"github.com/telekom/controlplane/projector/internal/domain/zone"
@@ -89,6 +94,11 @@ func registerSchemesAndModules(scheme *runtime.Scheme, baseModules []module.Modu
 	if cconfig.FeaturePermission.IsEnabled() {
 		_ = permissionv1.AddToScheme(scheme)
 		result = append(result, permissionset.Module)
+	}
+
+	if cconfig.FeatureAiGateway.IsEnabled() {
+		_ = agenticv1.AddToScheme(scheme)
+		result = append(result, mcpserver.Module, agentcard.Module, agenticexposure.Module, agenticsubscription.Module)
 	}
 
 	return result

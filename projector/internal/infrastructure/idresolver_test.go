@@ -353,6 +353,182 @@ var _ = Describe("IDResolver", func() {
 		})
 	})
 
+	// ── FindAgenticExposureByBasePath (base-path-only lookup) ──────────
+
+	Describe("FindAgenticExposureByBasePath", func() {
+		It("should return cached ID on cache hit", func() {
+			cache.Set("agenticexposure", "bp:/mcp/v1/tools", 56)
+			cache.Wait()
+
+			id, err := resolver.FindAgenticExposureByBasePath(ctx, "/mcp/v1/tools")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(id).To(Equal(56))
+		})
+
+		It("should fall back to DB on cache miss and cache the result", func() {
+			z, err := client.Zone.Create().
+				SetName("caas-agentic-bp").
+				SetVisibility(zone.VisibilityEnterprise).
+				Save(ctx)
+			Expect(err).NotTo(HaveOccurred())
+
+			t, err := client.Team.Create().
+				SetName("team-agentic-bp").
+				SetEmail("agentic-bp@example.com").
+				SetNamespace("team-agentic-bp").
+				Save(ctx)
+			Expect(err).NotTo(HaveOccurred())
+
+			app, err := client.Application.Create().
+				SetName("app-agentic-bp").
+				SetNamespace("team-agentic-bp").
+				SetOwnerTeamID(t.ID).
+				SetZoneID(z.ID).
+				Save(ctx)
+			Expect(err).NotTo(HaveOccurred())
+
+			exposure, err := client.AgenticExposure.Create().
+				SetBasePath("/mcp/v1/orders").
+				SetNamespace("team-agentic-bp").
+				SetActive(true).
+				SetOwnerID(app.ID).
+				Save(ctx)
+			Expect(err).NotTo(HaveOccurred())
+
+			id, foundErr := resolver.FindAgenticExposureByBasePath(ctx, "/mcp/v1/orders")
+			Expect(foundErr).NotTo(HaveOccurred())
+			Expect(id).To(Equal(exposure.ID))
+
+			cache.Wait()
+			cachedID, found := cache.Get("agenticexposure", "bp:/mcp/v1/orders")
+			Expect(found).To(BeTrue())
+			Expect(cachedID).To(Equal(exposure.ID))
+		})
+
+		It("should return ErrEntityNotFound for missing base path", func() {
+			_, err := resolver.FindAgenticExposureByBasePath(ctx, "/mcp/v1/nonexistent")
+			Expect(err).To(HaveOccurred())
+			Expect(errors.Is(err, infrastructure.ErrEntityNotFound)).To(BeTrue())
+			Expect(err.Error()).To(ContainSubstring("/mcp/v1/nonexistent"))
+		})
+
+		It("should only match active exposures", func() {
+			z, err := client.Zone.Create().
+				SetName("caas-agentic-active").
+				SetVisibility(zone.VisibilityEnterprise).
+				Save(ctx)
+			Expect(err).NotTo(HaveOccurred())
+
+			t, err := client.Team.Create().
+				SetName("team-agentic-active").
+				SetEmail("agentic-active@example.com").
+				SetNamespace("team-agentic-active").
+				Save(ctx)
+			Expect(err).NotTo(HaveOccurred())
+
+			app, err := client.Application.Create().
+				SetName("app-agentic-active").
+				SetNamespace("team-agentic-active").
+				SetOwnerTeamID(t.ID).
+				SetZoneID(z.ID).
+				Save(ctx)
+			Expect(err).NotTo(HaveOccurred())
+
+			// Inactive exposure — should NOT be found.
+			_, err = client.AgenticExposure.Create().
+				SetBasePath("/mcp/v1/shared").
+				SetNamespace("team-agentic-active").
+				SetActive(false).
+				SetOwnerID(app.ID).
+				Save(ctx)
+			Expect(err).NotTo(HaveOccurred())
+
+			_, err = resolver.FindAgenticExposureByBasePath(ctx, "/mcp/v1/shared")
+			Expect(err).To(HaveOccurred())
+			Expect(errors.Is(err, infrastructure.ErrEntityNotFound)).To(BeTrue())
+
+			app2, err := client.Application.Create().
+				SetName("app-agentic-active-2").
+				SetNamespace("team-agentic-active").
+				SetOwnerTeamID(t.ID).
+				SetZoneID(z.ID).
+				Save(ctx)
+			Expect(err).NotTo(HaveOccurred())
+
+			activeExposure, err := client.AgenticExposure.Create().
+				SetBasePath("/mcp/v1/shared").
+				SetNamespace("team-agentic-active-2").
+				SetActive(true).
+				SetOwnerID(app2.ID).
+				Save(ctx)
+			Expect(err).NotTo(HaveOccurred())
+
+			id, err := resolver.FindAgenticExposureByBasePath(ctx, "/mcp/v1/shared")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(id).To(Equal(activeExposure.ID))
+		})
+	})
+
+	// ── FindAgenticSubscriptionByMeta (cache-first, DB-fallback lookup) ──
+
+	Describe("FindAgenticSubscriptionByMeta", func() {
+		It("should return cached ID when present", func() {
+			cache.Set("agenticsubscription", "meta:ns:my-sub", 124)
+			cache.Wait()
+
+			id, err := resolver.FindAgenticSubscriptionByMeta(ctx, "ns", "my-sub")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(id).To(Equal(124))
+		})
+
+		It("should fall back to DB on cache miss and cache the result", func() {
+			z, err := client.Zone.Create().
+				SetName("caas-agentic-sub").
+				SetVisibility(zone.VisibilityEnterprise).
+				Save(ctx)
+			Expect(err).NotTo(HaveOccurred())
+
+			t, err := client.Team.Create().
+				SetName("team-agentic-sub").
+				SetEmail("agentic-sub@example.com").
+				SetNamespace("team-agentic-sub").
+				Save(ctx)
+			Expect(err).NotTo(HaveOccurred())
+
+			app, err := client.Application.Create().
+				SetName("app-agentic-sub").
+				SetNamespace("team-agentic-sub").
+				SetOwnerTeamID(t.ID).
+				SetZoneID(z.ID).
+				Save(ctx)
+			Expect(err).NotTo(HaveOccurred())
+
+			sub, err := client.AgenticSubscription.Create().
+				SetNamespace("prod--platform").
+				SetName("my-agentic-subscription").
+				SetBasePath("/mcp/v1/orders").
+				SetOwnerID(app.ID).
+				Save(ctx)
+			Expect(err).NotTo(HaveOccurred())
+
+			id, err := resolver.FindAgenticSubscriptionByMeta(ctx, "prod--platform", "my-agentic-subscription")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(id).To(Equal(sub.ID))
+
+			cache.Wait()
+			cachedID, found := cache.Get("agenticsubscription", "meta:prod--platform:my-agentic-subscription")
+			Expect(found).To(BeTrue())
+			Expect(cachedID).To(Equal(sub.ID))
+		})
+
+		It("should return ErrEntityNotFound when not in cache or DB", func() {
+			_, err := resolver.FindAgenticSubscriptionByMeta(ctx, "ns", "missing-sub")
+			Expect(err).To(HaveOccurred())
+			Expect(errors.Is(err, infrastructure.ErrEntityNotFound)).To(BeTrue())
+			Expect(err.Error()).To(ContainSubstring("ns/missing-sub"))
+		})
+	})
+
 	// ── FindPermissionSetIDByApplicationOwner ───────────────────────────
 
 	Describe("FindPermissionSetIDByApplicationOwner", func() {

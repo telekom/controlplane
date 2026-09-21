@@ -57,3 +57,30 @@ type EventExposureInfo struct {
 	OwnerApplicationName string         `json:"ownerApplicationName"`
 	OwnerTeam            *TeamInfo      `json:"ownerTeam"`
 }
+
+// AgenticExposureInfo provides a reduced cross-tenant safe view of an agentic exposure.
+// No navigable edges — traversal terminates here.
+type AgenticExposureInfo struct {
+	ID                   int            `json:"id"`
+	BasePath             string         `json:"basePath"`
+	Visibility           string         `json:"visibility"`
+	Variant              string         `json:"variant"`
+	Active               *bool          `json:"active,omitempty"`
+	ApprovalConfig       ApprovalConfig `json:"approvalConfig"`
+	Traffic              *Traffic       `json:"traffic,omitempty"`
+	OwnerApplicationName string         `json:"ownerApplicationName"`
+	OwnerTeam            *TeamInfo      `json:"ownerTeam"`
+}
+
+// AgenticSubscriptionInfo provides a reduced cross-tenant safe view of an agentic subscription.
+// No navigable edges — traversal terminates here.
+type AgenticSubscriptionInfo struct {
+	ID                   int       `json:"id"`
+	BasePath             string    `json:"basePath"`
+	StatusPhase          *string   `json:"statusPhase,omitempty"`
+	StatusMessage        *string   `json:"statusMessage,omitempty"`
+	OwnerApplicationName string    `json:"ownerApplicationName"`
+	OwnerTeam            *TeamInfo `json:"ownerTeam"`
+}
+
+func (AgenticSubscriptionInfo) IsSubscriptionInfo() {}

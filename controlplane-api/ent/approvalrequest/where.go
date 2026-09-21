@@ -724,6 +724,29 @@ func HasEventSubscriptionWith(preds ...predicate.EventSubscription) predicate.Ap
 	})
 }
 
+// HasAgenticSubscription applies the HasEdge predicate on the "agentic_subscription" edge.
+func HasAgenticSubscription() predicate.ApprovalRequest {
+	return predicate.ApprovalRequest(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, AgenticSubscriptionTable, AgenticSubscriptionColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasAgenticSubscriptionWith applies the HasEdge predicate on the "agentic_subscription" edge with a given conditions (other predicates).
+func HasAgenticSubscriptionWith(preds ...predicate.AgenticSubscription) predicate.ApprovalRequest {
+	return predicate.ApprovalRequest(func(s *sql.Selector) {
+		step := newAgenticSubscriptionStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.ApprovalRequest) predicate.ApprovalRequest {
 	return predicate.ApprovalRequest(sql.AndPredicates(predicates...))

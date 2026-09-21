@@ -91,11 +91,11 @@ var _ = Describe("TeamFilterInterceptor", func() {
 			Entry("approvals", func(ctx context.Context) (int, error) {
 				r, e := client.Approval.Query().All(ctx)
 				return len(r), e
-			}, 1),
+			}, 2),
 			Entry("approval requests", func(ctx context.Context) (int, error) {
 				r, e := client.ApprovalRequest.Query().All(ctx)
 				return len(r), e
-			}, 1),
+			}, 2),
 			Entry("members", func(ctx context.Context) (int, error) {
 				r, e := client.Member.Query().All(ctx)
 				return len(r), e
@@ -110,6 +110,18 @@ var _ = Describe("TeamFilterInterceptor", func() {
 			}, 1),
 			Entry("permission sets", func(ctx context.Context) (int, error) {
 				r, e := client.PermissionSet.Query().All(ctx)
+				return len(r), e
+			}, 1),
+			Entry("mcp servers", func(ctx context.Context) (int, error) {
+				r, e := client.McpServer.Query().All(ctx)
+				return len(r), e
+			}, 1),
+			Entry("agentic exposures", func(ctx context.Context) (int, error) {
+				r, e := client.AgenticExposure.Query().All(ctx)
+				return len(r), e
+			}, 1),
+			Entry("agentic subscriptions", func(ctx context.Context) (int, error) {
+				r, e := client.AgenticSubscription.Query().All(ctx)
 				return len(r), e
 			}, 1),
 		)
@@ -147,11 +159,11 @@ var _ = Describe("TeamFilterInterceptor", func() {
 			Entry("approvals (team-alpha is target provider)", func(ctx context.Context) (int, error) {
 				r, e := client.Approval.Query().All(ctx)
 				return len(r), e
-			}, 1),
+			}, 2),
 			Entry("approval requests (team-alpha is target provider)", func(ctx context.Context) (int, error) {
 				r, e := client.ApprovalRequest.Query().All(ctx)
 				return len(r), e
-			}, 1),
+			}, 2),
 			Entry("members", func(ctx context.Context) (int, error) {
 				r, e := client.Member.Query().All(ctx)
 				return len(r), e
@@ -168,6 +180,14 @@ var _ = Describe("TeamFilterInterceptor", func() {
 				r, e := client.PermissionSet.Query().All(ctx)
 				return len(r), e
 			}, 1),
+			Entry("agentic exposures (team-alpha owns one)", func(ctx context.Context) (int, error) {
+				r, e := client.AgenticExposure.Query().All(ctx)
+				return len(r), e
+			}, 1),
+			Entry("agentic subscriptions (team-alpha has none)", func(ctx context.Context) (int, error) {
+				r, e := client.AgenticSubscription.Query().All(ctx)
+				return len(r), e
+			}, 0),
 		)
 
 		// PermissionSet exposes access-control data, so beyond the row-count
@@ -189,6 +209,40 @@ var _ = Describe("TeamFilterInterceptor", func() {
 			// team-beta viewer must not see team-alpha's permission set.
 			ctx := viewerCtx(&viewer.Viewer{Teams: []string{"team-beta"}})
 			result, err := client.PermissionSet.Query().All(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result).To(BeEmpty())
+		})
+
+		// AgenticExposure/AgenticSubscription carry the same cross-tenant sensitivity
+		// as their API/event counterparts, so verify the same leak-proof scoping here.
+		It("should return only team-alpha's own agentic exposure, scoped correctly", func() {
+			ctx := alphaCtx()
+			result, err := client.AgenticExposure.Query().
+				WithOwner(func(q *entgen.ApplicationQuery) {
+					q.WithOwnerTeam()
+				}).
+				All(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result).To(HaveLen(1))
+			Expect(result[0].Edges.Owner.Edges.OwnerTeam.Name).To(Equal("team-alpha"))
+		})
+
+		It("should not leak team-alpha's agentic exposure to a team-beta-only viewer", func() {
+			// team-beta viewer must not see team-alpha's agentic exposure via a direct query,
+			// even though team-beta legitimately subscribes to it (that access is only via
+			// the reduced AgenticExposureInfo cross-tenant resolver, not a direct entity query).
+			ctx := viewerCtx(&viewer.Viewer{Teams: []string{"team-beta"}})
+			result, err := client.AgenticExposure.Query().All(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result).To(BeEmpty())
+		})
+
+		It("should not leak team-beta's agentic subscription to a team-alpha-only viewer", func() {
+			// team-alpha viewer must not see team-beta's agentic subscription via a direct
+			// query, even though team-alpha owns the target exposure (that access is only via
+			// the reduced AgenticSubscriptionInfo cross-tenant resolver, not a direct entity query).
+			ctx := alphaCtx()
+			result, err := client.AgenticSubscription.Query().All(ctx)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(result).To(BeEmpty())
 		})
@@ -253,6 +307,15 @@ var _ = Describe("TeamFilterInterceptor", func() {
 			groups, err := client.Group.Query().All(ctx)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(groups).To(HaveLen(2))
+		})
+
+		It("should not filter mcp servers even for a different team", func() {
+			// McpServerAlpha is owned by team-alpha, but a team-beta viewer should still see it
+			// since McpServer is a public catalogue entity (mirrors Api/EventType).
+			ctx := viewerCtx(&viewer.Viewer{Teams: []string{"team-beta"}})
+			servers, err := client.McpServer.Query().All(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(servers).To(HaveLen(1))
 		})
 	})
 

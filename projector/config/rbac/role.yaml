@@ -79,3 +79,15 @@ rules:
   - get
   - list
   - watch
+# agentic domain
+- apiGroups:
+  - agentic.cp.ei.telekom.de
+  resources:
+  - mcpservers
+  - agentcards
+  - agenticexposures
+  - agenticsubscriptions
+  verbs:
+  - get
+  - list
+  - watch

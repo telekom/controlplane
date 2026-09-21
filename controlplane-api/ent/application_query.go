@@ -16,6 +16,8 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/telekom/controlplane/controlplane-api/ent/agenticexposure"
+	"github.com/telekom/controlplane/controlplane-api/ent/agenticsubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/apiexposure"
 	"github.com/telekom/controlplane/controlplane-api/ent/apisubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/application"
@@ -30,24 +32,28 @@ import (
 // ApplicationQuery is the builder for querying Application entities.
 type ApplicationQuery struct {
 	config
-	ctx                       *QueryContext
-	order                     []application.OrderOption
-	inters                    []Interceptor
-	predicates                []predicate.Application
-	withZone                  *ZoneQuery
-	withOwnerTeam             *TeamQuery
-	withExposedApis           *ApiExposureQuery
-	withSubscribedApis        *ApiSubscriptionQuery
-	withExposedEvents         *EventExposureQuery
-	withSubscribedEvents      *EventSubscriptionQuery
-	withPermissionSet         *PermissionSetQuery
-	withFKs                   bool
-	modifiers                 []func(*sql.Selector)
-	loadTotal                 []func(context.Context, []*Application) error
-	withNamedExposedApis      map[string]*ApiExposureQuery
-	withNamedSubscribedApis   map[string]*ApiSubscriptionQuery
-	withNamedExposedEvents    map[string]*EventExposureQuery
-	withNamedSubscribedEvents map[string]*EventSubscriptionQuery
+	ctx                         *QueryContext
+	order                       []application.OrderOption
+	inters                      []Interceptor
+	predicates                  []predicate.Application
+	withZone                    *ZoneQuery
+	withOwnerTeam               *TeamQuery
+	withExposedApis             *ApiExposureQuery
+	withSubscribedApis          *ApiSubscriptionQuery
+	withExposedEvents           *EventExposureQuery
+	withSubscribedEvents        *EventSubscriptionQuery
+	withExposedAgentics         *AgenticExposureQuery
+	withSubscribedAgentics      *AgenticSubscriptionQuery
+	withPermissionSet           *PermissionSetQuery
+	withFKs                     bool
+	modifiers                   []func(*sql.Selector)
+	loadTotal                   []func(context.Context, []*Application) error
+	withNamedExposedApis        map[string]*ApiExposureQuery
+	withNamedSubscribedApis     map[string]*ApiSubscriptionQuery
+	withNamedExposedEvents      map[string]*EventExposureQuery
+	withNamedSubscribedEvents   map[string]*EventSubscriptionQuery
+	withNamedExposedAgentics    map[string]*AgenticExposureQuery
+	withNamedSubscribedAgentics map[string]*AgenticSubscriptionQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -209,6 +215,50 @@ func (_q *ApplicationQuery) QuerySubscribedEvents() *EventSubscriptionQuery {
 			sqlgraph.From(application.Table, application.FieldID, selector),
 			sqlgraph.To(eventsubscription.Table, eventsubscription.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, application.SubscribedEventsTable, application.SubscribedEventsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryExposedAgentics chains the current query on the "exposed_agentics" edge.
+func (_q *ApplicationQuery) QueryExposedAgentics() *AgenticExposureQuery {
+	query := (&AgenticExposureClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(application.Table, application.FieldID, selector),
+			sqlgraph.To(agenticexposure.Table, agenticexposure.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, application.ExposedAgenticsTable, application.ExposedAgenticsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QuerySubscribedAgentics chains the current query on the "subscribed_agentics" edge.
+func (_q *ApplicationQuery) QuerySubscribedAgentics() *AgenticSubscriptionQuery {
+	query := (&AgenticSubscriptionClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(application.Table, application.FieldID, selector),
+			sqlgraph.To(agenticsubscription.Table, agenticsubscription.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, application.SubscribedAgenticsTable, application.SubscribedAgenticsColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -425,18 +475,20 @@ func (_q *ApplicationQuery) Clone() *ApplicationQuery {
 		return nil
 	}
 	return &ApplicationQuery{
-		config:               _q.config,
-		ctx:                  _q.ctx.Clone(),
-		order:                append([]application.OrderOption{}, _q.order...),
-		inters:               append([]Interceptor{}, _q.inters...),
-		predicates:           append([]predicate.Application{}, _q.predicates...),
-		withZone:             _q.withZone.Clone(),
-		withOwnerTeam:        _q.withOwnerTeam.Clone(),
-		withExposedApis:      _q.withExposedApis.Clone(),
-		withSubscribedApis:   _q.withSubscribedApis.Clone(),
-		withExposedEvents:    _q.withExposedEvents.Clone(),
-		withSubscribedEvents: _q.withSubscribedEvents.Clone(),
-		withPermissionSet:    _q.withPermissionSet.Clone(),
+		config:                 _q.config,
+		ctx:                    _q.ctx.Clone(),
+		order:                  append([]application.OrderOption{}, _q.order...),
+		inters:                 append([]Interceptor{}, _q.inters...),
+		predicates:             append([]predicate.Application{}, _q.predicates...),
+		withZone:               _q.withZone.Clone(),
+		withOwnerTeam:          _q.withOwnerTeam.Clone(),
+		withExposedApis:        _q.withExposedApis.Clone(),
+		withSubscribedApis:     _q.withSubscribedApis.Clone(),
+		withExposedEvents:      _q.withExposedEvents.Clone(),
+		withSubscribedEvents:   _q.withSubscribedEvents.Clone(),
+		withExposedAgentics:    _q.withExposedAgentics.Clone(),
+		withSubscribedAgentics: _q.withSubscribedAgentics.Clone(),
+		withPermissionSet:      _q.withPermissionSet.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
@@ -506,6 +558,28 @@ func (_q *ApplicationQuery) WithSubscribedEvents(opts ...func(*EventSubscription
 		opt(query)
 	}
 	_q.withSubscribedEvents = query
+	return _q
+}
+
+// WithExposedAgentics tells the query-builder to eager-load the nodes that are connected to
+// the "exposed_agentics" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *ApplicationQuery) WithExposedAgentics(opts ...func(*AgenticExposureQuery)) *ApplicationQuery {
+	query := (&AgenticExposureClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withExposedAgentics = query
+	return _q
+}
+
+// WithSubscribedAgentics tells the query-builder to eager-load the nodes that are connected to
+// the "subscribed_agentics" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *ApplicationQuery) WithSubscribedAgentics(opts ...func(*AgenticSubscriptionQuery)) *ApplicationQuery {
+	query := (&AgenticSubscriptionClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withSubscribedAgentics = query
 	return _q
 }
 
@@ -605,13 +679,15 @@ func (_q *ApplicationQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*
 		nodes       = []*Application{}
 		withFKs     = _q.withFKs
 		_spec       = _q.querySpec()
-		loadedTypes = [7]bool{
+		loadedTypes = [9]bool{
 			_q.withZone != nil,
 			_q.withOwnerTeam != nil,
 			_q.withExposedApis != nil,
 			_q.withSubscribedApis != nil,
 			_q.withExposedEvents != nil,
 			_q.withSubscribedEvents != nil,
+			_q.withExposedAgentics != nil,
+			_q.withSubscribedAgentics != nil,
 			_q.withPermissionSet != nil,
 		}
 	)
@@ -684,6 +760,22 @@ func (_q *ApplicationQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*
 			return nil, err
 		}
 	}
+	if query := _q.withExposedAgentics; query != nil {
+		if err := _q.loadExposedAgentics(ctx, query, nodes,
+			func(n *Application) { n.Edges.ExposedAgentics = []*AgenticExposure{} },
+			func(n *Application, e *AgenticExposure) { n.Edges.ExposedAgentics = append(n.Edges.ExposedAgentics, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withSubscribedAgentics; query != nil {
+		if err := _q.loadSubscribedAgentics(ctx, query, nodes,
+			func(n *Application) { n.Edges.SubscribedAgentics = []*AgenticSubscription{} },
+			func(n *Application, e *AgenticSubscription) {
+				n.Edges.SubscribedAgentics = append(n.Edges.SubscribedAgentics, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
 	if query := _q.withPermissionSet; query != nil {
 		if err := _q.loadPermissionSet(ctx, query, nodes, nil,
 			func(n *Application, e *PermissionSet) { n.Edges.PermissionSet = e }); err != nil {
@@ -715,6 +807,20 @@ func (_q *ApplicationQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*
 		if err := _q.loadSubscribedEvents(ctx, query, nodes,
 			func(n *Application) { n.appendNamedSubscribedEvents(name) },
 			func(n *Application, e *EventSubscription) { n.appendNamedSubscribedEvents(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedExposedAgentics {
+		if err := _q.loadExposedAgentics(ctx, query, nodes,
+			func(n *Application) { n.appendNamedExposedAgentics(name) },
+			func(n *Application, e *AgenticExposure) { n.appendNamedExposedAgentics(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedSubscribedAgentics {
+		if err := _q.loadSubscribedAgentics(ctx, query, nodes,
+			func(n *Application) { n.appendNamedSubscribedAgentics(name) },
+			func(n *Application, e *AgenticSubscription) { n.appendNamedSubscribedAgentics(name, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -914,6 +1020,68 @@ func (_q *ApplicationQuery) loadSubscribedEvents(ctx context.Context, query *Eve
 	}
 	return nil
 }
+func (_q *ApplicationQuery) loadExposedAgentics(ctx context.Context, query *AgenticExposureQuery, nodes []*Application, init func(*Application), assign func(*Application, *AgenticExposure)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int]*Application)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.AgenticExposure(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(application.ExposedAgenticsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.application_exposed_agentics
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "application_exposed_agentics" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "application_exposed_agentics" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *ApplicationQuery) loadSubscribedAgentics(ctx context.Context, query *AgenticSubscriptionQuery, nodes []*Application, init func(*Application), assign func(*Application, *AgenticSubscription)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int]*Application)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.AgenticSubscription(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(application.SubscribedAgenticsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.application_subscribed_agentics
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "application_subscribed_agentics" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "application_subscribed_agentics" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
 func (_q *ApplicationQuery) loadPermissionSet(ctx context.Context, query *PermissionSetQuery, nodes []*Application, init func(*Application), assign func(*Application, *PermissionSet)) error {
 	fks := make([]driver.Value, 0, len(nodes))
 	nodeids := make(map[int]*Application)
@@ -1080,6 +1248,34 @@ func (_q *ApplicationQuery) WithNamedSubscribedEvents(name string, opts ...func(
 		_q.withNamedSubscribedEvents = make(map[string]*EventSubscriptionQuery)
 	}
 	_q.withNamedSubscribedEvents[name] = query
+	return _q
+}
+
+// WithNamedExposedAgentics tells the query-builder to eager-load the nodes that are connected to the "exposed_agentics"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *ApplicationQuery) WithNamedExposedAgentics(name string, opts ...func(*AgenticExposureQuery)) *ApplicationQuery {
+	query := (&AgenticExposureClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedExposedAgentics == nil {
+		_q.withNamedExposedAgentics = make(map[string]*AgenticExposureQuery)
+	}
+	_q.withNamedExposedAgentics[name] = query
+	return _q
+}
+
+// WithNamedSubscribedAgentics tells the query-builder to eager-load the nodes that are connected to the "subscribed_agentics"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *ApplicationQuery) WithNamedSubscribedAgentics(name string, opts ...func(*AgenticSubscriptionQuery)) *ApplicationQuery {
+	query := (&AgenticSubscriptionClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedSubscribedAgentics == nil {
+		_q.withNamedSubscribedAgentics = make(map[string]*AgenticSubscriptionQuery)
+	}
+	_q.withNamedSubscribedAgentics[name] = query
 	return _q
 }
 
