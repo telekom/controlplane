@@ -76,7 +76,7 @@ var _ = Describe("File Exposure/Subscription Handlers", func() {
 				FileType:   "demo-sftp-spec-v1",
 				Visibility: roverv1.VisibilityWorld,
 				Approval:   roverv1.Approval{Strategy: roverv1.ApprovalStrategyAuto},
-				PublicKeys: []roverv1.PublicKey{{Label: "provider-key", Key: "ssh-ed25519 AAAAprovider"}},
+				SFTP:       &roverv1.FileSFTP{PublicKeys: []roverv1.SSHPublicKeySpec{{Key: "ssh-ed25519 AAAAprovider"}}},
 			}
 
 			Expect(HandleExposure(ctx, newJanitor(), owner, exp)).To(Succeed())
@@ -107,8 +107,8 @@ var _ = Describe("File Exposure/Subscription Handlers", func() {
 		It("should create a file-domain FileSubscription owned by the Rover", func() {
 			owner := newOwner()
 			sub := &roverv1.FileSubscription{
-				FileType:   "demo-sftp-spec-v1",
-				PublicKeys: []roverv1.PublicKey{{Label: "consumer-key", Key: "ssh-ed25519 AAAAconsumer"}},
+				FileType: "demo-sftp-spec-v1",
+				SFTP:     &roverv1.FileSFTP{PublicKeys: []roverv1.SSHPublicKeySpec{{Key: "ssh-ed25519 AAAAconsumer"}}},
 			}
 
 			Expect(HandleSubscription(ctx, newJanitor(), owner, sub)).To(Succeed())

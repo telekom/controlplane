@@ -30,9 +30,10 @@ var _ = Describe("File Type (SFTP) Mapper", func() {
 			Expect(output).ToNot(BeNil())
 			Expect(output.FileType).To(Equal("demo-sftp-spec-v1"))
 			Expect(output.Visibility).To(Equal(roverv1.VisibilityWorld))
-			Expect(output.PublicKeys).To(HaveLen(1))
-			Expect(output.PublicKeys[0].Label).To(Equal("provider-key"))
-			Expect(output.PublicKeys[0].Key).To(Equal("ssh-ed25519 AAAA1"))
+			Expect(output.SFTP).ToNot(BeNil())
+			Expect(output.SFTP.PublicKeys).To(HaveLen(1))
+			Expect(output.SFTP.PublicKeys[0].Label).To(Equal("provider-key"))
+			Expect(output.SFTP.PublicKeys[0].Key).To(Equal("ssh-ed25519 AAAA1"))
 		})
 
 		It("must default visibility to Enterprise when omitted", func() {
@@ -98,9 +99,10 @@ var _ = Describe("File Type (SFTP) Mapper", func() {
 
 			Expect(output).ToNot(BeNil())
 			Expect(output.FileType).To(Equal("demo-sftp-spec-v1"))
-			Expect(output.PublicKeys).To(HaveLen(1))
-			Expect(output.PublicKeys[0].Label).To(Equal("consumer-key"))
-			Expect(output.PublicKeys[0].Key).To(Equal("ssh-ed25519 AAAA2"))
+			Expect(output.SFTP).ToNot(BeNil())
+			Expect(output.SFTP.PublicKeys).To(HaveLen(1))
+			Expect(output.SFTP.PublicKeys[0].Label).To(Equal("consumer-key"))
+			Expect(output.SFTP.PublicKeys[0].Key).To(Equal("ssh-ed25519 AAAA2"))
 		})
 	})
 
@@ -117,8 +119,8 @@ var _ = Describe("File Type (SFTP) Mapper", func() {
 			})
 
 			Expect(output).To(HaveLen(2))
-			Expect(output[0]).To(Equal(roverv1.PublicKey{Label: "a", Key: "k1"}))
-			Expect(output[1]).To(Equal(roverv1.PublicKey{Label: "b", Key: "k2"}))
+			Expect(output[0]).To(Equal(roverv1.SSHPublicKeySpec{Label: "a", Key: "k1"}))
+			Expect(output[1]).To(Equal(roverv1.SSHPublicKeySpec{Label: "b", Key: "k2"}))
 		})
 	})
 

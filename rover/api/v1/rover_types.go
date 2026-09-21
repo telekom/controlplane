@@ -8,6 +8,7 @@ import (
 	"slices"
 
 	"github.com/telekom/controlplane/common/pkg/types"
+	"golang.org/x/crypto/ssh"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -33,16 +34,8 @@ type RoverStatus struct {
 	// EventSubscriptions are references to EventSubscription resources created by this Rover
 	EventSubscriptions []types.ObjectRef `json:"eventSubscriptions,omitempty"`
 	// FileExposures are references to FileExposure resources created by this Rover in the file domain.
-	//
-	// TODO(DHEI-20903): today RoverHandler.CreateOrUpdate only initialises this slice
-	// (make(..., 0)); it is populated (append of the created file-domain resource refs)
-	// by the file handler dispatch once the file domain module is available.
-	// Populated from: rover/internal/handler/rover/handler.go, case roverv1.TypeFile.
 	FileExposures []types.ObjectRef `json:"fileExposures,omitempty"`
 	// FileSubscriptions are references to FileSubscription resources created by this Rover in the file domain.
-	//
-	// TODO(DHEI-20903): see FileExposures — populated by the file handler dispatch
-	// (rover/internal/handler/rover/handler.go, case roverv1.TypeFile) once delivered.
 	FileSubscriptions []types.ObjectRef `json:"fileSubscriptions,omitempty"`
 	// PermissionSets are references to PermissionSet resources created by this Rover
 	PermissionSets []types.ObjectRef `json:"permissionSets,omitempty"`
@@ -539,6 +532,15 @@ type AgenticSubscription struct {
 	Security *SubscriberSecurity `json:"security,omitempty"`
 }
 
+// AgenticVariant defines the agentic exposure variant.
+// +kubebuilder:validation:Enum=SFTP
+type FileVariant string
+
+const (
+	// AgenticVariantMCP exposes a standard MCP server via AI Gateway
+	FileVariantSFTP FileVariant = "SFTP"
+)
+
 // FileExposure defines a file type that is exposed by this Rover via SFTP.
 // Applying it registers the provider's SSH public keys on the corresponding
 // SFTP user (shared space) created from the matching FileSpecification.
@@ -558,11 +560,39 @@ type FileExposure struct {
 	// +kubebuilder:validation:Required
 	Approval Approval `json:"approval"`
 
-	// PublicKeys are the SSH public keys registered for the producer's SFTP user.
-	// At least one key is required. Both label and key value must be unique per fileType.
+	// Variant specifies the variant of the file exposure, e.g., "sftp".
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:default=SFTP
+	Variant FileVariant `json:"variant"`
+
+	// SFTP configures provider-side SFTP access for this file exposure.
+	// +kubebuilder:validation:Optional
+	SFTP *FileSFTP `json:"sftp,omitempty"`
+}
+
+// FileSFTP configures SFTP-specific settings for file exposures and subscriptions.
+type FileSFTP struct {
+	// PublicKeys contains SSH public keys for the SFTP user of the FileType.
+	// +listType=map
+	// +listMapKey=key
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MinItems=1
-	PublicKeys []PublicKey `json:"publicKeys"`
+	// +kubebuilder:validation:uniqueItems=truel
+	PublicKeys []SSHPublicKeySpec `json:"publicKeys,omitempty"`
+}
+
+// SSHPublicKeySpec carries an SSH public key.
+type SSHPublicKeySpec struct {
+	// Key is the SSH public key value.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
+	Key string `json:"key"`
+
+	// Label is a human-readable identifier for the key.
+	// It isn't used in logic and it is here for backward compatibility.
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:MinLength=1
+	Label string `json:"label,omitempty"`
 }
 
 // FileSubscription defines a file type that this Rover consumes via SFTP.
@@ -575,40 +605,19 @@ type FileSubscription struct {
 	// +kubebuilder:validation:MinLength=1
 	FileType string `json:"fileType"`
 
-	// PublicKeys are the SSH public keys registered for the consumer's SFTP user.
-	// At least one key is required. Both label and key value must be unique per fileType.
-	// +kubebuilder:validation:Required
-	// +kubebuilder:validation:MinItems=1
-	PublicKeys []PublicKey `json:"publicKeys"`
-}
-
-// PublicKey is a labelled SSH public key registered on a SFTP user.
-type PublicKey struct {
-	// Label is a human-readable identifier for the key. It must be unique per fileType.
-	// +kubebuilder:validation:Required
-	// +kubebuilder:validation:MinLength=1
-	Label string `json:"label"`
-
-	// Key is the SSH public key value. It must be unique per fileType.
-	// +kubebuilder:validation:Required
-	// +kubebuilder:validation:MinLength=1
-	Key string `json:"key"`
+	// SFTP configures provider-side SFTP access for this file exposure.
+	// +kubebuilder:validation:Optional
+	SFTP *FileSFTP `json:"sftp,omitempty"`
 }
 
 // SSHKeyType identifies the algorithm prefix of an SSH public key registered on
 // a SFTP user. Only these algorithms are accepted for file exposures and subscriptions.
 type SSHKeyType string
 
-const (
-	SSHKeyTypeRSA           SSHKeyType = "ssh-rsa"
-	SSHKeyTypeECDSANistP521 SSHKeyType = "ecdsa-sha2-nistp521"
-	SSHKeyTypeED25519       SSHKeyType = "ssh-ed25519"
-)
-
 var AllSSHKeyTypes = []SSHKeyType{
-	SSHKeyTypeRSA,
-	SSHKeyTypeECDSANistP521,
-	SSHKeyTypeED25519,
+	SSHKeyType(ssh.KeyAlgoED25519),
+	SSHKeyType(ssh.KeyAlgoRSA),
+	SSHKeyType(ssh.KeyAlgoECDSA256),
 }
 
 func (t SSHKeyType) String() string {
@@ -617,7 +626,7 @@ func (t SSHKeyType) String() string {
 
 func (t SSHKeyType) IsValid() bool {
 	switch t {
-	case SSHKeyTypeRSA, SSHKeyTypeECDSANistP521, SSHKeyTypeED25519:
+	case SSHKeyType(ssh.KeyAlgoRSA), SSHKeyType(ssh.KeyAlgoECDSA256), SSHKeyType(ssh.KeyAlgoED25519):
 		return true
 	}
 	return false

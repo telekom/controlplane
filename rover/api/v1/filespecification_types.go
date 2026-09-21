@@ -87,6 +87,7 @@ type FileSpecificationStatus struct {
 // It defines a file type's metadata and creates the corresponding file-domain
 // FileType, analogous to how ApiSpecification creates Api resources and
 // EventSpecification creates EventType resources.
+// +kubebuilder:validation:XValidation:rule="self.spec.type == self.metadata.name",message="Type must exactly match metadata.name"
 type FileSpecification struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

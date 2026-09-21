@@ -91,10 +91,13 @@ func mapFileExposure(in api.FileExposure) *roverv1.FileExposure {
 	out := &roverv1.FileExposure{
 		FileType:   in.FileType,
 		Visibility: toRoverVisibility(in.Visibility),
-		PublicKeys: mapPublicKeys(in.PublicKeys),
+		SFTP: &roverv1.FileSFTP{
+			PublicKeys: mapPublicKeys(in.PublicKeys),
+		},
 		Approval: roverv1.Approval{
 			Strategy: toRoverApprovalStrategy(in.Approval),
 		},
+		Variant: mapFileVariant(in.Variant),
 	}
 
 	mapTrustedTeams(in.TrustedTeams, &out.Approval.TrustedTeams)
@@ -102,13 +105,21 @@ func mapFileExposure(in api.FileExposure) *roverv1.FileExposure {
 	return out
 }
 
-func mapPublicKeys(in []api.PublicKey) []roverv1.PublicKey {
+func mapFileVariant(in api.FileExposureVariant) roverv1.FileVariant {
+	switch in {
+	case api.FileExposureVariantSftp:
+		return roverv1.FileVariantSFTP
+	}
+	return roverv1.FileVariant(in)
+}
+
+func mapPublicKeys(in []api.PublicKey) []roverv1.SSHPublicKeySpec {
 	if len(in) == 0 {
 		return nil
 	}
-	out := make([]roverv1.PublicKey, len(in))
+	out := make([]roverv1.SSHPublicKeySpec, len(in))
 	for i, key := range in {
-		out[i] = roverv1.PublicKey{
+		out[i] = roverv1.SSHPublicKeySpec{
 			Label: key.Label,
 			Key:   key.Key,
 		}

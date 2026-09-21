@@ -85,8 +85,11 @@
             Strategy:     "Simple",
             TrustedTeams: nil,
         },
-        PublicKeys: {
-            {Label:"provider-key", Key:"ssh-ed25519 AAAA-provider"},
+        Variant: "SFTP",
+        SFTP:    &v1.FileSFTP{
+            PublicKeys: {
+                {Key:"ssh-ed25519 AAAA-provider", Label:"provider-key"},
+            },
         },
     },
 }

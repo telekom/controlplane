@@ -52,9 +52,11 @@
     Event:   (*v1.EventSubscription)(nil),
     Agentic: (*v1.AgenticSubscription)(nil),
     File:    &v1.FileSubscription{
-        FileType:   "demo-sftp-spec-v1",
-        PublicKeys: {
-            {Label:"consumer-key", Key:"ssh-ed25519 AAAA-consumer"},
+        FileType: "demo-sftp-spec-v1",
+        SFTP:     &v1.FileSFTP{
+            PublicKeys: {
+                {Key:"ssh-ed25519 AAAA-consumer", Label:"consumer-key"},
+            },
         },
     },
 }

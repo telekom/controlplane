@@ -19,8 +19,10 @@ var _ = Describe("File Type (SFTP) Exposure Mapper", func() {
 			input := &roverv1.FileExposure{
 				FileType:   "demo-sftp-spec-v1",
 				Visibility: roverv1.VisibilityWorld,
-				PublicKeys: []roverv1.PublicKey{
-					{Label: "provider-key", Key: "ssh-ed25519 AAAA1"},
+				SFTP: &roverv1.FileSFTP{
+					PublicKeys: []roverv1.SSHPublicKeySpec{
+						{Label: "provider-key", Key: "ssh-ed25519 AAAA1"},
+					},
 				},
 			}
 
@@ -38,7 +40,9 @@ var _ = Describe("File Type (SFTP) Exposure Mapper", func() {
 				output := mapFileExposure(&roverv1.FileExposure{
 					FileType:   "demo-sftp-spec-v1",
 					Visibility: in,
-					PublicKeys: []roverv1.PublicKey{{Label: "provider-key", Key: "ssh-ed25519 AAAA1"}},
+					SFTP: &roverv1.FileSFTP{
+						PublicKeys: []roverv1.SSHPublicKeySpec{{Label: "provider-key", Key: "ssh-ed25519 AAAA1"}},
+					},
 				})
 				Expect(output.Visibility).To(Equal(expected))
 			},
@@ -51,13 +55,15 @@ var _ = Describe("File Type (SFTP) Exposure Mapper", func() {
 	Context("mapPublicKeys", func() {
 		It("must return nil for an empty list", func() {
 			Expect(mapPublicKeys(nil)).To(BeNil())
-			Expect(mapPublicKeys([]roverv1.PublicKey{})).To(BeNil())
+			Expect(mapPublicKeys(&roverv1.FileSFTP{PublicKeys: []roverv1.SSHPublicKeySpec{}})).To(BeNil())
 		})
 
 		It("must preserve order and values", func() {
-			output := mapPublicKeys([]roverv1.PublicKey{
-				{Label: "a", Key: "k1"},
-				{Label: "b", Key: "k2"},
+			output := mapPublicKeys(&roverv1.FileSFTP{
+				PublicKeys: []roverv1.SSHPublicKeySpec{
+					{Label: "a", Key: "k1"},
+					{Label: "b", Key: "k2"},
+				},
 			})
 
 			Expect(output).To(HaveLen(2))
@@ -72,8 +78,10 @@ var _ = Describe("File Type (SFTP) Exposure Mapper", func() {
 				File: &roverv1.FileExposure{
 					FileType:   "demo-sftp-spec-v1",
 					Visibility: roverv1.VisibilityWorld,
-					PublicKeys: []roverv1.PublicKey{
-						{Label: "provider-key", Key: "ssh-ed25519 AAAA1"},
+					SFTP: &roverv1.FileSFTP{
+						PublicKeys: []roverv1.SSHPublicKeySpec{
+							{Label: "provider-key", Key: "ssh-ed25519 AAAA1"},
+						},
 					},
 				},
 			}

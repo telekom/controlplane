@@ -67,7 +67,7 @@ func mapFileExposure(in *roverv1.FileExposure) api.FileExposure {
 	out := api.FileExposure{
 		FileType:   in.FileType,
 		Visibility: toApiVisibility(in.Visibility),
-		PublicKeys: mapPublicKeys(in.PublicKeys),
+		PublicKeys: mapPublicKeys(in.SFTP),
 		Approval:   toApiApprovalStrategy(in.Approval.Strategy),
 	}
 
@@ -76,12 +76,12 @@ func mapFileExposure(in *roverv1.FileExposure) api.FileExposure {
 	return out
 }
 
-func mapPublicKeys(in []roverv1.PublicKey) []api.PublicKey {
-	if len(in) == 0 {
+func mapPublicKeys(in *roverv1.FileSFTP) []api.PublicKey {
+	if in == nil || len(in.PublicKeys) == 0 {
 		return nil
 	}
-	out := make([]api.PublicKey, len(in))
-	for i, key := range in {
+	out := make([]api.PublicKey, len(in.PublicKeys))
+	for i, key := range in.PublicKeys {
 		out[i] = api.PublicKey{
 			Label: key.Label,
 			Key:   key.Key,

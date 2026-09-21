@@ -159,6 +159,9 @@ spec:
                 type: object
             type: object
         type: object
+        x-kubernetes-validations:
+        - message: Type must exactly match metadata.name
+          rule: self.spec.type == self.metadata.name
     served: true
     storage: true
     subresources:

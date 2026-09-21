@@ -18,7 +18,7 @@ type FileSpecHandler struct {
 
 func NewFileSpecHandlerInstance() *FileSpecHandler {
 	handler := &FileSpecHandler{
-		BaseHandler: common.NewBaseHandler("rover.cp.ei.telekom.de/v1", "FileSpecification", "filespecifications", 10).WithValidation(common.ValidateObjectName),
+		BaseHandler: common.NewBaseHandler("tcp.ei.telekom.de/v1", "FileSpecification", "filespecifications", 10).WithValidation(common.ValidateObjectName),
 	}
 	handler.AddHook(common.PreRequestHook, PatchFileSpecificationRequest)
 	return handler

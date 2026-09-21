@@ -28,6 +28,7 @@ import (
 	cerrors "github.com/telekom/controlplane/common/pkg/errors"
 	"github.com/telekom/controlplane/common/pkg/types"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
+	filev1 "github.com/telekom/controlplane/file/api/v1"
 	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 	secretsapi "github.com/telekom/controlplane/secret-manager/api"
@@ -144,6 +145,10 @@ func (r *RoverValidator) ValidateCreateOrUpdate(ctx context.Context, rover *rove
 	r.validatePermissionEntries(valErr, rover)
 
 	if err := r.validateEventSupport(ctx, valErr, rover, environment, zone); err != nil {
+		return nil, err
+	}
+
+	if err := r.validateFileSupport(ctx, valErr, rover, zone); err != nil {
 		return nil, err
 	}
 
@@ -281,10 +286,36 @@ func (r *RoverValidator) validateEventSupport(ctx context.Context, valErr *cerro
 	}
 	eventConfig := eventv1.EventConfig{}
 	if exists, err := r.ResourceMustExist(ctx, eventConfigRef, &eventConfig); !exists {
-		if err != nil {
+		if err != nil && !apierrors.IsNotFound(err) {
 			return err
 		}
 		valErr.AddInvalidError(field.NewPath("spec").Child("zone"), rover.Spec.Zone, fmt.Sprintf("zone '%s' does not support event subscriptions or exposures", rover.Spec.Zone))
+	}
+
+	return nil
+}
+
+func (r *RoverValidator) validateFileSupport(ctx context.Context, valErr *cerrors.ValidationError, rover *roverv1.Rover, zone *adminv1.Zone) error {
+	subscribesToFiles := slices.ContainsFunc(rover.Spec.Subscriptions, func(sub roverv1.Subscription) bool {
+		return sub.Type() == roverv1.TypeFile
+	})
+	exposesFiles := slices.ContainsFunc(rover.Spec.Exposures, func(exp roverv1.Exposure) bool {
+		return exp.Type() == roverv1.TypeFile
+	})
+	if !cconfig.FeatureFile.IsEnabled() || (!subscribesToFiles && !exposesFiles) {
+		return nil
+	}
+
+	zoneServiceConfig := client.ObjectKey{
+		Name:      zone.Name,
+		Namespace: zone.Status.Namespace,
+	}
+	zoneServiceConfigObj := filev1.ZoneServiceConfig{}
+	if exists, err := r.ResourceMustExist(ctx, zoneServiceConfig, &zoneServiceConfigObj); !exists {
+		if err != nil && !apierrors.IsNotFound(err) {
+			return err
+		}
+		valErr.AddInvalidError(field.NewPath("spec").Child("zone"), rover.Spec.Zone, fmt.Sprintf("zone %q does not support file subscriptions or exposures", rover.Spec.Zone))
 	}
 
 	return nil
@@ -811,7 +842,15 @@ func (r *RoverValidator) ValidateFileExposure(valErr *cerrors.ValidationError, e
 	if exposure.File == nil {
 		return nil
 	}
-	validateFilePublicKeys(valErr, exposure.File.PublicKeys, field.NewPath("spec").Child("exposures").Index(idx).Child("file"))
+
+	if !cconfig.FeaturePubSub.IsEnabled() {
+		return nil
+	}
+
+	if exposure.File.SFTP != nil {
+		validateFilePublicKeys(valErr, exposure.File.SFTP.PublicKeys, field.NewPath("spec").Child("exposures").Index(idx).Child("file"))
+	}
+
 	return nil
 }
 
@@ -820,38 +859,20 @@ func (r *RoverValidator) ValidateFileSubscription(valErr *cerrors.ValidationErro
 		return nil
 	}
 
-	validateFilePublicKeys(valErr, sub.File.PublicKeys, field.NewPath("spec").Child("subscriptions").Index(idx).Child("file"))
+	if !cconfig.FeaturePubSub.IsEnabled() {
+		return nil
+	}
+
+	if sub.File.SFTP != nil {
+		validateFilePublicKeys(valErr, sub.File.SFTP.PublicKeys, field.NewPath("spec").Child("subscriptions").Index(idx).Child("file"))
+	}
+
 	return nil
 }
 
-func validateFilePublicKeys(valErr *cerrors.ValidationError, keys []roverv1.PublicKey, filePath *field.Path) {
-	if len(keys) == 0 {
-		valErr.AddRequiredError(filePath.Child("publicKeys"), "at least one public key must be specified")
-		return
-	}
-
-	seenLabels := make(map[string]struct{}, len(keys))
-	seenKeys := make(map[string]struct{}, len(keys))
+func validateFilePublicKeys(valErr *cerrors.ValidationError, keys []roverv1.SSHPublicKeySpec, filePath *field.Path) {
 	for i, key := range keys {
-		keyPath := filePath.Child("publicKeys").Index(i)
-		if _, exists := seenLabels[key.Label]; exists {
-			valErr.AddInvalidError(
-				keyPath.Child("label"),
-				key.Label,
-				fmt.Sprintf("duplicate public key label '%s'; labels must be unique per fileType", key.Label),
-			)
-		}
-		seenLabels[key.Label] = struct{}{}
-
-		if _, exists := seenKeys[key.Key]; exists {
-			valErr.AddInvalidError(
-				keyPath.Child("key"),
-				key.Label,
-				fmt.Sprintf("duplicate public key value for label '%s'; key values must be unique per fileType", key.Label),
-			)
-		}
-		seenKeys[key.Key] = struct{}{}
-
+		keyPath := filePath.Child("sftp").Child("publicKeys").Index(i)
 		validateSSHPublicKeyFormat(valErr, key, keyPath)
 	}
 }
@@ -859,7 +880,7 @@ func validateFilePublicKeys(valErr *cerrors.ValidationError, keys []roverv1.Publ
 // validateSSHPublicKeyFormat verifies that a public key value is a well-formed
 // SSH authorized-keys entry ("<type> <base64-key> [comment]") whose algorithm is
 // one of the supported SSHKeyTypes.
-func validateSSHPublicKeyFormat(valErr *cerrors.ValidationError, key roverv1.PublicKey, keyPath *field.Path) {
+func validateSSHPublicKeyFormat(valErr *cerrors.ValidationError, key roverv1.SSHPublicKeySpec, keyPath *field.Path) {
 	pub, _, _, _, err := ssh.ParseAuthorizedKey([]byte(strings.TrimSpace(key.Key)))
 	if err != nil {
 		valErr.AddInvalidError(

@@ -23,21 +23,23 @@ var _ = Describe("MakeName", func() {
 
 var _ = Describe("mapPublicKeys", func() {
 	It("yields nil for nil input", func() {
-		Expect(mapPublicKeys(nil)).To(BeNil())
+		Expect(mapSFTP(nil)).To(BeNil())
 	})
 
 	It("yields nil for an empty slice", func() {
-		Expect(mapPublicKeys([]roverv1.PublicKey{})).To(BeNil())
+		Expect(mapSFTP(&roverv1.FileSFTP{PublicKeys: []roverv1.SSHPublicKeySpec{}})).To(BeNil())
 	})
 
 	It("maps label and key preserving order", func() {
-		in := []roverv1.PublicKey{
-			{Label: "provider-key", Key: "ssh-ed25519 AAAA"},
-			{Label: "consumer-key", Key: "ssh-ed25519 BBBB"},
+		in := &roverv1.FileSFTP{
+			PublicKeys: []roverv1.SSHPublicKeySpec{
+				{Key: "ssh-ed25519 AAAA"},
+				{Key: "ssh-ed25519 BBBB"},
+			},
 		}
-		got := mapPublicKeys(in)
-		Expect(got).To(HaveLen(2))
-		Expect(got[0].Key).To(Equal("ssh-ed25519 AAAA"))
-		Expect(got[1].Key).To(Equal("ssh-ed25519 BBBB"))
+		got := mapSFTP(in)
+		Expect(got.PublicKeys).To(HaveLen(2))
+		Expect(got.PublicKeys[0].Key).To(Equal("ssh-ed25519 AAAA"))
+		Expect(got.PublicKeys[1].Key).To(Equal("ssh-ed25519 BBBB"))
 	})
 })

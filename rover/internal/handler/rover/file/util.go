@@ -16,14 +16,18 @@ func MakeName(fileType, ownerName string) string {
 	return fileType + "--" + labelutil.NormalizeValue(ownerName)
 }
 
-// mapPublicKeys converts rover-domain public keys to file-domain public keys.
-func mapPublicKeys(in []roverv1.PublicKey) []filev1.SSHPublicKeySpec {
-	if len(in) == 0 {
+// mapSFTP converts rover-domain public keys to file-domain public keys.
+func mapSFTP(in *roverv1.FileSFTP) *filev1.FileSFTP {
+	if in == nil || len(in.PublicKeys) == 0 {
 		return nil
 	}
-	out := make([]filev1.SSHPublicKeySpec, len(in))
-	for i, k := range in {
-		out[i] = filev1.SSHPublicKeySpec{
+
+	out := &filev1.FileSFTP{
+		PublicKeys: make([]filev1.SSHPublicKeySpec, len(in.PublicKeys)),
+	}
+
+	for i, k := range in.PublicKeys {
+		out.PublicKeys[i] = filev1.SSHPublicKeySpec{
 			Key: k.Key,
 		}
 	}

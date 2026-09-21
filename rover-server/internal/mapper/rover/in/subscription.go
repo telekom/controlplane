@@ -109,8 +109,10 @@ func mapSubscription(in *api.Subscription, out *roverv1.Subscription) error {
 
 func mapFileSubscription(in api.FileSubscription) *roverv1.FileSubscription {
 	return &roverv1.FileSubscription{
-		FileType:   in.FileType,
-		PublicKeys: mapPublicKeys(in.PublicKeys),
+		FileType: in.FileType,
+		SFTP: &roverv1.FileSFTP{
+			PublicKeys: mapPublicKeys(in.PublicKeys),
+		},
 	}
 }
 

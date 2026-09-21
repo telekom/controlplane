@@ -47,6 +47,7 @@ var (
 		PublicKeys: []api.PublicKey{
 			{Label: "provider-key", Key: "ssh-ed25519 AAAA-provider"},
 		},
+		Variant: "sftp",
 	}
 
 	fileSubscription = api.FileSubscription{

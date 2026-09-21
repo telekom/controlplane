@@ -6,6 +6,7 @@ package file
 
 import (
 	"context"
+	"strings"
 
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -55,9 +56,7 @@ func HandleExposure(ctx context.Context, c client.JanitorClient, owner *roverv1.
 			Approval:   filev1.Approval{Strategy: filev1.ApprovalStrategy(exp.Approval.Strategy)},
 			Visibility: filev1.Visibility(exp.Visibility.String()),
 			FileType:   exp.FileType,
-			SFTP: &filev1.FileSFTP{
-				PublicKeys: mapPublicKeys(exp.PublicKeys),
-			},
+			SFTP:       mapSFTP(exp.SFTP),
 			Provider: types.TypedObjectRef{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       "Application",
@@ -65,7 +64,8 @@ func HandleExposure(ctx context.Context, c client.JanitorClient, owner *roverv1.
 				},
 				ObjectRef: *owner.Status.Application,
 			},
-			Zone: &zoneRef,
+			Variant: strings.ToLower(string(exp.Variant)),
+			Zone:    &zoneRef,
 		}
 		return nil
 	}

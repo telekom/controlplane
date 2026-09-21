@@ -293,11 +293,6 @@ func setupWebhooks(mgr ctrl.Manager) error {
 	if err := webhookv1.SetupApiChangelogWebhookWithManager(mgr); err != nil {
 		return fmt.Errorf("create ApiChangelog webhook: %w", err)
 	}
-	if cconfig.FeatureFile.IsEnabled() {
-		if err := webhookv1.SetupFileSpecificationWebhookWithManager(mgr); err != nil {
-			return fmt.Errorf("create FileSpecification webhook: %w", err)
-		}
-	}
 
 	return nil
 }

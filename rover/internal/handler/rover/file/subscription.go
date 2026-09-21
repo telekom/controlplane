@@ -46,9 +46,7 @@ func HandleSubscription(ctx context.Context, c client.JanitorClient, owner *rove
 
 		fileSubscription.Spec = filev1.FileSubscriptionSpec{
 			FileType: sub.FileType,
-			SFTP: &filev1.FileSFTP{
-				PublicKeys: mapPublicKeys(sub.PublicKeys),
-			},
+			SFTP:     mapSFTP(sub.SFTP),
 			Requestor: types.TypedObjectRef{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       "Application",
