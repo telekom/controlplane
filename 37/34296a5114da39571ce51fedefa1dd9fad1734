@@ -1,0 +1,16 @@
+controlplane-api/internal/graphql/viewer_middleware_test.go
+  h_0f030e7424553c 148-161
+controlplane-api/internal/graphql/viewer_middleware.go
+  h_0f030e7424553c 83
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "3734296a5114da39571ce51fedefa1dd9fad1734",
+  "prompts": {},
+  "humans": {
+    "h_0f030e7424553c": {
+      "author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

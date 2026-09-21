@@ -1,0 +1,30 @@
+rover-ctl/pkg/parser/parser_test.go
+  h_0f030e7424553c 15-16,86-99
+  s_1f42d76a118134::t_63dadd2e84c3ab 100-101
+rover-ctl/go.mod
+  h_0f030e7424553c 23
+rover-ctl/pkg/parser/parser.go
+  h_0f030e7424553c 8,22-23,139-143,145-148
+  s_1f42d76a118134::t_cd086fd511f279 144
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "ec954c2df0bd7ec7f4c9dcb52f3c8f504c092870",
+  "prompts": {},
+  "humans": {
+    "h_0f030e7424553c": {
+      "author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  },
+  "sessions": {
+    "s_1f42d76a118134": {
+      "agent_id": {
+        "tool": "github-copilot",
+        "id": "91e60ddf-0105-4f9d-9f94-1fe5917cb46f",
+        "model": "gpt-5.3-codex"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
