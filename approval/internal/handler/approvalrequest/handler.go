@@ -226,21 +226,31 @@ func (h *ApprovalRequestHandler) handleGranted(ctx context.Context, approvalReq 
 			// Scoped request with same name but different UID — proceed to rebind.
 		}
 
-		// Re-read the source AR via the uncached API reader to verify it is still
-		// the current live request. The manager's cached client could serve stale
-		// data if the source was deleted and recreated between cache syncs.
-		freshAR := &approvalv1.ApprovalRequest{}
-		if err := h.Reader.Get(ctx, ctrlclient.ObjectKeyFromObject(approvalReq), freshAR); err != nil {
-			return fmt.Errorf("re-reading source request: %w", err)
-		}
-		if freshAR.UID != approvalReq.UID {
-			return fmt.Errorf("source request was recreated (expected UID %s, got %s)", approvalReq.UID, freshAR.UID)
-		}
-		if freshAR.DeletionTimestamp != nil {
-			return fmt.Errorf("source request is terminating")
-		}
-		if freshAR.Spec.State != approvalv1.ApprovalStateGranted {
-			return fmt.Errorf("source request is no longer granted (state: %s)", freshAR.Spec.State)
+		// Verify the source request is still live, current, and eligible to
+		// materialize a grant. Scoped requests use a stricter check that rejects
+		// ambiguous states where multiple live requests target the same scope.
+		if isKeyed {
+			freshSource, err := h.loadSoleLiveScopedGrantSource(ctx, approvalReq)
+			if err != nil {
+				return fmt.Errorf("scoped grant-source selection: %w", err)
+			}
+			// Use freshSource fields for the Approval spec below.
+			_ = freshSource
+		} else {
+			// Legacy (unscoped): re-read via uncached reader to verify liveness.
+			freshAR := &approvalv1.ApprovalRequest{}
+			if err := h.Reader.Get(ctx, ctrlclient.ObjectKeyFromObject(approvalReq), freshAR); err != nil {
+				return fmt.Errorf("re-reading source request: %w", err)
+			}
+			if freshAR.UID != approvalReq.UID {
+				return fmt.Errorf("source request was recreated (expected UID %s, got %s)", approvalReq.UID, freshAR.UID)
+			}
+			if freshAR.DeletionTimestamp != nil {
+				return fmt.Errorf("source request is terminating")
+			}
+			if freshAR.Spec.State != approvalv1.ApprovalStateGranted {
+				return fmt.Errorf("source request is no longer granted (state: %s)", freshAR.Spec.State)
+			}
 		}
 
 		// Set controller owner reference only when creating (no existing refs).
