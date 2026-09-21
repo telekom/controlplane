@@ -145,6 +145,20 @@ var _ = Describe("ViewerFromBusinessContext", func() {
 			Expect(v.Teams).To(ConsistOf("team-alpha"))
 		})
 
+		It("should match user email case-insensitively", func() {
+			testutil.SeedStandard(client)
+
+			ctx := security.ToContext(context.Background(), &security.BusinessContext{
+				ClientType: security.ClientTypeAdmin,
+			})
+			ctx = viewer.NewForwardedUserContext(ctx, viewer.ForwardedUser{
+				Email: "ALICE@TEST.DEV",
+			})
+			v := captureViewer(ctx)
+			Expect(v).NotTo(BeNil())
+			Expect(v.Teams).To(ConsistOf("team-alpha"))
+		})
+
 		It("should keep admin=true when ForwardedUser has IsAdmin=true", func() {
 			testutil.SeedStandard(client)
 

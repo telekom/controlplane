@@ -80,7 +80,7 @@ func ViewerFromBusinessContext(client *ent.Client) graphql.OperationMiddleware {
 					// team memberships to build the Viewer that privacy rules will use.
 					sysCtx := viewer.SystemContext(ctx)
 					userTeams, err := client.Team.Query().
-						Where(entteam.HasMembersWith(member.EmailEQ(fu.Email))).
+						Where(entteam.HasMembersWith(member.EmailEqualFold(fu.Email))).
 						Select(entteam.FieldName).
 						Strings(sysCtx)
 					if err != nil {
