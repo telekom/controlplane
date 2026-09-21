@@ -532,12 +532,12 @@ type AgenticSubscription struct {
 	Security *SubscriberSecurity `json:"security,omitempty"`
 }
 
-// AgenticVariant defines the agentic exposure variant.
+// FileVariant defines the file exposure variant.
 // +kubebuilder:validation:Enum=SFTP
 type FileVariant string
 
 const (
-	// AgenticVariantMCP exposes a standard MCP server via AI Gateway
+	// FileVariantSFTP exposes a file via SFTP
 	FileVariantSFTP FileVariant = "SFTP"
 )
 
@@ -562,7 +562,7 @@ type FileExposure struct {
 
 	// Variant specifies the variant of the file exposure, e.g., "sftp".
 	// +kubebuilder:validation:Required
-	// +kubebuilder:validation:default=SFTP
+	// +kubebuilder:default=SFTP
 	Variant FileVariant `json:"variant"`
 
 	// SFTP configures provider-side SFTP access for this file exposure.

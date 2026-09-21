@@ -108,6 +108,14 @@ rules:
   - update
   - watch
 - apiGroups:
+  - file.cp.ei.telekom.de
+  resources:
+  - zoneserviceconfigs
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
   - organization.cp.ei.telekom.de
   resources:
   - teams

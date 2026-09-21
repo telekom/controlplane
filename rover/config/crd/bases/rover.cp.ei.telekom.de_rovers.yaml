@@ -1201,6 +1201,7 @@ spec:
                           - publicKeys
                           type: object
                         variant:
+                          default: SFTP
                           description: Variant specifies the variant of the file exposure,
                             e.g., "sftp".
                           enum:
