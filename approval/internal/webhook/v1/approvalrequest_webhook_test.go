@@ -623,6 +623,93 @@ var _ = Describe("ApprovalRequest Webhook", func() {
 		})
 	})
 
+	Context("ApprovalKey immutability on ApprovalRequest", func() {
+		var validator ApprovalRequestCustomValidator
+
+		makeAR := func(key string) *approvalv1.ApprovalRequest {
+			return &approvalv1.ApprovalRequest{
+				Spec: approvalv1.ApprovalRequestSpec{
+					Strategy:    approvalv1.ApprovalStrategySimple,
+					State:       approvalv1.ApprovalStatePending,
+					ApprovalKey: key,
+				},
+			}
+		}
+
+		It("should reject absent -> key (adding a key)", func() {
+			oldObj := makeAR("")
+			newObj := makeAR("provider")
+			_, err := validator.ValidateUpdate(context.Background(), oldObj, newObj)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("approvalKey"))
+		})
+
+		It("should reject key -> absent (removing a key)", func() {
+			oldObj := makeAR("provider")
+			newObj := makeAR("")
+			_, err := validator.ValidateUpdate(context.Background(), oldObj, newObj)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("approvalKey"))
+		})
+
+		It("should reject key -> empty (removing a key via empty string)", func() {
+			oldObj := makeAR("consumer")
+			newObj := makeAR("")
+			_, err := validator.ValidateUpdate(context.Background(), oldObj, newObj)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("approvalKey"))
+		})
+
+		It("should reject empty -> key", func() {
+			oldObj := makeAR("")
+			newObj := makeAR("consumer")
+			_, err := validator.ValidateUpdate(context.Background(), oldObj, newObj)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("approvalKey"))
+		})
+
+		It("should reject provider -> consumer (key change)", func() {
+			oldObj := makeAR("provider")
+			newObj := makeAR("consumer")
+			_, err := validator.ValidateUpdate(context.Background(), oldObj, newObj)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("approvalKey"))
+		})
+
+		It("should allow unchanged key with valid ordinary update", func() {
+			oneDecision := []approvalv1.Decision{
+				{Name: "Alice", Email: "alice@telekom.de", Comment: "ok", ResultingState: approvalv1.ApprovalStateGranted},
+			}
+			oldObj := makeAR("provider")
+			oldObj.Spec.State = approvalv1.ApprovalStatePending
+			newObj := makeAR("provider")
+			newObj.Spec.State = approvalv1.ApprovalStateGranted
+			newObj.Spec.Decisions = oneDecision
+			_, err := validator.ValidateUpdate(context.Background(), oldObj, newObj)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("should allow absent <-> empty round-trip (both legacy)", func() {
+			oldObj := makeAR("")
+			newObj := makeAR("")
+			_, err := validator.ValidateUpdate(context.Background(), oldObj, newObj)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("should allow valid legacy update (no key, state change)", func() {
+			oneDecision := []approvalv1.Decision{
+				{Name: "Bob", Email: "bob@telekom.de", Comment: "ok", ResultingState: approvalv1.ApprovalStateGranted},
+			}
+			oldObj := makeAR("")
+			oldObj.Spec.State = approvalv1.ApprovalStatePending
+			newObj := makeAR("")
+			newObj.Spec.State = approvalv1.ApprovalStateGranted
+			newObj.Spec.Decisions = oneDecision
+			_, err := validator.ValidateUpdate(context.Background(), oldObj, newObj)
+			Expect(err).NotTo(HaveOccurred())
+		})
+	})
+
 	Context("broadened distinct-decider check (Bug 3 fix)", func() {
 		var validator ApprovalRequestCustomValidator
 
