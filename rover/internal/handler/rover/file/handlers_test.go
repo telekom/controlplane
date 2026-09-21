@@ -124,6 +124,9 @@ var _ = Describe("File Exposure/Subscription Handlers", func() {
 			Expect(fileSubscription.Labels).To(HaveKeyWithValue(config.BuildLabelKey("zone"), testZone))
 			Expect(fileSubscription.OwnerReferences).To(HaveLen(1))
 			Expect(fileSubscription.OwnerReferences[0].Name).To(Equal("my-app"))
+			Expect(fileSubscription.Spec.Zone).ToNot(BeNil())
+			Expect(fileSubscription.Spec.Zone.Name).To(Equal(testZone))
+			Expect(fileSubscription.Spec.Zone.Namespace).To(Equal(testEnvironment))
 
 			Expect(owner.Status.FileSubscriptions).To(HaveLen(1))
 			Expect(owner.Status.FileSubscriptions[0].Name).To(Equal(name))

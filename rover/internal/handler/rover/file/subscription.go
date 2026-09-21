@@ -15,6 +15,7 @@ import (
 	"github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/types"
+	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	filev1 "github.com/telekom/controlplane/file/api/v1"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
@@ -32,6 +33,12 @@ func HandleSubscription(ctx context.Context, c client.JanitorClient, owner *rove
 			Name:      labelutil.NormalizeNameValue(name),
 			Namespace: owner.Namespace,
 		},
+	}
+
+	environment := contextutil.EnvFromContextOrDie(ctx)
+	zoneRef := types.ObjectRef{
+		Name:      owner.Spec.Zone,
+		Namespace: environment,
 	}
 
 	mutator := func() error {
@@ -54,6 +61,7 @@ func HandleSubscription(ctx context.Context, c client.JanitorClient, owner *rove
 				},
 				ObjectRef: *owner.Status.Application,
 			},
+			Zone: &zoneRef,
 		}
 		return nil
 	}
