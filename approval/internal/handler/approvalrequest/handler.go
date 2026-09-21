@@ -209,29 +209,35 @@ func (h *ApprovalRequestHandler) handleGranted(ctx context.Context, approvalReq 
 			}
 		}
 
-		if approvalObj.Spec.ApprovedRequest != nil && approvalObj.Spec.ApprovedRequest.Name == approvalReq.Name {
-			if approvalReq.Spec.ApprovalKey == "" || approvalObj.Spec.ApprovedRequest.UID == approvalReq.UID {
-				// Legacy: name match is sufficient. Scoped: name + UID must match.
-				if isKeyed {
-					approvalv1.SetApprovalKeyLabel(approvalObj, approvalReq.Spec.ApprovalKey)
-				}
-				logger.Info("Approval has already been processed for this request")
-				return nil
-			}
-			// Scoped request with same name but different UID — proceed to rebind.
-		}
-
-		// Verify the source request is still live, current, and eligible to
-		// materialize a grant. Scoped requests use a stricter check that rejects
-		// ambiguous states where multiple live requests target the same scope.
+		// Determine the authoritative source for building the Approval spec.
+		// Scoped requests load a validated fresh copy from the API server (which
+		// also enforces the ambiguity guard) BEFORE the idempotency check so that
+		// an already-bound request cannot bypass the guard.
+		// Unscoped requests fall through to the legacy idempotency + liveness path.
+		source := approvalReq
 		if isKeyed {
 			freshSource, err := h.loadSoleLiveScopedGrantSource(ctx, approvalReq)
 			if err != nil {
 				return fmt.Errorf("scoped grant-source selection: %w", err)
 			}
-			// Use freshSource fields for the Approval spec below.
-			_ = freshSource
+			source = freshSource
+
+			// Scoped idempotency: check using the validated source's identity.
+			if approvalObj.Spec.ApprovedRequest != nil &&
+				approvalObj.Spec.ApprovedRequest.Name == source.Name &&
+				approvalObj.Spec.ApprovedRequest.Namespace == source.Namespace &&
+				approvalObj.Spec.ApprovedRequest.UID == source.UID {
+				approvalv1.SetApprovalKeyLabel(approvalObj, source.Spec.ApprovalKey)
+				logger.Info("Approval has already been processed for this request")
+				return nil
+			}
 		} else {
+			// Legacy (unscoped) idempotency check.
+			if approvalObj.Spec.ApprovedRequest != nil && approvalObj.Spec.ApprovedRequest.Name == approvalReq.Name {
+				logger.Info("Approval has already been processed for this request")
+				return nil
+			}
+
 			// Legacy (unscoped): re-read via uncached reader to verify liveness.
 			freshAR := &approvalv1.ApprovalRequest{}
 			if err := h.Reader.Get(ctx, ctrlclient.ObjectKeyFromObject(approvalReq), freshAR); err != nil {
@@ -250,29 +256,29 @@ func (h *ApprovalRequestHandler) handleGranted(ctx context.Context, approvalReq 
 
 		// Set controller owner reference only when creating (no existing refs).
 		if len(approvalObj.GetOwnerReferences()) == 0 {
-			setControllerReferenceForRef(approvalObj, &approvalReq.Spec.Target)
+			setControllerReferenceForRef(approvalObj, &source.Spec.Target)
 		}
 
 		approvalObj.Spec = approvalv1.ApprovalSpec{
-			Strategy: approvalReq.Spec.Strategy,
+			Strategy: source.Spec.Strategy,
 			State:    approvalv1.ApprovalStateGranted,
 
-			Requester: approvalReq.Spec.Requester,
-			Decider:   approvalReq.Spec.Decider,
-			Target:    approvalReq.Spec.Target,
-			Action:    approvalReq.Spec.Action,
-			Decisions: approvalReq.Spec.Decisions,
+			Requester: source.Spec.Requester,
+			Decider:   source.Spec.Decider,
+			Target:    source.Spec.Target,
+			Action:    source.Spec.Action,
+			Decisions: source.Spec.Decisions,
 
-			ApprovedRequest: types.ObjectRefFromObject(approvalReq),
-			ApprovalKey:     approvalReq.Spec.ApprovalKey,
+			ApprovedRequest: types.ObjectRefFromObject(source),
+			ApprovalKey:     source.Spec.ApprovalKey,
 		}
 
-		approvalv1.SetApprovalLabels(approvalObj, approvalReq.Spec.Target,
-			approvalReq.Spec.Requester.TeamName,
-			approvalReq.Spec.Decider.TeamName,
-			approvalReq.Spec.Action,
-			string(approvalReq.Spec.Strategy))
-		approvalv1.SetApprovalKeyLabel(approvalObj, approvalReq.Spec.ApprovalKey)
+		approvalv1.SetApprovalLabels(approvalObj, source.Spec.Target,
+			source.Spec.Requester.TeamName,
+			source.Spec.Decider.TeamName,
+			source.Spec.Action,
+			string(source.Spec.Strategy))
+		approvalv1.SetApprovalKeyLabel(approvalObj, source.Spec.ApprovalKey)
 
 		return nil
 	}

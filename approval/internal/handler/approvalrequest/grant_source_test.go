@@ -298,6 +298,50 @@ var _ = Describe("loadSoleLiveScopedGrantSource", func() {
 			Expect(err.Error()).To(ContainSubstring("listing approval requests"))
 		})
 	})
+
+	Context("Test I: fresh source fields used for Approval spec", func() {
+		It("builds the Approval from the API-server version, not the stale in-memory copy", func() {
+			sole := makeAR("ar-fresh", "uid-fresh", "provider", approvalv1.ApprovalStateGranted, target)
+			sole.Spec.Requester.TeamName = "fresh--requester"
+			sole.Spec.Requester.TeamEmail = "fresh@requester.com"
+			sole.Spec.Decider.TeamEmail = "fresh@decider.com"
+
+			h := &ApprovalRequestHandler{Reader: fakeReader(sole)}
+
+			result, err := h.loadSoleLiveScopedGrantSource(ctx, sole)
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(result.Spec.Requester.TeamName).To(Equal("fresh--requester"))
+			Expect(result.Spec.Requester.TeamEmail).To(Equal("fresh@requester.com"))
+			Expect(result.Spec.Decider.TeamEmail).To(Equal("fresh@decider.com"))
+
+			// Mutate the original to confirm the result is a deep copy.
+			sole.Spec.Requester.TeamName = "stale--requester"
+			Expect(result.Spec.Requester.TeamName).To(Equal("fresh--requester"))
+		})
+	})
+
+	Context("Test J: already-bound request still detects ambiguity", func() {
+		It("returns ambiguity error even when the Approval already points to the source", func() {
+			r1 := makeAR("ar-r1", "uid-r1", "provider", approvalv1.ApprovalStateGranted, target)
+			r2 := makeAR("ar-r2", "uid-r2", "provider", approvalv1.ApprovalStateGranted, target)
+
+			h := &ApprovalRequestHandler{Reader: fakeReader(r1, r2)}
+
+			// Processing r2 (the "already-bound" one) still sees r1 in the partition.
+			_, err := h.loadSoleLiveScopedGrantSource(ctx, r2)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("ambiguous"))
+			Expect(err.Error()).To(ContainSubstring("2 live requests"))
+
+			// After r1 is removed, processing r2 succeeds.
+			h2 := &ApprovalRequestHandler{Reader: fakeReader(r2)}
+			result, err := h2.loadSoleLiveScopedGrantSource(ctx, r2)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result.UID).To(Equal(ktypes.UID("uid-r2")))
+			Expect(result.Spec.State).To(Equal(approvalv1.ApprovalStateGranted))
+		})
+	})
 })
 
 // errorReader is a client.Reader that always returns an error on List.
