@@ -6,6 +6,7 @@ package approvalrequest
 
 import (
 	"context"
+	"maps"
 
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -195,11 +196,8 @@ func handleGranted(ctx context.Context, approvalReq *approvalv1.ApprovalRequest)
 			ApprovedRequest: types.ObjectRefFromObject(approvalReq),
 		}
 
-		approvalv1.SetApprovalLabels(approvalObj, approvalReq.Spec.Target,
-			approvalReq.Spec.Requester.TeamName,
-			approvalReq.Spec.Decider.TeamName,
-			approvalReq.Spec.Action,
-			string(approvalReq.Spec.Strategy))
+		// copy labels from approval request.
+		approvalObj.Labels = maps.Clone(approvalReq.Labels)
 
 		return nil
 	}
