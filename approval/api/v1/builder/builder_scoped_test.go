@@ -502,7 +502,7 @@ var _ = Describe("Scoped approval builder", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(res).To(Equal(ApprovalResultGranted))
 
-		cond := meta.FindStatusCondition(b2.GetOwner().GetConditions(), ConditionTypeApprovalGranted)
+		cond := meta.FindStatusCondition(b2.GetOwner().GetConditions(), ConditionTypeForKey("provider"))
 		testutil.ExpectConditionToBeTrue(NewGomegaWithT(GinkgoT()), cond, "Granted")
 	})
 
