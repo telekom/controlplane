@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/telekom/controlplane/controlplane-api/ent"
+	"github.com/telekom/controlplane/controlplane-api/ent/agenticexposure"
 	entmcpserver "github.com/telekom/controlplane/controlplane-api/ent/mcpserver"
 	"github.com/telekom/controlplane/controlplane-api/ent/team"
 	"github.com/telekom/controlplane/projector/internal/infrastructure"
@@ -99,10 +100,28 @@ func (r *Repository) Upsert(ctx context.Context, data *McpServerData) error {
 	r.cache.Set(et, lk, mcpServerID)
 
 	// Update the active-mcp-server cache entry so that AgenticExposure FK
-	// resolution can find the active McpServer by base path alone.
+	// resolution can find the active McpServer by base path alone, and
+	// back-link any AgenticExposures that were projected before this McpServer
+	// existed. An MCP/TELECONTEXTMCP-variant AgenticExposure targets the active
+	// McpServer by base path (see FindActiveMcpServerID). If the exposure was
+	// reconciled first, it was stored with a NULL mcp_server FK and nothing
+	// re-links it when the McpServer later becomes active — the exposure CR is
+	// not re-reconciled.
 	if data.Active {
 		aet, alk := cachekeys.ActiveMcpServer(data.BasePath)
 		r.cache.Set(aet, alk, mcpServerID)
+
+		if _, err := r.client.AgenticExposure.Update().
+			Where(
+				agenticexposure.BasePathEQ(data.BasePath),
+				agenticexposure.VariantIn(agenticexposure.VariantMcp, agenticexposure.VariantTelecontextMcp),
+				agenticexposure.ActiveEQ(true),
+				agenticexposure.Not(agenticexposure.HasMcpServer()),
+			).
+			SetMcpServerID(mcpServerID).
+			Save(ctx); err != nil {
+			return fmt.Errorf("back-link agentic_exposures to mcp_server %q: %w", data.BasePath, err)
+		}
 	} else {
 		// Only clear the active cache entry if it currently points to this McpServer.
 		aet, alk := cachekeys.ActiveMcpServer(data.BasePath)

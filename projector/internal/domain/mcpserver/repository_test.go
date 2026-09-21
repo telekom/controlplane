@@ -10,19 +10,22 @@ import (
 	"fmt"
 
 	"entgo.io/ent/privacy"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 
-	_ "github.com/mattn/go-sqlite3"
 	"github.com/telekom/controlplane/controlplane-api/ent"
+	entagenticexposure "github.com/telekom/controlplane/controlplane-api/ent/agenticexposure"
 	"github.com/telekom/controlplane/controlplane-api/ent/enttest"
 	entmcpserver "github.com/telekom/controlplane/controlplane-api/ent/mcpserver"
-	_ "github.com/telekom/controlplane/controlplane-api/ent/runtime"
-
+	"github.com/telekom/controlplane/controlplane-api/ent/zone"
 	"github.com/telekom/controlplane/projector/internal/domain/mcpserver"
 	"github.com/telekom/controlplane/projector/internal/domain/shared"
 	"github.com/telekom/controlplane/projector/internal/infrastructure"
 	"github.com/telekom/controlplane/projector/internal/runtime"
+
+	_ "github.com/mattn/go-sqlite3"
+	_ "github.com/telekom/controlplane/controlplane-api/ent/runtime"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 // mockMcpServerDeps implements mcpserver.McpServerDeps for testing.
@@ -165,6 +168,7 @@ var _ = Describe("McpServer Repository", func() {
 				TeamName:    "platform--narvi",
 			}
 			Expect(repo.Upsert(ctx, data)).To(Succeed())
+			cache.Wait()
 
 			resolver := infrastructure.NewIDResolver(client, cache)
 			id, err := resolver.FindActiveMcpServerID(ctx, "/mcp/weather/v1")
@@ -186,10 +190,94 @@ var _ = Describe("McpServer Repository", func() {
 
 			data.Active = false
 			Expect(repo.Upsert(ctx, data)).To(Succeed())
+			cache.Wait()
 
 			resolver := infrastructure.NewIDResolver(client, cache)
 			_, err := resolver.FindActiveMcpServerID(ctx, "/mcp/weather/v1")
 			Expect(errors.Is(err, infrastructure.ErrEntityNotFound)).To(BeTrue())
+		})
+
+		It("should back-link orphaned AgenticExposures projected before the mcp_server", func() {
+			// Seed an Application (owner) via Zone → Team → Application.
+			z, err := client.Zone.Create().
+				SetName("caas").
+				SetVisibility(zone.VisibilityEnterprise).
+				Save(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			app, err := client.Application.Create().
+				SetName("my-app").
+				SetNamespace("platform--narvi").
+				SetOwnerTeamID(teamID).
+				SetZoneID(z.ID).
+				Save(ctx)
+			Expect(err).NotTo(HaveOccurred())
+
+			// AgenticExposure created first, before its McpServer exists → stored
+			// with a NULL mcp_server FK (the create-order race).
+			exp, err := client.AgenticExposure.Create().
+				SetBasePath("/mcp/weather/v1").
+				SetNamespace("prod--platform--narvi").
+				SetVariant(entagenticexposure.VariantMcp).
+				SetActive(true).
+				SetOwnerID(app.ID).
+				Save(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			_, err = exp.QueryMcpServer().Only(ctx)
+			Expect(ent.IsNotFound(err)).To(BeTrue())
+
+			// McpServer appears later → should adopt the orphaned exposure.
+			data := &mcpserver.McpServerData{
+				Meta:        shared.NewMetadata("prod--platform--narvi", "mcp-weather-v1", nil),
+				StatusPhase: "READY",
+				BasePath:    "/mcp/weather/v1",
+				Version:     "1.0.0",
+				Name:        "weather-server",
+				Active:      true,
+				TeamName:    "platform--narvi",
+			}
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			srv, err := exp.QueryMcpServer().Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(srv.BasePath).To(Equal("/mcp/weather/v1"))
+		})
+
+		It("should not back-link AgenticExposures with a different variant", func() {
+			z, err := client.Zone.Create().
+				SetName("caas").
+				SetVisibility(zone.VisibilityEnterprise).
+				Save(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			app, err := client.Application.Create().
+				SetName("my-app").
+				SetNamespace("platform--narvi").
+				SetOwnerTeamID(teamID).
+				SetZoneID(z.ID).
+				Save(ctx)
+			Expect(err).NotTo(HaveOccurred())
+
+			exp, err := client.AgenticExposure.Create().
+				SetBasePath("/mcp/weather/v1").
+				SetNamespace("prod--platform--narvi").
+				SetVariant(entagenticexposure.VariantAgent).
+				SetActive(true).
+				SetOwnerID(app.ID).
+				Save(ctx)
+			Expect(err).NotTo(HaveOccurred())
+
+			data := &mcpserver.McpServerData{
+				Meta:        shared.NewMetadata("prod--platform--narvi", "mcp-weather-v1", nil),
+				StatusPhase: "READY",
+				BasePath:    "/mcp/weather/v1",
+				Version:     "1.0.0",
+				Name:        "weather-server",
+				Active:      true,
+				TeamName:    "platform--narvi",
+			}
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			_, err = exp.QueryMcpServer().Only(ctx)
+			Expect(ent.IsNotFound(err)).To(BeTrue())
 		})
 	})
 
