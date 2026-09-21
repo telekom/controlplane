@@ -282,10 +282,10 @@ var _ = Describe("AgenticSubscriptionHandler", func() {
 			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.ApprovalRequest"), mock.Anything).
 			Return(controllerutil.OperationResultCreated, nil).Once()
 
-		// 2. Cleanup old ApprovalRequests
+		// 2. List owner ApprovalRequests for scoped cleanup (replaces legacy Cleanup call)
 		fakeClient.EXPECT().
-			Cleanup(ctx, mock.AnythingOfType("*v1.ApprovalRequestList"), mock.Anything).
-			Return(0, nil).Once()
+			List(ctx, mock.AnythingOfType("*v1.ApprovalRequestList"), mock.Anything).
+			Return(nil).Once()
 
 		// 3. Get Approval — return a Granted Approval
 		fakeClient.EXPECT().
@@ -302,9 +302,10 @@ var _ = Describe("AgenticSubscriptionHandler", func() {
 			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.ApprovalRequest"), mock.Anything).
 			Return(controllerutil.OperationResultCreated, nil).Once()
 
+		// List owner ApprovalRequests for scoped cleanup (replaces legacy Cleanup call)
 		fakeClient.EXPECT().
-			Cleanup(ctx, mock.AnythingOfType("*v1.ApprovalRequestList"), mock.Anything).
-			Return(0, nil).Once()
+			List(ctx, mock.AnythingOfType("*v1.ApprovalRequestList"), mock.Anything).
+			Return(nil).Once()
 
 		// Approval not found — results in Pending
 		fakeClient.EXPECT().
@@ -317,9 +318,10 @@ var _ = Describe("AgenticSubscriptionHandler", func() {
 			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.ApprovalRequest"), mock.Anything).
 			Return(controllerutil.OperationResultCreated, nil).Once()
 
+		// List owner ApprovalRequests for scoped cleanup (replaces legacy Cleanup call)
 		fakeClient.EXPECT().
-			Cleanup(ctx, mock.AnythingOfType("*v1.ApprovalRequestList"), mock.Anything).
-			Return(0, nil).Once()
+			List(ctx, mock.AnythingOfType("*v1.ApprovalRequestList"), mock.Anything).
+			Return(nil).Once()
 
 		// Approval found with Rejected state
 		fakeClient.EXPECT().
@@ -628,9 +630,10 @@ var _ = Describe("AgenticSubscriptionHandler", func() {
 				}).
 				Return(controllerutil.OperationResultCreated, nil).Once()
 
+			// List owner ApprovalRequests for scoped cleanup (replaces legacy Cleanup call)
 			fakeClient.EXPECT().
-				Cleanup(ctx, mock.AnythingOfType("*v1.ApprovalRequestList"), mock.Anything).
-				Return(0, nil).Once()
+				List(ctx, mock.AnythingOfType("*v1.ApprovalRequestList"), mock.Anything).
+				Return(nil).Once()
 
 			fakeClient.EXPECT().
 				Get(ctx, mock.Anything, mock.AnythingOfType("*v1.Approval")).
