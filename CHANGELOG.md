@@ -1,3 +1,18 @@
+# [0.26.0](https://github.com/telekom/controlplane/compare/v0.25.0...v0.26.0) (2026-09-21)
+
+
+### Bug Fixes
+
+* **git-workflow:** push roverctl-image to Artifactory only on Release ([#659](https://github.com/telekom/controlplane/issues/659)) ([fed1d83](https://github.com/telekom/controlplane/commit/fed1d83be704e8d7e1c8b483b6f212728de55910))
+* **projector:** add back-link for agentCard, api, eventTypeDef, mcpServer AND remove stale FKs in Exposure -> API/EventType ([#660](https://github.com/telekom/controlplane/issues/660)) ([dd076b0](https://github.com/telekom/controlplane/commit/dd076b06029dbb5885f276a0ea005b16b744a85a))
+
+
+### Features
+
+* **approval:** allow inject custom labels into request ([#664](https://github.com/telekom/controlplane/issues/664)) ([bdb2f00](https://github.com/telekom/controlplane/commit/bdb2f008d39558a37baa661e7d8414561aec4d8f))
+* bug-fixes and minor improvements from integration-tests ([#663](https://github.com/telekom/controlplane/issues/663)) ([8e7c7d7](https://github.com/telekom/controlplane/commit/8e7c7d7be51e7bfaf6fdb627136074a2438ee33a))
+* **pubsub,event:** allow overwrite environment-name ([#656](https://github.com/telekom/controlplane/issues/656)) ([7d81dbb](https://github.com/telekom/controlplane/commit/7d81dbba5cef462e48da2f0b67bdd8621eec1810))
+
 # [0.25.0](https://github.com/telekom/controlplane/compare/v0.24.1...v0.25.0) (2026-09-16)
 
 
