@@ -5,8 +5,8 @@
 package parser
 
 import (
-	"bytes"
 	"encoding/json"
+	stderrors "errors"
 	"io"
 	"iter"
 	"os"
@@ -131,18 +131,22 @@ func (p *ObjectParser) parseDirectory(dirPath string) error {
 func (p *ObjectParser) parseFile(filePath string) error {
 	ext := strings.ToLower(filepath.Ext(filePath))
 
-	fileContent, err := os.ReadFile(filePath)
+	file, err := os.Open(filePath)
 	if err != nil {
 		return errors.Wrap(err, "failed to read file "+filePath)
 	}
 
 	decodedReader := transform.NewReader(
-		bytes.NewReader(fileContent),
+		file,
 		unicode.BOMOverride(unicode.UTF8.NewDecoder()),
 	)
-	decodedContent, err := io.ReadAll(decodedReader)
-	if err != nil {
-		return errors.Wrap(err, "failed to decode content in "+filePath)
+	decodedContent, decodeErr := io.ReadAll(decodedReader)
+	closeErr := file.Close()
+	if err := stderrors.Join(
+		errors.Wrap(decodeErr, "failed to decode content in "+filePath),
+		errors.Wrap(closeErr, "failed to close file "+filePath),
+	); err != nil {
+		return err
 	}
 
 	content, err := SubstitutePlaceholders(string(decodedContent))
