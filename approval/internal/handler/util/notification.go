@@ -6,6 +6,8 @@ package util
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -72,6 +74,9 @@ type NotificationData struct {
 	Scenario               NotificationScenario
 	Actor                  Actor
 	Action                 string
+	// ApprovalKey isolates notification names for scoped approvals.
+	// Empty preserves the legacy unscoped notification naming.
+	ApprovalKey string
 }
 
 // ReminderNotificationData extends NotificationData with expiration-specific fields.
@@ -173,13 +178,23 @@ func SendNotification(ctx context.Context, data *NotificationData) (*types.Objec
 	purposeStringBuilder.WriteString(string(data.Actor))
 	purpose := purposeStringBuilder.String()
 
-	// let's build the notifications name - <purpose>--<targetName>
-	// example: ...
-	nameStringBuilder := strings.Builder{}
-	nameStringBuilder.WriteString(purpose)
-	nameStringBuilder.WriteString(DELIMITER)
-	nameStringBuilder.WriteString(data.Target.GetName())
-	name := nameStringBuilder.String()
+	// Build the notification base name.
+	// Scoped (non-empty ApprovalKey): deterministic hash of source identity + key + purpose.
+	// Unscoped: legacy format <purpose>--<targetName>.
+	var name string
+	if data.ApprovalKey != "" {
+		var err error
+		name, err = scopedNotificationBaseName(data.Owner, data.ApprovalKey, strings.ToLower(purpose))
+		if err != nil {
+			return nil, fmt.Errorf("computing scoped notification name: %w", err)
+		}
+	} else {
+		nameStringBuilder := strings.Builder{}
+		nameStringBuilder.WriteString(purpose)
+		nameStringBuilder.WriteString(DELIMITER)
+		nameStringBuilder.WriteString(data.Target.GetName())
+		name = nameStringBuilder.String()
+	}
 
 	notificationBuilder := builder.New().
 		WithOwner(data.Owner).
@@ -264,11 +279,23 @@ func SendReminderNotification(ctx context.Context, data *ReminderNotificationDat
 	purposeStringBuilder.WriteString(string(data.Actor))
 	purpose := purposeStringBuilder.String()
 
-	nameStringBuilder := strings.Builder{}
-	nameStringBuilder.WriteString(purpose)
-	nameStringBuilder.WriteString(DELIMITER)
-	nameStringBuilder.WriteString(data.Target.GetName())
-	name := nameStringBuilder.String()
+	// Build the notification base name.
+	// Scoped (non-empty ApprovalKey): deterministic hash of source identity + key + purpose.
+	// Unscoped: legacy format <purpose>--<targetName>.
+	var name string
+	if data.ApprovalKey != "" {
+		var err error
+		name, err = scopedNotificationBaseName(data.Owner, data.ApprovalKey, strings.ToLower(purpose))
+		if err != nil {
+			return nil, fmt.Errorf("computing scoped reminder notification name: %w", err)
+		}
+	} else {
+		nameStringBuilder := strings.Builder{}
+		nameStringBuilder.WriteString(purpose)
+		nameStringBuilder.WriteString(DELIMITER)
+		nameStringBuilder.WriteString(data.Target.GetName())
+		name = nameStringBuilder.String()
+	}
 
 	notificationBuilder := builder.New().
 		WithOwner(data.Owner).
@@ -283,4 +310,56 @@ func SendReminderNotification(ctx context.Context, data *ReminderNotificationDat
 		return nil, err
 	}
 	return types.ObjectRefFromObject(notification), nil
+}
+
+const (
+	scopedNotifPrefix  = "an-v1-"
+	scopedNotifHashLen = 48 // 48 hex chars = 192 bits of SHA-256
+)
+
+// scopedNotifHashInput is the deterministic JSON-serialized struct whose
+// encoding is fed into SHA-256. Field order is fixed by the struct declaration.
+type scopedNotifHashInput struct {
+	Domain        string `json:"domain"`
+	NamingVersion string `json:"namingVersion"`
+	SourceGroup   string `json:"sourceGroup"`
+	SourceKind    string `json:"sourceKind"`
+	SourceNs      string `json:"sourceNs"`
+	SourceName    string `json:"sourceName"`
+	SourceUID     string `json:"sourceUID"`
+	ApprovalKey   string `json:"approvalKey"`
+	Purpose       string `json:"purpose"`
+}
+
+// scopedNotificationBaseName produces a deterministic, bounded base name for a
+// scoped notification. The result has prefix "an-v1-" followed by 48 lowercase
+// hex characters (total length 54). Source identity = the notification controller
+// owner (the ApprovalRequest for AR notifications, the Approval for Approval
+// notifications). Same inputs always produce the same output.
+func scopedNotificationBaseName(owner client.Object, approvalKey, purpose string) (string, error) {
+	if owner.GetUID() == "" {
+		return "", fmt.Errorf("scoped notification name: owner UID must not be empty")
+	}
+
+	gvk := owner.GetObjectKind().GroupVersionKind()
+
+	input := scopedNotifHashInput{
+		Domain:        "approval-notification",
+		NamingVersion: "v1",
+		SourceGroup:   gvk.Group,
+		SourceKind:    gvk.Kind,
+		SourceNs:      owner.GetNamespace(),
+		SourceName:    owner.GetName(),
+		SourceUID:     string(owner.GetUID()),
+		ApprovalKey:   approvalKey,
+		Purpose:       purpose,
+	}
+
+	b, err := json.Marshal(input)
+	if err != nil {
+		return "", fmt.Errorf("marshaling notification name input: %w", err)
+	}
+	sum := sha256.Sum256(b)
+	digest := hex.EncodeToString(sum[:])
+	return scopedNotifPrefix + digest[:scopedNotifHashLen], nil
 }
