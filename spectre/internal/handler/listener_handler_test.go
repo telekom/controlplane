@@ -364,7 +364,7 @@ var _ = Describe("ListenerHandler", func() {
 
 	// mockApprovalGranted sets up the approval builder mock chain for an auto-granted approval.
 	mockApprovalGranted := func() {
-		// The ApprovalBuilder calls CreateOrUpdate (for ApprovalRequest), Cleanup, then Get (for Approval).
+		// The ApprovalBuilder calls CreateOrUpdate (for ApprovalRequest), List (scoped cleanup), then Get (for Approval).
 		// For auto-approved (same team), the builder sets state to Granted internally.
 		fakeClient.EXPECT().
 			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.ApprovalRequest"), mock.Anything).
@@ -378,9 +378,10 @@ var _ = Describe("ListenerHandler", func() {
 			}).
 			Return(controllerutil.OperationResultCreated, nil)
 
+		// List owner ApprovalRequests for scoped cleanup (replaces legacy Cleanup call)
 		fakeClient.EXPECT().
-			Cleanup(ctx, mock.AnythingOfType("*v1.ApprovalRequestList"), mock.Anything).
-			Return(0, nil)
+			List(ctx, mock.AnythingOfType("*v1.ApprovalRequestList"), mock.Anything).
+			Return(nil)
 
 		// Get Approval — return auto-granted Approval
 		fakeClient.EXPECT().
@@ -403,9 +404,10 @@ var _ = Describe("ListenerHandler", func() {
 			}).
 			Return(controllerutil.OperationResultCreated, nil)
 
+		// List owner ApprovalRequests for scoped cleanup (replaces legacy Cleanup call)
 		fakeClient.EXPECT().
-			Cleanup(ctx, mock.AnythingOfType("*v1.ApprovalRequestList"), mock.Anything).
-			Return(0, nil)
+			List(ctx, mock.AnythingOfType("*v1.ApprovalRequestList"), mock.Anything).
+			Return(nil)
 
 		// Get Approval — return NotFound (pending)
 		fakeClient.EXPECT().
@@ -422,9 +424,10 @@ var _ = Describe("ListenerHandler", func() {
 			}).
 			Return(controllerutil.OperationResultCreated, nil)
 
+		// List owner ApprovalRequests for scoped cleanup (replaces legacy Cleanup call)
 		fakeClient.EXPECT().
-			Cleanup(ctx, mock.AnythingOfType("*v1.ApprovalRequestList"), mock.Anything).
-			Return(0, nil)
+			List(ctx, mock.AnythingOfType("*v1.ApprovalRequestList"), mock.Anything).
+			Return(nil)
 
 		// Get Approval — return rejected
 		fakeClient.EXPECT().
@@ -449,9 +452,10 @@ var _ = Describe("ListenerHandler", func() {
 			}).
 			Return(controllerutil.OperationResultNone, nil)
 
+		// List owner ApprovalRequests for scoped cleanup (replaces legacy Cleanup call)
 		fakeClient.EXPECT().
-			Cleanup(ctx, mock.AnythingOfType("*v1.ApprovalRequestList"), mock.Anything).
-			Return(0, nil)
+			List(ctx, mock.AnythingOfType("*v1.ApprovalRequestList"), mock.Anything).
+			Return(nil)
 
 		// Get Approval — exists and not denied (so RequestDenied branch is reached)
 		fakeClient.EXPECT().
@@ -1014,9 +1018,10 @@ var _ = Describe("ListenerHandler", func() {
 					}).
 					Return(controllerutil.OperationResultCreated, nil)
 
+				// List owner ApprovalRequests for scoped cleanup (replaces legacy Cleanup call)
 				fakeClient.EXPECT().
-					Cleanup(ctx, mock.AnythingOfType("*v1.ApprovalRequestList"), mock.Anything).
-					Return(0, nil)
+					List(ctx, mock.AnythingOfType("*v1.ApprovalRequestList"), mock.Anything).
+					Return(nil)
 
 				fakeClient.EXPECT().
 					Get(ctx, mock.AnythingOfType("types.NamespacedName"), mock.AnythingOfType("*v1.Approval")).
