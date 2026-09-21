@@ -84,6 +84,11 @@ func (a *ApprovalCustomValidator) ValidateCreate(_ context.Context, obj *approva
 func (a *ApprovalCustomValidator) ValidateUpdate(ctx context.Context, oldObj, newObj *approvalv1.Approval) (warnings admission.Warnings, err error) {
 	approvallog.Info("validate update", "name", newObj.Name)
 
+	// Key immutability: reject any non-empty add/remove/change before all other checks.
+	if err := validateApprovalKeyImmutability(oldObj.Spec.ApprovalKey, newObj.Spec.ApprovalKey); err != nil {
+		return warnings, err
+	}
+
 	stateChanged := oldObj.Spec.State != newObj.Spec.State
 
 	// Validate FSM transitions on-the-fly using the canonical FSM definitions
