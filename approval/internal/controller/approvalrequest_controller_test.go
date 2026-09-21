@@ -553,4 +553,84 @@ var _ = Describe("ApprovalRequest Controller", func() {
 			}, timeout, interval).Should(Succeed())
 		})
 	})
+
+	Context("legacy naming", func() {
+		It("produces the legacy Approval name and preserves the full target reference for auto-approved requests", func() {
+			By("Creating a unique source resource for this characterization test")
+			src := test.NewObject("legacy-naming-src", testNamespace)
+			src.SetLabels(map[string]string{
+				config.EnvironmentLabelKey: testEnvironment,
+			})
+			Expect(k8sClient.Create(ctx, src)).To(Succeed())
+			DeferCleanup(func() { _ = k8sClient.Delete(ctx, src) })
+
+			By("Building a complete auto-approved ApprovalRequest from the created source")
+			ar := approvalv1.NewApprovalRequest(src, src.Spec)
+			ar.SetLabels(map[string]string{
+				config.EnvironmentLabelKey: testEnvironment,
+			})
+			ar.Spec = approvalv1.ApprovalRequestSpec{
+				Target:    *ctypes.TypedObjectRefFromObject(src, k8sClient.Scheme()),
+				Requester: requester,
+				Decider:   decider,
+				Strategy:  approvalv1.ApprovalStrategyAuto,
+				State:     approvalv1.ApprovalStateGranted,
+				Action:    "subscribe",
+				Decisions: []approvalv1.Decision{
+					{
+						Name:           approvalv1.SystemDecisionName,
+						Comment:        approvalv1.AutoApprovedComment,
+						ResultingState: approvalv1.ApprovalStateGranted,
+					},
+				},
+			}
+
+			Expect(k8sClient.Create(ctx, ar)).To(Succeed())
+
+			legacyApprovalName := "testresource--legacy-naming-src"
+
+			Eventually(func(g Gomega) {
+				By("Verifying the AR status references the legacy-named Approval")
+				err := k8sClient.Get(ctx, client.ObjectKey{
+					Name: ar.GetName(), Namespace: ar.GetNamespace(),
+				}, ar)
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(ar.Status.Approval.Name).To(Equal(legacyApprovalName))
+
+				By("Verifying the Approval exists with the legacy name")
+				a := &approvalv1.Approval{}
+				err = k8sClient.Get(ctx, client.ObjectKey{
+					Name: legacyApprovalName, Namespace: ar.GetNamespace(),
+				}, a)
+				g.Expect(err).NotTo(HaveOccurred())
+
+				By("Verifying the full target reference on the Approval")
+				g.Expect(a.Spec.Target.Kind).To(Equal("TestResource"))
+				g.Expect(a.Spec.Target.APIVersion).To(Equal("testgroup.cp.ei.telekom.de/v1"))
+				g.Expect(a.Spec.Target.Name).To(Equal("legacy-naming-src"))
+				g.Expect(a.Spec.Target.Namespace).To(Equal(testNamespace))
+				g.Expect(a.Spec.Target.UID).To(Equal(src.UID))
+
+				By("Verifying the controller owner reference points to the source resource")
+				g.Expect(a.ObjectMeta.OwnerReferences).To(HaveLen(1))
+				g.Expect(a.ObjectMeta.OwnerReferences[0].APIVersion).To(Equal("testgroup.cp.ei.telekom.de/v1"))
+				g.Expect(a.ObjectMeta.OwnerReferences[0].Kind).To(Equal("TestResource"))
+				g.Expect(a.ObjectMeta.OwnerReferences[0].Name).To(Equal("legacy-naming-src"))
+				g.Expect(a.ObjectMeta.OwnerReferences[0].UID).To(Equal(src.UID))
+
+				By("Verifying auto-approved decision was carried to the Approval")
+				g.Expect(a.Spec.State).To(Equal(approvalv1.ApprovalStateGranted))
+				g.Expect(a.Spec.Strategy).To(Equal(approvalv1.ApprovalStrategyAuto))
+				g.Expect(a.Spec.Decisions).To(HaveLen(1))
+				g.Expect(a.Spec.Decisions[0].Name).To(Equal(approvalv1.SystemDecisionName))
+				g.Expect(a.Spec.Decisions[0].Comment).To(Equal(approvalv1.AutoApprovedComment))
+				g.Expect(a.Spec.Decisions[0].ResultingState).To(Equal(approvalv1.ApprovalStateGranted))
+
+				By("Verifying ApprovedRequest reference")
+				g.Expect(a.Spec.ApprovedRequest).NotTo(BeNil())
+				g.Expect(a.Spec.ApprovedRequest.Name).To(Equal(ar.GetName()))
+				g.Expect(a.Spec.ApprovedRequest.Namespace).To(Equal(ar.GetNamespace()))
+			}, timeout, interval).Should(Succeed())
+		})
+	})
 })
