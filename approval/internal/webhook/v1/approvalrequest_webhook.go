@@ -93,6 +93,11 @@ func (ar *ApprovalRequestCustomValidator) ValidateCreate(_ context.Context, obj 
 func (ar *ApprovalRequestCustomValidator) ValidateUpdate(_ context.Context, oldObj, newObj *approvalv1.ApprovalRequest) (warnings admission.Warnings, err error) {
 	approvalrequestlog.Info("validate update", "name", newObj.Name)
 
+	// Key immutability: reject any non-empty add/remove/change before all other checks.
+	if err := validateApprovalKeyImmutability(oldObj.Spec.ApprovalKey, newObj.Spec.ApprovalKey); err != nil {
+		return warnings, err
+	}
+
 	// Block relevant approval-outcome changes on terminal-state ApprovalRequests.
 	// Granted ARs may still receive non-critical spec refreshes (for stale
 	// reconciliation), but outcome-defining fields stay immutable.
