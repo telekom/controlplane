@@ -1039,6 +1039,115 @@ var _ = Describe("ApprovalRequest Controller", func() {
 			Expect(approvalAfter.Spec.State).To(Equal(approvalv1.ApprovalStateGranted))
 			Expect(approvalAfter.ResourceVersion).To(Equal(rvBefore))
 		})
+
+		// Regression: verifies that when a keyed AR is replaced (different intent
+		// hash → different AR name), the Approval rebinds to the new AR. This
+		// exercises the uncached-reader liveness check — a stale cache returning
+		// a deleted AR1 would cause the mutate function to bind to a ghost request.
+		It("rebinds approval to the second keyed AR when intent hash changes", func() {
+			By("Creating a source resource")
+			src := test.NewObject("scoped-rebind-src", testNamespace)
+			src.SetLabels(map[string]string{
+				config.EnvironmentLabelKey: testEnvironment,
+			})
+			Expect(k8sClient.Create(ctx, src)).To(Succeed())
+			DeferCleanup(func() { _ = k8sClient.Delete(ctx, src) })
+
+			target := *ctypes.TypedObjectRefFromObject(src, k8sClient.Scheme())
+			approvalName, err := approvalv1.ScopedApprovalName(target, "rebind-key")
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Creating the first keyed auto-approved AR (intent A)")
+			ar1 := approvalv1.NewApprovalRequest(src, "scoped-rebind-a")
+			ar1.SetLabels(map[string]string{
+				config.EnvironmentLabelKey: testEnvironment,
+			})
+			ar1.Spec = approvalv1.ApprovalRequestSpec{
+				Target:      target,
+				Requester:   requester,
+				Decider:     decider,
+				Strategy:    approvalv1.ApprovalStrategyAuto,
+				State:       approvalv1.ApprovalStateGranted,
+				Action:      "subscribe",
+				ApprovalKey: "rebind-key",
+				Decisions: []approvalv1.Decision{
+					{
+						Name:           approvalv1.SystemDecisionName,
+						Comment:        approvalv1.AutoApprovedComment,
+						ResultingState: approvalv1.ApprovalStateGranted,
+					},
+				},
+			}
+			Expect(k8sClient.Create(ctx, ar1)).To(Succeed())
+
+			var ar1UID ktypes.UID
+			Eventually(func(g Gomega) {
+				err := k8sClient.Get(ctx, client.ObjectKey{
+					Name: ar1.GetName(), Namespace: testNamespace,
+				}, ar1)
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(ar1.Status.Approval.Name).To(Equal(approvalName))
+
+				a := &approvalv1.Approval{}
+				err = k8sClient.Get(ctx, client.ObjectKey{
+					Name: approvalName, Namespace: testNamespace,
+				}, a)
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(a.Spec.ApprovedRequest).NotTo(BeNil())
+				g.Expect(a.Spec.ApprovedRequest.Name).To(Equal(ar1.GetName()))
+				ar1UID = ar1.UID
+			}, timeout, interval).Should(Succeed())
+
+			By("Deleting AR1 to simulate intent change")
+			Expect(k8sClient.Delete(ctx, ar1)).To(Succeed())
+			Eventually(func() bool {
+				err := k8sClient.Get(ctx, client.ObjectKey{
+					Name: ar1.GetName(), Namespace: testNamespace,
+				}, &approvalv1.ApprovalRequest{})
+				return err != nil
+			}, timeout, interval).Should(BeTrue())
+
+			By("Creating a second keyed AR (intent B) for the same gate")
+			ar2 := approvalv1.NewApprovalRequest(src, "scoped-rebind-b")
+			ar2.SetLabels(map[string]string{
+				config.EnvironmentLabelKey: testEnvironment,
+			})
+			ar2.Spec = approvalv1.ApprovalRequestSpec{
+				Target:      target,
+				Requester:   requester,
+				Decider:     decider,
+				Strategy:    approvalv1.ApprovalStrategyAuto,
+				State:       approvalv1.ApprovalStateGranted,
+				Action:      "subscribe",
+				ApprovalKey: "rebind-key",
+				Decisions: []approvalv1.Decision{
+					{
+						Name:           approvalv1.SystemDecisionName,
+						Comment:        approvalv1.AutoApprovedComment,
+						ResultingState: approvalv1.ApprovalStateGranted,
+					},
+				},
+			}
+			Expect(k8sClient.Create(ctx, ar2)).To(Succeed())
+
+			By("Verifying the Approval rebinds to AR2")
+			Eventually(func(g Gomega) {
+				err := k8sClient.Get(ctx, client.ObjectKey{
+					Name: ar2.GetName(), Namespace: testNamespace,
+				}, ar2)
+				g.Expect(err).NotTo(HaveOccurred())
+
+				a := &approvalv1.Approval{}
+				err = k8sClient.Get(ctx, client.ObjectKey{
+					Name: approvalName, Namespace: testNamespace,
+				}, a)
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(a.Spec.ApprovedRequest).NotTo(BeNil())
+				g.Expect(a.Spec.ApprovedRequest.Name).To(Equal(ar2.GetName()))
+				g.Expect(a.Spec.ApprovedRequest.UID).NotTo(Equal(ar1UID))
+				g.Expect(a.Spec.ApprovedRequest.UID).To(Equal(ar2.UID))
+			}, timeout, interval).Should(Succeed())
+		})
 	})
 
 	Context("legacy naming", func() {
