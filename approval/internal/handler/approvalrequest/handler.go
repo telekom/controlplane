@@ -143,6 +143,7 @@ func handleNotifications(ctx context.Context, approvalReq *approvalv1.ApprovalRe
 		Scenario:               scenario,
 		Actor:                  util.ActorDecider,
 		Action:                 approvalReq.Spec.Action,
+		ApprovalKey:            approvalReq.Spec.ApprovalKey,
 	})
 	if err != nil {
 		return errors.Wrapf(err, "Failed to send notification to decider %q while handling approval request %+v", approvalReq.Spec.Decider.TeamName, approvalReq)
@@ -161,6 +162,7 @@ func handleNotifications(ctx context.Context, approvalReq *approvalv1.ApprovalRe
 			Scenario:               scenario,
 			Actor:                  util.ActorRequester,
 			Action:                 approvalReq.Spec.Action,
+			ApprovalKey:            approvalReq.Spec.ApprovalKey,
 		})
 		if err != nil {
 			return errors.Wrapf(err, "Failed to send notification to requester %q while handling approval request %+v", approvalReq.Spec.Requester.TeamName, approvalReq)
