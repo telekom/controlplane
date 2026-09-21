@@ -92,7 +92,12 @@ func mapFileExposure(in api.FileExposure) *roverv1.FileExposure {
 		FileType:   in.FileType,
 		Visibility: toRoverVisibility(in.Visibility),
 		PublicKeys: mapPublicKeys(in.PublicKeys),
+		Approval: roverv1.Approval{
+			Strategy: toRoverApprovalStrategy(in.Approval),
+		},
 	}
+
+	mapTrustedTeams(in.TrustedTeams, &out.Approval.TrustedTeams)
 
 	return out
 }
@@ -118,7 +123,8 @@ func mapApiExposure(in api.ApiExposure) *roverv1.ApiExposure {
 	out.Approval = roverv1.Approval{
 		Strategy: toRoverApprovalStrategy(in.Approval),
 	}
-	mapTrustedTeams(in, out)
+
+	mapTrustedTeams(in.TrustedTeams, &out.Approval.TrustedTeams)
 
 	if in.Upstream != "" {
 		out.Upstreams = []roverv1.Upstream{
@@ -269,24 +275,6 @@ func mapExposureTransformation(in api.ApiExposure, out *roverv1.ApiExposure) {
 
 }
 
-func mapTrustedTeams(in api.ApiExposure, out *roverv1.ApiExposure) {
-	if in.TrustedTeams == nil {
-		return
-	}
-
-	out.Approval.TrustedTeams = make([]roverv1.TrustedTeam, len(in.TrustedTeams))
-	for i, team := range in.TrustedTeams {
-		parts := strings.Split(team.Team, "--")
-		if len(parts) != 2 {
-			continue // invalid team format, skip
-		}
-		out.Approval.TrustedTeams[i] = roverv1.TrustedTeam{
-			Group: parts[0],
-			Team:  parts[1],
-		}
-	}
-}
-
 func mapEventExposure(in api.EventExposure) *roverv1.EventExposure {
 	out := &roverv1.EventExposure{
 		EventType:  in.EventType,
@@ -296,20 +284,7 @@ func mapEventExposure(in api.EventExposure) *roverv1.EventExposure {
 		},
 	}
 
-	// Map trusted teams
-	if in.TrustedTeams != nil {
-		out.Approval.TrustedTeams = make([]roverv1.TrustedTeam, len(in.TrustedTeams))
-		for i, team := range in.TrustedTeams {
-			parts := strings.Split(team.Team, "--")
-			if len(parts) != 2 {
-				continue
-			}
-			out.Approval.TrustedTeams[i] = roverv1.TrustedTeam{
-				Group: parts[0],
-				Team:  parts[1],
-			}
-		}
-	}
+	mapTrustedTeams(in.TrustedTeams, &out.Approval.TrustedTeams)
 
 	// Map scopes
 	if in.Scopes != nil {
@@ -368,7 +343,7 @@ func mapAiExposure(in api.AiExposure) *roverv1.AgenticExposure {
 	out.Approval = roverv1.Approval{
 		Strategy: toRoverApprovalStrategy(in.Approval),
 	}
-	mapAiTrustedTeams(in, out)
+	mapTrustedTeams(in.TrustedTeams, &out.Approval.TrustedTeams)
 
 	if in.Upstream != "" {
 		out.Upstreams = []roverv1.Upstream{
@@ -395,18 +370,18 @@ func mapAiExposure(in api.AiExposure) *roverv1.AgenticExposure {
 	return out
 }
 
-func mapAiTrustedTeams(in api.AiExposure, out *roverv1.AgenticExposure) {
-	if len(in.TrustedTeams) == 0 {
+func mapTrustedTeams(in []api.TrustedTeam, out *[]roverv1.TrustedTeam) {
+	if len(in) == 0 {
 		return
 	}
 
-	out.Approval.TrustedTeams = make([]roverv1.TrustedTeam, len(in.TrustedTeams))
-	for i, team := range in.TrustedTeams {
+	*out = make([]roverv1.TrustedTeam, len(in))
+	for i, team := range in {
 		parts := strings.Split(team.Team, "--")
 		if len(parts) != 2 {
 			continue
 		}
-		out.Approval.TrustedTeams[i] = roverv1.TrustedTeam{
+		(*out)[i] = roverv1.TrustedTeam{
 			Group: parts[0],
 			Team:  parts[1],
 		}

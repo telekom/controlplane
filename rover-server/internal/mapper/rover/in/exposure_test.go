@@ -283,7 +283,7 @@ var _ = Describe("Exposure Mapper", func() {
 				Approval: roverv1.Approval{},
 			}
 
-			mapTrustedTeams(input, output)
+			mapTrustedTeams(input.TrustedTeams, &output.Approval.TrustedTeams)
 
 			Expect(output.Approval.TrustedTeams).To(HaveLen(3))
 			// First entry: valid

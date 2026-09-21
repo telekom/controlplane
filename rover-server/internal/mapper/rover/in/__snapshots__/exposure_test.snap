@@ -81,7 +81,10 @@
     File:    &v1.FileExposure{
         FileType:   "demo-sftp-spec-v1",
         Visibility: "World",
-        Approval:   v1.Approval{},
+        Approval:   v1.Approval{
+            Strategy:     "Simple",
+            TrustedTeams: nil,
+        },
         PublicKeys: {
             {Label:"provider-key", Key:"ssh-ed25519 AAAA-provider"},
         },
