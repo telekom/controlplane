@@ -1,0 +1,37 @@
+rover/api/v1/rover_types.go
+  s_1abe402325c6a1::t_b23f13cdd7cefd 49
+api/config/crd/bases/api.cp.ei.telekom.de_apiexposures.yaml
+  s_1abe402325c6a1::t_487f8752a0c410 21-28,33-35
+rover/config/crd/bases/rover.cp.ei.telekom.de_rovers.yaml
+  s_1abe402325c6a1::t_ca4fec5b47bb9b 25-27
+rover/api/v1/apispecification_types.go
+  s_1abe402325c6a1::t_1bc858c13be89a 103-104
+api/api/v1/apiexposure_types.go
+  s_1abe402325c6a1::t_31d199f73d9e56 157-158,160
+rover/config/crd/bases/rover.cp.ei.telekom.de_apispecifications.yaml
+  s_1abe402325c6a1::t_ca4fec5b47bb9b 20-28
+api/config/crd/bases/api.cp.ei.telekom.de_apis.yaml
+  s_1abe402325c6a1::t_487f8752a0c410 21-24,29-31
+api/api/v1/api_types.go
+  s_1abe402325c6a1::t_15a0dbaf84a461 45,47
+api/api/v1/apisubscription_types.go
+  s_1abe402325c6a1::t_72416d4f70a131 81-82
+api/config/crd/bases/api.cp.ei.telekom.de_apisubscriptions.yaml
+  s_1abe402325c6a1::t_487f8752a0c410 20-28
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "82681c5af157531c092372c66a843f4c803271be",
+  "prompts": {},
+  "sessions": {
+    "s_1abe402325c6a1": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f511a891fffeV4JvygcCAAV28s",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
