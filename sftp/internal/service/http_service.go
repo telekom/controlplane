@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"time"
 )
 
 // HTTPService implements Service using the generated SFTP Tardis OpenAPI client.
@@ -35,9 +34,6 @@ func NewHTTPService(cfg Config) (*HTTPService, error) {
 
 func newClientWithResponses(cfg Config) (ClientWithResponsesInterface, error) {
 	httpClient := cfg.HTTPClient
-	if httpClient == nil {
-		httpClient = &http.Client{Timeout: 10 * time.Second}
-	}
 
 	generatedClient, err := NewClientWithResponses(cfg.Endpoint.String(),
 		WithHTTPClient(httpClient),
