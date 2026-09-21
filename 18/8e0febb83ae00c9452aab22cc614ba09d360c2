@@ -1,0 +1,53 @@
+controlplane-api/internal/resolvers/schema.resolvers.go
+  s_7ce68159a00f45::t_78282fd3f6375e 124,184,186-190
+  s_06e4030d940fa7::t_5c6439a505ab77 191-192
+projector/internal/domain/approvalrequest/translator_test.go
+  s_7ce68159a00f45::t_dc3c8b3bcc925a 268,298-301
+  s_7ce68159a00f45::t_14fb85e4bebb67 9,217,250-256,296-297,383-405
+  s_7ce68159a00f45::t_52d3eb0ef97da1 406
+controlplane-api/internal/resolvers/schema_resolvers_agentic_test.go
+  s_7ce68159a00f45::t_14fb85e4bebb67 207-209,282-284,333-334,344-345,390-395,397-402,404-406
+  s_7ce68159a00f45::t_9122bbd6304c4e 210-220
+  s_7ce68159a00f45::t_dc3c8b3bcc925a 285-307,310
+  s_7ce68159a00f45::t_179fe5a3ba6d22 407
+controlplane-api/schema.graphql
+  s_7ce68159a00f45::t_78282fd3f6375e 362-366,373-374
+projector/internal/domain/approval/translator.go
+  s_7ce68159a00f45::t_78282fd3f6375e 219-226,246-247
+projector/internal/domain/approval/translator_test.go
+  s_7ce68159a00f45::t_14fb85e4bebb67 148,181-187,226-227,229-230,313-336,572-573,587,596
+controlplane-api/internal/resolvers/mapper.go
+  s_7ce68159a00f45::t_78282fd3f6375e 150,228-235,237-244
+projector/internal/domain/approvalrequest/translator.go
+  s_7ce68159a00f45::t_78282fd3f6375e 11,214-221,235-236
+controlplane-api/internal/resolvers/model/models.generated.go
+  s_06e4030d940fa7::t_cd0ec721f73bee 28-82
+controlplane-api/internal/resolvers/root_.generated.go
+  s_06e4030d940fa7::t_2c657557a3d5af 207,1541-1546,10624-10628,10635-10636,11032-11033
+controlplane-api/internal/resolvers/schema.generated.go
+  s_06e4030d940fa7::t_2fc439ed43357e 38,620-631,633-642,4359-4396,7260-7262,7264-7267,7269-7274
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "188e0febb83ae00c9452aab22cc614ba09d360c2",
+  "prompts": {},
+  "sessions": {
+    "s_06e4030d940fa7": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f4f0d0de0ffeVwfVWDoaHJh1W4",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "luis.pflamminger@telekom.de <luis.pflamminger@telekom.de>"
+    },
+    "s_7ce68159a00f45": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f4f296a21ffeEc92y322eCPlKT",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "luis.pflamminger@telekom.de <luis.pflamminger@telekom.de>"
+    }
+  }
+}
