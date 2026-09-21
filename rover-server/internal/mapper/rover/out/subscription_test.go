@@ -58,6 +58,31 @@ var _ = Describe("Subscription Mapper", func() {
 			snaps.MatchSnapshot(GinkgoT(), output)
 		})
 
+		It("must map a FileSubscription correctly", func() {
+			input := &roverv1.Subscription{
+				File: &roverv1.FileSubscription{
+					FileType: "demo-sftp-spec-v1",
+					SFTP: &roverv1.FileSFTP{
+						PublicKeys: []roverv1.SSHPublicKeySpec{
+							{Label: "consumer-key", Key: "ssh-ed25519 AAAA-consumer"},
+						},
+					},
+				},
+			}
+			output := &api.Subscription{}
+
+			err := mapSubscription(input, output)
+
+			Expect(err).To(BeNil())
+			fileSubscription, err := output.AsFileSubscription()
+			Expect(err).To(BeNil())
+			Expect(fileSubscription.FileType).To(Equal("demo-sftp-spec-v1"))
+			Expect(fileSubscription.PublicKeys).To(ConsistOf(api.PublicKey{
+				Label: "consumer-key",
+				Key:   "ssh-ed25519 AAAA-consumer",
+			}))
+		})
+
 		It("must return an error if Discriminator fails", func() {
 			input := &roverv1.Subscription{}
 			output := &api.Subscription{}
@@ -67,6 +92,29 @@ var _ = Describe("Subscription Mapper", func() {
 			Expect(err).ToNot(BeNil())
 			Expect(err.Error()).To(ContainSubstring("unknown subscription type"))
 			snaps.MatchSnapshot(GinkgoT(), output)
+		})
+	})
+
+	Context("mapFileSubscription", func() {
+		It("must map file type and SFTP public keys", func() {
+			input := &roverv1.FileSubscription{
+				FileType: "demo-sftp-spec-v1",
+				SFTP: &roverv1.FileSFTP{
+					PublicKeys: []roverv1.SSHPublicKeySpec{
+						{Label: "consumer-key", Key: "ssh-ed25519 AAAA-consumer"},
+					},
+				},
+			}
+
+			output, err := mapFileSubscription(input)
+
+			Expect(err).To(BeNil())
+			Expect(output.FileType).To(Equal("demo-sftp-spec-v1"))
+			Expect(output.Type).To(Equal("file"))
+			Expect(output.PublicKeys).To(Equal([]api.PublicKey{
+				{Label: "consumer-key", Key: "ssh-ed25519 AAAA-consumer"},
+			},
+			))
 		})
 	})
 

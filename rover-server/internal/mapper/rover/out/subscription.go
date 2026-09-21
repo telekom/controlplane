@@ -213,22 +213,10 @@ func mapSubscriptionSecurity(in *roverv1.ApiSubscription, out *api.ApiSubscripti
 func mapFileSubscription(in *roverv1.FileSubscription) (api.FileSubscription, error) {
 	out := api.FileSubscription{
 		FileType: in.FileType,
-		Type: api.FileVariantSFTP,
+		Type:     string(api.FileExposureInfoTypeFile),
 	}
 
 	out.PublicKeys = mapPublicKeys(in.SFTP)
-	return out, nil
-}
-
-func mapPublicKeys(in *roverv1.FileSFTP) *api.FileSFTP {
-	if in == nil {
-		return nil
-	}
-	return &api.FileSFTP{
-		PublicKeys: in.PublicKeys,
-	}
-}
-
 	return out, nil
 }
 
