@@ -8,6 +8,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	ktypes "k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
@@ -827,6 +828,199 @@ var _ = Describe("ApprovalRequest Controller", func() {
 				g.Expect(a.Spec.Decisions).To(HaveLen(1))
 				g.Expect(a.Spec.Decisions[0].Comment).To(Equal("Access revoked"))
 			}, timeout, interval).Should(Succeed())
+		})
+	})
+
+	Context("scoped idempotency and liveness", func() {
+		It("rebinds approval when a keyed AR is recreated with the same name but new UID", func() {
+			By("Creating a source resource")
+			src := test.NewObject("scoped-idem-uid-src", testNamespace)
+			src.SetLabels(map[string]string{
+				config.EnvironmentLabelKey: testEnvironment,
+			})
+			Expect(k8sClient.Create(ctx, src)).To(Succeed())
+			DeferCleanup(func() { _ = k8sClient.Delete(ctx, src) })
+
+			target := *ctypes.TypedObjectRefFromObject(src, k8sClient.Scheme())
+			approvalName, err := approvalv1.ScopedApprovalName(target, "idem-key")
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Creating a keyed auto-approved ApprovalRequest")
+			ar := approvalv1.NewApprovalRequest(src, "scoped-idem-uid")
+			ar.SetLabels(map[string]string{
+				config.EnvironmentLabelKey: testEnvironment,
+			})
+			ar.Spec = approvalv1.ApprovalRequestSpec{
+				Target:      target,
+				Requester:   requester,
+				Decider:     decider,
+				Strategy:    approvalv1.ApprovalStrategyAuto,
+				State:       approvalv1.ApprovalStateGranted,
+				Action:      "subscribe",
+				ApprovalKey: "idem-key",
+				Decisions: []approvalv1.Decision{
+					{
+						Name:           approvalv1.SystemDecisionName,
+						Comment:        approvalv1.AutoApprovedComment,
+						ResultingState: approvalv1.ApprovalStateGranted,
+					},
+				},
+			}
+			arName := ar.GetName()
+
+			Expect(k8sClient.Create(ctx, ar)).To(Succeed())
+
+			var firstUID ktypes.UID
+			Eventually(func(g Gomega) {
+				err := k8sClient.Get(ctx, client.ObjectKey{
+					Name: arName, Namespace: testNamespace,
+				}, ar)
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(ar.Status.Approval.Name).To(Equal(approvalName))
+
+				a := &approvalv1.Approval{}
+				err = k8sClient.Get(ctx, client.ObjectKey{
+					Name: approvalName, Namespace: testNamespace,
+				}, a)
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(a.Spec.ApprovedRequest).NotTo(BeNil())
+				g.Expect(a.Spec.ApprovedRequest.UID).To(Equal(ar.UID))
+				firstUID = ar.UID
+			}, timeout, interval).Should(Succeed())
+
+			By("Deleting the original AR")
+			Expect(k8sClient.Delete(ctx, ar)).To(Succeed())
+			Eventually(func() bool {
+				err := k8sClient.Get(ctx, client.ObjectKey{
+					Name: arName, Namespace: testNamespace,
+				}, &approvalv1.ApprovalRequest{})
+				return err != nil
+			}, timeout, interval).Should(BeTrue())
+
+			By("Recreating an AR with the same name (same hash input) but new UID")
+			ar2 := approvalv1.NewApprovalRequest(src, "scoped-idem-uid")
+			ar2.SetLabels(map[string]string{
+				config.EnvironmentLabelKey: testEnvironment,
+			})
+			ar2.Spec = approvalv1.ApprovalRequestSpec{
+				Target:      target,
+				Requester:   requester,
+				Decider:     decider,
+				Strategy:    approvalv1.ApprovalStrategyAuto,
+				State:       approvalv1.ApprovalStateGranted,
+				Action:      "subscribe",
+				ApprovalKey: "idem-key",
+				Decisions: []approvalv1.Decision{
+					{
+						Name:           approvalv1.SystemDecisionName,
+						Comment:        approvalv1.AutoApprovedComment,
+						ResultingState: approvalv1.ApprovalStateGranted,
+					},
+				},
+			}
+			Expect(k8sClient.Create(ctx, ar2)).To(Succeed())
+
+			By("Verifying the Approval gets the new UID")
+			Eventually(func(g Gomega) {
+				err := k8sClient.Get(ctx, client.ObjectKey{
+					Name: ar2.GetName(), Namespace: testNamespace,
+				}, ar2)
+				g.Expect(err).NotTo(HaveOccurred())
+
+				a := &approvalv1.Approval{}
+				err = k8sClient.Get(ctx, client.ObjectKey{
+					Name: approvalName, Namespace: testNamespace,
+				}, a)
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(a.Spec.ApprovedRequest).NotTo(BeNil())
+				g.Expect(a.Spec.ApprovedRequest.UID).NotTo(Equal(firstUID))
+				g.Expect(a.Spec.ApprovedRequest.UID).To(Equal(ar2.UID))
+			}, timeout, interval).Should(Succeed())
+		})
+
+		It("does not overwrite approval when source AR transitions away from granted", func() {
+			By("Creating a source resource")
+			src := test.NewObject("scoped-stale-src", testNamespace)
+			src.SetLabels(map[string]string{
+				config.EnvironmentLabelKey: testEnvironment,
+			})
+			Expect(k8sClient.Create(ctx, src)).To(Succeed())
+			DeferCleanup(func() { _ = k8sClient.Delete(ctx, src) })
+
+			target := *ctypes.TypedObjectRefFromObject(src, k8sClient.Scheme())
+			approvalName, err := approvalv1.ScopedApprovalName(target, "stale-key")
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Creating a keyed Simple ApprovalRequest in Granted state")
+			ar := approvalv1.NewApprovalRequest(src, "scoped-stale")
+			ar.SetLabels(map[string]string{
+				config.EnvironmentLabelKey: testEnvironment,
+			})
+			ar.Spec = approvalv1.ApprovalRequestSpec{
+				Target:      target,
+				Requester:   requester,
+				Decider:     decider,
+				Strategy:    approvalv1.ApprovalStrategySimple,
+				State:       approvalv1.ApprovalStateGranted,
+				Action:      "subscribe",
+				ApprovalKey: "stale-key",
+				Decisions: []approvalv1.Decision{
+					{Name: "Alice", Email: "alice@example.com", Comment: "Approved", ResultingState: approvalv1.ApprovalStateGranted},
+				},
+			}
+			Expect(k8sClient.Create(ctx, ar)).To(Succeed())
+
+			By("Waiting for the Approval to be created")
+			Eventually(func(g Gomega) {
+				err := k8sClient.Get(ctx, client.ObjectKey{
+					Name: ar.GetName(), Namespace: testNamespace,
+				}, ar)
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(ar.Status.Approval.Name).To(Equal(approvalName))
+
+				a := &approvalv1.Approval{}
+				err = k8sClient.Get(ctx, client.ObjectKey{
+					Name: approvalName, Namespace: testNamespace,
+				}, a)
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(a.Spec.State).To(Equal(approvalv1.ApprovalStateGranted))
+				g.Expect(a.Spec.ApprovedRequest).NotTo(BeNil())
+				g.Expect(a.Spec.ApprovedRequest.Name).To(Equal(ar.GetName()))
+			}, timeout, interval).Should(Succeed())
+
+			By("Recording the Approval's resourceVersion before the state change")
+			approvalBefore := &approvalv1.Approval{}
+			Expect(k8sClient.Get(ctx, client.ObjectKey{
+				Name: approvalName, Namespace: testNamespace,
+			}, approvalBefore)).To(Succeed())
+			rvBefore := approvalBefore.ResourceVersion
+
+			By("Transitioning the AR to Rejected")
+			ar.Spec.State = approvalv1.ApprovalStateRejected
+			ar.Spec.Decisions = append(ar.Spec.Decisions, approvalv1.Decision{
+				Name: "Bob", Comment: "Revoked", ResultingState: approvalv1.ApprovalStateRejected,
+			})
+			Expect(k8sClient.Update(ctx, ar)).To(Succeed())
+
+			By("Waiting for the AR to be reconciled with Rejected state")
+			Eventually(func(g Gomega) {
+				err := k8sClient.Get(ctx, client.ObjectKey{
+					Name: ar.GetName(), Namespace: testNamespace,
+				}, ar)
+				g.Expect(err).NotTo(HaveOccurred())
+
+				approvedCondition := meta.FindStatusCondition(ar.Status.Conditions, "Approved")
+				g.Expect(approvedCondition).NotTo(BeNil())
+				g.Expect(approvedCondition.Reason).To(Equal("Rejected"))
+			}, timeout, interval).Should(Succeed())
+
+			By("Verifying the Approval was not overwritten — still has the original grant")
+			approvalAfter := &approvalv1.Approval{}
+			Expect(k8sClient.Get(ctx, client.ObjectKey{
+				Name: approvalName, Namespace: testNamespace,
+			}, approvalAfter)).To(Succeed())
+			Expect(approvalAfter.Spec.State).To(Equal(approvalv1.ApprovalStateGranted))
+			Expect(approvalAfter.ResourceVersion).To(Equal(rvBefore))
 		})
 	})
 

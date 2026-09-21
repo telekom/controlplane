@@ -12,6 +12,7 @@ import (
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
+	ctrlclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
@@ -206,12 +207,30 @@ func handleGranted(ctx context.Context, approvalReq *approvalv1.ApprovalRequest)
 		}
 
 		if approvalObj.Spec.ApprovedRequest != nil && approvalObj.Spec.ApprovedRequest.Name == approvalReq.Name {
-			// Already processed for this request; repair metadata only.
-			if isKeyed {
-				approvalv1.SetApprovalKeyLabel(approvalObj, approvalReq.Spec.ApprovalKey)
+			if approvalReq.Spec.ApprovalKey == "" || approvalObj.Spec.ApprovedRequest.UID == approvalReq.UID {
+				// Legacy: name match is sufficient. Scoped: name + UID must match.
+				if isKeyed {
+					approvalv1.SetApprovalKeyLabel(approvalObj, approvalReq.Spec.ApprovalKey)
+				}
+				logger.Info("Approval has already been processed for this request")
+				return nil
 			}
-			logger.Info("Approval has already been processed for this request")
-			return nil
+			// Scoped request with same name but different UID — proceed to rebind.
+		}
+
+		// Re-read the source AR to verify it is still the current live request.
+		freshAR := &approvalv1.ApprovalRequest{}
+		if err := c.Get(ctx, ctrlclient.ObjectKeyFromObject(approvalReq), freshAR); err != nil {
+			return fmt.Errorf("re-reading source request: %w", err)
+		}
+		if freshAR.UID != approvalReq.UID {
+			return fmt.Errorf("source request was recreated (expected UID %s, got %s)", approvalReq.UID, freshAR.UID)
+		}
+		if freshAR.DeletionTimestamp != nil {
+			return fmt.Errorf("source request is terminating")
+		}
+		if freshAR.Spec.State != approvalv1.ApprovalStateGranted {
+			return fmt.Errorf("source request is no longer granted (state: %s)", freshAR.Spec.State)
 		}
 
 		// Set controller owner reference only when creating (no existing refs).
