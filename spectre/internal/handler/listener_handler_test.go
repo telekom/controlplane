@@ -286,6 +286,18 @@ var _ = Describe("ListenerHandler", func() {
 			Return(nil).Once()
 	}
 
+	// mockGetObserverApp stubs the observer Application Get. In the default
+	// A==C case, the observer is the same as the consumer; call this after
+	// mockGetConsumerApp to set up the second Get for the same name.
+	mockGetObserverApp := func(app *applicationv1.Application) {
+		fakeClient.EXPECT().
+			Get(ctx, k8stypes.NamespacedName{Name: app.Name, Namespace: app.Namespace}, mock.AnythingOfType("*v1.Application")).
+			Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
+				*out.(*applicationv1.Application) = *app
+			}).
+			Return(nil).Once()
+	}
+
 	mockGetProviderApp := func(app *applicationv1.Application) {
 		fakeClient.EXPECT().
 			Get(ctx, k8stypes.NamespacedName{Name: providerAppName, Namespace: listenerNamespace}, mock.AnythingOfType("*v1.Application")).
@@ -653,6 +665,7 @@ var _ = Describe("ListenerHandler", func() {
 		mockGetConsumerApp(makeConsumerApp())
 		mockGetProviderApp(makeProviderApp())
 		mockGetSpectreApp(makeSpectreAppPtr())
+		mockGetObserverApp(makeConsumerApp()) // A==C: observer resolves to consumer
 		mockGetZone()
 		mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
 		mockGetEventStore(makeListenerEventStore())
@@ -687,26 +700,76 @@ var _ = Describe("ListenerHandler", func() {
 			})
 		})
 
-		Context("when consumer does not match SpectreApplication's Application", func() {
-			It("should block with consumer identity mismatch", func() {
+		Context("when observer (A) differs from consumer (C)", func() {
+			It("should resolve observer independently and proceed to zone resolution", func() {
 				listener := newListener()
 				mockGetConsumerApp(makeConsumerApp())
 				mockGetProviderApp(makeProviderApp())
 
 				// SpectreApplication references a different Application than the Listener's consumer.
+				observerAppName := "observer-app"
 				sa := makeSpectreAppPtr()
 				sa.Spec.Application.ObjectRef = ctypes.ObjectRef{
-					Name:      "different-app",
+					Name:      observerAppName,
 					Namespace: listenerNamespace,
 				}
+				sa.Status.Id = "team-gamma--observer-app"
 				mockGetSpectreApp(sa)
 
-				err := h.CreateOrUpdate(ctx, listener)
+				// The handler will resolve the observer Application.
+				observerApp := &applicationv1.Application{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      observerAppName,
+						Namespace: listenerNamespace,
+						UID:       "observer-uid-001",
+					},
+					Spec: applicationv1.ApplicationSpec{
+						Team:      "team-gamma",
+						TeamEmail: "gamma@test.com",
+						Zone:      ctypes.ObjectRef{Name: listenerZoneName, Namespace: listenerZoneNs},
+					},
+					Status: applicationv1.ApplicationStatus{
+						ClientId: "team-gamma--observer-app",
+					},
+				}
+				meta.SetStatusCondition(&observerApp.Status.Conditions, metav1.Condition{
+					Type:   condition.ConditionTypeReady,
+					Status: metav1.ConditionTrue,
+					Reason: "Ready",
+				})
+				fakeClient.EXPECT().
+					Get(ctx, k8stypes.NamespacedName{Name: observerAppName, Namespace: listenerNamespace}, mock.AnythingOfType("*v1.Application")).
+					Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
+						*out.(*applicationv1.Application) = *observerApp
+					}).
+					Return(nil).Once()
 
-				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(ContainSubstring("does not match SpectreApplication"))
-				Expect(listener.Status.RouteListener).To(BeNil())
-				Expect(listener.Status.EventSubscriptions).To(BeEmpty())
+				// Observer zone resolution.
+				mockGetZone()
+				// Consumer + provider zone resolution.
+				mockGetZone()
+
+				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
+				mockGetEventStore(makeListenerEventStore())
+				mockListRoutes()
+				mockNoStaleChildren()
+				mockApprovalGranted()
+				mockCreateOrUpdatePublisher()
+				mockGetRealm()
+				mockCreateOrUpdateRouteListener()
+				mockCreateOrUpdateSubscriber()
+				mockJanitorCleanup()
+				fakeClient.EXPECT().AnyChanged().Return(false).Once()
+				fakeClient.EXPECT().AllReady().Return(true).Once()
+				mockListenerReadinessChecks()
+
+				err := h.CreateOrUpdate(ctx, listener)
+				Expect(err).ToNot(HaveOccurred())
+
+				readyCond := meta.FindStatusCondition(listener.Status.Conditions, condition.ConditionTypeReady)
+				Expect(readyCond).ToNot(BeNil())
+				Expect(readyCond.Status).To(Equal(metav1.ConditionTrue))
+				Expect(readyCond.Reason).To(Equal(condition.ReasonProvisioned))
 			})
 		})
 
@@ -716,6 +779,7 @@ var _ = Describe("ListenerHandler", func() {
 				mockGetConsumerApp(makeConsumerApp())
 				mockGetProviderApp(makeProviderApp())
 				mockGetSpectreApp(makeSpectreAppPtr())
+				mockGetObserverApp(makeConsumerApp()) // A==C: observer resolves to consumer
 				mockGetZone()
 				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
 				mockGetEventStore(makeListenerEventStore())
@@ -747,6 +811,7 @@ var _ = Describe("ListenerHandler", func() {
 				mockGetConsumerApp(makeConsumerApp())
 				mockGetProviderApp(makeProviderApp())
 				mockGetSpectreApp(makeSpectreAppPtr())
+				mockGetObserverApp(makeConsumerApp()) // A==C: observer resolves to consumer
 				mockGetZone()
 				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
 				mockGetEventStore(makeListenerEventStore())
@@ -834,6 +899,7 @@ var _ = Describe("ListenerHandler", func() {
 				mockGetConsumerApp(makeConsumerApp())
 				mockGetProviderApp(makeProviderApp())
 				mockGetSpectreApp(makeSpectreAppPtr())
+				mockGetObserverApp(makeConsumerApp()) // A==C: observer resolves to consumer
 				mockGetZone()
 				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
 				mockGetEventStore(makeListenerEventStore())
@@ -857,6 +923,7 @@ var _ = Describe("ListenerHandler", func() {
 				mockGetConsumerApp(makeConsumerApp())
 				mockGetProviderApp(makeProviderApp())
 				mockGetSpectreApp(makeSpectreAppPtr())
+				mockGetObserverApp(makeConsumerApp()) // A==C: observer resolves to consumer
 				mockGetZone()
 				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
 				mockGetEventStore(makeListenerEventStore())
@@ -904,6 +971,7 @@ var _ = Describe("ListenerHandler", func() {
 				mockGetConsumerApp(makeConsumerApp())
 				mockGetProviderApp(makeProviderApp())
 				mockGetSpectreApp(makeSpectreAppPtr())
+				mockGetObserverApp(makeConsumerApp()) // A==C: observer resolves to consumer
 				mockGetZone()
 				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
 				mockGetEventStore(makeListenerEventStore())
@@ -942,6 +1010,7 @@ var _ = Describe("ListenerHandler", func() {
 				mockGetConsumerApp(makeConsumerApp())
 				mockGetProviderApp(makeProviderApp())
 				mockGetSpectreApp(makeSpectreAppPtr())
+				mockGetObserverApp(makeConsumerApp()) // A==C: observer resolves to consumer
 				mockGetZone()
 				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
 				mockGetEventStore(makeListenerEventStore())
@@ -1054,6 +1123,7 @@ var _ = Describe("ListenerHandler", func() {
 				mockGetConsumerApp(makeConsumerApp())
 				mockGetProviderApp(makeProviderApp())
 				mockGetSpectreApp(makeSpectreAppPtr())
+				mockGetObserverApp(makeConsumerApp()) // A==C: observer resolves to consumer
 				mockGetZone()
 				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
 				mockGetEventStore(makeListenerEventStore())
@@ -1137,6 +1207,7 @@ var _ = Describe("ListenerHandler", func() {
 				mockGetConsumerApp(makeConsumerApp())
 				mockGetProviderApp(makeProviderApp())
 				mockGetSpectreApp(makeSpectreAppPtr())
+				mockGetObserverApp(makeConsumerApp()) // A==C: observer resolves to consumer
 				mockGetZone()
 				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
 				mockGetEventStore(makeListenerEventStore())
@@ -1214,6 +1285,7 @@ var _ = Describe("ListenerHandler", func() {
 				mockGetConsumerApp(makeConsumerApp())
 				mockGetProviderApp(makeProviderApp())
 				mockGetSpectreApp(makeSpectreAppPtr())
+				mockGetObserverApp(makeConsumerApp()) // A==C: observer resolves to consumer
 				mockGetZone()
 				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
 				mockGetEventStore(makeListenerEventStore())
@@ -1286,6 +1358,7 @@ var _ = Describe("ListenerHandler", func() {
 				mockGetConsumerApp(makeConsumerApp())
 				mockGetProviderApp(makeProviderApp())
 				mockGetSpectreApp(makeSpectreAppPtr())
+				mockGetObserverApp(makeConsumerApp()) // A==C: observer resolves to consumer
 				mockGetZone()
 				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
 				mockGetEventStore(makeListenerEventStore())
@@ -1339,15 +1412,18 @@ var _ = Describe("ListenerHandler", func() {
 		})
 
 		Context("unsupported route modes", func() {
+			// In these tests, the route mode is rejected (pass-through/failover) before
+			// placement resolution. The cleanup deletes children and checks the generic
+			// Publisher. resolvePublisherNamespace falls back to the consumer zone via
+			// the topology resolver.
 			It("should block with pass-through route and NOT create ApprovalRequest or children", func() {
 				listener := newListener()
 				mockGetConsumerApp(makeConsumerApp())
 				mockGetProviderApp(makeProviderApp())
 				mockGetSpectreApp(makeSpectreAppPtr())
+				// No mockGetObserverApp: route mode check blocks before observer resolution.
 				mockGetZone()
 				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
-				// No mockGetEventStore: ResolvePlacement is never reached because
-				// the pass-through route check rejects before placement resolution.
 				mockPassThroughRoute()
 
 				// deleteAllOwnedChildren: no existing children.
@@ -1404,10 +1480,9 @@ var _ = Describe("ListenerHandler", func() {
 				mockGetConsumerApp(makeConsumerApp())
 				mockGetProviderApp(makeProviderApp())
 				mockGetSpectreApp(makeSpectreAppPtr())
+				// No mockGetObserverApp: route mode check blocks before observer resolution.
 				mockGetZone()
 				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
-				// No mockGetEventStore: ResolvePlacement is never reached because
-				// the failover route check rejects before placement resolution.
 				mockFailoverRoute()
 
 				// deleteAllOwnedChildren: no existing children.
@@ -1568,6 +1643,7 @@ var _ = Describe("ListenerHandler", func() {
 				mockGetConsumerApp(makeConsumerApp())
 				mockGetProviderApp(makeProviderApp())
 				mockGetSpectreApp(makeSpectreAppPtr())
+				mockGetObserverApp(makeConsumerApp()) // A==C: observer resolves to consumer
 				mockGetZone()
 				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
 				mockGetEventStore(makeListenerEventStore())
@@ -1599,6 +1675,7 @@ var _ = Describe("ListenerHandler", func() {
 				mockGetConsumerApp(makeConsumerApp())
 				mockGetProviderApp(makeProviderApp())
 				mockGetSpectreApp(makeSpectreAppPtr())
+				mockGetObserverApp(makeConsumerApp()) // A==C: observer resolves to consumer
 				mockGetZone()
 				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
 				mockGetEventStore(makeListenerEventStore())
@@ -1682,6 +1759,7 @@ var _ = Describe("ListenerHandler", func() {
 				mockGetConsumerApp(makeConsumerApp())
 				mockGetProviderApp(makeProviderApp())
 				mockGetSpectreApp(makeSpectreAppPtr())
+				mockGetObserverApp(makeConsumerApp()) // A==C: observer resolves to consumer
 				mockGetZone()
 				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
 				mockGetEventStore(makeListenerEventStore())
@@ -1746,6 +1824,7 @@ var _ = Describe("ListenerHandler", func() {
 				mockGetConsumerApp(makeConsumerApp())
 				mockGetProviderApp(makeProviderApp())
 				mockGetSpectreApp(makeSpectreAppPtr())
+				mockGetObserverApp(makeConsumerApp()) // A==C: observer resolves to consumer
 				mockGetZone()
 				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
 				mockGetEventStore(makeListenerEventStore())
@@ -1784,6 +1863,7 @@ var _ = Describe("ListenerHandler", func() {
 				mockGetConsumerApp(makeConsumerApp())
 				mockGetProviderApp(makeProviderApp())
 				mockGetSpectreApp(makeSpectreAppPtr())
+				mockGetObserverApp(makeConsumerApp()) // A==C: observer resolves to consumer
 				mockGetZone()
 				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
 				mockGetEventStore(makeListenerEventStore())
@@ -1815,6 +1895,7 @@ var _ = Describe("ListenerHandler", func() {
 				mockGetConsumerApp(makeConsumerApp())
 				mockGetProviderApp(makeProviderApp())
 				mockGetSpectreApp(makeSpectreAppPtr())
+				mockGetObserverApp(makeConsumerApp()) // A==C: observer resolves to consumer
 				mockGetZone()
 				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
 				mockGetEventStore(makeListenerEventStore())
@@ -1866,6 +1947,7 @@ var _ = Describe("ListenerHandler", func() {
 				mockGetConsumerApp(makeConsumerApp())
 				mockGetProviderApp(makeProviderApp())
 				mockGetSpectreApp(makeSpectreAppPtr())
+				mockGetObserverApp(makeConsumerApp()) // A==C: observer resolves to consumer
 				mockGetZone()
 				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
 				mockGetEventStore(makeListenerEventStore())
@@ -1969,6 +2051,7 @@ var _ = Describe("ListenerHandler", func() {
 				mockGetConsumerApp(makeConsumerApp())
 				mockGetProviderApp(makeProviderApp())
 				mockGetSpectreApp(makeSpectreAppPtr())
+				mockGetObserverApp(makeConsumerApp()) // A==C: observer resolves to consumer
 				mockGetZone()
 				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
 				mockGetEventStore(makeListenerEventStore())
@@ -1995,6 +2078,7 @@ var _ = Describe("ListenerHandler", func() {
 				mockGetConsumerApp(makeConsumerApp())
 				mockGetProviderApp(makeProviderApp())
 				mockGetSpectreApp(makeSpectreAppPtr())
+				mockGetObserverApp(makeConsumerApp()) // A==C: observer resolves to consumer
 				mockGetZone()
 				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
 				mockGetEventStore(makeListenerEventStore())
@@ -2015,6 +2099,7 @@ var _ = Describe("ListenerHandler", func() {
 				mockGetConsumerApp(makeConsumerApp())
 				mockGetProviderApp(makeProviderApp())
 				mockGetSpectreApp(makeSpectreAppPtr())
+				mockGetObserverApp(makeConsumerApp()) // A==C: observer resolves to consumer
 				mockGetZone()
 				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
 				mockGetEventStore(makeListenerEventStore())
@@ -2074,9 +2159,8 @@ var _ = Describe("ListenerHandler", func() {
 		})
 
 		// --- Brief section 3: Identity and team combinations (handler-level) ---
-		// Since A==C is enforced at handler level, only "all equal" and "A==P"
-		// are reachable. The other three combinations are tested at the
-		// approval-helper level in listener_approval_test.go.
+		// A!=C is now supported (Task 7). All team combinations are reachable.
+		// The pure-function tests live in listener_approval_test.go.
 
 		Context("dual-gate: all teams equal (A==C==P) auto-grants both", func() {
 			It("should provision when observer/consumer/provider share a team", func() {
@@ -2090,6 +2174,7 @@ var _ = Describe("ListenerHandler", func() {
 				mockGetConsumerApp(consumerApp)
 				mockGetProviderApp(providerApp)
 				mockGetSpectreApp(makeSpectreAppPtr())
+				mockGetObserverApp(consumerApp) // A==C: observer resolves to consumer (same team override)
 				mockGetZone()
 				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
 				mockGetEventStore(makeListenerEventStore())
@@ -2118,7 +2203,7 @@ var _ = Describe("ListenerHandler", func() {
 		Context("dual-gate: different provider team blocks provisioning", func() {
 			It("should block when provider gate is granted but consumer gate is pending", func() {
 				listener := newListener()
-				// Consumer team matches observer — A==C enforced.
+				// Consumer team matches observer — A==C in this test case.
 				consumerApp := makeConsumerApp()
 				consumerApp.Spec.Team = "observer-team"
 
@@ -2129,6 +2214,7 @@ var _ = Describe("ListenerHandler", func() {
 				mockGetConsumerApp(consumerApp)
 				mockGetProviderApp(providerApp)
 				mockGetSpectreApp(makeSpectreAppPtr())
+				mockGetObserverApp(consumerApp) // A==C: observer resolves to consumer (same team override)
 				mockGetZone()
 				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
 				mockGetEventStore(makeListenerEventStore())
@@ -2156,6 +2242,7 @@ var _ = Describe("ListenerHandler", func() {
 				mockGetConsumerApp(makeConsumerApp())
 				mockGetProviderApp(makeProviderApp())
 				mockGetSpectreApp(makeSpectreAppPtr())
+				mockGetObserverApp(makeConsumerApp()) // A==C: observer resolves to consumer
 				mockGetZone()
 				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
 				mockGetEventStore(makeListenerEventStore())
@@ -2211,10 +2298,9 @@ var _ = Describe("ListenerHandler", func() {
 				mockGetConsumerApp(makeConsumerApp())
 				mockGetProviderApp(makeProviderApp())
 				mockGetSpectreApp(makeSpectreAppPtr())
+				// No mockGetObserverApp: route mode check blocks before observer resolution.
 				mockGetZone()
 				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
-				// No mockGetEventStore: ResolvePlacement is never reached because
-				// the pass-through route check rejects before placement resolution.
 				mockPassThroughRoute()
 
 				// deleteAllOwnedChildren: no existing children.
