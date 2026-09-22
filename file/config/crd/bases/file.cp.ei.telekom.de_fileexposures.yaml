@@ -251,11 +251,11 @@ spec:
                 - name
                 - namespace
                 type: object
-              serviceExternalURL:
+              serviceExternalUrl:
                 description: ServiceExternalURL represents the externally reachable
                   SFTP service endpoint for users.
                 type: string
-              serviceURL:
+              serviceUrl:
                 description: ServiceURL represents the internal SFTP service endpoint
                   for users.
                 type: string

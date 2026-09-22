@@ -53,11 +53,11 @@ type FileSubscriptionStatus struct {
 
 	// ServiceURL represents the internal SFTP service endpoint for users.
 	// +optional
-	ServiceURL string `json:"serviceURL,omitempty"`
+	ServiceURL string `json:"serviceUrl,omitempty"`
 
 	// ServiceExternalURL represents the externally reachable SFTP service endpoint for users.
 	// +optional
-	ServiceExternalURL string `json:"serviceExternalURL,omitempty"`
+	ServiceExternalURL string `json:"serviceExternalUrl,omitempty"`
 }
 
 // +kubebuilder:object:root=true
