@@ -181,14 +181,9 @@ func (r *RoverValidator) validateListeners(ctx context.Context, valErr *cerrors.
 	for i, listener := range rover.Spec.Listeners {
 		listenerPath := listenersPath.Index(i)
 
-		// The listener consumer must match the Rover's own name — a Rover can only
-		// capture traffic for its own application identity.
-		if listener.Consumer != rover.Name {
-			valErr.AddInvalidError(
-				listenerPath.Child("consumer"),
-				listener.Consumer,
-				fmt.Sprintf("listener consumer must equal the Rover name %q", rover.Name),
-			)
+		// Consumer must be a non-empty application name.
+		if listener.Consumer == "" {
+			valErr.AddRequiredError(listenerPath.Child("consumer"), "consumer is required")
 		}
 
 		// apiBasePath is required (only supported mode)

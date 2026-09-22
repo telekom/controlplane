@@ -1333,7 +1333,7 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 	})
 
 	Context("Listener consumer validation", func() {
-		It("should reject a listener whose consumer does not match the Rover name", func() {
+		It("should accept a listener with an external consumer", func() {
 			cconfig.FeatureSpectre = cconfig.NewFeature("spectre", true)
 			defer func() { cconfig.FeatureSpectre = cconfig.NewFeature("spectre", false) }()
 
@@ -1351,7 +1351,8 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 				Callback:     "https://callback.example.com/events",
 			}
 			warnings, err := validator.ValidateCreateOrUpdate(ctx, roverWithListener)
-			assertValidationFailedWith(warnings, err, fmt.Sprintf("listener consumer must equal the Rover name %q", roverWithListener.Name))
+			Expect(warnings).To(BeNil())
+			Expect(err).ToNot(HaveOccurred())
 		})
 
 		It("should accept a listener whose consumer matches the Rover name", func() {
@@ -1373,6 +1374,26 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 			warnings, err := validator.ValidateCreateOrUpdate(ctx, roverWithListener)
 			Expect(warnings).To(BeNil())
 			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("should reject a listener with an empty consumer", func() {
+			cconfig.FeatureSpectre = cconfig.NewFeature("spectre", true)
+			defer func() { cconfig.FeatureSpectre = cconfig.NewFeature("spectre", false) }()
+
+			roverWithListener := roverObj.DeepCopy()
+			roverWithListener.Spec.Listeners = []roverv1.RoverListener{
+				{
+					Consumer:    "",
+					Provider:    "provider-app",
+					ApiBasePath: "/api/v1",
+				},
+			}
+			roverWithListener.Spec.ListenerSubscription = &roverv1.ListenerSubscription{
+				DeliveryType: "callback",
+				Callback:     "https://callback.example.com/events",
+			}
+			warnings, err := validator.ValidateCreateOrUpdate(ctx, roverWithListener)
+			assertValidationFailedWith(warnings, err, "consumer is required")
 		})
 	})
 
