@@ -52,19 +52,27 @@ type PlacementIntent struct {
 // same approval — a grant for one does not cover the other.
 type authorizationIntent struct {
 	PolicyVersion     string
+	ConsumerGroup     string
+	ConsumerKind      string
 	ConsumerName      string
 	ConsumerNamespace string
 	ConsumerUID       string
 	ConsumerTeam      string
 	ConsumerClientId  string
+	ProviderGroup     string
+	ProviderKind      string
 	ProviderName      string
 	ProviderNamespace string
 	ProviderUID       string
 	ProviderTeam      string
 	ProviderClientId  string
+	SpectreAppGroup   string
+	SpectreAppKind    string
 	SpectreAppName    string
 	SpectreAppNs      string
 	SpectreAppUID     string
+	ObserverGroup     string
+	ObserverKind      string
 	ObserverName      string
 	ObserverNamespace string
 	ObserverUID       string
@@ -93,19 +101,27 @@ func buildAuthorizationIntent(
 ) authorizationIntent {
 	intent := authorizationIntent{
 		PolicyVersion:     "v2",
+		ConsumerGroup:     applicationv1.GroupVersion.Group,
+		ConsumerKind:      "Application",
 		ConsumerName:      consumerApp.Name,
 		ConsumerNamespace: consumerApp.Namespace,
 		ConsumerUID:       string(consumerApp.UID),
 		ConsumerTeam:      consumerApp.Spec.Team,
 		ConsumerClientId:  consumerApp.Status.ClientId,
+		ProviderGroup:     applicationv1.GroupVersion.Group,
+		ProviderKind:      "Application",
 		ProviderName:      providerApp.Name,
 		ProviderNamespace: providerApp.Namespace,
 		ProviderUID:       string(providerApp.UID),
 		ProviderTeam:      providerApp.Spec.Team,
 		ProviderClientId:  providerApp.Status.ClientId,
+		SpectreAppGroup:   spectrev1.GroupVersion.Group,
+		SpectreAppKind:    "SpectreApplication",
 		SpectreAppName:    spectreApp.Name,
 		SpectreAppNs:      spectreApp.Namespace,
 		SpectreAppUID:     string(spectreApp.UID),
+		ObserverGroup:     applicationv1.GroupVersion.Group,
+		ObserverKind:      "Application",
 		ObserverName:      observerApp.Name,
 		ObserverNamespace: observerApp.Namespace,
 		ObserverUID:       string(observerApp.UID),
@@ -158,19 +174,27 @@ func (a *authorizationIntent) fingerprint() string {
 		val string
 	}{
 		{"policyVersion", a.PolicyVersion},
+		{"consumer.group", a.ConsumerGroup},
+		{"consumer.kind", a.ConsumerKind},
 		{"consumer.name", a.ConsumerName},
 		{"consumer.namespace", a.ConsumerNamespace},
 		{"consumer.uid", a.ConsumerUID},
 		{"consumer.team", a.ConsumerTeam},
 		{"consumer.clientId", a.ConsumerClientId},
+		{"provider.group", a.ProviderGroup},
+		{"provider.kind", a.ProviderKind},
 		{"provider.name", a.ProviderName},
 		{"provider.namespace", a.ProviderNamespace},
 		{"provider.uid", a.ProviderUID},
 		{"provider.team", a.ProviderTeam},
 		{"provider.clientId", a.ProviderClientId},
+		{"spectreApp.group", a.SpectreAppGroup},
+		{"spectreApp.kind", a.SpectreAppKind},
 		{"spectreApp.name", a.SpectreAppName},
 		{"spectreApp.namespace", a.SpectreAppNs},
 		{"spectreApp.uid", a.SpectreAppUID},
+		{"observer.group", a.ObserverGroup},
+		{"observer.kind", a.ObserverKind},
 		{"observer.name", a.ObserverName},
 		{"observer.namespace", a.ObserverNamespace},
 		{"observer.uid", a.ObserverUID},
