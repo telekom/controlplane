@@ -104,6 +104,7 @@
     "path": "file",
     "depends_on": [
       "admin",
+      "application",
       "approval",
       "common",
       "common-server",
