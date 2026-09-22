@@ -181,7 +181,7 @@ var _ = Describe("File query and relationship resolvers", func() {
 		Expect(fileInfo.FileType).To(Equal("invoice"))
 		Expect(fileInfo.OwnerApplicationName).To(Equal(seed.AppBeta.Name))
 		Expect(fileInfo.OwnerTeam.Name).To(Equal(seed.TeamBeta.Name))
-		Expect(fileInfo.OwnerApplication.ID).To(Equal(seed.AppBeta.ID))
+		expectOwnerApplication(fileInfo.OwnerApplication, seed.AppBeta.ID, "app-beta", "team-beta", "group-b")
 	})
 
 	It("returns FileSubscriptionInfo from an approval request", func() {
@@ -193,6 +193,9 @@ var _ = Describe("File query and relationship resolvers", func() {
 		Expect(ok).To(BeTrue(), "expected FileSubscriptionInfo implementation")
 		Expect(fileInfo.ID).To(Equal(fileSubscription.ID))
 		Expect(fileInfo.FileType).To(Equal("invoice"))
+		Expect(fileInfo.OwnerApplicationName).To(Equal(seed.AppBeta.Name))
+		Expect(fileInfo.OwnerTeam.Name).To(Equal(seed.TeamBeta.Name))
+		expectOwnerApplication(fileInfo.OwnerApplication, seed.AppBeta.ID, "app-beta", "team-beta", "group-b")
 	})
 
 	It("returns the approval related through a file subscription", func() {
@@ -210,6 +213,12 @@ var _ = Describe("File query and relationship resolvers", func() {
 		Expect(*status).To(Equal(filesubscription.StatusPhaseReady))
 	})
 
+	It("returns nil for a nil reduced status phase", func() {
+		status, err := resolver.FileSubscriptionInfo().StatusPhase(context.Background(), &gqlmodel.FileSubscriptionInfo{})
+		Expect(err).NotTo(HaveOccurred())
+		Expect(status).To(BeNil())
+	})
+
 	It("returns reduced cross-tenant subscriptions from a file exposure", func() {
 		infos, err := resolver.FileExposure().Subscriptions(context.Background(), fileExposure)
 		Expect(err).NotTo(HaveOccurred())
@@ -218,6 +227,23 @@ var _ = Describe("File query and relationship resolvers", func() {
 		Expect(infos[0].FileType).To(Equal("invoice"))
 		Expect(infos[0].OwnerApplicationName).To(Equal(seed.AppBeta.Name))
 		Expect(infos[0].OwnerTeam.Name).To(Equal(seed.TeamBeta.Name))
+		expectOwnerApplication(infos[0].OwnerApplication, seed.AppBeta.ID, "app-beta", "team-beta", "group-b")
+	})
+
+	It("returns an empty list when a file exposure has no subscriptions", func() {
+		emptyExposure, err := client.FileExposure.Create().
+			SetNamespace("default").
+			SetFileType("unsubscribed").
+			SetZoneName(seed.ZoneEU.Name).
+			SetOwner(seed.AppAlpha).
+			SetZone(seed.ZoneEU).
+			Save(testutil.AllowContext())
+		Expect(err).NotTo(HaveOccurred())
+
+		ctx := viewer.NewContext(testutil.AllowContext(), &viewer.Viewer{Teams: []string{seed.TeamAlpha.Name}})
+		infos, err := resolver.FileExposure().Subscriptions(ctx, emptyExposure)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(infos).To(BeEmpty())
 	})
 
 	It("returns a reduced cross-tenant target from a file subscription", func() {
@@ -227,6 +253,7 @@ var _ = Describe("File query and relationship resolvers", func() {
 		Expect(info.FileType).To(Equal("invoice"))
 		Expect(info.OwnerApplicationName).To(Equal(seed.AppAlpha.Name))
 		Expect(info.OwnerTeam.Name).To(Equal(seed.TeamAlpha.Name))
+		expectOwnerApplication(info.OwnerApplication, seed.AppAlpha.ID, "app-alpha", "team-alpha", "group-a")
 
 		visibility, err := resolver.FileExposureInfo().Visibility(context.Background(), info)
 		Expect(err).NotTo(HaveOccurred())
