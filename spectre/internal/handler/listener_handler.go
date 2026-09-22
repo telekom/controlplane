@@ -86,27 +86,6 @@ func (h *ListenerHandler) CreateOrUpdate(ctx context.Context, listener *spectrev
 		return errors.Wrap(err, "failed to resolve provider zone")
 	}
 
-	listeningZone, err := util.GetListeningZone(ctx, providerZone, consumerZone)
-	if err != nil {
-		return errors.Wrap(err, "failed to determine listening zone")
-	}
-
-	// Step 4: Get EventConfig for zone.
-	eventConfig, err := util.GetEventConfig(ctx, listeningZone)
-	if err != nil {
-		return errors.Wrap(err, "failed to get EventConfig")
-	}
-
-	if eventConfig.Status.CallbackURL == "" {
-		return ctrlerrors.BlockedErrorf("EventConfig %q has no CallbackURL in status", eventConfig.Name)
-	}
-
-	// Step 5: Resolve EventStore via EventConfig reference.
-	eventStore, err := util.ResolveEventStore(ctx, eventConfig)
-	if err != nil {
-		return errors.Wrap(err, "failed to resolve EventStore")
-	}
-
 	// Reject event-only Listeners early — creating ApprovalRequests for a
 	// Listener that can never provision downstream resources wastes effort and
 	// leaves orphaned CRs.
@@ -115,7 +94,13 @@ func (h *ListenerHandler) CreateOrUpdate(ctx context.Context, listener *spectrev
 	}
 	apiBasePath := listener.Spec.ApiListener.ApiBasePath
 
-	// Step 5.5: Resolve the gateway Route early so unsupported modes
+	// Step 4: Resolve the listening zone so we can find the Route.
+	listeningZone, err := util.GetListeningZone(ctx, providerZone, consumerZone)
+	if err != nil {
+		return errors.Wrap(err, "failed to determine listening zone")
+	}
+
+	// Step 5: Resolve the gateway Route early so unsupported modes
 	// (pass-through, failover) are rejected before creating approvals.
 	route, err := h.findRouteByPath(ctx, listeningZone.Status.Namespace, apiBasePath)
 	if err != nil {
@@ -155,23 +140,29 @@ func (h *ListenerHandler) CreateOrUpdate(ctx context.Context, listener *spectrev
 		return ctrlerrors.BlockedErrorf("Route %q is %s — listener capture is not supported for this route mode", route.Name, mode)
 	}
 
-	// Step 5.7: Compute the canonical authorization intent and fingerprint.
+	// Step 5.7: Resolve full placement (EventConfig, EventStore, callback URL).
+	lp, err := util.ResolvePlacement(ctx, listeningZone, route)
+	if err != nil {
+		return errors.Wrap(err, "failed to resolve placement")
+	}
+
+	// Compute the canonical authorization intent and fingerprint.
 	// Phase 2: observer == consumer. Task 7 will resolve A independently.
 	observerApp := consumerApp
 	placement := PlacementIntent{
-		CaptureRouteName:            route.Name,
-		CaptureRouteNamespace:       route.Namespace,
-		CaptureZoneName:             listeningZone.Name,
-		CaptureZoneNamespace:        listeningZone.Namespace,
-		CaptureEventStoreName:       eventStore.Name,
-		CaptureEventStoreNamespace:  eventStore.Namespace,
-		CallbackOriginZoneName:      listeningZone.Name,
-		CallbackOriginZoneNamespace: listeningZone.Namespace,
-		DeliveryZoneName:            listeningZone.Name,
-		DeliveryZoneNamespace:       listeningZone.Namespace,
-		DeliveryEventStoreName:      eventStore.Name,
-		DeliveryEventStoreNamespace: eventStore.Namespace,
-		CallbackBaseURL:             eventConfig.Status.CallbackURL,
+		CaptureRouteName:            lp.CaptureRoute.Name,
+		CaptureRouteNamespace:       lp.CaptureRoute.Namespace,
+		CaptureZoneName:             lp.CaptureZone.Name,
+		CaptureZoneNamespace:        lp.CaptureZone.Namespace,
+		CaptureEventStoreName:       lp.CaptureEventStore.Name,
+		CaptureEventStoreNamespace:  lp.CaptureEventStore.Namespace,
+		CallbackOriginZoneName:      lp.CallbackOriginZone.Name,
+		CallbackOriginZoneNamespace: lp.CallbackOriginZone.Namespace,
+		DeliveryZoneName:            lp.DeliveryZone.Name,
+		DeliveryZoneNamespace:       lp.DeliveryZone.Namespace,
+		DeliveryEventStoreName:      lp.DeliveryEventStore.Name,
+		DeliveryEventStoreNamespace: lp.DeliveryEventStore.Namespace,
+		CallbackBaseURL:             lp.CallbackBaseURL,
 	}
 	intent := buildAuthorizationIntent(listener, consumerApp, providerApp, spectreApp, observerApp, placement)
 	fingerprint := intent.fingerprint()
@@ -245,14 +236,14 @@ func (h *ListenerHandler) CreateOrUpdate(ctx context.Context, listener *spectrev
 	logger.Info("Approval granted, provisioning downstream resources")
 
 	// Step 8: Ensure shared generic Publisher.
-	publisher, err := h.ensureGenericPublisher(ctx, eventStore)
+	publisher, err := h.ensureGenericPublisher(ctx, lp.CaptureEventStore)
 	if err != nil {
 		return errors.Wrap(err, "failed to ensure generic Publisher")
 	}
 	logger.Info("Ensured generic Publisher", "publisher", publisher.Name)
 
 	// Step 9: Create RouteListener.
-	routeListener, err := h.ensureRouteListener(ctx, listener, listeningZone, route, appId, consumerId, providerId, apiBasePath, fingerprint)
+	routeListener, err := h.ensureRouteListener(ctx, listener, lp.CaptureZone, route, appId, consumerId, providerId, apiBasePath, fingerprint)
 	if err != nil {
 		return errors.Wrap(err, "failed to ensure RouteListener")
 	}
@@ -261,7 +252,7 @@ func (h *ListenerHandler) CreateOrUpdate(ctx context.Context, listener *spectrev
 
 	// Step 10: Create bridge Subscribers.
 	subRefs, err := h.ensureBridgeSubscribers(ctx, listener, publisher, appId,
-		eventConfig.Status.CallbackURL, apiBasePath, consumerId, providerId, fingerprint)
+		lp.CallbackBaseURL, apiBasePath, consumerId, providerId, fingerprint)
 	if err != nil {
 		return errors.Wrap(err, "failed to ensure bridge Subscribers")
 	}

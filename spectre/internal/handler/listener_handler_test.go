@@ -1330,7 +1330,8 @@ var _ = Describe("ListenerHandler", func() {
 				mockGetSpectreApp(makeSpectreAppPtr())
 				mockGetZone()
 				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
-				mockGetEventStore(makeListenerEventStore())
+				// No mockGetEventStore: ResolvePlacement is never reached because
+				// the pass-through route check rejects before placement resolution.
 				mockPassThroughRoute()
 
 				// deleteAllOwnedChildren: no existing children.
@@ -1389,7 +1390,8 @@ var _ = Describe("ListenerHandler", func() {
 				mockGetSpectreApp(makeSpectreAppPtr())
 				mockGetZone()
 				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
-				mockGetEventStore(makeListenerEventStore())
+				// No mockGetEventStore: ResolvePlacement is never reached because
+				// the failover route check rejects before placement resolution.
 				mockFailoverRoute()
 
 				// deleteAllOwnedChildren: no existing children.
@@ -1454,7 +1456,8 @@ var _ = Describe("ListenerHandler", func() {
 				mockGetSpectreApp(makeSpectreAppPtr())
 				mockGetZone()
 				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
-				mockGetEventStore(makeListenerEventStore())
+				// No mockGetEventStore: ResolvePlacement is never reached because
+				// the pass-through route check rejects before placement resolution.
 				mockPassThroughRoute()
 
 				// deleteAllOwnedChildren: existing children returned.
@@ -2194,7 +2197,8 @@ var _ = Describe("ListenerHandler", func() {
 				mockGetSpectreApp(makeSpectreAppPtr())
 				mockGetZone()
 				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
-				mockGetEventStore(makeListenerEventStore())
+				// No mockGetEventStore: ResolvePlacement is never reached because
+				// the pass-through route check rejects before placement resolution.
 				mockPassThroughRoute()
 
 				// deleteAllOwnedChildren: no existing children.
