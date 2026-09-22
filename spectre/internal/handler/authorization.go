@@ -11,6 +11,7 @@ import (
 	"fmt"
 
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
+	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
 	spectrev1 "github.com/telekom/controlplane/spectre/api/v1"
 )
 
@@ -24,25 +25,59 @@ const AuthorizationFingerprintLabelKey = "spectre.cp.ei.telekom.de/authorization
 // maxLabelValueLen is the Kubernetes limit for label values.
 const maxLabelValueLen = 63
 
+// PlacementIntent identifies validated placement references that affect where
+// data is captured or delivered. Only stable routing identifiers are included —
+// never entire resource specs/statuses, resourceVersions, Ready conditions,
+// emails, token/secret values, or reconciliation timestamps.
+type PlacementIntent struct {
+	ApiExposureName           string
+	ApiExposureNamespace      string
+	CaptureRouteName          string
+	CaptureRouteNamespace     string
+	CaptureZoneName           string
+	CaptureZoneNamespace      string
+	CaptureEventStoreName     string
+	CaptureEventStoreNamespace string
+	CallbackOriginZoneName    string
+	CallbackOriginZoneNamespace string
+	DeliveryZoneName          string
+	DeliveryZoneNamespace     string
+	DeliveryEventStoreName    string
+	DeliveryEventStoreNamespace string
+	CallbackBaseURL           string
+}
+
 // authorizationIntent captures every field that changes the meaning of an
 // approval grant. Two Listeners with different intents must not share the
 // same approval — a grant for one does not cover the other.
 type authorizationIntent struct {
-	ConsumerName       string
-	ConsumerNamespace  string
-	ConsumerUID        string
-	ProviderName       string
-	ProviderNamespace  string
-	ProviderUID        string
-	ApplicationName    string
-	ApplicationNs      string
-	ApiBasePath        string
-	CaptureRequest     bool
-	CaptureResponse    bool
-	DeliveryType       string
-	CallbackTarget     string
+	PolicyVersion     string
+	ConsumerName      string
+	ConsumerNamespace string
+	ConsumerUID       string
+	ConsumerTeam      string
+	ConsumerClientId  string
+	ProviderName      string
+	ProviderNamespace string
+	ProviderUID       string
+	ProviderTeam      string
+	ProviderClientId  string
+	SpectreAppName    string
+	SpectreAppNs      string
+	SpectreAppUID     string
+	ObserverName      string
+	ObserverNamespace string
+	ObserverUID       string
+	ObserverTeam      string
+	ObserverClientId  string
+	ApiBasePath       string
+	CaptureRequest    bool
+	CaptureResponse   bool
+	DeliveryType      string
+	CallbackTarget    string
 	RequestFilterJSON  string
 	ResponseFilterJSON string
+	Placement          PlacementIntent
 }
 
 // buildAuthorizationIntent constructs the canonical intent from resolved
@@ -53,18 +88,32 @@ func buildAuthorizationIntent(
 	consumerApp *applicationv1.Application,
 	providerApp *applicationv1.Application,
 	spectreApp *spectrev1.SpectreApplication,
+	observerApp *applicationv1.Application,
+	placement PlacementIntent,
 ) authorizationIntent {
 	intent := authorizationIntent{
+		PolicyVersion:     "v2",
 		ConsumerName:      consumerApp.Name,
 		ConsumerNamespace: consumerApp.Namespace,
 		ConsumerUID:       string(consumerApp.UID),
+		ConsumerTeam:      consumerApp.Spec.Team,
+		ConsumerClientId:  consumerApp.Status.ClientId,
 		ProviderName:      providerApp.Name,
 		ProviderNamespace: providerApp.Namespace,
 		ProviderUID:       string(providerApp.UID),
-		ApplicationName:   spectreApp.Name,
-		ApplicationNs:     spectreApp.Namespace,
+		ProviderTeam:      providerApp.Spec.Team,
+		ProviderClientId:  providerApp.Status.ClientId,
+		SpectreAppName:    spectreApp.Name,
+		SpectreAppNs:      spectreApp.Namespace,
+		SpectreAppUID:     string(spectreApp.UID),
+		ObserverName:      observerApp.Name,
+		ObserverNamespace: observerApp.Namespace,
+		ObserverUID:       string(observerApp.UID),
+		ObserverTeam:      observerApp.Spec.Team,
+		ObserverClientId:  observerApp.Status.ClientId,
 		DeliveryType:      spectreApp.Spec.DeliveryType,
 		CallbackTarget:    spectreApp.Spec.Callback,
+		Placement:         placement,
 	}
 
 	if listener.Spec.ApiListener != nil {
@@ -86,6 +135,16 @@ func buildAuthorizationIntent(
 	return intent
 }
 
+// TODO(task4): remove this adapter when listener_handler.go is updated
+func buildAuthorizationIntentCompat(
+	listener *spectrev1.Listener,
+	consumerApp *applicationv1.Application,
+	providerApp *applicationv1.Application,
+	spectreApp *spectrev1.SpectreApplication,
+) authorizationIntent {
+	return buildAuthorizationIntent(listener, consumerApp, providerApp, spectreApp, consumerApp, PlacementIntent{})
+}
+
 // fingerprint returns a deterministic, K8s-safe label value (≤63 chars,
 // lowercase hex) that represents this authorization intent.
 func (a *authorizationIntent) fingerprint() string {
@@ -98,14 +157,25 @@ func (a *authorizationIntent) fingerprint() string {
 		key string
 		val string
 	}{
+		{"policyVersion", a.PolicyVersion},
 		{"consumer.name", a.ConsumerName},
 		{"consumer.namespace", a.ConsumerNamespace},
 		{"consumer.uid", a.ConsumerUID},
+		{"consumer.team", a.ConsumerTeam},
+		{"consumer.clientId", a.ConsumerClientId},
 		{"provider.name", a.ProviderName},
 		{"provider.namespace", a.ProviderNamespace},
 		{"provider.uid", a.ProviderUID},
-		{"application.name", a.ApplicationName},
-		{"application.namespace", a.ApplicationNs},
+		{"provider.team", a.ProviderTeam},
+		{"provider.clientId", a.ProviderClientId},
+		{"spectreApp.name", a.SpectreAppName},
+		{"spectreApp.namespace", a.SpectreAppNs},
+		{"spectreApp.uid", a.SpectreAppUID},
+		{"observer.name", a.ObserverName},
+		{"observer.namespace", a.ObserverNamespace},
+		{"observer.uid", a.ObserverUID},
+		{"observer.team", a.ObserverTeam},
+		{"observer.clientId", a.ObserverClientId},
 		{"apiBasePath", a.ApiBasePath},
 		{"captureRequest", fmt.Sprintf("%t", a.CaptureRequest)},
 		{"captureResponse", fmt.Sprintf("%t", a.CaptureResponse)},
@@ -113,6 +183,22 @@ func (a *authorizationIntent) fingerprint() string {
 		{"callbackTarget", a.CallbackTarget},
 		{"requestFilter", filterFingerprintValue(a.RequestFilterJSON)},
 		{"responseFilter", filterFingerprintValue(a.ResponseFilterJSON)},
+		// Placement fields — any change to routing topology invalidates consent.
+		{"placement.apiExposure.name", a.Placement.ApiExposureName},
+		{"placement.apiExposure.namespace", a.Placement.ApiExposureNamespace},
+		{"placement.captureRoute.name", a.Placement.CaptureRouteName},
+		{"placement.captureRoute.namespace", a.Placement.CaptureRouteNamespace},
+		{"placement.captureZone.name", a.Placement.CaptureZoneName},
+		{"placement.captureZone.namespace", a.Placement.CaptureZoneNamespace},
+		{"placement.captureEventStore.name", a.Placement.CaptureEventStoreName},
+		{"placement.captureEventStore.namespace", a.Placement.CaptureEventStoreNamespace},
+		{"placement.callbackOriginZone.name", a.Placement.CallbackOriginZoneName},
+		{"placement.callbackOriginZone.namespace", a.Placement.CallbackOriginZoneNamespace},
+		{"placement.deliveryZone.name", a.Placement.DeliveryZoneName},
+		{"placement.deliveryZone.namespace", a.Placement.DeliveryZoneNamespace},
+		{"placement.deliveryEventStore.name", a.Placement.DeliveryEventStoreName},
+		{"placement.deliveryEventStore.namespace", a.Placement.DeliveryEventStoreNamespace},
+		{"placement.callbackBaseURL", a.Placement.CallbackBaseURL},
 	}
 
 	for _, f := range fields {
@@ -127,6 +213,34 @@ func (a *authorizationIntent) fingerprint() string {
 	return full
 }
 
+// gateRequestHash produces a per-gate hash that binds the common authorization
+// intent to a specific approval gate identified by key, requesterTeam, and
+// deciderTeam. It uses ScopedIntentHash for canonical JSON encoding so map key
+// ordering does not affect the result.
+//
+// The returned value is a full-length hex SHA-256 digest (not truncated to 63
+// chars) — it is passed to WithHashValue on the approval builder, not used as
+// a label value.
+func (a *authorizationIntent) gateRequestHash(key, requesterTeam, deciderTeam string) (string, error) {
+	if key == "" {
+		return "", fmt.Errorf("gateRequestHash: key must not be empty")
+	}
+
+	payload := struct {
+		Intent authorizationIntent `json:"intent"`
+		Key    string              `json:"key"`
+		Requester string           `json:"requester"`
+		Decider   string           `json:"decider"`
+	}{
+		Intent:    *a,
+		Key:       key,
+		Requester: requesterTeam,
+		Decider:   deciderTeam,
+	}
+
+	return approvalv1.ScopedIntentHash(payload)
+}
+
 // approvalProperties returns a human-readable map suitable for
 // Requester.SetProperties, exposing the capture intent to approvers.
 func (a *authorizationIntent) approvalProperties() map[string]any {
@@ -134,16 +248,37 @@ func (a *authorizationIntent) approvalProperties() map[string]any {
 		"action":              "listen-provider",
 		"consumer":            a.ConsumerNamespace + "/" + a.ConsumerName,
 		"provider":            a.ProviderNamespace + "/" + a.ProviderName,
-		"listenerApplication": a.ApplicationNs + "/" + a.ApplicationName,
+		"observer":            a.ObserverNamespace + "/" + a.ObserverName,
+		"listenerApplication": a.SpectreAppNs + "/" + a.SpectreAppName,
 		"apiBasePath":         a.ApiBasePath,
 		"captureRequest":      a.CaptureRequest,
 		"captureResponse":     a.CaptureResponse,
 		"deliveryType":        a.DeliveryType,
 		"requestFilter":       filterPropertyValue(a.RequestFilterJSON),
 		"responseFilter":      filterPropertyValue(a.ResponseFilterJSON),
+		"policyVersion":       a.PolicyVersion,
+		"consumerTeam":        a.ConsumerTeam,
+		"providerTeam":        a.ProviderTeam,
+		"observerTeam":        a.ObserverTeam,
 	}
 	if a.CallbackTarget != "" {
 		props["callbackTarget"] = a.CallbackTarget
+	}
+	// Include placement if any field is populated.
+	if a.Placement.ApiExposureName != "" {
+		props["apiExposure"] = a.Placement.ApiExposureNamespace + "/" + a.Placement.ApiExposureName
+	}
+	if a.Placement.CaptureRouteName != "" {
+		props["captureRoute"] = a.Placement.CaptureRouteNamespace + "/" + a.Placement.CaptureRouteName
+	}
+	if a.Placement.CaptureZoneName != "" {
+		props["captureZone"] = a.Placement.CaptureZoneNamespace + "/" + a.Placement.CaptureZoneName
+	}
+	if a.Placement.DeliveryZoneName != "" {
+		props["deliveryZone"] = a.Placement.DeliveryZoneNamespace + "/" + a.Placement.DeliveryZoneName
+	}
+	if a.Placement.CallbackBaseURL != "" {
+		props["callbackBaseURL"] = a.Placement.CallbackBaseURL
 	}
 	return props
 }
