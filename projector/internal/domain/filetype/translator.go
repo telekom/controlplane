@@ -29,7 +29,6 @@ func (t *Translator) ShouldSkip(_ *filev1.FileType) (bool, string) {
 func (t *Translator) Translate(_ context.Context, obj *filev1.FileType) (*FileTypeData, error) {
 	phase, message := shared.StatusFromConditions(obj.Status.Conditions)
 
-	active := obj.Status.FileExposureRef != nil
 	var variant *string
 	if obj.Status.SFTPInstance != nil {
 		variant = ptr.To(SFTPVariant)
@@ -42,7 +41,7 @@ func (t *Translator) Translate(_ context.Context, obj *filev1.FileType) (*FileTy
 		FileType:      obj.Name,
 		Description:   obj.Spec.Description,
 		Variant:       variant,
-		Active:        active,
+		Active:        obj.Status.Active,
 	}, nil
 }
 

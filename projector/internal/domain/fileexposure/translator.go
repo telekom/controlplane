@@ -41,7 +41,7 @@ func (t *Translator) Translate(_ context.Context, obj *filev1.FileExposure) (*Fi
 		StatusMessage: message,
 		Variant:       obj.Spec.Variant,
 		Visibility:    strings.ToUpper(string(obj.Spec.Visibility)),
-		Active:        isActiveExposure(obj),
+		Active:        obj.Status.Active,
 		Zone:          obj.Spec.Zone.Name,
 		FileSFTP:      toFileSFTP(obj.Spec.SFTP),
 		ApprovalConfig: model.ApprovalConfig{
