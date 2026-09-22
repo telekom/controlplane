@@ -43,6 +43,8 @@ type SeedData struct {
 	AgenticSubscription    *ent.AgenticSubscription
 	AgenticApproval        *ent.Approval
 	AgenticApprovalRequest *ent.ApprovalRequest
+
+	FileSubscriptionAlpha *ent.FileSubscription
 }
 
 // SeedStandard creates a standard set of test data covering all entity types.

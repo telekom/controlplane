@@ -73,10 +73,9 @@ var _ = Describe("SubscriptionInfo", func() {
 
 	Describe("GraphQL execution", func() {
 		var (
-			db               *ent.Client
-			seed             *testutil.SeedData
-			fileSubscription *ent.FileSubscription
-			server           *handler.Server
+			db     *ent.Client
+			seed   *testutil.SeedData
+			server *handler.Server
 		)
 
 		BeforeEach(func() {
@@ -95,19 +94,19 @@ var _ = Describe("SubscriptionInfo", func() {
 				SetRequester(seed.ApprovalRequest.Requester).SetDecider(seed.ApprovalRequest.Decider).
 				SetDeciderTeamName("team-alpha").SetEventSubscription(seed.EventSubscription).Save(ctx)
 			Expect(err).NotTo(HaveOccurred())
-			fileSubscription, err = db.FileSubscription.Create().
+			_, err = db.FileSubscription.Create().
 				SetNamespace("default").SetName("filesub-invoice").SetFileType("invoice").
 				SetZoneName(seed.ZoneEU.Name).SetOwner(seed.AppBeta).SetZone(seed.ZoneEU).Save(ctx)
 			Expect(err).NotTo(HaveOccurred())
 			_, err = db.Approval.Create().
 				SetNamespace("prod").SetName("file-approval").SetAction("ALLOW").
 				SetRequester(seed.Approval.Requester).SetDecider(seed.Approval.Decider).
-				SetDeciderTeamName("team-alpha").SetFileSubscription(fileSubscription).Save(ctx)
+				SetDeciderTeamName("team-alpha").SetFileSubscription(seed.FileSubscriptionAlpha).Save(ctx)
 			Expect(err).NotTo(HaveOccurred())
 			_, err = db.ApprovalRequest.Create().
 				SetNamespace("prod").SetName("file-approval-request").SetAction("ALLOW").
 				SetRequester(seed.ApprovalRequest.Requester).SetDecider(seed.ApprovalRequest.Decider).
-				SetDeciderTeamName("team-alpha").SetFileSubscription(fileSubscription).Save(ctx)
+				SetDeciderTeamName("team-alpha").SetFileSubscription(seed.FileSubscriptionAlpha).Save(ctx)
 			Expect(err).NotTo(HaveOccurred())
 			server = handler.New(resolvers.NewExecutableSchema(resolvers.Config{
 				Resolvers: resolvers.NewResolver(db, service.Services{}, nil, ""),
@@ -226,7 +225,7 @@ var _ = Describe("SubscriptionInfo", func() {
 					"ApiSubscriptionInfo":     {ID: strconv.Itoa(seed.Subscription.ID), BasePath: "/alpha"},
 					"EventSubscriptionInfo":   {ID: strconv.Itoa(seed.EventSubscription.ID), EventType: "order.created"},
 					"AgenticSubscriptionInfo": {ID: strconv.Itoa(seed.AgenticSubscription.ID), BasePath: "/mcp-alpha"},
-					"FileSubscriptionInfo":    {ID: strconv.Itoa(fileSubscription.ID), FileType: "invoice"},
+					"FileSubscriptionInfo":    {ID: strconv.Itoa(seed.FileSubscriptionAlpha.ID), FileType: "invoice"},
 				}
 				Expect(response.Data[field].Edges).To(HaveLen(4))
 				for _, edge := range response.Data[field].Edges {
