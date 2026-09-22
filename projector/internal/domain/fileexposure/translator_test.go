@@ -30,7 +30,7 @@ var _ = Describe("FileExposure Translator", func() {
 	})
 
 	Describe("Translate", func() {
-		It("should map provider, zone, approval, sftp keys and status without using provider as the owner app", func() {
+		It("should map the provider as owner independently of the application label", func() {
 			obj := &filev1.FileExposure{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "exp-a",
@@ -59,7 +59,10 @@ var _ = Describe("FileExposure Translator", func() {
 						},
 					},
 				},
-				Status: filev1.FileExposureStatus{Conditions: []metav1.Condition{{Type: "Ready", Status: metav1.ConditionTrue, Message: "ok"}}},
+				Status: filev1.FileExposureStatus{
+					Active:     true,
+					Conditions: []metav1.Condition{{Type: "Ready", Status: metav1.ConditionTrue, Message: "ok"}},
+				},
 			}
 
 			data, err := t.Translate(context.Background(), obj)
@@ -78,7 +81,7 @@ var _ = Describe("FileExposure Translator", func() {
 			Expect(data.Active).To(BeTrue())
 		})
 
-		It("should fallback owner app from labels and mark inactive on already-exists reason", func() {
+		It("should use the provider as owner and preserve inactive status", func() {
 			obj := &filev1.FileExposure{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "exp-b",
@@ -111,9 +114,14 @@ var _ = Describe("FileExposure Translator", func() {
 			obj := &filev1.FileExposure{
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: "prod--platform--narvi",
-					Labels:    map[string]string{"cp.ei.telekom.de/application": "my-app"},
+					Labels:    map[string]string{"cp.ei.telekom.de/application": "label-app"},
 				},
-				Spec: filev1.FileExposureSpec{FileType: "invoice"},
+				Spec: filev1.FileExposureSpec{
+					FileType: "invoice",
+					Provider: commontypes.TypedObjectRef{
+						ObjectRef: commontypes.ObjectRef{Name: "my-app"},
+					},
+				},
 			}
 			key := t.KeyFromObject(obj)
 			Expect(key.FileType).To(Equal("invoice"))
@@ -126,8 +134,13 @@ var _ = Describe("FileExposure Translator", func() {
 		It("should prefer lastKnown", func() {
 			req := k8stypes.NamespacedName{Namespace: "prod--platform--narvi", Name: "exp"}
 			lastKnown := &filev1.FileExposure{
-				ObjectMeta: metav1.ObjectMeta{Namespace: "prod--platform--narvi", Labels: map[string]string{"cp.ei.telekom.de/application": "my-app"}},
-				Spec:       filev1.FileExposureSpec{FileType: "invoice"},
+				ObjectMeta: metav1.ObjectMeta{Namespace: "prod--platform--narvi", Labels: map[string]string{"cp.ei.telekom.de/application": "label-app"}},
+				Spec: filev1.FileExposureSpec{
+					FileType: "invoice",
+					Provider: commontypes.TypedObjectRef{
+						ObjectRef: commontypes.ObjectRef{Name: "my-app"},
+					},
+				},
 			}
 			key, err := t.KeyFromDelete(req, lastKnown)
 			Expect(err).NotTo(HaveOccurred())

@@ -12,12 +12,7 @@ import (
 	filev1 "github.com/telekom/controlplane/file/api/v1"
 	"github.com/telekom/controlplane/projector/internal/domain/shared"
 	"github.com/telekom/controlplane/projector/internal/runtime"
-	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/types"
-)
-
-const (
-	applicationLabelKey = "cp.ei.telekom.de/application"
 )
 
 // Translator maps a FileExposure CR to a FileExposureData DTO and derives keys.
@@ -48,7 +43,7 @@ func (t *Translator) Translate(_ context.Context, obj *filev1.FileExposure) (*Fi
 			Strategy:     shared.MapApprovalStrategy(string(obj.Spec.Approval.Strategy)),
 			TrustedTeams: obj.Spec.Approval.TrustedTeams,
 		},
-		AppName:        obj.Spec.Provider.Name,
+		AppName:        obj.Spec.Provider.Name, // identifiy the app name via struct field instead of label
 		TeamName:       shared.TeamNameFromNamespace(obj.Namespace),
 		TargetFileType: obj.Spec.FileType,
 	}, nil
@@ -72,19 +67,11 @@ func toFileSFTP(obj *filev1.FileSFTP) *model.FileSFTP {
 	return &sftp
 }
 
-func isActiveExposure(obj *filev1.FileExposure) bool {
-	ready := meta.FindStatusCondition(obj.Status.Conditions, "Ready")
-	if ready != nil && ready.Reason == "FileExposureAlreadyExists" {
-		return false
-	}
-	return true
-}
-
 // KeyFromObject derives the composite identity key from a live FileExposure CR.
 func (t *Translator) KeyFromObject(obj *filev1.FileExposure) FileExposureKey {
 	return FileExposureKey{
 		FileType: obj.Spec.FileType,
-		AppName:  obj.Labels[applicationLabelKey],
+		AppName:  obj.Spec.Provider.Name,
 		TeamName: shared.TeamNameFromNamespace(obj.Namespace),
 	}
 }
@@ -94,7 +81,7 @@ func (t *Translator) KeyFromDelete(req types.NamespacedName, lastKnown *filev1.F
 	if lastKnown != nil {
 		return FileExposureKey{
 			FileType: lastKnown.Spec.FileType,
-			AppName:  lastKnown.Labels[applicationLabelKey],
+			AppName:  lastKnown.Spec.Provider.Name,
 			TeamName: shared.TeamNameFromNamespace(lastKnown.Namespace),
 		}, nil
 	}
