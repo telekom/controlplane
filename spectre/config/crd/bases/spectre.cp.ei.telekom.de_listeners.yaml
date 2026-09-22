@@ -197,6 +197,230 @@ spec:
           status:
             description: ListenerStatus defines the observed state of Listener.
             properties:
+              appliedPlacement:
+                description: |-
+                  AppliedListenerPlacementStatus records the durable placement state that was
+                  last successfully reconciled. Controllers compare the current fingerprint
+                  against the desired one to decide whether a re-placement is needed.
+                properties:
+                  callbackBaseURL:
+                    type: string
+                  callbackOriginZone:
+                    description: |-
+                      ObjectRef is a reference to a Kubernetes object
+                      It is similar to types.NamespacedName but has the required json tags for serialization
+                    properties:
+                      name:
+                        type: string
+                      namespace:
+                        type: string
+                      uid:
+                        description: |-
+                          UID is a type that holds unique ID values, including UUIDs.  Because we
+                          don't ONLY use UUIDs, this is an alias to string.  Being a type captures
+                          intent and helps make sure that UIDs and names do not get conflated.
+                        type: string
+                    required:
+                    - name
+                    - namespace
+                    type: object
+                  captureEventStore:
+                    description: |-
+                      ObjectRef is a reference to a Kubernetes object
+                      It is similar to types.NamespacedName but has the required json tags for serialization
+                    properties:
+                      name:
+                        type: string
+                      namespace:
+                        type: string
+                      uid:
+                        description: |-
+                          UID is a type that holds unique ID values, including UUIDs.  Because we
+                          don't ONLY use UUIDs, this is an alias to string.  Being a type captures
+                          intent and helps make sure that UIDs and names do not get conflated.
+                        type: string
+                    required:
+                    - name
+                    - namespace
+                    type: object
+                  captureRoute:
+                    description: |-
+                      ObjectRef is a reference to a Kubernetes object
+                      It is similar to types.NamespacedName but has the required json tags for serialization
+                    properties:
+                      name:
+                        type: string
+                      namespace:
+                        type: string
+                      uid:
+                        description: |-
+                          UID is a type that holds unique ID values, including UUIDs.  Because we
+                          don't ONLY use UUIDs, this is an alias to string.  Being a type captures
+                          intent and helps make sure that UIDs and names do not get conflated.
+                        type: string
+                    required:
+                    - name
+                    - namespace
+                    type: object
+                  captureZone:
+                    description: |-
+                      ObjectRef is a reference to a Kubernetes object
+                      It is similar to types.NamespacedName but has the required json tags for serialization
+                    properties:
+                      name:
+                        type: string
+                      namespace:
+                        type: string
+                      uid:
+                        description: |-
+                          UID is a type that holds unique ID values, including UUIDs.  Because we
+                          don't ONLY use UUIDs, this is an alias to string.  Being a type captures
+                          intent and helps make sure that UIDs and names do not get conflated.
+                        type: string
+                    required:
+                    - name
+                    - namespace
+                    type: object
+                  deliveryEventStore:
+                    description: |-
+                      ObjectRef is a reference to a Kubernetes object
+                      It is similar to types.NamespacedName but has the required json tags for serialization
+                    properties:
+                      name:
+                        type: string
+                      namespace:
+                        type: string
+                      uid:
+                        description: |-
+                          UID is a type that holds unique ID values, including UUIDs.  Because we
+                          don't ONLY use UUIDs, this is an alias to string.  Being a type captures
+                          intent and helps make sure that UIDs and names do not get conflated.
+                        type: string
+                    required:
+                    - name
+                    - namespace
+                    type: object
+                  deliveryZone:
+                    description: |-
+                      ObjectRef is a reference to a Kubernetes object
+                      It is similar to types.NamespacedName but has the required json tags for serialization
+                    properties:
+                      name:
+                        type: string
+                      namespace:
+                        type: string
+                      uid:
+                        description: |-
+                          UID is a type that holds unique ID values, including UUIDs.  Because we
+                          don't ONLY use UUIDs, this is an alias to string.  Being a type captures
+                          intent and helps make sure that UIDs and names do not get conflated.
+                        type: string
+                    required:
+                    - name
+                    - namespace
+                    type: object
+                  fingerprint:
+                    type: string
+                  publisher:
+                    description: |-
+                      ObjectRef is a reference to a Kubernetes object
+                      It is similar to types.NamespacedName but has the required json tags for serialization
+                    properties:
+                      name:
+                        type: string
+                      namespace:
+                        type: string
+                      uid:
+                        description: |-
+                          UID is a type that holds unique ID values, including UUIDs.  Because we
+                          don't ONLY use UUIDs, this is an alias to string.  Being a type captures
+                          intent and helps make sure that UIDs and names do not get conflated.
+                        type: string
+                    required:
+                    - name
+                    - namespace
+                    type: object
+                type: object
+              authorizationMigration:
+                description: |-
+                  AuthorizationMigrationStatus tracks the transition from a legacy
+                  (provider-only) approval model to the scoped dual-gate model. Once the
+                  migration completes, the controller sets AuthorizationPolicyVersion="v2"
+                  on the parent ListenerStatus and clears this struct.
+                properties:
+                  legacyApproval:
+                    description: |-
+                      ObjectRef is a reference to a Kubernetes object
+                      It is similar to types.NamespacedName but has the required json tags for serialization
+                    properties:
+                      name:
+                        type: string
+                      namespace:
+                        type: string
+                      uid:
+                        description: |-
+                          UID is a type that holds unique ID values, including UUIDs.  Because we
+                          don't ONLY use UUIDs, this is an alias to string.  Being a type captures
+                          intent and helps make sure that UIDs and names do not get conflated.
+                        type: string
+                    required:
+                    - name
+                    - namespace
+                    type: object
+                  legacyRequests:
+                    items:
+                      description: |-
+                        ObjectRef is a reference to a Kubernetes object
+                        It is similar to types.NamespacedName but has the required json tags for serialization
+                      properties:
+                        name:
+                          type: string
+                        namespace:
+                          type: string
+                        uid:
+                          description: |-
+                            UID is a type that holds unique ID values, including UUIDs.  Because we
+                            don't ONLY use UUIDs, this is an alias to string.  Being a type captures
+                            intent and helps make sure that UIDs and names do not get conflated.
+                          type: string
+                      required:
+                      - name
+                      - namespace
+                      type: object
+                    type: array
+                  phase:
+                    enum:
+                    - Recorded
+                    - Blocked
+                    - AwaitingScoped
+                    - Draining
+                    - RetiringRequests
+                    - RetiringApproval
+                    type: string
+                  retirementCheckpoint:
+                    description: |-
+                      MigrationRetirementCheckpoint records which legacy approval resources have
+                      been retired so the controller can resume after a restart.
+                    properties:
+                      approvalRetired:
+                        type: boolean
+                      lastRetiredResourceVersion:
+                        type: string
+                      lastRetiredUID:
+                        type: string
+                      requestsRetired:
+                        type: boolean
+                    type: object
+                  targetPolicyVersion:
+                    type: string
+                required:
+                - phase
+                type: object
+              authorizationPolicyVersion:
+                description: |-
+                  AuthorizationPolicyVersion records which approval model is active.
+                  Set to "v2" only after a verified fresh-install or completed migration.
+                type: string
               conditions:
                 items:
                   description: Condition contains details for one aspect of the current
@@ -256,6 +480,146 @@ spec:
                 x-kubernetes-list-map-keys:
                 - type
                 x-kubernetes-list-type: map
+              consumerApproval:
+                description: |-
+                  ObjectRef is a reference to a Kubernetes object
+                  It is similar to types.NamespacedName but has the required json tags for serialization
+                properties:
+                  name:
+                    type: string
+                  namespace:
+                    type: string
+                  uid:
+                    description: |-
+                      UID is a type that holds unique ID values, including UUIDs.  Because we
+                      don't ONLY use UUIDs, this is an alias to string.  Being a type captures
+                      intent and helps make sure that UIDs and names do not get conflated.
+                    type: string
+                required:
+                - name
+                - namespace
+                type: object
+              consumerApprovalRequest:
+                description: |-
+                  ObjectRef is a reference to a Kubernetes object
+                  It is similar to types.NamespacedName but has the required json tags for serialization
+                properties:
+                  name:
+                    type: string
+                  namespace:
+                    type: string
+                  uid:
+                    description: |-
+                      UID is a type that holds unique ID values, including UUIDs.  Because we
+                      don't ONLY use UUIDs, this is an alias to string.  Being a type captures
+                      intent and helps make sure that UIDs and names do not get conflated.
+                    type: string
+                required:
+                - name
+                - namespace
+                type: object
+              draining:
+                description: |-
+                  ListenerDrainStatus tracks the progress of tearing down an old placement.
+                  The controller walks through the phases in order: stop new traffic, drain
+                  subscribers, clean up the publisher, then mark complete.
+                properties:
+                  oldFingerprint:
+                    type: string
+                  oldRouteListener:
+                    description: |-
+                      ObjectRef is a reference to a Kubernetes object
+                      It is similar to types.NamespacedName but has the required json tags for serialization
+                    properties:
+                      name:
+                        type: string
+                      namespace:
+                        type: string
+                      uid:
+                        description: |-
+                          UID is a type that holds unique ID values, including UUIDs.  Because we
+                          don't ONLY use UUIDs, this is an alias to string.  Being a type captures
+                          intent and helps make sure that UIDs and names do not get conflated.
+                        type: string
+                    required:
+                    - name
+                    - namespace
+                    type: object
+                  oldSubscribers:
+                    items:
+                      description: |-
+                        ObjectRef is a reference to a Kubernetes object
+                        It is similar to types.NamespacedName but has the required json tags for serialization
+                      properties:
+                        name:
+                          type: string
+                        namespace:
+                          type: string
+                        uid:
+                          description: |-
+                            UID is a type that holds unique ID values, including UUIDs.  Because we
+                            don't ONLY use UUIDs, this is an alias to string.  Being a type captures
+                            intent and helps make sure that UIDs and names do not get conflated.
+                          type: string
+                      required:
+                      - name
+                      - namespace
+                      type: object
+                    type: array
+                  phase:
+                    enum:
+                    - Stopping
+                    - DrainingSubscribers
+                    - CleaningPublisher
+                    - Complete
+                    type: string
+                  reason:
+                    type: string
+                  sourceEventStore:
+                    description: |-
+                      ObjectRef is a reference to a Kubernetes object
+                      It is similar to types.NamespacedName but has the required json tags for serialization
+                    properties:
+                      name:
+                        type: string
+                      namespace:
+                        type: string
+                      uid:
+                        description: |-
+                          UID is a type that holds unique ID values, including UUIDs.  Because we
+                          don't ONLY use UUIDs, this is an alias to string.  Being a type captures
+                          intent and helps make sure that UIDs and names do not get conflated.
+                        type: string
+                    required:
+                    - name
+                    - namespace
+                    type: object
+                  sourcePublisher:
+                    description: |-
+                      ObjectRef is a reference to a Kubernetes object
+                      It is similar to types.NamespacedName but has the required json tags for serialization
+                    properties:
+                      name:
+                        type: string
+                      namespace:
+                        type: string
+                      uid:
+                        description: |-
+                          UID is a type that holds unique ID values, including UUIDs.  Because we
+                          don't ONLY use UUIDs, this is an alias to string.  Being a type captures
+                          intent and helps make sure that UIDs and names do not get conflated.
+                        type: string
+                    required:
+                    - name
+                    - namespace
+                    type: object
+                  subscriptionIDs:
+                    items:
+                      type: string
+                    type: array
+                required:
+                - phase
+                type: object
               eventSubscriptions:
                 items:
                   description: |-
@@ -283,6 +647,25 @@ spec:
                   provider owns the API whose traffic is captured, so its consent is the
                   security control. Only one approval can be modelled per owner CR — see
                   the note on ensureApprovals.
+                properties:
+                  name:
+                    type: string
+                  namespace:
+                    type: string
+                  uid:
+                    description: |-
+                      UID is a type that holds unique ID values, including UUIDs.  Because we
+                      don't ONLY use UUIDs, this is an alias to string.  Being a type captures
+                      intent and helps make sure that UIDs and names do not get conflated.
+                    type: string
+                required:
+                - name
+                - namespace
+                type: object
+              providerApprovalRequest:
+                description: |-
+                  ObjectRef is a reference to a Kubernetes object
+                  It is similar to types.NamespacedName but has the required json tags for serialization
                 properties:
                   name:
                     type: string
