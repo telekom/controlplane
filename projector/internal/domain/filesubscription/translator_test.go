@@ -7,15 +7,16 @@ package filesubscription_test
 import (
 	"context"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	k8stypes "k8s.io/apimachinery/pkg/types"
 
 	commontypes "github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 	filev1 "github.com/telekom/controlplane/file/api/v1"
 	"github.com/telekom/controlplane/projector/internal/domain/filesubscription"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	k8stypes "k8s.io/apimachinery/pkg/types"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("FileSubscription Translator", func() {
@@ -30,18 +31,21 @@ var _ = Describe("FileSubscription Translator", func() {
 	})
 
 	Describe("Translate", func() {
-		It("should map all relevant fields", func() {
+		It("should map the requestor as owner independently of the application label", func() {
 			obj := &filev1.FileSubscription{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "sub-a",
 					Namespace: "prod--platform--narvi",
 					Labels: map[string]string{
 						"cp.ei.telekom.de/environment": "prod",
-						"cp.ei.telekom.de/application": "consumer-app",
+						"cp.ei.telekom.de/application": "label-app",
 					},
 				},
 				Spec: filev1.FileSubscriptionSpec{
 					FileType: "invoice",
+					Requestor: commontypes.TypedObjectRef{
+						ObjectRef: commontypes.ObjectRef{Name: "consumer-app"},
+					},
 					Zone: &commontypes.ObjectRef{
 						Name:      "caas",
 						Namespace: "zone-ns",
@@ -98,9 +102,14 @@ var _ = Describe("FileSubscription Translator", func() {
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "sub-a",
 					Namespace: "prod--platform--narvi",
-					Labels:    map[string]string{"cp.ei.telekom.de/application": "consumer-app"},
+					Labels:    map[string]string{"cp.ei.telekom.de/application": "label-app"},
 				},
-				Spec: filev1.FileSubscriptionSpec{FileType: "invoice"},
+				Spec: filev1.FileSubscriptionSpec{
+					FileType: "invoice",
+					Requestor: commontypes.TypedObjectRef{
+						ObjectRef: commontypes.ObjectRef{Name: "consumer-app"},
+					},
+				},
 			}
 			key := t.KeyFromObject(obj)
 			Expect(key.FileType).To(Equal("invoice"))
@@ -115,8 +124,13 @@ var _ = Describe("FileSubscription Translator", func() {
 		It("should prefer lastKnown", func() {
 			req := k8stypes.NamespacedName{Namespace: "prod--platform--narvi", Name: "sub-a"}
 			lastKnown := &filev1.FileSubscription{
-				ObjectMeta: metav1.ObjectMeta{Name: "sub-a", Namespace: "prod--platform--narvi", Labels: map[string]string{"cp.ei.telekom.de/application": "consumer-app"}},
-				Spec:       filev1.FileSubscriptionSpec{FileType: "invoice"},
+				ObjectMeta: metav1.ObjectMeta{Name: "sub-a", Namespace: "prod--platform--narvi", Labels: map[string]string{"cp.ei.telekom.de/application": "label-app"}},
+				Spec: filev1.FileSubscriptionSpec{
+					FileType: "invoice",
+					Requestor: commontypes.TypedObjectRef{
+						ObjectRef: commontypes.ObjectRef{Name: "consumer-app"},
+					},
+				},
 			}
 			key, err := t.KeyFromDelete(req, lastKnown)
 			Expect(err).NotTo(HaveOccurred())

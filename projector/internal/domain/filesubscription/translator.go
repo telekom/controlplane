@@ -7,15 +7,12 @@ package filesubscription
 import (
 	"context"
 
+	"k8s.io/apimachinery/pkg/types"
+
 	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 	filev1 "github.com/telekom/controlplane/file/api/v1"
 	"github.com/telekom/controlplane/projector/internal/domain/shared"
 	"github.com/telekom/controlplane/projector/internal/runtime"
-	"k8s.io/apimachinery/pkg/types"
-)
-
-const (
-	applicationLabelKey = "cp.ei.telekom.de/application"
 )
 
 // Translator maps a FileSubscription CR to a FileSubscriptionData DTO.
@@ -33,13 +30,6 @@ func (t *Translator) ShouldSkip(obj *filev1.FileSubscription) (bool, string) {
 func (t *Translator) Translate(_ context.Context, obj *filev1.FileSubscription) (*FileSubscriptionData, error) {
 	phase, message := shared.StatusFromConditions(obj.Status.Conditions)
 
-	publicKeys := []string{}
-	if obj.Spec.SFTP != nil {
-		for i := range obj.Spec.SFTP.PublicKeys {
-			publicKeys = append(publicKeys, obj.Spec.SFTP.PublicKeys[i].Key)
-		}
-	}
-
 	return &FileSubscriptionData{
 		Meta:               shared.NewMetadata(obj.Namespace, obj.Name, obj.Labels),
 		StatusPhase:        phase,
@@ -48,7 +38,7 @@ func (t *Translator) Translate(_ context.Context, obj *filev1.FileSubscription) 
 		FileSFTP:           toFileSFTP(obj.Spec.SFTP),
 		ServiceURL:         obj.Status.ServiceURL,
 		ServiceExternalURL: obj.Status.ServiceExternalURL,
-		OwnerAppName:       obj.Labels[applicationLabelKey],
+		OwnerAppName:       obj.Spec.Requestor.Name,
 		OwnerTeamName:      shared.TeamNameFromNamespace(obj.Namespace),
 		TargetFileType:     obj.Spec.FileType,
 	}, nil
@@ -76,7 +66,7 @@ func toFileSFTP(obj *filev1.FileSFTP) *model.FileSFTP {
 func (t *Translator) KeyFromObject(obj *filev1.FileSubscription) FileSubscriptionKey {
 	return FileSubscriptionKey{
 		FileType:      obj.Spec.FileType,
-		OwnerAppName:  obj.Labels[applicationLabelKey],
+		OwnerAppName:  obj.Spec.Requestor.AppName,
 		OwnerTeamName: shared.TeamNameFromNamespace(obj.Namespace),
 		Namespace:     obj.Namespace,
 		Name:          obj.Name,
@@ -88,7 +78,7 @@ func (t *Translator) KeyFromDelete(req types.NamespacedName, lastKnown *filev1.F
 	if lastKnown != nil {
 		return FileSubscriptionKey{
 			FileType:      lastKnown.Spec.FileType,
-			OwnerAppName:  lastKnown.Labels[applicationLabelKey],
+			OwnerAppName:  lastKnown.Spec.Requestor.Name,
 			OwnerTeamName: shared.TeamNameFromNamespace(lastKnown.Namespace),
 			Namespace:     lastKnown.Namespace,
 			Name:          lastKnown.Name,
