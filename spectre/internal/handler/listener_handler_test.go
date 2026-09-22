@@ -362,28 +362,31 @@ var _ = Describe("ListenerHandler", func() {
 			Return(nil).Once()
 	}
 
-	// mockApprovalGranted sets up the approval builder mock chain for an auto-granted approval.
-	mockApprovalGranted := func() {
-		// The ApprovalBuilder calls CreateOrUpdate (for ApprovalRequest), List (scoped cleanup), then Get (for Approval).
-		// For auto-approved (same team), the builder sets state to Granted internally.
+	// mockApprovalGrantedGate sets up the approval builder mock chain for a single
+	// auto-granted approval gate. The key ("provider" or "consumer") is set on the
+	// returned Approval so the builder's scoped identity check passes.
+	// The ApprovedRequest ref is captured from the CreateOrUpdate call so
+	// isScopedGrantBound succeeds.
+	mockApprovalGrantedGate := func(approvalKey string) {
+		// Capture the ApprovalRequest so the Approval can reference it.
+		var capturedAR approvalv1.ApprovalRequest
+
 		fakeClient.EXPECT().
 			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.ApprovalRequest"), mock.Anything).
 			Run(func(_ context.Context, obj client.Object, mutate controllerutil.MutateFn) {
 				req := obj.(*approvalv1.ApprovalRequest)
 				_ = mutate()
-				// Simulate auto-approval: strategy=Auto means state=Granted
 				if req.Spec.Strategy == approvalv1.ApprovalStrategyAuto {
 					req.Spec.State = approvalv1.ApprovalStateGranted
 				}
+				capturedAR = *req.DeepCopy()
 			}).
-			Return(controllerutil.OperationResultCreated, nil)
+			Return(controllerutil.OperationResultCreated, nil).Once()
 
-		// List owner ApprovalRequests for scoped cleanup (replaces legacy Cleanup call)
 		fakeClient.EXPECT().
 			List(ctx, mock.AnythingOfType("*v1.ApprovalRequestList"), mock.Anything).
-			Return(nil)
+			Return(nil).Once()
 
-		// Get Approval — return auto-granted Approval
 		fakeClient.EXPECT().
 			Get(ctx, mock.AnythingOfType("types.NamespacedName"), mock.AnythingOfType("*v1.Approval")).
 			Run(func(_ context.Context, key k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
@@ -391,45 +394,61 @@ var _ = Describe("ListenerHandler", func() {
 				approval.Name = key.Name
 				approval.Namespace = key.Namespace
 				approval.Spec.State = approvalv1.ApprovalStateGranted
+				approval.Spec.ApprovalKey = approvalKey
+				approval.Spec.Target = capturedAR.Spec.Target
+				approval.Spec.ApprovedRequest = &ctypes.ObjectRef{
+					Name:      capturedAR.Name,
+					Namespace: capturedAR.Namespace,
+					UID:       capturedAR.UID,
+				}
 			}).
-			Return(nil)
+			Return(nil).Once()
 	}
 
-	// mockApprovalPending sets up mock chain where approval is pending (not yet granted).
-	mockApprovalPending := func() {
+	// mockApprovalGranted sets up both provider and consumer gates as auto-granted.
+	mockApprovalGranted := func() {
+		mockApprovalGrantedGate("provider") // provider gate
+		mockApprovalGrantedGate("consumer") // consumer gate
+	}
+
+	// mockApprovalPendingGate sets up mock chain for a single pending gate.
+	mockApprovalPendingGate := func() {
 		fakeClient.EXPECT().
 			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.ApprovalRequest"), mock.Anything).
 			Run(func(_ context.Context, _ client.Object, mutate controllerutil.MutateFn) {
 				_ = mutate()
 			}).
-			Return(controllerutil.OperationResultCreated, nil)
+			Return(controllerutil.OperationResultCreated, nil).Once()
 
-		// List owner ApprovalRequests for scoped cleanup (replaces legacy Cleanup call)
 		fakeClient.EXPECT().
 			List(ctx, mock.AnythingOfType("*v1.ApprovalRequestList"), mock.Anything).
-			Return(nil)
+			Return(nil).Once()
 
 		// Get Approval — return NotFound (pending)
 		fakeClient.EXPECT().
 			Get(ctx, mock.AnythingOfType("types.NamespacedName"), mock.AnythingOfType("*v1.Approval")).
-			Return(errors.NewNotFound(schema.GroupResource{Group: "approval.cp.ei.telekom.de", Resource: "approvals"}, ""))
+			Return(errors.NewNotFound(schema.GroupResource{Group: "approval.cp.ei.telekom.de", Resource: "approvals"}, "")).Once()
 	}
 
-	// mockApprovalDenied sets up mock chain where approval is rejected.
-	mockApprovalDenied := func() {
+	// mockApprovalPending sets up both gates as pending.
+	mockApprovalPending := func() {
+		mockApprovalPendingGate() // provider gate
+		mockApprovalPendingGate() // consumer gate
+	}
+
+	// mockApprovalDeniedGate sets up mock chain for a single denied gate.
+	mockApprovalDeniedGate := func(approvalKey string) {
 		fakeClient.EXPECT().
 			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.ApprovalRequest"), mock.Anything).
 			Run(func(_ context.Context, _ client.Object, mutate controllerutil.MutateFn) {
 				_ = mutate()
 			}).
-			Return(controllerutil.OperationResultCreated, nil)
+			Return(controllerutil.OperationResultCreated, nil).Once()
 
-		// List owner ApprovalRequests for scoped cleanup (replaces legacy Cleanup call)
 		fakeClient.EXPECT().
 			List(ctx, mock.AnythingOfType("*v1.ApprovalRequestList"), mock.Anything).
-			Return(nil)
+			Return(nil).Once()
 
-		// Get Approval — return rejected
 		fakeClient.EXPECT().
 			Get(ctx, mock.AnythingOfType("types.NamespacedName"), mock.AnythingOfType("*v1.Approval")).
 			Run(func(_ context.Context, key k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
@@ -437,12 +456,24 @@ var _ = Describe("ListenerHandler", func() {
 				approval.Name = key.Name
 				approval.Namespace = key.Namespace
 				approval.Spec.State = approvalv1.ApprovalStateRejected
+				approval.Spec.ApprovalKey = approvalKey
+				approval.Spec.Target = ctypes.TypedObjectRef{
+					TypeMeta:  metav1.TypeMeta{Kind: "Listener", APIVersion: spectrev1.GroupVersion.String()},
+					ObjectRef: ctypes.ObjectRef{Name: listenerName, Namespace: listenerNamespace, UID: "listener-uid-001"},
+				}
 			}).
-			Return(nil)
+			Return(nil).Once()
 	}
 
-	// mockApprovalRequestDenied sets up mock chain where ApprovalRequest itself is rejected.
-	mockApprovalRequestDenied := func() {
+	// mockApprovalDenied sets up provider gate as denied; consumer gate also denied
+	// (aggregate is Denied if either gate is Denied).
+	mockApprovalDenied := func() {
+		mockApprovalDeniedGate("provider") // provider gate
+		mockApprovalDeniedGate("consumer") // consumer gate
+	}
+
+	// mockApprovalRequestDeniedGate sets up mock chain for a single RequestDenied gate.
+	mockApprovalRequestDeniedGate := func(approvalKey string) {
 		fakeClient.EXPECT().
 			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.ApprovalRequest"), mock.Anything).
 			Run(func(_ context.Context, obj client.Object, mutate controllerutil.MutateFn) {
@@ -450,14 +481,12 @@ var _ = Describe("ListenerHandler", func() {
 				_ = mutate()
 				req.Spec.State = approvalv1.ApprovalStateRejected
 			}).
-			Return(controllerutil.OperationResultNone, nil)
+			Return(controllerutil.OperationResultNone, nil).Once()
 
-		// List owner ApprovalRequests for scoped cleanup (replaces legacy Cleanup call)
 		fakeClient.EXPECT().
 			List(ctx, mock.AnythingOfType("*v1.ApprovalRequestList"), mock.Anything).
-			Return(nil)
+			Return(nil).Once()
 
-		// Get Approval — exists and not denied (so RequestDenied branch is reached)
 		fakeClient.EXPECT().
 			Get(ctx, mock.AnythingOfType("types.NamespacedName"), mock.AnythingOfType("*v1.Approval")).
 			Run(func(_ context.Context, key k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
@@ -465,8 +494,19 @@ var _ = Describe("ListenerHandler", func() {
 				approval.Name = key.Name
 				approval.Namespace = key.Namespace
 				approval.Spec.State = approvalv1.ApprovalStateGranted
+				approval.Spec.ApprovalKey = approvalKey
+				approval.Spec.Target = ctypes.TypedObjectRef{
+					TypeMeta:  metav1.TypeMeta{Kind: "Listener", APIVersion: spectrev1.GroupVersion.String()},
+					ObjectRef: ctypes.ObjectRef{Name: listenerName, Namespace: listenerNamespace, UID: "listener-uid-001"},
+				}
 			}).
-			Return(nil)
+			Return(nil).Once()
+	}
+
+	// mockApprovalRequestDenied sets up both gates as request-denied.
+	mockApprovalRequestDenied := func() {
+		mockApprovalRequestDeniedGate("provider") // provider gate
+		mockApprovalRequestDeniedGate("consumer") // consumer gate
 	}
 
 	// mockListRoutes stubs the gateway Route lookup.
@@ -1004,7 +1044,7 @@ var _ = Describe("ListenerHandler", func() {
 				mockListRoutes()
 				mockNoStaleChildren()
 
-				// Capture the ApprovalRequest to inspect properties.
+				// Capture the first ApprovalRequest (provider gate) to inspect properties.
 				var capturedReq *approvalv1.ApprovalRequest
 				fakeClient.EXPECT().
 					CreateOrUpdate(ctx, mock.AnythingOfType("*v1.ApprovalRequest"), mock.Anything).
@@ -1016,12 +1056,11 @@ var _ = Describe("ListenerHandler", func() {
 						}
 						capturedReq = req.DeepCopy()
 					}).
-					Return(controllerutil.OperationResultCreated, nil)
+					Return(controllerutil.OperationResultCreated, nil).Once()
 
-				// List owner ApprovalRequests for scoped cleanup (replaces legacy Cleanup call)
 				fakeClient.EXPECT().
 					List(ctx, mock.AnythingOfType("*v1.ApprovalRequestList"), mock.Anything).
-					Return(nil)
+					Return(nil).Once()
 
 				fakeClient.EXPECT().
 					Get(ctx, mock.AnythingOfType("types.NamespacedName"), mock.AnythingOfType("*v1.Approval")).
@@ -1030,8 +1069,18 @@ var _ = Describe("ListenerHandler", func() {
 						approval.Name = key.Name
 						approval.Namespace = key.Namespace
 						approval.Spec.State = approvalv1.ApprovalStateGranted
+						approval.Spec.ApprovalKey = "provider"
+						approval.Spec.Target = capturedReq.Spec.Target
+						approval.Spec.ApprovedRequest = &ctypes.ObjectRef{
+							Name:      capturedReq.Name,
+							Namespace: capturedReq.Namespace,
+							UID:       capturedReq.UID,
+						}
 					}).
-					Return(nil)
+					Return(nil).Once()
+
+				// Consumer gate (second) — auto-granted like provider.
+				mockApprovalGrantedGate("consumer")
 
 				mockCreateOrUpdatePublisher()
 				mockGetRealm()

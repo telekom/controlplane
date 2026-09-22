@@ -481,33 +481,26 @@ var _ = Describe("Integration: Two-Tier Reconcile Cycle", Ordered, func() {
 				return k8sClient.Get(ctx, listenerNN, &spectrev1.Listener{})
 			}, testTimeout, testInterval).Should(Succeed())
 
-			By("Pre-creating Approval CR (simulates approval controller granting before reconcile)")
-			// Pre-create the Approval so the builder's Get finds it immediately as Granted.
-			// This bypasses the ApprovalRequest creation + cleanup race in envtest.
-			approval := &approvalv1.Approval{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "listener--" + integrationListenerName,
-					Namespace: testNamespace,
-					Labels:    map[string]string{envLabelKey: envName},
-				},
-				Spec: approvalv1.ApprovalSpec{
-					Action: "listen-provider",
-					Target: ctypes.TypedObjectRef{
-						TypeMeta:  metav1.TypeMeta{Kind: "Listener", APIVersion: "spectre.cp.ei.telekom.de/v1"},
-						ObjectRef: ctypes.ObjectRef{Name: integrationListenerName, Namespace: testNamespace},
-					},
-					Requester: approvalv1.Requester{TeamName: consumerTeamName, TeamEmail: "alpha@test.com"},
-					Decider:   approvalv1.Decider{TeamName: consumerTeamName, TeamEmail: "alpha@test.com"},
-					Strategy:  approvalv1.ApprovalStrategyAuto,
-					State:     approvalv1.ApprovalStateGranted,
-					Decisions: []approvalv1.Decision{{
-						Name: "System", Comment: "Auto-approved", ResultingState: approvalv1.ApprovalStateGranted,
-					}},
-				},
-			}
-			Expect(k8sClient.Create(ctx, approval)).To(Succeed())
+			By("Reconciling until ApprovalRequests exist, then granting approvals")
+			// The dual-gate path creates scoped ApprovalRequests. Let the
+			// reconciler create them, then grant both gates before proceeding.
+			Eventually(func(g Gomega) {
+				_, _ = listenerReconciler.Reconcile(ctx, reconcile.Request{NamespacedName: listenerNN})
+				arList := &approvalv1.ApprovalRequestList{}
+				g.Expect(directClient.List(ctx, arList, client.InNamespace(testNamespace))).To(Succeed())
+				count := 0
+				for i := range arList.Items {
+					for _, ref := range arList.Items[i].OwnerReferences {
+						if ref.Name == integrationListenerName {
+							count++
+						}
+					}
+				}
+				g.Expect(count).To(BeNumerically(">=", 2), "Both gate ApprovalRequests should exist")
+			}, testTimeout, testInterval).Should(Succeed())
+			grantApprovalsForListener(ctx, integrationListenerName)
 
-			By("Reconciling until generic Publisher exists (approval pre-granted)")
+			By("Reconciling until generic Publisher exists (approvals granted)")
 			genericPublisherName := util.MakePublisherName(util.GenericEventType)
 			reconcileUntilReady(ctx, listenerReconciler, listenerNN, func(g Gomega) {
 				genericPub := &pubsubv1.Publisher{}
@@ -832,56 +825,60 @@ func readyConditions() []metav1.Condition {
 	}
 }
 
-// grantApprovalsForListener simulates the approval controller by creating the single
-// Approval CR for a Listener. The approval builder looks for an Approval named
-// "listener--<listenerName>" (lowercase kind + "--" + owner name).
+// grantApprovalsForListener simulates the approval controller by finding all
+// scoped ApprovalRequests owned by the Listener and creating the matching
+// scoped Approvals. Each gate ("provider", "consumer") gets its own Approval
+// with a name computed by ScopedApprovalName(target, key).
 func grantApprovalsForListener(ctx context.Context, listenerName string) {
-	approvalName := "listener--" + listenerName
-
-	// Find any ApprovalRequest owned by this listener to copy fields from.
+	// Find ALL ApprovalRequests owned by this listener.
 	arList := &approvalv1.ApprovalRequestList{}
 	Expect(directClient.List(ctx, arList, client.InNamespace(testNamespace))).To(Succeed())
 
-	var templateAR *approvalv1.ApprovalRequest
+	var ownedARs []*approvalv1.ApprovalRequest
 	for i := range arList.Items {
 		ar := &arList.Items[i]
 		for _, ref := range ar.OwnerReferences {
 			if ref.Name == listenerName {
-				templateAR = ar
+				ownedARs = append(ownedARs, ar)
 				break
 			}
 		}
-		if templateAR != nil {
-			break
-		}
 	}
-	Expect(templateAR).NotTo(BeNil(), "No ApprovalRequest found for listener %q", listenerName)
+	Expect(ownedARs).NotTo(BeEmpty(), "No ApprovalRequests found for listener %q", listenerName)
 
-	approval := &approvalv1.Approval{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      approvalName,
-			Namespace: testNamespace,
-			Labels:    templateAR.Labels,
-		},
-		Spec: approvalv1.ApprovalSpec{
-			Action:    templateAR.Spec.Action,
-			Target:    templateAR.Spec.Target,
-			Requester: templateAR.Spec.Requester,
-			Decider:   templateAR.Spec.Decider,
-			Strategy:  templateAR.Spec.Strategy,
-			State:     approvalv1.ApprovalStateGranted,
-			Decisions: []approvalv1.Decision{
-				{
-					Name:           "System",
-					Comment:        "Auto-approved in test",
-					ResultingState: approvalv1.ApprovalStateGranted,
+	for _, ar := range ownedARs {
+		// Compute the scoped Approval name from the target and key.
+		approvalName, err := approvalv1.ScopedApprovalName(ar.Spec.Target, ar.Spec.ApprovalKey)
+		Expect(err).NotTo(HaveOccurred(), "failed to compute ScopedApprovalName for key %q", ar.Spec.ApprovalKey)
+
+		approval := &approvalv1.Approval{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      approvalName,
+				Namespace: testNamespace,
+				Labels:    ar.Labels,
+			},
+			Spec: approvalv1.ApprovalSpec{
+				Action:      ar.Spec.Action,
+				Target:      ar.Spec.Target,
+				Requester:   ar.Spec.Requester,
+				Decider:     ar.Spec.Decider,
+				Strategy:    ar.Spec.Strategy,
+				ApprovalKey: ar.Spec.ApprovalKey,
+				State:       approvalv1.ApprovalStateGranted,
+				Decisions: []approvalv1.Decision{
+					{
+						Name:           "System",
+						Comment:        "Auto-approved in test",
+						ResultingState: approvalv1.ApprovalStateGranted,
+					},
+				},
+				ApprovedRequest: &ctypes.ObjectRef{
+					Name:      ar.Name,
+					Namespace: ar.Namespace,
+					UID:       ar.UID,
 				},
 			},
-			ApprovedRequest: &ctypes.ObjectRef{
-				Name:      templateAR.Name,
-				Namespace: templateAR.Namespace,
-			},
-		},
+		}
+		Expect(client.IgnoreAlreadyExists(k8sClient.Create(ctx, approval))).To(Succeed())
 	}
-	Expect(client.IgnoreAlreadyExists(k8sClient.Create(ctx, approval))).To(Succeed())
 }
