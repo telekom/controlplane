@@ -1,3 +1,15 @@
+# [0.27.0](https://github.com/telekom/controlplane/compare/v0.26.0...v0.27.0) (2026-09-22)
+
+
+### Bug Fixes
+
+* **rover-ctl:** ignore bom when parsing files ([#669](https://github.com/telekom/controlplane/issues/669)) ([f8c4a73](https://github.com/telekom/controlplane/commit/f8c4a73288c551ea05143deb7ca4cba1cddb82ec))
+
+
+### Features
+
+* **approva:** copy labels from request into approval ([#673](https://github.com/telekom/controlplane/issues/673)) ([6055035](https://github.com/telekom/controlplane/commit/60550351aaa1536aff71ed050b4b4ea37a41d240))
+
 # [0.26.0](https://github.com/telekom/controlplane/compare/v0.25.0...v0.26.0) (2026-09-21)
 
 
