@@ -335,23 +335,12 @@ var _ = Describe("TeamFilterInterceptor", func() {
 				SetFileType("invoice").
 				Save(ctx)
 			Expect(err).NotTo(HaveOccurred())
-			exposure, err := client.FileExposure.Create().
-				SetNamespace("default").
-				SetFileType("invoice").
-				SetZoneName(s.ZoneEU.Name).
-				SetOwner(s.AppAlpha).
-				SetZone(s.ZoneEU).
+			exposure, err := client.FileExposure.UpdateOne(s.FileExposureAlpha).
 				SetFileTypeDef(fileType).
 				Save(ctx)
 			Expect(err).NotTo(HaveOccurred())
-			subscription, err := client.FileSubscription.Create().
-				SetNamespace("default").
-				SetName("filesub-invoice").
-				SetFileType("invoice").
-				SetZoneName(s.ZoneEU.Name).
-				SetOwner(s.AppBeta).
+			subscription, err := client.FileSubscription.UpdateOne(s.FileSubscriptionAlpha).
 				SetTarget(exposure).
-				SetZone(s.ZoneEU).
 				SetFileTypeDef(fileType).
 				Save(ctx)
 			Expect(err).NotTo(HaveOccurred())

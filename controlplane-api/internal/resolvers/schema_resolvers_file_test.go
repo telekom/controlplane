@@ -37,12 +37,7 @@ var _ = Describe("FileExposure/FileSubscription.Sftp", func() {
 	It("should store and return sftp public keys on FileExposure", func() {
 		ctx := testutil.AllowContext()
 
-		exposure, err := client.FileExposure.Create().
-			SetNamespace("default").
-			SetFileType("invoice").
-			SetZoneName(s.ZoneEU.Name).
-			SetOwner(s.AppAlpha).
-			SetZone(s.ZoneEU).
+		exposure, err := client.FileExposure.UpdateOne(s.FileExposureAlpha).
 			SetSftp(&model.FileSFTP{
 				PublicKeys: []model.SSHPublicKeySpec{{Key: "ssh-ed25519 AAA"}, {Key: "ssh-ed25519 BBB"}},
 			}).
@@ -58,13 +53,7 @@ var _ = Describe("FileExposure/FileSubscription.Sftp", func() {
 	It("should store and return sftp public keys on FileSubscription", func() {
 		ctx := testutil.AllowContext()
 
-		subscription, err := client.FileSubscription.Create().
-			SetNamespace("default").
-			SetName("filesub-invoice").
-			SetFileType("invoice").
-			SetZoneName(s.ZoneEU.Name).
-			SetOwner(s.AppBeta).
-			SetZone(s.ZoneEU).
+		subscription, err := client.FileSubscription.UpdateOne(s.FileSubscriptionAlpha).
 			SetSftp(&model.FileSFTP{
 				PublicKeys: []model.SSHPublicKeySpec{{Key: "ssh-ed25519 CCC"}},
 			}).
@@ -96,26 +85,14 @@ var _ = Describe("FileSubscription approval resolvers", func() {
 		ctx := testutil.AllowContext()
 
 		var err error
-		fileExposure, err = client.FileExposure.Create().
-			SetNamespace("default").
-			SetFileType("invoice").
-			SetZoneName(seed.ZoneEU.Name).
+		fileExposure, err = client.FileExposure.UpdateOne(seed.FileExposureAlpha).
 			SetVisibility(fileexposure.VisibilityEnterprise).
 			SetActive(true).
-			SetOwner(seed.AppAlpha).
-			SetZone(seed.ZoneEU).
 			Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
 
-		fileSubscription, err = client.FileSubscription.Create().
-			SetNamespace("default").
-			SetName("filesub-invoice").
-			SetFileType("invoice").
-			SetZoneName(seed.ZoneEU.Name).
+		fileSubscription, err = client.FileSubscription.UpdateOne(seed.FileSubscriptionAlpha).
 			SetStatusPhase(filesubscription.StatusPhaseReady).
-			SetOwner(seed.AppBeta).
-			SetTarget(fileExposure).
-			SetZone(seed.ZoneEU).
 			Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
 

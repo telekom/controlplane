@@ -94,10 +94,6 @@ var _ = Describe("SubscriptionInfo", func() {
 				SetRequester(seed.ApprovalRequest.Requester).SetDecider(seed.ApprovalRequest.Decider).
 				SetDeciderTeamName("team-alpha").SetEventSubscription(seed.EventSubscription).Save(ctx)
 			Expect(err).NotTo(HaveOccurred())
-			_, err = db.FileSubscription.Create().
-				SetNamespace("default").SetName("filesub-invoice").SetFileType("invoice").
-				SetZoneName(seed.ZoneEU.Name).SetOwner(seed.AppBeta).SetZone(seed.ZoneEU).Save(ctx)
-			Expect(err).NotTo(HaveOccurred())
 			_, err = db.Approval.Create().
 				SetNamespace("prod").SetName("file-approval").SetAction("ALLOW").
 				SetRequester(seed.Approval.Requester).SetDecider(seed.Approval.Decider).
@@ -164,7 +160,7 @@ var _ = Describe("SubscriptionInfo", func() {
 				}
 				Expect(json.Unmarshal(recorder.Body.Bytes(), &response)).To(Succeed())
 				Expect(response.Errors).To(BeEmpty())
-				Expect(response.Data.Approvals.Edges).To(HaveLen(3))
+				Expect(response.Data.Approvals.Edges).To(HaveLen(4))
 				for _, edge := range response.Data.Approvals.Edges {
 					owner := edge.Node.Subscription.OwnerApplication
 					Expect(owner.ID).To(Equal(strconv.Itoa(seed.AppBeta.ID)))
