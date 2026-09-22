@@ -9,6 +9,7 @@ import (
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/go-logr/logr"
+	"github.com/telekom/controlplane/common/pkg/util/emailutil"
 
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
 	"github.com/telekom/controlplane/controlplane-api/ent"
@@ -80,7 +81,7 @@ func ViewerFromBusinessContext(client *ent.Client) graphql.OperationMiddleware {
 					// team memberships to build the Viewer that privacy rules will use.
 					sysCtx := viewer.SystemContext(ctx)
 					userTeams, err := client.Team.Query().
-						Where(entteam.HasMembersWith(member.EmailEqualFold(fu.Email))).
+						Where(entteam.HasMembersWith(member.EmailEQ(emailutil.Canonicalize(fu.Email)))).
 						Select(entteam.FieldName).
 						Strings(sysCtx)
 					if err != nil {
