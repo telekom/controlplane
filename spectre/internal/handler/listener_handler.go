@@ -174,7 +174,31 @@ func (h *ListenerHandler) CreateOrUpdate(ctx context.Context, listener *spectrev
 	intent := buildAuthorizationIntent(listener, consumerApp, providerApp, spectreApp, observerApp, placement)
 	fingerprint := intent.fingerprint()
 
-	// Step 5.8: Remove stale children whose fingerprint differs from the current
+	// Step 5.8: If a drain is in progress from a previous reconcile, check
+	// whether old children have been fully removed before proceeding.
+	if listener.Status.Draining != nil {
+		complete, err := h.continueDrain(ctx, listener)
+		if err != nil {
+			return errors.Wrap(err, "failed to continue drain")
+		}
+		if !complete {
+			return nil // requeue; drain in progress
+		}
+	}
+
+	// Step 5.9: Detect fingerprint change. If there are existing children with
+	// a different fingerprint, start a drain to record what is being replaced,
+	// then remove them. The drain status ensures restart safety.
+	if listener.Status.AppliedPlacement != nil &&
+		listener.Status.AppliedPlacement.Fingerprint != "" &&
+		listener.Status.AppliedPlacement.Fingerprint != fingerprint &&
+		listener.Status.Draining == nil {
+		if err := h.startDrain(ctx, listener, "fingerprint changed", listener.Status.AppliedPlacement.Fingerprint); err != nil {
+			return errors.Wrap(err, "failed to start drain")
+		}
+	}
+
+	// Step 5.10: Remove stale children whose fingerprint differs from the current
 	// intent BEFORE evaluating the replacement grant. This ensures a provider,
 	// application, path, delivery, or capture-scope change stops the old capture
 	// immediately. Unlabelled children (pre-migration) are treated as stale.
@@ -182,10 +206,37 @@ func (h *ListenerHandler) CreateOrUpdate(ctx context.Context, listener *spectrev
 		return errors.Wrap(err, "failed to remove stale children")
 	}
 
+	// Step 5.11: Wire migration. Fresh installs set v2 directly; existing
+	// Listeners with legacy Approvals enter the state machine.
+	if listener.Status.AuthorizationPolicyVersion != authorizationPolicyV2 {
+		fresh, err := h.isFreshInstall(ctx, listener)
+		if err != nil {
+			return errors.Wrap(err, "failed to check fresh install")
+		}
+		if fresh {
+			listener.Status.AuthorizationPolicyVersion = authorizationPolicyV2
+		}
+		// Non-fresh installs proceed to ensureApprovals; advanceMigration is
+		// called after the dual result is available (step 5.12).
+	}
+
 	// Step 6: Evaluate dual-gate approval (provider + consumer).
 	dual, err := h.ensureApprovals(ctx, listener, observerApp, consumerApp, providerApp, &intent)
 	if err != nil && dual == nil {
 		return errors.Wrap(err, "failed to ensure approvals")
+	}
+
+	// Step 6.5: Advance migration for non-fresh installs that have legacy
+	// Approvals. The migration state machine needs the dual-gate result to
+	// decide whether scoped approvals have converged.
+	if listener.Status.AuthorizationPolicyVersion != authorizationPolicyV2 {
+		complete, migErr := h.advanceMigration(ctx, listener, &intent, dual)
+		if migErr != nil {
+			return errors.Wrap(migErr, "migration failed")
+		}
+		if !complete {
+			return nil // requeue; migration in progress
+		}
 	}
 
 	// Step 7: Handle approval states explicitly.
@@ -265,6 +316,19 @@ func (h *ListenerHandler) CreateOrUpdate(ctx context.Context, listener *spectrev
 	}
 	listener.Status.EventSubscriptions = subRefs
 	logger.Info("Ensured bridge Subscribers", "count", len(subRefs))
+
+	// Step 10.5: Update applied placement now that all children are provisioned.
+	listener.Status.AppliedPlacement = &spectrev1.AppliedListenerPlacementStatus{
+		Fingerprint:        fingerprint,
+		CaptureRoute:       ctypes.ObjectRefFromObject(lp.CaptureRoute),
+		CaptureZone:        ctypes.ObjectRefFromObject(lp.CaptureZone),
+		CaptureEventStore:  ctypes.ObjectRefFromObject(lp.CaptureEventStore),
+		DeliveryZone:       ctypes.ObjectRefFromObject(lp.DeliveryZone),
+		DeliveryEventStore: ctypes.ObjectRefFromObject(lp.DeliveryEventStore),
+		CallbackOriginZone: ctypes.ObjectRefFromObject(lp.CallbackOriginZone),
+		Publisher:          ctypes.ObjectRefFromObject(publisher),
+		CallbackBaseURL:    lp.CallbackBaseURL,
+	}
 
 	// Step 11: Janitor cleanup — remove any extra owner-labelled children that
 	// were not touched during this reconcile (e.g. leftover from a name change).
