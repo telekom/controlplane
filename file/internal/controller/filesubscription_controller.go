@@ -17,9 +17,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	cc "github.com/telekom/controlplane/common/pkg/controller"
+	ctypes "github.com/telekom/controlplane/common/pkg/types"
+	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	filev1 "github.com/telekom/controlplane/file/api/v1"
 	filesubscription_handler "github.com/telekom/controlplane/file/internal/handler/filesubscription"
 	"github.com/telekom/controlplane/file/internal/index"
@@ -45,6 +48,7 @@ type FileSubscriptionReconciler struct {
 // +kubebuilder:rbac:groups=approval.cp.ei.telekom.de,resources=approvals,verbs=get;list;watch
 // +kubebuilder:rbac:groups=sftp.cp.ei.telekom.de,resources=users,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=sftp.cp.ei.telekom.de,resources=users/status,verbs=get
+// +kubebuilder:rbac:groups=application.cp.ei.telekom.de,resources=applications,verbs=get;list;watch
 
 func (r *FileSubscriptionReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	return r.Controller.Reconcile(ctx, req, &filev1.FileSubscription{})
@@ -62,7 +66,11 @@ func (r *FileSubscriptionReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Owns(&sftpv1.User{}).
 		Watches(&filev1.FileType{},
 			handler.EnqueueRequestsFromMapFunc(r.MapFileTypeToFileSubscription),
-			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
+			builder.WithPredicates(cc.Count("filesubscription", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
+		).
+		Watches(&applicationv1.Application{},
+			handler.EnqueueRequestsFromMapFunc(r.MapApplicationToFileSubscription),
+			builder.WithPredicates(cc.Count("filesubscription", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
 		).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
@@ -89,6 +97,36 @@ func (r *FileSubscriptionReconciler) MapFileTypeToFileSubscription(ctx context.C
 	reqs := make([]reconcile.Request, 0, len(list.Items))
 	for i := range list.Items {
 		reqs = append(reqs, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(&list.Items[i])})
+	}
+	return reqs
+}
+
+// MapApplicationToFileSubscription enqueues FileSubscriptions that are affected by changes to Applications.
+// This is necessary to update the status of FileSubscriptions when the corresponding Application is updated, e.g. becoming ready
+func (r *FileSubscriptionReconciler) MapApplicationToFileSubscription(ctx context.Context, obj client.Object) []reconcile.Request {
+	application, ok := obj.(*applicationv1.Application)
+	if !ok {
+		return nil
+	}
+
+	list := &filev1.FileSubscriptionList{}
+	if err := r.List(ctx, list, client.MatchingLabels{
+		cconfig.EnvironmentLabelKey:          application.Labels[cconfig.EnvironmentLabelKey],
+		cconfig.BuildLabelKey("application"): labelutil.NormalizeLabelValue(application.Name),
+	}, client.InNamespace(application.Namespace)); err != nil {
+		ctrl.LoggerFrom(ctx).Error(err, "failed to obtain list of FileSubscription")
+		return nil
+	}
+
+	var reqs []reconcile.Request
+	for i := range list.Items {
+		if !ctypes.ObjectRefFromObject(application).Equals(&list.Items[i].Spec.Requestor) {
+			continue
+		}
+
+		reqs = append(reqs, reconcile.Request{
+			NamespacedName: client.ObjectKeyFromObject(&list.Items[i]),
+		})
 	}
 	return reqs
 }

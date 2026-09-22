@@ -7,7 +7,6 @@ package filesubscription
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -57,34 +56,41 @@ func (h *FileSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *filev
 
 	if !visibilityAllowsSubscription(activeExposure, obj) {
 		resetServiceURLsInStatus(obj)
-		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet, "FileExposure and FileSubscription visibility combination is not allowed"))
+		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonAccessDenied, "FileExposure and FileSubscription visibility combination is not allowed"))
 		return ctrlerrors.BlockedErrorf("FileSubscription is blocked by FileExposure visibility")
 	}
 
 	obj.Status.FileTypeRef = types.ObjectRefFromObject(fileType)
 
-	res, err := h.ensureApproval(ctx, obj, fileType, activeExposure)
+	res, err := h.ensureApproval(ctx, obj, activeExposure)
 	if err != nil {
 		return err
 	}
 	switch res {
 	case builder.ApprovalResultRequestDenied:
-		logger.Info("ApprovalRequest was denied - deleting subscriber SFTP User")
-		obj.SetCondition(condition.NewNotReadyCondition(builder.ReasonApprovalDenied, "ApprovalRequest has been denied"))
+		logger.Info("ApprovalRequest was denied — not touching child resources")
+		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonAccessDenied, "ApprovalRequest has been denied"))
 		obj.SetCondition(condition.NewDoneProcessingCondition("ApprovalRequest has been denied"))
 		return nil
 	case builder.ApprovalResultPending:
-		logger.Info("Approval is pending - waiting for approval")
-		obj.SetCondition(condition.NewNotReadyCondition(builder.ReasonApprovalPending, "Waiting for approval decision"))
+		logger.Info("Approval is pending — waiting for approval")
+		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonApprovalPending, "Waiting for approval decision"))
 		obj.SetCondition(condition.NewBlockedCondition("Waiting for approval decision"))
 		return nil
 	case builder.ApprovalResultDenied:
 		logger.Info("Approval was denied - deleting subscriber SFTP User")
-		obj.SetCondition(condition.NewNotReadyCondition(builder.ReasonApprovalDenied, "Approval has been denied"))
+		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonAccessDenied, "Approval has been denied"))
 		obj.SetCondition(condition.NewDoneProcessingCondition("Approval has been denied"))
+		err = h.deleteSubscriberUser(ctx, obj)
+		if err != nil {
+			return err
+		}
+
+		logger.Info("Subscriber SFTP User deleted due to approval denial")
 		return nil
 	case builder.ApprovalResultGranted:
-		logger.Info("Approval is granted - continuing with provisioning")
+		logger.Info("Approval is granted — continuing with provisioning")
+		builder.ClearApprovalPendingReady(obj)
 	default:
 		return errors.Errorf("unknown approval-builder result %q", res)
 	}
@@ -95,8 +101,8 @@ func (h *FileSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *filev
 	}
 
 	if !c.AllReady() {
-		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet, "One or more child resources are not yet ready"))
-		obj.SetCondition(condition.NewProcessingCondition(condition.ReasonPreconditionNotMet, "Waiting for child resources"))
+		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonSubResourceNotReady, "One or more child resources are not yet ready"))
+		obj.SetCondition(condition.NewProcessingCondition(condition.ReasonSubResourceNotReady, "Waiting for child resources"))
 		return nil
 	}
 
@@ -107,8 +113,10 @@ func (h *FileSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *filev
 
 	obj.Status.ServiceURL = zoneServiceConfig.Spec.ServiceURL
 	obj.Status.ServiceExternalURL = zoneServiceConfig.Spec.ServiceExternalURL
-	obj.SetCondition(condition.NewReadyCondition("FileSubscriptionProvisioned", "FileSubscription has been provisioned"))
-	obj.SetCondition(condition.NewDoneProcessingCondition("FileSubscription has been provisioned"))
+	obj.SetCondition(condition.NewReadyCondition(condition.ReasonProvisioned,
+		"FileSubscription has been provisioned"))
+	obj.SetCondition(condition.NewDoneProcessingCondition(
+		"FileSubscription has been provisioned"))
 	return nil
 }
 
@@ -116,27 +124,51 @@ func (h *FileSubscriptionHandler) Delete(ctx context.Context, obj *filev1.FileSu
 	return h.deleteSubscriberUser(ctx, obj)
 }
 
-func (h *FileSubscriptionHandler) ensureApproval(ctx context.Context, obj *filev1.FileSubscription, fileType *filev1.FileType, activeExposure *filev1.FileExposure) (builder.ApprovalResult, error) {
+func (h *FileSubscriptionHandler) ensureApproval(ctx context.Context, obj *filev1.FileSubscription, activeExposure *filev1.FileExposure) (builder.ApprovalResult, error) {
 	c := cclient.ClientFromContextOrDie(ctx)
 
-	properties := approvalProperties(obj)
-
-	requester := &approvalapi.Requester{
-		TeamName:       teamNameFromNamespace(obj.Namespace),
-		ApplicationRef: &obj.Spec.Requestor,
-		Reason: fmt.Sprintf("Team %s requested subscription to file type %s from zone %s",
-			obj.Namespace, fileType.Name, subscriptionZoneName(obj)),
+	if obj.Spec.Requestor.Kind != "Application" {
+		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonValidationFailed,
+			"Only requestors of kind 'Application' are supported"))
+		obj.SetCondition(condition.NewBlockedCondition(
+			"EventSubscription with requestor kind " + obj.Spec.Requestor.Kind + " is not supported"))
+		return builder.ApprovalResultNone, nil
+	}
+	requestorApp, err := util.GetApplication(ctx, obj.Spec.Requestor.ObjectRef)
+	if err != nil {
+		return builder.ApprovalResultNone, err
 	}
 
-	err := requester.SetProperties(properties)
+	providerApp, err := util.GetApplication(ctx, activeExposure.Spec.Provider.ObjectRef)
+	if err != nil {
+		return builder.ApprovalResultNone, fmt.Errorf("unable to get application from FileExposure provider %q while handling FileSubscription %q: %w",
+			activeExposure.Spec.Provider.Name, obj.Name, err)
+	}
+
+	requester := &approvalapi.Requester{
+		TeamName:       requestorApp.Spec.Team,
+		TeamEmail:      requestorApp.Spec.TeamEmail,
+		ApplicationRef: &activeExposure.Spec.Provider,
+		Reason: fmt.Sprintf("Team %s requested subscription to event %s from zone %s",
+			requestorApp.Spec.Team, obj.Spec.FileType, obj.Spec.Zone.Name),
+	}
+
+	properties := map[string]any{
+		"eventType":     obj.Spec.FileType,
+		"resource_type": "filetype",
+		"resource_name": obj.Spec.FileType,
+	}
+
+	err = requester.SetProperties(properties)
 	if err != nil {
 		return builder.ApprovalResultNone, fmt.Errorf("unable to set approvalRequest properties for FileSubscription %q in namespace %q: %w",
 			obj.Name, obj.Namespace, err)
 	}
 
 	decider := &approvalapi.Decider{
-		TeamName:       teamNameFromNamespace(activeExposure.Namespace),
-		ApplicationRef: &activeExposure.Spec.Provider,
+		TeamName:       providerApp.Spec.Team,
+		TeamEmail:      providerApp.Spec.TeamEmail,
+		ApplicationRef: &obj.Spec.Requestor,
 	}
 
 	approvalBuilder := builder.NewApprovalBuilder(c, obj).
@@ -145,10 +177,8 @@ func (h *FileSubscriptionHandler) ensureApproval(ctx context.Context, obj *filev
 		WithRequester(requester).
 		WithDecider(decider).
 		WithLabels(util.DomainLabel()).
-		WithStrategy(approvalapi.ApprovalStrategy(activeExposure.Spec.Approval.Strategy))
-	if len(activeExposure.Spec.Approval.TrustedTeams) > 0 {
-		approvalBuilder.WithTrustedRequesters(activeExposure.Spec.Approval.TrustedTeams)
-	}
+		WithStrategy(approvalapi.ApprovalStrategy(activeExposure.Spec.Approval.Strategy)).
+		WithTrustedRequesters(activeExposure.Spec.Approval.TrustedTeams)
 
 	res, err := approvalBuilder.Build(ctx)
 	if err != nil {
@@ -191,30 +221,8 @@ func visibilityAllowsSubscription(exposure *filev1.FileExposure, subscription *f
 	return exposure.Spec.Zone.Equals(subscription.Spec.Zone)
 }
 
-func approvalProperties(subscription *filev1.FileSubscription) map[string]any {
-	return map[string]any{
-		"fileType": subscription.Spec.FileType,
-		"zone":     subscriptionZoneName(subscription),
-	}
-}
-
 func subscriptionZoneName(subscription *filev1.FileSubscription) string {
 	return subscription.Spec.Zone.Name
-}
-
-// teamNameFromNamespace extracts the composite team name from a namespace
-// following the convention "<env>--<group>--<team>".
-//
-// The Team CR metadata.name is "<group>--<team>" (e.g. "eni--narvi-regr"),
-// so we drop the first segment (environment) and return everything after
-// the first "--" separator. If no "--" is found the full namespace is
-// returned as-is.
-// TODO: this can be part of common
-func teamNameFromNamespace(namespace string) string {
-	if idx := strings.Index(namespace, "--"); idx >= 0 {
-		return namespace[idx+2:]
-	}
-	return namespace
 }
 
 func resetServiceURLsInStatus(subscription *filev1.FileSubscription) {

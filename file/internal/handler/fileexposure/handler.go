@@ -72,8 +72,10 @@ func (h *FileExposureHandler) CreateOrUpdate(ctx context.Context, obj *filev1.Fi
 	obj.Status.Active = true
 	obj.Status.ServiceURL = zoneServiceConfig.Spec.ServiceURL
 	obj.Status.ServiceExternalURL = zoneServiceConfig.Spec.ServiceExternalURL
-	obj.SetCondition(condition.NewReadyCondition("FileExposureProvisioned", "FileExposure has been provisioned"))
-	obj.SetCondition(condition.NewDoneProcessingCondition("FileExposure has been provisioned"))
+	obj.SetCondition(condition.NewReadyCondition(condition.ReasonProvisioned,
+		"FileExposure has been provisioned"))
+	obj.SetCondition(condition.NewDoneProcessingCondition(
+		"FileExposure has been provisioned"))
 	return nil
 }
 

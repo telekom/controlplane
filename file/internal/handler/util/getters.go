@@ -15,7 +15,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
+	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
+	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	"github.com/telekom/controlplane/common/pkg/types"
 	filev1 "github.com/telekom/controlplane/file/api/v1"
@@ -124,4 +126,23 @@ func FetchZoneNamespace(ctx context.Context, ref *types.ObjectRef) (string, erro
 	}
 
 	return zone.Status.Namespace, nil
+}
+
+// GetApplication retrieves an Application object by ObjectRef and ensures it is ready.
+func GetApplication(ctx context.Context, ref types.ObjectRef) (*applicationv1.Application, error) {
+	c := cclient.ClientFromContextOrDie(ctx)
+
+	application := &applicationv1.Application{}
+	err := c.Get(ctx, ref.K8s(), application)
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			return nil, ctrlerrors.BlockedErrorf("application %q not found", ref.String())
+		}
+		return nil, errors.Wrapf(err, "failed to get application %q", ref.String())
+	}
+	if err := condition.EnsureReady(application); err != nil {
+		return nil, ctrlerrors.BlockedErrorf("application %q is not ready", ref.String())
+	}
+
+	return application, nil
 }

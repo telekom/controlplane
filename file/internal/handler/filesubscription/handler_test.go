@@ -20,6 +20,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
+	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/client/fake"
@@ -39,12 +40,15 @@ const (
 	testExposureName     = "test-exposure"
 	testSubscriptionName = "test-subscription"
 	testZoneName         = "test-zone"
+	testRequestorAppName = "test-requestor-app"
+	testProviderAppName  = "test-provider-app"
 )
 
 // buildScheme builds a runtime.Scheme with all types used by the handler.
 func buildScheme() *runtime.Scheme {
 	s := runtime.NewScheme()
 	_ = filev1.AddToScheme(s)
+	_ = applicationv1.AddToScheme(s)
 	_ = approvalv1.AddToScheme(s)
 	_ = sftpv1.AddToScheme(s)
 	return s
@@ -84,7 +88,11 @@ func testFileExposure() *filev1.FileExposure {
 			Namespace: testNamespace,
 		},
 		Spec: filev1.FileExposureSpec{
-			FileType:   testFileTypeName,
+			FileType: testFileTypeName,
+			Provider: types.TypedObjectRef{
+				TypeMeta:  metav1.TypeMeta{Kind: "Application"},
+				ObjectRef: types.ObjectRef{Name: testProviderAppName, Namespace: testNamespace},
+			},
 			Zone:       &types.ObjectRef{Name: testZoneName, Namespace: testNamespace},
 			Visibility: filev1.VisibilityEnterprise,
 			Approval: filev1.Approval{
@@ -109,6 +117,10 @@ func testSubscription() *filev1.FileSubscription {
 		Spec: filev1.FileSubscriptionSpec{
 			FileType: testFileTypeName,
 			Zone:     &types.ObjectRef{Name: testZoneName, Namespace: testNamespace},
+			Requestor: types.TypedObjectRef{
+				TypeMeta:  metav1.TypeMeta{Kind: "Application"},
+				ObjectRef: types.ObjectRef{Name: testRequestorAppName, Namespace: testNamespace},
+			},
 		},
 	}
 }
@@ -124,6 +136,48 @@ func testZoneServiceConfig() *filev1.ZoneServiceConfig {
 			ServiceExternalURL: "sftp.external:2222",
 		},
 	}
+}
+
+func testApplication(name, team, teamEmail string) *applicationv1.Application {
+	app := &applicationv1.Application{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: testNamespace,
+		},
+		Spec: applicationv1.ApplicationSpec{
+			Team:      team,
+			TeamEmail: teamEmail,
+		},
+	}
+	k8smeta.SetStatusCondition(&app.Status.Conditions, metav1.Condition{
+		Type:   condition.ConditionTypeReady,
+		Status: metav1.ConditionTrue,
+		Reason: "Ready",
+	})
+	return app
+}
+
+func mockGetApplication(mockClient *fake.MockJanitorClient, key k8stypes.NamespacedName, app *applicationv1.Application) {
+	mockClient.EXPECT().
+		Get(mock.Anything, key, mock.AnythingOfType("*v1.Application")).
+		Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
+			*out.(*applicationv1.Application) = *app
+		}).
+		Return(nil).Once()
+}
+
+func mockGetApplicationError(mockClient *fake.MockJanitorClient, key k8stypes.NamespacedName, err error) {
+	mockClient.EXPECT().
+		Get(mock.Anything, key, mock.AnythingOfType("*v1.Application")).
+		Return(err).Once()
+}
+
+// mockRequestorAndProviderApps stubs the two Application lookups performed by ensureApproval.
+func mockRequestorAndProviderApps(mockClient *fake.MockJanitorClient) {
+	mockGetApplication(mockClient, k8stypes.NamespacedName{Name: testRequestorAppName, Namespace: testNamespace},
+		testApplication(testRequestorAppName, "requestor-team", "requestor@example.com"))
+	mockGetApplication(mockClient, k8stypes.NamespacedName{Name: testProviderAppName, Namespace: testNamespace},
+		testApplication(testProviderAppName, "provider-team", "provider@example.com"))
 }
 
 var _ = Describe("FileSubscriptionHandler", func() {
@@ -222,6 +276,87 @@ var _ = Describe("FileSubscriptionHandler", func() {
 			Expect(k8smeta.IsStatusConditionFalse(sub.Status.Conditions, condition.ConditionTypeReady)).To(BeTrue())
 		})
 
+		It("returns an error when the requestor kind is not 'Application'", func() {
+			sub := testSubscription()
+			sub.Spec.Requestor.Kind = "ServiceAccount"
+			ctx, mockClient := newTestContext()
+
+			exposure := testFileExposure()
+
+			mockClient.EXPECT().
+				List(mock.Anything, mock.AnythingOfType("*v1.FileTypeList"), mock.Anything).
+				Run(func(_ context.Context, out client.ObjectList, _ ...client.ListOption) {
+					out.(*filev1.FileTypeList).Items = []filev1.FileType{*testFileType()}
+				}).
+				Return(nil).Once()
+			mockClient.EXPECT().
+				Get(mock.Anything, k8stypes.NamespacedName{Name: testExposureName, Namespace: testNamespace}, mock.AnythingOfType("*v1.FileExposure")).
+				Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
+					*out.(*filev1.FileExposure) = *exposure
+				}).
+				Return(nil).Once()
+
+			err := handler.CreateOrUpdate(ctx, sub)
+
+			// ensureApproval blocks with ApprovalResultNone, which the outer switch treats as unknown
+			Expect(err).To(MatchError(ContainSubstring("unknown approval-builder result")))
+			ready := k8smeta.FindStatusCondition(sub.Status.Conditions, condition.ConditionTypeReady)
+			Expect(ready).NotTo(BeNil())
+			Expect(ready.Reason).To(Equal(condition.ReasonValidationFailed))
+		})
+
+		It("returns error when GetApplication fails for the requestor", func() {
+			sub := testSubscription()
+			ctx, mockClient := newTestContext()
+
+			exposure := testFileExposure()
+
+			mockClient.EXPECT().
+				List(mock.Anything, mock.AnythingOfType("*v1.FileTypeList"), mock.Anything).
+				Run(func(_ context.Context, out client.ObjectList, _ ...client.ListOption) {
+					out.(*filev1.FileTypeList).Items = []filev1.FileType{*testFileType()}
+				}).
+				Return(nil).Once()
+			mockClient.EXPECT().
+				Get(mock.Anything, k8stypes.NamespacedName{Name: testExposureName, Namespace: testNamespace}, mock.AnythingOfType("*v1.FileExposure")).
+				Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
+					*out.(*filev1.FileExposure) = *exposure
+				}).
+				Return(nil).Once()
+			mockGetApplicationError(mockClient, k8stypes.NamespacedName{Name: testRequestorAppName, Namespace: testNamespace}, fmt.Errorf("requestor not found"))
+
+			err := handler.CreateOrUpdate(ctx, sub)
+
+			Expect(err).To(MatchError(ContainSubstring("requestor not found")))
+		})
+
+		It("returns error when GetApplication fails for the provider", func() {
+			sub := testSubscription()
+			ctx, mockClient := newTestContext()
+
+			exposure := testFileExposure()
+
+			mockClient.EXPECT().
+				List(mock.Anything, mock.AnythingOfType("*v1.FileTypeList"), mock.Anything).
+				Run(func(_ context.Context, out client.ObjectList, _ ...client.ListOption) {
+					out.(*filev1.FileTypeList).Items = []filev1.FileType{*testFileType()}
+				}).
+				Return(nil).Once()
+			mockClient.EXPECT().
+				Get(mock.Anything, k8stypes.NamespacedName{Name: testExposureName, Namespace: testNamespace}, mock.AnythingOfType("*v1.FileExposure")).
+				Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
+					*out.(*filev1.FileExposure) = *exposure
+				}).
+				Return(nil).Once()
+			mockGetApplication(mockClient, k8stypes.NamespacedName{Name: testRequestorAppName, Namespace: testNamespace},
+				testApplication(testRequestorAppName, "requestor-team", "requestor@example.com"))
+			mockGetApplicationError(mockClient, k8stypes.NamespacedName{Name: testProviderAppName, Namespace: testNamespace}, fmt.Errorf("provider not found"))
+
+			err := handler.CreateOrUpdate(ctx, sub)
+
+			Expect(err).To(MatchError(ContainSubstring("unable to get application from FileExposure provider")))
+		})
+
 		It("waits for approval when approval is pending (Approval not yet created)", func() {
 			sub := testSubscription()
 			ctx, mockClient := newTestContext()
@@ -241,6 +376,7 @@ var _ = Describe("FileSubscriptionHandler", func() {
 					*out.(*filev1.FileExposure) = *exposure
 				}).
 				Return(nil).Once()
+			mockRequestorAndProviderApps(mockClient)
 			// Scheme is needed by the approval builder's setWithHash()
 			mockClient.EXPECT().Scheme().Return(testScheme).Maybe()
 			// Approval builder creates the ApprovalRequest
@@ -292,6 +428,7 @@ var _ = Describe("FileSubscriptionHandler", func() {
 					*out.(*filev1.FileExposure) = *exposure
 				}).
 				Return(nil).Once()
+			mockRequestorAndProviderApps(mockClient)
 			mockClient.EXPECT().Scheme().Return(testScheme).Maybe()
 			mockClient.EXPECT().
 				CreateOrUpdate(mock.Anything, mock.AnythingOfType("*v1.ApprovalRequest"), mock.Anything).
@@ -374,6 +511,7 @@ var _ = Describe("FileSubscriptionHandler", func() {
 					*out.(*filev1.FileExposure) = *exposure
 				}).
 				Return(nil).Once()
+			mockRequestorAndProviderApps(mockClient)
 			mockClient.EXPECT().Scheme().Return(testScheme).Maybe()
 			mockClient.EXPECT().
 				CreateOrUpdate(mock.Anything, mock.AnythingOfType("*v1.ApprovalRequest"), mock.Anything).
@@ -387,12 +525,15 @@ var _ = Describe("FileSubscriptionHandler", func() {
 					*out.(*approvalv1.Approval) = *deniedApproval
 				}).
 				Return(nil).Once()
+			mockClient.EXPECT().
+				Delete(mock.Anything, mock.AnythingOfType("*v1.User")).
+				Return(nil).Once()
 			err := handler.CreateOrUpdate(ctx, sub)
 
 			Expect(err).NotTo(HaveOccurred())
 			ready := k8smeta.FindStatusCondition(sub.Status.Conditions, condition.ConditionTypeReady)
 			Expect(ready).NotTo(BeNil())
-			Expect(ready.Reason).To(Equal("ApprovalDenied"))
+			Expect(ready.Reason).To(Equal(condition.ReasonAccessDenied))
 		})
 
 		It("sets Processing condition when child resources are not yet ready after sync", func() {
@@ -418,6 +559,7 @@ var _ = Describe("FileSubscriptionHandler", func() {
 					*out.(*filev1.FileExposure) = *exposure
 				}).
 				Return(nil).Once()
+			mockRequestorAndProviderApps(mockClient)
 			mockClient.EXPECT().Scheme().Return(testScheme).Maybe()
 			mockClient.EXPECT().
 				CreateOrUpdate(mock.Anything, mock.AnythingOfType("*v1.ApprovalRequest"), mock.Anything).
@@ -465,6 +607,7 @@ var _ = Describe("FileSubscriptionHandler", func() {
 					*out.(*filev1.FileExposure) = *exposure
 				}).
 				Return(nil).Once()
+			mockRequestorAndProviderApps(mockClient)
 			mockClient.EXPECT().Scheme().Return(testScheme).Maybe()
 			mockClient.EXPECT().
 				CreateOrUpdate(mock.Anything, mock.AnythingOfType("*v1.ApprovalRequest"), mock.Anything).
@@ -536,16 +679,6 @@ var _ = Describe("filesubscription helpers", func() {
 		It("returns the zone name when Zone is set", func() {
 			sub := testSubscription()
 			Expect(subscriptionZoneName(sub)).To(Equal(testZoneName))
-		})
-	})
-
-	Describe("teamNameFromNamespace", func() {
-		It("returns the full namespace when no '--' separator is present", func() {
-			Expect(teamNameFromNamespace("myteam")).To(Equal("myteam"))
-		})
-
-		It("strips the environment prefix when '--' is present", func() {
-			Expect(teamNameFromNamespace("env--group--team")).To(Equal("group--team"))
 		})
 	})
 })

@@ -29,6 +29,14 @@ rules:
   verbs:
   - get
 - apiGroups:
+  - application.cp.ei.telekom.de
+  resources:
+  - applications
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
   - approval.cp.ei.telekom.de
   resources:
   - approvalrequests
