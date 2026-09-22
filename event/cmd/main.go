@@ -23,6 +23,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	"github.com/telekom/controlplane/common/pkg/config"
+	commonlog "github.com/telekom/controlplane/common/pkg/log"
 	"github.com/telekom/controlplane/event/internal/controller"
 	"github.com/telekom/controlplane/event/internal/index"
 	webhookv1 "github.com/telekom/controlplane/event/internal/webhook/v1"
@@ -72,9 +73,7 @@ func main() {
 	flag.StringVar(&metricsCertKey, "metrics-cert-key", "tls.key", "The name of the metrics server key file.")
 	flag.BoolVar(&enableHTTP2, "enable-http2", false,
 		"If set, HTTP/2 will be enabled for the metrics and webhook servers")
-	opts := zap.Options{
-		Development: true,
-	}
+	opts := commonlog.DefaultOptions()
 	opts.BindFlags(flag.CommandLine)
 	flag.Parse()
 

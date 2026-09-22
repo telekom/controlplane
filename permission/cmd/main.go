@@ -16,6 +16,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/metrics/filters"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
+	commonlog "github.com/telekom/controlplane/common/pkg/log"
 	"github.com/telekom/controlplane/permission/internal/controller"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
@@ -55,9 +56,7 @@ func main() {
 	flag.StringVar(&metricsCertKey, "metrics-cert-key", "tls.key", "The name of the metrics server key file.")
 	flag.BoolVar(&enableHTTP2, "enable-http2", false,
 		"If set, HTTP/2 will be enabled for the metrics server")
-	opts := zap.Options{
-		Development: true,
-	}
+	opts := commonlog.DefaultOptions()
 	opts.BindFlags(flag.CommandLine)
 	flag.Parse()
 

@@ -27,6 +27,7 @@ import (
 	apiapi "github.com/telekom/controlplane/api/api/v1"
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
+	commonlog "github.com/telekom/controlplane/common/pkg/log"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
 	permissionv1 "github.com/telekom/controlplane/permission/api/v1"
@@ -86,9 +87,7 @@ func main() {
 		"If set, HTTP/2 will be enabled for the metrics and webhook servers")
 	flag.StringVar(&kubeContext, "kubecontext", "", "The name of the kubeconfig context to use. "+
 		"Optional and only if out-of-cluster.")
-	opts := zap.Options{
-		Development: true,
-	}
+	opts := commonlog.DefaultOptions()
 
 	opts.BindFlags(flag.CommandLine)
 	flag.Parse()

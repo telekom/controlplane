@@ -25,6 +25,7 @@ import (
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	"github.com/telekom/controlplane/application/internal/controller"
 	webhookv1 "github.com/telekom/controlplane/application/internal/webhook/v1"
+	commonlog "github.com/telekom/controlplane/common/pkg/log"
 	gateway "github.com/telekom/controlplane/gateway/api/v1"
 	identity "github.com/telekom/controlplane/identity/api/v1"
 	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
@@ -68,9 +69,7 @@ func main() {
 	flag.StringVar(&webhookCertKey, "webhook-cert-key", "tls.key", "The name of the webhook key file.")
 	flag.BoolVar(&enableHTTP2, "enable-http2", false,
 		"If set, HTTP/2 will be enabled for the metrics and webhook servers")
-	opts := zap.Options{
-		Development: true,
-	}
+	opts := commonlog.DefaultOptions()
 	opts.BindFlags(flag.CommandLine)
 	flag.Parse()
 

@@ -23,6 +23,30 @@ Each operator exposes Prometheus-compatible metrics on its metrics endpoint. Key
 
 All operators produce structured JSON logs. Key log fields include the resource kind, namespace, name, and reconciliation result. Use these logs to trace the lifecycle of any resource through the system.
 
+Kubernetes object dumps in debug and error logs omit `metadata.managedFields`. This is Kubernetes bookkeeping metadata tracking which field manager last touched each field; it is primarily useful to the API server and adds noise to logs without aiding troubleshooting. Only the log-facing copy is sanitized — the underlying object used for reconciliation and persistence is unaffected.
+
+This sanitization is enabled by default and can be disabled (e.g. for troubleshooting field-manager conflicts) by setting the `DISABLE_MANAGED_FIELDS_SANITIZATION` environment variable to `true`:
+
+```yaml
+env:
+  - name: DISABLE_MANAGED_FIELDS_SANITIZATION
+    value: "true"
+```
+
+Any unset, empty, or unparsable value keeps sanitization enabled.
+
+#### Configuring log verbosity
+
+Each operator's log level can be configured via the `LOG_LEVEL` environment variable, without requiring a code change or rebuild. Supported values are the standard zap level names (case-insensitive): `debug`, `info`, `warn`, `error` (and other zap levels such as `dpanic`, `panic`, `fatal`). If `LOG_LEVEL` is unset, empty, or set to an unrecognized value, the operator defaults to `info`.
+
+```yaml
+env:
+  - name: LOG_LEVEL
+    value: "debug"
+```
+
+Log output remains JSON-encoded regardless of the configured level; `LOG_LEVEL` only affects verbosity, not the log format.
+
 ## Operational Tools
 
 The Control Plane includes several tools to assist with day-to-day operations:

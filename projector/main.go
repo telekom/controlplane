@@ -8,16 +8,15 @@ package main
 import (
 	"os"
 
-	"go.uber.org/zap/zapcore"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
+	commonlog "github.com/telekom/controlplane/common/pkg/log"
 	"github.com/telekom/controlplane/projector/internal/bootstrap"
 )
 
 func main() {
-	opts := zap.Options{Development: true}
-	opts.Level = zapcore.DebugLevel
+	opts := commonlog.DefaultOptions()
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 
 	setupLog := ctrl.Log.WithName("setup")
