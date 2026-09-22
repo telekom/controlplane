@@ -19,30 +19,15 @@ type ZoneServiceConfigSpec struct {
 
 	// ServiceURL represents the internal SFTP service endpoint for users.
 	// +kubebuilder:validation:Optional
-	ServiceURL string `json:"service,omitempty"`
+	ServiceURL string `json:"serviceUrl,omitempty"`
 
 	// ServiceExternalURL represents the externally reachable SFTP service endpoint for users.
 	// +kubebuilder:validation:Optional
-	ServiceExternalURL string `json:"serviceExternal,omitempty"`
+	ServiceExternalURL string `json:"serviceExternalUrl,omitempty"`
 
 	// Zone identifies the zone where this SFTP Service is provided.
 	// +kubebuilder:validation:Required
 	Zone *types.ObjectRef `json:"zone"`
-}
-
-// ServiceEndpoint identifies an SFTP service endpoint.
-type ServiceEndpoint struct {
-	// Host is the hostname or IP address of the service.
-	// +kubebuilder:validation:Required
-	// +kubebuilder:validation:MaxLength=253
-	// +kubebuilder:validation:XValidation:rule="!format.dns1123Subdomain().validate(self).hasValue()",message="hostname must be a valid DNS-1123 subdomain"
-	Host string `json:"host"`
-
-	// Port is the TCP port of the service.
-	// +kubebuilder:validation:Required
-	// +kubebuilder:validation:Minimum=1
-	// +kubebuilder:validation:Maximum=65535
-	Port int32 `json:"port"`
 }
 
 type ManagedRouteConfig struct {
