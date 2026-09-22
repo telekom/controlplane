@@ -2698,6 +2698,38 @@ func (ec *executionContext) fieldContext_Failover_zones(_ context.Context, field
 	return graphql.NewScalarFieldContext("Failover", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
+func (ec *executionContext) _FileSFTP_publicKeys(ctx context.Context, field graphql.CollectedField, obj *model1.FileSFTP) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_FileSFTP_publicKeys(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.PublicKeys, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []model1.SSHPublicKeySpec) graphql.Marshaler {
+			return ec.marshalNSSHPublicKeySpec2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐSSHPublicKeySpecᚄ(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_FileSFTP_publicKeys(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FileSFTP",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_SSHPublicKeySpec(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _IpRestrictions_Allow(ctx context.Context, field graphql.CollectedField, obj *model1.IpRestrictions) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -3403,6 +3435,29 @@ func (ec *executionContext) _ResponseFilter_mode(ctx context.Context, field grap
 }
 func (ec *executionContext) fieldContext_ResponseFilter_mode(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	return graphql.NewScalarFieldContext("ResponseFilter", field, true, true, errors.New("field of type ResponseFilterMode does not have child fields"))
+}
+
+func (ec *executionContext) _SSHPublicKeySpec_key(ctx context.Context, field graphql.CollectedField, obj *model1.SSHPublicKeySpec) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_SSHPublicKeySpec_key(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Key, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalOString2string(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_SSHPublicKeySpec_key(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("SSHPublicKeySpec", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
 func (ec *executionContext) _SelectionFilter_attributes(ctx context.Context, field graphql.CollectedField, obj *model1.SelectionFilter) (ret graphql.Marshaler) {
@@ -5940,6 +5995,44 @@ func (ec *executionContext) _Failover(ctx context.Context, sel ast.SelectionSet,
 	return out
 }
 
+var fileSFTPImplementors = []string{"FileSFTP"}
+
+func (ec *executionContext) _FileSFTP(ctx context.Context, sel ast.SelectionSet, obj *model1.FileSFTP) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, fileSFTPImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("FileSFTP")
+		case "publicKeys":
+			out.Values[i] = ec._FileSFTP_publicKeys(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
+
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
+
+	return out
+}
+
 var ipRestrictionsImplementors = []string{"IpRestrictions"}
 
 func (ec *executionContext) _IpRestrictions(ctx context.Context, sel ast.SelectionSet, obj *model1.IpRestrictions) graphql.Marshaler {
@@ -6521,6 +6614,44 @@ func (ec *executionContext) _ResponseFilter(ctx context.Context, sel ast.Selecti
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
+
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
+
+	return out
+}
+
+var sSHPublicKeySpecImplementors = []string{"SSHPublicKeySpec"}
+
+func (ec *executionContext) _SSHPublicKeySpec(ctx context.Context, sel ast.SelectionSet, obj *model1.SSHPublicKeySpec) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, sSHPublicKeySpecImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("SSHPublicKeySpec")
+		case "key":
+			out.Values[i] = ec._SSHPublicKeySpec_key(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -7138,6 +7269,26 @@ func (ec *executionContext) marshalNRequesterInfo2githubᚗcomᚋtelekomᚋcontr
 	return ec._RequesterInfo(ctx, sel, &v)
 }
 
+func (ec *executionContext) marshalNSSHPublicKeySpec2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐSSHPublicKeySpec(ctx context.Context, sel ast.SelectionSet, v model1.SSHPublicKeySpec) graphql.Marshaler {
+	return ec._SSHPublicKeySpec(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNSSHPublicKeySpec2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐSSHPublicKeySpecᚄ(ctx context.Context, sel ast.SelectionSet, v []model1.SSHPublicKeySpec) graphql.Marshaler {
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNSSHPublicKeySpec2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐSSHPublicKeySpec(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
 func (ec *executionContext) marshalNSubscriptionInfo2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐSubscriptionInfo(ctx context.Context, sel ast.SelectionSet, v model.SubscriptionInfo) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
@@ -7325,6 +7476,13 @@ func (ec *executionContext) marshalOFailover2ᚖgithubᚗcomᚋtelekomᚋcontrol
 		return graphql.Null
 	}
 	return ec._Failover(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOFileSFTP2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐFileSFTP(ctx context.Context, sel ast.SelectionSet, v *model1.FileSFTP) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._FileSFTP(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalOIpRestrictions2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐIpRestrictions(ctx context.Context, sel ast.SelectionSet, v model1.IpRestrictions) graphql.Marshaler {

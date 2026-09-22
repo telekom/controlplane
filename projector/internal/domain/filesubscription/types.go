@@ -8,10 +8,15 @@
 // FileExposure (target) and FileType (catalogue).
 package filesubscription
 
-import "github.com/telekom/controlplane/projector/internal/domain/shared"
+import (
+	"github.com/telekom/controlplane/controlplane-api/pkg/model"
+	"github.com/telekom/controlplane/projector/internal/domain/shared"
+)
 
 // FileSubscriptionKey is the composite identity key for FileSubscription
-// entities and cache cleanup by metadata.
+// entities. It contains the fields needed for both the primary DB operation
+// (FileType + OwnerAppName + OwnerTeamName) and the meta cache cleanup on
+// delete (Namespace + Name).
 type FileSubscriptionKey struct {
 	FileType      string
 	OwnerAppName  string
@@ -22,12 +27,14 @@ type FileSubscriptionKey struct {
 
 // FileSubscriptionData carries the transformed data for a FileSubscription entity.
 type FileSubscriptionData struct {
-	Meta           shared.Metadata
-	StatusPhase    string // "READY", "PENDING", "ERROR", "UNKNOWN"
-	StatusMessage  string
-	Zone           string
-	SFTPPublicKeys []string
-	OwnerAppName   string // resolved to owner Application FK (required)
-	OwnerTeamName  string // used to resolve owner Application FK
-	TargetFileType string // used to resolve optional target FileExposure FK
+	Meta               shared.Metadata
+	StatusPhase        string // "READY", "PENDING", "ERROR", "UNKNOWN"
+	StatusMessage      string
+	Zone               string
+	FileSFTP           *model.FileSFTP
+	OwnerAppName       string // resolved to owner Application FK (required)
+	OwnerTeamName      string // used to resolve owner Application FK
+	TargetFileType     string // used to resolve optional target FileExposure FK
+	ServiceURL         string // represents the internal SFTP service endpoint for users.
+	ServiceExternalURL string // represents the externally reachable SFTP service endpoint for users.
 }

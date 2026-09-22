@@ -51,8 +51,9 @@ func (FileExposure) Fields() []ent.Field {
 			Default(false),
 		field.Text("zone_name").
 			NotEmpty(),
-		field.JSON("sftp_public_keys", []string{}).
-			Default([]string{}).
+		field.JSON("sftp", &model.FileSFTP{}).
+			Optional().
+			Default(&model.FileSFTP{}).
 			Annotations(entgql.Skip(entgql.SkipWhereInput)),
 		field.JSON("approval_config", model.ApprovalConfig{}).
 			Default(model.ApprovalConfig{Strategy: "AUTO"}).

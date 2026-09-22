@@ -19,6 +19,7 @@ import (
 	entfilesubscription "github.com/telekom/controlplane/controlplane-api/ent/filesubscription"
 	_ "github.com/telekom/controlplane/controlplane-api/ent/runtime"
 	"github.com/telekom/controlplane/controlplane-api/ent/zone"
+	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 	"github.com/telekom/controlplane/projector/internal/domain/filesubscription"
 	"github.com/telekom/controlplane/projector/internal/domain/shared"
 	"github.com/telekom/controlplane/projector/internal/infrastructure"
@@ -132,21 +133,25 @@ var _ = Describe("FileSubscription Repository", func() {
 	Describe("Upsert", func() {
 		It("should create subscription and link optional edges", func() {
 			data := &filesubscription.FileSubscriptionData{
-				Meta:           shared.NewMetadata("prod--platform--narvi", "sub-a", nil),
-				StatusPhase:    "READY",
-				StatusMessage:  "ok",
-				Zone:           "caas",
-				SFTPPublicKeys: []string{"ssh-rsa AAA"},
-				OwnerAppName:   "consumer-app",
-				OwnerTeamName:  "platform--narvi",
-				TargetFileType: "invoice",
+				Meta:               shared.NewMetadata("prod--platform--narvi", "sub-a", nil),
+				StatusPhase:        "READY",
+				StatusMessage:      "ok",
+				Zone:               "caas",
+				FileSFTP:           &model.FileSFTP{PublicKeys: []model.SSHPublicKeySpec{{Key: "ssh-rsa AAA"}}},
+				ServiceURL:         "sftp://internal.example.com",
+				ServiceExternalURL: "sftp://external.example.com",
+				OwnerAppName:       "consumer-app",
+				OwnerTeamName:      "platform--narvi",
+				TargetFileType:     "invoice",
 			}
 			Expect(repo.Upsert(ctx, data)).To(Succeed())
 
 			sub, err := client.FileSubscription.Query().Where(entfilesubscription.FileTypeEQ("invoice")).Only(ctx)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(sub.ZoneName).To(Equal("caas"))
-			Expect(sub.SftpPublicKeys).To(Equal([]string{"ssh-rsa AAA"}))
+			Expect(sub.Sftp).To(Equal(&model.FileSFTP{PublicKeys: []model.SSHPublicKeySpec{{Key: "ssh-rsa AAA"}}}))
+			Expect(sub.ServiceURL).To(Equal("sftp://internal.example.com"))
+			Expect(sub.ServiceExternalURL).To(Equal("sftp://external.example.com"))
 
 			owner, err := sub.QueryOwner().Only(ctx)
 			Expect(err).NotTo(HaveOccurred())
@@ -215,6 +220,29 @@ var _ = Describe("FileSubscription Repository", func() {
 			id, found := cache.Get("filesubscription", "meta:prod--platform--narvi:sub-cache")
 			Expect(found).To(BeTrue())
 			Expect(id).To(BeNumerically(">", 0))
+		})
+
+		It("should update service URLs on conflict", func() {
+			data := &filesubscription.FileSubscriptionData{
+				Meta:               shared.NewMetadata("prod--platform--narvi", "sub-update", nil),
+				StatusPhase:        "READY",
+				Zone:               "caas",
+				ServiceURL:         "sftp://internal-v1.example.com",
+				ServiceExternalURL: "sftp://external-v1.example.com",
+				OwnerAppName:       "consumer-app",
+				OwnerTeamName:      "platform--narvi",
+				TargetFileType:     "invoice",
+			}
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			data.ServiceURL = "sftp://internal-v2.example.com"
+			data.ServiceExternalURL = "sftp://external-v2.example.com"
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			sub, err := client.FileSubscription.Query().Where(entfilesubscription.NameEQ("sub-update")).Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(sub.ServiceURL).To(Equal("sftp://internal-v2.example.com"))
+			Expect(sub.ServiceExternalURL).To(Equal("sftp://external-v2.example.com"))
 		})
 	})
 

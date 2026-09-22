@@ -35,22 +35,15 @@ func (t *Translator) ShouldSkip(obj *filev1.FileExposure) (bool, string) {
 func (t *Translator) Translate(_ context.Context, obj *filev1.FileExposure) (*FileExposureData, error) {
 	phase, message := shared.StatusFromConditions(obj.Status.Conditions)
 
-	publicKeys := []string{}
-	if obj.Spec.SFTP != nil {
-		for i := range obj.Spec.SFTP.PublicKeys {
-			publicKeys = append(publicKeys, obj.Spec.SFTP.PublicKeys[i].Key)
-		}
-	}
-
 	return &FileExposureData{
-		Meta:           shared.NewMetadata(obj.Namespace, obj.Name, obj.Labels),
-		StatusPhase:    phase,
-		StatusMessage:  message,
-		Variant:        obj.Spec.Variant,
-		Visibility:     strings.ToUpper(string(obj.Spec.Visibility)),
-		Active:         isActiveExposure(obj),
-		Zone:           obj.Spec.Zone.Name,
-		SFTPPublicKeys: publicKeys,
+		Meta:          shared.NewMetadata(obj.Namespace, obj.Name, obj.Labels),
+		StatusPhase:   phase,
+		StatusMessage: message,
+		Variant:       obj.Spec.Variant,
+		Visibility:    strings.ToUpper(string(obj.Spec.Visibility)),
+		Active:        isActiveExposure(obj),
+		Zone:          obj.Spec.Zone.Name,
+		FileSFTP:      toFileSFTP(obj.Spec.SFTP),
 		ApprovalConfig: model.ApprovalConfig{
 			Strategy:     shared.MapApprovalStrategy(string(obj.Spec.Approval.Strategy)),
 			TrustedTeams: obj.Spec.Approval.TrustedTeams,
@@ -59,6 +52,24 @@ func (t *Translator) Translate(_ context.Context, obj *filev1.FileExposure) (*Fi
 		TeamName:       shared.TeamNameFromNamespace(obj.Namespace),
 		TargetFileType: obj.Spec.FileType,
 	}, nil
+}
+
+func toFileSFTP(obj *filev1.FileSFTP) *model.FileSFTP {
+	if obj == nil {
+		return nil
+	}
+
+	if len(obj.PublicKeys) == 0 {
+		return nil
+	}
+
+	sftp := model.FileSFTP{PublicKeys: make([]model.SSHPublicKeySpec, 0)}
+	for i := range obj.PublicKeys {
+		sftp.PublicKeys = append(sftp.PublicKeys, model.SSHPublicKeySpec{
+			Key: obj.PublicKeys[i].Key,
+		})
+	}
+	return &sftp
 }
 
 func isActiveExposure(obj *filev1.FileExposure) bool {

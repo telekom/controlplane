@@ -138,7 +138,7 @@ var _ = Describe("FileExposure Repository", func() {
 				Visibility:     "ENTERPRISE",
 				Active:         true,
 				Zone:           "caas",
-				SFTPPublicKeys: []string{"ssh-rsa AAA"},
+				FileSFTP:       &model.FileSFTP{PublicKeys: []model.SSHPublicKeySpec{{Key: "ssh-rsa AAA"}}},
 				ApprovalConfig: model.ApprovalConfig{Strategy: "AUTO", TrustedTeams: []string{"team-a"}},
 				AppName:        "provider-app",
 				TeamName:       "platform--narvi",
@@ -152,7 +152,7 @@ var _ = Describe("FileExposure Repository", func() {
 			Expect(exp.Active).NotTo(BeNil())
 			Expect(*exp.Active).To(BeTrue())
 			Expect(exp.ZoneName).To(Equal("caas"))
-			Expect(exp.SftpPublicKeys).To(Equal([]string{"ssh-rsa AAA"}))
+			Expect(exp.Sftp).To(Equal(&model.FileSFTP{PublicKeys: []model.SSHPublicKeySpec{{Key: "ssh-rsa AAA"}}}))
 			Expect(exp.ApprovalConfig.Strategy).To(Equal("AUTO"))
 
 			owner, err := exp.QueryOwner().Only(ctx)

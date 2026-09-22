@@ -623,10 +623,10 @@ func init() {
 	fileexposureDescZoneName := fileexposureFields[4].Descriptor()
 	// fileexposure.ZoneNameValidator is a validator for the "zone_name" field. It is called by the builders before save.
 	fileexposure.ZoneNameValidator = fileexposureDescZoneName.Validators[0].(func(string) error)
-	// fileexposureDescSftpPublicKeys is the schema descriptor for sftp_public_keys field.
-	fileexposureDescSftpPublicKeys := fileexposureFields[5].Descriptor()
-	// fileexposure.DefaultSftpPublicKeys holds the default value on creation for the sftp_public_keys field.
-	fileexposure.DefaultSftpPublicKeys = fileexposureDescSftpPublicKeys.Default.([]string)
+	// fileexposureDescSftp is the schema descriptor for sftp field.
+	fileexposureDescSftp := fileexposureFields[5].Descriptor()
+	// fileexposure.DefaultSftp holds the default value on creation for the sftp field.
+	fileexposure.DefaultSftp = fileexposureDescSftp.Default.(*model.FileSFTP)
 	// fileexposureDescApprovalConfig is the schema descriptor for approval_config field.
 	fileexposureDescApprovalConfig := fileexposureFields[6].Descriptor()
 	// fileexposure.DefaultApprovalConfig holds the default value on creation for the approval_config field.
@@ -673,10 +673,10 @@ func init() {
 	filesubscriptionDescZoneName := filesubscriptionFields[1].Descriptor()
 	// filesubscription.ZoneNameValidator is a validator for the "zone_name" field. It is called by the builders before save.
 	filesubscription.ZoneNameValidator = filesubscriptionDescZoneName.Validators[0].(func(string) error)
-	// filesubscriptionDescSftpPublicKeys is the schema descriptor for sftp_public_keys field.
-	filesubscriptionDescSftpPublicKeys := filesubscriptionFields[2].Descriptor()
-	// filesubscription.DefaultSftpPublicKeys holds the default value on creation for the sftp_public_keys field.
-	filesubscription.DefaultSftpPublicKeys = filesubscriptionDescSftpPublicKeys.Default.([]string)
+	// filesubscriptionDescSftp is the schema descriptor for sftp field.
+	filesubscriptionDescSftp := filesubscriptionFields[4].Descriptor()
+	// filesubscription.DefaultSftp holds the default value on creation for the sftp field.
+	filesubscription.DefaultSftp = filesubscriptionDescSftp.Default.(*model.FileSFTP)
 	filetypeMixin := schema.FileType{}.Mixin()
 	filetype.Policy = privacy.NewPolicies(filetypeMixin[0], schema.FileType{})
 	filetype.Hooks[0] = func(next ent.Mutator) ent.Mutator {

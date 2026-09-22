@@ -160,9 +160,9 @@ func (_c *FileExposureCreate) SetZoneName(v string) *FileExposureCreate {
 	return _c
 }
 
-// SetSftpPublicKeys sets the "sftp_public_keys" field.
-func (_c *FileExposureCreate) SetSftpPublicKeys(v []string) *FileExposureCreate {
-	_c.mutation.SetSftpPublicKeys(v)
+// SetSftp sets the "sftp" field.
+func (_c *FileExposureCreate) SetSftp(v *model.FileSFTP) *FileExposureCreate {
+	_c.mutation.SetSftp(v)
 	return _c
 }
 
@@ -295,9 +295,9 @@ func (_c *FileExposureCreate) defaults() error {
 		v := fileexposure.DefaultActive
 		_c.mutation.SetActive(v)
 	}
-	if _, ok := _c.mutation.SftpPublicKeys(); !ok {
-		v := fileexposure.DefaultSftpPublicKeys
-		_c.mutation.SetSftpPublicKeys(v)
+	if _, ok := _c.mutation.Sftp(); !ok {
+		v := fileexposure.DefaultSftp
+		_c.mutation.SetSftp(v)
 	}
 	if _, ok := _c.mutation.ApprovalConfig(); !ok {
 		v := fileexposure.DefaultApprovalConfig
@@ -350,9 +350,6 @@ func (_c *FileExposureCreate) check() error {
 		if err := fileexposure.ZoneNameValidator(v); err != nil {
 			return &ValidationError{Name: "zone_name", err: fmt.Errorf(`ent: validator failed for field "FileExposure.zone_name": %w`, err)}
 		}
-	}
-	if _, ok := _c.mutation.SftpPublicKeys(); !ok {
-		return &ValidationError{Name: "sftp_public_keys", err: errors.New(`ent: missing required field "FileExposure.sftp_public_keys"`)}
 	}
 	if _, ok := _c.mutation.ApprovalConfig(); !ok {
 		return &ValidationError{Name: "approval_config", err: errors.New(`ent: missing required field "FileExposure.approval_config"`)}
@@ -434,9 +431,9 @@ func (_c *FileExposureCreate) createSpec() (*FileExposure, *sqlgraph.CreateSpec)
 		_spec.SetField(fileexposure.FieldZoneName, field.TypeString, value)
 		_node.ZoneName = value
 	}
-	if value, ok := _c.mutation.SftpPublicKeys(); ok {
-		_spec.SetField(fileexposure.FieldSftpPublicKeys, field.TypeJSON, value)
-		_node.SftpPublicKeys = value
+	if value, ok := _c.mutation.Sftp(); ok {
+		_spec.SetField(fileexposure.FieldSftp, field.TypeJSON, value)
+		_node.Sftp = value
 	}
 	if value, ok := _c.mutation.ApprovalConfig(); ok {
 		_spec.SetField(fileexposure.FieldApprovalConfig, field.TypeJSON, value)
@@ -711,15 +708,21 @@ func (u *FileExposureUpsert) UpdateZoneName() *FileExposureUpsert {
 	return u
 }
 
-// SetSftpPublicKeys sets the "sftp_public_keys" field.
-func (u *FileExposureUpsert) SetSftpPublicKeys(v []string) *FileExposureUpsert {
-	u.Set(fileexposure.FieldSftpPublicKeys, v)
+// SetSftp sets the "sftp" field.
+func (u *FileExposureUpsert) SetSftp(v *model.FileSFTP) *FileExposureUpsert {
+	u.Set(fileexposure.FieldSftp, v)
 	return u
 }
 
-// UpdateSftpPublicKeys sets the "sftp_public_keys" field to the value that was provided on create.
-func (u *FileExposureUpsert) UpdateSftpPublicKeys() *FileExposureUpsert {
-	u.SetExcluded(fileexposure.FieldSftpPublicKeys)
+// UpdateSftp sets the "sftp" field to the value that was provided on create.
+func (u *FileExposureUpsert) UpdateSftp() *FileExposureUpsert {
+	u.SetExcluded(fileexposure.FieldSftp)
+	return u
+}
+
+// ClearSftp clears the value of the "sftp" field.
+func (u *FileExposureUpsert) ClearSftp() *FileExposureUpsert {
+	u.SetNull(fileexposure.FieldSftp)
 	return u
 }
 
@@ -955,17 +958,24 @@ func (u *FileExposureUpsertOne) UpdateZoneName() *FileExposureUpsertOne {
 	})
 }
 
-// SetSftpPublicKeys sets the "sftp_public_keys" field.
-func (u *FileExposureUpsertOne) SetSftpPublicKeys(v []string) *FileExposureUpsertOne {
+// SetSftp sets the "sftp" field.
+func (u *FileExposureUpsertOne) SetSftp(v *model.FileSFTP) *FileExposureUpsertOne {
 	return u.Update(func(s *FileExposureUpsert) {
-		s.SetSftpPublicKeys(v)
+		s.SetSftp(v)
 	})
 }
 
-// UpdateSftpPublicKeys sets the "sftp_public_keys" field to the value that was provided on create.
-func (u *FileExposureUpsertOne) UpdateSftpPublicKeys() *FileExposureUpsertOne {
+// UpdateSftp sets the "sftp" field to the value that was provided on create.
+func (u *FileExposureUpsertOne) UpdateSftp() *FileExposureUpsertOne {
 	return u.Update(func(s *FileExposureUpsert) {
-		s.UpdateSftpPublicKeys()
+		s.UpdateSftp()
+	})
+}
+
+// ClearSftp clears the value of the "sftp" field.
+func (u *FileExposureUpsertOne) ClearSftp() *FileExposureUpsertOne {
+	return u.Update(func(s *FileExposureUpsert) {
+		s.ClearSftp()
 	})
 }
 
@@ -1369,17 +1379,24 @@ func (u *FileExposureUpsertBulk) UpdateZoneName() *FileExposureUpsertBulk {
 	})
 }
 
-// SetSftpPublicKeys sets the "sftp_public_keys" field.
-func (u *FileExposureUpsertBulk) SetSftpPublicKeys(v []string) *FileExposureUpsertBulk {
+// SetSftp sets the "sftp" field.
+func (u *FileExposureUpsertBulk) SetSftp(v *model.FileSFTP) *FileExposureUpsertBulk {
 	return u.Update(func(s *FileExposureUpsert) {
-		s.SetSftpPublicKeys(v)
+		s.SetSftp(v)
 	})
 }
 
-// UpdateSftpPublicKeys sets the "sftp_public_keys" field to the value that was provided on create.
-func (u *FileExposureUpsertBulk) UpdateSftpPublicKeys() *FileExposureUpsertBulk {
+// UpdateSftp sets the "sftp" field to the value that was provided on create.
+func (u *FileExposureUpsertBulk) UpdateSftp() *FileExposureUpsertBulk {
 	return u.Update(func(s *FileExposureUpsert) {
-		s.UpdateSftpPublicKeys()
+		s.UpdateSftp()
+	})
+}
+
+// ClearSftp clears the value of the "sftp" field.
+func (u *FileExposureUpsertBulk) ClearSftp() *FileExposureUpsertBulk {
+	return u.Update(func(s *FileExposureUpsert) {
+		s.ClearSftp()
 	})
 }
 

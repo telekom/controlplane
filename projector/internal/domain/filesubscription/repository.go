@@ -87,7 +87,9 @@ func (r *Repository) Upsert(ctx context.Context, data *FileSubscriptionData) err
 	create := r.client.FileSubscription.Create().
 		SetFileType(data.TargetFileType).
 		SetZoneName(data.Zone).
-		SetSftpPublicKeys(data.SFTPPublicKeys).
+		SetSftp(data.FileSFTP).
+		SetServiceURL(data.ServiceURL).
+		SetServiceExternalURL(data.ServiceExternalURL).
 		SetStatusPhase(entfilesubscription.StatusPhase(data.StatusPhase)).
 		SetStatusMessage(data.StatusMessage).
 		SetEnvironment(data.Meta.Environment).
@@ -102,7 +104,9 @@ func (r *Repository) Upsert(ctx context.Context, data *FileSubscriptionData) err
 		OnConflictColumns(entfilesubscription.FieldFileType, entfilesubscription.OwnerColumn).
 		Update(func(u *ent.FileSubscriptionUpsert) {
 			u.SetZoneName(data.Zone)
-			u.UpdateSftpPublicKeys()
+			u.UpdateSftp()
+			u.UpdateServiceURL()
+			u.UpdateServiceExternalURL()
 			u.SetStatusPhase(entfilesubscription.StatusPhase(data.StatusPhase))
 			u.SetStatusMessage(data.StatusMessage)
 			u.SetEnvironment(data.Meta.Environment)

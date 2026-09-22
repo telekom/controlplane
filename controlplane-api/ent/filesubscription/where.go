@@ -98,6 +98,16 @@ func ZoneName(v string) predicate.FileSubscription {
 	return predicate.FileSubscription(sql.FieldEQ(FieldZoneName, v))
 }
 
+// ServiceURL applies equality check predicate on the "service_url" field. It's identical to ServiceURLEQ.
+func ServiceURL(v string) predicate.FileSubscription {
+	return predicate.FileSubscription(sql.FieldEQ(FieldServiceURL, v))
+}
+
+// ServiceExternalURL applies equality check predicate on the "service_external_url" field. It's identical to ServiceExternalURLEQ.
+func ServiceExternalURL(v string) predicate.FileSubscription {
+	return predicate.FileSubscription(sql.FieldEQ(FieldServiceExternalURL, v))
+}
+
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
 func CreatedAtEQ(v time.Time) predicate.FileSubscription {
 	return predicate.FileSubscription(sql.FieldEQ(FieldCreatedAt, v))
@@ -616,6 +626,166 @@ func ZoneNameEqualFold(v string) predicate.FileSubscription {
 // ZoneNameContainsFold applies the ContainsFold predicate on the "zone_name" field.
 func ZoneNameContainsFold(v string) predicate.FileSubscription {
 	return predicate.FileSubscription(sql.FieldContainsFold(FieldZoneName, v))
+}
+
+// ServiceURLEQ applies the EQ predicate on the "service_url" field.
+func ServiceURLEQ(v string) predicate.FileSubscription {
+	return predicate.FileSubscription(sql.FieldEQ(FieldServiceURL, v))
+}
+
+// ServiceURLNEQ applies the NEQ predicate on the "service_url" field.
+func ServiceURLNEQ(v string) predicate.FileSubscription {
+	return predicate.FileSubscription(sql.FieldNEQ(FieldServiceURL, v))
+}
+
+// ServiceURLIn applies the In predicate on the "service_url" field.
+func ServiceURLIn(vs ...string) predicate.FileSubscription {
+	return predicate.FileSubscription(sql.FieldIn(FieldServiceURL, vs...))
+}
+
+// ServiceURLNotIn applies the NotIn predicate on the "service_url" field.
+func ServiceURLNotIn(vs ...string) predicate.FileSubscription {
+	return predicate.FileSubscription(sql.FieldNotIn(FieldServiceURL, vs...))
+}
+
+// ServiceURLGT applies the GT predicate on the "service_url" field.
+func ServiceURLGT(v string) predicate.FileSubscription {
+	return predicate.FileSubscription(sql.FieldGT(FieldServiceURL, v))
+}
+
+// ServiceURLGTE applies the GTE predicate on the "service_url" field.
+func ServiceURLGTE(v string) predicate.FileSubscription {
+	return predicate.FileSubscription(sql.FieldGTE(FieldServiceURL, v))
+}
+
+// ServiceURLLT applies the LT predicate on the "service_url" field.
+func ServiceURLLT(v string) predicate.FileSubscription {
+	return predicate.FileSubscription(sql.FieldLT(FieldServiceURL, v))
+}
+
+// ServiceURLLTE applies the LTE predicate on the "service_url" field.
+func ServiceURLLTE(v string) predicate.FileSubscription {
+	return predicate.FileSubscription(sql.FieldLTE(FieldServiceURL, v))
+}
+
+// ServiceURLContains applies the Contains predicate on the "service_url" field.
+func ServiceURLContains(v string) predicate.FileSubscription {
+	return predicate.FileSubscription(sql.FieldContains(FieldServiceURL, v))
+}
+
+// ServiceURLHasPrefix applies the HasPrefix predicate on the "service_url" field.
+func ServiceURLHasPrefix(v string) predicate.FileSubscription {
+	return predicate.FileSubscription(sql.FieldHasPrefix(FieldServiceURL, v))
+}
+
+// ServiceURLHasSuffix applies the HasSuffix predicate on the "service_url" field.
+func ServiceURLHasSuffix(v string) predicate.FileSubscription {
+	return predicate.FileSubscription(sql.FieldHasSuffix(FieldServiceURL, v))
+}
+
+// ServiceURLIsNil applies the IsNil predicate on the "service_url" field.
+func ServiceURLIsNil() predicate.FileSubscription {
+	return predicate.FileSubscription(sql.FieldIsNull(FieldServiceURL))
+}
+
+// ServiceURLNotNil applies the NotNil predicate on the "service_url" field.
+func ServiceURLNotNil() predicate.FileSubscription {
+	return predicate.FileSubscription(sql.FieldNotNull(FieldServiceURL))
+}
+
+// ServiceURLEqualFold applies the EqualFold predicate on the "service_url" field.
+func ServiceURLEqualFold(v string) predicate.FileSubscription {
+	return predicate.FileSubscription(sql.FieldEqualFold(FieldServiceURL, v))
+}
+
+// ServiceURLContainsFold applies the ContainsFold predicate on the "service_url" field.
+func ServiceURLContainsFold(v string) predicate.FileSubscription {
+	return predicate.FileSubscription(sql.FieldContainsFold(FieldServiceURL, v))
+}
+
+// ServiceExternalURLEQ applies the EQ predicate on the "service_external_url" field.
+func ServiceExternalURLEQ(v string) predicate.FileSubscription {
+	return predicate.FileSubscription(sql.FieldEQ(FieldServiceExternalURL, v))
+}
+
+// ServiceExternalURLNEQ applies the NEQ predicate on the "service_external_url" field.
+func ServiceExternalURLNEQ(v string) predicate.FileSubscription {
+	return predicate.FileSubscription(sql.FieldNEQ(FieldServiceExternalURL, v))
+}
+
+// ServiceExternalURLIn applies the In predicate on the "service_external_url" field.
+func ServiceExternalURLIn(vs ...string) predicate.FileSubscription {
+	return predicate.FileSubscription(sql.FieldIn(FieldServiceExternalURL, vs...))
+}
+
+// ServiceExternalURLNotIn applies the NotIn predicate on the "service_external_url" field.
+func ServiceExternalURLNotIn(vs ...string) predicate.FileSubscription {
+	return predicate.FileSubscription(sql.FieldNotIn(FieldServiceExternalURL, vs...))
+}
+
+// ServiceExternalURLGT applies the GT predicate on the "service_external_url" field.
+func ServiceExternalURLGT(v string) predicate.FileSubscription {
+	return predicate.FileSubscription(sql.FieldGT(FieldServiceExternalURL, v))
+}
+
+// ServiceExternalURLGTE applies the GTE predicate on the "service_external_url" field.
+func ServiceExternalURLGTE(v string) predicate.FileSubscription {
+	return predicate.FileSubscription(sql.FieldGTE(FieldServiceExternalURL, v))
+}
+
+// ServiceExternalURLLT applies the LT predicate on the "service_external_url" field.
+func ServiceExternalURLLT(v string) predicate.FileSubscription {
+	return predicate.FileSubscription(sql.FieldLT(FieldServiceExternalURL, v))
+}
+
+// ServiceExternalURLLTE applies the LTE predicate on the "service_external_url" field.
+func ServiceExternalURLLTE(v string) predicate.FileSubscription {
+	return predicate.FileSubscription(sql.FieldLTE(FieldServiceExternalURL, v))
+}
+
+// ServiceExternalURLContains applies the Contains predicate on the "service_external_url" field.
+func ServiceExternalURLContains(v string) predicate.FileSubscription {
+	return predicate.FileSubscription(sql.FieldContains(FieldServiceExternalURL, v))
+}
+
+// ServiceExternalURLHasPrefix applies the HasPrefix predicate on the "service_external_url" field.
+func ServiceExternalURLHasPrefix(v string) predicate.FileSubscription {
+	return predicate.FileSubscription(sql.FieldHasPrefix(FieldServiceExternalURL, v))
+}
+
+// ServiceExternalURLHasSuffix applies the HasSuffix predicate on the "service_external_url" field.
+func ServiceExternalURLHasSuffix(v string) predicate.FileSubscription {
+	return predicate.FileSubscription(sql.FieldHasSuffix(FieldServiceExternalURL, v))
+}
+
+// ServiceExternalURLIsNil applies the IsNil predicate on the "service_external_url" field.
+func ServiceExternalURLIsNil() predicate.FileSubscription {
+	return predicate.FileSubscription(sql.FieldIsNull(FieldServiceExternalURL))
+}
+
+// ServiceExternalURLNotNil applies the NotNil predicate on the "service_external_url" field.
+func ServiceExternalURLNotNil() predicate.FileSubscription {
+	return predicate.FileSubscription(sql.FieldNotNull(FieldServiceExternalURL))
+}
+
+// ServiceExternalURLEqualFold applies the EqualFold predicate on the "service_external_url" field.
+func ServiceExternalURLEqualFold(v string) predicate.FileSubscription {
+	return predicate.FileSubscription(sql.FieldEqualFold(FieldServiceExternalURL, v))
+}
+
+// ServiceExternalURLContainsFold applies the ContainsFold predicate on the "service_external_url" field.
+func ServiceExternalURLContainsFold(v string) predicate.FileSubscription {
+	return predicate.FileSubscription(sql.FieldContainsFold(FieldServiceExternalURL, v))
+}
+
+// SftpIsNil applies the IsNil predicate on the "sftp" field.
+func SftpIsNil() predicate.FileSubscription {
+	return predicate.FileSubscription(sql.FieldIsNull(FieldSftp))
+}
+
+// SftpNotNil applies the NotNil predicate on the "sftp" field.
+func SftpNotNil() predicate.FileSubscription {
+	return predicate.FileSubscription(sql.FieldNotNull(FieldSftp))
 }
 
 // HasOwner applies the HasEdge predicate on the "owner" edge.

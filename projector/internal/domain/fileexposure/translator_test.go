@@ -11,6 +11,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	commontypes "github.com/telekom/controlplane/common/pkg/types"
+	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 	filev1 "github.com/telekom/controlplane/file/api/v1"
 	"github.com/telekom/controlplane/projector/internal/domain/fileexposure"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -71,7 +72,7 @@ var _ = Describe("FileExposure Translator", func() {
 			Expect(data.StatusMessage).To(Equal("ok"))
 			Expect(data.Meta.Environment).To(Equal("prod"))
 			Expect(data.Zone).To(Equal("caas"))
-			Expect(data.SFTPPublicKeys).To(Equal([]string{"ssh-rsa AAA", "ssh-rsa BBB"}))
+			Expect(data.FileSFTP).To(Equal(&model.FileSFTP{PublicKeys: []model.SSHPublicKeySpec{{Key: "ssh-rsa AAA"}, {Key: "ssh-rsa BBB"}}}))
 			Expect(data.ApprovalConfig.Strategy).To(Equal("FOUR_EYES"))
 			Expect(data.ApprovalConfig.TrustedTeams).To(Equal([]string{"team-a"}))
 			Expect(data.Active).To(BeTrue())

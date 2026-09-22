@@ -691,7 +691,7 @@ type ComplexityRoot struct {
 		Namespace      func(childComplexity int) int
 		Owner          func(childComplexity int) int
 		Provider       func(childComplexity int) int
-		SftpPublicKeys func(childComplexity int) int
+		Sftp           func(childComplexity int) int
 		StatusMessage  func(childComplexity int) int
 		StatusPhase    func(childComplexity int) int
 		Visibility     func(childComplexity int) int
@@ -710,23 +710,29 @@ type ComplexityRoot struct {
 		Node   func(childComplexity int) int
 	}
 
+	FileSFTP struct {
+		PublicKeys func(childComplexity int) int
+	}
+
 	FileSubscription struct {
-		Approval         func(childComplexity int) int
-		ApprovalRequests func(childComplexity int) int
-		CreatedAt        func(childComplexity int) int
-		Environment      func(childComplexity int) int
-		FileType         func(childComplexity int) int
-		FileTypeDef      func(childComplexity int) int
-		ID               func(childComplexity int) int
-		LastModifiedAt   func(childComplexity int) int
-		Name             func(childComplexity int) int
-		Namespace        func(childComplexity int) int
-		Owner            func(childComplexity int) int
-		SftpPublicKeys   func(childComplexity int) int
-		StatusMessage    func(childComplexity int) int
-		StatusPhase      func(childComplexity int) int
-		Zone             func(childComplexity int) int
-		ZoneName         func(childComplexity int) int
+		Approval           func(childComplexity int) int
+		ApprovalRequests   func(childComplexity int) int
+		CreatedAt          func(childComplexity int) int
+		Environment        func(childComplexity int) int
+		FileType           func(childComplexity int) int
+		FileTypeDef        func(childComplexity int) int
+		ID                 func(childComplexity int) int
+		LastModifiedAt     func(childComplexity int) int
+		Name               func(childComplexity int) int
+		Namespace          func(childComplexity int) int
+		Owner              func(childComplexity int) int
+		ServiceExternalURL func(childComplexity int) int
+		ServiceURL         func(childComplexity int) int
+		Sftp               func(childComplexity int) int
+		StatusMessage      func(childComplexity int) int
+		StatusPhase        func(childComplexity int) int
+		Zone               func(childComplexity int) int
+		ZoneName           func(childComplexity int) int
 	}
 
 	FileSubscriptionConnection struct {
@@ -964,6 +970,10 @@ type ComplexityRoot struct {
 		Accepted func(childComplexity int) int
 		Errors   func(childComplexity int) int
 		Team     func(childComplexity int) int
+	}
+
+	SSHPublicKeySpec struct {
+		Key func(childComplexity int) int
 	}
 
 	SelectionFilter struct {
@@ -3638,12 +3648,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.FileExposure.Provider(childComplexity), true
-	case "FileExposure.sftpPublicKeys":
-		if e.ComplexityRoot.FileExposure.SftpPublicKeys == nil {
+	case "FileExposure.sftp":
+		if e.ComplexityRoot.FileExposure.Sftp == nil {
 			break
 		}
 
-		return e.ComplexityRoot.FileExposure.SftpPublicKeys(childComplexity), true
+		return e.ComplexityRoot.FileExposure.Sftp(childComplexity), true
 	case "FileExposure.statusMessage":
 		if e.ComplexityRoot.FileExposure.StatusMessage == nil {
 			break
@@ -3706,6 +3716,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.FileExposureEdge.Node(childComplexity), true
+
+	case "FileSFTP.publicKeys":
+		if e.ComplexityRoot.FileSFTP.PublicKeys == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileSFTP.PublicKeys(childComplexity), true
 
 	case "FileSubscription.approval":
 		if e.ComplexityRoot.FileSubscription.Approval == nil {
@@ -3773,12 +3790,24 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.FileSubscription.Owner(childComplexity), true
-	case "FileSubscription.sftpPublicKeys":
-		if e.ComplexityRoot.FileSubscription.SftpPublicKeys == nil {
+	case "FileSubscription.serviceExternalURL":
+		if e.ComplexityRoot.FileSubscription.ServiceExternalURL == nil {
 			break
 		}
 
-		return e.ComplexityRoot.FileSubscription.SftpPublicKeys(childComplexity), true
+		return e.ComplexityRoot.FileSubscription.ServiceExternalURL(childComplexity), true
+	case "FileSubscription.serviceURL":
+		if e.ComplexityRoot.FileSubscription.ServiceURL == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileSubscription.ServiceURL(childComplexity), true
+	case "FileSubscription.sftp":
+		if e.ComplexityRoot.FileSubscription.Sftp == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileSubscription.Sftp(childComplexity), true
 	case "FileSubscription.statusMessage":
 		if e.ComplexityRoot.FileSubscription.StatusMessage == nil {
 			break
@@ -4864,6 +4893,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.RotateTeamTokenPayload.Team(childComplexity), true
+
+	case "SSHPublicKeySpec.key":
+		if e.ComplexityRoot.SSHPublicKeySpec.Key == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SSHPublicKeySpec.Key(childComplexity), true
 
 	case "SelectionFilter.attributes":
 		if e.ComplexityRoot.SelectionFilter.Attributes == nil {
@@ -8891,7 +8927,7 @@ type FileExposure implements Node {
   visibility: FileExposureVisibility!
   active: Boolean
   zoneName: String!
-  sftpPublicKeys: [String!]!
+  sftp: FileSFTP
   approvalConfig: ApprovalConfig!
   owner: Application!
   fileTypeDef: FileType
@@ -9162,7 +9198,9 @@ type FileSubscription implements Node {
   name: String!
   fileType: String!
   zoneName: String!
-  sftpPublicKeys: [String!]!
+  serviceURL: String
+  serviceExternalURL: String
+  sftp: FileSFTP
   owner: Application!
   fileTypeDef: FileType
   zone: Zone!
@@ -9378,6 +9416,42 @@ input FileSubscriptionWhereInput {
   zoneNameHasSuffix: String
   zoneNameEqualFold: String
   zoneNameContainsFold: String
+  """
+  service_url field predicates
+  """
+  serviceURL: String
+  serviceURLNEQ: String
+  serviceURLIn: [String!]
+  serviceURLNotIn: [String!]
+  serviceURLGT: String
+  serviceURLGTE: String
+  serviceURLLT: String
+  serviceURLLTE: String
+  serviceURLContains: String
+  serviceURLHasPrefix: String
+  serviceURLHasSuffix: String
+  serviceURLIsNil: Boolean
+  serviceURLNotNil: Boolean
+  serviceURLEqualFold: String
+  serviceURLContainsFold: String
+  """
+  service_external_url field predicates
+  """
+  serviceExternalURL: String
+  serviceExternalURLNEQ: String
+  serviceExternalURLIn: [String!]
+  serviceExternalURLNotIn: [String!]
+  serviceExternalURLGT: String
+  serviceExternalURLGTE: String
+  serviceExternalURLLT: String
+  serviceExternalURLLTE: String
+  serviceExternalURLContains: String
+  serviceExternalURLHasPrefix: String
+  serviceExternalURLHasSuffix: String
+  serviceExternalURLIsNil: Boolean
+  serviceExternalURLNotNil: Boolean
+  serviceExternalURLEqualFold: String
+  serviceExternalURLContainsFold: String
   """
   owner edge predicates
   """
@@ -12095,6 +12169,16 @@ type AgenticSubscriptionInfo implements SubscriptionInfo {
   ownerApplication: ApplicationInfo!
 }
 
+# File
+
+type FileSFTP {
+  publicKeys: [SSHPublicKeySpec!]!
+}
+
+type SSHPublicKeySpec {
+  key: String
+}
+
 # -- Cross-tenant edge overrides --
 
 extend type Application {
@@ -13460,8 +13544,8 @@ func (ec *executionContext) childFields_FileExposure(ctx context.Context, field 
 		return ec.fieldContext_FileExposure_active(ctx, field)
 	case "zoneName":
 		return ec.fieldContext_FileExposure_zoneName(ctx, field)
-	case "sftpPublicKeys":
-		return ec.fieldContext_FileExposure_sftpPublicKeys(ctx, field)
+	case "sftp":
+		return ec.fieldContext_FileExposure_sftp(ctx, field)
 	case "approvalConfig":
 		return ec.fieldContext_FileExposure_approvalConfig(ctx, field)
 	case "owner":
@@ -13496,6 +13580,14 @@ func (ec *executionContext) childFields_FileExposureEdge(ctx context.Context, fi
 	return nil, fmt.Errorf("no field named %q was found under type FileExposureEdge", field.Name)
 }
 
+func (ec *executionContext) childFields_FileSFTP(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "publicKeys":
+		return ec.fieldContext_FileSFTP_publicKeys(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type FileSFTP", field.Name)
+}
+
 func (ec *executionContext) childFields_FileSubscription(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 	switch field.Name {
 	case "id":
@@ -13518,8 +13610,12 @@ func (ec *executionContext) childFields_FileSubscription(ctx context.Context, fi
 		return ec.fieldContext_FileSubscription_fileType(ctx, field)
 	case "zoneName":
 		return ec.fieldContext_FileSubscription_zoneName(ctx, field)
-	case "sftpPublicKeys":
-		return ec.fieldContext_FileSubscription_sftpPublicKeys(ctx, field)
+	case "serviceURL":
+		return ec.fieldContext_FileSubscription_serviceURL(ctx, field)
+	case "serviceExternalURL":
+		return ec.fieldContext_FileSubscription_serviceExternalURL(ctx, field)
+	case "sftp":
+		return ec.fieldContext_FileSubscription_sftp(ctx, field)
 	case "owner":
 		return ec.fieldContext_FileSubscription_owner(ctx, field)
 	case "fileTypeDef":
@@ -13924,6 +14020,14 @@ func (ec *executionContext) childFields_RotateTeamTokenPayload(ctx context.Conte
 		return ec.fieldContext_RotateTeamTokenPayload_errors(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type RotateTeamTokenPayload", field.Name)
+}
+
+func (ec *executionContext) childFields_SSHPublicKeySpec(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "key":
+		return ec.fieldContext_SSHPublicKeySpec_key(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type SSHPublicKeySpec", field.Name)
 }
 
 func (ec *executionContext) childFields_SelectionFilter(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {

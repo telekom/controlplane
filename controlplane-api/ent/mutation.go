@@ -17306,36 +17306,35 @@ func (m *EventTypeMutation) ResetEdge(name string) error {
 // FileExposureMutation represents an operation that mutates the FileExposure nodes in the graph.
 type FileExposureMutation struct {
 	config
-	op                     Op
-	typ                    string
-	id                     *int
-	created_at             *time.Time
-	last_modified_at       *time.Time
-	status_phase           *fileexposure.StatusPhase
-	status_message         *string
-	environment            *string
-	namespace              *string
-	file_type              *string
-	provider               *string
-	visibility             *fileexposure.Visibility
-	active                 *bool
-	zone_name              *string
-	sftp_public_keys       *[]string
-	appendsftp_public_keys []string
-	approval_config        *model.ApprovalConfig
-	clearedFields          map[string]struct{}
-	owner                  *int
-	clearedowner           bool
-	file_type_def          *int
-	clearedfile_type_def   bool
-	zone                   *int
-	clearedzone            bool
-	subscriptions          map[int]struct{}
-	removedsubscriptions   map[int]struct{}
-	clearedsubscriptions   bool
-	done                   bool
-	oldValue               func(context.Context) (*FileExposure, error)
-	predicates             []predicate.FileExposure
+	op                   Op
+	typ                  string
+	id                   *int
+	created_at           *time.Time
+	last_modified_at     *time.Time
+	status_phase         *fileexposure.StatusPhase
+	status_message       *string
+	environment          *string
+	namespace            *string
+	file_type            *string
+	provider             *string
+	visibility           *fileexposure.Visibility
+	active               *bool
+	zone_name            *string
+	sftp                 **model.FileSFTP
+	approval_config      *model.ApprovalConfig
+	clearedFields        map[string]struct{}
+	owner                *int
+	clearedowner         bool
+	file_type_def        *int
+	clearedfile_type_def bool
+	zone                 *int
+	clearedzone          bool
+	subscriptions        map[int]struct{}
+	removedsubscriptions map[int]struct{}
+	clearedsubscriptions bool
+	done                 bool
+	oldValue             func(context.Context) (*FileExposure, error)
+	predicates           []predicate.FileExposure
 }
 
 var _ ent.Mutation = (*FileExposureMutation)(nil)
@@ -17897,55 +17896,53 @@ func (m *FileExposureMutation) ResetZoneName() {
 	m.zone_name = nil
 }
 
-// SetSftpPublicKeys sets the "sftp_public_keys" field.
-func (m *FileExposureMutation) SetSftpPublicKeys(s []string) {
-	m.sftp_public_keys = &s
-	m.appendsftp_public_keys = nil
+// SetSftp sets the "sftp" field.
+func (m *FileExposureMutation) SetSftp(ms *model.FileSFTP) {
+	m.sftp = &ms
 }
 
-// SftpPublicKeys returns the value of the "sftp_public_keys" field in the mutation.
-func (m *FileExposureMutation) SftpPublicKeys() (r []string, exists bool) {
-	v := m.sftp_public_keys
+// Sftp returns the value of the "sftp" field in the mutation.
+func (m *FileExposureMutation) Sftp() (r *model.FileSFTP, exists bool) {
+	v := m.sftp
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldSftpPublicKeys returns the old "sftp_public_keys" field's value of the FileExposure entity.
+// OldSftp returns the old "sftp" field's value of the FileExposure entity.
 // If the FileExposure object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *FileExposureMutation) OldSftpPublicKeys(ctx context.Context) (v []string, err error) {
+func (m *FileExposureMutation) OldSftp(ctx context.Context) (v *model.FileSFTP, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldSftpPublicKeys is only allowed on UpdateOne operations")
+		return v, errors.New("OldSftp is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldSftpPublicKeys requires an ID field in the mutation")
+		return v, errors.New("OldSftp requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldSftpPublicKeys: %w", err)
+		return v, fmt.Errorf("querying old value for OldSftp: %w", err)
 	}
-	return oldValue.SftpPublicKeys, nil
+	return oldValue.Sftp, nil
 }
 
-// AppendSftpPublicKeys adds s to the "sftp_public_keys" field.
-func (m *FileExposureMutation) AppendSftpPublicKeys(s []string) {
-	m.appendsftp_public_keys = append(m.appendsftp_public_keys, s...)
+// ClearSftp clears the value of the "sftp" field.
+func (m *FileExposureMutation) ClearSftp() {
+	m.sftp = nil
+	m.clearedFields[fileexposure.FieldSftp] = struct{}{}
 }
 
-// AppendedSftpPublicKeys returns the list of values that were appended to the "sftp_public_keys" field in this mutation.
-func (m *FileExposureMutation) AppendedSftpPublicKeys() ([]string, bool) {
-	if len(m.appendsftp_public_keys) == 0 {
-		return nil, false
-	}
-	return m.appendsftp_public_keys, true
+// SftpCleared returns if the "sftp" field was cleared in this mutation.
+func (m *FileExposureMutation) SftpCleared() bool {
+	_, ok := m.clearedFields[fileexposure.FieldSftp]
+	return ok
 }
 
-// ResetSftpPublicKeys resets all changes to the "sftp_public_keys" field.
-func (m *FileExposureMutation) ResetSftpPublicKeys() {
-	m.sftp_public_keys = nil
-	m.appendsftp_public_keys = nil
+// ResetSftp resets all changes to the "sftp" field.
+func (m *FileExposureMutation) ResetSftp() {
+	m.sftp = nil
+	delete(m.clearedFields, fileexposure.FieldSftp)
 }
 
 // SetApprovalConfig sets the "approval_config" field.
@@ -18223,8 +18220,8 @@ func (m *FileExposureMutation) Fields() []string {
 	if m.zone_name != nil {
 		fields = append(fields, fileexposure.FieldZoneName)
 	}
-	if m.sftp_public_keys != nil {
-		fields = append(fields, fileexposure.FieldSftpPublicKeys)
+	if m.sftp != nil {
+		fields = append(fields, fileexposure.FieldSftp)
 	}
 	if m.approval_config != nil {
 		fields = append(fields, fileexposure.FieldApprovalConfig)
@@ -18259,8 +18256,8 @@ func (m *FileExposureMutation) Field(name string) (ent.Value, bool) {
 		return m.Active()
 	case fileexposure.FieldZoneName:
 		return m.ZoneName()
-	case fileexposure.FieldSftpPublicKeys:
-		return m.SftpPublicKeys()
+	case fileexposure.FieldSftp:
+		return m.Sftp()
 	case fileexposure.FieldApprovalConfig:
 		return m.ApprovalConfig()
 	}
@@ -18294,8 +18291,8 @@ func (m *FileExposureMutation) OldField(ctx context.Context, name string) (ent.V
 		return m.OldActive(ctx)
 	case fileexposure.FieldZoneName:
 		return m.OldZoneName(ctx)
-	case fileexposure.FieldSftpPublicKeys:
-		return m.OldSftpPublicKeys(ctx)
+	case fileexposure.FieldSftp:
+		return m.OldSftp(ctx)
 	case fileexposure.FieldApprovalConfig:
 		return m.OldApprovalConfig(ctx)
 	}
@@ -18384,12 +18381,12 @@ func (m *FileExposureMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetZoneName(v)
 		return nil
-	case fileexposure.FieldSftpPublicKeys:
-		v, ok := value.([]string)
+	case fileexposure.FieldSftp:
+		v, ok := value.(*model.FileSFTP)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetSftpPublicKeys(v)
+		m.SetSftp(v)
 		return nil
 	case fileexposure.FieldApprovalConfig:
 		v, ok := value.(model.ApprovalConfig)
@@ -18443,6 +18440,9 @@ func (m *FileExposureMutation) ClearedFields() []string {
 	if m.FieldCleared(fileexposure.FieldActive) {
 		fields = append(fields, fileexposure.FieldActive)
 	}
+	if m.FieldCleared(fileexposure.FieldSftp) {
+		fields = append(fields, fileexposure.FieldSftp)
+	}
 	return fields
 }
 
@@ -18471,6 +18471,9 @@ func (m *FileExposureMutation) ClearField(name string) error {
 		return nil
 	case fileexposure.FieldActive:
 		m.ClearActive()
+		return nil
+	case fileexposure.FieldSftp:
+		m.ClearSftp()
 		return nil
 	}
 	return fmt.Errorf("unknown FileExposure nullable field %s", name)
@@ -18513,8 +18516,8 @@ func (m *FileExposureMutation) ResetField(name string) error {
 	case fileexposure.FieldZoneName:
 		m.ResetZoneName()
 		return nil
-	case fileexposure.FieldSftpPublicKeys:
-		m.ResetSftpPublicKeys()
+	case fileexposure.FieldSftp:
+		m.ResetSftp()
 		return nil
 	case fileexposure.FieldApprovalConfig:
 		m.ResetApprovalConfig()
@@ -18676,8 +18679,9 @@ type FileSubscriptionMutation struct {
 	name                     *string
 	file_type                *string
 	zone_name                *string
-	sftp_public_keys         *[]string
-	appendsftp_public_keys   []string
+	service_url              *string
+	service_external_url     *string
+	sftp                     **model.FileSFTP
 	clearedFields            map[string]struct{}
 	owner                    *int
 	clearedowner             bool
@@ -19158,55 +19162,151 @@ func (m *FileSubscriptionMutation) ResetZoneName() {
 	m.zone_name = nil
 }
 
-// SetSftpPublicKeys sets the "sftp_public_keys" field.
-func (m *FileSubscriptionMutation) SetSftpPublicKeys(s []string) {
-	m.sftp_public_keys = &s
-	m.appendsftp_public_keys = nil
+// SetServiceURL sets the "service_url" field.
+func (m *FileSubscriptionMutation) SetServiceURL(s string) {
+	m.service_url = &s
 }
 
-// SftpPublicKeys returns the value of the "sftp_public_keys" field in the mutation.
-func (m *FileSubscriptionMutation) SftpPublicKeys() (r []string, exists bool) {
-	v := m.sftp_public_keys
+// ServiceURL returns the value of the "service_url" field in the mutation.
+func (m *FileSubscriptionMutation) ServiceURL() (r string, exists bool) {
+	v := m.service_url
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldSftpPublicKeys returns the old "sftp_public_keys" field's value of the FileSubscription entity.
+// OldServiceURL returns the old "service_url" field's value of the FileSubscription entity.
 // If the FileSubscription object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *FileSubscriptionMutation) OldSftpPublicKeys(ctx context.Context) (v []string, err error) {
+func (m *FileSubscriptionMutation) OldServiceURL(ctx context.Context) (v string, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldSftpPublicKeys is only allowed on UpdateOne operations")
+		return v, errors.New("OldServiceURL is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldSftpPublicKeys requires an ID field in the mutation")
+		return v, errors.New("OldServiceURL requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldSftpPublicKeys: %w", err)
+		return v, fmt.Errorf("querying old value for OldServiceURL: %w", err)
 	}
-	return oldValue.SftpPublicKeys, nil
+	return oldValue.ServiceURL, nil
 }
 
-// AppendSftpPublicKeys adds s to the "sftp_public_keys" field.
-func (m *FileSubscriptionMutation) AppendSftpPublicKeys(s []string) {
-	m.appendsftp_public_keys = append(m.appendsftp_public_keys, s...)
+// ClearServiceURL clears the value of the "service_url" field.
+func (m *FileSubscriptionMutation) ClearServiceURL() {
+	m.service_url = nil
+	m.clearedFields[filesubscription.FieldServiceURL] = struct{}{}
 }
 
-// AppendedSftpPublicKeys returns the list of values that were appended to the "sftp_public_keys" field in this mutation.
-func (m *FileSubscriptionMutation) AppendedSftpPublicKeys() ([]string, bool) {
-	if len(m.appendsftp_public_keys) == 0 {
-		return nil, false
+// ServiceURLCleared returns if the "service_url" field was cleared in this mutation.
+func (m *FileSubscriptionMutation) ServiceURLCleared() bool {
+	_, ok := m.clearedFields[filesubscription.FieldServiceURL]
+	return ok
+}
+
+// ResetServiceURL resets all changes to the "service_url" field.
+func (m *FileSubscriptionMutation) ResetServiceURL() {
+	m.service_url = nil
+	delete(m.clearedFields, filesubscription.FieldServiceURL)
+}
+
+// SetServiceExternalURL sets the "service_external_url" field.
+func (m *FileSubscriptionMutation) SetServiceExternalURL(s string) {
+	m.service_external_url = &s
+}
+
+// ServiceExternalURL returns the value of the "service_external_url" field in the mutation.
+func (m *FileSubscriptionMutation) ServiceExternalURL() (r string, exists bool) {
+	v := m.service_external_url
+	if v == nil {
+		return
 	}
-	return m.appendsftp_public_keys, true
+	return *v, true
 }
 
-// ResetSftpPublicKeys resets all changes to the "sftp_public_keys" field.
-func (m *FileSubscriptionMutation) ResetSftpPublicKeys() {
-	m.sftp_public_keys = nil
-	m.appendsftp_public_keys = nil
+// OldServiceExternalURL returns the old "service_external_url" field's value of the FileSubscription entity.
+// If the FileSubscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FileSubscriptionMutation) OldServiceExternalURL(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldServiceExternalURL is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldServiceExternalURL requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldServiceExternalURL: %w", err)
+	}
+	return oldValue.ServiceExternalURL, nil
+}
+
+// ClearServiceExternalURL clears the value of the "service_external_url" field.
+func (m *FileSubscriptionMutation) ClearServiceExternalURL() {
+	m.service_external_url = nil
+	m.clearedFields[filesubscription.FieldServiceExternalURL] = struct{}{}
+}
+
+// ServiceExternalURLCleared returns if the "service_external_url" field was cleared in this mutation.
+func (m *FileSubscriptionMutation) ServiceExternalURLCleared() bool {
+	_, ok := m.clearedFields[filesubscription.FieldServiceExternalURL]
+	return ok
+}
+
+// ResetServiceExternalURL resets all changes to the "service_external_url" field.
+func (m *FileSubscriptionMutation) ResetServiceExternalURL() {
+	m.service_external_url = nil
+	delete(m.clearedFields, filesubscription.FieldServiceExternalURL)
+}
+
+// SetSftp sets the "sftp" field.
+func (m *FileSubscriptionMutation) SetSftp(ms *model.FileSFTP) {
+	m.sftp = &ms
+}
+
+// Sftp returns the value of the "sftp" field in the mutation.
+func (m *FileSubscriptionMutation) Sftp() (r *model.FileSFTP, exists bool) {
+	v := m.sftp
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSftp returns the old "sftp" field's value of the FileSubscription entity.
+// If the FileSubscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FileSubscriptionMutation) OldSftp(ctx context.Context) (v *model.FileSFTP, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSftp is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSftp requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSftp: %w", err)
+	}
+	return oldValue.Sftp, nil
+}
+
+// ClearSftp clears the value of the "sftp" field.
+func (m *FileSubscriptionMutation) ClearSftp() {
+	m.sftp = nil
+	m.clearedFields[filesubscription.FieldSftp] = struct{}{}
+}
+
+// SftpCleared returns if the "sftp" field was cleared in this mutation.
+func (m *FileSubscriptionMutation) SftpCleared() bool {
+	_, ok := m.clearedFields[filesubscription.FieldSftp]
+	return ok
+}
+
+// ResetSftp resets all changes to the "sftp" field.
+func (m *FileSubscriptionMutation) ResetSftp() {
+	m.sftp = nil
+	delete(m.clearedFields, filesubscription.FieldSftp)
 }
 
 // SetOwnerID sets the "owner" edge to the Application entity by id.
@@ -19492,7 +19592,7 @@ func (m *FileSubscriptionMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *FileSubscriptionMutation) Fields() []string {
-	fields := make([]string, 0, 10)
+	fields := make([]string, 0, 12)
 	if m.created_at != nil {
 		fields = append(fields, filesubscription.FieldCreatedAt)
 	}
@@ -19520,8 +19620,14 @@ func (m *FileSubscriptionMutation) Fields() []string {
 	if m.zone_name != nil {
 		fields = append(fields, filesubscription.FieldZoneName)
 	}
-	if m.sftp_public_keys != nil {
-		fields = append(fields, filesubscription.FieldSftpPublicKeys)
+	if m.service_url != nil {
+		fields = append(fields, filesubscription.FieldServiceURL)
+	}
+	if m.service_external_url != nil {
+		fields = append(fields, filesubscription.FieldServiceExternalURL)
+	}
+	if m.sftp != nil {
+		fields = append(fields, filesubscription.FieldSftp)
 	}
 	return fields
 }
@@ -19549,8 +19655,12 @@ func (m *FileSubscriptionMutation) Field(name string) (ent.Value, bool) {
 		return m.FileType()
 	case filesubscription.FieldZoneName:
 		return m.ZoneName()
-	case filesubscription.FieldSftpPublicKeys:
-		return m.SftpPublicKeys()
+	case filesubscription.FieldServiceURL:
+		return m.ServiceURL()
+	case filesubscription.FieldServiceExternalURL:
+		return m.ServiceExternalURL()
+	case filesubscription.FieldSftp:
+		return m.Sftp()
 	}
 	return nil, false
 }
@@ -19578,8 +19688,12 @@ func (m *FileSubscriptionMutation) OldField(ctx context.Context, name string) (e
 		return m.OldFileType(ctx)
 	case filesubscription.FieldZoneName:
 		return m.OldZoneName(ctx)
-	case filesubscription.FieldSftpPublicKeys:
-		return m.OldSftpPublicKeys(ctx)
+	case filesubscription.FieldServiceURL:
+		return m.OldServiceURL(ctx)
+	case filesubscription.FieldServiceExternalURL:
+		return m.OldServiceExternalURL(ctx)
+	case filesubscription.FieldSftp:
+		return m.OldSftp(ctx)
 	}
 	return nil, fmt.Errorf("unknown FileSubscription field %s", name)
 }
@@ -19652,12 +19766,26 @@ func (m *FileSubscriptionMutation) SetField(name string, value ent.Value) error 
 		}
 		m.SetZoneName(v)
 		return nil
-	case filesubscription.FieldSftpPublicKeys:
-		v, ok := value.([]string)
+	case filesubscription.FieldServiceURL:
+		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetSftpPublicKeys(v)
+		m.SetServiceURL(v)
+		return nil
+	case filesubscription.FieldServiceExternalURL:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetServiceExternalURL(v)
+		return nil
+	case filesubscription.FieldSftp:
+		v, ok := value.(*model.FileSFTP)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSftp(v)
 		return nil
 	}
 	return fmt.Errorf("unknown FileSubscription field %s", name)
@@ -19698,6 +19826,15 @@ func (m *FileSubscriptionMutation) ClearedFields() []string {
 	if m.FieldCleared(filesubscription.FieldEnvironment) {
 		fields = append(fields, filesubscription.FieldEnvironment)
 	}
+	if m.FieldCleared(filesubscription.FieldServiceURL) {
+		fields = append(fields, filesubscription.FieldServiceURL)
+	}
+	if m.FieldCleared(filesubscription.FieldServiceExternalURL) {
+		fields = append(fields, filesubscription.FieldServiceExternalURL)
+	}
+	if m.FieldCleared(filesubscription.FieldSftp) {
+		fields = append(fields, filesubscription.FieldSftp)
+	}
 	return fields
 }
 
@@ -19720,6 +19857,15 @@ func (m *FileSubscriptionMutation) ClearField(name string) error {
 		return nil
 	case filesubscription.FieldEnvironment:
 		m.ClearEnvironment()
+		return nil
+	case filesubscription.FieldServiceURL:
+		m.ClearServiceURL()
+		return nil
+	case filesubscription.FieldServiceExternalURL:
+		m.ClearServiceExternalURL()
+		return nil
+	case filesubscription.FieldSftp:
+		m.ClearSftp()
 		return nil
 	}
 	return fmt.Errorf("unknown FileSubscription nullable field %s", name)
@@ -19756,8 +19902,14 @@ func (m *FileSubscriptionMutation) ResetField(name string) error {
 	case filesubscription.FieldZoneName:
 		m.ResetZoneName()
 		return nil
-	case filesubscription.FieldSftpPublicKeys:
-		m.ResetSftpPublicKeys()
+	case filesubscription.FieldServiceURL:
+		m.ResetServiceURL()
+		return nil
+	case filesubscription.FieldServiceExternalURL:
+		m.ResetServiceExternalURL()
+		return nil
+	case filesubscription.FieldSftp:
+		m.ResetSftp()
 		return nil
 	}
 	return fmt.Errorf("unknown FileSubscription field %s", name)

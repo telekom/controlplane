@@ -373,6 +373,16 @@ type AgenticSubscriptionInfo implements SubscriptionInfo {
   ownerApplication: ApplicationInfo!
 }
 
+# File
+
+type FileSFTP {
+  publicKeys: [SSHPublicKeySpec!]!
+}
+
+type SSHPublicKeySpec {
+  key: String
+}
+
 # -- Cross-tenant edge overrides --
 
 extend type Application {

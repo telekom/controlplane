@@ -9075,6 +9075,40 @@ type FileSubscriptionWhereInput struct {
 	ZoneNameEqualFold    *string  `json:"zoneNameEqualFold,omitempty"`
 	ZoneNameContainsFold *string  `json:"zoneNameContainsFold,omitempty"`
 
+	// "service_url" field predicates.
+	ServiceURL             *string  `json:"serviceURL,omitempty"`
+	ServiceURLNEQ          *string  `json:"serviceURLNEQ,omitempty"`
+	ServiceURLIn           []string `json:"serviceURLIn,omitempty"`
+	ServiceURLNotIn        []string `json:"serviceURLNotIn,omitempty"`
+	ServiceURLGT           *string  `json:"serviceURLGT,omitempty"`
+	ServiceURLGTE          *string  `json:"serviceURLGTE,omitempty"`
+	ServiceURLLT           *string  `json:"serviceURLLT,omitempty"`
+	ServiceURLLTE          *string  `json:"serviceURLLTE,omitempty"`
+	ServiceURLContains     *string  `json:"serviceURLContains,omitempty"`
+	ServiceURLHasPrefix    *string  `json:"serviceURLHasPrefix,omitempty"`
+	ServiceURLHasSuffix    *string  `json:"serviceURLHasSuffix,omitempty"`
+	ServiceURLIsNil        bool     `json:"serviceURLIsNil,omitempty"`
+	ServiceURLNotNil       bool     `json:"serviceURLNotNil,omitempty"`
+	ServiceURLEqualFold    *string  `json:"serviceURLEqualFold,omitempty"`
+	ServiceURLContainsFold *string  `json:"serviceURLContainsFold,omitempty"`
+
+	// "service_external_url" field predicates.
+	ServiceExternalURL             *string  `json:"serviceExternalURL,omitempty"`
+	ServiceExternalURLNEQ          *string  `json:"serviceExternalURLNEQ,omitempty"`
+	ServiceExternalURLIn           []string `json:"serviceExternalURLIn,omitempty"`
+	ServiceExternalURLNotIn        []string `json:"serviceExternalURLNotIn,omitempty"`
+	ServiceExternalURLGT           *string  `json:"serviceExternalURLGT,omitempty"`
+	ServiceExternalURLGTE          *string  `json:"serviceExternalURLGTE,omitempty"`
+	ServiceExternalURLLT           *string  `json:"serviceExternalURLLT,omitempty"`
+	ServiceExternalURLLTE          *string  `json:"serviceExternalURLLTE,omitempty"`
+	ServiceExternalURLContains     *string  `json:"serviceExternalURLContains,omitempty"`
+	ServiceExternalURLHasPrefix    *string  `json:"serviceExternalURLHasPrefix,omitempty"`
+	ServiceExternalURLHasSuffix    *string  `json:"serviceExternalURLHasSuffix,omitempty"`
+	ServiceExternalURLIsNil        bool     `json:"serviceExternalURLIsNil,omitempty"`
+	ServiceExternalURLNotNil       bool     `json:"serviceExternalURLNotNil,omitempty"`
+	ServiceExternalURLEqualFold    *string  `json:"serviceExternalURLEqualFold,omitempty"`
+	ServiceExternalURLContainsFold *string  `json:"serviceExternalURLContainsFold,omitempty"`
+
 	// "owner" edge predicates.
 	HasOwner     *bool                    `json:"hasOwner,omitempty"`
 	HasOwnerWith []*ApplicationWhereInput `json:"hasOwnerWith,omitempty"`
@@ -9506,6 +9540,96 @@ func (i *FileSubscriptionWhereInput) P() (predicate.FileSubscription, error) {
 	}
 	if i.ZoneNameContainsFold != nil {
 		predicates = append(predicates, filesubscription.ZoneNameContainsFold(*i.ZoneNameContainsFold))
+	}
+	if i.ServiceURL != nil {
+		predicates = append(predicates, filesubscription.ServiceURLEQ(*i.ServiceURL))
+	}
+	if i.ServiceURLNEQ != nil {
+		predicates = append(predicates, filesubscription.ServiceURLNEQ(*i.ServiceURLNEQ))
+	}
+	if len(i.ServiceURLIn) > 0 {
+		predicates = append(predicates, filesubscription.ServiceURLIn(i.ServiceURLIn...))
+	}
+	if len(i.ServiceURLNotIn) > 0 {
+		predicates = append(predicates, filesubscription.ServiceURLNotIn(i.ServiceURLNotIn...))
+	}
+	if i.ServiceURLGT != nil {
+		predicates = append(predicates, filesubscription.ServiceURLGT(*i.ServiceURLGT))
+	}
+	if i.ServiceURLGTE != nil {
+		predicates = append(predicates, filesubscription.ServiceURLGTE(*i.ServiceURLGTE))
+	}
+	if i.ServiceURLLT != nil {
+		predicates = append(predicates, filesubscription.ServiceURLLT(*i.ServiceURLLT))
+	}
+	if i.ServiceURLLTE != nil {
+		predicates = append(predicates, filesubscription.ServiceURLLTE(*i.ServiceURLLTE))
+	}
+	if i.ServiceURLContains != nil {
+		predicates = append(predicates, filesubscription.ServiceURLContains(*i.ServiceURLContains))
+	}
+	if i.ServiceURLHasPrefix != nil {
+		predicates = append(predicates, filesubscription.ServiceURLHasPrefix(*i.ServiceURLHasPrefix))
+	}
+	if i.ServiceURLHasSuffix != nil {
+		predicates = append(predicates, filesubscription.ServiceURLHasSuffix(*i.ServiceURLHasSuffix))
+	}
+	if i.ServiceURLIsNil {
+		predicates = append(predicates, filesubscription.ServiceURLIsNil())
+	}
+	if i.ServiceURLNotNil {
+		predicates = append(predicates, filesubscription.ServiceURLNotNil())
+	}
+	if i.ServiceURLEqualFold != nil {
+		predicates = append(predicates, filesubscription.ServiceURLEqualFold(*i.ServiceURLEqualFold))
+	}
+	if i.ServiceURLContainsFold != nil {
+		predicates = append(predicates, filesubscription.ServiceURLContainsFold(*i.ServiceURLContainsFold))
+	}
+	if i.ServiceExternalURL != nil {
+		predicates = append(predicates, filesubscription.ServiceExternalURLEQ(*i.ServiceExternalURL))
+	}
+	if i.ServiceExternalURLNEQ != nil {
+		predicates = append(predicates, filesubscription.ServiceExternalURLNEQ(*i.ServiceExternalURLNEQ))
+	}
+	if len(i.ServiceExternalURLIn) > 0 {
+		predicates = append(predicates, filesubscription.ServiceExternalURLIn(i.ServiceExternalURLIn...))
+	}
+	if len(i.ServiceExternalURLNotIn) > 0 {
+		predicates = append(predicates, filesubscription.ServiceExternalURLNotIn(i.ServiceExternalURLNotIn...))
+	}
+	if i.ServiceExternalURLGT != nil {
+		predicates = append(predicates, filesubscription.ServiceExternalURLGT(*i.ServiceExternalURLGT))
+	}
+	if i.ServiceExternalURLGTE != nil {
+		predicates = append(predicates, filesubscription.ServiceExternalURLGTE(*i.ServiceExternalURLGTE))
+	}
+	if i.ServiceExternalURLLT != nil {
+		predicates = append(predicates, filesubscription.ServiceExternalURLLT(*i.ServiceExternalURLLT))
+	}
+	if i.ServiceExternalURLLTE != nil {
+		predicates = append(predicates, filesubscription.ServiceExternalURLLTE(*i.ServiceExternalURLLTE))
+	}
+	if i.ServiceExternalURLContains != nil {
+		predicates = append(predicates, filesubscription.ServiceExternalURLContains(*i.ServiceExternalURLContains))
+	}
+	if i.ServiceExternalURLHasPrefix != nil {
+		predicates = append(predicates, filesubscription.ServiceExternalURLHasPrefix(*i.ServiceExternalURLHasPrefix))
+	}
+	if i.ServiceExternalURLHasSuffix != nil {
+		predicates = append(predicates, filesubscription.ServiceExternalURLHasSuffix(*i.ServiceExternalURLHasSuffix))
+	}
+	if i.ServiceExternalURLIsNil {
+		predicates = append(predicates, filesubscription.ServiceExternalURLIsNil())
+	}
+	if i.ServiceExternalURLNotNil {
+		predicates = append(predicates, filesubscription.ServiceExternalURLNotNil())
+	}
+	if i.ServiceExternalURLEqualFold != nil {
+		predicates = append(predicates, filesubscription.ServiceExternalURLEqualFold(*i.ServiceExternalURLEqualFold))
+	}
+	if i.ServiceExternalURLContainsFold != nil {
+		predicates = append(predicates, filesubscription.ServiceExternalURLContainsFold(*i.ServiceExternalURLContainsFold))
 	}
 
 	if i.HasOwner != nil {

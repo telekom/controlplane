@@ -82,7 +82,7 @@ func (r *Repository) Upsert(ctx context.Context, data *FileExposureData) error {
 		SetVisibility(entfileexposure.Visibility(data.Visibility)).
 		SetActive(data.Active).
 		SetZoneName(data.Zone).
-		SetSftpPublicKeys(data.SFTPPublicKeys).
+		SetSftp(data.FileSFTP).
 		SetApprovalConfig(data.ApprovalConfig).
 		SetStatusPhase(entfileexposure.StatusPhase(data.StatusPhase)).
 		SetStatusMessage(data.StatusMessage).
@@ -98,7 +98,7 @@ func (r *Repository) Upsert(ctx context.Context, data *FileExposureData) error {
 			u.SetVisibility(entfileexposure.Visibility(data.Visibility))
 			u.SetActive(data.Active)
 			u.SetZoneName(data.Zone)
-			u.UpdateSftpPublicKeys()
+			u.UpdateSftp()
 			u.UpdateApprovalConfig()
 			u.SetStatusPhase(entfileexposure.StatusPhase(data.StatusPhase))
 			u.SetStatusMessage(data.StatusMessage)

@@ -673,6 +673,16 @@ func ZoneNameContainsFold(v string) predicate.FileExposure {
 	return predicate.FileExposure(sql.FieldContainsFold(FieldZoneName, v))
 }
 
+// SftpIsNil applies the IsNil predicate on the "sftp" field.
+func SftpIsNil() predicate.FileExposure {
+	return predicate.FileExposure(sql.FieldIsNull(FieldSftp))
+}
+
+// SftpNotNil applies the NotNil predicate on the "sftp" field.
+func SftpNotNil() predicate.FileExposure {
+	return predicate.FileExposure(sql.FieldNotNull(FieldSftp))
+}
+
 // HasOwner applies the HasEdge predicate on the "owner" edge.
 func HasOwner() predicate.FileExposure {
 	return predicate.FileExposure(func(s *sql.Selector) {

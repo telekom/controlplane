@@ -14,6 +14,7 @@ import (
 	"entgo.io/ent/schema/index"
 
 	schemamixin "github.com/telekom/controlplane/controlplane-api/ent/schema/mixin"
+	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 )
 
 // FileSubscription holds the schema definition for a file type subscription.
@@ -37,8 +38,13 @@ func (FileSubscription) Fields() []ent.Field {
 			NotEmpty(),
 		field.Text("zone_name").
 			NotEmpty(),
-		field.JSON("sftp_public_keys", []string{}).
-			Default([]string{}).
+		field.Text("service_url").
+			Optional(),
+		field.Text("service_external_url").
+			Optional(),
+		field.JSON("sftp", &model.FileSFTP{}).
+			Optional().
+			Default(&model.FileSFTP{}).
 			Annotations(entgql.Skip(entgql.SkipWhereInput)),
 	}
 }

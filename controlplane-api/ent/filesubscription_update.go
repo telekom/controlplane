@@ -13,7 +13,6 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
-	"entgo.io/ent/dialect/sql/sqljson"
 	"entgo.io/ent/schema/field"
 	"github.com/telekom/controlplane/controlplane-api/ent/application"
 	"github.com/telekom/controlplane/controlplane-api/ent/approval"
@@ -23,6 +22,7 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/filetype"
 	"github.com/telekom/controlplane/controlplane-api/ent/predicate"
 	"github.com/telekom/controlplane/controlplane-api/ent/zone"
+	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 )
 
 // FileSubscriptionUpdate is the builder for updating FileSubscription entities.
@@ -160,15 +160,55 @@ func (_u *FileSubscriptionUpdate) SetNillableZoneName(v *string) *FileSubscripti
 	return _u
 }
 
-// SetSftpPublicKeys sets the "sftp_public_keys" field.
-func (_u *FileSubscriptionUpdate) SetSftpPublicKeys(v []string) *FileSubscriptionUpdate {
-	_u.mutation.SetSftpPublicKeys(v)
+// SetServiceURL sets the "service_url" field.
+func (_u *FileSubscriptionUpdate) SetServiceURL(v string) *FileSubscriptionUpdate {
+	_u.mutation.SetServiceURL(v)
 	return _u
 }
 
-// AppendSftpPublicKeys appends value to the "sftp_public_keys" field.
-func (_u *FileSubscriptionUpdate) AppendSftpPublicKeys(v []string) *FileSubscriptionUpdate {
-	_u.mutation.AppendSftpPublicKeys(v)
+// SetNillableServiceURL sets the "service_url" field if the given value is not nil.
+func (_u *FileSubscriptionUpdate) SetNillableServiceURL(v *string) *FileSubscriptionUpdate {
+	if v != nil {
+		_u.SetServiceURL(*v)
+	}
+	return _u
+}
+
+// ClearServiceURL clears the value of the "service_url" field.
+func (_u *FileSubscriptionUpdate) ClearServiceURL() *FileSubscriptionUpdate {
+	_u.mutation.ClearServiceURL()
+	return _u
+}
+
+// SetServiceExternalURL sets the "service_external_url" field.
+func (_u *FileSubscriptionUpdate) SetServiceExternalURL(v string) *FileSubscriptionUpdate {
+	_u.mutation.SetServiceExternalURL(v)
+	return _u
+}
+
+// SetNillableServiceExternalURL sets the "service_external_url" field if the given value is not nil.
+func (_u *FileSubscriptionUpdate) SetNillableServiceExternalURL(v *string) *FileSubscriptionUpdate {
+	if v != nil {
+		_u.SetServiceExternalURL(*v)
+	}
+	return _u
+}
+
+// ClearServiceExternalURL clears the value of the "service_external_url" field.
+func (_u *FileSubscriptionUpdate) ClearServiceExternalURL() *FileSubscriptionUpdate {
+	_u.mutation.ClearServiceExternalURL()
+	return _u
+}
+
+// SetSftp sets the "sftp" field.
+func (_u *FileSubscriptionUpdate) SetSftp(v *model.FileSFTP) *FileSubscriptionUpdate {
+	_u.mutation.SetSftp(v)
+	return _u
+}
+
+// ClearSftp clears the value of the "sftp" field.
+func (_u *FileSubscriptionUpdate) ClearSftp() *FileSubscriptionUpdate {
+	_u.mutation.ClearSftp()
 	return _u
 }
 
@@ -445,13 +485,23 @@ func (_u *FileSubscriptionUpdate) sqlSave(ctx context.Context) (_node int, err e
 	if value, ok := _u.mutation.ZoneName(); ok {
 		_spec.SetField(filesubscription.FieldZoneName, field.TypeString, value)
 	}
-	if value, ok := _u.mutation.SftpPublicKeys(); ok {
-		_spec.SetField(filesubscription.FieldSftpPublicKeys, field.TypeJSON, value)
+	if value, ok := _u.mutation.ServiceURL(); ok {
+		_spec.SetField(filesubscription.FieldServiceURL, field.TypeString, value)
 	}
-	if value, ok := _u.mutation.AppendedSftpPublicKeys(); ok {
-		_spec.AddModifier(func(u *sql.UpdateBuilder) {
-			sqljson.Append(u, filesubscription.FieldSftpPublicKeys, value)
-		})
+	if _u.mutation.ServiceURLCleared() {
+		_spec.ClearField(filesubscription.FieldServiceURL, field.TypeString)
+	}
+	if value, ok := _u.mutation.ServiceExternalURL(); ok {
+		_spec.SetField(filesubscription.FieldServiceExternalURL, field.TypeString, value)
+	}
+	if _u.mutation.ServiceExternalURLCleared() {
+		_spec.ClearField(filesubscription.FieldServiceExternalURL, field.TypeString)
+	}
+	if value, ok := _u.mutation.Sftp(); ok {
+		_spec.SetField(filesubscription.FieldSftp, field.TypeJSON, value)
+	}
+	if _u.mutation.SftpCleared() {
+		_spec.ClearField(filesubscription.FieldSftp, field.TypeJSON)
 	}
 	if _u.mutation.OwnerCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -785,15 +835,55 @@ func (_u *FileSubscriptionUpdateOne) SetNillableZoneName(v *string) *FileSubscri
 	return _u
 }
 
-// SetSftpPublicKeys sets the "sftp_public_keys" field.
-func (_u *FileSubscriptionUpdateOne) SetSftpPublicKeys(v []string) *FileSubscriptionUpdateOne {
-	_u.mutation.SetSftpPublicKeys(v)
+// SetServiceURL sets the "service_url" field.
+func (_u *FileSubscriptionUpdateOne) SetServiceURL(v string) *FileSubscriptionUpdateOne {
+	_u.mutation.SetServiceURL(v)
 	return _u
 }
 
-// AppendSftpPublicKeys appends value to the "sftp_public_keys" field.
-func (_u *FileSubscriptionUpdateOne) AppendSftpPublicKeys(v []string) *FileSubscriptionUpdateOne {
-	_u.mutation.AppendSftpPublicKeys(v)
+// SetNillableServiceURL sets the "service_url" field if the given value is not nil.
+func (_u *FileSubscriptionUpdateOne) SetNillableServiceURL(v *string) *FileSubscriptionUpdateOne {
+	if v != nil {
+		_u.SetServiceURL(*v)
+	}
+	return _u
+}
+
+// ClearServiceURL clears the value of the "service_url" field.
+func (_u *FileSubscriptionUpdateOne) ClearServiceURL() *FileSubscriptionUpdateOne {
+	_u.mutation.ClearServiceURL()
+	return _u
+}
+
+// SetServiceExternalURL sets the "service_external_url" field.
+func (_u *FileSubscriptionUpdateOne) SetServiceExternalURL(v string) *FileSubscriptionUpdateOne {
+	_u.mutation.SetServiceExternalURL(v)
+	return _u
+}
+
+// SetNillableServiceExternalURL sets the "service_external_url" field if the given value is not nil.
+func (_u *FileSubscriptionUpdateOne) SetNillableServiceExternalURL(v *string) *FileSubscriptionUpdateOne {
+	if v != nil {
+		_u.SetServiceExternalURL(*v)
+	}
+	return _u
+}
+
+// ClearServiceExternalURL clears the value of the "service_external_url" field.
+func (_u *FileSubscriptionUpdateOne) ClearServiceExternalURL() *FileSubscriptionUpdateOne {
+	_u.mutation.ClearServiceExternalURL()
+	return _u
+}
+
+// SetSftp sets the "sftp" field.
+func (_u *FileSubscriptionUpdateOne) SetSftp(v *model.FileSFTP) *FileSubscriptionUpdateOne {
+	_u.mutation.SetSftp(v)
+	return _u
+}
+
+// ClearSftp clears the value of the "sftp" field.
+func (_u *FileSubscriptionUpdateOne) ClearSftp() *FileSubscriptionUpdateOne {
+	_u.mutation.ClearSftp()
 	return _u
 }
 
@@ -1100,13 +1190,23 @@ func (_u *FileSubscriptionUpdateOne) sqlSave(ctx context.Context) (_node *FileSu
 	if value, ok := _u.mutation.ZoneName(); ok {
 		_spec.SetField(filesubscription.FieldZoneName, field.TypeString, value)
 	}
-	if value, ok := _u.mutation.SftpPublicKeys(); ok {
-		_spec.SetField(filesubscription.FieldSftpPublicKeys, field.TypeJSON, value)
+	if value, ok := _u.mutation.ServiceURL(); ok {
+		_spec.SetField(filesubscription.FieldServiceURL, field.TypeString, value)
 	}
-	if value, ok := _u.mutation.AppendedSftpPublicKeys(); ok {
-		_spec.AddModifier(func(u *sql.UpdateBuilder) {
-			sqljson.Append(u, filesubscription.FieldSftpPublicKeys, value)
-		})
+	if _u.mutation.ServiceURLCleared() {
+		_spec.ClearField(filesubscription.FieldServiceURL, field.TypeString)
+	}
+	if value, ok := _u.mutation.ServiceExternalURL(); ok {
+		_spec.SetField(filesubscription.FieldServiceExternalURL, field.TypeString, value)
+	}
+	if _u.mutation.ServiceExternalURLCleared() {
+		_spec.ClearField(filesubscription.FieldServiceExternalURL, field.TypeString)
+	}
+	if value, ok := _u.mutation.Sftp(); ok {
+		_spec.SetField(filesubscription.FieldSftp, field.TypeJSON, value)
+	}
+	if _u.mutation.SftpCleared() {
+		_spec.ClearField(filesubscription.FieldSftp, field.TypeJSON)
 	}
 	if _u.mutation.OwnerCleared() {
 		edge := &sqlgraph.EdgeSpec{

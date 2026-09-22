@@ -9610,27 +9610,36 @@ func (ec *executionContext) fieldContext_FileExposure_zoneName(_ context.Context
 	return graphql.NewScalarFieldContext("FileExposure", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
-func (ec *executionContext) _FileExposure_sftpPublicKeys(ctx context.Context, field graphql.CollectedField, obj *ent.FileExposure) (ret graphql.Marshaler) {
+func (ec *executionContext) _FileExposure_sftp(ctx context.Context, field graphql.CollectedField, obj *ent.FileExposure) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
 		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.fieldContext_FileExposure_sftpPublicKeys(ctx, field)
+			return ec.fieldContext_FileExposure_sftp(ctx, field)
 		},
 		func(ctx context.Context) (any, error) {
-			return obj.SftpPublicKeys, nil
+			return obj.Sftp, nil
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v []string) graphql.Marshaler {
-			return ec.marshalNString2ᚕstringᚄ(ctx, selections, v)
+		func(ctx context.Context, selections ast.SelectionSet, v *model1.FileSFTP) graphql.Marshaler {
+			return ec.marshalOFileSFTP2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐFileSFTP(ctx, selections, v)
 		},
 		true,
-		true,
+		false,
 	)
 }
-func (ec *executionContext) fieldContext_FileExposure_sftpPublicKeys(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	return graphql.NewScalarFieldContext("FileExposure", field, false, false, errors.New("field of type String does not have child fields"))
+func (ec *executionContext) fieldContext_FileExposure_sftp(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FileExposure",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_FileSFTP(ctx, field)
+		},
+	}
+	return fc, nil
 }
 
 func (ec *executionContext) _FileExposure_approvalConfig(ctx context.Context, field graphql.CollectedField, obj *ent.FileExposure) (ret graphql.Marshaler) {
@@ -10133,27 +10142,82 @@ func (ec *executionContext) fieldContext_FileSubscription_zoneName(_ context.Con
 	return graphql.NewScalarFieldContext("FileSubscription", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
-func (ec *executionContext) _FileSubscription_sftpPublicKeys(ctx context.Context, field graphql.CollectedField, obj *ent.FileSubscription) (ret graphql.Marshaler) {
+func (ec *executionContext) _FileSubscription_serviceURL(ctx context.Context, field graphql.CollectedField, obj *ent.FileSubscription) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
 		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.fieldContext_FileSubscription_sftpPublicKeys(ctx, field)
+			return ec.fieldContext_FileSubscription_serviceURL(ctx, field)
 		},
 		func(ctx context.Context) (any, error) {
-			return obj.SftpPublicKeys, nil
+			return obj.ServiceURL, nil
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v []string) graphql.Marshaler {
-			return ec.marshalNString2ᚕstringᚄ(ctx, selections, v)
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalOString2string(ctx, selections, v)
 		},
 		true,
-		true,
+		false,
 	)
 }
-func (ec *executionContext) fieldContext_FileSubscription_sftpPublicKeys(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_FileSubscription_serviceURL(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	return graphql.NewScalarFieldContext("FileSubscription", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _FileSubscription_serviceExternalURL(ctx context.Context, field graphql.CollectedField, obj *ent.FileSubscription) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_FileSubscription_serviceExternalURL(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ServiceExternalURL, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalOString2string(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_FileSubscription_serviceExternalURL(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("FileSubscription", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _FileSubscription_sftp(ctx context.Context, field graphql.CollectedField, obj *ent.FileSubscription) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_FileSubscription_sftp(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Sftp, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model1.FileSFTP) graphql.Marshaler {
+			return ec.marshalOFileSFTP2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐFileSFTP(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_FileSubscription_sftp(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FileSubscription",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_FileSFTP(ctx, field)
+		},
+	}
+	return fc, nil
 }
 
 func (ec *executionContext) _FileSubscription_owner(ctx context.Context, field graphql.CollectedField, obj *ent.FileSubscription) (ret graphql.Marshaler) {
@@ -26970,7 +27034,7 @@ func (ec *executionContext) unmarshalInputFileSubscriptionWhereInput(ctx context
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "lastModifiedAt", "lastModifiedAtNEQ", "lastModifiedAtIn", "lastModifiedAtNotIn", "lastModifiedAtGT", "lastModifiedAtGTE", "lastModifiedAtLT", "lastModifiedAtLTE", "statusPhase", "statusPhaseNEQ", "statusPhaseIn", "statusPhaseNotIn", "statusPhaseIsNil", "statusPhaseNotNil", "statusMessage", "statusMessageNEQ", "statusMessageIn", "statusMessageNotIn", "statusMessageGT", "statusMessageGTE", "statusMessageLT", "statusMessageLTE", "statusMessageContains", "statusMessageHasPrefix", "statusMessageHasSuffix", "statusMessageIsNil", "statusMessageNotNil", "statusMessageEqualFold", "statusMessageContainsFold", "environment", "environmentNEQ", "environmentIn", "environmentNotIn", "environmentGT", "environmentGTE", "environmentLT", "environmentLTE", "environmentContains", "environmentHasPrefix", "environmentHasSuffix", "environmentIsNil", "environmentNotNil", "environmentEqualFold", "environmentContainsFold", "namespace", "namespaceNEQ", "namespaceIn", "namespaceNotIn", "namespaceGT", "namespaceGTE", "namespaceLT", "namespaceLTE", "namespaceContains", "namespaceHasPrefix", "namespaceHasSuffix", "namespaceEqualFold", "namespaceContainsFold", "name", "nameNEQ", "nameIn", "nameNotIn", "nameGT", "nameGTE", "nameLT", "nameLTE", "nameContains", "nameHasPrefix", "nameHasSuffix", "nameEqualFold", "nameContainsFold", "fileType", "fileTypeNEQ", "fileTypeIn", "fileTypeNotIn", "fileTypeGT", "fileTypeGTE", "fileTypeLT", "fileTypeLTE", "fileTypeContains", "fileTypeHasPrefix", "fileTypeHasSuffix", "fileTypeEqualFold", "fileTypeContainsFold", "zoneName", "zoneNameNEQ", "zoneNameIn", "zoneNameNotIn", "zoneNameGT", "zoneNameGTE", "zoneNameLT", "zoneNameLTE", "zoneNameContains", "zoneNameHasPrefix", "zoneNameHasSuffix", "zoneNameEqualFold", "zoneNameContainsFold", "hasOwner", "hasOwnerWith", "hasFileTypeDef", "hasFileTypeDefWith", "hasTarget", "hasTargetWith", "hasZone", "hasZoneWith", "hasApproval", "hasApprovalWith", "hasApprovalRequests", "hasApprovalRequestsWith"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "lastModifiedAt", "lastModifiedAtNEQ", "lastModifiedAtIn", "lastModifiedAtNotIn", "lastModifiedAtGT", "lastModifiedAtGTE", "lastModifiedAtLT", "lastModifiedAtLTE", "statusPhase", "statusPhaseNEQ", "statusPhaseIn", "statusPhaseNotIn", "statusPhaseIsNil", "statusPhaseNotNil", "statusMessage", "statusMessageNEQ", "statusMessageIn", "statusMessageNotIn", "statusMessageGT", "statusMessageGTE", "statusMessageLT", "statusMessageLTE", "statusMessageContains", "statusMessageHasPrefix", "statusMessageHasSuffix", "statusMessageIsNil", "statusMessageNotNil", "statusMessageEqualFold", "statusMessageContainsFold", "environment", "environmentNEQ", "environmentIn", "environmentNotIn", "environmentGT", "environmentGTE", "environmentLT", "environmentLTE", "environmentContains", "environmentHasPrefix", "environmentHasSuffix", "environmentIsNil", "environmentNotNil", "environmentEqualFold", "environmentContainsFold", "namespace", "namespaceNEQ", "namespaceIn", "namespaceNotIn", "namespaceGT", "namespaceGTE", "namespaceLT", "namespaceLTE", "namespaceContains", "namespaceHasPrefix", "namespaceHasSuffix", "namespaceEqualFold", "namespaceContainsFold", "name", "nameNEQ", "nameIn", "nameNotIn", "nameGT", "nameGTE", "nameLT", "nameLTE", "nameContains", "nameHasPrefix", "nameHasSuffix", "nameEqualFold", "nameContainsFold", "fileType", "fileTypeNEQ", "fileTypeIn", "fileTypeNotIn", "fileTypeGT", "fileTypeGTE", "fileTypeLT", "fileTypeLTE", "fileTypeContains", "fileTypeHasPrefix", "fileTypeHasSuffix", "fileTypeEqualFold", "fileTypeContainsFold", "zoneName", "zoneNameNEQ", "zoneNameIn", "zoneNameNotIn", "zoneNameGT", "zoneNameGTE", "zoneNameLT", "zoneNameLTE", "zoneNameContains", "zoneNameHasPrefix", "zoneNameHasSuffix", "zoneNameEqualFold", "zoneNameContainsFold", "serviceURL", "serviceURLNEQ", "serviceURLIn", "serviceURLNotIn", "serviceURLGT", "serviceURLGTE", "serviceURLLT", "serviceURLLTE", "serviceURLContains", "serviceURLHasPrefix", "serviceURLHasSuffix", "serviceURLIsNil", "serviceURLNotNil", "serviceURLEqualFold", "serviceURLContainsFold", "serviceExternalURL", "serviceExternalURLNEQ", "serviceExternalURLIn", "serviceExternalURLNotIn", "serviceExternalURLGT", "serviceExternalURLGTE", "serviceExternalURLLT", "serviceExternalURLLTE", "serviceExternalURLContains", "serviceExternalURLHasPrefix", "serviceExternalURLHasSuffix", "serviceExternalURLIsNil", "serviceExternalURLNotNil", "serviceExternalURLEqualFold", "serviceExternalURLContainsFold", "hasOwner", "hasOwnerWith", "hasFileTypeDef", "hasFileTypeDefWith", "hasTarget", "hasTargetWith", "hasZone", "hasZoneWith", "hasApproval", "hasApprovalWith", "hasApprovalRequests", "hasApprovalRequestsWith"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -27782,6 +27846,216 @@ func (ec *executionContext) unmarshalInputFileSubscriptionWhereInput(ctx context
 				return it, err
 			}
 			it.ZoneNameContainsFold = data
+		case "serviceURL":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("serviceURL"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ServiceURL = data
+		case "serviceURLNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("serviceURLNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ServiceURLNEQ = data
+		case "serviceURLIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("serviceURLIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ServiceURLIn = data
+		case "serviceURLNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("serviceURLNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ServiceURLNotIn = data
+		case "serviceURLGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("serviceURLGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ServiceURLGT = data
+		case "serviceURLGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("serviceURLGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ServiceURLGTE = data
+		case "serviceURLLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("serviceURLLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ServiceURLLT = data
+		case "serviceURLLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("serviceURLLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ServiceURLLTE = data
+		case "serviceURLContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("serviceURLContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ServiceURLContains = data
+		case "serviceURLHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("serviceURLHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ServiceURLHasPrefix = data
+		case "serviceURLHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("serviceURLHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ServiceURLHasSuffix = data
+		case "serviceURLIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("serviceURLIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ServiceURLIsNil = data
+		case "serviceURLNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("serviceURLNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ServiceURLNotNil = data
+		case "serviceURLEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("serviceURLEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ServiceURLEqualFold = data
+		case "serviceURLContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("serviceURLContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ServiceURLContainsFold = data
+		case "serviceExternalURL":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("serviceExternalURL"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ServiceExternalURL = data
+		case "serviceExternalURLNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("serviceExternalURLNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ServiceExternalURLNEQ = data
+		case "serviceExternalURLIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("serviceExternalURLIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ServiceExternalURLIn = data
+		case "serviceExternalURLNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("serviceExternalURLNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ServiceExternalURLNotIn = data
+		case "serviceExternalURLGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("serviceExternalURLGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ServiceExternalURLGT = data
+		case "serviceExternalURLGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("serviceExternalURLGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ServiceExternalURLGTE = data
+		case "serviceExternalURLLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("serviceExternalURLLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ServiceExternalURLLT = data
+		case "serviceExternalURLLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("serviceExternalURLLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ServiceExternalURLLTE = data
+		case "serviceExternalURLContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("serviceExternalURLContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ServiceExternalURLContains = data
+		case "serviceExternalURLHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("serviceExternalURLHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ServiceExternalURLHasPrefix = data
+		case "serviceExternalURLHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("serviceExternalURLHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ServiceExternalURLHasSuffix = data
+		case "serviceExternalURLIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("serviceExternalURLIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ServiceExternalURLIsNil = data
+		case "serviceExternalURLNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("serviceExternalURLNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ServiceExternalURLNotNil = data
+		case "serviceExternalURLEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("serviceExternalURLEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ServiceExternalURLEqualFold = data
+		case "serviceExternalURLContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("serviceExternalURLContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ServiceExternalURLContainsFold = data
 		case "hasOwner":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasOwner"))
 			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
@@ -37690,9 +37964,9 @@ func (ec *executionContext) _FileExposure(ctx context.Context, sel ast.Selection
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
-		case "sftpPublicKeys":
-			out.Values[i] = ec._FileExposure_sftpPublicKeys(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
+		case "sftp":
+			out.Values[i] = ec._FileExposure_sftp(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "approvalConfig":
@@ -37988,9 +38262,19 @@ func (ec *executionContext) _FileSubscription(ctx context.Context, sel ast.Selec
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
-		case "sftpPublicKeys":
-			out.Values[i] = ec._FileSubscription_sftpPublicKeys(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
+		case "serviceURL":
+			out.Values[i] = ec._FileSubscription_serviceURL(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "serviceExternalURL":
+			out.Values[i] = ec._FileSubscription_serviceExternalURL(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "sftp":
+			out.Values[i] = ec._FileSubscription_sftp(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "owner":

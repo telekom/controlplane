@@ -44,8 +44,8 @@ const (
 	FieldActive = "active"
 	// FieldZoneName holds the string denoting the zone_name field in the database.
 	FieldZoneName = "zone_name"
-	// FieldSftpPublicKeys holds the string denoting the sftp_public_keys field in the database.
-	FieldSftpPublicKeys = "sftp_public_keys"
+	// FieldSftp holds the string denoting the sftp field in the database.
+	FieldSftp = "sftp"
 	// FieldApprovalConfig holds the string denoting the approval_config field in the database.
 	FieldApprovalConfig = "approval_config"
 	// EdgeOwner holds the string denoting the owner edge name in mutations.
@@ -102,7 +102,7 @@ var Columns = []string{
 	FieldVisibility,
 	FieldActive,
 	FieldZoneName,
-	FieldSftpPublicKeys,
+	FieldSftp,
 	FieldApprovalConfig,
 }
 
@@ -151,8 +151,8 @@ var (
 	DefaultActive bool
 	// ZoneNameValidator is a validator for the "zone_name" field. It is called by the builders before save.
 	ZoneNameValidator func(string) error
-	// DefaultSftpPublicKeys holds the default value on creation for the "sftp_public_keys" field.
-	DefaultSftpPublicKeys []string
+	// DefaultSftp holds the default value on creation for the "sftp" field.
+	DefaultSftp *model.FileSFTP
 	// DefaultApprovalConfig holds the default value on creation for the "approval_config" field.
 	DefaultApprovalConfig model.ApprovalConfig
 )

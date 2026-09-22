@@ -30,7 +30,7 @@ type FileExposureData struct {
 	Visibility     string // "WORLD", "ZONE", "ENTERPRISE"
 	Active         bool
 	Zone           string
-	SFTPPublicKeys []string
+	FileSFTP       *model.FileSFTP
 	ApprovalConfig model.ApprovalConfig
 	AppName        string // resolved to owner Application FK
 	TeamName       string // used to resolve owner Application FK

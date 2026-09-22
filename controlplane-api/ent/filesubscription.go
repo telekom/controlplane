@@ -19,6 +19,7 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/filesubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/filetype"
 	"github.com/telekom/controlplane/controlplane-api/ent/zone"
+	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 )
 
 // FileSubscription is the model entity for the FileSubscription schema.
@@ -44,8 +45,12 @@ type FileSubscription struct {
 	FileType string `json:"file_type,omitempty"`
 	// ZoneName holds the value of the "zone_name" field.
 	ZoneName string `json:"zone_name,omitempty"`
-	// SftpPublicKeys holds the value of the "sftp_public_keys" field.
-	SftpPublicKeys []string `json:"sftp_public_keys,omitempty"`
+	// ServiceURL holds the value of the "service_url" field.
+	ServiceURL string `json:"service_url,omitempty"`
+	// ServiceExternalURL holds the value of the "service_external_url" field.
+	ServiceExternalURL string `json:"service_external_url,omitempty"`
+	// Sftp holds the value of the "sftp" field.
+	Sftp *model.FileSFTP `json:"sftp,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the FileSubscriptionQuery when eager-loading is set.
 	Edges                             FileSubscriptionEdges `json:"edges"`
@@ -148,11 +153,11 @@ func (*FileSubscription) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case filesubscription.FieldSftpPublicKeys:
+		case filesubscription.FieldSftp:
 			values[i] = new([]byte)
 		case filesubscription.FieldID:
 			values[i] = new(sql.NullInt64)
-		case filesubscription.FieldStatusPhase, filesubscription.FieldStatusMessage, filesubscription.FieldEnvironment, filesubscription.FieldNamespace, filesubscription.FieldName, filesubscription.FieldFileType, filesubscription.FieldZoneName:
+		case filesubscription.FieldStatusPhase, filesubscription.FieldStatusMessage, filesubscription.FieldEnvironment, filesubscription.FieldNamespace, filesubscription.FieldName, filesubscription.FieldFileType, filesubscription.FieldZoneName, filesubscription.FieldServiceURL, filesubscription.FieldServiceExternalURL:
 			values[i] = new(sql.NullString)
 		case filesubscription.FieldCreatedAt, filesubscription.FieldLastModifiedAt:
 			values[i] = new(sql.NullTime)
@@ -242,12 +247,24 @@ func (_m *FileSubscription) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.ZoneName = value.String
 			}
-		case filesubscription.FieldSftpPublicKeys:
+		case filesubscription.FieldServiceURL:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field service_url", values[i])
+			} else if value.Valid {
+				_m.ServiceURL = value.String
+			}
+		case filesubscription.FieldServiceExternalURL:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field service_external_url", values[i])
+			} else if value.Valid {
+				_m.ServiceExternalURL = value.String
+			}
+		case filesubscription.FieldSftp:
 			if value, ok := values[i].(*[]byte); !ok {
-				return fmt.Errorf("unexpected type %T for field sftp_public_keys", values[i])
+				return fmt.Errorf("unexpected type %T for field sftp", values[i])
 			} else if value != nil && len(*value) > 0 {
-				if err := json.Unmarshal(*value, &_m.SftpPublicKeys); err != nil {
-					return fmt.Errorf("unmarshal field sftp_public_keys: %w", err)
+				if err := json.Unmarshal(*value, &_m.Sftp); err != nil {
+					return fmt.Errorf("unmarshal field sftp: %w", err)
 				}
 			}
 		case filesubscription.ForeignKeys[0]:
@@ -377,8 +394,14 @@ func (_m *FileSubscription) String() string {
 	builder.WriteString("zone_name=")
 	builder.WriteString(_m.ZoneName)
 	builder.WriteString(", ")
-	builder.WriteString("sftp_public_keys=")
-	builder.WriteString(fmt.Sprintf("%v", _m.SftpPublicKeys))
+	builder.WriteString("service_url=")
+	builder.WriteString(_m.ServiceURL)
+	builder.WriteString(", ")
+	builder.WriteString("service_external_url=")
+	builder.WriteString(_m.ServiceExternalURL)
+	builder.WriteString(", ")
+	builder.WriteString("sftp=")
+	builder.WriteString(fmt.Sprintf("%v", _m.Sftp))
 	builder.WriteByte(')')
 	return builder.String()
 }

@@ -2905,10 +2905,10 @@ func (_q *FileExposureQuery) collectField(ctx context.Context, oneNode bool, opC
 				selectedFields = append(selectedFields, fileexposure.FieldZoneName)
 				fieldSeen[fileexposure.FieldZoneName] = struct{}{}
 			}
-		case "sftpPublicKeys":
-			if _, ok := fieldSeen[fileexposure.FieldSftpPublicKeys]; !ok {
-				selectedFields = append(selectedFields, fileexposure.FieldSftpPublicKeys)
-				fieldSeen[fileexposure.FieldSftpPublicKeys] = struct{}{}
+		case "sftp":
+			if _, ok := fieldSeen[fileexposure.FieldSftp]; !ok {
+				selectedFields = append(selectedFields, fileexposure.FieldSftp)
+				fieldSeen[fileexposure.FieldSftp] = struct{}{}
 			}
 		case "approvalConfig":
 			if _, ok := fieldSeen[fileexposure.FieldApprovalConfig]; !ok {
@@ -3101,10 +3101,20 @@ func (_q *FileSubscriptionQuery) collectField(ctx context.Context, oneNode bool,
 				selectedFields = append(selectedFields, filesubscription.FieldZoneName)
 				fieldSeen[filesubscription.FieldZoneName] = struct{}{}
 			}
-		case "sftpPublicKeys":
-			if _, ok := fieldSeen[filesubscription.FieldSftpPublicKeys]; !ok {
-				selectedFields = append(selectedFields, filesubscription.FieldSftpPublicKeys)
-				fieldSeen[filesubscription.FieldSftpPublicKeys] = struct{}{}
+		case "serviceURL":
+			if _, ok := fieldSeen[filesubscription.FieldServiceURL]; !ok {
+				selectedFields = append(selectedFields, filesubscription.FieldServiceURL)
+				fieldSeen[filesubscription.FieldServiceURL] = struct{}{}
+			}
+		case "serviceExternalURL":
+			if _, ok := fieldSeen[filesubscription.FieldServiceExternalURL]; !ok {
+				selectedFields = append(selectedFields, filesubscription.FieldServiceExternalURL)
+				fieldSeen[filesubscription.FieldServiceExternalURL] = struct{}{}
+			}
+		case "sftp":
+			if _, ok := fieldSeen[filesubscription.FieldSftp]; !ok {
+				selectedFields = append(selectedFields, filesubscription.FieldSftp)
+				fieldSeen[filesubscription.FieldSftp] = struct{}{}
 			}
 		case "id":
 		case "__typename":

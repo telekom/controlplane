@@ -21,6 +21,7 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/filesubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/filetype"
 	"github.com/telekom/controlplane/controlplane-api/ent/zone"
+	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 )
 
 // FileSubscriptionCreate is the builder for creating a FileSubscription entity.
@@ -125,9 +126,37 @@ func (_c *FileSubscriptionCreate) SetZoneName(v string) *FileSubscriptionCreate 
 	return _c
 }
 
-// SetSftpPublicKeys sets the "sftp_public_keys" field.
-func (_c *FileSubscriptionCreate) SetSftpPublicKeys(v []string) *FileSubscriptionCreate {
-	_c.mutation.SetSftpPublicKeys(v)
+// SetServiceURL sets the "service_url" field.
+func (_c *FileSubscriptionCreate) SetServiceURL(v string) *FileSubscriptionCreate {
+	_c.mutation.SetServiceURL(v)
+	return _c
+}
+
+// SetNillableServiceURL sets the "service_url" field if the given value is not nil.
+func (_c *FileSubscriptionCreate) SetNillableServiceURL(v *string) *FileSubscriptionCreate {
+	if v != nil {
+		_c.SetServiceURL(*v)
+	}
+	return _c
+}
+
+// SetServiceExternalURL sets the "service_external_url" field.
+func (_c *FileSubscriptionCreate) SetServiceExternalURL(v string) *FileSubscriptionCreate {
+	_c.mutation.SetServiceExternalURL(v)
+	return _c
+}
+
+// SetNillableServiceExternalURL sets the "service_external_url" field if the given value is not nil.
+func (_c *FileSubscriptionCreate) SetNillableServiceExternalURL(v *string) *FileSubscriptionCreate {
+	if v != nil {
+		_c.SetServiceExternalURL(*v)
+	}
+	return _c
+}
+
+// SetSftp sets the "sftp" field.
+func (_c *FileSubscriptionCreate) SetSftp(v *model.FileSFTP) *FileSubscriptionCreate {
+	_c.mutation.SetSftp(v)
 	return _c
 }
 
@@ -276,9 +305,9 @@ func (_c *FileSubscriptionCreate) defaults() error {
 		v := filesubscription.DefaultLastModifiedAt()
 		_c.mutation.SetLastModifiedAt(v)
 	}
-	if _, ok := _c.mutation.SftpPublicKeys(); !ok {
-		v := filesubscription.DefaultSftpPublicKeys
-		_c.mutation.SetSftpPublicKeys(v)
+	if _, ok := _c.mutation.Sftp(); !ok {
+		v := filesubscription.DefaultSftp
+		_c.mutation.SetSftp(v)
 	}
 	return nil
 }
@@ -327,9 +356,6 @@ func (_c *FileSubscriptionCreate) check() error {
 		if err := filesubscription.ZoneNameValidator(v); err != nil {
 			return &ValidationError{Name: "zone_name", err: fmt.Errorf(`ent: validator failed for field "FileSubscription.zone_name": %w`, err)}
 		}
-	}
-	if _, ok := _c.mutation.SftpPublicKeys(); !ok {
-		return &ValidationError{Name: "sftp_public_keys", err: errors.New(`ent: missing required field "FileSubscription.sftp_public_keys"`)}
 	}
 	if len(_c.mutation.OwnerIDs()) == 0 {
 		return &ValidationError{Name: "owner", err: errors.New(`ent: missing required edge "FileSubscription.owner"`)}
@@ -400,9 +426,17 @@ func (_c *FileSubscriptionCreate) createSpec() (*FileSubscription, *sqlgraph.Cre
 		_spec.SetField(filesubscription.FieldZoneName, field.TypeString, value)
 		_node.ZoneName = value
 	}
-	if value, ok := _c.mutation.SftpPublicKeys(); ok {
-		_spec.SetField(filesubscription.FieldSftpPublicKeys, field.TypeJSON, value)
-		_node.SftpPublicKeys = value
+	if value, ok := _c.mutation.ServiceURL(); ok {
+		_spec.SetField(filesubscription.FieldServiceURL, field.TypeString, value)
+		_node.ServiceURL = value
+	}
+	if value, ok := _c.mutation.ServiceExternalURL(); ok {
+		_spec.SetField(filesubscription.FieldServiceExternalURL, field.TypeString, value)
+		_node.ServiceExternalURL = value
+	}
+	if value, ok := _c.mutation.Sftp(); ok {
+		_spec.SetField(filesubscription.FieldSftp, field.TypeJSON, value)
+		_node.Sftp = value
 	}
 	if nodes := _c.mutation.OwnerIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -670,15 +704,57 @@ func (u *FileSubscriptionUpsert) UpdateZoneName() *FileSubscriptionUpsert {
 	return u
 }
 
-// SetSftpPublicKeys sets the "sftp_public_keys" field.
-func (u *FileSubscriptionUpsert) SetSftpPublicKeys(v []string) *FileSubscriptionUpsert {
-	u.Set(filesubscription.FieldSftpPublicKeys, v)
+// SetServiceURL sets the "service_url" field.
+func (u *FileSubscriptionUpsert) SetServiceURL(v string) *FileSubscriptionUpsert {
+	u.Set(filesubscription.FieldServiceURL, v)
 	return u
 }
 
-// UpdateSftpPublicKeys sets the "sftp_public_keys" field to the value that was provided on create.
-func (u *FileSubscriptionUpsert) UpdateSftpPublicKeys() *FileSubscriptionUpsert {
-	u.SetExcluded(filesubscription.FieldSftpPublicKeys)
+// UpdateServiceURL sets the "service_url" field to the value that was provided on create.
+func (u *FileSubscriptionUpsert) UpdateServiceURL() *FileSubscriptionUpsert {
+	u.SetExcluded(filesubscription.FieldServiceURL)
+	return u
+}
+
+// ClearServiceURL clears the value of the "service_url" field.
+func (u *FileSubscriptionUpsert) ClearServiceURL() *FileSubscriptionUpsert {
+	u.SetNull(filesubscription.FieldServiceURL)
+	return u
+}
+
+// SetServiceExternalURL sets the "service_external_url" field.
+func (u *FileSubscriptionUpsert) SetServiceExternalURL(v string) *FileSubscriptionUpsert {
+	u.Set(filesubscription.FieldServiceExternalURL, v)
+	return u
+}
+
+// UpdateServiceExternalURL sets the "service_external_url" field to the value that was provided on create.
+func (u *FileSubscriptionUpsert) UpdateServiceExternalURL() *FileSubscriptionUpsert {
+	u.SetExcluded(filesubscription.FieldServiceExternalURL)
+	return u
+}
+
+// ClearServiceExternalURL clears the value of the "service_external_url" field.
+func (u *FileSubscriptionUpsert) ClearServiceExternalURL() *FileSubscriptionUpsert {
+	u.SetNull(filesubscription.FieldServiceExternalURL)
+	return u
+}
+
+// SetSftp sets the "sftp" field.
+func (u *FileSubscriptionUpsert) SetSftp(v *model.FileSFTP) *FileSubscriptionUpsert {
+	u.Set(filesubscription.FieldSftp, v)
+	return u
+}
+
+// UpdateSftp sets the "sftp" field to the value that was provided on create.
+func (u *FileSubscriptionUpsert) UpdateSftp() *FileSubscriptionUpsert {
+	u.SetExcluded(filesubscription.FieldSftp)
+	return u
+}
+
+// ClearSftp clears the value of the "sftp" field.
+func (u *FileSubscriptionUpsert) ClearSftp() *FileSubscriptionUpsert {
+	u.SetNull(filesubscription.FieldSftp)
 	return u
 }
 
@@ -860,17 +936,66 @@ func (u *FileSubscriptionUpsertOne) UpdateZoneName() *FileSubscriptionUpsertOne 
 	})
 }
 
-// SetSftpPublicKeys sets the "sftp_public_keys" field.
-func (u *FileSubscriptionUpsertOne) SetSftpPublicKeys(v []string) *FileSubscriptionUpsertOne {
+// SetServiceURL sets the "service_url" field.
+func (u *FileSubscriptionUpsertOne) SetServiceURL(v string) *FileSubscriptionUpsertOne {
 	return u.Update(func(s *FileSubscriptionUpsert) {
-		s.SetSftpPublicKeys(v)
+		s.SetServiceURL(v)
 	})
 }
 
-// UpdateSftpPublicKeys sets the "sftp_public_keys" field to the value that was provided on create.
-func (u *FileSubscriptionUpsertOne) UpdateSftpPublicKeys() *FileSubscriptionUpsertOne {
+// UpdateServiceURL sets the "service_url" field to the value that was provided on create.
+func (u *FileSubscriptionUpsertOne) UpdateServiceURL() *FileSubscriptionUpsertOne {
 	return u.Update(func(s *FileSubscriptionUpsert) {
-		s.UpdateSftpPublicKeys()
+		s.UpdateServiceURL()
+	})
+}
+
+// ClearServiceURL clears the value of the "service_url" field.
+func (u *FileSubscriptionUpsertOne) ClearServiceURL() *FileSubscriptionUpsertOne {
+	return u.Update(func(s *FileSubscriptionUpsert) {
+		s.ClearServiceURL()
+	})
+}
+
+// SetServiceExternalURL sets the "service_external_url" field.
+func (u *FileSubscriptionUpsertOne) SetServiceExternalURL(v string) *FileSubscriptionUpsertOne {
+	return u.Update(func(s *FileSubscriptionUpsert) {
+		s.SetServiceExternalURL(v)
+	})
+}
+
+// UpdateServiceExternalURL sets the "service_external_url" field to the value that was provided on create.
+func (u *FileSubscriptionUpsertOne) UpdateServiceExternalURL() *FileSubscriptionUpsertOne {
+	return u.Update(func(s *FileSubscriptionUpsert) {
+		s.UpdateServiceExternalURL()
+	})
+}
+
+// ClearServiceExternalURL clears the value of the "service_external_url" field.
+func (u *FileSubscriptionUpsertOne) ClearServiceExternalURL() *FileSubscriptionUpsertOne {
+	return u.Update(func(s *FileSubscriptionUpsert) {
+		s.ClearServiceExternalURL()
+	})
+}
+
+// SetSftp sets the "sftp" field.
+func (u *FileSubscriptionUpsertOne) SetSftp(v *model.FileSFTP) *FileSubscriptionUpsertOne {
+	return u.Update(func(s *FileSubscriptionUpsert) {
+		s.SetSftp(v)
+	})
+}
+
+// UpdateSftp sets the "sftp" field to the value that was provided on create.
+func (u *FileSubscriptionUpsertOne) UpdateSftp() *FileSubscriptionUpsertOne {
+	return u.Update(func(s *FileSubscriptionUpsert) {
+		s.UpdateSftp()
+	})
+}
+
+// ClearSftp clears the value of the "sftp" field.
+func (u *FileSubscriptionUpsertOne) ClearSftp() *FileSubscriptionUpsertOne {
+	return u.Update(func(s *FileSubscriptionUpsert) {
+		s.ClearSftp()
 	})
 }
 
@@ -1218,17 +1343,66 @@ func (u *FileSubscriptionUpsertBulk) UpdateZoneName() *FileSubscriptionUpsertBul
 	})
 }
 
-// SetSftpPublicKeys sets the "sftp_public_keys" field.
-func (u *FileSubscriptionUpsertBulk) SetSftpPublicKeys(v []string) *FileSubscriptionUpsertBulk {
+// SetServiceURL sets the "service_url" field.
+func (u *FileSubscriptionUpsertBulk) SetServiceURL(v string) *FileSubscriptionUpsertBulk {
 	return u.Update(func(s *FileSubscriptionUpsert) {
-		s.SetSftpPublicKeys(v)
+		s.SetServiceURL(v)
 	})
 }
 
-// UpdateSftpPublicKeys sets the "sftp_public_keys" field to the value that was provided on create.
-func (u *FileSubscriptionUpsertBulk) UpdateSftpPublicKeys() *FileSubscriptionUpsertBulk {
+// UpdateServiceURL sets the "service_url" field to the value that was provided on create.
+func (u *FileSubscriptionUpsertBulk) UpdateServiceURL() *FileSubscriptionUpsertBulk {
 	return u.Update(func(s *FileSubscriptionUpsert) {
-		s.UpdateSftpPublicKeys()
+		s.UpdateServiceURL()
+	})
+}
+
+// ClearServiceURL clears the value of the "service_url" field.
+func (u *FileSubscriptionUpsertBulk) ClearServiceURL() *FileSubscriptionUpsertBulk {
+	return u.Update(func(s *FileSubscriptionUpsert) {
+		s.ClearServiceURL()
+	})
+}
+
+// SetServiceExternalURL sets the "service_external_url" field.
+func (u *FileSubscriptionUpsertBulk) SetServiceExternalURL(v string) *FileSubscriptionUpsertBulk {
+	return u.Update(func(s *FileSubscriptionUpsert) {
+		s.SetServiceExternalURL(v)
+	})
+}
+
+// UpdateServiceExternalURL sets the "service_external_url" field to the value that was provided on create.
+func (u *FileSubscriptionUpsertBulk) UpdateServiceExternalURL() *FileSubscriptionUpsertBulk {
+	return u.Update(func(s *FileSubscriptionUpsert) {
+		s.UpdateServiceExternalURL()
+	})
+}
+
+// ClearServiceExternalURL clears the value of the "service_external_url" field.
+func (u *FileSubscriptionUpsertBulk) ClearServiceExternalURL() *FileSubscriptionUpsertBulk {
+	return u.Update(func(s *FileSubscriptionUpsert) {
+		s.ClearServiceExternalURL()
+	})
+}
+
+// SetSftp sets the "sftp" field.
+func (u *FileSubscriptionUpsertBulk) SetSftp(v *model.FileSFTP) *FileSubscriptionUpsertBulk {
+	return u.Update(func(s *FileSubscriptionUpsert) {
+		s.SetSftp(v)
+	})
+}
+
+// UpdateSftp sets the "sftp" field to the value that was provided on create.
+func (u *FileSubscriptionUpsertBulk) UpdateSftp() *FileSubscriptionUpsertBulk {
+	return u.Update(func(s *FileSubscriptionUpsert) {
+		s.UpdateSftp()
+	})
+}
+
+// ClearSftp clears the value of the "sftp" field.
+func (u *FileSubscriptionUpsertBulk) ClearSftp() *FileSubscriptionUpsertBulk {
+	return u.Update(func(s *FileSubscriptionUpsert) {
+		s.ClearSftp()
 	})
 }
 

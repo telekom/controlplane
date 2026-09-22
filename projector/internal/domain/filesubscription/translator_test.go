@@ -11,6 +11,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	commontypes "github.com/telekom/controlplane/common/pkg/types"
+	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 	filev1 "github.com/telekom/controlplane/file/api/v1"
 	"github.com/telekom/controlplane/projector/internal/domain/filesubscription"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -48,7 +49,9 @@ var _ = Describe("FileSubscription Translator", func() {
 					SFTP: &filev1.FileSFTP{PublicKeys: []filev1.SSHPublicKeySpec{{Key: "ssh-ed25519 AAA"}}},
 				},
 				Status: filev1.FileSubscriptionStatus{
-					Conditions: []metav1.Condition{{Type: "Ready", Status: metav1.ConditionTrue, Message: "ok"}},
+					Conditions:         []metav1.Condition{{Type: "Ready", Status: metav1.ConditionTrue, Message: "ok"}},
+					ServiceURL:         "sftp://internal.example.com",
+					ServiceExternalURL: "sftp://external.example.com",
 				},
 			}
 
@@ -58,7 +61,9 @@ var _ = Describe("FileSubscription Translator", func() {
 			Expect(data.OwnerAppName).To(Equal("consumer-app"))
 			Expect(data.OwnerTeamName).To(Equal("platform--narvi"))
 			Expect(data.Zone).To(Equal("caas"))
-			Expect(data.SFTPPublicKeys).To(Equal([]string{"ssh-ed25519 AAA"}))
+			Expect(data.FileSFTP).To(Equal(&model.FileSFTP{PublicKeys: []model.SSHPublicKeySpec{{Key: "ssh-ed25519 AAA"}}}))
+			Expect(data.ServiceURL).To(Equal("sftp://internal.example.com"))
+			Expect(data.ServiceExternalURL).To(Equal("sftp://external.example.com"))
 			Expect(data.StatusPhase).To(Equal("READY"))
 			Expect(data.StatusMessage).To(Equal("ok"))
 			Expect(data.Meta.Environment).To(Equal("prod"))
@@ -80,7 +85,9 @@ var _ = Describe("FileSubscription Translator", func() {
 			data, err := t.Translate(context.Background(), obj)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(data.Zone).To(Equal("caas"))
-			Expect(data.SFTPPublicKeys).To(BeEmpty())
+			Expect(data.FileSFTP).To(BeNil())
+			Expect(data.ServiceURL).To(BeEmpty())
+			Expect(data.ServiceExternalURL).To(BeEmpty())
 			Expect(data.StatusPhase).To(Equal("UNKNOWN"))
 		})
 	})

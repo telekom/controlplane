@@ -7,6 +7,7 @@ package filesubscription
 import (
 	"context"
 
+	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 	filev1 "github.com/telekom/controlplane/file/api/v1"
 	"github.com/telekom/controlplane/projector/internal/domain/shared"
 	"github.com/telekom/controlplane/projector/internal/runtime"
@@ -40,15 +41,35 @@ func (t *Translator) Translate(_ context.Context, obj *filev1.FileSubscription) 
 	}
 
 	return &FileSubscriptionData{
-		Meta:           shared.NewMetadata(obj.Namespace, obj.Name, obj.Labels),
-		StatusPhase:    phase,
-		StatusMessage:  message,
-		Zone:           obj.Spec.Zone.Name,
-		SFTPPublicKeys: publicKeys,
-		OwnerAppName:   obj.Labels[applicationLabelKey],
-		OwnerTeamName:  shared.TeamNameFromNamespace(obj.Namespace),
-		TargetFileType: obj.Spec.FileType,
+		Meta:               shared.NewMetadata(obj.Namespace, obj.Name, obj.Labels),
+		StatusPhase:        phase,
+		StatusMessage:      message,
+		Zone:               obj.Spec.Zone.Name,
+		FileSFTP:           toFileSFTP(obj.Spec.SFTP),
+		ServiceURL:         obj.Status.ServiceURL,
+		ServiceExternalURL: obj.Status.ServiceExternalURL,
+		OwnerAppName:       obj.Labels[applicationLabelKey],
+		OwnerTeamName:      shared.TeamNameFromNamespace(obj.Namespace),
+		TargetFileType:     obj.Spec.FileType,
 	}, nil
+}
+
+func toFileSFTP(obj *filev1.FileSFTP) *model.FileSFTP {
+	if obj == nil {
+		return nil
+	}
+
+	if len(obj.PublicKeys) == 0 {
+		return nil
+	}
+
+	sftp := model.FileSFTP{PublicKeys: make([]model.SSHPublicKeySpec, 0)}
+	for i := range obj.PublicKeys {
+		sftp.PublicKeys = append(sftp.PublicKeys, model.SSHPublicKeySpec{
+			Key: obj.PublicKeys[i].Key,
+		})
+	}
+	return &sftp
 }
 
 // KeyFromObject derives the composite identity key from a live FileSubscription.

@@ -47,8 +47,8 @@ type FileExposure struct {
 	Active *bool `json:"active,omitempty"`
 	// ZoneName holds the value of the "zone_name" field.
 	ZoneName string `json:"zone_name,omitempty"`
-	// SftpPublicKeys holds the value of the "sftp_public_keys" field.
-	SftpPublicKeys []string `json:"sftp_public_keys,omitempty"`
+	// Sftp holds the value of the "sftp" field.
+	Sftp *model.FileSFTP `json:"sftp,omitempty"`
 	// ApprovalConfig holds the value of the "approval_config" field.
 	ApprovalConfig model.ApprovalConfig `json:"approval_config,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -126,7 +126,7 @@ func (*FileExposure) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case fileexposure.FieldSftpPublicKeys, fileexposure.FieldApprovalConfig:
+		case fileexposure.FieldSftp, fileexposure.FieldApprovalConfig:
 			values[i] = new([]byte)
 		case fileexposure.FieldActive:
 			values[i] = new(sql.NullBool)
@@ -234,12 +234,12 @@ func (_m *FileExposure) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.ZoneName = value.String
 			}
-		case fileexposure.FieldSftpPublicKeys:
+		case fileexposure.FieldSftp:
 			if value, ok := values[i].(*[]byte); !ok {
-				return fmt.Errorf("unexpected type %T for field sftp_public_keys", values[i])
+				return fmt.Errorf("unexpected type %T for field sftp", values[i])
 			} else if value != nil && len(*value) > 0 {
-				if err := json.Unmarshal(*value, &_m.SftpPublicKeys); err != nil {
-					return fmt.Errorf("unmarshal field sftp_public_keys: %w", err)
+				if err := json.Unmarshal(*value, &_m.Sftp); err != nil {
+					return fmt.Errorf("unmarshal field sftp: %w", err)
 				}
 			}
 		case fileexposure.FieldApprovalConfig:
@@ -370,8 +370,8 @@ func (_m *FileExposure) String() string {
 	builder.WriteString("zone_name=")
 	builder.WriteString(_m.ZoneName)
 	builder.WriteString(", ")
-	builder.WriteString("sftp_public_keys=")
-	builder.WriteString(fmt.Sprintf("%v", _m.SftpPublicKeys))
+	builder.WriteString("sftp=")
+	builder.WriteString(fmt.Sprintf("%v", _m.Sftp))
 	builder.WriteString(", ")
 	builder.WriteString("approval_config=")
 	builder.WriteString(fmt.Sprintf("%v", _m.ApprovalConfig))

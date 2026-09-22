@@ -13,7 +13,6 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
-	"entgo.io/ent/dialect/sql/sqljson"
 	"entgo.io/ent/schema/field"
 	"github.com/telekom/controlplane/controlplane-api/ent/application"
 	"github.com/telekom/controlplane/controlplane-api/ent/fileexposure"
@@ -199,15 +198,15 @@ func (_u *FileExposureUpdate) SetNillableZoneName(v *string) *FileExposureUpdate
 	return _u
 }
 
-// SetSftpPublicKeys sets the "sftp_public_keys" field.
-func (_u *FileExposureUpdate) SetSftpPublicKeys(v []string) *FileExposureUpdate {
-	_u.mutation.SetSftpPublicKeys(v)
+// SetSftp sets the "sftp" field.
+func (_u *FileExposureUpdate) SetSftp(v *model.FileSFTP) *FileExposureUpdate {
+	_u.mutation.SetSftp(v)
 	return _u
 }
 
-// AppendSftpPublicKeys appends value to the "sftp_public_keys" field.
-func (_u *FileExposureUpdate) AppendSftpPublicKeys(v []string) *FileExposureUpdate {
-	_u.mutation.AppendSftpPublicKeys(v)
+// ClearSftp clears the value of the "sftp" field.
+func (_u *FileExposureUpdate) ClearSftp() *FileExposureUpdate {
+	_u.mutation.ClearSftp()
 	return _u
 }
 
@@ -460,13 +459,11 @@ func (_u *FileExposureUpdate) sqlSave(ctx context.Context) (_node int, err error
 	if value, ok := _u.mutation.ZoneName(); ok {
 		_spec.SetField(fileexposure.FieldZoneName, field.TypeString, value)
 	}
-	if value, ok := _u.mutation.SftpPublicKeys(); ok {
-		_spec.SetField(fileexposure.FieldSftpPublicKeys, field.TypeJSON, value)
+	if value, ok := _u.mutation.Sftp(); ok {
+		_spec.SetField(fileexposure.FieldSftp, field.TypeJSON, value)
 	}
-	if value, ok := _u.mutation.AppendedSftpPublicKeys(); ok {
-		_spec.AddModifier(func(u *sql.UpdateBuilder) {
-			sqljson.Append(u, fileexposure.FieldSftpPublicKeys, value)
-		})
+	if _u.mutation.SftpCleared() {
+		_spec.ClearField(fileexposure.FieldSftp, field.TypeJSON)
 	}
 	if value, ok := _u.mutation.ApprovalConfig(); ok {
 		_spec.SetField(fileexposure.FieldApprovalConfig, field.TypeJSON, value)
@@ -785,15 +782,15 @@ func (_u *FileExposureUpdateOne) SetNillableZoneName(v *string) *FileExposureUpd
 	return _u
 }
 
-// SetSftpPublicKeys sets the "sftp_public_keys" field.
-func (_u *FileExposureUpdateOne) SetSftpPublicKeys(v []string) *FileExposureUpdateOne {
-	_u.mutation.SetSftpPublicKeys(v)
+// SetSftp sets the "sftp" field.
+func (_u *FileExposureUpdateOne) SetSftp(v *model.FileSFTP) *FileExposureUpdateOne {
+	_u.mutation.SetSftp(v)
 	return _u
 }
 
-// AppendSftpPublicKeys appends value to the "sftp_public_keys" field.
-func (_u *FileExposureUpdateOne) AppendSftpPublicKeys(v []string) *FileExposureUpdateOne {
-	_u.mutation.AppendSftpPublicKeys(v)
+// ClearSftp clears the value of the "sftp" field.
+func (_u *FileExposureUpdateOne) ClearSftp() *FileExposureUpdateOne {
+	_u.mutation.ClearSftp()
 	return _u
 }
 
@@ -1076,13 +1073,11 @@ func (_u *FileExposureUpdateOne) sqlSave(ctx context.Context) (_node *FileExposu
 	if value, ok := _u.mutation.ZoneName(); ok {
 		_spec.SetField(fileexposure.FieldZoneName, field.TypeString, value)
 	}
-	if value, ok := _u.mutation.SftpPublicKeys(); ok {
-		_spec.SetField(fileexposure.FieldSftpPublicKeys, field.TypeJSON, value)
+	if value, ok := _u.mutation.Sftp(); ok {
+		_spec.SetField(fileexposure.FieldSftp, field.TypeJSON, value)
 	}
-	if value, ok := _u.mutation.AppendedSftpPublicKeys(); ok {
-		_spec.AddModifier(func(u *sql.UpdateBuilder) {
-			sqljson.Append(u, fileexposure.FieldSftpPublicKeys, value)
-		})
+	if _u.mutation.SftpCleared() {
+		_spec.ClearField(fileexposure.FieldSftp, field.TypeJSON)
 	}
 	if value, ok := _u.mutation.ApprovalConfig(); ok {
 		_spec.SetField(fileexposure.FieldApprovalConfig, field.TypeJSON, value)

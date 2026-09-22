@@ -14,6 +14,7 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 )
 
 const (
@@ -39,8 +40,12 @@ const (
 	FieldFileType = "file_type"
 	// FieldZoneName holds the string denoting the zone_name field in the database.
 	FieldZoneName = "zone_name"
-	// FieldSftpPublicKeys holds the string denoting the sftp_public_keys field in the database.
-	FieldSftpPublicKeys = "sftp_public_keys"
+	// FieldServiceURL holds the string denoting the service_url field in the database.
+	FieldServiceURL = "service_url"
+	// FieldServiceExternalURL holds the string denoting the service_external_url field in the database.
+	FieldServiceExternalURL = "service_external_url"
+	// FieldSftp holds the string denoting the sftp field in the database.
+	FieldSftp = "sftp"
 	// EdgeOwner holds the string denoting the owner edge name in mutations.
 	EdgeOwner = "owner"
 	// EdgeFileTypeDef holds the string denoting the file_type_def edge name in mutations.
@@ -111,7 +116,9 @@ var Columns = []string{
 	FieldName,
 	FieldFileType,
 	FieldZoneName,
-	FieldSftpPublicKeys,
+	FieldServiceURL,
+	FieldServiceExternalURL,
+	FieldSftp,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "file_subscriptions"
@@ -160,8 +167,8 @@ var (
 	FileTypeValidator func(string) error
 	// ZoneNameValidator is a validator for the "zone_name" field. It is called by the builders before save.
 	ZoneNameValidator func(string) error
-	// DefaultSftpPublicKeys holds the default value on creation for the "sftp_public_keys" field.
-	DefaultSftpPublicKeys []string
+	// DefaultSftp holds the default value on creation for the "sftp" field.
+	DefaultSftp *model.FileSFTP
 )
 
 // StatusPhase defines the type for the "status_phase" enum field.
@@ -240,6 +247,16 @@ func ByFileType(opts ...sql.OrderTermOption) OrderOption {
 // ByZoneName orders the results by the zone_name field.
 func ByZoneName(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldZoneName, opts...).ToFunc()
+}
+
+// ByServiceURL orders the results by the service_url field.
+func ByServiceURL(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldServiceURL, opts...).ToFunc()
+}
+
+// ByServiceExternalURL orders the results by the service_external_url field.
+func ByServiceExternalURL(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldServiceExternalURL, opts...).ToFunc()
 }
 
 // ByOwnerField orders the results by owner field.
