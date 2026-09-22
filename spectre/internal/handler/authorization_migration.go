@@ -17,6 +17,8 @@ import (
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	ctypes "github.com/telekom/controlplane/common/pkg/types"
+	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
+	pubsubv1 "github.com/telekom/controlplane/pubsub/api/v1"
 	spectrev1 "github.com/telekom/controlplane/spectre/api/v1"
 )
 
@@ -72,14 +74,45 @@ func (h *ListenerHandler) isFreshInstall(ctx context.Context, listener *spectrev
 
 	if err != nil {
 		if apierrors.IsNotFound(err) {
-			// No legacy approval exists — fresh install.
-			return true, nil
+			// No legacy approval by name — check for old unlabelled children.
+			return h.noOldUnlabelledChildren(ctx, c, listener)
 		}
 		return false, errors.Wrapf(err, "failed to check legacy Approval %q", legacyName)
 	}
 
 	// Legacy approval exists — not a fresh install.
 	return false, nil
+}
+
+// noOldUnlabelledChildren returns true only when no owner-labelled
+// RouteListeners or Subscribers exist that lack the authorization fingerprint
+// label. Such children are prior-policy artifacts that need migration/drain.
+func (h *ListenerHandler) noOldUnlabelledChildren(
+	ctx context.Context,
+	c cclient.JanitorClient,
+	listener *spectrev1.Listener,
+) (bool, error) {
+	rlList := &gatewayv1.RouteListenerList{}
+	if err := c.List(ctx, rlList, cclient.OwnedByLabel(listener)...); err != nil {
+		return false, errors.Wrap(err, "failed to list owned RouteListeners for fresh-install check")
+	}
+	for i := range rlList.Items {
+		if _, ok := rlList.Items[i].Labels[AuthorizationFingerprintLabelKey]; !ok {
+			return false, nil // old unlabelled child exists
+		}
+	}
+
+	subList := &pubsubv1.SubscriberList{}
+	if err := c.List(ctx, subList, cclient.OwnedByLabel(listener)...); err != nil {
+		return false, errors.Wrap(err, "failed to list owned Subscribers for fresh-install check")
+	}
+	for i := range subList.Items {
+		if _, ok := subList.Items[i].Labels[AuthorizationFingerprintLabelKey]; !ok {
+			return false, nil // old unlabelled child exists
+		}
+	}
+
+	return true, nil
 }
 
 // advanceMigration drives the six-step migration protocol. It returns:
@@ -152,6 +185,18 @@ func (h *ListenerHandler) advanceMigration(
 		listener.SetCondition(condition.NewNotReadyCondition("LegacyApprovalMigrationBlocked", reason))
 		listener.SetCondition(condition.NewBlockedCondition(reason))
 		logger.Info("Migration blocked: recorded evidence missing", "approvalRef", migration.LegacyApproval.String())
+		return false, nil
+	}
+
+	// UID cross-check: catch a legacy Approval that was deleted and recreated
+	// with the same name — the new object is not the original consent.
+	if migration.LegacyApproval != nil && mctx.legacyApprovalRef != nil &&
+		migration.LegacyApproval.UID != mctx.legacyApprovalRef.UID {
+		migration.Phase = MigrationPhaseBlocked
+		reason := fmt.Sprintf("Legacy Approval %q UID changed: recorded %s, found %s — recreated evidence is not consent",
+			migration.LegacyApproval.Name, migration.LegacyApproval.UID, mctx.legacyApprovalRef.UID)
+		listener.SetCondition(condition.NewNotReadyCondition("LegacyApprovalMigrationBlocked", reason))
+		listener.SetCondition(condition.NewBlockedCondition(reason))
 		return false, nil
 	}
 
@@ -350,9 +395,10 @@ func (h *ListenerHandler) retireLegacyRequests(
 		migration.RetirementCheckpoint = &spectrev1.MigrationRetirementCheckpoint{}
 	}
 
+	c := cclient.ClientFromContextOrDie(ctx)
+
 	// Retire each recorded legacy request.
 	for _, ref := range migration.LegacyRequests {
-		c := cclient.ClientFromContextOrDie(ctx)
 		ar := &approvalapi.ApprovalRequest{}
 		err := c.Get(ctx, k8stypes.NamespacedName{
 			Name:      ref.Name,
