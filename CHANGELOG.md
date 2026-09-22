@@ -1,3 +1,10 @@
+## [0.27.1](https://github.com/telekom/controlplane/compare/v0.27.0...v0.27.1) (2026-09-22)
+
+
+### Bug Fixes
+
+* **rover-ctl,rover-server:** correctly detect agent specifications; align enum validation ([#675](https://github.com/telekom/controlplane/issues/675)) ([43adbce](https://github.com/telekom/controlplane/commit/43adbce8a6e0564019f0d79f32f7d5a1d7ac050f))
+
 # [0.27.0](https://github.com/telekom/controlplane/compare/v0.26.0...v0.27.0) (2026-09-22)
 
 
