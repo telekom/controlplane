@@ -130,26 +130,6 @@ func (_u *FileExposureUpdate) SetNillableFileType(v *string) *FileExposureUpdate
 	return _u
 }
 
-// SetProvider sets the "provider" field.
-func (_u *FileExposureUpdate) SetProvider(v string) *FileExposureUpdate {
-	_u.mutation.SetProvider(v)
-	return _u
-}
-
-// SetNillableProvider sets the "provider" field if the given value is not nil.
-func (_u *FileExposureUpdate) SetNillableProvider(v *string) *FileExposureUpdate {
-	if v != nil {
-		_u.SetProvider(*v)
-	}
-	return _u
-}
-
-// ClearProvider clears the value of the "provider" field.
-func (_u *FileExposureUpdate) ClearProvider() *FileExposureUpdate {
-	_u.mutation.ClearProvider()
-	return _u
-}
-
 // SetVisibility sets the "visibility" field.
 func (_u *FileExposureUpdate) SetVisibility(v fileexposure.Visibility) *FileExposureUpdate {
 	_u.mutation.SetVisibility(v)
@@ -441,12 +421,6 @@ func (_u *FileExposureUpdate) sqlSave(ctx context.Context) (_node int, err error
 	if value, ok := _u.mutation.FileType(); ok {
 		_spec.SetField(fileexposure.FieldFileType, field.TypeString, value)
 	}
-	if value, ok := _u.mutation.Provider(); ok {
-		_spec.SetField(fileexposure.FieldProvider, field.TypeString, value)
-	}
-	if _u.mutation.ProviderCleared() {
-		_spec.ClearField(fileexposure.FieldProvider, field.TypeString)
-	}
 	if value, ok := _u.mutation.Visibility(); ok {
 		_spec.SetField(fileexposure.FieldVisibility, field.TypeEnum, value)
 	}
@@ -711,26 +685,6 @@ func (_u *FileExposureUpdateOne) SetNillableFileType(v *string) *FileExposureUpd
 	if v != nil {
 		_u.SetFileType(*v)
 	}
-	return _u
-}
-
-// SetProvider sets the "provider" field.
-func (_u *FileExposureUpdateOne) SetProvider(v string) *FileExposureUpdateOne {
-	_u.mutation.SetProvider(v)
-	return _u
-}
-
-// SetNillableProvider sets the "provider" field if the given value is not nil.
-func (_u *FileExposureUpdateOne) SetNillableProvider(v *string) *FileExposureUpdateOne {
-	if v != nil {
-		_u.SetProvider(*v)
-	}
-	return _u
-}
-
-// ClearProvider clears the value of the "provider" field.
-func (_u *FileExposureUpdateOne) ClearProvider() *FileExposureUpdateOne {
-	_u.mutation.ClearProvider()
 	return _u
 }
 
@@ -1054,12 +1008,6 @@ func (_u *FileExposureUpdateOne) sqlSave(ctx context.Context) (_node *FileExposu
 	}
 	if value, ok := _u.mutation.FileType(); ok {
 		_spec.SetField(fileexposure.FieldFileType, field.TypeString, value)
-	}
-	if value, ok := _u.mutation.Provider(); ok {
-		_spec.SetField(fileexposure.FieldProvider, field.TypeString, value)
-	}
-	if _u.mutation.ProviderCleared() {
-		_spec.ClearField(fileexposure.FieldProvider, field.TypeString)
 	}
 	if value, ok := _u.mutation.Visibility(); ok {
 		_spec.SetField(fileexposure.FieldVisibility, field.TypeEnum, value)

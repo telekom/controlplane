@@ -616,19 +616,19 @@ func init() {
 	// fileexposure.FileTypeValidator is a validator for the "file_type" field. It is called by the builders before save.
 	fileexposure.FileTypeValidator = fileexposureDescFileType.Validators[0].(func(string) error)
 	// fileexposureDescActive is the schema descriptor for active field.
-	fileexposureDescActive := fileexposureFields[3].Descriptor()
+	fileexposureDescActive := fileexposureFields[2].Descriptor()
 	// fileexposure.DefaultActive holds the default value on creation for the active field.
 	fileexposure.DefaultActive = fileexposureDescActive.Default.(bool)
 	// fileexposureDescZoneName is the schema descriptor for zone_name field.
-	fileexposureDescZoneName := fileexposureFields[4].Descriptor()
+	fileexposureDescZoneName := fileexposureFields[3].Descriptor()
 	// fileexposure.ZoneNameValidator is a validator for the "zone_name" field. It is called by the builders before save.
 	fileexposure.ZoneNameValidator = fileexposureDescZoneName.Validators[0].(func(string) error)
 	// fileexposureDescSftp is the schema descriptor for sftp field.
-	fileexposureDescSftp := fileexposureFields[5].Descriptor()
+	fileexposureDescSftp := fileexposureFields[4].Descriptor()
 	// fileexposure.DefaultSftp holds the default value on creation for the sftp field.
 	fileexposure.DefaultSftp = fileexposureDescSftp.Default.(*model.FileSFTP)
 	// fileexposureDescApprovalConfig is the schema descriptor for approval_config field.
-	fileexposureDescApprovalConfig := fileexposureFields[6].Descriptor()
+	fileexposureDescApprovalConfig := fileexposureFields[5].Descriptor()
 	// fileexposure.DefaultApprovalConfig holds the default value on creation for the approval_config field.
 	fileexposure.DefaultApprovalConfig = fileexposureDescApprovalConfig.Default.(model.ApprovalConfig)
 	filesubscriptionMixin := schema.FileSubscription{}.Mixin()

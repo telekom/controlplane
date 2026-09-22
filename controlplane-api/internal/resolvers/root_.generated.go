@@ -694,7 +694,6 @@ type ComplexityRoot struct {
 		LastModifiedAt func(childComplexity int) int
 		Namespace      func(childComplexity int) int
 		Owner          func(childComplexity int) int
-		Provider       func(childComplexity int) int
 		Sftp           func(childComplexity int) int
 		StatusMessage  func(childComplexity int) int
 		StatusPhase    func(childComplexity int) int
@@ -3669,12 +3668,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.FileExposure.Owner(childComplexity), true
-	case "FileExposure.provider":
-		if e.ComplexityRoot.FileExposure.Provider == nil {
-			break
-		}
-
-		return e.ComplexityRoot.FileExposure.Provider(childComplexity), true
 	case "FileExposure.sftp":
 		if e.ComplexityRoot.FileExposure.Sftp == nil {
 			break
@@ -9054,7 +9047,6 @@ type FileExposure implements Node {
   environment: String
   namespace: String!
   fileType: String!
-  provider: String
   visibility: FileExposureVisibility!
   active: Boolean
   zoneName: String!
@@ -9249,24 +9241,6 @@ input FileExposureWhereInput {
   fileTypeHasSuffix: String
   fileTypeEqualFold: String
   fileTypeContainsFold: String
-  """
-  provider field predicates
-  """
-  provider: String
-  providerNEQ: String
-  providerIn: [String!]
-  providerNotIn: [String!]
-  providerGT: String
-  providerGTE: String
-  providerLT: String
-  providerLTE: String
-  providerContains: String
-  providerHasPrefix: String
-  providerHasSuffix: String
-  providerIsNil: Boolean
-  providerNotNil: Boolean
-  providerEqualFold: String
-  providerContainsFold: String
   """
   visibility field predicates
   """
@@ -13706,8 +13680,6 @@ func (ec *executionContext) childFields_FileExposure(ctx context.Context, field 
 		return ec.fieldContext_FileExposure_namespace(ctx, field)
 	case "fileType":
 		return ec.fieldContext_FileExposure_fileType(ctx, field)
-	case "provider":
-		return ec.fieldContext_FileExposure_provider(ctx, field)
 	case "visibility":
 		return ec.fieldContext_FileExposure_visibility(ctx, field)
 	case "active":

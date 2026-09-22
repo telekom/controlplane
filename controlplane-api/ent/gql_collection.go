@@ -2885,11 +2885,6 @@ func (_q *FileExposureQuery) collectField(ctx context.Context, oneNode bool, opC
 				selectedFields = append(selectedFields, fileexposure.FieldFileType)
 				fieldSeen[fileexposure.FieldFileType] = struct{}{}
 			}
-		case "provider":
-			if _, ok := fieldSeen[fileexposure.FieldProvider]; !ok {
-				selectedFields = append(selectedFields, fileexposure.FieldProvider)
-				fieldSeen[fileexposure.FieldProvider] = struct{}{}
-			}
 		case "visibility":
 			if _, ok := fieldSeen[fileexposure.FieldVisibility]; !ok {
 				selectedFields = append(selectedFields, fileexposure.FieldVisibility)

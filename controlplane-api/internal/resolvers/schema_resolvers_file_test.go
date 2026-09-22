@@ -10,6 +10,7 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent"
 	"github.com/telekom/controlplane/controlplane-api/ent/fileexposure"
 	"github.com/telekom/controlplane/controlplane-api/ent/filesubscription"
+	"github.com/telekom/controlplane/controlplane-api/internal/interceptor"
 	"github.com/telekom/controlplane/controlplane-api/internal/resolvers"
 	gqlmodel "github.com/telekom/controlplane/controlplane-api/internal/resolvers/model"
 	"github.com/telekom/controlplane/controlplane-api/internal/service"
@@ -67,7 +68,7 @@ var _ = Describe("FileExposure/FileSubscription.Sftp", func() {
 	})
 })
 
-var _ = Describe("FileSubscription approval resolvers", func() {
+var _ = Describe("File query and relationship resolvers", func() {
 	var (
 		client           *ent.Client
 		resolver         *resolvers.Resolver
@@ -80,6 +81,7 @@ var _ = Describe("FileSubscription approval resolvers", func() {
 
 	BeforeEach(func() {
 		client = testutil.NewTestClient(GinkgoT())
+		client.Intercept(interceptor.TeamFilterInterceptor())
 		resolver = resolvers.NewResolver(client, service.Services{}, nil, "")
 		seed = testutil.SeedStandard(client)
 		ctx := testutil.AllowContext()
@@ -121,6 +123,52 @@ var _ = Describe("FileSubscription approval resolvers", func() {
 
 	AfterEach(func() {
 		client.Close()
+	})
+
+	It("queries file exposures from the root", func() {
+		connection, err := resolver.Query().FileExposures(testutil.AllowContext(), nil, nil, nil, nil, nil, nil)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(connection.Edges).To(HaveLen(1))
+		Expect(connection.Edges[0].Node.ID).To(Equal(fileExposure.ID))
+	})
+
+	It("queries file subscriptions from the root", func() {
+		connection, err := resolver.Query().FileSubscriptions(testutil.AllowContext(), nil, nil, nil, nil, nil, nil)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(connection.Edges).To(HaveLen(1))
+		Expect(connection.Edges[0].Node.ID).To(Equal(fileSubscription.ID))
+	})
+
+	It("applies team filtering to root file queries", func() {
+		providerCtx := viewer.NewContext(context.Background(), &viewer.Viewer{Teams: []string{seed.TeamAlpha.Name}})
+		exposures, err := resolver.Query().FileExposures(providerCtx, nil, nil, nil, nil, nil, nil)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(exposures.Edges).To(HaveLen(1))
+		subscriptions, err := resolver.Query().FileSubscriptions(providerCtx, nil, nil, nil, nil, nil, nil)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(subscriptions.Edges).To(BeEmpty())
+
+		requesterCtx := viewer.NewContext(context.Background(), &viewer.Viewer{Teams: []string{seed.TeamBeta.Name}})
+		exposures, err = resolver.Query().FileExposures(requesterCtx, nil, nil, nil, nil, nil, nil)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(exposures.Edges).To(BeEmpty())
+		subscriptions, err = resolver.Query().FileSubscriptions(requesterCtx, nil, nil, nil, nil, nil, nil)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(subscriptions.Edges).To(HaveLen(1))
+	})
+
+	It("queries file types from the root", func() {
+		ctx := testutil.AllowContext()
+		fileType, err := client.FileType.Create().
+			SetNamespace("default").
+			SetFileType("invoice").
+			Save(ctx)
+		Expect(err).NotTo(HaveOccurred())
+
+		connection, err := resolver.Query().FileTypes(ctx, nil, nil, nil, nil, nil, nil)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(connection.Edges).To(HaveLen(1))
+		Expect(connection.Edges[0].Node.ID).To(Equal(fileType.ID))
 	})
 
 	It("returns FileSubscriptionInfo from an approval", func() {

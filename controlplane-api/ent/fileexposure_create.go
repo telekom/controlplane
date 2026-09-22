@@ -112,20 +112,6 @@ func (_c *FileExposureCreate) SetFileType(v string) *FileExposureCreate {
 	return _c
 }
 
-// SetProvider sets the "provider" field.
-func (_c *FileExposureCreate) SetProvider(v string) *FileExposureCreate {
-	_c.mutation.SetProvider(v)
-	return _c
-}
-
-// SetNillableProvider sets the "provider" field if the given value is not nil.
-func (_c *FileExposureCreate) SetNillableProvider(v *string) *FileExposureCreate {
-	if v != nil {
-		_c.SetProvider(*v)
-	}
-	return _c
-}
-
 // SetVisibility sets the "visibility" field.
 func (_c *FileExposureCreate) SetVisibility(v fileexposure.Visibility) *FileExposureCreate {
 	_c.mutation.SetVisibility(v)
@@ -415,10 +401,6 @@ func (_c *FileExposureCreate) createSpec() (*FileExposure, *sqlgraph.CreateSpec)
 		_spec.SetField(fileexposure.FieldFileType, field.TypeString, value)
 		_node.FileType = value
 	}
-	if value, ok := _c.mutation.Provider(); ok {
-		_spec.SetField(fileexposure.FieldProvider, field.TypeString, value)
-		_node.Provider = &value
-	}
 	if value, ok := _c.mutation.Visibility(); ok {
 		_spec.SetField(fileexposure.FieldVisibility, field.TypeEnum, value)
 		_node.Visibility = value
@@ -648,24 +630,6 @@ func (u *FileExposureUpsert) UpdateFileType() *FileExposureUpsert {
 	return u
 }
 
-// SetProvider sets the "provider" field.
-func (u *FileExposureUpsert) SetProvider(v string) *FileExposureUpsert {
-	u.Set(fileexposure.FieldProvider, v)
-	return u
-}
-
-// UpdateProvider sets the "provider" field to the value that was provided on create.
-func (u *FileExposureUpsert) UpdateProvider() *FileExposureUpsert {
-	u.SetExcluded(fileexposure.FieldProvider)
-	return u
-}
-
-// ClearProvider clears the value of the "provider" field.
-func (u *FileExposureUpsert) ClearProvider() *FileExposureUpsert {
-	u.SetNull(fileexposure.FieldProvider)
-	return u
-}
-
 // SetVisibility sets the "visibility" field.
 func (u *FileExposureUpsert) SetVisibility(v fileexposure.Visibility) *FileExposureUpsert {
 	u.Set(fileexposure.FieldVisibility, v)
@@ -885,27 +849,6 @@ func (u *FileExposureUpsertOne) SetFileType(v string) *FileExposureUpsertOne {
 func (u *FileExposureUpsertOne) UpdateFileType() *FileExposureUpsertOne {
 	return u.Update(func(s *FileExposureUpsert) {
 		s.UpdateFileType()
-	})
-}
-
-// SetProvider sets the "provider" field.
-func (u *FileExposureUpsertOne) SetProvider(v string) *FileExposureUpsertOne {
-	return u.Update(func(s *FileExposureUpsert) {
-		s.SetProvider(v)
-	})
-}
-
-// UpdateProvider sets the "provider" field to the value that was provided on create.
-func (u *FileExposureUpsertOne) UpdateProvider() *FileExposureUpsertOne {
-	return u.Update(func(s *FileExposureUpsert) {
-		s.UpdateProvider()
-	})
-}
-
-// ClearProvider clears the value of the "provider" field.
-func (u *FileExposureUpsertOne) ClearProvider() *FileExposureUpsertOne {
-	return u.Update(func(s *FileExposureUpsert) {
-		s.ClearProvider()
 	})
 }
 
@@ -1306,27 +1249,6 @@ func (u *FileExposureUpsertBulk) SetFileType(v string) *FileExposureUpsertBulk {
 func (u *FileExposureUpsertBulk) UpdateFileType() *FileExposureUpsertBulk {
 	return u.Update(func(s *FileExposureUpsert) {
 		s.UpdateFileType()
-	})
-}
-
-// SetProvider sets the "provider" field.
-func (u *FileExposureUpsertBulk) SetProvider(v string) *FileExposureUpsertBulk {
-	return u.Update(func(s *FileExposureUpsert) {
-		s.SetProvider(v)
-	})
-}
-
-// UpdateProvider sets the "provider" field to the value that was provided on create.
-func (u *FileExposureUpsertBulk) UpdateProvider() *FileExposureUpsertBulk {
-	return u.Update(func(s *FileExposureUpsert) {
-		s.UpdateProvider()
-	})
-}
-
-// ClearProvider clears the value of the "provider" field.
-func (u *FileExposureUpsertBulk) ClearProvider() *FileExposureUpsertBulk {
-	return u.Update(func(s *FileExposureUpsert) {
-		s.ClearProvider()
 	})
 }
 

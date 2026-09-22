@@ -610,7 +610,6 @@ var (
 		{Name: "environment", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "namespace", Type: field.TypeString, Size: 2147483647},
 		{Name: "file_type", Type: field.TypeString, Size: 2147483647},
-		{Name: "provider", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "visibility", Type: field.TypeEnum, Enums: []string{"WORLD", "ZONE", "ENTERPRISE"}, Default: "ENTERPRISE"},
 		{Name: "active", Type: field.TypeBool, Nullable: true, Default: false},
 		{Name: "zone_name", Type: field.TypeString, Size: 2147483647},
@@ -628,19 +627,19 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "file_exposures_applications_exposed_file_types",
-				Columns:    []*schema.Column{FileExposuresColumns[14]},
+				Columns:    []*schema.Column{FileExposuresColumns[13]},
 				RefColumns: []*schema.Column{ApplicationsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "file_exposures_zones_zone",
-				Columns:    []*schema.Column{FileExposuresColumns[15]},
+				Columns:    []*schema.Column{FileExposuresColumns[14]},
 				RefColumns: []*schema.Column{ZonesColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "file_exposures_file_types_exposures",
-				Columns:    []*schema.Column{FileExposuresColumns[16]},
+				Columns:    []*schema.Column{FileExposuresColumns[15]},
 				RefColumns: []*schema.Column{FileTypesColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -649,7 +648,7 @@ var (
 			{
 				Name:    "fileexposure_file_type_application_exposed_file_types",
 				Unique:  true,
-				Columns: []*schema.Column{FileExposuresColumns[7], FileExposuresColumns[14]},
+				Columns: []*schema.Column{FileExposuresColumns[7], FileExposuresColumns[13]},
 			},
 		},
 	}

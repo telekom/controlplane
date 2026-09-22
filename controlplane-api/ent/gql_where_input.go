@@ -8355,23 +8355,6 @@ type FileExposureWhereInput struct {
 	FileTypeEqualFold    *string  `json:"fileTypeEqualFold,omitempty"`
 	FileTypeContainsFold *string  `json:"fileTypeContainsFold,omitempty"`
 
-	// "provider" field predicates.
-	Provider             *string  `json:"provider,omitempty"`
-	ProviderNEQ          *string  `json:"providerNEQ,omitempty"`
-	ProviderIn           []string `json:"providerIn,omitempty"`
-	ProviderNotIn        []string `json:"providerNotIn,omitempty"`
-	ProviderGT           *string  `json:"providerGT,omitempty"`
-	ProviderGTE          *string  `json:"providerGTE,omitempty"`
-	ProviderLT           *string  `json:"providerLT,omitempty"`
-	ProviderLTE          *string  `json:"providerLTE,omitempty"`
-	ProviderContains     *string  `json:"providerContains,omitempty"`
-	ProviderHasPrefix    *string  `json:"providerHasPrefix,omitempty"`
-	ProviderHasSuffix    *string  `json:"providerHasSuffix,omitempty"`
-	ProviderIsNil        bool     `json:"providerIsNil,omitempty"`
-	ProviderNotNil       bool     `json:"providerNotNil,omitempty"`
-	ProviderEqualFold    *string  `json:"providerEqualFold,omitempty"`
-	ProviderContainsFold *string  `json:"providerContainsFold,omitempty"`
-
 	// "visibility" field predicates.
 	Visibility      *fileexposure.Visibility  `json:"visibility,omitempty"`
 	VisibilityNEQ   *fileexposure.Visibility  `json:"visibilityNEQ,omitempty"`
@@ -8744,51 +8727,6 @@ func (i *FileExposureWhereInput) P() (predicate.FileExposure, error) {
 	}
 	if i.FileTypeContainsFold != nil {
 		predicates = append(predicates, fileexposure.FileTypeContainsFold(*i.FileTypeContainsFold))
-	}
-	if i.Provider != nil {
-		predicates = append(predicates, fileexposure.ProviderEQ(*i.Provider))
-	}
-	if i.ProviderNEQ != nil {
-		predicates = append(predicates, fileexposure.ProviderNEQ(*i.ProviderNEQ))
-	}
-	if len(i.ProviderIn) > 0 {
-		predicates = append(predicates, fileexposure.ProviderIn(i.ProviderIn...))
-	}
-	if len(i.ProviderNotIn) > 0 {
-		predicates = append(predicates, fileexposure.ProviderNotIn(i.ProviderNotIn...))
-	}
-	if i.ProviderGT != nil {
-		predicates = append(predicates, fileexposure.ProviderGT(*i.ProviderGT))
-	}
-	if i.ProviderGTE != nil {
-		predicates = append(predicates, fileexposure.ProviderGTE(*i.ProviderGTE))
-	}
-	if i.ProviderLT != nil {
-		predicates = append(predicates, fileexposure.ProviderLT(*i.ProviderLT))
-	}
-	if i.ProviderLTE != nil {
-		predicates = append(predicates, fileexposure.ProviderLTE(*i.ProviderLTE))
-	}
-	if i.ProviderContains != nil {
-		predicates = append(predicates, fileexposure.ProviderContains(*i.ProviderContains))
-	}
-	if i.ProviderHasPrefix != nil {
-		predicates = append(predicates, fileexposure.ProviderHasPrefix(*i.ProviderHasPrefix))
-	}
-	if i.ProviderHasSuffix != nil {
-		predicates = append(predicates, fileexposure.ProviderHasSuffix(*i.ProviderHasSuffix))
-	}
-	if i.ProviderIsNil {
-		predicates = append(predicates, fileexposure.ProviderIsNil())
-	}
-	if i.ProviderNotNil {
-		predicates = append(predicates, fileexposure.ProviderNotNil())
-	}
-	if i.ProviderEqualFold != nil {
-		predicates = append(predicates, fileexposure.ProviderEqualFold(*i.ProviderEqualFold))
-	}
-	if i.ProviderContainsFold != nil {
-		predicates = append(predicates, fileexposure.ProviderContainsFold(*i.ProviderContainsFold))
 	}
 	if i.Visibility != nil {
 		predicates = append(predicates, fileexposure.VisibilityEQ(*i.Visibility))

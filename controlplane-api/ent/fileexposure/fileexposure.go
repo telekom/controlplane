@@ -36,8 +36,6 @@ const (
 	FieldNamespace = "namespace"
 	// FieldFileType holds the string denoting the file_type field in the database.
 	FieldFileType = "file_type"
-	// FieldProvider holds the string denoting the provider field in the database.
-	FieldProvider = "provider"
 	// FieldVisibility holds the string denoting the visibility field in the database.
 	FieldVisibility = "visibility"
 	// FieldActive holds the string denoting the active field in the database.
@@ -98,7 +96,6 @@ var Columns = []string{
 	FieldEnvironment,
 	FieldNamespace,
 	FieldFileType,
-	FieldProvider,
 	FieldVisibility,
 	FieldActive,
 	FieldZoneName,
@@ -250,11 +247,6 @@ func ByNamespace(opts ...sql.OrderTermOption) OrderOption {
 // ByFileType orders the results by the file_type field.
 func ByFileType(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldFileType, opts...).ToFunc()
-}
-
-// ByProvider orders the results by the provider field.
-func ByProvider(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldProvider, opts...).ToFunc()
 }
 
 // ByVisibility orders the results by the visibility field.

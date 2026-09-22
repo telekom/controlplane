@@ -88,11 +88,6 @@ func FileType(v string) predicate.FileExposure {
 	return predicate.FileExposure(sql.FieldEQ(FieldFileType, v))
 }
 
-// Provider applies equality check predicate on the "provider" field. It's identical to ProviderEQ.
-func Provider(v string) predicate.FileExposure {
-	return predicate.FileExposure(sql.FieldEQ(FieldProvider, v))
-}
-
 // Active applies equality check predicate on the "active" field. It's identical to ActiveEQ.
 func Active(v bool) predicate.FileExposure {
 	return predicate.FileExposure(sql.FieldEQ(FieldActive, v))
@@ -491,81 +486,6 @@ func FileTypeEqualFold(v string) predicate.FileExposure {
 // FileTypeContainsFold applies the ContainsFold predicate on the "file_type" field.
 func FileTypeContainsFold(v string) predicate.FileExposure {
 	return predicate.FileExposure(sql.FieldContainsFold(FieldFileType, v))
-}
-
-// ProviderEQ applies the EQ predicate on the "provider" field.
-func ProviderEQ(v string) predicate.FileExposure {
-	return predicate.FileExposure(sql.FieldEQ(FieldProvider, v))
-}
-
-// ProviderNEQ applies the NEQ predicate on the "provider" field.
-func ProviderNEQ(v string) predicate.FileExposure {
-	return predicate.FileExposure(sql.FieldNEQ(FieldProvider, v))
-}
-
-// ProviderIn applies the In predicate on the "provider" field.
-func ProviderIn(vs ...string) predicate.FileExposure {
-	return predicate.FileExposure(sql.FieldIn(FieldProvider, vs...))
-}
-
-// ProviderNotIn applies the NotIn predicate on the "provider" field.
-func ProviderNotIn(vs ...string) predicate.FileExposure {
-	return predicate.FileExposure(sql.FieldNotIn(FieldProvider, vs...))
-}
-
-// ProviderGT applies the GT predicate on the "provider" field.
-func ProviderGT(v string) predicate.FileExposure {
-	return predicate.FileExposure(sql.FieldGT(FieldProvider, v))
-}
-
-// ProviderGTE applies the GTE predicate on the "provider" field.
-func ProviderGTE(v string) predicate.FileExposure {
-	return predicate.FileExposure(sql.FieldGTE(FieldProvider, v))
-}
-
-// ProviderLT applies the LT predicate on the "provider" field.
-func ProviderLT(v string) predicate.FileExposure {
-	return predicate.FileExposure(sql.FieldLT(FieldProvider, v))
-}
-
-// ProviderLTE applies the LTE predicate on the "provider" field.
-func ProviderLTE(v string) predicate.FileExposure {
-	return predicate.FileExposure(sql.FieldLTE(FieldProvider, v))
-}
-
-// ProviderContains applies the Contains predicate on the "provider" field.
-func ProviderContains(v string) predicate.FileExposure {
-	return predicate.FileExposure(sql.FieldContains(FieldProvider, v))
-}
-
-// ProviderHasPrefix applies the HasPrefix predicate on the "provider" field.
-func ProviderHasPrefix(v string) predicate.FileExposure {
-	return predicate.FileExposure(sql.FieldHasPrefix(FieldProvider, v))
-}
-
-// ProviderHasSuffix applies the HasSuffix predicate on the "provider" field.
-func ProviderHasSuffix(v string) predicate.FileExposure {
-	return predicate.FileExposure(sql.FieldHasSuffix(FieldProvider, v))
-}
-
-// ProviderIsNil applies the IsNil predicate on the "provider" field.
-func ProviderIsNil() predicate.FileExposure {
-	return predicate.FileExposure(sql.FieldIsNull(FieldProvider))
-}
-
-// ProviderNotNil applies the NotNil predicate on the "provider" field.
-func ProviderNotNil() predicate.FileExposure {
-	return predicate.FileExposure(sql.FieldNotNull(FieldProvider))
-}
-
-// ProviderEqualFold applies the EqualFold predicate on the "provider" field.
-func ProviderEqualFold(v string) predicate.FileExposure {
-	return predicate.FileExposure(sql.FieldEqualFold(FieldProvider, v))
-}
-
-// ProviderContainsFold applies the ContainsFold predicate on the "provider" field.
-func ProviderContainsFold(v string) predicate.FileExposure {
-	return predicate.FileExposure(sql.FieldContainsFold(FieldProvider, v))
 }
 
 // VisibilityEQ applies the EQ predicate on the "visibility" field.

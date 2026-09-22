@@ -39,8 +39,6 @@ type FileExposure struct {
 	Namespace string `json:"namespace,omitempty"`
 	// FileType holds the value of the "file_type" field.
 	FileType string `json:"file_type,omitempty"`
-	// Provider holds the value of the "provider" field.
-	Provider *string `json:"provider,omitempty"`
 	// Visibility holds the value of the "visibility" field.
 	Visibility fileexposure.Visibility `json:"visibility,omitempty"`
 	// Active holds the value of the "active" field.
@@ -132,7 +130,7 @@ func (*FileExposure) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullBool)
 		case fileexposure.FieldID:
 			values[i] = new(sql.NullInt64)
-		case fileexposure.FieldStatusPhase, fileexposure.FieldStatusMessage, fileexposure.FieldEnvironment, fileexposure.FieldNamespace, fileexposure.FieldFileType, fileexposure.FieldProvider, fileexposure.FieldVisibility, fileexposure.FieldZoneName:
+		case fileexposure.FieldStatusPhase, fileexposure.FieldStatusMessage, fileexposure.FieldEnvironment, fileexposure.FieldNamespace, fileexposure.FieldFileType, fileexposure.FieldVisibility, fileexposure.FieldZoneName:
 			values[i] = new(sql.NullString)
 		case fileexposure.FieldCreatedAt, fileexposure.FieldLastModifiedAt:
 			values[i] = new(sql.NullTime)
@@ -207,13 +205,6 @@ func (_m *FileExposure) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field file_type", values[i])
 			} else if value.Valid {
 				_m.FileType = value.String
-			}
-		case fileexposure.FieldProvider:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field provider", values[i])
-			} else if value.Valid {
-				_m.Provider = new(string)
-				*_m.Provider = value.String
 			}
 		case fileexposure.FieldVisibility:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -353,11 +344,6 @@ func (_m *FileExposure) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("file_type=")
 	builder.WriteString(_m.FileType)
-	builder.WriteString(", ")
-	if v := _m.Provider; v != nil {
-		builder.WriteString("provider=")
-		builder.WriteString(*v)
-	}
 	builder.WriteString(", ")
 	builder.WriteString("visibility=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Visibility))

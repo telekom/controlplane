@@ -3507,7 +3507,6 @@ type FileExposure implements Node {
   environment: String
   namespace: String!
   fileType: String!
-  provider: String
   visibility: FileExposureVisibility!
   active: Boolean
   zoneName: String!
@@ -3702,24 +3701,6 @@ input FileExposureWhereInput {
   fileTypeHasSuffix: String
   fileTypeEqualFold: String
   fileTypeContainsFold: String
-  """
-  provider field predicates
-  """
-  provider: String
-  providerNEQ: String
-  providerIn: [String!]
-  providerNotIn: [String!]
-  providerGT: String
-  providerGTE: String
-  providerLT: String
-  providerLTE: String
-  providerContains: String
-  providerHasPrefix: String
-  providerHasSuffix: String
-  providerIsNil: Boolean
-  providerNotNil: Boolean
-  providerEqualFold: String
-  providerContainsFold: String
   """
   visibility field predicates
   """

@@ -17316,7 +17316,6 @@ type FileExposureMutation struct {
 	environment          *string
 	namespace            *string
 	file_type            *string
-	provider             *string
 	visibility           *fileexposure.Visibility
 	active               *bool
 	zone_name            *string
@@ -17724,55 +17723,6 @@ func (m *FileExposureMutation) OldFileType(ctx context.Context) (v string, err e
 // ResetFileType resets all changes to the "file_type" field.
 func (m *FileExposureMutation) ResetFileType() {
 	m.file_type = nil
-}
-
-// SetProvider sets the "provider" field.
-func (m *FileExposureMutation) SetProvider(s string) {
-	m.provider = &s
-}
-
-// Provider returns the value of the "provider" field in the mutation.
-func (m *FileExposureMutation) Provider() (r string, exists bool) {
-	v := m.provider
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldProvider returns the old "provider" field's value of the FileExposure entity.
-// If the FileExposure object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *FileExposureMutation) OldProvider(ctx context.Context) (v *string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldProvider is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldProvider requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldProvider: %w", err)
-	}
-	return oldValue.Provider, nil
-}
-
-// ClearProvider clears the value of the "provider" field.
-func (m *FileExposureMutation) ClearProvider() {
-	m.provider = nil
-	m.clearedFields[fileexposure.FieldProvider] = struct{}{}
-}
-
-// ProviderCleared returns if the "provider" field was cleared in this mutation.
-func (m *FileExposureMutation) ProviderCleared() bool {
-	_, ok := m.clearedFields[fileexposure.FieldProvider]
-	return ok
-}
-
-// ResetProvider resets all changes to the "provider" field.
-func (m *FileExposureMutation) ResetProvider() {
-	m.provider = nil
-	delete(m.clearedFields, fileexposure.FieldProvider)
 }
 
 // SetVisibility sets the "visibility" field.
@@ -18186,7 +18136,7 @@ func (m *FileExposureMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *FileExposureMutation) Fields() []string {
-	fields := make([]string, 0, 13)
+	fields := make([]string, 0, 12)
 	if m.created_at != nil {
 		fields = append(fields, fileexposure.FieldCreatedAt)
 	}
@@ -18207,9 +18157,6 @@ func (m *FileExposureMutation) Fields() []string {
 	}
 	if m.file_type != nil {
 		fields = append(fields, fileexposure.FieldFileType)
-	}
-	if m.provider != nil {
-		fields = append(fields, fileexposure.FieldProvider)
 	}
 	if m.visibility != nil {
 		fields = append(fields, fileexposure.FieldVisibility)
@@ -18248,8 +18195,6 @@ func (m *FileExposureMutation) Field(name string) (ent.Value, bool) {
 		return m.Namespace()
 	case fileexposure.FieldFileType:
 		return m.FileType()
-	case fileexposure.FieldProvider:
-		return m.Provider()
 	case fileexposure.FieldVisibility:
 		return m.Visibility()
 	case fileexposure.FieldActive:
@@ -18283,8 +18228,6 @@ func (m *FileExposureMutation) OldField(ctx context.Context, name string) (ent.V
 		return m.OldNamespace(ctx)
 	case fileexposure.FieldFileType:
 		return m.OldFileType(ctx)
-	case fileexposure.FieldProvider:
-		return m.OldProvider(ctx)
 	case fileexposure.FieldVisibility:
 		return m.OldVisibility(ctx)
 	case fileexposure.FieldActive:
@@ -18352,13 +18295,6 @@ func (m *FileExposureMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetFileType(v)
-		return nil
-	case fileexposure.FieldProvider:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetProvider(v)
 		return nil
 	case fileexposure.FieldVisibility:
 		v, ok := value.(fileexposure.Visibility)
@@ -18434,9 +18370,6 @@ func (m *FileExposureMutation) ClearedFields() []string {
 	if m.FieldCleared(fileexposure.FieldEnvironment) {
 		fields = append(fields, fileexposure.FieldEnvironment)
 	}
-	if m.FieldCleared(fileexposure.FieldProvider) {
-		fields = append(fields, fileexposure.FieldProvider)
-	}
 	if m.FieldCleared(fileexposure.FieldActive) {
 		fields = append(fields, fileexposure.FieldActive)
 	}
@@ -18465,9 +18398,6 @@ func (m *FileExposureMutation) ClearField(name string) error {
 		return nil
 	case fileexposure.FieldEnvironment:
 		m.ClearEnvironment()
-		return nil
-	case fileexposure.FieldProvider:
-		m.ClearProvider()
 		return nil
 	case fileexposure.FieldActive:
 		m.ClearActive()
@@ -18503,9 +18433,6 @@ func (m *FileExposureMutation) ResetField(name string) error {
 		return nil
 	case fileexposure.FieldFileType:
 		m.ResetFileType()
-		return nil
-	case fileexposure.FieldProvider:
-		m.ResetProvider()
 		return nil
 	case fileexposure.FieldVisibility:
 		m.ResetVisibility()

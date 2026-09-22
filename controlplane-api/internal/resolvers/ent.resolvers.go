@@ -10,7 +10,6 @@ package resolvers
 
 import (
 	"context"
-	"fmt"
 
 	"entgo.io/contrib/entgql"
 	"github.com/telekom/controlplane/controlplane-api/ent"
@@ -158,6 +157,33 @@ func (r *queryResolver) EventTypes(ctx context.Context, after *entgql.Cursor[int
 		)
 }
 
+// FileExposures is the resolver for the fileExposures field.
+func (r *queryResolver) FileExposures(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.FileExposureOrder, where *ent.FileExposureWhereInput) (*ent.FileExposureConnection, error) {
+	return r.client.FileExposure.Query().
+		Paginate(ctx, after, first, before, last,
+			ent.WithFileExposureOrder(orderBy),
+			ent.WithFileExposureFilter(where.Filter),
+		)
+}
+
+// FileSubscriptions is the resolver for the fileSubscriptions field.
+func (r *queryResolver) FileSubscriptions(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.FileSubscriptionOrder, where *ent.FileSubscriptionWhereInput) (*ent.FileSubscriptionConnection, error) {
+	return r.client.FileSubscription.Query().
+		Paginate(ctx, after, first, before, last,
+			ent.WithFileSubscriptionOrder(orderBy),
+			ent.WithFileSubscriptionFilter(where.Filter),
+		)
+}
+
+// FileTypes is the resolver for the fileTypes field.
+func (r *queryResolver) FileTypes(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.FileTypeOrder, where *ent.FileTypeWhereInput) (*ent.FileTypeConnection, error) {
+	return r.client.FileType.Query().
+		Paginate(ctx, after, first, before, last,
+			ent.WithFileTypeOrder(orderBy),
+			ent.WithFileTypeFilter(where.Filter),
+		)
+}
+
 // McpServers is the resolver for the mcpServers field.
 func (r *queryResolver) McpServers(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.McpServerOrder, where *ent.McpServerWhereInput) (*ent.McpServerConnection, error) {
 	return r.client.McpServer.Query().
@@ -188,21 +214,6 @@ func (r *queryResolver) Teams(ctx context.Context, after *entgql.Cursor[int], fi
 // Zones is the resolver for the zones field.
 func (r *queryResolver) Zones(ctx context.Context) ([]*ent.Zone, error) {
 	return r.client.Zone.Query().All(ctx)
-}
-
-// FileExposures is the resolver for the fileExposures field.
-func (r *queryResolver) FileExposures(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.FileExposureOrder, where *ent.FileExposureWhereInput) (*ent.FileExposureConnection, error) {
-	panic(fmt.Errorf("not implemented: FileExposures - fileExposures"))
-}
-
-// FileSubscriptions is the resolver for the fileSubscriptions field.
-func (r *queryResolver) FileSubscriptions(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.FileSubscriptionOrder, where *ent.FileSubscriptionWhereInput) (*ent.FileSubscriptionConnection, error) {
-	panic(fmt.Errorf("not implemented: FileSubscriptions - fileSubscriptions"))
-}
-
-// FileTypes is the resolver for the fileTypes field.
-func (r *queryResolver) FileTypes(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.FileTypeOrder, where *ent.FileTypeWhereInput) (*ent.FileTypeConnection, error) {
-	panic(fmt.Errorf("not implemented: FileTypes - fileTypes"))
 }
 
 // TeamToken is the resolver for the teamToken field.

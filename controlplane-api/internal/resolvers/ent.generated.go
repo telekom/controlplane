@@ -9524,29 +9524,6 @@ func (ec *executionContext) fieldContext_FileExposure_fileType(_ context.Context
 	return graphql.NewScalarFieldContext("FileExposure", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
-func (ec *executionContext) _FileExposure_provider(ctx context.Context, field graphql.CollectedField, obj *ent.FileExposure) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.fieldContext_FileExposure_provider(ctx, field)
-		},
-		func(ctx context.Context) (any, error) {
-			return obj.Provider, nil
-		},
-		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v *string) graphql.Marshaler {
-			return ec.marshalOString2ᚖstring(ctx, selections, v)
-		},
-		true,
-		false,
-	)
-}
-func (ec *executionContext) fieldContext_FileExposure_provider(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	return graphql.NewScalarFieldContext("FileExposure", field, false, false, errors.New("field of type String does not have child fields"))
-}
-
 func (ec *executionContext) _FileExposure_visibility(ctx context.Context, field graphql.CollectedField, obj *ent.FileExposure) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -26109,7 +26086,7 @@ func (ec *executionContext) unmarshalInputFileExposureWhereInput(ctx context.Con
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "lastModifiedAt", "lastModifiedAtNEQ", "lastModifiedAtIn", "lastModifiedAtNotIn", "lastModifiedAtGT", "lastModifiedAtGTE", "lastModifiedAtLT", "lastModifiedAtLTE", "statusPhase", "statusPhaseNEQ", "statusPhaseIn", "statusPhaseNotIn", "statusPhaseIsNil", "statusPhaseNotNil", "statusMessage", "statusMessageNEQ", "statusMessageIn", "statusMessageNotIn", "statusMessageGT", "statusMessageGTE", "statusMessageLT", "statusMessageLTE", "statusMessageContains", "statusMessageHasPrefix", "statusMessageHasSuffix", "statusMessageIsNil", "statusMessageNotNil", "statusMessageEqualFold", "statusMessageContainsFold", "environment", "environmentNEQ", "environmentIn", "environmentNotIn", "environmentGT", "environmentGTE", "environmentLT", "environmentLTE", "environmentContains", "environmentHasPrefix", "environmentHasSuffix", "environmentIsNil", "environmentNotNil", "environmentEqualFold", "environmentContainsFold", "namespace", "namespaceNEQ", "namespaceIn", "namespaceNotIn", "namespaceGT", "namespaceGTE", "namespaceLT", "namespaceLTE", "namespaceContains", "namespaceHasPrefix", "namespaceHasSuffix", "namespaceEqualFold", "namespaceContainsFold", "fileType", "fileTypeNEQ", "fileTypeIn", "fileTypeNotIn", "fileTypeGT", "fileTypeGTE", "fileTypeLT", "fileTypeLTE", "fileTypeContains", "fileTypeHasPrefix", "fileTypeHasSuffix", "fileTypeEqualFold", "fileTypeContainsFold", "provider", "providerNEQ", "providerIn", "providerNotIn", "providerGT", "providerGTE", "providerLT", "providerLTE", "providerContains", "providerHasPrefix", "providerHasSuffix", "providerIsNil", "providerNotNil", "providerEqualFold", "providerContainsFold", "visibility", "visibilityNEQ", "visibilityIn", "visibilityNotIn", "active", "activeNEQ", "activeIsNil", "activeNotNil", "zoneName", "zoneNameNEQ", "zoneNameIn", "zoneNameNotIn", "zoneNameGT", "zoneNameGTE", "zoneNameLT", "zoneNameLTE", "zoneNameContains", "zoneNameHasPrefix", "zoneNameHasSuffix", "zoneNameEqualFold", "zoneNameContainsFold", "hasOwner", "hasOwnerWith", "hasFileTypeDef", "hasFileTypeDefWith", "hasZone", "hasZoneWith", "hasSubscriptions", "hasSubscriptionsWith"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "lastModifiedAt", "lastModifiedAtNEQ", "lastModifiedAtIn", "lastModifiedAtNotIn", "lastModifiedAtGT", "lastModifiedAtGTE", "lastModifiedAtLT", "lastModifiedAtLTE", "statusPhase", "statusPhaseNEQ", "statusPhaseIn", "statusPhaseNotIn", "statusPhaseIsNil", "statusPhaseNotNil", "statusMessage", "statusMessageNEQ", "statusMessageIn", "statusMessageNotIn", "statusMessageGT", "statusMessageGTE", "statusMessageLT", "statusMessageLTE", "statusMessageContains", "statusMessageHasPrefix", "statusMessageHasSuffix", "statusMessageIsNil", "statusMessageNotNil", "statusMessageEqualFold", "statusMessageContainsFold", "environment", "environmentNEQ", "environmentIn", "environmentNotIn", "environmentGT", "environmentGTE", "environmentLT", "environmentLTE", "environmentContains", "environmentHasPrefix", "environmentHasSuffix", "environmentIsNil", "environmentNotNil", "environmentEqualFold", "environmentContainsFold", "namespace", "namespaceNEQ", "namespaceIn", "namespaceNotIn", "namespaceGT", "namespaceGTE", "namespaceLT", "namespaceLTE", "namespaceContains", "namespaceHasPrefix", "namespaceHasSuffix", "namespaceEqualFold", "namespaceContainsFold", "fileType", "fileTypeNEQ", "fileTypeIn", "fileTypeNotIn", "fileTypeGT", "fileTypeGTE", "fileTypeLT", "fileTypeLTE", "fileTypeContains", "fileTypeHasPrefix", "fileTypeHasSuffix", "fileTypeEqualFold", "fileTypeContainsFold", "visibility", "visibilityNEQ", "visibilityIn", "visibilityNotIn", "active", "activeNEQ", "activeIsNil", "activeNotNil", "zoneName", "zoneNameNEQ", "zoneNameIn", "zoneNameNotIn", "zoneNameGT", "zoneNameGTE", "zoneNameLT", "zoneNameLTE", "zoneNameContains", "zoneNameHasPrefix", "zoneNameHasSuffix", "zoneNameEqualFold", "zoneNameContainsFold", "hasOwner", "hasOwnerWith", "hasFileTypeDef", "hasFileTypeDefWith", "hasZone", "hasZoneWith", "hasSubscriptions", "hasSubscriptionsWith"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -26739,111 +26716,6 @@ func (ec *executionContext) unmarshalInputFileExposureWhereInput(ctx context.Con
 				return it, err
 			}
 			it.FileTypeContainsFold = data
-		case "provider":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("provider"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Provider = data
-		case "providerNEQ":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("providerNEQ"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.ProviderNEQ = data
-		case "providerIn":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("providerIn"))
-			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.ProviderIn = data
-		case "providerNotIn":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("providerNotIn"))
-			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.ProviderNotIn = data
-		case "providerGT":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("providerGT"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.ProviderGT = data
-		case "providerGTE":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("providerGTE"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.ProviderGTE = data
-		case "providerLT":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("providerLT"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.ProviderLT = data
-		case "providerLTE":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("providerLTE"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.ProviderLTE = data
-		case "providerContains":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("providerContains"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.ProviderContains = data
-		case "providerHasPrefix":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("providerHasPrefix"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.ProviderHasPrefix = data
-		case "providerHasSuffix":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("providerHasSuffix"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.ProviderHasSuffix = data
-		case "providerIsNil":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("providerIsNil"))
-			data, err := ec.unmarshalOBoolean2bool(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.ProviderIsNil = data
-		case "providerNotNil":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("providerNotNil"))
-			data, err := ec.unmarshalOBoolean2bool(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.ProviderNotNil = data
-		case "providerEqualFold":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("providerEqualFold"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.ProviderEqualFold = data
-		case "providerContainsFold":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("providerContainsFold"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.ProviderContainsFold = data
 		case "visibility":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("visibility"))
 			data, err := ec.unmarshalOFileExposureVisibility2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋfileexposureᚐVisibility(ctx, v)
@@ -38012,11 +37884,6 @@ func (ec *executionContext) _FileExposure(ctx context.Context, sel ast.Selection
 		case "fileType":
 			out.Values[i] = ec._FileExposure_fileType(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
-			}
-		case "provider":
-			out.Values[i] = ec._FileExposure_provider(ctx, field, obj)
-			if out.Values[i] == graphql.RequiredNull {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "visibility":

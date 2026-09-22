@@ -35,9 +35,6 @@ func (FileExposure) Fields() []ent.Field {
 	return []ent.Field{
 		field.Text("file_type").
 			NotEmpty(),
-		field.Text("provider").
-			Optional().
-			Nillable(),
 		field.Enum("visibility").
 			NamedValues(
 				"World", "WORLD",
