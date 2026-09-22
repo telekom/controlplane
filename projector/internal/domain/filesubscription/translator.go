@@ -66,7 +66,7 @@ func toFileSFTP(obj *filev1.FileSFTP) *model.FileSFTP {
 func (t *Translator) KeyFromObject(obj *filev1.FileSubscription) FileSubscriptionKey {
 	return FileSubscriptionKey{
 		FileType:      obj.Spec.FileType,
-		OwnerAppName:  obj.Spec.Requestor.AppName,
+		OwnerAppName:  obj.Spec.Requestor.Name,
 		OwnerTeamName: shared.TeamNameFromNamespace(obj.Namespace),
 		Namespace:     obj.Namespace,
 		Name:          obj.Name,
