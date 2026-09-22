@@ -69,13 +69,6 @@ type dualApprovalResult struct {
 	err      error // combined diagnostics
 }
 
-// approvalResult carries the outcome of the approval check (legacy single-gate).
-// Kept for the compat adapter.
-type approvalResult struct {
-	result           builder.ApprovalResult
-	providerApproval *ctypes.ObjectRef
-}
-
 // ensureApprovals creates or reconciles both the provider and consumer
 // ApprovalRequests that gate this Listener.
 //
@@ -331,114 +324,6 @@ func (h *ListenerHandler) setAggregateConditions(ctx context.Context, listener *
 		// Conditions are not set for errors — the caller returns the error
 		// and the controller framework handles requeue.
 	}
-}
-
-// ensureApprovalsCompat preserves the original single-gate (provider-only)
-// approval path so that the existing listener_handler.go and integration tests
-// continue to work. The dual-gate path (ensureApprovals) will be wired in by
-// Task 4.
-//
-// TODO(task4): replace with direct ensureApprovals call when listener_handler.go
-// is updated to handle dualApprovalResult and integration tests are migrated to
-// scoped approval naming.
-func (h *ListenerHandler) ensureApprovalsCompat(
-	ctx context.Context,
-	listener *spectrev1.Listener,
-	consumerApp *applicationv1.Application,
-	providerApp *applicationv1.Application,
-	intent *authorizationIntent,
-) (*approvalResult, error) {
-	logger := log.FromContext(ctx)
-
-	result := &approvalResult{}
-
-	providerRes, err := h.buildSingleApproval(ctx, listener, consumerApp, providerApp, intent)
-	if err != nil {
-		return nil, err
-	}
-	result.providerApproval = ctypes.ObjectRefFromObject(providerRes.builder.GetApproval())
-	result.result = providerRes.result
-
-	// --- Evaluate gate ---
-	switch providerRes.result {
-	case builder.ApprovalResultGranted:
-		builder.ClearApprovalPendingReady(listener)
-		return result, nil
-
-	case builder.ApprovalResultDenied:
-		logger.Info("Approval denied", "provider", providerRes.result)
-		listener.SetCondition(condition.NewNotReadyCondition(condition.ReasonAccessDenied, "Approval has been denied"))
-		listener.SetCondition(condition.NewDoneProcessingCondition("Approval has been denied"))
-		return result, nil
-
-	case builder.ApprovalResultRequestDenied:
-		logger.Info("ApprovalRequest denied", "provider", providerRes.result)
-		listener.SetCondition(condition.NewNotReadyCondition(condition.ReasonAccessDenied, "ApprovalRequest has been denied"))
-		listener.SetCondition(condition.NewDoneProcessingCondition("ApprovalRequest has been denied"))
-		return result, nil
-
-	case builder.ApprovalResultPending:
-		logger.Info("Approval pending", "provider", providerRes.result)
-		listener.SetCondition(condition.NewNotReadyCondition(condition.ReasonApprovalPending, "Waiting for approval decision"))
-		listener.SetCondition(condition.NewBlockedCondition("Waiting for approval decision"))
-		return result, nil
-
-	default:
-		// Unknown result: fail closed rather than silently waiting forever.
-		return nil, errors.Errorf("unknown approval-builder result %q", providerRes.result)
-	}
-}
-
-type singleApprovalResult struct {
-	result  builder.ApprovalResult
-	builder builder.ApprovalBuilder
-}
-
-// buildSingleApproval creates a single unscoped provider gate (the original
-// Phase 1 behavior). Kept for the compat adapter.
-func (h *ListenerHandler) buildSingleApproval(
-	ctx context.Context,
-	listener *spectrev1.Listener,
-	consumerApp *applicationv1.Application,
-	providerApp *applicationv1.Application,
-	intent *authorizationIntent,
-) (*singleApprovalResult, error) {
-	c := cclient.ClientFromContextOrDie(ctx)
-	strategy := computeStrategy(consumerApp.Spec.Team, providerApp.Spec.Team)
-
-	consumerRef := ctypes.TypedObjectRefFromObject(consumerApp, c.Scheme())
-	providerRef := ctypes.TypedObjectRefFromObject(providerApp, c.Scheme())
-
-	requester := &approvalapi.Requester{
-		TeamName:       consumerApp.Spec.Team,
-		TeamEmail:      consumerApp.Spec.TeamEmail,
-		ApplicationRef: consumerRef,
-	}
-	if err := requester.SetProperties(intent.approvalProperties()); err != nil {
-		return nil, errors.Wrap(err, "failed to set requester properties")
-	}
-
-	decider := &approvalapi.Decider{
-		TeamName:       providerApp.Spec.Team,
-		TeamEmail:      providerApp.Spec.TeamEmail,
-		ApplicationRef: providerRef,
-	}
-
-	fingerprint := intent.fingerprint()
-
-	ab := builder.NewApprovalBuilder(c, listener)
-	ab.WithAction("listen-provider")
-	ab.WithHashValue(fingerprint)
-	ab.WithRequester(requester)
-	ab.WithDecider(decider)
-	ab.WithStrategy(strategy)
-
-	res, err := ab.Build(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	return &singleApprovalResult{result: res, builder: ab}, nil
 }
 
 // computeStrategy returns Auto if both teams are the same and neither is empty,

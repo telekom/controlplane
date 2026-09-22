@@ -621,20 +621,6 @@ var _ = Describe("authorization fingerprint", func() {
 		})
 	})
 
-	// --- Compat adapter ---
-
-	Describe("buildAuthorizationIntentCompat", func() {
-		It("should set observer == consumer and empty placement", func() {
-			intent := buildAuthorizationIntentCompat(listener, consumerApp, providerApp, spectreApp)
-			Expect(intent.ObserverName).To(Equal(consumerApp.Name))
-			Expect(intent.ObserverNamespace).To(Equal(consumerApp.Namespace))
-			Expect(intent.ObserverUID).To(Equal(string(consumerApp.UID)))
-			Expect(intent.ObserverTeam).To(Equal(consumerApp.Spec.Team))
-			Expect(intent.ObserverClientId).To(Equal(consumerApp.Status.ClientId))
-			Expect(intent.Placement).To(Equal(PlacementIntent{}))
-		})
-	})
-
 	Describe("isStaleChild", func() {
 		It("should return true when fingerprint label is missing", func() {
 			labels := map[string]string{"cp.ei.telekom.de/owner.uid": "uid-001"}
