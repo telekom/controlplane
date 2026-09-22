@@ -49,14 +49,8 @@ var _ = Describe("ZoneServiceConfig Controller", func() {
 							Path: "/test",
 							Url:  "https://sftp.example.com",
 						},
-						Service: &filev1.ServiceEndpoint{
-							Host: "sftp.internal",
-							Port: 22,
-						},
-						ServiceExternal: &filev1.ServiceEndpoint{
-							Host: "sftp.external",
-							Port: 2222,
-						},
+						ServiceURL:         "sftp.internal:22",
+						ServiceExternalURL: "sftp.external:2222",
 					},
 				}
 				Expect(k8sClient.Create(ctx, resource)).To(Succeed())

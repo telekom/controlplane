@@ -38,6 +38,7 @@ func (h *FileSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *filev
 	}
 
 	if fileType.Status.FileExposureRef == nil {
+		resetServiceURLsInStatus(obj)
 		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet, "No active FileExposure found for this FileType"))
 		obj.SetCondition(condition.NewBlockedCondition("FileSubscription will be processed when a FileExposure is registered"))
 		return nil
@@ -46,6 +47,7 @@ func (h *FileSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *filev
 	activeExposure := &filev1.FileExposure{}
 	if err = c.Get(ctx, fileType.Status.FileExposureRef.K8s(), activeExposure); err != nil {
 		if apierrors.IsNotFound(errors.Cause(err)) {
+			resetServiceURLsInStatus(obj)
 			obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet, "No active FileExposure found for this FileType"))
 			obj.SetCondition(condition.NewBlockedCondition("FileSubscription will be processed when a FileExposure is registered"))
 			return nil
@@ -54,6 +56,7 @@ func (h *FileSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *filev
 	}
 
 	if !visibilityAllowsSubscription(activeExposure, obj) {
+		resetServiceURLsInStatus(obj)
 		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet, "FileExposure and FileSubscription visibility combination is not allowed"))
 		return ctrlerrors.BlockedErrorf("FileSubscription is blocked by FileExposure visibility")
 	}
@@ -97,6 +100,13 @@ func (h *FileSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *filev
 		return nil
 	}
 
+	zoneServiceConfig, err := util.GetZoneServiceConfig(ctx, activeExposure.Spec.Zone)
+	if err != nil {
+		return err
+	}
+
+	obj.Status.ServiceURL = zoneServiceConfig.Spec.ServiceURL
+	obj.Status.ServiceExternalURL = zoneServiceConfig.Spec.ServiceExternalURL
 	obj.SetCondition(condition.NewReadyCondition("FileSubscriptionProvisioned", "FileSubscription has been provisioned"))
 	obj.SetCondition(condition.NewDoneProcessingCondition("FileSubscription has been provisioned"))
 	return nil
@@ -129,12 +139,13 @@ func (h *FileSubscriptionHandler) ensureApproval(ctx context.Context, obj *filev
 		ApplicationRef: &activeExposure.Spec.Provider,
 	}
 
-	approvalBuilder := builder.NewApprovalBuilder(c, obj)
-	approvalBuilder.WithAction("subscribe")
-	approvalBuilder.WithHashValue(requester.Properties)
-	approvalBuilder.WithRequester(requester)
-	approvalBuilder.WithDecider(decider)
-	approvalBuilder.WithStrategy(approvalapi.ApprovalStrategy(activeExposure.Spec.Approval.Strategy))
+	approvalBuilder := builder.NewApprovalBuilder(c, obj).
+		WithAction("subscribe").
+		WithHashValue(requester.Properties).
+		WithRequester(requester).
+		WithDecider(decider).
+		WithLabels(util.DomainLabel()).
+		WithStrategy(approvalapi.ApprovalStrategy(activeExposure.Spec.Approval.Strategy))
 	if len(activeExposure.Spec.Approval.TrustedTeams) > 0 {
 		approvalBuilder.WithTrustedRequesters(activeExposure.Spec.Approval.TrustedTeams)
 	}
@@ -204,4 +215,9 @@ func teamNameFromNamespace(namespace string) string {
 		return namespace[idx+2:]
 	}
 	return namespace
+}
+
+func resetServiceURLsInStatus(subscription *filev1.FileSubscription) {
+	subscription.Status.ServiceURL = ""
+	subscription.Status.ServiceExternalURL = ""
 }

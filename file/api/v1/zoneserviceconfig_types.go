@@ -17,15 +17,15 @@ type ZoneServiceConfigSpec struct {
 	// +kubebuilder:validation:Required
 	API ManagedRouteConfig `json:"api"`
 
-	// Service is the internal SFTP service endpoint.
+	// ServiceURL represents the internal SFTP service endpoint for users.
 	// +kubebuilder:validation:Optional
-	Service *ServiceEndpoint `json:"service,omitempty"`
+	ServiceURL string `json:"service,omitempty"`
 
-	// ServiceExternal is the externally reachable SFTP service endpoint.
+	// ServiceExternalURL represents the externally reachable SFTP service endpoint for users.
 	// +kubebuilder:validation:Optional
-	ServiceExternal *ServiceEndpoint `json:"serviceExternal,omitempty"`
+	ServiceExternalURL string `json:"serviceExternal,omitempty"`
 
-	// Zone identifies the zone where this file exposure is provided.
+	// Zone identifies the zone where this SFTP Service is provided.
 	// +kubebuilder:validation:Required
 	Zone *types.ObjectRef `json:"zone"`
 }

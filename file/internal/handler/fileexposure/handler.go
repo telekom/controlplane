@@ -34,6 +34,8 @@ func (h *FileExposureHandler) CreateOrUpdate(ctx context.Context, obj *filev1.Fi
 
 	if found && activeExposure.UID != obj.UID {
 		obj.Status.Active = false
+		obj.Status.ServiceURL = ""
+		obj.Status.ServiceExternalURL = ""
 		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet, "Another FileExposure already provides this FileType"))
 		obj.SetCondition(condition.NewBlockedCondition("FileExposure will be processed when the active FileExposure is deleted"))
 		return nil
@@ -68,6 +70,8 @@ func (h *FileExposureHandler) CreateOrUpdate(ctx context.Context, obj *filev1.Fi
 	}
 
 	obj.Status.Active = true
+	obj.Status.ServiceURL = zoneServiceConfig.Spec.ServiceURL
+	obj.Status.ServiceExternalURL = zoneServiceConfig.Spec.ServiceExternalURL
 	obj.SetCondition(condition.NewReadyCondition("FileExposureProvisioned", "FileExposure has been provisioned"))
 	obj.SetCondition(condition.NewDoneProcessingCondition("FileExposure has been provisioned"))
 	return nil

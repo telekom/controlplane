@@ -22,6 +22,7 @@ import (
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
+	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
 	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/file/internal/controller"
 	"github.com/telekom/controlplane/file/internal/index"
@@ -146,6 +147,12 @@ func main() {
 					Label: selector,
 				},
 				&identityv1.Client{}: {
+					Label: selector,
+				},
+				&approvalv1.ApprovalRequest{}: {
+					Label: selector,
+				},
+				&approvalv1.Approval{}: {
 					Label: selector,
 				},
 			},

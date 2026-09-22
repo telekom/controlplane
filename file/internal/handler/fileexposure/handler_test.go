@@ -78,6 +78,10 @@ func testZoneServiceConfig() *filev1.ZoneServiceConfig {
 			Name:      testZoneServiceConfigName,
 			Namespace: testNamespace,
 		},
+		Spec: filev1.ZoneServiceConfigSpec{
+			ServiceURL:         "sftp.internal:22",
+			ServiceExternalURL: "sftp.external:2222",
+		},
 	}
 }
 
@@ -237,6 +241,8 @@ var _ = Describe("FileExposureHandler", func() {
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(k8smeta.IsStatusConditionTrue(exposure.Status.Conditions, condition.ConditionTypeReady)).To(BeTrue())
+			Expect(exposure.Status.ServiceURL).To(Equal("sftp.internal:22"))
+			Expect(exposure.Status.ServiceExternalURL).To(Equal("sftp.external:2222"))
 		})
 
 		It("returns error when Instance creation fails", func() {

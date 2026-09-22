@@ -59,6 +59,14 @@ type FileExposureStatus struct {
 	// FileTypeRef references the FileType this exposure provides.
 	// +optional
 	FileTypeRef *types.ObjectRef `json:"fileTypeRef,omitempty"`
+
+	// ServiceURL represents the internal SFTP service endpoint for users.
+	// +optional
+	ServiceURL string `json:"serviceURL,omitempty"`
+
+	// ServiceExternalURL represents the externally reachable SFTP service endpoint for users.
+	// +optional
+	ServiceExternalURL string `json:"serviceExternalURL,omitempty"`
 }
 
 // +kubebuilder:object:root=true

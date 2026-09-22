@@ -19,6 +19,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
+	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/client/fake"
@@ -108,6 +109,19 @@ func testSubscription() *filev1.FileSubscription {
 		Spec: filev1.FileSubscriptionSpec{
 			FileType: testFileTypeName,
 			Zone:     &types.ObjectRef{Name: testZoneName, Namespace: testNamespace},
+		},
+	}
+}
+
+func testZoneServiceConfig() *filev1.ZoneServiceConfig {
+	return &filev1.ZoneServiceConfig{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      testZoneName,
+			Namespace: testNamespace,
+		},
+		Spec: filev1.ZoneServiceConfigSpec{
+			ServiceURL:         "sftp.internal:22",
+			ServiceExternalURL: "sftp.external:2222",
 		},
 	}
 }
@@ -297,11 +311,25 @@ var _ = Describe("FileSubscriptionHandler", func() {
 				CreateOrUpdate(mock.Anything, mock.AnythingOfType("*v1.User"), mock.Anything).
 				Return(controllerutil.OperationResultCreated, nil).Once()
 			mockClient.EXPECT().AllReady().Return(true).Once()
+			mockClient.EXPECT().
+				Get(mock.Anything, k8stypes.NamespacedName{Name: testZoneName, Namespace: testNamespace}, mock.AnythingOfType("*v1.Zone")).
+				Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
+					out.(*adminv1.Zone).Status.Namespace = testNamespace
+				}).
+				Return(nil).Once()
+			mockClient.EXPECT().
+				List(mock.Anything, mock.AnythingOfType("*v1.ZoneServiceConfigList"), mock.Anything, mock.Anything).
+				Run(func(_ context.Context, out client.ObjectList, _ ...client.ListOption) {
+					out.(*filev1.ZoneServiceConfigList).Items = []filev1.ZoneServiceConfig{*testZoneServiceConfig()}
+				}).
+				Return(nil).Once()
 
 			err := handler.CreateOrUpdate(ctx, sub)
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(k8smeta.IsStatusConditionTrue(sub.Status.Conditions, condition.ConditionTypeReady)).To(BeTrue())
+			Expect(sub.Status.ServiceURL).To(Equal("sftp.internal:22"))
+			Expect(sub.Status.ServiceExternalURL).To(Equal("sftp.external:2222"))
 		})
 
 		It("returns error when active FileExposure Get fails with unexpected error", func() {

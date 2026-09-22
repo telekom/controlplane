@@ -68,49 +68,15 @@ spec:
                 - url
                 type: object
               service:
-                description: Service is the internal SFTP service endpoint.
-                properties:
-                  host:
-                    description: Host is the hostname or IP address of the service.
-                    maxLength: 253
-                    type: string
-                    x-kubernetes-validations:
-                    - message: hostname must be a valid DNS-1123 subdomain
-                      rule: '!format.dns1123Subdomain().validate(self).hasValue()'
-                  port:
-                    description: Port is the TCP port of the service.
-                    format: int32
-                    maximum: 65535
-                    minimum: 1
-                    type: integer
-                required:
-                - host
-                - port
-                type: object
+                description: ServiceURL represents the internal SFTP service endpoint
+                  for users.
+                type: string
               serviceExternal:
-                description: ServiceExternal is the externally reachable SFTP service
-                  endpoint.
-                properties:
-                  host:
-                    description: Host is the hostname or IP address of the service.
-                    maxLength: 253
-                    type: string
-                    x-kubernetes-validations:
-                    - message: hostname must be a valid DNS-1123 subdomain
-                      rule: '!format.dns1123Subdomain().validate(self).hasValue()'
-                  port:
-                    description: Port is the TCP port of the service.
-                    format: int32
-                    maximum: 65535
-                    minimum: 1
-                    type: integer
-                required:
-                - host
-                - port
-                type: object
+                description: ServiceExternalURL represents the externally reachable
+                  SFTP service endpoint for users.
+                type: string
               zone:
-                description: Zone identifies the zone where this file exposure is
-                  provided.
+                description: Zone identifies the zone where this SFTP Service is provided.
                 properties:
                   name:
                     type: string

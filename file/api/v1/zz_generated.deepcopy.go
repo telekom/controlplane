@@ -494,16 +494,6 @@ func (in *ZoneServiceConfigList) DeepCopyObject() runtime.Object {
 func (in *ZoneServiceConfigSpec) DeepCopyInto(out *ZoneServiceConfigSpec) {
 	*out = *in
 	out.API = in.API
-	if in.Service != nil {
-		in, out := &in.Service, &out.Service
-		*out = new(ServiceEndpoint)
-		**out = **in
-	}
-	if in.ServiceExternal != nil {
-		in, out := &in.ServiceExternal, &out.ServiceExternal
-		*out = new(ServiceEndpoint)
-		**out = **in
-	}
 	if in.Zone != nil {
 		in, out := &in.Zone, &out.Zone
 		*out = (*in).DeepCopy()

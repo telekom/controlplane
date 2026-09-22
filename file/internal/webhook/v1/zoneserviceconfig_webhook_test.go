@@ -118,10 +118,7 @@ var _ = Describe("ZoneServiceConfig Webhook Validator", func() {
 
 			validator := &ZoneServiceConfigValidator{client: fakeClient}
 			cfg := newValidZoneServiceConfig("test-zone-ep", zone.Status.Namespace)
-			cfg.Spec.Service = &filev1.ServiceEndpoint{
-				Host: "sftp.example.com",
-				Port: 22,
-			}
+			cfg.Spec.ServiceURL = "sftp.example.com:22"
 
 			_, err := validator.ValidateCreate(ctx, cfg)
 			Expect(err).NotTo(HaveOccurred())
@@ -133,10 +130,7 @@ var _ = Describe("ZoneServiceConfig Webhook Validator", func() {
 
 			validator := &ZoneServiceConfigValidator{client: fakeClient}
 			cfg := newValidZoneServiceConfig("test-zone-bad-host", zone.Status.Namespace)
-			cfg.Spec.Service = &filev1.ServiceEndpoint{
-				Host: "",
-				Port: 22,
-			}
+			cfg.Spec.ServiceURL = "sftp.example.com:99999"
 
 			_, err := validator.ValidateCreate(ctx, cfg)
 			Expect(err).NotTo(HaveOccurred())
@@ -148,10 +142,7 @@ var _ = Describe("ZoneServiceConfig Webhook Validator", func() {
 
 			validator := &ZoneServiceConfigValidator{client: fakeClient}
 			cfg := newValidZoneServiceConfig("test-zone-bad-port", zone.Status.Namespace)
-			cfg.Spec.Service = &filev1.ServiceEndpoint{
-				Host: "sftp.example.com",
-				Port: 99999,
-			}
+			cfg.Spec.ServiceURL = "sftp.example.com:99999"
 
 			_, err := validator.ValidateCreate(ctx, cfg)
 			Expect(err).NotTo(HaveOccurred())
@@ -163,10 +154,7 @@ var _ = Describe("ZoneServiceConfig Webhook Validator", func() {
 
 			validator := &ZoneServiceConfigValidator{client: fakeClient}
 			cfg := newValidZoneServiceConfig("test-zone-ip", zone.Status.Namespace)
-			cfg.Spec.Service = &filev1.ServiceEndpoint{
-				Host: "192.168.1.100",
-				Port: 22,
-			}
+			cfg.Spec.ServiceURL = "192.168.1.100:22"
 
 			_, err := validator.ValidateCreate(ctx, cfg)
 			Expect(err).NotTo(HaveOccurred())
