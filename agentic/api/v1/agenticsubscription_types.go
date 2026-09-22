@@ -62,7 +62,7 @@ type AgenticSubscriptionStatus struct {
 	// +optional
 	ApprovalRequest *ctypes.ObjectRef `json:"approvalRequest,omitempty"`
 
-	// IdpIssuer is the issuer of the identity provider used for authentication.
+	// IdpIssuer is the full realm-specific OpenID Connect issuer URL used for authentication and endpoint discovery.
 	// +optional
 	IdpIssuer string `json:"idpIssuer,omitempty"`
 

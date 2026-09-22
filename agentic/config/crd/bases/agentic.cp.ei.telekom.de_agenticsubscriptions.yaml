@@ -315,8 +315,8 @@ spec:
                 description: GatewayUrl is the AI Gateway URL used for the subscription.
                 type: string
               idpIssuer:
-                description: IdpIssuer is the issuer of the identity provider used
-                  for authentication.
+                description: IdpIssuer is the full realm-specific OpenID Connect issuer
+                  URL used for authentication and endpoint discovery.
                 type: string
             type: object
         type: object

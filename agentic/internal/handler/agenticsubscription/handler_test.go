@@ -146,7 +146,7 @@ func makeReadyZoneWithAiGateway(name string) *adminv1.Zone {
 				Namespace: "default",
 			},
 			Links: adminv1.Links{
-				Issuer: "https://issuer.example.com",
+				Issuer: "https://issuer.example.com/auth/realms/test",
 			},
 			Features: []adminv1.Feature{
 				{Name: adminv1.FeatureAiGateway, Enabled: true},
@@ -504,7 +504,7 @@ var _ = Describe("AgenticSubscriptionHandler", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(obj.Status.ConsumeRoute).ToNot(BeNil())
 			Expect(obj.Status.GatewayUrl).To(Equal("https://ai-gateway.example.com:443/mcp/weather/v1"))
-			Expect(obj.Status.IdpIssuer).To(Equal("https://issuer.example.com"))
+			Expect(obj.Status.IdpIssuer).To(Equal("https://issuer.example.com/auth/realms/test"))
 
 			readyCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady)
 			Expect(readyCond).ToNot(BeNil())
