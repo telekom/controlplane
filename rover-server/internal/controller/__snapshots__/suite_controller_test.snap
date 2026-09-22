@@ -224,11 +224,11 @@
    ],
    "exposures": [
     {
-     "approval": "Simple",
+     "approval": "SIMPLE",
      "basePath": "/eni/distr/v1",
      "type": "api",
      "upstream": "https://httpbin.org/anything",
-     "visibility": "World"
+     "visibility": "WORLD"
     }
    ],
    "infos": null,
@@ -306,11 +306,11 @@
    ],
    "exposures": [
     {
-     "approval": "Simple",
+     "approval": "SIMPLE",
      "basePath": "/eni/distr/v1",
      "type": "api",
      "upstream": "https://httpbin.org/anything",
-     "visibility": "World"
+     "visibility": "WORLD"
     }
    ],
    "infos": null,
@@ -378,11 +378,11 @@
    ],
    "exposures": [
     {
-     "approval": "Simple",
+     "approval": "SIMPLE",
      "basePath": "/eni/distr/v1",
      "type": "api",
      "upstream": "https://httpbin.org/anything",
-     "visibility": "World"
+     "visibility": "WORLD"
     }
    ],
    "infos": null,

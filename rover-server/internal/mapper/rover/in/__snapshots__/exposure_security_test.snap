@@ -67,16 +67,3 @@
     },
 }
 ---
-
-[Exposure Security Mapper mapExposureSecurity must keep a symbolic valueFrom claim - 1]
-&v1.Security{
-    M2M: &v1.Machine2MachineAuthentication{
-        ExternalIDP: (*v1.ExternalIdentityProvider)(nil),
-        Basic:       (*v1.BasicAuthCredentials)(nil),
-        Scopes:      {"read"},
-        Claims:      &v1.Claims{
-            Aud: &v1.Claim{Value:"", ValueFrom:"ProviderClientId"},
-        },
-    },
-}
----
