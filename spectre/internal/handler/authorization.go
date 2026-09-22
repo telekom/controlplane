@@ -30,59 +30,59 @@ const maxLabelValueLen = 63
 // never entire resource specs/statuses, resourceVersions, Ready conditions,
 // emails, token/secret values, or reconciliation timestamps.
 type PlacementIntent struct {
-	ApiExposureName           string
-	ApiExposureNamespace      string
-	CaptureRouteName          string
-	CaptureRouteNamespace     string
-	CaptureZoneName           string
-	CaptureZoneNamespace      string
-	CaptureEventStoreName     string
-	CaptureEventStoreNamespace string
-	CallbackOriginZoneName    string
+	ApiExposureName             string
+	ApiExposureNamespace        string
+	CaptureRouteName            string
+	CaptureRouteNamespace       string
+	CaptureZoneName             string
+	CaptureZoneNamespace        string
+	CaptureEventStoreName       string
+	CaptureEventStoreNamespace  string
+	CallbackOriginZoneName      string
 	CallbackOriginZoneNamespace string
-	DeliveryZoneName          string
-	DeliveryZoneNamespace     string
-	DeliveryEventStoreName    string
+	DeliveryZoneName            string
+	DeliveryZoneNamespace       string
+	DeliveryEventStoreName      string
 	DeliveryEventStoreNamespace string
-	CallbackBaseURL           string
+	CallbackBaseURL             string
 }
 
 // authorizationIntent captures every field that changes the meaning of an
 // approval grant. Two Listeners with different intents must not share the
 // same approval — a grant for one does not cover the other.
 type authorizationIntent struct {
-	PolicyVersion     string
-	ConsumerGroup     string
-	ConsumerKind      string
-	ConsumerName      string
-	ConsumerNamespace string
-	ConsumerUID       string
-	ConsumerTeam      string
-	ConsumerClientId  string
-	ProviderGroup     string
-	ProviderKind      string
-	ProviderName      string
-	ProviderNamespace string
-	ProviderUID       string
-	ProviderTeam      string
-	ProviderClientId  string
-	SpectreAppGroup   string
-	SpectreAppKind    string
-	SpectreAppName    string
-	SpectreAppNs      string
-	SpectreAppUID     string
-	ObserverGroup     string
-	ObserverKind      string
-	ObserverName      string
-	ObserverNamespace string
-	ObserverUID       string
-	ObserverTeam      string
-	ObserverClientId  string
-	ApiBasePath       string
-	CaptureRequest    bool
-	CaptureResponse   bool
-	DeliveryType      string
-	CallbackTarget    string
+	PolicyVersion      string
+	ConsumerGroup      string
+	ConsumerKind       string
+	ConsumerName       string
+	ConsumerNamespace  string
+	ConsumerUID        string
+	ConsumerTeam       string
+	ConsumerClientId   string
+	ProviderGroup      string
+	ProviderKind       string
+	ProviderName       string
+	ProviderNamespace  string
+	ProviderUID        string
+	ProviderTeam       string
+	ProviderClientId   string
+	SpectreAppGroup    string
+	SpectreAppKind     string
+	SpectreAppName     string
+	SpectreAppNs       string
+	SpectreAppUID      string
+	ObserverGroup      string
+	ObserverKind       string
+	ObserverName       string
+	ObserverNamespace  string
+	ObserverUID        string
+	ObserverTeam       string
+	ObserverClientId   string
+	ApiBasePath        string
+	CaptureRequest     bool
+	CaptureResponse    bool
+	DeliveryType       string
+	CallbackTarget     string
 	RequestFilterJSON  string
 	ResponseFilterJSON string
 	Placement          PlacementIntent
@@ -251,10 +251,10 @@ func (a *authorizationIntent) gateRequestHash(key, requesterTeam, deciderTeam st
 	}
 
 	payload := struct {
-		Intent authorizationIntent `json:"intent"`
-		Key    string              `json:"key"`
-		Requester string           `json:"requester"`
-		Decider   string           `json:"decider"`
+		Intent    authorizationIntent `json:"intent"`
+		Key       string              `json:"key"`
+		Requester string              `json:"requester"`
+		Decider   string              `json:"decider"`
 	}{
 		Intent:    *a,
 		Key:       key,
