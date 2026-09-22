@@ -1,0 +1,60 @@
+rover-server/internal/controller/rover_test.go
+  s_e76f1a85477166::t_71782d1781d5ff 213-215,250-252
+  s_e76f1a85477166::t_6f168eea722dda 187-212,399-401,403-404,406-407,409
+  s_e76f1a85477166::t_0eb774395cf7b6 182-186,216-226,228-243,253-264,266-268,392-398,402,405,408,410-422
+  s_e76f1a85477166::t_835c462b9a6a4c 244-249
+  s_e76f1a85477166::t_becf8dce2c4fdd 227,265
+rover-server/internal/mapper/rover/in/exposure_security_test.go
+  s_e76f1a85477166::t_e10f3847c46de6 159-184
+rover-server/internal/mapper/rover/in/exposure_test.go
+  s_e76f1a85477166::t_e10f3847c46de6 356-359
+rover-server/internal/mapper/applicationinfo/out_test.go
+  s_e76f1a85477166::t_ce86f859377186 17,68-94
+  s_e76f1a85477166::t_e10f3847c46de6 33-42
+  s_9c48c7833a0990::t_251854dc6b11a4 95-96
+rover-server/internal/mapper/rover/out/exposure.go
+  s_e76f1a85477166::t_87319f6982770c 338-344,352
+rover-server/internal/mapper/applicationinfo/out.go
+  s_e76f1a85477166::t_3cac8d4a23d802 285-286,347-348,362-363,366-367
+  s_e76f1a85477166::t_87319f6982770c 364-365,368
+  s_9c48c7833a0990::t_a119ad9c3bf07b 369
+rover-server/internal/api/server.gen.go
+  s_e76f1a85477166::t_2f9c070500ffa6 135,137,139,147-148,151-152,155-156,165,169,171,179-180,187-188,191-192,223,225,227,291,293,295,303-304,307-308,311-312,447,449,451,459-460,463-464,467-468,2340-2395
+  s_e76f1a85477166::t_e54dff0a04c071 215-217,2396-2506
+rover-server/internal/mapper/rover/out/exposure_security_test.go
+  s_e76f1a85477166::t_e10f3847c46de6 169-179,182-198
+rover-server/internal/mapper/rover/in/exposure.go
+  s_e76f1a85477166::t_e10f3847c46de6 125,127,129
+  s_e76f1a85477166::t_87319f6982770c 196-201,203,211
+rover-server/api/openapi.yaml
+  s_e76f1a85477166::t_0bb47f06da6408 2428-2430,2444-2446,2476-2478,3110-3112
+  s_e76f1a85477166::t_71782d1781d5ff 2537-2539
+rover-server/internal/controller/__snapshots__/suite_controller_test.snap
+  s_9c48c7833a0990::t_a144cbde23ab2f 227,231,309,313,381,385
+rover-server/internal/mapper/applicationinfo/__snapshots__/out_test.snap
+  s_9c48c7833a0990::t_b034fe65c03ca5 7,11,109,113
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "40bd6e2177ba4608a771acfe2d1b64a485eb5a67",
+  "prompts": {},
+  "sessions": {
+    "s_9c48c7833a0990": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f376cca78ffeVBUI9mHKJCVrPT",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_e76f1a85477166": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f379548a8ffe3o08k4KJPP6Cnq",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
