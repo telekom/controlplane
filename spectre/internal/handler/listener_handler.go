@@ -140,6 +140,13 @@ func (h *ListenerHandler) CreateOrUpdate(ctx context.Context, listener *spectrev
 		return ctrlerrors.BlockedErrorf("Route %q is %s — listener capture is not supported for this route mode", route.Name, mode)
 	}
 
+	// Step 5.6b: Verify that the Route is owned by the provider's API exposure.
+	// This is a best-effort check until the api/api module is importable; see
+	// provider_binding.go for details.
+	if err := h.verifyProviderBinding(ctx, route, providerApp); err != nil {
+		return errors.Wrap(err, "provider binding check failed")
+	}
+
 	// Step 5.7: Resolve full placement (EventConfig, EventStore, callback URL).
 	lp, err := util.ResolvePlacement(ctx, listeningZone, route)
 	if err != nil {
