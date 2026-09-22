@@ -157,7 +157,8 @@ func (h *ListenerHandler) CreateOrUpdate(ctx context.Context, listener *spectrev
 	}
 
 	// Step 5.7: Compute the canonical authorization intent and fingerprint.
-	intent := buildAuthorizationIntent(listener, consumerApp, providerApp, spectreApp)
+	// TODO(task4): replace with buildAuthorizationIntent(listener, consumerApp, providerApp, spectreApp, observerApp, placement)
+	intent := buildAuthorizationIntentCompat(listener, consumerApp, providerApp, spectreApp)
 	fingerprint := intent.fingerprint()
 
 	// Step 5.8: Remove stale children whose fingerprint differs from the current
