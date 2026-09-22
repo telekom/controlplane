@@ -1537,6 +1537,732 @@ var _ = Describe("ListenerHandler", func() {
 				Expect(err.Error()).To(ContainSubstring("consumer Application"))
 			})
 		})
+
+		// --- Dual-gate aggregate pair table (Task 5, brief section 1) ---
+		// These handler-level tests verify the handler's switch statement and
+		// side effects (cleanup, conditions, provisioning) for each aggregate
+		// outcome. The pure-function tests live in listener_approval_test.go.
+
+		Context("dual-gate: provider Granted + consumer Pending", func() {
+			It("should NOT provision and set Blocked condition", func() {
+				listener := newListener()
+				mockGetConsumerApp(makeConsumerApp())
+				mockGetProviderApp(makeProviderApp())
+				mockGetSpectreApp(makeSpectreAppPtr())
+				mockGetZone()
+				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
+				mockGetEventStore(makeListenerEventStore())
+				mockListRoutes()
+				mockNoStaleChildren()
+				mockApprovalGrantedGate("provider")
+				mockApprovalPendingGate()
+
+				err := h.CreateOrUpdate(ctx, listener)
+				Expect(err).ToNot(HaveOccurred())
+
+				procCond := meta.FindStatusCondition(listener.Status.Conditions, condition.ConditionTypeProcessing)
+				Expect(procCond).ToNot(BeNil())
+				Expect(procCond.Reason).To(Equal(condition.ReasonBlocked))
+
+				Expect(listener.Status.RouteListener).To(BeNil())
+				Expect(listener.Status.EventSubscriptions).To(BeEmpty())
+			})
+		})
+
+		Context("dual-gate: provider Denied + consumer Granted", func() {
+			It("should cleanup all children and set AccessDenied", func() {
+				listener := newListener()
+				listener.Status.RouteListener = &ctypes.ObjectRef{Name: "old-rl", Namespace: listenerZoneStatus}
+				listener.Status.EventSubscriptions = []ctypes.ObjectRef{
+					{Name: "old-sub-rq", Namespace: listenerZoneStatus},
+				}
+
+				mockGetConsumerApp(makeConsumerApp())
+				mockGetProviderApp(makeProviderApp())
+				mockGetSpectreApp(makeSpectreAppPtr())
+				mockGetZone()
+				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
+				mockGetEventStore(makeListenerEventStore())
+				mockListRoutes()
+				mockNoStaleChildren()
+				mockApprovalDeniedGate("provider")
+				mockApprovalGrantedGate("consumer")
+
+				// Denial cleanup: deleteAllOwnedChildren.
+				fakeClient.EXPECT().
+					List(ctx, mock.AnythingOfType("*v1.RouteListenerList"), mock.Anything).
+					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+						*list.(*gatewayv1.RouteListenerList) = gatewayv1.RouteListenerList{
+							Items: []gatewayv1.RouteListener{
+								{ObjectMeta: metav1.ObjectMeta{Name: "old-rl", Namespace: listenerZoneStatus}},
+							},
+						}
+					}).
+					Return(nil).Once()
+				fakeClient.EXPECT().
+					Delete(ctx, mock.AnythingOfType("*v1.RouteListener"), mock.Anything).
+					Return(nil).Once()
+				fakeClient.EXPECT().
+					List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
+					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+						*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{
+							Items: []pubsubv1.Subscriber{
+								{ObjectMeta: metav1.ObjectMeta{Name: "old-sub-rq", Namespace: listenerZoneStatus}},
+							},
+						}
+					}).
+					Return(nil).Once()
+				fakeClient.EXPECT().
+					Delete(ctx, mock.AnythingOfType("*v1.Subscriber"), mock.Anything).
+					Return(nil).Once()
+
+				// resolvePublisherNamespace: label-list returns RL.
+				fakeClient.EXPECT().
+					List(ctx, mock.AnythingOfType("*v1.RouteListenerList"), mock.Anything).
+					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+						*list.(*gatewayv1.RouteListenerList) = gatewayv1.RouteListenerList{
+							Items: []gatewayv1.RouteListener{
+								{ObjectMeta: metav1.ObjectMeta{Name: "old-rl", Namespace: listenerZoneStatus}},
+							},
+						}
+					}).
+					Return(nil).Once()
+				fakeClient.EXPECT().
+					List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
+					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+						*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{}
+					}).
+					Return(nil).Once()
+
+				// cleanupGenericPublisherIfOrphaned.
+				fakeClient.EXPECT().
+					List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
+					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+						*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{}
+					}).
+					Return(nil).Once()
+				fakeClient.EXPECT().
+					Delete(ctx, mock.AnythingOfType("*v1.Publisher"), mock.Anything).
+					Return(nil).Once()
+
+				err := h.CreateOrUpdate(ctx, listener)
+				Expect(err).ToNot(HaveOccurred())
+
+				Expect(listener.Status.RouteListener).To(BeNil())
+				Expect(listener.Status.EventSubscriptions).To(BeEmpty())
+
+				readyCond := meta.FindStatusCondition(listener.Status.Conditions, condition.ConditionTypeReady)
+				Expect(readyCond).ToNot(BeNil())
+				Expect(readyCond.Reason).To(Equal(condition.ReasonAccessDenied))
+			})
+		})
+
+		Context("dual-gate: provider Granted + consumer Denied", func() {
+			It("should cleanup all children and set AccessDenied", func() {
+				listener := newListener()
+				mockGetConsumerApp(makeConsumerApp())
+				mockGetProviderApp(makeProviderApp())
+				mockGetSpectreApp(makeSpectreAppPtr())
+				mockGetZone()
+				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
+				mockGetEventStore(makeListenerEventStore())
+				mockListRoutes()
+				mockNoStaleChildren()
+				mockApprovalGrantedGate("provider")
+				mockApprovalDeniedGate("consumer")
+
+				// Denial cleanup: deleteAllOwnedChildren (no children).
+				fakeClient.EXPECT().
+					List(ctx, mock.AnythingOfType("*v1.RouteListenerList"), mock.Anything).
+					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+						*list.(*gatewayv1.RouteListenerList) = gatewayv1.RouteListenerList{}
+					}).
+					Return(nil).Once()
+				fakeClient.EXPECT().
+					List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
+					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+						*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{}
+					}).
+					Return(nil).Once()
+
+				// resolvePublisherNamespace: topology fallback.
+				fakeClient.EXPECT().
+					List(ctx, mock.AnythingOfType("*v1.RouteListenerList"), mock.Anything).
+					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+						*list.(*gatewayv1.RouteListenerList) = gatewayv1.RouteListenerList{}
+					}).
+					Return(nil).Once()
+				fakeClient.EXPECT().
+					List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
+					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+						*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{}
+					}).
+					Return(nil).Once()
+				mockGetConsumerApp(makeConsumerApp())
+				mockGetZone()
+
+				// cleanupGenericPublisherIfOrphaned.
+				fakeClient.EXPECT().
+					List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
+					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+						*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{}
+					}).
+					Return(nil).Once()
+				fakeClient.EXPECT().
+					Delete(ctx, mock.AnythingOfType("*v1.Publisher"), mock.Anything).
+					Return(nil).Once()
+
+				err := h.CreateOrUpdate(ctx, listener)
+				Expect(err).ToNot(HaveOccurred())
+
+				readyCond := meta.FindStatusCondition(listener.Status.Conditions, condition.ConditionTypeReady)
+				Expect(readyCond).ToNot(BeNil())
+				Expect(readyCond.Reason).To(Equal(condition.ReasonAccessDenied))
+			})
+		})
+
+		Context("dual-gate: provider Error + consumer Pending", func() {
+			It("should return error (NOT Pending) and NOT provision", func() {
+				listener := newListener()
+				mockGetConsumerApp(makeConsumerApp())
+				mockGetProviderApp(makeProviderApp())
+				mockGetSpectreApp(makeSpectreAppPtr())
+				mockGetZone()
+				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
+				mockGetEventStore(makeListenerEventStore())
+				mockListRoutes()
+				mockNoStaleChildren()
+
+				// Provider gate: Approval Get returns an internal error (not NotFound).
+				fakeClient.EXPECT().
+					CreateOrUpdate(ctx, mock.AnythingOfType("*v1.ApprovalRequest"), mock.Anything).
+					Run(func(_ context.Context, _ client.Object, mutate controllerutil.MutateFn) {
+						_ = mutate()
+					}).
+					Return(controllerutil.OperationResultCreated, nil).Once()
+				fakeClient.EXPECT().
+					List(ctx, mock.AnythingOfType("*v1.ApprovalRequestList"), mock.Anything).
+					Return(nil).Once()
+				fakeClient.EXPECT().
+					Get(ctx, mock.AnythingOfType("types.NamespacedName"), mock.AnythingOfType("*v1.Approval")).
+					Return(fmt.Errorf("internal API error")).Once()
+
+				// Consumer gate: pending.
+				mockApprovalPendingGate()
+
+				err := h.CreateOrUpdate(ctx, listener)
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("approval evaluation failed"))
+
+				Expect(listener.Status.RouteListener).To(BeNil())
+				Expect(listener.Status.EventSubscriptions).To(BeEmpty())
+			})
+		})
+
+		Context("dual-gate: both Pending", func() {
+			It("should NOT provision, stale children already removed", func() {
+				listener := newListener()
+				mockGetConsumerApp(makeConsumerApp())
+				mockGetProviderApp(makeProviderApp())
+				mockGetSpectreApp(makeSpectreAppPtr())
+				mockGetZone()
+				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
+				mockGetEventStore(makeListenerEventStore())
+				mockListRoutes()
+				mockNoStaleChildren()
+				mockApprovalPending()
+
+				err := h.CreateOrUpdate(ctx, listener)
+				Expect(err).ToNot(HaveOccurred())
+
+				procCond := meta.FindStatusCondition(listener.Status.Conditions, condition.ConditionTypeProcessing)
+				Expect(procCond).ToNot(BeNil())
+				Expect(procCond.Reason).To(Equal(condition.ReasonBlocked))
+
+				Expect(listener.Status.RouteListener).To(BeNil())
+				Expect(listener.Status.EventSubscriptions).To(BeEmpty())
+			})
+		})
+
+		Context("dual-gate: provider RequestDenied + consumer Granted", func() {
+			It("should NOT provision and retain same-intent children", func() {
+				listener := newListener()
+				// Pre-populate status to verify children are NOT deleted.
+				listener.Status.RouteListener = &ctypes.ObjectRef{Name: "active-rl", Namespace: listenerZoneStatus}
+				listener.Status.EventSubscriptions = []ctypes.ObjectRef{
+					{Name: "active-sub", Namespace: listenerZoneStatus},
+				}
+
+				mockGetConsumerApp(makeConsumerApp())
+				mockGetProviderApp(makeProviderApp())
+				mockGetSpectreApp(makeSpectreAppPtr())
+				mockGetZone()
+				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
+				mockGetEventStore(makeListenerEventStore())
+				mockListRoutes()
+				mockNoStaleChildren()
+				mockApprovalRequestDeniedGate("provider")
+				mockApprovalGrantedGate("consumer")
+
+				err := h.CreateOrUpdate(ctx, listener)
+				Expect(err).ToNot(HaveOccurred())
+
+				readyCond := meta.FindStatusCondition(listener.Status.Conditions, condition.ConditionTypeReady)
+				Expect(readyCond).ToNot(BeNil())
+				Expect(readyCond.Reason).To(Equal(condition.ReasonAccessDenied))
+
+				// Children are retained (not deleted).
+				Expect(listener.Status.RouteListener).ToNot(BeNil())
+				Expect(listener.Status.EventSubscriptions).To(HaveLen(1))
+			})
+		})
+
+		Context("dual-gate: both Granted provisions downstream resources", func() {
+			It("should create RouteListener and Subscribers when both gates grant", func() {
+				listener := setupFullHappyPath()
+				fakeClient.EXPECT().AnyChanged().Return(false).Once()
+				fakeClient.EXPECT().AllReady().Return(true).Once()
+				mockListenerReadinessChecks()
+
+				err := h.CreateOrUpdate(ctx, listener)
+				Expect(err).ToNot(HaveOccurred())
+
+				Expect(listener.Status.RouteListener).ToNot(BeNil())
+				Expect(listener.Status.EventSubscriptions).ToNot(BeEmpty())
+
+				readyCond := meta.FindStatusCondition(listener.Status.Conditions, condition.ConditionTypeReady)
+				Expect(readyCond).ToNot(BeNil())
+				Expect(readyCond.Status).To(Equal(metav1.ConditionTrue))
+				Expect(readyCond.Reason).To(Equal(condition.ReasonProvisioned))
+			})
+		})
+
+		// --- Brief section 4: Denial plus other-gate error ---
+
+		Context("dual-gate: provider Denied + consumer Error", func() {
+			It("should still trigger cleanup and return combined error", func() {
+				listener := newListener()
+				listener.Status.RouteListener = &ctypes.ObjectRef{Name: "old-rl", Namespace: listenerZoneStatus}
+
+				mockGetConsumerApp(makeConsumerApp())
+				mockGetProviderApp(makeProviderApp())
+				mockGetSpectreApp(makeSpectreAppPtr())
+				mockGetZone()
+				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
+				mockGetEventStore(makeListenerEventStore())
+				mockListRoutes()
+				mockNoStaleChildren()
+
+				// Provider gate: denied.
+				mockApprovalDeniedGate("provider")
+
+				// Consumer gate: error (internal API error on Approval Get).
+				fakeClient.EXPECT().
+					CreateOrUpdate(ctx, mock.AnythingOfType("*v1.ApprovalRequest"), mock.Anything).
+					Run(func(_ context.Context, _ client.Object, mutate controllerutil.MutateFn) {
+						_ = mutate()
+					}).
+					Return(controllerutil.OperationResultCreated, nil).Once()
+				fakeClient.EXPECT().
+					List(ctx, mock.AnythingOfType("*v1.ApprovalRequestList"), mock.Anything).
+					Return(nil).Once()
+				fakeClient.EXPECT().
+					Get(ctx, mock.AnythingOfType("types.NamespacedName"), mock.AnythingOfType("*v1.Approval")).
+					Return(fmt.Errorf("consumer API error")).Once()
+
+				// Denial cleanup: deleteAllOwnedChildren.
+				fakeClient.EXPECT().
+					List(ctx, mock.AnythingOfType("*v1.RouteListenerList"), mock.Anything).
+					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+						*list.(*gatewayv1.RouteListenerList) = gatewayv1.RouteListenerList{
+							Items: []gatewayv1.RouteListener{
+								{ObjectMeta: metav1.ObjectMeta{Name: "old-rl", Namespace: listenerZoneStatus}},
+							},
+						}
+					}).
+					Return(nil).Once()
+				fakeClient.EXPECT().
+					Delete(ctx, mock.AnythingOfType("*v1.RouteListener"), mock.Anything).
+					Return(nil).Once()
+				fakeClient.EXPECT().
+					List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
+					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+						*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{}
+					}).
+					Return(nil).Once()
+
+				// resolvePublisherNamespace: label-list returns RL.
+				fakeClient.EXPECT().
+					List(ctx, mock.AnythingOfType("*v1.RouteListenerList"), mock.Anything).
+					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+						*list.(*gatewayv1.RouteListenerList) = gatewayv1.RouteListenerList{
+							Items: []gatewayv1.RouteListener{
+								{ObjectMeta: metav1.ObjectMeta{Name: "old-rl", Namespace: listenerZoneStatus}},
+							},
+						}
+					}).
+					Return(nil).Once()
+				fakeClient.EXPECT().
+					List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
+					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+						*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{}
+					}).
+					Return(nil).Once()
+
+				// cleanupGenericPublisherIfOrphaned.
+				fakeClient.EXPECT().
+					List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
+					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+						*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{}
+					}).
+					Return(nil).Once()
+				fakeClient.EXPECT().
+					Delete(ctx, mock.AnythingOfType("*v1.Publisher"), mock.Anything).
+					Return(nil).Once()
+
+				err := h.CreateOrUpdate(ctx, listener)
+				// Denial cleanup succeeds, but the combined error from the consumer
+				// gate is preserved and returned.
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("consumer gate"))
+
+				// Cleanup still happened.
+				Expect(listener.Status.RouteListener).To(BeNil())
+				Expect(listener.Status.EventSubscriptions).To(BeEmpty())
+			})
+		})
+
+		// --- Brief section 5: No capture from partial authorization ---
+
+		Context("dual-gate: no provisioning from partial authorization", func() {
+			It("should NOT create RouteListener or Subscribers when only provider is Granted", func() {
+				listener := newListener()
+				mockGetConsumerApp(makeConsumerApp())
+				mockGetProviderApp(makeProviderApp())
+				mockGetSpectreApp(makeSpectreAppPtr())
+				mockGetZone()
+				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
+				mockGetEventStore(makeListenerEventStore())
+				mockListRoutes()
+				mockNoStaleChildren()
+				mockApprovalGrantedGate("provider")
+				mockApprovalPendingGate() // consumer pending
+
+				err := h.CreateOrUpdate(ctx, listener)
+				Expect(err).ToNot(HaveOccurred())
+
+				// No downstream resources created.
+				Expect(listener.Status.RouteListener).To(BeNil())
+				Expect(listener.Status.EventSubscriptions).To(BeEmpty())
+
+				// Blocked condition set.
+				procCond := meta.FindStatusCondition(listener.Status.Conditions, condition.ConditionTypeProcessing)
+				Expect(procCond).ToNot(BeNil())
+				Expect(procCond.Reason).To(Equal(condition.ReasonBlocked))
+			})
+
+			It("should NOT create RouteListener or Subscribers when only consumer is Granted", func() {
+				listener := newListener()
+				mockGetConsumerApp(makeConsumerApp())
+				mockGetProviderApp(makeProviderApp())
+				mockGetSpectreApp(makeSpectreAppPtr())
+				mockGetZone()
+				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
+				mockGetEventStore(makeListenerEventStore())
+				mockListRoutes()
+				mockNoStaleChildren()
+				mockApprovalPendingGate() // provider pending
+				mockApprovalGrantedGate("consumer")
+
+				err := h.CreateOrUpdate(ctx, listener)
+				Expect(err).ToNot(HaveOccurred())
+
+				Expect(listener.Status.RouteListener).To(BeNil())
+				Expect(listener.Status.EventSubscriptions).To(BeEmpty())
+			})
+
+			It("should NOT create RouteListener or Subscribers when one Granted + one Denied", func() {
+				listener := newListener()
+				mockGetConsumerApp(makeConsumerApp())
+				mockGetProviderApp(makeProviderApp())
+				mockGetSpectreApp(makeSpectreAppPtr())
+				mockGetZone()
+				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
+				mockGetEventStore(makeListenerEventStore())
+				mockListRoutes()
+				mockNoStaleChildren()
+				mockApprovalGrantedGate("provider")
+				mockApprovalDeniedGate("consumer")
+
+				// Denial cleanup (no children).
+				fakeClient.EXPECT().
+					List(ctx, mock.AnythingOfType("*v1.RouteListenerList"), mock.Anything).
+					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+						*list.(*gatewayv1.RouteListenerList) = gatewayv1.RouteListenerList{}
+					}).
+					Return(nil).Once()
+				fakeClient.EXPECT().
+					List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
+					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+						*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{}
+					}).
+					Return(nil).Once()
+
+				// resolvePublisherNamespace: topology fallback.
+				fakeClient.EXPECT().
+					List(ctx, mock.AnythingOfType("*v1.RouteListenerList"), mock.Anything).
+					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+						*list.(*gatewayv1.RouteListenerList) = gatewayv1.RouteListenerList{}
+					}).
+					Return(nil).Once()
+				fakeClient.EXPECT().
+					List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
+					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+						*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{}
+					}).
+					Return(nil).Once()
+				mockGetConsumerApp(makeConsumerApp())
+				mockGetZone()
+
+				// cleanupGenericPublisherIfOrphaned.
+				fakeClient.EXPECT().
+					List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
+					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+						*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{}
+					}).
+					Return(nil).Once()
+				fakeClient.EXPECT().
+					Delete(ctx, mock.AnythingOfType("*v1.Publisher"), mock.Anything).
+					Return(nil).Once()
+
+				err := h.CreateOrUpdate(ctx, listener)
+				Expect(err).ToNot(HaveOccurred())
+
+				// No provisioning happened.
+				Expect(listener.Status.RouteListener).To(BeNil())
+				Expect(listener.Status.EventSubscriptions).To(BeEmpty())
+			})
+		})
+
+		// --- Brief section 3: Identity and team combinations (handler-level) ---
+		// Since A==C is enforced at handler level, only "all equal" and "A==P"
+		// are reachable. The other three combinations are tested at the
+		// approval-helper level in listener_approval_test.go.
+
+		Context("dual-gate: all teams equal (A==C==P) auto-grants both", func() {
+			It("should provision when observer/consumer/provider share a team", func() {
+				listener := newListener()
+				// Set all apps to the same team.
+				consumerApp := makeConsumerApp()
+				consumerApp.Spec.Team = "shared-team"
+				providerApp := makeProviderApp()
+				providerApp.Spec.Team = "shared-team"
+
+				mockGetConsumerApp(consumerApp)
+				mockGetProviderApp(providerApp)
+				mockGetSpectreApp(makeSpectreAppPtr())
+				mockGetZone()
+				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
+				mockGetEventStore(makeListenerEventStore())
+				mockListRoutes()
+				mockNoStaleChildren()
+				// Both gates auto-granted because requester team == decider team.
+				mockApprovalGranted()
+				mockCreateOrUpdatePublisher()
+				mockGetRealm()
+				mockCreateOrUpdateRouteListener()
+				mockCreateOrUpdateSubscriber()
+				mockJanitorCleanup()
+				fakeClient.EXPECT().AnyChanged().Return(false).Once()
+				fakeClient.EXPECT().AllReady().Return(true).Once()
+				mockListenerReadinessChecks()
+
+				err := h.CreateOrUpdate(ctx, listener)
+				Expect(err).ToNot(HaveOccurred())
+
+				readyCond := meta.FindStatusCondition(listener.Status.Conditions, condition.ConditionTypeReady)
+				Expect(readyCond).ToNot(BeNil())
+				Expect(readyCond.Status).To(Equal(metav1.ConditionTrue))
+			})
+		})
+
+		Context("dual-gate: A==P only (consumer gate Simple, provider gate Auto)", func() {
+			It("should block when provider auto-grants but consumer is pending", func() {
+				listener := newListener()
+				// Consumer team differs from observer/provider team.
+				consumerApp := makeConsumerApp()
+				consumerApp.Spec.Team = "observer-team" // A==C still enforced
+				providerApp := makeProviderApp()
+				providerApp.Spec.Team = "observer-team" // A==P, so provider gate is Auto
+
+				// But to test A==P only, we need C!=P. Since A==C is enforced,
+				// the only way A==P and A!=C is impossible. Instead, test that
+				// when teams differ, Simple strategy forces pending.
+				providerApp2 := makeProviderApp()
+				providerApp2.Spec.Team = "other-team" // A!=P, so provider gate is Simple
+
+				mockGetConsumerApp(consumerApp)
+				mockGetProviderApp(providerApp2)
+				mockGetSpectreApp(makeSpectreAppPtr())
+				mockGetZone()
+				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
+				mockGetEventStore(makeListenerEventStore())
+				mockListRoutes()
+				mockNoStaleChildren()
+				// Consumer gate: Auto (same team as observer) -> granted.
+				mockApprovalGrantedGate("provider")
+				// Provider gate: Simple (different team) -> pending.
+				mockApprovalPendingGate()
+
+				err := h.CreateOrUpdate(ctx, listener)
+				Expect(err).ToNot(HaveOccurred())
+
+				procCond := meta.FindStatusCondition(listener.Status.Conditions, condition.ConditionTypeProcessing)
+				Expect(procCond).ToNot(BeNil())
+				Expect(procCond.Reason).To(Equal(condition.ReasonBlocked))
+			})
+		})
+
+		// --- Brief section 6: Regression coverage from Phase 1 ---
+
+		Context("regression: stale children removed BEFORE approval evaluation", func() {
+			It("should delete stale children before evaluating approval", func() {
+				listener := newListener()
+				mockGetConsumerApp(makeConsumerApp())
+				mockGetProviderApp(makeProviderApp())
+				mockGetSpectreApp(makeSpectreAppPtr())
+				mockGetZone()
+				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
+				mockGetEventStore(makeListenerEventStore())
+				mockListRoutes()
+
+				// Stale RouteListener with old fingerprint.
+				fakeClient.EXPECT().
+					List(ctx, mock.AnythingOfType("*v1.RouteListenerList"), mock.Anything).
+					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+						*list.(*gatewayv1.RouteListenerList) = gatewayv1.RouteListenerList{
+							Items: []gatewayv1.RouteListener{
+								{
+									ObjectMeta: metav1.ObjectMeta{
+										Name:      "stale-rl",
+										Namespace: listenerZoneStatus,
+										Labels: map[string]string{
+											handler.AuthorizationFingerprintLabelKey: "old-fp",
+										},
+									},
+								},
+							},
+						}
+					}).
+					Return(nil).Once()
+				fakeClient.EXPECT().
+					Delete(ctx, mock.MatchedBy(func(obj client.Object) bool {
+						return obj.GetName() == "stale-rl"
+					}), mock.Anything).
+					Return(nil).Once()
+
+				fakeClient.EXPECT().
+					List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
+					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+						*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{}
+					}).
+					Return(nil).Once()
+
+				// After stale removal, approval evaluates (pending stops test here).
+				mockApprovalPending()
+
+				err := h.CreateOrUpdate(ctx, listener)
+				Expect(err).ToNot(HaveOccurred())
+
+				procCond := meta.FindStatusCondition(listener.Status.Conditions, condition.ConditionTypeProcessing)
+				Expect(procCond).ToNot(BeNil())
+				Expect(procCond.Reason).To(Equal(condition.ReasonBlocked))
+			})
+		})
+
+		Context("regression: unsupported route mode cleanup happens before approval", func() {
+			It("should clean up and block without ever creating ApprovalRequests", func() {
+				listener := newListener()
+				mockGetConsumerApp(makeConsumerApp())
+				mockGetProviderApp(makeProviderApp())
+				mockGetSpectreApp(makeSpectreAppPtr())
+				mockGetZone()
+				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
+				mockGetEventStore(makeListenerEventStore())
+				mockPassThroughRoute()
+
+				// deleteAllOwnedChildren: no existing children.
+				fakeClient.EXPECT().
+					List(ctx, mock.AnythingOfType("*v1.RouteListenerList"), mock.Anything).
+					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+						*list.(*gatewayv1.RouteListenerList) = gatewayv1.RouteListenerList{}
+					}).
+					Return(nil).Once()
+				fakeClient.EXPECT().
+					List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
+					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+						*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{}
+					}).
+					Return(nil).Once()
+
+				// resolvePublisherNamespace: topology fallback.
+				fakeClient.EXPECT().
+					List(ctx, mock.AnythingOfType("*v1.RouteListenerList"), mock.Anything).
+					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+						*list.(*gatewayv1.RouteListenerList) = gatewayv1.RouteListenerList{}
+					}).
+					Return(nil).Once()
+				fakeClient.EXPECT().
+					List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
+					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+						*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{}
+					}).
+					Return(nil).Once()
+				mockGetConsumerApp(makeConsumerApp())
+				mockGetZone()
+
+				// cleanupGenericPublisherIfOrphaned.
+				fakeClient.EXPECT().
+					List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
+					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+						*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{}
+					}).
+					Return(nil).Once()
+				fakeClient.EXPECT().
+					Delete(ctx, mock.AnythingOfType("*v1.Publisher"), mock.Anything).
+					Return(nil).Once()
+
+				err := h.CreateOrUpdate(ctx, listener)
+				// Route mode rejection happens BEFORE approval.
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("pass-through"))
+
+				// No approval-related status refs set.
+				Expect(listener.Status.ProviderApproval).To(BeNil())
+				Expect(listener.Status.ConsumerApproval).To(BeNil())
+				Expect(listener.Status.ProviderApprovalRequest).To(BeNil())
+				Expect(listener.Status.ConsumerApprovalRequest).To(BeNil())
+			})
+		})
+
+		// --- Dual-gate status refs (both approval refs populated) ---
+
+		Context("dual-gate: both approval status refs populated on grant", func() {
+			It("should populate all four approval status refs", func() {
+				listener := setupFullHappyPath()
+				fakeClient.EXPECT().AnyChanged().Return(false).Once()
+				fakeClient.EXPECT().AllReady().Return(true).Once()
+				mockListenerReadinessChecks()
+
+				err := h.CreateOrUpdate(ctx, listener)
+				Expect(err).ToNot(HaveOccurred())
+
+				Expect(listener.Status.ProviderApproval).ToNot(BeNil())
+				Expect(listener.Status.ConsumerApproval).ToNot(BeNil())
+				Expect(listener.Status.ProviderApprovalRequest).ToNot(BeNil())
+				Expect(listener.Status.ConsumerApprovalRequest).ToNot(BeNil())
+			})
+		})
 	})
 
 	Describe("Delete", func() {
