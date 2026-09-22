@@ -252,6 +252,12 @@ func (r *Resolver) EventSubscription() EventSubscriptionResolver {
 // EventType returns EventTypeResolver implementation.
 func (r *Resolver) EventType() EventTypeResolver { return &eventTypeResolver{r} }
 
+// FileExposure returns FileExposureResolver implementation.
+func (r *Resolver) FileExposure() FileExposureResolver { return &fileExposureResolver{r} }
+
+// FileSubscription returns FileSubscriptionResolver implementation.
+func (r *Resolver) FileSubscription() FileSubscriptionResolver { return &fileSubscriptionResolver{r} }
+
 // McpServer returns McpServerResolver implementation.
 func (r *Resolver) McpServer() McpServerResolver { return &mcpServerResolver{r} }
 
@@ -277,6 +283,8 @@ type (
 	eventExposureResolver       struct{ *Resolver }
 	eventSubscriptionResolver   struct{ *Resolver }
 	eventTypeResolver           struct{ *Resolver }
+	fileExposureResolver        struct{ *Resolver }
+	fileSubscriptionResolver    struct{ *Resolver }
 	mcpServerResolver           struct{ *Resolver }
 	queryResolver               struct{ *Resolver }
 	teamResolver                struct{ *Resolver }

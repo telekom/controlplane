@@ -72,6 +72,39 @@ func (s *EventSubscriptionInfo) GetID() int { return s.ID }
 
 func (s *EventSubscriptionInfo) GetOwnerApplication() *ApplicationInfo { return s.OwnerApplication }
 
+// FileSubscriptionInfo provides a reduced cross-tenant safe view of a file subscription.
+// No navigable edges - traversal terminates here.
+type FileSubscriptionInfo struct {
+	ID                   int                `json:"id"`
+	FileType             string             `json:"fileType"`
+	StatusPhase          *string            `json:"statusPhase,omitempty"`
+	StatusMessage        *string            `json:"statusMessage,omitempty"`
+	OwnerApplicationName string             `json:"ownerApplicationName"`
+	OwnerTeam            *pkgmodel.TeamInfo `json:"ownerTeam"`
+	OwnerApplication     *ApplicationInfo   `json:"ownerApplication"`
+}
+
+func (FileSubscriptionInfo) IsSubscriptionInfo() {}
+
+func (s *FileSubscriptionInfo) GetID() int { return s.ID }
+
+func (s *FileSubscriptionInfo) GetOwnerApplication() *ApplicationInfo {
+	return s.OwnerApplication
+}
+
+// FileExposureInfo provides a reduced cross-tenant safe view of a file exposure.
+// No navigable edges - traversal terminates here.
+type FileExposureInfo struct {
+	ID                   int                     `json:"id"`
+	FileType             string                  `json:"fileType"`
+	Visibility           string                  `json:"visibility"`
+	Active               *bool                   `json:"active,omitempty"`
+	ApprovalConfig       pkgmodel.ApprovalConfig `json:"approvalConfig"`
+	OwnerApplicationName string                  `json:"ownerApplicationName"`
+	OwnerTeam            *pkgmodel.TeamInfo      `json:"ownerTeam"`
+	OwnerApplication     *ApplicationInfo        `json:"ownerApplication"`
+}
+
 // EventExposureInfo provides a reduced cross-tenant safe view of an event exposure.
 // No navigable edges — traversal terminates here.
 type EventExposureInfo struct {

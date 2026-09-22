@@ -22,6 +22,8 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/approval"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventexposure"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventsubscription"
+	"github.com/telekom/controlplane/controlplane-api/ent/fileexposure"
+	"github.com/telekom/controlplane/controlplane-api/ent/filesubscription"
 	"github.com/telekom/controlplane/controlplane-api/internal/resolvers/model"
 	model1 "github.com/telekom/controlplane/controlplane-api/pkg/model"
 	"github.com/vektah/gqlparser/v2/ast"
@@ -72,6 +74,12 @@ type ExternalIdResolver interface {
 }
 type ExternalIdentityProviderResolver interface {
 	TokenRequest(ctx context.Context, obj *model1.ExternalIdentityProvider) (*model.TokenRequestMethod, error)
+}
+type FileExposureInfoResolver interface {
+	Visibility(ctx context.Context, obj *model.FileExposureInfo) (fileexposure.Visibility, error)
+}
+type FileSubscriptionInfoResolver interface {
+	StatusPhase(ctx context.Context, obj *model.FileSubscriptionInfo) (*filesubscription.StatusPhase, error)
 }
 type OAuth2ClientCredentialsResolver interface {
 	ClientSecret(ctx context.Context, obj *model1.OAuth2ClientCredentials) (*string, error)
@@ -2698,6 +2706,217 @@ func (ec *executionContext) fieldContext_Failover_zones(_ context.Context, field
 	return graphql.NewScalarFieldContext("Failover", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
+func (ec *executionContext) _FileExposureInfo_id(ctx context.Context, field graphql.CollectedField, obj *model.FileExposureInfo) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_FileExposureInfo_id(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ID, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v int) graphql.Marshaler {
+			return ec.marshalNID2int(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_FileExposureInfo_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("FileExposureInfo", field, false, false, errors.New("field of type ID does not have child fields"))
+}
+
+func (ec *executionContext) _FileExposureInfo_fileType(ctx context.Context, field graphql.CollectedField, obj *model.FileExposureInfo) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_FileExposureInfo_fileType(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.FileType, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_FileExposureInfo_fileType(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("FileExposureInfo", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _FileExposureInfo_visibility(ctx context.Context, field graphql.CollectedField, obj *model.FileExposureInfo) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_FileExposureInfo_visibility(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return ec.Resolvers.FileExposureInfo().Visibility(ctx, obj)
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v fileexposure.Visibility) graphql.Marshaler {
+			return ec.marshalNFileExposureVisibility2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋfileexposureᚐVisibility(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_FileExposureInfo_visibility(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("FileExposureInfo", field, true, true, errors.New("field of type FileExposureVisibility does not have child fields"))
+}
+
+func (ec *executionContext) _FileExposureInfo_active(ctx context.Context, field graphql.CollectedField, obj *model.FileExposureInfo) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_FileExposureInfo_active(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Active, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *bool) graphql.Marshaler {
+			return ec.marshalOBoolean2ᚖbool(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_FileExposureInfo_active(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("FileExposureInfo", field, false, false, errors.New("field of type Boolean does not have child fields"))
+}
+
+func (ec *executionContext) _FileExposureInfo_approvalConfig(ctx context.Context, field graphql.CollectedField, obj *model.FileExposureInfo) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_FileExposureInfo_approvalConfig(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ApprovalConfig, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v model1.ApprovalConfig) graphql.Marshaler {
+			return ec.marshalNApprovalConfig2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐApprovalConfig(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_FileExposureInfo_approvalConfig(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FileExposureInfo",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_ApprovalConfig(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FileExposureInfo_ownerApplicationName(ctx context.Context, field graphql.CollectedField, obj *model.FileExposureInfo) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_FileExposureInfo_ownerApplicationName(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.OwnerApplicationName, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_FileExposureInfo_ownerApplicationName(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("FileExposureInfo", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _FileExposureInfo_ownerTeam(ctx context.Context, field graphql.CollectedField, obj *model.FileExposureInfo) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_FileExposureInfo_ownerTeam(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.OwnerTeam, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model1.TeamInfo) graphql.Marshaler {
+			return ec.marshalNTeamInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐTeamInfo(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_FileExposureInfo_ownerTeam(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FileExposureInfo",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_TeamInfo(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FileExposureInfo_ownerApplication(ctx context.Context, field graphql.CollectedField, obj *model.FileExposureInfo) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_FileExposureInfo_ownerApplication(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.OwnerApplication, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.ApplicationInfo) graphql.Marshaler {
+			return ec.marshalNApplicationInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐApplicationInfo(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_FileExposureInfo_ownerApplication(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FileExposureInfo",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_ApplicationInfo(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _FileSFTP_publicKeys(ctx context.Context, field graphql.CollectedField, obj *model1.FileSFTP) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -2725,6 +2944,185 @@ func (ec *executionContext) fieldContext_FileSFTP_publicKeys(_ context.Context, 
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return ec.childFields_SSHPublicKeySpec(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FileSubscriptionInfo_id(ctx context.Context, field graphql.CollectedField, obj *model.FileSubscriptionInfo) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_FileSubscriptionInfo_id(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ID, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v int) graphql.Marshaler {
+			return ec.marshalNID2int(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_FileSubscriptionInfo_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("FileSubscriptionInfo", field, false, false, errors.New("field of type ID does not have child fields"))
+}
+
+func (ec *executionContext) _FileSubscriptionInfo_fileType(ctx context.Context, field graphql.CollectedField, obj *model.FileSubscriptionInfo) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_FileSubscriptionInfo_fileType(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.FileType, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_FileSubscriptionInfo_fileType(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("FileSubscriptionInfo", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _FileSubscriptionInfo_statusPhase(ctx context.Context, field graphql.CollectedField, obj *model.FileSubscriptionInfo) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_FileSubscriptionInfo_statusPhase(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return ec.Resolvers.FileSubscriptionInfo().StatusPhase(ctx, obj)
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *filesubscription.StatusPhase) graphql.Marshaler {
+			return ec.marshalOFileSubscriptionStatusPhase2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋfilesubscriptionᚐStatusPhase(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_FileSubscriptionInfo_statusPhase(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("FileSubscriptionInfo", field, true, true, errors.New("field of type FileSubscriptionStatusPhase does not have child fields"))
+}
+
+func (ec *executionContext) _FileSubscriptionInfo_statusMessage(ctx context.Context, field graphql.CollectedField, obj *model.FileSubscriptionInfo) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_FileSubscriptionInfo_statusMessage(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.StatusMessage, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *string) graphql.Marshaler {
+			return ec.marshalOString2ᚖstring(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_FileSubscriptionInfo_statusMessage(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("FileSubscriptionInfo", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _FileSubscriptionInfo_ownerApplicationName(ctx context.Context, field graphql.CollectedField, obj *model.FileSubscriptionInfo) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_FileSubscriptionInfo_ownerApplicationName(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.OwnerApplicationName, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_FileSubscriptionInfo_ownerApplicationName(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("FileSubscriptionInfo", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _FileSubscriptionInfo_ownerTeam(ctx context.Context, field graphql.CollectedField, obj *model.FileSubscriptionInfo) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_FileSubscriptionInfo_ownerTeam(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.OwnerTeam, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model1.TeamInfo) graphql.Marshaler {
+			return ec.marshalNTeamInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐTeamInfo(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_FileSubscriptionInfo_ownerTeam(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FileSubscriptionInfo",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_TeamInfo(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FileSubscriptionInfo_ownerApplication(ctx context.Context, field graphql.CollectedField, obj *model.FileSubscriptionInfo) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_FileSubscriptionInfo_ownerApplication(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.OwnerApplication, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.ApplicationInfo) graphql.Marshaler {
+			return ec.marshalNApplicationInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐApplicationInfo(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_FileSubscriptionInfo_ownerApplication(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FileSubscriptionInfo",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_ApplicationInfo(ctx, field)
 		},
 	}
 	return fc, nil
@@ -3949,6 +4347,11 @@ func (ec *executionContext) _SubscriptionInfo(ctx context.Context, sel ast.Selec
 	switch obj := (obj).(type) {
 	case nil:
 		return graphql.Null
+	case *model.FileSubscriptionInfo:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._FileSubscriptionInfo(ctx, sel, obj)
 	case *model.EventSubscriptionInfo:
 		if obj == nil {
 			return graphql.Null
@@ -5995,6 +6398,112 @@ func (ec *executionContext) _Failover(ctx context.Context, sel ast.SelectionSet,
 	return out
 }
 
+var fileExposureInfoImplementors = []string{"FileExposureInfo"}
+
+func (ec *executionContext) _FileExposureInfo(ctx context.Context, sel ast.SelectionSet, obj *model.FileExposureInfo) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, fileExposureInfoImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("FileExposureInfo")
+		case "id":
+			out.Values[i] = ec._FileExposureInfo_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "fileType":
+			out.Values[i] = ec._FileExposureInfo_fileType(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "visibility":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._FileExposureInfo_visibility(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.IsDeferred() {
+				deferredFieldSet.AddField(field)
+				fieldIndex := len(deferredFieldSet.Values) - 1
+				deferredFieldSet.Concurrently(fieldIndex, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, deferredFieldSet)
+				})
+
+				for _, deferrable := range field.Deferrables {
+					view, ok := deferLabelToView[deferrable.Label]
+					if !ok {
+						view = deferredFieldSet.NewView()
+						deferLabelToView[deferrable.Label] = view
+					}
+					view.AddIndices(fieldIndex)
+				}
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "active":
+			out.Values[i] = ec._FileExposureInfo_active(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "approvalConfig":
+			out.Values[i] = ec._FileExposureInfo_approvalConfig(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "ownerApplicationName":
+			out.Values[i] = ec._FileExposureInfo_ownerApplicationName(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "ownerTeam":
+			out.Values[i] = ec._FileExposureInfo_ownerTeam(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "ownerApplication":
+			out.Values[i] = ec._FileExposureInfo_ownerApplication(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
+
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
+
+	return out
+}
+
 var fileSFTPImplementors = []string{"FileSFTP"}
 
 func (ec *executionContext) _FileSFTP(ctx context.Context, sel ast.SelectionSet, obj *model1.FileSFTP) graphql.Marshaler {
@@ -6011,6 +6520,107 @@ func (ec *executionContext) _FileSFTP(ctx context.Context, sel ast.SelectionSet,
 			out.Values[i] = ec._FileSFTP_publicKeys(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
+
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
+
+	return out
+}
+
+var fileSubscriptionInfoImplementors = []string{"FileSubscriptionInfo", "SubscriptionInfo"}
+
+func (ec *executionContext) _FileSubscriptionInfo(ctx context.Context, sel ast.SelectionSet, obj *model.FileSubscriptionInfo) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, fileSubscriptionInfoImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("FileSubscriptionInfo")
+		case "id":
+			out.Values[i] = ec._FileSubscriptionInfo_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "fileType":
+			out.Values[i] = ec._FileSubscriptionInfo_fileType(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "statusPhase":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._FileSubscriptionInfo_statusPhase(ctx, field, obj)
+				if res == graphql.RequiredNull {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.IsDeferred() {
+				deferredFieldSet.AddField(field)
+				fieldIndex := len(deferredFieldSet.Values) - 1
+				deferredFieldSet.Concurrently(fieldIndex, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, deferredFieldSet)
+				})
+
+				for _, deferrable := range field.Deferrables {
+					view, ok := deferLabelToView[deferrable.Label]
+					if !ok {
+						view = deferredFieldSet.NewView()
+						deferLabelToView[deferrable.Label] = view
+					}
+					view.AddIndices(fieldIndex)
+				}
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "statusMessage":
+			out.Values[i] = ec._FileSubscriptionInfo_statusMessage(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "ownerApplicationName":
+			out.Values[i] = ec._FileSubscriptionInfo_ownerApplicationName(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "ownerTeam":
+			out.Values[i] = ec._FileSubscriptionInfo_ownerTeam(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "ownerApplication":
+			out.Values[i] = ec._FileSubscriptionInfo_ownerApplication(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
@@ -7247,6 +7857,32 @@ func (ec *executionContext) marshalNExternalId2githubᚗcomᚋtelekomᚋcontrolp
 	return ec._ExternalId(ctx, sel, &v)
 }
 
+func (ec *executionContext) marshalNFileSubscriptionInfo2ᚕᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐFileSubscriptionInfoᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.FileSubscriptionInfo) graphql.Marshaler {
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNFileSubscriptionInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐFileSubscriptionInfo(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNFileSubscriptionInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐFileSubscriptionInfo(ctx context.Context, sel ast.SelectionSet, v *model.FileSubscriptionInfo) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._FileSubscriptionInfo(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNLimits2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐLimits(ctx context.Context, sel ast.SelectionSet, v model1.Limits) graphql.Marshaler {
 	return ec._Limits(ctx, sel, &v)
 }
@@ -7476,6 +8112,13 @@ func (ec *executionContext) marshalOFailover2ᚖgithubᚗcomᚋtelekomᚋcontrol
 		return graphql.Null
 	}
 	return ec._Failover(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOFileExposureInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐFileExposureInfo(ctx context.Context, sel ast.SelectionSet, v *model.FileExposureInfo) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._FileExposureInfo(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalOFileSFTP2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐFileSFTP(ctx context.Context, sel ast.SelectionSet, v *model1.FileSFTP) graphql.Marshaler {

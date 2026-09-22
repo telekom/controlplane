@@ -327,6 +327,35 @@ type EventSubscriptionInfo implements SubscriptionInfo {
   ownerApplication: ApplicationInfo!
 }
 
+"Reduced file subscription for cross-tenant contexts (e.g., approvals)."
+type FileSubscriptionInfo implements SubscriptionInfo {
+  id: ID!
+  fileType: String!
+  statusPhase: FileSubscriptionStatusPhase
+  statusMessage: String
+  "Application name that owns this subscription"
+  ownerApplicationName: String! @deprecated(reason: "Use ownerApplication.name instead.")
+  "Owning team (reduced view)"
+  ownerTeam: TeamInfo! @deprecated(reason: "Use ownerApplication.ownerTeam instead.")
+  "Owning application (reduced view)"
+  ownerApplication: ApplicationInfo!
+}
+
+"Reduced file exposure for cross-tenant contexts (e.g., subscription target)."
+type FileExposureInfo {
+  id: ID!
+  fileType: String!
+  visibility: FileExposureVisibility!
+  active: Boolean
+  approvalConfig: ApprovalConfig!
+  "Application name that owns this exposure"
+  ownerApplicationName: String! @deprecated(reason: "Use ownerApplication.name instead.")
+  "Owning team (reduced view)"
+  ownerTeam: TeamInfo! @deprecated(reason: "Use ownerApplication.ownerTeam instead.")
+  "Owning application (reduced view)"
+  ownerApplication: ApplicationInfo!
+}
+
 "Reduced event exposure for cross-tenant contexts (e.g., subscription target)."
 type EventExposureInfo {
   id: ID!
@@ -423,6 +452,16 @@ extend type AgenticSubscription {
 extend type AgenticExposure {
   "Subscriptions to this exposure (reduced view — cross-tenant boundary)"
   subscriptions: [AgenticSubscriptionInfo!]! @goField(forceResolver: true)
+}
+
+extend type FileSubscription {
+  "Target exposure (reduced view — cross-tenant boundary). Null when the target file type is not yet exposed."
+  target: FileExposureInfo @goField(forceResolver: true)
+}
+
+extend type FileExposure {
+  "Subscriptions to this exposure (reduced view — cross-tenant boundary)"
+  subscriptions: [FileSubscriptionInfo!]! @goField(forceResolver: true)
 }
 
 extend type Approval {

@@ -52,6 +52,10 @@ type ResolverRoot interface {
 	EventType() EventTypeResolver
 	ExternalId() ExternalIdResolver
 	ExternalIdentityProvider() ExternalIdentityProviderResolver
+	FileExposure() FileExposureResolver
+	FileExposureInfo() FileExposureInfoResolver
+	FileSubscription() FileSubscriptionResolver
+	FileSubscriptionInfo() FileSubscriptionInfoResolver
 	McpServer() McpServerResolver
 	Mutation() MutationResolver
 	OAuth2ClientCredentials() OAuth2ClientCredentialsResolver
@@ -694,6 +698,7 @@ type ComplexityRoot struct {
 		Sftp           func(childComplexity int) int
 		StatusMessage  func(childComplexity int) int
 		StatusPhase    func(childComplexity int) int
+		Subscriptions  func(childComplexity int) int
 		Visibility     func(childComplexity int) int
 		Zone           func(childComplexity int) int
 		ZoneName       func(childComplexity int) int
@@ -708,6 +713,17 @@ type ComplexityRoot struct {
 	FileExposureEdge struct {
 		Cursor func(childComplexity int) int
 		Node   func(childComplexity int) int
+	}
+
+	FileExposureInfo struct {
+		Active               func(childComplexity int) int
+		ApprovalConfig       func(childComplexity int) int
+		FileType             func(childComplexity int) int
+		ID                   func(childComplexity int) int
+		OwnerApplication     func(childComplexity int) int
+		OwnerApplicationName func(childComplexity int) int
+		OwnerTeam            func(childComplexity int) int
+		Visibility           func(childComplexity int) int
 	}
 
 	FileSFTP struct {
@@ -731,6 +747,7 @@ type ComplexityRoot struct {
 		Sftp               func(childComplexity int) int
 		StatusMessage      func(childComplexity int) int
 		StatusPhase        func(childComplexity int) int
+		Target             func(childComplexity int) int
 		Zone               func(childComplexity int) int
 		ZoneName           func(childComplexity int) int
 	}
@@ -744,6 +761,16 @@ type ComplexityRoot struct {
 	FileSubscriptionEdge struct {
 		Cursor func(childComplexity int) int
 		Node   func(childComplexity int) int
+	}
+
+	FileSubscriptionInfo struct {
+		FileType             func(childComplexity int) int
+		ID                   func(childComplexity int) int
+		OwnerApplication     func(childComplexity int) int
+		OwnerApplicationName func(childComplexity int) int
+		OwnerTeam            func(childComplexity int) int
+		StatusMessage        func(childComplexity int) int
+		StatusPhase          func(childComplexity int) int
 	}
 
 	FileType struct {
@@ -3666,6 +3693,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.FileExposure.StatusPhase(childComplexity), true
+	case "FileExposure.subscriptions":
+		if e.ComplexityRoot.FileExposure.Subscriptions == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileExposure.Subscriptions(childComplexity), true
 	case "FileExposure.visibility":
 		if e.ComplexityRoot.FileExposure.Visibility == nil {
 			break
@@ -3716,6 +3749,55 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.FileExposureEdge.Node(childComplexity), true
+
+	case "FileExposureInfo.active":
+		if e.ComplexityRoot.FileExposureInfo.Active == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileExposureInfo.Active(childComplexity), true
+	case "FileExposureInfo.approvalConfig":
+		if e.ComplexityRoot.FileExposureInfo.ApprovalConfig == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileExposureInfo.ApprovalConfig(childComplexity), true
+	case "FileExposureInfo.fileType":
+		if e.ComplexityRoot.FileExposureInfo.FileType == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileExposureInfo.FileType(childComplexity), true
+	case "FileExposureInfo.id":
+		if e.ComplexityRoot.FileExposureInfo.ID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileExposureInfo.ID(childComplexity), true
+	case "FileExposureInfo.ownerApplication":
+		if e.ComplexityRoot.FileExposureInfo.OwnerApplication == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileExposureInfo.OwnerApplication(childComplexity), true
+	case "FileExposureInfo.ownerApplicationName":
+		if e.ComplexityRoot.FileExposureInfo.OwnerApplicationName == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileExposureInfo.OwnerApplicationName(childComplexity), true
+	case "FileExposureInfo.ownerTeam":
+		if e.ComplexityRoot.FileExposureInfo.OwnerTeam == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileExposureInfo.OwnerTeam(childComplexity), true
+	case "FileExposureInfo.visibility":
+		if e.ComplexityRoot.FileExposureInfo.Visibility == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileExposureInfo.Visibility(childComplexity), true
 
 	case "FileSFTP.publicKeys":
 		if e.ComplexityRoot.FileSFTP.PublicKeys == nil {
@@ -3820,6 +3902,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.FileSubscription.StatusPhase(childComplexity), true
+	case "FileSubscription.target":
+		if e.ComplexityRoot.FileSubscription.Target == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileSubscription.Target(childComplexity), true
 	case "FileSubscription.zone":
 		if e.ComplexityRoot.FileSubscription.Zone == nil {
 			break
@@ -3864,6 +3952,49 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.FileSubscriptionEdge.Node(childComplexity), true
+
+	case "FileSubscriptionInfo.fileType":
+		if e.ComplexityRoot.FileSubscriptionInfo.FileType == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileSubscriptionInfo.FileType(childComplexity), true
+	case "FileSubscriptionInfo.id":
+		if e.ComplexityRoot.FileSubscriptionInfo.ID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileSubscriptionInfo.ID(childComplexity), true
+	case "FileSubscriptionInfo.ownerApplication":
+		if e.ComplexityRoot.FileSubscriptionInfo.OwnerApplication == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileSubscriptionInfo.OwnerApplication(childComplexity), true
+	case "FileSubscriptionInfo.ownerApplicationName":
+		if e.ComplexityRoot.FileSubscriptionInfo.OwnerApplicationName == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileSubscriptionInfo.OwnerApplicationName(childComplexity), true
+	case "FileSubscriptionInfo.ownerTeam":
+		if e.ComplexityRoot.FileSubscriptionInfo.OwnerTeam == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileSubscriptionInfo.OwnerTeam(childComplexity), true
+	case "FileSubscriptionInfo.statusMessage":
+		if e.ComplexityRoot.FileSubscriptionInfo.StatusMessage == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileSubscriptionInfo.StatusMessage(childComplexity), true
+	case "FileSubscriptionInfo.statusPhase":
+		if e.ComplexityRoot.FileSubscriptionInfo.StatusPhase == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileSubscriptionInfo.StatusPhase(childComplexity), true
 
 	case "FileType.active":
 		if e.ComplexityRoot.FileType.Active == nil {
@@ -12123,6 +12254,35 @@ type EventSubscriptionInfo implements SubscriptionInfo {
   ownerApplication: ApplicationInfo!
 }
 
+"Reduced file subscription for cross-tenant contexts (e.g., approvals)."
+type FileSubscriptionInfo implements SubscriptionInfo {
+  id: ID!
+  fileType: String!
+  statusPhase: FileSubscriptionStatusPhase
+  statusMessage: String
+  "Application name that owns this subscription"
+  ownerApplicationName: String! @deprecated(reason: "Use ownerApplication.name instead.")
+  "Owning team (reduced view)"
+  ownerTeam: TeamInfo! @deprecated(reason: "Use ownerApplication.ownerTeam instead.")
+  "Owning application (reduced view)"
+  ownerApplication: ApplicationInfo!
+}
+
+"Reduced file exposure for cross-tenant contexts (e.g., subscription target)."
+type FileExposureInfo {
+  id: ID!
+  fileType: String!
+  visibility: FileExposureVisibility!
+  active: Boolean
+  approvalConfig: ApprovalConfig!
+  "Application name that owns this exposure"
+  ownerApplicationName: String! @deprecated(reason: "Use ownerApplication.name instead.")
+  "Owning team (reduced view)"
+  ownerTeam: TeamInfo! @deprecated(reason: "Use ownerApplication.ownerTeam instead.")
+  "Owning application (reduced view)"
+  ownerApplication: ApplicationInfo!
+}
+
 "Reduced event exposure for cross-tenant contexts (e.g., subscription target)."
 type EventExposureInfo {
   id: ID!
@@ -12219,6 +12379,16 @@ extend type AgenticSubscription {
 extend type AgenticExposure {
   "Subscriptions to this exposure (reduced view — cross-tenant boundary)"
   subscriptions: [AgenticSubscriptionInfo!]! @goField(forceResolver: true)
+}
+
+extend type FileSubscription {
+  "Target exposure (reduced view — cross-tenant boundary). Null when the target file type is not yet exposed."
+  target: FileExposureInfo @goField(forceResolver: true)
+}
+
+extend type FileExposure {
+  "Subscriptions to this exposure (reduced view — cross-tenant boundary)"
+  subscriptions: [FileSubscriptionInfo!]! @goField(forceResolver: true)
 }
 
 extend type Approval {
@@ -13554,6 +13724,8 @@ func (ec *executionContext) childFields_FileExposure(ctx context.Context, field 
 		return ec.fieldContext_FileExposure_fileTypeDef(ctx, field)
 	case "zone":
 		return ec.fieldContext_FileExposure_zone(ctx, field)
+	case "subscriptions":
+		return ec.fieldContext_FileExposure_subscriptions(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type FileExposure", field.Name)
 }
@@ -13578,6 +13750,28 @@ func (ec *executionContext) childFields_FileExposureEdge(ctx context.Context, fi
 		return ec.fieldContext_FileExposureEdge_cursor(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type FileExposureEdge", field.Name)
+}
+
+func (ec *executionContext) childFields_FileExposureInfo(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "id":
+		return ec.fieldContext_FileExposureInfo_id(ctx, field)
+	case "fileType":
+		return ec.fieldContext_FileExposureInfo_fileType(ctx, field)
+	case "visibility":
+		return ec.fieldContext_FileExposureInfo_visibility(ctx, field)
+	case "active":
+		return ec.fieldContext_FileExposureInfo_active(ctx, field)
+	case "approvalConfig":
+		return ec.fieldContext_FileExposureInfo_approvalConfig(ctx, field)
+	case "ownerApplicationName":
+		return ec.fieldContext_FileExposureInfo_ownerApplicationName(ctx, field)
+	case "ownerTeam":
+		return ec.fieldContext_FileExposureInfo_ownerTeam(ctx, field)
+	case "ownerApplication":
+		return ec.fieldContext_FileExposureInfo_ownerApplication(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type FileExposureInfo", field.Name)
 }
 
 func (ec *executionContext) childFields_FileSFTP(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
@@ -13626,6 +13820,8 @@ func (ec *executionContext) childFields_FileSubscription(ctx context.Context, fi
 		return ec.fieldContext_FileSubscription_approval(ctx, field)
 	case "approvalRequests":
 		return ec.fieldContext_FileSubscription_approvalRequests(ctx, field)
+	case "target":
+		return ec.fieldContext_FileSubscription_target(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type FileSubscription", field.Name)
 }
@@ -13650,6 +13846,26 @@ func (ec *executionContext) childFields_FileSubscriptionEdge(ctx context.Context
 		return ec.fieldContext_FileSubscriptionEdge_cursor(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type FileSubscriptionEdge", field.Name)
+}
+
+func (ec *executionContext) childFields_FileSubscriptionInfo(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "id":
+		return ec.fieldContext_FileSubscriptionInfo_id(ctx, field)
+	case "fileType":
+		return ec.fieldContext_FileSubscriptionInfo_fileType(ctx, field)
+	case "statusPhase":
+		return ec.fieldContext_FileSubscriptionInfo_statusPhase(ctx, field)
+	case "statusMessage":
+		return ec.fieldContext_FileSubscriptionInfo_statusMessage(ctx, field)
+	case "ownerApplicationName":
+		return ec.fieldContext_FileSubscriptionInfo_ownerApplicationName(ctx, field)
+	case "ownerTeam":
+		return ec.fieldContext_FileSubscriptionInfo_ownerTeam(ctx, field)
+	case "ownerApplication":
+		return ec.fieldContext_FileSubscriptionInfo_ownerApplication(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type FileSubscriptionInfo", field.Name)
 }
 
 func (ec *executionContext) childFields_FileType(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {

@@ -92,6 +92,12 @@ type EventTypeResolver interface {
 	ActiveExposure(ctx context.Context, obj *ent.EventType) (*model.EventExposureInfo, error)
 	Owner(ctx context.Context, obj *ent.EventType) (*model1.TeamInfo, error)
 }
+type FileExposureResolver interface {
+	Subscriptions(ctx context.Context, obj *ent.FileExposure) ([]*model.FileSubscriptionInfo, error)
+}
+type FileSubscriptionResolver interface {
+	Target(ctx context.Context, obj *ent.FileSubscription) (*model.FileExposureInfo, error)
+}
 type McpServerResolver interface {
 	SpecificationURL(ctx context.Context, obj *ent.McpServer) (*string, error)
 	ActiveExposure(ctx context.Context, obj *ent.McpServer) (*model.AgenticExposureInfo, error)
@@ -9770,6 +9776,38 @@ func (ec *executionContext) fieldContext_FileExposure_zone(_ context.Context, fi
 	return fc, nil
 }
 
+func (ec *executionContext) _FileExposure_subscriptions(ctx context.Context, field graphql.CollectedField, obj *ent.FileExposure) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_FileExposure_subscriptions(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return ec.Resolvers.FileExposure().Subscriptions(ctx, obj)
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []*model.FileSubscriptionInfo) graphql.Marshaler {
+			return ec.marshalNFileSubscriptionInfo2ᚕᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐFileSubscriptionInfoᚄ(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_FileExposure_subscriptions(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FileExposure",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_FileSubscriptionInfo(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _FileExposureConnection_edges(ctx context.Context, field graphql.CollectedField, obj *ent.FileExposureConnection) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -10375,6 +10413,38 @@ func (ec *executionContext) fieldContext_FileSubscription_approvalRequests(_ con
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return ec.childFields_ApprovalRequest(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FileSubscription_target(ctx context.Context, field graphql.CollectedField, obj *ent.FileSubscription) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_FileSubscription_target(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return ec.Resolvers.FileSubscription().Target(ctx, obj)
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.FileExposureInfo) graphql.Marshaler {
+			return ec.marshalOFileExposureInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐFileExposureInfo(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_FileSubscription_target(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FileSubscription",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_FileExposureInfo(ctx, field)
 		},
 	}
 	return fc, nil
@@ -38088,6 +38158,44 @@ func (ec *executionContext) _FileExposure(ctx context.Context, sel ast.Selection
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "subscriptions":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._FileExposure_subscriptions(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.IsDeferred() {
+				deferredFieldSet.AddField(field)
+				fieldIndex := len(deferredFieldSet.Values) - 1
+				deferredFieldSet.Concurrently(fieldIndex, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, deferredFieldSet)
+				})
+
+				for _, deferrable := range field.Deferrables {
+					view, ok := deferLabelToView[deferrable.Label]
+					if !ok {
+						view = deferredFieldSet.NewView()
+						deferLabelToView[deferrable.Label] = view
+					}
+					view.AddIndices(fieldIndex)
+				}
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -38439,6 +38547,44 @@ func (ec *executionContext) _FileSubscription(ctx context.Context, sel ast.Selec
 					}
 				}()
 				res = ec._FileSubscription_approvalRequests(ctx, field, obj)
+				if res == graphql.RequiredNull {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.IsDeferred() {
+				deferredFieldSet.AddField(field)
+				fieldIndex := len(deferredFieldSet.Values) - 1
+				deferredFieldSet.Concurrently(fieldIndex, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, deferredFieldSet)
+				})
+
+				for _, deferrable := range field.Deferrables {
+					view, ok := deferLabelToView[deferrable.Label]
+					if !ok {
+						view = deferredFieldSet.NewView()
+						deferLabelToView[deferrable.Label] = view
+					}
+					view.AddIndices(fieldIndex)
+				}
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "target":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._FileSubscription_target(ctx, field, obj)
 				if res == graphql.RequiredNull {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
