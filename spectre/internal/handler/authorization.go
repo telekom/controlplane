@@ -151,16 +151,6 @@ func buildAuthorizationIntent(
 	return intent
 }
 
-// TODO(task4): remove this adapter when listener_handler.go is updated
-func buildAuthorizationIntentCompat(
-	listener *spectrev1.Listener,
-	consumerApp *applicationv1.Application,
-	providerApp *applicationv1.Application,
-	spectreApp *spectrev1.SpectreApplication,
-) authorizationIntent {
-	return buildAuthorizationIntent(listener, consumerApp, providerApp, spectreApp, consumerApp, PlacementIntent{})
-}
-
 // fingerprint returns a deterministic, K8s-safe label value (≤63 chars,
 // lowercase hex) that represents this authorization intent.
 func (a *authorizationIntent) fingerprint() string {

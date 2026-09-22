@@ -176,19 +176,19 @@ var _ = Describe("five team relationships", func() {
 
 var _ = Describe("gateApprovalProperties", func() {
 	It("should use the provided action for provider gate", func() {
-		intent := buildAuthorizationIntentCompat(baseListener(), baseConsumerApp(), baseProviderApp(), baseSpectreApp())
+		intent := buildAuthorizationIntent(baseListener(), baseConsumerApp(), baseProviderApp(), baseSpectreApp(), baseConsumerApp(), PlacementIntent{})
 		props := intent.gateApprovalProperties("listen-provider")
 		Expect(props["action"]).To(Equal("listen-provider"))
 	})
 
 	It("should use the provided action for consumer gate", func() {
-		intent := buildAuthorizationIntentCompat(baseListener(), baseConsumerApp(), baseProviderApp(), baseSpectreApp())
+		intent := buildAuthorizationIntent(baseListener(), baseConsumerApp(), baseProviderApp(), baseSpectreApp(), baseConsumerApp(), PlacementIntent{})
 		props := intent.gateApprovalProperties("listen-consumer")
 		Expect(props["action"]).To(Equal("listen-consumer"))
 	})
 
 	It("should preserve all existing property keys", func() {
-		intent := buildAuthorizationIntentCompat(baseListener(), baseConsumerApp(), baseProviderApp(), baseSpectreApp())
+		intent := buildAuthorizationIntent(baseListener(), baseConsumerApp(), baseProviderApp(), baseSpectreApp(), baseConsumerApp(), PlacementIntent{})
 		props := intent.gateApprovalProperties("listen-provider")
 		Expect(props).To(HaveKey("consumer"))
 		Expect(props).To(HaveKey("provider"))
@@ -202,7 +202,7 @@ var _ = Describe("gateApprovalProperties", func() {
 	})
 
 	It("should be backward-compatible with approvalProperties", func() {
-		intent := buildAuthorizationIntentCompat(baseListener(), baseConsumerApp(), baseProviderApp(), baseSpectreApp())
+		intent := buildAuthorizationIntent(baseListener(), baseConsumerApp(), baseProviderApp(), baseSpectreApp(), baseConsumerApp(), PlacementIntent{})
 		oldProps := intent.approvalProperties()
 		newProps := intent.gateApprovalProperties("listen-provider")
 		Expect(oldProps).To(Equal(newProps))
