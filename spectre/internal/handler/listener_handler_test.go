@@ -93,6 +93,10 @@ func newListener() *spectrev1.Listener {
 				ApiBasePath: testApiBasePath,
 			},
 		},
+		Status: spectrev1.ListenerStatus{
+			// Pre-set v2 so migration logic is skipped for non-migration tests.
+			AuthorizationPolicyVersion: "v2",
+		},
 	}
 }
 
@@ -1002,6 +1006,18 @@ var _ = Describe("ListenerHandler", func() {
 				Expect(readyCond).ToNot(BeNil())
 				Expect(readyCond.Status).To(Equal(metav1.ConditionTrue))
 				Expect(readyCond.Reason).To(Equal(condition.ReasonProvisioned))
+
+				// Verify AppliedPlacement was written on successful provisioning.
+				Expect(listener.Status.AppliedPlacement).ToNot(BeNil())
+				Expect(listener.Status.AppliedPlacement.Fingerprint).ToNot(BeEmpty())
+				Expect(listener.Status.AppliedPlacement.CaptureRoute).ToNot(BeNil())
+				Expect(listener.Status.AppliedPlacement.CaptureZone).ToNot(BeNil())
+				Expect(listener.Status.AppliedPlacement.CaptureEventStore).ToNot(BeNil())
+				Expect(listener.Status.AppliedPlacement.DeliveryZone).ToNot(BeNil())
+				Expect(listener.Status.AppliedPlacement.DeliveryEventStore).ToNot(BeNil())
+				Expect(listener.Status.AppliedPlacement.CallbackOriginZone).ToNot(BeNil())
+				Expect(listener.Status.AppliedPlacement.Publisher).ToNot(BeNil())
+				Expect(listener.Status.AppliedPlacement.CallbackBaseURL).To(Equal(testCallbackURL))
 			})
 
 			It("should set NotReady when a sub-resource was just created or updated", func() {
