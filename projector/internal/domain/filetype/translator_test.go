@@ -38,6 +38,7 @@ var _ = Describe("FileType Translator", func() {
 				},
 				Spec: filev1.FileTypeSpec{Description: "Invoice files"},
 				Status: filev1.FileTypeStatus{
+					Active:          true,
 					FileExposureRef: &commontypes.ObjectRef{Name: "exp-invoice"},
 					SFTPInstance:    &commontypes.ObjectRef{Name: "sftp-a", Namespace: "ns-a"},
 					Conditions:      []metav1.Condition{{Type: "Ready", Status: metav1.ConditionTrue, Message: "ok"}},
