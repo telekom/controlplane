@@ -11,5 +11,5 @@ import "context"
 type FileExposureDeps interface {
 	FindApplicationID(ctx context.Context, name, teamName string) (int, error)
 	FindZoneID(ctx context.Context, name string) (int, error)
-	FindFileTypeID(ctx context.Context, fileType string) (int, error)
+	FindActiveFileTypeID(ctx context.Context, fileType string) (int, error)
 }

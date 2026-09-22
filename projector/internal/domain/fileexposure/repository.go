@@ -67,14 +67,16 @@ func (r *Repository) Upsert(ctx context.Context, data *FileExposureData) error {
 		return fmt.Errorf("find zone %q: %w", data.Zone, err)
 	}
 
+	// Resolve optional FileType catalogue FK. Only link to the active FileType when this
+	// exposure itself is active. The lookup is team-independent because only one
+	// FileType is active cluster-wide for a given file type identifier (oldest-wins).
 	var fileTypeDefID *int
-	id, findErr := r.deps.FindFileTypeID(ctx, data.TargetFileType)
-	if findErr != nil {
-		if !errors.Is(findErr, infrastructure.ErrEntityNotFound) {
-			return fmt.Errorf("find file_type %q: %w", data.TargetFileType, findErr)
+	if data.Active {
+		if resolvedFileTypeID, findErr := r.deps.FindActiveFileTypeID(ctx, data.TargetFileType); findErr == nil {
+			fileTypeDefID = &resolvedFileTypeID
+		} else if !errors.Is(findErr, infrastructure.ErrEntityNotFound) {
+			return fmt.Errorf("find active file_type %q: %w", data.TargetFileType, findErr)
 		}
-	} else {
-		fileTypeDefID = &id
 	}
 
 	create := r.client.FileExposure.Create().

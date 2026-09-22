@@ -881,6 +881,34 @@ func (r *IDResolver) EvictAgenticExposureByBasePath(basePath string) {
 // FindFileTypeID looks up the DB primary key for a FileType catalogue entry
 // by file type identifier.
 // Returns ErrEntityNotFound (wrapped) if no matching row exists.
+func (r *IDResolver) FindActiveFileTypeID(ctx context.Context, ft string) (int, error) {
+	et, lk := cachekeys.ActiveFileType(ft)
+	fullKey := et + ":" + lk
+	return r.resolve(ctx, et, lk, fmt.Sprintf("active file_type %q", ft), func() (int, error) {
+		e, err := r.client.FileType.Query().
+			Where(
+				filetype.FileTypeEQ(ft),
+				filetype.ActiveEQ(true),
+			).
+			Only(ctx)
+		if err != nil {
+			if ent.IsNotFound(err) {
+				r.setNegCache(fullKey)
+				metrics.IDResolverLookups.WithLabelValues(et, metrics.ResultDBMiss).Inc()
+				return 0, fmt.Errorf("active file_type %q: %w", ft, ErrEntityNotFound)
+			}
+			return 0, fmt.Errorf("find active file_type %q: %w", ft, err)
+		}
+		r.clearNegCache(fullKey)
+		metrics.IDResolverLookups.WithLabelValues(et, metrics.ResultDBHit).Inc()
+		r.cache.Set(et, lk, e.ID)
+		return e.ID, nil
+	})
+}
+
+// FindFileTypeID looks up the DB primary key for a FileType catalogue entry
+// by file type identifier.
+// Returns ErrEntityNotFound (wrapped) if no matching row exists.
 func (r *IDResolver) FindFileTypeID(ctx context.Context, ft string) (int, error) {
 	et, lk := cachekeys.FileTypeDef(ft)
 	fullKey := et + ":" + lk

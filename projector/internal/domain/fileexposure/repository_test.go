@@ -28,12 +28,12 @@ import (
 )
 
 type mockFileExposureDeps struct {
-	appIDs      map[string]int
-	zoneIDs     map[string]int
-	fileTypeIDs map[string]int
-	appErr      error
-	zoneErr     error
-	fileTypeErr error
+	appIDs            map[string]int
+	zoneIDs           map[string]int
+	activeFileTypeIDs map[string]int
+	appErr            error
+	zoneErr           error
+	activeFileTypeErr error
 }
 
 func (m *mockFileExposureDeps) FindApplicationID(_ context.Context, name, teamName string) (int, error) {
@@ -56,14 +56,14 @@ func (m *mockFileExposureDeps) FindZoneID(_ context.Context, name string) (int, 
 	return 0, fmt.Errorf("zone %q: %w", name, infrastructure.ErrEntityNotFound)
 }
 
-func (m *mockFileExposureDeps) FindFileTypeID(_ context.Context, fileType string) (int, error) {
-	if m.fileTypeErr != nil {
-		return 0, m.fileTypeErr
+func (m *mockFileExposureDeps) FindActiveFileTypeID(_ context.Context, fileType string) (int, error) {
+	if m.activeFileTypeErr != nil {
+		return 0, m.activeFileTypeErr
 	}
-	if id, ok := m.fileTypeIDs[fileType]; ok {
+	if id, ok := m.activeFileTypeIDs[fileType]; ok {
 		return id, nil
 	}
-	return 0, fmt.Errorf("file_type %q: %w", fileType, infrastructure.ErrEntityNotFound)
+	return 0, fmt.Errorf("active file_type %q: %w", fileType, infrastructure.ErrEntityNotFound)
 }
 
 var _ = Describe("FileExposure Repository", func() {
@@ -117,9 +117,9 @@ var _ = Describe("FileExposure Repository", func() {
 		fileTypeID = ft.ID
 
 		deps = &mockFileExposureDeps{
-			appIDs:      map[string]int{"provider-app:platform--narvi": appID},
-			zoneIDs:     map[string]int{"caas": zoneID},
-			fileTypeIDs: map[string]int{"invoice": fileTypeID},
+			appIDs:            map[string]int{"provider-app:platform--narvi": appID},
+			zoneIDs:           map[string]int{"caas": zoneID},
+			activeFileTypeIDs: map[string]int{"invoice": fileTypeID},
 		}
 		repo = fileexposure.NewRepository(client, cache, deps)
 	})
@@ -186,6 +186,55 @@ var _ = Describe("FileExposure Repository", func() {
 			hasFT, err := exp.QueryFileTypeDef().Exist(ctx)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(hasFT).To(BeFalse())
+		})
+
+		It("should not link an inactive exposure to the active file type", func() {
+			data := &fileexposure.FileExposureData{
+				Meta:           shared.NewMetadata("prod--platform--narvi", "inactive-exp", nil),
+				StatusPhase:    "PENDING",
+				Visibility:     "WORLD",
+				Active:         false,
+				Zone:           "caas",
+				ApprovalConfig: model.ApprovalConfig{Strategy: "AUTO"},
+				AppName:        "provider-app",
+				TeamName:       "platform--narvi",
+				TargetFileType: "invoice",
+			}
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			exposure, err := client.FileExposure.Query().Where(entfileexposure.FileTypeEQ("invoice")).Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			_, err = exposure.QueryFileTypeDef().Only(ctx)
+			Expect(ent.IsNotFound(err)).To(BeTrue())
+		})
+
+		It("should clear a stale file_type_def edge when the active file type is no longer resolvable", func() {
+			data := &fileexposure.FileExposureData{
+				Meta:           shared.NewMetadata("prod--platform--narvi", "stale-exp", nil),
+				StatusPhase:    "READY",
+				Visibility:     "WORLD",
+				Active:         true,
+				Zone:           "caas",
+				ApprovalConfig: model.ApprovalConfig{Strategy: "AUTO"},
+				AppName:        "provider-app",
+				TeamName:       "platform--narvi",
+				TargetFileType: "invoice",
+			}
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			exposure, err := client.FileExposure.Query().Where(entfileexposure.FileTypeEQ("invoice")).Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			linked, err := exposure.QueryFileTypeDef().Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(linked.ID).To(Equal(fileTypeID))
+
+			deps.activeFileTypeIDs = map[string]int{}
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			exposure, err = client.FileExposure.Query().Where(entfileexposure.FileTypeEQ("invoice")).Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			_, err = exposure.QueryFileTypeDef().Only(ctx)
+			Expect(ent.IsNotFound(err)).To(BeTrue())
 		})
 
 		It("should return dependency missing when application is missing", func() {
