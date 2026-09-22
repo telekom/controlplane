@@ -170,7 +170,8 @@ func (h *ListenerHandler) CreateOrUpdate(ctx context.Context, listener *spectrev
 	}
 
 	// Step 6: Create the provider approval (gate).
-	approval, err := h.ensureApprovals(ctx, listener, consumerApp, providerApp, &intent)
+	// TODO(task4): replace ensureApprovalsCompat with direct ensureApprovals when handler is updated
+	approval, err := h.ensureApprovalsCompat(ctx, listener, consumerApp, providerApp, &intent)
 	if err != nil {
 		return errors.Wrap(err, "failed to ensure approvals")
 	}
