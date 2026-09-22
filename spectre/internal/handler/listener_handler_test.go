@@ -1929,6 +1929,16 @@ var _ = Describe("ListenerHandler", func() {
 				// Cleanup still happened.
 				Expect(listener.Status.RouteListener).To(BeNil())
 				Expect(listener.Status.EventSubscriptions).To(BeEmpty())
+
+				// Provider gate was denied (successful fetch) — refs populated.
+				Expect(listener.Status.ProviderApproval).ToNot(BeNil())
+				Expect(listener.Status.ProviderApprovalRequest).ToNot(BeNil())
+
+				// Consumer gate errored during Approval Get, but the builder
+				// computes the Approval name deterministically and the AR was
+				// created before the error — both refs are still populated.
+				Expect(listener.Status.ConsumerApproval).ToNot(BeNil())
+				Expect(listener.Status.ConsumerApprovalRequest).ToNot(BeNil())
 			})
 		})
 
@@ -2086,32 +2096,28 @@ var _ = Describe("ListenerHandler", func() {
 			})
 		})
 
-		Context("dual-gate: A==P only (consumer gate Simple, provider gate Auto)", func() {
-			It("should block when provider auto-grants but consumer is pending", func() {
+		Context("dual-gate: different provider team blocks provisioning", func() {
+			It("should block when provider gate is granted but consumer gate is pending", func() {
 				listener := newListener()
-				// Consumer team differs from observer/provider team.
+				// Consumer team matches observer — A==C enforced.
 				consumerApp := makeConsumerApp()
-				consumerApp.Spec.Team = "observer-team" // A==C still enforced
-				providerApp := makeProviderApp()
-				providerApp.Spec.Team = "observer-team" // A==P, so provider gate is Auto
+				consumerApp.Spec.Team = "observer-team"
 
-				// But to test A==P only, we need C!=P. Since A==C is enforced,
-				// the only way A==P and A!=C is impossible. Instead, test that
-				// when teams differ, Simple strategy forces pending.
-				providerApp2 := makeProviderApp()
-				providerApp2.Spec.Team = "other-team" // A!=P, so provider gate is Simple
+				// Provider team differs from observer — A!=P, so Simple strategy.
+				providerApp := makeProviderApp()
+				providerApp.Spec.Team = "other-team"
 
 				mockGetConsumerApp(consumerApp)
-				mockGetProviderApp(providerApp2)
+				mockGetProviderApp(providerApp)
 				mockGetSpectreApp(makeSpectreAppPtr())
 				mockGetZone()
 				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
 				mockGetEventStore(makeListenerEventStore())
 				mockListRoutes()
 				mockNoStaleChildren()
-				// Consumer gate: Auto (same team as observer) -> granted.
+				// Provider gate: granted (first in dual-gate order).
 				mockApprovalGrantedGate("provider")
-				// Provider gate: Simple (different team) -> pending.
+				// Consumer gate: pending (second in dual-gate order).
 				mockApprovalPendingGate()
 
 				err := h.CreateOrUpdate(ctx, listener)
