@@ -16,7 +16,6 @@ import (
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
-	"github.com/telekom/controlplane/approval/api/v1/builder"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
@@ -157,8 +156,24 @@ func (h *ListenerHandler) CreateOrUpdate(ctx context.Context, listener *spectrev
 	}
 
 	// Step 5.7: Compute the canonical authorization intent and fingerprint.
-	// TODO(task4): replace with buildAuthorizationIntent(listener, consumerApp, providerApp, spectreApp, observerApp, placement)
-	intent := buildAuthorizationIntentCompat(listener, consumerApp, providerApp, spectreApp)
+	// Phase 2: observer == consumer. Task 7 will resolve A independently.
+	observerApp := consumerApp
+	placement := PlacementIntent{
+		CaptureRouteName:            route.Name,
+		CaptureRouteNamespace:       route.Namespace,
+		CaptureZoneName:             listeningZone.Name,
+		CaptureZoneNamespace:        listeningZone.Namespace,
+		CaptureEventStoreName:       eventStore.Name,
+		CaptureEventStoreNamespace:  eventStore.Namespace,
+		CallbackOriginZoneName:      listeningZone.Name,
+		CallbackOriginZoneNamespace: listeningZone.Namespace,
+		DeliveryZoneName:            listeningZone.Name,
+		DeliveryZoneNamespace:       listeningZone.Namespace,
+		DeliveryEventStoreName:      eventStore.Name,
+		DeliveryEventStoreNamespace: eventStore.Namespace,
+		CallbackBaseURL:             eventConfig.Status.CallbackURL,
+	}
+	intent := buildAuthorizationIntent(listener, consumerApp, providerApp, spectreApp, observerApp, placement)
 	fingerprint := intent.fingerprint()
 
 	// Step 5.8: Remove stale children whose fingerprint differs from the current
@@ -169,21 +184,18 @@ func (h *ListenerHandler) CreateOrUpdate(ctx context.Context, listener *spectrev
 		return errors.Wrap(err, "failed to remove stale children")
 	}
 
-	// Step 6: Create the provider approval (gate).
-	// TODO(task4): replace ensureApprovalsCompat with direct ensureApprovals when handler is updated
-	approval, err := h.ensureApprovalsCompat(ctx, listener, consumerApp, providerApp, &intent)
-	if err != nil {
+	// Step 6: Evaluate dual-gate approval (provider + consumer).
+	dual, err := h.ensureApprovals(ctx, listener, observerApp, consumerApp, providerApp, &intent)
+	if err != nil && dual == nil {
 		return errors.Wrap(err, "failed to ensure approvals")
 	}
 
-	listener.Status.ProviderApproval = approval.providerApproval
-
 	// Step 7: Handle approval states explicitly.
-	switch approval.result {
-	case builder.ApprovalResultGranted:
+	switch dual.outcome {
+	case outcomeGranted:
 		// Continue to provisioning below.
 
-	case builder.ApprovalResultDenied:
+	case outcomeDenied:
 		// Delete all owner-labelled capture children: RouteListeners first (stop
 		// new traffic), then Subscribers.
 		if err := h.deleteAllOwnedChildren(ctx, listener); err != nil {
@@ -201,22 +213,33 @@ func (h *ListenerHandler) CreateOrUpdate(ctx context.Context, listener *spectrev
 				return errors.Wrap(err, "failed to check orphaned generic Publisher")
 			}
 		}
+		if dual.err != nil {
+			return errors.Wrap(dual.err, "combined approval error")
+		}
 		return nil
 
-	case builder.ApprovalResultPending:
-		// Do not provision; stale children already removed above.
-		return nil
-
-	case builder.ApprovalResultRequestDenied:
+	case outcomeRequestDenied:
 		// Do not provision; retain same-intent children (matching the builder
 		// "do not touch current children" contract). Stale children were already
-		// removed in step 5.6.
+		// removed in step 5.8.
+		if dual.err != nil {
+			return errors.Wrap(dual.err, "combined approval error")
+		}
 		return nil
 
+	case outcomePending:
+		// No new provisioning; stale already removed.
+		if dual.err != nil {
+			return errors.Wrap(dual.err, "combined approval error")
+		}
+		return nil
+
+	case outcomeError:
+		return errors.Wrap(err, "approval evaluation failed")
+
 	default:
-		// ensureApprovals already returns an error for unknown results, but
-		// defend against future additions.
-		return errors.Errorf("unhandled approval result %q", approval.result)
+		// outcomeUnknown: fail closed.
+		return errors.Errorf("unhandled approval outcome %d", dual.outcome)
 	}
 
 	logger.Info("Approval granted, provisioning downstream resources")
