@@ -353,6 +353,10 @@ var _ = Describe("Exposure Mapper", func() {
 			Expect(output).To(Equal(roverv1.ApprovalStrategyFourEyes))
 		})
 
+		It("must map lowercase foureyes approval strategy correctly", func() {
+			Expect(toRoverApprovalStrategy(api.Foureyes)).To(Equal(roverv1.ApprovalStrategyFourEyes))
+		})
+
 		It("must map unknown approval strategy", func() {
 			input := api.ApprovalStrategy("unknown")
 

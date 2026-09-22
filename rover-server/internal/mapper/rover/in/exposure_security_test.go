@@ -156,28 +156,32 @@ var _ = Describe("Exposure Security Mapper", func() {
 			snaps.MatchSnapshot(GinkgoT(), output.Security)
 		})
 
-		It("must keep a symbolic valueFrom claim", func() {
-			// Given
-			input := api.ApiExposure{BasePath: "/test"}
-			oauth2 := api.Oauth2{
-				Scopes: []string{"read"},
-				Claims: api.Claims{Aud: api.Claim{ValueFrom: api.ProviderClientId}},
-			}
-			input.Security = api.Security{}
-			Expect(input.Security.FromOauth2(oauth2)).To(Succeed())
+		DescribeTable("must translate a symbolic valueFrom claim",
+			func(apiValue api.ClaimValueFrom, domainValue roverv1.ClaimValueFrom) {
+				// Given
+				input := api.ApiExposure{BasePath: "/test"}
+				oauth2 := api.Oauth2{
+					Scopes: []string{"read"},
+					Claims: api.Claims{Aud: api.Claim{ValueFrom: apiValue}},
+				}
+				input.Security = api.Security{}
+				Expect(input.Security.FromOauth2(oauth2)).To(Succeed())
 
-			output := &roverv1.ApiExposure{}
+				output := &roverv1.ApiExposure{}
 
-			// When
-			mapExposureSecurity(input, output)
+				// When
+				mapExposureSecurity(input, output)
 
-			// Then
-			Expect(output.Security).ToNot(BeNil())
-			Expect(output.Security.M2M.Claims).ToNot(BeNil())
-			Expect(output.Security.M2M.Claims.Aud.Value).To(BeEmpty())
-			Expect(output.Security.M2M.Claims.Aud.ValueFrom).To(Equal(roverv1.ClaimValueFromProviderClientId))
-			snaps.MatchSnapshot(GinkgoT(), output.Security)
-		})
+				// Then
+				Expect(output.Security).ToNot(BeNil())
+				Expect(output.Security.M2M.Claims).ToNot(BeNil())
+				Expect(output.Security.M2M.Claims.Aud.Value).To(BeEmpty())
+				Expect(output.Security.M2M.Claims.Aud.ValueFrom).To(Equal(domainValue))
+			},
+			Entry("provider client ID", api.PROVIDERCLIENTID, roverv1.ClaimValueFromProviderClientId),
+			Entry("consumer client ID", api.CONSUMERCLIENTID, roverv1.ClaimValueFromConsumerClientId),
+			Entry("base path", api.BASEPATH, roverv1.ClaimValueFromBasePath),
+		)
 
 		It("must not set claims when aud is empty", func() {
 			// Given

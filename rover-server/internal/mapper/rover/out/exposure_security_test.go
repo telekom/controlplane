@@ -166,32 +166,36 @@ var _ = Describe("Exposure Security Mapper (Out)", func() {
 			snaps.MatchSnapshot(GinkgoT(), oauth2)
 		})
 
-		It("must echo scopes with a symbolic claim", func() {
-			// Given
-			input := &roverv1.ApiExposure{
-				BasePath: "/test",
-				Security: &roverv1.Security{
-					M2M: &roverv1.Machine2MachineAuthentication{
-						Scopes: []string{"read"},
-						Claims: &roverv1.Claims{
-							Aud: &roverv1.Claim{ValueFrom: roverv1.ClaimValueFromProviderClientId},
+		DescribeTable("must translate a symbolic claim",
+			func(domainValue roverv1.ClaimValueFrom, apiValue api.ClaimValueFrom) {
+				// Given
+				input := &roverv1.ApiExposure{
+					BasePath: "/test",
+					Security: &roverv1.Security{
+						M2M: &roverv1.Machine2MachineAuthentication{
+							Scopes: []string{"read"},
+							Claims: &roverv1.Claims{
+								Aud: &roverv1.Claim{ValueFrom: domainValue},
+							},
 						},
 					},
-				},
-			}
+				}
 
-			output := &api.ApiExposure{}
+				output := &api.ApiExposure{}
 
-			// When
-			mapExposureSecurity(input, output)
+				// When
+				mapExposureSecurity(input, output)
 
-			// Then
-			oauth2, err := output.Security.AsOauth2()
-			Expect(err).To(BeNil())
-			Expect(oauth2.Scopes).To(ContainElement("read"))
-			Expect(oauth2.Claims.Aud.ValueFrom).To(Equal(api.ProviderClientId))
-			snaps.MatchSnapshot(GinkgoT(), oauth2)
-		})
+				// Then
+				oauth2, err := output.Security.AsOauth2()
+				Expect(err).To(BeNil())
+				Expect(oauth2.Scopes).To(ContainElement("read"))
+				Expect(oauth2.Claims.Aud.ValueFrom).To(Equal(apiValue))
+			},
+			Entry("provider client ID", roverv1.ClaimValueFromProviderClientId, api.PROVIDERCLIENTID),
+			Entry("consumer client ID", roverv1.ClaimValueFromConsumerClientId, api.CONSUMERCLIENTID),
+			Entry("base path", roverv1.ClaimValueFromBasePath, api.BASEPATH),
+		)
 
 		It("must handle nil security", func() {
 			// Given

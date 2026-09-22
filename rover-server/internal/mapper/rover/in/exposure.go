@@ -122,11 +122,11 @@ func toRoverApprovalStrategy(approval api.ApprovalStrategy) roverv1.ApprovalStra
 	switch approval {
 	case "":
 		return roverv1.ApprovalStrategySimple
-	case api.AUTO:
+	case api.AUTO, api.Auto:
 		return roverv1.ApprovalStrategyAuto
-	case api.SIMPLE:
+	case api.SIMPLE, api.Simple:
 		return roverv1.ApprovalStrategySimple
-	case api.FOUREYES:
+	case api.FOUREYES, api.Foureyes:
 		return roverv1.ApprovalStrategyFourEyes
 	default:
 		return roverv1.ApprovalStrategy(cases.Title(language.Und).String(strings.ToLower(string(approval))))
@@ -193,8 +193,14 @@ func mapExposureSecurity(in api.ApiExposure, out *roverv1.ApiExposure) {
 	}
 }
 
+var claimValueFromAPIToCRD = map[api.ClaimValueFrom]roverv1.ClaimValueFrom{
+	api.PROVIDERCLIENTID: roverv1.ClaimValueFromProviderClientId,
+	api.CONSUMERCLIENTID: roverv1.ClaimValueFromConsumerClientId,
+	api.BASEPATH:         roverv1.ClaimValueFromBasePath,
+}
+
 // mapExposureClaims maps the rover-server Oauth2 claims (only aud is supported) into
-// the CRD Claims shape. value is copied through; valueFrom stays symbolic.
+// the CRD Claims shape.
 func mapExposureClaims(in api.Claims) *roverv1.Claims {
 	if in.Aud.Value == "" && in.Aud.ValueFrom == "" {
 		return nil
@@ -202,7 +208,7 @@ func mapExposureClaims(in api.Claims) *roverv1.Claims {
 	return &roverv1.Claims{
 		Aud: &roverv1.Claim{
 			Value:     in.Aud.Value,
-			ValueFrom: roverv1.ClaimValueFrom(in.Aud.ValueFrom),
+			ValueFrom: claimValueFromAPIToCRD[in.Aud.ValueFrom],
 		},
 	}
 }

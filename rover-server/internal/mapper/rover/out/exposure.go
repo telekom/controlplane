@@ -335,7 +335,13 @@ func mapExposureSecurity(in *roverv1.ApiExposure, out *api.ApiExposure) error {
 	return nil
 }
 
-// mapExposureClaimsOut echoes CRD claims back into the rover-server Oauth2 shape.
+var claimValueFromCRDToAPI = map[roverv1.ClaimValueFrom]api.ClaimValueFrom{
+	roverv1.ClaimValueFromProviderClientId: api.PROVIDERCLIENTID,
+	roverv1.ClaimValueFromConsumerClientId: api.CONSUMERCLIENTID,
+	roverv1.ClaimValueFromBasePath:         api.BASEPATH,
+}
+
+// mapExposureClaimsOut maps CRD claims into the rover-server Oauth2 shape.
 func mapExposureClaimsOut(in *roverv1.Claims) api.Claims {
 	if in == nil || in.Aud == nil {
 		return api.Claims{}
@@ -343,7 +349,7 @@ func mapExposureClaimsOut(in *roverv1.Claims) api.Claims {
 	return api.Claims{
 		Aud: api.Claim{
 			Value:     in.Aud.Value,
-			ValueFrom: api.ClaimValueFrom(in.Aud.ValueFrom),
+			ValueFrom: claimValueFromCRDToAPI[in.Aud.ValueFrom],
 		},
 	}
 }

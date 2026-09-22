@@ -146,16 +146,16 @@ exposures:
       type: oauth2
       claims:
         aud:
-          valueFrom: ProviderClientId
+          valueFrom: PROVIDER_CLIENT_ID
 ```
 
 The following sources are available for `valueFrom`:
 
 | Source | Meaning | When it is filled in |
 | ------ | ------- | -------------------- |
-| `ProviderClientId` | The identifier of your application (the API provider). | Automatically, by the platform. |
-| `BasePath` | The base path of the exposed API. | Automatically, by the platform. |
-| `ConsumerClientId` | The identifier of whichever application is calling the API. | At the moment of each request, because it is different for every consumer. |
+| `PROVIDER_CLIENT_ID` | The identifier of your application (the API provider). | Automatically, by the platform. |
+| `BASE_PATH` | The base path of the exposed API. | Automatically, by the platform. |
+| `CONSUMER_CLIENT_ID` | The identifier of whichever application is calling the API. | At the moment of each request, because it is different for every consumer. |
 
 Alternatively, you can provide a fixed value directly:
 
@@ -178,7 +178,7 @@ exposures:
 | Field | Description |
 | ----- | ----------- |
 | `security.claims.aud.value` | A fixed audience value that you provide. Cannot be used together with `valueFrom`. |
-| `security.claims.aud.valueFrom` | A predefined source the platform resolves into the audience value. One of `ProviderClientId`, `BasePath`, or `ConsumerClientId`. Cannot be used together with `value`. |
+| `security.claims.aud.valueFrom` | A predefined source the platform resolves into the audience value. One of `PROVIDER_CLIENT_ID`, `BASE_PATH`, or `CONSUMER_CLIENT_ID`. Cannot be used together with `value`. |
 
 :::note
 You must set exactly one of `value` or `valueFrom`. Setting both, or neither, is rejected when you apply the file.

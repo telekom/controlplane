@@ -282,8 +282,8 @@ func fillAPIExposures(ctx context.Context, rover *roverv1.Rover, appInfo *api.Ap
 		apiExpInfo := api.ApiExposureInfo{
 			BasePath:   apiExp.Spec.ApiBasePath,
 			Upstream:   apiExp.Spec.Upstreams[0].Url,
-			Approval:   api.ApprovalStrategy(apiExp.Spec.Approval.Strategy),
-			Visibility: api.Visibility(apiExp.Spec.Visibility),
+			Approval:   toApiApprovalStrategy(string(apiExp.Spec.Approval.Strategy)),
+			Visibility: toApiVisibility(string(apiExp.Spec.Visibility)),
 		}
 		if err := expInfo.FromApiExposureInfo(apiExpInfo); err != nil {
 			return errors.Wrap(err, "failed to convert api exposure info")
@@ -344,8 +344,8 @@ func fillAiExposures(ctx context.Context, rover *roverv1.Rover, appInfo *api.App
 		aiExpInfo := api.AiExposureInfo{
 			BasePath:   agenticExp.Spec.BasePath,
 			Variant:    api.AiExposureInfoVariant(agenticExp.Spec.Variant),
-			Approval:   api.ApprovalStrategy(agenticExp.Spec.Approval.Strategy),
-			Visibility: api.Visibility(agenticExp.Spec.Visibility),
+			Approval:   toApiApprovalStrategy(string(agenticExp.Spec.Approval.Strategy)),
+			Visibility: toApiVisibility(string(agenticExp.Spec.Visibility)),
 		}
 		if len(agenticExp.Spec.Upstreams) > 0 {
 			aiExpInfo.Upstream = agenticExp.Spec.Upstreams[0].Url
@@ -357,6 +357,14 @@ func fillAiExposures(ctx context.Context, rover *roverv1.Rover, appInfo *api.App
 		appInfo.Exposures = append(appInfo.Exposures, expInfo)
 	}
 	return nil
+}
+
+func toApiVisibility(visibility string) api.Visibility {
+	return api.Visibility(strings.ToUpper(visibility))
+}
+
+func toApiApprovalStrategy(strategy string) api.ApprovalStrategy {
+	return api.ApprovalStrategy(strings.ToUpper(strategy))
 }
 
 // mapEventSubscriptionInfo maps an event domain EventSubscription to the API's EventSubscriptionInfo.

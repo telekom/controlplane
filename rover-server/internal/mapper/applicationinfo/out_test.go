@@ -14,6 +14,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
+	agenticv1 "github.com/telekom/controlplane/agentic/api/v1"
 	apiv1 "github.com/telekom/controlplane/api/api/v1"
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
@@ -29,6 +30,16 @@ import (
 )
 
 var _ = Describe("ApplicationInfo Mapper", func() {
+	DescribeTable("normalizes rover and agentic exposure enums for API output",
+		func(visibility string, approval string, expectedVisibility api.Visibility, expectedApproval api.ApprovalStrategy) {
+			Expect(toApiVisibility(visibility)).To(Equal(expectedVisibility))
+			Expect(toApiApprovalStrategy(approval)).To(Equal(expectedApproval))
+		},
+		Entry("world and simple", "World", "Simple", api.WORLD, api.SIMPLE),
+		Entry("zone and four eyes", "Zone", "FourEyes", api.ZONE, api.FOUREYES),
+		Entry("enterprise and auto", "Enterprise", "Auto", api.ENTERPRISE, api.AUTO),
+	)
+
 	Context("FillExposureInfo", func() {
 		It("must fill exposure info correctly", func() {
 			var applicationInfo = &api.ApplicationInfo{}
@@ -52,6 +63,35 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 
 			Expect(err).ToNot(BeNil())
 			Expect(err.Error()).To(ContainSubstring("input applicationInfo is nil"))
+		})
+
+		It("must normalize AI exposure approval and visibility", func() {
+			agenticExposure := &agenticv1.AgenticExposure{
+				ObjectMeta: metav1.ObjectMeta{Name: "ai-exp", Namespace: "test-ns"},
+				Spec: agenticv1.AgenticExposureSpec{
+					BasePath:   "/ai/v1",
+					Upstreams:  []agenticv1.Upstream{{Url: "https://example.com"}},
+					Variant:    agenticv1.AgenticVariantMCP,
+					Visibility: agenticv1.VisibilityZone,
+					Approval:   agenticv1.Approval{Strategy: agenticv1.ApprovalStrategyFourEyes},
+				},
+				Status: agenticv1.AgenticExposureStatus{Conditions: []metav1.Condition{{Type: "Ready", Status: metav1.ConditionTrue}}},
+			}
+			agenticStore := mocks.NewMockObjectStore[*agenticv1.AgenticExposure](GinkgoT())
+			agenticStore.EXPECT().Get(mock.Anything, "test-ns", "ai-exp").Return(agenticExposure, nil).Once()
+
+			localStores := &store.Stores{AgenticExposureStore: agenticStore}
+			roverWithAiExposure := &roverv1.Rover{Status: roverv1.RoverStatus{
+				AgenticExposures: []types.ObjectRef{{Name: "ai-exp", Namespace: "test-ns"}},
+			}}
+			applicationInfo := &api.ApplicationInfo{}
+
+			Expect(fillAiExposures(ctx, roverWithAiExposure, applicationInfo, localStores)).To(Succeed())
+			Expect(applicationInfo.Exposures).To(HaveLen(1))
+			mapped, err := applicationInfo.Exposures[0].AsAiExposureInfo()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(mapped.Approval).To(Equal(api.FOUREYES))
+			Expect(mapped.Visibility).To(Equal(api.ZONE))
 		})
 
 		It("must record error when APIExposureStore.Get fails", func() {

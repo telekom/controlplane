@@ -2425,6 +2425,9 @@ components:
         - AUTO
         - SIMPLE
         - FOUREYES
+        - auto
+        - simple
+        - foureyes
       type: string
       default: SIMPLE
     Authentication:
@@ -2438,6 +2441,9 @@ components:
             - NONE
             - POST
             - BASIC
+            - none
+            - post
+            - BODY
             - body
             - basic
           default: basic
@@ -2467,6 +2473,9 @@ components:
         - PASSWORD
         - CLIENT_CREDENTIALS
         - REFRESH_TOKEN
+        - password
+        - client_credentials
+        - refresh_token
       type: string
     Oauth2:
       required:
@@ -2525,9 +2534,9 @@ components:
           type: string
           description: "A predefined source resolved into the claim value."
           enum:
-            - ProviderClientId
-            - ConsumerClientId
-            - BasePath
+            - PROVIDER_CLIENT_ID
+            - CONSUMER_CLIENT_ID
+            - BASE_PATH
     Problem:
       type: object
       required:
@@ -3098,6 +3107,9 @@ components:
         - ENTERPRISE
         - WORLD
         - ZONE
+        - enterprise
+        - world
+        - zone
       type: string
       default: ENTERPRISE
     ApiSpecification:
