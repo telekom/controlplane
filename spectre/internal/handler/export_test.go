@@ -10,7 +10,9 @@ package handler
 import (
 	"context"
 
+	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	approvalapi "github.com/telekom/controlplane/approval/api/v1"
+	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	spectrev1 "github.com/telekom/controlplane/spectre/api/v1"
 )
 
@@ -64,4 +66,13 @@ func (h *ListenerHandler) AdvanceMigration(
 // IsLegacyBlocked is the exported wrapper for isLegacyBlocked (test use).
 func IsLegacyBlocked(approval *approvalapi.Approval) (bool, string) {
 	return isLegacyBlocked(approval)
+}
+
+// VerifyProviderBinding is the exported wrapper for verifyProviderBinding (test use).
+func (h *ListenerHandler) VerifyProviderBinding(
+	ctx context.Context,
+	route *gatewayv1.Route,
+	providerApp *applicationv1.Application,
+) error {
+	return h.verifyProviderBinding(ctx, route, providerApp)
 }
