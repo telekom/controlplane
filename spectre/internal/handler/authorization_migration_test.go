@@ -20,6 +20,8 @@ import (
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	fakeclient "github.com/telekom/controlplane/common/pkg/client/fake"
 	ctypes "github.com/telekom/controlplane/common/pkg/types"
+	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
+	pubsubv1 "github.com/telekom/controlplane/pubsub/api/v1"
 	spectrev1 "github.com/telekom/controlplane/spectre/api/v1"
 	"github.com/telekom/controlplane/spectre/internal/handler"
 
@@ -209,6 +211,8 @@ var _ = Describe("Authorization Migration", func() {
 		_ = spectrev1.AddToScheme(scheme)
 		_ = approvalv1.AddToScheme(scheme)
 		_ = applicationv1.AddToScheme(scheme)
+		_ = gatewayv1.AddToScheme(scheme)
+		_ = pubsubv1.AddToScheme(scheme)
 		fakeClient.EXPECT().Scheme().Return(scheme).Maybe()
 	})
 
@@ -283,9 +287,23 @@ var _ = Describe("Authorization Migration", func() {
 			Expect(fresh).To(BeFalse())
 		})
 
-		It("should return true when no legacy Approval exists", func() {
+		It("should return true when no legacy Approval exists and no old children", func() {
 			listener := newMigrationListener()
 			mockLegacyApprovalNotFound()
+
+			// No children at all.
+			fakeClient.EXPECT().
+				List(ctx, mock.AnythingOfType("*v1.RouteListenerList"), mock.Anything).
+				Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+					*list.(*gatewayv1.RouteListenerList) = gatewayv1.RouteListenerList{}
+				}).
+				Return(nil).Once()
+			fakeClient.EXPECT().
+				List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
+				Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+					*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{}
+				}).
+				Return(nil).Once()
 
 			fresh, err := h.IsFreshInstall(ctx, listener)
 			Expect(err).ToNot(HaveOccurred())
@@ -300,6 +318,103 @@ var _ = Describe("Authorization Migration", func() {
 			fresh, err := h.IsFreshInstall(ctx, listener)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(fresh).To(BeFalse())
+		})
+
+		It("should return false when unlabelled RouteListener children exist", func() {
+			listener := newMigrationListener()
+			mockLegacyApprovalNotFound()
+
+			// Return a RouteListener without the authorization fingerprint label.
+			fakeClient.EXPECT().
+				List(ctx, mock.AnythingOfType("*v1.RouteListenerList"), mock.Anything).
+				Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+					*list.(*gatewayv1.RouteListenerList) = gatewayv1.RouteListenerList{
+						Items: []gatewayv1.RouteListener{
+							{ObjectMeta: metav1.ObjectMeta{Name: "old-rl", Namespace: migNamespace}},
+						},
+					}
+				}).
+				Return(nil).Once()
+
+			fresh, err := h.IsFreshInstall(ctx, listener)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(fresh).To(BeFalse())
+		})
+
+		It("should return false when unlabelled Subscriber children exist", func() {
+			listener := newMigrationListener()
+			mockLegacyApprovalNotFound()
+
+			// RouteListeners all have the fingerprint label.
+			fakeClient.EXPECT().
+				List(ctx, mock.AnythingOfType("*v1.RouteListenerList"), mock.Anything).
+				Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+					*list.(*gatewayv1.RouteListenerList) = gatewayv1.RouteListenerList{
+						Items: []gatewayv1.RouteListener{
+							{ObjectMeta: metav1.ObjectMeta{
+								Name:      "labelled-rl",
+								Namespace: migNamespace,
+								Labels:    map[string]string{handler.AuthorizationFingerprintLabelKey: "fp-abc"},
+							}},
+						},
+					}
+				}).
+				Return(nil).Once()
+
+			// But a Subscriber lacks the label.
+			fakeClient.EXPECT().
+				List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
+				Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+					*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{
+						Items: []pubsubv1.Subscriber{
+							{ObjectMeta: metav1.ObjectMeta{Name: "old-sub", Namespace: migNamespace}},
+						},
+					}
+				}).
+				Return(nil).Once()
+
+			fresh, err := h.IsFreshInstall(ctx, listener)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(fresh).To(BeFalse())
+		})
+
+		It("should return true when all children have fingerprint labels", func() {
+			listener := newMigrationListener()
+			mockLegacyApprovalNotFound()
+
+			fakeClient.EXPECT().
+				List(ctx, mock.AnythingOfType("*v1.RouteListenerList"), mock.Anything).
+				Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+					*list.(*gatewayv1.RouteListenerList) = gatewayv1.RouteListenerList{
+						Items: []gatewayv1.RouteListener{
+							{ObjectMeta: metav1.ObjectMeta{
+								Name:      "labelled-rl",
+								Namespace: migNamespace,
+								Labels:    map[string]string{handler.AuthorizationFingerprintLabelKey: "fp-abc"},
+							}},
+						},
+					}
+				}).
+				Return(nil).Once()
+
+			fakeClient.EXPECT().
+				List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
+				Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+					*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{
+						Items: []pubsubv1.Subscriber{
+							{ObjectMeta: metav1.ObjectMeta{
+								Name:      "labelled-sub",
+								Namespace: migNamespace,
+								Labels:    map[string]string{handler.AuthorizationFingerprintLabelKey: "fp-abc"},
+							}},
+						},
+					}
+				}).
+				Return(nil).Once()
+
+			fresh, err := h.IsFreshInstall(ctx, listener)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(fresh).To(BeTrue())
 		})
 	})
 
@@ -496,6 +611,31 @@ var _ = Describe("Authorization Migration", func() {
 				Expect(done).To(BeFalse())
 				Expect(listener.Status.AuthorizationMigration.Phase).To(Equal("Blocked"))
 			})
+
+			It("should block when legacy Approval UID changes (deleted and recreated)", func() {
+				listener := newMigrationListener()
+				// Pre-set migration status with the originally recorded UID.
+				listener.Status.AuthorizationMigration = &spectrev1.AuthorizationMigrationStatus{
+					TargetPolicyVersion: "v2",
+					Phase:               "AwaitingScoped",
+					LegacyApproval: &ctypes.ObjectRef{
+						Name:      legacyApprovalName(migListenerName),
+						Namespace: migNamespace,
+						UID:       "old-uid",
+					},
+				}
+
+				// Return a same-named Approval but with a different UID.
+				recreatedApproval := makeLegacyApproval(listener, approvalv1.ApprovalStateGranted)
+				recreatedApproval.UID = "new-uid"
+				mockLegacyApprovalExists(recreatedApproval)
+				mockLegacyRequestExists(makeLegacyRequest(listener))
+
+				done, err := h.AdvanceMigration(ctx, listener, &intent, nil)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(done).To(BeFalse())
+				Expect(listener.Status.AuthorizationMigration.Phase).To(Equal("Blocked"))
+			})
 		})
 
 		Context("restart resilience", func() {
@@ -570,12 +710,14 @@ var _ = Describe("Authorization Migration", func() {
 		})
 
 		Context("retirement conflict", func() {
-			It("should abort when Approval UID changes during retirement", func() {
+			It("should block when Approval UID changes between recorded and discovered", func() {
 				listener := newMigrationListener()
 				approval := makeLegacyApproval(listener, approvalv1.ApprovalStateGranted)
 				request := makeLegacyRequest(listener)
 
-				// Simulate: at RetiringApproval phase.
+				// Simulate: at RetiringApproval phase with a recorded UID that
+				// differs from the live object — the approval was deleted and
+				// recreated with the same name.
 				listener.Status.AuthorizationMigration = &spectrev1.AuthorizationMigrationStatus{
 					TargetPolicyVersion: "v2",
 					Phase:               "RetiringApproval",
@@ -592,13 +734,12 @@ var _ = Describe("Authorization Migration", func() {
 				// Discovery: Approval Get + ApprovalRequest Get (from ApprovedRequest ref).
 				mockLegacyApprovalExists(approval)
 				mockLegacyRequestExists(request)
-				// Retirement: fresh read returns the same approval (UID mismatch with recorded).
-				mockLegacyApprovalExists(approval)
 
+				// The UID cross-check fires before retirement, blocking gracefully.
 				done, err := h.AdvanceMigration(ctx, listener, &intent, makeDualGranted())
-				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(ContainSubstring("UID mismatch"))
+				Expect(err).ToNot(HaveOccurred())
 				Expect(done).To(BeFalse())
+				Expect(listener.Status.AuthorizationMigration.Phase).To(Equal("Blocked"))
 			})
 
 			It("should abort when ApprovalRequest UID changes during retirement", func() {
