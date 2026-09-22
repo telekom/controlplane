@@ -67,6 +67,22 @@ type ListenerStatus struct {
 	// the note on ensureApprovals.
 	// +optional
 	ProviderApproval *ctypes.ObjectRef `json:"providerApproval,omitempty"`
+	// +optional
+	ConsumerApproval *ctypes.ObjectRef `json:"consumerApproval,omitempty"`
+	// +optional
+	ProviderApprovalRequest *ctypes.ObjectRef `json:"providerApprovalRequest,omitempty"`
+	// +optional
+	ConsumerApprovalRequest *ctypes.ObjectRef `json:"consumerApprovalRequest,omitempty"`
+	// AuthorizationPolicyVersion records which approval model is active.
+	// Set to "v2" only after a verified fresh-install or completed migration.
+	// +optional
+	AuthorizationPolicyVersion string `json:"authorizationPolicyVersion,omitempty"`
+	// +optional
+	AuthorizationMigration *AuthorizationMigrationStatus `json:"authorizationMigration,omitempty"`
+	// +optional
+	AppliedPlacement *AppliedListenerPlacementStatus `json:"appliedPlacement,omitempty"`
+	// +optional
+	Draining *ListenerDrainStatus `json:"draining,omitempty"`
 }
 
 // +kubebuilder:object:root=true
