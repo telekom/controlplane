@@ -488,44 +488,51 @@ var _ = Describe("Watch-Driven Integration", Ordered, func() {
 	// -----------------------------------------------------------------------
 	Describe("Scenario 1: Approval grant provisions children", func() {
 		It("should create RouteListener and Subscribers when Approval is granted", func() {
-			By("Granting the Approval for the s7-listener")
-			// Find the ApprovalRequest and grant it.
-			var templateAR *approvalv1.ApprovalRequest
+			By("Granting scoped Approvals for the s7-listener")
+			// Find ALL ApprovalRequests owned by the s7-listener and create
+			// matching scoped Approvals (one per gate: provider + consumer).
+			var ownedARs []*approvalv1.ApprovalRequest
 			Eventually(func(g Gomega) {
 				arList := &approvalv1.ApprovalRequestList{}
 				g.Expect(directClient.List(ctx, arList, client.InNamespace(watchNs))).To(Succeed())
+				ownedARs = nil
 				for i := range arList.Items {
 					for _, ref := range arList.Items[i].OwnerReferences {
 						if ref.Name == "s7-listener" {
-							templateAR = &arList.Items[i]
+							ownedARs = append(ownedARs, &arList.Items[i])
 						}
 					}
 				}
-				g.Expect(templateAR).NotTo(BeNil())
+				g.Expect(ownedARs).To(HaveLen(2), "Both gate ApprovalRequests should exist")
 			}, watchTimeout, watchInterval).Should(Succeed())
 
-			approval := &approvalv1.Approval{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "listener--s7-listener", Namespace: watchNs,
-					Labels: map[string]string{envLabelKey: watchEnv},
-				},
-				Spec: approvalv1.ApprovalSpec{
-					Action:    templateAR.Spec.Action,
-					Target:    templateAR.Spec.Target,
-					Requester: templateAR.Spec.Requester,
-					Decider:   templateAR.Spec.Decider,
-					Strategy:  templateAR.Spec.Strategy,
-					State:     approvalv1.ApprovalStateGranted,
-					Decisions: []approvalv1.Decision{{
-						Name: "System", Comment: "Auto-approved in watch test",
-						ResultingState: approvalv1.ApprovalStateGranted,
-					}},
-					ApprovedRequest: &ctypes.ObjectRef{
-						Name: templateAR.Name, Namespace: templateAR.Namespace,
+			for _, ar := range ownedARs {
+				approvalName, err := approvalv1.ScopedApprovalName(ar.Spec.Target, ar.Spec.ApprovalKey)
+				Expect(err).NotTo(HaveOccurred())
+				approval := &approvalv1.Approval{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: approvalName, Namespace: watchNs,
+						Labels: ar.Labels,
 					},
-				},
+					Spec: approvalv1.ApprovalSpec{
+						Action:      ar.Spec.Action,
+						Target:      ar.Spec.Target,
+						Requester:   ar.Spec.Requester,
+						Decider:     ar.Spec.Decider,
+						Strategy:    ar.Spec.Strategy,
+						ApprovalKey: ar.Spec.ApprovalKey,
+						State:       approvalv1.ApprovalStateGranted,
+						Decisions: []approvalv1.Decision{{
+							Name: "System", Comment: "Auto-approved in watch test",
+							ResultingState: approvalv1.ApprovalStateGranted,
+						}},
+						ApprovedRequest: &ctypes.ObjectRef{
+							Name: ar.Name, Namespace: ar.Namespace, UID: ar.UID,
+						},
+					},
+				}
+				Expect(client.IgnoreAlreadyExists(directClient.Create(ctx, approval))).To(Succeed())
 			}
-			Expect(directClient.Create(ctx, approval)).To(Succeed())
 
 			By("Verifying RouteListener is created within a few seconds (watch-driven, no polling)")
 			rlName := util.MakeRouteListenerName(watchConsumerCID, "/api/v1/watch", watchConsumerCID, watchProviderCID)
@@ -568,11 +575,30 @@ var _ = Describe("Watch-Driven Integration", Ordered, func() {
 				g.Expect(directClient.Get(ctx, types.NamespacedName{Name: rlName, Namespace: watchZNs}, rl)).To(Succeed())
 			}, watchTimeout, watchInterval).Should(Succeed())
 
-			By("Suspending the Approval")
-			approval := &approvalv1.Approval{}
-			Expect(directClient.Get(ctx, types.NamespacedName{Name: "listener--s7-listener", Namespace: watchNs}, approval)).To(Succeed())
-			approval.Spec.State = approvalv1.ApprovalStateSuspended
-			Expect(directClient.Update(ctx, approval)).To(Succeed())
+			By("Suspending all scoped Approvals for s7-listener")
+			// The dual-gate path creates scoped Approvals. Find them via
+			// the ApprovalRequests owned by the listener and suspend each.
+			arList := &approvalv1.ApprovalRequestList{}
+			Expect(directClient.List(ctx, arList, client.InNamespace(watchNs))).To(Succeed())
+			for i := range arList.Items {
+				ar := &arList.Items[i]
+				isOwned := false
+				for _, ref := range ar.OwnerReferences {
+					if ref.Name == "s7-listener" {
+						isOwned = true
+						break
+					}
+				}
+				if !isOwned {
+					continue
+				}
+				approvalName, err := approvalv1.ScopedApprovalName(ar.Spec.Target, ar.Spec.ApprovalKey)
+				Expect(err).NotTo(HaveOccurred())
+				approval := &approvalv1.Approval{}
+				Expect(directClient.Get(ctx, types.NamespacedName{Name: approvalName, Namespace: watchNs}, approval)).To(Succeed())
+				approval.Spec.State = approvalv1.ApprovalStateSuspended
+				Expect(directClient.Update(ctx, approval)).To(Succeed())
+			}
 
 			By("Verifying RouteListener is deleted by the watch-driven reconcile")
 			Eventually(func(g Gomega) {
@@ -595,7 +621,6 @@ var _ = Describe("Watch-Driven Integration", Ordered, func() {
 			// Temporarily make provider same team.
 			provApp := &applicationv1.Application{}
 			Expect(directClient.Get(ctx, types.NamespacedName{Name: watchProviderName, Namespace: watchNs}, provApp)).To(Succeed())
-			origTeam := provApp.Spec.Team
 			provApp.Spec.Team = "team-watch"
 			Expect(directClient.Update(ctx, provApp)).To(Succeed())
 
@@ -618,29 +643,6 @@ var _ = Describe("Watch-Driven Integration", Ordered, func() {
 				},
 			}
 			Expect(directClient.Create(ctx, listener)).To(Succeed())
-
-			// Pre-create approval for same-team.
-			approval := &approvalv1.Approval{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "listener--s3-listener", Namespace: watchNs,
-					Labels: map[string]string{envLabelKey: watchEnv},
-				},
-				Spec: approvalv1.ApprovalSpec{
-					Action: "listen-provider",
-					Target: ctypes.TypedObjectRef{
-						TypeMeta:  metav1.TypeMeta{Kind: "Listener", APIVersion: "spectre.cp.ei.telekom.de/v1"},
-						ObjectRef: ctypes.ObjectRef{Name: "s3-listener", Namespace: watchNs},
-					},
-					Requester: approvalv1.Requester{TeamName: "team-watch", TeamEmail: "w@test.com"},
-					Decider:   approvalv1.Decider{TeamName: "team-watch", TeamEmail: "w@test.com"},
-					Strategy:  approvalv1.ApprovalStrategyAuto,
-					State:     approvalv1.ApprovalStateGranted,
-					Decisions: []approvalv1.Decision{{
-						Name: "System", Comment: "Auto", ResultingState: approvalv1.ApprovalStateGranted,
-					}},
-				},
-			}
-			Expect(client.IgnoreAlreadyExists(directClient.Create(ctx, approval))).To(Succeed())
 
 			By("Verifying no RouteListener exists yet (Route is missing, Listener is blocked)")
 			rlName := util.MakeRouteListenerName(watchConsumerCID, s3BasePath, watchConsumerCID, watchProviderCID)
@@ -669,16 +671,72 @@ var _ = Describe("Watch-Driven Integration", Ordered, func() {
 			}
 			Expect(directClient.Create(ctx, route)).To(Succeed())
 
-			By("Verifying RouteListener is created (Listener unblocked by Route watch)")
+			By("Waiting for scoped ApprovalRequests and granting them")
+			// Once the Route exists, the reconciler can reach the approval step.
+			Eventually(func(g Gomega) {
+				arList := &approvalv1.ApprovalRequestList{}
+				g.Expect(directClient.List(ctx, arList, client.InNamespace(watchNs))).To(Succeed())
+				count := 0
+				for i := range arList.Items {
+					for _, ref := range arList.Items[i].OwnerReferences {
+						if ref.Name == "s3-listener" {
+							count++
+						}
+					}
+				}
+				g.Expect(count).To(BeNumerically(">=", 2), "Both gate ApprovalRequests for s3-listener should exist")
+			}, watchTimeout, watchInterval).Should(Succeed())
+
+			// Grant all gates for s3-listener.
+			s3ARList := &approvalv1.ApprovalRequestList{}
+			Expect(directClient.List(ctx, s3ARList, client.InNamespace(watchNs))).To(Succeed())
+			for i := range s3ARList.Items {
+				ar := &s3ARList.Items[i]
+				isOwned := false
+				for _, ref := range ar.OwnerReferences {
+					if ref.Name == "s3-listener" {
+						isOwned = true
+						break
+					}
+				}
+				if !isOwned {
+					continue
+				}
+				approvalName, err := approvalv1.ScopedApprovalName(ar.Spec.Target, ar.Spec.ApprovalKey)
+				Expect(err).NotTo(HaveOccurred())
+				approval := &approvalv1.Approval{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: approvalName, Namespace: watchNs,
+						Labels: ar.Labels,
+					},
+					Spec: approvalv1.ApprovalSpec{
+						Action:      ar.Spec.Action,
+						Target:      ar.Spec.Target,
+						Requester:   ar.Spec.Requester,
+						Decider:     ar.Spec.Decider,
+						Strategy:    ar.Spec.Strategy,
+						ApprovalKey: ar.Spec.ApprovalKey,
+						State:       approvalv1.ApprovalStateGranted,
+						Decisions: []approvalv1.Decision{{
+							Name: "System", Comment: "Auto", ResultingState: approvalv1.ApprovalStateGranted,
+						}},
+						ApprovedRequest: &ctypes.ObjectRef{
+							Name: ar.Name, Namespace: ar.Namespace, UID: ar.UID,
+						},
+					},
+				}
+				Expect(client.IgnoreAlreadyExists(directClient.Create(ctx, approval))).To(Succeed())
+			}
+
+			By("Verifying RouteListener is created (Listener unblocked by Route watch + approvals granted)")
 			Eventually(func(g Gomega) {
 				rl := &gatewayv1.RouteListener{}
 				g.Expect(directClient.Get(ctx, types.NamespacedName{Name: rlName, Namespace: watchZNs}, rl)).To(Succeed())
 			}, watchTimeout, watchInterval).Should(Succeed())
 
-			// Restore provider team.
-			Expect(directClient.Get(ctx, types.NamespacedName{Name: watchProviderName, Namespace: watchNs}, provApp)).To(Succeed())
-			provApp.Spec.Team = origTeam
-			Expect(directClient.Update(ctx, provApp)).To(Succeed())
+			// NOTE: provider team restore moved to after Scenario 4 (which depends
+			// on the RouteListener created here). Restoring the team mid-chain
+			// changes the authorization fingerprint and causes stale-child removal.
 		})
 	})
 
@@ -709,6 +767,13 @@ var _ = Describe("Watch-Driven Integration", Ordered, func() {
 				err := directClient.Get(ctx, types.NamespacedName{Name: rlName, Namespace: watchZNs}, rl)
 				g.Expect(err).To(HaveOccurred(), "RouteListener should be deleted when Route is pass-through")
 			}, watchTimeout, watchInterval).Should(Succeed())
+
+			// Restore provider team (deferred from Scenario 3 so the RL
+			// created there was still valid when we confirmed it above).
+			provApp := &applicationv1.Application{}
+			Expect(directClient.Get(ctx, types.NamespacedName{Name: watchProviderName, Namespace: watchNs}, provApp)).To(Succeed())
+			provApp.Spec.Team = "team-watch-prov"
+			Expect(directClient.Update(ctx, provApp)).To(Succeed())
 		})
 	})
 
