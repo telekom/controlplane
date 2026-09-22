@@ -76,3 +76,28 @@ func (h *ListenerHandler) VerifyProviderBinding(
 ) error {
 	return h.verifyProviderBinding(ctx, route, providerApp)
 }
+
+// StartDrain is the exported wrapper for startDrain (test use).
+func (h *ListenerHandler) StartDrain(
+	ctx context.Context,
+	listener *spectrev1.Listener,
+	reason string,
+	oldFingerprint string,
+) error {
+	return h.startDrain(ctx, listener, reason, oldFingerprint)
+}
+
+// ContinueDrain is the exported wrapper for continueDrain (test use).
+func (h *ListenerHandler) ContinueDrain(
+	ctx context.Context,
+	listener *spectrev1.Listener,
+) (bool, error) {
+	return h.continueDrain(ctx, listener)
+}
+
+// Drain phase constants for test use.
+const (
+	ExportDrainPhaseStopping            = DrainPhaseStopping
+	ExportDrainPhaseDrainingSubscribers = DrainPhaseDrainingSubscribers
+	ExportDrainPhaseComplete            = DrainPhaseComplete
+)
