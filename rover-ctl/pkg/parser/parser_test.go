@@ -5,6 +5,7 @@
 package parser_test
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 
@@ -290,6 +291,30 @@ var _ = Describe("Parser", func() {
 			Expect(objects[0].GetApiVersion()).To(Equal("tcp.ei.telekom.de/v1"))
 			// The name should be derived from the servers section
 			Expect(objects[0].GetName()).To(Equal("v1"))
+		})
+
+		It("should expand anchors and merge keys", func() {
+			apiParser := parser.NewObjectParser(parser.Opts...)
+			Expect(apiParser.Parse(filepath.Join(testdataDir, "openapi-spec-with-anchors.yaml"))).To(Succeed())
+
+			objects := apiParser.Objects()
+			Expect(objects).To(HaveLen(1))
+			paths, ok := objects[0].GetContent()["paths"].(map[string]any)
+			Expect(ok).To(BeTrue())
+			responses := paths["/messages"].(map[string]any)["get"].(map[string]any)["responses"].(map[string]any)
+			Expect(responses["200"]).To(And(
+				HaveKeyWithValue("description", "A successful response"),
+				HaveKeyWithValue("content", HaveKey("application/json")),
+			))
+			Expect(responses["201"]).To(HaveKeyWithValue(
+				"content",
+				HaveKeyWithValue("application/json", HaveKeyWithValue("schema", HaveKeyWithValue("type", "object"))),
+			))
+
+			parsedJSON, err := json.Marshal(objects[0].GetContent())
+			Expect(err).NotTo(HaveOccurred())
+			Expect(parsedJSON).NotTo(ContainSubstring("openapi_response_defaults_anchor"))
+			Expect(parsedJSON).NotTo(ContainSubstring("openapi_message_schema_anchor"))
 		})
 
 		It("should correctly parse Swagger specs", func() {
