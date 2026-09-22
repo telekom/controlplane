@@ -136,6 +136,29 @@ var _ = Describe("authorization fingerprint", func() {
 		return intent.fingerprint()
 	}
 
+	It("should populate API group and kind from compile-time constants", func() {
+		intent := buildAuthorizationIntent(listener, consumerApp, providerApp, spectreApp, observerApp, placement)
+		Expect(intent.ConsumerGroup).To(Equal("application.cp.ei.telekom.de"))
+		Expect(intent.ConsumerKind).To(Equal("Application"))
+		Expect(intent.ProviderGroup).To(Equal("application.cp.ei.telekom.de"))
+		Expect(intent.ProviderKind).To(Equal("Application"))
+		Expect(intent.SpectreAppGroup).To(Equal("spectre.cp.ei.telekom.de"))
+		Expect(intent.SpectreAppKind).To(Equal("SpectreApplication"))
+		Expect(intent.ObserverGroup).To(Equal("application.cp.ei.telekom.de"))
+		Expect(intent.ObserverKind).To(Equal("Application"))
+	})
+
+	It("should include group/kind in fingerprint so different CRD types with same name/ns/UID differ", func() {
+		intent1 := buildAuthorizationIntent(listener, consumerApp, providerApp, spectreApp, observerApp, placement)
+		fp1 := intent1.fingerprint()
+
+		// Manually override group to simulate a hypothetical different CRD type
+		intent2 := buildAuthorizationIntent(listener, consumerApp, providerApp, spectreApp, observerApp, placement)
+		intent2.ConsumerGroup = "different.group.io"
+		fp2 := intent2.fingerprint()
+		Expect(fp1).ToNot(Equal(fp2))
+	})
+
 	It("should be stable for identical intents", func() {
 		fp1 := baseFingerprint()
 		fp2 := baseFingerprint()
@@ -586,7 +609,7 @@ var _ = Describe("authorization fingerprint", func() {
 			Expect(props).ToNot(HaveKey("callbackBaseURL"))
 		})
 
-		It("should preserve existing resource_type/resource_name template contract", func() {
+		It("should preserve existing approval property keys", func() {
 			intent := buildAuthorizationIntent(listener, consumerApp, providerApp, spectreApp, observerApp, placement)
 			props := intent.approvalProperties()
 			// These fields are used by notification templates
