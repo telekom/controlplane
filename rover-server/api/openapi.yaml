@@ -2567,8 +2567,8 @@ components:
         variant:
           type: string
           enum:
-            - sftp
-          description: File-transfer backend. Optional; currently only "sftp" is supported.
+            - SFTP
+          description: File-transfer backend. Optional; currently only "SFTP" is supported.
         visibility:
           $ref: '#/components/schemas/Visibility'
         publicKeys:
@@ -3366,6 +3366,11 @@ components:
           type: string
         fileType:
           type: string
+        variant:
+          type: string
+          enum:
+            - SFTP
+          description: File-transfer backend. Optional; currently only "SFTP" is supported.
         publicKeys:
           type: array
           items:

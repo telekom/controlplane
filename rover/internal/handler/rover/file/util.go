@@ -13,7 +13,7 @@ import (
 // MakeName generates a deterministic resource name for a file exposure or
 // subscription: "<fileType>--<owner>" (spec_dcp naming), normalized.
 func MakeName(fileType, ownerName string) string {
-	return fileType + "--" + labelutil.NormalizeValue(ownerName)
+	return labelutil.NormalizeNameValue(fileType + "--" + ownerName)
 }
 
 // mapSFTP converts rover-domain public keys to file-domain public keys.

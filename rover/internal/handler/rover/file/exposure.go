@@ -27,11 +27,9 @@ func HandleExposure(ctx context.Context, c client.JanitorClient, owner *roverv1.
 	logger := log.FromContext(ctx)
 	logger.V(1).Info("Handle FileExposure", "fileType", exp.FileType)
 
-	name := MakeName(exp.FileType, owner.Name)
-
 	fileExposure := &filev1.FileExposure{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      labelutil.NormalizeNameValue(name),
+			Name:      MakeName(exp.FileType, owner.Name),
 			Namespace: owner.Namespace,
 		},
 	}

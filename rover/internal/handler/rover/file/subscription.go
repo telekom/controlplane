@@ -26,11 +26,9 @@ func HandleSubscription(ctx context.Context, c client.JanitorClient, owner *rove
 	logger := log.FromContext(ctx)
 	logger.V(1).Info("Handle FileSubscription", "fileType", sub.FileType)
 
-	name := MakeName(sub.FileType, owner.Name)
-
 	fileSubscription := &filev1.FileSubscription{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      labelutil.NormalizeNameValue(name),
+			Name:      MakeName(sub.FileType, owner.Name),
 			Namespace: owner.Namespace,
 		},
 	}
