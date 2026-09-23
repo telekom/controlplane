@@ -24,7 +24,7 @@ func makeName(name string, notification *notificationv1.Notification) string {
 		resourceName = labelutil.NormalizeValue(notification.Spec.Purpose)
 	}
 
-	return resourceName + "--" + specHash
+	return labelutil.NormalizeNameValue(resourceName + "--" + specHash)
 }
 
 func ensureLabels(notification *notificationv1.Notification) {

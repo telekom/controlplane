@@ -69,9 +69,9 @@ func HandleApplication(ctx context.Context, c client.JanitorClient, owner *rover
 
 	mutator := func() error {
 		application.Labels = map[string]string{
-			config.BuildLabelKey("zone"):        labelutil.NormalizeValue(zoneRef.Name),
-			config.BuildLabelKey("application"): labelutil.NormalizeValue(owner.Name),
-			config.BuildLabelKey("team"):        labelutil.NormalizeValue(team.Name),
+			config.BuildLabelKey("zone"):        labelutil.NormalizeLabelValue(zoneRef.Name),
+			config.BuildLabelKey("application"): labelutil.NormalizeLabelValue(owner.Name),
+			config.BuildLabelKey("team"):        labelutil.NormalizeLabelValue(team.Name),
 		}
 
 		if refErr := controllerutil.SetControllerReference(owner, application, c.Scheme()); refErr != nil {
