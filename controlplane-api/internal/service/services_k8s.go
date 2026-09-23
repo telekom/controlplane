@@ -18,6 +18,7 @@ import (
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
 	cc "github.com/telekom/controlplane/common/pkg/client"
+	"github.com/telekom/controlplane/common/pkg/util/emailutil"
 	"github.com/telekom/controlplane/controlplane-api/internal/resolvers/model"
 	"github.com/telekom/controlplane/controlplane-api/internal/viewer"
 	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
@@ -177,9 +178,10 @@ func (s *teamK8sService) RemoveTeamMember(ctx context.Context, ref ResourceRef, 
 	}
 
 	_, err := s.client.CreateOrUpdate(ctx, team, func() error {
+		canonicalEmail := emailutil.Canonicalize(memberEmail)
 		filtered := make([]organizationv1.Member, 0, len(team.Spec.Members))
 		for _, m := range team.Spec.Members {
-			if m.Email != memberEmail {
+			if emailutil.Canonicalize(m.Email) != canonicalEmail {
 				filtered = append(filtered, m)
 			}
 		}
