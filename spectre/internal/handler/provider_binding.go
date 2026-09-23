@@ -6,62 +6,143 @@ package handler
 
 import (
 	"context"
+	"fmt"
 
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
+	apiv1 "github.com/telekom/controlplane/api/api/v1"
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
+	cclient "github.com/telekom/controlplane/common/pkg/client"
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
+	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 )
 
-// verifyProviderBinding checks that the resolved gateway Route is owned by a
-// resource whose identity is consistent with the declared provider Application.
+// applicationLabelKey is the label key that ApiExposures carry to reference their
+// owning Application by name. Identical to api/internal's ApplicationLabelKey —
+// we cannot import internal, so we reconstruct it from the shared BuildLabelKey.
+var applicationLabelKey = cconfig.BuildLabelKey("application")
+
+// ProviderBinding captures the resolved identity chain from a Route through its
+// owning ApiExposure to the Application that exposed the API. Used to populate
+// PlacementIntent fields for authorization fingerprinting.
+type ProviderBinding struct {
+	ApiExposureName      string
+	ApiExposureNamespace string
+	ApiExposureUID       string
+	ApplicationName      string
+}
+
+// verifyProviderBinding checks that the resolved gateway Route is owned by an
+// ApiExposure whose application label matches the declared provider Application.
 //
-// The api domain stamps Routes with cp.ei.telekom.de/owner.uid pointing at the
-// ApiExposure UID. The ApiExposure in turn carries a cp.ei.telekom.de/application
-// label holding the owning Application name. A full check would:
+// Verification chain:
+//  1. Route carries cp.ei.telekom.de/owner.uid = ApiExposure UID.
+//  2. List ApiExposures in the Route's namespace; find the one whose metadata.uid
+//     matches the label value.
+//  3. Verify the ApiExposure is active (status.active == true).
+//  4. Verify the Route is referenced in the ApiExposure's status.route or
+//     status.proxyRoutes.
+//  5. Read the ApiExposure's cp.ei.telekom.de/application label.
+//  6. Compare with providerApp.Name.
 //
-//  1. Read the Route's owner.uid label to get the ApiExposure UID.
-//  2. Fetch the ApiExposure by UID (or by basepath label + namespace).
-//  3. Compare the ApiExposure's application label against providerApp.Name.
-//
-// Step 2 requires importing the api/api module types (ApiExposure, BasePathLabelKey)
-// which the spectre module does not currently depend on. Adding the dependency is a
-// meaningful architectural decision that should be reviewed separately (Phase 3+).
-//
-// Until then this function performs a best-effort check: if the Route carries an
-// owner.uid label, it logs the value for traceability. A full provider-binding
-// violation blocks the Listener; a missing label is logged but does not block,
-// because Routes provisioned before the label was introduced legitimately lack it.
-//
-// Returns nil (passes) in all cases. Callers should treat a non-nil return as a
-// BlockedError.
+// Returns a ProviderBinding on success, or a BlockedError on any verification
+// failure.
 func (h *ListenerHandler) verifyProviderBinding(
 	ctx context.Context,
 	route *gatewayv1.Route,
 	providerApp *applicationv1.Application,
-) error {
+) (*ProviderBinding, error) {
 	logger := log.FromContext(ctx)
 
+	// Step 1: Read the Route's owner.uid label.
 	ownerUID := ""
 	if route.Labels != nil {
 		ownerUID = route.Labels[cconfig.OwnerUidLabelKey]
 	}
 
 	if ownerUID == "" {
-		logger.V(1).Info("Route has no owner.uid label; skipping provider binding check",
-			"route", route.Name, "namespace", route.Namespace,
-			"provider", providerApp.Name)
-		return nil
+		return nil, ctrlerrors.BlockedErrorf("Route %q in namespace %q has no owner.uid label — cannot verify provider binding",
+			route.Name, route.Namespace)
 	}
 
-	// The owner.uid is the ApiExposure UID, not the Application UID. A full
-	// binding check requires fetching the ApiExposure (api/api types). For now,
-	// log the association for traceability.
-	logger.V(1).Info("Provider binding: Route owner recorded",
-		"route", route.Name, "namespace", route.Namespace,
-		"routeOwnerUID", ownerUID,
-		"provider", providerApp.Name, "providerUID", providerApp.UID)
+	// Step 2: List ApiExposures in the Route's namespace and find the one
+	// whose metadata.uid matches the owner label. There is no field index
+	// for UID on ApiExposures in spectre, so we list and filter in code.
+	c := cclient.ClientFromContextOrDie(ctx)
+	exposureList := &apiv1.ApiExposureList{}
+	if err := c.List(ctx, exposureList, client.InNamespace(route.Namespace)); err != nil {
+		return nil, fmt.Errorf("failed to list ApiExposures in namespace %q: %w", route.Namespace, err)
+	}
 
-	return nil
+	var exposure *apiv1.ApiExposure
+	for i := range exposureList.Items {
+		if string(exposureList.Items[i].UID) == ownerUID {
+			exposure = &exposureList.Items[i]
+			break
+		}
+	}
+
+	if exposure == nil {
+		return nil, ctrlerrors.BlockedErrorf("no ApiExposure with UID %q found in namespace %q for Route %q",
+			ownerUID, route.Namespace, route.Name)
+	}
+
+	logger.V(1).Info("Resolved ApiExposure for Route",
+		"route", route.Name, "apiExposure", exposure.Name, "apiExposureUID", ownerUID)
+
+	// Step 3: Verify the ApiExposure is active.
+	if !exposure.Status.Active {
+		return nil, ctrlerrors.BlockedErrorf("ApiExposure %q (UID %s) is not active",
+			exposure.Name, ownerUID)
+	}
+
+	// Step 4: Verify the Route is referenced in the ApiExposure's status.
+	if !routeReferencedByExposure(route, exposure) {
+		return nil, ctrlerrors.BlockedErrorf("Route %q is not referenced by ApiExposure %q status (route or proxyRoutes)",
+			route.Name, exposure.Name)
+	}
+
+	// Step 5: Read the application label from the ApiExposure.
+	appName := ""
+	if exposure.Labels != nil {
+		appName = exposure.Labels[applicationLabelKey]
+	}
+
+	if appName == "" {
+		return nil, ctrlerrors.BlockedErrorf("ApiExposure %q has no application label", exposure.Name)
+	}
+
+	// Step 6: Compare with the declared provider. The label value is a
+	// normalized form of the Application name (same namespace).
+	if appName != providerApp.Name {
+		return nil, ctrlerrors.BlockedErrorf(
+			"provider binding mismatch: ApiExposure %q is owned by application %q, but declared provider is %q",
+			exposure.Name, appName, providerApp.Name)
+	}
+
+	return &ProviderBinding{
+		ApiExposureName:      exposure.Name,
+		ApiExposureNamespace: exposure.Namespace,
+		ApiExposureUID:       string(exposure.UID),
+		ApplicationName:      appName,
+	}, nil
+}
+
+// routeReferencedByExposure checks whether the Route is referenced in the
+// ApiExposure's status.route or status.proxyRoutes.
+func routeReferencedByExposure(route *gatewayv1.Route, exposure *apiv1.ApiExposure) bool {
+	if exposure.Status.Route != nil &&
+		exposure.Status.Route.Name == route.Name &&
+		exposure.Status.Route.Namespace == route.Namespace {
+		return true
+	}
+	for i := range exposure.Status.ProxyRoutes {
+		ref := &exposure.Status.ProxyRoutes[i]
+		if ref.Name == route.Name && ref.Namespace == route.Namespace {
+			return true
+		}
+	}
+	return false
 }

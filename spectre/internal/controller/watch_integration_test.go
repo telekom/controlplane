@@ -15,8 +15,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
+	apiv1 "github.com/telekom/controlplane/api/api/v1"
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
+	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	ctypes "github.com/telekom/controlplane/common/pkg/types"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
@@ -187,11 +189,38 @@ var _ = Describe("Watch-Driven Integration", Ordered, func() {
 		provApp.Status = applicationv1.ApplicationStatus{ClientId: watchProviderCID, Conditions: readyConditions()}
 		Expect(directClient.Status().Update(ctx, provApp)).To(Succeed())
 
+		// ApiExposure for provider binding verification.
+		watchExposure := &apiv1.ApiExposure{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: watchProviderName + "--api-v1-watch", Namespace: watchZNs,
+				Labels: map[string]string{
+					envLabelKey:                          watchEnv,
+					cconfig.BuildLabelKey("application"): watchProviderName,
+				},
+			},
+			Spec: apiv1.ApiExposureSpec{
+				ApiBasePath: "/api/v1/watch",
+				Upstreams:   []apiv1.Upstream{{Url: "https://api.watch.example.com"}},
+				Visibility:  apiv1.VisibilityZone,
+				Approval:    apiv1.Approval{Strategy: apiv1.ApprovalStrategyAuto},
+				Zone:        ctypes.ObjectRef{Name: "aws", Namespace: watchNs},
+			},
+		}
+		Expect(directClient.Create(ctx, watchExposure)).To(Succeed())
+		watchExposure.Status = apiv1.ApiExposureStatus{
+			Active: true,
+			Route:  &ctypes.ObjectRef{Name: "api-v1-watch", Namespace: watchZNs},
+		}
+		Expect(directClient.Status().Update(ctx, watchExposure)).To(Succeed())
+
 		// Gateway Route for the listener's apiBasePath.
 		gwRoute := &gatewayv1.Route{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "api-v1-watch", Namespace: watchZNs,
-				Labels: map[string]string{envLabelKey: watchEnv},
+				Labels: map[string]string{
+					envLabelKey:              watchEnv,
+					cconfig.OwnerUidLabelKey: string(watchExposure.UID),
+				},
 			},
 			Spec: gatewayv1.RouteSpec{
 				GatewayRef: ctypes.ObjectRef{Name: "gw-aws", Namespace: watchZNs},
@@ -652,11 +681,37 @@ var _ = Describe("Watch-Driven Integration", Ordered, func() {
 				g.Expect(err).To(HaveOccurred(), "RouteListener should not exist while Route is missing")
 			}, 3*time.Second, 500*time.Millisecond).Should(Succeed())
 
-			By("Creating the missing Route — this should trigger the watch and unblock the Listener")
+			By("Creating ApiExposure and Route — this should trigger the watch and unblock the Listener")
+			s3Exposure := &apiv1.ApiExposure{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: watchProviderName + "--" + util.MakeRouteName(s3BasePath), Namespace: watchZNs,
+					Labels: map[string]string{
+						envLabelKey:                          watchEnv,
+						cconfig.BuildLabelKey("application"): watchProviderName,
+					},
+				},
+				Spec: apiv1.ApiExposureSpec{
+					ApiBasePath: s3BasePath,
+					Upstreams:   []apiv1.Upstream{{Url: "https://api.s3.example.com"}},
+					Visibility:  apiv1.VisibilityZone,
+					Approval:    apiv1.Approval{Strategy: apiv1.ApprovalStrategyAuto},
+					Zone:        ctypes.ObjectRef{Name: "aws", Namespace: watchNs},
+				},
+			}
+			Expect(directClient.Create(ctx, s3Exposure)).To(Succeed())
+			s3Exposure.Status = apiv1.ApiExposureStatus{
+				Active: true,
+				Route:  &ctypes.ObjectRef{Name: util.MakeRouteName(s3BasePath), Namespace: watchZNs},
+			}
+			Expect(directClient.Status().Update(ctx, s3Exposure)).To(Succeed())
+
 			route := &gatewayv1.Route{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: util.MakeRouteName(s3BasePath), Namespace: watchZNs,
-					Labels: map[string]string{envLabelKey: watchEnv},
+					Labels: map[string]string{
+						envLabelKey:              watchEnv,
+						cconfig.OwnerUidLabelKey: string(s3Exposure.UID),
+					},
 				},
 				Spec: gatewayv1.RouteSpec{
 					GatewayRef: ctypes.ObjectRef{Name: "gw-aws", Namespace: watchZNs},
