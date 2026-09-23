@@ -2408,6 +2408,374 @@ var _ = Describe("ListenerHandler", func() {
 				Expect(listener.Status.ConsumerApprovalRequest).ToNot(BeNil())
 			})
 		})
+
+		// --- R7: Early restriction check (GPT §1 + §8 regression) ---
+
+		Context("early restriction: provider Approval is Rejected", func() {
+			It("should cleanup children without resolving Applications", func() {
+				listener := newListener()
+				// Pre-populate status refs as if a previous reconcile created them.
+				listener.Status.ProviderApproval = &ctypes.ObjectRef{
+					Name: "listener--test-listener--provider", Namespace: listenerNamespace,
+				}
+				listener.Status.RouteListener = &ctypes.ObjectRef{Name: "old-rl", Namespace: listenerZoneStatus}
+				listener.Status.EventSubscriptions = []ctypes.ObjectRef{
+					{Name: "old-sub-rq", Namespace: listenerZoneStatus},
+				}
+
+				// Early restriction: fetch provider Approval — Rejected.
+				fakeClient.EXPECT().
+					Get(ctx, k8stypes.NamespacedName{Name: "listener--test-listener--provider", Namespace: listenerNamespace},
+						mock.AnythingOfType("*v1.Approval")).
+					Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
+						approval := out.(*approvalv1.Approval)
+						approval.Spec.State = approvalv1.ApprovalStateRejected
+					}).
+					Return(nil).Once()
+
+				// handleDenialCleanup: deleteAllOwnedChildren.
+				fakeClient.EXPECT().
+					List(ctx, mock.AnythingOfType("*v1.RouteListenerList"), mock.Anything).
+					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+						*list.(*gatewayv1.RouteListenerList) = gatewayv1.RouteListenerList{
+							Items: []gatewayv1.RouteListener{
+								{ObjectMeta: metav1.ObjectMeta{Name: "old-rl", Namespace: listenerZoneStatus}},
+							},
+						}
+					}).
+					Return(nil).Once()
+				fakeClient.EXPECT().
+					Delete(ctx, mock.AnythingOfType("*v1.RouteListener"), mock.Anything).
+					Return(nil).Once()
+
+				fakeClient.EXPECT().
+					List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
+					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+						*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{
+							Items: []pubsubv1.Subscriber{
+								{ObjectMeta: metav1.ObjectMeta{Name: "old-sub-rq", Namespace: listenerZoneStatus}},
+							},
+						}
+					}).
+					Return(nil).Once()
+				fakeClient.EXPECT().
+					Delete(ctx, mock.AnythingOfType("*v1.Subscriber"), mock.Anything).
+					Return(nil).Once()
+
+				// resolvePublisherNamespace: status refs cleared — label fallback.
+				fakeClient.EXPECT().
+					List(ctx, mock.AnythingOfType("*v1.RouteListenerList"), mock.Anything).
+					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+						*list.(*gatewayv1.RouteListenerList) = gatewayv1.RouteListenerList{
+							Items: []gatewayv1.RouteListener{
+								{ObjectMeta: metav1.ObjectMeta{Name: "old-rl", Namespace: listenerZoneStatus}},
+							},
+						}
+					}).
+					Return(nil).Once()
+				fakeClient.EXPECT().
+					List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
+					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+						*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{}
+					}).
+					Return(nil).Once()
+
+				// cleanupGenericPublisherIfOrphaned.
+				fakeClient.EXPECT().
+					List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
+					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+						*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{}
+					}).
+					Return(nil).Once()
+				fakeClient.EXPECT().
+					Delete(ctx, mock.AnythingOfType("*v1.Publisher"), mock.Anything).
+					Return(nil).Once()
+
+				err := h.CreateOrUpdate(ctx, listener)
+				Expect(err).ToNot(HaveOccurred())
+
+				// Status cleared.
+				Expect(listener.Status.RouteListener).To(BeNil())
+				Expect(listener.Status.EventSubscriptions).To(BeEmpty())
+
+				// AccessDenied condition set with early restriction message.
+				readyCond := meta.FindStatusCondition(listener.Status.Conditions, condition.ConditionTypeReady)
+				Expect(readyCond).ToNot(BeNil())
+				Expect(readyCond.Reason).To(Equal(condition.ReasonAccessDenied))
+				Expect(readyCond.Message).To(ContainSubstring("early restriction"))
+				Expect(readyCond.Message).To(ContainSubstring("provider"))
+			})
+		})
+
+		Context("early restriction: consumer Approval is Suspended", func() {
+			It("should cleanup via early restriction on Suspended state", func() {
+				listener := newListener()
+				listener.Status.ConsumerApproval = &ctypes.ObjectRef{
+					Name: "listener--test-listener--consumer", Namespace: listenerNamespace,
+				}
+
+				// Early restriction: skip provider (nil ref), fetch consumer — Suspended.
+				fakeClient.EXPECT().
+					Get(ctx, k8stypes.NamespacedName{Name: "listener--test-listener--consumer", Namespace: listenerNamespace},
+						mock.AnythingOfType("*v1.Approval")).
+					Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
+						approval := out.(*approvalv1.Approval)
+						approval.Spec.State = approvalv1.ApprovalStateSuspended
+					}).
+					Return(nil).Once()
+
+				// handleDenialCleanup: no children.
+				fakeClient.EXPECT().
+					List(ctx, mock.AnythingOfType("*v1.RouteListenerList"), mock.Anything).
+					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+						*list.(*gatewayv1.RouteListenerList) = gatewayv1.RouteListenerList{}
+					}).
+					Return(nil).Once()
+				fakeClient.EXPECT().
+					List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
+					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+						*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{}
+					}).
+					Return(nil).Once()
+
+				// resolvePublisherNamespace: no children, no status refs.
+				fakeClient.EXPECT().
+					List(ctx, mock.AnythingOfType("*v1.RouteListenerList"), mock.Anything).
+					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+						*list.(*gatewayv1.RouteListenerList) = gatewayv1.RouteListenerList{}
+					}).
+					Return(nil).Once()
+				fakeClient.EXPECT().
+					List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
+					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+						*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{}
+					}).
+					Return(nil).Once()
+
+				// Topology fallback for resolvePublisherNamespace.
+				mockGetConsumerApp(makeConsumerApp())
+				mockGetZone()
+
+				// cleanupGenericPublisherIfOrphaned.
+				fakeClient.EXPECT().
+					List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
+					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+						*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{}
+					}).
+					Return(nil).Once()
+				fakeClient.EXPECT().
+					Delete(ctx, mock.AnythingOfType("*v1.Publisher"), mock.Anything).
+					Return(nil).Once()
+
+				err := h.CreateOrUpdate(ctx, listener)
+				Expect(err).ToNot(HaveOccurred())
+
+				readyCond := meta.FindStatusCondition(listener.Status.Conditions, condition.ConditionTypeReady)
+				Expect(readyCond).ToNot(BeNil())
+				Expect(readyCond.Reason).To(Equal(condition.ReasonAccessDenied))
+				Expect(readyCond.Message).To(ContainSubstring("consumer"))
+			})
+		})
+
+		Context("early restriction: Approval is Granted — no early exit", func() {
+			It("should continue to normal flow when Approvals are Granted", func() {
+				listener := newListener()
+				listener.Status.ProviderApproval = &ctypes.ObjectRef{
+					Name: "listener--test-listener--provider", Namespace: listenerNamespace,
+				}
+				listener.Status.ConsumerApproval = &ctypes.ObjectRef{
+					Name: "listener--test-listener--consumer", Namespace: listenerNamespace,
+				}
+
+				// Early restriction: both Approvals Granted — no early exit.
+				fakeClient.EXPECT().
+					Get(ctx, k8stypes.NamespacedName{Name: "listener--test-listener--provider", Namespace: listenerNamespace},
+						mock.AnythingOfType("*v1.Approval")).
+					Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
+						approval := out.(*approvalv1.Approval)
+						approval.Spec.State = approvalv1.ApprovalStateGranted
+					}).
+					Return(nil).Once()
+				fakeClient.EXPECT().
+					Get(ctx, k8stypes.NamespacedName{Name: "listener--test-listener--consumer", Namespace: listenerNamespace},
+						mock.AnythingOfType("*v1.Approval")).
+					Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
+						approval := out.(*approvalv1.Approval)
+						approval.Spec.State = approvalv1.ApprovalStateGranted
+					}).
+					Return(nil).Once()
+
+				// Normal flow continues — consumer App fails to resolve (blocks).
+				fakeClient.EXPECT().
+					Get(ctx, k8stypes.NamespacedName{Name: consumerAppName, Namespace: listenerNamespace}, mock.AnythingOfType("*v1.Application")).
+					Return(fmt.Errorf("not found")).Once()
+
+				err := h.CreateOrUpdate(ctx, listener)
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("consumer Application"))
+			})
+		})
+
+		Context("early restriction: Approval fetch error — continues to normal flow", func() {
+			It("should log the error and continue when Approval Get fails", func() {
+				listener := newListener()
+				listener.Status.ProviderApproval = &ctypes.ObjectRef{
+					Name: "listener--test-listener--provider", Namespace: listenerNamespace,
+				}
+
+				// Early restriction: Get returns error (not NotFound).
+				fakeClient.EXPECT().
+					Get(ctx, k8stypes.NamespacedName{Name: "listener--test-listener--provider", Namespace: listenerNamespace},
+						mock.AnythingOfType("*v1.Approval")).
+					Return(fmt.Errorf("internal API error")).Once()
+
+				// Normal flow continues — consumer App fails to resolve (blocks).
+				fakeClient.EXPECT().
+					Get(ctx, k8stypes.NamespacedName{Name: consumerAppName, Namespace: listenerNamespace}, mock.AnythingOfType("*v1.Application")).
+					Return(fmt.Errorf("not found")).Once()
+
+				err := h.CreateOrUpdate(ctx, listener)
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("consumer Application"))
+			})
+		})
+
+		Context("early restriction: Approval NotFound — continues to normal flow", func() {
+			It("should continue when Approval is NotFound (pending creation)", func() {
+				listener := newListener()
+				listener.Status.ProviderApproval = &ctypes.ObjectRef{
+					Name: "listener--test-listener--provider", Namespace: listenerNamespace,
+				}
+
+				// Early restriction: Approval NotFound — skip.
+				fakeClient.EXPECT().
+					Get(ctx, k8stypes.NamespacedName{Name: "listener--test-listener--provider", Namespace: listenerNamespace},
+						mock.AnythingOfType("*v1.Approval")).
+					Return(errors.NewNotFound(schema.GroupResource{Group: "approval.cp.ei.telekom.de", Resource: "approvals"}, "")).Once()
+
+				// Normal flow continues.
+				fakeClient.EXPECT().
+					Get(ctx, k8stypes.NamespacedName{Name: consumerAppName, Namespace: listenerNamespace}, mock.AnythingOfType("*v1.Application")).
+					Return(fmt.Errorf("not found")).Once()
+
+				err := h.CreateOrUpdate(ctx, listener)
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("consumer Application"))
+			})
+		})
+
+		Context("early restriction: Expired-from-Suspended triggers cleanup", func() {
+			It("should trigger cleanup on Expired state with LastState=Suspended", func() {
+				listener := newListener()
+				listener.Status.ProviderApproval = &ctypes.ObjectRef{
+					Name: "listener--test-listener--provider", Namespace: listenerNamespace,
+				}
+
+				// Early restriction: Expired with LastState=Suspended.
+				fakeClient.EXPECT().
+					Get(ctx, k8stypes.NamespacedName{Name: "listener--test-listener--provider", Namespace: listenerNamespace},
+						mock.AnythingOfType("*v1.Approval")).
+					Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
+						approval := out.(*approvalv1.Approval)
+						approval.Spec.State = approvalv1.ApprovalStateExpired
+						approval.Status.LastState = approvalv1.ApprovalStateSuspended
+					}).
+					Return(nil).Once()
+
+				// handleDenialCleanup: no children.
+				fakeClient.EXPECT().
+					List(ctx, mock.AnythingOfType("*v1.RouteListenerList"), mock.Anything).
+					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+						*list.(*gatewayv1.RouteListenerList) = gatewayv1.RouteListenerList{}
+					}).
+					Return(nil).Once()
+				fakeClient.EXPECT().
+					List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
+					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+						*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{}
+					}).
+					Return(nil).Once()
+
+				// resolvePublisherNamespace: no children.
+				fakeClient.EXPECT().
+					List(ctx, mock.AnythingOfType("*v1.RouteListenerList"), mock.Anything).
+					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+						*list.(*gatewayv1.RouteListenerList) = gatewayv1.RouteListenerList{}
+					}).
+					Return(nil).Once()
+				fakeClient.EXPECT().
+					List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
+					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+						*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{}
+					}).
+					Return(nil).Once()
+				mockGetConsumerApp(makeConsumerApp())
+				mockGetZone()
+
+				// cleanupGenericPublisherIfOrphaned.
+				fakeClient.EXPECT().
+					List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
+					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+						*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{}
+					}).
+					Return(nil).Once()
+				fakeClient.EXPECT().
+					Delete(ctx, mock.AnythingOfType("*v1.Publisher"), mock.Anything).
+					Return(nil).Once()
+
+				err := h.CreateOrUpdate(ctx, listener)
+				Expect(err).ToNot(HaveOccurred())
+
+				readyCond := meta.FindStatusCondition(listener.Status.Conditions, condition.ConditionTypeReady)
+				Expect(readyCond).ToNot(BeNil())
+				Expect(readyCond.Reason).To(Equal(condition.ReasonAccessDenied))
+			})
+		})
+
+		Context("early restriction: Expired-from-Granted does NOT trigger cleanup", func() {
+			It("should continue to normal flow when Expired but LastState is Granted", func() {
+				listener := newListener()
+				listener.Status.ProviderApproval = &ctypes.ObjectRef{
+					Name: "listener--test-listener--provider", Namespace: listenerNamespace,
+				}
+
+				// Early restriction: Expired with LastState=Granted — NOT denied.
+				fakeClient.EXPECT().
+					Get(ctx, k8stypes.NamespacedName{Name: "listener--test-listener--provider", Namespace: listenerNamespace},
+						mock.AnythingOfType("*v1.Approval")).
+					Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
+						approval := out.(*approvalv1.Approval)
+						approval.Spec.State = approvalv1.ApprovalStateExpired
+						approval.Status.LastState = approvalv1.ApprovalStateGranted
+					}).
+					Return(nil).Once()
+
+				// Normal flow continues.
+				fakeClient.EXPECT().
+					Get(ctx, k8stypes.NamespacedName{Name: consumerAppName, Namespace: listenerNamespace}, mock.AnythingOfType("*v1.Application")).
+					Return(fmt.Errorf("not found")).Once()
+
+				err := h.CreateOrUpdate(ctx, listener)
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("consumer Application"))
+			})
+		})
+
+		Context("early restriction: no approval refs in status — continues normally", func() {
+			It("should skip early restriction when no approval refs exist", func() {
+				listener := newListener()
+				// No approval refs in status — early restriction check is a no-op.
+
+				// Normal flow continues — consumer App fails to resolve (blocks).
+				fakeClient.EXPECT().
+					Get(ctx, k8stypes.NamespacedName{Name: consumerAppName, Namespace: listenerNamespace}, mock.AnythingOfType("*v1.Application")).
+					Return(fmt.Errorf("not found")).Once()
+
+				err := h.CreateOrUpdate(ctx, listener)
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("consumer Application"))
+			})
+		})
 	})
 
 	Describe("Delete", func() {
