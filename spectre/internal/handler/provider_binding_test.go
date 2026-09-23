@@ -77,6 +77,9 @@ var _ = Describe("verifyProviderBinding", func() {
 		}
 	}
 
+	// makeExposure creates an ApiExposure in the provider's team namespace
+	// (listenerNamespace), matching real Rover behavior where ApiExposures
+	// live alongside the Application, not in the zone namespace.
 	makeExposure := func(uid, appLabel string, active bool, routeRef *ctypes.ObjectRef, proxyRoutes []ctypes.ObjectRef) apiv1.ApiExposure {
 		labels := map[string]string{}
 		if appLabel != "" {
@@ -85,7 +88,7 @@ var _ = Describe("verifyProviderBinding", func() {
 		return apiv1.ApiExposure{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      exposureName,
-				Namespace: routeNamespace,
+				Namespace: listenerNamespace, // team namespace, same as providerApp
 				UID:       k8stypes.UID(uid),
 				Labels:    labels,
 			},
@@ -123,7 +126,7 @@ var _ = Describe("verifyProviderBinding", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(binding).NotTo(BeNil())
 			Expect(binding.ApiExposureName).To(Equal(exposureName))
-			Expect(binding.ApiExposureNamespace).To(Equal(routeNamespace))
+			Expect(binding.ApiExposureNamespace).To(Equal(listenerNamespace))
 			Expect(binding.ApiExposureUID).To(Equal(exposureUID))
 			Expect(binding.ApplicationName).To(Equal(applicationName))
 		})
