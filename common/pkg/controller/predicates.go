@@ -33,3 +33,15 @@ func (DeleteOnlyPredicate) Update(e event.UpdateEvent) bool {
 func (DeleteOnlyPredicate) Generic(e event.GenericEvent) bool {
 	return false
 }
+
+var _ predicate.Predicate = SkipInitialListPredicate{}
+
+// SkipInitialListPredicate drops the synthetic create events the informer emits
+// for the objects already present when the cache is first filled. Those objects
+// are reconciled by the periodic requeue anyway, so admitting them only makes
+// every restart pay a full resync burst.
+type SkipInitialListPredicate struct {
+	predicate.Funcs
+}
+
+func (SkipInitialListPredicate) Create(e event.CreateEvent) bool { return !e.IsInInitialList }
