@@ -111,3 +111,20 @@ const (
 	ExportPendingDeletionPhasePrepared = PendingDeletionPhasePrepared
 	ExportPendingDeletionPhaseObserved = PendingDeletionPhaseObserved
 )
+
+// CheckEarlyRestriction is the exported wrapper for checkEarlyRestriction (test use).
+func (h *ListenerHandler) CheckEarlyRestriction(
+	ctx context.Context,
+	listener *spectrev1.Listener,
+) (bool, string, error) {
+	return h.checkEarlyRestriction(ctx, listener)
+}
+
+// HandleDenialCleanup is the exported wrapper for handleDenialCleanup (test use).
+func (h *ListenerHandler) HandleDenialCleanup(
+	ctx context.Context,
+	listener *spectrev1.Listener,
+	gateKey string,
+) error {
+	return h.handleDenialCleanup(ctx, listener, gateKey)
+}

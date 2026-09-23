@@ -14,8 +14,11 @@ import (
 	k8stypes "k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
+	"fmt"
+
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
+	approvalapi "github.com/telekom/controlplane/approval/api/v1"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
@@ -33,6 +36,20 @@ type ListenerHandler struct{}
 func (h *ListenerHandler) CreateOrUpdate(ctx context.Context, listener *spectrev1.Listener) error {
 	c := cclient.ClientFromContextOrDie(ctx)
 	logger := log.FromContext(ctx)
+
+	// Step 0: Early restriction check — detect conclusive revocation from
+	// persisted status refs without requiring Application/Route readiness.
+	if denied, gateKey, err := h.checkEarlyRestriction(ctx, listener); err != nil {
+		// Read error — log and continue to normal flow.
+		logger.V(1).Info("Early restriction check failed, continuing", "error", err)
+	} else if denied {
+		// Conclusive revocation — initiate/continue drain even if topology is broken.
+		logger.Info("Early restriction detected, initiating cleanup", "gate", gateKey)
+		if err := h.handleDenialCleanup(ctx, listener, gateKey); err != nil {
+			return errors.Wrap(err, "failed cleanup after early restriction")
+		}
+		return nil
+	}
 
 	// Step 1: Resolve consumer and provider Applications.
 	consumerApp, err := h.resolveApplication(ctx, &listener.Spec.Consumer)
@@ -836,4 +853,76 @@ func (h *ListenerHandler) resolveGatewayCredentials(ctx context.Context, zone *a
 	// "gateway" is the zone-level singleton consumer name — every listener on a
 	// route resolves the same client, making this assignment idempotent.
 	return "gateway", realm.Status.IssuerUrl, nil
+}
+
+// checkEarlyRestriction reads the Approval refs from the Listener's persisted
+// status and returns (denied=true, gateKey) if any scoped Approval has been
+// conclusively revoked (Rejected, Suspended, or Expired-from-Suspended). This
+// is a READ-ONLY check that works even when the Application/Route topology is
+// temporarily unreachable.
+func (h *ListenerHandler) checkEarlyRestriction(
+	ctx context.Context,
+	listener *spectrev1.Listener,
+) (denied bool, gateKey string, err error) {
+	c := cclient.ClientFromContextOrDie(ctx)
+
+	for _, check := range []struct {
+		ref *ctypes.ObjectRef
+		key string
+	}{
+		{listener.Status.ProviderApproval, "provider"},
+		{listener.Status.ConsumerApproval, "consumer"},
+	} {
+		if check.ref == nil {
+			continue
+		}
+		approval := &approvalapi.Approval{}
+		if err := c.Get(ctx, check.ref.K8s(), approval); err != nil {
+			if apierrors.IsNotFound(err) {
+				continue // Missing = not denied (might be pending creation).
+			}
+			return false, "", err
+		}
+		if approval.Spec.State == approvalapi.ApprovalStateRejected ||
+			approval.Spec.State == approvalapi.ApprovalStateSuspended {
+			return true, check.key, nil
+		}
+		// Expired-from-Suspended = also denied.
+		if approval.Spec.State == approvalapi.ApprovalStateExpired &&
+			approval.Status.LastState == approvalapi.ApprovalStateSuspended {
+			return true, check.key, nil
+		}
+	}
+	return false, "", nil
+}
+
+// handleDenialCleanup deletes all owned children and cleans up the generic
+// Publisher when an early restriction or conclusive revocation is detected.
+// Sets AccessDenied conditions so the Listener's status reflects the denial.
+func (h *ListenerHandler) handleDenialCleanup(
+	ctx context.Context,
+	listener *spectrev1.Listener,
+	gateKey string,
+) error {
+	if err := h.deleteAllOwnedChildren(ctx, listener); err != nil {
+		return errors.Wrap(err, "failed to delete owned children during denial cleanup")
+	}
+	listener.Status.RouteListener = nil
+	listener.Status.EventSubscriptions = nil
+
+	zoneNamespace, err := h.resolvePublisherNamespace(ctx, listener)
+	if err != nil {
+		return errors.Wrap(err, "failed to resolve publisher namespace during denial cleanup")
+	}
+	if zoneNamespace != "" {
+		if err := h.cleanupGenericPublisherIfOrphaned(ctx, zoneNamespace); err != nil {
+			return errors.Wrap(err, "failed to check orphaned generic Publisher during denial cleanup")
+		}
+	}
+
+	listener.SetCondition(condition.NewNotReadyCondition(condition.ReasonAccessDenied,
+		fmt.Sprintf("Approval has been revoked (%s gate, early restriction)", gateKey)))
+	listener.SetCondition(condition.NewDoneProcessingCondition(
+		fmt.Sprintf("Approval has been revoked (%s gate, early restriction)", gateKey)))
+	return nil
 }
