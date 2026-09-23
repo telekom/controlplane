@@ -37,7 +37,31 @@ func (h *ListenerHandler) CreateOrUpdate(ctx context.Context, listener *spectrev
 	c := cclient.ClientFromContextOrDie(ctx)
 	logger := log.FromContext(ctx)
 
-	// Step 0: Early restriction check — detect conclusive revocation from
+	// Step 0: Resume persisted drain using saved refs — no topology needed.
+	// The drain checkpoint stores everything continueDrain needs (old child refs,
+	// UIDs, publisher namespace). Running it before any topology resolution
+	// ensures progress even when Applications/Zones/Routes are not ready.
+	if listener.Status.Draining != nil {
+		complete, err := h.continueDrain(ctx, listener)
+		if err != nil {
+			return errors.Wrap(err, "failed to continue drain")
+		}
+		if !complete {
+			return nil // persist and requeue
+		}
+		// Drain complete. If migration is active and in Draining phase, let
+		// migration handle advancement — don't clear AppliedPlacement here.
+		migrationIsDraining := listener.Status.AuthorizationMigration != nil &&
+			listener.Status.AuthorizationMigration.Phase == MigrationPhaseDraining
+		if !migrationIsDraining {
+			if listener.Status.AppliedPlacement != nil {
+				listener.Status.AppliedPlacement.Fingerprint = ""
+			}
+		}
+		// Fall through to resolve topology for new provisioning.
+	}
+
+	// Step 0.5: Early restriction check — detect conclusive revocation from
 	// persisted status refs without requiring Application/Route readiness.
 	if denied, gateKey, err := h.checkEarlyRestriction(ctx, listener); err != nil {
 		// Read error — log and continue to normal flow.
@@ -148,6 +172,15 @@ func (h *ListenerHandler) CreateOrUpdate(ctx context.Context, listener *spectrev
 	// Step 5.6b: Verify that the Route is owned by the provider's API exposure.
 	binding, err := h.verifyProviderBinding(ctx, route, providerApp)
 	if err != nil {
+		// If we have existing capture, drain it before blocking — the provider
+		// binding may have been invalidated (e.g., Route ownership changed).
+		if listener.Status.AppliedPlacement != nil && listener.Status.Draining == nil {
+			if drainErr := h.startDrain(ctx, listener, "provider binding invalidated",
+				listener.Status.AppliedPlacement.Fingerprint); drainErr != nil {
+				return errors.Wrap(drainErr, "failed to start drain after binding failure")
+			}
+			return nil // persist drain checkpoint
+		}
 		return errors.Wrap(err, "provider binding check failed")
 	}
 
@@ -188,29 +221,6 @@ func (h *ListenerHandler) CreateOrUpdate(ctx context.Context, listener *spectrev
 	}
 	intent := buildAuthorizationIntent(listener, consumerApp, providerApp, spectreApp, observerApp, placement)
 	fingerprint := intent.fingerprint()
-
-	// Step 5.8: If a drain is in progress from a previous reconcile, check
-	// whether old children have been fully removed before proceeding.
-	if listener.Status.Draining != nil {
-		complete, err := h.continueDrain(ctx, listener)
-		if err != nil {
-			return errors.Wrap(err, "failed to continue drain")
-		}
-		if !complete {
-			return nil // requeue; drain in progress
-		}
-		// Drain complete. If migration is active and in Draining phase, let
-		// migration handle advancement — don't clear AppliedPlacement here.
-		if listener.Status.AuthorizationMigration != nil &&
-			listener.Status.AuthorizationMigration.Phase == MigrationPhaseDraining {
-			// Migration will consume the completion in advanceMigration.
-		} else {
-			// Normal drain: clear old fingerprint so step 5.9 doesn't re-trigger.
-			if listener.Status.AppliedPlacement != nil {
-				listener.Status.AppliedPlacement.Fingerprint = ""
-			}
-		}
-	}
 
 	// Step 5.9: Detect fingerprint change. If there are existing children with
 	// a different fingerprint, start a drain to record what is being replaced.
@@ -920,29 +930,41 @@ func (h *ListenerHandler) checkEarlyRestriction(
 	return false, "", firstErr
 }
 
-// handleDenialCleanup deletes all owned children and cleans up the generic
-// Publisher when an early restriction or conclusive revocation is detected.
-// Sets AccessDenied conditions so the Listener's status reflects the denial.
+// handleDenialCleanup initiates a drain (or direct deletion when no children
+// are tracked) and sets AccessDenied conditions when an early restriction or
+// conclusive revocation is detected.
 func (h *ListenerHandler) handleDenialCleanup(
 	ctx context.Context,
 	listener *spectrev1.Listener,
 	gateKey string,
 ) error {
-	if err := h.deleteAllOwnedChildren(ctx, listener); err != nil {
-		return errors.Wrap(err, "failed to delete owned children during denial cleanup")
-	}
-	listener.Status.RouteListener = nil
-	listener.Status.EventSubscriptions = nil
+	// If there are provisioned children (indicated by AppliedPlacement), use the
+	// drain protocol so deletions get UID-checked and the publisher is cleaned up
+	// in the correct phase order. Otherwise fall back to direct deletion.
+	if listener.Status.AppliedPlacement != nil && listener.Status.Draining == nil {
+		oldFP := listener.Status.AppliedPlacement.Fingerprint
+		if err := h.startDrain(ctx, listener, fmt.Sprintf("early restriction (%s gate)", gateKey), oldFP); err != nil {
+			return errors.Wrap(err, "failed to start drain during denial cleanup")
+		}
+	} else if listener.Status.Draining == nil {
+		// No applied placement — direct cleanup of any stray children.
+		if err := h.deleteAllOwnedChildren(ctx, listener); err != nil {
+			return errors.Wrap(err, "failed to delete owned children during denial cleanup")
+		}
+		listener.Status.RouteListener = nil
+		listener.Status.EventSubscriptions = nil
 
-	zoneNamespace, err := h.resolvePublisherNamespace(ctx, listener)
-	if err != nil {
-		return errors.Wrap(err, "failed to resolve publisher namespace during denial cleanup")
-	}
-	if zoneNamespace != "" {
-		if err := h.cleanupGenericPublisherIfOrphaned(ctx, zoneNamespace); err != nil {
-			return errors.Wrap(err, "failed to check orphaned generic Publisher during denial cleanup")
+		zoneNamespace, err := h.resolvePublisherNamespace(ctx, listener)
+		if err != nil {
+			return errors.Wrap(err, "failed to resolve publisher namespace during denial cleanup")
+		}
+		if zoneNamespace != "" {
+			if err := h.cleanupGenericPublisherIfOrphaned(ctx, zoneNamespace); err != nil {
+				return errors.Wrap(err, "failed to check orphaned generic Publisher during denial cleanup")
+			}
 		}
 	}
+	// If Draining is already set, step 0.5 will advance it on the next reconcile.
 
 	listener.SetCondition(condition.NewNotReadyCondition(condition.ReasonAccessDenied,
 		fmt.Sprintf("Approval has been revoked (%s gate, early restriction)", gateKey)))
