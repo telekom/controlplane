@@ -105,3 +105,9 @@ const (
 	ExportDrainPhaseCleaningPublisher   = DrainPhaseCleaningPublisher
 	ExportDrainPhaseComplete            = DrainPhaseComplete
 )
+
+// PendingDeletion phase constants for test use.
+const (
+	ExportPendingDeletionPhasePrepared = PendingDeletionPhasePrepared
+	ExportPendingDeletionPhaseObserved = PendingDeletionPhaseObserved
+)
