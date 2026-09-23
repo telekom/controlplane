@@ -184,8 +184,9 @@ func (h *ListenerHandler) CreateOrUpdate(ctx context.Context, listener *spectrev
 	}
 
 	// Step 5.9: Detect fingerprint change. If there are existing children with
-	// a different fingerprint, start a drain to record what is being replaced,
-	// then remove them. The drain status ensures restart safety.
+	// a different fingerprint, start a drain to record what is being replaced.
+	// startDrain only snapshots; the caller returns nil so the controller
+	// persists the checkpoint before any destructive work begins.
 	if listener.Status.AppliedPlacement != nil &&
 		listener.Status.AppliedPlacement.Fingerprint != "" &&
 		listener.Status.AppliedPlacement.Fingerprint != fingerprint &&
@@ -193,12 +194,12 @@ func (h *ListenerHandler) CreateOrUpdate(ctx context.Context, listener *spectrev
 		if err := h.startDrain(ctx, listener, "fingerprint changed", listener.Status.AppliedPlacement.Fingerprint); err != nil {
 			return errors.Wrap(err, "failed to start drain")
 		}
+		return nil // persist drain checkpoint; continueDrain runs on next reconcile
 	}
 
 	// Step 5.10: Remove stale children whose fingerprint differs from the current
-	// intent BEFORE evaluating the replacement grant. This ensures a provider,
-	// application, path, delivery, or capture-scope change stops the old capture
-	// immediately. Unlabelled children (pre-migration) are treated as stale.
+	// intent. This handles unlabelled pre-migration children and is NOT used in the
+	// drain path (continueDrain performs its own UID-checked deletions).
 	if err := h.removeStaleChildren(ctx, listener, fingerprint); err != nil {
 		return errors.Wrap(err, "failed to remove stale children")
 	}
