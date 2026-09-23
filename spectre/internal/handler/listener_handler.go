@@ -134,12 +134,6 @@ func (h *ListenerHandler) CreateOrUpdate(ctx context.Context, listener *spectrev
 		return errors.Wrap(err, "provider binding check failed")
 	}
 
-	// Step 5.7: Resolve full placement (EventConfig, EventStore, callback URL).
-	lp, err := util.ResolvePlacement(ctx, listeningZone, route)
-	if err != nil {
-		return errors.Wrap(err, "failed to resolve placement")
-	}
-
 	// Compute the canonical authorization intent and fingerprint.
 	// The observer is the SpectreApplication's own Application (A), which may
 	// differ from the consumer (C) when observing another team's traffic.
@@ -151,7 +145,13 @@ func (h *ListenerHandler) CreateOrUpdate(ctx context.Context, listener *spectrev
 	if err != nil {
 		return errors.Wrap(err, "failed to resolve observer zone")
 	}
-	_ = observerZone // reserved for future placement work
+
+	// Step 5.7: Resolve full placement (EventConfig, EventStore, callback URL).
+	// Delivery is always A's zone (observerZone), capture is from the C→P path.
+	lp, err := util.ResolvePlacement(ctx, listeningZone, observerZone, route)
+	if err != nil {
+		return errors.Wrap(err, "failed to resolve placement")
+	}
 	placement := PlacementIntent{
 		ApiExposureName:             binding.ApiExposureName,
 		ApiExposureNamespace:        binding.ApiExposureNamespace,
