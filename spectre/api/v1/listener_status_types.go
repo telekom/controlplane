@@ -82,4 +82,24 @@ type MigrationRetirementCheckpoint struct {
 	LastRetiredUID string `json:"lastRetiredUID,omitempty"`
 	// +optional
 	LastRetiredResourceVersion string `json:"lastRetiredResourceVersion,omitempty"`
+	// +optional
+	PendingDeletions []PendingDeletion `json:"pendingDeletions,omitempty"`
+}
+
+// PendingDeletion tracks per-resource deletion state so the controller can
+// survive a crash between issuing a delete and acknowledging the result.
+type PendingDeletion struct {
+	// +optional
+	Kind string `json:"kind,omitempty"`
+	// +optional
+	Name string `json:"name,omitempty"`
+	// +optional
+	Namespace string `json:"namespace,omitempty"`
+	// +optional
+	UID string `json:"uid,omitempty"`
+	// +optional
+	ResourceVersion string `json:"resourceVersion,omitempty"`
+	// +kubebuilder:validation:Enum=DeletePrepared;DeleteObserved
+	// +optional
+	Phase string `json:"phase,omitempty"`
 }

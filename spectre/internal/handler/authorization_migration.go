@@ -232,12 +232,27 @@ func (h *ListenerHandler) advanceMigration(
 		logger.Info("Scoped approvals granted, advancing to Draining")
 	}
 
-	// Step 4: Drain old capture (stub — Task 10 implements the full protocol).
+	// Step 4: Drain old capture via the shared drain protocol.
 	if migration.Phase == MigrationPhaseDraining {
-		// Stub: mark as draining and proceed immediately.
-		// Task 10 will implement: wait for fingerprint change, drain old registrations.
+		if listener.Status.Draining == nil {
+			oldFP := ""
+			if listener.Status.AppliedPlacement != nil {
+				oldFP = listener.Status.AppliedPlacement.Fingerprint
+			}
+			if err := h.startDrain(ctx, listener, "legacy migration", oldFP); err != nil {
+				return false, err
+			}
+			return false, nil // persist drain checkpoint
+		}
+		complete, err := h.continueDrain(ctx, listener)
+		if err != nil {
+			return false, err
+		}
+		if !complete {
+			return false, nil // drain still in progress
+		}
 		migration.Phase = MigrationPhaseRetiringRequests
-		logger.Info("Drain stub complete, advancing to RetiringRequests")
+		logger.Info("Drain complete, advancing to RetiringRequests")
 	}
 
 	// Step 5: Retire legacy resources conditionally.
@@ -377,7 +392,29 @@ func isLegacyBlocked(approval *approvalapi.Approval) (bool, string) {
 	}
 }
 
-// retireLegacyRequests deletes legacy ApprovalRequests with conditional checks.
+// PendingDeletion phase constants.
+const (
+	PendingDeletionPhasePrepared = "DeletePrepared"
+	PendingDeletionPhaseObserved = "DeleteObserved"
+)
+
+// findPendingDeletion returns the index of a PendingDeletion for the given
+// kind+name+namespace, or -1 if not found.
+func findPendingDeletion(pds []spectrev1.PendingDeletion, kind, name, ns string) int {
+	for i := range pds {
+		if pds[i].Kind == kind && pds[i].Name == name && pds[i].Namespace == ns {
+			return i
+		}
+	}
+	return -1
+}
+
+// retireLegacyRequests deletes legacy ApprovalRequests using per-resource
+// deletion checkpoints. Each request goes through:
+//  1. Fresh read + UID check -> record PendingDeletion(DeletePrepared) -> return
+//  2. Next reconcile: re-read, if UID/RV match -> delete
+//  3. Next reconcile: verify NotFound -> mark DeleteObserved
+//
 // Returns true when all legacy requests are retired.
 func (h *ListenerHandler) retireLegacyRequests(
 	ctx context.Context,
@@ -396,17 +433,36 @@ func (h *ListenerHandler) retireLegacyRequests(
 	}
 
 	c := cclient.ClientFromContextOrDie(ctx)
+	cp := migration.RetirementCheckpoint
 
-	// Retire each recorded legacy request.
 	for _, ref := range migration.LegacyRequests {
+		idx := findPendingDeletion(cp.PendingDeletions, "ApprovalRequest", ref.Name, ref.Namespace)
+
+		// Already observed as deleted.
+		if idx >= 0 && cp.PendingDeletions[idx].Phase == PendingDeletionPhaseObserved {
+			continue
+		}
+
 		ar := &approvalapi.ApprovalRequest{}
 		err := c.Get(ctx, k8stypes.NamespacedName{
 			Name:      ref.Name,
 			Namespace: ref.Namespace,
 		}, ar)
+
 		if err != nil {
 			if apierrors.IsNotFound(err) {
-				// Already gone.
+				if idx >= 0 && cp.PendingDeletions[idx].Phase == PendingDeletionPhasePrepared {
+					// Phase-aware recovery: we prepared deletion and the object
+					// is gone — the delete succeeded before we could persist the ack.
+					cp.PendingDeletions[idx].Phase = PendingDeletionPhaseObserved
+					logger.Info("Recovered deletion: ApprovalRequest gone after DeletePrepared", "name", ref.Name)
+					continue
+				}
+				if idx < 0 {
+					// No checkpoint recorded but object is missing — unexplained
+					// absence. Block rather than silently proceeding.
+					return false, fmt.Errorf("legacy ApprovalRequest %q missing without deletion checkpoint — unexplained absence", ref.Name)
+				}
 				continue
 			}
 			return false, errors.Wrapf(err, "fresh read of legacy ApprovalRequest %q", ref.Name)
@@ -418,22 +474,45 @@ func (h *ListenerHandler) retireLegacyRequests(
 				ref.Name, ref.UID, ar.UID)
 		}
 
-		// Record checkpoint before deletion.
-		migration.RetirementCheckpoint.LastRetiredUID = string(ar.UID)
-		migration.RetirementCheckpoint.LastRetiredResourceVersion = ar.ResourceVersion
-
-		if err := c.Delete(ctx, ar); err != nil && !apierrors.IsNotFound(err) {
-			return false, errors.Wrapf(err, "failed to delete legacy ApprovalRequest %q", ref.Name)
+		if idx < 0 {
+			// Step 1: Record PendingDeletion checkpoint before any destructive work.
+			cp.PendingDeletions = append(cp.PendingDeletions, spectrev1.PendingDeletion{
+				Kind:            "ApprovalRequest",
+				Name:            ref.Name,
+				Namespace:       ref.Namespace,
+				UID:             string(ar.UID),
+				ResourceVersion: ar.ResourceVersion,
+				Phase:           PendingDeletionPhasePrepared,
+			})
+			cp.LastRetiredUID = string(ar.UID)
+			cp.LastRetiredResourceVersion = ar.ResourceVersion
+			logger.Info("Recorded PendingDeletion for ApprovalRequest", "name", ref.Name)
+			return false, nil // persist checkpoint before deletion
 		}
-		logger.Info("Retired legacy ApprovalRequest", "name", ref.Name)
+
+		pd := &cp.PendingDeletions[idx]
+		if pd.Phase == PendingDeletionPhasePrepared {
+			// Step 2: UID/RV match confirmed — delete.
+			if pd.UID != string(ar.UID) {
+				// UID changed since checkpoint — re-evaluate.
+				pd.UID = string(ar.UID)
+				pd.ResourceVersion = ar.ResourceVersion
+				return false, nil // persist updated checkpoint
+			}
+			if err := c.Delete(ctx, ar); err != nil && !apierrors.IsNotFound(err) {
+				return false, errors.Wrapf(err, "failed to delete legacy ApprovalRequest %q", ref.Name)
+			}
+			pd.Phase = PendingDeletionPhaseObserved
+			logger.Info("Retired legacy ApprovalRequest", "name", ref.Name)
+		}
 	}
 
-	migration.RetirementCheckpoint.RequestsRetired = true
+	cp.RequestsRetired = true
 	return true, nil
 }
 
-// retireLegacyApproval deletes the legacy Approval with conditional checks.
-// Returns true when the legacy Approval is retired.
+// retireLegacyApproval deletes the legacy Approval using the per-resource
+// deletion checkpoint pattern. Returns true when the legacy Approval is retired.
 func (h *ListenerHandler) retireLegacyApproval(
 	ctx context.Context,
 	mctx *migrationContext,
@@ -458,6 +537,16 @@ func (h *ListenerHandler) retireLegacyApproval(
 
 	ref := migration.LegacyApproval
 	c := cclient.ClientFromContextOrDie(ctx)
+	cp := migration.RetirementCheckpoint
+
+	idx := findPendingDeletion(cp.PendingDeletions, "Approval", ref.Name, ref.Namespace)
+
+	// Already observed as deleted.
+	if idx >= 0 && cp.PendingDeletions[idx].Phase == PendingDeletionPhaseObserved {
+		cp.ApprovalRetired = true
+		return true, nil
+	}
+
 	approval := &approvalapi.Approval{}
 	err := c.Get(ctx, k8stypes.NamespacedName{
 		Name:      ref.Name,
@@ -465,8 +554,12 @@ func (h *ListenerHandler) retireLegacyApproval(
 	}, approval)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
-			// Already gone.
-			migration.RetirementCheckpoint.ApprovalRetired = true
+			if idx >= 0 && cp.PendingDeletions[idx].Phase == PendingDeletionPhasePrepared {
+				// Phase-aware recovery: prepared but gone — delete succeeded before ack.
+				cp.PendingDeletions[idx].Phase = PendingDeletionPhaseObserved
+				logger.Info("Recovered deletion: Approval gone after DeletePrepared", "name", ref.Name)
+			}
+			cp.ApprovalRetired = true
 			return true, nil
 		}
 		return false, errors.Wrapf(err, "fresh read of legacy Approval %q", ref.Name)
@@ -478,16 +571,38 @@ func (h *ListenerHandler) retireLegacyApproval(
 			ref.Name, ref.UID, approval.UID)
 	}
 
-	// Record checkpoint before deletion.
-	migration.RetirementCheckpoint.LastRetiredUID = string(approval.UID)
-	migration.RetirementCheckpoint.LastRetiredResourceVersion = approval.ResourceVersion
-
-	if err := c.Delete(ctx, approval); err != nil && !apierrors.IsNotFound(err) {
-		return false, errors.Wrapf(err, "failed to delete legacy Approval %q", ref.Name)
+	if idx < 0 {
+		// Step 1: Record PendingDeletion checkpoint before deletion.
+		cp.PendingDeletions = append(cp.PendingDeletions, spectrev1.PendingDeletion{
+			Kind:            "Approval",
+			Name:            ref.Name,
+			Namespace:       ref.Namespace,
+			UID:             string(approval.UID),
+			ResourceVersion: approval.ResourceVersion,
+			Phase:           PendingDeletionPhasePrepared,
+		})
+		cp.LastRetiredUID = string(approval.UID)
+		cp.LastRetiredResourceVersion = approval.ResourceVersion
+		logger.Info("Recorded PendingDeletion for Approval", "name", ref.Name)
+		return false, nil // persist checkpoint before deletion
 	}
 
-	logger.Info("Retired legacy Approval", "name", ref.Name)
-	migration.RetirementCheckpoint.ApprovalRetired = true
+	pd := &cp.PendingDeletions[idx]
+	if pd.Phase == PendingDeletionPhasePrepared {
+		// Step 2: UID match confirmed — delete.
+		if pd.UID != string(approval.UID) {
+			pd.UID = string(approval.UID)
+			pd.ResourceVersion = approval.ResourceVersion
+			return false, nil // persist updated checkpoint
+		}
+		if err := c.Delete(ctx, approval); err != nil && !apierrors.IsNotFound(err) {
+			return false, errors.Wrapf(err, "failed to delete legacy Approval %q", ref.Name)
+		}
+		pd.Phase = PendingDeletionPhaseObserved
+		logger.Info("Retired legacy Approval", "name", ref.Name)
+	}
+
+	cp.ApprovalRetired = true
 	return true, nil
 }
 
