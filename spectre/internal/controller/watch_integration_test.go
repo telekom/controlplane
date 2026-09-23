@@ -189,10 +189,11 @@ var _ = Describe("Watch-Driven Integration", Ordered, func() {
 		provApp.Status = applicationv1.ApplicationStatus{ClientId: watchProviderCID, Conditions: readyConditions()}
 		Expect(directClient.Status().Update(ctx, provApp)).To(Succeed())
 
-		// ApiExposure for provider binding verification.
+		// ApiExposure for provider binding verification — lives in the team
+		// namespace (same as the provider Application), not the zone namespace.
 		watchExposure := &apiv1.ApiExposure{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: watchProviderName + "--api-v1-watch", Namespace: watchZNs,
+				Name: watchProviderName + "--api-v1-watch", Namespace: watchNs,
 				Labels: map[string]string{
 					envLabelKey:                          watchEnv,
 					cconfig.BuildLabelKey("application"): watchProviderName,
@@ -684,7 +685,7 @@ var _ = Describe("Watch-Driven Integration", Ordered, func() {
 			By("Creating ApiExposure and Route — this should trigger the watch and unblock the Listener")
 			s3Exposure := &apiv1.ApiExposure{
 				ObjectMeta: metav1.ObjectMeta{
-					Name: watchProviderName + "--" + util.MakeRouteName(s3BasePath), Namespace: watchZNs,
+					Name: watchProviderName + "--" + util.MakeRouteName(s3BasePath), Namespace: watchNs,
 					Labels: map[string]string{
 						envLabelKey:                          watchEnv,
 						cconfig.BuildLabelKey("application"): watchProviderName,
