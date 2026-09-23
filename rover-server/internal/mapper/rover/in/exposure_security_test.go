@@ -14,6 +14,72 @@ import (
 )
 
 var _ = Describe("Exposure Security Mapper", func() {
+	for _, exposureType := range []string{"api", "ai"} {
+		Context(exposureType+" OAuth2 exposure", func() {
+			var mapSecurity func(api.Oauth2) *roverv1.Security
+
+			BeforeEach(func() {
+				mapSecurity = func(oauth2 api.Oauth2) *roverv1.Security {
+					security := api.Security{}
+					Expect(security.FromOauth2(oauth2)).To(Succeed())
+					if exposureType == "ai" {
+						return mapAiExposure(api.AiExposure{Security: security}).Security
+					}
+					return mapApiExposure(api.ApiExposure{Security: security}).Security
+				}
+			})
+
+			DescribeTable("maps ExternalIDP grant and token request settings",
+				func(grant, tokenRequest string, expectedGrant roverv1.GrantType, expectedRequest roverv1.TokenRequestMethod) {
+					security := mapSecurity(api.Oauth2{
+						TokenEndpoint: "https://test.com/token",
+						ClientId:      "client-id",
+						ClientSecret:  "client-secret",
+						GrantType:     api.GrantType(grant),
+						TokenRequest:  api.Oauth2TokenRequest(tokenRequest),
+					})
+
+					Expect(security).ToNot(BeNil())
+					Expect(security.M2M).ToNot(BeNil())
+					Expect(security.M2M.ExternalIDP).ToNot(BeNil())
+					idp := security.M2M.ExternalIDP
+					Expect(idp.GrantType).To(Equal(expectedGrant))
+					Expect(idp.TokenRequest).To(Equal(expectedRequest))
+					Expect(idp.TokenEndpoint).To(Equal("https://test.com/token"))
+					Expect(idp.Client).ToNot(BeNil())
+					Expect(idp.Client.ClientId).To(Equal("client-id"))
+					Expect(idp.Client.ClientSecret).To(Equal("client-secret"))
+				},
+				Entry("defaults both omitted fields", "", "", roverv1.GrantTypeClientCredentials, roverv1.TokenRequestClientSecretBasic),
+				Entry("defaults only the omitted grant", "", "body", roverv1.GrantTypeClientCredentials, roverv1.TokenRequestClientSecretPost),
+				Entry("defaults only the omitted token request", "PASSWORD", "", roverv1.GrantTypePassword, roverv1.TokenRequestClientSecretBasic),
+				Entry("preserves lowercase settings", "client_credentials", "header", roverv1.GrantTypeClientCredentials, roverv1.TokenRequestClientSecretBasic),
+				Entry("normalizes uppercase settings", "CLIENT_CREDENTIALS", "HEADER", roverv1.GrantTypeClientCredentials, roverv1.TokenRequestClientSecretBasic),
+				Entry("preserves password and body", "password", "body", roverv1.GrantTypePassword, roverv1.TokenRequestClientSecretPost),
+				Entry("normalizes refresh token and body", "REFRESH_TOKEN", "BODY", roverv1.GrantTypeRefreshToken, roverv1.TokenRequestClientSecretPost),
+				Entry("preserves lowercase refresh token", "refresh_token", "header", roverv1.GrantTypeRefreshToken, roverv1.TokenRequestClientSecretBasic),
+				Entry("normalizes the legacy basic alias", "PASSWORD", "BASIC", roverv1.GrantTypePassword, roverv1.TokenRequestClientSecretBasic),
+				Entry("preserves canonical basic method", "client_credentials", "client_secret_basic", roverv1.GrantTypeClientCredentials, roverv1.TokenRequestClientSecretBasic),
+				Entry("preserves canonical post method", "client_credentials", "client_secret_post", roverv1.GrantTypeClientCredentials, roverv1.TokenRequestClientSecretPost),
+				Entry("keeps an invalid grant for validation", "INVALID", "", roverv1.GrantType("invalid"), roverv1.TokenRequestClientSecretBasic),
+				Entry("keeps an invalid token request for validation", "", "INVALID", roverv1.GrantTypeClientCredentials, roverv1.TokenRequestMethod("INVALID")),
+				Entry("does not default whitespace", " ", " ", roverv1.GrantType(" "), roverv1.TokenRequestMethod(" ")),
+			)
+
+			It("keeps scopes-only security on the platform identity provider", func() {
+				security := mapSecurity(api.Oauth2{Scopes: []string{"read", "write"}})
+				Expect(security).ToNot(BeNil())
+				Expect(security.M2M).ToNot(BeNil())
+				Expect(security.M2M.ExternalIDP).To(BeNil())
+				Expect(security.M2M.Scopes).To(Equal([]string{"read", "write"}))
+			})
+
+			It("keeps empty OAuth2 security on the platform identity provider", func() {
+				Expect(mapSecurity(api.Oauth2{})).To(BeNil())
+			})
+		})
+	}
+
 	Context("mapExposureSecurity", func() {
 		It("must map BasicAuth security correctly", func() {
 			// Given
@@ -153,6 +219,7 @@ var _ = Describe("Exposure Security Mapper", func() {
 			Expect(output.Security.M2M.Claims).ToNot(BeNil())
 			Expect(output.Security.M2M.Claims.Aud.Value).To(Equal("my-audience"))
 			Expect(output.Security.M2M.Claims.Aud.ValueFrom).To(BeEmpty())
+			Expect(output.Security.M2M.ExternalIDP).To(BeNil())
 			snaps.MatchSnapshot(GinkgoT(), output.Security)
 		})
 
