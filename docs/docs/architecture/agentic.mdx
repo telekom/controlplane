@@ -48,9 +48,8 @@ When an **McpExposure** is reconciled, the Agentic operator provisions gateway R
 | **Proxy** route | For each zone with an approved cross-zone subscription | Subscriber's zone namespace, upstream = provider zone's AI Gateway |
 
 After approval, an `AgenticSubscription` publishes the path-specific AI Gateway
-URL and the subscriber zone's identity-provider issuer in its status. The
-Projector persists both values and exposes them as `gatewayURL` and `idpIssuer`
-on the GraphQL `AgenticSubscription` type.
+URL in its status. The Projector persists this value and exposes it as
+`gatewayURL` on the GraphQL `AgenticSubscription` type.
 
 ### Cross-Zone Meshing
 

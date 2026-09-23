@@ -470,11 +470,6 @@ func (_q *AgenticSubscriptionQuery) collectField(ctx context.Context, oneNode bo
 				selectedFields = append(selectedFields, agenticsubscription.FieldGatewayURL)
 				fieldSeen[agenticsubscription.FieldGatewayURL] = struct{}{}
 			}
-		case "idpIssuer":
-			if _, ok := fieldSeen[agenticsubscription.FieldIdpIssuer]; !ok {
-				selectedFields = append(selectedFields, agenticsubscription.FieldIdpIssuer)
-				fieldSeen[agenticsubscription.FieldIdpIssuer] = struct{}{}
-			}
 		case "security":
 			if _, ok := fieldSeen[agenticsubscription.FieldSecurity]; !ok {
 				selectedFields = append(selectedFields, agenticsubscription.FieldSecurity)

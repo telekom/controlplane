@@ -1500,23 +1500,6 @@ type AgenticSubscriptionWhereInput struct {
 	GatewayURLEqualFold    *string  `json:"gatewayURLEqualFold,omitempty"`
 	GatewayURLContainsFold *string  `json:"gatewayURLContainsFold,omitempty"`
 
-	// "idp_issuer" field predicates.
-	IdpIssuer             *string  `json:"idpIssuer,omitempty"`
-	IdpIssuerNEQ          *string  `json:"idpIssuerNEQ,omitempty"`
-	IdpIssuerIn           []string `json:"idpIssuerIn,omitempty"`
-	IdpIssuerNotIn        []string `json:"idpIssuerNotIn,omitempty"`
-	IdpIssuerGT           *string  `json:"idpIssuerGT,omitempty"`
-	IdpIssuerGTE          *string  `json:"idpIssuerGTE,omitempty"`
-	IdpIssuerLT           *string  `json:"idpIssuerLT,omitempty"`
-	IdpIssuerLTE          *string  `json:"idpIssuerLTE,omitempty"`
-	IdpIssuerContains     *string  `json:"idpIssuerContains,omitempty"`
-	IdpIssuerHasPrefix    *string  `json:"idpIssuerHasPrefix,omitempty"`
-	IdpIssuerHasSuffix    *string  `json:"idpIssuerHasSuffix,omitempty"`
-	IdpIssuerIsNil        bool     `json:"idpIssuerIsNil,omitempty"`
-	IdpIssuerNotNil       bool     `json:"idpIssuerNotNil,omitempty"`
-	IdpIssuerEqualFold    *string  `json:"idpIssuerEqualFold,omitempty"`
-	IdpIssuerContainsFold *string  `json:"idpIssuerContainsFold,omitempty"`
-
 	// "owner" edge predicates.
 	HasOwner     *bool                    `json:"hasOwner,omitempty"`
 	HasOwnerWith []*ApplicationWhereInput `json:"hasOwnerWith,omitempty"`
@@ -1946,51 +1929,6 @@ func (i *AgenticSubscriptionWhereInput) P() (predicate.AgenticSubscription, erro
 	}
 	if i.GatewayURLContainsFold != nil {
 		predicates = append(predicates, agenticsubscription.GatewayURLContainsFold(*i.GatewayURLContainsFold))
-	}
-	if i.IdpIssuer != nil {
-		predicates = append(predicates, agenticsubscription.IdpIssuerEQ(*i.IdpIssuer))
-	}
-	if i.IdpIssuerNEQ != nil {
-		predicates = append(predicates, agenticsubscription.IdpIssuerNEQ(*i.IdpIssuerNEQ))
-	}
-	if len(i.IdpIssuerIn) > 0 {
-		predicates = append(predicates, agenticsubscription.IdpIssuerIn(i.IdpIssuerIn...))
-	}
-	if len(i.IdpIssuerNotIn) > 0 {
-		predicates = append(predicates, agenticsubscription.IdpIssuerNotIn(i.IdpIssuerNotIn...))
-	}
-	if i.IdpIssuerGT != nil {
-		predicates = append(predicates, agenticsubscription.IdpIssuerGT(*i.IdpIssuerGT))
-	}
-	if i.IdpIssuerGTE != nil {
-		predicates = append(predicates, agenticsubscription.IdpIssuerGTE(*i.IdpIssuerGTE))
-	}
-	if i.IdpIssuerLT != nil {
-		predicates = append(predicates, agenticsubscription.IdpIssuerLT(*i.IdpIssuerLT))
-	}
-	if i.IdpIssuerLTE != nil {
-		predicates = append(predicates, agenticsubscription.IdpIssuerLTE(*i.IdpIssuerLTE))
-	}
-	if i.IdpIssuerContains != nil {
-		predicates = append(predicates, agenticsubscription.IdpIssuerContains(*i.IdpIssuerContains))
-	}
-	if i.IdpIssuerHasPrefix != nil {
-		predicates = append(predicates, agenticsubscription.IdpIssuerHasPrefix(*i.IdpIssuerHasPrefix))
-	}
-	if i.IdpIssuerHasSuffix != nil {
-		predicates = append(predicates, agenticsubscription.IdpIssuerHasSuffix(*i.IdpIssuerHasSuffix))
-	}
-	if i.IdpIssuerIsNil {
-		predicates = append(predicates, agenticsubscription.IdpIssuerIsNil())
-	}
-	if i.IdpIssuerNotNil {
-		predicates = append(predicates, agenticsubscription.IdpIssuerNotNil())
-	}
-	if i.IdpIssuerEqualFold != nil {
-		predicates = append(predicates, agenticsubscription.IdpIssuerEqualFold(*i.IdpIssuerEqualFold))
-	}
-	if i.IdpIssuerContainsFold != nil {
-		predicates = append(predicates, agenticsubscription.IdpIssuerContainsFold(*i.IdpIssuerContainsFold))
 	}
 
 	if i.HasOwner != nil {

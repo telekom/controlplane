@@ -177,7 +177,6 @@ type ComplexityRoot struct {
 		Environment      func(childComplexity int) int
 		GatewayURL       func(childComplexity int) int
 		ID               func(childComplexity int) int
-		IdpIssuer        func(childComplexity int) int
 		LastModifiedAt   func(childComplexity int) int
 		Name             func(childComplexity int) int
 		Namespace        func(childComplexity int) int
@@ -1428,12 +1427,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.AgenticSubscription.ID(childComplexity), true
-	case "AgenticSubscription.idpIssuer":
-		if e.ComplexityRoot.AgenticSubscription.IdpIssuer == nil {
-			break
-		}
-
-		return e.ComplexityRoot.AgenticSubscription.IdpIssuer(childComplexity), true
 	case "AgenticSubscription.lastModifiedAt":
 		if e.ComplexityRoot.AgenticSubscription.LastModifiedAt == nil {
 			break
@@ -5425,7 +5418,6 @@ type AgenticSubscription implements Node {
   name: String!
   basePath: String!
   gatewayURL: String
-  idpIssuer: String
   security: AgenticSubscriptionSecurity
   traffic: AgenticSubscriberTraffic
   owner: Application!
@@ -5643,24 +5635,6 @@ input AgenticSubscriptionWhereInput {
   gatewayURLNotNil: Boolean
   gatewayURLEqualFold: String
   gatewayURLContainsFold: String
-  """
-  idp_issuer field predicates
-  """
-  idpIssuer: String
-  idpIssuerNEQ: String
-  idpIssuerIn: [String!]
-  idpIssuerNotIn: [String!]
-  idpIssuerGT: String
-  idpIssuerGTE: String
-  idpIssuerLT: String
-  idpIssuerLTE: String
-  idpIssuerContains: String
-  idpIssuerHasPrefix: String
-  idpIssuerHasSuffix: String
-  idpIssuerIsNil: Boolean
-  idpIssuerNotNil: Boolean
-  idpIssuerEqualFold: String
-  idpIssuerContainsFold: String
   """
   owner edge predicates
   """
@@ -11021,8 +10995,6 @@ func (ec *executionContext) childFields_AgenticSubscription(ctx context.Context,
 		return ec.fieldContext_AgenticSubscription_basePath(ctx, field)
 	case "gatewayURL":
 		return ec.fieldContext_AgenticSubscription_gatewayURL(ctx, field)
-	case "idpIssuer":
-		return ec.fieldContext_AgenticSubscription_idpIssuer(ctx, field)
 	case "security":
 		return ec.fieldContext_AgenticSubscription_security(ctx, field)
 	case "traffic":

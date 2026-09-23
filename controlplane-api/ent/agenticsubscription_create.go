@@ -132,20 +132,6 @@ func (_c *AgenticSubscriptionCreate) SetNillableGatewayURL(v *string) *AgenticSu
 	return _c
 }
 
-// SetIdpIssuer sets the "idp_issuer" field.
-func (_c *AgenticSubscriptionCreate) SetIdpIssuer(v string) *AgenticSubscriptionCreate {
-	_c.mutation.SetIdpIssuer(v)
-	return _c
-}
-
-// SetNillableIdpIssuer sets the "idp_issuer" field if the given value is not nil.
-func (_c *AgenticSubscriptionCreate) SetNillableIdpIssuer(v *string) *AgenticSubscriptionCreate {
-	if v != nil {
-		_c.SetIdpIssuer(*v)
-	}
-	return _c
-}
-
 // SetSecurity sets the "security" field.
 func (_c *AgenticSubscriptionCreate) SetSecurity(v model.AgenticSubscriptionSecurity) *AgenticSubscriptionCreate {
 	_c.mutation.SetSecurity(v)
@@ -395,10 +381,6 @@ func (_c *AgenticSubscriptionCreate) createSpec() (*AgenticSubscription, *sqlgra
 		_spec.SetField(agenticsubscription.FieldGatewayURL, field.TypeString, value)
 		_node.GatewayURL = &value
 	}
-	if value, ok := _c.mutation.IdpIssuer(); ok {
-		_spec.SetField(agenticsubscription.FieldIdpIssuer, field.TypeString, value)
-		_node.IdpIssuer = &value
-	}
 	if value, ok := _c.mutation.Security(); ok {
 		_spec.SetField(agenticsubscription.FieldSecurity, field.TypeJSON, value)
 		_node.Security = value
@@ -645,24 +627,6 @@ func (u *AgenticSubscriptionUpsert) ClearGatewayURL() *AgenticSubscriptionUpsert
 	return u
 }
 
-// SetIdpIssuer sets the "idp_issuer" field.
-func (u *AgenticSubscriptionUpsert) SetIdpIssuer(v string) *AgenticSubscriptionUpsert {
-	u.Set(agenticsubscription.FieldIdpIssuer, v)
-	return u
-}
-
-// UpdateIdpIssuer sets the "idp_issuer" field to the value that was provided on create.
-func (u *AgenticSubscriptionUpsert) UpdateIdpIssuer() *AgenticSubscriptionUpsert {
-	u.SetExcluded(agenticsubscription.FieldIdpIssuer)
-	return u
-}
-
-// ClearIdpIssuer clears the value of the "idp_issuer" field.
-func (u *AgenticSubscriptionUpsert) ClearIdpIssuer() *AgenticSubscriptionUpsert {
-	u.SetNull(agenticsubscription.FieldIdpIssuer)
-	return u
-}
-
 // SetSecurity sets the "security" field.
 func (u *AgenticSubscriptionUpsert) SetSecurity(v model.AgenticSubscriptionSecurity) *AgenticSubscriptionUpsert {
 	u.Set(agenticsubscription.FieldSecurity, v)
@@ -881,27 +845,6 @@ func (u *AgenticSubscriptionUpsertOne) UpdateGatewayURL() *AgenticSubscriptionUp
 func (u *AgenticSubscriptionUpsertOne) ClearGatewayURL() *AgenticSubscriptionUpsertOne {
 	return u.Update(func(s *AgenticSubscriptionUpsert) {
 		s.ClearGatewayURL()
-	})
-}
-
-// SetIdpIssuer sets the "idp_issuer" field.
-func (u *AgenticSubscriptionUpsertOne) SetIdpIssuer(v string) *AgenticSubscriptionUpsertOne {
-	return u.Update(func(s *AgenticSubscriptionUpsert) {
-		s.SetIdpIssuer(v)
-	})
-}
-
-// UpdateIdpIssuer sets the "idp_issuer" field to the value that was provided on create.
-func (u *AgenticSubscriptionUpsertOne) UpdateIdpIssuer() *AgenticSubscriptionUpsertOne {
-	return u.Update(func(s *AgenticSubscriptionUpsert) {
-		s.UpdateIdpIssuer()
-	})
-}
-
-// ClearIdpIssuer clears the value of the "idp_issuer" field.
-func (u *AgenticSubscriptionUpsertOne) ClearIdpIssuer() *AgenticSubscriptionUpsertOne {
-	return u.Update(func(s *AgenticSubscriptionUpsert) {
-		s.ClearIdpIssuer()
 	})
 }
 
@@ -1295,27 +1238,6 @@ func (u *AgenticSubscriptionUpsertBulk) UpdateGatewayURL() *AgenticSubscriptionU
 func (u *AgenticSubscriptionUpsertBulk) ClearGatewayURL() *AgenticSubscriptionUpsertBulk {
 	return u.Update(func(s *AgenticSubscriptionUpsert) {
 		s.ClearGatewayURL()
-	})
-}
-
-// SetIdpIssuer sets the "idp_issuer" field.
-func (u *AgenticSubscriptionUpsertBulk) SetIdpIssuer(v string) *AgenticSubscriptionUpsertBulk {
-	return u.Update(func(s *AgenticSubscriptionUpsert) {
-		s.SetIdpIssuer(v)
-	})
-}
-
-// UpdateIdpIssuer sets the "idp_issuer" field to the value that was provided on create.
-func (u *AgenticSubscriptionUpsertBulk) UpdateIdpIssuer() *AgenticSubscriptionUpsertBulk {
-	return u.Update(func(s *AgenticSubscriptionUpsert) {
-		s.UpdateIdpIssuer()
-	})
-}
-
-// ClearIdpIssuer clears the value of the "idp_issuer" field.
-func (u *AgenticSubscriptionUpsertBulk) ClearIdpIssuer() *AgenticSubscriptionUpsertBulk {
-	return u.Update(func(s *AgenticSubscriptionUpsert) {
-		s.ClearIdpIssuer()
 	})
 }
 

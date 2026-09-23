@@ -164,26 +164,6 @@ func (_u *AgenticSubscriptionUpdate) ClearGatewayURL() *AgenticSubscriptionUpdat
 	return _u
 }
 
-// SetIdpIssuer sets the "idp_issuer" field.
-func (_u *AgenticSubscriptionUpdate) SetIdpIssuer(v string) *AgenticSubscriptionUpdate {
-	_u.mutation.SetIdpIssuer(v)
-	return _u
-}
-
-// SetNillableIdpIssuer sets the "idp_issuer" field if the given value is not nil.
-func (_u *AgenticSubscriptionUpdate) SetNillableIdpIssuer(v *string) *AgenticSubscriptionUpdate {
-	if v != nil {
-		_u.SetIdpIssuer(*v)
-	}
-	return _u
-}
-
-// ClearIdpIssuer clears the value of the "idp_issuer" field.
-func (_u *AgenticSubscriptionUpdate) ClearIdpIssuer() *AgenticSubscriptionUpdate {
-	_u.mutation.ClearIdpIssuer()
-	return _u
-}
-
 // SetSecurity sets the "security" field.
 func (_u *AgenticSubscriptionUpdate) SetSecurity(v model.AgenticSubscriptionSecurity) *AgenticSubscriptionUpdate {
 	_u.mutation.SetSecurity(v)
@@ -449,12 +429,6 @@ func (_u *AgenticSubscriptionUpdate) sqlSave(ctx context.Context) (_node int, er
 	}
 	if _u.mutation.GatewayURLCleared() {
 		_spec.ClearField(agenticsubscription.FieldGatewayURL, field.TypeString)
-	}
-	if value, ok := _u.mutation.IdpIssuer(); ok {
-		_spec.SetField(agenticsubscription.FieldIdpIssuer, field.TypeString, value)
-	}
-	if _u.mutation.IdpIssuerCleared() {
-		_spec.ClearField(agenticsubscription.FieldIdpIssuer, field.TypeString)
 	}
 	if value, ok := _u.mutation.Security(); ok {
 		_spec.SetField(agenticsubscription.FieldSecurity, field.TypeJSON, value)
@@ -745,26 +719,6 @@ func (_u *AgenticSubscriptionUpdateOne) SetNillableGatewayURL(v *string) *Agenti
 // ClearGatewayURL clears the value of the "gateway_url" field.
 func (_u *AgenticSubscriptionUpdateOne) ClearGatewayURL() *AgenticSubscriptionUpdateOne {
 	_u.mutation.ClearGatewayURL()
-	return _u
-}
-
-// SetIdpIssuer sets the "idp_issuer" field.
-func (_u *AgenticSubscriptionUpdateOne) SetIdpIssuer(v string) *AgenticSubscriptionUpdateOne {
-	_u.mutation.SetIdpIssuer(v)
-	return _u
-}
-
-// SetNillableIdpIssuer sets the "idp_issuer" field if the given value is not nil.
-func (_u *AgenticSubscriptionUpdateOne) SetNillableIdpIssuer(v *string) *AgenticSubscriptionUpdateOne {
-	if v != nil {
-		_u.SetIdpIssuer(*v)
-	}
-	return _u
-}
-
-// ClearIdpIssuer clears the value of the "idp_issuer" field.
-func (_u *AgenticSubscriptionUpdateOne) ClearIdpIssuer() *AgenticSubscriptionUpdateOne {
-	_u.mutation.ClearIdpIssuer()
 	return _u
 }
 
@@ -1063,12 +1017,6 @@ func (_u *AgenticSubscriptionUpdateOne) sqlSave(ctx context.Context) (_node *Age
 	}
 	if _u.mutation.GatewayURLCleared() {
 		_spec.ClearField(agenticsubscription.FieldGatewayURL, field.TypeString)
-	}
-	if value, ok := _u.mutation.IdpIssuer(); ok {
-		_spec.SetField(agenticsubscription.FieldIdpIssuer, field.TypeString, value)
-	}
-	if _u.mutation.IdpIssuerCleared() {
-		_spec.ClearField(agenticsubscription.FieldIdpIssuer, field.TypeString)
 	}
 	if value, ok := _u.mutation.Security(); ok {
 		_spec.SetField(agenticsubscription.FieldSecurity, field.TypeJSON, value)

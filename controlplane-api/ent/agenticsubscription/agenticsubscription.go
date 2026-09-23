@@ -39,8 +39,6 @@ const (
 	FieldBasePath = "base_path"
 	// FieldGatewayURL holds the string denoting the gateway_url field in the database.
 	FieldGatewayURL = "gateway_url"
-	// FieldIdpIssuer holds the string denoting the idp_issuer field in the database.
-	FieldIdpIssuer = "idp_issuer"
 	// FieldSecurity holds the string denoting the security field in the database.
 	FieldSecurity = "security"
 	// FieldTraffic holds the string denoting the traffic field in the database.
@@ -97,7 +95,6 @@ var Columns = []string{
 	FieldName,
 	FieldBasePath,
 	FieldGatewayURL,
-	FieldIdpIssuer,
 	FieldSecurity,
 	FieldTraffic,
 }
@@ -222,11 +219,6 @@ func ByBasePath(opts ...sql.OrderTermOption) OrderOption {
 // ByGatewayURL orders the results by the gateway_url field.
 func ByGatewayURL(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldGatewayURL, opts...).ToFunc()
-}
-
-// ByIdpIssuer orders the results by the idp_issuer field.
-func ByIdpIssuer(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldIdpIssuer, opts...).ToFunc()
 }
 
 // ByOwnerField orders the results by owner field.

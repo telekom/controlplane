@@ -62,10 +62,6 @@ type AgenticSubscriptionStatus struct {
 	// +optional
 	ApprovalRequest *ctypes.ObjectRef `json:"approvalRequest,omitempty"`
 
-	// IdpIssuer is the full realm-specific OpenID Connect issuer URL used for authentication and endpoint discovery.
-	// +optional
-	IdpIssuer string `json:"idpIssuer,omitempty"`
-
 	// GatewayUrl is the AI Gateway URL used for the subscription.
 	// +optional
 	GatewayUrl string `json:"gatewayUrl,omitempty"`

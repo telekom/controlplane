@@ -98,11 +98,6 @@ func GatewayURL(v string) predicate.AgenticSubscription {
 	return predicate.AgenticSubscription(sql.FieldEQ(FieldGatewayURL, v))
 }
 
-// IdpIssuer applies equality check predicate on the "idp_issuer" field. It's identical to IdpIssuerEQ.
-func IdpIssuer(v string) predicate.AgenticSubscription {
-	return predicate.AgenticSubscription(sql.FieldEQ(FieldIdpIssuer, v))
-}
-
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
 func CreatedAtEQ(v time.Time) predicate.AgenticSubscription {
 	return predicate.AgenticSubscription(sql.FieldEQ(FieldCreatedAt, v))
@@ -631,81 +626,6 @@ func GatewayURLEqualFold(v string) predicate.AgenticSubscription {
 // GatewayURLContainsFold applies the ContainsFold predicate on the "gateway_url" field.
 func GatewayURLContainsFold(v string) predicate.AgenticSubscription {
 	return predicate.AgenticSubscription(sql.FieldContainsFold(FieldGatewayURL, v))
-}
-
-// IdpIssuerEQ applies the EQ predicate on the "idp_issuer" field.
-func IdpIssuerEQ(v string) predicate.AgenticSubscription {
-	return predicate.AgenticSubscription(sql.FieldEQ(FieldIdpIssuer, v))
-}
-
-// IdpIssuerNEQ applies the NEQ predicate on the "idp_issuer" field.
-func IdpIssuerNEQ(v string) predicate.AgenticSubscription {
-	return predicate.AgenticSubscription(sql.FieldNEQ(FieldIdpIssuer, v))
-}
-
-// IdpIssuerIn applies the In predicate on the "idp_issuer" field.
-func IdpIssuerIn(vs ...string) predicate.AgenticSubscription {
-	return predicate.AgenticSubscription(sql.FieldIn(FieldIdpIssuer, vs...))
-}
-
-// IdpIssuerNotIn applies the NotIn predicate on the "idp_issuer" field.
-func IdpIssuerNotIn(vs ...string) predicate.AgenticSubscription {
-	return predicate.AgenticSubscription(sql.FieldNotIn(FieldIdpIssuer, vs...))
-}
-
-// IdpIssuerGT applies the GT predicate on the "idp_issuer" field.
-func IdpIssuerGT(v string) predicate.AgenticSubscription {
-	return predicate.AgenticSubscription(sql.FieldGT(FieldIdpIssuer, v))
-}
-
-// IdpIssuerGTE applies the GTE predicate on the "idp_issuer" field.
-func IdpIssuerGTE(v string) predicate.AgenticSubscription {
-	return predicate.AgenticSubscription(sql.FieldGTE(FieldIdpIssuer, v))
-}
-
-// IdpIssuerLT applies the LT predicate on the "idp_issuer" field.
-func IdpIssuerLT(v string) predicate.AgenticSubscription {
-	return predicate.AgenticSubscription(sql.FieldLT(FieldIdpIssuer, v))
-}
-
-// IdpIssuerLTE applies the LTE predicate on the "idp_issuer" field.
-func IdpIssuerLTE(v string) predicate.AgenticSubscription {
-	return predicate.AgenticSubscription(sql.FieldLTE(FieldIdpIssuer, v))
-}
-
-// IdpIssuerContains applies the Contains predicate on the "idp_issuer" field.
-func IdpIssuerContains(v string) predicate.AgenticSubscription {
-	return predicate.AgenticSubscription(sql.FieldContains(FieldIdpIssuer, v))
-}
-
-// IdpIssuerHasPrefix applies the HasPrefix predicate on the "idp_issuer" field.
-func IdpIssuerHasPrefix(v string) predicate.AgenticSubscription {
-	return predicate.AgenticSubscription(sql.FieldHasPrefix(FieldIdpIssuer, v))
-}
-
-// IdpIssuerHasSuffix applies the HasSuffix predicate on the "idp_issuer" field.
-func IdpIssuerHasSuffix(v string) predicate.AgenticSubscription {
-	return predicate.AgenticSubscription(sql.FieldHasSuffix(FieldIdpIssuer, v))
-}
-
-// IdpIssuerIsNil applies the IsNil predicate on the "idp_issuer" field.
-func IdpIssuerIsNil() predicate.AgenticSubscription {
-	return predicate.AgenticSubscription(sql.FieldIsNull(FieldIdpIssuer))
-}
-
-// IdpIssuerNotNil applies the NotNil predicate on the "idp_issuer" field.
-func IdpIssuerNotNil() predicate.AgenticSubscription {
-	return predicate.AgenticSubscription(sql.FieldNotNull(FieldIdpIssuer))
-}
-
-// IdpIssuerEqualFold applies the EqualFold predicate on the "idp_issuer" field.
-func IdpIssuerEqualFold(v string) predicate.AgenticSubscription {
-	return predicate.AgenticSubscription(sql.FieldEqualFold(FieldIdpIssuer, v))
-}
-
-// IdpIssuerContainsFold applies the ContainsFold predicate on the "idp_issuer" field.
-func IdpIssuerContainsFold(v string) predicate.AgenticSubscription {
-	return predicate.AgenticSubscription(sql.FieldContainsFold(FieldIdpIssuer, v))
 }
 
 // SecurityIsNil applies the IsNil predicate on the "security" field.

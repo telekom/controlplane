@@ -214,7 +214,6 @@ func (h *AgenticSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *ag
 	if err != nil {
 		return errors.Wrapf(err, "failed to construct AI Gateway URL for zone %s", subscriberZone.Name)
 	}
-	obj.Status.IdpIssuer = subscriberZone.Status.Links.Issuer
 
 	consumeRoute, err := h.createConsumeRoute(ctx, obj, *routeRef, requestorApp)
 	if err != nil {

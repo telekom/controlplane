@@ -35,7 +35,6 @@ type AgenticSubscriptionData struct {
 	StatusMessage  string
 	BasePath       string
 	GatewayUrl     string
-	IdpIssuer      string
 	Security       *model.AgenticSubscriptionSecurity
 	Traffic        *model.AgenticSubscriberTraffic
 	OwnerAppName   string // resolved to owner Application FK (required)

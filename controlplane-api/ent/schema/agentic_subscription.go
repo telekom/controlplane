@@ -40,9 +40,6 @@ func (AgenticSubscription) Fields() []ent.Field {
 		field.Text("gateway_url").
 			Optional().
 			Nillable(),
-		field.Text("idp_issuer").
-			Optional().
-			Nillable(),
 		field.JSON("security", model.AgenticSubscriptionSecurity{}).
 			Optional().
 			Annotations(entgql.Skip(entgql.SkipWhereInput)),

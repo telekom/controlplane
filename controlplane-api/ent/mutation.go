@@ -2844,7 +2844,6 @@ type AgenticSubscriptionMutation struct {
 	name                     *string
 	base_path                *string
 	gateway_url              *string
-	idp_issuer               *string
 	security                 *model.AgenticSubscriptionSecurity
 	traffic                  *model.AgenticSubscriberTraffic
 	clearedFields            map[string]struct{}
@@ -3336,55 +3335,6 @@ func (m *AgenticSubscriptionMutation) ResetGatewayURL() {
 	delete(m.clearedFields, agenticsubscription.FieldGatewayURL)
 }
 
-// SetIdpIssuer sets the "idp_issuer" field.
-func (m *AgenticSubscriptionMutation) SetIdpIssuer(s string) {
-	m.idp_issuer = &s
-}
-
-// IdpIssuer returns the value of the "idp_issuer" field in the mutation.
-func (m *AgenticSubscriptionMutation) IdpIssuer() (r string, exists bool) {
-	v := m.idp_issuer
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldIdpIssuer returns the old "idp_issuer" field's value of the AgenticSubscription entity.
-// If the AgenticSubscription object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *AgenticSubscriptionMutation) OldIdpIssuer(ctx context.Context) (v *string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldIdpIssuer is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldIdpIssuer requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldIdpIssuer: %w", err)
-	}
-	return oldValue.IdpIssuer, nil
-}
-
-// ClearIdpIssuer clears the value of the "idp_issuer" field.
-func (m *AgenticSubscriptionMutation) ClearIdpIssuer() {
-	m.idp_issuer = nil
-	m.clearedFields[agenticsubscription.FieldIdpIssuer] = struct{}{}
-}
-
-// IdpIssuerCleared returns if the "idp_issuer" field was cleared in this mutation.
-func (m *AgenticSubscriptionMutation) IdpIssuerCleared() bool {
-	_, ok := m.clearedFields[agenticsubscription.FieldIdpIssuer]
-	return ok
-}
-
-// ResetIdpIssuer resets all changes to the "idp_issuer" field.
-func (m *AgenticSubscriptionMutation) ResetIdpIssuer() {
-	m.idp_issuer = nil
-	delete(m.clearedFields, agenticsubscription.FieldIdpIssuer)
-}
-
 // SetSecurity sets the "security" field.
 func (m *AgenticSubscriptionMutation) SetSecurity(mss model.AgenticSubscriptionSecurity) {
 	m.security = &mss
@@ -3688,7 +3638,7 @@ func (m *AgenticSubscriptionMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *AgenticSubscriptionMutation) Fields() []string {
-	fields := make([]string, 0, 12)
+	fields := make([]string, 0, 11)
 	if m.created_at != nil {
 		fields = append(fields, agenticsubscription.FieldCreatedAt)
 	}
@@ -3715,9 +3665,6 @@ func (m *AgenticSubscriptionMutation) Fields() []string {
 	}
 	if m.gateway_url != nil {
 		fields = append(fields, agenticsubscription.FieldGatewayURL)
-	}
-	if m.idp_issuer != nil {
-		fields = append(fields, agenticsubscription.FieldIdpIssuer)
 	}
 	if m.security != nil {
 		fields = append(fields, agenticsubscription.FieldSecurity)
@@ -3751,8 +3698,6 @@ func (m *AgenticSubscriptionMutation) Field(name string) (ent.Value, bool) {
 		return m.BasePath()
 	case agenticsubscription.FieldGatewayURL:
 		return m.GatewayURL()
-	case agenticsubscription.FieldIdpIssuer:
-		return m.IdpIssuer()
 	case agenticsubscription.FieldSecurity:
 		return m.Security()
 	case agenticsubscription.FieldTraffic:
@@ -3784,8 +3729,6 @@ func (m *AgenticSubscriptionMutation) OldField(ctx context.Context, name string)
 		return m.OldBasePath(ctx)
 	case agenticsubscription.FieldGatewayURL:
 		return m.OldGatewayURL(ctx)
-	case agenticsubscription.FieldIdpIssuer:
-		return m.OldIdpIssuer(ctx)
 	case agenticsubscription.FieldSecurity:
 		return m.OldSecurity(ctx)
 	case agenticsubscription.FieldTraffic:
@@ -3862,13 +3805,6 @@ func (m *AgenticSubscriptionMutation) SetField(name string, value ent.Value) err
 		}
 		m.SetGatewayURL(v)
 		return nil
-	case agenticsubscription.FieldIdpIssuer:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetIdpIssuer(v)
-		return nil
 	case agenticsubscription.FieldSecurity:
 		v, ok := value.(model.AgenticSubscriptionSecurity)
 		if !ok {
@@ -3925,9 +3861,6 @@ func (m *AgenticSubscriptionMutation) ClearedFields() []string {
 	if m.FieldCleared(agenticsubscription.FieldGatewayURL) {
 		fields = append(fields, agenticsubscription.FieldGatewayURL)
 	}
-	if m.FieldCleared(agenticsubscription.FieldIdpIssuer) {
-		fields = append(fields, agenticsubscription.FieldIdpIssuer)
-	}
 	if m.FieldCleared(agenticsubscription.FieldSecurity) {
 		fields = append(fields, agenticsubscription.FieldSecurity)
 	}
@@ -3959,9 +3892,6 @@ func (m *AgenticSubscriptionMutation) ClearField(name string) error {
 		return nil
 	case agenticsubscription.FieldGatewayURL:
 		m.ClearGatewayURL()
-		return nil
-	case agenticsubscription.FieldIdpIssuer:
-		m.ClearIdpIssuer()
 		return nil
 	case agenticsubscription.FieldSecurity:
 		m.ClearSecurity()
@@ -4003,9 +3933,6 @@ func (m *AgenticSubscriptionMutation) ResetField(name string) error {
 		return nil
 	case agenticsubscription.FieldGatewayURL:
 		m.ResetGatewayURL()
-		return nil
-	case agenticsubscription.FieldIdpIssuer:
-		m.ResetIdpIssuer()
 		return nil
 	case agenticsubscription.FieldSecurity:
 		m.ResetSecurity()

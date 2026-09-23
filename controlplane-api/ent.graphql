@@ -546,7 +546,6 @@ type AgenticSubscription implements Node {
   name: String!
   basePath: String!
   gatewayURL: String
-  idpIssuer: String
   security: AgenticSubscriptionSecurity
   traffic: AgenticSubscriberTraffic
   owner: Application!
@@ -764,24 +763,6 @@ input AgenticSubscriptionWhereInput {
   gatewayURLNotNil: Boolean
   gatewayURLEqualFold: String
   gatewayURLContainsFold: String
-  """
-  idp_issuer field predicates
-  """
-  idpIssuer: String
-  idpIssuerNEQ: String
-  idpIssuerIn: [String!]
-  idpIssuerNotIn: [String!]
-  idpIssuerGT: String
-  idpIssuerGTE: String
-  idpIssuerLT: String
-  idpIssuerLTE: String
-  idpIssuerContains: String
-  idpIssuerHasPrefix: String
-  idpIssuerHasSuffix: String
-  idpIssuerIsNil: Boolean
-  idpIssuerNotNil: Boolean
-  idpIssuerEqualFold: String
-  idpIssuerContainsFold: String
   """
   owner edge predicates
   """

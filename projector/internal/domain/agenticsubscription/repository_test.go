@@ -144,7 +144,6 @@ var _ = Describe("AgenticSubscription Repository", func() {
 			StatusMessage: "subscription active",
 			BasePath:      "/mcp/v1/tools",
 			GatewayUrl:    "https://ai-gateway.example.com/mcp/v1/tools",
-			IdpIssuer:     "https://issuer.example.com",
 			Security: &model.AgenticSubscriptionSecurity{
 				M2M: &model.SubscriberMachine2MachineAuthentication{
 					Client: &model.OAuth2ClientCredentials{
@@ -181,7 +180,6 @@ var _ = Describe("AgenticSubscription Repository", func() {
 			Expect(sub.StatusPhase.String()).To(Equal("READY"))
 			Expect(*sub.StatusMessage).To(Equal("subscription active"))
 			Expect(sub.GatewayURL).To(HaveValue(Equal("https://ai-gateway.example.com/mcp/v1/tools")))
-			Expect(sub.IdpIssuer).To(HaveValue(Equal("https://issuer.example.com")))
 			Expect(sub.Security.M2M).NotTo(BeNil())
 			Expect(sub.Security.M2M.Client).NotTo(BeNil())
 			Expect(sub.Security.M2M.Client.ClientId).To(Equal("my-client-id"))

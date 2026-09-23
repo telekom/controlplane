@@ -62,7 +62,6 @@ var _ = Describe("AgenticSubscription Translator", func() {
 				},
 				Status: agenticv1.AgenticSubscriptionStatus{
 					GatewayUrl: "https://ai-gateway.example.com/mcp/v1/tools",
-					IdpIssuer:  "https://issuer.example.com",
 					Conditions: []metav1.Condition{
 						{
 							Type:    "Ready",
@@ -83,7 +82,6 @@ var _ = Describe("AgenticSubscription Translator", func() {
 			Expect(data.StatusMessage).To(Equal("subscription active"))
 			Expect(data.BasePath).To(Equal("/mcp/v1/tools"))
 			Expect(data.GatewayUrl).To(Equal("https://ai-gateway.example.com/mcp/v1/tools"))
-			Expect(data.IdpIssuer).To(Equal("https://issuer.example.com"))
 			Expect(data.Security).NotTo(BeNil())
 			Expect(data.Security.M2M).NotTo(BeNil())
 			Expect(data.Security.M2M.Client).NotTo(BeNil())
