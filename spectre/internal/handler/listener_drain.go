@@ -26,15 +26,17 @@ const (
 	DrainPhaseComplete            = "Complete"
 )
 
-// startDrain records the current applied state and marks the Listener as draining.
-// It snapshots the old children so that continueDrain can verify they have been
-// removed after removeStaleChildren runs.
+// startDrain snapshots the old generation and marks the Listener as draining.
+// The caller MUST return nil immediately after startDrain so that the controller
+// persists the drain checkpoint before any destructive work begins.
+// continueDrain performs the actual deletions on a subsequent reconcile.
 func (h *ListenerHandler) startDrain(
 	ctx context.Context,
 	listener *spectrev1.Listener,
 	reason string,
 	oldFingerprint string,
 ) error {
+	c := cclient.ClientFromContextOrDie(ctx)
 	logger := log.FromContext(ctx)
 
 	drain := &spectrev1.ListenerDrainStatus{
@@ -54,14 +56,64 @@ func (h *ListenerHandler) startDrain(
 		}
 	}
 
+	// Recover partial provisioning: discover owner-labelled children that might
+	// not appear in status refs (e.g. status update failed after creation).
+	rlList := &gatewayv1.RouteListenerList{}
+	if err := c.List(ctx, rlList, cclient.OwnedByLabel(listener)...); err != nil {
+		return errors.Wrap(err, "failed to list owned RouteListeners for drain snapshot")
+	}
+	for i := range rlList.Items {
+		rl := &rlList.Items[i]
+		if drain.OldRouteListener == nil || (drain.OldRouteListener.Name != rl.Name || drain.OldRouteListener.Namespace != rl.Namespace) {
+			ref := ctypes.ObjectRefFromObject(rl)
+			drain.OldRouteListener = ref
+		} else if drain.OldRouteListener.UID == "" {
+			// Enrich the status ref with the live UID for safe deletion.
+			drain.OldRouteListener.UID = rl.UID
+		}
+	}
+
+	subList := &pubsubv1.SubscriberList{}
+	if err := c.List(ctx, subList, cclient.OwnedByLabel(listener)...); err != nil {
+		return errors.Wrap(err, "failed to list owned Subscribers for drain snapshot")
+	}
+	known := make(map[string]struct{}, len(drain.OldSubscribers))
+	for i := range drain.OldSubscribers {
+		key := drain.OldSubscribers[i].Namespace + "/" + drain.OldSubscribers[i].Name
+		known[key] = struct{}{}
+	}
+	for i := range subList.Items {
+		sub := &subList.Items[i]
+		key := sub.Namespace + "/" + sub.Name
+		if _, exists := known[key]; !exists {
+			drain.OldSubscribers = append(drain.OldSubscribers, *ctypes.ObjectRefFromObject(sub))
+		} else {
+			// Enrich existing refs with the live UID for safe deletion.
+			for j := range drain.OldSubscribers {
+				if drain.OldSubscribers[j].Name == sub.Name && drain.OldSubscribers[j].Namespace == sub.Namespace && drain.OldSubscribers[j].UID == "" {
+					drain.OldSubscribers[j].UID = sub.UID
+				}
+			}
+		}
+	}
+
+	// Snapshot source publisher and event store from applied placement.
+	if ap := listener.Status.AppliedPlacement; ap != nil {
+		if ap.Publisher != nil {
+			drain.SourcePublisher = ap.Publisher.DeepCopy()
+		}
+		if ap.CaptureEventStore != nil {
+			drain.SourceEventStore = ap.CaptureEventStore.DeepCopy()
+		}
+	}
+
 	listener.Status.Draining = drain
 	logger.Info("Started drain", "reason", reason, "oldFingerprint", oldFingerprint)
 	return nil
 }
 
-// continueDrain checks if the old generation has been fully cleaned up.
-// Returns true when drain is complete and the Listener can proceed to
-// provisioning with the new intent.
+// continueDrain advances the drain state machine. It performs deletions with
+// UID checks and returns true when the drain is complete.
 func (h *ListenerHandler) continueDrain(
 	ctx context.Context,
 	listener *spectrev1.Listener,
@@ -76,43 +128,80 @@ func (h *ListenerHandler) continueDrain(
 
 	switch drain.Phase {
 	case DrainPhaseStopping:
-		// Verify old RouteListener is gone.
+		// Delete old RouteListener, then verify it is gone.
 		if drain.OldRouteListener != nil {
 			rl := &gatewayv1.RouteListener{}
 			err := c.Get(ctx, drain.OldRouteListener.K8s(), rl)
 			if err == nil {
-				// Still exists — removeStaleChildren will delete it.
-				logger.V(1).Info("Old RouteListener still exists, waiting", "name", drain.OldRouteListener.Name)
-				return false, nil
-			}
-			if !apierrors.IsNotFound(err) {
+				// UID check: if the live object has a different UID than what we
+				// recorded, someone recreated it — treat the old one as gone.
+				if drain.OldRouteListener.UID != "" && rl.UID != drain.OldRouteListener.UID {
+					logger.Info("Old RouteListener UID differs, treating as gone", "name", drain.OldRouteListener.Name)
+				} else {
+					// Delete it.
+					if delErr := c.Delete(ctx, rl); delErr != nil && !apierrors.IsNotFound(delErr) {
+						return false, errors.Wrapf(delErr, "failed to delete old RouteListener %q", drain.OldRouteListener.Name)
+					}
+					logger.Info("Deleted old RouteListener during drain", "name", drain.OldRouteListener.Name)
+					return false, nil // Requeue to verify deletion
+				}
+			} else if !apierrors.IsNotFound(err) {
 				return false, errors.Wrapf(err, "failed to check old RouteListener %q", drain.OldRouteListener.Name)
 			}
 		}
+		// Clear the status ref — the old RouteListener is gone.
+		if listener.Status.RouteListener != nil &&
+			drain.OldRouteListener != nil &&
+			listener.Status.RouteListener.Name == drain.OldRouteListener.Name &&
+			listener.Status.RouteListener.Namespace == drain.OldRouteListener.Namespace {
+			listener.Status.RouteListener = nil
+		}
 		drain.Phase = DrainPhaseDrainingSubscribers
 		logger.Info("Drain: old RouteListener gone, advancing to DrainingSubscribers")
-		fallthrough
+		return false, nil // Persist phase advancement
 
 	case DrainPhaseDrainingSubscribers:
-		// Verify all old Subscribers are gone.
+		// Delete each old Subscriber, then verify all are gone.
+		allGone := true
 		for i := range drain.OldSubscribers {
 			ref := &drain.OldSubscribers[i]
 			sub := &pubsubv1.Subscriber{}
 			err := c.Get(ctx, ref.K8s(), sub)
 			if err == nil {
-				logger.V(1).Info("Old Subscriber still exists, waiting", "name", ref.Name)
-				return false, nil
-			}
-			if !apierrors.IsNotFound(err) {
+				// UID check.
+				if ref.UID != "" && sub.UID != ref.UID {
+					logger.V(1).Info("Old Subscriber UID differs, treating as gone", "name", ref.Name)
+					continue
+				}
+				if delErr := c.Delete(ctx, sub); delErr != nil && !apierrors.IsNotFound(delErr) {
+					return false, errors.Wrapf(delErr, "failed to delete old Subscriber %q", ref.Name)
+				}
+				logger.Info("Deleted old Subscriber during drain", "name", ref.Name)
+				allGone = false
+			} else if !apierrors.IsNotFound(err) {
 				return false, errors.Wrapf(err, "failed to check old Subscriber %q", ref.Name)
 			}
 		}
-		logger.Info("Drain: all old children removed, drain complete")
-		listener.Status.Draining = nil
-		return true, nil
+		if !allGone {
+			return false, nil // Requeue to verify finalization
+		}
+		// Clear status refs that matched drained subscribers.
+		listener.Status.EventSubscriptions = nil
+		drain.Phase = DrainPhaseCleaningPublisher
+		logger.Info("Drain: all old Subscribers gone, advancing to CleaningPublisher")
+		return false, nil // Persist phase advancement
 
 	case DrainPhaseCleaningPublisher:
-		// Stub — full Publisher cleanup is E2E territory.
+		// Clean up the generic Publisher if no other Subscribers reference it.
+		if drain.SourcePublisher != nil {
+			ns := drain.SourcePublisher.Namespace
+			if ns != "" {
+				if err := h.cleanupGenericPublisherIfOrphaned(ctx, ns); err != nil {
+					return false, errors.Wrap(err, "failed to cleanup Publisher during drain")
+				}
+			}
+		}
+		logger.Info("Drain complete")
 		listener.Status.Draining = nil
 		return true, nil
 

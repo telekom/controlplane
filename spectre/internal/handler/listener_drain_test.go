@@ -9,6 +9,7 @@ import (
 
 	"github.com/stretchr/testify/mock"
 	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	k8stypes "k8s.io/apimachinery/pkg/types"
@@ -22,6 +23,7 @@ import (
 	pubsubv1 "github.com/telekom/controlplane/pubsub/api/v1"
 	spectrev1 "github.com/telekom/controlplane/spectre/api/v1"
 	"github.com/telekom/controlplane/spectre/internal/handler"
+	"github.com/telekom/controlplane/spectre/internal/handler/util"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -50,13 +52,41 @@ var _ = Describe("Listener Drain", func() {
 	})
 
 	Describe("StartDrain", func() {
-		It("should record drain status with old children refs", func() {
+		It("should snapshot status refs, discover owner-labelled children, and record drain", func() {
 			listener := newListener()
 			listener.Status.RouteListener = &ctypes.ObjectRef{Name: "old-rl", Namespace: listenerZoneStatus}
 			listener.Status.EventSubscriptions = []ctypes.ObjectRef{
 				{Name: "old-sub-rq", Namespace: listenerZoneStatus},
 				{Name: "old-sub-rp", Namespace: listenerZoneStatus},
 			}
+			listener.Status.AppliedPlacement = &spectrev1.AppliedListenerPlacementStatus{
+				Fingerprint:       "old-fp-abc",
+				Publisher:         &ctypes.ObjectRef{Name: "pub-generic", Namespace: listenerZoneStatus},
+				CaptureEventStore: &ctypes.ObjectRef{Name: "es-capture", Namespace: listenerZoneStatus},
+			}
+
+			// Owner-labelled discovery returns the same children (no extras).
+			fakeClient.EXPECT().
+				List(ctx, mock.AnythingOfType("*v1.RouteListenerList"), mock.Anything).
+				Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+					*list.(*gatewayv1.RouteListenerList) = gatewayv1.RouteListenerList{
+						Items: []gatewayv1.RouteListener{
+							{ObjectMeta: metav1.ObjectMeta{Name: "old-rl", Namespace: listenerZoneStatus, UID: "rl-uid-1"}},
+						},
+					}
+				}).
+				Return(nil).Once()
+			fakeClient.EXPECT().
+				List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
+				Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+					*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{
+						Items: []pubsubv1.Subscriber{
+							{ObjectMeta: metav1.ObjectMeta{Name: "old-sub-rq", Namespace: listenerZoneStatus, UID: "sub-uid-1"}},
+							{ObjectMeta: metav1.ObjectMeta{Name: "old-sub-rp", Namespace: listenerZoneStatus, UID: "sub-uid-2"}},
+						},
+					}
+				}).
+				Return(nil).Once()
 
 			err := h.StartDrain(ctx, listener, "fingerprint changed", "old-fp-abc")
 			Expect(err).ToNot(HaveOccurred())
@@ -67,11 +97,55 @@ var _ = Describe("Listener Drain", func() {
 			Expect(listener.Status.Draining.OldFingerprint).To(Equal("old-fp-abc"))
 			Expect(listener.Status.Draining.OldRouteListener).ToNot(BeNil())
 			Expect(listener.Status.Draining.OldRouteListener.Name).To(Equal("old-rl"))
+			Expect(listener.Status.Draining.OldRouteListener.UID).To(Equal(k8stypes.UID("rl-uid-1")))
 			Expect(listener.Status.Draining.OldSubscribers).To(HaveLen(2))
+			Expect(listener.Status.Draining.OldSubscribers[0].UID).To(Equal(k8stypes.UID("sub-uid-1")))
+			Expect(listener.Status.Draining.OldSubscribers[1].UID).To(Equal(k8stypes.UID("sub-uid-2")))
+			// SourcePublisher and SourceEventStore are recorded.
+			Expect(listener.Status.Draining.SourcePublisher).ToNot(BeNil())
+			Expect(listener.Status.Draining.SourcePublisher.Name).To(Equal("pub-generic"))
+			Expect(listener.Status.Draining.SourceEventStore).ToNot(BeNil())
+			Expect(listener.Status.Draining.SourceEventStore.Name).To(Equal("es-capture"))
+		})
+
+		It("should not call Delete — startDrain only snapshots", func() {
+			listener := newListener()
+			listener.Status.RouteListener = &ctypes.ObjectRef{Name: "old-rl", Namespace: listenerZoneStatus}
+
+			fakeClient.EXPECT().
+				List(ctx, mock.AnythingOfType("*v1.RouteListenerList"), mock.Anything).
+				Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+					*list.(*gatewayv1.RouteListenerList) = gatewayv1.RouteListenerList{}
+				}).
+				Return(nil).Once()
+			fakeClient.EXPECT().
+				List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
+				Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+					*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{}
+				}).
+				Return(nil).Once()
+
+			err := h.StartDrain(ctx, listener, "test", "old-fp")
+			Expect(err).ToNot(HaveOccurred())
+			// No Delete calls were made — mockery strict mode would fail if any were.
+			Expect(listener.Status.Draining).ToNot(BeNil())
 		})
 
 		It("should handle nil status refs gracefully", func() {
 			listener := newListener()
+
+			fakeClient.EXPECT().
+				List(ctx, mock.AnythingOfType("*v1.RouteListenerList"), mock.Anything).
+				Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+					*list.(*gatewayv1.RouteListenerList) = gatewayv1.RouteListenerList{}
+				}).
+				Return(nil).Once()
+			fakeClient.EXPECT().
+				List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
+				Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+					*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{}
+				}).
+				Return(nil).Once()
 
 			err := h.StartDrain(ctx, listener, "test", "old-fp")
 			Expect(err).ToNot(HaveOccurred())
@@ -79,6 +153,42 @@ var _ = Describe("Listener Drain", func() {
 			Expect(listener.Status.Draining).ToNot(BeNil())
 			Expect(listener.Status.Draining.OldRouteListener).To(BeNil())
 			Expect(listener.Status.Draining.OldSubscribers).To(BeNil())
+			Expect(listener.Status.Draining.SourcePublisher).To(BeNil())
+		})
+
+		It("should discover extra owner-labelled children not in status refs", func() {
+			listener := newListener()
+			// Status has no children, but owner-labelled discovery finds one.
+
+			fakeClient.EXPECT().
+				List(ctx, mock.AnythingOfType("*v1.RouteListenerList"), mock.Anything).
+				Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+					*list.(*gatewayv1.RouteListenerList) = gatewayv1.RouteListenerList{
+						Items: []gatewayv1.RouteListener{
+							{ObjectMeta: metav1.ObjectMeta{Name: "orphan-rl", Namespace: listenerZoneStatus, UID: "orphan-uid"}},
+						},
+					}
+				}).
+				Return(nil).Once()
+			fakeClient.EXPECT().
+				List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
+				Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+					*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{
+						Items: []pubsubv1.Subscriber{
+							{ObjectMeta: metav1.ObjectMeta{Name: "orphan-sub", Namespace: listenerZoneStatus, UID: "orphan-sub-uid"}},
+						},
+					}
+				}).
+				Return(nil).Once()
+
+			err := h.StartDrain(ctx, listener, "test", "old-fp")
+			Expect(err).ToNot(HaveOccurred())
+
+			Expect(listener.Status.Draining.OldRouteListener).ToNot(BeNil())
+			Expect(listener.Status.Draining.OldRouteListener.Name).To(Equal("orphan-rl"))
+			Expect(listener.Status.Draining.OldRouteListener.UID).To(Equal(k8stypes.UID("orphan-uid")))
+			Expect(listener.Status.Draining.OldSubscribers).To(HaveLen(1))
+			Expect(listener.Status.Draining.OldSubscribers[0].Name).To(Equal("orphan-sub"))
 		})
 	})
 
@@ -91,8 +201,9 @@ var _ = Describe("Listener Drain", func() {
 			Expect(done).To(BeTrue())
 		})
 
-		It("should complete drain when old children are gone", func() {
+		It("should delete old RouteListener and requeue in Stopping phase", func() {
 			listener := newListener()
+			listener.Status.RouteListener = &ctypes.ObjectRef{Name: "old-rl", Namespace: listenerZoneStatus}
 			listener.Status.Draining = &spectrev1.ListenerDrainStatus{
 				Phase:          handler.ExportDrainPhaseStopping,
 				Reason:         "fingerprint changed",
@@ -100,35 +211,32 @@ var _ = Describe("Listener Drain", func() {
 				OldRouteListener: &ctypes.ObjectRef{
 					Name:      "old-rl",
 					Namespace: listenerZoneStatus,
-				},
-				OldSubscribers: []ctypes.ObjectRef{
-					{Name: "old-sub-rq", Namespace: listenerZoneStatus},
+					UID:       "rl-uid-1",
 				},
 			}
 
-			// Old RouteListener is gone.
+			// Old RouteListener still exists — continueDrain deletes it.
 			fakeClient.EXPECT().
 				Get(ctx, k8stypes.NamespacedName{Name: "old-rl", Namespace: listenerZoneStatus},
 					mock.AnythingOfType("*v1.RouteListener")).
-				Return(errors.NewNotFound(
-					schema.GroupResource{Group: "gateway.cp.ei.telekom.de", Resource: "routelisteners"}, "old-rl")).
-				Once()
+				Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
+					rl := out.(*gatewayv1.RouteListener)
+					rl.Name = "old-rl"
+					rl.Namespace = listenerZoneStatus
+					rl.UID = "rl-uid-1"
+				}).
+				Return(nil).Once()
 
-			// Old Subscriber is gone.
 			fakeClient.EXPECT().
-				Get(ctx, k8stypes.NamespacedName{Name: "old-sub-rq", Namespace: listenerZoneStatus},
-					mock.AnythingOfType("*v1.Subscriber")).
-				Return(errors.NewNotFound(
-					schema.GroupResource{Group: "pubsub.cp.ei.telekom.de", Resource: "subscribers"}, "old-sub-rq")).
-				Once()
+				Delete(ctx, mock.AnythingOfType("*v1.RouteListener"), mock.Anything).
+				Return(nil).Once()
 
 			done, err := h.ContinueDrain(ctx, listener)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(done).To(BeTrue())
-			Expect(listener.Status.Draining).To(BeNil())
+			Expect(done).To(BeFalse()) // Requeue to verify deletion
 		})
 
-		It("should wait when old RouteListener still exists", func() {
+		It("should advance to DrainingSubscribers when RouteListener is gone", func() {
 			listener := newListener()
 			listener.Status.Draining = &spectrev1.ListenerDrainStatus{
 				Phase:          handler.ExportDrainPhaseStopping,
@@ -139,7 +247,33 @@ var _ = Describe("Listener Drain", func() {
 				},
 			}
 
-			// Old RouteListener still exists.
+			// Old RouteListener is already gone.
+			fakeClient.EXPECT().
+				Get(ctx, k8stypes.NamespacedName{Name: "old-rl", Namespace: listenerZoneStatus},
+					mock.AnythingOfType("*v1.RouteListener")).
+				Return(errors.NewNotFound(
+					schema.GroupResource{Group: "gateway.cp.ei.telekom.de", Resource: "routelisteners"}, "old-rl")).
+				Once()
+
+			done, err := h.ContinueDrain(ctx, listener)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(done).To(BeFalse()) // Phase advanced, persist
+			Expect(listener.Status.Draining.Phase).To(Equal(handler.ExportDrainPhaseDrainingSubscribers))
+		})
+
+		It("should treat different-UID RouteListener as gone", func() {
+			listener := newListener()
+			listener.Status.Draining = &spectrev1.ListenerDrainStatus{
+				Phase:          handler.ExportDrainPhaseStopping,
+				OldFingerprint: "old-fp",
+				OldRouteListener: &ctypes.ObjectRef{
+					Name:      "old-rl",
+					Namespace: listenerZoneStatus,
+					UID:       "original-uid",
+				},
+			}
+
+			// Object exists but with a different UID — someone recreated it.
 			fakeClient.EXPECT().
 				Get(ctx, k8stypes.NamespacedName{Name: "old-rl", Namespace: listenerZoneStatus},
 					mock.AnythingOfType("*v1.RouteListener")).
@@ -147,22 +281,23 @@ var _ = Describe("Listener Drain", func() {
 					rl := out.(*gatewayv1.RouteListener)
 					rl.Name = "old-rl"
 					rl.Namespace = listenerZoneStatus
+					rl.UID = "different-uid" // Not the UID we recorded
 				}).
 				Return(nil).Once()
 
 			done, err := h.ContinueDrain(ctx, listener)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(done).To(BeFalse())
-			Expect(listener.Status.Draining).ToNot(BeNil())
+			Expect(done).To(BeFalse()) // Phase advanced
+			Expect(listener.Status.Draining.Phase).To(Equal(handler.ExportDrainPhaseDrainingSubscribers))
 		})
 
-		It("should wait when old Subscriber still exists", func() {
+		It("should delete Subscribers and requeue in DrainingSubscribers phase", func() {
 			listener := newListener()
 			listener.Status.Draining = &spectrev1.ListenerDrainStatus{
 				Phase:          handler.ExportDrainPhaseDrainingSubscribers,
 				OldFingerprint: "old-fp",
 				OldSubscribers: []ctypes.ObjectRef{
-					{Name: "old-sub", Namespace: listenerZoneStatus},
+					{Name: "old-sub", Namespace: listenerZoneStatus, UID: "sub-uid-1"},
 				},
 			}
 
@@ -174,15 +309,20 @@ var _ = Describe("Listener Drain", func() {
 					sub := out.(*pubsubv1.Subscriber)
 					sub.Name = "old-sub"
 					sub.Namespace = listenerZoneStatus
+					sub.UID = "sub-uid-1"
 				}).
+				Return(nil).Once()
+
+			fakeClient.EXPECT().
+				Delete(ctx, mock.AnythingOfType("*v1.Subscriber"), mock.Anything).
 				Return(nil).Once()
 
 			done, err := h.ContinueDrain(ctx, listener)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(done).To(BeFalse())
+			Expect(done).To(BeFalse()) // Requeue to wait for finalization
 		})
 
-		It("should complete from DrainingSubscribers when all old Subscribers gone", func() {
+		It("should advance to CleaningPublisher when all Subscribers are gone", func() {
 			listener := newListener()
 			listener.Status.Draining = &spectrev1.ListenerDrainStatus{
 				Phase:          handler.ExportDrainPhaseDrainingSubscribers,
@@ -198,6 +338,105 @@ var _ = Describe("Listener Drain", func() {
 				Return(errors.NewNotFound(
 					schema.GroupResource{Group: "pubsub.cp.ei.telekom.de", Resource: "subscribers"}, "old-sub")).
 				Once()
+
+			done, err := h.ContinueDrain(ctx, listener)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(done).To(BeFalse()) // Phase advanced, persist
+			Expect(listener.Status.Draining.Phase).To(Equal(handler.ExportDrainPhaseCleaningPublisher))
+			Expect(listener.Status.EventSubscriptions).To(BeNil())
+		})
+
+		It("should treat different-UID Subscriber as gone", func() {
+			listener := newListener()
+			listener.Status.Draining = &spectrev1.ListenerDrainStatus{
+				Phase:          handler.ExportDrainPhaseDrainingSubscribers,
+				OldFingerprint: "old-fp",
+				OldSubscribers: []ctypes.ObjectRef{
+					{Name: "old-sub", Namespace: listenerZoneStatus, UID: "original-sub-uid"},
+				},
+			}
+
+			// Object exists but with different UID.
+			fakeClient.EXPECT().
+				Get(ctx, k8stypes.NamespacedName{Name: "old-sub", Namespace: listenerZoneStatus},
+					mock.AnythingOfType("*v1.Subscriber")).
+				Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
+					sub := out.(*pubsubv1.Subscriber)
+					sub.Name = "old-sub"
+					sub.Namespace = listenerZoneStatus
+					sub.UID = "different-sub-uid"
+				}).
+				Return(nil).Once()
+
+			done, err := h.ContinueDrain(ctx, listener)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(done).To(BeFalse()) // Phase advanced
+			Expect(listener.Status.Draining.Phase).To(Equal(handler.ExportDrainPhaseCleaningPublisher))
+		})
+
+		It("should delete Publisher when no Subscribers remain in CleaningPublisher", func() {
+			listener := newListener()
+			listener.Status.Draining = &spectrev1.ListenerDrainStatus{
+				Phase:           handler.ExportDrainPhaseCleaningPublisher,
+				OldFingerprint:  "old-fp",
+				SourcePublisher: &ctypes.ObjectRef{Name: "pub-generic", Namespace: listenerZoneStatus},
+			}
+
+			// cleanupGenericPublisherIfOrphaned: list Subscribers (none) → delete Publisher.
+			fakeClient.EXPECT().
+				List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
+				Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+					*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{}
+				}).
+				Return(nil).Once()
+			fakeClient.EXPECT().
+				Delete(ctx, mock.AnythingOfType("*v1.Publisher"), mock.Anything).
+				Return(nil).Once()
+
+			done, err := h.ContinueDrain(ctx, listener)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(done).To(BeTrue())
+			Expect(listener.Status.Draining).To(BeNil())
+		})
+
+		It("should preserve Publisher when other Subscribers exist in CleaningPublisher", func() {
+			listener := newListener()
+			genericPubName := util.MakePublisherName(util.GenericEventType)
+			listener.Status.Draining = &spectrev1.ListenerDrainStatus{
+				Phase:           handler.ExportDrainPhaseCleaningPublisher,
+				OldFingerprint:  "old-fp",
+				SourcePublisher: &ctypes.ObjectRef{Name: genericPubName, Namespace: listenerZoneStatus},
+			}
+
+			// cleanupGenericPublisherIfOrphaned: a Subscriber still references the Publisher.
+			fakeClient.EXPECT().
+				List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
+				Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+					*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{
+						Items: []pubsubv1.Subscriber{
+							{
+								ObjectMeta: metav1.ObjectMeta{Name: "other-sub", Namespace: listenerZoneStatus},
+								Spec: pubsubv1.SubscriberSpec{
+									Publisher: ctypes.ObjectRef{Name: genericPubName, Namespace: listenerZoneStatus},
+								},
+							},
+						},
+					}
+				}).
+				Return(nil).Once()
+
+			done, err := h.ContinueDrain(ctx, listener)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(done).To(BeTrue())
+			Expect(listener.Status.Draining).To(BeNil())
+		})
+
+		It("should skip Publisher cleanup when SourcePublisher is nil", func() {
+			listener := newListener()
+			listener.Status.Draining = &spectrev1.ListenerDrainStatus{
+				Phase:          handler.ExportDrainPhaseCleaningPublisher,
+				OldFingerprint: "old-fp",
+			}
 
 			done, err := h.ContinueDrain(ctx, listener)
 			Expect(err).ToNot(HaveOccurred())
@@ -218,9 +457,9 @@ var _ = Describe("Listener Drain", func() {
 			Expect(listener.Status.Draining).To(BeNil())
 		})
 
-		It("should survive restart: drain status persists and resumes", func() {
+		It("should survive restart: re-enter with persisted Draining status", func() {
 			listener := newListener()
-			// Simulate: controller restarted while Stopping.
+			// Simulate: controller restarted while Stopping; old RL is now gone.
 			listener.Status.Draining = &spectrev1.ListenerDrainStatus{
 				Phase:          handler.ExportDrainPhaseStopping,
 				Reason:         "fingerprint changed",
@@ -228,6 +467,7 @@ var _ = Describe("Listener Drain", func() {
 				OldRouteListener: &ctypes.ObjectRef{
 					Name:      "old-rl",
 					Namespace: listenerZoneStatus,
+					UID:       "rl-uid-1",
 				},
 			}
 
@@ -241,8 +481,8 @@ var _ = Describe("Listener Drain", func() {
 
 			done, err := h.ContinueDrain(ctx, listener)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(done).To(BeTrue())
-			Expect(listener.Status.Draining).To(BeNil())
+			Expect(done).To(BeFalse()) // Phase advanced to DrainingSubscribers
+			Expect(listener.Status.Draining.Phase).To(Equal(handler.ExportDrainPhaseDrainingSubscribers))
 		})
 	})
 })
