@@ -50,7 +50,7 @@ var _ = Describe("CanonicalSSHPublicKeys", func() {
 
 	It("strips the comment and returns the canonical form of a valid key", func() {
 		keys, err := CanonicalSSHPublicKeys([]filev1.SSHPublicKeySpec{
-			{Key: validKey + " some-comment"},
+			{Key: validKey + " some-comment", Label: "provider"},
 		})
 		Expect(err).NotTo(HaveOccurred())
 		Expect(keys).To(HaveLen(1))

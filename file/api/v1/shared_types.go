@@ -59,4 +59,10 @@ type SSHPublicKeySpec struct {
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MinLength=1
 	Key string `json:"key"`
+
+	// Label is a human-readable identifier for the key.
+	// It isn't used in logic and it is here for backward compatibility.
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:MinLength=1
+	Label string `json:"label,omitempty"`
 }

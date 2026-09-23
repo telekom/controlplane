@@ -121,6 +121,12 @@ spec:
                           description: Key is the SSH public key value.
                           minLength: 1
                           type: string
+                        label:
+                          description: |-
+                            Label is a human-readable identifier for the key.
+                            It isn't used in logic and it is here for backward compatibility.
+                          minLength: 1
+                          type: string
                       required:
                       - key
                       type: object
