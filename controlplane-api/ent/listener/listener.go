@@ -41,16 +41,27 @@ const (
 	FieldRequestFilter = "request_filter"
 	// FieldResponseFilter holds the string denoting the response_filter field in the database.
 	FieldResponseFilter = "response_filter"
+	// EdgeApplication holds the string denoting the application edge name in mutations.
+	EdgeApplication = "application"
 	// EdgeSubscription holds the string denoting the subscription edge name in mutations.
 	EdgeSubscription = "subscription"
 	// EdgeExposure holds the string denoting the exposure edge name in mutations.
 	EdgeExposure = "exposure"
 	// EdgeProviderApproval holds the string denoting the provider_approval edge name in mutations.
 	EdgeProviderApproval = "provider_approval"
+	// EdgeConsumerApproval holds the string denoting the consumer_approval edge name in mutations.
+	EdgeConsumerApproval = "consumer_approval"
 	// EdgeApprovalRequests holds the string denoting the approval_requests edge name in mutations.
 	EdgeApprovalRequests = "approval_requests"
 	// Table holds the table name of the listener in the database.
 	Table = "listeners"
+	// ApplicationTable is the table that holds the application relation/edge.
+	ApplicationTable = "listeners"
+	// ApplicationInverseTable is the table name for the Application entity.
+	// It exists in this package in order to avoid circular dependency with the "application" package.
+	ApplicationInverseTable = "applications"
+	// ApplicationColumn is the table column denoting the application relation/edge.
+	ApplicationColumn = "application_listeners"
 	// SubscriptionTable is the table that holds the subscription relation/edge.
 	SubscriptionTable = "listeners"
 	// SubscriptionInverseTable is the table name for the ApiSubscription entity.
@@ -72,6 +83,13 @@ const (
 	ProviderApprovalInverseTable = "approvals"
 	// ProviderApprovalColumn is the table column denoting the provider_approval relation/edge.
 	ProviderApprovalColumn = "listener_provider_approval"
+	// ConsumerApprovalTable is the table that holds the consumer_approval relation/edge.
+	ConsumerApprovalTable = "approvals"
+	// ConsumerApprovalInverseTable is the table name for the Approval entity.
+	// It exists in this package in order to avoid circular dependency with the "approval" package.
+	ConsumerApprovalInverseTable = "approvals"
+	// ConsumerApprovalColumn is the table column denoting the consumer_approval relation/edge.
+	ConsumerApprovalColumn = "listener_consumer_approval"
 	// ApprovalRequestsTable is the table that holds the approval_requests relation/edge.
 	ApprovalRequestsTable = "approval_requests"
 	// ApprovalRequestsInverseTable is the table name for the ApprovalRequest entity.
@@ -101,6 +119,7 @@ var Columns = []string{
 var ForeignKeys = []string{
 	"api_exposure_listeners",
 	"api_subscription_listeners",
+	"application_listeners",
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -213,6 +232,13 @@ func ByAPIBasePath(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldAPIBasePath, opts...).ToFunc()
 }
 
+// ByApplicationField orders the results by application field.
+func ByApplicationField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newApplicationStep(), sql.OrderByField(field, opts...))
+	}
+}
+
 // BySubscriptionField orders the results by subscription field.
 func BySubscriptionField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -234,6 +260,13 @@ func ByProviderApprovalField(field string, opts ...sql.OrderTermOption) OrderOpt
 	}
 }
 
+// ByConsumerApprovalField orders the results by consumer_approval field.
+func ByConsumerApprovalField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newConsumerApprovalStep(), sql.OrderByField(field, opts...))
+	}
+}
+
 // ByApprovalRequestsCount orders the results by approval_requests count.
 func ByApprovalRequestsCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -246,6 +279,13 @@ func ByApprovalRequests(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption 
 	return func(s *sql.Selector) {
 		sqlgraph.OrderByNeighborTerms(s, newApprovalRequestsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
+}
+func newApplicationStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(ApplicationInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, true, ApplicationTable, ApplicationColumn),
+	)
 }
 func newSubscriptionStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
@@ -266,6 +306,13 @@ func newProviderApprovalStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(ProviderApprovalInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2O, false, ProviderApprovalTable, ProviderApprovalColumn),
+	)
+}
+func newConsumerApprovalStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(ConsumerApprovalInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2O, false, ConsumerApprovalTable, ConsumerApprovalColumn),
 	)
 }
 func newApprovalRequestsStep() *sqlgraph.Step {

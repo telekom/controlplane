@@ -2056,6 +2056,38 @@ func (ec *executionContext) fieldContext_ListenerInfo_approved(_ context.Context
 	return graphql.NewScalarFieldContext("ListenerInfo", field, false, false, errors.New("field of type Boolean does not have child fields"))
 }
 
+func (ec *executionContext) _ListenerInfo_application(ctx context.Context, field graphql.CollectedField, obj *model.ListenerInfo) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ListenerInfo_application(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Application, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.ApplicationInfo) graphql.Marshaler {
+			return ec.marshalNApplicationInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐApplicationInfo(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_ListenerInfo_application(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ListenerInfo",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_ApplicationInfo(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _ListenerInfo_consumer(ctx context.Context, field graphql.CollectedField, obj *model.ListenerInfo) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -4926,6 +4958,11 @@ func (ec *executionContext) _ListenerInfo(ctx context.Context, sel ast.Selection
 			}
 		case "approved":
 			out.Values[i] = ec._ListenerInfo_approved(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "application":
+			out.Values[i] = ec._ListenerInfo_application(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}

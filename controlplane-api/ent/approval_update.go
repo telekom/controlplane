@@ -339,6 +339,25 @@ func (_u *ApprovalUpdate) SetListener(v *Listener) *ApprovalUpdate {
 	return _u.SetListenerID(v.ID)
 }
 
+// SetConsumerListenerID sets the "consumer_listener" edge to the Listener entity by ID.
+func (_u *ApprovalUpdate) SetConsumerListenerID(id int) *ApprovalUpdate {
+	_u.mutation.SetConsumerListenerID(id)
+	return _u
+}
+
+// SetNillableConsumerListenerID sets the "consumer_listener" edge to the Listener entity by ID if the given value is not nil.
+func (_u *ApprovalUpdate) SetNillableConsumerListenerID(id *int) *ApprovalUpdate {
+	if id != nil {
+		_u = _u.SetConsumerListenerID(*id)
+	}
+	return _u
+}
+
+// SetConsumerListener sets the "consumer_listener" edge to the Listener entity.
+func (_u *ApprovalUpdate) SetConsumerListener(v *Listener) *ApprovalUpdate {
+	return _u.SetConsumerListenerID(v.ID)
+}
+
 // Mutation returns the ApprovalMutation object of the builder.
 func (_u *ApprovalUpdate) Mutation() *ApprovalMutation {
 	return _u.mutation
@@ -359,6 +378,12 @@ func (_u *ApprovalUpdate) ClearEventSubscription() *ApprovalUpdate {
 // ClearListener clears the "listener" edge to the Listener entity.
 func (_u *ApprovalUpdate) ClearListener() *ApprovalUpdate {
 	_u.mutation.ClearListener()
+	return _u
+}
+
+// ClearConsumerListener clears the "consumer_listener" edge to the Listener entity.
+func (_u *ApprovalUpdate) ClearConsumerListener() *ApprovalUpdate {
+	_u.mutation.ClearConsumerListener()
 	return _u
 }
 
@@ -614,6 +639,35 @@ func (_u *ApprovalUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 			Inverse: true,
 			Table:   approval.ListenerTable,
 			Columns: []string{approval.ListenerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(listener.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.ConsumerListenerCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: true,
+			Table:   approval.ConsumerListenerTable,
+			Columns: []string{approval.ConsumerListenerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(listener.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.ConsumerListenerIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: true,
+			Table:   approval.ConsumerListenerTable,
+			Columns: []string{approval.ConsumerListenerColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(listener.FieldID, field.TypeInt),
@@ -947,6 +1001,25 @@ func (_u *ApprovalUpdateOne) SetListener(v *Listener) *ApprovalUpdateOne {
 	return _u.SetListenerID(v.ID)
 }
 
+// SetConsumerListenerID sets the "consumer_listener" edge to the Listener entity by ID.
+func (_u *ApprovalUpdateOne) SetConsumerListenerID(id int) *ApprovalUpdateOne {
+	_u.mutation.SetConsumerListenerID(id)
+	return _u
+}
+
+// SetNillableConsumerListenerID sets the "consumer_listener" edge to the Listener entity by ID if the given value is not nil.
+func (_u *ApprovalUpdateOne) SetNillableConsumerListenerID(id *int) *ApprovalUpdateOne {
+	if id != nil {
+		_u = _u.SetConsumerListenerID(*id)
+	}
+	return _u
+}
+
+// SetConsumerListener sets the "consumer_listener" edge to the Listener entity.
+func (_u *ApprovalUpdateOne) SetConsumerListener(v *Listener) *ApprovalUpdateOne {
+	return _u.SetConsumerListenerID(v.ID)
+}
+
 // Mutation returns the ApprovalMutation object of the builder.
 func (_u *ApprovalUpdateOne) Mutation() *ApprovalMutation {
 	return _u.mutation
@@ -967,6 +1040,12 @@ func (_u *ApprovalUpdateOne) ClearEventSubscription() *ApprovalUpdateOne {
 // ClearListener clears the "listener" edge to the Listener entity.
 func (_u *ApprovalUpdateOne) ClearListener() *ApprovalUpdateOne {
 	_u.mutation.ClearListener()
+	return _u
+}
+
+// ClearConsumerListener clears the "consumer_listener" edge to the Listener entity.
+func (_u *ApprovalUpdateOne) ClearConsumerListener() *ApprovalUpdateOne {
+	_u.mutation.ClearConsumerListener()
 	return _u
 }
 
@@ -1252,6 +1331,35 @@ func (_u *ApprovalUpdateOne) sqlSave(ctx context.Context) (_node *Approval, err 
 			Inverse: true,
 			Table:   approval.ListenerTable,
 			Columns: []string{approval.ListenerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(listener.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.ConsumerListenerCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: true,
+			Table:   approval.ConsumerListenerTable,
+			Columns: []string{approval.ConsumerListenerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(listener.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.ConsumerListenerIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: true,
+			Table:   approval.ConsumerListenerTable,
+			Columns: []string{approval.ConsumerListenerColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(listener.FieldID, field.TypeInt),

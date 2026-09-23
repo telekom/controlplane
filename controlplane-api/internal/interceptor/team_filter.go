@@ -65,6 +65,9 @@ func TeamFilterInterceptor() ent.Interceptor {
 
 			case *entgen.ListenerQuery:
 				q.Where(listener.Or(
+					listener.HasApplicationWith(
+						application.HasOwnerTeamWith(team.NameIn(teams...)),
+					),
 					listener.HasSubscriptionWith(
 						apisubscription.HasOwnerWith(
 							application.HasOwnerTeamWith(team.NameIn(teams...)),
@@ -104,6 +107,11 @@ func TeamFilterInterceptor() ent.Interceptor {
 						),
 					),
 					approval.HasListenerWith(
+						listener.HasApplicationWith(
+							application.HasOwnerTeamWith(team.NameIn(teams...)),
+						),
+					),
+					approval.HasListenerWith(
 						listener.HasSubscriptionWith(
 							apisubscription.HasOwnerWith(
 								application.HasOwnerTeamWith(team.NameIn(teams...)),
@@ -115,6 +123,13 @@ func TeamFilterInterceptor() ent.Interceptor {
 							apiexposure.HasOwnerWith(
 								application.HasOwnerTeamWith(team.NameIn(teams...)),
 							),
+						),
+					),
+					approval.HasConsumerListenerWith(
+						listener.Or(
+							listener.HasApplicationWith(application.HasOwnerTeamWith(team.NameIn(teams...))),
+							listener.HasSubscriptionWith(apisubscription.HasOwnerWith(application.HasOwnerTeamWith(team.NameIn(teams...)))),
+							listener.HasExposureWith(apiexposure.HasOwnerWith(application.HasOwnerTeamWith(team.NameIn(teams...)))),
 						),
 					),
 				))
@@ -143,6 +158,11 @@ func TeamFilterInterceptor() ent.Interceptor {
 							eventexposure.HasOwnerWith(
 								application.HasOwnerTeamWith(team.NameIn(teams...)),
 							),
+						),
+					),
+					approvalrequest.HasListenerWith(
+						listener.HasApplicationWith(
+							application.HasOwnerTeamWith(team.NameIn(teams...)),
 						),
 					),
 					approvalrequest.HasListenerWith(

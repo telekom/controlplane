@@ -2970,6 +2970,10 @@ type ApprovalWhereInput struct {
 	// "listener" edge predicates.
 	HasListener     *bool                 `json:"hasListener,omitempty"`
 	HasListenerWith []*ListenerWhereInput `json:"hasListenerWith,omitempty"`
+
+	// "consumer_listener" edge predicates.
+	HasConsumerListener     *bool                 `json:"hasConsumerListener,omitempty"`
+	HasConsumerListenerWith []*ListenerWhereInput `json:"hasConsumerListenerWith,omitempty"`
 }
 
 // AddPredicates adds custom predicates to the where input to be used during the filtering phase.
@@ -3487,6 +3491,24 @@ func (i *ApprovalWhereInput) P() (predicate.Approval, error) {
 			with = append(with, p)
 		}
 		predicates = append(predicates, approval.HasListenerWith(with...))
+	}
+	if i.HasConsumerListener != nil {
+		p := approval.HasConsumerListener()
+		if !*i.HasConsumerListener {
+			p = approval.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasConsumerListenerWith) > 0 {
+		with := make([]predicate.Listener, 0, len(i.HasConsumerListenerWith))
+		for _, w := range i.HasConsumerListenerWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasConsumerListenerWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, approval.HasConsumerListenerWith(with...))
 	}
 	switch len(predicates) {
 	case 0:

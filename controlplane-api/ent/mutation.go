@@ -4377,6 +4377,9 @@ type ApplicationMutation struct {
 	subscribed_events        map[int]struct{}
 	removedsubscribed_events map[int]struct{}
 	clearedsubscribed_events bool
+	listeners                map[int]struct{}
+	removedlisteners         map[int]struct{}
+	clearedlisteners         bool
 	permission_set           *int
 	clearedpermission_set    bool
 	done                     bool
@@ -5560,6 +5563,60 @@ func (m *ApplicationMutation) ResetSubscribedEvents() {
 	m.removedsubscribed_events = nil
 }
 
+// AddListenerIDs adds the "listeners" edge to the Listener entity by ids.
+func (m *ApplicationMutation) AddListenerIDs(ids ...int) {
+	if m.listeners == nil {
+		m.listeners = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.listeners[ids[i]] = struct{}{}
+	}
+}
+
+// ClearListeners clears the "listeners" edge to the Listener entity.
+func (m *ApplicationMutation) ClearListeners() {
+	m.clearedlisteners = true
+}
+
+// ListenersCleared reports if the "listeners" edge to the Listener entity was cleared.
+func (m *ApplicationMutation) ListenersCleared() bool {
+	return m.clearedlisteners
+}
+
+// RemoveListenerIDs removes the "listeners" edge to the Listener entity by IDs.
+func (m *ApplicationMutation) RemoveListenerIDs(ids ...int) {
+	if m.removedlisteners == nil {
+		m.removedlisteners = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.listeners, ids[i])
+		m.removedlisteners[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedListeners returns the removed IDs of the "listeners" edge to the Listener entity.
+func (m *ApplicationMutation) RemovedListenersIDs() (ids []int) {
+	for id := range m.removedlisteners {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ListenersIDs returns the "listeners" edge IDs in the mutation.
+func (m *ApplicationMutation) ListenersIDs() (ids []int) {
+	for id := range m.listeners {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetListeners resets all changes to the "listeners" edge.
+func (m *ApplicationMutation) ResetListeners() {
+	m.listeners = nil
+	m.clearedlisteners = false
+	m.removedlisteners = nil
+}
+
 // SetPermissionSetID sets the "permission_set" edge to the PermissionSet entity by id.
 func (m *ApplicationMutation) SetPermissionSetID(id int) {
 	m.permission_set = &id
@@ -6079,7 +6136,7 @@ func (m *ApplicationMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *ApplicationMutation) AddedEdges() []string {
-	edges := make([]string, 0, 7)
+	edges := make([]string, 0, 8)
 	if m.zone != nil {
 		edges = append(edges, application.EdgeZone)
 	}
@@ -6097,6 +6154,9 @@ func (m *ApplicationMutation) AddedEdges() []string {
 	}
 	if m.subscribed_events != nil {
 		edges = append(edges, application.EdgeSubscribedEvents)
+	}
+	if m.listeners != nil {
+		edges = append(edges, application.EdgeListeners)
 	}
 	if m.permission_set != nil {
 		edges = append(edges, application.EdgePermissionSet)
@@ -6140,6 +6200,12 @@ func (m *ApplicationMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case application.EdgeListeners:
+		ids := make([]ent.Value, 0, len(m.listeners))
+		for id := range m.listeners {
+			ids = append(ids, id)
+		}
+		return ids
 	case application.EdgePermissionSet:
 		if id := m.permission_set; id != nil {
 			return []ent.Value{*id}
@@ -6150,7 +6216,7 @@ func (m *ApplicationMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *ApplicationMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 7)
+	edges := make([]string, 0, 8)
 	if m.removedexposed_apis != nil {
 		edges = append(edges, application.EdgeExposedApis)
 	}
@@ -6162,6 +6228,9 @@ func (m *ApplicationMutation) RemovedEdges() []string {
 	}
 	if m.removedsubscribed_events != nil {
 		edges = append(edges, application.EdgeSubscribedEvents)
+	}
+	if m.removedlisteners != nil {
+		edges = append(edges, application.EdgeListeners)
 	}
 	return edges
 }
@@ -6194,13 +6263,19 @@ func (m *ApplicationMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case application.EdgeListeners:
+		ids := make([]ent.Value, 0, len(m.removedlisteners))
+		for id := range m.removedlisteners {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *ApplicationMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 7)
+	edges := make([]string, 0, 8)
 	if m.clearedzone {
 		edges = append(edges, application.EdgeZone)
 	}
@@ -6218,6 +6293,9 @@ func (m *ApplicationMutation) ClearedEdges() []string {
 	}
 	if m.clearedsubscribed_events {
 		edges = append(edges, application.EdgeSubscribedEvents)
+	}
+	if m.clearedlisteners {
+		edges = append(edges, application.EdgeListeners)
 	}
 	if m.clearedpermission_set {
 		edges = append(edges, application.EdgePermissionSet)
@@ -6241,6 +6319,8 @@ func (m *ApplicationMutation) EdgeCleared(name string) bool {
 		return m.clearedexposed_events
 	case application.EdgeSubscribedEvents:
 		return m.clearedsubscribed_events
+	case application.EdgeListeners:
+		return m.clearedlisteners
 	case application.EdgePermissionSet:
 		return m.clearedpermission_set
 	}
@@ -6286,6 +6366,9 @@ func (m *ApplicationMutation) ResetEdge(name string) error {
 	case application.EdgeSubscribedEvents:
 		m.ResetSubscribedEvents()
 		return nil
+	case application.EdgeListeners:
+		m.ResetListeners()
+		return nil
 	case application.EdgePermissionSet:
 		m.ResetPermissionSet()
 		return nil
@@ -6326,6 +6409,8 @@ type ApprovalMutation struct {
 	clearedevent_subscription   bool
 	listener                    *int
 	clearedlistener             bool
+	consumer_listener           *int
+	clearedconsumer_listener    bool
 	done                        bool
 	oldValue                    func(context.Context) (*Approval, error)
 	predicates                  []predicate.Approval
@@ -7283,6 +7368,45 @@ func (m *ApprovalMutation) ResetListener() {
 	m.clearedlistener = false
 }
 
+// SetConsumerListenerID sets the "consumer_listener" edge to the Listener entity by id.
+func (m *ApprovalMutation) SetConsumerListenerID(id int) {
+	m.consumer_listener = &id
+}
+
+// ClearConsumerListener clears the "consumer_listener" edge to the Listener entity.
+func (m *ApprovalMutation) ClearConsumerListener() {
+	m.clearedconsumer_listener = true
+}
+
+// ConsumerListenerCleared reports if the "consumer_listener" edge to the Listener entity was cleared.
+func (m *ApprovalMutation) ConsumerListenerCleared() bool {
+	return m.clearedconsumer_listener
+}
+
+// ConsumerListenerID returns the "consumer_listener" edge ID in the mutation.
+func (m *ApprovalMutation) ConsumerListenerID() (id int, exists bool) {
+	if m.consumer_listener != nil {
+		return *m.consumer_listener, true
+	}
+	return
+}
+
+// ConsumerListenerIDs returns the "consumer_listener" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// ConsumerListenerID instead. It exists only for internal usage by the builders.
+func (m *ApprovalMutation) ConsumerListenerIDs() (ids []int) {
+	if id := m.consumer_listener; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetConsumerListener resets all changes to the "consumer_listener" edge.
+func (m *ApprovalMutation) ResetConsumerListener() {
+	m.consumer_listener = nil
+	m.clearedconsumer_listener = false
+}
+
 // Where appends a list predicates to the ApprovalMutation builder.
 func (m *ApprovalMutation) Where(ps ...predicate.Approval) {
 	m.predicates = append(m.predicates, ps...)
@@ -7727,7 +7851,7 @@ func (m *ApprovalMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *ApprovalMutation) AddedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 4)
 	if m.api_subscription != nil {
 		edges = append(edges, approval.EdgeAPISubscription)
 	}
@@ -7736,6 +7860,9 @@ func (m *ApprovalMutation) AddedEdges() []string {
 	}
 	if m.listener != nil {
 		edges = append(edges, approval.EdgeListener)
+	}
+	if m.consumer_listener != nil {
+		edges = append(edges, approval.EdgeConsumerListener)
 	}
 	return edges
 }
@@ -7756,13 +7883,17 @@ func (m *ApprovalMutation) AddedIDs(name string) []ent.Value {
 		if id := m.listener; id != nil {
 			return []ent.Value{*id}
 		}
+	case approval.EdgeConsumerListener:
+		if id := m.consumer_listener; id != nil {
+			return []ent.Value{*id}
+		}
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *ApprovalMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 4)
 	return edges
 }
 
@@ -7774,7 +7905,7 @@ func (m *ApprovalMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *ApprovalMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 4)
 	if m.clearedapi_subscription {
 		edges = append(edges, approval.EdgeAPISubscription)
 	}
@@ -7783,6 +7914,9 @@ func (m *ApprovalMutation) ClearedEdges() []string {
 	}
 	if m.clearedlistener {
 		edges = append(edges, approval.EdgeListener)
+	}
+	if m.clearedconsumer_listener {
+		edges = append(edges, approval.EdgeConsumerListener)
 	}
 	return edges
 }
@@ -7797,6 +7931,8 @@ func (m *ApprovalMutation) EdgeCleared(name string) bool {
 		return m.clearedevent_subscription
 	case approval.EdgeListener:
 		return m.clearedlistener
+	case approval.EdgeConsumerListener:
+		return m.clearedconsumer_listener
 	}
 	return false
 }
@@ -7814,6 +7950,9 @@ func (m *ApprovalMutation) ClearEdge(name string) error {
 	case approval.EdgeListener:
 		m.ClearListener()
 		return nil
+	case approval.EdgeConsumerListener:
+		m.ClearConsumerListener()
+		return nil
 	}
 	return fmt.Errorf("unknown Approval unique edge %s", name)
 }
@@ -7830,6 +7969,9 @@ func (m *ApprovalMutation) ResetEdge(name string) error {
 		return nil
 	case approval.EdgeListener:
 		m.ResetListener()
+		return nil
+	case approval.EdgeConsumerListener:
+		m.ResetConsumerListener()
 		return nil
 	}
 	return fmt.Errorf("unknown Approval edge %s", name)
@@ -13737,12 +13879,16 @@ type ListenerMutation struct {
 	request_filter           **model.ListenerFilter
 	response_filter          **model.ListenerFilter
 	clearedFields            map[string]struct{}
+	application              *int
+	clearedapplication       bool
 	subscription             *int
 	clearedsubscription      bool
 	exposure                 *int
 	clearedexposure          bool
 	provider_approval        *int
 	clearedprovider_approval bool
+	consumer_approval        *int
+	clearedconsumer_approval bool
 	approval_requests        map[int]struct{}
 	removedapproval_requests map[int]struct{}
 	clearedapproval_requests bool
@@ -14274,6 +14420,45 @@ func (m *ListenerMutation) ResetResponseFilter() {
 	delete(m.clearedFields, listener.FieldResponseFilter)
 }
 
+// SetApplicationID sets the "application" edge to the Application entity by id.
+func (m *ListenerMutation) SetApplicationID(id int) {
+	m.application = &id
+}
+
+// ClearApplication clears the "application" edge to the Application entity.
+func (m *ListenerMutation) ClearApplication() {
+	m.clearedapplication = true
+}
+
+// ApplicationCleared reports if the "application" edge to the Application entity was cleared.
+func (m *ListenerMutation) ApplicationCleared() bool {
+	return m.clearedapplication
+}
+
+// ApplicationID returns the "application" edge ID in the mutation.
+func (m *ListenerMutation) ApplicationID() (id int, exists bool) {
+	if m.application != nil {
+		return *m.application, true
+	}
+	return
+}
+
+// ApplicationIDs returns the "application" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// ApplicationID instead. It exists only for internal usage by the builders.
+func (m *ListenerMutation) ApplicationIDs() (ids []int) {
+	if id := m.application; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetApplication resets all changes to the "application" edge.
+func (m *ListenerMutation) ResetApplication() {
+	m.application = nil
+	m.clearedapplication = false
+}
+
 // SetSubscriptionID sets the "subscription" edge to the ApiSubscription entity by id.
 func (m *ListenerMutation) SetSubscriptionID(id int) {
 	m.subscription = &id
@@ -14389,6 +14574,45 @@ func (m *ListenerMutation) ProviderApprovalIDs() (ids []int) {
 func (m *ListenerMutation) ResetProviderApproval() {
 	m.provider_approval = nil
 	m.clearedprovider_approval = false
+}
+
+// SetConsumerApprovalID sets the "consumer_approval" edge to the Approval entity by id.
+func (m *ListenerMutation) SetConsumerApprovalID(id int) {
+	m.consumer_approval = &id
+}
+
+// ClearConsumerApproval clears the "consumer_approval" edge to the Approval entity.
+func (m *ListenerMutation) ClearConsumerApproval() {
+	m.clearedconsumer_approval = true
+}
+
+// ConsumerApprovalCleared reports if the "consumer_approval" edge to the Approval entity was cleared.
+func (m *ListenerMutation) ConsumerApprovalCleared() bool {
+	return m.clearedconsumer_approval
+}
+
+// ConsumerApprovalID returns the "consumer_approval" edge ID in the mutation.
+func (m *ListenerMutation) ConsumerApprovalID() (id int, exists bool) {
+	if m.consumer_approval != nil {
+		return *m.consumer_approval, true
+	}
+	return
+}
+
+// ConsumerApprovalIDs returns the "consumer_approval" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// ConsumerApprovalID instead. It exists only for internal usage by the builders.
+func (m *ListenerMutation) ConsumerApprovalIDs() (ids []int) {
+	if id := m.consumer_approval; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetConsumerApproval resets all changes to the "consumer_approval" edge.
+func (m *ListenerMutation) ResetConsumerApproval() {
+	m.consumer_approval = nil
+	m.clearedconsumer_approval = false
 }
 
 // AddApprovalRequestIDs adds the "approval_requests" edge to the ApprovalRequest entity by ids.
@@ -14764,7 +14988,10 @@ func (m *ListenerMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *ListenerMutation) AddedEdges() []string {
-	edges := make([]string, 0, 4)
+	edges := make([]string, 0, 6)
+	if m.application != nil {
+		edges = append(edges, listener.EdgeApplication)
+	}
 	if m.subscription != nil {
 		edges = append(edges, listener.EdgeSubscription)
 	}
@@ -14773,6 +15000,9 @@ func (m *ListenerMutation) AddedEdges() []string {
 	}
 	if m.provider_approval != nil {
 		edges = append(edges, listener.EdgeProviderApproval)
+	}
+	if m.consumer_approval != nil {
+		edges = append(edges, listener.EdgeConsumerApproval)
 	}
 	if m.approval_requests != nil {
 		edges = append(edges, listener.EdgeApprovalRequests)
@@ -14784,6 +15014,10 @@ func (m *ListenerMutation) AddedEdges() []string {
 // name in this mutation.
 func (m *ListenerMutation) AddedIDs(name string) []ent.Value {
 	switch name {
+	case listener.EdgeApplication:
+		if id := m.application; id != nil {
+			return []ent.Value{*id}
+		}
 	case listener.EdgeSubscription:
 		if id := m.subscription; id != nil {
 			return []ent.Value{*id}
@@ -14794,6 +15028,10 @@ func (m *ListenerMutation) AddedIDs(name string) []ent.Value {
 		}
 	case listener.EdgeProviderApproval:
 		if id := m.provider_approval; id != nil {
+			return []ent.Value{*id}
+		}
+	case listener.EdgeConsumerApproval:
+		if id := m.consumer_approval; id != nil {
 			return []ent.Value{*id}
 		}
 	case listener.EdgeApprovalRequests:
@@ -14808,7 +15046,7 @@ func (m *ListenerMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *ListenerMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 4)
+	edges := make([]string, 0, 6)
 	if m.removedapproval_requests != nil {
 		edges = append(edges, listener.EdgeApprovalRequests)
 	}
@@ -14831,7 +15069,10 @@ func (m *ListenerMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *ListenerMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 4)
+	edges := make([]string, 0, 6)
+	if m.clearedapplication {
+		edges = append(edges, listener.EdgeApplication)
+	}
 	if m.clearedsubscription {
 		edges = append(edges, listener.EdgeSubscription)
 	}
@@ -14840,6 +15081,9 @@ func (m *ListenerMutation) ClearedEdges() []string {
 	}
 	if m.clearedprovider_approval {
 		edges = append(edges, listener.EdgeProviderApproval)
+	}
+	if m.clearedconsumer_approval {
+		edges = append(edges, listener.EdgeConsumerApproval)
 	}
 	if m.clearedapproval_requests {
 		edges = append(edges, listener.EdgeApprovalRequests)
@@ -14851,12 +15095,16 @@ func (m *ListenerMutation) ClearedEdges() []string {
 // was cleared in this mutation.
 func (m *ListenerMutation) EdgeCleared(name string) bool {
 	switch name {
+	case listener.EdgeApplication:
+		return m.clearedapplication
 	case listener.EdgeSubscription:
 		return m.clearedsubscription
 	case listener.EdgeExposure:
 		return m.clearedexposure
 	case listener.EdgeProviderApproval:
 		return m.clearedprovider_approval
+	case listener.EdgeConsumerApproval:
+		return m.clearedconsumer_approval
 	case listener.EdgeApprovalRequests:
 		return m.clearedapproval_requests
 	}
@@ -14867,6 +15115,9 @@ func (m *ListenerMutation) EdgeCleared(name string) bool {
 // if that edge is not defined in the schema.
 func (m *ListenerMutation) ClearEdge(name string) error {
 	switch name {
+	case listener.EdgeApplication:
+		m.ClearApplication()
+		return nil
 	case listener.EdgeSubscription:
 		m.ClearSubscription()
 		return nil
@@ -14876,6 +15127,9 @@ func (m *ListenerMutation) ClearEdge(name string) error {
 	case listener.EdgeProviderApproval:
 		m.ClearProviderApproval()
 		return nil
+	case listener.EdgeConsumerApproval:
+		m.ClearConsumerApproval()
+		return nil
 	}
 	return fmt.Errorf("unknown Listener unique edge %s", name)
 }
@@ -14884,6 +15138,9 @@ func (m *ListenerMutation) ClearEdge(name string) error {
 // It returns an error if the edge is not defined in the schema.
 func (m *ListenerMutation) ResetEdge(name string) error {
 	switch name {
+	case listener.EdgeApplication:
+		m.ResetApplication()
+		return nil
 	case listener.EdgeSubscription:
 		m.ResetSubscription()
 		return nil
@@ -14892,6 +15149,9 @@ func (m *ListenerMutation) ResetEdge(name string) error {
 		return nil
 	case listener.EdgeProviderApproval:
 		m.ResetProviderApproval()
+		return nil
+	case listener.EdgeConsumerApproval:
+		m.ResetConsumerApproval()
 		return nil
 	case listener.EdgeApprovalRequests:
 		m.ResetApprovalRequests()

@@ -16,6 +16,7 @@ type ListenerInfo struct {
 	ID           int              `json:"id"`
 	ResourceName string           `json:"resourceName"`
 	Approved     bool             `json:"approved"`
+	Application  *ApplicationInfo `json:"application"`
 	Consumer     *ApplicationInfo `json:"consumer"`
 	Provider     *ApplicationInfo `json:"provider"`
 }

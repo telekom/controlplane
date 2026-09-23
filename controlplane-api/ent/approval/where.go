@@ -802,6 +802,29 @@ func HasListenerWith(preds ...predicate.Listener) predicate.Approval {
 	})
 }
 
+// HasConsumerListener applies the HasEdge predicate on the "consumer_listener" edge.
+func HasConsumerListener() predicate.Approval {
+	return predicate.Approval(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, true, ConsumerListenerTable, ConsumerListenerColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasConsumerListenerWith applies the HasEdge predicate on the "consumer_listener" edge with a given conditions (other predicates).
+func HasConsumerListenerWith(preds ...predicate.Listener) predicate.Approval {
+	return predicate.Approval(func(s *sql.Selector) {
+		step := newConsumerListenerStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.Approval) predicate.Approval {
 	return predicate.Approval(sql.AndPredicates(predicates...))

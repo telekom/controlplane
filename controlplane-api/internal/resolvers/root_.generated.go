@@ -548,6 +548,7 @@ type ComplexityRoot struct {
 		Application      func(childComplexity int) int
 		Approved         func(childComplexity int) int
 		Consumer         func(childComplexity int) int
+		ConsumerApproval func(childComplexity int) int
 		CreatedAt        func(childComplexity int) int
 		Environment      func(childComplexity int) int
 		Exposure         func(childComplexity int) int
@@ -582,6 +583,7 @@ type ComplexityRoot struct {
 	}
 
 	ListenerInfo struct {
+		Application  func(childComplexity int) int
 		Approved     func(childComplexity int) int
 		Consumer     func(childComplexity int) int
 		ID           func(childComplexity int) int
@@ -2810,6 +2812,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Listener.Consumer(childComplexity), true
+	case "Listener.consumerApproval":
+		if e.ComplexityRoot.Listener.ConsumerApproval == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Listener.ConsumerApproval(childComplexity), true
 	case "Listener.createdAt":
 		if e.ComplexityRoot.Listener.CreatedAt == nil {
 			break
@@ -2946,6 +2954,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.ListenerFilter.Trigger(childComplexity), true
 
+	case "ListenerInfo.application":
+		if e.ComplexityRoot.ListenerInfo.Application == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ListenerInfo.Application(childComplexity), true
 	case "ListenerInfo.approved":
 		if e.ComplexityRoot.ListenerInfo.Approved == nil {
 			break
@@ -5908,6 +5922,11 @@ input ApprovalWhereInput {
   """
   hasListener: Boolean
   hasListenerWith: [ListenerWhereInput!]
+  """
+  consumer_listener edge predicates
+  """
+  hasConsumerListener: Boolean
+  hasConsumerListenerWith: [ListenerWhereInput!]
 }
 """
 Define a Relay Cursor type:
@@ -8701,7 +8720,9 @@ type ApplicationInfo {
 type ListenerInfo {
   id: ID!
   resourceName: String!
+  "True when both provider and consumer approvals are granted."
   approved: Boolean!
+  application: ApplicationInfo!
   consumer: ApplicationInfo!
   provider: ApplicationInfo!
 }
@@ -8737,7 +8758,7 @@ type EventExposureInfo {
 extend type Application {
   "Owning team (reduced view for cross-tenant safety)"
   ownerTeam: TeamInfo!
-  "All Listeners owned by this consumer application, including non-ready Listeners."
+  "All Listeners declared by this application, including non-ready Listeners."
   listeners(
     after: Cursor
     first: Int
@@ -8768,6 +8789,7 @@ extend type ApiExposure {
 
 extend type Listener {
   resourceName: String! @goField(forceResolver: true)
+  "True when both provider and consumer approvals are granted."
   approved: Boolean! @goField(forceResolver: true)
   apiBasePath: String! @goField(forceResolver: true)
   requestFilter: ListenerFilter @goField(forceResolver: true)
@@ -8778,6 +8800,7 @@ extend type Listener {
   subscription: ApiSubscriptionInfo! @goField(forceResolver: true)
   exposure: ApiExposureInfo! @goField(forceResolver: true)
   providerApproval: Approval @goField(forceResolver: true)
+  consumerApproval: Approval @goField(forceResolver: true)
 }
 
 extend type EventSubscription {
@@ -9850,6 +9873,8 @@ func (ec *executionContext) childFields_Listener(ctx context.Context, field grap
 		return ec.fieldContext_Listener_exposure(ctx, field)
 	case "providerApproval":
 		return ec.fieldContext_Listener_providerApproval(ctx, field)
+	case "consumerApproval":
+		return ec.fieldContext_Listener_consumerApproval(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type Listener", field.Name)
 }
@@ -9894,6 +9919,8 @@ func (ec *executionContext) childFields_ListenerInfo(ctx context.Context, field 
 		return ec.fieldContext_ListenerInfo_resourceName(ctx, field)
 	case "approved":
 		return ec.fieldContext_ListenerInfo_approved(ctx, field)
+	case "application":
+		return ec.fieldContext_ListenerInfo_application(ctx, field)
 	case "consumer":
 		return ec.fieldContext_ListenerInfo_consumer(ctx, field)
 	case "provider":

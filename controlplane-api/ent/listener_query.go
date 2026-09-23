@@ -18,6 +18,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/telekom/controlplane/controlplane-api/ent/apiexposure"
 	"github.com/telekom/controlplane/controlplane-api/ent/apisubscription"
+	"github.com/telekom/controlplane/controlplane-api/ent/application"
 	"github.com/telekom/controlplane/controlplane-api/ent/approval"
 	"github.com/telekom/controlplane/controlplane-api/ent/approvalrequest"
 	"github.com/telekom/controlplane/controlplane-api/ent/listener"
@@ -31,9 +32,11 @@ type ListenerQuery struct {
 	order                     []listener.OrderOption
 	inters                    []Interceptor
 	predicates                []predicate.Listener
+	withApplication           *ApplicationQuery
 	withSubscription          *ApiSubscriptionQuery
 	withExposure              *ApiExposureQuery
 	withProviderApproval      *ApprovalQuery
+	withConsumerApproval      *ApprovalQuery
 	withApprovalRequests      *ApprovalRequestQuery
 	withFKs                   bool
 	modifiers                 []func(*sql.Selector)
@@ -73,6 +76,28 @@ func (_q *ListenerQuery) Unique(unique bool) *ListenerQuery {
 func (_q *ListenerQuery) Order(o ...listener.OrderOption) *ListenerQuery {
 	_q.order = append(_q.order, o...)
 	return _q
+}
+
+// QueryApplication chains the current query on the "application" edge.
+func (_q *ListenerQuery) QueryApplication() *ApplicationQuery {
+	query := (&ApplicationClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(listener.Table, listener.FieldID, selector),
+			sqlgraph.To(application.Table, application.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, listener.ApplicationTable, listener.ApplicationColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
 }
 
 // QuerySubscription chains the current query on the "subscription" edge.
@@ -134,6 +159,28 @@ func (_q *ListenerQuery) QueryProviderApproval() *ApprovalQuery {
 			sqlgraph.From(listener.Table, listener.FieldID, selector),
 			sqlgraph.To(approval.Table, approval.FieldID),
 			sqlgraph.Edge(sqlgraph.O2O, false, listener.ProviderApprovalTable, listener.ProviderApprovalColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryConsumerApproval chains the current query on the "consumer_approval" edge.
+func (_q *ListenerQuery) QueryConsumerApproval() *ApprovalQuery {
+	query := (&ApprovalClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(listener.Table, listener.FieldID, selector),
+			sqlgraph.To(approval.Table, approval.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, false, listener.ConsumerApprovalTable, listener.ConsumerApprovalColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -355,14 +402,27 @@ func (_q *ListenerQuery) Clone() *ListenerQuery {
 		order:                append([]listener.OrderOption{}, _q.order...),
 		inters:               append([]Interceptor{}, _q.inters...),
 		predicates:           append([]predicate.Listener{}, _q.predicates...),
+		withApplication:      _q.withApplication.Clone(),
 		withSubscription:     _q.withSubscription.Clone(),
 		withExposure:         _q.withExposure.Clone(),
 		withProviderApproval: _q.withProviderApproval.Clone(),
+		withConsumerApproval: _q.withConsumerApproval.Clone(),
 		withApprovalRequests: _q.withApprovalRequests.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
 	}
+}
+
+// WithApplication tells the query-builder to eager-load the nodes that are connected to
+// the "application" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *ListenerQuery) WithApplication(opts ...func(*ApplicationQuery)) *ListenerQuery {
+	query := (&ApplicationClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withApplication = query
+	return _q
 }
 
 // WithSubscription tells the query-builder to eager-load the nodes that are connected to
@@ -395,6 +455,17 @@ func (_q *ListenerQuery) WithProviderApproval(opts ...func(*ApprovalQuery)) *Lis
 		opt(query)
 	}
 	_q.withProviderApproval = query
+	return _q
+}
+
+// WithConsumerApproval tells the query-builder to eager-load the nodes that are connected to
+// the "consumer_approval" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *ListenerQuery) WithConsumerApproval(opts ...func(*ApprovalQuery)) *ListenerQuery {
+	query := (&ApprovalClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withConsumerApproval = query
 	return _q
 }
 
@@ -494,14 +565,16 @@ func (_q *ListenerQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Lis
 		nodes       = []*Listener{}
 		withFKs     = _q.withFKs
 		_spec       = _q.querySpec()
-		loadedTypes = [4]bool{
+		loadedTypes = [6]bool{
+			_q.withApplication != nil,
 			_q.withSubscription != nil,
 			_q.withExposure != nil,
 			_q.withProviderApproval != nil,
+			_q.withConsumerApproval != nil,
 			_q.withApprovalRequests != nil,
 		}
 	)
-	if _q.withSubscription != nil || _q.withExposure != nil {
+	if _q.withApplication != nil || _q.withSubscription != nil || _q.withExposure != nil {
 		withFKs = true
 	}
 	if withFKs {
@@ -528,6 +601,12 @@ func (_q *ListenerQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Lis
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
+	if query := _q.withApplication; query != nil {
+		if err := _q.loadApplication(ctx, query, nodes, nil,
+			func(n *Listener, e *Application) { n.Edges.Application = e }); err != nil {
+			return nil, err
+		}
+	}
 	if query := _q.withSubscription; query != nil {
 		if err := _q.loadSubscription(ctx, query, nodes, nil,
 			func(n *Listener, e *ApiSubscription) { n.Edges.Subscription = e }); err != nil {
@@ -543,6 +622,12 @@ func (_q *ListenerQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Lis
 	if query := _q.withProviderApproval; query != nil {
 		if err := _q.loadProviderApproval(ctx, query, nodes, nil,
 			func(n *Listener, e *Approval) { n.Edges.ProviderApproval = e }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withConsumerApproval; query != nil {
+		if err := _q.loadConsumerApproval(ctx, query, nodes, nil,
+			func(n *Listener, e *Approval) { n.Edges.ConsumerApproval = e }); err != nil {
 			return nil, err
 		}
 	}
@@ -568,6 +653,38 @@ func (_q *ListenerQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Lis
 	return nodes, nil
 }
 
+func (_q *ListenerQuery) loadApplication(ctx context.Context, query *ApplicationQuery, nodes []*Listener, init func(*Listener), assign func(*Listener, *Application)) error {
+	ids := make([]int, 0, len(nodes))
+	nodeids := make(map[int][]*Listener)
+	for i := range nodes {
+		if nodes[i].application_listeners == nil {
+			continue
+		}
+		fk := *nodes[i].application_listeners
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	query.Where(application.IDIn(ids...))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nodeids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "application_listeners" returned %v`, n.ID)
+		}
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
+	}
+	return nil
+}
 func (_q *ListenerQuery) loadSubscription(ctx context.Context, query *ApiSubscriptionQuery, nodes []*Listener, init func(*Listener), assign func(*Listener, *ApiSubscription)) error {
 	ids := make([]int, 0, len(nodes))
 	nodeids := make(map[int][]*Listener)
@@ -655,6 +772,34 @@ func (_q *ListenerQuery) loadProviderApproval(ctx context.Context, query *Approv
 		node, ok := nodeids[*fk]
 		if !ok {
 			return fmt.Errorf(`unexpected referenced foreign-key "listener_provider_approval" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *ListenerQuery) loadConsumerApproval(ctx context.Context, query *ApprovalQuery, nodes []*Listener, init func(*Listener), assign func(*Listener, *Approval)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int]*Listener)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+	}
+	query.withFKs = true
+	query.Where(predicate.Approval(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(listener.ConsumerApprovalColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.listener_consumer_approval
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "listener_consumer_approval" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "listener_consumer_approval" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
 	}

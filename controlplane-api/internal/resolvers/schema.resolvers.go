@@ -222,7 +222,7 @@ func (r *applicationResolver) OwnerTeam(ctx context.Context, obj *ent.Applicatio
 
 // Listeners is the resolver for the listeners field.
 func (r *applicationResolver) Listeners(ctx context.Context, obj *ent.Application, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, where *ent.ListenerWhereInput) (*ent.ListenerConnection, error) {
-	return withListenerInfo(obj.QuerySubscribedApis().QueryListeners()).
+	return withListenerInfo(obj.QueryListeners()).
 		Paginate(viewer.SystemContext(ctx), after, first, before, last, ent.WithListenerFilter(where.Filter))
 }
 
@@ -267,6 +267,16 @@ func (r *approvalResolver) Subscription(ctx context.Context, obj *ent.Approval) 
 	}
 	if listenerTarget != nil {
 		return loadListenerInfo(sysCtx, r.client, listenerTarget)
+	}
+	consumerListener, err := obj.Edges.ConsumerListenerOrErr()
+	if ent.IsNotLoaded(err) {
+		consumerListener, err = obj.QueryConsumerListener().Only(sysCtx)
+	}
+	if err != nil && !ent.IsNotFound(err) {
+		return nil, fmt.Errorf("loading consumer listener for approval %d: %w", obj.ID, err)
+	}
+	if consumerListener != nil {
+		return loadListenerInfo(sysCtx, r.client, consumerListener)
 	}
 
 	return nil, fmt.Errorf("approval %d has no related subscription", obj.ID)
@@ -354,14 +364,26 @@ func (r *approvalRequestResolver) Approval(ctx context.Context, obj *ent.Approva
 		return nil, fmt.Errorf("loading listener for approval request %d: %w", obj.ID, listenerErr)
 	}
 	if listenerTarget != nil {
-		providerApproval, err := listenerTarget.QueryProviderApproval().Only(ctx)
+		var approvalQuery *ent.ApprovalQuery
+		var gate string
+		switch obj.Action {
+		case "listen-provider":
+			approvalQuery = listenerTarget.QueryProviderApproval()
+			gate = "provider"
+		case "listen-consumer":
+			approvalQuery = listenerTarget.QueryConsumerApproval()
+			gate = "consumer"
+		default:
+			return nil, fmt.Errorf("unknown listener approval action %q for approval request %d", obj.Action, obj.ID)
+		}
+		matchedApproval, err := approvalQuery.Only(ctx)
 		if ent.IsNotFound(err) {
 			return nil, nil
 		}
 		if err != nil {
-			return nil, fmt.Errorf("loading provider approval for listener %d: %w", listenerTarget.ID, err)
+			return nil, fmt.Errorf("loading %s approval for listener %d: %w", gate, listenerTarget.ID, err)
 		}
-		return providerApproval, nil
+		return matchedApproval, nil
 	}
 
 	// Fall back to event subscription path.
@@ -613,7 +635,20 @@ func (r *listenerResolver) Approved(ctx context.Context, obj *ent.Listener) (boo
 	if err != nil {
 		return false, fmt.Errorf("loading provider approval for listener %d: %w", obj.ID, err)
 	}
-	return providerApproval.State == approval.StateGranted, nil
+	if providerApproval.State != approval.StateGranted {
+		return false, nil
+	}
+	consumerApproval, err := obj.Edges.ConsumerApprovalOrErr()
+	if ent.IsNotLoaded(err) {
+		consumerApproval, err = obj.QueryConsumerApproval().Only(viewer.SystemContext(ctx))
+	}
+	if ent.IsNotFound(err) {
+		return false, nil
+	}
+	if err != nil {
+		return false, fmt.Errorf("loading consumer approval for listener %d: %w", obj.ID, err)
+	}
+	return consumerApproval.State == approval.StateGranted, nil
 }
 
 // APIBasePath is the resolver for the apiBasePath field.
@@ -633,7 +668,15 @@ func (r *listenerResolver) ResponseFilter(ctx context.Context, obj *ent.Listener
 
 // Application is the resolver for the application field.
 func (r *listenerResolver) Application(ctx context.Context, obj *ent.Listener) (*model.ApplicationInfo, error) {
-	return r.Listener().Consumer(ctx, obj)
+	sysCtx := viewer.SystemContext(ctx)
+	application, err := obj.Edges.ApplicationOrErr()
+	if ent.IsNotLoaded(err) {
+		application, err = obj.QueryApplication().Only(sysCtx)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("loading listener application for listener %d: %w", obj.ID, err)
+	}
+	return loadApplicationInfo(sysCtx, application)
 }
 
 // Consumer is the resolver for the consumer field.
@@ -715,6 +758,21 @@ func (r *listenerResolver) ProviderApproval(ctx context.Context, obj *ent.Listen
 		return nil, fmt.Errorf("loading provider approval for listener %d: %w", obj.ID, err)
 	}
 	return providerApproval, nil
+}
+
+// ConsumerApproval is the resolver for the consumerApproval field.
+func (r *listenerResolver) ConsumerApproval(ctx context.Context, obj *ent.Listener) (*ent.Approval, error) {
+	consumerApproval, err := obj.Edges.ConsumerApprovalOrErr()
+	if ent.IsNotLoaded(err) {
+		consumerApproval, err = obj.QueryConsumerApproval().Only(ctx)
+	}
+	if ent.IsNotFound(err) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("loading consumer approval for listener %d: %w", obj.ID, err)
+	}
+	return consumerApproval, nil
 }
 
 // Trigger is the resolver for the trigger field.

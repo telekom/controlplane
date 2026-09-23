@@ -116,6 +116,10 @@ func mapListenerInfo(listener *ent.Listener) (*model.ListenerInfo, error) {
 	if err != nil {
 		return nil, fmt.Errorf("loading exposure edge for listener %d: %w", listener.ID, err)
 	}
+	application, applicationTeam, applicationGroup, err := loadedOwnerChain(listener.Edges.Application, listener.ID, "listener")
+	if err != nil {
+		return nil, err
+	}
 	consumer, consumerTeam, consumerGroup, err := loadedOwnerChain(subscription.Edges.Owner, listener.ID, "consumer")
 	if err != nil {
 		return nil, err
@@ -132,11 +136,13 @@ func mapListenerInfo(listener *ent.Listener) (*model.ListenerInfo, error) {
 		return nil, fmt.Errorf("listener %d references api %d without a projected kubernetes name", listener.ID, apiDefinition.ID)
 	}
 
-	approved := listener.Edges.ProviderApproval != nil && listener.Edges.ProviderApproval.State == approval.StateGranted
+	approved := listener.Edges.ProviderApproval != nil && listener.Edges.ProviderApproval.State == approval.StateGranted &&
+		listener.Edges.ConsumerApproval != nil && listener.Edges.ConsumerApproval.State == approval.StateGranted
 	return &model.ListenerInfo{
 		ID:           listener.ID,
 		ResourceName: *apiDefinition.Name,
 		Approved:     approved,
+		Application:  mapApplicationInfo(application, applicationTeam, applicationGroup),
 		Consumer:     mapApplicationInfo(consumer, consumerTeam, consumerGroup),
 		Provider:     mapApplicationInfo(provider, providerTeam, providerGroup),
 	}, nil
@@ -144,6 +150,9 @@ func mapListenerInfo(listener *ent.Listener) (*model.ListenerInfo, error) {
 
 func withListenerInfo(query *ent.ListenerQuery) *ent.ListenerQuery {
 	return query.
+		WithApplication(func(q *ent.ApplicationQuery) {
+			q.WithOwnerTeam(func(q *ent.TeamQuery) { q.WithGroup() })
+		}).
 		WithSubscription(func(q *ent.ApiSubscriptionQuery) {
 			q.WithOwner(func(q *ent.ApplicationQuery) {
 				q.WithOwnerTeam(func(q *ent.TeamQuery) { q.WithGroup() })
@@ -155,7 +164,8 @@ func withListenerInfo(query *ent.ListenerQuery) *ent.ListenerQuery {
 				q.WithOwnerTeam(func(q *ent.TeamQuery) { q.WithGroup() })
 			})
 		}).
-		WithProviderApproval()
+		WithProviderApproval().
+		WithConsumerApproval()
 }
 
 func loadListenerInfo(ctx context.Context, client *ent.Client, listener *ent.Listener) (*model.ListenerInfo, error) {

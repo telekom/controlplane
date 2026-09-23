@@ -117,6 +117,7 @@ erDiagram
     Team ||--o{ Member : "has"
     Application ||--o{ ApiExposure : "exposes"
     Application ||--o{ ApiSubscription : "subscribes"
+    Application ||--o{ Listener : "declares"
     ApiExposure ||--o{ ApiSubscription : "target of"
     ApiSubscription ||--o| Approval : "has"
     ApiSubscription ||--o| ApprovalRequest : "has"
@@ -153,9 +154,11 @@ The ControlPlane API enforces strict team-level isolation through a **privacy la
 
 This filtering is applied transparently — the GraphQL schema is the same for all callers, but the results are scoped automatically. No additional configuration is needed.
 
-For Listeners, approvals, and approval requests, isolation uses an **OR** rule: a resource is visible if the caller's team is either the subscriber's team or the exposure owner's team. This allows both sides to inspect the Listener and its approval workflow.
+For Listeners, approvals, and approval requests, isolation uses an **OR** rule: a resource is visible if the caller's team owns the listener application, the consumer application, or the provider application. This allows all three parties to inspect the Listener and its approval workflow.
 
-`ApiExposure.listeners` and `ApiSubscription.listeners` return only Listeners whose projected `Ready` condition is true. `Application.listeners` and top-level Listener queries include non-ready Listeners. API-specific values such as `apiBasePath`, `requestFilter`, and `responseFilter` are flat Listener fields. `approved` is true only when the provider approval is granted. Monitoring state is not stored or exposed; clients derive it from projected state.
+`Listener.application` identifies the application that declared the Listener and receives captured events. `Listener.consumer` and `Listener.provider` are derived from the related API subscription and exposure. `Application.listeners` follows the listener-application relationship, not the consumer relationship.
+
+`ApiExposure.listeners` and `ApiSubscription.listeners` return only Listeners whose projected `Ready` condition is true. `Application.listeners` and top-level Listener queries include non-ready Listeners. API-specific values such as `apiBasePath`, `requestFilter`, and `responseFilter` are flat Listener fields. `approved` is true only when both the provider and consumer approvals are granted. `providerApproval` and `consumerApproval` expose the separate decisions. Monitoring state is not stored or exposed; clients derive it from projected state.
 
 #### Cross-Tenant Safety
 

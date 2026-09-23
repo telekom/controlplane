@@ -252,6 +252,25 @@ func (_c *ApprovalCreate) SetListener(v *Listener) *ApprovalCreate {
 	return _c.SetListenerID(v.ID)
 }
 
+// SetConsumerListenerID sets the "consumer_listener" edge to the Listener entity by ID.
+func (_c *ApprovalCreate) SetConsumerListenerID(id int) *ApprovalCreate {
+	_c.mutation.SetConsumerListenerID(id)
+	return _c
+}
+
+// SetNillableConsumerListenerID sets the "consumer_listener" edge to the Listener entity by ID if the given value is not nil.
+func (_c *ApprovalCreate) SetNillableConsumerListenerID(id *int) *ApprovalCreate {
+	if id != nil {
+		_c = _c.SetConsumerListenerID(*id)
+	}
+	return _c
+}
+
+// SetConsumerListener sets the "consumer_listener" edge to the Listener entity.
+func (_c *ApprovalCreate) SetConsumerListener(v *Listener) *ApprovalCreate {
+	return _c.SetConsumerListenerID(v.ID)
+}
+
 // Mutation returns the ApprovalMutation object of the builder.
 func (_c *ApprovalCreate) Mutation() *ApprovalMutation {
 	return _c.mutation
@@ -532,6 +551,23 @@ func (_c *ApprovalCreate) createSpec() (*Approval, *sqlgraph.CreateSpec) {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_node.listener_provider_approval = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.ConsumerListenerIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: true,
+			Table:   approval.ConsumerListenerTable,
+			Columns: []string{approval.ConsumerListenerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(listener.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.listener_consumer_approval = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

@@ -1124,6 +1124,22 @@ func (c *ApplicationClient) QuerySubscribedEvents(_m *Application) *EventSubscri
 	return query
 }
 
+// QueryListeners queries the listeners edge of a Application.
+func (c *ApplicationClient) QueryListeners(_m *Application) *ListenerQuery {
+	query := (&ListenerClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(application.Table, application.FieldID, id),
+			sqlgraph.To(listener.Table, listener.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, application.ListenersTable, application.ListenersColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // QueryPermissionSet queries the permission_set edge of a Application.
 func (c *ApplicationClient) QueryPermissionSet(_m *Application) *PermissionSetQuery {
 	query := (&PermissionSetClient{config: c.config}).Query()
@@ -1315,6 +1331,22 @@ func (c *ApprovalClient) QueryListener(_m *Approval) *ListenerQuery {
 			sqlgraph.From(approval.Table, approval.FieldID, id),
 			sqlgraph.To(listener.Table, listener.FieldID),
 			sqlgraph.Edge(sqlgraph.O2O, true, approval.ListenerTable, approval.ListenerColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryConsumerListener queries the consumer_listener edge of a Approval.
+func (c *ApprovalClient) QueryConsumerListener(_m *Approval) *ListenerQuery {
+	query := (&ListenerClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(approval.Table, approval.FieldID, id),
+			sqlgraph.To(listener.Table, listener.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, true, approval.ConsumerListenerTable, approval.ConsumerListenerColumn),
 		)
 		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
@@ -2334,6 +2366,22 @@ func (c *ListenerClient) GetX(ctx context.Context, id int) *Listener {
 	return obj
 }
 
+// QueryApplication queries the application edge of a Listener.
+func (c *ListenerClient) QueryApplication(_m *Listener) *ApplicationQuery {
+	query := (&ApplicationClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(listener.Table, listener.FieldID, id),
+			sqlgraph.To(application.Table, application.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, listener.ApplicationTable, listener.ApplicationColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // QuerySubscription queries the subscription edge of a Listener.
 func (c *ListenerClient) QuerySubscription(_m *Listener) *ApiSubscriptionQuery {
 	query := (&ApiSubscriptionClient{config: c.config}).Query()
@@ -2375,6 +2423,22 @@ func (c *ListenerClient) QueryProviderApproval(_m *Listener) *ApprovalQuery {
 			sqlgraph.From(listener.Table, listener.FieldID, id),
 			sqlgraph.To(approval.Table, approval.FieldID),
 			sqlgraph.Edge(sqlgraph.O2O, false, listener.ProviderApprovalTable, listener.ProviderApprovalColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryConsumerApproval queries the consumer_approval edge of a Listener.
+func (c *ListenerClient) QueryConsumerApproval(_m *Listener) *ApprovalQuery {
+	query := (&ApprovalClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(listener.Table, listener.FieldID, id),
+			sqlgraph.To(approval.Table, approval.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, false, listener.ConsumerApprovalTable, listener.ConsumerApprovalColumn),
 		)
 		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil

@@ -35,12 +35,13 @@ type SeedData struct {
 
 	Subscription *ent.ApiSubscription
 
-	Approval                *ent.Approval
-	ApprovalRequest         *ent.ApprovalRequest
-	ListenerApproval        *ent.Approval
-	ListenerApprovalRequest *ent.ApprovalRequest
-	ListenerReady           *ent.Listener
-	ListenerPending         *ent.Listener
+	Approval                 *ent.Approval
+	ApprovalRequest          *ent.ApprovalRequest
+	ListenerApproval         *ent.Approval
+	ListenerConsumerApproval *ent.Approval
+	ListenerApprovalRequest  *ent.ApprovalRequest
+	ListenerReady            *ent.Listener
+	ListenerPending          *ent.Listener
 
 	MemberAlpha *ent.Member
 	MemberBeta  *ent.Member
@@ -126,6 +127,7 @@ func SeedStandard(client *ent.Client) *SeedData {
 		SetStatusPhase(listener.StatusPhaseReady).
 		SetRequestFilter(&model.ListenerFilter{Trigger: map[string]string{"method": "GET"}, Payload: []string{"request.id"}}).
 		SetResponseFilter(&model.ListenerFilter{Payload: []string{"response.id"}}).
+		SetApplication(s.AppBeta).
 		SetSubscription(s.Subscription).
 		SetExposure(s.ExposureAlpha).
 		Save(ctx))
@@ -134,23 +136,34 @@ func SeedStandard(client *ent.Client) *SeedData {
 		SetName("listener-pending").
 		SetAPIBasePath("/alpha").
 		SetStatusPhase(listener.StatusPhasePending).
+		SetApplication(s.AppBeta).
 		SetSubscription(s.Subscription).
 		SetExposure(s.ExposureAlpha).
 		Save(ctx))
 	s.ListenerApproval = must(client.Approval.Create().
 		SetNamespace("prod").
 		SetName("listener--listener-ready").
-		SetAction("ALLOW").
+		SetAction("listen-provider").
 		SetState(approval.StateGranted).
 		SetRequester(model.RequesterInfo{TeamName: teamBeta}).
 		SetDecider(model.DeciderInfo{TeamName: teamAlpha}).
 		SetDeciderTeamName(teamAlpha).
 		SetListener(s.ListenerReady).
 		Save(ctx))
+	s.ListenerConsumerApproval = must(client.Approval.Create().
+		SetNamespace("prod").
+		SetName("listener--listener-ready--consumer").
+		SetAction("listen-consumer").
+		SetState(approval.StateGranted).
+		SetRequester(model.RequesterInfo{TeamName: teamBeta}).
+		SetDecider(model.DeciderInfo{TeamName: teamBeta}).
+		SetDeciderTeamName(teamBeta).
+		SetConsumerListener(s.ListenerReady).
+		Save(ctx))
 	s.ListenerApprovalRequest = must(client.ApprovalRequest.Create().
 		SetNamespace("prod").
 		SetName("listener--listener-ready--req-1").
-		SetAction("ALLOW").
+		SetAction("listen-provider").
 		SetRequester(model.RequesterInfo{TeamName: teamBeta}).
 		SetDecider(model.DeciderInfo{TeamName: teamAlpha}).
 		SetDeciderTeamName(teamAlpha).

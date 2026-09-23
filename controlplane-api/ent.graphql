@@ -1784,6 +1784,11 @@ input ApprovalWhereInput {
   """
   hasListener: Boolean
   hasListenerWith: [ListenerWhereInput!]
+  """
+  consumer_listener edge predicates
+  """
+  hasConsumerListener: Boolean
+  hasConsumerListenerWith: [ListenerWhereInput!]
 }
 """
 Define a Relay Cursor type:

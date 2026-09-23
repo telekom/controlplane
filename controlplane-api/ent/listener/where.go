@@ -568,6 +568,29 @@ func ResponseFilterNotNil() predicate.Listener {
 	return predicate.Listener(sql.FieldNotNull(FieldResponseFilter))
 }
 
+// HasApplication applies the HasEdge predicate on the "application" edge.
+func HasApplication() predicate.Listener {
+	return predicate.Listener(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, ApplicationTable, ApplicationColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasApplicationWith applies the HasEdge predicate on the "application" edge with a given conditions (other predicates).
+func HasApplicationWith(preds ...predicate.Application) predicate.Listener {
+	return predicate.Listener(func(s *sql.Selector) {
+		step := newApplicationStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // HasSubscription applies the HasEdge predicate on the "subscription" edge.
 func HasSubscription() predicate.Listener {
 	return predicate.Listener(func(s *sql.Selector) {
@@ -629,6 +652,29 @@ func HasProviderApproval() predicate.Listener {
 func HasProviderApprovalWith(preds ...predicate.Approval) predicate.Listener {
 	return predicate.Listener(func(s *sql.Selector) {
 		step := newProviderApprovalStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasConsumerApproval applies the HasEdge predicate on the "consumer_approval" edge.
+func HasConsumerApproval() predicate.Listener {
+	return predicate.Listener(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, false, ConsumerApprovalTable, ConsumerApprovalColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasConsumerApprovalWith applies the HasEdge predicate on the "consumer_approval" edge with a given conditions (other predicates).
+func HasConsumerApprovalWith(preds ...predicate.Approval) predicate.Listener {
+	return predicate.Listener(func(s *sql.Selector) {
+		step := newConsumerApprovalStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

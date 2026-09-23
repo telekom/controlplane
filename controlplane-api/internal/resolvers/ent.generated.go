@@ -90,6 +90,7 @@ type ListenerResolver interface {
 	Subscription(ctx context.Context, obj *ent.Listener) (*model.ApiSubscriptionInfo, error)
 	Exposure(ctx context.Context, obj *ent.Listener) (*model.ApiExposureInfo, error)
 	ProviderApproval(ctx context.Context, obj *ent.Listener) (*ent.Approval, error)
+	ConsumerApproval(ctx context.Context, obj *ent.Listener) (*ent.Approval, error)
 }
 type QueryResolver interface {
 	Node(ctx context.Context, id int) (ent.Noder, error)
@@ -7538,6 +7539,38 @@ func (ec *executionContext) fieldContext_Listener_providerApproval(_ context.Con
 	return fc, nil
 }
 
+func (ec *executionContext) _Listener_consumerApproval(ctx context.Context, field graphql.CollectedField, obj *ent.Listener) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Listener_consumerApproval(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return ec.Resolvers.Listener().ConsumerApproval(ctx, obj)
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *ent.Approval) graphql.Marshaler {
+			return ec.marshalOApproval2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐApproval(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_Listener_consumerApproval(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Listener",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_Approval(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _ListenerConnection_edges(ctx context.Context, field graphql.CollectedField, obj *ent.ListenerConnection) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -14880,7 +14913,7 @@ func (ec *executionContext) unmarshalInputApprovalWhereInput(ctx context.Context
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "lastModifiedAt", "lastModifiedAtNEQ", "lastModifiedAtIn", "lastModifiedAtNotIn", "lastModifiedAtGT", "lastModifiedAtGTE", "lastModifiedAtLT", "lastModifiedAtLTE", "statusPhase", "statusPhaseNEQ", "statusPhaseIn", "statusPhaseNotIn", "statusPhaseIsNil", "statusPhaseNotNil", "statusMessage", "statusMessageNEQ", "statusMessageIn", "statusMessageNotIn", "statusMessageGT", "statusMessageGTE", "statusMessageLT", "statusMessageLTE", "statusMessageContains", "statusMessageHasPrefix", "statusMessageHasSuffix", "statusMessageIsNil", "statusMessageNotNil", "statusMessageEqualFold", "statusMessageContainsFold", "environment", "environmentNEQ", "environmentIn", "environmentNotIn", "environmentGT", "environmentGTE", "environmentLT", "environmentLTE", "environmentContains", "environmentHasPrefix", "environmentHasSuffix", "environmentIsNil", "environmentNotNil", "environmentEqualFold", "environmentContainsFold", "namespace", "namespaceNEQ", "namespaceIn", "namespaceNotIn", "namespaceGT", "namespaceGTE", "namespaceLT", "namespaceLTE", "namespaceContains", "namespaceHasPrefix", "namespaceHasSuffix", "namespaceEqualFold", "namespaceContainsFold", "action", "actionNEQ", "actionIn", "actionNotIn", "actionGT", "actionGTE", "actionLT", "actionLTE", "actionContains", "actionHasPrefix", "actionHasSuffix", "actionEqualFold", "actionContainsFold", "strategy", "strategyNEQ", "strategyIn", "strategyNotIn", "deciderTeamName", "deciderTeamNameNEQ", "deciderTeamNameIn", "deciderTeamNameNotIn", "deciderTeamNameGT", "deciderTeamNameGTE", "deciderTeamNameLT", "deciderTeamNameLTE", "deciderTeamNameContains", "deciderTeamNameHasPrefix", "deciderTeamNameHasSuffix", "deciderTeamNameEqualFold", "deciderTeamNameContainsFold", "name", "nameNEQ", "nameIn", "nameNotIn", "nameGT", "nameGTE", "nameLT", "nameLTE", "nameContains", "nameHasPrefix", "nameHasSuffix", "nameEqualFold", "nameContainsFold", "expiresat", "expiresatNEQ", "expiresatIn", "expiresatNotIn", "expiresatGT", "expiresatGTE", "expiresatLT", "expiresatLTE", "expiresatIsNil", "expiresatNotNil", "state", "stateNEQ", "stateIn", "stateNotIn", "hasAPISubscription", "hasAPISubscriptionWith", "hasEventSubscription", "hasEventSubscriptionWith", "hasListener", "hasListenerWith"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "lastModifiedAt", "lastModifiedAtNEQ", "lastModifiedAtIn", "lastModifiedAtNotIn", "lastModifiedAtGT", "lastModifiedAtGTE", "lastModifiedAtLT", "lastModifiedAtLTE", "statusPhase", "statusPhaseNEQ", "statusPhaseIn", "statusPhaseNotIn", "statusPhaseIsNil", "statusPhaseNotNil", "statusMessage", "statusMessageNEQ", "statusMessageIn", "statusMessageNotIn", "statusMessageGT", "statusMessageGTE", "statusMessageLT", "statusMessageLTE", "statusMessageContains", "statusMessageHasPrefix", "statusMessageHasSuffix", "statusMessageIsNil", "statusMessageNotNil", "statusMessageEqualFold", "statusMessageContainsFold", "environment", "environmentNEQ", "environmentIn", "environmentNotIn", "environmentGT", "environmentGTE", "environmentLT", "environmentLTE", "environmentContains", "environmentHasPrefix", "environmentHasSuffix", "environmentIsNil", "environmentNotNil", "environmentEqualFold", "environmentContainsFold", "namespace", "namespaceNEQ", "namespaceIn", "namespaceNotIn", "namespaceGT", "namespaceGTE", "namespaceLT", "namespaceLTE", "namespaceContains", "namespaceHasPrefix", "namespaceHasSuffix", "namespaceEqualFold", "namespaceContainsFold", "action", "actionNEQ", "actionIn", "actionNotIn", "actionGT", "actionGTE", "actionLT", "actionLTE", "actionContains", "actionHasPrefix", "actionHasSuffix", "actionEqualFold", "actionContainsFold", "strategy", "strategyNEQ", "strategyIn", "strategyNotIn", "deciderTeamName", "deciderTeamNameNEQ", "deciderTeamNameIn", "deciderTeamNameNotIn", "deciderTeamNameGT", "deciderTeamNameGTE", "deciderTeamNameLT", "deciderTeamNameLTE", "deciderTeamNameContains", "deciderTeamNameHasPrefix", "deciderTeamNameHasSuffix", "deciderTeamNameEqualFold", "deciderTeamNameContainsFold", "name", "nameNEQ", "nameIn", "nameNotIn", "nameGT", "nameGTE", "nameLT", "nameLTE", "nameContains", "nameHasPrefix", "nameHasSuffix", "nameEqualFold", "nameContainsFold", "expiresat", "expiresatNEQ", "expiresatIn", "expiresatNotIn", "expiresatGT", "expiresatGTE", "expiresatLT", "expiresatLTE", "expiresatIsNil", "expiresatNotNil", "state", "stateNEQ", "stateIn", "stateNotIn", "hasAPISubscription", "hasAPISubscriptionWith", "hasEventSubscription", "hasEventSubscriptionWith", "hasListener", "hasListenerWith", "hasConsumerListener", "hasConsumerListenerWith"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -15860,6 +15893,20 @@ func (ec *executionContext) unmarshalInputApprovalWhereInput(ctx context.Context
 				return it, err
 			}
 			it.HasListenerWith = data
+		case "hasConsumerListener":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasConsumerListener"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HasConsumerListener = data
+		case "hasConsumerListenerWith":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasConsumerListenerWith"))
+			data, err := ec.unmarshalOListenerWhereInput2ᚕᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐListenerWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HasConsumerListenerWith = data
 		}
 	}
 	return it, nil
@@ -26683,6 +26730,44 @@ func (ec *executionContext) _Listener(ctx context.Context, sel ast.SelectionSet,
 					}
 				}()
 				res = ec._Listener_providerApproval(ctx, field, obj)
+				if res == graphql.RequiredNull {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.IsDeferred() {
+				deferredFieldSet.AddField(field)
+				fieldIndex := len(deferredFieldSet.Values) - 1
+				deferredFieldSet.Concurrently(fieldIndex, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, deferredFieldSet)
+				})
+
+				for _, deferrable := range field.Deferrables {
+					view, ok := deferLabelToView[deferrable.Label]
+					if !ok {
+						view = deferredFieldSet.NewView()
+						deferLabelToView[deferrable.Label] = view
+					}
+					view.AddIndices(fieldIndex)
+				}
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "consumerApproval":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Listener_consumerApproval(ctx, field, obj)
 				if res == graphql.RequiredNull {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
