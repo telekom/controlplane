@@ -408,6 +408,29 @@ spec:
                         type: string
                       lastRetiredUID:
                         type: string
+                      pendingDeletions:
+                        items:
+                          description: |-
+                            PendingDeletion tracks per-resource deletion state so the controller can
+                            survive a crash between issuing a delete and acknowledging the result.
+                          properties:
+                            kind:
+                              type: string
+                            name:
+                              type: string
+                            namespace:
+                              type: string
+                            phase:
+                              enum:
+                              - DeletePrepared
+                              - DeleteObserved
+                              type: string
+                            resourceVersion:
+                              type: string
+                            uid:
+                              type: string
+                          type: object
+                        type: array
                       requestsRetired:
                         type: boolean
                     type: object
