@@ -12,6 +12,7 @@ import (
 
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	approvalapi "github.com/telekom/controlplane/approval/api/v1"
+	ctypes "github.com/telekom/controlplane/common/pkg/types"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	spectrev1 "github.com/telekom/controlplane/spectre/api/v1"
 )
@@ -111,6 +112,16 @@ const (
 	ExportPendingDeletionPhasePrepared = PendingDeletionPhasePrepared
 	ExportPendingDeletionPhaseObserved = PendingDeletionPhaseObserved
 )
+
+// Migration phase constants for test use.
+const (
+	ExportMigrationPhaseDraining = MigrationPhaseDraining
+)
+
+// HasPendingDeletionFor is the exported wrapper for hasPendingDeletionFor (test use).
+func HasPendingDeletionFor(migration *spectrev1.AuthorizationMigrationStatus, kind string, ref *ctypes.ObjectRef) bool {
+	return hasPendingDeletionFor(migration, kind, ref)
+}
 
 // CheckEarlyRestriction is the exported wrapper for checkEarlyRestriction (test use).
 func (h *ListenerHandler) CheckEarlyRestriction(

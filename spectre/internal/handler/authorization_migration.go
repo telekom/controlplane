@@ -181,17 +181,26 @@ func (h *ListenerHandler) advanceMigration(
 
 	// Validate that recorded legacy evidence still exists and matches.
 	if migration.LegacyApproval != nil && mctx.legacyApproval == nil {
-		// Evidence was recorded but is now missing — block.
-		migration.Phase = MigrationPhaseBlocked
-		reason := "Legacy Approval was previously recorded but is now missing or recreated"
-		listener.SetCondition(condition.NewNotReadyCondition("LegacyApprovalMigrationBlocked", reason))
-		listener.SetCondition(condition.NewBlockedCondition(reason))
-		logger.Info("Migration blocked: recorded evidence missing", "approvalRef", migration.LegacyApproval.String())
-		return false, nil
+		// Check if the absence is expected because we have a pending deletion
+		// checkpoint for this Approval. After retireLegacyApproval deletes the
+		// object, the next reconcile's discovery will find nothing — that is the
+		// happy path, not a blocking condition.
+		if !hasPendingDeletionFor(migration, "Approval", migration.LegacyApproval) {
+			// Unexplained absence — block.
+			migration.Phase = MigrationPhaseBlocked
+			reason := "Legacy Approval was previously recorded but is now missing or recreated"
+			listener.SetCondition(condition.NewNotReadyCondition("LegacyApprovalMigrationBlocked", reason))
+			listener.SetCondition(condition.NewBlockedCondition(reason))
+			logger.Info("Migration blocked: recorded evidence missing", "approvalRef", migration.LegacyApproval.String())
+			return false, nil
+		}
+		// Expected absence after our own deletion — let the retirement phase handle it.
+		logger.V(1).Info("Approval absent but pending deletion checkpoint exists, continuing", "approvalRef", migration.LegacyApproval.String())
 	}
 
 	// UID cross-check: catch a legacy Approval that was deleted and recreated
 	// with the same name — the new object is not the original consent.
+	// Skip if the Approval is absent due to a pending deletion (handled above).
 	if migration.LegacyApproval != nil && mctx.legacyApprovalRef != nil &&
 		migration.LegacyApproval.UID != mctx.legacyApprovalRef.UID {
 		migration.Phase = MigrationPhaseBlocked
@@ -429,6 +438,22 @@ func findPendingDeletion(pds []spectrev1.PendingDeletion, kind, name, ns string)
 	return -1
 }
 
+// hasPendingDeletionFor returns true if the migration has a PendingDeletion
+// checkpoint in the DeletePrepared phase for the given kind whose UID matches
+// the recorded ObjectRef. This indicates the controller itself deleted the
+// resource and is waiting to observe the NotFound confirmation.
+func hasPendingDeletionFor(migration *spectrev1.AuthorizationMigrationStatus, kind string, ref *ctypes.ObjectRef) bool {
+	if migration.RetirementCheckpoint == nil || ref == nil {
+		return false
+	}
+	idx := findPendingDeletion(migration.RetirementCheckpoint.PendingDeletions, kind, ref.Name, ref.Namespace)
+	if idx < 0 {
+		return false
+	}
+	pd := &migration.RetirementCheckpoint.PendingDeletions[idx]
+	return pd.Phase == PendingDeletionPhasePrepared && pd.UID == string(ref.UID)
+}
+
 // retireLegacyRequests deletes legacy ApprovalRequests using per-resource
 // deletion checkpoints. Each request goes through:
 //  1. Fresh read + UID check -> record PendingDeletion(DeletePrepared) -> return
@@ -512,15 +537,26 @@ func (h *ListenerHandler) retireLegacyRequests(
 
 		pd := &cp.PendingDeletions[idx]
 		if pd.Phase == PendingDeletionPhasePrepared {
-			// Step 2: UID/RV match confirmed — delete with UID precondition.
+			// Step 2: UID/RV match confirmed — delete with both preconditions.
 			if pd.UID != string(ar.UID) {
 				// UID changed since checkpoint — re-evaluate.
 				pd.UID = string(ar.UID)
 				pd.ResourceVersion = ar.ResourceVersion
 				return false, nil // persist updated checkpoint
 			}
+			if pd.ResourceVersion != ar.ResourceVersion {
+				// ResourceVersion changed since checkpoint — re-evaluate.
+				logger.Info("ApprovalRequest ResourceVersion changed since checkpoint, re-validating",
+					"name", ref.Name, "checkpointRV", pd.ResourceVersion, "currentRV", ar.ResourceVersion)
+				pd.ResourceVersion = ar.ResourceVersion
+				return false, nil // persist updated checkpoint
+			}
 			uid := ar.UID
-			precond := client.Preconditions(metav1.Preconditions{UID: &uid})
+			rv := ar.ResourceVersion
+			precond := client.Preconditions(metav1.Preconditions{
+				UID:             &uid,
+				ResourceVersion: &rv,
+			})
 			if err := c.Delete(ctx, ar, precond); err != nil && !apierrors.IsNotFound(err) {
 				return false, errors.Wrapf(err, "failed to delete legacy ApprovalRequest %q", ref.Name)
 			}
@@ -595,6 +631,18 @@ func (h *ListenerHandler) retireLegacyApproval(
 			ref.Name, ref.UID, approval.UID)
 	}
 
+	// Re-check restrictive state before deletion. Between the initial migration
+	// check and this retirement step the Approval may have been Rejected or
+	// Suspended. Deleting a now-restrictive Approval would silently remove the
+	// block signal — instead, block migration so the operator can investigate.
+	if blocked, reason := isLegacyBlocked(approval); blocked {
+		migration.Phase = MigrationPhaseBlocked
+		mctx.listener.SetCondition(condition.NewNotReadyCondition("LegacyApprovalMigrationBlocked", reason))
+		mctx.listener.SetCondition(condition.NewBlockedCondition(reason))
+		logger.Info("Retirement blocked: Approval became restrictive", "reason", reason)
+		return false, nil
+	}
+
 	if idx < 0 {
 		// Step 1: Record PendingDeletion checkpoint before deletion.
 		cp.PendingDeletions = append(cp.PendingDeletions, spectrev1.PendingDeletion{
@@ -613,14 +661,29 @@ func (h *ListenerHandler) retireLegacyApproval(
 
 	pd := &cp.PendingDeletions[idx]
 	if pd.Phase == PendingDeletionPhasePrepared {
-		// Step 2: UID match confirmed — delete with UID precondition.
+		// Step 2: UID match confirmed — check ResourceVersion for concurrent changes.
 		if pd.UID != string(approval.UID) {
 			pd.UID = string(approval.UID)
 			pd.ResourceVersion = approval.ResourceVersion
 			return false, nil // persist updated checkpoint
 		}
+		if pd.ResourceVersion != approval.ResourceVersion {
+			// The Approval was modified since we recorded the checkpoint. Update
+			// the checkpoint and re-validate on the next reconcile (the re-check
+			// above will catch any new restrictive state).
+			logger.Info("Approval ResourceVersion changed since checkpoint, re-validating",
+				"name", ref.Name, "checkpointRV", pd.ResourceVersion, "currentRV", approval.ResourceVersion)
+			pd.ResourceVersion = approval.ResourceVersion
+			return false, nil // persist updated checkpoint
+		}
+		// Delete with both UID and ResourceVersion preconditions to guard
+		// against concurrent modifications between the Get and the Delete.
 		uid := approval.UID
-		precond := client.Preconditions(metav1.Preconditions{UID: &uid})
+		rv := approval.ResourceVersion
+		precond := client.Preconditions(metav1.Preconditions{
+			UID:             &uid,
+			ResourceVersion: &rv,
+		})
 		if err := c.Delete(ctx, approval, precond); err != nil && !apierrors.IsNotFound(err) {
 			return false, errors.Wrapf(err, "failed to delete legacy Approval %q", ref.Name)
 		}
