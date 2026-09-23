@@ -44,48 +44,87 @@ type ListenerPlacement struct {
 }
 
 // ResolvePlacement resolves the EventConfig, EventStore, and callback URL for
-// a Listener whose listening zone and gateway Route have already been determined.
+// a Listener whose capture zone, observer zone, and gateway Route have already
+// been determined.
 //
-// The caller is responsible for calling GetListeningZone and findRouteByPath
-// beforehand so that route-mode rejection (pass-through, failover) can happen
-// before this more expensive resolution. ResolvePlacement then resolves the
-// remaining infrastructure: EventConfig, EventStore, callback URL.
+// captureZone is the zone where traffic is intercepted (from GetListeningZone).
+// observerZone is A's zone — the SpectreApplication owner — where delivery
+// always happens.
 //
-// During Phase 2 (A==C enforced), capture and delivery are co-located: the
-// listening zone serves both roles and the callback origin is the capture zone.
+// When captureZone == observerZone (same-zone / A==C on the same path), a
+// single EventConfig and EventStore serve both roles and the local CallbackURL
+// is used. When the zones differ (cross-zone), separate EventConfigs and
+// EventStores are resolved and the delivery EventConfig's ProxyCallbackURLs
+// map supplies the callback URL keyed by the capture zone name.
 func ResolvePlacement(
 	ctx context.Context,
-	listeningZone *adminv1.Zone,
+	captureZone *adminv1.Zone,
+	observerZone *adminv1.Zone,
 	route *gatewayv1.Route,
 ) (*ListenerPlacement, error) {
-	// Step 1: Resolve EventConfig for the listening zone.
-	eventConfig, err := GetEventConfig(ctx, listeningZone)
+	// Step 1: Resolve capture-side EventConfig and EventStore.
+	captureEventConfig, err := GetEventConfig(ctx, captureZone)
 	if err != nil {
-		return nil, errors.Wrap(err, "placement: failed to get EventConfig")
+		return nil, errors.Wrap(err, "placement: failed to get capture EventConfig")
+	}
+	captureEventStore, err := ResolveEventStore(ctx, captureEventConfig)
+	if err != nil {
+		return nil, errors.Wrap(err, "placement: failed to resolve capture EventStore")
 	}
 
-	if eventConfig.Status.CallbackURL == "" {
+	// Same-zone fast path: capture and delivery share the same infrastructure.
+	if captureZone.Name == observerZone.Name {
+		if captureEventConfig.Status.CallbackURL == "" {
+			return nil, ctrlerrors.BlockedErrorf(
+				"placement: EventConfig %q has no CallbackURL in status", captureEventConfig.Name)
+		}
+		return &ListenerPlacement{
+			CaptureZone:         captureZone,
+			CaptureRoute:        route,
+			CaptureEventConfig:  captureEventConfig,
+			CaptureEventStore:   captureEventStore,
+			CallbackOriginZone:  captureZone,
+			DeliveryZone:        captureZone,
+			DeliveryEventConfig: captureEventConfig,
+			DeliveryEventStore:  captureEventStore,
+			BridgeNamespace:     captureEventStore.Namespace,
+			CallbackBaseURL:     captureEventConfig.Status.CallbackURL,
+		}, nil
+	}
+
+	// Cross-zone: resolve delivery-side independently from observer zone.
+	deliveryEventConfig, err := GetEventConfig(ctx, observerZone)
+	if err != nil {
+		return nil, errors.Wrap(err, "placement: failed to get delivery EventConfig for observer zone")
+	}
+	deliveryEventStore, err := ResolveEventStore(ctx, deliveryEventConfig)
+	if err != nil {
+		return nil, errors.Wrap(err, "placement: failed to resolve delivery EventStore for observer zone")
+	}
+
+	// Cross-zone callback: use ProxyCallbackURLs from the delivery EventConfig
+	// keyed by the capture zone name.
+	if deliveryEventConfig.Status.ProxyCallbackURLs == nil {
 		return nil, ctrlerrors.BlockedErrorf(
-			"placement: EventConfig %q has no CallbackURL in status", eventConfig.Name)
+			"placement: cross-zone delivery EventConfig %q has no ProxyCallbackURLs", deliveryEventConfig.Name)
+	}
+	callbackURL, ok := deliveryEventConfig.Status.ProxyCallbackURLs[captureZone.Name]
+	if !ok {
+		return nil, ctrlerrors.BlockedErrorf(
+			"placement: cross-zone delivery EventConfig %q has no proxy callback for capture zone %q",
+			deliveryEventConfig.Name, captureZone.Name)
 	}
 
-	// Step 3: Resolve EventStore via EventConfig reference.
-	eventStore, err := ResolveEventStore(ctx, eventConfig)
-	if err != nil {
-		return nil, errors.Wrap(err, "placement: failed to resolve EventStore")
-	}
-
-	// Phase 2: capture == delivery, callback origin == capture zone.
 	return &ListenerPlacement{
-		CaptureZone:         listeningZone,
+		CaptureZone:         captureZone,
 		CaptureRoute:        route,
-		CaptureEventConfig:  eventConfig,
-		CaptureEventStore:   eventStore,
-		CallbackOriginZone:  listeningZone,
-		DeliveryZone:        listeningZone,
-		DeliveryEventConfig: eventConfig,
-		DeliveryEventStore:  eventStore,
-		BridgeNamespace:     eventStore.Namespace,
-		CallbackBaseURL:     eventConfig.Status.CallbackURL,
+		CaptureEventConfig:  captureEventConfig,
+		CaptureEventStore:   captureEventStore,
+		CallbackOriginZone:  captureZone,
+		DeliveryZone:        observerZone,
+		DeliveryEventConfig: deliveryEventConfig,
+		DeliveryEventStore:  deliveryEventStore,
+		BridgeNamespace:     captureEventStore.Namespace,
+		CallbackBaseURL:     callbackURL,
 	}, nil
 }
