@@ -150,7 +150,7 @@ var _ = Describe("SubscriptionInfo", func() {
 				}
 				Expect(json.Unmarshal(recorder.Body.Bytes(), &response)).To(Succeed())
 				Expect(response.Errors).To(BeEmpty())
-				Expect(response.Data.Approvals.Edges).To(HaveLen(4))
+				Expect(response.Data.Approvals.Edges).To(HaveLen(5))
 				for _, edge := range response.Data.Approvals.Edges {
 					owner := edge.Node.Subscription.OwnerApplication
 					Expect(owner.ID).To(Equal(strconv.Itoa(seed.AppBeta.ID)))
@@ -213,7 +213,18 @@ var _ = Describe("SubscriptionInfo", func() {
 					"AgenticSubscriptionInfo": {ID: strconv.Itoa(seed.AgenticSubscription.ID), BasePath: "/mcp-alpha"},
 					"ListenerInfo":            {ID: strconv.Itoa(seed.ListenerReady.ID), ResourceName: "api-alpha"},
 				}
-				Expect(response.Data[field].Edges).To(HaveLen(4))
+				remaining := map[string]int{
+					"ApiSubscriptionInfo":     1,
+					"EventSubscriptionInfo":   1,
+					"AgenticSubscriptionInfo": 1,
+					"ListenerInfo":            1,
+				}
+				if field == "approvals" {
+					Expect(response.Data[field].Edges).To(HaveLen(5))
+					remaining["ListenerInfo"] = 2
+				} else {
+					Expect(response.Data[field].Edges).To(HaveLen(4))
+				}
 				for _, edge := range response.Data[field].Edges {
 					actual := edge.Node.Subscription
 					Expect(expected).To(HaveKey(actual.Typename))
@@ -222,7 +233,10 @@ var _ = Describe("SubscriptionInfo", func() {
 					want.OwnerApplication.ID = strconv.Itoa(seed.AppBeta.ID)
 					want.OwnerApplication.Name = seed.AppBeta.Name
 					Expect(actual).To(Equal(want))
-					delete(expected, actual.Typename)
+					remaining[actual.Typename]--
+					if remaining[actual.Typename] == 0 {
+						delete(expected, actual.Typename)
+					}
 				}
 				Expect(expected).To(BeEmpty())
 			},

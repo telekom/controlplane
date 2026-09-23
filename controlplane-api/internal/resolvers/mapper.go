@@ -164,6 +164,10 @@ func mapListenerInfo(listener *ent.Listener) (*gqlmodel.ListenerInfo, error) {
 	if err != nil {
 		return nil, fmt.Errorf("loading exposure edge for listener %d: %w", listener.ID, err)
 	}
+	application, applicationZone, applicationTeam, applicationGroup, err := loadedOwnerChain(listener.Edges.Application, listener.ID, "listener")
+	if err != nil {
+		return nil, err
+	}
 	consumer, consumerZone, consumerTeam, consumerGroup, err := loadedOwnerChain(subscription.Edges.Owner, listener.ID, "consumer")
 	if err != nil {
 		return nil, err
@@ -180,20 +184,26 @@ func mapListenerInfo(listener *ent.Listener) (*gqlmodel.ListenerInfo, error) {
 		return nil, fmt.Errorf("listener %d references api %d without a projected kubernetes name", listener.ID, apiDefinition.ID)
 	}
 
-	approved := listener.Edges.ProviderApproval != nil && listener.Edges.ProviderApproval.State == approval.StateGranted
-	consumerInfo := mapApplicationInfo(consumer, consumerZone, consumerTeam, consumerGroup)
+	approved := listener.Edges.ProviderApproval != nil && listener.Edges.ProviderApproval.State == approval.StateGranted &&
+		listener.Edges.ConsumerApproval != nil && listener.Edges.ConsumerApproval.State == approval.StateGranted
+	applicationInfo := mapApplicationInfo(application, applicationZone, applicationTeam, applicationGroup)
 	return &gqlmodel.ListenerInfo{
 		ID:               listener.ID,
 		ResourceName:     *apiDefinition.Name,
 		Approved:         approved,
-		Consumer:         consumerInfo,
+		Application:      applicationInfo,
+		Consumer:         mapApplicationInfo(consumer, consumerZone, consumerTeam, consumerGroup),
 		Provider:         mapApplicationInfo(provider, providerZone, providerTeam, providerGroup),
-		OwnerApplication: consumerInfo,
+		OwnerApplication: applicationInfo,
 	}, nil
 }
 
 func withListenerInfo(query *ent.ListenerQuery) *ent.ListenerQuery {
 	return query.
+		WithApplication(func(q *ent.ApplicationQuery) {
+			q.WithZone()
+			q.WithOwnerTeam(func(q *ent.TeamQuery) { q.WithGroup() })
+		}).
 		WithSubscription(func(q *ent.ApiSubscriptionQuery) {
 			q.WithOwner(func(q *ent.ApplicationQuery) {
 				q.WithZone()
@@ -207,7 +217,8 @@ func withListenerInfo(query *ent.ListenerQuery) *ent.ListenerQuery {
 				q.WithOwnerTeam(func(q *ent.TeamQuery) { q.WithGroup() })
 			})
 		}).
-		WithProviderApproval()
+		WithProviderApproval().
+		WithConsumerApproval()
 }
 
 func loadListenerInfo(ctx context.Context, client *ent.Client, listener *ent.Listener) (*gqlmodel.ListenerInfo, error) {

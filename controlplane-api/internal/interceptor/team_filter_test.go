@@ -96,7 +96,7 @@ var _ = Describe("TeamFilterInterceptor", func() {
 			Entry("approvals", func(ctx context.Context) (int, error) {
 				r, e := client.Approval.Query().All(ctx)
 				return len(r), e
-			}, 3),
+			}, 4),
 			Entry("approval requests", func(ctx context.Context) (int, error) {
 				r, e := client.ApprovalRequest.Query().All(ctx)
 				return len(r), e
@@ -168,7 +168,7 @@ var _ = Describe("TeamFilterInterceptor", func() {
 			Entry("approvals (team-alpha is target provider)", func(ctx context.Context) (int, error) {
 				r, e := client.Approval.Query().All(ctx)
 				return len(r), e
-			}, 3),
+			}, 4),
 			Entry("approval requests (team-alpha is target provider)", func(ctx context.Context) (int, error) {
 				r, e := client.ApprovalRequest.Query().All(ctx)
 				return len(r), e
@@ -320,11 +320,38 @@ var _ = Describe("TeamFilterInterceptor", func() {
 
 			approvals, err := client.Approval.Query().All(ctx)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(approvals).To(HaveLen(3))
+			Expect(approvals).To(HaveLen(4))
 
 			requests, err := client.ApprovalRequest.Query().All(ctx)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(requests).To(HaveLen(3))
+		})
+	})
+
+	Context("when viewer owns only the Listener application", func() {
+		BeforeEach(func() {
+			s := testutil.SeedStandard(client)
+			ctx := testutil.AllowContext()
+			team := client.Team.Create().
+				SetNamespace("default").SetName("team-listener").SetEmail("listener@test.dev").SetGroup(s.GroupA).SaveX(ctx)
+			application := client.Application.Create().
+				SetNamespace("default").SetName("app-listener").SetOwnerTeam(team).SetZone(s.ZoneEU).SaveX(ctx)
+			client.Listener.Update().SetApplication(application).ExecX(ctx)
+		})
+
+		It("should see Listeners and their approval workflows", func() {
+			ctx := viewerCtx(&viewer.Viewer{Teams: []string{"team-listener"}})
+			listeners, err := client.Listener.Query().All(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(listeners).To(HaveLen(2))
+
+			approvals, err := client.Approval.Query().All(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(approvals).To(HaveLen(2))
+
+			requests, err := client.ApprovalRequest.Query().All(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(requests).To(HaveLen(1))
 		})
 	})
 

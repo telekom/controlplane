@@ -120,6 +120,7 @@ erDiagram
     Team ||--o{ AgentCard : "owns"
     Application ||--o{ ApiExposure : "exposes"
     Application ||--o{ ApiSubscription : "subscribes"
+    Application ||--o{ Listener : "declares"
     ApiExposure |o--o{ ApiSubscription : "target of"
     ApiSubscription ||--o| Approval : "has"
     ApiSubscription ||--o| ApprovalRequest : "has"
@@ -133,6 +134,7 @@ erDiagram
     ApiSubscription ||--o{ Listener : "consumed by"
     ApiExposure ||--o{ Listener : "provided by"
     Listener ||--o| Approval : "provider approval"
+    Listener ||--o| Approval : "consumer approval"
     Listener ||--o{ ApprovalRequest : "has"
 ```
 
@@ -167,15 +169,17 @@ The ControlPlane API enforces strict team-level isolation through a **privacy la
 
 This filtering is applied transparently — the GraphQL schema is the same for all callers, but the results are scoped automatically. No additional configuration is needed.
 
-For Listeners, approvals, and approval requests, isolation uses an **OR** rule: a resource is visible if the caller's team is either the subscriber's team or the exposure owner's team. This allows both sides to inspect the Listener and its approval workflow.
+For Listeners and their approvals and approval requests, isolation uses an **OR** rule: a resource is visible if the caller's team owns the listener application, the consumer application, or the provider application. This allows all three parties to inspect the Listener and its approval workflow.
 
-`ApiExposure.listeners` and `ApiSubscription.listeners` return only Listeners whose projected `Ready` condition is true. `Application.listeners` and top-level Listener queries include non-ready Listeners. API-specific values such as `apiBasePath`, `requestFilter`, and `responseFilter` are flat Listener fields. `approved` is true only when the provider approval is granted. Monitoring state is not stored or exposed; clients derive it from projected state.
+`Listener.application` identifies the application that declared the Listener and receives captured events. `Listener.consumer` and `Listener.provider` are derived from the related API subscription and exposure. `Application.listeners` follows the listener-application relationship, not the consumer relationship.
+
+`ApiExposure.listeners` and `ApiSubscription.listeners` return only Listeners whose projected `Ready` condition is true. `Application.listeners` and top-level Listener queries include non-ready Listeners. API-specific values such as `apiBasePath`, `requestFilter`, and `responseFilter` are flat Listener fields. `approved` is true only when both the provider and consumer approvals are granted. `providerApproval` and `consumerApproval` expose the separate decisions. Monitoring state is not stored or exposed; clients derive it from projected state.
 
 #### Cross-Tenant Safety
 
 When navigating relationships that cross team boundaries (for example, from a subscription to the target exposure owned by another team), the API returns **reduced types** (`TeamInfo`, `ApplicationInfo`, `ApiExposureInfo`, `ApiSubscriptionInfo`, `EventExposureInfo`, `EventSubscriptionInfo`, `AgenticExposureInfo`, `AgenticSubscriptionInfo`, and `ListenerInfo`) that expose only safe, non-sensitive fields. This prevents data leakage through graph traversal.
 
-`Approval.subscription` and `ApprovalRequest.subscription` return the non-null `SubscriptionInfo` interface, implemented by `ApiSubscriptionInfo`, `EventSubscriptionInfo`, `AgenticSubscriptionInfo`, and `ListenerInfo`. Select the common fields `id: ID!` and `ownerApplication: ApplicationInfo!` directly or through a fragment on `SubscriptionInfo`. For `ListenerInfo`, `ownerApplication` is the consumer application. Use concrete fragments for variant-specific fields:
+`Approval.subscription` and `ApprovalRequest.subscription` return the non-null `SubscriptionInfo` interface, implemented by `ApiSubscriptionInfo`, `EventSubscriptionInfo`, `AgenticSubscriptionInfo`, and `ListenerInfo`. Select the common fields `id: ID!` and `ownerApplication: ApplicationInfo!` directly or through a fragment on `SubscriptionInfo`. For `ListenerInfo`, `ownerApplication` is the observer application identified by `application`, not the API consumer identified by `consumer`. Use concrete fragments for variant-specific fields:
 
 ```graphql
 query {

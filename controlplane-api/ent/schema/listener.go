@@ -47,6 +47,11 @@ func (Listener) Fields() []ent.Field {
 
 func (Listener) Edges() []ent.Edge {
 	return []ent.Edge{
+		edge.From("application", Application.Type).
+			Ref("listeners").
+			Required().
+			Unique().
+			Annotations(entgql.Skip(entgql.SkipType | entgql.SkipWhereInput)),
 		edge.From("subscription", ApiSubscription.Type).
 			Ref("listeners").
 			Required().
@@ -58,6 +63,9 @@ func (Listener) Edges() []ent.Edge {
 			Unique().
 			Annotations(entgql.Skip(entgql.SkipType | entgql.SkipWhereInput)),
 		edge.To("provider_approval", Approval.Type).
+			Unique().
+			Annotations(entgql.Skip(entgql.SkipType|entgql.SkipWhereInput), entsql.OnDelete(entsql.Cascade)),
+		edge.To("consumer_approval", Approval.Type).
 			Unique().
 			Annotations(entgql.Skip(entgql.SkipType|entgql.SkipWhereInput), entsql.OnDelete(entsql.Cascade)),
 		edge.To("approval_requests", ApprovalRequest.Type).

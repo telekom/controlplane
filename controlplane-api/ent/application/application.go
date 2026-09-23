@@ -71,6 +71,8 @@ const (
 	EdgeExposedAgentics = "exposed_agentics"
 	// EdgeSubscribedAgentics holds the string denoting the subscribed_agentics edge name in mutations.
 	EdgeSubscribedAgentics = "subscribed_agentics"
+	// EdgeListeners holds the string denoting the listeners edge name in mutations.
+	EdgeListeners = "listeners"
 	// EdgePermissionSet holds the string denoting the permission_set edge name in mutations.
 	EdgePermissionSet = "permission_set"
 	// Table holds the table name of the application in the database.
@@ -131,6 +133,13 @@ const (
 	SubscribedAgenticsInverseTable = "agentic_subscriptions"
 	// SubscribedAgenticsColumn is the table column denoting the subscribed_agentics relation/edge.
 	SubscribedAgenticsColumn = "application_subscribed_agentics"
+	// ListenersTable is the table that holds the listeners relation/edge.
+	ListenersTable = "listeners"
+	// ListenersInverseTable is the table name for the Listener entity.
+	// It exists in this package in order to avoid circular dependency with the "listener" package.
+	ListenersInverseTable = "listeners"
+	// ListenersColumn is the table column denoting the listeners relation/edge.
+	ListenersColumn = "application_listeners"
 	// PermissionSetTable is the table that holds the permission_set relation/edge.
 	PermissionSetTable = "permission_sets"
 	// PermissionSetInverseTable is the table name for the PermissionSet entity.
@@ -445,6 +454,20 @@ func BySubscribedAgentics(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOptio
 	}
 }
 
+// ByListenersCount orders the results by listeners count.
+func ByListenersCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newListenersStep(), opts...)
+	}
+}
+
+// ByListeners orders the results by listeners terms.
+func ByListeners(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newListenersStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
 // ByPermissionSetField orders the results by permission_set field.
 func ByPermissionSetField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -505,6 +528,13 @@ func newSubscribedAgenticsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(SubscribedAgenticsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, SubscribedAgenticsTable, SubscribedAgenticsColumn),
+	)
+}
+func newListenersStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(ListenersInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, ListenersTable, ListenersColumn),
 	)
 }
 func newPermissionSetStep() *sqlgraph.Step {

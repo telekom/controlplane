@@ -16,6 +16,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/telekom/controlplane/controlplane-api/ent/apiexposure"
 	"github.com/telekom/controlplane/controlplane-api/ent/apisubscription"
+	"github.com/telekom/controlplane/controlplane-api/ent/application"
 	"github.com/telekom/controlplane/controlplane-api/ent/approval"
 	"github.com/telekom/controlplane/controlplane-api/ent/approvalrequest"
 	"github.com/telekom/controlplane/controlplane-api/ent/listener"
@@ -130,6 +131,17 @@ func (_c *ListenerCreate) SetResponseFilter(v *model.ListenerFilter) *ListenerCr
 	return _c
 }
 
+// SetApplicationID sets the "application" edge to the Application entity by ID.
+func (_c *ListenerCreate) SetApplicationID(id int) *ListenerCreate {
+	_c.mutation.SetApplicationID(id)
+	return _c
+}
+
+// SetApplication sets the "application" edge to the Application entity.
+func (_c *ListenerCreate) SetApplication(v *Application) *ListenerCreate {
+	return _c.SetApplicationID(v.ID)
+}
+
 // SetSubscriptionID sets the "subscription" edge to the ApiSubscription entity by ID.
 func (_c *ListenerCreate) SetSubscriptionID(id int) *ListenerCreate {
 	_c.mutation.SetSubscriptionID(id)
@@ -169,6 +181,25 @@ func (_c *ListenerCreate) SetNillableProviderApprovalID(id *int) *ListenerCreate
 // SetProviderApproval sets the "provider_approval" edge to the Approval entity.
 func (_c *ListenerCreate) SetProviderApproval(v *Approval) *ListenerCreate {
 	return _c.SetProviderApprovalID(v.ID)
+}
+
+// SetConsumerApprovalID sets the "consumer_approval" edge to the Approval entity by ID.
+func (_c *ListenerCreate) SetConsumerApprovalID(id int) *ListenerCreate {
+	_c.mutation.SetConsumerApprovalID(id)
+	return _c
+}
+
+// SetNillableConsumerApprovalID sets the "consumer_approval" edge to the Approval entity by ID if the given value is not nil.
+func (_c *ListenerCreate) SetNillableConsumerApprovalID(id *int) *ListenerCreate {
+	if id != nil {
+		_c = _c.SetConsumerApprovalID(*id)
+	}
+	return _c
+}
+
+// SetConsumerApproval sets the "consumer_approval" edge to the Approval entity.
+func (_c *ListenerCreate) SetConsumerApproval(v *Approval) *ListenerCreate {
+	return _c.SetConsumerApprovalID(v.ID)
 }
 
 // AddApprovalRequestIDs adds the "approval_requests" edge to the ApprovalRequest entity by IDs.
@@ -277,6 +308,9 @@ func (_c *ListenerCreate) check() error {
 			return &ValidationError{Name: "api_base_path", err: fmt.Errorf(`ent: validator failed for field "Listener.api_base_path": %w`, err)}
 		}
 	}
+	if len(_c.mutation.ApplicationIDs()) == 0 {
+		return &ValidationError{Name: "application", err: errors.New(`ent: missing required edge "Listener.application"`)}
+	}
 	if len(_c.mutation.SubscriptionIDs()) == 0 {
 		return &ValidationError{Name: "subscription", err: errors.New(`ent: missing required edge "Listener.subscription"`)}
 	}
@@ -350,6 +384,23 @@ func (_c *ListenerCreate) createSpec() (*Listener, *sqlgraph.CreateSpec) {
 		_spec.SetField(listener.FieldResponseFilter, field.TypeJSON, value)
 		_node.ResponseFilter = value
 	}
+	if nodes := _c.mutation.ApplicationIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   listener.ApplicationTable,
+			Columns: []string{listener.ApplicationColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(application.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.application_listeners = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
 	if nodes := _c.mutation.SubscriptionIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -390,6 +441,22 @@ func (_c *ListenerCreate) createSpec() (*Listener, *sqlgraph.CreateSpec) {
 			Inverse: false,
 			Table:   listener.ProviderApprovalTable,
 			Columns: []string{listener.ProviderApprovalColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(approval.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.ConsumerApprovalIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   listener.ConsumerApprovalTable,
+			Columns: []string{listener.ConsumerApprovalColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(approval.FieldID, field.TypeInt),

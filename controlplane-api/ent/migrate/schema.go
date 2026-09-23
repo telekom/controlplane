@@ -365,6 +365,7 @@ var (
 		{Name: "api_subscription_approval", Type: field.TypeInt, Unique: true, Nullable: true},
 		{Name: "event_subscription_approval", Type: field.TypeInt, Unique: true, Nullable: true},
 		{Name: "listener_provider_approval", Type: field.TypeInt, Unique: true, Nullable: true},
+		{Name: "listener_consumer_approval", Type: field.TypeInt, Unique: true, Nullable: true},
 	}
 	// ApprovalsTable holds the schema information for the "approvals" table.
 	ApprovalsTable = &schema.Table{
@@ -393,6 +394,12 @@ var (
 			{
 				Symbol:     "approvals_listeners_provider_approval",
 				Columns:    []*schema.Column{ApprovalsColumns[21]},
+				RefColumns: []*schema.Column{ListenersColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "approvals_listeners_consumer_approval",
+				Columns:    []*schema.Column{ApprovalsColumns[22]},
 				RefColumns: []*schema.Column{ListenersColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
@@ -631,6 +638,7 @@ var (
 		{Name: "response_filter", Type: field.TypeJSON, Nullable: true},
 		{Name: "api_exposure_listeners", Type: field.TypeInt},
 		{Name: "api_subscription_listeners", Type: field.TypeInt},
+		{Name: "application_listeners", Type: field.TypeInt},
 	}
 	// ListenersTable holds the schema information for the "listeners" table.
 	ListenersTable = &schema.Table{
@@ -648,6 +656,12 @@ var (
 				Symbol:     "listeners_api_subscriptions_listeners",
 				Columns:    []*schema.Column{ListenersColumns[12]},
 				RefColumns: []*schema.Column{APISubscriptionsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "listeners_applications_listeners",
+				Columns:    []*schema.Column{ListenersColumns[13]},
+				RefColumns: []*schema.Column{ApplicationsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
 		},
@@ -856,6 +870,7 @@ func init() {
 	ApprovalsTable.ForeignKeys[1].RefTable = APISubscriptionsTable
 	ApprovalsTable.ForeignKeys[2].RefTable = EventSubscriptionsTable
 	ApprovalsTable.ForeignKeys[3].RefTable = ListenersTable
+	ApprovalsTable.ForeignKeys[4].RefTable = ListenersTable
 	ApprovalRequestsTable.ForeignKeys[0].RefTable = AgenticSubscriptionsTable
 	ApprovalRequestsTable.ForeignKeys[1].RefTable = APISubscriptionsTable
 	ApprovalRequestsTable.ForeignKeys[2].RefTable = EventSubscriptionsTable
@@ -867,6 +882,7 @@ func init() {
 	EventTypesTable.ForeignKeys[0].RefTable = TeamsTable
 	ListenersTable.ForeignKeys[0].RefTable = APIExposuresTable
 	ListenersTable.ForeignKeys[1].RefTable = APISubscriptionsTable
+	ListenersTable.ForeignKeys[2].RefTable = ApplicationsTable
 	McpServersTable.ForeignKeys[0].RefTable = TeamsTable
 	MembersTable.ForeignKeys[0].RefTable = TeamsTable
 	PermissionSetsTable.ForeignKeys[0].RefTable = ApplicationsTable
