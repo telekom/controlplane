@@ -9,6 +9,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
 	"github.com/telekom/controlplane/common/pkg/config"
+	"github.com/telekom/controlplane/event/internal/handler/util"
 )
 
 // LabelPredicate is a predicate that filters objects based on the presence of the label.
@@ -22,5 +23,5 @@ var LabelPredicate = predicate.NewPredicateFuncs(func(object client.Object) bool
 	if !ok {
 		return false
 	}
-	return domainValue == "event"
+	return domainValue == util.LabelValueDomain
 })

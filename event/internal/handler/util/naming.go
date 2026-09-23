@@ -27,6 +27,10 @@ const (
 	horizon = "horizon"
 )
 
+const (
+	LabelValueDomain = "event"
+)
+
 // horizonPrefix builds the leading path segment for an event route.
 // An empty zone yields the local alias "/horizon"; a zone yields the mesh
 // form "/horizon-{zone}". This is the single place that encodes the

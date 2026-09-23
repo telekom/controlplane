@@ -265,7 +265,7 @@ func buildCrossZoneProxyRoute(
 
 	build := func() error {
 		route.Labels = map[string]string{
-			config.DomainLabelKey:        "event",
+			config.DomainLabelKey:        LabelValueDomain,
 			config.BuildLabelKey("zone"): sourceZone.Name,
 			config.BuildLabelKey("type"): kind + "-proxy",
 		}

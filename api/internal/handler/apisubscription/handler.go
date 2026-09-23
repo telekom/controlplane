@@ -24,6 +24,7 @@ import (
 	"github.com/telekom/controlplane/approval/api/v1/builder"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
+	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	"github.com/telekom/controlplane/common/pkg/handler"
 	"github.com/telekom/controlplane/common/pkg/types"
@@ -159,6 +160,9 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 	approvalBuilder.WithRequester(requester)
 	approvalBuilder.WithDecider(decider)
 	approvalBuilder.WithStrategy(approvalapi.ApprovalStrategy(apiExposure.Spec.Approval.Strategy))
+	approvalBuilder.WithLabels(map[string]string{
+		config.DomainLabelKey: "api",
+	})
 
 	if len(apiExposure.Spec.Approval.TrustedTeams) > 0 {
 		approvalBuilder.WithTrustedRequesters(apiExposure.Spec.Approval.TrustedTeams)

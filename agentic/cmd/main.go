@@ -24,6 +24,8 @@ import (
 
 	agenticconfig "github.com/telekom/controlplane/agentic/internal/config"
 	"github.com/telekom/controlplane/agentic/internal/controller"
+	"github.com/telekom/controlplane/agentic/internal/handler/util"
+	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
 	"github.com/telekom/controlplane/common/pkg/config"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 
@@ -120,7 +122,7 @@ func main() {
 	}
 
 	selector := labels.NewSelector()
-	requirement, err := labels.NewRequirement(config.DomainLabelKey, selection.In, []string{"agentic"})
+	requirement, err := labels.NewRequirement(config.DomainLabelKey, selection.In, []string{util.LabelValueDomain})
 	if err != nil {
 		setupLog.Error(err, "unable to create label requirement")
 		os.Exit(1)
@@ -140,6 +142,12 @@ func main() {
 					Label: selector,
 				},
 				&gatewayv1.ConsumeRoute{}: {
+					Label: selector,
+				},
+				&approvalv1.Approval{}: {
+					Label: selector,
+				},
+				&approvalv1.ApprovalRequest{}: {
 					Label: selector,
 				},
 			},

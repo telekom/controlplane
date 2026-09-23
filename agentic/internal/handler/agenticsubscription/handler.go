@@ -152,6 +152,9 @@ func (h *AgenticSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *ag
 	approvalBuilder.WithRequester(requester)
 	approvalBuilder.WithDecider(decider)
 	approvalBuilder.WithStrategy(approvalapi.ApprovalStrategy(exposure.Spec.Approval.Strategy))
+	approvalBuilder.WithLabels(map[string]string{
+		config.DomainLabelKey: util.LabelValueDomain,
+	})
 
 	if len(exposure.Spec.Approval.TrustedTeams) > 0 {
 		approvalBuilder.WithTrustedRequesters(exposure.Spec.Approval.TrustedTeams)
@@ -306,7 +309,7 @@ func (h *AgenticSubscriptionHandler) createConsumeRoute(
 		}
 
 		consumeRoute.Labels = map[string]string{
-			config.DomainLabelKey:             "agentic",
+			config.DomainLabelKey:             util.LabelValueDomain,
 			agenticv1.AgenticBasePathLabelKey: labelutil.NormalizeLabelValue(obj.Spec.BasePath),
 			config.BuildLabelKey("zone"):      obj.Spec.Zone.Name,
 			config.BuildLabelKey("type"):      "mcp-subscription",
