@@ -348,6 +348,12 @@ spec:
                   migration completes, the controller sets AuthorizationPolicyVersion="v2"
                   on the parent ListenerStatus and clears this struct.
                 properties:
+                  drainStarted:
+                    description: |-
+                      DrainStarted is set to true when the migration initiates a drain.
+                      It distinguishes "drain not yet started" (false) from "drain was
+                      consumed by the outer handler" (true but Draining is nil).
+                    type: boolean
                   legacyApproval:
                     description: |-
                       ObjectRef is a reference to a Kubernetes object

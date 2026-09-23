@@ -199,6 +199,17 @@ func (h *ListenerHandler) CreateOrUpdate(ctx context.Context, listener *spectrev
 		if !complete {
 			return nil // requeue; drain in progress
 		}
+		// Drain complete. If migration is active and in Draining phase, let
+		// migration handle advancement — don't clear AppliedPlacement here.
+		if listener.Status.AuthorizationMigration != nil &&
+			listener.Status.AuthorizationMigration.Phase == MigrationPhaseDraining {
+			// Migration will consume the completion in advanceMigration.
+		} else {
+			// Normal drain: clear old fingerprint so step 5.9 doesn't re-trigger.
+			if listener.Status.AppliedPlacement != nil {
+				listener.Status.AppliedPlacement.Fingerprint = ""
+			}
+		}
 	}
 
 	// Step 5.9: Detect fingerprint change. If there are existing children with
@@ -866,6 +877,7 @@ func (h *ListenerHandler) checkEarlyRestriction(
 ) (denied bool, gateKey string, err error) {
 	c := cclient.ClientFromContextOrDie(ctx)
 
+	var firstErr error
 	for _, check := range []struct {
 		ref *ctypes.ObjectRef
 		key string
@@ -881,7 +893,11 @@ func (h *ListenerHandler) checkEarlyRestriction(
 			if apierrors.IsNotFound(err) {
 				continue // Missing = not denied (might be pending creation).
 			}
-			return false, "", err
+			// Record error but try the next gate — denial takes priority.
+			if firstErr == nil {
+				firstErr = err
+			}
+			continue
 		}
 		if approval.Spec.State == approvalapi.ApprovalStateRejected ||
 			approval.Spec.State == approvalapi.ApprovalStateSuspended {
@@ -893,7 +909,7 @@ func (h *ListenerHandler) checkEarlyRestriction(
 			return true, check.key, nil
 		}
 	}
-	return false, "", nil
+	return false, "", firstErr
 }
 
 // handleDenialCleanup deletes all owned children and cleans up the generic

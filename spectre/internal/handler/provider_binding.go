@@ -67,13 +67,14 @@ func (h *ListenerHandler) verifyProviderBinding(
 			route.Name, route.Namespace)
 	}
 
-	// Step 2: List ApiExposures in the Route's namespace and find the one
-	// whose metadata.uid matches the owner label. There is no field index
-	// for UID on ApiExposures in spectre, so we list and filter in code.
+	// Step 2: List ApiExposures in the provider's namespace (team namespace)
+	// and find the one whose metadata.uid matches the owner label.
+	// ApiExposures live in the team namespace alongside the provider Application,
+	// NOT in the zone namespace where the Route lives.
 	c := cclient.ClientFromContextOrDie(ctx)
 	exposureList := &apiv1.ApiExposureList{}
-	if err := c.List(ctx, exposureList, client.InNamespace(route.Namespace)); err != nil {
-		return nil, fmt.Errorf("failed to list ApiExposures in namespace %q: %w", route.Namespace, err)
+	if err := c.List(ctx, exposureList, client.InNamespace(providerApp.Namespace)); err != nil {
+		return nil, fmt.Errorf("failed to list ApiExposures in namespace %q: %w", providerApp.Namespace, err)
 	}
 
 	var exposure *apiv1.ApiExposure
@@ -86,7 +87,7 @@ func (h *ListenerHandler) verifyProviderBinding(
 
 	if exposure == nil {
 		return nil, ctrlerrors.BlockedErrorf("no ApiExposure with UID %q found in namespace %q for Route %q",
-			ownerUID, route.Namespace, route.Name)
+			ownerUID, providerApp.Namespace, route.Name)
 	}
 
 	logger.V(1).Info("Resolved ApiExposure for Route",
@@ -114,12 +115,13 @@ func (h *ListenerHandler) verifyProviderBinding(
 		return nil, ctrlerrors.BlockedErrorf("ApiExposure %q has no application label", exposure.Name)
 	}
 
-	// Step 6: Compare with the declared provider. The label value is a
-	// normalized form of the Application name (same namespace).
-	if appName != providerApp.Name {
+	// Step 6: Compare with the declared provider — both name AND namespace
+	// must match. The ApiExposure lives in the provider's team namespace,
+	// so exposure.Namespace must equal providerApp.Namespace.
+	if appName != providerApp.Name || exposure.Namespace != providerApp.Namespace {
 		return nil, ctrlerrors.BlockedErrorf(
-			"provider binding mismatch: ApiExposure %q is owned by application %q, but declared provider is %q",
-			exposure.Name, appName, providerApp.Name)
+			"provider binding mismatch: ApiExposure %q (ns %q) is owned by application %q, but declared provider is %q (ns %q)",
+			exposure.Name, exposure.Namespace, appName, providerApp.Name, providerApp.Namespace)
 	}
 
 	return &ProviderBinding{
