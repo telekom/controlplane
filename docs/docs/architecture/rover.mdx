@@ -20,6 +20,12 @@ Users interact with the Rover domain through three paths:
 | **Rover Server** | REST API. Validates the configuration, uploads specifications to the File Manager, obfuscates secrets through the Secret Manager, and creates the Rover resource in Kubernetes. |
 | **Direct kubectl** | Apply a Rover resource directly to the Kubernetes API (for advanced users or automation). |
 
+### Resource Names and Labels
+
+The Rover Server accepts resource names between 2 and 90 characters. Names longer than 63 characters retain their full resource name, while the `cp.ei.telekom.de/application` label is shortened to fit Kubernetes' 63-character label-value limit. The shortened value retains the beginning and end of the name, with a deterministic hash in the middle.
+
+The server also normalizes the environment, team, and group labels to lowercase, replaces spaces, underscores, and slashes with hyphens, trims leading and trailing hyphens, and shortens values exceeding the label-value limit.
+
 ## Domain Interactions
 
 - **Application domain** — Creates Application resources.
