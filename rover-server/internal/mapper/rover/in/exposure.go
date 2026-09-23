@@ -26,10 +26,20 @@ var oauth2TokenRequestToCRD = map[string]roverv1.TokenRequestMethod{
 }
 
 func tokenRequestAPIToCRD(value string) roverv1.TokenRequestMethod {
+	if value == "" {
+		return roverv1.TokenRequestClientSecretBasic
+	}
 	if mapped, ok := oauth2TokenRequestToCRD[strings.ToLower(value)]; ok {
 		return mapped
 	}
 	return roverv1.TokenRequestMethod(value)
+}
+
+func grantTypeAPIToCRD(value string) roverv1.GrantType {
+	if value == "" {
+		return roverv1.GrantTypeClientCredentials
+	}
+	return roverv1.GrantType(strings.ToLower(value))
 }
 
 func mapExposure(in *api.Exposure, out *roverv1.Exposure) error {
@@ -162,7 +172,7 @@ func mapExposureSecurity(in api.ApiExposure, out *roverv1.ApiExposure) {
 			m2mSecurity.ExternalIDP = &roverv1.ExternalIdentityProvider{
 				TokenEndpoint: oauth2.TokenEndpoint,
 				TokenRequest:  tokenRequestAPIToCRD(string(oauth2.TokenRequest)),
-				GrantType:     roverv1.GrantType(strings.ToLower(string(oauth2.GrantType))),
+				GrantType:     grantTypeAPIToCRD(string(oauth2.GrantType)),
 			}
 			if oauth2.ClientId != "" {
 				m2mSecurity.ExternalIDP.Client = &roverv1.OAuth2ClientCredentials{
@@ -399,7 +409,7 @@ func mapAiExposureSecurity(in api.AiExposure, out *roverv1.AgenticExposure) {
 			m2mSecurity.ExternalIDP = &roverv1.ExternalIdentityProvider{
 				TokenEndpoint: oauth2.TokenEndpoint,
 				TokenRequest:  tokenRequestAPIToCRD(string(oauth2.TokenRequest)),
-				GrantType:     roverv1.GrantType(strings.ToLower(string(oauth2.GrantType))),
+				GrantType:     grantTypeAPIToCRD(string(oauth2.GrantType)),
 			}
 			if oauth2.ClientId != "" {
 				m2mSecurity.ExternalIDP.Client = &roverv1.OAuth2ClientCredentials{
