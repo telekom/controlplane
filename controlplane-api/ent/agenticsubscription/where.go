@@ -93,6 +93,11 @@ func BasePath(v string) predicate.AgenticSubscription {
 	return predicate.AgenticSubscription(sql.FieldEQ(FieldBasePath, v))
 }
 
+// GatewayURL applies equality check predicate on the "gateway_url" field. It's identical to GatewayURLEQ.
+func GatewayURL(v string) predicate.AgenticSubscription {
+	return predicate.AgenticSubscription(sql.FieldEQ(FieldGatewayURL, v))
+}
+
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
 func CreatedAtEQ(v time.Time) predicate.AgenticSubscription {
 	return predicate.AgenticSubscription(sql.FieldEQ(FieldCreatedAt, v))
@@ -546,6 +551,81 @@ func BasePathEqualFold(v string) predicate.AgenticSubscription {
 // BasePathContainsFold applies the ContainsFold predicate on the "base_path" field.
 func BasePathContainsFold(v string) predicate.AgenticSubscription {
 	return predicate.AgenticSubscription(sql.FieldContainsFold(FieldBasePath, v))
+}
+
+// GatewayURLEQ applies the EQ predicate on the "gateway_url" field.
+func GatewayURLEQ(v string) predicate.AgenticSubscription {
+	return predicate.AgenticSubscription(sql.FieldEQ(FieldGatewayURL, v))
+}
+
+// GatewayURLNEQ applies the NEQ predicate on the "gateway_url" field.
+func GatewayURLNEQ(v string) predicate.AgenticSubscription {
+	return predicate.AgenticSubscription(sql.FieldNEQ(FieldGatewayURL, v))
+}
+
+// GatewayURLIn applies the In predicate on the "gateway_url" field.
+func GatewayURLIn(vs ...string) predicate.AgenticSubscription {
+	return predicate.AgenticSubscription(sql.FieldIn(FieldGatewayURL, vs...))
+}
+
+// GatewayURLNotIn applies the NotIn predicate on the "gateway_url" field.
+func GatewayURLNotIn(vs ...string) predicate.AgenticSubscription {
+	return predicate.AgenticSubscription(sql.FieldNotIn(FieldGatewayURL, vs...))
+}
+
+// GatewayURLGT applies the GT predicate on the "gateway_url" field.
+func GatewayURLGT(v string) predicate.AgenticSubscription {
+	return predicate.AgenticSubscription(sql.FieldGT(FieldGatewayURL, v))
+}
+
+// GatewayURLGTE applies the GTE predicate on the "gateway_url" field.
+func GatewayURLGTE(v string) predicate.AgenticSubscription {
+	return predicate.AgenticSubscription(sql.FieldGTE(FieldGatewayURL, v))
+}
+
+// GatewayURLLT applies the LT predicate on the "gateway_url" field.
+func GatewayURLLT(v string) predicate.AgenticSubscription {
+	return predicate.AgenticSubscription(sql.FieldLT(FieldGatewayURL, v))
+}
+
+// GatewayURLLTE applies the LTE predicate on the "gateway_url" field.
+func GatewayURLLTE(v string) predicate.AgenticSubscription {
+	return predicate.AgenticSubscription(sql.FieldLTE(FieldGatewayURL, v))
+}
+
+// GatewayURLContains applies the Contains predicate on the "gateway_url" field.
+func GatewayURLContains(v string) predicate.AgenticSubscription {
+	return predicate.AgenticSubscription(sql.FieldContains(FieldGatewayURL, v))
+}
+
+// GatewayURLHasPrefix applies the HasPrefix predicate on the "gateway_url" field.
+func GatewayURLHasPrefix(v string) predicate.AgenticSubscription {
+	return predicate.AgenticSubscription(sql.FieldHasPrefix(FieldGatewayURL, v))
+}
+
+// GatewayURLHasSuffix applies the HasSuffix predicate on the "gateway_url" field.
+func GatewayURLHasSuffix(v string) predicate.AgenticSubscription {
+	return predicate.AgenticSubscription(sql.FieldHasSuffix(FieldGatewayURL, v))
+}
+
+// GatewayURLIsNil applies the IsNil predicate on the "gateway_url" field.
+func GatewayURLIsNil() predicate.AgenticSubscription {
+	return predicate.AgenticSubscription(sql.FieldIsNull(FieldGatewayURL))
+}
+
+// GatewayURLNotNil applies the NotNil predicate on the "gateway_url" field.
+func GatewayURLNotNil() predicate.AgenticSubscription {
+	return predicate.AgenticSubscription(sql.FieldNotNull(FieldGatewayURL))
+}
+
+// GatewayURLEqualFold applies the EqualFold predicate on the "gateway_url" field.
+func GatewayURLEqualFold(v string) predicate.AgenticSubscription {
+	return predicate.AgenticSubscription(sql.FieldEqualFold(FieldGatewayURL, v))
+}
+
+// GatewayURLContainsFold applies the ContainsFold predicate on the "gateway_url" field.
+func GatewayURLContainsFold(v string) predicate.AgenticSubscription {
+	return predicate.AgenticSubscription(sql.FieldContainsFold(FieldGatewayURL, v))
 }
 
 // SecurityIsNil applies the IsNil predicate on the "security" field.

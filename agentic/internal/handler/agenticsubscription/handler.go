@@ -7,6 +7,7 @@ package agenticsubscription
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -203,6 +204,15 @@ func (h *AgenticSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *ag
 	if routeRef == nil {
 		// Blocking condition already set by resolveRouteRef
 		return nil
+	}
+
+	preset, err := subscriberZone.Spec.AiGateway.GetDefaultPreset()
+	if err != nil {
+		return errors.Wrapf(err, "failed to select AI Gateway preset for zone %s", subscriberZone.Name)
+	}
+	obj.Status.GatewayUrl, err = url.JoinPath(preset.GetDefaultUrl(), obj.Spec.BasePath)
+	if err != nil {
+		return errors.Wrapf(err, "failed to construct AI Gateway URL for zone %s", subscriberZone.Name)
 	}
 
 	consumeRoute, err := h.createConsumeRoute(ctx, obj, *routeRef, requestorApp)

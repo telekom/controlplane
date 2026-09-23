@@ -12,6 +12,7 @@ import (
 
 	"github.com/telekom/controlplane/controlplane-api/ent"
 	entagentcard "github.com/telekom/controlplane/controlplane-api/ent/agentcard"
+	"github.com/telekom/controlplane/controlplane-api/ent/agenticexposure"
 	"github.com/telekom/controlplane/controlplane-api/ent/team"
 	"github.com/telekom/controlplane/projector/internal/infrastructure"
 	"github.com/telekom/controlplane/projector/internal/infrastructure/cachekeys"
@@ -99,10 +100,28 @@ func (r *Repository) Upsert(ctx context.Context, data *AgentCardData) error {
 	r.cache.Set(et, lk, agentCardID)
 
 	// Update the active-agent-card cache entry so that AgenticExposure FK
-	// resolution can find the active AgentCard by base path alone.
+	// resolution can find the active AgentCard by base path alone, and
+	// back-link any AgenticExposures that were projected before this AgentCard
+	// existed. An AGENT-variant AgenticExposure targets the active AgentCard by
+	// base path (see FindActiveAgentCardID). If the exposure was reconciled
+	// first, it was stored with a NULL agent_card FK and nothing re-links it
+	// when the AgentCard later becomes active — the exposure CR is not
+	// re-reconciled.
 	if data.Active {
 		aet, alk := cachekeys.ActiveAgentCard(data.BasePath)
 		r.cache.Set(aet, alk, agentCardID)
+
+		if _, err := r.client.AgenticExposure.Update().
+			Where(
+				agenticexposure.BasePathEQ(data.BasePath),
+				agenticexposure.VariantEQ(agenticexposure.VariantAgent),
+				agenticexposure.ActiveEQ(true),
+				agenticexposure.Not(agenticexposure.HasAgentCard()),
+			).
+			SetAgentCardID(agentCardID).
+			Save(ctx); err != nil {
+			return fmt.Errorf("back-link agentic_exposures to agent_card %q: %w", data.BasePath, err)
+		}
 	} else {
 		// If this AgentCard is not active, clear the active cache in case it
 		// was previously active (should not happen in practice due to

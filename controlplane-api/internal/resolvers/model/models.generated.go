@@ -12,9 +12,11 @@ import (
 	"strconv"
 )
 
-// A subscription related to an approval — either an API, event, or agentic subscription.
+// Common ownership fields for reduced subscription views.
 type SubscriptionInfo interface {
 	IsSubscriptionInfo()
+	GetID() int
+	GetOwnerApplication() *ApplicationInfo
 }
 
 // A category that APIs can be classified under.

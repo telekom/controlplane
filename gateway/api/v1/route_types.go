@@ -57,8 +57,9 @@ type RouteSpec struct {
 
 	// Paths defines the paths that are accepted for this route. If empty, all paths are accepted.
 	// +listType=set
-	// +kubebuilder:validation:MinItems=0
+	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:MaxItems=10
+	// +kubebuilder:default={/}
 	Paths []string `json:"paths,omitempty"`
 
 	// PassThrough is a flag to pass through the request to the upstream without authentication

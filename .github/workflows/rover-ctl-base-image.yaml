@@ -4,12 +4,10 @@
 
 name: "Rover-CTL Base Image"
 
-# Builds and pushes rover-ctl/Dockerfile.base (bash/jq/yq bundled alongside
-# roverctl) to the internal Artifactory Docker registry.
+# Builds rover-ctl/Dockerfile.base (bash/jq/yq bundled alongside roverctl),
+# optionally pushing it to the internal Artifactory Docker registry.
 #
 # Invoked (via workflow_call) by:
-#   - ci.yaml: only when rover-ctl/Dockerfile.base changed in the current
-#     push/PR (see the `rover-ctl-base-image-changes` job there).
 #   - release.yaml: unconditionally, before every release.
 #
 # Also directly runnable via workflow_dispatch (Actions tab > "Rover-CTL Base
@@ -36,7 +34,19 @@ name: "Rover-CTL Base Image"
 
 on:
   workflow_call:
+    inputs:
+      push:
+        description: "Push the base image to Artifactory"
+        required: false
+        type: boolean
+        default: false
   workflow_dispatch:
+    inputs:
+      push:
+        description: "Push the base image to Artifactory"
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -57,6 +67,7 @@ jobs:
         # `secrets:` input block) works both when this workflow is run
         # standalone via workflow_dispatch, and when called via
         # workflow_call by a caller using `secrets: inherit`.
+        if: ${{ inputs.push }}
         uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
           registry: ${{ vars.REGISTRY_HOST }}
@@ -68,7 +79,7 @@ jobs:
         with:
           context: rover-ctl
           file: rover-ctl/Dockerfile.base
-          push: true
+          push: ${{ inputs.push }}
           tags: |
             ${{ vars.REGISTRY_HOST }}/${{ vars.REGISTRY_ROVERCTL_BASE_REPO }}:latest
             ${{ vars.REGISTRY_HOST }}/${{ vars.REGISTRY_ROVERCTL_BASE_REPO }}:${{ vars.ROVERCTL_BASE_IMAGE_TAG }}

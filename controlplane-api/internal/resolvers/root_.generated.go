@@ -140,6 +140,7 @@ type ComplexityRoot struct {
 		ApprovalConfig       func(childComplexity int) int
 		BasePath             func(childComplexity int) int
 		ID                   func(childComplexity int) int
+		OwnerApplication     func(childComplexity int) int
 		OwnerApplicationName func(childComplexity int) int
 		OwnerTeam            func(childComplexity int) int
 		Traffic              func(childComplexity int) int
@@ -174,6 +175,7 @@ type ComplexityRoot struct {
 		BasePath         func(childComplexity int) int
 		CreatedAt        func(childComplexity int) int
 		Environment      func(childComplexity int) int
+		GatewayURL       func(childComplexity int) int
 		ID               func(childComplexity int) int
 		LastModifiedAt   func(childComplexity int) int
 		Name             func(childComplexity int) int
@@ -200,6 +202,7 @@ type ComplexityRoot struct {
 	AgenticSubscriptionInfo struct {
 		BasePath             func(childComplexity int) int
 		ID                   func(childComplexity int) int
+		OwnerApplication     func(childComplexity int) int
 		OwnerApplicationName func(childComplexity int) int
 		OwnerTeam            func(childComplexity int) int
 		StatusMessage        func(childComplexity int) int
@@ -287,6 +290,7 @@ type ComplexityRoot struct {
 		BasePath             func(childComplexity int) int
 		Features             func(childComplexity int) int
 		ID                   func(childComplexity int) int
+		OwnerApplication     func(childComplexity int) int
 		OwnerApplicationName func(childComplexity int) int
 		OwnerTeam            func(childComplexity int) int
 		Traffic              func(childComplexity int) int
@@ -332,6 +336,7 @@ type ComplexityRoot struct {
 	ApiSubscriptionInfo struct {
 		BasePath             func(childComplexity int) int
 		ID                   func(childComplexity int) int
+		OwnerApplication     func(childComplexity int) int
 		OwnerApplicationName func(childComplexity int) int
 		OwnerTeam            func(childComplexity int) int
 		StatusMessage        func(childComplexity int) int
@@ -386,6 +391,14 @@ type ComplexityRoot struct {
 	ApplicationEdge struct {
 		Cursor func(childComplexity int) int
 		Node   func(childComplexity int) int
+	}
+
+	ApplicationInfo struct {
+		ExternalIds func(childComplexity int) int
+		ID          func(childComplexity int) int
+		Name        func(childComplexity int) int
+		OwnerTeam   func(childComplexity int) int
+		Zone        func(childComplexity int) int
 	}
 
 	Approval struct {
@@ -560,6 +573,7 @@ type ComplexityRoot struct {
 		ApprovalConfig       func(childComplexity int) int
 		EventType            func(childComplexity int) int
 		ID                   func(childComplexity int) int
+		OwnerApplication     func(childComplexity int) int
 		OwnerApplicationName func(childComplexity int) int
 		OwnerTeam            func(childComplexity int) int
 		Visibility           func(childComplexity int) int
@@ -607,6 +621,7 @@ type ComplexityRoot struct {
 		DeliveryType         func(childComplexity int) int
 		EventType            func(childComplexity int) int
 		ID                   func(childComplexity int) int
+		OwnerApplication     func(childComplexity int) int
 		OwnerApplicationName func(childComplexity int) int
 		OwnerTeam            func(childComplexity int) int
 		StatusMessage        func(childComplexity int) int
@@ -1292,6 +1307,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.AgenticExposureInfo.ID(childComplexity), true
+	case "AgenticExposureInfo.ownerApplication":
+		if e.ComplexityRoot.AgenticExposureInfo.OwnerApplication == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgenticExposureInfo.OwnerApplication(childComplexity), true
 	case "AgenticExposureInfo.ownerApplicationName":
 		if e.ComplexityRoot.AgenticExposureInfo.OwnerApplicationName == nil {
 			break
@@ -1394,6 +1415,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.AgenticSubscription.Environment(childComplexity), true
+	case "AgenticSubscription.gatewayURL":
+		if e.ComplexityRoot.AgenticSubscription.GatewayURL == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgenticSubscription.GatewayURL(childComplexity), true
 	case "AgenticSubscription.id":
 		if e.ComplexityRoot.AgenticSubscription.ID == nil {
 			break
@@ -1499,6 +1526,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.AgenticSubscriptionInfo.ID(childComplexity), true
+	case "AgenticSubscriptionInfo.ownerApplication":
+		if e.ComplexityRoot.AgenticSubscriptionInfo.OwnerApplication == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgenticSubscriptionInfo.OwnerApplication(childComplexity), true
 	case "AgenticSubscriptionInfo.ownerApplicationName":
 		if e.ComplexityRoot.AgenticSubscriptionInfo.OwnerApplicationName == nil {
 			break
@@ -1851,6 +1884,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.ApiExposureInfo.ID(childComplexity), true
+	case "ApiExposureInfo.ownerApplication":
+		if e.ComplexityRoot.ApiExposureInfo.OwnerApplication == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApiExposureInfo.OwnerApplication(childComplexity), true
 	case "ApiExposureInfo.ownerApplicationName":
 		if e.ComplexityRoot.ApiExposureInfo.OwnerApplicationName == nil {
 			break
@@ -2036,6 +2075,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.ApiSubscriptionInfo.ID(childComplexity), true
+	case "ApiSubscriptionInfo.ownerApplication":
+		if e.ComplexityRoot.ApiSubscriptionInfo.OwnerApplication == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApiSubscriptionInfo.OwnerApplication(childComplexity), true
 	case "ApiSubscriptionInfo.ownerApplicationName":
 		if e.ComplexityRoot.ApiSubscriptionInfo.OwnerApplicationName == nil {
 			break
@@ -2306,6 +2351,37 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.ApplicationEdge.Node(childComplexity), true
 
+	case "ApplicationInfo.externalIds":
+		if e.ComplexityRoot.ApplicationInfo.ExternalIds == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApplicationInfo.ExternalIds(childComplexity), true
+	case "ApplicationInfo.id":
+		if e.ComplexityRoot.ApplicationInfo.ID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApplicationInfo.ID(childComplexity), true
+	case "ApplicationInfo.name":
+		if e.ComplexityRoot.ApplicationInfo.Name == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApplicationInfo.Name(childComplexity), true
+	case "ApplicationInfo.ownerTeam":
+		if e.ComplexityRoot.ApplicationInfo.OwnerTeam == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApplicationInfo.OwnerTeam(childComplexity), true
+	case "ApplicationInfo.zone":
+		if e.ComplexityRoot.ApplicationInfo.Zone == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApplicationInfo.Zone(childComplexity), true
+
 	case "Approval.action":
 		if e.ComplexityRoot.Approval.Action == nil {
 			break
@@ -2348,7 +2424,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Approval.Environment(childComplexity), true
-	case "Approval.expiresat":
+	case "Approval.expiresAt":
 		if e.ComplexityRoot.Approval.ExpiresAt == nil {
 			break
 		}
@@ -2975,6 +3051,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.EventExposureInfo.ID(childComplexity), true
+	case "EventExposureInfo.ownerApplication":
+		if e.ComplexityRoot.EventExposureInfo.OwnerApplication == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventExposureInfo.OwnerApplication(childComplexity), true
 	case "EventExposureInfo.ownerApplicationName":
 		if e.ComplexityRoot.EventExposureInfo.OwnerApplicationName == nil {
 			break
@@ -3172,6 +3254,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.EventSubscriptionInfo.ID(childComplexity), true
+	case "EventSubscriptionInfo.ownerApplication":
+		if e.ComplexityRoot.EventSubscriptionInfo.OwnerApplication == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventSubscriptionInfo.OwnerApplication(childComplexity), true
 	case "EventSubscriptionInfo.ownerApplicationName":
 		if e.ComplexityRoot.EventSubscriptionInfo.OwnerApplicationName == nil {
 			break
@@ -5329,6 +5417,7 @@ type AgenticSubscription implements Node {
   namespace: String!
   name: String!
   basePath: String!
+  gatewayURL: String
   security: AgenticSubscriptionSecurity
   traffic: AgenticSubscriberTraffic
   owner: Application!
@@ -5528,6 +5617,24 @@ input AgenticSubscriptionWhereInput {
   basePathHasSuffix: String
   basePathEqualFold: String
   basePathContainsFold: String
+  """
+  gateway_url field predicates
+  """
+  gatewayURL: String
+  gatewayURLNEQ: String
+  gatewayURLIn: [String!]
+  gatewayURLNotIn: [String!]
+  gatewayURLGT: String
+  gatewayURLGTE: String
+  gatewayURLLT: String
+  gatewayURLLTE: String
+  gatewayURLContains: String
+  gatewayURLHasPrefix: String
+  gatewayURLHasSuffix: String
+  gatewayURLIsNil: Boolean
+  gatewayURLNotNil: Boolean
+  gatewayURLEqualFold: String
+  gatewayURLContainsFold: String
   """
   owner edge predicates
   """
@@ -6851,7 +6958,7 @@ type Approval implements Node {
   """
   requestedScopes: [String!]
   name: String!
-  expiresat: Time @goField(name: "ExpiresAt", forceResolver: false)
+  expiresAt: Time
   state: ApprovalState!
 }
 """
@@ -7368,18 +7475,18 @@ input ApprovalWhereInput {
   nameEqualFold: String
   nameContainsFold: String
   """
-  expiresAt field predicates
+  expires_at field predicates
   """
-  expiresat: Time
-  expiresatNEQ: Time
-  expiresatIn: [Time!]
-  expiresatNotIn: [Time!]
-  expiresatGT: Time
-  expiresatGTE: Time
-  expiresatLT: Time
-  expiresatLTE: Time
-  expiresatIsNil: Boolean
-  expiresatNotNil: Boolean
+  expiresAt: Time
+  expiresAtNEQ: Time
+  expiresAtIn: [Time!]
+  expiresAtNotIn: [Time!]
+  expiresAtGT: Time
+  expiresAtGTE: Time
+  expiresAtLT: Time
+  expiresAtLTE: Time
+  expiresAtIsNil: Boolean
+  expiresAtNotNil: Boolean
   """
   state field predicates
   """
@@ -10119,13 +10226,17 @@ type RotateApplicationSecretPayload {
 # ──────────────────────────────────────────────────────────────────────────────
 
 type DecideApprovalRequestPayload {
+  "The ApprovalRequest projection read before the command. Query again to observe the resulting state."
   approvalRequest: ApprovalRequest
+  "Whether the command was accepted. This does not confirm that reconciliation and projection are complete."
   accepted: Boolean!
   errors: [MutationError!]!
 }
 
 type DecideApprovalPayload {
+  "The Approval projection read before the command. Query again to observe the resulting state."
   approval: Approval
+  "Whether the command was accepted. This does not confirm that reconciliation and projection are complete."
   accepted: Boolean!
   errors: [MutationError!]!
 }
@@ -10191,6 +10302,17 @@ type TeamInfo {
   email: String
   displayName: String
   description: String
+}
+
+"Reduced application information for cross-tenant contexts."
+type ApplicationInfo {
+  id: ID!
+  name: String!
+  externalIds: [ExternalId!]
+  "Zone the application is deployed in"
+  zone: Zone!
+  "Team that owns the application (reduced view)"
+  ownerTeam: TeamInfo!
 }
 
 type Upstream {
@@ -10318,9 +10440,11 @@ type ApiExposureInfo {
   approvalConfig: ApprovalConfig!
   traffic: Traffic 
   "Application name that owns this exposure"
-  ownerApplicationName: String!
+  ownerApplicationName: String! @deprecated(reason: "Use ownerApplication.name instead.")
   "Owning team (reduced view)"
-  ownerTeam: TeamInfo!
+  ownerTeam: TeamInfo! @deprecated(reason: "Use ownerApplication.ownerTeam instead.")
+  "Owning application (reduced view)"
+  ownerApplication: ApplicationInfo!
 }
 
 # Security
@@ -10453,29 +10577,39 @@ type ApiSubscriptionTraffic {
   subscriberLimits: Limits
 }
 
+"Common ownership fields for reduced subscription views."
+interface SubscriptionInfo {
+  id: ID!
+  ownerApplication: ApplicationInfo!
+}
+
 "Reduced API subscription for cross-tenant contexts (e.g., exposure subscribers)."
-type ApiSubscriptionInfo {
+type ApiSubscriptionInfo implements SubscriptionInfo {
   id: ID!
   basePath: String!
   statusPhase: ApiSubscriptionStatusPhase
   statusMessage: String
   "Application name that owns this subscription"
-  ownerApplicationName: String!
+  ownerApplicationName: String! @deprecated(reason: "Use ownerApplication.name instead.")
   "Owning team (reduced view)"
-  ownerTeam: TeamInfo!
+  ownerTeam: TeamInfo! @deprecated(reason: "Use ownerApplication.ownerTeam instead.")
+  "Owning application (reduced view)"
+  ownerApplication: ApplicationInfo!
 }
 
 "Reduced event subscription for cross-tenant contexts (e.g., exposure subscribers)."
-type EventSubscriptionInfo {
+type EventSubscriptionInfo implements SubscriptionInfo {
   id: ID!
   eventType: String!
   deliveryType: EventSubscriptionDeliveryType!
   statusPhase: EventSubscriptionStatusPhase
   statusMessage: String
   "Application name that owns this subscription"
-  ownerApplicationName: String!
+  ownerApplicationName: String! @deprecated(reason: "Use ownerApplication.name instead.")
   "Owning team (reduced view)"
-  ownerTeam: TeamInfo!
+  ownerTeam: TeamInfo! @deprecated(reason: "Use ownerApplication.ownerTeam instead.")
+  "Owning application (reduced view)"
+  ownerApplication: ApplicationInfo!
 }
 
 "Reduced event exposure for cross-tenant contexts (e.g., subscription target)."
@@ -10486,9 +10620,11 @@ type EventExposureInfo {
   active: Boolean
   approvalConfig: ApprovalConfig!
   "Application name that owns this exposure"
-  ownerApplicationName: String!
+  ownerApplicationName: String! @deprecated(reason: "Use ownerApplication.name instead.")
   "Owning team (reduced view)"
-  ownerTeam: TeamInfo!
+  ownerTeam: TeamInfo! @deprecated(reason: "Use ownerApplication.ownerTeam instead.")
+  "Owning application (reduced view)"
+  ownerApplication: ApplicationInfo!
 }
 
 "Reduced agentic exposure for cross-tenant contexts (e.g., subscription target)."
@@ -10501,21 +10637,25 @@ type AgenticExposureInfo {
   approvalConfig: ApprovalConfig!
   traffic: Traffic
   "Application name that owns this exposure"
-  ownerApplicationName: String!
+  ownerApplicationName: String! @deprecated(reason: "Use ownerApplication.name instead.")
   "Owning team (reduced view)"
-  ownerTeam: TeamInfo!
+  ownerTeam: TeamInfo! @deprecated(reason: "Use ownerApplication.ownerTeam instead.")
+  "Owning application (reduced view)"
+  ownerApplication: ApplicationInfo!
 }
 
 "Reduced agentic subscription for cross-tenant contexts (e.g., exposure subscribers)."
-type AgenticSubscriptionInfo {
+type AgenticSubscriptionInfo implements SubscriptionInfo {
   id: ID!
   basePath: String!
   statusPhase: AgenticSubscriptionStatusPhase
   statusMessage: String
   "Application name that owns this subscription"
-  ownerApplicationName: String!
+  ownerApplicationName: String! @deprecated(reason: "Use ownerApplication.name instead.")
   "Owning team (reduced view)"
-  ownerTeam: TeamInfo!
+  ownerTeam: TeamInfo! @deprecated(reason: "Use ownerApplication.ownerTeam instead.")
+  "Owning application (reduced view)"
+  ownerApplication: ApplicationInfo!
 }
 
 # -- Cross-tenant edge overrides --
@@ -10559,9 +10699,6 @@ extend type AgenticExposure {
   "Subscriptions to this exposure (reduced view — cross-tenant boundary)"
   subscriptions: [AgenticSubscriptionInfo!]! @goField(forceResolver: true)
 }
-
-"A subscription related to an approval — either an API, event, or agentic subscription."
-union SubscriptionInfo = ApiSubscriptionInfo | EventSubscriptionInfo | AgenticSubscriptionInfo
 
 extend type Approval {
   "Related subscription (reduced view — cross-tenant boundary)"
@@ -10626,7 +10763,6 @@ type ApiCategory {
   "The category identifier/name."
   name: String!
 }
-
 `, BuiltIn: false},
 }
 var parsedSchema = gqlparser.MustLoadSchema(sources...)
@@ -10793,6 +10929,8 @@ func (ec *executionContext) childFields_AgenticExposureInfo(ctx context.Context,
 		return ec.fieldContext_AgenticExposureInfo_ownerApplicationName(ctx, field)
 	case "ownerTeam":
 		return ec.fieldContext_AgenticExposureInfo_ownerTeam(ctx, field)
+	case "ownerApplication":
+		return ec.fieldContext_AgenticExposureInfo_ownerApplication(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type AgenticExposureInfo", field.Name)
 }
@@ -10859,6 +10997,8 @@ func (ec *executionContext) childFields_AgenticSubscription(ctx context.Context,
 		return ec.fieldContext_AgenticSubscription_name(ctx, field)
 	case "basePath":
 		return ec.fieldContext_AgenticSubscription_basePath(ctx, field)
+	case "gatewayURL":
+		return ec.fieldContext_AgenticSubscription_gatewayURL(ctx, field)
 	case "security":
 		return ec.fieldContext_AgenticSubscription_security(ctx, field)
 	case "traffic":
@@ -10911,6 +11051,8 @@ func (ec *executionContext) childFields_AgenticSubscriptionInfo(ctx context.Cont
 		return ec.fieldContext_AgenticSubscriptionInfo_ownerApplicationName(ctx, field)
 	case "ownerTeam":
 		return ec.fieldContext_AgenticSubscriptionInfo_ownerTeam(ctx, field)
+	case "ownerApplication":
+		return ec.fieldContext_AgenticSubscriptionInfo_ownerApplication(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type AgenticSubscriptionInfo", field.Name)
 }
@@ -11085,6 +11227,8 @@ func (ec *executionContext) childFields_ApiExposureInfo(ctx context.Context, fie
 		return ec.fieldContext_ApiExposureInfo_ownerApplicationName(ctx, field)
 	case "ownerTeam":
 		return ec.fieldContext_ApiExposureInfo_ownerTeam(ctx, field)
+	case "ownerApplication":
+		return ec.fieldContext_ApiExposureInfo_ownerApplication(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type ApiExposureInfo", field.Name)
 }
@@ -11175,6 +11319,8 @@ func (ec *executionContext) childFields_ApiSubscriptionInfo(ctx context.Context,
 		return ec.fieldContext_ApiSubscriptionInfo_ownerApplicationName(ctx, field)
 	case "ownerTeam":
 		return ec.fieldContext_ApiSubscriptionInfo_ownerTeam(ctx, field)
+	case "ownerApplication":
+		return ec.fieldContext_ApiSubscriptionInfo_ownerApplication(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type ApiSubscriptionInfo", field.Name)
 }
@@ -11279,6 +11425,22 @@ func (ec *executionContext) childFields_ApplicationEdge(ctx context.Context, fie
 	return nil, fmt.Errorf("no field named %q was found under type ApplicationEdge", field.Name)
 }
 
+func (ec *executionContext) childFields_ApplicationInfo(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "id":
+		return ec.fieldContext_ApplicationInfo_id(ctx, field)
+	case "name":
+		return ec.fieldContext_ApplicationInfo_name(ctx, field)
+	case "externalIds":
+		return ec.fieldContext_ApplicationInfo_externalIds(ctx, field)
+	case "zone":
+		return ec.fieldContext_ApplicationInfo_zone(ctx, field)
+	case "ownerTeam":
+		return ec.fieldContext_ApplicationInfo_ownerTeam(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type ApplicationInfo", field.Name)
+}
+
 func (ec *executionContext) childFields_Approval(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 	switch field.Name {
 	case "id":
@@ -11313,8 +11475,8 @@ func (ec *executionContext) childFields_Approval(ctx context.Context, field grap
 		return ec.fieldContext_Approval_requestedScopes(ctx, field)
 	case "name":
 		return ec.fieldContext_Approval_name(ctx, field)
-	case "expiresat":
-		return ec.fieldContext_Approval_expiresat(ctx, field)
+	case "expiresAt":
+		return ec.fieldContext_Approval_expiresAt(ctx, field)
 	case "state":
 		return ec.fieldContext_Approval_state(ctx, field)
 	case "subscription":
@@ -11629,6 +11791,8 @@ func (ec *executionContext) childFields_EventExposureInfo(ctx context.Context, f
 		return ec.fieldContext_EventExposureInfo_ownerApplicationName(ctx, field)
 	case "ownerTeam":
 		return ec.fieldContext_EventExposureInfo_ownerTeam(ctx, field)
+	case "ownerApplication":
+		return ec.fieldContext_EventExposureInfo_ownerApplication(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type EventExposureInfo", field.Name)
 }
@@ -11725,6 +11889,8 @@ func (ec *executionContext) childFields_EventSubscriptionInfo(ctx context.Contex
 		return ec.fieldContext_EventSubscriptionInfo_ownerApplicationName(ctx, field)
 	case "ownerTeam":
 		return ec.fieldContext_EventSubscriptionInfo_ownerTeam(ctx, field)
+	case "ownerApplication":
+		return ec.fieldContext_EventSubscriptionInfo_ownerApplication(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type EventSubscriptionInfo", field.Name)
 }

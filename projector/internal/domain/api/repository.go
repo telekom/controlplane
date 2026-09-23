@@ -12,6 +12,7 @@ import (
 
 	"github.com/telekom/controlplane/controlplane-api/ent"
 	entapi "github.com/telekom/controlplane/controlplane-api/ent/api"
+	"github.com/telekom/controlplane/controlplane-api/ent/apiexposure"
 	"github.com/telekom/controlplane/controlplane-api/ent/team"
 	"github.com/telekom/controlplane/projector/internal/infrastructure"
 	"github.com/telekom/controlplane/projector/internal/infrastructure/cachekeys"
@@ -94,11 +95,27 @@ func (r *Repository) Upsert(ctx context.Context, data *ApiData) error {
 	et, lk := cachekeys.Api(data.BasePath, data.TeamName)
 	r.cache.Set(et, lk, apiID)
 
-	// Update the active-api cache entry so that ApiExposure FK resolution
-	// can find the active Api by base path alone.
+	// Update the active-api cache entry so that ApiExposure FK resolution can
+	// find the active Api by base path alone, and back-link any ApiExposures
+	// that were projected before this Api existed. An ApiExposure targets the
+	// active Api by base path (see FindActiveApiID). If the exposure was
+	// reconciled first, it was stored with a NULL api FK and nothing re-links
+	// it when the Api later becomes active — the exposure CR is not
+	// re-reconciled.
 	if data.Active {
 		aet, alk := cachekeys.ActiveApi(data.BasePath)
 		r.cache.Set(aet, alk, apiID)
+
+		if _, err := r.client.ApiExposure.Update().
+			Where(
+				apiexposure.BasePathEQ(data.BasePath),
+				apiexposure.ActiveEQ(true),
+				apiexposure.Not(apiexposure.HasAPI()),
+			).
+			SetAPIID(apiID).
+			Save(ctx); err != nil {
+			return fmt.Errorf("back-link api_exposures to api %q: %w", data.BasePath, err)
+		}
 	} else {
 		// If this Api is not active, clear the active cache in case it was
 		// previously active (should not happen in practice due to oldest-wins,

@@ -12,6 +12,8 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/telekom/controlplane/rover-ctl/pkg/parser"
 	"github.com/telekom/controlplane/rover-ctl/pkg/types"
+	"golang.org/x/text/encoding/unicode"
+	"golang.org/x/text/transform"
 )
 
 var _ = Describe("Parser", func() {
@@ -79,6 +81,22 @@ var _ = Describe("Parser", func() {
 			Expect(objects[0].GetKind()).To(Equal("Rover"))
 			Expect(objects[0].GetApiVersion()).To(Equal("tcp.ei.telekom.de/v1"))
 			Expect(objects[0].GetName()).To(Equal("test-rover"))
+		})
+
+		It("should parse YAML encoded as UTF-16 with a BOM", func() {
+			encodedContent, _, err := transform.Bytes(
+				unicode.UTF16(unicode.LittleEndian, unicode.UseBOM).NewEncoder(),
+				[]byte("apiVersion: tcp.ei.telekom.de/v1\nkind: Rover\nmetadata:\n  name: utf16-rover\n"),
+			)
+			Expect(err).NotTo(HaveOccurred())
+
+			filePath := filepath.Join(GinkgoT().TempDir(), "utf16-resource.yaml")
+			Expect(os.WriteFile(filePath, encodedContent, 0o600)).To(Succeed())
+
+			Expect(objectParser.Parse(filePath)).To(Succeed())
+			objects := objectParser.Objects()
+			Expect(objects).To(HaveLen(1))
+			Expect(objects[0].GetName()).To(Equal("utf16-rover"))
 		})
 
 		It("should return an error when parsing a file with an unsupported extension", func() {

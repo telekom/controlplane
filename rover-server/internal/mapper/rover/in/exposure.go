@@ -26,10 +26,20 @@ var oauth2TokenRequestToCRD = map[string]roverv1.TokenRequestMethod{
 }
 
 func tokenRequestAPIToCRD(value string) roverv1.TokenRequestMethod {
+	if value == "" {
+		return roverv1.TokenRequestClientSecretBasic
+	}
 	if mapped, ok := oauth2TokenRequestToCRD[strings.ToLower(value)]; ok {
 		return mapped
 	}
 	return roverv1.TokenRequestMethod(value)
+}
+
+func grantTypeAPIToCRD(value string) roverv1.GrantType {
+	if value == "" {
+		return roverv1.GrantTypeClientCredentials
+	}
+	return roverv1.GrantType(strings.ToLower(value))
 }
 
 func mapExposure(in *api.Exposure, out *roverv1.Exposure) error {
@@ -122,11 +132,11 @@ func toRoverApprovalStrategy(approval api.ApprovalStrategy) roverv1.ApprovalStra
 	switch approval {
 	case "":
 		return roverv1.ApprovalStrategySimple
-	case api.AUTO:
+	case api.AUTO, api.Auto:
 		return roverv1.ApprovalStrategyAuto
-	case api.SIMPLE:
+	case api.SIMPLE, api.Simple:
 		return roverv1.ApprovalStrategySimple
-	case api.FOUREYES:
+	case api.FOUREYES, api.Foureyes:
 		return roverv1.ApprovalStrategyFourEyes
 	default:
 		return roverv1.ApprovalStrategy(cases.Title(language.Und).String(strings.ToLower(string(approval))))
@@ -162,7 +172,7 @@ func mapExposureSecurity(in api.ApiExposure, out *roverv1.ApiExposure) {
 			m2mSecurity.ExternalIDP = &roverv1.ExternalIdentityProvider{
 				TokenEndpoint: oauth2.TokenEndpoint,
 				TokenRequest:  tokenRequestAPIToCRD(string(oauth2.TokenRequest)),
-				GrantType:     roverv1.GrantType(strings.ToLower(string(oauth2.GrantType))),
+				GrantType:     grantTypeAPIToCRD(string(oauth2.GrantType)),
 			}
 			if oauth2.ClientId != "" {
 				m2mSecurity.ExternalIDP.Client = &roverv1.OAuth2ClientCredentials{
@@ -193,8 +203,14 @@ func mapExposureSecurity(in api.ApiExposure, out *roverv1.ApiExposure) {
 	}
 }
 
+var claimValueFromAPIToCRD = map[api.ClaimValueFrom]roverv1.ClaimValueFrom{
+	api.PROVIDERCLIENTID: roverv1.ClaimValueFromProviderClientId,
+	api.CONSUMERCLIENTID: roverv1.ClaimValueFromConsumerClientId,
+	api.BASEPATH:         roverv1.ClaimValueFromBasePath,
+}
+
 // mapExposureClaims maps the rover-server Oauth2 claims (only aud is supported) into
-// the CRD Claims shape. value is copied through; valueFrom stays symbolic.
+// the CRD Claims shape.
 func mapExposureClaims(in api.Claims) *roverv1.Claims {
 	if in.Aud.Value == "" && in.Aud.ValueFrom == "" {
 		return nil
@@ -202,7 +218,7 @@ func mapExposureClaims(in api.Claims) *roverv1.Claims {
 	return &roverv1.Claims{
 		Aud: &roverv1.Claim{
 			Value:     in.Aud.Value,
-			ValueFrom: roverv1.ClaimValueFrom(in.Aud.ValueFrom),
+			ValueFrom: claimValueFromAPIToCRD[in.Aud.ValueFrom],
 		},
 	}
 }
@@ -393,7 +409,7 @@ func mapAiExposureSecurity(in api.AiExposure, out *roverv1.AgenticExposure) {
 			m2mSecurity.ExternalIDP = &roverv1.ExternalIdentityProvider{
 				TokenEndpoint: oauth2.TokenEndpoint,
 				TokenRequest:  tokenRequestAPIToCRD(string(oauth2.TokenRequest)),
-				GrantType:     roverv1.GrantType(strings.ToLower(string(oauth2.GrantType))),
+				GrantType:     grantTypeAPIToCRD(string(oauth2.GrantType)),
 			}
 			if oauth2.ClientId != "" {
 				m2mSecurity.ExternalIDP.Client = &roverv1.OAuth2ClientCredentials{

@@ -179,6 +179,93 @@ var _ = Describe("Rover Controller", func() {
 	})
 
 	Context("Update rover resource", func() {
+		validEnumValues := []struct {
+			name  string
+			path  string
+			value string
+		}{
+			{name: "approval AUTO", path: "approval", value: "AUTO"},
+			{name: "approval SIMPLE", path: "approval", value: "SIMPLE"},
+			{name: "approval FOUREYES", path: "approval", value: "FOUREYES"},
+			{name: "approval auto", path: "approval", value: "auto"},
+			{name: "approval simple", path: "approval", value: "simple"},
+			{name: "approval foureyes", path: "approval", value: "foureyes"},
+			{name: "client auth NONE", path: "clientAuthMethod", value: "NONE"},
+			{name: "client auth POST", path: "clientAuthMethod", value: "POST"},
+			{name: "client auth BASIC", path: "clientAuthMethod", value: "BASIC"},
+			{name: "client auth none", path: "clientAuthMethod", value: "none"},
+			{name: "client auth post", path: "clientAuthMethod", value: "post"},
+			{name: "client auth BODY", path: "clientAuthMethod", value: "BODY"},
+			{name: "client auth body", path: "clientAuthMethod", value: "body"},
+			{name: "client auth basic", path: "clientAuthMethod", value: "basic"},
+			{name: "grant type PASSWORD", path: "grantType", value: "PASSWORD"},
+			{name: "grant type CLIENT_CREDENTIALS", path: "grantType", value: "CLIENT_CREDENTIALS"},
+			{name: "grant type REFRESH_TOKEN", path: "grantType", value: "REFRESH_TOKEN"},
+			{name: "grant type password", path: "grantType", value: "password"},
+			{name: "grant type client_credentials", path: "grantType", value: "client_credentials"},
+			{name: "grant type refresh_token", path: "grantType", value: "refresh_token"},
+			{name: "visibility ENTERPRISE", path: "visibility", value: "ENTERPRISE"},
+			{name: "visibility WORLD", path: "visibility", value: "WORLD"},
+			{name: "visibility ZONE", path: "visibility", value: "ZONE"},
+			{name: "visibility enterprise", path: "visibility", value: "enterprise"},
+			{name: "visibility world", path: "visibility", value: "world"},
+			{name: "visibility zone", path: "visibility", value: "zone"},
+			{name: "claim PROVIDER_CLIENT_ID", path: "valueFrom", value: "PROVIDER_CLIENT_ID"},
+			{name: "claim CONSUMER_CLIENT_ID", path: "valueFrom", value: "CONSUMER_CLIENT_ID"},
+			{name: "claim BASE_PATH", path: "valueFrom", value: "BASE_PATH"},
+		}
+
+		for _, test := range validEnumValues {
+			test := test
+			It("should accept "+test.name+" at the HTTP boundary", func() {
+				body := roverEnumRequest(test.path, test.value)
+				jsonBody, err := json.Marshal(body)
+				Expect(err).NotTo(HaveOccurred())
+
+				req := httptest.NewRequest(http.MethodPut, "/rovers/eni--hyperion--rover-local-sub", bytes.NewReader(jsonBody))
+				response, err := ExecuteRequest(req, groupToken)
+				ExpectStatus(response, err, http.StatusAccepted, "application/json")
+			})
+		}
+
+		invalidEnumValues := []struct {
+			name  string
+			path  string
+			value string
+		}{
+			{name: "approval mixed case", path: "approval", value: "Auto"},
+			{name: "approval unknown", path: "approval", value: "manual"},
+			{name: "client auth mixed case", path: "clientAuthMethod", value: "Post"},
+			{name: "client auth unknown", path: "clientAuthMethod", value: "header"},
+			{name: "grant type mixed case", path: "grantType", value: "Client_Credentials"},
+			{name: "grant type unknown", path: "grantType", value: "authorization_code"},
+			{name: "visibility mixed case", path: "visibility", value: "World"},
+			{name: "visibility unknown", path: "visibility", value: "public"},
+			{name: "claim provider mixed case", path: "valueFrom", value: "Provider_Client_Id"},
+			{name: "claim provider lowercase", path: "valueFrom", value: "provider_client_id"},
+			{name: "claim consumer mixed case", path: "valueFrom", value: "Consumer_Client_Id"},
+			{name: "claim consumer lowercase", path: "valueFrom", value: "consumer_client_id"},
+			{name: "claim base path mixed case", path: "valueFrom", value: "Base_Path"},
+			{name: "claim base path lowercase", path: "valueFrom", value: "base_path"},
+			{name: "claim old provider value", path: "valueFrom", value: "PROVIDERCLIENTID"},
+			{name: "claim old consumer value", path: "valueFrom", value: "CONSUMERCLIENTID"},
+			{name: "claim old base path value", path: "valueFrom", value: "BASEPATH"},
+			{name: "claim unknown", path: "valueFrom", value: "SUBJECT"},
+		}
+
+		for _, test := range invalidEnumValues {
+			test := test
+			It("should reject "+test.name+" at the HTTP boundary", func() {
+				body := roverEnumRequest(test.path, test.value)
+				jsonBody, err := json.Marshal(body)
+				Expect(err).NotTo(HaveOccurred())
+
+				req := httptest.NewRequest(http.MethodPut, "/rovers/eni--hyperion--rover-local-sub", bytes.NewReader(jsonBody))
+				response, err := ExecuteRequest(req, groupToken)
+				ExpectStatus(response, err, http.StatusBadRequest, "application/problem+json")
+			})
+		}
+
 		It("should apply defaults before the controller persists the rover", func() {
 			body := map[string]any{
 				"zone":           "dataplane1",
@@ -302,3 +389,34 @@ var _ = Describe("Rover Controller", func() {
 	})
 
 })
+
+func roverEnumRequest(path, value string) map[string]any {
+	body := map[string]any{"zone": "dataplane1"}
+	switch path {
+	case "clientAuthMethod":
+		body["authentication"] = map[string]any{"clientAuthMethod": value}
+	case "approval", "visibility":
+		exposure := map[string]any{
+			"type": "api", "basePath": "/test", "upstream": "https://example.com",
+		}
+		if path == "approval" {
+			exposure["approval"] = value
+			exposure["visibility"] = "WORLD"
+		} else {
+			exposure["approval"] = "AUTO"
+			exposure["visibility"] = value
+		}
+		body["exposures"] = []map[string]any{exposure}
+	case "grantType":
+		body["exposures"] = []map[string]any{{
+			"type": "api", "basePath": "/test", "upstream": "https://example.com", "approval": "AUTO", "visibility": "WORLD",
+			"security": map[string]any{"type": "oauth2", "tokenEndpoint": "https://example.com/token", "grantType": value},
+		}}
+	case "valueFrom":
+		body["exposures"] = []map[string]any{{
+			"type": "api", "basePath": "/test", "upstream": "https://example.com", "approval": "AUTO", "visibility": "WORLD",
+			"security": map[string]any{"type": "oauth2", "claims": map[string]any{"aud": map[string]any{"valueFrom": value}}},
+		}}
+	}
+	return body
+}

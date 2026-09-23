@@ -465,6 +465,11 @@ func (_q *AgenticSubscriptionQuery) collectField(ctx context.Context, oneNode bo
 				selectedFields = append(selectedFields, agenticsubscription.FieldBasePath)
 				fieldSeen[agenticsubscription.FieldBasePath] = struct{}{}
 			}
+		case "gatewayURL":
+			if _, ok := fieldSeen[agenticsubscription.FieldGatewayURL]; !ok {
+				selectedFields = append(selectedFields, agenticsubscription.FieldGatewayURL)
+				fieldSeen[agenticsubscription.FieldGatewayURL] = struct{}{}
+			}
 		case "security":
 			if _, ok := fieldSeen[agenticsubscription.FieldSecurity]; !ok {
 				selectedFields = append(selectedFields, agenticsubscription.FieldSecurity)
@@ -1877,7 +1882,7 @@ func (_q *ApprovalQuery) collectField(ctx context.Context, oneNode bool, opCtx *
 				selectedFields = append(selectedFields, approval.FieldName)
 				fieldSeen[approval.FieldName] = struct{}{}
 			}
-		case "expiresat":
+		case "expiresAt":
 			if _, ok := fieldSeen[approval.FieldExpiresAt]; !ok {
 				selectedFields = append(selectedFields, approval.FieldExpiresAt)
 				fieldSeen[approval.FieldExpiresAt] = struct{}{}

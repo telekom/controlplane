@@ -2843,6 +2843,7 @@ type AgenticSubscriptionMutation struct {
 	namespace                *string
 	name                     *string
 	base_path                *string
+	gateway_url              *string
 	security                 *model.AgenticSubscriptionSecurity
 	traffic                  *model.AgenticSubscriberTraffic
 	clearedFields            map[string]struct{}
@@ -3285,6 +3286,55 @@ func (m *AgenticSubscriptionMutation) ResetBasePath() {
 	m.base_path = nil
 }
 
+// SetGatewayURL sets the "gateway_url" field.
+func (m *AgenticSubscriptionMutation) SetGatewayURL(s string) {
+	m.gateway_url = &s
+}
+
+// GatewayURL returns the value of the "gateway_url" field in the mutation.
+func (m *AgenticSubscriptionMutation) GatewayURL() (r string, exists bool) {
+	v := m.gateway_url
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldGatewayURL returns the old "gateway_url" field's value of the AgenticSubscription entity.
+// If the AgenticSubscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AgenticSubscriptionMutation) OldGatewayURL(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldGatewayURL is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldGatewayURL requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldGatewayURL: %w", err)
+	}
+	return oldValue.GatewayURL, nil
+}
+
+// ClearGatewayURL clears the value of the "gateway_url" field.
+func (m *AgenticSubscriptionMutation) ClearGatewayURL() {
+	m.gateway_url = nil
+	m.clearedFields[agenticsubscription.FieldGatewayURL] = struct{}{}
+}
+
+// GatewayURLCleared returns if the "gateway_url" field was cleared in this mutation.
+func (m *AgenticSubscriptionMutation) GatewayURLCleared() bool {
+	_, ok := m.clearedFields[agenticsubscription.FieldGatewayURL]
+	return ok
+}
+
+// ResetGatewayURL resets all changes to the "gateway_url" field.
+func (m *AgenticSubscriptionMutation) ResetGatewayURL() {
+	m.gateway_url = nil
+	delete(m.clearedFields, agenticsubscription.FieldGatewayURL)
+}
+
 // SetSecurity sets the "security" field.
 func (m *AgenticSubscriptionMutation) SetSecurity(mss model.AgenticSubscriptionSecurity) {
 	m.security = &mss
@@ -3588,7 +3638,7 @@ func (m *AgenticSubscriptionMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *AgenticSubscriptionMutation) Fields() []string {
-	fields := make([]string, 0, 10)
+	fields := make([]string, 0, 11)
 	if m.created_at != nil {
 		fields = append(fields, agenticsubscription.FieldCreatedAt)
 	}
@@ -3612,6 +3662,9 @@ func (m *AgenticSubscriptionMutation) Fields() []string {
 	}
 	if m.base_path != nil {
 		fields = append(fields, agenticsubscription.FieldBasePath)
+	}
+	if m.gateway_url != nil {
+		fields = append(fields, agenticsubscription.FieldGatewayURL)
 	}
 	if m.security != nil {
 		fields = append(fields, agenticsubscription.FieldSecurity)
@@ -3643,6 +3696,8 @@ func (m *AgenticSubscriptionMutation) Field(name string) (ent.Value, bool) {
 		return m.Name()
 	case agenticsubscription.FieldBasePath:
 		return m.BasePath()
+	case agenticsubscription.FieldGatewayURL:
+		return m.GatewayURL()
 	case agenticsubscription.FieldSecurity:
 		return m.Security()
 	case agenticsubscription.FieldTraffic:
@@ -3672,6 +3727,8 @@ func (m *AgenticSubscriptionMutation) OldField(ctx context.Context, name string)
 		return m.OldName(ctx)
 	case agenticsubscription.FieldBasePath:
 		return m.OldBasePath(ctx)
+	case agenticsubscription.FieldGatewayURL:
+		return m.OldGatewayURL(ctx)
 	case agenticsubscription.FieldSecurity:
 		return m.OldSecurity(ctx)
 	case agenticsubscription.FieldTraffic:
@@ -3741,6 +3798,13 @@ func (m *AgenticSubscriptionMutation) SetField(name string, value ent.Value) err
 		}
 		m.SetBasePath(v)
 		return nil
+	case agenticsubscription.FieldGatewayURL:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetGatewayURL(v)
+		return nil
 	case agenticsubscription.FieldSecurity:
 		v, ok := value.(model.AgenticSubscriptionSecurity)
 		if !ok {
@@ -3794,6 +3858,9 @@ func (m *AgenticSubscriptionMutation) ClearedFields() []string {
 	if m.FieldCleared(agenticsubscription.FieldEnvironment) {
 		fields = append(fields, agenticsubscription.FieldEnvironment)
 	}
+	if m.FieldCleared(agenticsubscription.FieldGatewayURL) {
+		fields = append(fields, agenticsubscription.FieldGatewayURL)
+	}
 	if m.FieldCleared(agenticsubscription.FieldSecurity) {
 		fields = append(fields, agenticsubscription.FieldSecurity)
 	}
@@ -3822,6 +3889,9 @@ func (m *AgenticSubscriptionMutation) ClearField(name string) error {
 		return nil
 	case agenticsubscription.FieldEnvironment:
 		m.ClearEnvironment()
+		return nil
+	case agenticsubscription.FieldGatewayURL:
+		m.ClearGatewayURL()
 		return nil
 	case agenticsubscription.FieldSecurity:
 		m.ClearSecurity()
@@ -3860,6 +3930,9 @@ func (m *AgenticSubscriptionMutation) ResetField(name string) error {
 		return nil
 	case agenticsubscription.FieldBasePath:
 		m.ResetBasePath()
+		return nil
+	case agenticsubscription.FieldGatewayURL:
+		m.ResetGatewayURL()
 		return nil
 	case agenticsubscription.FieldSecurity:
 		m.ResetSecurity()
@@ -10194,7 +10267,7 @@ type ApprovalMutation struct {
 	requested_scopes            *[]string
 	appendrequested_scopes      []string
 	name                        *string
-	expiresAt                   *time.Time
+	expires_at                  *time.Time
 	state                       *approval.State
 	clearedFields               map[string]struct{}
 	api_subscription            *int
@@ -10958,21 +11031,21 @@ func (m *ApprovalMutation) ResetName() {
 	m.name = nil
 }
 
-// SetExpiresAt sets the "expiresAt" field.
+// SetExpiresAt sets the "expires_at" field.
 func (m *ApprovalMutation) SetExpiresAt(t time.Time) {
-	m.expiresAt = &t
+	m.expires_at = &t
 }
 
-// ExpiresAt returns the value of the "expiresAt" field in the mutation.
+// ExpiresAt returns the value of the "expires_at" field in the mutation.
 func (m *ApprovalMutation) ExpiresAt() (r time.Time, exists bool) {
-	v := m.expiresAt
+	v := m.expires_at
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldExpiresAt returns the old "expiresAt" field's value of the Approval entity.
+// OldExpiresAt returns the old "expires_at" field's value of the Approval entity.
 // If the Approval object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
 func (m *ApprovalMutation) OldExpiresAt(ctx context.Context) (v *time.Time, err error) {
@@ -10989,21 +11062,21 @@ func (m *ApprovalMutation) OldExpiresAt(ctx context.Context) (v *time.Time, err 
 	return oldValue.ExpiresAt, nil
 }
 
-// ClearExpiresAt clears the value of the "expiresAt" field.
+// ClearExpiresAt clears the value of the "expires_at" field.
 func (m *ApprovalMutation) ClearExpiresAt() {
-	m.expiresAt = nil
+	m.expires_at = nil
 	m.clearedFields[approval.FieldExpiresAt] = struct{}{}
 }
 
-// ExpiresAtCleared returns if the "expiresAt" field was cleared in this mutation.
+// ExpiresAtCleared returns if the "expires_at" field was cleared in this mutation.
 func (m *ApprovalMutation) ExpiresAtCleared() bool {
 	_, ok := m.clearedFields[approval.FieldExpiresAt]
 	return ok
 }
 
-// ResetExpiresAt resets all changes to the "expiresAt" field.
+// ResetExpiresAt resets all changes to the "expires_at" field.
 func (m *ApprovalMutation) ResetExpiresAt() {
-	m.expiresAt = nil
+	m.expires_at = nil
 	delete(m.clearedFields, approval.FieldExpiresAt)
 }
 
@@ -11240,7 +11313,7 @@ func (m *ApprovalMutation) Fields() []string {
 	if m.name != nil {
 		fields = append(fields, approval.FieldName)
 	}
-	if m.expiresAt != nil {
+	if m.expires_at != nil {
 		fields = append(fields, approval.FieldExpiresAt)
 	}
 	if m.state != nil {

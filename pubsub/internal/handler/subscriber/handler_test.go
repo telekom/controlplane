@@ -142,6 +142,64 @@ var _ = Describe("SubscriberHandler", func() {
 	})
 
 	Describe("CreateOrUpdate", func() {
+		DescribeTable("uses the effective Horizon environment for statusless IDs and payloads",
+			func(storeEnvironment, expectedEnvironment, expectedID string) {
+				obj := newTestSubscriber()
+				publisher := newTestPublisher()
+				publisher.Spec.JsonSchema = ""
+				eventStore := newTestEventStore()
+				eventStore.Spec.OverwriteEnvironmentName = storeEnvironment
+
+				fakeClient.EXPECT().Get(ctx, obj.Spec.Publisher.K8s(), mock.AnythingOfType("*v1.Publisher")).
+					Run(func(_ context.Context, _ types.NamespacedName, out client.Object, _ ...client.GetOption) {
+						*out.(*pubsubv1.Publisher) = *publisher
+					}).Return(nil)
+				fakeClient.EXPECT().Get(ctx, publisher.Spec.EventStore.K8s(), mock.AnythingOfType("*v1.EventStore")).
+					Run(func(_ context.Context, _ types.NamespacedName, out client.Object, _ ...client.GetOption) {
+						*out.(*pubsubv1.EventStore) = *eventStore
+					}).Return(nil)
+				configSvcMock.EXPECT().PutSubscription(ctx, expectedID, mock.AnythingOfType("service.SubscriptionResource")).
+					Run(func(_ context.Context, id string, resource service.SubscriptionResource) {
+						Expect(resource.Metadata.Name).To(Equal(id))
+						Expect(resource.Metadata.Namespace).To(Equal(service.DefaultDataplaneNamespace))
+						Expect(resource.Spec.Environment).To(Equal(expectedEnvironment))
+						Expect(resource.Spec.Subscription.SubscriptionId).To(Equal(id))
+					}).Return(nil)
+
+				Expect(handler.CreateOrUpdate(ctx, obj)).To(Succeed())
+				Expect(obj.Status.SubscriptionId).To(Equal(expectedID))
+			},
+			Entry("from an EventStore override", "legacy-horizon", "legacy-horizon", "a54dad1115b720028d75c405ad33ea71928352aa"),
+			Entry("from the context for a legacy empty EventStore", "", testEnvironment, GenerateSubscriptionID(testEnvironment, "de.telekom.test.event.v1", "my-consumer-app")),
+		)
+
+		It("preserves a stored ID while using the current effective environment", func() {
+			obj := newTestSubscriber()
+			obj.Status.SubscriptionId = "persisted-id"
+			publisher := newTestPublisher()
+			publisher.Spec.JsonSchema = ""
+			eventStore := newTestEventStore()
+			eventStore.Spec.OverwriteEnvironmentName = "changed-horizon"
+
+			fakeClient.EXPECT().Get(ctx, obj.Spec.Publisher.K8s(), mock.AnythingOfType("*v1.Publisher")).
+				Run(func(_ context.Context, _ types.NamespacedName, out client.Object, _ ...client.GetOption) {
+					*out.(*pubsubv1.Publisher) = *publisher
+				}).Return(nil)
+			fakeClient.EXPECT().Get(ctx, publisher.Spec.EventStore.K8s(), mock.AnythingOfType("*v1.EventStore")).
+				Run(func(_ context.Context, _ types.NamespacedName, out client.Object, _ ...client.GetOption) {
+					*out.(*pubsubv1.EventStore) = *eventStore
+				}).Return(nil)
+			configSvcMock.EXPECT().PutSubscription(ctx, "persisted-id", mock.AnythingOfType("service.SubscriptionResource")).
+				Run(func(_ context.Context, _ string, resource service.SubscriptionResource) {
+					Expect(resource.Metadata.Name).To(Equal("persisted-id"))
+					Expect(resource.Spec.Subscription.SubscriptionId).To(Equal("persisted-id"))
+					Expect(resource.Spec.Environment).To(Equal("changed-horizon"))
+				}).Return(nil)
+
+			Expect(handler.CreateOrUpdate(ctx, obj)).To(Succeed())
+			Expect(obj.Status.SubscriptionId).To(Equal("persisted-id"))
+		})
+
 		It("should register subscription and set Ready condition on success", func() {
 			obj := newTestSubscriber()
 			publisher := newTestPublisher()
@@ -302,6 +360,37 @@ var _ = Describe("SubscriberHandler", func() {
 	})
 
 	Describe("Delete", func() {
+		DescribeTable("uses the effective Horizon environment for deletion",
+			func(storeEnvironment, storedID, expectedEnvironment, expectedID string) {
+				obj := newTestSubscriber()
+				obj.Status.SubscriptionId = storedID
+				publisher := newTestPublisher()
+				eventStore := newTestEventStore()
+				eventStore.Spec.OverwriteEnvironmentName = storeEnvironment
+
+				fakeClient.EXPECT().Get(ctx, obj.Spec.Publisher.K8s(), mock.AnythingOfType("*v1.Publisher")).
+					Run(func(_ context.Context, _ types.NamespacedName, out client.Object, _ ...client.GetOption) {
+						*out.(*pubsubv1.Publisher) = *publisher
+					}).Return(nil)
+				fakeClient.EXPECT().Get(ctx, publisher.Spec.EventStore.K8s(), mock.AnythingOfType("*v1.EventStore")).
+					Run(func(_ context.Context, _ types.NamespacedName, out client.Object, _ ...client.GetOption) {
+						*out.(*pubsubv1.EventStore) = *eventStore
+					}).Return(nil)
+				configSvcMock.EXPECT().DeleteSubscription(ctx, expectedID, mock.AnythingOfType("service.SubscriptionResource")).
+					Run(func(_ context.Context, id string, resource service.SubscriptionResource) {
+						Expect(resource.Metadata.Name).To(Equal(id))
+						Expect(resource.Metadata.Namespace).To(Equal(service.DefaultDataplaneNamespace))
+						Expect(resource.Spec.Environment).To(Equal(expectedEnvironment))
+						Expect(resource.Spec.Subscription.SubscriptionId).To(Equal(id))
+					}).Return(nil)
+
+				Expect(handler.Delete(ctx, obj)).To(Succeed())
+			},
+			Entry("for a statusless subscription", "legacy-horizon", "", "legacy-horizon", "a54dad1115b720028d75c405ad33ea71928352aa"),
+			Entry("for a legacy empty store", "", "", testEnvironment, GenerateSubscriptionID(testEnvironment, "de.telekom.test.event.v1", "my-consumer-app")),
+			Entry("while preserving a stored ID after an environment change", "changed-horizon", "persisted-id", "changed-horizon", "persisted-id"),
+		)
+
 		It("should deregister subscription on success", func() {
 			obj := newTestSubscriber()
 			publisher := newTestPublisher()

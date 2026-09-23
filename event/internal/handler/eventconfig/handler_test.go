@@ -31,6 +31,7 @@ import (
 	"github.com/telekom/controlplane/event/internal/handler/eventconfig"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
+	pubsubv1 "github.com/telekom/controlplane/pubsub/api/v1"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -158,11 +159,12 @@ func buildScheme() *runtime.Scheme {
 
 var _ = Describe("EventConfigHandler", func() {
 	var (
-		ctx        context.Context
-		fakeClient *fakeclient.MockJanitorClient
-		h          *eventconfig.EventConfigHandler
-		obj        *eventv1.EventConfig
-		testScheme *runtime.Scheme
+		ctx               context.Context
+		fakeClient        *fakeclient.MockJanitorClient
+		h                 *eventconfig.EventConfigHandler
+		obj               *eventv1.EventConfig
+		testScheme        *runtime.Scheme
+		createdEventStore *pubsubv1.EventStore
 	)
 
 	BeforeEach(func() {
@@ -173,6 +175,7 @@ var _ = Describe("EventConfigHandler", func() {
 		h = &eventconfig.EventConfigHandler{}
 		obj = newEventConfig()
 		testScheme = buildScheme()
+		createdEventStore = nil
 	})
 
 	// mockGetRealm sets up a mock for c.Get on the identity realm key.
@@ -206,8 +209,9 @@ var _ = Describe("EventConfigHandler", func() {
 	mockCreateOrUpdateEventStore := func(result controllerutil.OperationResult, err error) {
 		fakeClient.EXPECT().
 			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.EventStore"), mock.Anything).
-			Run(func(_ context.Context, _ client.Object, mutate controllerutil.MutateFn) {
-				_ = mutate()
+			Run(func(_ context.Context, eventStoreObj client.Object, mutate controllerutil.MutateFn) {
+				Expect(mutate()).To(Succeed())
+				createdEventStore = eventStoreObj.(*pubsubv1.EventStore).DeepCopy()
 			}).
 			Return(result, err).Once()
 	}
@@ -576,6 +580,17 @@ var _ = Describe("EventConfigHandler", func() {
 			Expect(processingCond).ToNot(BeNil())
 			Expect(processingCond.Status).To(Equal(metav1.ConditionFalse))
 			Expect(processingCond.Reason).To(Equal("Done"))
+			Expect(createdEventStore.Spec.OverwriteEnvironmentName).To(Equal("test-env"))
+		})
+
+		It("should propagate the EventConfig Horizon environment overwrite verbatim", func() {
+			obj.Spec.OverwriteEnvironmentName = " Legacy Horizon "
+			setupFullHappyPath()
+			fakeClient.EXPECT().AllReady().Return(true).Once()
+			fakeClient.EXPECT().CleanupAll(ctx, mock.Anything).Return(0, nil).Once()
+
+			Expect(h.CreateOrUpdate(ctx, obj)).To(Succeed())
+			Expect(createdEventStore.Spec.OverwriteEnvironmentName).To(Equal(" Legacy Horizon "))
 		})
 	})
 

@@ -205,13 +205,13 @@ var _ = Describe("Rover Handler", func() {
 				Expect(security).To(HaveKeyWithValue("type", "basicAuth"))
 			})
 
-			It("should preserve an explicit exposure type", func() {
+			It("should normalize an explicit exposure type to lowercase", func() {
 				obj := &types.UnstructuredObject{
 					Content: map[string]any{
 						"spec": map[string]any{
 							"exposures": []any{
 								map[string]any{
-									"type":     "ai",
+									"type":     "AI",
 									"basePath": "/mcp/assistant",
 								},
 							},
@@ -307,10 +307,10 @@ var _ = Describe("Rover Handler", func() {
 				Expect(result[0]["security"]).To(HaveKeyWithValue("type", "oauth2"))
 			})
 
-			It("should preserve an explicit subscription type", func() {
+			It("should normalize an explicit subscription type to lowercase", func() {
 				subscriptions := []any{
 					map[string]any{
-						"type":     "ai",
+						"type":     "AI",
 						"basePath": "/mcp/assistant",
 					},
 				}

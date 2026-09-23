@@ -138,7 +138,6 @@ func (r *RoverController) Update(ctx context.Context, resourceId string, req api
 		return res, problems.BadRequest(err.Error())
 	}
 	EnsureLabelsOrDie(ctx, obj)
-	obj.Labels[config.BuildLabelKey("application")] = id.Name
 
 	if err := r.guardPubSubFeature(ctx, req, config.FeaturePubSub.IsEnabled()); err != nil {
 		return res, err

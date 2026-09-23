@@ -248,13 +248,13 @@ func (_u *ApprovalUpdate) SetNillableName(v *string) *ApprovalUpdate {
 	return _u
 }
 
-// SetExpiresAt sets the "expiresAt" field.
+// SetExpiresAt sets the "expires_at" field.
 func (_u *ApprovalUpdate) SetExpiresAt(v time.Time) *ApprovalUpdate {
 	_u.mutation.SetExpiresAt(v)
 	return _u
 }
 
-// SetNillableExpiresAt sets the "expiresAt" field if the given value is not nil.
+// SetNillableExpiresAt sets the "expires_at" field if the given value is not nil.
 func (_u *ApprovalUpdate) SetNillableExpiresAt(v *time.Time) *ApprovalUpdate {
 	if v != nil {
 		_u.SetExpiresAt(*v)
@@ -262,7 +262,7 @@ func (_u *ApprovalUpdate) SetNillableExpiresAt(v *time.Time) *ApprovalUpdate {
 	return _u
 }
 
-// ClearExpiresAt clears the value of the "expiresAt" field.
+// ClearExpiresAt clears the value of the "expires_at" field.
 func (_u *ApprovalUpdate) ClearExpiresAt() *ApprovalUpdate {
 	_u.mutation.ClearExpiresAt()
 	return _u
@@ -856,13 +856,13 @@ func (_u *ApprovalUpdateOne) SetNillableName(v *string) *ApprovalUpdateOne {
 	return _u
 }
 
-// SetExpiresAt sets the "expiresAt" field.
+// SetExpiresAt sets the "expires_at" field.
 func (_u *ApprovalUpdateOne) SetExpiresAt(v time.Time) *ApprovalUpdateOne {
 	_u.mutation.SetExpiresAt(v)
 	return _u
 }
 
-// SetNillableExpiresAt sets the "expiresAt" field if the given value is not nil.
+// SetNillableExpiresAt sets the "expires_at" field if the given value is not nil.
 func (_u *ApprovalUpdateOne) SetNillableExpiresAt(v *time.Time) *ApprovalUpdateOne {
 	if v != nil {
 		_u.SetExpiresAt(*v)
@@ -870,7 +870,7 @@ func (_u *ApprovalUpdateOne) SetNillableExpiresAt(v *time.Time) *ApprovalUpdateO
 	return _u
 }
 
-// ClearExpiresAt clears the value of the "expiresAt" field.
+// ClearExpiresAt clears the value of the "expires_at" field.
 func (_u *ApprovalUpdateOne) ClearExpiresAt() *ApprovalUpdateOne {
 	_u.mutation.ClearExpiresAt()
 	return _u

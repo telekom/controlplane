@@ -8,12 +8,15 @@ import (
 	"context"
 
 	"github.com/go-logr/logr"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/util/validation/field"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	commoncontroller "github.com/telekom/controlplane/common/pkg/controller"
+	"github.com/telekom/controlplane/common/pkg/util/emailutil"
 	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
 	"github.com/telekom/controlplane/organization/internal/webhook/v1/mutator"
 	"github.com/telekom/controlplane/organization/internal/webhook/v1/validator"
@@ -68,6 +71,9 @@ func (t TeamCustomDefaulter) Default(ctx context.Context, teamObj *organizationv
 	if err != nil {
 		return err
 	}
+	for i := range teamObj.Spec.Members {
+		teamObj.Spec.Members[i].Email = emailutil.Canonicalize(teamObj.Spec.Members[i].Email)
+	}
 	mutator.SortTeamMembers(teamObj)
 	return nil
 }
@@ -100,6 +106,9 @@ func (v *TeamCustomValidator) ValidateDelete(ctx context.Context, teamObj *organ
 }
 
 func (v *TeamCustomValidator) validateCreateOrUpdate(ctx context.Context, teamObj *organizationv1.Team) (admission.Warnings, error) {
+	if commoncontroller.IsBeingDeleted(teamObj) {
+		return nil, nil
+	}
 	_, log := setupLog(ctx, teamObj)
 	log.Info("validating team")
 
@@ -113,5 +122,30 @@ func (v *TeamCustomValidator) validateCreateOrUpdate(ctx context.Context, teamOb
 		return nil, err
 	}
 
+	var errs field.ErrorList
+	if err := emailutil.Validate(teamObj.Spec.Email); err != nil {
+		errs = append(errs, field.Invalid(field.NewPath("spec", "email"), teamObj.Spec.Email, err.Error()))
+	}
+	errs = append(errs, validateMemberEmails(teamObj.Spec.Members)...)
+	if len(errs) > 0 {
+		return nil, apierrors.NewInvalid(organizationv1.GroupVersion.WithKind("Team").GroupKind(), teamObj.Name, errs)
+	}
 	return nil, nil
+}
+
+func validateMemberEmails(members []organizationv1.Member) field.ErrorList {
+	seen := make(map[string]struct{}, len(members))
+	var errs field.ErrorList
+	for i, member := range members {
+		path := field.NewPath("spec", "members").Index(i).Child("email")
+		if err := emailutil.Validate(member.Email); err != nil {
+			errs = append(errs, field.Invalid(path, member.Email, err.Error()))
+		}
+		canonicalEmail := emailutil.Canonicalize(member.Email)
+		if _, exists := seen[canonicalEmail]; exists {
+			errs = append(errs, field.Duplicate(path, member.Email))
+		}
+		seen[canonicalEmail] = struct{}{}
+	}
+	return errs
 }

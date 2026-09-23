@@ -545,6 +545,7 @@ type AgenticSubscription implements Node {
   namespace: String!
   name: String!
   basePath: String!
+  gatewayURL: String
   security: AgenticSubscriptionSecurity
   traffic: AgenticSubscriberTraffic
   owner: Application!
@@ -744,6 +745,24 @@ input AgenticSubscriptionWhereInput {
   basePathHasSuffix: String
   basePathEqualFold: String
   basePathContainsFold: String
+  """
+  gateway_url field predicates
+  """
+  gatewayURL: String
+  gatewayURLNEQ: String
+  gatewayURLIn: [String!]
+  gatewayURLNotIn: [String!]
+  gatewayURLGT: String
+  gatewayURLGTE: String
+  gatewayURLLT: String
+  gatewayURLLTE: String
+  gatewayURLContains: String
+  gatewayURLHasPrefix: String
+  gatewayURLHasSuffix: String
+  gatewayURLIsNil: Boolean
+  gatewayURLNotNil: Boolean
+  gatewayURLEqualFold: String
+  gatewayURLContainsFold: String
   """
   owner edge predicates
   """
@@ -2067,7 +2086,7 @@ type Approval implements Node {
   """
   requestedScopes: [String!]
   name: String!
-  expiresat: Time @goField(name: "ExpiresAt", forceResolver: false)
+  expiresAt: Time
   state: ApprovalState!
 }
 """
@@ -2584,18 +2603,18 @@ input ApprovalWhereInput {
   nameEqualFold: String
   nameContainsFold: String
   """
-  expiresAt field predicates
+  expires_at field predicates
   """
-  expiresat: Time
-  expiresatNEQ: Time
-  expiresatIn: [Time!]
-  expiresatNotIn: [Time!]
-  expiresatGT: Time
-  expiresatGTE: Time
-  expiresatLT: Time
-  expiresatLTE: Time
-  expiresatIsNil: Boolean
-  expiresatNotNil: Boolean
+  expiresAt: Time
+  expiresAtNEQ: Time
+  expiresAtIn: [Time!]
+  expiresAtNotIn: [Time!]
+  expiresAtGT: Time
+  expiresAtGTE: Time
+  expiresAtLT: Time
+  expiresAtLTE: Time
+  expiresAtIsNil: Boolean
+  expiresAtNotNil: Boolean
   """
   state field predicates
   """

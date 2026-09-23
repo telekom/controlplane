@@ -28,7 +28,10 @@ type ApprovalSpec struct {
 	Decider Decider `json:"decider,omitempty"`
 
 	// Decisions contains information about who or what changed this approval
+	// Only the most recent MaxDecisions entries are retained; older ones are
+	// dropped by the mutating webhook.
 	// +kubebuilder:default={}
+	// +kubebuilder:validation:MaxItems=5
 	Decisions []Decision `json:"decisions"`
 
 	// Strategy defines the strategy that was used to approve the request
@@ -66,7 +69,12 @@ type ApprovalStatus struct {
 	// +kubebuilder:printcolumn:name="ExpiresAt",type="date",JSONPath=".status.expiresAt"
 	ExpiresAt *metav1.Time `json:"expiresAt,omitempty"`
 
-	// NotificationRefs is a reference to the notifications that were sent for this approval request
+	// NotificationRefs is a reference to the notifications that were sent for this approval request.
+	// Each notification appears at most once (keyed by namespace and name).
+	// +listType=map
+	// +listMapKey=namespace
+	// +listMapKey=name
+	// +optional
 	NotificationRefs []types.ObjectRef `json:"notificationRefs,omitempty"`
 }
 
@@ -76,6 +84,7 @@ type ApprovalStatus struct {
 // Approval is the Schema for the approvals API
 // +kubebuilder:printcolumn:name="State",type="string",JSONPath=".spec.state",description="The state of the approval"
 // +kubebuilder:printcolumn:name="Strategy",type="string",JSONPath=".spec.strategy",description="The strategy used to approve the request"
+// +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 type Approval struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -94,6 +103,13 @@ func (a *Approval) SetCondition(condition metav1.Condition) bool {
 
 func (a *Approval) StateChanged() bool {
 	return a.Status.LastState != a.Spec.State
+}
+
+// AppendDecision records a decision and keeps the list within MaxDecisions.
+// The mutating webhook enforces the same bound server-side; this helper keeps
+// the object in its final shape client-side.
+func (a *Approval) AppendDecision(d Decision) {
+	a.Spec.Decisions = TrimDecisions(append(a.Spec.Decisions, d))
 }
 
 var _ types.Object = &Approval{}

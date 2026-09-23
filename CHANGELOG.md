@@ -1,3 +1,65 @@
+## [0.28.2](https://github.com/telekom/controlplane/compare/v0.28.1...v0.28.2) (2026-09-23)
+
+
+### Bug Fixes
+
+* **rover-server:** correct gvr for agentic-exposures and agentic-subscriptions ([#681](https://github.com/telekom/controlplane/issues/681)) ([d03890e](https://github.com/telekom/controlplane/commit/d03890ec774edbd71a6a8ef5c2b3bebb5e438c1f))
+
+## [0.28.1](https://github.com/telekom/controlplane/compare/v0.28.0...v0.28.1) (2026-09-23)
+
+
+### Bug Fixes
+
+* align email formats used and validation ([#670](https://github.com/telekom/controlplane/issues/670)) ([2ee5be7](https://github.com/telekom/controlplane/commit/2ee5be76d262eada9df26c939d88b8d2deda9731))
+* **rover-server:** normalize application-names for rovers ([#679](https://github.com/telekom/controlplane/issues/679)) ([7fef4c3](https://github.com/telekom/controlplane/commit/7fef4c3bcd6ead13c18d5de5475a55e60ac458eb))
+* **rover:** normalize descriminator types; add default-values ([#677](https://github.com/telekom/controlplane/issues/677)) ([a9a05f7](https://github.com/telekom/controlplane/commit/a9a05f70748c2c04acff149a98f64338186392df))
+
+# [0.28.0](https://github.com/telekom/controlplane/compare/v0.27.1...v0.28.0) (2026-09-23)
+
+
+### Bug Fixes
+
+* **approvals:** correct projected approval metadata ([8c63d50](https://github.com/telekom/controlplane/commit/8c63d501a2306fa04a28260b4504e50517342af0))
+
+
+### Features
+
+* **agentic:** add gatewayURL ([#667](https://github.com/telekom/controlplane/issues/667)) ([02e646f](https://github.com/telekom/controlplane/commit/02e646f8e995b519ff7cefb97e28db2390e1d145))
+
+## [0.27.1](https://github.com/telekom/controlplane/compare/v0.27.0...v0.27.1) (2026-09-22)
+
+
+### Bug Fixes
+
+* **rover-ctl,rover-server:** correctly detect agent specifications; align enum validation ([#675](https://github.com/telekom/controlplane/issues/675)) ([43adbce](https://github.com/telekom/controlplane/commit/43adbce8a6e0564019f0d79f32f7d5a1d7ac050f))
+
+# [0.27.0](https://github.com/telekom/controlplane/compare/v0.26.0...v0.27.0) (2026-09-22)
+
+
+### Bug Fixes
+
+* **rover-ctl:** ignore bom when parsing files ([#669](https://github.com/telekom/controlplane/issues/669)) ([f8c4a73](https://github.com/telekom/controlplane/commit/f8c4a73288c551ea05143deb7ca4cba1cddb82ec))
+
+
+### Features
+
+* **approva:** copy labels from request into approval ([#673](https://github.com/telekom/controlplane/issues/673)) ([6055035](https://github.com/telekom/controlplane/commit/60550351aaa1536aff71ed050b4b4ea37a41d240))
+
+# [0.26.0](https://github.com/telekom/controlplane/compare/v0.25.0...v0.26.0) (2026-09-21)
+
+
+### Bug Fixes
+
+* **git-workflow:** push roverctl-image to Artifactory only on Release ([#659](https://github.com/telekom/controlplane/issues/659)) ([fed1d83](https://github.com/telekom/controlplane/commit/fed1d83be704e8d7e1c8b483b6f212728de55910))
+* **projector:** add back-link for agentCard, api, eventTypeDef, mcpServer AND remove stale FKs in Exposure -> API/EventType ([#660](https://github.com/telekom/controlplane/issues/660)) ([dd076b0](https://github.com/telekom/controlplane/commit/dd076b06029dbb5885f276a0ea005b16b744a85a))
+
+
+### Features
+
+* **approval:** allow inject custom labels into request ([#664](https://github.com/telekom/controlplane/issues/664)) ([bdb2f00](https://github.com/telekom/controlplane/commit/bdb2f008d39558a37baa661e7d8414561aec4d8f))
+* bug-fixes and minor improvements from integration-tests ([#663](https://github.com/telekom/controlplane/issues/663)) ([8e7c7d7](https://github.com/telekom/controlplane/commit/8e7c7d7be51e7bfaf6fdb627136074a2438ee33a))
+* **pubsub,event:** allow overwrite environment-name ([#656](https://github.com/telekom/controlplane/issues/656)) ([7d81dbb](https://github.com/telekom/controlplane/commit/7d81dbba5cef462e48da2f0b67bdd8621eec1810))
+
 # [0.25.0](https://github.com/telekom/controlplane/compare/v0.24.1...v0.25.0) (2026-09-16)
 
 

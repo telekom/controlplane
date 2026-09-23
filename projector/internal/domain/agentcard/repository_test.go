@@ -10,19 +10,22 @@ import (
 	"fmt"
 
 	"entgo.io/ent/privacy"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 
-	_ "github.com/mattn/go-sqlite3"
 	"github.com/telekom/controlplane/controlplane-api/ent"
 	entagentcard "github.com/telekom/controlplane/controlplane-api/ent/agentcard"
+	entagenticexposure "github.com/telekom/controlplane/controlplane-api/ent/agenticexposure"
 	"github.com/telekom/controlplane/controlplane-api/ent/enttest"
-	_ "github.com/telekom/controlplane/controlplane-api/ent/runtime"
-
+	"github.com/telekom/controlplane/controlplane-api/ent/zone"
 	"github.com/telekom/controlplane/projector/internal/domain/agentcard"
 	"github.com/telekom/controlplane/projector/internal/domain/shared"
 	"github.com/telekom/controlplane/projector/internal/infrastructure"
 	"github.com/telekom/controlplane/projector/internal/runtime"
+
+	_ "github.com/mattn/go-sqlite3"
+	_ "github.com/telekom/controlplane/controlplane-api/ent/runtime"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 // mockAgentCardDeps implements agentcard.AgentCardDeps for testing.
@@ -165,6 +168,7 @@ var _ = Describe("AgentCard Repository", func() {
 				TeamName:    "platform--narvi",
 			}
 			Expect(repo.Upsert(ctx, data)).To(Succeed())
+			cache.Wait()
 
 			resolver := infrastructure.NewIDResolver(client, cache)
 			id, err := resolver.FindActiveAgentCardID(ctx, "/agent/weather/v1")
@@ -186,10 +190,94 @@ var _ = Describe("AgentCard Repository", func() {
 
 			data.Active = false
 			Expect(repo.Upsert(ctx, data)).To(Succeed())
+			cache.Wait()
 
 			resolver := infrastructure.NewIDResolver(client, cache)
 			_, err := resolver.FindActiveAgentCardID(ctx, "/agent/weather/v1")
 			Expect(errors.Is(err, infrastructure.ErrEntityNotFound)).To(BeTrue())
+		})
+
+		It("should back-link orphaned AgenticExposures projected before the agent_card", func() {
+			// Seed an Application (owner) via Zone → Team → Application.
+			z, err := client.Zone.Create().
+				SetName("caas").
+				SetVisibility(zone.VisibilityEnterprise).
+				Save(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			app, err := client.Application.Create().
+				SetName("my-app").
+				SetNamespace("platform--narvi").
+				SetOwnerTeamID(teamID).
+				SetZoneID(z.ID).
+				Save(ctx)
+			Expect(err).NotTo(HaveOccurred())
+
+			// AgenticExposure created first, before its AgentCard exists → stored
+			// with a NULL agent_card FK (the create-order race).
+			exp, err := client.AgenticExposure.Create().
+				SetBasePath("/agent/weather/v1").
+				SetNamespace("prod--platform--narvi").
+				SetVariant(entagenticexposure.VariantAgent).
+				SetActive(true).
+				SetOwnerID(app.ID).
+				Save(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			_, err = exp.QueryAgentCard().Only(ctx)
+			Expect(ent.IsNotFound(err)).To(BeTrue())
+
+			// AgentCard appears later → should adopt the orphaned exposure.
+			data := &agentcard.AgentCardData{
+				Meta:        shared.NewMetadata("prod--platform--narvi", "card-weather-v1", nil),
+				StatusPhase: "READY",
+				BasePath:    "/agent/weather/v1",
+				Version:     "1.0.0",
+				Name:        "weather-agent",
+				Active:      true,
+				TeamName:    "platform--narvi",
+			}
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			card, err := exp.QueryAgentCard().Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(card.BasePath).To(Equal("/agent/weather/v1"))
+		})
+
+		It("should not back-link AgenticExposures with a different variant", func() {
+			z, err := client.Zone.Create().
+				SetName("caas").
+				SetVisibility(zone.VisibilityEnterprise).
+				Save(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			app, err := client.Application.Create().
+				SetName("my-app").
+				SetNamespace("platform--narvi").
+				SetOwnerTeamID(teamID).
+				SetZoneID(z.ID).
+				Save(ctx)
+			Expect(err).NotTo(HaveOccurred())
+
+			exp, err := client.AgenticExposure.Create().
+				SetBasePath("/agent/weather/v1").
+				SetNamespace("prod--platform--narvi").
+				SetVariant(entagenticexposure.VariantMcp).
+				SetActive(true).
+				SetOwnerID(app.ID).
+				Save(ctx)
+			Expect(err).NotTo(HaveOccurred())
+
+			data := &agentcard.AgentCardData{
+				Meta:        shared.NewMetadata("prod--platform--narvi", "card-weather-v1", nil),
+				StatusPhase: "READY",
+				BasePath:    "/agent/weather/v1",
+				Version:     "1.0.0",
+				Name:        "weather-agent",
+				Active:      true,
+				TeamName:    "platform--narvi",
+			}
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			_, err = exp.QueryAgentCard().Only(ctx)
+			Expect(ent.IsNotFound(err)).To(BeTrue())
 		})
 	})
 

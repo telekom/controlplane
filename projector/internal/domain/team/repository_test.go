@@ -63,6 +63,21 @@ var _ = Describe("Team Repository", func() {
 	})
 
 	Describe("Upsert", func() {
+		DescribeTable("copies member emails without applying admission policy", func(email string) {
+			data := &team.TeamData{
+				Meta:        shared.NewMetadata("prod", "grp--copy", nil),
+				Name:        "grp--copy",
+				Email:       "Contact@Example.com",
+				Category:    "CUSTOMER",
+				StatusPhase: "READY",
+				Members:     []team.MemberData{{Name: "Alice", Email: email}},
+			}
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+			stored, err := client.Member.Query().Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(stored.Email).To(Equal(email))
+		}, Entry("mixed-case input", "Alice@Example.COM"), Entry("syntax is owned by admission", "not-an-email"))
+
 		It("should create a team with group FK and members", func() {
 			// Create the group in the DB first.
 			g, err := client.Group.Create().
@@ -251,6 +266,29 @@ var _ = Describe("Team Repository", func() {
 			// IDs should be stable — same rows were updated in place.
 			Expect(members[0].ID).To(Equal(firstAliceID))
 			Expect(members[1].ID).To(Equal(firstBobID))
+		})
+
+		It("preserves distinct Unicode identities and contact casing on repeated projection", func() {
+			data := &team.TeamData{
+				Meta: shared.NewMetadata("prod", "grp--unicode", nil),
+				Name: "grp--unicode", Email: "Contact@Example.COM", Category: "CUSTOMER", StatusPhase: "READY",
+				Members: []team.MemberData{{Name: "Upper", Email: "Üser@example.com"}, {Name: "Lower", Email: "üser@example.com"}},
+			}
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+			before, err := client.Member.Query().Order(member.ByEmail()).All(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(before).To(HaveLen(2))
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+			after, err := client.Member.Query().Order(member.ByEmail()).All(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(after).To(HaveLen(2))
+			for i := range before {
+				Expect(after[i].ID).To(Equal(before[i].ID))
+				Expect(after[i].Email).To(Equal(before[i].Email))
+			}
+			stored, err := client.Team.Query().Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(stored.Email).To(Equal("Contact@Example.COM"))
 		})
 
 		It("should update member name in place when email stays the same", func() {
