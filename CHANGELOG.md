@@ -1,3 +1,10 @@
+## [0.28.2](https://github.com/telekom/controlplane/compare/v0.28.1...v0.28.2) (2026-09-23)
+
+
+### Bug Fixes
+
+* **rover-server:** correct gvr for agentic-exposures and agentic-subscriptions ([#681](https://github.com/telekom/controlplane/issues/681)) ([d03890e](https://github.com/telekom/controlplane/commit/d03890ec774edbd71a6a8ef5c2b3bebb5e438c1f))
+
 ## [0.28.1](https://github.com/telekom/controlplane/compare/v0.28.0...v0.28.1) (2026-09-23)
 
 
