@@ -1,3 +1,12 @@
+## [0.28.1](https://github.com/telekom/controlplane/compare/v0.28.0...v0.28.1) (2026-09-23)
+
+
+### Bug Fixes
+
+* align email formats used and validation ([#670](https://github.com/telekom/controlplane/issues/670)) ([2ee5be7](https://github.com/telekom/controlplane/commit/2ee5be76d262eada9df26c939d88b8d2deda9731))
+* **rover-server:** normalize application-names for rovers ([#679](https://github.com/telekom/controlplane/issues/679)) ([7fef4c3](https://github.com/telekom/controlplane/commit/7fef4c3bcd6ead13c18d5de5475a55e60ac458eb))
+* **rover:** normalize descriminator types; add default-values ([#677](https://github.com/telekom/controlplane/issues/677)) ([a9a05f7](https://github.com/telekom/controlplane/commit/a9a05f70748c2c04acff149a98f64338186392df))
+
 # [0.28.0](https://github.com/telekom/controlplane/compare/v0.27.1...v0.28.0) (2026-09-23)
 
 
