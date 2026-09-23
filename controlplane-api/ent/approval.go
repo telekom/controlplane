@@ -69,6 +69,7 @@ type Approval struct {
 	event_subscription_approval   *int
 	file_subscription_approval    *int
 	listener_provider_approval    *int
+	listener_consumer_approval    *int
 	selectValues                  sql.SelectValues
 }
 
@@ -84,9 +85,11 @@ type ApprovalEdges struct {
 	AgenticSubscription *AgenticSubscription `json:"agentic_subscription,omitempty"`
 	// Listener holds the value of the listener edge.
 	Listener *Listener `json:"listener,omitempty"`
+	// ConsumerListener holds the value of the consumer_listener edge.
+	ConsumerListener *Listener `json:"consumer_listener,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [5]bool
+	loadedTypes [6]bool
 }
 
 // APISubscriptionOrErr returns the APISubscription value or an error if the edge
@@ -144,6 +147,17 @@ func (e ApprovalEdges) ListenerOrErr() (*Listener, error) {
 	return nil, &NotLoadedError{edge: "listener"}
 }
 
+// ConsumerListenerOrErr returns the ConsumerListener value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e ApprovalEdges) ConsumerListenerOrErr() (*Listener, error) {
+	if e.ConsumerListener != nil {
+		return e.ConsumerListener, nil
+	} else if e.loadedTypes[5] {
+		return nil, &NotFoundError{label: listener.Label}
+	}
+	return nil, &NotLoadedError{edge: "consumer_listener"}
+}
+
 // scanValues returns the types for scanning values from sql.Rows.
 func (*Approval) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
@@ -166,6 +180,8 @@ func (*Approval) scanValues(columns []string) ([]any, error) {
 		case approval.ForeignKeys[3]: // file_subscription_approval
 			values[i] = new(sql.NullInt64)
 		case approval.ForeignKeys[4]: // listener_provider_approval
+			values[i] = new(sql.NullInt64)
+		case approval.ForeignKeys[5]: // listener_consumer_approval
 			values[i] = new(sql.NullInt64)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -339,6 +355,13 @@ func (_m *Approval) assignValues(columns []string, values []any) error {
 				_m.listener_provider_approval = new(int)
 				*_m.listener_provider_approval = int(value.Int64)
 			}
+		case approval.ForeignKeys[5]:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for edge-field listener_consumer_approval", value)
+			} else if value.Valid {
+				_m.listener_consumer_approval = new(int)
+				*_m.listener_consumer_approval = int(value.Int64)
+			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
 		}
@@ -375,6 +398,11 @@ func (_m *Approval) QueryAgenticSubscription() *AgenticSubscriptionQuery {
 // QueryListener queries the "listener" edge of the Approval entity.
 func (_m *Approval) QueryListener() *ListenerQuery {
 	return NewApprovalClient(_m.config).QueryListener(_m)
+}
+
+// QueryConsumerListener queries the "consumer_listener" edge of the Approval entity.
+func (_m *Approval) QueryConsumerListener() *ListenerQuery {
+	return NewApprovalClient(_m.config).QueryConsumerListener(_m)
 }
 
 // Update returns a builder for updating this Approval.

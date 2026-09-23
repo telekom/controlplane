@@ -16,6 +16,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/telekom/controlplane/controlplane-api/ent/apiexposure"
 	"github.com/telekom/controlplane/controlplane-api/ent/apisubscription"
+	"github.com/telekom/controlplane/controlplane-api/ent/application"
 	"github.com/telekom/controlplane/controlplane-api/ent/approval"
 	"github.com/telekom/controlplane/controlplane-api/ent/approvalrequest"
 	"github.com/telekom/controlplane/controlplane-api/ent/listener"
@@ -168,6 +169,17 @@ func (_u *ListenerUpdate) ClearResponseFilter() *ListenerUpdate {
 	return _u
 }
 
+// SetApplicationID sets the "application" edge to the Application entity by ID.
+func (_u *ListenerUpdate) SetApplicationID(id int) *ListenerUpdate {
+	_u.mutation.SetApplicationID(id)
+	return _u
+}
+
+// SetApplication sets the "application" edge to the Application entity.
+func (_u *ListenerUpdate) SetApplication(v *Application) *ListenerUpdate {
+	return _u.SetApplicationID(v.ID)
+}
+
 // SetSubscriptionID sets the "subscription" edge to the ApiSubscription entity by ID.
 func (_u *ListenerUpdate) SetSubscriptionID(id int) *ListenerUpdate {
 	_u.mutation.SetSubscriptionID(id)
@@ -209,6 +221,25 @@ func (_u *ListenerUpdate) SetProviderApproval(v *Approval) *ListenerUpdate {
 	return _u.SetProviderApprovalID(v.ID)
 }
 
+// SetConsumerApprovalID sets the "consumer_approval" edge to the Approval entity by ID.
+func (_u *ListenerUpdate) SetConsumerApprovalID(id int) *ListenerUpdate {
+	_u.mutation.SetConsumerApprovalID(id)
+	return _u
+}
+
+// SetNillableConsumerApprovalID sets the "consumer_approval" edge to the Approval entity by ID if the given value is not nil.
+func (_u *ListenerUpdate) SetNillableConsumerApprovalID(id *int) *ListenerUpdate {
+	if id != nil {
+		_u = _u.SetConsumerApprovalID(*id)
+	}
+	return _u
+}
+
+// SetConsumerApproval sets the "consumer_approval" edge to the Approval entity.
+func (_u *ListenerUpdate) SetConsumerApproval(v *Approval) *ListenerUpdate {
+	return _u.SetConsumerApprovalID(v.ID)
+}
+
 // AddApprovalRequestIDs adds the "approval_requests" edge to the ApprovalRequest entity by IDs.
 func (_u *ListenerUpdate) AddApprovalRequestIDs(ids ...int) *ListenerUpdate {
 	_u.mutation.AddApprovalRequestIDs(ids...)
@@ -229,6 +260,12 @@ func (_u *ListenerUpdate) Mutation() *ListenerMutation {
 	return _u.mutation
 }
 
+// ClearApplication clears the "application" edge to the Application entity.
+func (_u *ListenerUpdate) ClearApplication() *ListenerUpdate {
+	_u.mutation.ClearApplication()
+	return _u
+}
+
 // ClearSubscription clears the "subscription" edge to the ApiSubscription entity.
 func (_u *ListenerUpdate) ClearSubscription() *ListenerUpdate {
 	_u.mutation.ClearSubscription()
@@ -244,6 +281,12 @@ func (_u *ListenerUpdate) ClearExposure() *ListenerUpdate {
 // ClearProviderApproval clears the "provider_approval" edge to the Approval entity.
 func (_u *ListenerUpdate) ClearProviderApproval() *ListenerUpdate {
 	_u.mutation.ClearProviderApproval()
+	return _u
+}
+
+// ClearConsumerApproval clears the "consumer_approval" edge to the Approval entity.
+func (_u *ListenerUpdate) ClearConsumerApproval() *ListenerUpdate {
+	_u.mutation.ClearConsumerApproval()
 	return _u
 }
 
@@ -332,6 +375,9 @@ func (_u *ListenerUpdate) check() error {
 			return &ValidationError{Name: "api_base_path", err: fmt.Errorf(`ent: validator failed for field "Listener.api_base_path": %w`, err)}
 		}
 	}
+	if _u.mutation.ApplicationCleared() && len(_u.mutation.ApplicationIDs()) > 0 {
+		return errors.New(`ent: clearing a required unique edge "Listener.application"`)
+	}
 	if _u.mutation.SubscriptionCleared() && len(_u.mutation.SubscriptionIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "Listener.subscription"`)
 	}
@@ -394,6 +440,35 @@ func (_u *ListenerUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if _u.mutation.ResponseFilterCleared() {
 		_spec.ClearField(listener.FieldResponseFilter, field.TypeJSON)
+	}
+	if _u.mutation.ApplicationCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   listener.ApplicationTable,
+			Columns: []string{listener.ApplicationColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(application.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.ApplicationIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   listener.ApplicationTable,
+			Columns: []string{listener.ApplicationColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(application.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if _u.mutation.SubscriptionCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -472,6 +547,35 @@ func (_u *ListenerUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 			Inverse: false,
 			Table:   listener.ProviderApprovalTable,
 			Columns: []string{listener.ProviderApprovalColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(approval.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.ConsumerApprovalCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   listener.ConsumerApprovalTable,
+			Columns: []string{listener.ConsumerApprovalColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(approval.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.ConsumerApprovalIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   listener.ConsumerApprovalTable,
+			Columns: []string{listener.ConsumerApprovalColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(approval.FieldID, field.TypeInt),
@@ -679,6 +783,17 @@ func (_u *ListenerUpdateOne) ClearResponseFilter() *ListenerUpdateOne {
 	return _u
 }
 
+// SetApplicationID sets the "application" edge to the Application entity by ID.
+func (_u *ListenerUpdateOne) SetApplicationID(id int) *ListenerUpdateOne {
+	_u.mutation.SetApplicationID(id)
+	return _u
+}
+
+// SetApplication sets the "application" edge to the Application entity.
+func (_u *ListenerUpdateOne) SetApplication(v *Application) *ListenerUpdateOne {
+	return _u.SetApplicationID(v.ID)
+}
+
 // SetSubscriptionID sets the "subscription" edge to the ApiSubscription entity by ID.
 func (_u *ListenerUpdateOne) SetSubscriptionID(id int) *ListenerUpdateOne {
 	_u.mutation.SetSubscriptionID(id)
@@ -720,6 +835,25 @@ func (_u *ListenerUpdateOne) SetProviderApproval(v *Approval) *ListenerUpdateOne
 	return _u.SetProviderApprovalID(v.ID)
 }
 
+// SetConsumerApprovalID sets the "consumer_approval" edge to the Approval entity by ID.
+func (_u *ListenerUpdateOne) SetConsumerApprovalID(id int) *ListenerUpdateOne {
+	_u.mutation.SetConsumerApprovalID(id)
+	return _u
+}
+
+// SetNillableConsumerApprovalID sets the "consumer_approval" edge to the Approval entity by ID if the given value is not nil.
+func (_u *ListenerUpdateOne) SetNillableConsumerApprovalID(id *int) *ListenerUpdateOne {
+	if id != nil {
+		_u = _u.SetConsumerApprovalID(*id)
+	}
+	return _u
+}
+
+// SetConsumerApproval sets the "consumer_approval" edge to the Approval entity.
+func (_u *ListenerUpdateOne) SetConsumerApproval(v *Approval) *ListenerUpdateOne {
+	return _u.SetConsumerApprovalID(v.ID)
+}
+
 // AddApprovalRequestIDs adds the "approval_requests" edge to the ApprovalRequest entity by IDs.
 func (_u *ListenerUpdateOne) AddApprovalRequestIDs(ids ...int) *ListenerUpdateOne {
 	_u.mutation.AddApprovalRequestIDs(ids...)
@@ -740,6 +874,12 @@ func (_u *ListenerUpdateOne) Mutation() *ListenerMutation {
 	return _u.mutation
 }
 
+// ClearApplication clears the "application" edge to the Application entity.
+func (_u *ListenerUpdateOne) ClearApplication() *ListenerUpdateOne {
+	_u.mutation.ClearApplication()
+	return _u
+}
+
 // ClearSubscription clears the "subscription" edge to the ApiSubscription entity.
 func (_u *ListenerUpdateOne) ClearSubscription() *ListenerUpdateOne {
 	_u.mutation.ClearSubscription()
@@ -755,6 +895,12 @@ func (_u *ListenerUpdateOne) ClearExposure() *ListenerUpdateOne {
 // ClearProviderApproval clears the "provider_approval" edge to the Approval entity.
 func (_u *ListenerUpdateOne) ClearProviderApproval() *ListenerUpdateOne {
 	_u.mutation.ClearProviderApproval()
+	return _u
+}
+
+// ClearConsumerApproval clears the "consumer_approval" edge to the Approval entity.
+func (_u *ListenerUpdateOne) ClearConsumerApproval() *ListenerUpdateOne {
+	_u.mutation.ClearConsumerApproval()
 	return _u
 }
 
@@ -856,6 +1002,9 @@ func (_u *ListenerUpdateOne) check() error {
 			return &ValidationError{Name: "api_base_path", err: fmt.Errorf(`ent: validator failed for field "Listener.api_base_path": %w`, err)}
 		}
 	}
+	if _u.mutation.ApplicationCleared() && len(_u.mutation.ApplicationIDs()) > 0 {
+		return errors.New(`ent: clearing a required unique edge "Listener.application"`)
+	}
 	if _u.mutation.SubscriptionCleared() && len(_u.mutation.SubscriptionIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "Listener.subscription"`)
 	}
@@ -936,6 +1085,35 @@ func (_u *ListenerUpdateOne) sqlSave(ctx context.Context) (_node *Listener, err 
 	if _u.mutation.ResponseFilterCleared() {
 		_spec.ClearField(listener.FieldResponseFilter, field.TypeJSON)
 	}
+	if _u.mutation.ApplicationCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   listener.ApplicationTable,
+			Columns: []string{listener.ApplicationColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(application.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.ApplicationIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   listener.ApplicationTable,
+			Columns: []string{listener.ApplicationColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(application.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if _u.mutation.SubscriptionCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -1013,6 +1191,35 @@ func (_u *ListenerUpdateOne) sqlSave(ctx context.Context) (_node *Listener, err 
 			Inverse: false,
 			Table:   listener.ProviderApprovalTable,
 			Columns: []string{listener.ProviderApprovalColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(approval.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.ConsumerApprovalCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   listener.ConsumerApprovalTable,
+			Columns: []string{listener.ConsumerApprovalColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(approval.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.ConsumerApprovalIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   listener.ConsumerApprovalTable,
+			Columns: []string{listener.ConsumerApprovalColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(approval.FieldID, field.TypeInt),
