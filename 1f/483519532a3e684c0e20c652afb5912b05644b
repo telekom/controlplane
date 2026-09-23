@@ -1,0 +1,22 @@
+rover-server/internal/mapper/rover/in/exposure_security_test.go
+  s_305907d0de1dc0::t_a52fad8de0b042 33,38-39
+  s_305907d0de1dc0::t_9d5d5b1af87670 17-32,34-37,40-82,222
+rover-server/internal/mapper/rover/in/exposure.go
+  s_305907d0de1dc0::t_e0b5a7f9ba58a4 29-31,38-44,175,412
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "1f483519532a3e684c0e20c652afb5912b05644b",
+  "prompts": {},
+  "sessions": {
+    "s_305907d0de1dc0": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f32d323f2ffexYAZlWFgbqfma6",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
