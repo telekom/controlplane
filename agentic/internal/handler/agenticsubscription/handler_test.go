@@ -119,6 +119,7 @@ func makeReadyAgenticExposure(basePath, zoneName string) agenticv1.AgenticExposu
 	return exp
 }
 
+//nolint:unparam // test helper intentionally accepts zone names for reusable fixtures
 func makeReadyZoneWithAiGateway(name string) *adminv1.Zone {
 	z := &adminv1.Zone{
 		ObjectMeta: metav1.ObjectMeta{
@@ -145,7 +146,7 @@ func makeReadyZoneWithAiGateway(name string) *adminv1.Zone {
 				Namespace: "default",
 			},
 			Links: adminv1.Links{
-				Issuer: "https://issuer.example.com",
+				Issuer: "https://issuer.example.com/auth/realms/test",
 			},
 			Features: []adminv1.Feature{
 				{Name: adminv1.FeatureAiGateway, Enabled: true},
@@ -502,11 +503,34 @@ var _ = Describe("AgenticSubscriptionHandler", func() {
 
 			Expect(err).ToNot(HaveOccurred())
 			Expect(obj.Status.ConsumeRoute).ToNot(BeNil())
+			Expect(obj.Status.GatewayUrl).To(Equal("https://ai-gateway.example.com:443/mcp/weather/v1"))
 
 			readyCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady)
 			Expect(readyCond).ToNot(BeNil())
 			Expect(readyCond.Status).To(Equal(metav1.ConditionTrue))
 			Expect(readyCond.Reason).To(Equal("AgenticSubscriptionProvisioned"))
+		})
+
+		It("should return error when subscriber zone has no default AI Gateway preset", func() {
+			server := makeReadyMcpServer("/mcp/weather/v1")
+			exposure := makeReadyAgenticExposure("/mcp/weather/v1", "test-zone")
+			zone := makeReadyZoneWithAiGateway("test-zone")
+			zone.Spec.AiGateway.Presets[0].Default = false
+			requestorApp := makeReadyApplication("requestor-app", "requestor-team", "req@example.com", "req-client-id")
+			providerApp := makeReadyApplication("provider-app", "provider-team", "prov@example.com", "prov-client-id")
+
+			mockListMcpServers([]agenticv1.McpServer{server})
+			mockListAgenticExposures([]agenticv1.AgenticExposure{exposure})
+			mockGetZone(subscriberZoneKey, zone)
+			mockGetApplication(requestorAppKey, requestorApp)
+			mockGetApplication(providerAppKey, providerApp)
+			mockScheme()
+			mockApprovalBuilderGranted()
+
+			err := h.CreateOrUpdate(ctx, obj)
+
+			Expect(err).To(MatchError(ContainSubstring("failed to select AI Gateway preset")))
+			Expect(obj.Status.ConsumeRoute).To(BeNil())
 		})
 
 		It("should set NotReady when AllReady returns false", func() {

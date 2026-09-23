@@ -1483,6 +1483,23 @@ type AgenticSubscriptionWhereInput struct {
 	BasePathEqualFold    *string  `json:"basePathEqualFold,omitempty"`
 	BasePathContainsFold *string  `json:"basePathContainsFold,omitempty"`
 
+	// "gateway_url" field predicates.
+	GatewayURL             *string  `json:"gatewayURL,omitempty"`
+	GatewayURLNEQ          *string  `json:"gatewayURLNEQ,omitempty"`
+	GatewayURLIn           []string `json:"gatewayURLIn,omitempty"`
+	GatewayURLNotIn        []string `json:"gatewayURLNotIn,omitempty"`
+	GatewayURLGT           *string  `json:"gatewayURLGT,omitempty"`
+	GatewayURLGTE          *string  `json:"gatewayURLGTE,omitempty"`
+	GatewayURLLT           *string  `json:"gatewayURLLT,omitempty"`
+	GatewayURLLTE          *string  `json:"gatewayURLLTE,omitempty"`
+	GatewayURLContains     *string  `json:"gatewayURLContains,omitempty"`
+	GatewayURLHasPrefix    *string  `json:"gatewayURLHasPrefix,omitempty"`
+	GatewayURLHasSuffix    *string  `json:"gatewayURLHasSuffix,omitempty"`
+	GatewayURLIsNil        bool     `json:"gatewayURLIsNil,omitempty"`
+	GatewayURLNotNil       bool     `json:"gatewayURLNotNil,omitempty"`
+	GatewayURLEqualFold    *string  `json:"gatewayURLEqualFold,omitempty"`
+	GatewayURLContainsFold *string  `json:"gatewayURLContainsFold,omitempty"`
+
 	// "owner" edge predicates.
 	HasOwner     *bool                    `json:"hasOwner,omitempty"`
 	HasOwnerWith []*ApplicationWhereInput `json:"hasOwnerWith,omitempty"`
@@ -1867,6 +1884,51 @@ func (i *AgenticSubscriptionWhereInput) P() (predicate.AgenticSubscription, erro
 	}
 	if i.BasePathContainsFold != nil {
 		predicates = append(predicates, agenticsubscription.BasePathContainsFold(*i.BasePathContainsFold))
+	}
+	if i.GatewayURL != nil {
+		predicates = append(predicates, agenticsubscription.GatewayURLEQ(*i.GatewayURL))
+	}
+	if i.GatewayURLNEQ != nil {
+		predicates = append(predicates, agenticsubscription.GatewayURLNEQ(*i.GatewayURLNEQ))
+	}
+	if len(i.GatewayURLIn) > 0 {
+		predicates = append(predicates, agenticsubscription.GatewayURLIn(i.GatewayURLIn...))
+	}
+	if len(i.GatewayURLNotIn) > 0 {
+		predicates = append(predicates, agenticsubscription.GatewayURLNotIn(i.GatewayURLNotIn...))
+	}
+	if i.GatewayURLGT != nil {
+		predicates = append(predicates, agenticsubscription.GatewayURLGT(*i.GatewayURLGT))
+	}
+	if i.GatewayURLGTE != nil {
+		predicates = append(predicates, agenticsubscription.GatewayURLGTE(*i.GatewayURLGTE))
+	}
+	if i.GatewayURLLT != nil {
+		predicates = append(predicates, agenticsubscription.GatewayURLLT(*i.GatewayURLLT))
+	}
+	if i.GatewayURLLTE != nil {
+		predicates = append(predicates, agenticsubscription.GatewayURLLTE(*i.GatewayURLLTE))
+	}
+	if i.GatewayURLContains != nil {
+		predicates = append(predicates, agenticsubscription.GatewayURLContains(*i.GatewayURLContains))
+	}
+	if i.GatewayURLHasPrefix != nil {
+		predicates = append(predicates, agenticsubscription.GatewayURLHasPrefix(*i.GatewayURLHasPrefix))
+	}
+	if i.GatewayURLHasSuffix != nil {
+		predicates = append(predicates, agenticsubscription.GatewayURLHasSuffix(*i.GatewayURLHasSuffix))
+	}
+	if i.GatewayURLIsNil {
+		predicates = append(predicates, agenticsubscription.GatewayURLIsNil())
+	}
+	if i.GatewayURLNotNil {
+		predicates = append(predicates, agenticsubscription.GatewayURLNotNil())
+	}
+	if i.GatewayURLEqualFold != nil {
+		predicates = append(predicates, agenticsubscription.GatewayURLEqualFold(*i.GatewayURLEqualFold))
+	}
+	if i.GatewayURLContainsFold != nil {
+		predicates = append(predicates, agenticsubscription.GatewayURLContainsFold(*i.GatewayURLContainsFold))
 	}
 
 	if i.HasOwner != nil {

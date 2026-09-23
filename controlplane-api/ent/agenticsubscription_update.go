@@ -144,6 +144,26 @@ func (_u *AgenticSubscriptionUpdate) SetNillableBasePath(v *string) *AgenticSubs
 	return _u
 }
 
+// SetGatewayURL sets the "gateway_url" field.
+func (_u *AgenticSubscriptionUpdate) SetGatewayURL(v string) *AgenticSubscriptionUpdate {
+	_u.mutation.SetGatewayURL(v)
+	return _u
+}
+
+// SetNillableGatewayURL sets the "gateway_url" field if the given value is not nil.
+func (_u *AgenticSubscriptionUpdate) SetNillableGatewayURL(v *string) *AgenticSubscriptionUpdate {
+	if v != nil {
+		_u.SetGatewayURL(*v)
+	}
+	return _u
+}
+
+// ClearGatewayURL clears the value of the "gateway_url" field.
+func (_u *AgenticSubscriptionUpdate) ClearGatewayURL() *AgenticSubscriptionUpdate {
+	_u.mutation.ClearGatewayURL()
+	return _u
+}
+
 // SetSecurity sets the "security" field.
 func (_u *AgenticSubscriptionUpdate) SetSecurity(v model.AgenticSubscriptionSecurity) *AgenticSubscriptionUpdate {
 	_u.mutation.SetSecurity(v)
@@ -403,6 +423,12 @@ func (_u *AgenticSubscriptionUpdate) sqlSave(ctx context.Context) (_node int, er
 	}
 	if value, ok := _u.mutation.BasePath(); ok {
 		_spec.SetField(agenticsubscription.FieldBasePath, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.GatewayURL(); ok {
+		_spec.SetField(agenticsubscription.FieldGatewayURL, field.TypeString, value)
+	}
+	if _u.mutation.GatewayURLCleared() {
+		_spec.ClearField(agenticsubscription.FieldGatewayURL, field.TypeString)
 	}
 	if value, ok := _u.mutation.Security(); ok {
 		_spec.SetField(agenticsubscription.FieldSecurity, field.TypeJSON, value)
@@ -673,6 +699,26 @@ func (_u *AgenticSubscriptionUpdateOne) SetNillableBasePath(v *string) *AgenticS
 	if v != nil {
 		_u.SetBasePath(*v)
 	}
+	return _u
+}
+
+// SetGatewayURL sets the "gateway_url" field.
+func (_u *AgenticSubscriptionUpdateOne) SetGatewayURL(v string) *AgenticSubscriptionUpdateOne {
+	_u.mutation.SetGatewayURL(v)
+	return _u
+}
+
+// SetNillableGatewayURL sets the "gateway_url" field if the given value is not nil.
+func (_u *AgenticSubscriptionUpdateOne) SetNillableGatewayURL(v *string) *AgenticSubscriptionUpdateOne {
+	if v != nil {
+		_u.SetGatewayURL(*v)
+	}
+	return _u
+}
+
+// ClearGatewayURL clears the value of the "gateway_url" field.
+func (_u *AgenticSubscriptionUpdateOne) ClearGatewayURL() *AgenticSubscriptionUpdateOne {
+	_u.mutation.ClearGatewayURL()
 	return _u
 }
 
@@ -965,6 +1011,12 @@ func (_u *AgenticSubscriptionUpdateOne) sqlSave(ctx context.Context) (_node *Age
 	}
 	if value, ok := _u.mutation.BasePath(); ok {
 		_spec.SetField(agenticsubscription.FieldBasePath, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.GatewayURL(); ok {
+		_spec.SetField(agenticsubscription.FieldGatewayURL, field.TypeString, value)
+	}
+	if _u.mutation.GatewayURLCleared() {
+		_spec.ClearField(agenticsubscription.FieldGatewayURL, field.TypeString)
 	}
 	if value, ok := _u.mutation.Security(); ok {
 		_spec.SetField(agenticsubscription.FieldSecurity, field.TypeJSON, value)

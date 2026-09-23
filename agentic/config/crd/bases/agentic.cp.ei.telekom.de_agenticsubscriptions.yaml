@@ -311,6 +311,9 @@ spec:
                 - name
                 - namespace
                 type: object
+              gatewayUrl:
+                description: GatewayUrl is the AI Gateway URL used for the subscription.
+                type: string
             type: object
         type: object
     served: true
