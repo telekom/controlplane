@@ -216,7 +216,15 @@ func (h *ListenerHandler) CreateOrUpdate(ctx context.Context, listener *spectrev
 	// a different fingerprint, start a drain to record what is being replaced.
 	// startDrain only snapshots; the caller returns nil so the controller
 	// persists the checkpoint before any destructive work begins.
-	if listener.Status.AppliedPlacement != nil &&
+	//
+	// SKIP when migration is in Draining phase: the drain was initiated by
+	// advanceMigration and will be consumed there. Re-triggering here would
+	// overwrite the migration's DrainStarted checkpoint before advanceMigration
+	// can advance to RetiringRequests.
+	migrationIsDraining := listener.Status.AuthorizationMigration != nil &&
+		listener.Status.AuthorizationMigration.Phase == MigrationPhaseDraining
+	if !migrationIsDraining &&
+		listener.Status.AppliedPlacement != nil &&
 		listener.Status.AppliedPlacement.Fingerprint != "" &&
 		listener.Status.AppliedPlacement.Fingerprint != fingerprint &&
 		listener.Status.Draining == nil {
