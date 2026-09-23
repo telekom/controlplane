@@ -113,8 +113,8 @@ func NewStores(ctx context.Context, cfg *rest.Config, db inmemory.DatabaseOpts, 
 	s.ApiChangelogStore = NewOrDie[*roverv1.ApiChangelog](ctx, dynamicClient, roverv1.GroupVersion.WithResource("apichangelogs"), roverv1.GroupVersion.WithKind("ApiChangelog"), db, informer)
 
 	if cconfig.FeatureAiGateway.IsEnabled() {
-		s.AgenticExposureStore = NewOrDie[*agenticv1.AgenticExposure](ctx, dynamicClient, agenticv1.GroupVersion.WithResource("mcpexposures"), agenticv1.GroupVersion.WithKind("McpExposure"), db, informer)
-		s.AgenticSubscriptionStore = NewOrDie[*agenticv1.AgenticSubscription](ctx, dynamicClient, agenticv1.GroupVersion.WithResource("mcpsubscriptions"), agenticv1.GroupVersion.WithKind("McpSubscription"), db, informer)
+		s.AgenticExposureStore = NewOrDie[*agenticv1.AgenticExposure](ctx, dynamicClient, agenticv1.GroupVersion.WithResource("agenticexposures"), agenticv1.GroupVersion.WithKind("AgenticExposure"), db, informer)
+		s.AgenticSubscriptionStore = NewOrDie[*agenticv1.AgenticSubscription](ctx, dynamicClient, agenticv1.GroupVersion.WithResource("agenticsubscriptions"), agenticv1.GroupVersion.WithKind("AgenticSubscription"), db, informer)
 		s.McpSpecificationStore = NewOrDie[*roverv1.McpSpecification](ctx, dynamicClient, roverv1.GroupVersion.WithResource("mcpspecifications"), roverv1.GroupVersion.WithKind("McpSpecification"), db, informer)
 		s.McpServerStore = NewOrDie[*agenticv1.McpServer](ctx, dynamicClient, agenticv1.GroupVersion.WithResource("mcpservers"), agenticv1.GroupVersion.WithKind("McpServer"), db, informer)
 		s.AgentSpecificationStore = NewOrDie[*roverv1.AgentSpecification](ctx, dynamicClient, roverv1.GroupVersion.WithResource("agentspecifications"), roverv1.GroupVersion.WithKind("AgentSpecification"), db, informer)
