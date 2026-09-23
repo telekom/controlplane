@@ -128,7 +128,9 @@ func (c *ControllerImpl[T]) Reconcile(ctx context.Context, req reconcile.Request
 
 	// Success
 
-	logger.V(1).Info("Created or updated", "resource", commonlog.SanitizeForLog(object))
+	if logger.V(1).Enabled() {
+		logger.V(1).Info("Created or updated", "resource", commonlog.SanitizeForLog(object))
+	}
 	// Enforce that at least the ready condition is set in the handler. If not, log a warning.
 	if meta.IsStatusConditionPresentAndEqual(object.GetConditions(), condition.ConditionTypeReady, metav1.ConditionUnknown) {
 		c.Event(ctx, object, "Warning", "UnknownReady", "Resource has an unknown ready status")
@@ -210,7 +212,9 @@ func (c *ControllerImpl[T]) handleDeletion(ctx context.Context, object T) (recon
 		}
 	}
 
-	logger.V(1).Info("Deleted", "resource", commonlog.SanitizeForLog(object))
+	if logger.V(1).Enabled() {
+		logger.V(1).Info("Deleted", "resource", commonlog.SanitizeForLog(object))
+	}
 	return reconcile.Result{}, nil
 }
 

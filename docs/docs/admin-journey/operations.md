@@ -21,11 +21,11 @@ Each operator exposes Prometheus-compatible metrics on its metrics endpoint. Key
 
 ### Structured Logs
 
-All operators produce structured JSON logs. Key log fields include the resource kind, namespace, name, and reconciliation result. Use these logs to trace the lifecycle of any resource through the system.
+All operators produce structured JSON logs. Log fields vary by component and event; use the available structured context to trace resource lifecycle and reconciliation activity.
 
-Kubernetes object dumps in debug and error logs omit `metadata.managedFields`. This is Kubernetes bookkeeping metadata tracking which field manager last touched each field; it is primarily useful to the API server and adds noise to logs without aiding troubleshooting. Only the log-facing copy is sanitized — the underlying object used for reconciliation and persistence is unaffected.
+The shared controller logs a full resource object for successful create/update and deletion reconciliations at debug verbosity (`V(1)`). Those log entries omit `metadata.managedFields`. This Kubernetes bookkeeping metadata tracks which field manager last touched each field; it is primarily useful to the API server and adds noise to logs without aiding troubleshooting. Only the log-facing copy is sanitized — the underlying object used for reconciliation and persistence is unaffected.
 
-This sanitization is enabled by default and can be disabled (e.g. for troubleshooting field-manager conflicts) by setting the `DISABLE_MANAGED_FIELDS_SANITIZATION` environment variable to `true`:
+This sanitization is enabled by default and can be disabled, for example when troubleshooting field-manager conflicts, by setting `DISABLE_MANAGED_FIELDS_SANITIZATION` to a true boolean value:
 
 ```yaml
 env:
@@ -33,11 +33,11 @@ env:
     value: "true"
 ```
 
-Any unset, empty, or unparsable value keeps sanitization enabled.
+Boolean values are parsed using Go's standard boolean syntax (for example, `true`, `1`, or `t`). An unset, empty, false, or invalid value keeps sanitization enabled.
 
 #### Configuring log verbosity
 
-Each operator's log level can be configured via the `LOG_LEVEL` environment variable, without requiring a code change or rebuild. Supported values are the standard zap level names (case-insensitive): `debug`, `info`, `warn`, `error` (and other zap levels such as `dpanic`, `panic`, `fatal`). If `LOG_LEVEL` is unset, empty, or set to an unrecognized value, the operator defaults to `info`.
+Each operator's log level can be configured via the `LOG_LEVEL` environment variable, without requiring a code change or rebuild. Supported values are the standard zap level names (case-insensitive): `debug`, `info`, `warn`, `error` (and other zap levels such as `dpanic`, `panic`, `fatal`). If `LOG_LEVEL` is unset, empty, or set to an unrecognized value, the operator defaults to `info`. Set it to `debug` to emit the resource object logs described above.
 
 ```yaml
 env:
@@ -45,7 +45,7 @@ env:
     value: "debug"
 ```
 
-Log output remains JSON-encoded regardless of the configured level; `LOG_LEVEL` only affects verbosity, not the log format.
+Log output defaults to JSON regardless of the configured level; `LOG_LEVEL` only affects verbosity, not the log format. The controller-runtime `--zap-log-level` flag remains available and overrides the environment-derived level when explicitly provided.
 
 ## Operational Tools
 
