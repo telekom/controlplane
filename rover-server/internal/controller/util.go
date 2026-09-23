@@ -9,6 +9,7 @@ import (
 
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
 	"github.com/telekom/controlplane/common/pkg/config"
+	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -24,7 +25,7 @@ func EnsureLabelsOrDie(ctx context.Context, obj client.Object) {
 		panic("security context not found")
 	}
 
-	labels[config.EnvironmentLabelKey] = bCtx.Environment
-	labels[config.BuildLabelKey("team")] = bCtx.Team
-	labels[config.BuildLabelKey("group")] = bCtx.Group
+	labels[config.EnvironmentLabelKey] = labelutil.NormalizeLabelValue(bCtx.Environment)
+	labels[config.BuildLabelKey("team")] = labelutil.NormalizeLabelValue(bCtx.Team)
+	labels[config.BuildLabelKey("group")] = labelutil.NormalizeLabelValue(bCtx.Group)
 }
