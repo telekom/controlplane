@@ -370,14 +370,89 @@ var _ = Describe("Team Webhook", func() {
 			}
 		})
 
-		It("admits Unicode unchanged on create and update and keeps Unicode case distinct", func() {
-			teamObj.Spec.Members = []organizationv1.Member{{Name: "Lower", Email: "üSER@Example.COM"}, {Name: "Upper", Email: "ÜSER@Example.COM"}}
+		DescribeTable("detects duplicates without defaulting on create and update", func(first, duplicate string) {
+			teamObj.Spec.Members = []organizationv1.Member{
+				{Name: "First", Email: first},
+				{Name: "Duplicate", Email: duplicate},
+				{Name: "Another duplicate", Email: first},
+			}
+			original := teamObj.DeepCopy()
+			for _, update := range []bool{false, true} {
+				var err error
+				if update {
+					_, err = validator.ValidateUpdate(ctx, original, teamObj)
+				} else {
+					_, err = validator.ValidateCreate(ctx, teamObj)
+				}
+				Expect(errors.IsInvalid(err)).To(BeTrue())
+				causes := err.(errors.APIStatus).Status().Details.Causes
+				Expect(causes).To(HaveLen(2))
+				Expect(causes[0].Field).To(Equal("spec.members[1].email"))
+				Expect(causes[1].Field).To(Equal("spec.members[2].email"))
+				for _, cause := range causes {
+					Expect(cause.Type).To(Equal(metav1.CauseTypeFieldValueDuplicate))
+				}
+				Expect(teamObj).To(Equal(original))
+			}
+			now := metav1.Now()
+			teamObj.DeletionTimestamp = &now
+			_, err := validator.ValidateUpdate(ctx, original, teamObj)
+			Expect(err).NotTo(HaveOccurred())
+			_, err = validator.ValidateCreate(ctx, teamObj)
+			Expect(err).NotTo(HaveOccurred())
+			_, err = validator.ValidateDelete(ctx, original)
+			Expect(err).NotTo(HaveOccurred())
+		},
+			Entry("exact", "alice@example.com", "alice@example.com"),
+			Entry("ASCII", "Alice@Example.COM", "ALICE@example.com"),
+			Entry("Unicode", "ÜSER@BÜCHER.example", "üser@bücher.EXAMPLE"),
+			Entry("quoted spaces", `"Üser Name"@example.com`, `"üSER NAME"@EXAMPLE.COM`),
+		)
+
+		It("aggregates duplicate and syntax errors", func() {
+			teamObj.Spec.Email = "Contact <contact@example.com>"
+			teamObj.Spec.Members = []organizationv1.Member{{Name: "First", Email: "Üser@example.com"}, {Name: "Duplicate", Email: "üser@example.com"}, {Name: "Invalid", Email: "bad email"}}
+			_, err := validator.ValidateCreate(ctx, teamObj)
+			Expect(errors.IsInvalid(err)).To(BeTrue())
+			causes := err.(errors.APIStatus).Status().Details.Causes
+			Expect(causes).To(HaveLen(3))
+			Expect(causes[0].Field).To(Equal("spec.email"))
+			Expect(causes[1].Field).To(Equal("spec.members[1].email"))
+			Expect(causes[1].Type).To(Equal(metav1.CauseTypeFieldValueDuplicate))
+			Expect(causes[2].Field).To(Equal("spec.members[2].email"))
+		})
+
+		It("accepts distinct identities and the same members in another team", func() {
+			teamObj.Spec.Members = []organizationv1.Member{{Name: "Composed", Email: "Üser@example.com"}, {Name: "Decomposed", Email: "U\u0308ser@example.com"}, {Name: "Sharp S", Email: "straße@example.com"}, {Name: "Double S", Email: "STRASSE@example.com"}}
+			_, err := validator.ValidateCreate(ctx, teamObj)
+			Expect(err).NotTo(HaveOccurred())
+			teamObj.Name = "group-test--another-team"
+			teamObj.Spec.Name = "another-team"
+			_, err = validator.ValidateCreate(ctx, teamObj)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("lowercases Unicode before sorting on create and update", func() {
+			teamObj.Spec.Members = []organizationv1.Member{{Name: "Unicode", Email: "ÜSER@BÜCHER.Example"}, {Name: "ASCII", Email: "Zulu@Example.COM"}}
 			Expect(k8sClient.Create(ctx, teamObj)).To(Succeed())
 			DeferCleanup(func() { Expect(k8sClient.Delete(ctx, teamObj)).To(Succeed()) })
-			Expect(teamObj.Spec.Members).To(ConsistOf(organizationv1.Member{Name: "Lower", Email: "üser@example.com"}, organizationv1.Member{Name: "Upper", Email: "Üser@example.com"}))
-			teamObj.Spec.Members[0].Name = "Updated"
+			expected := []organizationv1.Member{{Name: "ASCII", Email: "zulu@example.com"}, {Name: "Unicode", Email: "üser@bücher.example"}}
+			Expect(teamObj.Spec.Members).To(Equal(expected))
+			teamObj.Spec.Members[1].Email = "ÜSER@BÜCHER.EXAMPLE"
 			Expect(k8sClient.Update(ctx, teamObj)).To(Succeed())
+			Expect(teamObj.Spec.Members).To(Equal(expected))
 			Expect(teamObj.Spec.Email).To(Equal("Contact@Example.COM"))
+		})
+
+		It("rejects Unicode duplicates through admission on create and update", func() {
+			teamObj.Spec.Members[0].Email = "ÜSER@example.com"
+			bad := teamObj.DeepCopy()
+			bad.Spec.Members = append(bad.Spec.Members, organizationv1.Member{Name: "Duplicate", Email: "üser@example.com"})
+			Expect(k8sClient.Create(ctx, bad)).NotTo(Succeed())
+			Expect(k8sClient.Create(ctx, teamObj)).To(Succeed())
+			DeferCleanup(func() { Expect(k8sClient.Delete(ctx, teamObj)).To(Succeed()) })
+			teamObj.Spec.Members = append(teamObj.Spec.Members, organizationv1.Member{Name: "Duplicate", Email: "ÜSER@example.com"})
+			Expect(k8sClient.Update(ctx, teamObj)).NotTo(Succeed())
 		})
 
 		It("rejects ASCII duplicates and malformed addresses on create and update", func() {
@@ -408,7 +483,7 @@ var _ = Describe("Team Webhook", func() {
 			Expect(k8sClient.Create(ctx, teamObj)).To(Succeed())
 			DeferCleanup(func() { Expect(k8sClient.Delete(ctx, teamObj)).To(Succeed()) })
 			Expect(teamObj.Spec.Members[0].Email).To(Equal(expected))
-		}, Entry("tags and percent", "A%_ICE+Tag@Example.COM", "a%_ice+tag@example.com"), Entry("apostrophe", "O'NEIL@Example.COM", "o'neil@example.com"), Entry("quoted mailbox", `"Alice Smith"@Example.COM`, `"alice smith"@example.com`))
+		}, Entry("tags and percent", "A%_ICE+Tag@Example.COM", "a%_ice+tag@example.com"), Entry("slash", "Alice/Smith@Example.COM", "alice/smith@example.com"), Entry("apostrophe", "O'NEIL@Example.COM", "o'neil@example.com"), Entry("quoted mailbox", `"Alice Smith"@Example.COM`, `"alice smith"@example.com`))
 
 		It("rejects repeated mixed-case SSA keys and supports canonical-key edits and removals", func() {
 			teamObj.Spec.Members = append(teamObj.Spec.Members, organizationv1.Member{Name: "Bob", Email: "BOB@Example.COM"})

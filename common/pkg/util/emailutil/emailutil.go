@@ -8,19 +8,16 @@ package emailutil
 import (
 	"fmt"
 	"net/mail"
+	"strings"
 	"unicode"
 )
 
-// Canonicalize folds only ASCII A-Z, matching CEL lowerAscii. It does not trim,
-// normalize Unicode, or rewrite mailbox dots, tags, or quoting.
+const unwantedBareAddressCharacters = "()<>"
+
+// Canonicalize applies Unicode lowercase, not full case folding. It does not trim,
+// normalize Unicode, apply IDNA, or rewrite mailbox dots, tags, or quoting.
 func Canonicalize(email string) string {
-	b := []byte(email)
-	for i, c := range b {
-		if c >= 'A' && c <= 'Z' {
-			b[i] = c + ('a' - 'A')
-		}
-	}
-	return string(b)
+	return strings.ToLower(email)
 }
 
 // Validate accepts a bare addr-spec, including quoted mailboxes and Unicode.
@@ -30,6 +27,10 @@ func Validate(email string) error {
 	// mailboxes, while leaving punctuation and quoted spaces to its syntax parser.
 	quoted, escaped := false, false
 	for _, c := range email {
+		// net/mail permits quoted tabs and non-ASCII control characters.
+		if unicode.IsControl(c) {
+			return fmt.Errorf("email address must not contain control characters")
+		}
 		if escaped {
 			escaped = false
 			continue
@@ -42,7 +43,7 @@ func Validate(email string) error {
 			quoted = !quoted
 			continue
 		}
-		if !quoted && (unicode.IsSpace(c) || c == '(' || c == ')' || c == '<' || c == '>') {
+		if !quoted && (unicode.IsSpace(c) || strings.ContainsRune(unwantedBareAddressCharacters, c)) {
 			return fmt.Errorf("must be a bare email address without display names, comments, or outer whitespace")
 		}
 	}

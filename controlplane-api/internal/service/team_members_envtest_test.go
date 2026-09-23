@@ -43,7 +43,7 @@ var _ = Describe("Team member removal with Kubernetes", Ordered, func() {
 	})
 
 	DescribeTable("removes the normalized identity without changing other members or contact email",
-		func(requestEmail string) {
+		func(storedEmail, requestEmail string) {
 			ctx := context.Background()
 			team := &organizationv1.Team{
 				ObjectMeta: metav1.ObjectMeta{
@@ -54,7 +54,7 @@ var _ = Describe("Team member removal with Kubernetes", Ordered, func() {
 					Name: "members", Group: "group-a", Email: "Contact@Example.com",
 					Category: organizationv1.TeamCategoryCustomer,
 					Members: []organizationv1.Member{
-						{Name: "Alice", Email: "alice@example.com"},
+						{Name: "Member", Email: storedEmail},
 						{Name: "Other Alice", Email: "alice.other@example.com"},
 					},
 				},
@@ -73,17 +73,22 @@ var _ = Describe("Team member removal with Kubernetes", Ordered, func() {
 				Expect(stored.Spec.Email).To(Equal("Contact@Example.com"))
 			}
 		},
-		Entry("lowercase projected email", "alice@example.com"),
-		Entry("mixed-case request email", "ALICE@example.com"),
+		Entry("lowercase projected email", "alice@example.com", "alice@example.com"),
+		Entry("mixed-case request email", "alice@example.com", "ALICE@example.com"),
+		Entry("Unicode request", "üser@bücher.example", "ÜSER@BÜCHER.EXAMPLE"),
+		Entry("legacy Unicode source", "Üser@BÜCHER.example", "üser@bücher.example"),
 	)
 
-	It("preserves Unicode-distinct members when removing mixed-case ASCII input", func() {
+	It("removes all legacy lowercase-equivalent members while preserving distinct identities", func() {
 		ctx := context.Background()
 		team := &organizationv1.Team{
 			ObjectMeta: metav1.ObjectMeta{Name: "group-a--unicode", Namespace: "default", Labels: map[string]string{config.EnvironmentLabelKey: "poc"}},
-			Spec: organizationv1.TeamSpec{Name: "unicode", Group: "group-a", Email: "Contact@Example.com", Category: organizationv1.TeamCategoryCustomer,
-				Members: []organizationv1.Member{{Name: "Upper", Email: "Üser@example.com"}, {Name: "Lower", Email: "üser@example.com"}}},
+			Spec: organizationv1.TeamSpec{
+				Name: "unicode", Group: "group-a", Email: "Contact@Example.com", Category: organizationv1.TeamCategoryCustomer,
+				Members: []organizationv1.Member{{Name: "Upper", Email: "Üser@example.com"}, {Name: "Lower", Email: "üser@example.com"}, {Name: "Decomposed", Email: "u\u0308ser@example.com"}},
+			},
 		}
+		// This envtest has no webhooks, allowing legacy keys that admission now rejects.
 		Expect(k8sClient.Create(ctx, team)).To(Succeed())
 		DeferCleanup(func() { Expect(k8sClient.Delete(ctx, team)).To(Succeed()) })
 		svc := service.NewTeamK8sService(cc.NewScopedClient(k8sClient, "poc"), service.NewNoopResourceChecker())
@@ -92,6 +97,6 @@ var _ = Describe("Team member removal with Kubernetes", Ordered, func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(result.Errors).To(BeEmpty())
 		Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(team), team)).To(Succeed())
-		Expect(team.Spec.Members).To(Equal([]organizationv1.Member{{Name: "Lower", Email: "üser@example.com"}}))
+		Expect(team.Spec.Members).To(Equal([]organizationv1.Member{{Name: "Decomposed", Email: "u\u0308ser@example.com"}}))
 	})
 })

@@ -169,10 +169,9 @@ var _ = Describe("ViewerFromBusinessContext", func() {
 			Expect(v.Teams).To(ConsistOf("team-alpha"))
 		})
 
-		It("should match mixed-case input across teams without granting unrelated access", func() {
+		DescribeTable("matches lowercase equivalents across teams without granting unrelated access", func(storedEmail, requestEmail string) {
 			s := testutil.SeedStandard(client)
 			seedCtx := testutil.AllowContext()
-			storedEmail := "alice@test.dev"
 			_, err := client.Member.UpdateOne(s.MemberAlpha).SetEmail(storedEmail).Save(seedCtx)
 			Expect(err).NotTo(HaveOccurred())
 			_, err = client.Member.Create().SetName("Alice").SetEmail(storedEmail).SetTeam(s.TeamBeta).Save(seedCtx)
@@ -187,17 +186,20 @@ var _ = Describe("ViewerFromBusinessContext", func() {
 				ClientType: security.ClientTypeAdmin,
 			})
 			ctx = viewer.NewForwardedUserContext(ctx, viewer.ForwardedUser{
-				Email: "aLICE@tEST.dEV",
+				Email: requestEmail,
 			})
 			v := captureViewer(ctx)
 			Expect(v).NotTo(BeNil())
 			Expect(v.Teams).To(ConsistOf("team-alpha", "team-beta"))
 			Expect(v.Admin).To(BeFalse())
-			Expect(v.UserEmail).To(Equal("aLICE@tEST.dEV"))
+			Expect(v.UserEmail).To(Equal(requestEmail))
 			stored, err := client.Member.Get(seedCtx, s.MemberAlpha.ID)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(stored.Email).To(Equal(storedEmail))
-		})
+		},
+			Entry("ASCII", "alice@test.dev", "aLICE@tEST.dEV"),
+			Entry("Unicode", "üser@bücher.dev", "ÜSER@BÜCHER.DEV"),
+		)
 
 		DescribeTable("literal email membership matching",
 			func(email, nearMatch string) {
@@ -228,7 +230,7 @@ var _ = Describe("ViewerFromBusinessContext", func() {
 			Entry("backslash", `"ALI\\CE"@TEST.DEV`, "alice@test.dev"),
 			Entry("quote", "O'NEIL@TEST.DEV", "oneil@test.dev"),
 			Entry("SQL-like input", `"' OR 1=1 --"@TEST.DEV`, "alice@test.dev"),
-			Entry("Unicode case is distinct", "ÜSER@TEST.DEV", "üser@test.dev"),
+			Entry("no full case folding", "STRASSE@TEST.DEV", "straße@test.dev"),
 			Entry("no Unicode normalization", "U\u0308SER@TEST.DEV", "üser@test.dev"),
 		)
 

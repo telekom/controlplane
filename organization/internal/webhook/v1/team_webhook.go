@@ -126,13 +126,26 @@ func (v *TeamCustomValidator) validateCreateOrUpdate(ctx context.Context, teamOb
 	if err := emailutil.Validate(teamObj.Spec.Email); err != nil {
 		errs = append(errs, field.Invalid(field.NewPath("spec", "email"), teamObj.Spec.Email, err.Error()))
 	}
-	for i, member := range teamObj.Spec.Members {
-		if err := emailutil.Validate(member.Email); err != nil {
-			errs = append(errs, field.Invalid(field.NewPath("spec", "members").Index(i).Child("email"), member.Email, err.Error()))
-		}
-	}
+	errs = append(errs, validateMemberEmails(teamObj.Spec.Members)...)
 	if len(errs) > 0 {
 		return nil, apierrors.NewInvalid(organizationv1.GroupVersion.WithKind("Team").GroupKind(), teamObj.Name, errs)
 	}
 	return nil, nil
+}
+
+func validateMemberEmails(members []organizationv1.Member) field.ErrorList {
+	seen := make(map[string]struct{}, len(members))
+	var errs field.ErrorList
+	for i, member := range members {
+		path := field.NewPath("spec", "members").Index(i).Child("email")
+		if err := emailutil.Validate(member.Email); err != nil {
+			errs = append(errs, field.Invalid(path, member.Email, err.Error()))
+		}
+		canonicalEmail := emailutil.Canonicalize(member.Email)
+		if _, exists := seen[canonicalEmail]; exists {
+			errs = append(errs, field.Duplicate(path, member.Email))
+		}
+		seen[canonicalEmail] = struct{}{}
+	}
+	return errs
 }
