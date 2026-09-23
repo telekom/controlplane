@@ -19,11 +19,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
+	apiv1 "github.com/telekom/controlplane/api/api/v1"
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	fakeclient "github.com/telekom/controlplane/common/pkg/client/fake"
 	"github.com/telekom/controlplane/common/pkg/condition"
+	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	ctypes "github.com/telekom/controlplane/common/pkg/types"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
@@ -59,6 +61,8 @@ const (
 	testAppId          = "team-alpha--consumer-app"
 	testRealmName      = "test-realm"
 	testRealmIssuer    = "https://iris.example.com/auth/realms/test"
+	testExposureUID    = "ae-uid-test-001"
+	testExposureName   = "provider-app--api-v1-orders"
 )
 
 // --- Test fixtures ---
@@ -525,7 +529,8 @@ var _ = Describe("ListenerHandler", func() {
 		mockApprovalRequestDeniedGate("consumer") // consumer gate
 	}
 
-	// mockListRoutes stubs the gateway Route lookup.
+	// mockListRoutes stubs the gateway Route lookup and the subsequent
+	// ApiExposure list call used by verifyProviderBinding.
 	mockListRoutes := func() {
 		routeName := util.MakeRouteName(testApiBasePath)
 		fakeClient.EXPECT().
@@ -536,9 +541,37 @@ var _ = Describe("ListenerHandler", func() {
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      routeName,
 						Namespace: listenerZoneStatus,
+						Labels: map[string]string{
+							cconfig.OwnerUidLabelKey: testExposureUID,
+						},
 					},
 					Spec: gatewayv1.RouteSpec{
 						Paths: []string{"/gateway" + testApiBasePath},
+					},
+				}
+			}).
+			Return(nil).Once()
+
+		// ApiExposure list for verifyProviderBinding.
+		fakeClient.EXPECT().
+			List(ctx, mock.AnythingOfType("*v1.ApiExposureList"), mock.Anything).
+			Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+				*list.(*apiv1.ApiExposureList) = apiv1.ApiExposureList{
+					Items: []apiv1.ApiExposure{
+						{
+							ObjectMeta: metav1.ObjectMeta{
+								Name:      testExposureName,
+								Namespace: listenerZoneStatus,
+								UID:       k8stypes.UID(testExposureUID),
+								Labels: map[string]string{
+									cconfig.BuildLabelKey("application"): providerAppName,
+								},
+							},
+							Status: apiv1.ApiExposureStatus{
+								Active: true,
+								Route:  &ctypes.ObjectRef{Name: routeName, Namespace: listenerZoneStatus},
+							},
+						},
 					},
 				}
 			}).
