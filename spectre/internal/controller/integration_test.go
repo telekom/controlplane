@@ -17,9 +17,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
+	apiv1 "github.com/telekom/controlplane/api/api/v1"
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
 	"github.com/telekom/controlplane/common/pkg/condition"
+	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	cc "github.com/telekom/controlplane/common/pkg/controller"
 	ctypes "github.com/telekom/controlplane/common/pkg/types"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
@@ -235,12 +237,64 @@ var _ = Describe("Integration: Two-Tier Reconcile Cycle", Ordered, func() {
 		}
 		Expect(k8sClient.Status().Update(ctx, eventStore)).To(Succeed())
 
+		By("Creating ApiExposure CRs (provider binding verification)")
+		ordersExposure := &apiv1.ApiExposure{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      providerName + "--api-v1-orders",
+				Namespace: zoneStatusNs,
+				Labels: map[string]string{
+					envLabelKey:                          envName,
+					cconfig.BuildLabelKey("application"): providerName,
+				},
+			},
+			Spec: apiv1.ApiExposureSpec{
+				ApiBasePath: testBasePath,
+				Upstreams:   []apiv1.Upstream{{Url: "https://api.provider.example.com"}},
+				Visibility:  apiv1.VisibilityZone,
+				Approval:    apiv1.Approval{Strategy: apiv1.ApprovalStrategyAuto},
+				Zone:        ctypes.ObjectRef{Name: zoneName, Namespace: zoneNamespace},
+			},
+		}
+		Expect(k8sClient.Create(ctx, ordersExposure)).To(Succeed())
+		ordersExposure.Status = apiv1.ApiExposureStatus{
+			Active: true,
+			Route:  &ctypes.ObjectRef{Name: "api-v1-orders", Namespace: zoneStatusNs},
+		}
+		Expect(k8sClient.Status().Update(ctx, ordersExposure)).To(Succeed())
+
+		crossExposure := &apiv1.ApiExposure{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      providerName + "--api-v1-cross",
+				Namespace: zoneStatusNs,
+				Labels: map[string]string{
+					envLabelKey:                          envName,
+					cconfig.BuildLabelKey("application"): providerName,
+				},
+			},
+			Spec: apiv1.ApiExposureSpec{
+				ApiBasePath: "/api/v1/cross",
+				Upstreams:   []apiv1.Upstream{{Url: "https://api.cross.example.com"}},
+				Visibility:  apiv1.VisibilityZone,
+				Approval:    apiv1.Approval{Strategy: apiv1.ApprovalStrategyAuto},
+				Zone:        ctypes.ObjectRef{Name: zoneName, Namespace: zoneNamespace},
+			},
+		}
+		Expect(k8sClient.Create(ctx, crossExposure)).To(Succeed())
+		crossExposure.Status = apiv1.ApiExposureStatus{
+			Active: true,
+			Route:  &ctypes.ObjectRef{Name: "api-v1-cross", Namespace: zoneStatusNs},
+		}
+		Expect(k8sClient.Status().Update(ctx, crossExposure)).To(Succeed())
+
 		By("Creating gateway Route CRs (prerequisites for RouteListener path resolution)")
 		gatewayRoute := &gatewayv1.Route{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "api-v1-orders",
 				Namespace: zoneStatusNs,
-				Labels:    map[string]string{envLabelKey: envName},
+				Labels: map[string]string{
+					envLabelKey:              envName,
+					cconfig.OwnerUidLabelKey: string(ordersExposure.UID),
+				},
 			},
 			Spec: gatewayv1.RouteSpec{
 				GatewayRef: ctypes.ObjectRef{Name: "gateway-aws", Namespace: zoneStatusNs},
@@ -259,7 +313,10 @@ var _ = Describe("Integration: Two-Tier Reconcile Cycle", Ordered, func() {
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "api-v1-cross",
 				Namespace: zoneStatusNs,
-				Labels:    map[string]string{envLabelKey: envName},
+				Labels: map[string]string{
+					envLabelKey:              envName,
+					cconfig.OwnerUidLabelKey: string(crossExposure.UID),
+				},
 			},
 			Spec: gatewayv1.RouteSpec{
 				GatewayRef: ctypes.ObjectRef{Name: "gateway-aws", Namespace: zoneStatusNs},
