@@ -68,12 +68,15 @@ func IsLegacyBlocked(approval *approvalapi.Approval) (bool, string) {
 	return isLegacyBlocked(approval)
 }
 
+// ProviderBindingResult is the exported alias for ProviderBinding (test use).
+type ProviderBindingResult = ProviderBinding
+
 // VerifyProviderBinding is the exported wrapper for verifyProviderBinding (test use).
 func (h *ListenerHandler) VerifyProviderBinding(
 	ctx context.Context,
 	route *gatewayv1.Route,
 	providerApp *applicationv1.Application,
-) error {
+) (*ProviderBinding, error) {
 	return h.verifyProviderBinding(ctx, route, providerApp)
 }
 

@@ -129,9 +129,8 @@ func (h *ListenerHandler) CreateOrUpdate(ctx context.Context, listener *spectrev
 	}
 
 	// Step 5.6b: Verify that the Route is owned by the provider's API exposure.
-	// This is a best-effort check until the api/api module is importable; see
-	// provider_binding.go for details.
-	if err := h.verifyProviderBinding(ctx, route, providerApp); err != nil {
+	binding, err := h.verifyProviderBinding(ctx, route, providerApp)
+	if err != nil {
 		return errors.Wrap(err, "provider binding check failed")
 	}
 
@@ -154,6 +153,8 @@ func (h *ListenerHandler) CreateOrUpdate(ctx context.Context, listener *spectrev
 	}
 	_ = observerZone // reserved for future placement work
 	placement := PlacementIntent{
+		ApiExposureName:             binding.ApiExposureName,
+		ApiExposureNamespace:        binding.ApiExposureNamespace,
 		CaptureRouteName:            lp.CaptureRoute.Name,
 		CaptureRouteNamespace:       lp.CaptureRoute.Namespace,
 		CaptureZoneName:             lp.CaptureZone.Name,

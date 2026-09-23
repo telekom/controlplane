@@ -10,6 +10,7 @@ import (
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
+	apiv1 "github.com/telekom/controlplane/api/api/v1"
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
@@ -30,4 +31,5 @@ func RegisterSchemesOrDie(scheme *runtime.Scheme) {
 	utilruntime.Must(adminv1.AddToScheme(scheme))
 	utilruntime.Must(identityv1.AddToScheme(scheme))
 	utilruntime.Must(eventv1.AddToScheme(scheme))
+	utilruntime.Must(apiv1.AddToScheme(scheme))
 }
