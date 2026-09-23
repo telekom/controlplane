@@ -1,3 +1,15 @@
+# [0.28.0](https://github.com/telekom/controlplane/compare/v0.27.1...v0.28.0) (2026-09-23)
+
+
+### Bug Fixes
+
+* **approvals:** correct projected approval metadata ([8c63d50](https://github.com/telekom/controlplane/commit/8c63d501a2306fa04a28260b4504e50517342af0))
+
+
+### Features
+
+* **agentic:** add gatewayURL ([#667](https://github.com/telekom/controlplane/issues/667)) ([02e646f](https://github.com/telekom/controlplane/commit/02e646f8e995b519ff7cefb97e28db2390e1d145))
+
 ## [0.27.1](https://github.com/telekom/controlplane/compare/v0.27.0...v0.27.1) (2026-09-22)
 
 
