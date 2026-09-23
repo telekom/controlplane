@@ -75,6 +75,8 @@ var _ = Describe("McpSpecification Parsing", func() {
 
 			parsedJSON, err := json.Marshal(objects[0].GetContent())
 			Expect(err).NotTo(HaveOccurred())
+			// Parsers that do not resolve aliases correctly can strip * but leave the anchor name as a value.
+			// Checking the name catches that case and also catches any unexpanded * or & syntax.
 			Expect(parsedJSON).NotTo(ContainSubstring("mcp_tool_defaults_anchor"))
 			Expect(parsedJSON).NotTo(ContainSubstring("mcp_text_schema_anchor"))
 		})

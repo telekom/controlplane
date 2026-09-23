@@ -313,6 +313,8 @@ var _ = Describe("Parser", func() {
 
 			parsedJSON, err := json.Marshal(objects[0].GetContent())
 			Expect(err).NotTo(HaveOccurred())
+			// Parsers that do not resolve aliases correctly can strip * but leave the anchor name as a value.
+			// Checking the name catches that case and also catches any unexpanded * or & syntax.
 			Expect(parsedJSON).NotTo(ContainSubstring("openapi_response_defaults_anchor"))
 			Expect(parsedJSON).NotTo(ContainSubstring("openapi_message_schema_anchor"))
 		})
