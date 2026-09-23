@@ -28,7 +28,8 @@ func mapSFTP(in *roverv1.FileSFTP) *filev1.FileSFTP {
 
 	for i, k := range in.PublicKeys {
 		out.PublicKeys[i] = filev1.SSHPublicKeySpec{
-			Key: k.Key,
+			Key:   k.Key,
+			Label: k.Label,
 		}
 	}
 	return out

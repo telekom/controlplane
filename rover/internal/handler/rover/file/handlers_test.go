@@ -20,6 +20,7 @@ import (
 	ctypes "github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	filev1 "github.com/telekom/controlplane/file/api/v1"
+	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -44,8 +45,11 @@ var _ = Describe("File Exposure/Subscription Handlers", func() {
 
 	newOwner := func() *roverv1.Rover {
 		return &roverv1.Rover{
-			ObjectMeta: metav1.ObjectMeta{Name: "my-app", Namespace: "default"},
-			Spec:       roverv1.RoverSpec{Zone: testZone},
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "my-app",
+				Namespace: organizationv1.TeamNamespace(testEnvironment, organizationv1.TeamResourceName("eni", "hyperion")),
+			},
+			Spec: roverv1.RoverSpec{Zone: testZone},
 			Status: roverv1.RoverStatus{
 				Application: &ctypes.ObjectRef{
 					Name: "application",
@@ -63,10 +67,21 @@ var _ = Describe("File Exposure/Subscription Handlers", func() {
 		scheme := runtime.NewScheme()
 		Expect(roverv1.AddToScheme(scheme)).To(Succeed())
 		Expect(filev1.AddToScheme(scheme)).To(Succeed())
+		Expect(organizationv1.AddToScheme(scheme)).To(Succeed())
 
 		fakeClient = fake.NewClientBuilder().WithScheme(scheme).Build()
 		// Env is required by the exposure handler (zone namespace resolution).
-		ctx = contextutil.WithEnv(logr.NewContext(context.Background(), logr.Discard()), testEnvironment)
+		ctx = contextutil.WithEnv(
+			commonclient.WithClient(logr.NewContext(context.Background(), logr.Discard()), newJanitor()),
+			testEnvironment,
+		)
+		Expect(fakeClient.Create(ctx, &organizationv1.Team{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      organizationv1.TeamResourceName("eni", "hyperion"),
+				Namespace: testEnvironment,
+				Labels:    map[string]string{config.EnvironmentLabelKey: testEnvironment},
+			},
+		})).To(Succeed())
 	})
 
 	Context("HandleExposure", func() {
@@ -83,11 +98,12 @@ var _ = Describe("File Exposure/Subscription Handlers", func() {
 
 			name := MakeName(exp.FileType, owner.Name)
 			fileExposure := &filev1.FileExposure{}
-			Expect(fakeClient.Get(ctx, types.NamespacedName{Name: name, Namespace: "default"}, fileExposure)).To(Succeed())
+			Expect(fakeClient.Get(ctx, types.NamespacedName{Name: name, Namespace: owner.Namespace}, fileExposure)).To(Succeed())
 
 			Expect(fileExposure.Spec.FileType).To(Equal("demo-sftp-spec-v1"))
 			Expect(fileExposure.Spec.Visibility).To(Equal(filev1.Visibility("World")))
 			Expect(fileExposure.Spec.Approval.Strategy).To(Equal(filev1.ApprovalStrategy("Auto")))
+			Expect(fileExposure.Spec.Approval.TrustedTeams).To(ConsistOf("eni--hyperion"))
 			Expect(fileExposure.Spec.SFTP.PublicKeys).To(HaveLen(1))
 			Expect(fileExposure.Spec.SFTP.PublicKeys[0].Key).To(Equal("ssh-ed25519 AAAAprovider"))
 			Expect(fileExposure.Spec.Zone.Name).To(Equal(testZone))
@@ -115,7 +131,7 @@ var _ = Describe("File Exposure/Subscription Handlers", func() {
 
 			name := MakeName(sub.FileType, owner.Name)
 			fileSubscription := &filev1.FileSubscription{}
-			Expect(fakeClient.Get(ctx, types.NamespacedName{Name: name, Namespace: "default"}, fileSubscription)).To(Succeed())
+			Expect(fakeClient.Get(ctx, types.NamespacedName{Name: name, Namespace: owner.Namespace}, fileSubscription)).To(Succeed())
 
 			Expect(fileSubscription.Spec.FileType).To(Equal("demo-sftp-spec-v1"))
 			Expect(fileSubscription.Spec.SFTP.PublicKeys).To(HaveLen(1))

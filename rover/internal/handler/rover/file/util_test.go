@@ -33,13 +33,15 @@ var _ = Describe("mapPublicKeys", func() {
 	It("maps label and key preserving order", func() {
 		in := &roverv1.FileSFTP{
 			PublicKeys: []roverv1.SSHPublicKeySpec{
-				{Key: "ssh-ed25519 AAAA"},
-				{Key: "ssh-ed25519 BBBB"},
+				{Key: "ssh-ed25519 AAAA", Label: "provider"},
+				{Key: "ssh-ed25519 BBBB", Label: "backup"},
 			},
 		}
 		got := mapSFTP(in)
 		Expect(got.PublicKeys).To(HaveLen(2))
 		Expect(got.PublicKeys[0].Key).To(Equal("ssh-ed25519 AAAA"))
+		Expect(got.PublicKeys[0].Label).To(Equal("provider"))
 		Expect(got.PublicKeys[1].Key).To(Equal("ssh-ed25519 BBBB"))
+		Expect(got.PublicKeys[1].Label).To(Equal("backup"))
 	})
 })
