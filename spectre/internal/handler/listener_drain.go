@@ -9,6 +9,8 @@ import (
 
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	cclient "github.com/telekom/controlplane/common/pkg/client"
@@ -138,9 +140,21 @@ func (h *ListenerHandler) continueDrain(
 				if drain.OldRouteListener.UID != "" && rl.UID != drain.OldRouteListener.UID {
 					logger.Info("Old RouteListener UID differs, treating as gone", "name", drain.OldRouteListener.Name)
 				} else {
-					// Delete it.
-					if delErr := c.Delete(ctx, rl); delErr != nil && !apierrors.IsNotFound(delErr) {
-						return false, errors.Wrapf(delErr, "failed to delete old RouteListener %q", drain.OldRouteListener.Name)
+					// Delete with UID+RV preconditions to guard against a replaced child.
+					uid := rl.UID
+					rv := rl.ResourceVersion
+					precond := client.Preconditions(metav1.Preconditions{
+						UID:             &uid,
+						ResourceVersion: &rv,
+					})
+					if delErr := c.Delete(ctx, rl, precond); delErr != nil {
+						if apierrors.IsConflict(delErr) {
+							// Object changed — re-evaluate next reconcile.
+							return false, nil
+						}
+						if !apierrors.IsNotFound(delErr) {
+							return false, errors.Wrapf(delErr, "failed to delete old RouteListener %q", drain.OldRouteListener.Name)
+						}
 					}
 					logger.Info("Deleted old RouteListener during drain", "name", drain.OldRouteListener.Name)
 					return false, nil // Requeue to verify deletion
@@ -173,8 +187,22 @@ func (h *ListenerHandler) continueDrain(
 					logger.V(1).Info("Old Subscriber UID differs, treating as gone", "name", ref.Name)
 					continue
 				}
-				if delErr := c.Delete(ctx, sub); delErr != nil && !apierrors.IsNotFound(delErr) {
-					return false, errors.Wrapf(delErr, "failed to delete old Subscriber %q", ref.Name)
+				// Delete with UID+RV preconditions to guard against a replaced child.
+				uid := sub.UID
+				rv := sub.ResourceVersion
+				precond := client.Preconditions(metav1.Preconditions{
+					UID:             &uid,
+					ResourceVersion: &rv,
+				})
+				if delErr := c.Delete(ctx, sub, precond); delErr != nil {
+					if apierrors.IsConflict(delErr) {
+						// Object changed — re-evaluate next reconcile.
+						allGone = false
+						continue
+					}
+					if !apierrors.IsNotFound(delErr) {
+						return false, errors.Wrapf(delErr, "failed to delete old Subscriber %q", ref.Name)
+					}
 				}
 				logger.Info("Deleted old Subscriber during drain", "name", ref.Name)
 				allGone = false
