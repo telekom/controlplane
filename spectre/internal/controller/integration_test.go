@@ -238,10 +238,12 @@ var _ = Describe("Integration: Two-Tier Reconcile Cycle", Ordered, func() {
 		Expect(k8sClient.Status().Update(ctx, eventStore)).To(Succeed())
 
 		By("Creating ApiExposure CRs (provider binding verification)")
+		// ApiExposures live in the team namespace (same as the provider
+		// Application), not in the zone namespace where Routes live.
 		ordersExposure := &apiv1.ApiExposure{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      providerName + "--api-v1-orders",
-				Namespace: zoneStatusNs,
+				Namespace: testNamespace,
 				Labels: map[string]string{
 					envLabelKey:                          envName,
 					cconfig.BuildLabelKey("application"): providerName,
@@ -265,7 +267,7 @@ var _ = Describe("Integration: Two-Tier Reconcile Cycle", Ordered, func() {
 		crossExposure := &apiv1.ApiExposure{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      providerName + "--api-v1-cross",
-				Namespace: zoneStatusNs,
+				Namespace: testNamespace,
 				Labels: map[string]string{
 					envLabelKey:                          envName,
 					cconfig.BuildLabelKey("application"): providerName,

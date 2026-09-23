@@ -69,6 +69,11 @@ type AuthorizationMigrationStatus struct {
 	LegacyRequests []ctypes.ObjectRef `json:"legacyRequests,omitempty"`
 	// +optional
 	RetirementCheckpoint *MigrationRetirementCheckpoint `json:"retirementCheckpoint,omitempty"`
+	// DrainStarted is set to true when the migration initiates a drain.
+	// It distinguishes "drain not yet started" (false) from "drain was
+	// consumed by the outer handler" (true but Draining is nil).
+	// +optional
+	DrainStarted bool `json:"drainStarted,omitempty"`
 }
 
 // MigrationRetirementCheckpoint records which legacy approval resources have

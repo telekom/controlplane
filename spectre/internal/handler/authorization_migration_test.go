@@ -264,7 +264,7 @@ var _ = Describe("Authorization Migration", func() {
 		fakeClient.EXPECT().
 			Delete(ctx, mock.MatchedBy(func(obj client.Object) bool {
 				return obj.GetName() == name
-			})).
+			}), mock.Anything).
 			Return(nil).Once()
 	}
 
@@ -272,7 +272,7 @@ var _ = Describe("Authorization Migration", func() {
 		fakeClient.EXPECT().
 			Delete(ctx, mock.MatchedBy(func(obj client.Object) bool {
 				return obj.GetName() == name
-			})).
+			}), mock.Anything).
 			Return(nil).Once()
 	}
 
@@ -552,12 +552,14 @@ var _ = Describe("Authorization Migration", func() {
 				Expect(listener.Status.Draining).ToNot(BeNil())
 				Expect(listener.Status.Draining.Phase).To(Equal(handler.ExportDrainPhaseStopping))
 				Expect(listener.Status.Draining.Reason).To(Equal("legacy migration"))
+				Expect(listener.Status.AuthorizationMigration.DrainStarted).To(BeTrue())
 			})
 
 			It("should wait for continueDrain to complete", func() {
 				listener.Status.AuthorizationMigration = &spectrev1.AuthorizationMigrationStatus{
 					TargetPolicyVersion: "v2",
 					Phase:               "Draining",
+					DrainStarted:        true,
 					LegacyApproval:      ctypes.ObjectRefFromObject(approval),
 					LegacyRequests:      []ctypes.ObjectRef{*ctypes.ObjectRefFromObject(request)},
 				}
@@ -598,6 +600,7 @@ var _ = Describe("Authorization Migration", func() {
 				listener.Status.AuthorizationMigration = &spectrev1.AuthorizationMigrationStatus{
 					TargetPolicyVersion: "v2",
 					Phase:               "Draining",
+					DrainStarted:        true,
 					LegacyApproval:      ctypes.ObjectRefFromObject(approval),
 					LegacyRequests:      []ctypes.ObjectRef{*ctypes.ObjectRefFromObject(request)},
 				}
@@ -682,25 +685,20 @@ var _ = Describe("Authorization Migration", func() {
 				// Discovery.
 				mockLegacyApprovalExists(approval)
 				mockLegacyRequestExists(request)
-				// retireLegacyRequests: fresh read + delete.
+				// retireLegacyRequests: fresh read + delete (with UID precondition).
 				mockLegacyRequestExists(request)
 				mockDeleteApprovalRequest(request.Name)
-				// retireLegacyApproval: fresh read -> records PendingDeletion, returns false.
-				mockLegacyApprovalExists(approval)
 
 				done, err := h.AdvanceMigration(ctx, listener, &intent, makeDualGranted())
 				Expect(err).ToNot(HaveOccurred())
-				Expect(done).To(BeFalse()) // returned to persist approval PendingDeletion
+				Expect(done).To(BeFalse()) // returned to verify delete on next reconcile
 				cp := listener.Status.AuthorizationMigration.RetirementCheckpoint
-				Expect(cp.RequestsRetired).To(BeTrue())
-				Expect(listener.Status.AuthorizationMigration.Phase).To(Equal("RetiringApproval"))
-				// Approval PendingDeletion should be recorded.
-				Expect(cp.PendingDeletions).To(HaveLen(2))
-				Expect(cp.PendingDeletions[1].Kind).To(Equal("Approval"))
-				Expect(cp.PendingDeletions[1].Phase).To(Equal(handler.ExportPendingDeletionPhasePrepared))
+				// Delete was issued but not yet verified — requests not yet retired.
+				Expect(cp.RequestsRetired).To(BeFalse())
+				Expect(listener.Status.AuthorizationMigration.Phase).To(Equal("RetiringRequests"))
 			})
 
-			It("should complete migration after all PendingDeletions are observed", func() {
+			It("should delete Approval after PendingDeletion is persisted", func() {
 				listener.Status.AuthorizationMigration = &spectrev1.AuthorizationMigrationStatus{
 					TargetPolicyVersion: "v2",
 					Phase:               "RetiringApproval",
@@ -729,9 +727,43 @@ var _ = Describe("Authorization Migration", func() {
 				// Discovery.
 				mockLegacyApprovalExists(approval)
 				mockLegacyRequestExists(request)
-				// retireLegacyApproval: fresh read + delete.
+				// retireLegacyApproval: fresh read + delete (with UID precondition).
 				mockLegacyApprovalExists(approval)
 				mockDeleteApproval(approval.Name)
+
+				done, err := h.AdvanceMigration(ctx, listener, &intent, makeDualGranted())
+				Expect(err).ToNot(HaveOccurred())
+				Expect(done).To(BeFalse()) // returned to verify delete on next reconcile
+			})
+
+			It("should complete migration after all PendingDeletions are observed", func() {
+				listener.Status.AuthorizationMigration = &spectrev1.AuthorizationMigrationStatus{
+					TargetPolicyVersion: "v2",
+					Phase:               "RetiringApproval",
+					LegacyApproval:      ctypes.ObjectRefFromObject(approval),
+					LegacyRequests:      []ctypes.ObjectRef{*ctypes.ObjectRefFromObject(request)},
+					RetirementCheckpoint: &spectrev1.MigrationRetirementCheckpoint{
+						RequestsRetired: true,
+						PendingDeletions: []spectrev1.PendingDeletion{
+							{
+								Kind:  "ApprovalRequest",
+								Name:  request.Name,
+								Phase: handler.ExportPendingDeletionPhaseObserved,
+							},
+							{
+								Kind:      "Approval",
+								Name:      approval.Name,
+								Namespace: approval.Namespace,
+								UID:       string(approval.UID),
+								Phase:     handler.ExportPendingDeletionPhaseObserved,
+							},
+						},
+					},
+				}
+
+				// Discovery.
+				mockLegacyApprovalExists(approval)
+				mockLegacyRequestExists(request)
 
 				done, err := h.AdvanceMigration(ctx, listener, &intent, makeDualGranted())
 				Expect(err).ToNot(HaveOccurred())
