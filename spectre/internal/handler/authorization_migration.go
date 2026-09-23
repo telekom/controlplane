@@ -7,6 +7,7 @@ package handler
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -62,6 +63,15 @@ func (h *ListenerHandler) isFreshInstall(ctx context.Context, listener *spectrev
 	// Recorded migration in progress.
 	if listener.Status.AuthorizationMigration != nil {
 		return false, nil
+	}
+
+	// Check for retained legacy approval references in status. A ProviderApproval
+	// that does not carry the scoped "ag-v1-" prefix is a legacy unscoped ref —
+	// not a fresh install.
+	if listener.Status.ProviderApproval != nil {
+		if !strings.HasPrefix(listener.Status.ProviderApproval.Name, "ag-v1-") {
+			return false, nil
+		}
 	}
 
 	// Check for legacy Approval by name convention.
@@ -142,11 +152,17 @@ func (h *ListenerHandler) advanceMigration(
 		return false, errors.Wrap(err, "migration: discover legacy evidence")
 	}
 
-	// No legacy evidence and no recorded migration — enter v2 directly.
+	// isFreshInstall is the SOLE freshness decision and runs before advanceMigration
+	// in the handler. If we reach here (isFreshInstall returned false) but find no
+	// legacy Approval and no migration status, something is inconsistent — block
+	// rather than silently granting v2.
 	if mctx.legacyApproval == nil && listener.Status.AuthorizationMigration == nil {
-		logger.Info("No legacy evidence found, entering v2 directly")
-		listener.Status.AuthorizationPolicyVersion = authorizationPolicyV2
-		return true, nil
+		listener.SetCondition(condition.NewNotReadyCondition("LegacyApprovalMigrationBlocked",
+			"No legacy Approval found but isFreshInstall returned false — cannot determine policy"))
+		listener.SetCondition(condition.NewBlockedCondition(
+			"No legacy Approval found but migration evidence exists"))
+		logger.Info("Migration blocked: no legacy Approval but isFreshInstall was false")
+		return false, nil
 	}
 
 	// Ensure migration status is initialized.
@@ -284,9 +300,12 @@ func (h *ListenerHandler) advanceMigration(
 		}
 	}
 
-	// Step 5: Retire legacy resources conditionally.
+	// Step 5: Retire legacy resources conditionally. Each retirement function
+	// receives the current dual-gate result so it can verify authorization is
+	// still Granted before issuing NEW deletions (not when observing
+	// already-prepared ones).
 	if migration.Phase == MigrationPhaseRetiringRequests {
-		retired, err := h.retireLegacyRequests(ctx, mctx, migration)
+		retired, err := h.retireLegacyRequests(ctx, mctx, migration, dual)
 		if err != nil {
 			return false, errors.Wrap(err, "migration: retire legacy requests")
 		}
@@ -298,7 +317,7 @@ func (h *ListenerHandler) advanceMigration(
 	}
 
 	if migration.Phase == MigrationPhaseRetiringApproval {
-		retired, err := h.retireLegacyApproval(ctx, mctx, migration)
+		retired, err := h.retireLegacyApproval(ctx, mctx, migration, dual)
 		if err != nil {
 			return false, errors.Wrap(err, "migration: retire legacy approval")
 		}
@@ -465,6 +484,7 @@ func (h *ListenerHandler) retireLegacyRequests(
 	ctx context.Context,
 	mctx *migrationContext,
 	migration *spectrev1.AuthorizationMigrationStatus,
+	dual *dualApprovalResult,
 ) (bool, error) {
 	logger := log.FromContext(ctx)
 
@@ -520,6 +540,12 @@ func (h *ListenerHandler) retireLegacyRequests(
 		}
 
 		if idx < 0 {
+			// About to issue a NEW deletion — verify the dual-gate result is
+			// still Granted. If authorization has regressed since AwaitingScoped,
+			// hold retirement to avoid deleting legacy consent without replacement.
+			if dual == nil || dual.outcome != outcomeGranted {
+				return false, nil
+			}
 			// Step 1: Record PendingDeletion checkpoint before any destructive work.
 			cp.PendingDeletions = append(cp.PendingDeletions, spectrev1.PendingDeletion{
 				Kind:            "ApprovalRequest",
@@ -577,6 +603,7 @@ func (h *ListenerHandler) retireLegacyApproval(
 	ctx context.Context,
 	mctx *migrationContext,
 	migration *spectrev1.AuthorizationMigrationStatus,
+	dual *dualApprovalResult,
 ) (bool, error) {
 	logger := log.FromContext(ctx)
 
@@ -644,6 +671,11 @@ func (h *ListenerHandler) retireLegacyApproval(
 	}
 
 	if idx < 0 {
+		// About to issue a NEW deletion — verify the dual-gate result is
+		// still Granted before deleting the legacy Approval.
+		if dual == nil || dual.outcome != outcomeGranted {
+			return false, nil
+		}
 		// Step 1: Record PendingDeletion checkpoint before deletion.
 		cp.PendingDeletions = append(cp.PendingDeletions, spectrev1.PendingDeletion{
 			Kind:            "Approval",
