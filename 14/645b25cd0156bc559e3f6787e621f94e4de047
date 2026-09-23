@@ -1,0 +1,26 @@
+rover-ctl/pkg/handlers/v0/rover_test.go
+  s_2cbb56985f9884::t_a78fb937e841ea 208,214,310,313
+rover-ctl/pkg/handlers/v0/rover.go
+  h_0f030e7424553c 10,120-123,152-155
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "14645b25cd0156bc559e3f6787e621f94e4de047",
+  "prompts": {},
+  "humans": {
+    "h_0f030e7424553c": {
+      "author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  },
+  "sessions": {
+    "s_2cbb56985f9884": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f32f3d0ceffe4qOM4YRFDl7x1i",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
