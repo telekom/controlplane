@@ -1,0 +1,32 @@
+# Copyright 2026 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+openapi: 3.0.0
+info:
+  title: Anchored API
+  version: 1.0.0
+servers:
+  - url: https://api.example.com/anchored
+x-response-defaults: &openapi_response_defaults_anchor
+  description: A successful response
+  content:
+    application/json:
+      schema: &openapi_message_schema_anchor
+        type: object
+        properties:
+          message:
+            type: string
+        required:
+          - message
+paths:
+  /messages:
+    get:
+      responses:
+        "200":
+          <<: *openapi_response_defaults_anchor
+        "201":
+          description: A created response
+          content:
+            application/json:
+              schema: *openapi_message_schema_anchor
