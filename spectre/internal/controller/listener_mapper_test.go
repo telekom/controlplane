@@ -16,6 +16,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
+	apiv1 "github.com/telekom/controlplane/api/api/v1"
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	cc "github.com/telekom/controlplane/common/pkg/controller"
@@ -246,6 +247,197 @@ var _ = Describe("Listener Mapper Tests", Ordered, func() {
 				},
 			}
 			reqs := reconciler.mapApplicationToListeners(ctx, app)
+			Expect(reqs).To(BeEmpty())
+		})
+
+		It("should match when Application is the observer via SpectreApplication", func() {
+			// The Listener has spec.application = {name: mapper-sa, namespace: mapper-ns}.
+			// Create a SpectreApplication with that name whose spec.application
+			// references a third Application (the observer's real Application).
+			observerAppName := "mapper-observer-app"
+			sa := &spectrev1.SpectreApplication{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      saName,
+					Namespace: mapNs,
+					Labels:    map[string]string{envLabelKey: mapEnv},
+				},
+				Spec: spectrev1.SpectreApplicationSpec{
+					Application: ctypes.TypedObjectRef{
+						TypeMeta:  metav1.TypeMeta{Kind: "Application", APIVersion: "application.cp.ei.telekom.de/v1"},
+						ObjectRef: ctypes.ObjectRef{Name: observerAppName, Namespace: mapNs},
+					},
+					DeliveryType: "server_sent_event",
+				},
+			}
+			Expect(client.IgnoreAlreadyExists(k8sClient.Create(ctx, sa))).To(Succeed())
+			Eventually(func() error {
+				return k8sClient.Get(ctx, client.ObjectKeyFromObject(sa), &spectrev1.SpectreApplication{})
+			}, testTimeout, testInterval).Should(Succeed())
+
+			// A change to the observer Application should wake the Listener.
+			app := &applicationv1.Application{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      observerAppName,
+					Namespace: mapNs,
+					Labels:    map[string]string{envLabelKey: mapEnv},
+				},
+			}
+			reqs := reconciler.mapApplicationToListeners(ctx, app)
+			Expect(reqs).To(ContainElement(reconcile.Request{
+				NamespacedName: types.NamespacedName{Name: "mapper-listener", Namespace: mapNs},
+			}))
+		})
+
+		It("should not duplicate when Application is both consumer and observer", func() {
+			// The consumer Application is already appName. If a SpectreApplication
+			// also references the same Application, the mapper should not return
+			// duplicates.
+			sa := &spectrev1.SpectreApplication{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "sa-dup-test",
+					Namespace: mapNs,
+					Labels:    map[string]string{envLabelKey: mapEnv},
+				},
+				Spec: spectrev1.SpectreApplicationSpec{
+					Application: ctypes.TypedObjectRef{
+						TypeMeta:  metav1.TypeMeta{Kind: "Application", APIVersion: "application.cp.ei.telekom.de/v1"},
+						ObjectRef: ctypes.ObjectRef{Name: appName, Namespace: mapNs},
+					},
+					DeliveryType: "server_sent_event",
+				},
+			}
+			Expect(client.IgnoreAlreadyExists(k8sClient.Create(ctx, sa))).To(Succeed())
+			Eventually(func() error {
+				return k8sClient.Get(ctx, client.ObjectKeyFromObject(sa), &spectrev1.SpectreApplication{})
+			}, testTimeout, testInterval).Should(Succeed())
+
+			// Create a second listener that references sa-dup-test as its application
+			// AND uses appName as consumer.
+			dupListener := &spectrev1.Listener{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "mapper-listener-dup",
+					Namespace: mapNs,
+					Labels:    map[string]string{envLabelKey: mapEnv},
+				},
+				Spec: spectrev1.ListenerSpec{
+					Consumer: ctypes.TypedObjectRef{
+						TypeMeta:  metav1.TypeMeta{Kind: "Application", APIVersion: "application.cp.ei.telekom.de/v1"},
+						ObjectRef: ctypes.ObjectRef{Name: appName, Namespace: mapNs},
+					},
+					Provider: ctypes.TypedObjectRef{
+						TypeMeta:  metav1.TypeMeta{Kind: "Application", APIVersion: "application.cp.ei.telekom.de/v1"},
+						ObjectRef: ctypes.ObjectRef{Name: provName, Namespace: mapNs},
+					},
+					Application: ctypes.ObjectRef{Name: "sa-dup-test", Namespace: mapNs},
+					ApiListener: &spectrev1.ApiListener{ApiBasePath: "/api/v1/dup"},
+				},
+			}
+			Expect(client.IgnoreAlreadyExists(k8sClient.Create(ctx, dupListener))).To(Succeed())
+			Eventually(func() error {
+				return k8sClient.Get(ctx, client.ObjectKeyFromObject(dupListener), &spectrev1.Listener{})
+			}, testTimeout, testInterval).Should(Succeed())
+
+			app := &applicationv1.Application{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      appName,
+					Namespace: mapNs,
+					Labels:    map[string]string{envLabelKey: mapEnv},
+				},
+			}
+			reqs := reconciler.mapApplicationToListeners(ctx, app)
+			// Count how many times mapper-listener-dup appears — should be exactly 1.
+			dupCount := 0
+			for _, r := range reqs {
+				if r.NamespacedName.Name == "mapper-listener-dup" {
+					dupCount++
+				}
+			}
+			Expect(dupCount).To(Equal(1), "Listener should appear only once even when matched via both consumer and observer path")
+		})
+	})
+
+	Describe("mapApiExposureToListeners", func() {
+		It("should match when ApiExposure status.route corresponds to the Listener's apiBasePath", func() {
+			routeName := labelutil.NormalizeValue(basePath)
+			exposure := &apiv1.ApiExposure{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "exposure-for-mapper",
+					Namespace: "zone-ns",
+					Labels:    map[string]string{envLabelKey: mapEnv},
+				},
+				Status: apiv1.ApiExposureStatus{
+					Active: true,
+					Route:  &ctypes.ObjectRef{Name: routeName, Namespace: "zone-ns"},
+				},
+			}
+			reqs := reconciler.mapApiExposureToListeners(ctx, exposure)
+			Expect(reqs).To(ContainElement(reconcile.Request{
+				NamespacedName: types.NamespacedName{Name: "mapper-listener", Namespace: mapNs},
+			}))
+		})
+
+		It("should match via proxyRoutes as well", func() {
+			routeName := labelutil.NormalizeValue(basePath)
+			exposure := &apiv1.ApiExposure{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "exposure-proxy",
+					Namespace: "zone-ns",
+					Labels:    map[string]string{envLabelKey: mapEnv},
+				},
+				Status: apiv1.ApiExposureStatus{
+					Active:      true,
+					ProxyRoutes: []ctypes.ObjectRef{{Name: routeName, Namespace: "zone-ns"}},
+				},
+			}
+			reqs := reconciler.mapApiExposureToListeners(ctx, exposure)
+			Expect(reqs).To(ContainElement(reconcile.Request{
+				NamespacedName: types.NamespacedName{Name: "mapper-listener", Namespace: mapNs},
+			}))
+		})
+
+		It("should not match when ApiExposure has no route refs", func() {
+			exposure := &apiv1.ApiExposure{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "exposure-no-route",
+					Namespace: "zone-ns",
+					Labels:    map[string]string{envLabelKey: mapEnv},
+				},
+				Status: apiv1.ApiExposureStatus{Active: false},
+			}
+			reqs := reconciler.mapApiExposureToListeners(ctx, exposure)
+			Expect(reqs).To(BeEmpty())
+		})
+
+		It("should not match when route name does not correspond to any Listener's apiBasePath", func() {
+			exposure := &apiv1.ApiExposure{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "exposure-other-route",
+					Namespace: "zone-ns",
+					Labels:    map[string]string{envLabelKey: mapEnv},
+				},
+				Status: apiv1.ApiExposureStatus{
+					Active: true,
+					Route:  &ctypes.ObjectRef{Name: "unrelated-route", Namespace: "zone-ns"},
+				},
+			}
+			reqs := reconciler.mapApiExposureToListeners(ctx, exposure)
+			Expect(reqs).To(BeEmpty())
+		})
+
+		It("should not match when environment differs", func() {
+			routeName := labelutil.NormalizeValue(basePath)
+			exposure := &apiv1.ApiExposure{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "exposure-other-env",
+					Namespace: "zone-ns",
+					Labels:    map[string]string{envLabelKey: "other-env"},
+				},
+				Status: apiv1.ApiExposureStatus{
+					Active: true,
+					Route:  &ctypes.ObjectRef{Name: routeName, Namespace: "zone-ns"},
+				},
+			}
+			reqs := reconciler.mapApiExposureToListeners(ctx, exposure)
 			Expect(reqs).To(BeEmpty())
 		})
 	})

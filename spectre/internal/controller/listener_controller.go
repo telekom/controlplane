@@ -22,6 +22,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
+	apiv1 "github.com/telekom/controlplane/api/api/v1"
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
@@ -143,6 +144,12 @@ func (r *ListenerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			crhandler.EnqueueRequestsFromMapFunc(r.mapGenericPublisherToListeners),
 			builder.WithPredicates(cc.Count("listener", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
 		).
+		// ApiExposures — activation/deactivation or application label changes.
+		Watches(
+			&apiv1.ApiExposure{},
+			crhandler.EnqueueRequestsFromMapFunc(r.mapApiExposureToListeners),
+			builder.WithPredicates(cc.Count("listener", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
+		).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
 			RateLimiter:             cc.NewRateLimiter(),
@@ -259,7 +266,8 @@ func (r *ListenerReconciler) mapRouteToListeners(
 }
 
 // mapApplicationToListeners maps an Application change to Listeners that
-// reference it as consumer or provider.
+// reference it as consumer or provider, or that reference it indirectly
+// as the observer (A) via SpectreApplication.spec.application.
 func (r *ListenerReconciler) mapApplicationToListeners(
 	ctx context.Context,
 	obj client.Object,
@@ -270,23 +278,56 @@ func (r *ListenerReconciler) mapApplicationToListeners(
 		return nil
 	}
 
+	envLabel := app.Labels[cconfig.EnvironmentLabelKey]
+
 	list := &spectrev1.ListenerList{}
 	if err := r.List(ctx, list, client.MatchingLabels{
-		cconfig.EnvironmentLabelKey: app.Labels[cconfig.EnvironmentLabelKey],
+		cconfig.EnvironmentLabelKey: envLabel,
 	}); err != nil {
 		logger.Error(err, "Failed to list Listeners for Application")
 		return nil
 	}
 
+	// Build a set of SpectreApplication names that reference this Application
+	// (the observer path: SpectreApplication.spec.application → Application).
+	saList := &spectrev1.SpectreApplicationList{}
+	saNames := make(map[types.NamespacedName]struct{})
+	if err := r.List(ctx, saList, client.MatchingLabels{
+		cconfig.EnvironmentLabelKey: envLabel,
+	}); err != nil {
+		logger.Error(err, "Failed to list SpectreApplications for Application")
+		// Continue — direct consumer/provider matching still works.
+	} else {
+		for i := range saList.Items {
+			sa := &saList.Items[i]
+			if sa.Spec.Application.Name == app.Name && sa.Spec.Application.Namespace == app.Namespace {
+				saNames[types.NamespacedName{Name: sa.Name, Namespace: sa.Namespace}] = struct{}{}
+			}
+		}
+	}
+
 	appRef := types.NamespacedName{Name: app.Name, Namespace: app.Namespace}
+	seen := make(map[types.NamespacedName]struct{})
 	var reqs []reconcile.Request
 	for i := range list.Items {
 		l := &list.Items[i]
+		key := client.ObjectKeyFromObject(l)
+		// Direct consumer or provider reference.
 		if (l.Spec.Consumer.Name == appRef.Name && l.Spec.Consumer.Namespace == appRef.Namespace) ||
 			(l.Spec.Provider.Name == appRef.Name && l.Spec.Provider.Namespace == appRef.Namespace) {
-			reqs = append(reqs, reconcile.Request{
-				NamespacedName: client.ObjectKeyFromObject(l),
-			})
+			if _, dup := seen[key]; !dup {
+				seen[key] = struct{}{}
+				reqs = append(reqs, reconcile.Request{NamespacedName: key})
+			}
+			continue
+		}
+		// Indirect via SpectreApplication (observer A's Application).
+		saRef := types.NamespacedName{Name: l.Spec.Application.Name, Namespace: l.Spec.Application.Namespace}
+		if _, ok := saNames[saRef]; ok {
+			if _, dup := seen[key]; !dup {
+				seen[key] = struct{}{}
+				reqs = append(reqs, reconcile.Request{NamespacedName: key})
+			}
 		}
 	}
 
@@ -570,6 +611,63 @@ func (r *ListenerReconciler) mapEventStoreToListeners(
 		ec := &ecList.Items[i]
 		if ec.Status.EventStore != nil && ec.Status.EventStore.Name == es.Name && ec.Status.EventStore.Namespace == es.Namespace {
 			reqs = append(reqs, r.mapEventConfigToListeners(ctx, ec)...)
+		}
+	}
+
+	return reqs
+}
+
+// mapApiExposureToListeners maps an ApiExposure change to Listeners whose
+// apiBasePath corresponds to a Route owned by the ApiExposure. This ensures
+// that activation/deactivation or application label changes on the exposure
+// wake the affected Listeners.
+func (r *ListenerReconciler) mapApiExposureToListeners(
+	ctx context.Context,
+	obj client.Object,
+) []reconcile.Request {
+	logger := log.FromContext(ctx)
+	exposure, ok := obj.(*apiv1.ApiExposure)
+	if !ok {
+		return nil
+	}
+
+	// Collect Route names referenced in the ApiExposure's status.
+	routeNames := make(map[string]struct{})
+	if exposure.Status.Route != nil {
+		routeNames[exposure.Status.Route.Name] = struct{}{}
+	}
+	for i := range exposure.Status.ProxyRoutes {
+		routeNames[exposure.Status.ProxyRoutes[i].Name] = struct{}{}
+	}
+
+	if len(routeNames) == 0 {
+		return nil
+	}
+
+	envLabel := exposure.Labels[cconfig.EnvironmentLabelKey]
+	if envLabel == "" {
+		return nil
+	}
+
+	list := &spectrev1.ListenerList{}
+	if err := r.List(ctx, list, client.MatchingLabels{
+		cconfig.EnvironmentLabelKey: envLabel,
+	}); err != nil {
+		logger.Error(err, "Failed to list Listeners for ApiExposure")
+		return nil
+	}
+
+	var reqs []reconcile.Request
+	for i := range list.Items {
+		l := &list.Items[i]
+		if l.Spec.ApiListener == nil {
+			continue
+		}
+		routeName := labelutil.NormalizeValue(l.Spec.ApiListener.ApiBasePath)
+		if _, ok := routeNames[routeName]; ok {
+			reqs = append(reqs, reconcile.Request{
+				NamespacedName: client.ObjectKeyFromObject(l),
+			})
 		}
 	}
 
