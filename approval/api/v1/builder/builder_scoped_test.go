@@ -11,6 +11,7 @@ import (
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	k8stypes "k8s.io/apimachinery/pkg/types"
 
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
@@ -569,5 +570,357 @@ var _ = Describe("Scoped approval builder", func() {
 		res, err := b2.Build(ctx)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(res).To(Equal(ApprovalResultDenied), "denied approval survives hash change")
+	})
+})
+
+// ---------------------------------------------------------------------------
+// Scoped identity hardening tests (R5 / §2.6)
+// ---------------------------------------------------------------------------
+var _ = Describe("Scoped identity hardening", func() {
+
+	var specIdx int
+
+	uniqueOwnerName := func(base string) string {
+		specIdx++
+		return fmt.Sprintf("%s-r5-%d", base, specIdx)
+	}
+
+	createOwner := func(name string) *test.TestResource {
+		owner := test.NewObject(name, testNamespace)
+		owner.SetLabels(map[string]string{
+			config.EnvironmentLabelKey: testEnvironment,
+		})
+		Expect(k8sClient.Create(ctx, owner)).To(Succeed())
+		return owner
+	}
+
+	waitForCacheAR := func(name string) {
+		Eventually(func(g Gomega) {
+			ar := &approvalv1.ApprovalRequest{}
+			g.Expect(k8sm.GetClient().Get(ctx, client.ObjectKey{Name: name, Namespace: testNamespace}, ar)).To(Succeed())
+		}, timeout, interval).Should(Succeed())
+	}
+
+	waitForCacheApproval := func(name string) {
+		Eventually(func(g Gomega) {
+			appr := &approvalv1.Approval{}
+			g.Expect(k8sm.GetClient().Get(ctx, client.ObjectKey{Name: name, Namespace: testNamespace}, appr)).To(Succeed())
+		}, timeout, interval).Should(Succeed())
+	}
+
+	// createScopedApprovalWithOwner is like createScopedApproval but also
+	// sets controller ownerReferences on the Approval.
+	createScopedApprovalWithOwner := func(
+		name, key string,
+		target ctypes.TypedObjectRef,
+		state approvalv1.ApprovalState,
+		approvedRequest *ctypes.ObjectRef,
+		ownerRefs []metav1.OwnerReference,
+	) *approvalv1.Approval {
+		appr := &approvalv1.Approval{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:            name,
+				Namespace:       testNamespace,
+				OwnerReferences: ownerRefs,
+				Labels: map[string]string{
+					config.EnvironmentLabelKey: testEnvironment,
+				},
+			},
+			Spec: approvalv1.ApprovalSpec{
+				Strategy:        approvalv1.ApprovalStrategySimple,
+				State:           state,
+				ApprovalKey:     key,
+				Target:          target,
+				ApprovedRequest: approvedRequest,
+			},
+		}
+		ExpectWithOffset(1, k8sClient.Create(ctx, appr)).To(Succeed())
+
+		appr.Status.LastState = state
+		ExpectWithOffset(1, k8sClient.Status().Update(ctx, appr)).To(Succeed())
+
+		return appr
+	}
+
+	BeforeEach(func() {
+		specIdx = 0
+	})
+
+	AfterEach(func() {
+		_ = k8sClient.DeleteAllOf(ctx, &approvalv1.ApprovalRequest{}, client.InNamespace(testNamespace))
+		_ = k8sClient.DeleteAllOf(ctx, &approvalv1.Approval{}, client.InNamespace(testNamespace))
+		_ = k8sClient.DeleteAllOf(ctx, &test.TestResource{}, client.InNamespace(testNamespace))
+	})
+
+	// -------------------------------------------------------------------
+	// Target identity mismatch on existing keyed ApprovalRequest -> error
+	// -------------------------------------------------------------------
+	It("rejects keyed request when existing AR has different target UID", func() {
+		ownerName := uniqueOwnerName("targetuid")
+		owner := createOwner(ownerName)
+
+		props := map[string]any{"path": "/tid"}
+		requester := &approvalv1.Requester{TeamName: "TeamTID", TeamEmail: "tid@telekom.de", Reason: "tid"}
+		Expect(requester.SetProperties(props)).To(Succeed())
+
+		// First build creates the AR normally.
+		jc1 := cclient.NewJanitorClient(cclient.NewScopedClient(k8sm.GetClient(), testEnvironment))
+		b1 := NewApprovalBuilder(jc1, owner)
+		b1.WithApprovalKey("provider").WithHashValue(requester.Properties).WithRequester(requester).WithStrategy(approvalv1.ApprovalStrategySimple)
+		res, err := b1.Build(ctx)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(res).To(Equal(ApprovalResultPending))
+
+		arName := b1.GetApprovalRequest().Name
+		waitForCacheAR(arName)
+
+		By("Tampering with the AR's target UID on the server")
+		ar := &approvalv1.ApprovalRequest{}
+		Expect(k8sClient.Get(ctx, client.ObjectKey{Name: arName, Namespace: testNamespace}, ar)).To(Succeed())
+		ar.Spec.Target.UID = k8stypes.UID("tampered-uid")
+		Expect(k8sClient.Update(ctx, ar)).To(Succeed())
+
+		By("Waiting for the cache to reflect the tampered target UID")
+		Eventually(func(g Gomega) {
+			cached := &approvalv1.ApprovalRequest{}
+			g.Expect(k8sm.GetClient().Get(ctx, client.ObjectKey{Name: arName, Namespace: testNamespace}, cached)).To(Succeed())
+			g.Expect(cached.Spec.Target.UID).To(Equal(k8stypes.UID("tampered-uid")))
+		}, timeout, interval).Should(Succeed())
+
+		By("Rebuilding — should fail with target identity mismatch")
+		jc2 := cclient.NewJanitorClient(cclient.NewScopedClient(k8sm.GetClient(), testEnvironment))
+		b2 := NewApprovalBuilder(jc2, owner)
+		b2.WithApprovalKey("provider").WithHashValue(requester.Properties).WithRequester(requester).WithStrategy(approvalv1.ApprovalStrategySimple)
+		_, err = b2.Build(ctx)
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(ContainSubstring("target identity mismatch"))
+	})
+
+	// -------------------------------------------------------------------
+	// Unscoped (legacy) builder: target mismatch is NOT checked
+	// -------------------------------------------------------------------
+	It("unscoped builder does not check target identity (legacy behavior)", func() {
+		ownerName := uniqueOwnerName("legacy")
+		owner := createOwner(ownerName)
+
+		props := map[string]any{"path": "/legacy"}
+		requester := &approvalv1.Requester{TeamName: "TeamLegacy", TeamEmail: "legacy@telekom.de", Reason: "legacy"}
+		Expect(requester.SetProperties(props)).To(Succeed())
+
+		// Build unscoped (no approvalKey).
+		jc1 := cclient.NewJanitorClient(cclient.NewScopedClient(k8sm.GetClient(), testEnvironment))
+		b1 := NewApprovalBuilder(jc1, owner)
+		b1.WithHashValue(requester.Properties).WithRequester(requester).WithStrategy(approvalv1.ApprovalStrategySimple)
+		res, err := b1.Build(ctx)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(res).To(Equal(ApprovalResultPending))
+
+		arName := b1.GetApprovalRequest().Name
+		waitForCacheAR(arName)
+
+		By("Rebuilding same unscoped intent — should succeed (no target identity check)")
+		jc2 := cclient.NewJanitorClient(cclient.NewScopedClient(k8sm.GetClient(), testEnvironment))
+		b2 := NewApprovalBuilder(jc2, owner)
+		b2.WithHashValue(requester.Properties).WithRequester(requester).WithStrategy(approvalv1.ApprovalStrategySimple)
+		res, err = b2.Build(ctx)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(res).To(Equal(ApprovalResultPending))
+	})
+
+	// -------------------------------------------------------------------
+	// Foreign controller owner on Approval -> error
+	// -------------------------------------------------------------------
+	It("rejects keyed Approval with foreign controller owner", func() {
+		ownerName := uniqueOwnerName("foreign")
+		owner := createOwner(ownerName)
+
+		props := map[string]any{"path": "/foreign"}
+		requester := &approvalv1.Requester{TeamName: "TeamForeign", TeamEmail: "foreign@telekom.de", Reason: "foreign"}
+		Expect(requester.SetProperties(props)).To(Succeed())
+
+		jc1 := cclient.NewJanitorClient(cclient.NewScopedClient(k8sm.GetClient(), testEnvironment))
+		b1 := NewApprovalBuilder(jc1, owner)
+		b1.WithApprovalKey("provider").WithHashValue(requester.Properties).WithRequester(requester).WithStrategy(approvalv1.ApprovalStrategySimple)
+		_, err := b1.Build(ctx)
+		Expect(err).NotTo(HaveOccurred())
+
+		approvalName := b1.GetApproval().Name
+		arName := b1.GetApprovalRequest().Name
+		arUID := b1.GetApprovalRequest().UID
+		waitForCacheAR(arName)
+
+		By("Creating an Approval with a foreign controller owner")
+		trueVal := true
+		foreignOwnerRefs := []metav1.OwnerReference{
+			{
+				APIVersion: "v1",
+				Kind:       "ConfigMap",
+				Name:       "foreign-object",
+				UID:        k8stypes.UID("foreign-uid-000"),
+				Controller: &trueVal,
+			},
+		}
+		correctRef := &ctypes.ObjectRef{Name: arName, Namespace: testNamespace, UID: arUID}
+		_ = createScopedApprovalWithOwner(approvalName, "provider", b1.GetApprovalRequest().Spec.Target,
+			approvalv1.ApprovalStateGranted, correctRef, foreignOwnerRefs)
+		waitForCacheApproval(approvalName)
+
+		By("Rebuilding — should fail with foreign controller owner")
+		jc2 := cclient.NewJanitorClient(cclient.NewScopedClient(k8sm.GetClient(), testEnvironment))
+		b2 := NewApprovalBuilder(jc2, owner)
+		b2.WithApprovalKey("provider").WithHashValue(requester.Properties).WithRequester(requester).WithStrategy(approvalv1.ApprovalStrategySimple)
+		_, err = b2.Build(ctx)
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(ContainSubstring("foreign controller owner"))
+	})
+
+	// -------------------------------------------------------------------
+	// Missing controller owner on Approval -> accepted (not yet reconciled)
+	// -------------------------------------------------------------------
+	It("accepts keyed Approval with no ownerReferences (not yet reconciled)", func() {
+		ownerName := uniqueOwnerName("noowner")
+		owner := createOwner(ownerName)
+
+		props := map[string]any{"path": "/noowner"}
+		requester := &approvalv1.Requester{TeamName: "TeamNoOwner", TeamEmail: "noowner@telekom.de", Reason: "noowner"}
+		Expect(requester.SetProperties(props)).To(Succeed())
+
+		jc1 := cclient.NewJanitorClient(cclient.NewScopedClient(k8sm.GetClient(), testEnvironment))
+		b1 := NewApprovalBuilder(jc1, owner)
+		b1.WithApprovalKey("provider").WithHashValue(requester.Properties).WithRequester(requester).WithStrategy(approvalv1.ApprovalStrategySimple)
+		_, err := b1.Build(ctx)
+		Expect(err).NotTo(HaveOccurred())
+
+		approvalName := b1.GetApproval().Name
+		arName := b1.GetApprovalRequest().Name
+		arUID := b1.GetApprovalRequest().UID
+		waitForCacheAR(arName)
+
+		By("Creating an Approval with NO ownerReferences (freshly created, not yet adopted)")
+		correctRef := &ctypes.ObjectRef{Name: arName, Namespace: testNamespace, UID: arUID}
+		_ = createScopedApprovalWithOwner(approvalName, "provider", b1.GetApprovalRequest().Spec.Target,
+			approvalv1.ApprovalStateGranted, correctRef, nil)
+		waitForCacheApproval(approvalName)
+
+		By("Rebuilding — should succeed (no owner = not yet adopted)")
+		jc2 := cclient.NewJanitorClient(cclient.NewScopedClient(k8sm.GetClient(), testEnvironment))
+		b2 := NewApprovalBuilder(jc2, owner)
+		b2.WithApprovalKey("provider").WithHashValue(requester.Properties).WithRequester(requester).WithStrategy(approvalv1.ApprovalStrategySimple)
+		res, err := b2.Build(ctx)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(res).To(Equal(ApprovalResultGranted))
+	})
+
+	// -------------------------------------------------------------------
+	// Correct controller owner on Approval -> accepted
+	// -------------------------------------------------------------------
+	It("accepts keyed Approval with correct controller owner", func() {
+		ownerName := uniqueOwnerName("correct")
+		owner := createOwner(ownerName)
+
+		props := map[string]any{"path": "/correct"}
+		requester := &approvalv1.Requester{TeamName: "TeamCorrect", TeamEmail: "correct@telekom.de", Reason: "correct"}
+		Expect(requester.SetProperties(props)).To(Succeed())
+
+		jc1 := cclient.NewJanitorClient(cclient.NewScopedClient(k8sm.GetClient(), testEnvironment))
+		b1 := NewApprovalBuilder(jc1, owner)
+		b1.WithApprovalKey("provider").WithHashValue(requester.Properties).WithRequester(requester).WithStrategy(approvalv1.ApprovalStrategySimple)
+		_, err := b1.Build(ctx)
+		Expect(err).NotTo(HaveOccurred())
+
+		approvalName := b1.GetApproval().Name
+		arName := b1.GetApprovalRequest().Name
+		arUID := b1.GetApprovalRequest().UID
+		waitForCacheAR(arName)
+
+		By("Creating an Approval with correct controller owner matching builder's Owner")
+		trueVal := true
+		correctOwnerRefs := []metav1.OwnerReference{
+			{
+				APIVersion: "testgroup.cp.ei.telekom.de/v1",
+				Kind:       "TestResource",
+				Name:       owner.GetName(),
+				UID:        owner.GetUID(),
+				Controller: &trueVal,
+			},
+		}
+		correctRef := &ctypes.ObjectRef{Name: arName, Namespace: testNamespace, UID: arUID}
+		_ = createScopedApprovalWithOwner(approvalName, "provider", b1.GetApprovalRequest().Spec.Target,
+			approvalv1.ApprovalStateGranted, correctRef, correctOwnerRefs)
+		waitForCacheApproval(approvalName)
+
+		By("Rebuilding — should succeed")
+		jc2 := cclient.NewJanitorClient(cclient.NewScopedClient(k8sm.GetClient(), testEnvironment))
+		b2 := NewApprovalBuilder(jc2, owner)
+		b2.WithApprovalKey("provider").WithHashValue(requester.Properties).WithRequester(requester).WithStrategy(approvalv1.ApprovalStrategySimple)
+		res, err := b2.Build(ctx)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(res).To(Equal(ApprovalResultGranted))
+
+		cond := meta.FindStatusCondition(b2.GetOwner().GetConditions(), ConditionTypeForKey("provider"))
+		testutil.ExpectConditionToBeTrue(NewGomegaWithT(GinkgoT()), cond, "Granted")
+	})
+
+	// -------------------------------------------------------------------
+	// Unscoped builder: foreign owner is NOT checked (legacy behavior)
+	// -------------------------------------------------------------------
+	It("unscoped builder ignores foreign owner on Approval", func() {
+		ownerName := uniqueOwnerName("legacyowner")
+		owner := createOwner(ownerName)
+
+		props := map[string]any{"path": "/legacyowner"}
+		requester := &approvalv1.Requester{TeamName: "TeamLO", TeamEmail: "lo@telekom.de", Reason: "lo"}
+		Expect(requester.SetProperties(props)).To(Succeed())
+
+		jc1 := cclient.NewJanitorClient(cclient.NewScopedClient(k8sm.GetClient(), testEnvironment))
+		b1 := NewApprovalBuilder(jc1, owner)
+		b1.WithHashValue(requester.Properties).WithRequester(requester).WithStrategy(approvalv1.ApprovalStrategySimple)
+		res, err := b1.Build(ctx)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(res).To(Equal(ApprovalResultPending))
+
+		By("Creating a legacy Approval (no approvalKey check at all)")
+		approvalName := b1.GetApproval().Name
+		arName := b1.GetApprovalRequest().Name
+		waitForCacheAR(arName)
+
+		trueVal := true
+		foreignOwnerRefs := []metav1.OwnerReference{
+			{
+				APIVersion: "v1",
+				Kind:       "ConfigMap",
+				Name:       "foreign-object",
+				UID:        k8stypes.UID("foreign-uid-000"),
+				Controller: &trueVal,
+			},
+		}
+		ref := &ctypes.ObjectRef{Name: arName, Namespace: testNamespace, UID: b1.GetApprovalRequest().UID}
+		appr := &approvalv1.Approval{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:            approvalName,
+				Namespace:       testNamespace,
+				OwnerReferences: foreignOwnerRefs,
+				Labels: map[string]string{
+					config.EnvironmentLabelKey: testEnvironment,
+				},
+			},
+			Spec: approvalv1.ApprovalSpec{
+				Strategy:        approvalv1.ApprovalStrategySimple,
+				State:           approvalv1.ApprovalStateGranted,
+				ApprovedRequest: ref,
+			},
+		}
+		Expect(k8sClient.Create(ctx, appr)).To(Succeed())
+		appr.Status.LastState = approvalv1.ApprovalStateGranted
+		Expect(k8sClient.Status().Update(ctx, appr)).To(Succeed())
+		waitForCacheApproval(approvalName)
+
+		By("Rebuilding unscoped — should succeed (no owner check in legacy mode)")
+		jc2 := cclient.NewJanitorClient(cclient.NewScopedClient(k8sm.GetClient(), testEnvironment))
+		b2 := NewApprovalBuilder(jc2, owner)
+		b2.WithHashValue(requester.Properties).WithRequester(requester).WithStrategy(approvalv1.ApprovalStrategySimple)
+		res, err = b2.Build(ctx)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(res).To(Equal(ApprovalResultGranted))
 	})
 })

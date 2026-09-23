@@ -215,6 +215,14 @@ func (b *approvalBuilder) Build(ctx context.Context) (finalResult ApprovalResult
 			if approvalReq.Spec.ApprovalKey != b.approvalKey {
 				return fmt.Errorf("scoped request %s: approvalKey mismatch: existing %q != desired %q", approvalReq.Name, approvalReq.Spec.ApprovalKey, b.approvalKey)
 			}
+			// Validate target identity before overwriting spec fields.
+			// A keyed request is pinned to a specific target; if the existing
+			// object has a different target, this is a foreign object at the
+			// same deterministic name — refuse to overwrite.
+			if !v1.ScopedIdentityMatch(approvalReq.Spec.Target, b.Request.Spec.Target,
+				approvalReq.Spec.ApprovalKey, b.approvalKey) {
+				return fmt.Errorf("scoped request %s: target identity mismatch: existing target does not match desired", approvalReq.Name)
+			}
 		}
 
 		// Preserve the server-side state and decisions before applying spec updates.
@@ -307,12 +315,35 @@ func (b *approvalBuilder) Build(ctx context.Context) (finalResult ApprovalResult
 
 		// For keyed builders, validate scoped identity on the Approval.
 		if b.approvalKey != "" {
+			// Reject terminating Approval — treat as not-yet-ready.
+			if b.Approval.DeletionTimestamp != nil {
+				log.V(1).Info("Scoped Approval is terminating; treating as pending")
+				b.Owner.SetCondition(newKeyedApprovalGrantedCondition(b.approvalKey, v1.ApprovalStatePending, "Approval is being deleted"))
+				return ApprovalResultPending, nil
+			}
 			if b.Approval.Spec.ApprovalKey != b.approvalKey {
 				return ApprovalResultNone, fmt.Errorf("scoped approval %s: approvalKey mismatch: existing %q != desired %q", b.Approval.Name, b.Approval.Spec.ApprovalKey, b.approvalKey)
 			}
 			target := b.Request.Spec.Target
 			if !v1.ScopedIdentityMatch(b.Approval.Spec.Target, target, b.Approval.Spec.ApprovalKey, b.approvalKey) {
 				return ApprovalResultNone, fmt.Errorf("scoped approval %s: target identity mismatch", b.Approval.Name)
+			}
+			// Reject Approval with foreign controller owner. An Approval
+			// that has ownerReferences but none matching the builder's
+			// Owner is foreign. Empty ownerReferences are accepted because
+			// the Approval controller may not have adopted it yet.
+			foreignOwner := false
+			for _, ref := range b.Approval.OwnerReferences {
+				if ref.Controller != nil && *ref.Controller && ref.UID == b.Owner.GetUID() {
+					foreignOwner = false
+					break
+				}
+				if ref.Controller != nil && *ref.Controller {
+					foreignOwner = true
+				}
+			}
+			if foreignOwner {
+				return ApprovalResultNone, fmt.Errorf("scoped approval %s: foreign controller owner", b.Approval.Name)
 			}
 		}
 

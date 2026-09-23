@@ -214,9 +214,14 @@ func (h *ListenerHandler) buildScopedGate(
 				break
 			}
 		}
-		// Only verify if the Approval has owner references at all (a freshly
-		// created Approval may not have been fetched with full metadata).
-		if len(ownerRefs) > 0 && !ownerFound {
+		if len(ownerRefs) == 0 {
+			// No owner references yet — the Approval controller has not
+			// reconciled (adopted) this Approval. Log a warning but accept;
+			// the builder's ScopedIdentityMatch already verified the target.
+			logger := log.FromContext(ctx)
+			logger.V(1).Info("Approval has no owner references; not yet adopted by controller",
+				"gate", key, "approval", approval.Name)
+		} else if !ownerFound {
 			result.outcome = outcomeError
 			result.err = fmt.Errorf("%s gate: Approval %s/%s is not owned by Listener %s/%s",
 				key, approval.Namespace, approval.Name, listener.Namespace, listener.Name)
