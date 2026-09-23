@@ -463,13 +463,14 @@ var _ = Describe("Authorization Migration", func() {
 			Expect(done).To(BeTrue())
 		})
 
-		It("should enter v2 directly when no legacy evidence exists", func() {
+		It("should block when no legacy evidence exists but isFreshInstall was false", func() {
 			mockLegacyApprovalNotFound()
 
 			done, err := h.AdvanceMigration(ctx, listener, &intent, nil)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(done).To(BeTrue())
-			Expect(listener.Status.AuthorizationPolicyVersion).To(Equal("v2"))
+			Expect(done).To(BeFalse())
+			// Should NOT set v2 — block instead.
+			Expect(listener.Status.AuthorizationPolicyVersion).ToNot(Equal("v2"))
 		})
 
 		Context("with granted legacy Approval", func() {
@@ -584,11 +585,11 @@ var _ = Describe("Authorization Migration", func() {
 						rl.UID = "old-rl-uid"
 					}).
 					Return(nil).Once()
-				// continueDrain: Delete old RouteListener.
+				// continueDrain: Delete old RouteListener (with UID+RV preconditions).
 				fakeClient.EXPECT().
 					Delete(ctx, mock.MatchedBy(func(obj client.Object) bool {
 						return obj.GetName() == "old-rl"
-					})).
+					}), mock.AnythingOfType("client.Preconditions")).
 					Return(nil).Once()
 
 				done, err := h.AdvanceMigration(ctx, listener, &intent, makeDualGranted())
