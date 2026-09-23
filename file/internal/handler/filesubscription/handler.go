@@ -146,9 +146,9 @@ func (h *FileSubscriptionHandler) ensureApproval(ctx context.Context, obj *filev
 	}
 
 	requester := &approvalapi.Requester{
-		TeamName:       providerApp.Spec.Team,
-		TeamEmail:      providerApp.Spec.TeamEmail,
-		ApplicationRef: &activeExposure.Spec.Provider,
+		TeamName:       requestorApp.Spec.Team,
+		TeamEmail:      requestorApp.Spec.TeamEmail,
+		ApplicationRef: &obj.Spec.Requestor,
 		Reason: fmt.Sprintf("Team %s requested subscription to filetype %s from zone %s",
 			requestorApp.Spec.Team, obj.Spec.FileType, obj.Spec.Zone.Name),
 	}
@@ -166,9 +166,9 @@ func (h *FileSubscriptionHandler) ensureApproval(ctx context.Context, obj *filev
 	}
 
 	decider := &approvalapi.Decider{
-		TeamName:       requestorApp.Spec.Team,
-		TeamEmail:      requestorApp.Spec.TeamEmail,
-		ApplicationRef: &obj.Spec.Requestor,
+		TeamName:       providerApp.Spec.Team,
+		TeamEmail:      providerApp.Spec.TeamEmail,
+		ApplicationRef: &activeExposure.Spec.Provider,
 	}
 
 	approvalBuilder := builder.NewApprovalBuilder(c, obj).
