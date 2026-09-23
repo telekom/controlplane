@@ -552,7 +552,8 @@ var _ = Describe("ListenerHandler", func() {
 			}).
 			Return(nil).Once()
 
-		// ApiExposure list for verifyProviderBinding.
+		// ApiExposure list for verifyProviderBinding — exposures live in the
+		// provider's team namespace (listenerNamespace), not the zone namespace.
 		fakeClient.EXPECT().
 			List(ctx, mock.AnythingOfType("*v1.ApiExposureList"), mock.Anything).
 			Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
@@ -561,7 +562,7 @@ var _ = Describe("ListenerHandler", func() {
 						{
 							ObjectMeta: metav1.ObjectMeta{
 								Name:      testExposureName,
-								Namespace: listenerZoneStatus,
+								Namespace: listenerNamespace,
 								UID:       k8stypes.UID(testExposureUID),
 								Labels: map[string]string{
 									cconfig.BuildLabelKey("application"): providerAppName,

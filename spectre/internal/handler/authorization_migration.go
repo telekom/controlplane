@@ -10,7 +10,9 @@ import (
 
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8stypes "k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	approvalapi "github.com/telekom/controlplane/approval/api/v1"
@@ -235,24 +237,42 @@ func (h *ListenerHandler) advanceMigration(
 	// Step 4: Drain old capture via the shared drain protocol.
 	if migration.Phase == MigrationPhaseDraining {
 		if listener.Status.Draining == nil {
-			oldFP := ""
-			if listener.Status.AppliedPlacement != nil {
-				oldFP = listener.Status.AppliedPlacement.Fingerprint
+			if migration.DrainStarted {
+				// Drain was started previously and completed by the outer handler
+				// (continueDrain in step 5.8 cleared Draining). Clear old
+				// applied fingerprint so step 5.9 doesn't re-trigger a drain.
+				if listener.Status.AppliedPlacement != nil {
+					listener.Status.AppliedPlacement.Fingerprint = ""
+				}
+				migration.Phase = MigrationPhaseRetiringRequests
+				logger.Info("Drain consumed by outer handler, advancing to RetiringRequests")
+			} else {
+				// First entry into Draining — start the drain.
+				oldFP := ""
+				if listener.Status.AppliedPlacement != nil {
+					oldFP = listener.Status.AppliedPlacement.Fingerprint
+				}
+				if err := h.startDrain(ctx, listener, "legacy migration", oldFP); err != nil {
+					return false, err
+				}
+				migration.DrainStarted = true
+				return false, nil // persist drain checkpoint
 			}
-			if err := h.startDrain(ctx, listener, "legacy migration", oldFP); err != nil {
+		} else {
+			complete, err := h.continueDrain(ctx, listener)
+			if err != nil {
 				return false, err
 			}
-			return false, nil // persist drain checkpoint
+			if !complete {
+				return false, nil // drain still in progress
+			}
+			// Clear old applied fingerprint now that drain is complete.
+			if listener.Status.AppliedPlacement != nil {
+				listener.Status.AppliedPlacement.Fingerprint = ""
+			}
+			migration.Phase = MigrationPhaseRetiringRequests
+			logger.Info("Drain complete, advancing to RetiringRequests")
 		}
-		complete, err := h.continueDrain(ctx, listener)
-		if err != nil {
-			return false, err
-		}
-		if !complete {
-			return false, nil // drain still in progress
-		}
-		migration.Phase = MigrationPhaseRetiringRequests
-		logger.Info("Drain complete, advancing to RetiringRequests")
 	}
 
 	// Step 5: Retire legacy resources conditionally.
@@ -492,18 +512,22 @@ func (h *ListenerHandler) retireLegacyRequests(
 
 		pd := &cp.PendingDeletions[idx]
 		if pd.Phase == PendingDeletionPhasePrepared {
-			// Step 2: UID/RV match confirmed — delete.
+			// Step 2: UID/RV match confirmed — delete with UID precondition.
 			if pd.UID != string(ar.UID) {
 				// UID changed since checkpoint — re-evaluate.
 				pd.UID = string(ar.UID)
 				pd.ResourceVersion = ar.ResourceVersion
 				return false, nil // persist updated checkpoint
 			}
-			if err := c.Delete(ctx, ar); err != nil && !apierrors.IsNotFound(err) {
+			uid := ar.UID
+			precond := client.Preconditions(metav1.Preconditions{UID: &uid})
+			if err := c.Delete(ctx, ar, precond); err != nil && !apierrors.IsNotFound(err) {
 				return false, errors.Wrapf(err, "failed to delete legacy ApprovalRequest %q", ref.Name)
 			}
-			pd.Phase = PendingDeletionPhaseObserved
-			logger.Info("Retired legacy ApprovalRequest", "name", ref.Name)
+			// Don't mark DeleteObserved immediately — verify on next reconcile.
+			// The phase-aware recovery (NotFound + DeletePrepared) handles
+			// the case where the controller crashes between delete and ack.
+			return false, nil
 		}
 	}
 
@@ -589,17 +613,19 @@ func (h *ListenerHandler) retireLegacyApproval(
 
 	pd := &cp.PendingDeletions[idx]
 	if pd.Phase == PendingDeletionPhasePrepared {
-		// Step 2: UID match confirmed — delete.
+		// Step 2: UID match confirmed — delete with UID precondition.
 		if pd.UID != string(approval.UID) {
 			pd.UID = string(approval.UID)
 			pd.ResourceVersion = approval.ResourceVersion
 			return false, nil // persist updated checkpoint
 		}
-		if err := c.Delete(ctx, approval); err != nil && !apierrors.IsNotFound(err) {
+		uid := approval.UID
+		precond := client.Preconditions(metav1.Preconditions{UID: &uid})
+		if err := c.Delete(ctx, approval, precond); err != nil && !apierrors.IsNotFound(err) {
 			return false, errors.Wrapf(err, "failed to delete legacy Approval %q", ref.Name)
 		}
-		pd.Phase = PendingDeletionPhaseObserved
-		logger.Info("Retired legacy Approval", "name", ref.Name)
+		// Don't mark DeleteObserved immediately — verify on next reconcile.
+		return false, nil
 	}
 
 	cp.ApprovalRetired = true
