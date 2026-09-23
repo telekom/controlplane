@@ -1,0 +1,36 @@
+rover-server/internal/controller/util_test.go
+  s_2140539b757ce2::t_136053b5b20110 1-81
+rover-server/internal/controller/rover_naming_test.go
+  s_2140539b757ce2::t_9162f0c1dc9c7b 1-63
+docs/docs/architecture/rover.mdx
+  s_2140539b757ce2::t_645ab0e6d32c69 23-28
+rover-server/internal/mapper/rover/in/rover_test.go
+  s_2140539b757ce2::t_136053b5b20110 8-9,13,15,17,230-298
+rover-server/internal/mapper/rover/in/rover.go
+  h_0f030e7424553c 10,31,34-35
+rover-server/internal/controller/util.go
+  h_0f030e7424553c 12,28-30
+.gitignore
+  h_0f030e7424553c 15
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "0d94337d24aa46cd9ffca0d97bcef4d19d6c4c97",
+  "prompts": {},
+  "humans": {
+    "h_0f030e7424553c": {
+      "author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  },
+  "sessions": {
+    "s_2140539b757ce2": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f323ba7e5ffeDnpzfKaXLCe2D9",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
