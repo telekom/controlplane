@@ -14,12 +14,15 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	k8stypes "k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	crfake "sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	fakeclient "github.com/telekom/controlplane/common/pkg/client/fake"
+	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	ctypes "github.com/telekom/controlplane/common/pkg/types"
+	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	pubsubv1 "github.com/telekom/controlplane/pubsub/api/v1"
 	spectrev1 "github.com/telekom/controlplane/spectre/api/v1"
@@ -810,6 +813,116 @@ var _ = Describe("Authorization Migration", func() {
 				Expect(done).To(BeTrue())
 				Expect(listener.Status.AuthorizationPolicyVersion).To(Equal("v2"))
 				Expect(listener.Status.AuthorizationMigration).To(BeNil())
+			})
+		})
+
+		// With an injected Reader the pre-delete review reads live. Discovery
+		// still reads through the cache; the strict cached mock serves no
+		// retirement read.
+		Context("live retirement reads through the injected Reader", func() {
+			const liveEnv = "test-env"
+			var (
+				approval *approvalv1.Approval
+				request  *approvalv1.ApprovalRequest
+			)
+			// inEnv returns a copy of obj labelled with env, as the Reader sees it.
+			inEnv := func(obj client.Object, env string) client.Object {
+				live := obj.DeepCopyObject().(client.Object)
+				live.SetLabels(map[string]string{cconfig.EnvironmentLabelKey: env})
+				return live
+			}
+			retiringApproval := func() *spectrev1.AuthorizationMigrationStatus {
+				return &spectrev1.AuthorizationMigrationStatus{
+					TargetPolicyVersion: "v2",
+					Phase:               "RetiringApproval",
+					LegacyApproval:      ctypes.ObjectRefFromObject(approval),
+					LegacyRequests:      []ctypes.ObjectRef{*ctypes.ObjectRefFromObject(request)},
+					RetirementCheckpoint: &spectrev1.MigrationRetirementCheckpoint{
+						RequestsRetired: true,
+						PendingDeletions: []spectrev1.PendingDeletion{
+							{Kind: "ApprovalRequest", Name: request.Name, Phase: handler.ExportPendingDeletionPhaseObserved},
+							{
+								Kind:            "Approval",
+								Name:            approval.Name,
+								Namespace:       approval.Namespace,
+								UID:             string(approval.UID),
+								ResourceVersion: approval.ResourceVersion,
+								Phase:           handler.ExportPendingDeletionPhasePrepared,
+							},
+						},
+					},
+				}
+			}
+
+			BeforeEach(func() {
+				ctx = contextutil.WithEnv(ctx, liveEnv)
+				approval = makeLegacyApproval(listener, approvalv1.ApprovalStateGranted)
+				request = makeLegacyRequest(listener)
+			})
+
+			It("deletes a legacy ApprovalRequest with the preconditions of its live read", func() {
+				listener.Status.AuthorizationMigration = &spectrev1.AuthorizationMigrationStatus{
+					TargetPolicyVersion: "v2",
+					Phase:               "RetiringRequests",
+					LegacyApproval:      ctypes.ObjectRefFromObject(approval),
+					LegacyRequests:      []ctypes.ObjectRef{*ctypes.ObjectRefFromObject(request)},
+					RetirementCheckpoint: &spectrev1.MigrationRetirementCheckpoint{
+						PendingDeletions: []spectrev1.PendingDeletion{{
+							Kind:            "ApprovalRequest",
+							Name:            request.Name,
+							Namespace:       request.Namespace,
+							UID:             string(request.UID),
+							ResourceVersion: request.ResourceVersion,
+							Phase:           handler.ExportPendingDeletionPhasePrepared,
+						}},
+					},
+				}
+				h.Reader = crfake.NewClientBuilder().WithScheme(scheme).WithObjects(inEnv(request, liveEnv)).Build()
+
+				mockLegacyApprovalExists(approval)
+				mockLegacyRequestExists(request)
+				fakeClient.EXPECT().
+					Delete(ctx,
+						mock.MatchedBy(func(obj client.Object) bool { return obj.GetName() == request.Name }),
+						mock.MatchedBy(func(p client.Preconditions) bool {
+							return p.UID != nil && *p.UID == request.UID &&
+								p.ResourceVersion != nil && *p.ResourceVersion == request.ResourceVersion
+						})).
+					Return(nil).Once()
+
+				done, err := h.AdvanceMigration(ctx, listener, &intent, makeDualGranted())
+				Expect(err).ToNot(HaveOccurred())
+				Expect(done).To(BeFalse())
+			})
+
+			It("blocks retirement on a legacy Approval revocation only the Reader sees", func() {
+				listener.Status.AuthorizationMigration = retiringApproval()
+				revoked := makeLegacyApproval(listener, approvalv1.ApprovalStateRejected)
+				h.Reader = crfake.NewClientBuilder().WithScheme(scheme).WithObjects(inEnv(revoked, liveEnv)).Build()
+
+				// The cache still shows the Granted legacy Approval.
+				mockLegacyApprovalExists(approval)
+				mockLegacyRequestExists(request)
+
+				done, err := h.AdvanceMigration(ctx, listener, &intent, makeDualGranted())
+				Expect(err).ToNot(HaveOccurred())
+				Expect(done).To(BeFalse())
+				Expect(listener.Status.AuthorizationMigration.Phase).To(Equal("Blocked"))
+				fakeClient.AssertNumberOfCalls(GinkgoT(), "Delete", 0)
+			})
+
+			It("refuses to retire a legacy Approval it cannot place in the Listener's environment", func() {
+				listener.Status.AuthorizationMigration = retiringApproval()
+				h.Reader = crfake.NewClientBuilder().WithScheme(scheme).WithObjects(inEnv(approval, "other-env")).Build()
+
+				mockLegacyApprovalExists(approval)
+				mockLegacyRequestExists(request)
+
+				done, err := h.AdvanceMigration(ctx, listener, &intent, makeDualGranted())
+				Expect(err).To(MatchError(ContainSubstring("does not belong to the environment")))
+				Expect(done).To(BeFalse())
+				Expect(listener.Status.AuthorizationMigration.RetirementCheckpoint.ApprovalRetired).To(BeFalse())
+				fakeClient.AssertNumberOfCalls(GinkgoT(), "Delete", 0)
 			})
 		})
 

@@ -396,7 +396,7 @@ var _ = Describe("Integration: Two-Tier Reconcile Cycle", Ordered, func() {
 			Scheme:   k8sClient.Scheme(),
 			Recorder: listenerRecorder,
 		}
-		listenerReconciler.Controller = cc.NewController(&handler.ListenerHandler{}, k8sClient, listenerRecorder)
+		listenerReconciler.Controller = cc.NewController(&handler.ListenerHandler{Reader: testMgr.GetAPIReader()}, k8sClient, listenerRecorder)
 
 		// --- SpectreApplication (prerequisite for Listener tests) ---
 		By("Creating the SpectreApplication CR")

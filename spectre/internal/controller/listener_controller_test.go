@@ -116,3 +116,14 @@ var _ = Describe("Listener Controller", func() {
 		})
 	})
 })
+
+var _ = Describe("Listener Controller wiring", func() {
+	It("gives the Listener handler the manager's uncached API reader", func() {
+		impl, ok := managedListenerReconciler.Controller.(*cc.ControllerImpl[*spectrev1.Listener])
+		Expect(ok).To(BeTrue())
+		h, ok := impl.Handler.(*handler.ListenerHandler)
+		Expect(ok).To(BeTrue())
+		Expect(h.Reader).NotTo(BeNil())
+		Expect(h.Reader).To(BeIdenticalTo(testMgr.GetAPIReader()))
+	})
+})
