@@ -1,0 +1,32 @@
+rover-server/internal/mapper/roadmap/in/roadmap.go
+  h_0f030e7424553c 40
+tools/route-tester/main.go
+  h_0f030e7424553c 103
+rover/internal/handler/rover/api/exposure.go
+  h_0f030e7424553c 64-65
+api/internal/handler/remoteapisubscription/consumer_scenario.go
+  h_0f030e7424553c 74,82
+rover/internal/handler/rover/permission/permission.go
+  h_0f030e7424553c 42-44
+notification/api/v1/builder/util.go
+  h_0f030e7424553c 27
+rover-server/internal/mapper/apichangelog/in/changelog.go
+  h_0f030e7424553c 40,58
+rover/internal/handler/rover/api/subscription.go
+  h_0f030e7424553c 68-69
+rover/internal/handler/rover/application/application.go
+  h_0f030e7424553c 72-74
+api/internal/handler/util/route_util.go
+  h_0f030e7424553c 275,556
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "e93d34d0994634e5fe8727fccc6a7aa841e99c9d",
+  "prompts": {},
+  "humans": {
+    "h_0f030e7424553c": {
+      "author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
