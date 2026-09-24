@@ -546,6 +546,7 @@ var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, f
 				readyCondition := meta.FindStatusCondition(denialSubscription.Status.Conditions, condition.ConditionTypeReady)
 				g.Expect(readyCondition).ToNot(BeNil())
 				g.Expect(readyCondition.Status).To(Equal(metav1.ConditionFalse))
+				g.Expect(denialSubscription.Status.ActiveScopes).To(BeEmpty())
 			}, timeout, interval).Should(Succeed())
 
 			By("Verifying proxy route still exists (route lifecycle is managed by ApiExposure)")

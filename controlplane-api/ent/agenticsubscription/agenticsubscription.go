@@ -35,6 +35,10 @@ const (
 	FieldNamespace = "namespace"
 	// FieldName holds the string denoting the name field in the database.
 	FieldName = "name"
+	// FieldRequestedScopes holds the string denoting the requested_scopes field in the database.
+	FieldRequestedScopes = "requested_scopes"
+	// FieldActiveScopes holds the string denoting the active_scopes field in the database.
+	FieldActiveScopes = "active_scopes"
 	// FieldBasePath holds the string denoting the base_path field in the database.
 	FieldBasePath = "base_path"
 	// FieldGatewayURL holds the string denoting the gateway_url field in the database.
@@ -93,6 +97,8 @@ var Columns = []string{
 	FieldEnvironment,
 	FieldNamespace,
 	FieldName,
+	FieldRequestedScopes,
+	FieldActiveScopes,
 	FieldBasePath,
 	FieldGatewayURL,
 	FieldSecurity,

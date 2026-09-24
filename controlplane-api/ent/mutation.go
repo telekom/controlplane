@@ -2842,6 +2842,10 @@ type AgenticSubscriptionMutation struct {
 	environment              *string
 	namespace                *string
 	name                     *string
+	requested_scopes         *[]string
+	appendrequested_scopes   []string
+	active_scopes            *[]string
+	appendactive_scopes      []string
 	base_path                *string
 	gateway_url              *string
 	security                 *model.AgenticSubscriptionSecurity
@@ -3250,6 +3254,136 @@ func (m *AgenticSubscriptionMutation) ResetName() {
 	m.name = nil
 }
 
+// SetRequestedScopes sets the "requested_scopes" field.
+func (m *AgenticSubscriptionMutation) SetRequestedScopes(s []string) {
+	m.requested_scopes = &s
+	m.appendrequested_scopes = nil
+}
+
+// RequestedScopes returns the value of the "requested_scopes" field in the mutation.
+func (m *AgenticSubscriptionMutation) RequestedScopes() (r []string, exists bool) {
+	v := m.requested_scopes
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRequestedScopes returns the old "requested_scopes" field's value of the AgenticSubscription entity.
+// If the AgenticSubscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AgenticSubscriptionMutation) OldRequestedScopes(ctx context.Context) (v []string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRequestedScopes is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRequestedScopes requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRequestedScopes: %w", err)
+	}
+	return oldValue.RequestedScopes, nil
+}
+
+// AppendRequestedScopes adds s to the "requested_scopes" field.
+func (m *AgenticSubscriptionMutation) AppendRequestedScopes(s []string) {
+	m.appendrequested_scopes = append(m.appendrequested_scopes, s...)
+}
+
+// AppendedRequestedScopes returns the list of values that were appended to the "requested_scopes" field in this mutation.
+func (m *AgenticSubscriptionMutation) AppendedRequestedScopes() ([]string, bool) {
+	if len(m.appendrequested_scopes) == 0 {
+		return nil, false
+	}
+	return m.appendrequested_scopes, true
+}
+
+// ClearRequestedScopes clears the value of the "requested_scopes" field.
+func (m *AgenticSubscriptionMutation) ClearRequestedScopes() {
+	m.requested_scopes = nil
+	m.appendrequested_scopes = nil
+	m.clearedFields[agenticsubscription.FieldRequestedScopes] = struct{}{}
+}
+
+// RequestedScopesCleared returns if the "requested_scopes" field was cleared in this mutation.
+func (m *AgenticSubscriptionMutation) RequestedScopesCleared() bool {
+	_, ok := m.clearedFields[agenticsubscription.FieldRequestedScopes]
+	return ok
+}
+
+// ResetRequestedScopes resets all changes to the "requested_scopes" field.
+func (m *AgenticSubscriptionMutation) ResetRequestedScopes() {
+	m.requested_scopes = nil
+	m.appendrequested_scopes = nil
+	delete(m.clearedFields, agenticsubscription.FieldRequestedScopes)
+}
+
+// SetActiveScopes sets the "active_scopes" field.
+func (m *AgenticSubscriptionMutation) SetActiveScopes(s []string) {
+	m.active_scopes = &s
+	m.appendactive_scopes = nil
+}
+
+// ActiveScopes returns the value of the "active_scopes" field in the mutation.
+func (m *AgenticSubscriptionMutation) ActiveScopes() (r []string, exists bool) {
+	v := m.active_scopes
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldActiveScopes returns the old "active_scopes" field's value of the AgenticSubscription entity.
+// If the AgenticSubscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AgenticSubscriptionMutation) OldActiveScopes(ctx context.Context) (v []string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldActiveScopes is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldActiveScopes requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldActiveScopes: %w", err)
+	}
+	return oldValue.ActiveScopes, nil
+}
+
+// AppendActiveScopes adds s to the "active_scopes" field.
+func (m *AgenticSubscriptionMutation) AppendActiveScopes(s []string) {
+	m.appendactive_scopes = append(m.appendactive_scopes, s...)
+}
+
+// AppendedActiveScopes returns the list of values that were appended to the "active_scopes" field in this mutation.
+func (m *AgenticSubscriptionMutation) AppendedActiveScopes() ([]string, bool) {
+	if len(m.appendactive_scopes) == 0 {
+		return nil, false
+	}
+	return m.appendactive_scopes, true
+}
+
+// ClearActiveScopes clears the value of the "active_scopes" field.
+func (m *AgenticSubscriptionMutation) ClearActiveScopes() {
+	m.active_scopes = nil
+	m.appendactive_scopes = nil
+	m.clearedFields[agenticsubscription.FieldActiveScopes] = struct{}{}
+}
+
+// ActiveScopesCleared returns if the "active_scopes" field was cleared in this mutation.
+func (m *AgenticSubscriptionMutation) ActiveScopesCleared() bool {
+	_, ok := m.clearedFields[agenticsubscription.FieldActiveScopes]
+	return ok
+}
+
+// ResetActiveScopes resets all changes to the "active_scopes" field.
+func (m *AgenticSubscriptionMutation) ResetActiveScopes() {
+	m.active_scopes = nil
+	m.appendactive_scopes = nil
+	delete(m.clearedFields, agenticsubscription.FieldActiveScopes)
+}
+
 // SetBasePath sets the "base_path" field.
 func (m *AgenticSubscriptionMutation) SetBasePath(s string) {
 	m.base_path = &s
@@ -3638,7 +3772,7 @@ func (m *AgenticSubscriptionMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *AgenticSubscriptionMutation) Fields() []string {
-	fields := make([]string, 0, 11)
+	fields := make([]string, 0, 13)
 	if m.created_at != nil {
 		fields = append(fields, agenticsubscription.FieldCreatedAt)
 	}
@@ -3659,6 +3793,12 @@ func (m *AgenticSubscriptionMutation) Fields() []string {
 	}
 	if m.name != nil {
 		fields = append(fields, agenticsubscription.FieldName)
+	}
+	if m.requested_scopes != nil {
+		fields = append(fields, agenticsubscription.FieldRequestedScopes)
+	}
+	if m.active_scopes != nil {
+		fields = append(fields, agenticsubscription.FieldActiveScopes)
 	}
 	if m.base_path != nil {
 		fields = append(fields, agenticsubscription.FieldBasePath)
@@ -3694,6 +3834,10 @@ func (m *AgenticSubscriptionMutation) Field(name string) (ent.Value, bool) {
 		return m.Namespace()
 	case agenticsubscription.FieldName:
 		return m.Name()
+	case agenticsubscription.FieldRequestedScopes:
+		return m.RequestedScopes()
+	case agenticsubscription.FieldActiveScopes:
+		return m.ActiveScopes()
 	case agenticsubscription.FieldBasePath:
 		return m.BasePath()
 	case agenticsubscription.FieldGatewayURL:
@@ -3725,6 +3869,10 @@ func (m *AgenticSubscriptionMutation) OldField(ctx context.Context, name string)
 		return m.OldNamespace(ctx)
 	case agenticsubscription.FieldName:
 		return m.OldName(ctx)
+	case agenticsubscription.FieldRequestedScopes:
+		return m.OldRequestedScopes(ctx)
+	case agenticsubscription.FieldActiveScopes:
+		return m.OldActiveScopes(ctx)
 	case agenticsubscription.FieldBasePath:
 		return m.OldBasePath(ctx)
 	case agenticsubscription.FieldGatewayURL:
@@ -3790,6 +3938,20 @@ func (m *AgenticSubscriptionMutation) SetField(name string, value ent.Value) err
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetName(v)
+		return nil
+	case agenticsubscription.FieldRequestedScopes:
+		v, ok := value.([]string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRequestedScopes(v)
+		return nil
+	case agenticsubscription.FieldActiveScopes:
+		v, ok := value.([]string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetActiveScopes(v)
 		return nil
 	case agenticsubscription.FieldBasePath:
 		v, ok := value.(string)
@@ -3858,6 +4020,12 @@ func (m *AgenticSubscriptionMutation) ClearedFields() []string {
 	if m.FieldCleared(agenticsubscription.FieldEnvironment) {
 		fields = append(fields, agenticsubscription.FieldEnvironment)
 	}
+	if m.FieldCleared(agenticsubscription.FieldRequestedScopes) {
+		fields = append(fields, agenticsubscription.FieldRequestedScopes)
+	}
+	if m.FieldCleared(agenticsubscription.FieldActiveScopes) {
+		fields = append(fields, agenticsubscription.FieldActiveScopes)
+	}
 	if m.FieldCleared(agenticsubscription.FieldGatewayURL) {
 		fields = append(fields, agenticsubscription.FieldGatewayURL)
 	}
@@ -3889,6 +4057,12 @@ func (m *AgenticSubscriptionMutation) ClearField(name string) error {
 		return nil
 	case agenticsubscription.FieldEnvironment:
 		m.ClearEnvironment()
+		return nil
+	case agenticsubscription.FieldRequestedScopes:
+		m.ClearRequestedScopes()
+		return nil
+	case agenticsubscription.FieldActiveScopes:
+		m.ClearActiveScopes()
 		return nil
 	case agenticsubscription.FieldGatewayURL:
 		m.ClearGatewayURL()
@@ -3927,6 +4101,12 @@ func (m *AgenticSubscriptionMutation) ResetField(name string) error {
 		return nil
 	case agenticsubscription.FieldName:
 		m.ResetName()
+		return nil
+	case agenticsubscription.FieldRequestedScopes:
+		m.ResetRequestedScopes()
+		return nil
+	case agenticsubscription.FieldActiveScopes:
+		m.ResetActiveScopes()
 		return nil
 	case agenticsubscription.FieldBasePath:
 		m.ResetBasePath()
@@ -6743,6 +6923,10 @@ type ApiSubscriptionMutation struct {
 	environment              *string
 	namespace                *string
 	name                     *string
+	requested_scopes         *[]string
+	appendrequested_scopes   []string
+	active_scopes            *[]string
+	appendactive_scopes      []string
 	base_path                *string
 	m2m_auth_method          *apisubscription.M2mAuthMethod
 	gateway_url              *string
@@ -7153,6 +7337,136 @@ func (m *ApiSubscriptionMutation) OldName(ctx context.Context) (v string, err er
 // ResetName resets all changes to the "name" field.
 func (m *ApiSubscriptionMutation) ResetName() {
 	m.name = nil
+}
+
+// SetRequestedScopes sets the "requested_scopes" field.
+func (m *ApiSubscriptionMutation) SetRequestedScopes(s []string) {
+	m.requested_scopes = &s
+	m.appendrequested_scopes = nil
+}
+
+// RequestedScopes returns the value of the "requested_scopes" field in the mutation.
+func (m *ApiSubscriptionMutation) RequestedScopes() (r []string, exists bool) {
+	v := m.requested_scopes
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRequestedScopes returns the old "requested_scopes" field's value of the ApiSubscription entity.
+// If the ApiSubscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ApiSubscriptionMutation) OldRequestedScopes(ctx context.Context) (v []string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRequestedScopes is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRequestedScopes requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRequestedScopes: %w", err)
+	}
+	return oldValue.RequestedScopes, nil
+}
+
+// AppendRequestedScopes adds s to the "requested_scopes" field.
+func (m *ApiSubscriptionMutation) AppendRequestedScopes(s []string) {
+	m.appendrequested_scopes = append(m.appendrequested_scopes, s...)
+}
+
+// AppendedRequestedScopes returns the list of values that were appended to the "requested_scopes" field in this mutation.
+func (m *ApiSubscriptionMutation) AppendedRequestedScopes() ([]string, bool) {
+	if len(m.appendrequested_scopes) == 0 {
+		return nil, false
+	}
+	return m.appendrequested_scopes, true
+}
+
+// ClearRequestedScopes clears the value of the "requested_scopes" field.
+func (m *ApiSubscriptionMutation) ClearRequestedScopes() {
+	m.requested_scopes = nil
+	m.appendrequested_scopes = nil
+	m.clearedFields[apisubscription.FieldRequestedScopes] = struct{}{}
+}
+
+// RequestedScopesCleared returns if the "requested_scopes" field was cleared in this mutation.
+func (m *ApiSubscriptionMutation) RequestedScopesCleared() bool {
+	_, ok := m.clearedFields[apisubscription.FieldRequestedScopes]
+	return ok
+}
+
+// ResetRequestedScopes resets all changes to the "requested_scopes" field.
+func (m *ApiSubscriptionMutation) ResetRequestedScopes() {
+	m.requested_scopes = nil
+	m.appendrequested_scopes = nil
+	delete(m.clearedFields, apisubscription.FieldRequestedScopes)
+}
+
+// SetActiveScopes sets the "active_scopes" field.
+func (m *ApiSubscriptionMutation) SetActiveScopes(s []string) {
+	m.active_scopes = &s
+	m.appendactive_scopes = nil
+}
+
+// ActiveScopes returns the value of the "active_scopes" field in the mutation.
+func (m *ApiSubscriptionMutation) ActiveScopes() (r []string, exists bool) {
+	v := m.active_scopes
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldActiveScopes returns the old "active_scopes" field's value of the ApiSubscription entity.
+// If the ApiSubscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ApiSubscriptionMutation) OldActiveScopes(ctx context.Context) (v []string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldActiveScopes is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldActiveScopes requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldActiveScopes: %w", err)
+	}
+	return oldValue.ActiveScopes, nil
+}
+
+// AppendActiveScopes adds s to the "active_scopes" field.
+func (m *ApiSubscriptionMutation) AppendActiveScopes(s []string) {
+	m.appendactive_scopes = append(m.appendactive_scopes, s...)
+}
+
+// AppendedActiveScopes returns the list of values that were appended to the "active_scopes" field in this mutation.
+func (m *ApiSubscriptionMutation) AppendedActiveScopes() ([]string, bool) {
+	if len(m.appendactive_scopes) == 0 {
+		return nil, false
+	}
+	return m.appendactive_scopes, true
+}
+
+// ClearActiveScopes clears the value of the "active_scopes" field.
+func (m *ApiSubscriptionMutation) ClearActiveScopes() {
+	m.active_scopes = nil
+	m.appendactive_scopes = nil
+	m.clearedFields[apisubscription.FieldActiveScopes] = struct{}{}
+}
+
+// ActiveScopesCleared returns if the "active_scopes" field was cleared in this mutation.
+func (m *ApiSubscriptionMutation) ActiveScopesCleared() bool {
+	_, ok := m.clearedFields[apisubscription.FieldActiveScopes]
+	return ok
+}
+
+// ResetActiveScopes resets all changes to the "active_scopes" field.
+func (m *ApiSubscriptionMutation) ResetActiveScopes() {
+	m.active_scopes = nil
+	m.appendactive_scopes = nil
+	delete(m.clearedFields, apisubscription.FieldActiveScopes)
 }
 
 // SetBasePath sets the "base_path" field.
@@ -7633,7 +7947,7 @@ func (m *ApiSubscriptionMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *ApiSubscriptionMutation) Fields() []string {
-	fields := make([]string, 0, 12)
+	fields := make([]string, 0, 14)
 	if m.created_at != nil {
 		fields = append(fields, apisubscription.FieldCreatedAt)
 	}
@@ -7654,6 +7968,12 @@ func (m *ApiSubscriptionMutation) Fields() []string {
 	}
 	if m.name != nil {
 		fields = append(fields, apisubscription.FieldName)
+	}
+	if m.requested_scopes != nil {
+		fields = append(fields, apisubscription.FieldRequestedScopes)
+	}
+	if m.active_scopes != nil {
+		fields = append(fields, apisubscription.FieldActiveScopes)
 	}
 	if m.base_path != nil {
 		fields = append(fields, apisubscription.FieldBasePath)
@@ -7692,6 +8012,10 @@ func (m *ApiSubscriptionMutation) Field(name string) (ent.Value, bool) {
 		return m.Namespace()
 	case apisubscription.FieldName:
 		return m.Name()
+	case apisubscription.FieldRequestedScopes:
+		return m.RequestedScopes()
+	case apisubscription.FieldActiveScopes:
+		return m.ActiveScopes()
 	case apisubscription.FieldBasePath:
 		return m.BasePath()
 	case apisubscription.FieldM2mAuthMethod:
@@ -7725,6 +8049,10 @@ func (m *ApiSubscriptionMutation) OldField(ctx context.Context, name string) (en
 		return m.OldNamespace(ctx)
 	case apisubscription.FieldName:
 		return m.OldName(ctx)
+	case apisubscription.FieldRequestedScopes:
+		return m.OldRequestedScopes(ctx)
+	case apisubscription.FieldActiveScopes:
+		return m.OldActiveScopes(ctx)
 	case apisubscription.FieldBasePath:
 		return m.OldBasePath(ctx)
 	case apisubscription.FieldM2mAuthMethod:
@@ -7792,6 +8120,20 @@ func (m *ApiSubscriptionMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetName(v)
+		return nil
+	case apisubscription.FieldRequestedScopes:
+		v, ok := value.([]string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRequestedScopes(v)
+		return nil
+	case apisubscription.FieldActiveScopes:
+		v, ok := value.([]string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetActiveScopes(v)
 		return nil
 	case apisubscription.FieldBasePath:
 		v, ok := value.(string)
@@ -7867,6 +8209,12 @@ func (m *ApiSubscriptionMutation) ClearedFields() []string {
 	if m.FieldCleared(apisubscription.FieldEnvironment) {
 		fields = append(fields, apisubscription.FieldEnvironment)
 	}
+	if m.FieldCleared(apisubscription.FieldRequestedScopes) {
+		fields = append(fields, apisubscription.FieldRequestedScopes)
+	}
+	if m.FieldCleared(apisubscription.FieldActiveScopes) {
+		fields = append(fields, apisubscription.FieldActiveScopes)
+	}
 	if m.FieldCleared(apisubscription.FieldGatewayURL) {
 		fields = append(fields, apisubscription.FieldGatewayURL)
 	}
@@ -7898,6 +8246,12 @@ func (m *ApiSubscriptionMutation) ClearField(name string) error {
 		return nil
 	case apisubscription.FieldEnvironment:
 		m.ClearEnvironment()
+		return nil
+	case apisubscription.FieldRequestedScopes:
+		m.ClearRequestedScopes()
+		return nil
+	case apisubscription.FieldActiveScopes:
+		m.ClearActiveScopes()
 		return nil
 	case apisubscription.FieldGatewayURL:
 		m.ClearGatewayURL()
@@ -7936,6 +8290,12 @@ func (m *ApiSubscriptionMutation) ResetField(name string) error {
 		return nil
 	case apisubscription.FieldName:
 		m.ResetName()
+		return nil
+	case apisubscription.FieldRequestedScopes:
+		m.ResetRequestedScopes()
+		return nil
+	case apisubscription.FieldActiveScopes:
+		m.ResetActiveScopes()
 		return nil
 	case apisubscription.FieldBasePath:
 		m.ResetBasePath()
@@ -14532,6 +14892,10 @@ type EventSubscriptionMutation struct {
 	environment              *string
 	namespace                *string
 	name                     *string
+	requested_scopes         *[]string
+	appendrequested_scopes   []string
+	active_scopes            *[]string
+	appendactive_scopes      []string
 	event_type               *string
 	delivery_type            *eventsubscription.DeliveryType
 	trigger                  **model.EventTrigger
@@ -14942,6 +15306,136 @@ func (m *EventSubscriptionMutation) OldName(ctx context.Context) (v string, err 
 // ResetName resets all changes to the "name" field.
 func (m *EventSubscriptionMutation) ResetName() {
 	m.name = nil
+}
+
+// SetRequestedScopes sets the "requested_scopes" field.
+func (m *EventSubscriptionMutation) SetRequestedScopes(s []string) {
+	m.requested_scopes = &s
+	m.appendrequested_scopes = nil
+}
+
+// RequestedScopes returns the value of the "requested_scopes" field in the mutation.
+func (m *EventSubscriptionMutation) RequestedScopes() (r []string, exists bool) {
+	v := m.requested_scopes
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRequestedScopes returns the old "requested_scopes" field's value of the EventSubscription entity.
+// If the EventSubscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EventSubscriptionMutation) OldRequestedScopes(ctx context.Context) (v []string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRequestedScopes is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRequestedScopes requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRequestedScopes: %w", err)
+	}
+	return oldValue.RequestedScopes, nil
+}
+
+// AppendRequestedScopes adds s to the "requested_scopes" field.
+func (m *EventSubscriptionMutation) AppendRequestedScopes(s []string) {
+	m.appendrequested_scopes = append(m.appendrequested_scopes, s...)
+}
+
+// AppendedRequestedScopes returns the list of values that were appended to the "requested_scopes" field in this mutation.
+func (m *EventSubscriptionMutation) AppendedRequestedScopes() ([]string, bool) {
+	if len(m.appendrequested_scopes) == 0 {
+		return nil, false
+	}
+	return m.appendrequested_scopes, true
+}
+
+// ClearRequestedScopes clears the value of the "requested_scopes" field.
+func (m *EventSubscriptionMutation) ClearRequestedScopes() {
+	m.requested_scopes = nil
+	m.appendrequested_scopes = nil
+	m.clearedFields[eventsubscription.FieldRequestedScopes] = struct{}{}
+}
+
+// RequestedScopesCleared returns if the "requested_scopes" field was cleared in this mutation.
+func (m *EventSubscriptionMutation) RequestedScopesCleared() bool {
+	_, ok := m.clearedFields[eventsubscription.FieldRequestedScopes]
+	return ok
+}
+
+// ResetRequestedScopes resets all changes to the "requested_scopes" field.
+func (m *EventSubscriptionMutation) ResetRequestedScopes() {
+	m.requested_scopes = nil
+	m.appendrequested_scopes = nil
+	delete(m.clearedFields, eventsubscription.FieldRequestedScopes)
+}
+
+// SetActiveScopes sets the "active_scopes" field.
+func (m *EventSubscriptionMutation) SetActiveScopes(s []string) {
+	m.active_scopes = &s
+	m.appendactive_scopes = nil
+}
+
+// ActiveScopes returns the value of the "active_scopes" field in the mutation.
+func (m *EventSubscriptionMutation) ActiveScopes() (r []string, exists bool) {
+	v := m.active_scopes
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldActiveScopes returns the old "active_scopes" field's value of the EventSubscription entity.
+// If the EventSubscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EventSubscriptionMutation) OldActiveScopes(ctx context.Context) (v []string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldActiveScopes is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldActiveScopes requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldActiveScopes: %w", err)
+	}
+	return oldValue.ActiveScopes, nil
+}
+
+// AppendActiveScopes adds s to the "active_scopes" field.
+func (m *EventSubscriptionMutation) AppendActiveScopes(s []string) {
+	m.appendactive_scopes = append(m.appendactive_scopes, s...)
+}
+
+// AppendedActiveScopes returns the list of values that were appended to the "active_scopes" field in this mutation.
+func (m *EventSubscriptionMutation) AppendedActiveScopes() ([]string, bool) {
+	if len(m.appendactive_scopes) == 0 {
+		return nil, false
+	}
+	return m.appendactive_scopes, true
+}
+
+// ClearActiveScopes clears the value of the "active_scopes" field.
+func (m *EventSubscriptionMutation) ClearActiveScopes() {
+	m.active_scopes = nil
+	m.appendactive_scopes = nil
+	m.clearedFields[eventsubscription.FieldActiveScopes] = struct{}{}
+}
+
+// ActiveScopesCleared returns if the "active_scopes" field was cleared in this mutation.
+func (m *EventSubscriptionMutation) ActiveScopesCleared() bool {
+	_, ok := m.clearedFields[eventsubscription.FieldActiveScopes]
+	return ok
+}
+
+// ResetActiveScopes resets all changes to the "active_scopes" field.
+func (m *EventSubscriptionMutation) ResetActiveScopes() {
+	m.active_scopes = nil
+	m.appendactive_scopes = nil
+	delete(m.clearedFields, eventsubscription.FieldActiveScopes)
 }
 
 // SetEventType sets the "event_type" field.
@@ -15469,7 +15963,7 @@ func (m *EventSubscriptionMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *EventSubscriptionMutation) Fields() []string {
-	fields := make([]string, 0, 14)
+	fields := make([]string, 0, 16)
 	if m.created_at != nil {
 		fields = append(fields, eventsubscription.FieldCreatedAt)
 	}
@@ -15490,6 +15984,12 @@ func (m *EventSubscriptionMutation) Fields() []string {
 	}
 	if m.name != nil {
 		fields = append(fields, eventsubscription.FieldName)
+	}
+	if m.requested_scopes != nil {
+		fields = append(fields, eventsubscription.FieldRequestedScopes)
+	}
+	if m.active_scopes != nil {
+		fields = append(fields, eventsubscription.FieldActiveScopes)
 	}
 	if m.event_type != nil {
 		fields = append(fields, eventsubscription.FieldEventType)
@@ -15534,6 +16034,10 @@ func (m *EventSubscriptionMutation) Field(name string) (ent.Value, bool) {
 		return m.Namespace()
 	case eventsubscription.FieldName:
 		return m.Name()
+	case eventsubscription.FieldRequestedScopes:
+		return m.RequestedScopes()
+	case eventsubscription.FieldActiveScopes:
+		return m.ActiveScopes()
 	case eventsubscription.FieldEventType:
 		return m.EventType()
 	case eventsubscription.FieldDeliveryType:
@@ -15571,6 +16075,10 @@ func (m *EventSubscriptionMutation) OldField(ctx context.Context, name string) (
 		return m.OldNamespace(ctx)
 	case eventsubscription.FieldName:
 		return m.OldName(ctx)
+	case eventsubscription.FieldRequestedScopes:
+		return m.OldRequestedScopes(ctx)
+	case eventsubscription.FieldActiveScopes:
+		return m.OldActiveScopes(ctx)
 	case eventsubscription.FieldEventType:
 		return m.OldEventType(ctx)
 	case eventsubscription.FieldDeliveryType:
@@ -15642,6 +16150,20 @@ func (m *EventSubscriptionMutation) SetField(name string, value ent.Value) error
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetName(v)
+		return nil
+	case eventsubscription.FieldRequestedScopes:
+		v, ok := value.([]string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRequestedScopes(v)
+		return nil
+	case eventsubscription.FieldActiveScopes:
+		v, ok := value.([]string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetActiveScopes(v)
 		return nil
 	case eventsubscription.FieldEventType:
 		v, ok := value.(string)
@@ -15731,6 +16253,12 @@ func (m *EventSubscriptionMutation) ClearedFields() []string {
 	if m.FieldCleared(eventsubscription.FieldEnvironment) {
 		fields = append(fields, eventsubscription.FieldEnvironment)
 	}
+	if m.FieldCleared(eventsubscription.FieldRequestedScopes) {
+		fields = append(fields, eventsubscription.FieldRequestedScopes)
+	}
+	if m.FieldCleared(eventsubscription.FieldActiveScopes) {
+		fields = append(fields, eventsubscription.FieldActiveScopes)
+	}
 	if m.FieldCleared(eventsubscription.FieldTrigger) {
 		fields = append(fields, eventsubscription.FieldTrigger)
 	}
@@ -15765,6 +16293,12 @@ func (m *EventSubscriptionMutation) ClearField(name string) error {
 		return nil
 	case eventsubscription.FieldEnvironment:
 		m.ClearEnvironment()
+		return nil
+	case eventsubscription.FieldRequestedScopes:
+		m.ClearRequestedScopes()
+		return nil
+	case eventsubscription.FieldActiveScopes:
+		m.ClearActiveScopes()
 		return nil
 	case eventsubscription.FieldTrigger:
 		m.ClearTrigger()
@@ -15806,6 +16340,12 @@ func (m *EventSubscriptionMutation) ResetField(name string) error {
 		return nil
 	case eventsubscription.FieldName:
 		m.ResetName()
+		return nil
+	case eventsubscription.FieldRequestedScopes:
+		m.ResetRequestedScopes()
+		return nil
+	case eventsubscription.FieldActiveScopes:
+		m.ResetActiveScopes()
 		return nil
 	case eventsubscription.FieldEventType:
 		m.ResetEventType()

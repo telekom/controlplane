@@ -491,6 +491,7 @@ var _ = Describe("EventSubscriptionHandler", func() {
 		})
 
 		It("should set NotReady when no EventExposure found (empty list) and cleanup succeeds", func() {
+			obj.Status.ActiveScopes = []string{"previous"}
 			et := makeReadyEventType(testEventType)
 			mockListEventTypes([]eventv1.EventType{et})
 			mockListEventExposures([]eventv1.EventExposure{})
@@ -499,6 +500,7 @@ var _ = Describe("EventSubscriptionHandler", func() {
 			err := h.CreateOrUpdate(ctx, obj)
 
 			Expect(err).ToNot(HaveOccurred())
+			Expect(obj.Status.ActiveScopes).To(BeEmpty())
 
 			readyCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady)
 			Expect(readyCond).ToNot(BeNil())
@@ -512,6 +514,7 @@ var _ = Describe("EventSubscriptionHandler", func() {
 		})
 
 		It("should return error when Subscriber cleanup fails (no exposures path)", func() {
+			obj.Status.ActiveScopes = []string{"previous"}
 			et := makeReadyEventType(testEventType)
 			mockListEventTypes([]eventv1.EventType{et})
 			mockListEventExposures([]eventv1.EventExposure{})
@@ -521,6 +524,7 @@ var _ = Describe("EventSubscriptionHandler", func() {
 
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("unable to cleanup Subscriber"))
+			Expect(obj.Status.ActiveScopes).To(Equal([]string{"previous"}))
 		})
 
 		It("should set NotReady when exposure exists but is not active", func() {
@@ -894,6 +898,7 @@ var _ = Describe("EventSubscriptionHandler", func() {
 		})
 
 		It("should return error when createSubscriber fails", func() {
+			obj.Status.ActiveScopes = []string{"previous"}
 			exposure := makeReadyEventExposure(testEventType)
 			setupUpToApproval(exposure)
 			mockApprovalBuilderGranted()
@@ -903,6 +908,7 @@ var _ = Describe("EventSubscriptionHandler", func() {
 
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("failed to create Subscriber"))
+			Expect(obj.Status.ActiveScopes).To(Equal([]string{"previous"}))
 		})
 
 		It("should set NotReady when child resources are not ready", func() {
@@ -972,6 +978,7 @@ var _ = Describe("EventSubscriptionHandler", func() {
 		})
 
 		It("should return error when approval cleanup of subscribers fails on denial", func() {
+			obj.Status.ActiveScopes = []string{"previous"}
 			exposure := makeReadyEventExposure(testEventType)
 			setupUpToApproval(exposure)
 			mockApprovalBuilderDenied()
@@ -981,6 +988,7 @@ var _ = Describe("EventSubscriptionHandler", func() {
 
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("unable to cleanup Subscriber"))
+			Expect(obj.Status.ActiveScopes).To(Equal([]string{"previous"}))
 		})
 	})
 

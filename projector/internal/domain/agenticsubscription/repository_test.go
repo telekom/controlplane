@@ -164,6 +164,27 @@ var _ = Describe("AgenticSubscription Repository", func() {
 	}
 
 	Describe("Upsert", func() {
+		It("should persist independent scope sets and clear both on subsequent upserts", func() {
+			data := baseData()
+			data.RequestedScopes = []string{"read", "write"}
+			data.ActiveScopes = []string{"read"}
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+			sub, err := client.AgenticSubscription.Query().Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(sub.RequestedScopes).To(Equal(data.RequestedScopes))
+			Expect(sub.ActiveScopes).To(Equal(data.ActiveScopes))
+			data.ActiveScopes = nil
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+			sub, err = client.AgenticSubscription.Query().Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(sub.ActiveScopes).To(BeEmpty())
+			Expect(sub.RequestedScopes).To(Equal(data.RequestedScopes))
+			data.RequestedScopes = nil
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+			sub, err = client.AgenticSubscription.Query().Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(sub.RequestedScopes).To(BeEmpty())
+		})
 		It("should create a new subscription with valid target exposure FK", func() {
 			data := baseData()
 			Expect(repo.Upsert(ctx, data)).To(Succeed())

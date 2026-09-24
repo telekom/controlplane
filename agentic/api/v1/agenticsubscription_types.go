@@ -43,6 +43,11 @@ type Requestor struct {
 
 // AgenticSubscriptionStatus defines the observed state of AgenticSubscription.
 type AgenticSubscriptionStatus struct {
+	// ActiveScopes is the last approved scope set successfully written to the ConsumeRoute.
+	// It is preserved while a scope change is pending or rejected and does not imply gateway readiness.
+	// +optional
+	ActiveScopes []string `json:"activeScopes,omitempty"`
+
 	// +listType=map
 	// +listMapKey=type
 	// +patchStrategy=merge

@@ -109,6 +109,8 @@ func (r *Repository) Upsert(ctx context.Context, data *AgenticSubscriptionData) 
 		SetStatusPhase(agenticsubscription.StatusPhase(data.StatusPhase)).
 		SetStatusMessage(data.StatusMessage).
 		SetGatewayURL(data.GatewayUrl).
+		SetRequestedScopes(data.RequestedScopes).
+		SetActiveScopes(data.ActiveScopes).
 		SetOwnerID(ownerAppID).
 		SetNillableTargetID(targetExposureID)
 

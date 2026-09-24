@@ -9,6 +9,7 @@ import (
 	stderrors "errors"
 	"fmt"
 	"net/url"
+	"slices"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -192,6 +193,7 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 				apiSub.Name, apiSub.Namespace)
 		}
 		logger.Info("🧹 Approval was denied. Cleaning up ConsumeRoutes of ApiSubscription", "deleted", deleted)
+		apiSub.Status.ActiveScopes = nil
 		return nil
 	case builder.ApprovalResultGranted:
 		logger.Info("👌 Approval is granted and will continue with processing")
@@ -269,6 +271,10 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 	}
 
 	// ---- Set Conditions ----
+	apiSub.Status.ActiveScopes = nil
+	if apiSub.HasM2M() {
+		apiSub.Status.ActiveScopes = slices.Clone(apiSub.Spec.Security.M2M.Scopes)
+	}
 	apiSub.SetCondition(condition.NewDoneProcessingCondition("Successfully provisioned subresources"))
 	apiSub.SetCondition(condition.NewReadyCondition(condition.ReasonProvisioned, "Successfully provisioned subresources"))
 

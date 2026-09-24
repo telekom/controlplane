@@ -47,6 +47,11 @@ type Requestor struct {
 
 // ApiSubscriptionStatus defines the observed state of ApiSubscription
 type ApiSubscriptionStatus struct {
+	// ActiveScopes is the last approved scope set successfully handed off to downstream subscription resources.
+	// It is preserved while a scope change is pending or rejected and does not imply gateway readiness.
+	// +optional
+	ActiveScopes []string `json:"activeScopes,omitempty"`
+
 	// +listType=map
 	// +listMapKey=type
 	// +patchStrategy=merge

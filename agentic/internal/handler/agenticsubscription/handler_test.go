@@ -89,7 +89,6 @@ func makeReadyMcpServer(basePath string) agenticv1.McpServer {
 	return s
 }
 
-//nolint:unparam // test helper designed for reuse with different basePaths
 func makeReadyAgenticExposure(basePath, zoneName string) agenticv1.AgenticExposure {
 	exp := agenticv1.AgenticExposure{
 		ObjectMeta: metav1.ObjectMeta{
@@ -534,6 +533,7 @@ var _ = Describe("AgenticSubscriptionHandler", func() {
 		})
 
 		It("should set NotReady when AllReady returns false", func() {
+			obj.Status.ActiveScopes = []string{"previous"}
 			setupFullHappyPath()
 			fakeClient.EXPECT().AllReady().Return(false).Once()
 
@@ -541,6 +541,7 @@ var _ = Describe("AgenticSubscriptionHandler", func() {
 
 			Expect(err).ToNot(HaveOccurred())
 			Expect(obj.Status.ConsumeRoute).ToNot(BeNil())
+			Expect(obj.Status.ActiveScopes).To(BeEmpty())
 
 			readyCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady)
 			Expect(readyCond).ToNot(BeNil())
@@ -549,6 +550,7 @@ var _ = Describe("AgenticSubscriptionHandler", func() {
 		})
 
 		It("should return error when ConsumeRoute creation fails", func() {
+			obj.Status.ActiveScopes = []string{"previous"}
 			setupPreApprovalMocks()
 			mockApprovalBuilderGranted()
 			mockCreateOrUpdateConsumeRoute(controllerutil.OperationResultNone, fmt.Errorf("create failed"))
@@ -557,6 +559,7 @@ var _ = Describe("AgenticSubscriptionHandler", func() {
 
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("failed to create ConsumeRoute"))
+			Expect(obj.Status.ActiveScopes).To(Equal([]string{"previous"}))
 		})
 
 		It("should use AGENT display type in approval reason for AGENT variant", func() {

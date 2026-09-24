@@ -196,6 +196,13 @@ spec:
           status:
             description: ApiSubscriptionStatus defines the observed state of ApiSubscription
             properties:
+              activeScopes:
+                description: |-
+                  ActiveScopes is the last approved scope set successfully handed off to downstream subscription resources.
+                  It is preserved while a scope change is pending or rejected and does not imply gateway readiness.
+                items:
+                  type: string
+                type: array
               approval:
                 description: |-
                   ObjectRef is a reference to a Kubernetes object

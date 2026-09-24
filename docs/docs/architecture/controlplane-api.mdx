@@ -148,6 +148,47 @@ All top-level queries support **cursor-based pagination** (Relay-style), **filte
 - `zones` — List all available zones (no pagination, visible to all users)
 - `node(id)` / `nodes(ids)` — Relay-compatible node lookups for any entity
 
+### Subscription Scopes
+
+`ApiSubscription`, `EventSubscription`, and `AgenticSubscription` expose two
+separate scope fields:
+
+| Field | Meaning |
+| ----- | ------- |
+| `requestedScopes` | Latest scopes requested in the subscription spec. |
+| `activeScopes` | Last approved scope set successfully written to downstream Kubernetes resources, projected from `status.activeScopes`. |
+
+For API and agentic subscriptions, the requested scopes come from
+`spec.security.m2m.scopes`; for event subscriptions, they come from `spec.scopes`.
+Active scopes advance after the controller successfully writes the ConsumeRoute
+resources or event Subscriber. They do not imply downstream gateway or delivery
+readiness. API subscriptions with failover advance the set only after all
+required ConsumeRoute writes succeed.
+
+Pending or rejected scope-change requests preserve the previous active set.
+Successful cleanup following rejection or suspension of the Approval clears it.
+An approved removal of all scopes also clears the active set. Ordinary
+reconciliation populates the status and projection fields.
+
+`EventSubscription.scopes` and `SubscriberMachine2MachineAuthentication.scopes`
+(used by API and agentic subscriptions) are deprecated. They continue to return
+requested scopes for compatibility. Clients should use the new top-level fields.
+`Approval.requestedScopes` remains the snapshot associated with that approval.
+
+```graphql
+{
+  apiSubscriptions {
+    edges {
+      node {
+        requestedScopes
+        activeScopes
+        approval { state requestedScopes }
+      }
+    }
+  }
+}
+```
+
 ### Team Isolation
 
 The ControlPlane API enforces strict team-level isolation through a **privacy layer** built into the ORM. Every database query is automatically filtered based on the authenticated caller's identity:

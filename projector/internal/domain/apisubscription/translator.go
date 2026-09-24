@@ -51,9 +51,11 @@ func (t *Translator) Translate(_ context.Context, obj *apiv1.ApiSubscription) (*
 	phase, message := shared.StatusFromConditions(obj.Status.Conditions)
 
 	var security *model.ApiSubscriptionSecurity
+	var requestedScopes []string
 	if obj.Spec.Security != nil {
 		security = &model.ApiSubscriptionSecurity{}
 		if obj.Spec.Security.M2M != nil {
+			requestedScopes = obj.Spec.Security.M2M.Scopes
 			security.M2M = &model.SubscriberMachine2MachineAuthentication{}
 			if obj.Spec.Security.M2M.Client != nil {
 				security.M2M.Client = util.MapCrOAuthToCpApi(obj.Spec.Security.M2M.Client)
@@ -68,18 +70,20 @@ func (t *Translator) Translate(_ context.Context, obj *apiv1.ApiSubscription) (*
 	}
 
 	return &APISubscriptionData{
-		Meta:           shared.NewMetadata(obj.Namespace, obj.Name, obj.Labels),
-		StatusPhase:    phase,
-		StatusMessage:  message,
-		BasePath:       obj.Spec.ApiBasePath,
-		M2MAuthMethod:  deriveM2MAuthMethod(obj.Spec.Security),
-		Security:       security,
-		OwnerAppName:   obj.Spec.Requestor.Application.Name,
-		OwnerTeamName:  shared.TeamNameFromNamespace(obj.Namespace),
-		TargetBasePath: obj.Spec.ApiBasePath,
-		TargetAppName:  "", // TODO: this needs to be improved, we need to get the ApiExposure into the context to resolve this
-		TargetTeamName: "",
-		GatewayUrl:     obj.Status.GatewayUrl,
+		Meta:            shared.NewMetadata(obj.Namespace, obj.Name, obj.Labels),
+		StatusPhase:     phase,
+		StatusMessage:   message,
+		BasePath:        obj.Spec.ApiBasePath,
+		M2MAuthMethod:   deriveM2MAuthMethod(obj.Spec.Security),
+		Security:        security,
+		RequestedScopes: requestedScopes,
+		ActiveScopes:    obj.Status.ActiveScopes,
+		OwnerAppName:    obj.Spec.Requestor.Application.Name,
+		OwnerTeamName:   shared.TeamNameFromNamespace(obj.Namespace),
+		TargetBasePath:  obj.Spec.ApiBasePath,
+		TargetAppName:   "", // TODO: this needs to be improved, we need to get the ApiExposure into the context to resolve this
+		TargetTeamName:  "",
+		GatewayUrl:      obj.Status.GatewayUrl,
 	}, nil
 }
 

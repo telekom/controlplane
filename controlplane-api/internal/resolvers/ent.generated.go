@@ -2986,6 +2986,52 @@ func (ec *executionContext) fieldContext_AgenticSubscription_name(_ context.Cont
 	return graphql.NewScalarFieldContext("AgenticSubscription", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
+func (ec *executionContext) _AgenticSubscription_requestedScopes(ctx context.Context, field graphql.CollectedField, obj *ent.AgenticSubscription) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_AgenticSubscription_requestedScopes(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.RequestedScopes, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []string) graphql.Marshaler {
+			return ec.marshalOString2ᚕstringᚄ(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_AgenticSubscription_requestedScopes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("AgenticSubscription", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _AgenticSubscription_activeScopes(ctx context.Context, field graphql.CollectedField, obj *ent.AgenticSubscription) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_AgenticSubscription_activeScopes(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ActiveScopes, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []string) graphql.Marshaler {
+			return ec.marshalOString2ᚕstringᚄ(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_AgenticSubscription_activeScopes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("AgenticSubscription", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
 func (ec *executionContext) _AgenticSubscription_basePath(ctx context.Context, field graphql.CollectedField, obj *ent.AgenticSubscription) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -4694,6 +4740,52 @@ func (ec *executionContext) _ApiSubscription_name(ctx context.Context, field gra
 	)
 }
 func (ec *executionContext) fieldContext_ApiSubscription_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("ApiSubscription", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _ApiSubscription_requestedScopes(ctx context.Context, field graphql.CollectedField, obj *ent.ApiSubscription) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ApiSubscription_requestedScopes(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.RequestedScopes, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []string) graphql.Marshaler {
+			return ec.marshalOString2ᚕstringᚄ(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_ApiSubscription_requestedScopes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("ApiSubscription", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _ApiSubscription_activeScopes(ctx context.Context, field graphql.CollectedField, obj *ent.ApiSubscription) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ApiSubscription_activeScopes(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ActiveScopes, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []string) graphql.Marshaler {
+			return ec.marshalOString2ᚕstringᚄ(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_ApiSubscription_activeScopes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	return graphql.NewScalarFieldContext("ApiSubscription", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
@@ -8059,6 +8151,52 @@ func (ec *executionContext) _EventSubscription_name(ctx context.Context, field g
 	)
 }
 func (ec *executionContext) fieldContext_EventSubscription_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("EventSubscription", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _EventSubscription_requestedScopes(ctx context.Context, field graphql.CollectedField, obj *ent.EventSubscription) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_EventSubscription_requestedScopes(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.RequestedScopes, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []string) graphql.Marshaler {
+			return ec.marshalOString2ᚕstringᚄ(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_EventSubscription_requestedScopes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("EventSubscription", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _EventSubscription_activeScopes(ctx context.Context, field graphql.CollectedField, obj *ent.EventSubscription) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_EventSubscription_activeScopes(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ActiveScopes, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []string) graphql.Marshaler {
+			return ec.marshalOString2ᚕstringᚄ(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_EventSubscription_activeScopes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	return graphql.NewScalarFieldContext("EventSubscription", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
@@ -29284,6 +29422,16 @@ func (ec *executionContext) _AgenticSubscription(ctx context.Context, sel ast.Se
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "requestedScopes":
+			out.Values[i] = ec._AgenticSubscription_requestedScopes(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "activeScopes":
+			out.Values[i] = ec._AgenticSubscription_activeScopes(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		case "basePath":
 			out.Values[i] = ec._AgenticSubscription_basePath(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -30267,6 +30415,16 @@ func (ec *executionContext) _ApiSubscription(ctx context.Context, sel ast.Select
 		case "name":
 			out.Values[i] = ec._ApiSubscription_name(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "requestedScopes":
+			out.Values[i] = ec._ApiSubscription_requestedScopes(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "activeScopes":
+			out.Values[i] = ec._ApiSubscription_activeScopes(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "basePath":
@@ -32108,6 +32266,16 @@ func (ec *executionContext) _EventSubscription(ctx context.Context, sel ast.Sele
 		case "name":
 			out.Values[i] = ec._EventSubscription_name(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "requestedScopes":
+			out.Values[i] = ec._EventSubscription_requestedScopes(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "activeScopes":
+			out.Values[i] = ec._EventSubscription_activeScopes(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "eventType":

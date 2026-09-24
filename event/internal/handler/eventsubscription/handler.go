@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"slices"
 
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -64,6 +65,7 @@ func (h *EventSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *even
 				obj.Name, obj.Namespace)
 		}
 		logger.Info("No EventExposure found for event type — cleaned up Subscriber resources", "deleted", deleted)
+		obj.Status.ActiveScopes = nil
 	}
 
 	exposureFound, exposure, err := util.FindActiveEventExposure(exposures)
@@ -222,6 +224,7 @@ func (h *EventSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *even
 				obj.Name, obj.Namespace)
 		}
 		logger.Info("Cleaned up Subscriber resources", "deleted", deleted)
+		obj.Status.ActiveScopes = nil
 		return nil
 
 	case builder.ApprovalResultGranted:
@@ -246,6 +249,7 @@ func (h *EventSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *even
 		return errors.Wrap(err, "failed to create Subscriber")
 	}
 	obj.Status.Subscriber = types.ObjectRefFromObject(subscriber)
+	obj.Status.ActiveScopes = slices.Clone(subscriber.Spec.AppliedScopes)
 
 	if obj.Spec.Delivery.Type == eventv1.DeliveryTypeServerSentEvent {
 		if sseErr := h.resolveSSEUrl(ctx, obj, exposure, subscriber); sseErr != nil {

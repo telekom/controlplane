@@ -259,6 +259,7 @@ var _ = Describe("ApiSubscription Controller", Ordered, func() {
 				err = json.Unmarshal(approvalRequest.Spec.Requester.Properties.Raw, &propertiesMap)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(propertiesMap["scopes"]).To(HaveLen(2))
+				g.Expect(apiSubscription.Status.ActiveScopes).To(BeEmpty())
 			}, timeout, interval).Should(Succeed())
 		})
 
@@ -299,6 +300,51 @@ var _ = Describe("ApiSubscription Controller", Ordered, func() {
 				g.Expect(consumeRoute.Spec.Security.M2M.Scopes[0]).To(Equal("scope1"))
 				g.Expect(consumeRoute.Spec.Security.M2M.Scopes[1]).To(Equal("scope2"))
 				g.Expect(consumeRoute.Spec.Security.M2M.Scopes).To(ConsistOf("scope1", "scope2"))
+				g.Expect(apiSubscription.Status.ActiveScopes).To(ConsistOf("scope1", "scope2"))
+			}, timeout, interval).Should(Succeed())
+		})
+
+		It("should preserve active scopes during a rejected change and clear them after approved removal", func() {
+			previousRequest := apiSubscription.Status.ApprovalRequest.Name
+			Eventually(func(g Gomega) {
+				g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(apiSubscription), apiSubscription)).To(Succeed())
+				apiSubscription.Spec.Security.M2M.Scopes = []string{"scope1"}
+				g.Expect(k8sClient.Update(ctx, apiSubscription)).To(Succeed())
+			}, timeout, interval).Should(Succeed())
+			Eventually(func(g Gomega) {
+				g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(apiSubscription), apiSubscription)).To(Succeed())
+				g.Expect(apiSubscription.Status.ApprovalRequest.Name).NotTo(Equal(previousRequest))
+				g.Expect(apiSubscription.Status.ActiveScopes).To(ConsistOf("scope1", "scope2"))
+			}, timeout, interval).Should(Succeed())
+			ProgressApprovalRequest(apiSubscription.Status.ApprovalRequest, approvalapi.ApprovalStateRejected)
+			Eventually(func(g Gomega) {
+				g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(apiSubscription), apiSubscription)).To(Succeed())
+				g.Expect(meta.FindStatusCondition(apiSubscription.Status.Conditions, condition.ConditionTypeReady).Message).To(Equal("ApprovalRequest has been denied"))
+				g.Expect(apiSubscription.Status.ActiveScopes).To(ConsistOf("scope1", "scope2"))
+				route := &gatewayapi.ConsumeRoute{}
+				g.Expect(k8sClient.Get(ctx, apiSubscription.Status.ConsumeRoute.K8s(), route)).To(Succeed())
+				g.Expect(route.Spec.Security.M2M.Scopes).To(ConsistOf("scope1", "scope2"))
+			}, timeout, interval).Should(Succeed())
+
+			previousRequest = apiSubscription.Status.ApprovalRequest.Name
+			Eventually(func(g Gomega) {
+				g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(apiSubscription), apiSubscription)).To(Succeed())
+				apiSubscription.Spec.Security = nil
+				g.Expect(k8sClient.Update(ctx, apiSubscription)).To(Succeed())
+			}, timeout, interval).Should(Succeed())
+			Eventually(func(g Gomega) {
+				g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(apiSubscription), apiSubscription)).To(Succeed())
+				g.Expect(apiSubscription.Status.ApprovalRequest.Name).NotTo(Equal(previousRequest))
+				g.Expect(apiSubscription.Status.ActiveScopes).To(ConsistOf("scope1", "scope2"))
+			}, timeout, interval).Should(Succeed())
+			request := ProgressApprovalRequest(apiSubscription.Status.ApprovalRequest, approvalapi.ApprovalStateGranted)
+			ProgressApproval(apiSubscription, approvalapi.ApprovalStateGranted, request)
+			Eventually(func(g Gomega) {
+				g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(apiSubscription), apiSubscription)).To(Succeed())
+				g.Expect(apiSubscription.Status.ActiveScopes).To(BeEmpty())
+				route := &gatewayapi.ConsumeRoute{}
+				g.Expect(k8sClient.Get(ctx, apiSubscription.Status.ConsumeRoute.K8s(), route)).To(Succeed())
+				g.Expect(route.Spec.Security).To(BeNil())
 			}, timeout, interval).Should(Succeed())
 		})
 	})
@@ -582,6 +628,7 @@ var _ = Describe("Remote Organisation Flow", Ordered, func() {
 
 				g.Expect(apiSubscription.Status.Route).ToNot(BeNil())
 				g.Expect(apiSubscription.Status.Route.Name).To(Equal("esp--apisubctrl-remotetest-v1")) // TODO: make this useable by multiple subs for same remote-api
+				g.Expect(apiSubscription.Status.ActiveScopes).To(ConsistOf("scope1", "scope2"))
 
 				route := &gatewayapi.Route{}
 				err = k8sClient.Get(ctx, apiSubscription.Status.Route.K8s(), route)
@@ -611,13 +658,14 @@ var _ = Describe("Remote Organisation Flow", Ordered, func() {
 
 		It("should create a proxy-route if the RemoteApiSubscription is in a different zone", func() {
 			By("Changing the zone of the ApiSubscription")
-			apiSubscription.Spec.Zone = types.ObjectRef{
-				Name:      consumerZoneName,
-				Namespace: testEnvironment,
-			}
-
-			err := k8sClient.Update(ctx, apiSubscription)
-			Expect(err).ToNot(HaveOccurred())
+			Eventually(func(g Gomega) {
+				g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(apiSubscription), apiSubscription)).To(Succeed())
+				apiSubscription.Spec.Zone = types.ObjectRef{
+					Name:      consumerZoneName,
+					Namespace: testEnvironment,
+				}
+				g.Expect(k8sClient.Update(ctx, apiSubscription)).To(Succeed())
+			}, timeout, interval).Should(Succeed())
 
 			By("Checking if the resource has the expected state")
 			Eventually(func(g Gomega) {

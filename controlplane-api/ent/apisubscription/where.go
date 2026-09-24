@@ -488,6 +488,26 @@ func NameContainsFold(v string) predicate.ApiSubscription {
 	return predicate.ApiSubscription(sql.FieldContainsFold(FieldName, v))
 }
 
+// RequestedScopesIsNil applies the IsNil predicate on the "requested_scopes" field.
+func RequestedScopesIsNil() predicate.ApiSubscription {
+	return predicate.ApiSubscription(sql.FieldIsNull(FieldRequestedScopes))
+}
+
+// RequestedScopesNotNil applies the NotNil predicate on the "requested_scopes" field.
+func RequestedScopesNotNil() predicate.ApiSubscription {
+	return predicate.ApiSubscription(sql.FieldNotNull(FieldRequestedScopes))
+}
+
+// ActiveScopesIsNil applies the IsNil predicate on the "active_scopes" field.
+func ActiveScopesIsNil() predicate.ApiSubscription {
+	return predicate.ApiSubscription(sql.FieldIsNull(FieldActiveScopes))
+}
+
+// ActiveScopesNotNil applies the NotNil predicate on the "active_scopes" field.
+func ActiveScopesNotNil() predicate.ApiSubscription {
+	return predicate.ApiSubscription(sql.FieldNotNull(FieldActiveScopes))
+}
+
 // BasePathEQ applies the EQ predicate on the "base_path" field.
 func BasePathEQ(v string) predicate.ApiSubscription {
 	return predicate.ApiSubscription(sql.FieldEQ(FieldBasePath, v))

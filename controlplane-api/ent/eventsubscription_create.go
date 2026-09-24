@@ -112,6 +112,18 @@ func (_c *EventSubscriptionCreate) SetName(v string) *EventSubscriptionCreate {
 	return _c
 }
 
+// SetRequestedScopes sets the "requested_scopes" field.
+func (_c *EventSubscriptionCreate) SetRequestedScopes(v []string) *EventSubscriptionCreate {
+	_c.mutation.SetRequestedScopes(v)
+	return _c
+}
+
+// SetActiveScopes sets the "active_scopes" field.
+func (_c *EventSubscriptionCreate) SetActiveScopes(v []string) *EventSubscriptionCreate {
+	_c.mutation.SetActiveScopes(v)
+	return _c
+}
+
 // SetEventType sets the "event_type" field.
 func (_c *EventSubscriptionCreate) SetEventType(v string) *EventSubscriptionCreate {
 	_c.mutation.SetEventType(v)
@@ -422,6 +434,14 @@ func (_c *EventSubscriptionCreate) createSpec() (*EventSubscription, *sqlgraph.C
 		_spec.SetField(eventsubscription.FieldName, field.TypeString, value)
 		_node.Name = value
 	}
+	if value, ok := _c.mutation.RequestedScopes(); ok {
+		_spec.SetField(eventsubscription.FieldRequestedScopes, field.TypeJSON, value)
+		_node.RequestedScopes = value
+	}
+	if value, ok := _c.mutation.ActiveScopes(); ok {
+		_spec.SetField(eventsubscription.FieldActiveScopes, field.TypeJSON, value)
+		_node.ActiveScopes = value
+	}
 	if value, ok := _c.mutation.EventType(); ok {
 		_spec.SetField(eventsubscription.FieldEventType, field.TypeString, value)
 		_node.EventType = value
@@ -655,6 +675,42 @@ func (u *EventSubscriptionUpsert) SetName(v string) *EventSubscriptionUpsert {
 // UpdateName sets the "name" field to the value that was provided on create.
 func (u *EventSubscriptionUpsert) UpdateName() *EventSubscriptionUpsert {
 	u.SetExcluded(eventsubscription.FieldName)
+	return u
+}
+
+// SetRequestedScopes sets the "requested_scopes" field.
+func (u *EventSubscriptionUpsert) SetRequestedScopes(v []string) *EventSubscriptionUpsert {
+	u.Set(eventsubscription.FieldRequestedScopes, v)
+	return u
+}
+
+// UpdateRequestedScopes sets the "requested_scopes" field to the value that was provided on create.
+func (u *EventSubscriptionUpsert) UpdateRequestedScopes() *EventSubscriptionUpsert {
+	u.SetExcluded(eventsubscription.FieldRequestedScopes)
+	return u
+}
+
+// ClearRequestedScopes clears the value of the "requested_scopes" field.
+func (u *EventSubscriptionUpsert) ClearRequestedScopes() *EventSubscriptionUpsert {
+	u.SetNull(eventsubscription.FieldRequestedScopes)
+	return u
+}
+
+// SetActiveScopes sets the "active_scopes" field.
+func (u *EventSubscriptionUpsert) SetActiveScopes(v []string) *EventSubscriptionUpsert {
+	u.Set(eventsubscription.FieldActiveScopes, v)
+	return u
+}
+
+// UpdateActiveScopes sets the "active_scopes" field to the value that was provided on create.
+func (u *EventSubscriptionUpsert) UpdateActiveScopes() *EventSubscriptionUpsert {
+	u.SetExcluded(eventsubscription.FieldActiveScopes)
+	return u
+}
+
+// ClearActiveScopes clears the value of the "active_scopes" field.
+func (u *EventSubscriptionUpsert) ClearActiveScopes() *EventSubscriptionUpsert {
+	u.SetNull(eventsubscription.FieldActiveScopes)
 	return u
 }
 
@@ -913,6 +969,48 @@ func (u *EventSubscriptionUpsertOne) SetName(v string) *EventSubscriptionUpsertO
 func (u *EventSubscriptionUpsertOne) UpdateName() *EventSubscriptionUpsertOne {
 	return u.Update(func(s *EventSubscriptionUpsert) {
 		s.UpdateName()
+	})
+}
+
+// SetRequestedScopes sets the "requested_scopes" field.
+func (u *EventSubscriptionUpsertOne) SetRequestedScopes(v []string) *EventSubscriptionUpsertOne {
+	return u.Update(func(s *EventSubscriptionUpsert) {
+		s.SetRequestedScopes(v)
+	})
+}
+
+// UpdateRequestedScopes sets the "requested_scopes" field to the value that was provided on create.
+func (u *EventSubscriptionUpsertOne) UpdateRequestedScopes() *EventSubscriptionUpsertOne {
+	return u.Update(func(s *EventSubscriptionUpsert) {
+		s.UpdateRequestedScopes()
+	})
+}
+
+// ClearRequestedScopes clears the value of the "requested_scopes" field.
+func (u *EventSubscriptionUpsertOne) ClearRequestedScopes() *EventSubscriptionUpsertOne {
+	return u.Update(func(s *EventSubscriptionUpsert) {
+		s.ClearRequestedScopes()
+	})
+}
+
+// SetActiveScopes sets the "active_scopes" field.
+func (u *EventSubscriptionUpsertOne) SetActiveScopes(v []string) *EventSubscriptionUpsertOne {
+	return u.Update(func(s *EventSubscriptionUpsert) {
+		s.SetActiveScopes(v)
+	})
+}
+
+// UpdateActiveScopes sets the "active_scopes" field to the value that was provided on create.
+func (u *EventSubscriptionUpsertOne) UpdateActiveScopes() *EventSubscriptionUpsertOne {
+	return u.Update(func(s *EventSubscriptionUpsert) {
+		s.UpdateActiveScopes()
+	})
+}
+
+// ClearActiveScopes clears the value of the "active_scopes" field.
+func (u *EventSubscriptionUpsertOne) ClearActiveScopes() *EventSubscriptionUpsertOne {
+	return u.Update(func(s *EventSubscriptionUpsert) {
+		s.ClearActiveScopes()
 	})
 }
 
@@ -1355,6 +1453,48 @@ func (u *EventSubscriptionUpsertBulk) SetName(v string) *EventSubscriptionUpsert
 func (u *EventSubscriptionUpsertBulk) UpdateName() *EventSubscriptionUpsertBulk {
 	return u.Update(func(s *EventSubscriptionUpsert) {
 		s.UpdateName()
+	})
+}
+
+// SetRequestedScopes sets the "requested_scopes" field.
+func (u *EventSubscriptionUpsertBulk) SetRequestedScopes(v []string) *EventSubscriptionUpsertBulk {
+	return u.Update(func(s *EventSubscriptionUpsert) {
+		s.SetRequestedScopes(v)
+	})
+}
+
+// UpdateRequestedScopes sets the "requested_scopes" field to the value that was provided on create.
+func (u *EventSubscriptionUpsertBulk) UpdateRequestedScopes() *EventSubscriptionUpsertBulk {
+	return u.Update(func(s *EventSubscriptionUpsert) {
+		s.UpdateRequestedScopes()
+	})
+}
+
+// ClearRequestedScopes clears the value of the "requested_scopes" field.
+func (u *EventSubscriptionUpsertBulk) ClearRequestedScopes() *EventSubscriptionUpsertBulk {
+	return u.Update(func(s *EventSubscriptionUpsert) {
+		s.ClearRequestedScopes()
+	})
+}
+
+// SetActiveScopes sets the "active_scopes" field.
+func (u *EventSubscriptionUpsertBulk) SetActiveScopes(v []string) *EventSubscriptionUpsertBulk {
+	return u.Update(func(s *EventSubscriptionUpsert) {
+		s.SetActiveScopes(v)
+	})
+}
+
+// UpdateActiveScopes sets the "active_scopes" field to the value that was provided on create.
+func (u *EventSubscriptionUpsertBulk) UpdateActiveScopes() *EventSubscriptionUpsertBulk {
+	return u.Update(func(s *EventSubscriptionUpsert) {
+		s.UpdateActiveScopes()
+	})
+}
+
+// ClearActiveScopes clears the value of the "active_scopes" field.
+func (u *EventSubscriptionUpsertBulk) ClearActiveScopes() *EventSubscriptionUpsertBulk {
+	return u.Update(func(s *EventSubscriptionUpsert) {
+		s.ClearActiveScopes()
 	})
 }
 
