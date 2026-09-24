@@ -2835,6 +2835,134 @@ var _ = Describe("ListenerHandler", func() {
 			})
 		})
 
+		// Golden values captured at 032f2a57 for a same-team, single-zone A==C
+		// Listener whose capture, delivery and callback origin are one local zone.
+		// Placement changes must not alter them, or every existing Listener would
+		// be drained and re-approved on upgrade.
+		Context("fingerprint stability vs 032f2a57", func() {
+			const (
+				goldenFingerprint     = "a89666ae23f97439136fb1806adb3c747e87d57353a2cec710874c49ff6929e"
+				goldenProviderRequest = "ar-v1-c1d2aba1131cd6a6a86e2b8be16d4e1b0bd85ed1551f61be"
+				goldenConsumerRequest = "ar-v1-eaad806d5f758ab59d275ff8981c4fcaf616924dd1f3efbb"
+			)
+
+			sameTeamApps := func() (*applicationv1.Application, *applicationv1.Application) {
+				consumerApp := makeConsumerApp()
+				consumerApp.Spec.Team = "shared-team"
+				providerApp := makeProviderApp()
+				providerApp.Spec.Team = "shared-team"
+				return consumerApp, providerApp
+			}
+
+			// mockReadyReconcile stubs one reconcile that provisions (or re-applies)
+			// capture and reports Ready. children are returned by removeStaleChildren.
+			mockReadyReconcile := func(rls []gatewayv1.RouteListener, subs []pubsubv1.Subscriber) {
+				consumerApp, providerApp := sameTeamApps()
+				mockGetConsumerApp(consumerApp)
+				mockGetProviderApp(providerApp)
+				mockGetSpectreApp(makeSpectreAppPtr())
+				mockGetObserverApp(consumerApp)
+				mockGetZone()
+				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
+				mockGetEventStore(makeListenerEventStore())
+				mockListRoutes()
+				mockOwnedLists(rls, subs)
+				mockApprovalGranted()
+				mockCreateOrUpdatePublisher()
+				mockGetRealm()
+				mockCreateOrUpdateRouteListener()
+				mockCreateOrUpdateSubscriber()
+				mockJanitorCleanup()
+				fakeClient.EXPECT().AnyChanged().Return(false).Once()
+				fakeClient.EXPECT().AllReady().Return(true).Once()
+				mockListenerReadinessChecks()
+			}
+
+			expectGolden := func(l *spectrev1.Listener) {
+				Expect(l.Status.AppliedPlacement).ToNot(BeNil())
+				Expect(l.Status.AppliedPlacement.Fingerprint).To(Equal(goldenFingerprint))
+				Expect(l.Status.ProviderApprovalRequest).ToNot(BeNil())
+				Expect(l.Status.ProviderApprovalRequest.Name).To(Equal(goldenProviderRequest))
+				Expect(l.Status.ConsumerApprovalRequest).ToNot(BeNil())
+				Expect(l.Status.ConsumerApprovalRequest.Name).To(Equal(goldenConsumerRequest))
+				ready := meta.FindStatusCondition(l.Status.Conditions, condition.ConditionTypeReady)
+				Expect(ready).ToNot(BeNil())
+				Expect(ready.Status).To(Equal(metav1.ConditionTrue))
+			}
+
+			It("T1: same-team single-zone A==C keeps fingerprint and scoped request names", func() {
+				mockReadyReconcile(nil, nil)
+				start := len(fakeClient.Calls)
+
+				l, err := reconcile(newListener())
+				Expect(err).ToNot(HaveOccurred())
+				expectGolden(l)
+				var rlLabels []string
+				for _, call := range fakeClient.Calls[start:] {
+					if call.Method != "CreateOrUpdate" {
+						continue
+					}
+					if rl, ok := call.Arguments.Get(1).(*gatewayv1.RouteListener); ok {
+						rlLabels = append(rlLabels, rl.Labels[handler.AuthorizationFingerprintLabelKey])
+					}
+				}
+				Expect(rlLabels).To(Equal([]string{goldenFingerprint}))
+				Expect(l.Status.AppliedPlacement.CaptureZone.Name).To(Equal(listenerZoneName))
+				Expect(l.Status.AppliedPlacement.DeliveryZone.Name).To(Equal(listenerZoneName))
+				Expect(l.Status.AppliedPlacement.CallbackOriginZone.Name).To(Equal(listenerZoneName))
+				Expect(l.Status.AppliedPlacement.CallbackBaseURL).To(Equal(testCallbackURL))
+			})
+
+			It("T2: status persisted by 032f2a57 converges without drain or deletion", func() {
+				l := newListener()
+				zoneRef := &ctypes.ObjectRef{Name: listenerZoneName, Namespace: listenerZoneNs}
+				esRef := &ctypes.ObjectRef{Name: "eventstore-aws", Namespace: listenerZoneStatus}
+				rlName := util.MakeRouteListenerName(testAppId, testApiBasePath, consumerClientId, providerClientId)
+				l.Status.AppliedPlacement = &spectrev1.AppliedListenerPlacementStatus{
+					Fingerprint:        goldenFingerprint,
+					CaptureRoute:       &ctypes.ObjectRef{Name: util.MakeRouteName(testApiBasePath), Namespace: listenerZoneStatus},
+					CaptureZone:        zoneRef.DeepCopy(),
+					CaptureEventStore:  esRef.DeepCopy(),
+					DeliveryZone:       zoneRef.DeepCopy(),
+					DeliveryEventStore: esRef.DeepCopy(),
+					CallbackOriginZone: zoneRef.DeepCopy(),
+					CallbackBaseURL:    testCallbackURL,
+				}
+				l.Status.RouteListener = &ctypes.ObjectRef{Name: rlName, Namespace: listenerZoneStatus}
+				rqName := util.MakeSubscriberName(util.MakeBridgeSubscriberId(consumerClientId, testAppId, testApiBasePath, "rq"))
+				rpName := util.MakeSubscriberName(util.MakeBridgeSubscriberId(consumerClientId, testAppId, testApiBasePath, "rp"))
+				l.Status.EventSubscriptions = []ctypes.ObjectRef{
+					{Name: rqName, Namespace: listenerZoneStatus},
+					{Name: rpName, Namespace: listenerZoneStatus},
+				}
+				labels := map[string]string{
+					cconfig.OwnerUidLabelKey:                 "listener-uid-001",
+					handler.AuthorizationFingerprintLabelKey: goldenFingerprint,
+				}
+				rls := []gatewayv1.RouteListener{{ObjectMeta: metav1.ObjectMeta{
+					Name: rlName, Namespace: listenerZoneStatus, Labels: labels,
+				}}}
+				subs := []pubsubv1.Subscriber{
+					{ObjectMeta: metav1.ObjectMeta{Name: rqName, Namespace: listenerZoneStatus, Labels: labels}},
+					{ObjectMeta: metav1.ObjectMeta{Name: rpName, Namespace: listenerZoneStatus, Labels: labels}},
+				}
+
+				for i := range 2 {
+					if i > 0 {
+						mockEarlyRestrictionGranted(l)
+					}
+					mockReadyReconcile(rls, subs)
+					start := len(fakeClient.Calls)
+					next, err := reconcile(l)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(next.Status.Draining).To(BeNil())
+					Expect(countCalls(start, "Delete", nil)).To(BeZero())
+					expectGolden(next)
+					l = next
+				}
+			})
+		})
+
 		Context("dual-gate: different provider team blocks provisioning", func() {
 			It("should block when provider gate is granted but consumer gate is pending", func() {
 				listener := newListener()
