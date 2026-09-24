@@ -6,10 +6,13 @@ package util
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
 	"github.com/pkg/errors"
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
+	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
@@ -25,9 +28,9 @@ type ListenerPlacement struct {
 	CaptureEventConfig *eventv1.EventConfig
 	CaptureEventStore  *pubsubv1.EventStore
 
-	// CallbackOriginZone is the zone whose callback gateway URL is used for
-	// delivery. During Phase 2 (A==C) this equals CaptureZone; Phase 3 may
-	// resolve it independently for proxy scenarios.
+	// CallbackOriginZone is the zone the delivery EventConfig keys its proxy
+	// callback by: the zone whose EventStore delivers the captured events
+	// (see CallbackOriginZone).
 	CallbackOriginZone *adminv1.Zone
 
 	DeliveryZone        *adminv1.Zone
@@ -39,92 +42,181 @@ type ListenerPlacement struct {
 	BridgeNamespace string
 
 	// CallbackBaseURL is the external gateway URL used for event delivery
-	// callbacks. Resolved from the capture EventConfig's Status.CallbackURL.
+	// callbacks: the delivery EventConfig's Status.CallbackURL when the origin is
+	// the delivery zone, otherwise its Status.ProxyCallbackURLs[origin].
 	CallbackBaseURL string
 }
 
-// ResolvePlacement resolves the EventConfig, EventStore, and callback URL for
-// a Listener whose capture zone, observer zone, and gateway Route have already
-// been determined.
-//
-// captureZone is the zone where traffic is intercepted (from GetListeningZone).
-// observerZone is A's zone — the SpectreApplication owner — where delivery
-// always happens.
-//
-// When captureZone == observerZone (same-zone / A==C on the same path), a
-// single EventConfig and EventStore serve both roles and the local CallbackURL
-// is used. When the zones differ (cross-zone), separate EventConfigs and
-// EventStores are resolved and the delivery EventConfig's ProxyCallbackURLs
-// map supplies the callback URL keyed by the capture zone name.
-func ResolvePlacement(
-	ctx context.Context,
-	captureZone *adminv1.Zone,
-	observerZone *adminv1.Zone,
-	route *gatewayv1.Route,
-) (*ListenerPlacement, error) {
-	// Step 1: Resolve capture-side EventConfig and EventStore.
-	captureEventConfig, err := GetEventConfig(ctx, captureZone)
-	if err != nil {
-		return nil, errors.Wrap(err, "placement: failed to get capture EventConfig")
-	}
-	captureEventStore, err := ResolveEventStore(ctx, captureEventConfig)
-	if err != nil {
-		return nil, errors.Wrap(err, "placement: failed to resolve capture EventStore")
-	}
+// SameZone reports whether a and b are the same Zone (name and namespace).
+func SameZone(a, b *adminv1.Zone) bool {
+	return a.Name == b.Name && a.Namespace == b.Namespace
+}
 
-	// Same-zone fast path: capture and delivery share the same infrastructure.
-	if captureZone.Name == observerZone.Name {
-		if captureEventConfig.Status.CallbackURL == "" {
-			return nil, ctrlerrors.BlockedErrorf(
-				"placement: EventConfig %q has no CallbackURL in status", captureEventConfig.Name)
+// CandidateRejection records why a capture candidate zone was skipped.
+type CandidateRejection struct {
+	Zone   string
+	Reason string
+}
+
+// NoCaptureCandidateError reports that no candidate zone supports capture. It is
+// a BlockedError: the Listener waits until the topology changes.
+type NoCaptureCandidateError struct {
+	ApiBasePath string
+	Rejections  []CandidateRejection
+}
+
+func (e *NoCaptureCandidateError) Error() string {
+	parts := make([]string, 0, len(e.Rejections))
+	for _, r := range e.Rejections {
+		parts = append(parts, fmt.Sprintf("zone %q: %s", r.Zone, r.Reason))
+	}
+	return fmt.Sprintf("no supported capture zone for path %q: %s", e.ApiBasePath, strings.Join(parts, "; "))
+}
+
+// IsBlocked implements ctrlerrors.BlockedError.
+func (e *NoCaptureCandidateError) IsBlocked() bool { return true }
+
+// CaptureCandidateZones returns the capture candidates in evaluation order:
+// the observer (A) zone when it can be on the consumer (C) to provider (P)
+// traffic path, then C's zone, then P's zone, deduplicated by zone identity.
+//
+// Gateway traffic from C to P only transits C's zone and P's zone, so A's zone
+// is a candidate only when it is one of them. Any other A zone is rejected
+// without being probed: a Route there serves other subscribers.
+func CaptureCandidateZones(observerZone, consumerZone, providerZone *adminv1.Zone) ([]*adminv1.Zone, []CandidateRejection) {
+	var rejections []CandidateRejection
+	ordered := make([]*adminv1.Zone, 0, 3)
+	if SameZone(observerZone, consumerZone) || SameZone(observerZone, providerZone) {
+		ordered = append(ordered, observerZone)
+	} else {
+		rejections = append(rejections, CandidateRejection{
+			Zone:   observerZone.Name,
+			Reason: "observer zone is neither the consumer nor the provider zone and is not on the consumer→provider traffic path",
+		})
+	}
+	ordered = append(ordered, consumerZone, providerZone)
+
+	candidates := make([]*adminv1.Zone, 0, len(ordered))
+	for _, z := range ordered {
+		dup := false
+		for _, c := range candidates {
+			if SameZone(c, z) {
+				dup = true
+				break
+			}
 		}
-		return &ListenerPlacement{
-			CaptureZone:         captureZone,
-			CaptureRoute:        route,
-			CaptureEventConfig:  captureEventConfig,
-			CaptureEventStore:   captureEventStore,
-			CallbackOriginZone:  captureZone,
-			DeliveryZone:        captureZone,
-			DeliveryEventConfig: captureEventConfig,
-			DeliveryEventStore:  captureEventStore,
-			BridgeNamespace:     captureEventStore.Namespace,
-			CallbackBaseURL:     captureEventConfig.Status.CallbackURL,
-		}, nil
+		if !dup {
+			candidates = append(candidates, z)
+		}
 	}
+	return candidates, rejections
+}
 
-	// Cross-zone: resolve delivery-side independently from observer zone.
-	deliveryEventConfig, err := GetEventConfig(ctx, observerZone)
+// DeliveryPlacement is the observer (A) zone's event infrastructure. Delivery
+// always happens there; it is never moved to another zone.
+type DeliveryPlacement struct {
+	Zone        *adminv1.Zone
+	EventConfig *eventv1.EventConfig
+	EventStore  *pubsubv1.EventStore
+}
+
+// ResolveDelivery resolves A's EventConfig and EventStore. Any failure blocks
+// the Listener; there is no fallback to the consumer or provider zone.
+func ResolveDelivery(ctx context.Context, observerZone *adminv1.Zone) (*DeliveryPlacement, error) {
+	ec, err := GetEventConfig(ctx, observerZone)
 	if err != nil {
 		return nil, errors.Wrap(err, "placement: failed to get delivery EventConfig for observer zone")
 	}
-	deliveryEventStore, err := ResolveEventStore(ctx, deliveryEventConfig)
+	es, err := ResolveEventStore(ctx, ec)
 	if err != nil {
 		return nil, errors.Wrap(err, "placement: failed to resolve delivery EventStore for observer zone")
 	}
+	return &DeliveryPlacement{Zone: observerZone, EventConfig: ec, EventStore: es}, nil
+}
 
-	// Cross-zone callback: use ProxyCallbackURLs from the delivery EventConfig
-	// keyed by the capture zone name.
-	if deliveryEventConfig.Status.ProxyCallbackURLs == nil {
-		return nil, ctrlerrors.BlockedErrorf(
-			"placement: cross-zone delivery EventConfig %q has no ProxyCallbackURLs", deliveryEventConfig.Name)
+// CallbackOriginZone returns the zone the delivery EventConfig's proxy callback
+// map is keyed by for events captured in captureZone.
+//
+// The event domain keys cross-zone callbacks by the logical zone whose
+// EventStore registered the Publisher (eventexposure handler:
+// GetEventStoreForZone(exposure zone); eventsubscription updateCallbackURL:
+// subscriber EventConfig Status.ProxyCallbackURLs[exposure zone]). A proxy zone
+// has its own EventStore CR and its own entry in every peer's
+// ProxyCallbackURLs, so the origin is the capture zone for both local and
+// proxy-backed capture, never the proxy's target zone.
+func CallbackOriginZone(captureZone *adminv1.Zone, captureEC *eventv1.EventConfig) (*adminv1.Zone, error) {
+	if captureEC.Spec.Zone.Name != captureZone.Name {
+		return nil, errors.Errorf("placement: EventConfig %q belongs to zone %q, not capture zone %q",
+			captureEC.Name, captureEC.Spec.Zone.Name, captureZone.Name)
 	}
-	callbackURL, ok := deliveryEventConfig.Status.ProxyCallbackURLs[captureZone.Name]
-	if !ok {
-		return nil, ctrlerrors.BlockedErrorf(
-			"placement: cross-zone delivery EventConfig %q has no proxy callback for capture zone %q",
-			deliveryEventConfig.Name, captureZone.Name)
+	return captureZone, nil
+}
+
+// ResolveCaptureZone resolves capture in captureZone for delivery d. It returns
+// the placement on success, a non-empty reason when the zone is definitively
+// unsuitable (no EventConfig, mesh excludes the delivery zone, no callback path
+// to A), or an error for transient or ambiguous state (read errors, NotReady
+// EventConfig or EventStore, duplicate EventConfigs). Callers may try another
+// candidate only for a reason, never for an error.
+func ResolveCaptureZone(
+	ctx context.Context,
+	captureZone *adminv1.Zone,
+	route *gatewayv1.Route,
+	d *DeliveryPlacement,
+) (*ListenerPlacement, string, error) {
+	ec, es := d.EventConfig, d.EventStore
+	if !SameZone(captureZone, d.Zone) {
+		var err error
+		ec, err = FindEventConfig(ctx, captureZone)
+		if err != nil {
+			return nil, "", errors.Wrap(err, "placement: failed to get capture EventConfig")
+		}
+		if ec == nil {
+			return nil, fmt.Sprintf("zone %q has no EventConfig", captureZone.Name), nil
+		}
+		if condition.EnsureReady(ec) != nil {
+			return nil, "", ctrlerrors.BlockedErrorf("placement: capture EventConfig %q for zone %q is not ready",
+				ec.Name, captureZone.Name)
+		}
+		es, err = ResolveEventStore(ctx, ec)
+		if err != nil {
+			return nil, "", errors.Wrap(err, "placement: failed to resolve capture EventStore")
+		}
+	}
+
+	if !ec.SupportsZone(d.Zone.Name) {
+		return nil, fmt.Sprintf("EventConfig %q of zone %q does not mesh with delivery zone %q",
+			ec.Name, captureZone.Name, d.Zone.Name), nil
+	}
+
+	origin, err := CallbackOriginZone(captureZone, ec)
+	if err != nil {
+		return nil, "", err
+	}
+	var base string
+	if SameZone(origin, d.Zone) {
+		base = d.EventConfig.Status.CallbackURL
+		if base == "" {
+			return nil, fmt.Sprintf("delivery EventConfig %q has no CallbackURL in status", d.EventConfig.Name), nil
+		}
+	} else {
+		base = d.EventConfig.Status.ProxyCallbackURLs[origin.Name]
+		if base == "" {
+			return nil, fmt.Sprintf("delivery EventConfig %q has no ProxyCallbackURLs entry (proxy callback) for origin zone %q",
+				d.EventConfig.Name, origin.Name), nil
+		}
 	}
 
 	return &ListenerPlacement{
 		CaptureZone:         captureZone,
 		CaptureRoute:        route,
-		CaptureEventConfig:  captureEventConfig,
-		CaptureEventStore:   captureEventStore,
-		CallbackOriginZone:  captureZone,
-		DeliveryZone:        observerZone,
-		DeliveryEventConfig: deliveryEventConfig,
-		DeliveryEventStore:  deliveryEventStore,
-		BridgeNamespace:     captureEventStore.Namespace,
-		CallbackBaseURL:     callbackURL,
-	}, nil
+		CaptureEventConfig:  ec,
+		CaptureEventStore:   es,
+		CallbackOriginZone:  origin,
+		DeliveryZone:        d.Zone,
+		DeliveryEventConfig: d.EventConfig,
+		DeliveryEventStore:  d.EventStore,
+		BridgeNamespace:     es.Namespace,
+		CallbackBaseURL:     base,
+	}, "", nil
 }
