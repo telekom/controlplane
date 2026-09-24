@@ -14,13 +14,16 @@ import (
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	"github.com/telekom/controlplane/common/pkg/condition"
+	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	spectrev1 "github.com/telekom/controlplane/spectre/api/v1"
 	"github.com/telekom/controlplane/spectre/internal/handler/util"
 )
 
-// providerBindingError marks a provider-binding failure other than an off-path
-// Route. It stops candidate evaluation: capture is never relocated because the
-// provider identity could not be verified.
+// providerBindingError marks a definitive provider-binding invalidation (a
+// BlockedError other than an off-path Route): missing owner label, exposure
+// not found or inactive, missing application label, provider mismatch. It
+// stops candidate evaluation and drains applied capture. Read errors are never
+// wrapped in it: they must leave capture untouched.
 type providerBindingError struct{ err error }
 
 func (e *providerBindingError) Error() string { return e.err.Error() }
@@ -82,7 +85,11 @@ func (h *ListenerHandler) evaluateCaptureCandidate(
 		if errors.As(err, &offPath) {
 			return nil, nil, offPath.Error(), nil
 		}
-		return nil, nil, "", &providerBindingError{err: err}
+		var blocked ctrlerrors.BlockedError
+		if errors.As(err, &blocked) && blocked.IsBlocked() {
+			return nil, nil, "", &providerBindingError{err: err}
+		}
+		return nil, nil, "", errors.Wrap(err, "failed to verify provider binding")
 	}
 	if !onConsumerPath(zone, consumerZone, binding) {
 		return nil, nil, fmt.Sprintf("Route %q is referenced by ApiExposure %q for another subscriber zone, not on the consumer→provider path",
@@ -144,8 +151,9 @@ func (h *ListenerHandler) resolveListenerPlacement(
 // handlePlacementError stops applied capture that can no longer be placed and
 // returns the error to report. When no candidate supports capture, applied
 // capture is drained (checkpoint first) or stray children are removed directly.
-// A provider-binding failure also drains applied capture. Other errors leave
-// capture untouched: a transient failure must not stop or move it.
+// A definitive provider-binding invalidation also drains applied capture. Other
+// errors, including read errors, leave capture untouched: a transient failure
+// must not stop or move it.
 func (h *ListenerHandler) handlePlacementError(ctx context.Context, listener *spectrev1.Listener, err error) error {
 	var noCandidate *util.NoCaptureCandidateError
 	if errors.As(err, &noCandidate) {
@@ -171,6 +179,8 @@ func (h *ListenerHandler) handlePlacementError(ctx context.Context, listener *sp
 			return errors.Wrap(drainErr, "failed to start drain after binding failure")
 		}
 		if started {
+			listener.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet, err.Error()))
+			listener.SetCondition(condition.NewBlockedCondition(err.Error()))
 			return nil // persist drain checkpoint
 		}
 		return errors.Wrap(err, "provider binding check failed")
