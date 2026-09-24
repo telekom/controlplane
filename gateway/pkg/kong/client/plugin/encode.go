@@ -6,6 +6,7 @@ package plugin
 
 import (
 	"encoding/json"
+	"fmt"
 	"slices"
 	"strings"
 )
@@ -24,9 +25,20 @@ func (m *StringMap) AddKV(key, value string) {
 	m.items[key] = value
 }
 
+func splitEntry(value string) (string, string, bool) {
+	pos := strings.Index(value, ":")
+	if pos < 0 {
+		return "", "", false
+	}
+	return value[:pos], value[pos+1:], true
+}
+
 func (m *StringMap) Add(value string) {
-	parts := strings.Split(value, ":")
-	m.items[parts[0]] = parts[1]
+	key, val, ok := splitEntry(value)
+	if !ok {
+		return
+	}
+	m.items[key] = val
 }
 
 func (m *StringMap) RemoveK(key, value string) {
@@ -34,8 +46,18 @@ func (m *StringMap) RemoveK(key, value string) {
 }
 
 func (m *StringMap) Remove(value string) {
-	parts := strings.Split(value, ":")
-	delete(m.items, parts[0])
+	if m == nil {
+		return
+	}
+	if !strings.Contains(value, ":") {
+		delete(m.items, value)
+		return
+	}
+	key, _, ok := splitEntry(value)
+	if !ok {
+		return
+	}
+	delete(m.items, key)
 }
 
 func (m *StringMap) Clear() {
@@ -75,16 +97,16 @@ func (m *StringMap) UnmarshalJSON(b []byte) error {
 	if m.items == nil {
 		m.items = make(map[string]string)
 	}
-	// Remove the brackets
-	b = b[1 : len(b)-1]
-	if len(b) == 0 {
-		return nil
+	var pairs []string
+	if err := json.Unmarshal(b, &pairs); err != nil {
+		return err
 	}
-	// Split the string into key-value pairs
-	pairs := strings.Split(string(b), ",")
 	for _, pair := range pairs {
-		kv := strings.Split(strings.Trim(pair, "\""), ":")
-		m.items[kv[0]] = kv[1]
+		key, value, ok := splitEntry(pair)
+		if !ok {
+			return fmt.Errorf("invalid string map entry %q", pair)
+		}
+		m.items[key] = value
 	}
 	return nil
 }
