@@ -41,9 +41,73 @@ func (h *ListenerHandler) startDrain(
 	reason string,
 	oldFingerprint string,
 ) error {
-	c := cclient.ClientFromContextOrDie(ctx)
-	logger := log.FromContext(ctx)
+	owned, err := listOwnedChildren(ctx, listener)
+	if err != nil {
+		return err
+	}
+	recordDrain(ctx, listener, reason, oldFingerprint, owned)
+	return nil
+}
 
+// drainCapture stops this Listener's capture through the persisted drain and
+// reports whether a drain is active; the caller must then return nil so the
+// checkpoint is persisted before continueDrain deletes anything. It is the only
+// way revocation, request denial, provider invalidation and unsupported
+// placement remove children. The inventory covers status refs and
+// owner-labelled children, so partial provisioning is drained too. With nothing
+// tracked, found or applied it starts no drain (that drain would complete empty
+// and restart on every reconcile), clears a drained placement and touches no
+// Publisher.
+func (h *ListenerHandler) drainCapture(ctx context.Context, listener *spectrev1.Listener, reason string) (bool, error) {
+	if listener.Status.Draining != nil {
+		return true, nil // Step 0 advances the active drain.
+	}
+	owned, err := listOwnedChildren(ctx, listener)
+	if err != nil {
+		return false, err
+	}
+	oldFingerprint := ""
+	if ap := listener.Status.AppliedPlacement; ap != nil {
+		oldFingerprint = ap.Fingerprint
+	}
+	tracked := listener.Status.RouteListener != nil || len(listener.Status.EventSubscriptions) > 0
+	if !tracked && len(owned.routeListeners) == 0 && len(owned.subscribers) == 0 && oldFingerprint == "" {
+		listener.Status.AppliedPlacement = nil
+		return false, nil
+	}
+	recordDrain(ctx, listener, reason, oldFingerprint, owned)
+	return true, nil
+}
+
+// ownedChildren is one owner-label inventory of a Listener's capture children.
+type ownedChildren struct {
+	routeListeners []gatewayv1.RouteListener
+	subscribers    []pubsubv1.Subscriber
+}
+
+// listOwnedChildren lists the RouteListeners and Subscribers carrying the
+// Listener's owner label.
+func listOwnedChildren(ctx context.Context, listener *spectrev1.Listener) (*ownedChildren, error) {
+	c := cclient.ClientFromContextOrDie(ctx)
+	rlList := &gatewayv1.RouteListenerList{}
+	if err := c.List(ctx, rlList, cclient.OwnedByLabel(listener)...); err != nil {
+		return nil, errors.Wrap(err, "failed to list owned RouteListeners for drain snapshot")
+	}
+	subList := &pubsubv1.SubscriberList{}
+	if err := c.List(ctx, subList, cclient.OwnedByLabel(listener)...); err != nil {
+		return nil, errors.Wrap(err, "failed to list owned Subscribers for drain snapshot")
+	}
+	return &ownedChildren{routeListeners: rlList.Items, subscribers: subList.Items}, nil
+}
+
+// recordDrain assigns the drain checkpoint for the old generation.
+func recordDrain(
+	ctx context.Context,
+	listener *spectrev1.Listener,
+	reason string,
+	oldFingerprint string,
+	owned *ownedChildren,
+) {
 	drain := &spectrev1.ListenerDrainStatus{
 		Phase:          DrainPhaseStopping,
 		Reason:         reason,
@@ -59,12 +123,8 @@ func (h *ListenerHandler) startDrain(
 	if listener.Status.RouteListener != nil {
 		oldRLs = addOldRef(oldRLs, *listener.Status.RouteListener)
 	}
-	rlList := &gatewayv1.RouteListenerList{}
-	if err := c.List(ctx, rlList, cclient.OwnedByLabel(listener)...); err != nil {
-		return errors.Wrap(err, "failed to list owned RouteListeners for drain snapshot")
-	}
-	for i := range rlList.Items {
-		oldRLs = addOldRef(oldRLs, *ctypes.ObjectRefFromObject(&rlList.Items[i]))
+	for i := range owned.routeListeners {
+		oldRLs = addOldRef(oldRLs, *ctypes.ObjectRefFromObject(&owned.routeListeners[i]))
 	}
 	slices.SortFunc(oldRLs, compareRefs)
 	drain.OldRouteListeners = oldRLs
@@ -77,17 +137,15 @@ func (h *ListenerHandler) startDrain(
 	for i := range listener.Status.EventSubscriptions {
 		oldSubs = addOldRef(oldSubs, listener.Status.EventSubscriptions[i])
 	}
-	subList := &pubsubv1.SubscriberList{}
-	if err := c.List(ctx, subList, cclient.OwnedByLabel(listener)...); err != nil {
-		return errors.Wrap(err, "failed to list owned Subscribers for drain snapshot")
-	}
-	for i := range subList.Items {
-		oldSubs = addOldRef(oldSubs, *ctypes.ObjectRefFromObject(&subList.Items[i]))
+	for i := range owned.subscribers {
+		oldSubs = addOldRef(oldSubs, *ctypes.ObjectRefFromObject(&owned.subscribers[i]))
 	}
 	slices.SortFunc(oldSubs, compareRefs)
 	drain.OldSubscribers = oldSubs
 
-	// Snapshot source publisher and event store from applied placement.
+	// Snapshot source publisher and event store from applied placement. Without
+	// one (partial provisioning, migration of legacy capture) the owned bridges
+	// name their Publisher.
 	if ap := listener.Status.AppliedPlacement; ap != nil {
 		if ap.Publisher != nil {
 			drain.SourcePublisher = ap.Publisher.DeepCopy()
@@ -96,30 +154,33 @@ func (h *ListenerHandler) startDrain(
 			drain.SourceEventStore = ap.CaptureEventStore.DeepCopy()
 		}
 	}
+	if drain.SourcePublisher == nil {
+		drain.SourcePublisher = agreedPublisher(owned.subscribers)
+	}
 
 	listener.Status.Draining = drain
-	logger.Info("Started drain", "reason", reason, "oldFingerprint", oldFingerprint)
-	return nil
+	log.FromContext(ctx).Info("Started drain", "reason", reason, "oldFingerprint", oldFingerprint)
 }
 
-// drainAppliedCapture starts a persisted drain of the applied capture and
-// reports whether it did; the caller must then return so the checkpoint is
-// persisted before continueDrain deletes anything. It never starts a drain
-// without tracked children: that drain would complete empty and restart on
-// every reconcile. A drained placement (no children, empty fingerprint) is
-// cleared instead.
-func (h *ListenerHandler) drainAppliedCapture(ctx context.Context, listener *spectrev1.Listener, reason string) (bool, error) {
-	ap := listener.Status.AppliedPlacement
-	if ap == nil || listener.Status.Draining != nil {
-		return false, nil
-	}
-	if listener.Status.RouteListener == nil && len(listener.Status.EventSubscriptions) == 0 {
-		if ap.Fingerprint == "" {
-			listener.Status.AppliedPlacement = nil
+// agreedPublisher returns the Publisher every Subscriber references, or nil
+// when there is none or they disagree. CleaningPublisher still covers every old
+// Subscriber namespace.
+func agreedPublisher(subs []pubsubv1.Subscriber) *ctypes.ObjectRef {
+	var ref *ctypes.ObjectRef
+	for i := range subs {
+		p := &subs[i].Spec.Publisher
+		if p.Name == "" || p.Namespace == "" {
+			return nil
 		}
-		return false, nil
+		if ref != nil && (ref.Namespace != p.Namespace || ref.Name != p.Name) {
+			return nil
+		}
+		ref = p
 	}
-	return true, h.startDrain(ctx, listener, reason, ap.Fingerprint)
+	if ref == nil {
+		return nil
+	}
+	return ref.DeepCopy()
 }
 
 // continueDrain advances the drain state machine. It performs deletions with
@@ -169,14 +230,16 @@ func (h *ListenerHandler) continueDrain(
 		return false, nil // Persist phase advancement
 
 	case DrainPhaseCleaningPublisher:
-		// Clean up the generic Publisher if no other Subscribers reference it.
-		if drain.SourcePublisher != nil {
-			ns := drain.SourcePublisher.Namespace
-			if ns != "" {
-				if err := h.cleanupGenericPublisherIfOrphaned(ctx, ns); err != nil {
-					return false, errors.Wrap(err, "failed to cleanup Publisher during drain")
-				}
+		// Clean up the generic Publisher in every old source namespace once no
+		// other Subscriber references it. Advance only when every one succeeded.
+		var errs error
+		for _, ns := range drainPublisherNamespaces(drain) {
+			if err := h.cleanupGenericPublisherIfOrphaned(ctx, ns); err != nil {
+				errs = stderrors.Join(errs, errors.Wrapf(err, "failed to cleanup Publisher in namespace %q during drain", ns))
 			}
+		}
+		if errs != nil {
+			return false, errs
 		}
 		logger.Info("Drain complete")
 		listener.Status.Draining = nil
@@ -218,6 +281,22 @@ func compareRefs(a, b ctypes.ObjectRef) int {
 		cmp.Compare(a.Name, b.Name),
 		cmp.Compare(a.UID, b.UID),
 	)
+}
+
+// drainPublisherNamespaces returns the sorted namespaces that may hold the old
+// generation's generic Publisher: the recorded source Publisher's and every old
+// bridge Subscriber's, since bridges are co-located with their Publisher.
+func drainPublisherNamespaces(drain *spectrev1.ListenerDrainStatus) []string {
+	var nss []string
+	if drain.SourcePublisher != nil {
+		nss = append(nss, drain.SourcePublisher.Namespace)
+	}
+	for i := range drain.OldSubscribers {
+		nss = append(nss, drain.OldSubscribers[i].Namespace)
+	}
+	nss = slices.DeleteFunc(nss, func(ns string) bool { return ns == "" })
+	slices.Sort(nss)
+	return slices.Compact(nss)
 }
 
 // drainRouteListenerRefs returns every RouteListener the Stopping phase must
