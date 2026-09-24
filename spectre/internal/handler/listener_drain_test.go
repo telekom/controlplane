@@ -150,6 +150,44 @@ var _ = Describe("Listener Drain", func() {
 		return pubsubv1.Subscriber{ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: ns, UID: uid}}
 	}
 
+	genericPublisher := util.MakePublisherName(util.GenericEventType)
+
+	// expectOrphanCheck stubs the CleaningPublisher Subscriber List in ns,
+	// returning subs.
+	expectOrphanCheck := func(ns string, subs []pubsubv1.Subscriber) {
+		fakeClient.EXPECT().
+			List(ctx, mock.AnythingOfType("*v1.SubscriberList"), client.InNamespace(ns)).
+			Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+				*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{Items: subs}
+			}).
+			Return(nil).Once()
+	}
+
+	// expectPublisherDelete stubs one Delete of the generic Publisher in ns; the
+	// strict mock fails a Publisher Delete in any other namespace.
+	expectPublisherDelete := func(ns string) {
+		fakeClient.EXPECT().
+			Delete(ctx, mock.MatchedBy(func(obj client.Object) bool {
+				_, ok := obj.(*pubsubv1.Publisher)
+				return ok && obj.GetNamespace() == ns && obj.GetName() == genericPublisher
+			})).
+			Return(nil).Once()
+	}
+
+	// bridgeSub is a Subscriber in ns referencing the generic Publisher there.
+	bridgeSub := func(ns, name string, terminating bool) pubsubv1.Subscriber {
+		sub := pubsubv1.Subscriber{
+			ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: ns},
+			Spec:       pubsubv1.SubscriberSpec{Publisher: ctypes.ObjectRef{Name: genericPublisher, Namespace: ns}},
+		}
+		if terminating {
+			now := metav1.Now()
+			sub.DeletionTimestamp = &now
+			sub.Finalizers = []string{"pubsub.cp.ei.telekom.de/finalizer"}
+		}
+		return sub
+	}
+
 	// twoRouteListenerCheckpoint is a Stopping checkpoint written by this build:
 	// rl-a (also the status ref) and rl-b, an orphan in another zone.
 	twoRouteListenerCheckpoint := func() *spectrev1.Listener {
@@ -329,8 +367,13 @@ var _ = Describe("Listener Drain", func() {
 			listener.Status.RouteListener = nil
 			listener.Status.EventSubscriptions = nil
 
+			// The owner-label inventory finds no untracked children either.
+			mockDrainLists(nil, nil)
+
 			err := h.HandleDenialCleanup(ctx, listener, "provider")
 			Expect(err).ToNot(HaveOccurred())
+			// No child and no Publisher is deleted.
+			fakeClient.AssertNumberOfCalls(GinkgoT(), "Delete", 0)
 
 			// No drain should have started.
 			Expect(listener.Status.Draining).To(BeNil(),
@@ -380,19 +423,24 @@ var _ = Describe("Listener Drain", func() {
 				Fingerprint: "",
 			}
 
+			mockDrainLists(nil, nil)
 			err := h.HandleDenialCleanup(ctx, listener, "provider")
 			Expect(err).ToNot(HaveOccurred())
 			Expect(listener.Status.AppliedPlacement).To(BeNil())
 			Expect(listener.Status.Draining).To(BeNil())
 
-			// Call 2: Same state again — AppliedPlacement nil means we enter
-			// the direct-delete branch, not the drain branch. No new drain starts.
-			// This proves the cycle is broken: previously the code would restart
-			// a drain on every reconcile.
+			// Call 2: Same state again — the inventory is empty and nothing is
+			// applied, so no drain starts and nothing is deleted. This proves the
+			// cycle is broken: previously the code would restart a drain on every
+			// reconcile.
+			mockDrainLists(nil, nil)
+			err = h.HandleDenialCleanup(ctx, listener, "provider")
+			Expect(err).ToNot(HaveOccurred())
 			Expect(listener.Status.AppliedPlacement).To(BeNil(),
 				"After clearing, repeated calls should not re-create AppliedPlacement")
 			Expect(listener.Status.Draining).To(BeNil(),
 				"No drain should be active after clearing")
+			fakeClient.AssertNumberOfCalls(GinkgoT(), "Delete", 0)
 		})
 	})
 
@@ -635,7 +683,7 @@ var _ = Describe("Listener Drain", func() {
 			Expect(listener.Status.Draining).To(BeNil())
 		})
 
-		It("should skip Publisher cleanup when SourcePublisher is nil", func() {
+		It("should skip Publisher cleanup when neither a SourcePublisher nor old Subscribers are recorded", func() {
 			listener := newListener()
 			listener.Status.Draining = &spectrev1.ListenerDrainStatus{
 				Phase:          handler.ExportDrainPhaseCleaningPublisher,
@@ -646,6 +694,43 @@ var _ = Describe("Listener Drain", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(done).To(BeTrue())
 			Expect(listener.Status.Draining).To(BeNil())
+		})
+
+		It("should clean every old Subscriber namespace and advance only when all succeed", func() {
+			listener := newListener()
+			listener.Status.Draining = &spectrev1.ListenerDrainStatus{
+				Phase:          handler.ExportDrainPhaseCleaningPublisher,
+				OldFingerprint: "old-fp",
+				OldSubscribers: []ctypes.ObjectRef{
+					{Name: "sub-a", Namespace: listenerZoneStatus},
+					{Name: "sub-b", Namespace: drainZoneB},
+				},
+			}
+
+			// Pass 1: the orphan check in the first namespace fails; the second is
+			// still attempted and its orphaned Publisher deleted.
+			fakeClient.EXPECT().
+				List(ctx, mock.AnythingOfType("*v1.SubscriberList"), client.InNamespace(listenerZoneStatus)).
+				Return(errors.NewServiceUnavailable("etcd leader changed")).Once()
+			expectOrphanCheck(drainZoneB, nil)
+			expectPublisherDelete(drainZoneB)
+			done, err := h.ContinueDrain(ctx, listener)
+			Expect(err).To(MatchError(ContainSubstring("etcd leader changed")))
+			Expect(done).To(BeFalse())
+			Expect(listener.Status.Draining).ToNot(BeNil())
+			Expect(listener.Status.Draining.Phase).To(Equal(handler.ExportDrainPhaseCleaningPublisher))
+			expectPassDone(1)
+
+			// Pass 2: both succeed; the drain completes.
+			expectOrphanCheck(listenerZoneStatus, nil)
+			expectPublisherDelete(listenerZoneStatus)
+			expectOrphanCheck(drainZoneB, nil)
+			expectPublisherDelete(drainZoneB)
+			done, err = h.ContinueDrain(ctx, listener)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(done).To(BeTrue())
+			Expect(listener.Status.Draining).To(BeNil())
+			expectPassDone(3)
 		})
 
 		It("should complete from Complete phase", func() {
@@ -1017,18 +1102,66 @@ var _ = Describe("Listener Drain", func() {
 				Expect(listener.Status.EventSubscriptions).To(BeEmpty())
 				expectPassDone(4)
 
-				// R7: the drain completes (no source Publisher recorded) and the same
+				// R7: no source Publisher was recorded, so the drain cleans the orphaned
+				// Publisher in the old Subscriber's namespace and completes. The same
 				// reconcile re-reads the still-Rejected Approval, which clears the
 				// drained applied placement instead of starting another drain.
 				listener = persistListener(listener)
+				Expect(listener.Status.Draining.SourcePublisher).To(BeNil())
+				expectOrphanCheck(listener.Status.Draining.OldSubscribers[0].Namespace, nil)
+				expectPublisherDelete(listenerZoneStatus)
 				expectApprovalRejected()
+				mockDrainLists(nil, nil) // drainCapture inventory: nothing left
 				Expect(h.CreateOrUpdate(ctx, listener)).To(Succeed())
 				Expect(listener.Status.Draining).To(BeNil())
 				Expect(listener.Status.AppliedPlacement).To(BeNil())
 				expectAccessDenied(listener)
-				// rl-a once, rl-b twice, sub-rq once; no Publisher delete.
-				expectPassDone(4)
+				// rl-a once, rl-b twice, sub-rq once, the Publisher once.
+				expectPassDone(5)
 			})
+
+			DescribeTable("should clean the Publisher in every unreferenced old namespace and keep it where another Subscriber references it",
+				func(source *ctypes.ObjectRef) {
+					providerApproval := k8stypes.NamespacedName{Name: "listener--test-listener--provider", Namespace: listenerNamespace}
+					listener := newListener()
+					listener.Status.ProviderApproval = &ctypes.ObjectRef{Name: providerApproval.Name, Namespace: providerApproval.Namespace}
+					listener.Status.Draining = &spectrev1.ListenerDrainStatus{
+						Phase:           handler.ExportDrainPhaseCleaningPublisher,
+						OldFingerprint:  "fp-old",
+						SourcePublisher: source,
+						OldSubscribers: []ctypes.ObjectRef{
+							{Name: "sub-rq", Namespace: drainZoneB, UID: "uid-b"},
+							{Name: "sub-rq", Namespace: listenerZoneStatus, UID: "uid-a"},
+						},
+					}
+
+					// listenerZoneStatus: another observer's terminating bridge still
+					// references the Publisher, so it is kept. drainZoneB: no reference
+					// remains, so it is deleted there, and only there.
+					expectOrphanCheck(listenerZoneStatus, []pubsubv1.Subscriber{bridgeSub(listenerZoneStatus, "other-sub", true)})
+					expectOrphanCheck(drainZoneB, []pubsubv1.Subscriber{{
+						ObjectMeta: metav1.ObjectMeta{Name: "unrelated", Namespace: drainZoneB},
+						Spec:       pubsubv1.SubscriberSpec{Publisher: ctypes.ObjectRef{Name: "other-publisher", Namespace: drainZoneB}},
+					}})
+					expectPublisherDelete(drainZoneB)
+					// The drain completes and the reconcile falls through to the still
+					// Rejected Approval, which starts no new drain.
+					fakeClient.EXPECT().
+						Get(ctx, providerApproval, mock.AnythingOfType("*v1.Approval")).
+						Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
+							out.(*approvalv1.Approval).Spec.State = approvalv1.ApprovalStateRejected
+						}).
+						Return(nil).Once()
+					mockDrainLists(nil, nil)
+
+					Expect(h.CreateOrUpdate(ctx, listener)).To(Succeed())
+					Expect(listener.Status.Draining).To(BeNil())
+					expectPassDone(1)
+				},
+				Entry("without a recorded source Publisher", nil),
+				Entry("with the source Publisher recorded in one of them",
+					&ctypes.ObjectRef{Name: util.MakePublisherName(util.GenericEventType), Namespace: listenerZoneStatus}),
+			)
 		})
 	})
 })
