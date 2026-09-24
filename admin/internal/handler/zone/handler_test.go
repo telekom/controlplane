@@ -365,6 +365,7 @@ var _ = Describe("Zone Handler Steps", func() {
 
 	Describe("createIdentityRoutes", func() {
 		It("should create issuer, certs, and discovery routes for default realm", func() {
+			zone.Spec.Visibility = adminv1.ZoneVisibilityEnterprise
 			testCtx := newTestContext(zone)
 			hc := newTestHandlingContext(testCtx, zone)
 			Expect(createIdentityProvider(testCtx, hc)).To(Succeed())
@@ -394,6 +395,27 @@ var _ = Describe("Zone Handler Steps", func() {
 				Name:      "gateway--" + hc.DefaultIdentityRealm.Name + "--certs",
 			}, certsRoute)).To(Succeed())
 			Expect(certsRoute.Spec.PassThrough).To(BeTrue())
+
+			roverCertsRoute := &gatewayapi.Route{}
+			Expect(k8sClient.Get(ctx, client.ObjectKey{
+				Namespace: hc.Namespace.Name,
+				Name:      "gateway--" + hc.InternalIdentityRealm.Name + "--certs",
+			}, roverCertsRoute)).To(Succeed())
+			Expect(roverCertsRoute.Spec.Paths).To(ContainElement("/auth/realms/rover/protocol/openid-connect/certs"))
+			Expect(roverCertsRoute.Spec.Backend.Upstreams).To(HaveLen(1))
+			Expect(roverCertsRoute.Spec.Backend.Upstreams[0].Hostname).To(Equal("localhost"))
+			Expect(roverCertsRoute.Spec.Backend.Upstreams[0].Port).To(Equal(jumperIdentityPort))
+			Expect(roverCertsRoute.Spec.Backend.Upstreams[0].Path).To(Equal("/api/v1/certs/rover"))
+			Expect(roverCertsRoute.Spec.PassThrough).To(BeTrue())
+
+			roverDiscoveryRoute := &gatewayapi.Route{}
+			Expect(k8sClient.Get(ctx, client.ObjectKey{
+				Namespace: hc.Namespace.Name,
+				Name:      "gateway--" + hc.InternalIdentityRealm.Name + "--discovery",
+			}, roverDiscoveryRoute)).To(Succeed())
+			Expect(roverDiscoveryRoute.Spec.Paths).To(ContainElement("/auth/realms/rover/.well-known/openid-configuration"))
+			Expect(roverDiscoveryRoute.Spec.Backend.Upstreams).To(HaveLen(1))
+			Expect(roverDiscoveryRoute.Spec.Backend.Upstreams[0].Path).To(Equal("/api/v1/discovery/rover"))
 
 			// Verify discovery route exists
 			discoveryRoute := &gatewayapi.Route{}
@@ -427,6 +449,13 @@ var _ = Describe("Zone Handler Steps", func() {
 			// Paths should contain /spacegate prefix
 			Expect(issuerRoute.Spec.Paths).NotTo(BeEmpty())
 			Expect(issuerRoute.Spec.Paths[0]).To(ContainSubstring("/spacegate/"))
+
+			roverCertsRoute := &gatewayapi.Route{}
+			Expect(k8sClient.Get(ctx, client.ObjectKey{
+				Namespace: hc.Namespace.Name,
+				Name:      "gateway--" + hc.InternalIdentityRealm.Name + "--certs",
+			}, roverCertsRoute)).To(Succeed())
+			Expect(roverCertsRoute.Spec.Paths).To(ContainElement("/spacegate/auth/realms/rover/protocol/openid-connect/certs"))
 		})
 
 		It("should NOT add spacegate prefix for Enterprise visibility", func() {
