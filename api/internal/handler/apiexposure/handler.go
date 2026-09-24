@@ -77,7 +77,7 @@ func (h *ApiExposureHandler) CreateOrUpdate(ctx context.Context, apiExp *apiapi.
 		return nil
 	}
 
-	// Scopes: check if scopes exist and are a valid subset of the Api's scopes.
+	// Validate specification scopes unless this exposure has an external token endpoint.
 	if !validateExposureScopes(ctx, api, apiExp) {
 		return nil
 	}
@@ -494,7 +494,8 @@ func (h *ApiExposureHandler) Delete(ctx context.Context, obj *apiapi.ApiExposure
 	return nil
 }
 
-// validateExposureScopes checks that the M2M scopes in apiExp are a valid subset of the Api's scopes.
+// validateExposureScopes checks specification-scope membership unless apiExp has a non-empty
+// M2M external-IDP token endpoint.
 // It sets blocking conditions on apiExp and returns false if processing should stop.
 func validateExposureScopes(ctx context.Context, api *apiapi.Api, apiExp *apiapi.ApiExposure) bool {
 	if !apiExp.HasM2M() || apiExp.Spec.Security.M2M.Scopes == nil || apiExp.HasExternalIdp() {

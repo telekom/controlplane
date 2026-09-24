@@ -62,11 +62,6 @@ func (h *AgenticSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *ag
 		return nil
 	}
 
-	// 1b. Validate subscription scopes against server's declared scopes
-	if !validateSubscriptionScopes(serverInfo, obj) {
-		return nil
-	}
-
 	// 2. Find active AgenticExposure
 	exposures, err := util.FindAgenticExposures(ctx, obj.Spec.BasePath)
 	if err != nil {
@@ -75,6 +70,10 @@ func (h *AgenticSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *ag
 	exposureFound, exposure, err := util.FindActiveAgenticExposure(exposures)
 	if err != nil {
 		return errors.Wrapf(err, "failed to find active AgenticExposure for basePath %q", obj.Spec.BasePath)
+	}
+	// Validate scopes using the selected exposure's endpoint exception before readiness checks.
+	if !validateSubscriptionScopes(serverInfo, exposure, obj) {
+		return nil
 	}
 	if !exposureFound {
 		obj.SetCondition(condition.NewNotReadyCondition("AgenticExposureNotFound",
@@ -354,10 +353,13 @@ func validateVisibility(exposure *agenticv1.AgenticExposure, sub *agenticv1.Agen
 	}
 }
 
-// validateSubscriptionScopes checks that the M2M scopes in the AgenticSubscription are a valid subset of the server's scopes.
+// validateSubscriptionScopes checks M2M scope membership unless the selected exposure has a non-empty external-IDP token endpoint.
 // It sets blocking conditions on the subscription and returns false if processing should stop.
-func validateSubscriptionScopes(server *util.ServerInfo, obj *agenticv1.AgenticSubscription) bool {
+func validateSubscriptionScopes(server *util.ServerInfo, exposure *agenticv1.AgenticExposure, obj *agenticv1.AgenticSubscription) bool {
 	if !obj.HasM2M() || obj.Spec.Security.M2M.Scopes == nil {
+		return true
+	}
+	if exposure != nil && exposure.HasExternalIdp() {
 		return true
 	}
 	if len(server.Oauth2Scopes) == 0 {

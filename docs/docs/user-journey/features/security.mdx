@@ -118,6 +118,28 @@ exposures:
         - write:orders
 ```
 
+#### Scope Validation and External Identity Providers
+
+For API and agentic (MCP and agent) exposures and subscriptions, configured M2M scopes normally must be declared in the corresponding specification. Matching is exact and case-sensitive.
+
+When the **active exposure has a non-empty external-IDP token endpoint**, the Control Plane skips this specification check for both the exposure and its subscriptions. Scopes may then be absent from the specification, including when it declares no scopes at all. Each exposure and subscription continues to forward its own configured scopes; subscription scopes do not have to match the exposure's list.
+
+In a Rover exposure, configure `security.tokenEndpoint` as shown in the OAuth2 example above. On the resulting `ApiExposure` or `AgenticExposure` custom resource, the relevant field is `spec.security.m2m.externalIDP.tokenEndpoint`:
+
+```yaml title="Exposure custom-resource fragment"
+spec:
+  security:
+    m2m:
+      externalIDP:
+        tokenEndpoint: https://auth.example.com/oauth/token
+      scopes:
+        - read:orders
+```
+
+The subscription inherits this exception from its active exposure. Subscriber credentials or a token endpoint configured elsewhere do not enable it. Removing the exposure's external-IDP configuration restores normal scope checking; an empty endpoint does not qualify for the exception.
+
+API approval requests still include the requested scopes. Existing readiness and approval requirements continue to apply, and the external identity provider determines whether it will grant the requested scopes.
+
 ### Audience Claims
 
 When a request reaches your backend service, it carries a security token. An **audience claim** (`aud`) tells the backend which service the token was intended for, so the backend can confirm it is the correct recipient before trusting the request.
