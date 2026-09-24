@@ -7,6 +7,7 @@ package approval
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
@@ -207,7 +208,7 @@ func mapDecisions(decisions []approvalv1.Decision) []model.Decision {
 			result[i].Timestamp = &timestamp
 		}
 		if d.ResultingState != "" {
-			resultingState := mapState(d.ResultingState.String())
+			resultingState := strings.ToUpper(d.ResultingState.String())
 			result[i].ResultingState = &resultingState
 		}
 	}
@@ -230,7 +231,7 @@ func mapAvailableTransitions(transitions approvalv1.AvailableTransitions) []mode
 		}
 		result = append(result, model.AvailableTransition{
 			Action:  strings.ToUpper(at.Action.String()),
-			ToState: mapState(at.To.String()),
+			ToState: strings.ToUpper(at.To.String()),
 		})
 	}
 	return result
