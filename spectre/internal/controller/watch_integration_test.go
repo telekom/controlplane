@@ -10,9 +10,11 @@ import (
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	apiv1 "github.com/telekom/controlplane/api/api/v1"
@@ -836,6 +838,339 @@ var _ = Describe("Watch-Driven Integration", Ordered, func() {
 	})
 
 	// -----------------------------------------------------------------------
+	// Scenario 9: a change confined to the observer (A) zone's EventConfig
+	// requeues an A != C Listener. C and P are in aws and A is in cetus, so only
+	// A's delivery EventConfig supplies the cross-zone callback base URL.
+	// -----------------------------------------------------------------------
+	Describe("Scenario 9: change confined to A's EventConfig requeues an A != C Listener", func() {
+		const (
+			s9Env     = "s9-env"
+			s9Ns      = "s9-ns"
+			s9AwsNs   = "s9-env--aws"
+			s9CetusNs = "s9-env--cetus"
+			s9Path    = "/api/v1/s9"
+			s9SAName  = "s9-sa"
+			s9ConsCID = "team-s9c--s9-consumer"
+			s9ProvCID = "team-s9p--s9-provider"
+			s9ObsCID  = "team-s9a--s9-observer"
+			s9CbV1    = "https://proxy-cb-v1.cetus.example.com/callback"
+			s9CbV2    = "https://proxy-cb-v2.cetus.example.com/callback"
+		)
+		listenerNN := types.NamespacedName{Name: "s9-listener", Namespace: s9Ns}
+		saNN := types.NamespacedName{Name: s9SAName, Namespace: s9Ns}
+		s9Labels := func() map[string]string { return map[string]string{envLabelKey: s9Env} }
+		appRef := func(name string) ctypes.TypedObjectRef {
+			return ctypes.TypedObjectRef{
+				TypeMeta:  metav1.TypeMeta{Kind: "Application", APIVersion: "application.cp.ei.telekom.de/v1"},
+				ObjectRef: ctypes.ObjectRef{Name: name, Namespace: s9Ns},
+			}
+		}
+
+		BeforeAll(func() {
+			for _, ns := range []string{s9Ns, s9AwsNs, s9CetusNs} {
+				nsObj := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: ns}}
+				Expect(client.IgnoreAlreadyExists(directClient.Create(ctx, nsObj))).To(Succeed())
+			}
+
+			realm := &identityv1.Realm{
+				ObjectMeta: metav1.ObjectMeta{Name: "s9-realm", Namespace: s9Ns, Labels: s9Labels()},
+				Spec:       identityv1.RealmSpec{IdentityProvider: &ctypes.ObjectRef{Name: "idp", Namespace: s9Ns}},
+			}
+			Expect(directClient.Create(ctx, realm)).To(Succeed())
+			realm.Status = identityv1.RealmStatus{IssuerUrl: "https://iris.example.com/auth/realms/s9"}
+			Expect(directClient.Status().Update(ctx, realm)).To(Succeed())
+
+			// createZone creates a Ready zone with its EventConfig and EventStore.
+			createZone := func(name, statusNs string, ecStatus eventv1.EventConfigStatus) {
+				host := "gw." + name + ".s9.example.com"
+				zone := &adminv1.Zone{
+					ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: s9Ns, Labels: s9Labels()},
+					Spec: adminv1.ZoneSpec{
+						IdentityProvider: adminv1.IdentityProviderConfig{
+							Url: "http://id.local", Admin: adminv1.IdentityProviderAdminConfig{ClientId: "a", UserName: "a", Password: "a"},
+						},
+						Gateway: adminv1.GatewayConfig{
+							Admin: adminv1.GatewayAdminConfig{Url: "http://gw.local"},
+							Presets: []adminv1.GatewayConfigPreset{{
+								Name: "default", Default: true,
+								Urls: []adminv1.UrlConfig{{Hostname: host, BasePath: "/gateway"}},
+							}},
+						},
+						Visibility: adminv1.ZoneVisibilityWorld,
+					},
+				}
+				Expect(directClient.Create(ctx, zone)).To(Succeed())
+				zone.Status = adminv1.ZoneStatus{
+					Namespace:     statusNs,
+					Gateway:       &ctypes.ObjectRef{Name: "gw-" + name, Namespace: statusNs},
+					IdentityRealm: &ctypes.ObjectRef{Name: "s9-realm", Namespace: s9Ns},
+					Conditions:    readyConditions(),
+					Links:         adminv1.Links{Url: "http://" + host, Issuer: "http://id.local/realms/s9", LmsIssuer: "http://id.local/realms/s9-lms"},
+				}
+				Expect(directClient.Status().Update(ctx, zone)).To(Succeed())
+
+				ec := &eventv1.EventConfig{
+					ObjectMeta: metav1.ObjectMeta{Name: "ec-" + name, Namespace: statusNs, Labels: s9Labels()},
+					Spec: eventv1.EventConfigSpec{
+						Zone: ctypes.ObjectRef{Name: name, Namespace: s9Ns},
+						Local: &eventv1.LocalBackend{
+							Admin:              eventv1.AdminConfig{Url: "http://admin.local"},
+							ServerSendEventUrl: "https://sse.local:443/api/v1/sse",
+							PublishEventUrl:    "http://publish.local",
+						},
+					},
+				}
+				Expect(directClient.Create(ctx, ec)).To(Succeed())
+				ecStatus.Conditions = readyConditions()
+				ecStatus.EventStore = &ctypes.ObjectRef{Name: "es-" + name, Namespace: statusNs}
+				ec.Status = ecStatus
+				Expect(directClient.Status().Update(ctx, ec)).To(Succeed())
+
+				es := &pubsubv1.EventStore{
+					ObjectMeta: metav1.ObjectMeta{Name: "es-" + name, Namespace: statusNs, Labels: s9Labels()},
+					Spec: pubsubv1.EventStoreSpec{
+						Url: "http://admin.local", TokenUrl: "http://token.local",
+						ClientId: "cid", ClientSecret: "csec",
+					},
+				}
+				Expect(directClient.Create(ctx, es)).To(Succeed())
+				es.Status = pubsubv1.EventStoreStatus{Conditions: readyConditions()}
+				Expect(directClient.Status().Update(ctx, es)).To(Succeed())
+			}
+			createZone("aws", s9AwsNs, eventv1.EventConfigStatus{CallbackURL: "https://callback.aws.s9.example.com/callback"})
+			createZone("cetus", s9CetusNs, eventv1.EventConfigStatus{
+				CallbackURL:       "https://callback.cetus.s9.example.com/callback",
+				ProxyCallbackURLs: map[string]string{"aws": s9CbV1},
+			})
+
+			createApp := func(name, team, zoneName, clientID string) {
+				app := &applicationv1.Application{
+					ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: s9Ns, Labels: s9Labels()},
+					Spec: applicationv1.ApplicationSpec{
+						Team: team, TeamEmail: team + "@test.com", Secret: "sec",
+						Zone:     ctypes.ObjectRef{Name: zoneName, Namespace: s9Ns},
+						Failover: applicationv1.Failover{Enabled: false},
+					},
+				}
+				Expect(directClient.Create(ctx, app)).To(Succeed())
+				app.Status = applicationv1.ApplicationStatus{ClientId: clientID, Conditions: readyConditions()}
+				Expect(directClient.Status().Update(ctx, app)).To(Succeed())
+			}
+			createApp("s9-consumer", "team-s9c", "aws", s9ConsCID)
+			createApp("s9-provider", "team-s9p", "aws", s9ProvCID)
+			createApp("s9-observer", "team-s9a", "cetus", s9ObsCID)
+
+			// P's exposure owns the only Route for the path, in aws. There is no
+			// Route in cetus, so A's zone is off the C→P path.
+			routeName := util.MakeRouteName(s9Path)
+			exposure := &apiv1.ApiExposure{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "s9-provider--" + routeName, Namespace: s9Ns,
+					Labels: map[string]string{
+						envLabelKey:                          s9Env,
+						cconfig.BuildLabelKey("application"): "s9-provider",
+					},
+				},
+				Spec: apiv1.ApiExposureSpec{
+					ApiBasePath: s9Path,
+					Upstreams:   []apiv1.Upstream{{Url: "https://api.s9.example.com"}},
+					Visibility:  apiv1.VisibilityZone,
+					Approval:    apiv1.Approval{Strategy: apiv1.ApprovalStrategyAuto},
+					Zone:        ctypes.ObjectRef{Name: "aws", Namespace: s9Ns},
+				},
+			}
+			Expect(directClient.Create(ctx, exposure)).To(Succeed())
+			exposure.Status = apiv1.ApiExposureStatus{
+				Active: true,
+				Route:  &ctypes.ObjectRef{Name: routeName, Namespace: s9AwsNs},
+			}
+			Expect(directClient.Status().Update(ctx, exposure)).To(Succeed())
+
+			route := &gatewayv1.Route{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: routeName, Namespace: s9AwsNs,
+					Labels: map[string]string{
+						envLabelKey:              s9Env,
+						cconfig.OwnerUidLabelKey: string(exposure.UID),
+					},
+				},
+				Spec: gatewayv1.RouteSpec{
+					GatewayRef: ctypes.ObjectRef{Name: "gw-aws", Namespace: s9AwsNs},
+					Type:       gatewayv1.RouteTypePrimary,
+					Paths:      []string{"/gateway" + s9Path},
+					Backend: gatewayv1.Backend{
+						Upstreams: []gatewayv1.Upstream{
+							{Scheme: "https", Hostname: "api.s9.example.com", Port: 443, Path: s9Path},
+						},
+					},
+				},
+			}
+			Expect(directClient.Create(ctx, route)).To(Succeed())
+
+			sa := &spectrev1.SpectreApplication{
+				ObjectMeta: metav1.ObjectMeta{Name: s9SAName, Namespace: s9Ns, Labels: s9Labels()},
+				Spec: spectrev1.SpectreApplicationSpec{
+					Application:  appRef("s9-observer"),
+					DeliveryType: "server_sent_event",
+				},
+			}
+			Expect(directClient.Create(ctx, sa)).To(Succeed())
+
+			listener := &spectrev1.Listener{
+				ObjectMeta: metav1.ObjectMeta{Name: listenerNN.Name, Namespace: s9Ns, Labels: s9Labels()},
+				Spec: spectrev1.ListenerSpec{
+					Consumer:    appRef("s9-consumer"),
+					Provider:    appRef("s9-provider"),
+					Application: ctypes.ObjectRef{Name: s9SAName, Namespace: s9Ns},
+					ApiListener: &spectrev1.ApiListener{ApiBasePath: s9Path},
+				},
+			}
+			Expect(directClient.Create(ctx, listener)).To(Succeed())
+		})
+
+		It("drains and re-provisions capture with A's new proxy callback URL", func() {
+			getListener := func(g Gomega) *spectrev1.Listener {
+				l := &spectrev1.Listener{}
+				g.Expect(directClient.Get(ctx, listenerNN, l)).To(Succeed())
+				return l
+			}
+			rqKey := types.NamespacedName{
+				Name:      util.MakeSubscriberName(util.MakeBridgeSubscriberId(s9ConsCID, s9ObsCID, s9Path, "rq")),
+				Namespace: s9AwsNs,
+			}
+
+			By("Waiting for A's application id and both gate ApprovalRequests")
+			Eventually(func(g Gomega) {
+				sa := &spectrev1.SpectreApplication{}
+				g.Expect(directClient.Get(ctx, saNN, sa)).To(Succeed())
+				g.Expect(sa.Status.Id).To(Equal(s9ObsCID))
+			}, watchTimeout, watchInterval).Should(Succeed())
+			Eventually(func(g Gomega) {
+				arList := &approvalv1.ApprovalRequestList{}
+				g.Expect(directClient.List(ctx, arList, client.InNamespace(s9Ns))).To(Succeed())
+				owned := 0
+				for i := range arList.Items {
+					if owner := metav1.GetControllerOf(&arList.Items[i]); owner != nil && owner.Name == listenerNN.Name {
+						owned++
+					}
+				}
+				g.Expect(owned).To(Equal(2))
+				l := getListener(g)
+				g.Expect(l.Status.ProviderApprovalRequest).NotTo(BeNil())
+				g.Expect(l.Status.ConsumerApprovalRequest).NotTo(BeNil())
+			}, watchTimeout, watchInterval).Should(Succeed())
+
+			By("Granting both gates")
+			Eventually(func(g Gomega) { upsertGrantedApprovals(g, listenerNN) }, watchTimeout, watchInterval).Should(Succeed())
+
+			By("Waiting for capture in C's zone delivered to A's zone through the v1 proxy callback")
+			var (
+				oldFP, oldProviderAR, oldConsumerAR string
+				oldRL                               ctypes.ObjectRef
+				oldRqUID                            types.UID
+				listenerUID                         types.UID
+			)
+			v1Callback, err := util.BuildBridgeCallbackURL(s9CbV1, s9ObsCID)
+			Expect(err).NotTo(HaveOccurred())
+			Eventually(func(g Gomega) {
+				l := getListener(g)
+				ap := l.Status.AppliedPlacement
+				g.Expect(ap).NotTo(BeNil())
+				g.Expect(ap.CaptureZone).NotTo(BeNil())
+				g.Expect(ap.CaptureZone.Name).To(Equal("aws"))
+				g.Expect(ap.DeliveryZone).NotTo(BeNil())
+				g.Expect(ap.DeliveryZone.Name).To(Equal("cetus"))
+				g.Expect(ap.CallbackBaseURL).To(Equal(s9CbV1))
+				g.Expect(ap.Fingerprint).NotTo(BeEmpty())
+				g.Expect(l.Status.RouteListener).NotTo(BeNil())
+				g.Expect(directClient.Get(ctx, l.Status.RouteListener.K8s(), &gatewayv1.RouteListener{})).To(Succeed())
+				rq := &pubsubv1.Subscriber{}
+				g.Expect(directClient.Get(ctx, rqKey, rq)).To(Succeed())
+				g.Expect(rq.Spec.Delivery.Callback).To(Equal(v1Callback))
+
+				oldFP = ap.Fingerprint
+				oldRL = *l.Status.RouteListener
+				oldRqUID = rq.UID
+				oldProviderAR = l.Status.ProviderApprovalRequest.Name
+				oldConsumerAR = l.Status.ConsumerApprovalRequest.Name
+				listenerUID = l.UID
+			}, watchTimeout, watchInterval).Should(Succeed())
+
+			By("Confirming the provisioned baseline is stable")
+			Consistently(func(g Gomega) {
+				l := getListener(g)
+				g.Expect(l.Status.AppliedPlacement).NotTo(BeNil())
+				g.Expect(l.Status.AppliedPlacement.Fingerprint).To(Equal(oldFP))
+				g.Expect(directClient.Get(ctx, oldRL.K8s(), &gatewayv1.RouteListener{})).To(Succeed())
+			}, 2*time.Second, watchInterval).Should(Succeed())
+			// No SpectreApplication handler reads ProxyCallbackURLs, so A's
+			// SpectreApplication status must not change: the Listener wake-up
+			// below cannot come through mapSpectreApplicationToListeners.
+			sa := &spectrev1.SpectreApplication{}
+			Expect(directClient.Get(ctx, saNN, sa)).To(Succeed())
+			saResourceVersion := sa.ResourceVersion
+
+			By("Changing only A's EventConfig status: the proxy callback URL for origin zone aws")
+			Eventually(func(g Gomega) {
+				ec := &eventv1.EventConfig{}
+				g.Expect(directClient.Get(ctx, types.NamespacedName{Name: "ec-cetus", Namespace: s9CetusNs}, ec)).To(Succeed())
+				ec.Status.ProxyCallbackURLs["aws"] = s9CbV2
+				g.Expect(directClient.Status().Update(ctx, ec)).To(Succeed())
+			}, watchTimeout, watchInterval).Should(Succeed())
+
+			By("Waiting for the watch-driven drain of the v1 capture and new gate requests")
+			Eventually(func(g Gomega) {
+				g.Expect(apierrors.IsNotFound(directClient.Get(ctx, oldRL.K8s(), &gatewayv1.RouteListener{}))).
+					To(BeTrue(), "old RouteListener should be drained")
+				l := getListener(g)
+				ap := l.Status.AppliedPlacement
+				g.Expect(ap == nil || ap.Fingerprint != oldFP).To(BeTrue(), "applied fingerprint should no longer be the v1 one")
+				g.Expect(l.Status.ProviderApprovalRequest).NotTo(BeNil())
+				g.Expect(l.Status.ProviderApprovalRequest.Name).NotTo(Equal(oldProviderAR))
+				g.Expect(l.Status.ConsumerApprovalRequest).NotTo(BeNil())
+				g.Expect(l.Status.ConsumerApprovalRequest.Name).NotTo(Equal(oldConsumerAR))
+			}, watchTimeout, watchInterval).Should(Succeed())
+
+			By("Keeping capture absent while the new gate requests are pending")
+			ownedBy := client.MatchingLabels{cconfig.OwnerUidLabelKey: string(listenerUID)}
+			Consistently(func(g Gomega) {
+				rls := &gatewayv1.RouteListenerList{}
+				g.Expect(directClient.List(ctx, rls, ownedBy)).To(Succeed())
+				g.Expect(rls.Items).To(BeEmpty(), "no RouteListener without consent for the new intent")
+				subs := &pubsubv1.SubscriberList{}
+				g.Expect(directClient.List(ctx, subs, ownedBy)).To(Succeed())
+				g.Expect(subs.Items).To(BeEmpty(), "no bridge Subscriber without consent for the new intent")
+			}, 3*time.Second, watchInterval).Should(Succeed())
+			Expect(directClient.Get(ctx, types.NamespacedName{
+				Name: util.MakePublisherName(util.BuildListenerEventType(s9ObsCID)), Namespace: s9CetusNs,
+			}, &pubsubv1.Publisher{})).To(Succeed(), "A's own Publisher must stay")
+			Expect(directClient.Get(ctx, types.NamespacedName{
+				Name: util.MakeSubscriberName(s9ObsCID), Namespace: s9CetusNs,
+			}, &pubsubv1.Subscriber{})).To(Succeed(), "A's own Subscriber must stay")
+			Expect(directClient.Get(ctx, saNN, sa)).To(Succeed())
+			Expect(sa.ResourceVersion).To(Equal(saResourceVersion), "A's SpectreApplication status must not have changed")
+
+			By("Re-granting both gates for the new requests")
+			Eventually(func(g Gomega) { upsertGrantedApprovals(g, listenerNN) }, watchTimeout, watchInterval).Should(Succeed())
+
+			By("Waiting for capture re-provisioned with the v2 proxy callback")
+			v2Callback, err := util.BuildBridgeCallbackURL(s9CbV2, s9ObsCID)
+			Expect(err).NotTo(HaveOccurred())
+			Eventually(func(g Gomega) {
+				ap := getListener(g).Status.AppliedPlacement
+				g.Expect(ap).NotTo(BeNil())
+				g.Expect(ap.CallbackBaseURL).To(Equal(s9CbV2))
+				g.Expect(ap.Fingerprint).NotTo(BeEmpty())
+				g.Expect(ap.Fingerprint).NotTo(Equal(oldFP))
+				rq := &pubsubv1.Subscriber{}
+				g.Expect(directClient.Get(ctx, rqKey, rq)).To(Succeed())
+				g.Expect(rq.UID).NotTo(Equal(oldRqUID))
+				g.Expect(rq.Spec.Delivery.Callback).To(Equal(v2Callback))
+			}, watchTimeout, watchInterval).Should(Succeed())
+		})
+	})
+
+	// -----------------------------------------------------------------------
 	// Scenario 8 note: Rover→Spectre chain requires both Rover and Spectre
 	// controllers running together with FeatureSpectre enabled. This is outside
 	// the Spectre controller's own domain and would need a separate test suite
@@ -851,3 +1186,43 @@ var _ = Describe("Watch-Driven Integration", Ordered, func() {
 		})
 	})
 })
+
+// upsertGrantedApprovals grants the Listener's current provider and consumer
+// ApprovalRequests the way the approval controller does: it creates or updates
+// each gate's scoped Approval, bound to the current request by UID and
+// controlled by the Listener. The Approval name stays the same when the
+// request name changes with the intent, so a re-grant must update it.
+func upsertGrantedApprovals(g Gomega, listenerNN types.NamespacedName) {
+	listener := &spectrev1.Listener{}
+	g.Expect(directClient.Get(ctx, listenerNN, listener)).To(Succeed())
+	for _, ref := range []*ctypes.ObjectRef{listener.Status.ProviderApprovalRequest, listener.Status.ConsumerApprovalRequest} {
+		g.Expect(ref).NotTo(BeNil())
+		ar := &approvalv1.ApprovalRequest{}
+		g.Expect(directClient.Get(ctx, ref.K8s(), ar)).To(Succeed())
+		approvalName, err := approvalv1.ScopedApprovalName(ar.Spec.Target, ar.Spec.ApprovalKey)
+		g.Expect(err).NotTo(HaveOccurred())
+
+		approval := &approvalv1.Approval{ObjectMeta: metav1.ObjectMeta{Name: approvalName, Namespace: ar.Namespace}}
+		_, err = controllerutil.CreateOrUpdate(ctx, directClient, approval, func() error {
+			approval.Labels = ar.Labels
+			if metav1.GetControllerOf(approval) == nil {
+				approval.OwnerReferences = append(approval.OwnerReferences, targetControllerRef(&ar.Spec.Target)...)
+			}
+			approval.Spec = approvalv1.ApprovalSpec{
+				Action:      ar.Spec.Action,
+				Target:      ar.Spec.Target,
+				Requester:   ar.Spec.Requester,
+				Decider:     ar.Spec.Decider,
+				Strategy:    ar.Spec.Strategy,
+				ApprovalKey: ar.Spec.ApprovalKey,
+				State:       approvalv1.ApprovalStateGranted,
+				Decisions: []approvalv1.Decision{{
+					Name: "System", Comment: "Granted in watch test", ResultingState: approvalv1.ApprovalStateGranted,
+				}},
+				ApprovedRequest: &ctypes.ObjectRef{Name: ar.Name, Namespace: ar.Namespace, UID: ar.UID},
+			}
+			return nil
+		})
+		g.Expect(err).NotTo(HaveOccurred())
+	}
+}
