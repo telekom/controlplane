@@ -1126,8 +1126,8 @@ var _ = Describe("Listener capture stop (controller)", func() {
 
 			h.expectSteadyStop()
 		},
-		Entry("rejected current ApprovalRequest", func(h *plHarness) { h.rejectRequest("provider") },
-			"approval request rejected (provider gate)"),
+		Entry("rejected current ApprovalRequest (early restriction)", func(h *plHarness) { h.rejectRequest("provider") },
+			"approval request rejected (provider gate, early restriction)"),
 		Entry("suspended Approval (early restriction)", func(h *plHarness) { h.suspendApproval() },
 			"early restriction (provider gate)"),
 	)

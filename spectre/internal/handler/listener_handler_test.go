@@ -546,9 +546,8 @@ var _ = Describe("ListenerHandler", func() {
 		mockApprovalRequestDeniedGate("consumer") // consumer gate
 	}
 
-	// mockListRoutes stubs the gateway Route lookup and the subsequent
-	// ApiExposure list call used by verifyProviderBinding.
-	mockListRoutes := func() {
+	// mockGetCaptureRoute stubs the gateway Route lookup of the capture zone.
+	mockGetCaptureRoute := func() {
 		routeName := util.MakeRouteName(testApiBasePath)
 		fakeClient.EXPECT().
 			Get(ctx, k8stypes.NamespacedName{Name: routeName, Namespace: listenerZoneStatus},
@@ -568,6 +567,13 @@ var _ = Describe("ListenerHandler", func() {
 				}
 			}).
 			Return(nil).Once()
+	}
+
+	// mockListRoutes stubs the gateway Route lookup and the subsequent
+	// ApiExposure list call used by verifyProviderBinding.
+	mockListRoutes := func() {
+		routeName := util.MakeRouteName(testApiBasePath)
+		mockGetCaptureRoute()
 
 		// ApiExposure list for verifyProviderBinding — exposures live in the
 		// provider's team namespace (listenerNamespace), not the zone namespace.
@@ -755,7 +761,11 @@ var _ = Describe("ListenerHandler", func() {
 			if calls[i].Method != method {
 				continue
 			}
-			if sample == nil || reflect.TypeOf(calls[i].Arguments.Get(1)) == reflect.TypeOf(sample) {
+			obj := 1
+			if method == "Get" {
+				obj = 2 // Get(ctx, key, obj)
+			}
+			if sample == nil || reflect.TypeOf(calls[i].Arguments.Get(obj)) == reflect.TypeOf(sample) {
 				n++
 			}
 		}
@@ -806,18 +816,96 @@ var _ = Describe("ListenerHandler", func() {
 		Expect(ready.Message).To(ContainSubstring("(" + gate + " gate)"))
 	}
 
-	// mockEarlyRestrictionGranted stubs the step-0.5 reads of the Approvals
-	// referenced by l's status, both Granted. Register it before the gate mocks:
-	// testify matches expectations in registration order.
+	// earlyRead is the result of one step-0.5 read: the referenced object in
+	// state (Granted by default), with uid instead of the ref's UID when set, or
+	// the read error err.
+	type earlyRead struct {
+		state approvalv1.ApprovalState
+		uid   k8stypes.UID
+		err   error
+	}
+
+	// mockEarlyReads stubs the step-0.5 reads of the provider and consumer refs
+	// with the result reads names for each gate. set decodes a result into the
+	// Get output; reads stop at the first result stop reports as denying.
+	// Register them before the gate mocks: testify matches expectations in
+	// registration order.
+	mockEarlyReads := func(
+		refs [2]*ctypes.ObjectRef,
+		sample string,
+		reads map[string]earlyRead,
+		set func(out client.Object, ref *ctypes.ObjectRef, r earlyRead),
+		stop func(r earlyRead) bool,
+	) {
+		for i, key := range []string{"provider", "consumer"} {
+			Expect(refs[i]).ToNot(BeNil())
+			ref := refs[i].DeepCopy()
+			r, ok := reads[key]
+			if !ok {
+				r.state = approvalv1.ApprovalStateGranted
+			}
+			call := fakeClient.EXPECT().Get(ctx, ref.K8s(), mock.AnythingOfType(sample))
+			if r.err != nil {
+				call.Return(r.err).Once()
+				continue
+			}
+			call.Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
+				set(out, ref, r)
+			}).Return(nil).Once()
+			if stop(r) {
+				return
+			}
+		}
+	}
+
+	// mockEarlyApprovalReads stubs the step-0.5 reads of the Approvals
+	// referenced by l's status.
+	mockEarlyApprovalReads := func(l *spectrev1.Listener, reads map[string]earlyRead) {
+		mockEarlyReads([2]*ctypes.ObjectRef{l.Status.ProviderApproval, l.Status.ConsumerApproval}, "*v1.Approval", reads,
+			func(out client.Object, _ *ctypes.ObjectRef, r earlyRead) {
+				out.(*approvalv1.Approval).Spec.State = r.state
+			},
+			func(r earlyRead) bool {
+				return r.state == approvalv1.ApprovalStateRejected || r.state == approvalv1.ApprovalStateSuspended
+			})
+	}
+
+	// mockEarlyApprovalsGranted stubs the step-0.5 reads of the Approvals
+	// referenced by l's status, both Granted.
+	mockEarlyApprovalsGranted := func(l *spectrev1.Listener) {
+		mockEarlyApprovalReads(l, nil)
+	}
+
+	// mockEarlyRequestReads stubs the step-0.5 reads of the current
+	// ApprovalRequests referenced by l's status, done while capture is applied.
+	// A Rejected request with the ref's UID ends the reads.
+	mockEarlyRequestReads := func(l *spectrev1.Listener, reads map[string]earlyRead) {
+		mockEarlyReads([2]*ctypes.ObjectRef{l.Status.ProviderApprovalRequest, l.Status.ConsumerApprovalRequest}, "*v1.ApprovalRequest", reads,
+			func(out client.Object, ref *ctypes.ObjectRef, r earlyRead) {
+				req := out.(*approvalv1.ApprovalRequest)
+				req.Name, req.Namespace, req.UID = ref.Name, ref.Namespace, ref.UID
+				if r.uid != "" {
+					req.UID = r.uid
+				}
+				req.Spec.State = r.state
+			},
+			func(r earlyRead) bool { return r.state == approvalv1.ApprovalStateRejected && r.uid == "" })
+	}
+
+	// captureApplied mirrors when step 0.5 reads the request refs: no drain is
+	// active and a fingerprint or capture child ref is recorded.
+	captureApplied := func(l *spectrev1.Listener) bool {
+		ap := l.Status.AppliedPlacement
+		return l.Status.Draining == nil &&
+			((ap != nil && ap.Fingerprint != "") || l.Status.RouteListener != nil || len(l.Status.EventSubscriptions) > 0)
+	}
+
+	// mockEarlyRestrictionGranted stubs every step-0.5 read for l: both Approvals
+	// Granted and, while capture is applied, both current requests not rejected.
 	mockEarlyRestrictionGranted := func(l *spectrev1.Listener) {
-		for _, ref := range []*ctypes.ObjectRef{l.Status.ProviderApproval, l.Status.ConsumerApproval} {
-			Expect(ref).ToNot(BeNil())
-			fakeClient.EXPECT().
-				Get(ctx, ref.K8s(), mock.AnythingOfType("*v1.Approval")).
-				Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
-					out.(*approvalv1.Approval).Spec.State = approvalv1.ApprovalStateGranted
-				}).
-				Return(nil).Once()
+		mockEarlyApprovalsGranted(l)
+		if captureApplied(l) {
+			mockEarlyRequestReads(l, nil)
 		}
 	}
 
@@ -1067,11 +1155,14 @@ var _ = Describe("ListenerHandler", func() {
 		}
 		liveRLs := []gatewayv1.RouteListener{f.rl}
 
-		// R1: the gate's current request is Rejected. The drain checkpoint is
-		// written and the reconcile returns before anything is deleted.
+		// R1: the gate's current request is Rejected. The early read of that
+		// request fails, so only the dual-gate build (step 7) reports the
+		// rejection. The drain checkpoint is written and the reconcile returns
+		// before anything is deleted.
 		preR1 := f.listener
 		mockR1 := func() {
-			mockEarlyRestrictionGranted(preR1)
+			mockEarlyApprovalsGranted(preR1)
+			mockEarlyRequestReads(preR1, map[string]earlyRead{gate: {err: errors.NewServiceUnavailable("etcd leader changed")}})
 			mockResolveTopology()
 			mockOwnedLists(liveRLs, f.subs) // stale-child check: same fingerprint, kept
 			mockRejectedGates(gate)
@@ -1561,6 +1652,7 @@ var _ = Describe("ListenerHandler", func() {
 				liveRLs := []gatewayv1.RouteListener{f.rl}
 
 				// R1: both gates report the Approval Rejected.
+				mockEarlyRequestReads(f.listener, nil)
 				mockResolveTopology()
 				mockOwnedLists(liveRLs, f.subs) // stale-child check: same fingerprint, kept
 				mockApprovalDenied()
@@ -1588,6 +1680,7 @@ var _ = Describe("ListenerHandler", func() {
 						out.(*approvalv1.Approval).Spec.State = approvalv1.ApprovalStateGranted
 					}).
 					Return(nil).Once()
+				mockEarlyRequestReads(f.listener, nil)
 				mockResolveTopology()
 				mockOwnedLists(liveRLs, f.subs) // stale-child check: same fingerprint, kept
 				mockApprovalDenied()
@@ -2119,6 +2212,216 @@ var _ = Describe("ListenerHandler", func() {
 				expectNoCaptureCreates(first)
 			})
 
+			// awaitingScoped is a prior-policy Listener whose recorded migration waits
+			// in AwaitingScoped: legacy Approval Granted, scoped refs written by an
+			// earlier ensureApprovals, and unlabelled prior-policy capture.
+			awaitingScoped := func() (*spectrev1.Listener, *approvalv1.Approval, *approvalv1.ApprovalRequest, *staleCapture) {
+				l := legacyListener()
+				legacy := makeLegacyApproval(l, approvalv1.ApprovalStateGranted)
+				legacyReq := makeLegacyRequest(l)
+				l.Status.AuthorizationMigration = &spectrev1.AuthorizationMigrationStatus{
+					TargetPolicyVersion: "v2",
+					Phase:               "AwaitingScoped",
+					LegacyApproval:      ctypes.ObjectRefFromObject(legacy),
+					LegacyRequests:      []ctypes.ObjectRef{*ctypes.ObjectRefFromObject(legacyReq)},
+				}
+				l.Status.ProviderApproval = &ctypes.ObjectRef{Name: "ag-v1-provider", Namespace: listenerNamespace}
+				l.Status.ConsumerApproval = &ctypes.ObjectRef{Name: "ag-v1-consumer", Namespace: listenerNamespace}
+				l.Status.ProviderApprovalRequest = &ctypes.ObjectRef{Name: "ar-v1-provider", Namespace: listenerNamespace, UID: "provider-req-uid"}
+				l.Status.ConsumerApprovalRequest = &ctypes.ObjectRef{Name: "ar-v1-consumer", Namespace: listenerNamespace, UID: "consumer-req-uid"}
+				return l, legacy, legacyReq, withStaleCapture(l, "", "")
+			}
+
+			// expectAwaitingWithoutCapture asserts that l keeps waiting for the scoped
+			// gates with no capture and no drain left.
+			expectAwaitingWithoutCapture := func(l *spectrev1.Listener) {
+				Expect(l.Status.Draining).To(BeNil())
+				Expect(l.Status.RouteListener).To(BeNil())
+				Expect(l.Status.EventSubscriptions).To(BeEmpty())
+				Expect(l.Status.AuthorizationMigration).ToNot(BeNil())
+				Expect(l.Status.AuthorizationMigration.Phase).To(Equal("AwaitingScoped"))
+				Expect(l.Status.AuthorizationPolicyVersion).ToNot(Equal("v2"))
+			}
+
+			// mockAwaitingReconcile stubs the rest of a reconcile whose gates
+			// (mockGates) leave the migration waiting: topology, an empty
+			// stale-child check and the migration's legacy discovery.
+			mockAwaitingReconcile := func(legacy *approvalv1.Approval, legacyReq *approvalv1.ApprovalRequest, mockGates func()) {
+				mockLegacyApprovalGets(legacy, 1)   // migration discovery
+				mockLegacyRequestGets(legacyReq, 1) // migration discovery
+				mockResolveTopology()
+				mockOwnedLists(nil, nil) // stale-child check: nothing left
+				mockGates()
+			}
+
+			// drainWhileAwaiting runs R1, whose early reads (mockR1Early) miss the
+			// denial so step 5.10 checkpoints the drain of the prior-policy capture
+			// s, then R2-R6: the drain, and the reconcile completing it, whose rest
+			// mockR6 stubs. Nothing is created throughout.
+			drainWhileAwaiting := func(l *spectrev1.Listener, s *staleCapture, mockR1Early, mockR6 func()) *spectrev1.Listener {
+				mockGetZone()
+				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
+				mockR1Early()
+				mockResolveTopology()
+				mockOwnedLists([]gatewayv1.RouteListener{s.rl}, s.subs) // stale-child check
+				first := len(fakeClient.Calls)
+				l, err := reconcile(l)
+				Expect(err).ToNot(HaveOccurred())
+				expectStaleCheckpoint(l, s, first)
+				Expect(l.Status.AuthorizationMigration.Phase).To(Equal("AwaitingScoped"))
+
+				l, _ = finishStaleDrain(l, s, mockR6)
+				expectAwaitingWithoutCapture(l)
+				expectNoCaptureCreates(first)
+				return l
+			}
+
+			It("drains prior-policy capture while waiting on a rejected current scoped request", func() {
+				l, legacy, legacyReq, s := awaitingScoped()
+				pre := l
+				mockRejected := func() { mockRejectedGates("provider") }
+				l = drainWhileAwaiting(l, s,
+					func() {
+						// The early read of the provider request fails.
+						mockEarlyApprovalsGranted(pre)
+						mockEarlyRequestReads(pre, map[string]earlyRead{"provider": {err: errors.NewServiceUnavailable("etcd leader changed")}})
+					},
+					func() {
+						mockEarlyApprovalsGranted(pre)
+						mockAwaitingReconcile(legacy, legacyReq, mockRejected)
+					})
+				expectRequestDenied(l, "provider")
+
+				// R7: the same rejection keeps the migration waiting without capture.
+				mockEarlyApprovalsGranted(l)
+				mockAwaitingReconcile(legacy, legacyReq, mockRejected)
+				start := len(fakeClient.Calls)
+				l, err := reconcile(l)
+				Expect(err).ToNot(HaveOccurred())
+				expectAwaitingWithoutCapture(l)
+				Expect(countCalls(start, "Delete", nil)).To(BeZero())
+				expectNoCaptureCreates(start)
+				expectRequestDenied(l, "provider")
+			})
+
+			It("drains prior-policy capture while waiting on a denied scoped Approval", func() {
+				l, legacy, legacyReq, s := awaitingScoped()
+				// No Approval ref is recorded, so the early check cannot see the denial.
+				l.Status.ProviderApproval = nil
+				l.Status.ConsumerApproval = nil
+				pre := l
+				l = drainWhileAwaiting(l, s,
+					func() { mockEarlyRequestReads(pre, nil) },
+					func() {
+						mockAwaitingReconcile(legacy, legacyReq, func() {
+							mockApprovalDeniedGate("provider")
+							mockApprovalGrantedGate("consumer")
+						})
+					})
+				ready := meta.FindStatusCondition(l.Status.Conditions, condition.ConditionTypeReady)
+				Expect(ready).ToNot(BeNil())
+				Expect(ready.Reason).To(Equal(condition.ReasonAccessDenied))
+				Expect(ready.Message).To(Equal("Approval has been denied (provider gate)"))
+
+				// R7: the scoped Approval refs are recorded now, so the early check
+				// sees the denial; nothing is left to drain.
+				mockEarlyApprovalReads(l, map[string]earlyRead{"provider": {state: approvalv1.ApprovalStateRejected}})
+				mockOwnedLists(nil, nil) // drainCapture inventory: nothing left
+				start := len(fakeClient.Calls)
+				l, err := reconcile(l)
+				Expect(err).ToNot(HaveOccurred())
+				expectAwaitingWithoutCapture(l)
+				Expect(countCalls(start, "Delete", nil)).To(BeZero())
+				expectNoCaptureCreates(start)
+				ready = meta.FindStatusCondition(l.Status.Conditions, condition.ConditionTypeReady)
+				Expect(ready.Message).To(Equal("Approval has been revoked (provider gate, early restriction)"))
+			})
+
+			It("records the migration before the early check drains on a rejected legacy request", func() {
+				l := legacyListener()
+				legacy := makeLegacyApproval(l, approvalv1.ApprovalStateGranted)
+				legacyReq := makeLegacyRequest(l)
+				rejected := legacyReq.DeepCopy()
+				rejected.Spec.State = approvalv1.ApprovalStateRejected
+				l.Status.ProviderApproval = ctypes.ObjectRefFromObject(legacy)
+				l.Status.ProviderApprovalRequest = ctypes.ObjectRefFromObject(legacyReq)
+				s := withStaleCapture(l, "", "")
+
+				// R1, with C NotReady: the early check reads the Granted legacy
+				// Approval and the Rejected legacy request. The freshness decision
+				// records the migration before the drain is checkpointed; no topology
+				// is read.
+				fakeClient.EXPECT().
+					Get(ctx, legacyApprovalKey, mock.AnythingOfType("*v1.Approval")).
+					Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
+						legacy.DeepCopyInto(out.(*approvalv1.Approval))
+					}).
+					Return(nil).Times(2) // early check, record (the unscoped ref makes it not fresh)
+				mockLegacyRequestGets(rejected, 2)                      // early check, record
+				mockOwnedLists([]gatewayv1.RouteListener{s.rl}, s.subs) // drainCapture inventory
+				start := len(fakeClient.Calls)
+				l, err := reconcile(l)
+				Expect(err).ToNot(HaveOccurred())
+				m := l.Status.AuthorizationMigration
+				Expect(m).ToNot(BeNil())
+				Expect(m.Phase).To(Equal("Recorded"))
+				Expect(m.LegacyApproval).To(Equal(ctypes.ObjectRefFromObject(legacy)))
+				Expect(l.Status.AuthorizationPolicyVersion).ToNot(Equal("v2"))
+				d := l.Status.Draining
+				Expect(d).ToNot(BeNil())
+				Expect(d.Reason).To(Equal("approval request rejected (provider gate, early restriction)"))
+				Expect(d.OldRouteListeners).To(Equal([]ctypes.ObjectRef{*ctypes.ObjectRefFromObject(&s.rl)}))
+				Expect(countCalls(start, "Get", &applicationv1.Application{})).To(BeZero())
+				Expect(countCalls(start, "Delete", nil)).To(BeZero())
+				Expect(countCalls(start, "CreateOrUpdate", nil)).To(BeZero())
+			})
+
+			It("does not restart the migration drain it completed when a scoped Approval was revoked meanwhile", func() {
+				f := provisionForRejection()
+				l := f.listener
+				l.Status.AuthorizationPolicyVersion = ""
+				legacy := makeLegacyApproval(l, approvalv1.ApprovalStateGranted)
+				legacyReq := makeLegacyRequest(l)
+				liveRLs := []gatewayv1.RouteListener{f.rl}
+
+				// R1: the migration checkpoints the drain of the applied capture.
+				mockEarlyRestrictionGranted(l)
+				mockLegacyApprovalGets(legacy, 3)   // isFreshInstall, record, migration discovery
+				mockLegacyRequestGets(legacyReq, 2) // record, migration discovery
+				mockResolveTopology()
+				mockOwnedLists(liveRLs, f.subs) // stale-child check: current fingerprint, kept
+				mockApprovalGranted()
+				mockOwnedLists(liveRLs, f.subs) // migration drain inventory
+				l, err := reconcile(l)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(l.Status.AuthorizationMigration.Phase).To(Equal(handler.ExportMigrationPhaseDraining))
+				Expect(l.Status.Draining).ToNot(BeNil())
+
+				// R2-R5: continueDrain deletes the RouteListener, then the Subscribers.
+				l = driveDrainToCleaningPublisher(l, f.rl, f.subs)
+
+				// R6-R7: the drain completes after the provider revoked its scoped
+				// Approval. The early check sees the revocation, nothing is applied
+				// any more, and no drain restarts.
+				expectOrphanedPublisherDelete()
+				for i := range 2 {
+					mockEarlyApprovalReads(l, map[string]earlyRead{"provider": {state: approvalv1.ApprovalStateRejected}})
+					mockOwnedLists(nil, nil) // drainCapture inventory: nothing left
+					start := len(fakeClient.Calls)
+					l, err = reconcile(l)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(l.Status.Draining).To(BeNil())
+					Expect(l.Status.AppliedPlacement).To(BeNil())
+					Expect(countCalls(start, "Delete", &pubsubv1.Publisher{})).To(Equal(1 - i))
+					Expect(countCalls(start, "Delete", &gatewayv1.RouteListener{})).To(BeZero())
+					Expect(countCalls(start, "Delete", &pubsubv1.Subscriber{})).To(BeZero())
+					expectNoCaptureCreates(start)
+					ready := meta.FindStatusCondition(l.Status.Conditions, condition.ConditionTypeReady)
+					Expect(ready).ToNot(BeNil())
+					Expect(ready.Message).To(Equal("Approval has been revoked (provider gate, early restriction)"))
+				}
+			})
+
 			It("drains capture the stale-child check keeps through the migration checkpoint before retirement", func() {
 				f := provisionForRejection()
 				l := f.listener
@@ -2630,7 +2933,10 @@ var _ = Describe("ListenerHandler", func() {
 				f := provisionForRejection()
 				liveRLs := []gatewayv1.RouteListener{f.rl}
 
-				mockEarlyRestrictionGranted(f.listener)
+				// The early read of the provider request fails, so only the
+				// dual-gate build reports the rejection.
+				mockEarlyApprovalsGranted(f.listener)
+				mockEarlyRequestReads(f.listener, map[string]earlyRead{"provider": {err: errors.NewServiceUnavailable("etcd leader changed")}})
 				mockResolveTopology()
 				mockOwnedLists(liveRLs, f.subs) // stale-child check
 				mockApprovalRequestDeniedGate("provider")
@@ -2736,6 +3042,218 @@ var _ = Describe("ListenerHandler", func() {
 				ready = meta.FindStatusCondition(l8.Status.Conditions, condition.ConditionTypeReady)
 				Expect(ready).ToNot(BeNil())
 				Expect(ready.Reason).To(Equal(condition.ReasonSubResourceNotReady))
+			})
+		})
+
+		// Findings #2/#7: a rejected current ApprovalRequest stops applied capture
+		// at the early check, before any topology read, so a NotReady Application
+		// or Zone or a non-definitive placement error cannot keep it running.
+		Context("early restriction: rejected current request while capture is applied", func() {
+			// provisionWithRequestUIDs provisions a Listener (R0) and gives its
+			// request refs the UIDs ensureApprovals records from the live requests.
+			provisionWithRequestUIDs := func() *rejectionFixture {
+				f := provisionForRejection()
+				f.listener.Status.ProviderApprovalRequest.UID = "provider-req-uid"
+				f.listener.Status.ConsumerApprovalRequest.UID = "consumer-req-uid"
+				return f
+			}
+
+			// mockConsumerNotReady stubs the consumer Application read with C NotReady.
+			mockConsumerNotReady := func() {
+				app := makeConsumerApp()
+				meta.SetStatusCondition(&app.Status.Conditions, metav1.Condition{
+					Type: condition.ConditionTypeReady, Status: metav1.ConditionFalse, Reason: "NotReady",
+				})
+				mockGetConsumerApp(app)
+			}
+
+			// mockExposureListFails stubs the topology up to placement with the
+			// provider binding's ApiExposure List failing with err.
+			mockExposureListFails := func(err error) func() {
+				return func() {
+					mockGetConsumerApp(makeConsumerApp())
+					mockGetProviderApp(makeProviderApp())
+					mockGetSpectreApp(makeSpectreAppPtr())
+					mockGetObserverApp(makeConsumerApp()) // A==C: observer resolves to consumer
+					mockGetEventStore(makeListenerEventStore())
+					mockGetCaptureRoute()
+					fakeClient.EXPECT().
+						List(ctx, mock.AnythingOfType("*v1.ApiExposureList"), mock.Anything).
+						Return(err).Once()
+				}
+			}
+
+			// drainOnEarlyRejection provisions (R0), rejects gate's current request
+			// and runs R1-R7 with the topology broken by mockBroken from R6 on:
+			// R1 checkpoints the drain from the early reads alone, R2-R5 delete the
+			// RouteListener and then the Subscribers, R6 cleans the Publisher and
+			// completes the drain, and R6-R7 return brokenErr without another drain.
+			drainOnEarlyRejection := func(gate string, mockBroken func(), brokenErr string) *rejectionFixture {
+				f := provisionWithRequestUIDs()
+				liveRLs := []gatewayv1.RouteListener{f.rl}
+
+				// R1: no topology read, no approval evaluation, nothing deleted.
+				mockEarlyApprovalsGranted(f.listener)
+				mockEarlyRequestReads(f.listener, map[string]earlyRead{gate: {state: approvalv1.ApprovalStateRejected}})
+				mockOwnedLists(liveRLs, f.subs) // drainCapture inventory
+				start := len(fakeClient.Calls)
+				l, err := reconcile(f.listener)
+				Expect(err).ToNot(HaveOccurred())
+				d := l.Status.Draining
+				Expect(d).ToNot(BeNil())
+				Expect(d.Phase).To(Equal(handler.ExportDrainPhaseStopping))
+				Expect(d.Reason).To(Equal("approval request rejected (" + gate + " gate, early restriction)"))
+				Expect(d.OldFingerprint).To(Equal(f.fingerprint))
+				Expect(d.OldRouteListeners).To(Equal([]ctypes.ObjectRef{*ctypes.ObjectRefFromObject(&f.rl)}))
+				Expect(d.OldSubscribers).To(ConsistOf(*ctypes.ObjectRefFromObject(&f.subs[0]), *ctypes.ObjectRefFromObject(&f.subs[1])))
+				Expect(l.Status.RouteListener).ToNot(BeNil())
+				Expect(countCalls(start, "Delete", nil)).To(BeZero())
+				Expect(countCalls(start, "CreateOrUpdate", nil)).To(BeZero())
+				Expect(countCalls(start, "Get", &applicationv1.Application{})).To(BeZero())
+				ready := meta.FindStatusCondition(l.Status.Conditions, condition.ConditionTypeReady)
+				Expect(ready).ToNot(BeNil())
+				Expect(ready.Status).To(Equal(metav1.ConditionFalse))
+				Expect(ready.Reason).To(Equal(condition.ReasonAccessDenied))
+				Expect(ready.Message).To(Equal("ApprovalRequest has been denied (" + gate + " gate, early restriction)"))
+
+				// R2-R5: RouteListener first (UID+RV preconditions), then Subscribers.
+				l = driveDrainToCleaningPublisher(l, f.rl, f.subs)
+
+				// R6 completes the drain and cleans the Publisher; R6 and R7 then hit
+				// the broken topology. Nothing is applied any more, so no request is
+				// read early and no drain restarts.
+				expectOrphanedPublisherDelete()
+				for i := range 2 {
+					mockEarlyApprovalsGranted(l)
+					mockBroken()
+					start = len(fakeClient.Calls)
+					l, err = reconcile(l)
+					Expect(err).To(MatchError(ContainSubstring(brokenErr)))
+					Expect(l.Status.Draining).To(BeNil())
+					Expect(l.Status.AppliedPlacement.Fingerprint).To(BeEmpty())
+					Expect(l.Status.RouteListener).To(BeNil())
+					Expect(l.Status.EventSubscriptions).To(BeEmpty())
+					Expect(countCalls(start, "Delete", &pubsubv1.Publisher{})).To(Equal(1 - i))
+					Expect(countCalls(start, "Delete", &gatewayv1.RouteListener{})).To(BeZero())
+					Expect(countCalls(start, "Delete", &pubsubv1.Subscriber{})).To(BeZero())
+					Expect(countCalls(start, "Get", &approvalv1.ApprovalRequest{})).To(BeZero())
+					Expect(countCalls(start, "CreateOrUpdate", nil)).To(BeZero())
+				}
+				f.listener = l
+				return f
+			}
+
+			DescribeTable("drains before reading topology, stays drained while it is broken, and reaches ensureApprovals once it recovers",
+				func(gate string, mockBroken func(), brokenErr string) {
+					f := drainOnEarlyRejection(gate, mockBroken, brokenErr)
+
+					// R8: topology recovers. ensureApprovals reports RequestDenied, the
+					// drain inventory is empty and nothing is provisioned.
+					mockEarlyApprovalsGranted(f.listener)
+					mockResolveTopology()
+					mockOwnedLists(nil, nil) // stale-child check
+					mockRejectedGates(gate)
+					mockOwnedLists(nil, nil) // drainCapture inventory: nothing left
+					start := len(fakeClient.Calls)
+					l, err := reconcile(f.listener)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(countCalls(start, "CreateOrUpdate", &approvalv1.ApprovalRequest{})).To(Equal(2))
+					Expect(l.Status.Draining).To(BeNil())
+					Expect(l.Status.AppliedPlacement).To(BeNil())
+					Expect(countCalls(start, "Delete", nil)).To(BeZero())
+					expectNoCaptureCreates(start)
+					expectRequestDenied(l, gate)
+				},
+				Entry("consumer request, C NotReady", "consumer", mockConsumerNotReady, "failed to resolve consumer Application"),
+				Entry("provider request, C NotReady", "provider", mockConsumerNotReady, "failed to resolve consumer Application"),
+				Entry("consumer request, ApiExposure List Forbidden", "consumer",
+					mockExposureListFails(errors.NewForbidden(schema.GroupResource{Group: apiv1.GroupVersion.Group, Resource: "apiexposures"}, "", fmt.Errorf("RBAC"))),
+					"failed to resolve placement"),
+				Entry("provider request, ApiExposure List ServiceUnavailable", "provider",
+					mockExposureListFails(errors.NewServiceUnavailable("etcd leader changed")),
+					"failed to resolve placement"),
+			)
+
+			It("creates the new-intent ApprovalRequests after that drain (no deadlock)", func() {
+				f := drainOnEarlyRejection("consumer", mockConsumerNotReady, "failed to resolve consumer Application")
+				l := f.listener
+				l.Spec.ApiListener.RequestFilter = &spectrev1.ListenerFilter{Trigger: map[string]string{"method": "POST"}}
+
+				// The changed intent yields new request names; the Approvals are still
+				// bound to the old requests, so both gates are Pending.
+				var capP, capC approvalv1.ApprovalRequest
+				mockEarlyApprovalsGranted(l)
+				mockResolveTopology()
+				mockOwnedLists(nil, nil) // stale-child check
+				mockGateBoundToOldRequest("provider", f.providerReq, &capP)
+				mockGateBoundToOldRequest("consumer", f.consumerReq, &capC)
+				start := len(fakeClient.Calls)
+				l, err := reconcile(l)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(countCalls(start, "CreateOrUpdate", &approvalv1.ApprovalRequest{})).To(Equal(2))
+				Expect(capP.Name).To(HavePrefix("ar-v1-"))
+				Expect(capP.Name).ToNot(Equal(f.providerReq.Name))
+				Expect(capC.Name).To(HavePrefix("ar-v1-"))
+				Expect(capC.Name).ToNot(Equal(f.consumerReq.Name))
+				Expect(l.Status.ProviderApprovalRequest.Name).To(Equal(capP.Name))
+				Expect(l.Status.ConsumerApprovalRequest.Name).To(Equal(capC.Name))
+				ready := meta.FindStatusCondition(l.Status.Conditions, condition.ConditionTypeReady)
+				Expect(ready).ToNot(BeNil())
+				Expect(ready.Reason).To(Equal(condition.ReasonApprovalPending))
+				Expect(l.Status.Draining).To(BeNil())
+				Expect(countCalls(start, "Delete", nil)).To(BeZero())
+				expectNoCaptureCreates(start)
+			})
+
+			DescribeTable("does not drain on a request that is not the recorded one",
+				func(gate string, read earlyRead) {
+					f := provisionWithRequestUIDs()
+					mockEarlyApprovalsGranted(f.listener)
+					mockEarlyRequestReads(f.listener, map[string]earlyRead{gate: read})
+					mockConsumerNotReady()
+					start := len(fakeClient.Calls)
+					l, err := reconcile(f.listener)
+					Expect(err).To(MatchError(ContainSubstring("failed to resolve consumer Application")))
+					Expect(countCalls(start, "Get", &approvalv1.ApprovalRequest{})).To(Equal(2))
+					Expect(l.Status.Draining).To(BeNil())
+					Expect(l.Status.RouteListener).ToNot(BeNil())
+					Expect(countCalls(start, "List", nil)).To(BeZero()) // no drain inventory
+					Expect(countCalls(start, "Delete", nil)).To(BeZero())
+					Expect(countCalls(start, "CreateOrUpdate", nil)).To(BeZero())
+				},
+				Entry("consumer request recreated with another UID", "consumer",
+					earlyRead{state: approvalv1.ApprovalStateRejected, uid: "recreated-uid"}),
+				Entry("provider request recreated with another UID", "provider",
+					earlyRead{state: approvalv1.ApprovalStateRejected, uid: "recreated-uid"}),
+				Entry("consumer request NotFound", "consumer",
+					earlyRead{err: errors.NewNotFound(schema.GroupResource{Group: approvalv1.GroupVersion.Group, Resource: "approvalrequests"}, "")}),
+				Entry("provider request NotFound", "provider",
+					earlyRead{err: errors.NewNotFound(schema.GroupResource{Group: approvalv1.GroupVersion.Group, Resource: "approvalrequests"}, "")}),
+			)
+
+			It("reads no request and still runs ensureApprovals when nothing is applied", func() {
+				l := newListener()
+				l.Status.ProviderApproval = &ctypes.ObjectRef{Name: "ag-v1-provider", Namespace: listenerNamespace}
+				l.Status.ConsumerApproval = &ctypes.ObjectRef{Name: "ag-v1-consumer", Namespace: listenerNamespace}
+				l.Status.ProviderApprovalRequest = &ctypes.ObjectRef{Name: "ar-v1-provider", Namespace: listenerNamespace, UID: "provider-req-uid"}
+				l.Status.ConsumerApprovalRequest = &ctypes.ObjectRef{Name: "ar-v1-consumer", Namespace: listenerNamespace, UID: "consumer-req-uid"}
+
+				mockGetZone()
+				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
+				mockEarlyApprovalsGranted(l)
+				mockResolveTopology()
+				mockNoStaleChildren()
+				mockRejectedGates("consumer")
+				mockOwnedLists(nil, nil) // drainCapture inventory: nothing to drain
+				start := len(fakeClient.Calls)
+				l, err := reconcile(l)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(countCalls(start, "Get", &approvalv1.ApprovalRequest{})).To(BeZero())
+				Expect(countCalls(start, "CreateOrUpdate", &approvalv1.ApprovalRequest{})).To(Equal(2))
+				Expect(l.Status.Draining).To(BeNil())
+				Expect(countCalls(start, "Delete", nil)).To(BeZero())
+				expectNoCaptureCreates(start)
+				expectRequestDenied(l, "consumer")
 			})
 		})
 
