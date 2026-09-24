@@ -96,6 +96,29 @@ func (h *ListenerHandler) isFreshInstall(ctx context.Context, listener *spectrev
 	return false, nil
 }
 
+// decideFreshness is the freshness decision for a Listener that is neither v2
+// nor migrating. A fresh install enters v2 directly; any other Listener gets
+// its migration record now (recordLegacyEvidence), persisted with this
+// reconcile's status. advanceMigration continues from it once the dual-gate
+// result is available.
+func (h *ListenerHandler) decideFreshness(ctx context.Context, listener *spectrev1.Listener) error {
+	if listener.Status.AuthorizationPolicyVersion == authorizationPolicyV2 || listener.Status.AuthorizationMigration != nil {
+		return nil
+	}
+	fresh, err := h.isFreshInstall(ctx, listener)
+	if err != nil {
+		return errors.Wrap(err, "failed to check fresh install")
+	}
+	if fresh {
+		listener.Status.AuthorizationPolicyVersion = authorizationPolicyV2
+		return nil
+	}
+	if _, _, err = h.recordLegacyEvidence(ctx, listener); err != nil {
+		return errors.Wrap(err, "failed to record migration")
+	}
+	return nil
+}
+
 // noOldUnlabelledChildren returns true only when no owner-labelled
 // RouteListeners or Subscribers exist that lack the authorization fingerprint
 // label. Such children are prior-policy artifacts that need migration/drain.
@@ -146,49 +169,15 @@ func (h *ListenerHandler) advanceMigration(
 		return true, nil
 	}
 
-	// Step 1: Discover and record legacy evidence.
-	mctx, err := h.discoverLegacyEvidence(ctx, listener, intent)
+	// Step 1: Discover and record legacy evidence. The handler normally recorded
+	// it before any child could be removed; this continues from that record.
+	mctx, recordedBlocked, err := h.recordLegacyEvidence(ctx, listener)
 	if err != nil {
-		return false, errors.Wrap(err, "migration: discover legacy evidence")
+		return false, err
 	}
-
-	// isFreshInstall is the SOLE freshness decision and runs before advanceMigration
-	// in the handler. If we reach here (isFreshInstall returned false) but find no
-	// legacy Approval and no migration status, something is inconsistent — block
-	// rather than silently granting v2.
-	//
-	// CRITICAL: Persist a migration record so the next reconcile's isFreshInstall
-	// sees AuthorizationMigration != nil and returns false. Without this record,
-	// ensureApprovals may overwrite the old unscoped ProviderApproval ref with a
-	// scoped "ag-v1-" ref, causing isFreshInstall to see only scoped refs and no
-	// migration record — misclassifying as fresh and granting v2.
-	if mctx.legacyApproval == nil && listener.Status.AuthorizationMigration == nil {
-		listener.Status.AuthorizationMigration = &spectrev1.AuthorizationMigrationStatus{
-			TargetPolicyVersion: authorizationPolicyV2,
-			Phase:               MigrationPhaseBlocked,
-		}
-		listener.SetCondition(condition.NewNotReadyCondition("LegacyApprovalMigrationBlocked",
-			"No legacy Approval found but isFreshInstall returned false — cannot determine policy"))
-		listener.SetCondition(condition.NewBlockedCondition(
-			"No legacy Approval found but migration evidence exists"))
-		logger.Info("Migration blocked: no legacy Approval but isFreshInstall was false")
+	mctx.intent = intent
+	if recordedBlocked {
 		return false, nil
-	}
-
-	// Ensure migration status is initialized.
-	if listener.Status.AuthorizationMigration == nil {
-		listener.Status.AuthorizationMigration = &spectrev1.AuthorizationMigrationStatus{
-			TargetPolicyVersion: authorizationPolicyV2,
-			Phase:               MigrationPhaseRecorded,
-		}
-		// Record legacy refs.
-		if mctx.legacyApprovalRef != nil {
-			listener.Status.AuthorizationMigration.LegacyApproval = mctx.legacyApprovalRef
-		}
-		if mctx.legacyRequestRef != nil {
-			listener.Status.AuthorizationMigration.LegacyRequests = []ctypes.ObjectRef{*mctx.legacyRequestRef}
-		}
-		logger.Info("Migration recorded", "phase", MigrationPhaseRecorded)
 	}
 
 	migration := listener.Status.AuthorizationMigration
@@ -269,31 +258,12 @@ func (h *ListenerHandler) advanceMigration(
 		logger.Info("Scoped approvals granted, advancing to Draining")
 	}
 
-	// Step 4: Drain old capture via the shared drain protocol.
+	// Step 4: Drain old capture via the shared drain protocol. Step 5.10 of the
+	// handler usually drained the prior-policy children already; with nothing
+	// left no empty drain is started and retirement follows directly.
 	if migration.Phase == MigrationPhaseDraining {
-		if listener.Status.Draining == nil {
-			if migration.DrainStarted {
-				// Drain was started previously and completed by the outer handler
-				// (continueDrain in step 5.8 cleared Draining). Clear old
-				// applied fingerprint so step 5.9 doesn't re-trigger a drain.
-				if listener.Status.AppliedPlacement != nil {
-					listener.Status.AppliedPlacement.Fingerprint = ""
-				}
-				migration.Phase = MigrationPhaseRetiringRequests
-				logger.Info("Drain consumed by outer handler, advancing to RetiringRequests")
-			} else {
-				// First entry into Draining — start the drain.
-				oldFP := ""
-				if listener.Status.AppliedPlacement != nil {
-					oldFP = listener.Status.AppliedPlacement.Fingerprint
-				}
-				if err := h.startDrain(ctx, listener, "legacy migration", oldFP); err != nil {
-					return false, err
-				}
-				migration.DrainStarted = true
-				return false, nil // persist drain checkpoint
-			}
-		} else {
+		switch {
+		case listener.Status.Draining != nil:
 			complete, err := h.continueDrain(ctx, listener)
 			if err != nil {
 				return false, err
@@ -301,13 +271,24 @@ func (h *ListenerHandler) advanceMigration(
 			if !complete {
 				return false, nil // drain still in progress
 			}
-			// Clear old applied fingerprint now that drain is complete.
-			if listener.Status.AppliedPlacement != nil {
-				listener.Status.AppliedPlacement.Fingerprint = ""
+		case !migration.DrainStarted:
+			started, err := h.drainCapture(ctx, listener, "legacy migration")
+			if err != nil {
+				return false, err
 			}
-			migration.Phase = MigrationPhaseRetiringRequests
-			logger.Info("Drain complete, advancing to RetiringRequests")
+			if started {
+				migration.DrainStarted = true
+				return false, nil // persist drain checkpoint
+			}
 		}
+		// The drain completed (here or in the handler's step 0) or there was
+		// nothing to drain. Clear the old applied fingerprint so step 5.9 does not
+		// re-trigger a drain.
+		if listener.Status.AppliedPlacement != nil {
+			listener.Status.AppliedPlacement.Fingerprint = ""
+		}
+		migration.Phase = MigrationPhaseRetiringRequests
+		logger.Info("Old capture drained, advancing to RetiringRequests")
 	}
 
 	// Step 5: Retire legacy resources conditionally. Each retirement function
@@ -343,18 +324,71 @@ func (h *ListenerHandler) advanceMigration(
 	return true, nil
 }
 
+// recordLegacyEvidence discovers the legacy evidence and, when no migration is
+// recorded yet, records one: Recorded with the legacy refs when a legacy
+// Approval exists, Blocked otherwise (prior-policy evidence without a legacy
+// Approval). It reports whether it just recorded a Blocked migration.
+//
+// decideFreshness calls it before placement, fingerprint or stale-child
+// handling can drain a child, so the not-fresh decision is persisted with that
+// reconcile's status and a Listener whose prior-policy children were drained is
+// never classified fresh afterwards (isFreshInstall returns false once a record
+// exists).
+func (h *ListenerHandler) recordLegacyEvidence(ctx context.Context, listener *spectrev1.Listener) (*migrationContext, bool, error) {
+	logger := log.FromContext(ctx)
+
+	mctx, err := h.discoverLegacyEvidence(ctx, listener)
+	if err != nil {
+		return nil, false, errors.Wrap(err, "migration: discover legacy evidence")
+	}
+	if listener.Status.AuthorizationMigration != nil {
+		return mctx, false, nil
+	}
+
+	// isFreshInstall is the SOLE freshness decision and runs before this. If we
+	// reach here (isFreshInstall returned false) but find no legacy Approval and
+	// no migration status, something is inconsistent — block rather than
+	// silently granting v2.
+	//
+	// CRITICAL: Persist a migration record so the next reconcile's isFreshInstall
+	// sees AuthorizationMigration != nil and returns false. Without this record,
+	// ensureApprovals may overwrite the old unscoped ProviderApproval ref with a
+	// scoped "ag-v1-" ref, or the prior-policy children may be drained, causing
+	// isFreshInstall to see no legacy evidence and no migration record —
+	// misclassifying as fresh and granting v2.
+	if mctx.legacyApproval == nil {
+		listener.Status.AuthorizationMigration = &spectrev1.AuthorizationMigrationStatus{
+			TargetPolicyVersion: authorizationPolicyV2,
+			Phase:               MigrationPhaseBlocked,
+		}
+		listener.SetCondition(condition.NewNotReadyCondition("LegacyApprovalMigrationBlocked",
+			"No legacy Approval found but isFreshInstall returned false — cannot determine policy"))
+		listener.SetCondition(condition.NewBlockedCondition(
+			"No legacy Approval found but migration evidence exists"))
+		logger.Info("Migration blocked: no legacy Approval but isFreshInstall was false")
+		return mctx, true, nil
+	}
+
+	listener.Status.AuthorizationMigration = &spectrev1.AuthorizationMigrationStatus{
+		TargetPolicyVersion: authorizationPolicyV2,
+		Phase:               MigrationPhaseRecorded,
+		LegacyApproval:      mctx.legacyApprovalRef,
+	}
+	if mctx.legacyRequestRef != nil {
+		listener.Status.AuthorizationMigration.LegacyRequests = []ctypes.ObjectRef{*mctx.legacyRequestRef}
+	}
+	logger.Info("Migration recorded", "phase", MigrationPhaseRecorded)
+	return mctx, false, nil
+}
+
 // discoverLegacyEvidence locates the legacy Approval and its bound request.
 // It validates ownership and binding before returning the evidence.
 func (h *ListenerHandler) discoverLegacyEvidence(
 	ctx context.Context,
 	listener *spectrev1.Listener,
-	intent *authorizationIntent,
 ) (*migrationContext, error) {
 	c := cclient.ClientFromContextOrDie(ctx)
-	mctx := &migrationContext{
-		listener: listener,
-		intent:   intent,
-	}
+	mctx := &migrationContext{listener: listener}
 
 	legacyName := approvalapi.ApprovalName("Listener", listener.Name)
 	approval := &approvalapi.Approval{}

@@ -183,6 +183,11 @@ func makeLegacyRequest(listener *spectrev1.Listener) *approvalv1.ApprovalRequest
 	}
 }
 
+// oldCaptureRef is a RouteListener of the old capture still recorded in status.
+func oldCaptureRef() *ctypes.ObjectRef {
+	return &ctypes.ObjectRef{Name: "old-rl", Namespace: migNamespace, UID: "old-rl-uid"}
+}
+
 // makeDualGranted returns a dualApprovalResult with both gates granted.
 func makeDualGranted() *handler.DualApprovalResult {
 	return handler.NewDualApprovalResult(handler.OutcomeGranted, nil)
@@ -508,10 +513,11 @@ var _ = Describe("Authorization Migration", func() {
 			})
 
 			It("should advance to Draining when dual-gate is granted", func() {
+				listener.Status.RouteListener = oldCaptureRef()
 				// Discovery: Approval + ApprovalRequest.
 				mockLegacyApprovalExists(approval)
 				mockLegacyRequestExists(request)
-				// startDrain needs List mocks for snapshot.
+				// The drain needs List mocks for its snapshot.
 				mockStartDrainLists()
 
 				done, err := h.AdvanceMigration(ctx, listener, &intent, makeDualGranted())
@@ -533,7 +539,33 @@ var _ = Describe("Authorization Migration", func() {
 				request = makeLegacyRequest(listener)
 			})
 
-			It("should invoke startDrain when Draining is nil", func() {
+			It("should start the shared drain when Draining is nil and old capture remains", func() {
+				listener.Status.AuthorizationMigration = &spectrev1.AuthorizationMigrationStatus{
+					TargetPolicyVersion: "v2",
+					Phase:               "Draining",
+					LegacyApproval:      ctypes.ObjectRefFromObject(approval),
+					LegacyRequests:      []ctypes.ObjectRef{*ctypes.ObjectRefFromObject(request)},
+				}
+				listener.Status.RouteListener = oldCaptureRef()
+
+				// Discovery.
+				mockLegacyApprovalExists(approval)
+				mockLegacyRequestExists(request)
+				// Drain snapshot List mocks.
+				mockStartDrainLists()
+
+				done, err := h.AdvanceMigration(ctx, listener, &intent, makeDualGranted())
+				Expect(err).ToNot(HaveOccurred())
+				Expect(done).To(BeFalse())
+				Expect(listener.Status.Draining).ToNot(BeNil())
+				Expect(listener.Status.Draining.Phase).To(Equal(handler.ExportDrainPhaseStopping))
+				Expect(listener.Status.Draining.Reason).To(Equal("legacy migration"))
+				Expect(listener.Status.Draining.OldRouteListeners).To(Equal([]ctypes.ObjectRef{*oldCaptureRef()}))
+				Expect(listener.Status.AuthorizationMigration.DrainStarted).To(BeTrue())
+				fakeClient.AssertNumberOfCalls(GinkgoT(), "Delete", 0)
+			})
+
+			It("should advance to RetiringRequests without an empty drain when nothing is left", func() {
 				listener.Status.AuthorizationMigration = &spectrev1.AuthorizationMigrationStatus{
 					TargetPolicyVersion: "v2",
 					Phase:               "Draining",
@@ -544,16 +576,23 @@ var _ = Describe("Authorization Migration", func() {
 				// Discovery.
 				mockLegacyApprovalExists(approval)
 				mockLegacyRequestExists(request)
-				// startDrain List mocks.
+				// Drain inventory: nothing owned, tracked or applied (the handler's
+				// stale-child check already drained the prior-policy children).
 				mockStartDrainLists()
+				// Retirement only checkpoints the request's deletion.
+				mockLegacyRequestExists(request)
 
 				done, err := h.AdvanceMigration(ctx, listener, &intent, makeDualGranted())
 				Expect(err).ToNot(HaveOccurred())
 				Expect(done).To(BeFalse())
-				Expect(listener.Status.Draining).ToNot(BeNil())
-				Expect(listener.Status.Draining.Phase).To(Equal(handler.ExportDrainPhaseStopping))
-				Expect(listener.Status.Draining.Reason).To(Equal("legacy migration"))
-				Expect(listener.Status.AuthorizationMigration.DrainStarted).To(BeTrue())
+				Expect(listener.Status.Draining).To(BeNil())
+				migration := listener.Status.AuthorizationMigration
+				Expect(migration.DrainStarted).To(BeFalse())
+				Expect(migration.Phase).To(Equal("RetiringRequests"))
+				Expect(migration.RetirementCheckpoint).ToNot(BeNil())
+				Expect(migration.RetirementCheckpoint.PendingDeletions).To(HaveLen(1))
+				Expect(migration.RetirementCheckpoint.PendingDeletions[0].Phase).To(Equal(handler.ExportPendingDeletionPhasePrepared))
+				fakeClient.AssertNumberOfCalls(GinkgoT(), "Delete", 0)
 			})
 
 			It("should wait for continueDrain to complete", func() {
@@ -914,10 +953,12 @@ var _ = Describe("Authorization Migration", func() {
 					},
 				}
 
+				listener.Status.RouteListener = oldCaptureRef()
+
 				// Discovery.
 				mockLegacyApprovalExists(approval)
 				mockLegacyRequestExists(request)
-				// Draining: startDrain.
+				// Draining: the drain snapshot.
 				mockStartDrainLists()
 
 				done, err := h.AdvanceMigration(ctx, listener, &intent, makeDualGranted())
