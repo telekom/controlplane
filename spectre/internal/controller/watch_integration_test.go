@@ -11,6 +11,7 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -20,6 +21,7 @@ import (
 	apiv1 "github.com/telekom/controlplane/api/api/v1"
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
+	"github.com/telekom/controlplane/common/pkg/condition"
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	ctypes "github.com/telekom/controlplane/common/pkg/types"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
@@ -394,9 +396,13 @@ var _ = Describe("Watch-Driven Integration", Ordered, func() {
 	Describe("Scenario 6: child readiness updates parent", func() {
 		It("should update SpectreApplication conditions when child Publisher becomes Ready", func() {
 			By("Creating a SpectreApplication and waiting for its Publisher to be created")
+			// This is the one SpectreApplication for watchConsumerName; scenarios
+			// 7 and 1-4 reuse it. A second one would derive the same child names,
+			// rewrite their owner label and requeue this one forever, waking every
+			// Listener that references it and masking the watches under test.
 			sa := &spectrev1.SpectreApplication{
 				ObjectMeta: metav1.ObjectMeta{
-					Name: "s6-sa", Namespace: watchNs,
+					Name: watchSAName, Namespace: watchNs,
 					Labels: map[string]string{envLabelKey: watchEnv},
 				},
 				Spec: spectrev1.SpectreApplicationSpec{
@@ -437,7 +443,7 @@ var _ = Describe("Watch-Driven Integration", Ordered, func() {
 			By("Verifying the SA's status.id is populated (controller reconciled)")
 			Eventually(func(g Gomega) {
 				updated := &spectrev1.SpectreApplication{}
-				g.Expect(directClient.Get(ctx, types.NamespacedName{Name: "s6-sa", Namespace: watchNs}, updated)).To(Succeed())
+				g.Expect(directClient.Get(ctx, types.NamespacedName{Name: watchSAName, Namespace: watchNs}, updated)).To(Succeed())
 				g.Expect(updated.Status.Id).To(Equal(watchConsumerCID))
 				g.Expect(updated.Status.Publisher).NotTo(BeNil())
 			}, watchTimeout, watchInterval).Should(Succeed())
@@ -677,15 +683,7 @@ var _ = Describe("Watch-Driven Integration", Ordered, func() {
 			}
 			Expect(directClient.Create(ctx, listener)).To(Succeed())
 
-			By("Verifying no RouteListener exists yet (Route is missing, Listener is blocked)")
-			rlName := util.MakeRouteListenerName(watchConsumerCID, s3BasePath, watchConsumerCID, watchProviderCID)
-			Consistently(func(g Gomega) {
-				rl := &gatewayv1.RouteListener{}
-				err := directClient.Get(ctx, types.NamespacedName{Name: rlName, Namespace: watchZNs}, rl)
-				g.Expect(err).To(HaveOccurred(), "RouteListener should not exist while Route is missing")
-			}, 3*time.Second, 500*time.Millisecond).Should(Succeed())
-
-			By("Creating ApiExposure and Route — this should trigger the watch and unblock the Listener")
+			By("Creating the ApiExposure first, so its own watch fires before the Route exists")
 			s3Exposure := &apiv1.ApiExposure{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: watchProviderName + "--" + util.MakeRouteName(s3BasePath), Namespace: watchNs,
@@ -709,6 +707,36 @@ var _ = Describe("Watch-Driven Integration", Ordered, func() {
 			}
 			Expect(directClient.Status().Update(ctx, s3Exposure)).To(Succeed())
 
+			By("Verifying the Listener is blocked on the missing Route and no RouteListener exists yet")
+			rlName := util.MakeRouteListenerName(watchConsumerCID, s3BasePath, watchConsumerCID, watchProviderCID)
+			Eventually(func(g Gomega) {
+				l := &spectrev1.Listener{}
+				g.Expect(directClient.Get(ctx, client.ObjectKeyFromObject(listener), l)).To(Succeed())
+				processing := meta.FindStatusCondition(l.Status.Conditions, condition.ConditionTypeProcessing)
+				g.Expect(processing).NotTo(BeNil())
+				g.Expect(processing.Reason).To(Equal(condition.ReasonBlocked))
+				g.Expect(processing.Message).To(ContainSubstring(fmt.Sprintf("no Route %q", util.MakeRouteName(s3BasePath))))
+			}, watchTimeout, watchInterval).Should(Succeed())
+			Consistently(func(g Gomega) {
+				rl := &gatewayv1.RouteListener{}
+				err := directClient.Get(ctx, types.NamespacedName{Name: rlName, Namespace: watchZNs}, rl)
+				g.Expect(err).To(HaveOccurred(), "RouteListener should not exist while Route is missing")
+			}, 3*time.Second, 500*time.Millisecond).Should(Succeed())
+
+			By("Confirming the SpectreApplication is quiet, so only the Route watch can wake the Listener")
+			// A SpectreApplication status write wakes its Listeners through
+			// mapSpectreApplicationToListeners; if it kept changing, the Listener
+			// below would be unblocked without the Route watch.
+			sa := &spectrev1.SpectreApplication{}
+			Expect(directClient.Get(ctx, types.NamespacedName{Name: watchSAName, Namespace: watchNs}, sa)).To(Succeed())
+			saResourceVersion := sa.ResourceVersion
+			Consistently(func(g Gomega) {
+				current := &spectrev1.SpectreApplication{}
+				g.Expect(directClient.Get(ctx, client.ObjectKeyFromObject(sa), current)).To(Succeed())
+				g.Expect(current.ResourceVersion).To(Equal(saResourceVersion))
+			}, 2*time.Second, 250*time.Millisecond).Should(Succeed())
+
+			By("Creating the Route — this should trigger the Route watch and unblock the Listener")
 			route := &gatewayv1.Route{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: util.MakeRouteName(s3BasePath), Namespace: watchZNs,
