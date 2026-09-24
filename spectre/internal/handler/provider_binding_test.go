@@ -129,6 +129,8 @@ var _ = Describe("verifyProviderBinding", func() {
 			Expect(binding.ApiExposureNamespace).To(Equal(listenerNamespace))
 			Expect(binding.ApiExposureUID).To(Equal(exposureUID))
 			Expect(binding.ApplicationName).To(Equal(applicationName))
+			Expect(binding.IsPrimaryRoute).To(BeTrue())
+			Expect(binding.ProxyRoutes).To(BeEmpty())
 		})
 	})
 
@@ -148,6 +150,11 @@ var _ = Describe("verifyProviderBinding", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(binding).NotTo(BeNil())
 			Expect(binding.ApiExposureName).To(Equal(exposureName))
+			Expect(binding.IsPrimaryRoute).To(BeFalse())
+			Expect(binding.ProxyRoutes).To(Equal([]ctypes.ObjectRef{{Name: routeName, Namespace: routeNamespace}}))
+			// The binding holds a copy, not the exposure's status slice.
+			exposure.Status.ProxyRoutes[0].Name = "mutated"
+			Expect(binding.ProxyRoutes[0].Name).To(Equal(routeName))
 		})
 	})
 

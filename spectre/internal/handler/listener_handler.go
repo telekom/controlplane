@@ -123,68 +123,6 @@ func (h *ListenerHandler) CreateOrUpdate(ctx context.Context, listener *spectrev
 	}
 	apiBasePath := listener.Spec.ApiListener.ApiBasePath
 
-	// Step 4: Resolve the listening zone so we can find the Route.
-	listeningZone, err := util.GetListeningZone(ctx, providerZone, consumerZone)
-	if err != nil {
-		return errors.Wrap(err, "failed to determine listening zone")
-	}
-
-	// Step 5: Resolve the gateway Route early so unsupported modes
-	// (pass-through, failover) are rejected before creating approvals.
-	route, err := h.findRouteByPath(ctx, listeningZone.Status.Namespace, apiBasePath)
-	if err != nil {
-		return errors.Wrap(err, "failed to find Route for apiBasePath")
-	}
-	if route == nil {
-		return ctrlerrors.BlockedErrorf("no Route found with path %q in namespace %q", apiBasePath, listeningZone.Status.Namespace)
-	}
-
-	// Step 5.6: Reject routes whose mode is incompatible with listener capture.
-	// Pass-through routes skip authentication entirely (the route handler wraps
-	// RouteListener collection in `if !route.Spec.PassThrough`), and failover
-	// routes overwrite the /listener upstream to /proxy (priority 109 > 103).
-	// In either case, clean up any existing children first — this handles a
-	// previously-supported Route that changed to an unsupported mode.
-	if route.Spec.PassThrough || route.Spec.Traffic.Failover != nil {
-		if err := h.deleteAllOwnedChildren(ctx, listener); err != nil {
-			return errors.Wrap(err, "failed to cleanup children for unsupported route mode")
-		}
-		listener.Status.RouteListener = nil
-		listener.Status.EventSubscriptions = nil
-
-		zoneNamespace, err := h.resolvePublisherNamespace(ctx, listener)
-		if err != nil {
-			return errors.Wrap(err, "failed to resolve publisher namespace for route-mode rejection")
-		}
-		if zoneNamespace != "" {
-			if err := h.cleanupGenericPublisherIfOrphaned(ctx, zoneNamespace); err != nil {
-				return errors.Wrap(err, "failed to check orphaned generic Publisher")
-			}
-		}
-
-		mode := "pass-through"
-		if route.Spec.Traffic.Failover != nil {
-			mode = "failover"
-		}
-		return ctrlerrors.BlockedErrorf("Route %q is %s — listener capture is not supported for this route mode", route.Name, mode)
-	}
-
-	// Step 5.6b: Verify that the Route is owned by the provider's API exposure.
-	binding, err := h.verifyProviderBinding(ctx, route, providerApp)
-	if err != nil {
-		// If we have existing capture, drain it before blocking — the provider
-		// binding may have been invalidated (e.g., Route ownership changed).
-		if listener.Status.AppliedPlacement != nil && listener.Status.Draining == nil {
-			if drainErr := h.startDrain(ctx, listener, "provider binding invalidated",
-				listener.Status.AppliedPlacement.Fingerprint); drainErr != nil {
-				return errors.Wrap(drainErr, "failed to start drain after binding failure")
-			}
-			return nil // persist drain checkpoint
-		}
-		return errors.Wrap(err, "provider binding check failed")
-	}
-
-	// Compute the canonical authorization intent and fingerprint.
 	// The observer is the SpectreApplication's own Application (A), which may
 	// differ from the consumer (C) when observing another team's traffic.
 	observerApp, err := h.resolveApplication(ctx, &spectreApp.Spec.Application)
@@ -196,12 +134,17 @@ func (h *ListenerHandler) CreateOrUpdate(ctx context.Context, listener *spectrev
 		return errors.Wrap(err, "failed to resolve observer zone")
 	}
 
-	// Step 5.7: Resolve full placement (EventConfig, EventStore, callback URL).
-	// Delivery is always A's zone (observerZone), capture is from the C→P path.
-	lp, err := util.ResolvePlacement(ctx, listeningZone, observerZone, route)
+	// Step 4: Resolve placement before creating approvals. Delivery is always
+	// A's zone; capture is the first supported zone on the C→P path (A's zone
+	// when on it, then C's, then P's). Unsupported Routes (missing, pass-through,
+	// failover, not bound to P) are skipped per candidate; when none remains,
+	// applied capture is drained.
+	lp, binding, err := h.resolveListenerPlacement(ctx, observerZone, consumerZone, providerZone, providerApp, apiBasePath)
 	if err != nil {
-		return errors.Wrap(err, "failed to resolve placement")
+		return h.handlePlacementError(ctx, listener, err)
 	}
+
+	// Compute the canonical authorization intent and fingerprint.
 	placement := PlacementIntent{
 		ApiExposureName:             binding.ApiExposureName,
 		ApiExposureNamespace:        binding.ApiExposureNamespace,
@@ -358,7 +301,7 @@ func (h *ListenerHandler) CreateOrUpdate(ctx context.Context, listener *spectrev
 	logger.Info("Ensured generic Publisher", "publisher", publisher.Name)
 
 	// Step 9: Create RouteListener.
-	routeListener, err := h.ensureRouteListener(ctx, listener, lp.CaptureZone, route, appId, consumerId, providerId, apiBasePath, fingerprint)
+	routeListener, err := h.ensureRouteListener(ctx, listener, lp.CaptureZone, lp.CaptureRoute, appId, consumerId, providerId, apiBasePath, fingerprint)
 	if err != nil {
 		return errors.Wrap(err, "failed to ensure RouteListener")
 	}
