@@ -408,6 +408,15 @@ var _ = Describe("Zone Handler Steps", func() {
 			Expect(roverCertsRoute.Spec.Backend.Upstreams[0].Path).To(Equal("/api/v1/certs/rover"))
 			Expect(roverCertsRoute.Spec.PassThrough).To(BeTrue())
 
+			roverDiscoveryRoute := &gatewayapi.Route{}
+			Expect(k8sClient.Get(ctx, client.ObjectKey{
+				Namespace: hc.Namespace.Name,
+				Name:      "gateway--" + hc.InternalIdentityRealm.Name + "--discovery",
+			}, roverDiscoveryRoute)).To(Succeed())
+			Expect(roverDiscoveryRoute.Spec.Paths).To(ContainElement("/auth/realms/rover/.well-known/openid-configuration"))
+			Expect(roverDiscoveryRoute.Spec.Backend.Upstreams).To(HaveLen(1))
+			Expect(roverDiscoveryRoute.Spec.Backend.Upstreams[0].Path).To(Equal("/api/v1/discovery/rover"))
+
 			// Verify discovery route exists
 			discoveryRoute := &gatewayapi.Route{}
 			Expect(k8sClient.Get(ctx, client.ObjectKey{

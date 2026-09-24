@@ -53,7 +53,7 @@ var identityRouteConfigs = []identityRouteConfig{
 const jumperIdentityPort int32 = 8081
 
 // createIdentityRoutes creates the OIDC identity routes (issuer, certs, discovery) for
-// the default identity realm and, if configured, the team-api identity realm.
+// the default, internal and identity realm and, if configured, the team-api identity realm.
 // These passthrough routes allow external consumers to discover JWKS keys and validate
 // last-mile-security tokens issued by this zone's gateway.
 func createIdentityRoutes(ctx context.Context, hc *HandlingContext) error {
@@ -75,6 +75,7 @@ func createIdentityRoutes(ctx context.Context, hc *HandlingContext) error {
 		}
 	}
 
+	// Create routes for the internal identity realm
 	for _, cfg := range identityRouteConfigs {
 		if err := createIdentityRoute(ctx, hc, hc.InternalIdentityRealm.Name, cfg, defaultPreset, pathPrefix); err != nil {
 			return err
