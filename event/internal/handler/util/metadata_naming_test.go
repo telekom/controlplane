@@ -8,8 +8,9 @@ import (
 	"strings"
 	"testing"
 
-	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/util/validation"
+
+	. "github.com/onsi/gomega"
 )
 
 func TestEventRouteNameBounds(t *testing.T) {

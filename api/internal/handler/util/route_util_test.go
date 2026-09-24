@@ -7,9 +7,10 @@ package util
 import (
 	"strings"
 
+	"k8s.io/apimachinery/pkg/util/validation"
+
 	apiapi "github.com/telekom/controlplane/api/api/v1"
 	"github.com/telekom/controlplane/common/pkg/types"
-	"k8s.io/apimachinery/pkg/util/validation"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"

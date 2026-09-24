@@ -8,10 +8,12 @@ import (
 	"strings"
 	"testing"
 
-	. "github.com/onsi/gomega"
-	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/telekom/controlplane/common/pkg/util/labelutil"
+
+	. "github.com/onsi/gomega"
 )
 
 func TestVerifyLongApplicationLabel(t *testing.T) {

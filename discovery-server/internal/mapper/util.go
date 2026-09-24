@@ -10,11 +10,11 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/telekom/controlplane/common-server/pkg/problems"
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
+	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 )
 
 const (
