@@ -24,17 +24,28 @@ import (
 
 // createScopedApproval creates an Approval with the given scoped fields and
 // progresses it to the target state. The Approval is created fresh (not via
-// the shared CreateApproval helper) to avoid resourceVersion conflicts.
+// the shared CreateApproval helper) to avoid resourceVersion conflicts. Like
+// the approval controller (setControllerReferenceForRef), it makes the target
+// the Approval's controller owner.
 func createScopedApproval(
 	name, key string,
 	target ctypes.TypedObjectRef,
 	state approvalv1.ApprovalState,
 	approvedRequest *ctypes.ObjectRef,
 ) *approvalv1.Approval {
+	isController := true
 	appr := &approvalv1.Approval{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: testNamespace,
+			OwnerReferences: []metav1.OwnerReference{{
+				APIVersion:         target.APIVersion,
+				Kind:               target.Kind,
+				Name:               target.Name,
+				UID:                target.UID,
+				Controller:         &isController,
+				BlockOwnerDeletion: &isController,
+			}},
 			Labels: map[string]string{
 				config.EnvironmentLabelKey: testEnvironment,
 			},
@@ -642,6 +653,23 @@ var _ = Describe("Scoped identity hardening", func() {
 		return appr
 	}
 
+	// rejectRequestAndWait records a decider rejection on the persisted request
+	// and waits until the builder's cache serves it.
+	rejectRequestAndWait := func(arName string) {
+		ar := &approvalv1.ApprovalRequest{}
+		ExpectWithOffset(1, k8sClient.Get(ctx, client.ObjectKey{Name: arName, Namespace: testNamespace}, ar)).To(Succeed())
+		ar.Spec.State = approvalv1.ApprovalStateRejected
+		ar.Spec.Decisions = append(ar.Spec.Decisions, approvalv1.Decision{
+			Name: "Decider", Comment: "rejected", ResultingState: approvalv1.ApprovalStateRejected,
+		})
+		ExpectWithOffset(1, k8sClient.Update(ctx, ar)).To(Succeed())
+		EventuallyWithOffset(1, func(g Gomega) {
+			cached := &approvalv1.ApprovalRequest{}
+			g.Expect(k8sm.GetClient().Get(ctx, client.ObjectKey{Name: arName, Namespace: testNamespace}, cached)).To(Succeed())
+			g.Expect(cached.ResourceVersion).To(Equal(ar.ResourceVersion))
+		}, timeout, interval).Should(Succeed())
+	}
+
 	BeforeEach(func() {
 		specIdx = 0
 	})
@@ -775,9 +803,9 @@ var _ = Describe("Scoped identity hardening", func() {
 	})
 
 	// -------------------------------------------------------------------
-	// Missing controller owner on Approval -> accepted (not yet reconciled)
+	// Missing controller owner on a persisted Approval -> error, not Granted
 	// -------------------------------------------------------------------
-	It("accepts keyed Approval with no ownerReferences (not yet reconciled)", func() {
+	It("rejects a persisted keyed Approval without a controller owner", func() {
 		ownerName := uniqueOwnerName("noowner")
 		owner := createOwner(ownerName)
 
@@ -796,20 +824,141 @@ var _ = Describe("Scoped identity hardening", func() {
 		arUID := b1.GetApprovalRequest().UID
 		waitForCacheAR(arName)
 
-		By("Creating an Approval with NO ownerReferences (freshly created, not yet adopted)")
+		By("Creating a bound, Granted Approval with NO ownerReferences")
 		correctRef := &ctypes.ObjectRef{Name: arName, Namespace: testNamespace, UID: arUID}
 		_ = createScopedApprovalWithOwner(approvalName, "provider", b1.GetApprovalRequest().Spec.Target,
 			approvalv1.ApprovalStateGranted, correctRef, nil)
 		waitForCacheApproval(approvalName)
 
-		By("Rebuilding — should succeed (no owner = not yet adopted)")
-		jc2 := cclient.NewJanitorClient(cclient.NewScopedClient(k8sm.GetClient(), testEnvironment))
-		b2 := NewApprovalBuilder(jc2, owner)
-		b2.WithApprovalKey("provider").WithHashValue(requester.Properties).WithRequester(requester).WithStrategy(approvalv1.ApprovalStrategySimple)
-		res, err := b2.Build(ctx)
-		Expect(err).NotTo(HaveOccurred())
-		Expect(res).To(Equal(ApprovalResultGranted))
+		By("Rebuilding on consecutive reconciles — never Granted")
+		for range 2 {
+			jc := cclient.NewJanitorClient(cclient.NewScopedClient(k8sm.GetClient(), testEnvironment))
+			b := NewApprovalBuilder(jc, owner)
+			b.WithApprovalKey("provider").WithHashValue(requester.Properties).WithRequester(requester).WithStrategy(approvalv1.ApprovalStrategySimple)
+			res, err := b.Build(ctx)
+			Expect(err).To(MatchError(ContainSubstring("missing or foreign controller owner")))
+			Expect(res).To(Equal(ApprovalResultNone))
+			Expect(meta.IsStatusConditionTrue(owner.GetConditions(), ConditionTypeForKey("provider"))).To(BeFalse())
+		}
+
+		By("Verifying the Approval was not adopted")
+		persisted := &approvalv1.Approval{}
+		Expect(k8sClient.Get(ctx, client.ObjectKey{Name: approvalName, Namespace: testNamespace}, persisted)).To(Succeed())
+		Expect(persisted.OwnerReferences).To(BeEmpty())
+		Expect(persisted.Spec.State).To(Equal(approvalv1.ApprovalStateGranted))
 	})
+
+	// -------------------------------------------------------------------
+	// Restrictive results need no controller-owner authority
+	// -------------------------------------------------------------------
+	DescribeTable("restrictive results are not masked by a missing controller owner",
+		func(approvalState approvalv1.ApprovalState, rejectRequest bool, expected ApprovalResult) {
+			owner := createOwner(uniqueOwnerName("restrict"))
+
+			requester := &approvalv1.Requester{TeamName: "TeamRestrict", TeamEmail: "restrict@telekom.de", Reason: "restrict"}
+			Expect(requester.SetProperties(map[string]any{"path": "/restrict"})).To(Succeed())
+
+			jc1 := cclient.NewJanitorClient(cclient.NewScopedClient(k8sm.GetClient(), testEnvironment))
+			b1 := NewApprovalBuilder(jc1, owner)
+			b1.WithApprovalKey("provider").WithHashValue(requester.Properties).WithRequester(requester).WithStrategy(approvalv1.ApprovalStrategySimple)
+			_, err := b1.Build(ctx)
+			Expect(err).NotTo(HaveOccurred())
+
+			arName := b1.GetApprovalRequest().Name
+			approvalName := b1.GetApproval().Name
+			waitForCacheAR(arName)
+
+			By("Creating an ownerless Approval bound to the current request")
+			boundRef := &ctypes.ObjectRef{Name: arName, Namespace: testNamespace, UID: b1.GetApprovalRequest().UID}
+			_ = createScopedApprovalWithOwner(approvalName, "provider", b1.GetApprovalRequest().Spec.Target,
+				approvalState, boundRef, nil)
+			waitForCacheApproval(approvalName)
+
+			if rejectRequest {
+				rejectRequestAndWait(arName)
+			}
+
+			jc2 := cclient.NewJanitorClient(cclient.NewScopedClient(k8sm.GetClient(), testEnvironment))
+			b2 := NewApprovalBuilder(jc2, owner)
+			b2.WithApprovalKey("provider").WithHashValue(requester.Properties).WithRequester(requester).WithStrategy(approvalv1.ApprovalStrategySimple)
+			res, err := b2.Build(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(res).To(Equal(expected))
+		},
+		Entry("Rejected Approval -> Denied", approvalv1.ApprovalStateRejected, false, ApprovalResultDenied),
+		Entry("rejected current request -> RequestDenied", approvalv1.ApprovalStateGranted, true, ApprovalResultRequestDenied),
+	)
+
+	// -------------------------------------------------------------------
+	// Existing keyed ApprovalRequest this owner does not control -> error,
+	// and the builder never takes over its controller reference.
+	// -------------------------------------------------------------------
+	DescribeTable("rejects an existing keyed ApprovalRequest this owner does not control",
+		func(tamper func(ar *approvalv1.ApprovalRequest)) {
+			owner := createOwner(uniqueOwnerName("arowner"))
+
+			requester := &approvalv1.Requester{TeamName: "TeamAROwner", TeamEmail: "arowner@telekom.de", Reason: "arowner"}
+			Expect(requester.SetProperties(map[string]any{"path": "/arowner"})).To(Succeed())
+
+			jc1 := cclient.NewJanitorClient(cclient.NewScopedClient(k8sm.GetClient(), testEnvironment))
+			b1 := NewApprovalBuilder(jc1, owner)
+			b1.WithApprovalKey("provider").WithHashValue(requester.Properties).WithRequester(requester).WithStrategy(approvalv1.ApprovalStrategySimple)
+			res, err := b1.Build(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(res).To(Equal(ApprovalResultPending))
+			arName := b1.GetApprovalRequest().Name
+
+			By("Verifying the creation path made the owner the controller")
+			ar := &approvalv1.ApprovalRequest{}
+			Expect(k8sClient.Get(ctx, client.ObjectKey{Name: arName, Namespace: testNamespace}, ar)).To(Succeed())
+			Expect(metav1.IsControlledBy(ar, owner)).To(BeTrue())
+
+			By("Tampering with the request's controller owner on the server")
+			tamper(ar)
+			Expect(k8sClient.Update(ctx, ar)).To(Succeed())
+			rv := ar.ResourceVersion
+			refs := append([]metav1.OwnerReference(nil), ar.OwnerReferences...)
+
+			Eventually(func(g Gomega) {
+				cached := &approvalv1.ApprovalRequest{}
+				g.Expect(k8sm.GetClient().Get(ctx, client.ObjectKey{Name: arName, Namespace: testNamespace}, cached)).To(Succeed())
+				g.Expect(cached.ResourceVersion).To(Equal(rv))
+			}, timeout, interval).Should(Succeed())
+
+			By("Rebuilding on consecutive reconciles — error, no write, no adoption")
+			for range 2 {
+				jc := cclient.NewJanitorClient(cclient.NewScopedClient(k8sm.GetClient(), testEnvironment))
+				b := NewApprovalBuilder(jc, owner)
+				b.WithApprovalKey("provider").WithHashValue(requester.Properties).WithRequester(requester).WithStrategy(approvalv1.ApprovalStrategySimple)
+				res, err := b.Build(ctx)
+				Expect(err).To(MatchError(ContainSubstring("missing or foreign controller owner")))
+				Expect(res).To(Equal(ApprovalResultNone))
+
+				persisted := &approvalv1.ApprovalRequest{}
+				Expect(k8sClient.Get(ctx, client.ObjectKey{Name: arName, Namespace: testNamespace}, persisted)).To(Succeed())
+				Expect(persisted.ResourceVersion).To(Equal(rv))
+				Expect(persisted.OwnerReferences).To(Equal(refs))
+			}
+		},
+		Entry("no ownerReferences", func(ar *approvalv1.ApprovalRequest) {
+			ar.OwnerReferences = nil
+		}),
+		Entry("foreign controller", func(ar *approvalv1.ApprovalRequest) {
+			isController := true
+			ar.OwnerReferences = []metav1.OwnerReference{{
+				APIVersion: "v1",
+				Kind:       "ConfigMap",
+				Name:       "foreign-object",
+				UID:        k8stypes.UID("foreign-uid-000"),
+				Controller: &isController,
+			}}
+		}),
+		Entry("owner name with stale UID", func(ar *approvalv1.ApprovalRequest) {
+			ref := *metav1.GetControllerOf(ar)
+			ref.UID = "stale-owner-uid"
+			ar.OwnerReferences = []metav1.OwnerReference{ref}
+		}),
+	)
 
 	// -------------------------------------------------------------------
 	// Correct controller owner on Approval -> accepted
