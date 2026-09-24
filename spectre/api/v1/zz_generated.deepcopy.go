@@ -167,6 +167,13 @@ func (in *ListenerDrainStatus) DeepCopyInto(out *ListenerDrainStatus) {
 		in, out := &in.OldRouteListener, &out.OldRouteListener
 		*out = (*in).DeepCopy()
 	}
+	if in.OldRouteListeners != nil {
+		in, out := &in.OldRouteListeners, &out.OldRouteListeners
+		*out = make([]types.ObjectRef, len(*in))
+		for i := range *in {
+			(*in)[i].DeepCopyInto(&(*out)[i])
+		}
+	}
 	if in.OldSubscribers != nil {
 		in, out := &in.OldSubscribers, &out.OldSubscribers
 		*out = make([]types.ObjectRef, len(*in))
