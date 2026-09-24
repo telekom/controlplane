@@ -9,6 +9,7 @@ package handler
 
 import (
 	"context"
+	"fmt"
 
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	approvalapi "github.com/telekom/controlplane/approval/api/v1"
@@ -127,15 +128,18 @@ func HasPendingDeletionFor(migration *spectrev1.AuthorizationMigrationStatus, ki
 func (h *ListenerHandler) CheckEarlyRestriction(
 	ctx context.Context,
 	listener *spectrev1.Listener,
-) (bool, string, error) {
+) (approvalGate, requestGate string, err error) {
 	return h.checkEarlyRestriction(ctx, listener)
 }
 
-// HandleDenialCleanup is the exported wrapper for handleDenialCleanup (test use).
+// HandleDenialCleanup is the exported wrapper for handleDenialCleanup with the
+// early Approval revocation reason and message (test use).
 func (h *ListenerHandler) HandleDenialCleanup(
 	ctx context.Context,
 	listener *spectrev1.Listener,
 	gateKey string,
 ) error {
-	return h.handleDenialCleanup(ctx, listener, gateKey)
+	return h.handleDenialCleanup(ctx, listener,
+		fmt.Sprintf("early restriction (%s gate)", gateKey),
+		fmt.Sprintf("Approval has been revoked (%s gate, early restriction)", gateKey))
 }
