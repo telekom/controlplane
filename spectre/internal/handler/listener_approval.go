@@ -308,10 +308,7 @@ func (h *ListenerHandler) setAggregateConditions(ctx context.Context, listener *
 			fmt.Sprintf("Approval has been denied (%s gate)", gate)))
 
 	case outcomeRequestDenied:
-		gate := "provider"
-		if result.consumer != nil && result.consumer.outcome == outcomeRequestDenied {
-			gate = "consumer"
-		}
+		gate := requestDeniedGates(result)
 		logger.Info("ApprovalRequest denied", "gate", gate)
 		listener.SetCondition(condition.NewNotReadyCondition(condition.ReasonAccessDenied,
 			fmt.Sprintf("ApprovalRequest has been denied (%s gate)", gate)))
@@ -328,6 +325,20 @@ func (h *ListenerHandler) setAggregateConditions(ctx context.Context, listener *
 		logger.Info("Approval evaluation error or unknown", "outcome", result.outcome.String())
 		// Conditions are not set for errors — the caller returns the error
 		// and the controller framework handles requeue.
+	}
+}
+
+// requestDeniedGates names the gate(s) whose current ApprovalRequest was rejected.
+func requestDeniedGates(result *dualApprovalResult) string {
+	provider := result.provider != nil && result.provider.outcome == outcomeRequestDenied
+	consumer := result.consumer != nil && result.consumer.outcome == outcomeRequestDenied
+	switch {
+	case provider && consumer:
+		return "provider and consumer"
+	case consumer:
+		return "consumer"
+	default:
+		return "provider"
 	}
 }
 
