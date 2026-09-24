@@ -156,7 +156,17 @@ func (h *ListenerHandler) advanceMigration(
 	// in the handler. If we reach here (isFreshInstall returned false) but find no
 	// legacy Approval and no migration status, something is inconsistent — block
 	// rather than silently granting v2.
+	//
+	// CRITICAL: Persist a migration record so the next reconcile's isFreshInstall
+	// sees AuthorizationMigration != nil and returns false. Without this record,
+	// ensureApprovals may overwrite the old unscoped ProviderApproval ref with a
+	// scoped "ag-v1-" ref, causing isFreshInstall to see only scoped refs and no
+	// migration record — misclassifying as fresh and granting v2.
 	if mctx.legacyApproval == nil && listener.Status.AuthorizationMigration == nil {
+		listener.Status.AuthorizationMigration = &spectrev1.AuthorizationMigrationStatus{
+			TargetPolicyVersion: authorizationPolicyV2,
+			Phase:               MigrationPhaseBlocked,
+		}
 		listener.SetCondition(condition.NewNotReadyCondition("LegacyApprovalMigrationBlocked",
 			"No legacy Approval found but isFreshInstall returned false — cannot determine policy"))
 		listener.SetCondition(condition.NewBlockedCondition(
@@ -563,6 +573,12 @@ func (h *ListenerHandler) retireLegacyRequests(
 
 		pd := &cp.PendingDeletions[idx]
 		if pd.Phase == PendingDeletionPhasePrepared {
+			// Re-verify dual authorization before deleting from a prepared
+			// checkpoint. Between prepare and delete, the Listener's approval
+			// state might have regressed (e.g., both gates now Pending).
+			if dual == nil || dual.outcome != outcomeGranted {
+				return false, nil
+			}
 			// Step 2: UID/RV match confirmed — delete with both preconditions.
 			if pd.UID != string(ar.UID) {
 				// UID changed since checkpoint — re-evaluate.
@@ -693,6 +709,12 @@ func (h *ListenerHandler) retireLegacyApproval(
 
 	pd := &cp.PendingDeletions[idx]
 	if pd.Phase == PendingDeletionPhasePrepared {
+		// Re-verify dual authorization before deleting from a prepared
+		// checkpoint. Between prepare and delete, the Listener's approval
+		// state might have regressed.
+		if dual == nil || dual.outcome != outcomeGranted {
+			return false, nil
+		}
 		// Step 2: UID match confirmed — check ResourceVersion for concurrent changes.
 		if pd.UID != string(approval.UID) {
 			pd.UID = string(approval.UID)

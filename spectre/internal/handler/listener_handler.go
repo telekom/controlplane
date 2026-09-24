@@ -941,10 +941,21 @@ func (h *ListenerHandler) handleDenialCleanup(
 	// If there are provisioned children (indicated by AppliedPlacement), use the
 	// drain protocol so deletions get UID-checked and the publisher is cleaned up
 	// in the correct phase order. Otherwise fall back to direct deletion.
+	//
+	// Guard against starting empty drains: after a denial drain completes,
+	// AppliedPlacement may remain with an empty fingerprint while status refs
+	// are cleared. Starting a new drain with no children would complete
+	// immediately and repeat every reconcile.
 	if listener.Status.AppliedPlacement != nil && listener.Status.Draining == nil {
-		oldFP := listener.Status.AppliedPlacement.Fingerprint
-		if err := h.startDrain(ctx, listener, fmt.Sprintf("early restriction (%s gate)", gateKey), oldFP); err != nil {
-			return errors.Wrap(err, "failed to start drain during denial cleanup")
+		hasChildren := listener.Status.RouteListener != nil || len(listener.Status.EventSubscriptions) > 0
+		if !hasChildren && listener.Status.AppliedPlacement.Fingerprint == "" {
+			// Already drained — just clear the stale applied state.
+			listener.Status.AppliedPlacement = nil
+		} else {
+			oldFP := listener.Status.AppliedPlacement.Fingerprint
+			if err := h.startDrain(ctx, listener, fmt.Sprintf("early restriction (%s gate)", gateKey), oldFP); err != nil {
+				return errors.Wrap(err, "failed to start drain during denial cleanup")
+			}
 		}
 	} else if listener.Status.Draining == nil {
 		// No applied placement — direct cleanup of any stray children.
