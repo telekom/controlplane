@@ -269,6 +269,11 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 	}
 
 	// ---- Set Conditions ----
+	if !scopedClient.AllReady() {
+		apiSub.SetCondition(condition.NewNotReadyCondition(condition.ReasonSubResourceNotReady, "Waiting for child resources to be ready"))
+		apiSub.SetCondition(condition.NewProcessingCondition(condition.ReasonSubResourceNotReady, "Waiting for child resources"))
+		return nil
+	}
 	apiSub.SetCondition(condition.NewDoneProcessingCondition("Successfully provisioned subresources"))
 	apiSub.SetCondition(condition.NewReadyCondition(condition.ReasonProvisioned, "Successfully provisioned subresources"))
 

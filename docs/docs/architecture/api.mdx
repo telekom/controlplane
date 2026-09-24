@@ -45,6 +45,15 @@ An `ApiSubscription` reports `Ready=False / PreconditionNotMet` while the exposu
 is missing the required primary, provider-failover, or proxy route reference.
 This also clears a previously successful readiness condition.
 
+After provisioning, local and remote subscriptions wait for condition-bearing
+resources created or updated during reconciliation to report `Ready=True` with
+`ObservedGeneration` equal to their current `metadata.generation`. This includes
+the primary and any subscriber-failover `ConsumeRoute`s, and, where applicable,
+the `ApprovalRequest`, `RemoteApiSubscription`, and locally created proxy Route.
+Missing, unknown, false, or outdated readiness keeps the subscription at
+`Ready=False / SubResourceNotReady`. Child status changes trigger reconciliation.
+Once the check passes, the subscription reports `Ready=True / Provisioned`.
+
 ## Domain Interactions
 
 - **Rover domain** — Creates Api, ApiExposure, and ApiSubscription resources.
