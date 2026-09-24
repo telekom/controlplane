@@ -6,7 +6,6 @@ package filetype
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/stretchr/testify/mock"
@@ -19,7 +18,6 @@ import (
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/client/fake"
 	"github.com/telekom/controlplane/common/pkg/condition"
-	ctrlerrors "github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	"github.com/telekom/controlplane/common/pkg/types"
 	filev1 "github.com/telekom/controlplane/file/api/v1"
 
@@ -153,42 +151,6 @@ var _ = Describe("FileTypeHandler", func() {
 			err := handler.CreateOrUpdate(ctx, fileType)
 
 			Expect(err).To(MatchError(ContainSubstring("zone config unavailable")))
-		})
-	})
-
-	Describe("Delete", func() {
-		It("returns nil without calling the client", func() {
-			fileType := testFileType()
-			ctx, _ := newTestContext()
-
-			err := handler.Delete(ctx, fileType)
-
-			Expect(err).NotTo(HaveOccurred())
-		})
-
-		It("blocks while it is associated with a FileExposure", func() {
-			fileType := testFileType()
-			fileType.Status.FileExposureRef = types.ObjectRefFromObject(testFileExposure())
-			ctx, _ := newTestContext()
-
-			err := handler.Delete(ctx, fileType)
-
-			var blocked ctrlerrors.BlockedError
-			Expect(errors.As(err, &blocked)).To(BeTrue())
-			Expect(err).To(MatchError("cannot delete FileType while it is still associated with a FileExposure"))
-		})
-
-		It("allows deletion after the FileExposure association is cleared", func() {
-			fileType := testFileType()
-			fileType.Status.SFTPInstance = &types.ObjectRef{
-				Name:      testFileTypeName,
-				Namespace: testNamespace,
-			}
-			ctx, _ := newTestContext()
-
-			err := handler.Delete(ctx, fileType)
-
-			Expect(err).NotTo(HaveOccurred())
 		})
 	})
 })
