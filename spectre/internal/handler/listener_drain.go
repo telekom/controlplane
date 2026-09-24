@@ -50,10 +50,11 @@ func (h *ListenerHandler) startDrain(
 }
 
 // drainCapture stops this Listener's capture through the persisted drain and
-// reports whether a drain is active; the caller must then return nil so the
-// checkpoint is persisted before continueDrain deletes anything. It is the only
-// way revocation, request denial, provider invalidation and unsupported
-// placement remove children. The inventory covers status refs and
+// reports whether a drain is active; the caller must then return (nil from
+// CreateOrUpdate, errDrainPending from Delete) so the checkpoint is persisted
+// before continueDrain deletes anything. It is the only way revocation, request
+// denial, provider invalidation, unsupported placement and Listener deletion
+// remove children. The inventory covers status refs and
 // owner-labelled children, so partial provisioning is drained too. With nothing
 // tracked, found or applied it starts no drain (that drain would complete empty
 // and restart on every reconcile), clears a drained placement and touches no

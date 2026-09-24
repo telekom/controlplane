@@ -7,6 +7,7 @@ package handler_test
 import (
 	"context"
 	"encoding/json"
+	stderrors "errors"
 	"reflect"
 
 	"github.com/stretchr/testify/mock"
@@ -22,6 +23,7 @@ import (
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	fakeclient "github.com/telekom/controlplane/common/pkg/client/fake"
 	"github.com/telekom/controlplane/common/pkg/condition"
+	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	ctypes "github.com/telekom/controlplane/common/pkg/types"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	pubsubv1 "github.com/telekom/controlplane/pubsub/api/v1"
@@ -1162,6 +1164,269 @@ var _ = Describe("Listener Drain", func() {
 				Entry("with the source Publisher recorded in one of them",
 					&ctypes.ObjectRef{Name: util.MakePublisherName(util.GenericEventType), Namespace: listenerZoneStatus}),
 			)
+		})
+	})
+
+	// Delete runs under the common controller, which removes the finalizer only
+	// when Delete returns nil and writes status only when it returns an error.
+	// Every pass that must be persisted therefore returns a retryable error.
+	Describe("through Delete", func() {
+		// expectDrainPending asserts err keeps the finalizer and asks for a
+		// delayed retry with status persisted (the common controller's
+		// RetryableWithDelayError handling).
+		expectDrainPending := func(err error) {
+			var rde ctrlerrors.RetryableWithDelayError
+			Expect(stderrors.As(err, &rde)).To(BeTrue(), "want a retryable-with-delay error, got %v", err)
+			Expect(rde.IsRetryable()).To(BeTrue())
+			Expect(rde.RetryDelay()).To(BeNumerically(">", 0))
+		}
+		genericIn := func(ns string) *ctypes.ObjectRef {
+			return &ctypes.ObjectRef{Name: genericPublisher, Namespace: ns}
+		}
+
+		It("should checkpoint first, drain the RouteListener, then the Subscribers, then the Publisher, and release only when complete", func() {
+			listener := newListener()
+			listener.Status.RouteListener = &ctypes.ObjectRef{Name: "rl-a", Namespace: listenerZoneStatus, UID: "uid-a"}
+			listener.Status.EventSubscriptions = []ctypes.ObjectRef{
+				{Name: "sub-rq", Namespace: listenerZoneStatus, UID: "uid-rq"},
+				{Name: "sub-rp", Namespace: listenerZoneStatus, UID: "uid-rp"},
+			}
+			listener.Status.AppliedPlacement = &spectrev1.AppliedListenerPlacementStatus{
+				Fingerprint: "fp-1",
+				Publisher:   genericIn(listenerZoneStatus),
+			}
+
+			// D1: checkpoint only.
+			mockDrainLists(
+				[]gatewayv1.RouteListener{liveRL(listenerZoneStatus, "rl-a", "uid-a")},
+				[]pubsubv1.Subscriber{liveSub(listenerZoneStatus, "sub-rq", "uid-rq"), liveSub(listenerZoneStatus, "sub-rp", "uid-rp")},
+			)
+			expectDrainPending(h.Delete(ctx, listener))
+			d := listener.Status.Draining
+			Expect(d).ToNot(BeNil())
+			Expect(d.Phase).To(Equal(handler.ExportDrainPhaseStopping))
+			Expect(d.Reason).To(Equal("listener deleted"))
+			Expect(d.OldFingerprint).To(Equal("fp-1"))
+			Expect(d.OldRouteListeners).To(Equal([]ctypes.ObjectRef{{Name: "rl-a", Namespace: listenerZoneStatus, UID: "uid-a"}}))
+			Expect(d.OldSubscribers).To(Equal([]ctypes.ObjectRef{
+				{Name: "sub-rp", Namespace: listenerZoneStatus, UID: "uid-rp"},
+				{Name: "sub-rq", Namespace: listenerZoneStatus, UID: "uid-rq"},
+			}))
+			Expect(d.SourcePublisher).To(Equal(genericIn(listenerZoneStatus)))
+			expectPassDone(0)
+
+			// D2: the RouteListener is deleted with its preconditions.
+			listener = persistListener(listener)
+			expectLive(rlKind, listenerZoneStatus, "rl-a", "uid-a", "11", false)
+			expectDelete(rlKind, listenerZoneStatus, "rl-a", "uid-a", "11", nil)
+			expectDrainPending(h.Delete(ctx, listener))
+			Expect(listener.Status.Draining.Phase).To(Equal(handler.ExportDrainPhaseStopping))
+			expectPassDone(1)
+
+			// D3: the RouteListener is gone; no Subscriber was touched yet.
+			listener = persistListener(listener)
+			expectGone(rlKind, listenerZoneStatus, "rl-a")
+			expectDrainPending(h.Delete(ctx, listener))
+			Expect(listener.Status.Draining.Phase).To(Equal(handler.ExportDrainPhaseDrainingSubscribers))
+			Expect(listener.Status.RouteListener).To(BeNil())
+			expectPassDone(1)
+
+			// D4: both Subscribers are deleted with their preconditions.
+			listener = persistListener(listener)
+			expectLive(subKind, listenerZoneStatus, "sub-rp", "uid-rp", "31", false)
+			expectDelete(subKind, listenerZoneStatus, "sub-rp", "uid-rp", "31", nil)
+			expectLive(subKind, listenerZoneStatus, "sub-rq", "uid-rq", "32", false)
+			expectDelete(subKind, listenerZoneStatus, "sub-rq", "uid-rq", "32", nil)
+			expectDrainPending(h.Delete(ctx, listener))
+			expectPassDone(3)
+
+			// D5: sub-rq still finalizes; the drain waits and keeps the Publisher.
+			listener = persistListener(listener)
+			expectGone(subKind, listenerZoneStatus, "sub-rp")
+			expectLive(subKind, listenerZoneStatus, "sub-rq", "uid-rq", "33", true)
+			expectDelete(subKind, listenerZoneStatus, "sub-rq", "uid-rq", "33", nil)
+			expectDrainPending(h.Delete(ctx, listener))
+			Expect(listener.Status.Draining.Phase).To(Equal(handler.ExportDrainPhaseDrainingSubscribers))
+			expectPassDone(4)
+
+			// D6: both Subscribers are gone.
+			listener = persistListener(listener)
+			expectGone(subKind, listenerZoneStatus, "sub-rp")
+			expectGone(subKind, listenerZoneStatus, "sub-rq")
+			expectDrainPending(h.Delete(ctx, listener))
+			Expect(listener.Status.Draining.Phase).To(Equal(handler.ExportDrainPhaseCleaningPublisher))
+			Expect(listener.Status.EventSubscriptions).To(BeEmpty())
+			expectPassDone(4)
+
+			// D7: the orphaned Publisher is deleted, a fresh inventory finds
+			// nothing, and only now may the finalizer go.
+			listener = persistListener(listener)
+			expectOrphanCheck(listenerZoneStatus, nil)
+			expectPublisherDelete(listenerZoneStatus)
+			mockDrainLists(nil, nil)
+			Expect(h.Delete(ctx, listener)).To(Succeed())
+			Expect(listener.Status.Draining).To(BeNil())
+			expectPassDone(5)
+		})
+
+		It("should continue a drain already in progress without re-snapshotting it", func() {
+			listener := newListener()
+			listener.Status.AppliedPlacement = &spectrev1.AppliedListenerPlacementStatus{Fingerprint: "fp-old"}
+			listener.Status.Draining = &spectrev1.ListenerDrainStatus{
+				Phase:           handler.ExportDrainPhaseDrainingSubscribers,
+				Reason:          "fingerprint changed",
+				OldFingerprint:  "fp-old",
+				OldSubscribers:  []ctypes.ObjectRef{{Name: "sub-rq", Namespace: listenerZoneStatus, UID: "uid-rq"}},
+				SourcePublisher: genericIn(listenerZoneStatus),
+			}
+
+			// D1: the recorded phase advances; no inventory List, no new checkpoint.
+			expectLive(subKind, listenerZoneStatus, "sub-rq", "uid-rq", "41", false)
+			expectDelete(subKind, listenerZoneStatus, "sub-rq", "uid-rq", "41", nil)
+			expectDrainPending(h.Delete(ctx, listener))
+			Expect(listener.Status.Draining.Reason).To(Equal("fingerprint changed"))
+			Expect(listener.Status.Draining.Phase).To(Equal(handler.ExportDrainPhaseDrainingSubscribers))
+			expectPassDone(1)
+
+			// D2: gone.
+			listener = persistListener(listener)
+			expectGone(subKind, listenerZoneStatus, "sub-rq")
+			expectDrainPending(h.Delete(ctx, listener))
+			Expect(listener.Status.Draining.Phase).To(Equal(handler.ExportDrainPhaseCleaningPublisher))
+			expectPassDone(1)
+
+			// D3: another observer keeps the Publisher; the drain completes and
+			// the drained fingerprint does not start another one.
+			listener = persistListener(listener)
+			expectOrphanCheck(listenerZoneStatus, []pubsubv1.Subscriber{bridgeSub(listenerZoneStatus, "other-sub", false)})
+			mockDrainLists(nil, nil)
+			Expect(h.Delete(ctx, listener)).To(Succeed())
+			Expect(listener.Status.Draining).To(BeNil())
+			expectPassDone(1)
+		})
+
+		It("should not delete a same-name replacement, and drain it through a new checkpoint when it is this Listener's", func() {
+			listener := newListener()
+			listener.Status.Draining = &spectrev1.ListenerDrainStatus{
+				Phase:           handler.ExportDrainPhaseDrainingSubscribers,
+				OldSubscribers:  []ctypes.ObjectRef{{Name: "sub-rq", Namespace: listenerZoneStatus, UID: "uid-rq"}},
+				SourcePublisher: genericIn(listenerZoneStatus),
+			}
+
+			// D1: the live sub-rq has another UID: the recorded instance is gone.
+			expectLive(subKind, listenerZoneStatus, "sub-rq", "uid-new", "51", false)
+			expectDrainPending(h.Delete(ctx, listener))
+			Expect(listener.Status.Draining.Phase).To(Equal(handler.ExportDrainPhaseCleaningPublisher))
+			expectPassDone(0)
+
+			// D2: the replacement references the Publisher, which is kept. The
+			// drain completes, but the fresh inventory finds the replacement owned
+			// by this Listener: a new checkpoint, not a released finalizer.
+			listener = persistListener(listener)
+			replacement := bridgeSub(listenerZoneStatus, "sub-rq", false)
+			replacement.UID = "uid-new"
+			expectOrphanCheck(listenerZoneStatus, []pubsubv1.Subscriber{replacement})
+			mockDrainLists(nil, []pubsubv1.Subscriber{replacement})
+			expectDrainPending(h.Delete(ctx, listener))
+			Expect(listener.Status.Draining).ToNot(BeNil())
+			Expect(listener.Status.Draining.Phase).To(Equal(handler.ExportDrainPhaseStopping))
+			Expect(listener.Status.Draining.OldSubscribers).To(Equal([]ctypes.ObjectRef{
+				{Name: "sub-rq", Namespace: listenerZoneStatus, UID: "uid-new"},
+			}))
+			expectPassDone(0)
+		})
+
+		It("should drain children in two namespaces with empty status refs instead of failing before deleting anything", func() {
+			listener := newListener()
+
+			// D1: nothing in status, owner-labelled children in two zones. The
+			// checkpoint covers both; nothing is deleted yet.
+			rlA := liveRL(listenerZoneStatus, "rl-a", "uid-a")
+			rlB := liveRL(drainZoneB, "rl-b", "uid-b")
+			subA := bridgeSub(listenerZoneStatus, "sub-a", false)
+			subA.UID = "uid-sa"
+			subB := bridgeSub(drainZoneB, "sub-b", false)
+			subB.UID = "uid-sb"
+			mockDrainLists([]gatewayv1.RouteListener{rlB, rlA}, []pubsubv1.Subscriber{subB, subA})
+			expectDrainPending(h.Delete(ctx, listener))
+			d := listener.Status.Draining
+			Expect(d).ToNot(BeNil())
+			Expect(d.OldRouteListeners).To(Equal([]ctypes.ObjectRef{
+				{Name: "rl-a", Namespace: listenerZoneStatus, UID: "uid-a"},
+				{Name: "rl-b", Namespace: drainZoneB, UID: "uid-b"},
+			}))
+			Expect(d.OldSubscribers).To(Equal([]ctypes.ObjectRef{
+				{Name: "sub-a", Namespace: listenerZoneStatus, UID: "uid-sa"},
+				{Name: "sub-b", Namespace: drainZoneB, UID: "uid-sb"},
+			}))
+			Expect(d.SourcePublisher).To(BeNil()) // the bridges disagree
+			expectPassDone(0)
+
+			// D2: both RouteListeners are deleted.
+			listener = persistListener(listener)
+			expectLive(rlKind, listenerZoneStatus, "rl-a", "uid-a", "61", false)
+			expectDelete(rlKind, listenerZoneStatus, "rl-a", "uid-a", "61", nil)
+			expectLive(rlKind, drainZoneB, "rl-b", "uid-b", "62", false)
+			expectDelete(rlKind, drainZoneB, "rl-b", "uid-b", "62", nil)
+			expectDrainPending(h.Delete(ctx, listener))
+			expectPassDone(2)
+
+			// D3: both gone.
+			listener = persistListener(listener)
+			expectGone(rlKind, listenerZoneStatus, "rl-a")
+			expectGone(rlKind, drainZoneB, "rl-b")
+			expectDrainPending(h.Delete(ctx, listener))
+			Expect(listener.Status.Draining.Phase).To(Equal(handler.ExportDrainPhaseDrainingSubscribers))
+			expectPassDone(2)
+
+			// D4: both Subscribers are deleted.
+			listener = persistListener(listener)
+			expectLive(subKind, listenerZoneStatus, "sub-a", "uid-sa", "63", false)
+			expectDelete(subKind, listenerZoneStatus, "sub-a", "uid-sa", "63", nil)
+			expectLive(subKind, drainZoneB, "sub-b", "uid-sb", "64", false)
+			expectDelete(subKind, drainZoneB, "sub-b", "uid-sb", "64", nil)
+			expectDrainPending(h.Delete(ctx, listener))
+			expectPassDone(4)
+
+			// D5: both gone.
+			listener = persistListener(listener)
+			expectGone(subKind, listenerZoneStatus, "sub-a")
+			expectGone(subKind, drainZoneB, "sub-b")
+			expectDrainPending(h.Delete(ctx, listener))
+			Expect(listener.Status.Draining.Phase).To(Equal(handler.ExportDrainPhaseCleaningPublisher))
+			expectPassDone(4)
+
+			// D6: the Publisher is cleaned in both namespaces, then released.
+			listener = persistListener(listener)
+			expectOrphanCheck(listenerZoneStatus, nil)
+			expectPublisherDelete(listenerZoneStatus)
+			expectOrphanCheck(drainZoneB, nil)
+			expectPublisherDelete(drainZoneB)
+			mockDrainLists(nil, nil)
+			Expect(h.Delete(ctx, listener)).To(Succeed())
+			Expect(listener.Status.Draining).To(BeNil())
+			expectPassDone(6)
+		})
+
+		It("should keep the finalizer and the phase when a RouteListener delete fails", func() {
+			listener := twoRouteListenerCheckpoint()
+			expectLive(rlKind, listenerZoneStatus, "rl-a", "uid-a", "71", false)
+			expectDelete(rlKind, listenerZoneStatus, "rl-a", "uid-a", "71", errors.NewServiceUnavailable("down"))
+			expectLive(rlKind, drainZoneB, "rl-b", "uid-b", "72", false)
+			expectDelete(rlKind, drainZoneB, "rl-b", "uid-b", "72", nil)
+			err := h.Delete(ctx, listener)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("down"))
+			Expect(listener.Status.Draining.Phase).To(Equal(handler.ExportDrainPhaseStopping))
+			expectPassDone(2)
+		})
+
+		It("should release at once when nothing was tracked, found or applied", func() {
+			listener := newListener()
+			mockDrainLists(nil, nil)
+			Expect(h.Delete(ctx, listener)).To(Succeed())
+			Expect(listener.Status.Draining).To(BeNil())
+			expectPassDone(0)
 		})
 	})
 })
