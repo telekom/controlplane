@@ -952,9 +952,15 @@ var _ = Describe("ListenerHandler", func() {
 			Expect(d.OldRouteListener).ToNot(BeNil())
 			Expect(d.OldRouteListener.Name).To(Equal(f.rl.Name))
 			Expect(d.OldRouteListener.UID).To(Equal(k8stypes.UID("rl-uid-1")))
-			Expect(d.OldSubscribers).To(HaveLen(2))
-			Expect(d.OldSubscribers[0].UID).To(Equal(k8stypes.UID("sub-uid-0")))
-			Expect(d.OldSubscribers[1].UID).To(Equal(k8stypes.UID("sub-uid-1")))
+			Expect(d.OldRouteListeners).To(Equal([]ctypes.ObjectRef{*ctypes.ObjectRefFromObject(&f.rl)}))
+			// Sorted by namespace/name: the "--rp" Subscriber (sub-uid-1) sorts
+			// before the "--rq" one (sub-uid-0).
+			Expect(d.OldSubscribers).To(Equal([]ctypes.ObjectRef{
+				*ctypes.ObjectRefFromObject(&f.subs[1]),
+				*ctypes.ObjectRefFromObject(&f.subs[0]),
+			}))
+			Expect(d.OldSubscribers[0].UID).To(Equal(k8stypes.UID("sub-uid-1")))
+			Expect(d.OldSubscribers[1].UID).To(Equal(k8stypes.UID("sub-uid-0")))
 			Expect(d.SourcePublisher).ToNot(BeNil())
 			Expect(d.SourcePublisher).To(Equal(l.Status.AppliedPlacement.Publisher))
 
