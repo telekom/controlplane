@@ -6,6 +6,7 @@ package util_test
 
 import (
 	"context"
+	"fmt"
 
 	mock "github.com/stretchr/testify/mock"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -90,6 +91,67 @@ var _ = Describe("GetEventConfig (duplicate rejection)", func() {
 		Expect(err.Error()).To(ContainSubstring("found 2 EventConfigs"))
 		// Ambiguity is a hard error, not a blocked error
 		Expect(err).ToNot(Satisfy(isBlockedError))
+	})
+})
+
+var _ = Describe("FindEventConfig", func() {
+	var (
+		ctx        context.Context
+		fakeClient *fakeclient.MockJanitorClient
+		zone       *adminv1.Zone
+	)
+
+	BeforeEach(func() {
+		ctx = context.Background()
+		fakeClient = fakeclient.NewMockJanitorClient(GinkgoT())
+		ctx = cclient.WithClient(ctx, fakeClient)
+		zone = makeZone("zone-a")
+	})
+
+	mockList := func(items ...eventv1.EventConfig) {
+		fakeClient.EXPECT().
+			List(mock.Anything, mock.Anything, mock.Anything).
+			Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+				*list.(*eventv1.EventConfigList) = eventv1.EventConfigList{Items: items}
+			}).
+			Return(nil).
+			Once()
+	}
+
+	It("should return nil without error when the zone has no EventConfig", func() {
+		mockList()
+		result, err := util.FindEventConfig(ctx, zone)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(result).To(BeNil())
+	})
+
+	It("should return the EventConfig without checking readiness", func() {
+		ec := makeReadyEventConfig("ec-1", "zone-a")
+		ec.Status.Conditions = nil
+		mockList(ec)
+		result, err := util.FindEventConfig(ctx, zone)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(result).ToNot(BeNil())
+		Expect(result.Name).To(Equal("ec-1"))
+	})
+
+	It("should return a non-blocked error for two EventConfigs", func() {
+		mockList(makeReadyEventConfig("ec-1", "zone-a"), makeReadyEventConfig("ec-2", "zone-a"))
+		result, err := util.FindEventConfig(ctx, zone)
+		Expect(err).To(MatchError(ContainSubstring("found 2 EventConfigs")))
+		Expect(err).ToNot(Satisfy(isBlockedError))
+		Expect(result).To(BeNil())
+	})
+
+	It("should wrap List errors", func() {
+		fakeClient.EXPECT().
+			List(mock.Anything, mock.Anything, mock.Anything).
+			Return(fmt.Errorf("connection refused")).
+			Once()
+		result, err := util.FindEventConfig(ctx, zone)
+		Expect(err).To(MatchError(ContainSubstring("connection refused")))
+		Expect(err).ToNot(Satisfy(isBlockedError))
+		Expect(result).To(BeNil())
 	})
 })
 
