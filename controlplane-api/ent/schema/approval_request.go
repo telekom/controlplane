@@ -62,6 +62,10 @@ func (ApprovalRequest) Edges() []ent.Edge {
 			Ref("approval_requests").
 			Unique().
 			Annotations(entgql.Skip(entgql.SkipType)),
+		edge.From("listener", Listener.Type).
+			Ref("approval_requests").
+			Unique().
+			Annotations(entgql.Skip(entgql.SkipType)),
 	}
 }
 

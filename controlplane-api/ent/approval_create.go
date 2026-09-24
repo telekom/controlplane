@@ -17,6 +17,7 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/apisubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/approval"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventsubscription"
+	"github.com/telekom/controlplane/controlplane-api/ent/listener"
 	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 )
 
@@ -230,6 +231,44 @@ func (_c *ApprovalCreate) SetNillableEventSubscriptionID(id *int) *ApprovalCreat
 // SetEventSubscription sets the "event_subscription" edge to the EventSubscription entity.
 func (_c *ApprovalCreate) SetEventSubscription(v *EventSubscription) *ApprovalCreate {
 	return _c.SetEventSubscriptionID(v.ID)
+}
+
+// SetListenerID sets the "listener" edge to the Listener entity by ID.
+func (_c *ApprovalCreate) SetListenerID(id int) *ApprovalCreate {
+	_c.mutation.SetListenerID(id)
+	return _c
+}
+
+// SetNillableListenerID sets the "listener" edge to the Listener entity by ID if the given value is not nil.
+func (_c *ApprovalCreate) SetNillableListenerID(id *int) *ApprovalCreate {
+	if id != nil {
+		_c = _c.SetListenerID(*id)
+	}
+	return _c
+}
+
+// SetListener sets the "listener" edge to the Listener entity.
+func (_c *ApprovalCreate) SetListener(v *Listener) *ApprovalCreate {
+	return _c.SetListenerID(v.ID)
+}
+
+// SetConsumerListenerID sets the "consumer_listener" edge to the Listener entity by ID.
+func (_c *ApprovalCreate) SetConsumerListenerID(id int) *ApprovalCreate {
+	_c.mutation.SetConsumerListenerID(id)
+	return _c
+}
+
+// SetNillableConsumerListenerID sets the "consumer_listener" edge to the Listener entity by ID if the given value is not nil.
+func (_c *ApprovalCreate) SetNillableConsumerListenerID(id *int) *ApprovalCreate {
+	if id != nil {
+		_c = _c.SetConsumerListenerID(*id)
+	}
+	return _c
+}
+
+// SetConsumerListener sets the "consumer_listener" edge to the Listener entity.
+func (_c *ApprovalCreate) SetConsumerListener(v *Listener) *ApprovalCreate {
+	return _c.SetConsumerListenerID(v.ID)
 }
 
 // Mutation returns the ApprovalMutation object of the builder.
@@ -495,6 +534,40 @@ func (_c *ApprovalCreate) createSpec() (*Approval, *sqlgraph.CreateSpec) {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_node.event_subscription_approval = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.ListenerIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: true,
+			Table:   approval.ListenerTable,
+			Columns: []string{approval.ListenerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(listener.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.listener_provider_approval = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.ConsumerListenerIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: true,
+			Table:   approval.ConsumerListenerTable,
+			Columns: []string{approval.ConsumerListenerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(listener.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.listener_consumer_approval = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

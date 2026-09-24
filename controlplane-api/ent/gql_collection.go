@@ -23,6 +23,7 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/eventsubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventtype"
 	"github.com/telekom/controlplane/controlplane-api/ent/group"
+	"github.com/telekom/controlplane/controlplane-api/ent/listener"
 	"github.com/telekom/controlplane/controlplane-api/ent/member"
 	"github.com/telekom/controlplane/controlplane-api/ent/permissionset"
 	"github.com/telekom/controlplane/controlplane-api/ent/team"
@@ -2019,6 +2020,131 @@ func newGroupPaginateArgs(rv map[string]any) *groupPaginateArgs {
 	}
 	if v, ok := rv[whereField].(*GroupWhereInput); ok {
 		args.opts = append(args.opts, WithGroupFilter(v.Filter))
+	}
+	return args
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (_q *ListenerQuery) CollectFields(ctx context.Context, satisfies ...string) (*ListenerQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return _q, nil
+	}
+	if err := _q.collectField(ctx, false, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return _q, nil
+}
+
+func (_q *ListenerQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	var (
+		unknownSeen    bool
+		fieldSeen      = make(map[string]struct{}, len(listener.Columns))
+		selectedFields = []string{listener.FieldID}
+	)
+	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
+		switch field.Name {
+		case "createdAt":
+			if _, ok := fieldSeen[listener.FieldCreatedAt]; !ok {
+				selectedFields = append(selectedFields, listener.FieldCreatedAt)
+				fieldSeen[listener.FieldCreatedAt] = struct{}{}
+			}
+		case "lastModifiedAt":
+			if _, ok := fieldSeen[listener.FieldLastModifiedAt]; !ok {
+				selectedFields = append(selectedFields, listener.FieldLastModifiedAt)
+				fieldSeen[listener.FieldLastModifiedAt] = struct{}{}
+			}
+		case "statusPhase":
+			if _, ok := fieldSeen[listener.FieldStatusPhase]; !ok {
+				selectedFields = append(selectedFields, listener.FieldStatusPhase)
+				fieldSeen[listener.FieldStatusPhase] = struct{}{}
+			}
+		case "statusMessage":
+			if _, ok := fieldSeen[listener.FieldStatusMessage]; !ok {
+				selectedFields = append(selectedFields, listener.FieldStatusMessage)
+				fieldSeen[listener.FieldStatusMessage] = struct{}{}
+			}
+		case "environment":
+			if _, ok := fieldSeen[listener.FieldEnvironment]; !ok {
+				selectedFields = append(selectedFields, listener.FieldEnvironment)
+				fieldSeen[listener.FieldEnvironment] = struct{}{}
+			}
+		case "namespace":
+			if _, ok := fieldSeen[listener.FieldNamespace]; !ok {
+				selectedFields = append(selectedFields, listener.FieldNamespace)
+				fieldSeen[listener.FieldNamespace] = struct{}{}
+			}
+		case "name":
+			if _, ok := fieldSeen[listener.FieldName]; !ok {
+				selectedFields = append(selectedFields, listener.FieldName)
+				fieldSeen[listener.FieldName] = struct{}{}
+			}
+		case "id":
+		case "__typename":
+		default:
+			unknownSeen = true
+		}
+	}
+	if !unknownSeen {
+		_q.Select(selectedFields...)
+	}
+	return nil
+}
+
+type listenerPaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []ListenerPaginateOption
+}
+
+func newListenerPaginateArgs(rv map[string]any) *listenerPaginateArgs {
+	args := &listenerPaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
+	}
+	if v, ok := rv[orderByField]; ok {
+		switch v := v.(type) {
+		case []*ListenerOrder:
+			args.opts = append(args.opts, WithListenerOrder(v))
+		case []any:
+			var orders []*ListenerOrder
+			for i := range v {
+				mv, ok := v[i].(map[string]any)
+				if !ok {
+					continue
+				}
+				var (
+					err1, err2 error
+					order      = &ListenerOrder{Field: &ListenerOrderField{}, Direction: entgql.OrderDirectionAsc}
+				)
+				if d, ok := mv[directionField]; ok {
+					err1 = order.Direction.UnmarshalGQL(d)
+				}
+				if f, ok := mv[fieldField]; ok {
+					err2 = order.Field.UnmarshalGQL(f)
+				}
+				if err1 == nil && err2 == nil {
+					orders = append(orders, order)
+				}
+			}
+			args.opts = append(args.opts, WithListenerOrder(orders))
+		}
+	}
+	if v, ok := rv[whereField].(*ListenerWhereInput); ok {
+		args.opts = append(args.opts, WithListenerFilter(v.Filter))
 	}
 	return args
 }

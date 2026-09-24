@@ -117,9 +117,14 @@ erDiagram
     Team ||--o{ Member : "has"
     Application ||--o{ ApiExposure : "exposes"
     Application ||--o{ ApiSubscription : "subscribes"
+    Application ||--o{ Listener : "declares"
     ApiExposure ||--o{ ApiSubscription : "target of"
     ApiSubscription ||--o| Approval : "has"
     ApiSubscription ||--o| ApprovalRequest : "has"
+    ApiSubscription ||--o{ Listener : "consumed by"
+    ApiExposure ||--o{ Listener : "provided by"
+    Listener ||--o| Approval : "provider approval"
+    Listener ||--o{ ApprovalRequest : "has"
 ```
 
 Each entity carries common fields such as `id`, `createdAt`, `lastModifiedAt`, `statusPhase` (Ready, Pending, Error, or Unknown), `statusMessage`, `environment`, and `namespace`.
@@ -132,6 +137,7 @@ All top-level queries support **cursor-based pagination** (Relay-style), **filte
 - `applications` — List applications with their zone, exposures, and subscriptions
 - `apiExposures` — List exposed APIs with visibility, upstreams, and approval configuration
 - `apiSubscriptions` — List subscriptions with their target exposure and approval state
+- `listeners` lists API Listeners, including non-ready Listeners
 - `approvals` / `approvalRequests` — List approval workflows and pending requests
 - `zones` — List all available zones (no pagination, visible to all users)
 - `node(id)` / `nodes(ids)` — Relay-compatible node lookups for any entity
@@ -148,11 +154,15 @@ The ControlPlane API enforces strict team-level isolation through a **privacy la
 
 This filtering is applied transparently — the GraphQL schema is the same for all callers, but the results are scoped automatically. No additional configuration is needed.
 
-For approvals and approval requests, the isolation uses an **OR** rule: a resource is visible if the caller's team is *either* the subscriber's team *or* the exposure owner's team. This allows both sides of an approval to see the workflow.
+For Listeners, approvals, and approval requests, isolation uses an **OR** rule: a resource is visible if the caller's team owns the listener application, the consumer application, or the provider application. This allows all three parties to inspect the Listener and its approval workflow.
+
+`Listener.application` identifies the application that declared the Listener and receives captured events. `Listener.consumer` and `Listener.provider` are derived from the related API subscription and exposure. `Application.listeners` follows the listener-application relationship, not the consumer relationship.
+
+`ApiExposure.listeners` and `ApiSubscription.listeners` return only Listeners whose projected `Ready` condition is true. `Application.listeners` and top-level Listener queries include non-ready Listeners. API-specific values such as `apiBasePath`, `requestFilter`, and `responseFilter` are flat Listener fields. `approved` is true only when both the provider and consumer approvals are granted. `providerApproval` and `consumerApproval` expose the separate decisions. Monitoring state is not stored or exposed; clients derive it from projected state.
 
 #### Cross-Tenant Safety
 
-When navigating relationships that cross team boundaries (for example, from a subscription to the target exposure owned by another team), the API returns **reduced types** (`TeamInfo`, `ApiExposureInfo`, `ApiSubscriptionInfo`) that expose only safe, non-sensitive fields. This prevents data leakage through graph traversal.
+When navigating relationships that cross team boundaries (for example, from a subscription to the target exposure owned by another team), the API returns **reduced types** (`TeamInfo`, `ApplicationInfo`, `ApiExposureInfo`, `ApiSubscriptionInfo`, and `ListenerInfo`) that expose only safe, non-sensitive fields. This prevents data leakage through graph traversal.
 
 ### Authentication
 

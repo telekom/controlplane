@@ -18,6 +18,7 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/apisubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/approvalrequest"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventsubscription"
+	"github.com/telekom/controlplane/controlplane-api/ent/listener"
 	"github.com/telekom/controlplane/controlplane-api/ent/predicate"
 	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 )
@@ -299,6 +300,25 @@ func (_u *ApprovalRequestUpdate) SetEventSubscription(v *EventSubscription) *App
 	return _u.SetEventSubscriptionID(v.ID)
 }
 
+// SetListenerID sets the "listener" edge to the Listener entity by ID.
+func (_u *ApprovalRequestUpdate) SetListenerID(id int) *ApprovalRequestUpdate {
+	_u.mutation.SetListenerID(id)
+	return _u
+}
+
+// SetNillableListenerID sets the "listener" edge to the Listener entity by ID if the given value is not nil.
+func (_u *ApprovalRequestUpdate) SetNillableListenerID(id *int) *ApprovalRequestUpdate {
+	if id != nil {
+		_u = _u.SetListenerID(*id)
+	}
+	return _u
+}
+
+// SetListener sets the "listener" edge to the Listener entity.
+func (_u *ApprovalRequestUpdate) SetListener(v *Listener) *ApprovalRequestUpdate {
+	return _u.SetListenerID(v.ID)
+}
+
 // Mutation returns the ApprovalRequestMutation object of the builder.
 func (_u *ApprovalRequestUpdate) Mutation() *ApprovalRequestMutation {
 	return _u.mutation
@@ -313,6 +333,12 @@ func (_u *ApprovalRequestUpdate) ClearAPISubscription() *ApprovalRequestUpdate {
 // ClearEventSubscription clears the "event_subscription" edge to the EventSubscription entity.
 func (_u *ApprovalRequestUpdate) ClearEventSubscription() *ApprovalRequestUpdate {
 	_u.mutation.ClearEventSubscription()
+	return _u
+}
+
+// ClearListener clears the "listener" edge to the Listener entity.
+func (_u *ApprovalRequestUpdate) ClearListener() *ApprovalRequestUpdate {
+	_u.mutation.ClearListener()
 	return _u
 }
 
@@ -536,6 +562,35 @@ func (_u *ApprovalRequestUpdate) sqlSave(ctx context.Context) (_node int, err er
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(eventsubscription.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.ListenerCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   approvalrequest.ListenerTable,
+			Columns: []string{approvalrequest.ListenerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(listener.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.ListenerIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   approvalrequest.ListenerTable,
+			Columns: []string{approvalrequest.ListenerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(listener.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {
@@ -827,6 +882,25 @@ func (_u *ApprovalRequestUpdateOne) SetEventSubscription(v *EventSubscription) *
 	return _u.SetEventSubscriptionID(v.ID)
 }
 
+// SetListenerID sets the "listener" edge to the Listener entity by ID.
+func (_u *ApprovalRequestUpdateOne) SetListenerID(id int) *ApprovalRequestUpdateOne {
+	_u.mutation.SetListenerID(id)
+	return _u
+}
+
+// SetNillableListenerID sets the "listener" edge to the Listener entity by ID if the given value is not nil.
+func (_u *ApprovalRequestUpdateOne) SetNillableListenerID(id *int) *ApprovalRequestUpdateOne {
+	if id != nil {
+		_u = _u.SetListenerID(*id)
+	}
+	return _u
+}
+
+// SetListener sets the "listener" edge to the Listener entity.
+func (_u *ApprovalRequestUpdateOne) SetListener(v *Listener) *ApprovalRequestUpdateOne {
+	return _u.SetListenerID(v.ID)
+}
+
 // Mutation returns the ApprovalRequestMutation object of the builder.
 func (_u *ApprovalRequestUpdateOne) Mutation() *ApprovalRequestMutation {
 	return _u.mutation
@@ -841,6 +915,12 @@ func (_u *ApprovalRequestUpdateOne) ClearAPISubscription() *ApprovalRequestUpdat
 // ClearEventSubscription clears the "event_subscription" edge to the EventSubscription entity.
 func (_u *ApprovalRequestUpdateOne) ClearEventSubscription() *ApprovalRequestUpdateOne {
 	_u.mutation.ClearEventSubscription()
+	return _u
+}
+
+// ClearListener clears the "listener" edge to the Listener entity.
+func (_u *ApprovalRequestUpdateOne) ClearListener() *ApprovalRequestUpdateOne {
+	_u.mutation.ClearListener()
 	return _u
 }
 
@@ -1094,6 +1174,35 @@ func (_u *ApprovalRequestUpdateOne) sqlSave(ctx context.Context) (_node *Approva
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(eventsubscription.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.ListenerCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   approvalrequest.ListenerTable,
+			Columns: []string{approvalrequest.ListenerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(listener.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.ListenerIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   approvalrequest.ListenerTable,
+			Columns: []string{approvalrequest.ListenerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(listener.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

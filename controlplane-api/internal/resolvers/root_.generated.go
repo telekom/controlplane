@@ -47,6 +47,8 @@ type ResolverRoot interface {
 	EventType() EventTypeResolver
 	ExternalId() ExternalIdResolver
 	ExternalIdentityProvider() ExternalIdentityProviderResolver
+	Listener() ListenerResolver
+	ListenerFilter() ListenerFilterResolver
 	Mutation() MutationResolver
 	OAuth2ClientCredentials() OAuth2ClientCredentialsResolver
 	Query() QueryResolver
@@ -109,6 +111,7 @@ type ComplexityRoot struct {
 		Features       func(childComplexity int) int
 		ID             func(childComplexity int) int
 		LastModifiedAt func(childComplexity int) int
+		Listeners      func(childComplexity int) int
 		Namespace      func(childComplexity int) int
 		Owner          func(childComplexity int) int
 		Security       func(childComplexity int) int
@@ -158,6 +161,7 @@ type ComplexityRoot struct {
 		GatewayURL       func(childComplexity int) int
 		ID               func(childComplexity int) int
 		LastModifiedAt   func(childComplexity int) int
+		Listeners        func(childComplexity int) int
 		M2mAuthMethod    func(childComplexity int) int
 		Name             func(childComplexity int) int
 		Namespace        func(childComplexity int) int
@@ -210,6 +214,7 @@ type ComplexityRoot struct {
 		ID                    func(childComplexity int) int
 		IPRestrictions        func(childComplexity int) int
 		LastModifiedAt        func(childComplexity int) int
+		Listeners             func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, where *ent.ListenerWhereInput) int
 		Name                  func(childComplexity int) int
 		Namespace             func(childComplexity int) int
 		OwnerTeam             func(childComplexity int) int
@@ -235,6 +240,12 @@ type ComplexityRoot struct {
 	ApplicationEdge struct {
 		Cursor func(childComplexity int) int
 		Node   func(childComplexity int) int
+	}
+
+	ApplicationInfo struct {
+		ID        func(childComplexity int) int
+		Name      func(childComplexity int) int
+		OwnerTeam func(childComplexity int) int
 	}
 
 	Approval struct {
@@ -532,6 +543,54 @@ type ComplexityRoot struct {
 		Second func(childComplexity int) int
 	}
 
+	Listener struct {
+		APIBasePath      func(childComplexity int) int
+		Application      func(childComplexity int) int
+		Approved         func(childComplexity int) int
+		Consumer         func(childComplexity int) int
+		ConsumerApproval func(childComplexity int) int
+		CreatedAt        func(childComplexity int) int
+		Environment      func(childComplexity int) int
+		Exposure         func(childComplexity int) int
+		ID               func(childComplexity int) int
+		LastModifiedAt   func(childComplexity int) int
+		Name             func(childComplexity int) int
+		Namespace        func(childComplexity int) int
+		Provider         func(childComplexity int) int
+		ProviderApproval func(childComplexity int) int
+		RequestFilter    func(childComplexity int) int
+		ResourceName     func(childComplexity int) int
+		ResponseFilter   func(childComplexity int) int
+		StatusMessage    func(childComplexity int) int
+		StatusPhase      func(childComplexity int) int
+		Subscription     func(childComplexity int) int
+	}
+
+	ListenerConnection struct {
+		Edges      func(childComplexity int) int
+		PageInfo   func(childComplexity int) int
+		TotalCount func(childComplexity int) int
+	}
+
+	ListenerEdge struct {
+		Cursor func(childComplexity int) int
+		Node   func(childComplexity int) int
+	}
+
+	ListenerFilter struct {
+		Payload func(childComplexity int) int
+		Trigger func(childComplexity int) int
+	}
+
+	ListenerInfo struct {
+		Application  func(childComplexity int) int
+		Approved     func(childComplexity int) int
+		Consumer     func(childComplexity int) int
+		ID           func(childComplexity int) int
+		Provider     func(childComplexity int) int
+		ResourceName func(childComplexity int) int
+	}
+
 	Machine2MachineAuthentication struct {
 		Basic       func(childComplexity int) int
 		ExternalIDP func(childComplexity int) int
@@ -620,6 +679,7 @@ type ComplexityRoot struct {
 		EventSubscriptions func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.EventSubscriptionOrder, where *ent.EventSubscriptionWhereInput) int
 		EventTypes         func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.EventTypeOrder, where *ent.EventTypeWhereInput) int
 		Groups             func(childComplexity int, where *ent.GroupWhereInput) int
+		Listeners          func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy []*ent.ListenerOrder, where *ent.ListenerWhereInput) int
 		Node               func(childComplexity int, id int) int
 		Nodes              func(childComplexity int, ids []int) int
 		PermissionSets     func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.PermissionSetOrder, where *ent.PermissionSetWhereInput) int
@@ -989,6 +1049,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.ApiExposure.LastModifiedAt(childComplexity), true
+	case "ApiExposure.listeners":
+		if e.ComplexityRoot.ApiExposure.Listeners == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApiExposure.Listeners(childComplexity), true
 	case "ApiExposure.namespace":
 		if e.ComplexityRoot.ApiExposure.Namespace == nil {
 			break
@@ -1198,6 +1264,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.ApiSubscription.LastModifiedAt(childComplexity), true
+	case "ApiSubscription.listeners":
+		if e.ComplexityRoot.ApiSubscription.Listeners == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApiSubscription.Listeners(childComplexity), true
 	case "ApiSubscription.m2mAuthMethod":
 		if e.ComplexityRoot.ApiSubscription.M2mAuthMethod == nil {
 			break
@@ -1418,6 +1490,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Application.LastModifiedAt(childComplexity), true
+	case "Application.listeners":
+		if e.ComplexityRoot.Application.Listeners == nil {
+			break
+		}
+
+		args, err := ec.field_Application_listeners_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Application.Listeners(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["where"].(*ent.ListenerWhereInput)), true
 	case "Application.name":
 		if e.ComplexityRoot.Application.Name == nil {
 			break
@@ -1544,6 +1627,25 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.ApplicationEdge.Node(childComplexity), true
+
+	case "ApplicationInfo.id":
+		if e.ComplexityRoot.ApplicationInfo.ID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApplicationInfo.ID(childComplexity), true
+	case "ApplicationInfo.name":
+		if e.ComplexityRoot.ApplicationInfo.Name == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApplicationInfo.Name(childComplexity), true
+	case "ApplicationInfo.ownerTeam":
+		if e.ComplexityRoot.ApplicationInfo.OwnerTeam == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApplicationInfo.OwnerTeam(childComplexity), true
 
 	case "Approval.action":
 		if e.ComplexityRoot.Approval.Action == nil {
@@ -2686,6 +2788,209 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.Limits.Second(childComplexity), true
 
+	case "Listener.apiBasePath":
+		if e.ComplexityRoot.Listener.APIBasePath == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Listener.APIBasePath(childComplexity), true
+	case "Listener.application":
+		if e.ComplexityRoot.Listener.Application == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Listener.Application(childComplexity), true
+	case "Listener.approved":
+		if e.ComplexityRoot.Listener.Approved == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Listener.Approved(childComplexity), true
+	case "Listener.consumer":
+		if e.ComplexityRoot.Listener.Consumer == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Listener.Consumer(childComplexity), true
+	case "Listener.consumerApproval":
+		if e.ComplexityRoot.Listener.ConsumerApproval == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Listener.ConsumerApproval(childComplexity), true
+	case "Listener.createdAt":
+		if e.ComplexityRoot.Listener.CreatedAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Listener.CreatedAt(childComplexity), true
+	case "Listener.environment":
+		if e.ComplexityRoot.Listener.Environment == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Listener.Environment(childComplexity), true
+	case "Listener.exposure":
+		if e.ComplexityRoot.Listener.Exposure == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Listener.Exposure(childComplexity), true
+	case "Listener.id":
+		if e.ComplexityRoot.Listener.ID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Listener.ID(childComplexity), true
+	case "Listener.lastModifiedAt":
+		if e.ComplexityRoot.Listener.LastModifiedAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Listener.LastModifiedAt(childComplexity), true
+	case "Listener.name":
+		if e.ComplexityRoot.Listener.Name == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Listener.Name(childComplexity), true
+	case "Listener.namespace":
+		if e.ComplexityRoot.Listener.Namespace == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Listener.Namespace(childComplexity), true
+	case "Listener.provider":
+		if e.ComplexityRoot.Listener.Provider == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Listener.Provider(childComplexity), true
+	case "Listener.providerApproval":
+		if e.ComplexityRoot.Listener.ProviderApproval == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Listener.ProviderApproval(childComplexity), true
+	case "Listener.requestFilter":
+		if e.ComplexityRoot.Listener.RequestFilter == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Listener.RequestFilter(childComplexity), true
+	case "Listener.resourceName":
+		if e.ComplexityRoot.Listener.ResourceName == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Listener.ResourceName(childComplexity), true
+	case "Listener.responseFilter":
+		if e.ComplexityRoot.Listener.ResponseFilter == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Listener.ResponseFilter(childComplexity), true
+	case "Listener.statusMessage":
+		if e.ComplexityRoot.Listener.StatusMessage == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Listener.StatusMessage(childComplexity), true
+	case "Listener.statusPhase":
+		if e.ComplexityRoot.Listener.StatusPhase == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Listener.StatusPhase(childComplexity), true
+	case "Listener.subscription":
+		if e.ComplexityRoot.Listener.Subscription == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Listener.Subscription(childComplexity), true
+
+	case "ListenerConnection.edges":
+		if e.ComplexityRoot.ListenerConnection.Edges == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ListenerConnection.Edges(childComplexity), true
+	case "ListenerConnection.pageInfo":
+		if e.ComplexityRoot.ListenerConnection.PageInfo == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ListenerConnection.PageInfo(childComplexity), true
+	case "ListenerConnection.totalCount":
+		if e.ComplexityRoot.ListenerConnection.TotalCount == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ListenerConnection.TotalCount(childComplexity), true
+
+	case "ListenerEdge.cursor":
+		if e.ComplexityRoot.ListenerEdge.Cursor == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ListenerEdge.Cursor(childComplexity), true
+	case "ListenerEdge.node":
+		if e.ComplexityRoot.ListenerEdge.Node == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ListenerEdge.Node(childComplexity), true
+
+	case "ListenerFilter.payload":
+		if e.ComplexityRoot.ListenerFilter.Payload == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ListenerFilter.Payload(childComplexity), true
+	case "ListenerFilter.trigger":
+		if e.ComplexityRoot.ListenerFilter.Trigger == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ListenerFilter.Trigger(childComplexity), true
+
+	case "ListenerInfo.application":
+		if e.ComplexityRoot.ListenerInfo.Application == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ListenerInfo.Application(childComplexity), true
+	case "ListenerInfo.approved":
+		if e.ComplexityRoot.ListenerInfo.Approved == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ListenerInfo.Approved(childComplexity), true
+	case "ListenerInfo.consumer":
+		if e.ComplexityRoot.ListenerInfo.Consumer == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ListenerInfo.Consumer(childComplexity), true
+	case "ListenerInfo.id":
+		if e.ComplexityRoot.ListenerInfo.ID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ListenerInfo.ID(childComplexity), true
+	case "ListenerInfo.provider":
+		if e.ComplexityRoot.ListenerInfo.Provider == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ListenerInfo.Provider(childComplexity), true
+	case "ListenerInfo.resourceName":
+		if e.ComplexityRoot.ListenerInfo.ResourceName == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ListenerInfo.ResourceName(childComplexity), true
+
 	case "Machine2MachineAuthentication.basic":
 		if e.ComplexityRoot.Machine2MachineAuthentication.Basic == nil {
 			break
@@ -3149,6 +3454,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.Query.Groups(childComplexity, args["where"].(*ent.GroupWhereInput)), true
 
+	case "Query.listeners":
+		if e.ComplexityRoot.Query.Listeners == nil {
+			break
+		}
+
+		args, err := ec.field_Query_listeners_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.Listeners(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].([]*ent.ListenerOrder), args["where"].(*ent.ListenerWhereInput)), true
 	case "Query.node":
 		if e.ComplexityRoot.Query.Node == nil {
 			break
@@ -3737,6 +4053,8 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputEventTypeOrder,
 		ec.unmarshalInputEventTypeWhereInput,
 		ec.unmarshalInputGroupWhereInput,
+		ec.unmarshalInputListenerOrder,
+		ec.unmarshalInputListenerWhereInput,
 		ec.unmarshalInputMemberInput,
 		ec.unmarshalInputMemberWhereInput,
 		ec.unmarshalInputPermissionSetOrder,
@@ -5378,6 +5696,11 @@ input ApprovalRequestWhereInput {
   """
   hasEventSubscription: Boolean
   hasEventSubscriptionWith: [EventSubscriptionWhereInput!]
+  """
+  listener edge predicates
+  """
+  hasListener: Boolean
+  hasListenerWith: [ListenerWhereInput!]
 }
 """
 ApprovalState is enum for the field state
@@ -5594,6 +5917,16 @@ input ApprovalWhereInput {
   """
   hasEventSubscription: Boolean
   hasEventSubscriptionWith: [EventSubscriptionWhereInput!]
+  """
+  listener edge predicates
+  """
+  hasListener: Boolean
+  hasListenerWith: [ListenerWhereInput!]
+  """
+  consumer_listener edge predicates
+  """
+  hasConsumerListener: Boolean
+  hasConsumerListenerWith: [ListenerWhereInput!]
 }
 """
 Define a Relay Cursor type:
@@ -6489,6 +6822,194 @@ input GroupWhereInput {
   hasTeams: Boolean
   hasTeamsWith: [TeamWhereInput!]
 }
+type Listener implements Node {
+  id: ID!
+  createdAt: Time!
+  lastModifiedAt: Time!
+  statusPhase: ListenerStatusPhase
+  statusMessage: String
+  environment: String
+  namespace: String!
+  name: String!
+}
+"""
+A connection to a list of items.
+"""
+type ListenerConnection {
+  """
+  A list of edges.
+  """
+  edges: [ListenerEdge]
+  """
+  Information to aid in pagination.
+  """
+  pageInfo: PageInfo!
+  """
+  Identifies the total count of items in the connection.
+  """
+  totalCount: Int!
+}
+"""
+An edge in a connection.
+"""
+type ListenerEdge {
+  """
+  The item at the end of the edge.
+  """
+  node: Listener
+  """
+  A cursor for use in pagination.
+  """
+  cursor: Cursor!
+}
+"""
+Ordering options for Listener connections
+"""
+input ListenerOrder {
+  """
+  The ordering direction.
+  """
+  direction: OrderDirection! = ASC
+  """
+  The field by which to order Listeners.
+  """
+  field: ListenerOrderField!
+}
+"""
+Properties by which Listener connections can be ordered.
+"""
+enum ListenerOrderField {
+  CREATED_AT
+  LAST_MODIFIED_AT
+}
+"""
+ListenerStatusPhase is enum for the field status_phase
+"""
+enum ListenerStatusPhase @goModel(model: "github.com/telekom/controlplane/controlplane-api/ent/listener.StatusPhase") {
+  READY
+  PENDING
+  ERROR
+  UNKNOWN
+}
+"""
+ListenerWhereInput is used for filtering Listener objects.
+Input was generated by ent.
+"""
+input ListenerWhereInput {
+  not: ListenerWhereInput
+  and: [ListenerWhereInput!]
+  or: [ListenerWhereInput!]
+  """
+  id field predicates
+  """
+  id: ID
+  idNEQ: ID
+  idIn: [ID!]
+  idNotIn: [ID!]
+  idGT: ID
+  idGTE: ID
+  idLT: ID
+  idLTE: ID
+  """
+  created_at field predicates
+  """
+  createdAt: Time
+  createdAtNEQ: Time
+  createdAtIn: [Time!]
+  createdAtNotIn: [Time!]
+  createdAtGT: Time
+  createdAtGTE: Time
+  createdAtLT: Time
+  createdAtLTE: Time
+  """
+  last_modified_at field predicates
+  """
+  lastModifiedAt: Time
+  lastModifiedAtNEQ: Time
+  lastModifiedAtIn: [Time!]
+  lastModifiedAtNotIn: [Time!]
+  lastModifiedAtGT: Time
+  lastModifiedAtGTE: Time
+  lastModifiedAtLT: Time
+  lastModifiedAtLTE: Time
+  """
+  status_phase field predicates
+  """
+  statusPhase: ListenerStatusPhase
+  statusPhaseNEQ: ListenerStatusPhase
+  statusPhaseIn: [ListenerStatusPhase!]
+  statusPhaseNotIn: [ListenerStatusPhase!]
+  statusPhaseIsNil: Boolean
+  statusPhaseNotNil: Boolean
+  """
+  status_message field predicates
+  """
+  statusMessage: String
+  statusMessageNEQ: String
+  statusMessageIn: [String!]
+  statusMessageNotIn: [String!]
+  statusMessageGT: String
+  statusMessageGTE: String
+  statusMessageLT: String
+  statusMessageLTE: String
+  statusMessageContains: String
+  statusMessageHasPrefix: String
+  statusMessageHasSuffix: String
+  statusMessageIsNil: Boolean
+  statusMessageNotNil: Boolean
+  statusMessageEqualFold: String
+  statusMessageContainsFold: String
+  """
+  environment field predicates
+  """
+  environment: String
+  environmentNEQ: String
+  environmentIn: [String!]
+  environmentNotIn: [String!]
+  environmentGT: String
+  environmentGTE: String
+  environmentLT: String
+  environmentLTE: String
+  environmentContains: String
+  environmentHasPrefix: String
+  environmentHasSuffix: String
+  environmentIsNil: Boolean
+  environmentNotNil: Boolean
+  environmentEqualFold: String
+  environmentContainsFold: String
+  """
+  namespace field predicates
+  """
+  namespace: String
+  namespaceNEQ: String
+  namespaceIn: [String!]
+  namespaceNotIn: [String!]
+  namespaceGT: String
+  namespaceGTE: String
+  namespaceLT: String
+  namespaceLTE: String
+  namespaceContains: String
+  namespaceHasPrefix: String
+  namespaceHasSuffix: String
+  namespaceEqualFold: String
+  namespaceContainsFold: String
+  """
+  name field predicates
+  """
+  name: String
+  nameNEQ: String
+  nameIn: [String!]
+  nameNotIn: [String!]
+  nameGT: String
+  nameGTE: String
+  nameLT: String
+  nameLTE: String
+  nameContains: String
+  nameHasPrefix: String
+  nameHasSuffix: String
+  nameEqualFold: String
+  nameContainsFold: String
+}
 type Member implements Node {
   id: ID!
   environment: String
@@ -7091,6 +7612,37 @@ type Query {
     """
     where: EventTypeWhereInput
   ): EventTypeConnection!
+  listeners(
+    """
+    Returns the elements in the list that come after the specified cursor.
+    """
+    after: Cursor
+
+    """
+    Returns the first _n_ elements from the list.
+    """
+    first: Int
+
+    """
+    Returns the elements in the list that come before the specified cursor.
+    """
+    before: Cursor
+
+    """
+    Returns the last _n_ elements from the list.
+    """
+    last: Int
+
+    """
+    Ordering options for Listeners returned from the connection.
+    """
+    orderBy: [ListenerOrder!]
+
+    """
+    Filtering options for Listeners returned from the connection.
+    """
+    where: ListenerWhereInput
+  ): ListenerConnection!
   permissionSets(
     """
     Returns the elements in the list that come after the specified cursor.
@@ -7913,6 +8465,11 @@ type TeamInfo {
   description: String
 }
 
+type ListenerFilter {
+  trigger: Map @goField(forceResolver: true)
+  payload: [String!]! @goField(forceResolver: true)
+}
+
 type Upstream {
   url: String!
   weight: Int!
@@ -7982,7 +8539,7 @@ enum ResponseFilterMode {
 
 type ResponseFilter {
   paths: [String]!
-  mode: ResponseFilterMode 
+  mode: ResponseFilterMode
 }
 
 type SelectionFilter {
@@ -8036,7 +8593,7 @@ type ApiExposureInfo {
   apiVersion: String
   features: [ApiExposureFeature!]!
   approvalConfig: ApprovalConfig!
-  traffic: Traffic 
+  traffic: Traffic
   "Application name that owns this exposure"
   ownerApplicationName: String!
   "Owning team (reduced view)"
@@ -8089,7 +8646,7 @@ type ApiSubscriptionSecurity {
   m2m: SubscriberMachine2MachineAuthentication
 }
 
-# Traffic 
+# Traffic
 
 type Limits {
   second: Int
@@ -8152,6 +8709,24 @@ type ApiSubscriptionInfo {
   ownerTeam: TeamInfo!
 }
 
+"Reduced application information used by Listener relationships."
+type ApplicationInfo {
+  id: ID!
+  name: String!
+  ownerTeam: TeamInfo!
+}
+
+"Reduced Listener information used by exposure, subscription, and approval relationships."
+type ListenerInfo {
+  id: ID!
+  resourceName: String!
+  "True when both provider and consumer approvals are granted."
+  approved: Boolean!
+  application: ApplicationInfo!
+  consumer: ApplicationInfo!
+  provider: ApplicationInfo!
+}
+
 "Reduced event subscription for cross-tenant contexts (e.g., exposure subscribers)."
 type EventSubscriptionInfo {
   id: ID!
@@ -8183,6 +8758,14 @@ type EventExposureInfo {
 extend type Application {
   "Owning team (reduced view for cross-tenant safety)"
   ownerTeam: TeamInfo!
+  "All Listeners declared by this application, including non-ready Listeners."
+  listeners(
+    after: Cursor
+    first: Int
+    before: Cursor
+    last: Int
+    where: ListenerWhereInput
+  ): ListenerConnection! @goField(forceResolver: true)
 }
 
 extend type Zone {
@@ -8193,11 +8776,31 @@ extend type Zone {
 extend type ApiSubscription {
   "Target exposure (reduced view — cross-tenant boundary). Null when the target API is not yet exposed."
   target: ApiExposureInfo @goField(forceResolver: true)
+  "Ready Listeners attached to this subscription."
+  listeners: [ListenerInfo!]! @goField(forceResolver: true)
 }
 
 extend type ApiExposure {
   "Subscriptions to this exposure (reduced view — cross-tenant boundary)"
   subscriptions: [ApiSubscriptionInfo!]! @goField(forceResolver: true)
+  "Ready Listeners attached to this exposure."
+  listeners: [ListenerInfo!]! @goField(forceResolver: true)
+}
+
+extend type Listener {
+  resourceName: String! @goField(forceResolver: true)
+  "True when both provider and consumer approvals are granted."
+  approved: Boolean! @goField(forceResolver: true)
+  apiBasePath: String! @goField(forceResolver: true)
+  requestFilter: ListenerFilter @goField(forceResolver: true)
+  responseFilter: ListenerFilter @goField(forceResolver: true)
+  application: ApplicationInfo! @goField(forceResolver: true)
+  consumer: ApplicationInfo! @goField(forceResolver: true)
+  provider: ApplicationInfo! @goField(forceResolver: true)
+  subscription: ApiSubscriptionInfo! @goField(forceResolver: true)
+  exposure: ApiExposureInfo! @goField(forceResolver: true)
+  providerApproval: Approval @goField(forceResolver: true)
+  consumerApproval: Approval @goField(forceResolver: true)
 }
 
 extend type EventSubscription {
@@ -8210,15 +8813,17 @@ extend type EventExposure {
   subscriptions: [EventSubscriptionInfo!]! @goField(forceResolver: true)
 }
 
-"A subscription related to an approval — either an API or event subscription."
-union SubscriptionInfo = ApiSubscriptionInfo | EventSubscriptionInfo
+"The API subscription, event subscription, or Listener related to an approval workflow."
+union SubscriptionInfo = ApiSubscriptionInfo | EventSubscriptionInfo | ListenerInfo
 
 extend type Approval {
+  # TODO: Rename subscription to target in a future breaking schema revision.
   "Related subscription (reduced view — cross-tenant boundary)"
   subscription: SubscriptionInfo! @goField(forceResolver: true)
 }
 
 extend type ApprovalRequest {
+  # TODO: Rename subscription to target in a future breaking schema revision.
   "Related subscription (reduced view — cross-tenant boundary)"
   subscription: SubscriptionInfo! @goField(forceResolver: true)
   "The corresponding approval, if one exists (traverses via the related subscription)"
@@ -8258,7 +8863,6 @@ type ApiCategory {
   "The category identifier/name."
   name: String!
 }
-
 `, BuiltIn: false},
 }
 var parsedSchema = gqlparser.MustLoadSchema(sources...)
@@ -8383,6 +8987,8 @@ func (ec *executionContext) childFields_ApiExposure(ctx context.Context, field g
 		return ec.fieldContext_ApiExposure_api(ctx, field)
 	case "subscriptions":
 		return ec.fieldContext_ApiExposure_subscriptions(ctx, field)
+	case "listeners":
+		return ec.fieldContext_ApiExposure_listeners(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type ApiExposure", field.Name)
 }
@@ -8481,6 +9087,8 @@ func (ec *executionContext) childFields_ApiSubscription(ctx context.Context, fie
 		return ec.fieldContext_ApiSubscription_approvalRequests(ctx, field)
 	case "target":
 		return ec.fieldContext_ApiSubscription_target(ctx, field)
+	case "listeners":
+		return ec.fieldContext_ApiSubscription_listeners(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type ApiSubscription", field.Name)
 }
@@ -8595,6 +9203,8 @@ func (ec *executionContext) childFields_Application(ctx context.Context, field g
 		return ec.fieldContext_Application_permissionSet(ctx, field)
 	case "ownerTeam":
 		return ec.fieldContext_Application_ownerTeam(ctx, field)
+	case "listeners":
+		return ec.fieldContext_Application_listeners(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type Application", field.Name)
 }
@@ -8619,6 +9229,18 @@ func (ec *executionContext) childFields_ApplicationEdge(ctx context.Context, fie
 		return ec.fieldContext_ApplicationEdge_cursor(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type ApplicationEdge", field.Name)
+}
+
+func (ec *executionContext) childFields_ApplicationInfo(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "id":
+		return ec.fieldContext_ApplicationInfo_id(ctx, field)
+	case "name":
+		return ec.fieldContext_ApplicationInfo_name(ctx, field)
+	case "ownerTeam":
+		return ec.fieldContext_ApplicationInfo_ownerTeam(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type ApplicationInfo", field.Name)
 }
 
 func (ec *executionContext) childFields_Approval(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
@@ -9209,6 +9831,102 @@ func (ec *executionContext) childFields_Limits(ctx context.Context, field graphq
 		return ec.fieldContext_Limits_hour(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type Limits", field.Name)
+}
+
+func (ec *executionContext) childFields_Listener(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "id":
+		return ec.fieldContext_Listener_id(ctx, field)
+	case "createdAt":
+		return ec.fieldContext_Listener_createdAt(ctx, field)
+	case "lastModifiedAt":
+		return ec.fieldContext_Listener_lastModifiedAt(ctx, field)
+	case "statusPhase":
+		return ec.fieldContext_Listener_statusPhase(ctx, field)
+	case "statusMessage":
+		return ec.fieldContext_Listener_statusMessage(ctx, field)
+	case "environment":
+		return ec.fieldContext_Listener_environment(ctx, field)
+	case "namespace":
+		return ec.fieldContext_Listener_namespace(ctx, field)
+	case "name":
+		return ec.fieldContext_Listener_name(ctx, field)
+	case "resourceName":
+		return ec.fieldContext_Listener_resourceName(ctx, field)
+	case "approved":
+		return ec.fieldContext_Listener_approved(ctx, field)
+	case "apiBasePath":
+		return ec.fieldContext_Listener_apiBasePath(ctx, field)
+	case "requestFilter":
+		return ec.fieldContext_Listener_requestFilter(ctx, field)
+	case "responseFilter":
+		return ec.fieldContext_Listener_responseFilter(ctx, field)
+	case "application":
+		return ec.fieldContext_Listener_application(ctx, field)
+	case "consumer":
+		return ec.fieldContext_Listener_consumer(ctx, field)
+	case "provider":
+		return ec.fieldContext_Listener_provider(ctx, field)
+	case "subscription":
+		return ec.fieldContext_Listener_subscription(ctx, field)
+	case "exposure":
+		return ec.fieldContext_Listener_exposure(ctx, field)
+	case "providerApproval":
+		return ec.fieldContext_Listener_providerApproval(ctx, field)
+	case "consumerApproval":
+		return ec.fieldContext_Listener_consumerApproval(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type Listener", field.Name)
+}
+
+func (ec *executionContext) childFields_ListenerConnection(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "edges":
+		return ec.fieldContext_ListenerConnection_edges(ctx, field)
+	case "pageInfo":
+		return ec.fieldContext_ListenerConnection_pageInfo(ctx, field)
+	case "totalCount":
+		return ec.fieldContext_ListenerConnection_totalCount(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type ListenerConnection", field.Name)
+}
+
+func (ec *executionContext) childFields_ListenerEdge(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "node":
+		return ec.fieldContext_ListenerEdge_node(ctx, field)
+	case "cursor":
+		return ec.fieldContext_ListenerEdge_cursor(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type ListenerEdge", field.Name)
+}
+
+func (ec *executionContext) childFields_ListenerFilter(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "trigger":
+		return ec.fieldContext_ListenerFilter_trigger(ctx, field)
+	case "payload":
+		return ec.fieldContext_ListenerFilter_payload(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type ListenerFilter", field.Name)
+}
+
+func (ec *executionContext) childFields_ListenerInfo(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "id":
+		return ec.fieldContext_ListenerInfo_id(ctx, field)
+	case "resourceName":
+		return ec.fieldContext_ListenerInfo_resourceName(ctx, field)
+	case "approved":
+		return ec.fieldContext_ListenerInfo_approved(ctx, field)
+	case "application":
+		return ec.fieldContext_ListenerInfo_application(ctx, field)
+	case "consumer":
+		return ec.fieldContext_ListenerInfo_consumer(ctx, field)
+	case "provider":
+		return ec.fieldContext_ListenerInfo_provider(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type ListenerInfo", field.Name)
 }
 
 func (ec *executionContext) childFields_Machine2MachineAuthentication(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {

@@ -7,6 +7,7 @@ package schema
 import (
 	"entgo.io/contrib/entgql"
 	"entgo.io/ent"
+	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/schema"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
@@ -95,6 +96,8 @@ func (Application) Edges() []ent.Edge {
 			Annotations(entgql.RelayConnection()),
 		edge.To("subscribed_events", EventSubscription.Type).
 			Annotations(entgql.RelayConnection()),
+		edge.To("listeners", Listener.Type).
+			Annotations(entgql.Skip(entgql.SkipType|entgql.SkipWhereInput), entsql.OnDelete(entsql.Cascade)),
 		edge.To("permission_set", PermissionSet.Type).
 			Unique(),
 	}

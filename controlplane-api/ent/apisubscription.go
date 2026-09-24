@@ -69,14 +69,17 @@ type ApiSubscriptionEdges struct {
 	Approval *Approval `json:"approval,omitempty"`
 	// ApprovalRequests holds the value of the approval_requests edge.
 	ApprovalRequests []*ApprovalRequest `json:"approval_requests,omitempty"`
+	// Listeners holds the value of the listeners edge.
+	Listeners []*Listener `json:"listeners,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [5]bool
+	loadedTypes [6]bool
 	// totalCount holds the count of the edges above.
 	totalCount [4]map[string]int
 
 	namedFailoverZones    map[string][]*Zone
 	namedApprovalRequests map[string][]*ApprovalRequest
+	namedListeners        map[string][]*Listener
 }
 
 // OwnerOrErr returns the Owner value or an error if the edge
@@ -128,6 +131,15 @@ func (e ApiSubscriptionEdges) ApprovalRequestsOrErr() ([]*ApprovalRequest, error
 		return e.ApprovalRequests, nil
 	}
 	return nil, &NotLoadedError{edge: "approval_requests"}
+}
+
+// ListenersOrErr returns the Listeners value or an error if the edge
+// was not loaded in eager-loading.
+func (e ApiSubscriptionEdges) ListenersOrErr() ([]*Listener, error) {
+	if e.loadedTypes[5] {
+		return e.Listeners, nil
+	}
+	return nil, &NotLoadedError{edge: "listeners"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -300,6 +312,11 @@ func (_m *ApiSubscription) QueryApprovalRequests() *ApprovalRequestQuery {
 	return NewApiSubscriptionClient(_m.config).QueryApprovalRequests(_m)
 }
 
+// QueryListeners queries the "listeners" edge of the ApiSubscription entity.
+func (_m *ApiSubscription) QueryListeners() *ListenerQuery {
+	return NewApiSubscriptionClient(_m.config).QueryListeners(_m)
+}
+
 // Update returns a builder for updating this ApiSubscription.
 // Note that you need to call ApiSubscription.Unwrap() before calling this method if this ApiSubscription
 // was returned from a transaction, and the transaction was committed or rolled back.
@@ -415,6 +432,30 @@ func (_m *ApiSubscription) appendNamedApprovalRequests(name string, edges ...*Ap
 		_m.Edges.namedApprovalRequests[name] = []*ApprovalRequest{}
 	} else {
 		_m.Edges.namedApprovalRequests[name] = append(_m.Edges.namedApprovalRequests[name], edges...)
+	}
+}
+
+// NamedListeners returns the Listeners named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *ApiSubscription) NamedListeners(name string) ([]*Listener, error) {
+	if _m.Edges.namedListeners == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedListeners[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *ApiSubscription) appendNamedListeners(name string, edges ...*Listener) {
+	if _m.Edges.namedListeners == nil {
+		_m.Edges.namedListeners = make(map[string][]*Listener)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedListeners[name] = []*Listener{}
+	} else {
+		_m.Edges.namedListeners[name] = append(_m.Edges.namedListeners[name], edges...)
 	}
 }
 

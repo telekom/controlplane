@@ -60,6 +60,10 @@ const (
 	EdgeAPISubscription = "api_subscription"
 	// EdgeEventSubscription holds the string denoting the event_subscription edge name in mutations.
 	EdgeEventSubscription = "event_subscription"
+	// EdgeListener holds the string denoting the listener edge name in mutations.
+	EdgeListener = "listener"
+	// EdgeConsumerListener holds the string denoting the consumer_listener edge name in mutations.
+	EdgeConsumerListener = "consumer_listener"
 	// Table holds the table name of the approval in the database.
 	Table = "approvals"
 	// APISubscriptionTable is the table that holds the api_subscription relation/edge.
@@ -76,6 +80,20 @@ const (
 	EventSubscriptionInverseTable = "event_subscriptions"
 	// EventSubscriptionColumn is the table column denoting the event_subscription relation/edge.
 	EventSubscriptionColumn = "event_subscription_approval"
+	// ListenerTable is the table that holds the listener relation/edge.
+	ListenerTable = "approvals"
+	// ListenerInverseTable is the table name for the Listener entity.
+	// It exists in this package in order to avoid circular dependency with the "listener" package.
+	ListenerInverseTable = "listeners"
+	// ListenerColumn is the table column denoting the listener relation/edge.
+	ListenerColumn = "listener_provider_approval"
+	// ConsumerListenerTable is the table that holds the consumer_listener relation/edge.
+	ConsumerListenerTable = "approvals"
+	// ConsumerListenerInverseTable is the table name for the Listener entity.
+	// It exists in this package in order to avoid circular dependency with the "listener" package.
+	ConsumerListenerInverseTable = "listeners"
+	// ConsumerListenerColumn is the table column denoting the consumer_listener relation/edge.
+	ConsumerListenerColumn = "listener_consumer_approval"
 )
 
 // Columns holds all SQL columns for approval fields.
@@ -105,6 +123,8 @@ var Columns = []string{
 var ForeignKeys = []string{
 	"api_subscription_approval",
 	"event_subscription_approval",
+	"listener_provider_approval",
+	"listener_consumer_approval",
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -311,6 +331,20 @@ func ByEventSubscriptionField(field string, opts ...sql.OrderTermOption) OrderOp
 		sqlgraph.OrderByNeighborTerms(s, newEventSubscriptionStep(), sql.OrderByField(field, opts...))
 	}
 }
+
+// ByListenerField orders the results by listener field.
+func ByListenerField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newListenerStep(), sql.OrderByField(field, opts...))
+	}
+}
+
+// ByConsumerListenerField orders the results by consumer_listener field.
+func ByConsumerListenerField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newConsumerListenerStep(), sql.OrderByField(field, opts...))
+	}
+}
 func newAPISubscriptionStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -323,6 +357,20 @@ func newEventSubscriptionStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(EventSubscriptionInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2O, true, EventSubscriptionTable, EventSubscriptionColumn),
+	)
+}
+func newListenerStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(ListenerInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2O, true, ListenerTable, ListenerColumn),
+	)
+}
+func newConsumerListenerStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(ConsumerListenerInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2O, true, ConsumerListenerTable, ConsumerListenerColumn),
 	)
 }
 
