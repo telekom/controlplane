@@ -1,0 +1,26 @@
+agentic/internal/handler/agenticsubscription/handler_test.go
+  s_ebc26bde2d8362::t_f1a4f44fbf7832 570-592
+  s_ebc26bde2d8362::t_17ccaa7a866cdf 385,400,429-432,453-456,484,503,519,556
+docs/docs/architecture/agentic.mdx
+  s_ebc26bde2d8362::t_17ccaa7a866cdf 54-65,67,71
+  s_ebc26bde2d8362::t_f1a4f44fbf7832 66,68-70
+agentic/internal/handler/agenticsubscription/handler.go
+  s_ebc26bde2d8362::t_17ccaa7a866cdf 50,56,80,88,101,109,171,177,183,228,234,271,289,365,375
+  s_ebc26bde2d8362::t_f1a4f44fbf7832 197
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "4a1fb4e96a28cfb4419bd5b0dda7d21c4627366c",
+  "prompts": {},
+  "sessions": {
+    "s_ebc26bde2d8362": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f2d365b4fffemnDZJrPjPDWYpe",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
