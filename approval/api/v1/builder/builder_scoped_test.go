@@ -722,6 +722,7 @@ var _ = Describe("Scoped identity hardening", func() {
 		_, err = b2.Build(ctx)
 		Expect(err).To(HaveOccurred())
 		Expect(err.Error()).To(ContainSubstring("target identity mismatch"))
+		Expect(err).To(MatchError(ErrScopedIdentity))
 	})
 
 	// -------------------------------------------------------------------
@@ -800,6 +801,7 @@ var _ = Describe("Scoped identity hardening", func() {
 		_, err = b2.Build(ctx)
 		Expect(err).To(HaveOccurred())
 		Expect(err.Error()).To(ContainSubstring("foreign controller owner"))
+		Expect(err).To(MatchError(ErrScopedIdentity))
 	})
 
 	// -------------------------------------------------------------------
@@ -837,6 +839,7 @@ var _ = Describe("Scoped identity hardening", func() {
 			b.WithApprovalKey("provider").WithHashValue(requester.Properties).WithRequester(requester).WithStrategy(approvalv1.ApprovalStrategySimple)
 			res, err := b.Build(ctx)
 			Expect(err).To(MatchError(ContainSubstring("missing or foreign controller owner")))
+			Expect(err).To(MatchError(ErrScopedIdentity))
 			Expect(res).To(Equal(ApprovalResultNone))
 			Expect(meta.IsStatusConditionTrue(owner.GetConditions(), ConditionTypeForKey("provider"))).To(BeFalse())
 		}
@@ -932,6 +935,7 @@ var _ = Describe("Scoped identity hardening", func() {
 				b.WithApprovalKey("provider").WithHashValue(requester.Properties).WithRequester(requester).WithStrategy(approvalv1.ApprovalStrategySimple)
 				res, err := b.Build(ctx)
 				Expect(err).To(MatchError(ContainSubstring("missing or foreign controller owner")))
+				Expect(err).To(MatchError(ErrScopedIdentity))
 				Expect(res).To(Equal(ApprovalResultNone))
 
 				persisted := &approvalv1.ApprovalRequest{}
@@ -958,6 +962,135 @@ var _ = Describe("Scoped identity hardening", func() {
 			ref.UID = "stale-owner-uid"
 			ar.OwnerReferences = []metav1.OwnerReference{ref}
 		}),
+	)
+
+	// -------------------------------------------------------------------
+	// Existing keyed ApprovalRequest with another approvalKey -> identity error
+	// -------------------------------------------------------------------
+	It("rejects an existing keyed ApprovalRequest with another approvalKey", func() {
+		owner := createOwner(uniqueOwnerName("arkey"))
+
+		requester := &approvalv1.Requester{TeamName: "TeamARKey", TeamEmail: "arkey@telekom.de", Reason: "arkey"}
+		Expect(requester.SetProperties(map[string]any{"path": "/arkey"})).To(Succeed())
+
+		jc1 := cclient.NewJanitorClient(cclient.NewScopedClient(k8sm.GetClient(), testEnvironment))
+		b1 := NewApprovalBuilder(jc1, owner)
+		b1.WithApprovalKey("provider").WithHashValue(requester.Properties).WithRequester(requester).WithStrategy(approvalv1.ApprovalStrategySimple)
+		_, err := b1.Build(ctx)
+		Expect(err).NotTo(HaveOccurred())
+		arName := b1.GetApprovalRequest().Name
+		waitForCacheAR(arName)
+
+		By("Replacing the request with a same-named one under another approvalKey")
+		ar := &approvalv1.ApprovalRequest{}
+		Expect(k8sClient.Get(ctx, client.ObjectKey{Name: arName, Namespace: testNamespace}, ar)).To(Succeed())
+		Expect(k8sClient.Delete(ctx, ar)).To(Succeed())
+		oldUID := ar.UID
+		replacement := &approvalv1.ApprovalRequest{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:            arName,
+				Namespace:       testNamespace,
+				Labels:          ar.Labels,
+				OwnerReferences: ar.OwnerReferences,
+			},
+			Spec: ar.Spec,
+		}
+		replacement.Spec.ApprovalKey = "consumer"
+		Eventually(func() error { return k8sClient.Create(ctx, replacement) }, timeout, interval).Should(Succeed())
+		Eventually(func(g Gomega) {
+			cached := &approvalv1.ApprovalRequest{}
+			g.Expect(k8sm.GetClient().Get(ctx, client.ObjectKey{Name: arName, Namespace: testNamespace}, cached)).To(Succeed())
+			g.Expect(cached.UID).ToNot(Equal(oldUID))
+		}, timeout, interval).Should(Succeed())
+
+		jc2 := cclient.NewJanitorClient(cclient.NewScopedClient(k8sm.GetClient(), testEnvironment))
+		b2 := NewApprovalBuilder(jc2, owner)
+		b2.WithApprovalKey("provider").WithHashValue(requester.Properties).WithRequester(requester).WithStrategy(approvalv1.ApprovalStrategySimple)
+		res, err := b2.Build(ctx)
+		Expect(err).To(MatchError(ContainSubstring("approvalKey mismatch")))
+		Expect(err).To(MatchError(ErrScopedIdentity))
+		Expect(res).To(Equal(ApprovalResultNone))
+	})
+
+	// -------------------------------------------------------------------
+	// Terminating keyed ApprovalRequest -> transient error, not an identity error
+	// -------------------------------------------------------------------
+	It("reports a terminating keyed ApprovalRequest without ErrScopedIdentity", func() {
+		owner := createOwner(uniqueOwnerName("arterm"))
+
+		requester := &approvalv1.Requester{TeamName: "TeamARTerm", TeamEmail: "arterm@telekom.de", Reason: "arterm"}
+		Expect(requester.SetProperties(map[string]any{"path": "/arterm"})).To(Succeed())
+
+		jc1 := cclient.NewJanitorClient(cclient.NewScopedClient(k8sm.GetClient(), testEnvironment))
+		b1 := NewApprovalBuilder(jc1, owner)
+		b1.WithApprovalKey("provider").WithHashValue(requester.Properties).WithRequester(requester).WithStrategy(approvalv1.ApprovalStrategySimple)
+		_, err := b1.Build(ctx)
+		Expect(err).NotTo(HaveOccurred())
+		arName := b1.GetApprovalRequest().Name
+		key := client.ObjectKey{Name: arName, Namespace: testNamespace}
+
+		By("Holding the request in deletion with a finalizer")
+		ar := &approvalv1.ApprovalRequest{}
+		Expect(k8sClient.Get(ctx, key, ar)).To(Succeed())
+		ar.Finalizers = append(ar.Finalizers, "test.cp.ei.telekom.de/hold")
+		Expect(k8sClient.Update(ctx, ar)).To(Succeed())
+		DeferCleanup(func() {
+			held := &approvalv1.ApprovalRequest{}
+			if k8sClient.Get(ctx, key, held) == nil {
+				held.Finalizers = nil
+				_ = k8sClient.Update(ctx, held)
+			}
+		})
+		Expect(k8sClient.Delete(ctx, ar)).To(Succeed())
+		Eventually(func(g Gomega) {
+			cached := &approvalv1.ApprovalRequest{}
+			g.Expect(k8sm.GetClient().Get(ctx, key, cached)).To(Succeed())
+			g.Expect(cached.DeletionTimestamp).ToNot(BeNil())
+		}, timeout, interval).Should(Succeed())
+
+		jc2 := cclient.NewJanitorClient(cclient.NewScopedClient(k8sm.GetClient(), testEnvironment))
+		b2 := NewApprovalBuilder(jc2, owner)
+		b2.WithApprovalKey("provider").WithHashValue(requester.Properties).WithRequester(requester).WithStrategy(approvalv1.ApprovalStrategySimple)
+		_, err = b2.Build(ctx)
+		Expect(err).To(MatchError(ContainSubstring("is terminating; retry")))
+		Expect(err).NotTo(MatchError(ErrScopedIdentity))
+	})
+
+	// -------------------------------------------------------------------
+	// Persisted keyed Approval with another approvalKey or target -> identity error
+	// -------------------------------------------------------------------
+	DescribeTable("rejects a persisted keyed Approval with another identity",
+		func(key string, tamper func(target *ctypes.TypedObjectRef), msg string) {
+			owner := createOwner(uniqueOwnerName("apprid"))
+
+			requester := &approvalv1.Requester{TeamName: "TeamApprID", TeamEmail: "apprid@telekom.de", Reason: "apprid"}
+			Expect(requester.SetProperties(map[string]any{"path": "/apprid"})).To(Succeed())
+
+			jc1 := cclient.NewJanitorClient(cclient.NewScopedClient(k8sm.GetClient(), testEnvironment))
+			b1 := NewApprovalBuilder(jc1, owner)
+			b1.WithApprovalKey("provider").WithHashValue(requester.Properties).WithRequester(requester).WithStrategy(approvalv1.ApprovalStrategySimple)
+			_, err := b1.Build(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			arName := b1.GetApprovalRequest().Name
+			approvalName := b1.GetApproval().Name
+			waitForCacheAR(arName)
+
+			target := b1.GetApprovalRequest().Spec.Target
+			tamper(&target)
+			boundRef := &ctypes.ObjectRef{Name: arName, Namespace: testNamespace, UID: b1.GetApprovalRequest().UID}
+			_ = createScopedApproval(approvalName, key, target, approvalv1.ApprovalStateGranted, boundRef)
+			waitForCacheApproval(approvalName)
+
+			jc2 := cclient.NewJanitorClient(cclient.NewScopedClient(k8sm.GetClient(), testEnvironment))
+			b2 := NewApprovalBuilder(jc2, owner)
+			b2.WithApprovalKey("provider").WithHashValue(requester.Properties).WithRequester(requester).WithStrategy(approvalv1.ApprovalStrategySimple)
+			res, err := b2.Build(ctx)
+			Expect(err).To(MatchError(ContainSubstring(msg)))
+			Expect(err).To(MatchError(ErrScopedIdentity))
+			Expect(res).To(Equal(ApprovalResultNone))
+		},
+		Entry("another approvalKey", "consumer", func(*ctypes.TypedObjectRef) {}, "approvalKey mismatch"),
+		Entry("another target UID", "provider", func(t *ctypes.TypedObjectRef) { t.UID = "tampered-uid" }, "target identity mismatch"),
 	)
 
 	// -------------------------------------------------------------------
