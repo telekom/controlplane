@@ -12,6 +12,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8stypes "k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	"fmt"
@@ -49,27 +50,42 @@ func (h *ListenerHandler) CreateOrUpdate(ctx context.Context, listener *spectrev
 		if !complete {
 			return nil // persist and requeue
 		}
-		// Drain complete. If migration is active and in Draining phase, let
-		// migration handle advancement — don't clear AppliedPlacement here.
-		migrationIsDraining := listener.Status.AuthorizationMigration != nil &&
-			listener.Status.AuthorizationMigration.Phase == MigrationPhaseDraining
-		if !migrationIsDraining {
-			if listener.Status.AppliedPlacement != nil {
-				listener.Status.AppliedPlacement.Fingerprint = ""
-			}
+		// Drain complete: nothing is applied any more, also while the migration
+		// drains (it only advances from here). A kept fingerprint would make the
+		// early check below start the same drain again on every reconcile.
+		if listener.Status.AppliedPlacement != nil {
+			listener.Status.AppliedPlacement.Fingerprint = ""
 		}
 		// Fall through to resolve topology for new provisioning.
 	}
 
-	// Step 0.5: Early restriction check — detect conclusive revocation from
-	// persisted status refs without requiring Application/Route readiness.
-	if denied, gateKey, err := h.checkEarlyRestriction(ctx, listener); err != nil {
-		// Read error — log and continue to normal flow.
-		logger.V(1).Info("Early restriction check failed, continuing", "error", err)
-	} else if denied {
-		// Conclusive revocation — initiate/continue drain even if topology is broken.
-		logger.Info("Early restriction detected, initiating cleanup", "gate", gateKey)
-		if err := h.handleDenialCleanup(ctx, listener, gateKey); err != nil {
+	// Step 0.5: Early restriction check — detect a conclusive revocation, or a
+	// rejected current request while capture is applied, from persisted status
+	// refs without requiring Application/Route readiness, and drain even if
+	// topology is broken. A read error does not mask a denial found by another read.
+	approvalGate, requestGate, earlyErr := h.checkEarlyRestriction(ctx, listener)
+	if earlyErr != nil {
+		logger.V(1).Info("Early restriction check failed", "error", earlyErr)
+	}
+	switch {
+	case approvalGate != "":
+		logger.Info("Early restriction detected, initiating cleanup", "gate", approvalGate)
+		if err := h.handleDenialCleanup(ctx, listener,
+			fmt.Sprintf("early restriction (%s gate)", approvalGate),
+			fmt.Sprintf("Approval has been revoked (%s gate, early restriction)", approvalGate)); err != nil {
+			return errors.Wrap(err, "failed cleanup after early restriction")
+		}
+		return nil
+	case requestGate != "":
+		// Like every other drain, this one follows the freshness decision, so a
+		// prior-policy Listener it drains never looks fresh afterwards.
+		if err := h.decideFreshness(ctx, listener); err != nil {
+			return err
+		}
+		logger.Info("Rejected ApprovalRequest with applied capture, initiating cleanup", "gate", requestGate)
+		if err := h.handleDenialCleanup(ctx, listener,
+			fmt.Sprintf("approval request rejected (%s gate, early restriction)", requestGate),
+			fmt.Sprintf("ApprovalRequest has been denied (%s gate, early restriction)", requestGate)); err != nil {
 			return errors.Wrap(err, "failed cleanup after early restriction")
 		}
 		return nil
@@ -136,9 +152,10 @@ func (h *ListenerHandler) CreateOrUpdate(ctx context.Context, listener *spectrev
 
 	// Step 3.5: Decide freshness before placement, fingerprint or stale-child
 	// handling can drain a child: a Listener whose prior-policy children were
-	// drained must not then look fresh. The early restriction (step 0.5) only
-	// acts on persisted Approval refs, and an unscoped legacy ref keeps the
-	// Listener not fresh.
+	// drained must not then look fresh. The early restriction (step 0.5) drains
+	// on a revoked Approval only through a persisted Approval ref, and an unscoped
+	// legacy ref keeps the Listener not fresh; on a rejected request it decides
+	// freshness itself first.
 	if freshErr := h.decideFreshness(ctx, listener); freshErr != nil {
 		return freshErr
 	}
@@ -245,9 +262,9 @@ func (h *ListenerHandler) CreateOrUpdate(ctx context.Context, listener *spectrev
 		// Listener's capture via the same persisted drain as an Approval denial.
 		// The shared builder contract (RequestDenied = children untouched) is
 		// unchanged for other domains. setAggregateConditions already set
-		// Ready=False/AccessDenied naming the gate(s). Request rejection is not read
-		// before topology: the request name carries the intent hash, so an intent
-		// change must still reach ensureApprovals.
+		// Ready=False/AccessDenied naming the gate(s). The early check (step 0.5)
+		// acts on a rejected request only while capture is applied; once the drain
+		// has cleared it, an intent change (new request name) reaches ensureApprovals.
 		reason := "approval denied"
 		if dual.outcome == outcomeRequestDenied {
 			reason = fmt.Sprintf("approval request rejected (%s gate)", requestDeniedGates(dual))
@@ -725,67 +742,104 @@ func (h *ListenerHandler) resolveGatewayCredentials(ctx context.Context, zone *a
 	return "gateway", realm.Status.IssuerUrl, nil
 }
 
-// checkEarlyRestriction reads the Approval refs from the Listener's persisted
-// status and returns (denied=true, gateKey) if any scoped Approval has been
-// conclusively revoked (Rejected, Suspended, or Expired-from-Suspended). This
-// is a READ-ONLY check that works even when the Application/Route topology is
-// temporarily unreachable.
+// checkEarlyRestriction reads the Approvals referenced by the Listener's
+// persisted status and returns the gate of one that is conclusively revoked
+// (Rejected, Suspended, or Expired-from-Suspended). While capture is applied it
+// also reads the referenced current ApprovalRequests and returns the gate of a
+// Rejected one; a ref with a UID must match the live request, so NotFound or a
+// recreated request is not a rejection. This is a READ-ONLY check that works
+// even when the Application/Route topology is temporarily unreachable. Every
+// read is attempted; the first read error is returned with any denial found.
 func (h *ListenerHandler) checkEarlyRestriction(
 	ctx context.Context,
 	listener *spectrev1.Listener,
-) (denied bool, gateKey string, err error) {
+) (approvalGate, requestGate string, err error) {
 	c := cclient.ClientFromContextOrDie(ctx)
 
 	var firstErr error
-	for _, check := range []struct {
-		ref *ctypes.ObjectRef
-		key string
-	}{
-		{listener.Status.ProviderApproval, "provider"},
-		{listener.Status.ConsumerApproval, "consumer"},
-	} {
-		if check.ref == nil {
-			continue
-		}
-		approval := &approvalapi.Approval{}
-		if err := c.Get(ctx, check.ref.K8s(), approval); err != nil {
-			if apierrors.IsNotFound(err) {
-				continue // Missing = not denied (might be pending creation).
-			}
-			// Record error but try the next gate — denial takes priority.
-			if firstErr == nil {
+	get := func(ref *ctypes.ObjectRef, obj client.Object) bool {
+		if err := c.Get(ctx, ref.K8s(), obj); err != nil {
+			// Missing = not denied (might be pending creation). Record other errors
+			// but try the next read — denial takes priority.
+			if !apierrors.IsNotFound(err) && firstErr == nil {
 				firstErr = err
 			}
+			return false
+		}
+		return true
+	}
+
+	gates := []struct {
+		key      string
+		approval *ctypes.ObjectRef
+		request  *ctypes.ObjectRef
+	}{
+		{"provider", listener.Status.ProviderApproval, listener.Status.ProviderApprovalRequest},
+		{"consumer", listener.Status.ConsumerApproval, listener.Status.ConsumerApprovalRequest},
+	}
+	for _, gate := range gates {
+		approval := &approvalapi.Approval{}
+		if gate.approval == nil || !get(gate.approval, approval) {
 			continue
 		}
 		if approval.Spec.State == approvalapi.ApprovalStateRejected ||
 			approval.Spec.State == approvalapi.ApprovalStateSuspended {
-			return true, check.key, nil
+			return gate.key, "", firstErr
 		}
 		// Expired-from-Suspended = also denied.
 		if approval.Spec.State == approvalapi.ApprovalStateExpired &&
 			approval.Status.LastState == approvalapi.ApprovalStateSuspended {
-			return true, check.key, nil
+			return gate.key, "", firstErr
 		}
 	}
-	return false, "", firstErr
+
+	// With nothing applied a rejected request stops nothing, and the normal flow
+	// must still reach ensureApprovals for a changed intent.
+	if !hasAppliedCapture(listener) {
+		return "", "", firstErr
+	}
+	for _, gate := range gates {
+		request := &approvalapi.ApprovalRequest{}
+		if gate.request == nil || !get(gate.request, request) {
+			continue
+		}
+		if gate.request.UID != "" && request.UID != gate.request.UID {
+			continue
+		}
+		if request.Spec.State == approvalapi.ApprovalStateRejected {
+			return "", gate.key, firstErr
+		}
+	}
+	return "", "", firstErr
+}
+
+// hasAppliedCapture reports whether capture may still run with no drain stopping
+// it: an applied fingerprint, or status refs of capture children (Listeners of
+// the prior policy have no applied placement).
+func hasAppliedCapture(listener *spectrev1.Listener) bool {
+	if listener.Status.Draining != nil {
+		return false
+	}
+	ap := listener.Status.AppliedPlacement
+	return (ap != nil && ap.Fingerprint != "") ||
+		listener.Status.RouteListener != nil ||
+		len(listener.Status.EventSubscriptions) > 0
 }
 
 // handleDenialCleanup stops capture through the persisted drain and sets
-// AccessDenied conditions when an early restriction or conclusive revocation is
-// detected.
+// AccessDenied conditions with message when the early check detects a
+// conclusive revocation or a rejected current request.
 func (h *ListenerHandler) handleDenialCleanup(
 	ctx context.Context,
 	listener *spectrev1.Listener,
-	gateKey string,
+	reason string,
+	message string,
 ) error {
-	if _, err := h.drainCapture(ctx, listener, fmt.Sprintf("early restriction (%s gate)", gateKey)); err != nil {
+	if _, err := h.drainCapture(ctx, listener, reason); err != nil {
 		return errors.Wrap(err, "failed to start drain during denial cleanup")
 	}
 
-	listener.SetCondition(condition.NewNotReadyCondition(condition.ReasonAccessDenied,
-		fmt.Sprintf("Approval has been revoked (%s gate, early restriction)", gateKey)))
-	listener.SetCondition(condition.NewDoneProcessingCondition(
-		fmt.Sprintf("Approval has been revoked (%s gate, early restriction)", gateKey)))
+	listener.SetCondition(condition.NewNotReadyCondition(condition.ReasonAccessDenied, message))
+	listener.SetCondition(condition.NewDoneProcessingCondition(message))
 	return nil
 }
