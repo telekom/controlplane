@@ -25,6 +25,7 @@ import (
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	ctypes "github.com/telekom/controlplane/common/pkg/types"
+	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
 	pubsubv1 "github.com/telekom/controlplane/pubsub/api/v1"
@@ -32,7 +33,37 @@ import (
 	"github.com/telekom/controlplane/spectre/internal/handler/util"
 )
 
-type ListenerHandler struct{}
+type ListenerHandler struct {
+	// Reader is the manager's uncached API reader (mgr.GetAPIReader()). Safety
+	// decisions on current revocation and retirement state read through it,
+	// never the cache. Nil only in handler unit tests; see getLive.
+	Reader client.Reader
+}
+
+// getLive reads key through Reader for a safety decision. Reader lacks the
+// ScopedClient's environment filtering, so its namespace default and
+// environment-label check are applied here: a foreign object is a read error,
+// never evidence. Without a Reader it reads through the scoped client.
+func (h *ListenerHandler) getLive(ctx context.Context, key client.ObjectKey, obj client.Object) error {
+	if h.Reader == nil {
+		return cclient.ClientFromContextOrDie(ctx).Get(ctx, key, obj)
+	}
+	env, ok := contextutil.EnvFromContext(ctx)
+	if !ok {
+		return errors.Errorf("no environment in context for the live read of %s", key)
+	}
+	if key.Namespace == "" {
+		key.Namespace = env
+	}
+	if err := h.Reader.Get(ctx, key, obj); err != nil {
+		return errors.Wrapf(err, "failed to read %s live", key)
+	}
+	labels := obj.GetLabels()
+	if labels == nil || labels[cconfig.EnvironmentLabelKey] != env {
+		return errors.Errorf("live object %s does not belong to the environment %q", key, env)
+	}
+	return nil
+}
 
 func (h *ListenerHandler) CreateOrUpdate(ctx context.Context, listener *spectrev1.Listener) error {
 	c := cclient.ClientFromContextOrDie(ctx)
@@ -598,17 +629,16 @@ func (h *ListenerHandler) resolveGatewayCredentials(ctx context.Context, zone *a
 // also reads the referenced current ApprovalRequests and returns the gate of a
 // Rejected one; a ref with a UID must match the live request, so NotFound or a
 // recreated request is not a rejection. This is a READ-ONLY check that works
-// even when the Application/Route topology is temporarily unreachable. Every
-// read is attempted; the first read error is returned with any denial found.
+// even when the Application/Route topology is temporarily unreachable. Reads
+// are live (getLive), so a revocation the cache has not seen yet still counts.
+// Every read is attempted; the first read error is returned with any denial found.
 func (h *ListenerHandler) checkEarlyRestriction(
 	ctx context.Context,
 	listener *spectrev1.Listener,
 ) (approvalGate, requestGate string, err error) {
-	c := cclient.ClientFromContextOrDie(ctx)
-
 	var firstErr error
 	get := func(ref *ctypes.ObjectRef, obj client.Object) bool {
-		if err := c.Get(ctx, ref.K8s(), obj); err != nil {
+		if err := h.getLive(ctx, ref.K8s(), obj); err != nil {
 			// Missing = not denied (might be pending creation). Record other errors
 			// but try the next read — denial takes priority.
 			if !apierrors.IsNotFound(err) && firstErr == nil {

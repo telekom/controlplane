@@ -552,8 +552,9 @@ func (h *ListenerHandler) retireLegacyRequests(
 			continue
 		}
 
+		// Live read: the pre-delete review must see the current instance.
 		ar := &approvalapi.ApprovalRequest{}
-		err := c.Get(ctx, k8stypes.NamespacedName{
+		err := h.getLive(ctx, k8stypes.NamespacedName{
 			Name:      ref.Name,
 			Namespace: ref.Namespace,
 		}, ar)
@@ -684,8 +685,9 @@ func (h *ListenerHandler) retireLegacyApproval(
 		return true, nil
 	}
 
+	// Live read: the pre-delete review must see the current instance.
 	approval := &approvalapi.Approval{}
-	err := c.Get(ctx, k8stypes.NamespacedName{
+	err := h.getLive(ctx, k8stypes.NamespacedName{
 		Name:      ref.Name,
 		Namespace: ref.Namespace,
 	}, approval)
