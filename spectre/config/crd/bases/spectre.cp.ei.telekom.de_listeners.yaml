@@ -557,8 +557,9 @@ spec:
                     type: string
                   oldRouteListener:
                     description: |-
-                      ObjectRef is a reference to a Kubernetes object
-                      It is similar to types.NamespacedName but has the required json tags for serialization
+                      OldRouteListener is the single-RouteListener record written by earlier
+                      controller builds. It mirrors OldRouteListeners[0] and is still drained
+                      when it is the only record.
                     properties:
                       name:
                         type: string
@@ -574,6 +575,30 @@ spec:
                     - name
                     - namespace
                     type: object
+                  oldRouteListeners:
+                    description: |-
+                      OldRouteListeners records every old-generation RouteListener that must be
+                      gone before Subscribers drain, sorted by namespace, name, UID.
+                    items:
+                      description: |-
+                        ObjectRef is a reference to a Kubernetes object
+                        It is similar to types.NamespacedName but has the required json tags for serialization
+                      properties:
+                        name:
+                          type: string
+                        namespace:
+                          type: string
+                        uid:
+                          description: |-
+                            UID is a type that holds unique ID values, including UUIDs.  Because we
+                            don't ONLY use UUIDs, this is an alias to string.  Being a type captures
+                            intent and helps make sure that UIDs and names do not get conflated.
+                          type: string
+                      required:
+                      - name
+                      - namespace
+                      type: object
+                    type: array
                   oldSubscribers:
                     items:
                       description: |-
