@@ -69,6 +69,12 @@ API subscriptions. The condition message provides the specific cause.
 Once approval is granted, a previous `ApprovalPending` reason is cleared before
 provisioning continues, including when a subsequent provisioning operation fails.
 
+The child-resource readiness check requires every condition-bearing resource
+created or updated during reconciliation, including the `ApprovalRequest` and
+`ConsumeRoute`, to report `Ready=True` with `ObservedGeneration` equal to its
+current `metadata.generation`. Missing, unknown, false, or outdated readiness
+keeps the subscription at `Ready=False / SubResourceNotReady`.
+
 ### Cross-Zone Meshing
 
 When subscribers exist in a different zone than the exposure, the operator creates a proxy Route in the subscriber's zone. That proxy gateway stamps a **Last-Mile-Security (LMS) token** when forwarding traffic to the provider zone. The primary route therefore adds the subscriber zone's `LmsIssuer` to its `TrustedIssuers` so that forwarded requests are accepted.

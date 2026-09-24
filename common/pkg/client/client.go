@@ -8,7 +8,6 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
-	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -26,7 +25,9 @@ type ScopedClient interface {
 	Delete(ctx context.Context, obj client.Object, opts ...client.DeleteOption) error
 	// AnyChanged returns true if any object has been created or updated
 	AnyChanged() bool
-	// Ready returns true if all objects are ready
+	// AllReady reports whether every condition-bearing object passed to CreateOrUpdate
+	// since Reset has Ready=True with ObservedGeneration matching its generation.
+	// Objects without the conditions interface do not affect readiness.
 	AllReady() bool
 	// Reset resets the state of this client instance
 	Reset()
@@ -143,15 +144,14 @@ func (c *scopedClientImpl) setChanged(res controllerutil.OperationResult) {
 	}
 }
 
-// setReady will set the current client to not ready if the object is not ready
-// If any object is not ready, the client will be marked as not ready
+// setReady accumulates readiness until Reset, including condition freshness.
 func (c *scopedClientImpl) setReady(obj client.Object) {
 	if !c.ready || obj == nil {
 		return
 	}
 
 	if cobj, ok := obj.(types.Object); ok {
-		if meta.IsStatusConditionFalse(cobj.GetConditions(), condition.ConditionTypeReady) {
+		if !condition.IsReady(cobj) {
 			c.ready = false
 		}
 	}
