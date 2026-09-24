@@ -15,6 +15,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
@@ -857,49 +858,89 @@ var _ = Describe("Integration: Two-Tier Reconcile Cycle", Ordered, func() {
 	})
 
 	Describe("Listener deletion", func() {
-		It("should delete the RouteListener and bridge Subscribers it created", func() {
+		It("should drain the RouteListener, then the bridge Subscribers, and release the finalizer only after the drain", func() {
 			// The children live in the zone namespace while the Listener lives in
 			// the team namespace, so Kubernetes owner references cannot garbage
 			// collect them. The Delete handler must remove them explicitly.
 			listenerNN := types.NamespacedName{Name: "cross-team-listener", Namespace: testNamespace}
-			crossRL := util.MakeRouteListenerName(appId, "/api/v1/cross", consumerClientID, providerClientID)
-			rqSubName := util.MakeSubscriberName(util.MakeBridgeSubscriberId(consumerClientID, appId, "/api/v1/cross", "rq"))
-			rpSubName := util.MakeSubscriberName(util.MakeBridgeSubscriberId(consumerClientID, appId, "/api/v1/cross", "rp"))
+			rlKey := types.NamespacedName{
+				Name:      util.MakeRouteListenerName(appId, "/api/v1/cross", consumerClientID, providerClientID),
+				Namespace: zoneStatusNs,
+			}
+			rqKey := types.NamespacedName{
+				Name:      util.MakeSubscriberName(util.MakeBridgeSubscriberId(consumerClientID, appId, "/api/v1/cross", "rq")),
+				Namespace: zoneStatusNs,
+			}
+			rpKey := types.NamespacedName{
+				Name:      util.MakeSubscriberName(util.MakeBridgeSubscriberId(consumerClientID, appId, "/api/v1/cross", "rp")),
+				Namespace: zoneStatusNs,
+			}
+			reconcileDeletion := func() {
+				_, _ = listenerReconciler.Reconcile(ctx, reconcile.Request{NamespacedName: listenerNN})
+			}
 
 			By("Confirming the children exist before deletion")
-			Expect(directClient.Get(ctx, types.NamespacedName{Name: crossRL, Namespace: zoneStatusNs},
-				&gatewayv1.RouteListener{})).To(Succeed())
-			Expect(directClient.Get(ctx, types.NamespacedName{Name: rqSubName, Namespace: zoneStatusNs},
-				&pubsubv1.Subscriber{})).To(Succeed())
-			Expect(directClient.Get(ctx, types.NamespacedName{Name: rpSubName, Namespace: zoneStatusNs},
-				&pubsubv1.Subscriber{})).To(Succeed())
+			Expect(directClient.Get(ctx, rlKey, &gatewayv1.RouteListener{})).To(Succeed())
+			Expect(directClient.Get(ctx, rpKey, &pubsubv1.Subscriber{})).To(Succeed())
 
-			By("Deleting the Listener and reconciling the deletion")
+			By("Holding the rq Subscriber behind a finalizer, as the pubsub controller does while it deregisters")
+			const holdFinalizer = "test.cp.ei.telekom.de/hold"
+			Eventually(func(g Gomega) {
+				sub := &pubsubv1.Subscriber{}
+				g.Expect(directClient.Get(ctx, rqKey, sub)).To(Succeed())
+				controllerutil.AddFinalizer(sub, holdFinalizer)
+				g.Expect(directClient.Update(ctx, sub)).To(Succeed())
+			}, testTimeout, testInterval).Should(Succeed())
+
+			By("Deleting the Listener")
 			listener := &spectrev1.Listener{}
-			Expect(k8sClient.Get(ctx, listenerNN, listener)).To(Succeed())
-			Expect(k8sClient.Delete(ctx, listener)).To(Succeed())
+			Expect(directClient.Get(ctx, listenerNN, listener)).To(Succeed())
+			Expect(directClient.Delete(ctx, listener)).To(Succeed())
 
+			By("Waiting for the RouteListener to go while the persisted checkpoint drains the Subscribers")
 			Eventually(func(g Gomega) {
-				_, _ = listenerReconciler.Reconcile(ctx, reconcile.Request{NamespacedName: listenerNN})
-				g.Expect(apierrors.IsNotFound(
-					directClient.Get(ctx, listenerNN, &spectrev1.Listener{}),
-				)).To(BeTrue(), "Listener should be gone once the finalizer is released")
+				reconcileDeletion()
+				g.Expect(apierrors.IsNotFound(directClient.Get(ctx, rlKey, &gatewayv1.RouteListener{}))).
+					To(BeTrue(), "RouteListener should be deleted, not orphaned")
+				g.Expect(apierrors.IsNotFound(directClient.Get(ctx, rpKey, &pubsubv1.Subscriber{}))).
+					To(BeTrue(), "unheld bridge Subscriber should be deleted")
+				held := &pubsubv1.Subscriber{}
+				g.Expect(directClient.Get(ctx, rqKey, held)).To(Succeed())
+				g.Expect(held.DeletionTimestamp).NotTo(BeNil(), "held bridge Subscriber should be terminating")
+				current := &spectrev1.Listener{}
+				g.Expect(directClient.Get(ctx, listenerNN, current)).To(Succeed())
+				g.Expect(current.Status.Draining).NotTo(BeNil())
+				g.Expect(current.Status.Draining.Phase).To(Equal(handler.DrainPhaseDrainingSubscribers))
+				g.Expect(current.Status.RouteListener).To(BeNil())
 			}, testTimeout, testInterval).Should(Succeed())
 
-			By("Verifying the RouteListener was deleted")
+			By("Keeping the Listener finalizer while the held Subscriber finalizes")
+			Consistently(func(g Gomega) {
+				reconcileDeletion()
+				current := &spectrev1.Listener{}
+				g.Expect(directClient.Get(ctx, listenerNN, current)).To(Succeed())
+				g.Expect(current.Finalizers).To(ContainElement(cconfig.FinalizerName))
+				g.Expect(current.Status.Draining).NotTo(BeNil())
+			}, 2*time.Second, testInterval).Should(Succeed())
+
+			By("Releasing the held Subscriber")
 			Eventually(func(g Gomega) {
-				err := directClient.Get(ctx, types.NamespacedName{Name: crossRL, Namespace: zoneStatusNs},
-					&gatewayv1.RouteListener{})
-				g.Expect(apierrors.IsNotFound(err)).To(BeTrue(), "RouteListener should be deleted, not orphaned")
+				sub := &pubsubv1.Subscriber{}
+				g.Expect(directClient.Get(ctx, rqKey, sub)).To(Succeed())
+				controllerutil.RemoveFinalizer(sub, holdFinalizer)
+				g.Expect(directClient.Update(ctx, sub)).To(Succeed())
 			}, testTimeout, testInterval).Should(Succeed())
 
-			By("Verifying both bridge Subscribers were deleted")
-			for _, name := range []string{rqSubName, rpSubName} {
-				Eventually(func(g Gomega) {
-					err := directClient.Get(ctx, types.NamespacedName{Name: name, Namespace: zoneStatusNs},
-						&pubsubv1.Subscriber{})
-					g.Expect(apierrors.IsNotFound(err)).To(BeTrue(), "bridge Subscriber %q should be deleted, not orphaned", name)
-				}, testTimeout, testInterval).Should(Succeed())
+			By("Waiting for the Listener to be gone with every child")
+			Eventually(func(g Gomega) {
+				reconcileDeletion()
+				g.Expect(apierrors.IsNotFound(directClient.Get(ctx, listenerNN, &spectrev1.Listener{}))).
+					To(BeTrue(), "Listener should be gone once the drain completes")
+			}, testTimeout, testInterval).Should(Succeed())
+			Expect(apierrors.IsNotFound(directClient.Get(ctx, rlKey, &gatewayv1.RouteListener{}))).To(BeTrue())
+			for _, key := range []types.NamespacedName{rqKey, rpKey} {
+				Expect(apierrors.IsNotFound(directClient.Get(ctx, key, &pubsubv1.Subscriber{}))).
+					To(BeTrue(), "bridge Subscriber %q should be deleted, not orphaned", key.Name)
 			}
 		})
 	})
