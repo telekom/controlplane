@@ -1,0 +1,146 @@
+rover/api/v1/apispecification_types.go
+  s_289ecd7e3edbe2::t_7d0f36f4903a01 11,30
+discovery-server/internal/mapper/label_normalization_test.go
+  s_289ecd7e3edbe2::t_f39ae68cbfa060 1-23
+organization/internal/handler/team/handler/notification_channel/build.go
+  s_289ecd7e3edbe2::t_ae79b4ff1dabe6 8,21
+event/api/v1/eventtype_types.go
+  s_289ecd7e3edbe2::t_7d0f36f4903a01 22
+  s_289ecd7e3edbe2::t_777685b4d63796 12
+discovery-server/internal/mapper/util.go
+  s_289ecd7e3edbe2::t_777685b4d63796 13
+  s_289ecd7e3edbe2::t_7d0f36f4903a01 144
+organization/internal/webhook/v1/validator/validate.go
+  s_289ecd7e3edbe2::t_d20a0d68787894 8-9,12,55-64,66-67
+  s_289ecd7e3edbe2::t_dc202ca3122270 23,31
+  s_289ecd7e3edbe2::t_f9ca520a8a2232 65
+  s_289ecd7e3edbe2::t_717913b804fa01 68
+rover/api/v1/mcpspecification_types.go
+  s_289ecd7e3edbe2::t_7d0f36f4903a01 20
+  s_289ecd7e3edbe2::t_777685b4d63796 11
+agentic/internal/handler/util/naming.go
+  s_289ecd7e3edbe2::t_b8cab129f185d9 21
+event/internal/handler/util/naming.go
+  s_289ecd7e3edbe2::t_b8cab129f185d9 10,58
+admin/internal/handler/zone/routes.go
+  s_289ecd7e3edbe2::t_ae79b4ff1dabe6 123
+  s_289ecd7e3edbe2::t_777685b4d63796 12
+api/internal/handler/remoteapisubscription/provider_scenario.go
+  s_289ecd7e3edbe2::t_f70d8c20d7226f 76,123
+organization/api/v1/team_types.go
+  s_289ecd7e3edbe2::t_777685b4d63796 14
+  s_289ecd7e3edbe2::t_7d0f36f4903a01 169
+docs/docs/developer-journey/creating-an-operator.md
+  s_289ecd7e3edbe2::t_bc70bae21fa5d2 118-143
+docs/docs/admin-journey/organizations-and-teams.md
+  s_289ecd7e3edbe2::t_d20a0d68787894 50-69
+organization/internal/handler/team/handler/identity_client/metadata_test.go
+  s_289ecd7e3edbe2::t_777685b4d63796 1-24
+secret-manager/go.mod
+  s_289ecd7e3edbe2::t_7d0f36f4903a01 39
+  s_289ecd7e3edbe2::t_2d0bcb9d090c97 25
+  s_289ecd7e3edbe2::t_53af855afa0034 40
+secret-manager/pkg/backend/kubernetes/metadata_test.go
+  s_289ecd7e3edbe2::t_f39ae68cbfa060 1-25
+agentic/internal/handler/util/naming_test.go
+  s_289ecd7e3edbe2::t_f39ae68cbfa060 1-23
+application/internal/handler/application/handler.go
+  s_289ecd7e3edbe2::t_777685b4d63796 14
+  s_289ecd7e3edbe2::t_b8cab129f185d9 289,369
+  s_289ecd7e3edbe2::t_f70d8c20d7226f 312-314,385-387
+admin/internal/handler/zone/identity_routes.go
+  s_289ecd7e3edbe2::t_ae79b4ff1dabe6 11-12,98
+secret-manager/pkg/backend/kubernetes/onboarder.go
+  s_289ecd7e3edbe2::t_ae79b4ff1dabe6 250-251
+  s_289ecd7e3edbe2::t_777685b4d63796 12
+approval/api/v1/naming_test.go
+  s_289ecd7e3edbe2::t_f39ae68cbfa060 1-27
+application/internal/controller/resource_metadata_test.go
+  s_289ecd7e3edbe2::t_f39ae68cbfa060 1-81
+organization/internal/webhook/v1/team_webhook_test.go
+  s_289ecd7e3edbe2::t_d20a0d68787894 227
+  s_289ecd7e3edbe2::t_dc3f66daf9d6b5 544
+organization/internal/webhook/v1/team_namespace_test.go
+  s_289ecd7e3edbe2::t_dc3f66daf9d6b5 20-36
+  s_289ecd7e3edbe2::t_d20a0d68787894 1-19,37-78
+api/internal/handler/util/route_util.go
+  s_289ecd7e3edbe2::t_b8cab129f185d9 632
+  s_289ecd7e3edbe2::t_221474378dcf27 230
+organization/internal/handler/team/handler/notification_channel/metadata_test.go
+  s_289ecd7e3edbe2::t_777685b4d63796 1-23
+organization/internal/handler/team/handler/gateway_consumer/metadata_test.go
+  s_289ecd7e3edbe2::t_2201f98a673d56 21
+  s_289ecd7e3edbe2::t_777685b4d63796 1-20,22-25
+rover/internal/webhook/v1/rover_webhook.go
+  s_289ecd7e3edbe2::t_7d0f36f4903a01 400
+approval/api/v1/approval_types.go
+  s_289ecd7e3edbe2::t_b8cab129f185d9 9,117
+agentic/api/v1/agentcard_types.go
+  s_289ecd7e3edbe2::t_7d0f36f4903a01 20
+  s_289ecd7e3edbe2::t_777685b4d63796 11
+rover/api/v1/naming_test.go
+  s_289ecd7e3edbe2::t_f39ae68cbfa060 1-35
+organization/internal/handler/team/handler/gateway_consumer/gateway_consumer.go
+  s_289ecd7e3edbe2::t_2201f98a673d56 43
+rover/api/v1/eventspecification_types.go
+  s_289ecd7e3edbe2::t_7d0f36f4903a01 20
+  s_289ecd7e3edbe2::t_777685b4d63796 11
+agentic/internal/handler/agenticsubscription/handler.go
+  s_289ecd7e3edbe2::t_b8cab129f185d9 304
+notification/api/v1/builder/util.go
+  s_289ecd7e3edbe2::t_f70d8c20d7226f 34-35
+rover/api/v1/agentspecification_types.go
+  s_289ecd7e3edbe2::t_777685b4d63796 11
+  s_289ecd7e3edbe2::t_7d0f36f4903a01 20
+organization/internal/handler/team/handler/identity_client/build.go
+  s_289ecd7e3edbe2::t_ae79b4ff1dabe6 8,20
+notification/api/v1/builder/metadata_test.go
+  s_289ecd7e3edbe2::t_f39ae68cbfa060 1-26
+api/internal/handler/util/route_util_test.go
+  s_289ecd7e3edbe2::t_221474378dcf27 8-9,12,26-31
+.github/ci/module-graph.json
+  s_289ecd7e3edbe2::t_9e222333034adf 220
+organization/internal/webhook/v1/team_webhook.go
+  s_289ecd7e3edbe2::t_d20a0d68787894 65-67,123,127,129
+  s_289ecd7e3edbe2::t_43d953d06c47fe 128
+organization/internal/webhook/v1/validator/metadata_test.go
+  s_289ecd7e3edbe2::t_dc202ca3122270 1-26
+event/internal/handler/eventconfig/handler.go
+  s_289ecd7e3edbe2::t_7d0f36f4903a01 10-11,256
+approval/api/v1/approvalrequest_types.go
+  s_289ecd7e3edbe2::t_b8cab129f185d9 124
+  s_289ecd7e3edbe2::t_ae79b4ff1dabe6 10
+event/internal/handler/util/metadata_naming_test.go
+  s_289ecd7e3edbe2::t_f39ae68cbfa060 1-16,20
+  s_289ecd7e3edbe2::t_bc70bae21fa5d2 17-19
+admin/internal/handler/zone/identity.go
+  s_289ecd7e3edbe2::t_ae79b4ff1dabe6 160
+organization/internal/handler/team/handler/gateway_consumer/build.go
+  s_289ecd7e3edbe2::t_2201f98a673d56 21,26-28
+  s_289ecd7e3edbe2::t_ae79b4ff1dabe6 8
+  s_505e0112706183::t_5ebd1836427537 29
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "158bcd2ab076250f4b4748e4b46485d87f881e55",
+  "prompts": {},
+  "sessions": {
+    "s_289ecd7e3edbe2": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f3125be6affeo1DijsZe6LrAHq",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_505e0112706183": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f312e2158ffeRIme7NayD8Wkcy",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
