@@ -53,6 +53,9 @@ func TestListenerDrainStatusRoundTrip(t *testing.T) {
 		Reason:           "placement changed",
 		OldFingerprint:   "old-fp",
 		OldRouteListener: sampleRef("old-rl"),
+		OldRouteListeners: []ctypes.ObjectRef{
+			*sampleRef("old-rl"), *sampleRef("orphan-rl"),
+		},
 		OldSubscribers:   []ctypes.ObjectRef{*sampleRef("sub1"), *sampleRef("sub2")},
 		SourcePublisher:  sampleRef("src-pub"),
 		SourceEventStore: sampleRef("src-es"),
@@ -288,9 +291,10 @@ func TestDeepCopyNewStatusTypes(t *testing.T) {
 			Publisher:    sampleRef("pub"),
 		},
 		Draining: &ListenerDrainStatus{
-			Phase:           "DrainingSubscribers",
-			OldSubscribers:  []ctypes.ObjectRef{*sampleRef("os1")},
-			SubscriptionIDs: []string{"sid-1"},
+			Phase:             "DrainingSubscribers",
+			OldRouteListeners: []ctypes.ObjectRef{*sampleRef("orl1")},
+			OldSubscribers:    []ctypes.ObjectRef{*sampleRef("os1")},
+			SubscriptionIDs:   []string{"sid-1"},
 		},
 	}
 
@@ -317,6 +321,10 @@ func TestDeepCopyNewStatusTypes(t *testing.T) {
 	cp.Draining.SubscriptionIDs[0] = "mutated"
 	if orig.Draining.SubscriptionIDs[0] == "mutated" {
 		t.Error("Draining.SubscriptionIDs not deep-copied")
+	}
+	cp.Draining.OldRouteListeners[0].Name = "mutated"
+	if orig.Draining.OldRouteListeners[0].Name == "mutated" {
+		t.Error("Draining.OldRouteListeners not deep-copied")
 	}
 	cp.AuthorizationMigration.LegacyRequests[0].Name = "mutated"
 	if orig.AuthorizationMigration.LegacyRequests[0].Name == "mutated" {
