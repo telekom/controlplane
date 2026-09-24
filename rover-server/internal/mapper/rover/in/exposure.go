@@ -107,7 +107,7 @@ func mapFileExposure(in api.FileExposure) *roverv1.FileExposure {
 
 func mapFileVariant(in api.FileExposureVariant) roverv1.FileVariant {
 	switch in {
-	case api.FileExposureVariantSftp:
+	case api.FileExposureVariantSFTP:
 		return roverv1.FileVariantSFTP
 	}
 	return roverv1.FileVariant(in)

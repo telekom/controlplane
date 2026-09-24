@@ -477,7 +477,7 @@ func mapFileExposureInfo(in *filev1.FileExposure) api.FileExposureInfo {
 		Visibility: toApiVisibilityFromFile(in.Spec.Visibility),
 		Approval:   toApiApprovalStrategyFromFile(in.Spec.Approval.Strategy),
 		Type:       "file",
-		Variant:    api.FileExposureInfoVariantSftp,
+		Variant:    api.FileExposureInfoVariantSFTP,
 	}
 
 	if len(in.Spec.Approval.TrustedTeams) > 0 {

@@ -7,6 +7,7 @@ package v1_test
 import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"golang.org/x/crypto/ssh"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	v1 "github.com/telekom/controlplane/rover/api/v1"
@@ -86,18 +87,20 @@ var _ = Describe("FileSpecification Types", func() {
 
 	Context("SSHKeyType", func() {
 		It("should stringify the supported key types", func() {
-			Expect(v1.SSHKeyTypeRSA.String()).To(Equal("ssh-rsa"))
-			Expect(v1.SSHKeyTypeECDSANistP521.String()).To(Equal("ecdsa-sha2-nistp521"))
-			Expect(v1.SSHKeyTypeED25519.String()).To(Equal("ssh-ed25519"))
+			Expect(v1.SSHKeyType(ssh.KeyAlgoRSA).String()).To(Equal("ssh-rsa"))
+			Expect(v1.SSHKeyType(ssh.KeyAlgoECDSA256).String()).To(Equal("ecdsa-sha2-nistp256"))
+			Expect(v1.SSHKeyType(ssh.KeyAlgoECDSA384).String()).To(Equal("ecdsa-sha2-nistp384"))
+			Expect(v1.SSHKeyType(ssh.KeyAlgoECDSA521).String()).To(Equal("ecdsa-sha2-nistp521"))
+			Expect(v1.SSHKeyType(ssh.KeyAlgoED25519).String()).To(Equal("ssh-ed25519"))
 		})
 
 		DescribeTable("reports validity of a key type",
 			func(keyType v1.SSHKeyType, valid bool) {
 				Expect(keyType.IsValid()).To(Equal(valid))
 			},
-			Entry("ssh-rsa is valid", v1.SSHKeyTypeRSA, true),
-			Entry("ecdsa-sha2-nistp521 is valid", v1.SSHKeyTypeECDSANistP521, true),
-			Entry("ssh-ed25519 is valid", v1.SSHKeyTypeED25519, true),
+			Entry("ssh-rsa is valid", v1.SSHKeyType(ssh.KeyAlgoRSA), true),
+			Entry("ecdsa-sha2-nistp521 is valid", v1.SSHKeyType(ssh.KeyAlgoECDSA521), true),
+			Entry("ssh-ed25519 is valid", v1.SSHKeyType(ssh.KeyAlgoED25519), true),
 			Entry("unsupported ecdsa-sha2-nistp256 is invalid", v1.SSHKeyType("ecdsa-sha2-nistp256"), false),
 			Entry("empty is invalid", v1.SSHKeyType(""), false),
 		)

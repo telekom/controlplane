@@ -410,10 +410,14 @@ var _ = Describe("Rover V1 Test Suite", func() {
 				Exposures: []v1.Exposure{
 					{
 						File: &v1.FileExposure{
+							Approval:   v1.Approval{Strategy: v1.ApprovalStrategyAuto},
 							FileType:   "demo-sftp-spec-v1",
 							Visibility: v1.VisibilityWorld,
-							PublicKeys: []v1.PublicKey{
-								{Label: "demo-provider-key", Key: "ssh-ed25519 AAAAprovider"},
+							Variant:    v1.FileVariantSFTP,
+							SFTP: &v1.FileSFTP{
+								PublicKeys: []v1.SSHPublicKeySpec{
+									{Label: "demo-provider-key", Key: "ssh-ed25519 AAAAprovider"},
+								},
 							},
 						},
 					},
@@ -422,8 +426,10 @@ var _ = Describe("Rover V1 Test Suite", func() {
 					{
 						File: &v1.FileSubscription{
 							FileType: "demo-sftp-spec-v1",
-							PublicKeys: []v1.PublicKey{
-								{Label: "demo-consumer-key", Key: "ssh-ed25519 AAAAconsumer"},
+							SFTP: &v1.FileSFTP{
+								PublicKeys: []v1.SSHPublicKeySpec{
+									{Label: "demo-consumer-key", Key: "ssh-ed25519 AAAAconsumer"},
+								},
 							},
 						},
 					},
@@ -450,7 +456,10 @@ var _ = Describe("Rover V1 Test Suite", func() {
 						File: &v1.FileExposure{
 							FileType:   "demo-sftp-spec-v1",
 							Visibility: v1.VisibilityWorld,
-							PublicKeys: []v1.PublicKey{},
+							Variant:    v1.FileVariantSFTP,
+							SFTP: &v1.FileSFTP{
+								PublicKeys: []v1.SSHPublicKeySpec{},
+							},
 						},
 					},
 				},
@@ -484,8 +493,11 @@ var _ = Describe("Rover V1 Test Suite", func() {
 						File: &v1.FileExposure{
 							FileType:   "demo-sftp-spec-v1",
 							Visibility: v1.VisibilityWorld,
-							PublicKeys: []v1.PublicKey{
-								{Label: "demo-provider-key", Key: "ssh-ed25519 AAAAprovider"},
+							Variant:    v1.FileVariantSFTP,
+							SFTP: &v1.FileSFTP{
+								PublicKeys: []v1.SSHPublicKeySpec{
+									{Label: "demo-provider-key", Key: "ssh-ed25519 AAAAprovider"},
+								},
 							},
 						},
 					},

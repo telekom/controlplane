@@ -617,7 +617,7 @@ type SSHKeyType string
 var AllSSHKeyTypes = []SSHKeyType{
 	SSHKeyType(ssh.KeyAlgoED25519),
 	SSHKeyType(ssh.KeyAlgoRSA),
-	SSHKeyType(ssh.KeyAlgoECDSA256),
+	SSHKeyType(ssh.KeyAlgoECDSA521),
 }
 
 func (t SSHKeyType) String() string {
@@ -626,7 +626,7 @@ func (t SSHKeyType) String() string {
 
 func (t SSHKeyType) IsValid() bool {
 	switch t {
-	case SSHKeyType(ssh.KeyAlgoRSA), SSHKeyType(ssh.KeyAlgoECDSA256), SSHKeyType(ssh.KeyAlgoED25519):
+	case SSHKeyType(ssh.KeyAlgoRSA), SSHKeyType(ssh.KeyAlgoECDSA521), SSHKeyType(ssh.KeyAlgoED25519):
 		return true
 	}
 	return false

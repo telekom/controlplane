@@ -283,7 +283,7 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 			Expect(fileExpInfo.FileType).To(Equal("demo-invoices-v1"))
 			Expect(fileExpInfo.Visibility).To(Equal(api.WORLD))
 			Expect(fileExpInfo.Approval).To(Equal(api.AUTO))
-			Expect(fileExpInfo.Variant).To(Equal(api.FileExposureInfoVariantSftp))
+			Expect(fileExpInfo.Variant).To(Equal(api.FileExposureInfoVariantSFTP))
 			Expect(fileExpInfo.PublicKeys).To(HaveLen(1))
 			Expect(fileExpInfo.PublicKeys[0].Key).To(Equal("ssh-rsa AAAA..."))
 		})
