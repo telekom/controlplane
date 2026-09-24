@@ -248,6 +248,8 @@ type plHarness struct {
 	calls     []plCall
 	recording bool
 	uids      int
+	// listErr, when set, fails a List before it reaches the fake client.
+	listErr func(list client.ObjectList) error
 }
 
 func plKind(o any) string { return reflect.TypeOf(o).Elem().Name() }
@@ -291,6 +293,11 @@ func newPlHarness(f *plFixtures) *plHarness {
 					field = lo.FieldSelector.String()
 				}
 				rec(plCall{verb: "List", kind: plKind(list), ns: lo.Namespace, field: field})
+				if h.listErr != nil {
+					if err := h.listErr(list); err != nil {
+						return err
+					}
+				}
 				return c.List(ctx, list, opts...)
 			},
 			Create: func(ctx context.Context, c client.WithWatch, obj client.Object, opts ...client.CreateOption) error {
@@ -779,6 +786,104 @@ var _ = Describe("Listener capture placement (controller)", func() {
 		Expect(plBlocked(h.listener())).To(ContainSubstring(`no ApiExposure with UID "foreign-uid"`))
 		Expect(plCount(all, "Get", "Route", plZoneNs("p"))).To(BeZero())
 		Expect(plECListed(all, "p")).To(BeFalse())
+	})
+
+	It("H12b: an ApiExposure read error with applied capture errors without draining or deleting", func() {
+		f := newPlFixtures("c")
+		h := newPlHarness(f)
+		l, _ := h.provision()
+		plExpectPlacement(l, "c", "c", "c", f.ecs["c"].Status.CallbackURL)
+		applied := l.Status.AppliedPlacement.DeepCopy()
+		rlRef := l.Status.RouteListener.DeepCopy()
+		subRefs := append([]ctypes.ObjectRef(nil), l.Status.EventSubscriptions...)
+
+		h.listErr = func(list client.ObjectList) error {
+			if _, ok := list.(*apiv1.ApiExposureList); ok {
+				return apierrors.NewServiceUnavailable("etcd leader changed")
+			}
+			return nil
+		}
+		for range 3 {
+			calls, err := h.reconcile()
+			Expect(err).To(MatchError(ContainSubstring("etcd leader changed")))
+			l = h.listener()
+			Expect(l.Status.Draining).To(BeNil())
+			Expect(l.Status.AppliedPlacement).To(Equal(applied))
+			Expect(plCountVerb(calls, "Delete")).To(BeZero(), "unexpected delete in %+v", calls)
+			plExpectNoCaptureWrites(calls)
+			Expect(plCount(calls, "Get", "Route", plZoneNs("p"))).To(BeZero())
+			ready := meta.FindStatusCondition(l.Status.Conditions, condition.ConditionTypeReady)
+			Expect(ready).ToNot(BeNil())
+			Expect(ready.Status).To(Equal(metav1.ConditionFalse))
+		}
+
+		h.listErr = nil
+		calls := h.mustReconcile()
+		l = h.listener()
+		Expect(l.Status.Draining).To(BeNil())
+		Expect(l.Status.AppliedPlacement.Fingerprint).To(Equal(applied.Fingerprint))
+		Expect(plCountVerb(calls, "Delete")).To(BeZero())
+		Expect(h.exists(rlRef, &gatewayv1.RouteListener{})).To(BeTrue())
+		for i := range subRefs {
+			Expect(h.exists(&subRefs[i], &pubsubv1.Subscriber{})).To(BeTrue())
+		}
+	})
+
+	It("H12c: an exposure that became inactive checkpoints first, then drains applied capture", func() {
+		f := newPlFixtures("c")
+		h := newPlHarness(f)
+		l, _ := h.provision()
+		oldFP := l.Status.AppliedPlacement.Fingerprint
+		rlRef := l.Status.RouteListener.DeepCopy()
+		subRefs := append([]ctypes.ObjectRef(nil), l.Status.EventSubscriptions...)
+
+		exposure := &apiv1.ApiExposure{}
+		Expect(h.raw.Get(context.Background(), client.ObjectKeyFromObject(f.exposure), exposure)).To(Succeed())
+		exposure.Status.Active = false
+		h.update(exposure)
+
+		// Checkpoint only: the drain is persisted before anything is deleted.
+		calls := h.mustReconcile()
+		l = h.listener()
+		Expect(l.Status.Draining).ToNot(BeNil())
+		Expect(l.Status.Draining.Phase).To(Equal(handler.ExportDrainPhaseStopping))
+		Expect(l.Status.Draining.Reason).To(Equal("provider binding invalidated"))
+		Expect(l.Status.Draining.OldFingerprint).To(Equal(oldFP))
+		Expect(plCountVerb(calls, "Delete")).To(BeZero())
+		Expect(plCount(calls, "Get", "Route", plZoneNs("p"))).To(BeZero())
+		Expect(plBlocked(l)).To(ContainSubstring("is not active"))
+		ready := meta.FindStatusCondition(l.Status.Conditions, condition.ConditionTypeReady)
+		Expect(ready).ToNot(BeNil())
+		Expect(ready.Status).To(Equal(metav1.ConditionFalse))
+		Expect(ready.Message).To(ContainSubstring("is not active"))
+
+		// Stopping deletes the RouteListener before any Subscriber.
+		calls = h.mustReconcile()
+		Expect(plCount(calls, "Delete", "RouteListener", "")).To(Equal(1))
+		Expect(plCount(calls, "Delete", "Subscriber", "")).To(BeZero())
+		err := h.raw.Get(context.Background(), rlRef.K8s(), &gatewayv1.RouteListener{})
+		Expect(apierrors.IsNotFound(err)).To(BeTrue())
+		for i := range subRefs {
+			Expect(h.exists(&subRefs[i], &pubsubv1.Subscriber{})).To(BeTrue())
+		}
+
+		for pass := 0; h.listener().Status.Draining != nil; pass++ {
+			Expect(pass).To(BeNumerically("<", 10), "drain did not complete")
+			calls = h.mustReconcile()
+			Expect(plCountVerb(calls, "Create")).To(BeZero(), "unexpected create in %+v", calls)
+		}
+		for i := range subRefs {
+			err := h.raw.Get(context.Background(), subRefs[i].K8s(), &pubsubv1.Subscriber{})
+			Expect(apierrors.IsNotFound(err)).To(BeTrue())
+		}
+		l = h.listener()
+		Expect(l.Status.AppliedPlacement).To(BeNil())
+		Expect(plBlocked(l)).To(ContainSubstring("is not active"))
+
+		calls = h.mustReconcile()
+		Expect(h.listener().Status.Draining).To(BeNil())
+		Expect(plCountVerb(calls, "Create")).To(BeZero())
+		Expect(plCountVerb(calls, "Delete")).To(BeZero())
 	})
 
 	It("H13: delivery never falls back when A's zone has no EventConfig", func() {
