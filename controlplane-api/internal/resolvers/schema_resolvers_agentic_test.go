@@ -8,6 +8,7 @@ import (
 	"context"
 
 	"github.com/telekom/controlplane/controlplane-api/ent"
+	"github.com/telekom/controlplane/controlplane-api/ent/agenticsubscription"
 	"github.com/telekom/controlplane/controlplane-api/internal/resolvers"
 	gqlmodel "github.com/telekom/controlplane/controlplane-api/internal/resolvers/model"
 	"github.com/telekom/controlplane/controlplane-api/internal/service"
@@ -228,6 +229,26 @@ var _ = Describe("AgenticSubscription.Target resolver (cross-tenant)", func() {
 	AfterEach(func() {
 		client.Close()
 	})
+
+	DescribeTable("should return nil without an error when no target exists",
+		func(eagerLoad bool) {
+			ctx := testutil.AllowContext()
+			Expect(client.AgenticSubscription.UpdateOne(s.AgenticSubscription).ClearTarget().Exec(ctx)).To(Succeed())
+
+			query := client.AgenticSubscription.Query().Where(agenticsubscription.ID(s.AgenticSubscription.ID))
+			if eagerLoad {
+				query.WithTarget()
+			}
+			sub, err := query.Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+
+			target, err := r.AgenticSubscription().Target(ctx, sub)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(target).To(BeNil())
+		},
+		Entry("with lazy loading", false),
+		Entry("with eager loading", true),
+	)
 
 	It("should return AgenticExposureInfo for a subscription's target", func() {
 		ctx := viewer.NewContext(testutil.AllowContext(), &viewer.Viewer{Teams: []string{"team-beta"}})

@@ -318,6 +318,9 @@ func (r *apiSubscriptionResolver) Target(ctx context.Context, obj *ent.ApiSubscr
 		exposure, err = obj.QueryTarget().Only(sysCtx)
 	}
 	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, nil
+		}
 		return nil, fmt.Errorf("loading target for api subscription %d: %w", obj.ID, err)
 	}
 
