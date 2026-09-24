@@ -35,7 +35,7 @@ type ApprovalSpec struct {
 
 	// Strategy defines the strategy that was used to approve the request
 	// +kubebuilder:validation:Enum=Auto;Simple;FourEyes
-	// +kubebuilder:default=Auto
+	// +kubebuilder:default=Simple
 	Strategy ApprovalStrategy `json:"strategy"`
 
 	// State defines the state of the approval

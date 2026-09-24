@@ -63,7 +63,7 @@ spec:
               approval:
                 properties:
                   strategy:
-                    default: Auto
+                    default: Simple
                     enum:
                     - Auto
                     - Simple
