@@ -8,6 +8,7 @@ import (
 	"context"
 
 	"github.com/telekom/controlplane/common/pkg/condition"
+	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	"github.com/telekom/controlplane/common/pkg/handler"
 	"github.com/telekom/controlplane/common/pkg/types"
 	filev1 "github.com/telekom/controlplane/file/api/v1"
@@ -50,5 +51,9 @@ func (h *FileTypeHandler) CreateOrUpdate(ctx context.Context, obj *filev1.FileTy
 }
 
 func (h *FileTypeHandler) Delete(ctx context.Context, obj *filev1.FileType) error {
+	if obj.Status.FileExposureRef != nil {
+		return ctrlerrors.BlockedErrorf("cannot delete FileType while it is still associated with a FileExposure")
+	}
+
 	return nil
 }
