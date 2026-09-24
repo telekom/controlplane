@@ -6,19 +6,16 @@ package filespecification
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/pkg/errors"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
-	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	"github.com/telekom/controlplane/common/pkg/handler"
 	"github.com/telekom/controlplane/common/pkg/types"
+	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	filev1 "github.com/telekom/controlplane/file/api/v1"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 )
@@ -46,6 +43,10 @@ func (h *FileSpecificationHandler) CreateOrUpdate(ctx context.Context, obj *rove
 			return errors.Wrap(err, "failed to set controller reference")
 		}
 
+		fileType.Labels = map[string]string{
+			filev1.FileTypeNameLabelKey: labelutil.NormalizeLabelValue(obj.Spec.Type),
+		}
+
 		fileType.Spec = filev1.FileTypeSpec{
 			Description: obj.Spec.Description,
 		}
@@ -68,21 +69,5 @@ func (h *FileSpecificationHandler) CreateOrUpdate(ctx context.Context, obj *rove
 }
 
 func (h *FileSpecificationHandler) Delete(ctx context.Context, obj *roverv1.FileSpecification) error {
-	fileType := &filev1.FileType{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      roverv1.MakeFileSpecificationName(obj),
-			Namespace: obj.Namespace,
-		},
-	}
-
-	cc := cclient.ClientFromContextOrDie(ctx)
-	err := cc.Get(ctx, client.ObjectKeyFromObject(fileType), fileType)
-	if err != nil {
-		if apierrors.IsNotFound(err) {
-			return nil
-		}
-		return fmt.Errorf("failed to get FileType before deletion: %w", err)
-	}
-
-	return ctrlerrors.BlockedErrorf("fileType still exists")
+	return nil
 }

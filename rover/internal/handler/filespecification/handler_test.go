@@ -6,7 +6,6 @@ package filespecification
 
 import (
 	"context"
-	stderrors "errors"
 	"strings"
 	"testing"
 
@@ -20,7 +19,6 @@ import (
 
 	commonclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/config"
-	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	filev1 "github.com/telekom/controlplane/file/api/v1"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 
@@ -122,30 +120,5 @@ var _ = Describe("FileSpecificationHandler", func() {
 		// dots -> hyphens and lower-cased.
 		getFileType("de-telekom-foo-v1")
 		Expect(fileSpec.Status.FileType.Name).To(Equal("de-telekom-foo-v1"))
-	})
-
-	It("should allow Delete when the derived FileType does not exist", func() {
-		fileSpec := newFileSpec("demo-sftp-spec-v1")
-
-		Expect(handler.Delete(newContext(), fileSpec)).To(Succeed())
-	})
-
-	It("should block Delete while the derived FileType exists", func() {
-		fileSpec := newFileSpec("demo-sftp-spec-v1")
-		fileType := &filev1.FileType{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      roverv1.MakeFileSpecificationName(fileSpec),
-				Namespace: fileSpec.Namespace,
-				Labels:    map[string]string{config.EnvironmentLabelKey: testEnvironment},
-			},
-		}
-		Expect(fakeClient.Create(ctx, fileType)).To(Succeed())
-
-		err := handler.Delete(newContext(), fileSpec)
-
-		Expect(err).To(MatchError("fileType still exists"))
-		var blocked ctrlerrors.BlockedError
-		Expect(stderrors.As(err, &blocked)).To(BeTrue())
-		Expect(blocked.IsBlocked()).To(BeTrue())
 	})
 })
