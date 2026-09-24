@@ -313,9 +313,21 @@ func (h *ListenerHandler) CreateOrUpdate(ctx context.Context, listener *spectrev
 		return nil
 
 	case outcomeRequestDenied:
-		// Do not provision; retain same-intent children (matching the builder
-		// "do not touch current children" contract). Stale children were already
-		// removed in step 5.8.
+		// Spectre policy (plan 2.3): a rejected current ApprovalRequest stops this
+		// Listener's capture via the same persisted drain as an Approval denial.
+		// The shared builder contract (RequestDenied = children untouched) is
+		// unchanged for other domains. setAggregateConditions already set
+		// Ready=False/AccessDenied naming the gate(s). Request rejection is not read
+		// before topology: the request name carries the intent hash, so an intent
+		// change must still reach ensureApprovals.
+		stopErr := h.stopCapture(ctx, listener,
+			fmt.Sprintf("approval request rejected (%s gate)", requestDeniedGates(dual)))
+		if stopErr != nil && dual.err != nil {
+			return fmt.Errorf("failed to stop capture after request denial: %w; combined approval error: %w", stopErr, dual.err)
+		}
+		if stopErr != nil {
+			return errors.Wrap(stopErr, "failed to stop capture after request denial")
+		}
 		if dual.err != nil {
 			return errors.Wrap(dual.err, "combined approval error")
 		}
@@ -938,6 +950,26 @@ func (h *ListenerHandler) handleDenialCleanup(
 	listener *spectrev1.Listener,
 	gateKey string,
 ) error {
+	if err := h.stopCapture(ctx, listener, fmt.Sprintf("early restriction (%s gate)", gateKey)); err != nil {
+		return err
+	}
+
+	listener.SetCondition(condition.NewNotReadyCondition(condition.ReasonAccessDenied,
+		fmt.Sprintf("Approval has been revoked (%s gate, early restriction)", gateKey)))
+	listener.SetCondition(condition.NewDoneProcessingCondition(
+		fmt.Sprintf("Approval has been revoked (%s gate, early restriction)", gateKey)))
+	return nil
+}
+
+// stopCapture initiates a persisted drain of applied capture, or directly removes
+// stray owner-labelled children when nothing was applied. Shared by Approval
+// denial and Spectre's RequestDenied policy. After a drain starts the caller must
+// return so the checkpoint is persisted before continueDrain deletes anything.
+func (h *ListenerHandler) stopCapture(
+	ctx context.Context,
+	listener *spectrev1.Listener,
+	reason string,
+) error {
 	// If there are provisioned children (indicated by AppliedPlacement), use the
 	// drain protocol so deletions get UID-checked and the publisher is cleaned up
 	// in the correct phase order. Otherwise fall back to direct deletion.
@@ -953,7 +985,7 @@ func (h *ListenerHandler) handleDenialCleanup(
 			listener.Status.AppliedPlacement = nil
 		} else {
 			oldFP := listener.Status.AppliedPlacement.Fingerprint
-			if err := h.startDrain(ctx, listener, fmt.Sprintf("early restriction (%s gate)", gateKey), oldFP); err != nil {
+			if err := h.startDrain(ctx, listener, reason, oldFP); err != nil {
 				return errors.Wrap(err, "failed to start drain during denial cleanup")
 			}
 		}
@@ -976,10 +1008,5 @@ func (h *ListenerHandler) handleDenialCleanup(
 		}
 	}
 	// If Draining is already set, step 0.5 will advance it on the next reconcile.
-
-	listener.SetCondition(condition.NewNotReadyCondition(condition.ReasonAccessDenied,
-		fmt.Sprintf("Approval has been revoked (%s gate, early restriction)", gateKey)))
-	listener.SetCondition(condition.NewDoneProcessingCondition(
-		fmt.Sprintf("Approval has been revoked (%s gate, early restriction)", gateKey)))
 	return nil
 }

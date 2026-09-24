@@ -7,6 +7,7 @@ package handler_test
 import (
 	"context"
 	"fmt"
+	"reflect"
 
 	"github.com/stretchr/testify/mock"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -22,6 +23,7 @@ import (
 	apiv1 "github.com/telekom/controlplane/api/api/v1"
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
+	"github.com/telekom/controlplane/approval/api/v1/builder"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	fakeclient "github.com/telekom/controlplane/common/pkg/client/fake"
 	"github.com/telekom/controlplane/common/pkg/condition"
@@ -714,6 +716,434 @@ var _ = Describe("ListenerHandler", func() {
 		return listener
 	}
 
+	// --- Multi-reconcile helpers ---
+	//
+	// These drive CreateOrUpdate several times in a row and carry the returned
+	// Listener forward as the status the controller would have persisted.
+
+	// reconcile runs CreateOrUpdate on a copy of l; the copy stands in for the
+	// persisted object handed to the next reconcile.
+	reconcile := func(l *spectrev1.Listener) (*spectrev1.Listener, error) {
+		next := l.DeepCopy()
+		err := h.CreateOrUpdate(ctx, next)
+		return next, err
+	}
+
+	// countCalls counts client calls recorded since index from with the given
+	// method whose object argument has the type of sample (nil matches any type).
+	// Explicit counts are needed because some mocks (Subscriber CreateOrUpdate,
+	// Zone, Realm, EventConfig list) are registered without Once().
+	countCalls := func(from int, method string, sample client.Object) int {
+		n := 0
+		calls := fakeClient.Calls[from:]
+		for i := range calls {
+			if calls[i].Method != method {
+				continue
+			}
+			if sample == nil || reflect.TypeOf(calls[i].Arguments.Get(1)) == reflect.TypeOf(sample) {
+				n++
+			}
+		}
+		return n
+	}
+
+	// expectNoCaptureCreates asserts that no RouteListener, Subscriber or
+	// Publisher was created or updated since index from.
+	expectNoCaptureCreates := func(from int) {
+		Expect(countCalls(from, "CreateOrUpdate", &gatewayv1.RouteListener{})).To(BeZero())
+		Expect(countCalls(from, "CreateOrUpdate", &pubsubv1.Subscriber{})).To(BeZero())
+		Expect(countCalls(from, "CreateOrUpdate", &pubsubv1.Publisher{})).To(BeZero())
+	}
+
+	// expectRequestDenied asserts Ready=False/AccessDenied naming the gate whose
+	// current ApprovalRequest was rejected.
+	expectRequestDenied := func(l *spectrev1.Listener, gate string) {
+		ready := meta.FindStatusCondition(l.Status.Conditions, condition.ConditionTypeReady)
+		Expect(ready).ToNot(BeNil())
+		Expect(ready.Status).To(Equal(metav1.ConditionFalse))
+		Expect(ready.Reason).To(Equal(condition.ReasonAccessDenied))
+		Expect(ready.Message).To(ContainSubstring("ApprovalRequest"))
+		Expect(ready.Message).To(ContainSubstring("(" + gate + " gate)"))
+	}
+
+	// mockEarlyRestrictionGranted stubs the step-0.5 reads of the Approvals
+	// referenced by l's status, both Granted. Register it before the gate mocks:
+	// testify matches expectations in registration order.
+	mockEarlyRestrictionGranted := func(l *spectrev1.Listener) {
+		for _, ref := range []*ctypes.ObjectRef{l.Status.ProviderApproval, l.Status.ConsumerApproval} {
+			Expect(ref).ToNot(BeNil())
+			fakeClient.EXPECT().
+				Get(ctx, ref.K8s(), mock.AnythingOfType("*v1.Approval")).
+				Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
+					out.(*approvalv1.Approval).Spec.State = approvalv1.ApprovalStateGranted
+				}).
+				Return(nil).Once()
+		}
+	}
+
+	// mockResolveTopology stubs the Once() topology reads of one reconcile. Zone,
+	// EventConfig and Realm reads stay registered from the first reconcile.
+	mockResolveTopology := func() {
+		mockGetConsumerApp(makeConsumerApp())
+		mockGetProviderApp(makeProviderApp())
+		mockGetSpectreApp(makeSpectreAppPtr())
+		mockGetObserverApp(makeConsumerApp()) // A==C: observer resolves to consumer
+		mockGetEventStore(makeListenerEventStore())
+		mockListRoutes()
+	}
+
+	// mockOwnedLists stubs one owner-label List of RouteListeners and one of
+	// Subscribers.
+	mockOwnedLists := func(rls []gatewayv1.RouteListener, subs []pubsubv1.Subscriber) {
+		fakeClient.EXPECT().
+			List(ctx, mock.AnythingOfType("*v1.RouteListenerList"), mock.Anything).
+			Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+				src := gatewayv1.RouteListenerList{Items: rls}
+				src.DeepCopyInto(list.(*gatewayv1.RouteListenerList))
+			}).
+			Return(nil).Once()
+		fakeClient.EXPECT().
+			List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
+			Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+				src := pubsubv1.SubscriberList{Items: subs}
+				src.DeepCopyInto(list.(*pubsubv1.SubscriberList))
+			}).
+			Return(nil).Once()
+	}
+
+	// mockRejectedGates stubs the dual-gate build with the given gate's current
+	// ApprovalRequest Rejected and the other gate Granted.
+	mockRejectedGates := func(gate string) {
+		for _, key := range []string{"provider", "consumer"} {
+			if key == gate {
+				mockApprovalRequestDeniedGate(key)
+			} else {
+				mockApprovalGrantedGate(key)
+			}
+		}
+	}
+
+	// mockGateBoundToOldRequest stubs one gate whose Granted Approval is still
+	// bound to oldReq, so the builder reports Pending for a new-intent request.
+	// The created ApprovalRequest is captured after mutate.
+	mockGateBoundToOldRequest := func(approvalKey string, oldReq *ctypes.ObjectRef, captured *approvalv1.ApprovalRequest) {
+		fakeClient.EXPECT().
+			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.ApprovalRequest"), mock.Anything).
+			Run(func(_ context.Context, obj client.Object, mutate controllerutil.MutateFn) {
+				req := obj.(*approvalv1.ApprovalRequest)
+				_ = mutate()
+				req.DeepCopyInto(captured)
+			}).
+			Return(controllerutil.OperationResultCreated, nil).Once()
+
+		fakeClient.EXPECT().
+			List(ctx, mock.AnythingOfType("*v1.ApprovalRequestList"), mock.Anything).
+			Return(nil).Once()
+
+		isController := true
+		fakeClient.EXPECT().
+			Get(ctx, mock.AnythingOfType("types.NamespacedName"), mock.AnythingOfType("*v1.Approval")).
+			Run(func(_ context.Context, key k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
+				approval := out.(*approvalv1.Approval)
+				approval.Name = key.Name
+				approval.Namespace = key.Namespace
+				approval.OwnerReferences = []metav1.OwnerReference{{
+					APIVersion: spectrev1.GroupVersion.String(),
+					Kind:       "Listener",
+					Name:       listenerName,
+					UID:        "listener-uid-001",
+					Controller: &isController,
+				}}
+				approval.Spec.State = approvalv1.ApprovalStateGranted
+				approval.Spec.ApprovalKey = approvalKey
+				approval.Spec.Target = captured.Spec.Target
+				approval.Spec.ApprovedRequest = oldReq.DeepCopy()
+			}).
+			Return(nil).Once()
+	}
+
+	// rejectionFixture is a provisioned Listener plus the live children an
+	// owner-label List would return for it.
+	type rejectionFixture struct {
+		listener    *spectrev1.Listener
+		fingerprint string
+		rl          gatewayv1.RouteListener
+		subs        []pubsubv1.Subscriber
+		providerReq *ctypes.ObjectRef
+		consumerReq *ctypes.ObjectRef
+	}
+
+	// provisionForRejection runs R0 with both gates granted and builds the live
+	// children from the persisted status refs. They carry the applied
+	// fingerprint label so removeStaleChildren keeps them.
+	provisionForRejection := func() *rejectionFixture {
+		fakeClient.EXPECT().AnyChanged().Return(true).Once()
+		l, err := reconcile(setupFullHappyPath())
+		Expect(err).ToNot(HaveOccurred())
+		Expect(l.Status.AppliedPlacement).ToNot(BeNil())
+		fp := l.Status.AppliedPlacement.Fingerprint
+		Expect(fp).ToNot(BeEmpty())
+		Expect(l.Status.RouteListener).ToNot(BeNil())
+		Expect(l.Status.EventSubscriptions).To(HaveLen(2))
+		Expect(l.Status.ProviderApproval).ToNot(BeNil())
+		Expect(l.Status.ConsumerApproval).ToNot(BeNil())
+		Expect(l.Status.ProviderApprovalRequest).ToNot(BeNil())
+		Expect(l.Status.ConsumerApprovalRequest).ToNot(BeNil())
+
+		labels := func() map[string]string {
+			return map[string]string{
+				cconfig.OwnerUidLabelKey:                 "listener-uid-001",
+				handler.AuthorizationFingerprintLabelKey: fp,
+			}
+		}
+		f := &rejectionFixture{
+			listener:    l,
+			fingerprint: fp,
+			rl: gatewayv1.RouteListener{ObjectMeta: metav1.ObjectMeta{
+				Name:            l.Status.RouteListener.Name,
+				Namespace:       l.Status.RouteListener.Namespace,
+				UID:             "rl-uid-1",
+				ResourceVersion: "7",
+				Labels:          labels(),
+			}},
+			providerReq: l.Status.ProviderApprovalRequest.DeepCopy(),
+			consumerReq: l.Status.ConsumerApprovalRequest.DeepCopy(),
+		}
+		for i, ref := range l.Status.EventSubscriptions {
+			f.subs = append(f.subs, pubsubv1.Subscriber{ObjectMeta: metav1.ObjectMeta{
+				Name:            ref.Name,
+				Namespace:       ref.Namespace,
+				UID:             k8stypes.UID(fmt.Sprintf("sub-uid-%d", i)),
+				ResourceVersion: "3",
+				Labels:          labels(),
+			}})
+		}
+		return f
+	}
+
+	// provisionAndDrainAfterRejection provisions a Listener (R0), rejects the
+	// given gate's current ApprovalRequest and drives the persisted drain to
+	// completion (R1-R6), asserting the checkpoint and delete order on the way.
+	provisionAndDrainAfterRejection := func(gate string) *rejectionFixture {
+		f := provisionForRejection()
+		otherGate := "consumer"
+		if gate == "consumer" {
+			otherGate = "provider"
+		}
+		liveRLs := []gatewayv1.RouteListener{f.rl}
+		rlKey := k8stypes.NamespacedName{Name: f.rl.Name, Namespace: f.rl.Namespace}
+
+		// R1: the gate's current request is Rejected. The drain checkpoint is
+		// written and the reconcile returns before anything is deleted.
+		preR1 := f.listener
+		mockR1 := func() {
+			mockEarlyRestrictionGranted(preR1)
+			mockResolveTopology()
+			mockOwnedLists(liveRLs, f.subs) // removeStaleChildren: same fingerprint, kept
+			mockRejectedGates(gate)
+			mockOwnedLists(liveRLs, f.subs) // startDrain snapshot
+		}
+		expectCheckpoint := func(l *spectrev1.Listener, from int) {
+			d := l.Status.Draining
+			Expect(d).ToNot(BeNil())
+			Expect(d.Phase).To(Equal(handler.ExportDrainPhaseStopping))
+			Expect(d.Reason).To(Equal("approval request rejected (" + gate + " gate)"))
+			Expect(d.OldFingerprint).To(Equal(f.fingerprint))
+			Expect(d.OldRouteListener).ToNot(BeNil())
+			Expect(d.OldRouteListener.Name).To(Equal(f.rl.Name))
+			Expect(d.OldRouteListener.UID).To(Equal(k8stypes.UID("rl-uid-1")))
+			Expect(d.OldSubscribers).To(HaveLen(2))
+			Expect(d.OldSubscribers[0].UID).To(Equal(k8stypes.UID("sub-uid-0")))
+			Expect(d.OldSubscribers[1].UID).To(Equal(k8stypes.UID("sub-uid-1")))
+			Expect(d.SourcePublisher).ToNot(BeNil())
+			Expect(d.SourcePublisher).To(Equal(l.Status.AppliedPlacement.Publisher))
+
+			// Capture is still recorded: nothing was deleted yet.
+			Expect(l.Status.RouteListener).ToNot(BeNil())
+			Expect(l.Status.EventSubscriptions).To(HaveLen(2))
+			Expect(l.Status.AppliedPlacement.Fingerprint).To(Equal(f.fingerprint))
+			Expect(countCalls(from, "Delete", nil)).To(BeZero())
+			expectNoCaptureCreates(from)
+
+			expectRequestDenied(l, gate)
+			rejected := meta.FindStatusCondition(l.Status.Conditions, builder.ConditionTypeForKey(gate))
+			Expect(rejected).ToNot(BeNil())
+			Expect(rejected.Status).To(Equal(metav1.ConditionFalse))
+			Expect(rejected.Reason).To(Equal(string(approvalv1.ApprovalStateRejected)))
+			granted := meta.FindStatusCondition(l.Status.Conditions, builder.ConditionTypeForKey(otherGate))
+			Expect(granted).ToNot(BeNil())
+			Expect(granted.Status).To(Equal(metav1.ConditionTrue))
+		}
+
+		mockR1()
+		start := len(fakeClient.Calls)
+		l, err := reconcile(preR1)
+		Expect(err).ToNot(HaveOccurred())
+		expectCheckpoint(l, start)
+
+		// R1b: the R1 status write was lost. Re-running from the pre-R1 object
+		// must again only write a checkpoint.
+		mockR1()
+		start = len(fakeClient.Calls)
+		l, err = reconcile(preR1)
+		Expect(err).ToNot(HaveOccurred())
+		expectCheckpoint(l, start)
+
+		// R2: Stopping deletes the old RouteListener with UID+RV preconditions.
+		fakeClient.EXPECT().
+			Get(ctx, rlKey, mock.AnythingOfType("*v1.RouteListener")).
+			Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
+				f.rl.DeepCopyInto(out.(*gatewayv1.RouteListener))
+			}).
+			Return(nil).Once()
+		fakeClient.EXPECT().
+			Delete(ctx, mock.AnythingOfType("*v1.RouteListener"), mock.Anything).
+			Run(func(_ context.Context, _ client.Object, opts ...client.DeleteOption) {
+				do := (&client.DeleteOptions{}).ApplyOptions(opts)
+				Expect(do.Preconditions).ToNot(BeNil())
+				Expect(do.Preconditions.UID).To(HaveValue(Equal(k8stypes.UID("rl-uid-1"))))
+				Expect(do.Preconditions.ResourceVersion).To(HaveValue(Equal("7")))
+			}).
+			Return(nil).Once()
+		start = len(fakeClient.Calls)
+		l, err = reconcile(l)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(countCalls(start, "Delete", &gatewayv1.RouteListener{})).To(Equal(1))
+		Expect(countCalls(start, "Delete", &pubsubv1.Subscriber{})).To(BeZero())
+		Expect(countCalls(start, "Delete", &pubsubv1.Publisher{})).To(BeZero())
+		expectNoCaptureCreates(start)
+		Expect(l.Status.Draining).ToNot(BeNil())
+		Expect(l.Status.Draining.Phase).To(Equal(handler.ExportDrainPhaseStopping))
+
+		// R3: the RouteListener is gone; its ref is cleared before any Subscriber
+		// is touched.
+		fakeClient.EXPECT().
+			Get(ctx, rlKey, mock.AnythingOfType("*v1.RouteListener")).
+			Return(errors.NewNotFound(schema.GroupResource{Group: gatewayv1.GroupVersion.Group, Resource: "routelisteners"}, f.rl.Name)).Once()
+		start = len(fakeClient.Calls)
+		l, err = reconcile(l)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(countCalls(start, "Delete", nil)).To(BeZero())
+		Expect(l.Status.Draining).ToNot(BeNil())
+		Expect(l.Status.Draining.Phase).To(Equal(handler.ExportDrainPhaseDrainingSubscribers))
+		Expect(l.Status.RouteListener).To(BeNil())
+		Expect(l.Status.EventSubscriptions).To(HaveLen(2))
+
+		// R4: DrainingSubscribers deletes both Subscribers with UID+RV preconditions.
+		subUIDs := []k8stypes.UID{f.subs[0].UID, f.subs[1].UID}
+		for i := range f.subs {
+			sub := f.subs[i].DeepCopy()
+			fakeClient.EXPECT().
+				Get(ctx, k8stypes.NamespacedName{Name: sub.Name, Namespace: sub.Namespace}, mock.AnythingOfType("*v1.Subscriber")).
+				Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
+					sub.DeepCopyInto(out.(*pubsubv1.Subscriber))
+				}).
+				Return(nil).Once()
+		}
+		fakeClient.EXPECT().
+			Delete(ctx, mock.AnythingOfType("*v1.Subscriber"), mock.Anything).
+			Run(func(_ context.Context, obj client.Object, opts ...client.DeleteOption) {
+				do := (&client.DeleteOptions{}).ApplyOptions(opts)
+				Expect(subUIDs).To(ContainElement(obj.GetUID()))
+				Expect(do.Preconditions).ToNot(BeNil())
+				Expect(do.Preconditions.UID).To(HaveValue(Equal(obj.GetUID())))
+				Expect(do.Preconditions.ResourceVersion).To(HaveValue(Equal("3")))
+			}).
+			Return(nil).Times(2)
+		start = len(fakeClient.Calls)
+		l, err = reconcile(l)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(countCalls(start, "Delete", &pubsubv1.Subscriber{})).To(Equal(2))
+		Expect(countCalls(start, "Delete", &gatewayv1.RouteListener{})).To(BeZero())
+		Expect(countCalls(start, "Delete", &pubsubv1.Publisher{})).To(BeZero())
+		Expect(l.Status.Draining).ToNot(BeNil())
+		Expect(l.Status.Draining.Phase).To(Equal(handler.ExportDrainPhaseDrainingSubscribers))
+
+		// R5: both Subscribers are gone.
+		for i := range f.subs {
+			fakeClient.EXPECT().
+				Get(ctx, k8stypes.NamespacedName{Name: f.subs[i].Name, Namespace: f.subs[i].Namespace}, mock.AnythingOfType("*v1.Subscriber")).
+				Return(errors.NewNotFound(schema.GroupResource{Group: pubsubv1.GroupVersion.Group, Resource: "subscribers"}, f.subs[i].Name)).Once()
+		}
+		start = len(fakeClient.Calls)
+		l, err = reconcile(l)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(countCalls(start, "Delete", nil)).To(BeZero())
+		Expect(l.Status.Draining).ToNot(BeNil())
+		Expect(l.Status.Draining.Phase).To(Equal(handler.ExportDrainPhaseCleaningPublisher))
+		Expect(l.Status.EventSubscriptions).To(BeEmpty())
+
+		// R6: CleaningPublisher removes the orphaned generic Publisher, the drain
+		// completes and the same reconcile falls through: the request is still
+		// Rejected and nothing is applied, so the applied placement is cleared.
+		src := l.Status.Draining.SourcePublisher.DeepCopy()
+		Expect(src).ToNot(BeNil())
+		fakeClient.EXPECT().
+			List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
+			Return(nil).Once()
+		fakeClient.EXPECT().
+			Delete(ctx, mock.AnythingOfType("*v1.Publisher"), mock.Anything).
+			Run(func(_ context.Context, obj client.Object, _ ...client.DeleteOption) {
+				Expect(obj.GetName()).To(Equal(src.Name))
+				Expect(obj.GetNamespace()).To(Equal(src.Namespace))
+			}).
+			Return(nil).Once()
+		mockEarlyRestrictionGranted(l)
+		mockResolveTopology()
+		mockOwnedLists(nil, nil) // removeStaleChildren
+		mockRejectedGates(gate)
+		start = len(fakeClient.Calls)
+		l, err = reconcile(l)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(l.Status.Draining).To(BeNil())
+		Expect(l.Status.AppliedPlacement).To(BeNil())
+		Expect(l.Status.RouteListener).To(BeNil())
+		Expect(l.Status.EventSubscriptions).To(BeEmpty())
+		Expect(countCalls(start, "Delete", &pubsubv1.Publisher{})).To(Equal(1))
+		Expect(countCalls(start, "Delete", &gatewayv1.RouteListener{})).To(BeZero())
+		Expect(countCalls(start, "Delete", &pubsubv1.Subscriber{})).To(BeZero())
+		expectNoCaptureCreates(start)
+		expectRequestDenied(l, gate)
+
+		f.listener = l
+		return f
+	}
+
+	// expectStaysDrainedWhileRejected runs several more reconciles with the same
+	// rejection and asserts that no drain restarts and no capture is recreated.
+	// Each one takes stopCapture's direct branch: no owned children are found and
+	// the Publisher namespace falls back to the consumer zone.
+	expectStaysDrainedWhileRejected := func(l *spectrev1.Listener, gate string) {
+		for range 3 {
+			mockEarlyRestrictionGranted(l)
+			mockResolveTopology()
+			mockOwnedLists(nil, nil) // removeStaleChildren
+			mockRejectedGates(gate)
+			mockOwnedLists(nil, nil)              // deleteAllOwnedChildren
+			mockOwnedLists(nil, nil)              // resolvePublisherNamespace
+			mockGetConsumerApp(makeConsumerApp()) // namespace fallback via consumer zone
+			fakeClient.EXPECT().
+				List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
+				Return(nil).Once()
+			fakeClient.EXPECT().
+				Delete(ctx, mock.AnythingOfType("*v1.Publisher"), mock.Anything).
+				Return(errors.NewNotFound(schema.GroupResource{Group: pubsubv1.GroupVersion.Group, Resource: "publishers"}, "")).Once()
+
+			start := len(fakeClient.Calls)
+			next, err := reconcile(l)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(next.Status.Draining).To(BeNil())
+			Expect(next.Status.AppliedPlacement).To(BeNil())
+			Expect(next.Status.RouteListener).To(BeNil())
+			Expect(next.Status.EventSubscriptions).To(BeEmpty())
+			Expect(countCalls(start, "Delete", &gatewayv1.RouteListener{})).To(BeZero())
+			Expect(countCalls(start, "Delete", &pubsubv1.Subscriber{})).To(BeZero())
+			expectNoCaptureCreates(start)
+			expectRequestDenied(next, gate)
+			l = next
+		}
+	}
+
 	Describe("CreateOrUpdate", func() {
 		Context("when the SpectreApplication has not resolved its application id", func() {
 			It("should block and NOT create any RouteListener or Subscriber", func() {
@@ -928,7 +1358,7 @@ var _ = Describe("ListenerHandler", func() {
 		})
 
 		Context("when ApprovalRequest is denied (RequestDenied)", func() {
-			It("should not delete same-fingerprint active children", func() {
+			It("should set AccessDenied naming both gates and delete no capture children when nothing is applied", func() {
 				listener := newListener()
 				mockGetConsumerApp(makeConsumerApp())
 				mockGetProviderApp(makeProviderApp())
@@ -941,6 +1371,20 @@ var _ = Describe("ListenerHandler", func() {
 				mockNoStaleChildren()
 				mockApprovalRequestDenied()
 
+				// stopCapture direct branch (nothing applied): deleteAllOwnedChildren
+				// and resolvePublisherNamespace find no owned children, so the
+				// namespace falls back to the consumer zone for the Publisher check.
+				mockOwnedLists(nil, nil)
+				mockOwnedLists(nil, nil)
+				mockGetConsumerApp(makeConsumerApp())
+				fakeClient.EXPECT().
+					List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
+					Return(nil).Once()
+				fakeClient.EXPECT().
+					Delete(ctx, mock.AnythingOfType("*v1.Publisher"), mock.Anything).
+					Return(nil).Once()
+
+				start := len(fakeClient.Calls)
 				err := h.CreateOrUpdate(ctx, listener)
 				Expect(err).ToNot(HaveOccurred())
 
@@ -948,6 +1392,12 @@ var _ = Describe("ListenerHandler", func() {
 				readyCond := meta.FindStatusCondition(listener.Status.Conditions, condition.ConditionTypeReady)
 				Expect(readyCond).ToNot(BeNil())
 				Expect(readyCond.Reason).To(Equal(condition.ReasonAccessDenied))
+				Expect(readyCond.Message).To(ContainSubstring("provider and consumer"))
+
+				Expect(listener.Status.Draining).To(BeNil())
+				Expect(countCalls(start, "Delete", &gatewayv1.RouteListener{})).To(BeZero())
+				Expect(countCalls(start, "Delete", &pubsubv1.Subscriber{})).To(BeZero())
+				expectNoCaptureCreates(start)
 			})
 		})
 
@@ -1917,37 +2367,133 @@ var _ = Describe("ListenerHandler", func() {
 			})
 		})
 
+		// Spectre policy (plan 2.3): a rejected current ApprovalRequest stops and
+		// drains this Listener's capture through the persisted drain.
 		Context("dual-gate: provider RequestDenied + consumer Granted", func() {
-			It("should NOT provision and retain same-intent children", func() {
-				listener := newListener()
-				// Pre-populate status to verify children are NOT deleted.
-				listener.Status.RouteListener = &ctypes.ObjectRef{Name: "active-rl", Namespace: listenerZoneStatus}
-				listener.Status.EventSubscriptions = []ctypes.ObjectRef{
-					{Name: "active-sub", Namespace: listenerZoneStatus},
-				}
+			It("checkpoints before deleting, drains the RouteListener then Subscribers, and stays drained", func() {
+				f := provisionAndDrainAfterRejection("provider")
+				expectStaysDrainedWhileRejected(f.listener, "provider")
+			})
+		})
 
-				mockGetConsumerApp(makeConsumerApp())
-				mockGetProviderApp(makeProviderApp())
-				mockGetSpectreApp(makeSpectreAppPtr())
-				mockGetObserverApp(makeConsumerApp()) // A==C: observer resolves to consumer
-				mockGetZone()
-				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
-				mockGetEventStore(makeListenerEventStore())
-				mockListRoutes()
-				mockNoStaleChildren()
+		Context("dual-gate: provider Granted + consumer RequestDenied", func() {
+			It("checkpoints before deleting, drains the RouteListener then Subscribers, and stays drained", func() {
+				f := provisionAndDrainAfterRejection("consumer")
+				expectStaysDrainedWhileRejected(f.listener, "consumer")
+			})
+		})
+
+		Context("dual-gate: provider RequestDenied + consumer Error", func() {
+			It("persists a drain checkpoint and returns the consumer gate error", func() {
+				f := provisionForRejection()
+				liveRLs := []gatewayv1.RouteListener{f.rl}
+
+				mockEarlyRestrictionGranted(f.listener)
+				mockResolveTopology()
+				mockOwnedLists(liveRLs, f.subs) // removeStaleChildren
 				mockApprovalRequestDeniedGate("provider")
-				mockApprovalGrantedGate("consumer")
+				// Consumer gate: Approval Get returns an internal error.
+				fakeClient.EXPECT().
+					CreateOrUpdate(ctx, mock.AnythingOfType("*v1.ApprovalRequest"), mock.Anything).
+					Run(func(_ context.Context, _ client.Object, mutate controllerutil.MutateFn) {
+						_ = mutate()
+					}).
+					Return(controllerutil.OperationResultCreated, nil).Once()
+				fakeClient.EXPECT().
+					List(ctx, mock.AnythingOfType("*v1.ApprovalRequestList"), mock.Anything).
+					Return(nil).Once()
+				fakeClient.EXPECT().
+					Get(ctx, mock.AnythingOfType("types.NamespacedName"), mock.AnythingOfType("*v1.Approval")).
+					Return(fmt.Errorf("internal API error")).Once()
+				mockOwnedLists(liveRLs, f.subs) // startDrain snapshot
 
-				err := h.CreateOrUpdate(ctx, listener)
+				start := len(fakeClient.Calls)
+				l, err := reconcile(f.listener)
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("consumer gate"))
+				Expect(err.Error()).To(ContainSubstring("internal API error"))
+
+				Expect(l.Status.Draining).ToNot(BeNil())
+				Expect(l.Status.Draining.Phase).To(Equal(handler.ExportDrainPhaseStopping))
+				Expect(l.Status.Draining.OldFingerprint).To(Equal(f.fingerprint))
+				Expect(countCalls(start, "Delete", nil)).To(BeZero())
+				expectNoCaptureCreates(start)
+				expectRequestDenied(l, "provider")
+			})
+		})
+
+		Context("request denial: intent change after drain", func() {
+			It("creates and evaluates the new-intent ApprovalRequests and provisions once both gates grant", func() {
+				f := provisionAndDrainAfterRejection("provider")
+				l := f.listener
+				l.Spec.ApiListener.RequestFilter = &spectrev1.ListenerFilter{Trigger: map[string]string{"method": "POST"}}
+
+				// R7: the changed intent yields new ApprovalRequest names. The
+				// Approvals are still bound to the rejected V1 requests, so both
+				// gates are Pending (not AccessDenied).
+				var capP, capC approvalv1.ApprovalRequest
+				mockEarlyRestrictionGranted(l)
+				mockResolveTopology()
+				mockOwnedLists(nil, nil) // removeStaleChildren
+				mockGateBoundToOldRequest("provider", f.providerReq, &capP)
+				mockGateBoundToOldRequest("consumer", f.consumerReq, &capC)
+
+				start := len(fakeClient.Calls)
+				l7, err := reconcile(l)
 				Expect(err).ToNot(HaveOccurred())
 
-				readyCond := meta.FindStatusCondition(listener.Status.Conditions, condition.ConditionTypeReady)
-				Expect(readyCond).ToNot(BeNil())
-				Expect(readyCond.Reason).To(Equal(condition.ReasonAccessDenied))
+				Expect(capP.Name).To(HavePrefix("ar-v1-"))
+				Expect(capP.Name).ToNot(Equal(f.providerReq.Name))
+				Expect(l7.Status.ProviderApprovalRequest).ToNot(BeNil())
+				Expect(l7.Status.ProviderApprovalRequest.Name).To(Equal(capP.Name))
+				Expect(capC.Name).To(HavePrefix("ar-v1-"))
+				Expect(capC.Name).ToNot(Equal(f.consumerReq.Name))
+				Expect(l7.Status.ConsumerApprovalRequest).ToNot(BeNil())
+				Expect(l7.Status.ConsumerApprovalRequest.Name).To(Equal(capC.Name))
 
-				// Children are retained (not deleted).
-				Expect(listener.Status.RouteListener).ToNot(BeNil())
-				Expect(listener.Status.EventSubscriptions).To(HaveLen(1))
+				ready := meta.FindStatusCondition(l7.Status.Conditions, condition.ConditionTypeReady)
+				Expect(ready).ToNot(BeNil())
+				Expect(ready.Reason).To(Equal(condition.ReasonApprovalPending))
+				Expect(l7.Status.Draining).To(BeNil())
+				Expect(countCalls(start, "Delete", nil)).To(BeZero())
+				expectNoCaptureCreates(start)
+
+				// R8: both gates grant the V2 requests; provisioning resumes under
+				// the new fingerprint.
+				mockEarlyRestrictionGranted(l7)
+				mockResolveTopology()
+				mockOwnedLists(nil, nil) // removeStaleChildren
+				mockApprovalGranted()
+				mockCreateOrUpdatePublisher()
+				var capturedRL *gatewayv1.RouteListener
+				fakeClient.EXPECT().
+					CreateOrUpdate(ctx, mock.AnythingOfType("*v1.RouteListener"), mock.Anything).
+					Run(func(_ context.Context, obj client.Object, mutate controllerutil.MutateFn) {
+						_ = mutate()
+						capturedRL = obj.(*gatewayv1.RouteListener).DeepCopy()
+					}).
+					Return(controllerutil.OperationResultCreated, nil).Once()
+				mockJanitorCleanup()
+				fakeClient.EXPECT().AnyChanged().Return(true).Once()
+
+				start = len(fakeClient.Calls)
+				l8, err := reconcile(l7)
+				Expect(err).ToNot(HaveOccurred())
+
+				Expect(l8.Status.AppliedPlacement).ToNot(BeNil())
+				Expect(l8.Status.AppliedPlacement.Fingerprint).ToNot(Equal(f.fingerprint))
+				Expect(capturedRL).ToNot(BeNil())
+				Expect(capturedRL.Labels).To(HaveKeyWithValue(handler.AuthorizationFingerprintLabelKey, l8.Status.AppliedPlacement.Fingerprint))
+				Expect(l8.Status.RouteListener).ToNot(BeNil())
+				Expect(l8.Status.EventSubscriptions).To(HaveLen(2))
+				Expect(countCalls(start, "CreateOrUpdate", &gatewayv1.RouteListener{})).To(Equal(1))
+				Expect(countCalls(start, "CreateOrUpdate", &pubsubv1.Subscriber{})).To(Equal(2))
+				Expect(countCalls(start, "CreateOrUpdate", &pubsubv1.Publisher{})).To(Equal(1))
+				Expect(countCalls(start, "Delete", nil)).To(BeZero())
+
+				ready = meta.FindStatusCondition(l8.Status.Conditions, condition.ConditionTypeReady)
+				Expect(ready).ToNot(BeNil())
+				Expect(ready.Reason).To(Equal(condition.ReasonSubResourceNotReady))
 			})
 		})
 
