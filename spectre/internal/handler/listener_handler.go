@@ -269,17 +269,7 @@ func (h *ListenerHandler) CreateOrUpdate(ctx context.Context, listener *spectrev
 		if dual.outcome == outcomeRequestDenied {
 			reason = fmt.Sprintf("approval request rejected (%s gate)", requestDeniedGates(dual))
 		}
-		_, stopErr := h.drainCapture(ctx, listener, reason)
-		if stopErr != nil && dual.err != nil {
-			return fmt.Errorf("failed to stop capture after %s: %w; combined approval error: %w", reason, stopErr, dual.err)
-		}
-		if stopErr != nil {
-			return errors.Wrapf(stopErr, "failed to stop capture after %s", reason)
-		}
-		if dual.err != nil {
-			return errors.Wrap(dual.err, "combined approval error")
-		}
-		return nil
+		return h.stopCaptureAfter(ctx, listener, reason, dual.err)
 
 	case outcomePending:
 		// No new provisioning; no stale child remains (step 5.10).
@@ -289,7 +279,19 @@ func (h *ListenerHandler) CreateOrUpdate(ctx context.Context, listener *spectrev
 		return nil
 
 	case outcomeError:
-		return errors.Wrap(err, "approval evaluation failed")
+		evalErr := dual.err
+		if evalErr == nil {
+			evalErr = errors.New("no gate diagnostics")
+		}
+		evalErr = errors.Wrap(evalErr, "approval evaluation failed")
+		// A definitive scoped identity failure (ownerless or foreign Approval or
+		// request) is permanent: the approval controller never repairs it, so no
+		// applied capture may keep running on it. Transient build and read errors
+		// leave capture untouched.
+		if gate := scopedIdentityGates(dual); gate != "" {
+			return h.stopCaptureAfter(ctx, listener, fmt.Sprintf("approval identity invalid (%s gate)", gate), evalErr)
+		}
+		return evalErr
 
 	default:
 		// outcomeUnknown: fail closed.
@@ -841,5 +843,28 @@ func (h *ListenerHandler) handleDenialCleanup(
 
 	listener.SetCondition(condition.NewNotReadyCondition(condition.ReasonAccessDenied, message))
 	listener.SetCondition(condition.NewDoneProcessingCondition(message))
+	return nil
+}
+
+// stopCaptureAfter stops capture through the persisted drain after an approval
+// decision and returns the cleanup failure joined with approvalErr, or
+// approvalErr. The caller returns it, so the checkpoint is persisted before
+// continueDrain deletes anything.
+func (h *ListenerHandler) stopCaptureAfter(
+	ctx context.Context,
+	listener *spectrev1.Listener,
+	reason string,
+	approvalErr error,
+) error {
+	_, stopErr := h.drainCapture(ctx, listener, reason)
+	if stopErr != nil && approvalErr != nil {
+		return fmt.Errorf("failed to stop capture after %s: %w; combined approval error: %w", reason, stopErr, approvalErr)
+	}
+	if stopErr != nil {
+		return errors.Wrapf(stopErr, "failed to stop capture after %s", reason)
+	}
+	if approvalErr != nil {
+		return errors.Wrap(approvalErr, "combined approval error")
+	}
 	return nil
 }
