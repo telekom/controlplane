@@ -180,6 +180,7 @@
       "common-server",
       "controlplane-api",
       "event",
+      "file",
       "organization",
       "permission",
       "secret-manager"
