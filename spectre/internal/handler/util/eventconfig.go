@@ -22,11 +22,11 @@ import (
 // EventConfigZoneIndex is the field index path used to look up EventConfigs by zone name.
 const EventConfigZoneIndex = ".spec.zone.name"
 
-// GetEventConfig retrieves the unique EventConfig for the given zone.
-// It uses the field index on spec.zone.name for efficient lookup.
-// Returns an error if multiple EventConfigs exist for the zone (ambiguity),
-// BlockedError if no EventConfig is found, and BlockedError if it is not ready.
-func GetEventConfig(ctx context.Context, zone *adminv1.Zone) (*eventv1.EventConfig, error) {
+// FindEventConfig looks up the unique EventConfig for the given zone via the
+// field index on spec.zone.name. It returns (nil, nil) when the zone has no
+// EventConfig, and an error when the List fails or the zone has more than one
+// (ambiguity). Readiness is not checked.
+func FindEventConfig(ctx context.Context, zone *adminv1.Zone) (*eventv1.EventConfig, error) {
 	c := cclient.ClientFromContextOrDie(ctx)
 
 	eventConfigList := &eventv1.EventConfigList{}
@@ -36,15 +36,28 @@ func GetEventConfig(ctx context.Context, zone *adminv1.Zone) (*eventv1.EventConf
 		return nil, errors.Wrapf(err, "failed to list EventConfigs for zone %q", zone.Name)
 	}
 
-	if len(eventConfigList.Items) == 0 {
-		return nil, ctrlerrors.BlockedErrorf("no EventConfig found for zone %q", zone.Name)
-	}
-
-	if len(eventConfigList.Items) > 1 {
+	switch len(eventConfigList.Items) {
+	case 0:
+		return nil, nil
+	case 1:
+		return &eventConfigList.Items[0], nil
+	default:
 		return nil, fmt.Errorf("found %d EventConfigs for zone %q, expected exactly one", len(eventConfigList.Items), zone.Name)
 	}
+}
 
-	eventConfig := &eventConfigList.Items[0]
+// GetEventConfig retrieves the unique EventConfig for the given zone.
+// It uses the field index on spec.zone.name for efficient lookup.
+// Returns an error if multiple EventConfigs exist for the zone (ambiguity),
+// BlockedError if no EventConfig is found, and BlockedError if it is not ready.
+func GetEventConfig(ctx context.Context, zone *adminv1.Zone) (*eventv1.EventConfig, error) {
+	eventConfig, err := FindEventConfig(ctx, zone)
+	if err != nil {
+		return nil, err
+	}
+	if eventConfig == nil {
+		return nil, ctrlerrors.BlockedErrorf("no EventConfig found for zone %q", zone.Name)
+	}
 
 	if err := condition.EnsureReady(eventConfig); err != nil {
 		return nil, ctrlerrors.BlockedErrorf("EventConfig %q for zone %q is not ready", eventConfig.Name, zone.Name)
