@@ -232,30 +232,11 @@ func (h *ListenerHandler) CreateOrUpdate(ctx context.Context, listener *spectrev
 	case outcomeGranted:
 		// Continue to provisioning below.
 
-	case outcomeDenied:
-		// Delete all owner-labelled capture children: RouteListeners first (stop
-		// new traffic), then Subscribers.
-		if err := h.deleteAllOwnedChildren(ctx, listener); err != nil {
-			return errors.Wrap(err, "failed to cleanup children after denial")
-		}
-		listener.Status.RouteListener = nil
-		listener.Status.EventSubscriptions = nil
-
-		zoneNamespace, err := h.resolvePublisherNamespace(ctx, listener)
-		if err != nil {
-			return errors.Wrap(err, "failed to resolve publisher namespace after denial")
-		}
-		if zoneNamespace != "" {
-			if err := h.cleanupGenericPublisherIfOrphaned(ctx, zoneNamespace); err != nil {
-				return errors.Wrap(err, "failed to check orphaned generic Publisher")
-			}
-		}
-		if dual.err != nil {
-			return errors.Wrap(dual.err, "combined approval error")
-		}
-		return nil
-
-	case outcomeRequestDenied:
+	case outcomeDenied, outcomeRequestDenied:
+		// A denied Approval stops capture through the persisted drain: RouteListeners
+		// first (stop new traffic), then Subscribers. It is reached when the early
+		// check could not see the denial (read error, no Approval ref persisted yet).
+		//
 		// Spectre policy (plan 2.3): a rejected current ApprovalRequest stops this
 		// Listener's capture via the same persisted drain as an Approval denial.
 		// The shared builder contract (RequestDenied = children untouched) is
@@ -263,13 +244,16 @@ func (h *ListenerHandler) CreateOrUpdate(ctx context.Context, listener *spectrev
 		// Ready=False/AccessDenied naming the gate(s). Request rejection is not read
 		// before topology: the request name carries the intent hash, so an intent
 		// change must still reach ensureApprovals.
-		stopErr := h.stopCapture(ctx, listener,
-			fmt.Sprintf("approval request rejected (%s gate)", requestDeniedGates(dual)))
+		reason := "approval denied"
+		if dual.outcome == outcomeRequestDenied {
+			reason = fmt.Sprintf("approval request rejected (%s gate)", requestDeniedGates(dual))
+		}
+		_, stopErr := h.drainCapture(ctx, listener, reason)
 		if stopErr != nil && dual.err != nil {
-			return fmt.Errorf("failed to stop capture after request denial: %w; combined approval error: %w", stopErr, dual.err)
+			return fmt.Errorf("failed to stop capture after %s: %w; combined approval error: %w", reason, stopErr, dual.err)
 		}
 		if stopErr != nil {
-			return errors.Wrap(stopErr, "failed to stop capture after request denial")
+			return errors.Wrapf(stopErr, "failed to stop capture after %s", reason)
 		}
 		if dual.err != nil {
 			return errors.Wrap(dual.err, "combined approval error")
@@ -523,42 +507,6 @@ func (h *ListenerHandler) removeStaleChildren(ctx context.Context, listener *spe
 			}
 		}
 		listener.Status.EventSubscriptions = kept
-	}
-
-	return nil
-}
-
-// deleteAllOwnedChildren removes all owner-labelled RouteListeners and
-// Subscribers. Used on the Denied path where capture must stop entirely.
-// RouteListeners are deleted first so no new traffic is captured.
-func (h *ListenerHandler) deleteAllOwnedChildren(ctx context.Context, listener *spectrev1.Listener) error {
-	c := cclient.ClientFromContextOrDie(ctx)
-	logger := log.FromContext(ctx)
-
-	// Delete RouteListeners first.
-	rlList := &gatewayv1.RouteListenerList{}
-	if err := c.List(ctx, rlList, cclient.OwnedByLabel(listener)...); err != nil {
-		return errors.Wrap(err, "failed to list owned RouteListeners for denial cleanup")
-	}
-	for i := range rlList.Items {
-		rl := &rlList.Items[i]
-		logger.Info("Deleting RouteListener after denial", "routeListener", rl.Name, "namespace", rl.Namespace)
-		if err := c.Delete(ctx, rl); err != nil && !apierrors.IsNotFound(err) {
-			return errors.Wrapf(err, "failed to delete RouteListener %q after denial", rl.Name)
-		}
-	}
-
-	// Then Subscribers.
-	subList := &pubsubv1.SubscriberList{}
-	if err := c.List(ctx, subList, cclient.OwnedByLabel(listener)...); err != nil {
-		return errors.Wrap(err, "failed to list owned Subscribers for denial cleanup")
-	}
-	for i := range subList.Items {
-		sub := &subList.Items[i]
-		logger.Info("Deleting Subscriber after denial", "subscriber", sub.Name, "namespace", sub.Namespace)
-		if err := c.Delete(ctx, sub); err != nil && !apierrors.IsNotFound(err) {
-			return errors.Wrapf(err, "failed to delete Subscriber %q after denial", sub.Name)
-		}
 	}
 
 	return nil
@@ -885,71 +833,21 @@ func (h *ListenerHandler) checkEarlyRestriction(
 	return false, "", firstErr
 }
 
-// handleDenialCleanup initiates a drain (or direct deletion when no children
-// are tracked) and sets AccessDenied conditions when an early restriction or
-// conclusive revocation is detected.
+// handleDenialCleanup stops capture through the persisted drain and sets
+// AccessDenied conditions when an early restriction or conclusive revocation is
+// detected.
 func (h *ListenerHandler) handleDenialCleanup(
 	ctx context.Context,
 	listener *spectrev1.Listener,
 	gateKey string,
 ) error {
-	if err := h.stopCapture(ctx, listener, fmt.Sprintf("early restriction (%s gate)", gateKey)); err != nil {
-		return err
+	if _, err := h.drainCapture(ctx, listener, fmt.Sprintf("early restriction (%s gate)", gateKey)); err != nil {
+		return errors.Wrap(err, "failed to start drain during denial cleanup")
 	}
 
 	listener.SetCondition(condition.NewNotReadyCondition(condition.ReasonAccessDenied,
 		fmt.Sprintf("Approval has been revoked (%s gate, early restriction)", gateKey)))
 	listener.SetCondition(condition.NewDoneProcessingCondition(
 		fmt.Sprintf("Approval has been revoked (%s gate, early restriction)", gateKey)))
-	return nil
-}
-
-// stopCapture initiates a persisted drain of applied capture, or directly removes
-// stray owner-labelled children when nothing was applied. Shared by Approval
-// denial and Spectre's RequestDenied policy. After a drain starts the caller must
-// return so the checkpoint is persisted before continueDrain deletes anything.
-func (h *ListenerHandler) stopCapture(
-	ctx context.Context,
-	listener *spectrev1.Listener,
-	reason string,
-) error {
-	// If there are provisioned children (indicated by AppliedPlacement), use the
-	// drain protocol so deletions get UID-checked and the publisher is cleaned up
-	// in the correct phase order. Otherwise fall back to direct deletion.
-	//
-	// Guard against starting empty drains: after a denial drain completes,
-	// AppliedPlacement may remain with an empty fingerprint while status refs
-	// are cleared. Starting a new drain with no children would complete
-	// immediately and repeat every reconcile.
-	if listener.Status.AppliedPlacement != nil && listener.Status.Draining == nil {
-		hasChildren := listener.Status.RouteListener != nil || len(listener.Status.EventSubscriptions) > 0
-		if !hasChildren && listener.Status.AppliedPlacement.Fingerprint == "" {
-			// Already drained — just clear the stale applied state.
-			listener.Status.AppliedPlacement = nil
-		} else {
-			oldFP := listener.Status.AppliedPlacement.Fingerprint
-			if err := h.startDrain(ctx, listener, reason, oldFP); err != nil {
-				return errors.Wrap(err, "failed to start drain during denial cleanup")
-			}
-		}
-	} else if listener.Status.Draining == nil {
-		// No applied placement — direct cleanup of any stray children.
-		if err := h.deleteAllOwnedChildren(ctx, listener); err != nil {
-			return errors.Wrap(err, "failed to delete owned children during denial cleanup")
-		}
-		listener.Status.RouteListener = nil
-		listener.Status.EventSubscriptions = nil
-
-		zoneNamespace, err := h.resolvePublisherNamespace(ctx, listener)
-		if err != nil {
-			return errors.Wrap(err, "failed to resolve publisher namespace during denial cleanup")
-		}
-		if zoneNamespace != "" {
-			if err := h.cleanupGenericPublisherIfOrphaned(ctx, zoneNamespace); err != nil {
-				return errors.Wrap(err, "failed to check orphaned generic Publisher during denial cleanup")
-			}
-		}
-	}
-	// If Draining is already set, step 0.5 will advance it on the next reconcile.
 	return nil
 }

@@ -148,64 +148,33 @@ func (h *ListenerHandler) resolveListenerPlacement(
 	return nil, nil, &util.NoCaptureCandidateError{ApiBasePath: apiBasePath, Rejections: rejections}
 }
 
-// handlePlacementError stops applied capture that can no longer be placed and
-// returns the error to report. When no candidate supports capture, applied
-// capture is drained (checkpoint first) or stray children are removed directly.
-// A definitive provider-binding invalidation also drains applied capture. Other
-// errors, including read errors, leave capture untouched: a transient failure
-// must not stop or move it.
+// handlePlacementError stops capture that can no longer be placed and returns
+// the error to report. When no candidate supports capture, or the provider
+// binding is definitively invalidated, capture is drained (checkpoint first),
+// including untracked children of a partial provisioning. Other errors,
+// including read errors, leave capture untouched: a transient failure must not
+// stop or move it.
 func (h *ListenerHandler) handlePlacementError(ctx context.Context, listener *spectrev1.Listener, err error) error {
 	var noCandidate *util.NoCaptureCandidateError
-	if errors.As(err, &noCandidate) {
-		started, drainErr := h.drainAppliedCapture(ctx, listener, "no supported capture placement")
-		if drainErr != nil {
-			return errors.Wrap(drainErr, "failed to start drain after placement loss")
-		}
-		if started {
-			listener.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet, err.Error()))
-			listener.SetCondition(condition.NewBlockedCondition(err.Error()))
-			return nil // persist drain checkpoint
-		}
-		if cleanupErr := h.removeUnplacedChildren(ctx, listener); cleanupErr != nil {
-			return cleanupErr
-		}
-		return err
-	}
-
 	var bindingErr *providerBindingError
-	if errors.As(err, &bindingErr) {
-		started, drainErr := h.drainAppliedCapture(ctx, listener, "provider binding invalidated")
-		if drainErr != nil {
-			return errors.Wrap(drainErr, "failed to start drain after binding failure")
-		}
-		if started {
-			listener.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet, err.Error()))
-			listener.SetCondition(condition.NewBlockedCondition(err.Error()))
-			return nil // persist drain checkpoint
-		}
-		return errors.Wrap(err, "provider binding check failed")
+	reason, notStarted := "", err
+	switch {
+	case errors.As(err, &noCandidate):
+		reason = "no supported capture placement"
+	case errors.As(err, &bindingErr):
+		reason, notStarted = "provider binding invalidated", errors.Wrap(err, "provider binding check failed")
+	default:
+		return errors.Wrap(err, "failed to resolve placement")
 	}
 
-	return errors.Wrap(err, "failed to resolve placement")
-}
-
-// removeUnplacedChildren directly deletes owner-labelled children of a Listener
-// without applied capture, then the generic Publisher if it became orphaned.
-func (h *ListenerHandler) removeUnplacedChildren(ctx context.Context, listener *spectrev1.Listener) error {
-	if err := h.deleteAllOwnedChildren(ctx, listener); err != nil {
-		return errors.Wrap(err, "failed to cleanup children for unsupported capture placement")
+	started, drainErr := h.drainCapture(ctx, listener, reason)
+	if drainErr != nil {
+		return errors.Wrapf(drainErr, "failed to start drain (%s)", reason)
 	}
-	listener.Status.RouteListener = nil
-	listener.Status.EventSubscriptions = nil
-
-	zoneNamespace, err := h.resolvePublisherNamespace(ctx, listener)
-	if err != nil {
-		return errors.Wrap(err, "failed to resolve publisher namespace for unsupported capture placement")
+	if !started {
+		return notStarted
 	}
-	if zoneNamespace != "" {
-		if err := h.cleanupGenericPublisherIfOrphaned(ctx, zoneNamespace); err != nil {
-			return errors.Wrap(err, "failed to check orphaned generic Publisher")
-		}
-	}
-	return nil
+	listener.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet, err.Error()))
+	listener.SetCondition(condition.NewBlockedCondition(err.Error()))
+	return nil // persist drain checkpoint
 }
