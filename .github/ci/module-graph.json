@@ -255,6 +255,7 @@
     "path": "spectre",
     "depends_on": [
       "admin",
+      "api",
       "application",
       "approval",
       "common",
