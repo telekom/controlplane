@@ -111,7 +111,7 @@ func (h *ListenerHandler) ensureApprovals(
 	var combinedErr error
 	switch {
 	case providerGate.err != nil && consumerGate.err != nil:
-		combinedErr = fmt.Errorf("provider gate: %w; consumer gate: %v", providerGate.err, consumerGate.err)
+		combinedErr = fmt.Errorf("provider gate: %w; consumer gate: %w", providerGate.err, consumerGate.err)
 	case providerGate.err != nil:
 		combinedErr = fmt.Errorf("provider gate: %w", providerGate.err)
 	case consumerGate.err != nil:
@@ -303,15 +303,28 @@ func (h *ListenerHandler) setAggregateConditions(ctx context.Context, listener *
 
 // requestDeniedGates names the gate(s) whose current ApprovalRequest was rejected.
 func requestDeniedGates(result *dualApprovalResult) string {
-	provider := result.provider != nil && result.provider.outcome == outcomeRequestDenied
-	consumer := result.consumer != nil && result.consumer.outcome == outcomeRequestDenied
+	return gateNames(result, func(g *gateResult) bool { return g.outcome == outcomeRequestDenied })
+}
+
+// scopedIdentityGates names the gate(s) whose build failed on a definitive scoped
+// identity mismatch (builder.ErrScopedIdentity), or returns "" when none did.
+func scopedIdentityGates(result *dualApprovalResult) string {
+	return gateNames(result, func(g *gateResult) bool { return errors.Is(g.err, builder.ErrScopedIdentity) })
+}
+
+// gateNames names the gate(s) of result that match, or returns "" when none does.
+func gateNames(result *dualApprovalResult, match func(*gateResult) bool) string {
+	provider := result.provider != nil && match(result.provider)
+	consumer := result.consumer != nil && match(result.consumer)
 	switch {
 	case provider && consumer:
 		return "provider and consumer"
 	case consumer:
 		return "consumer"
-	default:
+	case provider:
 		return "provider"
+	default:
+		return ""
 	}
 }
 
