@@ -80,14 +80,18 @@ var _ = Describe("CreateOrReplacePlugin", func() {
 		Expect(plugin.GetId()).To(Equal("plugin-id"))
 	})
 
-	It("resolves entity references from the ownership tags without extra reads", func() {
-		// The mock fails the test if an unexpected call is made, so the absence
-		// of route and consumer expectations asserts that no lookup happens.
+	It("resolves entity references from the ownership tags before comparing them", func() {
 		plugin.route = ptr("route-name")
 		plugin.consumer = ptr("consumer-name")
 		stored.Route = &kong.PluginRoute{Id: ptr("route-id")}
 		stored.Consumer = &kong.PluginConsumer{Id: ptr("consumer-id")}
 		stored.Tags = &[]string{"plugin--acl", "consumer--consumer-name", "env--test", "route--route-name"}
+		api.EXPECT().GetRouteWithResponse(mock.Anything, "route-name").Return(
+			&kong.GetRouteResponse{HTTPResponse: &http.Response{StatusCode: http.StatusOK}, JSON200: &kong.Route{Id: ptr("route-id")}}, nil,
+		).Once()
+		api.EXPECT().GetConsumerWithResponse(mock.Anything, "consumer-name").Return(
+			&kong.GetConsumerResponse{HTTPResponse: &http.Response{StatusCode: http.StatusOK}, JSON200: &kong.Consumer{Id: ptr("consumer-id")}}, nil,
+		).Once()
 		expectPlugin()
 
 		_, err := client.CreateOrReplacePlugin(ctx, plugin)
@@ -106,6 +110,9 @@ var _ = Describe("CreateOrReplacePlugin", func() {
 		plugin.route = ptr("route-name")
 		stored.Route = &kong.PluginRoute{Id: ptr("89d89d2e-7fbd-4d6d-9133-42f5f9e98f81")}
 		stored.Tags = &[]string{"route--route-name", "plugin--acl", "consumer--none", "env--test"}
+		api.EXPECT().GetRouteWithResponse(mock.Anything, "route-name").Return(
+			&kong.GetRouteResponse{HTTPResponse: &http.Response{StatusCode: http.StatusOK}, JSON200: &kong.Route{Id: ptr("89d89d2e-7fbd-4d6d-9133-42f5f9e98f81")}}, nil,
+		).Once()
 		expectPlugin()
 
 		_, err := client.CreateOrReplacePlugin(ctx, plugin)
@@ -116,6 +123,9 @@ var _ = Describe("CreateOrReplacePlugin", func() {
 		plugin.consumer = ptr("consumer-name")
 		stored.Consumer = &kong.PluginConsumer{Id: ptr("d2de9d8c-e035-46f2-9ff5-8308c53a50de")}
 		stored.Tags = &[]string{"consumer--consumer-name", "plugin--acl", "env--test"}
+		api.EXPECT().GetConsumerWithResponse(mock.Anything, "consumer-name").Return(
+			&kong.GetConsumerResponse{HTTPResponse: &http.Response{StatusCode: http.StatusOK}, JSON200: &kong.Consumer{Id: ptr("d2de9d8c-e035-46f2-9ff5-8308c53a50de")}}, nil,
+		).Once()
 		expectPlugin()
 
 		_, err := client.CreateOrReplacePlugin(ctx, plugin)
@@ -128,6 +138,12 @@ var _ = Describe("CreateOrReplacePlugin", func() {
 		stored.Route = &kong.PluginRoute{Id: ptr("89d89d2e-7fbd-4d6d-9133-42f5f9e98f81")}
 		stored.Consumer = &kong.PluginConsumer{Id: ptr("d2de9d8c-e035-46f2-9ff5-8308c53a50de")}
 		stored.Tags = &[]string{"route--route-name", "consumer--consumer-name", "plugin--acl", "env--test"}
+		api.EXPECT().GetRouteWithResponse(mock.Anything, "route-name").Return(
+			&kong.GetRouteResponse{HTTPResponse: &http.Response{StatusCode: http.StatusOK}, JSON200: &kong.Route{Id: ptr("89d89d2e-7fbd-4d6d-9133-42f5f9e98f81")}}, nil,
+		).Once()
+		api.EXPECT().GetConsumerWithResponse(mock.Anything, "consumer-name").Return(
+			&kong.GetConsumerResponse{HTTPResponse: &http.Response{StatusCode: http.StatusOK}, JSON200: &kong.Consumer{Id: ptr("d2de9d8c-e035-46f2-9ff5-8308c53a50de")}}, nil,
+		).Once()
 		expectPlugin()
 
 		_, err := client.CreateOrReplacePlugin(ctx, plugin)
@@ -188,6 +204,9 @@ var _ = Describe("CreateOrReplacePlugin", func() {
 		plugin.route = ptr("route-name")
 		stored.Enabled = ptr(false)
 		stored.Tags = &[]string{"route--route-name", "plugin--acl", "consumer--none", "env--test"}
+		api.EXPECT().GetRouteWithResponse(mock.Anything, "route-name").Return(
+			&kong.GetRouteResponse{HTTPResponse: &http.Response{StatusCode: http.StatusOK}, JSON200: &kong.Route{Id: ptr("route-id")}}, nil,
+		).Once()
 		expectPlugin()
 		api.EXPECT().UpsertPluginForRouteWithResponse(mock.Anything, "route-name", "plugin-id", mock.Anything).
 			RunAndReturn(func(_ context.Context, _, _ string, body kong.UpsertPluginForRouteJSONRequestBody, _ ...kong.RequestEditorFn) (*kong.UpsertPluginForRouteResponse, error) {
@@ -205,6 +224,9 @@ var _ = Describe("CreateOrReplacePlugin", func() {
 		plugin.consumer = ptr("consumer-name")
 		stored.Enabled = ptr(false)
 		stored.Tags = &[]string{"consumer--consumer-name", "plugin--acl", "env--test"}
+		api.EXPECT().GetConsumerWithResponse(mock.Anything, "consumer-name").Return(
+			&kong.GetConsumerResponse{HTTPResponse: &http.Response{StatusCode: http.StatusOK}, JSON200: &kong.Consumer{Id: ptr("consumer-id")}}, nil,
+		).Once()
 		expectPlugin()
 		api.EXPECT().UpsertPluginForConsumerWithResponse(mock.Anything, "consumer-name", "plugin-id", mock.Anything).Return(
 			&kong.UpsertPluginForConsumerResponse{HTTPResponse: upsertResponse, Body: upsertBody}, nil,
@@ -224,18 +246,37 @@ var _ = Describe("CreateOrReplacePlugin", func() {
 		Expect(err).To(MatchError(ContainSubstring("failed to write plugin")))
 	})
 
-	DescribeTable("ignores entity references, which the ownership tags already cover",
-		func(change func(*kong.Plugin)) {
-			change(&stored)
-			expectPlugin()
+	It("upserts a route plugin when Kong drifted the route association", func() {
+		plugin.route = ptr("route-name")
+		stored.Route = &kong.PluginRoute{Id: ptr("other-route-id")}
+		stored.Tags = &[]string{"route--route-name", "plugin--acl", "consumer--none", "env--test"}
+		api.EXPECT().GetRouteWithResponse(mock.Anything, "route-name").Return(
+			&kong.GetRouteResponse{HTTPResponse: &http.Response{StatusCode: http.StatusOK}, JSON200: &kong.Route{Id: ptr("route-id")}}, nil,
+		).Once()
+		expectPlugin()
+		api.EXPECT().UpsertPluginForRouteWithResponse(mock.Anything, "route-name", "plugin-id", mock.Anything).Return(
+			&kong.UpsertPluginForRouteResponse{HTTPResponse: upsertResponse, Body: upsertBody}, nil,
+		).Once()
 
-			_, err := client.CreateOrReplacePlugin(ctx, plugin)
-			Expect(err).NotTo(HaveOccurred())
-		},
-		Entry("route", func(current *kong.Plugin) { current.Route = &kong.PluginRoute{Id: ptr("route-id")} }),
-		Entry("consumer", func(current *kong.Plugin) { current.Consumer = &kong.PluginConsumer{Id: ptr("consumer-id")} }),
-		Entry("service", func(current *kong.Plugin) { current.Service = &kong.PluginService{Id: ptr("service-id")} }),
-	)
+		_, err := client.CreateOrReplacePlugin(ctx, plugin)
+		Expect(err).NotTo(HaveOccurred())
+	})
+
+	It("upserts a consumer plugin when Kong drifted the consumer association", func() {
+		plugin.consumer = ptr("consumer-name")
+		stored.Consumer = &kong.PluginConsumer{Id: ptr("other-consumer-id")}
+		stored.Tags = &[]string{"consumer--consumer-name", "plugin--acl", "env--test"}
+		api.EXPECT().GetConsumerWithResponse(mock.Anything, "consumer-name").Return(
+			&kong.GetConsumerResponse{HTTPResponse: &http.Response{StatusCode: http.StatusOK}, JSON200: &kong.Consumer{Id: ptr("consumer-id")}}, nil,
+		).Once()
+		expectPlugin()
+		api.EXPECT().UpsertPluginForConsumerWithResponse(mock.Anything, "consumer-name", "plugin-id", mock.Anything).Return(
+			&kong.UpsertPluginForConsumerResponse{HTTPResponse: upsertResponse, Body: upsertBody}, nil,
+		).Once()
+
+		_, err := client.CreateOrReplacePlugin(ctx, plugin)
+		Expect(err).NotTo(HaveOccurred())
+	})
 
 	It("upserts a plugin missing by stored ID under a fresh ID", func() {
 		api.EXPECT().GetPluginWithResponse(mock.Anything, "plugin-id").Return(

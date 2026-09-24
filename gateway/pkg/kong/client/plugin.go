@@ -73,6 +73,9 @@ func (c *kongClient) DeletePlugin(ctx context.Context, plugin CustomPlugin) erro
 		if kongPlugin == nil {
 			return nil
 		}
+		if kongPlugin.Id == nil {
+			return fmt.Errorf("plugin response ID is missing")
+		}
 		pluginId = *kongPlugin.Id
 	}
 
@@ -120,8 +123,15 @@ func (c *kongClient) CleanupPlugins(ctx context.Context, route CustomRoute, cons
 	)
 
 	for _, kongPlugin := range kongPlugins {
+		if kongPlugin.Id == nil {
+			return fmt.Errorf("plugin response ID is missing")
+		}
 		if !slices.Contains(pluginIds, *kongPlugin.Id) {
-			log.V(1).Info("deleting plugin", "name", *kongPlugin.Name, "id", *kongPlugin.Id)
+			name := ""
+			if kongPlugin.Name != nil {
+				name = *kongPlugin.Name
+			}
+			log.V(1).Info("deleting plugin", "name", name, "id", *kongPlugin.Id)
 			response, err := c.client.DeletePluginWithResponse(ctx, *kongPlugin.Id)
 			if err != nil {
 				return fmt.Errorf("failed to delete plugin: %w", HandleClientError(err))
@@ -244,9 +254,11 @@ func getPluginMatchingTags(ctx context.Context, api KongAdminApi, tags []string)
 }
 
 type pluginEntity struct {
-	client  KongAdminApi
-	plugin  CustomPlugin
-	current *kong.Plugin
+	client     KongAdminApi
+	plugin     CustomPlugin
+	current    *kong.Plugin
+	consumerID *string
+	routeID    *string
 }
 
 var (
@@ -264,7 +276,50 @@ func (e *pluginEntity) Get(ctx context.Context) (*kong.Plugin, bool, error) {
 		return nil, false, err
 	}
 	e.current = current
+	e.consumerID = nil
+	e.routeID = nil
+	if e.plugin.GetConsumer() != nil {
+		consumerID, err := resolvePluginBindingID(ctx, e.client, "consumer", *e.plugin.GetConsumer())
+		if err != nil {
+			return nil, false, err
+		}
+		e.consumerID = consumerID
+	}
+	if e.plugin.GetRoute() != nil {
+		routeID, err := resolvePluginBindingID(ctx, e.client, "route", *e.plugin.GetRoute())
+		if err != nil {
+			return nil, false, err
+		}
+		e.routeID = routeID
+	}
 	return current, current != nil, nil
+}
+
+func resolvePluginBindingID(ctx context.Context, api KongAdminApi, kind, name string) (*string, error) {
+	switch kind {
+	case "consumer":
+		response, err := api.GetConsumerWithResponse(ctx, name)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get consumer %q: %w", name, HandleClientError(err))
+		}
+		consumer, found, err := readOne("consumer", readResult[kong.Consumer]{response.StatusCode(), response.Body, response.JSON200})
+		if err != nil || !found {
+			return nil, err
+		}
+		return consumer.Id, nil
+	case "route":
+		response, err := api.GetRouteWithResponse(ctx, name)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get route %q: %w", name, HandleClientError(err))
+		}
+		route, found, err := readOne("route", readResult[kong.Route]{response.StatusCode(), response.Body, response.JSON200})
+		if err != nil || !found {
+			return nil, err
+		}
+		return route.Id, nil
+	default:
+		return nil, nil
+	}
 }
 
 func (e *pluginEntity) Project(current *kong.Plugin) (kong.UpsertPluginJSONRequestBody, error) {
@@ -281,23 +336,35 @@ func (e *pluginEntity) Project(current *kong.Plugin) (kong.UpsertPluginJSONReque
 		Protocols:    convertStringSet[kong.CreatePluginForConsumerRequestProtocols](current.Protocols),
 		Tags:         normalizeSet(current.Tags),
 	}
+	if current.Consumer != nil && current.Consumer.Id != nil {
+		projected.Consumer = current.Consumer.Id
+	}
+	if current.Route != nil && current.Route.Id != nil {
+		projected.Route = &map[string]any{"id": *current.Route.Id}
+	}
+	if current.Service != nil && current.Service.Id != nil {
+		projected.Service = current.Service.Id
+	}
 	if config != nil {
 		projected.Config = &config
 	}
 	return projected, nil
 }
 
-// Equal ignores the entity references. The desired body names the route and the
-// consumer while Kong reports their ids, and resolving the names would cost two
-// extra reads per plugin. The ownership tags, which are compared, already carry
-// the same association.
-//
-// The configuration is compared only over the keys the desired body names,
-// because Kong reports the whole schema including the defaults for everything a
-// feature leaves unset.
+// Equal compares the request against the current definition while normalizing
+// the entity references that Kong reports as IDs. If Kong drifted the plugin to
+// a different route or consumer out-of-band, matching on the name would be a
+// false positive because the ownership tags alone do not make the plugin safe to
+// reuse.
 func (e *pluginEntity) Equal(desired, current kong.UpsertPluginJSONRequestBody) bool {
-	desired.Consumer, desired.Route, desired.Service = nil, nil, nil
-	current.Consumer, current.Route, current.Service = nil, nil, nil
+	desired.Service = nil
+	current.Service = nil
+	if e.consumerID != nil {
+		desired.Consumer = e.consumerID
+	}
+	if e.routeID != nil {
+		desired.Route = &map[string]any{"id": *e.routeID}
+	}
 
 	desiredConfig := valueOrZero(desired.Config)
 	narrowed := narrowToDesired(desiredConfig, valueOrZero(current.Config))
