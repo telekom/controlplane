@@ -51,6 +51,24 @@ After approval, an `AgenticSubscription` publishes the path-specific AI Gateway
 URL in its status. The Projector persists this value and exposes it as
 `gatewayURL` on the GraphQL `AgenticSubscription` type.
 
+### Subscription Readiness
+
+`AgenticSubscription` uses the shared `Ready` condition reason vocabulary used by
+API subscriptions. The condition message provides the specific cause.
+
+| Ready status | Reason | Meaning |
+|---|---|---|
+| `True` | `Provisioned` | Subscription provisioning completed. |
+| `False` | `PreconditionNotMet` | An active server, ready exposure, required route reference, or AI Gateway feature is unavailable. |
+| `False` | `ValidationFailed` | The base path has a case conflict, or requested OAuth2 scopes are invalid or undefined by the server. |
+| `False` | `AccessDenied` | Visibility rules disallow the subscription, or its approval or approval request was denied. |
+| `False` | `ApprovalPending` | An approval decision is pending. |
+| `False` | `Processing` | A previously pending approval was granted; provisioning is in progress. |
+| `False` | `SubResourceNotReady` | The child-resource readiness check has not passed. |
+
+Once approval is granted, a previous `ApprovalPending` reason is cleared before
+provisioning continues, including when a subsequent provisioning operation fails.
+
 ### Cross-Zone Meshing
 
 When subscribers exist in a different zone than the exposure, the operator creates a proxy Route in the subscriber's zone. That proxy gateway stamps a **Last-Mile-Security (LMS) token** when forwarding traffic to the provider zone. The primary route therefore adds the subscriber zone's `LmsIssuer` to its `TrustedIssuers` so that forwarded requests are accepted.
