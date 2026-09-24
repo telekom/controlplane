@@ -96,11 +96,11 @@ func cleanupScopedRequests(
 	return deleted, nil
 }
 
-// isOwnedByUID checks that the AR has a controller owner reference matching the
+// isOwnedByUID checks that obj has a controller owner reference matching the
 // owner's UID. This prevents acting on resources that happen to share a name
 // index but belong to a different controller.
-func isOwnedByUID(ar *v1.ApprovalRequest, owner types.Object) bool {
-	for _, ref := range ar.GetOwnerReferences() {
+func isOwnedByUID(obj metav1.Object, owner types.Object) bool {
+	for _, ref := range obj.GetOwnerReferences() {
 		if ref.Controller != nil && *ref.Controller && ref.UID == owner.GetUID() {
 			return true
 		}

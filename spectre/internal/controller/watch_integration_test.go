@@ -542,7 +542,8 @@ var _ = Describe("Watch-Driven Integration", Ordered, func() {
 				approval := &approvalv1.Approval{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: approvalName, Namespace: watchNs,
-						Labels: ar.Labels,
+						Labels:          ar.Labels,
+						OwnerReferences: targetControllerRef(&ar.Spec.Target),
 					},
 					Spec: approvalv1.ApprovalSpec{
 						Action:      ar.Spec.Action,
@@ -763,7 +764,8 @@ var _ = Describe("Watch-Driven Integration", Ordered, func() {
 				approval := &approvalv1.Approval{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: approvalName, Namespace: watchNs,
-						Labels: ar.Labels,
+						Labels:          ar.Labels,
+						OwnerReferences: targetControllerRef(&ar.Spec.Target),
 					},
 					Spec: approvalv1.ApprovalSpec{
 						Action:      ar.Spec.Action,

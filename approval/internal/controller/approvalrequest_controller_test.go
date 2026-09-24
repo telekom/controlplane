@@ -5,10 +5,13 @@
 package controller
 
 import (
+	"time"
+
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ktypes "k8s.io/apimachinery/pkg/types"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
@@ -614,8 +617,106 @@ var _ = Describe("ApprovalRequest Controller", func() {
 				g.Expect(a.Labels[approvalv1.ApprovalKeyLabelKey]).To(Equal("gate-a"))
 				g.Expect(a.Spec.ApprovedRequest).NotTo(BeNil())
 				g.Expect(a.Spec.ApprovedRequest.Name).To(Equal(ar.GetName()))
+				// The keyed builder requires exactly this controller owner on a persisted grant.
+				g.Expect(metav1.IsControlledBy(a, src)).To(BeTrue())
 			}, timeout, interval).Should(Succeed())
 		})
+
+		DescribeTable("does not adopt or grant an existing scoped Approval without this target's controller owner",
+			func(suffix string, ownerRefs []metav1.OwnerReference) {
+				By("Creating a source resource")
+				src := test.NewObject("scoped-"+suffix+"-src", testNamespace)
+				src.SetLabels(map[string]string{
+					config.EnvironmentLabelKey: testEnvironment,
+				})
+				Expect(k8sClient.Create(ctx, src)).To(Succeed())
+				DeferCleanup(func() { _ = k8sClient.Delete(ctx, src) })
+
+				target := *ctypes.TypedObjectRefFromObject(src, k8sClient.Scheme())
+				approvalName, err := approvalv1.ScopedApprovalName(target, suffix+"-key")
+				Expect(err).NotTo(HaveOccurred())
+
+				By("Pre-creating a Granted scoped Approval at the deterministic name")
+				existing := &approvalv1.Approval{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:            approvalName,
+						Namespace:       testNamespace,
+						OwnerReferences: ownerRefs,
+						Labels: map[string]string{
+							config.EnvironmentLabelKey: testEnvironment,
+						},
+					},
+					Spec: approvalv1.ApprovalSpec{
+						State:       approvalv1.ApprovalStateGranted,
+						Target:      target,
+						ApprovalKey: suffix + "-key",
+						Strategy:    approvalv1.ApprovalStrategySimple,
+						Action:      "subscribe",
+						Requester:   requester,
+						Decider:     decider,
+					},
+				}
+				Expect(k8sClient.Create(ctx, existing)).To(Succeed())
+
+				By("Waiting for the Approval controller to settle the pre-created Approval")
+				var rv string
+				Eventually(func(g Gomega) {
+					a := &approvalv1.Approval{}
+					g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(existing), a)).To(Succeed())
+					g.Expect(meta.IsStatusConditionTrue(a.Status.Conditions, condition.ConditionTypeReady)).To(BeTrue())
+					rv = a.ResourceVersion
+				}, timeout, interval).Should(Succeed())
+
+				By("Creating a granted keyed ApprovalRequest for the same gate")
+				ar := approvalv1.NewApprovalRequest(src, "scoped-"+suffix)
+				ar.SetLabels(map[string]string{
+					config.EnvironmentLabelKey: testEnvironment,
+				})
+				ar.Spec = approvalv1.ApprovalRequestSpec{
+					Target:      target,
+					Requester:   requester,
+					Decider:     decider,
+					Strategy:    approvalv1.ApprovalStrategyAuto,
+					State:       approvalv1.ApprovalStateGranted,
+					Action:      "subscribe",
+					ApprovalKey: suffix + "-key",
+					Decisions: []approvalv1.Decision{
+						{
+							Name:           approvalv1.SystemDecisionName,
+							Comment:        approvalv1.AutoApprovedComment,
+							ResultingState: approvalv1.ApprovalStateGranted,
+						},
+					},
+				}
+				Expect(k8sClient.Create(ctx, ar)).To(Succeed())
+
+				By("Waiting for the request to fail on the missing or foreign authority")
+				Eventually(func(g Gomega) {
+					g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(ar), ar)).To(Succeed())
+					ready := meta.FindStatusCondition(ar.Status.Conditions, condition.ConditionTypeReady)
+					g.Expect(ready).NotTo(BeNil())
+					g.Expect(ready.Status).To(Equal(metav1.ConditionFalse))
+					g.Expect(ready.Message).To(ContainSubstring("missing or foreign controller owner"))
+				}, timeout, interval).Should(Succeed())
+
+				By("Verifying the Approval is never adopted, bound, or rewritten across retries")
+				Consistently(func(g Gomega) {
+					a := &approvalv1.Approval{}
+					g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(existing), a)).To(Succeed())
+					g.Expect(a.ResourceVersion).To(Equal(rv))
+					g.Expect(a.OwnerReferences).To(Equal(ownerRefs))
+					g.Expect(a.Spec.ApprovedRequest).To(BeNil())
+				}, 2*time.Second, interval).Should(Succeed())
+			},
+			Entry("no ownerReferences", "orphan", nil),
+			Entry("foreign controller", "foreign", []metav1.OwnerReference{{
+				APIVersion: "v1",
+				Kind:       "ConfigMap",
+				Name:       "foreign-object",
+				UID:        ktypes.UID("foreign-uid-000"),
+				Controller: ptr.To(true),
+			}}),
+		)
 
 		It("creates two independent Approvals for different keys on the SAME target", func() {
 			By("Creating one source resource shared by both keyed ARs")
@@ -844,6 +945,7 @@ var _ = Describe("ApprovalRequest Controller", func() {
 				g.Expect(a.Spec.State).To(Equal(approvalv1.ApprovalStateRejected))
 				g.Expect(a.Spec.Decisions).To(HaveLen(1))
 				g.Expect(a.Spec.Decisions[0].Comment).To(Equal("Access revoked"))
+				g.Expect(a.OwnerReferences).To(BeEmpty())
 			}, timeout, interval).Should(Succeed())
 		})
 	})

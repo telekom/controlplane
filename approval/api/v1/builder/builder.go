@@ -230,6 +230,12 @@ func (b *approvalBuilder) Build(ctx context.Context) (finalResult ApprovalResult
 				approvalReq.Spec.ApprovalKey, b.approvalKey) {
 				return fmt.Errorf("scoped request %s: target identity mismatch: existing target does not match desired", approvalReq.Name)
 			}
+			// Validate the controller owner before SetControllerReference below: adopting an
+			// ownerless request or replacing a same-named stale owner would take over another
+			// object's decisions.
+			if !isOwnedByUID(approvalReq, b.Owner) {
+				return fmt.Errorf("scoped request %s: missing or foreign controller owner", approvalReq.Name)
+			}
 		}
 
 		// Preserve the server-side state and decisions before applying spec updates.
@@ -343,23 +349,6 @@ func (b *approvalBuilder) Build(ctx context.Context) (finalResult ApprovalResult
 			if !v1.ScopedIdentityMatch(b.Approval.Spec.Target, target, b.Approval.Spec.ApprovalKey, b.approvalKey) {
 				return ApprovalResultNone, fmt.Errorf("scoped approval %s: target identity mismatch", b.Approval.Name)
 			}
-			// Reject Approval with foreign controller owner. An Approval
-			// that has ownerReferences but none matching the builder's
-			// Owner is foreign. Empty ownerReferences are accepted because
-			// the Approval controller may not have adopted it yet.
-			foreignOwner := false
-			for _, ref := range b.Approval.OwnerReferences {
-				if ref.Controller != nil && *ref.Controller && ref.UID == b.Owner.GetUID() {
-					foreignOwner = false
-					break
-				}
-				if ref.Controller != nil && *ref.Controller {
-					foreignOwner = true
-				}
-			}
-			if foreignOwner {
-				return ApprovalResultNone, fmt.Errorf("scoped approval %s: foreign controller owner", b.Approval.Name)
-			}
 		}
 
 		isDenied := b.Approval.Spec.State == v1.ApprovalStateRejected || b.Approval.Spec.State == v1.ApprovalStateSuspended
@@ -390,6 +379,13 @@ func (b *approvalBuilder) Build(ctx context.Context) (finalResult ApprovalResult
 		log.Info("Approval does not exist")
 		b.Owner.SetCondition(newKeyedApprovalGrantedCondition(b.approvalKey, v1.ApprovalStatePending, "Approval does not exist yet"))
 		return ApprovalResultPending, nil
+	}
+
+	// A persisted scoped Approval grants only when this owner controls it; the approval
+	// controller always sets that reference when it creates the Approval. Denials above
+	// are honoured without that authority because they only stop provisioning.
+	if b.approvalKey != "" && !isOwnedByUID(b.Approval, b.Owner) {
+		return ApprovalResultNone, fmt.Errorf("scoped approval %s: missing or foreign controller owner", b.Approval.Name)
 	}
 
 	// Check if the Approval is for the current ApprovalRequest.
