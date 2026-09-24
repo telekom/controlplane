@@ -10,6 +10,7 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
@@ -868,6 +869,157 @@ var _ = Describe("Integration: Two-Tier Reconcile Cycle", Ordered, func() {
 					g.Expect(apierrors.IsNotFound(err)).To(BeTrue(), "bridge Subscriber %q should be deleted, not orphaned", name)
 				}, testTimeout, testInterval).Should(Succeed())
 			}
+		})
+	})
+
+	Describe("Listener reconcile when a current ApprovalRequest is rejected", func() {
+		It("should drain the RouteListener and bridge Subscribers and keep them gone", func() {
+			const (
+				rejectedListenerName = "rejected-listener"
+				rejectedBasePath     = "/api/v1/rejected"
+				rejectedRouteName    = "api-v1-rejected"
+			)
+
+			By("Creating the ApiExposure and Route for the rejected Listener's API")
+			exposure := &apiv1.ApiExposure{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      providerName + "--api-v1-rejected",
+					Namespace: testNamespace,
+					Labels: map[string]string{
+						envLabelKey:                          envName,
+						cconfig.BuildLabelKey("application"): providerName,
+					},
+				},
+				Spec: apiv1.ApiExposureSpec{
+					ApiBasePath: rejectedBasePath,
+					Upstreams:   []apiv1.Upstream{{Url: "https://api.rejected.example.com"}},
+					Visibility:  apiv1.VisibilityZone,
+					Approval:    apiv1.Approval{Strategy: apiv1.ApprovalStrategyAuto},
+					Zone:        ctypes.ObjectRef{Name: zoneName, Namespace: zoneNamespace},
+				},
+			}
+			Expect(k8sClient.Create(ctx, exposure)).To(Succeed())
+			exposure.Status = apiv1.ApiExposureStatus{
+				Active: true,
+				Route:  &ctypes.ObjectRef{Name: rejectedRouteName, Namespace: zoneStatusNs},
+			}
+			Expect(k8sClient.Status().Update(ctx, exposure)).To(Succeed())
+
+			route := &gatewayv1.Route{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      rejectedRouteName,
+					Namespace: zoneStatusNs,
+					Labels: map[string]string{
+						envLabelKey:              envName,
+						cconfig.OwnerUidLabelKey: string(exposure.UID),
+					},
+				},
+				Spec: gatewayv1.RouteSpec{
+					GatewayRef: ctypes.ObjectRef{Name: "gateway-aws", Namespace: zoneStatusNs},
+					Type:       gatewayv1.RouteTypePrimary,
+					Paths:      []string{"/gateway" + rejectedBasePath},
+					Backend: gatewayv1.Backend{
+						Upstreams: []gatewayv1.Upstream{
+							{Scheme: "https", Hostname: "api.rejected.example.com", Port: 443, Path: rejectedBasePath},
+						},
+					},
+				},
+			}
+			Expect(k8sClient.Create(ctx, route)).To(Succeed())
+
+			By("Creating a cross-team Listener")
+			listener := &spectrev1.Listener{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      rejectedListenerName,
+					Namespace: testNamespace,
+					Labels:    map[string]string{envLabelKey: envName},
+				},
+				Spec: spectrev1.ListenerSpec{
+					Consumer: ctypes.TypedObjectRef{
+						TypeMeta:  metav1.TypeMeta{Kind: "Application", APIVersion: "application.cp.ei.telekom.de/v1"},
+						ObjectRef: ctypes.ObjectRef{Name: consumerName, Namespace: testNamespace},
+					},
+					Provider: ctypes.TypedObjectRef{
+						TypeMeta:  metav1.TypeMeta{Kind: "Application", APIVersion: "application.cp.ei.telekom.de/v1"},
+						ObjectRef: ctypes.ObjectRef{Name: providerName, Namespace: testNamespace},
+					},
+					Application: ctypes.ObjectRef{Name: spectreAppName, Namespace: testNamespace},
+					ApiListener: &spectrev1.ApiListener{ApiBasePath: rejectedBasePath},
+				},
+			}
+			Expect(k8sClient.Create(ctx, listener)).To(Succeed())
+
+			nn := types.NamespacedName{Name: rejectedListenerName, Namespace: testNamespace}
+			rlKey := types.NamespacedName{
+				Name:      util.MakeRouteListenerName(appId, rejectedBasePath, consumerClientID, providerClientID),
+				Namespace: zoneStatusNs,
+			}
+			subKeys := []types.NamespacedName{
+				{Name: util.MakeSubscriberName(util.MakeBridgeSubscriberId(consumerClientID, appId, rejectedBasePath, "rq")), Namespace: zoneStatusNs},
+				{Name: util.MakeSubscriberName(util.MakeBridgeSubscriberId(consumerClientID, appId, rejectedBasePath, "rp")), Namespace: zoneStatusNs},
+			}
+
+			// ownedRequest returns the Listener's current ApprovalRequest for key.
+			ownedRequest := func(g Gomega, key string) *approvalv1.ApprovalRequest {
+				arList := &approvalv1.ApprovalRequestList{}
+				g.Expect(directClient.List(ctx, arList, client.InNamespace(testNamespace))).To(Succeed())
+				var found *approvalv1.ApprovalRequest
+				for i := range arList.Items {
+					ar := &arList.Items[i]
+					owner := metav1.GetControllerOf(ar)
+					if ar.Spec.ApprovalKey == key && owner != nil && owner.Name == rejectedListenerName {
+						found = ar
+					}
+				}
+				g.Expect(found).NotTo(BeNil(), "no %s-gate ApprovalRequest owned by %s", key, rejectedListenerName)
+				return found
+			}
+
+			By("Granting both gates and waiting for capture to be provisioned")
+			Eventually(func(g Gomega) {
+				_, _ = listenerReconciler.Reconcile(ctx, reconcile.Request{NamespacedName: nn})
+				ownedRequest(g, "provider")
+				ownedRequest(g, "consumer")
+			}, testTimeout, testInterval).Should(Succeed())
+			grantApprovalsForListener(ctx, rejectedListenerName)
+			reconcileUntilReady(ctx, listenerReconciler, nn, func(g Gomega) {
+				g.Expect(directClient.Get(ctx, rlKey, &gatewayv1.RouteListener{})).To(Succeed())
+				for _, key := range subKeys {
+					g.Expect(directClient.Get(ctx, key, &pubsubv1.Subscriber{})).To(Succeed())
+				}
+			})
+
+			By("Rejecting the provider gate's current ApprovalRequest")
+			Eventually(func(g Gomega) {
+				ar := ownedRequest(g, "provider")
+				ar.Spec.State = approvalv1.ApprovalStateRejected
+				g.Expect(k8sClient.Update(ctx, ar)).To(Succeed())
+			}, testTimeout, testInterval).Should(Succeed())
+
+			// expectDrained asserts the capture children are gone and the Listener
+			// reports the rejection without a pending drain.
+			expectDrained := func(g Gomega) {
+				_, _ = listenerReconciler.Reconcile(ctx, reconcile.Request{NamespacedName: nn})
+				g.Expect(apierrors.IsNotFound(directClient.Get(ctx, rlKey, &gatewayv1.RouteListener{}))).
+					To(BeTrue(), "RouteListener should be drained")
+				for _, key := range subKeys {
+					g.Expect(apierrors.IsNotFound(directClient.Get(ctx, key, &pubsubv1.Subscriber{}))).
+						To(BeTrue(), "bridge Subscriber %q should be drained", key.Name)
+				}
+				current := &spectrev1.Listener{}
+				g.Expect(directClient.Get(ctx, nn, current)).To(Succeed())
+				g.Expect(current.Status.Draining).To(BeNil())
+				ready := meta.FindStatusCondition(current.Status.Conditions, condition.ConditionTypeReady)
+				g.Expect(ready).NotTo(BeNil())
+				g.Expect(ready.Reason).To(Equal(condition.ReasonAccessDenied))
+				g.Expect(ready.Message).To(ContainSubstring("provider gate"))
+			}
+
+			By("Waiting for the capture to drain")
+			Eventually(expectDrained, testTimeout, testInterval).Should(Succeed())
+
+			By("Verifying the capture stays gone while the request remains rejected")
+			Consistently(expectDrained, 2*time.Second, testInterval).Should(Succeed())
 		})
 	})
 })
