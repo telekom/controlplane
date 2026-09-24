@@ -7,6 +7,7 @@ package handler
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -16,6 +17,7 @@ import (
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
+	ctypes "github.com/telekom/controlplane/common/pkg/types"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 )
 
@@ -32,7 +34,23 @@ type ProviderBinding struct {
 	ApiExposureNamespace string
 	ApiExposureUID       string
 	ApplicationName      string
+
+	// IsPrimaryRoute reports whether the Route is the exposure's status.route
+	// (the real route in the exposure zone) rather than one of its proxy routes.
+	IsPrimaryRoute bool
+	// ProxyRoutes is a copy of the exposure's status.proxyRoutes: one per
+	// cross-zone subscriber zone, whose traffic transits the primary route.
+	ProxyRoutes []ctypes.ObjectRef
 }
+
+// routeOffPathError reports that a Route is not referenced by the provider's
+// ApiExposure, so it is definitively not on the provider's traffic path.
+type routeOffPathError struct{ msg string }
+
+func (e *routeOffPathError) Error() string { return e.msg }
+
+// IsBlocked implements ctrlerrors.BlockedError.
+func (e *routeOffPathError) IsBlocked() bool { return true }
 
 // verifyProviderBinding checks that the resolved gateway Route is owned by an
 // ApiExposure whose application label matches the declared provider Application.
@@ -101,8 +119,8 @@ func (h *ListenerHandler) verifyProviderBinding(
 
 	// Step 4: Verify the Route is referenced in the ApiExposure's status.
 	if !routeReferencedByExposure(route, exposure) {
-		return nil, ctrlerrors.BlockedErrorf("Route %q is not referenced by ApiExposure %q status (route or proxyRoutes)",
-			route.Name, exposure.Name)
+		return nil, &routeOffPathError{msg: fmt.Sprintf("Route %q is not referenced by ApiExposure %q status (route or proxyRoutes)",
+			route.Name, exposure.Name)}
 	}
 
 	// Step 5: Read the application label from the ApiExposure.
@@ -129,15 +147,22 @@ func (h *ListenerHandler) verifyProviderBinding(
 		ApiExposureNamespace: exposure.Namespace,
 		ApiExposureUID:       string(exposure.UID),
 		ApplicationName:      appName,
+		IsPrimaryRoute:       isPrimaryRoute(route, exposure),
+		ProxyRoutes:          slices.Clone(exposure.Status.ProxyRoutes),
 	}, nil
+}
+
+// isPrimaryRoute reports whether the Route is the ApiExposure's status.route.
+func isPrimaryRoute(route *gatewayv1.Route, exposure *apiv1.ApiExposure) bool {
+	return exposure.Status.Route != nil &&
+		exposure.Status.Route.Name == route.Name &&
+		exposure.Status.Route.Namespace == route.Namespace
 }
 
 // routeReferencedByExposure checks whether the Route is referenced in the
 // ApiExposure's status.route or status.proxyRoutes.
 func routeReferencedByExposure(route *gatewayv1.Route, exposure *apiv1.ApiExposure) bool {
-	if exposure.Status.Route != nil &&
-		exposure.Status.Route.Name == route.Name &&
-		exposure.Status.Route.Namespace == route.Namespace {
+	if isPrimaryRoute(route, exposure) {
 		return true
 	}
 	for i := range exposure.Status.ProxyRoutes {

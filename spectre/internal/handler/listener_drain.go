@@ -102,6 +102,26 @@ func (h *ListenerHandler) startDrain(
 	return nil
 }
 
+// drainAppliedCapture starts a persisted drain of the applied capture and
+// reports whether it did; the caller must then return so the checkpoint is
+// persisted before continueDrain deletes anything. It never starts a drain
+// without tracked children: that drain would complete empty and restart on
+// every reconcile. A drained placement (no children, empty fingerprint) is
+// cleared instead.
+func (h *ListenerHandler) drainAppliedCapture(ctx context.Context, listener *spectrev1.Listener, reason string) (bool, error) {
+	ap := listener.Status.AppliedPlacement
+	if ap == nil || listener.Status.Draining != nil {
+		return false, nil
+	}
+	if listener.Status.RouteListener == nil && len(listener.Status.EventSubscriptions) == 0 {
+		if ap.Fingerprint == "" {
+			listener.Status.AppliedPlacement = nil
+		}
+		return false, nil
+	}
+	return true, h.startDrain(ctx, listener, reason, ap.Fingerprint)
+}
+
 // continueDrain advances the drain state machine. It performs deletions with
 // UID checks and returns true when the drain is complete.
 func (h *ListenerHandler) continueDrain(

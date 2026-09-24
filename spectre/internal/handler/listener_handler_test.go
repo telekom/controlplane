@@ -1918,18 +1918,21 @@ var _ = Describe("ListenerHandler", func() {
 		})
 
 		Context("unsupported route modes", func() {
-			// In these tests, the route mode is rejected (pass-through/failover) before
-			// placement resolution. The cleanup deletes children and checks the generic
-			// Publisher. resolvePublisherNamespace falls back to the consumer zone via
-			// the topology resolver.
+			// In these tests, the only capture candidate is rejected for its route mode
+			// (pass-through/failover) and nothing was applied, so no candidate remains.
+			// The cleanup deletes children and checks the generic Publisher.
+			// resolvePublisherNamespace falls back to the consumer zone via the
+			// topology resolver.
 			It("should block with pass-through route and NOT create ApprovalRequest or children", func() {
 				listener := newListener()
 				mockGetConsumerApp(makeConsumerApp())
 				mockGetProviderApp(makeProviderApp())
 				mockGetSpectreApp(makeSpectreAppPtr())
-				// No mockGetObserverApp: route mode check blocks before observer resolution.
+				// Delivery (A's zone) resolves before the per-candidate route mode check.
+				mockGetObserverApp(makeConsumerApp())
 				mockGetZone()
 				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
+				mockGetEventStore(makeListenerEventStore())
 				mockPassThroughRoute()
 
 				// deleteAllOwnedChildren: no existing children.
@@ -1986,9 +1989,11 @@ var _ = Describe("ListenerHandler", func() {
 				mockGetConsumerApp(makeConsumerApp())
 				mockGetProviderApp(makeProviderApp())
 				mockGetSpectreApp(makeSpectreAppPtr())
-				// No mockGetObserverApp: route mode check blocks before observer resolution.
+				// Delivery (A's zone) resolves before the per-candidate route mode check.
+				mockGetObserverApp(makeConsumerApp())
 				mockGetZone()
 				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
+				mockGetEventStore(makeListenerEventStore())
 				mockFailoverRoute()
 
 				// deleteAllOwnedChildren: no existing children.
@@ -2051,10 +2056,12 @@ var _ = Describe("ListenerHandler", func() {
 				mockGetConsumerApp(makeConsumerApp())
 				mockGetProviderApp(makeProviderApp())
 				mockGetSpectreApp(makeSpectreAppPtr())
+				// Delivery (A's zone) resolves before the per-candidate route mode
+				// check rejects the only candidate as pass-through.
+				mockGetObserverApp(makeConsumerApp())
 				mockGetZone()
 				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
-				// No mockGetEventStore: ResolvePlacement is never reached because
-				// the pass-through route check rejects before placement resolution.
+				mockGetEventStore(makeListenerEventStore())
 				mockPassThroughRoute()
 
 				// deleteAllOwnedChildren: existing children returned.
@@ -3061,9 +3068,11 @@ var _ = Describe("ListenerHandler", func() {
 				mockGetConsumerApp(makeConsumerApp())
 				mockGetProviderApp(makeProviderApp())
 				mockGetSpectreApp(makeSpectreAppPtr())
-				// No mockGetObserverApp: route mode check blocks before observer resolution.
+				// Delivery (A's zone) resolves before the per-candidate route mode check.
+				mockGetObserverApp(makeConsumerApp())
 				mockGetZone()
 				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
+				mockGetEventStore(makeListenerEventStore())
 				mockPassThroughRoute()
 
 				// deleteAllOwnedChildren: no existing children.
