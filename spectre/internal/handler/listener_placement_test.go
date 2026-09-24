@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"net/url"
 	"reflect"
+	"strings"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -238,7 +239,12 @@ func (f *plFixtures) objects() []client.Object {
 	return objs
 }
 
-type plCall struct{ verb, kind, ns, name, field string }
+// plCall is one recorded client call; precond marks a Delete carrying both UID
+// and resourceVersion preconditions.
+type plCall struct {
+	verb, kind, ns, name, field string
+	precond                     bool
+}
 
 // plHarness runs the Listener controller over a fake client and records every
 // client call a reconcile makes.
@@ -250,6 +256,8 @@ type plHarness struct {
 	uids      int
 	// listErr, when set, fails a List before it reaches the fake client.
 	listErr func(list client.ObjectList) error
+	// createErr, when set, fails a Create before it reaches the fake client.
+	createErr func(obj client.Object) error
 }
 
 func plKind(o any) string { return reflect.TypeOf(o).Elem().Name() }
@@ -306,6 +314,11 @@ func newPlHarness(f *plFixtures) *plHarness {
 					obj.SetUID(k8stypes.UID(fmt.Sprintf("pl-uid-%d", h.uids)))
 				}
 				rec(plCall{verb: "Create", kind: plKind(obj), ns: obj.GetNamespace(), name: obj.GetName()})
+				if h.createErr != nil {
+					if err := h.createErr(obj); err != nil {
+						return err
+					}
+				}
 				return c.Create(ctx, obj, opts...)
 			},
 			Update: func(ctx context.Context, c client.WithWatch, obj client.Object, opts ...client.UpdateOption) error {
@@ -313,7 +326,9 @@ func newPlHarness(f *plFixtures) *plHarness {
 				return c.Update(ctx, obj, opts...)
 			},
 			Delete: func(ctx context.Context, c client.WithWatch, obj client.Object, opts ...client.DeleteOption) error {
-				rec(plCall{verb: "Delete", kind: plKind(obj), ns: obj.GetNamespace(), name: obj.GetName()})
+				p := (&client.DeleteOptions{}).ApplyOptions(opts).Preconditions
+				precond := p != nil && p.UID != nil && p.ResourceVersion != nil
+				rec(plCall{verb: "Delete", kind: plKind(obj), ns: obj.GetNamespace(), name: obj.GetName(), precond: precond})
 				return c.Delete(ctx, obj, opts...)
 			},
 		}).
@@ -324,11 +339,14 @@ func newPlHarness(f *plFixtures) *plHarness {
 
 // reconcile runs one controller pass on the persisted Listener and returns the
 // calls it made.
-func (h *plHarness) reconcile() ([]plCall, error) {
+func (h *plHarness) reconcile() ([]plCall, error) { return h.reconcileNamed(plListener) }
+
+// reconcileNamed runs one controller pass on the persisted Listener name.
+func (h *plHarness) reconcileNamed(name string) ([]plCall, error) {
 	h.calls = nil
 	h.recording = true
 	defer func() { h.recording = false }()
-	nn := k8stypes.NamespacedName{Name: plListener, Namespace: plTeamNs}
+	nn := k8stypes.NamespacedName{Name: name, Namespace: plTeamNs}
 	_, err := h.ctrl.Reconcile(context.Background(), reconcile.Request{NamespacedName: nn}, &spectrev1.Listener{})
 	return h.calls, err
 }
@@ -346,17 +364,21 @@ func (h *plHarness) startup() []plCall {
 	return append(first, h.mustReconcile()...)
 }
 
-func (h *plHarness) listener() *spectrev1.Listener {
+func (h *plHarness) listener() *spectrev1.Listener { return h.listenerNamed(plListener) }
+
+func (h *plHarness) listenerNamed(name string) *spectrev1.Listener {
 	l := &spectrev1.Listener{}
-	ExpectWithOffset(1, h.raw.Get(context.Background(), k8stypes.NamespacedName{Name: plListener, Namespace: plTeamNs}, l)).To(Succeed())
+	ExpectWithOffset(1, h.raw.Get(context.Background(), k8stypes.NamespacedName{Name: name, Namespace: plTeamNs}, l)).To(Succeed())
 	return l
 }
 
 // grant simulates the approval controller: both scoped Approvals are Granted,
 // controlled by the Listener and bound to the Listener's current requests.
-func (h *plHarness) grant() {
+func (h *plHarness) grant() { h.grantNamed(plListener) }
+
+func (h *plHarness) grantNamed(name string) {
 	ctx := context.Background()
-	l := h.listener()
+	l := h.listenerNamed(name)
 	for _, ref := range []*ctypes.ObjectRef{l.Status.ProviderApprovalRequest, l.Status.ConsumerApprovalRequest} {
 		ExpectWithOffset(1, ref).ToNot(BeNil())
 		ar := &approvalv1.ApprovalRequest{}
@@ -415,6 +437,130 @@ func (h *plHarness) exists(ref *ctypes.ObjectRef, obj client.Object) bool {
 	}
 	ExpectWithOffset(1, err).ToNot(HaveOccurred())
 	return true
+}
+
+// plPublisherKey is the generic Publisher in zone's namespace.
+func plPublisherKey(zone string) k8stypes.NamespacedName {
+	return k8stypes.NamespacedName{Name: util.MakePublisherName(util.GenericEventType), Namespace: plZoneNs(zone)}
+}
+
+func (h *plHarness) publisherExists(zone string) bool {
+	err := h.raw.Get(context.Background(), plPublisherKey(zone), &pubsubv1.Publisher{})
+	if apierrors.IsNotFound(err) {
+		return false
+	}
+	ExpectWithOffset(1, err).ToNot(HaveOccurred())
+	return true
+}
+
+// seedPublisher creates the generic Publisher in zone without any Subscriber,
+// as another Listener leaves it while its own capture is still being created.
+func (h *plHarness) seedPublisher(zone string) {
+	key := plPublisherKey(zone)
+	pub := &pubsubv1.Publisher{
+		ObjectMeta: metav1.ObjectMeta{Name: key.Name, Namespace: key.Namespace, Labels: map[string]string{cconfig.EnvironmentLabelKey: plEnv}},
+		Spec: pubsubv1.PublisherSpec{
+			EventStore:  ctypes.ObjectRef{Name: "es-" + zone, Namespace: plZoneNs(zone)},
+			EventType:   util.GenericEventType,
+			PublisherId: util.PublisherID,
+		},
+	}
+	ExpectWithOffset(1, h.raw.Create(context.Background(), pub)).To(Succeed())
+}
+
+// rejectRequest simulates the decider rejecting the gate's current request.
+func (h *plHarness) rejectRequest(gate string) {
+	l := h.listener()
+	ref := l.Status.ProviderApprovalRequest
+	if gate == "consumer" {
+		ref = l.Status.ConsumerApprovalRequest
+	}
+	ExpectWithOffset(1, ref).ToNot(BeNil())
+	ar := &approvalv1.ApprovalRequest{}
+	ExpectWithOffset(1, h.raw.Get(context.Background(), ref.K8s(), ar)).To(Succeed())
+	ar.Spec.State = approvalv1.ApprovalStateRejected
+	h.update(ar)
+}
+
+// suspendApproval simulates the decider suspending the provider Approval.
+func (h *plHarness) suspendApproval() {
+	ref := h.listener().Status.ProviderApproval
+	ExpectWithOffset(1, ref).ToNot(BeNil())
+	approval := &approvalv1.Approval{}
+	ExpectWithOffset(1, h.raw.Get(context.Background(), ref.K8s(), approval)).To(Succeed())
+	approval.Spec.State = approvalv1.ApprovalStateSuspended
+	h.update(approval)
+}
+
+// ownedSubscribers lists the Subscribers carrying l's owner label.
+func (h *plHarness) ownedSubscribers(l *spectrev1.Listener) []pubsubv1.Subscriber {
+	subs := &pubsubv1.SubscriberList{}
+	ExpectWithOffset(1, h.raw.List(context.Background(), subs, client.MatchingLabels{cconfig.OwnerUidLabelKey: string(l.UID)})).To(Succeed())
+	return subs.Items
+}
+
+// partialProvision grants the Listener and fails the rp bridge Subscriber
+// Create. The failed reconcile persists what it did: the RouteListener ref is
+// recorded, nothing is applied, and the RouteListener and rq Subscriber live.
+func (h *plHarness) partialProvision() (rl, rq *ctypes.ObjectRef) {
+	h.startup()
+	h.grant()
+	h.createErr = func(obj client.Object) error {
+		if sub, ok := obj.(*pubsubv1.Subscriber); ok && strings.HasSuffix(sub.Spec.SubscriberId, "--rp") {
+			return apierrors.NewServiceUnavailable("rp create failed")
+		}
+		return nil
+	}
+	_, err := h.reconcile()
+	h.createErr = nil
+	ExpectWithOffset(1, err).To(MatchError(ContainSubstring("rp create failed")))
+
+	l := h.listener()
+	ExpectWithOffset(1, l.Status.RouteListener).ToNot(BeNil())
+	ExpectWithOffset(1, l.Status.EventSubscriptions).To(BeEmpty())
+	ExpectWithOffset(1, l.Status.AppliedPlacement).To(BeNil())
+	ExpectWithOffset(1, h.exists(l.Status.RouteListener, &gatewayv1.RouteListener{})).To(BeTrue())
+	subs := h.ownedSubscribers(l)
+	ExpectWithOffset(1, subs).To(HaveLen(1))
+	ExpectWithOffset(1, subs[0].Spec.SubscriberId).To(HaveSuffix("--rq"))
+	return l.Status.RouteListener.DeepCopy(), ctypes.ObjectRefFromObject(&subs[0])
+}
+
+// drain runs reconciles until the persisted drain completes and returns their
+// calls. Every child Delete carries UID+RV preconditions, no Subscriber is
+// deleted before the RouteListener rl is gone, and nothing is created.
+func (h *plHarness) drain(rl *ctypes.ObjectRef) []plCall {
+	var all []plCall
+	rlGone := false
+	for pass := 0; h.listener().Status.Draining != nil; pass++ {
+		ExpectWithOffset(1, pass).To(BeNumerically("<", 10), "drain did not complete")
+		calls := h.mustReconcile()
+		for _, c := range calls {
+			if c.verb != "Delete" || (c.kind != "RouteListener" && c.kind != "Subscriber") {
+				continue
+			}
+			ExpectWithOffset(1, c.precond).To(BeTrue(), "Delete %s %s/%s without UID+RV preconditions", c.kind, c.ns, c.name)
+			if c.kind == "Subscriber" {
+				ExpectWithOffset(1, rlGone).To(BeTrue(), "Subscriber %s deleted before the RouteListener was gone", c.name)
+			}
+		}
+		ExpectWithOffset(1, plCountVerb(calls, "Create")).To(BeZero(), "unexpected create in %+v", calls)
+		rlGone = !h.exists(rl, &gatewayv1.RouteListener{})
+		all = append(all, calls...)
+	}
+	return all
+}
+
+// expectSteadyStop runs two more reconciles and asserts that neither creates
+// or deletes anything or touches a Publisher.
+func (h *plHarness) expectSteadyStop() {
+	for range 2 {
+		calls := h.mustReconcile()
+		ExpectWithOffset(1, h.listener().Status.Draining).To(BeNil())
+		ExpectWithOffset(1, plCountVerb(calls, "Create")).To(BeZero(), "unexpected create in %+v", calls)
+		ExpectWithOffset(1, plCountVerb(calls, "Delete")).To(BeZero(), "unexpected delete in %+v", calls)
+		ExpectWithOffset(1, plCount(calls, "Get", "Publisher", "")).To(BeZero())
+	}
 }
 
 // plCount returns the calls with verb and kind, in ns when ns is non-empty.
@@ -640,6 +786,8 @@ var _ = Describe("Listener capture placement (controller)", func() {
 		f.routes["c"] = nil
 		f.routes["p"].Spec.PassThrough = true
 		h := newPlHarness(f)
+		// Another Listener's fresh generic Publisher in C's zone, no Subscriber yet.
+		h.seedPublisher("c")
 
 		all := h.startup()
 		msg := plBlocked(h.listener())
@@ -649,6 +797,12 @@ var _ = Describe("Listener capture placement (controller)", func() {
 		for _, kind := range []string{"ApprovalRequest", "RouteListener", "Subscriber", "Publisher"} {
 			Expect(plCount(all, "Create", kind, "")).To(BeZero(), "Create %s", kind)
 		}
+		for _, kind := range []string{"RouteListener", "Subscriber", "Publisher"} {
+			Expect(plCount(all, "Delete", kind, "")).To(BeZero(), "Delete %s", kind)
+		}
+		Expect(plCount(all, "Get", "Publisher", "")).To(BeZero())
+		h.expectSteadyStop()
+		Expect(h.publisherExists("c")).To(BeTrue())
 	})
 
 	It("H8: drains applied capture whose Route became unsupported when no other candidate works", func() {
@@ -702,7 +856,12 @@ var _ = Describe("Listener capture placement (controller)", func() {
 		h.mustReconcile()
 		Expect(h.listener().Status.Draining.Phase).To(Equal(handler.ExportDrainPhaseCleaningPublisher))
 
-		h.mustReconcile()
+		// CleaningPublisher removes the orphaned generic Publisher exactly once.
+		Expect(h.publisherExists("c")).To(BeTrue())
+		calls = h.mustReconcile()
+		Expect(plCount(calls, "Delete", "Publisher", plZoneNs("c"))).To(Equal(1))
+		Expect(plCount(calls, "Delete", "Publisher", "")).To(Equal(1))
+		Expect(h.publisherExists("c")).To(BeFalse())
 		l = h.listener()
 		Expect(l.Status.Draining).To(BeNil())
 		Expect(l.Status.AppliedPlacement).To(BeNil())
@@ -715,6 +874,7 @@ var _ = Describe("Listener capture placement (controller)", func() {
 			Expect(l.Status.AppliedPlacement).To(BeNil())
 			Expect(plCount(calls, "Delete", "RouteListener", "")).To(BeZero())
 			Expect(plCount(calls, "Delete", "Subscriber", "")).To(BeZero())
+			Expect(plCount(calls, "Delete", "Publisher", "")).To(BeZero())
 			Expect(plCountVerb(calls, "Create")).To(BeZero(), "unexpected create in %+v", calls)
 		}
 	})
@@ -899,5 +1059,254 @@ var _ = Describe("Listener capture placement (controller)", func() {
 		Expect(ready.Message).To(ContainSubstring("delivery EventConfig for observer zone"))
 		Expect(plCount(all, "Get", "Route", "")).To(BeZero())
 		Expect(plCount(all, "Create", "ApprovalRequest", "")).To(BeZero())
+	})
+})
+
+var _ = Describe("Listener capture stop (controller)", func() {
+	It("S1: a rejected never-provisioned Listener leaves the generic Publisher in its consumer zone alone", func() {
+		f := newPlFixtures("c")
+		h := newPlHarness(f)
+		h.seedPublisher("c")
+		h.startup()
+		h.rejectRequest("provider")
+
+		for range 3 {
+			calls := h.mustReconcile()
+			l := h.listener()
+			ready := meta.FindStatusCondition(l.Status.Conditions, condition.ConditionTypeReady)
+			Expect(ready).ToNot(BeNil())
+			Expect(ready.Reason).To(Equal(condition.ReasonAccessDenied))
+			Expect(l.Status.Draining).To(BeNil())
+			plExpectNoCaptureWrites(calls)
+			Expect(plCount(calls, "Get", "Publisher", "")).To(BeZero())
+			Expect(plCount(calls, "List", "SubscriberList", plZoneNs("c"))).To(BeZero())
+			Expect(h.publisherExists("c")).To(BeTrue())
+		}
+	})
+
+	DescribeTable("S2: a denial after partial provisioning checkpoints, then drains the RouteListener, the Subscriber and the Publisher",
+		func(stop func(h *plHarness), reason string) {
+			f := newPlFixtures("c")
+			h := newPlHarness(f)
+			rl, rq := h.partialProvision()
+			Expect(h.publisherExists("c")).To(BeTrue())
+			stop(h)
+
+			// Checkpoint only.
+			calls := h.mustReconcile()
+			l := h.listener()
+			Expect(l.Status.Draining).ToNot(BeNil())
+			Expect(l.Status.Draining.Phase).To(Equal(handler.ExportDrainPhaseStopping))
+			Expect(l.Status.Draining.Reason).To(Equal(reason))
+			Expect(l.Status.Draining.OldRouteListeners).To(ConsistOf(*rl))
+			Expect(l.Status.Draining.OldSubscribers).To(ConsistOf(*rq))
+			Expect(l.Status.Draining.SourcePublisher).ToNot(BeNil())
+			Expect(l.Status.Draining.SourcePublisher.Namespace).To(Equal(plZoneNs("c")))
+			Expect(plCountVerb(calls, "Delete")).To(BeZero())
+			Expect(plCountVerb(calls, "Create")).To(BeZero())
+
+			// Stopping deletes the RouteListener only.
+			calls = h.mustReconcile()
+			Expect(plCount(calls, "Delete", "RouteListener", "")).To(Equal(1))
+			Expect(plCount(calls, "Delete", "Subscriber", "")).To(BeZero())
+			Expect(plCount(calls, "Delete", "Publisher", "")).To(BeZero())
+			for _, c := range calls {
+				if c.verb == "Delete" {
+					Expect(c.precond).To(BeTrue(), "Delete %s without UID+RV preconditions", c.kind)
+				}
+			}
+
+			calls = h.drain(rl)
+			Expect(plCount(calls, "Delete", "Subscriber", "")).To(Equal(1))
+			Expect(plCount(calls, "Delete", "Publisher", plZoneNs("c"))).To(Equal(1))
+			Expect(plCount(calls, "Delete", "Publisher", "")).To(Equal(1))
+			Expect(h.exists(rl, &gatewayv1.RouteListener{})).To(BeFalse())
+			Expect(h.exists(rq, &pubsubv1.Subscriber{})).To(BeFalse())
+			Expect(h.publisherExists("c")).To(BeFalse())
+
+			h.expectSteadyStop()
+		},
+		Entry("rejected current ApprovalRequest", func(h *plHarness) { h.rejectRequest("provider") },
+			"approval request rejected (provider gate)"),
+		Entry("suspended Approval (early restriction)", func(h *plHarness) { h.suspendApproval() },
+			"early restriction (provider gate)"),
+	)
+
+	It("S3: no remaining candidate after partial provisioning drains P's zone and leaves C's Publisher alone", func() {
+		f := newPlFixtures("c")
+		f.routes["c"].Spec.PassThrough = true // capture lands in P's zone
+		h := newPlHarness(f)
+		h.seedPublisher("c") // another Listener's fresh Publisher in C's zone
+		rl, rq := h.partialProvision()
+		Expect(rl.Namespace).To(Equal(plZoneNs("p")))
+		Expect(rq.Namespace).To(Equal(plZoneNs("p")))
+		Expect(h.publisherExists("p")).To(BeTrue())
+
+		route := &gatewayv1.Route{}
+		Expect(h.exists(new(plRouteRef("p")), route)).To(BeTrue())
+		route.Spec.PassThrough = true
+		h.update(route)
+
+		// Checkpoint only.
+		calls := h.mustReconcile()
+		l := h.listener()
+		Expect(l.Status.Draining).ToNot(BeNil())
+		Expect(l.Status.Draining.Reason).To(Equal("no supported capture placement"))
+		Expect(l.Status.Draining.SourcePublisher).ToNot(BeNil())
+		Expect(l.Status.Draining.SourcePublisher.Namespace).To(Equal(plZoneNs("p")))
+		Expect(plCountVerb(calls, "Delete")).To(BeZero())
+		Expect(plBlocked(l)).To(ContainSubstring("pass-through"))
+
+		calls = h.drain(rl)
+		Expect(plCount(calls, "Delete", "RouteListener", "")).To(Equal(1))
+		Expect(plCount(calls, "Delete", "Subscriber", "")).To(Equal(1))
+		Expect(plCount(calls, "Delete", "Publisher", plZoneNs("p"))).To(Equal(1))
+		Expect(plCount(calls, "Delete", "Publisher", plZoneNs("c"))).To(BeZero())
+		Expect(h.exists(rq, &pubsubv1.Subscriber{})).To(BeFalse())
+		Expect(h.publisherExists("p")).To(BeFalse())
+		Expect(h.publisherExists("c")).To(BeTrue())
+		Expect(plBlocked(h.listener())).To(ContainSubstring("pass-through"))
+
+		h.expectSteadyStop()
+		Expect(h.publisherExists("c")).To(BeTrue())
+	})
+
+	It("S4: a provider binding invalidated after a lost status write drains the untracked children", func() {
+		f := newPlFixtures("c")
+		h := newPlHarness(f)
+		h.startup()
+		h.grant()
+		pre := h.listener().Status.DeepCopy()
+		h.mustReconcile()
+		l := h.listener()
+		Expect(l.Status.AppliedPlacement).ToNot(BeNil())
+		rl := l.Status.RouteListener.DeepCopy()
+		subRefs := append([]ctypes.ObjectRef(nil), l.Status.EventSubscriptions...)
+
+		// The provisioning status write was lost: children live, status has
+		// neither refs nor an applied placement.
+		l.Status = *pre
+		Expect(h.raw.Status().Update(context.Background(), l)).To(Succeed())
+		Expect(h.listener().Status.RouteListener).To(BeNil())
+
+		exposure := &apiv1.ApiExposure{}
+		Expect(h.raw.Get(context.Background(), client.ObjectKeyFromObject(f.exposure), exposure)).To(Succeed())
+		exposure.Status.Active = false
+		h.update(exposure)
+
+		// Checkpoint only: the inventory recovers the owner-labelled children.
+		calls := h.mustReconcile()
+		l = h.listener()
+		Expect(l.Status.Draining).ToNot(BeNil())
+		Expect(l.Status.Draining.Reason).To(Equal("provider binding invalidated"))
+		Expect(l.Status.Draining.OldRouteListeners).To(HaveLen(1))
+		Expect(l.Status.Draining.OldSubscribers).To(HaveLen(2))
+		Expect(plCountVerb(calls, "Delete")).To(BeZero())
+		Expect(plCountVerb(calls, "Create")).To(BeZero())
+		Expect(plBlocked(l)).To(ContainSubstring("is not active"))
+
+		h.drain(rl)
+		Expect(apierrors.IsNotFound(h.raw.Get(context.Background(), rl.K8s(), &gatewayv1.RouteListener{}))).To(BeTrue())
+		for i := range subRefs {
+			Expect(apierrors.IsNotFound(h.raw.Get(context.Background(), subRefs[i].K8s(), &pubsubv1.Subscriber{}))).To(BeTrue())
+		}
+		Expect(plBlocked(h.listener())).To(ContainSubstring("is not active"))
+		h.expectSteadyStop()
+	})
+
+	DescribeTable("S5: a provider binding invalidated after partial provisioning checkpoints, then drains",
+		func(invalidate func(f *plFixtures, h *plHarness), msg string) {
+			f := newPlFixtures("c")
+			h := newPlHarness(f)
+			rl, rq := h.partialProvision()
+			invalidate(f, h)
+
+			// Checkpoint only; no later candidate is evaluated.
+			calls := h.mustReconcile()
+			l := h.listener()
+			Expect(l.Status.Draining).ToNot(BeNil())
+			Expect(l.Status.Draining.Reason).To(Equal("provider binding invalidated"))
+			Expect(l.Status.Draining.OldRouteListeners).To(ConsistOf(*rl))
+			Expect(l.Status.Draining.OldSubscribers).To(ConsistOf(*rq))
+			Expect(plCountVerb(calls, "Delete")).To(BeZero())
+			Expect(plCountVerb(calls, "Create")).To(BeZero())
+			Expect(plCount(calls, "Get", "Route", plZoneNs("p"))).To(BeZero())
+			Expect(plBlocked(l)).To(ContainSubstring(msg))
+
+			calls = h.drain(rl)
+			Expect(plCount(calls, "Delete", "RouteListener", "")).To(Equal(1))
+			Expect(plCount(calls, "Delete", "Subscriber", "")).To(Equal(1))
+			Expect(apierrors.IsNotFound(h.raw.Get(context.Background(), rl.K8s(), &gatewayv1.RouteListener{}))).To(BeTrue())
+			Expect(apierrors.IsNotFound(h.raw.Get(context.Background(), rq.K8s(), &pubsubv1.Subscriber{}))).To(BeTrue())
+			Expect(plBlocked(h.listener())).To(ContainSubstring(msg))
+			h.expectSteadyStop()
+		},
+		Entry("exposure became inactive", func(f *plFixtures, h *plHarness) {
+			exposure := &apiv1.ApiExposure{}
+			Expect(h.raw.Get(context.Background(), client.ObjectKeyFromObject(f.exposure), exposure)).To(Succeed())
+			exposure.Status.Active = false
+			h.update(exposure)
+		}, "is not active"),
+		Entry("Route re-pointed to a foreign provider's exposure", func(f *plFixtures, h *plHarness) {
+			foreign := &apiv1.ApiExposure{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "other-app--api-v1-orders",
+					Namespace: plTeamNs,
+					UID:       "foreign-exposure-uid",
+					Labels: map[string]string{
+						cconfig.EnvironmentLabelKey:          plEnv,
+						cconfig.BuildLabelKey("application"): "other-app",
+					},
+				},
+				Spec: apiv1.ApiExposureSpec{ApiBasePath: plPath, Zone: plZoneRef("c")},
+			}
+			Expect(h.raw.Create(context.Background(), foreign)).To(Succeed())
+			foreign.Status = apiv1.ApiExposureStatus{Active: true, Route: new(plRouteRef("c"))}
+			Expect(h.raw.Update(context.Background(), foreign)).To(Succeed())
+			route := &gatewayv1.Route{}
+			Expect(h.exists(new(plRouteRef("c")), route)).To(BeTrue())
+			route.Labels[cconfig.OwnerUidLabelKey] = "foreign-exposure-uid"
+			h.update(route)
+		}, "provider binding mismatch"),
+	)
+
+	It("S6: a Blocked Listener never deletes the Publisher a granted Listener just created in the same zone", func() {
+		f := newPlFixtures("c")
+		f.realms["c"].Status.IssuerUrl = "" // L2 stops after creating the Publisher
+		h := newPlHarness(f)
+
+		const blocked = "pl-listener-unrouted"
+		l1 := f.listener.DeepCopy()
+		l1.ObjectMeta = metav1.ObjectMeta{
+			Name: blocked, Namespace: plTeamNs, UID: "pl-listener-unrouted-uid",
+			Labels: map[string]string{cconfig.EnvironmentLabelKey: plEnv},
+		}
+		l1.Spec.ApiListener = &spectrev1.ApiListener{ApiBasePath: "/api/v1/unrouted"}
+		Expect(h.raw.Create(context.Background(), l1)).To(Succeed())
+
+		// L2 is granted and creates the generic Publisher, then blocks on the
+		// Realm before any RouteListener or Subscriber exists.
+		h.startup()
+		h.grant()
+		calls := h.mustReconcile()
+		Expect(plCount(calls, "Create", "Publisher", plZoneNs("c"))).To(Equal(1))
+		Expect(plBlocked(h.listener())).To(ContainSubstring("has no IssuerUrl"))
+		Expect(h.publisherExists("c")).To(BeTrue())
+
+		for i := range 4 {
+			calls, err := h.reconcileNamed(blocked)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(plCount(calls, "Delete", "Publisher", "")).To(BeZero())
+			plExpectNoCaptureWrites(calls)
+			Expect(h.publisherExists("c")).To(BeTrue())
+			if i > 0 {
+				Expect(plBlocked(h.listenerNamed(blocked))).To(ContainSubstring("no Route"))
+			}
+
+			calls = h.mustReconcile()
+			Expect(plCount(calls, "Delete", "Publisher", "")).To(BeZero())
+			Expect(plBlocked(h.listener())).To(ContainSubstring("has no IssuerUrl"))
+			Expect(h.publisherExists("c")).To(BeTrue())
+		}
 	})
 })
