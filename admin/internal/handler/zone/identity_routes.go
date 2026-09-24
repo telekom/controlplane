@@ -75,6 +75,12 @@ func createIdentityRoutes(ctx context.Context, hc *HandlingContext) error {
 		}
 	}
 
+	for _, cfg := range identityRouteConfigs {
+		if err := createIdentityRoute(ctx, hc, hc.InternalIdentityRealm.Name, cfg, defaultPreset, pathPrefix); err != nil {
+			return err
+		}
+	}
+
 	// Create routes for the team-api identity realm if it was set up
 	if hc.TeamApiIdentityRealm != nil {
 		for _, cfg := range identityRouteConfigs {
@@ -108,6 +114,7 @@ func createIdentityRoute(ctx context.Context, hc *HandlingContext, realmName str
 		}
 		route.Labels[cconfig.EnvironmentLabelKey] = hc.Environment.Name
 		route.Labels[cconfig.BuildLabelKey(zoneLabelName)] = hc.Zone.Name
+		route.Labels[cconfig.DomainLabelKey] = "admin"
 		route.Labels[cconfig.OwnerUidLabelKey] = string(hc.Zone.GetUID())
 
 		// Construct the downstream path with optional spacegate prefix
