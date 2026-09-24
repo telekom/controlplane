@@ -43,6 +43,10 @@ var (
 	k8sClient    client.Client
 	directClient client.Client // uncached client for test assertions
 	testScheme   *runtime.Scheme
+	testMgr      ctrl.Manager
+
+	// managedListenerReconciler is the Listener reconciler registered with testMgr.
+	managedListenerReconciler *ListenerReconciler
 )
 
 func TestControllers(t *testing.T) {
@@ -129,11 +133,13 @@ var _ = BeforeSuite(func() {
 	}).SetupWithManager(mgr)
 	Expect(err).NotTo(HaveOccurred())
 
-	err = (&ListenerReconciler{
+	managedListenerReconciler = &ListenerReconciler{
 		Client: mgr.GetClient(),
 		Scheme: testScheme,
-	}).SetupWithManager(mgr)
+	}
+	err = managedListenerReconciler.SetupWithManager(mgr)
 	Expect(err).NotTo(HaveOccurred())
+	testMgr = mgr
 
 	// Start the manager cache in a goroutine.
 	go func() {
