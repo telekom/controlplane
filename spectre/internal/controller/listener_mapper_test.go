@@ -7,6 +7,7 @@ package controller
 
 import (
 	"context"
+	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -997,6 +998,322 @@ var _ = Describe("SpectreApplication Mapper Tests", Ordered, func() {
 			}
 			reqs := reconciler.mapEventStoreToSpectreApplications(ctx, es)
 			Expect(reqs).To(BeEmpty())
+		})
+	})
+})
+
+var _ = Describe("Listener dependency mapping (observer, applied, draining)", Ordered, func() {
+	const (
+		topoEnv   = "topo-env"
+		topoOther = "topo-other-env"
+		topoNs    = "topo-ns"
+	)
+
+	var (
+		ctx        context.Context
+		reconciler *ListenerReconciler
+	)
+
+	key := func(name string) types.NamespacedName { return types.NamespacedName{Name: name, Namespace: topoNs} }
+	ref := func(name string) *ctypes.ObjectRef { return &ctypes.ObjectRef{Name: name, Namespace: topoNs} }
+	req := func(name string) reconcile.Request { return reconcile.Request{NamespacedName: key(name)} }
+	meta := func(name, env string) metav1.ObjectMeta {
+		m := metav1.ObjectMeta{Name: name, Namespace: topoNs}
+		if env != "" {
+			m.Labels = map[string]string{envLabelKey: env}
+		}
+		return m
+	}
+	zoneObj := func(name, env string) *adminv1.Zone { return &adminv1.Zone{ObjectMeta: meta(name, env)} }
+	ecObj := func(zone, env string) *eventv1.EventConfig {
+		return &eventv1.EventConfig{ObjectMeta: meta("ec-"+zone, env), Spec: eventv1.EventConfigSpec{Zone: *ref(zone)}}
+	}
+	esObj := func(name, env string) *pubsubv1.EventStore { return &pubsubv1.EventStore{ObjectMeta: meta(name, env)} }
+	routeObj := func(name, env string) *gatewayv1.Route { return &gatewayv1.Route{ObjectMeta: meta(name, env)} }
+	appRef := func(name string) ctypes.TypedObjectRef {
+		return ctypes.TypedObjectRef{
+			TypeMeta:  metav1.TypeMeta{Kind: "Application", APIVersion: "application.cp.ei.telekom.de/v1"},
+			ObjectRef: *ref(name),
+		}
+	}
+	countOf := func(reqs []reconcile.Request, name string) int {
+		n := 0
+		for _, r := range reqs {
+			if r.NamespacedName == key(name) {
+				n++
+			}
+		}
+		return n
+	}
+
+	BeforeAll(func() {
+		ctx = context.Background()
+
+		recorder := record.NewFakeRecorder(10)
+		reconciler = &ListenerReconciler{
+			Client:   k8sClient,
+			Scheme:   k8sClient.Scheme(),
+			Recorder: recorder,
+		}
+		reconciler.Controller = cc.NewController(&handler.ListenerHandler{}, k8sClient, recorder)
+
+		nsObj := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: topoNs}}
+		Expect(client.IgnoreAlreadyExists(k8sClient.Create(ctx, nsObj))).To(Succeed())
+
+		// C and P share zone-cap; A is alone in zone-obs. No status, so the
+		// running Listener controller blocks at resolveApplication and never
+		// touches the applied placement written below.
+		for name, zone := range map[string]string{"topo-c": "zone-cap", "topo-p": "zone-cap", "topo-a": "zone-obs"} {
+			app := &applicationv1.Application{
+				ObjectMeta: meta(name, topoEnv),
+				Spec: applicationv1.ApplicationSpec{
+					Team: "team-" + name, TeamEmail: name + "@test.com", Secret: "s",
+					Zone:     *ref(zone),
+					Failover: applicationv1.Failover{Enabled: false},
+				},
+			}
+			Expect(k8sClient.Create(ctx, app)).To(Succeed())
+			Eventually(func() error {
+				return k8sClient.Get(ctx, key(name), &applicationv1.Application{})
+			}, testTimeout, testInterval).Should(Succeed())
+		}
+
+		sa := &spectrev1.SpectreApplication{
+			ObjectMeta: meta("topo-sa", topoEnv),
+			Spec:       spectrev1.SpectreApplicationSpec{Application: appRef("topo-a"), DeliveryType: "server_sent_event"},
+		}
+		Expect(k8sClient.Create(ctx, sa)).To(Succeed())
+		Eventually(func() error {
+			return k8sClient.Get(ctx, key("topo-sa"), &spectrev1.SpectreApplication{})
+		}, testTimeout, testInterval).Should(Succeed())
+
+		// A's EventConfig proxies to zone-backend and uses EventStore es-obs.
+		ec := &eventv1.EventConfig{
+			ObjectMeta: meta("ec-obs", topoEnv),
+			Spec: eventv1.EventConfigSpec{
+				Zone:  *ref("zone-obs"),
+				Proxy: &eventv1.ProxyBackend{TargetZone: *ref("zone-backend")},
+			},
+		}
+		Expect(k8sClient.Create(ctx, ec)).To(Succeed())
+		Eventually(func(g Gomega) {
+			fetched := &eventv1.EventConfig{}
+			g.Expect(directClient.Get(ctx, key("ec-obs"), fetched)).To(Succeed())
+			fetched.Status.EventStore = ref("es-obs")
+			g.Expect(directClient.Status().Update(ctx, fetched)).To(Succeed())
+		}, testTimeout, testInterval).Should(Succeed())
+		Eventually(func(g Gomega) {
+			cached := &eventv1.EventConfig{}
+			g.Expect(k8sClient.Get(ctx, key("ec-obs"), cached)).To(Succeed())
+			g.Expect(cached.Status.EventStore).NotTo(BeNil())
+		}, testTimeout, testInterval).Should(Succeed())
+
+		createListener := func(name, consumer, provider, spectreApp, path string, ap *spectrev1.AppliedListenerPlacementStatus) {
+			l := &spectrev1.Listener{
+				ObjectMeta: meta(name, topoEnv),
+				Spec: spectrev1.ListenerSpec{
+					Consumer:    appRef(consumer),
+					Provider:    appRef(provider),
+					Application: *ref(spectreApp),
+					ApiListener: &spectrev1.ApiListener{ApiBasePath: path},
+				},
+			}
+			Expect(k8sClient.Create(ctx, l)).To(Succeed())
+			if ap != nil {
+				Eventually(func(g Gomega) {
+					fetched := &spectrev1.Listener{}
+					g.Expect(directClient.Get(ctx, key(name), fetched)).To(Succeed())
+					fetched.Status.AppliedPlacement = ap.DeepCopy()
+					g.Expect(directClient.Status().Update(ctx, fetched)).To(Succeed())
+				}, testTimeout, testInterval).Should(Succeed())
+			}
+			Eventually(func(g Gomega) {
+				cached := &spectrev1.Listener{}
+				g.Expect(k8sClient.Get(ctx, key(name), cached)).To(Succeed())
+				if ap != nil {
+					g.Expect(cached.Status.AppliedPlacement).NotTo(BeNil())
+				}
+			}, testTimeout, testInterval).Should(Succeed())
+		}
+		createListener("topo-listener", "topo-c", "topo-p", "topo-sa", "/api/v1/topo", nil)
+		// Spec refs name objects that do not exist: only the status can match.
+		createListener("topo-applied", "topo-gone-c", "topo-gone-p", "topo-gone-sa", "/api/v1/topo-applied",
+			&spectrev1.AppliedListenerPlacementStatus{
+				Fingerprint:        "fp-old",
+				CaptureZone:        ref("zone-old-cap"),
+				DeliveryZone:       ref("zone-old-del"),
+				CallbackOriginZone: ref("zone-old-origin"),
+				CaptureEventStore:  ref("es-old-cap"),
+				DeliveryEventStore: ref("es-old-del"),
+				CaptureRoute:       ref("route-old"),
+				Publisher:          &ctypes.ObjectRef{Name: util.MakePublisherName(util.GenericEventType), Namespace: "old-zone-ns"},
+			})
+		// Consumer, observer and applied delivery zone all hit zone-obs.
+		createListener("topo-dedupe", "topo-a", "topo-p", "topo-sa", "/api/v1/topo-dedupe",
+			&spectrev1.AppliedListenerPlacementStatus{Fingerprint: "fp-dedupe", DeliveryZone: ref("zone-obs")})
+
+		// Guard: the fixtures below rely on the applied placement staying put.
+		Consistently(func(g Gomega) {
+			for _, name := range []string{"topo-applied", "topo-dedupe"} {
+				cached := &spectrev1.Listener{}
+				g.Expect(k8sClient.Get(ctx, key(name), cached)).To(Succeed())
+				g.Expect(cached.Status.AppliedPlacement).NotTo(BeNil(), "applied placement of %s was cleared", name)
+			}
+		}, 2*time.Second, testInterval).Should(Succeed())
+	})
+
+	It("enqueues a Listener when only its observer A's Zone changes", func() {
+		Expect(reconciler.mapZoneToListeners(ctx, zoneObj("zone-obs", topoEnv))).To(ContainElement(req("topo-listener")))
+	})
+
+	It("enqueues a Listener when only A's EventConfig changes", func() {
+		Expect(reconciler.mapEventConfigToListeners(ctx, ecObj("zone-obs", topoEnv))).To(ContainElement(req("topo-listener")))
+	})
+
+	It("enqueues a Listener when the backend zone behind A's proxy EventConfig changes", func() {
+		Expect(reconciler.mapEventConfigToListeners(ctx, ecObj("zone-backend", topoEnv))).To(ContainElement(req("topo-listener")))
+		Expect(reconciler.mapZoneToListeners(ctx, zoneObj("zone-backend", topoEnv))).To(ContainElement(req("topo-listener")))
+	})
+
+	It("enqueues a Listener when A's EventStore changes", func() {
+		Expect(reconciler.mapEventStoreToListeners(ctx, esObj("es-obs", topoEnv))).To(ContainElement(req("topo-listener")))
+	})
+
+	It("enqueues a Listener when the Realm of A's Zone changes", func() {
+		zone := &adminv1.Zone{
+			ObjectMeta: meta("zone-obs", topoEnv),
+			Spec: adminv1.ZoneSpec{
+				IdentityProvider: adminv1.IdentityProviderConfig{
+					Url:   "http://id.local",
+					Admin: adminv1.IdentityProviderAdminConfig{ClientId: "a", UserName: "a", Password: "a"},
+				},
+				Gateway: adminv1.GatewayConfig{
+					Admin: adminv1.GatewayAdminConfig{Url: "http://gw.local"},
+					Presets: []adminv1.GatewayConfigPreset{{
+						Name: "default", Default: true,
+						Urls: []adminv1.UrlConfig{{Hostname: "gw.topo.local", BasePath: "/"}},
+					}},
+				},
+				Visibility: adminv1.ZoneVisibilityWorld,
+			},
+		}
+		Expect(client.IgnoreAlreadyExists(directClient.Create(ctx, zone))).To(Succeed())
+		Eventually(func(g Gomega) {
+			fetched := &adminv1.Zone{}
+			g.Expect(directClient.Get(ctx, key("zone-obs"), fetched)).To(Succeed())
+			fetched.Status.IdentityRealm = ref("topo-realm")
+			fetched.Status.Namespace = "topo-env--zone-obs"
+			fetched.Status.Links = adminv1.Links{
+				Url:       "http://gw.topo.local",
+				Issuer:    "http://id.local/realms/topo-env",
+				LmsIssuer: "http://id.local/realms/topo-env-lms",
+			}
+			g.Expect(directClient.Status().Update(ctx, fetched)).To(Succeed())
+		}, testTimeout, testInterval).Should(Succeed())
+		Eventually(func(g Gomega) {
+			cached := &adminv1.Zone{}
+			g.Expect(k8sClient.Get(ctx, key("zone-obs"), cached)).To(Succeed())
+			g.Expect(cached.Status.IdentityRealm).NotTo(BeNil())
+		}, testTimeout, testInterval).Should(Succeed())
+
+		realm := &identityv1.Realm{ObjectMeta: meta("topo-realm", topoEnv)}
+		Expect(reconciler.mapRealmToListeners(ctx, realm)).To(ContainElement(req("topo-listener")))
+	})
+
+	DescribeTable("enqueues a Listener through its applied placement ref although its spec matches nothing",
+		func(mapFn func() []reconcile.Request) {
+			reqs := mapFn()
+			Expect(reqs).To(ContainElement(req("topo-applied")))
+			Expect(reqs).NotTo(ContainElement(req("topo-listener")))
+		},
+		Entry("CaptureZone", func() []reconcile.Request {
+			return reconciler.mapZoneToListeners(ctx, zoneObj("zone-old-cap", topoEnv))
+		}),
+		Entry("DeliveryZone", func() []reconcile.Request {
+			return reconciler.mapZoneToListeners(ctx, zoneObj("zone-old-del", topoEnv))
+		}),
+		Entry("CallbackOriginZone", func() []reconcile.Request {
+			return reconciler.mapZoneToListeners(ctx, zoneObj("zone-old-origin", topoEnv))
+		}),
+		Entry("CaptureZone via its EventConfig", func() []reconcile.Request {
+			return reconciler.mapEventConfigToListeners(ctx, ecObj("zone-old-cap", topoEnv))
+		}),
+		// No EventConfig references es-old-cap or es-old-del: only the status can match.
+		Entry("CaptureEventStore", func() []reconcile.Request {
+			return reconciler.mapEventStoreToListeners(ctx, esObj("es-old-cap", topoEnv))
+		}),
+		Entry("DeliveryEventStore", func() []reconcile.Request {
+			return reconciler.mapEventStoreToListeners(ctx, esObj("es-old-del", topoEnv))
+		}),
+		// The Route name differs from the Listener's normalized apiBasePath.
+		Entry("CaptureRoute", func() []reconcile.Request {
+			return reconciler.mapRouteToListeners(ctx, routeObj("route-old", topoEnv))
+		}),
+	)
+
+	It("still enqueues a Listener whose applied generic Publisher sits in an old zone namespace", func() {
+		pub := &pubsubv1.Publisher{ObjectMeta: metav1.ObjectMeta{
+			Name:      util.MakePublisherName(util.GenericEventType),
+			Namespace: "old-zone-ns",
+			Labels:    map[string]string{envLabelKey: topoEnv},
+		}}
+		Expect(reconciler.mapGenericPublisherToListeners(ctx, pub)).To(ContainElement(req("topo-applied")))
+	})
+
+	It("enqueues a Listener once when spec and applied refs hit the same Zone", func() {
+		Expect(countOf(reconciler.mapZoneToListeners(ctx, zoneObj("zone-obs", topoEnv)), "topo-dedupe")).To(Equal(1))
+		Expect(countOf(reconciler.mapEventConfigToListeners(ctx, ecObj("zone-obs", topoEnv)), "topo-dedupe")).To(Equal(1))
+	})
+
+	It("ignores other environments and unlabelled objects", func() {
+		for _, env := range []string{topoOther, ""} {
+			Expect(reconciler.mapZoneToListeners(ctx, zoneObj("zone-obs", env))).To(BeEmpty())
+			Expect(reconciler.mapEventConfigToListeners(ctx, ecObj("zone-obs", env))).To(BeEmpty())
+			Expect(reconciler.mapEventStoreToListeners(ctx, esObj("es-old-cap", env))).To(BeEmpty())
+			Expect(reconciler.mapRouteToListeners(ctx, routeObj("route-old", env))).To(BeEmpty())
+		}
+	})
+
+	// A synthetic status.draining on an envtest Listener is consumed by
+	// continueDrain within a few reconciles, so drain refs are tested here on
+	// in-memory Listeners. The eventStores wiring is proven by the envtest
+	// applied-EventStore entries above.
+	Describe("listenerTargets.statusRefersTo", func() {
+		drainKey := key("es-drain")
+		draining := func(es *ctypes.ObjectRef) *spectrev1.Listener {
+			return &spectrev1.Listener{Status: spectrev1.ListenerStatus{
+				Draining: &spectrev1.ListenerDrainStatus{Phase: handler.DrainPhaseStopping, SourceEventStore: es},
+			}}
+		}
+
+		It("matches a drain's source EventStore", func() {
+			t := &listenerTargets{eventStores: refSet{drainKey: {}}}
+			Expect(t.statusRefersTo(draining(ref("es-drain")))).To(BeTrue())
+		})
+
+		It("does not match another EventStore or a target of another kind with the same key", func() {
+			other := &listenerTargets{eventStores: refSet{key("es-other"): {}}}
+			Expect(other.statusRefersTo(draining(ref("es-drain")))).To(BeFalse())
+
+			mixed := &listenerTargets{apps: refSet{drainKey: {}}, zones: refSet{drainKey: {}}, routes: refSet{drainKey: {}}}
+			Expect(mixed.statusRefersTo(draining(ref("es-drain")))).To(BeFalse())
+			applied := &spectrev1.Listener{Status: spectrev1.ListenerStatus{
+				AppliedPlacement: &spectrev1.AppliedListenerPlacementStatus{CaptureZone: ref("es-drain")},
+			}}
+			Expect((&listenerTargets{eventStores: refSet{drainKey: {}}}).statusRefersTo(applied)).To(BeFalse())
+		})
+
+		It("is false for nil placement, nil drain, nil refs and nil target sets", func() {
+			all := &listenerTargets{
+				apps: refSet{drainKey: {}}, zones: refSet{drainKey: {}},
+				eventStores: refSet{drainKey: {}}, routes: refSet{drainKey: {}},
+			}
+			Expect(all.statusRefersTo(&spectrev1.Listener{})).To(BeFalse())
+			Expect(all.statusRefersTo(&spectrev1.Listener{Status: spectrev1.ListenerStatus{
+				AppliedPlacement: &spectrev1.AppliedListenerPlacementStatus{Fingerprint: "fp"},
+				Draining:         &spectrev1.ListenerDrainStatus{Phase: handler.DrainPhaseStopping},
+			}})).To(BeFalse())
+			Expect((&listenerTargets{}).statusRefersTo(draining(ref("es-drain")))).To(BeFalse())
 		})
 	})
 })
