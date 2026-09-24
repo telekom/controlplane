@@ -106,6 +106,12 @@ func newListener() *spectrev1.Listener {
 	}
 }
 
+// listenerControllerRef is the controller reference the approval controller
+// writes on every scoped Approval it creates for the test Listener.
+func listenerControllerRef() metav1.OwnerReference {
+	return *metav1.NewControllerRef(newListener(), spectrev1.GroupVersion.WithKind("Listener"))
+}
+
 func makeConsumerApp() *applicationv1.Application {
 	app := &applicationv1.Application{
 		ObjectMeta: metav1.ObjectMeta{
@@ -384,12 +390,12 @@ var _ = Describe("ListenerHandler", func() {
 			Return(nil).Once()
 	}
 
-	// mockApprovalGrantedGate sets up the approval builder mock chain for a single
-	// auto-granted approval gate. The key ("provider" or "consumer") is set on the
-	// returned Approval so the builder's scoped identity check passes.
-	// The ApprovedRequest ref is captured from the CreateOrUpdate call so
-	// isScopedGrantBound succeeds.
-	mockApprovalGrantedGate := func(approvalKey string) {
+	// mockApprovalGrantedGateOwnedBy sets up the approval builder mock chain for a
+	// single auto-granted approval gate whose Approval carries ownerRefs. The key
+	// ("provider" or "consumer") is set on the returned Approval so the builder's
+	// scoped identity check passes. The ApprovedRequest ref is captured from the
+	// CreateOrUpdate call so isScopedGrantBound succeeds.
+	mockApprovalGrantedGateOwnedBy := func(approvalKey string, ownerRefs []metav1.OwnerReference) {
 		// Capture the ApprovalRequest so the Approval can reference it.
 		var capturedAR approvalv1.ApprovalRequest
 
@@ -415,6 +421,7 @@ var _ = Describe("ListenerHandler", func() {
 				approval := out.(*approvalv1.Approval)
 				approval.Name = key.Name
 				approval.Namespace = key.Namespace
+				approval.OwnerReferences = ownerRefs
 				approval.Spec.State = approvalv1.ApprovalStateGranted
 				approval.Spec.ApprovalKey = approvalKey
 				approval.Spec.Target = capturedAR.Spec.Target
@@ -425,6 +432,12 @@ var _ = Describe("ListenerHandler", func() {
 				}
 			}).
 			Return(nil).Once()
+	}
+
+	// mockApprovalGrantedGate is mockApprovalGrantedGateOwnedBy with the
+	// controller reference the approval controller writes.
+	mockApprovalGrantedGate := func(approvalKey string) {
+		mockApprovalGrantedGateOwnedBy(approvalKey, []metav1.OwnerReference{listenerControllerRef()})
 	}
 
 	// mockApprovalGranted sets up both provider and consumer gates as auto-granted.
@@ -477,6 +490,7 @@ var _ = Describe("ListenerHandler", func() {
 				approval := out.(*approvalv1.Approval)
 				approval.Name = key.Name
 				approval.Namespace = key.Namespace
+				approval.OwnerReferences = []metav1.OwnerReference{listenerControllerRef()}
 				approval.Spec.State = approvalv1.ApprovalStateRejected
 				approval.Spec.ApprovalKey = approvalKey
 				approval.Spec.Target = ctypes.TypedObjectRef{
@@ -515,6 +529,7 @@ var _ = Describe("ListenerHandler", func() {
 				approval := out.(*approvalv1.Approval)
 				approval.Name = key.Name
 				approval.Namespace = key.Namespace
+				approval.OwnerReferences = []metav1.OwnerReference{listenerControllerRef()}
 				approval.Spec.State = approvalv1.ApprovalStateGranted
 				approval.Spec.ApprovalKey = approvalKey
 				approval.Spec.Target = ctypes.TypedObjectRef{
@@ -1644,6 +1659,7 @@ var _ = Describe("ListenerHandler", func() {
 						approval := out.(*approvalv1.Approval)
 						approval.Name = key.Name
 						approval.Namespace = key.Namespace
+						approval.OwnerReferences = []metav1.OwnerReference{listenerControllerRef()}
 						approval.Spec.State = approvalv1.ApprovalStateGranted
 						approval.Spec.ApprovalKey = "provider"
 						approval.Spec.Target = capturedReq.Spec.Target
@@ -2344,6 +2360,39 @@ var _ = Describe("ListenerHandler", func() {
 
 				Expect(listener.Status.RouteListener).To(BeNil())
 				Expect(listener.Status.EventSubscriptions).To(BeEmpty())
+			})
+		})
+
+		// Section 2.6: a persisted scoped Approval authorizes capture only when this
+		// Listener is its controller owner, as the approval controller writes it.
+		Context("scoped identity: persisted Approval without a controller owner", func() {
+			It("does not provision capture across consecutive reconciles", func() {
+				l := newListener()
+				mockGetZone()
+				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
+
+				for i := range 2 {
+					if i > 0 {
+						// Step 0.5 reads the Approvals the previous reconcile recorded.
+						mockEarlyRestrictionGranted(l)
+					}
+					mockResolveTopology()
+					mockNoStaleChildren()
+					mockApprovalGrantedGateOwnedBy("provider", nil)
+					mockApprovalGrantedGate("consumer")
+
+					var err error
+					l, err = reconcile(l)
+					Expect(err).To(MatchError(ContainSubstring("missing or foreign controller owner")))
+					Expect(err.Error()).To(ContainSubstring("approval evaluation failed"))
+					Expect(l.Status.RouteListener).To(BeNil())
+					Expect(l.Status.EventSubscriptions).To(BeEmpty())
+					Expect(l.Status.AppliedPlacement).To(BeNil())
+					Expect(l.Status.ProviderApproval).ToNot(BeNil())
+				}
+
+				expectNoCaptureCreates(0)
+				Expect(countCalls(0, "Delete", nil)).To(BeZero())
 			})
 		})
 

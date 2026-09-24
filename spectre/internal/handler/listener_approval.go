@@ -129,8 +129,8 @@ func (h *ListenerHandler) ensureApprovals(
 }
 
 // buildScopedGate builds a single approval gate using the keyed builder.
-// It validates the returned Approval's controller owner is this Listener
-// (identity hardening per section 2.6).
+// Identity hardening (section 2.6), including that this Listener controls the
+// ApprovalRequest and the Approval, is enforced by the keyed builder.
 func (h *ListenerHandler) buildScopedGate(
 	ctx context.Context,
 	listener *spectrev1.Listener,
@@ -200,33 +200,6 @@ func (h *ListenerHandler) buildScopedGate(
 	}
 	if ab.GetApprovalRequest() != nil && ab.GetApprovalRequest().Name != "" {
 		result.approvalRequest = ctypes.ObjectRefFromObject(ab.GetApprovalRequest())
-	}
-
-	// Identity hardening (section 2.6): verify the Approval's controller owner
-	// is this Listener. The builder validates scoped identity (ScopedIdentityMatch,
-	// isScopedGrantBound), but the handler also verifies ownership.
-	if approval := ab.GetApproval(); approval != nil && approval.Name != "" {
-		ownerRefs := approval.GetOwnerReferences()
-		ownerFound := false
-		for _, ref := range ownerRefs {
-			if ref.UID == listener.UID && ref.Controller != nil && *ref.Controller {
-				ownerFound = true
-				break
-			}
-		}
-		if len(ownerRefs) == 0 {
-			// No owner references yet — the Approval controller has not
-			// reconciled (adopted) this Approval. Log a warning but accept;
-			// the builder's ScopedIdentityMatch already verified the target.
-			logger := log.FromContext(ctx)
-			logger.V(1).Info("Approval has no owner references; not yet adopted by controller",
-				"gate", key, "approval", approval.Name)
-		} else if !ownerFound {
-			result.outcome = outcomeError
-			result.err = fmt.Errorf("%s gate: Approval %s/%s is not owned by Listener %s/%s",
-				key, approval.Namespace, approval.Name, listener.Namespace, listener.Name)
-			return result
-		}
 	}
 
 	// Map builder result to outcome.
