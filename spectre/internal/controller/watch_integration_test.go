@@ -838,11 +838,12 @@ var _ = Describe("Watch-Driven Integration", Ordered, func() {
 	})
 
 	// -----------------------------------------------------------------------
-	// Scenario 9: a change confined to the observer (A) zone's EventConfig
-	// requeues an A != C Listener. C and P are in aws and A is in cetus, so only
-	// A's delivery EventConfig supplies the cross-zone callback base URL.
+	// Scenario 9: C and P are in aws and A is in cetus. The cross-zone callback
+	// base URL is the capture (aws) EventConfig's ProxyCallbackURLs entry for
+	// A's zone, the aws-gateway Route to cetus's callback Route, so the final
+	// DynamicUpstream hop reaches A's Jumper. A's own entry for aws is not used.
 	// -----------------------------------------------------------------------
-	Describe("Scenario 9: change confined to A's EventConfig requeues an A != C Listener", func() {
+	Describe("Scenario 9: the capture EventConfig's callback entry for A re-provisions an A != C Listener", func() {
 		const (
 			s9Env     = "s9-env"
 			s9Ns      = "s9-ns"
@@ -853,8 +854,9 @@ var _ = Describe("Watch-Driven Integration", Ordered, func() {
 			s9ConsCID = "team-s9c--s9-consumer"
 			s9ProvCID = "team-s9p--s9-provider"
 			s9ObsCID  = "team-s9a--s9-observer"
-			s9CbV1    = "https://proxy-cb-v1.cetus.example.com/callback"
-			s9CbV2    = "https://proxy-cb-v2.cetus.example.com/callback"
+			s9CbV1    = "https://proxy-cb-v1.aws.example.com/callback/cetus"
+			s9CbV2    = "https://proxy-cb-v2.aws.example.com/callback/cetus"
+			s9CbA     = "https://proxy-cb.cetus.example.com/callback/aws"
 		)
 		listenerNN := types.NamespacedName{Name: "s9-listener", Namespace: s9Ns}
 		saNN := types.NamespacedName{Name: s9SAName, Namespace: s9Ns}
@@ -937,10 +939,13 @@ var _ = Describe("Watch-Driven Integration", Ordered, func() {
 				es.Status = pubsubv1.EventStoreStatus{Conditions: readyConditions()}
 				Expect(directClient.Status().Update(ctx, es)).To(Succeed())
 			}
-			createZone("aws", s9AwsNs, eventv1.EventConfigStatus{CallbackURL: "https://callback.aws.s9.example.com/callback"})
+			createZone("aws", s9AwsNs, eventv1.EventConfigStatus{
+				CallbackURL:       "https://callback.aws.s9.example.com/callback",
+				ProxyCallbackURLs: map[string]string{"cetus": s9CbV1},
+			})
 			createZone("cetus", s9CetusNs, eventv1.EventConfigStatus{
 				CallbackURL:       "https://callback.cetus.s9.example.com/callback",
-				ProxyCallbackURLs: map[string]string{"aws": s9CbV1},
+				ProxyCallbackURLs: map[string]string{"aws": s9CbA},
 			})
 
 			createApp := func(name, team, zoneName, clientID string) {
@@ -1028,7 +1033,7 @@ var _ = Describe("Watch-Driven Integration", Ordered, func() {
 			Expect(directClient.Create(ctx, listener)).To(Succeed())
 		})
 
-		It("drains and re-provisions capture with A's new proxy callback URL", func() {
+		It("ignores A's entry and drains and re-provisions capture with the capture zone's new entry for A", func() {
 			getListener := func(g Gomega) *spectrev1.Listener {
 				l := &spectrev1.Listener{}
 				g.Expect(directClient.Get(ctx, listenerNN, l)).To(Succeed())
@@ -1063,7 +1068,7 @@ var _ = Describe("Watch-Driven Integration", Ordered, func() {
 			By("Granting both gates")
 			Eventually(func(g Gomega) { upsertGrantedApprovals(g, listenerNN) }, watchTimeout, watchInterval).Should(Succeed())
 
-			By("Waiting for capture in C's zone delivered to A's zone through the v1 proxy callback")
+			By("Waiting for capture in C's zone delivered to A's zone through aws's v1 proxy callback for cetus")
 			var (
 				oldFP, oldProviderAR, oldConsumerAR string
 				oldRL                               ctypes.ObjectRef
@@ -1110,11 +1115,27 @@ var _ = Describe("Watch-Driven Integration", Ordered, func() {
 			Expect(directClient.Get(ctx, saNN, sa)).To(Succeed())
 			saResourceVersion := sa.ResourceVersion
 
-			By("Changing only A's EventConfig status: the proxy callback URL for origin zone aws")
+			By("Changing only A's EventConfig entry for aws: it would end at aws's Jumper, so capture is unchanged")
 			Eventually(func(g Gomega) {
 				ec := &eventv1.EventConfig{}
 				g.Expect(directClient.Get(ctx, types.NamespacedName{Name: "ec-cetus", Namespace: s9CetusNs}, ec)).To(Succeed())
-				ec.Status.ProxyCallbackURLs["aws"] = s9CbV2
+				ec.Status.ProxyCallbackURLs["aws"] = s9CbA + "-v2"
+				g.Expect(directClient.Status().Update(ctx, ec)).To(Succeed())
+			}, watchTimeout, watchInterval).Should(Succeed())
+			Consistently(func(g Gomega) {
+				l := getListener(g)
+				g.Expect(l.Status.Draining).To(BeNil())
+				g.Expect(l.Status.AppliedPlacement).NotTo(BeNil())
+				g.Expect(l.Status.AppliedPlacement.Fingerprint).To(Equal(oldFP))
+				g.Expect(l.Status.AppliedPlacement.CallbackBaseURL).To(Equal(s9CbV1))
+				g.Expect(directClient.Get(ctx, oldRL.K8s(), &gatewayv1.RouteListener{})).To(Succeed())
+			}, 2*time.Second, watchInterval).Should(Succeed())
+
+			By("Changing only the capture EventConfig status: aws's proxy callback URL for delivery zone cetus")
+			Eventually(func(g Gomega) {
+				ec := &eventv1.EventConfig{}
+				g.Expect(directClient.Get(ctx, types.NamespacedName{Name: "ec-aws", Namespace: s9AwsNs}, ec)).To(Succeed())
+				ec.Status.ProxyCallbackURLs["cetus"] = s9CbV2
 				g.Expect(directClient.Status().Update(ctx, ec)).To(Succeed())
 			}, watchTimeout, watchInterval).Should(Succeed())
 

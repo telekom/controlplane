@@ -28,9 +28,8 @@ type ListenerPlacement struct {
 	CaptureEventConfig *eventv1.EventConfig
 	CaptureEventStore  *pubsubv1.EventStore
 
-	// CallbackOriginZone is the zone the delivery EventConfig keys its proxy
-	// callback by: the zone whose EventStore delivers the captured events
-	// (see CallbackOriginZone).
+	// CallbackOriginZone is the zone whose Horizon makes the bridge callback:
+	// the capture zone (see CallbackOriginZone).
 	CallbackOriginZone *adminv1.Zone
 
 	DeliveryZone        *adminv1.Zone
@@ -43,7 +42,9 @@ type ListenerPlacement struct {
 
 	// CallbackBaseURL is the external gateway URL used for event delivery
 	// callbacks: the delivery EventConfig's Status.CallbackURL when the origin is
-	// the delivery zone, otherwise its Status.ProxyCallbackURLs[origin].
+	// the delivery zone, otherwise the capture EventConfig's
+	// Status.ProxyCallbackURLs[delivery zone]. Either way the final
+	// DynamicUpstream hop runs on A's gateway, so localhost:8080 is A's Jumper.
 	CallbackBaseURL string
 }
 
@@ -134,16 +135,19 @@ func ResolveDelivery(ctx context.Context, observerZone *adminv1.Zone) (*Delivery
 	return &DeliveryPlacement{Zone: observerZone, EventConfig: ec, EventStore: es}, nil
 }
 
-// CallbackOriginZone returns the zone the delivery EventConfig's proxy callback
-// map is keyed by for events captured in captureZone.
+// CallbackOriginZone returns the zone whose Horizon makes the bridge callback
+// for events captured in captureZone: the capture zone itself. The bridge
+// Subscribers live in the capture EventStore; a proxy zone has its own
+// EventStore CR, so this holds for local and proxy-backed capture alike and is
+// never the proxy's target zone.
 //
-// The event domain keys cross-zone callbacks by the logical zone whose
-// EventStore registered the Publisher (eventexposure handler:
-// GetEventStoreForZone(exposure zone); eventsubscription updateCallbackURL:
-// subscriber EventConfig Status.ProxyCallbackURLs[exposure zone]). A proxy zone
-// has its own EventStore CR and its own entry in every peer's
-// ProxyCallbackURLs, so the origin is the capture zone for both local and
-// proxy-backed capture, never the proxy's target zone.
+// The event domain builds EventConfig S's Status.ProxyCallbackURLs[T] as a
+// Route on S's gateway whose upstream is T's gateway /horizon-T/callback/v1,
+// T's primary callback Route, whose DynamicUpstream makes the final hop from
+// T's gateway. A cross-zone bridge callback therefore uses the origin
+// EventConfig's entry for the delivery zone: origin gateway -> A's gateway ->
+// localhost:8080 at A's Jumper. The subscriber-keyed lookup the event domain
+// uses for external callback URLs would end at the origin zone's Jumper.
 func CallbackOriginZone(captureZone *adminv1.Zone, captureEC *eventv1.EventConfig) (*adminv1.Zone, error) {
 	if captureEC.Spec.Zone.Name != captureZone.Name {
 		return nil, errors.Errorf("placement: EventConfig %q belongs to zone %q, not capture zone %q",
@@ -200,10 +204,10 @@ func ResolveCaptureZone(
 			return nil, fmt.Sprintf("delivery EventConfig %q has no CallbackURL in status", d.EventConfig.Name), nil
 		}
 	} else {
-		base = d.EventConfig.Status.ProxyCallbackURLs[origin.Name]
+		base = ec.Status.ProxyCallbackURLs[d.Zone.Name]
 		if base == "" {
-			return nil, fmt.Sprintf("delivery EventConfig %q has no ProxyCallbackURLs entry (proxy callback) for origin zone %q",
-				d.EventConfig.Name, origin.Name), nil
+			return nil, fmt.Sprintf("capture EventConfig %q has no ProxyCallbackURLs entry for delivery zone %q",
+				ec.Name, d.Zone.Name), nil
 		}
 	}
 

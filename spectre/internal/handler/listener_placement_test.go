@@ -649,14 +649,15 @@ var _ = Describe("Listener capture placement (controller)", func() {
 		Expect(rl.Spec.Route).To(Equal(plRouteRef("p")))
 	})
 
-	It("H3: A off-path in a third zone captures per order and delivers at A through the proxy callback", func() {
+	It("H3: A off-path in a third zone captures per order and delivers at A through C's proxy callback for A", func() {
 		f := newPlFixtures("a3")
 		f.routes["a3"] = plRoute("a3") // proxy route serving another subscriber in a3
 		f.exposure.Status.ProxyRoutes = append(f.exposure.Status.ProxyRoutes, plRouteRef("a3"))
 		h := newPlHarness(f)
 		l, calls := h.provision()
 
-		base := f.ecs["a3"].Status.ProxyCallbackURLs["c"]
+		base := f.ecs["c"].Status.ProxyCallbackURLs["a3"]
+		Expect(base).To(Equal("https://c.gw.example/proxy/a3"))
 		plExpectPlacement(l, "c", "a3", "c", base)
 		Expect(plCount(calls, "Get", "Route", plZoneNs("a3"))).To(BeZero())
 		ap := l.Status.AppliedPlacement
@@ -681,7 +682,7 @@ var _ = Describe("Listener capture placement (controller)", func() {
 		h := newPlHarness(f)
 		l, _ := h.provision()
 
-		plExpectPlacement(l, "p", "c", "p", f.ecs["c"].Status.ProxyCallbackURLs["p"])
+		plExpectPlacement(l, "p", "c", "p", f.ecs["p"].Status.ProxyCallbackURLs["c"])
 		processing := meta.FindStatusCondition(l.Status.Conditions, condition.ConditionTypeProcessing)
 		Expect(processing).ToNot(BeNil())
 		Expect(processing.Reason).ToNot(Equal(condition.ReasonBlocked))
@@ -693,7 +694,7 @@ var _ = Describe("Listener capture placement (controller)", func() {
 		h := newPlHarness(f)
 		l, _ := h.provision()
 
-		plExpectPlacement(l, "p", "c", "p", f.ecs["c"].Status.ProxyCallbackURLs["p"])
+		plExpectPlacement(l, "p", "c", "p", f.ecs["p"].Status.ProxyCallbackURLs["c"])
 	})
 
 	It("H5b: relocation drains the old capture before provisioning the replacement", func() {
@@ -739,7 +740,7 @@ var _ = Describe("Listener capture placement (controller)", func() {
 		h.grant()
 		h.mustReconcile()
 		l = h.listener()
-		plExpectPlacement(l, "p", "c", "p", f.ecs["c"].Status.ProxyCallbackURLs["p"])
+		plExpectPlacement(l, "p", "c", "p", f.ecs["p"].Status.ProxyCallbackURLs["c"])
 		Expect(l.Status.AppliedPlacement.Fingerprint).ToNot(Equal(oldFP))
 		err := h.raw.Get(context.Background(), oldRL.K8s(), &gatewayv1.RouteListener{})
 		Expect(apierrors.IsNotFound(err)).To(BeTrue())
@@ -749,7 +750,7 @@ var _ = Describe("Listener capture placement (controller)", func() {
 		f := newPlFixtures("a3")
 		h := newPlHarness(f)
 		l, _ := h.provision()
-		plExpectPlacement(l, "c", "a3", "c", f.ecs["a3"].Status.ProxyCallbackURLs["c"])
+		plExpectPlacement(l, "c", "a3", "c", f.ecs["c"].Status.ProxyCallbackURLs["a3"])
 		applied := l.Status.AppliedPlacement.DeepCopy()
 		rlRef := l.Status.RouteListener.DeepCopy()
 
@@ -885,7 +886,7 @@ var _ = Describe("Listener capture placement (controller)", func() {
 		h := newPlHarness(f)
 		l, _ := h.provision()
 
-		plExpectPlacement(l, "c", "a3", "c", f.ecs["a3"].Status.ProxyCallbackURLs["c"])
+		plExpectPlacement(l, "c", "a3", "c", f.ecs["c"].Status.ProxyCallbackURLs["a3"])
 		ap := l.Status.AppliedPlacement
 		Expect(ap.CaptureEventStore.Name).To(Equal("es-c"))
 		Expect(ap.CaptureEventStore.Namespace).To(Equal(plZoneNs("c")))
@@ -914,28 +915,29 @@ var _ = Describe("Listener capture placement (controller)", func() {
 		h := newPlHarness(f)
 		l, _ := h.provision()
 
-		plExpectPlacement(l, "c", "a3", "c", f.ecs["a3"].Status.ProxyCallbackURLs["c"])
+		plExpectPlacement(l, "c", "a3", "c", f.ecs["c"].Status.ProxyCallbackURLs["a3"])
 		Expect(l.Status.AppliedPlacement.DeliveryEventStore.Name).To(Equal("es-a3"))
 		Expect(l.Status.AppliedPlacement.DeliveryEventStore.Namespace).To(Equal(plZoneNs("a3")))
 	})
 
-	It("H11: a missing ProxyCallbackURLs key makes that candidate unsuitable without substitution", func() {
+	It("H11: a capture EventConfig without an entry for A makes that candidate unsuitable without substitution", func() {
 		f := newPlFixtures("a3")
-		f.ecs["a3"].Status.ProxyCallbackURLs = map[string]string{"p": "https://a3.gw.example/proxy/p"}
+		f.ecs["c"].Status.ProxyCallbackURLs = map[string]string{"p": "https://c.gw.example/proxy/p"}
 		h := newPlHarness(f)
 		l, _ := h.provision()
 
-		plExpectPlacement(l, "p", "a3", "p", "https://a3.gw.example/proxy/p")
+		plExpectPlacement(l, "p", "a3", "p", "https://p.gw.example/proxy/a3")
 	})
 
-	It("H11b: no ProxyCallbackURLs at A blocks naming every candidate", func() {
+	It("H11b: no capture ProxyCallbackURLs entry for A blocks naming every candidate", func() {
 		f := newPlFixtures("a3")
-		f.ecs["a3"].Status.ProxyCallbackURLs = nil
+		f.ecs["c"].Status.ProxyCallbackURLs = nil
+		f.ecs["p"].Status.ProxyCallbackURLs = map[string]string{"c": "https://p.gw.example/proxy/c"}
 		h := newPlHarness(f)
 		h.startup()
 		msg := plBlocked(h.listener())
-		Expect(msg).To(ContainSubstring(`zone "c": delivery EventConfig "ec-a3" has no ProxyCallbackURLs entry`))
-		Expect(msg).To(ContainSubstring(`zone "p": delivery EventConfig "ec-a3" has no ProxyCallbackURLs entry`))
+		Expect(msg).To(ContainSubstring(`zone "c": capture EventConfig "ec-c" has no ProxyCallbackURLs entry for delivery zone "a3"`))
+		Expect(msg).To(ContainSubstring(`zone "p": capture EventConfig "ec-p" has no ProxyCallbackURLs entry for delivery zone "a3"`))
 	})
 
 	It("H12: an unverifiable provider binding blocks without trying later candidates", func() {
