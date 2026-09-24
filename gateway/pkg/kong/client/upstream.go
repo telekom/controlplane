@@ -8,7 +8,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"strings"
 
 	kong "github.com/telekom/controlplane/gateway/pkg/kong/api"
 )
@@ -229,11 +228,8 @@ func (e targetEntity) Name() string { return "target" }
 func (e targetEntity) Get(ctx context.Context) (*kong.Target, bool, error) {
 	size := 1000
 	params := &kong.ListTargetsForUpstreamParams{Size: &size}
-	if e.tags != nil && len(*e.tags) > 0 {
-		tags := strings.Join(*e.tags, ",")
-		params.Tags = &tags
-	}
 
+	seenOffsets := map[string]struct{}{}
 	var effective *kong.Target
 	for {
 		response, err := e.client.ListTargetsForUpstreamWithResponse(ctx, e.upstreamName, params)
@@ -260,9 +256,10 @@ func (e targetEntity) Get(ctx context.Context) (*kong.Target, bool, error) {
 		if response.JSON200.Offset == nil || *response.JSON200.Offset == "" {
 			return effective, effective != nil, nil
 		}
-		if params.Offset != nil && *response.JSON200.Offset == *params.Offset {
+		if _, seen := seenOffsets[*response.JSON200.Offset]; seen {
 			return nil, false, fmt.Errorf("target list pagination offset did not advance")
 		}
+		seenOffsets[*response.JSON200.Offset] = struct{}{}
 		params.Offset = response.JSON200.Offset
 	}
 }

@@ -89,7 +89,7 @@ var _ = Describe("CreateOrReplaceUpstream", func() {
 		response.JSON200.Healthchecks.Active.Healthy.HttpStatuses = ptr([]int{201, 200})
 		expectMatchingUpstream(response)
 		api.EXPECT().ListTargetsForUpstreamWithResponse(mock.Anything, "test-route", mock.MatchedBy(func(params *kong.ListTargetsForUpstreamParams) bool {
-			return params.Size != nil && *params.Size == 1000 && params.Tags != nil && *params.Tags == "env--test,targets--test-route"
+			return params.Size != nil && *params.Size == 1000 && params.Tags == nil
 		})).Return(targetsResponse([]kong.Target{matchingTarget(1)}, nil), nil)
 
 		Expect(client.CreateOrReplaceUpstream(ctx, route, &upstream, &target)).To(Succeed())
