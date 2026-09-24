@@ -17,6 +17,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	k8stypes "k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	crfake "sigs.k8s.io/controller-runtime/pkg/client/fake"
+	"sigs.k8s.io/controller-runtime/pkg/client/interceptor"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
@@ -29,6 +31,7 @@ import (
 	"github.com/telekom/controlplane/common/pkg/condition"
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	ctypes "github.com/telekom/controlplane/common/pkg/types"
+	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
@@ -4000,6 +4003,102 @@ var _ = Describe("ListenerHandler", func() {
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring("consumer Application"))
 			})
+		})
+
+		// With an injected Reader the early check reads live. The strict cached
+		// mock serves no Approval, so a Get through the cache fails the test.
+		Context("early restriction: live reads through the injected Reader", func() {
+			const (
+				liveEnv          = "test-env"
+				providerApproval = "listener--test-listener--provider"
+				consumerApproval = "listener--test-listener--consumer"
+			)
+			liveApproval := func(name, env string, state approvalv1.ApprovalState) *approvalv1.Approval {
+				return &approvalv1.Approval{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      name,
+						Namespace: listenerNamespace,
+						Labels:    map[string]string{cconfig.EnvironmentLabelKey: env},
+					},
+					Spec: approvalv1.ApprovalSpec{State: state},
+				}
+			}
+			appliedListener := func() *spectrev1.Listener {
+				listener := newListener()
+				listener.Status.ProviderApproval = &ctypes.ObjectRef{Name: providerApproval, Namespace: listenerNamespace}
+				listener.Status.ConsumerApproval = &ctypes.ObjectRef{Name: consumerApproval, Namespace: listenerNamespace}
+				listener.Status.RouteListener = &ctypes.ObjectRef{Name: "old-rl", Namespace: listenerZoneStatus, UID: "rl-uid-1"}
+				return listener
+			}
+			ownedRL := []gatewayv1.RouteListener{{ObjectMeta: metav1.ObjectMeta{Name: "old-rl", Namespace: listenerZoneStatus, UID: "rl-uid-1"}}}
+
+			BeforeEach(func() {
+				ctx = contextutil.WithEnv(ctx, liveEnv)
+			})
+
+			It("stops capture on a revocation only the Reader sees", func() {
+				h.Reader = crfake.NewClientBuilder().WithScheme(scheme).WithObjects(
+					liveApproval(providerApproval, liveEnv, approvalv1.ApprovalStateRejected),
+					liveApproval(consumerApproval, liveEnv, approvalv1.ApprovalStateGranted),
+				).Build()
+				listener := appliedListener()
+				mockOwnedLists(ownedRL, nil)
+
+				start := len(fakeClient.Calls)
+				Expect(h.CreateOrUpdate(ctx, listener)).To(Succeed())
+				Expect(listener.Status.Draining).ToNot(BeNil())
+				Expect(listener.Status.Draining.Reason).To(Equal("early restriction (provider gate)"))
+				Expect(countCalls(start, "Delete", nil)).To(BeZero())
+				ready := meta.FindStatusCondition(listener.Status.Conditions, condition.ConditionTypeReady)
+				Expect(ready).ToNot(BeNil())
+				Expect(ready.Reason).To(Equal(condition.ReasonAccessDenied))
+			})
+
+			It("attempts every live read: a Reader error on one gate does not mask a revocation on the other", func() {
+				h.Reader = crfake.NewClientBuilder().WithScheme(scheme).
+					WithObjects(liveApproval(consumerApproval, liveEnv, approvalv1.ApprovalStateSuspended)).
+					WithInterceptorFuncs(interceptor.Funcs{
+						Get: func(ctx context.Context, c client.WithWatch, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
+							if key.Name == providerApproval {
+								return errors.NewServiceUnavailable("reader down")
+							}
+							return c.Get(ctx, key, obj, opts...)
+						},
+					}).Build()
+				listener := appliedListener()
+
+				approvalGate, requestGate, err := h.CheckEarlyRestriction(ctx, listener)
+				Expect(approvalGate).To(Equal("consumer"))
+				Expect(requestGate).To(BeEmpty())
+				Expect(err).To(MatchError(ContainSubstring("reader down")))
+
+				mockOwnedLists(ownedRL, nil)
+				Expect(h.CreateOrUpdate(ctx, listener)).To(Succeed())
+				Expect(listener.Status.Draining).ToNot(BeNil())
+				Expect(listener.Status.Draining.Reason).To(Equal("early restriction (consumer gate)"))
+			})
+
+			DescribeTable("treats an object it cannot place in the Listener's environment as a read error, never as evidence",
+				func(env string, withEnvInContext bool) {
+					if !withEnvInContext {
+						ctx = cclient.WithClient(context.Background(), fakeClient)
+					}
+					h.Reader = crfake.NewClientBuilder().WithScheme(scheme).WithObjects(
+						liveApproval(providerApproval, env, approvalv1.ApprovalStateRejected),
+					).Build()
+					listener := appliedListener()
+					listener.Status.ConsumerApproval = nil
+
+					approvalGate, requestGate, err := h.CheckEarlyRestriction(ctx, listener)
+					Expect(approvalGate).To(BeEmpty())
+					Expect(requestGate).To(BeEmpty())
+					Expect(err).To(HaveOccurred())
+					Expect(errors.IsNotFound(err)).To(BeFalse())
+				},
+				Entry("another environment's label", "other-env", true),
+				Entry("an empty environment label", "", true),
+				Entry("no environment in the context", liveEnv, false),
+			)
 		})
 
 		Context("early restriction: Expired-from-Suspended triggers cleanup", func() {
