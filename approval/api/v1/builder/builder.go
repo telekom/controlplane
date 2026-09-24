@@ -6,6 +6,7 @@ package builder
 
 import (
 	"context"
+	stderrors "errors"
 	"fmt"
 	"reflect"
 	"slices"
@@ -28,6 +29,12 @@ import (
 )
 
 type ApprovalResult string
+
+// ErrScopedIdentity marks a definitive scoped identity failure: the ApprovalRequest
+// or Approval at a scoped name carries another approvalKey or target, or this owner
+// is not its controller. Such an object is never consent. Match it with errors.Is;
+// transient states such as a terminating request are not wrapped with it.
+var ErrScopedIdentity = stderrors.New("invalid scoped identity")
 
 var (
 	DefaultStrategy v1.ApprovalStrategy = v1.ApprovalStrategySimple
@@ -220,7 +227,7 @@ func (b *approvalBuilder) Build(ctx context.Context) (finalResult ApprovalResult
 				return fmt.Errorf("scoped request %s is terminating; retry after deletion completes", approvalReq.Name)
 			}
 			if approvalReq.Spec.ApprovalKey != b.approvalKey {
-				return fmt.Errorf("scoped request %s: approvalKey mismatch: existing %q != desired %q", approvalReq.Name, approvalReq.Spec.ApprovalKey, b.approvalKey)
+				return fmt.Errorf("scoped request %s: approvalKey mismatch: existing %q != desired %q: %w", approvalReq.Name, approvalReq.Spec.ApprovalKey, b.approvalKey, ErrScopedIdentity)
 			}
 			// Validate target identity before overwriting spec fields.
 			// A keyed request is pinned to a specific target; if the existing
@@ -228,13 +235,13 @@ func (b *approvalBuilder) Build(ctx context.Context) (finalResult ApprovalResult
 			// same deterministic name — refuse to overwrite.
 			if !v1.ScopedIdentityMatch(approvalReq.Spec.Target, b.Request.Spec.Target,
 				approvalReq.Spec.ApprovalKey, b.approvalKey) {
-				return fmt.Errorf("scoped request %s: target identity mismatch: existing target does not match desired", approvalReq.Name)
+				return fmt.Errorf("scoped request %s: target identity mismatch: existing target does not match desired: %w", approvalReq.Name, ErrScopedIdentity)
 			}
 			// Validate the controller owner before SetControllerReference below: adopting an
 			// ownerless request or replacing a same-named stale owner would take over another
 			// object's decisions.
 			if !isOwnedByUID(approvalReq, b.Owner) {
-				return fmt.Errorf("scoped request %s: missing or foreign controller owner", approvalReq.Name)
+				return fmt.Errorf("scoped request %s: missing or foreign controller owner: %w", approvalReq.Name, ErrScopedIdentity)
 			}
 		}
 
@@ -343,11 +350,11 @@ func (b *approvalBuilder) Build(ctx context.Context) (finalResult ApprovalResult
 				return ApprovalResultPending, nil
 			}
 			if b.Approval.Spec.ApprovalKey != b.approvalKey {
-				return ApprovalResultNone, fmt.Errorf("scoped approval %s: approvalKey mismatch: existing %q != desired %q", b.Approval.Name, b.Approval.Spec.ApprovalKey, b.approvalKey)
+				return ApprovalResultNone, fmt.Errorf("scoped approval %s: approvalKey mismatch: existing %q != desired %q: %w", b.Approval.Name, b.Approval.Spec.ApprovalKey, b.approvalKey, ErrScopedIdentity)
 			}
 			target := b.Request.Spec.Target
 			if !v1.ScopedIdentityMatch(b.Approval.Spec.Target, target, b.Approval.Spec.ApprovalKey, b.approvalKey) {
-				return ApprovalResultNone, fmt.Errorf("scoped approval %s: target identity mismatch", b.Approval.Name)
+				return ApprovalResultNone, fmt.Errorf("scoped approval %s: target identity mismatch: %w", b.Approval.Name, ErrScopedIdentity)
 			}
 		}
 
@@ -385,7 +392,7 @@ func (b *approvalBuilder) Build(ctx context.Context) (finalResult ApprovalResult
 	// controller always sets that reference when it creates the Approval. Denials above
 	// are honoured without that authority because they only stop provisioning.
 	if b.approvalKey != "" && !isOwnedByUID(b.Approval, b.Owner) {
-		return ApprovalResultNone, fmt.Errorf("scoped approval %s: missing or foreign controller owner", b.Approval.Name)
+		return ApprovalResultNone, fmt.Errorf("scoped approval %s: missing or foreign controller owner: %w", b.Approval.Name, ErrScopedIdentity)
 	}
 
 	// Check if the Approval is for the current ApprovalRequest.
