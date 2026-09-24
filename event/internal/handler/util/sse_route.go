@@ -76,7 +76,7 @@ func CreateSSERoute(
 
 	build := func() error {
 		route.Labels = map[string]string{
-			config.DomainLabelKey:        "event",
+			config.DomainLabelKey:        LabelValueDomain,
 			eventv1.EventTypeLabelKey:    labelutil.NormalizeLabelValue(eventType),
 			config.BuildLabelKey("zone"): zone.Name,
 			config.BuildLabelKey("type"): "sse",
@@ -163,7 +163,7 @@ func CreateSSEProxyRoute(
 
 	build := func() error {
 		route.Labels = map[string]string{
-			config.DomainLabelKey:        "event",
+			config.DomainLabelKey:        LabelValueDomain,
 			eventv1.EventTypeLabelKey:    labelutil.NormalizeLabelValue(eventType),
 			config.BuildLabelKey("zone"): subscriberZone.Name,
 			config.BuildLabelKey("type"): "sse-proxy",

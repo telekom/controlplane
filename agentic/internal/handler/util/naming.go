@@ -15,6 +15,10 @@ const (
 	GatewayConsumerName = "gateway"
 )
 
+const (
+	LabelValueDomain = "agentic"
+)
+
 // MakeAgenticRouteName creates the route name for an MCP exposure.
 // Format: "ai-gateway--<normalized-basepath>"
 func MakeAgenticRouteName(basePath string) string {

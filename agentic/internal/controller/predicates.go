@@ -8,23 +8,22 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
+	"github.com/telekom/controlplane/agentic/internal/handler/util"
 	"github.com/telekom/controlplane/common/pkg/config"
 )
-
-const domainName = "agentic"
 
 // LabelPredicate filters events for resources with domain=agentic label.
 var LabelPredicate = predicate.Funcs{
 	CreateFunc: func(e event.CreateEvent) bool {
-		return e.Object.GetLabels()[config.DomainLabelKey] == domainName
+		return e.Object.GetLabels()[config.DomainLabelKey] == util.LabelValueDomain
 	},
 	UpdateFunc: func(e event.UpdateEvent) bool {
-		return e.ObjectNew.GetLabels()[config.DomainLabelKey] == domainName
+		return e.ObjectNew.GetLabels()[config.DomainLabelKey] == util.LabelValueDomain
 	},
 	DeleteFunc: func(e event.DeleteEvent) bool {
-		return e.Object.GetLabels()[config.DomainLabelKey] == domainName
+		return e.Object.GetLabels()[config.DomainLabelKey] == util.LabelValueDomain
 	},
 	GenericFunc: func(e event.GenericEvent) bool {
-		return e.Object.GetLabels()[config.DomainLabelKey] == domainName
+		return e.Object.GetLabels()[config.DomainLabelKey] == util.LabelValueDomain
 	},
 }
