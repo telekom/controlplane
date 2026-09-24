@@ -111,10 +111,9 @@ func (h *ListenerHandler) CreateOrUpdate(ctx context.Context, listener *spectrev
 	}
 	// The appId becomes part of the RouteListener and Subscriber names and of the
 	// bridge callback URL, so it is effectively immutable identity. Those children
-	// live in other namespaces and therefore carry no owner references, and Delete
-	// only removes what the Listener status currently points at — so provisioning
-	// under an empty appId leaves untracked resources behind once a later pass
-	// creates the correctly named ones.
+	// live in other namespaces and therefore carry no owner references, so
+	// provisioning under an empty appId would create wrongly named capture that a
+	// later pass must drain and replace.
 	appId := spectreApp.Status.Id
 	if appId == "" {
 		return ctrlerrors.BlockedErrorf("SpectreApplication %q has not resolved its application id yet",
@@ -390,192 +389,41 @@ func (h *ListenerHandler) CreateOrUpdate(ctx context.Context, listener *spectrev
 	return nil
 }
 
+// Delete stops capture through the same persisted drain as CreateOrUpdate:
+// checkpoint, RouteListeners, Subscribers, then the Publisher in every old
+// namespace. The common controller removes the finalizer only when Delete
+// returns nil and writes status only when it returns an error, so every pass
+// that must be persisted returns errDrainPending.
 func (h *ListenerHandler) Delete(ctx context.Context, listener *spectrev1.Listener) error {
-	c := cclient.ClientFromContextOrDie(ctx)
-	logger := log.FromContext(ctx)
-
-	// Phase 0: Resolve the publisher namespace BEFORE clearing any status.
-	// The namespace comes from status refs, then owner-labelled children, then
-	// topology as a last resort.
-	zoneNamespace, err := h.resolvePublisherNamespace(ctx, listener)
+	if listener.Status.Draining != nil {
+		complete, err := h.continueDrain(ctx, listener)
+		if err != nil {
+			return errors.Wrap(err, "failed to continue drain")
+		}
+		if !complete {
+			return errDrainPending(listener)
+		}
+		// Nothing drained is applied any more; a kept fingerprint would restart it.
+		if ap := listener.Status.AppliedPlacement; ap != nil {
+			ap.Fingerprint = ""
+		}
+	}
+	// A fresh inventory: release only when no owned child remains.
+	started, err := h.drainCapture(ctx, listener, "listener deleted")
 	if err != nil {
-		return errors.Wrap(err, "failed to resolve publisher namespace")
+		return errors.Wrap(err, "failed to start drain")
 	}
-
-	// Phase 1: Delete RouteListener first to stop new capture.
-	if err := h.deleteRouteListener(ctx, listener.Status.RouteListener); err != nil {
-		return err
+	if started {
+		return errDrainPending(listener)
 	}
-	// Delete any owner-labelled RouteListeners the status missed.
-	rlList := &gatewayv1.RouteListenerList{}
-	if err := c.List(ctx, rlList, cclient.OwnedByLabel(listener)...); err != nil {
-		return errors.Wrap(err, "failed to list owned RouteListeners")
-	}
-	for i := range rlList.Items {
-		rl := &rlList.Items[i]
-		if err := c.Delete(ctx, rl); err != nil && !apierrors.IsNotFound(err) {
-			return errors.Wrapf(err, "failed to delete RouteListener %q", rl.Name)
-		}
-		logger.Info("Deleted owned RouteListener", "routeListener", rl.Name, "namespace", rl.Namespace)
-	}
-	listener.Status.RouteListener = nil
-
-	// Phase 2: Request deletion of bridge Subscribers from status refs.
-	for i := range listener.Status.EventSubscriptions {
-		ref := &listener.Status.EventSubscriptions[i]
-		if err := h.deleteSubscriber(ctx, ref); err != nil {
-			return err
-		}
-	}
-	// Delete any owner-labelled Subscribers the status missed.
-	subList := &pubsubv1.SubscriberList{}
-	if err := c.List(ctx, subList, cclient.OwnedByLabel(listener)...); err != nil {
-		return errors.Wrap(err, "failed to list owned Subscribers")
-	}
-	for i := range subList.Items {
-		sub := &subList.Items[i]
-		if err := c.Delete(ctx, sub); err != nil && !apierrors.IsNotFound(err) {
-			return errors.Wrapf(err, "failed to delete Subscriber %q", sub.Name)
-		}
-		logger.Info("Deleted owned Subscriber", "subscriber", sub.Name, "namespace", sub.Namespace)
-	}
-
-	// Phase 3: Fresh-list owner-labelled Subscribers. If any remain (finalizers
-	// still running), retry so the Publisher is not deleted prematurely.
-	remainingList := &pubsubv1.SubscriberList{}
-	if err := c.List(ctx, remainingList, cclient.OwnedByLabel(listener)...); err != nil {
-		return errors.Wrap(err, "failed to re-list owned Subscribers")
-	}
-	if len(remainingList.Items) > 0 {
-		return ctrlerrors.RetryableWithDelayErrorf(
-			2*time.Second,
-			"waiting for bridge Subscriber finalization before deleting generic Publisher",
-		)
-	}
-
-	// Phase 4: All Subscribers gone — clear subscriber status.
-	listener.Status.EventSubscriptions = nil
-
-	// Phase 5: Decide whether the shared generic Publisher is unused.
-	if zoneNamespace == "" {
-		logger.V(1).Info("Could not determine zone namespace, skipping generic Publisher cleanup")
-		return nil
-	}
-
-	if err := h.cleanupGenericPublisherIfOrphaned(ctx, zoneNamespace); err != nil {
-		return errors.Wrap(err, "failed to cleanup generic Publisher")
-	}
-
 	return nil
 }
 
-// resolvePublisherNamespace determines the zone namespace holding the shared
-// generic Publisher. It uses a preference order:
-//  1. namespace from status RouteListener/Subscriber refs
-//  2. namespace from owner-labelled children (status-update-failure recovery)
-//  3. current topology resolution as a final fallback
-//
-// Returns an error if owner-labelled children span multiple namespaces.
-func (h *ListenerHandler) resolvePublisherNamespace(ctx context.Context, listener *spectrev1.Listener) (string, error) {
-	c := cclient.ClientFromContextOrDie(ctx)
-	logger := log.FromContext(ctx)
-
-	// Preference 1: status refs.
-	if ref := listener.Status.RouteListener; ref != nil && ref.Namespace != "" {
-		return ref.Namespace, nil
-	}
-	for i := range listener.Status.EventSubscriptions {
-		if ns := listener.Status.EventSubscriptions[i].Namespace; ns != "" {
-			return ns, nil
-		}
-	}
-
-	// Preference 2: owner-labelled children.
-	namespaces := make(map[string]struct{})
-
-	rlList := &gatewayv1.RouteListenerList{}
-	if err := c.List(ctx, rlList, cclient.OwnedByLabel(listener)...); err != nil {
-		return "", errors.Wrap(err, "failed to list owned RouteListeners for namespace resolution")
-	}
-	for i := range rlList.Items {
-		namespaces[rlList.Items[i].Namespace] = struct{}{}
-	}
-
-	subList := &pubsubv1.SubscriberList{}
-	if err := c.List(ctx, subList, cclient.OwnedByLabel(listener)...); err != nil {
-		return "", errors.Wrap(err, "failed to list owned Subscribers for namespace resolution")
-	}
-	for i := range subList.Items {
-		namespaces[subList.Items[i].Namespace] = struct{}{}
-	}
-
-	if len(namespaces) == 1 {
-		for ns := range namespaces {
-			return ns, nil
-		}
-	}
-	if len(namespaces) > 1 {
-		return "", errors.Errorf("owner-labelled children span multiple namespaces: found %d distinct namespaces", len(namespaces))
-	}
-
-	// Preference 3: topology resolution (consumer zone).
-	consumerApp, err := h.resolveApplication(ctx, &listener.Spec.Consumer)
-	if err != nil {
-		logger.V(1).Info("Could not resolve consumer Application during delete", "error", err)
-		return "", nil
-	}
-	consumerZone, err := h.resolveZone(ctx, consumerApp)
-	if err != nil {
-		logger.V(1).Info("Could not resolve zone during delete", "error", err)
-		return "", nil
-	}
-	return consumerZone.Status.Namespace, nil
-}
-
-// deleteRouteListener removes the RouteListener referenced in status, tolerating
-// an already-deleted object.
-func (h *ListenerHandler) deleteRouteListener(ctx context.Context, ref *ctypes.ObjectRef) error {
-	if ref == nil {
-		return nil
-	}
-	c := cclient.ClientFromContextOrDie(ctx)
-	logger := log.FromContext(ctx)
-
-	rl := &gatewayv1.RouteListener{}
-	if err := c.Get(ctx, ref.K8s(), rl); err != nil {
-		if apierrors.IsNotFound(err) {
-			return nil
-		}
-		return errors.Wrapf(err, "failed to get RouteListener %q", ref.String())
-	}
-	if err := c.Delete(ctx, rl); err != nil && !apierrors.IsNotFound(err) {
-		return errors.Wrapf(err, "failed to delete RouteListener %q", ref.String())
-	}
-	logger.Info("Deleted RouteListener", "routeListener", ref.String())
-	return nil
-}
-
-// deleteSubscriber removes a bridge Subscriber referenced in status, tolerating
-// an already-deleted object.
-func (h *ListenerHandler) deleteSubscriber(ctx context.Context, ref *ctypes.ObjectRef) error {
-	if ref == nil {
-		return nil
-	}
-	c := cclient.ClientFromContextOrDie(ctx)
-	logger := log.FromContext(ctx)
-
-	sub := &pubsubv1.Subscriber{}
-	if err := c.Get(ctx, ref.K8s(), sub); err != nil {
-		if apierrors.IsNotFound(err) {
-			return nil
-		}
-		return errors.Wrapf(err, "failed to get Subscriber %q", ref.String())
-	}
-	if err := c.Delete(ctx, sub); err != nil && !apierrors.IsNotFound(err) {
-		return errors.Wrapf(err, "failed to delete Subscriber %q", ref.String())
-	}
-	logger.Info("Deleted bridge Subscriber", "subscriber", ref.String())
-	return nil
+// errDrainPending keeps the finalizer and has the common controller persist the
+// drain checkpoint and retry shortly.
+func errDrainPending(listener *spectrev1.Listener) error {
+	return ctrlerrors.RetryableWithDelayErrorf(2*time.Second,
+		"draining capture before deletion (phase %s)", listener.Status.Draining.Phase)
 }
 
 // resolveApplication fetches an Application by TypedObjectRef and ensures it is ready.
