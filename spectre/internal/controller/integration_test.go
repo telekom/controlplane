@@ -558,7 +558,7 @@ var _ = Describe("Integration: Two-Tier Reconcile Cycle", Ordered, func() {
 				}
 				g.Expect(count).To(BeNumerically(">=", 2), "Both gate ApprovalRequests should exist")
 			}, testTimeout, testInterval).Should(Succeed())
-			grantApprovalsForListener(ctx, integrationListenerName)
+			grantApprovalsForListener(ctx, integrationListenerName, true)
 
 			By("Reconciling until generic Publisher exists (approvals granted)")
 			genericPublisherName := util.MakePublisherName(util.GenericEventType)
@@ -782,7 +782,39 @@ var _ = Describe("Integration: Two-Tier Reconcile Cycle", Ordered, func() {
 				}
 				g.Expect(found).To(BeTrue(), "ApprovalRequest for cross-team-listener should exist")
 			}, testTimeout, testInterval).Should(Succeed())
-			grantApprovalsForListener(ctx, "cross-team-listener")
+
+			By("Keeping capture blocked while the Granted Approvals have no controller owner")
+			grantApprovalsForListener(ctx, "cross-team-listener", false)
+			reconcileOwnerless := func() error {
+				_, err := listenerReconciler.Reconcile(ctx, reconcile.Request{NamespacedName: crossNN})
+				return err
+			}
+			// Wait for the cache to serve the ownerless Approvals to the builder.
+			Eventually(reconcileOwnerless, testTimeout, testInterval).
+				Should(MatchError(ContainSubstring("missing or foreign controller owner")))
+			for range 3 {
+				Expect(reconcileOwnerless()).To(MatchError(ContainSubstring("missing or foreign controller owner")))
+				l := &spectrev1.Listener{}
+				Expect(directClient.Get(ctx, crossNN, l)).To(Succeed())
+				Expect(meta.IsStatusConditionTrue(l.Status.Conditions, condition.ConditionTypeReady)).To(BeFalse())
+				Expect(l.Status.RouteListener).To(BeNil())
+				Expect(apierrors.IsNotFound(directClient.Get(ctx,
+					types.NamespacedName{Name: crossRL, Namespace: zoneStatusNs}, &gatewayv1.RouteListener{}))).To(BeTrue())
+			}
+
+			By("Replacing the ownerless Approvals with ones the approval controller would write")
+			for _, ar := range listenerApprovalRequests(ctx, "cross-team-listener") {
+				approvalName, err := approvalv1.ScopedApprovalName(ar.Spec.Target, ar.Spec.ApprovalKey)
+				Expect(err).NotTo(HaveOccurred())
+				key := types.NamespacedName{Name: approvalName, Namespace: testNamespace}
+				Expect(directClient.Delete(ctx, &approvalv1.Approval{
+					ObjectMeta: metav1.ObjectMeta{Name: key.Name, Namespace: key.Namespace},
+				})).To(Succeed())
+				Eventually(func() bool {
+					return apierrors.IsNotFound(directClient.Get(ctx, key, &approvalv1.Approval{}))
+				}, testTimeout, testInterval).Should(BeTrue())
+			}
+			grantApprovalsForListener(ctx, "cross-team-listener", true)
 
 			By("Reconciling until RouteListener is created (approval pre-granted)")
 			reconcileUntilReady(ctx, listenerReconciler, crossNN, func(g Gomega) {
@@ -981,7 +1013,7 @@ var _ = Describe("Integration: Two-Tier Reconcile Cycle", Ordered, func() {
 				ownedRequest(g, "provider")
 				ownedRequest(g, "consumer")
 			}, testTimeout, testInterval).Should(Succeed())
-			grantApprovalsForListener(ctx, rejectedListenerName)
+			grantApprovalsForListener(ctx, rejectedListenerName, true)
 			reconcileUntilReady(ctx, listenerReconciler, nn, func(g Gomega) {
 				g.Expect(directClient.Get(ctx, rlKey, &gatewayv1.RouteListener{})).To(Succeed())
 				for _, key := range subKeys {
@@ -1036,12 +1068,23 @@ func readyConditions() []metav1.Condition {
 	}
 }
 
-// grantApprovalsForListener simulates the approval controller by finding all
-// scoped ApprovalRequests owned by the Listener and creating the matching
-// scoped Approvals. Each gate ("provider", "consumer") gets its own Approval
-// with a name computed by ScopedApprovalName(target, key).
-func grantApprovalsForListener(ctx context.Context, listenerName string) {
-	// Find ALL ApprovalRequests owned by this listener.
+// targetControllerRef is the controller reference the approval controller
+// writes on every scoped Approval it creates for target
+// (approvalrequest handler setControllerReferenceForRef).
+func targetControllerRef(t *ctypes.TypedObjectRef) []metav1.OwnerReference {
+	isController := true
+	return []metav1.OwnerReference{{
+		APIVersion:         t.APIVersion,
+		Kind:               t.Kind,
+		Name:               t.Name,
+		UID:                t.UID,
+		Controller:         &isController,
+		BlockOwnerDeletion: &isController,
+	}}
+}
+
+// listenerApprovalRequests returns all ApprovalRequests owned by the Listener.
+func listenerApprovalRequests(ctx context.Context, listenerName string) []*approvalv1.ApprovalRequest {
 	arList := &approvalv1.ApprovalRequestList{}
 	Expect(directClient.List(ctx, arList, client.InNamespace(testNamespace))).To(Succeed())
 
@@ -1056,17 +1099,31 @@ func grantApprovalsForListener(ctx context.Context, listenerName string) {
 		}
 	}
 	Expect(ownedARs).NotTo(BeEmpty(), "No ApprovalRequests found for listener %q", listenerName)
+	return ownedARs
+}
 
-	for _, ar := range ownedARs {
+// grantApprovalsForListener simulates the approval controller by finding all
+// scoped ApprovalRequests owned by the Listener and creating the matching
+// scoped Approvals. Each gate ("provider", "consumer") gets its own Approval
+// with a name computed by ScopedApprovalName(target, key). withControllerOwner
+// writes the controller reference the real approval controller sets; false
+// creates ownerless Approvals that must not authorize capture.
+func grantApprovalsForListener(ctx context.Context, listenerName string, withControllerOwner bool) {
+	for _, ar := range listenerApprovalRequests(ctx, listenerName) {
 		// Compute the scoped Approval name from the target and key.
 		approvalName, err := approvalv1.ScopedApprovalName(ar.Spec.Target, ar.Spec.ApprovalKey)
 		Expect(err).NotTo(HaveOccurred(), "failed to compute ScopedApprovalName for key %q", ar.Spec.ApprovalKey)
 
+		var ownerRefs []metav1.OwnerReference
+		if withControllerOwner {
+			ownerRefs = targetControllerRef(&ar.Spec.Target)
+		}
 		approval := &approvalv1.Approval{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      approvalName,
-				Namespace: testNamespace,
-				Labels:    ar.Labels,
+				Name:            approvalName,
+				Namespace:       testNamespace,
+				Labels:          ar.Labels,
+				OwnerReferences: ownerRefs,
 			},
 			Spec: approvalv1.ApprovalSpec{
 				Action:      ar.Spec.Action,

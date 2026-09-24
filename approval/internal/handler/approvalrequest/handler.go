@@ -212,6 +212,13 @@ func (h *ApprovalRequestHandler) handleGranted(ctx context.Context, approvalReq 
 					"state", approvalObj.Spec.State)
 				return nil
 			}
+
+			// An existing scoped Approval must already be controlled by its target; this
+			// controller always writes that reference on creation. Refuse to adopt or
+			// overwrite one with missing or foreign authority.
+			if ref := metav1.GetControllerOfNoCopy(approvalObj); ref == nil || ref.UID != approvalReq.Spec.Target.UID {
+				return fmt.Errorf("scoped approval %s: missing or foreign controller owner", approvalObj.Name)
+			}
 		}
 
 		// Determine the authoritative source for building the Approval spec.
