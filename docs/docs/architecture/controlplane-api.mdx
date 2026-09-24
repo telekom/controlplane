@@ -120,19 +120,21 @@ erDiagram
     Team ||--o{ AgentCard : "owns"
     Application ||--o{ ApiExposure : "exposes"
     Application ||--o{ ApiSubscription : "subscribes"
-    ApiExposure ||--o{ ApiSubscription : "target of"
+    ApiExposure |o--o{ ApiSubscription : "target of"
     ApiSubscription ||--o| Approval : "has"
     ApiSubscription ||--o| ApprovalRequest : "has"
     Application ||--o{ AgenticExposure : "exposes"
     Application ||--o{ AgenticSubscription : "subscribes"
     McpServer ||--o{ AgenticExposure : "exposed as"
     AgentCard ||--o{ AgenticExposure : "exposed as"
-    AgenticExposure ||--o{ AgenticSubscription : "target of"
+    AgenticExposure |o--o{ AgenticSubscription : "target of"
     AgenticSubscription ||--o| Approval : "has"
     AgenticSubscription ||--o| ApprovalRequest : "has"
 ```
 
 Each entity carries common fields such as `id`, `createdAt`, `lastModifiedAt`, `statusPhase` (Ready, Pending, Error, or Unknown), `statusMessage`, `environment`, and `namespace`.
+
+API and agentic subscriptions can exist without a target exposure. In that case, their GraphQL `target` field returns `null` without an error.
 
 ### GraphQL Queries
 
