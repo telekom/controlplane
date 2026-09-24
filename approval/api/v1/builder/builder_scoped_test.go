@@ -622,7 +622,7 @@ var _ = Describe("Scoped identity hardening", func() {
 	// createScopedApprovalWithOwner is like createScopedApproval but also
 	// sets controller ownerReferences on the Approval.
 	createScopedApprovalWithOwner := func(
-		name, key string,
+		name string,
 		target ctypes.TypedObjectRef,
 		state approvalv1.ApprovalState,
 		approvedRequest *ctypes.ObjectRef,
@@ -640,7 +640,7 @@ var _ = Describe("Scoped identity hardening", func() {
 			Spec: approvalv1.ApprovalSpec{
 				Strategy:        approvalv1.ApprovalStrategySimple,
 				State:           state,
-				ApprovalKey:     key,
+				ApprovalKey:     "provider",
 				Target:          target,
 				ApprovedRequest: approvedRequest,
 			},
@@ -789,7 +789,7 @@ var _ = Describe("Scoped identity hardening", func() {
 			},
 		}
 		correctRef := &ctypes.ObjectRef{Name: arName, Namespace: testNamespace, UID: arUID}
-		_ = createScopedApprovalWithOwner(approvalName, "provider", b1.GetApprovalRequest().Spec.Target,
+		_ = createScopedApprovalWithOwner(approvalName, b1.GetApprovalRequest().Spec.Target,
 			approvalv1.ApprovalStateGranted, correctRef, foreignOwnerRefs)
 		waitForCacheApproval(approvalName)
 
@@ -826,7 +826,7 @@ var _ = Describe("Scoped identity hardening", func() {
 
 		By("Creating a bound, Granted Approval with NO ownerReferences")
 		correctRef := &ctypes.ObjectRef{Name: arName, Namespace: testNamespace, UID: arUID}
-		_ = createScopedApprovalWithOwner(approvalName, "provider", b1.GetApprovalRequest().Spec.Target,
+		_ = createScopedApprovalWithOwner(approvalName, b1.GetApprovalRequest().Spec.Target,
 			approvalv1.ApprovalStateGranted, correctRef, nil)
 		waitForCacheApproval(approvalName)
 
@@ -870,7 +870,7 @@ var _ = Describe("Scoped identity hardening", func() {
 
 			By("Creating an ownerless Approval bound to the current request")
 			boundRef := &ctypes.ObjectRef{Name: arName, Namespace: testNamespace, UID: b1.GetApprovalRequest().UID}
-			_ = createScopedApprovalWithOwner(approvalName, "provider", b1.GetApprovalRequest().Spec.Target,
+			_ = createScopedApprovalWithOwner(approvalName, b1.GetApprovalRequest().Spec.Target,
 				approvalState, boundRef, nil)
 			waitForCacheApproval(approvalName)
 
@@ -994,7 +994,7 @@ var _ = Describe("Scoped identity hardening", func() {
 			},
 		}
 		correctRef := &ctypes.ObjectRef{Name: arName, Namespace: testNamespace, UID: arUID}
-		_ = createScopedApprovalWithOwner(approvalName, "provider", b1.GetApprovalRequest().Spec.Target,
+		_ = createScopedApprovalWithOwner(approvalName, b1.GetApprovalRequest().Spec.Target,
 			approvalv1.ApprovalStateGranted, correctRef, correctOwnerRefs)
 		waitForCacheApproval(approvalName)
 
