@@ -8,6 +8,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/telekom/controlplane/common/pkg/util/labelutil"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
@@ -93,7 +95,7 @@ func createIdentityRoute(ctx context.Context, hc *HandlingContext, realmName str
 	c := cclient.ClientFromContextOrDie(ctx)
 
 	// Route name: gateway--<realmName>--<suffix>
-	routeName := hc.Gateway.Name + "--" + realmName + "--" + cfg.suffix
+	routeName := labelutil.NormalizeNameValue(hc.Gateway.Name + "--" + realmName + "--" + cfg.suffix)
 
 	route := &gatewayapi.Route{
 		ObjectMeta: metav1.ObjectMeta{

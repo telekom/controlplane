@@ -5,6 +5,7 @@
 package notification_channel
 
 import (
+	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
@@ -17,7 +18,7 @@ func buildNotificationChannelObj(owner *organisationv1.Team) *notificationv1.Not
 
 	return &notificationv1.NotificationChannel{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
+			Name:      labelutil.NormalizeNameValue(name),
 			Namespace: owner.Status.Namespace,
 		},
 	}

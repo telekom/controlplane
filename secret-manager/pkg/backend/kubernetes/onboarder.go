@@ -9,6 +9,7 @@ import (
 	"maps"
 
 	"github.com/pkg/errors"
+	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	"github.com/telekom/controlplane/secret-manager/pkg/backend"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -246,8 +247,8 @@ func NewSecretObj(env, teamId, appId string) *corev1.Secret {
 			Namespace: ref.Namespace,
 			Labels: map[string]string{
 				"cp.ei.telekom.de/environment": env,
-				"cp.ei.telekom.de/team":        teamId,
-				"cp.ei.telekom.de/application": appId,
+				"cp.ei.telekom.de/team":        labelutil.NormalizeLabelValue(teamId),
+				"cp.ei.telekom.de/application": labelutil.NormalizeLabelValue(appId),
 				"app.kubernetes.io/managed-by": "secret-manager",
 			},
 		},

@@ -5,6 +5,7 @@
 package identity_client
 
 import (
+	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
@@ -16,7 +17,7 @@ const TeamNameSuffix = "team-user"
 func buildIdentityClientObj(owner *organisationv1.Team) *identityv1.Client {
 	return &identityv1.Client{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      MakeClientId(owner),
+			Name:      labelutil.NormalizeNameValue(MakeClientId(owner)),
 			Namespace: owner.GetNamespace(),
 		},
 	}

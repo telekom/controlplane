@@ -73,7 +73,7 @@ func (h *RemoteApiSubscriptionHandler) handleProviderScenario(ctx context.Contex
 		}
 
 		application.Labels = map[string]string{
-			config.BuildLabelKey("org.id"): remoteOrg.Spec.Id,
+			config.BuildLabelKey("org.id"): labelutil.NormalizeLabelValue(remoteOrg.Spec.Id),
 		}
 
 		secret := application.Spec.Secret
@@ -120,7 +120,7 @@ func (h *RemoteApiSubscriptionHandler) handleProviderScenario(ctx context.Contex
 		}
 		apiSubscription.Labels = map[string]string{
 			apiapi.BasePathLabelKey:             labelutil.NormalizeLabelValue(obj.Spec.ApiBasePath),
-			config.BuildLabelKey("application"): application.Name,
+			config.BuildLabelKey("application"): labelutil.NormalizeLabelValue(application.Name),
 		}
 
 		apiSubscription.Spec = apiapi.ApiSubscriptionSpec{

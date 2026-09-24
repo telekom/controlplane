@@ -7,6 +7,8 @@ package eventconfig
 import (
 	"context"
 
+	"github.com/telekom/controlplane/common/pkg/util/labelutil"
+
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -251,7 +253,7 @@ func (h *EventConfigHandler) createIdentityClient(ctx context.Context, obj *even
 
 	identityClient := &identityv1.Client{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      clientCfg.ClientId,
+			Name:      labelutil.NormalizeNameValue(clientCfg.ClientId),
 			Namespace: obj.Namespace,
 		},
 	}

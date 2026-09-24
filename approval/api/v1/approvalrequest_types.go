@@ -7,6 +7,7 @@ package v1
 import (
 	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/hash"
+	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -120,7 +121,7 @@ func NewApprovalRequest(owner types.Object, hashValue any) *ApprovalRequest {
 }
 
 func ApprovalRequestName(owner types.Object, hashValue any) string {
-	return owner.GetName() + "--" + hash.ComputeHash(&hashValue, nil)
+	return labelutil.NormalizeNameValue(owner.GetName() + "--" + hash.ComputeHash(&hashValue, nil))
 }
 
 // +kubebuilder:object:root=true

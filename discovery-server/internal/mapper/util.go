@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/telekom/controlplane/common-server/pkg/problems"
@@ -140,7 +141,7 @@ func MakeResourceName(obj client.Object) string {
 // are invisible to the caller.
 func VerifyApplicationLabel(obj client.Object, expectedAppName string) error {
 	labels := obj.GetLabels()
-	if labels == nil || labels[ApplicationLabelKey] != expectedAppName {
+	if labels == nil || labels[ApplicationLabelKey] != labelutil.NormalizeLabelValue(expectedAppName) {
 		return problems.NotFound(fmt.Sprintf("resource %s/%s not found for application %s",
 			obj.GetNamespace(), obj.GetName(), expectedAppName))
 	}

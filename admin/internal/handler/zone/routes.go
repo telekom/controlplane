@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"slices"
 
+	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
@@ -119,7 +120,7 @@ func createManagedRoute(ctx context.Context, hc *HandlingContext, routeConfig ad
 
 	route := &gatewayapi.Route{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      hc.Gateway.Name + "--" + naming.ForGatewayRoute(routeConfig),
+			Name:      labelutil.NormalizeNameValue(hc.Gateway.Name + "--" + naming.ForGatewayRoute(routeConfig)),
 			Namespace: hc.Namespace.Name,
 		},
 	}

@@ -227,7 +227,7 @@ func WithFailoverLabel() CreateConsumeRouteOption {
 }
 
 func MakeRouteName(apiBasePath string) string {
-	return labelutil.NormalizeValue(apiBasePath)
+	return labelutil.NormalizeNameValue(apiBasePath)
 }
 
 func CreateProxyRoute(ctx context.Context, downstreamZoneRef, upstreamZoneRef types.ObjectRef, apiBasePath string, opts ...CreateRouteOption) (*gatewayapi.Route, error) {
@@ -629,7 +629,7 @@ func CreateConsumeRoute(ctx context.Context, apiSub *apiapi.ApiSubscription, dow
 		opt(options)
 	}
 
-	name := downstreamZoneRef.Name + "--" + apiSub.GetName()
+	name := labelutil.NormalizeNameValue(downstreamZoneRef.Name + "--" + apiSub.GetName())
 	routeConsumer := &gatewayapi.ConsumeRoute{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,

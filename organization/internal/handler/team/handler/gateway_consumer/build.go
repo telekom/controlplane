@@ -5,6 +5,7 @@
 package gateway_consumer
 
 import (
+	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
@@ -15,11 +16,14 @@ import (
 const TeamNameSuffix = "team-user"
 
 func buildGatewayConsumerObj(owner *organisationv1.Team) *gatewayv1.Consumer {
-	name := owner.Spec.Group + handler.Separator + owner.Spec.Name + handler.Separator + TeamNameSuffix
 	return &gatewayv1.Consumer{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
+			Name:      labelutil.NormalizeNameValue(makeConsumerName(owner)),
 			Namespace: owner.Status.Namespace,
 		},
 	}
+}
+
+func makeConsumerName(owner *organisationv1.Team) string {
+	return owner.Spec.Group + handler.Separator + owner.Spec.Name + handler.Separator + TeamNameSuffix
 }

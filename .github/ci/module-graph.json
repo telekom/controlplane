@@ -217,6 +217,7 @@
   "secret-manager": {
     "path": "secret-manager",
     "depends_on": [
+      "common",
       "common-server"
     ]
   },

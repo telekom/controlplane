@@ -5,9 +5,8 @@
 package v1
 
 import (
-	"strings"
-
 	"github.com/telekom/controlplane/common/pkg/types"
+	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -115,7 +114,7 @@ func (a *Approval) AppendDecision(d Decision) {
 var _ types.Object = &Approval{}
 
 func ApprovalName(ownerKind, ownerName string) string {
-	return strings.ToLower(ownerKind) + "--" + ownerName
+	return labelutil.NormalizeNameValue(ownerKind + "--" + ownerName)
 }
 
 // +kubebuilder:object:root=true
