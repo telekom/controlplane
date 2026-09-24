@@ -262,15 +262,16 @@ var _ = Describe("ResolveCaptureZone", func() {
 		Expect(reason).To(ContainSubstring("CallbackURL"))
 	})
 
-	It("uses A's ProxyCallbackURLs entry for a cross-zone local capture", func() {
+	It("uses the capture EventConfig's ProxyCallbackURLs entry for the delivery zone for a cross-zone local capture", func() {
 		captureES := storeFor("c")
 		captureEC := eventConfigFor("c", captureES)
+		captureEC.Status.ProxyCallbackURLs = map[string]string{
+			"a":     "https://c.example.com/proxy/a",
+			"other": "https://c.example.com/proxy/other",
+		}
 		deliveryES := storeFor("a")
 		deliveryEC := eventConfigFor("a", deliveryES)
-		deliveryEC.Status.ProxyCallbackURLs = map[string]string{
-			"c":     "https://a.example.com/proxy/c",
-			"other": "https://a.example.com/proxy/other",
-		}
+		deliveryEC.Status.ProxyCallbackURLs = map[string]string{"c": "https://a.example.com/proxy/c"}
 		ctx := pc.context(captureEC, captureES)
 
 		lp, reason, err := util.ResolveCaptureZone(ctx, makeZone("c"), route, delivery("a", deliveryEC, deliveryES))
@@ -285,7 +286,7 @@ var _ = Describe("ResolveCaptureZone", func() {
 		Expect(lp.DeliveryEventConfig.Name).To(Equal("ec-a"))
 		Expect(lp.DeliveryEventStore.Name).To(Equal("es-a"))
 		Expect(lp.CallbackOriginZone.Name).To(Equal("c"))
-		Expect(lp.CallbackBaseURL).To(Equal("https://a.example.com/proxy/c"))
+		Expect(lp.CallbackBaseURL).To(Equal("https://c.example.com/proxy/a"))
 		Expect(lp.BridgeNamespace).To(Equal("test-env--c"))
 		Expect(lp.CaptureEventStore.Namespace).To(Equal("test-env--c"))
 		Expect(lp.DeliveryEventStore.Namespace).To(Equal("test-env--a"))
@@ -358,6 +359,7 @@ var _ = Describe("ResolveCaptureZone", func() {
 		captureES := storeFor("c")
 		captureEC := eventConfigFor("c", captureES)
 		captureEC.Spec.Mesh = &eventv1.MeshConfig{FullMesh: false, ZoneNames: []string{"p"}}
+		captureEC.Status.ProxyCallbackURLs = map[string]string{"a": "https://c.example.com/proxy/a"}
 		deliveryES := storeFor("a")
 		deliveryEC := eventConfigFor("a", deliveryES)
 		deliveryEC.Status.ProxyCallbackURLs = map[string]string{"c": "https://a.example.com/proxy/c"}
@@ -369,45 +371,55 @@ var _ = Describe("ResolveCaptureZone", func() {
 		Expect(reason).To(ContainSubstring("does not mesh with delivery zone"))
 	})
 
-	It("treats nil ProxyCallbackURLs as unsuitable", func() {
+	It("treats nil capture ProxyCallbackURLs as unsuitable even when A has an entry for the capture zone", func() {
 		captureES := storeFor("c")
 		deliveryES := storeFor("a")
-		d := delivery("a", eventConfigFor("a", deliveryES), deliveryES)
+		deliveryEC := eventConfigFor("a", deliveryES)
+		deliveryEC.Status.ProxyCallbackURLs = map[string]string{"c": "https://a.example.com/proxy/c"}
 
-		lp, reason, err := util.ResolveCaptureZone(pc.context(eventConfigFor("c", captureES), captureES), makeZone("c"), route, d)
+		lp, reason, err := util.ResolveCaptureZone(pc.context(eventConfigFor("c", captureES), captureES), makeZone("c"), route,
+			delivery("a", deliveryEC, deliveryES))
 		Expect(err).ToNot(HaveOccurred())
 		Expect(lp).To(BeNil())
-		Expect(reason).To(ContainSubstring("ProxyCallbackURLs"))
+		Expect(reason).To(Equal(`capture EventConfig "ec-c" has no ProxyCallbackURLs entry for delivery zone "a"`))
 	})
 
 	It("treats a missing or empty ProxyCallbackURLs key as unsuitable and never substitutes another", func() {
 		captureES := storeFor("c")
+		captureEC := eventConfigFor("c", captureES)
+		captureEC.Status.ProxyCallbackURLs = map[string]string{
+			"p": "https://c.example.com/proxy/p",
+			"t": "https://c.example.com/proxy/t",
+		}
 		deliveryES := storeFor("a")
 		deliveryEC := eventConfigFor("a", deliveryES)
-		deliveryEC.Status.ProxyCallbackURLs = map[string]string{
-			"p": "https://a.example.com/proxy/p",
-			"t": "https://a.example.com/proxy/t",
-		}
-		ctx := pc.context(eventConfigFor("c", captureES), captureES)
+		deliveryEC.Status.ProxyCallbackURLs = map[string]string{"c": "https://a.example.com/proxy/c"}
 
-		lp, reason, err := util.ResolveCaptureZone(ctx, makeZone("c"), route, delivery("a", deliveryEC, deliveryES))
+		lp, reason, err := util.ResolveCaptureZone(pc.context(captureEC, captureES), makeZone("c"), route,
+			delivery("a", deliveryEC, deliveryES))
 		Expect(err).ToNot(HaveOccurred())
 		Expect(lp).To(BeNil())
-		Expect(reason).To(ContainSubstring("proxy callback"))
-		Expect(reason).To(ContainSubstring(`"c"`))
+		Expect(reason).To(Equal(`capture EventConfig "ec-c" has no ProxyCallbackURLs entry for delivery zone "a"`))
 
-		deliveryEC.Status.ProxyCallbackURLs["c"] = ""
-		lp, reason, err = util.ResolveCaptureZone(ctx, makeZone("c"), route, delivery("a", deliveryEC, deliveryES))
+		emptyEC := eventConfigFor("c", captureES)
+		emptyEC.Status.ProxyCallbackURLs = map[string]string{"a": "", "p": "https://c.example.com/proxy/p"}
+		lp, reason, err = util.ResolveCaptureZone(pc.context(emptyEC, captureES), makeZone("c"), route,
+			delivery("a", deliveryEC, deliveryES))
 		Expect(err).ToNot(HaveOccurred())
 		Expect(lp).To(BeNil())
-		Expect(reason).To(ContainSubstring("proxy callback"))
+		Expect(reason).To(Equal(`capture EventConfig "ec-c" has no ProxyCallbackURLs entry for delivery zone "a"`))
 	})
 
 	It("keys a proxy-backed capture by the proxy zone and uses its own EventStore", func() {
 		xES := storeFor("x")
 		xEC := proxyEventConfigFor("x", xES)
+		xEC.Status.ProxyCallbackURLs = map[string]string{
+			"d": "https://x.example.com/proxy/d",
+			"t": "https://x.example.com/proxy/t",
+		}
 		tES := storeFor("t")
 		tEC := eventConfigFor("t", tES)
+		tEC.Status.ProxyCallbackURLs = map[string]string{"d": "https://t.example.com/proxy/d"}
 		dES := storeFor("d")
 		dEC := eventConfigFor("d", dES)
 		dEC.Status.ProxyCallbackURLs = map[string]string{
@@ -420,15 +432,16 @@ var _ = Describe("ResolveCaptureZone", func() {
 		Expect(err).ToNot(HaveOccurred())
 		Expect(reason).To(BeEmpty())
 		Expect(lp.CallbackOriginZone.Name).To(Equal("x"))
-		Expect(lp.CallbackBaseURL).To(Equal("https://d.example.com/proxy/x"))
+		Expect(lp.CallbackBaseURL).To(Equal("https://x.example.com/proxy/d"))
 		Expect(lp.CaptureEventStore.Name).To(Equal("es-x"))
 		Expect(lp.CaptureEventStore.Namespace).To(Equal("test-env--x"))
 		Expect(lp.BridgeNamespace).To(Equal("test-env--x"))
 	})
 
-	It("uses the target zone's ProxyCallbackURLs entry for a proxy capture delivered in its target zone", func() {
+	It("uses the proxy capture zone's ProxyCallbackURLs entry for its target zone when delivered there", func() {
 		xES := storeFor("x")
 		xEC := proxyEventConfigFor("x", xES)
+		xEC.Status.ProxyCallbackURLs = map[string]string{"t": "https://x.example.com/proxy/t"}
 		tES := storeFor("t")
 		tEC := eventConfigFor("t", tES)
 		tEC.Status.ProxyCallbackURLs = map[string]string{"x": "https://t.example.com/proxy/x"}
@@ -437,7 +450,7 @@ var _ = Describe("ResolveCaptureZone", func() {
 		lp, reason, err := util.ResolveCaptureZone(ctx, makeZone("x"), route, delivery("t", tEC, tES))
 		Expect(err).ToNot(HaveOccurred())
 		Expect(reason).To(BeEmpty())
-		Expect(lp.CallbackBaseURL).To(Equal("https://t.example.com/proxy/x"))
+		Expect(lp.CallbackBaseURL).To(Equal("https://x.example.com/proxy/t"))
 		Expect(lp.CallbackBaseURL).ToNot(Equal(tEC.Status.CallbackURL))
 		Expect(lp.CaptureEventStore.Name).To(Equal("es-x"))
 	})
@@ -447,7 +460,9 @@ var _ = Describe("ResolveCaptureZone", func() {
 		dES := storeFor("d")
 		dEC := proxyEventConfigFor("d", dES)
 		dEC.Status.ProxyCallbackURLs = map[string]string{"c": "https://d.example.com/proxy/c"}
-		ctx := pc.context(eventConfigFor("c", cES), cES)
+		cEC := eventConfigFor("c", cES)
+		cEC.Status.ProxyCallbackURLs = map[string]string{"d": "https://c.example.com/proxy/d"}
+		ctx := pc.context(cEC, cES)
 
 		lp, reason, err := util.ResolveCaptureZone(ctx, makeZone("c"), route, delivery("d", dEC, dES))
 		Expect(err).ToNot(HaveOccurred())
@@ -455,7 +470,7 @@ var _ = Describe("ResolveCaptureZone", func() {
 		Expect(lp.DeliveryEventStore.Name).To(Equal("es-d"))
 		Expect(lp.CaptureEventStore.Name).To(Equal("es-c"))
 		Expect(lp.CallbackOriginZone.Name).To(Equal("c"))
-		Expect(lp.CallbackBaseURL).To(Equal("https://d.example.com/proxy/c"))
+		Expect(lp.CallbackBaseURL).To(Equal("https://c.example.com/proxy/d"))
 	})
 
 	It("treats A==C inside a proxy zone as local", func() {
@@ -470,6 +485,85 @@ var _ = Describe("ResolveCaptureZone", func() {
 		Expect(lp.CaptureEventStore).To(BeIdenticalTo(dES))
 		Expect(lp.DeliveryEventStore).To(BeIdenticalTo(dES))
 	})
+})
+
+// chainRoute is one callback Route as the event domain builds it
+// (eventconfig handler createCallbackRoutes): a Route on gatewayZone's gateway
+// that forwards to upstream, or, for the zone's primary callback Route, makes
+// the final DynamicUpstream hop itself (empty upstream).
+type chainRoute struct {
+	gatewayZone string
+	upstream    string
+}
+
+// chainURL is the downstream URL of the callback Route for target served by
+// gateway's zone: /horizon-<target>/callback/v1 on gateway's hostname.
+func chainURL(gateway, target string) string {
+	return "https://gw-" + gateway + ".example/horizon-" + target + "/callback/v1"
+}
+
+// chainGateways follows base through routes and returns the zones whose
+// gateways it traverses, ending at the one making the DynamicUpstream hop.
+func chainGateways(routes map[string]chainRoute, base string) []string {
+	var zones []string
+	for u := base; ; {
+		r, ok := routes[u]
+		ExpectWithOffset(1, ok).To(BeTrue(), "no callback Route serves %q", u)
+		zones = append(zones, r.gatewayZone)
+		if r.upstream == "" {
+			return zones
+		}
+		ExpectWithOffset(1, len(zones)).To(BeNumerically("<", 5), "callback Route chain does not terminate")
+		u = r.upstream
+	}
+}
+
+var _ = Describe("ResolveCaptureZone callback Route chain", func() {
+	zones := []string{"a", "c", "p", "x", "t"}
+
+	DescribeTable("makes the final DynamicUpstream hop, localhost:8080, on A's gateway",
+		func(observer, capture string, want []string) {
+			routes := map[string]chainRoute{}
+			ecs := map[string]*eventv1.EventConfig{}
+			stores := map[string]*pubsubv1.EventStore{}
+			objs := make([]client.Object, 0, 2*len(zones))
+			for _, s := range zones {
+				stores[s] = storeFor(s)
+				ec := eventConfigFor(s, stores[s])
+				if s == "x" {
+					ec = proxyEventConfigFor(s, stores[s])
+				}
+				// Primary callback Route: localhost:8080 via DynamicUpstream on S's gateway.
+				ec.Status.CallbackURL = chainURL(s, s)
+				routes[ec.Status.CallbackURL] = chainRoute{gatewayZone: s}
+				// Proxy callback Route per peer T: on S's gateway, upstream T's primary.
+				ec.Status.ProxyCallbackURLs = map[string]string{}
+				for _, t := range zones {
+					if t != s {
+						ec.Status.ProxyCallbackURLs[t] = chainURL(s, t)
+						routes[chainURL(s, t)] = chainRoute{gatewayZone: s, upstream: chainURL(t, t)}
+					}
+				}
+				ecs[s] = ec
+				objs = append(objs, ec, stores[s])
+			}
+			pc := &placementClient{}
+			d := &util.DeliveryPlacement{Zone: makeZone(observer), EventConfig: ecs[observer], EventStore: stores[observer]}
+
+			lp, reason, err := util.ResolveCaptureZone(pc.context(objs...), makeZone(capture),
+				makeRoute("route-api-v1", "test-env--"+capture, "/api/v1"), d)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(reason).To(BeEmpty())
+			Expect(lp.CallbackOriginZone.Name).To(Equal(capture))
+			Expect(chainGateways(routes, lp.CallbackBaseURL)).To(Equal(want))
+		},
+		Entry("A off-path, capture in C's zone", "a", "c", []string{"c", "a"}),
+		Entry("A off-path, capture in P's zone", "a", "p", []string{"p", "a"}),
+		Entry("A in P's zone, capture in C's zone", "p", "c", []string{"c", "p"}),
+		Entry("A in C's zone, capture in P's zone", "c", "p", []string{"p", "c"}),
+		Entry("A off-path, proxy-backed capture zone", "a", "x", []string{"x", "a"}),
+		Entry("A in the capture zone", "c", "c", []string{"c"}),
+	)
 })
 
 var _ = Describe("CallbackOriginZone", func() {
