@@ -72,7 +72,6 @@ type AgenticExposureStatus struct {
 	// ProxyRoutes references proxy gateway Route CRs for cross-zone MCP delivery.
 	// +optional
 	ProxyRoutes []ctypes.ObjectRef `json:"proxyRoutes,omitempty"`
-
 }
 
 // +kubebuilder:object:root=true
@@ -107,11 +106,13 @@ func (r *AgenticExposure) HasM2M() bool {
 	return r.Spec.Security != nil && r.Spec.Security.M2M != nil
 }
 
+// HasExternalIdp reports whether the M2M external IDP has a non-empty token endpoint.
 func (r *AgenticExposure) HasExternalIdp() bool {
 	if !r.HasM2M() {
 		return false
 	}
-	return r.Spec.Security.M2M.ExternalIDP != nil
+	return r.Spec.Security.M2M.ExternalIDP != nil &&
+		r.Spec.Security.M2M.ExternalIDP.TokenEndpoint != ""
 }
 
 // +kubebuilder:object:root=true

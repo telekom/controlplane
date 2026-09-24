@@ -256,7 +256,7 @@ func cleanupServerRoutes(ctx context.Context, obj *agenticv1.AgenticExposure) er
 	return nil
 }
 
-// validateExposureScopes checks that the M2M scopes in the AgenticExposure are a valid subset of the server's scopes.
+// validateExposureScopes checks M2M scope membership unless the exposure has a non-empty external-IDP token endpoint.
 // It sets blocking conditions on the exposure and returns false if processing should stop.
 func validateExposureScopes(_ context.Context, server *util.ServerInfo, obj *agenticv1.AgenticExposure) bool {
 	if !obj.HasM2M() || obj.Spec.Security.M2M.Scopes == nil || obj.HasExternalIdp() {

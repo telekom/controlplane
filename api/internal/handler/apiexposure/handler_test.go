@@ -6,6 +6,8 @@ package apiexposure
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
 	"github.com/stretchr/testify/mock"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -34,6 +36,61 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
+
+var _ = Describe("Exposure scope validation", func() {
+	endpoint := &apiapi.ExternalIdentityProvider{TokenEndpoint: "https://idp.example/token"}
+	emptyEndpoint := &apiapi.ExternalIdentityProvider{}
+	requested := []string{"provider:z", "provider:a", "provider:z"}
+
+	DescribeTable("checks specification membership only without an external endpoint", func(idp *apiapi.ExternalIdentityProvider, declared, scopes []string, allowed bool) {
+		api := &apiapi.Api{Spec: apiapi.ApiSpec{Oauth2Scopes: declared}}
+		exposure := &apiapi.ApiExposure{Spec: apiapi.ApiExposureSpec{Security: &apiapi.Security{
+			M2M: &apiapi.Machine2MachineAuthentication{ExternalIDP: idp, Scopes: scopes},
+		}}}
+		original := exposure.DeepCopy().Spec
+		Expect(validateExposureScopes(context.Background(), api, exposure)).To(Equal(allowed))
+		Expect(exposure.Spec).To(Equal(original))
+		if allowed {
+			Expect(exposure.GetConditions()).To(BeEmpty())
+			return
+		}
+		ready := meta.FindStatusCondition(exposure.GetConditions(), condition.ConditionTypeReady)
+		blocked := meta.FindStatusCondition(exposure.GetConditions(), condition.ConditionTypeProcessing)
+		Expect(ready).NotTo(BeNil())
+		Expect(ready.Status).To(Equal(metav1.ConditionFalse))
+		Expect(ready.Reason).To(Equal(condition.ReasonValidationFailed))
+		Expect(blocked).NotTo(BeNil())
+		Expect(blocked.Reason).To(Equal("Blocked"))
+		if len(declared) == 0 {
+			Expect(ready.Message).To(Equal("Api does not define any Oauth2 scopes"))
+			Expect(blocked.Message).To(Equal("Api does not define any Oauth2 scopes. ApiExposure will be automatically processed, if the API will be updated with scopes"))
+		} else {
+			Expect(ready.Message).To(Equal("One or more scopes which are defined in ApiExposure are not defined in the ApiSpecification"))
+			Expect(blocked.Message).To(Equal(fmt.Sprintf("Some defined scopes are not available. Available scopes: %q. Unsupported scopes: %q", strings.Join(declared, ", "), strings.Join(scopes, ", "))))
+		}
+	},
+		Entry("external endpoint with no declared scopes", endpoint, nil, requested, true),
+		Entry("external endpoint with unmatched scopes", endpoint, []string{"spec:only"}, requested, true),
+		Entry("absent endpoint with no declared scopes", nil, nil, requested, false),
+		Entry("empty endpoint with no declared scopes", emptyEndpoint, nil, requested, false),
+		Entry("absent endpoint with unmatched scopes", nil, []string{"spec:only"}, requested, false),
+		Entry("empty endpoint with unmatched scopes", emptyEndpoint, []string{"spec:only"}, requested, false),
+		Entry("ordinary valid subset", nil, []string{"provider:a", "provider:z", "extra"}, requested, true),
+		Entry("nil scopes without an endpoint", nil, nil, nil, true),
+		Entry("nil scopes with an endpoint", endpoint, nil, nil, true),
+		Entry("empty scopes without declarations still fail", nil, nil, []string{}, false),
+		Entry("empty scopes with declarations succeed", emptyEndpoint, []string{"spec:only"}, []string{}, true),
+		Entry("empty exempt scopes succeed", endpoint, nil, []string{}, true),
+	)
+
+	It("accepts absent security and absent M2M", func() {
+		for _, security := range []*apiapi.Security{nil, {}} {
+			exposure := &apiapi.ApiExposure{Spec: apiapi.ApiExposureSpec{Security: security}}
+			Expect(validateExposureScopes(context.Background(), &apiapi.Api{}, exposure)).To(BeTrue())
+			Expect(exposure.GetConditions()).To(BeEmpty())
+		}
+	})
+})
 
 // ──────────────────────────────────────────────────────────────────────────────
 // Test fixture builders
