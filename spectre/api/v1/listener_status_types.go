@@ -42,8 +42,15 @@ type ListenerDrainStatus struct {
 	Reason string `json:"reason,omitempty"`
 	// +optional
 	OldFingerprint string `json:"oldFingerprint,omitempty"`
+	// OldRouteListener is the single-RouteListener record written by earlier
+	// controller builds. It mirrors OldRouteListeners[0] and is still drained
+	// when it is the only record.
 	// +optional
 	OldRouteListener *ctypes.ObjectRef `json:"oldRouteListener,omitempty"`
+	// OldRouteListeners records every old-generation RouteListener that must be
+	// gone before Subscribers drain, sorted by namespace, name, UID.
+	// +optional
+	OldRouteListeners []ctypes.ObjectRef `json:"oldRouteListeners,omitempty"`
 	// +optional
 	OldSubscribers []ctypes.ObjectRef `json:"oldSubscribers,omitempty"`
 	// +optional
