@@ -2870,6 +2870,7 @@ var _ = Describe("ListenerHandler", func() {
 					mockNoStaleChildren()
 					mockApprovalGrantedGateOwnedBy("provider", nil)
 					mockApprovalGrantedGate("consumer")
+					mockOwnedLists(nil, nil) // identity drain inventory: nothing to stop
 
 					var err error
 					l, err = reconcile(l)
@@ -2883,6 +2884,146 @@ var _ = Describe("ListenerHandler", func() {
 
 				expectNoCaptureCreates(0)
 				Expect(countCalls(0, "Delete", nil)).To(BeZero())
+			})
+		})
+
+		// Finding #17: a scoped Approval that loses or changes its controller owner
+		// after provisioning stays Granted but is never repaired by the approval
+		// controller, so the applied capture it no longer authorizes is drained.
+		Context("scoped identity: controller owner lost after provisioning", func() {
+			foreignOwner := func() []metav1.OwnerReference {
+				isController := true
+				return []metav1.OwnerReference{{
+					APIVersion: "v1", Kind: "ConfigMap", Name: "foreign-object", UID: "foreign-uid-000", Controller: &isController,
+				}}
+			}
+
+			// mockGateReadError stubs one gate whose Approval read fails transiently.
+			mockGateReadError := func() {
+				fakeClient.EXPECT().
+					CreateOrUpdate(ctx, mock.AnythingOfType("*v1.ApprovalRequest"), mock.Anything).
+					Run(func(_ context.Context, _ client.Object, mutate controllerutil.MutateFn) {
+						_ = mutate()
+					}).
+					Return(controllerutil.OperationResultNone, nil).Once()
+				fakeClient.EXPECT().
+					List(ctx, mock.AnythingOfType("*v1.ApprovalRequestList"), mock.Anything).
+					Return(nil).Once()
+				fakeClient.EXPECT().
+					Get(ctx, mock.AnythingOfType("types.NamespacedName"), mock.AnythingOfType("*v1.Approval")).
+					Return(fmt.Errorf("internal API error")).Once()
+			}
+
+			DescribeTable("checkpoints the drain, deletes the RouteListener then the Subscribers, and stays drained",
+				func(owners map[string][]metav1.OwnerReference, gates string) {
+					f := provisionForRejection()
+					liveRLs := []gatewayv1.RouteListener{f.rl}
+					mockGates := func() {
+						for _, key := range []string{"provider", "consumer"} {
+							if refs, ok := owners[key]; ok {
+								mockApprovalGrantedGateOwnedBy(key, refs)
+							} else {
+								mockApprovalGrantedGate(key)
+							}
+						}
+					}
+					expectIdentityErr := func(err error) {
+						Expect(err).To(MatchError(builder.ErrScopedIdentity))
+						Expect(err).To(MatchError(ContainSubstring("missing or foreign controller owner")))
+						Expect(err.Error()).To(ContainSubstring("approval evaluation failed"))
+					}
+
+					// R1: the Approvals are still Granted, so the early check passes;
+					// the build rejects the owner and only the checkpoint is written.
+					mockEarlyRestrictionGranted(f.listener)
+					mockResolveTopology()
+					mockOwnedLists(liveRLs, f.subs) // stale-child check: same fingerprint, kept
+					mockGates()
+					mockOwnedLists(liveRLs, f.subs) // drainCapture inventory
+					start := len(fakeClient.Calls)
+					l, err := reconcile(f.listener)
+					expectIdentityErr(err)
+					d := l.Status.Draining
+					Expect(d).ToNot(BeNil())
+					Expect(d.Phase).To(Equal(handler.ExportDrainPhaseStopping))
+					Expect(d.Reason).To(Equal("approval identity invalid (" + gates + " gate)"))
+					Expect(d.OldFingerprint).To(Equal(f.fingerprint))
+					Expect(d.OldRouteListeners).To(Equal([]ctypes.ObjectRef{*ctypes.ObjectRefFromObject(&f.rl)}))
+					Expect(d.OldSubscribers).To(ConsistOf(*ctypes.ObjectRefFromObject(&f.subs[0]), *ctypes.ObjectRefFromObject(&f.subs[1])))
+					Expect(l.Status.RouteListener).ToNot(BeNil())
+					Expect(countCalls(start, "Delete", nil)).To(BeZero())
+					expectNoCaptureCreates(start)
+
+					// R2-R5: continueDrain deletes the RouteListener, then the Subscribers.
+					l = driveDrainToCleaningPublisher(l, f.rl, f.subs)
+
+					// R6 completes the drain and cleans the Publisher; R6 and R7 still
+					// fail on the identity, find nothing to drain and create nothing.
+					expectOrphanedPublisherDelete()
+					for i := range 2 {
+						mockEarlyRestrictionGranted(l)
+						mockResolveTopology()
+						mockOwnedLists(nil, nil) // stale-child check
+						mockGates()
+						mockOwnedLists(nil, nil) // drainCapture inventory: nothing left
+						start = len(fakeClient.Calls)
+						l, err = reconcile(l)
+						expectIdentityErr(err)
+						Expect(l.Status.Draining).To(BeNil())
+						Expect(l.Status.AppliedPlacement).To(BeNil())
+						Expect(l.Status.RouteListener).To(BeNil())
+						Expect(l.Status.EventSubscriptions).To(BeEmpty())
+						Expect(countCalls(start, "Delete", &pubsubv1.Publisher{})).To(Equal(1 - i))
+						Expect(countCalls(start, "Delete", &gatewayv1.RouteListener{})).To(BeZero())
+						Expect(countCalls(start, "Delete", &pubsubv1.Subscriber{})).To(BeZero())
+						expectNoCaptureCreates(start)
+					}
+				},
+				Entry("provider Approval without ownerReferences", map[string][]metav1.OwnerReference{"provider": nil}, "provider"),
+				Entry("consumer Approval without ownerReferences", map[string][]metav1.OwnerReference{"consumer": nil}, "consumer"),
+				Entry("both Approvals without ownerReferences",
+					map[string][]metav1.OwnerReference{"provider": nil, "consumer": nil}, "provider and consumer"),
+				Entry("provider Approval with a foreign controller", map[string][]metav1.OwnerReference{"provider": foreignOwner()}, "provider"),
+			)
+
+			It("drains on the consumer identity failure when the provider gate fails transiently", func() {
+				f := provisionForRejection()
+				liveRLs := []gatewayv1.RouteListener{f.rl}
+				mockEarlyRestrictionGranted(f.listener)
+				mockResolveTopology()
+				mockOwnedLists(liveRLs, f.subs) // stale-child check
+				mockGateReadError()             // provider gate
+				mockApprovalGrantedGateOwnedBy("consumer", nil)
+				mockOwnedLists(liveRLs, f.subs) // drainCapture inventory
+				start := len(fakeClient.Calls)
+				l, err := reconcile(f.listener)
+				// The consumer gate's identity failure stays matchable behind the
+				// provider gate's error in the combined error.
+				Expect(err).To(MatchError(builder.ErrScopedIdentity))
+				Expect(err).To(MatchError(ContainSubstring("internal API error")))
+				Expect(l.Status.Draining).ToNot(BeNil())
+				Expect(l.Status.Draining.Reason).To(Equal("approval identity invalid (consumer gate)"))
+				Expect(countCalls(start, "Delete", nil)).To(BeZero())
+				expectNoCaptureCreates(start)
+			})
+
+			It("keeps applied capture on a transient gate error", func() {
+				f := provisionForRejection()
+				mockEarlyRestrictionGranted(f.listener)
+				mockResolveTopology()
+				mockOwnedLists([]gatewayv1.RouteListener{f.rl}, f.subs) // stale-child check
+				mockGateReadError()                                     // provider gate
+				mockApprovalGrantedGate("consumer")
+				start := len(fakeClient.Calls)
+				l, err := reconcile(f.listener)
+				Expect(err).To(MatchError(ContainSubstring("internal API error")))
+				Expect(err).ToNot(MatchError(builder.ErrScopedIdentity))
+				Expect(err.Error()).To(ContainSubstring("approval evaluation failed"))
+				Expect(l.Status.Draining).To(BeNil())
+				Expect(l.Status.RouteListener).ToNot(BeNil())
+				Expect(l.Status.AppliedPlacement.Fingerprint).To(Equal(f.fingerprint))
+				Expect(countCalls(start, "Delete", nil)).To(BeZero())
+				expectNoCaptureCreates(start)
 			})
 		})
 
