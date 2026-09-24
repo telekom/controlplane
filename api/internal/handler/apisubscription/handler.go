@@ -403,6 +403,7 @@ func resolveRouteRef(ctx context.Context, scopedClient cclient.JanitorClient, ap
 	switch {
 	case sameZoneAsExposure:
 		if apiExposure.Status.Route == nil {
+			apiSub.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet, "Waiting for ApiExposure to create the route"))
 			apiSub.SetCondition(condition.NewBlockedCondition("Waiting for ApiExposure to create the route"))
 			return nil, nil
 		}
@@ -421,6 +422,7 @@ func resolveRouteRef(ctx context.Context, scopedClient cclient.JanitorClient, ap
 				return failoverRoute, nil
 			}
 		}
+		apiSub.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet, "Waiting for ApiExposure to create the failover route for this zone"))
 		apiSub.SetCondition(condition.NewBlockedCondition("Waiting for ApiExposure to create the failover route for this zone"))
 		return nil, nil
 
@@ -436,6 +438,7 @@ func resolveRouteRef(ctx context.Context, scopedClient cclient.JanitorClient, ap
 				return proxyRoute, nil
 			}
 		}
+		apiSub.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet, "Waiting for ApiExposure to create the proxy route for this zone"))
 		apiSub.SetCondition(condition.NewBlockedCondition("Waiting for ApiExposure to create the proxy route for this zone"))
 		return nil, nil
 	}

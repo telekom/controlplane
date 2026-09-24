@@ -39,6 +39,12 @@ A matching **ConsumeRoute** is then created for each approved subscription to gr
 
 For the meaning of each route type and how they forward traffic, see [Gateway Domain: Route Types & Cross-Zone Meshing](./gateway.mdx#route-types--cross-zone-meshing).
 
+### Subscription Readiness
+
+An `ApiSubscription` reports `Ready=False / PreconditionNotMet` while the exposure
+is missing the required primary, provider-failover, or proxy route reference.
+This also clears a previously successful readiness condition.
+
 ## Domain Interactions
 
 - **Rover domain** — Creates Api, ApiExposure, and ApiSubscription resources.
