@@ -14,9 +14,10 @@
 # roverctl-combined-image jobs.
 #
 # Also directly runnable via workflow_dispatch (Actions tab > "Release
-# GoReleaser" > Run workflow) to re-run just this job for an existing tag,
-# e.g. after fixing a transient GHCR/registry outage, without re-running
-# semantic-release or re-triggering the rest of release-publish.yaml.
+# GoReleaser" > Run workflow, supplying the existing release tag) to re-run
+# just this job, e.g. after fixing a transient GHCR/registry outage, without
+# re-running semantic-release or re-triggering the rest of
+# release-publish.yaml.
 name: "Release GoReleaser"
 
 on:
@@ -26,6 +27,11 @@ on:
         description: "The released version (tag with leading 'v' stripped), e.g. 1.2.3"
         value: ${{ jobs.goreleaser.outputs.version }}
   workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing release tag to (re-)run GoReleaser for, e.g. v1.2.3"
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -43,16 +49,23 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          # On workflow_call (tag push), the default ref is already the
+          # pushed tag. On workflow_dispatch, the run's ref defaults to the
+          # branch the workflow was launched from - not a release tag - so
+          # explicitly check out the requested tag input instead.
+          ref: ${{ inputs.tag || github.ref }}
           fetch-depth: 0 # full history, needed for GoReleaser's changelog generation
 
       - name: Determine release version
         id: version
         shell: bash
+        env:
+          TAG: ${{ inputs.tag || github.ref_name }}
         run: |
-          # GITHUB_REF_NAME is the pushed tag, e.g. "v1.2.3"; GoReleaser's
-          # own {{.Version}} (used in image labels/tags below) strips the
-          # leading "v" the same way.
-          echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+          # `TAG` is either the explicit workflow_dispatch input or the
+          # pushed tag (e.g. "v1.2.3"); GoReleaser's own {{.Version}} (used
+          # in image labels/tags below) strips the leading "v" the same way.
+          echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
 
       - name: Set up Go
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0

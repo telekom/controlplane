@@ -11,6 +11,11 @@
 # tag itself, and pushing this commit to `main` separately would bypass
 # required PR review and re-trigger CI on push.
 #
+# Deliberately does NOT include a `[skip ci]`/similar marker: GitHub applies
+# skip directives to the resulting `push` event too, which would suppress
+# the `v*` tag push that release-publish.yaml (and CI's tag-triggered Helm
+# publish) depend on to start at all.
+#
 # This script is designed to be used with semantic-release during the
 # prepare phase (see `.releaserc.mjs`).
 
@@ -34,4 +39,4 @@ if git diff --cached --quiet; then
   exit 0
 fi
 
-git commit -m "chore(release): ${NEXT_VERSION} [skip ci]"
+git commit -m "chore(release): ${NEXT_VERSION}"
