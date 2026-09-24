@@ -1422,6 +1422,181 @@ var _ = Describe("Authorization Migration", func() {
 		})
 	})
 
+	Describe("Finding 1 regression: multi-reconcile fresh-install escape", func() {
+		It("should persist migration record so second reconcile does not misclassify as fresh", func() {
+			listener := newMigrationListener()
+			intent := handler.NewTestIntent()
+
+			// Simulate the pre-condition: old unscoped ProviderApproval ref exists
+			// (no "ag-v1-" prefix), causing isFreshInstall to return false.
+			listener.Status.ProviderApproval = &ctypes.ObjectRef{
+				Name:      legacyApprovalName(migListenerName),
+				Namespace: migNamespace,
+			}
+
+			// --- Reconcile 1 ---
+			// advanceMigration finds no legacy Approval by name. The bug was that
+			// it set conditions but did NOT persist an AuthorizationMigration
+			// record. With the fix, it persists Phase=Blocked.
+			mockLegacyApprovalNotFound()
+
+			done, err := h.AdvanceMigration(ctx, listener, &intent, nil)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(done).To(BeFalse())
+			// Fix: migration record MUST be persisted.
+			Expect(listener.Status.AuthorizationMigration).ToNot(BeNil(),
+				"Reconcile 1 must persist a migration record to prevent fresh-install escape")
+			Expect(listener.Status.AuthorizationMigration.Phase).To(Equal("Blocked"))
+
+			// --- Simulate ensureApprovals overwriting ProviderApproval with scoped ref ---
+			listener.Status.ProviderApproval = &ctypes.ObjectRef{
+				Name:      "ag-v1-provider-" + migListenerName,
+				Namespace: migNamespace,
+			}
+
+			// --- Reconcile 2 ---
+			// isFreshInstall would see only the scoped ref (ag-v1- prefix) and no
+			// old unlabelled children. Without the fix, AuthorizationMigration is
+			// nil, so isFreshInstall returns true. With the fix, isFreshInstall
+			// sees AuthorizationMigration != nil and returns false.
+			fresh, err := h.IsFreshInstall(ctx, listener)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(fresh).To(BeFalse(),
+				"Reconcile 2: isFreshInstall must return false because migration record exists")
+			Expect(listener.Status.AuthorizationPolicyVersion).ToNot(Equal("v2"),
+				"Listener must NOT escape to v2")
+		})
+	})
+
+	Describe("Finding 2 regression: retirement re-authorization check", func() {
+		It("should not delete ApprovalRequest from DeletePrepared when dual regresses to Pending", func() {
+			listener := newMigrationListener()
+			intent := handler.NewTestIntent()
+			approval := makeLegacyApproval(listener, approvalv1.ApprovalStateGranted)
+			request := makeLegacyRequest(listener)
+
+			// State: RetiringRequests, PendingDeletion was recorded while Granted.
+			listener.Status.AuthorizationMigration = &spectrev1.AuthorizationMigrationStatus{
+				TargetPolicyVersion: "v2",
+				Phase:               "RetiringRequests",
+				LegacyApproval:      ctypes.ObjectRefFromObject(approval),
+				LegacyRequests:      []ctypes.ObjectRef{*ctypes.ObjectRefFromObject(request)},
+				RetirementCheckpoint: &spectrev1.MigrationRetirementCheckpoint{
+					PendingDeletions: []spectrev1.PendingDeletion{
+						{
+							Kind:            "ApprovalRequest",
+							Name:            request.Name,
+							Namespace:       request.Namespace,
+							UID:             string(request.UID),
+							ResourceVersion: request.ResourceVersion,
+							Phase:           handler.ExportPendingDeletionPhasePrepared,
+						},
+					},
+				},
+			}
+
+			// Discovery.
+			mockLegacyApprovalExists(approval)
+			mockLegacyRequestExists(request)
+			// retireLegacyRequests: fresh read succeeds (object still alive).
+			mockLegacyRequestExists(request)
+
+			// Dual has regressed to Pending (was Granted when checkpoint was recorded).
+			done, err := h.AdvanceMigration(ctx, listener, &intent, makeDualPending())
+			Expect(err).ToNot(HaveOccurred())
+			Expect(done).To(BeFalse())
+			// ZERO delete calls should have been made — mockery strict mode
+			// would fail if any Delete was called unexpectedly.
+			// Phase should still be RetiringRequests (waiting for re-grant).
+			Expect(listener.Status.AuthorizationMigration.Phase).To(Equal("RetiringRequests"))
+		})
+
+		It("should not delete Approval from DeletePrepared when dual regresses to Pending", func() {
+			listener := newMigrationListener()
+			intent := handler.NewTestIntent()
+			approval := makeLegacyApproval(listener, approvalv1.ApprovalStateGranted)
+			request := makeLegacyRequest(listener)
+
+			// State: RetiringApproval, PendingDeletion was recorded while Granted.
+			listener.Status.AuthorizationMigration = &spectrev1.AuthorizationMigrationStatus{
+				TargetPolicyVersion: "v2",
+				Phase:               "RetiringApproval",
+				LegacyApproval:      ctypes.ObjectRefFromObject(approval),
+				LegacyRequests:      []ctypes.ObjectRef{*ctypes.ObjectRefFromObject(request)},
+				RetirementCheckpoint: &spectrev1.MigrationRetirementCheckpoint{
+					RequestsRetired: true,
+					PendingDeletions: []spectrev1.PendingDeletion{
+						{
+							Kind:  "ApprovalRequest",
+							Name:  request.Name,
+							Phase: handler.ExportPendingDeletionPhaseObserved,
+						},
+						{
+							Kind:            "Approval",
+							Name:            approval.Name,
+							Namespace:       approval.Namespace,
+							UID:             string(approval.UID),
+							ResourceVersion: approval.ResourceVersion,
+							Phase:           handler.ExportPendingDeletionPhasePrepared,
+						},
+					},
+				},
+			}
+
+			// Discovery.
+			mockLegacyApprovalExists(approval)
+			mockLegacyRequestExists(request)
+			// retireLegacyApproval: fresh read succeeds.
+			mockLegacyApprovalExists(approval)
+
+			// Dual has regressed to Pending.
+			done, err := h.AdvanceMigration(ctx, listener, &intent, makeDualPending())
+			Expect(err).ToNot(HaveOccurred())
+			Expect(done).To(BeFalse())
+			// ZERO delete calls — mockery strict mode catches any unexpected Delete.
+			Expect(listener.Status.AuthorizationMigration.Phase).To(Equal("RetiringApproval"))
+		})
+
+		It("should resume retirement when dual re-grants after regression", func() {
+			listener := newMigrationListener()
+			intent := handler.NewTestIntent()
+			approval := makeLegacyApproval(listener, approvalv1.ApprovalStateGranted)
+			request := makeLegacyRequest(listener)
+
+			// State: same as above but now dual is Granted again.
+			listener.Status.AuthorizationMigration = &spectrev1.AuthorizationMigrationStatus{
+				TargetPolicyVersion: "v2",
+				Phase:               "RetiringRequests",
+				LegacyApproval:      ctypes.ObjectRefFromObject(approval),
+				LegacyRequests:      []ctypes.ObjectRef{*ctypes.ObjectRefFromObject(request)},
+				RetirementCheckpoint: &spectrev1.MigrationRetirementCheckpoint{
+					PendingDeletions: []spectrev1.PendingDeletion{
+						{
+							Kind:            "ApprovalRequest",
+							Name:            request.Name,
+							Namespace:       request.Namespace,
+							UID:             string(request.UID),
+							ResourceVersion: request.ResourceVersion,
+							Phase:           handler.ExportPendingDeletionPhasePrepared,
+						},
+					},
+				},
+			}
+
+			// Discovery.
+			mockLegacyApprovalExists(approval)
+			mockLegacyRequestExists(request)
+			// retireLegacyRequests: fresh read + delete.
+			mockLegacyRequestExists(request)
+			mockDeleteApprovalRequest(request.Name)
+
+			// Re-granted — delete should proceed.
+			done, err := h.AdvanceMigration(ctx, listener, &intent, makeDualGranted())
+			Expect(err).ToNot(HaveOccurred())
+			Expect(done).To(BeFalse()) // returned to verify delete on next reconcile
+		})
+	})
+
 	Describe("isLegacyBlocked", func() {
 		It("should block on Rejected", func() {
 			approval := makeLegacyApproval(newMigrationListener(), approvalv1.ApprovalStateRejected)
