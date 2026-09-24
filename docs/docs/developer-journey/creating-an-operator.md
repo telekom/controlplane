@@ -115,6 +115,32 @@ Here is what each part does:
 
 Your actual business logic goes into the `MyResourceHandler`, which implements the `Handler` interface.
 
+## Resource Names and Labels
+
+Normalize calculated Kubernetes resource names with `labelutil.NormalizeNameValue`
+from `common/pkg/util/labelutil`. Apply it to the **complete name**, including
+prefixes and suffixes, so the result fits the 253-character resource-name limit:
+
+```go
+name := labelutil.NormalizeNameValue(clientID + "--" + zone.Name)
+```
+
+Use `labelutil.NormalizeLabelValue` for dynamic label values, including an
+owner's name copied into a label. A valid resource name can exceed the
+63-character label limit. Normalize inputs to matching label selectors and
+comparisons in the same way. These helpers normalize characters and shorten
+long values deterministically using a hash.
+
+Keep original values in specs, external client IDs, and references to existing
+resources. A shortened label is an index, not a reversible resource reference.
+The common client does not automatically normalize names or labels.
+
+Zone names and environment identifiers are assumed to already fit label limits.
+Generated namespaces have a separate 63-character DNS-label limit; resource-name
+normalization is not sufficient for them. Namespace shortening also requires
+updating code that derives environment, group, or team identifiers from namespace
+strings.
+
 ## Error Handling
 
 The Common library provides specialized error types that control how the framework responds to failures:

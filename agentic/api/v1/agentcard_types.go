@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/telekom/controlplane/common/pkg/types"
+	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -16,7 +17,7 @@ import (
 // It strips leading slashes and replaces "/" with "-" (e.g. "/agent/assistant/v1" -> "agent-assistant-v1").
 func MakeAgentCardName(basePath string) string {
 	name := strings.TrimPrefix(basePath, "/")
-	return strings.ToLower(strings.ReplaceAll(name, "/", "-"))
+	return labelutil.NormalizeNameValue(strings.ReplaceAll(name, "/", "-"))
 }
 
 // AgentCardSpec defines the desired state of AgentCard.

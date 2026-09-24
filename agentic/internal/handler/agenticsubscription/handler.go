@@ -301,7 +301,7 @@ func (h *AgenticSubscriptionHandler) createConsumeRoute(
 ) (*gatewayapi.ConsumeRoute, error) {
 	c := cclient.ClientFromContextOrDie(ctx)
 
-	consumeRouteName := routeRef.Name + "--" + labelutil.NormalizeNameValue(application.Status.ClientId)
+	consumeRouteName := labelutil.NormalizeNameValue(routeRef.Name + "--" + application.Status.ClientId)
 
 	consumeRoute := &gatewayapi.ConsumeRoute{
 		ObjectMeta: metav1.ObjectMeta{

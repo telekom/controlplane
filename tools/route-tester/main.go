@@ -100,7 +100,7 @@ func main() {
 	route := &gatewayv1.Route{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: zone.Status.Namespace,
-			Name:      labelutil.NormalizeValue(basePath),
+			Name:      labelutil.NormalizeNameValue(basePath),
 		},
 	}
 

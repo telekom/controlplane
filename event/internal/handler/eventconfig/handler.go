@@ -21,6 +21,7 @@ import (
 	"github.com/telekom/controlplane/common/pkg/handler"
 	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
+	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	"github.com/telekom/controlplane/event/internal/handler/util"
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
@@ -251,7 +252,7 @@ func (h *EventConfigHandler) createIdentityClient(ctx context.Context, obj *even
 
 	identityClient := &identityv1.Client{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      clientCfg.ClientId,
+			Name:      labelutil.NormalizeNameValue(clientCfg.ClientId),
 			Namespace: obj.Namespace,
 		},
 	}

@@ -28,6 +28,7 @@ import (
 	"github.com/telekom/controlplane/common/pkg/reminder"
 	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
+	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	gateway "github.com/telekom/controlplane/gateway/api/v1"
 	identity "github.com/telekom/controlplane/identity/api/v1"
 )
@@ -285,7 +286,7 @@ func CreateIdentityClient(ctx context.Context, zone *admin.Zone, owner *applicat
 
 	c := client.ClientFromContextOrDie(ctx)
 	clientId := MakeClientName(owner)
-	resourceName := clientId + "--" + zone.Name
+	resourceName := labelutil.NormalizeNameValue(clientId + "--" + zone.Name)
 
 	// Resolve realm name from zone status (decoupled from environment name)
 	if zone.Status.IdentityRealm == nil {
@@ -308,9 +309,9 @@ func CreateIdentityClient(ctx context.Context, zone *admin.Zone, owner *applicat
 
 	mutator := func() error {
 		idpClient.Labels = map[string]string{
-			config.BuildLabelKey("application"): owner.Name,
-			config.BuildLabelKey("team"):        owner.Spec.Team,
-			config.BuildLabelKey("realm"):       realmName,
+			config.BuildLabelKey("application"): labelutil.NormalizeLabelValue(owner.Name),
+			config.BuildLabelKey("team"):        labelutil.NormalizeLabelValue(owner.Spec.Team),
+			config.BuildLabelKey("realm"):       labelutil.NormalizeLabelValue(realmName),
 			config.BuildLabelKey("zone"):        zone.Name,
 		}
 		if options.Failover {
@@ -365,7 +366,7 @@ func CreateGatewayConsumer(ctx context.Context, zone *admin.Zone, owner *applica
 
 	c := client.ClientFromContextOrDie(ctx)
 	clientId := MakeClientName(owner)
-	resourceName := clientId + "--" + zone.Name
+	resourceName := labelutil.NormalizeNameValue(clientId + "--" + zone.Name)
 
 	if zone.Status.Gateway == nil {
 		return ctrlerrors.BlockedErrorf("zone %q does not contain a Gateway", zone.Name)
@@ -381,9 +382,9 @@ func CreateGatewayConsumer(ctx context.Context, zone *admin.Zone, owner *applica
 
 	mutator := func() error {
 		consumer.Labels = map[string]string{
-			config.BuildLabelKey("application"): owner.Name,
-			config.BuildLabelKey("team"):        owner.Spec.Team,
-			config.BuildLabelKey("gateway"):     gatewayRef.Name,
+			config.BuildLabelKey("application"): labelutil.NormalizeLabelValue(owner.Name),
+			config.BuildLabelKey("team"):        labelutil.NormalizeLabelValue(owner.Spec.Team),
+			config.BuildLabelKey("gateway"):     labelutil.NormalizeLabelValue(gatewayRef.Name),
 			config.BuildLabelKey("zone"):        zone.Name,
 		}
 		if options.Failover {

@@ -47,6 +47,26 @@ spec:
       email: bob@example.com
 ```
 
+### Team Name Length
+
+The complete generated namespace `{environment}--{group}--{team}` must fit
+Kubernetes' 63-character namespace limit:
+
+```text
+length(environment) + length(group) + length(team) + 4 <= 63
+```
+
+There are no separate fixed length budgets for group and team: they share the
+space remaining after the environment and the two `--` separators. For example,
+environment `prod` and group `engineering` leave 44 characters for the team name.
+The environment is taken from the Team's environment label.
+
+Team admission rejects oversized combinations on create and update before
+provisioning credentials. The error reports the combined group/team budget.
+Existing oversized Teams must be corrected before further updates; deletion
+remains possible. Shortening the Team resource's metadata name does not bypass
+this check, because the namespace uses the original group and team spec fields.
+
 ### User Membership Lookup
 
 When the ControlPlane API receives a forwarded user identity from an authorized client (such as the BFF), it resolves team memberships using the shared ASCII email policy: only `A-Z` become `a-z`. For example, `Alice@Example.com` and `alice@example.com` match the same memberships across teams. Characters such as `%` and `_` are treated literally, not as wildcards. Dots, tags, quoting, and Unicode are not rewritten or normalized; `Üser@example.com` and `üser@example.com` remain distinct identities.

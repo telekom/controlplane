@@ -120,25 +120,6 @@ var _ = Describe("HandlePermission", func() {
 		}))
 	})
 
-	It("must not set zone label when zone is empty", func() {
-		owner.Spec.Zone = ""
-		var capturedPS *permissionv1.PermissionSet
-
-		fakeClient.EXPECT().Scheme().Return(testScheme).Maybe()
-		fakeClient.EXPECT().
-			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.PermissionSet"), mock.AnythingOfType("controllerutil.MutateFn")).
-			Run(func(_ context.Context, obj client.Object, mutate controllerutil.MutateFn) {
-				_ = mutate()
-				capturedPS = obj.(*permissionv1.PermissionSet)
-			}).
-			Return(controllerutil.OperationResultCreated, nil).Once()
-
-		err := HandlePermission(ctx, fakeClient, owner)
-
-		Expect(err).ToNot(HaveOccurred())
-		Expect(capturedPS.Labels).ToNot(HaveKey(config.BuildLabelKey("zone")))
-	})
-
 	It("must return error when CreateOrUpdate fails", func() {
 		fakeClient.EXPECT().Scheme().Return(testScheme).Maybe()
 		fakeClient.EXPECT().

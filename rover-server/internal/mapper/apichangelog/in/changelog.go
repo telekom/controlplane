@@ -37,7 +37,7 @@ func MapRequest(basePath string, fileAPIResp *filesapi.FileUploadResponse, id ma
 	}
 
 	ns := id.Environment + "--" + id.Namespace
-	apiSpecName := labelutil.NormalizeValue(basePath)
+	apiSpecName := labelutil.NormalizeNameValue(basePath)
 	apiSpecRef := types.TypedObjectRef{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "ApiSpecification",
@@ -55,7 +55,7 @@ func MapRequest(basePath string, fileAPIResp *filesapi.FileUploadResponse, id ma
 			APIVersion: "rover.cp.ei.telekom.de/v1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      id.Name,
+			Name:      labelutil.NormalizeNameValue(id.Name),
 			Namespace: ns,
 			Annotations: map[string]string{
 				config.BuildLabelKey("basePath"): basePath,

@@ -39,12 +39,9 @@ func HandlePermission(ctx context.Context, c client.JanitorClient, owner *roverv
 		}
 
 		// Set labels
-		if ps.Labels == nil {
-			ps.Labels = make(map[string]string)
-		}
-		ps.Labels[config.BuildLabelKey("application")] = labelutil.NormalizeValue(owner.Name)
-		if owner.Spec.Zone != "" {
-			ps.Labels[config.BuildLabelKey("zone")] = labelutil.NormalizeValue(owner.Spec.Zone)
+		ps.Labels = map[string]string{
+			config.BuildLabelKey("application"): labelutil.NormalizeLabelValue(owner.Name),
+			config.BuildLabelKey("zone"):        labelutil.NormalizeLabelValue(owner.Spec.Zone),
 		}
 
 		// Set permissions spec

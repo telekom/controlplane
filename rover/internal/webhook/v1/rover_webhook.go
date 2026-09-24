@@ -397,7 +397,7 @@ func (r *RoverValidator) validateExposureRateLimit(valErr *cerrors.ValidationErr
 func (r *RoverValidator) validateApproval(ctx context.Context, valErr *cerrors.ValidationError, environment string, approval roverv1.Approval) error {
 	for i := range approval.TrustedTeams {
 		ref := types.ObjectRef{
-			Name:      approval.TrustedTeams[i].Group + "--" + approval.TrustedTeams[i].Team,
+			Name:      organizationv1.TeamResourceName(approval.TrustedTeams[i].Group, approval.TrustedTeams[i].Team),
 			Namespace: environment,
 		}
 		if _, err := r.GetTeam(ctx, ref.K8s()); err != nil {

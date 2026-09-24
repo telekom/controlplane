@@ -24,15 +24,15 @@ func makeName(name string, notification *notificationv1.Notification) string {
 		resourceName = labelutil.NormalizeValue(notification.Spec.Purpose)
 	}
 
-	return resourceName + "--" + specHash
+	return labelutil.NormalizeNameValue(resourceName + "--" + specHash)
 }
 
 func ensureLabels(notification *notificationv1.Notification) {
 	if notification.Labels == nil {
 		notification.Labels = make(map[string]string)
 	}
-	notification.Labels[cconfig.BuildLabelKey("purpose")] = notification.Spec.Purpose
-	notification.Labels[cconfig.BuildLabelKey("sender-type")] = string(notification.Spec.Sender.Type)
+	notification.Labels[cconfig.BuildLabelKey("purpose")] = labelutil.NormalizeLabelValue(notification.Spec.Purpose)
+	notification.Labels[cconfig.BuildLabelKey("sender-type")] = labelutil.NormalizeLabelValue(string(notification.Spec.Sender.Type))
 }
 
 // ExtractApplicationInformation extract values from the target structure based on conventions

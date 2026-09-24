@@ -224,7 +224,7 @@ var _ = Describe("Team Webhook", func() {
 			Expect(warning).To(BeNil())
 			Expect(err).To(HaveOccurred())
 			Expect(errors.IsInvalid(err)).To(BeTrue())
-			Expect(err.Error()).To(ContainSubstring("must be equal to 'spec.group--spec.name'"))
+			Expect(err.Error()).To(ContainSubstring("must be equal to the normalized 'spec.group--spec.name'"))
 		})
 		It("should return an error since env is missing", func() {
 			By("Creating a Team with name completely different from spec.group--spec.name")
@@ -541,7 +541,7 @@ var _ = Describe("Team Webhook", func() {
 				}, nil)
 			err := k8sClient.Create(ctx, teamObj)
 			Expect(errors.IsInvalid(err)).To(BeTrue())
-			Expect(err.Error()).To(ContainSubstring("Invalid value: \"here-is-a--complete-mismatch\": must be equal to 'spec.group--spec.name'"))
+			Expect(err.Error()).To(ContainSubstring("Invalid value: \"here-is-a--complete-mismatch\": must be equal to the normalized 'spec.group--spec.name'"))
 		})
 	})
 })

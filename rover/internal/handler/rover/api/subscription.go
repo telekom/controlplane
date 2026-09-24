@@ -65,8 +65,8 @@ func HandleSubscription(ctx context.Context, c client.JanitorClient, owner *rove
 
 		apiSubscription.Labels = map[string]string{
 			apiapi.BasePathLabelKey:             labelutil.NormalizeLabelValue(sub.BasePath),
-			config.BuildLabelKey("zone"):        labelutil.NormalizeValue(zoneRef.Name),
-			config.BuildLabelKey("application"): labelutil.NormalizeValue(owner.Name),
+			config.BuildLabelKey("zone"):        labelutil.NormalizeLabelValue(zoneRef.Name),
+			config.BuildLabelKey("application"): labelutil.NormalizeLabelValue(owner.Name),
 		}
 
 		return nil

@@ -15,6 +15,7 @@ import (
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	ctrlerrors "github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	"github.com/telekom/controlplane/common/pkg/types"
+	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
 )
 
@@ -93,7 +94,7 @@ func createIdentityRoute(ctx context.Context, hc *HandlingContext, realmName str
 	c := cclient.ClientFromContextOrDie(ctx)
 
 	// Route name: gateway--<realmName>--<suffix>
-	routeName := hc.Gateway.Name + "--" + realmName + "--" + cfg.suffix
+	routeName := labelutil.NormalizeNameValue(hc.Gateway.Name + "--" + realmName + "--" + cfg.suffix)
 
 	route := &gatewayapi.Route{
 		ObjectMeta: metav1.ObjectMeta{
