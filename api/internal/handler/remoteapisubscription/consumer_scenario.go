@@ -71,7 +71,7 @@ func (h *RemoteApiSubscriptionHandler) handleConsumerScenario(ctx context.Contex
 	// Create real route
 	route := &gatewayapi.Route{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      labelutil.NormalizeNameValue(remoteOrg.Spec.Id + "--" + labelutil.NormalizeValue(obj.Spec.ApiBasePath)),
+			Name:      labelutil.NormalizeNameValue(remoteOrg.Spec.Id + "--" + obj.Spec.ApiBasePath),
 			Namespace: zone.Status.Namespace,
 		},
 	}

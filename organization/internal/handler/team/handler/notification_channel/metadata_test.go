@@ -8,9 +8,11 @@ import (
 	"strings"
 	"testing"
 
-	. "github.com/onsi/gomega"
-	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
 	"k8s.io/apimachinery/pkg/util/validation"
+
+	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
+
+	. "github.com/onsi/gomega"
 )
 
 func TestLongTeamChannelName(t *testing.T) {

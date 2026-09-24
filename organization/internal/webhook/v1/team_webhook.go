@@ -62,7 +62,8 @@ func (t TeamCustomDefaulter) Default(ctx context.Context, teamObj *organizationv
 	if err != nil {
 		return err
 	}
-	if err := validator.ValidateTeamNamespace(teamObj, env); err != nil {
+	err = validator.ValidateTeamNamespace(teamObj, env)
+	if err != nil {
 		return err
 	}
 

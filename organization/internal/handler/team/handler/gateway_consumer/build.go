@@ -5,9 +5,9 @@
 package gateway_consumer
 
 import (
-	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	organisationv1 "github.com/telekom/controlplane/organization/api/v1"
 	"github.com/telekom/controlplane/organization/internal/handler/team/handler"

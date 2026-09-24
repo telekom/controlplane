@@ -8,9 +8,11 @@ import (
 	"strings"
 	"testing"
 
-	. "github.com/onsi/gomega"
-	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
+
+	. "github.com/onsi/gomega"
 )
 
 func TestValidateNormalizedTeamName(t *testing.T) {

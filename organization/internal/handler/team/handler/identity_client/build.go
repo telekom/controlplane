@@ -5,9 +5,9 @@
 package identity_client
 
 import (
-	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
 	organisationv1 "github.com/telekom/controlplane/organization/api/v1"
 )
