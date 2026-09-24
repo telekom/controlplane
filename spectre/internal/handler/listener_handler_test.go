@@ -770,6 +770,31 @@ var _ = Describe("ListenerHandler", func() {
 		Expect(countCalls(from, "CreateOrUpdate", &pubsubv1.Publisher{})).To(BeZero())
 	}
 
+	// countNamespacedSubscriberLists counts Subscriber Lists scoped to a
+	// namespace since index from: the orphan check behind a Publisher delete.
+	// Owner-label inventories are cluster-wide and not counted.
+	countNamespacedSubscriberLists := func(from int) int {
+		n := 0
+		for _, call := range fakeClient.Calls[from:] {
+			if call.Method != "List" {
+				continue
+			}
+			if _, ok := call.Arguments.Get(1).(*pubsubv1.SubscriberList); !ok {
+				continue
+			}
+			lo := &client.ListOptions{}
+			for _, a := range call.Arguments[2:] {
+				if o, ok := a.(client.ListOption); ok {
+					o.ApplyToList(lo)
+				}
+			}
+			if lo.Namespace != "" {
+				n++
+			}
+		}
+		return n
+	}
+
 	// expectRequestDenied asserts Ready=False/AccessDenied naming the gate whose
 	// current ApprovalRequest was rejected.
 	expectRequestDenied := func(l *spectrev1.Listener, gate string) {
@@ -936,6 +961,101 @@ var _ = Describe("ListenerHandler", func() {
 		return f
 	}
 
+	// driveDrainToCleaningPublisher drives a persisted Stopping checkpoint for
+	// the live RouteListener rl and Subscribers subs through the next four
+	// reconciles: the RouteListener is deleted with its UID+RV preconditions
+	// and waited for before any Subscriber is touched, then the Subscribers
+	// likewise. It returns the Listener at CleaningPublisher.
+	driveDrainToCleaningPublisher := func(l *spectrev1.Listener, rl gatewayv1.RouteListener, subs []pubsubv1.Subscriber) *spectrev1.Listener {
+		rlKey := k8stypes.NamespacedName{Name: rl.Name, Namespace: rl.Namespace}
+		// R2: Stopping deletes the old RouteListener with UID+RV preconditions.
+		fakeClient.EXPECT().
+			Get(ctx, rlKey, mock.AnythingOfType("*v1.RouteListener")).
+			Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
+				rl.DeepCopyInto(out.(*gatewayv1.RouteListener))
+			}).
+			Return(nil).Once()
+		fakeClient.EXPECT().
+			Delete(ctx, mock.AnythingOfType("*v1.RouteListener"), mock.Anything).
+			Run(func(_ context.Context, _ client.Object, opts ...client.DeleteOption) {
+				do := (&client.DeleteOptions{}).ApplyOptions(opts)
+				Expect(do.Preconditions).ToNot(BeNil())
+				Expect(do.Preconditions.UID).To(HaveValue(Equal(rl.UID)))
+				Expect(do.Preconditions.ResourceVersion).To(HaveValue(Equal(rl.ResourceVersion)))
+			}).
+			Return(nil).Once()
+		start := len(fakeClient.Calls)
+		l, err := reconcile(l)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(countCalls(start, "Delete", &gatewayv1.RouteListener{})).To(Equal(1))
+		Expect(countCalls(start, "Delete", &pubsubv1.Subscriber{})).To(BeZero())
+		Expect(countCalls(start, "Delete", &pubsubv1.Publisher{})).To(BeZero())
+		expectNoCaptureCreates(start)
+		Expect(l.Status.Draining).ToNot(BeNil())
+		Expect(l.Status.Draining.Phase).To(Equal(handler.ExportDrainPhaseStopping))
+
+		// R3: the RouteListener is gone; its ref is cleared before any Subscriber
+		// is touched.
+		fakeClient.EXPECT().
+			Get(ctx, rlKey, mock.AnythingOfType("*v1.RouteListener")).
+			Return(errors.NewNotFound(schema.GroupResource{Group: gatewayv1.GroupVersion.Group, Resource: "routelisteners"}, rl.Name)).Once()
+		start = len(fakeClient.Calls)
+		l, err = reconcile(l)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(countCalls(start, "Delete", nil)).To(BeZero())
+		Expect(l.Status.Draining).ToNot(BeNil())
+		Expect(l.Status.Draining.Phase).To(Equal(handler.ExportDrainPhaseDrainingSubscribers))
+		Expect(l.Status.RouteListener).To(BeNil())
+		Expect(l.Status.EventSubscriptions).To(HaveLen(len(subs)))
+
+		// R4: DrainingSubscribers deletes both Subscribers with UID+RV preconditions.
+		subRVs := map[k8stypes.UID]string{}
+		for i := range subs {
+			subRVs[subs[i].UID] = subs[i].ResourceVersion
+			sub := subs[i].DeepCopy()
+			fakeClient.EXPECT().
+				Get(ctx, k8stypes.NamespacedName{Name: sub.Name, Namespace: sub.Namespace}, mock.AnythingOfType("*v1.Subscriber")).
+				Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
+					sub.DeepCopyInto(out.(*pubsubv1.Subscriber))
+				}).
+				Return(nil).Once()
+		}
+		fakeClient.EXPECT().
+			Delete(ctx, mock.AnythingOfType("*v1.Subscriber"), mock.Anything).
+			Run(func(_ context.Context, obj client.Object, opts ...client.DeleteOption) {
+				do := (&client.DeleteOptions{}).ApplyOptions(opts)
+				Expect(subRVs).To(HaveKey(obj.GetUID()))
+				Expect(do.Preconditions).ToNot(BeNil())
+				Expect(do.Preconditions.UID).To(HaveValue(Equal(obj.GetUID())))
+				Expect(do.Preconditions.ResourceVersion).To(HaveValue(Equal(subRVs[obj.GetUID()])))
+			}).
+			Return(nil).Times(len(subs))
+		start = len(fakeClient.Calls)
+		l, err = reconcile(l)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(countCalls(start, "Delete", &pubsubv1.Subscriber{})).To(Equal(len(subs)))
+		Expect(countCalls(start, "Delete", &gatewayv1.RouteListener{})).To(BeZero())
+		Expect(countCalls(start, "Delete", &pubsubv1.Publisher{})).To(BeZero())
+		Expect(l.Status.Draining).ToNot(BeNil())
+		Expect(l.Status.Draining.Phase).To(Equal(handler.ExportDrainPhaseDrainingSubscribers))
+
+		// R5: both Subscribers are gone.
+		for i := range subs {
+			fakeClient.EXPECT().
+				Get(ctx, k8stypes.NamespacedName{Name: subs[i].Name, Namespace: subs[i].Namespace}, mock.AnythingOfType("*v1.Subscriber")).
+				Return(errors.NewNotFound(schema.GroupResource{Group: pubsubv1.GroupVersion.Group, Resource: "subscribers"}, subs[i].Name)).Once()
+		}
+		start = len(fakeClient.Calls)
+		l, err = reconcile(l)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(countCalls(start, "Delete", nil)).To(BeZero())
+		Expect(l.Status.Draining).ToNot(BeNil())
+		Expect(l.Status.Draining.Phase).To(Equal(handler.ExportDrainPhaseCleaningPublisher))
+		Expect(l.Status.EventSubscriptions).To(BeEmpty())
+
+		return l
+	}
+
 	// provisionAndDrainAfterRejection provisions a Listener (R0), rejects the
 	// given gate's current ApprovalRequest and drives the persisted drain to
 	// completion (R1-R6), asserting the checkpoint and delete order on the way.
@@ -946,7 +1066,6 @@ var _ = Describe("ListenerHandler", func() {
 			otherGate = "provider"
 		}
 		liveRLs := []gatewayv1.RouteListener{f.rl}
-		rlKey := k8stypes.NamespacedName{Name: f.rl.Name, Namespace: f.rl.Namespace}
 
 		// R1: the gate's current request is Rejected. The drain checkpoint is
 		// written and the reconcile returns before anything is deleted.
@@ -956,7 +1075,7 @@ var _ = Describe("ListenerHandler", func() {
 			mockResolveTopology()
 			mockOwnedLists(liveRLs, f.subs) // removeStaleChildren: same fingerprint, kept
 			mockRejectedGates(gate)
-			mockOwnedLists(liveRLs, f.subs) // startDrain snapshot
+			mockOwnedLists(liveRLs, f.subs) // drainCapture inventory
 		}
 		expectCheckpoint := func(l *spectrev1.Listener, from int) {
 			d := l.Status.Draining
@@ -1010,89 +1129,7 @@ var _ = Describe("ListenerHandler", func() {
 		Expect(err).ToNot(HaveOccurred())
 		expectCheckpoint(l, start)
 
-		// R2: Stopping deletes the old RouteListener with UID+RV preconditions.
-		fakeClient.EXPECT().
-			Get(ctx, rlKey, mock.AnythingOfType("*v1.RouteListener")).
-			Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
-				f.rl.DeepCopyInto(out.(*gatewayv1.RouteListener))
-			}).
-			Return(nil).Once()
-		fakeClient.EXPECT().
-			Delete(ctx, mock.AnythingOfType("*v1.RouteListener"), mock.Anything).
-			Run(func(_ context.Context, _ client.Object, opts ...client.DeleteOption) {
-				do := (&client.DeleteOptions{}).ApplyOptions(opts)
-				Expect(do.Preconditions).ToNot(BeNil())
-				Expect(do.Preconditions.UID).To(HaveValue(Equal(k8stypes.UID("rl-uid-1"))))
-				Expect(do.Preconditions.ResourceVersion).To(HaveValue(Equal("7")))
-			}).
-			Return(nil).Once()
-		start = len(fakeClient.Calls)
-		l, err = reconcile(l)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(countCalls(start, "Delete", &gatewayv1.RouteListener{})).To(Equal(1))
-		Expect(countCalls(start, "Delete", &pubsubv1.Subscriber{})).To(BeZero())
-		Expect(countCalls(start, "Delete", &pubsubv1.Publisher{})).To(BeZero())
-		expectNoCaptureCreates(start)
-		Expect(l.Status.Draining).ToNot(BeNil())
-		Expect(l.Status.Draining.Phase).To(Equal(handler.ExportDrainPhaseStopping))
-
-		// R3: the RouteListener is gone; its ref is cleared before any Subscriber
-		// is touched.
-		fakeClient.EXPECT().
-			Get(ctx, rlKey, mock.AnythingOfType("*v1.RouteListener")).
-			Return(errors.NewNotFound(schema.GroupResource{Group: gatewayv1.GroupVersion.Group, Resource: "routelisteners"}, f.rl.Name)).Once()
-		start = len(fakeClient.Calls)
-		l, err = reconcile(l)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(countCalls(start, "Delete", nil)).To(BeZero())
-		Expect(l.Status.Draining).ToNot(BeNil())
-		Expect(l.Status.Draining.Phase).To(Equal(handler.ExportDrainPhaseDrainingSubscribers))
-		Expect(l.Status.RouteListener).To(BeNil())
-		Expect(l.Status.EventSubscriptions).To(HaveLen(2))
-
-		// R4: DrainingSubscribers deletes both Subscribers with UID+RV preconditions.
-		subUIDs := []k8stypes.UID{f.subs[0].UID, f.subs[1].UID}
-		for i := range f.subs {
-			sub := f.subs[i].DeepCopy()
-			fakeClient.EXPECT().
-				Get(ctx, k8stypes.NamespacedName{Name: sub.Name, Namespace: sub.Namespace}, mock.AnythingOfType("*v1.Subscriber")).
-				Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
-					sub.DeepCopyInto(out.(*pubsubv1.Subscriber))
-				}).
-				Return(nil).Once()
-		}
-		fakeClient.EXPECT().
-			Delete(ctx, mock.AnythingOfType("*v1.Subscriber"), mock.Anything).
-			Run(func(_ context.Context, obj client.Object, opts ...client.DeleteOption) {
-				do := (&client.DeleteOptions{}).ApplyOptions(opts)
-				Expect(subUIDs).To(ContainElement(obj.GetUID()))
-				Expect(do.Preconditions).ToNot(BeNil())
-				Expect(do.Preconditions.UID).To(HaveValue(Equal(obj.GetUID())))
-				Expect(do.Preconditions.ResourceVersion).To(HaveValue(Equal("3")))
-			}).
-			Return(nil).Times(2)
-		start = len(fakeClient.Calls)
-		l, err = reconcile(l)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(countCalls(start, "Delete", &pubsubv1.Subscriber{})).To(Equal(2))
-		Expect(countCalls(start, "Delete", &gatewayv1.RouteListener{})).To(BeZero())
-		Expect(countCalls(start, "Delete", &pubsubv1.Publisher{})).To(BeZero())
-		Expect(l.Status.Draining).ToNot(BeNil())
-		Expect(l.Status.Draining.Phase).To(Equal(handler.ExportDrainPhaseDrainingSubscribers))
-
-		// R5: both Subscribers are gone.
-		for i := range f.subs {
-			fakeClient.EXPECT().
-				Get(ctx, k8stypes.NamespacedName{Name: f.subs[i].Name, Namespace: f.subs[i].Namespace}, mock.AnythingOfType("*v1.Subscriber")).
-				Return(errors.NewNotFound(schema.GroupResource{Group: pubsubv1.GroupVersion.Group, Resource: "subscribers"}, f.subs[i].Name)).Once()
-		}
-		start = len(fakeClient.Calls)
-		l, err = reconcile(l)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(countCalls(start, "Delete", nil)).To(BeZero())
-		Expect(l.Status.Draining).ToNot(BeNil())
-		Expect(l.Status.Draining.Phase).To(Equal(handler.ExportDrainPhaseCleaningPublisher))
-		Expect(l.Status.EventSubscriptions).To(BeEmpty())
+		l = driveDrainToCleaningPublisher(l, f.rl, f.subs)
 
 		// R6: CleaningPublisher removes the orphaned generic Publisher, the drain
 		// completes and the same reconcile falls through: the request is still
@@ -1113,6 +1150,7 @@ var _ = Describe("ListenerHandler", func() {
 		mockResolveTopology()
 		mockOwnedLists(nil, nil) // removeStaleChildren
 		mockRejectedGates(gate)
+		mockOwnedLists(nil, nil) // drainCapture inventory: nothing left
 		start = len(fakeClient.Calls)
 		l, err = reconcile(l)
 		Expect(err).ToNot(HaveOccurred())
@@ -1132,23 +1170,15 @@ var _ = Describe("ListenerHandler", func() {
 
 	// expectStaysDrainedWhileRejected runs several more reconciles with the same
 	// rejection and asserts that no drain restarts and no capture is recreated.
-	// Each one takes stopCapture's direct branch: no owned children are found and
-	// the Publisher namespace falls back to the consumer zone.
+	// Each one takes one owner-label inventory, finds nothing and touches no
+	// Publisher: the shared Publisher is only cleaned by a drain.
 	expectStaysDrainedWhileRejected := func(l *spectrev1.Listener, gate string) {
 		for range 3 {
 			mockEarlyRestrictionGranted(l)
 			mockResolveTopology()
 			mockOwnedLists(nil, nil) // removeStaleChildren
 			mockRejectedGates(gate)
-			mockOwnedLists(nil, nil)              // deleteAllOwnedChildren
-			mockOwnedLists(nil, nil)              // resolvePublisherNamespace
-			mockGetConsumerApp(makeConsumerApp()) // namespace fallback via consumer zone
-			fakeClient.EXPECT().
-				List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
-				Return(nil).Once()
-			fakeClient.EXPECT().
-				Delete(ctx, mock.AnythingOfType("*v1.Publisher"), mock.Anything).
-				Return(errors.NewNotFound(schema.GroupResource{Group: pubsubv1.GroupVersion.Group, Resource: "publishers"}, "")).Once()
+			mockOwnedLists(nil, nil) // drainCapture inventory
 
 			start := len(fakeClient.Calls)
 			next, err := reconcile(l)
@@ -1159,6 +1189,8 @@ var _ = Describe("ListenerHandler", func() {
 			Expect(next.Status.EventSubscriptions).To(BeEmpty())
 			Expect(countCalls(start, "Delete", &gatewayv1.RouteListener{})).To(BeZero())
 			Expect(countCalls(start, "Delete", &pubsubv1.Subscriber{})).To(BeZero())
+			Expect(countCalls(start, "Delete", &pubsubv1.Publisher{})).To(BeZero())
+			Expect(countNamespacedSubscriberLists(start)).To(BeZero())
 			expectNoCaptureCreates(start)
 			expectRequestDenied(next, gate)
 			l = next
@@ -1285,101 +1317,124 @@ var _ = Describe("ListenerHandler", func() {
 		})
 
 		Context("when approval is denied", func() {
-			It("should delete all owner-labelled capture children and clear status", func() {
-				listener := newListener()
-				// Pre-populate status refs to verify they are cleared.
-				listener.Status.RouteListener = &ctypes.ObjectRef{Name: "old-rl", Namespace: listenerZoneStatus}
-				listener.Status.EventSubscriptions = []ctypes.ObjectRef{
-					{Name: "old-sub-rq", Namespace: listenerZoneStatus},
-				}
+			// provisionForDenial provisions a Listener whose applied capture the early
+			// check cannot see as denied, so the denial is only reported by the
+			// dual-gate build (outcomeDenied).
+			provisionForDenial := func() *rejectionFixture {
+				f := provisionForRejection()
+				f.listener.Status.ProviderApproval = nil
+				f.listener.Status.ConsumerApproval = nil
+				return f
+			}
 
-				mockGetConsumerApp(makeConsumerApp())
-				mockGetProviderApp(makeProviderApp())
-				mockGetSpectreApp(makeSpectreAppPtr())
-				mockGetObserverApp(makeConsumerApp()) // A==C: observer resolves to consumer
-				mockGetZone()
-				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
-				mockGetEventStore(makeListenerEventStore())
-				mockListRoutes()
-				mockNoStaleChildren()
-				mockApprovalDenied()
+			// expectDeniedCheckpoint asserts the R1 contract: the drain checkpoint
+			// is recorded and nothing is deleted or created.
+			expectDeniedCheckpoint := func(f *rejectionFixture, l *spectrev1.Listener, from int) {
+				d := l.Status.Draining
+				Expect(d).ToNot(BeNil())
+				Expect(d.Phase).To(Equal(handler.ExportDrainPhaseStopping))
+				Expect(d.Reason).To(Equal("approval denied"))
+				Expect(d.OldFingerprint).To(Equal(f.fingerprint))
+				Expect(d.OldRouteListeners).To(Equal([]ctypes.ObjectRef{*ctypes.ObjectRefFromObject(&f.rl)}))
+				Expect(d.OldSubscribers).To(ConsistOf(
+					*ctypes.ObjectRefFromObject(&f.subs[0]),
+					*ctypes.ObjectRefFromObject(&f.subs[1]),
+				))
+				Expect(d.SourcePublisher).To(Equal(l.Status.AppliedPlacement.Publisher))
+				Expect(l.Status.RouteListener).ToNot(BeNil())
+				Expect(l.Status.EventSubscriptions).To(HaveLen(2))
+				Expect(countCalls(from, "Delete", nil)).To(BeZero())
+				expectNoCaptureCreates(from)
+				ready := meta.FindStatusCondition(l.Status.Conditions, condition.ConditionTypeReady)
+				Expect(ready).ToNot(BeNil())
+				Expect(ready.Reason).To(Equal(condition.ReasonAccessDenied))
+			}
 
-				// Denial cleanup: List + Delete for RouteListeners and Subscribers.
-				fakeClient.EXPECT().
-					List(ctx, mock.AnythingOfType("*v1.RouteListenerList"), mock.Anything).
-					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-						*list.(*gatewayv1.RouteListenerList) = gatewayv1.RouteListenerList{
-							Items: []gatewayv1.RouteListener{
-								{ObjectMeta: metav1.ObjectMeta{Name: "old-rl", Namespace: listenerZoneStatus}},
-							},
-						}
-					}).
-					Return(nil).Once()
-				fakeClient.EXPECT().
-					Delete(ctx, mock.AnythingOfType("*v1.RouteListener"), mock.Anything).
-					Return(nil).Once()
+			// drainDenied drives the persisted checkpoint to completion (R2-R6).
+			// The last reconcile cleans the orphaned Publisher, then the early check
+			// now sees the Rejected provider Approval and clears the drained
+			// placement without starting another drain.
+			drainDenied := func(f *rejectionFixture, l *spectrev1.Listener) {
+				l = driveDrainToCleaningPublisher(l, f.rl, f.subs)
 
+				src := l.Status.Draining.SourcePublisher.DeepCopy()
 				fakeClient.EXPECT().
 					List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
-					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-						*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{
-							Items: []pubsubv1.Subscriber{
-								{ObjectMeta: metav1.ObjectMeta{Name: "old-sub-rq", Namespace: listenerZoneStatus}},
-							},
-						}
-					}).
-					Return(nil).Once()
-				fakeClient.EXPECT().
-					Delete(ctx, mock.AnythingOfType("*v1.Subscriber"), mock.Anything).
-					Return(nil).Once()
-
-				// After deleteAllOwnedChildren, resolvePublisherNamespace is called.
-				// Status refs are nil — fall back to owner-labelled children. Return
-				// one RouteListener so the namespace is resolved without topology.
-				fakeClient.EXPECT().
-					List(ctx, mock.AnythingOfType("*v1.RouteListenerList"), mock.Anything).
-					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-						*list.(*gatewayv1.RouteListenerList) = gatewayv1.RouteListenerList{
-							Items: []gatewayv1.RouteListener{
-								{ObjectMeta: metav1.ObjectMeta{Name: "old-rl", Namespace: listenerZoneStatus}},
-							},
-						}
-					}).
-					Return(nil).Once()
-				fakeClient.EXPECT().
-					List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
-					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-						*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{}
-					}).
-					Return(nil).Once()
-
-				// cleanupGenericPublisherIfOrphaned: no Subscribers reference the Publisher.
-				fakeClient.EXPECT().
-					List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
-					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-						*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{}
-					}).
 					Return(nil).Once()
 				fakeClient.EXPECT().
 					Delete(ctx, mock.AnythingOfType("*v1.Publisher"), mock.Anything).
+					Run(func(_ context.Context, obj client.Object, _ ...client.DeleteOption) {
+						Expect(obj.GetName()).To(Equal(src.Name))
+						Expect(obj.GetNamespace()).To(Equal(src.Namespace))
+					}).
 					Return(nil).Once()
-
-				err := h.CreateOrUpdate(ctx, listener)
+				fakeClient.EXPECT().
+					Get(ctx, l.Status.ProviderApproval.K8s(), mock.AnythingOfType("*v1.Approval")).
+					Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
+						out.(*approvalv1.Approval).Spec.State = approvalv1.ApprovalStateRejected
+					}).
+					Return(nil).Once()
+				mockOwnedLists(nil, nil) // drainCapture inventory: nothing left
+				start := len(fakeClient.Calls)
+				l, err := reconcile(l)
 				Expect(err).ToNot(HaveOccurred())
+				Expect(l.Status.Draining).To(BeNil())
+				Expect(l.Status.AppliedPlacement).To(BeNil())
+				Expect(l.Status.RouteListener).To(BeNil())
+				Expect(l.Status.EventSubscriptions).To(BeEmpty())
+				Expect(countCalls(start, "Delete", &pubsubv1.Publisher{})).To(Equal(1))
+				Expect(countCalls(start, "Delete", &gatewayv1.RouteListener{})).To(BeZero())
+				Expect(countCalls(start, "Delete", &pubsubv1.Subscriber{})).To(BeZero())
+				expectNoCaptureCreates(start)
+			}
 
-				// Status must be cleared.
-				Expect(listener.Status.RouteListener).To(BeNil())
-				Expect(listener.Status.EventSubscriptions).To(BeEmpty())
+			It("should checkpoint first, then drain the RouteListener, the Subscribers and the Publisher", func() {
+				f := provisionForDenial()
+				liveRLs := []gatewayv1.RouteListener{f.rl}
 
-				// AccessDenied condition must be set.
-				readyCond := meta.FindStatusCondition(listener.Status.Conditions, condition.ConditionTypeReady)
-				Expect(readyCond).ToNot(BeNil())
-				Expect(readyCond.Reason).To(Equal(condition.ReasonAccessDenied))
+				// R1: both gates report the Approval Rejected.
+				mockResolveTopology()
+				mockOwnedLists(liveRLs, f.subs) // removeStaleChildren: same fingerprint, kept
+				mockApprovalDenied()
+				mockOwnedLists(liveRLs, f.subs) // drainCapture inventory
+				start := len(fakeClient.Calls)
+				l, err := reconcile(f.listener)
+				Expect(err).ToNot(HaveOccurred())
+				expectDeniedCheckpoint(f, l, start)
+
+				drainDenied(f, l)
+			})
+
+			It("should checkpoint first when the early check could not read the Approval", func() {
+				f := provisionForRejection()
+				liveRLs := []gatewayv1.RouteListener{f.rl}
+
+				// R1: the early read of the provider Approval fails, so the denial is
+				// only reported by the dual-gate build.
+				fakeClient.EXPECT().
+					Get(ctx, f.listener.Status.ProviderApproval.K8s(), mock.AnythingOfType("*v1.Approval")).
+					Return(errors.NewServiceUnavailable("etcd leader changed")).Once()
+				fakeClient.EXPECT().
+					Get(ctx, f.listener.Status.ConsumerApproval.K8s(), mock.AnythingOfType("*v1.Approval")).
+					Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
+						out.(*approvalv1.Approval).Spec.State = approvalv1.ApprovalStateGranted
+					}).
+					Return(nil).Once()
+				mockResolveTopology()
+				mockOwnedLists(liveRLs, f.subs) // removeStaleChildren: same fingerprint, kept
+				mockApprovalDenied()
+				mockOwnedLists(liveRLs, f.subs) // drainCapture inventory
+				start := len(fakeClient.Calls)
+				l, err := reconcile(f.listener)
+				Expect(err).ToNot(HaveOccurred())
+				expectDeniedCheckpoint(f, l, start)
+
+				drainDenied(f, l)
 			})
 		})
 
 		Context("when ApprovalRequest is denied (RequestDenied)", func() {
-			It("should set AccessDenied naming both gates and delete no capture children when nothing is applied", func() {
+			It("should set AccessDenied naming both gates and touch no capture child or Publisher when nothing is applied", func() {
 				listener := newListener()
 				mockGetConsumerApp(makeConsumerApp())
 				mockGetProviderApp(makeProviderApp())
@@ -1391,19 +1446,7 @@ var _ = Describe("ListenerHandler", func() {
 				mockListRoutes()
 				mockNoStaleChildren()
 				mockApprovalRequestDenied()
-
-				// stopCapture direct branch (nothing applied): deleteAllOwnedChildren
-				// and resolvePublisherNamespace find no owned children, so the
-				// namespace falls back to the consumer zone for the Publisher check.
-				mockOwnedLists(nil, nil)
-				mockOwnedLists(nil, nil)
-				mockGetConsumerApp(makeConsumerApp())
-				fakeClient.EXPECT().
-					List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
-					Return(nil).Once()
-				fakeClient.EXPECT().
-					Delete(ctx, mock.AnythingOfType("*v1.Publisher"), mock.Anything).
-					Return(nil).Once()
+				mockOwnedLists(nil, nil) // drainCapture inventory: nothing to drain
 
 				start := len(fakeClient.Calls)
 				err := h.CreateOrUpdate(ctx, listener)
@@ -1418,6 +1461,8 @@ var _ = Describe("ListenerHandler", func() {
 				Expect(listener.Status.Draining).To(BeNil())
 				Expect(countCalls(start, "Delete", &gatewayv1.RouteListener{})).To(BeZero())
 				Expect(countCalls(start, "Delete", &pubsubv1.Subscriber{})).To(BeZero())
+				Expect(countCalls(start, "Delete", &pubsubv1.Publisher{})).To(BeZero())
+				Expect(countNamespacedSubscriberLists(start)).To(BeZero())
 				expectNoCaptureCreates(start)
 			})
 		})
@@ -1920,9 +1965,8 @@ var _ = Describe("ListenerHandler", func() {
 		Context("unsupported route modes", func() {
 			// In these tests, the only capture candidate is rejected for its route mode
 			// (pass-through/failover) and nothing was applied, so no candidate remains.
-			// The cleanup deletes children and checks the generic Publisher.
-			// resolvePublisherNamespace falls back to the consumer zone via the
-			// topology resolver.
+			// Children are only removed through the persisted drain; with nothing to
+			// drain no Publisher is touched.
 			It("should block with pass-through route and NOT create ApprovalRequest or children", func() {
 				listener := newListener()
 				mockGetConsumerApp(makeConsumerApp())
@@ -1935,53 +1979,19 @@ var _ = Describe("ListenerHandler", func() {
 				mockGetEventStore(makeListenerEventStore())
 				mockPassThroughRoute()
 
-				// deleteAllOwnedChildren: no existing children.
-				fakeClient.EXPECT().
-					List(ctx, mock.AnythingOfType("*v1.RouteListenerList"), mock.Anything).
-					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-						*list.(*gatewayv1.RouteListenerList) = gatewayv1.RouteListenerList{}
-					}).
-					Return(nil).Once()
-				fakeClient.EXPECT().
-					List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
-					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-						*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{}
-					}).
-					Return(nil).Once()
+				mockOwnedLists(nil, nil) // drainCapture inventory: nothing to drain
 
-				// resolvePublisherNamespace: topology fallback.
-				fakeClient.EXPECT().
-					List(ctx, mock.AnythingOfType("*v1.RouteListenerList"), mock.Anything).
-					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-						*list.(*gatewayv1.RouteListenerList) = gatewayv1.RouteListenerList{}
-					}).
-					Return(nil).Once()
-				fakeClient.EXPECT().
-					List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
-					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-						*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{}
-					}).
-					Return(nil).Once()
-				mockGetConsumerApp(makeConsumerApp())
-				mockGetZone()
-
-				// cleanupGenericPublisherIfOrphaned: no Subscribers reference the Publisher.
-				fakeClient.EXPECT().
-					List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
-					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-						*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{}
-					}).
-					Return(nil).Once()
-				fakeClient.EXPECT().
-					Delete(ctx, mock.AnythingOfType("*v1.Publisher"), mock.Anything).
-					Return(nil).Once()
-
+				start := len(fakeClient.Calls)
 				err := h.CreateOrUpdate(ctx, listener)
 
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring("pass-through"))
 				Expect(listener.Status.RouteListener).To(BeNil())
 				Expect(listener.Status.EventSubscriptions).To(BeEmpty())
+				Expect(listener.Status.Draining).To(BeNil())
+				Expect(countCalls(start, "Delete", nil)).To(BeZero())
+				Expect(countCalls(start, "CreateOrUpdate", nil)).To(BeZero())
+				Expect(countNamespacedSubscriberLists(start)).To(BeZero())
 			})
 
 			It("should block with failover route and NOT create ApprovalRequest or children", func() {
@@ -1996,139 +2006,101 @@ var _ = Describe("ListenerHandler", func() {
 				mockGetEventStore(makeListenerEventStore())
 				mockFailoverRoute()
 
-				// deleteAllOwnedChildren: no existing children.
-				fakeClient.EXPECT().
-					List(ctx, mock.AnythingOfType("*v1.RouteListenerList"), mock.Anything).
-					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-						*list.(*gatewayv1.RouteListenerList) = gatewayv1.RouteListenerList{}
-					}).
-					Return(nil).Once()
-				fakeClient.EXPECT().
-					List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
-					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-						*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{}
-					}).
-					Return(nil).Once()
+				mockOwnedLists(nil, nil) // drainCapture inventory: nothing to drain
 
-				// resolvePublisherNamespace: topology fallback.
-				fakeClient.EXPECT().
-					List(ctx, mock.AnythingOfType("*v1.RouteListenerList"), mock.Anything).
-					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-						*list.(*gatewayv1.RouteListenerList) = gatewayv1.RouteListenerList{}
-					}).
-					Return(nil).Once()
-				fakeClient.EXPECT().
-					List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
-					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-						*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{}
-					}).
-					Return(nil).Once()
-				mockGetConsumerApp(makeConsumerApp())
-				mockGetZone()
-
-				// cleanupGenericPublisherIfOrphaned: no Subscribers reference the Publisher.
-				fakeClient.EXPECT().
-					List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
-					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-						*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{}
-					}).
-					Return(nil).Once()
-				fakeClient.EXPECT().
-					Delete(ctx, mock.AnythingOfType("*v1.Publisher"), mock.Anything).
-					Return(nil).Once()
-
+				start := len(fakeClient.Calls)
 				err := h.CreateOrUpdate(ctx, listener)
 
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring("failover"))
 				Expect(listener.Status.RouteListener).To(BeNil())
 				Expect(listener.Status.EventSubscriptions).To(BeEmpty())
+				Expect(listener.Status.Draining).To(BeNil())
+				Expect(countCalls(start, "Delete", nil)).To(BeZero())
+				Expect(countCalls(start, "CreateOrUpdate", nil)).To(BeZero())
+				Expect(countNamespacedSubscriberLists(start)).To(BeZero())
 			})
 
-			It("should remove existing children when Route transitions to pass-through", func() {
+			It("should drain existing children through the checkpoint when Route transitions to pass-through", func() {
+				// Partial provisioning: the refs are recorded but nothing was applied.
+				genericPub := ctypes.ObjectRef{Name: util.MakePublisherName(util.GenericEventType), Namespace: listenerZoneStatus}
+				rl := gatewayv1.RouteListener{ObjectMeta: metav1.ObjectMeta{
+					Name: "old-rl", Namespace: listenerZoneStatus, UID: "rl-uid-9", ResourceVersion: "12",
+				}}
+				subs := []pubsubv1.Subscriber{{
+					ObjectMeta: metav1.ObjectMeta{Name: "old-sub-rq", Namespace: listenerZoneStatus, UID: "sub-uid-9", ResourceVersion: "4"},
+					Spec:       pubsubv1.SubscriberSpec{Publisher: genericPub},
+				}}
 				listener := newListener()
-				// Pre-populate status refs to verify they are cleared.
 				listener.Status.RouteListener = &ctypes.ObjectRef{Name: "old-rl", Namespace: listenerZoneStatus}
 				listener.Status.EventSubscriptions = []ctypes.ObjectRef{
 					{Name: "old-sub-rq", Namespace: listenerZoneStatus},
 				}
 
-				mockGetConsumerApp(makeConsumerApp())
-				mockGetProviderApp(makeProviderApp())
-				mockGetSpectreApp(makeSpectreAppPtr())
-				// Delivery (A's zone) resolves before the per-candidate route mode
-				// check rejects the only candidate as pass-through.
-				mockGetObserverApp(makeConsumerApp())
+				// mockPassThroughTopology stubs the Once() reads of one reconcile that
+				// rejects the only capture candidate as pass-through.
+				mockPassThroughTopology := func() {
+					mockGetConsumerApp(makeConsumerApp())
+					mockGetProviderApp(makeProviderApp())
+					mockGetSpectreApp(makeSpectreAppPtr())
+					// Delivery (A's zone) resolves before the per-candidate route mode
+					// check rejects the only candidate as pass-through.
+					mockGetObserverApp(makeConsumerApp())
+					mockGetEventStore(makeListenerEventStore())
+					mockPassThroughRoute()
+				}
 				mockGetZone()
 				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
-				mockGetEventStore(makeListenerEventStore())
-				mockPassThroughRoute()
 
-				// deleteAllOwnedChildren: existing children returned.
-				fakeClient.EXPECT().
-					List(ctx, mock.AnythingOfType("*v1.RouteListenerList"), mock.Anything).
-					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-						*list.(*gatewayv1.RouteListenerList) = gatewayv1.RouteListenerList{
-							Items: []gatewayv1.RouteListener{
-								{ObjectMeta: metav1.ObjectMeta{Name: "old-rl", Namespace: listenerZoneStatus}},
-							},
-						}
-					}).
-					Return(nil).Once()
-				fakeClient.EXPECT().
-					Delete(ctx, mock.AnythingOfType("*v1.RouteListener"), mock.Anything).
-					Return(nil).Once()
+				// R1: the checkpoint is recorded; nothing is deleted yet.
+				mockPassThroughTopology()
+				mockOwnedLists([]gatewayv1.RouteListener{rl}, subs) // drainCapture inventory
+				start := len(fakeClient.Calls)
+				l, err := reconcile(listener)
+				Expect(err).ToNot(HaveOccurred())
+				d := l.Status.Draining
+				Expect(d).ToNot(BeNil())
+				Expect(d.Phase).To(Equal(handler.ExportDrainPhaseStopping))
+				Expect(d.Reason).To(Equal("no supported capture placement"))
+				Expect(d.OldRouteListeners).To(Equal([]ctypes.ObjectRef{*ctypes.ObjectRefFromObject(&rl)}))
+				Expect(d.OldSubscribers).To(Equal([]ctypes.ObjectRef{*ctypes.ObjectRefFromObject(&subs[0])}))
+				Expect(d.SourcePublisher).To(Equal(&genericPub))
+				Expect(l.Status.RouteListener).ToNot(BeNil())
+				Expect(l.Status.EventSubscriptions).To(HaveLen(1))
+				Expect(countCalls(start, "Delete", nil)).To(BeZero())
+				expectNoCaptureCreates(start)
+				blocked := meta.FindStatusCondition(l.Status.Conditions, condition.ConditionTypeProcessing)
+				Expect(blocked).ToNot(BeNil())
+				Expect(blocked.Reason).To(Equal(condition.ReasonBlocked))
+				Expect(blocked.Message).To(ContainSubstring("pass-through"))
 
+				l = driveDrainToCleaningPublisher(l, rl, subs)
+
+				// R6: the Publisher is cleaned in the Subscribers' namespace, the drain
+				// completes and the reconcile falls through to the same rejection.
 				fakeClient.EXPECT().
 					List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
-					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-						*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{
-							Items: []pubsubv1.Subscriber{
-								{ObjectMeta: metav1.ObjectMeta{Name: "old-sub-rq", Namespace: listenerZoneStatus}},
-							},
-						}
-					}).
-					Return(nil).Once()
-				fakeClient.EXPECT().
-					Delete(ctx, mock.AnythingOfType("*v1.Subscriber"), mock.Anything).
-					Return(nil).Once()
-
-				// resolvePublisherNamespace: status refs nil — label-list returns one
-				// RouteListener so namespace resolves without topology.
-				fakeClient.EXPECT().
-					List(ctx, mock.AnythingOfType("*v1.RouteListenerList"), mock.Anything).
-					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-						*list.(*gatewayv1.RouteListenerList) = gatewayv1.RouteListenerList{
-							Items: []gatewayv1.RouteListener{
-								{ObjectMeta: metav1.ObjectMeta{Name: "old-rl", Namespace: listenerZoneStatus}},
-							},
-						}
-					}).
-					Return(nil).Once()
-				fakeClient.EXPECT().
-					List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
-					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-						*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{}
-					}).
-					Return(nil).Once()
-
-				// cleanupGenericPublisherIfOrphaned: no Subscribers reference the Publisher.
-				fakeClient.EXPECT().
-					List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
-					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-						*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{}
-					}).
 					Return(nil).Once()
 				fakeClient.EXPECT().
 					Delete(ctx, mock.AnythingOfType("*v1.Publisher"), mock.Anything).
+					Run(func(_ context.Context, obj client.Object, _ ...client.DeleteOption) {
+						Expect(obj.GetName()).To(Equal(genericPub.Name))
+						Expect(obj.GetNamespace()).To(Equal(genericPub.Namespace))
+					}).
 					Return(nil).Once()
-
-				err := h.CreateOrUpdate(ctx, listener)
-
+				mockPassThroughTopology()
+				mockOwnedLists(nil, nil) // drainCapture inventory: nothing left
+				start = len(fakeClient.Calls)
+				l, err = reconcile(l)
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring("pass-through"))
-				Expect(listener.Status.RouteListener).To(BeNil())
-				Expect(listener.Status.EventSubscriptions).To(BeEmpty())
+				Expect(l.Status.Draining).To(BeNil())
+				Expect(l.Status.RouteListener).To(BeNil())
+				Expect(l.Status.EventSubscriptions).To(BeEmpty())
+				Expect(countCalls(start, "Delete", &pubsubv1.Publisher{})).To(Equal(1))
+				Expect(countCalls(start, "Delete", &gatewayv1.RouteListener{})).To(BeZero())
+				Expect(countCalls(start, "Delete", &pubsubv1.Subscriber{})).To(BeZero())
+				expectNoCaptureCreates(start)
 			})
 		})
 
@@ -2178,7 +2150,7 @@ var _ = Describe("ListenerHandler", func() {
 		})
 
 		Context("dual-gate: provider Denied + consumer Granted", func() {
-			It("should cleanup all children and set AccessDenied", func() {
+			It("should checkpoint the drain before deleting anything and set AccessDenied", func() {
 				listener := newListener()
 				listener.Status.RouteListener = &ctypes.ObjectRef{Name: "old-rl", Namespace: listenerZoneStatus}
 				listener.Status.EventSubscriptions = []ctypes.ObjectRef{
@@ -2197,68 +2169,26 @@ var _ = Describe("ListenerHandler", func() {
 				mockApprovalDeniedGate("provider")
 				mockApprovalGrantedGate("consumer")
 
-				// Denial cleanup: deleteAllOwnedChildren.
-				fakeClient.EXPECT().
-					List(ctx, mock.AnythingOfType("*v1.RouteListenerList"), mock.Anything).
-					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-						*list.(*gatewayv1.RouteListenerList) = gatewayv1.RouteListenerList{
-							Items: []gatewayv1.RouteListener{
-								{ObjectMeta: metav1.ObjectMeta{Name: "old-rl", Namespace: listenerZoneStatus}},
-							},
-						}
-					}).
-					Return(nil).Once()
-				fakeClient.EXPECT().
-					Delete(ctx, mock.AnythingOfType("*v1.RouteListener"), mock.Anything).
-					Return(nil).Once()
-				fakeClient.EXPECT().
-					List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
-					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-						*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{
-							Items: []pubsubv1.Subscriber{
-								{ObjectMeta: metav1.ObjectMeta{Name: "old-sub-rq", Namespace: listenerZoneStatus}},
-							},
-						}
-					}).
-					Return(nil).Once()
-				fakeClient.EXPECT().
-					Delete(ctx, mock.AnythingOfType("*v1.Subscriber"), mock.Anything).
-					Return(nil).Once()
+				// Denial checkpoint: one owner-label inventory, no deletes yet.
+				mockOwnedLists(
+					[]gatewayv1.RouteListener{{ObjectMeta: metav1.ObjectMeta{Name: "old-rl", Namespace: listenerZoneStatus, UID: "rl-uid-1"}}},
+					[]pubsubv1.Subscriber{{ObjectMeta: metav1.ObjectMeta{Name: "old-sub-rq", Namespace: listenerZoneStatus, UID: "sub-uid-1"}}},
+				)
 
-				// resolvePublisherNamespace: label-list returns RL.
-				fakeClient.EXPECT().
-					List(ctx, mock.AnythingOfType("*v1.RouteListenerList"), mock.Anything).
-					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-						*list.(*gatewayv1.RouteListenerList) = gatewayv1.RouteListenerList{
-							Items: []gatewayv1.RouteListener{
-								{ObjectMeta: metav1.ObjectMeta{Name: "old-rl", Namespace: listenerZoneStatus}},
-							},
-						}
-					}).
-					Return(nil).Once()
-				fakeClient.EXPECT().
-					List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
-					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-						*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{}
-					}).
-					Return(nil).Once()
-
-				// cleanupGenericPublisherIfOrphaned.
-				fakeClient.EXPECT().
-					List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
-					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-						*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{}
-					}).
-					Return(nil).Once()
-				fakeClient.EXPECT().
-					Delete(ctx, mock.AnythingOfType("*v1.Publisher"), mock.Anything).
-					Return(nil).Once()
-
+				start := len(fakeClient.Calls)
 				err := h.CreateOrUpdate(ctx, listener)
 				Expect(err).ToNot(HaveOccurred())
 
-				Expect(listener.Status.RouteListener).To(BeNil())
-				Expect(listener.Status.EventSubscriptions).To(BeEmpty())
+				// Nothing is deleted before the checkpoint is persisted.
+				Expect(listener.Status.Draining).ToNot(BeNil())
+				Expect(listener.Status.Draining.Phase).To(Equal(handler.ExportDrainPhaseStopping))
+				Expect(listener.Status.Draining.Reason).To(Equal("approval denied"))
+				Expect(listener.Status.Draining.OldRouteListeners).To(HaveLen(1))
+				Expect(listener.Status.Draining.OldSubscribers).To(HaveLen(1))
+				Expect(listener.Status.RouteListener).ToNot(BeNil())
+				Expect(listener.Status.EventSubscriptions).To(HaveLen(1))
+				Expect(countCalls(start, "Delete", nil)).To(BeZero())
+				expectNoCaptureCreates(start)
 
 				readyCond := meta.FindStatusCondition(listener.Status.Conditions, condition.ConditionTypeReady)
 				Expect(readyCond).ToNot(BeNil())
@@ -2267,7 +2197,7 @@ var _ = Describe("ListenerHandler", func() {
 		})
 
 		Context("dual-gate: provider Granted + consumer Denied", func() {
-			It("should cleanup all children and set AccessDenied", func() {
+			It("should set AccessDenied and touch no capture child or Publisher when nothing exists", func() {
 				listener := newListener()
 				mockGetConsumerApp(makeConsumerApp())
 				mockGetProviderApp(makeProviderApp())
@@ -2281,53 +2211,20 @@ var _ = Describe("ListenerHandler", func() {
 				mockApprovalGrantedGate("provider")
 				mockApprovalDeniedGate("consumer")
 
-				// Denial cleanup: deleteAllOwnedChildren (no children).
-				fakeClient.EXPECT().
-					List(ctx, mock.AnythingOfType("*v1.RouteListenerList"), mock.Anything).
-					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-						*list.(*gatewayv1.RouteListenerList) = gatewayv1.RouteListenerList{}
-					}).
-					Return(nil).Once()
-				fakeClient.EXPECT().
-					List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
-					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-						*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{}
-					}).
-					Return(nil).Once()
+				// Denial: the owner-label inventory finds nothing to drain.
+				mockOwnedLists(nil, nil)
 
-				// resolvePublisherNamespace: topology fallback.
-				fakeClient.EXPECT().
-					List(ctx, mock.AnythingOfType("*v1.RouteListenerList"), mock.Anything).
-					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-						*list.(*gatewayv1.RouteListenerList) = gatewayv1.RouteListenerList{}
-					}).
-					Return(nil).Once()
-				fakeClient.EXPECT().
-					List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
-					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-						*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{}
-					}).
-					Return(nil).Once()
-				mockGetConsumerApp(makeConsumerApp())
-				mockGetZone()
-
-				// cleanupGenericPublisherIfOrphaned.
-				fakeClient.EXPECT().
-					List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
-					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-						*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{}
-					}).
-					Return(nil).Once()
-				fakeClient.EXPECT().
-					Delete(ctx, mock.AnythingOfType("*v1.Publisher"), mock.Anything).
-					Return(nil).Once()
-
+				start := len(fakeClient.Calls)
 				err := h.CreateOrUpdate(ctx, listener)
 				Expect(err).ToNot(HaveOccurred())
 
 				readyCond := meta.FindStatusCondition(listener.Status.Conditions, condition.ConditionTypeReady)
 				Expect(readyCond).ToNot(BeNil())
 				Expect(readyCond.Reason).To(Equal(condition.ReasonAccessDenied))
+				Expect(listener.Status.Draining).To(BeNil())
+				Expect(countCalls(start, "Delete", nil)).To(BeZero())
+				Expect(countNamespacedSubscriberLists(start)).To(BeZero())
+				expectNoCaptureCreates(start)
 			})
 		})
 
@@ -2582,7 +2479,7 @@ var _ = Describe("ListenerHandler", func() {
 		// --- Brief section 4: Denial plus other-gate error ---
 
 		Context("dual-gate: provider Denied + consumer Error", func() {
-			It("should still trigger cleanup and return combined error", func() {
+			It("should still checkpoint the drain and return the combined error", func() {
 				listener := newListener()
 				listener.Status.RouteListener = &ctypes.ObjectRef{Name: "old-rl", Namespace: listenerZoneStatus}
 
@@ -2613,65 +2510,23 @@ var _ = Describe("ListenerHandler", func() {
 					Get(ctx, mock.AnythingOfType("types.NamespacedName"), mock.AnythingOfType("*v1.Approval")).
 					Return(fmt.Errorf("consumer API error")).Once()
 
-				// Denial cleanup: deleteAllOwnedChildren.
-				fakeClient.EXPECT().
-					List(ctx, mock.AnythingOfType("*v1.RouteListenerList"), mock.Anything).
-					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-						*list.(*gatewayv1.RouteListenerList) = gatewayv1.RouteListenerList{
-							Items: []gatewayv1.RouteListener{
-								{ObjectMeta: metav1.ObjectMeta{Name: "old-rl", Namespace: listenerZoneStatus}},
-							},
-						}
-					}).
-					Return(nil).Once()
-				fakeClient.EXPECT().
-					Delete(ctx, mock.AnythingOfType("*v1.RouteListener"), mock.Anything).
-					Return(nil).Once()
-				fakeClient.EXPECT().
-					List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
-					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-						*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{}
-					}).
-					Return(nil).Once()
+				// Denial checkpoint: one owner-label inventory, no deletes yet.
+				mockOwnedLists([]gatewayv1.RouteListener{{ObjectMeta: metav1.ObjectMeta{Name: "old-rl", Namespace: listenerZoneStatus, UID: "rl-uid-1"}}}, nil)
 
-				// resolvePublisherNamespace: label-list returns RL.
-				fakeClient.EXPECT().
-					List(ctx, mock.AnythingOfType("*v1.RouteListenerList"), mock.Anything).
-					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-						*list.(*gatewayv1.RouteListenerList) = gatewayv1.RouteListenerList{
-							Items: []gatewayv1.RouteListener{
-								{ObjectMeta: metav1.ObjectMeta{Name: "old-rl", Namespace: listenerZoneStatus}},
-							},
-						}
-					}).
-					Return(nil).Once()
-				fakeClient.EXPECT().
-					List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
-					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-						*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{}
-					}).
-					Return(nil).Once()
-
-				// cleanupGenericPublisherIfOrphaned.
-				fakeClient.EXPECT().
-					List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
-					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-						*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{}
-					}).
-					Return(nil).Once()
-				fakeClient.EXPECT().
-					Delete(ctx, mock.AnythingOfType("*v1.Publisher"), mock.Anything).
-					Return(nil).Once()
-
+				start := len(fakeClient.Calls)
 				err := h.CreateOrUpdate(ctx, listener)
-				// Denial cleanup succeeds, but the combined error from the consumer
-				// gate is preserved and returned.
+				// The drain checkpoint is recorded, and the combined error from the
+				// consumer gate is preserved and returned.
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring("consumer gate"))
 
-				// Cleanup still happened.
-				Expect(listener.Status.RouteListener).To(BeNil())
-				Expect(listener.Status.EventSubscriptions).To(BeEmpty())
+				// The drain still started; nothing is deleted before it is persisted.
+				Expect(listener.Status.Draining).ToNot(BeNil())
+				Expect(listener.Status.Draining.Phase).To(Equal(handler.ExportDrainPhaseStopping))
+				Expect(listener.Status.Draining.OldRouteListeners).To(HaveLen(1))
+				Expect(listener.Status.RouteListener).ToNot(BeNil())
+				Expect(countCalls(start, "Delete", nil)).To(BeZero())
+				expectNoCaptureCreates(start)
 
 				// Provider gate was denied (successful fetch) — refs populated.
 				Expect(listener.Status.ProviderApproval).ToNot(BeNil())
@@ -2750,53 +2605,19 @@ var _ = Describe("ListenerHandler", func() {
 				mockApprovalGrantedGate("provider")
 				mockApprovalDeniedGate("consumer")
 
-				// Denial cleanup (no children).
-				fakeClient.EXPECT().
-					List(ctx, mock.AnythingOfType("*v1.RouteListenerList"), mock.Anything).
-					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-						*list.(*gatewayv1.RouteListenerList) = gatewayv1.RouteListenerList{}
-					}).
-					Return(nil).Once()
-				fakeClient.EXPECT().
-					List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
-					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-						*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{}
-					}).
-					Return(nil).Once()
+				// Denial: the owner-label inventory finds nothing to drain.
+				mockOwnedLists(nil, nil)
 
-				// resolvePublisherNamespace: topology fallback.
-				fakeClient.EXPECT().
-					List(ctx, mock.AnythingOfType("*v1.RouteListenerList"), mock.Anything).
-					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-						*list.(*gatewayv1.RouteListenerList) = gatewayv1.RouteListenerList{}
-					}).
-					Return(nil).Once()
-				fakeClient.EXPECT().
-					List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
-					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-						*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{}
-					}).
-					Return(nil).Once()
-				mockGetConsumerApp(makeConsumerApp())
-				mockGetZone()
-
-				// cleanupGenericPublisherIfOrphaned.
-				fakeClient.EXPECT().
-					List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
-					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-						*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{}
-					}).
-					Return(nil).Once()
-				fakeClient.EXPECT().
-					Delete(ctx, mock.AnythingOfType("*v1.Publisher"), mock.Anything).
-					Return(nil).Once()
-
+				start := len(fakeClient.Calls)
 				err := h.CreateOrUpdate(ctx, listener)
 				Expect(err).ToNot(HaveOccurred())
 
 				// No provisioning happened.
 				Expect(listener.Status.RouteListener).To(BeNil())
 				Expect(listener.Status.EventSubscriptions).To(BeEmpty())
+				Expect(listener.Status.Draining).To(BeNil())
+				Expect(countCalls(start, "Delete", nil)).To(BeZero())
+				expectNoCaptureCreates(start)
 			})
 		})
 
@@ -3063,7 +2884,7 @@ var _ = Describe("ListenerHandler", func() {
 		})
 
 		Context("regression: unsupported route mode cleanup happens before approval", func() {
-			It("should clean up and block without ever creating ApprovalRequests", func() {
+			It("should block without ever creating ApprovalRequests or touching a Publisher", func() {
 				listener := newListener()
 				mockGetConsumerApp(makeConsumerApp())
 				mockGetProviderApp(makeProviderApp())
@@ -3075,47 +2896,9 @@ var _ = Describe("ListenerHandler", func() {
 				mockGetEventStore(makeListenerEventStore())
 				mockPassThroughRoute()
 
-				// deleteAllOwnedChildren: no existing children.
-				fakeClient.EXPECT().
-					List(ctx, mock.AnythingOfType("*v1.RouteListenerList"), mock.Anything).
-					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-						*list.(*gatewayv1.RouteListenerList) = gatewayv1.RouteListenerList{}
-					}).
-					Return(nil).Once()
-				fakeClient.EXPECT().
-					List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
-					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-						*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{}
-					}).
-					Return(nil).Once()
+				mockOwnedLists(nil, nil) // drainCapture inventory: nothing to drain
 
-				// resolvePublisherNamespace: topology fallback.
-				fakeClient.EXPECT().
-					List(ctx, mock.AnythingOfType("*v1.RouteListenerList"), mock.Anything).
-					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-						*list.(*gatewayv1.RouteListenerList) = gatewayv1.RouteListenerList{}
-					}).
-					Return(nil).Once()
-				fakeClient.EXPECT().
-					List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
-					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-						*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{}
-					}).
-					Return(nil).Once()
-				mockGetConsumerApp(makeConsumerApp())
-				mockGetZone()
-
-				// cleanupGenericPublisherIfOrphaned.
-				fakeClient.EXPECT().
-					List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
-					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-						*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{}
-					}).
-					Return(nil).Once()
-				fakeClient.EXPECT().
-					Delete(ctx, mock.AnythingOfType("*v1.Publisher"), mock.Anything).
-					Return(nil).Once()
-
+				start := len(fakeClient.Calls)
 				err := h.CreateOrUpdate(ctx, listener)
 				// Route mode rejection happens BEFORE approval.
 				Expect(err).To(HaveOccurred())
@@ -3126,6 +2909,9 @@ var _ = Describe("ListenerHandler", func() {
 				Expect(listener.Status.ConsumerApproval).To(BeNil())
 				Expect(listener.Status.ProviderApprovalRequest).To(BeNil())
 				Expect(listener.Status.ConsumerApprovalRequest).To(BeNil())
+				Expect(countCalls(start, "CreateOrUpdate", nil)).To(BeZero())
+				Expect(countCalls(start, "Delete", nil)).To(BeZero())
+				Expect(countNamespacedSubscriberLists(start)).To(BeZero())
 			})
 		})
 
@@ -3151,7 +2937,7 @@ var _ = Describe("ListenerHandler", func() {
 		// --- R7: Early restriction check (GPT §1 + §8 regression) ---
 
 		Context("early restriction: provider Approval is Rejected", func() {
-			It("should cleanup children without resolving Applications", func() {
+			It("should checkpoint the drain without resolving Applications", func() {
 				listener := newListener()
 				// Pre-populate status refs as if a previous reconcile created them.
 				listener.Status.ProviderApproval = &ctypes.ObjectRef{
@@ -3172,70 +2958,24 @@ var _ = Describe("ListenerHandler", func() {
 					}).
 					Return(nil).Once()
 
-				// handleDenialCleanup: deleteAllOwnedChildren.
-				fakeClient.EXPECT().
-					List(ctx, mock.AnythingOfType("*v1.RouteListenerList"), mock.Anything).
-					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-						*list.(*gatewayv1.RouteListenerList) = gatewayv1.RouteListenerList{
-							Items: []gatewayv1.RouteListener{
-								{ObjectMeta: metav1.ObjectMeta{Name: "old-rl", Namespace: listenerZoneStatus}},
-							},
-						}
-					}).
-					Return(nil).Once()
-				fakeClient.EXPECT().
-					Delete(ctx, mock.AnythingOfType("*v1.RouteListener"), mock.Anything).
-					Return(nil).Once()
+				// handleDenialCleanup: one owner-label inventory, checkpoint only.
+				mockOwnedLists(
+					[]gatewayv1.RouteListener{{ObjectMeta: metav1.ObjectMeta{Name: "old-rl", Namespace: listenerZoneStatus, UID: "rl-uid-1"}}},
+					[]pubsubv1.Subscriber{{ObjectMeta: metav1.ObjectMeta{Name: "old-sub-rq", Namespace: listenerZoneStatus, UID: "sub-uid-1"}}},
+				)
 
-				fakeClient.EXPECT().
-					List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
-					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-						*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{
-							Items: []pubsubv1.Subscriber{
-								{ObjectMeta: metav1.ObjectMeta{Name: "old-sub-rq", Namespace: listenerZoneStatus}},
-							},
-						}
-					}).
-					Return(nil).Once()
-				fakeClient.EXPECT().
-					Delete(ctx, mock.AnythingOfType("*v1.Subscriber"), mock.Anything).
-					Return(nil).Once()
-
-				// resolvePublisherNamespace: status refs cleared — label fallback.
-				fakeClient.EXPECT().
-					List(ctx, mock.AnythingOfType("*v1.RouteListenerList"), mock.Anything).
-					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-						*list.(*gatewayv1.RouteListenerList) = gatewayv1.RouteListenerList{
-							Items: []gatewayv1.RouteListener{
-								{ObjectMeta: metav1.ObjectMeta{Name: "old-rl", Namespace: listenerZoneStatus}},
-							},
-						}
-					}).
-					Return(nil).Once()
-				fakeClient.EXPECT().
-					List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
-					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-						*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{}
-					}).
-					Return(nil).Once()
-
-				// cleanupGenericPublisherIfOrphaned.
-				fakeClient.EXPECT().
-					List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
-					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-						*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{}
-					}).
-					Return(nil).Once()
-				fakeClient.EXPECT().
-					Delete(ctx, mock.AnythingOfType("*v1.Publisher"), mock.Anything).
-					Return(nil).Once()
-
+				start := len(fakeClient.Calls)
 				err := h.CreateOrUpdate(ctx, listener)
 				Expect(err).ToNot(HaveOccurred())
 
-				// Status cleared.
-				Expect(listener.Status.RouteListener).To(BeNil())
-				Expect(listener.Status.EventSubscriptions).To(BeEmpty())
+				// Drain recorded; the refs stay until Stopping deletes the children.
+				Expect(listener.Status.Draining).ToNot(BeNil())
+				Expect(listener.Status.Draining.Phase).To(Equal(handler.ExportDrainPhaseStopping))
+				Expect(listener.Status.Draining.Reason).To(Equal("early restriction (provider gate)"))
+				Expect(listener.Status.RouteListener).ToNot(BeNil())
+				Expect(listener.Status.EventSubscriptions).To(HaveLen(1))
+				Expect(countCalls(start, "Delete", nil)).To(BeZero())
+				expectNoCaptureCreates(start)
 
 				// AccessDenied condition set with early restriction message.
 				readyCond := meta.FindStatusCondition(listener.Status.Conditions, condition.ConditionTypeReady)
@@ -3263,55 +3003,20 @@ var _ = Describe("ListenerHandler", func() {
 					}).
 					Return(nil).Once()
 
-				// handleDenialCleanup: no children.
-				fakeClient.EXPECT().
-					List(ctx, mock.AnythingOfType("*v1.RouteListenerList"), mock.Anything).
-					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-						*list.(*gatewayv1.RouteListenerList) = gatewayv1.RouteListenerList{}
-					}).
-					Return(nil).Once()
-				fakeClient.EXPECT().
-					List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
-					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-						*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{}
-					}).
-					Return(nil).Once()
+				// handleDenialCleanup: the owner-label inventory finds nothing to
+				// drain, so no Publisher is touched.
+				mockOwnedLists(nil, nil)
 
-				// resolvePublisherNamespace: no children, no status refs.
-				fakeClient.EXPECT().
-					List(ctx, mock.AnythingOfType("*v1.RouteListenerList"), mock.Anything).
-					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-						*list.(*gatewayv1.RouteListenerList) = gatewayv1.RouteListenerList{}
-					}).
-					Return(nil).Once()
-				fakeClient.EXPECT().
-					List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
-					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-						*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{}
-					}).
-					Return(nil).Once()
-
-				// Topology fallback for resolvePublisherNamespace.
-				mockGetConsumerApp(makeConsumerApp())
-				mockGetZone()
-
-				// cleanupGenericPublisherIfOrphaned.
-				fakeClient.EXPECT().
-					List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
-					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-						*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{}
-					}).
-					Return(nil).Once()
-				fakeClient.EXPECT().
-					Delete(ctx, mock.AnythingOfType("*v1.Publisher"), mock.Anything).
-					Return(nil).Once()
-
+				start := len(fakeClient.Calls)
 				err := h.CreateOrUpdate(ctx, listener)
 				Expect(err).ToNot(HaveOccurred())
 
 				readyCond := meta.FindStatusCondition(listener.Status.Conditions, condition.ConditionTypeReady)
 				Expect(readyCond).ToNot(BeNil())
 				Expect(readyCond.Reason).To(Equal(condition.ReasonAccessDenied))
+				Expect(listener.Status.Draining).To(BeNil())
+				Expect(countCalls(start, "Delete", nil)).To(BeZero())
+				Expect(countNamespacedSubscriberLists(start)).To(BeZero())
 				Expect(readyCond.Message).To(ContainSubstring("consumer"))
 			})
 		})
@@ -3421,53 +3126,20 @@ var _ = Describe("ListenerHandler", func() {
 					}).
 					Return(nil).Once()
 
-				// handleDenialCleanup: no children.
-				fakeClient.EXPECT().
-					List(ctx, mock.AnythingOfType("*v1.RouteListenerList"), mock.Anything).
-					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-						*list.(*gatewayv1.RouteListenerList) = gatewayv1.RouteListenerList{}
-					}).
-					Return(nil).Once()
-				fakeClient.EXPECT().
-					List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
-					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-						*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{}
-					}).
-					Return(nil).Once()
+				// handleDenialCleanup: the owner-label inventory finds nothing to
+				// drain, so no Publisher is touched.
+				mockOwnedLists(nil, nil)
 
-				// resolvePublisherNamespace: no children.
-				fakeClient.EXPECT().
-					List(ctx, mock.AnythingOfType("*v1.RouteListenerList"), mock.Anything).
-					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-						*list.(*gatewayv1.RouteListenerList) = gatewayv1.RouteListenerList{}
-					}).
-					Return(nil).Once()
-				fakeClient.EXPECT().
-					List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
-					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-						*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{}
-					}).
-					Return(nil).Once()
-				mockGetConsumerApp(makeConsumerApp())
-				mockGetZone()
-
-				// cleanupGenericPublisherIfOrphaned.
-				fakeClient.EXPECT().
-					List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
-					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-						*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{}
-					}).
-					Return(nil).Once()
-				fakeClient.EXPECT().
-					Delete(ctx, mock.AnythingOfType("*v1.Publisher"), mock.Anything).
-					Return(nil).Once()
-
+				start := len(fakeClient.Calls)
 				err := h.CreateOrUpdate(ctx, listener)
 				Expect(err).ToNot(HaveOccurred())
 
 				readyCond := meta.FindStatusCondition(listener.Status.Conditions, condition.ConditionTypeReady)
 				Expect(readyCond).ToNot(BeNil())
 				Expect(readyCond.Reason).To(Equal(condition.ReasonAccessDenied))
+				Expect(listener.Status.Draining).To(BeNil())
+				Expect(countCalls(start, "Delete", nil)).To(BeZero())
+				Expect(countNamespacedSubscriberLists(start)).To(BeZero())
 			})
 		})
 
