@@ -192,6 +192,84 @@ var _ = Describe("Listener Drain", func() {
 		})
 	})
 
+	Describe("Finding 3 regression: post-drain denial stability", func() {
+		It("should not start a new drain when AppliedPlacement has empty fingerprint and no children", func() {
+			listener := newListener()
+			// Post-drain state: AppliedPlacement remains with empty fingerprint,
+			// status refs cleared, Draining is nil.
+			listener.Status.AppliedPlacement = &spectrev1.AppliedListenerPlacementStatus{
+				Fingerprint: "",
+			}
+			listener.Status.RouteListener = nil
+			listener.Status.EventSubscriptions = nil
+
+			err := h.HandleDenialCleanup(ctx, listener, "provider")
+			Expect(err).ToNot(HaveOccurred())
+
+			// No drain should have started.
+			Expect(listener.Status.Draining).To(BeNil(),
+				"No drain should start when children are already gone")
+			// AppliedPlacement should be cleared.
+			Expect(listener.Status.AppliedPlacement).To(BeNil(),
+				"Stale AppliedPlacement should be cleared")
+		})
+
+		It("should start drain when AppliedPlacement has children to drain", func() {
+			listener := newListener()
+			listener.Status.AppliedPlacement = &spectrev1.AppliedListenerPlacementStatus{
+				Fingerprint: "live-fp",
+			}
+			listener.Status.RouteListener = &ctypes.ObjectRef{Name: "rl-1", Namespace: listenerZoneStatus}
+			listener.Status.EventSubscriptions = []ctypes.ObjectRef{
+				{Name: "sub-1", Namespace: listenerZoneStatus},
+			}
+
+			// startDrain needs List mocks for snapshot.
+			fakeClient.EXPECT().
+				List(ctx, mock.AnythingOfType("*v1.RouteListenerList"), mock.Anything).
+				Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+					*list.(*gatewayv1.RouteListenerList) = gatewayv1.RouteListenerList{}
+				}).
+				Return(nil).Once()
+			fakeClient.EXPECT().
+				List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
+				Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+					*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{}
+				}).
+				Return(nil).Once()
+
+			err := h.HandleDenialCleanup(ctx, listener, "provider")
+			Expect(err).ToNot(HaveOccurred())
+
+			// Drain should have started because children exist.
+			Expect(listener.Status.Draining).ToNot(BeNil(),
+				"Drain must start when children exist")
+		})
+
+		It("should be stable across repeated calls when already denied and drained", func() {
+			listener := newListener()
+
+			// Call 1: AppliedPlacement with empty FP, no children.
+			listener.Status.AppliedPlacement = &spectrev1.AppliedListenerPlacementStatus{
+				Fingerprint: "",
+			}
+
+			err := h.HandleDenialCleanup(ctx, listener, "provider")
+			Expect(err).ToNot(HaveOccurred())
+			Expect(listener.Status.AppliedPlacement).To(BeNil())
+			Expect(listener.Status.Draining).To(BeNil())
+
+			// Call 2: Same state again — AppliedPlacement nil means we enter
+			// the direct-delete branch, not the drain branch. No new drain starts.
+			// This proves the cycle is broken: previously the code would restart
+			// a drain on every reconcile.
+			Expect(listener.Status.AppliedPlacement).To(BeNil(),
+				"After clearing, repeated calls should not re-create AppliedPlacement")
+			Expect(listener.Status.Draining).To(BeNil(),
+				"No drain should be active after clearing")
+		})
+	})
+
 	Describe("ContinueDrain", func() {
 		It("should return true when draining is nil", func() {
 			listener := newListener()
