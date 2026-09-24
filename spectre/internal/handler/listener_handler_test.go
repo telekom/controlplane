@@ -915,7 +915,7 @@ var _ = Describe("ListenerHandler", func() {
 
 	// provisionForRejection runs R0 with both gates granted and builds the live
 	// children from the persisted status refs. They carry the applied
-	// fingerprint label so removeStaleChildren keeps them.
+	// fingerprint label so the stale-child check keeps them.
 	provisionForRejection := func() *rejectionFixture {
 		fakeClient.EXPECT().AnyChanged().Return(true).Once()
 		l, err := reconcile(setupFullHappyPath())
@@ -1073,7 +1073,7 @@ var _ = Describe("ListenerHandler", func() {
 		mockR1 := func() {
 			mockEarlyRestrictionGranted(preR1)
 			mockResolveTopology()
-			mockOwnedLists(liveRLs, f.subs) // removeStaleChildren: same fingerprint, kept
+			mockOwnedLists(liveRLs, f.subs) // stale-child check: same fingerprint, kept
 			mockRejectedGates(gate)
 			mockOwnedLists(liveRLs, f.subs) // drainCapture inventory
 		}
@@ -1148,7 +1148,7 @@ var _ = Describe("ListenerHandler", func() {
 			Return(nil).Once()
 		mockEarlyRestrictionGranted(l)
 		mockResolveTopology()
-		mockOwnedLists(nil, nil) // removeStaleChildren
+		mockOwnedLists(nil, nil) // stale-child check
 		mockRejectedGates(gate)
 		mockOwnedLists(nil, nil) // drainCapture inventory: nothing left
 		start = len(fakeClient.Calls)
@@ -1176,7 +1176,7 @@ var _ = Describe("ListenerHandler", func() {
 		for range 3 {
 			mockEarlyRestrictionGranted(l)
 			mockResolveTopology()
-			mockOwnedLists(nil, nil) // removeStaleChildren
+			mockOwnedLists(nil, nil) // stale-child check
 			mockRejectedGates(gate)
 			mockOwnedLists(nil, nil) // drainCapture inventory
 
@@ -1195,6 +1195,174 @@ var _ = Describe("ListenerHandler", func() {
 			expectRequestDenied(next, gate)
 			l = next
 		}
+	}
+
+	// --- Stale-generation and legacy-migration helpers ---
+
+	// ownedChildMeta is the metadata of a live child owned by the test Listener
+	// in its zone, labelled with fingerprint; an empty fingerprint leaves it
+	// unlabelled like a child of the prior authorization policy.
+	ownedChildMeta := func(name, fingerprint string) metav1.ObjectMeta {
+		labels := map[string]string{cconfig.OwnerUidLabelKey: "listener-uid-001"}
+		if fingerprint != "" {
+			labels[handler.AuthorizationFingerprintLabelKey] = fingerprint
+		}
+		return metav1.ObjectMeta{
+			Name:            name,
+			Namespace:       listenerZoneStatus,
+			UID:             k8stypes.UID(name + "-uid"),
+			ResourceVersion: "5",
+			Labels:          labels,
+		}
+	}
+
+	// staleCapture is the live capture of an earlier generation.
+	type staleCapture struct {
+		rl   gatewayv1.RouteListener
+		subs []pubsubv1.Subscriber
+	}
+
+	// withStaleCapture gives l a live RouteListener labelled rlFingerprint and
+	// one Subscriber per subFingerprints entry, all referenced by l's status.
+	withStaleCapture := func(l *spectrev1.Listener, rlFingerprint string, subFingerprints ...string) *staleCapture {
+		s := &staleCapture{rl: gatewayv1.RouteListener{ObjectMeta: ownedChildMeta("stale-rl", rlFingerprint)}}
+		l.Status.RouteListener = ctypes.ObjectRefFromObject(&s.rl)
+		for i, fp := range subFingerprints {
+			s.subs = append(s.subs, pubsubv1.Subscriber{ObjectMeta: ownedChildMeta(fmt.Sprintf("stale-sub-%d", i), fp)})
+			l.Status.EventSubscriptions = append(l.Status.EventSubscriptions, *ctypes.ObjectRefFromObject(&s.subs[i]))
+		}
+		return s
+	}
+
+	// expectStaleCheckpoint asserts that the reconcile since call index from only
+	// wrote a Stopping checkpoint for s: nothing was deleted, and no child,
+	// Publisher or ApprovalRequest was created.
+	expectStaleCheckpoint := func(l *spectrev1.Listener, s *staleCapture, from int) {
+		d := l.Status.Draining
+		Expect(d).ToNot(BeNil())
+		Expect(d.Phase).To(Equal(handler.ExportDrainPhaseStopping))
+		Expect(d.Reason).To(Equal("stale authorization generation"))
+		Expect(d.OldFingerprint).To(BeEmpty())
+		Expect(d.OldRouteListeners).To(Equal([]ctypes.ObjectRef{*ctypes.ObjectRefFromObject(&s.rl)}))
+		want := make([]ctypes.ObjectRef, len(s.subs))
+		for i := range s.subs {
+			want[i] = *ctypes.ObjectRefFromObject(&s.subs[i])
+		}
+		Expect(d.OldSubscribers).To(Equal(want))
+		Expect(countCalls(from, "Delete", nil)).To(BeZero())
+		Expect(countCalls(from, "CreateOrUpdate", nil)).To(BeZero())
+	}
+
+	// expectOrphanedPublisherDelete stubs the CleaningPublisher orphan check in
+	// the zone namespace (no Subscriber left) and the generic Publisher Delete
+	// there. Register it before owner-label List stubs: those match any List.
+	expectOrphanedPublisherDelete := func() {
+		fakeClient.EXPECT().
+			List(ctx, mock.AnythingOfType("*v1.SubscriberList"), client.InNamespace(listenerZoneStatus)).
+			Return(nil).Once()
+		fakeClient.EXPECT().
+			Delete(ctx, mock.AnythingOfType("*v1.Publisher"), mock.Anything).
+			Run(func(_ context.Context, obj client.Object, _ ...client.DeleteOption) {
+				Expect(obj.GetName()).To(Equal(util.MakePublisherName(util.GenericEventType)))
+				Expect(obj.GetNamespace()).To(Equal(listenerZoneStatus))
+			}).
+			Return(nil).Once()
+	}
+
+	// finishStaleDrain drives the persisted checkpoint for s through the
+	// deletions and the CleaningPublisher reconcile, which removes the orphaned
+	// generic Publisher, completes the drain and runs the rest of the reconcile
+	// that mockRest stubs. It returns the Listener and the call index at which
+	// that reconcile started.
+	finishStaleDrain := func(l *spectrev1.Listener, s *staleCapture, mockRest func()) (*spectrev1.Listener, int) {
+		l = driveDrainToCleaningPublisher(l, s.rl, s.subs)
+		expectOrphanedPublisherDelete()
+		mockRest()
+		start := len(fakeClient.Calls)
+		l, err := reconcile(l)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(l.Status.Draining).To(BeNil())
+		Expect(countCalls(start, "Delete", &pubsubv1.Publisher{})).To(Equal(1))
+		Expect(countCalls(start, "Delete", &gatewayv1.RouteListener{})).To(BeZero())
+		Expect(countCalls(start, "Delete", &pubsubv1.Subscriber{})).To(BeZero())
+		expectNoCaptureCreates(start)
+		return l, start
+	}
+
+	// expectStaleDrainedBeforeApproval reconciles the v2 Listener l whose status
+	// references the stale capture s: R1 only checkpoints, R2-R5 delete the
+	// RouteListener and then the Subscribers with UID+RV preconditions, and only
+	// the reconcile completing the drain evaluates the approvals (Pending). No
+	// capture child or Publisher is created throughout.
+	expectStaleDrainedBeforeApproval := func(l *spectrev1.Listener, s *staleCapture) {
+		mockGetZone()
+		mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
+		mockResolveTopology()
+		mockOwnedLists([]gatewayv1.RouteListener{s.rl}, s.subs) // stale-child check
+		first := len(fakeClient.Calls)
+		l, err := reconcile(l)
+		Expect(err).ToNot(HaveOccurred())
+		expectStaleCheckpoint(l, s, first)
+
+		l, last := finishStaleDrain(l, s, func() {
+			mockResolveTopology()
+			mockOwnedLists(nil, nil) // stale-child check: nothing left
+			mockApprovalPending()
+		})
+		// The approvals are evaluated only now, after the drain.
+		Expect(countCalls(first, "CreateOrUpdate", &approvalv1.ApprovalRequest{})).To(Equal(2))
+		Expect(countCalls(last, "CreateOrUpdate", &approvalv1.ApprovalRequest{})).To(Equal(2))
+		expectNoCaptureCreates(first)
+		procCond := meta.FindStatusCondition(l.Status.Conditions, condition.ConditionTypeProcessing)
+		Expect(procCond).ToNot(BeNil())
+		Expect(procCond.Reason).To(Equal(condition.ReasonBlocked))
+	}
+
+	legacyApprovalKey := k8stypes.NamespacedName{
+		Name:      approvalv1.ApprovalName("Listener", listenerName),
+		Namespace: listenerNamespace,
+	}
+
+	// mockLegacyApprovalGets stubs n reads of the legacy unscoped Approval by its
+	// deterministic name, returning approval, or NotFound when it is nil.
+	// Register them before gate stubs: those match every Approval key.
+	mockLegacyApprovalGets := func(approval *approvalv1.Approval, n int) {
+		call := fakeClient.EXPECT().Get(ctx, legacyApprovalKey, mock.AnythingOfType("*v1.Approval"))
+		if approval == nil {
+			call.Return(errors.NewNotFound(schema.GroupResource{Group: approvalv1.GroupVersion.Group, Resource: "approvals"},
+				legacyApprovalKey.Name)).Times(n)
+			return
+		}
+		call.Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
+			approval.DeepCopyInto(out.(*approvalv1.Approval))
+		}).Return(nil).Times(n)
+	}
+
+	// mockLegacyRequestGets stubs n reads of the legacy ApprovalRequest ar.
+	mockLegacyRequestGets := func(ar *approvalv1.ApprovalRequest, n int) {
+		fakeClient.EXPECT().
+			Get(ctx, k8stypes.NamespacedName{Name: ar.Name, Namespace: ar.Namespace}, mock.AnythingOfType("*v1.ApprovalRequest")).
+			Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
+				ar.DeepCopyInto(out.(*approvalv1.ApprovalRequest))
+			}).
+			Return(nil).Times(n)
+	}
+
+	// expectRequestRetirementPrepared asserts the migration is retiring the
+	// legacy request ar and has only checkpointed its deletion.
+	expectRequestRetirementPrepared := func(l *spectrev1.Listener, ar *approvalv1.ApprovalRequest, from int) {
+		m := l.Status.AuthorizationMigration
+		Expect(m).ToNot(BeNil())
+		Expect(m.Phase).To(Equal("RetiringRequests"))
+		Expect(m.RetirementCheckpoint).ToNot(BeNil())
+		Expect(m.RetirementCheckpoint.PendingDeletions).To(HaveLen(1))
+		pd := m.RetirementCheckpoint.PendingDeletions[0]
+		Expect(pd.Kind).To(Equal("ApprovalRequest"))
+		Expect(pd.Name).To(Equal(ar.Name))
+		Expect(pd.UID).To(Equal(string(ar.UID)))
+		Expect(pd.Phase).To(Equal(handler.ExportPendingDeletionPhasePrepared))
+		Expect(countCalls(from, "Delete", &approvalv1.ApprovalRequest{})).To(BeZero())
+		Expect(l.Status.AuthorizationPolicyVersion).ToNot(Equal("v2"))
 	}
 
 	Describe("CreateOrUpdate", func() {
@@ -1394,7 +1562,7 @@ var _ = Describe("ListenerHandler", func() {
 
 				// R1: both gates report the Approval Rejected.
 				mockResolveTopology()
-				mockOwnedLists(liveRLs, f.subs) // removeStaleChildren: same fingerprint, kept
+				mockOwnedLists(liveRLs, f.subs) // stale-child check: same fingerprint, kept
 				mockApprovalDenied()
 				mockOwnedLists(liveRLs, f.subs) // drainCapture inventory
 				start := len(fakeClient.Calls)
@@ -1421,7 +1589,7 @@ var _ = Describe("ListenerHandler", func() {
 					}).
 					Return(nil).Once()
 				mockResolveTopology()
-				mockOwnedLists(liveRLs, f.subs) // removeStaleChildren: same fingerprint, kept
+				mockOwnedLists(liveRLs, f.subs) // stale-child check: same fingerprint, kept
 				mockApprovalDenied()
 				mockOwnedLists(liveRLs, f.subs) // drainCapture inventory
 				start := len(fakeClient.Calls)
@@ -1753,147 +1921,262 @@ var _ = Describe("ListenerHandler", func() {
 		})
 
 		Context("provider changes (stale children)", func() {
-			It("should delete old-fingerprint children before evaluating the replacement grant", func() {
-				listener := newListener()
-				mockGetConsumerApp(makeConsumerApp())
-				mockGetProviderApp(makeProviderApp())
-				mockGetSpectreApp(makeSpectreAppPtr())
-				mockGetObserverApp(makeConsumerApp()) // A==C: observer resolves to consumer
+			It("should drain old-fingerprint children through the checkpoint before evaluating the replacement grant", func() {
+				l := newListener()
+				s := withStaleCapture(l, "old-fingerprint", "old-fingerprint")
+				expectStaleDrainedBeforeApproval(l, s)
+			})
+
+			It("should not delete a same-name child recreated with another UID after the checkpoint", func() {
+				l := newListener()
+				s := withStaleCapture(l, "old-fingerprint", "old-fingerprint")
 				mockGetZone()
 				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
-				mockGetEventStore(makeListenerEventStore())
-				mockListRoutes()
-
-				// Simulate existing children with a different fingerprint (stale).
-				fakeClient.EXPECT().
-					List(ctx, mock.AnythingOfType("*v1.RouteListenerList"), mock.Anything).
-					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-						*list.(*gatewayv1.RouteListenerList) = gatewayv1.RouteListenerList{
-							Items: []gatewayv1.RouteListener{
-								{
-									ObjectMeta: metav1.ObjectMeta{
-										Name:      "stale-rl",
-										Namespace: listenerZoneStatus,
-										Labels: map[string]string{
-											handler.AuthorizationFingerprintLabelKey: "old-fingerprint",
-										},
-									},
-								},
-							},
-						}
-					}).
-					Return(nil).Once()
-
-				// Expect stale RouteListener deletion.
-				fakeClient.EXPECT().
-					Delete(ctx, mock.MatchedBy(func(obj client.Object) bool {
-						return obj.GetName() == "stale-rl"
-					}), mock.Anything).
-					Return(nil).Once()
-
-				fakeClient.EXPECT().
-					List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
-					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-						*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{
-							Items: []pubsubv1.Subscriber{
-								{
-									ObjectMeta: metav1.ObjectMeta{
-										Name:      "stale-sub",
-										Namespace: listenerZoneStatus,
-										Labels: map[string]string{
-											handler.AuthorizationFingerprintLabelKey: "old-fingerprint",
-										},
-									},
-								},
-							},
-						}
-					}).
-					Return(nil).Once()
-
-				// Expect stale Subscriber deletion.
-				fakeClient.EXPECT().
-					Delete(ctx, mock.MatchedBy(func(obj client.Object) bool {
-						return obj.GetName() == "stale-sub"
-					}), mock.Anything).
-					Return(nil).Once()
-
-				// After stale cleanup, proceed with approval (pending to stop here).
-				mockApprovalPending()
-
-				err := h.CreateOrUpdate(ctx, listener)
+				mockResolveTopology()
+				mockOwnedLists([]gatewayv1.RouteListener{s.rl}, s.subs)
+				start := len(fakeClient.Calls)
+				l, err := reconcile(l)
 				Expect(err).ToNot(HaveOccurred())
+				expectStaleCheckpoint(l, s, start)
 
-				// Confirm blocked condition (pending).
-				procCond := meta.FindStatusCondition(listener.Status.Conditions, condition.ConditionTypeProcessing)
-				Expect(procCond).ToNot(BeNil())
-				Expect(procCond.Reason).To(Equal(condition.ReasonBlocked))
+				// R2: the RouteListener was recreated under the same name with another
+				// UID: the recorded instance is gone and the replacement is not deleted.
+				rl := s.rl.DeepCopy()
+				rl.UID = "replacement-rl-uid"
+				rl.ResourceVersion = "9"
+				fakeClient.EXPECT().
+					Get(ctx, k8stypes.NamespacedName{Name: rl.Name, Namespace: rl.Namespace}, mock.AnythingOfType("*v1.RouteListener")).
+					Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
+						rl.DeepCopyInto(out.(*gatewayv1.RouteListener))
+					}).
+					Return(nil).Once()
+				start = len(fakeClient.Calls)
+				l, err = reconcile(l)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(countCalls(start, "Delete", nil)).To(BeZero())
+				Expect(l.Status.Draining.Phase).To(Equal(handler.ExportDrainPhaseDrainingSubscribers))
+
+				// R3: the same for the Subscriber, which references the zone's generic
+				// Publisher.
+				sub := s.subs[0].DeepCopy()
+				sub.UID = "replacement-sub-uid"
+				sub.ResourceVersion = "9"
+				sub.Spec.Publisher = ctypes.ObjectRef{Name: util.MakePublisherName(util.GenericEventType), Namespace: listenerZoneStatus}
+				fakeClient.EXPECT().
+					Get(ctx, k8stypes.NamespacedName{Name: sub.Name, Namespace: sub.Namespace}, mock.AnythingOfType("*v1.Subscriber")).
+					Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
+						sub.DeepCopyInto(out.(*pubsubv1.Subscriber))
+					}).
+					Return(nil).Once()
+				start = len(fakeClient.Calls)
+				l, err = reconcile(l)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(countCalls(start, "Delete", nil)).To(BeZero())
+				Expect(l.Status.Draining.Phase).To(Equal(handler.ExportDrainPhaseCleaningPublisher))
+
+				// R4: the replacement Subscriber keeps the Publisher. The drain
+				// completes, and the replacements, still owned and stale, are recorded
+				// by their own checkpoint instead of being adopted; nothing is deleted.
+				fakeClient.EXPECT().
+					List(ctx, mock.AnythingOfType("*v1.SubscriberList"), client.InNamespace(listenerZoneStatus)).
+					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+						list.(*pubsubv1.SubscriberList).Items = []pubsubv1.Subscriber{*sub.DeepCopy()}
+					}).
+					Return(nil).Once()
+				mockResolveTopology()
+				mockOwnedLists([]gatewayv1.RouteListener{*rl}, []pubsubv1.Subscriber{*sub})
+				start = len(fakeClient.Calls)
+				l, err = reconcile(l)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(countCalls(start, "Delete", nil)).To(BeZero())
+				expectNoCaptureCreates(start)
+				d := l.Status.Draining
+				Expect(d).ToNot(BeNil())
+				Expect(d.Phase).To(Equal(handler.ExportDrainPhaseStopping))
+				Expect(d.OldRouteListeners).To(Equal([]ctypes.ObjectRef{*ctypes.ObjectRefFromObject(rl)}))
+				Expect(d.OldSubscribers).To(Equal([]ctypes.ObjectRef{*ctypes.ObjectRefFromObject(sub)}))
 			})
 		})
 
 		Context("legacy children without a fingerprint", func() {
-			It("should remove unlabelled legacy children (fail-closed migration)", func() {
-				listener := newListener()
-				mockGetConsumerApp(makeConsumerApp())
-				mockGetProviderApp(makeProviderApp())
-				mockGetSpectreApp(makeSpectreAppPtr())
-				mockGetObserverApp(makeConsumerApp()) // A==C: observer resolves to consumer
+			It("should drain unlabelled legacy children through the checkpoint (fail-closed migration)", func() {
+				l := newListener()
+				s := withStaleCapture(l, "", "")
+				expectStaleDrainedBeforeApproval(l, s)
+			})
+		})
+
+		// A Listener of the prior policy: the freshness decision and the migration
+		// record come before anything can remove a child, so draining its children
+		// never makes it look fresh.
+		Context("legacy migration", func() {
+			// legacyListener is a Listener reconciled for the first time after the
+			// upgrade: no policy version, no applied placement.
+			legacyListener := func() *spectrev1.Listener {
+				l := newListener()
+				l.Status.AuthorizationPolicyVersion = ""
+				return l
+			}
+
+			It("records the migration with the drain checkpoint without a legacy Approval and never turns fresh", func() {
+				l := legacyListener()
+				s := withStaleCapture(l, "", "")
+
+				// R1: isFreshInstall finds no legacy Approval and stops at the unlabelled
+				// RouteListener; the record re-reads the Approval; the stale-child check
+				// checkpoints the drain.
 				mockGetZone()
 				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
-				mockGetEventStore(makeListenerEventStore())
-				mockListRoutes()
-
-				// Simulate existing children WITHOUT fingerprint label (pre-migration).
+				mockLegacyApprovalGets(nil, 2)
+				mockResolveTopology()
 				fakeClient.EXPECT().
 					List(ctx, mock.AnythingOfType("*v1.RouteListenerList"), mock.Anything).
 					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-						*list.(*gatewayv1.RouteListenerList) = gatewayv1.RouteListenerList{
-							Items: []gatewayv1.RouteListener{
-								{
-									ObjectMeta: metav1.ObjectMeta{
-										Name:      "legacy-rl",
-										Namespace: listenerZoneStatus,
-										Labels:    map[string]string{},
-									},
-								},
-							},
-						}
+						list.(*gatewayv1.RouteListenerList).Items = []gatewayv1.RouteListener{*s.rl.DeepCopy()}
 					}).
-					Return(nil).Once()
-
-				fakeClient.EXPECT().
-					Delete(ctx, mock.MatchedBy(func(obj client.Object) bool {
-						return obj.GetName() == "legacy-rl"
-					}), mock.Anything).
-					Return(nil).Once()
-
-				fakeClient.EXPECT().
-					List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
-					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-						*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{
-							Items: []pubsubv1.Subscriber{
-								{
-									ObjectMeta: metav1.ObjectMeta{
-										Name:      "legacy-sub",
-										Namespace: listenerZoneStatus,
-										Labels:    map[string]string{},
-									},
-								},
-							},
-						}
-					}).
-					Return(nil).Once()
-
-				fakeClient.EXPECT().
-					Delete(ctx, mock.MatchedBy(func(obj client.Object) bool {
-						return obj.GetName() == "legacy-sub"
-					}), mock.Anything).
-					Return(nil).Once()
-
-				// After stale cleanup, approval proceeds (pending).
-				mockApprovalPending()
-
-				err := h.CreateOrUpdate(ctx, listener)
+					Return(nil).Once() // isFreshInstall
+				mockOwnedLists([]gatewayv1.RouteListener{s.rl}, s.subs) // stale-child check
+				first := len(fakeClient.Calls)
+				l, err := reconcile(l)
 				Expect(err).ToNot(HaveOccurred())
+				Expect(l.Status.AuthorizationMigration).ToNot(BeNil())
+				Expect(l.Status.AuthorizationMigration.Phase).To(Equal("Blocked"))
+				Expect(l.Status.AuthorizationPolicyVersion).ToNot(Equal("v2"))
+				expectStaleCheckpoint(l, s, first)
+
+				// R2-R6: the drain. The reconcile completing it finds no child left, yet
+				// the persisted record keeps it off the fresh path: the scoped gates are
+				// requested (Pending) and v2 is not set.
+				l, _ = finishStaleDrain(l, s, func() {
+					mockLegacyApprovalGets(nil, 1) // migration discovery
+					mockResolveTopology()
+					mockOwnedLists(nil, nil) // stale-child check
+					mockApprovalPending()
+				})
+				Expect(l.Status.AuthorizationPolicyVersion).ToNot(Equal("v2"))
+				Expect(l.Status.AuthorizationMigration).ToNot(BeNil())
+
+				// R7: the next reconcile, children gone, still does not set v2.
+				notFound := errors.NewNotFound(schema.GroupResource{Group: approvalv1.GroupVersion.Group, Resource: "approvals"}, "")
+				for _, ref := range []*ctypes.ObjectRef{l.Status.ProviderApproval, l.Status.ConsumerApproval} {
+					if ref != nil {
+						fakeClient.EXPECT().Get(ctx, ref.K8s(), mock.AnythingOfType("*v1.Approval")).Return(notFound).Once()
+					}
+				}
+				mockLegacyApprovalGets(nil, 1)
+				mockResolveTopology()
+				mockOwnedLists(nil, nil)
+				mockApprovalPending()
+				start := len(fakeClient.Calls)
+				l, err = reconcile(l)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(l.Status.AuthorizationPolicyVersion).ToNot(Equal("v2"))
+				Expect(l.Status.AuthorizationMigration).ToNot(BeNil())
+				Expect(countCalls(start, "Delete", nil)).To(BeZero())
+				expectNoCaptureCreates(first)
+			})
+
+			It("drains unlabelled capture first, then retires without an empty migration drain", func() {
+				l := legacyListener()
+				legacy := makeLegacyApproval(l, approvalv1.ApprovalStateGranted)
+				legacyReq := makeLegacyRequest(l)
+				l.Status.ProviderApproval = ctypes.ObjectRefFromObject(legacy)
+				s := withStaleCapture(l, "", "")
+
+				// R1: the early check reads the Granted legacy Approval; its unscoped
+				// ref makes the Listener not fresh; the record reads the Approval and
+				// its request; the stale-child check checkpoints the drain.
+				mockGetZone()
+				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
+				mockLegacyApprovalGets(legacy, 2)
+				mockLegacyRequestGets(legacyReq, 1)
+				mockResolveTopology()
+				mockOwnedLists([]gatewayv1.RouteListener{s.rl}, s.subs) // stale-child check
+				first := len(fakeClient.Calls)
+				l, err := reconcile(l)
+				Expect(err).ToNot(HaveOccurred())
+				m := l.Status.AuthorizationMigration
+				Expect(m).ToNot(BeNil())
+				Expect(m.Phase).To(Equal("Recorded"))
+				Expect(m.LegacyApproval).To(Equal(ctypes.ObjectRefFromObject(legacy)))
+				Expect(m.LegacyRequests).To(Equal([]ctypes.ObjectRef{*ctypes.ObjectRefFromObject(legacyReq)}))
+				expectStaleCheckpoint(l, s, first)
+
+				// R2-R6: the drain. The reconcile completing it finds no child left,
+				// both scoped gates grant, and the migration's drain step finds nothing
+				// to drain: no empty drain starts, and retirement only checkpoints the
+				// legacy request's deletion.
+				l, last := finishStaleDrain(l, s, func() {
+					mockLegacyApprovalGets(legacy, 2)   // early check, migration discovery
+					mockLegacyRequestGets(legacyReq, 2) // migration discovery, retirement
+					mockResolveTopology()
+					mockOwnedLists(nil, nil) // stale-child check
+					mockApprovalGranted()
+					mockOwnedLists(nil, nil) // migration drain inventory
+				})
+				Expect(l.Status.AuthorizationMigration.DrainStarted).To(BeFalse())
+				expectRequestRetirementPrepared(l, legacyReq, last)
+				expectNoCaptureCreates(first)
+			})
+
+			It("drains capture the stale-child check keeps through the migration checkpoint before retirement", func() {
+				f := provisionForRejection()
+				l := f.listener
+				l.Status.AuthorizationPolicyVersion = ""
+				legacy := makeLegacyApproval(l, approvalv1.ApprovalStateGranted)
+				legacyReq := makeLegacyRequest(l)
+				liveRLs := []gatewayv1.RouteListener{f.rl}
+
+				// R1: the legacy Approval makes the Listener not fresh and is recorded.
+				// The children carry the current fingerprint, so the stale-child check
+				// keeps them; both scoped gates grant and the migration checkpoints
+				// their drain without deleting anything.
+				mockEarlyRestrictionGranted(l)
+				mockLegacyApprovalGets(legacy, 3)   // isFreshInstall, record, migration discovery
+				mockLegacyRequestGets(legacyReq, 2) // record, migration discovery
+				mockResolveTopology()
+				mockOwnedLists(liveRLs, f.subs) // stale-child check: current fingerprint, kept
+				mockApprovalGranted()
+				mockOwnedLists(liveRLs, f.subs) // migration drain inventory
+				start := len(fakeClient.Calls)
+				l, err := reconcile(l)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(l.Status.AuthorizationMigration.Phase).To(Equal(handler.ExportMigrationPhaseDraining))
+				Expect(l.Status.AuthorizationMigration.DrainStarted).To(BeTrue())
+				d := l.Status.Draining
+				Expect(d).ToNot(BeNil())
+				Expect(d.Phase).To(Equal(handler.ExportDrainPhaseStopping))
+				Expect(d.Reason).To(Equal("legacy migration"))
+				Expect(d.OldFingerprint).To(Equal(f.fingerprint))
+				Expect(d.OldRouteListeners).To(Equal([]ctypes.ObjectRef{*ctypes.ObjectRefFromObject(&f.rl)}))
+				Expect(d.OldSubscribers).To(ConsistOf(*ctypes.ObjectRefFromObject(&f.subs[0]), *ctypes.ObjectRefFromObject(&f.subs[1])))
+				Expect(countCalls(start, "Delete", nil)).To(BeZero())
+				expectNoCaptureCreates(start)
+
+				// R2-R5: continueDrain deletes the RouteListener, then the Subscribers,
+				// with UID+RV preconditions.
+				l = driveDrainToCleaningPublisher(l, f.rl, f.subs)
+
+				// R6: the drain completes. The fingerprint and stale-child checks are
+				// skipped while the migration drains (no owner-label List is stubbed);
+				// the migration consumes the drain and only checkpoints the legacy
+				// request's deletion.
+				expectOrphanedPublisherDelete()
+				mockEarlyRestrictionGranted(l)
+				mockLegacyApprovalGets(legacy, 1)
+				mockLegacyRequestGets(legacyReq, 2)
+				mockResolveTopology()
+				mockApprovalGranted()
+				start = len(fakeClient.Calls)
+				l, err = reconcile(l)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(l.Status.Draining).To(BeNil())
+				Expect(l.Status.AppliedPlacement.Fingerprint).To(BeEmpty())
+				Expect(countCalls(start, "Delete", &pubsubv1.Publisher{})).To(Equal(1))
+				Expect(countCalls(start, "Delete", &gatewayv1.RouteListener{})).To(BeZero())
+				Expect(countCalls(start, "Delete", &pubsubv1.Subscriber{})).To(BeZero())
+				expectNoCaptureCreates(start)
+				expectRequestRetirementPrepared(l, legacyReq, start)
 			})
 		})
 
@@ -2349,7 +2632,7 @@ var _ = Describe("ListenerHandler", func() {
 
 				mockEarlyRestrictionGranted(f.listener)
 				mockResolveTopology()
-				mockOwnedLists(liveRLs, f.subs) // removeStaleChildren
+				mockOwnedLists(liveRLs, f.subs) // stale-child check
 				mockApprovalRequestDeniedGate("provider")
 				// Consumer gate: Approval Get returns an internal error.
 				fakeClient.EXPECT().
@@ -2393,7 +2676,7 @@ var _ = Describe("ListenerHandler", func() {
 				var capP, capC approvalv1.ApprovalRequest
 				mockEarlyRestrictionGranted(l)
 				mockResolveTopology()
-				mockOwnedLists(nil, nil) // removeStaleChildren
+				mockOwnedLists(nil, nil) // stale-child check
 				mockGateBoundToOldRequest("provider", f.providerReq, &capP)
 				mockGateBoundToOldRequest("consumer", f.consumerReq, &capC)
 
@@ -2421,7 +2704,7 @@ var _ = Describe("ListenerHandler", func() {
 				// the new fingerprint.
 				mockEarlyRestrictionGranted(l7)
 				mockResolveTopology()
-				mockOwnedLists(nil, nil) // removeStaleChildren
+				mockOwnedLists(nil, nil) // stale-child check
 				mockApprovalGranted()
 				mockCreateOrUpdatePublisher()
 				var capturedRL *gatewayv1.RouteListener
@@ -2683,7 +2966,7 @@ var _ = Describe("ListenerHandler", func() {
 			}
 
 			// mockReadyReconcile stubs one reconcile that provisions (or re-applies)
-			// capture and reports Ready. children are returned by removeStaleChildren.
+			// capture and reports Ready. children are returned by the stale-child check.
 			mockReadyReconcile := func(rls []gatewayv1.RouteListener, subs []pubsubv1.Subscriber) {
 				consumerApp, providerApp := sameTeamApps()
 				mockGetConsumerApp(consumerApp)
@@ -2828,58 +3111,10 @@ var _ = Describe("ListenerHandler", func() {
 		// --- Brief section 6: Regression coverage from Phase 1 ---
 
 		Context("regression: stale children removed BEFORE approval evaluation", func() {
-			It("should delete stale children before evaluating approval", func() {
-				listener := newListener()
-				mockGetConsumerApp(makeConsumerApp())
-				mockGetProviderApp(makeProviderApp())
-				mockGetSpectreApp(makeSpectreAppPtr())
-				mockGetObserverApp(makeConsumerApp()) // A==C: observer resolves to consumer
-				mockGetZone()
-				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
-				mockGetEventStore(makeListenerEventStore())
-				mockListRoutes()
-
-				// Stale RouteListener with old fingerprint.
-				fakeClient.EXPECT().
-					List(ctx, mock.AnythingOfType("*v1.RouteListenerList"), mock.Anything).
-					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-						*list.(*gatewayv1.RouteListenerList) = gatewayv1.RouteListenerList{
-							Items: []gatewayv1.RouteListener{
-								{
-									ObjectMeta: metav1.ObjectMeta{
-										Name:      "stale-rl",
-										Namespace: listenerZoneStatus,
-										Labels: map[string]string{
-											handler.AuthorizationFingerprintLabelKey: "old-fp",
-										},
-									},
-								},
-							},
-						}
-					}).
-					Return(nil).Once()
-				fakeClient.EXPECT().
-					Delete(ctx, mock.MatchedBy(func(obj client.Object) bool {
-						return obj.GetName() == "stale-rl"
-					}), mock.Anything).
-					Return(nil).Once()
-
-				fakeClient.EXPECT().
-					List(ctx, mock.AnythingOfType("*v1.SubscriberList"), mock.Anything).
-					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-						*list.(*pubsubv1.SubscriberList) = pubsubv1.SubscriberList{}
-					}).
-					Return(nil).Once()
-
-				// After stale removal, approval evaluates (pending stops test here).
-				mockApprovalPending()
-
-				err := h.CreateOrUpdate(ctx, listener)
-				Expect(err).ToNot(HaveOccurred())
-
-				procCond := meta.FindStatusCondition(listener.Status.Conditions, condition.ConditionTypeProcessing)
-				Expect(procCond).ToNot(BeNil())
-				Expect(procCond.Reason).To(Equal(condition.ReasonBlocked))
+			It("should drain stale children through the checkpoint before evaluating approval", func() {
+				l := newListener()
+				s := withStaleCapture(l, "old-fp", "")
+				expectStaleDrainedBeforeApproval(l, s)
 			})
 		})
 

@@ -134,6 +134,15 @@ func (h *ListenerHandler) CreateOrUpdate(ctx context.Context, listener *spectrev
 		return errors.Wrap(err, "failed to resolve observer zone")
 	}
 
+	// Step 3.5: Decide freshness before placement, fingerprint or stale-child
+	// handling can drain a child: a Listener whose prior-policy children were
+	// drained must not then look fresh. The early restriction (step 0.5) only
+	// acts on persisted Approval refs, and an unscoped legacy ref keeps the
+	// Listener not fresh.
+	if freshErr := h.decideFreshness(ctx, listener); freshErr != nil {
+		return freshErr
+	}
+
 	// Step 4: Resolve placement before creating approvals. Delivery is always
 	// A's zone; capture is the first supported zone on the C→P path (A's zone
 	// when on it, then C's, then P's). Unsupported Routes (missing, pass-through,
@@ -187,25 +196,20 @@ func (h *ListenerHandler) CreateOrUpdate(ctx context.Context, listener *spectrev
 		return nil // persist drain checkpoint; continueDrain runs on next reconcile
 	}
 
-	// Step 5.10: Remove stale children whose fingerprint differs from the current
-	// intent. This handles unlabelled pre-migration children and is NOT used in the
-	// drain path (continueDrain performs its own UID-checked deletions).
-	if err := h.removeStaleChildren(ctx, listener, fingerprint); err != nil {
-		return errors.Wrap(err, "failed to remove stale children")
-	}
-
-	// Step 5.11: Wire migration. Fresh installs set v2 directly; existing
-	// Listeners with legacy Approvals enter the state machine.
-	if listener.Status.AuthorizationPolicyVersion != authorizationPolicyV2 {
-		fresh, err := h.isFreshInstall(ctx, listener)
-		if err != nil {
-			return errors.Wrap(err, "failed to check fresh install")
+	// Step 5.10: Owned children the current intent did not produce (unlabelled
+	// prior-policy children, or another fingerprint step 5.9 did not catch) are
+	// drained through the persisted checkpoint like every other capture stop;
+	// return so it is persisted before continueDrain deletes anything. Skipped
+	// while the migration drains, as step 5.9. No drain is active here: step 0
+	// returns until it completes.
+	if !migrationIsDraining {
+		started, staleErr := h.drainStaleChildren(ctx, listener, fingerprint)
+		if staleErr != nil {
+			return errors.Wrap(staleErr, "failed to drain stale children")
 		}
-		if fresh {
-			listener.Status.AuthorizationPolicyVersion = authorizationPolicyV2
+		if started {
+			return nil // persist drain checkpoint; continueDrain runs on next reconcile
 		}
-		// Non-fresh installs proceed to ensureApprovals; advanceMigration is
-		// called after the dual result is available (step 5.12).
 	}
 
 	// Step 6: Evaluate dual-gate approval (provider + consumer).
@@ -261,7 +265,7 @@ func (h *ListenerHandler) CreateOrUpdate(ctx context.Context, listener *spectrev
 		return nil
 
 	case outcomePending:
-		// No new provisioning; stale already removed.
+		// No new provisioning; no stale child remains (step 5.10).
 		if dual.err != nil {
 			return errors.Wrap(dual.err, "combined approval error")
 		}
@@ -441,72 +445,6 @@ func (h *ListenerHandler) Delete(ctx context.Context, listener *spectrev1.Listen
 
 	if err := h.cleanupGenericPublisherIfOrphaned(ctx, zoneNamespace); err != nil {
 		return errors.Wrap(err, "failed to cleanup generic Publisher")
-	}
-
-	return nil
-}
-
-// removeStaleChildren lists all Listener-owned RouteListeners and Subscribers
-// and deletes those whose authorization fingerprint differs from the current
-// intent. Resources without the fingerprint label (pre-migration) are treated
-// as stale to enforce fail-closed migration.
-//
-// RouteListeners are deleted before Subscribers so no new traffic is captured
-// while the replacement approval is pending.
-func (h *ListenerHandler) removeStaleChildren(ctx context.Context, listener *spectrev1.Listener, currentFingerprint string) error {
-	c := cclient.ClientFromContextOrDie(ctx)
-	logger := log.FromContext(ctx)
-
-	// List all owner-labelled RouteListeners.
-	rlList := &gatewayv1.RouteListenerList{}
-	if err := c.List(ctx, rlList, cclient.OwnedByLabel(listener)...); err != nil {
-		return errors.Wrap(err, "failed to list owned RouteListeners")
-	}
-	for i := range rlList.Items {
-		rl := &rlList.Items[i]
-		if isStaleChild(rl.Labels, currentFingerprint) {
-			logger.Info("Deleting stale RouteListener", "routeListener", rl.Name, "namespace", rl.Namespace)
-			if err := c.Delete(ctx, rl); err != nil && !apierrors.IsNotFound(err) {
-				return errors.Wrapf(err, "failed to delete stale RouteListener %q", rl.Name)
-			}
-			// Clear status ref if it points to this stale child.
-			if listener.Status.RouteListener != nil && listener.Status.RouteListener.Name == rl.Name && listener.Status.RouteListener.Namespace == rl.Namespace {
-				listener.Status.RouteListener = nil
-			}
-		}
-	}
-
-	// List all owner-labelled Subscribers.
-	subList := &pubsubv1.SubscriberList{}
-	if err := c.List(ctx, subList, cclient.OwnedByLabel(listener)...); err != nil {
-		return errors.Wrap(err, "failed to list owned Subscribers")
-	}
-	for i := range subList.Items {
-		sub := &subList.Items[i]
-		if isStaleChild(sub.Labels, currentFingerprint) {
-			logger.Info("Deleting stale Subscriber", "subscriber", sub.Name, "namespace", sub.Namespace)
-			if err := c.Delete(ctx, sub); err != nil && !apierrors.IsNotFound(err) {
-				return errors.Wrapf(err, "failed to delete stale Subscriber %q", sub.Name)
-			}
-		}
-	}
-	// Clear status refs that pointed to stale Subscribers.
-	if len(subList.Items) > 0 {
-		var kept []ctypes.ObjectRef
-		for _, ref := range listener.Status.EventSubscriptions {
-			stale := false
-			for i := range subList.Items {
-				sub := &subList.Items[i]
-				if ref.Name == sub.Name && ref.Namespace == sub.Namespace && isStaleChild(sub.Labels, currentFingerprint) {
-					stale = true
-					break
-				}
-			}
-			if !stale {
-				kept = append(kept, ref)
-			}
-		}
-		listener.Status.EventSubscriptions = kept
 	}
 
 	return nil

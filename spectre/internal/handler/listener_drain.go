@@ -79,6 +79,30 @@ func (h *ListenerHandler) drainCapture(ctx context.Context, listener *spectrev1.
 	return true, nil
 }
 
+// drainStaleChildren starts the persisted drain when any owned child lacks the
+// current authorization fingerprint, unlabelled prior-policy children included,
+// and reports whether it did. The checkpoint covers the whole owned inventory
+// plus status refs; the caller must return so it is persisted before
+// continueDrain deletes anything.
+func (h *ListenerHandler) drainStaleChildren(ctx context.Context, listener *spectrev1.Listener, fingerprint string) (bool, error) {
+	owned, err := listOwnedChildren(ctx, listener)
+	if err != nil {
+		return false, err
+	}
+	stale := false
+	for i := range owned.routeListeners {
+		stale = stale || isStaleChild(owned.routeListeners[i].Labels, fingerprint)
+	}
+	for i := range owned.subscribers {
+		stale = stale || isStaleChild(owned.subscribers[i].Labels, fingerprint)
+	}
+	if !stale {
+		return false, nil
+	}
+	recordDrain(ctx, listener, "stale authorization generation", "", owned)
+	return true, nil
+}
+
 // ownedChildren is one owner-label inventory of a Listener's capture children.
 type ownedChildren struct {
 	routeListeners []gatewayv1.RouteListener
