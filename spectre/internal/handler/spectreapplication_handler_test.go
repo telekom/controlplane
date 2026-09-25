@@ -43,6 +43,9 @@ const (
 	testSSEUrl              = "https://horizon-sse.internal:443/api/v1/sse"
 	testGatewayCallbackURL  = "https://callback.gateway.example.com/callback"
 	testCustomerCallbackURL = "https://customer.example.com/callback"
+	testSubscriptionId      = "5a1b2c3d4e5f"
+	testCanonicalSSEPath    = "/horizon/sse/v1/de.telekom.ei.listener.pandora--my-app"
+	testLegacySSEPath       = "/spectre-sse/pandora--my-app"
 )
 
 func newSpectreApplication(deliveryType string) *spectrev1.SpectreApplication {
@@ -240,11 +243,14 @@ var _ = Describe("SpectreApplicationHandler", func() {
 			Return(controllerutil.OperationResultCreated, nil).Once()
 	}
 
+	// mockCreateOrUpdateSubscriber stubs the Subscriber upsert. The returned
+	// Subscriber carries a SubscriptionId, as an existing Subscriber would.
 	mockCreateOrUpdateSubscriber := func() {
 		fakeClient.EXPECT().
 			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Subscriber"), mock.Anything).
-			Run(func(_ context.Context, _ client.Object, mutate controllerutil.MutateFn) {
+			Run(func(_ context.Context, obj client.Object, mutate controllerutil.MutateFn) {
 				_ = mutate()
+				obj.(*pubsubv1.Subscriber).Status.SubscriptionId = testSubscriptionId
 			}).
 			Return(controllerutil.OperationResultCreated, nil).Once()
 	}
@@ -268,6 +274,20 @@ var _ = Describe("SpectreApplicationHandler", func() {
 		fakeClient.EXPECT().
 			Cleanup(ctx, mock.AnythingOfType("*v1.PublisherList"), mock.Anything).
 			Return(0, nil).Once()
+	}
+
+	// mockRouteReadinessCheck stubs one Route readiness Get matching key, returning
+	// the Route with the given Ready status.
+	mockRouteReadinessCheck := func(key any, status metav1.ConditionStatus) {
+		fakeClient.EXPECT().
+			Get(ctx, key, mock.AnythingOfType("*v1.Route")).
+			Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
+				route := out.(*gatewayv1.Route)
+				meta.SetStatusCondition(&route.Status.Conditions, metav1.Condition{
+					Type: condition.ConditionTypeReady, Status: status, Reason: "Test",
+				})
+			}).
+			Return(nil).Once()
 	}
 
 	// mockExplicitReadinessChecks stubs the Get calls that ensureChildReady
@@ -295,15 +315,7 @@ var _ = Describe("SpectreApplicationHandler", func() {
 			Return(nil).Once()
 		// Route readiness check (SSE only).
 		if deliveryType == "server_sent_event" {
-			fakeClient.EXPECT().
-				Get(ctx, mock.AnythingOfType("types.NamespacedName"), mock.AnythingOfType("*v1.Route")).
-				Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
-					route := out.(*gatewayv1.Route)
-					meta.SetStatusCondition(&route.Status.Conditions, metav1.Condition{
-						Type: condition.ConditionTypeReady, Status: metav1.ConditionTrue, Reason: "Ready",
-					})
-				}).
-				Return(nil).Once()
+			mockRouteReadinessCheck(mock.AnythingOfType("types.NamespacedName"), metav1.ConditionTrue)
 		}
 	}
 
@@ -415,6 +427,7 @@ var _ = Describe("SpectreApplicationHandler", func() {
 
 				// No Route should be in status
 				Expect(obj.Status.ListenerRoute).To(BeNil())
+				Expect(obj.Status.SseUrl).To(BeEmpty())
 				// Publisher and Subscriber should still be created
 				Expect(obj.Status.Publisher).ToNot(BeNil())
 				Expect(obj.Status.Subscriber).ToNot(BeNil())
@@ -586,9 +599,93 @@ var _ = Describe("SpectreApplicationHandler", func() {
 				Expect(capturedRoute.Spec.Backend.Upstreams[0].Hostname).To(Equal("horizon-sse.internal"))
 				Expect(capturedRoute.Spec.Backend.Upstreams[0].Port).To(Equal(int32(443)))
 				Expect(capturedRoute.Spec.Backend.Upstreams[0].Scheme).To(Equal("https"))
-				// Path should contain the event type
-				Expect(capturedRoute.Spec.Paths).ToNot(BeEmpty())
-				Expect(capturedRoute.Spec.Paths[0]).To(ContainSubstring("/sse/v1/de.telekom.ei.listener.pandora--my-app"))
+				// Canonical path first (Paths[0] drives api_base_path), legacy alias second.
+				Expect(capturedRoute.Spec.Hostnames).To(Equal([]string{"gateway.example.com"}))
+				Expect(capturedRoute.Spec.Paths).To(Equal([]string{testCanonicalSSEPath, testLegacySSEPath}))
+
+				Expect(obj.Status.SseUrl).To(Equal("https://gateway.example.com:443" + testCanonicalSSEPath + "/" + testSubscriptionId))
+			})
+
+			It("should serve canonical then legacy paths for every preset URL and publish the first visible URL", func() {
+				obj := newSpectreApplication("server_sent_event")
+				app := makeReadyApplication()
+				zone := makeReadyZone()
+				zone.Spec.Gateway.Presets[0].Urls = []adminv1.UrlConfig{
+					{Hostname: "internal.example.com", Port: 443, Scheme: "https", BasePath: "/internal", Hidden: true},
+					{Hostname: "gateway.example.com", Scheme: "https", BasePath: "/base"},
+				}
+				ec := makeReadyEventConfig()
+				es := makeEventStore()
+
+				mockGetApplication(app)
+				mockGetZone(zone)
+				mockListEventConfigs([]eventv1.EventConfig{ec})
+				mockGetEventStore(es)
+				mockCreateOrUpdatePublisher()
+				mockCreateOrUpdateSubscriber()
+
+				var capturedRoute *gatewayv1.Route
+				fakeClient.EXPECT().
+					CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Route"), mock.Anything).
+					Run(func(_ context.Context, obj client.Object, mutate controllerutil.MutateFn) {
+						_ = mutate()
+						capturedRoute = obj.(*gatewayv1.Route)
+					}).
+					Return(controllerutil.OperationResultCreated, nil).Once()
+
+				mockCleanup()
+				fakeClient.EXPECT().AnyChanged().Return(false).Once()
+				fakeClient.EXPECT().AllReady().Return(true).Once()
+				mockExplicitReadinessChecks("server_sent_event")
+
+				err := h.CreateOrUpdate(ctx, obj)
+				Expect(err).ToNot(HaveOccurred())
+
+				Expect(capturedRoute).ToNot(BeNil())
+				Expect(capturedRoute.Spec.Hostnames).To(Equal([]string{"internal.example.com", "gateway.example.com"}))
+				Expect(capturedRoute.Spec.Paths).To(Equal([]string{
+					"/internal" + testCanonicalSSEPath,
+					"/base" + testCanonicalSSEPath,
+					"/internal" + testLegacySSEPath,
+					"/base" + testLegacySSEPath,
+				}))
+				Expect(obj.Status.SseUrl).To(Equal("https://gateway.example.com/base" + testCanonicalSSEPath + "/" + testSubscriptionId))
+			})
+
+			It("should leave SseUrl empty and stay NotReady until the Subscriber has a SubscriptionId", func() {
+				obj := newSpectreApplication("server_sent_event")
+				obj.Status.SseUrl = "https://stale.example.com/old"
+				app := makeReadyApplication()
+				zone := makeReadyZone()
+				ec := makeReadyEventConfig()
+				es := makeEventStore()
+
+				mockGetApplication(app)
+				mockGetZone(zone)
+				mockListEventConfigs([]eventv1.EventConfig{ec})
+				mockGetEventStore(es)
+				mockCreateOrUpdatePublisher()
+				// Subscriber without a SubscriptionId yet.
+				fakeClient.EXPECT().
+					CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Subscriber"), mock.Anything).
+					Run(func(_ context.Context, _ client.Object, mutate controllerutil.MutateFn) {
+						_ = mutate()
+					}).
+					Return(controllerutil.OperationResultCreated, nil).Once()
+				mockCreateOrUpdateRoute()
+				mockCleanup()
+				fakeClient.EXPECT().AnyChanged().Return(false).Once()
+				fakeClient.EXPECT().AllReady().Return(true).Once()
+				mockExplicitReadinessChecks("server_sent_event")
+
+				err := h.CreateOrUpdate(ctx, obj)
+				Expect(err).ToNot(HaveOccurred())
+
+				Expect(obj.Status.SseUrl).To(BeEmpty())
+				readyCond := meta.FindStatusCondition(obj.Status.Conditions, condition.ConditionTypeReady)
+				Expect(readyCond).ToNot(BeNil())
+				Expect(readyCond.Status).To(Equal(metav1.ConditionFalse))
+				Expect(readyCond.Message).To(ContainSubstring("SSE URL"))
 			})
 		})
 
@@ -657,6 +754,7 @@ var _ = Describe("SpectreApplicationHandler", func() {
 				// Callback delivery does not call ensureSSERoute, but cleanup
 				// still runs for Routes — this handles SSE→callback transition.
 				obj := setupHappyPath("callback")
+				obj.Status.SseUrl = "https://gateway.example.com:443" + testCanonicalSSEPath + "/" + testSubscriptionId
 				fakeClient.EXPECT().AnyChanged().Return(false).Once()
 				fakeClient.EXPECT().AllReady().Return(true).Once()
 				mockExplicitReadinessChecks("callback")
@@ -666,6 +764,8 @@ var _ = Describe("SpectreApplicationHandler", func() {
 
 				// No Route in status (callback), but Route cleanup was mocked and called.
 				Expect(obj.Status.ListenerRoute).To(BeNil())
+				// The SSE URL from the previous delivery type is cleared.
+				Expect(obj.Status.SseUrl).To(BeEmpty())
 			})
 		})
 
@@ -814,7 +914,12 @@ var _ = Describe("SpectreApplicationHandler", func() {
 				Expect(obj.Status.ProxyRoute).To(BeNil())
 			})
 
-			It("should create primary route in backend zone and proxy route in app zone for proxy zone", func() {
+			var capturedProxyRoute, capturedPrimaryRoute *gatewayv1.Route
+
+			// setupProxyPath stubs a proxy-zone SSE reconcile up to and including
+			// cleanup; the proxy and primary Routes are captured.
+			setupProxyPath := func() *spectrev1.SpectreApplication {
+				capturedProxyRoute, capturedPrimaryRoute = nil, nil
 				obj := newSpectreApplication("server_sent_event")
 				app := makeReadyApplication()
 				zone := makeReadyZone()
@@ -858,7 +963,6 @@ var _ = Describe("SpectreApplicationHandler", func() {
 					Return(nil).Once()
 
 				// Two Route CreateOrUpdate calls: proxy + primary
-				var capturedProxyRoute, capturedPrimaryRoute *gatewayv1.Route
 				fakeClient.EXPECT().
 					CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Route"), mock.Anything).
 					Run(func(_ context.Context, obj client.Object, mutate controllerutil.MutateFn) {
@@ -875,9 +979,26 @@ var _ = Describe("SpectreApplicationHandler", func() {
 					Return(controllerutil.OperationResultCreated, nil).Once()
 
 				mockCleanup()
+				return obj
+			}
+
+			// mockProxyRouteReadinessChecks stubs the Publisher, Subscriber, primary
+			// Route and proxy Route readiness Gets with the given proxy Route status.
+			mockProxyRouteReadinessChecks := func(proxyStatus metav1.ConditionStatus) {
+				mockExplicitReadinessChecks("callback")
+				mockRouteReadinessCheck(mock.MatchedBy(func(k k8stypes.NamespacedName) bool {
+					return k.Namespace == backendZoneStatusNs
+				}), metav1.ConditionTrue)
+				mockRouteReadinessCheck(mock.MatchedBy(func(k k8stypes.NamespacedName) bool {
+					return k.Namespace == testZoneStatusNs
+				}), proxyStatus)
+			}
+
+			It("should create primary route in backend zone and proxy route in app zone for proxy zone", func() {
+				obj := setupProxyPath()
 				fakeClient.EXPECT().AnyChanged().Return(false).Once()
 				fakeClient.EXPECT().AllReady().Return(true).Once()
-				mockExplicitReadinessChecks("server_sent_event")
+				mockProxyRouteReadinessChecks(metav1.ConditionTrue)
 
 				err := h.CreateOrUpdate(ctx, obj)
 				Expect(err).ToNot(HaveOccurred())
@@ -890,9 +1011,13 @@ var _ = Describe("SpectreApplicationHandler", func() {
 				Expect(capturedProxyRoute.Spec.Buffering.DisableResponseBuffering).To(BeTrue())
 				Expect(capturedProxyRoute.Labels[cconfig.OwnerUidLabelKey]).To(Equal(string(obj.UID)))
 				Expect(capturedProxyRoute.Labels[cconfig.BuildLabelKey("type")]).To(Equal("sse-proxy"))
-				// Proxy route upstream should point at the backend zone's gateway
+				// Proxy route serves both paths on the app zone's gateway.
+				Expect(capturedProxyRoute.Spec.Hostnames).To(Equal([]string{"gateway.example.com"}))
+				Expect(capturedProxyRoute.Spec.Paths).To(Equal([]string{testCanonicalSSEPath, testLegacySSEPath}))
+				// Proxy route upstream should point at the backend zone's gateway canonical path
 				Expect(capturedProxyRoute.Spec.Backend.Upstreams).To(HaveLen(1))
 				Expect(capturedProxyRoute.Spec.Backend.Upstreams[0].Hostname).To(Equal("gateway.backend.example.com"))
+				Expect(capturedProxyRoute.Spec.Backend.Upstreams[0].Path).To(Equal(testCanonicalSSEPath))
 				// Proxy route should trust the app zone's IDP issuer
 				Expect(capturedProxyRoute.Spec.Security.TrustedIssuers).To(ContainElement(appZoneIssuer))
 
@@ -903,6 +1028,9 @@ var _ = Describe("SpectreApplicationHandler", func() {
 				Expect(capturedPrimaryRoute.Spec.Security.DisableAccessControl).To(BeTrue())
 				Expect(capturedPrimaryRoute.Spec.Buffering.DisableResponseBuffering).To(BeTrue())
 				Expect(capturedPrimaryRoute.Labels[cconfig.OwnerUidLabelKey]).To(Equal(string(obj.UID)))
+				// Primary route also serves both paths, on the backend zone's gateway.
+				Expect(capturedPrimaryRoute.Spec.Hostnames).To(Equal([]string{"gateway.backend.example.com"}))
+				Expect(capturedPrimaryRoute.Spec.Paths).To(Equal([]string{testCanonicalSSEPath, testLegacySSEPath}))
 				// Primary route upstream should point at the backend SSE URL
 				Expect(capturedPrimaryRoute.Spec.Backend.Upstreams).To(HaveLen(1))
 				Expect(capturedPrimaryRoute.Spec.Backend.Upstreams[0].Hostname).To(Equal("horizon-sse.backend"))
@@ -917,6 +1045,27 @@ var _ = Describe("SpectreApplicationHandler", func() {
 				Expect(obj.Status.ListenerRoute.Namespace).To(Equal(backendZoneStatusNs))
 				Expect(obj.Status.ProxyRoute).ToNot(BeNil())
 				Expect(obj.Status.ProxyRoute.Namespace).To(Equal(testZoneStatusNs))
+
+				// The SSE URL is published on the app zone's gateway, not the backend's.
+				Expect(obj.Status.SseUrl).To(Equal("https://gateway.example.com:443" + testCanonicalSSEPath + "/" + testSubscriptionId))
+				readyCond := meta.FindStatusCondition(obj.Status.Conditions, condition.ConditionTypeReady)
+				Expect(readyCond).ToNot(BeNil())
+				Expect(readyCond.Status).To(Equal(metav1.ConditionTrue))
+			})
+
+			It("should stay NotReady while the proxy Route is not ready", func() {
+				obj := setupProxyPath()
+				fakeClient.EXPECT().AnyChanged().Return(false).Once()
+				fakeClient.EXPECT().AllReady().Return(true).Once()
+				mockProxyRouteReadinessChecks(metav1.ConditionFalse)
+
+				err := h.CreateOrUpdate(ctx, obj)
+				Expect(err).ToNot(HaveOccurred())
+
+				readyCond := meta.FindStatusCondition(obj.Status.Conditions, condition.ConditionTypeReady)
+				Expect(readyCond).ToNot(BeNil())
+				Expect(readyCond.Status).To(Equal(metav1.ConditionFalse))
+				Expect(readyCond.Reason).To(Equal(condition.ReasonSubResourceNotReady))
 			})
 
 			It("should return BlockedError when proxy chain resolves to non-local zone", func() {
@@ -1032,6 +1181,7 @@ var _ = Describe("SpectreApplicationHandler", func() {
 			obj.Status.Publisher = &ctypes.ObjectRef{Name: "pub-1", Namespace: testZoneStatusNs}
 			obj.Status.Subscriber = &ctypes.ObjectRef{Name: "sub-1", Namespace: testZoneStatusNs}
 			obj.Status.ListenerRoute = &ctypes.ObjectRef{Name: "route-1", Namespace: testZoneStatusNs}
+			obj.Status.SseUrl = "https://gateway.example.com:443" + testCanonicalSSEPath + "/" + testSubscriptionId
 
 			// Phase 1: Subscriber delete (status ref).
 			fakeClient.EXPECT().
@@ -1071,6 +1221,7 @@ var _ = Describe("SpectreApplicationHandler", func() {
 			Expect(obj.Status.Publisher).To(BeNil())
 			Expect(obj.Status.Subscriber).To(BeNil())
 			Expect(obj.Status.ListenerRoute).To(BeNil())
+			Expect(obj.Status.SseUrl).To(BeEmpty())
 		})
 
 		It("should retry while Subscribers remain (finalizers still running)", func() {
