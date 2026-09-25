@@ -1,0 +1,31 @@
+.github/ci/module-graph.json
+  s_abfabf0f0c7246::t_a86ac47eb424f4 147-148
+.github/ci/modules.yaml
+  s_e638a8e6a1e9f8::t_66d0f7c3bc9db5 11
+.github/scripts/gen-module-graph.sh
+  s_abfabf0f0c7246::t_fcf2289e9a1275 8-11,88-104
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "7cc6de03e3bfea7d526c519370453d35ec086931",
+  "prompts": {},
+  "sessions": {
+    "s_abfabf0f0c7246": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f3bd14e97ffeyJUoXiUlWq4sT1",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "luis.pflamminger@telekom.de <luis.pflamminger@telekom.de>"
+    },
+    "s_e638a8e6a1e9f8": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f27cb6780ffeglSjmIYVtZDWLv",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "luis.pflamminger@telekom.de <luis.pflamminger@telekom.de>"
+    }
+  }
+}
