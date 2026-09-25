@@ -19,9 +19,10 @@ import (
 // It uses pre-delete before upsert, maintains dual cache entries, and uses
 // a convention-based fallback delete strategy so KeyFromDelete always succeeds.
 var Module = &module.TypedModule[*apiv1.ApiSubscription, *APISubscriptionData, APISubscriptionKey]{
-	ModuleName: "apisubscription",
-	NewObj:     func() *apiv1.ApiSubscription { return &apiv1.ApiSubscription{} },
-	Translator: &Translator{},
+	ModuleName:   "apisubscription",
+	NotifyParent: true,
+	NewObj:       func() *apiv1.ApiSubscription { return &apiv1.ApiSubscription{} },
+	Translator:   &Translator{},
 	RepoFactory: func(deps module.ModuleDeps) runtime.Repository[APISubscriptionKey, *APISubscriptionData] {
 		return NewRepository(
 			deps.EntClient,

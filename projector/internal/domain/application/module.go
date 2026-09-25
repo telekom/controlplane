@@ -18,9 +18,10 @@ import (
 // Team and Zone. It uses a convention-based fallback delete strategy
 // (TeamNameFromNamespace) so KeyFromDelete always succeeds.
 var Module = &module.TypedModule[*appv1.Application, *ApplicationData, ApplicationKey]{
-	ModuleName: "application",
-	NewObj:     func() *appv1.Application { return &appv1.Application{} },
-	Translator: &Translator{},
+	ModuleName:   "application",
+	NotifyParent: true,
+	NewObj:       func() *appv1.Application { return &appv1.Application{} },
+	Translator:   &Translator{},
 	RepoFactory: func(deps module.ModuleDeps) runtime.Repository[ApplicationKey, *ApplicationData] {
 		return NewRepository(
 			deps.EntClient,

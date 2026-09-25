@@ -66,6 +66,7 @@ func (r *Repository) Upsert(ctx context.Context, data *ApiData) error {
 
 	create := r.client.Api.Create().
 		SetBasePath(data.BasePath).
+		SetName(data.Meta.Name).
 		SetVersion(data.Version).
 		SetActive(data.Active).
 		SetStatusPhase(entapi.StatusPhase(data.StatusPhase)).
