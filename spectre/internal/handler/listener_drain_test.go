@@ -199,9 +199,8 @@ var _ = Describe("Listener Drain", func() {
 		listener := newListener()
 		listener.Status.RouteListener = &ctypes.ObjectRef{Name: "rl-a", Namespace: listenerZoneStatus, UID: "uid-a"}
 		listener.Status.Draining = &spectrev1.ListenerDrainStatus{
-			Phase:            handler.ExportDrainPhaseStopping,
-			OldFingerprint:   "old-fp",
-			OldRouteListener: &ctypes.ObjectRef{Name: "rl-a", Namespace: listenerZoneStatus, UID: "uid-a"},
+			Phase:          handler.ExportDrainPhaseStopping,
+			OldFingerprint: "old-fp",
 			OldRouteListeners: []ctypes.ObjectRef{
 				{Name: "rl-a", Namespace: listenerZoneStatus, UID: "uid-a"},
 				{Name: "rl-b", Namespace: drainZoneB, UID: "uid-b"},
@@ -255,9 +254,6 @@ var _ = Describe("Listener Drain", func() {
 			Expect(listener.Status.Draining.Phase).To(Equal(handler.ExportDrainPhaseStopping))
 			Expect(listener.Status.Draining.Reason).To(Equal("fingerprint changed"))
 			Expect(listener.Status.Draining.OldFingerprint).To(Equal("old-fp-abc"))
-			Expect(listener.Status.Draining.OldRouteListener).ToNot(BeNil())
-			Expect(listener.Status.Draining.OldRouteListener.Name).To(Equal("old-rl"))
-			Expect(listener.Status.Draining.OldRouteListener.UID).To(Equal(k8stypes.UID("rl-uid-1")))
 			Expect(listener.Status.Draining.OldRouteListeners).To(Equal([]ctypes.ObjectRef{
 				{Name: "old-rl", Namespace: listenerZoneStatus, UID: "rl-uid-1"},
 			}))
@@ -316,7 +312,6 @@ var _ = Describe("Listener Drain", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			Expect(listener.Status.Draining).ToNot(BeNil())
-			Expect(listener.Status.Draining.OldRouteListener).To(BeNil())
 			Expect(listener.Status.Draining.OldRouteListeners).To(BeNil())
 			Expect(listener.Status.Draining.OldSubscribers).To(BeNil())
 			Expect(listener.Status.Draining.SourcePublisher).To(BeNil())
@@ -350,9 +345,6 @@ var _ = Describe("Listener Drain", func() {
 			err := h.StartDrain(ctx, listener, "test", "old-fp")
 			Expect(err).ToNot(HaveOccurred())
 
-			Expect(listener.Status.Draining.OldRouteListener).ToNot(BeNil())
-			Expect(listener.Status.Draining.OldRouteListener.Name).To(Equal("orphan-rl"))
-			Expect(listener.Status.Draining.OldRouteListener.UID).To(Equal(k8stypes.UID("orphan-uid")))
 			Expect(listener.Status.Draining.OldRouteListeners).To(Equal([]ctypes.ObjectRef{
 				{Name: "orphan-rl", Namespace: listenerZoneStatus, UID: "orphan-uid"},
 			}))
@@ -465,11 +457,11 @@ var _ = Describe("Listener Drain", func() {
 				Phase:          handler.ExportDrainPhaseStopping,
 				Reason:         "fingerprint changed",
 				OldFingerprint: "old-fp",
-				OldRouteListener: &ctypes.ObjectRef{
+				OldRouteListeners: []ctypes.ObjectRef{{
 					Name:      "old-rl",
 					Namespace: listenerZoneStatus,
 					UID:       "rl-uid-1",
-				},
+				}},
 			}
 
 			// Old RouteListener still exists — continueDrain deletes it.
@@ -498,10 +490,10 @@ var _ = Describe("Listener Drain", func() {
 			listener.Status.Draining = &spectrev1.ListenerDrainStatus{
 				Phase:          handler.ExportDrainPhaseStopping,
 				OldFingerprint: "old-fp",
-				OldRouteListener: &ctypes.ObjectRef{
+				OldRouteListeners: []ctypes.ObjectRef{{
 					Name:      "old-rl",
 					Namespace: listenerZoneStatus,
-				},
+				}},
 			}
 
 			// Old RouteListener is already gone.
@@ -523,11 +515,11 @@ var _ = Describe("Listener Drain", func() {
 			listener.Status.Draining = &spectrev1.ListenerDrainStatus{
 				Phase:          handler.ExportDrainPhaseStopping,
 				OldFingerprint: "old-fp",
-				OldRouteListener: &ctypes.ObjectRef{
+				OldRouteListeners: []ctypes.ObjectRef{{
 					Name:      "old-rl",
 					Namespace: listenerZoneStatus,
 					UID:       "original-uid",
-				},
+				}},
 			}
 
 			// Object exists but with a different UID — someone recreated it.
@@ -758,11 +750,11 @@ var _ = Describe("Listener Drain", func() {
 				Phase:          handler.ExportDrainPhaseStopping,
 				Reason:         "fingerprint changed",
 				OldFingerprint: "old-fp",
-				OldRouteListener: &ctypes.ObjectRef{
+				OldRouteListeners: []ctypes.ObjectRef{{
 					Name:      "old-rl",
 					Namespace: listenerZoneStatus,
 					UID:       "rl-uid-1",
-				},
+				}},
 			}
 
 			// On restart, old RL is gone now.
@@ -802,7 +794,6 @@ var _ = Describe("Listener Drain", func() {
 					{Name: "rl-a", Namespace: listenerZoneStatus, UID: "uid-a"},
 					{Name: "rl-b", Namespace: drainZoneB, UID: "uid-b"},
 				}))
-				Expect(d.OldRouteListener).To(Equal(&ctypes.ObjectRef{Name: "rl-a", Namespace: listenerZoneStatus, UID: "uid-a"}))
 				Expect(d.OldSubscribers).To(BeNil())
 				expectPassDone(0)
 			})
@@ -843,7 +834,6 @@ var _ = Describe("Listener Drain", func() {
 					{Name: "sub-x", Namespace: drainZoneB, UID: "uid-3"},
 				}))
 				Expect(listener.Status.Draining.OldRouteListeners).To(BeNil())
-				Expect(listener.Status.Draining.OldRouteListener).To(BeNil())
 				expectPassDone(0)
 			})
 		})
@@ -959,63 +949,6 @@ var _ = Describe("Listener Drain", func() {
 		})
 
 		Describe("through CreateOrUpdate", func() {
-			It("should drain a legacy checkpoint that only has the singular OldRouteListener", func() {
-				listener := newListener()
-				listener.Status.RouteListener = &ctypes.ObjectRef{Name: "old-rl", Namespace: listenerZoneStatus, UID: "uid-old"}
-				listener.Status.Draining = &spectrev1.ListenerDrainStatus{
-					Phase:            handler.ExportDrainPhaseStopping,
-					OldFingerprint:   "old-fp",
-					OldRouteListener: &ctypes.ObjectRef{Name: "old-rl", Namespace: listenerZoneStatus, UID: "uid-old"},
-				}
-
-				// R1: the recorded RouteListener exists and is deleted.
-				expectLive(rlKind, listenerZoneStatus, "old-rl", "uid-old", "5", false)
-				expectDelete(rlKind, listenerZoneStatus, "old-rl", "uid-old", "5", nil)
-				Expect(h.CreateOrUpdate(ctx, listener)).To(Succeed())
-				Expect(listener.Status.Draining).ToNot(BeNil())
-				Expect(listener.Status.Draining.Phase).To(Equal(handler.ExportDrainPhaseStopping))
-				expectPassDone(1)
-
-				// R2: it is gone; the drain advances and the status ref is cleared.
-				listener = persistListener(listener)
-				expectGone(rlKind, listenerZoneStatus, "old-rl")
-				Expect(h.CreateOrUpdate(ctx, listener)).To(Succeed())
-				Expect(listener.Status.Draining).ToNot(BeNil())
-				Expect(listener.Status.Draining.Phase).To(Equal(handler.ExportDrainPhaseDrainingSubscribers))
-				Expect(listener.Status.RouteListener).To(BeNil())
-				expectPassDone(1)
-			})
-
-			It("should drain the status RouteListener a legacy single-ref checkpoint dropped", func() {
-				// The previous build kept only the last listed RouteListener (rl-b) and
-				// lost the status ref (rl-a).
-				listener := newListener()
-				listener.Status.RouteListener = &ctypes.ObjectRef{Name: "rl-a", Namespace: listenerZoneStatus, UID: "uid-a"}
-				listener.Status.Draining = &spectrev1.ListenerDrainStatus{
-					Phase:            handler.ExportDrainPhaseStopping,
-					OldFingerprint:   "old-fp",
-					OldRouteListener: &ctypes.ObjectRef{Name: "rl-b", Namespace: drainZoneB, UID: "uid-b"},
-				}
-
-				// R1: both exist and both are deleted.
-				expectLive(rlKind, drainZoneB, "rl-b", "uid-b", "21", false)
-				expectDelete(rlKind, drainZoneB, "rl-b", "uid-b", "21", nil)
-				expectLive(rlKind, listenerZoneStatus, "rl-a", "uid-a", "11", false)
-				expectDelete(rlKind, listenerZoneStatus, "rl-a", "uid-a", "11", nil)
-				Expect(h.CreateOrUpdate(ctx, listener)).To(Succeed())
-				Expect(listener.Status.Draining.Phase).To(Equal(handler.ExportDrainPhaseStopping))
-				expectPassDone(2)
-
-				// R2: both are gone; the drain advances.
-				listener = persistListener(listener)
-				expectGone(rlKind, drainZoneB, "rl-b")
-				expectGone(rlKind, listenerZoneStatus, "rl-a")
-				Expect(h.CreateOrUpdate(ctx, listener)).To(Succeed())
-				Expect(listener.Status.Draining.Phase).To(Equal(handler.ExportDrainPhaseDrainingSubscribers))
-				Expect(listener.Status.RouteListener).To(BeNil())
-				expectPassDone(2)
-			})
-
 			It("should record and drain a status RouteListener and an orphan in another zone before touching Subscribers", func() {
 				providerApproval := k8stypes.NamespacedName{Name: "listener--test-listener--provider", Namespace: listenerNamespace}
 				expectApprovalRejected := func() {
@@ -1056,7 +989,6 @@ var _ = Describe("Listener Drain", func() {
 					{Name: "rl-a", Namespace: listenerZoneStatus, UID: "uid-a"},
 					{Name: "rl-b", Namespace: drainZoneB, UID: "uid-b"},
 				}))
-				Expect(d.OldRouteListener).To(Equal(&ctypes.ObjectRef{Name: "rl-a", Namespace: listenerZoneStatus, UID: "uid-a"}))
 				Expect(d.OldSubscribers).To(Equal([]ctypes.ObjectRef{{Name: "sub-rq", Namespace: listenerZoneStatus, UID: "uid-sub"}}))
 				expectAccessDenied(listener)
 				expectPassDone(0)
