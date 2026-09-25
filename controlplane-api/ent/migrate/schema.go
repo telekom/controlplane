@@ -115,6 +115,8 @@ var (
 		{Name: "environment", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "namespace", Type: field.TypeString, Size: 2147483647},
 		{Name: "name", Type: field.TypeString, Size: 2147483647},
+		{Name: "requested_scopes", Type: field.TypeJSON, Nullable: true},
+		{Name: "active_scopes", Type: field.TypeJSON, Nullable: true},
 		{Name: "base_path", Type: field.TypeString, Size: 2147483647},
 		{Name: "gateway_url", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "security", Type: field.TypeJSON, Nullable: true},
@@ -130,13 +132,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "agentic_subscriptions_agentic_exposures_target",
-				Columns:    []*schema.Column{AgenticSubscriptionsColumns[12]},
+				Columns:    []*schema.Column{AgenticSubscriptionsColumns[14]},
 				RefColumns: []*schema.Column{AgenticExposuresColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "agentic_subscriptions_applications_subscribed_agentics",
-				Columns:    []*schema.Column{AgenticSubscriptionsColumns[13]},
+				Columns:    []*schema.Column{AgenticSubscriptionsColumns[15]},
 				RefColumns: []*schema.Column{ApplicationsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -150,7 +152,7 @@ var (
 			{
 				Name:    "agenticsubscription_base_path_application_subscribed_agentics",
 				Unique:  true,
-				Columns: []*schema.Column{AgenticSubscriptionsColumns[8], AgenticSubscriptionsColumns[13]},
+				Columns: []*schema.Column{AgenticSubscriptionsColumns[10], AgenticSubscriptionsColumns[15]},
 			},
 		},
 	}
@@ -250,6 +252,8 @@ var (
 		{Name: "environment", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "namespace", Type: field.TypeString, Size: 2147483647},
 		{Name: "name", Type: field.TypeString, Size: 2147483647},
+		{Name: "requested_scopes", Type: field.TypeJSON, Nullable: true},
+		{Name: "active_scopes", Type: field.TypeJSON, Nullable: true},
 		{Name: "base_path", Type: field.TypeString, Size: 2147483647},
 		{Name: "m2m_auth_method", Type: field.TypeEnum, Enums: []string{"NONE", "BASIC_AUTH", "OAUTH2_CLIENT", "SCOPES_ONLY"}, Default: "NONE"},
 		{Name: "gateway_url", Type: field.TypeString, Nullable: true, Size: 2147483647},
@@ -266,13 +270,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "api_subscriptions_api_exposures_target",
-				Columns:    []*schema.Column{APISubscriptionsColumns[13]},
+				Columns:    []*schema.Column{APISubscriptionsColumns[15]},
 				RefColumns: []*schema.Column{APIExposuresColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "api_subscriptions_applications_subscribed_apis",
-				Columns:    []*schema.Column{APISubscriptionsColumns[14]},
+				Columns:    []*schema.Column{APISubscriptionsColumns[16]},
 				RefColumns: []*schema.Column{ApplicationsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -286,7 +290,7 @@ var (
 			{
 				Name:    "apisubscription_base_path_application_subscribed_apis",
 				Unique:  true,
-				Columns: []*schema.Column{APISubscriptionsColumns[8], APISubscriptionsColumns[14]},
+				Columns: []*schema.Column{APISubscriptionsColumns[10], APISubscriptionsColumns[16]},
 			},
 		},
 	}
@@ -508,6 +512,8 @@ var (
 		{Name: "environment", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "namespace", Type: field.TypeString, Size: 2147483647},
 		{Name: "name", Type: field.TypeString, Size: 2147483647},
+		{Name: "requested_scopes", Type: field.TypeJSON, Nullable: true},
+		{Name: "active_scopes", Type: field.TypeJSON, Nullable: true},
 		{Name: "event_type", Type: field.TypeString, Size: 2147483647},
 		{Name: "delivery_type", Type: field.TypeEnum, Enums: []string{"CALLBACK", "SERVER_SENT_EVENT"}, Default: "CALLBACK"},
 		{Name: "trigger", Type: field.TypeJSON, Nullable: true},
@@ -526,13 +532,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "event_subscriptions_applications_subscribed_events",
-				Columns:    []*schema.Column{EventSubscriptionsColumns[15]},
+				Columns:    []*schema.Column{EventSubscriptionsColumns[17]},
 				RefColumns: []*schema.Column{ApplicationsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "event_subscriptions_event_exposures_target",
-				Columns:    []*schema.Column{EventSubscriptionsColumns[16]},
+				Columns:    []*schema.Column{EventSubscriptionsColumns[18]},
 				RefColumns: []*schema.Column{EventExposuresColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -546,7 +552,7 @@ var (
 			{
 				Name:    "eventsubscription_event_type_application_subscribed_events",
 				Unique:  true,
-				Columns: []*schema.Column{EventSubscriptionsColumns[8], EventSubscriptionsColumns[15]},
+				Columns: []*schema.Column{EventSubscriptionsColumns[10], EventSubscriptionsColumns[17]},
 			},
 		},
 	}

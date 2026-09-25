@@ -493,6 +493,26 @@ func NameContainsFold(v string) predicate.EventSubscription {
 	return predicate.EventSubscription(sql.FieldContainsFold(FieldName, v))
 }
 
+// RequestedScopesIsNil applies the IsNil predicate on the "requested_scopes" field.
+func RequestedScopesIsNil() predicate.EventSubscription {
+	return predicate.EventSubscription(sql.FieldIsNull(FieldRequestedScopes))
+}
+
+// RequestedScopesNotNil applies the NotNil predicate on the "requested_scopes" field.
+func RequestedScopesNotNil() predicate.EventSubscription {
+	return predicate.EventSubscription(sql.FieldNotNull(FieldRequestedScopes))
+}
+
+// ActiveScopesIsNil applies the IsNil predicate on the "active_scopes" field.
+func ActiveScopesIsNil() predicate.EventSubscription {
+	return predicate.EventSubscription(sql.FieldIsNull(FieldActiveScopes))
+}
+
+// ActiveScopesNotNil applies the NotNil predicate on the "active_scopes" field.
+func ActiveScopesNotNil() predicate.EventSubscription {
+	return predicate.EventSubscription(sql.FieldNotNull(FieldActiveScopes))
+}
+
 // EventTypeEQ applies the EQ predicate on the "event_type" field.
 func EventTypeEQ(v string) predicate.EventSubscription {
 	return predicate.EventSubscription(sql.FieldEQ(FieldEventType, v))

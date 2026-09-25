@@ -77,6 +77,11 @@ type EventSubscriptionSpec struct {
 
 // EventSubscriptionStatus defines the observed state of EventSubscription.
 type EventSubscriptionStatus struct {
+	// ActiveScopes is the last approved scope set successfully written to the Subscriber.
+	// It is preserved while a scope change is pending or rejected and does not imply delivery readiness.
+	// +optional
+	ActiveScopes []string `json:"activeScopes,omitempty"`
+
 	// +listType=map
 	// +listMapKey=type
 	// +patchStrategy=merge

@@ -31,6 +31,28 @@ var _ = Describe("AgenticSubscription Translator", func() {
 	})
 
 	Describe("Translate", func() {
+		It("should keep requested scopes separate from active scopes across pending and revoked states", func() {
+			obj := &agenticv1.AgenticSubscription{
+				Spec: agenticv1.AgenticSubscriptionSpec{Security: &agenticv1.SubscriberSecurity{
+					M2M: &agenticv1.SubscriberMachine2MachineAuthentication{Scopes: []string{"read", "write"}},
+				}},
+				Status: agenticv1.AgenticSubscriptionStatus{ActiveScopes: []string{"read"}},
+			}
+			data, err := t.Translate(context.Background(), obj)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(data.RequestedScopes).To(Equal([]string{"read", "write"}))
+			Expect(data.ActiveScopes).To(Equal([]string{"read"}))
+			Expect(data.Security.M2M.Scopes).To(Equal(data.RequestedScopes))
+			obj.Status.ActiveScopes = nil
+			data, err = t.Translate(context.Background(), obj)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(data.ActiveScopes).To(BeEmpty())
+			Expect(data.RequestedScopes).To(Equal([]string{"read", "write"}))
+			obj.Spec.Security = nil
+			data, err = t.Translate(context.Background(), obj)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(data.RequestedScopes).To(BeEmpty())
+		})
 		It("should populate all fields from the CR", func() {
 			obj := &agenticv1.AgenticSubscription{
 				ObjectMeta: metav1.ObjectMeta{

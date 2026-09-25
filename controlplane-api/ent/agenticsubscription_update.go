@@ -13,6 +13,7 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/dialect/sql/sqljson"
 	"entgo.io/ent/schema/field"
 	"github.com/telekom/controlplane/controlplane-api/ent/agenticexposure"
 	"github.com/telekom/controlplane/controlplane-api/ent/agenticsubscription"
@@ -127,6 +128,42 @@ func (_u *AgenticSubscriptionUpdate) SetNillableName(v *string) *AgenticSubscrip
 	if v != nil {
 		_u.SetName(*v)
 	}
+	return _u
+}
+
+// SetRequestedScopes sets the "requested_scopes" field.
+func (_u *AgenticSubscriptionUpdate) SetRequestedScopes(v []string) *AgenticSubscriptionUpdate {
+	_u.mutation.SetRequestedScopes(v)
+	return _u
+}
+
+// AppendRequestedScopes appends value to the "requested_scopes" field.
+func (_u *AgenticSubscriptionUpdate) AppendRequestedScopes(v []string) *AgenticSubscriptionUpdate {
+	_u.mutation.AppendRequestedScopes(v)
+	return _u
+}
+
+// ClearRequestedScopes clears the value of the "requested_scopes" field.
+func (_u *AgenticSubscriptionUpdate) ClearRequestedScopes() *AgenticSubscriptionUpdate {
+	_u.mutation.ClearRequestedScopes()
+	return _u
+}
+
+// SetActiveScopes sets the "active_scopes" field.
+func (_u *AgenticSubscriptionUpdate) SetActiveScopes(v []string) *AgenticSubscriptionUpdate {
+	_u.mutation.SetActiveScopes(v)
+	return _u
+}
+
+// AppendActiveScopes appends value to the "active_scopes" field.
+func (_u *AgenticSubscriptionUpdate) AppendActiveScopes(v []string) *AgenticSubscriptionUpdate {
+	_u.mutation.AppendActiveScopes(v)
+	return _u
+}
+
+// ClearActiveScopes clears the value of the "active_scopes" field.
+func (_u *AgenticSubscriptionUpdate) ClearActiveScopes() *AgenticSubscriptionUpdate {
+	_u.mutation.ClearActiveScopes()
 	return _u
 }
 
@@ -421,6 +458,28 @@ func (_u *AgenticSubscriptionUpdate) sqlSave(ctx context.Context) (_node int, er
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(agenticsubscription.FieldName, field.TypeString, value)
 	}
+	if value, ok := _u.mutation.RequestedScopes(); ok {
+		_spec.SetField(agenticsubscription.FieldRequestedScopes, field.TypeJSON, value)
+	}
+	if value, ok := _u.mutation.AppendedRequestedScopes(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, agenticsubscription.FieldRequestedScopes, value)
+		})
+	}
+	if _u.mutation.RequestedScopesCleared() {
+		_spec.ClearField(agenticsubscription.FieldRequestedScopes, field.TypeJSON)
+	}
+	if value, ok := _u.mutation.ActiveScopes(); ok {
+		_spec.SetField(agenticsubscription.FieldActiveScopes, field.TypeJSON, value)
+	}
+	if value, ok := _u.mutation.AppendedActiveScopes(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, agenticsubscription.FieldActiveScopes, value)
+		})
+	}
+	if _u.mutation.ActiveScopesCleared() {
+		_spec.ClearField(agenticsubscription.FieldActiveScopes, field.TypeJSON)
+	}
 	if value, ok := _u.mutation.BasePath(); ok {
 		_spec.SetField(agenticsubscription.FieldBasePath, field.TypeString, value)
 	}
@@ -685,6 +744,42 @@ func (_u *AgenticSubscriptionUpdateOne) SetNillableName(v *string) *AgenticSubsc
 	if v != nil {
 		_u.SetName(*v)
 	}
+	return _u
+}
+
+// SetRequestedScopes sets the "requested_scopes" field.
+func (_u *AgenticSubscriptionUpdateOne) SetRequestedScopes(v []string) *AgenticSubscriptionUpdateOne {
+	_u.mutation.SetRequestedScopes(v)
+	return _u
+}
+
+// AppendRequestedScopes appends value to the "requested_scopes" field.
+func (_u *AgenticSubscriptionUpdateOne) AppendRequestedScopes(v []string) *AgenticSubscriptionUpdateOne {
+	_u.mutation.AppendRequestedScopes(v)
+	return _u
+}
+
+// ClearRequestedScopes clears the value of the "requested_scopes" field.
+func (_u *AgenticSubscriptionUpdateOne) ClearRequestedScopes() *AgenticSubscriptionUpdateOne {
+	_u.mutation.ClearRequestedScopes()
+	return _u
+}
+
+// SetActiveScopes sets the "active_scopes" field.
+func (_u *AgenticSubscriptionUpdateOne) SetActiveScopes(v []string) *AgenticSubscriptionUpdateOne {
+	_u.mutation.SetActiveScopes(v)
+	return _u
+}
+
+// AppendActiveScopes appends value to the "active_scopes" field.
+func (_u *AgenticSubscriptionUpdateOne) AppendActiveScopes(v []string) *AgenticSubscriptionUpdateOne {
+	_u.mutation.AppendActiveScopes(v)
+	return _u
+}
+
+// ClearActiveScopes clears the value of the "active_scopes" field.
+func (_u *AgenticSubscriptionUpdateOne) ClearActiveScopes() *AgenticSubscriptionUpdateOne {
+	_u.mutation.ClearActiveScopes()
 	return _u
 }
 
@@ -1008,6 +1103,28 @@ func (_u *AgenticSubscriptionUpdateOne) sqlSave(ctx context.Context) (_node *Age
 	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(agenticsubscription.FieldName, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.RequestedScopes(); ok {
+		_spec.SetField(agenticsubscription.FieldRequestedScopes, field.TypeJSON, value)
+	}
+	if value, ok := _u.mutation.AppendedRequestedScopes(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, agenticsubscription.FieldRequestedScopes, value)
+		})
+	}
+	if _u.mutation.RequestedScopesCleared() {
+		_spec.ClearField(agenticsubscription.FieldRequestedScopes, field.TypeJSON)
+	}
+	if value, ok := _u.mutation.ActiveScopes(); ok {
+		_spec.SetField(agenticsubscription.FieldActiveScopes, field.TypeJSON, value)
+	}
+	if value, ok := _u.mutation.AppendedActiveScopes(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, agenticsubscription.FieldActiveScopes, value)
+		})
+	}
+	if _u.mutation.ActiveScopesCleared() {
+		_spec.ClearField(agenticsubscription.FieldActiveScopes, field.TypeJSON)
 	}
 	if value, ok := _u.mutation.BasePath(); ok {
 		_spec.SetField(agenticsubscription.FieldBasePath, field.TypeString, value)

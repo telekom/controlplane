@@ -61,6 +61,8 @@ func (t *Translator) Translate(_ context.Context, obj *eventv1.EventSubscription
 		Trigger:               trigger,
 		Delivery:              mapDelivery(obj.Spec.Delivery),
 		Scopes:                obj.Spec.Scopes,
+		RequestedScopes:       obj.Spec.Scopes,
+		ActiveScopes:          obj.Status.ActiveScopes,
 		CallbackURL:           callbackURL,
 		GatewayConsumerSseUrl: obj.Status.URL,
 		OwnerAppName:          obj.Spec.Requestor.Name,

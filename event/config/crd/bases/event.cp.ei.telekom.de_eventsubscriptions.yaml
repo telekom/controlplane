@@ -220,6 +220,13 @@ spec:
           status:
             description: EventSubscriptionStatus defines the observed state of EventSubscription.
             properties:
+              activeScopes:
+                description: |-
+                  ActiveScopes is the last approved scope set successfully written to the Subscriber.
+                  It is preserved while a scope change is pending or rejected and does not imply delivery readiness.
+                items:
+                  type: string
+                type: array
               approval:
                 description: Approval references the Approval CR managing subscription
                   approval.

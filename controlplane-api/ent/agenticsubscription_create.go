@@ -112,6 +112,18 @@ func (_c *AgenticSubscriptionCreate) SetName(v string) *AgenticSubscriptionCreat
 	return _c
 }
 
+// SetRequestedScopes sets the "requested_scopes" field.
+func (_c *AgenticSubscriptionCreate) SetRequestedScopes(v []string) *AgenticSubscriptionCreate {
+	_c.mutation.SetRequestedScopes(v)
+	return _c
+}
+
+// SetActiveScopes sets the "active_scopes" field.
+func (_c *AgenticSubscriptionCreate) SetActiveScopes(v []string) *AgenticSubscriptionCreate {
+	_c.mutation.SetActiveScopes(v)
+	return _c
+}
+
 // SetBasePath sets the "base_path" field.
 func (_c *AgenticSubscriptionCreate) SetBasePath(v string) *AgenticSubscriptionCreate {
 	_c.mutation.SetBasePath(v)
@@ -373,6 +385,14 @@ func (_c *AgenticSubscriptionCreate) createSpec() (*AgenticSubscription, *sqlgra
 		_spec.SetField(agenticsubscription.FieldName, field.TypeString, value)
 		_node.Name = value
 	}
+	if value, ok := _c.mutation.RequestedScopes(); ok {
+		_spec.SetField(agenticsubscription.FieldRequestedScopes, field.TypeJSON, value)
+		_node.RequestedScopes = value
+	}
+	if value, ok := _c.mutation.ActiveScopes(); ok {
+		_spec.SetField(agenticsubscription.FieldActiveScopes, field.TypeJSON, value)
+		_node.ActiveScopes = value
+	}
 	if value, ok := _c.mutation.BasePath(); ok {
 		_spec.SetField(agenticsubscription.FieldBasePath, field.TypeString, value)
 		_node.BasePath = value
@@ -597,6 +617,42 @@ func (u *AgenticSubscriptionUpsert) UpdateName() *AgenticSubscriptionUpsert {
 	return u
 }
 
+// SetRequestedScopes sets the "requested_scopes" field.
+func (u *AgenticSubscriptionUpsert) SetRequestedScopes(v []string) *AgenticSubscriptionUpsert {
+	u.Set(agenticsubscription.FieldRequestedScopes, v)
+	return u
+}
+
+// UpdateRequestedScopes sets the "requested_scopes" field to the value that was provided on create.
+func (u *AgenticSubscriptionUpsert) UpdateRequestedScopes() *AgenticSubscriptionUpsert {
+	u.SetExcluded(agenticsubscription.FieldRequestedScopes)
+	return u
+}
+
+// ClearRequestedScopes clears the value of the "requested_scopes" field.
+func (u *AgenticSubscriptionUpsert) ClearRequestedScopes() *AgenticSubscriptionUpsert {
+	u.SetNull(agenticsubscription.FieldRequestedScopes)
+	return u
+}
+
+// SetActiveScopes sets the "active_scopes" field.
+func (u *AgenticSubscriptionUpsert) SetActiveScopes(v []string) *AgenticSubscriptionUpsert {
+	u.Set(agenticsubscription.FieldActiveScopes, v)
+	return u
+}
+
+// UpdateActiveScopes sets the "active_scopes" field to the value that was provided on create.
+func (u *AgenticSubscriptionUpsert) UpdateActiveScopes() *AgenticSubscriptionUpsert {
+	u.SetExcluded(agenticsubscription.FieldActiveScopes)
+	return u
+}
+
+// ClearActiveScopes clears the value of the "active_scopes" field.
+func (u *AgenticSubscriptionUpsert) ClearActiveScopes() *AgenticSubscriptionUpsert {
+	u.SetNull(agenticsubscription.FieldActiveScopes)
+	return u
+}
+
 // SetBasePath sets the "base_path" field.
 func (u *AgenticSubscriptionUpsert) SetBasePath(v string) *AgenticSubscriptionUpsert {
 	u.Set(agenticsubscription.FieldBasePath, v)
@@ -810,6 +866,48 @@ func (u *AgenticSubscriptionUpsertOne) SetName(v string) *AgenticSubscriptionUps
 func (u *AgenticSubscriptionUpsertOne) UpdateName() *AgenticSubscriptionUpsertOne {
 	return u.Update(func(s *AgenticSubscriptionUpsert) {
 		s.UpdateName()
+	})
+}
+
+// SetRequestedScopes sets the "requested_scopes" field.
+func (u *AgenticSubscriptionUpsertOne) SetRequestedScopes(v []string) *AgenticSubscriptionUpsertOne {
+	return u.Update(func(s *AgenticSubscriptionUpsert) {
+		s.SetRequestedScopes(v)
+	})
+}
+
+// UpdateRequestedScopes sets the "requested_scopes" field to the value that was provided on create.
+func (u *AgenticSubscriptionUpsertOne) UpdateRequestedScopes() *AgenticSubscriptionUpsertOne {
+	return u.Update(func(s *AgenticSubscriptionUpsert) {
+		s.UpdateRequestedScopes()
+	})
+}
+
+// ClearRequestedScopes clears the value of the "requested_scopes" field.
+func (u *AgenticSubscriptionUpsertOne) ClearRequestedScopes() *AgenticSubscriptionUpsertOne {
+	return u.Update(func(s *AgenticSubscriptionUpsert) {
+		s.ClearRequestedScopes()
+	})
+}
+
+// SetActiveScopes sets the "active_scopes" field.
+func (u *AgenticSubscriptionUpsertOne) SetActiveScopes(v []string) *AgenticSubscriptionUpsertOne {
+	return u.Update(func(s *AgenticSubscriptionUpsert) {
+		s.SetActiveScopes(v)
+	})
+}
+
+// UpdateActiveScopes sets the "active_scopes" field to the value that was provided on create.
+func (u *AgenticSubscriptionUpsertOne) UpdateActiveScopes() *AgenticSubscriptionUpsertOne {
+	return u.Update(func(s *AgenticSubscriptionUpsert) {
+		s.UpdateActiveScopes()
+	})
+}
+
+// ClearActiveScopes clears the value of the "active_scopes" field.
+func (u *AgenticSubscriptionUpsertOne) ClearActiveScopes() *AgenticSubscriptionUpsertOne {
+	return u.Update(func(s *AgenticSubscriptionUpsert) {
+		s.ClearActiveScopes()
 	})
 }
 
@@ -1203,6 +1301,48 @@ func (u *AgenticSubscriptionUpsertBulk) SetName(v string) *AgenticSubscriptionUp
 func (u *AgenticSubscriptionUpsertBulk) UpdateName() *AgenticSubscriptionUpsertBulk {
 	return u.Update(func(s *AgenticSubscriptionUpsert) {
 		s.UpdateName()
+	})
+}
+
+// SetRequestedScopes sets the "requested_scopes" field.
+func (u *AgenticSubscriptionUpsertBulk) SetRequestedScopes(v []string) *AgenticSubscriptionUpsertBulk {
+	return u.Update(func(s *AgenticSubscriptionUpsert) {
+		s.SetRequestedScopes(v)
+	})
+}
+
+// UpdateRequestedScopes sets the "requested_scopes" field to the value that was provided on create.
+func (u *AgenticSubscriptionUpsertBulk) UpdateRequestedScopes() *AgenticSubscriptionUpsertBulk {
+	return u.Update(func(s *AgenticSubscriptionUpsert) {
+		s.UpdateRequestedScopes()
+	})
+}
+
+// ClearRequestedScopes clears the value of the "requested_scopes" field.
+func (u *AgenticSubscriptionUpsertBulk) ClearRequestedScopes() *AgenticSubscriptionUpsertBulk {
+	return u.Update(func(s *AgenticSubscriptionUpsert) {
+		s.ClearRequestedScopes()
+	})
+}
+
+// SetActiveScopes sets the "active_scopes" field.
+func (u *AgenticSubscriptionUpsertBulk) SetActiveScopes(v []string) *AgenticSubscriptionUpsertBulk {
+	return u.Update(func(s *AgenticSubscriptionUpsert) {
+		s.SetActiveScopes(v)
+	})
+}
+
+// UpdateActiveScopes sets the "active_scopes" field to the value that was provided on create.
+func (u *AgenticSubscriptionUpsertBulk) UpdateActiveScopes() *AgenticSubscriptionUpsertBulk {
+	return u.Update(func(s *AgenticSubscriptionUpsert) {
+		s.UpdateActiveScopes()
+	})
+}
+
+// ClearActiveScopes clears the value of the "active_scopes" field.
+func (u *AgenticSubscriptionUpsertBulk) ClearActiveScopes() *AgenticSubscriptionUpsertBulk {
+	return u.Update(func(s *AgenticSubscriptionUpsert) {
+		s.ClearActiveScopes()
 	})
 }
 

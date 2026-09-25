@@ -6,6 +6,7 @@ package remote
 
 import (
 	"context"
+	"slices"
 
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -112,6 +113,10 @@ func HandleRemoteApiSubscription(ctx context.Context, owner *apiapi.ApiSubscript
 		logger.Info("🧹 RemoteApiSubscription not granted. We need to cleanup")
 		owner.SetCondition(condition.NewBlockedCondition("RemoteApiSubscription not granted"))
 		owner.SetCondition(condition.NewNotReadyCondition(condition.ReasonAccessDenied, "RemoteApiSubscription not granted"))
+		if _, cleanupErr := c.Cleanup(ctx, &gatewayapi.ConsumeRouteList{}, cclient.OwnedBy(owner)); cleanupErr != nil {
+			return errors.Wrap(cleanupErr, "failed to cleanup remote subscription consume routes")
+		}
+		owner.Status.ActiveScopes = nil
 
 		// Proxy route lifecycle is managed by ApiExposure; no route cleanup here.
 		return nil
@@ -201,6 +206,10 @@ func HandleRemoteApiSubscription(ctx context.Context, owner *apiapi.ApiSubscript
 	}
 
 	owner.Status.ConsumeRoute = types.ObjectRefFromObject(routeConsumer)
+	owner.Status.ActiveScopes = nil
+	if req.HasM2M() {
+		owner.Status.ActiveScopes = slices.Clone(req.Spec.Security.M2M.Scopes)
+	}
 	owner.SetCondition(condition.NewDoneProcessingCondition("Successfully provisioned subresources"))
 	owner.SetCondition(condition.NewReadyCondition(condition.ReasonProvisioned, "ApiSubscription is ready"))
 	return nil

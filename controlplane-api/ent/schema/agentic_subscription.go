@@ -30,6 +30,7 @@ func (AgenticSubscription) Mixin() []ent.Mixin {
 		schemamixin.StatusMixin{},
 		schemamixin.EnvironmentMixin{},
 		schemamixin.MetadataMixin{},
+		schemamixin.SubscriptionScopesMixin{},
 	}
 }
 

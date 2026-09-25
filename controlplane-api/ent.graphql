@@ -544,6 +544,14 @@ type AgenticSubscription implements Node {
   environment: String
   namespace: String!
   name: String!
+  """
+  Latest scopes requested in the subscription specification.
+  """
+  requestedScopes: [String!]
+  """
+  Last approved scope set successfully written to downstream Kubernetes resources; does not imply data-plane readiness.
+  """
+  activeScopes: [String!]
   basePath: String!
   gatewayURL: String
   security: AgenticSubscriptionSecurity
@@ -1119,6 +1127,14 @@ type ApiSubscription implements Node {
   environment: String
   namespace: String!
   name: String!
+  """
+  Latest scopes requested in the subscription specification.
+  """
+  requestedScopes: [String!]
+  """
+  Last approved scope set successfully written to downstream Kubernetes resources; does not imply data-plane readiness.
+  """
+  activeScopes: [String!]
   basePath: String!
   m2mAuthMethod: ApiSubscriptionM2mAuthMethod!
   gatewayURL: String
@@ -2902,11 +2918,19 @@ type EventSubscription implements Node {
   environment: String
   namespace: String!
   name: String!
+  """
+  Latest scopes requested in the subscription specification.
+  """
+  requestedScopes: [String!]
+  """
+  Last approved scope set successfully written to downstream Kubernetes resources; does not imply data-plane readiness.
+  """
+  activeScopes: [String!]
   eventType: String!
   deliveryType: EventSubscriptionDeliveryType!
   trigger: EventTrigger
   delivery: EventDelivery!
-  scopes: [String!]
+  scopes: [String!] @deprecated(reason: "Use requestedScopes for requested scopes and activeScopes for provisioned scopes.")
   callbackURL: String
   gatewaySseURL: String
   owner: Application!
