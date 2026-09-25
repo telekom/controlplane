@@ -16,9 +16,6 @@ import (
 	spectrev1 "github.com/telekom/controlplane/spectre/api/v1"
 )
 
-// ProviderBindingResult is the exported alias for ProviderBinding (test use).
-type ProviderBindingResult = ProviderBinding
-
 // VerifyProviderBinding is the exported wrapper for verifyProviderBinding (test use).
 func (h *ListenerHandler) VerifyProviderBinding(
 	ctx context.Context,
