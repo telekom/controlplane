@@ -5,7 +5,10 @@
 
 # Generates .github/ci/module-graph.json: a map of each CI module (as
 # defined in .github/ci/modules.yaml) to the list of other CI modules it
-# locally depends on, derived from `replace` directives in its go.mod.
+# locally depends on. Dependencies come from:
+#   - local `replace` directives in the module's go.mod
+#   - `schema` paths in the module's genqlient.yaml (GraphQL clients that
+#     generate code from another module's schema files)
 #
 # This is the single source of truth for cross-module dependencies used by
 # .github/scripts/select-scope.sh to compute the "optimized" CI scope (changed
@@ -80,6 +83,23 @@ while IFS=$'\t' read -r name path; do
       fi
     done < <(grep -E "^[[:space:]]*(replace[[:space:]]+)?${GO_MODULE_PREFIX}/[^[:space:]]+[[:space:]]*=>[[:space:]]*\.\.?/" "$gomod" |
       sed -E 's#.*=>[[:space:]]*(\.\.?/[^[:space:]]+).*#\1#' || true)
+  fi
+
+  genqlient="$path/genqlient.yaml"
+  if [ -f "$genqlient" ]; then
+    # `schema` is a single path or a list of paths (globs allowed), relative
+    # to the config file. The owner of each schema file's directory is a
+    # dependency, because changes there regenerate this module's client.
+    while IFS= read -r schema_rel; do
+      [ -z "$schema_rel" ] && continue
+      abs="$(cd "$path" && cd "$(dirname "$schema_rel")" 2>/dev/null && pwd || true)"
+      [ -z "$abs" ] && continue
+      rel="${abs#"$REPO_ROOT"/}"
+      dep_name="$(owning_module "$rel")"
+      if [ -n "$dep_name" ] && [ "$dep_name" != "$name" ]; then
+        deps+=("$dep_name")
+      fi
+    done < <(yq '.schema | ((select(tag == "!!seq") | .[]), select(tag == "!!str"))' "$genqlient")
   fi
 
   # Deduplicate and sort dependency names for a stable, diffable output.
