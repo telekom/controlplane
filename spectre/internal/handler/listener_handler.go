@@ -35,8 +35,10 @@ import (
 
 type ListenerHandler struct {
 	// Reader is the manager's uncached API reader (mgr.GetAPIReader()). Safety
-	// decisions on current revocation and retirement state read through it,
-	// never the cache. Nil only in handler unit tests; see getLive.
+	// decisions on current revocation, deletion and retirement state read
+	// through it, never the cache. Handler unit tests and controller envtests
+	// that build the handler directly leave it nil (getLive then reads through
+	// the scoped client); SetupWithManager always sets it.
 	Reader client.Reader
 }
 
@@ -96,7 +98,11 @@ func (h *ListenerHandler) CreateOrUpdate(ctx context.Context, listener *spectrev
 	// topology is broken. A read error does not mask a denial found by another read.
 	approvalGate, requestGate, earlyErr := h.checkEarlyRestriction(ctx, listener)
 	if earlyErr != nil {
-		logger.V(1).Info("Early restriction check failed", "error", earlyErr)
+		// Not returned: a denial found by another read still stops capture below.
+		// Logged at V(0) because a persistent read failure (throttling, a foreign
+		// object at a status ref) would otherwise disable this check silently.
+		logger.Error(earlyErr, "Early restriction check could not read every gate; an unreadable gate cannot stop capture",
+			"appliedCapture", hasAppliedCapture(listener))
 	}
 	switch {
 	case approvalGate != "":
