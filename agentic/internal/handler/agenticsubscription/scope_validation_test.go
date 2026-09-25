@@ -27,7 +27,7 @@ var _ = Describe("Subscription scope validation", func() {
 		}}
 	}
 	DescribeTable("uses only the selected exposure's token endpoint",
-		func(exp *agenticv1.AgenticExposure, declared, requested []string, accepted bool, reason string) {
+		func(exp *agenticv1.AgenticExposure, declared, requested []string, accepted bool, message string) {
 			obj := &agenticv1.AgenticSubscription{Spec: agenticv1.AgenticSubscriptionSpec{
 				Security: &agenticv1.SubscriberSecurity{M2M: &agenticv1.SubscriberMachine2MachineAuthentication{Scopes: requested}},
 			}}
@@ -42,20 +42,21 @@ var _ = Describe("Subscription scope validation", func() {
 				ready := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady)
 				Expect(ready).NotTo(BeNil())
 				Expect(ready.Status).To(Equal(metav1.ConditionFalse))
-				Expect(ready.Reason).To(Equal(reason))
+				Expect(ready.Reason).To(Equal(condition.ReasonValidationFailed))
+				Expect(ready.Message).To(ContainSubstring(message))
 				Expect(meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeProcessing).Reason).To(Equal("Blocked"))
 			}
 		},
 		Entry("endpoint without declared scopes", exposure("https://idp.example/token"), nil, []string{"z", "a", "z"}, true, ""),
 		Entry("endpoint with unmatched server and exposure scopes", exposure("https://idp.example/token"), []string{"read"}, []string{"z", "a", "z"}, true, ""),
-		Entry("nil exposure without declarations", nil, nil, []string{"read"}, false, "ScopesNotDefined"),
-		Entry("nil exposure with unmatched scopes", nil, []string{"read"}, []string{"write"}, false, "InvalidScopes"),
-		Entry("absent endpoint", &agenticv1.AgenticExposure{}, []string{"read"}, []string{"write"}, false, "InvalidScopes"),
-		Entry("empty endpoint without declarations", exposure(""), nil, []string{"read"}, false, "ScopesNotDefined"),
-		Entry("empty endpoint with unmatched scopes", exposure(""), []string{"read"}, []string{"write"}, false, "InvalidScopes"),
+		Entry("nil exposure without declarations", nil, nil, []string{"read"}, false, "does not define any OAuth2 scopes"),
+		Entry("nil exposure with unmatched scopes", nil, []string{"read"}, []string{"write"}, false, "not defined"),
+		Entry("absent endpoint", &agenticv1.AgenticExposure{}, []string{"read"}, []string{"write"}, false, "not defined"),
+		Entry("empty endpoint without declarations", exposure(""), nil, []string{"read"}, false, "does not define any OAuth2 scopes"),
+		Entry("empty endpoint with unmatched scopes", exposure(""), []string{"read"}, []string{"write"}, false, "not defined"),
 		Entry("valid subset", exposure(""), []string{"read", "write"}, []string{"write", "read"}, true, ""),
 		Entry("nil scopes", nil, nil, nil, true, ""),
-		Entry("empty scopes without declarations", nil, nil, []string{}, false, "ScopesNotDefined"),
+		Entry("empty scopes without declarations", nil, nil, []string{}, false, "does not define any OAuth2 scopes"),
 		Entry("empty subset", nil, []string{"read"}, []string{}, true, ""),
 		Entry("exempt empty scopes", exposure("https://idp.example/token"), nil, []string{}, true, ""),
 	)
