@@ -1389,7 +1389,7 @@ func expectGraceRetry(h *plHarness, gh *graceHandler, calls []plCall, err error,
 }
 
 var _ = Describe("Listener approval answer unavailable (controller)", func() {
-	It("G1: keeps applied capture for 5 minutes and retries no later than the end of the grace period", func() {
+	It("G1: keeps applied capture for 5 minutes and never asks for a retry after more than the time left", func() {
 		now := graceT0
 		h, gh := newGraceHarness(newPlFixtures("c"), &now)
 		l, _ := h.provision()
@@ -1408,8 +1408,9 @@ var _ = Describe("Listener approval answer unavailable (controller)", func() {
 		rv := l.ResourceVersion
 
 		// Inside the grace period capture stays, the timestamp is kept, and the
-		// retry delay never runs past the end of the period. No status write
-		// happens, so no watch event wakes the Listener before that delay.
+		// handler never asks for more than the time left; the controller's
+		// jitter may stretch that by up to JitterFactor (expectGraceRetry). No
+		// status write happens, so no watch event wakes the Listener before it.
 		for _, step := range []struct{ elapsed, delay time.Duration }{
 			{time.Minute, 30 * time.Second},
 			{4*time.Minute + 50*time.Second, 10 * time.Second},
@@ -1492,8 +1493,8 @@ var _ = Describe("Listener approval answer unavailable (controller)", func() {
 		ready := graceReady(l)
 		Expect(ready.Status).To(Equal(metav1.ConditionFalse))
 		Expect(ready.Reason).To(Equal(graceReason))
-		Expect(ready.Message).To(And(
-			ContainSubstring("provider gate"), ContainSubstring("since 2026-09-25T10:00:00Z"), ContainSubstring("5m0s")))
+		Expect(ready.Message).To(And(ContainSubstring("provider gate"), ContainSubstring("since 2026-09-25T10:00:00Z"),
+			ContainSubstring("capture is stopped after 5m0s without an answer")))
 
 		// Later passes delete the RouteListener, then the Subscribers, then the
 		// orphaned Publisher; every child Delete carries UID+RV preconditions.
@@ -1528,7 +1529,9 @@ var _ = Describe("Listener approval answer unavailable (controller)", func() {
 		l = h.listener()
 		Expect(l.Status.AppliedPlacement).To(BeNil())
 		Expect(l.Status.AuthorizationUnknownSince.Time).To(BeTemporally("==", graceT0))
+		// The pass completing the drain reports that no capture runs any more.
 		Expect(graceReady(l).Reason).To(Equal(graceReason))
+		Expect(graceReady(l).Message).To(ContainSubstring("no capture runs"))
 
 		// Still no answer: blocked, nothing to drain, nothing created.
 		calls, err = h.reconcile()
@@ -1581,7 +1584,11 @@ var _ = Describe("Listener approval answer unavailable (controller)", func() {
 			Expect(l.Status.AppliedPlacement).To(BeNil())
 			Expect(l.Status.RouteListener).To(BeNil())
 			Expect(l.Status.AuthorizationUnknownSince.Time).To(BeTemporally("==", graceT0))
-			Expect(graceReady(l).Reason).To(Equal(graceReason))
+			ready := graceReady(l)
+			Expect(ready.Reason).To(Equal(graceReason))
+			Expect(ready.Message).To(And(ContainSubstring("provider gate"),
+				ContainSubstring("no capture runs and none is provisioned until both gates answer"),
+				Not(ContainSubstring("capture is stopped"))))
 		}
 	})
 
@@ -1627,5 +1634,51 @@ var _ = Describe("Listener approval answer unavailable (controller)", func() {
 		Expect(l.Status.AppliedPlacement).To(BeNil())
 		Expect(l.Status.AuthorizationUnknownSince).To(BeNil())
 		Expect(graceReady(l).Reason).To(Equal(condition.ReasonAccessDenied))
+	})
+
+	It("G7: grants after the stop replace the AuthorizationUnavailable Ready, also when provisioning then fails", func() {
+		now := graceT0
+		h, _ := newGraceHarness(newPlFixtures("c"), &now)
+		l, _ := h.provision()
+		h.failApprovalRead(l.Status.ProviderApproval.Name)
+		_, err := h.reconcile()
+		Expect(err).ToNot(HaveOccurred())
+		now = graceT0.Add(5 * time.Minute)
+		_, err = h.reconcile()
+		Expect(err).To(MatchError(ContainSubstring("approval API unavailable")))
+		for pass := 0; h.listener().Status.Draining != nil; pass++ {
+			Expect(pass).To(BeNumerically("<", 10), "drain did not complete")
+			_, _ = h.reconcile() // the pass completing the drain still has no answer
+		}
+		Expect(h.publisherExists("c")).To(BeFalse())
+		Expect(graceReady(h.listener()).Reason).To(Equal(graceReason))
+
+		// Both gates answer and grant again, but the generic Publisher cannot be
+		// created, so the controller keeps the handler's Ready as it is.
+		h.getErr = nil
+		h.createErr = func(obj client.Object) error {
+			if _, ok := obj.(*pubsubv1.Publisher); ok {
+				return apierrors.NewServiceUnavailable("publisher create failed")
+			}
+			return nil
+		}
+		calls, err := h.reconcile()
+		Expect(err).To(MatchError(ContainSubstring("publisher create failed")))
+		Expect(plCount(calls, "Create", "Publisher", "")).To(Equal(1))
+		l = h.listener()
+		Expect(l.Status.AuthorizationUnknownSince).To(BeNil())
+		ready := graceReady(l)
+		Expect(ready.Status).To(Equal(metav1.ConditionFalse))
+		Expect(ready.Reason).To(Equal(condition.ReasonProcessing))
+		Expect(ready.Message).To(Equal("Approval granted, provisioning in progress"))
+		processing := meta.FindStatusCondition(l.Status.Conditions, condition.ConditionTypeProcessing)
+		Expect(processing).ToNot(BeNil())
+		Expect(processing.Reason).To(Equal(condition.ReasonProcessing))
+
+		// Provisioning then succeeds.
+		h.createErr = nil
+		h.mustReconcile()
+		Expect(h.publisherExists("c")).To(BeTrue())
+		Expect(h.listener().Status.AppliedPlacement).ToNot(BeNil())
 	})
 })
