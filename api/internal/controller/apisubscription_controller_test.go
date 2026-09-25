@@ -347,7 +347,6 @@ var _ = Describe("ApiSubscription Controller", Ordered, func() {
 					}
 				}, timeout, interval).Should(Succeed())
 			}
-
 		})
 	})
 
