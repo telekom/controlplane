@@ -881,6 +881,41 @@ var _ = Describe("SpectreApplication Mapper Tests", Ordered, func() {
 			}))
 		})
 
+		It("should match proxy-zone SAs when the proxy's backend Zone changes", func() {
+			// sa-zone proxies to sa-backend-zone, so a backend preset change must
+			// refresh the SA's proxy Route upstream.
+			ec := &eventv1.EventConfig{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "ec-sa-zone-proxy",
+					Namespace: saMapNs,
+					Labels:    map[string]string{envLabelKey: saMapEnv},
+				},
+				Spec: eventv1.EventConfigSpec{
+					Zone: ctypes.ObjectRef{Name: "sa-zone", Namespace: saMapNs},
+					Proxy: &eventv1.ProxyBackend{
+						TargetZone: ctypes.ObjectRef{Name: "sa-backend-zone", Namespace: saMapNs},
+					},
+				},
+			}
+			Expect(client.IgnoreAlreadyExists(k8sClient.Create(ctx, ec))).To(Succeed())
+			DeferCleanup(func() {
+				Expect(client.IgnoreNotFound(k8sClient.Delete(ctx, ec))).To(Succeed())
+			})
+
+			backendZone := &adminv1.Zone{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "sa-backend-zone",
+					Namespace: saMapNs,
+					Labels:    map[string]string{envLabelKey: saMapEnv},
+				},
+			}
+			Eventually(func() []reconcile.Request {
+				return reconciler.mapZoneToSpectreApplications(ctx, backendZone)
+			}, testTimeout, testInterval).Should(ContainElement(reconcile.Request{
+				NamespacedName: types.NamespacedName{Name: "sa-mapper-target", Namespace: saMapNs},
+			}))
+		})
+
 		It("should not match an unrelated Zone", func() {
 			zone := &adminv1.Zone{
 				ObjectMeta: metav1.ObjectMeta{
