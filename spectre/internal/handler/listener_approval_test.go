@@ -200,11 +200,4 @@ var _ = Describe("gateApprovalProperties", func() {
 		Expect(props).To(HaveKey("providerTeam"))
 		Expect(props).To(HaveKey("observerTeam"))
 	})
-
-	It("should be backward-compatible with approvalProperties", func() {
-		intent := buildAuthorizationIntent(baseListener(), baseConsumerApp(), baseProviderApp(), baseSpectreApp(), baseConsumerApp(), PlacementIntent{})
-		oldProps := intent.approvalProperties()
-		newProps := intent.gateApprovalProperties("listen-provider")
-		Expect(oldProps).To(Equal(newProps))
-	})
 })

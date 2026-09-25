@@ -255,13 +255,6 @@ func (a *authorizationIntent) gateRequestHash(key, requesterTeam, deciderTeam st
 	return approvalv1.ScopedIntentHash(payload)
 }
 
-// approvalProperties returns a human-readable map suitable for
-// Requester.SetProperties, exposing the capture intent to approvers.
-// Used by the legacy single-gate path; dual-gate uses gateApprovalProperties.
-func (a *authorizationIntent) approvalProperties() map[string]any {
-	return a.gateApprovalProperties("listen-provider")
-}
-
 // gateApprovalProperties returns per-gate approval properties. Each gate gets
 // its own action string so approvers can see which gate the request is for.
 func (a *authorizationIntent) gateApprovalProperties(action string) map[string]any {
