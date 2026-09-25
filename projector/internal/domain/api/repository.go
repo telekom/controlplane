@@ -24,22 +24,22 @@ import (
 const entityType = "api"
 
 // Repository performs typed persistence operations for Api catalogue entities.
-// It implements runtime.Repository[ApiKey, *ApiData].
+// It implements runtime.Repository[APIKey, *APIData].
 //
 // Api has a required FK dependency on Team. If the owner Team is missing,
 // Upsert returns ErrDependencyMissing.
 type Repository struct {
 	client *ent.Client
 	cache  *infrastructure.EdgeCache
-	deps   ApiDeps
+	deps   APIDeps
 }
 
 // compile-time interface check.
-var _ runtime.Repository[ApiKey, *ApiData] = (*Repository)(nil)
+var _ runtime.Repository[APIKey, *APIData] = (*Repository)(nil)
 
 // NewRepository creates an Api repository wired with the given ent client,
 // edge cache, and dependency resolver.
-func NewRepository(client *ent.Client, cache *infrastructure.EdgeCache, deps ApiDeps) *Repository {
+func NewRepository(client *ent.Client, cache *infrastructure.EdgeCache, deps APIDeps) *Repository {
 	return &Repository{
 		client: client,
 		cache:  cache,
@@ -50,7 +50,7 @@ func NewRepository(client *ent.Client, cache *infrastructure.EdgeCache, deps Api
 // Upsert creates or updates an Api catalogue entity in the database.
 // Resolves the owner Team FK (required) via deps, then upserts on the
 // composite unique constraint (base_path, owner).
-func (r *Repository) Upsert(ctx context.Context, data *ApiData) error {
+func (r *Repository) Upsert(ctx context.Context, data *APIData) error {
 	start := time.Now()
 	defer func() {
 		metrics.DBOperationDuration.WithLabelValues(entityType, metrics.OperationUpsert).Observe(time.Since(start).Seconds())
@@ -64,7 +64,7 @@ func (r *Repository) Upsert(ctx context.Context, data *ApiData) error {
 		return fmt.Errorf("find team %q: %w", data.TeamName, err)
 	}
 
-	create := r.client.Api.Create().
+	create := r.client.API.Create().
 		SetBasePath(data.BasePath).
 		SetVersion(data.Version).
 		SetActive(data.Active).
@@ -72,7 +72,7 @@ func (r *Repository) Upsert(ctx context.Context, data *ApiData) error {
 		SetStatusMessage(data.StatusMessage).
 		SetNamespace(data.Meta.Namespace).
 		SetXVendor(data.XVendor).
-		SetOauth2Scopes(data.Oauth2Scopes).
+		SetOAuth2Scopes(data.OAuth2Scopes).
 		SetOwnerID(teamID)
 
 	if data.Category != "" {
@@ -92,21 +92,21 @@ func (r *Repository) Upsert(ctx context.Context, data *ApiData) error {
 			data.BasePath, data.TeamName, upsertErr)
 	}
 
-	et, lk := cachekeys.Api(data.BasePath, data.TeamName)
+	et, lk := cachekeys.API(data.BasePath, data.TeamName)
 	r.cache.Set(et, lk, apiID)
 
 	// Update the active-api cache entry so that ApiExposure FK resolution can
 	// find the active Api by base path alone, and back-link any ApiExposures
 	// that were projected before this Api existed. An ApiExposure targets the
-	// active Api by base path (see FindActiveApiID). If the exposure was
+	// active Api by base path (see FindActiveAPIID). If the exposure was
 	// reconciled first, it was stored with a NULL api FK and nothing re-links
 	// it when the Api later becomes active — the exposure CR is not
 	// re-reconciled.
 	if data.Active {
-		aet, alk := cachekeys.ActiveApi(data.BasePath)
+		aet, alk := cachekeys.ActiveAPI(data.BasePath)
 		r.cache.Set(aet, alk, apiID)
 
-		if _, err := r.client.ApiExposure.Update().
+		if _, err := r.client.APIExposure.Update().
 			Where(
 				apiexposure.BasePathEQ(data.BasePath),
 				apiexposure.ActiveEQ(true),
@@ -120,7 +120,7 @@ func (r *Repository) Upsert(ctx context.Context, data *ApiData) error {
 		// If this Api is not active, clear the active cache in case it was
 		// previously active (should not happen in practice due to oldest-wins,
 		// but handles edge cases during resync).
-		aet, alk := cachekeys.ActiveApi(data.BasePath)
+		aet, alk := cachekeys.ActiveAPI(data.BasePath)
 		r.cache.Del(aet, alk)
 	}
 	return nil
@@ -128,13 +128,13 @@ func (r *Repository) Upsert(ctx context.Context, data *ApiData) error {
 
 // Delete removes an Api catalogue entity from the database by base path and
 // team name. Returns nil if the entity does not exist (idempotent delete).
-func (r *Repository) Delete(ctx context.Context, key ApiKey) error {
+func (r *Repository) Delete(ctx context.Context, key APIKey) error {
 	start := time.Now()
 	defer func() {
 		metrics.DBOperationDuration.WithLabelValues(entityType, metrics.OperationDelete).Observe(time.Since(start).Seconds())
 	}()
 
-	count, err := r.client.Api.Delete().
+	count, err := r.client.API.Delete().
 		Where(
 			entapi.BasePathEQ(key.BasePath),
 			entapi.HasOwnerWith(team.NameEQ(key.TeamName)),
@@ -145,11 +145,11 @@ func (r *Repository) Delete(ctx context.Context, key ApiKey) error {
 			key.BasePath, key.TeamName, err)
 	}
 	if count > 0 {
-		et, lk := cachekeys.Api(key.BasePath, key.TeamName)
+		et, lk := cachekeys.API(key.BasePath, key.TeamName)
 		r.cache.Del(et, lk)
 		// Also clear the active-api cache — if this was the active Api,
 		// the cache entry is now stale.
-		aet, alk := cachekeys.ActiveApi(key.BasePath)
+		aet, alk := cachekeys.ActiveAPI(key.BasePath)
 		r.cache.Del(aet, alk)
 	}
 	return nil

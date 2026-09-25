@@ -44,8 +44,8 @@ func (AgenticExposure) Fields() []ent.Field {
 			Default("ENTERPRISE"),
 		field.Enum("variant").
 			NamedValues(
-				"Mcp", "MCP",
-				"TelecontextMcp", "TELECONTEXTMCP",
+				"MCP", "MCP",
+				"TelecontextMCP", "TELECONTEXTMCP",
 				"Agent", "AGENT",
 			).
 			Default("MCP"),
@@ -77,7 +77,7 @@ func (AgenticExposure) Edges() []ent.Edge {
 			Ref("exposed_agentics").
 			Required().
 			Unique(),
-		edge.From("mcp_server", McpServer.Type).
+		edge.From("MCP_server", MCPServer.Type).
 			Ref("exposures").
 			Unique(),
 		edge.From("agent_card", AgentCard.Type).

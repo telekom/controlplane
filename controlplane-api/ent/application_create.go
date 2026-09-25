@@ -215,20 +215,20 @@ func (_c *ApplicationCreate) SetNillableSecretRotationMessage(v *string) *Applic
 	return _c
 }
 
-// SetExternalIds sets the "external_ids" field.
-func (_c *ApplicationCreate) SetExternalIds(v []model.ExternalId) *ApplicationCreate {
-	_c.mutation.SetExternalIds(v)
+// SetExternalIDs sets the "external_IDs" field.
+func (_c *ApplicationCreate) SetExternalIDs(v []model.ExternalID) *ApplicationCreate {
+	_c.mutation.SetExternalIDs(v)
 	return _c
 }
 
 // SetIPRestrictions sets the "ip_restrictions" field.
-func (_c *ApplicationCreate) SetIPRestrictions(v model.IpRestrictions) *ApplicationCreate {
+func (_c *ApplicationCreate) SetIPRestrictions(v model.IPRestrictions) *ApplicationCreate {
 	_c.mutation.SetIPRestrictions(v)
 	return _c
 }
 
 // SetNillableIPRestrictions sets the "ip_restrictions" field if the given value is not nil.
-func (_c *ApplicationCreate) SetNillableIPRestrictions(v *model.IpRestrictions) *ApplicationCreate {
+func (_c *ApplicationCreate) SetNillableIPRestrictions(v *model.IPRestrictions) *ApplicationCreate {
 	if v != nil {
 		_c.SetIPRestrictions(*v)
 	}
@@ -271,14 +271,14 @@ func (_c *ApplicationCreate) SetOwnerTeam(v *Team) *ApplicationCreate {
 	return _c.SetOwnerTeamID(v.ID)
 }
 
-// AddExposedAPIIDs adds the "exposed_apis" edge to the ApiExposure entity by IDs.
+// AddExposedAPIIDs adds the "exposed_APIs" edge to the APIExposure entity by IDs.
 func (_c *ApplicationCreate) AddExposedAPIIDs(ids ...int) *ApplicationCreate {
 	_c.mutation.AddExposedAPIIDs(ids...)
 	return _c
 }
 
-// AddExposedApis adds the "exposed_apis" edges to the ApiExposure entity.
-func (_c *ApplicationCreate) AddExposedApis(v ...*ApiExposure) *ApplicationCreate {
+// AddExposedAPIs adds the "exposed_APIs" edges to the APIExposure entity.
+func (_c *ApplicationCreate) AddExposedAPIs(v ...*APIExposure) *ApplicationCreate {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
@@ -286,14 +286,14 @@ func (_c *ApplicationCreate) AddExposedApis(v ...*ApiExposure) *ApplicationCreat
 	return _c.AddExposedAPIIDs(ids...)
 }
 
-// AddSubscribedAPIIDs adds the "subscribed_apis" edge to the ApiSubscription entity by IDs.
+// AddSubscribedAPIIDs adds the "subscribed_APIs" edge to the APISubscription entity by IDs.
 func (_c *ApplicationCreate) AddSubscribedAPIIDs(ids ...int) *ApplicationCreate {
 	_c.mutation.AddSubscribedAPIIDs(ids...)
 	return _c
 }
 
-// AddSubscribedApis adds the "subscribed_apis" edges to the ApiSubscription entity.
-func (_c *ApplicationCreate) AddSubscribedApis(v ...*ApiSubscription) *ApplicationCreate {
+// AddSubscribedAPIs adds the "subscribed_APIs" edges to the APISubscription entity.
+func (_c *ApplicationCreate) AddSubscribedAPIs(v ...*APISubscription) *ApplicationCreate {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
@@ -579,9 +579,9 @@ func (_c *ApplicationCreate) createSpec() (*Application, *sqlgraph.CreateSpec) {
 		_spec.SetField(application.FieldSecretRotationMessage, field.TypeString, value)
 		_node.SecretRotationMessage = &value
 	}
-	if value, ok := _c.mutation.ExternalIds(); ok {
-		_spec.SetField(application.FieldExternalIds, field.TypeJSON, value)
-		_node.ExternalIds = value
+	if value, ok := _c.mutation.ExternalIDs(); ok {
+		_spec.SetField(application.FieldExternalIDs, field.TypeJSON, value)
+		_node.ExternalIDs = value
 	}
 	if value, ok := _c.mutation.IPRestrictions(); ok {
 		_spec.SetField(application.FieldIPRestrictions, field.TypeJSON, value)
@@ -625,12 +625,12 @@ func (_c *ApplicationCreate) createSpec() (*Application, *sqlgraph.CreateSpec) {
 		_node.team_applications = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := _c.mutation.ExposedApisIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.ExposedAPIsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   application.ExposedApisTable,
-			Columns: []string{application.ExposedApisColumn},
+			Table:   application.ExposedAPIsTable,
+			Columns: []string{application.ExposedAPIsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(apiexposure.FieldID, field.TypeInt),
@@ -641,12 +641,12 @@ func (_c *ApplicationCreate) createSpec() (*Application, *sqlgraph.CreateSpec) {
 		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := _c.mutation.SubscribedApisIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.SubscribedAPIsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   application.SubscribedApisTable,
-			Columns: []string{application.SubscribedApisColumn},
+			Table:   application.SubscribedAPIsTable,
+			Columns: []string{application.SubscribedAPIsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(apisubscription.FieldID, field.TypeInt),
@@ -999,26 +999,26 @@ func (u *ApplicationUpsert) ClearSecretRotationMessage() *ApplicationUpsert {
 	return u
 }
 
-// SetExternalIds sets the "external_ids" field.
-func (u *ApplicationUpsert) SetExternalIds(v []model.ExternalId) *ApplicationUpsert {
-	u.Set(application.FieldExternalIds, v)
+// SetExternalIDs sets the "external_IDs" field.
+func (u *ApplicationUpsert) SetExternalIDs(v []model.ExternalID) *ApplicationUpsert {
+	u.Set(application.FieldExternalIDs, v)
 	return u
 }
 
-// UpdateExternalIds sets the "external_ids" field to the value that was provided on create.
-func (u *ApplicationUpsert) UpdateExternalIds() *ApplicationUpsert {
-	u.SetExcluded(application.FieldExternalIds)
+// UpdateExternalIDs sets the "external_IDs" field to the value that was provided on create.
+func (u *ApplicationUpsert) UpdateExternalIDs() *ApplicationUpsert {
+	u.SetExcluded(application.FieldExternalIDs)
 	return u
 }
 
-// ClearExternalIds clears the value of the "external_ids" field.
-func (u *ApplicationUpsert) ClearExternalIds() *ApplicationUpsert {
-	u.SetNull(application.FieldExternalIds)
+// ClearExternalIDs clears the value of the "external_IDs" field.
+func (u *ApplicationUpsert) ClearExternalIDs() *ApplicationUpsert {
+	u.SetNull(application.FieldExternalIDs)
 	return u
 }
 
 // SetIPRestrictions sets the "ip_restrictions" field.
-func (u *ApplicationUpsert) SetIPRestrictions(v model.IpRestrictions) *ApplicationUpsert {
+func (u *ApplicationUpsert) SetIPRestrictions(v model.IPRestrictions) *ApplicationUpsert {
 	u.Set(application.FieldIPRestrictions, v)
 	return u
 }
@@ -1343,29 +1343,29 @@ func (u *ApplicationUpsertOne) ClearSecretRotationMessage() *ApplicationUpsertOn
 	})
 }
 
-// SetExternalIds sets the "external_ids" field.
-func (u *ApplicationUpsertOne) SetExternalIds(v []model.ExternalId) *ApplicationUpsertOne {
+// SetExternalIDs sets the "external_IDs" field.
+func (u *ApplicationUpsertOne) SetExternalIDs(v []model.ExternalID) *ApplicationUpsertOne {
 	return u.Update(func(s *ApplicationUpsert) {
-		s.SetExternalIds(v)
+		s.SetExternalIDs(v)
 	})
 }
 
-// UpdateExternalIds sets the "external_ids" field to the value that was provided on create.
-func (u *ApplicationUpsertOne) UpdateExternalIds() *ApplicationUpsertOne {
+// UpdateExternalIDs sets the "external_IDs" field to the value that was provided on create.
+func (u *ApplicationUpsertOne) UpdateExternalIDs() *ApplicationUpsertOne {
 	return u.Update(func(s *ApplicationUpsert) {
-		s.UpdateExternalIds()
+		s.UpdateExternalIDs()
 	})
 }
 
-// ClearExternalIds clears the value of the "external_ids" field.
-func (u *ApplicationUpsertOne) ClearExternalIds() *ApplicationUpsertOne {
+// ClearExternalIDs clears the value of the "external_IDs" field.
+func (u *ApplicationUpsertOne) ClearExternalIDs() *ApplicationUpsertOne {
 	return u.Update(func(s *ApplicationUpsert) {
-		s.ClearExternalIds()
+		s.ClearExternalIDs()
 	})
 }
 
 // SetIPRestrictions sets the "ip_restrictions" field.
-func (u *ApplicationUpsertOne) SetIPRestrictions(v model.IpRestrictions) *ApplicationUpsertOne {
+func (u *ApplicationUpsertOne) SetIPRestrictions(v model.IPRestrictions) *ApplicationUpsertOne {
 	return u.Update(func(s *ApplicationUpsert) {
 		s.SetIPRestrictions(v)
 	})
@@ -1862,29 +1862,29 @@ func (u *ApplicationUpsertBulk) ClearSecretRotationMessage() *ApplicationUpsertB
 	})
 }
 
-// SetExternalIds sets the "external_ids" field.
-func (u *ApplicationUpsertBulk) SetExternalIds(v []model.ExternalId) *ApplicationUpsertBulk {
+// SetExternalIDs sets the "external_IDs" field.
+func (u *ApplicationUpsertBulk) SetExternalIDs(v []model.ExternalID) *ApplicationUpsertBulk {
 	return u.Update(func(s *ApplicationUpsert) {
-		s.SetExternalIds(v)
+		s.SetExternalIDs(v)
 	})
 }
 
-// UpdateExternalIds sets the "external_ids" field to the value that was provided on create.
-func (u *ApplicationUpsertBulk) UpdateExternalIds() *ApplicationUpsertBulk {
+// UpdateExternalIDs sets the "external_IDs" field to the value that was provided on create.
+func (u *ApplicationUpsertBulk) UpdateExternalIDs() *ApplicationUpsertBulk {
 	return u.Update(func(s *ApplicationUpsert) {
-		s.UpdateExternalIds()
+		s.UpdateExternalIDs()
 	})
 }
 
-// ClearExternalIds clears the value of the "external_ids" field.
-func (u *ApplicationUpsertBulk) ClearExternalIds() *ApplicationUpsertBulk {
+// ClearExternalIDs clears the value of the "external_IDs" field.
+func (u *ApplicationUpsertBulk) ClearExternalIDs() *ApplicationUpsertBulk {
 	return u.Update(func(s *ApplicationUpsert) {
-		s.ClearExternalIds()
+		s.ClearExternalIDs()
 	})
 }
 
 // SetIPRestrictions sets the "ip_restrictions" field.
-func (u *ApplicationUpsertBulk) SetIPRestrictions(v model.IpRestrictions) *ApplicationUpsertBulk {
+func (u *ApplicationUpsertBulk) SetIPRestrictions(v model.IPRestrictions) *ApplicationUpsertBulk {
 	return u.Update(func(s *ApplicationUpsert) {
 		s.SetIPRestrictions(v)
 	})

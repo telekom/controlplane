@@ -46,7 +46,7 @@ func (m *mockExposureDeps) FindApplicationID(_ context.Context, name, teamName s
 	return 0, fmt.Errorf("application %q (team %q): %w", name, teamName, infrastructure.ErrEntityNotFound)
 }
 
-func (m *mockExposureDeps) FindActiveMcpServerID(_ context.Context, basePath string) (int, error) {
+func (m *mockExposureDeps) FindActiveMCPServerID(_ context.Context, basePath string) (int, error) {
 	if m.mcpServerIDs != nil {
 		if id, ok := m.mcpServerIDs[basePath]; ok {
 			return id, nil
@@ -156,7 +156,7 @@ var _ = Describe("AgenticExposure Repository", func() {
 		})
 
 		It("should link the active McpServer catalogue entry for MCP variant", func() {
-			mcp, err := client.McpServer.Create().
+			mcp, err := client.MCPServer.Create().
 				SetBasePath("/mcp/v1/tools").
 				SetNamespace("platform--narvi").
 				SetVersion("1.0.0").
@@ -186,9 +186,9 @@ var _ = Describe("AgenticExposure Repository", func() {
 				Only(ctx)
 			Expect(err).NotTo(HaveOccurred())
 
-			linkedMcp, err := exp.QueryMcpServer().Only(ctx)
+			linkedMCP, err := exp.QueryMCPServer().Only(ctx)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(linkedMcp.ID).To(Equal(mcp.ID))
+			Expect(linkedMCP.ID).To(Equal(mcp.ID))
 
 			_, err = exp.QueryAgentCard().Only(ctx)
 			Expect(ent.IsNotFound(err)).To(BeTrue())
@@ -229,7 +229,7 @@ var _ = Describe("AgenticExposure Repository", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(linkedCard.ID).To(Equal(card.ID))
 
-			_, err = exp.QueryMcpServer().Only(ctx)
+			_, err = exp.QueryMCPServer().Only(ctx)
 			Expect(ent.IsNotFound(err)).To(BeTrue())
 		})
 
@@ -252,7 +252,7 @@ var _ = Describe("AgenticExposure Repository", func() {
 				Only(ctx)
 			Expect(err).NotTo(HaveOccurred())
 
-			_, err = exp.QueryMcpServer().Only(ctx)
+			_, err = exp.QueryMCPServer().Only(ctx)
 			Expect(ent.IsNotFound(err)).To(BeTrue())
 		})
 
@@ -280,7 +280,7 @@ var _ = Describe("AgenticExposure Repository", func() {
 		})
 
 		It("should not resolve catalogue FK when the exposure is inactive", func() {
-			mcp, err := client.McpServer.Create().
+			mcp, err := client.MCPServer.Create().
 				SetBasePath("/mcp/v1/inactive-exp").
 				SetNamespace("platform--narvi").
 				SetVersion("1.0.0").
@@ -309,12 +309,12 @@ var _ = Describe("AgenticExposure Repository", func() {
 				Only(ctx)
 			Expect(err).NotTo(HaveOccurred())
 
-			_, err = exp.QueryMcpServer().Only(ctx)
+			_, err = exp.QueryMCPServer().Only(ctx)
 			Expect(ent.IsNotFound(err)).To(BeTrue())
 		})
 
 		It("should clear the McpServer FK when a variant changes from MCP to AGENT", func() {
-			mcp, err := client.McpServer.Create().
+			mcp, err := client.MCPServer.Create().
 				SetBasePath("/mcp/v1/switch").
 				SetNamespace("platform--narvi").
 				SetVersion("1.0.0").
@@ -353,9 +353,9 @@ var _ = Describe("AgenticExposure Repository", func() {
 				Where(entagenticexposure.BasePathEQ("/mcp/v1/switch")).
 				Only(ctx)
 			Expect(err).NotTo(HaveOccurred())
-			linkedMcp, err := exp.QueryMcpServer().Only(ctx)
+			linkedMCP, err := exp.QueryMCPServer().Only(ctx)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(linkedMcp.ID).To(Equal(mcp.ID))
+			Expect(linkedMCP.ID).To(Equal(mcp.ID))
 
 			// Now switch the variant to AGENT — the McpServer FK must be
 			// cleared and replaced with the AgentCard FK, not left dangling.
@@ -371,12 +371,12 @@ var _ = Describe("AgenticExposure Repository", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(linkedCard.ID).To(Equal(card.ID))
 
-			_, err = exp.QueryMcpServer().Only(ctx)
+			_, err = exp.QueryMCPServer().Only(ctx)
 			Expect(ent.IsNotFound(err)).To(BeTrue())
 		})
 
 		It("should clear the catalogue FK when an active exposure becomes inactive", func() {
-			mcp, err := client.McpServer.Create().
+			mcp, err := client.MCPServer.Create().
 				SetBasePath("/mcp/v1/deactivate").
 				SetNamespace("platform--narvi").
 				SetVersion("1.0.0").
@@ -404,7 +404,7 @@ var _ = Describe("AgenticExposure Repository", func() {
 				Where(entagenticexposure.BasePathEQ("/mcp/v1/deactivate")).
 				Only(ctx)
 			Expect(err).NotTo(HaveOccurred())
-			_, err = exp.QueryMcpServer().Only(ctx)
+			_, err = exp.QueryMCPServer().Only(ctx)
 			Expect(err).NotTo(HaveOccurred())
 
 			// Now the exposure becomes inactive — the stale McpServer FK
@@ -418,7 +418,7 @@ var _ = Describe("AgenticExposure Repository", func() {
 				Only(ctx)
 			Expect(err).NotTo(HaveOccurred())
 
-			_, err = exp.QueryMcpServer().Only(ctx)
+			_, err = exp.QueryMCPServer().Only(ctx)
 			Expect(ent.IsNotFound(err)).To(BeTrue())
 		})
 
@@ -512,7 +512,7 @@ var _ = Describe("AgenticExposure Repository", func() {
 								Password: "ext-pass",
 							},
 							Client: &model.OAuth2ClientCredentials{
-								ClientId:     "ext-client-id",
+								ClientID:     "ext-client-id",
 								ClientSecret: &clientSecret,
 								ClientKey:    &clientKey,
 							},
@@ -585,7 +585,7 @@ var _ = Describe("AgenticExposure Repository", func() {
 			Expect(*exp.Security.M2M.ExternalIDP.GrantType).To(Equal("client_credentials"))
 			Expect(exp.Security.M2M.ExternalIDP.Basic.Username).To(Equal("ext-user"))
 			Expect(exp.Security.M2M.ExternalIDP.Basic.Password).To(Equal("ext-pass"))
-			Expect(exp.Security.M2M.ExternalIDP.Client.ClientId).To(Equal("ext-client-id"))
+			Expect(exp.Security.M2M.ExternalIDP.Client.ClientID).To(Equal("ext-client-id"))
 			Expect(*exp.Security.M2M.ExternalIDP.Client.ClientSecret).To(Equal("ext-client-secret"))
 			Expect(*exp.Security.M2M.ExternalIDP.Client.ClientKey).To(Equal("ext-client-key"))
 

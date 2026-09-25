@@ -114,7 +114,7 @@ var _ = Describe("EventExposure Translator", func() {
 			Expect(data.Scopes[1].Trigger.ResponseFilter.Paths).To(Equal([]string{"$.data.secret"}))
 			Expect(data.Scopes[1].Trigger.ResponseFilter.Mode).To(Equal("Exclude"))
 			Expect(data.Scopes[1].Trigger.SelectionFilter).To(BeNil())
-			Expect(data.GatewayProviderUrl).To(Equal("https://gateway.example.com/events/provider"))
+			Expect(data.GatewayProviderURL).To(Equal("https://gateway.example.com/events/provider"))
 
 		})
 
@@ -235,7 +235,7 @@ var _ = Describe("EventExposure Translator", func() {
 			Expect(data.Scopes[0].Trigger.SelectionFilter).To(BeNil())
 		})
 
-		It("should set GatewayProviderUrl to empty when status has no provider url", func() {
+		It("should set GatewayProviderURL to empty when status has no provider url", func() {
 			obj := &eventv1.EventExposure{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "no-provider-url",
@@ -251,7 +251,7 @@ var _ = Describe("EventExposure Translator", func() {
 
 			data, err := t.Translate(context.Background(), obj)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(data.GatewayProviderUrl).To(BeEmpty())
+			Expect(data.GatewayProviderURL).To(BeEmpty())
 		})
 
 		It("should upper-case Zone visibility", func() {

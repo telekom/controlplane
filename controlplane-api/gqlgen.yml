@@ -4,6 +4,11 @@
 
 schema: "*.graphql"
 
+# Adds initialisms to the gqlgen defaults for generated Go names.
+go_initialisms:
+  initialisms:
+    - MCP
+
 exec:
   layout: follow-schema
   package: resolvers
@@ -135,22 +140,22 @@ models:
         resolver: true
       rotatedClientSecret:
         resolver: true
-  ExternalId:
+  ExternalID:
     model:
-      - github.com/telekom/controlplane/controlplane-api/pkg/model.ExternalId
-  IpRestrictions:
+      - github.com/telekom/controlplane/controlplane-api/pkg/model.ExternalID
+  IPRestrictions:
     model:
-      - github.com/telekom/controlplane/controlplane-api/pkg/model.IpRestrictions
+      - github.com/telekom/controlplane/controlplane-api/pkg/model.IPRestrictions
   Team:
     fields:
       teamToken:
         resolver: true
-  ApiExposureInfo:
+  APIExposureInfo:
     model:
-      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.ApiExposureInfo
-  ApiSubscriptionInfo:
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.APIExposureInfo
+  APISubscriptionInfo:
     model:
-      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.ApiSubscriptionInfo
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.APISubscriptionInfo
   EventSubscriptionInfo:
     model:
       - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.EventSubscriptionInfo
@@ -164,12 +169,12 @@ models:
     model:
       - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.AgenticSubscriptionInfo
   # Security
-  ApiExposureSecurity:
+  APIExposureSecurity:
     model:
-      - github.com/telekom/controlplane/controlplane-api/pkg/model.ApiExposureSecurity
-  ApiSubscriptionSecurity:
+      - github.com/telekom/controlplane/controlplane-api/pkg/model.APIExposureSecurity
+  APISubscriptionSecurity:
     model:
-      - github.com/telekom/controlplane/controlplane-api/pkg/model.ApiSubscriptionSecurity
+      - github.com/telekom/controlplane/controlplane-api/pkg/model.APISubscriptionSecurity
   AgenticExposureSecurity:
     model:
       - github.com/telekom/controlplane/controlplane-api/pkg/model.AgenticExposureSecurity
@@ -203,9 +208,9 @@ models:
   Traffic:
     model:
       - github.com/telekom/controlplane/controlplane-api/pkg/model.Traffic
-  ApiSubscriptionTraffic:
+  APISubscriptionTraffic:
     model:
-      - github.com/telekom/controlplane/controlplane-api/pkg/model.ApiSubscriptionTraffic
+      - github.com/telekom/controlplane/controlplane-api/pkg/model.APISubscriptionTraffic
   RateLimit:
     model:
       - github.com/telekom/controlplane/controlplane-api/pkg/model.RateLimit

@@ -52,9 +52,9 @@ var _ = Describe("Subscriptions resolver (cross-tenant)", func() {
 		client.Close()
 	})
 
-	It("should return ApiSubscriptionInfo for an exposure's subscriptions", func() {
+	It("should return APISubscriptionInfo for an exposure's subscriptions", func() {
 		ctx := viewer.NewContext(testutil.AllowContext(), &viewer.Viewer{Teams: []string{"team-alpha"}})
-		subs, err := r.ApiExposure().Subscriptions(ctx, s.ExposureAlpha)
+		subs, err := r.APIExposure().Subscriptions(ctx, s.ExposureAlpha)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(subs).To(HaveLen(1))
 		Expect(subs[0].BasePath).To(Equal("/alpha"))
@@ -67,7 +67,7 @@ var _ = Describe("Subscriptions resolver (cross-tenant)", func() {
 
 	It("should return empty list when no subscriptions exist", func() {
 		ctx := viewer.NewContext(testutil.AllowContext(), &viewer.Viewer{Teams: []string{"team-beta"}})
-		subs, err := r.ApiExposure().Subscriptions(ctx, s.ExposureBeta)
+		subs, err := r.APIExposure().Subscriptions(ctx, s.ExposureBeta)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(subs).To(BeEmpty())
 	})
@@ -90,10 +90,10 @@ var _ = Describe("Target resolver (cross-tenant)", func() {
 		client.Close()
 	})
 
-	It("should return ApiExposureInfo for a subscription's target", func() {
+	It("should return APIExposureInfo for a subscription's target", func() {
 		ctx := viewer.NewContext(testutil.AllowContext(), &viewer.Viewer{Teams: []string{"team-beta"}})
 
-		client.ApiExposure.UpdateOneID(s.ExposureAlpha.ID).SetTraffic(
+		client.APIExposure.UpdateOneID(s.ExposureAlpha.ID).SetTraffic(
 			model.Traffic{
 				RateLimit: &model.RateLimit{
 					SubscriberRateLimit: &model.SubscriberRateLimits{
@@ -112,7 +112,7 @@ var _ = Describe("Target resolver (cross-tenant)", func() {
 			},
 		).SaveX(ctx)
 
-		info, err := r.ApiSubscription().Target(ctx, s.Subscription)
+		info, err := r.APISubscription().Target(ctx, s.Subscription)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(info).NotTo(BeNil())
 		Expect(info.BasePath).To(Equal("/alpha"))
@@ -145,13 +145,13 @@ var _ = Describe("Approval.APISubscription resolver (cross-tenant)", func() {
 		client.Close()
 	})
 
-	It("should return ApiSubscriptionInfo from an approval", func() {
+	It("should return APISubscriptionInfo from an approval", func() {
 		ctx := viewer.NewContext(testutil.AllowContext(), &viewer.Viewer{Admin: true})
 		info, err := r.Approval().Subscription(ctx, s.Approval)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(info).NotTo(BeNil())
-		apiInfo, ok := info.(*gqlmodel.ApiSubscriptionInfo)
-		Expect(ok).To(BeTrue(), "expected ApiSubscriptionInfo implementation")
+		apiInfo, ok := info.(*gqlmodel.APISubscriptionInfo)
+		Expect(ok).To(BeTrue(), "expected APISubscriptionInfo implementation")
 		Expect(apiInfo.BasePath).To(Equal("/alpha"))
 		Expect(apiInfo.OwnerApplicationName).To(Equal("app-beta"))
 		Expect(apiInfo.OwnerTeam.Name).To(Equal("team-beta"))
@@ -176,13 +176,13 @@ var _ = Describe("ApprovalRequest.APISubscription resolver (cross-tenant)", func
 		client.Close()
 	})
 
-	It("should return ApiSubscriptionInfo from an approval request", func() {
+	It("should return APISubscriptionInfo from an approval request", func() {
 		ctx := viewer.NewContext(testutil.AllowContext(), &viewer.Viewer{Admin: true})
 		info, err := r.ApprovalRequest().Subscription(ctx, s.ApprovalRequest)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(info).NotTo(BeNil())
-		apiInfo, ok := info.(*gqlmodel.ApiSubscriptionInfo)
-		Expect(ok).To(BeTrue(), "expected ApiSubscriptionInfo implementation")
+		apiInfo, ok := info.(*gqlmodel.APISubscriptionInfo)
+		Expect(ok).To(BeTrue(), "expected APISubscriptionInfo implementation")
 		Expect(apiInfo.BasePath).To(Equal("/alpha"))
 		Expect(apiInfo.OwnerApplicationName).To(Equal("app-beta"))
 		Expect(apiInfo.OwnerTeam.Name).To(Equal("team-beta"))
@@ -190,17 +190,17 @@ var _ = Describe("ApprovalRequest.APISubscription resolver (cross-tenant)", func
 	})
 })
 
-var _ = Describe("ApiExposureInfo resolvers", func() {
+var _ = Describe("APIExposureInfo resolvers", func() {
 	r := resolvers.NewResolver(nil, service.Services{}, nil, "")
 
 	It("should convert visibility string to enum", func() {
-		v, err := r.ApiExposureInfo().Visibility(context.TODO(), &gqlmodel.ApiExposureInfo{Visibility: "WORLD"})
+		v, err := r.APIExposureInfo().Visibility(context.TODO(), &gqlmodel.APIExposureInfo{Visibility: "WORLD"})
 		Expect(err).NotTo(HaveOccurred())
 		Expect(string(v)).To(Equal("WORLD"))
 	})
 
 	It("should convert feature strings to enum array", func() {
-		features, err := r.ApiExposureInfo().Features(context.TODO(), &gqlmodel.ApiExposureInfo{
+		features, err := r.APIExposureInfo().Features(context.TODO(), &gqlmodel.APIExposureInfo{
 			Features: []string{"BASIC_AUTH", "CIRCUIT_BREAKER"},
 		})
 		Expect(err).NotTo(HaveOccurred())
@@ -210,7 +210,7 @@ var _ = Describe("ApiExposureInfo resolvers", func() {
 	})
 
 	It("should return empty features for nil list", func() {
-		features, err := r.ApiExposureInfo().Features(context.TODO(), &gqlmodel.ApiExposureInfo{})
+		features, err := r.APIExposureInfo().Features(context.TODO(), &gqlmodel.APIExposureInfo{})
 		Expect(err).NotTo(HaveOccurred())
 		Expect(features).To(BeEmpty())
 	})
@@ -288,19 +288,19 @@ var _ = Describe("EventExposureInfo.Visibility resolver", func() {
 	})
 })
 
-var _ = Describe("ApiSubscriptionInfo.StatusPhase resolver", func() {
+var _ = Describe("APISubscriptionInfo.StatusPhase resolver", func() {
 	r := resolvers.NewResolver(nil, service.Services{}, nil, "")
 
 	It("should convert status phase string to enum", func() {
 		sp := "SUBSCRIBED"
-		phase, err := r.ApiSubscriptionInfo().StatusPhase(context.TODO(), &gqlmodel.ApiSubscriptionInfo{StatusPhase: &sp})
+		phase, err := r.APISubscriptionInfo().StatusPhase(context.TODO(), &gqlmodel.APISubscriptionInfo{StatusPhase: &sp})
 		Expect(err).NotTo(HaveOccurred())
 		Expect(phase).NotTo(BeNil())
 		Expect(string(*phase)).To(Equal("SUBSCRIBED"))
 	})
 
 	It("should return nil for nil status phase", func() {
-		phase, err := r.ApiSubscriptionInfo().StatusPhase(context.TODO(), &gqlmodel.ApiSubscriptionInfo{})
+		phase, err := r.APISubscriptionInfo().StatusPhase(context.TODO(), &gqlmodel.APISubscriptionInfo{})
 		Expect(err).NotTo(HaveOccurred())
 		Expect(phase).To(BeNil())
 	})

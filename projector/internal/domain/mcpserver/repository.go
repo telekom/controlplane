@@ -24,22 +24,22 @@ import (
 const entityType = "mcpserver"
 
 // Repository performs typed persistence operations for McpServer catalogue
-// entities. It implements runtime.Repository[McpServerKey, *McpServerData].
+// entities. It implements runtime.Repository[MCPServerKey, *MCPServerData].
 //
 // McpServer has a required FK dependency on Team. If the owner Team is
 // missing, Upsert returns ErrDependencyMissing.
 type Repository struct {
 	client *ent.Client
 	cache  *infrastructure.EdgeCache
-	deps   McpServerDeps
+	deps   MCPServerDeps
 }
 
 // compile-time interface check.
-var _ runtime.Repository[McpServerKey, *McpServerData] = (*Repository)(nil)
+var _ runtime.Repository[MCPServerKey, *MCPServerData] = (*Repository)(nil)
 
 // NewRepository creates an McpServer repository wired with the given ent
 // client, edge cache, and dependency resolver.
-func NewRepository(client *ent.Client, cache *infrastructure.EdgeCache, deps McpServerDeps) *Repository {
+func NewRepository(client *ent.Client, cache *infrastructure.EdgeCache, deps MCPServerDeps) *Repository {
 	return &Repository{
 		client: client,
 		cache:  cache,
@@ -50,7 +50,7 @@ func NewRepository(client *ent.Client, cache *infrastructure.EdgeCache, deps Mcp
 // Upsert creates or updates an McpServer catalogue entity in the database.
 // Resolves the owner Team FK (required) via deps, then upserts on the
 // composite unique constraint (base_path, owner).
-func (r *Repository) Upsert(ctx context.Context, data *McpServerData) error {
+func (r *Repository) Upsert(ctx context.Context, data *MCPServerData) error {
 	start := time.Now()
 	defer func() {
 		metrics.DBOperationDuration.WithLabelValues(entityType, metrics.OperationUpsert).Observe(time.Since(start).Seconds())
@@ -64,7 +64,7 @@ func (r *Repository) Upsert(ctx context.Context, data *McpServerData) error {
 		return fmt.Errorf("find team %q: %w", data.TeamName, err)
 	}
 
-	create := r.client.McpServer.Create().
+	create := r.client.MCPServer.Create().
 		SetBasePath(data.BasePath).
 		SetVersion(data.Version).
 		SetName(data.Name).
@@ -72,7 +72,7 @@ func (r *Repository) Upsert(ctx context.Context, data *McpServerData) error {
 		SetStatusPhase(entmcpserver.StatusPhase(data.StatusPhase)).
 		SetStatusMessage(data.StatusMessage).
 		SetNamespace(data.Meta.Namespace).
-		SetOauth2Scopes(data.Oauth2Scopes).
+		SetOAuth2Scopes(data.OAuth2Scopes).
 		SetOwnerID(teamID)
 
 	if data.Description != "" {
@@ -96,35 +96,35 @@ func (r *Repository) Upsert(ctx context.Context, data *McpServerData) error {
 			data.BasePath, data.TeamName, upsertErr)
 	}
 
-	et, lk := cachekeys.McpServer(data.BasePath, data.TeamName)
+	et, lk := cachekeys.MCPServer(data.BasePath, data.TeamName)
 	r.cache.Set(et, lk, mcpServerID)
 
 	// Update the active-mcp-server cache entry so that AgenticExposure FK
 	// resolution can find the active McpServer by base path alone, and
 	// back-link any AgenticExposures that were projected before this McpServer
 	// existed. An MCP/TELECONTEXTMCP-variant AgenticExposure targets the active
-	// McpServer by base path (see FindActiveMcpServerID). If the exposure was
+	// McpServer by base path (see FindActiveMCPServerID). If the exposure was
 	// reconciled first, it was stored with a NULL mcp_server FK and nothing
 	// re-links it when the McpServer later becomes active — the exposure CR is
 	// not re-reconciled.
 	if data.Active {
-		aet, alk := cachekeys.ActiveMcpServer(data.BasePath)
+		aet, alk := cachekeys.ActiveMCPServer(data.BasePath)
 		r.cache.Set(aet, alk, mcpServerID)
 
 		if _, err := r.client.AgenticExposure.Update().
 			Where(
 				agenticexposure.BasePathEQ(data.BasePath),
-				agenticexposure.VariantIn(agenticexposure.VariantMcp, agenticexposure.VariantTelecontextMcp),
+				agenticexposure.VariantIn(agenticexposure.VariantMCP, agenticexposure.VariantTelecontextMCP),
 				agenticexposure.ActiveEQ(true),
-				agenticexposure.Not(agenticexposure.HasMcpServer()),
+				agenticexposure.Not(agenticexposure.HasMCPServer()),
 			).
-			SetMcpServerID(mcpServerID).
+			SetMCPServerID(mcpServerID).
 			Save(ctx); err != nil {
 			return fmt.Errorf("back-link agentic_exposures to mcp_server %q: %w", data.BasePath, err)
 		}
 	} else {
 		// Only clear the active cache entry if it currently points to this McpServer.
-		aet, alk := cachekeys.ActiveMcpServer(data.BasePath)
+		aet, alk := cachekeys.ActiveMCPServer(data.BasePath)
 		if cachedID, ok := r.cache.Get(aet, alk); ok && cachedID == mcpServerID {
 			r.cache.Del(aet, alk)
 		}
@@ -135,13 +135,13 @@ func (r *Repository) Upsert(ctx context.Context, data *McpServerData) error {
 // Delete removes an McpServer catalogue entity from the database by base
 // path and team name. Returns nil if the entity does not exist (idempotent
 // delete).
-func (r *Repository) Delete(ctx context.Context, key McpServerKey) error {
+func (r *Repository) Delete(ctx context.Context, key MCPServerKey) error {
 	start := time.Now()
 	defer func() {
 		metrics.DBOperationDuration.WithLabelValues(entityType, metrics.OperationDelete).Observe(time.Since(start).Seconds())
 	}()
 
-	count, err := r.client.McpServer.Delete().
+	count, err := r.client.MCPServer.Delete().
 		Where(
 			entmcpserver.BasePathEQ(key.BasePath),
 			entmcpserver.HasOwnerWith(team.NameEQ(key.TeamName)),
@@ -152,11 +152,11 @@ func (r *Repository) Delete(ctx context.Context, key McpServerKey) error {
 			key.BasePath, key.TeamName, err)
 	}
 	if count > 0 {
-		et, lk := cachekeys.McpServer(key.BasePath, key.TeamName)
+		et, lk := cachekeys.MCPServer(key.BasePath, key.TeamName)
 		r.cache.Del(et, lk)
 		// Also clear the active-mcp-server cache — if this was the active
 		// McpServer, the cache entry is now stale.
-		aet, alk := cachekeys.ActiveMcpServer(key.BasePath)
+		aet, alk := cachekeys.ActiveMCPServer(key.BasePath)
 		r.cache.Del(aet, alk)
 	}
 	return nil

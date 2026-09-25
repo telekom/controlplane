@@ -17,8 +17,8 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/team"
 )
 
-// Api is the model entity for the Api schema.
-type Api struct {
+// API is the model entity for the API schema.
+type API struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID int `json:"id,omitempty"`
@@ -38,8 +38,8 @@ type Api struct {
 	Version string `json:"version,omitempty"`
 	// Category holds the value of the "category" field.
 	Category string `json:"category,omitempty"`
-	// Oauth2Scopes holds the value of the "oauth2_scopes" field.
-	Oauth2Scopes []string `json:"oauth2_scopes,omitempty"`
+	// OAuth2Scopes holds the value of the "OAuth2_scopes" field.
+	OAuth2Scopes []string `json:"OAuth2_scopes,omitempty"`
 	// XVendor holds the value of the "x_vendor" field.
 	XVendor bool `json:"x_vendor,omitempty"`
 	// Specification holds the value of the "specification" field.
@@ -47,28 +47,28 @@ type Api struct {
 	// Active holds the value of the "active" field.
 	Active bool `json:"active,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
-	// The values are being populated by the ApiQuery when eager-loading is set.
-	Edges        ApiEdges `json:"edges"`
+	// The values are being populated by the APIQuery when eager-loading is set.
+	Edges        APIEdges `json:"edges"`
 	team_apis    *int
 	selectValues sql.SelectValues
 }
 
-// ApiEdges holds the relations/edges for other nodes in the graph.
-type ApiEdges struct {
+// APIEdges holds the relations/edges for other nodes in the graph.
+type APIEdges struct {
 	// Owner holds the value of the owner edge.
 	Owner *Team `json:"owner,omitempty"`
 	// Exposures holds the value of the exposures edge.
-	Exposures []*ApiExposure `json:"exposures,omitempty"`
+	Exposures []*APIExposure `json:"exposures,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [2]bool
 
-	namedExposures map[string][]*ApiExposure
+	namedExposures map[string][]*APIExposure
 }
 
 // OwnerOrErr returns the Owner value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
-func (e ApiEdges) OwnerOrErr() (*Team, error) {
+func (e APIEdges) OwnerOrErr() (*Team, error) {
 	if e.Owner != nil {
 		return e.Owner, nil
 	} else if e.loadedTypes[0] {
@@ -79,7 +79,7 @@ func (e ApiEdges) OwnerOrErr() (*Team, error) {
 
 // ExposuresOrErr returns the Exposures value or an error if the edge
 // was not loaded in eager-loading.
-func (e ApiEdges) ExposuresOrErr() ([]*ApiExposure, error) {
+func (e APIEdges) ExposuresOrErr() ([]*APIExposure, error) {
 	if e.loadedTypes[1] {
 		return e.Exposures, nil
 	}
@@ -87,11 +87,11 @@ func (e ApiEdges) ExposuresOrErr() ([]*ApiExposure, error) {
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
-func (*Api) scanValues(columns []string) ([]any, error) {
+func (*API) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case api.FieldOauth2Scopes:
+		case api.FieldOAuth2Scopes:
 			values[i] = new([]byte)
 		case api.FieldXVendor, api.FieldActive:
 			values[i] = new(sql.NullBool)
@@ -111,8 +111,8 @@ func (*Api) scanValues(columns []string) ([]any, error) {
 }
 
 // assignValues assigns the values that were returned from sql.Rows (after scanning)
-// to the Api fields.
-func (_m *Api) assignValues(columns []string, values []any) error {
+// to the API fields.
+func (_m *API) assignValues(columns []string, values []any) error {
 	if m, n := len(values), len(columns); m < n {
 		return fmt.Errorf("mismatch number of scan values: %d != %d", m, n)
 	}
@@ -174,12 +174,12 @@ func (_m *Api) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.Category = value.String
 			}
-		case api.FieldOauth2Scopes:
+		case api.FieldOAuth2Scopes:
 			if value, ok := values[i].(*[]byte); !ok {
-				return fmt.Errorf("unexpected type %T for field oauth2_scopes", values[i])
+				return fmt.Errorf("unexpected type %T for field OAuth2_scopes", values[i])
 			} else if value != nil && len(*value) > 0 {
-				if err := json.Unmarshal(*value, &_m.Oauth2Scopes); err != nil {
-					return fmt.Errorf("unmarshal field oauth2_scopes: %w", err)
+				if err := json.Unmarshal(*value, &_m.OAuth2Scopes); err != nil {
+					return fmt.Errorf("unmarshal field OAuth2_scopes: %w", err)
 				}
 			}
 		case api.FieldXVendor:
@@ -214,44 +214,44 @@ func (_m *Api) assignValues(columns []string, values []any) error {
 	return nil
 }
 
-// Value returns the ent.Value that was dynamically selected and assigned to the Api.
+// Value returns the ent.Value that was dynamically selected and assigned to the API.
 // This includes values selected through modifiers, order, etc.
-func (_m *Api) Value(name string) (ent.Value, error) {
+func (_m *API) Value(name string) (ent.Value, error) {
 	return _m.selectValues.Get(name)
 }
 
-// QueryOwner queries the "owner" edge of the Api entity.
-func (_m *Api) QueryOwner() *TeamQuery {
+// QueryOwner queries the "owner" edge of the API entity.
+func (_m *API) QueryOwner() *TeamQuery {
 	return NewAPIClient(_m.config).QueryOwner(_m)
 }
 
-// QueryExposures queries the "exposures" edge of the Api entity.
-func (_m *Api) QueryExposures() *ApiExposureQuery {
+// QueryExposures queries the "exposures" edge of the API entity.
+func (_m *API) QueryExposures() *APIExposureQuery {
 	return NewAPIClient(_m.config).QueryExposures(_m)
 }
 
-// Update returns a builder for updating this Api.
-// Note that you need to call Api.Unwrap() before calling this method if this Api
+// Update returns a builder for updating this API.
+// Note that you need to call API.Unwrap() before calling this method if this API
 // was returned from a transaction, and the transaction was committed or rolled back.
-func (_m *Api) Update() *APIUpdateOne {
+func (_m *API) Update() *APIUpdateOne {
 	return NewAPIClient(_m.config).UpdateOne(_m)
 }
 
-// Unwrap unwraps the Api entity that was returned from a transaction after it was closed,
+// Unwrap unwraps the API entity that was returned from a transaction after it was closed,
 // so that all future queries will be executed through the driver which created the transaction.
-func (_m *Api) Unwrap() *Api {
+func (_m *API) Unwrap() *API {
 	_tx, ok := _m.config.driver.(*txDriver)
 	if !ok {
-		panic("ent: Api is not a transactional entity")
+		panic("ent: API is not a transactional entity")
 	}
 	_m.config.driver = _tx.drv
 	return _m
 }
 
 // String implements the fmt.Stringer.
-func (_m *Api) String() string {
+func (_m *API) String() string {
 	var builder strings.Builder
-	builder.WriteString("Api(")
+	builder.WriteString("API(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", _m.ID))
 	builder.WriteString("created_at=")
 	builder.WriteString(_m.CreatedAt.Format(time.ANSIC))
@@ -281,8 +281,8 @@ func (_m *Api) String() string {
 	builder.WriteString("category=")
 	builder.WriteString(_m.Category)
 	builder.WriteString(", ")
-	builder.WriteString("oauth2_scopes=")
-	builder.WriteString(fmt.Sprintf("%v", _m.Oauth2Scopes))
+	builder.WriteString("OAuth2_scopes=")
+	builder.WriteString(fmt.Sprintf("%v", _m.OAuth2Scopes))
 	builder.WriteString(", ")
 	builder.WriteString("x_vendor=")
 	builder.WriteString(fmt.Sprintf("%v", _m.XVendor))
@@ -298,7 +298,7 @@ func (_m *Api) String() string {
 
 // NamedExposures returns the Exposures named value or an error if the edge was not
 // loaded in eager-loading with this name.
-func (_m *Api) NamedExposures(name string) ([]*ApiExposure, error) {
+func (_m *API) NamedExposures(name string) ([]*APIExposure, error) {
 	if _m.Edges.namedExposures == nil {
 		return nil, &NotLoadedError{edge: name}
 	}
@@ -309,16 +309,16 @@ func (_m *Api) NamedExposures(name string) ([]*ApiExposure, error) {
 	return nodes, nil
 }
 
-func (_m *Api) appendNamedExposures(name string, edges ...*ApiExposure) {
+func (_m *API) appendNamedExposures(name string, edges ...*APIExposure) {
 	if _m.Edges.namedExposures == nil {
-		_m.Edges.namedExposures = make(map[string][]*ApiExposure)
+		_m.Edges.namedExposures = make(map[string][]*APIExposure)
 	}
 	if len(edges) == 0 {
-		_m.Edges.namedExposures[name] = []*ApiExposure{}
+		_m.Edges.namedExposures[name] = []*APIExposure{}
 	} else {
 		_m.Edges.namedExposures[name] = append(_m.Edges.namedExposures[name], edges...)
 	}
 }
 
-// Apis is a parsable slice of Api.
-type Apis []*Api
+// APIs is a parsable slice of API.
+type APIs []*API

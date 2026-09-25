@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package schema //nolint:dupl // structurally mirrors McpServer by design (sibling catalogue entity); ent's one-schema-per-entity convention makes further extraction impractical.
+package schema //nolint:dupl // structurally mirrors MCPServer by design (sibling catalogue entity); ent's one-schema-per-entity convention makes further extraction impractical.
 
 import (
 	"entgo.io/contrib/entgql"
@@ -44,7 +44,7 @@ func (AgentCard) Fields() []ent.Field {
 			Annotations(entgql.Skip(entgql.SkipType)),
 		field.Text("category").
 			Optional(),
-		field.JSON("oauth2_scopes", []string{}).
+		field.JSON("OAuth2_scopes", []string{}).
 			Optional().
 			Annotations(entgql.Skip(entgql.SkipWhereInput)),
 		field.Bool("active").

@@ -98,9 +98,9 @@ func CallbackURL(v string) predicate.EventSubscription {
 	return predicate.EventSubscription(sql.FieldEQ(FieldCallbackURL, v))
 }
 
-// GatewaySseURL applies equality check predicate on the "gateway_sse_url" field. It's identical to GatewaySseURLEQ.
-func GatewaySseURL(v string) predicate.EventSubscription {
-	return predicate.EventSubscription(sql.FieldEQ(FieldGatewaySseURL, v))
+// GatewaySSEURL applies equality check predicate on the "gateway_SSE_url" field. It's identical to GatewaySSEURLEQ.
+func GatewaySSEURL(v string) predicate.EventSubscription {
+	return predicate.EventSubscription(sql.FieldEQ(FieldGatewaySSEURL, v))
 }
 
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
@@ -673,79 +673,79 @@ func CallbackURLContainsFold(v string) predicate.EventSubscription {
 	return predicate.EventSubscription(sql.FieldContainsFold(FieldCallbackURL, v))
 }
 
-// GatewaySseURLEQ applies the EQ predicate on the "gateway_sse_url" field.
-func GatewaySseURLEQ(v string) predicate.EventSubscription {
-	return predicate.EventSubscription(sql.FieldEQ(FieldGatewaySseURL, v))
+// GatewaySSEURLEQ applies the EQ predicate on the "gateway_SSE_url" field.
+func GatewaySSEURLEQ(v string) predicate.EventSubscription {
+	return predicate.EventSubscription(sql.FieldEQ(FieldGatewaySSEURL, v))
 }
 
-// GatewaySseURLNEQ applies the NEQ predicate on the "gateway_sse_url" field.
-func GatewaySseURLNEQ(v string) predicate.EventSubscription {
-	return predicate.EventSubscription(sql.FieldNEQ(FieldGatewaySseURL, v))
+// GatewaySSEURLNEQ applies the NEQ predicate on the "gateway_SSE_url" field.
+func GatewaySSEURLNEQ(v string) predicate.EventSubscription {
+	return predicate.EventSubscription(sql.FieldNEQ(FieldGatewaySSEURL, v))
 }
 
-// GatewaySseURLIn applies the In predicate on the "gateway_sse_url" field.
-func GatewaySseURLIn(vs ...string) predicate.EventSubscription {
-	return predicate.EventSubscription(sql.FieldIn(FieldGatewaySseURL, vs...))
+// GatewaySSEURLIn applies the In predicate on the "gateway_SSE_url" field.
+func GatewaySSEURLIn(vs ...string) predicate.EventSubscription {
+	return predicate.EventSubscription(sql.FieldIn(FieldGatewaySSEURL, vs...))
 }
 
-// GatewaySseURLNotIn applies the NotIn predicate on the "gateway_sse_url" field.
-func GatewaySseURLNotIn(vs ...string) predicate.EventSubscription {
-	return predicate.EventSubscription(sql.FieldNotIn(FieldGatewaySseURL, vs...))
+// GatewaySSEURLNotIn applies the NotIn predicate on the "gateway_SSE_url" field.
+func GatewaySSEURLNotIn(vs ...string) predicate.EventSubscription {
+	return predicate.EventSubscription(sql.FieldNotIn(FieldGatewaySSEURL, vs...))
 }
 
-// GatewaySseURLGT applies the GT predicate on the "gateway_sse_url" field.
-func GatewaySseURLGT(v string) predicate.EventSubscription {
-	return predicate.EventSubscription(sql.FieldGT(FieldGatewaySseURL, v))
+// GatewaySSEURLGT applies the GT predicate on the "gateway_SSE_url" field.
+func GatewaySSEURLGT(v string) predicate.EventSubscription {
+	return predicate.EventSubscription(sql.FieldGT(FieldGatewaySSEURL, v))
 }
 
-// GatewaySseURLGTE applies the GTE predicate on the "gateway_sse_url" field.
-func GatewaySseURLGTE(v string) predicate.EventSubscription {
-	return predicate.EventSubscription(sql.FieldGTE(FieldGatewaySseURL, v))
+// GatewaySSEURLGTE applies the GTE predicate on the "gateway_SSE_url" field.
+func GatewaySSEURLGTE(v string) predicate.EventSubscription {
+	return predicate.EventSubscription(sql.FieldGTE(FieldGatewaySSEURL, v))
 }
 
-// GatewaySseURLLT applies the LT predicate on the "gateway_sse_url" field.
-func GatewaySseURLLT(v string) predicate.EventSubscription {
-	return predicate.EventSubscription(sql.FieldLT(FieldGatewaySseURL, v))
+// GatewaySSEURLLT applies the LT predicate on the "gateway_SSE_url" field.
+func GatewaySSEURLLT(v string) predicate.EventSubscription {
+	return predicate.EventSubscription(sql.FieldLT(FieldGatewaySSEURL, v))
 }
 
-// GatewaySseURLLTE applies the LTE predicate on the "gateway_sse_url" field.
-func GatewaySseURLLTE(v string) predicate.EventSubscription {
-	return predicate.EventSubscription(sql.FieldLTE(FieldGatewaySseURL, v))
+// GatewaySSEURLLTE applies the LTE predicate on the "gateway_SSE_url" field.
+func GatewaySSEURLLTE(v string) predicate.EventSubscription {
+	return predicate.EventSubscription(sql.FieldLTE(FieldGatewaySSEURL, v))
 }
 
-// GatewaySseURLContains applies the Contains predicate on the "gateway_sse_url" field.
-func GatewaySseURLContains(v string) predicate.EventSubscription {
-	return predicate.EventSubscription(sql.FieldContains(FieldGatewaySseURL, v))
+// GatewaySSEURLContains applies the Contains predicate on the "gateway_SSE_url" field.
+func GatewaySSEURLContains(v string) predicate.EventSubscription {
+	return predicate.EventSubscription(sql.FieldContains(FieldGatewaySSEURL, v))
 }
 
-// GatewaySseURLHasPrefix applies the HasPrefix predicate on the "gateway_sse_url" field.
-func GatewaySseURLHasPrefix(v string) predicate.EventSubscription {
-	return predicate.EventSubscription(sql.FieldHasPrefix(FieldGatewaySseURL, v))
+// GatewaySSEURLHasPrefix applies the HasPrefix predicate on the "gateway_SSE_url" field.
+func GatewaySSEURLHasPrefix(v string) predicate.EventSubscription {
+	return predicate.EventSubscription(sql.FieldHasPrefix(FieldGatewaySSEURL, v))
 }
 
-// GatewaySseURLHasSuffix applies the HasSuffix predicate on the "gateway_sse_url" field.
-func GatewaySseURLHasSuffix(v string) predicate.EventSubscription {
-	return predicate.EventSubscription(sql.FieldHasSuffix(FieldGatewaySseURL, v))
+// GatewaySSEURLHasSuffix applies the HasSuffix predicate on the "gateway_SSE_url" field.
+func GatewaySSEURLHasSuffix(v string) predicate.EventSubscription {
+	return predicate.EventSubscription(sql.FieldHasSuffix(FieldGatewaySSEURL, v))
 }
 
-// GatewaySseURLIsNil applies the IsNil predicate on the "gateway_sse_url" field.
-func GatewaySseURLIsNil() predicate.EventSubscription {
-	return predicate.EventSubscription(sql.FieldIsNull(FieldGatewaySseURL))
+// GatewaySSEURLIsNil applies the IsNil predicate on the "gateway_SSE_url" field.
+func GatewaySSEURLIsNil() predicate.EventSubscription {
+	return predicate.EventSubscription(sql.FieldIsNull(FieldGatewaySSEURL))
 }
 
-// GatewaySseURLNotNil applies the NotNil predicate on the "gateway_sse_url" field.
-func GatewaySseURLNotNil() predicate.EventSubscription {
-	return predicate.EventSubscription(sql.FieldNotNull(FieldGatewaySseURL))
+// GatewaySSEURLNotNil applies the NotNil predicate on the "gateway_SSE_url" field.
+func GatewaySSEURLNotNil() predicate.EventSubscription {
+	return predicate.EventSubscription(sql.FieldNotNull(FieldGatewaySSEURL))
 }
 
-// GatewaySseURLEqualFold applies the EqualFold predicate on the "gateway_sse_url" field.
-func GatewaySseURLEqualFold(v string) predicate.EventSubscription {
-	return predicate.EventSubscription(sql.FieldEqualFold(FieldGatewaySseURL, v))
+// GatewaySSEURLEqualFold applies the EqualFold predicate on the "gateway_SSE_url" field.
+func GatewaySSEURLEqualFold(v string) predicate.EventSubscription {
+	return predicate.EventSubscription(sql.FieldEqualFold(FieldGatewaySSEURL, v))
 }
 
-// GatewaySseURLContainsFold applies the ContainsFold predicate on the "gateway_sse_url" field.
-func GatewaySseURLContainsFold(v string) predicate.EventSubscription {
-	return predicate.EventSubscription(sql.FieldContainsFold(FieldGatewaySseURL, v))
+// GatewaySSEURLContainsFold applies the ContainsFold predicate on the "gateway_SSE_url" field.
+func GatewaySSEURLContainsFold(v string) predicate.EventSubscription {
+	return predicate.EventSubscription(sql.FieldContainsFold(FieldGatewaySSEURL, v))
 }
 
 // HasOwner applies the HasEdge predicate on the "owner" edge.

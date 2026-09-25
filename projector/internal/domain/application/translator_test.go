@@ -82,13 +82,13 @@ var _ = Describe("Application Translator", func() {
 			Expect(*data.ClientID).To(Equal("client-123"))
 			Expect(data.Meta.Environment).To(Equal("prod"))
 
-			Expect(data.ExternalIds).To(HaveLen(2))
-			Expect(data.ExternalIds[0].Id).To(Equal("abc"))
-			Expect(data.ExternalIds[0].Scheme).To(Equal("schema1"))
-			Expect(data.ExternalIds[1].Id).To(Equal("123"))
-			Expect(data.ExternalIds[1].Scheme).To(Equal("schema2"))
-			Expect(data.IpRestrictions.Allow).To(Equal([]string{"127.0.0.1", "127.0.0.2"}))
-			Expect(data.IpRestrictions.Deny).To(Equal([]string{"127.0.0.4", "127.0.0.5"}))
+			Expect(data.ExternalIDs).To(HaveLen(2))
+			Expect(data.ExternalIDs[0].ID).To(Equal("abc"))
+			Expect(data.ExternalIDs[0].Scheme).To(Equal("schema1"))
+			Expect(data.ExternalIDs[1].ID).To(Equal("123"))
+			Expect(data.ExternalIDs[1].Scheme).To(Equal("schema2"))
+			Expect(data.IPRestrictions.Allow).To(Equal([]string{"127.0.0.1", "127.0.0.2"}))
+			Expect(data.IPRestrictions.Deny).To(Equal([]string{"127.0.0.4", "127.0.0.5"}))
 		})
 
 		It("should set ClientID to nil when Status.ClientId is empty", func() {

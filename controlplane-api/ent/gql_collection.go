@@ -34,6 +34,518 @@ import (
 )
 
 // CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (_q *APIQuery) CollectFields(ctx context.Context, satisfies ...string) (*APIQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return _q, nil
+	}
+	if err := _q.collectField(ctx, false, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return _q, nil
+}
+
+func (_q *APIQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	var (
+		unknownSeen    bool
+		fieldSeen      = make(map[string]struct{}, len(api.Columns))
+		selectedFields = []string{api.FieldID}
+	)
+	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
+		switch field.Name {
+		case "createdAt":
+			if _, ok := fieldSeen[api.FieldCreatedAt]; !ok {
+				selectedFields = append(selectedFields, api.FieldCreatedAt)
+				fieldSeen[api.FieldCreatedAt] = struct{}{}
+			}
+		case "lastModifiedAt":
+			if _, ok := fieldSeen[api.FieldLastModifiedAt]; !ok {
+				selectedFields = append(selectedFields, api.FieldLastModifiedAt)
+				fieldSeen[api.FieldLastModifiedAt] = struct{}{}
+			}
+		case "statusPhase":
+			if _, ok := fieldSeen[api.FieldStatusPhase]; !ok {
+				selectedFields = append(selectedFields, api.FieldStatusPhase)
+				fieldSeen[api.FieldStatusPhase] = struct{}{}
+			}
+		case "statusMessage":
+			if _, ok := fieldSeen[api.FieldStatusMessage]; !ok {
+				selectedFields = append(selectedFields, api.FieldStatusMessage)
+				fieldSeen[api.FieldStatusMessage] = struct{}{}
+			}
+		case "namespace":
+			if _, ok := fieldSeen[api.FieldNamespace]; !ok {
+				selectedFields = append(selectedFields, api.FieldNamespace)
+				fieldSeen[api.FieldNamespace] = struct{}{}
+			}
+		case "basePath":
+			if _, ok := fieldSeen[api.FieldBasePath]; !ok {
+				selectedFields = append(selectedFields, api.FieldBasePath)
+				fieldSeen[api.FieldBasePath] = struct{}{}
+			}
+		case "version":
+			if _, ok := fieldSeen[api.FieldVersion]; !ok {
+				selectedFields = append(selectedFields, api.FieldVersion)
+				fieldSeen[api.FieldVersion] = struct{}{}
+			}
+		case "category":
+			if _, ok := fieldSeen[api.FieldCategory]; !ok {
+				selectedFields = append(selectedFields, api.FieldCategory)
+				fieldSeen[api.FieldCategory] = struct{}{}
+			}
+		case "oauth2Scopes":
+			if _, ok := fieldSeen[api.FieldOAuth2Scopes]; !ok {
+				selectedFields = append(selectedFields, api.FieldOAuth2Scopes)
+				fieldSeen[api.FieldOAuth2Scopes] = struct{}{}
+			}
+		case "xVendor":
+			if _, ok := fieldSeen[api.FieldXVendor]; !ok {
+				selectedFields = append(selectedFields, api.FieldXVendor)
+				fieldSeen[api.FieldXVendor] = struct{}{}
+			}
+		case "active":
+			if _, ok := fieldSeen[api.FieldActive]; !ok {
+				selectedFields = append(selectedFields, api.FieldActive)
+				fieldSeen[api.FieldActive] = struct{}{}
+			}
+		case "id":
+		case "__typename":
+		default:
+			unknownSeen = true
+		}
+	}
+	if !unknownSeen {
+		_q.Select(selectedFields...)
+	}
+	return nil
+}
+
+type apiPaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []APIPaginateOption
+}
+
+func newAPIPaginateArgs(rv map[string]any) *apiPaginateArgs {
+	args := &apiPaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
+	}
+	if v, ok := rv[orderByField]; ok {
+		switch v := v.(type) {
+		case map[string]any:
+			var (
+				err1, err2 error
+				order      = &APIOrder{Field: &APIOrderField{}, Direction: entgql.OrderDirectionAsc}
+			)
+			if d, ok := v[directionField]; ok {
+				err1 = order.Direction.UnmarshalGQL(d)
+			}
+			if f, ok := v[fieldField]; ok {
+				err2 = order.Field.UnmarshalGQL(f)
+			}
+			if err1 == nil && err2 == nil {
+				args.opts = append(args.opts, WithAPIOrder(order))
+			}
+		case *APIOrder:
+			if v != nil {
+				args.opts = append(args.opts, WithAPIOrder(v))
+			}
+		}
+	}
+	if v, ok := rv[whereField].(*APIWhereInput); ok {
+		args.opts = append(args.opts, WithAPIFilter(v.Filter))
+	}
+	return args
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (_q *APIExposureQuery) CollectFields(ctx context.Context, satisfies ...string) (*APIExposureQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return _q, nil
+	}
+	if err := _q.collectField(ctx, false, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return _q, nil
+}
+
+func (_q *APIExposureQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	var (
+		unknownSeen    bool
+		fieldSeen      = make(map[string]struct{}, len(apiexposure.Columns))
+		selectedFields = []string{apiexposure.FieldID}
+	)
+	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
+		switch field.Name {
+
+		case "owner":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&ApplicationClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, applicationImplementors)...); err != nil {
+				return err
+			}
+			_q.withOwner = query
+
+		case "api":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&APIClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, apiImplementors)...); err != nil {
+				return err
+			}
+			_q.withAPI = query
+		case "createdAt":
+			if _, ok := fieldSeen[apiexposure.FieldCreatedAt]; !ok {
+				selectedFields = append(selectedFields, apiexposure.FieldCreatedAt)
+				fieldSeen[apiexposure.FieldCreatedAt] = struct{}{}
+			}
+		case "lastModifiedAt":
+			if _, ok := fieldSeen[apiexposure.FieldLastModifiedAt]; !ok {
+				selectedFields = append(selectedFields, apiexposure.FieldLastModifiedAt)
+				fieldSeen[apiexposure.FieldLastModifiedAt] = struct{}{}
+			}
+		case "statusPhase":
+			if _, ok := fieldSeen[apiexposure.FieldStatusPhase]; !ok {
+				selectedFields = append(selectedFields, apiexposure.FieldStatusPhase)
+				fieldSeen[apiexposure.FieldStatusPhase] = struct{}{}
+			}
+		case "statusMessage":
+			if _, ok := fieldSeen[apiexposure.FieldStatusMessage]; !ok {
+				selectedFields = append(selectedFields, apiexposure.FieldStatusMessage)
+				fieldSeen[apiexposure.FieldStatusMessage] = struct{}{}
+			}
+		case "environment":
+			if _, ok := fieldSeen[apiexposure.FieldEnvironment]; !ok {
+				selectedFields = append(selectedFields, apiexposure.FieldEnvironment)
+				fieldSeen[apiexposure.FieldEnvironment] = struct{}{}
+			}
+		case "namespace":
+			if _, ok := fieldSeen[apiexposure.FieldNamespace]; !ok {
+				selectedFields = append(selectedFields, apiexposure.FieldNamespace)
+				fieldSeen[apiexposure.FieldNamespace] = struct{}{}
+			}
+		case "basePath":
+			if _, ok := fieldSeen[apiexposure.FieldBasePath]; !ok {
+				selectedFields = append(selectedFields, apiexposure.FieldBasePath)
+				fieldSeen[apiexposure.FieldBasePath] = struct{}{}
+			}
+		case "visibility":
+			if _, ok := fieldSeen[apiexposure.FieldVisibility]; !ok {
+				selectedFields = append(selectedFields, apiexposure.FieldVisibility)
+				fieldSeen[apiexposure.FieldVisibility] = struct{}{}
+			}
+		case "active":
+			if _, ok := fieldSeen[apiexposure.FieldActive]; !ok {
+				selectedFields = append(selectedFields, apiexposure.FieldActive)
+				fieldSeen[apiexposure.FieldActive] = struct{}{}
+			}
+		case "features":
+			if _, ok := fieldSeen[apiexposure.FieldFeatures]; !ok {
+				selectedFields = append(selectedFields, apiexposure.FieldFeatures)
+				fieldSeen[apiexposure.FieldFeatures] = struct{}{}
+			}
+		case "upstreams":
+			if _, ok := fieldSeen[apiexposure.FieldUpstreams]; !ok {
+				selectedFields = append(selectedFields, apiexposure.FieldUpstreams)
+				fieldSeen[apiexposure.FieldUpstreams] = struct{}{}
+			}
+		case "security":
+			if _, ok := fieldSeen[apiexposure.FieldSecurity]; !ok {
+				selectedFields = append(selectedFields, apiexposure.FieldSecurity)
+				fieldSeen[apiexposure.FieldSecurity] = struct{}{}
+			}
+		case "traffic":
+			if _, ok := fieldSeen[apiexposure.FieldTraffic]; !ok {
+				selectedFields = append(selectedFields, apiexposure.FieldTraffic)
+				fieldSeen[apiexposure.FieldTraffic] = struct{}{}
+			}
+		case "approvalConfig":
+			if _, ok := fieldSeen[apiexposure.FieldApprovalConfig]; !ok {
+				selectedFields = append(selectedFields, apiexposure.FieldApprovalConfig)
+				fieldSeen[apiexposure.FieldApprovalConfig] = struct{}{}
+			}
+		case "apiVersion":
+			if _, ok := fieldSeen[apiexposure.FieldAPIVersion]; !ok {
+				selectedFields = append(selectedFields, apiexposure.FieldAPIVersion)
+				fieldSeen[apiexposure.FieldAPIVersion] = struct{}{}
+			}
+		case "id":
+		case "__typename":
+		default:
+			unknownSeen = true
+		}
+	}
+	if !unknownSeen {
+		_q.Select(selectedFields...)
+	}
+	return nil
+}
+
+type apiexposurePaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []APIExposurePaginateOption
+}
+
+func newAPIExposurePaginateArgs(rv map[string]any) *apiexposurePaginateArgs {
+	args := &apiexposurePaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
+	}
+	if v, ok := rv[orderByField]; ok {
+		switch v := v.(type) {
+		case map[string]any:
+			var (
+				err1, err2 error
+				order      = &APIExposureOrder{Field: &APIExposureOrderField{}, Direction: entgql.OrderDirectionAsc}
+			)
+			if d, ok := v[directionField]; ok {
+				err1 = order.Direction.UnmarshalGQL(d)
+			}
+			if f, ok := v[fieldField]; ok {
+				err2 = order.Field.UnmarshalGQL(f)
+			}
+			if err1 == nil && err2 == nil {
+				args.opts = append(args.opts, WithAPIExposureOrder(order))
+			}
+		case *APIExposureOrder:
+			if v != nil {
+				args.opts = append(args.opts, WithAPIExposureOrder(v))
+			}
+		}
+	}
+	if v, ok := rv[whereField].(*APIExposureWhereInput); ok {
+		args.opts = append(args.opts, WithAPIExposureFilter(v.Filter))
+	}
+	return args
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (_q *APISubscriptionQuery) CollectFields(ctx context.Context, satisfies ...string) (*APISubscriptionQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return _q, nil
+	}
+	if err := _q.collectField(ctx, false, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return _q, nil
+}
+
+func (_q *APISubscriptionQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	var (
+		unknownSeen    bool
+		fieldSeen      = make(map[string]struct{}, len(apisubscription.Columns))
+		selectedFields = []string{apisubscription.FieldID}
+	)
+	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
+		switch field.Name {
+
+		case "owner":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&ApplicationClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, applicationImplementors)...); err != nil {
+				return err
+			}
+			_q.withOwner = query
+
+		case "failoverZones":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&ZoneClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, zoneImplementors)...); err != nil {
+				return err
+			}
+			_q.WithNamedFailoverZones(alias, func(wq *ZoneQuery) {
+				*wq = *query
+			})
+
+		case "approval":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&ApprovalClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, approvalImplementors)...); err != nil {
+				return err
+			}
+			_q.withApproval = query
+
+		case "approvalRequests":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&ApprovalRequestClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, approvalrequestImplementors)...); err != nil {
+				return err
+			}
+			_q.WithNamedApprovalRequests(alias, func(wq *ApprovalRequestQuery) {
+				*wq = *query
+			})
+		case "createdAt":
+			if _, ok := fieldSeen[apisubscription.FieldCreatedAt]; !ok {
+				selectedFields = append(selectedFields, apisubscription.FieldCreatedAt)
+				fieldSeen[apisubscription.FieldCreatedAt] = struct{}{}
+			}
+		case "lastModifiedAt":
+			if _, ok := fieldSeen[apisubscription.FieldLastModifiedAt]; !ok {
+				selectedFields = append(selectedFields, apisubscription.FieldLastModifiedAt)
+				fieldSeen[apisubscription.FieldLastModifiedAt] = struct{}{}
+			}
+		case "statusPhase":
+			if _, ok := fieldSeen[apisubscription.FieldStatusPhase]; !ok {
+				selectedFields = append(selectedFields, apisubscription.FieldStatusPhase)
+				fieldSeen[apisubscription.FieldStatusPhase] = struct{}{}
+			}
+		case "statusMessage":
+			if _, ok := fieldSeen[apisubscription.FieldStatusMessage]; !ok {
+				selectedFields = append(selectedFields, apisubscription.FieldStatusMessage)
+				fieldSeen[apisubscription.FieldStatusMessage] = struct{}{}
+			}
+		case "environment":
+			if _, ok := fieldSeen[apisubscription.FieldEnvironment]; !ok {
+				selectedFields = append(selectedFields, apisubscription.FieldEnvironment)
+				fieldSeen[apisubscription.FieldEnvironment] = struct{}{}
+			}
+		case "namespace":
+			if _, ok := fieldSeen[apisubscription.FieldNamespace]; !ok {
+				selectedFields = append(selectedFields, apisubscription.FieldNamespace)
+				fieldSeen[apisubscription.FieldNamespace] = struct{}{}
+			}
+		case "name":
+			if _, ok := fieldSeen[apisubscription.FieldName]; !ok {
+				selectedFields = append(selectedFields, apisubscription.FieldName)
+				fieldSeen[apisubscription.FieldName] = struct{}{}
+			}
+		case "basePath":
+			if _, ok := fieldSeen[apisubscription.FieldBasePath]; !ok {
+				selectedFields = append(selectedFields, apisubscription.FieldBasePath)
+				fieldSeen[apisubscription.FieldBasePath] = struct{}{}
+			}
+		case "m2mAuthMethod":
+			if _, ok := fieldSeen[apisubscription.FieldM2MAuthMethod]; !ok {
+				selectedFields = append(selectedFields, apisubscription.FieldM2MAuthMethod)
+				fieldSeen[apisubscription.FieldM2MAuthMethod] = struct{}{}
+			}
+		case "gatewayURL":
+			if _, ok := fieldSeen[apisubscription.FieldGatewayURL]; !ok {
+				selectedFields = append(selectedFields, apisubscription.FieldGatewayURL)
+				fieldSeen[apisubscription.FieldGatewayURL] = struct{}{}
+			}
+		case "security":
+			if _, ok := fieldSeen[apisubscription.FieldSecurity]; !ok {
+				selectedFields = append(selectedFields, apisubscription.FieldSecurity)
+				fieldSeen[apisubscription.FieldSecurity] = struct{}{}
+			}
+		case "traffic":
+			if _, ok := fieldSeen[apisubscription.FieldTraffic]; !ok {
+				selectedFields = append(selectedFields, apisubscription.FieldTraffic)
+				fieldSeen[apisubscription.FieldTraffic] = struct{}{}
+			}
+		case "id":
+		case "__typename":
+		default:
+			unknownSeen = true
+		}
+	}
+	if !unknownSeen {
+		_q.Select(selectedFields...)
+	}
+	return nil
+}
+
+type apisubscriptionPaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []APISubscriptionPaginateOption
+}
+
+func newAPISubscriptionPaginateArgs(rv map[string]any) *apisubscriptionPaginateArgs {
+	args := &apisubscriptionPaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
+	}
+	if v, ok := rv[orderByField]; ok {
+		switch v := v.(type) {
+		case map[string]any:
+			var (
+				err1, err2 error
+				order      = &APISubscriptionOrder{Field: &APISubscriptionOrderField{}, Direction: entgql.OrderDirectionAsc}
+			)
+			if d, ok := v[directionField]; ok {
+				err1 = order.Direction.UnmarshalGQL(d)
+			}
+			if f, ok := v[fieldField]; ok {
+				err2 = order.Field.UnmarshalGQL(f)
+			}
+			if err1 == nil && err2 == nil {
+				args.opts = append(args.opts, WithAPISubscriptionOrder(order))
+			}
+		case *APISubscriptionOrder:
+			if v != nil {
+				args.opts = append(args.opts, WithAPISubscriptionOrder(v))
+			}
+		}
+	}
+	if v, ok := rv[whereField].(*APISubscriptionWhereInput); ok {
+		args.opts = append(args.opts, WithAPISubscriptionFilter(v.Filter))
+	}
+	return args
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
 func (_q *AgentCardQuery) CollectFields(ctx context.Context, satisfies ...string) (*AgentCardQuery, error) {
 	fc := graphql.GetFieldContext(ctx)
 	if fc == nil {
@@ -105,9 +617,9 @@ func (_q *AgentCardQuery) collectField(ctx context.Context, oneNode bool, opCtx 
 				fieldSeen[agentcard.FieldCategory] = struct{}{}
 			}
 		case "oauth2Scopes":
-			if _, ok := fieldSeen[agentcard.FieldOauth2Scopes]; !ok {
-				selectedFields = append(selectedFields, agentcard.FieldOauth2Scopes)
-				fieldSeen[agentcard.FieldOauth2Scopes] = struct{}{}
+			if _, ok := fieldSeen[agentcard.FieldOAuth2Scopes]; !ok {
+				selectedFields = append(selectedFields, agentcard.FieldOAuth2Scopes)
+				fieldSeen[agentcard.FieldOAuth2Scopes] = struct{}{}
 			}
 		case "active":
 			if _, ok := fieldSeen[agentcard.FieldActive]; !ok {
@@ -214,12 +726,12 @@ func (_q *AgenticExposureQuery) collectField(ctx context.Context, oneNode bool, 
 			var (
 				alias = field.Alias
 				path  = append(path, alias)
-				query = (&McpServerClient{config: _q.config}).Query()
+				query = (&MCPServerClient{config: _q.config}).Query()
 			)
 			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, mcpserverImplementors)...); err != nil {
 				return err
 			}
-			_q.withMcpServer = query
+			_q.withMCPServer = query
 
 		case "agentCard":
 			var (
@@ -544,518 +1056,6 @@ func newAgenticSubscriptionPaginateArgs(rv map[string]any) *agenticsubscriptionP
 }
 
 // CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
-func (_q *APIQuery) CollectFields(ctx context.Context, satisfies ...string) (*APIQuery, error) {
-	fc := graphql.GetFieldContext(ctx)
-	if fc == nil {
-		return _q, nil
-	}
-	if err := _q.collectField(ctx, false, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
-		return nil, err
-	}
-	return _q, nil
-}
-
-func (_q *APIQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
-	path = append([]string(nil), path...)
-	var (
-		unknownSeen    bool
-		fieldSeen      = make(map[string]struct{}, len(api.Columns))
-		selectedFields = []string{api.FieldID}
-	)
-	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
-		switch field.Name {
-		case "createdAt":
-			if _, ok := fieldSeen[api.FieldCreatedAt]; !ok {
-				selectedFields = append(selectedFields, api.FieldCreatedAt)
-				fieldSeen[api.FieldCreatedAt] = struct{}{}
-			}
-		case "lastModifiedAt":
-			if _, ok := fieldSeen[api.FieldLastModifiedAt]; !ok {
-				selectedFields = append(selectedFields, api.FieldLastModifiedAt)
-				fieldSeen[api.FieldLastModifiedAt] = struct{}{}
-			}
-		case "statusPhase":
-			if _, ok := fieldSeen[api.FieldStatusPhase]; !ok {
-				selectedFields = append(selectedFields, api.FieldStatusPhase)
-				fieldSeen[api.FieldStatusPhase] = struct{}{}
-			}
-		case "statusMessage":
-			if _, ok := fieldSeen[api.FieldStatusMessage]; !ok {
-				selectedFields = append(selectedFields, api.FieldStatusMessage)
-				fieldSeen[api.FieldStatusMessage] = struct{}{}
-			}
-		case "namespace":
-			if _, ok := fieldSeen[api.FieldNamespace]; !ok {
-				selectedFields = append(selectedFields, api.FieldNamespace)
-				fieldSeen[api.FieldNamespace] = struct{}{}
-			}
-		case "basePath":
-			if _, ok := fieldSeen[api.FieldBasePath]; !ok {
-				selectedFields = append(selectedFields, api.FieldBasePath)
-				fieldSeen[api.FieldBasePath] = struct{}{}
-			}
-		case "version":
-			if _, ok := fieldSeen[api.FieldVersion]; !ok {
-				selectedFields = append(selectedFields, api.FieldVersion)
-				fieldSeen[api.FieldVersion] = struct{}{}
-			}
-		case "category":
-			if _, ok := fieldSeen[api.FieldCategory]; !ok {
-				selectedFields = append(selectedFields, api.FieldCategory)
-				fieldSeen[api.FieldCategory] = struct{}{}
-			}
-		case "oauth2Scopes":
-			if _, ok := fieldSeen[api.FieldOauth2Scopes]; !ok {
-				selectedFields = append(selectedFields, api.FieldOauth2Scopes)
-				fieldSeen[api.FieldOauth2Scopes] = struct{}{}
-			}
-		case "xVendor":
-			if _, ok := fieldSeen[api.FieldXVendor]; !ok {
-				selectedFields = append(selectedFields, api.FieldXVendor)
-				fieldSeen[api.FieldXVendor] = struct{}{}
-			}
-		case "active":
-			if _, ok := fieldSeen[api.FieldActive]; !ok {
-				selectedFields = append(selectedFields, api.FieldActive)
-				fieldSeen[api.FieldActive] = struct{}{}
-			}
-		case "id":
-		case "__typename":
-		default:
-			unknownSeen = true
-		}
-	}
-	if !unknownSeen {
-		_q.Select(selectedFields...)
-	}
-	return nil
-}
-
-type apiPaginateArgs struct {
-	first, last   *int
-	after, before *Cursor
-	opts          []ApiPaginateOption
-}
-
-func newApiPaginateArgs(rv map[string]any) *apiPaginateArgs {
-	args := &apiPaginateArgs{}
-	if rv == nil {
-		return args
-	}
-	if v := rv[firstField]; v != nil {
-		args.first = v.(*int)
-	}
-	if v := rv[lastField]; v != nil {
-		args.last = v.(*int)
-	}
-	if v := rv[afterField]; v != nil {
-		args.after = v.(*Cursor)
-	}
-	if v := rv[beforeField]; v != nil {
-		args.before = v.(*Cursor)
-	}
-	if v, ok := rv[orderByField]; ok {
-		switch v := v.(type) {
-		case map[string]any:
-			var (
-				err1, err2 error
-				order      = &ApiOrder{Field: &ApiOrderField{}, Direction: entgql.OrderDirectionAsc}
-			)
-			if d, ok := v[directionField]; ok {
-				err1 = order.Direction.UnmarshalGQL(d)
-			}
-			if f, ok := v[fieldField]; ok {
-				err2 = order.Field.UnmarshalGQL(f)
-			}
-			if err1 == nil && err2 == nil {
-				args.opts = append(args.opts, WithApiOrder(order))
-			}
-		case *ApiOrder:
-			if v != nil {
-				args.opts = append(args.opts, WithApiOrder(v))
-			}
-		}
-	}
-	if v, ok := rv[whereField].(*ApiWhereInput); ok {
-		args.opts = append(args.opts, WithApiFilter(v.Filter))
-	}
-	return args
-}
-
-// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
-func (_q *ApiExposureQuery) CollectFields(ctx context.Context, satisfies ...string) (*ApiExposureQuery, error) {
-	fc := graphql.GetFieldContext(ctx)
-	if fc == nil {
-		return _q, nil
-	}
-	if err := _q.collectField(ctx, false, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
-		return nil, err
-	}
-	return _q, nil
-}
-
-func (_q *ApiExposureQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
-	path = append([]string(nil), path...)
-	var (
-		unknownSeen    bool
-		fieldSeen      = make(map[string]struct{}, len(apiexposure.Columns))
-		selectedFields = []string{apiexposure.FieldID}
-	)
-	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
-		switch field.Name {
-
-		case "owner":
-			var (
-				alias = field.Alias
-				path  = append(path, alias)
-				query = (&ApplicationClient{config: _q.config}).Query()
-			)
-			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, applicationImplementors)...); err != nil {
-				return err
-			}
-			_q.withOwner = query
-
-		case "api":
-			var (
-				alias = field.Alias
-				path  = append(path, alias)
-				query = (&APIClient{config: _q.config}).Query()
-			)
-			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, apiImplementors)...); err != nil {
-				return err
-			}
-			_q.withAPI = query
-		case "createdAt":
-			if _, ok := fieldSeen[apiexposure.FieldCreatedAt]; !ok {
-				selectedFields = append(selectedFields, apiexposure.FieldCreatedAt)
-				fieldSeen[apiexposure.FieldCreatedAt] = struct{}{}
-			}
-		case "lastModifiedAt":
-			if _, ok := fieldSeen[apiexposure.FieldLastModifiedAt]; !ok {
-				selectedFields = append(selectedFields, apiexposure.FieldLastModifiedAt)
-				fieldSeen[apiexposure.FieldLastModifiedAt] = struct{}{}
-			}
-		case "statusPhase":
-			if _, ok := fieldSeen[apiexposure.FieldStatusPhase]; !ok {
-				selectedFields = append(selectedFields, apiexposure.FieldStatusPhase)
-				fieldSeen[apiexposure.FieldStatusPhase] = struct{}{}
-			}
-		case "statusMessage":
-			if _, ok := fieldSeen[apiexposure.FieldStatusMessage]; !ok {
-				selectedFields = append(selectedFields, apiexposure.FieldStatusMessage)
-				fieldSeen[apiexposure.FieldStatusMessage] = struct{}{}
-			}
-		case "environment":
-			if _, ok := fieldSeen[apiexposure.FieldEnvironment]; !ok {
-				selectedFields = append(selectedFields, apiexposure.FieldEnvironment)
-				fieldSeen[apiexposure.FieldEnvironment] = struct{}{}
-			}
-		case "namespace":
-			if _, ok := fieldSeen[apiexposure.FieldNamespace]; !ok {
-				selectedFields = append(selectedFields, apiexposure.FieldNamespace)
-				fieldSeen[apiexposure.FieldNamespace] = struct{}{}
-			}
-		case "basePath":
-			if _, ok := fieldSeen[apiexposure.FieldBasePath]; !ok {
-				selectedFields = append(selectedFields, apiexposure.FieldBasePath)
-				fieldSeen[apiexposure.FieldBasePath] = struct{}{}
-			}
-		case "visibility":
-			if _, ok := fieldSeen[apiexposure.FieldVisibility]; !ok {
-				selectedFields = append(selectedFields, apiexposure.FieldVisibility)
-				fieldSeen[apiexposure.FieldVisibility] = struct{}{}
-			}
-		case "active":
-			if _, ok := fieldSeen[apiexposure.FieldActive]; !ok {
-				selectedFields = append(selectedFields, apiexposure.FieldActive)
-				fieldSeen[apiexposure.FieldActive] = struct{}{}
-			}
-		case "features":
-			if _, ok := fieldSeen[apiexposure.FieldFeatures]; !ok {
-				selectedFields = append(selectedFields, apiexposure.FieldFeatures)
-				fieldSeen[apiexposure.FieldFeatures] = struct{}{}
-			}
-		case "upstreams":
-			if _, ok := fieldSeen[apiexposure.FieldUpstreams]; !ok {
-				selectedFields = append(selectedFields, apiexposure.FieldUpstreams)
-				fieldSeen[apiexposure.FieldUpstreams] = struct{}{}
-			}
-		case "security":
-			if _, ok := fieldSeen[apiexposure.FieldSecurity]; !ok {
-				selectedFields = append(selectedFields, apiexposure.FieldSecurity)
-				fieldSeen[apiexposure.FieldSecurity] = struct{}{}
-			}
-		case "traffic":
-			if _, ok := fieldSeen[apiexposure.FieldTraffic]; !ok {
-				selectedFields = append(selectedFields, apiexposure.FieldTraffic)
-				fieldSeen[apiexposure.FieldTraffic] = struct{}{}
-			}
-		case "approvalConfig":
-			if _, ok := fieldSeen[apiexposure.FieldApprovalConfig]; !ok {
-				selectedFields = append(selectedFields, apiexposure.FieldApprovalConfig)
-				fieldSeen[apiexposure.FieldApprovalConfig] = struct{}{}
-			}
-		case "apiVersion":
-			if _, ok := fieldSeen[apiexposure.FieldAPIVersion]; !ok {
-				selectedFields = append(selectedFields, apiexposure.FieldAPIVersion)
-				fieldSeen[apiexposure.FieldAPIVersion] = struct{}{}
-			}
-		case "id":
-		case "__typename":
-		default:
-			unknownSeen = true
-		}
-	}
-	if !unknownSeen {
-		_q.Select(selectedFields...)
-	}
-	return nil
-}
-
-type apiexposurePaginateArgs struct {
-	first, last   *int
-	after, before *Cursor
-	opts          []ApiExposurePaginateOption
-}
-
-func newApiExposurePaginateArgs(rv map[string]any) *apiexposurePaginateArgs {
-	args := &apiexposurePaginateArgs{}
-	if rv == nil {
-		return args
-	}
-	if v := rv[firstField]; v != nil {
-		args.first = v.(*int)
-	}
-	if v := rv[lastField]; v != nil {
-		args.last = v.(*int)
-	}
-	if v := rv[afterField]; v != nil {
-		args.after = v.(*Cursor)
-	}
-	if v := rv[beforeField]; v != nil {
-		args.before = v.(*Cursor)
-	}
-	if v, ok := rv[orderByField]; ok {
-		switch v := v.(type) {
-		case map[string]any:
-			var (
-				err1, err2 error
-				order      = &ApiExposureOrder{Field: &ApiExposureOrderField{}, Direction: entgql.OrderDirectionAsc}
-			)
-			if d, ok := v[directionField]; ok {
-				err1 = order.Direction.UnmarshalGQL(d)
-			}
-			if f, ok := v[fieldField]; ok {
-				err2 = order.Field.UnmarshalGQL(f)
-			}
-			if err1 == nil && err2 == nil {
-				args.opts = append(args.opts, WithApiExposureOrder(order))
-			}
-		case *ApiExposureOrder:
-			if v != nil {
-				args.opts = append(args.opts, WithApiExposureOrder(v))
-			}
-		}
-	}
-	if v, ok := rv[whereField].(*ApiExposureWhereInput); ok {
-		args.opts = append(args.opts, WithApiExposureFilter(v.Filter))
-	}
-	return args
-}
-
-// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
-func (_q *ApiSubscriptionQuery) CollectFields(ctx context.Context, satisfies ...string) (*ApiSubscriptionQuery, error) {
-	fc := graphql.GetFieldContext(ctx)
-	if fc == nil {
-		return _q, nil
-	}
-	if err := _q.collectField(ctx, false, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
-		return nil, err
-	}
-	return _q, nil
-}
-
-func (_q *ApiSubscriptionQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
-	path = append([]string(nil), path...)
-	var (
-		unknownSeen    bool
-		fieldSeen      = make(map[string]struct{}, len(apisubscription.Columns))
-		selectedFields = []string{apisubscription.FieldID}
-	)
-	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
-		switch field.Name {
-
-		case "owner":
-			var (
-				alias = field.Alias
-				path  = append(path, alias)
-				query = (&ApplicationClient{config: _q.config}).Query()
-			)
-			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, applicationImplementors)...); err != nil {
-				return err
-			}
-			_q.withOwner = query
-
-		case "failoverZones":
-			var (
-				alias = field.Alias
-				path  = append(path, alias)
-				query = (&ZoneClient{config: _q.config}).Query()
-			)
-			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, zoneImplementors)...); err != nil {
-				return err
-			}
-			_q.WithNamedFailoverZones(alias, func(wq *ZoneQuery) {
-				*wq = *query
-			})
-
-		case "approval":
-			var (
-				alias = field.Alias
-				path  = append(path, alias)
-				query = (&ApprovalClient{config: _q.config}).Query()
-			)
-			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, approvalImplementors)...); err != nil {
-				return err
-			}
-			_q.withApproval = query
-
-		case "approvalRequests":
-			var (
-				alias = field.Alias
-				path  = append(path, alias)
-				query = (&ApprovalRequestClient{config: _q.config}).Query()
-			)
-			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, approvalrequestImplementors)...); err != nil {
-				return err
-			}
-			_q.WithNamedApprovalRequests(alias, func(wq *ApprovalRequestQuery) {
-				*wq = *query
-			})
-		case "createdAt":
-			if _, ok := fieldSeen[apisubscription.FieldCreatedAt]; !ok {
-				selectedFields = append(selectedFields, apisubscription.FieldCreatedAt)
-				fieldSeen[apisubscription.FieldCreatedAt] = struct{}{}
-			}
-		case "lastModifiedAt":
-			if _, ok := fieldSeen[apisubscription.FieldLastModifiedAt]; !ok {
-				selectedFields = append(selectedFields, apisubscription.FieldLastModifiedAt)
-				fieldSeen[apisubscription.FieldLastModifiedAt] = struct{}{}
-			}
-		case "statusPhase":
-			if _, ok := fieldSeen[apisubscription.FieldStatusPhase]; !ok {
-				selectedFields = append(selectedFields, apisubscription.FieldStatusPhase)
-				fieldSeen[apisubscription.FieldStatusPhase] = struct{}{}
-			}
-		case "statusMessage":
-			if _, ok := fieldSeen[apisubscription.FieldStatusMessage]; !ok {
-				selectedFields = append(selectedFields, apisubscription.FieldStatusMessage)
-				fieldSeen[apisubscription.FieldStatusMessage] = struct{}{}
-			}
-		case "environment":
-			if _, ok := fieldSeen[apisubscription.FieldEnvironment]; !ok {
-				selectedFields = append(selectedFields, apisubscription.FieldEnvironment)
-				fieldSeen[apisubscription.FieldEnvironment] = struct{}{}
-			}
-		case "namespace":
-			if _, ok := fieldSeen[apisubscription.FieldNamespace]; !ok {
-				selectedFields = append(selectedFields, apisubscription.FieldNamespace)
-				fieldSeen[apisubscription.FieldNamespace] = struct{}{}
-			}
-		case "name":
-			if _, ok := fieldSeen[apisubscription.FieldName]; !ok {
-				selectedFields = append(selectedFields, apisubscription.FieldName)
-				fieldSeen[apisubscription.FieldName] = struct{}{}
-			}
-		case "basePath":
-			if _, ok := fieldSeen[apisubscription.FieldBasePath]; !ok {
-				selectedFields = append(selectedFields, apisubscription.FieldBasePath)
-				fieldSeen[apisubscription.FieldBasePath] = struct{}{}
-			}
-		case "m2mAuthMethod":
-			if _, ok := fieldSeen[apisubscription.FieldM2mAuthMethod]; !ok {
-				selectedFields = append(selectedFields, apisubscription.FieldM2mAuthMethod)
-				fieldSeen[apisubscription.FieldM2mAuthMethod] = struct{}{}
-			}
-		case "gatewayURL":
-			if _, ok := fieldSeen[apisubscription.FieldGatewayURL]; !ok {
-				selectedFields = append(selectedFields, apisubscription.FieldGatewayURL)
-				fieldSeen[apisubscription.FieldGatewayURL] = struct{}{}
-			}
-		case "security":
-			if _, ok := fieldSeen[apisubscription.FieldSecurity]; !ok {
-				selectedFields = append(selectedFields, apisubscription.FieldSecurity)
-				fieldSeen[apisubscription.FieldSecurity] = struct{}{}
-			}
-		case "traffic":
-			if _, ok := fieldSeen[apisubscription.FieldTraffic]; !ok {
-				selectedFields = append(selectedFields, apisubscription.FieldTraffic)
-				fieldSeen[apisubscription.FieldTraffic] = struct{}{}
-			}
-		case "id":
-		case "__typename":
-		default:
-			unknownSeen = true
-		}
-	}
-	if !unknownSeen {
-		_q.Select(selectedFields...)
-	}
-	return nil
-}
-
-type apisubscriptionPaginateArgs struct {
-	first, last   *int
-	after, before *Cursor
-	opts          []ApiSubscriptionPaginateOption
-}
-
-func newApiSubscriptionPaginateArgs(rv map[string]any) *apisubscriptionPaginateArgs {
-	args := &apisubscriptionPaginateArgs{}
-	if rv == nil {
-		return args
-	}
-	if v := rv[firstField]; v != nil {
-		args.first = v.(*int)
-	}
-	if v := rv[lastField]; v != nil {
-		args.last = v.(*int)
-	}
-	if v := rv[afterField]; v != nil {
-		args.after = v.(*Cursor)
-	}
-	if v := rv[beforeField]; v != nil {
-		args.before = v.(*Cursor)
-	}
-	if v, ok := rv[orderByField]; ok {
-		switch v := v.(type) {
-		case map[string]any:
-			var (
-				err1, err2 error
-				order      = &ApiSubscriptionOrder{Field: &ApiSubscriptionOrderField{}, Direction: entgql.OrderDirectionAsc}
-			)
-			if d, ok := v[directionField]; ok {
-				err1 = order.Direction.UnmarshalGQL(d)
-			}
-			if f, ok := v[fieldField]; ok {
-				err2 = order.Field.UnmarshalGQL(f)
-			}
-			if err1 == nil && err2 == nil {
-				args.opts = append(args.opts, WithApiSubscriptionOrder(order))
-			}
-		case *ApiSubscriptionOrder:
-			if v != nil {
-				args.opts = append(args.opts, WithApiSubscriptionOrder(v))
-			}
-		}
-	}
-	if v, ok := rv[whereField].(*ApiSubscriptionWhereInput); ok {
-		args.opts = append(args.opts, WithApiSubscriptionFilter(v.Filter))
-	}
-	return args
-}
-
-// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
 func (_q *ApplicationQuery) CollectFields(ctx context.Context, satisfies ...string) (*ApplicationQuery, error) {
 	fc := graphql.GetFieldContext(ctx)
 	if fc == nil {
@@ -1088,17 +1088,17 @@ func (_q *ApplicationQuery) collectField(ctx context.Context, oneNode bool, opCt
 			}
 			_q.withZone = query
 
-		case "exposedApis":
+		case "exposedAPIs":
 			var (
 				alias = field.Alias
 				path  = append(path, alias)
-				query = (&ApiExposureClient{config: _q.config}).Query()
+				query = (&APIExposureClient{config: _q.config}).Query()
 			)
-			args := newApiExposurePaginateArgs(fieldArgs(ctx, new(ApiExposureWhereInput), path...))
+			args := newAPIExposurePaginateArgs(fieldArgs(ctx, new(APIExposureWhereInput), path...))
 			if err := validateFirstLast(args.first, args.last); err != nil {
 				return fmt.Errorf("validate first and last in path %q: %w", path, err)
 			}
-			pager, err := newApiExposurePager(args.opts, args.last != nil)
+			pager, err := newAPIExposurePager(args.opts, args.last != nil)
 			if err != nil {
 				return fmt.Errorf("create new pager in path %q: %w", path, err)
 			}
@@ -1120,9 +1120,9 @@ func (_q *ApplicationQuery) collectField(ctx context.Context, oneNode bool, opCt
 							Count  int `sql:"count"`
 						}
 						query.Where(func(s *sql.Selector) {
-							s.Where(sql.InValues(s.C(application.ExposedApisColumn), ids...))
+							s.Where(sql.InValues(s.C(application.ExposedAPIsColumn), ids...))
 						})
-						if err := query.GroupBy(application.ExposedApisColumn).Aggregate(Count()).Scan(ctx, &v); err != nil {
+						if err := query.GroupBy(application.ExposedAPIsColumn).Aggregate(Count()).Scan(ctx, &v); err != nil {
 							return err
 						}
 						m := make(map[int]int, len(v))
@@ -1141,7 +1141,7 @@ func (_q *ApplicationQuery) collectField(ctx context.Context, oneNode bool, opCt
 				} else {
 					_q.loadTotal = append(_q.loadTotal, func(_ context.Context, nodes []*Application) error {
 						for i := range nodes {
-							n := len(nodes[i].Edges.ExposedApis)
+							n := len(nodes[i].Edges.ExposedAPIs)
 							if nodes[i].Edges.totalCount[1] == nil {
 								nodes[i].Edges.totalCount[1] = make(map[string]int)
 							}
@@ -1167,27 +1167,27 @@ func (_q *ApplicationQuery) collectField(ctx context.Context, oneNode bool, opCt
 				if oneNode {
 					pager.applyOrder(query.Limit(limit))
 				} else {
-					modify := entgql.LimitPerRow(application.ExposedApisColumn, limit, pager.orderExpr(query))
+					modify := entgql.LimitPerRow(application.ExposedAPIsColumn, limit, pager.orderExpr(query))
 					query.modifiers = append(query.modifiers, modify)
 				}
 			} else {
 				query = pager.applyOrder(query)
 			}
-			_q.WithNamedExposedApis(alias, func(wq *ApiExposureQuery) {
+			_q.WithNamedExposedAPIs(alias, func(wq *APIExposureQuery) {
 				*wq = *query
 			})
 
-		case "subscribedApis":
+		case "subscribedAPIs":
 			var (
 				alias = field.Alias
 				path  = append(path, alias)
-				query = (&ApiSubscriptionClient{config: _q.config}).Query()
+				query = (&APISubscriptionClient{config: _q.config}).Query()
 			)
-			args := newApiSubscriptionPaginateArgs(fieldArgs(ctx, new(ApiSubscriptionWhereInput), path...))
+			args := newAPISubscriptionPaginateArgs(fieldArgs(ctx, new(APISubscriptionWhereInput), path...))
 			if err := validateFirstLast(args.first, args.last); err != nil {
 				return fmt.Errorf("validate first and last in path %q: %w", path, err)
 			}
-			pager, err := newApiSubscriptionPager(args.opts, args.last != nil)
+			pager, err := newAPISubscriptionPager(args.opts, args.last != nil)
 			if err != nil {
 				return fmt.Errorf("create new pager in path %q: %w", path, err)
 			}
@@ -1209,9 +1209,9 @@ func (_q *ApplicationQuery) collectField(ctx context.Context, oneNode bool, opCt
 							Count  int `sql:"count"`
 						}
 						query.Where(func(s *sql.Selector) {
-							s.Where(sql.InValues(s.C(application.SubscribedApisColumn), ids...))
+							s.Where(sql.InValues(s.C(application.SubscribedAPIsColumn), ids...))
 						})
-						if err := query.GroupBy(application.SubscribedApisColumn).Aggregate(Count()).Scan(ctx, &v); err != nil {
+						if err := query.GroupBy(application.SubscribedAPIsColumn).Aggregate(Count()).Scan(ctx, &v); err != nil {
 							return err
 						}
 						m := make(map[int]int, len(v))
@@ -1230,7 +1230,7 @@ func (_q *ApplicationQuery) collectField(ctx context.Context, oneNode bool, opCt
 				} else {
 					_q.loadTotal = append(_q.loadTotal, func(_ context.Context, nodes []*Application) error {
 						for i := range nodes {
-							n := len(nodes[i].Edges.SubscribedApis)
+							n := len(nodes[i].Edges.SubscribedAPIs)
 							if nodes[i].Edges.totalCount[2] == nil {
 								nodes[i].Edges.totalCount[2] = make(map[string]int)
 							}
@@ -1256,13 +1256,13 @@ func (_q *ApplicationQuery) collectField(ctx context.Context, oneNode bool, opCt
 				if oneNode {
 					pager.applyOrder(query.Limit(limit))
 				} else {
-					modify := entgql.LimitPerRow(application.SubscribedApisColumn, limit, pager.orderExpr(query))
+					modify := entgql.LimitPerRow(application.SubscribedAPIsColumn, limit, pager.orderExpr(query))
 					query.modifiers = append(query.modifiers, modify)
 				}
 			} else {
 				query = pager.applyOrder(query)
 			}
-			_q.WithNamedSubscribedApis(alias, func(wq *ApiSubscriptionQuery) {
+			_q.WithNamedSubscribedAPIs(alias, func(wq *APISubscriptionQuery) {
 				*wq = *query
 			})
 
@@ -1702,10 +1702,10 @@ func (_q *ApplicationQuery) collectField(ctx context.Context, oneNode bool, opCt
 				selectedFields = append(selectedFields, application.FieldSecretRotationMessage)
 				fieldSeen[application.FieldSecretRotationMessage] = struct{}{}
 			}
-		case "externalIds":
-			if _, ok := fieldSeen[application.FieldExternalIds]; !ok {
-				selectedFields = append(selectedFields, application.FieldExternalIds)
-				fieldSeen[application.FieldExternalIds] = struct{}{}
+		case "externalIDs":
+			if _, ok := fieldSeen[application.FieldExternalIDs]; !ok {
+				selectedFields = append(selectedFields, application.FieldExternalIDs)
+				fieldSeen[application.FieldExternalIDs] = struct{}{}
 			}
 		case "ipRestrictions":
 			if _, ok := fieldSeen[application.FieldIPRestrictions]; !ok {
@@ -2418,10 +2418,10 @@ func (_q *EventSubscriptionQuery) collectField(ctx context.Context, oneNode bool
 				selectedFields = append(selectedFields, eventsubscription.FieldCallbackURL)
 				fieldSeen[eventsubscription.FieldCallbackURL] = struct{}{}
 			}
-		case "gatewaySseURL":
-			if _, ok := fieldSeen[eventsubscription.FieldGatewaySseURL]; !ok {
-				selectedFields = append(selectedFields, eventsubscription.FieldGatewaySseURL)
-				fieldSeen[eventsubscription.FieldGatewaySseURL] = struct{}{}
+		case "gatewaySSEURL":
+			if _, ok := fieldSeen[eventsubscription.FieldGatewaySSEURL]; !ok {
+				selectedFields = append(selectedFields, eventsubscription.FieldGatewaySSEURL)
+				fieldSeen[eventsubscription.FieldGatewaySSEURL] = struct{}{}
 			}
 		case "id":
 		case "__typename":
@@ -2716,7 +2716,7 @@ func newGroupPaginateArgs(rv map[string]any) *groupPaginateArgs {
 }
 
 // CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
-func (_q *McpServerQuery) CollectFields(ctx context.Context, satisfies ...string) (*McpServerQuery, error) {
+func (_q *MCPServerQuery) CollectFields(ctx context.Context, satisfies ...string) (*MCPServerQuery, error) {
 	fc := graphql.GetFieldContext(ctx)
 	if fc == nil {
 		return _q, nil
@@ -2727,7 +2727,7 @@ func (_q *McpServerQuery) CollectFields(ctx context.Context, satisfies ...string
 	return _q, nil
 }
 
-func (_q *McpServerQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
+func (_q *MCPServerQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
 	path = append([]string(nil), path...)
 	var (
 		unknownSeen    bool
@@ -2787,9 +2787,9 @@ func (_q *McpServerQuery) collectField(ctx context.Context, oneNode bool, opCtx 
 				fieldSeen[mcpserver.FieldCategory] = struct{}{}
 			}
 		case "oauth2Scopes":
-			if _, ok := fieldSeen[mcpserver.FieldOauth2Scopes]; !ok {
-				selectedFields = append(selectedFields, mcpserver.FieldOauth2Scopes)
-				fieldSeen[mcpserver.FieldOauth2Scopes] = struct{}{}
+			if _, ok := fieldSeen[mcpserver.FieldOAuth2Scopes]; !ok {
+				selectedFields = append(selectedFields, mcpserver.FieldOAuth2Scopes)
+				fieldSeen[mcpserver.FieldOAuth2Scopes] = struct{}{}
 			}
 		case "active":
 			if _, ok := fieldSeen[mcpserver.FieldActive]; !ok {
@@ -2811,10 +2811,10 @@ func (_q *McpServerQuery) collectField(ctx context.Context, oneNode bool, opCtx 
 type mcpserverPaginateArgs struct {
 	first, last   *int
 	after, before *Cursor
-	opts          []McpServerPaginateOption
+	opts          []MCPServerPaginateOption
 }
 
-func newMcpServerPaginateArgs(rv map[string]any) *mcpserverPaginateArgs {
+func newMCPServerPaginateArgs(rv map[string]any) *mcpserverPaginateArgs {
 	args := &mcpserverPaginateArgs{}
 	if rv == nil {
 		return args
@@ -2836,7 +2836,7 @@ func newMcpServerPaginateArgs(rv map[string]any) *mcpserverPaginateArgs {
 		case map[string]any:
 			var (
 				err1, err2 error
-				order      = &McpServerOrder{Field: &McpServerOrderField{}, Direction: entgql.OrderDirectionAsc}
+				order      = &MCPServerOrder{Field: &MCPServerOrderField{}, Direction: entgql.OrderDirectionAsc}
 			)
 			if d, ok := v[directionField]; ok {
 				err1 = order.Direction.UnmarshalGQL(d)
@@ -2845,16 +2845,16 @@ func newMcpServerPaginateArgs(rv map[string]any) *mcpserverPaginateArgs {
 				err2 = order.Field.UnmarshalGQL(f)
 			}
 			if err1 == nil && err2 == nil {
-				args.opts = append(args.opts, WithMcpServerOrder(order))
+				args.opts = append(args.opts, WithMCPServerOrder(order))
 			}
-		case *McpServerOrder:
+		case *MCPServerOrder:
 			if v != nil {
-				args.opts = append(args.opts, WithMcpServerOrder(v))
+				args.opts = append(args.opts, WithMCPServerOrder(v))
 			}
 		}
 	}
-	if v, ok := rv[whereField].(*McpServerWhereInput); ok {
-		args.opts = append(args.opts, WithMcpServerFilter(v.Filter))
+	if v, ok := rv[whereField].(*MCPServerWhereInput); ok {
+		args.opts = append(args.opts, WithMCPServerFilter(v.Filter))
 	}
 	return args
 }
@@ -3207,11 +3207,11 @@ func (_q *TeamQuery) collectField(ctx context.Context, oneNode bool, opCtx *grap
 				path  = append(path, alias)
 				query = (&APIClient{config: _q.config}).Query()
 			)
-			args := newApiPaginateArgs(fieldArgs(ctx, new(ApiWhereInput), path...))
+			args := newAPIPaginateArgs(fieldArgs(ctx, new(APIWhereInput), path...))
 			if err := validateFirstLast(args.first, args.last); err != nil {
 				return fmt.Errorf("validate first and last in path %q: %w", path, err)
 			}
-			pager, err := newApiPager(args.opts, args.last != nil)
+			pager, err := newAPIPager(args.opts, args.last != nil)
 			if err != nil {
 				return fmt.Errorf("create new pager in path %q: %w", path, err)
 			}
@@ -3233,9 +3233,9 @@ func (_q *TeamQuery) collectField(ctx context.Context, oneNode bool, opCtx *grap
 							Count  int `sql:"count"`
 						}
 						query.Where(func(s *sql.Selector) {
-							s.Where(sql.InValues(s.C(team.ApisColumn), ids...))
+							s.Where(sql.InValues(s.C(team.APIsColumn), ids...))
 						})
-						if err := query.GroupBy(team.ApisColumn).Aggregate(Count()).Scan(ctx, &v); err != nil {
+						if err := query.GroupBy(team.APIsColumn).Aggregate(Count()).Scan(ctx, &v); err != nil {
 							return err
 						}
 						m := make(map[int]int, len(v))
@@ -3254,7 +3254,7 @@ func (_q *TeamQuery) collectField(ctx context.Context, oneNode bool, opCtx *grap
 				} else {
 					_q.loadTotal = append(_q.loadTotal, func(_ context.Context, nodes []*Team) error {
 						for i := range nodes {
-							n := len(nodes[i].Edges.Apis)
+							n := len(nodes[i].Edges.APIs)
 							if nodes[i].Edges.totalCount[3] == nil {
 								nodes[i].Edges.totalCount[3] = make(map[string]int)
 							}
@@ -3280,13 +3280,13 @@ func (_q *TeamQuery) collectField(ctx context.Context, oneNode bool, opCtx *grap
 				if oneNode {
 					pager.applyOrder(query.Limit(limit))
 				} else {
-					modify := entgql.LimitPerRow(team.ApisColumn, limit, pager.orderExpr(query))
+					modify := entgql.LimitPerRow(team.APIsColumn, limit, pager.orderExpr(query))
 					query.modifiers = append(query.modifiers, modify)
 				}
 			} else {
 				query = pager.applyOrder(query)
 			}
-			_q.WithNamedApis(alias, func(wq *APIQuery) {
+			_q.WithNamedAPIs(alias, func(wq *APIQuery) {
 				*wq = *query
 			})
 
@@ -3383,13 +3383,13 @@ func (_q *TeamQuery) collectField(ctx context.Context, oneNode bool, opCtx *grap
 			var (
 				alias = field.Alias
 				path  = append(path, alias)
-				query = (&McpServerClient{config: _q.config}).Query()
+				query = (&MCPServerClient{config: _q.config}).Query()
 			)
-			args := newMcpServerPaginateArgs(fieldArgs(ctx, new(McpServerWhereInput), path...))
+			args := newMCPServerPaginateArgs(fieldArgs(ctx, new(MCPServerWhereInput), path...))
 			if err := validateFirstLast(args.first, args.last); err != nil {
 				return fmt.Errorf("validate first and last in path %q: %w", path, err)
 			}
-			pager, err := newMcpServerPager(args.opts, args.last != nil)
+			pager, err := newMCPServerPager(args.opts, args.last != nil)
 			if err != nil {
 				return fmt.Errorf("create new pager in path %q: %w", path, err)
 			}
@@ -3411,9 +3411,9 @@ func (_q *TeamQuery) collectField(ctx context.Context, oneNode bool, opCtx *grap
 							Count  int `sql:"count"`
 						}
 						query.Where(func(s *sql.Selector) {
-							s.Where(sql.InValues(s.C(team.McpServersColumn), ids...))
+							s.Where(sql.InValues(s.C(team.MCPServersColumn), ids...))
 						})
-						if err := query.GroupBy(team.McpServersColumn).Aggregate(Count()).Scan(ctx, &v); err != nil {
+						if err := query.GroupBy(team.MCPServersColumn).Aggregate(Count()).Scan(ctx, &v); err != nil {
 							return err
 						}
 						m := make(map[int]int, len(v))
@@ -3432,7 +3432,7 @@ func (_q *TeamQuery) collectField(ctx context.Context, oneNode bool, opCtx *grap
 				} else {
 					_q.loadTotal = append(_q.loadTotal, func(_ context.Context, nodes []*Team) error {
 						for i := range nodes {
-							n := len(nodes[i].Edges.McpServers)
+							n := len(nodes[i].Edges.MCPServers)
 							if nodes[i].Edges.totalCount[5] == nil {
 								nodes[i].Edges.totalCount[5] = make(map[string]int)
 							}
@@ -3458,13 +3458,13 @@ func (_q *TeamQuery) collectField(ctx context.Context, oneNode bool, opCtx *grap
 				if oneNode {
 					pager.applyOrder(query.Limit(limit))
 				} else {
-					modify := entgql.LimitPerRow(team.McpServersColumn, limit, pager.orderExpr(query))
+					modify := entgql.LimitPerRow(team.MCPServersColumn, limit, pager.orderExpr(query))
 					query.modifiers = append(query.modifiers, modify)
 				}
 			} else {
 				query = pager.applyOrder(query)
 			}
-			_q.WithNamedMcpServers(alias, func(wq *McpServerQuery) {
+			_q.WithNamedMCPServers(alias, func(wq *MCPServerQuery) {
 				*wq = *query
 			})
 
@@ -3596,7 +3596,7 @@ func (_q *TeamQuery) collectField(ctx context.Context, oneNode bool, opCtx *grap
 				selectedFields = append(selectedFields, team.FieldEmail)
 				fieldSeen[team.FieldEmail] = struct{}{}
 			}
-		case "displayname":
+		case "displayName":
 			if _, ok := fieldSeen[team.FieldDisplayName]; !ok {
 				selectedFields = append(selectedFields, team.FieldDisplayName)
 				fieldSeen[team.FieldDisplayName] = struct{}{}

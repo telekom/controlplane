@@ -262,13 +262,13 @@ func (_u *ApprovalRequestUpdate) SetNillableState(v *approvalrequest.State) *App
 	return _u
 }
 
-// SetAPISubscriptionID sets the "api_subscription" edge to the ApiSubscription entity by ID.
+// SetAPISubscriptionID sets the "api_subscription" edge to the APISubscription entity by ID.
 func (_u *ApprovalRequestUpdate) SetAPISubscriptionID(id int) *ApprovalRequestUpdate {
 	_u.mutation.SetAPISubscriptionID(id)
 	return _u
 }
 
-// SetNillableAPISubscriptionID sets the "api_subscription" edge to the ApiSubscription entity by ID if the given value is not nil.
+// SetNillableAPISubscriptionID sets the "api_subscription" edge to the APISubscription entity by ID if the given value is not nil.
 func (_u *ApprovalRequestUpdate) SetNillableAPISubscriptionID(id *int) *ApprovalRequestUpdate {
 	if id != nil {
 		_u = _u.SetAPISubscriptionID(*id)
@@ -276,8 +276,8 @@ func (_u *ApprovalRequestUpdate) SetNillableAPISubscriptionID(id *int) *Approval
 	return _u
 }
 
-// SetAPISubscription sets the "api_subscription" edge to the ApiSubscription entity.
-func (_u *ApprovalRequestUpdate) SetAPISubscription(v *ApiSubscription) *ApprovalRequestUpdate {
+// SetAPISubscription sets the "api_subscription" edge to the APISubscription entity.
+func (_u *ApprovalRequestUpdate) SetAPISubscription(v *APISubscription) *ApprovalRequestUpdate {
 	return _u.SetAPISubscriptionID(v.ID)
 }
 
@@ -324,7 +324,7 @@ func (_u *ApprovalRequestUpdate) Mutation() *ApprovalRequestMutation {
 	return _u.mutation
 }
 
-// ClearAPISubscription clears the "api_subscription" edge to the ApiSubscription entity.
+// ClearAPISubscription clears the "api_subscription" edge to the APISubscription entity.
 func (_u *ApprovalRequestUpdate) ClearAPISubscription() *ApprovalRequestUpdate {
 	_u.mutation.ClearAPISubscription()
 	return _u
@@ -844,13 +844,13 @@ func (_u *ApprovalRequestUpdateOne) SetNillableState(v *approvalrequest.State) *
 	return _u
 }
 
-// SetAPISubscriptionID sets the "api_subscription" edge to the ApiSubscription entity by ID.
+// SetAPISubscriptionID sets the "api_subscription" edge to the APISubscription entity by ID.
 func (_u *ApprovalRequestUpdateOne) SetAPISubscriptionID(id int) *ApprovalRequestUpdateOne {
 	_u.mutation.SetAPISubscriptionID(id)
 	return _u
 }
 
-// SetNillableAPISubscriptionID sets the "api_subscription" edge to the ApiSubscription entity by ID if the given value is not nil.
+// SetNillableAPISubscriptionID sets the "api_subscription" edge to the APISubscription entity by ID if the given value is not nil.
 func (_u *ApprovalRequestUpdateOne) SetNillableAPISubscriptionID(id *int) *ApprovalRequestUpdateOne {
 	if id != nil {
 		_u = _u.SetAPISubscriptionID(*id)
@@ -858,8 +858,8 @@ func (_u *ApprovalRequestUpdateOne) SetNillableAPISubscriptionID(id *int) *Appro
 	return _u
 }
 
-// SetAPISubscription sets the "api_subscription" edge to the ApiSubscription entity.
-func (_u *ApprovalRequestUpdateOne) SetAPISubscription(v *ApiSubscription) *ApprovalRequestUpdateOne {
+// SetAPISubscription sets the "api_subscription" edge to the APISubscription entity.
+func (_u *ApprovalRequestUpdateOne) SetAPISubscription(v *APISubscription) *ApprovalRequestUpdateOne {
 	return _u.SetAPISubscriptionID(v.ID)
 }
 
@@ -906,7 +906,7 @@ func (_u *ApprovalRequestUpdateOne) Mutation() *ApprovalRequestMutation {
 	return _u.mutation
 }
 
-// ClearAPISubscription clears the "api_subscription" edge to the ApiSubscription entity.
+// ClearAPISubscription clears the "api_subscription" edge to the APISubscription entity.
 func (_u *ApprovalRequestUpdateOne) ClearAPISubscription() *ApprovalRequestUpdateOne {
 	_u.mutation.ClearAPISubscription()
 	return _u

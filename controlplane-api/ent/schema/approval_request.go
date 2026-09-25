@@ -54,7 +54,7 @@ func (ApprovalRequest) Indexes() []ent.Index {
 
 func (ApprovalRequest) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("api_subscription", ApiSubscription.Type).
+		edge.From("api_subscription", APISubscription.Type).
 			Ref("approval_requests").
 			Unique().
 			Annotations(entgql.Skip(entgql.SkipType)),

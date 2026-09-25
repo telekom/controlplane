@@ -37,8 +37,8 @@ const (
 	FieldName = "name"
 	// FieldBasePath holds the string denoting the base_path field in the database.
 	FieldBasePath = "base_path"
-	// FieldM2mAuthMethod holds the string denoting the m2m_auth_method field in the database.
-	FieldM2mAuthMethod = "m2m_auth_method"
+	// FieldM2MAuthMethod holds the string denoting the m2m_auth_method field in the database.
+	FieldM2MAuthMethod = "m2m_auth_method"
 	// FieldGatewayURL holds the string denoting the gateway_url field in the database.
 	FieldGatewayURL = "gateway_url"
 	// FieldSecurity holds the string denoting the security field in the database.
@@ -66,7 +66,7 @@ const (
 	OwnerColumn = "application_subscribed_apis"
 	// TargetTable is the table that holds the target relation/edge.
 	TargetTable = "api_subscriptions"
-	// TargetInverseTable is the table name for the ApiExposure entity.
+	// TargetInverseTable is the table name for the APIExposure entity.
 	// It exists in this package in order to avoid circular dependency with the "apiexposure" package.
 	TargetInverseTable = "api_exposures"
 	// TargetColumn is the table column denoting the target relation/edge.
@@ -105,7 +105,7 @@ var Columns = []string{
 	FieldNamespace,
 	FieldName,
 	FieldBasePath,
-	FieldM2mAuthMethod,
+	FieldM2MAuthMethod,
 	FieldGatewayURL,
 	FieldSecurity,
 	FieldTraffic,
@@ -180,35 +180,35 @@ func StatusPhaseValidator(sp StatusPhase) error {
 	}
 }
 
-// M2mAuthMethod defines the type for the "m2m_auth_method" enum field.
-type M2mAuthMethod string
+// M2MAuthMethod defines the type for the "M2M_auth_method" enum field.
+type M2MAuthMethod string
 
-// M2mAuthMethodNone is the default value of the M2mAuthMethod enum.
-const DefaultM2mAuthMethod = M2mAuthMethodNone
+// M2MAuthMethodNone is the default value of the M2MAuthMethod enum.
+const DefaultM2MAuthMethod = M2MAuthMethodNone
 
-// M2mAuthMethod values.
+// M2MAuthMethod values.
 const (
-	M2mAuthMethodNone         M2mAuthMethod = "NONE"
-	M2mAuthMethodBasicAuth    M2mAuthMethod = "BASIC_AUTH"
-	M2mAuthMethodOauth2Client M2mAuthMethod = "OAUTH2_CLIENT"
-	M2mAuthMethodScopesOnly   M2mAuthMethod = "SCOPES_ONLY"
+	M2MAuthMethodNone         M2MAuthMethod = "NONE"
+	M2MAuthMethodBasicAuth    M2MAuthMethod = "BASIC_AUTH"
+	M2MAuthMethodOAuth2Client M2MAuthMethod = "OAUTH2_CLIENT"
+	M2MAuthMethodScopesOnly   M2MAuthMethod = "SCOPES_ONLY"
 )
 
-func (mam M2mAuthMethod) String() string {
-	return string(mam)
+func (_m2m_auth_method M2MAuthMethod) String() string {
+	return string(_m2m_auth_method)
 }
 
-// M2mAuthMethodValidator is a validator for the "m2m_auth_method" field enum values. It is called by the builders before save.
-func M2mAuthMethodValidator(mam M2mAuthMethod) error {
-	switch mam {
-	case M2mAuthMethodNone, M2mAuthMethodBasicAuth, M2mAuthMethodOauth2Client, M2mAuthMethodScopesOnly:
+// M2MAuthMethodValidator is a validator for the "M2M_auth_method" field enum values. It is called by the builders before save.
+func M2MAuthMethodValidator(_m2m_auth_method M2MAuthMethod) error {
+	switch _m2m_auth_method {
+	case M2MAuthMethodNone, M2MAuthMethodBasicAuth, M2MAuthMethodOAuth2Client, M2MAuthMethodScopesOnly:
 		return nil
 	default:
-		return fmt.Errorf("apisubscription: invalid enum value for m2m_auth_method field: %q", mam)
+		return fmt.Errorf("apisubscription: invalid enum value for M2M_auth_method field: %q", _m2m_auth_method)
 	}
 }
 
-// OrderOption defines the ordering options for the ApiSubscription queries.
+// OrderOption defines the ordering options for the APISubscription queries.
 type OrderOption func(*sql.Selector)
 
 // ByID orders the results by the id field.
@@ -256,9 +256,9 @@ func ByBasePath(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldBasePath, opts...).ToFunc()
 }
 
-// ByM2mAuthMethod orders the results by the m2m_auth_method field.
-func ByM2mAuthMethod(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldM2mAuthMethod, opts...).ToFunc()
+// ByM2MAuthMethod orders the results by the M2M_auth_method field.
+func ByM2MAuthMethod(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldM2MAuthMethod, opts...).ToFunc()
 }
 
 // ByGatewayURL orders the results by the gateway_url field.
@@ -369,19 +369,19 @@ func (e *StatusPhase) UnmarshalGQL(val interface{}) error {
 }
 
 // MarshalGQL implements graphql.Marshaler interface.
-func (e M2mAuthMethod) MarshalGQL(w io.Writer) {
+func (e M2MAuthMethod) MarshalGQL(w io.Writer) {
 	io.WriteString(w, strconv.Quote(e.String()))
 }
 
 // UnmarshalGQL implements graphql.Unmarshaler interface.
-func (e *M2mAuthMethod) UnmarshalGQL(val interface{}) error {
+func (e *M2MAuthMethod) UnmarshalGQL(val interface{}) error {
 	str, ok := val.(string)
 	if !ok {
 		return fmt.Errorf("enum %T must be a string", val)
 	}
-	*e = M2mAuthMethod(str)
-	if err := M2mAuthMethodValidator(*e); err != nil {
-		return fmt.Errorf("%s is not a valid M2mAuthMethod", str)
+	*e = M2MAuthMethod(str)
+	if err := M2MAuthMethodValidator(*e); err != nil {
+		return fmt.Errorf("%s is not a valid M2MAuthMethod", str)
 	}
 	return nil
 }

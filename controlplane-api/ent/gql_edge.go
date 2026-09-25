@@ -11,6 +11,62 @@ import (
 	"github.com/99designs/gqlgen/graphql"
 )
 
+func (_m *APIExposure) Owner(ctx context.Context) (*Application, error) {
+	result, err := _m.Edges.OwnerOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryOwner().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *APIExposure) API(ctx context.Context) (*API, error) {
+	result, err := _m.Edges.APIOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryAPI().Only(ctx)
+	}
+	return result, MaskNotFound(err)
+}
+
+func (_m *APISubscription) Owner(ctx context.Context) (*Application, error) {
+	result, err := _m.Edges.OwnerOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryOwner().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *APISubscription) FailoverZones(ctx context.Context) (result []*Zone, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedFailoverZones(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.FailoverZonesOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryFailoverZones().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *APISubscription) Approval(ctx context.Context) (*Approval, error) {
+	result, err := _m.Edges.ApprovalOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryApproval().Only(ctx)
+	}
+	return result, MaskNotFound(err)
+}
+
+func (_m *APISubscription) ApprovalRequests(ctx context.Context) (result []*ApprovalRequest, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedApprovalRequests(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.ApprovalRequestsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryApprovalRequests().All(ctx)
+	}
+	return result, err
+}
+
 func (_m *AgenticExposure) Owner(ctx context.Context) (*Application, error) {
 	result, err := _m.Edges.OwnerOrErr()
 	if IsNotLoaded(err) {
@@ -19,10 +75,10 @@ func (_m *AgenticExposure) Owner(ctx context.Context) (*Application, error) {
 	return result, err
 }
 
-func (_m *AgenticExposure) McpServer(ctx context.Context) (*McpServer, error) {
-	result, err := _m.Edges.McpServerOrErr()
+func (_m *AgenticExposure) MCPServer(ctx context.Context) (*MCPServer, error) {
+	result, err := _m.Edges.MCPServerOrErr()
 	if IsNotLoaded(err) {
-		result, err = _m.QueryMcpServer().Only(ctx)
+		result, err = _m.QueryMCPServer().Only(ctx)
 	}
 	return result, MaskNotFound(err)
 }
@@ -63,62 +119,6 @@ func (_m *AgenticSubscription) ApprovalRequests(ctx context.Context) (result []*
 	return result, err
 }
 
-func (_m *ApiExposure) Owner(ctx context.Context) (*Application, error) {
-	result, err := _m.Edges.OwnerOrErr()
-	if IsNotLoaded(err) {
-		result, err = _m.QueryOwner().Only(ctx)
-	}
-	return result, err
-}
-
-func (_m *ApiExposure) API(ctx context.Context) (*Api, error) {
-	result, err := _m.Edges.APIOrErr()
-	if IsNotLoaded(err) {
-		result, err = _m.QueryAPI().Only(ctx)
-	}
-	return result, MaskNotFound(err)
-}
-
-func (_m *ApiSubscription) Owner(ctx context.Context) (*Application, error) {
-	result, err := _m.Edges.OwnerOrErr()
-	if IsNotLoaded(err) {
-		result, err = _m.QueryOwner().Only(ctx)
-	}
-	return result, err
-}
-
-func (_m *ApiSubscription) FailoverZones(ctx context.Context) (result []*Zone, err error) {
-	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
-		result, err = _m.NamedFailoverZones(graphql.GetFieldContext(ctx).Field.Alias)
-	} else {
-		result, err = _m.Edges.FailoverZonesOrErr()
-	}
-	if IsNotLoaded(err) {
-		result, err = _m.QueryFailoverZones().All(ctx)
-	}
-	return result, err
-}
-
-func (_m *ApiSubscription) Approval(ctx context.Context) (*Approval, error) {
-	result, err := _m.Edges.ApprovalOrErr()
-	if IsNotLoaded(err) {
-		result, err = _m.QueryApproval().Only(ctx)
-	}
-	return result, MaskNotFound(err)
-}
-
-func (_m *ApiSubscription) ApprovalRequests(ctx context.Context) (result []*ApprovalRequest, err error) {
-	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
-		result, err = _m.NamedApprovalRequests(graphql.GetFieldContext(ctx).Field.Alias)
-	} else {
-		result, err = _m.Edges.ApprovalRequestsOrErr()
-	}
-	if IsNotLoaded(err) {
-		result, err = _m.QueryApprovalRequests().All(ctx)
-	}
-	return result, err
-}
-
 func (_m *Application) Zone(ctx context.Context) (*Zone, error) {
 	result, err := _m.Edges.ZoneOrErr()
 	if IsNotLoaded(err) {
@@ -127,46 +127,46 @@ func (_m *Application) Zone(ctx context.Context) (*Zone, error) {
 	return result, err
 }
 
-func (_m *Application) ExposedApis(
-	ctx context.Context, after *Cursor, first *int, before *Cursor, last *int, orderBy *ApiExposureOrder, where *ApiExposureWhereInput,
-) (*ApiExposureConnection, error) {
-	opts := []ApiExposurePaginateOption{
-		WithApiExposureOrder(orderBy),
-		WithApiExposureFilter(where.Filter),
+func (_m *Application) ExposedAPIs(
+	ctx context.Context, after *Cursor, first *int, before *Cursor, last *int, orderBy *APIExposureOrder, where *APIExposureWhereInput,
+) (*APIExposureConnection, error) {
+	opts := []APIExposurePaginateOption{
+		WithAPIExposureOrder(orderBy),
+		WithAPIExposureFilter(where.Filter),
 	}
 	alias := graphql.GetFieldContext(ctx).Field.Alias
 	totalCount, hasTotalCount := _m.Edges.totalCount[1][alias]
-	if nodes, err := _m.NamedExposedApis(alias); err == nil || hasTotalCount {
-		pager, err := newApiExposurePager(opts, last != nil)
+	if nodes, err := _m.NamedExposedAPIs(alias); err == nil || hasTotalCount {
+		pager, err := newAPIExposurePager(opts, last != nil)
 		if err != nil {
 			return nil, err
 		}
-		conn := &ApiExposureConnection{Edges: []*ApiExposureEdge{}, TotalCount: totalCount}
+		conn := &APIExposureConnection{Edges: []*APIExposureEdge{}, TotalCount: totalCount}
 		conn.build(nodes, pager, after, first, before, last)
 		return conn, nil
 	}
-	return _m.QueryExposedApis().Paginate(ctx, after, first, before, last, opts...)
+	return _m.QueryExposedAPIs().Paginate(ctx, after, first, before, last, opts...)
 }
 
-func (_m *Application) SubscribedApis(
-	ctx context.Context, after *Cursor, first *int, before *Cursor, last *int, orderBy *ApiSubscriptionOrder, where *ApiSubscriptionWhereInput,
-) (*ApiSubscriptionConnection, error) {
-	opts := []ApiSubscriptionPaginateOption{
-		WithApiSubscriptionOrder(orderBy),
-		WithApiSubscriptionFilter(where.Filter),
+func (_m *Application) SubscribedAPIs(
+	ctx context.Context, after *Cursor, first *int, before *Cursor, last *int, orderBy *APISubscriptionOrder, where *APISubscriptionWhereInput,
+) (*APISubscriptionConnection, error) {
+	opts := []APISubscriptionPaginateOption{
+		WithAPISubscriptionOrder(orderBy),
+		WithAPISubscriptionFilter(where.Filter),
 	}
 	alias := graphql.GetFieldContext(ctx).Field.Alias
 	totalCount, hasTotalCount := _m.Edges.totalCount[2][alias]
-	if nodes, err := _m.NamedSubscribedApis(alias); err == nil || hasTotalCount {
-		pager, err := newApiSubscriptionPager(opts, last != nil)
+	if nodes, err := _m.NamedSubscribedAPIs(alias); err == nil || hasTotalCount {
+		pager, err := newAPISubscriptionPager(opts, last != nil)
 		if err != nil {
 			return nil, err
 		}
-		conn := &ApiSubscriptionConnection{Edges: []*ApiSubscriptionEdge{}, TotalCount: totalCount}
+		conn := &APISubscriptionConnection{Edges: []*APISubscriptionEdge{}, TotalCount: totalCount}
 		conn.build(nodes, pager, after, first, before, last)
 		return conn, nil
 	}
-	return _m.QuerySubscribedApis().Paginate(ctx, after, first, before, last, opts...)
+	return _m.QuerySubscribedAPIs().Paginate(ctx, after, first, before, last, opts...)
 }
 
 func (_m *Application) ExposedEvents(
@@ -366,25 +366,25 @@ func (_m *Team) Applications(
 	return _m.QueryApplications().Paginate(ctx, after, first, before, last, opts...)
 }
 
-func (_m *Team) Apis(
-	ctx context.Context, after *Cursor, first *int, before *Cursor, last *int, orderBy *ApiOrder, where *ApiWhereInput,
-) (*ApiConnection, error) {
-	opts := []ApiPaginateOption{
-		WithApiOrder(orderBy),
-		WithApiFilter(where.Filter),
+func (_m *Team) APIs(
+	ctx context.Context, after *Cursor, first *int, before *Cursor, last *int, orderBy *APIOrder, where *APIWhereInput,
+) (*APIConnection, error) {
+	opts := []APIPaginateOption{
+		WithAPIOrder(orderBy),
+		WithAPIFilter(where.Filter),
 	}
 	alias := graphql.GetFieldContext(ctx).Field.Alias
 	totalCount, hasTotalCount := _m.Edges.totalCount[3][alias]
-	if nodes, err := _m.NamedApis(alias); err == nil || hasTotalCount {
-		pager, err := newApiPager(opts, last != nil)
+	if nodes, err := _m.NamedAPIs(alias); err == nil || hasTotalCount {
+		pager, err := newAPIPager(opts, last != nil)
 		if err != nil {
 			return nil, err
 		}
-		conn := &ApiConnection{Edges: []*ApiEdge{}, TotalCount: totalCount}
+		conn := &APIConnection{Edges: []*APIEdge{}, TotalCount: totalCount}
 		conn.build(nodes, pager, after, first, before, last)
 		return conn, nil
 	}
-	return _m.QueryApis().Paginate(ctx, after, first, before, last, opts...)
+	return _m.QueryAPIs().Paginate(ctx, after, first, before, last, opts...)
 }
 
 func (_m *Team) EventTypes(
@@ -408,25 +408,25 @@ func (_m *Team) EventTypes(
 	return _m.QueryEventTypes().Paginate(ctx, after, first, before, last, opts...)
 }
 
-func (_m *Team) McpServers(
-	ctx context.Context, after *Cursor, first *int, before *Cursor, last *int, orderBy *McpServerOrder, where *McpServerWhereInput,
-) (*McpServerConnection, error) {
-	opts := []McpServerPaginateOption{
-		WithMcpServerOrder(orderBy),
-		WithMcpServerFilter(where.Filter),
+func (_m *Team) MCPServers(
+	ctx context.Context, after *Cursor, first *int, before *Cursor, last *int, orderBy *MCPServerOrder, where *MCPServerWhereInput,
+) (*MCPServerConnection, error) {
+	opts := []MCPServerPaginateOption{
+		WithMCPServerOrder(orderBy),
+		WithMCPServerFilter(where.Filter),
 	}
 	alias := graphql.GetFieldContext(ctx).Field.Alias
 	totalCount, hasTotalCount := _m.Edges.totalCount[5][alias]
-	if nodes, err := _m.NamedMcpServers(alias); err == nil || hasTotalCount {
-		pager, err := newMcpServerPager(opts, last != nil)
+	if nodes, err := _m.NamedMCPServers(alias); err == nil || hasTotalCount {
+		pager, err := newMCPServerPager(opts, last != nil)
 		if err != nil {
 			return nil, err
 		}
-		conn := &McpServerConnection{Edges: []*McpServerEdge{}, TotalCount: totalCount}
+		conn := &MCPServerConnection{Edges: []*MCPServerEdge{}, TotalCount: totalCount}
 		conn.build(nodes, pager, after, first, before, last)
 		return conn, nil
 	}
-	return _m.QueryMcpServers().Paginate(ctx, after, first, before, last, opts...)
+	return _m.QueryMCPServers().Paginate(ctx, after, first, before, last, opts...)
 }
 
 func (_m *Team) AgentCards(

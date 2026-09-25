@@ -15,5 +15,5 @@ import "context"
 // Satisfied by *infrastructure.IDResolver at wiring time.
 type APIExposureDeps interface {
 	FindApplicationID(ctx context.Context, name, teamName string) (int, error)
-	FindActiveApiID(ctx context.Context, basePath string) (int, error)
+	FindActiveAPIID(ctx context.Context, basePath string) (int, error)
 }

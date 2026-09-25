@@ -49,8 +49,8 @@ const (
 	FieldSecretRotationPhase = "secret_rotation_phase"
 	// FieldSecretRotationMessage holds the string denoting the secret_rotation_message field in the database.
 	FieldSecretRotationMessage = "secret_rotation_message"
-	// FieldExternalIds holds the string denoting the external_ids field in the database.
-	FieldExternalIds = "external_ids"
+	// FieldExternalIDs holds the string denoting the external_ids field in the database.
+	FieldExternalIDs = "external_ids"
 	// FieldIPRestrictions holds the string denoting the ip_restrictions field in the database.
 	FieldIPRestrictions = "ip_restrictions"
 	// FieldPermissionsURL holds the string denoting the permissions_url field in the database.
@@ -59,10 +59,10 @@ const (
 	EdgeZone = "zone"
 	// EdgeOwnerTeam holds the string denoting the owner_team edge name in mutations.
 	EdgeOwnerTeam = "owner_team"
-	// EdgeExposedApis holds the string denoting the exposed_apis edge name in mutations.
-	EdgeExposedApis = "exposed_apis"
-	// EdgeSubscribedApis holds the string denoting the subscribed_apis edge name in mutations.
-	EdgeSubscribedApis = "subscribed_apis"
+	// EdgeExposedAPIs holds the string denoting the exposed_apis edge name in mutations.
+	EdgeExposedAPIs = "exposed_APIs"
+	// EdgeSubscribedAPIs holds the string denoting the subscribed_apis edge name in mutations.
+	EdgeSubscribedAPIs = "subscribed_APIs"
 	// EdgeExposedEvents holds the string denoting the exposed_events edge name in mutations.
 	EdgeExposedEvents = "exposed_events"
 	// EdgeSubscribedEvents holds the string denoting the subscribed_events edge name in mutations.
@@ -89,20 +89,20 @@ const (
 	OwnerTeamInverseTable = "teams"
 	// OwnerTeamColumn is the table column denoting the owner_team relation/edge.
 	OwnerTeamColumn = "team_applications"
-	// ExposedApisTable is the table that holds the exposed_apis relation/edge.
-	ExposedApisTable = "api_exposures"
-	// ExposedApisInverseTable is the table name for the ApiExposure entity.
+	// ExposedAPIsTable is the table that holds the exposed_APIs relation/edge.
+	ExposedAPIsTable = "api_exposures"
+	// ExposedAPIsInverseTable is the table name for the APIExposure entity.
 	// It exists in this package in order to avoid circular dependency with the "apiexposure" package.
-	ExposedApisInverseTable = "api_exposures"
-	// ExposedApisColumn is the table column denoting the exposed_apis relation/edge.
-	ExposedApisColumn = "application_exposed_apis"
-	// SubscribedApisTable is the table that holds the subscribed_apis relation/edge.
-	SubscribedApisTable = "api_subscriptions"
-	// SubscribedApisInverseTable is the table name for the ApiSubscription entity.
+	ExposedAPIsInverseTable = "api_exposures"
+	// ExposedAPIsColumn is the table column denoting the exposed_APIs relation/edge.
+	ExposedAPIsColumn = "application_exposed_apis"
+	// SubscribedAPIsTable is the table that holds the subscribed_APIs relation/edge.
+	SubscribedAPIsTable = "api_subscriptions"
+	// SubscribedAPIsInverseTable is the table name for the APISubscription entity.
 	// It exists in this package in order to avoid circular dependency with the "apisubscription" package.
-	SubscribedApisInverseTable = "api_subscriptions"
-	// SubscribedApisColumn is the table column denoting the subscribed_apis relation/edge.
-	SubscribedApisColumn = "application_subscribed_apis"
+	SubscribedAPIsInverseTable = "api_subscriptions"
+	// SubscribedAPIsColumn is the table column denoting the subscribed_APIs relation/edge.
+	SubscribedAPIsColumn = "application_subscribed_apis"
 	// ExposedEventsTable is the table that holds the exposed_events relation/edge.
 	ExposedEventsTable = "event_exposures"
 	// ExposedEventsInverseTable is the table name for the EventExposure entity.
@@ -157,7 +157,7 @@ var Columns = []string{
 	FieldCurrentExpiresAt,
 	FieldSecretRotationPhase,
 	FieldSecretRotationMessage,
-	FieldExternalIds,
+	FieldExternalIDs,
 	FieldIPRestrictions,
 	FieldPermissionsURL,
 }
@@ -361,31 +361,31 @@ func ByOwnerTeamField(field string, opts ...sql.OrderTermOption) OrderOption {
 	}
 }
 
-// ByExposedApisCount orders the results by exposed_apis count.
-func ByExposedApisCount(opts ...sql.OrderTermOption) OrderOption {
+// ByExposedAPIsCount orders the results by exposed_APIs count.
+func ByExposedAPIsCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborsCount(s, newExposedApisStep(), opts...)
+		sqlgraph.OrderByNeighborsCount(s, newExposedAPIsStep(), opts...)
 	}
 }
 
-// ByExposedApis orders the results by exposed_apis terms.
-func ByExposedApis(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+// ByExposedAPIs orders the results by exposed_APIs terms.
+func ByExposedAPIs(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newExposedApisStep(), append([]sql.OrderTerm{term}, terms...)...)
+		sqlgraph.OrderByNeighborTerms(s, newExposedAPIsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
 
-// BySubscribedApisCount orders the results by subscribed_apis count.
-func BySubscribedApisCount(opts ...sql.OrderTermOption) OrderOption {
+// BySubscribedAPIsCount orders the results by subscribed_APIs count.
+func BySubscribedAPIsCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborsCount(s, newSubscribedApisStep(), opts...)
+		sqlgraph.OrderByNeighborsCount(s, newSubscribedAPIsStep(), opts...)
 	}
 }
 
-// BySubscribedApis orders the results by subscribed_apis terms.
-func BySubscribedApis(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+// BySubscribedAPIs orders the results by subscribed_APIs terms.
+func BySubscribedAPIs(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newSubscribedApisStep(), append([]sql.OrderTerm{term}, terms...)...)
+		sqlgraph.OrderByNeighborTerms(s, newSubscribedAPIsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
 
@@ -465,18 +465,18 @@ func newOwnerTeamStep() *sqlgraph.Step {
 		sqlgraph.Edge(sqlgraph.M2O, true, OwnerTeamTable, OwnerTeamColumn),
 	)
 }
-func newExposedApisStep() *sqlgraph.Step {
+func newExposedAPIsStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(ExposedApisInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.O2M, false, ExposedApisTable, ExposedApisColumn),
+		sqlgraph.To(ExposedAPIsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, ExposedAPIsTable, ExposedAPIsColumn),
 	)
 }
-func newSubscribedApisStep() *sqlgraph.Step {
+func newSubscribedAPIsStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(SubscribedApisInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.O2M, false, SubscribedApisTable, SubscribedApisColumn),
+		sqlgraph.To(SubscribedAPIsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, SubscribedAPIsTable, SubscribedAPIsColumn),
 	)
 }
 func newExposedEventsStep() *sqlgraph.Step {

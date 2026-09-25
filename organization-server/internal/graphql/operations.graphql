@@ -185,8 +185,8 @@ mutation DeleteTeam($input: DeleteTeamInput!) {
   }
 }
 
-mutation RotateTeamToken($teamId: ID!) {
-  rotateTeamToken(teamId: $teamId) {
+mutation RotateTeamToken($teamID: ID!) {
+  rotateTeamToken(teamID: $teamID) {
     team {
       id
       teamToken

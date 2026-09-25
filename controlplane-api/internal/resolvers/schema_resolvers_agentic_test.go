@@ -44,7 +44,7 @@ var _ = Describe("Root query resolvers for agentic entities", func() {
 
 	It("should paginate mcpServers without panicking", func() {
 		ctx := testutil.AllowContext()
-		conn, err := r.Query().McpServers(ctx, nil, nil, nil, nil, nil, nil)
+		conn, err := r.Query().MCPServers(ctx, nil, nil, nil, nil, nil, nil)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(conn).NotTo(BeNil())
 		Expect(conn.Edges).To(HaveLen(1))
@@ -77,33 +77,33 @@ var _ = Describe("Root query resolvers for agentic entities", func() {
 	It("should respect the first/after pagination window and report hasNextPage correctly", func() {
 		ctx := testutil.AllowContext()
 
-		// SeedStandard already created one McpServer; add two more so there are
+		// SeedStandard already created one MCPServer; add two more so there are
 		// three total, enough to exercise a real pagination window.
-		_, err := client.McpServer.Create().
+		_, err := client.MCPServer.Create().
 			SetNamespace("default").SetBasePath("/mcp-b").SetVersion("1.0.0").SetName("mcp-b").
 			SetOwner(s.TeamAlpha).Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
-		_, err = client.McpServer.Create().
+		_, err = client.MCPServer.Create().
 			SetNamespace("default").SetBasePath("/mcp-c").SetVersion("1.0.0").SetName("mcp-c").
 			SetOwner(s.TeamAlpha).Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
 
 		first := 2
-		page1, err := r.Query().McpServers(ctx, nil, &first, nil, nil, nil, nil)
+		page1, err := r.Query().MCPServers(ctx, nil, &first, nil, nil, nil, nil)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(page1.Edges).To(HaveLen(2))
 		Expect(page1.TotalCount).To(Equal(3))
 		Expect(page1.PageInfo.HasNextPage).To(BeTrue())
 
 		after := page1.PageInfo.EndCursor
-		page2, err := r.Query().McpServers(ctx, after, &first, nil, nil, nil, nil)
+		page2, err := r.Query().MCPServers(ctx, after, &first, nil, nil, nil, nil)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(page2.Edges).To(HaveLen(1))
 		Expect(page2.PageInfo.HasNextPage).To(BeFalse())
 	})
 })
 
-var _ = Describe("McpServer resolvers", func() {
+var _ = Describe("MCPServer resolvers", func() {
 	var (
 		client *ent.Client
 		r      *resolvers.Resolver
@@ -122,7 +122,7 @@ var _ = Describe("McpServer resolvers", func() {
 
 	It("should return the active exposure for a mcp server", func() {
 		ctx := viewer.NewContext(testutil.AllowContext(), &viewer.Viewer{Teams: []string{"team-alpha"}})
-		info, err := r.McpServer().ActiveExposure(ctx, s.McpServerAlpha)
+		info, err := r.MCPServer().ActiveExposure(ctx, s.MCPServerAlpha)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(info).NotTo(BeNil())
 		Expect(info.BasePath).To(Equal("/mcp-alpha"))
@@ -134,7 +134,7 @@ var _ = Describe("McpServer resolvers", func() {
 
 	It("should return nil when no active exposure exists", func() {
 		ctx := viewer.NewContext(testutil.AllowContext(), &viewer.Viewer{Teams: []string{"team-alpha"}})
-		other, err := client.McpServer.Create().
+		other, err := client.MCPServer.Create().
 			SetNamespace("default").
 			SetBasePath("/mcp-noexp").
 			SetVersion("1.0.0").
@@ -143,14 +143,14 @@ var _ = Describe("McpServer resolvers", func() {
 			Save(testutil.AllowContext())
 		Expect(err).NotTo(HaveOccurred())
 
-		info, err := r.McpServer().ActiveExposure(ctx, other)
+		info, err := r.MCPServer().ActiveExposure(ctx, other)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(info).To(BeNil())
 	})
 
 	It("should resolve the owner team", func() {
 		ctx := viewer.NewContext(testutil.AllowContext(), &viewer.Viewer{Teams: []string{"team-alpha"}})
-		team, err := r.McpServer().Owner(ctx, s.McpServerAlpha)
+		team, err := r.MCPServer().Owner(ctx, s.MCPServerAlpha)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(team).NotTo(BeNil())
 		Expect(team.Name).To(Equal("team-alpha"))
@@ -159,7 +159,7 @@ var _ = Describe("McpServer resolvers", func() {
 
 	It("should build the specification url", func() {
 		ctx := testutil.AllowContext()
-		withSpec, err := client.McpServer.Create().
+		withSpec, err := client.MCPServer.Create().
 			SetNamespace("default").
 			SetBasePath("/mcp-spec").
 			SetVersion("1.0.0").
@@ -169,7 +169,7 @@ var _ = Describe("McpServer resolvers", func() {
 			Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
 
-		url, err := r.McpServer().SpecificationURL(ctx, withSpec)
+		url, err := r.MCPServer().SpecificationURL(ctx, withSpec)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(url).NotTo(BeNil())
 		Expect(*url).To(Equal("https://files.example.com/files/file-id-123"))
@@ -177,7 +177,7 @@ var _ = Describe("McpServer resolvers", func() {
 
 	It("should return nil specification url when specification is empty", func() {
 		ctx := testutil.AllowContext()
-		url, err := r.McpServer().SpecificationURL(ctx, s.McpServerAlpha)
+		url, err := r.MCPServer().SpecificationURL(ctx, s.MCPServerAlpha)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(url).To(BeNil())
 	})

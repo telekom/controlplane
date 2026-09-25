@@ -1,0 +1,322 @@
+table agent_cards
+  column active bool nullable=false unique=false default=false
+  column base_path string nullable=false unique=false size=2147483647
+  column category string nullable=true unique=false size=2147483647
+  column created_at time.Time nullable=false unique=false
+  column description string nullable=true unique=false size=2147483647
+  column id int nullable=false unique=false
+  column last_modified_at time.Time nullable=false unique=false
+  column name string nullable=false unique=false size=2147483647
+  column namespace string nullable=false unique=false size=2147483647
+  column oauth2_scopes json.RawMessage nullable=true unique=false
+  column specification string nullable=true unique=false size=2147483647
+  column status_message string nullable=true unique=false size=2147483647
+  column status_phase string nullable=true unique=false enums=READY,PENDING,ERROR,UNKNOWN
+  column team_agent_cards int nullable=false unique=false
+  column version string nullable=false unique=false size=2147483647
+  fk agent_cards_teams_agent_cards (team_agent_cards) -> teams (id) on_delete=NO ACTION
+  index agentcard_base_path_team_agent_cards (base_path,team_agent_cards) unique=true
+table agentic_exposures
+  column active bool nullable=true unique=false default=false
+  column agent_card_exposures int nullable=true unique=false
+  column application_exposed_agentics int nullable=false unique=false
+  column approval_config json.RawMessage nullable=false unique=false
+  column base_path string nullable=false unique=false size=2147483647
+  column created_at time.Time nullable=false unique=false
+  column environment string nullable=true unique=false size=2147483647
+  column id int nullable=false unique=false
+  column last_modified_at time.Time nullable=false unique=false
+  column mcp_server_exposures int nullable=true unique=false
+  column namespace string nullable=false unique=false size=2147483647
+  column security json.RawMessage nullable=true unique=false
+  column status_message string nullable=true unique=false size=2147483647
+  column status_phase string nullable=true unique=false enums=READY,PENDING,ERROR,UNKNOWN
+  column traffic json.RawMessage nullable=true unique=false
+  column transformation json.RawMessage nullable=true unique=false
+  column upstreams json.RawMessage nullable=false unique=false
+  column variant string nullable=false unique=false default=MCP enums=MCP,TELECONTEXTMCP,AGENT
+  column visibility string nullable=false unique=false default=ENTERPRISE enums=WORLD,ZONE,ENTERPRISE
+  fk agentic_exposures_agent_cards_exposures (agent_card_exposures) -> agent_cards (id) on_delete=SET NULL
+  fk agentic_exposures_applications_exposed_agentics (application_exposed_agentics) -> applications (id) on_delete=NO ACTION
+  fk agentic_exposures_mcp_servers_exposures (mcp_server_exposures) -> mcp_servers (id) on_delete=SET NULL
+  index agenticexposure_base_path_application_exposed_agentics (base_path,application_exposed_agentics) unique=true
+table agentic_subscriptions
+  column agentic_subscription_target int nullable=true unique=false
+  column application_subscribed_agentics int nullable=false unique=false
+  column base_path string nullable=false unique=false size=2147483647
+  column created_at time.Time nullable=false unique=false
+  column environment string nullable=true unique=false size=2147483647
+  column gateway_url string nullable=true unique=false size=2147483647
+  column id int nullable=false unique=false
+  column last_modified_at time.Time nullable=false unique=false
+  column name string nullable=false unique=false size=2147483647
+  column namespace string nullable=false unique=false size=2147483647
+  column security json.RawMessage nullable=true unique=false
+  column status_message string nullable=true unique=false size=2147483647
+  column status_phase string nullable=true unique=false enums=READY,PENDING,ERROR,UNKNOWN
+  column traffic json.RawMessage nullable=true unique=false
+  fk agentic_subscriptions_agentic_exposures_target (agentic_subscription_target) -> agentic_exposures (id) on_delete=SET NULL
+  fk agentic_subscriptions_applications_subscribed_agentics (application_subscribed_agentics) -> applications (id) on_delete=NO ACTION
+  index agenticsubscription_base_path_application_subscribed_agentics (base_path,application_subscribed_agentics) unique=true
+  index agenticsubscription_namespace_name (namespace,name) unique=true
+table api_exposures
+  column active bool nullable=true unique=false default=false
+  column api_exposures int nullable=true unique=false
+  column api_version string nullable=true unique=false size=2147483647
+  column application_exposed_apis int nullable=false unique=false
+  column approval_config json.RawMessage nullable=false unique=false
+  column base_path string nullable=false unique=false size=2147483647
+  column created_at time.Time nullable=false unique=false
+  column environment string nullable=true unique=false size=2147483647
+  column features json.RawMessage nullable=false unique=false
+  column id int nullable=false unique=false
+  column last_modified_at time.Time nullable=false unique=false
+  column namespace string nullable=false unique=false size=2147483647
+  column security json.RawMessage nullable=true unique=false
+  column status_message string nullable=true unique=false size=2147483647
+  column status_phase string nullable=true unique=false enums=READY,PENDING,ERROR,UNKNOWN
+  column traffic json.RawMessage nullable=true unique=false
+  column upstreams json.RawMessage nullable=false unique=false
+  column visibility string nullable=false unique=false default=ENTERPRISE enums=WORLD,ZONE,ENTERPRISE
+  fk api_exposures_apis_exposures (api_exposures) -> apis (id) on_delete=SET NULL
+  fk api_exposures_applications_exposed_apis (application_exposed_apis) -> applications (id) on_delete=NO ACTION
+  index apiexposure_base_path_application_exposed_apis (base_path,application_exposed_apis) unique=true
+table api_subscriptions
+  column api_subscription_target int nullable=true unique=false
+  column application_subscribed_apis int nullable=false unique=false
+  column base_path string nullable=false unique=false size=2147483647
+  column created_at time.Time nullable=false unique=false
+  column environment string nullable=true unique=false size=2147483647
+  column gateway_url string nullable=true unique=false size=2147483647
+  column id int nullable=false unique=false
+  column last_modified_at time.Time nullable=false unique=false
+  column m2m_auth_method string nullable=false unique=false default=NONE enums=NONE,BASIC_AUTH,OAUTH2_CLIENT,SCOPES_ONLY
+  column name string nullable=false unique=false size=2147483647
+  column namespace string nullable=false unique=false size=2147483647
+  column security json.RawMessage nullable=true unique=false
+  column status_message string nullable=true unique=false size=2147483647
+  column status_phase string nullable=true unique=false enums=READY,PENDING,ERROR,UNKNOWN
+  column traffic json.RawMessage nullable=true unique=false
+  fk api_subscriptions_api_exposures_target (api_subscription_target) -> api_exposures (id) on_delete=SET NULL
+  fk api_subscriptions_applications_subscribed_apis (application_subscribed_apis) -> applications (id) on_delete=NO ACTION
+  index apisubscription_base_path_application_subscribed_apis (base_path,application_subscribed_apis) unique=true
+  index apisubscription_namespace_name (namespace,name) unique=true
+table apis
+  column active bool nullable=false unique=false default=false
+  column base_path string nullable=false unique=false size=2147483647
+  column category string nullable=true unique=false size=2147483647
+  column created_at time.Time nullable=false unique=false
+  column id int nullable=false unique=false
+  column last_modified_at time.Time nullable=false unique=false
+  column namespace string nullable=false unique=false size=2147483647
+  column oauth2_scopes json.RawMessage nullable=true unique=false
+  column specification string nullable=true unique=false size=2147483647
+  column status_message string nullable=true unique=false size=2147483647
+  column status_phase string nullable=true unique=false enums=READY,PENDING,ERROR,UNKNOWN
+  column team_apis int nullable=false unique=false
+  column version string nullable=false unique=false size=2147483647
+  column x_vendor bool nullable=false unique=false default=false
+  fk apis_teams_apis (team_apis) -> teams (id) on_delete=NO ACTION
+  index api_base_path_team_apis (base_path,team_apis) unique=true
+table applications
+  column client_id string nullable=true unique=false size=2147483647
+  column client_secret string nullable=true unique=false size=2147483647
+  column created_at time.Time nullable=false unique=false
+  column current_expires_at time.Time nullable=true unique=false
+  column environment string nullable=true unique=false size=2147483647
+  column external_ids json.RawMessage nullable=true unique=false
+  column id int nullable=false unique=false
+  column ip_restrictions json.RawMessage nullable=true unique=false
+  column last_modified_at time.Time nullable=false unique=false
+  column name string nullable=false unique=false size=2147483647
+  column namespace string nullable=false unique=false size=2147483647
+  column permissions_url string nullable=true unique=false size=2147483647
+  column rotated_client_secret string nullable=true unique=false size=2147483647
+  column rotated_expires_at time.Time nullable=true unique=false
+  column secret_rotation_message string nullable=true unique=false size=2147483647
+  column secret_rotation_phase string nullable=false unique=false default=DONE enums=DONE,ROTATING,GRACE_PERIOD_ACTIVE,GRACE_PERIOD_EXPIRING,FAILED
+  column status_message string nullable=true unique=false size=2147483647
+  column status_phase string nullable=true unique=false enums=READY,PENDING,ERROR,UNKNOWN
+  column team_applications int nullable=false unique=false
+  column zone_applications int nullable=false unique=false
+  fk applications_teams_applications (team_applications) -> teams (id) on_delete=NO ACTION
+  fk applications_zones_applications (zone_applications) -> zones (id) on_delete=NO ACTION
+  index application_name_team_applications (name,team_applications) unique=true
+table approval_requests
+  column action string nullable=false unique=false size=2147483647
+  column agentic_subscription_approval_requests int nullable=true unique=false
+  column api_subscription_approval_requests int nullable=true unique=false
+  column available_transitions json.RawMessage nullable=true unique=false
+  column created_at time.Time nullable=false unique=false
+  column decider json.RawMessage nullable=false unique=false
+  column decider_team_name string nullable=false unique=false size=2147483647
+  column decisions json.RawMessage nullable=false unique=false
+  column environment string nullable=true unique=false size=2147483647
+  column event_subscription_approval_requests int nullable=true unique=false
+  column id int nullable=false unique=false
+  column last_modified_at time.Time nullable=false unique=false
+  column name string nullable=false unique=false size=2147483647
+  column namespace string nullable=false unique=false size=2147483647
+  column requested_scopes json.RawMessage nullable=true unique=false
+  column requester json.RawMessage nullable=false unique=false
+  column state string nullable=false unique=false default=PENDING enums=PENDING,SEMIGRANTED,GRANTED,REJECTED
+  column status_message string nullable=true unique=false size=2147483647
+  column status_phase string nullable=true unique=false enums=READY,PENDING,ERROR,UNKNOWN
+  column strategy string nullable=false unique=false default=AUTO enums=AUTO,SIMPLE,FOUR_EYES
+  fk approval_requests_agentic_subscriptions_approval_requests (agentic_subscription_approval_requests) -> agentic_subscriptions (id) on_delete=CASCADE
+  fk approval_requests_api_subscriptions_approval_requests (api_subscription_approval_requests) -> api_subscriptions (id) on_delete=CASCADE
+  fk approval_requests_event_subscriptions_approval_requests (event_subscription_approval_requests) -> event_subscriptions (id) on_delete=CASCADE
+  index approvalrequest_namespace_name (namespace,name) unique=true
+table approvals
+  column action string nullable=false unique=false size=2147483647
+  column agentic_subscription_approval int nullable=true unique=true
+  column api_subscription_approval int nullable=true unique=true
+  column available_transitions json.RawMessage nullable=true unique=false
+  column created_at time.Time nullable=false unique=false
+  column decider json.RawMessage nullable=false unique=false
+  column decider_team_name string nullable=false unique=false size=2147483647
+  column decisions json.RawMessage nullable=false unique=false
+  column environment string nullable=true unique=false size=2147483647
+  column event_subscription_approval int nullable=true unique=true
+  column expires_at time.Time nullable=true unique=false
+  column id int nullable=false unique=false
+  column last_modified_at time.Time nullable=false unique=false
+  column name string nullable=false unique=false size=2147483647
+  column namespace string nullable=false unique=false size=2147483647
+  column requested_scopes json.RawMessage nullable=true unique=false
+  column requester json.RawMessage nullable=false unique=false
+  column state string nullable=false unique=false default=PENDING enums=PENDING,SEMIGRANTED,GRANTED,REJECTED,SUSPENDED,EXPIRED
+  column status_message string nullable=true unique=false size=2147483647
+  column status_phase string nullable=true unique=false enums=READY,PENDING,ERROR,UNKNOWN
+  column strategy string nullable=false unique=false default=AUTO enums=AUTO,SIMPLE,FOUR_EYES
+  fk approvals_agentic_subscriptions_approval (agentic_subscription_approval) -> agentic_subscriptions (id) on_delete=SET NULL
+  fk approvals_api_subscriptions_approval (api_subscription_approval) -> api_subscriptions (id) on_delete=SET NULL
+  fk approvals_event_subscriptions_approval (event_subscription_approval) -> event_subscriptions (id) on_delete=SET NULL
+  index approval_namespace_name (namespace,name) unique=true
+table event_exposures
+  column active bool nullable=true unique=false default=false
+  column application_exposed_events int nullable=false unique=false
+  column approval_config json.RawMessage nullable=false unique=false
+  column created_at time.Time nullable=false unique=false
+  column environment string nullable=true unique=false size=2147483647
+  column event_scopes json.RawMessage nullable=true unique=false
+  column event_type string nullable=false unique=false size=2147483647
+  column event_type_exposures int nullable=true unique=false
+  column gateway_publishing_url string nullable=true unique=false size=2147483647
+  column id int nullable=false unique=false
+  column last_modified_at time.Time nullable=false unique=false
+  column namespace string nullable=false unique=false size=2147483647
+  column status_message string nullable=true unique=false size=2147483647
+  column status_phase string nullable=true unique=false enums=READY,PENDING,ERROR,UNKNOWN
+  column visibility string nullable=false unique=false default=ENTERPRISE enums=WORLD,ZONE,ENTERPRISE
+  fk event_exposures_applications_exposed_events (application_exposed_events) -> applications (id) on_delete=NO ACTION
+  fk event_exposures_event_types_exposures (event_type_exposures) -> event_types (id) on_delete=SET NULL
+  index eventexposure_event_type_application_exposed_events (event_type,application_exposed_events) unique=true
+table event_subscriptions
+  column application_subscribed_events int nullable=false unique=false
+  column callback_url string nullable=true unique=false size=2147483647
+  column created_at time.Time nullable=false unique=false
+  column delivery json.RawMessage nullable=false unique=false
+  column delivery_type string nullable=false unique=false default=CALLBACK enums=CALLBACK,SERVER_SENT_EVENT
+  column environment string nullable=true unique=false size=2147483647
+  column event_subscription_target int nullable=true unique=false
+  column event_type string nullable=false unique=false size=2147483647
+  column gateway_sse_url string nullable=true unique=false size=2147483647
+  column id int nullable=false unique=false
+  column last_modified_at time.Time nullable=false unique=false
+  column name string nullable=false unique=false size=2147483647
+  column namespace string nullable=false unique=false size=2147483647
+  column scopes json.RawMessage nullable=true unique=false
+  column status_message string nullable=true unique=false size=2147483647
+  column status_phase string nullable=true unique=false enums=READY,PENDING,ERROR,UNKNOWN
+  column trigger json.RawMessage nullable=true unique=false
+  fk event_subscriptions_applications_subscribed_events (application_subscribed_events) -> applications (id) on_delete=NO ACTION
+  fk event_subscriptions_event_exposures_target (event_subscription_target) -> event_exposures (id) on_delete=SET NULL
+  index eventsubscription_event_type_application_subscribed_events (event_type,application_subscribed_events) unique=true
+  index eventsubscription_namespace_name (namespace,name) unique=true
+table event_types
+  column active bool nullable=false unique=false default=false
+  column created_at time.Time nullable=false unique=false
+  column description string nullable=true unique=false size=2147483647
+  column event_type string nullable=false unique=false size=2147483647
+  column id int nullable=false unique=false
+  column last_modified_at time.Time nullable=false unique=false
+  column namespace string nullable=false unique=false size=2147483647
+  column specification string nullable=true unique=false size=2147483647
+  column status_message string nullable=true unique=false size=2147483647
+  column status_phase string nullable=true unique=false enums=READY,PENDING,ERROR,UNKNOWN
+  column team_event_types int nullable=false unique=false
+  column version string nullable=false unique=false size=2147483647
+  fk event_types_teams_event_types (team_event_types) -> teams (id) on_delete=NO ACTION
+  index eventtype_event_type_team_event_types (event_type,team_event_types) unique=true
+table groups
+  column description string nullable=false unique=false size=2147483647 default=
+  column display_name string nullable=false unique=false size=2147483647
+  column environment string nullable=true unique=false size=2147483647
+  column id int nullable=false unique=false
+  column name string nullable=false unique=true size=2147483647
+  column namespace string nullable=false unique=false size=2147483647
+table mcp_servers
+  column active bool nullable=false unique=false default=false
+  column base_path string nullable=false unique=false size=2147483647
+  column category string nullable=true unique=false size=2147483647
+  column created_at time.Time nullable=false unique=false
+  column description string nullable=true unique=false size=2147483647
+  column id int nullable=false unique=false
+  column last_modified_at time.Time nullable=false unique=false
+  column name string nullable=false unique=false size=2147483647
+  column namespace string nullable=false unique=false size=2147483647
+  column oauth2_scopes json.RawMessage nullable=true unique=false
+  column specification string nullable=true unique=false size=2147483647
+  column status_message string nullable=true unique=false size=2147483647
+  column status_phase string nullable=true unique=false enums=READY,PENDING,ERROR,UNKNOWN
+  column team_mcp_servers int nullable=false unique=false
+  column version string nullable=false unique=false size=2147483647
+  fk mcp_servers_teams_mcp_servers (team_mcp_servers) -> teams (id) on_delete=NO ACTION
+  index mcpserver_base_path_team_mcp_servers (base_path,team_mcp_servers) unique=true
+table members
+  column email string nullable=false unique=false size=2147483647
+  column environment string nullable=true unique=false size=2147483647
+  column id int nullable=false unique=false
+  column name string nullable=false unique=false size=2147483647
+  column team_members int nullable=true unique=false
+  fk members_teams_members (team_members) -> teams (id) on_delete=SET NULL
+  index member_email (email) unique=false
+  index member_email_team_members (email,team_members) unique=true
+table permission_sets
+  column application_permission_set int nullable=false unique=true
+  column created_at time.Time nullable=false unique=false
+  column environment string nullable=true unique=false size=2147483647
+  column id int nullable=false unique=false
+  column last_modified_at time.Time nullable=false unique=false
+  column namespace string nullable=false unique=false size=2147483647
+  column permissions json.RawMessage nullable=true unique=false
+  column status_message string nullable=true unique=false size=2147483647
+  column status_phase string nullable=true unique=false enums=READY,PENDING,ERROR,UNKNOWN
+  fk permission_sets_applications_permission_set (application_permission_set) -> applications (id) on_delete=NO ACTION
+table teams
+  column category string nullable=false unique=false default=CUSTOMER enums=CUSTOMER,INFRASTRUCTURE
+  column created_at time.Time nullable=false unique=false
+  column description string nullable=true unique=false size=2147483647
+  column display_name string nullable=true unique=false size=2147483647
+  column email string nullable=false unique=false size=2147483647
+  column environment string nullable=true unique=false size=2147483647
+  column group_teams int nullable=true unique=false
+  column id int nullable=false unique=false
+  column last_modified_at time.Time nullable=false unique=false
+  column name string nullable=false unique=true size=2147483647
+  column namespace string nullable=false unique=false size=2147483647
+  column status_message string nullable=true unique=false size=2147483647
+  column status_phase string nullable=true unique=false enums=READY,PENDING,ERROR,UNKNOWN
+  column team_token string nullable=true unique=false size=2147483647
+  fk teams_groups_teams (group_teams) -> groups (id) on_delete=SET NULL
+table zones
+  column api_subscription_failover_zones int nullable=true unique=false
+  column environment string nullable=true unique=false size=2147483647
+  column gateway_url string nullable=true unique=false size=2147483647
+  column id int nullable=false unique=false
+  column issuer_url string nullable=true unique=false size=2147483647
+  column name string nullable=false unique=true size=2147483647
+  column permissions_url string nullable=true unique=false size=2147483647
+  column visibility string nullable=false unique=false default=ENTERPRISE enums=WORLD,ENTERPRISE
+  fk zones_api_subscriptions_failover_zones (api_subscription_failover_zones) -> api_subscriptions (id) on_delete=SET NULL

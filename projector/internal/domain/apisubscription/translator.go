@@ -50,16 +50,16 @@ func (t *Translator) ShouldSkip(_ *apiv1.ApiSubscription) (bool, string) {
 func (t *Translator) Translate(_ context.Context, obj *apiv1.ApiSubscription) (*APISubscriptionData, error) {
 	phase, message := shared.StatusFromConditions(obj.Status.Conditions)
 
-	var security *model.ApiSubscriptionSecurity
+	var security *model.APISubscriptionSecurity
 	if obj.Spec.Security != nil {
-		security = &model.ApiSubscriptionSecurity{}
+		security = &model.APISubscriptionSecurity{}
 		if obj.Spec.Security.M2M != nil {
 			security.M2M = &model.SubscriberMachine2MachineAuthentication{}
 			if obj.Spec.Security.M2M.Client != nil {
-				security.M2M.Client = util.MapCrOAuthToCpApi(obj.Spec.Security.M2M.Client)
+				security.M2M.Client = util.MapCROAuthToCPAPI(obj.Spec.Security.M2M.Client)
 			}
 			if obj.Spec.Security.M2M.Basic != nil {
-				security.M2M.Basic = util.MapCrBasicAuthToCpApi(obj.Spec.Security.M2M.Basic)
+				security.M2M.Basic = util.MapCRBasicAuthToCPAPI(obj.Spec.Security.M2M.Basic)
 			}
 			if len(obj.Spec.Security.M2M.Scopes) > 0 {
 				security.M2M.Scopes = obj.Spec.Security.M2M.Scopes
@@ -79,7 +79,7 @@ func (t *Translator) Translate(_ context.Context, obj *apiv1.ApiSubscription) (*
 		TargetBasePath: obj.Spec.ApiBasePath,
 		TargetAppName:  "", // TODO: this needs to be improved, we need to get the ApiExposure into the context to resolve this
 		TargetTeamName: "",
-		GatewayUrl:     obj.Status.GatewayUrl,
+		GatewayURL:     obj.Status.GatewayUrl,
 	}, nil
 }
 

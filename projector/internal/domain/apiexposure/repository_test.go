@@ -45,7 +45,7 @@ func (m *mockExposureDeps) FindApplicationID(_ context.Context, name, teamName s
 	return 0, fmt.Errorf("application %q (team %q): %w", name, teamName, infrastructure.ErrEntityNotFound)
 }
 
-func (m *mockExposureDeps) FindActiveApiID(_ context.Context, basePath string) (int, error) {
+func (m *mockExposureDeps) FindActiveAPIID(_ context.Context, basePath string) (int, error) {
 	if m.apiIDs != nil {
 		if id, ok := m.apiIDs[basePath]; ok {
 			return id, nil
@@ -130,7 +130,7 @@ var _ = Describe("ApiExposure Repository", func() {
 			}
 			Expect(repo.Upsert(ctx, data)).To(Succeed())
 
-			exp, err := client.ApiExposure.Query().
+			exp, err := client.APIExposure.Query().
 				Where(entapiexposure.BasePathEQ("/api/v1/users")).
 				Only(ctx)
 			Expect(err).NotTo(HaveOccurred())
@@ -154,7 +154,7 @@ var _ = Describe("ApiExposure Repository", func() {
 		It("should back-link orphaned subscriptions projected before the exposure", func() {
 			// Subscription created first, before its target exposure exists →
 			// stored with a NULL target FK (the create-order race).
-			sub, err := client.ApiSubscription.Create().
+			sub, err := client.APISubscription.Create().
 				SetBasePath("/api/v1/orphan").
 				SetEnvironment("prod").
 				SetNamespace("prod--platform--narvi").
@@ -186,7 +186,7 @@ var _ = Describe("ApiExposure Repository", func() {
 		})
 
 		It("should not back-link subscriptions when the exposure is inactive", func() {
-			sub, err := client.ApiSubscription.Create().
+			sub, err := client.APISubscription.Create().
 				SetBasePath("/api/v1/inactive").
 				SetEnvironment("prod").
 				SetNamespace("prod--platform--narvi").
@@ -220,7 +220,7 @@ var _ = Describe("ApiExposure Repository", func() {
 				SetNamespace("platform--catalogue").
 				Save(ctx)
 			Expect(err).NotTo(HaveOccurred())
-			catalogueApi, err := client.Api.Create().
+			catalogueAPI, err := client.API.Create().
 				SetBasePath("/api/v1/stale").
 				SetNamespace("platform--catalogue").
 				SetVersion("1.0.0").
@@ -241,22 +241,22 @@ var _ = Describe("ApiExposure Repository", func() {
 				AppName:       "my-app",
 				TeamName:      "platform--narvi",
 			}
-			deps.apiIDs = map[string]int{"/api/v1/stale": catalogueApi.ID}
+			deps.apiIDs = map[string]int{"/api/v1/stale": catalogueAPI.ID}
 			Expect(repo.Upsert(ctx, data)).To(Succeed())
 
-			exp, err := client.ApiExposure.Query().
+			exp, err := client.APIExposure.Query().
 				Where(entapiexposure.BasePathEQ("/api/v1/stale")).
 				Only(ctx)
 			Expect(err).NotTo(HaveOccurred())
 			linked, err := exp.QueryAPI().Only(ctx)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(linked.ID).To(Equal(catalogueApi.ID))
+			Expect(linked.ID).To(Equal(catalogueAPI.ID))
 
 			// Api becomes unresolvable (e.g. it went inactive) — re-reconcile.
 			deps.apiIDs = map[string]int{}
 			Expect(repo.Upsert(ctx, data)).To(Succeed())
 
-			exp, err = client.ApiExposure.Query().
+			exp, err = client.APIExposure.Query().
 				Where(entapiexposure.BasePathEQ("/api/v1/stale")).
 				Only(ctx)
 			Expect(err).NotTo(HaveOccurred())
@@ -283,7 +283,7 @@ var _ = Describe("ApiExposure Repository", func() {
 				},
 				AppName:  "my-app",
 				TeamName: "platform--narvi",
-				Security: &model.ApiExposureSecurity{
+				Security: &model.APIExposureSecurity{
 					M2M: &model.Machine2MachineAuthentication{
 						ExternalIDP: &model.ExternalIdentityProvider{
 							TokenEndpoint: "https://idp.example.com/token",
@@ -294,7 +294,7 @@ var _ = Describe("ApiExposure Repository", func() {
 								Password: "ext-pass",
 							},
 							Client: &model.OAuth2ClientCredentials{
-								ClientId:     "ext-client-id",
+								ClientID:     "ext-client-id",
 								ClientSecret: &clientSecret,
 								ClientKey:    &clientKey,
 							},
@@ -342,7 +342,7 @@ var _ = Describe("ApiExposure Repository", func() {
 			}
 			Expect(repo.Upsert(ctx, data)).To(Succeed())
 
-			exp, err := client.ApiExposure.Query().
+			exp, err := client.APIExposure.Query().
 				Where(entapiexposure.BasePathEQ("/api/v1/secure")).
 				Only(ctx)
 			Expect(err).NotTo(HaveOccurred())
@@ -359,7 +359,7 @@ var _ = Describe("ApiExposure Repository", func() {
 			Expect(*exp.Security.M2M.ExternalIDP.GrantType).To(Equal("client_credentials"))
 			Expect(exp.Security.M2M.ExternalIDP.Basic.Username).To(Equal("ext-user"))
 			Expect(exp.Security.M2M.ExternalIDP.Basic.Password).To(Equal("ext-pass"))
-			Expect(exp.Security.M2M.ExternalIDP.Client.ClientId).To(Equal("ext-client-id"))
+			Expect(exp.Security.M2M.ExternalIDP.Client.ClientID).To(Equal("ext-client-id"))
 			Expect(*exp.Security.M2M.ExternalIDP.Client.ClientSecret).To(Equal("ext-client-secret"))
 			Expect(*exp.Security.M2M.ExternalIDP.Client.ClientKey).To(Equal("ext-client-key"))
 
@@ -456,7 +456,7 @@ var _ = Describe("ApiExposure Repository", func() {
 			data.ApprovalConfig = model.ApprovalConfig{Strategy: "FOUR_EYES", TrustedTeams: []string{"t1"}}
 			Expect(repo.Upsert(ctx, data)).To(Succeed())
 
-			exp, err := client.ApiExposure.Query().
+			exp, err := client.APIExposure.Query().
 				Where(entapiexposure.BasePathEQ("/api/v1/update")).
 				Only(ctx)
 			Expect(err).NotTo(HaveOccurred())
@@ -487,7 +487,7 @@ var _ = Describe("ApiExposure Repository", func() {
 			}
 			Expect(repo.Upsert(ctx, data)).To(Succeed())
 
-			exp, err := client.ApiExposure.Query().
+			exp, err := client.APIExposure.Query().
 				Where(entapiexposure.BasePathEQ("/api/v1/features")).
 				Only(ctx)
 			Expect(err).NotTo(HaveOccurred())
@@ -498,7 +498,7 @@ var _ = Describe("ApiExposure Repository", func() {
 
 			// Update with security, traffic, and expanded features.
 			data.Features = []string{"LAST_MILE_SECURITY", "EXTERNAL_IDP", "CUSTOM_SCOPES", "RATE_LIMIT", "FAILOVER"}
-			data.Security = &model.ApiExposureSecurity{
+			data.Security = &model.APIExposureSecurity{
 				M2M: &model.Machine2MachineAuthentication{
 					Scopes: []string{"read", "write"},
 				},
@@ -515,7 +515,7 @@ var _ = Describe("ApiExposure Repository", func() {
 			}
 			Expect(repo.Upsert(ctx, data)).To(Succeed())
 
-			exp, err = client.ApiExposure.Query().
+			exp, err = client.APIExposure.Query().
 				Where(entapiexposure.BasePathEQ("/api/v1/features")).
 				Only(ctx)
 			Expect(err).NotTo(HaveOccurred())
@@ -544,7 +544,7 @@ var _ = Describe("ApiExposure Repository", func() {
 			}
 			Expect(repo.Upsert(ctx, data)).To(Succeed())
 
-			exp, err = client.ApiExposure.Query().
+			exp, err = client.APIExposure.Query().
 				Where(entapiexposure.BasePathEQ("/api/v1/features")).
 				Only(ctx)
 			Expect(err).NotTo(HaveOccurred())
@@ -606,7 +606,7 @@ var _ = Describe("ApiExposure Repository", func() {
 		}
 
 		exposureID := func() int {
-			id, err := client.ApiExposure.Query().
+			id, err := client.APIExposure.Query().
 				Where(entapiexposure.BasePathEQ(rlBasePath)).
 				OnlyID(ctx)
 			Expect(err).NotTo(HaveOccurred())
@@ -626,7 +626,7 @@ var _ = Describe("ApiExposure Repository", func() {
 		}
 
 		createTargetingSub := func(name string, ownerID, targetID int) int {
-			sub, err := client.ApiSubscription.Create().
+			sub, err := client.APISubscription.Create().
 				SetBasePath(rlBasePath).
 				SetEnvironment("prod").
 				SetNamespace("prod--platform--narvi").
@@ -639,7 +639,7 @@ var _ = Describe("ApiExposure Repository", func() {
 		}
 
 		createOrphanSub := func(name string, ownerID int) int {
-			sub, err := client.ApiSubscription.Create().
+			sub, err := client.APISubscription.Create().
 				SetBasePath(rlBasePath).
 				SetEnvironment("prod").
 				SetNamespace("prod--platform--narvi").
@@ -650,8 +650,8 @@ var _ = Describe("ApiExposure Repository", func() {
 			return sub.ID
 		}
 
-		subTraffic := func(subID int) *model.ApiSubscriptionTraffic {
-			sub, err := client.ApiSubscription.Get(ctx, subID)
+		subTraffic := func(subID int) *model.APISubscriptionTraffic {
+			sub, err := client.APISubscription.Get(ctx, subID)
 			Expect(err).NotTo(HaveOccurred())
 			return sub.Traffic
 		}
@@ -730,8 +730,8 @@ var _ = Describe("ApiExposure Repository", func() {
 			Expect(repo.Upsert(ctx, exposureData(rl))).To(Succeed())
 
 			// Stamp a sentinel the guard must preserve if propagation is skipped.
-			sentinel := &model.ApiSubscriptionTraffic{ProviderLimits: &model.Limits{Second: 999}}
-			Expect(client.ApiSubscription.UpdateOneID(subID).SetTraffic(sentinel).Exec(ctx)).To(Succeed())
+			sentinel := &model.APISubscriptionTraffic{ProviderLimits: &model.Limits{Second: 999}}
+			Expect(client.APISubscription.UpdateOneID(subID).SetTraffic(sentinel).Exec(ctx)).To(Succeed())
 
 			// Re-upsert with the identical rate limit — the change guard must skip propagation.
 			Expect(repo.Upsert(ctx, exposureData(rl))).To(Succeed())
@@ -877,8 +877,8 @@ var _ = Describe("ApiExposure Repository", func() {
 			subID := createTargetingSub("sub-cx", consumerID, exposureID())
 
 			// Sentinel the guard must preserve if it correctly detects "unchanged".
-			sentinel := &model.ApiSubscriptionTraffic{ProviderLimits: &model.Limits{Second: 999}}
-			Expect(client.ApiSubscription.UpdateOneID(subID).SetTraffic(sentinel).Exec(ctx)).To(Succeed())
+			sentinel := &model.APISubscriptionTraffic{ProviderLimits: &model.Limits{Second: 999}}
+			Expect(client.APISubscription.UpdateOneID(subID).SetTraffic(sentinel).Exec(ctx)).To(Succeed())
 
 			// ── Second Upsert ── re-applies the identical complexRL.
 			Expect(repo.Upsert(ctx, exposureData(complexRL))).To(Succeed())
@@ -910,7 +910,7 @@ var _ = Describe("ApiExposure Repository", func() {
 			}
 			Expect(repo.Delete(ctx, key)).To(Succeed())
 
-			count, err := client.ApiExposure.Query().Count(ctx)
+			count, err := client.APIExposure.Query().Count(ctx)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(count).To(Equal(0))
 		})
@@ -994,11 +994,11 @@ var _ = Describe("ApiExposure Repository", func() {
 			Expect(repo.Delete(ctx, key)).To(Succeed())
 
 			// Second exposure should still exist.
-			count, err := client.ApiExposure.Query().Count(ctx)
+			count, err := client.APIExposure.Query().Count(ctx)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(count).To(Equal(1))
 
-			exp, err := client.ApiExposure.Query().
+			exp, err := client.APIExposure.Query().
 				Where(entapiexposure.BasePathEQ("/api/v1/second")).
 				Only(ctx)
 			Expect(err).NotTo(HaveOccurred())
@@ -1025,7 +1025,7 @@ var _ = Describe("ApiExposure Repository", func() {
 		})
 
 		It("should fall back to DB on cache miss and cache the result", func() {
-			exp, err := client.ApiExposure.Create().
+			exp, err := client.APIExposure.Create().
 				SetBasePath("/api/v1/db-lookup").
 				SetNamespace("platform--narvi").
 				SetOwnerID(appID).

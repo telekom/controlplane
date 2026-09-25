@@ -71,7 +71,7 @@ func (e *APIExposureFeature) UnmarshalGQL(v any) error {
 
 	*e = APIExposureFeature(str)
 	if !e.IsValid() {
-		return fmt.Errorf("%s is not a valid ApiExposureFeature", str)
+		return fmt.Errorf("%s is not a valid APIExposureFeature", str)
 	}
 	return nil
 }
@@ -327,8 +327,8 @@ func (e ResponseFilterMode) MarshalJSON() ([]byte, error) {
 type TokenRequestMethod string
 
 const (
-	TokenRequestMethodClientSecretBasic TokenRequestMethod = "client_secret_basic"
-	TokenRequestMethodClientSecretPost  TokenRequestMethod = "client_secret_post"
+	TokenRequestMethodClientSecretBasic TokenRequestMethod = "CLIENT_SECRET_BASIC"
+	TokenRequestMethodClientSecretPost  TokenRequestMethod = "CLIENT_SECRET_POST"
 )
 
 var AllTokenRequestMethod = []TokenRequestMethod{

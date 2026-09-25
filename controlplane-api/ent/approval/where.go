@@ -745,7 +745,7 @@ func HasAPISubscription() predicate.Approval {
 }
 
 // HasAPISubscriptionWith applies the HasEdge predicate on the "api_subscription" edge with a given conditions (other predicates).
-func HasAPISubscriptionWith(preds ...predicate.ApiSubscription) predicate.Approval {
+func HasAPISubscriptionWith(preds ...predicate.APISubscription) predicate.Approval {
 	return predicate.Approval(func(s *sql.Selector) {
 		step := newAPISubscriptionStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {

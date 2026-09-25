@@ -17,12 +17,12 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 )
 
-// ApiSubscription holds the schema definition for an API subscription.
-type ApiSubscription struct {
+// APISubscription holds the schema definition for an API subscription.
+type APISubscription struct {
 	ent.Schema
 }
 
-func (ApiSubscription) Mixin() []ent.Mixin {
+func (APISubscription) Mixin() []ent.Mixin {
 	return []ent.Mixin{
 		schemamixin.PrivacyMixin{},
 		schemamixin.TimestampsMixin{},
@@ -32,37 +32,37 @@ func (ApiSubscription) Mixin() []ent.Mixin {
 	}
 }
 
-func (ApiSubscription) Fields() []ent.Field {
+func (APISubscription) Fields() []ent.Field {
 	return []ent.Field{
 		field.Text("base_path").
 			NotEmpty(),
-		field.Enum("m2m_auth_method").
+		field.Enum("M2M_auth_method").
 			NamedValues(
 				"None", "NONE",
 				"BasicAuth", "BASIC_AUTH",
-				"Oauth2Client", "OAUTH2_CLIENT",
+				"OAuth2Client", "OAUTH2_CLIENT",
 				"ScopesOnly", "SCOPES_ONLY",
 			).
 			Default("NONE"),
 		field.Text("gateway_url").
 			Optional().
 			Nillable(),
-		field.JSON("security", &model.ApiSubscriptionSecurity{}).
+		field.JSON("security", &model.APISubscriptionSecurity{}).
 			Optional().
 			Annotations(entgql.Skip(entgql.SkipWhereInput)),
-		field.JSON("traffic", &model.ApiSubscriptionTraffic{}).
+		field.JSON("traffic", &model.APISubscriptionTraffic{}).
 			Optional().
 			Annotations(entgql.Skip(entgql.SkipWhereInput)),
 	}
 }
 
-func (ApiSubscription) Edges() []ent.Edge {
+func (APISubscription) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("owner", Application.Type).
-			Ref("subscribed_apis").
+			Ref("subscribed_APIs").
 			Required().
 			Unique(),
-		edge.To("target", ApiExposure.Type).
+		edge.To("target", APIExposure.Type).
 			Unique().
 			Annotations(entgql.Skip(entgql.SkipType)),
 		edge.To("failover_zones", Zone.Type),
@@ -73,14 +73,14 @@ func (ApiSubscription) Edges() []ent.Edge {
 	}
 }
 
-func (ApiSubscription) Annotations() []schema.Annotation {
+func (APISubscription) Annotations() []schema.Annotation {
 	return []schema.Annotation{
 		entgql.QueryField(),
 		entgql.RelayConnection(),
 	}
 }
 
-func (ApiSubscription) Indexes() []ent.Index {
+func (APISubscription) Indexes() []ent.Index {
 	return []ent.Index{
 		index.Fields("base_path").Edges("owner").Unique(),
 	}

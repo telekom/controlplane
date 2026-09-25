@@ -91,7 +91,7 @@ func (r *Repository) Upsert(ctx context.Context, data *APISubscriptionData) erro
 	// Target exposure is optional — subscription may exist before the target
 	// API is exposed. If not found, store with NULL target FK.
 	var targetExposureID *int
-	var traffic *model.ApiSubscriptionTraffic
+	var traffic *model.APISubscriptionTraffic
 	if id, findErr := r.deps.FindAPIExposureByBasePath(ctx, data.TargetBasePath); findErr != nil {
 		if !errors.Is(findErr, infrastructure.ErrEntityNotFound) {
 			return fmt.Errorf("find target api_exposure for subscription (basePath %q): %w",
@@ -105,18 +105,18 @@ func (r *Repository) Upsert(ctx context.Context, data *APISubscriptionData) erro
 		}
 	}
 
-	create := r.client.ApiSubscription.Create().
+	create := r.client.APISubscription.Create().
 		SetBasePath(data.BasePath).
 		SetEnvironment(data.Meta.Environment).
 		SetNamespace(data.Meta.Namespace).
 		SetName(data.Meta.Name).
-		SetM2mAuthMethod(apisubscription.M2mAuthMethod(data.M2MAuthMethod)).
+		SetM2MAuthMethod(apisubscription.M2MAuthMethod(data.M2MAuthMethod)).
 		SetSecurity(data.Security).
 		SetStatusPhase(apisubscription.StatusPhase(data.StatusPhase)).
 		SetStatusMessage(data.StatusMessage).
 		SetOwnerID(ownerAppID).
 		SetNillableTargetID(targetExposureID).
-		SetGatewayURL(data.GatewayUrl).
+		SetGatewayURL(data.GatewayURL).
 		SetTraffic(traffic)
 
 	subscriptionID, upsertErr := create.
@@ -142,7 +142,7 @@ func (r *Repository) Upsert(ctx context.Context, data *APISubscriptionData) erro
 	// INSERT, so the old target FK value would be preserved instead of being
 	// cleared to NULL. We explicitly clear it here.
 	if targetExposureID == nil {
-		if err := r.client.ApiSubscription.UpdateOneID(subscriptionID).
+		if err := r.client.APISubscription.UpdateOneID(subscriptionID).
 			ClearTarget().
 			Exec(ctx); err != nil {
 			return fmt.Errorf("clear target FK for api_subscription %d (owner %q, basePath %q): %w",
@@ -161,9 +161,9 @@ func (r *Repository) Upsert(ctx context.Context, data *APISubscriptionData) erro
 // derives the denormalized traffic for this subscriber. Overrides are keyed by
 // the owner's client id (what the gateway enforces), so it is resolved only
 // when overrides actually exist.
-func (r *Repository) resolveSubscriberTraffic(ctx context.Context, exposureID, ownerAppID int, data *APISubscriptionData) (*model.ApiSubscriptionTraffic, error) {
+func (r *Repository) resolveSubscriberTraffic(ctx context.Context, exposureID, ownerAppID int, data *APISubscriptionData) (*model.APISubscriptionTraffic, error) {
 	// Read only the traffic column to derive subscriber rate limits.
-	exposure, err := r.client.ApiExposure.Query().
+	exposure, err := r.client.APIExposure.Query().
 		Where(apiexposure.IDEQ(exposureID)).
 		Select(apiexposure.FieldTraffic).
 		Only(ctx)
@@ -212,7 +212,7 @@ func (r *Repository) Delete(ctx context.Context, key APISubscriptionKey) error {
 		metrics.DBOperationDuration.WithLabelValues(entityType, metrics.OperationDelete).Observe(time.Since(start).Seconds())
 	}()
 
-	count, err := r.client.ApiSubscription.Delete().
+	count, err := r.client.APISubscription.Delete().
 		Where(
 			apisubscription.HasOwnerWith(
 				application.NameEQ(key.OwnerAppName),

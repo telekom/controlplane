@@ -21,22 +21,22 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 )
 
-// ApiExposureCreate is the builder for creating a ApiExposure entity.
-type ApiExposureCreate struct {
+// APIExposureCreate is the builder for creating a APIExposure entity.
+type APIExposureCreate struct {
 	config
-	mutation *ApiExposureMutation
+	mutation *APIExposureMutation
 	hooks    []Hook
 	conflict []sql.ConflictOption
 }
 
 // SetCreatedAt sets the "created_at" field.
-func (_c *ApiExposureCreate) SetCreatedAt(v time.Time) *ApiExposureCreate {
+func (_c *APIExposureCreate) SetCreatedAt(v time.Time) *APIExposureCreate {
 	_c.mutation.SetCreatedAt(v)
 	return _c
 }
 
 // SetNillableCreatedAt sets the "created_at" field if the given value is not nil.
-func (_c *ApiExposureCreate) SetNillableCreatedAt(v *time.Time) *ApiExposureCreate {
+func (_c *APIExposureCreate) SetNillableCreatedAt(v *time.Time) *APIExposureCreate {
 	if v != nil {
 		_c.SetCreatedAt(*v)
 	}
@@ -44,13 +44,13 @@ func (_c *ApiExposureCreate) SetNillableCreatedAt(v *time.Time) *ApiExposureCrea
 }
 
 // SetLastModifiedAt sets the "last_modified_at" field.
-func (_c *ApiExposureCreate) SetLastModifiedAt(v time.Time) *ApiExposureCreate {
+func (_c *APIExposureCreate) SetLastModifiedAt(v time.Time) *APIExposureCreate {
 	_c.mutation.SetLastModifiedAt(v)
 	return _c
 }
 
 // SetNillableLastModifiedAt sets the "last_modified_at" field if the given value is not nil.
-func (_c *ApiExposureCreate) SetNillableLastModifiedAt(v *time.Time) *ApiExposureCreate {
+func (_c *APIExposureCreate) SetNillableLastModifiedAt(v *time.Time) *APIExposureCreate {
 	if v != nil {
 		_c.SetLastModifiedAt(*v)
 	}
@@ -58,13 +58,13 @@ func (_c *ApiExposureCreate) SetNillableLastModifiedAt(v *time.Time) *ApiExposur
 }
 
 // SetStatusPhase sets the "status_phase" field.
-func (_c *ApiExposureCreate) SetStatusPhase(v apiexposure.StatusPhase) *ApiExposureCreate {
+func (_c *APIExposureCreate) SetStatusPhase(v apiexposure.StatusPhase) *APIExposureCreate {
 	_c.mutation.SetStatusPhase(v)
 	return _c
 }
 
 // SetNillableStatusPhase sets the "status_phase" field if the given value is not nil.
-func (_c *ApiExposureCreate) SetNillableStatusPhase(v *apiexposure.StatusPhase) *ApiExposureCreate {
+func (_c *APIExposureCreate) SetNillableStatusPhase(v *apiexposure.StatusPhase) *APIExposureCreate {
 	if v != nil {
 		_c.SetStatusPhase(*v)
 	}
@@ -72,13 +72,13 @@ func (_c *ApiExposureCreate) SetNillableStatusPhase(v *apiexposure.StatusPhase) 
 }
 
 // SetStatusMessage sets the "status_message" field.
-func (_c *ApiExposureCreate) SetStatusMessage(v string) *ApiExposureCreate {
+func (_c *APIExposureCreate) SetStatusMessage(v string) *APIExposureCreate {
 	_c.mutation.SetStatusMessage(v)
 	return _c
 }
 
 // SetNillableStatusMessage sets the "status_message" field if the given value is not nil.
-func (_c *ApiExposureCreate) SetNillableStatusMessage(v *string) *ApiExposureCreate {
+func (_c *APIExposureCreate) SetNillableStatusMessage(v *string) *APIExposureCreate {
 	if v != nil {
 		_c.SetStatusMessage(*v)
 	}
@@ -86,13 +86,13 @@ func (_c *ApiExposureCreate) SetNillableStatusMessage(v *string) *ApiExposureCre
 }
 
 // SetEnvironment sets the "environment" field.
-func (_c *ApiExposureCreate) SetEnvironment(v string) *ApiExposureCreate {
+func (_c *APIExposureCreate) SetEnvironment(v string) *APIExposureCreate {
 	_c.mutation.SetEnvironment(v)
 	return _c
 }
 
 // SetNillableEnvironment sets the "environment" field if the given value is not nil.
-func (_c *ApiExposureCreate) SetNillableEnvironment(v *string) *ApiExposureCreate {
+func (_c *APIExposureCreate) SetNillableEnvironment(v *string) *APIExposureCreate {
 	if v != nil {
 		_c.SetEnvironment(*v)
 	}
@@ -100,25 +100,25 @@ func (_c *ApiExposureCreate) SetNillableEnvironment(v *string) *ApiExposureCreat
 }
 
 // SetNamespace sets the "namespace" field.
-func (_c *ApiExposureCreate) SetNamespace(v string) *ApiExposureCreate {
+func (_c *APIExposureCreate) SetNamespace(v string) *APIExposureCreate {
 	_c.mutation.SetNamespace(v)
 	return _c
 }
 
 // SetBasePath sets the "base_path" field.
-func (_c *ApiExposureCreate) SetBasePath(v string) *ApiExposureCreate {
+func (_c *APIExposureCreate) SetBasePath(v string) *APIExposureCreate {
 	_c.mutation.SetBasePath(v)
 	return _c
 }
 
 // SetVisibility sets the "visibility" field.
-func (_c *ApiExposureCreate) SetVisibility(v apiexposure.Visibility) *ApiExposureCreate {
+func (_c *APIExposureCreate) SetVisibility(v apiexposure.Visibility) *APIExposureCreate {
 	_c.mutation.SetVisibility(v)
 	return _c
 }
 
 // SetNillableVisibility sets the "visibility" field if the given value is not nil.
-func (_c *ApiExposureCreate) SetNillableVisibility(v *apiexposure.Visibility) *ApiExposureCreate {
+func (_c *APIExposureCreate) SetNillableVisibility(v *apiexposure.Visibility) *APIExposureCreate {
 	if v != nil {
 		_c.SetVisibility(*v)
 	}
@@ -126,13 +126,13 @@ func (_c *ApiExposureCreate) SetNillableVisibility(v *apiexposure.Visibility) *A
 }
 
 // SetActive sets the "active" field.
-func (_c *ApiExposureCreate) SetActive(v bool) *ApiExposureCreate {
+func (_c *APIExposureCreate) SetActive(v bool) *APIExposureCreate {
 	_c.mutation.SetActive(v)
 	return _c
 }
 
 // SetNillableActive sets the "active" field if the given value is not nil.
-func (_c *ApiExposureCreate) SetNillableActive(v *bool) *ApiExposureCreate {
+func (_c *APIExposureCreate) SetNillableActive(v *bool) *APIExposureCreate {
 	if v != nil {
 		_c.SetActive(*v)
 	}
@@ -140,25 +140,25 @@ func (_c *ApiExposureCreate) SetNillableActive(v *bool) *ApiExposureCreate {
 }
 
 // SetFeatures sets the "features" field.
-func (_c *ApiExposureCreate) SetFeatures(v []string) *ApiExposureCreate {
+func (_c *APIExposureCreate) SetFeatures(v []string) *APIExposureCreate {
 	_c.mutation.SetFeatures(v)
 	return _c
 }
 
 // SetUpstreams sets the "upstreams" field.
-func (_c *ApiExposureCreate) SetUpstreams(v []model.Upstream) *ApiExposureCreate {
+func (_c *APIExposureCreate) SetUpstreams(v []model.Upstream) *APIExposureCreate {
 	_c.mutation.SetUpstreams(v)
 	return _c
 }
 
 // SetSecurity sets the "security" field.
-func (_c *ApiExposureCreate) SetSecurity(v model.ApiExposureSecurity) *ApiExposureCreate {
+func (_c *APIExposureCreate) SetSecurity(v model.APIExposureSecurity) *APIExposureCreate {
 	_c.mutation.SetSecurity(v)
 	return _c
 }
 
 // SetNillableSecurity sets the "security" field if the given value is not nil.
-func (_c *ApiExposureCreate) SetNillableSecurity(v *model.ApiExposureSecurity) *ApiExposureCreate {
+func (_c *APIExposureCreate) SetNillableSecurity(v *model.APIExposureSecurity) *APIExposureCreate {
 	if v != nil {
 		_c.SetSecurity(*v)
 	}
@@ -166,13 +166,13 @@ func (_c *ApiExposureCreate) SetNillableSecurity(v *model.ApiExposureSecurity) *
 }
 
 // SetTraffic sets the "traffic" field.
-func (_c *ApiExposureCreate) SetTraffic(v model.Traffic) *ApiExposureCreate {
+func (_c *APIExposureCreate) SetTraffic(v model.Traffic) *APIExposureCreate {
 	_c.mutation.SetTraffic(v)
 	return _c
 }
 
 // SetNillableTraffic sets the "traffic" field if the given value is not nil.
-func (_c *ApiExposureCreate) SetNillableTraffic(v *model.Traffic) *ApiExposureCreate {
+func (_c *APIExposureCreate) SetNillableTraffic(v *model.Traffic) *APIExposureCreate {
 	if v != nil {
 		_c.SetTraffic(*v)
 	}
@@ -180,13 +180,13 @@ func (_c *ApiExposureCreate) SetNillableTraffic(v *model.Traffic) *ApiExposureCr
 }
 
 // SetApprovalConfig sets the "approval_config" field.
-func (_c *ApiExposureCreate) SetApprovalConfig(v model.ApprovalConfig) *ApiExposureCreate {
+func (_c *APIExposureCreate) SetApprovalConfig(v model.ApprovalConfig) *APIExposureCreate {
 	_c.mutation.SetApprovalConfig(v)
 	return _c
 }
 
 // SetNillableApprovalConfig sets the "approval_config" field if the given value is not nil.
-func (_c *ApiExposureCreate) SetNillableApprovalConfig(v *model.ApprovalConfig) *ApiExposureCreate {
+func (_c *APIExposureCreate) SetNillableApprovalConfig(v *model.ApprovalConfig) *APIExposureCreate {
 	if v != nil {
 		_c.SetApprovalConfig(*v)
 	}
@@ -194,13 +194,13 @@ func (_c *ApiExposureCreate) SetNillableApprovalConfig(v *model.ApprovalConfig) 
 }
 
 // SetAPIVersion sets the "api_version" field.
-func (_c *ApiExposureCreate) SetAPIVersion(v string) *ApiExposureCreate {
+func (_c *APIExposureCreate) SetAPIVersion(v string) *APIExposureCreate {
 	_c.mutation.SetAPIVersion(v)
 	return _c
 }
 
 // SetNillableAPIVersion sets the "api_version" field if the given value is not nil.
-func (_c *ApiExposureCreate) SetNillableAPIVersion(v *string) *ApiExposureCreate {
+func (_c *APIExposureCreate) SetNillableAPIVersion(v *string) *APIExposureCreate {
 	if v != nil {
 		_c.SetAPIVersion(*v)
 	}
@@ -208,43 +208,43 @@ func (_c *ApiExposureCreate) SetNillableAPIVersion(v *string) *ApiExposureCreate
 }
 
 // SetOwnerID sets the "owner" edge to the Application entity by ID.
-func (_c *ApiExposureCreate) SetOwnerID(id int) *ApiExposureCreate {
+func (_c *APIExposureCreate) SetOwnerID(id int) *APIExposureCreate {
 	_c.mutation.SetOwnerID(id)
 	return _c
 }
 
 // SetOwner sets the "owner" edge to the Application entity.
-func (_c *ApiExposureCreate) SetOwner(v *Application) *ApiExposureCreate {
+func (_c *APIExposureCreate) SetOwner(v *Application) *APIExposureCreate {
 	return _c.SetOwnerID(v.ID)
 }
 
-// SetAPIID sets the "api" edge to the Api entity by ID.
-func (_c *ApiExposureCreate) SetAPIID(id int) *ApiExposureCreate {
+// SetAPIID sets the "api" edge to the API entity by ID.
+func (_c *APIExposureCreate) SetAPIID(id int) *APIExposureCreate {
 	_c.mutation.SetAPIID(id)
 	return _c
 }
 
-// SetNillableAPIID sets the "api" edge to the Api entity by ID if the given value is not nil.
-func (_c *ApiExposureCreate) SetNillableAPIID(id *int) *ApiExposureCreate {
+// SetNillableAPIID sets the "api" edge to the API entity by ID if the given value is not nil.
+func (_c *APIExposureCreate) SetNillableAPIID(id *int) *APIExposureCreate {
 	if id != nil {
 		_c = _c.SetAPIID(*id)
 	}
 	return _c
 }
 
-// SetAPI sets the "api" edge to the Api entity.
-func (_c *ApiExposureCreate) SetAPI(v *Api) *ApiExposureCreate {
+// SetAPI sets the "api" edge to the API entity.
+func (_c *APIExposureCreate) SetAPI(v *API) *APIExposureCreate {
 	return _c.SetAPIID(v.ID)
 }
 
-// AddSubscriptionIDs adds the "subscriptions" edge to the ApiSubscription entity by IDs.
-func (_c *ApiExposureCreate) AddSubscriptionIDs(ids ...int) *ApiExposureCreate {
+// AddSubscriptionIDs adds the "subscriptions" edge to the APISubscription entity by IDs.
+func (_c *APIExposureCreate) AddSubscriptionIDs(ids ...int) *APIExposureCreate {
 	_c.mutation.AddSubscriptionIDs(ids...)
 	return _c
 }
 
-// AddSubscriptions adds the "subscriptions" edges to the ApiSubscription entity.
-func (_c *ApiExposureCreate) AddSubscriptions(v ...*ApiSubscription) *ApiExposureCreate {
+// AddSubscriptions adds the "subscriptions" edges to the APISubscription entity.
+func (_c *APIExposureCreate) AddSubscriptions(v ...*APISubscription) *APIExposureCreate {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
@@ -252,13 +252,13 @@ func (_c *ApiExposureCreate) AddSubscriptions(v ...*ApiSubscription) *ApiExposur
 	return _c.AddSubscriptionIDs(ids...)
 }
 
-// Mutation returns the ApiExposureMutation object of the builder.
-func (_c *ApiExposureCreate) Mutation() *ApiExposureMutation {
+// Mutation returns the APIExposureMutation object of the builder.
+func (_c *APIExposureCreate) Mutation() *APIExposureMutation {
 	return _c.mutation
 }
 
-// Save creates the ApiExposure in the database.
-func (_c *ApiExposureCreate) Save(ctx context.Context) (*ApiExposure, error) {
+// Save creates the APIExposure in the database.
+func (_c *APIExposureCreate) Save(ctx context.Context) (*APIExposure, error) {
 	if err := _c.defaults(); err != nil {
 		return nil, err
 	}
@@ -266,7 +266,7 @@ func (_c *ApiExposureCreate) Save(ctx context.Context) (*ApiExposure, error) {
 }
 
 // SaveX calls Save and panics if Save returns an error.
-func (_c *ApiExposureCreate) SaveX(ctx context.Context) *ApiExposure {
+func (_c *APIExposureCreate) SaveX(ctx context.Context) *APIExposure {
 	v, err := _c.Save(ctx)
 	if err != nil {
 		panic(err)
@@ -275,20 +275,20 @@ func (_c *ApiExposureCreate) SaveX(ctx context.Context) *ApiExposure {
 }
 
 // Exec executes the query.
-func (_c *ApiExposureCreate) Exec(ctx context.Context) error {
+func (_c *APIExposureCreate) Exec(ctx context.Context) error {
 	_, err := _c.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (_c *ApiExposureCreate) ExecX(ctx context.Context) {
+func (_c *APIExposureCreate) ExecX(ctx context.Context) {
 	if err := _c.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // defaults sets the default values of the builder before save.
-func (_c *ApiExposureCreate) defaults() error {
+func (_c *APIExposureCreate) defaults() error {
 	if _, ok := _c.mutation.CreatedAt(); !ok {
 		if apiexposure.DefaultCreatedAt == nil {
 			return fmt.Errorf("ent: uninitialized apiexposure.DefaultCreatedAt (forgotten import ent/runtime?)")
@@ -327,58 +327,58 @@ func (_c *ApiExposureCreate) defaults() error {
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (_c *ApiExposureCreate) check() error {
+func (_c *APIExposureCreate) check() error {
 	if _, ok := _c.mutation.CreatedAt(); !ok {
-		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "ApiExposure.created_at"`)}
+		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "APIExposure.created_at"`)}
 	}
 	if _, ok := _c.mutation.LastModifiedAt(); !ok {
-		return &ValidationError{Name: "last_modified_at", err: errors.New(`ent: missing required field "ApiExposure.last_modified_at"`)}
+		return &ValidationError{Name: "last_modified_at", err: errors.New(`ent: missing required field "APIExposure.last_modified_at"`)}
 	}
 	if v, ok := _c.mutation.StatusPhase(); ok {
 		if err := apiexposure.StatusPhaseValidator(v); err != nil {
-			return &ValidationError{Name: "status_phase", err: fmt.Errorf(`ent: validator failed for field "ApiExposure.status_phase": %w`, err)}
+			return &ValidationError{Name: "status_phase", err: fmt.Errorf(`ent: validator failed for field "APIExposure.status_phase": %w`, err)}
 		}
 	}
 	if _, ok := _c.mutation.Namespace(); !ok {
-		return &ValidationError{Name: "namespace", err: errors.New(`ent: missing required field "ApiExposure.namespace"`)}
+		return &ValidationError{Name: "namespace", err: errors.New(`ent: missing required field "APIExposure.namespace"`)}
 	}
 	if v, ok := _c.mutation.Namespace(); ok {
 		if err := apiexposure.NamespaceValidator(v); err != nil {
-			return &ValidationError{Name: "namespace", err: fmt.Errorf(`ent: validator failed for field "ApiExposure.namespace": %w`, err)}
+			return &ValidationError{Name: "namespace", err: fmt.Errorf(`ent: validator failed for field "APIExposure.namespace": %w`, err)}
 		}
 	}
 	if _, ok := _c.mutation.BasePath(); !ok {
-		return &ValidationError{Name: "base_path", err: errors.New(`ent: missing required field "ApiExposure.base_path"`)}
+		return &ValidationError{Name: "base_path", err: errors.New(`ent: missing required field "APIExposure.base_path"`)}
 	}
 	if v, ok := _c.mutation.BasePath(); ok {
 		if err := apiexposure.BasePathValidator(v); err != nil {
-			return &ValidationError{Name: "base_path", err: fmt.Errorf(`ent: validator failed for field "ApiExposure.base_path": %w`, err)}
+			return &ValidationError{Name: "base_path", err: fmt.Errorf(`ent: validator failed for field "APIExposure.base_path": %w`, err)}
 		}
 	}
 	if _, ok := _c.mutation.Visibility(); !ok {
-		return &ValidationError{Name: "visibility", err: errors.New(`ent: missing required field "ApiExposure.visibility"`)}
+		return &ValidationError{Name: "visibility", err: errors.New(`ent: missing required field "APIExposure.visibility"`)}
 	}
 	if v, ok := _c.mutation.Visibility(); ok {
 		if err := apiexposure.VisibilityValidator(v); err != nil {
-			return &ValidationError{Name: "visibility", err: fmt.Errorf(`ent: validator failed for field "ApiExposure.visibility": %w`, err)}
+			return &ValidationError{Name: "visibility", err: fmt.Errorf(`ent: validator failed for field "APIExposure.visibility": %w`, err)}
 		}
 	}
 	if _, ok := _c.mutation.Features(); !ok {
-		return &ValidationError{Name: "features", err: errors.New(`ent: missing required field "ApiExposure.features"`)}
+		return &ValidationError{Name: "features", err: errors.New(`ent: missing required field "APIExposure.features"`)}
 	}
 	if _, ok := _c.mutation.Upstreams(); !ok {
-		return &ValidationError{Name: "upstreams", err: errors.New(`ent: missing required field "ApiExposure.upstreams"`)}
+		return &ValidationError{Name: "upstreams", err: errors.New(`ent: missing required field "APIExposure.upstreams"`)}
 	}
 	if _, ok := _c.mutation.ApprovalConfig(); !ok {
-		return &ValidationError{Name: "approval_config", err: errors.New(`ent: missing required field "ApiExposure.approval_config"`)}
+		return &ValidationError{Name: "approval_config", err: errors.New(`ent: missing required field "APIExposure.approval_config"`)}
 	}
 	if len(_c.mutation.OwnerIDs()) == 0 {
-		return &ValidationError{Name: "owner", err: errors.New(`ent: missing required edge "ApiExposure.owner"`)}
+		return &ValidationError{Name: "owner", err: errors.New(`ent: missing required edge "APIExposure.owner"`)}
 	}
 	return nil
 }
 
-func (_c *ApiExposureCreate) sqlSave(ctx context.Context) (*ApiExposure, error) {
+func (_c *APIExposureCreate) sqlSave(ctx context.Context) (*APIExposure, error) {
 	if err := _c.check(); err != nil {
 		return nil, err
 	}
@@ -396,9 +396,9 @@ func (_c *ApiExposureCreate) sqlSave(ctx context.Context) (*ApiExposure, error) 
 	return _node, nil
 }
 
-func (_c *ApiExposureCreate) createSpec() (*ApiExposure, *sqlgraph.CreateSpec) {
+func (_c *APIExposureCreate) createSpec() (*APIExposure, *sqlgraph.CreateSpec) {
 	var (
-		_node = &ApiExposure{config: _c.config}
+		_node = &APIExposure{config: _c.config}
 		_spec = sqlgraph.NewCreateSpec(apiexposure.Table, sqlgraph.NewFieldSpec(apiexposure.FieldID, field.TypeInt))
 	)
 	_spec.OnConflict = _c.conflict
@@ -518,7 +518,7 @@ func (_c *ApiExposureCreate) createSpec() (*ApiExposure, *sqlgraph.CreateSpec) {
 // OnConflict allows configuring the `ON CONFLICT` / `ON DUPLICATE KEY` clause
 // of the `INSERT` statement. For example:
 //
-//	client.ApiExposure.Create().
+//	client.APIExposure.Create().
 //		SetCreatedAt(v).
 //		OnConflict(
 //			// Update the row with the new values
@@ -527,13 +527,13 @@ func (_c *ApiExposureCreate) createSpec() (*ApiExposure, *sqlgraph.CreateSpec) {
 //		).
 //		// Override some of the fields with custom
 //		// update values.
-//		Update(func(u *ent.ApiExposureUpsert) {
+//		Update(func(u *ent.APIExposureUpsert) {
 //			SetCreatedAt(v+v).
 //		}).
 //		Exec(ctx)
-func (_c *ApiExposureCreate) OnConflict(opts ...sql.ConflictOption) *ApiExposureUpsertOne {
+func (_c *APIExposureCreate) OnConflict(opts ...sql.ConflictOption) *APIExposureUpsertOne {
 	_c.conflict = opts
-	return &ApiExposureUpsertOne{
+	return &APIExposureUpsertOne{
 		create: _c,
 	}
 }
@@ -541,235 +541,235 @@ func (_c *ApiExposureCreate) OnConflict(opts ...sql.ConflictOption) *ApiExposure
 // OnConflictColumns calls `OnConflict` and configures the columns
 // as conflict target. Using this option is equivalent to using:
 //
-//	client.ApiExposure.Create().
+//	client.APIExposure.Create().
 //		OnConflict(sql.ConflictColumns(columns...)).
 //		Exec(ctx)
-func (_c *ApiExposureCreate) OnConflictColumns(columns ...string) *ApiExposureUpsertOne {
+func (_c *APIExposureCreate) OnConflictColumns(columns ...string) *APIExposureUpsertOne {
 	_c.conflict = append(_c.conflict, sql.ConflictColumns(columns...))
-	return &ApiExposureUpsertOne{
+	return &APIExposureUpsertOne{
 		create: _c,
 	}
 }
 
 type (
-	// ApiExposureUpsertOne is the builder for "upsert"-ing
-	//  one ApiExposure node.
-	ApiExposureUpsertOne struct {
-		create *ApiExposureCreate
+	// APIExposureUpsertOne is the builder for "upsert"-ing
+	//  one APIExposure node.
+	APIExposureUpsertOne struct {
+		create *APIExposureCreate
 	}
 
-	// ApiExposureUpsert is the "OnConflict" setter.
-	ApiExposureUpsert struct {
+	// APIExposureUpsert is the "OnConflict" setter.
+	APIExposureUpsert struct {
 		*sql.UpdateSet
 	}
 )
 
 // SetLastModifiedAt sets the "last_modified_at" field.
-func (u *ApiExposureUpsert) SetLastModifiedAt(v time.Time) *ApiExposureUpsert {
+func (u *APIExposureUpsert) SetLastModifiedAt(v time.Time) *APIExposureUpsert {
 	u.Set(apiexposure.FieldLastModifiedAt, v)
 	return u
 }
 
 // UpdateLastModifiedAt sets the "last_modified_at" field to the value that was provided on create.
-func (u *ApiExposureUpsert) UpdateLastModifiedAt() *ApiExposureUpsert {
+func (u *APIExposureUpsert) UpdateLastModifiedAt() *APIExposureUpsert {
 	u.SetExcluded(apiexposure.FieldLastModifiedAt)
 	return u
 }
 
 // SetStatusPhase sets the "status_phase" field.
-func (u *ApiExposureUpsert) SetStatusPhase(v apiexposure.StatusPhase) *ApiExposureUpsert {
+func (u *APIExposureUpsert) SetStatusPhase(v apiexposure.StatusPhase) *APIExposureUpsert {
 	u.Set(apiexposure.FieldStatusPhase, v)
 	return u
 }
 
 // UpdateStatusPhase sets the "status_phase" field to the value that was provided on create.
-func (u *ApiExposureUpsert) UpdateStatusPhase() *ApiExposureUpsert {
+func (u *APIExposureUpsert) UpdateStatusPhase() *APIExposureUpsert {
 	u.SetExcluded(apiexposure.FieldStatusPhase)
 	return u
 }
 
 // ClearStatusPhase clears the value of the "status_phase" field.
-func (u *ApiExposureUpsert) ClearStatusPhase() *ApiExposureUpsert {
+func (u *APIExposureUpsert) ClearStatusPhase() *APIExposureUpsert {
 	u.SetNull(apiexposure.FieldStatusPhase)
 	return u
 }
 
 // SetStatusMessage sets the "status_message" field.
-func (u *ApiExposureUpsert) SetStatusMessage(v string) *ApiExposureUpsert {
+func (u *APIExposureUpsert) SetStatusMessage(v string) *APIExposureUpsert {
 	u.Set(apiexposure.FieldStatusMessage, v)
 	return u
 }
 
 // UpdateStatusMessage sets the "status_message" field to the value that was provided on create.
-func (u *ApiExposureUpsert) UpdateStatusMessage() *ApiExposureUpsert {
+func (u *APIExposureUpsert) UpdateStatusMessage() *APIExposureUpsert {
 	u.SetExcluded(apiexposure.FieldStatusMessage)
 	return u
 }
 
 // ClearStatusMessage clears the value of the "status_message" field.
-func (u *ApiExposureUpsert) ClearStatusMessage() *ApiExposureUpsert {
+func (u *APIExposureUpsert) ClearStatusMessage() *APIExposureUpsert {
 	u.SetNull(apiexposure.FieldStatusMessage)
 	return u
 }
 
 // SetEnvironment sets the "environment" field.
-func (u *ApiExposureUpsert) SetEnvironment(v string) *ApiExposureUpsert {
+func (u *APIExposureUpsert) SetEnvironment(v string) *APIExposureUpsert {
 	u.Set(apiexposure.FieldEnvironment, v)
 	return u
 }
 
 // UpdateEnvironment sets the "environment" field to the value that was provided on create.
-func (u *ApiExposureUpsert) UpdateEnvironment() *ApiExposureUpsert {
+func (u *APIExposureUpsert) UpdateEnvironment() *APIExposureUpsert {
 	u.SetExcluded(apiexposure.FieldEnvironment)
 	return u
 }
 
 // ClearEnvironment clears the value of the "environment" field.
-func (u *ApiExposureUpsert) ClearEnvironment() *ApiExposureUpsert {
+func (u *APIExposureUpsert) ClearEnvironment() *APIExposureUpsert {
 	u.SetNull(apiexposure.FieldEnvironment)
 	return u
 }
 
 // SetNamespace sets the "namespace" field.
-func (u *ApiExposureUpsert) SetNamespace(v string) *ApiExposureUpsert {
+func (u *APIExposureUpsert) SetNamespace(v string) *APIExposureUpsert {
 	u.Set(apiexposure.FieldNamespace, v)
 	return u
 }
 
 // UpdateNamespace sets the "namespace" field to the value that was provided on create.
-func (u *ApiExposureUpsert) UpdateNamespace() *ApiExposureUpsert {
+func (u *APIExposureUpsert) UpdateNamespace() *APIExposureUpsert {
 	u.SetExcluded(apiexposure.FieldNamespace)
 	return u
 }
 
 // SetBasePath sets the "base_path" field.
-func (u *ApiExposureUpsert) SetBasePath(v string) *ApiExposureUpsert {
+func (u *APIExposureUpsert) SetBasePath(v string) *APIExposureUpsert {
 	u.Set(apiexposure.FieldBasePath, v)
 	return u
 }
 
 // UpdateBasePath sets the "base_path" field to the value that was provided on create.
-func (u *ApiExposureUpsert) UpdateBasePath() *ApiExposureUpsert {
+func (u *APIExposureUpsert) UpdateBasePath() *APIExposureUpsert {
 	u.SetExcluded(apiexposure.FieldBasePath)
 	return u
 }
 
 // SetVisibility sets the "visibility" field.
-func (u *ApiExposureUpsert) SetVisibility(v apiexposure.Visibility) *ApiExposureUpsert {
+func (u *APIExposureUpsert) SetVisibility(v apiexposure.Visibility) *APIExposureUpsert {
 	u.Set(apiexposure.FieldVisibility, v)
 	return u
 }
 
 // UpdateVisibility sets the "visibility" field to the value that was provided on create.
-func (u *ApiExposureUpsert) UpdateVisibility() *ApiExposureUpsert {
+func (u *APIExposureUpsert) UpdateVisibility() *APIExposureUpsert {
 	u.SetExcluded(apiexposure.FieldVisibility)
 	return u
 }
 
 // SetActive sets the "active" field.
-func (u *ApiExposureUpsert) SetActive(v bool) *ApiExposureUpsert {
+func (u *APIExposureUpsert) SetActive(v bool) *APIExposureUpsert {
 	u.Set(apiexposure.FieldActive, v)
 	return u
 }
 
 // UpdateActive sets the "active" field to the value that was provided on create.
-func (u *ApiExposureUpsert) UpdateActive() *ApiExposureUpsert {
+func (u *APIExposureUpsert) UpdateActive() *APIExposureUpsert {
 	u.SetExcluded(apiexposure.FieldActive)
 	return u
 }
 
 // ClearActive clears the value of the "active" field.
-func (u *ApiExposureUpsert) ClearActive() *ApiExposureUpsert {
+func (u *APIExposureUpsert) ClearActive() *APIExposureUpsert {
 	u.SetNull(apiexposure.FieldActive)
 	return u
 }
 
 // SetFeatures sets the "features" field.
-func (u *ApiExposureUpsert) SetFeatures(v []string) *ApiExposureUpsert {
+func (u *APIExposureUpsert) SetFeatures(v []string) *APIExposureUpsert {
 	u.Set(apiexposure.FieldFeatures, v)
 	return u
 }
 
 // UpdateFeatures sets the "features" field to the value that was provided on create.
-func (u *ApiExposureUpsert) UpdateFeatures() *ApiExposureUpsert {
+func (u *APIExposureUpsert) UpdateFeatures() *APIExposureUpsert {
 	u.SetExcluded(apiexposure.FieldFeatures)
 	return u
 }
 
 // SetUpstreams sets the "upstreams" field.
-func (u *ApiExposureUpsert) SetUpstreams(v []model.Upstream) *ApiExposureUpsert {
+func (u *APIExposureUpsert) SetUpstreams(v []model.Upstream) *APIExposureUpsert {
 	u.Set(apiexposure.FieldUpstreams, v)
 	return u
 }
 
 // UpdateUpstreams sets the "upstreams" field to the value that was provided on create.
-func (u *ApiExposureUpsert) UpdateUpstreams() *ApiExposureUpsert {
+func (u *APIExposureUpsert) UpdateUpstreams() *APIExposureUpsert {
 	u.SetExcluded(apiexposure.FieldUpstreams)
 	return u
 }
 
 // SetSecurity sets the "security" field.
-func (u *ApiExposureUpsert) SetSecurity(v model.ApiExposureSecurity) *ApiExposureUpsert {
+func (u *APIExposureUpsert) SetSecurity(v model.APIExposureSecurity) *APIExposureUpsert {
 	u.Set(apiexposure.FieldSecurity, v)
 	return u
 }
 
 // UpdateSecurity sets the "security" field to the value that was provided on create.
-func (u *ApiExposureUpsert) UpdateSecurity() *ApiExposureUpsert {
+func (u *APIExposureUpsert) UpdateSecurity() *APIExposureUpsert {
 	u.SetExcluded(apiexposure.FieldSecurity)
 	return u
 }
 
 // ClearSecurity clears the value of the "security" field.
-func (u *ApiExposureUpsert) ClearSecurity() *ApiExposureUpsert {
+func (u *APIExposureUpsert) ClearSecurity() *APIExposureUpsert {
 	u.SetNull(apiexposure.FieldSecurity)
 	return u
 }
 
 // SetTraffic sets the "traffic" field.
-func (u *ApiExposureUpsert) SetTraffic(v model.Traffic) *ApiExposureUpsert {
+func (u *APIExposureUpsert) SetTraffic(v model.Traffic) *APIExposureUpsert {
 	u.Set(apiexposure.FieldTraffic, v)
 	return u
 }
 
 // UpdateTraffic sets the "traffic" field to the value that was provided on create.
-func (u *ApiExposureUpsert) UpdateTraffic() *ApiExposureUpsert {
+func (u *APIExposureUpsert) UpdateTraffic() *APIExposureUpsert {
 	u.SetExcluded(apiexposure.FieldTraffic)
 	return u
 }
 
 // ClearTraffic clears the value of the "traffic" field.
-func (u *ApiExposureUpsert) ClearTraffic() *ApiExposureUpsert {
+func (u *APIExposureUpsert) ClearTraffic() *APIExposureUpsert {
 	u.SetNull(apiexposure.FieldTraffic)
 	return u
 }
 
 // SetApprovalConfig sets the "approval_config" field.
-func (u *ApiExposureUpsert) SetApprovalConfig(v model.ApprovalConfig) *ApiExposureUpsert {
+func (u *APIExposureUpsert) SetApprovalConfig(v model.ApprovalConfig) *APIExposureUpsert {
 	u.Set(apiexposure.FieldApprovalConfig, v)
 	return u
 }
 
 // UpdateApprovalConfig sets the "approval_config" field to the value that was provided on create.
-func (u *ApiExposureUpsert) UpdateApprovalConfig() *ApiExposureUpsert {
+func (u *APIExposureUpsert) UpdateApprovalConfig() *APIExposureUpsert {
 	u.SetExcluded(apiexposure.FieldApprovalConfig)
 	return u
 }
 
 // SetAPIVersion sets the "api_version" field.
-func (u *ApiExposureUpsert) SetAPIVersion(v string) *ApiExposureUpsert {
+func (u *APIExposureUpsert) SetAPIVersion(v string) *APIExposureUpsert {
 	u.Set(apiexposure.FieldAPIVersion, v)
 	return u
 }
 
 // UpdateAPIVersion sets the "api_version" field to the value that was provided on create.
-func (u *ApiExposureUpsert) UpdateAPIVersion() *ApiExposureUpsert {
+func (u *APIExposureUpsert) UpdateAPIVersion() *APIExposureUpsert {
 	u.SetExcluded(apiexposure.FieldAPIVersion)
 	return u
 }
 
 // ClearAPIVersion clears the value of the "api_version" field.
-func (u *ApiExposureUpsert) ClearAPIVersion() *ApiExposureUpsert {
+func (u *APIExposureUpsert) ClearAPIVersion() *APIExposureUpsert {
 	u.SetNull(apiexposure.FieldAPIVersion)
 	return u
 }
@@ -777,12 +777,12 @@ func (u *ApiExposureUpsert) ClearAPIVersion() *ApiExposureUpsert {
 // UpdateNewValues updates the mutable fields using the new values that were set on create.
 // Using this option is equivalent to using:
 //
-//	client.ApiExposure.Create().
+//	client.APIExposure.Create().
 //		OnConflict(
 //			sql.ResolveWithNewValues(),
 //		).
 //		Exec(ctx)
-func (u *ApiExposureUpsertOne) UpdateNewValues() *ApiExposureUpsertOne {
+func (u *APIExposureUpsertOne) UpdateNewValues() *APIExposureUpsertOne {
 	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
 	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
 		if _, exists := u.create.mutation.CreatedAt(); exists {
@@ -795,292 +795,292 @@ func (u *ApiExposureUpsertOne) UpdateNewValues() *ApiExposureUpsertOne {
 // Ignore sets each column to itself in case of conflict.
 // Using this option is equivalent to using:
 //
-//	client.ApiExposure.Create().
+//	client.APIExposure.Create().
 //	    OnConflict(sql.ResolveWithIgnore()).
 //	    Exec(ctx)
-func (u *ApiExposureUpsertOne) Ignore() *ApiExposureUpsertOne {
+func (u *APIExposureUpsertOne) Ignore() *APIExposureUpsertOne {
 	u.create.conflict = append(u.create.conflict, sql.ResolveWithIgnore())
 	return u
 }
 
 // DoNothing configures the conflict_action to `DO NOTHING`.
 // Supported only by SQLite and PostgreSQL.
-func (u *ApiExposureUpsertOne) DoNothing() *ApiExposureUpsertOne {
+func (u *APIExposureUpsertOne) DoNothing() *APIExposureUpsertOne {
 	u.create.conflict = append(u.create.conflict, sql.DoNothing())
 	return u
 }
 
-// Update allows overriding fields `UPDATE` values. See the ApiExposureCreate.OnConflict
+// Update allows overriding fields `UPDATE` values. See the APIExposureCreate.OnConflict
 // documentation for more info.
-func (u *ApiExposureUpsertOne) Update(set func(*ApiExposureUpsert)) *ApiExposureUpsertOne {
+func (u *APIExposureUpsertOne) Update(set func(*APIExposureUpsert)) *APIExposureUpsertOne {
 	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(update *sql.UpdateSet) {
-		set(&ApiExposureUpsert{UpdateSet: update})
+		set(&APIExposureUpsert{UpdateSet: update})
 	}))
 	return u
 }
 
 // SetLastModifiedAt sets the "last_modified_at" field.
-func (u *ApiExposureUpsertOne) SetLastModifiedAt(v time.Time) *ApiExposureUpsertOne {
-	return u.Update(func(s *ApiExposureUpsert) {
+func (u *APIExposureUpsertOne) SetLastModifiedAt(v time.Time) *APIExposureUpsertOne {
+	return u.Update(func(s *APIExposureUpsert) {
 		s.SetLastModifiedAt(v)
 	})
 }
 
 // UpdateLastModifiedAt sets the "last_modified_at" field to the value that was provided on create.
-func (u *ApiExposureUpsertOne) UpdateLastModifiedAt() *ApiExposureUpsertOne {
-	return u.Update(func(s *ApiExposureUpsert) {
+func (u *APIExposureUpsertOne) UpdateLastModifiedAt() *APIExposureUpsertOne {
+	return u.Update(func(s *APIExposureUpsert) {
 		s.UpdateLastModifiedAt()
 	})
 }
 
 // SetStatusPhase sets the "status_phase" field.
-func (u *ApiExposureUpsertOne) SetStatusPhase(v apiexposure.StatusPhase) *ApiExposureUpsertOne {
-	return u.Update(func(s *ApiExposureUpsert) {
+func (u *APIExposureUpsertOne) SetStatusPhase(v apiexposure.StatusPhase) *APIExposureUpsertOne {
+	return u.Update(func(s *APIExposureUpsert) {
 		s.SetStatusPhase(v)
 	})
 }
 
 // UpdateStatusPhase sets the "status_phase" field to the value that was provided on create.
-func (u *ApiExposureUpsertOne) UpdateStatusPhase() *ApiExposureUpsertOne {
-	return u.Update(func(s *ApiExposureUpsert) {
+func (u *APIExposureUpsertOne) UpdateStatusPhase() *APIExposureUpsertOne {
+	return u.Update(func(s *APIExposureUpsert) {
 		s.UpdateStatusPhase()
 	})
 }
 
 // ClearStatusPhase clears the value of the "status_phase" field.
-func (u *ApiExposureUpsertOne) ClearStatusPhase() *ApiExposureUpsertOne {
-	return u.Update(func(s *ApiExposureUpsert) {
+func (u *APIExposureUpsertOne) ClearStatusPhase() *APIExposureUpsertOne {
+	return u.Update(func(s *APIExposureUpsert) {
 		s.ClearStatusPhase()
 	})
 }
 
 // SetStatusMessage sets the "status_message" field.
-func (u *ApiExposureUpsertOne) SetStatusMessage(v string) *ApiExposureUpsertOne {
-	return u.Update(func(s *ApiExposureUpsert) {
+func (u *APIExposureUpsertOne) SetStatusMessage(v string) *APIExposureUpsertOne {
+	return u.Update(func(s *APIExposureUpsert) {
 		s.SetStatusMessage(v)
 	})
 }
 
 // UpdateStatusMessage sets the "status_message" field to the value that was provided on create.
-func (u *ApiExposureUpsertOne) UpdateStatusMessage() *ApiExposureUpsertOne {
-	return u.Update(func(s *ApiExposureUpsert) {
+func (u *APIExposureUpsertOne) UpdateStatusMessage() *APIExposureUpsertOne {
+	return u.Update(func(s *APIExposureUpsert) {
 		s.UpdateStatusMessage()
 	})
 }
 
 // ClearStatusMessage clears the value of the "status_message" field.
-func (u *ApiExposureUpsertOne) ClearStatusMessage() *ApiExposureUpsertOne {
-	return u.Update(func(s *ApiExposureUpsert) {
+func (u *APIExposureUpsertOne) ClearStatusMessage() *APIExposureUpsertOne {
+	return u.Update(func(s *APIExposureUpsert) {
 		s.ClearStatusMessage()
 	})
 }
 
 // SetEnvironment sets the "environment" field.
-func (u *ApiExposureUpsertOne) SetEnvironment(v string) *ApiExposureUpsertOne {
-	return u.Update(func(s *ApiExposureUpsert) {
+func (u *APIExposureUpsertOne) SetEnvironment(v string) *APIExposureUpsertOne {
+	return u.Update(func(s *APIExposureUpsert) {
 		s.SetEnvironment(v)
 	})
 }
 
 // UpdateEnvironment sets the "environment" field to the value that was provided on create.
-func (u *ApiExposureUpsertOne) UpdateEnvironment() *ApiExposureUpsertOne {
-	return u.Update(func(s *ApiExposureUpsert) {
+func (u *APIExposureUpsertOne) UpdateEnvironment() *APIExposureUpsertOne {
+	return u.Update(func(s *APIExposureUpsert) {
 		s.UpdateEnvironment()
 	})
 }
 
 // ClearEnvironment clears the value of the "environment" field.
-func (u *ApiExposureUpsertOne) ClearEnvironment() *ApiExposureUpsertOne {
-	return u.Update(func(s *ApiExposureUpsert) {
+func (u *APIExposureUpsertOne) ClearEnvironment() *APIExposureUpsertOne {
+	return u.Update(func(s *APIExposureUpsert) {
 		s.ClearEnvironment()
 	})
 }
 
 // SetNamespace sets the "namespace" field.
-func (u *ApiExposureUpsertOne) SetNamespace(v string) *ApiExposureUpsertOne {
-	return u.Update(func(s *ApiExposureUpsert) {
+func (u *APIExposureUpsertOne) SetNamespace(v string) *APIExposureUpsertOne {
+	return u.Update(func(s *APIExposureUpsert) {
 		s.SetNamespace(v)
 	})
 }
 
 // UpdateNamespace sets the "namespace" field to the value that was provided on create.
-func (u *ApiExposureUpsertOne) UpdateNamespace() *ApiExposureUpsertOne {
-	return u.Update(func(s *ApiExposureUpsert) {
+func (u *APIExposureUpsertOne) UpdateNamespace() *APIExposureUpsertOne {
+	return u.Update(func(s *APIExposureUpsert) {
 		s.UpdateNamespace()
 	})
 }
 
 // SetBasePath sets the "base_path" field.
-func (u *ApiExposureUpsertOne) SetBasePath(v string) *ApiExposureUpsertOne {
-	return u.Update(func(s *ApiExposureUpsert) {
+func (u *APIExposureUpsertOne) SetBasePath(v string) *APIExposureUpsertOne {
+	return u.Update(func(s *APIExposureUpsert) {
 		s.SetBasePath(v)
 	})
 }
 
 // UpdateBasePath sets the "base_path" field to the value that was provided on create.
-func (u *ApiExposureUpsertOne) UpdateBasePath() *ApiExposureUpsertOne {
-	return u.Update(func(s *ApiExposureUpsert) {
+func (u *APIExposureUpsertOne) UpdateBasePath() *APIExposureUpsertOne {
+	return u.Update(func(s *APIExposureUpsert) {
 		s.UpdateBasePath()
 	})
 }
 
 // SetVisibility sets the "visibility" field.
-func (u *ApiExposureUpsertOne) SetVisibility(v apiexposure.Visibility) *ApiExposureUpsertOne {
-	return u.Update(func(s *ApiExposureUpsert) {
+func (u *APIExposureUpsertOne) SetVisibility(v apiexposure.Visibility) *APIExposureUpsertOne {
+	return u.Update(func(s *APIExposureUpsert) {
 		s.SetVisibility(v)
 	})
 }
 
 // UpdateVisibility sets the "visibility" field to the value that was provided on create.
-func (u *ApiExposureUpsertOne) UpdateVisibility() *ApiExposureUpsertOne {
-	return u.Update(func(s *ApiExposureUpsert) {
+func (u *APIExposureUpsertOne) UpdateVisibility() *APIExposureUpsertOne {
+	return u.Update(func(s *APIExposureUpsert) {
 		s.UpdateVisibility()
 	})
 }
 
 // SetActive sets the "active" field.
-func (u *ApiExposureUpsertOne) SetActive(v bool) *ApiExposureUpsertOne {
-	return u.Update(func(s *ApiExposureUpsert) {
+func (u *APIExposureUpsertOne) SetActive(v bool) *APIExposureUpsertOne {
+	return u.Update(func(s *APIExposureUpsert) {
 		s.SetActive(v)
 	})
 }
 
 // UpdateActive sets the "active" field to the value that was provided on create.
-func (u *ApiExposureUpsertOne) UpdateActive() *ApiExposureUpsertOne {
-	return u.Update(func(s *ApiExposureUpsert) {
+func (u *APIExposureUpsertOne) UpdateActive() *APIExposureUpsertOne {
+	return u.Update(func(s *APIExposureUpsert) {
 		s.UpdateActive()
 	})
 }
 
 // ClearActive clears the value of the "active" field.
-func (u *ApiExposureUpsertOne) ClearActive() *ApiExposureUpsertOne {
-	return u.Update(func(s *ApiExposureUpsert) {
+func (u *APIExposureUpsertOne) ClearActive() *APIExposureUpsertOne {
+	return u.Update(func(s *APIExposureUpsert) {
 		s.ClearActive()
 	})
 }
 
 // SetFeatures sets the "features" field.
-func (u *ApiExposureUpsertOne) SetFeatures(v []string) *ApiExposureUpsertOne {
-	return u.Update(func(s *ApiExposureUpsert) {
+func (u *APIExposureUpsertOne) SetFeatures(v []string) *APIExposureUpsertOne {
+	return u.Update(func(s *APIExposureUpsert) {
 		s.SetFeatures(v)
 	})
 }
 
 // UpdateFeatures sets the "features" field to the value that was provided on create.
-func (u *ApiExposureUpsertOne) UpdateFeatures() *ApiExposureUpsertOne {
-	return u.Update(func(s *ApiExposureUpsert) {
+func (u *APIExposureUpsertOne) UpdateFeatures() *APIExposureUpsertOne {
+	return u.Update(func(s *APIExposureUpsert) {
 		s.UpdateFeatures()
 	})
 }
 
 // SetUpstreams sets the "upstreams" field.
-func (u *ApiExposureUpsertOne) SetUpstreams(v []model.Upstream) *ApiExposureUpsertOne {
-	return u.Update(func(s *ApiExposureUpsert) {
+func (u *APIExposureUpsertOne) SetUpstreams(v []model.Upstream) *APIExposureUpsertOne {
+	return u.Update(func(s *APIExposureUpsert) {
 		s.SetUpstreams(v)
 	})
 }
 
 // UpdateUpstreams sets the "upstreams" field to the value that was provided on create.
-func (u *ApiExposureUpsertOne) UpdateUpstreams() *ApiExposureUpsertOne {
-	return u.Update(func(s *ApiExposureUpsert) {
+func (u *APIExposureUpsertOne) UpdateUpstreams() *APIExposureUpsertOne {
+	return u.Update(func(s *APIExposureUpsert) {
 		s.UpdateUpstreams()
 	})
 }
 
 // SetSecurity sets the "security" field.
-func (u *ApiExposureUpsertOne) SetSecurity(v model.ApiExposureSecurity) *ApiExposureUpsertOne {
-	return u.Update(func(s *ApiExposureUpsert) {
+func (u *APIExposureUpsertOne) SetSecurity(v model.APIExposureSecurity) *APIExposureUpsertOne {
+	return u.Update(func(s *APIExposureUpsert) {
 		s.SetSecurity(v)
 	})
 }
 
 // UpdateSecurity sets the "security" field to the value that was provided on create.
-func (u *ApiExposureUpsertOne) UpdateSecurity() *ApiExposureUpsertOne {
-	return u.Update(func(s *ApiExposureUpsert) {
+func (u *APIExposureUpsertOne) UpdateSecurity() *APIExposureUpsertOne {
+	return u.Update(func(s *APIExposureUpsert) {
 		s.UpdateSecurity()
 	})
 }
 
 // ClearSecurity clears the value of the "security" field.
-func (u *ApiExposureUpsertOne) ClearSecurity() *ApiExposureUpsertOne {
-	return u.Update(func(s *ApiExposureUpsert) {
+func (u *APIExposureUpsertOne) ClearSecurity() *APIExposureUpsertOne {
+	return u.Update(func(s *APIExposureUpsert) {
 		s.ClearSecurity()
 	})
 }
 
 // SetTraffic sets the "traffic" field.
-func (u *ApiExposureUpsertOne) SetTraffic(v model.Traffic) *ApiExposureUpsertOne {
-	return u.Update(func(s *ApiExposureUpsert) {
+func (u *APIExposureUpsertOne) SetTraffic(v model.Traffic) *APIExposureUpsertOne {
+	return u.Update(func(s *APIExposureUpsert) {
 		s.SetTraffic(v)
 	})
 }
 
 // UpdateTraffic sets the "traffic" field to the value that was provided on create.
-func (u *ApiExposureUpsertOne) UpdateTraffic() *ApiExposureUpsertOne {
-	return u.Update(func(s *ApiExposureUpsert) {
+func (u *APIExposureUpsertOne) UpdateTraffic() *APIExposureUpsertOne {
+	return u.Update(func(s *APIExposureUpsert) {
 		s.UpdateTraffic()
 	})
 }
 
 // ClearTraffic clears the value of the "traffic" field.
-func (u *ApiExposureUpsertOne) ClearTraffic() *ApiExposureUpsertOne {
-	return u.Update(func(s *ApiExposureUpsert) {
+func (u *APIExposureUpsertOne) ClearTraffic() *APIExposureUpsertOne {
+	return u.Update(func(s *APIExposureUpsert) {
 		s.ClearTraffic()
 	})
 }
 
 // SetApprovalConfig sets the "approval_config" field.
-func (u *ApiExposureUpsertOne) SetApprovalConfig(v model.ApprovalConfig) *ApiExposureUpsertOne {
-	return u.Update(func(s *ApiExposureUpsert) {
+func (u *APIExposureUpsertOne) SetApprovalConfig(v model.ApprovalConfig) *APIExposureUpsertOne {
+	return u.Update(func(s *APIExposureUpsert) {
 		s.SetApprovalConfig(v)
 	})
 }
 
 // UpdateApprovalConfig sets the "approval_config" field to the value that was provided on create.
-func (u *ApiExposureUpsertOne) UpdateApprovalConfig() *ApiExposureUpsertOne {
-	return u.Update(func(s *ApiExposureUpsert) {
+func (u *APIExposureUpsertOne) UpdateApprovalConfig() *APIExposureUpsertOne {
+	return u.Update(func(s *APIExposureUpsert) {
 		s.UpdateApprovalConfig()
 	})
 }
 
 // SetAPIVersion sets the "api_version" field.
-func (u *ApiExposureUpsertOne) SetAPIVersion(v string) *ApiExposureUpsertOne {
-	return u.Update(func(s *ApiExposureUpsert) {
+func (u *APIExposureUpsertOne) SetAPIVersion(v string) *APIExposureUpsertOne {
+	return u.Update(func(s *APIExposureUpsert) {
 		s.SetAPIVersion(v)
 	})
 }
 
 // UpdateAPIVersion sets the "api_version" field to the value that was provided on create.
-func (u *ApiExposureUpsertOne) UpdateAPIVersion() *ApiExposureUpsertOne {
-	return u.Update(func(s *ApiExposureUpsert) {
+func (u *APIExposureUpsertOne) UpdateAPIVersion() *APIExposureUpsertOne {
+	return u.Update(func(s *APIExposureUpsert) {
 		s.UpdateAPIVersion()
 	})
 }
 
 // ClearAPIVersion clears the value of the "api_version" field.
-func (u *ApiExposureUpsertOne) ClearAPIVersion() *ApiExposureUpsertOne {
-	return u.Update(func(s *ApiExposureUpsert) {
+func (u *APIExposureUpsertOne) ClearAPIVersion() *APIExposureUpsertOne {
+	return u.Update(func(s *APIExposureUpsert) {
 		s.ClearAPIVersion()
 	})
 }
 
 // Exec executes the query.
-func (u *ApiExposureUpsertOne) Exec(ctx context.Context) error {
+func (u *APIExposureUpsertOne) Exec(ctx context.Context) error {
 	if len(u.create.conflict) == 0 {
-		return errors.New("ent: missing options for ApiExposureCreate.OnConflict")
+		return errors.New("ent: missing options for APIExposureCreate.OnConflict")
 	}
 	return u.create.Exec(ctx)
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (u *ApiExposureUpsertOne) ExecX(ctx context.Context) {
+func (u *APIExposureUpsertOne) ExecX(ctx context.Context) {
 	if err := u.create.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // Exec executes the UPSERT query and returns the inserted/updated ID.
-func (u *ApiExposureUpsertOne) ID(ctx context.Context) (id int, err error) {
+func (u *APIExposureUpsertOne) ID(ctx context.Context) (id int, err error) {
 	node, err := u.create.Save(ctx)
 	if err != nil {
 		return id, err
@@ -1089,7 +1089,7 @@ func (u *ApiExposureUpsertOne) ID(ctx context.Context) (id int, err error) {
 }
 
 // IDX is like ID, but panics if an error occurs.
-func (u *ApiExposureUpsertOne) IDX(ctx context.Context) int {
+func (u *APIExposureUpsertOne) IDX(ctx context.Context) int {
 	id, err := u.ID(ctx)
 	if err != nil {
 		panic(err)
@@ -1097,28 +1097,28 @@ func (u *ApiExposureUpsertOne) IDX(ctx context.Context) int {
 	return id
 }
 
-// ApiExposureCreateBulk is the builder for creating many ApiExposure entities in bulk.
-type ApiExposureCreateBulk struct {
+// APIExposureCreateBulk is the builder for creating many APIExposure entities in bulk.
+type APIExposureCreateBulk struct {
 	config
 	err      error
-	builders []*ApiExposureCreate
+	builders []*APIExposureCreate
 	conflict []sql.ConflictOption
 }
 
-// Save creates the ApiExposure entities in the database.
-func (_c *ApiExposureCreateBulk) Save(ctx context.Context) ([]*ApiExposure, error) {
+// Save creates the APIExposure entities in the database.
+func (_c *APIExposureCreateBulk) Save(ctx context.Context) ([]*APIExposure, error) {
 	if _c.err != nil {
 		return nil, _c.err
 	}
 	specs := make([]*sqlgraph.CreateSpec, len(_c.builders))
-	nodes := make([]*ApiExposure, len(_c.builders))
+	nodes := make([]*APIExposure, len(_c.builders))
 	mutators := make([]Mutator, len(_c.builders))
 	for i := range _c.builders {
 		func(i int, root context.Context) {
 			builder := _c.builders[i]
 			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
-				mutation, ok := m.(*ApiExposureMutation)
+				mutation, ok := m.(*APIExposureMutation)
 				if !ok {
 					return nil, fmt.Errorf("unexpected mutation type %T", m)
 				}
@@ -1166,7 +1166,7 @@ func (_c *ApiExposureCreateBulk) Save(ctx context.Context) ([]*ApiExposure, erro
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (_c *ApiExposureCreateBulk) SaveX(ctx context.Context) []*ApiExposure {
+func (_c *APIExposureCreateBulk) SaveX(ctx context.Context) []*APIExposure {
 	v, err := _c.Save(ctx)
 	if err != nil {
 		panic(err)
@@ -1175,13 +1175,13 @@ func (_c *ApiExposureCreateBulk) SaveX(ctx context.Context) []*ApiExposure {
 }
 
 // Exec executes the query.
-func (_c *ApiExposureCreateBulk) Exec(ctx context.Context) error {
+func (_c *APIExposureCreateBulk) Exec(ctx context.Context) error {
 	_, err := _c.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (_c *ApiExposureCreateBulk) ExecX(ctx context.Context) {
+func (_c *APIExposureCreateBulk) ExecX(ctx context.Context) {
 	if err := _c.Exec(ctx); err != nil {
 		panic(err)
 	}
@@ -1190,7 +1190,7 @@ func (_c *ApiExposureCreateBulk) ExecX(ctx context.Context) {
 // OnConflict allows configuring the `ON CONFLICT` / `ON DUPLICATE KEY` clause
 // of the `INSERT` statement. For example:
 //
-//	client.ApiExposure.CreateBulk(builders...).
+//	client.APIExposure.CreateBulk(builders...).
 //		OnConflict(
 //			// Update the row with the new values
 //			// the was proposed for insertion.
@@ -1198,13 +1198,13 @@ func (_c *ApiExposureCreateBulk) ExecX(ctx context.Context) {
 //		).
 //		// Override some of the fields with custom
 //		// update values.
-//		Update(func(u *ent.ApiExposureUpsert) {
+//		Update(func(u *ent.APIExposureUpsert) {
 //			SetCreatedAt(v+v).
 //		}).
 //		Exec(ctx)
-func (_c *ApiExposureCreateBulk) OnConflict(opts ...sql.ConflictOption) *ApiExposureUpsertBulk {
+func (_c *APIExposureCreateBulk) OnConflict(opts ...sql.ConflictOption) *APIExposureUpsertBulk {
 	_c.conflict = opts
-	return &ApiExposureUpsertBulk{
+	return &APIExposureUpsertBulk{
 		create: _c,
 	}
 }
@@ -1212,31 +1212,31 @@ func (_c *ApiExposureCreateBulk) OnConflict(opts ...sql.ConflictOption) *ApiExpo
 // OnConflictColumns calls `OnConflict` and configures the columns
 // as conflict target. Using this option is equivalent to using:
 //
-//	client.ApiExposure.Create().
+//	client.APIExposure.Create().
 //		OnConflict(sql.ConflictColumns(columns...)).
 //		Exec(ctx)
-func (_c *ApiExposureCreateBulk) OnConflictColumns(columns ...string) *ApiExposureUpsertBulk {
+func (_c *APIExposureCreateBulk) OnConflictColumns(columns ...string) *APIExposureUpsertBulk {
 	_c.conflict = append(_c.conflict, sql.ConflictColumns(columns...))
-	return &ApiExposureUpsertBulk{
+	return &APIExposureUpsertBulk{
 		create: _c,
 	}
 }
 
-// ApiExposureUpsertBulk is the builder for "upsert"-ing
-// a bulk of ApiExposure nodes.
-type ApiExposureUpsertBulk struct {
-	create *ApiExposureCreateBulk
+// APIExposureUpsertBulk is the builder for "upsert"-ing
+// a bulk of APIExposure nodes.
+type APIExposureUpsertBulk struct {
+	create *APIExposureCreateBulk
 }
 
 // UpdateNewValues updates the mutable fields using the new values that
 // were set on create. Using this option is equivalent to using:
 //
-//	client.ApiExposure.Create().
+//	client.APIExposure.Create().
 //		OnConflict(
 //			sql.ResolveWithNewValues(),
 //		).
 //		Exec(ctx)
-func (u *ApiExposureUpsertBulk) UpdateNewValues() *ApiExposureUpsertBulk {
+func (u *APIExposureUpsertBulk) UpdateNewValues() *APIExposureUpsertBulk {
 	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
 	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
 		for _, b := range u.create.builders {
@@ -1251,293 +1251,293 @@ func (u *ApiExposureUpsertBulk) UpdateNewValues() *ApiExposureUpsertBulk {
 // Ignore sets each column to itself in case of conflict.
 // Using this option is equivalent to using:
 //
-//	client.ApiExposure.Create().
+//	client.APIExposure.Create().
 //		OnConflict(sql.ResolveWithIgnore()).
 //		Exec(ctx)
-func (u *ApiExposureUpsertBulk) Ignore() *ApiExposureUpsertBulk {
+func (u *APIExposureUpsertBulk) Ignore() *APIExposureUpsertBulk {
 	u.create.conflict = append(u.create.conflict, sql.ResolveWithIgnore())
 	return u
 }
 
 // DoNothing configures the conflict_action to `DO NOTHING`.
 // Supported only by SQLite and PostgreSQL.
-func (u *ApiExposureUpsertBulk) DoNothing() *ApiExposureUpsertBulk {
+func (u *APIExposureUpsertBulk) DoNothing() *APIExposureUpsertBulk {
 	u.create.conflict = append(u.create.conflict, sql.DoNothing())
 	return u
 }
 
-// Update allows overriding fields `UPDATE` values. See the ApiExposureCreateBulk.OnConflict
+// Update allows overriding fields `UPDATE` values. See the APIExposureCreateBulk.OnConflict
 // documentation for more info.
-func (u *ApiExposureUpsertBulk) Update(set func(*ApiExposureUpsert)) *ApiExposureUpsertBulk {
+func (u *APIExposureUpsertBulk) Update(set func(*APIExposureUpsert)) *APIExposureUpsertBulk {
 	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(update *sql.UpdateSet) {
-		set(&ApiExposureUpsert{UpdateSet: update})
+		set(&APIExposureUpsert{UpdateSet: update})
 	}))
 	return u
 }
 
 // SetLastModifiedAt sets the "last_modified_at" field.
-func (u *ApiExposureUpsertBulk) SetLastModifiedAt(v time.Time) *ApiExposureUpsertBulk {
-	return u.Update(func(s *ApiExposureUpsert) {
+func (u *APIExposureUpsertBulk) SetLastModifiedAt(v time.Time) *APIExposureUpsertBulk {
+	return u.Update(func(s *APIExposureUpsert) {
 		s.SetLastModifiedAt(v)
 	})
 }
 
 // UpdateLastModifiedAt sets the "last_modified_at" field to the value that was provided on create.
-func (u *ApiExposureUpsertBulk) UpdateLastModifiedAt() *ApiExposureUpsertBulk {
-	return u.Update(func(s *ApiExposureUpsert) {
+func (u *APIExposureUpsertBulk) UpdateLastModifiedAt() *APIExposureUpsertBulk {
+	return u.Update(func(s *APIExposureUpsert) {
 		s.UpdateLastModifiedAt()
 	})
 }
 
 // SetStatusPhase sets the "status_phase" field.
-func (u *ApiExposureUpsertBulk) SetStatusPhase(v apiexposure.StatusPhase) *ApiExposureUpsertBulk {
-	return u.Update(func(s *ApiExposureUpsert) {
+func (u *APIExposureUpsertBulk) SetStatusPhase(v apiexposure.StatusPhase) *APIExposureUpsertBulk {
+	return u.Update(func(s *APIExposureUpsert) {
 		s.SetStatusPhase(v)
 	})
 }
 
 // UpdateStatusPhase sets the "status_phase" field to the value that was provided on create.
-func (u *ApiExposureUpsertBulk) UpdateStatusPhase() *ApiExposureUpsertBulk {
-	return u.Update(func(s *ApiExposureUpsert) {
+func (u *APIExposureUpsertBulk) UpdateStatusPhase() *APIExposureUpsertBulk {
+	return u.Update(func(s *APIExposureUpsert) {
 		s.UpdateStatusPhase()
 	})
 }
 
 // ClearStatusPhase clears the value of the "status_phase" field.
-func (u *ApiExposureUpsertBulk) ClearStatusPhase() *ApiExposureUpsertBulk {
-	return u.Update(func(s *ApiExposureUpsert) {
+func (u *APIExposureUpsertBulk) ClearStatusPhase() *APIExposureUpsertBulk {
+	return u.Update(func(s *APIExposureUpsert) {
 		s.ClearStatusPhase()
 	})
 }
 
 // SetStatusMessage sets the "status_message" field.
-func (u *ApiExposureUpsertBulk) SetStatusMessage(v string) *ApiExposureUpsertBulk {
-	return u.Update(func(s *ApiExposureUpsert) {
+func (u *APIExposureUpsertBulk) SetStatusMessage(v string) *APIExposureUpsertBulk {
+	return u.Update(func(s *APIExposureUpsert) {
 		s.SetStatusMessage(v)
 	})
 }
 
 // UpdateStatusMessage sets the "status_message" field to the value that was provided on create.
-func (u *ApiExposureUpsertBulk) UpdateStatusMessage() *ApiExposureUpsertBulk {
-	return u.Update(func(s *ApiExposureUpsert) {
+func (u *APIExposureUpsertBulk) UpdateStatusMessage() *APIExposureUpsertBulk {
+	return u.Update(func(s *APIExposureUpsert) {
 		s.UpdateStatusMessage()
 	})
 }
 
 // ClearStatusMessage clears the value of the "status_message" field.
-func (u *ApiExposureUpsertBulk) ClearStatusMessage() *ApiExposureUpsertBulk {
-	return u.Update(func(s *ApiExposureUpsert) {
+func (u *APIExposureUpsertBulk) ClearStatusMessage() *APIExposureUpsertBulk {
+	return u.Update(func(s *APIExposureUpsert) {
 		s.ClearStatusMessage()
 	})
 }
 
 // SetEnvironment sets the "environment" field.
-func (u *ApiExposureUpsertBulk) SetEnvironment(v string) *ApiExposureUpsertBulk {
-	return u.Update(func(s *ApiExposureUpsert) {
+func (u *APIExposureUpsertBulk) SetEnvironment(v string) *APIExposureUpsertBulk {
+	return u.Update(func(s *APIExposureUpsert) {
 		s.SetEnvironment(v)
 	})
 }
 
 // UpdateEnvironment sets the "environment" field to the value that was provided on create.
-func (u *ApiExposureUpsertBulk) UpdateEnvironment() *ApiExposureUpsertBulk {
-	return u.Update(func(s *ApiExposureUpsert) {
+func (u *APIExposureUpsertBulk) UpdateEnvironment() *APIExposureUpsertBulk {
+	return u.Update(func(s *APIExposureUpsert) {
 		s.UpdateEnvironment()
 	})
 }
 
 // ClearEnvironment clears the value of the "environment" field.
-func (u *ApiExposureUpsertBulk) ClearEnvironment() *ApiExposureUpsertBulk {
-	return u.Update(func(s *ApiExposureUpsert) {
+func (u *APIExposureUpsertBulk) ClearEnvironment() *APIExposureUpsertBulk {
+	return u.Update(func(s *APIExposureUpsert) {
 		s.ClearEnvironment()
 	})
 }
 
 // SetNamespace sets the "namespace" field.
-func (u *ApiExposureUpsertBulk) SetNamespace(v string) *ApiExposureUpsertBulk {
-	return u.Update(func(s *ApiExposureUpsert) {
+func (u *APIExposureUpsertBulk) SetNamespace(v string) *APIExposureUpsertBulk {
+	return u.Update(func(s *APIExposureUpsert) {
 		s.SetNamespace(v)
 	})
 }
 
 // UpdateNamespace sets the "namespace" field to the value that was provided on create.
-func (u *ApiExposureUpsertBulk) UpdateNamespace() *ApiExposureUpsertBulk {
-	return u.Update(func(s *ApiExposureUpsert) {
+func (u *APIExposureUpsertBulk) UpdateNamespace() *APIExposureUpsertBulk {
+	return u.Update(func(s *APIExposureUpsert) {
 		s.UpdateNamespace()
 	})
 }
 
 // SetBasePath sets the "base_path" field.
-func (u *ApiExposureUpsertBulk) SetBasePath(v string) *ApiExposureUpsertBulk {
-	return u.Update(func(s *ApiExposureUpsert) {
+func (u *APIExposureUpsertBulk) SetBasePath(v string) *APIExposureUpsertBulk {
+	return u.Update(func(s *APIExposureUpsert) {
 		s.SetBasePath(v)
 	})
 }
 
 // UpdateBasePath sets the "base_path" field to the value that was provided on create.
-func (u *ApiExposureUpsertBulk) UpdateBasePath() *ApiExposureUpsertBulk {
-	return u.Update(func(s *ApiExposureUpsert) {
+func (u *APIExposureUpsertBulk) UpdateBasePath() *APIExposureUpsertBulk {
+	return u.Update(func(s *APIExposureUpsert) {
 		s.UpdateBasePath()
 	})
 }
 
 // SetVisibility sets the "visibility" field.
-func (u *ApiExposureUpsertBulk) SetVisibility(v apiexposure.Visibility) *ApiExposureUpsertBulk {
-	return u.Update(func(s *ApiExposureUpsert) {
+func (u *APIExposureUpsertBulk) SetVisibility(v apiexposure.Visibility) *APIExposureUpsertBulk {
+	return u.Update(func(s *APIExposureUpsert) {
 		s.SetVisibility(v)
 	})
 }
 
 // UpdateVisibility sets the "visibility" field to the value that was provided on create.
-func (u *ApiExposureUpsertBulk) UpdateVisibility() *ApiExposureUpsertBulk {
-	return u.Update(func(s *ApiExposureUpsert) {
+func (u *APIExposureUpsertBulk) UpdateVisibility() *APIExposureUpsertBulk {
+	return u.Update(func(s *APIExposureUpsert) {
 		s.UpdateVisibility()
 	})
 }
 
 // SetActive sets the "active" field.
-func (u *ApiExposureUpsertBulk) SetActive(v bool) *ApiExposureUpsertBulk {
-	return u.Update(func(s *ApiExposureUpsert) {
+func (u *APIExposureUpsertBulk) SetActive(v bool) *APIExposureUpsertBulk {
+	return u.Update(func(s *APIExposureUpsert) {
 		s.SetActive(v)
 	})
 }
 
 // UpdateActive sets the "active" field to the value that was provided on create.
-func (u *ApiExposureUpsertBulk) UpdateActive() *ApiExposureUpsertBulk {
-	return u.Update(func(s *ApiExposureUpsert) {
+func (u *APIExposureUpsertBulk) UpdateActive() *APIExposureUpsertBulk {
+	return u.Update(func(s *APIExposureUpsert) {
 		s.UpdateActive()
 	})
 }
 
 // ClearActive clears the value of the "active" field.
-func (u *ApiExposureUpsertBulk) ClearActive() *ApiExposureUpsertBulk {
-	return u.Update(func(s *ApiExposureUpsert) {
+func (u *APIExposureUpsertBulk) ClearActive() *APIExposureUpsertBulk {
+	return u.Update(func(s *APIExposureUpsert) {
 		s.ClearActive()
 	})
 }
 
 // SetFeatures sets the "features" field.
-func (u *ApiExposureUpsertBulk) SetFeatures(v []string) *ApiExposureUpsertBulk {
-	return u.Update(func(s *ApiExposureUpsert) {
+func (u *APIExposureUpsertBulk) SetFeatures(v []string) *APIExposureUpsertBulk {
+	return u.Update(func(s *APIExposureUpsert) {
 		s.SetFeatures(v)
 	})
 }
 
 // UpdateFeatures sets the "features" field to the value that was provided on create.
-func (u *ApiExposureUpsertBulk) UpdateFeatures() *ApiExposureUpsertBulk {
-	return u.Update(func(s *ApiExposureUpsert) {
+func (u *APIExposureUpsertBulk) UpdateFeatures() *APIExposureUpsertBulk {
+	return u.Update(func(s *APIExposureUpsert) {
 		s.UpdateFeatures()
 	})
 }
 
 // SetUpstreams sets the "upstreams" field.
-func (u *ApiExposureUpsertBulk) SetUpstreams(v []model.Upstream) *ApiExposureUpsertBulk {
-	return u.Update(func(s *ApiExposureUpsert) {
+func (u *APIExposureUpsertBulk) SetUpstreams(v []model.Upstream) *APIExposureUpsertBulk {
+	return u.Update(func(s *APIExposureUpsert) {
 		s.SetUpstreams(v)
 	})
 }
 
 // UpdateUpstreams sets the "upstreams" field to the value that was provided on create.
-func (u *ApiExposureUpsertBulk) UpdateUpstreams() *ApiExposureUpsertBulk {
-	return u.Update(func(s *ApiExposureUpsert) {
+func (u *APIExposureUpsertBulk) UpdateUpstreams() *APIExposureUpsertBulk {
+	return u.Update(func(s *APIExposureUpsert) {
 		s.UpdateUpstreams()
 	})
 }
 
 // SetSecurity sets the "security" field.
-func (u *ApiExposureUpsertBulk) SetSecurity(v model.ApiExposureSecurity) *ApiExposureUpsertBulk {
-	return u.Update(func(s *ApiExposureUpsert) {
+func (u *APIExposureUpsertBulk) SetSecurity(v model.APIExposureSecurity) *APIExposureUpsertBulk {
+	return u.Update(func(s *APIExposureUpsert) {
 		s.SetSecurity(v)
 	})
 }
 
 // UpdateSecurity sets the "security" field to the value that was provided on create.
-func (u *ApiExposureUpsertBulk) UpdateSecurity() *ApiExposureUpsertBulk {
-	return u.Update(func(s *ApiExposureUpsert) {
+func (u *APIExposureUpsertBulk) UpdateSecurity() *APIExposureUpsertBulk {
+	return u.Update(func(s *APIExposureUpsert) {
 		s.UpdateSecurity()
 	})
 }
 
 // ClearSecurity clears the value of the "security" field.
-func (u *ApiExposureUpsertBulk) ClearSecurity() *ApiExposureUpsertBulk {
-	return u.Update(func(s *ApiExposureUpsert) {
+func (u *APIExposureUpsertBulk) ClearSecurity() *APIExposureUpsertBulk {
+	return u.Update(func(s *APIExposureUpsert) {
 		s.ClearSecurity()
 	})
 }
 
 // SetTraffic sets the "traffic" field.
-func (u *ApiExposureUpsertBulk) SetTraffic(v model.Traffic) *ApiExposureUpsertBulk {
-	return u.Update(func(s *ApiExposureUpsert) {
+func (u *APIExposureUpsertBulk) SetTraffic(v model.Traffic) *APIExposureUpsertBulk {
+	return u.Update(func(s *APIExposureUpsert) {
 		s.SetTraffic(v)
 	})
 }
 
 // UpdateTraffic sets the "traffic" field to the value that was provided on create.
-func (u *ApiExposureUpsertBulk) UpdateTraffic() *ApiExposureUpsertBulk {
-	return u.Update(func(s *ApiExposureUpsert) {
+func (u *APIExposureUpsertBulk) UpdateTraffic() *APIExposureUpsertBulk {
+	return u.Update(func(s *APIExposureUpsert) {
 		s.UpdateTraffic()
 	})
 }
 
 // ClearTraffic clears the value of the "traffic" field.
-func (u *ApiExposureUpsertBulk) ClearTraffic() *ApiExposureUpsertBulk {
-	return u.Update(func(s *ApiExposureUpsert) {
+func (u *APIExposureUpsertBulk) ClearTraffic() *APIExposureUpsertBulk {
+	return u.Update(func(s *APIExposureUpsert) {
 		s.ClearTraffic()
 	})
 }
 
 // SetApprovalConfig sets the "approval_config" field.
-func (u *ApiExposureUpsertBulk) SetApprovalConfig(v model.ApprovalConfig) *ApiExposureUpsertBulk {
-	return u.Update(func(s *ApiExposureUpsert) {
+func (u *APIExposureUpsertBulk) SetApprovalConfig(v model.ApprovalConfig) *APIExposureUpsertBulk {
+	return u.Update(func(s *APIExposureUpsert) {
 		s.SetApprovalConfig(v)
 	})
 }
 
 // UpdateApprovalConfig sets the "approval_config" field to the value that was provided on create.
-func (u *ApiExposureUpsertBulk) UpdateApprovalConfig() *ApiExposureUpsertBulk {
-	return u.Update(func(s *ApiExposureUpsert) {
+func (u *APIExposureUpsertBulk) UpdateApprovalConfig() *APIExposureUpsertBulk {
+	return u.Update(func(s *APIExposureUpsert) {
 		s.UpdateApprovalConfig()
 	})
 }
 
 // SetAPIVersion sets the "api_version" field.
-func (u *ApiExposureUpsertBulk) SetAPIVersion(v string) *ApiExposureUpsertBulk {
-	return u.Update(func(s *ApiExposureUpsert) {
+func (u *APIExposureUpsertBulk) SetAPIVersion(v string) *APIExposureUpsertBulk {
+	return u.Update(func(s *APIExposureUpsert) {
 		s.SetAPIVersion(v)
 	})
 }
 
 // UpdateAPIVersion sets the "api_version" field to the value that was provided on create.
-func (u *ApiExposureUpsertBulk) UpdateAPIVersion() *ApiExposureUpsertBulk {
-	return u.Update(func(s *ApiExposureUpsert) {
+func (u *APIExposureUpsertBulk) UpdateAPIVersion() *APIExposureUpsertBulk {
+	return u.Update(func(s *APIExposureUpsert) {
 		s.UpdateAPIVersion()
 	})
 }
 
 // ClearAPIVersion clears the value of the "api_version" field.
-func (u *ApiExposureUpsertBulk) ClearAPIVersion() *ApiExposureUpsertBulk {
-	return u.Update(func(s *ApiExposureUpsert) {
+func (u *APIExposureUpsertBulk) ClearAPIVersion() *APIExposureUpsertBulk {
+	return u.Update(func(s *APIExposureUpsert) {
 		s.ClearAPIVersion()
 	})
 }
 
 // Exec executes the query.
-func (u *ApiExposureUpsertBulk) Exec(ctx context.Context) error {
+func (u *APIExposureUpsertBulk) Exec(ctx context.Context) error {
 	if u.create.err != nil {
 		return u.create.err
 	}
 	for i, b := range u.create.builders {
 		if len(b.conflict) != 0 {
-			return fmt.Errorf("ent: OnConflict was set for builder %d. Set it on the ApiExposureCreateBulk instead", i)
+			return fmt.Errorf("ent: OnConflict was set for builder %d. Set it on the APIExposureCreateBulk instead", i)
 		}
 	}
 	if len(u.create.conflict) == 0 {
-		return errors.New("ent: missing options for ApiExposureCreateBulk.OnConflict")
+		return errors.New("ent: missing options for APIExposureCreateBulk.OnConflict")
 	}
 	return u.create.Exec(ctx)
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (u *ApiExposureUpsertBulk) ExecX(ctx context.Context) {
+func (u *APIExposureUpsertBulk) ExecX(ctx context.Context) {
 	if err := u.create.Exec(ctx); err != nil {
 		panic(err)
 	}

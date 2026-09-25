@@ -37,18 +37,18 @@ type TeamQuery struct {
 	withGroup             *GroupQuery
 	withMembers           *MemberQuery
 	withApplications      *ApplicationQuery
-	withApis              *APIQuery
+	withAPIs              *APIQuery
 	withEventTypes        *EventTypeQuery
-	withMcpServers        *McpServerQuery
+	withMCPServers        *MCPServerQuery
 	withAgentCards        *AgentCardQuery
 	withFKs               bool
 	modifiers             []func(*sql.Selector)
 	loadTotal             []func(context.Context, []*Team) error
 	withNamedMembers      map[string]*MemberQuery
 	withNamedApplications map[string]*ApplicationQuery
-	withNamedApis         map[string]*APIQuery
+	withNamedAPIs         map[string]*APIQuery
 	withNamedEventTypes   map[string]*EventTypeQuery
-	withNamedMcpServers   map[string]*McpServerQuery
+	withNamedMCPServers   map[string]*MCPServerQuery
 	withNamedAgentCards   map[string]*AgentCardQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
@@ -152,8 +152,8 @@ func (_q *TeamQuery) QueryApplications() *ApplicationQuery {
 	return query
 }
 
-// QueryApis chains the current query on the "apis" edge.
-func (_q *TeamQuery) QueryApis() *APIQuery {
+// QueryAPIs chains the current query on the "APIs" edge.
+func (_q *TeamQuery) QueryAPIs() *APIQuery {
 	query := (&APIClient{config: _q.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := _q.prepareQuery(ctx); err != nil {
@@ -166,7 +166,7 @@ func (_q *TeamQuery) QueryApis() *APIQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(team.Table, team.FieldID, selector),
 			sqlgraph.To(api.Table, api.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, team.ApisTable, team.ApisColumn),
+			sqlgraph.Edge(sqlgraph.O2M, false, team.APIsTable, team.APIsColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -196,9 +196,9 @@ func (_q *TeamQuery) QueryEventTypes() *EventTypeQuery {
 	return query
 }
 
-// QueryMcpServers chains the current query on the "mcp_servers" edge.
-func (_q *TeamQuery) QueryMcpServers() *McpServerQuery {
-	query := (&McpServerClient{config: _q.config}).Query()
+// QueryMCPServers chains the current query on the "MCP_servers" edge.
+func (_q *TeamQuery) QueryMCPServers() *MCPServerQuery {
+	query := (&MCPServerClient{config: _q.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := _q.prepareQuery(ctx); err != nil {
 			return nil, err
@@ -210,7 +210,7 @@ func (_q *TeamQuery) QueryMcpServers() *McpServerQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(team.Table, team.FieldID, selector),
 			sqlgraph.To(mcpserver.Table, mcpserver.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, team.McpServersTable, team.McpServersColumn),
+			sqlgraph.Edge(sqlgraph.O2M, false, team.MCPServersTable, team.MCPServersColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -435,9 +435,9 @@ func (_q *TeamQuery) Clone() *TeamQuery {
 		withGroup:        _q.withGroup.Clone(),
 		withMembers:      _q.withMembers.Clone(),
 		withApplications: _q.withApplications.Clone(),
-		withApis:         _q.withApis.Clone(),
+		withAPIs:         _q.withAPIs.Clone(),
 		withEventTypes:   _q.withEventTypes.Clone(),
-		withMcpServers:   _q.withMcpServers.Clone(),
+		withMCPServers:   _q.withMCPServers.Clone(),
 		withAgentCards:   _q.withAgentCards.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
@@ -478,14 +478,14 @@ func (_q *TeamQuery) WithApplications(opts ...func(*ApplicationQuery)) *TeamQuer
 	return _q
 }
 
-// WithApis tells the query-builder to eager-load the nodes that are connected to
-// the "apis" edge. The optional arguments are used to configure the query builder of the edge.
-func (_q *TeamQuery) WithApis(opts ...func(*APIQuery)) *TeamQuery {
+// WithAPIs tells the query-builder to eager-load the nodes that are connected to
+// the "APIs" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *TeamQuery) WithAPIs(opts ...func(*APIQuery)) *TeamQuery {
 	query := (&APIClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	_q.withApis = query
+	_q.withAPIs = query
 	return _q
 }
 
@@ -500,14 +500,14 @@ func (_q *TeamQuery) WithEventTypes(opts ...func(*EventTypeQuery)) *TeamQuery {
 	return _q
 }
 
-// WithMcpServers tells the query-builder to eager-load the nodes that are connected to
-// the "mcp_servers" edge. The optional arguments are used to configure the query builder of the edge.
-func (_q *TeamQuery) WithMcpServers(opts ...func(*McpServerQuery)) *TeamQuery {
-	query := (&McpServerClient{config: _q.config}).Query()
+// WithMCPServers tells the query-builder to eager-load the nodes that are connected to
+// the "MCP_servers" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *TeamQuery) WithMCPServers(opts ...func(*MCPServerQuery)) *TeamQuery {
+	query := (&MCPServerClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	_q.withMcpServers = query
+	_q.withMCPServers = query
 	return _q
 }
 
@@ -611,9 +611,9 @@ func (_q *TeamQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Team, e
 			_q.withGroup != nil,
 			_q.withMembers != nil,
 			_q.withApplications != nil,
-			_q.withApis != nil,
+			_q.withAPIs != nil,
 			_q.withEventTypes != nil,
-			_q.withMcpServers != nil,
+			_q.withMCPServers != nil,
 			_q.withAgentCards != nil,
 		}
 	)
@@ -664,10 +664,10 @@ func (_q *TeamQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Team, e
 			return nil, err
 		}
 	}
-	if query := _q.withApis; query != nil {
-		if err := _q.loadApis(ctx, query, nodes,
-			func(n *Team) { n.Edges.Apis = []*Api{} },
-			func(n *Team, e *Api) { n.Edges.Apis = append(n.Edges.Apis, e) }); err != nil {
+	if query := _q.withAPIs; query != nil {
+		if err := _q.loadAPIs(ctx, query, nodes,
+			func(n *Team) { n.Edges.APIs = []*API{} },
+			func(n *Team, e *API) { n.Edges.APIs = append(n.Edges.APIs, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -678,10 +678,10 @@ func (_q *TeamQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Team, e
 			return nil, err
 		}
 	}
-	if query := _q.withMcpServers; query != nil {
-		if err := _q.loadMcpServers(ctx, query, nodes,
-			func(n *Team) { n.Edges.McpServers = []*McpServer{} },
-			func(n *Team, e *McpServer) { n.Edges.McpServers = append(n.Edges.McpServers, e) }); err != nil {
+	if query := _q.withMCPServers; query != nil {
+		if err := _q.loadMCPServers(ctx, query, nodes,
+			func(n *Team) { n.Edges.MCPServers = []*MCPServer{} },
+			func(n *Team, e *MCPServer) { n.Edges.MCPServers = append(n.Edges.MCPServers, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -706,10 +706,10 @@ func (_q *TeamQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Team, e
 			return nil, err
 		}
 	}
-	for name, query := range _q.withNamedApis {
-		if err := _q.loadApis(ctx, query, nodes,
-			func(n *Team) { n.appendNamedApis(name) },
-			func(n *Team, e *Api) { n.appendNamedApis(name, e) }); err != nil {
+	for name, query := range _q.withNamedAPIs {
+		if err := _q.loadAPIs(ctx, query, nodes,
+			func(n *Team) { n.appendNamedAPIs(name) },
+			func(n *Team, e *API) { n.appendNamedAPIs(name, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -720,10 +720,10 @@ func (_q *TeamQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Team, e
 			return nil, err
 		}
 	}
-	for name, query := range _q.withNamedMcpServers {
-		if err := _q.loadMcpServers(ctx, query, nodes,
-			func(n *Team) { n.appendNamedMcpServers(name) },
-			func(n *Team, e *McpServer) { n.appendNamedMcpServers(name, e) }); err != nil {
+	for name, query := range _q.withNamedMCPServers {
+		if err := _q.loadMCPServers(ctx, query, nodes,
+			func(n *Team) { n.appendNamedMCPServers(name) },
+			func(n *Team, e *MCPServer) { n.appendNamedMCPServers(name, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -836,7 +836,7 @@ func (_q *TeamQuery) loadApplications(ctx context.Context, query *ApplicationQue
 	}
 	return nil
 }
-func (_q *TeamQuery) loadApis(ctx context.Context, query *APIQuery, nodes []*Team, init func(*Team), assign func(*Team, *Api)) error {
+func (_q *TeamQuery) loadAPIs(ctx context.Context, query *APIQuery, nodes []*Team, init func(*Team), assign func(*Team, *API)) error {
 	fks := make([]driver.Value, 0, len(nodes))
 	nodeids := make(map[int]*Team)
 	for i := range nodes {
@@ -847,8 +847,8 @@ func (_q *TeamQuery) loadApis(ctx context.Context, query *APIQuery, nodes []*Tea
 		}
 	}
 	query.withFKs = true
-	query.Where(predicate.Api(func(s *sql.Selector) {
-		s.Where(sql.InValues(s.C(team.ApisColumn), fks...))
+	query.Where(predicate.API(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(team.APIsColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {
@@ -898,7 +898,7 @@ func (_q *TeamQuery) loadEventTypes(ctx context.Context, query *EventTypeQuery, 
 	}
 	return nil
 }
-func (_q *TeamQuery) loadMcpServers(ctx context.Context, query *McpServerQuery, nodes []*Team, init func(*Team), assign func(*Team, *McpServer)) error {
+func (_q *TeamQuery) loadMCPServers(ctx context.Context, query *MCPServerQuery, nodes []*Team, init func(*Team), assign func(*Team, *MCPServer)) error {
 	fks := make([]driver.Value, 0, len(nodes))
 	nodeids := make(map[int]*Team)
 	for i := range nodes {
@@ -909,8 +909,8 @@ func (_q *TeamQuery) loadMcpServers(ctx context.Context, query *McpServerQuery, 
 		}
 	}
 	query.withFKs = true
-	query.Where(predicate.McpServer(func(s *sql.Selector) {
-		s.Where(sql.InValues(s.C(team.McpServersColumn), fks...))
+	query.Where(predicate.MCPServer(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(team.MCPServersColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {
@@ -1073,17 +1073,17 @@ func (_q *TeamQuery) WithNamedApplications(name string, opts ...func(*Applicatio
 	return _q
 }
 
-// WithNamedApis tells the query-builder to eager-load the nodes that are connected to the "apis"
+// WithNamedAPIs tells the query-builder to eager-load the nodes that are connected to the "APIs"
 // edge with the given name. The optional arguments are used to configure the query builder of the edge.
-func (_q *TeamQuery) WithNamedApis(name string, opts ...func(*APIQuery)) *TeamQuery {
+func (_q *TeamQuery) WithNamedAPIs(name string, opts ...func(*APIQuery)) *TeamQuery {
 	query := (&APIClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	if _q.withNamedApis == nil {
-		_q.withNamedApis = make(map[string]*APIQuery)
+	if _q.withNamedAPIs == nil {
+		_q.withNamedAPIs = make(map[string]*APIQuery)
 	}
-	_q.withNamedApis[name] = query
+	_q.withNamedAPIs[name] = query
 	return _q
 }
 
@@ -1101,17 +1101,17 @@ func (_q *TeamQuery) WithNamedEventTypes(name string, opts ...func(*EventTypeQue
 	return _q
 }
 
-// WithNamedMcpServers tells the query-builder to eager-load the nodes that are connected to the "mcp_servers"
+// WithNamedMCPServers tells the query-builder to eager-load the nodes that are connected to the "MCP_servers"
 // edge with the given name. The optional arguments are used to configure the query builder of the edge.
-func (_q *TeamQuery) WithNamedMcpServers(name string, opts ...func(*McpServerQuery)) *TeamQuery {
-	query := (&McpServerClient{config: _q.config}).Query()
+func (_q *TeamQuery) WithNamedMCPServers(name string, opts ...func(*MCPServerQuery)) *TeamQuery {
+	query := (&MCPServerClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	if _q.withNamedMcpServers == nil {
-		_q.withNamedMcpServers = make(map[string]*McpServerQuery)
+	if _q.withNamedMCPServers == nil {
+		_q.withNamedMCPServers = make(map[string]*MCPServerQuery)
 	}
-	_q.withNamedMcpServers[name] = query
+	_q.withNamedMCPServers[name] = query
 	return _q
 }
 

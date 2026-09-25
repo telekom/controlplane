@@ -22,57 +22,57 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/team"
 )
 
-// McpServerQuery is the builder for querying McpServer entities.
-type McpServerQuery struct {
+// MCPServerQuery is the builder for querying MCPServer entities.
+type MCPServerQuery struct {
 	config
 	ctx                *QueryContext
 	order              []mcpserver.OrderOption
 	inters             []Interceptor
-	predicates         []predicate.McpServer
+	predicates         []predicate.MCPServer
 	withOwner          *TeamQuery
 	withExposures      *AgenticExposureQuery
 	withFKs            bool
 	modifiers          []func(*sql.Selector)
-	loadTotal          []func(context.Context, []*McpServer) error
+	loadTotal          []func(context.Context, []*MCPServer) error
 	withNamedExposures map[string]*AgenticExposureQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
 }
 
-// Where adds a new predicate for the McpServerQuery builder.
-func (_q *McpServerQuery) Where(ps ...predicate.McpServer) *McpServerQuery {
+// Where adds a new predicate for the MCPServerQuery builder.
+func (_q *MCPServerQuery) Where(ps ...predicate.MCPServer) *MCPServerQuery {
 	_q.predicates = append(_q.predicates, ps...)
 	return _q
 }
 
 // Limit the number of records to be returned by this query.
-func (_q *McpServerQuery) Limit(limit int) *McpServerQuery {
+func (_q *MCPServerQuery) Limit(limit int) *MCPServerQuery {
 	_q.ctx.Limit = &limit
 	return _q
 }
 
 // Offset to start from.
-func (_q *McpServerQuery) Offset(offset int) *McpServerQuery {
+func (_q *MCPServerQuery) Offset(offset int) *MCPServerQuery {
 	_q.ctx.Offset = &offset
 	return _q
 }
 
 // Unique configures the query builder to filter duplicate records on query.
 // By default, unique is set to true, and can be disabled using this method.
-func (_q *McpServerQuery) Unique(unique bool) *McpServerQuery {
+func (_q *MCPServerQuery) Unique(unique bool) *MCPServerQuery {
 	_q.ctx.Unique = &unique
 	return _q
 }
 
 // Order specifies how the records should be ordered.
-func (_q *McpServerQuery) Order(o ...mcpserver.OrderOption) *McpServerQuery {
+func (_q *MCPServerQuery) Order(o ...mcpserver.OrderOption) *MCPServerQuery {
 	_q.order = append(_q.order, o...)
 	return _q
 }
 
 // QueryOwner chains the current query on the "owner" edge.
-func (_q *McpServerQuery) QueryOwner() *TeamQuery {
+func (_q *MCPServerQuery) QueryOwner() *TeamQuery {
 	query := (&TeamClient{config: _q.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := _q.prepareQuery(ctx); err != nil {
@@ -94,7 +94,7 @@ func (_q *McpServerQuery) QueryOwner() *TeamQuery {
 }
 
 // QueryExposures chains the current query on the "exposures" edge.
-func (_q *McpServerQuery) QueryExposures() *AgenticExposureQuery {
+func (_q *MCPServerQuery) QueryExposures() *AgenticExposureQuery {
 	query := (&AgenticExposureClient{config: _q.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := _q.prepareQuery(ctx); err != nil {
@@ -115,9 +115,9 @@ func (_q *McpServerQuery) QueryExposures() *AgenticExposureQuery {
 	return query
 }
 
-// First returns the first McpServer entity from the query.
-// Returns a *NotFoundError when no McpServer was found.
-func (_q *McpServerQuery) First(ctx context.Context) (*McpServer, error) {
+// First returns the first MCPServer entity from the query.
+// Returns a *NotFoundError when no MCPServer was found.
+func (_q *MCPServerQuery) First(ctx context.Context) (*MCPServer, error) {
 	nodes, err := _q.Limit(1).All(setContextOp(ctx, _q.ctx, ent.OpQueryFirst))
 	if err != nil {
 		return nil, err
@@ -129,7 +129,7 @@ func (_q *McpServerQuery) First(ctx context.Context) (*McpServer, error) {
 }
 
 // FirstX is like First, but panics if an error occurs.
-func (_q *McpServerQuery) FirstX(ctx context.Context) *McpServer {
+func (_q *MCPServerQuery) FirstX(ctx context.Context) *MCPServer {
 	node, err := _q.First(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -137,9 +137,9 @@ func (_q *McpServerQuery) FirstX(ctx context.Context) *McpServer {
 	return node
 }
 
-// FirstID returns the first McpServer ID from the query.
-// Returns a *NotFoundError when no McpServer ID was found.
-func (_q *McpServerQuery) FirstID(ctx context.Context) (id int, err error) {
+// FirstID returns the first MCPServer ID from the query.
+// Returns a *NotFoundError when no MCPServer ID was found.
+func (_q *MCPServerQuery) FirstID(ctx context.Context) (id int, err error) {
 	var ids []int
 	if ids, err = _q.Limit(1).IDs(setContextOp(ctx, _q.ctx, ent.OpQueryFirstID)); err != nil {
 		return
@@ -152,7 +152,7 @@ func (_q *McpServerQuery) FirstID(ctx context.Context) (id int, err error) {
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (_q *McpServerQuery) FirstIDX(ctx context.Context) int {
+func (_q *MCPServerQuery) FirstIDX(ctx context.Context) int {
 	id, err := _q.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -160,10 +160,10 @@ func (_q *McpServerQuery) FirstIDX(ctx context.Context) int {
 	return id
 }
 
-// Only returns a single McpServer entity found by the query, ensuring it only returns one.
-// Returns a *NotSingularError when more than one McpServer entity is found.
-// Returns a *NotFoundError when no McpServer entities are found.
-func (_q *McpServerQuery) Only(ctx context.Context) (*McpServer, error) {
+// Only returns a single MCPServer entity found by the query, ensuring it only returns one.
+// Returns a *NotSingularError when more than one MCPServer entity is found.
+// Returns a *NotFoundError when no MCPServer entities are found.
+func (_q *MCPServerQuery) Only(ctx context.Context) (*MCPServer, error) {
 	nodes, err := _q.Limit(2).All(setContextOp(ctx, _q.ctx, ent.OpQueryOnly))
 	if err != nil {
 		return nil, err
@@ -179,7 +179,7 @@ func (_q *McpServerQuery) Only(ctx context.Context) (*McpServer, error) {
 }
 
 // OnlyX is like Only, but panics if an error occurs.
-func (_q *McpServerQuery) OnlyX(ctx context.Context) *McpServer {
+func (_q *MCPServerQuery) OnlyX(ctx context.Context) *MCPServer {
 	node, err := _q.Only(ctx)
 	if err != nil {
 		panic(err)
@@ -187,10 +187,10 @@ func (_q *McpServerQuery) OnlyX(ctx context.Context) *McpServer {
 	return node
 }
 
-// OnlyID is like Only, but returns the only McpServer ID in the query.
-// Returns a *NotSingularError when more than one McpServer ID is found.
+// OnlyID is like Only, but returns the only MCPServer ID in the query.
+// Returns a *NotSingularError when more than one MCPServer ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (_q *McpServerQuery) OnlyID(ctx context.Context) (id int, err error) {
+func (_q *MCPServerQuery) OnlyID(ctx context.Context) (id int, err error) {
 	var ids []int
 	if ids, err = _q.Limit(2).IDs(setContextOp(ctx, _q.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
@@ -207,7 +207,7 @@ func (_q *McpServerQuery) OnlyID(ctx context.Context) (id int, err error) {
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (_q *McpServerQuery) OnlyIDX(ctx context.Context) int {
+func (_q *MCPServerQuery) OnlyIDX(ctx context.Context) int {
 	id, err := _q.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -215,18 +215,18 @@ func (_q *McpServerQuery) OnlyIDX(ctx context.Context) int {
 	return id
 }
 
-// All executes the query and returns a list of McpServers.
-func (_q *McpServerQuery) All(ctx context.Context) ([]*McpServer, error) {
+// All executes the query and returns a list of MCPServers.
+func (_q *MCPServerQuery) All(ctx context.Context) ([]*MCPServer, error) {
 	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryAll)
 	if err := _q.prepareQuery(ctx); err != nil {
 		return nil, err
 	}
-	qr := querierAll[[]*McpServer, *McpServerQuery]()
-	return withInterceptors[[]*McpServer](ctx, _q, qr, _q.inters)
+	qr := querierAll[[]*MCPServer, *MCPServerQuery]()
+	return withInterceptors[[]*MCPServer](ctx, _q, qr, _q.inters)
 }
 
 // AllX is like All, but panics if an error occurs.
-func (_q *McpServerQuery) AllX(ctx context.Context) []*McpServer {
+func (_q *MCPServerQuery) AllX(ctx context.Context) []*MCPServer {
 	nodes, err := _q.All(ctx)
 	if err != nil {
 		panic(err)
@@ -234,8 +234,8 @@ func (_q *McpServerQuery) AllX(ctx context.Context) []*McpServer {
 	return nodes
 }
 
-// IDs executes the query and returns a list of McpServer IDs.
-func (_q *McpServerQuery) IDs(ctx context.Context) (ids []int, err error) {
+// IDs executes the query and returns a list of MCPServer IDs.
+func (_q *MCPServerQuery) IDs(ctx context.Context) (ids []int, err error) {
 	if _q.ctx.Unique == nil && _q.path != nil {
 		_q.Unique(true)
 	}
@@ -247,7 +247,7 @@ func (_q *McpServerQuery) IDs(ctx context.Context) (ids []int, err error) {
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (_q *McpServerQuery) IDsX(ctx context.Context) []int {
+func (_q *MCPServerQuery) IDsX(ctx context.Context) []int {
 	ids, err := _q.IDs(ctx)
 	if err != nil {
 		panic(err)
@@ -256,16 +256,16 @@ func (_q *McpServerQuery) IDsX(ctx context.Context) []int {
 }
 
 // Count returns the count of the given query.
-func (_q *McpServerQuery) Count(ctx context.Context) (int, error) {
+func (_q *MCPServerQuery) Count(ctx context.Context) (int, error) {
 	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryCount)
 	if err := _q.prepareQuery(ctx); err != nil {
 		return 0, err
 	}
-	return withInterceptors[int](ctx, _q, querierCount[*McpServerQuery](), _q.inters)
+	return withInterceptors[int](ctx, _q, querierCount[*MCPServerQuery](), _q.inters)
 }
 
 // CountX is like Count, but panics if an error occurs.
-func (_q *McpServerQuery) CountX(ctx context.Context) int {
+func (_q *MCPServerQuery) CountX(ctx context.Context) int {
 	count, err := _q.Count(ctx)
 	if err != nil {
 		panic(err)
@@ -274,7 +274,7 @@ func (_q *McpServerQuery) CountX(ctx context.Context) int {
 }
 
 // Exist returns true if the query has elements in the graph.
-func (_q *McpServerQuery) Exist(ctx context.Context) (bool, error) {
+func (_q *MCPServerQuery) Exist(ctx context.Context) (bool, error) {
 	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryExist)
 	switch _, err := _q.FirstID(ctx); {
 	case IsNotFound(err):
@@ -287,7 +287,7 @@ func (_q *McpServerQuery) Exist(ctx context.Context) (bool, error) {
 }
 
 // ExistX is like Exist, but panics if an error occurs.
-func (_q *McpServerQuery) ExistX(ctx context.Context) bool {
+func (_q *MCPServerQuery) ExistX(ctx context.Context) bool {
 	exist, err := _q.Exist(ctx)
 	if err != nil {
 		panic(err)
@@ -295,18 +295,18 @@ func (_q *McpServerQuery) ExistX(ctx context.Context) bool {
 	return exist
 }
 
-// Clone returns a duplicate of the McpServerQuery builder, including all associated steps. It can be
+// Clone returns a duplicate of the MCPServerQuery builder, including all associated steps. It can be
 // used to prepare common query builders and use them differently after the clone is made.
-func (_q *McpServerQuery) Clone() *McpServerQuery {
+func (_q *MCPServerQuery) Clone() *MCPServerQuery {
 	if _q == nil {
 		return nil
 	}
-	return &McpServerQuery{
+	return &MCPServerQuery{
 		config:        _q.config,
 		ctx:           _q.ctx.Clone(),
 		order:         append([]mcpserver.OrderOption{}, _q.order...),
 		inters:        append([]Interceptor{}, _q.inters...),
-		predicates:    append([]predicate.McpServer{}, _q.predicates...),
+		predicates:    append([]predicate.MCPServer{}, _q.predicates...),
 		withOwner:     _q.withOwner.Clone(),
 		withExposures: _q.withExposures.Clone(),
 		// clone intermediate query.
@@ -317,7 +317,7 @@ func (_q *McpServerQuery) Clone() *McpServerQuery {
 
 // WithOwner tells the query-builder to eager-load the nodes that are connected to
 // the "owner" edge. The optional arguments are used to configure the query builder of the edge.
-func (_q *McpServerQuery) WithOwner(opts ...func(*TeamQuery)) *McpServerQuery {
+func (_q *MCPServerQuery) WithOwner(opts ...func(*TeamQuery)) *MCPServerQuery {
 	query := (&TeamClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
@@ -328,7 +328,7 @@ func (_q *McpServerQuery) WithOwner(opts ...func(*TeamQuery)) *McpServerQuery {
 
 // WithExposures tells the query-builder to eager-load the nodes that are connected to
 // the "exposures" edge. The optional arguments are used to configure the query builder of the edge.
-func (_q *McpServerQuery) WithExposures(opts ...func(*AgenticExposureQuery)) *McpServerQuery {
+func (_q *MCPServerQuery) WithExposures(opts ...func(*AgenticExposureQuery)) *MCPServerQuery {
 	query := (&AgenticExposureClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
@@ -347,13 +347,13 @@ func (_q *McpServerQuery) WithExposures(opts ...func(*AgenticExposureQuery)) *Mc
 //		Count int `json:"count,omitempty"`
 //	}
 //
-//	client.McpServer.Query().
+//	client.MCPServer.Query().
 //		GroupBy(mcpserver.FieldCreatedAt).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
-func (_q *McpServerQuery) GroupBy(field string, fields ...string) *McpServerGroupBy {
+func (_q *MCPServerQuery) GroupBy(field string, fields ...string) *MCPServerGroupBy {
 	_q.ctx.Fields = append([]string{field}, fields...)
-	grbuild := &McpServerGroupBy{build: _q}
+	grbuild := &MCPServerGroupBy{build: _q}
 	grbuild.flds = &_q.ctx.Fields
 	grbuild.label = mcpserver.Label
 	grbuild.scan = grbuild.Scan
@@ -369,23 +369,23 @@ func (_q *McpServerQuery) GroupBy(field string, fields ...string) *McpServerGrou
 //		CreatedAt time.Time `json:"created_at,omitempty"`
 //	}
 //
-//	client.McpServer.Query().
+//	client.MCPServer.Query().
 //		Select(mcpserver.FieldCreatedAt).
 //		Scan(ctx, &v)
-func (_q *McpServerQuery) Select(fields ...string) *McpServerSelect {
+func (_q *MCPServerQuery) Select(fields ...string) *MCPServerSelect {
 	_q.ctx.Fields = append(_q.ctx.Fields, fields...)
-	sbuild := &McpServerSelect{McpServerQuery: _q}
+	sbuild := &MCPServerSelect{MCPServerQuery: _q}
 	sbuild.label = mcpserver.Label
 	sbuild.flds, sbuild.scan = &_q.ctx.Fields, sbuild.Scan
 	return sbuild
 }
 
-// Aggregate returns a McpServerSelect configured with the given aggregations.
-func (_q *McpServerQuery) Aggregate(fns ...AggregateFunc) *McpServerSelect {
+// Aggregate returns a MCPServerSelect configured with the given aggregations.
+func (_q *MCPServerQuery) Aggregate(fns ...AggregateFunc) *MCPServerSelect {
 	return _q.Select().Aggregate(fns...)
 }
 
-func (_q *McpServerQuery) prepareQuery(ctx context.Context) error {
+func (_q *MCPServerQuery) prepareQuery(ctx context.Context) error {
 	for _, inter := range _q.inters {
 		if inter == nil {
 			return fmt.Errorf("ent: uninitialized interceptor (forgotten import ent/runtime?)")
@@ -417,9 +417,9 @@ func (_q *McpServerQuery) prepareQuery(ctx context.Context) error {
 	return nil
 }
 
-func (_q *McpServerQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*McpServer, error) {
+func (_q *MCPServerQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*MCPServer, error) {
 	var (
-		nodes       = []*McpServer{}
+		nodes       = []*MCPServer{}
 		withFKs     = _q.withFKs
 		_spec       = _q.querySpec()
 		loadedTypes = [2]bool{
@@ -434,10 +434,10 @@ func (_q *McpServerQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Mc
 		_spec.Node.Columns = append(_spec.Node.Columns, mcpserver.ForeignKeys...)
 	}
 	_spec.ScanValues = func(columns []string) ([]any, error) {
-		return (*McpServer).scanValues(nil, columns)
+		return (*MCPServer).scanValues(nil, columns)
 	}
 	_spec.Assign = func(columns []string, values []any) error {
-		node := &McpServer{config: _q.config}
+		node := &MCPServer{config: _q.config}
 		nodes = append(nodes, node)
 		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
@@ -456,21 +456,21 @@ func (_q *McpServerQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Mc
 	}
 	if query := _q.withOwner; query != nil {
 		if err := _q.loadOwner(ctx, query, nodes, nil,
-			func(n *McpServer, e *Team) { n.Edges.Owner = e }); err != nil {
+			func(n *MCPServer, e *Team) { n.Edges.Owner = e }); err != nil {
 			return nil, err
 		}
 	}
 	if query := _q.withExposures; query != nil {
 		if err := _q.loadExposures(ctx, query, nodes,
-			func(n *McpServer) { n.Edges.Exposures = []*AgenticExposure{} },
-			func(n *McpServer, e *AgenticExposure) { n.Edges.Exposures = append(n.Edges.Exposures, e) }); err != nil {
+			func(n *MCPServer) { n.Edges.Exposures = []*AgenticExposure{} },
+			func(n *MCPServer, e *AgenticExposure) { n.Edges.Exposures = append(n.Edges.Exposures, e) }); err != nil {
 			return nil, err
 		}
 	}
 	for name, query := range _q.withNamedExposures {
 		if err := _q.loadExposures(ctx, query, nodes,
-			func(n *McpServer) { n.appendNamedExposures(name) },
-			func(n *McpServer, e *AgenticExposure) { n.appendNamedExposures(name, e) }); err != nil {
+			func(n *MCPServer) { n.appendNamedExposures(name) },
+			func(n *MCPServer, e *AgenticExposure) { n.appendNamedExposures(name, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -482,9 +482,9 @@ func (_q *McpServerQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Mc
 	return nodes, nil
 }
 
-func (_q *McpServerQuery) loadOwner(ctx context.Context, query *TeamQuery, nodes []*McpServer, init func(*McpServer), assign func(*McpServer, *Team)) error {
+func (_q *MCPServerQuery) loadOwner(ctx context.Context, query *TeamQuery, nodes []*MCPServer, init func(*MCPServer), assign func(*MCPServer, *Team)) error {
 	ids := make([]int, 0, len(nodes))
-	nodeids := make(map[int][]*McpServer)
+	nodeids := make(map[int][]*MCPServer)
 	for i := range nodes {
 		if nodes[i].team_mcp_servers == nil {
 			continue
@@ -514,9 +514,9 @@ func (_q *McpServerQuery) loadOwner(ctx context.Context, query *TeamQuery, nodes
 	}
 	return nil
 }
-func (_q *McpServerQuery) loadExposures(ctx context.Context, query *AgenticExposureQuery, nodes []*McpServer, init func(*McpServer), assign func(*McpServer, *AgenticExposure)) error {
+func (_q *MCPServerQuery) loadExposures(ctx context.Context, query *AgenticExposureQuery, nodes []*MCPServer, init func(*MCPServer), assign func(*MCPServer, *AgenticExposure)) error {
 	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[int]*McpServer)
+	nodeids := make(map[int]*MCPServer)
 	for i := range nodes {
 		fks = append(fks, nodes[i].ID)
 		nodeids[nodes[i].ID] = nodes[i]
@@ -546,7 +546,7 @@ func (_q *McpServerQuery) loadExposures(ctx context.Context, query *AgenticExpos
 	return nil
 }
 
-func (_q *McpServerQuery) sqlCount(ctx context.Context) (int, error) {
+func (_q *MCPServerQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := _q.querySpec()
 	if len(_q.modifiers) > 0 {
 		_spec.Modifiers = _q.modifiers
@@ -558,7 +558,7 @@ func (_q *McpServerQuery) sqlCount(ctx context.Context) (int, error) {
 	return sqlgraph.CountNodes(ctx, _q.driver, _spec)
 }
 
-func (_q *McpServerQuery) querySpec() *sqlgraph.QuerySpec {
+func (_q *MCPServerQuery) querySpec() *sqlgraph.QuerySpec {
 	_spec := sqlgraph.NewQuerySpec(mcpserver.Table, mcpserver.Columns, sqlgraph.NewFieldSpec(mcpserver.FieldID, field.TypeInt))
 	_spec.From = _q.sql
 	if unique := _q.ctx.Unique; unique != nil {
@@ -598,7 +598,7 @@ func (_q *McpServerQuery) querySpec() *sqlgraph.QuerySpec {
 	return _spec
 }
 
-func (_q *McpServerQuery) sqlQuery(ctx context.Context) *sql.Selector {
+func (_q *MCPServerQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	builder := sql.Dialect(_q.driver.Dialect())
 	t1 := builder.Table(mcpserver.Table)
 	columns := _q.ctx.Fields
@@ -632,7 +632,7 @@ func (_q *McpServerQuery) sqlQuery(ctx context.Context) *sql.Selector {
 
 // WithNamedExposures tells the query-builder to eager-load the nodes that are connected to the "exposures"
 // edge with the given name. The optional arguments are used to configure the query builder of the edge.
-func (_q *McpServerQuery) WithNamedExposures(name string, opts ...func(*AgenticExposureQuery)) *McpServerQuery {
+func (_q *MCPServerQuery) WithNamedExposures(name string, opts ...func(*AgenticExposureQuery)) *MCPServerQuery {
 	query := (&AgenticExposureClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
@@ -644,28 +644,28 @@ func (_q *McpServerQuery) WithNamedExposures(name string, opts ...func(*AgenticE
 	return _q
 }
 
-// McpServerGroupBy is the group-by builder for McpServer entities.
-type McpServerGroupBy struct {
+// MCPServerGroupBy is the group-by builder for MCPServer entities.
+type MCPServerGroupBy struct {
 	selector
-	build *McpServerQuery
+	build *MCPServerQuery
 }
 
 // Aggregate adds the given aggregation functions to the group-by query.
-func (_g *McpServerGroupBy) Aggregate(fns ...AggregateFunc) *McpServerGroupBy {
+func (_g *MCPServerGroupBy) Aggregate(fns ...AggregateFunc) *MCPServerGroupBy {
 	_g.fns = append(_g.fns, fns...)
 	return _g
 }
 
 // Scan applies the selector query and scans the result into the given value.
-func (_g *McpServerGroupBy) Scan(ctx context.Context, v any) error {
+func (_g *MCPServerGroupBy) Scan(ctx context.Context, v any) error {
 	ctx = setContextOp(ctx, _g.build.ctx, ent.OpQueryGroupBy)
 	if err := _g.build.prepareQuery(ctx); err != nil {
 		return err
 	}
-	return scanWithInterceptors[*McpServerQuery, *McpServerGroupBy](ctx, _g.build, _g, _g.build.inters, v)
+	return scanWithInterceptors[*MCPServerQuery, *MCPServerGroupBy](ctx, _g.build, _g, _g.build.inters, v)
 }
 
-func (_g *McpServerGroupBy) sqlScan(ctx context.Context, root *McpServerQuery, v any) error {
+func (_g *MCPServerGroupBy) sqlScan(ctx context.Context, root *MCPServerQuery, v any) error {
 	selector := root.sqlQuery(ctx).Select()
 	aggregation := make([]string, 0, len(_g.fns))
 	for _, fn := range _g.fns {
@@ -692,28 +692,28 @@ func (_g *McpServerGroupBy) sqlScan(ctx context.Context, root *McpServerQuery, v
 	return sql.ScanSlice(rows, v)
 }
 
-// McpServerSelect is the builder for selecting fields of McpServer entities.
-type McpServerSelect struct {
-	*McpServerQuery
+// MCPServerSelect is the builder for selecting fields of MCPServer entities.
+type MCPServerSelect struct {
+	*MCPServerQuery
 	selector
 }
 
 // Aggregate adds the given aggregation functions to the selector query.
-func (_s *McpServerSelect) Aggregate(fns ...AggregateFunc) *McpServerSelect {
+func (_s *MCPServerSelect) Aggregate(fns ...AggregateFunc) *MCPServerSelect {
 	_s.fns = append(_s.fns, fns...)
 	return _s
 }
 
 // Scan applies the selector query and scans the result into the given value.
-func (_s *McpServerSelect) Scan(ctx context.Context, v any) error {
+func (_s *MCPServerSelect) Scan(ctx context.Context, v any) error {
 	ctx = setContextOp(ctx, _s.ctx, ent.OpQuerySelect)
 	if err := _s.prepareQuery(ctx); err != nil {
 		return err
 	}
-	return scanWithInterceptors[*McpServerQuery, *McpServerSelect](ctx, _s.McpServerQuery, _s, _s.inters, v)
+	return scanWithInterceptors[*MCPServerQuery, *MCPServerSelect](ctx, _s.MCPServerQuery, _s, _s.inters, v)
 }
 
-func (_s *McpServerSelect) sqlScan(ctx context.Context, root *McpServerQuery, v any) error {
+func (_s *MCPServerSelect) sqlScan(ctx context.Context, root *MCPServerQuery, v any) error {
 	selector := root.sqlQuery(ctx)
 	aggregation := make([]string, 0, len(_s.fns))
 	for _, fn := range _s.fns {

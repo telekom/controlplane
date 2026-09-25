@@ -25,21 +25,21 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/zone"
 )
 
-// ApiSubscriptionQuery is the builder for querying ApiSubscription entities.
-type ApiSubscriptionQuery struct {
+// APISubscriptionQuery is the builder for querying APISubscription entities.
+type APISubscriptionQuery struct {
 	config
 	ctx                       *QueryContext
 	order                     []apisubscription.OrderOption
 	inters                    []Interceptor
-	predicates                []predicate.ApiSubscription
+	predicates                []predicate.APISubscription
 	withOwner                 *ApplicationQuery
-	withTarget                *ApiExposureQuery
+	withTarget                *APIExposureQuery
 	withFailoverZones         *ZoneQuery
 	withApproval              *ApprovalQuery
 	withApprovalRequests      *ApprovalRequestQuery
 	withFKs                   bool
 	modifiers                 []func(*sql.Selector)
-	loadTotal                 []func(context.Context, []*ApiSubscription) error
+	loadTotal                 []func(context.Context, []*APISubscription) error
 	withNamedFailoverZones    map[string]*ZoneQuery
 	withNamedApprovalRequests map[string]*ApprovalRequestQuery
 	// intermediate query (i.e. traversal path).
@@ -47,39 +47,39 @@ type ApiSubscriptionQuery struct {
 	path func(context.Context) (*sql.Selector, error)
 }
 
-// Where adds a new predicate for the ApiSubscriptionQuery builder.
-func (_q *ApiSubscriptionQuery) Where(ps ...predicate.ApiSubscription) *ApiSubscriptionQuery {
+// Where adds a new predicate for the APISubscriptionQuery builder.
+func (_q *APISubscriptionQuery) Where(ps ...predicate.APISubscription) *APISubscriptionQuery {
 	_q.predicates = append(_q.predicates, ps...)
 	return _q
 }
 
 // Limit the number of records to be returned by this query.
-func (_q *ApiSubscriptionQuery) Limit(limit int) *ApiSubscriptionQuery {
+func (_q *APISubscriptionQuery) Limit(limit int) *APISubscriptionQuery {
 	_q.ctx.Limit = &limit
 	return _q
 }
 
 // Offset to start from.
-func (_q *ApiSubscriptionQuery) Offset(offset int) *ApiSubscriptionQuery {
+func (_q *APISubscriptionQuery) Offset(offset int) *APISubscriptionQuery {
 	_q.ctx.Offset = &offset
 	return _q
 }
 
 // Unique configures the query builder to filter duplicate records on query.
 // By default, unique is set to true, and can be disabled using this method.
-func (_q *ApiSubscriptionQuery) Unique(unique bool) *ApiSubscriptionQuery {
+func (_q *APISubscriptionQuery) Unique(unique bool) *APISubscriptionQuery {
 	_q.ctx.Unique = &unique
 	return _q
 }
 
 // Order specifies how the records should be ordered.
-func (_q *ApiSubscriptionQuery) Order(o ...apisubscription.OrderOption) *ApiSubscriptionQuery {
+func (_q *APISubscriptionQuery) Order(o ...apisubscription.OrderOption) *APISubscriptionQuery {
 	_q.order = append(_q.order, o...)
 	return _q
 }
 
 // QueryOwner chains the current query on the "owner" edge.
-func (_q *ApiSubscriptionQuery) QueryOwner() *ApplicationQuery {
+func (_q *APISubscriptionQuery) QueryOwner() *ApplicationQuery {
 	query := (&ApplicationClient{config: _q.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := _q.prepareQuery(ctx); err != nil {
@@ -101,8 +101,8 @@ func (_q *ApiSubscriptionQuery) QueryOwner() *ApplicationQuery {
 }
 
 // QueryTarget chains the current query on the "target" edge.
-func (_q *ApiSubscriptionQuery) QueryTarget() *ApiExposureQuery {
-	query := (&ApiExposureClient{config: _q.config}).Query()
+func (_q *APISubscriptionQuery) QueryTarget() *APIExposureQuery {
+	query := (&APIExposureClient{config: _q.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := _q.prepareQuery(ctx); err != nil {
 			return nil, err
@@ -123,7 +123,7 @@ func (_q *ApiSubscriptionQuery) QueryTarget() *ApiExposureQuery {
 }
 
 // QueryFailoverZones chains the current query on the "failover_zones" edge.
-func (_q *ApiSubscriptionQuery) QueryFailoverZones() *ZoneQuery {
+func (_q *APISubscriptionQuery) QueryFailoverZones() *ZoneQuery {
 	query := (&ZoneClient{config: _q.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := _q.prepareQuery(ctx); err != nil {
@@ -145,7 +145,7 @@ func (_q *ApiSubscriptionQuery) QueryFailoverZones() *ZoneQuery {
 }
 
 // QueryApproval chains the current query on the "approval" edge.
-func (_q *ApiSubscriptionQuery) QueryApproval() *ApprovalQuery {
+func (_q *APISubscriptionQuery) QueryApproval() *ApprovalQuery {
 	query := (&ApprovalClient{config: _q.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := _q.prepareQuery(ctx); err != nil {
@@ -167,7 +167,7 @@ func (_q *ApiSubscriptionQuery) QueryApproval() *ApprovalQuery {
 }
 
 // QueryApprovalRequests chains the current query on the "approval_requests" edge.
-func (_q *ApiSubscriptionQuery) QueryApprovalRequests() *ApprovalRequestQuery {
+func (_q *APISubscriptionQuery) QueryApprovalRequests() *ApprovalRequestQuery {
 	query := (&ApprovalRequestClient{config: _q.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := _q.prepareQuery(ctx); err != nil {
@@ -188,9 +188,9 @@ func (_q *ApiSubscriptionQuery) QueryApprovalRequests() *ApprovalRequestQuery {
 	return query
 }
 
-// First returns the first ApiSubscription entity from the query.
-// Returns a *NotFoundError when no ApiSubscription was found.
-func (_q *ApiSubscriptionQuery) First(ctx context.Context) (*ApiSubscription, error) {
+// First returns the first APISubscription entity from the query.
+// Returns a *NotFoundError when no APISubscription was found.
+func (_q *APISubscriptionQuery) First(ctx context.Context) (*APISubscription, error) {
 	nodes, err := _q.Limit(1).All(setContextOp(ctx, _q.ctx, ent.OpQueryFirst))
 	if err != nil {
 		return nil, err
@@ -202,7 +202,7 @@ func (_q *ApiSubscriptionQuery) First(ctx context.Context) (*ApiSubscription, er
 }
 
 // FirstX is like First, but panics if an error occurs.
-func (_q *ApiSubscriptionQuery) FirstX(ctx context.Context) *ApiSubscription {
+func (_q *APISubscriptionQuery) FirstX(ctx context.Context) *APISubscription {
 	node, err := _q.First(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -210,9 +210,9 @@ func (_q *ApiSubscriptionQuery) FirstX(ctx context.Context) *ApiSubscription {
 	return node
 }
 
-// FirstID returns the first ApiSubscription ID from the query.
-// Returns a *NotFoundError when no ApiSubscription ID was found.
-func (_q *ApiSubscriptionQuery) FirstID(ctx context.Context) (id int, err error) {
+// FirstID returns the first APISubscription ID from the query.
+// Returns a *NotFoundError when no APISubscription ID was found.
+func (_q *APISubscriptionQuery) FirstID(ctx context.Context) (id int, err error) {
 	var ids []int
 	if ids, err = _q.Limit(1).IDs(setContextOp(ctx, _q.ctx, ent.OpQueryFirstID)); err != nil {
 		return
@@ -225,7 +225,7 @@ func (_q *ApiSubscriptionQuery) FirstID(ctx context.Context) (id int, err error)
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (_q *ApiSubscriptionQuery) FirstIDX(ctx context.Context) int {
+func (_q *APISubscriptionQuery) FirstIDX(ctx context.Context) int {
 	id, err := _q.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -233,10 +233,10 @@ func (_q *ApiSubscriptionQuery) FirstIDX(ctx context.Context) int {
 	return id
 }
 
-// Only returns a single ApiSubscription entity found by the query, ensuring it only returns one.
-// Returns a *NotSingularError when more than one ApiSubscription entity is found.
-// Returns a *NotFoundError when no ApiSubscription entities are found.
-func (_q *ApiSubscriptionQuery) Only(ctx context.Context) (*ApiSubscription, error) {
+// Only returns a single APISubscription entity found by the query, ensuring it only returns one.
+// Returns a *NotSingularError when more than one APISubscription entity is found.
+// Returns a *NotFoundError when no APISubscription entities are found.
+func (_q *APISubscriptionQuery) Only(ctx context.Context) (*APISubscription, error) {
 	nodes, err := _q.Limit(2).All(setContextOp(ctx, _q.ctx, ent.OpQueryOnly))
 	if err != nil {
 		return nil, err
@@ -252,7 +252,7 @@ func (_q *ApiSubscriptionQuery) Only(ctx context.Context) (*ApiSubscription, err
 }
 
 // OnlyX is like Only, but panics if an error occurs.
-func (_q *ApiSubscriptionQuery) OnlyX(ctx context.Context) *ApiSubscription {
+func (_q *APISubscriptionQuery) OnlyX(ctx context.Context) *APISubscription {
 	node, err := _q.Only(ctx)
 	if err != nil {
 		panic(err)
@@ -260,10 +260,10 @@ func (_q *ApiSubscriptionQuery) OnlyX(ctx context.Context) *ApiSubscription {
 	return node
 }
 
-// OnlyID is like Only, but returns the only ApiSubscription ID in the query.
-// Returns a *NotSingularError when more than one ApiSubscription ID is found.
+// OnlyID is like Only, but returns the only APISubscription ID in the query.
+// Returns a *NotSingularError when more than one APISubscription ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (_q *ApiSubscriptionQuery) OnlyID(ctx context.Context) (id int, err error) {
+func (_q *APISubscriptionQuery) OnlyID(ctx context.Context) (id int, err error) {
 	var ids []int
 	if ids, err = _q.Limit(2).IDs(setContextOp(ctx, _q.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
@@ -280,7 +280,7 @@ func (_q *ApiSubscriptionQuery) OnlyID(ctx context.Context) (id int, err error) 
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (_q *ApiSubscriptionQuery) OnlyIDX(ctx context.Context) int {
+func (_q *APISubscriptionQuery) OnlyIDX(ctx context.Context) int {
 	id, err := _q.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -288,18 +288,18 @@ func (_q *ApiSubscriptionQuery) OnlyIDX(ctx context.Context) int {
 	return id
 }
 
-// All executes the query and returns a list of ApiSubscriptions.
-func (_q *ApiSubscriptionQuery) All(ctx context.Context) ([]*ApiSubscription, error) {
+// All executes the query and returns a list of APISubscriptions.
+func (_q *APISubscriptionQuery) All(ctx context.Context) ([]*APISubscription, error) {
 	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryAll)
 	if err := _q.prepareQuery(ctx); err != nil {
 		return nil, err
 	}
-	qr := querierAll[[]*ApiSubscription, *ApiSubscriptionQuery]()
-	return withInterceptors[[]*ApiSubscription](ctx, _q, qr, _q.inters)
+	qr := querierAll[[]*APISubscription, *APISubscriptionQuery]()
+	return withInterceptors[[]*APISubscription](ctx, _q, qr, _q.inters)
 }
 
 // AllX is like All, but panics if an error occurs.
-func (_q *ApiSubscriptionQuery) AllX(ctx context.Context) []*ApiSubscription {
+func (_q *APISubscriptionQuery) AllX(ctx context.Context) []*APISubscription {
 	nodes, err := _q.All(ctx)
 	if err != nil {
 		panic(err)
@@ -307,8 +307,8 @@ func (_q *ApiSubscriptionQuery) AllX(ctx context.Context) []*ApiSubscription {
 	return nodes
 }
 
-// IDs executes the query and returns a list of ApiSubscription IDs.
-func (_q *ApiSubscriptionQuery) IDs(ctx context.Context) (ids []int, err error) {
+// IDs executes the query and returns a list of APISubscription IDs.
+func (_q *APISubscriptionQuery) IDs(ctx context.Context) (ids []int, err error) {
 	if _q.ctx.Unique == nil && _q.path != nil {
 		_q.Unique(true)
 	}
@@ -320,7 +320,7 @@ func (_q *ApiSubscriptionQuery) IDs(ctx context.Context) (ids []int, err error) 
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (_q *ApiSubscriptionQuery) IDsX(ctx context.Context) []int {
+func (_q *APISubscriptionQuery) IDsX(ctx context.Context) []int {
 	ids, err := _q.IDs(ctx)
 	if err != nil {
 		panic(err)
@@ -329,16 +329,16 @@ func (_q *ApiSubscriptionQuery) IDsX(ctx context.Context) []int {
 }
 
 // Count returns the count of the given query.
-func (_q *ApiSubscriptionQuery) Count(ctx context.Context) (int, error) {
+func (_q *APISubscriptionQuery) Count(ctx context.Context) (int, error) {
 	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryCount)
 	if err := _q.prepareQuery(ctx); err != nil {
 		return 0, err
 	}
-	return withInterceptors[int](ctx, _q, querierCount[*ApiSubscriptionQuery](), _q.inters)
+	return withInterceptors[int](ctx, _q, querierCount[*APISubscriptionQuery](), _q.inters)
 }
 
 // CountX is like Count, but panics if an error occurs.
-func (_q *ApiSubscriptionQuery) CountX(ctx context.Context) int {
+func (_q *APISubscriptionQuery) CountX(ctx context.Context) int {
 	count, err := _q.Count(ctx)
 	if err != nil {
 		panic(err)
@@ -347,7 +347,7 @@ func (_q *ApiSubscriptionQuery) CountX(ctx context.Context) int {
 }
 
 // Exist returns true if the query has elements in the graph.
-func (_q *ApiSubscriptionQuery) Exist(ctx context.Context) (bool, error) {
+func (_q *APISubscriptionQuery) Exist(ctx context.Context) (bool, error) {
 	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryExist)
 	switch _, err := _q.FirstID(ctx); {
 	case IsNotFound(err):
@@ -360,7 +360,7 @@ func (_q *ApiSubscriptionQuery) Exist(ctx context.Context) (bool, error) {
 }
 
 // ExistX is like Exist, but panics if an error occurs.
-func (_q *ApiSubscriptionQuery) ExistX(ctx context.Context) bool {
+func (_q *APISubscriptionQuery) ExistX(ctx context.Context) bool {
 	exist, err := _q.Exist(ctx)
 	if err != nil {
 		panic(err)
@@ -368,18 +368,18 @@ func (_q *ApiSubscriptionQuery) ExistX(ctx context.Context) bool {
 	return exist
 }
 
-// Clone returns a duplicate of the ApiSubscriptionQuery builder, including all associated steps. It can be
+// Clone returns a duplicate of the APISubscriptionQuery builder, including all associated steps. It can be
 // used to prepare common query builders and use them differently after the clone is made.
-func (_q *ApiSubscriptionQuery) Clone() *ApiSubscriptionQuery {
+func (_q *APISubscriptionQuery) Clone() *APISubscriptionQuery {
 	if _q == nil {
 		return nil
 	}
-	return &ApiSubscriptionQuery{
+	return &APISubscriptionQuery{
 		config:               _q.config,
 		ctx:                  _q.ctx.Clone(),
 		order:                append([]apisubscription.OrderOption{}, _q.order...),
 		inters:               append([]Interceptor{}, _q.inters...),
-		predicates:           append([]predicate.ApiSubscription{}, _q.predicates...),
+		predicates:           append([]predicate.APISubscription{}, _q.predicates...),
 		withOwner:            _q.withOwner.Clone(),
 		withTarget:           _q.withTarget.Clone(),
 		withFailoverZones:    _q.withFailoverZones.Clone(),
@@ -393,7 +393,7 @@ func (_q *ApiSubscriptionQuery) Clone() *ApiSubscriptionQuery {
 
 // WithOwner tells the query-builder to eager-load the nodes that are connected to
 // the "owner" edge. The optional arguments are used to configure the query builder of the edge.
-func (_q *ApiSubscriptionQuery) WithOwner(opts ...func(*ApplicationQuery)) *ApiSubscriptionQuery {
+func (_q *APISubscriptionQuery) WithOwner(opts ...func(*ApplicationQuery)) *APISubscriptionQuery {
 	query := (&ApplicationClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
@@ -404,8 +404,8 @@ func (_q *ApiSubscriptionQuery) WithOwner(opts ...func(*ApplicationQuery)) *ApiS
 
 // WithTarget tells the query-builder to eager-load the nodes that are connected to
 // the "target" edge. The optional arguments are used to configure the query builder of the edge.
-func (_q *ApiSubscriptionQuery) WithTarget(opts ...func(*ApiExposureQuery)) *ApiSubscriptionQuery {
-	query := (&ApiExposureClient{config: _q.config}).Query()
+func (_q *APISubscriptionQuery) WithTarget(opts ...func(*APIExposureQuery)) *APISubscriptionQuery {
+	query := (&APIExposureClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
@@ -415,7 +415,7 @@ func (_q *ApiSubscriptionQuery) WithTarget(opts ...func(*ApiExposureQuery)) *Api
 
 // WithFailoverZones tells the query-builder to eager-load the nodes that are connected to
 // the "failover_zones" edge. The optional arguments are used to configure the query builder of the edge.
-func (_q *ApiSubscriptionQuery) WithFailoverZones(opts ...func(*ZoneQuery)) *ApiSubscriptionQuery {
+func (_q *APISubscriptionQuery) WithFailoverZones(opts ...func(*ZoneQuery)) *APISubscriptionQuery {
 	query := (&ZoneClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
@@ -426,7 +426,7 @@ func (_q *ApiSubscriptionQuery) WithFailoverZones(opts ...func(*ZoneQuery)) *Api
 
 // WithApproval tells the query-builder to eager-load the nodes that are connected to
 // the "approval" edge. The optional arguments are used to configure the query builder of the edge.
-func (_q *ApiSubscriptionQuery) WithApproval(opts ...func(*ApprovalQuery)) *ApiSubscriptionQuery {
+func (_q *APISubscriptionQuery) WithApproval(opts ...func(*ApprovalQuery)) *APISubscriptionQuery {
 	query := (&ApprovalClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
@@ -437,7 +437,7 @@ func (_q *ApiSubscriptionQuery) WithApproval(opts ...func(*ApprovalQuery)) *ApiS
 
 // WithApprovalRequests tells the query-builder to eager-load the nodes that are connected to
 // the "approval_requests" edge. The optional arguments are used to configure the query builder of the edge.
-func (_q *ApiSubscriptionQuery) WithApprovalRequests(opts ...func(*ApprovalRequestQuery)) *ApiSubscriptionQuery {
+func (_q *APISubscriptionQuery) WithApprovalRequests(opts ...func(*ApprovalRequestQuery)) *APISubscriptionQuery {
 	query := (&ApprovalRequestClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
@@ -456,13 +456,13 @@ func (_q *ApiSubscriptionQuery) WithApprovalRequests(opts ...func(*ApprovalReque
 //		Count int `json:"count,omitempty"`
 //	}
 //
-//	client.ApiSubscription.Query().
+//	client.APISubscription.Query().
 //		GroupBy(apisubscription.FieldCreatedAt).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
-func (_q *ApiSubscriptionQuery) GroupBy(field string, fields ...string) *ApiSubscriptionGroupBy {
+func (_q *APISubscriptionQuery) GroupBy(field string, fields ...string) *APISubscriptionGroupBy {
 	_q.ctx.Fields = append([]string{field}, fields...)
-	grbuild := &ApiSubscriptionGroupBy{build: _q}
+	grbuild := &APISubscriptionGroupBy{build: _q}
 	grbuild.flds = &_q.ctx.Fields
 	grbuild.label = apisubscription.Label
 	grbuild.scan = grbuild.Scan
@@ -478,23 +478,23 @@ func (_q *ApiSubscriptionQuery) GroupBy(field string, fields ...string) *ApiSubs
 //		CreatedAt time.Time `json:"created_at,omitempty"`
 //	}
 //
-//	client.ApiSubscription.Query().
+//	client.APISubscription.Query().
 //		Select(apisubscription.FieldCreatedAt).
 //		Scan(ctx, &v)
-func (_q *ApiSubscriptionQuery) Select(fields ...string) *ApiSubscriptionSelect {
+func (_q *APISubscriptionQuery) Select(fields ...string) *APISubscriptionSelect {
 	_q.ctx.Fields = append(_q.ctx.Fields, fields...)
-	sbuild := &ApiSubscriptionSelect{ApiSubscriptionQuery: _q}
+	sbuild := &APISubscriptionSelect{APISubscriptionQuery: _q}
 	sbuild.label = apisubscription.Label
 	sbuild.flds, sbuild.scan = &_q.ctx.Fields, sbuild.Scan
 	return sbuild
 }
 
-// Aggregate returns a ApiSubscriptionSelect configured with the given aggregations.
-func (_q *ApiSubscriptionQuery) Aggregate(fns ...AggregateFunc) *ApiSubscriptionSelect {
+// Aggregate returns a APISubscriptionSelect configured with the given aggregations.
+func (_q *APISubscriptionQuery) Aggregate(fns ...AggregateFunc) *APISubscriptionSelect {
 	return _q.Select().Aggregate(fns...)
 }
 
-func (_q *ApiSubscriptionQuery) prepareQuery(ctx context.Context) error {
+func (_q *APISubscriptionQuery) prepareQuery(ctx context.Context) error {
 	for _, inter := range _q.inters {
 		if inter == nil {
 			return fmt.Errorf("ent: uninitialized interceptor (forgotten import ent/runtime?)")
@@ -526,9 +526,9 @@ func (_q *ApiSubscriptionQuery) prepareQuery(ctx context.Context) error {
 	return nil
 }
 
-func (_q *ApiSubscriptionQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*ApiSubscription, error) {
+func (_q *APISubscriptionQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*APISubscription, error) {
 	var (
-		nodes       = []*ApiSubscription{}
+		nodes       = []*APISubscription{}
 		withFKs     = _q.withFKs
 		_spec       = _q.querySpec()
 		loadedTypes = [5]bool{
@@ -546,10 +546,10 @@ func (_q *ApiSubscriptionQuery) sqlAll(ctx context.Context, hooks ...queryHook) 
 		_spec.Node.Columns = append(_spec.Node.Columns, apisubscription.ForeignKeys...)
 	}
 	_spec.ScanValues = func(columns []string) ([]any, error) {
-		return (*ApiSubscription).scanValues(nil, columns)
+		return (*APISubscription).scanValues(nil, columns)
 	}
 	_spec.Assign = func(columns []string, values []any) error {
-		node := &ApiSubscription{config: _q.config}
+		node := &APISubscription{config: _q.config}
 		nodes = append(nodes, node)
 		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
@@ -568,33 +568,33 @@ func (_q *ApiSubscriptionQuery) sqlAll(ctx context.Context, hooks ...queryHook) 
 	}
 	if query := _q.withOwner; query != nil {
 		if err := _q.loadOwner(ctx, query, nodes, nil,
-			func(n *ApiSubscription, e *Application) { n.Edges.Owner = e }); err != nil {
+			func(n *APISubscription, e *Application) { n.Edges.Owner = e }); err != nil {
 			return nil, err
 		}
 	}
 	if query := _q.withTarget; query != nil {
 		if err := _q.loadTarget(ctx, query, nodes, nil,
-			func(n *ApiSubscription, e *ApiExposure) { n.Edges.Target = e }); err != nil {
+			func(n *APISubscription, e *APIExposure) { n.Edges.Target = e }); err != nil {
 			return nil, err
 		}
 	}
 	if query := _q.withFailoverZones; query != nil {
 		if err := _q.loadFailoverZones(ctx, query, nodes,
-			func(n *ApiSubscription) { n.Edges.FailoverZones = []*Zone{} },
-			func(n *ApiSubscription, e *Zone) { n.Edges.FailoverZones = append(n.Edges.FailoverZones, e) }); err != nil {
+			func(n *APISubscription) { n.Edges.FailoverZones = []*Zone{} },
+			func(n *APISubscription, e *Zone) { n.Edges.FailoverZones = append(n.Edges.FailoverZones, e) }); err != nil {
 			return nil, err
 		}
 	}
 	if query := _q.withApproval; query != nil {
 		if err := _q.loadApproval(ctx, query, nodes, nil,
-			func(n *ApiSubscription, e *Approval) { n.Edges.Approval = e }); err != nil {
+			func(n *APISubscription, e *Approval) { n.Edges.Approval = e }); err != nil {
 			return nil, err
 		}
 	}
 	if query := _q.withApprovalRequests; query != nil {
 		if err := _q.loadApprovalRequests(ctx, query, nodes,
-			func(n *ApiSubscription) { n.Edges.ApprovalRequests = []*ApprovalRequest{} },
-			func(n *ApiSubscription, e *ApprovalRequest) {
+			func(n *APISubscription) { n.Edges.ApprovalRequests = []*ApprovalRequest{} },
+			func(n *APISubscription, e *ApprovalRequest) {
 				n.Edges.ApprovalRequests = append(n.Edges.ApprovalRequests, e)
 			}); err != nil {
 			return nil, err
@@ -602,15 +602,15 @@ func (_q *ApiSubscriptionQuery) sqlAll(ctx context.Context, hooks ...queryHook) 
 	}
 	for name, query := range _q.withNamedFailoverZones {
 		if err := _q.loadFailoverZones(ctx, query, nodes,
-			func(n *ApiSubscription) { n.appendNamedFailoverZones(name) },
-			func(n *ApiSubscription, e *Zone) { n.appendNamedFailoverZones(name, e) }); err != nil {
+			func(n *APISubscription) { n.appendNamedFailoverZones(name) },
+			func(n *APISubscription, e *Zone) { n.appendNamedFailoverZones(name, e) }); err != nil {
 			return nil, err
 		}
 	}
 	for name, query := range _q.withNamedApprovalRequests {
 		if err := _q.loadApprovalRequests(ctx, query, nodes,
-			func(n *ApiSubscription) { n.appendNamedApprovalRequests(name) },
-			func(n *ApiSubscription, e *ApprovalRequest) { n.appendNamedApprovalRequests(name, e) }); err != nil {
+			func(n *APISubscription) { n.appendNamedApprovalRequests(name) },
+			func(n *APISubscription, e *ApprovalRequest) { n.appendNamedApprovalRequests(name, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -622,9 +622,9 @@ func (_q *ApiSubscriptionQuery) sqlAll(ctx context.Context, hooks ...queryHook) 
 	return nodes, nil
 }
 
-func (_q *ApiSubscriptionQuery) loadOwner(ctx context.Context, query *ApplicationQuery, nodes []*ApiSubscription, init func(*ApiSubscription), assign func(*ApiSubscription, *Application)) error {
+func (_q *APISubscriptionQuery) loadOwner(ctx context.Context, query *ApplicationQuery, nodes []*APISubscription, init func(*APISubscription), assign func(*APISubscription, *Application)) error {
 	ids := make([]int, 0, len(nodes))
-	nodeids := make(map[int][]*ApiSubscription)
+	nodeids := make(map[int][]*APISubscription)
 	for i := range nodes {
 		if nodes[i].application_subscribed_apis == nil {
 			continue
@@ -654,9 +654,9 @@ func (_q *ApiSubscriptionQuery) loadOwner(ctx context.Context, query *Applicatio
 	}
 	return nil
 }
-func (_q *ApiSubscriptionQuery) loadTarget(ctx context.Context, query *ApiExposureQuery, nodes []*ApiSubscription, init func(*ApiSubscription), assign func(*ApiSubscription, *ApiExposure)) error {
+func (_q *APISubscriptionQuery) loadTarget(ctx context.Context, query *APIExposureQuery, nodes []*APISubscription, init func(*APISubscription), assign func(*APISubscription, *APIExposure)) error {
 	ids := make([]int, 0, len(nodes))
-	nodeids := make(map[int][]*ApiSubscription)
+	nodeids := make(map[int][]*APISubscription)
 	for i := range nodes {
 		if nodes[i].api_subscription_target == nil {
 			continue
@@ -686,9 +686,9 @@ func (_q *ApiSubscriptionQuery) loadTarget(ctx context.Context, query *ApiExposu
 	}
 	return nil
 }
-func (_q *ApiSubscriptionQuery) loadFailoverZones(ctx context.Context, query *ZoneQuery, nodes []*ApiSubscription, init func(*ApiSubscription), assign func(*ApiSubscription, *Zone)) error {
+func (_q *APISubscriptionQuery) loadFailoverZones(ctx context.Context, query *ZoneQuery, nodes []*APISubscription, init func(*APISubscription), assign func(*APISubscription, *Zone)) error {
 	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[int]*ApiSubscription)
+	nodeids := make(map[int]*APISubscription)
 	for i := range nodes {
 		fks = append(fks, nodes[i].ID)
 		nodeids[nodes[i].ID] = nodes[i]
@@ -717,9 +717,9 @@ func (_q *ApiSubscriptionQuery) loadFailoverZones(ctx context.Context, query *Zo
 	}
 	return nil
 }
-func (_q *ApiSubscriptionQuery) loadApproval(ctx context.Context, query *ApprovalQuery, nodes []*ApiSubscription, init func(*ApiSubscription), assign func(*ApiSubscription, *Approval)) error {
+func (_q *APISubscriptionQuery) loadApproval(ctx context.Context, query *ApprovalQuery, nodes []*APISubscription, init func(*APISubscription), assign func(*APISubscription, *Approval)) error {
 	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[int]*ApiSubscription)
+	nodeids := make(map[int]*APISubscription)
 	for i := range nodes {
 		fks = append(fks, nodes[i].ID)
 		nodeids[nodes[i].ID] = nodes[i]
@@ -745,9 +745,9 @@ func (_q *ApiSubscriptionQuery) loadApproval(ctx context.Context, query *Approva
 	}
 	return nil
 }
-func (_q *ApiSubscriptionQuery) loadApprovalRequests(ctx context.Context, query *ApprovalRequestQuery, nodes []*ApiSubscription, init func(*ApiSubscription), assign func(*ApiSubscription, *ApprovalRequest)) error {
+func (_q *APISubscriptionQuery) loadApprovalRequests(ctx context.Context, query *ApprovalRequestQuery, nodes []*APISubscription, init func(*APISubscription), assign func(*APISubscription, *ApprovalRequest)) error {
 	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[int]*ApiSubscription)
+	nodeids := make(map[int]*APISubscription)
 	for i := range nodes {
 		fks = append(fks, nodes[i].ID)
 		nodeids[nodes[i].ID] = nodes[i]
@@ -777,7 +777,7 @@ func (_q *ApiSubscriptionQuery) loadApprovalRequests(ctx context.Context, query 
 	return nil
 }
 
-func (_q *ApiSubscriptionQuery) sqlCount(ctx context.Context) (int, error) {
+func (_q *APISubscriptionQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := _q.querySpec()
 	if len(_q.modifiers) > 0 {
 		_spec.Modifiers = _q.modifiers
@@ -789,7 +789,7 @@ func (_q *ApiSubscriptionQuery) sqlCount(ctx context.Context) (int, error) {
 	return sqlgraph.CountNodes(ctx, _q.driver, _spec)
 }
 
-func (_q *ApiSubscriptionQuery) querySpec() *sqlgraph.QuerySpec {
+func (_q *APISubscriptionQuery) querySpec() *sqlgraph.QuerySpec {
 	_spec := sqlgraph.NewQuerySpec(apisubscription.Table, apisubscription.Columns, sqlgraph.NewFieldSpec(apisubscription.FieldID, field.TypeInt))
 	_spec.From = _q.sql
 	if unique := _q.ctx.Unique; unique != nil {
@@ -829,7 +829,7 @@ func (_q *ApiSubscriptionQuery) querySpec() *sqlgraph.QuerySpec {
 	return _spec
 }
 
-func (_q *ApiSubscriptionQuery) sqlQuery(ctx context.Context) *sql.Selector {
+func (_q *APISubscriptionQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	builder := sql.Dialect(_q.driver.Dialect())
 	t1 := builder.Table(apisubscription.Table)
 	columns := _q.ctx.Fields
@@ -863,7 +863,7 @@ func (_q *ApiSubscriptionQuery) sqlQuery(ctx context.Context) *sql.Selector {
 
 // WithNamedFailoverZones tells the query-builder to eager-load the nodes that are connected to the "failover_zones"
 // edge with the given name. The optional arguments are used to configure the query builder of the edge.
-func (_q *ApiSubscriptionQuery) WithNamedFailoverZones(name string, opts ...func(*ZoneQuery)) *ApiSubscriptionQuery {
+func (_q *APISubscriptionQuery) WithNamedFailoverZones(name string, opts ...func(*ZoneQuery)) *APISubscriptionQuery {
 	query := (&ZoneClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
@@ -877,7 +877,7 @@ func (_q *ApiSubscriptionQuery) WithNamedFailoverZones(name string, opts ...func
 
 // WithNamedApprovalRequests tells the query-builder to eager-load the nodes that are connected to the "approval_requests"
 // edge with the given name. The optional arguments are used to configure the query builder of the edge.
-func (_q *ApiSubscriptionQuery) WithNamedApprovalRequests(name string, opts ...func(*ApprovalRequestQuery)) *ApiSubscriptionQuery {
+func (_q *APISubscriptionQuery) WithNamedApprovalRequests(name string, opts ...func(*ApprovalRequestQuery)) *APISubscriptionQuery {
 	query := (&ApprovalRequestClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
@@ -889,28 +889,28 @@ func (_q *ApiSubscriptionQuery) WithNamedApprovalRequests(name string, opts ...f
 	return _q
 }
 
-// ApiSubscriptionGroupBy is the group-by builder for ApiSubscription entities.
-type ApiSubscriptionGroupBy struct {
+// APISubscriptionGroupBy is the group-by builder for APISubscription entities.
+type APISubscriptionGroupBy struct {
 	selector
-	build *ApiSubscriptionQuery
+	build *APISubscriptionQuery
 }
 
 // Aggregate adds the given aggregation functions to the group-by query.
-func (_g *ApiSubscriptionGroupBy) Aggregate(fns ...AggregateFunc) *ApiSubscriptionGroupBy {
+func (_g *APISubscriptionGroupBy) Aggregate(fns ...AggregateFunc) *APISubscriptionGroupBy {
 	_g.fns = append(_g.fns, fns...)
 	return _g
 }
 
 // Scan applies the selector query and scans the result into the given value.
-func (_g *ApiSubscriptionGroupBy) Scan(ctx context.Context, v any) error {
+func (_g *APISubscriptionGroupBy) Scan(ctx context.Context, v any) error {
 	ctx = setContextOp(ctx, _g.build.ctx, ent.OpQueryGroupBy)
 	if err := _g.build.prepareQuery(ctx); err != nil {
 		return err
 	}
-	return scanWithInterceptors[*ApiSubscriptionQuery, *ApiSubscriptionGroupBy](ctx, _g.build, _g, _g.build.inters, v)
+	return scanWithInterceptors[*APISubscriptionQuery, *APISubscriptionGroupBy](ctx, _g.build, _g, _g.build.inters, v)
 }
 
-func (_g *ApiSubscriptionGroupBy) sqlScan(ctx context.Context, root *ApiSubscriptionQuery, v any) error {
+func (_g *APISubscriptionGroupBy) sqlScan(ctx context.Context, root *APISubscriptionQuery, v any) error {
 	selector := root.sqlQuery(ctx).Select()
 	aggregation := make([]string, 0, len(_g.fns))
 	for _, fn := range _g.fns {
@@ -937,28 +937,28 @@ func (_g *ApiSubscriptionGroupBy) sqlScan(ctx context.Context, root *ApiSubscrip
 	return sql.ScanSlice(rows, v)
 }
 
-// ApiSubscriptionSelect is the builder for selecting fields of ApiSubscription entities.
-type ApiSubscriptionSelect struct {
-	*ApiSubscriptionQuery
+// APISubscriptionSelect is the builder for selecting fields of APISubscription entities.
+type APISubscriptionSelect struct {
+	*APISubscriptionQuery
 	selector
 }
 
 // Aggregate adds the given aggregation functions to the selector query.
-func (_s *ApiSubscriptionSelect) Aggregate(fns ...AggregateFunc) *ApiSubscriptionSelect {
+func (_s *APISubscriptionSelect) Aggregate(fns ...AggregateFunc) *APISubscriptionSelect {
 	_s.fns = append(_s.fns, fns...)
 	return _s
 }
 
 // Scan applies the selector query and scans the result into the given value.
-func (_s *ApiSubscriptionSelect) Scan(ctx context.Context, v any) error {
+func (_s *APISubscriptionSelect) Scan(ctx context.Context, v any) error {
 	ctx = setContextOp(ctx, _s.ctx, ent.OpQuerySelect)
 	if err := _s.prepareQuery(ctx); err != nil {
 		return err
 	}
-	return scanWithInterceptors[*ApiSubscriptionQuery, *ApiSubscriptionSelect](ctx, _s.ApiSubscriptionQuery, _s, _s.inters, v)
+	return scanWithInterceptors[*APISubscriptionQuery, *APISubscriptionSelect](ctx, _s.APISubscriptionQuery, _s, _s.inters, v)
 }
 
-func (_s *ApiSubscriptionSelect) sqlScan(ctx context.Context, root *ApiSubscriptionQuery, v any) error {
+func (_s *APISubscriptionSelect) sqlScan(ctx context.Context, root *APISubscriptionQuery, v any) error {
 	selector := root.sqlQuery(ctx)
 	aggregation := make([]string, 0, len(_s.fns))
 	for _, fn := range _s.fns {

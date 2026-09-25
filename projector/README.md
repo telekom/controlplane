@@ -35,9 +35,9 @@ main.go                          26-line entrypoint → bootstrap.Run()
        ├── team/                 Level 1 — optional Group FK
        ├── application/          Level 2 — required Team + Zone FKs
        ├── apiexposure/          Level 3 — required Application FK
-       ├── apisubscription/      Level 3 — required Application FK, optional target ApiExposure FK
-       ├── approval/             Level 4 — required ApiSubscription FK
-       ├── approvalrequest/      Level 4 — required ApiSubscription FK
+       ├── apisubscription/      Level 3 — required Application FK, optional target APIExposure FK
+       ├── approval/             Level 4 — required APISubscription FK
+       ├── approvalrequest/      Level 4 — required APISubscription FK
        ├── eventtype/            Level 0 — no FK dependencies (gated behind FeaturePubSub)
        ├── eventexposure/        Level 3 — required Application FK (gated behind FeaturePubSub)
        ├── eventsubscription/    Level 3 — required Application FK, optional target EventExposure FK (gated behind FeaturePubSub)
@@ -87,8 +87,8 @@ The core interfaces (`runtime/contracts.go`):
 Level 0:  Zone    Group    EventType
 Level 1:         Team ─────────────┐
 Level 2:  Application ◄────────────┘ (Team FK + Zone FK)
-Level 3:  ApiExposure   ApiSubscription   EventExposure   EventSubscription   PermissionSet ◄── Application FK
-Level 4:  Approval   ApprovalRequest ◄── ApiSubscription FK
+Level 3:  APIExposure   APISubscription   EventExposure   EventSubscription   PermissionSet ◄── Application FK
+Level 4:  Approval   ApprovalRequest ◄── APISubscription FK
 ```
 
 ### Feature-Gated Modules

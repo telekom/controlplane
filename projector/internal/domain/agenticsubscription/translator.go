@@ -45,10 +45,10 @@ func (t *Translator) Translate(_ context.Context, obj *agenticv1.AgenticSubscrip
 		security = &model.AgenticSubscriptionSecurity{}
 		security.M2M = &model.SubscriberMachine2MachineAuthentication{}
 		if obj.Spec.Security.M2M.Client != nil {
-			security.M2M.Client = util.MapAgenticOAuthToCpApi(obj.Spec.Security.M2M.Client)
+			security.M2M.Client = util.MapAgenticOAuthToCPAPI(obj.Spec.Security.M2M.Client)
 		}
 		if obj.Spec.Security.M2M.Basic != nil {
-			security.M2M.Basic = util.MapAgenticBasicAuthToCpApi(obj.Spec.Security.M2M.Basic)
+			security.M2M.Basic = util.MapAgenticBasicAuthToCPAPI(obj.Spec.Security.M2M.Basic)
 		}
 		if len(obj.Spec.Security.M2M.Scopes) > 0 {
 			security.M2M.Scopes = obj.Spec.Security.M2M.Scopes
@@ -69,7 +69,7 @@ func (t *Translator) Translate(_ context.Context, obj *agenticv1.AgenticSubscrip
 		StatusPhase:    phase,
 		StatusMessage:  message,
 		BasePath:       obj.Spec.BasePath,
-		GatewayUrl:     obj.Status.GatewayUrl,
+		GatewayURL:     obj.Status.GatewayUrl,
 		Security:       security,
 		Traffic:        traffic,
 		OwnerAppName:   obj.Spec.Requestor.Application.Name,

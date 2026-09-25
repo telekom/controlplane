@@ -91,7 +91,7 @@ var _ = Describe("AgentCard Repository", func() {
 				Name:          "weather-agent",
 				Description:   "Weather agent card",
 				Category:      "g-api",
-				Oauth2Scopes:  []string{"scope-a"},
+				OAuth2Scopes:  []string{"scope-a"},
 				Active:        true,
 				TeamName:      "platform--narvi",
 			}
@@ -106,7 +106,7 @@ var _ = Describe("AgentCard Repository", func() {
 			Expect(card.Name).To(Equal("weather-agent"))
 			Expect(card.Description).To(Equal("Weather agent card"))
 			Expect(card.Category).To(Equal("g-api"))
-			Expect(card.Oauth2Scopes).To(Equal([]string{"scope-a"}))
+			Expect(card.OAuth2Scopes).To(Equal([]string{"scope-a"}))
 			Expect(card.Active).To(BeTrue())
 
 			owner, err := card.QueryOwner().Only(ctx)
@@ -259,7 +259,7 @@ var _ = Describe("AgentCard Repository", func() {
 			exp, err := client.AgenticExposure.Create().
 				SetBasePath("/agent/weather/v1").
 				SetNamespace("prod--platform--narvi").
-				SetVariant(entagenticexposure.VariantMcp).
+				SetVariant(entagenticexposure.VariantMCP).
 				SetActive(true).
 				SetOwnerID(app.ID).
 				Save(ctx)
