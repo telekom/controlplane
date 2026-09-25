@@ -242,16 +242,16 @@ var _ = Describe("Notification Utilities", func() {
 	})
 
 	Describe("scopedNotificationBaseName", func() {
-		makeOwner := func(kind, group, ns, name string, uid ktypes.UID) *approvalv1.ApprovalRequest {
+		makeOwner := func(kind, name string, uid ktypes.UID) *approvalv1.ApprovalRequest {
 			ar := &approvalv1.ApprovalRequest{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      name,
-					Namespace: ns,
+					Namespace: "env--grp--team",
 					UID:       uid,
 				},
 			}
 			ar.SetGroupVersionKind(schema.GroupVersionKind{
-				Group:   group,
+				Group:   "approval.cp.ei.telekom.de",
 				Version: "v1",
 				Kind:    kind,
 			})
@@ -259,7 +259,7 @@ var _ = Describe("Notification Utilities", func() {
 		}
 
 		It("produces an-v1- prefix with 48 hex chars", func() {
-			owner := makeOwner("ApprovalRequest", "approval.cp.ei.telekom.de", "env--grp--team", "ar-test", "uid-1")
+			owner := makeOwner("ApprovalRequest", "ar-test", "uid-1")
 			name, err := scopedNotificationBaseName(owner, "provider", "approvalrequest--subscribe--created--decider")
 			Expect(err).NotTo(HaveOccurred())
 			Expect(name).To(HavePrefix("an-v1-"))
@@ -267,7 +267,7 @@ var _ = Describe("Notification Utilities", func() {
 		})
 
 		It("is deterministic — same inputs produce same output", func() {
-			owner := makeOwner("ApprovalRequest", "approval.cp.ei.telekom.de", "env--grp--team", "ar-idem", "uid-2")
+			owner := makeOwner("ApprovalRequest", "ar-idem", "uid-2")
 			name1, err := scopedNotificationBaseName(owner, "provider", "approvalrequest--subscribe--created--decider")
 			Expect(err).NotTo(HaveOccurred())
 			name2, err := scopedNotificationBaseName(owner, "provider", "approvalrequest--subscribe--created--decider")
@@ -276,7 +276,7 @@ var _ = Describe("Notification Utilities", func() {
 		})
 
 		It("different approval keys produce different names", func() {
-			owner := makeOwner("ApprovalRequest", "approval.cp.ei.telekom.de", "env--grp--team", "ar-keys", "uid-3")
+			owner := makeOwner("ApprovalRequest", "ar-keys", "uid-3")
 			nameP, err := scopedNotificationBaseName(owner, "provider", "approvalrequest--subscribe--created--decider")
 			Expect(err).NotTo(HaveOccurred())
 			nameC, err := scopedNotificationBaseName(owner, "consumer", "approvalrequest--subscribe--created--decider")
@@ -285,8 +285,8 @@ var _ = Describe("Notification Utilities", func() {
 		})
 
 		It("different UIDs produce different names", func() {
-			ownerA := makeOwner("ApprovalRequest", "approval.cp.ei.telekom.de", "env--grp--team", "ar-same", "uid-a")
-			ownerB := makeOwner("ApprovalRequest", "approval.cp.ei.telekom.de", "env--grp--team", "ar-same", "uid-b")
+			ownerA := makeOwner("ApprovalRequest", "ar-same", "uid-a")
+			ownerB := makeOwner("ApprovalRequest", "ar-same", "uid-b")
 			nameA, err := scopedNotificationBaseName(ownerA, "provider", "approvalrequest--subscribe--created--decider")
 			Expect(err).NotTo(HaveOccurred())
 			nameB, err := scopedNotificationBaseName(ownerB, "provider", "approvalrequest--subscribe--created--decider")
@@ -295,8 +295,8 @@ var _ = Describe("Notification Utilities", func() {
 		})
 
 		It("AR vs Approval source separation — different kinds produce different names", func() {
-			ownerAR := makeOwner("ApprovalRequest", "approval.cp.ei.telekom.de", "env--grp--team", "obj", "uid-same")
-			ownerA := makeOwner("Approval", "approval.cp.ei.telekom.de", "env--grp--team", "obj", "uid-same")
+			ownerAR := makeOwner("ApprovalRequest", "obj", "uid-same")
+			ownerA := makeOwner("Approval", "obj", "uid-same")
 			nameAR, err := scopedNotificationBaseName(ownerAR, "provider", "approvalrequest--subscribe--created--decider")
 			Expect(err).NotTo(HaveOccurred())
 			nameA, err := scopedNotificationBaseName(ownerA, "provider", "approval--subscribe--updated--decider")
@@ -305,14 +305,14 @@ var _ = Describe("Notification Utilities", func() {
 		})
 
 		It("errors when owner UID is empty", func() {
-			owner := makeOwner("ApprovalRequest", "approval.cp.ei.telekom.de", "env--grp--team", "ar-no-uid", "")
+			owner := makeOwner("ApprovalRequest", "ar-no-uid", "")
 			_, err := scopedNotificationBaseName(owner, "provider", "some-purpose")
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("owner UID must not be empty"))
 		})
 
 		It("name fits within Kubernetes name length limit", func() {
-			owner := makeOwner("ApprovalRequest", "approval.cp.ei.telekom.de", "env--grp--team", "ar-long", "uid-long")
+			owner := makeOwner("ApprovalRequest", "ar-long", "uid-long")
 			name, err := scopedNotificationBaseName(owner, "provider", "approvalrequest--subscribe--created--decider")
 			Expect(err).NotTo(HaveOccurred())
 			Expect(len(name)).To(BeNumerically("<=", 253))

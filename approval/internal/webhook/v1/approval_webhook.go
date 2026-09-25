@@ -85,7 +85,8 @@ func (a *ApprovalCustomValidator) ValidateUpdate(ctx context.Context, oldObj, ne
 	approvallog.Info("validate update", "name", newObj.Name)
 
 	// Key immutability: reject any non-empty add/remove/change before all other checks.
-	if err := validateApprovalKeyImmutability(oldObj.Spec.ApprovalKey, newObj.Spec.ApprovalKey); err != nil {
+	err = validateApprovalKeyImmutability(oldObj.Spec.ApprovalKey, newObj.Spec.ApprovalKey)
+	if err != nil {
 		return warnings, err
 	}
 
