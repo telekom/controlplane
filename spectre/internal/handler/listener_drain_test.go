@@ -18,13 +18,16 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	k8stypes "k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	crfake "sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	fakeclient "github.com/telekom/controlplane/common/pkg/client/fake"
 	"github.com/telekom/controlplane/common/pkg/condition"
+	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	ctypes "github.com/telekom/controlplane/common/pkg/types"
+	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	pubsubv1 "github.com/telekom/controlplane/pubsub/api/v1"
 	spectrev1 "github.com/telekom/controlplane/spectre/api/v1"
@@ -1436,6 +1439,47 @@ var _ = Describe("Listener Drain", func() {
 			Expect(err.Error()).To(ContainSubstring("down"))
 			Expect(listener.Status.Draining.Phase).To(Equal(handler.ExportDrainPhaseStopping))
 			expectPassDone(2)
+		})
+
+		It("should decide gone and take delete preconditions from the live read, not the cache", func() {
+			const liveEnv = "test-env"
+			ctx = contextutil.WithEnv(ctx, liveEnv)
+			inEnv := map[string]string{cconfig.EnvironmentLabelKey: liveEnv}
+			listener := twoRouteListenerCheckpoint()
+
+			// The cache lags: it still shows rl-a (deleted on the server) and an
+			// older rl-b. The Reader sees rl-a gone and rl-b at RV 91.
+			for _, rl := range []gatewayv1.RouteListener{
+				liveRL(listenerZoneStatus, "rl-a", "uid-a"), liveRL(drainZoneB, "rl-b", "uid-b"),
+			} {
+				stale := rl
+				stale.ResourceVersion = "5"
+				fakeClient.EXPECT().
+					Get(ctx, k8stypes.NamespacedName{Name: rl.Name, Namespace: rl.Namespace}, mock.AnythingOfType("*v1.RouteListener")).
+					Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
+						stale.DeepCopyInto(out.(*gatewayv1.RouteListener))
+					}).
+					Return(nil).Maybe()
+			}
+			rlB := liveRL(drainZoneB, "rl-b", "uid-b")
+			rlB.ResourceVersion = "91"
+			rlB.Labels = inEnv
+			h.Reader = crfake.NewClientBuilder().WithScheme(scheme).WithObjects(&rlB).Build()
+
+			// D1: only rl-b is deleted, with the Reader's UID and RV.
+			expectDelete(rlKind, drainZoneB, "rl-b", "uid-b", "91", nil)
+			expectDrainPending(h.Delete(ctx, listener))
+			Expect(listener.Status.Draining.Phase).To(Equal(handler.ExportDrainPhaseStopping))
+			expectPassDone(1)
+
+			// D2: the Reader sees both gone; the drain advances although the
+			// cache still shows them.
+			listener = persistListener(listener)
+			h.Reader = crfake.NewClientBuilder().WithScheme(scheme).Build()
+			expectDrainPending(h.Delete(ctx, listener))
+			Expect(listener.Status.Draining.Phase).To(Equal(handler.ExportDrainPhaseDrainingSubscribers))
+			expectPassDone(1)
+			fakeClient.AssertNumberOfCalls(GinkgoT(), "Get", 0)
 		})
 
 		It("should release at once when nothing was tracked, found or applied", func() {

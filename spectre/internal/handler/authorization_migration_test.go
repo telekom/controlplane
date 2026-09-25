@@ -6,6 +6,8 @@ package handler_test
 
 import (
 	"context"
+	"fmt"
+	"reflect"
 
 	"github.com/stretchr/testify/mock"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -816,9 +818,9 @@ var _ = Describe("Authorization Migration", func() {
 			})
 		})
 
-		// With an injected Reader the pre-delete review reads live. Discovery
-		// still reads through the cache; the strict cached mock serves no
-		// retirement read.
+		// With an injected Reader discovery and the pre-delete review read live.
+		// The cached mock only offers stale copies (cacheShows), so a cache read
+		// changes the outcome, and every spec asserts the cache served no Get.
 		Context("live retirement reads through the injected Reader", func() {
 			const liveEnv = "test-env"
 			var (
@@ -830,6 +832,15 @@ var _ = Describe("Authorization Migration", func() {
 				live := obj.DeepCopyObject().(client.Object)
 				live.SetLabels(map[string]string{cconfig.EnvironmentLabelKey: env})
 				return live
+			}
+			// cacheShows offers obj on the cached mock without requiring the read.
+			cacheShows := func(obj client.Object) {
+				fakeClient.EXPECT().
+					Get(ctx, client.ObjectKeyFromObject(obj), mock.AnythingOfType(fmt.Sprintf("%T", obj))).
+					Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
+						reflect.ValueOf(out).Elem().Set(reflect.ValueOf(obj.DeepCopyObject()).Elem())
+					}).
+					Return(nil).Maybe()
 			}
 			retiringApproval := func() *spectrev1.AuthorizationMigrationStatus {
 				return &spectrev1.AuthorizationMigrationStatus{
@@ -861,6 +872,10 @@ var _ = Describe("Authorization Migration", func() {
 			})
 
 			It("deletes a legacy ApprovalRequest with the preconditions of its live read", func() {
+				// The previous pass prepared the deletion from the live read (RV
+				// 77); the cache still holds RV 50, which would only re-prepare.
+				live := inEnv(request, liveEnv).(*approvalv1.ApprovalRequest)
+				live.ResourceVersion = "77"
 				listener.Status.AuthorizationMigration = &spectrev1.AuthorizationMigrationStatus{
 					TargetPolicyVersion: "v2",
 					Phase:               "RetiringRequests",
@@ -871,58 +886,64 @@ var _ = Describe("Authorization Migration", func() {
 							Kind:            "ApprovalRequest",
 							Name:            request.Name,
 							Namespace:       request.Namespace,
-							UID:             string(request.UID),
-							ResourceVersion: request.ResourceVersion,
+							UID:             string(live.UID),
+							ResourceVersion: live.ResourceVersion,
 							Phase:           handler.ExportPendingDeletionPhasePrepared,
 						}},
 					},
 				}
-				h.Reader = crfake.NewClientBuilder().WithScheme(scheme).WithObjects(inEnv(request, liveEnv)).Build()
+				h.Reader = crfake.NewClientBuilder().WithScheme(scheme).WithObjects(inEnv(approval, liveEnv), live).Build()
 
-				mockLegacyApprovalExists(approval)
-				mockLegacyRequestExists(request)
+				cacheShows(approval)
+				cacheShows(request)
 				fakeClient.EXPECT().
 					Delete(ctx,
 						mock.MatchedBy(func(obj client.Object) bool { return obj.GetName() == request.Name }),
 						mock.MatchedBy(func(p client.Preconditions) bool {
-							return p.UID != nil && *p.UID == request.UID &&
-								p.ResourceVersion != nil && *p.ResourceVersion == request.ResourceVersion
+							return p.UID != nil && *p.UID == live.UID &&
+								p.ResourceVersion != nil && *p.ResourceVersion == "77"
 						})).
 					Return(nil).Once()
 
 				done, err := h.AdvanceMigration(ctx, listener, &intent, makeDualGranted())
 				Expect(err).ToNot(HaveOccurred())
 				Expect(done).To(BeFalse())
+				fakeClient.AssertNumberOfCalls(GinkgoT(), "Get", 0)
 			})
 
 			It("blocks retirement on a legacy Approval revocation only the Reader sees", func() {
 				listener.Status.AuthorizationMigration = retiringApproval()
 				revoked := makeLegacyApproval(listener, approvalv1.ApprovalStateRejected)
-				h.Reader = crfake.NewClientBuilder().WithScheme(scheme).WithObjects(inEnv(revoked, liveEnv)).Build()
+				h.Reader = crfake.NewClientBuilder().WithScheme(scheme).
+					WithObjects(inEnv(revoked, liveEnv), inEnv(request, liveEnv)).Build()
 
 				// The cache still shows the Granted legacy Approval.
-				mockLegacyApprovalExists(approval)
-				mockLegacyRequestExists(request)
+				cacheShows(approval)
+				cacheShows(request)
 
 				done, err := h.AdvanceMigration(ctx, listener, &intent, makeDualGranted())
 				Expect(err).ToNot(HaveOccurred())
 				Expect(done).To(BeFalse())
 				Expect(listener.Status.AuthorizationMigration.Phase).To(Equal("Blocked"))
 				fakeClient.AssertNumberOfCalls(GinkgoT(), "Delete", 0)
+				fakeClient.AssertNumberOfCalls(GinkgoT(), "Get", 0)
 			})
 
 			It("refuses to retire a legacy Approval it cannot place in the Listener's environment", func() {
 				listener.Status.AuthorizationMigration = retiringApproval()
-				h.Reader = crfake.NewClientBuilder().WithScheme(scheme).WithObjects(inEnv(approval, "other-env")).Build()
+				h.Reader = crfake.NewClientBuilder().WithScheme(scheme).
+					WithObjects(inEnv(approval, "other-env"), inEnv(request, liveEnv)).Build()
 
-				mockLegacyApprovalExists(approval)
-				mockLegacyRequestExists(request)
+				// The cache shows it in the environment.
+				cacheShows(approval)
+				cacheShows(request)
 
 				done, err := h.AdvanceMigration(ctx, listener, &intent, makeDualGranted())
 				Expect(err).To(MatchError(ContainSubstring("does not belong to the environment")))
 				Expect(done).To(BeFalse())
 				Expect(listener.Status.AuthorizationMigration.RetirementCheckpoint.ApprovalRetired).To(BeFalse())
 				fakeClient.AssertNumberOfCalls(GinkgoT(), "Delete", 0)
+				fakeClient.AssertNumberOfCalls(GinkgoT(), "Get", 0)
 			})
 		})
 

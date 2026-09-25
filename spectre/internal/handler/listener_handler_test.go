@@ -4054,6 +4054,88 @@ var _ = Describe("ListenerHandler", func() {
 				Expect(ready.Reason).To(Equal(condition.ReasonAccessDenied))
 			})
 
+			// cacheShows offers a stale obj on the cached mock without requiring
+			// the read; a cache read would decide on it instead of the Reader's copy.
+			cacheShows := func(obj client.Object) {
+				fakeClient.EXPECT().
+					Get(ctx, client.ObjectKeyFromObject(obj), mock.AnythingOfType(fmt.Sprintf("%T", obj))).
+					Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
+						reflect.ValueOf(out).Elem().Set(reflect.ValueOf(obj.DeepCopyObject()).Elem())
+					}).
+					Return(nil).Maybe()
+			}
+			// rejectedRequest returns the provider gate's current request in state,
+			// labelled with env.
+			rejectedRequest := func(state approvalv1.ApprovalState) *approvalv1.ApprovalRequest {
+				return &approvalv1.ApprovalRequest{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test-listener--provider-request",
+						Namespace: listenerNamespace,
+						UID:       "provider-req-uid",
+						Labels:    map[string]string{cconfig.EnvironmentLabelKey: liveEnv},
+					},
+					Spec: approvalv1.ApprovalRequestSpec{State: state},
+				}
+			}
+
+			It("stops applied capture on a rejected current request only the Reader sees", func() {
+				live := rejectedRequest(approvalv1.ApprovalStateRejected)
+				h.Reader = crfake.NewClientBuilder().WithScheme(scheme).WithObjects(
+					liveApproval(providerApproval, liveEnv, approvalv1.ApprovalStateGranted),
+					liveApproval(consumerApproval, liveEnv, approvalv1.ApprovalStateGranted),
+					live,
+				).Build()
+				listener := appliedListener()
+				listener.Status.ProviderApprovalRequest = ctypes.ObjectRefFromObject(live)
+				cacheShows(rejectedRequest(approvalv1.ApprovalStatePending))
+				mockOwnedLists(ownedRL, nil)
+
+				start := len(fakeClient.Calls)
+				Expect(h.CreateOrUpdate(ctx, listener)).To(Succeed())
+				Expect(listener.Status.Draining).ToNot(BeNil())
+				Expect(listener.Status.Draining.Reason).To(Equal("approval request rejected (provider gate, early restriction)"))
+				Expect(countCalls(start, "Get", nil)).To(BeZero())
+				Expect(countCalls(start, "Delete", nil)).To(BeZero())
+				ready := meta.FindStatusCondition(listener.Status.Conditions, condition.ConditionTypeReady)
+				Expect(ready).ToNot(BeNil())
+				Expect(ready.Reason).To(Equal(condition.ReasonAccessDenied))
+			})
+
+			It("records the migration from a legacy Approval only the Reader sees instead of entering v2 fresh", func() {
+				listener := newListener()
+				listener.Status.AuthorizationPolicyVersion = ""
+				listener.Status.RouteListener = &ctypes.ObjectRef{Name: "old-rl", Namespace: listenerZoneStatus, UID: "rl-uid-1"}
+				live := rejectedRequest(approvalv1.ApprovalStateRejected)
+				listener.Status.ProviderApprovalRequest = ctypes.ObjectRefFromObject(live)
+				legacy := makeLegacyApproval(listener, approvalv1.ApprovalStateGranted)
+				legacy.Labels = map[string]string{cconfig.EnvironmentLabelKey: liveEnv}
+				legacyReq := makeLegacyRequest(listener)
+				legacyReq.Labels = map[string]string{cconfig.EnvironmentLabelKey: liveEnv}
+				h.Reader = crfake.NewClientBuilder().WithScheme(scheme).WithObjects(live, legacy, legacyReq).Build()
+
+				// The cache has not seen the legacy objects; from it the Listener
+				// would look fresh.
+				gr := schema.GroupResource{Group: approvalv1.GroupVersion.Group, Resource: "approvals"}
+				fakeClient.EXPECT().
+					Get(ctx, client.ObjectKeyFromObject(legacy), mock.AnythingOfType("*v1.Approval")).
+					Return(errors.NewNotFound(gr, legacy.Name)).Maybe()
+				mockOwnedLists(ownedRL, nil) // drainCapture inventory
+
+				start := len(fakeClient.Calls)
+				Expect(h.CreateOrUpdate(ctx, listener)).To(Succeed())
+				Expect(listener.Status.AuthorizationPolicyVersion).To(BeEmpty())
+				m := listener.Status.AuthorizationMigration
+				Expect(m).ToNot(BeNil())
+				Expect(m.Phase).To(Equal("Recorded"))
+				Expect(m.LegacyApproval).ToNot(BeNil())
+				Expect(m.LegacyApproval.UID).To(Equal(legacy.UID))
+				Expect(m.LegacyRequests).To(HaveLen(1))
+				Expect(m.LegacyRequests[0].UID).To(Equal(legacyReq.UID))
+				Expect(listener.Status.Draining).ToNot(BeNil())
+				Expect(listener.Status.Draining.Reason).To(Equal("approval request rejected (provider gate, early restriction)"))
+				Expect(countCalls(start, "Get", nil)).To(BeZero())
+			})
+
 			It("attempts every live read: a Reader error on one gate does not mask a revocation on the other", func() {
 				h.Reader = crfake.NewClientBuilder().WithScheme(scheme).
 					WithObjects(liveApproval(consumerApproval, liveEnv, approvalv1.ApprovalStateSuspended)).

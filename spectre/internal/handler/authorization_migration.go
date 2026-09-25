@@ -74,12 +74,13 @@ func (h *ListenerHandler) isFreshInstall(ctx context.Context, listener *spectrev
 		}
 	}
 
-	// Check for legacy Approval by name convention.
+	// Check for legacy Approval by name convention, live: a legacy Approval the
+	// cache has not seen must not make the Listener fresh.
 	legacyName := approvalapi.ApprovalName("Listener", listener.Name)
 	c := cclient.ClientFromContextOrDie(ctx)
 
 	approval := &approvalapi.Approval{}
-	err := c.Get(ctx, k8stypes.NamespacedName{
+	err := h.getLive(ctx, k8stypes.NamespacedName{
 		Name:      legacyName,
 		Namespace: listener.Namespace,
 	}, approval)
@@ -381,18 +382,18 @@ func (h *ListenerHandler) recordLegacyEvidence(ctx context.Context, listener *sp
 	return mctx, false, nil
 }
 
-// discoverLegacyEvidence locates the legacy Approval and its bound request.
-// It validates ownership and binding before returning the evidence.
+// discoverLegacyEvidence locates the legacy Approval and its bound request
+// through live reads (getLive). It validates ownership and binding before
+// returning the evidence.
 func (h *ListenerHandler) discoverLegacyEvidence(
 	ctx context.Context,
 	listener *spectrev1.Listener,
 ) (*migrationContext, error) {
-	c := cclient.ClientFromContextOrDie(ctx)
 	mctx := &migrationContext{listener: listener}
 
 	legacyName := approvalapi.ApprovalName("Listener", listener.Name)
 	approval := &approvalapi.Approval{}
-	err := c.Get(ctx, k8stypes.NamespacedName{
+	err := h.getLive(ctx, k8stypes.NamespacedName{
 		Name:      legacyName,
 		Namespace: listener.Namespace,
 	}, approval)
@@ -439,7 +440,7 @@ func (h *ListenerHandler) discoverLegacyEvidence(
 	// Discover the bound ApprovalRequest.
 	if approval.Spec.ApprovedRequest != nil {
 		ar := &approvalapi.ApprovalRequest{}
-		err := c.Get(ctx, k8stypes.NamespacedName{
+		err := h.getLive(ctx, k8stypes.NamespacedName{
 			Name:      approval.Spec.ApprovedRequest.Name,
 			Namespace: approval.Spec.ApprovedRequest.Namespace,
 		}, ar)
