@@ -46,18 +46,19 @@ jobs:
     outputs:
       version: ${{ steps.version.outputs.version }}
     steps:
-      - name: Validate tag input
-        # Only relevant for workflow_dispatch: workflow_call always supplies
-        # the tag via the triggering push event, not this input. Rejects
-        # anything that isn't a `v<semver>` release tag (e.g. "main" or an
-        # arbitrary branch name) up front, before it's used as a checkout
-        # ref or emitted as the release version below - `actions/checkout`
-        # would otherwise happily check out a branch and silently run
-        # GoReleaser against a non-release ref.
-        if: ${{ github.event_name == 'workflow_dispatch' }}
+      - name: Validate release tag
+        # Applies to both trigger types: workflow_call (a `v*` tag push,
+        # including one pushed manually/out-of-band with a malformed name -
+        # see release-publish.yaml's on.push.tags glob, which only requires
+        # a `v` prefix) and workflow_dispatch (an arbitrary user-supplied
+        # input, e.g. "main"). Rejects anything that isn't a `v<semver>`
+        # release tag up front, before it's used as a checkout ref or
+        # emitted as the release version below - `actions/checkout` would
+        # otherwise happily check out a branch, and GoReleaser would
+        # happily publish under a non-release version string.
         shell: bash
         env:
-          TAG: ${{ inputs.tag }}
+          TAG: ${{ inputs.tag || github.ref_name }}
         run: |
           if ! [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
             echo "::error::'$TAG' is not a valid release tag (expected format: v<semver>, e.g. v1.2.3)"
