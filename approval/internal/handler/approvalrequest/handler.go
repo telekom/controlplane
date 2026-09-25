@@ -180,7 +180,6 @@ func handleNotifications(ctx context.Context, approvalReq *approvalv1.ApprovalRe
 }
 
 func (h *ApprovalRequestHandler) handleGranted(ctx context.Context, approvalReq *approvalv1.ApprovalRequest) error {
-	logger := log.FromContext(ctx)
 	c := client.ClientFromContextOrDie(ctx)
 
 	approvalObj, err := newApprovalFromApprovalRequest(approvalReq)
@@ -191,36 +190,6 @@ func (h *ApprovalRequestHandler) handleGranted(ctx context.Context, approvalReq 
 	isKeyed := approvalReq.Spec.ApprovalKey != ""
 
 	mutate := func() error {
-		// For scoped Approvals that already exist, validate identity and protect revocations.
-		if isKeyed && approvalObj.UID != "" {
-			if approvalObj.Spec.ApprovalKey != approvalReq.Spec.ApprovalKey {
-				return fmt.Errorf("scoped approval %s: approvalKey mismatch: existing %q != request %q",
-					approvalObj.Name, approvalObj.Spec.ApprovalKey, approvalReq.Spec.ApprovalKey)
-			}
-			if !approvalv1.ScopedIdentityMatch(approvalObj.Spec.Target, approvalReq.Spec.Target,
-				approvalObj.Spec.ApprovalKey, approvalReq.Spec.ApprovalKey) {
-				return fmt.Errorf("scoped approval %s: target identity mismatch", approvalObj.Name)
-			}
-
-			// Preserve active revocations: do not overwrite Rejected/Suspended with a new grant.
-			isRevoked := approvalObj.Spec.State == approvalv1.ApprovalStateRejected ||
-				approvalObj.Spec.State == approvalv1.ApprovalStateSuspended
-			isExpiredFromSuspended := approvalObj.Spec.State == approvalv1.ApprovalStateExpired &&
-				approvalObj.Status.LastState == approvalv1.ApprovalStateSuspended
-			if isRevoked || isExpiredFromSuspended {
-				logger.Info("Scoped approval is revoked; preserving revocation",
-					"state", approvalObj.Spec.State)
-				return nil
-			}
-
-			// An existing scoped Approval must already be controlled by its target; this
-			// controller always writes that reference on creation. Refuse to adopt or
-			// overwrite one with missing or foreign authority.
-			if ref := metav1.GetControllerOfNoCopy(approvalObj); ref == nil || ref.UID != approvalReq.Spec.Target.UID {
-				return fmt.Errorf("scoped approval %s: missing or foreign controller owner", approvalObj.Name)
-			}
-		}
-
 		// Determine the authoritative source for building the Approval spec.
 		// Scoped requests load a validated fresh copy from the API server (which
 		// also enforces the ambiguity guard) BEFORE the idempotency check so that
@@ -228,41 +197,15 @@ func (h *ApprovalRequestHandler) handleGranted(ctx context.Context, approvalReq 
 		// Unscoped requests fall through to the legacy idempotency + liveness path.
 		source := approvalReq
 		if isKeyed {
-			freshSource, err := h.loadSoleLiveScopedGrantSource(ctx, approvalReq)
-			if err != nil {
-				return fmt.Errorf("scoped grant-source selection: %w", err)
+			scopedSource, skip, scopedErr := h.resolveScopedGrantSource(ctx, approvalObj, approvalReq)
+			if scopedErr != nil || skip {
+				return scopedErr
 			}
-			source = freshSource
-
-			// Scoped idempotency: check using the validated source's identity.
-			if approvalObj.Spec.ApprovedRequest != nil &&
-				approvalObj.Spec.ApprovedRequest.Name == source.Name &&
-				approvalObj.Spec.ApprovedRequest.Namespace == source.Namespace &&
-				approvalObj.Spec.ApprovedRequest.UID == source.UID {
-				approvalv1.SetApprovalKeyLabel(approvalObj, source.Spec.ApprovalKey)
-				logger.Info("Approval has already been processed for this request")
-				return nil
-			}
+			source = scopedSource
 		} else {
-			// Legacy (unscoped) idempotency check.
-			if approvalObj.Spec.ApprovedRequest != nil && approvalObj.Spec.ApprovedRequest.Name == approvalReq.Name {
-				logger.Info("Approval has already been processed for this request")
-				return nil
-			}
-
-			// Legacy (unscoped): re-read via uncached reader to verify liveness.
-			freshAR := &approvalv1.ApprovalRequest{}
-			if err := h.Reader.Get(ctx, ctrlclient.ObjectKeyFromObject(approvalReq), freshAR); err != nil {
-				return fmt.Errorf("re-reading source request: %w", err)
-			}
-			if freshAR.UID != approvalReq.UID {
-				return fmt.Errorf("source request was recreated (expected UID %s, got %s)", approvalReq.UID, freshAR.UID)
-			}
-			if freshAR.DeletionTimestamp != nil {
-				return fmt.Errorf("source request is terminating")
-			}
-			if freshAR.Spec.State != approvalv1.ApprovalStateGranted {
-				return fmt.Errorf("source request is no longer granted (state: %s)", freshAR.Spec.State)
+			skip, legacyErr := h.checkLegacyGrantSource(ctx, approvalObj, approvalReq)
+			if legacyErr != nil || skip {
+				return legacyErr
 			}
 		}
 
@@ -311,6 +254,88 @@ func (h *ApprovalRequestHandler) handleGranted(ctx context.Context, approvalReq 
 		condition.NewReadyCondition("Granted", "Request has been approved and approval is granted"))
 
 	return nil
+}
+
+// resolveScopedGrantSource validates an existing scoped Approval against the
+// request and returns the validated grant source. skip is true when the mutation
+// must leave the Approval untouched (revocation preserved or already processed).
+func (h *ApprovalRequestHandler) resolveScopedGrantSource(ctx context.Context, approvalObj *approvalv1.Approval, approvalReq *approvalv1.ApprovalRequest) (source *approvalv1.ApprovalRequest, skip bool, err error) {
+	logger := log.FromContext(ctx)
+
+	// For scoped Approvals that already exist, validate identity and protect revocations.
+	if approvalObj.UID != "" {
+		if approvalObj.Spec.ApprovalKey != approvalReq.Spec.ApprovalKey {
+			return nil, false, fmt.Errorf("scoped approval %s: approvalKey mismatch: existing %q != request %q",
+				approvalObj.Name, approvalObj.Spec.ApprovalKey, approvalReq.Spec.ApprovalKey)
+		}
+		if !approvalv1.ScopedIdentityMatch(approvalObj.Spec.Target, approvalReq.Spec.Target,
+			approvalObj.Spec.ApprovalKey, approvalReq.Spec.ApprovalKey) {
+			return nil, false, fmt.Errorf("scoped approval %s: target identity mismatch", approvalObj.Name)
+		}
+
+		// Preserve active revocations: do not overwrite Rejected/Suspended with a new grant.
+		isRevoked := approvalObj.Spec.State == approvalv1.ApprovalStateRejected ||
+			approvalObj.Spec.State == approvalv1.ApprovalStateSuspended
+		isExpiredFromSuspended := approvalObj.Spec.State == approvalv1.ApprovalStateExpired &&
+			approvalObj.Status.LastState == approvalv1.ApprovalStateSuspended
+		if isRevoked || isExpiredFromSuspended {
+			logger.Info("Scoped approval is revoked; preserving revocation",
+				"state", approvalObj.Spec.State)
+			return nil, true, nil
+		}
+
+		// An existing scoped Approval must already be controlled by its target; this
+		// controller always writes that reference on creation. Refuse to adopt or
+		// overwrite one with missing or foreign authority.
+		if ref := metav1.GetControllerOfNoCopy(approvalObj); ref == nil || ref.UID != approvalReq.Spec.Target.UID {
+			return nil, false, fmt.Errorf("scoped approval %s: missing or foreign controller owner", approvalObj.Name)
+		}
+	}
+
+	source, err = h.loadSoleLiveScopedGrantSource(ctx, approvalReq)
+	if err != nil {
+		return nil, false, fmt.Errorf("scoped grant-source selection: %w", err)
+	}
+
+	// Scoped idempotency: check using the validated source's identity.
+	if approvalObj.Spec.ApprovedRequest != nil &&
+		approvalObj.Spec.ApprovedRequest.Name == source.Name &&
+		approvalObj.Spec.ApprovedRequest.Namespace == source.Namespace &&
+		approvalObj.Spec.ApprovedRequest.UID == source.UID {
+		approvalv1.SetApprovalKeyLabel(approvalObj, source.Spec.ApprovalKey)
+		logger.Info("Approval has already been processed for this request")
+		return nil, true, nil
+	}
+
+	return source, false, nil
+}
+
+// checkLegacyGrantSource applies the unscoped idempotency check and verifies the
+// source request is still live and granted. skip is true when the request has
+// already been processed.
+func (h *ApprovalRequestHandler) checkLegacyGrantSource(ctx context.Context, approvalObj *approvalv1.Approval, approvalReq *approvalv1.ApprovalRequest) (skip bool, err error) {
+	// Legacy (unscoped) idempotency check.
+	if approvalObj.Spec.ApprovedRequest != nil && approvalObj.Spec.ApprovedRequest.Name == approvalReq.Name {
+		log.FromContext(ctx).Info("Approval has already been processed for this request")
+		return true, nil
+	}
+
+	// Legacy (unscoped): re-read via uncached reader to verify liveness.
+	freshAR := &approvalv1.ApprovalRequest{}
+	if err = h.Reader.Get(ctx, ctrlclient.ObjectKeyFromObject(approvalReq), freshAR); err != nil {
+		return false, fmt.Errorf("re-reading source request: %w", err)
+	}
+	if freshAR.UID != approvalReq.UID {
+		return false, fmt.Errorf("source request was recreated (expected UID %s, got %s)", approvalReq.UID, freshAR.UID)
+	}
+	if freshAR.DeletionTimestamp != nil {
+		return false, fmt.Errorf("source request is terminating")
+	}
+	if freshAR.Spec.State != approvalv1.ApprovalStateGranted {
+		return false, fmt.Errorf("source request is no longer granted (state: %s)", freshAR.Spec.State)
+	}
+
+	return false, nil
 }
 
 func setControllerReferenceForRef(obj types.Object, objRef *types.TypedObjectRef) {
