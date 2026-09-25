@@ -450,11 +450,16 @@ func (h *ListenerHandler) Delete(ctx context.Context, listener *spectrev1.Listen
 	return nil
 }
 
-// errDrainPending keeps the finalizer and has the common controller persist the
-// drain checkpoint and retry shortly.
+// errDrainPending marks the Listener not ready with the drain phase deletion
+// waits on, keeps the finalizer, and has the common controller persist the
+// drain checkpoint and retry shortly. The condition is set on every pass: the
+// controller's own NotReady write skips a Ready that is already False, which
+// would freeze the first phase or keep a pre-deletion reason such as AccessDenied.
 func errDrainPending(listener *spectrev1.Listener) error {
-	return ctrlerrors.RetryableWithDelayErrorf(2*time.Second,
-		"draining capture before deletion (phase %s)", listener.Status.Draining.Phase)
+	phase := listener.Status.Draining.Phase
+	listener.SetCondition(condition.NewNotReadyCondition("Deleting",
+		fmt.Sprintf("Draining capture before deletion (phase %s)", phase)))
+	return ctrlerrors.RetryableWithDelayErrorf(2*time.Second, "draining capture before deletion (phase %s)", phase)
 }
 
 // resolveApplication fetches an Application by TypedObjectRef and ensures it is ready.
