@@ -82,7 +82,7 @@ func (r *ListenerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	owns := builder.WithPredicates(cc.Count("listener", cc.RoleOwns))
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&spectrev1.Listener{}).
+		For(&spectrev1.Listener{}, builder.WithPredicates(cc.Count("listener", cc.RoleFor))).
 		// Approval children — same pattern as ApiSubscription and EventSubscription.
 		Owns(&approvalv1.ApprovalRequest{}, owns).
 		Owns(&approvalv1.Approval{}, owns).

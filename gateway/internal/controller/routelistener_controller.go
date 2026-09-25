@@ -47,14 +47,14 @@ func (r *RouteListenerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Controller = cc.NewController(&routelistener_handler.RouteListenerHandler{}, r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&gatewayv1.RouteListener{}).
+		For(&gatewayv1.RouteListener{}, builder.WithPredicates(cc.Count("routelistener", cc.RoleFor))).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
 			RateLimiter:             cc.NewRateLimiter(),
 		}).
 		Watches(&gatewayv1.Route{},
 			handler.EnqueueRequestsFromMapFunc(r.mapRouteToRouteListener),
-			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{})).
+			builder.WithPredicates(cc.Count("routelistener", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}))).
 		Complete(r)
 }
 
