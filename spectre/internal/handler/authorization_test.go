@@ -321,14 +321,14 @@ var _ = Describe("authorization fingerprint", func() {
 			Trigger: map[string]string{"key": "val"},
 		}
 		intent := buildAuthorizationIntent(listener, consumerApp, providerApp, spectreApp, observerApp, placement)
-		props := intent.approvalProperties()
+		props := intent.gateApprovalProperties("listen-provider")
 		Expect(props["requestFilter"]).To(BeAssignableToTypeOf(""))
 		Expect(props["requestFilter"]).To(ContainSubstring("key"))
 	})
 
 	It("should expose false for approval properties when filter is nil", func() {
 		intent := buildAuthorizationIntent(listener, consumerApp, providerApp, spectreApp, observerApp, placement)
-		props := intent.approvalProperties()
+		props := intent.gateApprovalProperties("listen-provider")
 		Expect(props["requestFilter"]).To(Equal(false))
 		Expect(props["responseFilter"]).To(Equal(false))
 	})
@@ -565,24 +565,24 @@ var _ = Describe("authorization fingerprint", func() {
 		})
 	})
 
-	// --- approvalProperties v2 fields ---
+	// --- gateApprovalProperties v2 fields ---
 
-	Describe("approvalProperties v2", func() {
+	Describe("gateApprovalProperties v2", func() {
 		It("should include observer field", func() {
 			intent := buildAuthorizationIntent(listener, consumerApp, providerApp, spectreApp, observerApp, placement)
-			props := intent.approvalProperties()
+			props := intent.gateApprovalProperties("listen-provider")
 			Expect(props["observer"]).To(Equal("team-ns/consumer-app"))
 		})
 
 		It("should include policyVersion", func() {
 			intent := buildAuthorizationIntent(listener, consumerApp, providerApp, spectreApp, observerApp, placement)
-			props := intent.approvalProperties()
+			props := intent.gateApprovalProperties("listen-provider")
 			Expect(props["policyVersion"]).To(Equal("v2"))
 		})
 
 		It("should include team fields", func() {
 			intent := buildAuthorizationIntent(listener, consumerApp, providerApp, spectreApp, observerApp, placement)
-			props := intent.approvalProperties()
+			props := intent.gateApprovalProperties("listen-provider")
 			Expect(props["consumerTeam"]).To(Equal("team-alpha"))
 			Expect(props["providerTeam"]).To(Equal("team-beta"))
 			Expect(props["observerTeam"]).To(Equal("team-alpha"))
@@ -590,7 +590,7 @@ var _ = Describe("authorization fingerprint", func() {
 
 		It("should include placement fields when populated", func() {
 			intent := buildAuthorizationIntent(listener, consumerApp, providerApp, spectreApp, observerApp, placement)
-			props := intent.approvalProperties()
+			props := intent.gateApprovalProperties("listen-provider")
 			Expect(props["apiExposure"]).To(Equal("provider-ns/api-exposure-orders"))
 			Expect(props["captureRoute"]).To(Equal("zone-ns/route-orders"))
 			Expect(props["captureZone"]).To(Equal("zones/zone-aws"))
@@ -601,7 +601,7 @@ var _ = Describe("authorization fingerprint", func() {
 		It("should omit placement fields when empty", func() {
 			placement = PlacementIntent{}
 			intent := buildAuthorizationIntent(listener, consumerApp, providerApp, spectreApp, observerApp, placement)
-			props := intent.approvalProperties()
+			props := intent.gateApprovalProperties("listen-provider")
 			Expect(props).ToNot(HaveKey("apiExposure"))
 			Expect(props).ToNot(HaveKey("captureRoute"))
 			Expect(props).ToNot(HaveKey("captureZone"))
@@ -611,7 +611,7 @@ var _ = Describe("authorization fingerprint", func() {
 
 		It("should preserve existing approval property keys", func() {
 			intent := buildAuthorizationIntent(listener, consumerApp, providerApp, spectreApp, observerApp, placement)
-			props := intent.approvalProperties()
+			props := intent.gateApprovalProperties("listen-provider")
 			// These fields are used by notification templates
 			Expect(props["consumer"]).To(Equal("team-ns/consumer-app"))
 			Expect(props["provider"]).To(Equal("team-ns/provider-app"))

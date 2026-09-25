@@ -219,7 +219,7 @@ func (h *ListenerHandler) continueDrain(
 	case DrainPhaseStopping:
 		// Delete every old RouteListener, then verify all are gone before any
 		// Subscriber is touched.
-		allGone, err := h.deleteRecorded(ctx, drainRouteListenerRefs(listener),
+		allGone, err := h.deleteRecorded(ctx, drain.OldRouteListeners,
 			func() client.Object { return &gatewayv1.RouteListener{} })
 		if err != nil {
 			return false, errors.Wrap(err, "failed to delete old RouteListeners")
@@ -227,7 +227,7 @@ func (h *ListenerHandler) continueDrain(
 		if !allGone {
 			return false, nil // Requeue to verify deletion
 		}
-		// Clear the status ref — it is part of the drained set, so it is gone.
+		// Clear the status ref — recordDrain added it to the drained set, so it is gone.
 		listener.Status.RouteListener = nil
 		drain.Phase = DrainPhaseDrainingSubscribers
 		logger.Info("Drain: old RouteListeners gone, advancing to DrainingSubscribers")
@@ -317,17 +317,6 @@ func drainPublisherNamespaces(drain *spectrev1.ListenerDrainStatus) []string {
 	nss = slices.DeleteFunc(nss, func(ns string) bool { return ns == "" })
 	slices.Sort(nss)
 	return slices.Compact(nss)
-}
-
-// drainRouteListenerRefs returns every RouteListener the Stopping phase must
-// remove: the recorded set and the status ref. Provisioning is blocked while a
-// drain is active, so the status ref is always old-generation here.
-func drainRouteListenerRefs(listener *spectrev1.Listener) []ctypes.ObjectRef {
-	refs := slices.Clone(listener.Status.Draining.OldRouteListeners)
-	if ref := listener.Status.RouteListener; ref != nil {
-		refs = addOldRef(refs, *ref)
-	}
-	return refs
 }
 
 // deleteRecorded requests deletion of each recorded instance that still exists
