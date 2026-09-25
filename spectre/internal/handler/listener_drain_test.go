@@ -1183,6 +1183,16 @@ var _ = Describe("Listener Drain", func() {
 		genericIn := func(ns string) *ctypes.ObjectRef {
 			return &ctypes.ObjectRef{Name: genericPublisher, Namespace: ns}
 		}
+		// expectDeleting asserts Ready names the deletion and the drain phase it
+		// waits on; the common controller's own NotReady write would keep an
+		// earlier False reason and message.
+		expectDeleting := func(l *spectrev1.Listener, phase string) {
+			ready := meta.FindStatusCondition(l.Status.Conditions, condition.ConditionTypeReady)
+			Expect(ready).ToNot(BeNil())
+			Expect(ready.Status).To(Equal(metav1.ConditionFalse))
+			Expect(ready.Reason).To(Equal("Deleting"))
+			Expect(ready.Message).To(Equal("Draining capture before deletion (phase " + phase + ")"))
+		}
 
 		It("should checkpoint first, drain the RouteListener, then the Subscribers, then the Publisher, and release only when complete", func() {
 			listener := newListener()
@@ -1213,6 +1223,7 @@ var _ = Describe("Listener Drain", func() {
 				{Name: "sub-rq", Namespace: listenerZoneStatus, UID: "uid-rq"},
 			}))
 			Expect(d.SourcePublisher).To(Equal(genericIn(listenerZoneStatus)))
+			expectDeleting(listener, handler.ExportDrainPhaseStopping)
 			expectPassDone(0)
 
 			// D2: the RouteListener is deleted with its preconditions.
@@ -1229,6 +1240,7 @@ var _ = Describe("Listener Drain", func() {
 			expectDrainPending(h.Delete(ctx, listener))
 			Expect(listener.Status.Draining.Phase).To(Equal(handler.ExportDrainPhaseDrainingSubscribers))
 			Expect(listener.Status.RouteListener).To(BeNil())
+			expectDeleting(listener, handler.ExportDrainPhaseDrainingSubscribers)
 			expectPassDone(1)
 
 			// D4: both Subscribers are deleted with their preconditions.
@@ -1256,6 +1268,7 @@ var _ = Describe("Listener Drain", func() {
 			expectDrainPending(h.Delete(ctx, listener))
 			Expect(listener.Status.Draining.Phase).To(Equal(handler.ExportDrainPhaseCleaningPublisher))
 			Expect(listener.Status.EventSubscriptions).To(BeEmpty())
+			expectDeleting(listener, handler.ExportDrainPhaseCleaningPublisher)
 			expectPassDone(4)
 
 			// D7: the orphaned Publisher is deleted, a fresh inventory finds
@@ -1279,6 +1292,8 @@ var _ = Describe("Listener Drain", func() {
 				OldSubscribers:  []ctypes.ObjectRef{{Name: "sub-rq", Namespace: listenerZoneStatus, UID: "uid-rq"}},
 				SourcePublisher: genericIn(listenerZoneStatus),
 			}
+			// Ready was already False before the deletion.
+			listener.SetCondition(condition.NewNotReadyCondition(condition.ReasonAccessDenied, "Approval has been revoked"))
 
 			// D1: the recorded phase advances; no inventory List, no new checkpoint.
 			expectLive(subKind, listenerZoneStatus, "sub-rq", "uid-rq", "41", false)
@@ -1286,6 +1301,7 @@ var _ = Describe("Listener Drain", func() {
 			expectDrainPending(h.Delete(ctx, listener))
 			Expect(listener.Status.Draining.Reason).To(Equal("fingerprint changed"))
 			Expect(listener.Status.Draining.Phase).To(Equal(handler.ExportDrainPhaseDrainingSubscribers))
+			expectDeleting(listener, handler.ExportDrainPhaseDrainingSubscribers)
 			expectPassDone(1)
 
 			// D2: gone.
@@ -1293,6 +1309,7 @@ var _ = Describe("Listener Drain", func() {
 			expectGone(subKind, listenerZoneStatus, "sub-rq")
 			expectDrainPending(h.Delete(ctx, listener))
 			Expect(listener.Status.Draining.Phase).To(Equal(handler.ExportDrainPhaseCleaningPublisher))
+			expectDeleting(listener, handler.ExportDrainPhaseCleaningPublisher)
 			expectPassDone(1)
 
 			// D3: another observer keeps the Publisher; the drain completes and
