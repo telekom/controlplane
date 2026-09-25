@@ -84,6 +84,8 @@ func (h *SpectreApplicationHandler) CreateOrUpdate(ctx context.Context, obj *spe
 			return errors.Wrap(err, "failed to reconcile SSE Routes")
 		}
 	} else {
+		obj.Status.ListenerRoute = nil
+		obj.Status.ProxyRoute = nil
 		obj.Status.SseUrl = ""
 	}
 
