@@ -1,0 +1,192 @@
+event/api/v1/eventexposure_types.go
+  s_f7d2dcca80dad2::t_d67bc1369ba5f8 108-109
+event/internal/controller/suite_test.go
+  s_f7d2dcca80dad2::t_e805412853aaed 54,58-66
+event/config/crd/bases/event.cp.ei.telekom.de_eventconfigs.yaml
+  s_f7d2dcca80dad2::t_48c5f0b77a0175 275-276,293-296,400-401,426-428
+event/api/v1/eventconfig_types.go
+  s_f7d2dcca80dad2::t_d67bc1369ba5f8 158,162-164,168,172-174
+event/internal/controller/callback_lifecycle_test.go
+  s_cc0ceab9780e6a::t_79d1b2130c49ba 235
+  s_f7d2dcca80dad2::t_a5012e216d14cd 260-268,273-284,287-290
+  s_f7d2dcca80dad2::t_d7fe4ffbf0cffb 270,286
+  s_f7d2dcca80dad2::t_07638b685c3dc5 18,35,74-81,114,120-121,123-124,133,145
+  s_f7d2dcca80dad2::t_c16abf286cec79 12,53-55,115-119,144,178-179
+  s_f7d2dcca80dad2::t_369046274cbcfc 271-272
+  s_f7d2dcca80dad2::t_b1d21ffc6062c4 210-217
+  s_cc0ceab9780e6a::t_e155b5a76b8d94 122
+  s_f7d2dcca80dad2::t_226febd7e43f6b 233-234
+  s_f7d2dcca80dad2::t_b42ad02e41debc 269,285
+  s_f7d2dcca80dad2::t_142e27e574cab4 98
+  s_f7d2dcca80dad2::t_3b521c2c7f3ddb 30,37,154-156,169,171
+  s_f7d2dcca80dad2::t_5b9be2bd966609 175,202-203,226
+  s_f7d2dcca80dad2::t_f0edc30ae7c5c3 8
+  s_f7d2dcca80dad2::t_510a3ee8f54453 84
+  s_f7d2dcca80dad2::t_9c640b56fa3e28 153
+  s_f7d2dcca80dad2::t_26d0d2728aff34 174,177
+  s_f7d2dcca80dad2::t_7e1f96f131fbbd 44-49,51-52,125-132,146
+  s_f7d2dcca80dad2::t_e7e857fa3f9b5f 94
+  s_f7d2dcca80dad2::t_d4104a5802d33d 1-7,9-11,13-17,19-23,25-29,32-34,38-43,56-73,82-83,85-87,89-93,95-97,100-105,107-113,147-152,157-168,170,172-173,176,180-183,187-192,194-201,204-209,218-225,227-232,236-259,291-292
+  s_f7d2dcca80dad2::t_c17bb34d47b167 24,134
+  s_f7d2dcca80dad2::t_18cf02909ac059 31,193
+  s_f7d2dcca80dad2::t_41265857168891 99
+  s_f7d2dcca80dad2::t_65d5a0567e7a80 36,50,135-143
+  s_f7d2dcca80dad2::t_badc067776057d 88
+  s_f7d2dcca80dad2::t_6adf6cf522ceb3 106
+  s_f7d2dcca80dad2::t_1056034354687c 184-186
+event/internal/index/index.go
+  s_cc0ceab9780e6a::t_0fac3c39382f8f 9,25-28,31-34,40-47,53-60,65-74,76-79
+  s_cc0ceab9780e6a::t_2f83f49649dee6 35-39,48-52,61-64
+event/internal/controller/eventconfig_controller.go
+  s_f7d2dcca80dad2::t_dfaf948b2c42f6 123
+  s_b92f029a79ed9b::t_0cee9a2a9572a9 95-96
+event/internal/handler/eventconfig/handler.go
+  s_35fbb3413ebad2::t_550946705aa608 345-346,348
+  s_f7d2dcca80dad2::t_f4c2e857d007dc 28
+  s_f7d2dcca80dad2::t_6e215c4908536a 401,409-421,425
+  s_f7d2dcca80dad2::t_1d33c7f11fb888 422-424
+  s_35fbb3413ebad2::t_f39c5795022d92 342-343,349,375
+  s_b92f029a79ed9b::t_ad9afd31aaa0c4 376-377
+  s_f7d2dcca80dad2::t_5ad37949aebde1 9,49-53,367-369,371-373,391-400,402-404
+  s_f7d2dcca80dad2::t_d7f78628e03e44 426-427
+event/config/crd/bases/event.cp.ei.telekom.de_eventexposures.yaml
+  s_f7d2dcca80dad2::t_48c5f0b77a0175 232-234
+event/internal/controller/eventsubscription_controller_test.go
+  s_b92f029a79ed9b::t_b2e3909a0da47e 82
+  s_cc0ceab9780e6a::t_ec1831d49e2c1d 287-291,313-317
+  s_f7d2dcca80dad2::t_01862d7f481711 181-186,188-189
+  s_f760a3ddb43c7a::t_7037a37b297f43 208-213
+  s_35fbb3413ebad2::t_644c83d8b7fb28 152-155,157-164,175
+  s_35fbb3413ebad2::t_7795cd2b54e898 129-137,139-142,144-151,174,177,179-180
+  s_cc0ceab9780e6a::t_cb039e41db11a4 220-249,251-259,261-267,273-286,292-301,308-312,318-323
+  s_f760a3ddb43c7a::t_d512c50dcd9df9 165-170,176
+  s_cc0ceab9780e6a::t_7b4259098ac77a 250,260
+  s_cc0ceab9780e6a::t_01dbabb2bafa6f 268-272,302-307
+  s_f760a3ddb43c7a::t_a04fb4f1fe5e5b 109-128
+  s_35fbb3413ebad2::t_714da16b842be0 138,143
+  s_b92f029a79ed9b::t_97fbd91cef06bb 327,337,358,364,368,380
+  s_b92f029a79ed9b::t_5e3537e924b962 20,72,74-81,83-85,87-92,94-99,101-108,171,217-219
+  s_cc0ceab9780e6a::t_e155b5a76b8d94 10,16,25,40-70,73,172-173,178,187,193,214-215
+  s_35fbb3413ebad2::t_05e865115e1357 156
+  s_b92f029a79ed9b::t_202f64f813a088 9,17,31-39,190-192,194-207,216
+  s_b92f029a79ed9b::t_735fdb00fc09f1 86,93,100
+event/internal/handler/eventconfig/callback_routes_test.go
+  s_b92f029a79ed9b::t_4c25b33a075369 191-193,226-229
+  s_f7d2dcca80dad2::t_3a3fe36755657b 51-61,63-66
+  s_35fbb3413ebad2::t_550946705aa608 80,91-93,142-146,164-167
+  s_f7d2dcca80dad2::t_5eae3ad2c30575 25,121-122,125-135,157-162,213-214,217-223
+  s_b92f029a79ed9b::t_473636c84898eb 169,171-180,184-190,195-198,200,202-208,211-212,224-225
+  s_b92f029a79ed9b::t_4ba41a974b5310 13
+  s_b92f029a79ed9b::t_0a713b0198e32e 24,148,151,210
+  s_f7d2dcca80dad2::t_fdbbb4a996387d 11,21,123-124,215-216
+  s_f7d2dcca80dad2::t_69bdda3820e7c4 33-50
+  s_f7d2dcca80dad2::t_1d33c7f11fb888 74-76
+  s_b92f029a79ed9b::t_190766e36e2f9d 1-10,12,14-20,22-23,26-32,81-90,94-107,113-120,136-141,147,149,152-156,163,168,230-237
+  s_f7d2dcca80dad2::t_d9435086d7caf9 62,67-73,77-78
+  s_35fbb3413ebad2::t_3d4d52480ba00a 79,150,170,181-183,194,199,201,209
+  s_b92f029a79ed9b::t_2a5cdc2f366b7b 108-112
+event/internal/controller/eventsubscription_controller.go
+  s_b92f029a79ed9b::t_902db87fafdcf4 145-147
+  s_b92f029a79ed9b::t_15baa2aec9fe27 17,135,149
+  s_cc0ceab9780e6a::t_0fac3c39382f8f 30,128-132,134,140,142-144,148,150-155,158-173
+event/internal/handler/eventsubscription/handler.go
+  s_f7d2dcca80dad2::t_a15bc86293f1ef 138-139,142-144,147-148,151,419,426,430,432,434,437,439
+  s_f7d2dcca80dad2::t_37ad92b9b52339 127-133
+  s_b92f029a79ed9b::t_a9358da7750f59 433
+  s_35fbb3413ebad2::t_8b0bbe5cde3c09 140-141,145-146
+  s_35fbb3413ebad2::t_5f4ed8795bef71 438,440
+docs/docs/admin-journey/environments-and-zones.md
+  s_f7d2dcca80dad2::t_747576616ce0c2 331-332
+event/internal/handler/eventsubscription/handler_test.go
+  s_b92f029a79ed9b::t_871a0e79b1dae3 637-643,645
+  s_35fbb3413ebad2::t_56a6d743330265 278-279,283-287,690-695,697-699,704-708,713-718,721-732,736-739
+  s_35fbb3413ebad2::t_20f9f45572b487 280,282
+  s_b92f029a79ed9b::t_5977dfa6440fa1 621-622,654-655,671-678,686
+  s_b92f029a79ed9b::t_382653f7996acb 446,865,890,909
+  s_f7d2dcca80dad2::t_f81277af8671cb 602-606,608-610
+  s_35fbb3413ebad2::t_1834cfd54ccafd 628,644,662,756,769
+  s_35fbb3413ebad2::t_3292907725c281 719,740,835-837
+  s_f7d2dcca80dad2::t_f4977c517b395d 157,696,700,709-712,720,743,748-749,754-755,757-765,796,799-801,806,810,818
+  s_35fbb3413ebad2::t_41aa607832c951 34,281,701-703,733-735
+  s_f7d2dcca80dad2::t_1310f5c13674ef 634
+  s_b92f029a79ed9b::t_4d257d834a5239 656
+  s_35fbb3413ebad2::t_0bd1c761cb46c5 158
+  s_35fbb3413ebad2::t_007890192e050e 744,746-747,750-753,768,777,782-795,797-798,802-805,807-808
+  s_b92f029a79ed9b::t_2f8f333e931021 745,766-767,770-776,778-781,809
+  s_f7d2dcca80dad2::t_18cf02909ac059 585
+  s_35fbb3413ebad2::t_a0e59d832873f8 635,741,811-817,819-821
+event/internal/handler/util/callback_route.go
+  s_f5c4812cdda66e::t_de0e1e5b8e7002 23
+  s_f5c4812cdda66e::t_df9ccee158ba38 109
+  s_35fbb3413ebad2::t_30fe51e91f0af2 20,25,27-29
+docs/docs/architecture/event.mdx
+  s_f7d2dcca80dad2::t_d67bc1369ba5f8 49,75,78-79
+  s_b92f029a79ed9b::t_81e4c4154f5773 80,87,89-90,94
+  s_f7d2dcca80dad2::t_5fbf9968a55b8b 81-82
+  s_35fbb3413ebad2::t_30fe51e91f0af2 77,83,88,93,97-99
+event/internal/controller/eventconfig_controller_test.go
+  s_f7d2dcca80dad2::t_3a3fe36755657b 84,94,121,127,131,143,151,154-155,159-160,164-165
+  s_b92f029a79ed9b::t_c202bc6fab7c90 16-17,57-80
+  s_f7d2dcca80dad2::t_fefb99cc8c2f40 28-56
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "5c2be31fc734c6c6b658f527875dac4bf3c7fcd5",
+  "prompts": {},
+  "humans": {
+    "h_0f030e7424553c": {
+      "author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  },
+  "sessions": {
+    "s_35fbb3413ebad2": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f287c3599fferowFLpeXFLPcoE",
+        "model": "gpt-6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_b92f029a79ed9b": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f2c076802ffe31yBRRn5Iu5q4x",
+        "model": "gpt-6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_cc0ceab9780e6a": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f277cc0d9ffeH6yp80REvHHfOF",
+        "model": "gpt-6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_f5c4812cdda66e": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f2b9ea634ffePRlUC8pjlmylwE",
+        "model": "gpt-6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_f760a3ddb43c7a": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f27806b59ffe94DlFDZS9PZ42p",
+        "model": "gpt-6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_f7d2dcca80dad2": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f27f507baffe7cp2CCiH198lFr",
+        "model": "gpt-6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

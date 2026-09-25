@@ -1,0 +1,188 @@
+controlplane-api/ent/migrate/schema.go
+  s_505e0112706183::t_eb77d63f67be03 118-119,135,141,155,255-256,273,279,293,515-516,535,541,555
+agentic/internal/handler/agenticsubscription/handler.go
+  s_505e0112706183::t_998748bd286e08 244,249-252
+  s_505e0112706183::t_0a5e8f665d766b 136,243,246-248
+  s_505e0112706183::t_dece20c0aaa14a 245
+  s_505e0112706183::t_d5278a3665269e 11,190,221-224
+  s_505e0112706183::t_5e191bd1717d80 253-254
+controlplane-api/ent/agenticsubscription_update.go
+  s_505e0112706183::t_eb77d63f67be03 16,134-169,461-482,750-785,1107-1128
+projector/internal/domain/eventsubscription/repository.go
+  s_505e0112706183::t_ca31d3d2895778 96-97
+controlplane-api/ent/schema/mixin/subscription_scopes.go
+  s_505e0112706183::t_d5278a3665269e 1-30
+agentic/internal/handler/agenticsubscription/approval_properties_test.go
+  s_505e0112706183::t_0a5e8f665d766b 1-9,12-13,17-50,52-83
+  s_505e0112706183::t_36e8ba9466a6e6 10-11,14-16
+  s_505e0112706183::t_dece20c0aaa14a 51
+controlplane-api/ent/eventsubscription.go
+  s_505e0112706183::t_eb77d63f67be03 42-45,134,212-227,375-380
+api/internal/controller/apisubscription_controller_test.go
+  s_505e0112706183::t_70d3ae2766aa5f 262,303-347
+  s_505e0112706183::t_2824f891f82951 631
+  s_505e0112706183::t_7bee677eacedcc 661-668
+agentic/config/crd/bases/agentic.cp.ei.telekom.de_agenticsubscriptions.yaml
+  s_505e0112706183::t_c722beb2888efb 202-205
+  s_505e0112706183::t_f029e7468060c7 206-208
+docs/docs/user-journey/approvals.mdx
+  s_505e0112706183::t_9348c4f2b1fe5d 43-62
+event/config/crd/bases/event.cp.ei.telekom.de_eventsubscriptions.yaml
+  s_505e0112706183::t_c722beb2888efb 223-226
+  s_505e0112706183::t_c8218efeb0bcf3 227-229
+projector/internal/domain/agenticsubscription/translator_test.go
+  s_505e0112706183::t_02244d8a725d0b 34-55
+api/config/crd/bases/api.cp.ei.telekom.de_apisubscriptions.yaml
+  s_505e0112706183::t_5f7792e57829a5 199-202
+  s_505e0112706183::t_51b58b4ce127fa 203-205
+controlplane-api/ent/eventsubscription_create.go
+  s_505e0112706183::t_eb77d63f67be03 115-122,124-126,437-444,681-716,975-977,979-984,986-991,993-998,1000-1005,1007-1012,1014-1016,1459-1500
+  s_505e0112706183::t_19b7e556cf0a94 123,978,985,992,999,1006,1013
+docs/docs/architecture/agentic.mdx
+  s_505e0112706183::t_998748bd286e08 42-53
+  s_505e0112706183::t_a7201cc4a63deb 41,54
+controlplane-api/ent/agenticsubscription/agenticsubscription.go
+  s_505e0112706183::t_eb77d63f67be03 38-41,100-101
+controlplane-api/ent/gql_collection.go
+  s_505e0112706183::t_eb77d63f67be03 463-472,980-989,2411-2420
+api/internal/handler/apisubscription/remote/handler.go
+  s_505e0112706183::t_70d3ae2766aa5f 9,116-119,209-212
+projector/internal/domain/agenticsubscription/repository_test.go
+  s_505e0112706183::t_02244d8a725d0b 167-187
+controlplane-api/internal/resolvers/subscription_scopes_test.go
+  s_505e0112706183::t_c8e4dd3b0413ea 1-98
+controlplane-api/schema.graphql
+  s_505e0112706183::t_d5278a3665269e 200
+controlplane-api/ent/apisubscription_update.go
+  s_505e0112706183::t_eb77d63f67be03 16,135-170,501-522,838-873,1234-1255
+projector/internal/domain/apisubscription/translator.go
+  s_505e0112706183::t_ca31d3d2895778 54,58,73-86
+agentic/internal/handler/agenticsubscription/active_scopes_test.go
+  s_505e0112706183::t_3221b8631714ba 79,117
+  s_505e0112706183::t_c8e4dd3b0413ea 17,86-92,95
+  s_505e0112706183::t_cc730bb8d3ded9 10,13,23,36,53-62,110,163-167,175-189
+  s_505e0112706183::t_6e17580d0875dc 43
+  s_505e0112706183::t_1363f8816e1a25 1-9,11-12,14-16,18-22,24-35,37-42,44-52,63-78,80-85,96-109,111-116,118-162,168-174
+  s_505e0112706183::t_9348c4f2b1fe5d 93-94
+api/api/v1/apisubscription_types.go
+  s_505e0112706183::t_d5278a3665269e 51-54
+  s_505e0112706183::t_70d3ae2766aa5f 50
+controlplane-api/ent/agenticsubscription/where.go
+  s_505e0112706183::t_eb77d63f67be03 494,499,504,508-510
+  s_505e0112706183::t_e1f7c48b9aa8f8 491-493,495-498,500-503,505-507
+projector/internal/domain/apisubscription/types.go
+  s_505e0112706183::t_ca31d3d2895778 32-45
+controlplane-api/ent/mutation.go
+  s_505e0112706183::t_eb77d63f67be03 2845-2848,3257-3294,3296-3386,3775,3797-3802,3837-3840,3872-3875,3942-3955,4023-4028,4061-4066,4105-4110,6926-6929,7342-7352,7354-7427,7429-7431,7433-7447,7449-7460,7462-7467,7469-7471,7950,7972-7977,8015-8018,8052-8055,8124-8137,8212-8217,8250-8255,8294-8299,14895-14898,15311-15440,15966,15988-15993,16037-16040,16078-16081,16154-16167,16256-16261,16297-16302,16344-16349
+  s_505e0112706183::t_19b7e556cf0a94 3295,7353,7428,7432,7448,7461,7468
+api/internal/controller/apisubscription_controller_failover_test.go
+  s_505e0112706183::t_9348c4f2b1fe5d 549
+docs/docs/architecture/controlplane-api.mdx
+  s_505e0112706183::t_9348c4f2b1fe5d 151-191
+event/internal/handler/eventsubscription/handler_test.go
+  s_505e0112706183::t_2824f891f82951 494,517,527,901,911,981,991
+  s_505e0112706183::t_7cee40bd8df6c5 503
+projector/internal/domain/agenticsubscription/translator.go
+  s_505e0112706183::t_ca31d3d2895778 44,46,70-81
+projector/internal/domain/apisubscription/repository.go
+  s_505e0112706183::t_ca31d3d2895778 115-116
+projector/internal/domain/eventsubscription/translator_test.go
+  s_505e0112706183::t_02244d8a725d0b 35-50
+projector/internal/domain/eventsubscription/repository_test.go
+  s_505e0112706183::t_02244d8a725d0b 112-135
+api/internal/handler/apisubscription/util.go
+  s_505e0112706183::t_6e17580d0875dc 45,74
+controlplane-api/ent/schema/agentic_subscription.go
+  s_505e0112706183::t_d5278a3665269e 33
+controlplane-api/ent/schema/event_subscription.go
+  s_505e0112706183::t_ca31d3d2895778 55
+  s_505e0112706183::t_d5278a3665269e 32
+controlplane-api/ent/eventsubscription/eventsubscription.go
+  s_505e0112706183::t_eb77d63f67be03 39-42,107-108
+event/internal/handler/eventsubscription/active_scopes_test.go
+  s_505e0112706183::t_9348c4f2b1fe5d 23,64-67,125
+  s_505e0112706183::t_c8e4dd3b0413ea 90-93
+  s_505e0112706183::t_3221b8631714ba 17,76-84
+  s_505e0112706183::t_117a0a7d0b1853 1-9,11-12,14-16,18-20,22,24-34,36-39,41-49,63,68-75,85-89,94-95,101-115,117-124,126-162,168-174
+  s_505e0112706183::t_6e17580d0875dc 40
+  s_505e0112706183::t_cc730bb8d3ded9 10,13,21,35,50-54,58-62,116,163-167,175-189
+  s_505e0112706183::t_df3e620bf82d47 55-57,96-100
+event/api/v1/eventsubscription_types.go
+  s_505e0112706183::t_d5278a3665269e 80-84
+event/internal/handler/eventsubscription/handler.go
+  s_505e0112706183::t_9348c4f2b1fe5d 68
+  s_505e0112706183::t_d5278a3665269e 11,227,252
+controlplane-api/ent/agenticsubscription_create.go
+  s_505e0112706183::t_eb77d63f67be03 115-126,388-395,620-621,623-627,629-633,635-639,641-645,647-651,653-655,872-874,876-881,883-888,890-895,897-909,911-913,1307-1348
+  s_505e0112706183::t_19b7e556cf0a94 622,628,634,640,646,652,875,882,889,896,910
+controlplane-api/ent/eventsubscription_update.go
+  s_505e0112706183::t_eb77d63f67be03 134-169,504-525,810-845,1210-1231
+projector/internal/domain/eventsubscription/translator.go
+  s_505e0112706183::t_ca31d3d2895778 64-65
+controlplane-api/ent/apisubscription/apisubscription.go
+  s_505e0112706183::t_eb77d63f67be03 38-41,111-112
+controlplane-api/ent/eventsubscription/where.go
+  s_505e0112706183::t_eb77d63f67be03 499,504,509,513-515
+  s_505e0112706183::t_0b7ccdc42c0b6d 496-498,500-503,505-508,510-512
+agentic/api/v1/agenticsubscription_types.go
+  s_505e0112706183::t_d5278a3665269e 46-50
+projector/internal/domain/agenticsubscription/types.go
+  s_505e0112706183::t_ca31d3d2895778 33-44
+controlplane-api/ent/schema/api_subscription.go
+  s_505e0112706183::t_d5278a3665269e 32
+event/api/v1/zz_generated.deepcopy.go
+  s_505e0112706183::t_c722beb2888efb 500-504
+api/internal/handler/apisubscription/handler.go
+  s_505e0112706183::t_d5278a3665269e 12,196,274-277
+projector/internal/domain/apisubscription/translator_test.go
+  s_505e0112706183::t_02244d8a725d0b 34-55
+agentic/internal/handler/agenticsubscription/handler_test.go
+  s_505e0112706183::t_2824f891f82951 536,544,553,562
+agentic/api/v1/zz_generated.deepcopy.go
+  s_505e0112706183::t_c722beb2888efb 329-333
+controlplane-api/ent/apisubscription/where.go
+  s_505e0112706183::t_eb77d63f67be03 494,499,504,508-510
+  s_505e0112706183::t_2bf14795e9e7b1 491-493,495-498,500-503,505-507
+api/api/v1/zz_generated.deepcopy.go
+  s_505e0112706183::t_5f7792e57829a5 466-470
+projector/internal/domain/apisubscription/repository_test.go
+  s_505e0112706183::t_02244d8a725d0b 163-183
+controlplane-api/ent/apisubscription.go
+  s_505e0112706183::t_eb77d63f67be03 42-45,142,220-235,373-378
+projector/internal/domain/eventsubscription/types.go
+  s_505e0112706183::t_ca31d3d2895778 40-41
+controlplane-api/ent/agenticsubscription.go
+  s_505e0112706183::t_eb77d63f67be03 42-45,128,206-221,348-353
+controlplane-api/ent/apisubscription_create.go
+  s_505e0112706183::t_eb77d63f67be03 116-117,119-127,414-421,666-667,669-673,675-679,681-685,687-691,693-697,699-701,930-932,934-946,948-953,955-960,962-967,969-971,1379-1420
+  s_505e0112706183::t_19b7e556cf0a94 118,668,674,680,686,692,698,933,947,954,961,968
+projector/internal/domain/agenticsubscription/repository.go
+  s_505e0112706183::t_ca31d3d2895778 112-113
+controlplane-api/ent.graphql
+  s_505e0112706183::t_286ae1703c14a1 547-554,1130-1137,2921-2928,2933
+controlplane-api/internal/resolvers/ent.generated.go
+  s_505e0112706183::t_77ce7ece06fff9 2989-3034,4746-4791,8157-8202,29425-29434,30420-30429,32271-32280
+controlplane-api/internal/resolvers/root_.generated.go
+  s_505e0112706183::t_07ac4cbb12ee08 173,185,307,321,592,607,1394-1399,1466-1471,1943-1948,2027-2032,3122-3127,3212-3217,5461-5468,6044-6051,7835-7842,7847,10551,11064-11067,11332-11335,11902-11905
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "b08e27b1aaa48141e94b14a254c8a26182544892",
+  "prompts": {},
+  "humans": {
+    "h_0f030e7424553c": {
+      "author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  },
+  "sessions": {
+    "s_505e0112706183": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f312e2158ffeRIme7NayD8Wkcy",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
