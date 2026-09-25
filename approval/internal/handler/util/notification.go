@@ -183,7 +183,6 @@ func SendNotification(ctx context.Context, data *NotificationData) (*types.Objec
 	// Unscoped: legacy format <purpose>--<targetName>.
 	var name string
 	if data.ApprovalKey != "" {
-		var err error
 		name, err = scopedNotificationBaseName(data.Owner, data.ApprovalKey, strings.ToLower(purpose))
 		if err != nil {
 			return nil, fmt.Errorf("computing scoped notification name: %w", err)
@@ -284,7 +283,6 @@ func SendReminderNotification(ctx context.Context, data *ReminderNotificationDat
 	// Unscoped: legacy format <purpose>--<targetName>.
 	var name string
 	if data.ApprovalKey != "" {
-		var err error
 		name, err = scopedNotificationBaseName(data.Owner, data.ApprovalKey, strings.ToLower(purpose))
 		if err != nil {
 			return nil, fmt.Errorf("computing scoped reminder notification name: %w", err)

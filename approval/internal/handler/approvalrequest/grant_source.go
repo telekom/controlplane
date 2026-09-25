@@ -8,8 +8,9 @@ import (
 	"context"
 	"fmt"
 
-	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
 	ctrlclient "sigs.k8s.io/controller-runtime/pkg/client"
+
+	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
 )
 
 // loadSoleLiveScopedGrantSource lists all ApprovalRequests in the source
