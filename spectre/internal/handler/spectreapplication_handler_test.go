@@ -686,6 +686,41 @@ var _ = Describe("SpectreApplicationHandler", func() {
 				Expect(readyCond).ToNot(BeNil())
 				Expect(readyCond.Status).To(Equal(metav1.ConditionFalse))
 				Expect(readyCond.Message).To(ContainSubstring("SSE URL"))
+				Expect(readyCond.Message).To(ContainSubstring("the Subscriber has no SubscriptionId yet"))
+				Expect(readyCond.Message).ToNot(ContainSubstring("preset"))
+			})
+
+			It("should leave SseUrl empty and stay NotReady when the zone preset has no visible URL", func() {
+				obj := newSpectreApplication("server_sent_event")
+				app := makeReadyApplication()
+				zone := makeReadyZone()
+				for i := range zone.Spec.Gateway.Presets[0].Urls {
+					zone.Spec.Gateway.Presets[0].Urls[i].Hidden = true
+				}
+				ec := makeReadyEventConfig()
+				es := makeEventStore()
+
+				mockGetApplication(app)
+				mockGetZone(zone)
+				mockListEventConfigs([]eventv1.EventConfig{ec})
+				mockGetEventStore(es)
+				mockCreateOrUpdatePublisher()
+				mockCreateOrUpdateSubscriber()
+				mockCreateOrUpdateRoute()
+				mockCleanup()
+				fakeClient.EXPECT().AnyChanged().Return(false).Once()
+				fakeClient.EXPECT().AllReady().Return(true).Once()
+				mockExplicitReadinessChecks("server_sent_event")
+
+				err := h.CreateOrUpdate(ctx, obj)
+				Expect(err).ToNot(HaveOccurred())
+
+				Expect(obj.Status.SseUrl).To(BeEmpty())
+				readyCond := meta.FindStatusCondition(obj.Status.Conditions, condition.ConditionTypeReady)
+				Expect(readyCond).ToNot(BeNil())
+				Expect(readyCond.Status).To(Equal(metav1.ConditionFalse))
+				Expect(readyCond.Message).To(ContainSubstring(`zone "` + testZoneName + `" default preset has no visible (non-hidden) URL`))
+				Expect(readyCond.Message).ToNot(ContainSubstring("SubscriptionId"))
 			})
 		})
 
