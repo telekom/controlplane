@@ -11,6 +11,19 @@
 # produces. Everything here is a pure function of an already-existing tag,
 # so it's safe to re-run (Actions > this run > "Re-run failed jobs") if e.g.
 # the Artifactory mirroring flakes, without cutting a new release.
+#
+# SECURITY: this workflow triggers on *any* push of a `v*` tag and has write
+# access to GHCR/GitHub Releases plus the Artifactory push credentials -
+# without a guard, anyone able to push a matching tag could get arbitrary
+# checked-out code published under a release tag, or overwrite existing
+# release image tags. The `guard` job below restricts execution to tags
+# pushed by the same release bot (GitHub App) that release.yaml uses, by
+# comparing `github.actor` (the authenticated pusher, not attacker-
+# controllable commit metadata) against that App's bot identity.
+# Defense in depth: also configure a GitHub tag protection rule for `v*`
+# (Settings > Tags > New rule) restricting who may create/push matching
+# tags at all - the in-workflow guard alone cannot prevent a trusted-but-
+# compromised token from pushing a malicious tag.
 name: Release Publish
 on:
   push:
@@ -21,8 +34,36 @@ permissions:
   contents: read
 
 jobs:
+  guard:
+    name: Verify Trusted Trigger
+    runs-on: ubuntu-latest
+    steps:
+      - name: Resolve release bot identity
+        id: bot_identity
+        # Reuses the same GitHub App credentials release.yaml uses to push
+        # the tag - only to read the App's own bot login (`app-slug` +
+        # "[bot]"), not to grant this job any write access.
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          app-id: ${{ secrets.BOT_APP_ID }}
+          private-key: ${{ secrets.BOT_PRIVATE_KEY }}
+
+      - name: Verify tag was pushed by the release bot
+        shell: bash
+        env:
+          ACTOR: ${{ github.actor }}
+          APP_SLUG: ${{ steps.bot_identity.outputs.app-slug }}
+        run: |
+          expected_actor="${APP_SLUG}[bot]"
+          if [ "$ACTOR" != "$expected_actor" ]; then
+            echo "::error::Tag '${GITHUB_REF_NAME}' was pushed by unexpected actor '${ACTOR}' (expected '${expected_actor}'). Refusing to run privileged release-publish jobs."
+            exit 1
+          fi
+          echo "Tag pushed by trusted actor '${ACTOR}' - proceeding."
+
   rover-ctl-base-image:
     name: Rover-CTL Base Image
+    needs: guard
     # Runs unconditionally as a safety net, ensuring the base image is
     # always fresh before it's consumed by roverctl-combined-image below.
     uses: ./.github/workflows/rover-ctl-base-image.yaml
@@ -32,6 +73,7 @@ jobs:
 
   goreleaser:
     name: GoReleaser
+    needs: guard
     permissions:
       contents: write # to publish the GitHub release
       packages: write # to push module images to GHCR
@@ -167,7 +209,7 @@ jobs:
 
   release_summary:
     name: Release Publish Summary
-    needs: [rover-ctl-base-image, goreleaser, mirror-to-artifactory, roverctl-combined-image]
+    needs: [guard, rover-ctl-base-image, goreleaser, mirror-to-artifactory, roverctl-combined-image]
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -175,6 +217,7 @@ jobs:
         shell: bash
         run: |
           {
+            echo "Guard result: ${{ needs.guard.result }}"
             echo "Rover-CTL base image result: ${{ needs.rover-ctl-base-image.result }}"
             echo "GoReleaser result: ${{ needs.goreleaser.result }}"
             echo "Artifactory mirroring result: ${{ needs.mirror-to-artifactory.result }}"
@@ -182,7 +225,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
           fail=false
-          for r in "${{ needs.rover-ctl-base-image.result }}" "${{ needs.goreleaser.result }}" "${{ needs.mirror-to-artifactory.result }}" "${{ needs.roverctl-combined-image.result }}"; do
+          for r in "${{ needs.guard.result }}" "${{ needs.rover-ctl-base-image.result }}" "${{ needs.goreleaser.result }}" "${{ needs.mirror-to-artifactory.result }}" "${{ needs.roverctl-combined-image.result }}"; do
             [ "$r" = "success" ] || fail=true
           done
 
