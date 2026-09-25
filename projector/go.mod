@@ -38,6 +38,7 @@ require (
 	github.com/telekom/controlplane/file/api v0.0.0
 	github.com/telekom/controlplane/organization/api v0.0.0
 	github.com/telekom/controlplane/permission/api v0.0.0-00010101000000-000000000000
+	github.com/telekom/controlplane/spectre v0.0.0
 	k8s.io/apiextensions-apiserver v0.37.0
 	k8s.io/utils v0.0.0-20260626114624-be93311217bd
 )
@@ -56,6 +57,7 @@ replace (
 	github.com/telekom/controlplane/organization/api => ../organization/api
 	github.com/telekom/controlplane/permission/api => ../permission/api
 	github.com/telekom/controlplane/secret-manager => ../secret-manager
+	github.com/telekom/controlplane/spectre => ../spectre
 )
 
 require (
