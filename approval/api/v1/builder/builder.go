@@ -6,6 +6,8 @@ package builder
 
 import (
 	"context"
+	stderrors "errors"
+	"fmt"
 	"reflect"
 	"slices"
 	"strings"
@@ -27,6 +29,12 @@ import (
 )
 
 type ApprovalResult string
+
+// ErrScopedIdentity marks a definitive scoped identity failure: the ApprovalRequest
+// or Approval at a scoped name carries another approvalKey or target, or this owner
+// is not its controller. Such an object is never consent. Match it with errors.Is;
+// transient states such as a terminating request are not wrapped with it.
+var ErrScopedIdentity = stderrors.New("invalid scoped identity")
 
 var (
 	DefaultStrategy v1.ApprovalStrategy = v1.ApprovalStrategySimple
@@ -51,6 +59,7 @@ type ApprovalBuilder interface {
 	WithAction(action string) ApprovalBuilder
 	WithLabels(labels map[string]string) ApprovalBuilder
 	WithTrustedRequesters(trustedRequesters []string) ApprovalBuilder
+	WithApprovalKey(key string) ApprovalBuilder
 	Build(ctx context.Context) (ApprovalResult, error)
 
 	GetApprovalRequest() *v1.ApprovalRequest
@@ -69,7 +78,9 @@ type approvalBuilder struct {
 	Labels            map[string]string
 	TrustedRequesters []string
 
-	hashValue any
+	hashValue    any
+	hashValueSet bool
+	approvalKey  string
 }
 
 func NewApprovalBuilder(client cclient.JanitorClient, owner types.Object) ApprovalBuilder {
@@ -94,17 +105,57 @@ func NewApprovalBuilder(client cclient.JanitorClient, owner types.Object) Approv
 	}
 }
 
-// WithHashValue is used to make the approval request unique
-// The value should be deterministic for each request
+// WithHashValue is used to make the approval request unique.
+// The value should be deterministic for each request.
 func (b *approvalBuilder) WithHashValue(hashValue any) ApprovalBuilder {
 	b.hashValue = hashValue
+	b.hashValueSet = true
 	return b
 }
 
-func (b *approvalBuilder) setWithHash() {
-	b.Request.Name = v1.ApprovalRequestName(b.Owner, b.hashValue)
+func (b *approvalBuilder) WithApprovalKey(key string) ApprovalBuilder {
+	b.approvalKey = key
+	return b
+}
+
+func (b *approvalBuilder) setWithHash() error {
+	target := *types.TypedObjectRefFromObject(b.Owner, b.Client.Scheme())
+	b.Request.Spec.Target = target
 	b.Request.Namespace = b.Owner.GetNamespace()
-	b.Request.Spec.Target = *types.TypedObjectRefFromObject(b.Owner, b.Client.Scheme())
+
+	if b.approvalKey != "" {
+		if !b.hashValueSet {
+			return fmt.Errorf("scoped builder: WithHashValue is required when approvalKey is set")
+		}
+		if b.Owner.GetUID() == "" {
+			return fmt.Errorf("scoped builder: owner UID must not be empty")
+		}
+
+		intentHash, err := v1.ScopedIntentHash(b.hashValue)
+		if err != nil {
+			return fmt.Errorf("scoped builder: computing intent hash: %w", err)
+		}
+
+		reqName, err := v1.ScopedApprovalRequestName(target, b.approvalKey, intentHash)
+		if err != nil {
+			return fmt.Errorf("scoped builder: computing request name: %w", err)
+		}
+		b.Request.Name = reqName
+
+		approvalName, err := v1.ScopedApprovalName(target, b.approvalKey)
+		if err != nil {
+			return fmt.Errorf("scoped builder: computing approval name: %w", err)
+		}
+		b.Approval.Name = approvalName
+		b.Approval.Namespace = b.Owner.GetNamespace()
+
+		b.Request.Spec.ApprovalKey = b.approvalKey
+		return nil
+	}
+
+	// Legacy unscoped path — unchanged behaviour.
+	b.Request.Name = v1.ApprovalRequestName(b.Owner, b.hashValue)
+	return nil
 }
 
 func (b *approvalBuilder) WithTrustedRequesters(trustedRequesters []string) ApprovalBuilder {
@@ -155,15 +206,45 @@ func (b *approvalBuilder) Build(ctx context.Context) (finalResult ApprovalResult
 		return ApprovalResultNone, errors.New("builder has already been run")
 	}
 	b.ran.Store(true)
+
+	if err := b.setWithHash(); err != nil {
+		return ApprovalResultNone, err
+	}
+
 	log := log.FromContext(ctx).WithValues("approval.name", b.Approval.Name, "approval.namespace", b.Approval.Namespace)
 
-	b.setWithHash()
 	if err := b.requireRequester(); err != nil {
 		return ApprovalResultNone, err
 	}
 
 	approvalReq := b.Request.DeepCopy()
 	mutate := func() error {
+		// For scoped requests, validate identity of any existing server object
+		// before overwriting fields. CreateOrUpdate fetches the existing object
+		// into approvalReq; if it already exists, verify the scoped contract.
+		if b.approvalKey != "" && approvalReq.UID != "" {
+			if approvalReq.DeletionTimestamp != nil {
+				return fmt.Errorf("scoped request %s is terminating; retry after deletion completes", approvalReq.Name)
+			}
+			if approvalReq.Spec.ApprovalKey != b.approvalKey {
+				return fmt.Errorf("scoped request %s: approvalKey mismatch: existing %q != desired %q: %w", approvalReq.Name, approvalReq.Spec.ApprovalKey, b.approvalKey, ErrScopedIdentity)
+			}
+			// Validate target identity before overwriting spec fields.
+			// A keyed request is pinned to a specific target; if the existing
+			// object has a different target, this is a foreign object at the
+			// same deterministic name — refuse to overwrite.
+			if !v1.ScopedIdentityMatch(approvalReq.Spec.Target, b.Request.Spec.Target,
+				approvalReq.Spec.ApprovalKey, b.approvalKey) {
+				return fmt.Errorf("scoped request %s: target identity mismatch: existing target does not match desired: %w", approvalReq.Name, ErrScopedIdentity)
+			}
+			// Validate the controller owner before SetControllerReference below: adopting an
+			// ownerless request or replacing a same-named stale owner would take over another
+			// object's decisions.
+			if !isOwnedByUID(approvalReq, b.Owner) {
+				return fmt.Errorf("scoped request %s: missing or foreign controller owner: %w", approvalReq.Name, ErrScopedIdentity)
+			}
+		}
+
 		// Preserve the server-side state and decisions before applying spec updates.
 		// After controllerutil.CreateOrUpdate fetches the existing object, approvalReq
 		// contains the server-side values. We must not overwrite the state set by a
@@ -190,6 +271,7 @@ func (b *approvalBuilder) Build(ctx context.Context) (finalResult ApprovalResult
 		approvalReq.Spec.Decider = b.Request.Spec.Decider
 		approvalReq.Spec.Action = b.Request.Spec.Action
 		approvalReq.Spec.Strategy = b.Request.Spec.Strategy
+		approvalReq.Spec.ApprovalKey = b.approvalKey
 
 		if b.isRequesterFromTrustedRequesters() {
 			approvalReq.Spec.Strategy = v1.ApprovalStrategyAuto
@@ -221,6 +303,7 @@ func (b *approvalBuilder) Build(ctx context.Context) (finalResult ApprovalResult
 			approvalReq.Spec.Decider.TeamName,
 			approvalReq.Spec.Action,
 			string(approvalReq.Spec.Strategy))
+		v1.SetApprovalKeyLabel(approvalReq, approvalReq.Spec.ApprovalKey)
 
 		return nil
 	}
@@ -238,10 +321,11 @@ func (b *approvalBuilder) Build(ctx context.Context) (finalResult ApprovalResult
 
 	if res != controllerutil.OperationResultNone {
 		log.V(2).Info("ApprovalRequest reconciled", "operation", res)
-		b.Owner.SetCondition(newApprovalGrantedCondition(v1.ApprovalStatePending, "ApprovalRequest has been created or updated"))
+		b.Owner.SetCondition(newKeyedApprovalGrantedCondition(b.approvalKey, v1.ApprovalStatePending, "ApprovalRequest has been created or updated"))
 	}
 
-	_, err = b.Client.Cleanup(ctx, &v1.ApprovalRequestList{}, cclient.OwnedBy(b.Owner))
+	// Cleanup stale requests — scoped cleanup partitions by approvalKey.
+	_, err = cleanupScopedRequests(ctx, b.Client, b.Owner, approvalReq, b.approvalKey)
 	if err != nil {
 		return ApprovalResultPending, errors.Wrap(err, "failed to cleanup approval-requests")
 	}
@@ -256,18 +340,36 @@ func (b *approvalBuilder) Build(ctx context.Context) (finalResult ApprovalResult
 	// Approval was found
 	if approvalExists {
 		log.V(2).Info("Approval exists")
+
+		// For keyed builders, validate scoped identity on the Approval.
+		if b.approvalKey != "" {
+			// Reject terminating Approval — treat as not-yet-ready.
+			if b.Approval.DeletionTimestamp != nil {
+				log.V(1).Info("Scoped Approval is terminating; treating as pending")
+				b.Owner.SetCondition(newKeyedApprovalGrantedCondition(b.approvalKey, v1.ApprovalStatePending, "Approval is being deleted"))
+				return ApprovalResultPending, nil
+			}
+			if b.Approval.Spec.ApprovalKey != b.approvalKey {
+				return ApprovalResultNone, fmt.Errorf("scoped approval %s: approvalKey mismatch: existing %q != desired %q: %w", b.Approval.Name, b.Approval.Spec.ApprovalKey, b.approvalKey, ErrScopedIdentity)
+			}
+			target := b.Request.Spec.Target
+			if !v1.ScopedIdentityMatch(b.Approval.Spec.Target, target, b.Approval.Spec.ApprovalKey, b.approvalKey) {
+				return ApprovalResultNone, fmt.Errorf("scoped approval %s: target identity mismatch: %w", b.Approval.Name, ErrScopedIdentity)
+			}
+		}
+
 		isDenied := b.Approval.Spec.State == v1.ApprovalStateRejected || b.Approval.Spec.State == v1.ApprovalStateSuspended
 		// transition from Suspended to Expired -> treat as denied
 		isDeniedAndExpired := b.Approval.Spec.State == v1.ApprovalStateExpired && b.Approval.Status.LastState == v1.ApprovalStateSuspended
 
 		if isDenied {
 			log.V(1).Info("Approval is rejected or suspended and must not be provisioned")
-			b.Owner.SetCondition(newApprovalGrantedCondition(b.Approval.Spec.State, "Approval has been rejected or suspended"))
+			b.Owner.SetCondition(newKeyedApprovalGrantedCondition(b.approvalKey, b.Approval.Spec.State, "Approval has been rejected or suspended"))
 			return ApprovalResultDenied, nil
 		}
 		if isDeniedAndExpired {
 			log.V(1).Info("Approval expired from suspended state and must not be provisioned")
-			b.Owner.SetCondition(newApprovalGrantedCondition(b.Approval.Spec.State, "Approval has expired"))
+			b.Owner.SetCondition(newKeyedApprovalGrantedCondition(b.approvalKey, b.Approval.Spec.State, "Approval has expired"))
 			return ApprovalResultDenied, nil
 		}
 	}
@@ -275,21 +377,35 @@ func (b *approvalBuilder) Build(ctx context.Context) (finalResult ApprovalResult
 	// Priority 2: Check if ApprovalRequest is rejected (only if Approval didn't deny)
 	if approvalReq.Spec.State == v1.ApprovalStateRejected {
 		log.V(1).Info("ApprovalRequest is rejected")
-		b.Owner.SetCondition(newApprovalGrantedCondition(v1.ApprovalStateRejected, "ApprovalRequest has been rejected"))
+		b.Owner.SetCondition(newKeyedApprovalGrantedCondition(b.approvalKey, v1.ApprovalStateRejected, "ApprovalRequest has been rejected"))
 		return ApprovalResultRequestDenied, nil
 	}
 
 	// Priority 3: If Approval doesn't exist --> Pending
 	if !approvalExists {
 		log.Info("Approval does not exist")
-		b.Owner.SetCondition(newApprovalGrantedCondition(v1.ApprovalStatePending, "Approval does not exist yet"))
+		b.Owner.SetCondition(newKeyedApprovalGrantedCondition(b.approvalKey, v1.ApprovalStatePending, "Approval does not exist yet"))
 		return ApprovalResultPending, nil
 	}
 
-	// Check if the Approval is for the current ApprovalRequest
-	if b.Approval.Spec.ApprovedRequest != nil && !b.Approval.Spec.ApprovedRequest.Equals(approvalReq) {
+	// A persisted scoped Approval grants only when this owner controls it; the approval
+	// controller always sets that reference when it creates the Approval. Denials above
+	// are honoured without that authority because they only stop provisioning.
+	if b.approvalKey != "" && !isOwnedByUID(b.Approval, b.Owner) {
+		return ApprovalResultNone, fmt.Errorf("scoped approval %s: missing or foreign controller owner: %w", b.Approval.Name, ErrScopedIdentity)
+	}
+
+	// Check if the Approval is for the current ApprovalRequest.
+	// For scoped builders, require exact namespace+name+UID binding.
+	if b.approvalKey != "" {
+		if !b.isScopedGrantBound(approvalReq) {
+			log.V(1).Info("Scoped Approval grant is not bound to this request")
+			b.Owner.SetCondition(newKeyedApprovalGrantedCondition(b.approvalKey, v1.ApprovalStatePending, "Approval is not bound to the current ApprovalRequest"))
+			return ApprovalResultPending, nil
+		}
+	} else if b.Approval.Spec.ApprovedRequest != nil && !b.Approval.Spec.ApprovedRequest.Equals(approvalReq) {
 		log.V(1).Info("Approval is not for this request. Returning early")
-		b.Owner.SetCondition(newApprovalGrantedCondition(v1.ApprovalStatePending, "Approval is not for the current ApprovalRequest"))
+		b.Owner.SetCondition(newKeyedApprovalGrantedCondition(b.approvalKey, v1.ApprovalStatePending, "Approval is not for the current ApprovalRequest"))
 		return ApprovalResultPending, nil
 	}
 
@@ -299,16 +415,28 @@ func (b *approvalBuilder) Build(ctx context.Context) (finalResult ApprovalResult
 	// Priority 4: Approval is granted
 	if b.Approval.Spec.State == v1.ApprovalStateGranted {
 		log.V(2).Info("Approval is granted")
-		b.Owner.SetCondition(newApprovalGrantedCondition(v1.ApprovalStateGranted, "Approval has been granted"))
+		b.Owner.SetCondition(newKeyedApprovalGrantedCondition(b.approvalKey, v1.ApprovalStateGranted, "Approval has been granted"))
 		return ApprovalResultGranted, nil
 	}
 	if isGrantedAndExpired {
 		log.V(2).Info("Approval expired from granted state, treating as granted")
-		b.Owner.SetCondition(newApprovalGrantedCondition(v1.ApprovalStateGranted, "Approval has expired but was previously granted"))
+		b.Owner.SetCondition(newKeyedApprovalGrantedCondition(b.approvalKey, v1.ApprovalStateGranted, "Approval has expired but was previously granted"))
 		return ApprovalResultGranted, nil
 	}
 	// Fallback, but should not be reached
 	return ApprovalResultNone, nil
+}
+
+// isScopedGrantBound checks that the Approval's ApprovedRequest references the
+// current request by namespace, name and UID — not just name/namespace equality.
+func (b *approvalBuilder) isScopedGrantBound(currentReq *v1.ApprovalRequest) bool {
+	ref := b.Approval.Spec.ApprovedRequest
+	if ref == nil {
+		return false
+	}
+	return ref.Name == currentReq.Name &&
+		ref.Namespace == currentReq.Namespace &&
+		ref.UID == currentReq.UID
 }
 
 func (b *approvalBuilder) GetApprovalRequest() *v1.ApprovalRequest {

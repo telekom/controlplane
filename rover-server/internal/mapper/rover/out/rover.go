@@ -42,6 +42,9 @@ func MapRover(in *roverv1.Rover, out *api.Rover) error {
 		return err
 	}
 
+	mapListeners(in, out)
+	mapListenerSubscription(in, out)
+
 	out.Zone = in.Spec.Zone
 	scalars := mapper.RoverExternalIdsToScalars(in.Spec.ExternalIds)
 	out.Psiid = scalars.Psiid

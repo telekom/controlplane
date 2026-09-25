@@ -43,7 +43,12 @@ func (r *ApprovalRequestReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 // SetupWithManager sets up the controller with the Manager.
 func (r *ApprovalRequestReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Recorder = mgr.GetEventRecorderFor("approval-request-controller")
-	r.Controller = cc.NewController(&approvalreq_handler.ApprovalRequestHandler{}, r.Client, r.Recorder)
+	r.Controller = cc.NewController(
+		&approvalreq_handler.ApprovalRequestHandler{
+			Reader: mgr.GetAPIReader(),
+		},
+		r.Client, r.Recorder,
+	)
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&approvalv1.ApprovalRequest{}, builder.WithPredicates(cc.Count("approvalrequest", cc.RoleFor))).

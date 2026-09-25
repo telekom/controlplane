@@ -5,6 +5,8 @@
 package v1_test
 
 import (
+	"os"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -12,6 +14,23 @@ import (
 	v1 "github.com/telekom/controlplane/event/api/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
+
+var _ = Describe("EventTypeSpec CEL rules", func() {
+	// The reserved-prefix rule is enforced by the API server at admission time
+	// via a CEL XValidation marker on EventTypeSpec. We verify the rule is
+	// present in the generated CRD YAML so a missing regeneration step does
+	// not silently drop it.
+	It("has a CEL rule rejecting the reserved de.telekom.ei.listener prefix", func() {
+		crdBytes, err := os.ReadFile("../../config/crd/bases/event.cp.ei.telekom.de_eventtypes.yaml")
+		Expect(err).ToNot(HaveOccurred(), "CRD YAML must be readable — run 'make manifests' first")
+
+		crd := string(crdBytes)
+		Expect(crd).To(ContainSubstring("de.telekom.ei.listener"),
+			"generated CRD must contain the reserved-prefix validation rule")
+		Expect(crd).To(ContainSubstring("!self.type.startsWith"),
+			"generated CRD must contain the startsWith CEL expression")
+	})
+})
 
 var _ = Describe("MakeEventTypeName", func() {
 	DescribeTable("converts event type strings to Kubernetes resource names",

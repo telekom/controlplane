@@ -130,6 +130,12 @@ modules:
     coverage_threshold: 50
     lint_fail_on_issues: true
 
+  - name: spectre
+    path: spectre
+    run_check_generated_files: true
+    ko_build_path: cmd/main.go
+    coverage_threshold: 70
+
   - name: event
     path: event
     run_check_generated_files: true
