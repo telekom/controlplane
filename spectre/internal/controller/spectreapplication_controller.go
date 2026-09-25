@@ -173,57 +173,19 @@ func (r *SpectreApplicationReconciler) mapApplicationToSpectreApplications(
 }
 
 // mapZoneToSpectreApplications maps a Zone change to SpectreApplications
-// whose referenced Application is in that Zone.
+// whose referenced Application is in that Zone, or in a proxy zone that
+// targets it (the proxy Route upstream is built from the target zone's preset).
 func (r *SpectreApplicationReconciler) mapZoneToSpectreApplications(
 	ctx context.Context,
 	obj client.Object,
 ) []reconcile.Request {
-	logger := log.FromContext(ctx)
 	zone, ok := obj.(*adminv1.Zone)
 	if !ok {
 		return nil
 	}
 
-	// Find Applications in this Zone.
-	appList := &applicationv1.ApplicationList{}
-	if err := r.List(ctx, appList, client.MatchingLabels{
-		cconfig.EnvironmentLabelKey: zone.Labels[cconfig.EnvironmentLabelKey],
-	}); err != nil {
-		logger.Error(err, "Failed to list Applications for Zone")
-		return nil
-	}
-
 	zoneRef := types.NamespacedName{Name: zone.Name, Namespace: zone.Namespace}
-	appRefs := make(map[types.NamespacedName]struct{})
-	for i := range appList.Items {
-		a := &appList.Items[i]
-		if a.Spec.Zone.Name == zoneRef.Name && a.Spec.Zone.Namespace == zoneRef.Namespace {
-			appRefs[types.NamespacedName{Name: a.Name, Namespace: a.Namespace}] = struct{}{}
-		}
-	}
-
-	if len(appRefs) == 0 {
-		return nil
-	}
-
-	saList := &spectrev1.SpectreApplicationList{}
-	if err := r.List(ctx, saList, client.MatchingLabels{
-		cconfig.EnvironmentLabelKey: zone.Labels[cconfig.EnvironmentLabelKey],
-	}); err != nil {
-		logger.Error(err, "Failed to list SpectreApplications for Zone")
-		return nil
-	}
-
-	var reqs []reconcile.Request
-	for i := range saList.Items {
-		sa := &saList.Items[i]
-		ref := types.NamespacedName{Name: sa.Spec.Application.Name, Namespace: sa.Spec.Application.Namespace}
-		if _, ok := appRefs[ref]; ok {
-			reqs = append(reqs, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(sa)})
-		}
-	}
-
-	return reqs
+	return r.mapZoneAndProxiesToSpectreApplications(ctx, zone.Labels[cconfig.EnvironmentLabelKey], zoneRef)
 }
 
 // mapEventConfigToSpectreApplications maps an EventConfig change to
@@ -235,29 +197,37 @@ func (r *SpectreApplicationReconciler) mapEventConfigToSpectreApplications(
 	ctx context.Context,
 	obj client.Object,
 ) []reconcile.Request {
-	logger := log.FromContext(ctx)
 	ec, ok := obj.(*eventv1.EventConfig)
 	if !ok {
 		return nil
 	}
 
+	zoneRef := types.NamespacedName{Name: ec.Spec.Zone.Name, Namespace: ec.Spec.Zone.Namespace}
+	return r.mapZoneAndProxiesToSpectreApplications(ctx, ec.Labels[cconfig.EnvironmentLabelKey], zoneRef)
+}
+
+// mapZoneAndProxiesToSpectreApplications enqueues SpectreApplications whose
+// Application is in zoneRef or in any proxy zone whose EventConfig targets zoneRef.
+func (r *SpectreApplicationReconciler) mapZoneAndProxiesToSpectreApplications(
+	ctx context.Context,
+	env string,
+	zoneRef types.NamespacedName,
+) []reconcile.Request {
+	logger := log.FromContext(ctx)
+	envLabels := client.MatchingLabels{cconfig.EnvironmentLabelKey: env}
+
 	appList := &applicationv1.ApplicationList{}
-	if err := r.List(ctx, appList, client.MatchingLabels{
-		cconfig.EnvironmentLabelKey: ec.Labels[cconfig.EnvironmentLabelKey],
-	}); err != nil {
-		logger.Error(err, "Failed to list Applications for EventConfig")
+	if err := r.List(ctx, appList, envLabels); err != nil {
+		logger.Error(err, "Failed to list Applications for zone")
 		return nil
 	}
 
-	// Collect zones to match: the EventConfig's own zone, plus any proxy
-	// zones whose target points at this EventConfig's zone.
-	zoneRef := types.NamespacedName{Name: ec.Spec.Zone.Name, Namespace: ec.Spec.Zone.Namespace}
+	// Collect zones to match: the zone itself, plus any proxy
+	// zones whose target points at this zone.
 	zoneRefs := map[types.NamespacedName]struct{}{zoneRef: {}}
 
 	ecList := &eventv1.EventConfigList{}
-	if err := r.List(ctx, ecList, client.MatchingLabels{
-		cconfig.EnvironmentLabelKey: ec.Labels[cconfig.EnvironmentLabelKey],
-	}); err != nil {
+	if err := r.List(ctx, ecList, envLabels); err != nil {
 		logger.Error(err, "Failed to list EventConfigs for proxy resolution")
 	} else {
 		for i := range ecList.Items {
@@ -283,10 +253,8 @@ func (r *SpectreApplicationReconciler) mapEventConfigToSpectreApplications(
 	}
 
 	saList := &spectrev1.SpectreApplicationList{}
-	if err := r.List(ctx, saList, client.MatchingLabels{
-		cconfig.EnvironmentLabelKey: ec.Labels[cconfig.EnvironmentLabelKey],
-	}); err != nil {
-		logger.Error(err, "Failed to list SpectreApplications for EventConfig")
+	if err := r.List(ctx, saList, envLabels); err != nil {
+		logger.Error(err, "Failed to list SpectreApplications for zone")
 		return nil
 	}
 
