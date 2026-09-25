@@ -125,6 +125,8 @@ func PatchExposures(exposures []any) []map[string]any {
 				exposuresMaps[i]["type"] = "api"
 			} else if _, exist := exposure["eventType"]; exist {
 				exposuresMaps[i]["type"] = "event"
+			} else if _, exist := exposure["fileType"]; exist {
+				exposuresMaps[i]["type"] = "file"
 			}
 		}
 		security, exist := exposure["security"]
@@ -157,6 +159,8 @@ func PatchSubscriptions(subscriptions []any) []map[string]any {
 				subscriptionsMaps[i]["type"] = "api"
 			} else if _, exist := subscription["eventType"]; exist {
 				subscriptionsMaps[i]["type"] = "event"
+			} else if _, exist := subscription["fileType"]; exist {
+				subscriptionsMaps[i]["type"] = "file"
 			}
 		}
 		security, exist := subscription["security"]

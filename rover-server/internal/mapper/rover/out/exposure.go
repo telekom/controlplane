@@ -52,10 +52,42 @@ func mapExposure(in *roverv1.Exposure, out *api.Exposure) error {
 			return errors.Wrap(err, "failed to map ai exposure")
 		}
 
+	} else if in.File != nil {
+		if err := out.FromFileExposure(mapFileExposure(in.File)); err != nil {
+			return errors.Wrap(err, "failed to map file exposure")
+		}
+
 	} else {
 		return errors.Errorf("unknown exposure type: %s", in.Type())
 	}
 	return nil
+}
+
+func mapFileExposure(in *roverv1.FileExposure) api.FileExposure {
+	out := api.FileExposure{
+		FileType:   in.FileType,
+		Visibility: toApiVisibility(in.Visibility),
+		PublicKeys: mapPublicKeys(in.SFTP),
+		Approval:   toApiApprovalStrategy(in.Approval.Strategy),
+	}
+
+	mapTrustedTeams(in.Approval.TrustedTeams, &out.TrustedTeams)
+
+	return out
+}
+
+func mapPublicKeys(in *roverv1.FileSFTP) []api.PublicKey {
+	if in == nil || len(in.PublicKeys) == 0 {
+		return nil
+	}
+	out := make([]api.PublicKey, len(in.PublicKeys))
+	for i, key := range in.PublicKeys {
+		out[i] = api.PublicKey{
+			Label: key.Label,
+			Key:   key.Key,
+		}
+	}
+	return out
 }
 
 func mapApiExposure(in *roverv1.ApiExposure) (api.ApiExposure, error) {
@@ -67,7 +99,7 @@ func mapApiExposure(in *roverv1.ApiExposure) (api.ApiExposure, error) {
 		RateLimit: api.RateLimitContainer{},
 	}
 
-	mapTrustedTeams(in, &apiExposure)
+	mapTrustedTeams(in.Approval.TrustedTeams, &apiExposure.TrustedTeams)
 
 	if len(in.Upstreams) == 1 {
 		apiExposure.Upstream = in.Upstreams[0].URL
@@ -99,15 +131,7 @@ func mapEventExposure(in *roverv1.EventExposure) api.EventExposure {
 		Approval:   toApiApprovalStrategy(in.Approval.Strategy),
 	}
 
-	// Map trusted teams
-	if in.Approval.TrustedTeams != nil {
-		out.TrustedTeams = make([]api.TrustedTeam, len(in.Approval.TrustedTeams))
-		for i, team := range in.Approval.TrustedTeams {
-			out.TrustedTeams[i] = api.TrustedTeam{
-				Team: team.Group + "--" + team.Team,
-			}
-		}
-	}
+	mapTrustedTeams(in.Approval.TrustedTeams, &out.TrustedTeams)
 
 	// Map scopes
 	if in.Scopes != nil {
@@ -162,14 +186,7 @@ func mapAiExposure(in *roverv1.AgenticExposure) (api.AiExposure, error) {
 		RateLimit:  api.RateLimitContainer{},
 	}
 
-	if in.Approval.TrustedTeams != nil {
-		aiExposure.TrustedTeams = make([]api.TrustedTeam, len(in.Approval.TrustedTeams))
-		for i, team := range in.Approval.TrustedTeams {
-			aiExposure.TrustedTeams[i] = api.TrustedTeam{
-				Team: team.Group + "--" + team.Team,
-			}
-		}
-	}
+	mapTrustedTeams(in.Approval.TrustedTeams, &aiExposure.TrustedTeams)
 
 	if len(in.Upstreams) == 1 {
 		aiExposure.Upstream = in.Upstreams[0].URL
@@ -364,14 +381,14 @@ func mapExposureTransformation(in *roverv1.ApiExposure, out *api.ApiExposure) {
 	}
 }
 
-func mapTrustedTeams(in *roverv1.ApiExposure, out *api.ApiExposure) {
-	if in.Approval.TrustedTeams == nil {
+func mapTrustedTeams(in []roverv1.TrustedTeam, out *[]api.TrustedTeam) {
+	if in == nil {
 		return
 	}
 
-	out.TrustedTeams = make([]api.TrustedTeam, len(in.Approval.TrustedTeams))
-	for i, team := range in.Approval.TrustedTeams {
-		out.TrustedTeams[i] = api.TrustedTeam{
+	*out = make([]api.TrustedTeam, len(in))
+	for i, team := range in {
+		(*out)[i] = api.TrustedTeam{
 			Team: team.Group + "--" + team.Team,
 		}
 	}

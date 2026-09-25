@@ -10,6 +10,12 @@ import (
 	"fmt"
 	"os"
 
+	filev1 "github.com/telekom/controlplane/file/api/v1"
+
+	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
+	// to ensure that exec-entrypoint and run can make use of them.
+	_ "k8s.io/client-go/plugin/pkg/client/auth"
+
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -35,10 +41,6 @@ import (
 	webhookv1 "github.com/telekom/controlplane/rover/internal/webhook/v1"
 	secretsapi "github.com/telekom/controlplane/secret-manager/api"
 	secretmetrics "github.com/telekom/controlplane/secret-manager/api/metrics"
-
-	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
-	// to ensure that exec-entrypoint and run can make use of them.
-	_ "k8s.io/client-go/plugin/pkg/client/auth"
 )
 
 var (
@@ -64,6 +66,10 @@ func init() {
 	}
 	if cconfig.FeatureAiGateway.IsEnabled() {
 		utilruntime.Must(agenticv1.AddToScheme(scheme))
+	}
+	// +kubebuilder:scaffold:scheme
+	if cconfig.FeatureFile.IsEnabled() {
+		utilruntime.Must(filev1.AddToScheme(scheme))
 	}
 	// +kubebuilder:scaffold:scheme
 }
@@ -198,6 +204,16 @@ func main() {
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Roadmap")
 		os.Exit(1)
+	}
+
+	if cconfig.FeatureFile.IsEnabled() {
+		if err = (&controller.FileSpecificationReconciler{
+			Client: mgr.GetClient(),
+			Scheme: mgr.GetScheme(),
+		}).SetupWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", "FileSpecification")
+			os.Exit(1)
+		}
 	}
 
 	if err = (&controller.ApiChangelogReconciler{

@@ -30,7 +30,7 @@ var _ = Describe("Trusted Teams Mapper", func() {
 				Approval: roverv1.Approval{},
 			}
 
-			mapTrustedTeams(input, output)
+			mapTrustedTeams(input.TrustedTeams, &output.Approval.TrustedTeams)
 
 			Expect(output.Approval.TrustedTeams).To(HaveLen(2))
 			Expect(output.Approval.TrustedTeams[0].Group).To(Equal("group1"))
@@ -47,7 +47,7 @@ var _ = Describe("Trusted Teams Mapper", func() {
 				Approval: roverv1.Approval{},
 			}
 
-			mapTrustedTeams(input, output)
+			mapTrustedTeams(input.TrustedTeams, &output.Approval.TrustedTeams)
 
 			Expect(output.Approval.TrustedTeams).To(HaveLen(0))
 		})
@@ -60,7 +60,7 @@ var _ = Describe("Trusted Teams Mapper", func() {
 				Approval: roverv1.Approval{},
 			}
 
-			mapTrustedTeams(input, output)
+			mapTrustedTeams(input.TrustedTeams, &output.Approval.TrustedTeams)
 
 			Expect(output.Approval.TrustedTeams).To(BeNil())
 		})

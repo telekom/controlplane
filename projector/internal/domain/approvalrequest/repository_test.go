@@ -38,6 +38,8 @@ type mockApprovalRequestDeps struct {
 	eventSubErr   error          // if non-nil, FindEventSubscriptionByMeta always returns this error
 	agenticSubIDs map[string]int // key: "namespace:name"
 	agenticSubErr error          // if non-nil, FindAgenticSubscriptionByMeta always returns this error
+	fileSubIDs    map[string]int // key: "namespace:name"
+	fileSubErr    error          // if non-nil, FindFileSubscriptionByMeta always returns this error
 	evicted       []string       // tracks eviction calls as "namespace:name"
 }
 
@@ -83,6 +85,21 @@ func (m *mockApprovalRequestDeps) EvictEventSubscription(namespace, name string)
 }
 
 func (m *mockApprovalRequestDeps) EvictAgenticSubscription(namespace, name string) {
+	m.evicted = append(m.evicted, namespace+":"+name)
+}
+
+func (m *mockApprovalRequestDeps) FindFileSubscriptionByMeta(_ context.Context, namespace, name string) (int, error) {
+	if m.fileSubErr != nil {
+		return 0, m.fileSubErr
+	}
+	key := namespace + ":" + name
+	if id, ok := m.fileSubIDs[key]; ok {
+		return id, nil
+	}
+	return 0, fmt.Errorf("file_subscription %s/%s: %w", namespace, name, infrastructure.ErrEntityNotFound)
+}
+
+func (m *mockApprovalRequestDeps) EvictFileSubscription(namespace, name string) {
 	m.evicted = append(m.evicted, namespace+":"+name)
 }
 
@@ -156,6 +173,7 @@ var _ = Describe("ApprovalRequest Repository", func() {
 		deps = &mockApprovalRequestDeps{
 			subIDs:      map[string]int{"prod--platform--narvi:my-sub": subID},
 			eventSubIDs: map[string]int{},
+			fileSubIDs:  map[string]int{},
 		}
 
 		repo = approvalrequest.NewRepository(client, cache, deps)
@@ -308,6 +326,80 @@ var _ = Describe("ApprovalRequest Repository", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(ar.Edges.AgenticSubscription).NotTo(BeNil())
 			Expect(ar.Edges.AgenticSubscription.ID).To(Equal(agenticSub.ID))
+		})
+
+		It("should create a new approval request with file subscription FK", func() {
+			// Seed a FileSubscription.
+			z, err := client.Zone.Query().Where(zone.NameEQ("caas")).Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			t, err := client.Team.Query().Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			subscriberApp, err := client.Application.Create().
+				SetName("file-consumer").
+				SetNamespace("platform--narvi").
+				SetOwnerTeamID(t.ID).
+				SetZoneID(z.ID).
+				Save(ctx)
+			Expect(err).NotTo(HaveOccurred())
+
+			fileSub, err := client.FileSubscription.Create().
+				SetFileType("invoice").
+				SetZoneName("caas").
+				SetNamespace("platform--narvi").
+				SetName("my-file-sub").
+				SetOwnerID(subscriberApp.ID).
+				SetZoneID(z.ID).
+				Save(ctx)
+			Expect(err).NotTo(HaveOccurred())
+
+			deps.fileSubIDs["prod--platform--narvi:my-file-sub"] = fileSub.ID
+
+			data := baseData()
+			data.Meta.Name = "filesubscription--my-file-sub--abc123"
+			data.TargetKind = "FileSubscription"
+			data.SubscriptionNamespace = "prod--platform--narvi"
+			data.SubscriptionName = "my-file-sub"
+
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			// Verify the approval request was created with file subscription FK.
+			ar, err := client.ApprovalRequest.Query().
+				Where(
+					entapprovalrequest.NamespaceEQ("prod--platform--narvi"),
+					entapprovalrequest.NameEQ("filesubscription--my-file-sub--abc123"),
+				).
+				WithFileSubscription().
+				Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(ar.Edges.FileSubscription).NotTo(BeNil())
+			Expect(ar.Edges.FileSubscription.ID).To(Equal(fileSub.ID))
+		})
+
+		It("should return ErrDependencyMissing when file subscription is not cached", func() {
+			data := baseData()
+			data.TargetKind = "FileSubscription"
+			data.SubscriptionName = "missing-file-sub"
+			err := repo.Upsert(ctx, data)
+			Expect(err).To(HaveOccurred())
+			Expect(errors.Is(err, runtime.ErrDependencyMissing)).To(BeTrue())
+		})
+
+		It("should propagate non-ErrEntityNotFound errors from FindFileSubscriptionByMeta", func() {
+			dbErr := errors.New("connection refused")
+			failDeps := &mockApprovalRequestDeps{
+				subIDs:      map[string]int{},
+				eventSubIDs: map[string]int{},
+				fileSubIDs:  map[string]int{},
+				fileSubErr:  dbErr,
+			}
+			failRepo := approvalrequest.NewRepository(client, cache, failDeps)
+
+			data := baseData()
+			data.TargetKind = "FileSubscription"
+			err := failRepo.Upsert(ctx, data)
+			Expect(err).To(HaveOccurred())
+			Expect(runtime.IsDependencyMissing(err)).To(BeFalse())
+			Expect(errors.Is(err, dbErr)).To(BeTrue())
 		})
 
 		It("should return ErrDependencyMissing when subscription is not cached", func() {
