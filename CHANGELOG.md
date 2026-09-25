@@ -1,3 +1,26 @@
+# [0.29.0](https://github.com/telekom/controlplane/compare/v0.28.2...v0.29.0) (2026-09-25)
+
+
+### Bug Fixes
+
+* **controlplane-api:** api-sububscription edge via target to apiexposure is optional ([#685](https://github.com/telekom/controlplane/issues/685)) ([d04f355](https://github.com/telekom/controlplane/commit/d04f355f1e08f09b969c234d0528c7b1647217cf))
+* normalize all names and labels ([#682](https://github.com/telekom/controlplane/issues/682)) ([475f138](https://github.com/telekom/controlplane/commit/475f138ee572461eb11f3748d2f05e11c6ff9904))
+* use Simple approval strategy as default ([#690](https://github.com/telekom/controlplane/issues/690)) ([ba8eeb0](https://github.com/telekom/controlplane/commit/ba8eeb0958d88d8c3318ca009023b11c3d5515a3))
+
+
+### Features
+
+* **admin:** expose rover realm openid-configuration ([#686](https://github.com/telekom/controlplane/issues/686)) ([8e991b0](https://github.com/telekom/controlplane/commit/8e991b0de1c84644f5e49a811c73b7bb8bb63541))
+* align condition-handling in agentic and api ([#688](https://github.com/telekom/controlplane/issues/688)) ([522242b](https://github.com/telekom/controlplane/commit/522242b9e052f6dd77bd3878c9522f7f36aa0e28))
+* filter approval in cache based on domain label ([#678](https://github.com/telekom/controlplane/issues/678)) ([2563432](https://github.com/telekom/controlplane/commit/2563432a018abfa6552387cf811504551a4e1760))
+* skip specified scope check for external idps and allow any scopes ([#684](https://github.com/telekom/controlplane/issues/684)) ([03d6b45](https://github.com/telekom/controlplane/commit/03d6b453aa162b945774d3197560870658c54e3c))
+
+
+### Performance Improvements
+
+* **gateway:** avoid redundant Kong writes ([#539](https://github.com/telekom/controlplane/issues/539)) ([bb69930](https://github.com/telekom/controlplane/commit/bb69930b06e52ee1af051919fabf6c1dab065490))
+* **gateway:** filter redundant reconcile triggers with watch predicates ([#662](https://github.com/telekom/controlplane/issues/662)) ([45027a6](https://github.com/telekom/controlplane/commit/45027a6e6d70cf7bfbfe63201215137c405a0aa8))
+
 ## [0.28.2](https://github.com/telekom/controlplane/compare/v0.28.1...v0.28.2) (2026-09-23)
 
 
