@@ -51,6 +51,10 @@ type ListenerHandler struct {
 // capture is stopped through the persisted drain.
 const authorizationUnknownGracePeriod = 5 * time.Minute
 
+// reasonAuthorizationUnavailable is the Ready reason once the grace period has
+// passed without an approval answer.
+const reasonAuthorizationUnavailable = "AuthorizationUnavailable"
+
 func (h *ListenerHandler) now() time.Time {
 	if h.Now == nil {
 		return time.Now()
@@ -767,6 +771,12 @@ func (h *ListenerHandler) stopCaptureAfter(
 	approvalErr error,
 ) error {
 	_, stopErr := h.drainCapture(ctx, listener, reason)
+	return joinStopError(reason, stopErr, approvalErr)
+}
+
+// joinStopError returns the failure to stop capture after reason joined with
+// approvalErr, or approvalErr.
+func joinStopError(reason string, stopErr, approvalErr error) error {
 	if stopErr != nil && approvalErr != nil {
 		return fmt.Errorf("failed to stop capture after %s: %w; combined approval error: %w", reason, stopErr, approvalErr)
 	}
@@ -782,10 +792,13 @@ func (h *ListenerHandler) stopCaptureAfter(
 // awaitApprovalAnswer handles a dual-gate evaluation that gave no answer.
 // Applied capture keeps running for authorizationUnknownGracePeriod from the
 // first such reconcile, recorded in status.authorizationUnknownSince. Within
-// it the Listener is retried after a delay that ends no later than the period,
-// because a failing read may produce no watch event to wake it. After it,
-// capture is stopped through the persisted drain and the Listener stays not
-// ready until both gates answer. Nothing new is provisioned either way.
+// it the Listener is retried after a delay, because a failing read may produce
+// no watch event to wake it. The handler never asks for more than the time
+// left in the period, but the controller's jitter stretches each delay by up
+// to JitterFactor, so the stop can come up to JitterFactor x the 30s step
+// (about 21s with the defaults) after the period ends. After it, capture is
+// stopped through the persisted drain and the Listener stays not ready until
+// both gates answer. Nothing new is provisioned either way.
 func (h *ListenerHandler) awaitApprovalAnswer(
 	ctx context.Context,
 	listener *spectrev1.Listener,
@@ -809,9 +822,15 @@ func (h *ListenerHandler) awaitApprovalAnswer(
 	gates := gateNames(dual, func(g *gateResult) bool {
 		return g.outcome == outcomeError || g.outcome == outcomeUnknown
 	})
-	message := fmt.Sprintf("No approval answer for the %s gate since %s; capture is stopped after %s without an answer",
-		gates, sinceText, authorizationUnknownGracePeriod)
-	listener.SetCondition(condition.NewNotReadyCondition("AuthorizationUnavailable", message))
+	reason := fmt.Sprintf("approval answer unavailable (%s gate)", gates)
+	stopping, stopErr := h.drainCapture(ctx, listener, reason)
+	// Only an inventory that found nothing may say no capture runs.
+	outcome := "no capture runs and none is provisioned until both gates answer"
+	if stopping || stopErr != nil {
+		outcome = fmt.Sprintf("capture is stopped after %s without an answer", authorizationUnknownGracePeriod)
+	}
+	message := fmt.Sprintf("No approval answer for the %s gate since %s; %s", gates, sinceText, outcome)
+	listener.SetCondition(condition.NewNotReadyCondition(reasonAuthorizationUnavailable, message))
 	listener.SetCondition(condition.NewBlockedCondition(message))
-	return h.stopCaptureAfter(ctx, listener, fmt.Sprintf("approval answer unavailable (%s gate)", gates), evalErr)
+	return joinStopError(reason, stopErr, evalErr)
 }
