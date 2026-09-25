@@ -224,7 +224,7 @@ func (h *ListenerHandler) continueDrain(
 	case DrainPhaseStopping:
 		// Delete every old RouteListener, then verify all are gone before any
 		// Subscriber is touched.
-		allGone, err := deleteRecorded(ctx, drainRouteListenerRefs(listener),
+		allGone, err := h.deleteRecorded(ctx, drainRouteListenerRefs(listener),
 			func() client.Object { return &gatewayv1.RouteListener{} })
 		if err != nil {
 			return false, errors.Wrap(err, "failed to delete old RouteListeners")
@@ -240,7 +240,7 @@ func (h *ListenerHandler) continueDrain(
 
 	case DrainPhaseDrainingSubscribers:
 		// Delete each old Subscriber, then verify all are gone.
-		allGone, err := deleteRecorded(ctx, drain.OldSubscribers,
+		allGone, err := h.deleteRecorded(ctx, drain.OldSubscribers,
 			func() client.Object { return &pubsubv1.Subscriber{} })
 		if err != nil {
 			return false, errors.Wrap(err, "failed to delete old Subscribers")
@@ -341,10 +341,11 @@ func drainRouteListenerRefs(listener *spectrev1.Listener) []ctypes.ObjectRef {
 }
 
 // deleteRecorded requests deletion of each recorded instance that still exists
-// and reports whether all of them are gone. NotFound or a different live UID
-// counts as gone: the same-name replacement is never deleted. Every ref is
-// attempted; read and delete errors are joined and returned.
-func deleteRecorded(ctx context.Context, refs []ctypes.ObjectRef, newObj func() client.Object) (bool, error) {
+// and reports whether all of them are gone. Each check reads live (getLive):
+// NotFound or a different live UID counts as gone, and the same-name
+// replacement is never deleted. Every ref is attempted; read and delete errors
+// are joined and returned.
+func (h *ListenerHandler) deleteRecorded(ctx context.Context, refs []ctypes.ObjectRef, newObj func() client.Object) (bool, error) {
 	c := cclient.ClientFromContextOrDie(ctx)
 	logger := log.FromContext(ctx)
 
@@ -353,7 +354,7 @@ func deleteRecorded(ctx context.Context, refs []ctypes.ObjectRef, newObj func() 
 	for _, ref := range refs {
 		// A fresh object per Get: decoding into a reused one can keep stale fields.
 		obj := newObj()
-		if err := c.Get(ctx, ref.K8s(), obj); err != nil {
+		if err := h.getLive(ctx, ref.K8s(), obj); err != nil {
 			if !apierrors.IsNotFound(err) {
 				allGone = false
 				errs = stderrors.Join(errs, errors.Wrapf(err, "failed to check %s", ref.String()))
