@@ -234,6 +234,7 @@ archives:
     files:
       - LICENSE*
       - README*
+      - CHANGELOG.md
 
 changelog:
   sort: asc

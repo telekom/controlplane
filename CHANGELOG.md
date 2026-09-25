@@ -1,0 +1,542 @@
+## [0.28.2](https://github.com/telekom/controlplane/compare/v0.28.1...v0.28.2) (2026-09-23)
+
+
+### Bug Fixes
+
+* **rover-server:** correct gvr for agentic-exposures and agentic-subscriptions ([#681](https://github.com/telekom/controlplane/issues/681)) ([d03890e](https://github.com/telekom/controlplane/commit/d03890ec774edbd71a6a8ef5c2b3bebb5e438c1f))
+
+## [0.28.1](https://github.com/telekom/controlplane/compare/v0.28.0...v0.28.1) (2026-09-23)
+
+
+### Bug Fixes
+
+* align email formats used and validation ([#670](https://github.com/telekom/controlplane/issues/670)) ([2ee5be7](https://github.com/telekom/controlplane/commit/2ee5be76d262eada9df26c939d88b8d2deda9731))
+* **rover-server:** normalize application-names for rovers ([#679](https://github.com/telekom/controlplane/issues/679)) ([7fef4c3](https://github.com/telekom/controlplane/commit/7fef4c3bcd6ead13c18d5de5475a55e60ac458eb))
+* **rover:** normalize descriminator types; add default-values ([#677](https://github.com/telekom/controlplane/issues/677)) ([a9a05f7](https://github.com/telekom/controlplane/commit/a9a05f70748c2c04acff149a98f64338186392df))
+
+# [0.28.0](https://github.com/telekom/controlplane/compare/v0.27.1...v0.28.0) (2026-09-23)
+
+
+### Bug Fixes
+
+* **approvals:** correct projected approval metadata ([8c63d50](https://github.com/telekom/controlplane/commit/8c63d501a2306fa04a28260b4504e50517342af0))
+
+
+### Features
+
+* **agentic:** add gatewayURL ([#667](https://github.com/telekom/controlplane/issues/667)) ([02e646f](https://github.com/telekom/controlplane/commit/02e646f8e995b519ff7cefb97e28db2390e1d145))
+
+## [0.27.1](https://github.com/telekom/controlplane/compare/v0.27.0...v0.27.1) (2026-09-22)
+
+
+### Bug Fixes
+
+* **rover-ctl,rover-server:** correctly detect agent specifications; align enum validation ([#675](https://github.com/telekom/controlplane/issues/675)) ([43adbce](https://github.com/telekom/controlplane/commit/43adbce8a6e0564019f0d79f32f7d5a1d7ac050f))
+
+# [0.27.0](https://github.com/telekom/controlplane/compare/v0.26.0...v0.27.0) (2026-09-22)
+
+
+### Bug Fixes
+
+* **rover-ctl:** ignore bom when parsing files ([#669](https://github.com/telekom/controlplane/issues/669)) ([f8c4a73](https://github.com/telekom/controlplane/commit/f8c4a73288c551ea05143deb7ca4cba1cddb82ec))
+
+
+### Features
+
+* **approva:** copy labels from request into approval ([#673](https://github.com/telekom/controlplane/issues/673)) ([6055035](https://github.com/telekom/controlplane/commit/60550351aaa1536aff71ed050b4b4ea37a41d240))
+
+# [0.26.0](https://github.com/telekom/controlplane/compare/v0.25.0...v0.26.0) (2026-09-21)
+
+
+### Bug Fixes
+
+* **git-workflow:** push roverctl-image to Artifactory only on Release ([#659](https://github.com/telekom/controlplane/issues/659)) ([fed1d83](https://github.com/telekom/controlplane/commit/fed1d83be704e8d7e1c8b483b6f212728de55910))
+* **projector:** add back-link for agentCard, api, eventTypeDef, mcpServer AND remove stale FKs in Exposure -> API/EventType ([#660](https://github.com/telekom/controlplane/issues/660)) ([dd076b0](https://github.com/telekom/controlplane/commit/dd076b06029dbb5885f276a0ea005b16b744a85a))
+
+
+### Features
+
+* **approval:** allow inject custom labels into request ([#664](https://github.com/telekom/controlplane/issues/664)) ([bdb2f00](https://github.com/telekom/controlplane/commit/bdb2f008d39558a37baa661e7d8414561aec4d8f))
+* bug-fixes and minor improvements from integration-tests ([#663](https://github.com/telekom/controlplane/issues/663)) ([8e7c7d7](https://github.com/telekom/controlplane/commit/8e7c7d7be51e7bfaf6fdb627136074a2438ee33a))
+* **pubsub,event:** allow overwrite environment-name ([#656](https://github.com/telekom/controlplane/issues/656)) ([7d81dbb](https://github.com/telekom/controlplane/commit/7d81dbba5cef462e48da2f0b67bdd8621eec1810))
+
+# [0.25.0](https://github.com/telekom/controlplane/compare/v0.24.1...v0.25.0) (2026-09-16)
+
+
+### Bug Fixes
+
+* **agentic:** correct seccomp-profile ([#657](https://github.com/telekom/controlplane/issues/657)) ([a58c04d](https://github.com/telekom/controlplane/commit/a58c04d818458ec912908b50c84a12696900e83e))
+* **common-server:** add listener bind to prevent blocking on multiport setup ([#648](https://github.com/telekom/controlplane/issues/648)) ([b8507ca](https://github.com/telekom/controlplane/commit/b8507cac6b0aae8c7d212ea8a89ec212f69f4757))
+
+
+### Features
+
+* **agentic-cpapi:** agnetic CRs are projected and prepared for qgl ([#625](https://github.com/telekom/controlplane/issues/625)) ([c0fda07](https://github.com/telekom/controlplane/commit/c0fda07eefbbfa3a15ba89cf667ca7752a59ff58))
+* **controlplane-api:** expose GraphQL playground publicly ([#654](https://github.com/telekom/controlplane/issues/654)) ([76c2e1c](https://github.com/telekom/controlplane/commit/76c2e1c302d0e2d20003686a69dcc06be8dc2285))
+
+## [0.24.1](https://github.com/telekom/controlplane/compare/v0.24.0...v0.24.1) (2026-09-04)
+
+
+### Bug Fixes
+
+* pin jq to upstream binary release instead of Alpine package ([#652](https://github.com/telekom/controlplane/issues/652)) ([785e098](https://github.com/telekom/controlplane/commit/785e09857ae1f11dd0aa6905659a12a7892e44ac))
+* **pubsub:** only downfile json-schema if configured ([#647](https://github.com/telekom/controlplane/issues/647)) ([b86b038](https://github.com/telekom/controlplane/commit/b86b03806769d19bf01d55ce26a93431b5c7c19b))
+
+# [0.24.0](https://github.com/telekom/controlplane/compare/v0.23.0...v0.24.0) (2026-08-27)
+
+
+### Bug Fixes
+
+* **common:** preserve original error when status update fails ([#545](https://github.com/telekom/controlplane/issues/545)) ([02d5164](https://github.com/telekom/controlplane/commit/02d51643d85e3b13c7e4a6e41371b3ff0275fbf4))
+* **rover:** avoid panic if rover namespace is invalid ([#570](https://github.com/telekom/controlplane/issues/570)) ([c2afce1](https://github.com/telekom/controlplane/commit/c2afce1a1023fe4496cfe1456def61d2d661a09f))
+
+
+### Features
+
+* **agentic:** add agent 2 agent support  ([#535](https://github.com/telekom/controlplane/issues/535)) ([2191d79](https://github.com/telekom/controlplane/commit/2191d791500a5388d3ad378bd31d3b2c84abd49e))
+* **cpapi:** add Failover type and resolver for Traffic exposure ([#559](https://github.com/telekom/controlplane/issues/559)) ([8cfa0e8](https://github.com/telekom/controlplane/commit/8cfa0e89de6760142801338b89b9e752fb9190bd))
+* **cpapi:** add permissionsURL and store in db ([#564](https://github.com/telekom/controlplane/issues/564)) ([397e21c](https://github.com/telekom/controlplane/commit/397e21cbaeeff587e55c25bb6114515c038f5680))
+* **cpapi:** add rate limiting to ApiSubscriptions ([#610](https://github.com/telekom/controlplane/issues/610)) ([b69b2e6](https://github.com/telekom/controlplane/commit/b69b2e6d30026e30c3ac6e69f6d31ad16cf52f87))
+
+# [0.23.0](https://github.com/telekom/controlplane/compare/v0.22.1...v0.23.0) (2026-08-17)
+
+
+### Bug Fixes
+
+* **admin:** npe when redis is not configured ([#566](https://github.com/telekom/controlplane/issues/566)) ([c3a7f5f](https://github.com/telekom/controlplane/commit/c3a7f5ffc9e4044401285679ccb78ea4c06c2c23))
+* **api:** should reduce flakyness of tests ([9a4a059](https://github.com/telekom/controlplane/commit/9a4a05927f0b10519d46f03f83c101e01b69cebf))
+* **org:** should reduce flakyness of tests ([#542](https://github.com/telekom/controlplane/issues/542)) ([6c8a8ed](https://github.com/telekom/controlplane/commit/6c8a8ed1825f4e823783191e1a8922df46ae02ce))
+* **rover:** ignored webhook-validation for deletion ([#565](https://github.com/telekom/controlplane/issues/565)) ([8200c55](https://github.com/telekom/controlplane/commit/8200c5586767e6a9b7447b26c7f091c60143eed7))
+
+
+### Features
+
+* **install:** improved config-management; added rustfs ([32896b8](https://github.com/telekom/controlplane/commit/32896b8ffd2bfc93c57cd9a374164bb0a1775fb9))
+
+## [0.22.1](https://github.com/telekom/controlplane/compare/v0.22.0...v0.22.1) (2026-08-10)
+
+
+### Bug Fixes
+
+* **releasing:** add missing entries for some operators for releases ([#558](https://github.com/telekom/controlplane/issues/558)) ([31e6323](https://github.com/telekom/controlplane/commit/31e6323c2fa42109031ba38b4104761d1c988934))
+
+# [0.22.0](https://github.com/telekom/controlplane/compare/v0.21.0...v0.22.0) (2026-08-10)
+
+
+### Bug Fixes
+
+* **api:** apiexposure must watch application to avoid not-ready-block ([#534](https://github.com/telekom/controlplane/issues/534)) ([82f9d0a](https://github.com/telekom/controlplane/commit/82f9d0a160f84c3fa27b476dcb78e5202b559b42))
+* **api:** clean up stale ApiExposure routes on zone change ([#512](https://github.com/telekom/controlplane/issues/512)) ([4f11b38](https://github.com/telekom/controlplane/commit/4f11b38b589e22a14f948200dfe7a5ffd9a616fb))
+* **common:** always requeue reconcilation after FirstSetup ([#544](https://github.com/telekom/controlplane/issues/544)) ([1b76780](https://github.com/telekom/controlplane/commit/1b767808b8320bfa7b60c65fc8ce93990624824a))
+* **controller:** use rate-limited retries for reconciliation errors ([#532](https://github.com/telekom/controlplane/issues/532)) ([6125b10](https://github.com/telekom/controlplane/commit/6125b1028798a7aae2d66f4a5e640280982d7bae))
+* **file-manager:** remove obsolete address arg ([#518](https://github.com/telekom/controlplane/issues/518)) ([94ea1e6](https://github.com/telekom/controlplane/commit/94ea1e652231a087ef428bf970435d9621b887d9))
+* **perf:** bump resources to reasonable values ([#511](https://github.com/telekom/controlplane/issues/511)) ([8e8024d](https://github.com/telekom/controlplane/commit/8e8024d0d64f8f980b11d330d45f10a6ef2cc010))
+* **rover-ctl:** ignore placeholders in yaml comments ([#520](https://github.com/telekom/controlplane/issues/520)) ([fb751af](https://github.com/telekom/controlplane/commit/fb751af290ca0025352031a41e1b84b3cbc5d572))
+* **servers:** register logger with controller-runtime in rover/discovery servers ([#515](https://github.com/telekom/controlplane/issues/515)) ([800fb89](https://github.com/telekom/controlplane/commit/800fb892ad7bed1429f82f41d23cf8ddd2b136d1))
+* we must not rely on readiness for uniqueness check in the singleton logic ([#471](https://github.com/telekom/controlplane/issues/471)) ([0ca4c70](https://github.com/telekom/controlplane/commit/0ca4c7074d211e3a6de853eef7960480c76a10e6))
+
+
+### Features
+
+* add organization-server ([#485](https://github.com/telekom/controlplane/issues/485)) ([3ff1bb3](https://github.com/telekom/controlplane/commit/3ff1bb3cdefa9bb64e66239e2366356d17c276b3))
+* **rover-server:** improve rover defaults ([#530](https://github.com/telekom/controlplane/issues/530)) ([c6cdbe9](https://github.com/telekom/controlplane/commit/c6cdbe9493d5d9db714c3b3ce668660296429dba))
+* **roverctl:** Added proper bash, jq and yq support ([#509](https://github.com/telekom/controlplane/issues/509)) ([6229b85](https://github.com/telekom/controlplane/commit/6229b8564f6aaf355e8e9919d4ae8ebc192c4447))
+* **tls:** use shared internal certificate authority ([#541](https://github.com/telekom/controlplane/issues/541)) ([456796c](https://github.com/telekom/controlplane/commit/456796c7fa2d24e25904918553bcce6aba025997))
+* watcher metrics ([#513](https://github.com/telekom/controlplane/issues/513)) ([8268e8f](https://github.com/telekom/controlplane/commit/8268e8f2c801ed4e46008795659c29999e28c66a))
+
+
+### Performance Improvements
+
+* **controller:** skip noop status writes ([#538](https://github.com/telekom/controlplane/issues/538)) ([fa325e9](https://github.com/telekom/controlplane/commit/fa325e93cea1176b4f87a0e7b754f624d4b0df98))
+
+# [0.21.0](https://github.com/telekom/controlplane/compare/v0.20.0...v0.21.0) (2026-07-30)
+
+
+### Bug Fixes
+
+* **admin:** set team API route realm to team identity realm ([#504](https://github.com/telekom/controlplane/issues/504)) ([5ab13d6](https://github.com/telekom/controlplane/commit/5ab13d64c7beae83677b5bf1438bb512516ddb9e))
+* **agentic:** add missing watches for mcpsubscription CR ([#496](https://github.com/telekom/controlplane/issues/496)) ([2a62873](https://github.com/telekom/controlplane/commit/2a628731762b25d27b52f1b1e41b4d731dec88bd))
+* **agentic:** add missing workflow ([#497](https://github.com/telekom/controlplane/issues/497)) ([7779451](https://github.com/telekom/controlplane/commit/7779451e04525c930597a5be1cb245d6a1d230ec))
+* **perf:** improve responses from notification handler ([#510](https://github.com/telekom/controlplane/issues/510)) ([bebaf75](https://github.com/telekom/controlplane/commit/bebaf752372caeb62d760bec02b384914da45f2b))
+* **projector:** back-link subscriptions to fix race-condition exposure vs subscription ([#472](https://github.com/telekom/controlplane/issues/472)) ([d7285cc](https://github.com/telekom/controlplane/commit/d7285cc1d28d8a7ac6a2139ce53221fc23ad1106))
+* **projector:** stability improvements ([#494](https://github.com/telekom/controlplane/issues/494)) ([89a306c](https://github.com/telekom/controlplane/commit/89a306cacb6464be9e2b6ae219fa1975fd6824a4))
+* resource_type is set by notification-sender ([#500](https://github.com/telekom/controlplane/issues/500)) ([3172c60](https://github.com/telekom/controlplane/commit/3172c60e01dbfa958ddd493d32338cee5ce9f19a))
+* **vulnerability:** bump versions to fix vulnerabilities ([#516](https://github.com/telekom/controlplane/issues/516)) ([d87443f](https://github.com/telekom/controlplane/commit/d87443fed56c76fcdb1c314edba1806c1f6d76ae))
+
+
+### Features
+
+* **admin:** show internal issuer url in zone links ([#499](https://github.com/telekom/controlplane/issues/499)) ([01a32ac](https://github.com/telekom/controlplane/commit/01a32ac54c2fd278fa21b68da0b9c3b229cb4ef3))
+* **agentic:** Add support for AI related exposures and subscriptions (mcp + telecontext) ([#430](https://github.com/telekom/controlplane/issues/430)) ([fab1499](https://github.com/telekom/controlplane/commit/fab1499cafc8405641b00c375aceb8e408cc2c71))
+* **controlplane-api,projector:** add requested-scopes for approval and approvalrequest ([#486](https://github.com/telekom/controlplane/issues/486)) ([f610075](https://github.com/telekom/controlplane/commit/f610075cb7bf6ad770bb79e3a0f8256ffc6b4946))
+* **cpapi, projector:** Added PermissionSet ([#492](https://github.com/telekom/controlplane/issues/492)) ([ec3211e](https://github.com/telekom/controlplane/commit/ec3211e7ceb762c6f94617c8b5c3ec9030e42a0f))
+* **event:** support proxy-zones ([#469](https://github.com/telekom/controlplane/issues/469)) ([58aa0e5](https://github.com/telekom/controlplane/commit/58aa0e5e090c1fa9bbf5387b2eeead8997be846f))
+* **oauth2:** add refresh-token  ([#490](https://github.com/telekom/controlplane/issues/490)) ([25baa34](https://github.com/telekom/controlplane/commit/25baa34f922c4cd301e519d8502a312689306524))
+* **rover:** be strict when validating any url ([#493](https://github.com/telekom/controlplane/issues/493)) ([8a86494](https://github.com/telekom/controlplane/commit/8a86494266297c1d28e38de0e87cf86d9a0f74f7))
+* **rover:** increase all size limit to 150 to not restrict any heavy-users ([#498](https://github.com/telekom/controlplane/issues/498)) ([0d37281](https://github.com/telekom/controlplane/commit/0d372817977a26453e4cd1b49612dd1302a1b7e6))
+* **servers:** enhance server-security by adding listeners for internal and external traffic ([#507](https://github.com/telekom/controlplane/issues/507)) ([a4a848f](https://github.com/telekom/controlplane/commit/a4a848f2ec44dabfa10a3a63a9d205dad1a146b9))
+* support custom-claims that are added to the lms-token; self-service aud-claims ([#491](https://github.com/telekom/controlplane/issues/491)) ([6440ef0](https://github.com/telekom/controlplane/commit/6440ef0c884905327617c35eaf71ded49e88c41b))
+
+# [0.20.0](https://github.com/telekom/controlplane/compare/v0.19.0...v0.20.0) (2026-07-14)
+
+
+### Bug Fixes
+
+* **admin:** enhance populateRealmName tests for default behavior ([#467](https://github.com/telekom/controlplane/issues/467)) ([edd48fa](https://github.com/telekom/controlplane/commit/edd48fa7fc4235e21383d4a1eb1a4779358a9e7a))
+* **common-server:**  "scopes"  →  "scope"  JWT claim rename ([#488](https://github.com/telekom/controlplane/issues/488)) ([37fb583](https://github.com/telekom/controlplane/commit/37fb5831d227bb5cf78795f69cc0344053a8af70))
+* **file-manager:** allow tls-insecure for buckets ([#436](https://github.com/telekom/controlplane/issues/436)) ([67f5169](https://github.com/telekom/controlplane/commit/67f51693d2323d52a6033152fbb694715b89ac3b))
+* improve failover handling; add mesh-flag to routing-config ([#466](https://github.com/telekom/controlplane/issues/466)) ([bd1134a](https://github.com/telekom/controlplane/commit/bd1134a094ff6a501eb8957f0ecd734f60fdcb98))
+* **organization:** use secure generate-secret function for team-user ([#456](https://github.com/telekom/controlplane/issues/456)) ([64de706](https://github.com/telekom/controlplane/commit/64de7063c533c7271d8865e8f79fde0135f887be))
+* **secret-manager:** harden k8s onboarder ([#438](https://github.com/telekom/controlplane/issues/438)) ([ddee2fc](https://github.com/telekom/controlplane/commit/ddee2fcbb89921021b783268742378d332b2f92f))
+
+
+### Features
+
+* align condition handling and improve rover-server status determination ([#414](https://github.com/telekom/controlplane/issues/414)) ([6242df2](https://github.com/telekom/controlplane/commit/6242df2210bcc20850a095a673d14672f787e905))
+* **cpapi:** add deployment derived Gateway URLs ([#429](https://github.com/telekom/controlplane/issues/429)) ([7e79289](https://github.com/telekom/controlplane/commit/7e79289d987e830da633de38ea312444c8031103))
+* **cpapi:** project and query Approval.Spec.ExpiresAt and Team.Spec.DisplayName + Description ([#443](https://github.com/telekom/controlplane/issues/443)) ([5cddae0](https://github.com/telekom/controlplane/commit/5cddae08d5bbb3a533bf5c9359f46b25de8a96bb))
+* **cpapi:** project and query EventExposure + EventSubscription ([#444](https://github.com/telekom/controlplane/issues/444)) ([218801d](https://github.com/telekom/controlplane/commit/218801d357e43b59fc2f81e76b19e62531e1f802))
+* **cpapi:** project and query missing Application, ApiExposure & ApiSubscription fields ([#431](https://github.com/telekom/controlplane/issues/431)) ([648cc2f](https://github.com/telekom/controlplane/commit/648cc2fed11f94f7179c3ac8458807b62a61628d))
+* **cpapi:** security hardening, disable mock auth, add JWT ([#454](https://github.com/telekom/controlplane/issues/454)) ([996ebaf](https://github.com/telekom/controlplane/commit/996ebaf006e7389cd6d49aec50e78b00fb143334))
+* enforce team api category ([#432](https://github.com/telekom/controlplane/issues/432)) ([923d113](https://github.com/telekom/controlplane/commit/923d1130c0af7fcd05642b8a1f93cb0484af725c))
+* **event:** add category to all event resources ([#468](https://github.com/telekom/controlplane/issues/468)) ([77c5abd](https://github.com/telekom/controlplane/commit/77c5abd7ca3599181195c2a890318b4c10bb81b0))
+* harden deployment config especially securityContext ([#457](https://github.com/telekom/controlplane/issues/457)) ([022acf8](https://github.com/telekom/controlplane/commit/022acf8f5eb71c3caeb69fa04779fb750b132fca))
+* **local-setup:** deploy step of the script can be custom ([#455](https://github.com/telekom/controlplane/issues/455)) ([6b3dd19](https://github.com/telekom/controlplane/commit/6b3dd19cd104685a40138f0f3f7cad0515c036fc))
+* **projector-expired-filter:** internal state Expired is filtered by ([#434](https://github.com/telekom/controlplane/issues/434)) ([132a0fa](https://github.com/telekom/controlplane/commit/132a0faa39e85093d2ac772072f6c9ee922de9d5))
+* restructure gateway integration and admin-bootstrapping; improved failover features ([#435](https://github.com/telekom/controlplane/issues/435)) ([4692c0a](https://github.com/telekom/controlplane/commit/4692c0a3ce94c35b807b04d474071dec4854713f))
+* **rover:** Added Team watch to Rover ([#428](https://github.com/telekom/controlplane/issues/428)) ([0220563](https://github.com/telekom/controlplane/commit/02205633cc20c9d24d07751d7a581ce522e0b457))
+* **security:** require tokenRequest and grantType for external IDP ([#439](https://github.com/telekom/controlplane/issues/439)) ([7e25c80](https://github.com/telekom/controlplane/commit/7e25c80d2bbdec95beb26ca17809590e9f6f7998))
+* **team-user-ns-migration:** team user is now in the same namespace as ([#433](https://github.com/telekom/controlplane/issues/433)) ([e56bb76](https://github.com/telekom/controlplane/commit/e56bb7692b9ffa7964422040dfa69c003a2293e1))
+
+# [0.19.0](https://github.com/telekom/controlplane/compare/v0.18.0...v0.19.0) (2026-06-18)
+
+
+### Bug Fixes
+
+* **admin:** Fix golangci-lint issues ([#359](https://github.com/telekom/controlplane/issues/359)) ([861d0b6](https://github.com/telekom/controlplane/commit/861d0b65329dab15070a57ec3f50b120a5ed0378))
+* **api:** resolve all golangci-lint issues ([#425](https://github.com/telekom/controlplane/issues/425)) ([c6a8d97](https://github.com/telekom/controlplane/commit/c6a8d97c33276d8f528ae353c30ebb698f21be32))
+* **application,identity:** handle secret rotation for non-graceful identity clients ([#394](https://github.com/telekom/controlplane/issues/394)) ([c29bdaf](https://github.com/telekom/controlplane/commit/c29bdaf57f01ec020e381f1bfd93559cc183c6de))
+* **application:** Fix golangci-lint issues ([#368](https://github.com/telekom/controlplane/issues/368)) ([d212a2e](https://github.com/telekom/controlplane/commit/d212a2e9170e9767f174887ca7f3589e42ffebc0))
+* **approval:** approvals that are auto approved can be transitioned via the FSM ([#389](https://github.com/telekom/controlplane/issues/389)) ([bcd3df1](https://github.com/telekom/controlplane/commit/bcd3df18a5d72dbc986432f3e5d004848328446d))
+* **approval:** Fix golangci-lint issues ([#363](https://github.com/telekom/controlplane/issues/363)) ([c8a0689](https://github.com/telekom/controlplane/commit/c8a06895ba7efb771e3486d9f6448c55e2a3d7d8))
+* **approval:** preserve state and decisions when updating ApprovalRequest spec fields ([#317](https://github.com/telekom/controlplane/issues/317)) ([f054d5b](https://github.com/telekom/controlplane/commit/f054d5b8fb5040eeb0d0436d13cf55b14cd5ea7c))
+* **common:** Fix golangci-lint issues ([#379](https://github.com/telekom/controlplane/issues/379)) ([248f652](https://github.com/telekom/controlplane/commit/248f6523b20662aee441844b68f49063efb2983a))
+* **discover-server:** Fix golangci-lint issues ([#380](https://github.com/telekom/controlplane/issues/380)) ([d1d5a00](https://github.com/telekom/controlplane/commit/d1d5a00046f068f8b664dc0c48d8c48f0707b03b))
+* **event:** Fix golangci-lint issues  ([#370](https://github.com/telekom/controlplane/issues/370)) ([ad3b686](https://github.com/telekom/controlplane/commit/ad3b6864605a4867988ae8bac5652ec0ffa94235))
+* **file-manager:** Fix golangci-lint issues ([#378](https://github.com/telekom/controlplane/issues/378)) ([e65f9e2](https://github.com/telekom/controlplane/commit/e65f9e23734d0360109e6ca3778a754df1025052))
+* **identity:** cleanup stale config in keycloak when secret-rotation was switched-off ([#418](https://github.com/telekom/controlplane/issues/418)) ([f43870a](https://github.com/telekom/controlplane/commit/f43870a4bd509c141aba4ed94c7ad5349fbec31c))
+* **identity:** resolve all golangci-lint issues ([#416](https://github.com/telekom/controlplane/issues/416)) ([b3e795c](https://github.com/telekom/controlplane/commit/b3e795c308f7cd9e539c92ca8605d6102fcb37ba))
+* **notification:** Fix golangci-lint issues ([#377](https://github.com/telekom/controlplane/issues/377)) ([d08985d](https://github.com/telekom/controlplane/commit/d08985d0b82ca8de6b8e98a97fb5f216a003b74d))
+* **notifications:** relax chat template validations, but change validation errors to BlockedError ([8cbd491](https://github.com/telekom/controlplane/commit/8cbd491e38ae1fb6ec1ea3a5d830f4d1a92aaf2e))
+* **organization:** Fix golangci-lint issues ([#369](https://github.com/telekom/controlplane/issues/369)) ([934094d](https://github.com/telekom/controlplane/commit/934094d88cf4db7a28c3c2212a714e0b1932017d))
+* **permission:** Fix golangci-lint issues ([#375](https://github.com/telekom/controlplane/issues/375)) ([d76984b](https://github.com/telekom/controlplane/commit/d76984bbd411d3b7f91f1e71e62e69ef71a12d6d))
+* **pubsub:** Fix golangci-lint issues ([#376](https://github.com/telekom/controlplane/issues/376)) ([7b5cb83](https://github.com/telekom/controlplane/commit/7b5cb83d5ccef3c28d464f238113405941535ade))
+* **review-skill:** Move pre-fetch context to instructions to avoid permission issue ([#362](https://github.com/telekom/controlplane/issues/362)) ([d507049](https://github.com/telekom/controlplane/commit/d5070493db2f60513e784385b0b85a2dbf97d704))
+* **roadmap:** fix basepath label normalization. rover-server tests are are again allowed to fail ([#373](https://github.com/telekom/controlplane/issues/373)) ([f8f31ab](https://github.com/telekom/controlplane/commit/f8f31abb021f1712e4c3da4f108240817ee2a3ea))
+* **rover-server:** add fuzzy matcher for responseFilterMode ([#322](https://github.com/telekom/controlplane/issues/322)) ([62459bd](https://github.com/telekom/controlplane/commit/62459bd094efbc2ad063079a1ba7efb182dcd285))
+* **rover-server:** ran generator ([#399](https://github.com/telekom/controlplane/issues/399)) ([86a66d7](https://github.com/telekom/controlplane/commit/86a66d71d408766537f59ffaa7ceee2af7d7544a))
+* **secret-manager:** invalidate cached children on parent update ([#419](https://github.com/telekom/controlplane/issues/419)) ([8b8f539](https://github.com/telekom/controlplane/commit/8b8f539a67894e6c9e83c5eaa402ce4f267b115c))
+* **secret-manager:** kubernetes-backend environment onboarding ([#288](https://github.com/telekom/controlplane/issues/288)) ([e14d0d1](https://github.com/telekom/controlplane/commit/e14d0d11dbd9bde9a8e062f0eb0a4211de493d27))
+* **security:** bump golang.org/x/net to v0.55.0 (GO-2026-5026) ([#411](https://github.com/telekom/controlplane/issues/411)) ([0a5a07a](https://github.com/telekom/controlplane/commit/0a5a07a0ee04e8bac21074b98e2743a51d31f229))
+* use Ginkgo native JUnit reports for accurate test counts in CI ([#366](https://github.com/telekom/controlplane/issues/366)) ([425ad89](https://github.com/telekom/controlplane/commit/425ad8941c2881eee3af54cbb8fe1a6e4b409beb))
+
+
+### Features
+
+* add review-pr skill for github copilot ([#402](https://github.com/telekom/controlplane/issues/402)) ([479ba65](https://github.com/telekom/controlplane/commit/479ba6519e88043802144eb471602e7be3694983))
+* added documentation; restructure installation components; added install scripts ([#306](https://github.com/telekom/controlplane/issues/306)) ([27478bb](https://github.com/telekom/controlplane/commit/27478bb50d98ec2897c51153eab343bf2f645b4c))
+* added new projector domain; updated controlplane-api ([#321](https://github.com/telekom/controlplane/issues/321)) ([992a5e3](https://github.com/telekom/controlplane/commit/992a5e3db1df82ff0197fb40ba57586114fc5745))
+* **admin,organization:** add realm claims, rover realm, and refactor TeamApis to ManagedRoutes ([#400](https://github.com/telekom/controlplane/issues/400)) ([15acb87](https://github.com/telekom/controlplane/commit/15acb878a33f4c90dce077fc19a563b755b4f2b8))
+* **api,admin,gateway:** add dynamic cross-zone proxy target ACL management ([#287](https://github.com/telekom/controlplane/issues/287)) ([acd577f](https://github.com/telekom/controlplane/commit/acd577f0e534d5c063f6b01a97de2f0981bb3395))
+* **approval:** implement FourEyes approval strategy with Semigranted state ([#299](https://github.com/telekom/controlplane/issues/299)) ([c731ac1](https://github.com/telekom/controlplane/commit/c731ac1f1b977015ceb8a1a55218d848c2082e80))
+* **changelog:** add the Changelog feature to track changes for API ([68d80de](https://github.com/telekom/controlplane/commit/68d80de95d25075531d6b10df11afeee199d7c82))
+* **common-server:** define debug mode for server ([#415](https://github.com/telekom/controlplane/issues/415)) ([e77b192](https://github.com/telekom/controlplane/commit/e77b192dd6da0e44a7388a609637bad1852884c2))
+* **controlplane-api:** add kustomize deployment config and enable TLS ([#292](https://github.com/telekom/controlplane/issues/292)) ([a8ef915](https://github.com/telekom/controlplane/commit/a8ef915f60dc1dd80b553e324c950527008c105b))
+* **controlplane-api:** GraphQL model changes ([#303](https://github.com/telekom/controlplane/issues/303)) ([eb5b316](https://github.com/telekom/controlplane/commit/eb5b3166a49c19b43adef079df7138ed82114a94))
+* **controlplane-api:** implement controlplane-api with GraphQL ([#274](https://github.com/telekom/controlplane/issues/274)) ([630ba65](https://github.com/telekom/controlplane/commit/630ba6527d271c93e626d082fcbb4bc9f7c15502))
+* **cpapi, application:** Added write operations ([#344](https://github.com/telekom/controlplane/issues/344)) ([b58afbf](https://github.com/telekom/controlplane/commit/b58afbf90bd76ef97f125776a5cf2b2582a1df0a))
+* **discovery-server:** add read-only API for the Control Plane ([#304](https://github.com/telekom/controlplane/issues/304)) ([b09a21f](https://github.com/telekom/controlplane/commit/b09a21f92f1347b266e78cf4d4429c71b7c865e7))
+* **e2e-tester:** add snapshot directory config ([#327](https://github.com/telekom/controlplane/issues/327)) ([556cdf0](https://github.com/telekom/controlplane/commit/556cdf01bd51aa7adea26387ffe899492166f00e))
+* **expiry:** approvals can now expire ([0069d36](https://github.com/telekom/controlplane/commit/0069d3619ccf33fea376cad20511928dba8cb4b4))
+* **exposure-driven-proxy-routes:** proxy routes are now created from api exposures perspective ([#316](https://github.com/telekom/controlplane/issues/316)) ([d2134e4](https://github.com/telekom/controlplane/commit/d2134e4aea2dd0ad6e6607b71a36040de04a5476))
+* **go:** use proper license file for go modules ([#367](https://github.com/telekom/controlplane/issues/367)) ([aa58aca](https://github.com/telekom/controlplane/commit/aa58aca9a6af097223cf902e1009b6f01fbaf897))
+* graceful client-secret rotation ([#350](https://github.com/telekom/controlplane/issues/350)) ([8dcf9db](https://github.com/telekom/controlplane/commit/8dcf9db8c8a934273d28f11c27fbed485d8498bd))
+* **identity:** add managed client scopes with custom claim injection ([#388](https://github.com/telekom/controlplane/issues/388)) ([9e8d58c](https://github.com/telekom/controlplane/commit/9e8d58cea8ad5f9c92b703a66f850a6ff3379347))
+* **identity:** refactor keycloak integration and add graceful client-secret rotation ([#323](https://github.com/telekom/controlplane/issues/323)) ([b1717ba](https://github.com/telekom/controlplane/commit/b1717ba90357f99f7b4c130bb0f0fbbc90caedbe))
+* improve controlplane-api and projector installation and docs ([9df8374](https://github.com/telekom/controlplane/commit/9df837421c84d62518e9f8d7e615523da6291877))
+* improve projector ([#338](https://github.com/telekom/controlplane/issues/338)) ([74ba711](https://github.com/telekom/controlplane/commit/74ba711f547a89c6ee7b1ec5232fcfaf1dc680bf))
+* improve status-handling in rover-server ([#275](https://github.com/telekom/controlplane/issues/275)) ([24fcd69](https://github.com/telekom/controlplane/commit/24fcd69c82e97398364f2733fb487509b286df21))
+* **multi-url-realm:** let gateway realms have multiple urls and issuer urls ([e3dd480](https://github.com/telekom/controlplane/commit/e3dd480dacca6a73c7928f610a491ea40424145e))
+* **notification:** add attachment support for notification templates and rendering ([#364](https://github.com/telekom/controlplane/issues/364)) ([955cf98](https://github.com/telekom/controlplane/commit/955cf98e18ae41bc7b36a0031d627f58429829a2))
+* **notifications:** improve notification template handling making it more generic ([ab21ca4](https://github.com/telekom/controlplane/commit/ab21ca435acdd3114df7ccbd5cfcaef0160d9d3c))
+* **oaslint:** add oaslint ([#371](https://github.com/telekom/controlplane/issues/371)) ([a0bbf65](https://github.com/telekom/controlplane/commit/a0bbf654d82c9c1480b9b4b5625958b21ebcf9ea))
+* **organization:** improve team type fields ([#396](https://github.com/telekom/controlplane/issues/396)) ([a205897](https://github.com/telekom/controlplane/commit/a205897f373d0469fe78a8c987b83b7446d56aa5))
+* **permissions:** enable configuring ACL style permissions in rover ([250b45e](https://github.com/telekom/controlplane/commit/250b45ed0f38e0f2472bb2e9a5f660fdd691106a))
+* **roadmap:** lets customers provide Roadmaps for their APIs ([4d97cd9](https://github.com/telekom/controlplane/commit/4d97cd9800915b9558f6981a40048dd423b6771c))
+* **rover-server,rover-ctl:** correctly supported secret-rotation; added support for graceful-secret-rotation ([#381](https://github.com/telekom/controlplane/issues/381)) ([4d25321](https://github.com/telekom/controlplane/commit/4d253215d7af087430dd8293839c83746e8a6637))
+* **rover, application, admin:** Add support for externalIds ([#386](https://github.com/telekom/controlplane/issues/386)) ([304b4eb](https://github.com/telekom/controlplane/commit/304b4eb24bdd1e70acbd4802940a0a1779b76102))
+* **rover:** implement PatchAuthentication to map clientAuthMethod values ([#365](https://github.com/telekom/controlplane/issues/365)) ([304155f](https://github.com/telekom/controlplane/commit/304155f9b8379b661a0220776087432d25245761))
+* **tool:** improved e2e-tester with improved validation and json-schema support; external suite configuration; better obfuscator patterns; more convenient run-policy ([#254](https://github.com/telekom/controlplane/issues/254)) ([b3e2b99](https://github.com/telekom/controlplane/commit/b3e2b9910f898e5927ef0db523b514eeb774dcce))
+* Verification workflow and AI skills/hooks ([#348](https://github.com/telekom/controlplane/issues/348)) ([95f8fda](https://github.com/telekom/controlplane/commit/95f8fda2a2af1557b1b489709140a5a5dc061c67))
+
+# [0.18.0](https://github.com/telekom/controlplane/compare/v0.17.0...v0.18.0) (2026-03-18)
+
+
+### Bug Fixes
+
+* **common-server:** race-condition and security improvements ([#272](https://github.com/telekom/controlplane/issues/272)) ([9d08e02](https://github.com/telekom/controlplane/commit/9d08e02675481ffa35d3f5c7e2c3e091b69af9d2))
+* **gateway:** add deny-all sentinel to ACL plugin when no consumers exist ([#277](https://github.com/telekom/controlplane/issues/277)) ([0dd6017](https://github.com/telekom/controlplane/commit/0dd6017cc3af99bec25de21c270df213297d7275))
+
+
+### Features
+
+* **common-libs:** improve error handling, add feature flags, and fix logger type ([#260](https://github.com/telekom/controlplane/issues/260)) ([03165a0](https://github.com/telekom/controlplane/commit/03165a05a67416f0b540d116db6fe9dcff994e1c))
+* **common-server:** unify latency format in logs ([#267](https://github.com/telekom/controlplane/issues/267)) ([5fbb19e](https://github.com/telekom/controlplane/commit/5fbb19ed2b11e4c620cbb83634266cea7af45291))
+* **gateway:** add buffering config, dynamic upstream, access control fix, and secret-manager integration ([#259](https://github.com/telekom/controlplane/issues/259)) ([719c58f](https://github.com/telekom/controlplane/commit/719c58fd0c472dfb3a85ce0eb01ac58bbfb6e52c))
+* introduce event-driven communication to the control plane ([#265](https://github.com/telekom/controlplane/issues/265)) ([f1ed1f5](https://github.com/telekom/controlplane/commit/f1ed1f512865d4b68e4c880122a72f4ab31f7c2a))
+* **rover-ctl:** add EventSpec handler, env placeholder substitution, and HTTP client improvements ([#264](https://github.com/telekom/controlplane/issues/264)) ([f15e0f7](https://github.com/telekom/controlplane/commit/f15e0f713e96670d35e378018e10f8cc81489d2b))
+* **rover-ctl:** support for get-info-many cmd ([#246](https://github.com/telekom/controlplane/issues/246)) ([1d9f194](https://github.com/telekom/controlplane/commit/1d9f1945fec36073ae728d283703f572bcb9a8c6))
+* **secret-manager:** add write strategy support and improve caching ([#263](https://github.com/telekom/controlplane/issues/263)) ([3f311bf](https://github.com/telekom/controlplane/commit/3f311bfb6a766b7cd950840009776c2962ed411e))
+
+# [0.17.0](https://github.com/telekom/controlplane/compare/v0.16.0...v0.17.0) (2025-11-28)
+
+
+### Features
+
+* **notification:** improve notifications and minor features like housekeeping, custom funcs etc ([ad58f6c](https://github.com/telekom/controlplane/commit/ad58f6c9d27983cda5b9bc3f81262756328f22f0))
+
+# [0.16.0](https://github.com/telekom/controlplane/compare/v0.15.0...v0.16.0) (2025-11-27)
+
+
+### Bug Fixes
+
+* **install:** add missing notification in local install ([#226](https://github.com/telekom/controlplane/issues/226)) ([3f5cc2d](https://github.com/telekom/controlplane/commit/3f5cc2dbe96b0f2e8ecdc08fa7523ca5dc678f3d))
+* k8s-authz-mdw checks aud-claim correctly; updated default aud-claim; added unit-tests ([9b43a9c](https://github.com/telekom/controlplane/commit/9b43a9c88ce0c33d66d763be68416ce5042c5508))
+* **k8s-authz:** updated file-manager audience; added option to set audience ([09fa2db](https://github.com/telekom/controlplane/commit/09fa2db59e593ceedc256de6a6438801c165abd9))
+* **rover-ctl:** correctly append the expected base-path if not provided in the server-url ([#231](https://github.com/telekom/controlplane/issues/231)) ([2b30a29](https://github.com/telekom/controlplane/commit/2b30a295b61464e88c18230c1d6a3539eb3b58d2))
+* **rover:** improve error-handling for application-secret deletion ([#237](https://github.com/telekom/controlplane/issues/237)) ([a2fa10e](https://github.com/telekom/controlplane/commit/a2fa10e8b031bdb530291b642fc1fc8733578842))
+* **secret-manager:** improved api error-handling for get and set ([#228](https://github.com/telekom/controlplane/issues/228)) ([430c9d2](https://github.com/telekom/controlplane/commit/430c9d270e88aee3a0aa20daba70a606363425f3))
+
+
+### Features
+
+* **rover:** added stricter validation for naming of objects ([#236](https://github.com/telekom/controlplane/issues/236)) ([9010ad4](https://github.com/telekom/controlplane/commit/9010ad4d6d836b4f3653989a8459b53db9d765bb))
+
+# [0.15.0](https://github.com/telekom/controlplane/compare/v0.14.0...v0.15.0) (2025-11-18)
+
+
+### Bug Fixes
+
+* **ci:** correctly escape semantic-release notes ([066fb80](https://github.com/telekom/controlplane/commit/066fb8041584c05dba21c4d23b1ca1bcb6591c5f))
+* **ci:** correctly escape semantic-release notes using heredoc ([87ff030](https://github.com/telekom/controlplane/commit/87ff0302bdfe0162da2a5f6662ca5380042b5adf))
+* correctly set api-spec-name in swagger; api-spec-name must be all-lower-case ([#196](https://github.com/telekom/controlplane/issues/196)) ([32eca4c](https://github.com/telekom/controlplane/commit/32eca4cea47514ee9dd2ef71f23f580325fafb0f))
+* identity remove `SetStatusProcessing(...)`; common-server: enhance client-metric if no response from server ([#218](https://github.com/telekom/controlplane/issues/218)) ([4d72987](https://github.com/telekom/controlplane/commit/4d72987b46c2cb1feeae8907e136d14107f4a55f))
+* **install:** correctly add labels to label-selector in servicemonitor ([#189](https://github.com/telekom/controlplane/issues/189)) ([ca41088](https://github.com/telekom/controlplane/commit/ca410880edfda5ad98200dc89f8589c00ab54b6c))
+* **organization:** support setting of team-secret value ([#200](https://github.com/telekom/controlplane/issues/200)) ([8b1db7e](https://github.com/telekom/controlplane/commit/8b1db7ea463d7fa667e11ac338ee3d3d799da7a5))
+* **secret-manager:** fix race condition when using backend-cache ([#201](https://github.com/telekom/controlplane/issues/201)) ([93aaa09](https://github.com/telekom/controlplane/commit/93aaa099af1c40944fafec36c829abd088dc7a1f))
+
+
+### Features
+
+* add notification for organization and approval ([#194](https://github.com/telekom/controlplane/issues/194)) ([785def5](https://github.com/telekom/controlplane/commit/785def5aeacde8fb3e1c971111ede6febc1abcdb))
+* **errors:** implement specialized error types and handling for controllers ([#204](https://github.com/telekom/controlplane/issues/204)) ([179feae](https://github.com/telekom/controlplane/commit/179feaeb05a84cf9c0f0ba2cac76b4fd2f2339cf))
+* **file-manager:** Add DELETE operation for files ([#182](https://github.com/telekom/controlplane/issues/182)) ([de1afe6](https://github.com/telekom/controlplane/commit/de1afe6eb76622a83353923004f21c6b3099e148))
+* improved approval-builder; improved conditions; refactored validation in all api-handlers ([#223](https://github.com/telekom/controlplane/issues/223)) ([8162b88](https://github.com/telekom/controlplane/commit/8162b888a3c5fb0a70b68d4d366d3b358ed0b8d9))
+* major improvements in regards to migration; added e2e-tester tool; improved snapshotter-tool ([#205](https://github.com/telekom/controlplane/issues/205)) ([461a0a6](https://github.com/telekom/controlplane/commit/461a0a6a817d1591ef144401c6c77c2a10fa16d3))
+* **rover-server:** integrate delete API from file-manager ([#191](https://github.com/telekom/controlplane/issues/191)) ([2fd9c63](https://github.com/telekom/controlplane/commit/2fd9c634f959d49e6cc06dd686ba1333e7c7727d))
+
+# [0.14.0](https://github.com/telekom/controlplane/compare/v0.13.0...v0.14.0) (2025-10-01)
+
+
+### Bug Fixes
+
+* changes from debs ([#187](https://github.com/telekom/controlplane/issues/187)) ([618bc6d](https://github.com/telekom/controlplane/commit/618bc6d76192347ff25882ffee0d64a1f40bb0ff))
+* **ci:** build image in PRs ([#179](https://github.com/telekom/controlplane/issues/179)) ([2491c0f](https://github.com/telekom/controlplane/commit/2491c0fa158b6f24e105bff46da876f0c082864c))
+* improve memory-usage for inmemory-store ([#180](https://github.com/telekom/controlplane/issues/180)) ([919c549](https://github.com/telekom/controlplane/commit/919c549aa8cb2657c062428959628ede3c6ec1be))
+* resolve reconciler loops in organization + identity ([#178](https://github.com/telekom/controlplane/issues/178)) ([0504b8e](https://github.com/telekom/controlplane/commit/0504b8e36cfde0b42fa71a07084e4b9bec1267a1))
+
+
+### Features
+
+* **circuit-breaker:** add the circuit breaker feature ([826bcaf](https://github.com/telekom/controlplane/commit/826bcafa040440fbcfc364d86958856d13e57d7f))
+* moved entire controlplane into single namespace ([#183](https://github.com/telekom/controlplane/issues/183)) ([d646615](https://github.com/telekom/controlplane/commit/d64661582163901640dc62871f2f6311fae21d3c))
+
+# [0.13.0](https://github.com/telekom/controlplane/compare/v0.12.1...v0.13.0) (2025-09-24)
+
+
+### Bug Fixes
+
+* **admin:** added missing link to team-api-issuer to zone-status ([#163](https://github.com/telekom/controlplane/issues/163)) ([33f61ac](https://github.com/telekom/controlplane/commit/33f61acc2f29511d67d599eea4735c9604523b93))
+* **route-tester:** Fix accesstoken import because it was moved from secret-manager to common-server ([#161](https://github.com/telekom/controlplane/issues/161)) ([ea4c310](https://github.com/telekom/controlplane/commit/ea4c310b8bbb27ee29bec99a9f7b94b801044377))
+
+
+### Features
+
+* added api-category crd to enforce conventions for different api types ([#167](https://github.com/telekom/controlplane/issues/167)) ([a5e68d6](https://github.com/telekom/controlplane/commit/a5e68d62591235ef4d1a5ae57277155041e80321))
+* **organization:** add prefix to token, add token_url + server_url to token ([#168](https://github.com/telekom/controlplane/issues/168)) ([60cf199](https://github.com/telekom/controlplane/commit/60cf199818b921321ebe0b3ffdc8fbc75ddd477c))
+* **rover-ctl:** improved debug-info about user to printed banner ([#169](https://github.com/telekom/controlplane/issues/169)) ([20e0d02](https://github.com/telekom/controlplane/commit/20e0d02d9eb1f37aab891b2f15dd8f9070e39aa2))
+* **secret-manager:** added support for setting onboarding secret-values for team and environment ([#164](https://github.com/telekom/controlplane/issues/164)) ([7e14901](https://github.com/telekom/controlplane/commit/7e14901dc189479a97668d67a7516e8ed75d2f0d))
+
+## [0.12.1](https://github.com/telekom/controlplane/compare/v0.12.0...v0.12.1) (2025-09-08)
+
+
+### Bug Fixes
+
+* **rover-ctl:** correctly map security object for oauth2 and basicauth ([#158](https://github.com/telekom/controlplane/issues/158)) ([68b4dee](https://github.com/telekom/controlplane/commit/68b4dee5e62aba889bd5f80013b0e4bea060a725))
+
+# [0.12.0](https://github.com/telekom/controlplane/compare/v0.11.0...v0.12.0) (2025-09-05)
+
+
+### Features
+
+* add new component rover-ctl ([#119](https://github.com/telekom/controlplane/issues/119)) ([5dd6c1f](https://github.com/telekom/controlplane/commit/5dd6c1fa6c8cb3c93d42ceace21c46554526a89d))
+* **file-manager:** switched to sha256 checksum alg; added example for minio standalone server; updated credentials for buckets-backend; ([#140](https://github.com/telekom/controlplane/issues/140)) ([f9f7e97](https://github.com/telekom/controlplane/commit/f9f7e973946e6c65323286ab7f611607db0be8f3))
+* **rover:** File Client Integration ([#143](https://github.com/telekom/controlplane/issues/143)) ([74e42d9](https://github.com/telekom/controlplane/commit/74e42d94023e979780801057040ab73fd69b8397))
+
+# [0.11.0](https://github.com/telekom/controlplane/compare/v0.10.0...v0.11.0) (2025-08-25)
+
+
+### Features
+
+* **client-metrics:** added metrics to gateway kong-client; updated common-client for options-pattern; updated secret-manager client metrics ([#137](https://github.com/telekom/controlplane/issues/137)) ([2a3250f](https://github.com/telekom/controlplane/commit/2a3250f5feab709788c87ed3446aa65c9c0d2c80))
+
+# [0.10.0](https://github.com/telekom/controlplane/compare/v0.9.0...v0.10.0) (2025-08-20)
+
+
+### Features
+
+* add rate-limiting ([#114](https://github.com/telekom/controlplane/issues/114)) ([d3eec5b](https://github.com/telekom/controlplane/commit/d3eec5bcc580ccef2514c0d00a74580e35c85134))
+
+# [0.9.0](https://github.com/telekom/controlplane/compare/v0.8.0...v0.9.0) (2025-08-19)
+
+
+### Bug Fixes
+
+* **admin:** correct creation of team-routes ([#118](https://github.com/telekom/controlplane/issues/118)) ([1807f4b](https://github.com/telekom/controlplane/commit/1807f4b6199df8af335205bbb745d7e0281b53b7))
+* **file-manager-api:** correct token-path for client-jwt ([86cf202](https://github.com/telekom/controlplane/commit/86cf2029d26ac9342c6c9b879e83440008eee9e2))
+* **gateway:** fixed bug where acl was not created; only consumers that are not being deleted are considered; removed obsolete code ([#126](https://github.com/telekom/controlplane/issues/126)) ([a722062](https://github.com/telekom/controlplane/commit/a722062aee244e74d067b6a7f67c88431bd94926))
+* **organization:** register Prometheus metrics for secret manager communication ([#96](https://github.com/telekom/controlplane/issues/96)) ([ef65e15](https://github.com/telekom/controlplane/commit/ef65e15a6b2e05aea4d614734192fd4ba6ca968a))
+* **secret-manager:** exit application on fatal error when init secret-manager; changed localhost default url; skip-tls-verify=true for localhost ([#125](https://github.com/telekom/controlplane/issues/125)) ([1f878ba](https://github.com/telekom/controlplane/commit/1f878ba239a37335f7d3daadbb5d4bdeb2bc9157))
+* **security:** bump fiber to v2.52.9 ([#121](https://github.com/telekom/controlplane/issues/121)) ([6cd38cb](https://github.com/telekom/controlplane/commit/6cd38cb02620012097ca6edd498832315bfec436))
+
+
+### Features
+
+* add trusted teams ([#98](https://github.com/telekom/controlplane/issues/98)) ([79e08f0](https://github.com/telekom/controlplane/commit/79e08f0fe8b209d516779ecf82a8159882e252e5))
+* Added Private Key JWT feature ([#95](https://github.com/telekom/controlplane/issues/95)) ([89a5698](https://github.com/telekom/controlplane/commit/89a5698eb010c548e593f180881d8c65adf9bfb1))
+* added rover-server; improved rover-wehooks; improved secret-manager; fixed minor issues in other domains ([d27b183](https://github.com/telekom/controlplane/commit/d27b1839343ea267551716dcee41c5658dc94819))
+* **file-manager:** Add a file-manager client and server based on the OAS ([#108](https://github.com/telekom/controlplane/issues/108)) ([b9279fd](https://github.com/telekom/controlplane/commit/b9279fd38809098c265e72426665692a804b6d10))
+* **install-local:** Add installation and quickstart guide for the controlplane in a local environment ([#83](https://github.com/telekom/controlplane/issues/83)) ([4d01f17](https://github.com/telekom/controlplane/commit/4d01f17e838588dffb75bb94996321ea02998fb0))
+
+# [0.8.0](https://github.com/telekom/controlplane/compare/v0.7.0...v0.8.0) (2025-07-22)
+
+
+### Bug Fixes
+
+* **api:** correct handling of failover edge cases;  correct handling of api-exposure default scopes ([#87](https://github.com/telekom/controlplane/issues/87)) ([859bffb](https://github.com/telekom/controlplane/commit/859bffb01aba5a2442b95b4726efb20773d2e1db))
+
+
+### Features
+
+* add unified configuration options for reconciler with spf13/viper as ENVs ([#90](https://github.com/telekom/controlplane/issues/90)) ([0d2091a](https://github.com/telekom/controlplane/commit/0d2091a2d68fa97df7ebe7ee4ff769935cbfc54d))
+* added basic-auth feature ([#88](https://github.com/telekom/controlplane/issues/88)) ([5cf41c0](https://github.com/telekom/controlplane/commit/5cf41c002d854a2916cb645f963df4c9f4b38b50))
+* added ip-restriction feature; refactored feature-builder to support consumer-features ([#89](https://github.com/telekom/controlplane/issues/89)) ([5a6aa2f](https://github.com/telekom/controlplane/commit/5a6aa2fa96e9f3a8be582a0ec1d1bd594a098c32))
+* **remove-headers:** Added remove-headers feature ([#91](https://github.com/telekom/controlplane/issues/91)) ([4ab4b60](https://github.com/telekom/controlplane/commit/4ab4b607626e6a7125f3a4351e470ffd2907ebe3))
+* **secret-manager:** add cache metrics for cache hits and misses ([#81](https://github.com/telekom/controlplane/issues/81)) ([902666f](https://github.com/telekom/controlplane/commit/902666fe0ea98f23e1ea21fc3d3d64b13cb34459))
+
+# [0.7.0](https://github.com/telekom/controlplane/compare/v0.6.0...v0.7.0) (2025-07-14)
+
+
+### Bug Fixes
+
+* added disable-access-control; refactored custom-scopes ([4873006](https://github.com/telekom/controlplane/commit/4873006bedbf092c2c35230cb12019034ad6d116))
+
+
+### Features
+
+* added failover feature ([#77](https://github.com/telekom/controlplane/issues/77)) ([75981ef](https://github.com/telekom/controlplane/commit/75981efff4d804c06135ebec7beb34717fe686ad))
+* **default-scopes:** Added provider default-scopes ([58026c6](https://github.com/telekom/controlplane/commit/58026c6321a223ee04152f873258cf100c6597b3))
+* **externalIDP:** add external idp feature to api, gateway, rover ([#78](https://github.com/telekom/controlplane/issues/78)) ([6c185c4](https://github.com/telekom/controlplane/commit/6c185c43586dda48d5598796a4cbf09ff05ac2ae))
+* **loadbalancing:** Add loadbalancing feature in the gateway domain using Upstreams in the RouteSpec ([eb3c625](https://github.com/telekom/controlplane/commit/eb3c625e08c9f07fdb33447a9f1d34f5f5649e95))
+* **loadbalancing:** Add validation for load-balancing in rover webhook ([#82](https://github.com/telekom/controlplane/issues/82)) ([d22d198](https://github.com/telekom/controlplane/commit/d22d198900f68b2024b39ba7f2620303fc4a9636))
+
+# [0.6.0](https://github.com/telekom/controlplane/compare/v0.5.0...v0.6.0) (2025-07-14)
+
+
+### Bug Fixes
+
+* add update_install.sh ([#70](https://github.com/telekom/controlplane/issues/70)) ([989c9fb](https://github.com/telekom/controlplane/commit/989c9fb3d351ea83133faef066a09e87bfbf9905))
+
+
+### Features
+
+* **visibility:** add Zone visibility feature ([e24a881](https://github.com/telekom/controlplane/commit/e24a8813afc43360dcb5c3657faeb5b96cf7e236))
+
+# [0.5.0](https://github.com/telekom/controlplane/compare/v0.4.0...v0.5.0) (2025-07-03)
+
+
+### Bug Fixes
+
+* **secret-manager:** k8s jwks; bouncer for deletion; system certpool ([#58](https://github.com/telekom/controlplane/issues/58)) ([55f313b](https://github.com/telekom/controlplane/commit/55f313b2063528c702d27a1e9c0de9c42a81c71a))
+
+
+### Features
+
+* **codeql:** Use go build ./... for codeql to make sure all sources are compiled for analysis ([#63](https://github.com/telekom/controlplane/issues/63)) ([2fa5b15](https://github.com/telekom/controlplane/commit/2fa5b15167e2aced4cf9eddc315312a728f7bcde))
+* **tool:** added snapshot tool ([#49](https://github.com/telekom/controlplane/issues/49)) ([019a771](https://github.com/telekom/controlplane/commit/019a771a07ca62f809e4b68cae5786b4dcb74fc9))
+
+# [0.4.0](https://github.com/telekom/controlplane/compare/v0.3.0...v0.4.0) (2025-06-11)
+
+
+### Features
+
+* **installation:** added installation script and instructions; smaller code-adjustments to support installation ([6b54c63](https://github.com/telekom/controlplane/commit/6b54c63686df9e8450d6b7e749761c6166ec99de))
+
+# [0.3.0](https://github.com/telekom/controlplane/compare/v0.2.1...v0.3.0) (2025-05-28)
+
+
+### Bug Fixes
+
+* **deps:** bump github.com/gofiber/fiber/v2 from 2.52.6 to 2.52.7 ([#27](https://github.com/telekom/controlplane/issues/27)) ([2a0696e](https://github.com/telekom/controlplane/commit/2a0696e159836606c22828c73c03922ea7894532))
+* include the approval api in the operators go mod file ([1a0a13a](https://github.com/telekom/controlplane/commit/1a0a13a4b1a71c987e99efef22c5bf7098e3118a))
+* **kubebuilder:** correct group-names; correct paths and repos; rover-deps ([d9a19ef](https://github.com/telekom/controlplane/commit/d9a19ef95bb203417d3f209bf3861a1f3990c244))
+* run go mod tidy ([c6f865e](https://github.com/telekom/controlplane/commit/c6f865e03de7258947ccb2205a522445f844b581))
+* temporary fix for tests until common testutils are fixed ([9edf075](https://github.com/telekom/controlplane/commit/9edf0751bd7039c49fb98fcbc93d3690590e9f5f))
+
+
+### Features
+
+* add admin domain (api and config pkg) ([61fb9b9](https://github.com/telekom/controlplane/commit/61fb9b99441d3cdabf2ab616e4356cd9abf2b99e))
+* add api submodule in organization ([afab5d1](https://github.com/telekom/controlplane/commit/afab5d1b89bcdcc2c413d942d35c06e6288f174e))
+* add approval domain ([9d089cd](https://github.com/telekom/controlplane/commit/9d089cd08eb2b33e422de821a9dffb66bc4b49b2))
+* add go.sum.license for go.mod in admin domain ([ef30ffc](https://github.com/telekom/controlplane/commit/ef30ffcbf04cd608295bdc8fd033feaaa5b6601e))
+* add identity domain ([#23](https://github.com/telekom/controlplane/issues/23)) ([3bd1207](https://github.com/telekom/controlplane/commit/3bd1207d892ca416e55034cddc94f335319bc948))
+* add organization domain ([0f78bfe](https://github.com/telekom/controlplane/commit/0f78bfe9aaa14fa977b1ef07a58b37bae2d39886))
+* add organization domain in goreleaser for kos ([63f7273](https://github.com/telekom/controlplane/commit/63f72734f849fa3cb9f3312244c623539ee4de0a))
+* added gateway module ([#30](https://github.com/telekom/controlplane/issues/30)) ([5c1a643](https://github.com/telekom/controlplane/commit/5c1a643d77bdb59ca4aea585e8873867c4ac15fb))
+* adjust go.mod and paths after rebase ([cc325b6](https://github.com/telekom/controlplane/commit/cc325b64dbd8022e4e8d0828c463f2924a8d391f))
+* **admin:** WIP add admin operator ([3ff51d7](https://github.com/telekom/controlplane/commit/3ff51d7dd2a222df046c72e19a657d55db143f9d))
+* **api:** WIP add api operator ([421c5d3](https://github.com/telekom/controlplane/commit/421c5d334760936e8c066c0921c105d56149f8bd))
+* **application:** WIP add application operator ([5e0cb32](https://github.com/telekom/controlplane/commit/5e0cb320c1b8b48fbd0682981b04d226964deba9))
+* **rover:** add integration with the secret manager ([c3b4c20](https://github.com/telekom/controlplane/commit/c3b4c200a137243f5d4eac8f7320ee8ed39cb36a))
+* **rover:** fix import path for secret manager (mistake) ([3337b83](https://github.com/telekom/controlplane/commit/3337b838cdb8299ae92bfc328a03cd7061534a98))
+* **rover:** WIP add rover operator ([30debe3](https://github.com/telekom/controlplane/commit/30debe3ec1a3cb7ae118b9b59a3ca7ffc2e6d665))
+
+## [0.2.1](https://github.com/telekom/controlplane/compare/v0.2.0...v0.2.1) (2025-05-20)
+
+
+### Bug Fixes
+
+* **goreleaser:** correct base-image; added opencontainers labels ([#14](https://github.com/telekom/controlplane/issues/14)) ([80fdae9](https://github.com/telekom/controlplane/commit/80fdae952d76e2cddc20d72e7a742274d79b4684))
+
+# [0.2.0](https://github.com/telekom/controlplane/compare/v0.1.0...v0.2.0) (2025-05-19)
+
+
+### Bug Fixes
+
+* **reuse:** added license headers to common-server/pkg ([4a3d611](https://github.com/telekom/controlplane/commit/4a3d611093b1990eed387681d4a65edade5897be))
+
+
+### Features
+
+* added shared modules for common, common-server and secret-manager ([#7](https://github.com/telekom/controlplane/issues/7)) ([6af3eae](https://github.com/telekom/controlplane/commit/6af3eae7cb3eb2e03fd850e7246664429cefee70))

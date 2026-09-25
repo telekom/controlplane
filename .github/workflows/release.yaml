@@ -4,11 +4,10 @@
 
 # Cuts a new release: runs semantic-release to analyze commits since the
 # last tag, bump the version-reference files (kustomize overlay ref, Helm
-# chart version), commit+push that to the release branch, and create+push
-# the resulting `v*` git tag - see .releaserc.mjs for why the version-bump
-# commit is pushed to the branch (tag/branch reachability for the next
-# release run), and why no CHANGELOG.md is committed (GoReleaser generates
-# the changelog as the GitHub Release body instead, in release-publish.yaml).
+# chart version, CHANGELOG.md), commit+push that to the release branch, and
+# create+push the resulting `v*` git tag - see .releaserc.mjs for why the
+# version-bump commit is pushed to the branch (tag/branch reachability for
+# the next release run).
 #
 # Intentionally does nothing else. Building/publishing images, mirroring to
 # Artifactory, and assembling the combined roverctl image all happen in
@@ -48,12 +47,12 @@ jobs:
         id: semantic_release
         uses: cycjimmy/semantic-release-action@b12c8f6015dc215fe37bc154d4ad456dd3833c90 # v6.0.0
         with:
-          # @semantic-release/commit-analyzer is bundled with semantic-release
-          # itself; only @semantic-release/exec and @semantic-release/git need
-          # installing. Neither @semantic-release/changelog nor
-          # @semantic-release/release-notes-generator is used - see
-          # .releaserc.mjs for why.
+          # @semantic-release/commit-analyzer and
+          # @semantic-release/release-notes-generator are bundled with
+          # semantic-release itself; only @semantic-release/changelog,
+          # @semantic-release/exec and @semantic-release/git need installing.
           extra_plugins: |
+            @semantic-release/changelog
             @semantic-release/exec
             @semantic-release/git
         env:
