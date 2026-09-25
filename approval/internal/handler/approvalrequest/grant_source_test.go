@@ -8,13 +8,14 @@ import (
 	"context"
 	"fmt"
 
-	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
-	ctypes "github.com/telekom/controlplane/common/pkg/types"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ktypes "k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+
+	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
+	ctypes "github.com/telekom/controlplane/common/pkg/types"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -40,7 +41,7 @@ func baseTarget() ctypes.TypedObjectRef {
 	}
 }
 
-func makeAR(name string, uid ktypes.UID, key string, state approvalv1.ApprovalState, target ctypes.TypedObjectRef) *approvalv1.ApprovalRequest {
+func makeAR(name string, uid ktypes.UID, key string, state approvalv1.ApprovalState, target *ctypes.TypedObjectRef) *approvalv1.ApprovalRequest {
 	return &approvalv1.ApprovalRequest{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
@@ -48,7 +49,7 @@ func makeAR(name string, uid ktypes.UID, key string, state approvalv1.ApprovalSt
 			UID:       uid,
 		},
 		Spec: approvalv1.ApprovalRequestSpec{
-			Target:      target,
+			Target:      *target,
 			ApprovalKey: key,
 			State:       state,
 			Strategy:    approvalv1.ApprovalStrategySimple,
@@ -78,8 +79,8 @@ var _ = Describe("loadSoleLiveScopedGrantSource", func() {
 
 	Context("Test A: two live Granted requests (ambiguity)", func() {
 		It("rejects with ambiguity error when two Granted ARs target same scope", func() {
-			r1 := makeAR("ar-r1", "uid-r1", "provider", approvalv1.ApprovalStateGranted, target)
-			r2 := makeAR("ar-r2", "uid-r2", "provider", approvalv1.ApprovalStateGranted, target)
+			r1 := makeAR("ar-r1", "uid-r1", "provider", approvalv1.ApprovalStateGranted, &target)
+			r2 := makeAR("ar-r2", "uid-r2", "provider", approvalv1.ApprovalStateGranted, &target)
 
 			h := &ApprovalRequestHandler{Reader: fakeReader(r1, r2)}
 
@@ -90,7 +91,7 @@ var _ = Describe("loadSoleLiveScopedGrantSource", func() {
 		})
 
 		It("converges when the competing request is removed", func() {
-			r2 := makeAR("ar-r2", "uid-r2", "provider", approvalv1.ApprovalStateGranted, target)
+			r2 := makeAR("ar-r2", "uid-r2", "provider", approvalv1.ApprovalStateGranted, &target)
 
 			h := &ApprovalRequestHandler{Reader: fakeReader(r2)}
 
@@ -103,8 +104,8 @@ var _ = Describe("loadSoleLiveScopedGrantSource", func() {
 
 	Context("Test B: pending competitor counts in partition", func() {
 		It("rejects when old Granted request has a Pending competitor", func() {
-			old := makeAR("ar-old", "uid-old", "provider", approvalv1.ApprovalStateGranted, target)
-			pending := makeAR("ar-new", "uid-new", "provider", approvalv1.ApprovalStatePending, target)
+			old := makeAR("ar-old", "uid-old", "provider", approvalv1.ApprovalStateGranted, &target)
+			pending := makeAR("ar-new", "uid-new", "provider", approvalv1.ApprovalStatePending, &target)
 
 			h := &ApprovalRequestHandler{Reader: fakeReader(old, pending)}
 
@@ -117,8 +118,8 @@ var _ = Describe("loadSoleLiveScopedGrantSource", func() {
 
 	Context("Test C: gate/target isolation", func() {
 		It("does not count requests with a different approvalKey", func() {
-			provider := makeAR("ar-provider", "uid-prov", "provider", approvalv1.ApprovalStateGranted, target)
-			consumer := makeAR("ar-consumer", "uid-cons", "consumer", approvalv1.ApprovalStateGranted, target)
+			provider := makeAR("ar-provider", "uid-prov", "provider", approvalv1.ApprovalStateGranted, &target)
+			consumer := makeAR("ar-consumer", "uid-cons", "consumer", approvalv1.ApprovalStateGranted, &target)
 
 			h := &ApprovalRequestHandler{Reader: fakeReader(provider, consumer)}
 
@@ -128,8 +129,8 @@ var _ = Describe("loadSoleLiveScopedGrantSource", func() {
 		})
 
 		It("does not count unscoped requests", func() {
-			scoped := makeAR("ar-scoped", "uid-scoped", "provider", approvalv1.ApprovalStateGranted, target)
-			unscoped := makeAR("ar-unscoped", "uid-unscoped", "", approvalv1.ApprovalStateGranted, target)
+			scoped := makeAR("ar-scoped", "uid-scoped", "provider", approvalv1.ApprovalStateGranted, &target)
+			unscoped := makeAR("ar-unscoped", "uid-unscoped", "", approvalv1.ApprovalStateGranted, &target)
 
 			h := &ApprovalRequestHandler{Reader: fakeReader(scoped, unscoped)}
 
@@ -139,10 +140,10 @@ var _ = Describe("loadSoleLiveScopedGrantSource", func() {
 		})
 
 		It("does not count requests with different target UID", func() {
-			ar1 := makeAR("ar-1", "uid-1", "provider", approvalv1.ApprovalStateGranted, target)
+			ar1 := makeAR("ar-1", "uid-1", "provider", approvalv1.ApprovalStateGranted, &target)
 			differentTarget := baseTarget()
 			differentTarget.UID = "target-uid-different"
-			ar2 := makeAR("ar-2", "uid-2", "provider", approvalv1.ApprovalStateGranted, differentTarget)
+			ar2 := makeAR("ar-2", "uid-2", "provider", approvalv1.ApprovalStateGranted, &differentTarget)
 
 			h := &ApprovalRequestHandler{Reader: fakeReader(ar1, ar2)}
 
@@ -154,7 +155,7 @@ var _ = Describe("loadSoleLiveScopedGrantSource", func() {
 
 	Context("Test D: source lifecycle failures", func() {
 		It("fails when expected source is absent", func() {
-			expected := makeAR("ar-ghost", "uid-ghost", "provider", approvalv1.ApprovalStateGranted, target)
+			expected := makeAR("ar-ghost", "uid-ghost", "provider", approvalv1.ApprovalStateGranted, &target)
 
 			h := &ApprovalRequestHandler{Reader: fakeReader() /* empty */}
 
@@ -164,8 +165,8 @@ var _ = Describe("loadSoleLiveScopedGrantSource", func() {
 		})
 
 		It("fails when expected source has wrong UID (recreated)", func() {
-			actual := makeAR("ar-same-name", "uid-actual", "provider", approvalv1.ApprovalStateGranted, target)
-			expected := makeAR("ar-same-name", "uid-expected", "provider", approvalv1.ApprovalStateGranted, target)
+			actual := makeAR("ar-same-name", "uid-actual", "provider", approvalv1.ApprovalStateGranted, &target)
+			expected := makeAR("ar-same-name", "uid-expected", "provider", approvalv1.ApprovalStateGranted, &target)
 
 			h := &ApprovalRequestHandler{Reader: fakeReader(actual)}
 
@@ -176,7 +177,7 @@ var _ = Describe("loadSoleLiveScopedGrantSource", func() {
 
 		It("fails when expected source is terminating (DeletionTimestamp set)", func() {
 			now := metav1.Now()
-			terminating := makeAR("ar-term", "uid-term", "provider", approvalv1.ApprovalStateGranted, target)
+			terminating := makeAR("ar-term", "uid-term", "provider", approvalv1.ApprovalStateGranted, &target)
 			terminating.DeletionTimestamp = &now
 			terminating.Finalizers = []string{"test-finalizer"}
 
@@ -188,7 +189,7 @@ var _ = Describe("loadSoleLiveScopedGrantSource", func() {
 		})
 
 		It("fails when sole live request is not Granted", func() {
-			pending := makeAR("ar-pending", "uid-pending", "provider", approvalv1.ApprovalStatePending, target)
+			pending := makeAR("ar-pending", "uid-pending", "provider", approvalv1.ApprovalStatePending, &target)
 
 			h := &ApprovalRequestHandler{Reader: fakeReader(pending)}
 
@@ -198,7 +199,7 @@ var _ = Describe("loadSoleLiveScopedGrantSource", func() {
 		})
 
 		It("fails when Reader is nil", func() {
-			expected := makeAR("ar-nil", "uid-nil", "provider", approvalv1.ApprovalStateGranted, target)
+			expected := makeAR("ar-nil", "uid-nil", "provider", approvalv1.ApprovalStateGranted, &target)
 
 			h := &ApprovalRequestHandler{Reader: nil}
 
@@ -210,7 +211,7 @@ var _ = Describe("loadSoleLiveScopedGrantSource", func() {
 
 	Context("Test H: existing behavior intact", func() {
 		It("succeeds for sole live Granted request", func() {
-			sole := makeAR("ar-sole", "uid-sole", "provider", approvalv1.ApprovalStateGranted, target)
+			sole := makeAR("ar-sole", "uid-sole", "provider", approvalv1.ApprovalStateGranted, &target)
 
 			h := &ApprovalRequestHandler{Reader: fakeReader(sole)}
 
@@ -222,8 +223,8 @@ var _ = Describe("loadSoleLiveScopedGrantSource", func() {
 		})
 
 		It("handles two different gates on the same owner without ambiguity", func() {
-			provider := makeAR("ar-prov", "uid-prov", "provider", approvalv1.ApprovalStateGranted, target)
-			consumer := makeAR("ar-cons", "uid-cons", "consumer", approvalv1.ApprovalStateGranted, target)
+			provider := makeAR("ar-prov", "uid-prov", "provider", approvalv1.ApprovalStateGranted, &target)
+			consumer := makeAR("ar-cons", "uid-cons", "consumer", approvalv1.ApprovalStateGranted, &target)
 
 			h := &ApprovalRequestHandler{Reader: fakeReader(provider, consumer)}
 
@@ -237,7 +238,7 @@ var _ = Describe("loadSoleLiveScopedGrantSource", func() {
 		})
 
 		It("returns a deep copy that does not alias the original", func() {
-			sole := makeAR("ar-copy", "uid-copy", "provider", approvalv1.ApprovalStateGranted, target)
+			sole := makeAR("ar-copy", "uid-copy", "provider", approvalv1.ApprovalStateGranted, &target)
 
 			h := &ApprovalRequestHandler{Reader: fakeReader(sole)}
 
@@ -251,8 +252,8 @@ var _ = Describe("loadSoleLiveScopedGrantSource", func() {
 
 	Context("partition edge cases", func() {
 		It("includes Rejected requests in partition", func() {
-			granted := makeAR("ar-granted", "uid-granted", "provider", approvalv1.ApprovalStateGranted, target)
-			rejected := makeAR("ar-rejected", "uid-rejected", "provider", approvalv1.ApprovalStateRejected, target)
+			granted := makeAR("ar-granted", "uid-granted", "provider", approvalv1.ApprovalStateGranted, &target)
+			rejected := makeAR("ar-rejected", "uid-rejected", "provider", approvalv1.ApprovalStateRejected, &target)
 
 			h := &ApprovalRequestHandler{Reader: fakeReader(granted, rejected)}
 
@@ -262,8 +263,8 @@ var _ = Describe("loadSoleLiveScopedGrantSource", func() {
 		})
 
 		It("includes Semigranted requests in partition", func() {
-			granted := makeAR("ar-granted", "uid-granted", "provider", approvalv1.ApprovalStateGranted, target)
-			semi := makeAR("ar-semi", "uid-semi", "provider", approvalv1.ApprovalStateSemigranted, target)
+			granted := makeAR("ar-granted", "uid-granted", "provider", approvalv1.ApprovalStateGranted, &target)
+			semi := makeAR("ar-semi", "uid-semi", "provider", approvalv1.ApprovalStateSemigranted, &target)
 
 			h := &ApprovalRequestHandler{Reader: fakeReader(granted, semi)}
 
@@ -273,7 +274,7 @@ var _ = Describe("loadSoleLiveScopedGrantSource", func() {
 		})
 
 		It("handles empty List result when source is absent", func() {
-			expected := makeAR("ar-missing", "uid-missing", "provider", approvalv1.ApprovalStateGranted, target)
+			expected := makeAR("ar-missing", "uid-missing", "provider", approvalv1.ApprovalStateGranted, &target)
 
 			h := &ApprovalRequestHandler{Reader: fakeReader()}
 
@@ -283,7 +284,7 @@ var _ = Describe("loadSoleLiveScopedGrantSource", func() {
 		})
 
 		It("handles List error gracefully", func() {
-			expected := makeAR("ar-err", "uid-err", "provider", approvalv1.ApprovalStateGranted, target)
+			expected := makeAR("ar-err", "uid-err", "provider", approvalv1.ApprovalStateGranted, &target)
 
 			h := &ApprovalRequestHandler{Reader: &errorReader{}}
 
@@ -295,7 +296,7 @@ var _ = Describe("loadSoleLiveScopedGrantSource", func() {
 
 	Context("Test I: fresh source fields used for Approval spec", func() {
 		It("builds the Approval from the API-server version, not the stale in-memory copy", func() {
-			sole := makeAR("ar-fresh", "uid-fresh", "provider", approvalv1.ApprovalStateGranted, target)
+			sole := makeAR("ar-fresh", "uid-fresh", "provider", approvalv1.ApprovalStateGranted, &target)
 			sole.Spec.Requester.TeamName = "fresh--requester"
 			sole.Spec.Requester.TeamEmail = "fresh@requester.com"
 			sole.Spec.Decider.TeamEmail = "fresh@decider.com"
@@ -317,8 +318,8 @@ var _ = Describe("loadSoleLiveScopedGrantSource", func() {
 
 	Context("Test J: already-bound request still detects ambiguity", func() {
 		It("returns ambiguity error even when the Approval already points to the source", func() {
-			r1 := makeAR("ar-r1", "uid-r1", "provider", approvalv1.ApprovalStateGranted, target)
-			r2 := makeAR("ar-r2", "uid-r2", "provider", approvalv1.ApprovalStateGranted, target)
+			r1 := makeAR("ar-r1", "uid-r1", "provider", approvalv1.ApprovalStateGranted, &target)
+			r2 := makeAR("ar-r2", "uid-r2", "provider", approvalv1.ApprovalStateGranted, &target)
 
 			h := &ApprovalRequestHandler{Reader: fakeReader(r1, r2)}
 
