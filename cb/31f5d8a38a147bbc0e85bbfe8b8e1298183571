@@ -1,0 +1,143 @@
+projector/internal/domain/apisubscription/repository.go
+  s_8d9d0eac8beb07::t_7577172dbdd5ce 157-158,235-236
+projector/internal/domain/application/module.go
+  s_8d9d0eac8beb07::t_7577172dbdd5ce 21-24
+projector/internal/domain/approvalrequest/types.go
+  s_7f16d4800e0d39::t_15b8d88178077b 7,9,22,51,53
+  s_8d9d0eac8beb07::t_7577172dbdd5ce 54
+projector/internal/infrastructure/cachekeys/cachekeys.go
+  s_8d9d0eac8beb07::t_7577172dbdd5ce 32-36,60-63
+  s_8d9d0eac8beb07::t_0397c638ad3121 64
+projector/internal/domain/approval/translator.go
+  s_7f16d4800e0d39::t_15b8d88178077b 37,50
+  s_8d9d0eac8beb07::t_7577172dbdd5ce 58-68,120
+projector/internal/domain/approval/repository_test.go
+  s_8d9d0eac8beb07::t_7577172dbdd5ce 20,24,201-256,291-332,541-551
+  s_8d9d0eac8beb07::t_50e278d5d9dbd9 552
+  s_7f16d4800e0d39::t_f315a8a7c7271b 257-290
+projector/internal/domain/apiexposure/module.go
+  s_8d9d0eac8beb07::t_7577172dbdd5ce 21-24
+projector/internal/domain/application/repository.go
+  s_8d9d0eac8beb07::t_bc04ff20ae6676 248
+  s_8d9d0eac8beb07::t_7577172dbdd5ce 200-201,247
+projector/internal/domain/listener/translator_test.go
+  s_8d9d0eac8beb07::t_7577172dbdd5ce 1-93
+projector/internal/domain/listener/types.go
+  s_8d9d0eac8beb07::t_7577172dbdd5ce 1-27
+projector/internal/domain/approval/types.go
+  s_7f16d4800e0d39::t_15b8d88178077b 7,9,24,52,54
+  s_8d9d0eac8beb07::t_7577172dbdd5ce 55
+projector/config/rbac/role.yaml
+  s_8d9d0eac8beb07::t_7577172dbdd5ce 63-72
+projector/internal/domain/listener/module.go
+  s_8d9d0eac8beb07::t_7577172dbdd5ce 1-105,108-231
+  s_c3dcd0b88aa640::t_092367ea7325bd 106-107
+  s_8d9d0eac8beb07::t_5f2e6b7a2c0ca3 232-233
+projector/internal/infrastructure/idresolver.go
+  s_8d9d0eac8beb07::t_7577172dbdd5ce 283-310,404-440
+  s_8d9d0eac8beb07::t_6b1366d5fee8cb 441
+projector/README.md
+  s_8d9d0eac8beb07::t_7577172dbdd5ce 39,103,107
+  s_8d9d0eac8beb07::t_3cb1274c02918d 108
+projector/internal/domain/approvalrequest/translator.go
+  s_8d9d0eac8beb07::t_7577172dbdd5ce 59-69,115
+  s_7f16d4800e0d39::t_15b8d88178077b 38,51
+projector/internal/bootstrap/bootstrap_test.go
+  s_285dbb2d0e4ba5::t_2de35b3098d4ab 145,166
+  s_8d9d0eac8beb07::t_1731ca178f7fb8 112-113
+  s_285dbb2d0e4ba5::t_9736422b344d59 14,115,119,121-122,146-156,162-165,167-169
+  s_8d9d0eac8beb07::t_7577172dbdd5ce 19,24,46,54,62,100-111
+projector/internal/domain/api/name_projection_test.go
+  s_285dbb2d0e4ba5::t_9736422b344d59 1-111
+projector/go.mod
+  s_8d9d0eac8beb07::t_7577172dbdd5ce 40,57
+projector/internal/domain/approvalrequest/repository.go
+  s_7f16d4800e0d39::t_15b8d88178077b 30,56,192,194,196,198,226-227,241
+  s_8d9d0eac8beb07::t_7577172dbdd5ce 15,59-75,133-136,138,156-157,171-173,189,191,201-203,212-215,242
+projector/internal/domain/apisubscription/module.go
+  s_8d9d0eac8beb07::t_7577172dbdd5ce 22-25
+projector/internal/domain/listener/translator.go
+  s_8d9d0eac8beb07::t_7577172dbdd5ce 1-90
+projector/internal/domain/approval/translator_test.go
+  s_8d9d0eac8beb07::t_7577172dbdd5ce 48-77,195-206
+  s_7f16d4800e0d39::t_15b8d88178077b 120
+  s_7f16d4800e0d39::t_f315a8a7c7271b 29-47
+projector/internal/domain/listener/listener_suite_test.go
+  s_8d9d0eac8beb07::t_7577172dbdd5ce 1-17
+projector/internal/domain/listener/module_test.go
+  s_8d9d0eac8beb07::t_7577172dbdd5ce 1-159
+projector/internal/module/module_test.go
+  s_8d9d0eac8beb07::t_a97886ff9777ad 51
+  s_8d9d0eac8beb07::t_7577172dbdd5ce 5,8-9,14-15,18-24,26,31,37-50
+projector/internal/module/module.go
+  s_c3dcd0b88aa640::t_092367ea7325bd 45-50,69
+  s_8d9d0eac8beb07::t_7577172dbdd5ce 11-15,27,70-104,123-125
+  s_8d9d0eac8beb07::t_2336c73791ffb5 126
+projector/internal/domain/approvalrequest/translator_test.go
+  s_7f16d4800e0d39::t_f315a8a7c7271b 29-47
+  s_8d9d0eac8beb07::t_7577172dbdd5ce 48-77,195-206
+  s_7f16d4800e0d39::t_15b8d88178077b 120
+projector/internal/domain/approval/repository.go
+  s_8d9d0eac8beb07::t_7577172dbdd5ce 15,58-74,132-146,148-153,172-177,191-193,209,211,213-217,226-228,237-240,267
+  s_7f16d4800e0d39::t_15b8d88178077b 29,55,212,219,221,223,251-252,266
+projector/internal/domain/api/repository.go
+  s_8d9d0eac8beb07::t_7577172dbdd5ce 69
+projector/internal/domain/listener/processor.go
+  s_c3dcd0b88aa640::t_092367ea7325bd 46-47,56,59-62,71-74
+  s_8d9d0eac8beb07::t_7577172dbdd5ce 1-45,48-55,57-58,63-70,75-79
+  s_8d9d0eac8beb07::t_0bc237bfc8ea76 80-82
+projector/internal/domain/listener/repository.go
+  s_8d9d0eac8beb07::t_7577172dbdd5ce 1-139
+projector/internal/bootstrap/bootstrap.go
+  s_8d9d0eac8beb07::t_7577172dbdd5ce 26,42,58,89-93,184-186
+projector/internal/domain/approvalrequest/repository_test.go
+  s_8d9d0eac8beb07::t_7577172dbdd5ce 19,23,199-240,270-307,510-520
+  s_7f16d4800e0d39::t_f315a8a7c7271b 241-269
+  s_8d9d0eac8beb07::t_2f73fa93c7678f 521
+projector/internal/domain/listener/repository_test.go
+  s_c3dcd0b88aa640::t_c51a396021c313 144-149,157
+  s_8d9d0eac8beb07::t_7577172dbdd5ce 1-143,150-156,158-168,170,172-174
+  s_8d9d0eac8beb07::t_d16256779aec45 169
+  s_8d9d0eac8beb07::t_da62b821dccb74 171
+  s_8d9d0eac8beb07::t_d3fca65f185509 175-177
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6",
+  "base_commit_sha": "cb31f5d8a38a147bbc0e85bbfe8b8e1298183571",
+  "prompts": {},
+  "sessions": {
+    "s_285dbb2d0e4ba5": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f2757b341ffeBuHS7GqoHhwZ3u",
+        "model": "unknown"
+      },
+      "human_author": "Miká Juznik <mika.juznik@telekom.de>"
+    },
+    "s_7f16d4800e0d39": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f2757b389ffeIEHBCSuR8ZQlSs",
+        "model": "unknown"
+      },
+      "human_author": "Miká Juznik <mika.juznik@telekom.de>"
+    },
+    "s_8d9d0eac8beb07": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f278b3750ffeawFs6RCuCgKtUj",
+        "model": "unknown"
+      },
+      "human_author": "Miká Juznik <mika.juznik@telekom.de>"
+    },
+    "s_c3dcd0b88aa640": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f2749f99affeRPMJYYEaxTty9D",
+        "model": "unknown"
+      },
+      "human_author": null
+    }
+  }
+}
