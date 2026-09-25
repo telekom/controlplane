@@ -875,9 +875,12 @@ var _ = Describe("Integration: Two-Tier Reconcile Cycle", Ordered, func() {
 				Name:      util.MakeSubscriberName(util.MakeBridgeSubscriberId(consumerClientID, appId, "/api/v1/cross", "rp")),
 				Namespace: zoneStatusNs,
 			}
-			reconcileDeletion := func() {
-				_, _ = listenerReconciler.Reconcile(ctx, reconcile.Request{NamespacedName: listenerNN})
-			}
+			// Only the manager's Listener controller reconciles the Listener from
+			// here on. A second reconciler whose cache has not seen the delete
+			// yet runs a CreateOrUpdate pass next to the manager's drain; when it
+			// ensures the RouteListener after the drain deleted it, the new UID
+			// counts the recorded one as gone and the replacement stays while
+			// the held Subscriber blocks the drain.
 
 			By("Confirming the children exist before deletion")
 			Expect(directClient.Get(ctx, rlKey, &gatewayv1.RouteListener{})).To(Succeed())
@@ -899,7 +902,6 @@ var _ = Describe("Integration: Two-Tier Reconcile Cycle", Ordered, func() {
 
 			By("Waiting for the RouteListener to go while the persisted checkpoint drains the Subscribers")
 			Eventually(func(g Gomega) {
-				reconcileDeletion()
 				g.Expect(apierrors.IsNotFound(directClient.Get(ctx, rlKey, &gatewayv1.RouteListener{}))).
 					To(BeTrue(), "RouteListener should be deleted, not orphaned")
 				g.Expect(apierrors.IsNotFound(directClient.Get(ctx, rpKey, &pubsubv1.Subscriber{}))).
@@ -921,7 +923,6 @@ var _ = Describe("Integration: Two-Tier Reconcile Cycle", Ordered, func() {
 
 			By("Keeping the Listener finalizer while the held Subscriber finalizes")
 			Consistently(func(g Gomega) {
-				reconcileDeletion()
 				current := &spectrev1.Listener{}
 				g.Expect(directClient.Get(ctx, listenerNN, current)).To(Succeed())
 				g.Expect(current.Finalizers).To(ContainElement(cconfig.FinalizerName))
@@ -938,7 +939,6 @@ var _ = Describe("Integration: Two-Tier Reconcile Cycle", Ordered, func() {
 
 			By("Waiting for the Listener to be gone with every child")
 			Eventually(func(g Gomega) {
-				reconcileDeletion()
 				g.Expect(apierrors.IsNotFound(directClient.Get(ctx, listenerNN, &spectrev1.Listener{}))).
 					To(BeTrue(), "Listener should be gone once the drain completes")
 			}, testTimeout, testInterval).Should(Succeed())
@@ -996,17 +996,15 @@ var _ = Describe("Integration: Two-Tier Reconcile Cycle", Ordered, func() {
 				holdFinalizer          = "spectre.cp.ei.telekom.de/test-hold"
 			)
 
-			// The grace period is read through the handler's clock, shifted by
-			// offset; the manager's own Listener controller keeps the real clock
-			// and so never stops capture itself within this spec.
-			var offset time.Duration
-			graceReconciler := &ListenerReconciler{Client: k8sClient, Scheme: k8sClient.Scheme()}
-			graceReconciler.Controller = cc.NewController(&handler.ListenerHandler{
-				Reader: testMgr.GetAPIReader(),
-				Now:    func() time.Time { return time.Now().Add(offset) },
-			}, k8sClient, newDrainedRecorder(100))
-
-			nn, rlKey, subKeys := provisionCrossTeamListener(ctx, graceReconciler, unansweredListenerName, "unanswered")
+			// Only the manager's Listener controller reconciles this Listener, as
+			// in the deletion spec: a second reconciler could provision from a
+			// stale Listener next to the drain. It runs on the real clock, so the
+			// spec moves the recorded start of the grace period back instead of
+			// waiting for it.
+			watchOnly := reconcile.Func(func(context.Context, reconcile.Request) (reconcile.Result, error) {
+				return reconcile.Result{}, nil
+			})
+			nn, rlKey, subKeys := provisionCrossTeamListener(ctx, watchOnly, unansweredListenerName, "unanswered")
 			captureExists := func(g Gomega) {
 				g.Expect(directClient.Get(ctx, rlKey, &gatewayv1.RouteListener{})).To(Succeed())
 				for _, key := range subKeys {
@@ -1027,20 +1025,26 @@ var _ = Describe("Integration: Two-Tier Reconcile Cycle", Ordered, func() {
 			})).To(Succeed())
 
 			By("Recording when the answer became unavailable and keeping capture")
-			reconcileUntilReady(ctx, graceReconciler, nn, func(g Gomega) {
+			Eventually(func(g Gomega) {
 				current := &spectrev1.Listener{}
 				g.Expect(directClient.Get(ctx, nn, current)).To(Succeed())
 				g.Expect(current.Status.AuthorizationUnknownSince).NotTo(BeNil())
 				g.Expect(current.Status.Draining).To(BeNil())
-			})
-			Consistently(func(g Gomega) {
-				_, _ = graceReconciler.Reconcile(ctx, reconcile.Request{NamespacedName: nn})
-				captureExists(g)
-			}, 2*time.Second, testInterval).Should(Succeed())
+			}, testTimeout, testInterval).Should(Succeed())
+			Consistently(captureExists, 2*time.Second, testInterval).Should(Succeed())
 
 			By("Draining capture once the grace period has passed")
-			offset = 5*time.Minute + time.Second
-			reconcileUntilReady(ctx, graceReconciler, nn, func(g Gomega) {
+			// This is the status 5 minutes without an answer leave behind. The
+			// write wakes the Listener now; its own retry is up to 30s plus
+			// jitter away.
+			Eventually(func(g Gomega) {
+				current := &spectrev1.Listener{}
+				g.Expect(directClient.Get(ctx, nn, current)).To(Succeed())
+				g.Expect(current.Status.AuthorizationUnknownSince).NotTo(BeNil())
+				current.Status.AuthorizationUnknownSince = &metav1.Time{Time: time.Now().Add(-5*time.Minute - time.Second)}
+				g.Expect(directClient.Status().Update(ctx, current)).To(Succeed())
+			}, testTimeout, testInterval).Should(Succeed())
+			Eventually(func(g Gomega) {
 				g.Expect(apierrors.IsNotFound(directClient.Get(ctx, rlKey, &gatewayv1.RouteListener{}))).
 					To(BeTrue(), "RouteListener should be drained")
 				for _, key := range subKeys {
@@ -1055,7 +1059,7 @@ var _ = Describe("Integration: Two-Tier Reconcile Cycle", Ordered, func() {
 				g.Expect(ready).NotTo(BeNil())
 				g.Expect(ready.Reason).To(Equal("AuthorizationUnavailable"))
 				g.Expect(ready.Message).To(ContainSubstring("provider gate"))
-			})
+			}, testTimeout, testInterval).Should(Succeed())
 
 			By("Releasing the held request: the recreated request is an answer (pending)")
 			Eventually(func(g Gomega) {
@@ -1064,14 +1068,14 @@ var _ = Describe("Integration: Two-Tier Reconcile Cycle", Ordered, func() {
 				controllerutil.RemoveFinalizer(ar, holdFinalizer)
 				g.Expect(directClient.Update(ctx, ar)).To(Succeed())
 			}, testTimeout, testInterval).Should(Succeed())
-			reconcileUntilReady(ctx, graceReconciler, nn, func(g Gomega) {
+			Eventually(func(g Gomega) {
 				current := &spectrev1.Listener{}
 				g.Expect(directClient.Get(ctx, nn, current)).To(Succeed())
 				g.Expect(current.Status.AuthorizationUnknownSince).To(BeNil())
 				ready := meta.FindStatusCondition(current.Status.Conditions, condition.ConditionTypeReady)
 				g.Expect(ready).NotTo(BeNil())
 				g.Expect(ready.Reason).To(Equal(condition.ReasonApprovalPending))
-			})
+			}, testTimeout, testInterval).Should(Succeed())
 
 			By("Granting the recreated request resumes capture")
 			Eventually(func(g Gomega) {
@@ -1084,13 +1088,13 @@ var _ = Describe("Integration: Two-Tier Reconcile Cycle", Ordered, func() {
 				approval.Spec.ApprovedRequest = &ctypes.ObjectRef{Name: ar.Name, Namespace: ar.Namespace, UID: ar.UID}
 				g.Expect(directClient.Update(ctx, approval)).To(Succeed())
 			}, testTimeout, testInterval).Should(Succeed())
-			reconcileUntilReady(ctx, graceReconciler, nn, func(g Gomega) {
+			Eventually(func(g Gomega) {
 				captureExists(g)
 				current := &spectrev1.Listener{}
 				g.Expect(directClient.Get(ctx, nn, current)).To(Succeed())
 				g.Expect(current.Status.AuthorizationUnknownSince).To(BeNil())
 				g.Expect(current.Status.AppliedPlacement).NotTo(BeNil())
-			})
+			}, testTimeout, testInterval).Should(Succeed())
 		})
 	})
 })
