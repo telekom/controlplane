@@ -53,7 +53,7 @@ func (r *SpectreApplicationReconciler) SetupWithManager(mgr ctrl.Manager) error 
 	r.Controller = cc.NewController(&handler.SpectreApplicationHandler{}, r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&spectrev1.SpectreApplication{}).
+		For(&spectrev1.SpectreApplication{}, builder.WithPredicates(cc.Count("spectreapplication", cc.RoleFor))).
 		// Owner-labelled Publishers (readiness changes update parent readiness).
 		Watches(
 			&pubsubv1.Publisher{},
