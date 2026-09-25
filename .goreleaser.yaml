@@ -726,7 +726,7 @@ kos:
     main: .
     working_dir: sftp/cmd/sftp-operator
     repositories:
-      - ghcr.io/telekom/controlplane/sftp-operator
+      - ghcr.io/telekom/controlplane/sftp
     labels:
       org.opencontainers.image.authors: "Deutsche Telekom IT GmbH <opensource@telekom.de>"
       org.opencontainers.image.url: "https://developer.telekom.de/"

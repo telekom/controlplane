@@ -844,7 +844,7 @@ func (r *RoverValidator) ValidateFileExposure(valErr *cerrors.ValidationError, e
 		return nil
 	}
 
-	if !cconfig.FeaturePubSub.IsEnabled() {
+	if !cconfig.FeatureFile.IsEnabled() {
 		return nil
 	}
 
@@ -860,7 +860,7 @@ func (r *RoverValidator) ValidateFileSubscription(valErr *cerrors.ValidationErro
 		return nil
 	}
 
-	if !cconfig.FeaturePubSub.IsEnabled() {
+	if !cconfig.FeatureFile.IsEnabled() {
 		return nil
 	}
 

@@ -131,7 +131,7 @@ func (h *FileSubscriptionHandler) ensureApproval(ctx context.Context, obj *filev
 		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonValidationFailed,
 			"Only requestors of kind 'Application' are supported"))
 		obj.SetCondition(condition.NewBlockedCondition(
-			"EventSubscription with requestor kind " + obj.Spec.Requestor.Kind + " is not supported"))
+			"FileSubscription with requestor kind " + obj.Spec.Requestor.Kind + " is not supported"))
 		return builder.ApprovalResultNone, nil
 	}
 	requestorApp, err := util.GetApplication(ctx, obj.Spec.Requestor.ObjectRef)

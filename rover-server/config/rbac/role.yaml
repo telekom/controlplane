@@ -83,7 +83,7 @@ rules:
 - apiGroups:
   - file.cp.ei.telekom.de
   resources:
-  - filetype
+  - filetypes
   - fileexposures
   - filesubscriptions
   verbs:
