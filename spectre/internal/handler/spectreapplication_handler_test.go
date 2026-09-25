@@ -754,6 +754,8 @@ var _ = Describe("SpectreApplicationHandler", func() {
 				// Callback delivery does not call ensureSSERoute, but cleanup
 				// still runs for Routes — this handles SSE→callback transition.
 				obj := setupHappyPath("callback")
+				obj.Status.ListenerRoute = &ctypes.ObjectRef{Name: "spectre-sse--old", Namespace: testZoneStatusNs}
+				obj.Status.ProxyRoute = &ctypes.ObjectRef{Name: "spectre-sse-proxy--old", Namespace: testZoneStatusNs}
 				obj.Status.SseUrl = "https://gateway.example.com:443" + testCanonicalSSEPath + "/" + testSubscriptionId
 				fakeClient.EXPECT().AnyChanged().Return(false).Once()
 				fakeClient.EXPECT().AllReady().Return(true).Once()
@@ -764,6 +766,7 @@ var _ = Describe("SpectreApplicationHandler", func() {
 
 				// No Route in status (callback), but Route cleanup was mocked and called.
 				Expect(obj.Status.ListenerRoute).To(BeNil())
+				Expect(obj.Status.ProxyRoute).To(BeNil())
 				// The SSE URL from the previous delivery type is cleared.
 				Expect(obj.Status.SseUrl).To(BeEmpty())
 			})
