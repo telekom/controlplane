@@ -818,9 +818,9 @@ components:
         type:
           type: string
           description: >
-            Dot-separated event type identifier (e.g. "de.telekom.eni.quickstart.v1").
+            Event type identifier with dot or hyphen separators (e.g. "de.telekom.eni-quickstart.v1").
             The last segment must be a version prefix matching the major version.
-          pattern: '^[a-z0-9]+(\.[a-z0-9]+)*$'
+          pattern: '^[a-z0-9]+([.-][a-z0-9]+)*$'
           minLength: 1
           maxLength: 253
           example: de.telekom.eni.quickstart.v1
@@ -892,9 +892,10 @@ components:
         eventType:
           type: string
           description: >
-            Dot-separated event type identifier (e.g. "de.telekom.eni.quickstart.v1").
+            Event type identifier with dot or hyphen separators (e.g. "de.telekom.eni-quickstart.v1").
             References the EventType CR.
           minLength: 1
+          pattern: '^[a-z0-9]+([.-][a-z0-9]+)*$'
           example: de.telekom.eni.quickstart.v1
         visibility:
           $ref: '#/components/schemas/EventVisibility'
@@ -986,9 +987,10 @@ components:
         eventType:
           type: string
           description: >
-            Dot-separated event type identifier (e.g. "de.telekom.eni.quickstart.v1").
+            Event type identifier with dot or hyphen separators (e.g. "de.telekom.eni-quickstart.v1").
             References the EventType CR.
           minLength: 1
+          pattern: '^[a-z0-9]+([.-][a-z0-9]+)*$'
           example: de.telekom.eni.quickstart.v1
         delivery:
           $ref: '#/components/schemas/Delivery'

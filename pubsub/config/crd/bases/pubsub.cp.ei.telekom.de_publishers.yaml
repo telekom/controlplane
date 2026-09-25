@@ -73,8 +73,8 @@ spec:
                 - namespace
                 type: object
               eventType:
-                description: EventType is the dot-separated event type identifier
-                  (e.g. "de.telekom.eni.quickstart.v1").
+                description: EventType is an event type identifier with dot or hyphen
+                  separators (e.g. "de.telekom.eni-quickstart.v1").
                 minLength: 1
                 type: string
               jsonSchema:

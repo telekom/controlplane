@@ -2244,6 +2244,7 @@ components:
           $ref: '#/components/schemas/Visibility'
         eventType:
           type: string
+          pattern: '^[a-z0-9]+([.-][a-z0-9]+)*$'
         eventCategory:
           $ref: '#/components/schemas/Category'
         additionalPublisherIds:
@@ -2957,6 +2958,7 @@ components:
         eventType:
           description: Unique identifier of the event type
           type: string
+          pattern: '^[a-z0-9]+([.-][a-z0-9]+)*$'
         callback:
           type: string
         deliveryType:
@@ -3278,8 +3280,11 @@ components:
         - description
       properties:
         type:
-          description: Your event type (separated with dots)
+          description: Event type identifier with lowercase alphanumeric segments separated by dots or hyphens
           type: string
+          pattern: '^[a-z0-9]+([.-][a-z0-9]+)*$'
+          minLength: 1
+          maxLength: 253
           example: de.telekom.eni.quickstart.v1
         version:
           type: string

@@ -365,6 +365,7 @@ type EventExposure struct {
 	// EventType identifies the type of event that is published (e.g. "de.telekom.eni.quickstart.v1")
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:Pattern=`^[a-z0-9]+([.-][a-z0-9]+)*$`
 	EventType string `json:"eventType"`
 
 	// Visibility defines who can see and subscribe to this event
@@ -428,6 +429,7 @@ type EventSubscription struct {
 	// EventType identifies the type of event to subscribe to (e.g. "de.telekom.eni.quickstart.v1")
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:Pattern=`^[a-z0-9]+([.-][a-z0-9]+)*$`
 	EventType string `json:"eventType"`
 
 	// Delivery configures how events are delivered to the subscriber

@@ -22,11 +22,11 @@ func MakeEventSpecificationName(eventSpec *EventSpecification) string {
 
 // EventSpecificationSpec defines the desired state of EventSpecification.
 type EventSpecificationSpec struct {
-	// Type is the dot-separated event type identifier (e.g. "de.telekom.eni.quickstart.v1").
+	// Type is an event type identifier with dot or hyphen separators (e.g. "de.telekom.eni-quickstart.v1").
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:MaxLength=253
-	// +kubebuilder:validation:Pattern=`^[a-z0-9]+(\.[a-z0-9]+)*$`
+	// +kubebuilder:validation:Pattern=`^[a-z0-9]+([.-][a-z0-9]+)*$`
 	Type string `json:"type"`
 
 	// Version of the event type specification (e.g. "1.0.0").

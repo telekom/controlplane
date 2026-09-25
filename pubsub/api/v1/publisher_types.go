@@ -18,7 +18,7 @@ type PublisherSpec struct {
 	// EventStore references the EventStore CR that provides configuration connection details.
 	EventStore ctypes.ObjectRef `json:"eventStore"`
 
-	// EventType is the dot-separated event type identifier (e.g. "de.telekom.eni.quickstart.v1").
+	// EventType is an event type identifier with dot or hyphen separators (e.g. "de.telekom.eni-quickstart.v1").
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MinLength=1
 	EventType string `json:"eventType"`
