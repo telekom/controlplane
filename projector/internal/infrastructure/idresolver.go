@@ -280,6 +280,34 @@ func (r *IDResolver) FindApplicationID(ctx context.Context, name, teamName strin
 	})
 }
 
+// FindApplicationByMeta resolves the observer by its Kubernetes reference.
+func (r *IDResolver) FindApplicationByMeta(ctx context.Context, namespace, name string) (int, error) {
+	et, lk := cachekeys.ApplicationMeta(namespace, name)
+	fullKey := et + ":" + lk
+	return r.resolve(ctx, et, lk, fmt.Sprintf("application %s/%s", namespace, name), func() (int, error) {
+		a, err := r.client.Application.Query().Where(application.NamespaceEQ(namespace), application.NameEQ(name)).Only(ctx)
+		if err != nil {
+			if ent.IsNotFound(err) {
+				r.setNegCache(fullKey)
+				metrics.IDResolverLookups.WithLabelValues(et, metrics.ResultDBMiss).Inc()
+				return 0, fmt.Errorf("application %s/%s: %w", namespace, name, ErrEntityNotFound)
+			}
+			return 0, fmt.Errorf("find application %s/%s: %w", namespace, name, err)
+		}
+		r.clearNegCache(fullKey)
+		metrics.IDResolverLookups.WithLabelValues(et, metrics.ResultDBHit).Inc()
+		r.cache.Set(et, lk, a.ID)
+		return a.ID, nil
+	})
+}
+
+// EvictApplicationByMeta discards a stale observer ID after a foreign-key failure.
+func (r *IDResolver) EvictApplicationByMeta(namespace, name string) {
+	et, lk := cachekeys.ApplicationMeta(namespace, name)
+	r.cache.Del(et, lk)
+	r.clearNegCache(et + ":" + lk)
+}
+
 // FindAPIExposureID looks up the DB primary key for an ApiExposure by base
 // path, application name, and team name. Base paths are unique per application,
 // and applications per team, so all three are required.
@@ -371,6 +399,44 @@ func (r *IDResolver) FindAPISubscriptionByMeta(ctx context.Context, namespace, n
 		r.cache.Set(et, lk, sub.ID)
 		return sub.ID, nil
 	})
+}
+
+// FindAPISubscriptionID resolves the subscription owned by the exact consumer.
+func (r *IDResolver) FindAPISubscriptionID(ctx context.Context, basePath, appName, teamName string) (int, error) {
+	et, lk := cachekeys.APISubscription(basePath, appName, teamName)
+	fullKey := et + ":" + lk
+	return r.resolve(ctx, et, lk, fmt.Sprintf("api_subscription %q (app %q, team %q)", basePath, appName, teamName), func() (int, error) {
+		sub, err := r.client.ApiSubscription.Query().Where(
+			apisubscription.BasePathEQ(basePath),
+			apisubscription.HasOwnerWith(application.NameEQ(appName), application.HasOwnerTeamWith(team.NameEQ(teamName))),
+		).Only(ctx)
+		if err != nil {
+			if ent.IsNotFound(err) {
+				r.setNegCache(fullKey)
+				metrics.IDResolverLookups.WithLabelValues(et, metrics.ResultDBMiss).Inc()
+				return 0, fmt.Errorf("api_subscription %q (app %q, team %q): %w", basePath, appName, teamName, ErrEntityNotFound)
+			}
+			return 0, fmt.Errorf("find api_subscription %q (app %q, team %q): %w", basePath, appName, teamName, err)
+		}
+		r.clearNegCache(fullKey)
+		metrics.IDResolverLookups.WithLabelValues(et, metrics.ResultDBHit).Inc()
+		r.cache.Set(et, lk, sub.ID)
+		return sub.ID, nil
+	})
+}
+
+// EvictAPISubscriptionID discards a stale consumer-owned subscription ID.
+func (r *IDResolver) EvictAPISubscriptionID(basePath, appName, teamName string) {
+	et, lk := cachekeys.APISubscription(basePath, appName, teamName)
+	r.cache.Del(et, lk)
+	r.clearNegCache(et + ":" + lk)
+}
+
+// EvictAPIExposureID discards a stale provider-owned exposure ID.
+func (r *IDResolver) EvictAPIExposureID(basePath, appName, teamName string) {
+	et, lk := cachekeys.APIExposure(basePath, appName, teamName)
+	r.cache.Del(et, lk)
+	r.clearNegCache(et + ":" + lk)
 }
 
 // FindEventSubscriptionByMeta looks up the DB primary key for an EventSubscription

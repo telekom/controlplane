@@ -4,9 +4,9 @@
 
 // Package approvalrequest implements the ApprovalRequest resource module for
 // the projector. ApprovalRequest is a Level 4 entity with a required
-// FK dependency on ApiSubscription, EventSubscription, or AgenticSubscription
+// FK dependency on ApiSubscription, EventSubscription, AgenticSubscription, or Listener
 // (determined by TargetKind). It uses namespace+name as the unique conflict
-// key and resolves the subscription FK via cache-based meta-key lookup.
+// key and resolves subscription FKs via cache and Listener FKs directly from the DB.
 package approvalrequest
 
 import (
@@ -19,6 +19,7 @@ const (
 	TargetKindAPISubscription     = "ApiSubscription"
 	TargetKindEventSubscription   = "EventSubscription"
 	TargetKindAgenticSubscription = "AgenticSubscription"
+	TargetKindListener            = "Listener"
 )
 
 // ApprovalRequestKey is the composite identity key for ApprovalRequest
@@ -47,9 +48,10 @@ type ApprovalRequestData struct {
 	Decisions            []model.Decision
 	AvailableTransitions []model.AvailableTransition
 	// TargetKind indicates whether the approval request targets an
-	// ApiSubscription, EventSubscription, or AgenticSubscription. Used by the
+	// ApiSubscription, EventSubscription, AgenticSubscription, or Listener. Used by the
 	// repository to resolve the correct FK.
-	TargetKind string // "ApiSubscription", "EventSubscription", or "AgenticSubscription"
+	TargetKind  string
+	ApprovalKey string // "provider" or "consumer" for Listener targets
 	// Subscription reference via spec.target (k8s namespace + name).
 	SubscriptionNamespace string
 	SubscriptionName      string

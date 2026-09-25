@@ -29,6 +29,11 @@ func Application(name, teamName string) (entityType, lookupKey string) {
 	return "application", name + ":" + teamName
 }
 
+// ApplicationMeta identifies an Application by Kubernetes namespace and name.
+func ApplicationMeta(namespace, name string) (entityType, lookupKey string) {
+	return "application", "meta:" + namespace + ":" + name
+}
+
 // APIExposure returns the cache key components for an ApiExposure entity
 // identified by base path, application name, and team name.
 // Base paths are unique per application, and applications per team,
@@ -50,6 +55,11 @@ func APIExposureByBasePath(basePath string) (entityType, lookupKey string) {
 // spec.target reference.
 func APISubscriptionMeta(namespace, name string) (entityType, lookupKey string) {
 	return "apisubscription", "meta:" + namespace + ":" + name
+}
+
+// APISubscription identifies a subscription by base path and its exact owner.
+func APISubscription(basePath, appName, teamName string) (entityType, lookupKey string) {
+	return "apisubscription", "owner:" + basePath + ":" + appName + ":" + teamName
 }
 
 // Approval returns the cache key components for an Approval entity,

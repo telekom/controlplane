@@ -18,9 +18,10 @@ import (
 // Application. It uses a convention-based fallback delete strategy so
 // KeyFromDelete always succeeds.
 var Module = &module.TypedModule[*apiv1.ApiExposure, *APIExposureData, APIExposureKey]{
-	ModuleName: "apiexposure",
-	NewObj:     func() *apiv1.ApiExposure { return &apiv1.ApiExposure{} },
-	Translator: &Translator{},
+	ModuleName:   "apiexposure",
+	NotifyParent: true,
+	NewObj:       func() *apiv1.ApiExposure { return &apiv1.ApiExposure{} },
+	Translator:   &Translator{},
 	RepoFactory: func(deps module.ModuleDeps) runtime.Repository[APIExposureKey, *APIExposureData] {
 		return NewRepository(
 			deps.EntClient,

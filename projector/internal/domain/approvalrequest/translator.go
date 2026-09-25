@@ -35,7 +35,7 @@ var _ runtime.Translator[*approvalv1.ApprovalRequest, *ApprovalRequestData, Appr
 
 // isSupportedTargetKind returns true if the target kind is one we can resolve.
 func isSupportedTargetKind(kind string) bool {
-	return kind == TargetKindAPISubscription || kind == TargetKindEventSubscription || kind == TargetKindAgenticSubscription
+	return kind == TargetKindAPISubscription || kind == TargetKindEventSubscription || kind == TargetKindAgenticSubscription || kind == TargetKindListener
 }
 
 // ShouldSkip returns true if the ApprovalRequest CR lacks the required fields
@@ -48,13 +48,24 @@ func (t *Translator) ShouldSkip(obj *approvalv1.ApprovalRequest) (bool, string) 
 		return true, "spec.action is empty"
 	}
 	if !isSupportedTargetKind(obj.Spec.Target.TypeMeta.Kind) {
-		return true, "spec.target.kind is not ApiSubscription, EventSubscription, or AgenticSubscription"
+		return true, "spec.target.kind is not ApiSubscription, EventSubscription, AgenticSubscription, or Listener"
 	}
 	if !cconfig.FeaturePubSub.IsEnabled() && obj.Spec.Target.TypeMeta.Kind == TargetKindEventSubscription {
 		return true, "pubsub feature is disabled"
 	}
 	if !cconfig.FeatureAiGateway.IsEnabled() && obj.Spec.Target.TypeMeta.Kind == TargetKindAgenticSubscription {
 		return true, "ai_gateway feature is disabled"
+	}
+	if obj.Spec.Target.TypeMeta.Kind == TargetKindListener {
+		if !cconfig.FeatureSpectre.IsEnabled() {
+			return true, "spectre feature is disabled"
+		}
+		if obj.Spec.ApprovalKey != "provider" && obj.Spec.ApprovalKey != "consumer" {
+			return true, "Listener target requires provider or consumer approvalKey"
+		}
+		if obj.Spec.Action != "listen-"+obj.Spec.ApprovalKey {
+			return true, "Listener action must match approvalKey"
+		}
 	}
 
 	if obj.Spec.Decider.TeamName == "" {
@@ -101,6 +112,7 @@ func (t *Translator) Translate(_ context.Context, obj *approvalv1.ApprovalReques
 		Decisions:             mapDecisions(obj.Spec.Decisions),
 		AvailableTransitions:  mapAvailableTransitions(obj.Status.AvailableTransitions),
 		TargetKind:            obj.Spec.Target.TypeMeta.Kind,
+		ApprovalKey:           obj.Spec.ApprovalKey,
 		SubscriptionNamespace: targetNamespace,
 		SubscriptionName:      obj.Spec.Target.Name,
 		AccessScopes:          properties.Scopes,

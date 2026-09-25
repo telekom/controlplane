@@ -154,6 +154,8 @@ func (r *Repository) Upsert(ctx context.Context, data *APISubscriptionData) erro
 	// spec.target references.
 	et, lk := cachekeys.APISubscriptionMeta(data.Meta.Namespace, data.Meta.Name)
 	r.cache.Set(et, lk, subscriptionID)
+	et, lk = cachekeys.APISubscription(data.BasePath, data.OwnerAppName, data.OwnerTeamName)
+	r.cache.Set(et, lk, subscriptionID)
 	return nil
 }
 
@@ -230,6 +232,8 @@ func (r *Repository) Delete(ctx context.Context, key APISubscriptionKey) error {
 			et, lk := cachekeys.APISubscriptionMeta(key.Namespace, key.Name)
 			r.cache.Del(et, lk)
 		}
+		et, lk := cachekeys.APISubscription(key.BasePath, key.OwnerAppName, key.OwnerTeamName)
+		r.cache.Del(et, lk)
 	}
 	return nil
 }

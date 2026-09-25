@@ -197,6 +197,8 @@ func (r *Repository) Upsert(ctx context.Context, data *ApplicationData) error {
 
 	et, lk := cachekeys.Application(data.Name, data.TeamName)
 	r.cache.Set(et, lk, appID)
+	et, lk = cachekeys.ApplicationMeta(data.Meta.Namespace, data.Name)
+	r.cache.Set(et, lk, appID)
 	return nil
 }
 
@@ -241,6 +243,8 @@ func (r *Repository) Delete(ctx context.Context, key ApplicationKey) error {
 	}
 
 	et, lk := cachekeys.Application(key.Name, key.TeamName)
+	r.cache.Del(et, lk)
+	et, lk = cachekeys.ApplicationMeta(app.Namespace, app.Name)
 	r.cache.Del(et, lk)
 	return nil
 }

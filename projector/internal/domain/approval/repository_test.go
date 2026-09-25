@@ -17,9 +17,11 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/telekom/controlplane/controlplane-api/ent"
 	entapiexposure "github.com/telekom/controlplane/controlplane-api/ent/apiexposure"
+	entapplication "github.com/telekom/controlplane/controlplane-api/ent/application"
 	entapproval "github.com/telekom/controlplane/controlplane-api/ent/approval"
 	"github.com/telekom/controlplane/controlplane-api/ent/enttest"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventsubscription"
+	entlistener "github.com/telekom/controlplane/controlplane-api/ent/listener"
 	_ "github.com/telekom/controlplane/controlplane-api/ent/runtime"
 	"github.com/telekom/controlplane/controlplane-api/ent/zone"
 	"github.com/telekom/controlplane/controlplane-api/pkg/model"
@@ -196,6 +198,138 @@ var _ = Describe("Approval Repository", func() {
 	}
 
 	Describe("Upsert", func() {
+		It("attaches scoped provider and consumer approvals to separate Listener edges", func() {
+			app, err := client.Application.Query().Where(entapplication.NameEQ("consumer-app")).Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			exposure, err := client.ApiExposure.Query().Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			makeListener := func(name string) int {
+				l, err := client.Listener.Create().SetName(name).SetNamespace("ns").SetAPIBasePath("/api/v1/users").
+					SetApplicationID(app.ID).SetSubscriptionID(subID).SetExposureID(exposure.ID).Save(ctx)
+				Expect(err).NotTo(HaveOccurred())
+				return l.ID
+			}
+			first := makeListener("first")
+			second := makeListener("second")
+			data := baseData()
+			data.TargetKind = approval.TargetKindListener
+			data.SubscriptionNamespace = "ns"
+			data.SubscriptionName = "first"
+			data.Meta.Name = "provider-approval"
+			data.ApprovalKey = "provider"
+			data.Action = "listen-provider"
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+			provider, err := client.Approval.Query().Where(entapproval.NameEQ(data.Meta.Name)).Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(provider.QueryListener().OnlyID(ctx)).To(Equal(first))
+			data.Meta.Name = "consumer-approval"
+			data.ApprovalKey = "consumer"
+			data.Action = "listen-consumer"
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+			consumer, err := client.Approval.Query().Where(entapproval.NameEQ(data.Meta.Name)).Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(consumer.QueryConsumerListener().OnlyID(ctx)).To(Equal(first))
+			data.SubscriptionName = "second"
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+			consumer, err = client.Approval.Query().Where(entapproval.NameEQ(data.Meta.Name)).Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(consumer.QueryConsumerListener().OnlyID(ctx)).To(Equal(second))
+			count, err := client.Listener.Query().Where(entlistener.NameEQ("first")).QueryConsumerApproval().Count(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(count).To(Equal(0))
+			data.ApprovalKey = "provider"
+			data.Action = "listen-provider"
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+			consumer, err = client.Approval.Query().Where(entapproval.NameEQ(data.Meta.Name)).Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(consumer.QueryListener().OnlyID(ctx)).To(Equal(second))
+			Expect(consumer.QueryConsumerListener().Exist(ctx)).To(BeFalse())
+			data.TargetKind = approval.TargetKindAPISubscription
+			data.Action = "subscribe"
+			data.SubscriptionNamespace = "prod--platform--narvi"
+			data.SubscriptionName = "my-sub"
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+			consumer, err = client.Approval.Query().Where(entapproval.NameEQ(data.Meta.Name)).Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(consumer.QueryAPISubscription().OnlyID(ctx)).To(Equal(subID))
+			Expect(consumer.QueryConsumerListener().Exist(ctx)).To(BeFalse())
+			Expect(consumer.QueryListener().Exist(ctx)).To(BeFalse())
+
+			agenticSub, err := client.AgenticSubscription.Create().SetBasePath("/agentic/v1/my-agent").
+				SetNamespace("ns").SetName("agentic-sub").SetOwnerID(app.ID).Save(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			deps.agenticSubIDs = map[string]int{"ns:agentic-sub": agenticSub.ID}
+			data.SubscriptionNamespace = "ns"
+			data.TargetKind = approval.TargetKindAgenticSubscription
+			data.SubscriptionName = "agentic-sub"
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+			for _, gate := range []string{"provider", "consumer"} {
+				data.TargetKind = approval.TargetKindListener
+				data.SubscriptionName = "second"
+				data.ApprovalKey = gate
+				data.Action = "listen-" + gate
+				Expect(repo.Upsert(ctx, data)).To(Succeed())
+				consumer, err = client.Approval.Query().Where(entapproval.NameEQ(data.Meta.Name)).Only(ctx)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(consumer.QueryAgenticSubscription().Exist(ctx)).To(BeFalse())
+				Expect(consumer.QueryAPISubscription().Exist(ctx)).To(BeFalse())
+				if gate == "provider" {
+					Expect(consumer.QueryListener().OnlyID(ctx)).To(Equal(second))
+				} else {
+					Expect(consumer.QueryConsumerListener().OnlyID(ctx)).To(Equal(second))
+				}
+				data.TargetKind = approval.TargetKindAgenticSubscription
+				data.SubscriptionName = "agentic-sub"
+				data.Action = "subscribe"
+				Expect(repo.Upsert(ctx, data)).To(Succeed())
+				consumer, err = client.Approval.Query().Where(entapproval.NameEQ(data.Meta.Name)).Only(ctx)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(consumer.QueryAgenticSubscription().OnlyID(ctx)).To(Equal(agenticSub.ID))
+				Expect(consumer.QueryListener().Exist(ctx)).To(BeFalse())
+				Expect(consumer.QueryConsumerListener().Exist(ctx)).To(BeFalse())
+			}
+		})
+
+		It("retries missing Listener and refuses unscoped approvals", func() {
+			data := baseData()
+			data.TargetKind = approval.TargetKindListener
+			data.ApprovalKey = "provider"
+			data.Action = "listen-provider"
+			data.SubscriptionNamespace = "ns"
+			data.SubscriptionName = "absent"
+			Expect(errors.Is(repo.Upsert(ctx, data), runtime.ErrDependencyMissing)).To(BeTrue())
+			data.ApprovalKey = ""
+			Expect(repo.Upsert(ctx, data)).To(MatchError(ContainSubstring("invalid Listener approvalKey")))
+		})
+		It("rejects a second approval for the same Listener gate without changing either row", func() {
+			app, err := client.Application.Query().Where(entapplication.NameEQ("consumer-app")).Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			exposure, err := client.ApiExposure.Query().Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			listener, err := client.Listener.Create().SetName("gate").SetNamespace("ns").SetAPIBasePath("/api/v1/users").
+				SetApplicationID(app.ID).SetSubscriptionID(subID).SetExposureID(exposure.ID).Save(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			data := baseData()
+			data.TargetKind = approval.TargetKindListener
+			data.ApprovalKey = "provider"
+			data.Action = "listen-provider"
+			data.SubscriptionNamespace = "ns"
+			data.SubscriptionName = "gate"
+			data.Meta.Name = "first-provider"
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+			data.Meta.Name = "second-provider"
+			Expect(repo.Upsert(ctx, data)).To(MatchError(ContainSubstring("already belongs to")))
+			count, err := client.Approval.Query().Count(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(count).To(Equal(1))
+			Expect(listener.QueryProviderApproval().OnlyID(ctx)).To(BeNumerically(">", 0))
+			owner, err := listener.QueryProviderApproval().Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(owner.Name).To(Equal("first-provider"))
+			cache.Wait()
+			_, ok := cache.Get("approval", data.Meta.Namespace+":second-provider")
+			Expect(ok).To(BeFalse())
+		})
 		It("should create a new approval with subscription FK", func() {
 			data := baseData()
 			Expect(repo.Upsert(ctx, data)).To(Succeed())
@@ -402,6 +536,18 @@ var _ = Describe("Approval Repository", func() {
 			Expect(*a.StatusMessage).To(Equal("approval rejected"))
 			Expect(a.ExpiresAt).NotTo(BeNil())
 			Expect(*a.ExpiresAt).To(BeTemporally("~", time.Date(2026, 12, 31, 23, 59, 0, 0, time.UTC), time.Second))
+		})
+
+		It("rolls back changed fields when the edge update fails", func() {
+			data := baseData()
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+			data.State = "REJECTED"
+			deps.subIDs["prod--platform--narvi:my-sub"] = subID + 10000
+			Expect(repo.Upsert(ctx, data)).To(HaveOccurred())
+			a, err := client.Approval.Query().Where(entapproval.NameEQ(data.Meta.Name)).Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(a.State.String()).To(Equal("GRANTED"))
+			Expect(a.QueryAPISubscription().OnlyID(ctx)).To(Equal(subID))
 		})
 
 		It("should maintain cache entry", func() {
