@@ -154,6 +154,12 @@ models:
   EventSubscriptionInfo:
     model:
       - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.EventSubscriptionInfo
+  FileSubscriptionInfo:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.FileSubscriptionInfo
+  FileExposureInfo:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.FileExposureInfo
   EventExposureInfo:
     model:
       - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.EventExposureInfo
@@ -261,3 +267,10 @@ models:
   EventDelivery:
     model:
      - github.com/telekom/controlplane/controlplane-api/pkg/model.EventDelivery
+  # File
+  FileSFTP:
+    model:
+     - github.com/telekom/controlplane/controlplane-api/pkg/model.FileSFTP
+  SSHPublicKeySpec:
+    model:
+     - github.com/telekom/controlplane/controlplane-api/pkg/model.SSHPublicKeySpec

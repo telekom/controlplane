@@ -17,6 +17,7 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/apisubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/approval"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventsubscription"
+	"github.com/telekom/controlplane/controlplane-api/ent/filesubscription"
 	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 )
 
@@ -65,6 +66,7 @@ type Approval struct {
 	agentic_subscription_approval *int
 	api_subscription_approval     *int
 	event_subscription_approval   *int
+	file_subscription_approval    *int
 	selectValues                  sql.SelectValues
 }
 
@@ -72,13 +74,15 @@ type Approval struct {
 type ApprovalEdges struct {
 	// APISubscription holds the value of the api_subscription edge.
 	APISubscription *ApiSubscription `json:"api_subscription,omitempty"`
+	// FileSubscription holds the value of the file_subscription edge.
+	FileSubscription *FileSubscription `json:"file_subscription,omitempty"`
 	// EventSubscription holds the value of the event_subscription edge.
 	EventSubscription *EventSubscription `json:"event_subscription,omitempty"`
 	// AgenticSubscription holds the value of the agentic_subscription edge.
 	AgenticSubscription *AgenticSubscription `json:"agentic_subscription,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [3]bool
+	loadedTypes [4]bool
 }
 
 // APISubscriptionOrErr returns the APISubscription value or an error if the edge
@@ -92,12 +96,23 @@ func (e ApprovalEdges) APISubscriptionOrErr() (*ApiSubscription, error) {
 	return nil, &NotLoadedError{edge: "api_subscription"}
 }
 
+// FileSubscriptionOrErr returns the FileSubscription value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e ApprovalEdges) FileSubscriptionOrErr() (*FileSubscription, error) {
+	if e.FileSubscription != nil {
+		return e.FileSubscription, nil
+	} else if e.loadedTypes[1] {
+		return nil, &NotFoundError{label: filesubscription.Label}
+	}
+	return nil, &NotLoadedError{edge: "file_subscription"}
+}
+
 // EventSubscriptionOrErr returns the EventSubscription value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
 func (e ApprovalEdges) EventSubscriptionOrErr() (*EventSubscription, error) {
 	if e.EventSubscription != nil {
 		return e.EventSubscription, nil
-	} else if e.loadedTypes[1] {
+	} else if e.loadedTypes[2] {
 		return nil, &NotFoundError{label: eventsubscription.Label}
 	}
 	return nil, &NotLoadedError{edge: "event_subscription"}
@@ -108,7 +123,7 @@ func (e ApprovalEdges) EventSubscriptionOrErr() (*EventSubscription, error) {
 func (e ApprovalEdges) AgenticSubscriptionOrErr() (*AgenticSubscription, error) {
 	if e.AgenticSubscription != nil {
 		return e.AgenticSubscription, nil
-	} else if e.loadedTypes[2] {
+	} else if e.loadedTypes[3] {
 		return nil, &NotFoundError{label: agenticsubscription.Label}
 	}
 	return nil, &NotLoadedError{edge: "agentic_subscription"}
@@ -132,6 +147,8 @@ func (*Approval) scanValues(columns []string) ([]any, error) {
 		case approval.ForeignKeys[1]: // api_subscription_approval
 			values[i] = new(sql.NullInt64)
 		case approval.ForeignKeys[2]: // event_subscription_approval
+			values[i] = new(sql.NullInt64)
+		case approval.ForeignKeys[3]: // file_subscription_approval
 			values[i] = new(sql.NullInt64)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -291,6 +308,13 @@ func (_m *Approval) assignValues(columns []string, values []any) error {
 				_m.event_subscription_approval = new(int)
 				*_m.event_subscription_approval = int(value.Int64)
 			}
+		case approval.ForeignKeys[3]:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for edge-field file_subscription_approval", value)
+			} else if value.Valid {
+				_m.file_subscription_approval = new(int)
+				*_m.file_subscription_approval = int(value.Int64)
+			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
 		}
@@ -307,6 +331,11 @@ func (_m *Approval) Value(name string) (ent.Value, error) {
 // QueryAPISubscription queries the "api_subscription" edge of the Approval entity.
 func (_m *Approval) QueryAPISubscription() *ApiSubscriptionQuery {
 	return NewApprovalClient(_m.config).QueryAPISubscription(_m)
+}
+
+// QueryFileSubscription queries the "file_subscription" edge of the Approval entity.
+func (_m *Approval) QueryFileSubscription() *FileSubscriptionQuery {
+	return NewApprovalClient(_m.config).QueryFileSubscription(_m)
 }
 
 // QueryEventSubscription queries the "event_subscription" edge of the Approval entity.

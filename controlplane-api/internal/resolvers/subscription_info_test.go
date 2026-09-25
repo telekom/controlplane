@@ -36,6 +36,7 @@ var (
 	_ gqlmodel.SubscriptionInfo = (*gqlmodel.ApiSubscriptionInfo)(nil)
 	_ gqlmodel.SubscriptionInfo = (*gqlmodel.EventSubscriptionInfo)(nil)
 	_ gqlmodel.SubscriptionInfo = (*gqlmodel.AgenticSubscriptionInfo)(nil)
+	_ gqlmodel.SubscriptionInfo = (*gqlmodel.FileSubscriptionInfo)(nil)
 )
 
 var _ = Describe("SubscriptionInfo", func() {
@@ -63,7 +64,7 @@ var _ = Describe("SubscriptionInfo", func() {
 		for _, typ := range possibleTypes {
 			implementors = append(implementors, typ.Name)
 		}
-		Expect(implementors).To(ConsistOf("ApiSubscriptionInfo", "EventSubscriptionInfo", "AgenticSubscriptionInfo"))
+		Expect(implementors).To(ConsistOf("ApiSubscriptionInfo", "EventSubscriptionInfo", "AgenticSubscriptionInfo", "FileSubscriptionInfo"))
 		Expect(schema.Types).NotTo(HaveKey("OwnedSubscriptionInfo"))
 		for _, name := range []string{"Approval", "ApprovalRequest"} {
 			Expect(schema.Types[name].Fields.ForName("subscription").Type.String()).To(Equal("SubscriptionInfo!"))
@@ -92,6 +93,16 @@ var _ = Describe("SubscriptionInfo", func() {
 				SetNamespace("prod").SetName("event-approval-request").SetAction("ALLOW").
 				SetRequester(seed.ApprovalRequest.Requester).SetDecider(seed.ApprovalRequest.Decider).
 				SetDeciderTeamName("team-alpha").SetEventSubscription(seed.EventSubscription).Save(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			_, err = db.Approval.Create().
+				SetNamespace("prod").SetName("file-approval").SetAction("ALLOW").
+				SetRequester(seed.Approval.Requester).SetDecider(seed.Approval.Decider).
+				SetDeciderTeamName("team-alpha").SetFileSubscription(seed.FileSubscriptionAlpha).Save(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			_, err = db.ApprovalRequest.Create().
+				SetNamespace("prod").SetName("file-approval-request").SetAction("ALLOW").
+				SetRequester(seed.ApprovalRequest.Requester).SetDecider(seed.ApprovalRequest.Decider).
+				SetDeciderTeamName("team-alpha").SetFileSubscription(seed.FileSubscriptionAlpha).Save(ctx)
 			Expect(err).NotTo(HaveOccurred())
 			server = handler.New(resolvers.NewExecutableSchema(resolvers.Config{
 				Resolvers: resolvers.NewResolver(db, service.Services{}, nil, ""),
@@ -149,7 +160,7 @@ var _ = Describe("SubscriptionInfo", func() {
 				}
 				Expect(json.Unmarshal(recorder.Body.Bytes(), &response)).To(Succeed())
 				Expect(response.Errors).To(BeEmpty())
-				Expect(response.Data.Approvals.Edges).To(HaveLen(3))
+				Expect(response.Data.Approvals.Edges).To(HaveLen(4))
 				for _, edge := range response.Data.Approvals.Edges {
 					owner := edge.Node.Subscription.OwnerApplication
 					Expect(owner.ID).To(Equal(strconv.Itoa(seed.AppBeta.ID)))
@@ -175,6 +186,7 @@ var _ = Describe("SubscriptionInfo", func() {
 							... on ApiSubscriptionInfo { basePath }
 							... on EventSubscriptionInfo { eventType }
 							... on AgenticSubscriptionInfo { basePath }
+							... on FileSubscriptionInfo { fileType }
 						} } }
 					}
 				} %s`, field, selection, fragment)
@@ -192,6 +204,7 @@ var _ = Describe("SubscriptionInfo", func() {
 					ID               string
 					BasePath         string
 					EventType        string
+					FileType         string
 					OwnerApplication struct{ ID, Name string }
 				}
 				var response struct {
@@ -208,8 +221,9 @@ var _ = Describe("SubscriptionInfo", func() {
 					"ApiSubscriptionInfo":     {ID: strconv.Itoa(seed.Subscription.ID), BasePath: "/alpha"},
 					"EventSubscriptionInfo":   {ID: strconv.Itoa(seed.EventSubscription.ID), EventType: "order.created"},
 					"AgenticSubscriptionInfo": {ID: strconv.Itoa(seed.AgenticSubscription.ID), BasePath: "/mcp-alpha"},
+					"FileSubscriptionInfo":    {ID: strconv.Itoa(seed.FileSubscriptionAlpha.ID), FileType: "invoice"},
 				}
-				Expect(response.Data[field].Edges).To(HaveLen(3))
+				Expect(response.Data[field].Edges).To(HaveLen(4))
 				for _, edge := range response.Data[field].Edges {
 					actual := edge.Node.Subscription
 					Expect(expected).To(HaveKey(actual.Typename))
