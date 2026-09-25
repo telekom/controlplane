@@ -1,0 +1,36 @@
+api/internal/controller/token_endpoint_scopes_test.go
+  s_ef81f1bb219316::t_14fed12ff53d27 205,292
+docs/docs/architecture/agentic.mdx
+  s_ef81f1bb219316::t_aaa1fcf88e2e5a 72-76
+agentic/internal/handler/agenticsubscription/scope_validation_test.go
+  s_ef81f1bb219316::t_14fed12ff53d27 30,45-46,52-56,59
+agentic/internal/controller/token_endpoint_scopes_test.go
+  s_ef81f1bb219316::t_b5542058ec03cf 176-178,229-240,318-323,326,354,359,365,368-369,371,390,393-395,405,410,416-420,433-437,440
+common/pkg/client/client_test.go
+  s_ef81f1bb219316::t_d0242e2d7ccf4f 267,307
+rover/internal/controller/rover_controller_trusted_teams_test.go
+  s_ef81f1bb219316::t_aaa1fcf88e2e5a 11,70
+  s_ef81f1bb219316::t_8221f9fd69c4db 65,72
+docs/docs/architecture/api.mdx
+  s_ef81f1bb219316::t_aaa1fcf88e2e5a 48-50,53-55
+api/internal/controller/apisubscription_controller_test.go
+  s_ef81f1bb219316::t_aaa1fcf88e2e5a 325,328,331,343
+common/pkg/client/client.go
+  s_ef81f1bb219316::t_d0242e2d7ccf4f 11,29,146-147,154
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "978106ba6ac56df3d5b7627edf71f926d628f543",
+  "prompts": {},
+  "sessions": {
+    "s_ef81f1bb219316": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f2c67172fffeJCZ24R9DVjnL5r",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
