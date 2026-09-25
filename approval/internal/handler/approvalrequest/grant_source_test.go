@@ -7,7 +7,6 @@ package approvalrequest
 import (
 	"context"
 	"fmt"
-	"testing"
 
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
 	ctypes "github.com/telekom/controlplane/common/pkg/types"
@@ -20,11 +19,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
-
-func TestGrantSource(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "Grant Source Suite")
-}
 
 func newScheme() *runtime.Scheme {
 	s := runtime.NewScheme()
