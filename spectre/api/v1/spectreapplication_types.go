@@ -41,6 +41,9 @@ type SpectreApplicationStatus struct {
 	ListenerRoute *ctypes.ObjectRef `json:"listenerRoute,omitempty"`
 	// +optional
 	ProxyRoute *ctypes.ObjectRef `json:"proxyRoute,omitempty"`
+	// SseUrl is the canonical SSE endpoint for this listener application, including the subscription ID.
+	// +optional
+	SseUrl string `json:"sseUrl,omitempty"`
 }
 
 // +kubebuilder:object:root=true

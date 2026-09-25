@@ -213,6 +213,10 @@ spec:
                 - name
                 - namespace
                 type: object
+              sseUrl:
+                description: SseUrl is the canonical SSE endpoint for this listener
+                  application, including the subscription ID.
+                type: string
               subscriber:
                 description: |-
                   ObjectRef is a reference to a Kubernetes object
