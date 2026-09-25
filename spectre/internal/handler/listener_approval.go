@@ -9,6 +9,7 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
@@ -268,6 +269,14 @@ func (h *ListenerHandler) setAggregateConditions(ctx context.Context, listener *
 	switch result.outcome {
 	case outcomeGranted:
 		builder.ClearApprovalPendingReady(listener)
+		// The builder clears only its own ApprovalPending reason, and the
+		// controller never overwrites a Ready that is already False, so a
+		// grace-period stop would outlive the answer when provisioning fails.
+		if ready := meta.FindStatusCondition(listener.Status.Conditions, condition.ConditionTypeReady); ready != nil &&
+			ready.Reason == reasonAuthorizationUnavailable {
+			listener.SetCondition(condition.NewNotReadyCondition(condition.ReasonProcessing, "Approval granted, provisioning in progress"))
+			listener.SetCondition(condition.NewProcessingCondition(condition.ReasonProcessing, "Approval granted, provisioning in progress"))
+		}
 
 	case outcomeDenied:
 		gate := "provider"
