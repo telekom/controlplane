@@ -912,6 +912,11 @@ var _ = Describe("Integration: Two-Tier Reconcile Cycle", Ordered, func() {
 				g.Expect(current.Status.Draining).NotTo(BeNil())
 				g.Expect(current.Status.Draining.Phase).To(Equal(handler.DrainPhaseDrainingSubscribers))
 				g.Expect(current.Status.RouteListener).To(BeNil())
+				// Ready follows the drain; it does not freeze at the first phase.
+				ready := meta.FindStatusCondition(current.Status.Conditions, condition.ConditionTypeReady)
+				g.Expect(ready).NotTo(BeNil())
+				g.Expect(ready.Reason).To(Equal("Deleting"))
+				g.Expect(ready.Message).To(ContainSubstring("phase " + handler.DrainPhaseDrainingSubscribers))
 			}, testTimeout, testInterval).Should(Succeed())
 
 			By("Keeping the Listener finalizer while the held Subscriber finalizes")
