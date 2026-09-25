@@ -73,12 +73,6 @@ type ListenerStatus struct {
 	ProviderApprovalRequest *ctypes.ObjectRef `json:"providerApprovalRequest,omitempty"`
 	// +optional
 	ConsumerApprovalRequest *ctypes.ObjectRef `json:"consumerApprovalRequest,omitempty"`
-	// AuthorizationPolicyVersion records which approval model is active.
-	// Set to "v2" only after a verified fresh-install or completed migration.
-	// +optional
-	AuthorizationPolicyVersion string `json:"authorizationPolicyVersion,omitempty"`
-	// +optional
-	AuthorizationMigration *AuthorizationMigrationStatus `json:"authorizationMigration,omitempty"`
 	// +optional
 	AppliedPlacement *AppliedListenerPlacementStatus `json:"appliedPlacement,omitempty"`
 	// +optional
