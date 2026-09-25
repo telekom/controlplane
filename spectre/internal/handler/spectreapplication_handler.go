@@ -80,9 +80,11 @@ func (h *SpectreApplicationHandler) CreateOrUpdate(ctx context.Context, obj *spe
 
 	// Step 5: If SSE delivery, reconcile SSE Routes (primary + optional proxy).
 	if obj.Spec.DeliveryType == "server_sent_event" {
-		if err := h.reconcileSSERoutes(ctx, obj, zone, eventConfig, appId); err != nil {
+		if err := h.reconcileSSERoutes(ctx, obj, zone, eventConfig, subscriber, appId); err != nil {
 			return errors.Wrap(err, "failed to reconcile SSE Routes")
 		}
+	} else {
+		obj.Status.SseUrl = ""
 	}
 
 	// Step 5.5: Cleanup obsolete children that were not touched in this reconcile.
@@ -132,7 +134,7 @@ func (h *SpectreApplicationHandler) CreateOrUpdate(ctx context.Context, obj *spe
 		return nil
 	}
 	if obj.Spec.DeliveryType == "server_sent_event" {
-		if err := ensureChildReady(ctx, obj.Status.ListenerRoute, &gatewayv1.Route{}); err != nil {
+		if err := ensureSSEReady(ctx, obj); err != nil {
 			obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonSubResourceNotReady, err.Error()))
 			obj.SetCondition(condition.NewProcessingCondition(condition.ReasonSubResourceNotReady, err.Error()))
 			return nil
@@ -228,6 +230,7 @@ func (h *SpectreApplicationHandler) Delete(ctx context.Context, obj *spectrev1.S
 	}
 	obj.Status.ListenerRoute = nil
 	obj.Status.ProxyRoute = nil
+	obj.Status.SseUrl = ""
 
 	return nil
 }
@@ -245,6 +248,21 @@ func ensureChildReady(ctx context.Context, ref *ctypes.ObjectRef, into client.Ob
 	}
 	if cobj, ok := into.(ctypes.Object); ok {
 		return condition.EnsureReady(cobj)
+	}
+	return nil
+}
+
+// ensureSSEReady verifies that every SSE Route carries Ready=True and that the
+// SSE URL is published. A proxy-zone app is only reachable through its proxy Route.
+func ensureSSEReady(ctx context.Context, obj *spectrev1.SpectreApplication) error {
+	for _, ref := range []*ctypes.ObjectRef{obj.Status.ListenerRoute, obj.Status.ProxyRoute} {
+		if err := ensureChildReady(ctx, ref, &gatewayv1.Route{}); err != nil {
+			return err
+		}
+	}
+	// The Subscriber watch requeues once its SubscriptionId appears.
+	if obj.Status.SseUrl == "" {
+		return errors.New("SSE URL is not yet known: the Subscriber has no SubscriptionId or the zone preset has no visible URL")
 	}
 	return nil
 }
