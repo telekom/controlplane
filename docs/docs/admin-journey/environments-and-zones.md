@@ -328,6 +328,8 @@ spec:
 
 The target zone must be a **local** (non-proxy) zone running Horizon. Because a proxy zone has no backend of its own, it needs no `admin` or backend URLs — those all belong to the target zone.
 
+For callback subscriptions, Horizon sends to the **target zone's gateway**, even when the exposure and subscriber are both in the proxy zone. With the example above, `dataplane2`'s `EventConfig.status.callbackUrl` advertises the effective ingress from `dataplane1`'s `proxyCallbackUrls[dataplane2]`. Its own `callbackRoute` still references a primary route in `dataplane2` for final delivery to the subscriber. For other subscriber zones, `proxyCallbackUrls` advertises only endpoints permitted by both the proxy's mesh and the target's mesh: the target's primary URL when subscribing in `dataplane1`, or its forward URL to another zone. These effective URLs need not match the proxy's owned `proxyCallbackRoutes`. If the backend route or permissions are missing, the entry is omitted; do not use a reverse or local proxy-zone route as fallback. The backend gateway accepts Horizon's `eventstore` token from its normal issuer and forwards cross-zone as `gateway` with its LMS issuer, which the subscriber's primary route trusts. See [callback routing](../architecture/event.mdx#callback-route).
+
 :::warning Mutually exclusive
 
 `local` and `proxy` are mutually exclusive. Every `EventConfig` must set exactly one of them, and the resource is rejected if both (or neither) are present.

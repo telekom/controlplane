@@ -105,7 +105,8 @@ type EventExposureStatus struct {
 	// +optional
 	Publisher *ctypes.ObjectRef `json:"publisher,omitempty"`
 
-	// CallbackURL is the URL of callback gateway in the provider zone.
+	// CallbackURL is the effective same-zone callback ingress from the provider's EventConfig.
+	// For proxy providers this URL belongs to the target backend's gateway.
 	// +optional
 	CallbackURL string `json:"callbackURL,omitempty"`
 

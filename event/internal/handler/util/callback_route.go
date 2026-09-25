@@ -17,15 +17,16 @@ import (
 
 // How this works:
 //
-// Subscriber and Provider share the same Zone ("provider" --> "foo" --> "consumer"):
+// Subscriber and backend share the same Zone ("foo" --> "consumer"):
 // 1. Subscriber has deliveryType callback with the callbackUrl "https://my-callback/v1/post"
 // 2. Approval is done and pubsub-Subscription is provisioned with the callbackUrl "https://foo-gateway/horizon-foo/callback/v1?callback=https://my-callback/v1/post"
-// 3. Horizon publishes events (auth using mesh-client); the foo-gateway proxies them and then forwards them to the callbackUrl with the correct LMS-token (clientId=mesh-client)
+// 3. Horizon publishes events as eventstore; the foo-gateway forwards them to the callbackUrl with a gateway LMS token.
 //
-// Subscriber is on a different zone ("provider" --> "bar" --> "foo" --> "consumer"):
+// Subscriber is on a different zone ("backend" --> "subscriber" --> "consumer"):
 // 1. Subscriber has deliveryType callback with the callbackUrl "https://my-callback/v1/post"
-// 2. Approval is done and pubsub-Subscription is provisioned with the callbackUrl "https://bar-gateway/horizon-foo/callback/v1?callback=https://my-callback/v1/post"
-// 3. Horizon publishes events (auth using mesh-client) to bar-gateway, which proxies them to foo-gateway and then forwards them to the callbackUrl with the correct LMS-token (clientId=mesh-client)
+// 2. Approval is done and pubsub-Subscription is provisioned with the callbackUrl "https://backend-gateway/horizon-subscriber/callback/v1?callback=https://my-callback/v1/post"
+// 3. Horizon sends events as eventstore to the backend gateway, which forwards with a gateway LMS token to the subscriber zone's primary Route; that Route forwards to the callbackUrl.
+// This also applies when exposure and subscriber share a proxy zone: the first hop remains in the physical backend zone.
 
 func CreateProxyCallbackRoute(
 	ctx context.Context,
@@ -105,7 +106,7 @@ func CreateCallbackRoute(
 
 // CreateCallbackProxyRoutes creates cross-zone proxy Routes for callback delivery to remote subscribers.
 // For each target zone, a Route is created in the source zone thats points to the target callback Route
-// It is secured using OAuth2 credentials from the target zone's event service account.
+// It accepts Horizon's eventstore token and forwards with a gateway LMS token from the source zone.
 func CreateCallbackProxyRoutes(
 	ctx context.Context,
 	meshConfig *eventv1.MeshConfig,

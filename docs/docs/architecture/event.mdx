@@ -46,7 +46,7 @@ Every route comes in two flavours, and which one is used depends only on whether
 
 The proxy route is what makes [proxy zones](../admin-journey/environments-and-zones.md#proxy-zones) work: a zone that runs no backend of its own still exposes a full set of local addresses, and every one of them forwards to the target zone behind the scenes. Either way, each participant only ever talks to a gateway in its own zone, and the cross-zone hop stays invisible.
 
-The external addresses that result from all of this are published on the `EventConfig` status — for example `publishUrl`, `callbackUrl`, and `voyagerUrl` for the local routes, and the `proxyCallbackUrls` / `proxyVoyagerUrls` maps (keyed by zone name) for the cross-zone proxy routes.
+External addresses are published on `EventConfig` status. Publish and Voyager URLs describe their routes; callback URLs describe **effective ingress** from Horizon. For a proxy zone, `callbackUrl` and `proxyCallbackUrls` can therefore point to routes in its backend zone rather than the routes it owns. `callbackRoute` and `proxyCallbackRoutes` remain references to routes owned in the proxy zone, including its primary route for final subscriber delivery.
 
 ### Publish Route
 
@@ -72,21 +72,31 @@ graph LR
 
 Some subscribers prefer to be *called back*: instead of fetching events, they give the platform an address of their own and let each event be pushed there. The callback route makes this happen. The event backend sends every event to the callback route, which reads the subscriber's real address (carried along with the request) and forwards the event to it.
 
-When subscriber and backend share a zone, the local callback route forwards straight to the subscriber's address. When they are in different zones, the backend's zone forwards the event through a callback proxy route to the subscriber's zone, whose callback route then makes the final hand-off to the subscriber's address.
+Callback delivery starts in the **backend zone**, where Horizon runs. For a local exposure this is the exposure zone; for a proxy exposure it is the exposure zone's `EventConfig.spec.proxy.targetZone`. The exposure EventConfig advertises the effective ingress: `status.callbackUrl` for a subscriber in the same *logical* exposure zone, or `status.proxyCallbackUrls[subscriberZone]` for a different zone. A proxy config projects these addresses from its ready local backend: its own scalar comes from the backend's forward URL to the proxy zone; a remote entry comes from the backend primary when the subscriber is the backend, or from the backend forward URL otherwise. Only zones allowed by both the exposure's logical mesh and the backend's actual mesh and with a usable URL are advertised. Missing endpoints are not replaced by the proxy's owned local or reverse route. The subscriber zone needs a ready EventConfig with an owned primary callback route for final delivery, even if its own effective callback URL points elsewhere. SSE also requires a ready subscriber EventConfig; publisher publish endpoints are unchanged.
+
+For example, when dataplane2 is both the exposure and subscriber zone and proxies to dataplane1, Horizon sends to `https://dataplane1-gateway/horizon-dataplane2/callback/v1?callback=U`. That proxy route forwards to dataplane2's primary callback route, which delivers to `U`. Even when the subscriber is a proxy zone, callback termination is in the subscriber zone, not its backend.
+
+Backend callback URL or mesh changes requeue the proxy EventConfig, updating its effective status when an endpoint changes. A proxy config change then requeues callbacks for its logical exposures (including remote subscribers); changes to a subscriber's own config also requeue both callbacks and SSE subscriptions. The exposure copies the effective same-zone callback URL for discovery, while map-only updates can reach subscriptions directly without an exposure status change.
+
+If the exposure's **logical mesh** is explicitly changed to disallow a callback subscriber zone, reconciliation deletes the subscription's owned PubSub Subscriber so the backend deregisters delivery. A temporarily unavailable backend or EventConfig does not trigger this deletion. Restoring the mesh allows the Subscriber to be provisioned again, subject to normal readiness and approval checks.
+
+Horizon authenticates as `eventstore` to the backend gateway using a token from the backend zone's normal issuer (`Links.Issuer`), not its LMS issuer. On a cross-zone hop, the backend gateway forwards with a **gateway LMS token** from the backend zone's `Links.LmsIssuer` (including any `/spacegate` prefix). The subscriber zone's primary callback route accepts `gateway` and trusts that LMS issuer when the backend meshes with the subscriber. Its primary route also accepts `eventstore` from its own normal issuer for locally hosted callbacks. No reverse subscriber-to-backend mesh is needed. A proxy exposure gateway is not the first hop of its own callbacks.
 
 ```mermaid
 graph LR
-    subgraph TZ["Target zone — runs the backend"]
-        B["<b>Event Backend</b>"] -->|"push event"| CR1["<b>Callback Route</b>"]
-        CR1 -->|"forward"| S1["<b>Subscriber's address</b><br/><i>same zone</i>"]
-        B -->|"push event"| CR2["<b>Callback Route</b><br/><i>proxy</i>"]
+    subgraph BZ["Backend zone — runs Horizon (may differ from exposure zone)"]
+        B["<b>Horizon</b>"]
+        CR1["<b>Primary Callback Route</b>"] -->|"forward"| S1["<b>Subscriber's address</b><br/><i>same zone</i>"]
+        CR2["<b>Proxy Callback Route</b><br/><i>targeting subscriber zone</i>"]
     end
 
-    subgraph PZ["Proxy zone — no backend"]
-        CR3["<b>Callback Route</b>"] -->|"forward"| S2["<b>Subscriber's address</b>"]
+    subgraph SZ["Subscriber zone — can itself be a proxy zone"]
+        CR3["<b>Primary Callback Route</b>"] -->|"forward"| S2["<b>Subscriber's address</b>"]
     end
 
-    CR2 -.->|"cross-zone hop"| CR3
+    B -->|"eventstore, normal issuer"| CR1
+    B -->|"eventstore, normal issuer"| CR2
+    CR2 -.->|"gateway, backend LMS issuer"| CR3
 ```
 
 ### Voyager Route

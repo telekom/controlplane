@@ -20,7 +20,6 @@ import (
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	cc "github.com/telekom/controlplane/common/pkg/controller"
-	ctypes "github.com/telekom/controlplane/common/pkg/types"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	"github.com/telekom/controlplane/event/internal/handler/eventconfig"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
@@ -93,7 +92,8 @@ func (r *EventConfigReconciler) MapZoneToEventConfig(ctx context.Context, obj cl
 
 	var reqs []reconcile.Request
 	for i := range list.Items {
-		if !list.Items[i].Spec.Zone.Equals(zone) {
+		if !list.Items[i].Spec.Zone.Equals(zone) &&
+			(list.Items[i].Spec.Proxy == nil || !list.Items[i].Spec.Proxy.TargetZone.Equals(zone)) {
 			continue
 		}
 		reqs = append(reqs, reconcile.Request{
@@ -120,7 +120,7 @@ func (r *EventConfigReconciler) MapEventConfigToEventConfig(ctx context.Context,
 
 	var reqs []reconcile.Request
 	for i := range list.Items {
-		if ctypes.Equals(&list.Items[i], eventConfig) {
+		if client.ObjectKeyFromObject(&list.Items[i]) == client.ObjectKeyFromObject(eventConfig) {
 			continue
 		}
 		reqs = append(reqs, reconcile.Request{
