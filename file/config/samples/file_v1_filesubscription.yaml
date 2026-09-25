@@ -14,4 +14,6 @@ spec:
     name: sample-zone
     namespace: default
   sftp:
-    publicKeys: []
+    publicKeys:
+      - key: ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC3... user@example.com
+        label: sample-label

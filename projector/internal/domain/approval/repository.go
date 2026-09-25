@@ -176,13 +176,13 @@ func (r *Repository) Upsert(ctx context.Context, data *ApprovalData) error {
 
 	switch data.TargetKind {
 	case TargetKindEventSubscription:
-		update = update.SetEventSubscriptionID(subID).ClearAPISubscription().ClearAgenticSubscription()
+		update = update.SetEventSubscriptionID(subID).ClearAPISubscription().ClearAgenticSubscription().ClearFileSubscription()
 	case TargetKindAgenticSubscription:
-		update = update.SetAgenticSubscriptionID(subID).ClearAPISubscription().ClearEventSubscription()
+		update = update.SetAgenticSubscriptionID(subID).ClearAPISubscription().ClearEventSubscription().ClearFileSubscription()
 	case TargetKindFileSubscription:
-		update = update.SetFileSubscriptionID(subID).ClearAPISubscription().ClearEventSubscription()
+		update = update.SetFileSubscriptionID(subID).ClearAPISubscription().ClearEventSubscription().ClearAgenticSubscription()
 	default:
-		update = update.SetAPISubscriptionID(subID).ClearEventSubscription().ClearAgenticSubscription()
+		update = update.SetAPISubscriptionID(subID).ClearEventSubscription().ClearAgenticSubscription().ClearFileSubscription()
 	}
 	if err := update.Exec(ctx); err != nil {
 		if infrastructure.IsFKViolation(err, "") {
