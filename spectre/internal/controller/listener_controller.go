@@ -76,7 +76,7 @@ func (r *ListenerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 // SetupWithManager sets up the controller with the Manager.
 func (r *ListenerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Recorder = mgr.GetEventRecorderFor("listener-controller")
-	// Safety reads (revocation, retirement) bypass the cache.
+	// Safety reads (revocation, deletion) bypass the cache.
 	r.Controller = cc.NewController(&handler.ListenerHandler{Reader: mgr.GetAPIReader()}, r.Client, r.Recorder)
 
 	owns := builder.WithPredicates(cc.Count("listener", cc.RoleOwns))
