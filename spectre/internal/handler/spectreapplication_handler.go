@@ -136,7 +136,7 @@ func (h *SpectreApplicationHandler) CreateOrUpdate(ctx context.Context, obj *spe
 		return nil
 	}
 	if obj.Spec.DeliveryType == "server_sent_event" {
-		if err := ensureSSEReady(ctx, obj); err != nil {
+		if err := ensureSSEReady(ctx, obj, zone, subscriber); err != nil {
 			obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonSubResourceNotReady, err.Error()))
 			obj.SetCondition(condition.NewProcessingCondition(condition.ReasonSubResourceNotReady, err.Error()))
 			return nil
@@ -256,17 +256,20 @@ func ensureChildReady(ctx context.Context, ref *ctypes.ObjectRef, into client.Ob
 
 // ensureSSEReady verifies that every SSE Route carries Ready=True and that the
 // SSE URL is published. A proxy-zone app is only reachable through its proxy Route.
-func ensureSSEReady(ctx context.Context, obj *spectrev1.SpectreApplication) error {
+func ensureSSEReady(ctx context.Context, obj *spectrev1.SpectreApplication, zone *adminv1.Zone, subscriber *pubsubv1.Subscriber) error {
 	for _, ref := range []*ctypes.ObjectRef{obj.Status.ListenerRoute, obj.Status.ProxyRoute} {
 		if err := ensureChildReady(ctx, ref, &gatewayv1.Route{}); err != nil {
 			return err
 		}
 	}
-	// The Subscriber watch requeues once its SubscriptionId appears.
-	if obj.Status.SseUrl == "" {
-		return errors.New("SSE URL is not yet known: the Subscriber has no SubscriptionId or the zone preset has no visible URL")
+	if obj.Status.SseUrl != "" {
+		return nil
 	}
-	return nil
+	// The Subscriber watch requeues once its SubscriptionId appears.
+	if subscriber.Status.SubscriptionId == "" {
+		return errors.New("SSE URL is not yet known: the Subscriber has no SubscriptionId yet")
+	}
+	return errors.Errorf("SSE URL is not yet known: zone %q default preset has no visible (non-hidden) URL", zone.Name)
 }
 
 // deleteIfExists deletes the referenced object, tolerating an already-deleted one.
