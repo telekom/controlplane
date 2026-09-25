@@ -40,6 +40,22 @@ type ListenerHandler struct {
 	// that build the handler directly leave it nil (getLive then reads through
 	// the scoped client); SetupWithManager always sets it.
 	Reader client.Reader
+	// Now is the clock of the approval grace period. Nil uses time.Now; tests
+	// inject a fake clock.
+	Now func() time.Time
+}
+
+// authorizationUnknownGracePeriod is how long applied capture keeps running
+// while the dual-gate evaluation gives no answer for a reason other than a
+// scoped identity mismatch. Shorter outages leave capture untouched; after it
+// capture is stopped through the persisted drain.
+const authorizationUnknownGracePeriod = 5 * time.Minute
+
+func (h *ListenerHandler) now() time.Time {
+	if h.Now == nil {
+		return time.Now()
+	}
+	return h.Now()
 }
 
 // getLive reads key through Reader for a safety decision. Reader lacks the
@@ -284,12 +300,16 @@ func (h *ListenerHandler) CreateOrUpdate(ctx context.Context, listener *spectrev
 		}
 	}
 
-	// Step 7: Handle approval states explicitly.
+	// Step 7: Handle approval states explicitly. Every answer (Granted, Denied,
+	// RequestDenied, Pending) ends a no-answer grace period; a later failure to
+	// answer starts a fresh one.
 	switch dual.outcome {
 	case outcomeGranted:
+		listener.Status.AuthorizationUnknownSince = nil
 		// Continue to provisioning below.
 
 	case outcomeDenied, outcomeRequestDenied:
+		listener.Status.AuthorizationUnknownSince = nil
 		// A denied Approval stops capture through the persisted drain: RouteListeners
 		// first (stop new traffic), then Subscribers. It is reached when the early
 		// check could not see the denial (read error, no Approval ref persisted yet).
@@ -308,6 +328,7 @@ func (h *ListenerHandler) CreateOrUpdate(ctx context.Context, listener *spectrev
 		return h.stopCaptureAfter(ctx, listener, reason, dual.err)
 
 	case outcomePending:
+		listener.Status.AuthorizationUnknownSince = nil
 		// No new provisioning; no stale child remains (step 5.10).
 		if dual.err != nil {
 			return errors.Wrap(dual.err, "combined approval error")
@@ -322,12 +343,12 @@ func (h *ListenerHandler) CreateOrUpdate(ctx context.Context, listener *spectrev
 		evalErr = errors.Wrap(evalErr, "approval evaluation failed")
 		// A definitive scoped identity failure (ownerless or foreign Approval or
 		// request) is permanent: the approval controller never repairs it, so no
-		// applied capture may keep running on it. Transient build and read errors
-		// leave capture untouched.
+		// applied capture may keep running on it. Any other failure gives no
+		// answer: capture keeps running for the grace period only.
 		if gate := scopedIdentityGates(dual); gate != "" {
 			return h.stopCaptureAfter(ctx, listener, fmt.Sprintf("approval identity invalid (%s gate)", gate), evalErr)
 		}
-		return evalErr
+		return h.awaitApprovalAnswer(ctx, listener, dual, evalErr)
 
 	default:
 		// outcomeUnknown: fail closed.
@@ -756,4 +777,41 @@ func (h *ListenerHandler) stopCaptureAfter(
 		return errors.Wrap(approvalErr, "combined approval error")
 	}
 	return nil
+}
+
+// awaitApprovalAnswer handles a dual-gate evaluation that gave no answer.
+// Applied capture keeps running for authorizationUnknownGracePeriod from the
+// first such reconcile, recorded in status.authorizationUnknownSince. Within
+// it the Listener is retried after a delay that ends no later than the period,
+// because a failing read may produce no watch event to wake it. After it,
+// capture is stopped through the persisted drain and the Listener stays not
+// ready until both gates answer. Nothing new is provisioned either way.
+func (h *ListenerHandler) awaitApprovalAnswer(
+	ctx context.Context,
+	listener *spectrev1.Listener,
+	dual *dualApprovalResult,
+	evalErr error,
+) error {
+	now := h.now()
+	if listener.Status.AuthorizationUnknownSince == nil {
+		listener.Status.AuthorizationUnknownSince = &metav1.Time{Time: now}
+	}
+	since := listener.Status.AuthorizationUnknownSince.Time
+	// Messages name the start time, not the elapsed time, so the persisted
+	// status does not change on every retry.
+	sinceText := since.UTC().Format(time.RFC3339)
+	if remaining := since.Add(authorizationUnknownGracePeriod).Sub(now); remaining > 0 {
+		return ctrlerrors.RetryableWithDelayErrorf(min(remaining, 30*time.Second),
+			"%v; no approval answer since %s, applied capture is kept for %s from then",
+			evalErr, sinceText, authorizationUnknownGracePeriod)
+	}
+
+	gates := gateNames(dual, func(g *gateResult) bool {
+		return g.outcome == outcomeError || g.outcome == outcomeUnknown
+	})
+	message := fmt.Sprintf("No approval answer for the %s gate since %s; capture is stopped after %s without an answer",
+		gates, sinceText, authorizationUnknownGracePeriod)
+	listener.SetCondition(condition.NewNotReadyCondition("AuthorizationUnavailable", message))
+	listener.SetCondition(condition.NewBlockedCondition(message))
+	return h.stopCaptureAfter(ctx, listener, fmt.Sprintf("approval answer unavailable (%s gate)", gates), evalErr)
 }

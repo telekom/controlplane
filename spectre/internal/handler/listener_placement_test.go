@@ -6,10 +6,12 @@ package handler_test
 
 import (
 	"context"
+	stderrors "errors"
 	"fmt"
 	"net/url"
 	"reflect"
 	"strings"
+	"time"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -27,10 +29,12 @@ import (
 	apiv1 "github.com/telekom/controlplane/api/api/v1"
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
+	"github.com/telekom/controlplane/approval/api/v1/builder"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	cc "github.com/telekom/controlplane/common/pkg/controller"
 	"github.com/telekom/controlplane/common/pkg/controller/index"
+	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	ctypes "github.com/telekom/controlplane/common/pkg/types"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
@@ -254,6 +258,10 @@ type plHarness struct {
 	calls     []plCall
 	recording bool
 	uids      int
+	// result is the controller result of the last reconcile.
+	result reconcile.Result
+	// getErr, when set, fails a Get before it reaches the fake client.
+	getErr func(key client.ObjectKey, obj client.Object) error
 	// listErr, when set, fails a List before it reaches the fake client.
 	listErr func(list client.ObjectList) error
 	// createErr, when set, fails a Create before it reaches the fake client.
@@ -292,6 +300,11 @@ func newPlHarness(f *plFixtures) *plHarness {
 		WithInterceptorFuncs(interceptor.Funcs{
 			Get: func(ctx context.Context, c client.WithWatch, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
 				rec(plCall{verb: "Get", kind: plKind(obj), ns: key.Namespace, name: key.Name})
+				if h.getErr != nil {
+					if err := h.getErr(key, obj); err != nil {
+						return err
+					}
+				}
 				return c.Get(ctx, key, obj, opts...)
 			},
 			List: func(ctx context.Context, c client.WithWatch, list client.ObjectList, opts ...client.ListOption) error {
@@ -347,7 +360,8 @@ func (h *plHarness) reconcileNamed(name string) ([]plCall, error) {
 	h.recording = true
 	defer func() { h.recording = false }()
 	nn := k8stypes.NamespacedName{Name: name, Namespace: plTeamNs}
-	_, err := h.ctrl.Reconcile(context.Background(), reconcile.Request{NamespacedName: nn}, &spectrev1.Listener{})
+	var err error
+	h.result, err = h.ctrl.Reconcile(context.Background(), reconcile.Request{NamespacedName: nn}, &spectrev1.Listener{})
 	return h.calls, err
 }
 
@@ -1310,5 +1324,308 @@ var _ = Describe("Listener capture stop (controller)", func() {
 			Expect(plBlocked(h.listener())).To(ContainSubstring("has no IssuerUrl"))
 			Expect(h.publisherExists("c")).To(BeTrue())
 		}
+	})
+})
+
+// graceHandler records the error the Listener handler returns to the common
+// controller, so a spec can read the retry delay it asks for.
+type graceHandler struct {
+	*handler.ListenerHandler
+	err error
+}
+
+func (g *graceHandler) CreateOrUpdate(ctx context.Context, l *spectrev1.Listener) error {
+	g.err = g.ListenerHandler.CreateOrUpdate(ctx, l)
+	return g.err
+}
+
+// graceT0 starts the fake clock on a whole second, which the RFC 3339 status
+// round trip keeps exactly.
+var graceT0 = time.Date(2026, time.September, 25, 10, 0, 0, 0, time.UTC)
+
+const graceReason = "AuthorizationUnavailable"
+
+// newGraceHarness is a placement harness whose handler reads the fake clock now.
+func newGraceHarness(f *plFixtures, now *time.Time) (*plHarness, *graceHandler) {
+	h := newPlHarness(f)
+	gh := &graceHandler{ListenerHandler: &handler.ListenerHandler{Now: func() time.Time { return *now }}}
+	h.ctrl = cc.NewController(gh, h.raw, &record.FakeRecorder{})
+	return h, gh
+}
+
+// failApprovalRead makes every read of the named Approval fail as an
+// unavailable API server does, so its gate gives no answer.
+func (h *plHarness) failApprovalRead(name string) {
+	h.getErr = func(key client.ObjectKey, obj client.Object) error {
+		if _, ok := obj.(*approvalv1.Approval); ok && key.Name == name {
+			return apierrors.NewServiceUnavailable("approval API unavailable")
+		}
+		return nil
+	}
+}
+
+func graceReady(l *spectrev1.Listener) *metav1.Condition {
+	ready := meta.FindStatusCondition(l.Status.Conditions, condition.ConditionTypeReady)
+	ExpectWithOffset(1, ready).ToNot(BeNil())
+	return ready
+}
+
+// expectGraceRetry asserts that the last pass kept capture and asked for a
+// retry after exactly want, and that the controller scheduled it from that
+// delay (plus its jitter) instead of the error backoff.
+func expectGraceRetry(h *plHarness, gh *graceHandler, calls []plCall, err error, want time.Duration) {
+	ExpectWithOffset(1, err).ToNot(HaveOccurred())
+	ExpectWithOffset(1, plCountVerb(calls, "Delete")).To(BeZero(), "unexpected delete in %+v", calls)
+	ExpectWithOffset(1, plCountVerb(calls, "Create")).To(BeZero(), "unexpected create in %+v", calls)
+	plExpectNoCaptureWrites(calls)
+	ExpectWithOffset(1, h.listener().Status.Draining).To(BeNil())
+
+	var rde ctrlerrors.RetryableWithDelayError
+	ExpectWithOffset(1, stderrors.As(gh.err, &rde)).To(BeTrue(), "handler returned %v", gh.err)
+	ExpectWithOffset(1, rde.RetryDelay()).To(Equal(want))
+	ExpectWithOffset(1, rde.Error()).To(ContainSubstring("approval API unavailable"))
+	ExpectWithOffset(1, h.result.RequeueAfter).To(BeNumerically(">=", want))
+	ExpectWithOffset(1, h.result.RequeueAfter).To(BeNumerically("<=", time.Duration(float64(want)*(1+cconfig.JitterFactor))))
+}
+
+var _ = Describe("Listener approval answer unavailable (controller)", func() {
+	It("G1: keeps applied capture for 5 minutes and retries no later than the end of the grace period", func() {
+		now := graceT0
+		h, gh := newGraceHarness(newPlFixtures("c"), &now)
+		l, _ := h.provision()
+		applied := l.Status.AppliedPlacement.DeepCopy()
+		rlRef := l.Status.RouteListener.DeepCopy()
+		subRefs := append([]ctypes.ObjectRef(nil), l.Status.EventSubscriptions...)
+		Expect(l.Status.AuthorizationUnknownSince).To(BeNil())
+		h.failApprovalRead(l.Status.ProviderApproval.Name)
+
+		// t0: the first pass without an answer records when it began.
+		calls, err := h.reconcile()
+		expectGraceRetry(h, gh, calls, err, 30*time.Second)
+		l = h.listener()
+		Expect(l.Status.AuthorizationUnknownSince).ToNot(BeNil())
+		Expect(l.Status.AuthorizationUnknownSince.Time).To(BeTemporally("==", graceT0))
+		rv := l.ResourceVersion
+
+		// Inside the grace period capture stays, the timestamp is kept, and the
+		// retry delay never runs past the end of the period. No status write
+		// happens, so no watch event wakes the Listener before that delay.
+		for _, step := range []struct{ elapsed, delay time.Duration }{
+			{time.Minute, 30 * time.Second},
+			{4*time.Minute + 50*time.Second, 10 * time.Second},
+			{4*time.Minute + 59*time.Second, time.Second},
+		} {
+			now = graceT0.Add(step.elapsed)
+			calls, err = h.reconcile()
+			expectGraceRetry(h, gh, calls, err, step.delay)
+			l = h.listener()
+			Expect(l.ResourceVersion).To(Equal(rv))
+			Expect(l.Status.AuthorizationUnknownSince.Time).To(BeTemporally("==", graceT0))
+			Expect(l.Status.AppliedPlacement).To(Equal(applied))
+		}
+		Expect(h.exists(rlRef, &gatewayv1.RouteListener{})).To(BeTrue())
+		for i := range subRefs {
+			Expect(h.exists(&subRefs[i], &pubsubv1.Subscriber{})).To(BeTrue())
+		}
+		Expect(graceReady(l).Reason).ToNot(Equal(graceReason))
+	})
+
+	DescribeTable("G2: an answer ends the grace period and a later failure starts a fresh one",
+		func(provisioned bool) {
+			now := graceT0
+			h, gh := newGraceHarness(newPlFixtures("c"), &now)
+			if provisioned {
+				h.provision()
+			} else {
+				h.startup()
+			}
+			name := h.listener().Status.ProviderApproval.Name
+			h.failApprovalRead(name)
+			calls, err := h.reconcile()
+			expectGraceRetry(h, gh, calls, err, 30*time.Second)
+
+			// t0+4m: the gate answers again.
+			now = graceT0.Add(4 * time.Minute)
+			h.getErr = nil
+			calls = h.mustReconcile()
+			Expect(h.listener().Status.AuthorizationUnknownSince).To(BeNil())
+			Expect(plCountVerb(calls, "Delete")).To(BeZero())
+
+			// t0+6m: 6 minutes after the first failure, but only the start of
+			// the new one.
+			now = graceT0.Add(6 * time.Minute)
+			h.failApprovalRead(name)
+			calls, err = h.reconcile()
+			expectGraceRetry(h, gh, calls, err, 30*time.Second)
+			l := h.listener()
+			Expect(l.Status.AuthorizationUnknownSince.Time).To(BeTemporally("==", now))
+			Expect(l.Status.AppliedPlacement != nil).To(Equal(provisioned))
+		},
+		Entry("both gates grant", true),
+		Entry("a gate is pending", false),
+	)
+
+	It("G3: stops applied capture through the checkpointed drain after 5 minutes and resumes once both gates grant", func() {
+		now := graceT0
+		h, _ := newGraceHarness(newPlFixtures("c"), &now)
+		l, _ := h.provision()
+		oldFP := l.Status.AppliedPlacement.Fingerprint
+		rlRef := l.Status.RouteListener.DeepCopy()
+		subRefs := append([]ctypes.ObjectRef(nil), l.Status.EventSubscriptions...)
+		Expect(h.publisherExists("c")).To(BeTrue())
+		h.failApprovalRead(l.Status.ProviderApproval.Name)
+		_, err := h.reconcile()
+		Expect(err).ToNot(HaveOccurred())
+
+		// t0+5m: only the checkpoint is written.
+		now = graceT0.Add(5 * time.Minute)
+		calls, err := h.reconcile()
+		Expect(err).To(MatchError(ContainSubstring("approval API unavailable")))
+		Expect(plCountVerb(calls, "Delete")).To(BeZero())
+		plExpectNoCaptureWrites(calls)
+		l = h.listener()
+		d := l.Status.Draining
+		Expect(d).ToNot(BeNil())
+		Expect(d.Phase).To(Equal(handler.ExportDrainPhaseStopping))
+		Expect(d.Reason).To(Equal("approval answer unavailable (provider gate)"))
+		Expect(d.OldFingerprint).To(Equal(oldFP))
+		ready := graceReady(l)
+		Expect(ready.Status).To(Equal(metav1.ConditionFalse))
+		Expect(ready.Reason).To(Equal(graceReason))
+		Expect(ready.Message).To(And(
+			ContainSubstring("provider gate"), ContainSubstring("since 2026-09-25T10:00:00Z"), ContainSubstring("5m0s")))
+
+		// Later passes delete the RouteListener, then the Subscribers, then the
+		// orphaned Publisher; every child Delete carries UID+RV preconditions.
+		rlGone, subsGone := false, false
+		for pass := 0; h.listener().Status.Draining != nil; pass++ {
+			Expect(pass).To(BeNumerically("<", 10), "drain did not complete")
+			now = now.Add(10 * time.Second)
+			// The pass completing the drain still has no answer and returns it.
+			calls, _ = h.reconcile()
+			for _, c := range calls {
+				switch {
+				case c.verb != "Delete":
+				case c.kind == "Subscriber":
+					Expect(rlGone).To(BeTrue(), "Subscriber %s deleted before the RouteListener was gone", c.name)
+					Expect(c.precond).To(BeTrue())
+				case c.kind == "Publisher":
+					Expect(subsGone).To(BeTrue(), "Publisher deleted before the Subscribers were gone")
+				default:
+					Expect(c.precond).To(BeTrue())
+				}
+			}
+			Expect(plCountVerb(calls, "Create")).To(BeZero(), "unexpected create in %+v", calls)
+			rlGone = !h.exists(rlRef, &gatewayv1.RouteListener{})
+			subsGone = true
+			for i := range subRefs {
+				subsGone = subsGone && !h.exists(&subRefs[i], &pubsubv1.Subscriber{})
+			}
+		}
+		Expect(rlGone).To(BeTrue())
+		Expect(subsGone).To(BeTrue())
+		Expect(h.publisherExists("c")).To(BeFalse())
+		l = h.listener()
+		Expect(l.Status.AppliedPlacement).To(BeNil())
+		Expect(l.Status.AuthorizationUnknownSince.Time).To(BeTemporally("==", graceT0))
+		Expect(graceReady(l).Reason).To(Equal(graceReason))
+
+		// Still no answer: blocked, nothing to drain, nothing created.
+		calls, err = h.reconcile()
+		Expect(err).To(MatchError(ContainSubstring("approval API unavailable")))
+		Expect(h.listener().Status.Draining).To(BeNil())
+		plExpectNoCaptureWrites(calls)
+
+		// The answer is back and both grants are still valid.
+		h.getErr = nil
+		calls = h.mustReconcile()
+		l = h.listener()
+		Expect(l.Status.AuthorizationUnknownSince).To(BeNil())
+		Expect(l.Status.AppliedPlacement).ToNot(BeNil())
+		Expect(l.Status.AppliedPlacement.Fingerprint).To(Equal(oldFP))
+		Expect(l.Status.RouteListener).ToNot(BeNil())
+		Expect(l.Status.EventSubscriptions).To(HaveLen(2))
+		Expect(plCount(calls, "Create", "RouteListener", "")).To(Equal(1))
+		Expect(plCount(calls, "Create", "Subscriber", "")).To(Equal(2))
+		Expect(h.publisherExists("c")).To(BeTrue())
+		Expect(graceReady(l).Reason).ToNot(Equal(graceReason))
+	})
+
+	It("G4: without applied capture it starts no drain past 5 minutes and provisions nothing", func() {
+		now := graceT0
+		h, _ := newGraceHarness(newPlFixtures("c"), &now)
+		h.startup()
+		name := h.listener().Status.ProviderApproval.Name
+		h.failApprovalRead(name)
+		_, err := h.reconcile()
+		Expect(err).ToNot(HaveOccurred())
+		// The decisions arrive but the provider gate still cannot be read.
+		h.getErr = nil
+		h.grant()
+		h.failApprovalRead(name)
+
+		// The status settles after the first pass past the grace period.
+		rv := ""
+		for _, elapsed := range []time.Duration{5 * time.Minute, 6 * time.Minute} {
+			now = graceT0.Add(elapsed)
+			calls, err := h.reconcile()
+			Expect(err).To(MatchError(ContainSubstring("approval API unavailable")))
+			Expect(plCountVerb(calls, "Delete")).To(BeZero(), "unexpected delete in %+v", calls)
+			plExpectNoCaptureWrites(calls)
+			l := h.listener()
+			if rv != "" {
+				Expect(l.ResourceVersion).To(Equal(rv))
+			}
+			rv = l.ResourceVersion
+			Expect(l.Status.Draining).To(BeNil())
+			Expect(l.Status.AppliedPlacement).To(BeNil())
+			Expect(l.Status.RouteListener).To(BeNil())
+			Expect(l.Status.AuthorizationUnknownSince.Time).To(BeTemporally("==", graceT0))
+			Expect(graceReady(l).Reason).To(Equal(graceReason))
+		}
+	})
+
+	It("G5: a scoped identity failure still stops capture at once, also inside a grace period", func() {
+		now := graceT0
+		h, _ := newGraceHarness(newPlFixtures("c"), &now)
+		l, _ := h.provision()
+		h.failApprovalRead(l.Status.ConsumerApproval.Name)
+		_, err := h.reconcile()
+		Expect(err).ToNot(HaveOccurred())
+
+		// t0+1m: the provider Approval loses its controller owner.
+		now = graceT0.Add(time.Minute)
+		approval := &approvalv1.Approval{}
+		Expect(h.raw.Get(context.Background(), l.Status.ProviderApproval.K8s(), approval)).To(Succeed())
+		approval.OwnerReferences = nil
+		h.update(approval)
+		calls, err := h.reconcile()
+		Expect(err).To(MatchError(builder.ErrScopedIdentity))
+		Expect(plCountVerb(calls, "Delete")).To(BeZero())
+		l = h.listener()
+		Expect(l.Status.Draining).ToNot(BeNil())
+		Expect(l.Status.Draining.Reason).To(Equal("approval identity invalid (provider gate)"))
+	})
+
+	It("G6: a rejection inside the grace period stops capture at once and ends the grace period", func() {
+		now := graceT0
+		h, _ := newGraceHarness(newPlFixtures("c"), &now)
+		l, _ := h.provision()
+		rlRef := l.Status.RouteListener.DeepCopy()
+		h.failApprovalRead(l.Status.ProviderApproval.Name)
+		_, err := h.reconcile()
+		Expect(err).ToNot(HaveOccurred())
+
+		// t0+1m: the gate answers again, with a rejection.
+		now = graceT0.Add(time.Minute)
+		h.getErr = nil
+		h.rejectRequest("provider")
+		h.mustReconcile()
+		Expect(h.listener().Status.Draining).ToNot(BeNil())
+		h.drain(rlRef)
+		l = h.listener()
+		Expect(l.Status.AppliedPlacement).To(BeNil())
+		Expect(l.Status.AuthorizationUnknownSince).To(BeNil())
+		Expect(graceReady(l).Reason).To(Equal(condition.ReasonAccessDenied))
 	})
 })
