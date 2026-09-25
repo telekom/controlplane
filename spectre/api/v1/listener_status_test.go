@@ -49,10 +49,9 @@ func TestAppliedListenerPlacementStatusRoundTrip(t *testing.T) {
 
 func TestListenerDrainStatusRoundTrip(t *testing.T) {
 	orig := &ListenerDrainStatus{
-		Phase:            "DrainingSubscribers",
-		Reason:           "placement changed",
-		OldFingerprint:   "old-fp",
-		OldRouteListener: sampleRef("old-rl"),
+		Phase:          "DrainingSubscribers",
+		Reason:         "placement changed",
+		OldFingerprint: "old-fp",
 		OldRouteListeners: []ctypes.ObjectRef{
 			*sampleRef("old-rl"), *sampleRef("orphan-rl"),
 		},
@@ -74,41 +73,11 @@ func TestListenerDrainStatusRoundTrip(t *testing.T) {
 	}
 }
 
-func TestAuthorizationMigrationStatusRoundTrip(t *testing.T) {
-	orig := &AuthorizationMigrationStatus{
-		TargetPolicyVersion: "v2",
-		Phase:               "RetiringRequests",
-		LegacyApproval:      sampleRef("legacy-appr"),
-		LegacyRequests:      []ctypes.ObjectRef{*sampleRef("req1")},
-		RetirementCheckpoint: &MigrationRetirementCheckpoint{
-			RequestsRetired:            true,
-			ApprovalRetired:            false,
-			LastRetiredUID:             "uid-req1",
-			LastRetiredResourceVersion: "42",
-		},
-	}
-	data, err := json.Marshal(orig)
-	if err != nil {
-		t.Fatalf("marshal: %v", err)
-	}
-	var got AuthorizationMigrationStatus
-	if err := json.Unmarshal(data, &got); err != nil {
-		t.Fatalf("unmarshal: %v", err)
-	}
-	if !reflect.DeepEqual(*orig, got) {
-		t.Errorf("round-trip mismatch:\n  orig: %+v\n  got:  %+v", *orig, got)
-	}
-}
-
 func TestListenerStatusNewFieldsRoundTrip(t *testing.T) {
 	orig := ListenerStatus{
-		ConsumerApproval:           sampleRef("consumer-appr"),
-		ProviderApprovalRequest:    sampleRef("prov-req"),
-		ConsumerApprovalRequest:    sampleRef("cons-req"),
-		AuthorizationPolicyVersion: "v2",
-		AuthorizationMigration: &AuthorizationMigrationStatus{
-			Phase: "Recorded",
-		},
+		ConsumerApproval:        sampleRef("consumer-appr"),
+		ProviderApprovalRequest: sampleRef("prov-req"),
+		ConsumerApprovalRequest: sampleRef("cons-req"),
 		AppliedPlacement: &AppliedListenerPlacementStatus{
 			Fingerprint: "fp",
 		},
@@ -145,12 +114,6 @@ func TestOptionalFieldsNil(t *testing.T) {
 	if status.ConsumerApprovalRequest != nil {
 		t.Error("ConsumerApprovalRequest should be nil")
 	}
-	if status.AuthorizationPolicyVersion != "" {
-		t.Error("AuthorizationPolicyVersion should be empty")
-	}
-	if status.AuthorizationMigration != nil {
-		t.Error("AuthorizationMigration should be nil")
-	}
 	if status.AppliedPlacement != nil {
 		t.Error("AppliedPlacement should be nil")
 	}
@@ -174,8 +137,6 @@ func TestOptionalFieldsOmittedFromJSON(t *testing.T) {
 		"consumerApproval",
 		"providerApprovalRequest",
 		"consumerApprovalRequest",
-		"authorizationPolicyVersion",
-		"authorizationMigration",
 		"appliedPlacement",
 		"draining",
 	}
@@ -204,24 +165,6 @@ func TestPhaseEnumValuesSerialization(t *testing.T) {
 			t.Errorf("drain phase round-trip: got %q, want %q", got.Phase, phase)
 		}
 	}
-
-	migrationPhases := []string{"Recorded", "Blocked", "AwaitingScoped", "Draining", "RetiringRequests", "RetiringApproval"}
-	for _, phase := range migrationPhases {
-		m := AuthorizationMigrationStatus{Phase: phase}
-		data, err := json.Marshal(m)
-		if err != nil {
-			t.Errorf("marshal migration phase %q: %v", phase, err)
-			continue
-		}
-		var got AuthorizationMigrationStatus
-		if err := json.Unmarshal(data, &got); err != nil {
-			t.Errorf("unmarshal migration phase %q: %v", phase, err)
-			continue
-		}
-		if got.Phase != phase {
-			t.Errorf("migration phase round-trip: got %q, want %q", got.Phase, phase)
-		}
-	}
 }
 
 func TestNoEmbeddedFullObjects(t *testing.T) {
@@ -231,8 +174,6 @@ func TestNoEmbeddedFullObjects(t *testing.T) {
 	statusTypes := []reflect.Type{
 		reflect.TypeOf(AppliedListenerPlacementStatus{}),
 		reflect.TypeOf(ListenerDrainStatus{}),
-		reflect.TypeOf(AuthorizationMigrationStatus{}),
-		reflect.TypeOf(MigrationRetirementCheckpoint{}),
 	}
 	for _, st := range statusTypes {
 		assertNoEmbeddedObjectMeta(t, st, st.Name())
@@ -271,20 +212,9 @@ func assertNoEmbeddedObjectMeta(t *testing.T, rt reflect.Type, path string) {
 
 func TestDeepCopyNewStatusTypes(t *testing.T) {
 	orig := &ListenerStatus{
-		ConsumerApproval:           sampleRef("ca"),
-		ProviderApprovalRequest:    sampleRef("par"),
-		ConsumerApprovalRequest:    sampleRef("car"),
-		AuthorizationPolicyVersion: "v2",
-		AuthorizationMigration: &AuthorizationMigrationStatus{
-			TargetPolicyVersion: "v2",
-			Phase:               "Draining",
-			LegacyApproval:      sampleRef("la"),
-			LegacyRequests:      []ctypes.ObjectRef{*sampleRef("lr1")},
-			RetirementCheckpoint: &MigrationRetirementCheckpoint{
-				RequestsRetired: true,
-				LastRetiredUID:  "uid-1",
-			},
-		},
+		ConsumerApproval:        sampleRef("ca"),
+		ProviderApprovalRequest: sampleRef("par"),
+		ConsumerApprovalRequest: sampleRef("car"),
 		AppliedPlacement: &AppliedListenerPlacementStatus{
 			Fingerprint:  "fp1",
 			CaptureRoute: sampleRef("cr"),
@@ -310,10 +240,6 @@ func TestDeepCopyNewStatusTypes(t *testing.T) {
 	if orig.ConsumerApproval.Name == "mutated" {
 		t.Error("ConsumerApproval not deep-copied")
 	}
-	cp.AuthorizationMigration.Phase = "Blocked"
-	if orig.AuthorizationMigration.Phase == "Blocked" {
-		t.Error("AuthorizationMigration not deep-copied")
-	}
 	cp.AppliedPlacement.Fingerprint = "mutated"
 	if orig.AppliedPlacement.Fingerprint == "mutated" {
 		t.Error("AppliedPlacement not deep-copied")
@@ -325,9 +251,5 @@ func TestDeepCopyNewStatusTypes(t *testing.T) {
 	cp.Draining.OldRouteListeners[0].Name = "mutated"
 	if orig.Draining.OldRouteListeners[0].Name == "mutated" {
 		t.Error("Draining.OldRouteListeners not deep-copied")
-	}
-	cp.AuthorizationMigration.LegacyRequests[0].Name = "mutated"
-	if orig.AuthorizationMigration.LegacyRequests[0].Name == "mutated" {
-		t.Error("AuthorizationMigration.LegacyRequests not deep-copied")
 	}
 }

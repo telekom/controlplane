@@ -35,10 +35,10 @@ import (
 
 type ListenerHandler struct {
 	// Reader is the manager's uncached API reader (mgr.GetAPIReader()). Safety
-	// decisions on current revocation, deletion and retirement state read
-	// through it, never the cache. Handler unit tests and controller envtests
-	// that build the handler directly leave it nil (getLive then reads through
-	// the scoped client); SetupWithManager always sets it.
+	// decisions on current revocation and deletion state read through it, never
+	// the cache. Handler unit tests and controller envtests that build the
+	// handler directly leave it nil (getLive then reads through the scoped
+	// client); SetupWithManager always sets it.
 	Reader client.Reader
 	// Now is the clock of the approval grace period. Nil uses time.Now; tests
 	// inject a fake clock.
@@ -103,9 +103,8 @@ func (h *ListenerHandler) CreateOrUpdate(ctx context.Context, listener *spectrev
 		if !complete {
 			return nil // persist and requeue
 		}
-		// Drain complete: nothing is applied any more, also while the migration
-		// drains (it only advances from here). A kept fingerprint would make the
-		// early check below start the same drain again on every reconcile.
+		// Drain complete: nothing is applied any more. A kept fingerprint would
+		// make the early check below start the same drain again on every reconcile.
 		if listener.Status.AppliedPlacement != nil {
 			listener.Status.AppliedPlacement.Fingerprint = ""
 		}
@@ -134,11 +133,6 @@ func (h *ListenerHandler) CreateOrUpdate(ctx context.Context, listener *spectrev
 		}
 		return nil
 	case requestGate != "":
-		// Like every other drain, this one follows the freshness decision, so a
-		// prior-policy Listener it drains never looks fresh afterwards.
-		if err := h.decideFreshness(ctx, listener); err != nil {
-			return err
-		}
 		logger.Info("Rejected ApprovalRequest with applied capture, initiating cleanup", "gate", requestGate)
 		if err := h.handleDenialCleanup(ctx, listener,
 			fmt.Sprintf("approval request rejected (%s gate, early restriction)", requestGate),
@@ -206,16 +200,6 @@ func (h *ListenerHandler) CreateOrUpdate(ctx context.Context, listener *spectrev
 		return errors.Wrap(err, "failed to resolve observer zone")
 	}
 
-	// Step 3.5: Decide freshness before placement, fingerprint or stale-child
-	// handling can drain a child: a Listener whose prior-policy children were
-	// drained must not then look fresh. The early restriction (step 0.5) drains
-	// on a revoked Approval only through a persisted Approval ref, and an unscoped
-	// legacy ref keeps the Listener not fresh; on a rejected request it decides
-	// freshness itself first.
-	if freshErr := h.decideFreshness(ctx, listener); freshErr != nil {
-		return freshErr
-	}
-
 	// Step 4: Resolve placement before creating approvals. Delivery is always
 	// A's zone; capture is the first supported zone on the C→P path (A's zone
 	// when on it, then C's, then P's). Unsupported Routes (missing, pass-through,
@@ -251,15 +235,7 @@ func (h *ListenerHandler) CreateOrUpdate(ctx context.Context, listener *spectrev
 	// a different fingerprint, start a drain to record what is being replaced.
 	// startDrain only snapshots; the caller returns nil so the controller
 	// persists the checkpoint before any destructive work begins.
-	//
-	// SKIP when migration is in Draining phase: the drain was initiated by
-	// advanceMigration and will be consumed there. Re-triggering here would
-	// overwrite the migration's DrainStarted checkpoint before advanceMigration
-	// can advance to RetiringRequests.
-	migrationIsDraining := listener.Status.AuthorizationMigration != nil &&
-		listener.Status.AuthorizationMigration.Phase == MigrationPhaseDraining
-	if !migrationIsDraining &&
-		listener.Status.AppliedPlacement != nil &&
+	if listener.Status.AppliedPlacement != nil &&
 		listener.Status.AppliedPlacement.Fingerprint != "" &&
 		listener.Status.AppliedPlacement.Fingerprint != fingerprint &&
 		listener.Status.Draining == nil {
@@ -270,38 +246,22 @@ func (h *ListenerHandler) CreateOrUpdate(ctx context.Context, listener *spectrev
 	}
 
 	// Step 5.10: Owned children the current intent did not produce (unlabelled
-	// prior-policy children, or another fingerprint step 5.9 did not catch) are
-	// drained through the persisted checkpoint like every other capture stop;
-	// return so it is persisted before continueDrain deletes anything. Skipped
-	// while the migration drains, as step 5.9. No drain is active here: step 0
-	// returns until it completes.
-	if !migrationIsDraining {
-		started, staleErr := h.drainStaleChildren(ctx, listener, fingerprint)
-		if staleErr != nil {
-			return errors.Wrap(staleErr, "failed to drain stale children")
-		}
-		if started {
-			return nil // persist drain checkpoint; continueDrain runs on next reconcile
-		}
+	// children, or another fingerprint step 5.9 did not catch) are drained
+	// through the persisted checkpoint like every other capture stop; return so
+	// it is persisted before continueDrain deletes anything. No drain is active
+	// here: step 0 returns until it completes.
+	started, staleErr := h.drainStaleChildren(ctx, listener, fingerprint)
+	if staleErr != nil {
+		return errors.Wrap(staleErr, "failed to drain stale children")
+	}
+	if started {
+		return nil // persist drain checkpoint; continueDrain runs on next reconcile
 	}
 
 	// Step 6: Evaluate dual-gate approval (provider + consumer).
 	dual, err := h.ensureApprovals(ctx, listener, observerApp, consumerApp, providerApp, &intent)
 	if err != nil && dual == nil {
 		return errors.Wrap(err, "failed to ensure approvals")
-	}
-
-	// Step 6.5: Advance migration for non-fresh installs that have legacy
-	// Approvals. The migration state machine needs the dual-gate result to
-	// decide whether scoped approvals have converged.
-	if listener.Status.AuthorizationPolicyVersion != authorizationPolicyV2 {
-		complete, migErr := h.advanceMigration(ctx, listener, &intent, dual)
-		if migErr != nil {
-			return errors.Wrap(migErr, "migration failed")
-		}
-		if !complete {
-			return nil // requeue; migration in progress
-		}
 	}
 
 	// Step 7: Handle approval states explicitly. Every answer (Granted, Denied,
@@ -730,8 +690,8 @@ func (h *ListenerHandler) checkEarlyRestriction(
 }
 
 // hasAppliedCapture reports whether capture may still run with no drain stopping
-// it: an applied fingerprint, or status refs of capture children (Listeners of
-// the prior policy have no applied placement).
+// it: an applied fingerprint, or status refs of capture children, also without
+// an applied placement.
 func hasAppliedCapture(listener *spectrev1.Listener) bool {
 	if listener.Status.Draining != nil {
 		return false

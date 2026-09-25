@@ -81,7 +81,7 @@ func (h *ListenerHandler) drainCapture(ctx context.Context, listener *spectrev1.
 }
 
 // drainStaleChildren starts the persisted drain when any owned child lacks the
-// current authorization fingerprint, unlabelled prior-policy children included,
+// current authorization fingerprint, unlabelled children included,
 // and reports whether it did. The checkpoint covers the whole owned inventory
 // plus status refs; the caller must return so it is persisted before
 // continueDrain deletes anything.
@@ -153,10 +153,6 @@ func recordDrain(
 	}
 	slices.SortFunc(oldRLs, compareRefs)
 	drain.OldRouteListeners = oldRLs
-	if len(oldRLs) > 0 {
-		// Mirror for controller builds that only read the singular field.
-		drain.OldRouteListener = oldRLs[0].DeepCopy()
-	}
 
 	var oldSubs []ctypes.ObjectRef
 	for i := range listener.Status.EventSubscriptions {
@@ -169,8 +165,7 @@ func recordDrain(
 	drain.OldSubscribers = oldSubs
 
 	// Snapshot source publisher and event store from applied placement. Without
-	// one (partial provisioning, migration of legacy capture) the owned bridges
-	// name their Publisher.
+	// one (partial provisioning) the owned bridges name their Publisher.
 	if ap := listener.Status.AppliedPlacement; ap != nil {
 		if ap.Publisher != nil {
 			drain.SourcePublisher = ap.Publisher.DeepCopy()
@@ -325,17 +320,12 @@ func drainPublisherNamespaces(drain *spectrev1.ListenerDrainStatus) []string {
 }
 
 // drainRouteListenerRefs returns every RouteListener the Stopping phase must
-// remove: the recorded set, the singular record of checkpoints written by
-// earlier builds, and the status ref those builds could drop from the
-// checkpoint. Provisioning is blocked while a drain is active, so the status
-// ref is always old-generation here.
+// remove: the recorded set and the status ref. Provisioning is blocked while a
+// drain is active, so the status ref is always old-generation here.
 func drainRouteListenerRefs(listener *spectrev1.Listener) []ctypes.ObjectRef {
-	drain := listener.Status.Draining
-	refs := slices.Clone(drain.OldRouteListeners)
-	for _, ref := range []*ctypes.ObjectRef{drain.OldRouteListener, listener.Status.RouteListener} {
-		if ref != nil {
-			refs = addOldRef(refs, *ref)
-		}
+	refs := slices.Clone(listener.Status.Draining.OldRouteListeners)
+	if ref := listener.Status.RouteListener; ref != nil {
+		refs = addOldRef(refs, *ref)
 	}
 	return refs
 }
