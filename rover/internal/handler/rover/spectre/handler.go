@@ -6,7 +6,6 @@ package spectre
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -213,7 +212,7 @@ func mapListenerFilter(f *roverv1.ListenerFilter) *spectrev1.ListenerFilter {
 
 // makeSpectreAppName generates a deterministic name for the SpectreApplication.
 func makeSpectreAppName(roverName string) string {
-	return fmt.Sprintf("%s--spectre-app", roverName)
+	return labelutil.NormalizeNameValue(roverName + "--spectre-app")
 }
 
 // makeListenerName generates a deterministic name for a Listener based on content identity.

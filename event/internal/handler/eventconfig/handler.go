@@ -302,7 +302,7 @@ func (h *EventConfigHandler) createCallbackConsumer(ctx context.Context, obj *ev
 
 	consumer := &gatewayapi.Consumer{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      clientId,
+			Name:      labelutil.NormalizeNameValue(clientId),
 			Namespace: obj.Namespace,
 		},
 	}
