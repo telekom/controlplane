@@ -302,12 +302,12 @@ func gatewayUpstream(preset *adminv1.GatewayConfigPreset, path string) (gatewayv
 
 // makeSpectreSSERouteName returns a deterministic Route name for a Spectre listener's SSE endpoint.
 func makeSpectreSSERouteName(appId string) string {
-	return "spectre-sse--" + labelutil.NormalizeNameValue(appId)
+	return labelutil.NormalizeNameValue("spectre-sse--" + appId)
 }
 
 // makeSpectreSSEProxyRouteName returns a deterministic Route name for a Spectre SSE proxy route.
 func makeSpectreSSEProxyRouteName(appId string) string {
-	return "spectre-sse-proxy--" + labelutil.NormalizeNameValue(appId)
+	return labelutil.NormalizeNameValue("spectre-sse-proxy--" + appId)
 }
 
 // makeSpectreSSERoutePath builds the SSE path for a Spectre listener event type.
