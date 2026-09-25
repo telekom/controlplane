@@ -15,41 +15,57 @@ export default {
         'next',
         'next-major',
     ],
-    // Deliberately does NOT use @semantic-release/git or
-    // @semantic-release/changelog:
-    //   - The changelog itself is no longer a committed CHANGELOG.md file;
-    //     GoReleaser generates it from commits since the previous tag and
-    //     publishes it as the GitHub Release body (see .goreleaser.yaml's
-    //     `changelog:`/`release:` config) - semantic-release's own release
-    //     notes plugin is unnecessary for the same reason.
-    //   - semantic-release *core* (not the git plugin) already creates and
-    //     pushes the release tag on its own - see
+    // Deliberately does NOT use @semantic-release/changelog or
+    // @semantic-release/release-notes-generator: the changelog itself is no
+    // longer a committed CHANGELOG.md file. GoReleaser generates it from
+    // commits since the previous tag and publishes it as the GitHub Release
+    // body (see .goreleaser.yaml's `changelog:`/`release:` config) instead.
+    //
+    // Does use @semantic-release/git, scoped to only the two self-referential
+    // version-bump files below (not CHANGELOG.md). This is deliberate despite
+    // semantic-release's own general advice to avoid the git plugin when
+    // possible:
+    //   - install/overlays/default/kustomization.yaml's `ref=` value points
+    //     at the very tag being cut, so the *tagged commit's own tree* must
+    //     already contain the bumped value - not just a later commit on
+    //     `main`.
+    //   - semantic-release *core* (not the git plugin) creates and pushes
+    //     the release tag itself, pointing at whatever commit is HEAD after
+    //     the `prepare` step - see
     //     https://github.com/semantic-release/semantic-release/discussions/3800.
-    //     The git plugin's only remaining job would be committing/pushing
-    //     version-bump files to the branch, which carries real downsides
-    //     (bypasses required PR review on protected branches, can race with
-    //     concurrent pushes, and - since this workflow deliberately uses a
-    //     GitHub App token so the *tag* push triggers release-publish.yaml -
-    //     would also spuriously re-trigger ci.yaml's push-to-main CI run).
-    //   - The `@semantic-release/exec` prepare hook below still needs
-    //     install/overlays/default/kustomization.yaml and
-    //     common-server/helm/Chart.yaml to carry the new version, since
-    //     they're self-referential (the kustomize overlay's `ref=` value
-    //     points at the very tag being cut). It commits them locally (see
-    //     .github/scripts/commit_release_files.sh) so they become part of
-    //     the commit that core then tags - but does not push to `main`.
-    //     This means `main`'s copies of these two files reflect the last
-    //     release only for as long as no further commits land on `main`;
-    //     consumers should always pin to a release tag, never to `main`,
-    //     which is the intended usage already.
+    //     If that commit is never pushed to the release branch, it becomes
+    //     unreachable from `main`. semantic-release's *next* run determines
+    //     the "last release" by looking at tags reachable from the current
+    //     branch, so an unreachable tag is invisible to it - it would
+    //     recompute from the previous (older) release and could attempt to
+    //     recreate the same version/tag again. Pushing this commit to the
+    //     branch (what @semantic-release/git does) is what keeps the tag
+    //     reachable and next-version calculation correct.
+    //   - The commit message below intentionally does NOT include `[skip
+    //     ci]` (the plugin's default message does): GitHub applies skip
+    //     directives to the `push` event of the *tag* too, since both the
+    //     branch commit and the tag point at the same commit - a skip
+    //     marker here would silently suppress release-publish.yaml.
+    //   - Trade-off accepted: this bot commit bypasses required PR review
+    //     on the protected branch (the bot has the necessary bypass rights),
+    //     and - since it uses the same GitHub App token as the tag push -
+    //     also re-triggers ci.yaml's ordinary push-to-main CI run. Both are
+    //     pre-existing, previously-accepted behaviors of this release
+    //     process, not new costs introduced here.
     plugins: [
         '@semantic-release/commit-analyzer',
         ['@semantic-release/exec', {
             prepareCmd: `
                 bash ./.github/scripts/update_install.sh "\${nextRelease.gitTag}"
                 bash ./.github/scripts/update_chart_version.sh common-server/helm "\${nextRelease.gitTag}"
-                bash ./.github/scripts/commit_release_files.sh "\${nextRelease.gitTag}"
             `,
+        }],
+        ['@semantic-release/git', {
+            assets: [
+                'install/overlays/default/kustomization.yaml',
+                'common-server/helm/Chart.yaml',
+            ],
+            message: 'chore(release): ${nextRelease.gitTag}',
         }],
     ],
 };
