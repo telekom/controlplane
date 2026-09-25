@@ -690,8 +690,8 @@ func (h *ListenerHandler) checkEarlyRestriction(
 }
 
 // hasAppliedCapture reports whether capture may still run with no drain stopping
-// it: an applied fingerprint, or status refs of capture children, also without
-// an applied placement.
+// it: an applied fingerprint, or status refs of capture children. The refs
+// cover partial provisioning, because they are written before AppliedPlacement.
 func hasAppliedCapture(listener *spectrev1.Listener) bool {
 	if listener.Status.Draining != nil {
 		return false
