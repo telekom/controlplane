@@ -173,6 +173,9 @@ func waitExposure(exp *agenticv1.AgenticExposure) *gatewayv1.Route {
 func updateFixtureStatus(obj ctypes.Object) {
 	Eventually(func(g Gomega) {
 		g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(obj), obj)).To(Succeed())
+		if condition.IsReady(obj) {
+			return
+		}
 		setFixtureReady(obj)
 		g.Expect(k8sClient.Status().Update(ctx, obj)).To(Succeed())
 	}, timeout, interval).Should(Succeed())
@@ -223,10 +226,18 @@ func waitConsumeRoute(sub *agenticv1.AgenticSubscription, scopes []string) *gate
 		g.Expect(k8sClient.Get(ctx, sub.Status.ConsumeRoute.K8s(), consume)).To(Succeed())
 		g.Expect(consume.Spec.Security.M2M).NotTo(BeNil())
 		g.Expect(consume.Spec.Security.M2M.Scopes).To(Equal(scopes))
-	}, timeout, interval).Should(Succeed())
-	updateFixtureStatus(consume)
-	Eventually(func(g Gomega) {
-		expectReadyReason(g, sub, "AgenticSubscriptionProvisioned", metav1.ConditionTrue)
+		// Subscription changes can also update the exposure Route's allowed consumers.
+		route := &gatewayv1.Route{}
+		g.Expect(k8sClient.Get(ctx, consume.Spec.Route.K8s(), route)).To(Succeed())
+		if !condition.IsReady(route) {
+			setFixtureReady(route)
+			g.Expect(k8sClient.Status().Update(ctx, route)).To(Succeed())
+		}
+		if !condition.IsReady(consume) {
+			setFixtureReady(consume)
+			g.Expect(k8sClient.Status().Update(ctx, consume)).To(Succeed())
+		}
+		expectReadyReason(g, sub, condition.ReasonProvisioned, metav1.ConditionTrue)
 	}, timeout, interval).Should(Succeed())
 	return consume
 }
@@ -305,10 +316,15 @@ var _ = Describe("External token endpoint scope exception", func() {
 			g.Expect(k8sClient.Update(ctx, sub)).To(Succeed())
 		}, timeout, interval).Should(Succeed())
 		Eventually(func(g Gomega) {
-			expectReadyReason(g, exp, "AgenticExposureProvisioned", metav1.ConditionTrue)
-			expectReadyReason(g, sub, "AgenticSubscriptionProvisioned", metav1.ConditionTrue)
 			g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(route), route)).To(Succeed())
-			g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(consume), consume)).To(Succeed())
+			g.Expect(route.Spec.Security.M2M.Scopes).To(Equal(providerScopes))
+		}, timeout, interval).Should(Succeed())
+		waitExposure(exp)
+		consume = waitConsumeRoute(sub, consumerScopes)
+		Eventually(func(g Gomega) {
+			expectReadyReason(g, exp, "AgenticExposureProvisioned", metav1.ConditionTrue)
+			expectReadyReason(g, sub, condition.ReasonProvisioned, metav1.ConditionTrue)
+			g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(route), route)).To(Succeed())
 			g.Expect(route.Spec.Security.M2M.Scopes).To(Equal(providerScopes))
 			g.Expect(consume.Spec.Security.M2M.Scopes).To(Equal(consumerScopes))
 			g.Expect(route.UID).To(Equal(routeBefore.UID))
@@ -335,23 +351,24 @@ var _ = Describe("External token endpoint scope exception", func() {
 		}, timeout, interval).Should(Succeed())
 		sub := f.subscription([]string{"consumer"})
 		Eventually(func(g Gomega) {
-			expectReadyReason(g, sub, "InvalidScopes", metav1.ConditionFalse)
+			expectReadyReason(g, sub, condition.ReasonValidationFailed, metav1.ConditionFalse)
 			f.expectNoProvisioning(g)
 		}, timeout, interval).Should(Succeed())
 	})
 
-	DescribeTable("preserves missing-exposure diagnostics", func(scopes []string, reason string) {
+	DescribeTable("preserves missing-exposure diagnostics", func(scopes []string, reason, message string) {
 		f := newScopeFixture()
 		f.server("McpServer", []string{"read"})
 		sub := f.subscription(scopes)
 		Eventually(func(g Gomega) {
 			expectReadyReason(g, sub, reason, metav1.ConditionFalse)
+			g.Expect(meta.FindStatusCondition(sub.GetConditions(), condition.ConditionTypeReady).Message).To(ContainSubstring(message))
 			f.expectNoProvisioning(g)
 		}, timeout, interval).Should(Succeed())
-	}, Entry("scope failure precedes missing exposure", []string{"consumer"}, "InvalidScopes"),
-		Entry("valid scopes still require an exposure", []string{"read"}, "AgenticExposureNotFound"))
+	}, Entry("scope failure precedes missing exposure", []string{"consumer"}, condition.ReasonValidationFailed, "not defined in the server"),
+		Entry("valid scopes still require an exposure", []string{"read"}, condition.ReasonPreconditionNotMet, "No active AgenticExposure found"))
 
-	DescribeTable("preserves the selected exposure's readiness gate", func(endpoint bool, scopes []string, reason string) {
+	DescribeTable("preserves the selected exposure's readiness gate", func(endpoint bool, scopes []string, reason, message string) {
 		f := newScopeFixture()
 		f.server("McpServer", []string{"read"})
 		exp := f.exposure("exposure", []string{"read"}, endpoint)
@@ -370,11 +387,12 @@ var _ = Describe("External token endpoint scope exception", func() {
 		sub := f.subscription(scopes)
 		Eventually(func(g Gomega) {
 			expectReadyReason(g, sub, reason, metav1.ConditionFalse)
+			g.Expect(meta.FindStatusCondition(sub.GetConditions(), condition.ConditionTypeReady).Message).To(ContainSubstring(message))
 			f.expectNoProvisioning(g)
 		}, timeout, interval).Should(Succeed())
-	}, Entry("non-exempt scope failure precedes readiness", false, []string{"consumer"}, "InvalidScopes"),
-		Entry("valid non-exempt scopes still require readiness", false, []string{"read"}, "AgenticExposureNotReady"),
-		Entry("qualifying endpoint does not exempt readiness", true, []string{"consumer"}, "AgenticExposureNotReady"))
+	}, Entry("non-exempt scope failure precedes readiness", false, []string{"consumer"}, condition.ReasonValidationFailed, "not defined in the server"),
+		Entry("valid non-exempt scopes still require readiness", false, []string{"read"}, condition.ReasonPreconditionNotMet, "is not ready"),
+		Entry("qualifying endpoint does not exempt readiness", true, []string{"consumer"}, condition.ReasonPreconditionNotMet, "is not ready"))
 
 	It("revalidates through exposure-only endpoint add/remove watches before any approval events", func() {
 		f := newScopeFixture()
@@ -384,17 +402,22 @@ var _ = Describe("External token endpoint scope exception", func() {
 		consumerScopes := []string{"external.write", "external.read"}
 		sub := f.subscription(consumerScopes)
 		Eventually(func(g Gomega) {
-			expectReadyReason(g, sub, "InvalidScopes", metav1.ConditionFalse)
+			expectReadyReason(g, sub, condition.ReasonValidationFailed, metav1.ConditionFalse)
 			f.expectNoProvisioning(g)
 		}, timeout, interval).Should(Succeed())
 		settleScopeObjects(exp, route, sub)
 		Consistently(func(g Gomega) {
-			expectReadyReason(g, sub, "InvalidScopes", metav1.ConditionFalse)
+			expectReadyReason(g, sub, condition.ReasonValidationFailed, metav1.ConditionFalse)
 			f.expectNoProvisioning(g)
 		}, time.Second, interval).Should(Succeed())
 		subGeneration := sub.Generation
 		exp.Spec.Security.M2M.ExternalIDP = externalIDPFixture()
 		Expect(k8sClient.Update(ctx, exp)).To(Succeed())
+		Eventually(func(g Gomega) {
+			g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(route), route)).To(Succeed())
+			g.Expect(route.Spec.Security.M2M.ExternalIDP).NotTo(BeNil())
+		}, timeout, interval).Should(Succeed())
+		waitExposure(exp)
 		req := waitPending(sub)
 		Expect(sub.Generation).To(Equal(subGeneration))
 		Expect(req.CreationTimestamp.Before(&exp.CreationTimestamp)).To(BeFalse())
@@ -408,8 +431,13 @@ var _ = Describe("External token endpoint scope exception", func() {
 		exp.Spec.Security.M2M.ExternalIDP = nil
 		Expect(k8sClient.Update(ctx, exp)).To(Succeed())
 		Eventually(func(g Gomega) {
+			g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(route), route)).To(Succeed())
+			g.Expect(route.Spec.Security.M2M.ExternalIDP).To(BeNil())
+		}, timeout, interval).Should(Succeed())
+		waitExposure(exp)
+		Eventually(func(g Gomega) {
 			expectReadyReason(g, exp, "AgenticExposureProvisioned", metav1.ConditionTrue)
-			expectReadyReason(g, sub, "InvalidScopes", metav1.ConditionFalse)
+			expectReadyReason(g, sub, condition.ReasonValidationFailed, metav1.ConditionFalse)
 			g.Expect(sub.Generation).To(Equal(subGeneration))
 			g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(consume), consume)).To(Succeed())
 			g.Expect(consume.Spec.Security.M2M.Scopes).To(Equal(consumerScopes))

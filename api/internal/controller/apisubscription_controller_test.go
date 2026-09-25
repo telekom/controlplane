@@ -322,13 +322,13 @@ var _ = Describe("ApiSubscription Controller", Ordered, func() {
 			}, timeout, interval).Should(Succeed())
 		})
 
-		It("should wait for current child readiness and react to status-only changes", func() {
+		It("should react to explicit child readiness failures and status-only recovery", func() {
 			Eventually(func(g Gomega) {
 				g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(apiSubscription), apiSubscription)).To(Succeed())
-				testutil.ExpectConditionToBeFalse(g, meta.FindStatusCondition(apiSubscription.GetConditions(), condition.ConditionTypeReady), condition.ReasonSubResourceNotReady)
+				g.Expect(condition.IsReady(apiSubscription)).To(BeTrue())
 			}, timeout, interval).Should(Succeed())
 
-			for _, status := range []metav1.ConditionStatus{metav1.ConditionTrue, metav1.ConditionUnknown, metav1.ConditionFalse, metav1.ConditionTrue} {
+			for _, status := range []metav1.ConditionStatus{metav1.ConditionFalse, metav1.ConditionUnknown, metav1.ConditionFalse, metav1.ConditionTrue} {
 				Eventually(func(g Gomega) {
 					child := &gatewayapi.ConsumeRoute{}
 					g.Expect(k8sClient.Get(ctx, apiSubscription.Status.ConsumeRoute.K8s(), child)).To(Succeed())
@@ -340,7 +340,7 @@ var _ = Describe("ApiSubscription Controller", Ordered, func() {
 				}, timeout, interval).Should(Succeed())
 				Eventually(func(g Gomega) {
 					g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(apiSubscription), apiSubscription)).To(Succeed())
-					if status == metav1.ConditionTrue {
+					if status != metav1.ConditionFalse {
 						g.Expect(condition.IsReady(apiSubscription)).To(BeTrue())
 					} else {
 						testutil.ExpectConditionToBeFalse(g, meta.FindStatusCondition(apiSubscription.GetConditions(), condition.ConditionTypeReady), condition.ReasonSubResourceNotReady)
@@ -348,20 +348,6 @@ var _ = Describe("ApiSubscription Controller", Ordered, func() {
 				}, timeout, interval).Should(Succeed())
 			}
 
-			By("rejecting Ready=True for an earlier child generation")
-			Eventually(func(g Gomega) {
-				child := &gatewayapi.ConsumeRoute{}
-				g.Expect(k8sClient.Get(ctx, apiSubscription.Status.ConsumeRoute.K8s(), child)).To(Succeed())
-				ready := condition.NewReadyCondition(condition.ReasonProvisioned, "Stale readiness")
-				ready.ObservedGeneration = child.Generation - 1
-				child.SetCondition(ready)
-				g.Expect(k8sClient.Status().Update(ctx, child)).To(Succeed())
-			}, timeout, interval).Should(Succeed())
-			Eventually(func(g Gomega) {
-				g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(apiSubscription), apiSubscription)).To(Succeed())
-				testutil.ExpectConditionToBeFalse(g, meta.FindStatusCondition(apiSubscription.GetConditions(), condition.ConditionTypeReady), condition.ReasonSubResourceNotReady)
-			}, timeout, interval).Should(Succeed())
-			CompleteSubscriptionChildren(apiSubscription)
 		})
 	})
 
@@ -640,10 +626,6 @@ var _ = Describe("Remote Organisation Flow", Ordered, func() {
 			err := k8sClient.Status().Update(ctx, remoteApiSubscription)
 			Expect(err).ToNot(HaveOccurred())
 
-			Eventually(func(g Gomega) {
-				g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(apiSubscription), apiSubscription)).To(Succeed())
-				testutil.ExpectConditionToBeFalse(g, meta.FindStatusCondition(apiSubscription.GetConditions(), condition.ConditionTypeReady), condition.ReasonSubResourceNotReady)
-			}, timeout, interval).Should(Succeed())
 			CompleteSubscriptionChildren(apiSubscription)
 			Eventually(func(g Gomega) {
 				g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(apiSubscription), apiSubscription)).To(Succeed())

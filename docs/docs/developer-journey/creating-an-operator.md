@@ -79,19 +79,6 @@ You do not need to implement any of this yourself.
 
 The `ScopedClient` is an environment-aware Kubernetes client. It automatically labels every resource it creates and scopes all queries to the correct virtual environment. When your handler creates child resources through the `ScopedClient`, they are automatically tagged with the right environment label.
 
-`AllReady()` checks resources passed through `CreateOrUpdate` since the last
-`Reset()`. Each resource implementing the common `Object` interface must have
-`Ready=True` and a condition `ObservedGeneration` matching its current
-`metadata.generation`. Missing or unknown conditions and stale generations are
-not ready. Core resources without that interface, such as Secrets, do not affect
-the result; resources only read through `Get` or `List` are not tracked.
-
-Once any tracked resource is not ready, `AllReady()` remains false until the next
-reset or reconciliation. Handlers can use it to set
-`Ready=False / SubResourceNotReady` while waiting for children. Watch child status
-updates so reconciliation resumes when they become ready; a generation-only
-predicate filters out those updates.
-
 ### JanitorClient
 
 The `JanitorClient` extends `ScopedClient` with garbage collection. It tracks which resources were created or updated during a reconciliation cycle and, once reconciliation completes, cleans up any orphaned resources that were not touched. This is useful for operators that create a dynamic set of child resources where the exact set may change between reconciliation runs.

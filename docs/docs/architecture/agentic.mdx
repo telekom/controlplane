@@ -69,11 +69,11 @@ API subscriptions. The condition message provides the specific cause.
 Once approval is granted, a previous `ApprovalPending` reason is cleared before
 provisioning continues, including when a subsequent provisioning operation fails.
 
-The child-resource readiness check requires every condition-bearing resource
-created or updated during reconciliation, including the `ApprovalRequest` and
-`ConsumeRoute`, to report `Ready=True` with `ObservedGeneration` equal to its
-current `metadata.generation`. Missing, unknown, false, or outdated readiness
-keeps the subscription at `Ready=False / SubResourceNotReady`.
+The child-resource readiness check reports `Ready=False / SubResourceNotReady`
+when a condition-bearing resource created or updated during reconciliation,
+including the `ApprovalRequest` or `ConsumeRoute`, explicitly reports
+`Ready=False`. This check does not reject missing or unknown Ready conditions
+and does not check child `ObservedGeneration`.
 
 ### Cross-Zone Meshing
 

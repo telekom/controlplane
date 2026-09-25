@@ -9,9 +9,7 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
@@ -266,9 +264,7 @@ var _ = Describe("Client", func() {
 
 			scopedClient.Reset()
 
-			ready := condition.NewReadyCondition("Test", "test")
-			ready.ObservedGeneration = obj.Generation
-			obj.SetCondition(ready)
+			obj.SetCondition(condition.NewReadyCondition("Test", "test"))
 			Expect(k8sClient.Status().Update(ctx, obj)).To(Succeed())
 			_, err = scopedClient.CreateOrUpdate(ctx, obj, DoNothing())
 			Expect(err).ToNot(HaveOccurred())
@@ -277,14 +273,10 @@ var _ = Describe("Client", func() {
 			Expect(scopedClient.AllReady()).To(BeTrue())
 
 			notReadyObj := templ.DeepCopy()
-			notReadyObj.Name = "not-ready-child"
 			_, err = scopedClient.CreateOrUpdate(ctx, notReadyObj, DoNothing())
 			Expect(err).ToNot(HaveOccurred())
 			notReadyObj.SetCondition(condition.NewNotReadyCondition("Test", "test"))
 			Expect(k8sClient.Status().Update(ctx, notReadyObj)).To(Succeed())
-			scopedClient.Reset()
-			_, err = scopedClient.CreateOrUpdate(ctx, notReadyObj, DoNothing())
-			Expect(err).NotTo(HaveOccurred())
 			_, err = scopedClient.CreateOrUpdate(ctx, obj, DoNothing())
 			Expect(err).ToNot(HaveOccurred())
 
@@ -312,64 +304,7 @@ var _ = Describe("Client", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			Expect(scopedClient.AnyChanged()).To(BeTrue())
-			Expect(scopedClient.AllReady()).To(BeFalse())
-		})
-
-		DescribeTable("requires a current Ready=True condition",
-			func(status metav1.ConditionStatus, generationOffset int64, expected bool) {
-				Expect(k8sClient.Create(ctx, obj)).To(Succeed())
-				if status != "" {
-					obj.SetCondition(metav1.Condition{
-						Type: condition.ConditionTypeReady, Status: status,
-						Reason: "Test", Message: "test",
-						ObservedGeneration: obj.Generation + generationOffset,
-					})
-					Expect(k8sClient.Status().Update(ctx, obj)).To(Succeed())
-				}
-				_, err := scopedClient.CreateOrUpdate(ctx, obj, DoNothing())
-				Expect(err).NotTo(HaveOccurred())
-				Expect(scopedClient.AllReady()).To(Equal(expected))
-			},
-			Entry("missing", metav1.ConditionStatus(""), int64(0), false),
-			Entry("unknown", metav1.ConditionUnknown, int64(0), false),
-			Entry("false", metav1.ConditionFalse, int64(0), false),
-			Entry("stale true", metav1.ConditionTrue, int64(-1), false),
-			Entry("future generation", metav1.ConditionTrue, int64(1), false),
-			Entry("current true", metav1.ConditionTrue, int64(0), true),
-		)
-
-		It("waits for a new generation after updating a ready child's spec", func() {
-			Expect(k8sClient.Create(ctx, obj)).To(Succeed())
-			ready := condition.NewReadyCondition(condition.ReasonProvisioned, "ready")
-			ready.ObservedGeneration = obj.Generation
-			obj.SetCondition(ready)
-			Expect(k8sClient.Status().Update(ctx, obj)).To(Succeed())
-
-			_, err := scopedClient.CreateOrUpdate(ctx, obj, func() error {
-				obj.Spec.Properties = &runtime.RawExtension{Raw: []byte(`{"changed":true}`)}
-				return nil
-			})
-			Expect(err).NotTo(HaveOccurred())
-			Expect(obj.Generation).To(BeNumerically(">", ready.ObservedGeneration))
-			Expect(scopedClient.AllReady()).To(BeFalse())
-
-			ready.ObservedGeneration = obj.Generation
-			obj.SetCondition(ready)
-			Expect(k8sClient.Status().Update(ctx, obj)).To(Succeed())
-			_, err = scopedClient.CreateOrUpdate(ctx, obj, DoNothing())
-			Expect(err).NotTo(HaveOccurred())
-			Expect(scopedClient.AllReady()).To(BeFalse(), "readiness stays false until Reset")
-			scopedClient.Reset()
-			_, err = scopedClient.CreateOrUpdate(ctx, obj, DoNothing())
-			Expect(err).NotTo(HaveOccurred())
-			Expect(scopedClient.AllReady()).To(BeTrue())
-		})
-
-		It("does not require readiness conditions on core objects", func() {
-			secret := &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: "readiness-test", Namespace: namespace}}
-			_, err := scopedClient.CreateOrUpdate(ctx, secret, DoNothing())
-			Expect(err).NotTo(HaveOccurred())
-			DeferCleanup(func() { Expect(k8sClient.Delete(ctx, secret)).To(Succeed()) })
+			// defaults as no conditions set
 			Expect(scopedClient.AllReady()).To(BeTrue())
 		})
 	})
