@@ -50,10 +50,11 @@ type Delivery struct {
 
 // EventSubscriptionSpec defines the desired state of EventSubscription.
 type EventSubscriptionSpec struct {
-	// EventType is the dot-separated event type identifier (e.g. "de.telekom.eni.quickstart.v1").
+	// EventType is an event type identifier with dot or hyphen separators (e.g. "de.telekom.eni-quickstart.v1").
 	// References the EventType CR via MakeEventTypeName() conversion.
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:Pattern=`^[a-z0-9]+([.-][a-z0-9]+)*$`
 	EventType string `json:"eventType"`
 
 	// Zone references the Zone CR where this subscription is placed.

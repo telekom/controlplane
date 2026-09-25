@@ -1040,6 +1040,7 @@ spec:
                           description: EventType identifies the type of event that
                             is published (e.g. "de.telekom.eni.quickstart.v1")
                           minLength: 1
+                          pattern: ^[a-z0-9]+([.-][a-z0-9]+)*$
                           type: string
                         scopes:
                           description: Scopes defines named scopes with optional publisher-side
@@ -1602,6 +1603,7 @@ spec:
                           description: EventType identifies the type of event to subscribe
                             to (e.g. "de.telekom.eni.quickstart.v1")
                           minLength: 1
+                          pattern: ^[a-z0-9]+([.-][a-z0-9]+)*$
                           type: string
                         scopes:
                           description: |-

@@ -91,9 +91,10 @@ spec:
                 type: object
               eventType:
                 description: |-
-                  EventType is the dot-separated event type identifier (e.g. "de.telekom.eni.quickstart.v1").
+                  EventType is an event type identifier with dot or hyphen separators (e.g. "de.telekom.eni-quickstart.v1").
                   References the EventType CR via MakeEventTypeName() conversion.
                 minLength: 1
+                pattern: ^[a-z0-9]+([.-][a-z0-9]+)*$
                 type: string
               provider:
                 description: Provider identifies the providing application.
