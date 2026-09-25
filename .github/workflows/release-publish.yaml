@@ -13,17 +13,29 @@
 # the Artifactory mirroring flakes, without cutting a new release.
 #
 # SECURITY: this workflow triggers on *any* push of a `v*` tag and has write
-# access to GHCR/GitHub Releases plus the Artifactory push credentials -
-# without a guard, anyone able to push a matching tag could get arbitrary
-# checked-out code published under a release tag, or overwrite existing
-# release image tags. The `guard` job below restricts execution to tags
-# pushed by the same release bot (GitHub App) that release.yaml uses, by
-# comparing `github.actor` (the authenticated pusher, not attacker-
-# controllable commit metadata) against that App's bot identity.
-# Defense in depth: also configure a GitHub tag protection rule for `v*`
-# (Settings > Tags > New rule) restricting who may create/push matching
-# tags at all - the in-workflow guard alone cannot prevent a trusted-but-
-# compromised token from pushing a malicious tag.
+# access to GHCR/GitHub Releases plus the Artifactory push credentials.
+# The `guard` job below is only a fast fail-fast/defense-in-depth check
+# (comparing `github.actor` against the release bot's identity) - it is NOT
+# by itself a sufficient security boundary: GitHub evaluates this workflow's
+# *own* file from the commit the pushed tag points at, so an attacker who
+# can create a `v*` tag could point it at a commit whose copy of this file
+# has the guard job removed entirely.
+#
+# The actual, tamper-proof boundary is the `environment: release` set on
+# each privileged job below (goreleaser, mirror-to-artifactory,
+# roverctl-combined-image). Environment protection rules are enforced by
+# GitHub from repository settings, independent of any workflow file content
+# at any ref - so they hold even if an attacker's malicious tag commit
+# rewrites this entire file. This REQUIRES (not optional) configuring, in
+# Settings > Environments > "release":
+#   - Required reviewers, so every run of a privileged job pauses for
+#     manual approval regardless of which ref/commit its workflow file
+#     came from
+#   - "Deployment branches and tags" restricted to the `v*` pattern, so
+#     only tags matching the release format can even reach the environment
+# Additionally (defense in depth, but still recommended): a GitHub tag
+# protection ruleset for `v*` (Settings > Tags > New ruleset) restricting
+# who may create/push matching tags in the first place.
 name: Release Publish
 on:
   push:
@@ -84,6 +96,7 @@ jobs:
     name: "Mirror ${{ matrix.module }} to Artifactory"
     needs: goreleaser
     runs-on: ubuntu-latest
+    environment: release
     permissions:
       contents: read
       packages: read # to pull images from GHCR via skopeo below
@@ -156,6 +169,7 @@ jobs:
     name: Rover-CTL Combined Image (bash/jq/yq)
     needs: [rover-ctl-base-image, goreleaser]
     runs-on: ubuntu-latest
+    environment: release
     permissions:
       contents: read
       packages: read # to pull the plain roverctl image from GHCR below

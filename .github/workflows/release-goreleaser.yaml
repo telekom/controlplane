@@ -18,6 +18,18 @@
 # just this job, e.g. after fixing a transient GHCR/registry outage, without
 # re-running semantic-release or re-triggering the rest of
 # release-publish.yaml.
+#
+# SECURITY: this job publishes with `contents: write`/`packages: write` from
+# BOTH entry points above - a workflow_dispatch run is just as privileged as
+# a tag-push-triggered one, and isn't covered by release-publish.yaml's
+# `guard` job (that guard only gates release-publish.yaml's own jobs). The
+# `environment: release` below is the actual boundary for both paths: it
+# requires a "release" environment configured in Settings > Environments,
+# with required reviewers and its "Deployment branches and tags" rule
+# restricted to `v*`. This is enforced by GitHub itself from repository
+# settings, not from workflow file content - so it holds even against a
+# maliciously-modified copy of this file (see release-publish.yaml's
+# security note for why that matters for the tag-push path).
 name: "Release GoReleaser"
 
 on:
@@ -40,6 +52,7 @@ jobs:
   goreleaser:
     name: GoReleaser
     runs-on: ubuntu-latest
+    environment: release
     permissions:
       contents: write # to publish the GitHub release
       packages: write # to push module images to GHCR

@@ -331,14 +331,12 @@ Does nothing else - no images are built or published here.
 Workflow above
 
 **Jobs (see dependency graph below):**
-1. **Verify Trusted Trigger** (`guard`) - since this workflow runs on *any*
-   `v*` tag push and holds write access to GHCR/GitHub Releases plus the
-   Artifactory push credentials, this job compares `github.actor` (the
-   authenticated pusher) against the release bot's own identity (resolved
-   via the same GitHub App credentials release.yaml uses) and fails the run
-   for any other actor. All other jobs depend on this passing. Defense in
-   depth: also configure a GitHub tag protection rule for `v*` (Settings >
-   Tags) to restrict who may push matching tags at all.
+1. **Verify Trusted Trigger** (`guard`) - a fast fail-fast/defense-in-depth
+   check: compares `github.actor` (the authenticated pusher) against the
+   release bot's own identity (resolved via the same GitHub App credentials
+   release.yaml uses) and fails the run for any other actor. **Not** by
+   itself a sufficient security boundary - see "Security Model" below for
+   why, and what the real boundary is.
 2. **Rover-CTL Base Image** (via reusable `rover-ctl-base-image.yaml`) -
    independent of the release version; runs unconditionally as a freshness
    safety net
@@ -379,6 +377,32 @@ goreleaser ──┬────────────────────
 
 **Permissions:** Packages (write, goreleaser job), contents (write, goreleaser job), packages (read, roverctl-combined-image job, mirror-to-artifactory job)
 
+**Security Model**
+
+The `guard` job's `github.actor` check alone is **not** a sufficient
+boundary: GitHub evaluates this workflow's own file from the commit the
+pushed tag points at, so an attacker able to create a `v*` tag could point
+it at a commit whose copy of `release-publish.yaml` has the `guard` job
+(or any other check) simply removed.
+
+The actual, tamper-proof boundary is `environment: release`, set on every
+privileged job (`goreleaser` - defined inside `release-goreleaser.yaml` so
+it also covers that workflow's standalone `workflow_dispatch` path -
+`mirror-to-artifactory`, `roverctl-combined-image`, and conditionally on
+`rover-ctl-base-image`'s job when `push: true`). Environment protection
+rules are enforced by GitHub from **repository settings**, independent of
+any workflow file content at any ref, so they hold even against a
+maliciously-rewritten copy of these files. This requires configuring, in
+**Settings > Environments > "release"** (mandatory, not optional):
+- **Required reviewers** - every run of a privileged job pauses for manual
+  approval, regardless of which ref/commit its workflow file came from
+- **Deployment branches and tags** restricted to the `v*` pattern - only
+  tags matching the release format can reach the environment at all
+
+Defense in depth (still recommended, but not a substitute for the above):
+a GitHub tag protection ruleset for `v*` (Settings > Tags > New ruleset)
+restricting who may create/push matching tags in the first place.
+
 **Key Features:**
 - **Dual registry distribution** - GHCR for open-source binaries, Artifactory for GPL-bundled images
 - **Image mirroring** - Synchronizes multi-arch manifests across registries for consistent deployments
@@ -386,8 +410,8 @@ goreleaser ──┬────────────────────
 - **Independently re-runnable jobs** - each job is a pure function of the
   already-pushed tag, so a flaky step (e.g. Artifactory mirroring) can be
   retried via "Re-run failed jobs" without cutting a new release
-- **Trusted-trigger guard** - restricts the workflow's privileged jobs to
-  tags pushed by the release bot itself
+- **Environment-gated privileged jobs** - the real trust boundary for every
+  job that publishes artifacts or uses Artifactory/GHCR write credentials
 
 #### **Release GoReleaser Workflow** (`release-goreleaser.yaml`)
 **Type:** Reusable workflow (also directly `workflow_dispatch`-able)

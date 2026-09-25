@@ -55,6 +55,15 @@ jobs:
   build-and-push:
     name: Build and push rover-ctl base image
     runs-on: ubuntu-latest
+    # Only gated behind the "release" environment when actually pushing -
+    # ci.yaml's local (push:false) build must stay ungated so ordinary PR/
+    # push CI runs don't require manual approval. When push:true (used by
+    # release-publish.yaml and ad-hoc workflow_dispatch pushes), this is the
+    # tamper-proof security boundary: GitHub enforces the "release"
+    # environment's required reviewers and tag-pattern restriction from
+    # repository settings, regardless of this file's content at whatever
+    # ref triggered the run - see release-publish.yaml's security note.
+    environment: ${{ inputs.push && 'release' || '' }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
