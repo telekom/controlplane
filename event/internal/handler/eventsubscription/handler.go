@@ -124,16 +124,31 @@ func (h *EventSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *even
 			fmt.Sprintf("EventConfig for zone %q does not support this subscription zone. "+
 				"EventSubscription will be automatically processed when an EventConfig that supports the subscription zone is registered",
 				exposure.Spec.Zone.Name)))
+		if obj.Spec.Delivery.Type == eventv1.DeliveryTypeCallback {
+			deleted, cleanupErr := c.Cleanup(ctx, &pubsubv1.SubscriberList{}, cclient.OwnedBy(obj))
+			if cleanupErr != nil {
+				return errors.Wrap(cleanupErr, "failed to cleanup callback Subscriber after exposure mesh denial")
+			}
+			logger.Info("Exposure mesh no longer permits callback subscriber; removed Subscriber", "deleted", deleted)
+		}
 
 		return nil
 	}
 
-	subscriberEventConfig, err := util.GetEventConfigForZone(ctx, obj.Spec.Zone.Name)
-	if err != nil {
-		return errors.Wrapf(err, "failed to get EventConfig for subscription zone %q", obj.Spec.Zone.Name)
+	// A projected callback ingress does not replace the subscriber's own
+	// primary route for final delivery. SSE also requires a ready config.
+	subscriberConfig := exposureEventConfig
+	if !obj.Spec.Zone.Equals(&exposureEventConfig.Spec.Zone) {
+		subscriberConfig, err = util.GetEventConfigForZone(ctx, obj.Spec.Zone.Name)
+		if err != nil {
+			return errors.Wrapf(err, "failed to get EventConfig for subscription zone %q", obj.Spec.Zone.Name)
+		}
+	}
+	if obj.Spec.Delivery.Type == eventv1.DeliveryTypeCallback && subscriberConfig.Status.CallbackRoute == nil {
+		return ctrlerrors.BlockedErrorf("no primary callback Route found in subscription zone's EventConfig for zone %q", obj.Spec.Zone.Name)
 	}
 
-	if err = updateCallbackURL(ctx, exposure, obj, subscriberEventConfig); err != nil {
+	if err = updateCallbackURL(ctx, obj, exposureEventConfig); err != nil {
 		return errors.Wrap(err, "failed to update callback URL for EventSubscription")
 	}
 
@@ -401,27 +416,28 @@ func mapTrigger(t *eventv1.EventTrigger) *pubsubv1.Trigger {
 // updateCallbackURL updates the callback URL in the EventSubscription spec.
 // The callback request needs to be sent via the Gateway, so we always set the Gateway as direct upstream
 // In the Gateway will use the Feature "DynamicUpstream" to then dynamically set the actual callback URL as upstream.
-func updateCallbackURL(ctx context.Context, exposure *eventv1.EventExposure, sub *eventv1.EventSubscription, subEventCfg *eventv1.EventConfig) error {
+func updateCallbackURL(ctx context.Context, sub *eventv1.EventSubscription, exposureConfig *eventv1.EventConfig) error {
 	logger := log.FromContext(ctx)
 	isCallback := sub.Spec.Delivery.Type == eventv1.DeliveryTypeCallback
 	if !isCallback {
 		// we only do this for callback subscriptions, so if it's not a callback subscription, we can skip this
 		return nil
 	}
-	isProxy := !exposure.Spec.Zone.Equals(&sub.Spec.Zone)
+	isProxy := !exposureConfig.Spec.Zone.Equals(&sub.Spec.Zone)
 	var rawCallbackUrl string
 
 	if isProxy {
-		// If this is a proxy subscription, we set the callbackURL to the sub-zone callback in the provider-zone.
-		// E. g. aws --> aws-gcp-callback --> gcp-callback --> provider-callback (determined using DynamicUpstream)
+		// The exposure config advertises the effective backend ingress.
 		var ok bool
-		rawCallbackUrl, ok = subEventCfg.Status.ProxyCallbackURLs[exposure.Spec.Zone.Name]
-		if !ok {
-			return ctrlerrors.BlockedErrorf("no proxy callback URL found in subscription zone's EventConfig for exposure zone %q", exposure.Spec.Zone.Name)
+		rawCallbackUrl, ok = exposureConfig.Status.ProxyCallbackURLs[sub.Spec.Zone.Name]
+		if !ok || rawCallbackUrl == "" {
+			return ctrlerrors.BlockedErrorf("no effective proxy callback URL found in exposure zone's EventConfig for subscription zone %q", sub.Spec.Zone.Name)
 		}
 	} else {
-		// If this is not a proxy subscription, we directly use the provider-zone callback URL as callback URL.
-		rawCallbackUrl = subEventCfg.Status.CallbackURL
+		rawCallbackUrl = exposureConfig.Status.CallbackURL
+		if rawCallbackUrl == "" {
+			return ctrlerrors.BlockedErrorf("no effective callback URL found in exposure zone's EventConfig for subscription zone %q", sub.Spec.Zone.Name)
+		}
 	}
 
 	// Use rawCallbackUrl as new callback URL and add actual callback URL as query parameter so that provider can use it for callbacks.

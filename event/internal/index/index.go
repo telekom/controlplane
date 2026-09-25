@@ -6,6 +6,7 @@ package index
 
 import (
 	"context"
+	"fmt"
 	"os"
 
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -21,10 +22,61 @@ import (
 
 const (
 	// EventConfigZoneIndex indexes EventConfig by spec.zone.name for efficient lookups.
-	EventConfigZoneIndex = ".spec.zone.name"
+	EventConfigZoneIndex                    = ".spec.zone.name"
+	EventSubscriptionZoneIndex              = ".spec.zone.ref"
+	EventExposureZoneIndex                  = ".spec.zone.ref"
+	EventSubscriptionCallbackEventTypeIndex = ".spec.callback.eventType"
 )
 
+// RegisterEventSubscriptionMapperIndices registers the cache fields used for
+// routing EventConfig changes to subscriptions.
+func RegisterEventSubscriptionMapperIndices(ctx context.Context, indexer client.FieldIndexer) error {
+	if err := indexer.IndexField(ctx, &eventv1.EventSubscription{}, EventSubscriptionZoneIndex, func(obj client.Object) []string {
+		sub, ok := obj.(*eventv1.EventSubscription)
+		if !ok {
+			return nil
+		}
+		zone := sub.Spec.Zone
+		if zone.Name == "" || zone.Namespace == "" {
+			return nil
+		}
+		return []string{zone.String()}
+	}); err != nil {
+		return fmt.Errorf("index EventSubscription zone: %w", err)
+	}
+	if err := indexer.IndexField(ctx, &eventv1.EventExposure{}, EventExposureZoneIndex, func(obj client.Object) []string {
+		exposure, ok := obj.(*eventv1.EventExposure)
+		if !ok {
+			return nil
+		}
+		zone := exposure.Spec.Zone
+		if zone.Name == "" || zone.Namespace == "" {
+			return nil
+		}
+		return []string{zone.String()}
+	}); err != nil {
+		return fmt.Errorf("index EventExposure zone: %w", err)
+	}
+	if err := indexer.IndexField(ctx, &eventv1.EventSubscription{}, EventSubscriptionCallbackEventTypeIndex, func(obj client.Object) []string {
+		sub, ok := obj.(*eventv1.EventSubscription)
+		if !ok {
+			return nil
+		}
+		if sub.Spec.Delivery.Type != eventv1.DeliveryTypeCallback || sub.Spec.EventType == "" {
+			return nil
+		}
+		return []string{sub.Spec.EventType}
+	}); err != nil {
+		return fmt.Errorf("index EventSubscription callback event type: %w", err)
+	}
+	return nil
+}
+
 func RegisterIndicesOrDie(ctx context.Context, mgr ctrl.Manager) {
+	if err := RegisterEventSubscriptionMapperIndices(ctx, mgr.GetFieldIndexer()); err != nil {
+		ctrl.Log.Error(err, "unable to create EventSubscription mapper field indices")
+		os.Exit(1)
+	}
 	indexEventConfigByZone := func(obj client.Object) []string {
 		ec, ok := obj.(*eventv1.EventConfig)
 		if !ok {

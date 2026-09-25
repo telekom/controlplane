@@ -6,6 +6,7 @@ package eventconfig
 
 import (
 	"context"
+	"sort"
 
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -24,6 +25,7 @@ import (
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	"github.com/telekom/controlplane/event/internal/handler/util"
+	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
 	pubsubv1 "github.com/telekom/controlplane/pubsub/api/v1"
 )
@@ -44,6 +46,11 @@ func effectiveEnvironmentName(ctx context.Context, overwrite string) string {
 func (h *EventConfigHandler) CreateOrUpdate(ctx context.Context, obj *eventv1.EventConfig) error {
 	logger := log.FromContext(ctx)
 	c := cclient.ClientFromContextOrDie(ctx)
+	if obj.IsProxy() {
+		// Never advertise endpoints from a former target while this target is unavailable.
+		obj.Status.CallbackURL = ""
+		obj.Status.ProxyCallbackURLs = nil
+	}
 
 	// --- Fetch Zone early to auto-resolve optional realm references ---
 
@@ -332,10 +339,14 @@ func (h *EventConfigHandler) createCallbackRoutes(ctx context.Context, obj *even
 		return err
 	}
 
-	// Proxy routes use the source zone's LMS issuer (mesh-client authentication)
+	// Horizon enters its backend zone as eventstore using the normal issuer;
+	// the gateway forwards to remote primary routes as gateway using LMS.
 	var proxyTrustedIssuers []string
-	if myZone.Status.Links.LmsIssuer != "" {
+	if obj.IsProxy() && myZone.Status.Links.LmsIssuer != "" {
+		// Proxy zones are not callback ingress for their own exposures.
 		proxyTrustedIssuers = []string{myZone.Status.Links.LmsIssuer}
+	} else if !obj.IsProxy() && myZone.Status.Links.Issuer != "" {
+		proxyTrustedIssuers = []string{myZone.Status.Links.Issuer}
 	}
 
 	logger.V(1).Info("Creating proxy callback Routes for other zones", "count", len(otherZones))
@@ -353,12 +364,17 @@ func (h *EventConfigHandler) createCallbackRoutes(ctx context.Context, obj *even
 
 	for zoneName, route := range routes {
 		obj.Status.ProxyCallbackRoutes = append(obj.Status.ProxyCallbackRoutes, *types.ObjectRefFromObject(route))
-		obj.Status.ProxyCallbackURLs[zoneName] = util.RouteDownstreamURL(route)
+		if !obj.IsProxy() {
+			obj.Status.ProxyCallbackURLs[zoneName] = util.RouteDownstreamURL(route)
+		}
 	}
+	sort.Slice(obj.Status.ProxyCallbackRoutes, func(i, j int) bool {
+		return obj.Status.ProxyCallbackRoutes[i].Name < obj.Status.ProxyCallbackRoutes[j].Name
+	})
 
-	// Primary callback route: trusted issuers = [IDP issuer] + [LMS issuers of inbound peers].
-	// A peer's LMS issuer is trusted only if that peer meshes with this zone; without a mesh
-	// there is no LMS issuer to add and no mesh-client consumer on the primary.
+	// Primary callback route accepts its normal issuer and LMS issuers of peers
+	// that route callbacks into this zone (including backend-less proxy peers).
+	// The latter are selected by their outbound mesh, not by this zone's mesh.
 	isProxyTarget := len(inboundZones) > 0
 	primaryTrustedIssuers := collectPrimaryTrustedIssuers(myZone, inboundZones, isProxyTarget)
 
@@ -372,9 +388,41 @@ func (h *EventConfigHandler) createCallbackRoutes(ctx context.Context, obj *even
 		return errors.Wrap(err, "failed to create callback Route for own zone")
 	}
 	obj.Status.CallbackRoute = types.ObjectRefFromObject(myCallbackRoute)
-	obj.Status.CallbackURL = util.RouteDownstreamURL(myCallbackRoute)
+	if obj.IsProxy() {
+		// The local primary remains the final delivery route. Horizon enters at
+		// the local backend's gateway, not at this proxy zone's gateway.
+		backend, err := util.GetEventConfigForZone(ctx, obj.Spec.Proxy.TargetZone.Name)
+		if err != nil {
+			return errors.Wrap(err, "failed to get callback backend EventConfig")
+		}
+		if !backend.IsLocal() {
+			return ctrlerrors.BlockedErrorf("callback backend zone %q must be local", backend.Spec.Zone.Name)
+		}
+		obj.Status.CallbackURL, obj.Status.ProxyCallbackURLs = projectCallbackIngress(obj, backend, routes)
+	} else {
+		obj.Status.CallbackURL = util.RouteDownstreamURL(myCallbackRoute)
+	}
 
 	return nil
+}
+
+// projectCallbackIngress rebases a proxy's logical mesh onto its local backend's
+// ingress. routes contains only the proxy's permitted outbound mesh destinations.
+func projectCallbackIngress(proxy, backend *eventv1.EventConfig, routes map[string]*gatewayv1.Route) (string, map[string]string) {
+	urls := make(map[string]string)
+	for zoneName := range routes {
+		if zoneName == backend.Spec.Zone.Name {
+			if backend.Status.CallbackURL != "" {
+				urls[zoneName] = backend.Status.CallbackURL
+			}
+		} else if backend.SupportsZone(zoneName) && backend.Status.ProxyCallbackURLs[zoneName] != "" {
+			urls[zoneName] = backend.Status.ProxyCallbackURLs[zoneName]
+		}
+	}
+	if !backend.SupportsZone(proxy.Spec.Zone.Name) {
+		return "", urls
+	}
+	return backend.Status.ProxyCallbackURLs[proxy.Spec.Zone.Name], urls
 }
 
 func (h *EventConfigHandler) createPublishRoute(ctx context.Context, obj *eventv1.EventConfig, myZone *adminv1.Zone) error {

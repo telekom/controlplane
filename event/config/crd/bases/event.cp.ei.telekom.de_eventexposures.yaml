@@ -229,8 +229,9 @@ spec:
                   one for its event type.
                 type: boolean
               callbackURL:
-                description: CallbackURL is the URL of callback gateway in the provider
-                  zone.
+                description: |-
+                  CallbackURL is the effective same-zone callback ingress from the provider's EventConfig.
+                  For proxy providers this URL belongs to the target backend's gateway.
                 type: string
               conditions:
                 items:

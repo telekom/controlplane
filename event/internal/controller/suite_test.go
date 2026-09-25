@@ -51,10 +51,19 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 
 	// +kubebuilder:scaffold:scheme
+	RegisterSchemesOrDie(scheme.Scheme)
 
 	By("bootstrapping test environment")
 	testEnv = &envtest.Environment{
-		CRDDirectoryPaths:     []string{filepath.Join("..", "..", "config", "crd", "bases")},
+		CRDDirectoryPaths: []string{
+			filepath.Join("..", "..", "config", "crd", "bases"),
+			filepath.Join("..", "..", "..", "admin", "config", "crd", "bases"),
+			filepath.Join("..", "..", "..", "identity", "config", "crd", "bases"),
+			filepath.Join("..", "..", "..", "gateway", "config", "crd", "bases"),
+			filepath.Join("..", "..", "..", "pubsub", "config", "crd", "bases"),
+			filepath.Join("..", "..", "..", "application", "config", "crd", "bases"),
+			filepath.Join("..", "..", "..", "approval", "config", "crd", "bases"),
+		},
 		ErrorIfCRDPathMissing: true,
 	}
 

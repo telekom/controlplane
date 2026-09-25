@@ -272,8 +272,8 @@ spec:
                 - observedGeneration
                 type: object
               callbackRoute:
-                description: CallbackRoute references the Route CR created for the
-                  callback gateway.
+                description: CallbackRoute references this zone's owned primary Route
+                  for final callback delivery.
                 properties:
                   name:
                     type: string
@@ -290,8 +290,10 @@ spec:
                 - namespace
                 type: object
               callbackUrl:
-                description: CallbackURL is the external URL of the callback gateway,
-                  used to send events to event consumers.
+                description: |-
+                  CallbackURL is the effective callback ingress for subscribers in this zone.
+                  For a proxy zone it is the target backend's proxy callback URL to this zone,
+                  not the URL of CallbackRoute.
                 type: string
               conditions:
                 items:
@@ -395,8 +397,8 @@ spec:
                 - observedGeneration
                 type: object
               proxyCallbackRoutes:
-                description: ProxyCallbackRoutes references the Route CRs created
-                  for the proxy callback gateway.
+                description: ProxyCallbackRoutes references this zone's owned outbound
+                  proxy Route CRs.
                 items:
                   description: |-
                     ObjectRef is a reference to a Kubernetes object
@@ -421,8 +423,9 @@ spec:
                 additionalProperties:
                   type: string
                 description: |-
-                  ProxyCallbackURLs maps zone names to the external URLs of the proxy callback gateway Routes for those zones.
-                  Used to send events to event consumers in other zones.
+                  ProxyCallbackURLs maps remote subscriber zones to usable callback ingress URLs.
+                  For proxy zones these are projected from the local target backend's primary
+                  or forward Routes, and can differ from the owned ProxyCallbackRoutes' URLs.
                 type: object
               proxyVoyagerRoutes:
                 description: ProxyVoyagerRoutes references the proxy Route CRs created
