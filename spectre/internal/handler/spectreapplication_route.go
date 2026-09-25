@@ -23,6 +23,7 @@ import (
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
+	pubsubv1 "github.com/telekom/controlplane/pubsub/api/v1"
 	spectrev1 "github.com/telekom/controlplane/spectre/api/v1"
 	"github.com/telekom/controlplane/spectre/internal/handler/util"
 )
@@ -30,18 +31,20 @@ import (
 // reconcileSSERoutes manages SSE Route creation for cross-zone proxy routes and the primary route.
 // When the SpectreApplication's zone is a proxy zone, it creates a proxy Route in the app's
 // own zone and a primary Route in the backend zone. When the zone is local, only the primary
-// Route is created.
+// Route is created. Once the Routes exist, the canonical SSE URL is published in status.
 func (h *SpectreApplicationHandler) reconcileSSERoutes(
 	ctx context.Context,
 	obj *spectrev1.SpectreApplication,
 	zone *adminv1.Zone,
 	eventConfig *eventv1.EventConfig,
+	subscriber *pubsubv1.Subscriber,
 	appId string,
 ) error {
 	logger := log.FromContext(ctx)
 
 	obj.Status.ListenerRoute = nil
 	obj.Status.ProxyRoute = nil
+	obj.Status.SseUrl = ""
 
 	backendZone, backendConfig, err := resolveSSEBackendZone(ctx, zone, eventConfig)
 	if err != nil {
@@ -72,7 +75,32 @@ func (h *SpectreApplicationHandler) reconcileSSERoutes(
 	obj.Status.ListenerRoute = ctypes.ObjectRefFromObject(primaryRoute)
 	logger.V(1).Info("Created primary SSE Route", "zone", backendZone.Name, "route", primaryRoute.Name)
 
+	sseUrl, err := makeSpectreSSEUrl(zone, appId, subscriber.Status.SubscriptionId)
+	if err != nil {
+		return err
+	}
+	obj.Status.SseUrl = sseUrl
+
 	return nil
+}
+
+// makeSpectreSSEUrl builds the canonical SSE URL on the app's own zone gateway: the
+// proxy-facing gateway for a proxy zone, the only gateway for a local zone. It returns
+// an empty URL while the Subscriber has no SubscriptionId or the preset has no visible URL.
+func makeSpectreSSEUrl(zone *adminv1.Zone, appId, subscriptionId string) (string, error) {
+	preset, err := zone.Spec.Gateway.GetDefaultPreset()
+	if err != nil {
+		return "", ctrlerrors.BlockedErrorf("zone %q has no default gateway preset: %s", zone.Name, err)
+	}
+	baseUrl := preset.GetDefaultUrl()
+	if subscriptionId == "" || baseUrl == "" {
+		return "", nil
+	}
+	sseUrl, err := url.JoinPath(baseUrl, makeSpectreSSERoutePath(util.BuildListenerEventType(appId)), subscriptionId)
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to build SSE URL for zone %q", zone.Name)
+	}
+	return sseUrl, nil
 }
 
 // resolveSSEBackendZone returns the zone (and its EventConfig) that runs the local
@@ -131,15 +159,12 @@ func createSpectreSSEPrimaryRoute(
 		return nil, errors.Wrapf(err, "failed to parse ServerSendEventUrl %q", eventConfig.Spec.Local.ServerSendEventUrl)
 	}
 
-	eventType := util.BuildListenerEventType(appId)
-	routePath := makeSpectreSSERoutePath(eventType)
-
 	preset, err := zone.Spec.Gateway.GetDefaultPreset()
 	if err != nil {
 		return nil, ctrlerrors.BlockedErrorf("zone %q has no default gateway preset: %s", zone.Name, err)
 	}
 
-	hostnames, paths := preset.ResolveHostnamesAndPaths(routePath)
+	hostnames, paths := resolveSSEPaths(preset, appId)
 
 	routeName := makeSpectreSSERouteName(appId)
 	route := &gatewayv1.Route{
@@ -224,7 +249,8 @@ func createSpectreSSEProxyRoute(
 		return nil, errors.Wrap(err, "failed to create upstream for SSE proxy route")
 	}
 
-	hostnames, paths := appPreset.ResolveHostnamesAndPaths(ssePath)
+	// Legacy alias requests on the proxy are forwarded to the backend's canonical path.
+	hostnames, paths := resolveSSEPaths(appPreset, appId)
 
 	routeName := makeSpectreSSEProxyRouteName(appId)
 	route := &gatewayv1.Route{
@@ -310,9 +336,24 @@ func makeSpectreSSEProxyRouteName(appId string) string {
 	return labelutil.NormalizeNameValue("spectre-sse-proxy--" + appId)
 }
 
-// makeSpectreSSERoutePath builds the SSE path for a Spectre listener event type.
+// makeSpectreSSERoutePath builds the canonical SSE path for a Spectre listener event type.
 func makeSpectreSSERoutePath(eventType string) string {
-	return "/sse/v1/" + strings.ToLower(eventType)
+	return "/horizon/sse/v1/" + strings.ToLower(eventType)
+}
+
+// makeSpectreSSELegacyPath builds the legacy Spectre SSE path that existing
+// listener URLs (/spectre-sse/<appId>/<subscriptionId>) still point at.
+func makeSpectreSSELegacyPath(appId string) string {
+	return "/spectre-sse/" + appId
+}
+
+// resolveSSEPaths returns the preset hostnames and the canonical plus legacy SSE
+// paths for every preset URL. Canonical paths come first because Paths[0] drives
+// the api_base_path header.
+func resolveSSEPaths(preset *adminv1.GatewayConfigPreset, appId string) (hostnames, paths []string) {
+	hostnames, canonicalPaths := preset.ResolveHostnamesAndPaths(makeSpectreSSERoutePath(util.BuildListenerEventType(appId)))
+	_, legacyPaths := preset.ResolveHostnamesAndPaths(makeSpectreSSELegacyPath(appId))
+	return hostnames, slices.Concat(canonicalPaths, legacyPaths)
 }
 
 // parseSSEUpstream parses a raw URL into a gateway Upstream.
