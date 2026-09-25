@@ -65,6 +65,7 @@ flowchart TB
     %% ── SpectreApplication interactions ────────────────────
     SpectreApp -- "creates / owns" --> Publisher
     SpectreApp -- "creates / owns" --> Approval
+    SpectreApp -- "creates / owns" --> Route
     SpectreApp -. "reads" .-> EventStore
     SpectreApp -. "reads" .-> EventConfig
     SpectreApp -. "reads" .-> App
@@ -93,6 +94,7 @@ Reconciles `SpectreApplication` resources. One SpectreApplication groups all Lis
 |---|---|---|---|
 | **PubSub** | `Publisher` | creates/owns | Registers a shared generic Publisher for the application's listener event type |
 | **PubSub** | `EventStore` | reads | Resolves the zone's EventStore for backend connection details |
+| **Gateway** | `Route` | creates/owns | SSE delivery only: a primary SSE Route in the backend zone, plus a proxy SSE Route in the app zone when that zone is a proxy zone |
 | **Approval** | `Approval` | creates/owns | Creates an Approval capturing consumer, provider, path, listener app, directions, delivery mode, callback, and filters |
 | **Event** | `EventConfig` | reads | Reads `CallbackURL` and zone configuration |
 | **Application** | `Application` | reads | Resolves consumer and provider application metadata |
@@ -130,7 +132,7 @@ Spectre creates child resources (Publishers, Subscribers, RouteListeners) in the
 
 - **Deletion order**: Subscriber -> Publisher -> EventStore. A Publisher is retained until all referencing Subscribers have finalized.
 - **Pass-through and failover listeners** are rejected at reconciliation time.
-- **SSE delivery** is local-zone-only. Cross-zone SSE proxy routes are not yet implemented for Spectre listeners.
+- **SSE delivery** works in local and proxy zones. Each SSE Route serves the canonical path `/horizon/sse/v1/de.telekom.ei.listener.<appId>` first (it drives `api_base_path`) and the legacy alias `/spectre-sse/<appId>`, both to the same upstream and subscription. `status.sseUrl` holds the canonical URL on the app zone's gateway including the subscription ID; the SpectreApplication is Ready only once it is set and every SSE Route is Ready. The alias does not cover legacy hostnames/TLS or hash-shortened app IDs of very long team names.
 - **Callback traffic** is Gateway-mediated: the Subscriber's callback URL is constructed from `EventConfig.Status.CallbackURL`, routing through the Gateway's callback route.
 
 ## Internal Event-Type Namespace
