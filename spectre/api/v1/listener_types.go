@@ -83,6 +83,13 @@ type ListenerStatus struct {
 	AppliedPlacement *AppliedListenerPlacementStatus `json:"appliedPlacement,omitempty"`
 	// +optional
 	Draining *ListenerDrainStatus `json:"draining,omitempty"`
+	// AuthorizationUnknownSince is when the dual-gate approval evaluation first
+	// gave no answer (neither granted, pending nor denied) for a reason other
+	// than a scoped identity mismatch. Applied capture keeps running for a
+	// 5-minute grace period from this time and is then stopped through the
+	// drain. Cleared as soon as both gates answer again.
+	// +optional
+	AuthorizationUnknownSince *metav1.Time `json:"authorizationUnknownSince,omitempty"`
 }
 
 // +kubebuilder:object:root=true

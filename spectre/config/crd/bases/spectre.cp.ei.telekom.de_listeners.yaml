@@ -450,6 +450,15 @@ spec:
                   AuthorizationPolicyVersion records which approval model is active.
                   Set to "v2" only after a verified fresh-install or completed migration.
                 type: string
+              authorizationUnknownSince:
+                description: |-
+                  AuthorizationUnknownSince is when the dual-gate approval evaluation first
+                  gave no answer (neither granted, pending nor denied) for a reason other
+                  than a scoped identity mismatch. Applied capture keeps running for a
+                  5-minute grace period from this time and is then stopped through the
+                  drain. Cleared as soon as both gates answer again.
+                format: date-time
+                type: string
               conditions:
                 items:
                   description: Condition contains details for one aspect of the current
