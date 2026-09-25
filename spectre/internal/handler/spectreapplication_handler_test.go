@@ -722,6 +722,49 @@ var _ = Describe("SpectreApplicationHandler", func() {
 				Expect(readyCond.Message).To(ContainSubstring(`zone "` + testZoneName + `" default preset has no visible (non-hidden) URL`))
 				Expect(readyCond.Message).ToNot(ContainSubstring("SubscriptionId"))
 			})
+
+			It("should dedupe hostnames and paths of preset URLs sharing hostname and basePath", func() {
+				obj := newSpectreApplication("server_sent_event")
+				app := makeReadyApplication()
+				zone := makeReadyZone()
+				zone.Spec.Gateway.Presets[0].Urls = []adminv1.UrlConfig{
+					{Hostname: "gateway.example.com", Port: 443, Scheme: "https", BasePath: "/base"},
+					{Hostname: "gateway.example.com", Port: 8443, Scheme: "https", BasePath: "/base"},
+				}
+				ec := makeReadyEventConfig()
+				es := makeEventStore()
+
+				mockGetApplication(app)
+				mockGetZone(zone)
+				mockListEventConfigs([]eventv1.EventConfig{ec})
+				mockGetEventStore(es)
+				mockCreateOrUpdatePublisher()
+				mockCreateOrUpdateSubscriber()
+
+				var capturedRoute *gatewayv1.Route
+				fakeClient.EXPECT().
+					CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Route"), mock.Anything).
+					Run(func(_ context.Context, obj client.Object, mutate controllerutil.MutateFn) {
+						_ = mutate()
+						capturedRoute = obj.(*gatewayv1.Route)
+					}).
+					Return(controllerutil.OperationResultCreated, nil).Once()
+
+				mockCleanup()
+				fakeClient.EXPECT().AnyChanged().Return(false).Once()
+				fakeClient.EXPECT().AllReady().Return(true).Once()
+				mockExplicitReadinessChecks("server_sent_event")
+
+				err := h.CreateOrUpdate(ctx, obj)
+				Expect(err).ToNot(HaveOccurred())
+
+				Expect(capturedRoute).ToNot(BeNil())
+				Expect(capturedRoute.Spec.Hostnames).To(Equal([]string{"gateway.example.com"}))
+				Expect(capturedRoute.Spec.Paths).To(Equal([]string{
+					"/base" + testCanonicalSSEPath,
+					"/base" + testLegacySSEPath,
+				}))
+			})
 		})
 
 		Context("error handling", func() {

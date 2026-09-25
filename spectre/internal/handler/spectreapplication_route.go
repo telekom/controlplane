@@ -349,11 +349,26 @@ func makeSpectreSSELegacyPath(appId string) string {
 
 // resolveSSEPaths returns the preset hostnames and the canonical plus legacy SSE
 // paths for every preset URL. Canonical paths come first because Paths[0] drives
-// the api_base_path header.
+// the api_base_path header. Duplicates are dropped in order because RouteSpec
+// Hostnames and Paths are sets.
 func resolveSSEPaths(preset *adminv1.GatewayConfigPreset, appId string) (hostnames, paths []string) {
 	hostnames, canonicalPaths := preset.ResolveHostnamesAndPaths(makeSpectreSSERoutePath(util.BuildListenerEventType(appId)))
 	_, legacyPaths := preset.ResolveHostnamesAndPaths(makeSpectreSSELegacyPath(appId))
-	return hostnames, slices.Concat(canonicalPaths, legacyPaths)
+	return dedupeOrdered(hostnames), dedupeOrdered(slices.Concat(canonicalPaths, legacyPaths))
+}
+
+// dedupeOrdered returns values without duplicates, keeping first occurrences in order.
+func dedupeOrdered(values []string) []string {
+	seen := make(map[string]struct{}, len(values))
+	out := make([]string, 0, len(values))
+	for _, v := range values {
+		if _, ok := seen[v]; ok {
+			continue
+		}
+		seen[v] = struct{}{}
+		out = append(out, v)
+	}
+	return out
 }
 
 // parseSSEUpstream parses a raw URL into a gateway Upstream.
