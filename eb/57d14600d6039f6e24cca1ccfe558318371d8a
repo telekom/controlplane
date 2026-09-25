@@ -1,0 +1,157 @@
+controlplane-api/internal/resolvers/schema_resolvers_listener_test.go
+  s_fe3418541904e6::t_1a141d4c229d4e 108-110,118-120,157
+  s_a2216194f99d8b::t_8a90de224a0694 124,253-263
+  s_fe3418541904e6::t_759d609b98298e 111-117,133,140,144,148,153,158,242-250
+  s_054e57e2cfee4b::t_3357ee96d0176c 121,177,194,251-252,291
+  s_fe3418541904e6::t_951887097e1858 83-85,92-107,231-232,290
+  s_fe3418541904e6::t_ef28d3c13b6c64 135,138-139
+  s_fe3418541904e6::t_7f6ad4b071dd8d 141-143
+  s_fe3418541904e6::t_16109a5aabe00e 145-147
+  s_fe3418541904e6::t_4505ed3a366eb3 149-152
+  s_fe3418541904e6::t_7d1f9f46a579e9 154-156
+  s_054e57e2cfee4b::t_b7beb1a3eb2a2a 178
+controlplane-api/ent.graphql
+  s_fe3418541904e6::t_6fd55c2c95ede9 2650-2654
+docs/docs/architecture/controlplane-api.mdx
+  s_fe3418541904e6::t_9f64e07e903e6a 176
+  s_054e57e2cfee4b::t_6120251d5434a9 123,174-175
+controlplane-api/ent/application_create.go
+  s_054e57e2cfee4b::t_3357ee96d0176c 24,365-379,740-748,755
+  s_77e614b58a5545::t_c2c25f07884aab 749-754
+controlplane-api/ent/listener.go
+  s_fe3418541904e6::t_6fd55c2c95ede9 68-69,74,79-89,95,106,117,123-133,137,160-161,264-270,284-288,304-307
+  s_77e614b58a5545::t_cd3020d6d9b06d 18,54,60-61,308
+controlplane-api/ent/application_update.go
+  s_054e57e2cfee4b::t_3357ee96d0176c 25,444-458,621-641,1165-1209,1657-1671,1834-1854,2408-2450,2452
+  s_77e614b58a5545::t_050c3c7f4f892a 2451
+controlplane-api/ent/application.go
+  s_054e57e2cfee4b::t_3357ee96d0176c 88-89,183-185,187-191,424-428,675-697
+  s_77e614b58a5545::t_a74e5e212da45f 698
+controlplane-api/ent/schema/application.go
+  s_054e57e2cfee4b::t_3357ee96d0176c 10,103-104
+controlplane-api/ent/listener_create.go
+  s_fe3418541904e6::t_6fd55c2c95ede9 137-138,143,186-204,311-313,387-403,451-459,464
+  s_77e614b58a5545::t_34a7e1a6952a77 19,134-136,139-142,144,460-463,465-466
+controlplane-api/ent/approval_query.go
+  s_fe3418541904e6::t_6fd55c2c95ede9 165-186,434-444,535,589-594,731-756,759-760,762
+  s_77e614b58a5545::t_2060b2b2cc352d 757-758,761
+controlplane-api/ent/listener/listener.go
+  s_054e57e2cfee4b::t_3357ee96d0176c 316-317
+  s_fe3418541904e6::t_6fd55c2c95ede9 52-53,58-64,86-92,122,235-241,263-269,283-289,311-315
+  s_77e614b58a5545::t_f65c5960484d07 44-45
+controlplane-api/ent/approval.go
+  s_fe3418541904e6::t_6fd55c2c95ede9 84-85,135-139,141-145,168,335-340,374-377
+  s_77e614b58a5545::t_88904b962ded2a 378
+controlplane-api/ent/schema/approval.go
+  s_fe3418541904e6::t_9f64e07e903e6a 78-81
+controlplane-api/ent/approval_update.go
+  s_054e57e2cfee4b::t_3357ee96d0176c 1472-1481
+  s_fe3418541904e6::t_6fd55c2c95ede9 362-380,410-415,707-735,1078-1096,1126-1131,1453-1471
+controlplane-api/schema.graphql
+  s_fe3418541904e6::t_9f64e07e903e6a 324,326,399,430,441
+controlplane-api/ent/mutation.go
+  s_fe3418541904e6::t_6fd55c2c95ede9 11562,11567,11572,11577,11583-11585,11593-11595,11601,12098,12159,12222,13632,13644,13666-13667,13674,13686,13698,13733,13753,20060-20061,20066-20067,20073,20075-20076,20083,20166-20167,20171-20172,20176-20177,20182-20185,20187,20191-20195,20200-20201,20635,20648-20649,20688,20713,20724
+  s_77e614b58a5545::t_2fb6adc9ea315f 11563,11568,11573,11578,11586,11596,11602,12124
+controlplane-api/ent/listener_query.go
+  s_fe3418541904e6::t_6fd55c2c95ede9 39,81-102,169-190,405,409,417-427,461-471,568-569,573,577,604-609,628-633,656-687,780-803,805,807
+  s_77e614b58a5545::t_13f5b40f052038 21,35,804,806
+controlplane-api/ent/application_query.go
+  s_054e57e2cfee4b::t_3357ee96d0176c 26,272-293,612-622,728,817-823,872-878,1137-1167,1365-1375,1377
+  s_77e614b58a5545::t_5cb2c444fb3214 1376,1378
+controlplane-api/ent/client.go
+  s_fe3418541904e6::t_6fd55c2c95ede9 1757-1760,1762,1764-1769,1985-2000,3029-3044,3093-3107
+  s_77e614b58a5545::t_fe5c3541f457de 1755-1756,1761,1763,1770,3108
+controlplane-api/ent/approval/approval.go
+  s_fe3418541904e6::t_6fd55c2c95ede9 67-68,99-105,137,358-364,393-397
+  s_77e614b58a5545::t_dcd57807df4f60 398-399
+controlplane-api/internal/testutil/seed.go
+  s_fe3418541904e6::t_951887097e1858 38-44,136,145,152,159-167
+  s_fe3418541904e6::t_759d609b98298e 172
+  s_054e57e2cfee4b::t_9e079adf308930 168
+controlplane-api/ent/gql_where_input.go
+  s_fe3418541904e6::t_6fd55c2c95ede9 6233-6235,6239-6240,6242-6244,6246
+controlplane-api/internal/resolvers/schema.resolvers.go
+  s_fe3418541904e6::t_9f64e07e903e6a 565,569-570,577,858-871,891-899,983-995
+  s_fe3418541904e6::t_951887097e1858 450-459
+  s_fe3418541904e6::t_e4c9fa314db82a 566,575
+  s_a2216194f99d8b::t_8a90de224a0694 558-564,567-568
+  s_77e614b58a5545::t_dbdf9b98cc0488 392,996-997
+controlplane-api/ent/approval_create.go
+  s_fe3418541904e6::t_6fd55c2c95ede9 275-293,593-607,609
+  s_77e614b58a5545::t_73e864621fa3a1 608
+controlplane-api/ent/schema/listener.go
+  s_fe3418541904e6::t_9f64e07e903e6a 53,68-70
+  s_054e57e2cfee4b::t_9b0aeb53a286d9 50-52,54
+controlplane-api/internal/interceptor/team_filter_test.go
+  s_fe3418541904e6::t_951887097e1858 331-350
+  s_054e57e2cfee4b::t_14378ba8cfa772 351-357
+controlplane-api/ent/approval/where.go
+  s_fe3418541904e6::t_6fd55c2c95ede9 828-850
+controlplane-api/ent/migrate/schema.go
+  s_054e57e2cfee4b::t_3357ee96d0176c 885
+  s_fe3418541904e6::t_6fd55c2c95ede9 368,400-401,403-405,641,661-666,872
+controlplane-api/ent/listener/where.go
+  s_fe3418541904e6::t_6fd55c2c95ede9 573-575,577-580,584,586-592,663-685
+  s_77e614b58a5545::t_07a20df22d3de8 571-572,576,581-583,585,593
+controlplane-api/ent/application/where.go
+  s_054e57e2cfee4b::t_3357ee96d0176c 1215-1237
+controlplane-api/internal/interceptor/team_filter.go
+  s_fe3418541904e6::t_951887097e1858 72,126-127,142-148,192-193
+  s_054e57e2cfee4b::t_b5cc0c6520021e 70-71,123-125,189-191
+controlplane-api/ent/application/application.go
+  s_054e57e2cfee4b::t_3357ee96d0176c 74-75,136-142,457-470,533-537,539
+  s_77e614b58a5545::t_0283dc1d5ea596 538
+controlplane-api/ent/listener_update.go
+  s_fe3418541904e6::t_6fd55c2c95ede9 175-176,181,224-242,263-268,287-292,378-380,444-472,560-588,786-796,838-856,877-882,901-905,1007,1200-1222
+  s_054e57e2cfee4b::t_3357ee96d0176c 1088-1116,1223-1228
+  s_77e614b58a5545::t_8f91298ee5291b 19,172-174,177-180,182,906,1005-1006
+controlplane-api/internal/resolvers/mapper.go
+  s_fe3418541904e6::t_9f64e07e903e6a 187-188,203,205-206,220-221
+  s_054e57e2cfee4b::t_d265081df4b204 168-170
+controlplane-api/internal/resolvers/ent.generated.go
+  s_77e614b58a5545::t_2c47cd9c2b3b80 108,8054-8058,8060-8061,8063-8064,8067-8071,8073,8075,8078,8080-8084,22860-22863,22868-22870,35375,35377-35384,35387-35412
+controlplane-api/internal/resolvers/root_.generated.go
+  s_77e614b58a5545::t_07b55d5fbb1549 711,3035-3037,3172-3174,7822-7826,11143,11145,11218,11249,11260,12666-12667,12712-12713
+controlplane-api/internal/resolvers/schema.generated.go
+  s_77e614b58a5545::t_c1eb4966df93a2 2261-2265,2267-2268,2270-2271,2274-2278,2281-2282,6422-6426
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6",
+  "base_commit_sha": "eb57d14600d6039f6e24cca1ccfe558318371d8a",
+  "prompts": {},
+  "sessions": {
+    "s_054e57e2cfee4b": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f3251e396ffePaEqMqGVAvjuZT",
+        "model": "unknown"
+      },
+      "human_author": "Miká Juznik <mika.juznik@telekom.de>"
+    },
+    "s_77e614b58a5545": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f318b3b8dfferL4IjZwjF4jHWZ",
+        "model": "unknown"
+      },
+      "human_author": "Miká Juznik <mika.juznik@telekom.de>"
+    },
+    "s_a2216194f99d8b": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f323a987bffeTA4WIdoca0OavR",
+        "model": "unknown"
+      },
+      "human_author": "Miká Juznik <mika.juznik@telekom.de>"
+    },
+    "s_fe3418541904e6": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f329da7c2ffenRhoDZK8hQE7gU",
+        "model": "unknown"
+      },
+      "human_author": null
+    }
+  }
+}
