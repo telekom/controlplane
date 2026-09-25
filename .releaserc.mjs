@@ -34,6 +34,13 @@ EOF`,
                 'install/overlays/default/kustomization.yaml',
                 'common-server/helm/Chart.yaml',
             ],
+            // @semantic-release/git's default commit message includes
+            // "[skip ci]". release-publish.yaml is triggered by the `v*`
+            // tag push that immediately follows this commit, and GitHub
+            // applies skip-ci directives to that tag's push event too
+            // (both point at the same commit) - a "[skip ci]" message here
+            // would silently suppress release-publish.yaml. Omit it.
+            message: 'chore(release): ${nextRelease.gitTag}\n\n${nextRelease.notes}',
         }],
     ],
 };

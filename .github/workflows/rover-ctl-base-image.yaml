@@ -8,7 +8,7 @@ name: "Rover-CTL Base Image"
 # optionally pushing it to the internal Artifactory Docker registry.
 #
 # Invoked (via workflow_call) by:
-#   - release.yaml: unconditionally, before every release.
+#   - release-publish.yaml: unconditionally, on every release tag push.
 #
 # Also directly runnable via workflow_dispatch (Actions tab > "Rover-CTL Base
 # Image" > Run workflow) for ad-hoc rebuilds (e.g. picking up a security
@@ -26,9 +26,9 @@ name: "Rover-CTL Base Image"
 #   - vars.ROVERCTL_BASE_IMAGE_TAG    (e.g. bash-jq-yq-v1)
 #
 # NOTE: this is a different Artifactory repo/path than the final rover-ctl
-# image published by release.yaml's goreleaser step (vars.REGISTRY_ROVERCTL_REPO)
-# - the base image and final image live in unrelated repos, not a shared
-# path prefix.
+# image published by release-publish.yaml's roverctl-combined-image job
+# (vars.REGISTRY_ROVERCTL_REPO) - the base image and final image live in
+# unrelated repos, not a shared path prefix.
 # TODO: create these repository variables (Settings > Secrets and variables
 # > Actions > Variables) with the real Artifactory registry host/path.
 
@@ -55,6 +55,15 @@ jobs:
   build-and-push:
     name: Build and push rover-ctl base image
     runs-on: ubuntu-latest
+    # Only gated behind the "release" environment when actually pushing -
+    # ci.yaml's local (push:false) build must stay ungated so ordinary PR/
+    # push CI runs don't require manual approval. When push:true (used by
+    # release-publish.yaml and ad-hoc workflow_dispatch pushes), this is the
+    # tamper-proof security boundary: GitHub enforces the "release"
+    # environment's required reviewers and tag-pattern restriction from
+    # repository settings, regardless of this file's content at whatever
+    # ref triggered the run - see release-publish.yaml's security note.
+    environment: ${{ inputs.push && 'release' || '' }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

@@ -71,10 +71,12 @@ jobs:
             mode="$DISPATCH_MODE"
           elif [[ "$GIT_REF" == refs/tags/* ]]; then
             # Tags are created by the separate, manually-triggered
-            # release.yaml workflow, which already builds/tests/publishes
-            # everything via goreleaser+ko. Running the module CI again
-            # here would just duplicate that work (and could push
-            # conflicting image tags), so intentionally run nothing.
+            # release.yaml workflow (semantic-release), which triggers
+            # release-publish.yaml on the resulting tag push - that already
+            # builds/tests/publishes everything via goreleaser+ko. Running
+            # the module CI again here would just duplicate that work (and
+            # could push conflicting image tags), so intentionally run
+            # nothing.
             mode=none
           else
             mode=maximum # push to main, schedule: full integration confidence
@@ -239,8 +241,9 @@ jobs:
     name: Common Server Helm Chart
     needs: package
     # `package` is legitimately "skipped" for tag pushes (mode=none, see
-    # determine-scope) - release.yaml handles building/publishing there,
-    # this job only needs to still publish the Helm chart for that tag.
+    # determine-scope) - release-publish.yaml handles building/publishing
+    # there, this job only needs to still publish the Helm chart for that
+    # tag.
     if: ${{ !cancelled() && (needs.package.result == 'success' || needs.package.result == 'skipped') && startsWith(github.ref, 'refs/tags/v') }}
     uses: ./.github/workflows/helm-release.yaml
     with:
