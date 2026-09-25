@@ -26,7 +26,7 @@ type AgentCardData struct {
 	Name          string
 	Description   string
 	Category      string
-	Oauth2Scopes  []string
+	OAuth2Scopes  []string
 	Specification string // file-manager file ID (optional)
 	Active        bool   // cluster-wide active singleton flag
 	TeamName      string // resolved to owner Team FK

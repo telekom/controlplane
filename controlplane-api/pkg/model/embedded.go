@@ -91,18 +91,18 @@ type EventDelivery struct {
 	CircuitBreakerOptOut                      bool   `json:"circuitBreakerOptOut"`
 	RetryableStatusCodes                      []int  `json:"retryableStatusCodes"`
 	RedeliveriesPerSecond                     *int   `json:"redeliveriesPerSecond"`
-	EnforceGetHttpRequestMethodForHealthCheck bool   `json:"enforceGetHttpRequestMethodForHealthCheck"`
+	EnforceGetHTTPRequestMethodForHealthCheck bool   `json:"enforceGetHTTPRequestMethodForHealthCheck"`
 }
 
-// IpRestrictions represents the IP allowlist and denylist for an application.
-type IpRestrictions struct {
+// IPRestrictions represents the IP allowlist and denylist for an application.
+type IPRestrictions struct {
 	Allow []string `json:"allow,omitempty"`
 	Deny  []string `json:"deny,omitempty"`
 }
 
-// ExternalId represents an external identifier for an application.
-type ExternalId struct {
-	Id     string `json:"id"`
+// ExternalID represents an external identifier for an application.
+type ExternalID struct {
+	ID     string `json:"id"`
 	Scheme string `json:"scheme"`
 }
 
@@ -116,17 +116,17 @@ type Permission struct {
 
 // Security
 
-// ApiExposureSecurity represents the security config
-type ApiExposureSecurity struct {
+// APIExposureSecurity represents the security config
+type APIExposureSecurity struct {
 	M2M *Machine2MachineAuthentication `json:"m2m,omitempty"`
 }
 
-// ApiSubscriptionSecurity defines the security configuration for the Rover
-type ApiSubscriptionSecurity struct {
+// APISubscriptionSecurity defines the security configuration for the Rover
+type APISubscriptionSecurity struct {
 	M2M *SubscriberMachine2MachineAuthentication `json:"m2m,omitempty"`
 }
 
-// ApiExposureMachine2MachineAuthentication for Machine2Machine communication
+// APIExposureMachine2MachineAuthentication for Machine2Machine communication
 type Machine2MachineAuthentication struct {
 	ExternalIDP *ExternalIdentityProvider `json:"externalIDP,omitempty"` // optional/nillable
 	Basic       *BasicAuthCredentials     `json:"basic,omitempty"`       // optional/nillable
@@ -157,7 +157,7 @@ type BasicAuthCredentials struct {
 
 // OAuth2ClientCredentials defines client credentials for OAuth2
 type OAuth2ClientCredentials struct {
-	ClientId     string  `json:"clientId"`
+	ClientID     string  `json:"clientID"`
 	ClientSecret *string `json:"clientSecret,omitempty"` // optional/nillable
 	ClientKey    *string `json:"clientKey,omitempty"`    // optional/nillable
 }
@@ -168,8 +168,8 @@ type Traffic struct {
 	RateLimit *RateLimit `json:"rateLimit,omitempty"` // optional/nillable
 }
 
-// ApiSubscriptionTraffic
-type ApiSubscriptionTraffic struct {
+// APISubscriptionTraffic
+type APISubscriptionTraffic struct {
 	ProviderLimits   *Limits `json:"providerLimits,omitempty"`   // optional/nillable
 	SubscriberLimits *Limits `json:"subscriberLimits,omitempty"` // optional/nillable
 }

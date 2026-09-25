@@ -130,11 +130,11 @@ func (r *Repository) Upsert(ctx context.Context, data *ApplicationData) error {
 	if data.SecretRotationMessage != nil {
 		create.SetSecretRotationMessage(*data.SecretRotationMessage)
 	}
-	if len(data.IpRestrictions.Allow) > 0 || len(data.IpRestrictions.Deny) > 0 {
-		create.SetIPRestrictions(data.IpRestrictions)
+	if len(data.IPRestrictions.Allow) > 0 || len(data.IPRestrictions.Deny) > 0 {
+		create.SetIPRestrictions(data.IPRestrictions)
 	}
-	if len(data.ExternalIds) > 0 {
-		create.SetExternalIds(data.ExternalIds)
+	if len(data.ExternalIDs) > 0 {
+		create.SetExternalIDs(data.ExternalIDs)
 	}
 	if permissionsURL != "" {
 		create.SetPermissionsURL(permissionsURL)
@@ -174,15 +174,15 @@ func (r *Repository) Upsert(ctx context.Context, data *ApplicationData) error {
 			} else {
 				u.ClearSecretRotationMessage()
 			}
-			if len(data.IpRestrictions.Allow) > 0 || len(data.IpRestrictions.Deny) > 0 {
+			if len(data.IPRestrictions.Allow) > 0 || len(data.IPRestrictions.Deny) > 0 {
 				u.UpdateIPRestrictions()
 			} else {
 				u.ClearIPRestrictions()
 			}
-			if len(data.ExternalIds) > 0 {
-				u.UpdateExternalIds()
+			if len(data.ExternalIDs) > 0 {
+				u.UpdateExternalIDs()
 			} else {
-				u.ClearExternalIds()
+				u.ClearExternalIDs()
 			}
 			if permissionsURL != "" {
 				u.SetPermissionsURL(permissionsURL)
@@ -224,12 +224,12 @@ func (r *Repository) Delete(ctx context.Context, key ApplicationKey) error {
 	}
 
 	// Delete child entities first.
-	if _, err := r.client.ApiExposure.Delete().
+	if _, err := r.client.APIExposure.Delete().
 		Where(apiexposure.HasOwnerWith(application.IDEQ(app.ID))).
 		Exec(ctx); err != nil {
 		return fmt.Errorf("delete api_exposures for application %q: %w", key.Name, err)
 	}
-	if _, err := r.client.ApiSubscription.Delete().
+	if _, err := r.client.APISubscription.Delete().
 		Where(apisubscription.HasOwnerWith(application.IDEQ(app.ID))).
 		Exec(ctx); err != nil {
 		return fmt.Errorf("delete api_subscriptions for application %q: %w", key.Name, err)

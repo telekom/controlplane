@@ -15,18 +15,18 @@ import (
 // Tx is a transactional client that is created by calling Client.Tx().
 type Tx struct {
 	config
+	// API is the client for interacting with the API builders.
+	API *APIClient
+	// APIExposure is the client for interacting with the APIExposure builders.
+	APIExposure *APIExposureClient
+	// APISubscription is the client for interacting with the APISubscription builders.
+	APISubscription *APISubscriptionClient
 	// AgentCard is the client for interacting with the AgentCard builders.
 	AgentCard *AgentCardClient
 	// AgenticExposure is the client for interacting with the AgenticExposure builders.
 	AgenticExposure *AgenticExposureClient
 	// AgenticSubscription is the client for interacting with the AgenticSubscription builders.
 	AgenticSubscription *AgenticSubscriptionClient
-	// Api is the client for interacting with the Api builders.
-	Api *APIClient
-	// ApiExposure is the client for interacting with the ApiExposure builders.
-	ApiExposure *ApiExposureClient
-	// ApiSubscription is the client for interacting with the ApiSubscription builders.
-	ApiSubscription *ApiSubscriptionClient
 	// Application is the client for interacting with the Application builders.
 	Application *ApplicationClient
 	// Approval is the client for interacting with the Approval builders.
@@ -41,8 +41,8 @@ type Tx struct {
 	EventType *EventTypeClient
 	// Group is the client for interacting with the Group builders.
 	Group *GroupClient
-	// McpServer is the client for interacting with the McpServer builders.
-	McpServer *McpServerClient
+	// MCPServer is the client for interacting with the MCPServer builders.
+	MCPServer *MCPServerClient
 	// Member is the client for interacting with the Member builders.
 	Member *MemberClient
 	// PermissionSet is the client for interacting with the PermissionSet builders.
@@ -182,12 +182,12 @@ func (tx *Tx) Client() *Client {
 }
 
 func (tx *Tx) init() {
+	tx.API = NewAPIClient(tx.config)
+	tx.APIExposure = NewAPIExposureClient(tx.config)
+	tx.APISubscription = NewAPISubscriptionClient(tx.config)
 	tx.AgentCard = NewAgentCardClient(tx.config)
 	tx.AgenticExposure = NewAgenticExposureClient(tx.config)
 	tx.AgenticSubscription = NewAgenticSubscriptionClient(tx.config)
-	tx.Api = NewAPIClient(tx.config)
-	tx.ApiExposure = NewApiExposureClient(tx.config)
-	tx.ApiSubscription = NewApiSubscriptionClient(tx.config)
 	tx.Application = NewApplicationClient(tx.config)
 	tx.Approval = NewApprovalClient(tx.config)
 	tx.ApprovalRequest = NewApprovalRequestClient(tx.config)
@@ -195,7 +195,7 @@ func (tx *Tx) init() {
 	tx.EventSubscription = NewEventSubscriptionClient(tx.config)
 	tx.EventType = NewEventTypeClient(tx.config)
 	tx.Group = NewGroupClient(tx.config)
-	tx.McpServer = NewMcpServerClient(tx.config)
+	tx.MCPServer = NewMCPServerClient(tx.config)
 	tx.Member = NewMemberClient(tx.config)
 	tx.PermissionSet = NewPermissionSetClient(tx.config)
 	tx.Team = NewTeamClient(tx.config)
@@ -209,7 +209,7 @@ func (tx *Tx) init() {
 // of them in order to commit or rollback the transaction.
 //
 // If a closed transaction is embedded in one of the generated entities, and the entity
-// applies a query, for example: AgentCard.QueryXXX(), the query will be executed
+// applies a query, for example: API.QueryXXX(), the query will be executed
 // through the driver which created this transaction.
 //
 // Note that txDriver is not goroutine safe.

@@ -29,7 +29,7 @@ type ApprovalQuery struct {
 	order                   []approval.OrderOption
 	inters                  []Interceptor
 	predicates              []predicate.Approval
-	withAPISubscription     *ApiSubscriptionQuery
+	withAPISubscription     *APISubscriptionQuery
 	withEventSubscription   *EventSubscriptionQuery
 	withAgenticSubscription *AgenticSubscriptionQuery
 	withFKs                 bool
@@ -72,8 +72,8 @@ func (_q *ApprovalQuery) Order(o ...approval.OrderOption) *ApprovalQuery {
 }
 
 // QueryAPISubscription chains the current query on the "api_subscription" edge.
-func (_q *ApprovalQuery) QueryAPISubscription() *ApiSubscriptionQuery {
-	query := (&ApiSubscriptionClient{config: _q.config}).Query()
+func (_q *ApprovalQuery) QueryAPISubscription() *APISubscriptionQuery {
+	query := (&APISubscriptionClient{config: _q.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := _q.prepareQuery(ctx); err != nil {
 			return nil, err
@@ -340,8 +340,8 @@ func (_q *ApprovalQuery) Clone() *ApprovalQuery {
 
 // WithAPISubscription tells the query-builder to eager-load the nodes that are connected to
 // the "api_subscription" edge. The optional arguments are used to configure the query builder of the edge.
-func (_q *ApprovalQuery) WithAPISubscription(opts ...func(*ApiSubscriptionQuery)) *ApprovalQuery {
-	query := (&ApiSubscriptionClient{config: _q.config}).Query()
+func (_q *ApprovalQuery) WithAPISubscription(opts ...func(*APISubscriptionQuery)) *ApprovalQuery {
+	query := (&APISubscriptionClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
@@ -491,7 +491,7 @@ func (_q *ApprovalQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*App
 	}
 	if query := _q.withAPISubscription; query != nil {
 		if err := _q.loadAPISubscription(ctx, query, nodes, nil,
-			func(n *Approval, e *ApiSubscription) { n.Edges.APISubscription = e }); err != nil {
+			func(n *Approval, e *APISubscription) { n.Edges.APISubscription = e }); err != nil {
 			return nil, err
 		}
 	}
@@ -515,7 +515,7 @@ func (_q *ApprovalQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*App
 	return nodes, nil
 }
 
-func (_q *ApprovalQuery) loadAPISubscription(ctx context.Context, query *ApiSubscriptionQuery, nodes []*Approval, init func(*Approval), assign func(*Approval, *ApiSubscription)) error {
+func (_q *ApprovalQuery) loadAPISubscription(ctx context.Context, query *APISubscriptionQuery, nodes []*Approval, init func(*Approval), assign func(*Approval, *APISubscription)) error {
 	ids := make([]int, 0, len(nodes))
 	nodeids := make(map[int][]*Approval)
 	for i := range nodes {

@@ -22,26 +22,26 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/team"
 )
 
-// APIQuery is the builder for querying Api entities.
+// APIQuery is the builder for querying API entities.
 type APIQuery struct {
 	config
 	ctx                *QueryContext
 	order              []api.OrderOption
 	inters             []Interceptor
-	predicates         []predicate.Api
+	predicates         []predicate.API
 	withOwner          *TeamQuery
-	withExposures      *ApiExposureQuery
+	withExposures      *APIExposureQuery
 	withFKs            bool
 	modifiers          []func(*sql.Selector)
-	loadTotal          []func(context.Context, []*Api) error
-	withNamedExposures map[string]*ApiExposureQuery
+	loadTotal          []func(context.Context, []*API) error
+	withNamedExposures map[string]*APIExposureQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
 }
 
 // Where adds a new predicate for the APIQuery builder.
-func (_q *APIQuery) Where(ps ...predicate.Api) *APIQuery {
+func (_q *APIQuery) Where(ps ...predicate.API) *APIQuery {
 	_q.predicates = append(_q.predicates, ps...)
 	return _q
 }
@@ -94,8 +94,8 @@ func (_q *APIQuery) QueryOwner() *TeamQuery {
 }
 
 // QueryExposures chains the current query on the "exposures" edge.
-func (_q *APIQuery) QueryExposures() *ApiExposureQuery {
-	query := (&ApiExposureClient{config: _q.config}).Query()
+func (_q *APIQuery) QueryExposures() *APIExposureQuery {
+	query := (&APIExposureClient{config: _q.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := _q.prepareQuery(ctx); err != nil {
 			return nil, err
@@ -115,9 +115,9 @@ func (_q *APIQuery) QueryExposures() *ApiExposureQuery {
 	return query
 }
 
-// First returns the first Api entity from the query.
-// Returns a *NotFoundError when no Api was found.
-func (_q *APIQuery) First(ctx context.Context) (*Api, error) {
+// First returns the first API entity from the query.
+// Returns a *NotFoundError when no API was found.
+func (_q *APIQuery) First(ctx context.Context) (*API, error) {
 	nodes, err := _q.Limit(1).All(setContextOp(ctx, _q.ctx, ent.OpQueryFirst))
 	if err != nil {
 		return nil, err
@@ -129,7 +129,7 @@ func (_q *APIQuery) First(ctx context.Context) (*Api, error) {
 }
 
 // FirstX is like First, but panics if an error occurs.
-func (_q *APIQuery) FirstX(ctx context.Context) *Api {
+func (_q *APIQuery) FirstX(ctx context.Context) *API {
 	node, err := _q.First(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -137,8 +137,8 @@ func (_q *APIQuery) FirstX(ctx context.Context) *Api {
 	return node
 }
 
-// FirstID returns the first Api ID from the query.
-// Returns a *NotFoundError when no Api ID was found.
+// FirstID returns the first API ID from the query.
+// Returns a *NotFoundError when no API ID was found.
 func (_q *APIQuery) FirstID(ctx context.Context) (id int, err error) {
 	var ids []int
 	if ids, err = _q.Limit(1).IDs(setContextOp(ctx, _q.ctx, ent.OpQueryFirstID)); err != nil {
@@ -160,10 +160,10 @@ func (_q *APIQuery) FirstIDX(ctx context.Context) int {
 	return id
 }
 
-// Only returns a single Api entity found by the query, ensuring it only returns one.
-// Returns a *NotSingularError when more than one Api entity is found.
-// Returns a *NotFoundError when no Api entities are found.
-func (_q *APIQuery) Only(ctx context.Context) (*Api, error) {
+// Only returns a single API entity found by the query, ensuring it only returns one.
+// Returns a *NotSingularError when more than one API entity is found.
+// Returns a *NotFoundError when no API entities are found.
+func (_q *APIQuery) Only(ctx context.Context) (*API, error) {
 	nodes, err := _q.Limit(2).All(setContextOp(ctx, _q.ctx, ent.OpQueryOnly))
 	if err != nil {
 		return nil, err
@@ -179,7 +179,7 @@ func (_q *APIQuery) Only(ctx context.Context) (*Api, error) {
 }
 
 // OnlyX is like Only, but panics if an error occurs.
-func (_q *APIQuery) OnlyX(ctx context.Context) *Api {
+func (_q *APIQuery) OnlyX(ctx context.Context) *API {
 	node, err := _q.Only(ctx)
 	if err != nil {
 		panic(err)
@@ -187,8 +187,8 @@ func (_q *APIQuery) OnlyX(ctx context.Context) *Api {
 	return node
 }
 
-// OnlyID is like Only, but returns the only Api ID in the query.
-// Returns a *NotSingularError when more than one Api ID is found.
+// OnlyID is like Only, but returns the only API ID in the query.
+// Returns a *NotSingularError when more than one API ID is found.
 // Returns a *NotFoundError when no entities are found.
 func (_q *APIQuery) OnlyID(ctx context.Context) (id int, err error) {
 	var ids []int
@@ -215,18 +215,18 @@ func (_q *APIQuery) OnlyIDX(ctx context.Context) int {
 	return id
 }
 
-// All executes the query and returns a list of Apis.
-func (_q *APIQuery) All(ctx context.Context) ([]*Api, error) {
+// All executes the query and returns a list of APIs.
+func (_q *APIQuery) All(ctx context.Context) ([]*API, error) {
 	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryAll)
 	if err := _q.prepareQuery(ctx); err != nil {
 		return nil, err
 	}
-	qr := querierAll[[]*Api, *APIQuery]()
-	return withInterceptors[[]*Api](ctx, _q, qr, _q.inters)
+	qr := querierAll[[]*API, *APIQuery]()
+	return withInterceptors[[]*API](ctx, _q, qr, _q.inters)
 }
 
 // AllX is like All, but panics if an error occurs.
-func (_q *APIQuery) AllX(ctx context.Context) []*Api {
+func (_q *APIQuery) AllX(ctx context.Context) []*API {
 	nodes, err := _q.All(ctx)
 	if err != nil {
 		panic(err)
@@ -234,7 +234,7 @@ func (_q *APIQuery) AllX(ctx context.Context) []*Api {
 	return nodes
 }
 
-// IDs executes the query and returns a list of Api IDs.
+// IDs executes the query and returns a list of API IDs.
 func (_q *APIQuery) IDs(ctx context.Context) (ids []int, err error) {
 	if _q.ctx.Unique == nil && _q.path != nil {
 		_q.Unique(true)
@@ -306,7 +306,7 @@ func (_q *APIQuery) Clone() *APIQuery {
 		ctx:           _q.ctx.Clone(),
 		order:         append([]api.OrderOption{}, _q.order...),
 		inters:        append([]Interceptor{}, _q.inters...),
-		predicates:    append([]predicate.Api{}, _q.predicates...),
+		predicates:    append([]predicate.API{}, _q.predicates...),
 		withOwner:     _q.withOwner.Clone(),
 		withExposures: _q.withExposures.Clone(),
 		// clone intermediate query.
@@ -328,8 +328,8 @@ func (_q *APIQuery) WithOwner(opts ...func(*TeamQuery)) *APIQuery {
 
 // WithExposures tells the query-builder to eager-load the nodes that are connected to
 // the "exposures" edge. The optional arguments are used to configure the query builder of the edge.
-func (_q *APIQuery) WithExposures(opts ...func(*ApiExposureQuery)) *APIQuery {
-	query := (&ApiExposureClient{config: _q.config}).Query()
+func (_q *APIQuery) WithExposures(opts ...func(*APIExposureQuery)) *APIQuery {
+	query := (&APIExposureClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
@@ -417,9 +417,9 @@ func (_q *APIQuery) prepareQuery(ctx context.Context) error {
 	return nil
 }
 
-func (_q *APIQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Api, error) {
+func (_q *APIQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*API, error) {
 	var (
-		nodes       = []*Api{}
+		nodes       = []*API{}
 		withFKs     = _q.withFKs
 		_spec       = _q.querySpec()
 		loadedTypes = [2]bool{
@@ -434,10 +434,10 @@ func (_q *APIQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Api, err
 		_spec.Node.Columns = append(_spec.Node.Columns, api.ForeignKeys...)
 	}
 	_spec.ScanValues = func(columns []string) ([]any, error) {
-		return (*Api).scanValues(nil, columns)
+		return (*API).scanValues(nil, columns)
 	}
 	_spec.Assign = func(columns []string, values []any) error {
-		node := &Api{config: _q.config}
+		node := &API{config: _q.config}
 		nodes = append(nodes, node)
 		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
@@ -456,21 +456,21 @@ func (_q *APIQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Api, err
 	}
 	if query := _q.withOwner; query != nil {
 		if err := _q.loadOwner(ctx, query, nodes, nil,
-			func(n *Api, e *Team) { n.Edges.Owner = e }); err != nil {
+			func(n *API, e *Team) { n.Edges.Owner = e }); err != nil {
 			return nil, err
 		}
 	}
 	if query := _q.withExposures; query != nil {
 		if err := _q.loadExposures(ctx, query, nodes,
-			func(n *Api) { n.Edges.Exposures = []*ApiExposure{} },
-			func(n *Api, e *ApiExposure) { n.Edges.Exposures = append(n.Edges.Exposures, e) }); err != nil {
+			func(n *API) { n.Edges.Exposures = []*APIExposure{} },
+			func(n *API, e *APIExposure) { n.Edges.Exposures = append(n.Edges.Exposures, e) }); err != nil {
 			return nil, err
 		}
 	}
 	for name, query := range _q.withNamedExposures {
 		if err := _q.loadExposures(ctx, query, nodes,
-			func(n *Api) { n.appendNamedExposures(name) },
-			func(n *Api, e *ApiExposure) { n.appendNamedExposures(name, e) }); err != nil {
+			func(n *API) { n.appendNamedExposures(name) },
+			func(n *API, e *APIExposure) { n.appendNamedExposures(name, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -482,9 +482,9 @@ func (_q *APIQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Api, err
 	return nodes, nil
 }
 
-func (_q *APIQuery) loadOwner(ctx context.Context, query *TeamQuery, nodes []*Api, init func(*Api), assign func(*Api, *Team)) error {
+func (_q *APIQuery) loadOwner(ctx context.Context, query *TeamQuery, nodes []*API, init func(*API), assign func(*API, *Team)) error {
 	ids := make([]int, 0, len(nodes))
-	nodeids := make(map[int][]*Api)
+	nodeids := make(map[int][]*API)
 	for i := range nodes {
 		if nodes[i].team_apis == nil {
 			continue
@@ -514,9 +514,9 @@ func (_q *APIQuery) loadOwner(ctx context.Context, query *TeamQuery, nodes []*Ap
 	}
 	return nil
 }
-func (_q *APIQuery) loadExposures(ctx context.Context, query *ApiExposureQuery, nodes []*Api, init func(*Api), assign func(*Api, *ApiExposure)) error {
+func (_q *APIQuery) loadExposures(ctx context.Context, query *APIExposureQuery, nodes []*API, init func(*API), assign func(*API, *APIExposure)) error {
 	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[int]*Api)
+	nodeids := make(map[int]*API)
 	for i := range nodes {
 		fks = append(fks, nodes[i].ID)
 		nodeids[nodes[i].ID] = nodes[i]
@@ -525,7 +525,7 @@ func (_q *APIQuery) loadExposures(ctx context.Context, query *ApiExposureQuery, 
 		}
 	}
 	query.withFKs = true
-	query.Where(predicate.ApiExposure(func(s *sql.Selector) {
+	query.Where(predicate.APIExposure(func(s *sql.Selector) {
 		s.Where(sql.InValues(s.C(api.ExposuresColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
@@ -632,19 +632,19 @@ func (_q *APIQuery) sqlQuery(ctx context.Context) *sql.Selector {
 
 // WithNamedExposures tells the query-builder to eager-load the nodes that are connected to the "exposures"
 // edge with the given name. The optional arguments are used to configure the query builder of the edge.
-func (_q *APIQuery) WithNamedExposures(name string, opts ...func(*ApiExposureQuery)) *APIQuery {
-	query := (&ApiExposureClient{config: _q.config}).Query()
+func (_q *APIQuery) WithNamedExposures(name string, opts ...func(*APIExposureQuery)) *APIQuery {
+	query := (&APIExposureClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
 	if _q.withNamedExposures == nil {
-		_q.withNamedExposures = make(map[string]*ApiExposureQuery)
+		_q.withNamedExposures = make(map[string]*APIExposureQuery)
 	}
 	_q.withNamedExposures[name] = query
 	return _q
 }
 
-// APIGroupBy is the group-by builder for Api entities.
+// APIGroupBy is the group-by builder for API entities.
 type APIGroupBy struct {
 	selector
 	build *APIQuery

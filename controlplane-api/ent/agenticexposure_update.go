@@ -276,23 +276,23 @@ func (_u *AgenticExposureUpdate) SetOwner(v *Application) *AgenticExposureUpdate
 	return _u.SetOwnerID(v.ID)
 }
 
-// SetMcpServerID sets the "mcp_server" edge to the McpServer entity by ID.
-func (_u *AgenticExposureUpdate) SetMcpServerID(id int) *AgenticExposureUpdate {
-	_u.mutation.SetMcpServerID(id)
+// SetMCPServerID sets the "MCP_server" edge to the MCPServer entity by ID.
+func (_u *AgenticExposureUpdate) SetMCPServerID(id int) *AgenticExposureUpdate {
+	_u.mutation.SetMCPServerID(id)
 	return _u
 }
 
-// SetNillableMcpServerID sets the "mcp_server" edge to the McpServer entity by ID if the given value is not nil.
-func (_u *AgenticExposureUpdate) SetNillableMcpServerID(id *int) *AgenticExposureUpdate {
+// SetNillableMCPServerID sets the "MCP_server" edge to the MCPServer entity by ID if the given value is not nil.
+func (_u *AgenticExposureUpdate) SetNillableMCPServerID(id *int) *AgenticExposureUpdate {
 	if id != nil {
-		_u = _u.SetMcpServerID(*id)
+		_u = _u.SetMCPServerID(*id)
 	}
 	return _u
 }
 
-// SetMcpServer sets the "mcp_server" edge to the McpServer entity.
-func (_u *AgenticExposureUpdate) SetMcpServer(v *McpServer) *AgenticExposureUpdate {
-	return _u.SetMcpServerID(v.ID)
+// SetMCPServer sets the "MCP_server" edge to the MCPServer entity.
+func (_u *AgenticExposureUpdate) SetMCPServer(v *MCPServer) *AgenticExposureUpdate {
+	return _u.SetMCPServerID(v.ID)
 }
 
 // SetAgentCardID sets the "agent_card" edge to the AgentCard entity by ID.
@@ -340,9 +340,9 @@ func (_u *AgenticExposureUpdate) ClearOwner() *AgenticExposureUpdate {
 	return _u
 }
 
-// ClearMcpServer clears the "mcp_server" edge to the McpServer entity.
-func (_u *AgenticExposureUpdate) ClearMcpServer() *AgenticExposureUpdate {
-	_u.mutation.ClearMcpServer()
+// ClearMCPServer clears the "MCP_server" edge to the MCPServer entity.
+func (_u *AgenticExposureUpdate) ClearMCPServer() *AgenticExposureUpdate {
+	_u.mutation.ClearMCPServer()
 	return _u
 }
 
@@ -557,12 +557,12 @@ func (_u *AgenticExposureUpdate) sqlSave(ctx context.Context) (_node int, err er
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if _u.mutation.McpServerCleared() {
+	if _u.mutation.MCPServerCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
-			Table:   agenticexposure.McpServerTable,
-			Columns: []string{agenticexposure.McpServerColumn},
+			Table:   agenticexposure.MCPServerTable,
+			Columns: []string{agenticexposure.MCPServerColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(mcpserver.FieldID, field.TypeInt),
@@ -570,12 +570,12 @@ func (_u *AgenticExposureUpdate) sqlSave(ctx context.Context) (_node int, err er
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := _u.mutation.McpServerIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.MCPServerIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
-			Table:   agenticexposure.McpServerTable,
-			Columns: []string{agenticexposure.McpServerColumn},
+			Table:   agenticexposure.MCPServerTable,
+			Columns: []string{agenticexposure.MCPServerColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(mcpserver.FieldID, field.TypeInt),
@@ -919,23 +919,23 @@ func (_u *AgenticExposureUpdateOne) SetOwner(v *Application) *AgenticExposureUpd
 	return _u.SetOwnerID(v.ID)
 }
 
-// SetMcpServerID sets the "mcp_server" edge to the McpServer entity by ID.
-func (_u *AgenticExposureUpdateOne) SetMcpServerID(id int) *AgenticExposureUpdateOne {
-	_u.mutation.SetMcpServerID(id)
+// SetMCPServerID sets the "MCP_server" edge to the MCPServer entity by ID.
+func (_u *AgenticExposureUpdateOne) SetMCPServerID(id int) *AgenticExposureUpdateOne {
+	_u.mutation.SetMCPServerID(id)
 	return _u
 }
 
-// SetNillableMcpServerID sets the "mcp_server" edge to the McpServer entity by ID if the given value is not nil.
-func (_u *AgenticExposureUpdateOne) SetNillableMcpServerID(id *int) *AgenticExposureUpdateOne {
+// SetNillableMCPServerID sets the "MCP_server" edge to the MCPServer entity by ID if the given value is not nil.
+func (_u *AgenticExposureUpdateOne) SetNillableMCPServerID(id *int) *AgenticExposureUpdateOne {
 	if id != nil {
-		_u = _u.SetMcpServerID(*id)
+		_u = _u.SetMCPServerID(*id)
 	}
 	return _u
 }
 
-// SetMcpServer sets the "mcp_server" edge to the McpServer entity.
-func (_u *AgenticExposureUpdateOne) SetMcpServer(v *McpServer) *AgenticExposureUpdateOne {
-	return _u.SetMcpServerID(v.ID)
+// SetMCPServer sets the "MCP_server" edge to the MCPServer entity.
+func (_u *AgenticExposureUpdateOne) SetMCPServer(v *MCPServer) *AgenticExposureUpdateOne {
+	return _u.SetMCPServerID(v.ID)
 }
 
 // SetAgentCardID sets the "agent_card" edge to the AgentCard entity by ID.
@@ -983,9 +983,9 @@ func (_u *AgenticExposureUpdateOne) ClearOwner() *AgenticExposureUpdateOne {
 	return _u
 }
 
-// ClearMcpServer clears the "mcp_server" edge to the McpServer entity.
-func (_u *AgenticExposureUpdateOne) ClearMcpServer() *AgenticExposureUpdateOne {
-	_u.mutation.ClearMcpServer()
+// ClearMCPServer clears the "MCP_server" edge to the MCPServer entity.
+func (_u *AgenticExposureUpdateOne) ClearMCPServer() *AgenticExposureUpdateOne {
+	_u.mutation.ClearMCPServer()
 	return _u
 }
 
@@ -1230,12 +1230,12 @@ func (_u *AgenticExposureUpdateOne) sqlSave(ctx context.Context) (_node *Agentic
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if _u.mutation.McpServerCleared() {
+	if _u.mutation.MCPServerCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
-			Table:   agenticexposure.McpServerTable,
-			Columns: []string{agenticexposure.McpServerColumn},
+			Table:   agenticexposure.MCPServerTable,
+			Columns: []string{agenticexposure.MCPServerColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(mcpserver.FieldID, field.TypeInt),
@@ -1243,12 +1243,12 @@ func (_u *AgenticExposureUpdateOne) sqlSave(ctx context.Context) (_node *Agentic
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := _u.mutation.McpServerIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.MCPServerIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
-			Table:   agenticexposure.McpServerTable,
-			Columns: []string{agenticexposure.McpServerColumn},
+			Table:   agenticexposure.MCPServerTable,
+			Columns: []string{agenticexposure.MCPServerColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(mcpserver.FieldID, field.TypeInt),

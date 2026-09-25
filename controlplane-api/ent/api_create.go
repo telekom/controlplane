@@ -19,7 +19,7 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/team"
 )
 
-// APICreate is the builder for creating a Api entity.
+// APICreate is the builder for creating a API entity.
 type APICreate struct {
 	config
 	mutation *APIMutation
@@ -115,9 +115,9 @@ func (_c *APICreate) SetNillableCategory(v *string) *APICreate {
 	return _c
 }
 
-// SetOauth2Scopes sets the "oauth2_scopes" field.
-func (_c *APICreate) SetOauth2Scopes(v []string) *APICreate {
-	_c.mutation.SetOauth2Scopes(v)
+// SetOAuth2Scopes sets the "OAuth2_scopes" field.
+func (_c *APICreate) SetOAuth2Scopes(v []string) *APICreate {
+	_c.mutation.SetOAuth2Scopes(v)
 	return _c
 }
 
@@ -174,14 +174,14 @@ func (_c *APICreate) SetOwner(v *Team) *APICreate {
 	return _c.SetOwnerID(v.ID)
 }
 
-// AddExposureIDs adds the "exposures" edge to the ApiExposure entity by IDs.
+// AddExposureIDs adds the "exposures" edge to the APIExposure entity by IDs.
 func (_c *APICreate) AddExposureIDs(ids ...int) *APICreate {
 	_c.mutation.AddExposureIDs(ids...)
 	return _c
 }
 
-// AddExposures adds the "exposures" edges to the ApiExposure entity.
-func (_c *APICreate) AddExposures(v ...*ApiExposure) *APICreate {
+// AddExposures adds the "exposures" edges to the APIExposure entity.
+func (_c *APICreate) AddExposures(v ...*APIExposure) *APICreate {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
@@ -194,8 +194,8 @@ func (_c *APICreate) Mutation() *APIMutation {
 	return _c.mutation
 }
 
-// Save creates the Api in the database.
-func (_c *APICreate) Save(ctx context.Context) (*Api, error) {
+// Save creates the API in the database.
+func (_c *APICreate) Save(ctx context.Context) (*API, error) {
 	if err := _c.defaults(); err != nil {
 		return nil, err
 	}
@@ -203,7 +203,7 @@ func (_c *APICreate) Save(ctx context.Context) (*Api, error) {
 }
 
 // SaveX calls Save and panics if Save returns an error.
-func (_c *APICreate) SaveX(ctx context.Context) *Api {
+func (_c *APICreate) SaveX(ctx context.Context) *API {
 	v, err := _c.Save(ctx)
 	if err != nil {
 		panic(err)
@@ -254,53 +254,53 @@ func (_c *APICreate) defaults() error {
 // check runs all checks and user-defined validators on the builder.
 func (_c *APICreate) check() error {
 	if _, ok := _c.mutation.CreatedAt(); !ok {
-		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "Api.created_at"`)}
+		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "API.created_at"`)}
 	}
 	if _, ok := _c.mutation.LastModifiedAt(); !ok {
-		return &ValidationError{Name: "last_modified_at", err: errors.New(`ent: missing required field "Api.last_modified_at"`)}
+		return &ValidationError{Name: "last_modified_at", err: errors.New(`ent: missing required field "API.last_modified_at"`)}
 	}
 	if v, ok := _c.mutation.StatusPhase(); ok {
 		if err := api.StatusPhaseValidator(v); err != nil {
-			return &ValidationError{Name: "status_phase", err: fmt.Errorf(`ent: validator failed for field "Api.status_phase": %w`, err)}
+			return &ValidationError{Name: "status_phase", err: fmt.Errorf(`ent: validator failed for field "API.status_phase": %w`, err)}
 		}
 	}
 	if _, ok := _c.mutation.Namespace(); !ok {
-		return &ValidationError{Name: "namespace", err: errors.New(`ent: missing required field "Api.namespace"`)}
+		return &ValidationError{Name: "namespace", err: errors.New(`ent: missing required field "API.namespace"`)}
 	}
 	if v, ok := _c.mutation.Namespace(); ok {
 		if err := api.NamespaceValidator(v); err != nil {
-			return &ValidationError{Name: "namespace", err: fmt.Errorf(`ent: validator failed for field "Api.namespace": %w`, err)}
+			return &ValidationError{Name: "namespace", err: fmt.Errorf(`ent: validator failed for field "API.namespace": %w`, err)}
 		}
 	}
 	if _, ok := _c.mutation.BasePath(); !ok {
-		return &ValidationError{Name: "base_path", err: errors.New(`ent: missing required field "Api.base_path"`)}
+		return &ValidationError{Name: "base_path", err: errors.New(`ent: missing required field "API.base_path"`)}
 	}
 	if v, ok := _c.mutation.BasePath(); ok {
 		if err := api.BasePathValidator(v); err != nil {
-			return &ValidationError{Name: "base_path", err: fmt.Errorf(`ent: validator failed for field "Api.base_path": %w`, err)}
+			return &ValidationError{Name: "base_path", err: fmt.Errorf(`ent: validator failed for field "API.base_path": %w`, err)}
 		}
 	}
 	if _, ok := _c.mutation.Version(); !ok {
-		return &ValidationError{Name: "version", err: errors.New(`ent: missing required field "Api.version"`)}
+		return &ValidationError{Name: "version", err: errors.New(`ent: missing required field "API.version"`)}
 	}
 	if v, ok := _c.mutation.Version(); ok {
 		if err := api.VersionValidator(v); err != nil {
-			return &ValidationError{Name: "version", err: fmt.Errorf(`ent: validator failed for field "Api.version": %w`, err)}
+			return &ValidationError{Name: "version", err: fmt.Errorf(`ent: validator failed for field "API.version": %w`, err)}
 		}
 	}
 	if _, ok := _c.mutation.XVendor(); !ok {
-		return &ValidationError{Name: "x_vendor", err: errors.New(`ent: missing required field "Api.x_vendor"`)}
+		return &ValidationError{Name: "x_vendor", err: errors.New(`ent: missing required field "API.x_vendor"`)}
 	}
 	if _, ok := _c.mutation.Active(); !ok {
-		return &ValidationError{Name: "active", err: errors.New(`ent: missing required field "Api.active"`)}
+		return &ValidationError{Name: "active", err: errors.New(`ent: missing required field "API.active"`)}
 	}
 	if len(_c.mutation.OwnerIDs()) == 0 {
-		return &ValidationError{Name: "owner", err: errors.New(`ent: missing required edge "Api.owner"`)}
+		return &ValidationError{Name: "owner", err: errors.New(`ent: missing required edge "API.owner"`)}
 	}
 	return nil
 }
 
-func (_c *APICreate) sqlSave(ctx context.Context) (*Api, error) {
+func (_c *APICreate) sqlSave(ctx context.Context) (*API, error) {
 	if err := _c.check(); err != nil {
 		return nil, err
 	}
@@ -318,9 +318,9 @@ func (_c *APICreate) sqlSave(ctx context.Context) (*Api, error) {
 	return _node, nil
 }
 
-func (_c *APICreate) createSpec() (*Api, *sqlgraph.CreateSpec) {
+func (_c *APICreate) createSpec() (*API, *sqlgraph.CreateSpec) {
 	var (
-		_node = &Api{config: _c.config}
+		_node = &API{config: _c.config}
 		_spec = sqlgraph.NewCreateSpec(api.Table, sqlgraph.NewFieldSpec(api.FieldID, field.TypeInt))
 	)
 	_spec.OnConflict = _c.conflict
@@ -356,9 +356,9 @@ func (_c *APICreate) createSpec() (*Api, *sqlgraph.CreateSpec) {
 		_spec.SetField(api.FieldCategory, field.TypeString, value)
 		_node.Category = value
 	}
-	if value, ok := _c.mutation.Oauth2Scopes(); ok {
-		_spec.SetField(api.FieldOauth2Scopes, field.TypeJSON, value)
-		_node.Oauth2Scopes = value
+	if value, ok := _c.mutation.OAuth2Scopes(); ok {
+		_spec.SetField(api.FieldOAuth2Scopes, field.TypeJSON, value)
+		_node.OAuth2Scopes = value
 	}
 	if value, ok := _c.mutation.XVendor(); ok {
 		_spec.SetField(api.FieldXVendor, field.TypeBool, value)
@@ -411,7 +411,7 @@ func (_c *APICreate) createSpec() (*Api, *sqlgraph.CreateSpec) {
 // OnConflict allows configuring the `ON CONFLICT` / `ON DUPLICATE KEY` clause
 // of the `INSERT` statement. For example:
 //
-//	client.Api.Create().
+//	client.API.Create().
 //		SetCreatedAt(v).
 //		OnConflict(
 //			// Update the row with the new values
@@ -420,13 +420,13 @@ func (_c *APICreate) createSpec() (*Api, *sqlgraph.CreateSpec) {
 //		).
 //		// Override some of the fields with custom
 //		// update values.
-//		Update(func(u *ent.ApiUpsert) {
+//		Update(func(u *ent.APIUpsert) {
 //			SetCreatedAt(v+v).
 //		}).
 //		Exec(ctx)
-func (_c *APICreate) OnConflict(opts ...sql.ConflictOption) *ApiUpsertOne {
+func (_c *APICreate) OnConflict(opts ...sql.ConflictOption) *APIUpsertOne {
 	_c.conflict = opts
-	return &ApiUpsertOne{
+	return &APIUpsertOne{
 		create: _c,
 	}
 }
@@ -434,187 +434,187 @@ func (_c *APICreate) OnConflict(opts ...sql.ConflictOption) *ApiUpsertOne {
 // OnConflictColumns calls `OnConflict` and configures the columns
 // as conflict target. Using this option is equivalent to using:
 //
-//	client.Api.Create().
+//	client.API.Create().
 //		OnConflict(sql.ConflictColumns(columns...)).
 //		Exec(ctx)
-func (_c *APICreate) OnConflictColumns(columns ...string) *ApiUpsertOne {
+func (_c *APICreate) OnConflictColumns(columns ...string) *APIUpsertOne {
 	_c.conflict = append(_c.conflict, sql.ConflictColumns(columns...))
-	return &ApiUpsertOne{
+	return &APIUpsertOne{
 		create: _c,
 	}
 }
 
 type (
-	// ApiUpsertOne is the builder for "upsert"-ing
-	//  one Api node.
-	ApiUpsertOne struct {
+	// APIUpsertOne is the builder for "upsert"-ing
+	//  one API node.
+	APIUpsertOne struct {
 		create *APICreate
 	}
 
-	// ApiUpsert is the "OnConflict" setter.
-	ApiUpsert struct {
+	// APIUpsert is the "OnConflict" setter.
+	APIUpsert struct {
 		*sql.UpdateSet
 	}
 )
 
 // SetLastModifiedAt sets the "last_modified_at" field.
-func (u *ApiUpsert) SetLastModifiedAt(v time.Time) *ApiUpsert {
+func (u *APIUpsert) SetLastModifiedAt(v time.Time) *APIUpsert {
 	u.Set(api.FieldLastModifiedAt, v)
 	return u
 }
 
 // UpdateLastModifiedAt sets the "last_modified_at" field to the value that was provided on create.
-func (u *ApiUpsert) UpdateLastModifiedAt() *ApiUpsert {
+func (u *APIUpsert) UpdateLastModifiedAt() *APIUpsert {
 	u.SetExcluded(api.FieldLastModifiedAt)
 	return u
 }
 
 // SetStatusPhase sets the "status_phase" field.
-func (u *ApiUpsert) SetStatusPhase(v api.StatusPhase) *ApiUpsert {
+func (u *APIUpsert) SetStatusPhase(v api.StatusPhase) *APIUpsert {
 	u.Set(api.FieldStatusPhase, v)
 	return u
 }
 
 // UpdateStatusPhase sets the "status_phase" field to the value that was provided on create.
-func (u *ApiUpsert) UpdateStatusPhase() *ApiUpsert {
+func (u *APIUpsert) UpdateStatusPhase() *APIUpsert {
 	u.SetExcluded(api.FieldStatusPhase)
 	return u
 }
 
 // ClearStatusPhase clears the value of the "status_phase" field.
-func (u *ApiUpsert) ClearStatusPhase() *ApiUpsert {
+func (u *APIUpsert) ClearStatusPhase() *APIUpsert {
 	u.SetNull(api.FieldStatusPhase)
 	return u
 }
 
 // SetStatusMessage sets the "status_message" field.
-func (u *ApiUpsert) SetStatusMessage(v string) *ApiUpsert {
+func (u *APIUpsert) SetStatusMessage(v string) *APIUpsert {
 	u.Set(api.FieldStatusMessage, v)
 	return u
 }
 
 // UpdateStatusMessage sets the "status_message" field to the value that was provided on create.
-func (u *ApiUpsert) UpdateStatusMessage() *ApiUpsert {
+func (u *APIUpsert) UpdateStatusMessage() *APIUpsert {
 	u.SetExcluded(api.FieldStatusMessage)
 	return u
 }
 
 // ClearStatusMessage clears the value of the "status_message" field.
-func (u *ApiUpsert) ClearStatusMessage() *ApiUpsert {
+func (u *APIUpsert) ClearStatusMessage() *APIUpsert {
 	u.SetNull(api.FieldStatusMessage)
 	return u
 }
 
 // SetNamespace sets the "namespace" field.
-func (u *ApiUpsert) SetNamespace(v string) *ApiUpsert {
+func (u *APIUpsert) SetNamespace(v string) *APIUpsert {
 	u.Set(api.FieldNamespace, v)
 	return u
 }
 
 // UpdateNamespace sets the "namespace" field to the value that was provided on create.
-func (u *ApiUpsert) UpdateNamespace() *ApiUpsert {
+func (u *APIUpsert) UpdateNamespace() *APIUpsert {
 	u.SetExcluded(api.FieldNamespace)
 	return u
 }
 
 // SetBasePath sets the "base_path" field.
-func (u *ApiUpsert) SetBasePath(v string) *ApiUpsert {
+func (u *APIUpsert) SetBasePath(v string) *APIUpsert {
 	u.Set(api.FieldBasePath, v)
 	return u
 }
 
 // UpdateBasePath sets the "base_path" field to the value that was provided on create.
-func (u *ApiUpsert) UpdateBasePath() *ApiUpsert {
+func (u *APIUpsert) UpdateBasePath() *APIUpsert {
 	u.SetExcluded(api.FieldBasePath)
 	return u
 }
 
 // SetVersion sets the "version" field.
-func (u *ApiUpsert) SetVersion(v string) *ApiUpsert {
+func (u *APIUpsert) SetVersion(v string) *APIUpsert {
 	u.Set(api.FieldVersion, v)
 	return u
 }
 
 // UpdateVersion sets the "version" field to the value that was provided on create.
-func (u *ApiUpsert) UpdateVersion() *ApiUpsert {
+func (u *APIUpsert) UpdateVersion() *APIUpsert {
 	u.SetExcluded(api.FieldVersion)
 	return u
 }
 
 // SetCategory sets the "category" field.
-func (u *ApiUpsert) SetCategory(v string) *ApiUpsert {
+func (u *APIUpsert) SetCategory(v string) *APIUpsert {
 	u.Set(api.FieldCategory, v)
 	return u
 }
 
 // UpdateCategory sets the "category" field to the value that was provided on create.
-func (u *ApiUpsert) UpdateCategory() *ApiUpsert {
+func (u *APIUpsert) UpdateCategory() *APIUpsert {
 	u.SetExcluded(api.FieldCategory)
 	return u
 }
 
 // ClearCategory clears the value of the "category" field.
-func (u *ApiUpsert) ClearCategory() *ApiUpsert {
+func (u *APIUpsert) ClearCategory() *APIUpsert {
 	u.SetNull(api.FieldCategory)
 	return u
 }
 
-// SetOauth2Scopes sets the "oauth2_scopes" field.
-func (u *ApiUpsert) SetOauth2Scopes(v []string) *ApiUpsert {
-	u.Set(api.FieldOauth2Scopes, v)
+// SetOAuth2Scopes sets the "OAuth2_scopes" field.
+func (u *APIUpsert) SetOAuth2Scopes(v []string) *APIUpsert {
+	u.Set(api.FieldOAuth2Scopes, v)
 	return u
 }
 
-// UpdateOauth2Scopes sets the "oauth2_scopes" field to the value that was provided on create.
-func (u *ApiUpsert) UpdateOauth2Scopes() *ApiUpsert {
-	u.SetExcluded(api.FieldOauth2Scopes)
+// UpdateOAuth2Scopes sets the "OAuth2_scopes" field to the value that was provided on create.
+func (u *APIUpsert) UpdateOAuth2Scopes() *APIUpsert {
+	u.SetExcluded(api.FieldOAuth2Scopes)
 	return u
 }
 
-// ClearOauth2Scopes clears the value of the "oauth2_scopes" field.
-func (u *ApiUpsert) ClearOauth2Scopes() *ApiUpsert {
-	u.SetNull(api.FieldOauth2Scopes)
+// ClearOAuth2Scopes clears the value of the "OAuth2_scopes" field.
+func (u *APIUpsert) ClearOAuth2Scopes() *APIUpsert {
+	u.SetNull(api.FieldOAuth2Scopes)
 	return u
 }
 
 // SetXVendor sets the "x_vendor" field.
-func (u *ApiUpsert) SetXVendor(v bool) *ApiUpsert {
+func (u *APIUpsert) SetXVendor(v bool) *APIUpsert {
 	u.Set(api.FieldXVendor, v)
 	return u
 }
 
 // UpdateXVendor sets the "x_vendor" field to the value that was provided on create.
-func (u *ApiUpsert) UpdateXVendor() *ApiUpsert {
+func (u *APIUpsert) UpdateXVendor() *APIUpsert {
 	u.SetExcluded(api.FieldXVendor)
 	return u
 }
 
 // SetSpecification sets the "specification" field.
-func (u *ApiUpsert) SetSpecification(v string) *ApiUpsert {
+func (u *APIUpsert) SetSpecification(v string) *APIUpsert {
 	u.Set(api.FieldSpecification, v)
 	return u
 }
 
 // UpdateSpecification sets the "specification" field to the value that was provided on create.
-func (u *ApiUpsert) UpdateSpecification() *ApiUpsert {
+func (u *APIUpsert) UpdateSpecification() *APIUpsert {
 	u.SetExcluded(api.FieldSpecification)
 	return u
 }
 
 // ClearSpecification clears the value of the "specification" field.
-func (u *ApiUpsert) ClearSpecification() *ApiUpsert {
+func (u *APIUpsert) ClearSpecification() *APIUpsert {
 	u.SetNull(api.FieldSpecification)
 	return u
 }
 
 // SetActive sets the "active" field.
-func (u *ApiUpsert) SetActive(v bool) *ApiUpsert {
+func (u *APIUpsert) SetActive(v bool) *APIUpsert {
 	u.Set(api.FieldActive, v)
 	return u
 }
 
 // UpdateActive sets the "active" field to the value that was provided on create.
-func (u *ApiUpsert) UpdateActive() *ApiUpsert {
+func (u *APIUpsert) UpdateActive() *APIUpsert {
 	u.SetExcluded(api.FieldActive)
 	return u
 }
@@ -622,12 +622,12 @@ func (u *ApiUpsert) UpdateActive() *ApiUpsert {
 // UpdateNewValues updates the mutable fields using the new values that were set on create.
 // Using this option is equivalent to using:
 //
-//	client.Api.Create().
+//	client.API.Create().
 //		OnConflict(
 //			sql.ResolveWithNewValues(),
 //		).
 //		Exec(ctx)
-func (u *ApiUpsertOne) UpdateNewValues() *ApiUpsertOne {
+func (u *APIUpsertOne) UpdateNewValues() *APIUpsertOne {
 	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
 	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
 		if _, exists := u.create.mutation.CreatedAt(); exists {
@@ -640,221 +640,221 @@ func (u *ApiUpsertOne) UpdateNewValues() *ApiUpsertOne {
 // Ignore sets each column to itself in case of conflict.
 // Using this option is equivalent to using:
 //
-//	client.Api.Create().
+//	client.API.Create().
 //	    OnConflict(sql.ResolveWithIgnore()).
 //	    Exec(ctx)
-func (u *ApiUpsertOne) Ignore() *ApiUpsertOne {
+func (u *APIUpsertOne) Ignore() *APIUpsertOne {
 	u.create.conflict = append(u.create.conflict, sql.ResolveWithIgnore())
 	return u
 }
 
 // DoNothing configures the conflict_action to `DO NOTHING`.
 // Supported only by SQLite and PostgreSQL.
-func (u *ApiUpsertOne) DoNothing() *ApiUpsertOne {
+func (u *APIUpsertOne) DoNothing() *APIUpsertOne {
 	u.create.conflict = append(u.create.conflict, sql.DoNothing())
 	return u
 }
 
 // Update allows overriding fields `UPDATE` values. See the APICreate.OnConflict
 // documentation for more info.
-func (u *ApiUpsertOne) Update(set func(*ApiUpsert)) *ApiUpsertOne {
+func (u *APIUpsertOne) Update(set func(*APIUpsert)) *APIUpsertOne {
 	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(update *sql.UpdateSet) {
-		set(&ApiUpsert{UpdateSet: update})
+		set(&APIUpsert{UpdateSet: update})
 	}))
 	return u
 }
 
 // SetLastModifiedAt sets the "last_modified_at" field.
-func (u *ApiUpsertOne) SetLastModifiedAt(v time.Time) *ApiUpsertOne {
-	return u.Update(func(s *ApiUpsert) {
+func (u *APIUpsertOne) SetLastModifiedAt(v time.Time) *APIUpsertOne {
+	return u.Update(func(s *APIUpsert) {
 		s.SetLastModifiedAt(v)
 	})
 }
 
 // UpdateLastModifiedAt sets the "last_modified_at" field to the value that was provided on create.
-func (u *ApiUpsertOne) UpdateLastModifiedAt() *ApiUpsertOne {
-	return u.Update(func(s *ApiUpsert) {
+func (u *APIUpsertOne) UpdateLastModifiedAt() *APIUpsertOne {
+	return u.Update(func(s *APIUpsert) {
 		s.UpdateLastModifiedAt()
 	})
 }
 
 // SetStatusPhase sets the "status_phase" field.
-func (u *ApiUpsertOne) SetStatusPhase(v api.StatusPhase) *ApiUpsertOne {
-	return u.Update(func(s *ApiUpsert) {
+func (u *APIUpsertOne) SetStatusPhase(v api.StatusPhase) *APIUpsertOne {
+	return u.Update(func(s *APIUpsert) {
 		s.SetStatusPhase(v)
 	})
 }
 
 // UpdateStatusPhase sets the "status_phase" field to the value that was provided on create.
-func (u *ApiUpsertOne) UpdateStatusPhase() *ApiUpsertOne {
-	return u.Update(func(s *ApiUpsert) {
+func (u *APIUpsertOne) UpdateStatusPhase() *APIUpsertOne {
+	return u.Update(func(s *APIUpsert) {
 		s.UpdateStatusPhase()
 	})
 }
 
 // ClearStatusPhase clears the value of the "status_phase" field.
-func (u *ApiUpsertOne) ClearStatusPhase() *ApiUpsertOne {
-	return u.Update(func(s *ApiUpsert) {
+func (u *APIUpsertOne) ClearStatusPhase() *APIUpsertOne {
+	return u.Update(func(s *APIUpsert) {
 		s.ClearStatusPhase()
 	})
 }
 
 // SetStatusMessage sets the "status_message" field.
-func (u *ApiUpsertOne) SetStatusMessage(v string) *ApiUpsertOne {
-	return u.Update(func(s *ApiUpsert) {
+func (u *APIUpsertOne) SetStatusMessage(v string) *APIUpsertOne {
+	return u.Update(func(s *APIUpsert) {
 		s.SetStatusMessage(v)
 	})
 }
 
 // UpdateStatusMessage sets the "status_message" field to the value that was provided on create.
-func (u *ApiUpsertOne) UpdateStatusMessage() *ApiUpsertOne {
-	return u.Update(func(s *ApiUpsert) {
+func (u *APIUpsertOne) UpdateStatusMessage() *APIUpsertOne {
+	return u.Update(func(s *APIUpsert) {
 		s.UpdateStatusMessage()
 	})
 }
 
 // ClearStatusMessage clears the value of the "status_message" field.
-func (u *ApiUpsertOne) ClearStatusMessage() *ApiUpsertOne {
-	return u.Update(func(s *ApiUpsert) {
+func (u *APIUpsertOne) ClearStatusMessage() *APIUpsertOne {
+	return u.Update(func(s *APIUpsert) {
 		s.ClearStatusMessage()
 	})
 }
 
 // SetNamespace sets the "namespace" field.
-func (u *ApiUpsertOne) SetNamespace(v string) *ApiUpsertOne {
-	return u.Update(func(s *ApiUpsert) {
+func (u *APIUpsertOne) SetNamespace(v string) *APIUpsertOne {
+	return u.Update(func(s *APIUpsert) {
 		s.SetNamespace(v)
 	})
 }
 
 // UpdateNamespace sets the "namespace" field to the value that was provided on create.
-func (u *ApiUpsertOne) UpdateNamespace() *ApiUpsertOne {
-	return u.Update(func(s *ApiUpsert) {
+func (u *APIUpsertOne) UpdateNamespace() *APIUpsertOne {
+	return u.Update(func(s *APIUpsert) {
 		s.UpdateNamespace()
 	})
 }
 
 // SetBasePath sets the "base_path" field.
-func (u *ApiUpsertOne) SetBasePath(v string) *ApiUpsertOne {
-	return u.Update(func(s *ApiUpsert) {
+func (u *APIUpsertOne) SetBasePath(v string) *APIUpsertOne {
+	return u.Update(func(s *APIUpsert) {
 		s.SetBasePath(v)
 	})
 }
 
 // UpdateBasePath sets the "base_path" field to the value that was provided on create.
-func (u *ApiUpsertOne) UpdateBasePath() *ApiUpsertOne {
-	return u.Update(func(s *ApiUpsert) {
+func (u *APIUpsertOne) UpdateBasePath() *APIUpsertOne {
+	return u.Update(func(s *APIUpsert) {
 		s.UpdateBasePath()
 	})
 }
 
 // SetVersion sets the "version" field.
-func (u *ApiUpsertOne) SetVersion(v string) *ApiUpsertOne {
-	return u.Update(func(s *ApiUpsert) {
+func (u *APIUpsertOne) SetVersion(v string) *APIUpsertOne {
+	return u.Update(func(s *APIUpsert) {
 		s.SetVersion(v)
 	})
 }
 
 // UpdateVersion sets the "version" field to the value that was provided on create.
-func (u *ApiUpsertOne) UpdateVersion() *ApiUpsertOne {
-	return u.Update(func(s *ApiUpsert) {
+func (u *APIUpsertOne) UpdateVersion() *APIUpsertOne {
+	return u.Update(func(s *APIUpsert) {
 		s.UpdateVersion()
 	})
 }
 
 // SetCategory sets the "category" field.
-func (u *ApiUpsertOne) SetCategory(v string) *ApiUpsertOne {
-	return u.Update(func(s *ApiUpsert) {
+func (u *APIUpsertOne) SetCategory(v string) *APIUpsertOne {
+	return u.Update(func(s *APIUpsert) {
 		s.SetCategory(v)
 	})
 }
 
 // UpdateCategory sets the "category" field to the value that was provided on create.
-func (u *ApiUpsertOne) UpdateCategory() *ApiUpsertOne {
-	return u.Update(func(s *ApiUpsert) {
+func (u *APIUpsertOne) UpdateCategory() *APIUpsertOne {
+	return u.Update(func(s *APIUpsert) {
 		s.UpdateCategory()
 	})
 }
 
 // ClearCategory clears the value of the "category" field.
-func (u *ApiUpsertOne) ClearCategory() *ApiUpsertOne {
-	return u.Update(func(s *ApiUpsert) {
+func (u *APIUpsertOne) ClearCategory() *APIUpsertOne {
+	return u.Update(func(s *APIUpsert) {
 		s.ClearCategory()
 	})
 }
 
-// SetOauth2Scopes sets the "oauth2_scopes" field.
-func (u *ApiUpsertOne) SetOauth2Scopes(v []string) *ApiUpsertOne {
-	return u.Update(func(s *ApiUpsert) {
-		s.SetOauth2Scopes(v)
+// SetOAuth2Scopes sets the "OAuth2_scopes" field.
+func (u *APIUpsertOne) SetOAuth2Scopes(v []string) *APIUpsertOne {
+	return u.Update(func(s *APIUpsert) {
+		s.SetOAuth2Scopes(v)
 	})
 }
 
-// UpdateOauth2Scopes sets the "oauth2_scopes" field to the value that was provided on create.
-func (u *ApiUpsertOne) UpdateOauth2Scopes() *ApiUpsertOne {
-	return u.Update(func(s *ApiUpsert) {
-		s.UpdateOauth2Scopes()
+// UpdateOAuth2Scopes sets the "OAuth2_scopes" field to the value that was provided on create.
+func (u *APIUpsertOne) UpdateOAuth2Scopes() *APIUpsertOne {
+	return u.Update(func(s *APIUpsert) {
+		s.UpdateOAuth2Scopes()
 	})
 }
 
-// ClearOauth2Scopes clears the value of the "oauth2_scopes" field.
-func (u *ApiUpsertOne) ClearOauth2Scopes() *ApiUpsertOne {
-	return u.Update(func(s *ApiUpsert) {
-		s.ClearOauth2Scopes()
+// ClearOAuth2Scopes clears the value of the "OAuth2_scopes" field.
+func (u *APIUpsertOne) ClearOAuth2Scopes() *APIUpsertOne {
+	return u.Update(func(s *APIUpsert) {
+		s.ClearOAuth2Scopes()
 	})
 }
 
 // SetXVendor sets the "x_vendor" field.
-func (u *ApiUpsertOne) SetXVendor(v bool) *ApiUpsertOne {
-	return u.Update(func(s *ApiUpsert) {
+func (u *APIUpsertOne) SetXVendor(v bool) *APIUpsertOne {
+	return u.Update(func(s *APIUpsert) {
 		s.SetXVendor(v)
 	})
 }
 
 // UpdateXVendor sets the "x_vendor" field to the value that was provided on create.
-func (u *ApiUpsertOne) UpdateXVendor() *ApiUpsertOne {
-	return u.Update(func(s *ApiUpsert) {
+func (u *APIUpsertOne) UpdateXVendor() *APIUpsertOne {
+	return u.Update(func(s *APIUpsert) {
 		s.UpdateXVendor()
 	})
 }
 
 // SetSpecification sets the "specification" field.
-func (u *ApiUpsertOne) SetSpecification(v string) *ApiUpsertOne {
-	return u.Update(func(s *ApiUpsert) {
+func (u *APIUpsertOne) SetSpecification(v string) *APIUpsertOne {
+	return u.Update(func(s *APIUpsert) {
 		s.SetSpecification(v)
 	})
 }
 
 // UpdateSpecification sets the "specification" field to the value that was provided on create.
-func (u *ApiUpsertOne) UpdateSpecification() *ApiUpsertOne {
-	return u.Update(func(s *ApiUpsert) {
+func (u *APIUpsertOne) UpdateSpecification() *APIUpsertOne {
+	return u.Update(func(s *APIUpsert) {
 		s.UpdateSpecification()
 	})
 }
 
 // ClearSpecification clears the value of the "specification" field.
-func (u *ApiUpsertOne) ClearSpecification() *ApiUpsertOne {
-	return u.Update(func(s *ApiUpsert) {
+func (u *APIUpsertOne) ClearSpecification() *APIUpsertOne {
+	return u.Update(func(s *APIUpsert) {
 		s.ClearSpecification()
 	})
 }
 
 // SetActive sets the "active" field.
-func (u *ApiUpsertOne) SetActive(v bool) *ApiUpsertOne {
-	return u.Update(func(s *ApiUpsert) {
+func (u *APIUpsertOne) SetActive(v bool) *APIUpsertOne {
+	return u.Update(func(s *APIUpsert) {
 		s.SetActive(v)
 	})
 }
 
 // UpdateActive sets the "active" field to the value that was provided on create.
-func (u *ApiUpsertOne) UpdateActive() *ApiUpsertOne {
-	return u.Update(func(s *ApiUpsert) {
+func (u *APIUpsertOne) UpdateActive() *APIUpsertOne {
+	return u.Update(func(s *APIUpsert) {
 		s.UpdateActive()
 	})
 }
 
 // Exec executes the query.
-func (u *ApiUpsertOne) Exec(ctx context.Context) error {
+func (u *APIUpsertOne) Exec(ctx context.Context) error {
 	if len(u.create.conflict) == 0 {
 		return errors.New("ent: missing options for APICreate.OnConflict")
 	}
@@ -862,14 +862,14 @@ func (u *ApiUpsertOne) Exec(ctx context.Context) error {
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (u *ApiUpsertOne) ExecX(ctx context.Context) {
+func (u *APIUpsertOne) ExecX(ctx context.Context) {
 	if err := u.create.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // Exec executes the UPSERT query and returns the inserted/updated ID.
-func (u *ApiUpsertOne) ID(ctx context.Context) (id int, err error) {
+func (u *APIUpsertOne) ID(ctx context.Context) (id int, err error) {
 	node, err := u.create.Save(ctx)
 	if err != nil {
 		return id, err
@@ -878,7 +878,7 @@ func (u *ApiUpsertOne) ID(ctx context.Context) (id int, err error) {
 }
 
 // IDX is like ID, but panics if an error occurs.
-func (u *ApiUpsertOne) IDX(ctx context.Context) int {
+func (u *APIUpsertOne) IDX(ctx context.Context) int {
 	id, err := u.ID(ctx)
 	if err != nil {
 		panic(err)
@@ -886,7 +886,7 @@ func (u *ApiUpsertOne) IDX(ctx context.Context) int {
 	return id
 }
 
-// APICreateBulk is the builder for creating many Api entities in bulk.
+// APICreateBulk is the builder for creating many API entities in bulk.
 type APICreateBulk struct {
 	config
 	err      error
@@ -894,13 +894,13 @@ type APICreateBulk struct {
 	conflict []sql.ConflictOption
 }
 
-// Save creates the Api entities in the database.
-func (_c *APICreateBulk) Save(ctx context.Context) ([]*Api, error) {
+// Save creates the API entities in the database.
+func (_c *APICreateBulk) Save(ctx context.Context) ([]*API, error) {
 	if _c.err != nil {
 		return nil, _c.err
 	}
 	specs := make([]*sqlgraph.CreateSpec, len(_c.builders))
-	nodes := make([]*Api, len(_c.builders))
+	nodes := make([]*API, len(_c.builders))
 	mutators := make([]Mutator, len(_c.builders))
 	for i := range _c.builders {
 		func(i int, root context.Context) {
@@ -955,7 +955,7 @@ func (_c *APICreateBulk) Save(ctx context.Context) ([]*Api, error) {
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (_c *APICreateBulk) SaveX(ctx context.Context) []*Api {
+func (_c *APICreateBulk) SaveX(ctx context.Context) []*API {
 	v, err := _c.Save(ctx)
 	if err != nil {
 		panic(err)
@@ -979,7 +979,7 @@ func (_c *APICreateBulk) ExecX(ctx context.Context) {
 // OnConflict allows configuring the `ON CONFLICT` / `ON DUPLICATE KEY` clause
 // of the `INSERT` statement. For example:
 //
-//	client.Api.CreateBulk(builders...).
+//	client.API.CreateBulk(builders...).
 //		OnConflict(
 //			// Update the row with the new values
 //			// the was proposed for insertion.
@@ -987,13 +987,13 @@ func (_c *APICreateBulk) ExecX(ctx context.Context) {
 //		).
 //		// Override some of the fields with custom
 //		// update values.
-//		Update(func(u *ent.ApiUpsert) {
+//		Update(func(u *ent.APIUpsert) {
 //			SetCreatedAt(v+v).
 //		}).
 //		Exec(ctx)
-func (_c *APICreateBulk) OnConflict(opts ...sql.ConflictOption) *ApiUpsertBulk {
+func (_c *APICreateBulk) OnConflict(opts ...sql.ConflictOption) *APIUpsertBulk {
 	_c.conflict = opts
-	return &ApiUpsertBulk{
+	return &APIUpsertBulk{
 		create: _c,
 	}
 }
@@ -1001,31 +1001,31 @@ func (_c *APICreateBulk) OnConflict(opts ...sql.ConflictOption) *ApiUpsertBulk {
 // OnConflictColumns calls `OnConflict` and configures the columns
 // as conflict target. Using this option is equivalent to using:
 //
-//	client.Api.Create().
+//	client.API.Create().
 //		OnConflict(sql.ConflictColumns(columns...)).
 //		Exec(ctx)
-func (_c *APICreateBulk) OnConflictColumns(columns ...string) *ApiUpsertBulk {
+func (_c *APICreateBulk) OnConflictColumns(columns ...string) *APIUpsertBulk {
 	_c.conflict = append(_c.conflict, sql.ConflictColumns(columns...))
-	return &ApiUpsertBulk{
+	return &APIUpsertBulk{
 		create: _c,
 	}
 }
 
-// ApiUpsertBulk is the builder for "upsert"-ing
-// a bulk of Api nodes.
-type ApiUpsertBulk struct {
+// APIUpsertBulk is the builder for "upsert"-ing
+// a bulk of API nodes.
+type APIUpsertBulk struct {
 	create *APICreateBulk
 }
 
 // UpdateNewValues updates the mutable fields using the new values that
 // were set on create. Using this option is equivalent to using:
 //
-//	client.Api.Create().
+//	client.API.Create().
 //		OnConflict(
 //			sql.ResolveWithNewValues(),
 //		).
 //		Exec(ctx)
-func (u *ApiUpsertBulk) UpdateNewValues() *ApiUpsertBulk {
+func (u *APIUpsertBulk) UpdateNewValues() *APIUpsertBulk {
 	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
 	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
 		for _, b := range u.create.builders {
@@ -1040,221 +1040,221 @@ func (u *ApiUpsertBulk) UpdateNewValues() *ApiUpsertBulk {
 // Ignore sets each column to itself in case of conflict.
 // Using this option is equivalent to using:
 //
-//	client.Api.Create().
+//	client.API.Create().
 //		OnConflict(sql.ResolveWithIgnore()).
 //		Exec(ctx)
-func (u *ApiUpsertBulk) Ignore() *ApiUpsertBulk {
+func (u *APIUpsertBulk) Ignore() *APIUpsertBulk {
 	u.create.conflict = append(u.create.conflict, sql.ResolveWithIgnore())
 	return u
 }
 
 // DoNothing configures the conflict_action to `DO NOTHING`.
 // Supported only by SQLite and PostgreSQL.
-func (u *ApiUpsertBulk) DoNothing() *ApiUpsertBulk {
+func (u *APIUpsertBulk) DoNothing() *APIUpsertBulk {
 	u.create.conflict = append(u.create.conflict, sql.DoNothing())
 	return u
 }
 
 // Update allows overriding fields `UPDATE` values. See the APICreateBulk.OnConflict
 // documentation for more info.
-func (u *ApiUpsertBulk) Update(set func(*ApiUpsert)) *ApiUpsertBulk {
+func (u *APIUpsertBulk) Update(set func(*APIUpsert)) *APIUpsertBulk {
 	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(update *sql.UpdateSet) {
-		set(&ApiUpsert{UpdateSet: update})
+		set(&APIUpsert{UpdateSet: update})
 	}))
 	return u
 }
 
 // SetLastModifiedAt sets the "last_modified_at" field.
-func (u *ApiUpsertBulk) SetLastModifiedAt(v time.Time) *ApiUpsertBulk {
-	return u.Update(func(s *ApiUpsert) {
+func (u *APIUpsertBulk) SetLastModifiedAt(v time.Time) *APIUpsertBulk {
+	return u.Update(func(s *APIUpsert) {
 		s.SetLastModifiedAt(v)
 	})
 }
 
 // UpdateLastModifiedAt sets the "last_modified_at" field to the value that was provided on create.
-func (u *ApiUpsertBulk) UpdateLastModifiedAt() *ApiUpsertBulk {
-	return u.Update(func(s *ApiUpsert) {
+func (u *APIUpsertBulk) UpdateLastModifiedAt() *APIUpsertBulk {
+	return u.Update(func(s *APIUpsert) {
 		s.UpdateLastModifiedAt()
 	})
 }
 
 // SetStatusPhase sets the "status_phase" field.
-func (u *ApiUpsertBulk) SetStatusPhase(v api.StatusPhase) *ApiUpsertBulk {
-	return u.Update(func(s *ApiUpsert) {
+func (u *APIUpsertBulk) SetStatusPhase(v api.StatusPhase) *APIUpsertBulk {
+	return u.Update(func(s *APIUpsert) {
 		s.SetStatusPhase(v)
 	})
 }
 
 // UpdateStatusPhase sets the "status_phase" field to the value that was provided on create.
-func (u *ApiUpsertBulk) UpdateStatusPhase() *ApiUpsertBulk {
-	return u.Update(func(s *ApiUpsert) {
+func (u *APIUpsertBulk) UpdateStatusPhase() *APIUpsertBulk {
+	return u.Update(func(s *APIUpsert) {
 		s.UpdateStatusPhase()
 	})
 }
 
 // ClearStatusPhase clears the value of the "status_phase" field.
-func (u *ApiUpsertBulk) ClearStatusPhase() *ApiUpsertBulk {
-	return u.Update(func(s *ApiUpsert) {
+func (u *APIUpsertBulk) ClearStatusPhase() *APIUpsertBulk {
+	return u.Update(func(s *APIUpsert) {
 		s.ClearStatusPhase()
 	})
 }
 
 // SetStatusMessage sets the "status_message" field.
-func (u *ApiUpsertBulk) SetStatusMessage(v string) *ApiUpsertBulk {
-	return u.Update(func(s *ApiUpsert) {
+func (u *APIUpsertBulk) SetStatusMessage(v string) *APIUpsertBulk {
+	return u.Update(func(s *APIUpsert) {
 		s.SetStatusMessage(v)
 	})
 }
 
 // UpdateStatusMessage sets the "status_message" field to the value that was provided on create.
-func (u *ApiUpsertBulk) UpdateStatusMessage() *ApiUpsertBulk {
-	return u.Update(func(s *ApiUpsert) {
+func (u *APIUpsertBulk) UpdateStatusMessage() *APIUpsertBulk {
+	return u.Update(func(s *APIUpsert) {
 		s.UpdateStatusMessage()
 	})
 }
 
 // ClearStatusMessage clears the value of the "status_message" field.
-func (u *ApiUpsertBulk) ClearStatusMessage() *ApiUpsertBulk {
-	return u.Update(func(s *ApiUpsert) {
+func (u *APIUpsertBulk) ClearStatusMessage() *APIUpsertBulk {
+	return u.Update(func(s *APIUpsert) {
 		s.ClearStatusMessage()
 	})
 }
 
 // SetNamespace sets the "namespace" field.
-func (u *ApiUpsertBulk) SetNamespace(v string) *ApiUpsertBulk {
-	return u.Update(func(s *ApiUpsert) {
+func (u *APIUpsertBulk) SetNamespace(v string) *APIUpsertBulk {
+	return u.Update(func(s *APIUpsert) {
 		s.SetNamespace(v)
 	})
 }
 
 // UpdateNamespace sets the "namespace" field to the value that was provided on create.
-func (u *ApiUpsertBulk) UpdateNamespace() *ApiUpsertBulk {
-	return u.Update(func(s *ApiUpsert) {
+func (u *APIUpsertBulk) UpdateNamespace() *APIUpsertBulk {
+	return u.Update(func(s *APIUpsert) {
 		s.UpdateNamespace()
 	})
 }
 
 // SetBasePath sets the "base_path" field.
-func (u *ApiUpsertBulk) SetBasePath(v string) *ApiUpsertBulk {
-	return u.Update(func(s *ApiUpsert) {
+func (u *APIUpsertBulk) SetBasePath(v string) *APIUpsertBulk {
+	return u.Update(func(s *APIUpsert) {
 		s.SetBasePath(v)
 	})
 }
 
 // UpdateBasePath sets the "base_path" field to the value that was provided on create.
-func (u *ApiUpsertBulk) UpdateBasePath() *ApiUpsertBulk {
-	return u.Update(func(s *ApiUpsert) {
+func (u *APIUpsertBulk) UpdateBasePath() *APIUpsertBulk {
+	return u.Update(func(s *APIUpsert) {
 		s.UpdateBasePath()
 	})
 }
 
 // SetVersion sets the "version" field.
-func (u *ApiUpsertBulk) SetVersion(v string) *ApiUpsertBulk {
-	return u.Update(func(s *ApiUpsert) {
+func (u *APIUpsertBulk) SetVersion(v string) *APIUpsertBulk {
+	return u.Update(func(s *APIUpsert) {
 		s.SetVersion(v)
 	})
 }
 
 // UpdateVersion sets the "version" field to the value that was provided on create.
-func (u *ApiUpsertBulk) UpdateVersion() *ApiUpsertBulk {
-	return u.Update(func(s *ApiUpsert) {
+func (u *APIUpsertBulk) UpdateVersion() *APIUpsertBulk {
+	return u.Update(func(s *APIUpsert) {
 		s.UpdateVersion()
 	})
 }
 
 // SetCategory sets the "category" field.
-func (u *ApiUpsertBulk) SetCategory(v string) *ApiUpsertBulk {
-	return u.Update(func(s *ApiUpsert) {
+func (u *APIUpsertBulk) SetCategory(v string) *APIUpsertBulk {
+	return u.Update(func(s *APIUpsert) {
 		s.SetCategory(v)
 	})
 }
 
 // UpdateCategory sets the "category" field to the value that was provided on create.
-func (u *ApiUpsertBulk) UpdateCategory() *ApiUpsertBulk {
-	return u.Update(func(s *ApiUpsert) {
+func (u *APIUpsertBulk) UpdateCategory() *APIUpsertBulk {
+	return u.Update(func(s *APIUpsert) {
 		s.UpdateCategory()
 	})
 }
 
 // ClearCategory clears the value of the "category" field.
-func (u *ApiUpsertBulk) ClearCategory() *ApiUpsertBulk {
-	return u.Update(func(s *ApiUpsert) {
+func (u *APIUpsertBulk) ClearCategory() *APIUpsertBulk {
+	return u.Update(func(s *APIUpsert) {
 		s.ClearCategory()
 	})
 }
 
-// SetOauth2Scopes sets the "oauth2_scopes" field.
-func (u *ApiUpsertBulk) SetOauth2Scopes(v []string) *ApiUpsertBulk {
-	return u.Update(func(s *ApiUpsert) {
-		s.SetOauth2Scopes(v)
+// SetOAuth2Scopes sets the "OAuth2_scopes" field.
+func (u *APIUpsertBulk) SetOAuth2Scopes(v []string) *APIUpsertBulk {
+	return u.Update(func(s *APIUpsert) {
+		s.SetOAuth2Scopes(v)
 	})
 }
 
-// UpdateOauth2Scopes sets the "oauth2_scopes" field to the value that was provided on create.
-func (u *ApiUpsertBulk) UpdateOauth2Scopes() *ApiUpsertBulk {
-	return u.Update(func(s *ApiUpsert) {
-		s.UpdateOauth2Scopes()
+// UpdateOAuth2Scopes sets the "OAuth2_scopes" field to the value that was provided on create.
+func (u *APIUpsertBulk) UpdateOAuth2Scopes() *APIUpsertBulk {
+	return u.Update(func(s *APIUpsert) {
+		s.UpdateOAuth2Scopes()
 	})
 }
 
-// ClearOauth2Scopes clears the value of the "oauth2_scopes" field.
-func (u *ApiUpsertBulk) ClearOauth2Scopes() *ApiUpsertBulk {
-	return u.Update(func(s *ApiUpsert) {
-		s.ClearOauth2Scopes()
+// ClearOAuth2Scopes clears the value of the "OAuth2_scopes" field.
+func (u *APIUpsertBulk) ClearOAuth2Scopes() *APIUpsertBulk {
+	return u.Update(func(s *APIUpsert) {
+		s.ClearOAuth2Scopes()
 	})
 }
 
 // SetXVendor sets the "x_vendor" field.
-func (u *ApiUpsertBulk) SetXVendor(v bool) *ApiUpsertBulk {
-	return u.Update(func(s *ApiUpsert) {
+func (u *APIUpsertBulk) SetXVendor(v bool) *APIUpsertBulk {
+	return u.Update(func(s *APIUpsert) {
 		s.SetXVendor(v)
 	})
 }
 
 // UpdateXVendor sets the "x_vendor" field to the value that was provided on create.
-func (u *ApiUpsertBulk) UpdateXVendor() *ApiUpsertBulk {
-	return u.Update(func(s *ApiUpsert) {
+func (u *APIUpsertBulk) UpdateXVendor() *APIUpsertBulk {
+	return u.Update(func(s *APIUpsert) {
 		s.UpdateXVendor()
 	})
 }
 
 // SetSpecification sets the "specification" field.
-func (u *ApiUpsertBulk) SetSpecification(v string) *ApiUpsertBulk {
-	return u.Update(func(s *ApiUpsert) {
+func (u *APIUpsertBulk) SetSpecification(v string) *APIUpsertBulk {
+	return u.Update(func(s *APIUpsert) {
 		s.SetSpecification(v)
 	})
 }
 
 // UpdateSpecification sets the "specification" field to the value that was provided on create.
-func (u *ApiUpsertBulk) UpdateSpecification() *ApiUpsertBulk {
-	return u.Update(func(s *ApiUpsert) {
+func (u *APIUpsertBulk) UpdateSpecification() *APIUpsertBulk {
+	return u.Update(func(s *APIUpsert) {
 		s.UpdateSpecification()
 	})
 }
 
 // ClearSpecification clears the value of the "specification" field.
-func (u *ApiUpsertBulk) ClearSpecification() *ApiUpsertBulk {
-	return u.Update(func(s *ApiUpsert) {
+func (u *APIUpsertBulk) ClearSpecification() *APIUpsertBulk {
+	return u.Update(func(s *APIUpsert) {
 		s.ClearSpecification()
 	})
 }
 
 // SetActive sets the "active" field.
-func (u *ApiUpsertBulk) SetActive(v bool) *ApiUpsertBulk {
-	return u.Update(func(s *ApiUpsert) {
+func (u *APIUpsertBulk) SetActive(v bool) *APIUpsertBulk {
+	return u.Update(func(s *APIUpsert) {
 		s.SetActive(v)
 	})
 }
 
 // UpdateActive sets the "active" field to the value that was provided on create.
-func (u *ApiUpsertBulk) UpdateActive() *ApiUpsertBulk {
-	return u.Update(func(s *ApiUpsert) {
+func (u *APIUpsertBulk) UpdateActive() *APIUpsertBulk {
+	return u.Update(func(s *APIUpsert) {
 		s.UpdateActive()
 	})
 }
 
 // Exec executes the query.
-func (u *ApiUpsertBulk) Exec(ctx context.Context) error {
+func (u *APIUpsertBulk) Exec(ctx context.Context) error {
 	if u.create.err != nil {
 		return u.create.err
 	}
@@ -1270,7 +1270,7 @@ func (u *ApiUpsertBulk) Exec(ctx context.Context) error {
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (u *ApiUpsertBulk) ExecX(ctx context.Context) {
+func (u *APIUpsertBulk) ExecX(ctx context.Context) {
 	if err := u.create.Exec(ctx); err != nil {
 		panic(err)
 	}

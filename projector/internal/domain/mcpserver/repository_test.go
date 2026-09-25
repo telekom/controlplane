@@ -28,13 +28,13 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-// mockMcpServerDeps implements mcpserver.McpServerDeps for testing.
-type mockMcpServerDeps struct {
+// mockMCPServerDeps implements mcpserver.MCPServerDeps for testing.
+type mockMCPServerDeps struct {
 	teamIDs map[string]int // key: team name
 	teamErr error          // if non-nil, FindTeamID always returns this error
 }
 
-func (m *mockMcpServerDeps) FindTeamID(_ context.Context, name string) (int, error) {
+func (m *mockMCPServerDeps) FindTeamID(_ context.Context, name string) (int, error) {
 	if m.teamErr != nil {
 		return 0, m.teamErr
 	}
@@ -48,7 +48,7 @@ var _ = Describe("McpServer Repository", func() {
 	var (
 		client *ent.Client
 		cache  *infrastructure.EdgeCache
-		deps   *mockMcpServerDeps
+		deps   *mockMCPServerDeps
 		repo   *mcpserver.Repository
 		ctx    context.Context
 		teamID int
@@ -69,7 +69,7 @@ var _ = Describe("McpServer Repository", func() {
 		Expect(err).NotTo(HaveOccurred())
 		teamID = tm.ID
 
-		deps = &mockMcpServerDeps{
+		deps = &mockMCPServerDeps{
 			teamIDs: map[string]int{"platform--narvi": teamID},
 		}
 		repo = mcpserver.NewRepository(client, cache, deps)
@@ -82,7 +82,7 @@ var _ = Describe("McpServer Repository", func() {
 
 	Describe("Upsert", func() {
 		It("should create an mcp_server with valid deps", func() {
-			data := &mcpserver.McpServerData{
+			data := &mcpserver.MCPServerData{
 				Meta:          shared.NewMetadata("prod--platform--narvi", "mcp-weather-v1", nil),
 				StatusPhase:   "READY",
 				StatusMessage: "ok",
@@ -91,13 +91,13 @@ var _ = Describe("McpServer Repository", func() {
 				Name:          "weather-server",
 				Description:   "Weather MCP server",
 				Category:      "g-api",
-				Oauth2Scopes:  []string{"scope-a"},
+				OAuth2Scopes:  []string{"scope-a"},
 				Active:        true,
 				TeamName:      "platform--narvi",
 			}
 			Expect(repo.Upsert(ctx, data)).To(Succeed())
 
-			mcp, err := client.McpServer.Query().
+			mcp, err := client.MCPServer.Query().
 				Where(entmcpserver.BasePathEQ("/mcp/weather/v1")).
 				Only(ctx)
 			Expect(err).NotTo(HaveOccurred())
@@ -106,7 +106,7 @@ var _ = Describe("McpServer Repository", func() {
 			Expect(mcp.Name).To(Equal("weather-server"))
 			Expect(mcp.Description).To(Equal("Weather MCP server"))
 			Expect(mcp.Category).To(Equal("g-api"))
-			Expect(mcp.Oauth2Scopes).To(Equal([]string{"scope-a"}))
+			Expect(mcp.OAuth2Scopes).To(Equal([]string{"scope-a"}))
 			Expect(mcp.Active).To(BeTrue())
 
 			owner, err := mcp.QueryOwner().Only(ctx)
@@ -116,7 +116,7 @@ var _ = Describe("McpServer Repository", func() {
 
 		It("should return ErrDependencyMissing when the owner Team is missing", func() {
 			deps.teamIDs = map[string]int{}
-			data := &mcpserver.McpServerData{
+			data := &mcpserver.MCPServerData{
 				Meta:        shared.NewMetadata("prod--platform--narvi", "mcp-weather-v1", nil),
 				StatusPhase: "READY",
 				BasePath:    "/mcp/weather/v1",
@@ -130,7 +130,7 @@ var _ = Describe("McpServer Repository", func() {
 		})
 
 		It("should update an existing mcp_server on conflict", func() {
-			data := &mcpserver.McpServerData{
+			data := &mcpserver.MCPServerData{
 				Meta:        shared.NewMetadata("prod--platform--narvi", "mcp-weather-v1", nil),
 				StatusPhase: "READY",
 				BasePath:    "/mcp/weather/v1",
@@ -145,11 +145,11 @@ var _ = Describe("McpServer Repository", func() {
 			data.Name = "weather-server-v2"
 			Expect(repo.Upsert(ctx, data)).To(Succeed())
 
-			count, err := client.McpServer.Query().Count(ctx)
+			count, err := client.MCPServer.Query().Count(ctx)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(count).To(Equal(1))
 
-			mcp, err := client.McpServer.Query().
+			mcp, err := client.MCPServer.Query().
 				Where(entmcpserver.BasePathEQ("/mcp/weather/v1")).
 				Only(ctx)
 			Expect(err).NotTo(HaveOccurred())
@@ -158,7 +158,7 @@ var _ = Describe("McpServer Repository", func() {
 		})
 
 		It("should set the active-mcp-server cache entry when active", func() {
-			data := &mcpserver.McpServerData{
+			data := &mcpserver.MCPServerData{
 				Meta:        shared.NewMetadata("prod--platform--narvi", "mcp-weather-v1", nil),
 				StatusPhase: "READY",
 				BasePath:    "/mcp/weather/v1",
@@ -171,13 +171,13 @@ var _ = Describe("McpServer Repository", func() {
 			cache.Wait()
 
 			resolver := infrastructure.NewIDResolver(client, cache)
-			id, err := resolver.FindActiveMcpServerID(ctx, "/mcp/weather/v1")
+			id, err := resolver.FindActiveMCPServerID(ctx, "/mcp/weather/v1")
 			Expect(err).NotTo(HaveOccurred())
 			Expect(id).To(BeNumerically(">", 0))
 		})
 
 		It("should clear the active-mcp-server cache entry when inactive", func() {
-			data := &mcpserver.McpServerData{
+			data := &mcpserver.MCPServerData{
 				Meta:        shared.NewMetadata("prod--platform--narvi", "mcp-weather-v1", nil),
 				StatusPhase: "READY",
 				BasePath:    "/mcp/weather/v1",
@@ -193,7 +193,7 @@ var _ = Describe("McpServer Repository", func() {
 			cache.Wait()
 
 			resolver := infrastructure.NewIDResolver(client, cache)
-			_, err := resolver.FindActiveMcpServerID(ctx, "/mcp/weather/v1")
+			_, err := resolver.FindActiveMCPServerID(ctx, "/mcp/weather/v1")
 			Expect(errors.Is(err, infrastructure.ErrEntityNotFound)).To(BeTrue())
 		})
 
@@ -217,16 +217,16 @@ var _ = Describe("McpServer Repository", func() {
 			exp, err := client.AgenticExposure.Create().
 				SetBasePath("/mcp/weather/v1").
 				SetNamespace("prod--platform--narvi").
-				SetVariant(entagenticexposure.VariantMcp).
+				SetVariant(entagenticexposure.VariantMCP).
 				SetActive(true).
 				SetOwnerID(app.ID).
 				Save(ctx)
 			Expect(err).NotTo(HaveOccurred())
-			_, err = exp.QueryMcpServer().Only(ctx)
+			_, err = exp.QueryMCPServer().Only(ctx)
 			Expect(ent.IsNotFound(err)).To(BeTrue())
 
 			// McpServer appears later → should adopt the orphaned exposure.
-			data := &mcpserver.McpServerData{
+			data := &mcpserver.MCPServerData{
 				Meta:        shared.NewMetadata("prod--platform--narvi", "mcp-weather-v1", nil),
 				StatusPhase: "READY",
 				BasePath:    "/mcp/weather/v1",
@@ -237,7 +237,7 @@ var _ = Describe("McpServer Repository", func() {
 			}
 			Expect(repo.Upsert(ctx, data)).To(Succeed())
 
-			srv, err := exp.QueryMcpServer().Only(ctx)
+			srv, err := exp.QueryMCPServer().Only(ctx)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(srv.BasePath).To(Equal("/mcp/weather/v1"))
 		})
@@ -265,7 +265,7 @@ var _ = Describe("McpServer Repository", func() {
 				Save(ctx)
 			Expect(err).NotTo(HaveOccurred())
 
-			data := &mcpserver.McpServerData{
+			data := &mcpserver.MCPServerData{
 				Meta:        shared.NewMetadata("prod--platform--narvi", "mcp-weather-v1", nil),
 				StatusPhase: "READY",
 				BasePath:    "/mcp/weather/v1",
@@ -276,19 +276,19 @@ var _ = Describe("McpServer Repository", func() {
 			}
 			Expect(repo.Upsert(ctx, data)).To(Succeed())
 
-			_, err = exp.QueryMcpServer().Only(ctx)
+			_, err = exp.QueryMCPServer().Only(ctx)
 			Expect(ent.IsNotFound(err)).To(BeTrue())
 		})
 	})
 
 	Describe("Delete", func() {
 		It("should be idempotent when the entity does not exist", func() {
-			key := mcpserver.McpServerKey{BasePath: "/mcp/missing", TeamName: "platform--narvi"}
+			key := mcpserver.MCPServerKey{BasePath: "/mcp/missing", TeamName: "platform--narvi"}
 			Expect(repo.Delete(ctx, key)).To(Succeed())
 		})
 
 		It("should delete an existing mcp_server by base path and team name", func() {
-			data := &mcpserver.McpServerData{
+			data := &mcpserver.MCPServerData{
 				Meta:        shared.NewMetadata("prod--platform--narvi", "mcp-weather-v1", nil),
 				StatusPhase: "READY",
 				BasePath:    "/mcp/weather/v1",
@@ -299,15 +299,15 @@ var _ = Describe("McpServer Repository", func() {
 			}
 			Expect(repo.Upsert(ctx, data)).To(Succeed())
 
-			key := mcpserver.McpServerKey{BasePath: "/mcp/weather/v1", TeamName: "platform--narvi"}
+			key := mcpserver.MCPServerKey{BasePath: "/mcp/weather/v1", TeamName: "platform--narvi"}
 			Expect(repo.Delete(ctx, key)).To(Succeed())
 
-			count, err := client.McpServer.Query().Count(ctx)
+			count, err := client.MCPServer.Query().Count(ctx)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(count).To(Equal(0))
 
 			resolver := infrastructure.NewIDResolver(client, cache)
-			_, err = resolver.FindActiveMcpServerID(ctx, "/mcp/weather/v1")
+			_, err = resolver.FindActiveMCPServerID(ctx, "/mcp/weather/v1")
 			Expect(errors.Is(err, infrastructure.ErrEntityNotFound)).To(BeTrue())
 		})
 	})

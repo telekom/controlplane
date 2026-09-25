@@ -45,12 +45,12 @@ const (
 	OpUpdateOne = ent.OpUpdateOne
 
 	// Node types.
+	TypeAPI                 = "API"
+	TypeAPIExposure         = "APIExposure"
+	TypeAPISubscription     = "APISubscription"
 	TypeAgentCard           = "AgentCard"
 	TypeAgenticExposure     = "AgenticExposure"
 	TypeAgenticSubscription = "AgenticSubscription"
-	TypeAPI                 = "Api"
-	TypeApiExposure         = "ApiExposure"
-	TypeApiSubscription     = "ApiSubscription"
 	TypeApplication         = "Application"
 	TypeApproval            = "Approval"
 	TypeApprovalRequest     = "ApprovalRequest"
@@ -58,42 +58,4080 @@ const (
 	TypeEventSubscription   = "EventSubscription"
 	TypeEventType           = "EventType"
 	TypeGroup               = "Group"
-	TypeMcpServer           = "McpServer"
+	TypeMCPServer           = "MCPServer"
 	TypeMember              = "Member"
 	TypePermissionSet       = "PermissionSet"
 	TypeTeam                = "Team"
 	TypeZone                = "Zone"
 )
 
+// APIMutation represents an operation that mutates the API nodes in the graph.
+type APIMutation struct {
+	config
+	op                   Op
+	typ                  string
+	id                   *int
+	created_at           *time.Time
+	last_modified_at     *time.Time
+	status_phase         *api.StatusPhase
+	status_message       *string
+	namespace            *string
+	base_path            *string
+	version              *string
+	category             *string
+	_OAuth2_scopes       *[]string
+	append_OAuth2_scopes []string
+	x_vendor             *bool
+	specification        *string
+	active               *bool
+	clearedFields        map[string]struct{}
+	owner                *int
+	clearedowner         bool
+	exposures            map[int]struct{}
+	removedexposures     map[int]struct{}
+	clearedexposures     bool
+	done                 bool
+	oldValue             func(context.Context) (*API, error)
+	predicates           []predicate.API
+}
+
+var _ ent.Mutation = (*APIMutation)(nil)
+
+// apiOption allows management of the mutation configuration using functional options.
+type apiOption func(*APIMutation)
+
+// newAPIMutation creates new mutation for the API entity.
+func newAPIMutation(c config, op Op, opts ...apiOption) *APIMutation {
+	m := &APIMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeAPI,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withAPIID sets the ID field of the mutation.
+func withAPIID(id int) apiOption {
+	return func(m *APIMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *API
+		)
+		m.oldValue = func(ctx context.Context) (*API, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().API.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withAPI sets the old API of the mutation.
+func withAPI(node *API) apiOption {
+	return func(m *APIMutation) {
+		m.oldValue = func(context.Context) (*API, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m APIMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m APIMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *APIMutation) ID() (id int, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *APIMutation) IDs(ctx context.Context) ([]int, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().API.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *APIMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *APIMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the API entity.
+// If the API object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *APIMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *APIMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetLastModifiedAt sets the "last_modified_at" field.
+func (m *APIMutation) SetLastModifiedAt(t time.Time) {
+	m.last_modified_at = &t
+}
+
+// LastModifiedAt returns the value of the "last_modified_at" field in the mutation.
+func (m *APIMutation) LastModifiedAt() (r time.Time, exists bool) {
+	v := m.last_modified_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLastModifiedAt returns the old "last_modified_at" field's value of the API entity.
+// If the API object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *APIMutation) OldLastModifiedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLastModifiedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLastModifiedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLastModifiedAt: %w", err)
+	}
+	return oldValue.LastModifiedAt, nil
+}
+
+// ResetLastModifiedAt resets all changes to the "last_modified_at" field.
+func (m *APIMutation) ResetLastModifiedAt() {
+	m.last_modified_at = nil
+}
+
+// SetStatusPhase sets the "status_phase" field.
+func (m *APIMutation) SetStatusPhase(ap api.StatusPhase) {
+	m.status_phase = &ap
+}
+
+// StatusPhase returns the value of the "status_phase" field in the mutation.
+func (m *APIMutation) StatusPhase() (r api.StatusPhase, exists bool) {
+	v := m.status_phase
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStatusPhase returns the old "status_phase" field's value of the API entity.
+// If the API object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *APIMutation) OldStatusPhase(ctx context.Context) (v *api.StatusPhase, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStatusPhase is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStatusPhase requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStatusPhase: %w", err)
+	}
+	return oldValue.StatusPhase, nil
+}
+
+// ClearStatusPhase clears the value of the "status_phase" field.
+func (m *APIMutation) ClearStatusPhase() {
+	m.status_phase = nil
+	m.clearedFields[api.FieldStatusPhase] = struct{}{}
+}
+
+// StatusPhaseCleared returns if the "status_phase" field was cleared in this mutation.
+func (m *APIMutation) StatusPhaseCleared() bool {
+	_, ok := m.clearedFields[api.FieldStatusPhase]
+	return ok
+}
+
+// ResetStatusPhase resets all changes to the "status_phase" field.
+func (m *APIMutation) ResetStatusPhase() {
+	m.status_phase = nil
+	delete(m.clearedFields, api.FieldStatusPhase)
+}
+
+// SetStatusMessage sets the "status_message" field.
+func (m *APIMutation) SetStatusMessage(s string) {
+	m.status_message = &s
+}
+
+// StatusMessage returns the value of the "status_message" field in the mutation.
+func (m *APIMutation) StatusMessage() (r string, exists bool) {
+	v := m.status_message
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStatusMessage returns the old "status_message" field's value of the API entity.
+// If the API object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *APIMutation) OldStatusMessage(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStatusMessage is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStatusMessage requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStatusMessage: %w", err)
+	}
+	return oldValue.StatusMessage, nil
+}
+
+// ClearStatusMessage clears the value of the "status_message" field.
+func (m *APIMutation) ClearStatusMessage() {
+	m.status_message = nil
+	m.clearedFields[api.FieldStatusMessage] = struct{}{}
+}
+
+// StatusMessageCleared returns if the "status_message" field was cleared in this mutation.
+func (m *APIMutation) StatusMessageCleared() bool {
+	_, ok := m.clearedFields[api.FieldStatusMessage]
+	return ok
+}
+
+// ResetStatusMessage resets all changes to the "status_message" field.
+func (m *APIMutation) ResetStatusMessage() {
+	m.status_message = nil
+	delete(m.clearedFields, api.FieldStatusMessage)
+}
+
+// SetNamespace sets the "namespace" field.
+func (m *APIMutation) SetNamespace(s string) {
+	m.namespace = &s
+}
+
+// Namespace returns the value of the "namespace" field in the mutation.
+func (m *APIMutation) Namespace() (r string, exists bool) {
+	v := m.namespace
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldNamespace returns the old "namespace" field's value of the API entity.
+// If the API object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *APIMutation) OldNamespace(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldNamespace is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldNamespace requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldNamespace: %w", err)
+	}
+	return oldValue.Namespace, nil
+}
+
+// ResetNamespace resets all changes to the "namespace" field.
+func (m *APIMutation) ResetNamespace() {
+	m.namespace = nil
+}
+
+// SetBasePath sets the "base_path" field.
+func (m *APIMutation) SetBasePath(s string) {
+	m.base_path = &s
+}
+
+// BasePath returns the value of the "base_path" field in the mutation.
+func (m *APIMutation) BasePath() (r string, exists bool) {
+	v := m.base_path
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldBasePath returns the old "base_path" field's value of the API entity.
+// If the API object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *APIMutation) OldBasePath(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldBasePath is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldBasePath requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldBasePath: %w", err)
+	}
+	return oldValue.BasePath, nil
+}
+
+// ResetBasePath resets all changes to the "base_path" field.
+func (m *APIMutation) ResetBasePath() {
+	m.base_path = nil
+}
+
+// SetVersion sets the "version" field.
+func (m *APIMutation) SetVersion(s string) {
+	m.version = &s
+}
+
+// Version returns the value of the "version" field in the mutation.
+func (m *APIMutation) Version() (r string, exists bool) {
+	v := m.version
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldVersion returns the old "version" field's value of the API entity.
+// If the API object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *APIMutation) OldVersion(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldVersion is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldVersion requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldVersion: %w", err)
+	}
+	return oldValue.Version, nil
+}
+
+// ResetVersion resets all changes to the "version" field.
+func (m *APIMutation) ResetVersion() {
+	m.version = nil
+}
+
+// SetCategory sets the "category" field.
+func (m *APIMutation) SetCategory(s string) {
+	m.category = &s
+}
+
+// Category returns the value of the "category" field in the mutation.
+func (m *APIMutation) Category() (r string, exists bool) {
+	v := m.category
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCategory returns the old "category" field's value of the API entity.
+// If the API object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *APIMutation) OldCategory(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCategory is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCategory requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCategory: %w", err)
+	}
+	return oldValue.Category, nil
+}
+
+// ClearCategory clears the value of the "category" field.
+func (m *APIMutation) ClearCategory() {
+	m.category = nil
+	m.clearedFields[api.FieldCategory] = struct{}{}
+}
+
+// CategoryCleared returns if the "category" field was cleared in this mutation.
+func (m *APIMutation) CategoryCleared() bool {
+	_, ok := m.clearedFields[api.FieldCategory]
+	return ok
+}
+
+// ResetCategory resets all changes to the "category" field.
+func (m *APIMutation) ResetCategory() {
+	m.category = nil
+	delete(m.clearedFields, api.FieldCategory)
+}
+
+// SetOAuth2Scopes sets the "OAuth2_scopes" field.
+func (m *APIMutation) SetOAuth2Scopes(s []string) {
+	m._OAuth2_scopes = &s
+	m.append_OAuth2_scopes = nil
+}
+
+// OAuth2Scopes returns the value of the "OAuth2_scopes" field in the mutation.
+func (m *APIMutation) OAuth2Scopes() (r []string, exists bool) {
+	v := m._OAuth2_scopes
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldOAuth2Scopes returns the old "OAuth2_scopes" field's value of the API entity.
+// If the API object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *APIMutation) OldOAuth2Scopes(ctx context.Context) (v []string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldOAuth2Scopes is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldOAuth2Scopes requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldOAuth2Scopes: %w", err)
+	}
+	return oldValue.OAuth2Scopes, nil
+}
+
+// AppendOAuth2Scopes adds s to the "OAuth2_scopes" field.
+func (m *APIMutation) AppendOAuth2Scopes(s []string) {
+	m.append_OAuth2_scopes = append(m.append_OAuth2_scopes, s...)
+}
+
+// AppendedOAuth2Scopes returns the list of values that were appended to the "OAuth2_scopes" field in this mutation.
+func (m *APIMutation) AppendedOAuth2Scopes() ([]string, bool) {
+	if len(m.append_OAuth2_scopes) == 0 {
+		return nil, false
+	}
+	return m.append_OAuth2_scopes, true
+}
+
+// ClearOAuth2Scopes clears the value of the "OAuth2_scopes" field.
+func (m *APIMutation) ClearOAuth2Scopes() {
+	m._OAuth2_scopes = nil
+	m.append_OAuth2_scopes = nil
+	m.clearedFields[api.FieldOAuth2Scopes] = struct{}{}
+}
+
+// OAuth2ScopesCleared returns if the "OAuth2_scopes" field was cleared in this mutation.
+func (m *APIMutation) OAuth2ScopesCleared() bool {
+	_, ok := m.clearedFields[api.FieldOAuth2Scopes]
+	return ok
+}
+
+// ResetOAuth2Scopes resets all changes to the "OAuth2_scopes" field.
+func (m *APIMutation) ResetOAuth2Scopes() {
+	m._OAuth2_scopes = nil
+	m.append_OAuth2_scopes = nil
+	delete(m.clearedFields, api.FieldOAuth2Scopes)
+}
+
+// SetXVendor sets the "x_vendor" field.
+func (m *APIMutation) SetXVendor(b bool) {
+	m.x_vendor = &b
+}
+
+// XVendor returns the value of the "x_vendor" field in the mutation.
+func (m *APIMutation) XVendor() (r bool, exists bool) {
+	v := m.x_vendor
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldXVendor returns the old "x_vendor" field's value of the API entity.
+// If the API object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *APIMutation) OldXVendor(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldXVendor is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldXVendor requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldXVendor: %w", err)
+	}
+	return oldValue.XVendor, nil
+}
+
+// ResetXVendor resets all changes to the "x_vendor" field.
+func (m *APIMutation) ResetXVendor() {
+	m.x_vendor = nil
+}
+
+// SetSpecification sets the "specification" field.
+func (m *APIMutation) SetSpecification(s string) {
+	m.specification = &s
+}
+
+// Specification returns the value of the "specification" field in the mutation.
+func (m *APIMutation) Specification() (r string, exists bool) {
+	v := m.specification
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSpecification returns the old "specification" field's value of the API entity.
+// If the API object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *APIMutation) OldSpecification(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSpecification is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSpecification requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSpecification: %w", err)
+	}
+	return oldValue.Specification, nil
+}
+
+// ClearSpecification clears the value of the "specification" field.
+func (m *APIMutation) ClearSpecification() {
+	m.specification = nil
+	m.clearedFields[api.FieldSpecification] = struct{}{}
+}
+
+// SpecificationCleared returns if the "specification" field was cleared in this mutation.
+func (m *APIMutation) SpecificationCleared() bool {
+	_, ok := m.clearedFields[api.FieldSpecification]
+	return ok
+}
+
+// ResetSpecification resets all changes to the "specification" field.
+func (m *APIMutation) ResetSpecification() {
+	m.specification = nil
+	delete(m.clearedFields, api.FieldSpecification)
+}
+
+// SetActive sets the "active" field.
+func (m *APIMutation) SetActive(b bool) {
+	m.active = &b
+}
+
+// Active returns the value of the "active" field in the mutation.
+func (m *APIMutation) Active() (r bool, exists bool) {
+	v := m.active
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldActive returns the old "active" field's value of the API entity.
+// If the API object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *APIMutation) OldActive(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldActive is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldActive requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldActive: %w", err)
+	}
+	return oldValue.Active, nil
+}
+
+// ResetActive resets all changes to the "active" field.
+func (m *APIMutation) ResetActive() {
+	m.active = nil
+}
+
+// SetOwnerID sets the "owner" edge to the Team entity by id.
+func (m *APIMutation) SetOwnerID(id int) {
+	m.owner = &id
+}
+
+// ClearOwner clears the "owner" edge to the Team entity.
+func (m *APIMutation) ClearOwner() {
+	m.clearedowner = true
+}
+
+// OwnerCleared reports if the "owner" edge to the Team entity was cleared.
+func (m *APIMutation) OwnerCleared() bool {
+	return m.clearedowner
+}
+
+// OwnerID returns the "owner" edge ID in the mutation.
+func (m *APIMutation) OwnerID() (id int, exists bool) {
+	if m.owner != nil {
+		return *m.owner, true
+	}
+	return
+}
+
+// OwnerIDs returns the "owner" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// OwnerID instead. It exists only for internal usage by the builders.
+func (m *APIMutation) OwnerIDs() (ids []int) {
+	if id := m.owner; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetOwner resets all changes to the "owner" edge.
+func (m *APIMutation) ResetOwner() {
+	m.owner = nil
+	m.clearedowner = false
+}
+
+// AddExposureIDs adds the "exposures" edge to the APIExposure entity by ids.
+func (m *APIMutation) AddExposureIDs(ids ...int) {
+	if m.exposures == nil {
+		m.exposures = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.exposures[ids[i]] = struct{}{}
+	}
+}
+
+// ClearExposures clears the "exposures" edge to the APIExposure entity.
+func (m *APIMutation) ClearExposures() {
+	m.clearedexposures = true
+}
+
+// ExposuresCleared reports if the "exposures" edge to the APIExposure entity was cleared.
+func (m *APIMutation) ExposuresCleared() bool {
+	return m.clearedexposures
+}
+
+// RemoveExposureIDs removes the "exposures" edge to the APIExposure entity by IDs.
+func (m *APIMutation) RemoveExposureIDs(ids ...int) {
+	if m.removedexposures == nil {
+		m.removedexposures = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.exposures, ids[i])
+		m.removedexposures[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedExposures returns the removed IDs of the "exposures" edge to the APIExposure entity.
+func (m *APIMutation) RemovedExposuresIDs() (ids []int) {
+	for id := range m.removedexposures {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ExposuresIDs returns the "exposures" edge IDs in the mutation.
+func (m *APIMutation) ExposuresIDs() (ids []int) {
+	for id := range m.exposures {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetExposures resets all changes to the "exposures" edge.
+func (m *APIMutation) ResetExposures() {
+	m.exposures = nil
+	m.clearedexposures = false
+	m.removedexposures = nil
+}
+
+// Where appends a list predicates to the APIMutation builder.
+func (m *APIMutation) Where(ps ...predicate.API) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the APIMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *APIMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.API, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *APIMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *APIMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (API).
+func (m *APIMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *APIMutation) Fields() []string {
+	fields := make([]string, 0, 12)
+	if m.created_at != nil {
+		fields = append(fields, api.FieldCreatedAt)
+	}
+	if m.last_modified_at != nil {
+		fields = append(fields, api.FieldLastModifiedAt)
+	}
+	if m.status_phase != nil {
+		fields = append(fields, api.FieldStatusPhase)
+	}
+	if m.status_message != nil {
+		fields = append(fields, api.FieldStatusMessage)
+	}
+	if m.namespace != nil {
+		fields = append(fields, api.FieldNamespace)
+	}
+	if m.base_path != nil {
+		fields = append(fields, api.FieldBasePath)
+	}
+	if m.version != nil {
+		fields = append(fields, api.FieldVersion)
+	}
+	if m.category != nil {
+		fields = append(fields, api.FieldCategory)
+	}
+	if m._OAuth2_scopes != nil {
+		fields = append(fields, api.FieldOAuth2Scopes)
+	}
+	if m.x_vendor != nil {
+		fields = append(fields, api.FieldXVendor)
+	}
+	if m.specification != nil {
+		fields = append(fields, api.FieldSpecification)
+	}
+	if m.active != nil {
+		fields = append(fields, api.FieldActive)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *APIMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case api.FieldCreatedAt:
+		return m.CreatedAt()
+	case api.FieldLastModifiedAt:
+		return m.LastModifiedAt()
+	case api.FieldStatusPhase:
+		return m.StatusPhase()
+	case api.FieldStatusMessage:
+		return m.StatusMessage()
+	case api.FieldNamespace:
+		return m.Namespace()
+	case api.FieldBasePath:
+		return m.BasePath()
+	case api.FieldVersion:
+		return m.Version()
+	case api.FieldCategory:
+		return m.Category()
+	case api.FieldOAuth2Scopes:
+		return m.OAuth2Scopes()
+	case api.FieldXVendor:
+		return m.XVendor()
+	case api.FieldSpecification:
+		return m.Specification()
+	case api.FieldActive:
+		return m.Active()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *APIMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case api.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case api.FieldLastModifiedAt:
+		return m.OldLastModifiedAt(ctx)
+	case api.FieldStatusPhase:
+		return m.OldStatusPhase(ctx)
+	case api.FieldStatusMessage:
+		return m.OldStatusMessage(ctx)
+	case api.FieldNamespace:
+		return m.OldNamespace(ctx)
+	case api.FieldBasePath:
+		return m.OldBasePath(ctx)
+	case api.FieldVersion:
+		return m.OldVersion(ctx)
+	case api.FieldCategory:
+		return m.OldCategory(ctx)
+	case api.FieldOAuth2Scopes:
+		return m.OldOAuth2Scopes(ctx)
+	case api.FieldXVendor:
+		return m.OldXVendor(ctx)
+	case api.FieldSpecification:
+		return m.OldSpecification(ctx)
+	case api.FieldActive:
+		return m.OldActive(ctx)
+	}
+	return nil, fmt.Errorf("unknown API field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *APIMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case api.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case api.FieldLastModifiedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLastModifiedAt(v)
+		return nil
+	case api.FieldStatusPhase:
+		v, ok := value.(api.StatusPhase)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStatusPhase(v)
+		return nil
+	case api.FieldStatusMessage:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStatusMessage(v)
+		return nil
+	case api.FieldNamespace:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetNamespace(v)
+		return nil
+	case api.FieldBasePath:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetBasePath(v)
+		return nil
+	case api.FieldVersion:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetVersion(v)
+		return nil
+	case api.FieldCategory:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCategory(v)
+		return nil
+	case api.FieldOAuth2Scopes:
+		v, ok := value.([]string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetOAuth2Scopes(v)
+		return nil
+	case api.FieldXVendor:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetXVendor(v)
+		return nil
+	case api.FieldSpecification:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSpecification(v)
+		return nil
+	case api.FieldActive:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetActive(v)
+		return nil
+	}
+	return fmt.Errorf("unknown API field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *APIMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *APIMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *APIMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown API numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *APIMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(api.FieldStatusPhase) {
+		fields = append(fields, api.FieldStatusPhase)
+	}
+	if m.FieldCleared(api.FieldStatusMessage) {
+		fields = append(fields, api.FieldStatusMessage)
+	}
+	if m.FieldCleared(api.FieldCategory) {
+		fields = append(fields, api.FieldCategory)
+	}
+	if m.FieldCleared(api.FieldOAuth2Scopes) {
+		fields = append(fields, api.FieldOAuth2Scopes)
+	}
+	if m.FieldCleared(api.FieldSpecification) {
+		fields = append(fields, api.FieldSpecification)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *APIMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *APIMutation) ClearField(name string) error {
+	switch name {
+	case api.FieldStatusPhase:
+		m.ClearStatusPhase()
+		return nil
+	case api.FieldStatusMessage:
+		m.ClearStatusMessage()
+		return nil
+	case api.FieldCategory:
+		m.ClearCategory()
+		return nil
+	case api.FieldOAuth2Scopes:
+		m.ClearOAuth2Scopes()
+		return nil
+	case api.FieldSpecification:
+		m.ClearSpecification()
+		return nil
+	}
+	return fmt.Errorf("unknown API nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *APIMutation) ResetField(name string) error {
+	switch name {
+	case api.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case api.FieldLastModifiedAt:
+		m.ResetLastModifiedAt()
+		return nil
+	case api.FieldStatusPhase:
+		m.ResetStatusPhase()
+		return nil
+	case api.FieldStatusMessage:
+		m.ResetStatusMessage()
+		return nil
+	case api.FieldNamespace:
+		m.ResetNamespace()
+		return nil
+	case api.FieldBasePath:
+		m.ResetBasePath()
+		return nil
+	case api.FieldVersion:
+		m.ResetVersion()
+		return nil
+	case api.FieldCategory:
+		m.ResetCategory()
+		return nil
+	case api.FieldOAuth2Scopes:
+		m.ResetOAuth2Scopes()
+		return nil
+	case api.FieldXVendor:
+		m.ResetXVendor()
+		return nil
+	case api.FieldSpecification:
+		m.ResetSpecification()
+		return nil
+	case api.FieldActive:
+		m.ResetActive()
+		return nil
+	}
+	return fmt.Errorf("unknown API field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *APIMutation) AddedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.owner != nil {
+		edges = append(edges, api.EdgeOwner)
+	}
+	if m.exposures != nil {
+		edges = append(edges, api.EdgeExposures)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *APIMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case api.EdgeOwner:
+		if id := m.owner; id != nil {
+			return []ent.Value{*id}
+		}
+	case api.EdgeExposures:
+		ids := make([]ent.Value, 0, len(m.exposures))
+		for id := range m.exposures {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *APIMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.removedexposures != nil {
+		edges = append(edges, api.EdgeExposures)
+	}
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *APIMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case api.EdgeExposures:
+		ids := make([]ent.Value, 0, len(m.removedexposures))
+		for id := range m.removedexposures {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *APIMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.clearedowner {
+		edges = append(edges, api.EdgeOwner)
+	}
+	if m.clearedexposures {
+		edges = append(edges, api.EdgeExposures)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *APIMutation) EdgeCleared(name string) bool {
+	switch name {
+	case api.EdgeOwner:
+		return m.clearedowner
+	case api.EdgeExposures:
+		return m.clearedexposures
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *APIMutation) ClearEdge(name string) error {
+	switch name {
+	case api.EdgeOwner:
+		m.ClearOwner()
+		return nil
+	}
+	return fmt.Errorf("unknown API unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *APIMutation) ResetEdge(name string) error {
+	switch name {
+	case api.EdgeOwner:
+		m.ResetOwner()
+		return nil
+	case api.EdgeExposures:
+		m.ResetExposures()
+		return nil
+	}
+	return fmt.Errorf("unknown API edge %s", name)
+}
+
+// APIExposureMutation represents an operation that mutates the APIExposure nodes in the graph.
+type APIExposureMutation struct {
+	config
+	op                   Op
+	typ                  string
+	id                   *int
+	created_at           *time.Time
+	last_modified_at     *time.Time
+	status_phase         *apiexposure.StatusPhase
+	status_message       *string
+	environment          *string
+	namespace            *string
+	base_path            *string
+	visibility           *apiexposure.Visibility
+	active               *bool
+	features             *[]string
+	appendfeatures       []string
+	upstreams            *[]model.Upstream
+	appendupstreams      []model.Upstream
+	security             *model.APIExposureSecurity
+	traffic              *model.Traffic
+	approval_config      *model.ApprovalConfig
+	api_version          *string
+	clearedFields        map[string]struct{}
+	owner                *int
+	clearedowner         bool
+	api                  *int
+	clearedapi           bool
+	subscriptions        map[int]struct{}
+	removedsubscriptions map[int]struct{}
+	clearedsubscriptions bool
+	done                 bool
+	oldValue             func(context.Context) (*APIExposure, error)
+	predicates           []predicate.APIExposure
+}
+
+var _ ent.Mutation = (*APIExposureMutation)(nil)
+
+// apiexposureOption allows management of the mutation configuration using functional options.
+type apiexposureOption func(*APIExposureMutation)
+
+// newAPIExposureMutation creates new mutation for the APIExposure entity.
+func newAPIExposureMutation(c config, op Op, opts ...apiexposureOption) *APIExposureMutation {
+	m := &APIExposureMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeAPIExposure,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withAPIExposureID sets the ID field of the mutation.
+func withAPIExposureID(id int) apiexposureOption {
+	return func(m *APIExposureMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *APIExposure
+		)
+		m.oldValue = func(ctx context.Context) (*APIExposure, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().APIExposure.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withAPIExposure sets the old APIExposure of the mutation.
+func withAPIExposure(node *APIExposure) apiexposureOption {
+	return func(m *APIExposureMutation) {
+		m.oldValue = func(context.Context) (*APIExposure, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m APIExposureMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m APIExposureMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *APIExposureMutation) ID() (id int, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *APIExposureMutation) IDs(ctx context.Context) ([]int, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().APIExposure.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *APIExposureMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *APIExposureMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the APIExposure entity.
+// If the APIExposure object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *APIExposureMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *APIExposureMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetLastModifiedAt sets the "last_modified_at" field.
+func (m *APIExposureMutation) SetLastModifiedAt(t time.Time) {
+	m.last_modified_at = &t
+}
+
+// LastModifiedAt returns the value of the "last_modified_at" field in the mutation.
+func (m *APIExposureMutation) LastModifiedAt() (r time.Time, exists bool) {
+	v := m.last_modified_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLastModifiedAt returns the old "last_modified_at" field's value of the APIExposure entity.
+// If the APIExposure object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *APIExposureMutation) OldLastModifiedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLastModifiedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLastModifiedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLastModifiedAt: %w", err)
+	}
+	return oldValue.LastModifiedAt, nil
+}
+
+// ResetLastModifiedAt resets all changes to the "last_modified_at" field.
+func (m *APIExposureMutation) ResetLastModifiedAt() {
+	m.last_modified_at = nil
+}
+
+// SetStatusPhase sets the "status_phase" field.
+func (m *APIExposureMutation) SetStatusPhase(ap apiexposure.StatusPhase) {
+	m.status_phase = &ap
+}
+
+// StatusPhase returns the value of the "status_phase" field in the mutation.
+func (m *APIExposureMutation) StatusPhase() (r apiexposure.StatusPhase, exists bool) {
+	v := m.status_phase
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStatusPhase returns the old "status_phase" field's value of the APIExposure entity.
+// If the APIExposure object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *APIExposureMutation) OldStatusPhase(ctx context.Context) (v *apiexposure.StatusPhase, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStatusPhase is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStatusPhase requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStatusPhase: %w", err)
+	}
+	return oldValue.StatusPhase, nil
+}
+
+// ClearStatusPhase clears the value of the "status_phase" field.
+func (m *APIExposureMutation) ClearStatusPhase() {
+	m.status_phase = nil
+	m.clearedFields[apiexposure.FieldStatusPhase] = struct{}{}
+}
+
+// StatusPhaseCleared returns if the "status_phase" field was cleared in this mutation.
+func (m *APIExposureMutation) StatusPhaseCleared() bool {
+	_, ok := m.clearedFields[apiexposure.FieldStatusPhase]
+	return ok
+}
+
+// ResetStatusPhase resets all changes to the "status_phase" field.
+func (m *APIExposureMutation) ResetStatusPhase() {
+	m.status_phase = nil
+	delete(m.clearedFields, apiexposure.FieldStatusPhase)
+}
+
+// SetStatusMessage sets the "status_message" field.
+func (m *APIExposureMutation) SetStatusMessage(s string) {
+	m.status_message = &s
+}
+
+// StatusMessage returns the value of the "status_message" field in the mutation.
+func (m *APIExposureMutation) StatusMessage() (r string, exists bool) {
+	v := m.status_message
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStatusMessage returns the old "status_message" field's value of the APIExposure entity.
+// If the APIExposure object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *APIExposureMutation) OldStatusMessage(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStatusMessage is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStatusMessage requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStatusMessage: %w", err)
+	}
+	return oldValue.StatusMessage, nil
+}
+
+// ClearStatusMessage clears the value of the "status_message" field.
+func (m *APIExposureMutation) ClearStatusMessage() {
+	m.status_message = nil
+	m.clearedFields[apiexposure.FieldStatusMessage] = struct{}{}
+}
+
+// StatusMessageCleared returns if the "status_message" field was cleared in this mutation.
+func (m *APIExposureMutation) StatusMessageCleared() bool {
+	_, ok := m.clearedFields[apiexposure.FieldStatusMessage]
+	return ok
+}
+
+// ResetStatusMessage resets all changes to the "status_message" field.
+func (m *APIExposureMutation) ResetStatusMessage() {
+	m.status_message = nil
+	delete(m.clearedFields, apiexposure.FieldStatusMessage)
+}
+
+// SetEnvironment sets the "environment" field.
+func (m *APIExposureMutation) SetEnvironment(s string) {
+	m.environment = &s
+}
+
+// Environment returns the value of the "environment" field in the mutation.
+func (m *APIExposureMutation) Environment() (r string, exists bool) {
+	v := m.environment
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEnvironment returns the old "environment" field's value of the APIExposure entity.
+// If the APIExposure object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *APIExposureMutation) OldEnvironment(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEnvironment is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEnvironment requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEnvironment: %w", err)
+	}
+	return oldValue.Environment, nil
+}
+
+// ClearEnvironment clears the value of the "environment" field.
+func (m *APIExposureMutation) ClearEnvironment() {
+	m.environment = nil
+	m.clearedFields[apiexposure.FieldEnvironment] = struct{}{}
+}
+
+// EnvironmentCleared returns if the "environment" field was cleared in this mutation.
+func (m *APIExposureMutation) EnvironmentCleared() bool {
+	_, ok := m.clearedFields[apiexposure.FieldEnvironment]
+	return ok
+}
+
+// ResetEnvironment resets all changes to the "environment" field.
+func (m *APIExposureMutation) ResetEnvironment() {
+	m.environment = nil
+	delete(m.clearedFields, apiexposure.FieldEnvironment)
+}
+
+// SetNamespace sets the "namespace" field.
+func (m *APIExposureMutation) SetNamespace(s string) {
+	m.namespace = &s
+}
+
+// Namespace returns the value of the "namespace" field in the mutation.
+func (m *APIExposureMutation) Namespace() (r string, exists bool) {
+	v := m.namespace
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldNamespace returns the old "namespace" field's value of the APIExposure entity.
+// If the APIExposure object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *APIExposureMutation) OldNamespace(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldNamespace is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldNamespace requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldNamespace: %w", err)
+	}
+	return oldValue.Namespace, nil
+}
+
+// ResetNamespace resets all changes to the "namespace" field.
+func (m *APIExposureMutation) ResetNamespace() {
+	m.namespace = nil
+}
+
+// SetBasePath sets the "base_path" field.
+func (m *APIExposureMutation) SetBasePath(s string) {
+	m.base_path = &s
+}
+
+// BasePath returns the value of the "base_path" field in the mutation.
+func (m *APIExposureMutation) BasePath() (r string, exists bool) {
+	v := m.base_path
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldBasePath returns the old "base_path" field's value of the APIExposure entity.
+// If the APIExposure object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *APIExposureMutation) OldBasePath(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldBasePath is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldBasePath requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldBasePath: %w", err)
+	}
+	return oldValue.BasePath, nil
+}
+
+// ResetBasePath resets all changes to the "base_path" field.
+func (m *APIExposureMutation) ResetBasePath() {
+	m.base_path = nil
+}
+
+// SetVisibility sets the "visibility" field.
+func (m *APIExposureMutation) SetVisibility(a apiexposure.Visibility) {
+	m.visibility = &a
+}
+
+// Visibility returns the value of the "visibility" field in the mutation.
+func (m *APIExposureMutation) Visibility() (r apiexposure.Visibility, exists bool) {
+	v := m.visibility
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldVisibility returns the old "visibility" field's value of the APIExposure entity.
+// If the APIExposure object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *APIExposureMutation) OldVisibility(ctx context.Context) (v apiexposure.Visibility, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldVisibility is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldVisibility requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldVisibility: %w", err)
+	}
+	return oldValue.Visibility, nil
+}
+
+// ResetVisibility resets all changes to the "visibility" field.
+func (m *APIExposureMutation) ResetVisibility() {
+	m.visibility = nil
+}
+
+// SetActive sets the "active" field.
+func (m *APIExposureMutation) SetActive(b bool) {
+	m.active = &b
+}
+
+// Active returns the value of the "active" field in the mutation.
+func (m *APIExposureMutation) Active() (r bool, exists bool) {
+	v := m.active
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldActive returns the old "active" field's value of the APIExposure entity.
+// If the APIExposure object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *APIExposureMutation) OldActive(ctx context.Context) (v *bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldActive is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldActive requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldActive: %w", err)
+	}
+	return oldValue.Active, nil
+}
+
+// ClearActive clears the value of the "active" field.
+func (m *APIExposureMutation) ClearActive() {
+	m.active = nil
+	m.clearedFields[apiexposure.FieldActive] = struct{}{}
+}
+
+// ActiveCleared returns if the "active" field was cleared in this mutation.
+func (m *APIExposureMutation) ActiveCleared() bool {
+	_, ok := m.clearedFields[apiexposure.FieldActive]
+	return ok
+}
+
+// ResetActive resets all changes to the "active" field.
+func (m *APIExposureMutation) ResetActive() {
+	m.active = nil
+	delete(m.clearedFields, apiexposure.FieldActive)
+}
+
+// SetFeatures sets the "features" field.
+func (m *APIExposureMutation) SetFeatures(s []string) {
+	m.features = &s
+	m.appendfeatures = nil
+}
+
+// Features returns the value of the "features" field in the mutation.
+func (m *APIExposureMutation) Features() (r []string, exists bool) {
+	v := m.features
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldFeatures returns the old "features" field's value of the APIExposure entity.
+// If the APIExposure object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *APIExposureMutation) OldFeatures(ctx context.Context) (v []string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldFeatures is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldFeatures requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldFeatures: %w", err)
+	}
+	return oldValue.Features, nil
+}
+
+// AppendFeatures adds s to the "features" field.
+func (m *APIExposureMutation) AppendFeatures(s []string) {
+	m.appendfeatures = append(m.appendfeatures, s...)
+}
+
+// AppendedFeatures returns the list of values that were appended to the "features" field in this mutation.
+func (m *APIExposureMutation) AppendedFeatures() ([]string, bool) {
+	if len(m.appendfeatures) == 0 {
+		return nil, false
+	}
+	return m.appendfeatures, true
+}
+
+// ResetFeatures resets all changes to the "features" field.
+func (m *APIExposureMutation) ResetFeatures() {
+	m.features = nil
+	m.appendfeatures = nil
+}
+
+// SetUpstreams sets the "upstreams" field.
+func (m *APIExposureMutation) SetUpstreams(value []model.Upstream) {
+	m.upstreams = &value
+	m.appendupstreams = nil
+}
+
+// Upstreams returns the value of the "upstreams" field in the mutation.
+func (m *APIExposureMutation) Upstreams() (r []model.Upstream, exists bool) {
+	v := m.upstreams
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpstreams returns the old "upstreams" field's value of the APIExposure entity.
+// If the APIExposure object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *APIExposureMutation) OldUpstreams(ctx context.Context) (v []model.Upstream, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpstreams is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpstreams requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpstreams: %w", err)
+	}
+	return oldValue.Upstreams, nil
+}
+
+// AppendUpstreams adds value to the "upstreams" field.
+func (m *APIExposureMutation) AppendUpstreams(value []model.Upstream) {
+	m.appendupstreams = append(m.appendupstreams, value...)
+}
+
+// AppendedUpstreams returns the list of values that were appended to the "upstreams" field in this mutation.
+func (m *APIExposureMutation) AppendedUpstreams() ([]model.Upstream, bool) {
+	if len(m.appendupstreams) == 0 {
+		return nil, false
+	}
+	return m.appendupstreams, true
+}
+
+// ResetUpstreams resets all changes to the "upstreams" field.
+func (m *APIExposureMutation) ResetUpstreams() {
+	m.upstreams = nil
+	m.appendupstreams = nil
+}
+
+// SetSecurity sets the "security" field.
+func (m *APIExposureMutation) SetSecurity(mes model.APIExposureSecurity) {
+	m.security = &mes
+}
+
+// Security returns the value of the "security" field in the mutation.
+func (m *APIExposureMutation) Security() (r model.APIExposureSecurity, exists bool) {
+	v := m.security
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSecurity returns the old "security" field's value of the APIExposure entity.
+// If the APIExposure object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *APIExposureMutation) OldSecurity(ctx context.Context) (v model.APIExposureSecurity, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSecurity is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSecurity requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSecurity: %w", err)
+	}
+	return oldValue.Security, nil
+}
+
+// ClearSecurity clears the value of the "security" field.
+func (m *APIExposureMutation) ClearSecurity() {
+	m.security = nil
+	m.clearedFields[apiexposure.FieldSecurity] = struct{}{}
+}
+
+// SecurityCleared returns if the "security" field was cleared in this mutation.
+func (m *APIExposureMutation) SecurityCleared() bool {
+	_, ok := m.clearedFields[apiexposure.FieldSecurity]
+	return ok
+}
+
+// ResetSecurity resets all changes to the "security" field.
+func (m *APIExposureMutation) ResetSecurity() {
+	m.security = nil
+	delete(m.clearedFields, apiexposure.FieldSecurity)
+}
+
+// SetTraffic sets the "traffic" field.
+func (m *APIExposureMutation) SetTraffic(value model.Traffic) {
+	m.traffic = &value
+}
+
+// Traffic returns the value of the "traffic" field in the mutation.
+func (m *APIExposureMutation) Traffic() (r model.Traffic, exists bool) {
+	v := m.traffic
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTraffic returns the old "traffic" field's value of the APIExposure entity.
+// If the APIExposure object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *APIExposureMutation) OldTraffic(ctx context.Context) (v model.Traffic, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTraffic is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTraffic requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTraffic: %w", err)
+	}
+	return oldValue.Traffic, nil
+}
+
+// ClearTraffic clears the value of the "traffic" field.
+func (m *APIExposureMutation) ClearTraffic() {
+	m.traffic = nil
+	m.clearedFields[apiexposure.FieldTraffic] = struct{}{}
+}
+
+// TrafficCleared returns if the "traffic" field was cleared in this mutation.
+func (m *APIExposureMutation) TrafficCleared() bool {
+	_, ok := m.clearedFields[apiexposure.FieldTraffic]
+	return ok
+}
+
+// ResetTraffic resets all changes to the "traffic" field.
+func (m *APIExposureMutation) ResetTraffic() {
+	m.traffic = nil
+	delete(m.clearedFields, apiexposure.FieldTraffic)
+}
+
+// SetApprovalConfig sets the "approval_config" field.
+func (m *APIExposureMutation) SetApprovalConfig(mc model.ApprovalConfig) {
+	m.approval_config = &mc
+}
+
+// ApprovalConfig returns the value of the "approval_config" field in the mutation.
+func (m *APIExposureMutation) ApprovalConfig() (r model.ApprovalConfig, exists bool) {
+	v := m.approval_config
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldApprovalConfig returns the old "approval_config" field's value of the APIExposure entity.
+// If the APIExposure object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *APIExposureMutation) OldApprovalConfig(ctx context.Context) (v model.ApprovalConfig, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldApprovalConfig is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldApprovalConfig requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldApprovalConfig: %w", err)
+	}
+	return oldValue.ApprovalConfig, nil
+}
+
+// ResetApprovalConfig resets all changes to the "approval_config" field.
+func (m *APIExposureMutation) ResetApprovalConfig() {
+	m.approval_config = nil
+}
+
+// SetAPIVersion sets the "api_version" field.
+func (m *APIExposureMutation) SetAPIVersion(s string) {
+	m.api_version = &s
+}
+
+// APIVersion returns the value of the "api_version" field in the mutation.
+func (m *APIExposureMutation) APIVersion() (r string, exists bool) {
+	v := m.api_version
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAPIVersion returns the old "api_version" field's value of the APIExposure entity.
+// If the APIExposure object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *APIExposureMutation) OldAPIVersion(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAPIVersion is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAPIVersion requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAPIVersion: %w", err)
+	}
+	return oldValue.APIVersion, nil
+}
+
+// ClearAPIVersion clears the value of the "api_version" field.
+func (m *APIExposureMutation) ClearAPIVersion() {
+	m.api_version = nil
+	m.clearedFields[apiexposure.FieldAPIVersion] = struct{}{}
+}
+
+// APIVersionCleared returns if the "api_version" field was cleared in this mutation.
+func (m *APIExposureMutation) APIVersionCleared() bool {
+	_, ok := m.clearedFields[apiexposure.FieldAPIVersion]
+	return ok
+}
+
+// ResetAPIVersion resets all changes to the "api_version" field.
+func (m *APIExposureMutation) ResetAPIVersion() {
+	m.api_version = nil
+	delete(m.clearedFields, apiexposure.FieldAPIVersion)
+}
+
+// SetOwnerID sets the "owner" edge to the Application entity by id.
+func (m *APIExposureMutation) SetOwnerID(id int) {
+	m.owner = &id
+}
+
+// ClearOwner clears the "owner" edge to the Application entity.
+func (m *APIExposureMutation) ClearOwner() {
+	m.clearedowner = true
+}
+
+// OwnerCleared reports if the "owner" edge to the Application entity was cleared.
+func (m *APIExposureMutation) OwnerCleared() bool {
+	return m.clearedowner
+}
+
+// OwnerID returns the "owner" edge ID in the mutation.
+func (m *APIExposureMutation) OwnerID() (id int, exists bool) {
+	if m.owner != nil {
+		return *m.owner, true
+	}
+	return
+}
+
+// OwnerIDs returns the "owner" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// OwnerID instead. It exists only for internal usage by the builders.
+func (m *APIExposureMutation) OwnerIDs() (ids []int) {
+	if id := m.owner; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetOwner resets all changes to the "owner" edge.
+func (m *APIExposureMutation) ResetOwner() {
+	m.owner = nil
+	m.clearedowner = false
+}
+
+// SetAPIID sets the "api" edge to the API entity by id.
+func (m *APIExposureMutation) SetAPIID(id int) {
+	m.api = &id
+}
+
+// ClearAPI clears the "api" edge to the API entity.
+func (m *APIExposureMutation) ClearAPI() {
+	m.clearedapi = true
+}
+
+// APICleared reports if the "api" edge to the API entity was cleared.
+func (m *APIExposureMutation) APICleared() bool {
+	return m.clearedapi
+}
+
+// APIID returns the "api" edge ID in the mutation.
+func (m *APIExposureMutation) APIID() (id int, exists bool) {
+	if m.api != nil {
+		return *m.api, true
+	}
+	return
+}
+
+// APIIDs returns the "api" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// APIID instead. It exists only for internal usage by the builders.
+func (m *APIExposureMutation) APIIDs() (ids []int) {
+	if id := m.api; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetAPI resets all changes to the "api" edge.
+func (m *APIExposureMutation) ResetAPI() {
+	m.api = nil
+	m.clearedapi = false
+}
+
+// AddSubscriptionIDs adds the "subscriptions" edge to the APISubscription entity by ids.
+func (m *APIExposureMutation) AddSubscriptionIDs(ids ...int) {
+	if m.subscriptions == nil {
+		m.subscriptions = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.subscriptions[ids[i]] = struct{}{}
+	}
+}
+
+// ClearSubscriptions clears the "subscriptions" edge to the APISubscription entity.
+func (m *APIExposureMutation) ClearSubscriptions() {
+	m.clearedsubscriptions = true
+}
+
+// SubscriptionsCleared reports if the "subscriptions" edge to the APISubscription entity was cleared.
+func (m *APIExposureMutation) SubscriptionsCleared() bool {
+	return m.clearedsubscriptions
+}
+
+// RemoveSubscriptionIDs removes the "subscriptions" edge to the APISubscription entity by IDs.
+func (m *APIExposureMutation) RemoveSubscriptionIDs(ids ...int) {
+	if m.removedsubscriptions == nil {
+		m.removedsubscriptions = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.subscriptions, ids[i])
+		m.removedsubscriptions[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedSubscriptions returns the removed IDs of the "subscriptions" edge to the APISubscription entity.
+func (m *APIExposureMutation) RemovedSubscriptionsIDs() (ids []int) {
+	for id := range m.removedsubscriptions {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// SubscriptionsIDs returns the "subscriptions" edge IDs in the mutation.
+func (m *APIExposureMutation) SubscriptionsIDs() (ids []int) {
+	for id := range m.subscriptions {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetSubscriptions resets all changes to the "subscriptions" edge.
+func (m *APIExposureMutation) ResetSubscriptions() {
+	m.subscriptions = nil
+	m.clearedsubscriptions = false
+	m.removedsubscriptions = nil
+}
+
+// Where appends a list predicates to the APIExposureMutation builder.
+func (m *APIExposureMutation) Where(ps ...predicate.APIExposure) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the APIExposureMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *APIExposureMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.APIExposure, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *APIExposureMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *APIExposureMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (APIExposure).
+func (m *APIExposureMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *APIExposureMutation) Fields() []string {
+	fields := make([]string, 0, 15)
+	if m.created_at != nil {
+		fields = append(fields, apiexposure.FieldCreatedAt)
+	}
+	if m.last_modified_at != nil {
+		fields = append(fields, apiexposure.FieldLastModifiedAt)
+	}
+	if m.status_phase != nil {
+		fields = append(fields, apiexposure.FieldStatusPhase)
+	}
+	if m.status_message != nil {
+		fields = append(fields, apiexposure.FieldStatusMessage)
+	}
+	if m.environment != nil {
+		fields = append(fields, apiexposure.FieldEnvironment)
+	}
+	if m.namespace != nil {
+		fields = append(fields, apiexposure.FieldNamespace)
+	}
+	if m.base_path != nil {
+		fields = append(fields, apiexposure.FieldBasePath)
+	}
+	if m.visibility != nil {
+		fields = append(fields, apiexposure.FieldVisibility)
+	}
+	if m.active != nil {
+		fields = append(fields, apiexposure.FieldActive)
+	}
+	if m.features != nil {
+		fields = append(fields, apiexposure.FieldFeatures)
+	}
+	if m.upstreams != nil {
+		fields = append(fields, apiexposure.FieldUpstreams)
+	}
+	if m.security != nil {
+		fields = append(fields, apiexposure.FieldSecurity)
+	}
+	if m.traffic != nil {
+		fields = append(fields, apiexposure.FieldTraffic)
+	}
+	if m.approval_config != nil {
+		fields = append(fields, apiexposure.FieldApprovalConfig)
+	}
+	if m.api_version != nil {
+		fields = append(fields, apiexposure.FieldAPIVersion)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *APIExposureMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case apiexposure.FieldCreatedAt:
+		return m.CreatedAt()
+	case apiexposure.FieldLastModifiedAt:
+		return m.LastModifiedAt()
+	case apiexposure.FieldStatusPhase:
+		return m.StatusPhase()
+	case apiexposure.FieldStatusMessage:
+		return m.StatusMessage()
+	case apiexposure.FieldEnvironment:
+		return m.Environment()
+	case apiexposure.FieldNamespace:
+		return m.Namespace()
+	case apiexposure.FieldBasePath:
+		return m.BasePath()
+	case apiexposure.FieldVisibility:
+		return m.Visibility()
+	case apiexposure.FieldActive:
+		return m.Active()
+	case apiexposure.FieldFeatures:
+		return m.Features()
+	case apiexposure.FieldUpstreams:
+		return m.Upstreams()
+	case apiexposure.FieldSecurity:
+		return m.Security()
+	case apiexposure.FieldTraffic:
+		return m.Traffic()
+	case apiexposure.FieldApprovalConfig:
+		return m.ApprovalConfig()
+	case apiexposure.FieldAPIVersion:
+		return m.APIVersion()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *APIExposureMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case apiexposure.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case apiexposure.FieldLastModifiedAt:
+		return m.OldLastModifiedAt(ctx)
+	case apiexposure.FieldStatusPhase:
+		return m.OldStatusPhase(ctx)
+	case apiexposure.FieldStatusMessage:
+		return m.OldStatusMessage(ctx)
+	case apiexposure.FieldEnvironment:
+		return m.OldEnvironment(ctx)
+	case apiexposure.FieldNamespace:
+		return m.OldNamespace(ctx)
+	case apiexposure.FieldBasePath:
+		return m.OldBasePath(ctx)
+	case apiexposure.FieldVisibility:
+		return m.OldVisibility(ctx)
+	case apiexposure.FieldActive:
+		return m.OldActive(ctx)
+	case apiexposure.FieldFeatures:
+		return m.OldFeatures(ctx)
+	case apiexposure.FieldUpstreams:
+		return m.OldUpstreams(ctx)
+	case apiexposure.FieldSecurity:
+		return m.OldSecurity(ctx)
+	case apiexposure.FieldTraffic:
+		return m.OldTraffic(ctx)
+	case apiexposure.FieldApprovalConfig:
+		return m.OldApprovalConfig(ctx)
+	case apiexposure.FieldAPIVersion:
+		return m.OldAPIVersion(ctx)
+	}
+	return nil, fmt.Errorf("unknown APIExposure field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *APIExposureMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case apiexposure.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case apiexposure.FieldLastModifiedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLastModifiedAt(v)
+		return nil
+	case apiexposure.FieldStatusPhase:
+		v, ok := value.(apiexposure.StatusPhase)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStatusPhase(v)
+		return nil
+	case apiexposure.FieldStatusMessage:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStatusMessage(v)
+		return nil
+	case apiexposure.FieldEnvironment:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEnvironment(v)
+		return nil
+	case apiexposure.FieldNamespace:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetNamespace(v)
+		return nil
+	case apiexposure.FieldBasePath:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetBasePath(v)
+		return nil
+	case apiexposure.FieldVisibility:
+		v, ok := value.(apiexposure.Visibility)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetVisibility(v)
+		return nil
+	case apiexposure.FieldActive:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetActive(v)
+		return nil
+	case apiexposure.FieldFeatures:
+		v, ok := value.([]string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetFeatures(v)
+		return nil
+	case apiexposure.FieldUpstreams:
+		v, ok := value.([]model.Upstream)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpstreams(v)
+		return nil
+	case apiexposure.FieldSecurity:
+		v, ok := value.(model.APIExposureSecurity)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSecurity(v)
+		return nil
+	case apiexposure.FieldTraffic:
+		v, ok := value.(model.Traffic)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTraffic(v)
+		return nil
+	case apiexposure.FieldApprovalConfig:
+		v, ok := value.(model.ApprovalConfig)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetApprovalConfig(v)
+		return nil
+	case apiexposure.FieldAPIVersion:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAPIVersion(v)
+		return nil
+	}
+	return fmt.Errorf("unknown APIExposure field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *APIExposureMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *APIExposureMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *APIExposureMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown APIExposure numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *APIExposureMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(apiexposure.FieldStatusPhase) {
+		fields = append(fields, apiexposure.FieldStatusPhase)
+	}
+	if m.FieldCleared(apiexposure.FieldStatusMessage) {
+		fields = append(fields, apiexposure.FieldStatusMessage)
+	}
+	if m.FieldCleared(apiexposure.FieldEnvironment) {
+		fields = append(fields, apiexposure.FieldEnvironment)
+	}
+	if m.FieldCleared(apiexposure.FieldActive) {
+		fields = append(fields, apiexposure.FieldActive)
+	}
+	if m.FieldCleared(apiexposure.FieldSecurity) {
+		fields = append(fields, apiexposure.FieldSecurity)
+	}
+	if m.FieldCleared(apiexposure.FieldTraffic) {
+		fields = append(fields, apiexposure.FieldTraffic)
+	}
+	if m.FieldCleared(apiexposure.FieldAPIVersion) {
+		fields = append(fields, apiexposure.FieldAPIVersion)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *APIExposureMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *APIExposureMutation) ClearField(name string) error {
+	switch name {
+	case apiexposure.FieldStatusPhase:
+		m.ClearStatusPhase()
+		return nil
+	case apiexposure.FieldStatusMessage:
+		m.ClearStatusMessage()
+		return nil
+	case apiexposure.FieldEnvironment:
+		m.ClearEnvironment()
+		return nil
+	case apiexposure.FieldActive:
+		m.ClearActive()
+		return nil
+	case apiexposure.FieldSecurity:
+		m.ClearSecurity()
+		return nil
+	case apiexposure.FieldTraffic:
+		m.ClearTraffic()
+		return nil
+	case apiexposure.FieldAPIVersion:
+		m.ClearAPIVersion()
+		return nil
+	}
+	return fmt.Errorf("unknown APIExposure nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *APIExposureMutation) ResetField(name string) error {
+	switch name {
+	case apiexposure.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case apiexposure.FieldLastModifiedAt:
+		m.ResetLastModifiedAt()
+		return nil
+	case apiexposure.FieldStatusPhase:
+		m.ResetStatusPhase()
+		return nil
+	case apiexposure.FieldStatusMessage:
+		m.ResetStatusMessage()
+		return nil
+	case apiexposure.FieldEnvironment:
+		m.ResetEnvironment()
+		return nil
+	case apiexposure.FieldNamespace:
+		m.ResetNamespace()
+		return nil
+	case apiexposure.FieldBasePath:
+		m.ResetBasePath()
+		return nil
+	case apiexposure.FieldVisibility:
+		m.ResetVisibility()
+		return nil
+	case apiexposure.FieldActive:
+		m.ResetActive()
+		return nil
+	case apiexposure.FieldFeatures:
+		m.ResetFeatures()
+		return nil
+	case apiexposure.FieldUpstreams:
+		m.ResetUpstreams()
+		return nil
+	case apiexposure.FieldSecurity:
+		m.ResetSecurity()
+		return nil
+	case apiexposure.FieldTraffic:
+		m.ResetTraffic()
+		return nil
+	case apiexposure.FieldApprovalConfig:
+		m.ResetApprovalConfig()
+		return nil
+	case apiexposure.FieldAPIVersion:
+		m.ResetAPIVersion()
+		return nil
+	}
+	return fmt.Errorf("unknown APIExposure field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *APIExposureMutation) AddedEdges() []string {
+	edges := make([]string, 0, 3)
+	if m.owner != nil {
+		edges = append(edges, apiexposure.EdgeOwner)
+	}
+	if m.api != nil {
+		edges = append(edges, apiexposure.EdgeAPI)
+	}
+	if m.subscriptions != nil {
+		edges = append(edges, apiexposure.EdgeSubscriptions)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *APIExposureMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case apiexposure.EdgeOwner:
+		if id := m.owner; id != nil {
+			return []ent.Value{*id}
+		}
+	case apiexposure.EdgeAPI:
+		if id := m.api; id != nil {
+			return []ent.Value{*id}
+		}
+	case apiexposure.EdgeSubscriptions:
+		ids := make([]ent.Value, 0, len(m.subscriptions))
+		for id := range m.subscriptions {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *APIExposureMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 3)
+	if m.removedsubscriptions != nil {
+		edges = append(edges, apiexposure.EdgeSubscriptions)
+	}
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *APIExposureMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case apiexposure.EdgeSubscriptions:
+		ids := make([]ent.Value, 0, len(m.removedsubscriptions))
+		for id := range m.removedsubscriptions {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *APIExposureMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 3)
+	if m.clearedowner {
+		edges = append(edges, apiexposure.EdgeOwner)
+	}
+	if m.clearedapi {
+		edges = append(edges, apiexposure.EdgeAPI)
+	}
+	if m.clearedsubscriptions {
+		edges = append(edges, apiexposure.EdgeSubscriptions)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *APIExposureMutation) EdgeCleared(name string) bool {
+	switch name {
+	case apiexposure.EdgeOwner:
+		return m.clearedowner
+	case apiexposure.EdgeAPI:
+		return m.clearedapi
+	case apiexposure.EdgeSubscriptions:
+		return m.clearedsubscriptions
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *APIExposureMutation) ClearEdge(name string) error {
+	switch name {
+	case apiexposure.EdgeOwner:
+		m.ClearOwner()
+		return nil
+	case apiexposure.EdgeAPI:
+		m.ClearAPI()
+		return nil
+	}
+	return fmt.Errorf("unknown APIExposure unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *APIExposureMutation) ResetEdge(name string) error {
+	switch name {
+	case apiexposure.EdgeOwner:
+		m.ResetOwner()
+		return nil
+	case apiexposure.EdgeAPI:
+		m.ResetAPI()
+		return nil
+	case apiexposure.EdgeSubscriptions:
+		m.ResetSubscriptions()
+		return nil
+	}
+	return fmt.Errorf("unknown APIExposure edge %s", name)
+}
+
+// APISubscriptionMutation represents an operation that mutates the APISubscription nodes in the graph.
+type APISubscriptionMutation struct {
+	config
+	op                       Op
+	typ                      string
+	id                       *int
+	created_at               *time.Time
+	last_modified_at         *time.Time
+	status_phase             *apisubscription.StatusPhase
+	status_message           *string
+	environment              *string
+	namespace                *string
+	name                     *string
+	base_path                *string
+	_M2M_auth_method         *apisubscription.M2MAuthMethod
+	gateway_url              *string
+	security                 **model.APISubscriptionSecurity
+	traffic                  **model.APISubscriptionTraffic
+	clearedFields            map[string]struct{}
+	owner                    *int
+	clearedowner             bool
+	target                   *int
+	clearedtarget            bool
+	failover_zones           map[int]struct{}
+	removedfailover_zones    map[int]struct{}
+	clearedfailover_zones    bool
+	approval                 *int
+	clearedapproval          bool
+	approval_requests        map[int]struct{}
+	removedapproval_requests map[int]struct{}
+	clearedapproval_requests bool
+	done                     bool
+	oldValue                 func(context.Context) (*APISubscription, error)
+	predicates               []predicate.APISubscription
+}
+
+var _ ent.Mutation = (*APISubscriptionMutation)(nil)
+
+// apisubscriptionOption allows management of the mutation configuration using functional options.
+type apisubscriptionOption func(*APISubscriptionMutation)
+
+// newAPISubscriptionMutation creates new mutation for the APISubscription entity.
+func newAPISubscriptionMutation(c config, op Op, opts ...apisubscriptionOption) *APISubscriptionMutation {
+	m := &APISubscriptionMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeAPISubscription,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withAPISubscriptionID sets the ID field of the mutation.
+func withAPISubscriptionID(id int) apisubscriptionOption {
+	return func(m *APISubscriptionMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *APISubscription
+		)
+		m.oldValue = func(ctx context.Context) (*APISubscription, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().APISubscription.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withAPISubscription sets the old APISubscription of the mutation.
+func withAPISubscription(node *APISubscription) apisubscriptionOption {
+	return func(m *APISubscriptionMutation) {
+		m.oldValue = func(context.Context) (*APISubscription, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m APISubscriptionMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m APISubscriptionMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *APISubscriptionMutation) ID() (id int, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *APISubscriptionMutation) IDs(ctx context.Context) ([]int, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().APISubscription.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *APISubscriptionMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *APISubscriptionMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the APISubscription entity.
+// If the APISubscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *APISubscriptionMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *APISubscriptionMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetLastModifiedAt sets the "last_modified_at" field.
+func (m *APISubscriptionMutation) SetLastModifiedAt(t time.Time) {
+	m.last_modified_at = &t
+}
+
+// LastModifiedAt returns the value of the "last_modified_at" field in the mutation.
+func (m *APISubscriptionMutation) LastModifiedAt() (r time.Time, exists bool) {
+	v := m.last_modified_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLastModifiedAt returns the old "last_modified_at" field's value of the APISubscription entity.
+// If the APISubscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *APISubscriptionMutation) OldLastModifiedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLastModifiedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLastModifiedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLastModifiedAt: %w", err)
+	}
+	return oldValue.LastModifiedAt, nil
+}
+
+// ResetLastModifiedAt resets all changes to the "last_modified_at" field.
+func (m *APISubscriptionMutation) ResetLastModifiedAt() {
+	m.last_modified_at = nil
+}
+
+// SetStatusPhase sets the "status_phase" field.
+func (m *APISubscriptionMutation) SetStatusPhase(ap apisubscription.StatusPhase) {
+	m.status_phase = &ap
+}
+
+// StatusPhase returns the value of the "status_phase" field in the mutation.
+func (m *APISubscriptionMutation) StatusPhase() (r apisubscription.StatusPhase, exists bool) {
+	v := m.status_phase
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStatusPhase returns the old "status_phase" field's value of the APISubscription entity.
+// If the APISubscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *APISubscriptionMutation) OldStatusPhase(ctx context.Context) (v *apisubscription.StatusPhase, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStatusPhase is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStatusPhase requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStatusPhase: %w", err)
+	}
+	return oldValue.StatusPhase, nil
+}
+
+// ClearStatusPhase clears the value of the "status_phase" field.
+func (m *APISubscriptionMutation) ClearStatusPhase() {
+	m.status_phase = nil
+	m.clearedFields[apisubscription.FieldStatusPhase] = struct{}{}
+}
+
+// StatusPhaseCleared returns if the "status_phase" field was cleared in this mutation.
+func (m *APISubscriptionMutation) StatusPhaseCleared() bool {
+	_, ok := m.clearedFields[apisubscription.FieldStatusPhase]
+	return ok
+}
+
+// ResetStatusPhase resets all changes to the "status_phase" field.
+func (m *APISubscriptionMutation) ResetStatusPhase() {
+	m.status_phase = nil
+	delete(m.clearedFields, apisubscription.FieldStatusPhase)
+}
+
+// SetStatusMessage sets the "status_message" field.
+func (m *APISubscriptionMutation) SetStatusMessage(s string) {
+	m.status_message = &s
+}
+
+// StatusMessage returns the value of the "status_message" field in the mutation.
+func (m *APISubscriptionMutation) StatusMessage() (r string, exists bool) {
+	v := m.status_message
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStatusMessage returns the old "status_message" field's value of the APISubscription entity.
+// If the APISubscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *APISubscriptionMutation) OldStatusMessage(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStatusMessage is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStatusMessage requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStatusMessage: %w", err)
+	}
+	return oldValue.StatusMessage, nil
+}
+
+// ClearStatusMessage clears the value of the "status_message" field.
+func (m *APISubscriptionMutation) ClearStatusMessage() {
+	m.status_message = nil
+	m.clearedFields[apisubscription.FieldStatusMessage] = struct{}{}
+}
+
+// StatusMessageCleared returns if the "status_message" field was cleared in this mutation.
+func (m *APISubscriptionMutation) StatusMessageCleared() bool {
+	_, ok := m.clearedFields[apisubscription.FieldStatusMessage]
+	return ok
+}
+
+// ResetStatusMessage resets all changes to the "status_message" field.
+func (m *APISubscriptionMutation) ResetStatusMessage() {
+	m.status_message = nil
+	delete(m.clearedFields, apisubscription.FieldStatusMessage)
+}
+
+// SetEnvironment sets the "environment" field.
+func (m *APISubscriptionMutation) SetEnvironment(s string) {
+	m.environment = &s
+}
+
+// Environment returns the value of the "environment" field in the mutation.
+func (m *APISubscriptionMutation) Environment() (r string, exists bool) {
+	v := m.environment
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEnvironment returns the old "environment" field's value of the APISubscription entity.
+// If the APISubscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *APISubscriptionMutation) OldEnvironment(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEnvironment is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEnvironment requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEnvironment: %w", err)
+	}
+	return oldValue.Environment, nil
+}
+
+// ClearEnvironment clears the value of the "environment" field.
+func (m *APISubscriptionMutation) ClearEnvironment() {
+	m.environment = nil
+	m.clearedFields[apisubscription.FieldEnvironment] = struct{}{}
+}
+
+// EnvironmentCleared returns if the "environment" field was cleared in this mutation.
+func (m *APISubscriptionMutation) EnvironmentCleared() bool {
+	_, ok := m.clearedFields[apisubscription.FieldEnvironment]
+	return ok
+}
+
+// ResetEnvironment resets all changes to the "environment" field.
+func (m *APISubscriptionMutation) ResetEnvironment() {
+	m.environment = nil
+	delete(m.clearedFields, apisubscription.FieldEnvironment)
+}
+
+// SetNamespace sets the "namespace" field.
+func (m *APISubscriptionMutation) SetNamespace(s string) {
+	m.namespace = &s
+}
+
+// Namespace returns the value of the "namespace" field in the mutation.
+func (m *APISubscriptionMutation) Namespace() (r string, exists bool) {
+	v := m.namespace
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldNamespace returns the old "namespace" field's value of the APISubscription entity.
+// If the APISubscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *APISubscriptionMutation) OldNamespace(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldNamespace is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldNamespace requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldNamespace: %w", err)
+	}
+	return oldValue.Namespace, nil
+}
+
+// ResetNamespace resets all changes to the "namespace" field.
+func (m *APISubscriptionMutation) ResetNamespace() {
+	m.namespace = nil
+}
+
+// SetName sets the "name" field.
+func (m *APISubscriptionMutation) SetName(s string) {
+	m.name = &s
+}
+
+// Name returns the value of the "name" field in the mutation.
+func (m *APISubscriptionMutation) Name() (r string, exists bool) {
+	v := m.name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldName returns the old "name" field's value of the APISubscription entity.
+// If the APISubscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *APISubscriptionMutation) OldName(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldName: %w", err)
+	}
+	return oldValue.Name, nil
+}
+
+// ResetName resets all changes to the "name" field.
+func (m *APISubscriptionMutation) ResetName() {
+	m.name = nil
+}
+
+// SetBasePath sets the "base_path" field.
+func (m *APISubscriptionMutation) SetBasePath(s string) {
+	m.base_path = &s
+}
+
+// BasePath returns the value of the "base_path" field in the mutation.
+func (m *APISubscriptionMutation) BasePath() (r string, exists bool) {
+	v := m.base_path
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldBasePath returns the old "base_path" field's value of the APISubscription entity.
+// If the APISubscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *APISubscriptionMutation) OldBasePath(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldBasePath is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldBasePath requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldBasePath: %w", err)
+	}
+	return oldValue.BasePath, nil
+}
+
+// ResetBasePath resets all changes to the "base_path" field.
+func (m *APISubscriptionMutation) ResetBasePath() {
+	m.base_path = nil
+}
+
+// SetM2MAuthMethod sets the "M2M_auth_method" field.
+func (m *APISubscriptionMutation) SetM2MAuthMethod(aam apisubscription.M2MAuthMethod) {
+	m._M2M_auth_method = &aam
+}
+
+// M2MAuthMethod returns the value of the "M2M_auth_method" field in the mutation.
+func (m *APISubscriptionMutation) M2MAuthMethod() (r apisubscription.M2MAuthMethod, exists bool) {
+	v := m._M2M_auth_method
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldM2MAuthMethod returns the old "M2M_auth_method" field's value of the APISubscription entity.
+// If the APISubscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *APISubscriptionMutation) OldM2MAuthMethod(ctx context.Context) (v apisubscription.M2MAuthMethod, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldM2MAuthMethod is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldM2MAuthMethod requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldM2MAuthMethod: %w", err)
+	}
+	return oldValue.M2MAuthMethod, nil
+}
+
+// ResetM2MAuthMethod resets all changes to the "M2M_auth_method" field.
+func (m *APISubscriptionMutation) ResetM2MAuthMethod() {
+	m._M2M_auth_method = nil
+}
+
+// SetGatewayURL sets the "gateway_url" field.
+func (m *APISubscriptionMutation) SetGatewayURL(s string) {
+	m.gateway_url = &s
+}
+
+// GatewayURL returns the value of the "gateway_url" field in the mutation.
+func (m *APISubscriptionMutation) GatewayURL() (r string, exists bool) {
+	v := m.gateway_url
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldGatewayURL returns the old "gateway_url" field's value of the APISubscription entity.
+// If the APISubscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *APISubscriptionMutation) OldGatewayURL(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldGatewayURL is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldGatewayURL requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldGatewayURL: %w", err)
+	}
+	return oldValue.GatewayURL, nil
+}
+
+// ClearGatewayURL clears the value of the "gateway_url" field.
+func (m *APISubscriptionMutation) ClearGatewayURL() {
+	m.gateway_url = nil
+	m.clearedFields[apisubscription.FieldGatewayURL] = struct{}{}
+}
+
+// GatewayURLCleared returns if the "gateway_url" field was cleared in this mutation.
+func (m *APISubscriptionMutation) GatewayURLCleared() bool {
+	_, ok := m.clearedFields[apisubscription.FieldGatewayURL]
+	return ok
+}
+
+// ResetGatewayURL resets all changes to the "gateway_url" field.
+func (m *APISubscriptionMutation) ResetGatewayURL() {
+	m.gateway_url = nil
+	delete(m.clearedFields, apisubscription.FieldGatewayURL)
+}
+
+// SetSecurity sets the "security" field.
+func (m *APISubscriptionMutation) SetSecurity(mss *model.APISubscriptionSecurity) {
+	m.security = &mss
+}
+
+// Security returns the value of the "security" field in the mutation.
+func (m *APISubscriptionMutation) Security() (r *model.APISubscriptionSecurity, exists bool) {
+	v := m.security
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSecurity returns the old "security" field's value of the APISubscription entity.
+// If the APISubscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *APISubscriptionMutation) OldSecurity(ctx context.Context) (v *model.APISubscriptionSecurity, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSecurity is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSecurity requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSecurity: %w", err)
+	}
+	return oldValue.Security, nil
+}
+
+// ClearSecurity clears the value of the "security" field.
+func (m *APISubscriptionMutation) ClearSecurity() {
+	m.security = nil
+	m.clearedFields[apisubscription.FieldSecurity] = struct{}{}
+}
+
+// SecurityCleared returns if the "security" field was cleared in this mutation.
+func (m *APISubscriptionMutation) SecurityCleared() bool {
+	_, ok := m.clearedFields[apisubscription.FieldSecurity]
+	return ok
+}
+
+// ResetSecurity resets all changes to the "security" field.
+func (m *APISubscriptionMutation) ResetSecurity() {
+	m.security = nil
+	delete(m.clearedFields, apisubscription.FieldSecurity)
+}
+
+// SetTraffic sets the "traffic" field.
+func (m *APISubscriptionMutation) SetTraffic(mst *model.APISubscriptionTraffic) {
+	m.traffic = &mst
+}
+
+// Traffic returns the value of the "traffic" field in the mutation.
+func (m *APISubscriptionMutation) Traffic() (r *model.APISubscriptionTraffic, exists bool) {
+	v := m.traffic
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTraffic returns the old "traffic" field's value of the APISubscription entity.
+// If the APISubscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *APISubscriptionMutation) OldTraffic(ctx context.Context) (v *model.APISubscriptionTraffic, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTraffic is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTraffic requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTraffic: %w", err)
+	}
+	return oldValue.Traffic, nil
+}
+
+// ClearTraffic clears the value of the "traffic" field.
+func (m *APISubscriptionMutation) ClearTraffic() {
+	m.traffic = nil
+	m.clearedFields[apisubscription.FieldTraffic] = struct{}{}
+}
+
+// TrafficCleared returns if the "traffic" field was cleared in this mutation.
+func (m *APISubscriptionMutation) TrafficCleared() bool {
+	_, ok := m.clearedFields[apisubscription.FieldTraffic]
+	return ok
+}
+
+// ResetTraffic resets all changes to the "traffic" field.
+func (m *APISubscriptionMutation) ResetTraffic() {
+	m.traffic = nil
+	delete(m.clearedFields, apisubscription.FieldTraffic)
+}
+
+// SetOwnerID sets the "owner" edge to the Application entity by id.
+func (m *APISubscriptionMutation) SetOwnerID(id int) {
+	m.owner = &id
+}
+
+// ClearOwner clears the "owner" edge to the Application entity.
+func (m *APISubscriptionMutation) ClearOwner() {
+	m.clearedowner = true
+}
+
+// OwnerCleared reports if the "owner" edge to the Application entity was cleared.
+func (m *APISubscriptionMutation) OwnerCleared() bool {
+	return m.clearedowner
+}
+
+// OwnerID returns the "owner" edge ID in the mutation.
+func (m *APISubscriptionMutation) OwnerID() (id int, exists bool) {
+	if m.owner != nil {
+		return *m.owner, true
+	}
+	return
+}
+
+// OwnerIDs returns the "owner" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// OwnerID instead. It exists only for internal usage by the builders.
+func (m *APISubscriptionMutation) OwnerIDs() (ids []int) {
+	if id := m.owner; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetOwner resets all changes to the "owner" edge.
+func (m *APISubscriptionMutation) ResetOwner() {
+	m.owner = nil
+	m.clearedowner = false
+}
+
+// SetTargetID sets the "target" edge to the APIExposure entity by id.
+func (m *APISubscriptionMutation) SetTargetID(id int) {
+	m.target = &id
+}
+
+// ClearTarget clears the "target" edge to the APIExposure entity.
+func (m *APISubscriptionMutation) ClearTarget() {
+	m.clearedtarget = true
+}
+
+// TargetCleared reports if the "target" edge to the APIExposure entity was cleared.
+func (m *APISubscriptionMutation) TargetCleared() bool {
+	return m.clearedtarget
+}
+
+// TargetID returns the "target" edge ID in the mutation.
+func (m *APISubscriptionMutation) TargetID() (id int, exists bool) {
+	if m.target != nil {
+		return *m.target, true
+	}
+	return
+}
+
+// TargetIDs returns the "target" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// TargetID instead. It exists only for internal usage by the builders.
+func (m *APISubscriptionMutation) TargetIDs() (ids []int) {
+	if id := m.target; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetTarget resets all changes to the "target" edge.
+func (m *APISubscriptionMutation) ResetTarget() {
+	m.target = nil
+	m.clearedtarget = false
+}
+
+// AddFailoverZoneIDs adds the "failover_zones" edge to the Zone entity by ids.
+func (m *APISubscriptionMutation) AddFailoverZoneIDs(ids ...int) {
+	if m.failover_zones == nil {
+		m.failover_zones = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.failover_zones[ids[i]] = struct{}{}
+	}
+}
+
+// ClearFailoverZones clears the "failover_zones" edge to the Zone entity.
+func (m *APISubscriptionMutation) ClearFailoverZones() {
+	m.clearedfailover_zones = true
+}
+
+// FailoverZonesCleared reports if the "failover_zones" edge to the Zone entity was cleared.
+func (m *APISubscriptionMutation) FailoverZonesCleared() bool {
+	return m.clearedfailover_zones
+}
+
+// RemoveFailoverZoneIDs removes the "failover_zones" edge to the Zone entity by IDs.
+func (m *APISubscriptionMutation) RemoveFailoverZoneIDs(ids ...int) {
+	if m.removedfailover_zones == nil {
+		m.removedfailover_zones = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.failover_zones, ids[i])
+		m.removedfailover_zones[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedFailoverZones returns the removed IDs of the "failover_zones" edge to the Zone entity.
+func (m *APISubscriptionMutation) RemovedFailoverZonesIDs() (ids []int) {
+	for id := range m.removedfailover_zones {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// FailoverZonesIDs returns the "failover_zones" edge IDs in the mutation.
+func (m *APISubscriptionMutation) FailoverZonesIDs() (ids []int) {
+	for id := range m.failover_zones {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetFailoverZones resets all changes to the "failover_zones" edge.
+func (m *APISubscriptionMutation) ResetFailoverZones() {
+	m.failover_zones = nil
+	m.clearedfailover_zones = false
+	m.removedfailover_zones = nil
+}
+
+// SetApprovalID sets the "approval" edge to the Approval entity by id.
+func (m *APISubscriptionMutation) SetApprovalID(id int) {
+	m.approval = &id
+}
+
+// ClearApproval clears the "approval" edge to the Approval entity.
+func (m *APISubscriptionMutation) ClearApproval() {
+	m.clearedapproval = true
+}
+
+// ApprovalCleared reports if the "approval" edge to the Approval entity was cleared.
+func (m *APISubscriptionMutation) ApprovalCleared() bool {
+	return m.clearedapproval
+}
+
+// ApprovalID returns the "approval" edge ID in the mutation.
+func (m *APISubscriptionMutation) ApprovalID() (id int, exists bool) {
+	if m.approval != nil {
+		return *m.approval, true
+	}
+	return
+}
+
+// ApprovalIDs returns the "approval" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// ApprovalID instead. It exists only for internal usage by the builders.
+func (m *APISubscriptionMutation) ApprovalIDs() (ids []int) {
+	if id := m.approval; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetApproval resets all changes to the "approval" edge.
+func (m *APISubscriptionMutation) ResetApproval() {
+	m.approval = nil
+	m.clearedapproval = false
+}
+
+// AddApprovalRequestIDs adds the "approval_requests" edge to the ApprovalRequest entity by ids.
+func (m *APISubscriptionMutation) AddApprovalRequestIDs(ids ...int) {
+	if m.approval_requests == nil {
+		m.approval_requests = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.approval_requests[ids[i]] = struct{}{}
+	}
+}
+
+// ClearApprovalRequests clears the "approval_requests" edge to the ApprovalRequest entity.
+func (m *APISubscriptionMutation) ClearApprovalRequests() {
+	m.clearedapproval_requests = true
+}
+
+// ApprovalRequestsCleared reports if the "approval_requests" edge to the ApprovalRequest entity was cleared.
+func (m *APISubscriptionMutation) ApprovalRequestsCleared() bool {
+	return m.clearedapproval_requests
+}
+
+// RemoveApprovalRequestIDs removes the "approval_requests" edge to the ApprovalRequest entity by IDs.
+func (m *APISubscriptionMutation) RemoveApprovalRequestIDs(ids ...int) {
+	if m.removedapproval_requests == nil {
+		m.removedapproval_requests = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.approval_requests, ids[i])
+		m.removedapproval_requests[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedApprovalRequests returns the removed IDs of the "approval_requests" edge to the ApprovalRequest entity.
+func (m *APISubscriptionMutation) RemovedApprovalRequestsIDs() (ids []int) {
+	for id := range m.removedapproval_requests {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ApprovalRequestsIDs returns the "approval_requests" edge IDs in the mutation.
+func (m *APISubscriptionMutation) ApprovalRequestsIDs() (ids []int) {
+	for id := range m.approval_requests {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetApprovalRequests resets all changes to the "approval_requests" edge.
+func (m *APISubscriptionMutation) ResetApprovalRequests() {
+	m.approval_requests = nil
+	m.clearedapproval_requests = false
+	m.removedapproval_requests = nil
+}
+
+// Where appends a list predicates to the APISubscriptionMutation builder.
+func (m *APISubscriptionMutation) Where(ps ...predicate.APISubscription) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the APISubscriptionMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *APISubscriptionMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.APISubscription, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *APISubscriptionMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *APISubscriptionMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (APISubscription).
+func (m *APISubscriptionMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *APISubscriptionMutation) Fields() []string {
+	fields := make([]string, 0, 12)
+	if m.created_at != nil {
+		fields = append(fields, apisubscription.FieldCreatedAt)
+	}
+	if m.last_modified_at != nil {
+		fields = append(fields, apisubscription.FieldLastModifiedAt)
+	}
+	if m.status_phase != nil {
+		fields = append(fields, apisubscription.FieldStatusPhase)
+	}
+	if m.status_message != nil {
+		fields = append(fields, apisubscription.FieldStatusMessage)
+	}
+	if m.environment != nil {
+		fields = append(fields, apisubscription.FieldEnvironment)
+	}
+	if m.namespace != nil {
+		fields = append(fields, apisubscription.FieldNamespace)
+	}
+	if m.name != nil {
+		fields = append(fields, apisubscription.FieldName)
+	}
+	if m.base_path != nil {
+		fields = append(fields, apisubscription.FieldBasePath)
+	}
+	if m._M2M_auth_method != nil {
+		fields = append(fields, apisubscription.FieldM2MAuthMethod)
+	}
+	if m.gateway_url != nil {
+		fields = append(fields, apisubscription.FieldGatewayURL)
+	}
+	if m.security != nil {
+		fields = append(fields, apisubscription.FieldSecurity)
+	}
+	if m.traffic != nil {
+		fields = append(fields, apisubscription.FieldTraffic)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *APISubscriptionMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case apisubscription.FieldCreatedAt:
+		return m.CreatedAt()
+	case apisubscription.FieldLastModifiedAt:
+		return m.LastModifiedAt()
+	case apisubscription.FieldStatusPhase:
+		return m.StatusPhase()
+	case apisubscription.FieldStatusMessage:
+		return m.StatusMessage()
+	case apisubscription.FieldEnvironment:
+		return m.Environment()
+	case apisubscription.FieldNamespace:
+		return m.Namespace()
+	case apisubscription.FieldName:
+		return m.Name()
+	case apisubscription.FieldBasePath:
+		return m.BasePath()
+	case apisubscription.FieldM2MAuthMethod:
+		return m.M2MAuthMethod()
+	case apisubscription.FieldGatewayURL:
+		return m.GatewayURL()
+	case apisubscription.FieldSecurity:
+		return m.Security()
+	case apisubscription.FieldTraffic:
+		return m.Traffic()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *APISubscriptionMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case apisubscription.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case apisubscription.FieldLastModifiedAt:
+		return m.OldLastModifiedAt(ctx)
+	case apisubscription.FieldStatusPhase:
+		return m.OldStatusPhase(ctx)
+	case apisubscription.FieldStatusMessage:
+		return m.OldStatusMessage(ctx)
+	case apisubscription.FieldEnvironment:
+		return m.OldEnvironment(ctx)
+	case apisubscription.FieldNamespace:
+		return m.OldNamespace(ctx)
+	case apisubscription.FieldName:
+		return m.OldName(ctx)
+	case apisubscription.FieldBasePath:
+		return m.OldBasePath(ctx)
+	case apisubscription.FieldM2MAuthMethod:
+		return m.OldM2MAuthMethod(ctx)
+	case apisubscription.FieldGatewayURL:
+		return m.OldGatewayURL(ctx)
+	case apisubscription.FieldSecurity:
+		return m.OldSecurity(ctx)
+	case apisubscription.FieldTraffic:
+		return m.OldTraffic(ctx)
+	}
+	return nil, fmt.Errorf("unknown APISubscription field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *APISubscriptionMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case apisubscription.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case apisubscription.FieldLastModifiedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLastModifiedAt(v)
+		return nil
+	case apisubscription.FieldStatusPhase:
+		v, ok := value.(apisubscription.StatusPhase)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStatusPhase(v)
+		return nil
+	case apisubscription.FieldStatusMessage:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStatusMessage(v)
+		return nil
+	case apisubscription.FieldEnvironment:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEnvironment(v)
+		return nil
+	case apisubscription.FieldNamespace:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetNamespace(v)
+		return nil
+	case apisubscription.FieldName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetName(v)
+		return nil
+	case apisubscription.FieldBasePath:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetBasePath(v)
+		return nil
+	case apisubscription.FieldM2MAuthMethod:
+		v, ok := value.(apisubscription.M2MAuthMethod)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetM2MAuthMethod(v)
+		return nil
+	case apisubscription.FieldGatewayURL:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetGatewayURL(v)
+		return nil
+	case apisubscription.FieldSecurity:
+		v, ok := value.(*model.APISubscriptionSecurity)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSecurity(v)
+		return nil
+	case apisubscription.FieldTraffic:
+		v, ok := value.(*model.APISubscriptionTraffic)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTraffic(v)
+		return nil
+	}
+	return fmt.Errorf("unknown APISubscription field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *APISubscriptionMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *APISubscriptionMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *APISubscriptionMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown APISubscription numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *APISubscriptionMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(apisubscription.FieldStatusPhase) {
+		fields = append(fields, apisubscription.FieldStatusPhase)
+	}
+	if m.FieldCleared(apisubscription.FieldStatusMessage) {
+		fields = append(fields, apisubscription.FieldStatusMessage)
+	}
+	if m.FieldCleared(apisubscription.FieldEnvironment) {
+		fields = append(fields, apisubscription.FieldEnvironment)
+	}
+	if m.FieldCleared(apisubscription.FieldGatewayURL) {
+		fields = append(fields, apisubscription.FieldGatewayURL)
+	}
+	if m.FieldCleared(apisubscription.FieldSecurity) {
+		fields = append(fields, apisubscription.FieldSecurity)
+	}
+	if m.FieldCleared(apisubscription.FieldTraffic) {
+		fields = append(fields, apisubscription.FieldTraffic)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *APISubscriptionMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *APISubscriptionMutation) ClearField(name string) error {
+	switch name {
+	case apisubscription.FieldStatusPhase:
+		m.ClearStatusPhase()
+		return nil
+	case apisubscription.FieldStatusMessage:
+		m.ClearStatusMessage()
+		return nil
+	case apisubscription.FieldEnvironment:
+		m.ClearEnvironment()
+		return nil
+	case apisubscription.FieldGatewayURL:
+		m.ClearGatewayURL()
+		return nil
+	case apisubscription.FieldSecurity:
+		m.ClearSecurity()
+		return nil
+	case apisubscription.FieldTraffic:
+		m.ClearTraffic()
+		return nil
+	}
+	return fmt.Errorf("unknown APISubscription nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *APISubscriptionMutation) ResetField(name string) error {
+	switch name {
+	case apisubscription.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case apisubscription.FieldLastModifiedAt:
+		m.ResetLastModifiedAt()
+		return nil
+	case apisubscription.FieldStatusPhase:
+		m.ResetStatusPhase()
+		return nil
+	case apisubscription.FieldStatusMessage:
+		m.ResetStatusMessage()
+		return nil
+	case apisubscription.FieldEnvironment:
+		m.ResetEnvironment()
+		return nil
+	case apisubscription.FieldNamespace:
+		m.ResetNamespace()
+		return nil
+	case apisubscription.FieldName:
+		m.ResetName()
+		return nil
+	case apisubscription.FieldBasePath:
+		m.ResetBasePath()
+		return nil
+	case apisubscription.FieldM2MAuthMethod:
+		m.ResetM2MAuthMethod()
+		return nil
+	case apisubscription.FieldGatewayURL:
+		m.ResetGatewayURL()
+		return nil
+	case apisubscription.FieldSecurity:
+		m.ResetSecurity()
+		return nil
+	case apisubscription.FieldTraffic:
+		m.ResetTraffic()
+		return nil
+	}
+	return fmt.Errorf("unknown APISubscription field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *APISubscriptionMutation) AddedEdges() []string {
+	edges := make([]string, 0, 5)
+	if m.owner != nil {
+		edges = append(edges, apisubscription.EdgeOwner)
+	}
+	if m.target != nil {
+		edges = append(edges, apisubscription.EdgeTarget)
+	}
+	if m.failover_zones != nil {
+		edges = append(edges, apisubscription.EdgeFailoverZones)
+	}
+	if m.approval != nil {
+		edges = append(edges, apisubscription.EdgeApproval)
+	}
+	if m.approval_requests != nil {
+		edges = append(edges, apisubscription.EdgeApprovalRequests)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *APISubscriptionMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case apisubscription.EdgeOwner:
+		if id := m.owner; id != nil {
+			return []ent.Value{*id}
+		}
+	case apisubscription.EdgeTarget:
+		if id := m.target; id != nil {
+			return []ent.Value{*id}
+		}
+	case apisubscription.EdgeFailoverZones:
+		ids := make([]ent.Value, 0, len(m.failover_zones))
+		for id := range m.failover_zones {
+			ids = append(ids, id)
+		}
+		return ids
+	case apisubscription.EdgeApproval:
+		if id := m.approval; id != nil {
+			return []ent.Value{*id}
+		}
+	case apisubscription.EdgeApprovalRequests:
+		ids := make([]ent.Value, 0, len(m.approval_requests))
+		for id := range m.approval_requests {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *APISubscriptionMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 5)
+	if m.removedfailover_zones != nil {
+		edges = append(edges, apisubscription.EdgeFailoverZones)
+	}
+	if m.removedapproval_requests != nil {
+		edges = append(edges, apisubscription.EdgeApprovalRequests)
+	}
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *APISubscriptionMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case apisubscription.EdgeFailoverZones:
+		ids := make([]ent.Value, 0, len(m.removedfailover_zones))
+		for id := range m.removedfailover_zones {
+			ids = append(ids, id)
+		}
+		return ids
+	case apisubscription.EdgeApprovalRequests:
+		ids := make([]ent.Value, 0, len(m.removedapproval_requests))
+		for id := range m.removedapproval_requests {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *APISubscriptionMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 5)
+	if m.clearedowner {
+		edges = append(edges, apisubscription.EdgeOwner)
+	}
+	if m.clearedtarget {
+		edges = append(edges, apisubscription.EdgeTarget)
+	}
+	if m.clearedfailover_zones {
+		edges = append(edges, apisubscription.EdgeFailoverZones)
+	}
+	if m.clearedapproval {
+		edges = append(edges, apisubscription.EdgeApproval)
+	}
+	if m.clearedapproval_requests {
+		edges = append(edges, apisubscription.EdgeApprovalRequests)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *APISubscriptionMutation) EdgeCleared(name string) bool {
+	switch name {
+	case apisubscription.EdgeOwner:
+		return m.clearedowner
+	case apisubscription.EdgeTarget:
+		return m.clearedtarget
+	case apisubscription.EdgeFailoverZones:
+		return m.clearedfailover_zones
+	case apisubscription.EdgeApproval:
+		return m.clearedapproval
+	case apisubscription.EdgeApprovalRequests:
+		return m.clearedapproval_requests
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *APISubscriptionMutation) ClearEdge(name string) error {
+	switch name {
+	case apisubscription.EdgeOwner:
+		m.ClearOwner()
+		return nil
+	case apisubscription.EdgeTarget:
+		m.ClearTarget()
+		return nil
+	case apisubscription.EdgeApproval:
+		m.ClearApproval()
+		return nil
+	}
+	return fmt.Errorf("unknown APISubscription unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *APISubscriptionMutation) ResetEdge(name string) error {
+	switch name {
+	case apisubscription.EdgeOwner:
+		m.ResetOwner()
+		return nil
+	case apisubscription.EdgeTarget:
+		m.ResetTarget()
+		return nil
+	case apisubscription.EdgeFailoverZones:
+		m.ResetFailoverZones()
+		return nil
+	case apisubscription.EdgeApproval:
+		m.ResetApproval()
+		return nil
+	case apisubscription.EdgeApprovalRequests:
+		m.ResetApprovalRequests()
+		return nil
+	}
+	return fmt.Errorf("unknown APISubscription edge %s", name)
+}
+
 // AgentCardMutation represents an operation that mutates the AgentCard nodes in the graph.
 type AgentCardMutation struct {
 	config
-	op                  Op
-	typ                 string
-	id                  *int
-	created_at          *time.Time
-	last_modified_at    *time.Time
-	status_phase        *agentcard.StatusPhase
-	status_message      *string
-	namespace           *string
-	base_path           *string
-	version             *string
-	name                *string
-	description         *string
-	specification       *string
-	category            *string
-	oauth2_scopes       *[]string
-	appendoauth2_scopes []string
-	active              *bool
-	clearedFields       map[string]struct{}
-	owner               *int
-	clearedowner        bool
-	exposures           map[int]struct{}
-	removedexposures    map[int]struct{}
-	clearedexposures    bool
-	done                bool
-	oldValue            func(context.Context) (*AgentCard, error)
-	predicates          []predicate.AgentCard
+	op                   Op
+	typ                  string
+	id                   *int
+	created_at           *time.Time
+	last_modified_at     *time.Time
+	status_phase         *agentcard.StatusPhase
+	status_message       *string
+	namespace            *string
+	base_path            *string
+	version              *string
+	name                 *string
+	description          *string
+	specification        *string
+	category             *string
+	_OAuth2_scopes       *[]string
+	append_OAuth2_scopes []string
+	active               *bool
+	clearedFields        map[string]struct{}
+	owner                *int
+	clearedowner         bool
+	exposures            map[int]struct{}
+	removedexposures     map[int]struct{}
+	clearedexposures     bool
+	done                 bool
+	oldValue             func(context.Context) (*AgentCard, error)
+	predicates           []predicate.AgentCard
 }
 
 var _ ent.Mutation = (*AgentCardMutation)(nil)
@@ -655,69 +4693,69 @@ func (m *AgentCardMutation) ResetCategory() {
 	delete(m.clearedFields, agentcard.FieldCategory)
 }
 
-// SetOauth2Scopes sets the "oauth2_scopes" field.
-func (m *AgentCardMutation) SetOauth2Scopes(s []string) {
-	m.oauth2_scopes = &s
-	m.appendoauth2_scopes = nil
+// SetOAuth2Scopes sets the "OAuth2_scopes" field.
+func (m *AgentCardMutation) SetOAuth2Scopes(s []string) {
+	m._OAuth2_scopes = &s
+	m.append_OAuth2_scopes = nil
 }
 
-// Oauth2Scopes returns the value of the "oauth2_scopes" field in the mutation.
-func (m *AgentCardMutation) Oauth2Scopes() (r []string, exists bool) {
-	v := m.oauth2_scopes
+// OAuth2Scopes returns the value of the "OAuth2_scopes" field in the mutation.
+func (m *AgentCardMutation) OAuth2Scopes() (r []string, exists bool) {
+	v := m._OAuth2_scopes
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldOauth2Scopes returns the old "oauth2_scopes" field's value of the AgentCard entity.
+// OldOAuth2Scopes returns the old "OAuth2_scopes" field's value of the AgentCard entity.
 // If the AgentCard object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *AgentCardMutation) OldOauth2Scopes(ctx context.Context) (v []string, err error) {
+func (m *AgentCardMutation) OldOAuth2Scopes(ctx context.Context) (v []string, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldOauth2Scopes is only allowed on UpdateOne operations")
+		return v, errors.New("OldOAuth2Scopes is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldOauth2Scopes requires an ID field in the mutation")
+		return v, errors.New("OldOAuth2Scopes requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldOauth2Scopes: %w", err)
+		return v, fmt.Errorf("querying old value for OldOAuth2Scopes: %w", err)
 	}
-	return oldValue.Oauth2Scopes, nil
+	return oldValue.OAuth2Scopes, nil
 }
 
-// AppendOauth2Scopes adds s to the "oauth2_scopes" field.
-func (m *AgentCardMutation) AppendOauth2Scopes(s []string) {
-	m.appendoauth2_scopes = append(m.appendoauth2_scopes, s...)
+// AppendOAuth2Scopes adds s to the "OAuth2_scopes" field.
+func (m *AgentCardMutation) AppendOAuth2Scopes(s []string) {
+	m.append_OAuth2_scopes = append(m.append_OAuth2_scopes, s...)
 }
 
-// AppendedOauth2Scopes returns the list of values that were appended to the "oauth2_scopes" field in this mutation.
-func (m *AgentCardMutation) AppendedOauth2Scopes() ([]string, bool) {
-	if len(m.appendoauth2_scopes) == 0 {
+// AppendedOAuth2Scopes returns the list of values that were appended to the "OAuth2_scopes" field in this mutation.
+func (m *AgentCardMutation) AppendedOAuth2Scopes() ([]string, bool) {
+	if len(m.append_OAuth2_scopes) == 0 {
 		return nil, false
 	}
-	return m.appendoauth2_scopes, true
+	return m.append_OAuth2_scopes, true
 }
 
-// ClearOauth2Scopes clears the value of the "oauth2_scopes" field.
-func (m *AgentCardMutation) ClearOauth2Scopes() {
-	m.oauth2_scopes = nil
-	m.appendoauth2_scopes = nil
-	m.clearedFields[agentcard.FieldOauth2Scopes] = struct{}{}
+// ClearOAuth2Scopes clears the value of the "OAuth2_scopes" field.
+func (m *AgentCardMutation) ClearOAuth2Scopes() {
+	m._OAuth2_scopes = nil
+	m.append_OAuth2_scopes = nil
+	m.clearedFields[agentcard.FieldOAuth2Scopes] = struct{}{}
 }
 
-// Oauth2ScopesCleared returns if the "oauth2_scopes" field was cleared in this mutation.
-func (m *AgentCardMutation) Oauth2ScopesCleared() bool {
-	_, ok := m.clearedFields[agentcard.FieldOauth2Scopes]
+// OAuth2ScopesCleared returns if the "OAuth2_scopes" field was cleared in this mutation.
+func (m *AgentCardMutation) OAuth2ScopesCleared() bool {
+	_, ok := m.clearedFields[agentcard.FieldOAuth2Scopes]
 	return ok
 }
 
-// ResetOauth2Scopes resets all changes to the "oauth2_scopes" field.
-func (m *AgentCardMutation) ResetOauth2Scopes() {
-	m.oauth2_scopes = nil
-	m.appendoauth2_scopes = nil
-	delete(m.clearedFields, agentcard.FieldOauth2Scopes)
+// ResetOAuth2Scopes resets all changes to the "OAuth2_scopes" field.
+func (m *AgentCardMutation) ResetOAuth2Scopes() {
+	m._OAuth2_scopes = nil
+	m.append_OAuth2_scopes = nil
+	delete(m.clearedFields, agentcard.FieldOAuth2Scopes)
 }
 
 // SetActive sets the "active" field.
@@ -917,8 +4955,8 @@ func (m *AgentCardMutation) Fields() []string {
 	if m.category != nil {
 		fields = append(fields, agentcard.FieldCategory)
 	}
-	if m.oauth2_scopes != nil {
-		fields = append(fields, agentcard.FieldOauth2Scopes)
+	if m._OAuth2_scopes != nil {
+		fields = append(fields, agentcard.FieldOAuth2Scopes)
 	}
 	if m.active != nil {
 		fields = append(fields, agentcard.FieldActive)
@@ -953,8 +4991,8 @@ func (m *AgentCardMutation) Field(name string) (ent.Value, bool) {
 		return m.Specification()
 	case agentcard.FieldCategory:
 		return m.Category()
-	case agentcard.FieldOauth2Scopes:
-		return m.Oauth2Scopes()
+	case agentcard.FieldOAuth2Scopes:
+		return m.OAuth2Scopes()
 	case agentcard.FieldActive:
 		return m.Active()
 	}
@@ -988,8 +5026,8 @@ func (m *AgentCardMutation) OldField(ctx context.Context, name string) (ent.Valu
 		return m.OldSpecification(ctx)
 	case agentcard.FieldCategory:
 		return m.OldCategory(ctx)
-	case agentcard.FieldOauth2Scopes:
-		return m.OldOauth2Scopes(ctx)
+	case agentcard.FieldOAuth2Scopes:
+		return m.OldOAuth2Scopes(ctx)
 	case agentcard.FieldActive:
 		return m.OldActive(ctx)
 	}
@@ -1078,12 +5116,12 @@ func (m *AgentCardMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetCategory(v)
 		return nil
-	case agentcard.FieldOauth2Scopes:
+	case agentcard.FieldOAuth2Scopes:
 		v, ok := value.([]string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetOauth2Scopes(v)
+		m.SetOAuth2Scopes(v)
 		return nil
 	case agentcard.FieldActive:
 		v, ok := value.(bool)
@@ -1137,8 +5175,8 @@ func (m *AgentCardMutation) ClearedFields() []string {
 	if m.FieldCleared(agentcard.FieldCategory) {
 		fields = append(fields, agentcard.FieldCategory)
 	}
-	if m.FieldCleared(agentcard.FieldOauth2Scopes) {
-		fields = append(fields, agentcard.FieldOauth2Scopes)
+	if m.FieldCleared(agentcard.FieldOAuth2Scopes) {
+		fields = append(fields, agentcard.FieldOAuth2Scopes)
 	}
 	return fields
 }
@@ -1169,8 +5207,8 @@ func (m *AgentCardMutation) ClearField(name string) error {
 	case agentcard.FieldCategory:
 		m.ClearCategory()
 		return nil
-	case agentcard.FieldOauth2Scopes:
-		m.ClearOauth2Scopes()
+	case agentcard.FieldOAuth2Scopes:
+		m.ClearOAuth2Scopes()
 		return nil
 	}
 	return fmt.Errorf("unknown AgentCard nullable field %s", name)
@@ -1213,8 +5251,8 @@ func (m *AgentCardMutation) ResetField(name string) error {
 	case agentcard.FieldCategory:
 		m.ResetCategory()
 		return nil
-	case agentcard.FieldOauth2Scopes:
-		m.ResetOauth2Scopes()
+	case agentcard.FieldOAuth2Scopes:
+		m.ResetOAuth2Scopes()
 		return nil
 	case agentcard.FieldActive:
 		m.ResetActive()
@@ -1350,8 +5388,8 @@ type AgenticExposureMutation struct {
 	clearedFields        map[string]struct{}
 	owner                *int
 	clearedowner         bool
-	mcp_server           *int
-	clearedmcp_server    bool
+	_MCP_server          *int
+	cleared_MCP_server   bool
 	agent_card           *int
 	clearedagent_card    bool
 	subscriptions        map[int]struct{}
@@ -2145,43 +6183,43 @@ func (m *AgenticExposureMutation) ResetOwner() {
 	m.clearedowner = false
 }
 
-// SetMcpServerID sets the "mcp_server" edge to the McpServer entity by id.
-func (m *AgenticExposureMutation) SetMcpServerID(id int) {
-	m.mcp_server = &id
+// SetMCPServerID sets the "MCP_server" edge to the MCPServer entity by id.
+func (m *AgenticExposureMutation) SetMCPServerID(id int) {
+	m._MCP_server = &id
 }
 
-// ClearMcpServer clears the "mcp_server" edge to the McpServer entity.
-func (m *AgenticExposureMutation) ClearMcpServer() {
-	m.clearedmcp_server = true
+// ClearMCPServer clears the "MCP_server" edge to the MCPServer entity.
+func (m *AgenticExposureMutation) ClearMCPServer() {
+	m.cleared_MCP_server = true
 }
 
-// McpServerCleared reports if the "mcp_server" edge to the McpServer entity was cleared.
-func (m *AgenticExposureMutation) McpServerCleared() bool {
-	return m.clearedmcp_server
+// MCPServerCleared reports if the "MCP_server" edge to the MCPServer entity was cleared.
+func (m *AgenticExposureMutation) MCPServerCleared() bool {
+	return m.cleared_MCP_server
 }
 
-// McpServerID returns the "mcp_server" edge ID in the mutation.
-func (m *AgenticExposureMutation) McpServerID() (id int, exists bool) {
-	if m.mcp_server != nil {
-		return *m.mcp_server, true
+// MCPServerID returns the "MCP_server" edge ID in the mutation.
+func (m *AgenticExposureMutation) MCPServerID() (id int, exists bool) {
+	if m._MCP_server != nil {
+		return *m._MCP_server, true
 	}
 	return
 }
 
-// McpServerIDs returns the "mcp_server" edge IDs in the mutation.
+// MCPServerIDs returns the "MCP_server" edge IDs in the mutation.
 // Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
-// McpServerID instead. It exists only for internal usage by the builders.
-func (m *AgenticExposureMutation) McpServerIDs() (ids []int) {
-	if id := m.mcp_server; id != nil {
+// MCPServerID instead. It exists only for internal usage by the builders.
+func (m *AgenticExposureMutation) MCPServerIDs() (ids []int) {
+	if id := m._MCP_server; id != nil {
 		ids = append(ids, *id)
 	}
 	return
 }
 
-// ResetMcpServer resets all changes to the "mcp_server" edge.
-func (m *AgenticExposureMutation) ResetMcpServer() {
-	m.mcp_server = nil
-	m.clearedmcp_server = false
+// ResetMCPServer resets all changes to the "MCP_server" edge.
+func (m *AgenticExposureMutation) ResetMCPServer() {
+	m._MCP_server = nil
+	m.cleared_MCP_server = false
 }
 
 // SetAgentCardID sets the "agent_card" edge to the AgentCard entity by id.
@@ -2697,8 +6735,8 @@ func (m *AgenticExposureMutation) AddedEdges() []string {
 	if m.owner != nil {
 		edges = append(edges, agenticexposure.EdgeOwner)
 	}
-	if m.mcp_server != nil {
-		edges = append(edges, agenticexposure.EdgeMcpServer)
+	if m._MCP_server != nil {
+		edges = append(edges, agenticexposure.EdgeMCPServer)
 	}
 	if m.agent_card != nil {
 		edges = append(edges, agenticexposure.EdgeAgentCard)
@@ -2717,8 +6755,8 @@ func (m *AgenticExposureMutation) AddedIDs(name string) []ent.Value {
 		if id := m.owner; id != nil {
 			return []ent.Value{*id}
 		}
-	case agenticexposure.EdgeMcpServer:
-		if id := m.mcp_server; id != nil {
+	case agenticexposure.EdgeMCPServer:
+		if id := m._MCP_server; id != nil {
 			return []ent.Value{*id}
 		}
 	case agenticexposure.EdgeAgentCard:
@@ -2764,8 +6802,8 @@ func (m *AgenticExposureMutation) ClearedEdges() []string {
 	if m.clearedowner {
 		edges = append(edges, agenticexposure.EdgeOwner)
 	}
-	if m.clearedmcp_server {
-		edges = append(edges, agenticexposure.EdgeMcpServer)
+	if m.cleared_MCP_server {
+		edges = append(edges, agenticexposure.EdgeMCPServer)
 	}
 	if m.clearedagent_card {
 		edges = append(edges, agenticexposure.EdgeAgentCard)
@@ -2782,8 +6820,8 @@ func (m *AgenticExposureMutation) EdgeCleared(name string) bool {
 	switch name {
 	case agenticexposure.EdgeOwner:
 		return m.clearedowner
-	case agenticexposure.EdgeMcpServer:
-		return m.clearedmcp_server
+	case agenticexposure.EdgeMCPServer:
+		return m.cleared_MCP_server
 	case agenticexposure.EdgeAgentCard:
 		return m.clearedagent_card
 	case agenticexposure.EdgeSubscriptions:
@@ -2799,8 +6837,8 @@ func (m *AgenticExposureMutation) ClearEdge(name string) error {
 	case agenticexposure.EdgeOwner:
 		m.ClearOwner()
 		return nil
-	case agenticexposure.EdgeMcpServer:
-		m.ClearMcpServer()
+	case agenticexposure.EdgeMCPServer:
+		m.ClearMCPServer()
 		return nil
 	case agenticexposure.EdgeAgentCard:
 		m.ClearAgentCard()
@@ -2816,8 +6854,8 @@ func (m *AgenticExposureMutation) ResetEdge(name string) error {
 	case agenticexposure.EdgeOwner:
 		m.ResetOwner()
 		return nil
-	case agenticexposure.EdgeMcpServer:
-		m.ResetMcpServer()
+	case agenticexposure.EdgeMCPServer:
+		m.ResetMCPServer()
 		return nil
 	case agenticexposure.EdgeAgentCard:
 		m.ResetAgentCard()
@@ -4082,4044 +8120,6 @@ func (m *AgenticSubscriptionMutation) ResetEdge(name string) error {
 	return fmt.Errorf("unknown AgenticSubscription edge %s", name)
 }
 
-// APIMutation represents an operation that mutates the Api nodes in the graph.
-type APIMutation struct {
-	config
-	op                  Op
-	typ                 string
-	id                  *int
-	created_at          *time.Time
-	last_modified_at    *time.Time
-	status_phase        *api.StatusPhase
-	status_message      *string
-	namespace           *string
-	base_path           *string
-	version             *string
-	category            *string
-	oauth2_scopes       *[]string
-	appendoauth2_scopes []string
-	x_vendor            *bool
-	specification       *string
-	active              *bool
-	clearedFields       map[string]struct{}
-	owner               *int
-	clearedowner        bool
-	exposures           map[int]struct{}
-	removedexposures    map[int]struct{}
-	clearedexposures    bool
-	done                bool
-	oldValue            func(context.Context) (*Api, error)
-	predicates          []predicate.Api
-}
-
-var _ ent.Mutation = (*APIMutation)(nil)
-
-// apiOption allows management of the mutation configuration using functional options.
-type apiOption func(*APIMutation)
-
-// newAPIMutation creates new mutation for the Api entity.
-func newAPIMutation(c config, op Op, opts ...apiOption) *APIMutation {
-	m := &APIMutation{
-		config:        c,
-		op:            op,
-		typ:           TypeAPI,
-		clearedFields: make(map[string]struct{}),
-	}
-	for _, opt := range opts {
-		opt(m)
-	}
-	return m
-}
-
-// withApiID sets the ID field of the mutation.
-func withApiID(id int) apiOption {
-	return func(m *APIMutation) {
-		var (
-			err   error
-			once  sync.Once
-			value *Api
-		)
-		m.oldValue = func(ctx context.Context) (*Api, error) {
-			once.Do(func() {
-				if m.done {
-					err = errors.New("querying old values post mutation is not allowed")
-				} else {
-					value, err = m.Client().Api.Get(ctx, id)
-				}
-			})
-			return value, err
-		}
-		m.id = &id
-	}
-}
-
-// withApi sets the old Api of the mutation.
-func withApi(node *Api) apiOption {
-	return func(m *APIMutation) {
-		m.oldValue = func(context.Context) (*Api, error) {
-			return node, nil
-		}
-		m.id = &node.ID
-	}
-}
-
-// Client returns a new `ent.Client` from the mutation. If the mutation was
-// executed in a transaction (ent.Tx), a transactional client is returned.
-func (m APIMutation) Client() *Client {
-	client := &Client{config: m.config}
-	client.init()
-	return client
-}
-
-// Tx returns an `ent.Tx` for mutations that were executed in transactions;
-// it returns an error otherwise.
-func (m APIMutation) Tx() (*Tx, error) {
-	if _, ok := m.driver.(*txDriver); !ok {
-		return nil, errors.New("ent: mutation is not running in a transaction")
-	}
-	tx := &Tx{config: m.config}
-	tx.init()
-	return tx, nil
-}
-
-// ID returns the ID value in the mutation. Note that the ID is only available
-// if it was provided to the builder or after it was returned from the database.
-func (m *APIMutation) ID() (id int, exists bool) {
-	if m.id == nil {
-		return
-	}
-	return *m.id, true
-}
-
-// IDs queries the database and returns the entity ids that match the mutation's predicate.
-// That means, if the mutation is applied within a transaction with an isolation level such
-// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
-// or updated by the mutation.
-func (m *APIMutation) IDs(ctx context.Context) ([]int, error) {
-	switch {
-	case m.op.Is(OpUpdateOne | OpDeleteOne):
-		id, exists := m.ID()
-		if exists {
-			return []int{id}, nil
-		}
-		fallthrough
-	case m.op.Is(OpUpdate | OpDelete):
-		return m.Client().Api.Query().Where(m.predicates...).IDs(ctx)
-	default:
-		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
-	}
-}
-
-// SetCreatedAt sets the "created_at" field.
-func (m *APIMutation) SetCreatedAt(t time.Time) {
-	m.created_at = &t
-}
-
-// CreatedAt returns the value of the "created_at" field in the mutation.
-func (m *APIMutation) CreatedAt() (r time.Time, exists bool) {
-	v := m.created_at
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldCreatedAt returns the old "created_at" field's value of the Api entity.
-// If the Api object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *APIMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
-	}
-	return oldValue.CreatedAt, nil
-}
-
-// ResetCreatedAt resets all changes to the "created_at" field.
-func (m *APIMutation) ResetCreatedAt() {
-	m.created_at = nil
-}
-
-// SetLastModifiedAt sets the "last_modified_at" field.
-func (m *APIMutation) SetLastModifiedAt(t time.Time) {
-	m.last_modified_at = &t
-}
-
-// LastModifiedAt returns the value of the "last_modified_at" field in the mutation.
-func (m *APIMutation) LastModifiedAt() (r time.Time, exists bool) {
-	v := m.last_modified_at
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldLastModifiedAt returns the old "last_modified_at" field's value of the Api entity.
-// If the Api object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *APIMutation) OldLastModifiedAt(ctx context.Context) (v time.Time, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldLastModifiedAt is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldLastModifiedAt requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldLastModifiedAt: %w", err)
-	}
-	return oldValue.LastModifiedAt, nil
-}
-
-// ResetLastModifiedAt resets all changes to the "last_modified_at" field.
-func (m *APIMutation) ResetLastModifiedAt() {
-	m.last_modified_at = nil
-}
-
-// SetStatusPhase sets the "status_phase" field.
-func (m *APIMutation) SetStatusPhase(ap api.StatusPhase) {
-	m.status_phase = &ap
-}
-
-// StatusPhase returns the value of the "status_phase" field in the mutation.
-func (m *APIMutation) StatusPhase() (r api.StatusPhase, exists bool) {
-	v := m.status_phase
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldStatusPhase returns the old "status_phase" field's value of the Api entity.
-// If the Api object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *APIMutation) OldStatusPhase(ctx context.Context) (v *api.StatusPhase, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldStatusPhase is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldStatusPhase requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldStatusPhase: %w", err)
-	}
-	return oldValue.StatusPhase, nil
-}
-
-// ClearStatusPhase clears the value of the "status_phase" field.
-func (m *APIMutation) ClearStatusPhase() {
-	m.status_phase = nil
-	m.clearedFields[api.FieldStatusPhase] = struct{}{}
-}
-
-// StatusPhaseCleared returns if the "status_phase" field was cleared in this mutation.
-func (m *APIMutation) StatusPhaseCleared() bool {
-	_, ok := m.clearedFields[api.FieldStatusPhase]
-	return ok
-}
-
-// ResetStatusPhase resets all changes to the "status_phase" field.
-func (m *APIMutation) ResetStatusPhase() {
-	m.status_phase = nil
-	delete(m.clearedFields, api.FieldStatusPhase)
-}
-
-// SetStatusMessage sets the "status_message" field.
-func (m *APIMutation) SetStatusMessage(s string) {
-	m.status_message = &s
-}
-
-// StatusMessage returns the value of the "status_message" field in the mutation.
-func (m *APIMutation) StatusMessage() (r string, exists bool) {
-	v := m.status_message
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldStatusMessage returns the old "status_message" field's value of the Api entity.
-// If the Api object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *APIMutation) OldStatusMessage(ctx context.Context) (v *string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldStatusMessage is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldStatusMessage requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldStatusMessage: %w", err)
-	}
-	return oldValue.StatusMessage, nil
-}
-
-// ClearStatusMessage clears the value of the "status_message" field.
-func (m *APIMutation) ClearStatusMessage() {
-	m.status_message = nil
-	m.clearedFields[api.FieldStatusMessage] = struct{}{}
-}
-
-// StatusMessageCleared returns if the "status_message" field was cleared in this mutation.
-func (m *APIMutation) StatusMessageCleared() bool {
-	_, ok := m.clearedFields[api.FieldStatusMessage]
-	return ok
-}
-
-// ResetStatusMessage resets all changes to the "status_message" field.
-func (m *APIMutation) ResetStatusMessage() {
-	m.status_message = nil
-	delete(m.clearedFields, api.FieldStatusMessage)
-}
-
-// SetNamespace sets the "namespace" field.
-func (m *APIMutation) SetNamespace(s string) {
-	m.namespace = &s
-}
-
-// Namespace returns the value of the "namespace" field in the mutation.
-func (m *APIMutation) Namespace() (r string, exists bool) {
-	v := m.namespace
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldNamespace returns the old "namespace" field's value of the Api entity.
-// If the Api object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *APIMutation) OldNamespace(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldNamespace is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldNamespace requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldNamespace: %w", err)
-	}
-	return oldValue.Namespace, nil
-}
-
-// ResetNamespace resets all changes to the "namespace" field.
-func (m *APIMutation) ResetNamespace() {
-	m.namespace = nil
-}
-
-// SetBasePath sets the "base_path" field.
-func (m *APIMutation) SetBasePath(s string) {
-	m.base_path = &s
-}
-
-// BasePath returns the value of the "base_path" field in the mutation.
-func (m *APIMutation) BasePath() (r string, exists bool) {
-	v := m.base_path
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldBasePath returns the old "base_path" field's value of the Api entity.
-// If the Api object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *APIMutation) OldBasePath(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldBasePath is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldBasePath requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldBasePath: %w", err)
-	}
-	return oldValue.BasePath, nil
-}
-
-// ResetBasePath resets all changes to the "base_path" field.
-func (m *APIMutation) ResetBasePath() {
-	m.base_path = nil
-}
-
-// SetVersion sets the "version" field.
-func (m *APIMutation) SetVersion(s string) {
-	m.version = &s
-}
-
-// Version returns the value of the "version" field in the mutation.
-func (m *APIMutation) Version() (r string, exists bool) {
-	v := m.version
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldVersion returns the old "version" field's value of the Api entity.
-// If the Api object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *APIMutation) OldVersion(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldVersion is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldVersion requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldVersion: %w", err)
-	}
-	return oldValue.Version, nil
-}
-
-// ResetVersion resets all changes to the "version" field.
-func (m *APIMutation) ResetVersion() {
-	m.version = nil
-}
-
-// SetCategory sets the "category" field.
-func (m *APIMutation) SetCategory(s string) {
-	m.category = &s
-}
-
-// Category returns the value of the "category" field in the mutation.
-func (m *APIMutation) Category() (r string, exists bool) {
-	v := m.category
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldCategory returns the old "category" field's value of the Api entity.
-// If the Api object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *APIMutation) OldCategory(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldCategory is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldCategory requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldCategory: %w", err)
-	}
-	return oldValue.Category, nil
-}
-
-// ClearCategory clears the value of the "category" field.
-func (m *APIMutation) ClearCategory() {
-	m.category = nil
-	m.clearedFields[api.FieldCategory] = struct{}{}
-}
-
-// CategoryCleared returns if the "category" field was cleared in this mutation.
-func (m *APIMutation) CategoryCleared() bool {
-	_, ok := m.clearedFields[api.FieldCategory]
-	return ok
-}
-
-// ResetCategory resets all changes to the "category" field.
-func (m *APIMutation) ResetCategory() {
-	m.category = nil
-	delete(m.clearedFields, api.FieldCategory)
-}
-
-// SetOauth2Scopes sets the "oauth2_scopes" field.
-func (m *APIMutation) SetOauth2Scopes(s []string) {
-	m.oauth2_scopes = &s
-	m.appendoauth2_scopes = nil
-}
-
-// Oauth2Scopes returns the value of the "oauth2_scopes" field in the mutation.
-func (m *APIMutation) Oauth2Scopes() (r []string, exists bool) {
-	v := m.oauth2_scopes
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldOauth2Scopes returns the old "oauth2_scopes" field's value of the Api entity.
-// If the Api object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *APIMutation) OldOauth2Scopes(ctx context.Context) (v []string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldOauth2Scopes is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldOauth2Scopes requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldOauth2Scopes: %w", err)
-	}
-	return oldValue.Oauth2Scopes, nil
-}
-
-// AppendOauth2Scopes adds s to the "oauth2_scopes" field.
-func (m *APIMutation) AppendOauth2Scopes(s []string) {
-	m.appendoauth2_scopes = append(m.appendoauth2_scopes, s...)
-}
-
-// AppendedOauth2Scopes returns the list of values that were appended to the "oauth2_scopes" field in this mutation.
-func (m *APIMutation) AppendedOauth2Scopes() ([]string, bool) {
-	if len(m.appendoauth2_scopes) == 0 {
-		return nil, false
-	}
-	return m.appendoauth2_scopes, true
-}
-
-// ClearOauth2Scopes clears the value of the "oauth2_scopes" field.
-func (m *APIMutation) ClearOauth2Scopes() {
-	m.oauth2_scopes = nil
-	m.appendoauth2_scopes = nil
-	m.clearedFields[api.FieldOauth2Scopes] = struct{}{}
-}
-
-// Oauth2ScopesCleared returns if the "oauth2_scopes" field was cleared in this mutation.
-func (m *APIMutation) Oauth2ScopesCleared() bool {
-	_, ok := m.clearedFields[api.FieldOauth2Scopes]
-	return ok
-}
-
-// ResetOauth2Scopes resets all changes to the "oauth2_scopes" field.
-func (m *APIMutation) ResetOauth2Scopes() {
-	m.oauth2_scopes = nil
-	m.appendoauth2_scopes = nil
-	delete(m.clearedFields, api.FieldOauth2Scopes)
-}
-
-// SetXVendor sets the "x_vendor" field.
-func (m *APIMutation) SetXVendor(b bool) {
-	m.x_vendor = &b
-}
-
-// XVendor returns the value of the "x_vendor" field in the mutation.
-func (m *APIMutation) XVendor() (r bool, exists bool) {
-	v := m.x_vendor
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldXVendor returns the old "x_vendor" field's value of the Api entity.
-// If the Api object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *APIMutation) OldXVendor(ctx context.Context) (v bool, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldXVendor is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldXVendor requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldXVendor: %w", err)
-	}
-	return oldValue.XVendor, nil
-}
-
-// ResetXVendor resets all changes to the "x_vendor" field.
-func (m *APIMutation) ResetXVendor() {
-	m.x_vendor = nil
-}
-
-// SetSpecification sets the "specification" field.
-func (m *APIMutation) SetSpecification(s string) {
-	m.specification = &s
-}
-
-// Specification returns the value of the "specification" field in the mutation.
-func (m *APIMutation) Specification() (r string, exists bool) {
-	v := m.specification
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldSpecification returns the old "specification" field's value of the Api entity.
-// If the Api object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *APIMutation) OldSpecification(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldSpecification is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldSpecification requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldSpecification: %w", err)
-	}
-	return oldValue.Specification, nil
-}
-
-// ClearSpecification clears the value of the "specification" field.
-func (m *APIMutation) ClearSpecification() {
-	m.specification = nil
-	m.clearedFields[api.FieldSpecification] = struct{}{}
-}
-
-// SpecificationCleared returns if the "specification" field was cleared in this mutation.
-func (m *APIMutation) SpecificationCleared() bool {
-	_, ok := m.clearedFields[api.FieldSpecification]
-	return ok
-}
-
-// ResetSpecification resets all changes to the "specification" field.
-func (m *APIMutation) ResetSpecification() {
-	m.specification = nil
-	delete(m.clearedFields, api.FieldSpecification)
-}
-
-// SetActive sets the "active" field.
-func (m *APIMutation) SetActive(b bool) {
-	m.active = &b
-}
-
-// Active returns the value of the "active" field in the mutation.
-func (m *APIMutation) Active() (r bool, exists bool) {
-	v := m.active
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldActive returns the old "active" field's value of the Api entity.
-// If the Api object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *APIMutation) OldActive(ctx context.Context) (v bool, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldActive is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldActive requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldActive: %w", err)
-	}
-	return oldValue.Active, nil
-}
-
-// ResetActive resets all changes to the "active" field.
-func (m *APIMutation) ResetActive() {
-	m.active = nil
-}
-
-// SetOwnerID sets the "owner" edge to the Team entity by id.
-func (m *APIMutation) SetOwnerID(id int) {
-	m.owner = &id
-}
-
-// ClearOwner clears the "owner" edge to the Team entity.
-func (m *APIMutation) ClearOwner() {
-	m.clearedowner = true
-}
-
-// OwnerCleared reports if the "owner" edge to the Team entity was cleared.
-func (m *APIMutation) OwnerCleared() bool {
-	return m.clearedowner
-}
-
-// OwnerID returns the "owner" edge ID in the mutation.
-func (m *APIMutation) OwnerID() (id int, exists bool) {
-	if m.owner != nil {
-		return *m.owner, true
-	}
-	return
-}
-
-// OwnerIDs returns the "owner" edge IDs in the mutation.
-// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
-// OwnerID instead. It exists only for internal usage by the builders.
-func (m *APIMutation) OwnerIDs() (ids []int) {
-	if id := m.owner; id != nil {
-		ids = append(ids, *id)
-	}
-	return
-}
-
-// ResetOwner resets all changes to the "owner" edge.
-func (m *APIMutation) ResetOwner() {
-	m.owner = nil
-	m.clearedowner = false
-}
-
-// AddExposureIDs adds the "exposures" edge to the ApiExposure entity by ids.
-func (m *APIMutation) AddExposureIDs(ids ...int) {
-	if m.exposures == nil {
-		m.exposures = make(map[int]struct{})
-	}
-	for i := range ids {
-		m.exposures[ids[i]] = struct{}{}
-	}
-}
-
-// ClearExposures clears the "exposures" edge to the ApiExposure entity.
-func (m *APIMutation) ClearExposures() {
-	m.clearedexposures = true
-}
-
-// ExposuresCleared reports if the "exposures" edge to the ApiExposure entity was cleared.
-func (m *APIMutation) ExposuresCleared() bool {
-	return m.clearedexposures
-}
-
-// RemoveExposureIDs removes the "exposures" edge to the ApiExposure entity by IDs.
-func (m *APIMutation) RemoveExposureIDs(ids ...int) {
-	if m.removedexposures == nil {
-		m.removedexposures = make(map[int]struct{})
-	}
-	for i := range ids {
-		delete(m.exposures, ids[i])
-		m.removedexposures[ids[i]] = struct{}{}
-	}
-}
-
-// RemovedExposures returns the removed IDs of the "exposures" edge to the ApiExposure entity.
-func (m *APIMutation) RemovedExposuresIDs() (ids []int) {
-	for id := range m.removedexposures {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// ExposuresIDs returns the "exposures" edge IDs in the mutation.
-func (m *APIMutation) ExposuresIDs() (ids []int) {
-	for id := range m.exposures {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// ResetExposures resets all changes to the "exposures" edge.
-func (m *APIMutation) ResetExposures() {
-	m.exposures = nil
-	m.clearedexposures = false
-	m.removedexposures = nil
-}
-
-// Where appends a list predicates to the APIMutation builder.
-func (m *APIMutation) Where(ps ...predicate.Api) {
-	m.predicates = append(m.predicates, ps...)
-}
-
-// WhereP appends storage-level predicates to the APIMutation builder. Using this method,
-// users can use type-assertion to append predicates that do not depend on any generated package.
-func (m *APIMutation) WhereP(ps ...func(*sql.Selector)) {
-	p := make([]predicate.Api, len(ps))
-	for i := range ps {
-		p[i] = ps[i]
-	}
-	m.Where(p...)
-}
-
-// Op returns the operation name.
-func (m *APIMutation) Op() Op {
-	return m.op
-}
-
-// SetOp allows setting the mutation operation.
-func (m *APIMutation) SetOp(op Op) {
-	m.op = op
-}
-
-// Type returns the node type of this mutation (Api).
-func (m *APIMutation) Type() string {
-	return m.typ
-}
-
-// Fields returns all fields that were changed during this mutation. Note that in
-// order to get all numeric fields that were incremented/decremented, call
-// AddedFields().
-func (m *APIMutation) Fields() []string {
-	fields := make([]string, 0, 12)
-	if m.created_at != nil {
-		fields = append(fields, api.FieldCreatedAt)
-	}
-	if m.last_modified_at != nil {
-		fields = append(fields, api.FieldLastModifiedAt)
-	}
-	if m.status_phase != nil {
-		fields = append(fields, api.FieldStatusPhase)
-	}
-	if m.status_message != nil {
-		fields = append(fields, api.FieldStatusMessage)
-	}
-	if m.namespace != nil {
-		fields = append(fields, api.FieldNamespace)
-	}
-	if m.base_path != nil {
-		fields = append(fields, api.FieldBasePath)
-	}
-	if m.version != nil {
-		fields = append(fields, api.FieldVersion)
-	}
-	if m.category != nil {
-		fields = append(fields, api.FieldCategory)
-	}
-	if m.oauth2_scopes != nil {
-		fields = append(fields, api.FieldOauth2Scopes)
-	}
-	if m.x_vendor != nil {
-		fields = append(fields, api.FieldXVendor)
-	}
-	if m.specification != nil {
-		fields = append(fields, api.FieldSpecification)
-	}
-	if m.active != nil {
-		fields = append(fields, api.FieldActive)
-	}
-	return fields
-}
-
-// Field returns the value of a field with the given name. The second boolean
-// return value indicates that this field was not set, or was not defined in the
-// schema.
-func (m *APIMutation) Field(name string) (ent.Value, bool) {
-	switch name {
-	case api.FieldCreatedAt:
-		return m.CreatedAt()
-	case api.FieldLastModifiedAt:
-		return m.LastModifiedAt()
-	case api.FieldStatusPhase:
-		return m.StatusPhase()
-	case api.FieldStatusMessage:
-		return m.StatusMessage()
-	case api.FieldNamespace:
-		return m.Namespace()
-	case api.FieldBasePath:
-		return m.BasePath()
-	case api.FieldVersion:
-		return m.Version()
-	case api.FieldCategory:
-		return m.Category()
-	case api.FieldOauth2Scopes:
-		return m.Oauth2Scopes()
-	case api.FieldXVendor:
-		return m.XVendor()
-	case api.FieldSpecification:
-		return m.Specification()
-	case api.FieldActive:
-		return m.Active()
-	}
-	return nil, false
-}
-
-// OldField returns the old value of the field from the database. An error is
-// returned if the mutation operation is not UpdateOne, or the query to the
-// database failed.
-func (m *APIMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
-	switch name {
-	case api.FieldCreatedAt:
-		return m.OldCreatedAt(ctx)
-	case api.FieldLastModifiedAt:
-		return m.OldLastModifiedAt(ctx)
-	case api.FieldStatusPhase:
-		return m.OldStatusPhase(ctx)
-	case api.FieldStatusMessage:
-		return m.OldStatusMessage(ctx)
-	case api.FieldNamespace:
-		return m.OldNamespace(ctx)
-	case api.FieldBasePath:
-		return m.OldBasePath(ctx)
-	case api.FieldVersion:
-		return m.OldVersion(ctx)
-	case api.FieldCategory:
-		return m.OldCategory(ctx)
-	case api.FieldOauth2Scopes:
-		return m.OldOauth2Scopes(ctx)
-	case api.FieldXVendor:
-		return m.OldXVendor(ctx)
-	case api.FieldSpecification:
-		return m.OldSpecification(ctx)
-	case api.FieldActive:
-		return m.OldActive(ctx)
-	}
-	return nil, fmt.Errorf("unknown Api field %s", name)
-}
-
-// SetField sets the value of a field with the given name. It returns an error if
-// the field is not defined in the schema, or if the type mismatched the field
-// type.
-func (m *APIMutation) SetField(name string, value ent.Value) error {
-	switch name {
-	case api.FieldCreatedAt:
-		v, ok := value.(time.Time)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetCreatedAt(v)
-		return nil
-	case api.FieldLastModifiedAt:
-		v, ok := value.(time.Time)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetLastModifiedAt(v)
-		return nil
-	case api.FieldStatusPhase:
-		v, ok := value.(api.StatusPhase)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetStatusPhase(v)
-		return nil
-	case api.FieldStatusMessage:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetStatusMessage(v)
-		return nil
-	case api.FieldNamespace:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetNamespace(v)
-		return nil
-	case api.FieldBasePath:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetBasePath(v)
-		return nil
-	case api.FieldVersion:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetVersion(v)
-		return nil
-	case api.FieldCategory:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetCategory(v)
-		return nil
-	case api.FieldOauth2Scopes:
-		v, ok := value.([]string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetOauth2Scopes(v)
-		return nil
-	case api.FieldXVendor:
-		v, ok := value.(bool)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetXVendor(v)
-		return nil
-	case api.FieldSpecification:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetSpecification(v)
-		return nil
-	case api.FieldActive:
-		v, ok := value.(bool)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetActive(v)
-		return nil
-	}
-	return fmt.Errorf("unknown Api field %s", name)
-}
-
-// AddedFields returns all numeric fields that were incremented/decremented during
-// this mutation.
-func (m *APIMutation) AddedFields() []string {
-	return nil
-}
-
-// AddedField returns the numeric value that was incremented/decremented on a field
-// with the given name. The second boolean return value indicates that this field
-// was not set, or was not defined in the schema.
-func (m *APIMutation) AddedField(name string) (ent.Value, bool) {
-	return nil, false
-}
-
-// AddField adds the value to the field with the given name. It returns an error if
-// the field is not defined in the schema, or if the type mismatched the field
-// type.
-func (m *APIMutation) AddField(name string, value ent.Value) error {
-	switch name {
-	}
-	return fmt.Errorf("unknown Api numeric field %s", name)
-}
-
-// ClearedFields returns all nullable fields that were cleared during this
-// mutation.
-func (m *APIMutation) ClearedFields() []string {
-	var fields []string
-	if m.FieldCleared(api.FieldStatusPhase) {
-		fields = append(fields, api.FieldStatusPhase)
-	}
-	if m.FieldCleared(api.FieldStatusMessage) {
-		fields = append(fields, api.FieldStatusMessage)
-	}
-	if m.FieldCleared(api.FieldCategory) {
-		fields = append(fields, api.FieldCategory)
-	}
-	if m.FieldCleared(api.FieldOauth2Scopes) {
-		fields = append(fields, api.FieldOauth2Scopes)
-	}
-	if m.FieldCleared(api.FieldSpecification) {
-		fields = append(fields, api.FieldSpecification)
-	}
-	return fields
-}
-
-// FieldCleared returns a boolean indicating if a field with the given name was
-// cleared in this mutation.
-func (m *APIMutation) FieldCleared(name string) bool {
-	_, ok := m.clearedFields[name]
-	return ok
-}
-
-// ClearField clears the value of the field with the given name. It returns an
-// error if the field is not defined in the schema.
-func (m *APIMutation) ClearField(name string) error {
-	switch name {
-	case api.FieldStatusPhase:
-		m.ClearStatusPhase()
-		return nil
-	case api.FieldStatusMessage:
-		m.ClearStatusMessage()
-		return nil
-	case api.FieldCategory:
-		m.ClearCategory()
-		return nil
-	case api.FieldOauth2Scopes:
-		m.ClearOauth2Scopes()
-		return nil
-	case api.FieldSpecification:
-		m.ClearSpecification()
-		return nil
-	}
-	return fmt.Errorf("unknown Api nullable field %s", name)
-}
-
-// ResetField resets all changes in the mutation for the field with the given name.
-// It returns an error if the field is not defined in the schema.
-func (m *APIMutation) ResetField(name string) error {
-	switch name {
-	case api.FieldCreatedAt:
-		m.ResetCreatedAt()
-		return nil
-	case api.FieldLastModifiedAt:
-		m.ResetLastModifiedAt()
-		return nil
-	case api.FieldStatusPhase:
-		m.ResetStatusPhase()
-		return nil
-	case api.FieldStatusMessage:
-		m.ResetStatusMessage()
-		return nil
-	case api.FieldNamespace:
-		m.ResetNamespace()
-		return nil
-	case api.FieldBasePath:
-		m.ResetBasePath()
-		return nil
-	case api.FieldVersion:
-		m.ResetVersion()
-		return nil
-	case api.FieldCategory:
-		m.ResetCategory()
-		return nil
-	case api.FieldOauth2Scopes:
-		m.ResetOauth2Scopes()
-		return nil
-	case api.FieldXVendor:
-		m.ResetXVendor()
-		return nil
-	case api.FieldSpecification:
-		m.ResetSpecification()
-		return nil
-	case api.FieldActive:
-		m.ResetActive()
-		return nil
-	}
-	return fmt.Errorf("unknown Api field %s", name)
-}
-
-// AddedEdges returns all edge names that were set/added in this mutation.
-func (m *APIMutation) AddedEdges() []string {
-	edges := make([]string, 0, 2)
-	if m.owner != nil {
-		edges = append(edges, api.EdgeOwner)
-	}
-	if m.exposures != nil {
-		edges = append(edges, api.EdgeExposures)
-	}
-	return edges
-}
-
-// AddedIDs returns all IDs (to other nodes) that were added for the given edge
-// name in this mutation.
-func (m *APIMutation) AddedIDs(name string) []ent.Value {
-	switch name {
-	case api.EdgeOwner:
-		if id := m.owner; id != nil {
-			return []ent.Value{*id}
-		}
-	case api.EdgeExposures:
-		ids := make([]ent.Value, 0, len(m.exposures))
-		for id := range m.exposures {
-			ids = append(ids, id)
-		}
-		return ids
-	}
-	return nil
-}
-
-// RemovedEdges returns all edge names that were removed in this mutation.
-func (m *APIMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 2)
-	if m.removedexposures != nil {
-		edges = append(edges, api.EdgeExposures)
-	}
-	return edges
-}
-
-// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
-// the given name in this mutation.
-func (m *APIMutation) RemovedIDs(name string) []ent.Value {
-	switch name {
-	case api.EdgeExposures:
-		ids := make([]ent.Value, 0, len(m.removedexposures))
-		for id := range m.removedexposures {
-			ids = append(ids, id)
-		}
-		return ids
-	}
-	return nil
-}
-
-// ClearedEdges returns all edge names that were cleared in this mutation.
-func (m *APIMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 2)
-	if m.clearedowner {
-		edges = append(edges, api.EdgeOwner)
-	}
-	if m.clearedexposures {
-		edges = append(edges, api.EdgeExposures)
-	}
-	return edges
-}
-
-// EdgeCleared returns a boolean which indicates if the edge with the given name
-// was cleared in this mutation.
-func (m *APIMutation) EdgeCleared(name string) bool {
-	switch name {
-	case api.EdgeOwner:
-		return m.clearedowner
-	case api.EdgeExposures:
-		return m.clearedexposures
-	}
-	return false
-}
-
-// ClearEdge clears the value of the edge with the given name. It returns an error
-// if that edge is not defined in the schema.
-func (m *APIMutation) ClearEdge(name string) error {
-	switch name {
-	case api.EdgeOwner:
-		m.ClearOwner()
-		return nil
-	}
-	return fmt.Errorf("unknown Api unique edge %s", name)
-}
-
-// ResetEdge resets all changes to the edge with the given name in this mutation.
-// It returns an error if the edge is not defined in the schema.
-func (m *APIMutation) ResetEdge(name string) error {
-	switch name {
-	case api.EdgeOwner:
-		m.ResetOwner()
-		return nil
-	case api.EdgeExposures:
-		m.ResetExposures()
-		return nil
-	}
-	return fmt.Errorf("unknown Api edge %s", name)
-}
-
-// ApiExposureMutation represents an operation that mutates the ApiExposure nodes in the graph.
-type ApiExposureMutation struct {
-	config
-	op                   Op
-	typ                  string
-	id                   *int
-	created_at           *time.Time
-	last_modified_at     *time.Time
-	status_phase         *apiexposure.StatusPhase
-	status_message       *string
-	environment          *string
-	namespace            *string
-	base_path            *string
-	visibility           *apiexposure.Visibility
-	active               *bool
-	features             *[]string
-	appendfeatures       []string
-	upstreams            *[]model.Upstream
-	appendupstreams      []model.Upstream
-	security             *model.ApiExposureSecurity
-	traffic              *model.Traffic
-	approval_config      *model.ApprovalConfig
-	api_version          *string
-	clearedFields        map[string]struct{}
-	owner                *int
-	clearedowner         bool
-	api                  *int
-	clearedapi           bool
-	subscriptions        map[int]struct{}
-	removedsubscriptions map[int]struct{}
-	clearedsubscriptions bool
-	done                 bool
-	oldValue             func(context.Context) (*ApiExposure, error)
-	predicates           []predicate.ApiExposure
-}
-
-var _ ent.Mutation = (*ApiExposureMutation)(nil)
-
-// apiexposureOption allows management of the mutation configuration using functional options.
-type apiexposureOption func(*ApiExposureMutation)
-
-// newApiExposureMutation creates new mutation for the ApiExposure entity.
-func newApiExposureMutation(c config, op Op, opts ...apiexposureOption) *ApiExposureMutation {
-	m := &ApiExposureMutation{
-		config:        c,
-		op:            op,
-		typ:           TypeApiExposure,
-		clearedFields: make(map[string]struct{}),
-	}
-	for _, opt := range opts {
-		opt(m)
-	}
-	return m
-}
-
-// withApiExposureID sets the ID field of the mutation.
-func withApiExposureID(id int) apiexposureOption {
-	return func(m *ApiExposureMutation) {
-		var (
-			err   error
-			once  sync.Once
-			value *ApiExposure
-		)
-		m.oldValue = func(ctx context.Context) (*ApiExposure, error) {
-			once.Do(func() {
-				if m.done {
-					err = errors.New("querying old values post mutation is not allowed")
-				} else {
-					value, err = m.Client().ApiExposure.Get(ctx, id)
-				}
-			})
-			return value, err
-		}
-		m.id = &id
-	}
-}
-
-// withApiExposure sets the old ApiExposure of the mutation.
-func withApiExposure(node *ApiExposure) apiexposureOption {
-	return func(m *ApiExposureMutation) {
-		m.oldValue = func(context.Context) (*ApiExposure, error) {
-			return node, nil
-		}
-		m.id = &node.ID
-	}
-}
-
-// Client returns a new `ent.Client` from the mutation. If the mutation was
-// executed in a transaction (ent.Tx), a transactional client is returned.
-func (m ApiExposureMutation) Client() *Client {
-	client := &Client{config: m.config}
-	client.init()
-	return client
-}
-
-// Tx returns an `ent.Tx` for mutations that were executed in transactions;
-// it returns an error otherwise.
-func (m ApiExposureMutation) Tx() (*Tx, error) {
-	if _, ok := m.driver.(*txDriver); !ok {
-		return nil, errors.New("ent: mutation is not running in a transaction")
-	}
-	tx := &Tx{config: m.config}
-	tx.init()
-	return tx, nil
-}
-
-// ID returns the ID value in the mutation. Note that the ID is only available
-// if it was provided to the builder or after it was returned from the database.
-func (m *ApiExposureMutation) ID() (id int, exists bool) {
-	if m.id == nil {
-		return
-	}
-	return *m.id, true
-}
-
-// IDs queries the database and returns the entity ids that match the mutation's predicate.
-// That means, if the mutation is applied within a transaction with an isolation level such
-// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
-// or updated by the mutation.
-func (m *ApiExposureMutation) IDs(ctx context.Context) ([]int, error) {
-	switch {
-	case m.op.Is(OpUpdateOne | OpDeleteOne):
-		id, exists := m.ID()
-		if exists {
-			return []int{id}, nil
-		}
-		fallthrough
-	case m.op.Is(OpUpdate | OpDelete):
-		return m.Client().ApiExposure.Query().Where(m.predicates...).IDs(ctx)
-	default:
-		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
-	}
-}
-
-// SetCreatedAt sets the "created_at" field.
-func (m *ApiExposureMutation) SetCreatedAt(t time.Time) {
-	m.created_at = &t
-}
-
-// CreatedAt returns the value of the "created_at" field in the mutation.
-func (m *ApiExposureMutation) CreatedAt() (r time.Time, exists bool) {
-	v := m.created_at
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldCreatedAt returns the old "created_at" field's value of the ApiExposure entity.
-// If the ApiExposure object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ApiExposureMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
-	}
-	return oldValue.CreatedAt, nil
-}
-
-// ResetCreatedAt resets all changes to the "created_at" field.
-func (m *ApiExposureMutation) ResetCreatedAt() {
-	m.created_at = nil
-}
-
-// SetLastModifiedAt sets the "last_modified_at" field.
-func (m *ApiExposureMutation) SetLastModifiedAt(t time.Time) {
-	m.last_modified_at = &t
-}
-
-// LastModifiedAt returns the value of the "last_modified_at" field in the mutation.
-func (m *ApiExposureMutation) LastModifiedAt() (r time.Time, exists bool) {
-	v := m.last_modified_at
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldLastModifiedAt returns the old "last_modified_at" field's value of the ApiExposure entity.
-// If the ApiExposure object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ApiExposureMutation) OldLastModifiedAt(ctx context.Context) (v time.Time, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldLastModifiedAt is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldLastModifiedAt requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldLastModifiedAt: %w", err)
-	}
-	return oldValue.LastModifiedAt, nil
-}
-
-// ResetLastModifiedAt resets all changes to the "last_modified_at" field.
-func (m *ApiExposureMutation) ResetLastModifiedAt() {
-	m.last_modified_at = nil
-}
-
-// SetStatusPhase sets the "status_phase" field.
-func (m *ApiExposureMutation) SetStatusPhase(ap apiexposure.StatusPhase) {
-	m.status_phase = &ap
-}
-
-// StatusPhase returns the value of the "status_phase" field in the mutation.
-func (m *ApiExposureMutation) StatusPhase() (r apiexposure.StatusPhase, exists bool) {
-	v := m.status_phase
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldStatusPhase returns the old "status_phase" field's value of the ApiExposure entity.
-// If the ApiExposure object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ApiExposureMutation) OldStatusPhase(ctx context.Context) (v *apiexposure.StatusPhase, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldStatusPhase is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldStatusPhase requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldStatusPhase: %w", err)
-	}
-	return oldValue.StatusPhase, nil
-}
-
-// ClearStatusPhase clears the value of the "status_phase" field.
-func (m *ApiExposureMutation) ClearStatusPhase() {
-	m.status_phase = nil
-	m.clearedFields[apiexposure.FieldStatusPhase] = struct{}{}
-}
-
-// StatusPhaseCleared returns if the "status_phase" field was cleared in this mutation.
-func (m *ApiExposureMutation) StatusPhaseCleared() bool {
-	_, ok := m.clearedFields[apiexposure.FieldStatusPhase]
-	return ok
-}
-
-// ResetStatusPhase resets all changes to the "status_phase" field.
-func (m *ApiExposureMutation) ResetStatusPhase() {
-	m.status_phase = nil
-	delete(m.clearedFields, apiexposure.FieldStatusPhase)
-}
-
-// SetStatusMessage sets the "status_message" field.
-func (m *ApiExposureMutation) SetStatusMessage(s string) {
-	m.status_message = &s
-}
-
-// StatusMessage returns the value of the "status_message" field in the mutation.
-func (m *ApiExposureMutation) StatusMessage() (r string, exists bool) {
-	v := m.status_message
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldStatusMessage returns the old "status_message" field's value of the ApiExposure entity.
-// If the ApiExposure object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ApiExposureMutation) OldStatusMessage(ctx context.Context) (v *string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldStatusMessage is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldStatusMessage requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldStatusMessage: %w", err)
-	}
-	return oldValue.StatusMessage, nil
-}
-
-// ClearStatusMessage clears the value of the "status_message" field.
-func (m *ApiExposureMutation) ClearStatusMessage() {
-	m.status_message = nil
-	m.clearedFields[apiexposure.FieldStatusMessage] = struct{}{}
-}
-
-// StatusMessageCleared returns if the "status_message" field was cleared in this mutation.
-func (m *ApiExposureMutation) StatusMessageCleared() bool {
-	_, ok := m.clearedFields[apiexposure.FieldStatusMessage]
-	return ok
-}
-
-// ResetStatusMessage resets all changes to the "status_message" field.
-func (m *ApiExposureMutation) ResetStatusMessage() {
-	m.status_message = nil
-	delete(m.clearedFields, apiexposure.FieldStatusMessage)
-}
-
-// SetEnvironment sets the "environment" field.
-func (m *ApiExposureMutation) SetEnvironment(s string) {
-	m.environment = &s
-}
-
-// Environment returns the value of the "environment" field in the mutation.
-func (m *ApiExposureMutation) Environment() (r string, exists bool) {
-	v := m.environment
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldEnvironment returns the old "environment" field's value of the ApiExposure entity.
-// If the ApiExposure object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ApiExposureMutation) OldEnvironment(ctx context.Context) (v *string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldEnvironment is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldEnvironment requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldEnvironment: %w", err)
-	}
-	return oldValue.Environment, nil
-}
-
-// ClearEnvironment clears the value of the "environment" field.
-func (m *ApiExposureMutation) ClearEnvironment() {
-	m.environment = nil
-	m.clearedFields[apiexposure.FieldEnvironment] = struct{}{}
-}
-
-// EnvironmentCleared returns if the "environment" field was cleared in this mutation.
-func (m *ApiExposureMutation) EnvironmentCleared() bool {
-	_, ok := m.clearedFields[apiexposure.FieldEnvironment]
-	return ok
-}
-
-// ResetEnvironment resets all changes to the "environment" field.
-func (m *ApiExposureMutation) ResetEnvironment() {
-	m.environment = nil
-	delete(m.clearedFields, apiexposure.FieldEnvironment)
-}
-
-// SetNamespace sets the "namespace" field.
-func (m *ApiExposureMutation) SetNamespace(s string) {
-	m.namespace = &s
-}
-
-// Namespace returns the value of the "namespace" field in the mutation.
-func (m *ApiExposureMutation) Namespace() (r string, exists bool) {
-	v := m.namespace
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldNamespace returns the old "namespace" field's value of the ApiExposure entity.
-// If the ApiExposure object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ApiExposureMutation) OldNamespace(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldNamespace is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldNamespace requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldNamespace: %w", err)
-	}
-	return oldValue.Namespace, nil
-}
-
-// ResetNamespace resets all changes to the "namespace" field.
-func (m *ApiExposureMutation) ResetNamespace() {
-	m.namespace = nil
-}
-
-// SetBasePath sets the "base_path" field.
-func (m *ApiExposureMutation) SetBasePath(s string) {
-	m.base_path = &s
-}
-
-// BasePath returns the value of the "base_path" field in the mutation.
-func (m *ApiExposureMutation) BasePath() (r string, exists bool) {
-	v := m.base_path
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldBasePath returns the old "base_path" field's value of the ApiExposure entity.
-// If the ApiExposure object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ApiExposureMutation) OldBasePath(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldBasePath is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldBasePath requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldBasePath: %w", err)
-	}
-	return oldValue.BasePath, nil
-}
-
-// ResetBasePath resets all changes to the "base_path" field.
-func (m *ApiExposureMutation) ResetBasePath() {
-	m.base_path = nil
-}
-
-// SetVisibility sets the "visibility" field.
-func (m *ApiExposureMutation) SetVisibility(a apiexposure.Visibility) {
-	m.visibility = &a
-}
-
-// Visibility returns the value of the "visibility" field in the mutation.
-func (m *ApiExposureMutation) Visibility() (r apiexposure.Visibility, exists bool) {
-	v := m.visibility
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldVisibility returns the old "visibility" field's value of the ApiExposure entity.
-// If the ApiExposure object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ApiExposureMutation) OldVisibility(ctx context.Context) (v apiexposure.Visibility, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldVisibility is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldVisibility requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldVisibility: %w", err)
-	}
-	return oldValue.Visibility, nil
-}
-
-// ResetVisibility resets all changes to the "visibility" field.
-func (m *ApiExposureMutation) ResetVisibility() {
-	m.visibility = nil
-}
-
-// SetActive sets the "active" field.
-func (m *ApiExposureMutation) SetActive(b bool) {
-	m.active = &b
-}
-
-// Active returns the value of the "active" field in the mutation.
-func (m *ApiExposureMutation) Active() (r bool, exists bool) {
-	v := m.active
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldActive returns the old "active" field's value of the ApiExposure entity.
-// If the ApiExposure object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ApiExposureMutation) OldActive(ctx context.Context) (v *bool, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldActive is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldActive requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldActive: %w", err)
-	}
-	return oldValue.Active, nil
-}
-
-// ClearActive clears the value of the "active" field.
-func (m *ApiExposureMutation) ClearActive() {
-	m.active = nil
-	m.clearedFields[apiexposure.FieldActive] = struct{}{}
-}
-
-// ActiveCleared returns if the "active" field was cleared in this mutation.
-func (m *ApiExposureMutation) ActiveCleared() bool {
-	_, ok := m.clearedFields[apiexposure.FieldActive]
-	return ok
-}
-
-// ResetActive resets all changes to the "active" field.
-func (m *ApiExposureMutation) ResetActive() {
-	m.active = nil
-	delete(m.clearedFields, apiexposure.FieldActive)
-}
-
-// SetFeatures sets the "features" field.
-func (m *ApiExposureMutation) SetFeatures(s []string) {
-	m.features = &s
-	m.appendfeatures = nil
-}
-
-// Features returns the value of the "features" field in the mutation.
-func (m *ApiExposureMutation) Features() (r []string, exists bool) {
-	v := m.features
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldFeatures returns the old "features" field's value of the ApiExposure entity.
-// If the ApiExposure object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ApiExposureMutation) OldFeatures(ctx context.Context) (v []string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldFeatures is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldFeatures requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldFeatures: %w", err)
-	}
-	return oldValue.Features, nil
-}
-
-// AppendFeatures adds s to the "features" field.
-func (m *ApiExposureMutation) AppendFeatures(s []string) {
-	m.appendfeatures = append(m.appendfeatures, s...)
-}
-
-// AppendedFeatures returns the list of values that were appended to the "features" field in this mutation.
-func (m *ApiExposureMutation) AppendedFeatures() ([]string, bool) {
-	if len(m.appendfeatures) == 0 {
-		return nil, false
-	}
-	return m.appendfeatures, true
-}
-
-// ResetFeatures resets all changes to the "features" field.
-func (m *ApiExposureMutation) ResetFeatures() {
-	m.features = nil
-	m.appendfeatures = nil
-}
-
-// SetUpstreams sets the "upstreams" field.
-func (m *ApiExposureMutation) SetUpstreams(value []model.Upstream) {
-	m.upstreams = &value
-	m.appendupstreams = nil
-}
-
-// Upstreams returns the value of the "upstreams" field in the mutation.
-func (m *ApiExposureMutation) Upstreams() (r []model.Upstream, exists bool) {
-	v := m.upstreams
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldUpstreams returns the old "upstreams" field's value of the ApiExposure entity.
-// If the ApiExposure object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ApiExposureMutation) OldUpstreams(ctx context.Context) (v []model.Upstream, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldUpstreams is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldUpstreams requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldUpstreams: %w", err)
-	}
-	return oldValue.Upstreams, nil
-}
-
-// AppendUpstreams adds value to the "upstreams" field.
-func (m *ApiExposureMutation) AppendUpstreams(value []model.Upstream) {
-	m.appendupstreams = append(m.appendupstreams, value...)
-}
-
-// AppendedUpstreams returns the list of values that were appended to the "upstreams" field in this mutation.
-func (m *ApiExposureMutation) AppendedUpstreams() ([]model.Upstream, bool) {
-	if len(m.appendupstreams) == 0 {
-		return nil, false
-	}
-	return m.appendupstreams, true
-}
-
-// ResetUpstreams resets all changes to the "upstreams" field.
-func (m *ApiExposureMutation) ResetUpstreams() {
-	m.upstreams = nil
-	m.appendupstreams = nil
-}
-
-// SetSecurity sets the "security" field.
-func (m *ApiExposureMutation) SetSecurity(mes model.ApiExposureSecurity) {
-	m.security = &mes
-}
-
-// Security returns the value of the "security" field in the mutation.
-func (m *ApiExposureMutation) Security() (r model.ApiExposureSecurity, exists bool) {
-	v := m.security
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldSecurity returns the old "security" field's value of the ApiExposure entity.
-// If the ApiExposure object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ApiExposureMutation) OldSecurity(ctx context.Context) (v model.ApiExposureSecurity, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldSecurity is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldSecurity requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldSecurity: %w", err)
-	}
-	return oldValue.Security, nil
-}
-
-// ClearSecurity clears the value of the "security" field.
-func (m *ApiExposureMutation) ClearSecurity() {
-	m.security = nil
-	m.clearedFields[apiexposure.FieldSecurity] = struct{}{}
-}
-
-// SecurityCleared returns if the "security" field was cleared in this mutation.
-func (m *ApiExposureMutation) SecurityCleared() bool {
-	_, ok := m.clearedFields[apiexposure.FieldSecurity]
-	return ok
-}
-
-// ResetSecurity resets all changes to the "security" field.
-func (m *ApiExposureMutation) ResetSecurity() {
-	m.security = nil
-	delete(m.clearedFields, apiexposure.FieldSecurity)
-}
-
-// SetTraffic sets the "traffic" field.
-func (m *ApiExposureMutation) SetTraffic(value model.Traffic) {
-	m.traffic = &value
-}
-
-// Traffic returns the value of the "traffic" field in the mutation.
-func (m *ApiExposureMutation) Traffic() (r model.Traffic, exists bool) {
-	v := m.traffic
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldTraffic returns the old "traffic" field's value of the ApiExposure entity.
-// If the ApiExposure object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ApiExposureMutation) OldTraffic(ctx context.Context) (v model.Traffic, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldTraffic is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldTraffic requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldTraffic: %w", err)
-	}
-	return oldValue.Traffic, nil
-}
-
-// ClearTraffic clears the value of the "traffic" field.
-func (m *ApiExposureMutation) ClearTraffic() {
-	m.traffic = nil
-	m.clearedFields[apiexposure.FieldTraffic] = struct{}{}
-}
-
-// TrafficCleared returns if the "traffic" field was cleared in this mutation.
-func (m *ApiExposureMutation) TrafficCleared() bool {
-	_, ok := m.clearedFields[apiexposure.FieldTraffic]
-	return ok
-}
-
-// ResetTraffic resets all changes to the "traffic" field.
-func (m *ApiExposureMutation) ResetTraffic() {
-	m.traffic = nil
-	delete(m.clearedFields, apiexposure.FieldTraffic)
-}
-
-// SetApprovalConfig sets the "approval_config" field.
-func (m *ApiExposureMutation) SetApprovalConfig(mc model.ApprovalConfig) {
-	m.approval_config = &mc
-}
-
-// ApprovalConfig returns the value of the "approval_config" field in the mutation.
-func (m *ApiExposureMutation) ApprovalConfig() (r model.ApprovalConfig, exists bool) {
-	v := m.approval_config
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldApprovalConfig returns the old "approval_config" field's value of the ApiExposure entity.
-// If the ApiExposure object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ApiExposureMutation) OldApprovalConfig(ctx context.Context) (v model.ApprovalConfig, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldApprovalConfig is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldApprovalConfig requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldApprovalConfig: %w", err)
-	}
-	return oldValue.ApprovalConfig, nil
-}
-
-// ResetApprovalConfig resets all changes to the "approval_config" field.
-func (m *ApiExposureMutation) ResetApprovalConfig() {
-	m.approval_config = nil
-}
-
-// SetAPIVersion sets the "api_version" field.
-func (m *ApiExposureMutation) SetAPIVersion(s string) {
-	m.api_version = &s
-}
-
-// APIVersion returns the value of the "api_version" field in the mutation.
-func (m *ApiExposureMutation) APIVersion() (r string, exists bool) {
-	v := m.api_version
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldAPIVersion returns the old "api_version" field's value of the ApiExposure entity.
-// If the ApiExposure object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ApiExposureMutation) OldAPIVersion(ctx context.Context) (v *string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldAPIVersion is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldAPIVersion requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldAPIVersion: %w", err)
-	}
-	return oldValue.APIVersion, nil
-}
-
-// ClearAPIVersion clears the value of the "api_version" field.
-func (m *ApiExposureMutation) ClearAPIVersion() {
-	m.api_version = nil
-	m.clearedFields[apiexposure.FieldAPIVersion] = struct{}{}
-}
-
-// APIVersionCleared returns if the "api_version" field was cleared in this mutation.
-func (m *ApiExposureMutation) APIVersionCleared() bool {
-	_, ok := m.clearedFields[apiexposure.FieldAPIVersion]
-	return ok
-}
-
-// ResetAPIVersion resets all changes to the "api_version" field.
-func (m *ApiExposureMutation) ResetAPIVersion() {
-	m.api_version = nil
-	delete(m.clearedFields, apiexposure.FieldAPIVersion)
-}
-
-// SetOwnerID sets the "owner" edge to the Application entity by id.
-func (m *ApiExposureMutation) SetOwnerID(id int) {
-	m.owner = &id
-}
-
-// ClearOwner clears the "owner" edge to the Application entity.
-func (m *ApiExposureMutation) ClearOwner() {
-	m.clearedowner = true
-}
-
-// OwnerCleared reports if the "owner" edge to the Application entity was cleared.
-func (m *ApiExposureMutation) OwnerCleared() bool {
-	return m.clearedowner
-}
-
-// OwnerID returns the "owner" edge ID in the mutation.
-func (m *ApiExposureMutation) OwnerID() (id int, exists bool) {
-	if m.owner != nil {
-		return *m.owner, true
-	}
-	return
-}
-
-// OwnerIDs returns the "owner" edge IDs in the mutation.
-// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
-// OwnerID instead. It exists only for internal usage by the builders.
-func (m *ApiExposureMutation) OwnerIDs() (ids []int) {
-	if id := m.owner; id != nil {
-		ids = append(ids, *id)
-	}
-	return
-}
-
-// ResetOwner resets all changes to the "owner" edge.
-func (m *ApiExposureMutation) ResetOwner() {
-	m.owner = nil
-	m.clearedowner = false
-}
-
-// SetAPIID sets the "api" edge to the Api entity by id.
-func (m *ApiExposureMutation) SetAPIID(id int) {
-	m.api = &id
-}
-
-// ClearAPI clears the "api" edge to the Api entity.
-func (m *ApiExposureMutation) ClearAPI() {
-	m.clearedapi = true
-}
-
-// APICleared reports if the "api" edge to the Api entity was cleared.
-func (m *ApiExposureMutation) APICleared() bool {
-	return m.clearedapi
-}
-
-// APIID returns the "api" edge ID in the mutation.
-func (m *ApiExposureMutation) APIID() (id int, exists bool) {
-	if m.api != nil {
-		return *m.api, true
-	}
-	return
-}
-
-// APIIDs returns the "api" edge IDs in the mutation.
-// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
-// APIID instead. It exists only for internal usage by the builders.
-func (m *ApiExposureMutation) APIIDs() (ids []int) {
-	if id := m.api; id != nil {
-		ids = append(ids, *id)
-	}
-	return
-}
-
-// ResetAPI resets all changes to the "api" edge.
-func (m *ApiExposureMutation) ResetAPI() {
-	m.api = nil
-	m.clearedapi = false
-}
-
-// AddSubscriptionIDs adds the "subscriptions" edge to the ApiSubscription entity by ids.
-func (m *ApiExposureMutation) AddSubscriptionIDs(ids ...int) {
-	if m.subscriptions == nil {
-		m.subscriptions = make(map[int]struct{})
-	}
-	for i := range ids {
-		m.subscriptions[ids[i]] = struct{}{}
-	}
-}
-
-// ClearSubscriptions clears the "subscriptions" edge to the ApiSubscription entity.
-func (m *ApiExposureMutation) ClearSubscriptions() {
-	m.clearedsubscriptions = true
-}
-
-// SubscriptionsCleared reports if the "subscriptions" edge to the ApiSubscription entity was cleared.
-func (m *ApiExposureMutation) SubscriptionsCleared() bool {
-	return m.clearedsubscriptions
-}
-
-// RemoveSubscriptionIDs removes the "subscriptions" edge to the ApiSubscription entity by IDs.
-func (m *ApiExposureMutation) RemoveSubscriptionIDs(ids ...int) {
-	if m.removedsubscriptions == nil {
-		m.removedsubscriptions = make(map[int]struct{})
-	}
-	for i := range ids {
-		delete(m.subscriptions, ids[i])
-		m.removedsubscriptions[ids[i]] = struct{}{}
-	}
-}
-
-// RemovedSubscriptions returns the removed IDs of the "subscriptions" edge to the ApiSubscription entity.
-func (m *ApiExposureMutation) RemovedSubscriptionsIDs() (ids []int) {
-	for id := range m.removedsubscriptions {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// SubscriptionsIDs returns the "subscriptions" edge IDs in the mutation.
-func (m *ApiExposureMutation) SubscriptionsIDs() (ids []int) {
-	for id := range m.subscriptions {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// ResetSubscriptions resets all changes to the "subscriptions" edge.
-func (m *ApiExposureMutation) ResetSubscriptions() {
-	m.subscriptions = nil
-	m.clearedsubscriptions = false
-	m.removedsubscriptions = nil
-}
-
-// Where appends a list predicates to the ApiExposureMutation builder.
-func (m *ApiExposureMutation) Where(ps ...predicate.ApiExposure) {
-	m.predicates = append(m.predicates, ps...)
-}
-
-// WhereP appends storage-level predicates to the ApiExposureMutation builder. Using this method,
-// users can use type-assertion to append predicates that do not depend on any generated package.
-func (m *ApiExposureMutation) WhereP(ps ...func(*sql.Selector)) {
-	p := make([]predicate.ApiExposure, len(ps))
-	for i := range ps {
-		p[i] = ps[i]
-	}
-	m.Where(p...)
-}
-
-// Op returns the operation name.
-func (m *ApiExposureMutation) Op() Op {
-	return m.op
-}
-
-// SetOp allows setting the mutation operation.
-func (m *ApiExposureMutation) SetOp(op Op) {
-	m.op = op
-}
-
-// Type returns the node type of this mutation (ApiExposure).
-func (m *ApiExposureMutation) Type() string {
-	return m.typ
-}
-
-// Fields returns all fields that were changed during this mutation. Note that in
-// order to get all numeric fields that were incremented/decremented, call
-// AddedFields().
-func (m *ApiExposureMutation) Fields() []string {
-	fields := make([]string, 0, 15)
-	if m.created_at != nil {
-		fields = append(fields, apiexposure.FieldCreatedAt)
-	}
-	if m.last_modified_at != nil {
-		fields = append(fields, apiexposure.FieldLastModifiedAt)
-	}
-	if m.status_phase != nil {
-		fields = append(fields, apiexposure.FieldStatusPhase)
-	}
-	if m.status_message != nil {
-		fields = append(fields, apiexposure.FieldStatusMessage)
-	}
-	if m.environment != nil {
-		fields = append(fields, apiexposure.FieldEnvironment)
-	}
-	if m.namespace != nil {
-		fields = append(fields, apiexposure.FieldNamespace)
-	}
-	if m.base_path != nil {
-		fields = append(fields, apiexposure.FieldBasePath)
-	}
-	if m.visibility != nil {
-		fields = append(fields, apiexposure.FieldVisibility)
-	}
-	if m.active != nil {
-		fields = append(fields, apiexposure.FieldActive)
-	}
-	if m.features != nil {
-		fields = append(fields, apiexposure.FieldFeatures)
-	}
-	if m.upstreams != nil {
-		fields = append(fields, apiexposure.FieldUpstreams)
-	}
-	if m.security != nil {
-		fields = append(fields, apiexposure.FieldSecurity)
-	}
-	if m.traffic != nil {
-		fields = append(fields, apiexposure.FieldTraffic)
-	}
-	if m.approval_config != nil {
-		fields = append(fields, apiexposure.FieldApprovalConfig)
-	}
-	if m.api_version != nil {
-		fields = append(fields, apiexposure.FieldAPIVersion)
-	}
-	return fields
-}
-
-// Field returns the value of a field with the given name. The second boolean
-// return value indicates that this field was not set, or was not defined in the
-// schema.
-func (m *ApiExposureMutation) Field(name string) (ent.Value, bool) {
-	switch name {
-	case apiexposure.FieldCreatedAt:
-		return m.CreatedAt()
-	case apiexposure.FieldLastModifiedAt:
-		return m.LastModifiedAt()
-	case apiexposure.FieldStatusPhase:
-		return m.StatusPhase()
-	case apiexposure.FieldStatusMessage:
-		return m.StatusMessage()
-	case apiexposure.FieldEnvironment:
-		return m.Environment()
-	case apiexposure.FieldNamespace:
-		return m.Namespace()
-	case apiexposure.FieldBasePath:
-		return m.BasePath()
-	case apiexposure.FieldVisibility:
-		return m.Visibility()
-	case apiexposure.FieldActive:
-		return m.Active()
-	case apiexposure.FieldFeatures:
-		return m.Features()
-	case apiexposure.FieldUpstreams:
-		return m.Upstreams()
-	case apiexposure.FieldSecurity:
-		return m.Security()
-	case apiexposure.FieldTraffic:
-		return m.Traffic()
-	case apiexposure.FieldApprovalConfig:
-		return m.ApprovalConfig()
-	case apiexposure.FieldAPIVersion:
-		return m.APIVersion()
-	}
-	return nil, false
-}
-
-// OldField returns the old value of the field from the database. An error is
-// returned if the mutation operation is not UpdateOne, or the query to the
-// database failed.
-func (m *ApiExposureMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
-	switch name {
-	case apiexposure.FieldCreatedAt:
-		return m.OldCreatedAt(ctx)
-	case apiexposure.FieldLastModifiedAt:
-		return m.OldLastModifiedAt(ctx)
-	case apiexposure.FieldStatusPhase:
-		return m.OldStatusPhase(ctx)
-	case apiexposure.FieldStatusMessage:
-		return m.OldStatusMessage(ctx)
-	case apiexposure.FieldEnvironment:
-		return m.OldEnvironment(ctx)
-	case apiexposure.FieldNamespace:
-		return m.OldNamespace(ctx)
-	case apiexposure.FieldBasePath:
-		return m.OldBasePath(ctx)
-	case apiexposure.FieldVisibility:
-		return m.OldVisibility(ctx)
-	case apiexposure.FieldActive:
-		return m.OldActive(ctx)
-	case apiexposure.FieldFeatures:
-		return m.OldFeatures(ctx)
-	case apiexposure.FieldUpstreams:
-		return m.OldUpstreams(ctx)
-	case apiexposure.FieldSecurity:
-		return m.OldSecurity(ctx)
-	case apiexposure.FieldTraffic:
-		return m.OldTraffic(ctx)
-	case apiexposure.FieldApprovalConfig:
-		return m.OldApprovalConfig(ctx)
-	case apiexposure.FieldAPIVersion:
-		return m.OldAPIVersion(ctx)
-	}
-	return nil, fmt.Errorf("unknown ApiExposure field %s", name)
-}
-
-// SetField sets the value of a field with the given name. It returns an error if
-// the field is not defined in the schema, or if the type mismatched the field
-// type.
-func (m *ApiExposureMutation) SetField(name string, value ent.Value) error {
-	switch name {
-	case apiexposure.FieldCreatedAt:
-		v, ok := value.(time.Time)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetCreatedAt(v)
-		return nil
-	case apiexposure.FieldLastModifiedAt:
-		v, ok := value.(time.Time)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetLastModifiedAt(v)
-		return nil
-	case apiexposure.FieldStatusPhase:
-		v, ok := value.(apiexposure.StatusPhase)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetStatusPhase(v)
-		return nil
-	case apiexposure.FieldStatusMessage:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetStatusMessage(v)
-		return nil
-	case apiexposure.FieldEnvironment:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetEnvironment(v)
-		return nil
-	case apiexposure.FieldNamespace:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetNamespace(v)
-		return nil
-	case apiexposure.FieldBasePath:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetBasePath(v)
-		return nil
-	case apiexposure.FieldVisibility:
-		v, ok := value.(apiexposure.Visibility)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetVisibility(v)
-		return nil
-	case apiexposure.FieldActive:
-		v, ok := value.(bool)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetActive(v)
-		return nil
-	case apiexposure.FieldFeatures:
-		v, ok := value.([]string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetFeatures(v)
-		return nil
-	case apiexposure.FieldUpstreams:
-		v, ok := value.([]model.Upstream)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetUpstreams(v)
-		return nil
-	case apiexposure.FieldSecurity:
-		v, ok := value.(model.ApiExposureSecurity)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetSecurity(v)
-		return nil
-	case apiexposure.FieldTraffic:
-		v, ok := value.(model.Traffic)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetTraffic(v)
-		return nil
-	case apiexposure.FieldApprovalConfig:
-		v, ok := value.(model.ApprovalConfig)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetApprovalConfig(v)
-		return nil
-	case apiexposure.FieldAPIVersion:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetAPIVersion(v)
-		return nil
-	}
-	return fmt.Errorf("unknown ApiExposure field %s", name)
-}
-
-// AddedFields returns all numeric fields that were incremented/decremented during
-// this mutation.
-func (m *ApiExposureMutation) AddedFields() []string {
-	return nil
-}
-
-// AddedField returns the numeric value that was incremented/decremented on a field
-// with the given name. The second boolean return value indicates that this field
-// was not set, or was not defined in the schema.
-func (m *ApiExposureMutation) AddedField(name string) (ent.Value, bool) {
-	return nil, false
-}
-
-// AddField adds the value to the field with the given name. It returns an error if
-// the field is not defined in the schema, or if the type mismatched the field
-// type.
-func (m *ApiExposureMutation) AddField(name string, value ent.Value) error {
-	switch name {
-	}
-	return fmt.Errorf("unknown ApiExposure numeric field %s", name)
-}
-
-// ClearedFields returns all nullable fields that were cleared during this
-// mutation.
-func (m *ApiExposureMutation) ClearedFields() []string {
-	var fields []string
-	if m.FieldCleared(apiexposure.FieldStatusPhase) {
-		fields = append(fields, apiexposure.FieldStatusPhase)
-	}
-	if m.FieldCleared(apiexposure.FieldStatusMessage) {
-		fields = append(fields, apiexposure.FieldStatusMessage)
-	}
-	if m.FieldCleared(apiexposure.FieldEnvironment) {
-		fields = append(fields, apiexposure.FieldEnvironment)
-	}
-	if m.FieldCleared(apiexposure.FieldActive) {
-		fields = append(fields, apiexposure.FieldActive)
-	}
-	if m.FieldCleared(apiexposure.FieldSecurity) {
-		fields = append(fields, apiexposure.FieldSecurity)
-	}
-	if m.FieldCleared(apiexposure.FieldTraffic) {
-		fields = append(fields, apiexposure.FieldTraffic)
-	}
-	if m.FieldCleared(apiexposure.FieldAPIVersion) {
-		fields = append(fields, apiexposure.FieldAPIVersion)
-	}
-	return fields
-}
-
-// FieldCleared returns a boolean indicating if a field with the given name was
-// cleared in this mutation.
-func (m *ApiExposureMutation) FieldCleared(name string) bool {
-	_, ok := m.clearedFields[name]
-	return ok
-}
-
-// ClearField clears the value of the field with the given name. It returns an
-// error if the field is not defined in the schema.
-func (m *ApiExposureMutation) ClearField(name string) error {
-	switch name {
-	case apiexposure.FieldStatusPhase:
-		m.ClearStatusPhase()
-		return nil
-	case apiexposure.FieldStatusMessage:
-		m.ClearStatusMessage()
-		return nil
-	case apiexposure.FieldEnvironment:
-		m.ClearEnvironment()
-		return nil
-	case apiexposure.FieldActive:
-		m.ClearActive()
-		return nil
-	case apiexposure.FieldSecurity:
-		m.ClearSecurity()
-		return nil
-	case apiexposure.FieldTraffic:
-		m.ClearTraffic()
-		return nil
-	case apiexposure.FieldAPIVersion:
-		m.ClearAPIVersion()
-		return nil
-	}
-	return fmt.Errorf("unknown ApiExposure nullable field %s", name)
-}
-
-// ResetField resets all changes in the mutation for the field with the given name.
-// It returns an error if the field is not defined in the schema.
-func (m *ApiExposureMutation) ResetField(name string) error {
-	switch name {
-	case apiexposure.FieldCreatedAt:
-		m.ResetCreatedAt()
-		return nil
-	case apiexposure.FieldLastModifiedAt:
-		m.ResetLastModifiedAt()
-		return nil
-	case apiexposure.FieldStatusPhase:
-		m.ResetStatusPhase()
-		return nil
-	case apiexposure.FieldStatusMessage:
-		m.ResetStatusMessage()
-		return nil
-	case apiexposure.FieldEnvironment:
-		m.ResetEnvironment()
-		return nil
-	case apiexposure.FieldNamespace:
-		m.ResetNamespace()
-		return nil
-	case apiexposure.FieldBasePath:
-		m.ResetBasePath()
-		return nil
-	case apiexposure.FieldVisibility:
-		m.ResetVisibility()
-		return nil
-	case apiexposure.FieldActive:
-		m.ResetActive()
-		return nil
-	case apiexposure.FieldFeatures:
-		m.ResetFeatures()
-		return nil
-	case apiexposure.FieldUpstreams:
-		m.ResetUpstreams()
-		return nil
-	case apiexposure.FieldSecurity:
-		m.ResetSecurity()
-		return nil
-	case apiexposure.FieldTraffic:
-		m.ResetTraffic()
-		return nil
-	case apiexposure.FieldApprovalConfig:
-		m.ResetApprovalConfig()
-		return nil
-	case apiexposure.FieldAPIVersion:
-		m.ResetAPIVersion()
-		return nil
-	}
-	return fmt.Errorf("unknown ApiExposure field %s", name)
-}
-
-// AddedEdges returns all edge names that were set/added in this mutation.
-func (m *ApiExposureMutation) AddedEdges() []string {
-	edges := make([]string, 0, 3)
-	if m.owner != nil {
-		edges = append(edges, apiexposure.EdgeOwner)
-	}
-	if m.api != nil {
-		edges = append(edges, apiexposure.EdgeAPI)
-	}
-	if m.subscriptions != nil {
-		edges = append(edges, apiexposure.EdgeSubscriptions)
-	}
-	return edges
-}
-
-// AddedIDs returns all IDs (to other nodes) that were added for the given edge
-// name in this mutation.
-func (m *ApiExposureMutation) AddedIDs(name string) []ent.Value {
-	switch name {
-	case apiexposure.EdgeOwner:
-		if id := m.owner; id != nil {
-			return []ent.Value{*id}
-		}
-	case apiexposure.EdgeAPI:
-		if id := m.api; id != nil {
-			return []ent.Value{*id}
-		}
-	case apiexposure.EdgeSubscriptions:
-		ids := make([]ent.Value, 0, len(m.subscriptions))
-		for id := range m.subscriptions {
-			ids = append(ids, id)
-		}
-		return ids
-	}
-	return nil
-}
-
-// RemovedEdges returns all edge names that were removed in this mutation.
-func (m *ApiExposureMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 3)
-	if m.removedsubscriptions != nil {
-		edges = append(edges, apiexposure.EdgeSubscriptions)
-	}
-	return edges
-}
-
-// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
-// the given name in this mutation.
-func (m *ApiExposureMutation) RemovedIDs(name string) []ent.Value {
-	switch name {
-	case apiexposure.EdgeSubscriptions:
-		ids := make([]ent.Value, 0, len(m.removedsubscriptions))
-		for id := range m.removedsubscriptions {
-			ids = append(ids, id)
-		}
-		return ids
-	}
-	return nil
-}
-
-// ClearedEdges returns all edge names that were cleared in this mutation.
-func (m *ApiExposureMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 3)
-	if m.clearedowner {
-		edges = append(edges, apiexposure.EdgeOwner)
-	}
-	if m.clearedapi {
-		edges = append(edges, apiexposure.EdgeAPI)
-	}
-	if m.clearedsubscriptions {
-		edges = append(edges, apiexposure.EdgeSubscriptions)
-	}
-	return edges
-}
-
-// EdgeCleared returns a boolean which indicates if the edge with the given name
-// was cleared in this mutation.
-func (m *ApiExposureMutation) EdgeCleared(name string) bool {
-	switch name {
-	case apiexposure.EdgeOwner:
-		return m.clearedowner
-	case apiexposure.EdgeAPI:
-		return m.clearedapi
-	case apiexposure.EdgeSubscriptions:
-		return m.clearedsubscriptions
-	}
-	return false
-}
-
-// ClearEdge clears the value of the edge with the given name. It returns an error
-// if that edge is not defined in the schema.
-func (m *ApiExposureMutation) ClearEdge(name string) error {
-	switch name {
-	case apiexposure.EdgeOwner:
-		m.ClearOwner()
-		return nil
-	case apiexposure.EdgeAPI:
-		m.ClearAPI()
-		return nil
-	}
-	return fmt.Errorf("unknown ApiExposure unique edge %s", name)
-}
-
-// ResetEdge resets all changes to the edge with the given name in this mutation.
-// It returns an error if the edge is not defined in the schema.
-func (m *ApiExposureMutation) ResetEdge(name string) error {
-	switch name {
-	case apiexposure.EdgeOwner:
-		m.ResetOwner()
-		return nil
-	case apiexposure.EdgeAPI:
-		m.ResetAPI()
-		return nil
-	case apiexposure.EdgeSubscriptions:
-		m.ResetSubscriptions()
-		return nil
-	}
-	return fmt.Errorf("unknown ApiExposure edge %s", name)
-}
-
-// ApiSubscriptionMutation represents an operation that mutates the ApiSubscription nodes in the graph.
-type ApiSubscriptionMutation struct {
-	config
-	op                       Op
-	typ                      string
-	id                       *int
-	created_at               *time.Time
-	last_modified_at         *time.Time
-	status_phase             *apisubscription.StatusPhase
-	status_message           *string
-	environment              *string
-	namespace                *string
-	name                     *string
-	base_path                *string
-	m2m_auth_method          *apisubscription.M2mAuthMethod
-	gateway_url              *string
-	security                 **model.ApiSubscriptionSecurity
-	traffic                  **model.ApiSubscriptionTraffic
-	clearedFields            map[string]struct{}
-	owner                    *int
-	clearedowner             bool
-	target                   *int
-	clearedtarget            bool
-	failover_zones           map[int]struct{}
-	removedfailover_zones    map[int]struct{}
-	clearedfailover_zones    bool
-	approval                 *int
-	clearedapproval          bool
-	approval_requests        map[int]struct{}
-	removedapproval_requests map[int]struct{}
-	clearedapproval_requests bool
-	done                     bool
-	oldValue                 func(context.Context) (*ApiSubscription, error)
-	predicates               []predicate.ApiSubscription
-}
-
-var _ ent.Mutation = (*ApiSubscriptionMutation)(nil)
-
-// apisubscriptionOption allows management of the mutation configuration using functional options.
-type apisubscriptionOption func(*ApiSubscriptionMutation)
-
-// newApiSubscriptionMutation creates new mutation for the ApiSubscription entity.
-func newApiSubscriptionMutation(c config, op Op, opts ...apisubscriptionOption) *ApiSubscriptionMutation {
-	m := &ApiSubscriptionMutation{
-		config:        c,
-		op:            op,
-		typ:           TypeApiSubscription,
-		clearedFields: make(map[string]struct{}),
-	}
-	for _, opt := range opts {
-		opt(m)
-	}
-	return m
-}
-
-// withApiSubscriptionID sets the ID field of the mutation.
-func withApiSubscriptionID(id int) apisubscriptionOption {
-	return func(m *ApiSubscriptionMutation) {
-		var (
-			err   error
-			once  sync.Once
-			value *ApiSubscription
-		)
-		m.oldValue = func(ctx context.Context) (*ApiSubscription, error) {
-			once.Do(func() {
-				if m.done {
-					err = errors.New("querying old values post mutation is not allowed")
-				} else {
-					value, err = m.Client().ApiSubscription.Get(ctx, id)
-				}
-			})
-			return value, err
-		}
-		m.id = &id
-	}
-}
-
-// withApiSubscription sets the old ApiSubscription of the mutation.
-func withApiSubscription(node *ApiSubscription) apisubscriptionOption {
-	return func(m *ApiSubscriptionMutation) {
-		m.oldValue = func(context.Context) (*ApiSubscription, error) {
-			return node, nil
-		}
-		m.id = &node.ID
-	}
-}
-
-// Client returns a new `ent.Client` from the mutation. If the mutation was
-// executed in a transaction (ent.Tx), a transactional client is returned.
-func (m ApiSubscriptionMutation) Client() *Client {
-	client := &Client{config: m.config}
-	client.init()
-	return client
-}
-
-// Tx returns an `ent.Tx` for mutations that were executed in transactions;
-// it returns an error otherwise.
-func (m ApiSubscriptionMutation) Tx() (*Tx, error) {
-	if _, ok := m.driver.(*txDriver); !ok {
-		return nil, errors.New("ent: mutation is not running in a transaction")
-	}
-	tx := &Tx{config: m.config}
-	tx.init()
-	return tx, nil
-}
-
-// ID returns the ID value in the mutation. Note that the ID is only available
-// if it was provided to the builder or after it was returned from the database.
-func (m *ApiSubscriptionMutation) ID() (id int, exists bool) {
-	if m.id == nil {
-		return
-	}
-	return *m.id, true
-}
-
-// IDs queries the database and returns the entity ids that match the mutation's predicate.
-// That means, if the mutation is applied within a transaction with an isolation level such
-// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
-// or updated by the mutation.
-func (m *ApiSubscriptionMutation) IDs(ctx context.Context) ([]int, error) {
-	switch {
-	case m.op.Is(OpUpdateOne | OpDeleteOne):
-		id, exists := m.ID()
-		if exists {
-			return []int{id}, nil
-		}
-		fallthrough
-	case m.op.Is(OpUpdate | OpDelete):
-		return m.Client().ApiSubscription.Query().Where(m.predicates...).IDs(ctx)
-	default:
-		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
-	}
-}
-
-// SetCreatedAt sets the "created_at" field.
-func (m *ApiSubscriptionMutation) SetCreatedAt(t time.Time) {
-	m.created_at = &t
-}
-
-// CreatedAt returns the value of the "created_at" field in the mutation.
-func (m *ApiSubscriptionMutation) CreatedAt() (r time.Time, exists bool) {
-	v := m.created_at
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldCreatedAt returns the old "created_at" field's value of the ApiSubscription entity.
-// If the ApiSubscription object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ApiSubscriptionMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
-	}
-	return oldValue.CreatedAt, nil
-}
-
-// ResetCreatedAt resets all changes to the "created_at" field.
-func (m *ApiSubscriptionMutation) ResetCreatedAt() {
-	m.created_at = nil
-}
-
-// SetLastModifiedAt sets the "last_modified_at" field.
-func (m *ApiSubscriptionMutation) SetLastModifiedAt(t time.Time) {
-	m.last_modified_at = &t
-}
-
-// LastModifiedAt returns the value of the "last_modified_at" field in the mutation.
-func (m *ApiSubscriptionMutation) LastModifiedAt() (r time.Time, exists bool) {
-	v := m.last_modified_at
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldLastModifiedAt returns the old "last_modified_at" field's value of the ApiSubscription entity.
-// If the ApiSubscription object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ApiSubscriptionMutation) OldLastModifiedAt(ctx context.Context) (v time.Time, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldLastModifiedAt is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldLastModifiedAt requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldLastModifiedAt: %w", err)
-	}
-	return oldValue.LastModifiedAt, nil
-}
-
-// ResetLastModifiedAt resets all changes to the "last_modified_at" field.
-func (m *ApiSubscriptionMutation) ResetLastModifiedAt() {
-	m.last_modified_at = nil
-}
-
-// SetStatusPhase sets the "status_phase" field.
-func (m *ApiSubscriptionMutation) SetStatusPhase(ap apisubscription.StatusPhase) {
-	m.status_phase = &ap
-}
-
-// StatusPhase returns the value of the "status_phase" field in the mutation.
-func (m *ApiSubscriptionMutation) StatusPhase() (r apisubscription.StatusPhase, exists bool) {
-	v := m.status_phase
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldStatusPhase returns the old "status_phase" field's value of the ApiSubscription entity.
-// If the ApiSubscription object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ApiSubscriptionMutation) OldStatusPhase(ctx context.Context) (v *apisubscription.StatusPhase, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldStatusPhase is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldStatusPhase requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldStatusPhase: %w", err)
-	}
-	return oldValue.StatusPhase, nil
-}
-
-// ClearStatusPhase clears the value of the "status_phase" field.
-func (m *ApiSubscriptionMutation) ClearStatusPhase() {
-	m.status_phase = nil
-	m.clearedFields[apisubscription.FieldStatusPhase] = struct{}{}
-}
-
-// StatusPhaseCleared returns if the "status_phase" field was cleared in this mutation.
-func (m *ApiSubscriptionMutation) StatusPhaseCleared() bool {
-	_, ok := m.clearedFields[apisubscription.FieldStatusPhase]
-	return ok
-}
-
-// ResetStatusPhase resets all changes to the "status_phase" field.
-func (m *ApiSubscriptionMutation) ResetStatusPhase() {
-	m.status_phase = nil
-	delete(m.clearedFields, apisubscription.FieldStatusPhase)
-}
-
-// SetStatusMessage sets the "status_message" field.
-func (m *ApiSubscriptionMutation) SetStatusMessage(s string) {
-	m.status_message = &s
-}
-
-// StatusMessage returns the value of the "status_message" field in the mutation.
-func (m *ApiSubscriptionMutation) StatusMessage() (r string, exists bool) {
-	v := m.status_message
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldStatusMessage returns the old "status_message" field's value of the ApiSubscription entity.
-// If the ApiSubscription object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ApiSubscriptionMutation) OldStatusMessage(ctx context.Context) (v *string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldStatusMessage is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldStatusMessage requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldStatusMessage: %w", err)
-	}
-	return oldValue.StatusMessage, nil
-}
-
-// ClearStatusMessage clears the value of the "status_message" field.
-func (m *ApiSubscriptionMutation) ClearStatusMessage() {
-	m.status_message = nil
-	m.clearedFields[apisubscription.FieldStatusMessage] = struct{}{}
-}
-
-// StatusMessageCleared returns if the "status_message" field was cleared in this mutation.
-func (m *ApiSubscriptionMutation) StatusMessageCleared() bool {
-	_, ok := m.clearedFields[apisubscription.FieldStatusMessage]
-	return ok
-}
-
-// ResetStatusMessage resets all changes to the "status_message" field.
-func (m *ApiSubscriptionMutation) ResetStatusMessage() {
-	m.status_message = nil
-	delete(m.clearedFields, apisubscription.FieldStatusMessage)
-}
-
-// SetEnvironment sets the "environment" field.
-func (m *ApiSubscriptionMutation) SetEnvironment(s string) {
-	m.environment = &s
-}
-
-// Environment returns the value of the "environment" field in the mutation.
-func (m *ApiSubscriptionMutation) Environment() (r string, exists bool) {
-	v := m.environment
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldEnvironment returns the old "environment" field's value of the ApiSubscription entity.
-// If the ApiSubscription object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ApiSubscriptionMutation) OldEnvironment(ctx context.Context) (v *string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldEnvironment is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldEnvironment requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldEnvironment: %w", err)
-	}
-	return oldValue.Environment, nil
-}
-
-// ClearEnvironment clears the value of the "environment" field.
-func (m *ApiSubscriptionMutation) ClearEnvironment() {
-	m.environment = nil
-	m.clearedFields[apisubscription.FieldEnvironment] = struct{}{}
-}
-
-// EnvironmentCleared returns if the "environment" field was cleared in this mutation.
-func (m *ApiSubscriptionMutation) EnvironmentCleared() bool {
-	_, ok := m.clearedFields[apisubscription.FieldEnvironment]
-	return ok
-}
-
-// ResetEnvironment resets all changes to the "environment" field.
-func (m *ApiSubscriptionMutation) ResetEnvironment() {
-	m.environment = nil
-	delete(m.clearedFields, apisubscription.FieldEnvironment)
-}
-
-// SetNamespace sets the "namespace" field.
-func (m *ApiSubscriptionMutation) SetNamespace(s string) {
-	m.namespace = &s
-}
-
-// Namespace returns the value of the "namespace" field in the mutation.
-func (m *ApiSubscriptionMutation) Namespace() (r string, exists bool) {
-	v := m.namespace
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldNamespace returns the old "namespace" field's value of the ApiSubscription entity.
-// If the ApiSubscription object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ApiSubscriptionMutation) OldNamespace(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldNamespace is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldNamespace requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldNamespace: %w", err)
-	}
-	return oldValue.Namespace, nil
-}
-
-// ResetNamespace resets all changes to the "namespace" field.
-func (m *ApiSubscriptionMutation) ResetNamespace() {
-	m.namespace = nil
-}
-
-// SetName sets the "name" field.
-func (m *ApiSubscriptionMutation) SetName(s string) {
-	m.name = &s
-}
-
-// Name returns the value of the "name" field in the mutation.
-func (m *ApiSubscriptionMutation) Name() (r string, exists bool) {
-	v := m.name
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldName returns the old "name" field's value of the ApiSubscription entity.
-// If the ApiSubscription object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ApiSubscriptionMutation) OldName(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldName is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldName requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldName: %w", err)
-	}
-	return oldValue.Name, nil
-}
-
-// ResetName resets all changes to the "name" field.
-func (m *ApiSubscriptionMutation) ResetName() {
-	m.name = nil
-}
-
-// SetBasePath sets the "base_path" field.
-func (m *ApiSubscriptionMutation) SetBasePath(s string) {
-	m.base_path = &s
-}
-
-// BasePath returns the value of the "base_path" field in the mutation.
-func (m *ApiSubscriptionMutation) BasePath() (r string, exists bool) {
-	v := m.base_path
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldBasePath returns the old "base_path" field's value of the ApiSubscription entity.
-// If the ApiSubscription object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ApiSubscriptionMutation) OldBasePath(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldBasePath is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldBasePath requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldBasePath: %w", err)
-	}
-	return oldValue.BasePath, nil
-}
-
-// ResetBasePath resets all changes to the "base_path" field.
-func (m *ApiSubscriptionMutation) ResetBasePath() {
-	m.base_path = nil
-}
-
-// SetM2mAuthMethod sets the "m2m_auth_method" field.
-func (m *ApiSubscriptionMutation) SetM2mAuthMethod(aam apisubscription.M2mAuthMethod) {
-	m.m2m_auth_method = &aam
-}
-
-// M2mAuthMethod returns the value of the "m2m_auth_method" field in the mutation.
-func (m *ApiSubscriptionMutation) M2mAuthMethod() (r apisubscription.M2mAuthMethod, exists bool) {
-	v := m.m2m_auth_method
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldM2mAuthMethod returns the old "m2m_auth_method" field's value of the ApiSubscription entity.
-// If the ApiSubscription object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ApiSubscriptionMutation) OldM2mAuthMethod(ctx context.Context) (v apisubscription.M2mAuthMethod, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldM2mAuthMethod is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldM2mAuthMethod requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldM2mAuthMethod: %w", err)
-	}
-	return oldValue.M2mAuthMethod, nil
-}
-
-// ResetM2mAuthMethod resets all changes to the "m2m_auth_method" field.
-func (m *ApiSubscriptionMutation) ResetM2mAuthMethod() {
-	m.m2m_auth_method = nil
-}
-
-// SetGatewayURL sets the "gateway_url" field.
-func (m *ApiSubscriptionMutation) SetGatewayURL(s string) {
-	m.gateway_url = &s
-}
-
-// GatewayURL returns the value of the "gateway_url" field in the mutation.
-func (m *ApiSubscriptionMutation) GatewayURL() (r string, exists bool) {
-	v := m.gateway_url
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldGatewayURL returns the old "gateway_url" field's value of the ApiSubscription entity.
-// If the ApiSubscription object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ApiSubscriptionMutation) OldGatewayURL(ctx context.Context) (v *string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldGatewayURL is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldGatewayURL requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldGatewayURL: %w", err)
-	}
-	return oldValue.GatewayURL, nil
-}
-
-// ClearGatewayURL clears the value of the "gateway_url" field.
-func (m *ApiSubscriptionMutation) ClearGatewayURL() {
-	m.gateway_url = nil
-	m.clearedFields[apisubscription.FieldGatewayURL] = struct{}{}
-}
-
-// GatewayURLCleared returns if the "gateway_url" field was cleared in this mutation.
-func (m *ApiSubscriptionMutation) GatewayURLCleared() bool {
-	_, ok := m.clearedFields[apisubscription.FieldGatewayURL]
-	return ok
-}
-
-// ResetGatewayURL resets all changes to the "gateway_url" field.
-func (m *ApiSubscriptionMutation) ResetGatewayURL() {
-	m.gateway_url = nil
-	delete(m.clearedFields, apisubscription.FieldGatewayURL)
-}
-
-// SetSecurity sets the "security" field.
-func (m *ApiSubscriptionMutation) SetSecurity(mss *model.ApiSubscriptionSecurity) {
-	m.security = &mss
-}
-
-// Security returns the value of the "security" field in the mutation.
-func (m *ApiSubscriptionMutation) Security() (r *model.ApiSubscriptionSecurity, exists bool) {
-	v := m.security
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldSecurity returns the old "security" field's value of the ApiSubscription entity.
-// If the ApiSubscription object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ApiSubscriptionMutation) OldSecurity(ctx context.Context) (v *model.ApiSubscriptionSecurity, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldSecurity is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldSecurity requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldSecurity: %w", err)
-	}
-	return oldValue.Security, nil
-}
-
-// ClearSecurity clears the value of the "security" field.
-func (m *ApiSubscriptionMutation) ClearSecurity() {
-	m.security = nil
-	m.clearedFields[apisubscription.FieldSecurity] = struct{}{}
-}
-
-// SecurityCleared returns if the "security" field was cleared in this mutation.
-func (m *ApiSubscriptionMutation) SecurityCleared() bool {
-	_, ok := m.clearedFields[apisubscription.FieldSecurity]
-	return ok
-}
-
-// ResetSecurity resets all changes to the "security" field.
-func (m *ApiSubscriptionMutation) ResetSecurity() {
-	m.security = nil
-	delete(m.clearedFields, apisubscription.FieldSecurity)
-}
-
-// SetTraffic sets the "traffic" field.
-func (m *ApiSubscriptionMutation) SetTraffic(mst *model.ApiSubscriptionTraffic) {
-	m.traffic = &mst
-}
-
-// Traffic returns the value of the "traffic" field in the mutation.
-func (m *ApiSubscriptionMutation) Traffic() (r *model.ApiSubscriptionTraffic, exists bool) {
-	v := m.traffic
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldTraffic returns the old "traffic" field's value of the ApiSubscription entity.
-// If the ApiSubscription object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ApiSubscriptionMutation) OldTraffic(ctx context.Context) (v *model.ApiSubscriptionTraffic, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldTraffic is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldTraffic requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldTraffic: %w", err)
-	}
-	return oldValue.Traffic, nil
-}
-
-// ClearTraffic clears the value of the "traffic" field.
-func (m *ApiSubscriptionMutation) ClearTraffic() {
-	m.traffic = nil
-	m.clearedFields[apisubscription.FieldTraffic] = struct{}{}
-}
-
-// TrafficCleared returns if the "traffic" field was cleared in this mutation.
-func (m *ApiSubscriptionMutation) TrafficCleared() bool {
-	_, ok := m.clearedFields[apisubscription.FieldTraffic]
-	return ok
-}
-
-// ResetTraffic resets all changes to the "traffic" field.
-func (m *ApiSubscriptionMutation) ResetTraffic() {
-	m.traffic = nil
-	delete(m.clearedFields, apisubscription.FieldTraffic)
-}
-
-// SetOwnerID sets the "owner" edge to the Application entity by id.
-func (m *ApiSubscriptionMutation) SetOwnerID(id int) {
-	m.owner = &id
-}
-
-// ClearOwner clears the "owner" edge to the Application entity.
-func (m *ApiSubscriptionMutation) ClearOwner() {
-	m.clearedowner = true
-}
-
-// OwnerCleared reports if the "owner" edge to the Application entity was cleared.
-func (m *ApiSubscriptionMutation) OwnerCleared() bool {
-	return m.clearedowner
-}
-
-// OwnerID returns the "owner" edge ID in the mutation.
-func (m *ApiSubscriptionMutation) OwnerID() (id int, exists bool) {
-	if m.owner != nil {
-		return *m.owner, true
-	}
-	return
-}
-
-// OwnerIDs returns the "owner" edge IDs in the mutation.
-// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
-// OwnerID instead. It exists only for internal usage by the builders.
-func (m *ApiSubscriptionMutation) OwnerIDs() (ids []int) {
-	if id := m.owner; id != nil {
-		ids = append(ids, *id)
-	}
-	return
-}
-
-// ResetOwner resets all changes to the "owner" edge.
-func (m *ApiSubscriptionMutation) ResetOwner() {
-	m.owner = nil
-	m.clearedowner = false
-}
-
-// SetTargetID sets the "target" edge to the ApiExposure entity by id.
-func (m *ApiSubscriptionMutation) SetTargetID(id int) {
-	m.target = &id
-}
-
-// ClearTarget clears the "target" edge to the ApiExposure entity.
-func (m *ApiSubscriptionMutation) ClearTarget() {
-	m.clearedtarget = true
-}
-
-// TargetCleared reports if the "target" edge to the ApiExposure entity was cleared.
-func (m *ApiSubscriptionMutation) TargetCleared() bool {
-	return m.clearedtarget
-}
-
-// TargetID returns the "target" edge ID in the mutation.
-func (m *ApiSubscriptionMutation) TargetID() (id int, exists bool) {
-	if m.target != nil {
-		return *m.target, true
-	}
-	return
-}
-
-// TargetIDs returns the "target" edge IDs in the mutation.
-// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
-// TargetID instead. It exists only for internal usage by the builders.
-func (m *ApiSubscriptionMutation) TargetIDs() (ids []int) {
-	if id := m.target; id != nil {
-		ids = append(ids, *id)
-	}
-	return
-}
-
-// ResetTarget resets all changes to the "target" edge.
-func (m *ApiSubscriptionMutation) ResetTarget() {
-	m.target = nil
-	m.clearedtarget = false
-}
-
-// AddFailoverZoneIDs adds the "failover_zones" edge to the Zone entity by ids.
-func (m *ApiSubscriptionMutation) AddFailoverZoneIDs(ids ...int) {
-	if m.failover_zones == nil {
-		m.failover_zones = make(map[int]struct{})
-	}
-	for i := range ids {
-		m.failover_zones[ids[i]] = struct{}{}
-	}
-}
-
-// ClearFailoverZones clears the "failover_zones" edge to the Zone entity.
-func (m *ApiSubscriptionMutation) ClearFailoverZones() {
-	m.clearedfailover_zones = true
-}
-
-// FailoverZonesCleared reports if the "failover_zones" edge to the Zone entity was cleared.
-func (m *ApiSubscriptionMutation) FailoverZonesCleared() bool {
-	return m.clearedfailover_zones
-}
-
-// RemoveFailoverZoneIDs removes the "failover_zones" edge to the Zone entity by IDs.
-func (m *ApiSubscriptionMutation) RemoveFailoverZoneIDs(ids ...int) {
-	if m.removedfailover_zones == nil {
-		m.removedfailover_zones = make(map[int]struct{})
-	}
-	for i := range ids {
-		delete(m.failover_zones, ids[i])
-		m.removedfailover_zones[ids[i]] = struct{}{}
-	}
-}
-
-// RemovedFailoverZones returns the removed IDs of the "failover_zones" edge to the Zone entity.
-func (m *ApiSubscriptionMutation) RemovedFailoverZonesIDs() (ids []int) {
-	for id := range m.removedfailover_zones {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// FailoverZonesIDs returns the "failover_zones" edge IDs in the mutation.
-func (m *ApiSubscriptionMutation) FailoverZonesIDs() (ids []int) {
-	for id := range m.failover_zones {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// ResetFailoverZones resets all changes to the "failover_zones" edge.
-func (m *ApiSubscriptionMutation) ResetFailoverZones() {
-	m.failover_zones = nil
-	m.clearedfailover_zones = false
-	m.removedfailover_zones = nil
-}
-
-// SetApprovalID sets the "approval" edge to the Approval entity by id.
-func (m *ApiSubscriptionMutation) SetApprovalID(id int) {
-	m.approval = &id
-}
-
-// ClearApproval clears the "approval" edge to the Approval entity.
-func (m *ApiSubscriptionMutation) ClearApproval() {
-	m.clearedapproval = true
-}
-
-// ApprovalCleared reports if the "approval" edge to the Approval entity was cleared.
-func (m *ApiSubscriptionMutation) ApprovalCleared() bool {
-	return m.clearedapproval
-}
-
-// ApprovalID returns the "approval" edge ID in the mutation.
-func (m *ApiSubscriptionMutation) ApprovalID() (id int, exists bool) {
-	if m.approval != nil {
-		return *m.approval, true
-	}
-	return
-}
-
-// ApprovalIDs returns the "approval" edge IDs in the mutation.
-// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
-// ApprovalID instead. It exists only for internal usage by the builders.
-func (m *ApiSubscriptionMutation) ApprovalIDs() (ids []int) {
-	if id := m.approval; id != nil {
-		ids = append(ids, *id)
-	}
-	return
-}
-
-// ResetApproval resets all changes to the "approval" edge.
-func (m *ApiSubscriptionMutation) ResetApproval() {
-	m.approval = nil
-	m.clearedapproval = false
-}
-
-// AddApprovalRequestIDs adds the "approval_requests" edge to the ApprovalRequest entity by ids.
-func (m *ApiSubscriptionMutation) AddApprovalRequestIDs(ids ...int) {
-	if m.approval_requests == nil {
-		m.approval_requests = make(map[int]struct{})
-	}
-	for i := range ids {
-		m.approval_requests[ids[i]] = struct{}{}
-	}
-}
-
-// ClearApprovalRequests clears the "approval_requests" edge to the ApprovalRequest entity.
-func (m *ApiSubscriptionMutation) ClearApprovalRequests() {
-	m.clearedapproval_requests = true
-}
-
-// ApprovalRequestsCleared reports if the "approval_requests" edge to the ApprovalRequest entity was cleared.
-func (m *ApiSubscriptionMutation) ApprovalRequestsCleared() bool {
-	return m.clearedapproval_requests
-}
-
-// RemoveApprovalRequestIDs removes the "approval_requests" edge to the ApprovalRequest entity by IDs.
-func (m *ApiSubscriptionMutation) RemoveApprovalRequestIDs(ids ...int) {
-	if m.removedapproval_requests == nil {
-		m.removedapproval_requests = make(map[int]struct{})
-	}
-	for i := range ids {
-		delete(m.approval_requests, ids[i])
-		m.removedapproval_requests[ids[i]] = struct{}{}
-	}
-}
-
-// RemovedApprovalRequests returns the removed IDs of the "approval_requests" edge to the ApprovalRequest entity.
-func (m *ApiSubscriptionMutation) RemovedApprovalRequestsIDs() (ids []int) {
-	for id := range m.removedapproval_requests {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// ApprovalRequestsIDs returns the "approval_requests" edge IDs in the mutation.
-func (m *ApiSubscriptionMutation) ApprovalRequestsIDs() (ids []int) {
-	for id := range m.approval_requests {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// ResetApprovalRequests resets all changes to the "approval_requests" edge.
-func (m *ApiSubscriptionMutation) ResetApprovalRequests() {
-	m.approval_requests = nil
-	m.clearedapproval_requests = false
-	m.removedapproval_requests = nil
-}
-
-// Where appends a list predicates to the ApiSubscriptionMutation builder.
-func (m *ApiSubscriptionMutation) Where(ps ...predicate.ApiSubscription) {
-	m.predicates = append(m.predicates, ps...)
-}
-
-// WhereP appends storage-level predicates to the ApiSubscriptionMutation builder. Using this method,
-// users can use type-assertion to append predicates that do not depend on any generated package.
-func (m *ApiSubscriptionMutation) WhereP(ps ...func(*sql.Selector)) {
-	p := make([]predicate.ApiSubscription, len(ps))
-	for i := range ps {
-		p[i] = ps[i]
-	}
-	m.Where(p...)
-}
-
-// Op returns the operation name.
-func (m *ApiSubscriptionMutation) Op() Op {
-	return m.op
-}
-
-// SetOp allows setting the mutation operation.
-func (m *ApiSubscriptionMutation) SetOp(op Op) {
-	m.op = op
-}
-
-// Type returns the node type of this mutation (ApiSubscription).
-func (m *ApiSubscriptionMutation) Type() string {
-	return m.typ
-}
-
-// Fields returns all fields that were changed during this mutation. Note that in
-// order to get all numeric fields that were incremented/decremented, call
-// AddedFields().
-func (m *ApiSubscriptionMutation) Fields() []string {
-	fields := make([]string, 0, 12)
-	if m.created_at != nil {
-		fields = append(fields, apisubscription.FieldCreatedAt)
-	}
-	if m.last_modified_at != nil {
-		fields = append(fields, apisubscription.FieldLastModifiedAt)
-	}
-	if m.status_phase != nil {
-		fields = append(fields, apisubscription.FieldStatusPhase)
-	}
-	if m.status_message != nil {
-		fields = append(fields, apisubscription.FieldStatusMessage)
-	}
-	if m.environment != nil {
-		fields = append(fields, apisubscription.FieldEnvironment)
-	}
-	if m.namespace != nil {
-		fields = append(fields, apisubscription.FieldNamespace)
-	}
-	if m.name != nil {
-		fields = append(fields, apisubscription.FieldName)
-	}
-	if m.base_path != nil {
-		fields = append(fields, apisubscription.FieldBasePath)
-	}
-	if m.m2m_auth_method != nil {
-		fields = append(fields, apisubscription.FieldM2mAuthMethod)
-	}
-	if m.gateway_url != nil {
-		fields = append(fields, apisubscription.FieldGatewayURL)
-	}
-	if m.security != nil {
-		fields = append(fields, apisubscription.FieldSecurity)
-	}
-	if m.traffic != nil {
-		fields = append(fields, apisubscription.FieldTraffic)
-	}
-	return fields
-}
-
-// Field returns the value of a field with the given name. The second boolean
-// return value indicates that this field was not set, or was not defined in the
-// schema.
-func (m *ApiSubscriptionMutation) Field(name string) (ent.Value, bool) {
-	switch name {
-	case apisubscription.FieldCreatedAt:
-		return m.CreatedAt()
-	case apisubscription.FieldLastModifiedAt:
-		return m.LastModifiedAt()
-	case apisubscription.FieldStatusPhase:
-		return m.StatusPhase()
-	case apisubscription.FieldStatusMessage:
-		return m.StatusMessage()
-	case apisubscription.FieldEnvironment:
-		return m.Environment()
-	case apisubscription.FieldNamespace:
-		return m.Namespace()
-	case apisubscription.FieldName:
-		return m.Name()
-	case apisubscription.FieldBasePath:
-		return m.BasePath()
-	case apisubscription.FieldM2mAuthMethod:
-		return m.M2mAuthMethod()
-	case apisubscription.FieldGatewayURL:
-		return m.GatewayURL()
-	case apisubscription.FieldSecurity:
-		return m.Security()
-	case apisubscription.FieldTraffic:
-		return m.Traffic()
-	}
-	return nil, false
-}
-
-// OldField returns the old value of the field from the database. An error is
-// returned if the mutation operation is not UpdateOne, or the query to the
-// database failed.
-func (m *ApiSubscriptionMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
-	switch name {
-	case apisubscription.FieldCreatedAt:
-		return m.OldCreatedAt(ctx)
-	case apisubscription.FieldLastModifiedAt:
-		return m.OldLastModifiedAt(ctx)
-	case apisubscription.FieldStatusPhase:
-		return m.OldStatusPhase(ctx)
-	case apisubscription.FieldStatusMessage:
-		return m.OldStatusMessage(ctx)
-	case apisubscription.FieldEnvironment:
-		return m.OldEnvironment(ctx)
-	case apisubscription.FieldNamespace:
-		return m.OldNamespace(ctx)
-	case apisubscription.FieldName:
-		return m.OldName(ctx)
-	case apisubscription.FieldBasePath:
-		return m.OldBasePath(ctx)
-	case apisubscription.FieldM2mAuthMethod:
-		return m.OldM2mAuthMethod(ctx)
-	case apisubscription.FieldGatewayURL:
-		return m.OldGatewayURL(ctx)
-	case apisubscription.FieldSecurity:
-		return m.OldSecurity(ctx)
-	case apisubscription.FieldTraffic:
-		return m.OldTraffic(ctx)
-	}
-	return nil, fmt.Errorf("unknown ApiSubscription field %s", name)
-}
-
-// SetField sets the value of a field with the given name. It returns an error if
-// the field is not defined in the schema, or if the type mismatched the field
-// type.
-func (m *ApiSubscriptionMutation) SetField(name string, value ent.Value) error {
-	switch name {
-	case apisubscription.FieldCreatedAt:
-		v, ok := value.(time.Time)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetCreatedAt(v)
-		return nil
-	case apisubscription.FieldLastModifiedAt:
-		v, ok := value.(time.Time)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetLastModifiedAt(v)
-		return nil
-	case apisubscription.FieldStatusPhase:
-		v, ok := value.(apisubscription.StatusPhase)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetStatusPhase(v)
-		return nil
-	case apisubscription.FieldStatusMessage:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetStatusMessage(v)
-		return nil
-	case apisubscription.FieldEnvironment:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetEnvironment(v)
-		return nil
-	case apisubscription.FieldNamespace:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetNamespace(v)
-		return nil
-	case apisubscription.FieldName:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetName(v)
-		return nil
-	case apisubscription.FieldBasePath:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetBasePath(v)
-		return nil
-	case apisubscription.FieldM2mAuthMethod:
-		v, ok := value.(apisubscription.M2mAuthMethod)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetM2mAuthMethod(v)
-		return nil
-	case apisubscription.FieldGatewayURL:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetGatewayURL(v)
-		return nil
-	case apisubscription.FieldSecurity:
-		v, ok := value.(*model.ApiSubscriptionSecurity)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetSecurity(v)
-		return nil
-	case apisubscription.FieldTraffic:
-		v, ok := value.(*model.ApiSubscriptionTraffic)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetTraffic(v)
-		return nil
-	}
-	return fmt.Errorf("unknown ApiSubscription field %s", name)
-}
-
-// AddedFields returns all numeric fields that were incremented/decremented during
-// this mutation.
-func (m *ApiSubscriptionMutation) AddedFields() []string {
-	return nil
-}
-
-// AddedField returns the numeric value that was incremented/decremented on a field
-// with the given name. The second boolean return value indicates that this field
-// was not set, or was not defined in the schema.
-func (m *ApiSubscriptionMutation) AddedField(name string) (ent.Value, bool) {
-	return nil, false
-}
-
-// AddField adds the value to the field with the given name. It returns an error if
-// the field is not defined in the schema, or if the type mismatched the field
-// type.
-func (m *ApiSubscriptionMutation) AddField(name string, value ent.Value) error {
-	switch name {
-	}
-	return fmt.Errorf("unknown ApiSubscription numeric field %s", name)
-}
-
-// ClearedFields returns all nullable fields that were cleared during this
-// mutation.
-func (m *ApiSubscriptionMutation) ClearedFields() []string {
-	var fields []string
-	if m.FieldCleared(apisubscription.FieldStatusPhase) {
-		fields = append(fields, apisubscription.FieldStatusPhase)
-	}
-	if m.FieldCleared(apisubscription.FieldStatusMessage) {
-		fields = append(fields, apisubscription.FieldStatusMessage)
-	}
-	if m.FieldCleared(apisubscription.FieldEnvironment) {
-		fields = append(fields, apisubscription.FieldEnvironment)
-	}
-	if m.FieldCleared(apisubscription.FieldGatewayURL) {
-		fields = append(fields, apisubscription.FieldGatewayURL)
-	}
-	if m.FieldCleared(apisubscription.FieldSecurity) {
-		fields = append(fields, apisubscription.FieldSecurity)
-	}
-	if m.FieldCleared(apisubscription.FieldTraffic) {
-		fields = append(fields, apisubscription.FieldTraffic)
-	}
-	return fields
-}
-
-// FieldCleared returns a boolean indicating if a field with the given name was
-// cleared in this mutation.
-func (m *ApiSubscriptionMutation) FieldCleared(name string) bool {
-	_, ok := m.clearedFields[name]
-	return ok
-}
-
-// ClearField clears the value of the field with the given name. It returns an
-// error if the field is not defined in the schema.
-func (m *ApiSubscriptionMutation) ClearField(name string) error {
-	switch name {
-	case apisubscription.FieldStatusPhase:
-		m.ClearStatusPhase()
-		return nil
-	case apisubscription.FieldStatusMessage:
-		m.ClearStatusMessage()
-		return nil
-	case apisubscription.FieldEnvironment:
-		m.ClearEnvironment()
-		return nil
-	case apisubscription.FieldGatewayURL:
-		m.ClearGatewayURL()
-		return nil
-	case apisubscription.FieldSecurity:
-		m.ClearSecurity()
-		return nil
-	case apisubscription.FieldTraffic:
-		m.ClearTraffic()
-		return nil
-	}
-	return fmt.Errorf("unknown ApiSubscription nullable field %s", name)
-}
-
-// ResetField resets all changes in the mutation for the field with the given name.
-// It returns an error if the field is not defined in the schema.
-func (m *ApiSubscriptionMutation) ResetField(name string) error {
-	switch name {
-	case apisubscription.FieldCreatedAt:
-		m.ResetCreatedAt()
-		return nil
-	case apisubscription.FieldLastModifiedAt:
-		m.ResetLastModifiedAt()
-		return nil
-	case apisubscription.FieldStatusPhase:
-		m.ResetStatusPhase()
-		return nil
-	case apisubscription.FieldStatusMessage:
-		m.ResetStatusMessage()
-		return nil
-	case apisubscription.FieldEnvironment:
-		m.ResetEnvironment()
-		return nil
-	case apisubscription.FieldNamespace:
-		m.ResetNamespace()
-		return nil
-	case apisubscription.FieldName:
-		m.ResetName()
-		return nil
-	case apisubscription.FieldBasePath:
-		m.ResetBasePath()
-		return nil
-	case apisubscription.FieldM2mAuthMethod:
-		m.ResetM2mAuthMethod()
-		return nil
-	case apisubscription.FieldGatewayURL:
-		m.ResetGatewayURL()
-		return nil
-	case apisubscription.FieldSecurity:
-		m.ResetSecurity()
-		return nil
-	case apisubscription.FieldTraffic:
-		m.ResetTraffic()
-		return nil
-	}
-	return fmt.Errorf("unknown ApiSubscription field %s", name)
-}
-
-// AddedEdges returns all edge names that were set/added in this mutation.
-func (m *ApiSubscriptionMutation) AddedEdges() []string {
-	edges := make([]string, 0, 5)
-	if m.owner != nil {
-		edges = append(edges, apisubscription.EdgeOwner)
-	}
-	if m.target != nil {
-		edges = append(edges, apisubscription.EdgeTarget)
-	}
-	if m.failover_zones != nil {
-		edges = append(edges, apisubscription.EdgeFailoverZones)
-	}
-	if m.approval != nil {
-		edges = append(edges, apisubscription.EdgeApproval)
-	}
-	if m.approval_requests != nil {
-		edges = append(edges, apisubscription.EdgeApprovalRequests)
-	}
-	return edges
-}
-
-// AddedIDs returns all IDs (to other nodes) that were added for the given edge
-// name in this mutation.
-func (m *ApiSubscriptionMutation) AddedIDs(name string) []ent.Value {
-	switch name {
-	case apisubscription.EdgeOwner:
-		if id := m.owner; id != nil {
-			return []ent.Value{*id}
-		}
-	case apisubscription.EdgeTarget:
-		if id := m.target; id != nil {
-			return []ent.Value{*id}
-		}
-	case apisubscription.EdgeFailoverZones:
-		ids := make([]ent.Value, 0, len(m.failover_zones))
-		for id := range m.failover_zones {
-			ids = append(ids, id)
-		}
-		return ids
-	case apisubscription.EdgeApproval:
-		if id := m.approval; id != nil {
-			return []ent.Value{*id}
-		}
-	case apisubscription.EdgeApprovalRequests:
-		ids := make([]ent.Value, 0, len(m.approval_requests))
-		for id := range m.approval_requests {
-			ids = append(ids, id)
-		}
-		return ids
-	}
-	return nil
-}
-
-// RemovedEdges returns all edge names that were removed in this mutation.
-func (m *ApiSubscriptionMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 5)
-	if m.removedfailover_zones != nil {
-		edges = append(edges, apisubscription.EdgeFailoverZones)
-	}
-	if m.removedapproval_requests != nil {
-		edges = append(edges, apisubscription.EdgeApprovalRequests)
-	}
-	return edges
-}
-
-// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
-// the given name in this mutation.
-func (m *ApiSubscriptionMutation) RemovedIDs(name string) []ent.Value {
-	switch name {
-	case apisubscription.EdgeFailoverZones:
-		ids := make([]ent.Value, 0, len(m.removedfailover_zones))
-		for id := range m.removedfailover_zones {
-			ids = append(ids, id)
-		}
-		return ids
-	case apisubscription.EdgeApprovalRequests:
-		ids := make([]ent.Value, 0, len(m.removedapproval_requests))
-		for id := range m.removedapproval_requests {
-			ids = append(ids, id)
-		}
-		return ids
-	}
-	return nil
-}
-
-// ClearedEdges returns all edge names that were cleared in this mutation.
-func (m *ApiSubscriptionMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 5)
-	if m.clearedowner {
-		edges = append(edges, apisubscription.EdgeOwner)
-	}
-	if m.clearedtarget {
-		edges = append(edges, apisubscription.EdgeTarget)
-	}
-	if m.clearedfailover_zones {
-		edges = append(edges, apisubscription.EdgeFailoverZones)
-	}
-	if m.clearedapproval {
-		edges = append(edges, apisubscription.EdgeApproval)
-	}
-	if m.clearedapproval_requests {
-		edges = append(edges, apisubscription.EdgeApprovalRequests)
-	}
-	return edges
-}
-
-// EdgeCleared returns a boolean which indicates if the edge with the given name
-// was cleared in this mutation.
-func (m *ApiSubscriptionMutation) EdgeCleared(name string) bool {
-	switch name {
-	case apisubscription.EdgeOwner:
-		return m.clearedowner
-	case apisubscription.EdgeTarget:
-		return m.clearedtarget
-	case apisubscription.EdgeFailoverZones:
-		return m.clearedfailover_zones
-	case apisubscription.EdgeApproval:
-		return m.clearedapproval
-	case apisubscription.EdgeApprovalRequests:
-		return m.clearedapproval_requests
-	}
-	return false
-}
-
-// ClearEdge clears the value of the edge with the given name. It returns an error
-// if that edge is not defined in the schema.
-func (m *ApiSubscriptionMutation) ClearEdge(name string) error {
-	switch name {
-	case apisubscription.EdgeOwner:
-		m.ClearOwner()
-		return nil
-	case apisubscription.EdgeTarget:
-		m.ClearTarget()
-		return nil
-	case apisubscription.EdgeApproval:
-		m.ClearApproval()
-		return nil
-	}
-	return fmt.Errorf("unknown ApiSubscription unique edge %s", name)
-}
-
-// ResetEdge resets all changes to the edge with the given name in this mutation.
-// It returns an error if the edge is not defined in the schema.
-func (m *ApiSubscriptionMutation) ResetEdge(name string) error {
-	switch name {
-	case apisubscription.EdgeOwner:
-		m.ResetOwner()
-		return nil
-	case apisubscription.EdgeTarget:
-		m.ResetTarget()
-		return nil
-	case apisubscription.EdgeFailoverZones:
-		m.ResetFailoverZones()
-		return nil
-	case apisubscription.EdgeApproval:
-		m.ResetApproval()
-		return nil
-	case apisubscription.EdgeApprovalRequests:
-		m.ResetApprovalRequests()
-		return nil
-	}
-	return fmt.Errorf("unknown ApiSubscription edge %s", name)
-}
-
 // ApplicationMutation represents an operation that mutates the Application nodes in the graph.
 type ApplicationMutation struct {
 	config
@@ -8140,21 +8140,21 @@ type ApplicationMutation struct {
 	current_expires_at         *time.Time
 	secret_rotation_phase      *application.SecretRotationPhase
 	secret_rotation_message    *string
-	external_ids               *[]model.ExternalId
-	appendexternal_ids         []model.ExternalId
-	ip_restrictions            *model.IpRestrictions
+	external_IDs               *[]model.ExternalID
+	appendexternal_IDs         []model.ExternalID
+	ip_restrictions            *model.IPRestrictions
 	permissions_url            *string
 	clearedFields              map[string]struct{}
 	zone                       *int
 	clearedzone                bool
 	owner_team                 *int
 	clearedowner_team          bool
-	exposed_apis               map[int]struct{}
-	removedexposed_apis        map[int]struct{}
-	clearedexposed_apis        bool
-	subscribed_apis            map[int]struct{}
-	removedsubscribed_apis     map[int]struct{}
-	clearedsubscribed_apis     bool
+	exposed_APIs               map[int]struct{}
+	removedexposed_APIs        map[int]struct{}
+	clearedexposed_APIs        bool
+	subscribed_APIs            map[int]struct{}
+	removedsubscribed_APIs     map[int]struct{}
+	clearedsubscribed_APIs     bool
 	exposed_events             map[int]struct{}
 	removedexposed_events      map[int]struct{}
 	clearedexposed_events      bool
@@ -8893,78 +8893,78 @@ func (m *ApplicationMutation) ResetSecretRotationMessage() {
 	delete(m.clearedFields, application.FieldSecretRotationMessage)
 }
 
-// SetExternalIds sets the "external_ids" field.
-func (m *ApplicationMutation) SetExternalIds(mi []model.ExternalId) {
-	m.external_ids = &mi
-	m.appendexternal_ids = nil
+// SetExternalIDs sets the "external_IDs" field.
+func (m *ApplicationMutation) SetExternalIDs(mi []model.ExternalID) {
+	m.external_IDs = &mi
+	m.appendexternal_IDs = nil
 }
 
-// ExternalIds returns the value of the "external_ids" field in the mutation.
-func (m *ApplicationMutation) ExternalIds() (r []model.ExternalId, exists bool) {
-	v := m.external_ids
+// ExternalIDs returns the value of the "external_IDs" field in the mutation.
+func (m *ApplicationMutation) ExternalIDs() (r []model.ExternalID, exists bool) {
+	v := m.external_IDs
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldExternalIds returns the old "external_ids" field's value of the Application entity.
+// OldExternalIDs returns the old "external_IDs" field's value of the Application entity.
 // If the Application object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ApplicationMutation) OldExternalIds(ctx context.Context) (v []model.ExternalId, err error) {
+func (m *ApplicationMutation) OldExternalIDs(ctx context.Context) (v []model.ExternalID, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldExternalIds is only allowed on UpdateOne operations")
+		return v, errors.New("OldExternalIDs is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldExternalIds requires an ID field in the mutation")
+		return v, errors.New("OldExternalIDs requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldExternalIds: %w", err)
+		return v, fmt.Errorf("querying old value for OldExternalIDs: %w", err)
 	}
-	return oldValue.ExternalIds, nil
+	return oldValue.ExternalIDs, nil
 }
 
-// AppendExternalIds adds mi to the "external_ids" field.
-func (m *ApplicationMutation) AppendExternalIds(mi []model.ExternalId) {
-	m.appendexternal_ids = append(m.appendexternal_ids, mi...)
+// AppendExternalIDs adds mi to the "external_IDs" field.
+func (m *ApplicationMutation) AppendExternalIDs(mi []model.ExternalID) {
+	m.appendexternal_IDs = append(m.appendexternal_IDs, mi...)
 }
 
-// AppendedExternalIds returns the list of values that were appended to the "external_ids" field in this mutation.
-func (m *ApplicationMutation) AppendedExternalIds() ([]model.ExternalId, bool) {
-	if len(m.appendexternal_ids) == 0 {
+// AppendedExternalIDs returns the list of values that were appended to the "external_IDs" field in this mutation.
+func (m *ApplicationMutation) AppendedExternalIDs() ([]model.ExternalID, bool) {
+	if len(m.appendexternal_IDs) == 0 {
 		return nil, false
 	}
-	return m.appendexternal_ids, true
+	return m.appendexternal_IDs, true
 }
 
-// ClearExternalIds clears the value of the "external_ids" field.
-func (m *ApplicationMutation) ClearExternalIds() {
-	m.external_ids = nil
-	m.appendexternal_ids = nil
-	m.clearedFields[application.FieldExternalIds] = struct{}{}
+// ClearExternalIDs clears the value of the "external_IDs" field.
+func (m *ApplicationMutation) ClearExternalIDs() {
+	m.external_IDs = nil
+	m.appendexternal_IDs = nil
+	m.clearedFields[application.FieldExternalIDs] = struct{}{}
 }
 
-// ExternalIdsCleared returns if the "external_ids" field was cleared in this mutation.
-func (m *ApplicationMutation) ExternalIdsCleared() bool {
-	_, ok := m.clearedFields[application.FieldExternalIds]
+// ExternalIDsCleared returns if the "external_IDs" field was cleared in this mutation.
+func (m *ApplicationMutation) ExternalIDsCleared() bool {
+	_, ok := m.clearedFields[application.FieldExternalIDs]
 	return ok
 }
 
-// ResetExternalIds resets all changes to the "external_ids" field.
-func (m *ApplicationMutation) ResetExternalIds() {
-	m.external_ids = nil
-	m.appendexternal_ids = nil
-	delete(m.clearedFields, application.FieldExternalIds)
+// ResetExternalIDs resets all changes to the "external_IDs" field.
+func (m *ApplicationMutation) ResetExternalIDs() {
+	m.external_IDs = nil
+	m.appendexternal_IDs = nil
+	delete(m.clearedFields, application.FieldExternalIDs)
 }
 
 // SetIPRestrictions sets the "ip_restrictions" field.
-func (m *ApplicationMutation) SetIPRestrictions(mr model.IpRestrictions) {
+func (m *ApplicationMutation) SetIPRestrictions(mr model.IPRestrictions) {
 	m.ip_restrictions = &mr
 }
 
 // IPRestrictions returns the value of the "ip_restrictions" field in the mutation.
-func (m *ApplicationMutation) IPRestrictions() (r model.IpRestrictions, exists bool) {
+func (m *ApplicationMutation) IPRestrictions() (r model.IPRestrictions, exists bool) {
 	v := m.ip_restrictions
 	if v == nil {
 		return
@@ -8975,7 +8975,7 @@ func (m *ApplicationMutation) IPRestrictions() (r model.IpRestrictions, exists b
 // OldIPRestrictions returns the old "ip_restrictions" field's value of the Application entity.
 // If the Application object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ApplicationMutation) OldIPRestrictions(ctx context.Context) (v model.IpRestrictions, err error) {
+func (m *ApplicationMutation) OldIPRestrictions(ctx context.Context) (v model.IPRestrictions, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldIPRestrictions is only allowed on UpdateOne operations")
 	}
@@ -9134,112 +9134,112 @@ func (m *ApplicationMutation) ResetOwnerTeam() {
 	m.clearedowner_team = false
 }
 
-// AddExposedAPIIDs adds the "exposed_apis" edge to the ApiExposure entity by ids.
+// AddExposedAPIIDs adds the "exposed_APIs" edge to the APIExposure entity by ids.
 func (m *ApplicationMutation) AddExposedAPIIDs(ids ...int) {
-	if m.exposed_apis == nil {
-		m.exposed_apis = make(map[int]struct{})
+	if m.exposed_APIs == nil {
+		m.exposed_APIs = make(map[int]struct{})
 	}
 	for i := range ids {
-		m.exposed_apis[ids[i]] = struct{}{}
+		m.exposed_APIs[ids[i]] = struct{}{}
 	}
 }
 
-// ClearExposedApis clears the "exposed_apis" edge to the ApiExposure entity.
-func (m *ApplicationMutation) ClearExposedApis() {
-	m.clearedexposed_apis = true
+// ClearExposedAPIs clears the "exposed_APIs" edge to the APIExposure entity.
+func (m *ApplicationMutation) ClearExposedAPIs() {
+	m.clearedexposed_APIs = true
 }
 
-// ExposedApisCleared reports if the "exposed_apis" edge to the ApiExposure entity was cleared.
-func (m *ApplicationMutation) ExposedApisCleared() bool {
-	return m.clearedexposed_apis
+// ExposedAPIsCleared reports if the "exposed_APIs" edge to the APIExposure entity was cleared.
+func (m *ApplicationMutation) ExposedAPIsCleared() bool {
+	return m.clearedexposed_APIs
 }
 
-// RemoveExposedAPIIDs removes the "exposed_apis" edge to the ApiExposure entity by IDs.
+// RemoveExposedAPIIDs removes the "exposed_APIs" edge to the APIExposure entity by IDs.
 func (m *ApplicationMutation) RemoveExposedAPIIDs(ids ...int) {
-	if m.removedexposed_apis == nil {
-		m.removedexposed_apis = make(map[int]struct{})
+	if m.removedexposed_APIs == nil {
+		m.removedexposed_APIs = make(map[int]struct{})
 	}
 	for i := range ids {
-		delete(m.exposed_apis, ids[i])
-		m.removedexposed_apis[ids[i]] = struct{}{}
+		delete(m.exposed_APIs, ids[i])
+		m.removedexposed_APIs[ids[i]] = struct{}{}
 	}
 }
 
-// RemovedExposedApis returns the removed IDs of the "exposed_apis" edge to the ApiExposure entity.
-func (m *ApplicationMutation) RemovedExposedApisIDs() (ids []int) {
-	for id := range m.removedexposed_apis {
+// RemovedExposedAPIs returns the removed IDs of the "exposed_APIs" edge to the APIExposure entity.
+func (m *ApplicationMutation) RemovedExposedAPIsIDs() (ids []int) {
+	for id := range m.removedexposed_APIs {
 		ids = append(ids, id)
 	}
 	return
 }
 
-// ExposedApisIDs returns the "exposed_apis" edge IDs in the mutation.
-func (m *ApplicationMutation) ExposedApisIDs() (ids []int) {
-	for id := range m.exposed_apis {
+// ExposedAPIsIDs returns the "exposed_APIs" edge IDs in the mutation.
+func (m *ApplicationMutation) ExposedAPIsIDs() (ids []int) {
+	for id := range m.exposed_APIs {
 		ids = append(ids, id)
 	}
 	return
 }
 
-// ResetExposedApis resets all changes to the "exposed_apis" edge.
-func (m *ApplicationMutation) ResetExposedApis() {
-	m.exposed_apis = nil
-	m.clearedexposed_apis = false
-	m.removedexposed_apis = nil
+// ResetExposedAPIs resets all changes to the "exposed_APIs" edge.
+func (m *ApplicationMutation) ResetExposedAPIs() {
+	m.exposed_APIs = nil
+	m.clearedexposed_APIs = false
+	m.removedexposed_APIs = nil
 }
 
-// AddSubscribedAPIIDs adds the "subscribed_apis" edge to the ApiSubscription entity by ids.
+// AddSubscribedAPIIDs adds the "subscribed_APIs" edge to the APISubscription entity by ids.
 func (m *ApplicationMutation) AddSubscribedAPIIDs(ids ...int) {
-	if m.subscribed_apis == nil {
-		m.subscribed_apis = make(map[int]struct{})
+	if m.subscribed_APIs == nil {
+		m.subscribed_APIs = make(map[int]struct{})
 	}
 	for i := range ids {
-		m.subscribed_apis[ids[i]] = struct{}{}
+		m.subscribed_APIs[ids[i]] = struct{}{}
 	}
 }
 
-// ClearSubscribedApis clears the "subscribed_apis" edge to the ApiSubscription entity.
-func (m *ApplicationMutation) ClearSubscribedApis() {
-	m.clearedsubscribed_apis = true
+// ClearSubscribedAPIs clears the "subscribed_APIs" edge to the APISubscription entity.
+func (m *ApplicationMutation) ClearSubscribedAPIs() {
+	m.clearedsubscribed_APIs = true
 }
 
-// SubscribedApisCleared reports if the "subscribed_apis" edge to the ApiSubscription entity was cleared.
-func (m *ApplicationMutation) SubscribedApisCleared() bool {
-	return m.clearedsubscribed_apis
+// SubscribedAPIsCleared reports if the "subscribed_APIs" edge to the APISubscription entity was cleared.
+func (m *ApplicationMutation) SubscribedAPIsCleared() bool {
+	return m.clearedsubscribed_APIs
 }
 
-// RemoveSubscribedAPIIDs removes the "subscribed_apis" edge to the ApiSubscription entity by IDs.
+// RemoveSubscribedAPIIDs removes the "subscribed_APIs" edge to the APISubscription entity by IDs.
 func (m *ApplicationMutation) RemoveSubscribedAPIIDs(ids ...int) {
-	if m.removedsubscribed_apis == nil {
-		m.removedsubscribed_apis = make(map[int]struct{})
+	if m.removedsubscribed_APIs == nil {
+		m.removedsubscribed_APIs = make(map[int]struct{})
 	}
 	for i := range ids {
-		delete(m.subscribed_apis, ids[i])
-		m.removedsubscribed_apis[ids[i]] = struct{}{}
+		delete(m.subscribed_APIs, ids[i])
+		m.removedsubscribed_APIs[ids[i]] = struct{}{}
 	}
 }
 
-// RemovedSubscribedApis returns the removed IDs of the "subscribed_apis" edge to the ApiSubscription entity.
-func (m *ApplicationMutation) RemovedSubscribedApisIDs() (ids []int) {
-	for id := range m.removedsubscribed_apis {
+// RemovedSubscribedAPIs returns the removed IDs of the "subscribed_APIs" edge to the APISubscription entity.
+func (m *ApplicationMutation) RemovedSubscribedAPIsIDs() (ids []int) {
+	for id := range m.removedsubscribed_APIs {
 		ids = append(ids, id)
 	}
 	return
 }
 
-// SubscribedApisIDs returns the "subscribed_apis" edge IDs in the mutation.
-func (m *ApplicationMutation) SubscribedApisIDs() (ids []int) {
-	for id := range m.subscribed_apis {
+// SubscribedAPIsIDs returns the "subscribed_APIs" edge IDs in the mutation.
+func (m *ApplicationMutation) SubscribedAPIsIDs() (ids []int) {
+	for id := range m.subscribed_APIs {
 		ids = append(ids, id)
 	}
 	return
 }
 
-// ResetSubscribedApis resets all changes to the "subscribed_apis" edge.
-func (m *ApplicationMutation) ResetSubscribedApis() {
-	m.subscribed_apis = nil
-	m.clearedsubscribed_apis = false
-	m.removedsubscribed_apis = nil
+// ResetSubscribedAPIs resets all changes to the "subscribed_APIs" edge.
+func (m *ApplicationMutation) ResetSubscribedAPIs() {
+	m.subscribed_APIs = nil
+	m.clearedsubscribed_APIs = false
+	m.removedsubscribed_APIs = nil
 }
 
 // AddExposedEventIDs adds the "exposed_events" edge to the EventExposure entity by ids.
@@ -9574,8 +9574,8 @@ func (m *ApplicationMutation) Fields() []string {
 	if m.secret_rotation_message != nil {
 		fields = append(fields, application.FieldSecretRotationMessage)
 	}
-	if m.external_ids != nil {
-		fields = append(fields, application.FieldExternalIds)
+	if m.external_IDs != nil {
+		fields = append(fields, application.FieldExternalIDs)
 	}
 	if m.ip_restrictions != nil {
 		fields = append(fields, application.FieldIPRestrictions)
@@ -9619,8 +9619,8 @@ func (m *ApplicationMutation) Field(name string) (ent.Value, bool) {
 		return m.SecretRotationPhase()
 	case application.FieldSecretRotationMessage:
 		return m.SecretRotationMessage()
-	case application.FieldExternalIds:
-		return m.ExternalIds()
+	case application.FieldExternalIDs:
+		return m.ExternalIDs()
 	case application.FieldIPRestrictions:
 		return m.IPRestrictions()
 	case application.FieldPermissionsURL:
@@ -9662,8 +9662,8 @@ func (m *ApplicationMutation) OldField(ctx context.Context, name string) (ent.Va
 		return m.OldSecretRotationPhase(ctx)
 	case application.FieldSecretRotationMessage:
 		return m.OldSecretRotationMessage(ctx)
-	case application.FieldExternalIds:
-		return m.OldExternalIds(ctx)
+	case application.FieldExternalIDs:
+		return m.OldExternalIDs(ctx)
 	case application.FieldIPRestrictions:
 		return m.OldIPRestrictions(ctx)
 	case application.FieldPermissionsURL:
@@ -9775,15 +9775,15 @@ func (m *ApplicationMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetSecretRotationMessage(v)
 		return nil
-	case application.FieldExternalIds:
-		v, ok := value.([]model.ExternalId)
+	case application.FieldExternalIDs:
+		v, ok := value.([]model.ExternalID)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetExternalIds(v)
+		m.SetExternalIDs(v)
 		return nil
 	case application.FieldIPRestrictions:
-		v, ok := value.(model.IpRestrictions)
+		v, ok := value.(model.IPRestrictions)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
@@ -9853,8 +9853,8 @@ func (m *ApplicationMutation) ClearedFields() []string {
 	if m.FieldCleared(application.FieldSecretRotationMessage) {
 		fields = append(fields, application.FieldSecretRotationMessage)
 	}
-	if m.FieldCleared(application.FieldExternalIds) {
-		fields = append(fields, application.FieldExternalIds)
+	if m.FieldCleared(application.FieldExternalIDs) {
+		fields = append(fields, application.FieldExternalIDs)
 	}
 	if m.FieldCleared(application.FieldIPRestrictions) {
 		fields = append(fields, application.FieldIPRestrictions)
@@ -9903,8 +9903,8 @@ func (m *ApplicationMutation) ClearField(name string) error {
 	case application.FieldSecretRotationMessage:
 		m.ClearSecretRotationMessage()
 		return nil
-	case application.FieldExternalIds:
-		m.ClearExternalIds()
+	case application.FieldExternalIDs:
+		m.ClearExternalIDs()
 		return nil
 	case application.FieldIPRestrictions:
 		m.ClearIPRestrictions()
@@ -9962,8 +9962,8 @@ func (m *ApplicationMutation) ResetField(name string) error {
 	case application.FieldSecretRotationMessage:
 		m.ResetSecretRotationMessage()
 		return nil
-	case application.FieldExternalIds:
-		m.ResetExternalIds()
+	case application.FieldExternalIDs:
+		m.ResetExternalIDs()
 		return nil
 	case application.FieldIPRestrictions:
 		m.ResetIPRestrictions()
@@ -9984,11 +9984,11 @@ func (m *ApplicationMutation) AddedEdges() []string {
 	if m.owner_team != nil {
 		edges = append(edges, application.EdgeOwnerTeam)
 	}
-	if m.exposed_apis != nil {
-		edges = append(edges, application.EdgeExposedApis)
+	if m.exposed_APIs != nil {
+		edges = append(edges, application.EdgeExposedAPIs)
 	}
-	if m.subscribed_apis != nil {
-		edges = append(edges, application.EdgeSubscribedApis)
+	if m.subscribed_APIs != nil {
+		edges = append(edges, application.EdgeSubscribedAPIs)
 	}
 	if m.exposed_events != nil {
 		edges = append(edges, application.EdgeExposedEvents)
@@ -10020,15 +10020,15 @@ func (m *ApplicationMutation) AddedIDs(name string) []ent.Value {
 		if id := m.owner_team; id != nil {
 			return []ent.Value{*id}
 		}
-	case application.EdgeExposedApis:
-		ids := make([]ent.Value, 0, len(m.exposed_apis))
-		for id := range m.exposed_apis {
+	case application.EdgeExposedAPIs:
+		ids := make([]ent.Value, 0, len(m.exposed_APIs))
+		for id := range m.exposed_APIs {
 			ids = append(ids, id)
 		}
 		return ids
-	case application.EdgeSubscribedApis:
-		ids := make([]ent.Value, 0, len(m.subscribed_apis))
-		for id := range m.subscribed_apis {
+	case application.EdgeSubscribedAPIs:
+		ids := make([]ent.Value, 0, len(m.subscribed_APIs))
+		for id := range m.subscribed_APIs {
 			ids = append(ids, id)
 		}
 		return ids
@@ -10067,11 +10067,11 @@ func (m *ApplicationMutation) AddedIDs(name string) []ent.Value {
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *ApplicationMutation) RemovedEdges() []string {
 	edges := make([]string, 0, 9)
-	if m.removedexposed_apis != nil {
-		edges = append(edges, application.EdgeExposedApis)
+	if m.removedexposed_APIs != nil {
+		edges = append(edges, application.EdgeExposedAPIs)
 	}
-	if m.removedsubscribed_apis != nil {
-		edges = append(edges, application.EdgeSubscribedApis)
+	if m.removedsubscribed_APIs != nil {
+		edges = append(edges, application.EdgeSubscribedAPIs)
 	}
 	if m.removedexposed_events != nil {
 		edges = append(edges, application.EdgeExposedEvents)
@@ -10092,15 +10092,15 @@ func (m *ApplicationMutation) RemovedEdges() []string {
 // the given name in this mutation.
 func (m *ApplicationMutation) RemovedIDs(name string) []ent.Value {
 	switch name {
-	case application.EdgeExposedApis:
-		ids := make([]ent.Value, 0, len(m.removedexposed_apis))
-		for id := range m.removedexposed_apis {
+	case application.EdgeExposedAPIs:
+		ids := make([]ent.Value, 0, len(m.removedexposed_APIs))
+		for id := range m.removedexposed_APIs {
 			ids = append(ids, id)
 		}
 		return ids
-	case application.EdgeSubscribedApis:
-		ids := make([]ent.Value, 0, len(m.removedsubscribed_apis))
-		for id := range m.removedsubscribed_apis {
+	case application.EdgeSubscribedAPIs:
+		ids := make([]ent.Value, 0, len(m.removedsubscribed_APIs))
+		for id := range m.removedsubscribed_APIs {
 			ids = append(ids, id)
 		}
 		return ids
@@ -10141,11 +10141,11 @@ func (m *ApplicationMutation) ClearedEdges() []string {
 	if m.clearedowner_team {
 		edges = append(edges, application.EdgeOwnerTeam)
 	}
-	if m.clearedexposed_apis {
-		edges = append(edges, application.EdgeExposedApis)
+	if m.clearedexposed_APIs {
+		edges = append(edges, application.EdgeExposedAPIs)
 	}
-	if m.clearedsubscribed_apis {
-		edges = append(edges, application.EdgeSubscribedApis)
+	if m.clearedsubscribed_APIs {
+		edges = append(edges, application.EdgeSubscribedAPIs)
 	}
 	if m.clearedexposed_events {
 		edges = append(edges, application.EdgeExposedEvents)
@@ -10173,10 +10173,10 @@ func (m *ApplicationMutation) EdgeCleared(name string) bool {
 		return m.clearedzone
 	case application.EdgeOwnerTeam:
 		return m.clearedowner_team
-	case application.EdgeExposedApis:
-		return m.clearedexposed_apis
-	case application.EdgeSubscribedApis:
-		return m.clearedsubscribed_apis
+	case application.EdgeExposedAPIs:
+		return m.clearedexposed_APIs
+	case application.EdgeSubscribedAPIs:
+		return m.clearedsubscribed_APIs
 	case application.EdgeExposedEvents:
 		return m.clearedexposed_events
 	case application.EdgeSubscribedEvents:
@@ -10218,11 +10218,11 @@ func (m *ApplicationMutation) ResetEdge(name string) error {
 	case application.EdgeOwnerTeam:
 		m.ResetOwnerTeam()
 		return nil
-	case application.EdgeExposedApis:
-		m.ResetExposedApis()
+	case application.EdgeExposedAPIs:
+		m.ResetExposedAPIs()
 		return nil
-	case application.EdgeSubscribedApis:
-		m.ResetSubscribedApis()
+	case application.EdgeSubscribedAPIs:
+		m.ResetSubscribedAPIs()
 		return nil
 	case application.EdgeExposedEvents:
 		m.ResetExposedEvents()
@@ -11116,17 +11116,17 @@ func (m *ApprovalMutation) ResetState() {
 	m.state = nil
 }
 
-// SetAPISubscriptionID sets the "api_subscription" edge to the ApiSubscription entity by id.
+// SetAPISubscriptionID sets the "api_subscription" edge to the APISubscription entity by id.
 func (m *ApprovalMutation) SetAPISubscriptionID(id int) {
 	m.api_subscription = &id
 }
 
-// ClearAPISubscription clears the "api_subscription" edge to the ApiSubscription entity.
+// ClearAPISubscription clears the "api_subscription" edge to the APISubscription entity.
 func (m *ApprovalMutation) ClearAPISubscription() {
 	m.clearedapi_subscription = true
 }
 
-// APISubscriptionCleared reports if the "api_subscription" edge to the ApiSubscription entity was cleared.
+// APISubscriptionCleared reports if the "api_subscription" edge to the APISubscription entity was cleared.
 func (m *ApprovalMutation) APISubscriptionCleared() bool {
 	return m.clearedapi_subscription
 }
@@ -12608,17 +12608,17 @@ func (m *ApprovalRequestMutation) ResetState() {
 	m.state = nil
 }
 
-// SetAPISubscriptionID sets the "api_subscription" edge to the ApiSubscription entity by id.
+// SetAPISubscriptionID sets the "api_subscription" edge to the APISubscription entity by id.
 func (m *ApprovalRequestMutation) SetAPISubscriptionID(id int) {
 	m.api_subscription = &id
 }
 
-// ClearAPISubscription clears the "api_subscription" edge to the ApiSubscription entity.
+// ClearAPISubscription clears the "api_subscription" edge to the APISubscription entity.
 func (m *ApprovalRequestMutation) ClearAPISubscription() {
 	m.clearedapi_subscription = true
 }
 
-// APISubscriptionCleared reports if the "api_subscription" edge to the ApiSubscription entity was cleared.
+// APISubscriptionCleared reports if the "api_subscription" edge to the APISubscription entity was cleared.
 func (m *ApprovalRequestMutation) APISubscriptionCleared() bool {
 	return m.clearedapi_subscription
 }
@@ -14539,7 +14539,7 @@ type EventSubscriptionMutation struct {
 	scopes                   *[]string
 	appendscopes             []string
 	callback_url             *string
-	gateway_sse_url          *string
+	gateway_SSE_url          *string
 	clearedFields            map[string]struct{}
 	owner                    *int
 	clearedowner             bool
@@ -15215,53 +15215,53 @@ func (m *EventSubscriptionMutation) ResetCallbackURL() {
 	delete(m.clearedFields, eventsubscription.FieldCallbackURL)
 }
 
-// SetGatewaySseURL sets the "gateway_sse_url" field.
-func (m *EventSubscriptionMutation) SetGatewaySseURL(s string) {
-	m.gateway_sse_url = &s
+// SetGatewaySSEURL sets the "gateway_SSE_url" field.
+func (m *EventSubscriptionMutation) SetGatewaySSEURL(s string) {
+	m.gateway_SSE_url = &s
 }
 
-// GatewaySseURL returns the value of the "gateway_sse_url" field in the mutation.
-func (m *EventSubscriptionMutation) GatewaySseURL() (r string, exists bool) {
-	v := m.gateway_sse_url
+// GatewaySSEURL returns the value of the "gateway_SSE_url" field in the mutation.
+func (m *EventSubscriptionMutation) GatewaySSEURL() (r string, exists bool) {
+	v := m.gateway_SSE_url
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldGatewaySseURL returns the old "gateway_sse_url" field's value of the EventSubscription entity.
+// OldGatewaySSEURL returns the old "gateway_SSE_url" field's value of the EventSubscription entity.
 // If the EventSubscription object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *EventSubscriptionMutation) OldGatewaySseURL(ctx context.Context) (v *string, err error) {
+func (m *EventSubscriptionMutation) OldGatewaySSEURL(ctx context.Context) (v *string, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldGatewaySseURL is only allowed on UpdateOne operations")
+		return v, errors.New("OldGatewaySSEURL is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldGatewaySseURL requires an ID field in the mutation")
+		return v, errors.New("OldGatewaySSEURL requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldGatewaySseURL: %w", err)
+		return v, fmt.Errorf("querying old value for OldGatewaySSEURL: %w", err)
 	}
-	return oldValue.GatewaySseURL, nil
+	return oldValue.GatewaySSEURL, nil
 }
 
-// ClearGatewaySseURL clears the value of the "gateway_sse_url" field.
-func (m *EventSubscriptionMutation) ClearGatewaySseURL() {
-	m.gateway_sse_url = nil
-	m.clearedFields[eventsubscription.FieldGatewaySseURL] = struct{}{}
+// ClearGatewaySSEURL clears the value of the "gateway_SSE_url" field.
+func (m *EventSubscriptionMutation) ClearGatewaySSEURL() {
+	m.gateway_SSE_url = nil
+	m.clearedFields[eventsubscription.FieldGatewaySSEURL] = struct{}{}
 }
 
-// GatewaySseURLCleared returns if the "gateway_sse_url" field was cleared in this mutation.
-func (m *EventSubscriptionMutation) GatewaySseURLCleared() bool {
-	_, ok := m.clearedFields[eventsubscription.FieldGatewaySseURL]
+// GatewaySSEURLCleared returns if the "gateway_SSE_url" field was cleared in this mutation.
+func (m *EventSubscriptionMutation) GatewaySSEURLCleared() bool {
+	_, ok := m.clearedFields[eventsubscription.FieldGatewaySSEURL]
 	return ok
 }
 
-// ResetGatewaySseURL resets all changes to the "gateway_sse_url" field.
-func (m *EventSubscriptionMutation) ResetGatewaySseURL() {
-	m.gateway_sse_url = nil
-	delete(m.clearedFields, eventsubscription.FieldGatewaySseURL)
+// ResetGatewaySSEURL resets all changes to the "gateway_SSE_url" field.
+func (m *EventSubscriptionMutation) ResetGatewaySSEURL() {
+	m.gateway_SSE_url = nil
+	delete(m.clearedFields, eventsubscription.FieldGatewaySSEURL)
 }
 
 // SetOwnerID sets the "owner" edge to the Application entity by id.
@@ -15509,8 +15509,8 @@ func (m *EventSubscriptionMutation) Fields() []string {
 	if m.callback_url != nil {
 		fields = append(fields, eventsubscription.FieldCallbackURL)
 	}
-	if m.gateway_sse_url != nil {
-		fields = append(fields, eventsubscription.FieldGatewaySseURL)
+	if m.gateway_SSE_url != nil {
+		fields = append(fields, eventsubscription.FieldGatewaySSEURL)
 	}
 	return fields
 }
@@ -15546,8 +15546,8 @@ func (m *EventSubscriptionMutation) Field(name string) (ent.Value, bool) {
 		return m.Scopes()
 	case eventsubscription.FieldCallbackURL:
 		return m.CallbackURL()
-	case eventsubscription.FieldGatewaySseURL:
-		return m.GatewaySseURL()
+	case eventsubscription.FieldGatewaySSEURL:
+		return m.GatewaySSEURL()
 	}
 	return nil, false
 }
@@ -15583,8 +15583,8 @@ func (m *EventSubscriptionMutation) OldField(ctx context.Context, name string) (
 		return m.OldScopes(ctx)
 	case eventsubscription.FieldCallbackURL:
 		return m.OldCallbackURL(ctx)
-	case eventsubscription.FieldGatewaySseURL:
-		return m.OldGatewaySseURL(ctx)
+	case eventsubscription.FieldGatewaySSEURL:
+		return m.OldGatewaySSEURL(ctx)
 	}
 	return nil, fmt.Errorf("unknown EventSubscription field %s", name)
 }
@@ -15685,12 +15685,12 @@ func (m *EventSubscriptionMutation) SetField(name string, value ent.Value) error
 		}
 		m.SetCallbackURL(v)
 		return nil
-	case eventsubscription.FieldGatewaySseURL:
+	case eventsubscription.FieldGatewaySSEURL:
 		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetGatewaySseURL(v)
+		m.SetGatewaySSEURL(v)
 		return nil
 	}
 	return fmt.Errorf("unknown EventSubscription field %s", name)
@@ -15740,8 +15740,8 @@ func (m *EventSubscriptionMutation) ClearedFields() []string {
 	if m.FieldCleared(eventsubscription.FieldCallbackURL) {
 		fields = append(fields, eventsubscription.FieldCallbackURL)
 	}
-	if m.FieldCleared(eventsubscription.FieldGatewaySseURL) {
-		fields = append(fields, eventsubscription.FieldGatewaySseURL)
+	if m.FieldCleared(eventsubscription.FieldGatewaySSEURL) {
+		fields = append(fields, eventsubscription.FieldGatewaySSEURL)
 	}
 	return fields
 }
@@ -15775,8 +15775,8 @@ func (m *EventSubscriptionMutation) ClearField(name string) error {
 	case eventsubscription.FieldCallbackURL:
 		m.ClearCallbackURL()
 		return nil
-	case eventsubscription.FieldGatewaySseURL:
-		m.ClearGatewaySseURL()
+	case eventsubscription.FieldGatewaySSEURL:
+		m.ClearGatewaySSEURL()
 		return nil
 	}
 	return fmt.Errorf("unknown EventSubscription nullable field %s", name)
@@ -15825,8 +15825,8 @@ func (m *EventSubscriptionMutation) ResetField(name string) error {
 	case eventsubscription.FieldCallbackURL:
 		m.ResetCallbackURL()
 		return nil
-	case eventsubscription.FieldGatewaySseURL:
-		m.ResetGatewaySseURL()
+	case eventsubscription.FieldGatewaySSEURL:
+		m.ResetGatewaySSEURL()
 		return nil
 	}
 	return fmt.Errorf("unknown EventSubscription field %s", name)
@@ -17670,48 +17670,48 @@ func (m *GroupMutation) ResetEdge(name string) error {
 	return fmt.Errorf("unknown Group edge %s", name)
 }
 
-// McpServerMutation represents an operation that mutates the McpServer nodes in the graph.
-type McpServerMutation struct {
+// MCPServerMutation represents an operation that mutates the MCPServer nodes in the graph.
+type MCPServerMutation struct {
 	config
-	op                  Op
-	typ                 string
-	id                  *int
-	created_at          *time.Time
-	last_modified_at    *time.Time
-	status_phase        *mcpserver.StatusPhase
-	status_message      *string
-	namespace           *string
-	base_path           *string
-	version             *string
-	name                *string
-	description         *string
-	specification       *string
-	category            *string
-	oauth2_scopes       *[]string
-	appendoauth2_scopes []string
-	active              *bool
-	clearedFields       map[string]struct{}
-	owner               *int
-	clearedowner        bool
-	exposures           map[int]struct{}
-	removedexposures    map[int]struct{}
-	clearedexposures    bool
-	done                bool
-	oldValue            func(context.Context) (*McpServer, error)
-	predicates          []predicate.McpServer
+	op                   Op
+	typ                  string
+	id                   *int
+	created_at           *time.Time
+	last_modified_at     *time.Time
+	status_phase         *mcpserver.StatusPhase
+	status_message       *string
+	namespace            *string
+	base_path            *string
+	version              *string
+	name                 *string
+	description          *string
+	specification        *string
+	category             *string
+	_OAuth2_scopes       *[]string
+	append_OAuth2_scopes []string
+	active               *bool
+	clearedFields        map[string]struct{}
+	owner                *int
+	clearedowner         bool
+	exposures            map[int]struct{}
+	removedexposures     map[int]struct{}
+	clearedexposures     bool
+	done                 bool
+	oldValue             func(context.Context) (*MCPServer, error)
+	predicates           []predicate.MCPServer
 }
 
-var _ ent.Mutation = (*McpServerMutation)(nil)
+var _ ent.Mutation = (*MCPServerMutation)(nil)
 
 // mcpserverOption allows management of the mutation configuration using functional options.
-type mcpserverOption func(*McpServerMutation)
+type mcpserverOption func(*MCPServerMutation)
 
-// newMcpServerMutation creates new mutation for the McpServer entity.
-func newMcpServerMutation(c config, op Op, opts ...mcpserverOption) *McpServerMutation {
-	m := &McpServerMutation{
+// newMCPServerMutation creates new mutation for the MCPServer entity.
+func newMCPServerMutation(c config, op Op, opts ...mcpserverOption) *MCPServerMutation {
+	m := &MCPServerMutation{
 		config:        c,
 		op:            op,
-		typ:           TypeMcpServer,
+		typ:           TypeMCPServer,
 		clearedFields: make(map[string]struct{}),
 	}
 	for _, opt := range opts {
@@ -17720,20 +17720,20 @@ func newMcpServerMutation(c config, op Op, opts ...mcpserverOption) *McpServerMu
 	return m
 }
 
-// withMcpServerID sets the ID field of the mutation.
-func withMcpServerID(id int) mcpserverOption {
-	return func(m *McpServerMutation) {
+// withMCPServerID sets the ID field of the mutation.
+func withMCPServerID(id int) mcpserverOption {
+	return func(m *MCPServerMutation) {
 		var (
 			err   error
 			once  sync.Once
-			value *McpServer
+			value *MCPServer
 		)
-		m.oldValue = func(ctx context.Context) (*McpServer, error) {
+		m.oldValue = func(ctx context.Context) (*MCPServer, error) {
 			once.Do(func() {
 				if m.done {
 					err = errors.New("querying old values post mutation is not allowed")
 				} else {
-					value, err = m.Client().McpServer.Get(ctx, id)
+					value, err = m.Client().MCPServer.Get(ctx, id)
 				}
 			})
 			return value, err
@@ -17742,10 +17742,10 @@ func withMcpServerID(id int) mcpserverOption {
 	}
 }
 
-// withMcpServer sets the old McpServer of the mutation.
-func withMcpServer(node *McpServer) mcpserverOption {
-	return func(m *McpServerMutation) {
-		m.oldValue = func(context.Context) (*McpServer, error) {
+// withMCPServer sets the old MCPServer of the mutation.
+func withMCPServer(node *MCPServer) mcpserverOption {
+	return func(m *MCPServerMutation) {
+		m.oldValue = func(context.Context) (*MCPServer, error) {
 			return node, nil
 		}
 		m.id = &node.ID
@@ -17754,7 +17754,7 @@ func withMcpServer(node *McpServer) mcpserverOption {
 
 // Client returns a new `ent.Client` from the mutation. If the mutation was
 // executed in a transaction (ent.Tx), a transactional client is returned.
-func (m McpServerMutation) Client() *Client {
+func (m MCPServerMutation) Client() *Client {
 	client := &Client{config: m.config}
 	client.init()
 	return client
@@ -17762,7 +17762,7 @@ func (m McpServerMutation) Client() *Client {
 
 // Tx returns an `ent.Tx` for mutations that were executed in transactions;
 // it returns an error otherwise.
-func (m McpServerMutation) Tx() (*Tx, error) {
+func (m MCPServerMutation) Tx() (*Tx, error) {
 	if _, ok := m.driver.(*txDriver); !ok {
 		return nil, errors.New("ent: mutation is not running in a transaction")
 	}
@@ -17773,7 +17773,7 @@ func (m McpServerMutation) Tx() (*Tx, error) {
 
 // ID returns the ID value in the mutation. Note that the ID is only available
 // if it was provided to the builder or after it was returned from the database.
-func (m *McpServerMutation) ID() (id int, exists bool) {
+func (m *MCPServerMutation) ID() (id int, exists bool) {
 	if m.id == nil {
 		return
 	}
@@ -17784,7 +17784,7 @@ func (m *McpServerMutation) ID() (id int, exists bool) {
 // That means, if the mutation is applied within a transaction with an isolation level such
 // as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
 // or updated by the mutation.
-func (m *McpServerMutation) IDs(ctx context.Context) ([]int, error) {
+func (m *MCPServerMutation) IDs(ctx context.Context) ([]int, error) {
 	switch {
 	case m.op.Is(OpUpdateOne | OpDeleteOne):
 		id, exists := m.ID()
@@ -17793,19 +17793,19 @@ func (m *McpServerMutation) IDs(ctx context.Context) ([]int, error) {
 		}
 		fallthrough
 	case m.op.Is(OpUpdate | OpDelete):
-		return m.Client().McpServer.Query().Where(m.predicates...).IDs(ctx)
+		return m.Client().MCPServer.Query().Where(m.predicates...).IDs(ctx)
 	default:
 		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
 	}
 }
 
 // SetCreatedAt sets the "created_at" field.
-func (m *McpServerMutation) SetCreatedAt(t time.Time) {
+func (m *MCPServerMutation) SetCreatedAt(t time.Time) {
 	m.created_at = &t
 }
 
 // CreatedAt returns the value of the "created_at" field in the mutation.
-func (m *McpServerMutation) CreatedAt() (r time.Time, exists bool) {
+func (m *MCPServerMutation) CreatedAt() (r time.Time, exists bool) {
 	v := m.created_at
 	if v == nil {
 		return
@@ -17813,10 +17813,10 @@ func (m *McpServerMutation) CreatedAt() (r time.Time, exists bool) {
 	return *v, true
 }
 
-// OldCreatedAt returns the old "created_at" field's value of the McpServer entity.
-// If the McpServer object wasn't provided to the builder, the object is fetched from the database.
+// OldCreatedAt returns the old "created_at" field's value of the MCPServer entity.
+// If the MCPServer object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *McpServerMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+func (m *MCPServerMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
 	}
@@ -17831,17 +17831,17 @@ func (m *McpServerMutation) OldCreatedAt(ctx context.Context) (v time.Time, err 
 }
 
 // ResetCreatedAt resets all changes to the "created_at" field.
-func (m *McpServerMutation) ResetCreatedAt() {
+func (m *MCPServerMutation) ResetCreatedAt() {
 	m.created_at = nil
 }
 
 // SetLastModifiedAt sets the "last_modified_at" field.
-func (m *McpServerMutation) SetLastModifiedAt(t time.Time) {
+func (m *MCPServerMutation) SetLastModifiedAt(t time.Time) {
 	m.last_modified_at = &t
 }
 
 // LastModifiedAt returns the value of the "last_modified_at" field in the mutation.
-func (m *McpServerMutation) LastModifiedAt() (r time.Time, exists bool) {
+func (m *MCPServerMutation) LastModifiedAt() (r time.Time, exists bool) {
 	v := m.last_modified_at
 	if v == nil {
 		return
@@ -17849,10 +17849,10 @@ func (m *McpServerMutation) LastModifiedAt() (r time.Time, exists bool) {
 	return *v, true
 }
 
-// OldLastModifiedAt returns the old "last_modified_at" field's value of the McpServer entity.
-// If the McpServer object wasn't provided to the builder, the object is fetched from the database.
+// OldLastModifiedAt returns the old "last_modified_at" field's value of the MCPServer entity.
+// If the MCPServer object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *McpServerMutation) OldLastModifiedAt(ctx context.Context) (v time.Time, err error) {
+func (m *MCPServerMutation) OldLastModifiedAt(ctx context.Context) (v time.Time, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldLastModifiedAt is only allowed on UpdateOne operations")
 	}
@@ -17867,17 +17867,17 @@ func (m *McpServerMutation) OldLastModifiedAt(ctx context.Context) (v time.Time,
 }
 
 // ResetLastModifiedAt resets all changes to the "last_modified_at" field.
-func (m *McpServerMutation) ResetLastModifiedAt() {
+func (m *MCPServerMutation) ResetLastModifiedAt() {
 	m.last_modified_at = nil
 }
 
 // SetStatusPhase sets the "status_phase" field.
-func (m *McpServerMutation) SetStatusPhase(mp mcpserver.StatusPhase) {
+func (m *MCPServerMutation) SetStatusPhase(mp mcpserver.StatusPhase) {
 	m.status_phase = &mp
 }
 
 // StatusPhase returns the value of the "status_phase" field in the mutation.
-func (m *McpServerMutation) StatusPhase() (r mcpserver.StatusPhase, exists bool) {
+func (m *MCPServerMutation) StatusPhase() (r mcpserver.StatusPhase, exists bool) {
 	v := m.status_phase
 	if v == nil {
 		return
@@ -17885,10 +17885,10 @@ func (m *McpServerMutation) StatusPhase() (r mcpserver.StatusPhase, exists bool)
 	return *v, true
 }
 
-// OldStatusPhase returns the old "status_phase" field's value of the McpServer entity.
-// If the McpServer object wasn't provided to the builder, the object is fetched from the database.
+// OldStatusPhase returns the old "status_phase" field's value of the MCPServer entity.
+// If the MCPServer object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *McpServerMutation) OldStatusPhase(ctx context.Context) (v *mcpserver.StatusPhase, err error) {
+func (m *MCPServerMutation) OldStatusPhase(ctx context.Context) (v *mcpserver.StatusPhase, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldStatusPhase is only allowed on UpdateOne operations")
 	}
@@ -17903,30 +17903,30 @@ func (m *McpServerMutation) OldStatusPhase(ctx context.Context) (v *mcpserver.St
 }
 
 // ClearStatusPhase clears the value of the "status_phase" field.
-func (m *McpServerMutation) ClearStatusPhase() {
+func (m *MCPServerMutation) ClearStatusPhase() {
 	m.status_phase = nil
 	m.clearedFields[mcpserver.FieldStatusPhase] = struct{}{}
 }
 
 // StatusPhaseCleared returns if the "status_phase" field was cleared in this mutation.
-func (m *McpServerMutation) StatusPhaseCleared() bool {
+func (m *MCPServerMutation) StatusPhaseCleared() bool {
 	_, ok := m.clearedFields[mcpserver.FieldStatusPhase]
 	return ok
 }
 
 // ResetStatusPhase resets all changes to the "status_phase" field.
-func (m *McpServerMutation) ResetStatusPhase() {
+func (m *MCPServerMutation) ResetStatusPhase() {
 	m.status_phase = nil
 	delete(m.clearedFields, mcpserver.FieldStatusPhase)
 }
 
 // SetStatusMessage sets the "status_message" field.
-func (m *McpServerMutation) SetStatusMessage(s string) {
+func (m *MCPServerMutation) SetStatusMessage(s string) {
 	m.status_message = &s
 }
 
 // StatusMessage returns the value of the "status_message" field in the mutation.
-func (m *McpServerMutation) StatusMessage() (r string, exists bool) {
+func (m *MCPServerMutation) StatusMessage() (r string, exists bool) {
 	v := m.status_message
 	if v == nil {
 		return
@@ -17934,10 +17934,10 @@ func (m *McpServerMutation) StatusMessage() (r string, exists bool) {
 	return *v, true
 }
 
-// OldStatusMessage returns the old "status_message" field's value of the McpServer entity.
-// If the McpServer object wasn't provided to the builder, the object is fetched from the database.
+// OldStatusMessage returns the old "status_message" field's value of the MCPServer entity.
+// If the MCPServer object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *McpServerMutation) OldStatusMessage(ctx context.Context) (v *string, err error) {
+func (m *MCPServerMutation) OldStatusMessage(ctx context.Context) (v *string, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldStatusMessage is only allowed on UpdateOne operations")
 	}
@@ -17952,30 +17952,30 @@ func (m *McpServerMutation) OldStatusMessage(ctx context.Context) (v *string, er
 }
 
 // ClearStatusMessage clears the value of the "status_message" field.
-func (m *McpServerMutation) ClearStatusMessage() {
+func (m *MCPServerMutation) ClearStatusMessage() {
 	m.status_message = nil
 	m.clearedFields[mcpserver.FieldStatusMessage] = struct{}{}
 }
 
 // StatusMessageCleared returns if the "status_message" field was cleared in this mutation.
-func (m *McpServerMutation) StatusMessageCleared() bool {
+func (m *MCPServerMutation) StatusMessageCleared() bool {
 	_, ok := m.clearedFields[mcpserver.FieldStatusMessage]
 	return ok
 }
 
 // ResetStatusMessage resets all changes to the "status_message" field.
-func (m *McpServerMutation) ResetStatusMessage() {
+func (m *MCPServerMutation) ResetStatusMessage() {
 	m.status_message = nil
 	delete(m.clearedFields, mcpserver.FieldStatusMessage)
 }
 
 // SetNamespace sets the "namespace" field.
-func (m *McpServerMutation) SetNamespace(s string) {
+func (m *MCPServerMutation) SetNamespace(s string) {
 	m.namespace = &s
 }
 
 // Namespace returns the value of the "namespace" field in the mutation.
-func (m *McpServerMutation) Namespace() (r string, exists bool) {
+func (m *MCPServerMutation) Namespace() (r string, exists bool) {
 	v := m.namespace
 	if v == nil {
 		return
@@ -17983,10 +17983,10 @@ func (m *McpServerMutation) Namespace() (r string, exists bool) {
 	return *v, true
 }
 
-// OldNamespace returns the old "namespace" field's value of the McpServer entity.
-// If the McpServer object wasn't provided to the builder, the object is fetched from the database.
+// OldNamespace returns the old "namespace" field's value of the MCPServer entity.
+// If the MCPServer object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *McpServerMutation) OldNamespace(ctx context.Context) (v string, err error) {
+func (m *MCPServerMutation) OldNamespace(ctx context.Context) (v string, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldNamespace is only allowed on UpdateOne operations")
 	}
@@ -18001,17 +18001,17 @@ func (m *McpServerMutation) OldNamespace(ctx context.Context) (v string, err err
 }
 
 // ResetNamespace resets all changes to the "namespace" field.
-func (m *McpServerMutation) ResetNamespace() {
+func (m *MCPServerMutation) ResetNamespace() {
 	m.namespace = nil
 }
 
 // SetBasePath sets the "base_path" field.
-func (m *McpServerMutation) SetBasePath(s string) {
+func (m *MCPServerMutation) SetBasePath(s string) {
 	m.base_path = &s
 }
 
 // BasePath returns the value of the "base_path" field in the mutation.
-func (m *McpServerMutation) BasePath() (r string, exists bool) {
+func (m *MCPServerMutation) BasePath() (r string, exists bool) {
 	v := m.base_path
 	if v == nil {
 		return
@@ -18019,10 +18019,10 @@ func (m *McpServerMutation) BasePath() (r string, exists bool) {
 	return *v, true
 }
 
-// OldBasePath returns the old "base_path" field's value of the McpServer entity.
-// If the McpServer object wasn't provided to the builder, the object is fetched from the database.
+// OldBasePath returns the old "base_path" field's value of the MCPServer entity.
+// If the MCPServer object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *McpServerMutation) OldBasePath(ctx context.Context) (v string, err error) {
+func (m *MCPServerMutation) OldBasePath(ctx context.Context) (v string, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldBasePath is only allowed on UpdateOne operations")
 	}
@@ -18037,17 +18037,17 @@ func (m *McpServerMutation) OldBasePath(ctx context.Context) (v string, err erro
 }
 
 // ResetBasePath resets all changes to the "base_path" field.
-func (m *McpServerMutation) ResetBasePath() {
+func (m *MCPServerMutation) ResetBasePath() {
 	m.base_path = nil
 }
 
 // SetVersion sets the "version" field.
-func (m *McpServerMutation) SetVersion(s string) {
+func (m *MCPServerMutation) SetVersion(s string) {
 	m.version = &s
 }
 
 // Version returns the value of the "version" field in the mutation.
-func (m *McpServerMutation) Version() (r string, exists bool) {
+func (m *MCPServerMutation) Version() (r string, exists bool) {
 	v := m.version
 	if v == nil {
 		return
@@ -18055,10 +18055,10 @@ func (m *McpServerMutation) Version() (r string, exists bool) {
 	return *v, true
 }
 
-// OldVersion returns the old "version" field's value of the McpServer entity.
-// If the McpServer object wasn't provided to the builder, the object is fetched from the database.
+// OldVersion returns the old "version" field's value of the MCPServer entity.
+// If the MCPServer object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *McpServerMutation) OldVersion(ctx context.Context) (v string, err error) {
+func (m *MCPServerMutation) OldVersion(ctx context.Context) (v string, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldVersion is only allowed on UpdateOne operations")
 	}
@@ -18073,17 +18073,17 @@ func (m *McpServerMutation) OldVersion(ctx context.Context) (v string, err error
 }
 
 // ResetVersion resets all changes to the "version" field.
-func (m *McpServerMutation) ResetVersion() {
+func (m *MCPServerMutation) ResetVersion() {
 	m.version = nil
 }
 
 // SetName sets the "name" field.
-func (m *McpServerMutation) SetName(s string) {
+func (m *MCPServerMutation) SetName(s string) {
 	m.name = &s
 }
 
 // Name returns the value of the "name" field in the mutation.
-func (m *McpServerMutation) Name() (r string, exists bool) {
+func (m *MCPServerMutation) Name() (r string, exists bool) {
 	v := m.name
 	if v == nil {
 		return
@@ -18091,10 +18091,10 @@ func (m *McpServerMutation) Name() (r string, exists bool) {
 	return *v, true
 }
 
-// OldName returns the old "name" field's value of the McpServer entity.
-// If the McpServer object wasn't provided to the builder, the object is fetched from the database.
+// OldName returns the old "name" field's value of the MCPServer entity.
+// If the MCPServer object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *McpServerMutation) OldName(ctx context.Context) (v string, err error) {
+func (m *MCPServerMutation) OldName(ctx context.Context) (v string, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldName is only allowed on UpdateOne operations")
 	}
@@ -18109,17 +18109,17 @@ func (m *McpServerMutation) OldName(ctx context.Context) (v string, err error) {
 }
 
 // ResetName resets all changes to the "name" field.
-func (m *McpServerMutation) ResetName() {
+func (m *MCPServerMutation) ResetName() {
 	m.name = nil
 }
 
 // SetDescription sets the "description" field.
-func (m *McpServerMutation) SetDescription(s string) {
+func (m *MCPServerMutation) SetDescription(s string) {
 	m.description = &s
 }
 
 // Description returns the value of the "description" field in the mutation.
-func (m *McpServerMutation) Description() (r string, exists bool) {
+func (m *MCPServerMutation) Description() (r string, exists bool) {
 	v := m.description
 	if v == nil {
 		return
@@ -18127,10 +18127,10 @@ func (m *McpServerMutation) Description() (r string, exists bool) {
 	return *v, true
 }
 
-// OldDescription returns the old "description" field's value of the McpServer entity.
-// If the McpServer object wasn't provided to the builder, the object is fetched from the database.
+// OldDescription returns the old "description" field's value of the MCPServer entity.
+// If the MCPServer object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *McpServerMutation) OldDescription(ctx context.Context) (v string, err error) {
+func (m *MCPServerMutation) OldDescription(ctx context.Context) (v string, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldDescription is only allowed on UpdateOne operations")
 	}
@@ -18145,30 +18145,30 @@ func (m *McpServerMutation) OldDescription(ctx context.Context) (v string, err e
 }
 
 // ClearDescription clears the value of the "description" field.
-func (m *McpServerMutation) ClearDescription() {
+func (m *MCPServerMutation) ClearDescription() {
 	m.description = nil
 	m.clearedFields[mcpserver.FieldDescription] = struct{}{}
 }
 
 // DescriptionCleared returns if the "description" field was cleared in this mutation.
-func (m *McpServerMutation) DescriptionCleared() bool {
+func (m *MCPServerMutation) DescriptionCleared() bool {
 	_, ok := m.clearedFields[mcpserver.FieldDescription]
 	return ok
 }
 
 // ResetDescription resets all changes to the "description" field.
-func (m *McpServerMutation) ResetDescription() {
+func (m *MCPServerMutation) ResetDescription() {
 	m.description = nil
 	delete(m.clearedFields, mcpserver.FieldDescription)
 }
 
 // SetSpecification sets the "specification" field.
-func (m *McpServerMutation) SetSpecification(s string) {
+func (m *MCPServerMutation) SetSpecification(s string) {
 	m.specification = &s
 }
 
 // Specification returns the value of the "specification" field in the mutation.
-func (m *McpServerMutation) Specification() (r string, exists bool) {
+func (m *MCPServerMutation) Specification() (r string, exists bool) {
 	v := m.specification
 	if v == nil {
 		return
@@ -18176,10 +18176,10 @@ func (m *McpServerMutation) Specification() (r string, exists bool) {
 	return *v, true
 }
 
-// OldSpecification returns the old "specification" field's value of the McpServer entity.
-// If the McpServer object wasn't provided to the builder, the object is fetched from the database.
+// OldSpecification returns the old "specification" field's value of the MCPServer entity.
+// If the MCPServer object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *McpServerMutation) OldSpecification(ctx context.Context) (v string, err error) {
+func (m *MCPServerMutation) OldSpecification(ctx context.Context) (v string, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldSpecification is only allowed on UpdateOne operations")
 	}
@@ -18194,30 +18194,30 @@ func (m *McpServerMutation) OldSpecification(ctx context.Context) (v string, err
 }
 
 // ClearSpecification clears the value of the "specification" field.
-func (m *McpServerMutation) ClearSpecification() {
+func (m *MCPServerMutation) ClearSpecification() {
 	m.specification = nil
 	m.clearedFields[mcpserver.FieldSpecification] = struct{}{}
 }
 
 // SpecificationCleared returns if the "specification" field was cleared in this mutation.
-func (m *McpServerMutation) SpecificationCleared() bool {
+func (m *MCPServerMutation) SpecificationCleared() bool {
 	_, ok := m.clearedFields[mcpserver.FieldSpecification]
 	return ok
 }
 
 // ResetSpecification resets all changes to the "specification" field.
-func (m *McpServerMutation) ResetSpecification() {
+func (m *MCPServerMutation) ResetSpecification() {
 	m.specification = nil
 	delete(m.clearedFields, mcpserver.FieldSpecification)
 }
 
 // SetCategory sets the "category" field.
-func (m *McpServerMutation) SetCategory(s string) {
+func (m *MCPServerMutation) SetCategory(s string) {
 	m.category = &s
 }
 
 // Category returns the value of the "category" field in the mutation.
-func (m *McpServerMutation) Category() (r string, exists bool) {
+func (m *MCPServerMutation) Category() (r string, exists bool) {
 	v := m.category
 	if v == nil {
 		return
@@ -18225,10 +18225,10 @@ func (m *McpServerMutation) Category() (r string, exists bool) {
 	return *v, true
 }
 
-// OldCategory returns the old "category" field's value of the McpServer entity.
-// If the McpServer object wasn't provided to the builder, the object is fetched from the database.
+// OldCategory returns the old "category" field's value of the MCPServer entity.
+// If the MCPServer object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *McpServerMutation) OldCategory(ctx context.Context) (v string, err error) {
+func (m *MCPServerMutation) OldCategory(ctx context.Context) (v string, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldCategory is only allowed on UpdateOne operations")
 	}
@@ -18243,95 +18243,95 @@ func (m *McpServerMutation) OldCategory(ctx context.Context) (v string, err erro
 }
 
 // ClearCategory clears the value of the "category" field.
-func (m *McpServerMutation) ClearCategory() {
+func (m *MCPServerMutation) ClearCategory() {
 	m.category = nil
 	m.clearedFields[mcpserver.FieldCategory] = struct{}{}
 }
 
 // CategoryCleared returns if the "category" field was cleared in this mutation.
-func (m *McpServerMutation) CategoryCleared() bool {
+func (m *MCPServerMutation) CategoryCleared() bool {
 	_, ok := m.clearedFields[mcpserver.FieldCategory]
 	return ok
 }
 
 // ResetCategory resets all changes to the "category" field.
-func (m *McpServerMutation) ResetCategory() {
+func (m *MCPServerMutation) ResetCategory() {
 	m.category = nil
 	delete(m.clearedFields, mcpserver.FieldCategory)
 }
 
-// SetOauth2Scopes sets the "oauth2_scopes" field.
-func (m *McpServerMutation) SetOauth2Scopes(s []string) {
-	m.oauth2_scopes = &s
-	m.appendoauth2_scopes = nil
+// SetOAuth2Scopes sets the "OAuth2_scopes" field.
+func (m *MCPServerMutation) SetOAuth2Scopes(s []string) {
+	m._OAuth2_scopes = &s
+	m.append_OAuth2_scopes = nil
 }
 
-// Oauth2Scopes returns the value of the "oauth2_scopes" field in the mutation.
-func (m *McpServerMutation) Oauth2Scopes() (r []string, exists bool) {
-	v := m.oauth2_scopes
+// OAuth2Scopes returns the value of the "OAuth2_scopes" field in the mutation.
+func (m *MCPServerMutation) OAuth2Scopes() (r []string, exists bool) {
+	v := m._OAuth2_scopes
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldOauth2Scopes returns the old "oauth2_scopes" field's value of the McpServer entity.
-// If the McpServer object wasn't provided to the builder, the object is fetched from the database.
+// OldOAuth2Scopes returns the old "OAuth2_scopes" field's value of the MCPServer entity.
+// If the MCPServer object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *McpServerMutation) OldOauth2Scopes(ctx context.Context) (v []string, err error) {
+func (m *MCPServerMutation) OldOAuth2Scopes(ctx context.Context) (v []string, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldOauth2Scopes is only allowed on UpdateOne operations")
+		return v, errors.New("OldOAuth2Scopes is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldOauth2Scopes requires an ID field in the mutation")
+		return v, errors.New("OldOAuth2Scopes requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldOauth2Scopes: %w", err)
+		return v, fmt.Errorf("querying old value for OldOAuth2Scopes: %w", err)
 	}
-	return oldValue.Oauth2Scopes, nil
+	return oldValue.OAuth2Scopes, nil
 }
 
-// AppendOauth2Scopes adds s to the "oauth2_scopes" field.
-func (m *McpServerMutation) AppendOauth2Scopes(s []string) {
-	m.appendoauth2_scopes = append(m.appendoauth2_scopes, s...)
+// AppendOAuth2Scopes adds s to the "OAuth2_scopes" field.
+func (m *MCPServerMutation) AppendOAuth2Scopes(s []string) {
+	m.append_OAuth2_scopes = append(m.append_OAuth2_scopes, s...)
 }
 
-// AppendedOauth2Scopes returns the list of values that were appended to the "oauth2_scopes" field in this mutation.
-func (m *McpServerMutation) AppendedOauth2Scopes() ([]string, bool) {
-	if len(m.appendoauth2_scopes) == 0 {
+// AppendedOAuth2Scopes returns the list of values that were appended to the "OAuth2_scopes" field in this mutation.
+func (m *MCPServerMutation) AppendedOAuth2Scopes() ([]string, bool) {
+	if len(m.append_OAuth2_scopes) == 0 {
 		return nil, false
 	}
-	return m.appendoauth2_scopes, true
+	return m.append_OAuth2_scopes, true
 }
 
-// ClearOauth2Scopes clears the value of the "oauth2_scopes" field.
-func (m *McpServerMutation) ClearOauth2Scopes() {
-	m.oauth2_scopes = nil
-	m.appendoauth2_scopes = nil
-	m.clearedFields[mcpserver.FieldOauth2Scopes] = struct{}{}
+// ClearOAuth2Scopes clears the value of the "OAuth2_scopes" field.
+func (m *MCPServerMutation) ClearOAuth2Scopes() {
+	m._OAuth2_scopes = nil
+	m.append_OAuth2_scopes = nil
+	m.clearedFields[mcpserver.FieldOAuth2Scopes] = struct{}{}
 }
 
-// Oauth2ScopesCleared returns if the "oauth2_scopes" field was cleared in this mutation.
-func (m *McpServerMutation) Oauth2ScopesCleared() bool {
-	_, ok := m.clearedFields[mcpserver.FieldOauth2Scopes]
+// OAuth2ScopesCleared returns if the "OAuth2_scopes" field was cleared in this mutation.
+func (m *MCPServerMutation) OAuth2ScopesCleared() bool {
+	_, ok := m.clearedFields[mcpserver.FieldOAuth2Scopes]
 	return ok
 }
 
-// ResetOauth2Scopes resets all changes to the "oauth2_scopes" field.
-func (m *McpServerMutation) ResetOauth2Scopes() {
-	m.oauth2_scopes = nil
-	m.appendoauth2_scopes = nil
-	delete(m.clearedFields, mcpserver.FieldOauth2Scopes)
+// ResetOAuth2Scopes resets all changes to the "OAuth2_scopes" field.
+func (m *MCPServerMutation) ResetOAuth2Scopes() {
+	m._OAuth2_scopes = nil
+	m.append_OAuth2_scopes = nil
+	delete(m.clearedFields, mcpserver.FieldOAuth2Scopes)
 }
 
 // SetActive sets the "active" field.
-func (m *McpServerMutation) SetActive(b bool) {
+func (m *MCPServerMutation) SetActive(b bool) {
 	m.active = &b
 }
 
 // Active returns the value of the "active" field in the mutation.
-func (m *McpServerMutation) Active() (r bool, exists bool) {
+func (m *MCPServerMutation) Active() (r bool, exists bool) {
 	v := m.active
 	if v == nil {
 		return
@@ -18339,10 +18339,10 @@ func (m *McpServerMutation) Active() (r bool, exists bool) {
 	return *v, true
 }
 
-// OldActive returns the old "active" field's value of the McpServer entity.
-// If the McpServer object wasn't provided to the builder, the object is fetched from the database.
+// OldActive returns the old "active" field's value of the MCPServer entity.
+// If the MCPServer object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *McpServerMutation) OldActive(ctx context.Context) (v bool, err error) {
+func (m *MCPServerMutation) OldActive(ctx context.Context) (v bool, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldActive is only allowed on UpdateOne operations")
 	}
@@ -18357,27 +18357,27 @@ func (m *McpServerMutation) OldActive(ctx context.Context) (v bool, err error) {
 }
 
 // ResetActive resets all changes to the "active" field.
-func (m *McpServerMutation) ResetActive() {
+func (m *MCPServerMutation) ResetActive() {
 	m.active = nil
 }
 
 // SetOwnerID sets the "owner" edge to the Team entity by id.
-func (m *McpServerMutation) SetOwnerID(id int) {
+func (m *MCPServerMutation) SetOwnerID(id int) {
 	m.owner = &id
 }
 
 // ClearOwner clears the "owner" edge to the Team entity.
-func (m *McpServerMutation) ClearOwner() {
+func (m *MCPServerMutation) ClearOwner() {
 	m.clearedowner = true
 }
 
 // OwnerCleared reports if the "owner" edge to the Team entity was cleared.
-func (m *McpServerMutation) OwnerCleared() bool {
+func (m *MCPServerMutation) OwnerCleared() bool {
 	return m.clearedowner
 }
 
 // OwnerID returns the "owner" edge ID in the mutation.
-func (m *McpServerMutation) OwnerID() (id int, exists bool) {
+func (m *MCPServerMutation) OwnerID() (id int, exists bool) {
 	if m.owner != nil {
 		return *m.owner, true
 	}
@@ -18387,7 +18387,7 @@ func (m *McpServerMutation) OwnerID() (id int, exists bool) {
 // OwnerIDs returns the "owner" edge IDs in the mutation.
 // Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
 // OwnerID instead. It exists only for internal usage by the builders.
-func (m *McpServerMutation) OwnerIDs() (ids []int) {
+func (m *MCPServerMutation) OwnerIDs() (ids []int) {
 	if id := m.owner; id != nil {
 		ids = append(ids, *id)
 	}
@@ -18395,13 +18395,13 @@ func (m *McpServerMutation) OwnerIDs() (ids []int) {
 }
 
 // ResetOwner resets all changes to the "owner" edge.
-func (m *McpServerMutation) ResetOwner() {
+func (m *MCPServerMutation) ResetOwner() {
 	m.owner = nil
 	m.clearedowner = false
 }
 
 // AddExposureIDs adds the "exposures" edge to the AgenticExposure entity by ids.
-func (m *McpServerMutation) AddExposureIDs(ids ...int) {
+func (m *MCPServerMutation) AddExposureIDs(ids ...int) {
 	if m.exposures == nil {
 		m.exposures = make(map[int]struct{})
 	}
@@ -18411,17 +18411,17 @@ func (m *McpServerMutation) AddExposureIDs(ids ...int) {
 }
 
 // ClearExposures clears the "exposures" edge to the AgenticExposure entity.
-func (m *McpServerMutation) ClearExposures() {
+func (m *MCPServerMutation) ClearExposures() {
 	m.clearedexposures = true
 }
 
 // ExposuresCleared reports if the "exposures" edge to the AgenticExposure entity was cleared.
-func (m *McpServerMutation) ExposuresCleared() bool {
+func (m *MCPServerMutation) ExposuresCleared() bool {
 	return m.clearedexposures
 }
 
 // RemoveExposureIDs removes the "exposures" edge to the AgenticExposure entity by IDs.
-func (m *McpServerMutation) RemoveExposureIDs(ids ...int) {
+func (m *MCPServerMutation) RemoveExposureIDs(ids ...int) {
 	if m.removedexposures == nil {
 		m.removedexposures = make(map[int]struct{})
 	}
@@ -18432,7 +18432,7 @@ func (m *McpServerMutation) RemoveExposureIDs(ids ...int) {
 }
 
 // RemovedExposures returns the removed IDs of the "exposures" edge to the AgenticExposure entity.
-func (m *McpServerMutation) RemovedExposuresIDs() (ids []int) {
+func (m *MCPServerMutation) RemovedExposuresIDs() (ids []int) {
 	for id := range m.removedexposures {
 		ids = append(ids, id)
 	}
@@ -18440,7 +18440,7 @@ func (m *McpServerMutation) RemovedExposuresIDs() (ids []int) {
 }
 
 // ExposuresIDs returns the "exposures" edge IDs in the mutation.
-func (m *McpServerMutation) ExposuresIDs() (ids []int) {
+func (m *MCPServerMutation) ExposuresIDs() (ids []int) {
 	for id := range m.exposures {
 		ids = append(ids, id)
 	}
@@ -18448,21 +18448,21 @@ func (m *McpServerMutation) ExposuresIDs() (ids []int) {
 }
 
 // ResetExposures resets all changes to the "exposures" edge.
-func (m *McpServerMutation) ResetExposures() {
+func (m *MCPServerMutation) ResetExposures() {
 	m.exposures = nil
 	m.clearedexposures = false
 	m.removedexposures = nil
 }
 
-// Where appends a list predicates to the McpServerMutation builder.
-func (m *McpServerMutation) Where(ps ...predicate.McpServer) {
+// Where appends a list predicates to the MCPServerMutation builder.
+func (m *MCPServerMutation) Where(ps ...predicate.MCPServer) {
 	m.predicates = append(m.predicates, ps...)
 }
 
-// WhereP appends storage-level predicates to the McpServerMutation builder. Using this method,
+// WhereP appends storage-level predicates to the MCPServerMutation builder. Using this method,
 // users can use type-assertion to append predicates that do not depend on any generated package.
-func (m *McpServerMutation) WhereP(ps ...func(*sql.Selector)) {
-	p := make([]predicate.McpServer, len(ps))
+func (m *MCPServerMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.MCPServer, len(ps))
 	for i := range ps {
 		p[i] = ps[i]
 	}
@@ -18470,24 +18470,24 @@ func (m *McpServerMutation) WhereP(ps ...func(*sql.Selector)) {
 }
 
 // Op returns the operation name.
-func (m *McpServerMutation) Op() Op {
+func (m *MCPServerMutation) Op() Op {
 	return m.op
 }
 
 // SetOp allows setting the mutation operation.
-func (m *McpServerMutation) SetOp(op Op) {
+func (m *MCPServerMutation) SetOp(op Op) {
 	m.op = op
 }
 
-// Type returns the node type of this mutation (McpServer).
-func (m *McpServerMutation) Type() string {
+// Type returns the node type of this mutation (MCPServer).
+func (m *MCPServerMutation) Type() string {
 	return m.typ
 }
 
 // Fields returns all fields that were changed during this mutation. Note that in
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
-func (m *McpServerMutation) Fields() []string {
+func (m *MCPServerMutation) Fields() []string {
 	fields := make([]string, 0, 13)
 	if m.created_at != nil {
 		fields = append(fields, mcpserver.FieldCreatedAt)
@@ -18522,8 +18522,8 @@ func (m *McpServerMutation) Fields() []string {
 	if m.category != nil {
 		fields = append(fields, mcpserver.FieldCategory)
 	}
-	if m.oauth2_scopes != nil {
-		fields = append(fields, mcpserver.FieldOauth2Scopes)
+	if m._OAuth2_scopes != nil {
+		fields = append(fields, mcpserver.FieldOAuth2Scopes)
 	}
 	if m.active != nil {
 		fields = append(fields, mcpserver.FieldActive)
@@ -18534,7 +18534,7 @@ func (m *McpServerMutation) Fields() []string {
 // Field returns the value of a field with the given name. The second boolean
 // return value indicates that this field was not set, or was not defined in the
 // schema.
-func (m *McpServerMutation) Field(name string) (ent.Value, bool) {
+func (m *MCPServerMutation) Field(name string) (ent.Value, bool) {
 	switch name {
 	case mcpserver.FieldCreatedAt:
 		return m.CreatedAt()
@@ -18558,8 +18558,8 @@ func (m *McpServerMutation) Field(name string) (ent.Value, bool) {
 		return m.Specification()
 	case mcpserver.FieldCategory:
 		return m.Category()
-	case mcpserver.FieldOauth2Scopes:
-		return m.Oauth2Scopes()
+	case mcpserver.FieldOAuth2Scopes:
+		return m.OAuth2Scopes()
 	case mcpserver.FieldActive:
 		return m.Active()
 	}
@@ -18569,7 +18569,7 @@ func (m *McpServerMutation) Field(name string) (ent.Value, bool) {
 // OldField returns the old value of the field from the database. An error is
 // returned if the mutation operation is not UpdateOne, or the query to the
 // database failed.
-func (m *McpServerMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+func (m *MCPServerMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
 	switch name {
 	case mcpserver.FieldCreatedAt:
 		return m.OldCreatedAt(ctx)
@@ -18593,18 +18593,18 @@ func (m *McpServerMutation) OldField(ctx context.Context, name string) (ent.Valu
 		return m.OldSpecification(ctx)
 	case mcpserver.FieldCategory:
 		return m.OldCategory(ctx)
-	case mcpserver.FieldOauth2Scopes:
-		return m.OldOauth2Scopes(ctx)
+	case mcpserver.FieldOAuth2Scopes:
+		return m.OldOAuth2Scopes(ctx)
 	case mcpserver.FieldActive:
 		return m.OldActive(ctx)
 	}
-	return nil, fmt.Errorf("unknown McpServer field %s", name)
+	return nil, fmt.Errorf("unknown MCPServer field %s", name)
 }
 
 // SetField sets the value of a field with the given name. It returns an error if
 // the field is not defined in the schema, or if the type mismatched the field
 // type.
-func (m *McpServerMutation) SetField(name string, value ent.Value) error {
+func (m *MCPServerMutation) SetField(name string, value ent.Value) error {
 	switch name {
 	case mcpserver.FieldCreatedAt:
 		v, ok := value.(time.Time)
@@ -18683,12 +18683,12 @@ func (m *McpServerMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetCategory(v)
 		return nil
-	case mcpserver.FieldOauth2Scopes:
+	case mcpserver.FieldOAuth2Scopes:
 		v, ok := value.([]string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetOauth2Scopes(v)
+		m.SetOAuth2Scopes(v)
 		return nil
 	case mcpserver.FieldActive:
 		v, ok := value.(bool)
@@ -18698,34 +18698,34 @@ func (m *McpServerMutation) SetField(name string, value ent.Value) error {
 		m.SetActive(v)
 		return nil
 	}
-	return fmt.Errorf("unknown McpServer field %s", name)
+	return fmt.Errorf("unknown MCPServer field %s", name)
 }
 
 // AddedFields returns all numeric fields that were incremented/decremented during
 // this mutation.
-func (m *McpServerMutation) AddedFields() []string {
+func (m *MCPServerMutation) AddedFields() []string {
 	return nil
 }
 
 // AddedField returns the numeric value that was incremented/decremented on a field
 // with the given name. The second boolean return value indicates that this field
 // was not set, or was not defined in the schema.
-func (m *McpServerMutation) AddedField(name string) (ent.Value, bool) {
+func (m *MCPServerMutation) AddedField(name string) (ent.Value, bool) {
 	return nil, false
 }
 
 // AddField adds the value to the field with the given name. It returns an error if
 // the field is not defined in the schema, or if the type mismatched the field
 // type.
-func (m *McpServerMutation) AddField(name string, value ent.Value) error {
+func (m *MCPServerMutation) AddField(name string, value ent.Value) error {
 	switch name {
 	}
-	return fmt.Errorf("unknown McpServer numeric field %s", name)
+	return fmt.Errorf("unknown MCPServer numeric field %s", name)
 }
 
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
-func (m *McpServerMutation) ClearedFields() []string {
+func (m *MCPServerMutation) ClearedFields() []string {
 	var fields []string
 	if m.FieldCleared(mcpserver.FieldStatusPhase) {
 		fields = append(fields, mcpserver.FieldStatusPhase)
@@ -18742,22 +18742,22 @@ func (m *McpServerMutation) ClearedFields() []string {
 	if m.FieldCleared(mcpserver.FieldCategory) {
 		fields = append(fields, mcpserver.FieldCategory)
 	}
-	if m.FieldCleared(mcpserver.FieldOauth2Scopes) {
-		fields = append(fields, mcpserver.FieldOauth2Scopes)
+	if m.FieldCleared(mcpserver.FieldOAuth2Scopes) {
+		fields = append(fields, mcpserver.FieldOAuth2Scopes)
 	}
 	return fields
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
 // cleared in this mutation.
-func (m *McpServerMutation) FieldCleared(name string) bool {
+func (m *MCPServerMutation) FieldCleared(name string) bool {
 	_, ok := m.clearedFields[name]
 	return ok
 }
 
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
-func (m *McpServerMutation) ClearField(name string) error {
+func (m *MCPServerMutation) ClearField(name string) error {
 	switch name {
 	case mcpserver.FieldStatusPhase:
 		m.ClearStatusPhase()
@@ -18774,16 +18774,16 @@ func (m *McpServerMutation) ClearField(name string) error {
 	case mcpserver.FieldCategory:
 		m.ClearCategory()
 		return nil
-	case mcpserver.FieldOauth2Scopes:
-		m.ClearOauth2Scopes()
+	case mcpserver.FieldOAuth2Scopes:
+		m.ClearOAuth2Scopes()
 		return nil
 	}
-	return fmt.Errorf("unknown McpServer nullable field %s", name)
+	return fmt.Errorf("unknown MCPServer nullable field %s", name)
 }
 
 // ResetField resets all changes in the mutation for the field with the given name.
 // It returns an error if the field is not defined in the schema.
-func (m *McpServerMutation) ResetField(name string) error {
+func (m *MCPServerMutation) ResetField(name string) error {
 	switch name {
 	case mcpserver.FieldCreatedAt:
 		m.ResetCreatedAt()
@@ -18818,18 +18818,18 @@ func (m *McpServerMutation) ResetField(name string) error {
 	case mcpserver.FieldCategory:
 		m.ResetCategory()
 		return nil
-	case mcpserver.FieldOauth2Scopes:
-		m.ResetOauth2Scopes()
+	case mcpserver.FieldOAuth2Scopes:
+		m.ResetOAuth2Scopes()
 		return nil
 	case mcpserver.FieldActive:
 		m.ResetActive()
 		return nil
 	}
-	return fmt.Errorf("unknown McpServer field %s", name)
+	return fmt.Errorf("unknown MCPServer field %s", name)
 }
 
 // AddedEdges returns all edge names that were set/added in this mutation.
-func (m *McpServerMutation) AddedEdges() []string {
+func (m *MCPServerMutation) AddedEdges() []string {
 	edges := make([]string, 0, 2)
 	if m.owner != nil {
 		edges = append(edges, mcpserver.EdgeOwner)
@@ -18842,7 +18842,7 @@ func (m *McpServerMutation) AddedEdges() []string {
 
 // AddedIDs returns all IDs (to other nodes) that were added for the given edge
 // name in this mutation.
-func (m *McpServerMutation) AddedIDs(name string) []ent.Value {
+func (m *MCPServerMutation) AddedIDs(name string) []ent.Value {
 	switch name {
 	case mcpserver.EdgeOwner:
 		if id := m.owner; id != nil {
@@ -18859,7 +18859,7 @@ func (m *McpServerMutation) AddedIDs(name string) []ent.Value {
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
-func (m *McpServerMutation) RemovedEdges() []string {
+func (m *MCPServerMutation) RemovedEdges() []string {
 	edges := make([]string, 0, 2)
 	if m.removedexposures != nil {
 		edges = append(edges, mcpserver.EdgeExposures)
@@ -18869,7 +18869,7 @@ func (m *McpServerMutation) RemovedEdges() []string {
 
 // RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
 // the given name in this mutation.
-func (m *McpServerMutation) RemovedIDs(name string) []ent.Value {
+func (m *MCPServerMutation) RemovedIDs(name string) []ent.Value {
 	switch name {
 	case mcpserver.EdgeExposures:
 		ids := make([]ent.Value, 0, len(m.removedexposures))
@@ -18882,7 +18882,7 @@ func (m *McpServerMutation) RemovedIDs(name string) []ent.Value {
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
-func (m *McpServerMutation) ClearedEdges() []string {
+func (m *MCPServerMutation) ClearedEdges() []string {
 	edges := make([]string, 0, 2)
 	if m.clearedowner {
 		edges = append(edges, mcpserver.EdgeOwner)
@@ -18895,7 +18895,7 @@ func (m *McpServerMutation) ClearedEdges() []string {
 
 // EdgeCleared returns a boolean which indicates if the edge with the given name
 // was cleared in this mutation.
-func (m *McpServerMutation) EdgeCleared(name string) bool {
+func (m *MCPServerMutation) EdgeCleared(name string) bool {
 	switch name {
 	case mcpserver.EdgeOwner:
 		return m.clearedowner
@@ -18907,18 +18907,18 @@ func (m *McpServerMutation) EdgeCleared(name string) bool {
 
 // ClearEdge clears the value of the edge with the given name. It returns an error
 // if that edge is not defined in the schema.
-func (m *McpServerMutation) ClearEdge(name string) error {
+func (m *MCPServerMutation) ClearEdge(name string) error {
 	switch name {
 	case mcpserver.EdgeOwner:
 		m.ClearOwner()
 		return nil
 	}
-	return fmt.Errorf("unknown McpServer unique edge %s", name)
+	return fmt.Errorf("unknown MCPServer unique edge %s", name)
 }
 
 // ResetEdge resets all changes to the edge with the given name in this mutation.
 // It returns an error if the edge is not defined in the schema.
-func (m *McpServerMutation) ResetEdge(name string) error {
+func (m *MCPServerMutation) ResetEdge(name string) error {
 	switch name {
 	case mcpserver.EdgeOwner:
 		m.ResetOwner()
@@ -18927,7 +18927,7 @@ func (m *McpServerMutation) ResetEdge(name string) error {
 		m.ResetExposures()
 		return nil
 	}
-	return fmt.Errorf("unknown McpServer edge %s", name)
+	return fmt.Errorf("unknown MCPServer edge %s", name)
 }
 
 // MemberMutation represents an operation that mutates the Member nodes in the graph.
@@ -20280,7 +20280,7 @@ type TeamMutation struct {
 	namespace           *string
 	name                *string
 	email               *string
-	displayName         *string
+	display_name        *string
 	description         *string
 	category            *team.Category
 	team_token          *string
@@ -20293,15 +20293,15 @@ type TeamMutation struct {
 	applications        map[int]struct{}
 	removedapplications map[int]struct{}
 	clearedapplications bool
-	apis                map[int]struct{}
-	removedapis         map[int]struct{}
-	clearedapis         bool
+	_APIs               map[int]struct{}
+	removed_APIs        map[int]struct{}
+	cleared_APIs        bool
 	event_types         map[int]struct{}
 	removedevent_types  map[int]struct{}
 	clearedevent_types  bool
-	mcp_servers         map[int]struct{}
-	removedmcp_servers  map[int]struct{}
-	clearedmcp_servers  bool
+	_MCP_servers        map[int]struct{}
+	removed_MCP_servers map[int]struct{}
+	cleared_MCP_servers bool
 	agent_cards         map[int]struct{}
 	removedagent_cards  map[int]struct{}
 	clearedagent_cards  bool
@@ -20735,21 +20735,21 @@ func (m *TeamMutation) ResetEmail() {
 	m.email = nil
 }
 
-// SetDisplayName sets the "displayName" field.
+// SetDisplayName sets the "display_name" field.
 func (m *TeamMutation) SetDisplayName(s string) {
-	m.displayName = &s
+	m.display_name = &s
 }
 
-// DisplayName returns the value of the "displayName" field in the mutation.
+// DisplayName returns the value of the "display_name" field in the mutation.
 func (m *TeamMutation) DisplayName() (r string, exists bool) {
-	v := m.displayName
+	v := m.display_name
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldDisplayName returns the old "displayName" field's value of the Team entity.
+// OldDisplayName returns the old "display_name" field's value of the Team entity.
 // If the Team object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
 func (m *TeamMutation) OldDisplayName(ctx context.Context) (v *string, err error) {
@@ -20766,21 +20766,21 @@ func (m *TeamMutation) OldDisplayName(ctx context.Context) (v *string, err error
 	return oldValue.DisplayName, nil
 }
 
-// ClearDisplayName clears the value of the "displayName" field.
+// ClearDisplayName clears the value of the "display_name" field.
 func (m *TeamMutation) ClearDisplayName() {
-	m.displayName = nil
+	m.display_name = nil
 	m.clearedFields[team.FieldDisplayName] = struct{}{}
 }
 
-// DisplayNameCleared returns if the "displayName" field was cleared in this mutation.
+// DisplayNameCleared returns if the "display_name" field was cleared in this mutation.
 func (m *TeamMutation) DisplayNameCleared() bool {
 	_, ok := m.clearedFields[team.FieldDisplayName]
 	return ok
 }
 
-// ResetDisplayName resets all changes to the "displayName" field.
+// ResetDisplayName resets all changes to the "display_name" field.
 func (m *TeamMutation) ResetDisplayName() {
-	m.displayName = nil
+	m.display_name = nil
 	delete(m.clearedFields, team.FieldDisplayName)
 }
 
@@ -21065,58 +21065,58 @@ func (m *TeamMutation) ResetApplications() {
 	m.removedapplications = nil
 }
 
-// AddAPIIDs adds the "apis" edge to the Api entity by ids.
+// AddAPIIDs adds the "APIs" edge to the API entity by ids.
 func (m *TeamMutation) AddAPIIDs(ids ...int) {
-	if m.apis == nil {
-		m.apis = make(map[int]struct{})
+	if m._APIs == nil {
+		m._APIs = make(map[int]struct{})
 	}
 	for i := range ids {
-		m.apis[ids[i]] = struct{}{}
+		m._APIs[ids[i]] = struct{}{}
 	}
 }
 
-// ClearApis clears the "apis" edge to the Api entity.
-func (m *TeamMutation) ClearApis() {
-	m.clearedapis = true
+// ClearAPIs clears the "APIs" edge to the API entity.
+func (m *TeamMutation) ClearAPIs() {
+	m.cleared_APIs = true
 }
 
-// ApisCleared reports if the "apis" edge to the Api entity was cleared.
-func (m *TeamMutation) ApisCleared() bool {
-	return m.clearedapis
+// APIsCleared reports if the "APIs" edge to the API entity was cleared.
+func (m *TeamMutation) APIsCleared() bool {
+	return m.cleared_APIs
 }
 
-// RemoveAPIIDs removes the "apis" edge to the Api entity by IDs.
+// RemoveAPIIDs removes the "APIs" edge to the API entity by IDs.
 func (m *TeamMutation) RemoveAPIIDs(ids ...int) {
-	if m.removedapis == nil {
-		m.removedapis = make(map[int]struct{})
+	if m.removed_APIs == nil {
+		m.removed_APIs = make(map[int]struct{})
 	}
 	for i := range ids {
-		delete(m.apis, ids[i])
-		m.removedapis[ids[i]] = struct{}{}
+		delete(m._APIs, ids[i])
+		m.removed_APIs[ids[i]] = struct{}{}
 	}
 }
 
-// RemovedApis returns the removed IDs of the "apis" edge to the Api entity.
-func (m *TeamMutation) RemovedApisIDs() (ids []int) {
-	for id := range m.removedapis {
+// RemovedAPIs returns the removed IDs of the "APIs" edge to the API entity.
+func (m *TeamMutation) RemovedAPIsIDs() (ids []int) {
+	for id := range m.removed_APIs {
 		ids = append(ids, id)
 	}
 	return
 }
 
-// ApisIDs returns the "apis" edge IDs in the mutation.
-func (m *TeamMutation) ApisIDs() (ids []int) {
-	for id := range m.apis {
+// APIsIDs returns the "APIs" edge IDs in the mutation.
+func (m *TeamMutation) APIsIDs() (ids []int) {
+	for id := range m._APIs {
 		ids = append(ids, id)
 	}
 	return
 }
 
-// ResetApis resets all changes to the "apis" edge.
-func (m *TeamMutation) ResetApis() {
-	m.apis = nil
-	m.clearedapis = false
-	m.removedapis = nil
+// ResetAPIs resets all changes to the "APIs" edge.
+func (m *TeamMutation) ResetAPIs() {
+	m._APIs = nil
+	m.cleared_APIs = false
+	m.removed_APIs = nil
 }
 
 // AddEventTypeIDs adds the "event_types" edge to the EventType entity by ids.
@@ -21173,58 +21173,58 @@ func (m *TeamMutation) ResetEventTypes() {
 	m.removedevent_types = nil
 }
 
-// AddMcpServerIDs adds the "mcp_servers" edge to the McpServer entity by ids.
-func (m *TeamMutation) AddMcpServerIDs(ids ...int) {
-	if m.mcp_servers == nil {
-		m.mcp_servers = make(map[int]struct{})
+// AddMCPServerIDs adds the "MCP_servers" edge to the MCPServer entity by ids.
+func (m *TeamMutation) AddMCPServerIDs(ids ...int) {
+	if m._MCP_servers == nil {
+		m._MCP_servers = make(map[int]struct{})
 	}
 	for i := range ids {
-		m.mcp_servers[ids[i]] = struct{}{}
+		m._MCP_servers[ids[i]] = struct{}{}
 	}
 }
 
-// ClearMcpServers clears the "mcp_servers" edge to the McpServer entity.
-func (m *TeamMutation) ClearMcpServers() {
-	m.clearedmcp_servers = true
+// ClearMCPServers clears the "MCP_servers" edge to the MCPServer entity.
+func (m *TeamMutation) ClearMCPServers() {
+	m.cleared_MCP_servers = true
 }
 
-// McpServersCleared reports if the "mcp_servers" edge to the McpServer entity was cleared.
-func (m *TeamMutation) McpServersCleared() bool {
-	return m.clearedmcp_servers
+// MCPServersCleared reports if the "MCP_servers" edge to the MCPServer entity was cleared.
+func (m *TeamMutation) MCPServersCleared() bool {
+	return m.cleared_MCP_servers
 }
 
-// RemoveMcpServerIDs removes the "mcp_servers" edge to the McpServer entity by IDs.
-func (m *TeamMutation) RemoveMcpServerIDs(ids ...int) {
-	if m.removedmcp_servers == nil {
-		m.removedmcp_servers = make(map[int]struct{})
+// RemoveMCPServerIDs removes the "MCP_servers" edge to the MCPServer entity by IDs.
+func (m *TeamMutation) RemoveMCPServerIDs(ids ...int) {
+	if m.removed_MCP_servers == nil {
+		m.removed_MCP_servers = make(map[int]struct{})
 	}
 	for i := range ids {
-		delete(m.mcp_servers, ids[i])
-		m.removedmcp_servers[ids[i]] = struct{}{}
+		delete(m._MCP_servers, ids[i])
+		m.removed_MCP_servers[ids[i]] = struct{}{}
 	}
 }
 
-// RemovedMcpServers returns the removed IDs of the "mcp_servers" edge to the McpServer entity.
-func (m *TeamMutation) RemovedMcpServersIDs() (ids []int) {
-	for id := range m.removedmcp_servers {
+// RemovedMCPServers returns the removed IDs of the "MCP_servers" edge to the MCPServer entity.
+func (m *TeamMutation) RemovedMCPServersIDs() (ids []int) {
+	for id := range m.removed_MCP_servers {
 		ids = append(ids, id)
 	}
 	return
 }
 
-// McpServersIDs returns the "mcp_servers" edge IDs in the mutation.
-func (m *TeamMutation) McpServersIDs() (ids []int) {
-	for id := range m.mcp_servers {
+// MCPServersIDs returns the "MCP_servers" edge IDs in the mutation.
+func (m *TeamMutation) MCPServersIDs() (ids []int) {
+	for id := range m._MCP_servers {
 		ids = append(ids, id)
 	}
 	return
 }
 
-// ResetMcpServers resets all changes to the "mcp_servers" edge.
-func (m *TeamMutation) ResetMcpServers() {
-	m.mcp_servers = nil
-	m.clearedmcp_servers = false
-	m.removedmcp_servers = nil
+// ResetMCPServers resets all changes to the "MCP_servers" edge.
+func (m *TeamMutation) ResetMCPServers() {
+	m._MCP_servers = nil
+	m.cleared_MCP_servers = false
+	m.removed_MCP_servers = nil
 }
 
 // AddAgentCardIDs adds the "agent_cards" edge to the AgentCard entity by ids.
@@ -21340,7 +21340,7 @@ func (m *TeamMutation) Fields() []string {
 	if m.email != nil {
 		fields = append(fields, team.FieldEmail)
 	}
-	if m.displayName != nil {
+	if m.display_name != nil {
 		fields = append(fields, team.FieldDisplayName)
 	}
 	if m.description != nil {
@@ -21650,14 +21650,14 @@ func (m *TeamMutation) AddedEdges() []string {
 	if m.applications != nil {
 		edges = append(edges, team.EdgeApplications)
 	}
-	if m.apis != nil {
-		edges = append(edges, team.EdgeApis)
+	if m._APIs != nil {
+		edges = append(edges, team.EdgeAPIs)
 	}
 	if m.event_types != nil {
 		edges = append(edges, team.EdgeEventTypes)
 	}
-	if m.mcp_servers != nil {
-		edges = append(edges, team.EdgeMcpServers)
+	if m._MCP_servers != nil {
+		edges = append(edges, team.EdgeMCPServers)
 	}
 	if m.agent_cards != nil {
 		edges = append(edges, team.EdgeAgentCards)
@@ -21685,9 +21685,9 @@ func (m *TeamMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
-	case team.EdgeApis:
-		ids := make([]ent.Value, 0, len(m.apis))
-		for id := range m.apis {
+	case team.EdgeAPIs:
+		ids := make([]ent.Value, 0, len(m._APIs))
+		for id := range m._APIs {
 			ids = append(ids, id)
 		}
 		return ids
@@ -21697,9 +21697,9 @@ func (m *TeamMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
-	case team.EdgeMcpServers:
-		ids := make([]ent.Value, 0, len(m.mcp_servers))
-		for id := range m.mcp_servers {
+	case team.EdgeMCPServers:
+		ids := make([]ent.Value, 0, len(m._MCP_servers))
+		for id := range m._MCP_servers {
 			ids = append(ids, id)
 		}
 		return ids
@@ -21722,14 +21722,14 @@ func (m *TeamMutation) RemovedEdges() []string {
 	if m.removedapplications != nil {
 		edges = append(edges, team.EdgeApplications)
 	}
-	if m.removedapis != nil {
-		edges = append(edges, team.EdgeApis)
+	if m.removed_APIs != nil {
+		edges = append(edges, team.EdgeAPIs)
 	}
 	if m.removedevent_types != nil {
 		edges = append(edges, team.EdgeEventTypes)
 	}
-	if m.removedmcp_servers != nil {
-		edges = append(edges, team.EdgeMcpServers)
+	if m.removed_MCP_servers != nil {
+		edges = append(edges, team.EdgeMCPServers)
 	}
 	if m.removedagent_cards != nil {
 		edges = append(edges, team.EdgeAgentCards)
@@ -21753,9 +21753,9 @@ func (m *TeamMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
-	case team.EdgeApis:
-		ids := make([]ent.Value, 0, len(m.removedapis))
-		for id := range m.removedapis {
+	case team.EdgeAPIs:
+		ids := make([]ent.Value, 0, len(m.removed_APIs))
+		for id := range m.removed_APIs {
 			ids = append(ids, id)
 		}
 		return ids
@@ -21765,9 +21765,9 @@ func (m *TeamMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
-	case team.EdgeMcpServers:
-		ids := make([]ent.Value, 0, len(m.removedmcp_servers))
-		for id := range m.removedmcp_servers {
+	case team.EdgeMCPServers:
+		ids := make([]ent.Value, 0, len(m.removed_MCP_servers))
+		for id := range m.removed_MCP_servers {
 			ids = append(ids, id)
 		}
 		return ids
@@ -21793,14 +21793,14 @@ func (m *TeamMutation) ClearedEdges() []string {
 	if m.clearedapplications {
 		edges = append(edges, team.EdgeApplications)
 	}
-	if m.clearedapis {
-		edges = append(edges, team.EdgeApis)
+	if m.cleared_APIs {
+		edges = append(edges, team.EdgeAPIs)
 	}
 	if m.clearedevent_types {
 		edges = append(edges, team.EdgeEventTypes)
 	}
-	if m.clearedmcp_servers {
-		edges = append(edges, team.EdgeMcpServers)
+	if m.cleared_MCP_servers {
+		edges = append(edges, team.EdgeMCPServers)
 	}
 	if m.clearedagent_cards {
 		edges = append(edges, team.EdgeAgentCards)
@@ -21818,12 +21818,12 @@ func (m *TeamMutation) EdgeCleared(name string) bool {
 		return m.clearedmembers
 	case team.EdgeApplications:
 		return m.clearedapplications
-	case team.EdgeApis:
-		return m.clearedapis
+	case team.EdgeAPIs:
+		return m.cleared_APIs
 	case team.EdgeEventTypes:
 		return m.clearedevent_types
-	case team.EdgeMcpServers:
-		return m.clearedmcp_servers
+	case team.EdgeMCPServers:
+		return m.cleared_MCP_servers
 	case team.EdgeAgentCards:
 		return m.clearedagent_cards
 	}
@@ -21854,14 +21854,14 @@ func (m *TeamMutation) ResetEdge(name string) error {
 	case team.EdgeApplications:
 		m.ResetApplications()
 		return nil
-	case team.EdgeApis:
-		m.ResetApis()
+	case team.EdgeAPIs:
+		m.ResetAPIs()
 		return nil
 	case team.EdgeEventTypes:
 		m.ResetEventTypes()
 		return nil
-	case team.EdgeMcpServers:
-		m.ResetMcpServers()
+	case team.EdgeMCPServers:
+		m.ResetMCPServers()
 		return nil
 	case team.EdgeAgentCards:
 		m.ResetAgentCards()

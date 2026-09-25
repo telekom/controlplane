@@ -6,11 +6,148 @@
 package migrate
 
 import (
+	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/dialect/sql/schema"
 	"entgo.io/ent/schema/field"
 )
 
 var (
+	// ApisColumns holds the columns for the "apis" table.
+	ApisColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "last_modified_at", Type: field.TypeTime},
+		{Name: "status_phase", Type: field.TypeEnum, Nullable: true, Enums: []string{"READY", "PENDING", "ERROR", "UNKNOWN"}},
+		{Name: "status_message", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "namespace", Type: field.TypeString, Size: 2147483647},
+		{Name: "base_path", Type: field.TypeString, Size: 2147483647},
+		{Name: "version", Type: field.TypeString, Size: 2147483647},
+		{Name: "category", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "oauth2_scopes", Type: field.TypeJSON, Nullable: true},
+		{Name: "x_vendor", Type: field.TypeBool, Default: false},
+		{Name: "specification", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "active", Type: field.TypeBool, Default: false},
+		{Name: "team_apis", Type: field.TypeInt},
+	}
+	// ApisTable holds the schema information for the "apis" table.
+	ApisTable = &schema.Table{
+		Name:       "apis",
+		Columns:    ApisColumns,
+		PrimaryKey: []*schema.Column{ApisColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "apis_teams_apis",
+				Columns:    []*schema.Column{ApisColumns[13]},
+				RefColumns: []*schema.Column{TeamsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "api_base_path_team_apis",
+				Unique:  true,
+				Columns: []*schema.Column{ApisColumns[6], ApisColumns[13]},
+			},
+		},
+	}
+	// APIExposuresColumns holds the columns for the "api_exposures" table.
+	APIExposuresColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "last_modified_at", Type: field.TypeTime},
+		{Name: "status_phase", Type: field.TypeEnum, Nullable: true, Enums: []string{"READY", "PENDING", "ERROR", "UNKNOWN"}},
+		{Name: "status_message", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "environment", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "namespace", Type: field.TypeString, Size: 2147483647},
+		{Name: "base_path", Type: field.TypeString, Size: 2147483647},
+		{Name: "visibility", Type: field.TypeEnum, Enums: []string{"WORLD", "ZONE", "ENTERPRISE"}, Default: "ENTERPRISE"},
+		{Name: "active", Type: field.TypeBool, Nullable: true, Default: false},
+		{Name: "features", Type: field.TypeJSON},
+		{Name: "upstreams", Type: field.TypeJSON},
+		{Name: "security", Type: field.TypeJSON, Nullable: true},
+		{Name: "traffic", Type: field.TypeJSON, Nullable: true},
+		{Name: "approval_config", Type: field.TypeJSON},
+		{Name: "api_version", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "api_exposures", Type: field.TypeInt, Nullable: true},
+		{Name: "application_exposed_apis", Type: field.TypeInt},
+	}
+	// APIExposuresTable holds the schema information for the "api_exposures" table.
+	APIExposuresTable = &schema.Table{
+		Name:       "api_exposures",
+		Columns:    APIExposuresColumns,
+		PrimaryKey: []*schema.Column{APIExposuresColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "api_exposures_apis_exposures",
+				Columns:    []*schema.Column{APIExposuresColumns[16]},
+				RefColumns: []*schema.Column{ApisColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "api_exposures_applications_exposed_apis",
+				Columns:    []*schema.Column{APIExposuresColumns[17]},
+				RefColumns: []*schema.Column{ApplicationsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "apiexposure_base_path_application_exposed_apis",
+				Unique:  true,
+				Columns: []*schema.Column{APIExposuresColumns[7], APIExposuresColumns[17]},
+			},
+		},
+	}
+	// APISubscriptionsColumns holds the columns for the "api_subscriptions" table.
+	APISubscriptionsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "last_modified_at", Type: field.TypeTime},
+		{Name: "status_phase", Type: field.TypeEnum, Nullable: true, Enums: []string{"READY", "PENDING", "ERROR", "UNKNOWN"}},
+		{Name: "status_message", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "environment", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "namespace", Type: field.TypeString, Size: 2147483647},
+		{Name: "name", Type: field.TypeString, Size: 2147483647},
+		{Name: "base_path", Type: field.TypeString, Size: 2147483647},
+		{Name: "m2m_auth_method", Type: field.TypeEnum, Enums: []string{"NONE", "BASIC_AUTH", "OAUTH2_CLIENT", "SCOPES_ONLY"}, Default: "NONE"},
+		{Name: "gateway_url", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "security", Type: field.TypeJSON, Nullable: true},
+		{Name: "traffic", Type: field.TypeJSON, Nullable: true},
+		{Name: "api_subscription_target", Type: field.TypeInt, Nullable: true},
+		{Name: "application_subscribed_apis", Type: field.TypeInt},
+	}
+	// APISubscriptionsTable holds the schema information for the "api_subscriptions" table.
+	APISubscriptionsTable = &schema.Table{
+		Name:       "api_subscriptions",
+		Columns:    APISubscriptionsColumns,
+		PrimaryKey: []*schema.Column{APISubscriptionsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "api_subscriptions_api_exposures_target",
+				Columns:    []*schema.Column{APISubscriptionsColumns[13]},
+				RefColumns: []*schema.Column{APIExposuresColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "api_subscriptions_applications_subscribed_apis",
+				Columns:    []*schema.Column{APISubscriptionsColumns[14]},
+				RefColumns: []*schema.Column{ApplicationsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "apisubscription_namespace_name",
+				Unique:  true,
+				Columns: []*schema.Column{APISubscriptionsColumns[6], APISubscriptionsColumns[7]},
+			},
+			{
+				Name:    "apisubscription_base_path_application_subscribed_apis",
+				Unique:  true,
+				Columns: []*schema.Column{APISubscriptionsColumns[8], APISubscriptionsColumns[14]},
+			},
+		},
+	}
 	// AgentCardsColumns holds the columns for the "agent_cards" table.
 	AgentCardsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
@@ -154,142 +291,6 @@ var (
 			},
 		},
 	}
-	// ApisColumns holds the columns for the "apis" table.
-	ApisColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeInt, Increment: true},
-		{Name: "created_at", Type: field.TypeTime},
-		{Name: "last_modified_at", Type: field.TypeTime},
-		{Name: "status_phase", Type: field.TypeEnum, Nullable: true, Enums: []string{"READY", "PENDING", "ERROR", "UNKNOWN"}},
-		{Name: "status_message", Type: field.TypeString, Nullable: true, Size: 2147483647},
-		{Name: "namespace", Type: field.TypeString, Size: 2147483647},
-		{Name: "base_path", Type: field.TypeString, Size: 2147483647},
-		{Name: "version", Type: field.TypeString, Size: 2147483647},
-		{Name: "category", Type: field.TypeString, Nullable: true, Size: 2147483647},
-		{Name: "oauth2_scopes", Type: field.TypeJSON, Nullable: true},
-		{Name: "x_vendor", Type: field.TypeBool, Default: false},
-		{Name: "specification", Type: field.TypeString, Nullable: true, Size: 2147483647},
-		{Name: "active", Type: field.TypeBool, Default: false},
-		{Name: "team_apis", Type: field.TypeInt},
-	}
-	// ApisTable holds the schema information for the "apis" table.
-	ApisTable = &schema.Table{
-		Name:       "apis",
-		Columns:    ApisColumns,
-		PrimaryKey: []*schema.Column{ApisColumns[0]},
-		ForeignKeys: []*schema.ForeignKey{
-			{
-				Symbol:     "apis_teams_apis",
-				Columns:    []*schema.Column{ApisColumns[13]},
-				RefColumns: []*schema.Column{TeamsColumns[0]},
-				OnDelete:   schema.NoAction,
-			},
-		},
-		Indexes: []*schema.Index{
-			{
-				Name:    "api_base_path_team_apis",
-				Unique:  true,
-				Columns: []*schema.Column{ApisColumns[6], ApisColumns[13]},
-			},
-		},
-	}
-	// APIExposuresColumns holds the columns for the "api_exposures" table.
-	APIExposuresColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeInt, Increment: true},
-		{Name: "created_at", Type: field.TypeTime},
-		{Name: "last_modified_at", Type: field.TypeTime},
-		{Name: "status_phase", Type: field.TypeEnum, Nullable: true, Enums: []string{"READY", "PENDING", "ERROR", "UNKNOWN"}},
-		{Name: "status_message", Type: field.TypeString, Nullable: true, Size: 2147483647},
-		{Name: "environment", Type: field.TypeString, Nullable: true, Size: 2147483647},
-		{Name: "namespace", Type: field.TypeString, Size: 2147483647},
-		{Name: "base_path", Type: field.TypeString, Size: 2147483647},
-		{Name: "visibility", Type: field.TypeEnum, Enums: []string{"WORLD", "ZONE", "ENTERPRISE"}, Default: "ENTERPRISE"},
-		{Name: "active", Type: field.TypeBool, Nullable: true, Default: false},
-		{Name: "features", Type: field.TypeJSON},
-		{Name: "upstreams", Type: field.TypeJSON},
-		{Name: "security", Type: field.TypeJSON, Nullable: true},
-		{Name: "traffic", Type: field.TypeJSON, Nullable: true},
-		{Name: "approval_config", Type: field.TypeJSON},
-		{Name: "api_version", Type: field.TypeString, Nullable: true, Size: 2147483647},
-		{Name: "api_exposures", Type: field.TypeInt, Nullable: true},
-		{Name: "application_exposed_apis", Type: field.TypeInt},
-	}
-	// APIExposuresTable holds the schema information for the "api_exposures" table.
-	APIExposuresTable = &schema.Table{
-		Name:       "api_exposures",
-		Columns:    APIExposuresColumns,
-		PrimaryKey: []*schema.Column{APIExposuresColumns[0]},
-		ForeignKeys: []*schema.ForeignKey{
-			{
-				Symbol:     "api_exposures_apis_exposures",
-				Columns:    []*schema.Column{APIExposuresColumns[16]},
-				RefColumns: []*schema.Column{ApisColumns[0]},
-				OnDelete:   schema.SetNull,
-			},
-			{
-				Symbol:     "api_exposures_applications_exposed_apis",
-				Columns:    []*schema.Column{APIExposuresColumns[17]},
-				RefColumns: []*schema.Column{ApplicationsColumns[0]},
-				OnDelete:   schema.NoAction,
-			},
-		},
-		Indexes: []*schema.Index{
-			{
-				Name:    "apiexposure_base_path_application_exposed_apis",
-				Unique:  true,
-				Columns: []*schema.Column{APIExposuresColumns[7], APIExposuresColumns[17]},
-			},
-		},
-	}
-	// APISubscriptionsColumns holds the columns for the "api_subscriptions" table.
-	APISubscriptionsColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeInt, Increment: true},
-		{Name: "created_at", Type: field.TypeTime},
-		{Name: "last_modified_at", Type: field.TypeTime},
-		{Name: "status_phase", Type: field.TypeEnum, Nullable: true, Enums: []string{"READY", "PENDING", "ERROR", "UNKNOWN"}},
-		{Name: "status_message", Type: field.TypeString, Nullable: true, Size: 2147483647},
-		{Name: "environment", Type: field.TypeString, Nullable: true, Size: 2147483647},
-		{Name: "namespace", Type: field.TypeString, Size: 2147483647},
-		{Name: "name", Type: field.TypeString, Size: 2147483647},
-		{Name: "base_path", Type: field.TypeString, Size: 2147483647},
-		{Name: "m2m_auth_method", Type: field.TypeEnum, Enums: []string{"NONE", "BASIC_AUTH", "OAUTH2_CLIENT", "SCOPES_ONLY"}, Default: "NONE"},
-		{Name: "gateway_url", Type: field.TypeString, Nullable: true, Size: 2147483647},
-		{Name: "security", Type: field.TypeJSON, Nullable: true},
-		{Name: "traffic", Type: field.TypeJSON, Nullable: true},
-		{Name: "api_subscription_target", Type: field.TypeInt, Nullable: true},
-		{Name: "application_subscribed_apis", Type: field.TypeInt},
-	}
-	// APISubscriptionsTable holds the schema information for the "api_subscriptions" table.
-	APISubscriptionsTable = &schema.Table{
-		Name:       "api_subscriptions",
-		Columns:    APISubscriptionsColumns,
-		PrimaryKey: []*schema.Column{APISubscriptionsColumns[0]},
-		ForeignKeys: []*schema.ForeignKey{
-			{
-				Symbol:     "api_subscriptions_api_exposures_target",
-				Columns:    []*schema.Column{APISubscriptionsColumns[13]},
-				RefColumns: []*schema.Column{APIExposuresColumns[0]},
-				OnDelete:   schema.SetNull,
-			},
-			{
-				Symbol:     "api_subscriptions_applications_subscribed_apis",
-				Columns:    []*schema.Column{APISubscriptionsColumns[14]},
-				RefColumns: []*schema.Column{ApplicationsColumns[0]},
-				OnDelete:   schema.NoAction,
-			},
-		},
-		Indexes: []*schema.Index{
-			{
-				Name:    "apisubscription_namespace_name",
-				Unique:  true,
-				Columns: []*schema.Column{APISubscriptionsColumns[6], APISubscriptionsColumns[7]},
-			},
-			{
-				Name:    "apisubscription_base_path_application_subscribed_apis",
-				Unique:  true,
-				Columns: []*schema.Column{APISubscriptionsColumns[8], APISubscriptionsColumns[14]},
-			},
-		},
-	}
 	// ApplicationsColumns holds the columns for the "applications" table.
 	ApplicationsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
@@ -360,8 +361,8 @@ var (
 		{Name: "name", Type: field.TypeString, Size: 2147483647},
 		{Name: "expires_at", Type: field.TypeTime, Nullable: true},
 		{Name: "state", Type: field.TypeEnum, Enums: []string{"PENDING", "SEMIGRANTED", "GRANTED", "REJECTED", "SUSPENDED", "EXPIRED"}, Default: "PENDING"},
-		{Name: "agentic_subscription_approval", Type: field.TypeInt, Unique: true, Nullable: true},
 		{Name: "api_subscription_approval", Type: field.TypeInt, Unique: true, Nullable: true},
+		{Name: "agentic_subscription_approval", Type: field.TypeInt, Unique: true, Nullable: true},
 		{Name: "event_subscription_approval", Type: field.TypeInt, Unique: true, Nullable: true},
 	}
 	// ApprovalsTable holds the schema information for the "approvals" table.
@@ -371,15 +372,15 @@ var (
 		PrimaryKey: []*schema.Column{ApprovalsColumns[0]},
 		ForeignKeys: []*schema.ForeignKey{
 			{
-				Symbol:     "approvals_agentic_subscriptions_approval",
+				Symbol:     "approvals_api_subscriptions_approval",
 				Columns:    []*schema.Column{ApprovalsColumns[18]},
-				RefColumns: []*schema.Column{AgenticSubscriptionsColumns[0]},
+				RefColumns: []*schema.Column{APISubscriptionsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
-				Symbol:     "approvals_api_subscriptions_approval",
+				Symbol:     "approvals_agentic_subscriptions_approval",
 				Columns:    []*schema.Column{ApprovalsColumns[19]},
-				RefColumns: []*schema.Column{APISubscriptionsColumns[0]},
+				RefColumns: []*schema.Column{AgenticSubscriptionsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
@@ -416,8 +417,8 @@ var (
 		{Name: "requested_scopes", Type: field.TypeJSON, Nullable: true},
 		{Name: "name", Type: field.TypeString, Size: 2147483647},
 		{Name: "state", Type: field.TypeEnum, Enums: []string{"PENDING", "SEMIGRANTED", "GRANTED", "REJECTED"}, Default: "PENDING"},
-		{Name: "agentic_subscription_approval_requests", Type: field.TypeInt, Nullable: true},
 		{Name: "api_subscription_approval_requests", Type: field.TypeInt, Nullable: true},
+		{Name: "agentic_subscription_approval_requests", Type: field.TypeInt, Nullable: true},
 		{Name: "event_subscription_approval_requests", Type: field.TypeInt, Nullable: true},
 	}
 	// ApprovalRequestsTable holds the schema information for the "approval_requests" table.
@@ -427,15 +428,15 @@ var (
 		PrimaryKey: []*schema.Column{ApprovalRequestsColumns[0]},
 		ForeignKeys: []*schema.ForeignKey{
 			{
-				Symbol:     "approval_requests_agentic_subscriptions_approval_requests",
+				Symbol:     "approval_requests_api_subscriptions_approval_requests",
 				Columns:    []*schema.Column{ApprovalRequestsColumns[17]},
-				RefColumns: []*schema.Column{AgenticSubscriptionsColumns[0]},
+				RefColumns: []*schema.Column{APISubscriptionsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
 			{
-				Symbol:     "approval_requests_api_subscriptions_approval_requests",
+				Symbol:     "approval_requests_agentic_subscriptions_approval_requests",
 				Columns:    []*schema.Column{ApprovalRequestsColumns[18]},
-				RefColumns: []*schema.Column{APISubscriptionsColumns[0]},
+				RefColumns: []*schema.Column{AgenticSubscriptionsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
 			{
@@ -758,12 +759,12 @@ var (
 	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
-		AgentCardsTable,
-		AgenticExposuresTable,
-		AgenticSubscriptionsTable,
 		ApisTable,
 		APIExposuresTable,
 		APISubscriptionsTable,
+		AgentCardsTable,
+		AgenticExposuresTable,
+		AgenticSubscriptionsTable,
 		ApplicationsTable,
 		ApprovalsTable,
 		ApprovalRequestsTable,
@@ -780,24 +781,27 @@ var (
 )
 
 func init() {
+	ApisTable.ForeignKeys[0].RefTable = TeamsTable
+	ApisTable.Annotation = &entsql.Annotation{
+		Table: "apis",
+	}
+	APIExposuresTable.ForeignKeys[0].RefTable = ApisTable
+	APIExposuresTable.ForeignKeys[1].RefTable = ApplicationsTable
+	APISubscriptionsTable.ForeignKeys[0].RefTable = APIExposuresTable
+	APISubscriptionsTable.ForeignKeys[1].RefTable = ApplicationsTable
 	AgentCardsTable.ForeignKeys[0].RefTable = TeamsTable
 	AgenticExposuresTable.ForeignKeys[0].RefTable = AgentCardsTable
 	AgenticExposuresTable.ForeignKeys[1].RefTable = ApplicationsTable
 	AgenticExposuresTable.ForeignKeys[2].RefTable = McpServersTable
 	AgenticSubscriptionsTable.ForeignKeys[0].RefTable = AgenticExposuresTable
 	AgenticSubscriptionsTable.ForeignKeys[1].RefTable = ApplicationsTable
-	ApisTable.ForeignKeys[0].RefTable = TeamsTable
-	APIExposuresTable.ForeignKeys[0].RefTable = ApisTable
-	APIExposuresTable.ForeignKeys[1].RefTable = ApplicationsTable
-	APISubscriptionsTable.ForeignKeys[0].RefTable = APIExposuresTable
-	APISubscriptionsTable.ForeignKeys[1].RefTable = ApplicationsTable
 	ApplicationsTable.ForeignKeys[0].RefTable = TeamsTable
 	ApplicationsTable.ForeignKeys[1].RefTable = ZonesTable
-	ApprovalsTable.ForeignKeys[0].RefTable = AgenticSubscriptionsTable
-	ApprovalsTable.ForeignKeys[1].RefTable = APISubscriptionsTable
+	ApprovalsTable.ForeignKeys[0].RefTable = APISubscriptionsTable
+	ApprovalsTable.ForeignKeys[1].RefTable = AgenticSubscriptionsTable
 	ApprovalsTable.ForeignKeys[2].RefTable = EventSubscriptionsTable
-	ApprovalRequestsTable.ForeignKeys[0].RefTable = AgenticSubscriptionsTable
-	ApprovalRequestsTable.ForeignKeys[1].RefTable = APISubscriptionsTable
+	ApprovalRequestsTable.ForeignKeys[0].RefTable = APISubscriptionsTable
+	ApprovalRequestsTable.ForeignKeys[1].RefTable = AgenticSubscriptionsTable
 	ApprovalRequestsTable.ForeignKeys[2].RefTable = EventSubscriptionsTable
 	EventExposuresTable.ForeignKeys[0].RefTable = ApplicationsTable
 	EventExposuresTable.ForeignKeys[1].RefTable = EventTypesTable

@@ -62,10 +62,11 @@ func (Application) Fields() []ent.Field {
 		field.Text("secret_rotation_message").
 			Optional().
 			Nillable(),
-		field.JSON("external_ids", []model.ExternalId{}).
+		field.JSON("external_IDs", []model.ExternalID{}).
+			StorageKey("external_ids").
 			Optional().
 			Annotations(entgql.Skip(entgql.SkipWhereInput)),
-		field.JSON("ip_restrictions", model.IpRestrictions{}).
+		field.JSON("ip_restrictions", model.IPRestrictions{}).
 			Optional().
 			Annotations(entgql.Skip(entgql.SkipWhereInput)),
 		// // PermissionsURL for permission queries (built from Zone.PermissionsURL) and appends ?application=<clientId>.
@@ -87,9 +88,11 @@ func (Application) Edges() []ent.Edge {
 			Unique().
 			Required().
 			Annotations(entgql.Skip(entgql.SkipType)),
-		edge.To("exposed_apis", ApiExposure.Type).
+		edge.To("exposed_APIs", APIExposure.Type).
+			StorageKey(edge.Column("application_exposed_apis"), edge.Symbol("api_exposures_applications_exposed_apis")).
 			Annotations(entgql.RelayConnection()),
-		edge.To("subscribed_apis", ApiSubscription.Type).
+		edge.To("subscribed_APIs", APISubscription.Type).
+			StorageKey(edge.Column("application_subscribed_apis"), edge.Symbol("api_subscriptions_applications_subscribed_apis")).
 			Annotations(entgql.RelayConnection()),
 		edge.To("exposed_events", EventExposure.Type).
 			Annotations(entgql.RelayConnection()),

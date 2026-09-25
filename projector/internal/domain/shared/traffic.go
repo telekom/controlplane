@@ -15,7 +15,7 @@ import "github.com/telekom/controlplane/controlplane-api/pkg/model"
 // DefaultSubscriptionTraffic when there is no specific subscriber to match.
 // Returns nil when neither provider nor subscriber limits apply, which callers
 // persist as a NULL traffic column.
-func DeriveSubscriptionTraffic(rl *model.RateLimit, subscriberID string) *model.ApiSubscriptionTraffic {
+func DeriveSubscriptionTraffic(rl *model.RateLimit, subscriberID string) *model.APISubscriptionTraffic {
 	if rl == nil {
 		return nil
 	}
@@ -28,7 +28,7 @@ func DeriveSubscriptionTraffic(rl *model.RateLimit, subscriberID string) *model.
 
 // DefaultSubscriptionTraffic derives the traffic for a subscriber that has no
 // per-subscriber override: provider limits plus the subscriber default.
-func DefaultSubscriptionTraffic(rl *model.RateLimit) *model.ApiSubscriptionTraffic {
+func DefaultSubscriptionTraffic(rl *model.RateLimit) *model.APISubscriptionTraffic {
 	if rl == nil {
 		return nil
 	}
@@ -59,7 +59,7 @@ func subscriberOverrideLimits(rl *model.RateLimit, subscriberID string) *model.L
 
 // assembleTraffic combines provider limits with the resolved subscriber limits,
 // returning nil when neither applies.
-func assembleTraffic(rl *model.RateLimit, subscriber *model.Limits) *model.ApiSubscriptionTraffic {
+func assembleTraffic(rl *model.RateLimit, subscriber *model.Limits) *model.APISubscriptionTraffic {
 	var provider *model.Limits
 	if rl.Provider != nil {
 		provider = &rl.Provider.Limits
@@ -67,7 +67,7 @@ func assembleTraffic(rl *model.RateLimit, subscriber *model.Limits) *model.ApiSu
 	if provider == nil && subscriber == nil {
 		return nil
 	}
-	return &model.ApiSubscriptionTraffic{SubscriberLimits: subscriber, ProviderLimits: provider}
+	return &model.APISubscriptionTraffic{SubscriberLimits: subscriber, ProviderLimits: provider}
 }
 
 // SubscriberOverrideIDs returns the subscriber client ids that carry an explicit

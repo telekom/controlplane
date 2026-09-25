@@ -108,7 +108,7 @@ var _ = Describe("ApiSubscription Repository", func() {
 			Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
 
-		exposure, err := client.ApiExposure.Create().
+		exposure, err := client.APIExposure.Create().
 			SetBasePath("/api/v1/users").
 			SetNamespace("platform--narvi").
 			SetVisibility(entapiexposure.VisibilityWorld).
@@ -143,10 +143,10 @@ var _ = Describe("ApiSubscription Repository", func() {
 			StatusMessage: "subscription active",
 			BasePath:      "/api/v1/users",
 			M2MAuthMethod: "OAUTH2_CLIENT",
-			Security: &model.ApiSubscriptionSecurity{
+			Security: &model.APISubscriptionSecurity{
 				M2M: &model.SubscriberMachine2MachineAuthentication{
 					Client: &model.OAuth2ClientCredentials{
-						ClientId: "my-client-id",
+						ClientID: "my-client-id",
 					},
 					Scopes: []string{"read", "write"},
 				},
@@ -165,7 +165,7 @@ var _ = Describe("ApiSubscription Repository", func() {
 			Expect(repo.Upsert(ctx, data)).To(Succeed())
 
 			// Verify the subscription was created.
-			sub, err := client.ApiSubscription.Query().
+			sub, err := client.APISubscription.Query().
 				Where(
 					entapisub.BasePathEQ("/api/v1/users"),
 					entapisub.HasOwnerWith(),
@@ -173,14 +173,14 @@ var _ = Describe("ApiSubscription Repository", func() {
 				Only(ctx)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(sub.BasePath).To(Equal("/api/v1/users"))
-			Expect(sub.M2mAuthMethod.String()).To(Equal("OAUTH2_CLIENT"))
+			Expect(sub.M2MAuthMethod.String()).To(Equal("OAUTH2_CLIENT"))
 			Expect(sub.StatusPhase.String()).To(Equal("READY"))
 			Expect(*sub.StatusMessage).To(Equal("subscription active"))
 
 			// Verify target FK is set.
 			targetFK := sub.Edges.Target
 			// Query edges to check target.
-			sub2, err := client.ApiSubscription.Query().
+			sub2, err := client.APISubscription.Query().
 				Where(entapisub.IDEQ(sub.ID)).
 				WithTarget().
 				Only(ctx)
@@ -202,7 +202,7 @@ var _ = Describe("ApiSubscription Repository", func() {
 			Expect(repo.Upsert(ctx, data)).To(Succeed())
 
 			// Verify target FK is nil.
-			sub, err := client.ApiSubscription.Query().
+			sub, err := client.APISubscription.Query().
 				Where(entapisub.BasePathEQ("/api/v1/users")).
 				WithTarget().
 				Only(ctx)
@@ -245,7 +245,7 @@ var _ = Describe("ApiSubscription Repository", func() {
 			Expect(repo.Upsert(ctx, data)).To(Succeed())
 
 			// Verify first subscription exists with target.
-			sub1, err := client.ApiSubscription.Query().
+			sub1, err := client.APISubscription.Query().
 				Where(entapisub.BasePathEQ("/api/v1/users")).
 				WithTarget().
 				Only(ctx)
@@ -265,7 +265,7 @@ var _ = Describe("ApiSubscription Repository", func() {
 			Expect(repo.Upsert(ctx, data2)).To(Succeed())
 
 			// Verify only one subscription exists.
-			subs, err := client.ApiSubscription.Query().
+			subs, err := client.APISubscription.Query().
 				Where(entapisub.BasePathEQ("/api/v1/users")).
 				All(ctx)
 			Expect(err).NotTo(HaveOccurred())
@@ -276,7 +276,7 @@ var _ = Describe("ApiSubscription Repository", func() {
 			Expect(subs[0].ID).To(Equal(originalID))
 
 			// Verify target FK is now nil.
-			sub2, err := client.ApiSubscription.Query().
+			sub2, err := client.APISubscription.Query().
 				Where(entapisub.BasePathEQ("/api/v1/users")).
 				WithTarget().
 				Only(ctx)
@@ -294,13 +294,13 @@ var _ = Describe("ApiSubscription Repository", func() {
 			data.M2MAuthMethod = "BASIC_AUTH"
 			Expect(repo.Upsert(ctx, data)).To(Succeed())
 
-			sub, err := client.ApiSubscription.Query().
+			sub, err := client.APISubscription.Query().
 				Where(entapisub.BasePathEQ("/api/v1/users")).
 				Only(ctx)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(sub.StatusPhase.String()).To(Equal("ERROR"))
 			Expect(*sub.StatusMessage).To(Equal("failed to connect"))
-			Expect(sub.M2mAuthMethod.String()).To(Equal("BASIC_AUTH"))
+			Expect(sub.M2MAuthMethod.String()).To(Equal("BASIC_AUTH"))
 		})
 
 		It("should update security-derived fields on upsert conflict", func() {
@@ -308,15 +308,15 @@ var _ = Describe("ApiSubscription Repository", func() {
 			// baseData has M2MAuthMethod=OAUTH2_CLIENT with Security.M2M.Client set — aligned.
 			Expect(repo.Upsert(ctx, data)).To(Succeed())
 
-			sub, err := client.ApiSubscription.Query().
+			sub, err := client.APISubscription.Query().
 				Where(entapisub.BasePathEQ("/api/v1/users")).
 				Only(ctx)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(sub.M2mAuthMethod.String()).To(Equal("OAUTH2_CLIENT"))
+			Expect(sub.M2MAuthMethod.String()).To(Equal("OAUTH2_CLIENT"))
 
 			// Change to BASIC_AUTH — align Security accordingly.
 			data.M2MAuthMethod = "BASIC_AUTH"
-			data.Security = &model.ApiSubscriptionSecurity{
+			data.Security = &model.APISubscriptionSecurity{
 				M2M: &model.SubscriberMachine2MachineAuthentication{
 					Basic: &model.BasicAuthCredentials{
 						Username: "test-user",
@@ -327,29 +327,29 @@ var _ = Describe("ApiSubscription Repository", func() {
 			}
 			Expect(repo.Upsert(ctx, data)).To(Succeed())
 
-			sub, err = client.ApiSubscription.Query().
+			sub, err = client.APISubscription.Query().
 				Where(entapisub.BasePathEQ("/api/v1/users")).
 				Only(ctx)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(sub.M2mAuthMethod.String()).To(Equal("BASIC_AUTH"))
+			Expect(sub.M2MAuthMethod.String()).To(Equal("BASIC_AUTH"))
 
 			// Clear security — set to NONE with nil Security.
 			data.M2MAuthMethod = "NONE"
 			data.Security = nil
 			Expect(repo.Upsert(ctx, data)).To(Succeed())
 
-			sub, err = client.ApiSubscription.Query().
+			sub, err = client.APISubscription.Query().
 				Where(entapisub.BasePathEQ("/api/v1/users")).
 				Only(ctx)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(sub.M2mAuthMethod.String()).To(Equal("NONE"))
+			Expect(sub.M2MAuthMethod.String()).To(Equal("NONE"))
 			Expect(sub.Security).To(BeNil())
 		})
 
 		It("should update from BASIC_AUTH to OAUTH2_CLIENT on upsert conflict", func() {
 			data := baseData()
 			data.M2MAuthMethod = "BASIC_AUTH"
-			data.Security = &model.ApiSubscriptionSecurity{
+			data.Security = &model.APISubscriptionSecurity{
 				M2M: &model.SubscriberMachine2MachineAuthentication{
 					Basic: &model.BasicAuthCredentials{
 						Username: "test-user",
@@ -360,29 +360,29 @@ var _ = Describe("ApiSubscription Repository", func() {
 			}
 			Expect(repo.Upsert(ctx, data)).To(Succeed())
 
-			sub, err := client.ApiSubscription.Query().
+			sub, err := client.APISubscription.Query().
 				Where(entapisub.BasePathEQ("/api/v1/users")).
 				Only(ctx)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(sub.M2mAuthMethod.String()).To(Equal("BASIC_AUTH"))
+			Expect(sub.M2MAuthMethod.String()).To(Equal("BASIC_AUTH"))
 
 			// Switch to OAUTH2_CLIENT.
 			data.M2MAuthMethod = "OAUTH2_CLIENT"
-			data.Security = &model.ApiSubscriptionSecurity{
+			data.Security = &model.APISubscriptionSecurity{
 				M2M: &model.SubscriberMachine2MachineAuthentication{
 					Client: &model.OAuth2ClientCredentials{
-						ClientId: "new-client-id",
+						ClientID: "new-client-id",
 					},
 					Scopes: []string{"read", "write"},
 				},
 			}
 			Expect(repo.Upsert(ctx, data)).To(Succeed())
 
-			sub, err = client.ApiSubscription.Query().
+			sub, err = client.APISubscription.Query().
 				Where(entapisub.BasePathEQ("/api/v1/users")).
 				Only(ctx)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(sub.M2mAuthMethod.String()).To(Equal("OAUTH2_CLIENT"))
+			Expect(sub.M2MAuthMethod.String()).To(Equal("OAUTH2_CLIENT"))
 		})
 
 		It("should return an error when the cached target exposure ID is stale", func() {
@@ -405,7 +405,7 @@ var _ = Describe("ApiSubscription Repository", func() {
 			Expect(err).To(HaveOccurred())
 
 			// The bad target FK must not have been persisted.
-			count, err := client.ApiSubscription.Query().
+			count, err := client.APISubscription.Query().
 				Where(entapisub.BasePathEQ("/api/v1/users")).
 				Count(ctx)
 			Expect(err).NotTo(HaveOccurred())
@@ -428,13 +428,13 @@ var _ = Describe("ApiSubscription Repository", func() {
 	Describe("Upsert rate limit traffic", func() {
 		// setExposureTraffic overwrites the seeded target exposure's traffic config.
 		setExposureTraffic := func(traffic model.Traffic) {
-			Expect(client.ApiExposure.UpdateOneID(exposureID).
+			Expect(client.APIExposure.UpdateOneID(exposureID).
 				SetTraffic(traffic).
 				Exec(ctx)).To(Succeed())
 		}
 
-		querySubTraffic := func() *model.ApiSubscriptionTraffic {
-			sub, err := client.ApiSubscription.Query().
+		querySubTraffic := func() *model.APISubscriptionTraffic {
+			sub, err := client.APISubscription.Query().
 				Where(entapisub.BasePathEQ("/api/v1/users")).
 				Only(ctx)
 			Expect(err).NotTo(HaveOccurred())
@@ -673,7 +673,7 @@ var _ = Describe("ApiSubscription Repository", func() {
 			Expect(repo.Delete(ctx, key)).To(Succeed())
 
 			// Verify deleted from DB.
-			count, err := client.ApiSubscription.Query().
+			count, err := client.APISubscription.Query().
 				Where(entapisub.BasePathEQ("/api/v1/users")).
 				Count(ctx)
 			Expect(err).NotTo(HaveOccurred())

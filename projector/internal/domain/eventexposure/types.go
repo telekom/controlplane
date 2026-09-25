@@ -31,7 +31,7 @@ type EventExposureData struct {
 	Active             bool
 	ApprovalConfig     model.ApprovalConfig
 	Scopes             []model.EventScope
-	GatewayProviderUrl string
+	GatewayProviderURL string
 	AppName            string // resolved to owner Application FK
 	TeamName           string // used to resolve owner Application FK
 }

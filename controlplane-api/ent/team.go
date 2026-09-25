@@ -37,8 +37,8 @@ type Team struct {
 	Name string `json:"name,omitempty"`
 	// Email holds the value of the "email" field.
 	Email string `json:"email,omitempty"`
-	// DisplayName holds the value of the "displayName" field.
-	DisplayName *string `json:"displayName,omitempty"`
+	// DisplayName holds the value of the "display_name" field.
+	DisplayName *string `json:"display_name,omitempty"`
 	// Description holds the value of the "description" field.
 	Description *string `json:"description,omitempty"`
 	// Category holds the value of the "category" field.
@@ -60,12 +60,12 @@ type TeamEdges struct {
 	Members []*Member `json:"members,omitempty"`
 	// Applications holds the value of the applications edge.
 	Applications []*Application `json:"applications,omitempty"`
-	// Apis holds the value of the apis edge.
-	Apis []*Api `json:"apis,omitempty"`
+	// APIs holds the value of the APIs edge.
+	APIs []*API `json:"APIs,omitempty"`
 	// EventTypes holds the value of the event_types edge.
 	EventTypes []*EventType `json:"event_types,omitempty"`
-	// McpServers holds the value of the mcp_servers edge.
-	McpServers []*McpServer `json:"mcp_servers,omitempty"`
+	// MCPServers holds the value of the MCP_servers edge.
+	MCPServers []*MCPServer `json:"MCP_servers,omitempty"`
 	// AgentCards holds the value of the agent_cards edge.
 	AgentCards []*AgentCard `json:"agent_cards,omitempty"`
 	// loadedTypes holds the information for reporting if a
@@ -76,9 +76,9 @@ type TeamEdges struct {
 
 	namedMembers      map[string][]*Member
 	namedApplications map[string][]*Application
-	namedApis         map[string][]*Api
+	namedAPIs         map[string][]*API
 	namedEventTypes   map[string][]*EventType
-	namedMcpServers   map[string][]*McpServer
+	namedMCPServers   map[string][]*MCPServer
 	namedAgentCards   map[string][]*AgentCard
 }
 
@@ -111,13 +111,13 @@ func (e TeamEdges) ApplicationsOrErr() ([]*Application, error) {
 	return nil, &NotLoadedError{edge: "applications"}
 }
 
-// ApisOrErr returns the Apis value or an error if the edge
+// APIsOrErr returns the APIs value or an error if the edge
 // was not loaded in eager-loading.
-func (e TeamEdges) ApisOrErr() ([]*Api, error) {
+func (e TeamEdges) APIsOrErr() ([]*API, error) {
 	if e.loadedTypes[3] {
-		return e.Apis, nil
+		return e.APIs, nil
 	}
-	return nil, &NotLoadedError{edge: "apis"}
+	return nil, &NotLoadedError{edge: "APIs"}
 }
 
 // EventTypesOrErr returns the EventTypes value or an error if the edge
@@ -129,13 +129,13 @@ func (e TeamEdges) EventTypesOrErr() ([]*EventType, error) {
 	return nil, &NotLoadedError{edge: "event_types"}
 }
 
-// McpServersOrErr returns the McpServers value or an error if the edge
+// MCPServersOrErr returns the MCPServers value or an error if the edge
 // was not loaded in eager-loading.
-func (e TeamEdges) McpServersOrErr() ([]*McpServer, error) {
+func (e TeamEdges) MCPServersOrErr() ([]*MCPServer, error) {
 	if e.loadedTypes[5] {
-		return e.McpServers, nil
+		return e.MCPServers, nil
 	}
-	return nil, &NotLoadedError{edge: "mcp_servers"}
+	return nil, &NotLoadedError{edge: "MCP_servers"}
 }
 
 // AgentCardsOrErr returns the AgentCards value or an error if the edge
@@ -234,7 +234,7 @@ func (_m *Team) assignValues(columns []string, values []any) error {
 			}
 		case team.FieldDisplayName:
 			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field displayName", values[i])
+				return fmt.Errorf("unexpected type %T for field display_name", values[i])
 			} else if value.Valid {
 				_m.DisplayName = new(string)
 				*_m.DisplayName = value.String
@@ -294,9 +294,9 @@ func (_m *Team) QueryApplications() *ApplicationQuery {
 	return NewTeamClient(_m.config).QueryApplications(_m)
 }
 
-// QueryApis queries the "apis" edge of the Team entity.
-func (_m *Team) QueryApis() *APIQuery {
-	return NewTeamClient(_m.config).QueryApis(_m)
+// QueryAPIs queries the "APIs" edge of the Team entity.
+func (_m *Team) QueryAPIs() *APIQuery {
+	return NewTeamClient(_m.config).QueryAPIs(_m)
 }
 
 // QueryEventTypes queries the "event_types" edge of the Team entity.
@@ -304,9 +304,9 @@ func (_m *Team) QueryEventTypes() *EventTypeQuery {
 	return NewTeamClient(_m.config).QueryEventTypes(_m)
 }
 
-// QueryMcpServers queries the "mcp_servers" edge of the Team entity.
-func (_m *Team) QueryMcpServers() *McpServerQuery {
-	return NewTeamClient(_m.config).QueryMcpServers(_m)
+// QueryMCPServers queries the "MCP_servers" edge of the Team entity.
+func (_m *Team) QueryMCPServers() *MCPServerQuery {
+	return NewTeamClient(_m.config).QueryMCPServers(_m)
 }
 
 // QueryAgentCards queries the "agent_cards" edge of the Team entity.
@@ -368,7 +368,7 @@ func (_m *Team) String() string {
 	builder.WriteString(_m.Email)
 	builder.WriteString(", ")
 	if v := _m.DisplayName; v != nil {
-		builder.WriteString("displayName=")
+		builder.WriteString("display_name=")
 		builder.WriteString(*v)
 	}
 	builder.WriteString(", ")
@@ -436,27 +436,27 @@ func (_m *Team) appendNamedApplications(name string, edges ...*Application) {
 	}
 }
 
-// NamedApis returns the Apis named value or an error if the edge was not
+// NamedAPIs returns the APIs named value or an error if the edge was not
 // loaded in eager-loading with this name.
-func (_m *Team) NamedApis(name string) ([]*Api, error) {
-	if _m.Edges.namedApis == nil {
+func (_m *Team) NamedAPIs(name string) ([]*API, error) {
+	if _m.Edges.namedAPIs == nil {
 		return nil, &NotLoadedError{edge: name}
 	}
-	nodes, ok := _m.Edges.namedApis[name]
+	nodes, ok := _m.Edges.namedAPIs[name]
 	if !ok {
 		return nil, &NotLoadedError{edge: name}
 	}
 	return nodes, nil
 }
 
-func (_m *Team) appendNamedApis(name string, edges ...*Api) {
-	if _m.Edges.namedApis == nil {
-		_m.Edges.namedApis = make(map[string][]*Api)
+func (_m *Team) appendNamedAPIs(name string, edges ...*API) {
+	if _m.Edges.namedAPIs == nil {
+		_m.Edges.namedAPIs = make(map[string][]*API)
 	}
 	if len(edges) == 0 {
-		_m.Edges.namedApis[name] = []*Api{}
+		_m.Edges.namedAPIs[name] = []*API{}
 	} else {
-		_m.Edges.namedApis[name] = append(_m.Edges.namedApis[name], edges...)
+		_m.Edges.namedAPIs[name] = append(_m.Edges.namedAPIs[name], edges...)
 	}
 }
 
@@ -484,27 +484,27 @@ func (_m *Team) appendNamedEventTypes(name string, edges ...*EventType) {
 	}
 }
 
-// NamedMcpServers returns the McpServers named value or an error if the edge was not
+// NamedMCPServers returns the MCPServers named value or an error if the edge was not
 // loaded in eager-loading with this name.
-func (_m *Team) NamedMcpServers(name string) ([]*McpServer, error) {
-	if _m.Edges.namedMcpServers == nil {
+func (_m *Team) NamedMCPServers(name string) ([]*MCPServer, error) {
+	if _m.Edges.namedMCPServers == nil {
 		return nil, &NotLoadedError{edge: name}
 	}
-	nodes, ok := _m.Edges.namedMcpServers[name]
+	nodes, ok := _m.Edges.namedMCPServers[name]
 	if !ok {
 		return nil, &NotLoadedError{edge: name}
 	}
 	return nodes, nil
 }
 
-func (_m *Team) appendNamedMcpServers(name string, edges ...*McpServer) {
-	if _m.Edges.namedMcpServers == nil {
-		_m.Edges.namedMcpServers = make(map[string][]*McpServer)
+func (_m *Team) appendNamedMCPServers(name string, edges ...*MCPServer) {
+	if _m.Edges.namedMCPServers == nil {
+		_m.Edges.namedMCPServers = make(map[string][]*MCPServer)
 	}
 	if len(edges) == 0 {
-		_m.Edges.namedMcpServers[name] = []*McpServer{}
+		_m.Edges.namedMCPServers[name] = []*MCPServer{}
 	} else {
-		_m.Edges.namedMcpServers[name] = append(_m.Edges.namedMcpServers[name], edges...)
+		_m.Edges.namedMCPServers[name] = append(_m.Edges.namedMCPServers[name], edges...)
 	}
 }
 

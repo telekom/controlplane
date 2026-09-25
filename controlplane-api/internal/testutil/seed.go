@@ -22,10 +22,10 @@ type SeedData struct {
 	AppAlpha *ent.Application
 	AppBeta  *ent.Application
 
-	ExposureAlpha *ent.ApiExposure
-	ExposureBeta  *ent.ApiExposure
+	ExposureAlpha *ent.APIExposure
+	ExposureBeta  *ent.APIExposure
 
-	Subscription *ent.ApiSubscription
+	Subscription *ent.APISubscription
 
 	Approval        *ent.Approval
 	ApprovalRequest *ent.ApprovalRequest
@@ -38,7 +38,7 @@ type SeedData struct {
 
 	PermissionSetAlpha *ent.PermissionSet
 
-	McpServerAlpha         *ent.McpServer
+	MCPServerAlpha         *ent.MCPServer
 	AgenticExposureAlpha   *ent.AgenticExposure
 	AgenticSubscription    *ent.AgenticSubscription
 	AgenticApproval        *ent.Approval
@@ -77,13 +77,13 @@ func SeedStandard(client *ent.Client) *SeedData {
 		SetOwnerTeam(s.TeamBeta).SetZone(s.ZoneEU).Save(ctx))
 
 	// API Exposures
-	s.ExposureAlpha = must(client.ApiExposure.Create().
+	s.ExposureAlpha = must(client.APIExposure.Create().
 		SetNamespace("default").SetBasePath("/alpha").SetOwner(s.AppAlpha).Save(ctx))
-	s.ExposureBeta = must(client.ApiExposure.Create().
+	s.ExposureBeta = must(client.APIExposure.Create().
 		SetNamespace("default").SetBasePath("/beta").SetOwner(s.AppBeta).Save(ctx))
 
 	// Subscription: app-beta subscribes to exposure-alpha (cross-team)
-	s.Subscription = must(client.ApiSubscription.Create().
+	s.Subscription = must(client.APISubscription.Create().
 		SetNamespace("default").
 		SetName("sub-alpha").
 		SetBasePath("/alpha").
@@ -137,7 +137,7 @@ func SeedStandard(client *ent.Client) *SeedData {
 		Save(ctx))
 
 	// MCP server owned by team-alpha, exposed by app-alpha
-	s.McpServerAlpha = must(client.McpServer.Create().
+	s.MCPServerAlpha = must(client.MCPServer.Create().
 		SetNamespace("default").
 		SetBasePath("/mcp-alpha").
 		SetVersion("1.0.0").
@@ -148,7 +148,7 @@ func SeedStandard(client *ent.Client) *SeedData {
 		SetNamespace("default").
 		SetBasePath("/mcp-alpha").
 		SetOwner(s.AppAlpha).
-		SetMcpServer(s.McpServerAlpha).
+		SetMCPServer(s.MCPServerAlpha).
 		SetActive(true).
 		Save(ctx))
 

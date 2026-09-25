@@ -288,7 +288,7 @@ func (r *IDResolver) FindAPIExposureID(ctx context.Context, basePath, appName, t
 	et, lk := cachekeys.APIExposure(basePath, appName, teamName)
 	fullKey := et + ":" + lk
 	return r.resolve(ctx, et, lk, fmt.Sprintf("api_exposure %q (app %q, team %q)", basePath, appName, teamName), func() (int, error) {
-		exposure, err := r.client.ApiExposure.Query().
+		exposure, err := r.client.APIExposure.Query().
 			Where(
 				apiexposure.BasePathEQ(basePath),
 				apiexposure.HasOwnerWith(
@@ -325,7 +325,7 @@ func (r *IDResolver) FindAPIExposureByBasePath(ctx context.Context, basePath str
 	et, lk := cachekeys.APIExposureByBasePath(basePath)
 	fullKey := et + ":" + lk
 	return r.resolve(ctx, et, lk, fmt.Sprintf("api_exposure basePath %q", basePath), func() (int, error) {
-		exposure, err := r.client.ApiExposure.Query().
+		exposure, err := r.client.APIExposure.Query().
 			Where(apiexposure.BasePathEQ(basePath)).
 			Where(apiexposure.ActiveEQ(true)).
 			First(ctx)
@@ -352,7 +352,7 @@ func (r *IDResolver) FindAPISubscriptionByMeta(ctx context.Context, namespace, n
 	et, lk := cachekeys.APISubscriptionMeta(namespace, name)
 	fullKey := et + ":" + lk
 	return r.resolve(ctx, et, lk, fmt.Sprintf("api_subscription %s/%s", namespace, name), func() (int, error) {
-		sub, err := r.client.ApiSubscription.Query().
+		sub, err := r.client.APISubscription.Query().
 			Where(
 				apisubscription.NamespaceEQ(namespace),
 				apisubscription.NameEQ(name),
@@ -490,15 +490,15 @@ func (r *IDResolver) FindEventExposureByEventType(ctx context.Context, eventType
 	})
 }
 
-// FindApiID looks up the DB primary key for an Api catalogue entry by base path
+// FindAPIID looks up the DB primary key for an Api catalogue entry by base path
 // and team name. Api base paths are unique per team (composite unique index on
 // base_path + owner), so both are required.
 // Returns ErrEntityNotFound (wrapped) if no matching row exists.
-func (r *IDResolver) FindApiID(ctx context.Context, basePath, teamName string) (int, error) {
-	et, lk := cachekeys.Api(basePath, teamName)
+func (r *IDResolver) FindAPIID(ctx context.Context, basePath, teamName string) (int, error) {
+	et, lk := cachekeys.API(basePath, teamName)
 	fullKey := et + ":" + lk
 	return r.resolve(ctx, et, lk, fmt.Sprintf("api %q (team %q)", basePath, teamName), func() (int, error) {
-		a, err := r.client.Api.Query().
+		a, err := r.client.API.Query().
 			Where(
 				entapi.BasePathEQ(basePath),
 				entapi.HasOwnerWith(team.NameEQ(teamName)),
@@ -519,15 +519,15 @@ func (r *IDResolver) FindApiID(ctx context.Context, basePath, teamName string) (
 	})
 }
 
-// FindActiveApiID looks up the DB primary key for the cluster-wide active Api
+// FindActiveAPIID looks up the DB primary key for the cluster-wide active Api
 // for a given base path. Only one Api is active at a time per base path
 // (oldest-wins), so the lookup is team-independent.
 // Returns ErrEntityNotFound (wrapped) if no active Api exists for the base path.
-func (r *IDResolver) FindActiveApiID(ctx context.Context, basePath string) (int, error) {
-	et, lk := cachekeys.ActiveApi(basePath)
+func (r *IDResolver) FindActiveAPIID(ctx context.Context, basePath string) (int, error) {
+	et, lk := cachekeys.ActiveAPI(basePath)
 	fullKey := et + ":" + lk
 	return r.resolve(ctx, et, lk, fmt.Sprintf("active api %q", basePath), func() (int, error) {
-		a, err := r.client.Api.Query().
+		a, err := r.client.API.Query().
 			Where(
 				entapi.BasePathEQ(basePath),
 				entapi.ActiveEQ(true),
@@ -636,15 +636,15 @@ func (r *IDResolver) FindPermissionSetIDByApplicationOwner(ctx context.Context, 
 	})
 }
 
-// FindMcpServerID looks up the DB primary key for an McpServer catalogue entry
+// FindMCPServerID looks up the DB primary key for an McpServer catalogue entry
 // by base path and team name. Base paths are unique per team (composite
 // unique index on base_path + owner), so both are required.
 // Returns ErrEntityNotFound (wrapped) if no matching row exists.
-func (r *IDResolver) FindMcpServerID(ctx context.Context, basePath, teamName string) (int, error) {
-	et, lk := cachekeys.McpServer(basePath, teamName)
+func (r *IDResolver) FindMCPServerID(ctx context.Context, basePath, teamName string) (int, error) {
+	et, lk := cachekeys.MCPServer(basePath, teamName)
 	fullKey := et + ":" + lk
 	return r.resolve(ctx, et, lk, fmt.Sprintf("mcp_server %q (team %q)", basePath, teamName), func() (int, error) {
-		m, err := r.client.McpServer.Query().
+		m, err := r.client.MCPServer.Query().
 			Where(
 				entmcpserver.BasePathEQ(basePath),
 				entmcpserver.HasOwnerWith(team.NameEQ(teamName)),
@@ -665,15 +665,15 @@ func (r *IDResolver) FindMcpServerID(ctx context.Context, basePath, teamName str
 	})
 }
 
-// FindActiveMcpServerID looks up the DB primary key for the cluster-wide
+// FindActiveMCPServerID looks up the DB primary key for the cluster-wide
 // active McpServer for a given base path. Only one McpServer is active at a
 // time per base path (oldest-wins), so the lookup is team-independent.
 // Returns ErrEntityNotFound (wrapped) if no active McpServer exists.
-func (r *IDResolver) FindActiveMcpServerID(ctx context.Context, basePath string) (int, error) {
-	et, lk := cachekeys.ActiveMcpServer(basePath)
+func (r *IDResolver) FindActiveMCPServerID(ctx context.Context, basePath string) (int, error) {
+	et, lk := cachekeys.ActiveMCPServer(basePath)
 	fullKey := et + ":" + lk
 	return r.resolve(ctx, et, lk, fmt.Sprintf("active mcp_server %q", basePath), func() (int, error) {
-		m, err := r.client.McpServer.Query().
+		m, err := r.client.MCPServer.Query().
 			Where(
 				entmcpserver.BasePathEQ(basePath),
 				entmcpserver.ActiveEQ(true),

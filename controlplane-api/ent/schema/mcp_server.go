@@ -15,12 +15,12 @@ import (
 	schemamixin "github.com/telekom/controlplane/controlplane-api/ent/schema/mixin"
 )
 
-// McpServer holds the schema definition for a registered MCP server in the catalogue.
-type McpServer struct {
+// MCPServer holds the schema definition for a registered MCP server in the catalogue.
+type MCPServer struct {
 	ent.Schema
 }
 
-func (McpServer) Mixin() []ent.Mixin {
+func (MCPServer) Mixin() []ent.Mixin {
 	return []ent.Mixin{
 		schemamixin.PrivacyMixin{},
 		schemamixin.TimestampsMixin{},
@@ -29,7 +29,7 @@ func (McpServer) Mixin() []ent.Mixin {
 	}
 }
 
-func (McpServer) Fields() []ent.Field {
+func (MCPServer) Fields() []ent.Field {
 	return []ent.Field{
 		field.Text("base_path").
 			NotEmpty(),
@@ -44,7 +44,7 @@ func (McpServer) Fields() []ent.Field {
 			Annotations(entgql.Skip(entgql.SkipType)),
 		field.Text("category").
 			Optional(),
-		field.JSON("oauth2_scopes", []string{}).
+		field.JSON("OAuth2_scopes", []string{}).
 			Optional().
 			Annotations(entgql.Skip(entgql.SkipWhereInput)),
 		field.Bool("active").
@@ -52,10 +52,10 @@ func (McpServer) Fields() []ent.Field {
 	}
 }
 
-func (McpServer) Edges() []ent.Edge {
+func (MCPServer) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("owner", Team.Type).
-			Ref("mcp_servers").
+			Ref("MCP_servers").
 			Required().
 			Unique().
 			Annotations(entgql.Skip(entgql.SkipType)),
@@ -64,14 +64,14 @@ func (McpServer) Edges() []ent.Edge {
 	}
 }
 
-func (McpServer) Annotations() []schema.Annotation {
+func (MCPServer) Annotations() []schema.Annotation {
 	return []schema.Annotation{
 		entgql.QueryField(),
 		entgql.RelayConnection(),
 	}
 }
 
-func (McpServer) Indexes() []ent.Index {
+func (MCPServer) Indexes() []ent.Index {
 	return []ent.Index{
 		index.Fields("base_path").Edges("owner").Unique(),
 	}

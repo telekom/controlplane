@@ -55,16 +55,16 @@ func (t *Translator) Translate(_ context.Context, obj *apiv1.ApiExposure) (*APIE
 		}
 	}
 
-	var security *model.ApiExposureSecurity
+	var security *model.APIExposureSecurity
 	if obj.Spec.Security != nil && obj.Spec.Security.M2M != nil {
-		security = &model.ApiExposureSecurity{}
+		security = &model.APIExposureSecurity{}
 		if obj.Spec.Security.M2M != nil {
 			security.M2M = &model.Machine2MachineAuthentication{}
 			if obj.Spec.Security.M2M.Basic != nil {
-				security.M2M.Basic = util.MapCrBasicAuthToCpApi(obj.Spec.Security.M2M.Basic)
+				security.M2M.Basic = util.MapCRBasicAuthToCPAPI(obj.Spec.Security.M2M.Basic)
 			}
 			if obj.Spec.Security.M2M.ExternalIDP != nil {
-				security.M2M.ExternalIDP = util.MapCrExternalIdpToCpApi(obj.Spec.Security.M2M.ExternalIDP)
+				security.M2M.ExternalIDP = util.MapCRExternalIDPToCPAPI(obj.Spec.Security.M2M.ExternalIDP)
 			}
 			if len(obj.Spec.Security.M2M.Scopes) > 0 {
 				security.M2M.Scopes = obj.Spec.Security.M2M.Scopes

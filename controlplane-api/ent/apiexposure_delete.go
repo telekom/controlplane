@@ -15,26 +15,26 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/predicate"
 )
 
-// ApiExposureDelete is the builder for deleting a ApiExposure entity.
-type ApiExposureDelete struct {
+// APIExposureDelete is the builder for deleting a APIExposure entity.
+type APIExposureDelete struct {
 	config
 	hooks    []Hook
-	mutation *ApiExposureMutation
+	mutation *APIExposureMutation
 }
 
-// Where appends a list predicates to the ApiExposureDelete builder.
-func (_d *ApiExposureDelete) Where(ps ...predicate.ApiExposure) *ApiExposureDelete {
+// Where appends a list predicates to the APIExposureDelete builder.
+func (_d *APIExposureDelete) Where(ps ...predicate.APIExposure) *APIExposureDelete {
 	_d.mutation.Where(ps...)
 	return _d
 }
 
 // Exec executes the deletion query and returns how many vertices were deleted.
-func (_d *ApiExposureDelete) Exec(ctx context.Context) (int, error) {
+func (_d *APIExposureDelete) Exec(ctx context.Context) (int, error) {
 	return withHooks(ctx, _d.sqlExec, _d.mutation, _d.hooks)
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (_d *ApiExposureDelete) ExecX(ctx context.Context) int {
+func (_d *APIExposureDelete) ExecX(ctx context.Context) int {
 	n, err := _d.Exec(ctx)
 	if err != nil {
 		panic(err)
@@ -42,7 +42,7 @@ func (_d *ApiExposureDelete) ExecX(ctx context.Context) int {
 	return n
 }
 
-func (_d *ApiExposureDelete) sqlExec(ctx context.Context) (int, error) {
+func (_d *APIExposureDelete) sqlExec(ctx context.Context) (int, error) {
 	_spec := sqlgraph.NewDeleteSpec(apiexposure.Table, sqlgraph.NewFieldSpec(apiexposure.FieldID, field.TypeInt))
 	if ps := _d.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
@@ -59,19 +59,19 @@ func (_d *ApiExposureDelete) sqlExec(ctx context.Context) (int, error) {
 	return affected, err
 }
 
-// ApiExposureDeleteOne is the builder for deleting a single ApiExposure entity.
-type ApiExposureDeleteOne struct {
-	_d *ApiExposureDelete
+// APIExposureDeleteOne is the builder for deleting a single APIExposure entity.
+type APIExposureDeleteOne struct {
+	_d *APIExposureDelete
 }
 
-// Where appends a list predicates to the ApiExposureDelete builder.
-func (_d *ApiExposureDeleteOne) Where(ps ...predicate.ApiExposure) *ApiExposureDeleteOne {
+// Where appends a list predicates to the APIExposureDelete builder.
+func (_d *APIExposureDeleteOne) Where(ps ...predicate.APIExposure) *APIExposureDeleteOne {
 	_d._d.mutation.Where(ps...)
 	return _d
 }
 
 // Exec executes the deletion query.
-func (_d *ApiExposureDeleteOne) Exec(ctx context.Context) error {
+func (_d *APIExposureDeleteOne) Exec(ctx context.Context) error {
 	n, err := _d._d.Exec(ctx)
 	switch {
 	case err != nil:
@@ -84,7 +84,7 @@ func (_d *ApiExposureDeleteOne) Exec(ctx context.Context) error {
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (_d *ApiExposureDeleteOne) ExecX(ctx context.Context) {
+func (_d *APIExposureDeleteOne) ExecX(ctx context.Context) {
 	if err := _d.Exec(ctx); err != nil {
 		panic(err)
 	}

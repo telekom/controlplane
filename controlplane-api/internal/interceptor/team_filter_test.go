@@ -81,11 +81,11 @@ var _ = Describe("TeamFilterInterceptor", func() {
 				return len(r), e
 			}, 2),
 			Entry("exposures", func(ctx context.Context) (int, error) {
-				r, e := client.ApiExposure.Query().All(ctx)
+				r, e := client.APIExposure.Query().All(ctx)
 				return len(r), e
 			}, 2),
 			Entry("subscriptions", func(ctx context.Context) (int, error) {
-				r, e := client.ApiSubscription.Query().All(ctx)
+				r, e := client.APISubscription.Query().All(ctx)
 				return len(r), e
 			}, 1),
 			Entry("approvals", func(ctx context.Context) (int, error) {
@@ -113,7 +113,7 @@ var _ = Describe("TeamFilterInterceptor", func() {
 				return len(r), e
 			}, 1),
 			Entry("mcp servers", func(ctx context.Context) (int, error) {
-				r, e := client.McpServer.Query().All(ctx)
+				r, e := client.MCPServer.Query().All(ctx)
 				return len(r), e
 			}, 1),
 			Entry("agentic exposures", func(ctx context.Context) (int, error) {
@@ -149,11 +149,11 @@ var _ = Describe("TeamFilterInterceptor", func() {
 				return len(r), e
 			}, 1),
 			Entry("exposures", func(ctx context.Context) (int, error) {
-				r, e := client.ApiExposure.Query().All(ctx)
+				r, e := client.APIExposure.Query().All(ctx)
 				return len(r), e
 			}, 1),
 			Entry("subscriptions (team-alpha has none)", func(ctx context.Context) (int, error) {
-				r, e := client.ApiSubscription.Query().All(ctx)
+				r, e := client.APISubscription.Query().All(ctx)
 				return len(r), e
 			}, 0),
 			Entry("approvals (team-alpha is target provider)", func(ctx context.Context) (int, error) {
@@ -270,11 +270,11 @@ var _ = Describe("TeamFilterInterceptor", func() {
 				return len(r), e
 			}, 2),
 			Entry("exposures", func(ctx context.Context) (int, error) {
-				r, e := client.ApiExposure.Query().All(ctx)
+				r, e := client.APIExposure.Query().All(ctx)
 				return len(r), e
 			}, 2),
 			Entry("subscriptions", func(ctx context.Context) (int, error) {
-				r, e := client.ApiSubscription.Query().All(ctx)
+				r, e := client.APISubscription.Query().All(ctx)
 				return len(r), e
 			}, 1),
 			Entry("event exposures", func(ctx context.Context) (int, error) {
@@ -310,10 +310,10 @@ var _ = Describe("TeamFilterInterceptor", func() {
 		})
 
 		It("should not filter mcp servers even for a different team", func() {
-			// McpServerAlpha is owned by team-alpha, but a team-beta viewer should still see it
+			// MCPServerAlpha is owned by team-alpha, but a team-beta viewer should still see it
 			// since McpServer is a public catalogue entity (mirrors Api/EventType).
 			ctx := viewerCtx(&viewer.Viewer{Teams: []string{"team-beta"}})
-			servers, err := client.McpServer.Query().All(ctx)
+			servers, err := client.MCPServer.Query().All(ctx)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(servers).To(HaveLen(1))
 		})

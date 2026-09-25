@@ -62,8 +62,8 @@ type Approval struct {
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the ApprovalQuery when eager-loading is set.
 	Edges                         ApprovalEdges `json:"edges"`
-	agentic_subscription_approval *int
 	api_subscription_approval     *int
+	agentic_subscription_approval *int
 	event_subscription_approval   *int
 	selectValues                  sql.SelectValues
 }
@@ -71,7 +71,7 @@ type Approval struct {
 // ApprovalEdges holds the relations/edges for other nodes in the graph.
 type ApprovalEdges struct {
 	// APISubscription holds the value of the api_subscription edge.
-	APISubscription *ApiSubscription `json:"api_subscription,omitempty"`
+	APISubscription *APISubscription `json:"api_subscription,omitempty"`
 	// EventSubscription holds the value of the event_subscription edge.
 	EventSubscription *EventSubscription `json:"event_subscription,omitempty"`
 	// AgenticSubscription holds the value of the agentic_subscription edge.
@@ -83,7 +83,7 @@ type ApprovalEdges struct {
 
 // APISubscriptionOrErr returns the APISubscription value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
-func (e ApprovalEdges) APISubscriptionOrErr() (*ApiSubscription, error) {
+func (e ApprovalEdges) APISubscriptionOrErr() (*APISubscription, error) {
 	if e.APISubscription != nil {
 		return e.APISubscription, nil
 	} else if e.loadedTypes[0] {
@@ -127,9 +127,9 @@ func (*Approval) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullString)
 		case approval.FieldCreatedAt, approval.FieldLastModifiedAt, approval.FieldExpiresAt:
 			values[i] = new(sql.NullTime)
-		case approval.ForeignKeys[0]: // agentic_subscription_approval
+		case approval.ForeignKeys[0]: // api_subscription_approval
 			values[i] = new(sql.NullInt64)
-		case approval.ForeignKeys[1]: // api_subscription_approval
+		case approval.ForeignKeys[1]: // agentic_subscription_approval
 			values[i] = new(sql.NullInt64)
 		case approval.ForeignKeys[2]: // event_subscription_approval
 			values[i] = new(sql.NullInt64)
@@ -272,17 +272,17 @@ func (_m *Approval) assignValues(columns []string, values []any) error {
 			}
 		case approval.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
-				return fmt.Errorf("unexpected type %T for edge-field agentic_subscription_approval", value)
-			} else if value.Valid {
-				_m.agentic_subscription_approval = new(int)
-				*_m.agentic_subscription_approval = int(value.Int64)
-			}
-		case approval.ForeignKeys[1]:
-			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for edge-field api_subscription_approval", value)
 			} else if value.Valid {
 				_m.api_subscription_approval = new(int)
 				*_m.api_subscription_approval = int(value.Int64)
+			}
+		case approval.ForeignKeys[1]:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for edge-field agentic_subscription_approval", value)
+			} else if value.Valid {
+				_m.agentic_subscription_approval = new(int)
+				*_m.agentic_subscription_approval = int(value.Int64)
 			}
 		case approval.ForeignKeys[2]:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
@@ -305,7 +305,7 @@ func (_m *Approval) Value(name string) (ent.Value, error) {
 }
 
 // QueryAPISubscription queries the "api_subscription" edge of the Approval entity.
-func (_m *Approval) QueryAPISubscription() *ApiSubscriptionQuery {
+func (_m *Approval) QueryAPISubscription() *APISubscriptionQuery {
 	return NewApprovalClient(_m.config).QueryAPISubscription(_m)
 }
 

@@ -70,9 +70,9 @@ var _ = Describe("CacheKeys", func() {
 		})
 	})
 
-	// --- ApiExposure ---
+	// --- APIExposure ---
 
-	Describe("ApiExposure", func() {
+	Describe("APIExposure", func() {
 		It("returns the correct entity type and composite key", func() {
 			et, lk := cachekeys.APIExposure("/api/v1", "my-app", "hyperion")
 			Expect(et).To(Equal("apiexposure"))
@@ -92,9 +92,9 @@ var _ = Describe("CacheKeys", func() {
 		})
 	})
 
-	// --- ApiExposureByBasePath ---
+	// --- APIExposureByBasePath ---
 
-	Describe("ApiExposureByBasePath", func() {
+	Describe("APIExposureByBasePath", func() {
 		It("returns apiexposure entity type with bp: prefix", func() {
 			et, lk := cachekeys.APIExposureByBasePath("/api/v1")
 			Expect(et).To(Equal("apiexposure"))
@@ -108,9 +108,9 @@ var _ = Describe("CacheKeys", func() {
 		})
 	})
 
-	// --- ApiSubscriptionMeta ---
+	// --- APISubscriptionMeta ---
 
-	Describe("ApiSubscriptionMeta", func() {
+	Describe("APISubscriptionMeta", func() {
 		It("returns the correct entity type and meta-prefixed key", func() {
 			et, lk := cachekeys.APISubscriptionMeta("default", "my-sub")
 			Expect(et).To(Equal("apisubscription"))
@@ -159,34 +159,34 @@ var _ = Describe("CacheKeys", func() {
 		})
 	})
 
-	// --- McpServer ---
+	// --- MCPServer ---
 
-	Describe("McpServer", func() {
+	Describe("MCPServer", func() {
 		It("returns the correct entity type and composite key", func() {
-			et, lk := cachekeys.McpServer("/mcp/v1", "hyperion")
+			et, lk := cachekeys.MCPServer("/mcp/v1", "hyperion")
 			Expect(et).To(Equal("mcpserver"))
 			Expect(lk).To(Equal("/mcp/v1:hyperion"))
 		})
 
 		It("produces different keys for different teams", func() {
-			_, lk1 := cachekeys.McpServer("/mcp/v1", "team-a")
-			_, lk2 := cachekeys.McpServer("/mcp/v1", "team-b")
+			_, lk1 := cachekeys.MCPServer("/mcp/v1", "team-a")
+			_, lk2 := cachekeys.MCPServer("/mcp/v1", "team-b")
 			Expect(lk1).NotTo(Equal(lk2))
 		})
 	})
 
-	// --- ActiveMcpServer ---
+	// --- ActiveMCPServer ---
 
-	Describe("ActiveMcpServer", func() {
+	Describe("ActiveMCPServer", func() {
 		It("returns the correct entity type and lookup key", func() {
-			et, lk := cachekeys.ActiveMcpServer("/mcp/v1")
+			et, lk := cachekeys.ActiveMCPServer("/mcp/v1")
 			Expect(et).To(Equal("mcpserver_active"))
 			Expect(lk).To(Equal("/mcp/v1"))
 		})
 
 		It("does not collide with McpServer key", func() {
-			etActive, _ := cachekeys.ActiveMcpServer("/mcp/v1")
-			etFull, _ := cachekeys.McpServer("/mcp/v1", "team")
+			etActive, _ := cachekeys.ActiveMCPServer("/mcp/v1")
+			etFull, _ := cachekeys.MCPServer("/mcp/v1", "team")
 			Expect(etActive).NotTo(Equal(etFull))
 		})
 	})

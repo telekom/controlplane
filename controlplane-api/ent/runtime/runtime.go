@@ -38,6 +38,140 @@ import (
 // (default values, validators, hooks and policies) and stitches it
 // to their package variables.
 func init() {
+	apiMixin := schema.API{}.Mixin()
+	api.Policy = privacy.NewPolicies(apiMixin[0], schema.API{})
+	api.Hooks[0] = func(next ent.Mutator) ent.Mutator {
+		return ent.MutateFunc(func(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+			if err := api.Policy.EvalMutation(ctx, m); err != nil {
+				return nil, err
+			}
+			return next.Mutate(ctx, m)
+		})
+	}
+	apiMixinFields1 := apiMixin[1].Fields()
+	_ = apiMixinFields1
+	apiMixinFields3 := apiMixin[3].Fields()
+	_ = apiMixinFields3
+	apiFields := schema.API{}.Fields()
+	_ = apiFields
+	// apiDescCreatedAt is the schema descriptor for created_at field.
+	apiDescCreatedAt := apiMixinFields1[0].Descriptor()
+	// api.DefaultCreatedAt holds the default value on creation for the created_at field.
+	api.DefaultCreatedAt = apiDescCreatedAt.Default.(func() time.Time)
+	// apiDescLastModifiedAt is the schema descriptor for last_modified_at field.
+	apiDescLastModifiedAt := apiMixinFields1[1].Descriptor()
+	// api.DefaultLastModifiedAt holds the default value on creation for the last_modified_at field.
+	api.DefaultLastModifiedAt = apiDescLastModifiedAt.Default.(func() time.Time)
+	// api.UpdateDefaultLastModifiedAt holds the default value on update for the last_modified_at field.
+	api.UpdateDefaultLastModifiedAt = apiDescLastModifiedAt.UpdateDefault.(func() time.Time)
+	// apiDescNamespace is the schema descriptor for namespace field.
+	apiDescNamespace := apiMixinFields3[0].Descriptor()
+	// api.NamespaceValidator is a validator for the "namespace" field. It is called by the builders before save.
+	api.NamespaceValidator = apiDescNamespace.Validators[0].(func(string) error)
+	// apiDescBasePath is the schema descriptor for base_path field.
+	apiDescBasePath := apiFields[0].Descriptor()
+	// api.BasePathValidator is a validator for the "base_path" field. It is called by the builders before save.
+	api.BasePathValidator = apiDescBasePath.Validators[0].(func(string) error)
+	// apiDescVersion is the schema descriptor for version field.
+	apiDescVersion := apiFields[1].Descriptor()
+	// api.VersionValidator is a validator for the "version" field. It is called by the builders before save.
+	api.VersionValidator = apiDescVersion.Validators[0].(func(string) error)
+	// apiDescXVendor is the schema descriptor for x_vendor field.
+	apiDescXVendor := apiFields[4].Descriptor()
+	// api.DefaultXVendor holds the default value on creation for the x_vendor field.
+	api.DefaultXVendor = apiDescXVendor.Default.(bool)
+	// apiDescActive is the schema descriptor for active field.
+	apiDescActive := apiFields[6].Descriptor()
+	// api.DefaultActive holds the default value on creation for the active field.
+	api.DefaultActive = apiDescActive.Default.(bool)
+	apiexposureMixin := schema.APIExposure{}.Mixin()
+	apiexposure.Policy = privacy.NewPolicies(apiexposureMixin[0], schema.APIExposure{})
+	apiexposure.Hooks[0] = func(next ent.Mutator) ent.Mutator {
+		return ent.MutateFunc(func(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+			if err := apiexposure.Policy.EvalMutation(ctx, m); err != nil {
+				return nil, err
+			}
+			return next.Mutate(ctx, m)
+		})
+	}
+	apiexposureMixinFields1 := apiexposureMixin[1].Fields()
+	_ = apiexposureMixinFields1
+	apiexposureMixinFields4 := apiexposureMixin[4].Fields()
+	_ = apiexposureMixinFields4
+	apiexposureFields := schema.APIExposure{}.Fields()
+	_ = apiexposureFields
+	// apiexposureDescCreatedAt is the schema descriptor for created_at field.
+	apiexposureDescCreatedAt := apiexposureMixinFields1[0].Descriptor()
+	// apiexposure.DefaultCreatedAt holds the default value on creation for the created_at field.
+	apiexposure.DefaultCreatedAt = apiexposureDescCreatedAt.Default.(func() time.Time)
+	// apiexposureDescLastModifiedAt is the schema descriptor for last_modified_at field.
+	apiexposureDescLastModifiedAt := apiexposureMixinFields1[1].Descriptor()
+	// apiexposure.DefaultLastModifiedAt holds the default value on creation for the last_modified_at field.
+	apiexposure.DefaultLastModifiedAt = apiexposureDescLastModifiedAt.Default.(func() time.Time)
+	// apiexposure.UpdateDefaultLastModifiedAt holds the default value on update for the last_modified_at field.
+	apiexposure.UpdateDefaultLastModifiedAt = apiexposureDescLastModifiedAt.UpdateDefault.(func() time.Time)
+	// apiexposureDescNamespace is the schema descriptor for namespace field.
+	apiexposureDescNamespace := apiexposureMixinFields4[0].Descriptor()
+	// apiexposure.NamespaceValidator is a validator for the "namespace" field. It is called by the builders before save.
+	apiexposure.NamespaceValidator = apiexposureDescNamespace.Validators[0].(func(string) error)
+	// apiexposureDescBasePath is the schema descriptor for base_path field.
+	apiexposureDescBasePath := apiexposureFields[0].Descriptor()
+	// apiexposure.BasePathValidator is a validator for the "base_path" field. It is called by the builders before save.
+	apiexposure.BasePathValidator = apiexposureDescBasePath.Validators[0].(func(string) error)
+	// apiexposureDescActive is the schema descriptor for active field.
+	apiexposureDescActive := apiexposureFields[2].Descriptor()
+	// apiexposure.DefaultActive holds the default value on creation for the active field.
+	apiexposure.DefaultActive = apiexposureDescActive.Default.(bool)
+	// apiexposureDescFeatures is the schema descriptor for features field.
+	apiexposureDescFeatures := apiexposureFields[3].Descriptor()
+	// apiexposure.DefaultFeatures holds the default value on creation for the features field.
+	apiexposure.DefaultFeatures = apiexposureDescFeatures.Default.([]string)
+	// apiexposureDescUpstreams is the schema descriptor for upstreams field.
+	apiexposureDescUpstreams := apiexposureFields[4].Descriptor()
+	// apiexposure.DefaultUpstreams holds the default value on creation for the upstreams field.
+	apiexposure.DefaultUpstreams = apiexposureDescUpstreams.Default.([]model.Upstream)
+	// apiexposureDescApprovalConfig is the schema descriptor for approval_config field.
+	apiexposureDescApprovalConfig := apiexposureFields[7].Descriptor()
+	// apiexposure.DefaultApprovalConfig holds the default value on creation for the approval_config field.
+	apiexposure.DefaultApprovalConfig = apiexposureDescApprovalConfig.Default.(model.ApprovalConfig)
+	apisubscriptionMixin := schema.APISubscription{}.Mixin()
+	apisubscription.Policy = privacy.NewPolicies(apisubscriptionMixin[0], schema.APISubscription{})
+	apisubscription.Hooks[0] = func(next ent.Mutator) ent.Mutator {
+		return ent.MutateFunc(func(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+			if err := apisubscription.Policy.EvalMutation(ctx, m); err != nil {
+				return nil, err
+			}
+			return next.Mutate(ctx, m)
+		})
+	}
+	apisubscriptionMixinFields1 := apisubscriptionMixin[1].Fields()
+	_ = apisubscriptionMixinFields1
+	apisubscriptionMixinFields4 := apisubscriptionMixin[4].Fields()
+	_ = apisubscriptionMixinFields4
+	apisubscriptionFields := schema.APISubscription{}.Fields()
+	_ = apisubscriptionFields
+	// apisubscriptionDescCreatedAt is the schema descriptor for created_at field.
+	apisubscriptionDescCreatedAt := apisubscriptionMixinFields1[0].Descriptor()
+	// apisubscription.DefaultCreatedAt holds the default value on creation for the created_at field.
+	apisubscription.DefaultCreatedAt = apisubscriptionDescCreatedAt.Default.(func() time.Time)
+	// apisubscriptionDescLastModifiedAt is the schema descriptor for last_modified_at field.
+	apisubscriptionDescLastModifiedAt := apisubscriptionMixinFields1[1].Descriptor()
+	// apisubscription.DefaultLastModifiedAt holds the default value on creation for the last_modified_at field.
+	apisubscription.DefaultLastModifiedAt = apisubscriptionDescLastModifiedAt.Default.(func() time.Time)
+	// apisubscription.UpdateDefaultLastModifiedAt holds the default value on update for the last_modified_at field.
+	apisubscription.UpdateDefaultLastModifiedAt = apisubscriptionDescLastModifiedAt.UpdateDefault.(func() time.Time)
+	// apisubscriptionDescNamespace is the schema descriptor for namespace field.
+	apisubscriptionDescNamespace := apisubscriptionMixinFields4[0].Descriptor()
+	// apisubscription.NamespaceValidator is a validator for the "namespace" field. It is called by the builders before save.
+	apisubscription.NamespaceValidator = apisubscriptionDescNamespace.Validators[0].(func(string) error)
+	// apisubscriptionDescName is the schema descriptor for name field.
+	apisubscriptionDescName := apisubscriptionMixinFields4[1].Descriptor()
+	// apisubscription.NameValidator is a validator for the "name" field. It is called by the builders before save.
+	apisubscription.NameValidator = apisubscriptionDescName.Validators[0].(func(string) error)
+	// apisubscriptionDescBasePath is the schema descriptor for base_path field.
+	apisubscriptionDescBasePath := apisubscriptionFields[0].Descriptor()
+	// apisubscription.BasePathValidator is a validator for the "base_path" field. It is called by the builders before save.
+	apisubscription.BasePathValidator = apisubscriptionDescBasePath.Validators[0].(func(string) error)
 	agentcardMixin := schema.AgentCard{}.Mixin()
 	agentcard.Policy = privacy.NewPolicies(agentcardMixin[0], schema.AgentCard{})
 	agentcard.Hooks[0] = func(next ent.Mutator) ent.Mutator {
@@ -168,140 +302,6 @@ func init() {
 	agenticsubscriptionDescBasePath := agenticsubscriptionFields[0].Descriptor()
 	// agenticsubscription.BasePathValidator is a validator for the "base_path" field. It is called by the builders before save.
 	agenticsubscription.BasePathValidator = agenticsubscriptionDescBasePath.Validators[0].(func(string) error)
-	apiMixin := schema.Api{}.Mixin()
-	api.Policy = privacy.NewPolicies(apiMixin[0], schema.Api{})
-	api.Hooks[0] = func(next ent.Mutator) ent.Mutator {
-		return ent.MutateFunc(func(ctx context.Context, m ent.Mutation) (ent.Value, error) {
-			if err := api.Policy.EvalMutation(ctx, m); err != nil {
-				return nil, err
-			}
-			return next.Mutate(ctx, m)
-		})
-	}
-	apiMixinFields1 := apiMixin[1].Fields()
-	_ = apiMixinFields1
-	apiMixinFields3 := apiMixin[3].Fields()
-	_ = apiMixinFields3
-	apiFields := schema.Api{}.Fields()
-	_ = apiFields
-	// apiDescCreatedAt is the schema descriptor for created_at field.
-	apiDescCreatedAt := apiMixinFields1[0].Descriptor()
-	// api.DefaultCreatedAt holds the default value on creation for the created_at field.
-	api.DefaultCreatedAt = apiDescCreatedAt.Default.(func() time.Time)
-	// apiDescLastModifiedAt is the schema descriptor for last_modified_at field.
-	apiDescLastModifiedAt := apiMixinFields1[1].Descriptor()
-	// api.DefaultLastModifiedAt holds the default value on creation for the last_modified_at field.
-	api.DefaultLastModifiedAt = apiDescLastModifiedAt.Default.(func() time.Time)
-	// api.UpdateDefaultLastModifiedAt holds the default value on update for the last_modified_at field.
-	api.UpdateDefaultLastModifiedAt = apiDescLastModifiedAt.UpdateDefault.(func() time.Time)
-	// apiDescNamespace is the schema descriptor for namespace field.
-	apiDescNamespace := apiMixinFields3[0].Descriptor()
-	// api.NamespaceValidator is a validator for the "namespace" field. It is called by the builders before save.
-	api.NamespaceValidator = apiDescNamespace.Validators[0].(func(string) error)
-	// apiDescBasePath is the schema descriptor for base_path field.
-	apiDescBasePath := apiFields[0].Descriptor()
-	// api.BasePathValidator is a validator for the "base_path" field. It is called by the builders before save.
-	api.BasePathValidator = apiDescBasePath.Validators[0].(func(string) error)
-	// apiDescVersion is the schema descriptor for version field.
-	apiDescVersion := apiFields[1].Descriptor()
-	// api.VersionValidator is a validator for the "version" field. It is called by the builders before save.
-	api.VersionValidator = apiDescVersion.Validators[0].(func(string) error)
-	// apiDescXVendor is the schema descriptor for x_vendor field.
-	apiDescXVendor := apiFields[4].Descriptor()
-	// api.DefaultXVendor holds the default value on creation for the x_vendor field.
-	api.DefaultXVendor = apiDescXVendor.Default.(bool)
-	// apiDescActive is the schema descriptor for active field.
-	apiDescActive := apiFields[6].Descriptor()
-	// api.DefaultActive holds the default value on creation for the active field.
-	api.DefaultActive = apiDescActive.Default.(bool)
-	apiexposureMixin := schema.ApiExposure{}.Mixin()
-	apiexposure.Policy = privacy.NewPolicies(apiexposureMixin[0], schema.ApiExposure{})
-	apiexposure.Hooks[0] = func(next ent.Mutator) ent.Mutator {
-		return ent.MutateFunc(func(ctx context.Context, m ent.Mutation) (ent.Value, error) {
-			if err := apiexposure.Policy.EvalMutation(ctx, m); err != nil {
-				return nil, err
-			}
-			return next.Mutate(ctx, m)
-		})
-	}
-	apiexposureMixinFields1 := apiexposureMixin[1].Fields()
-	_ = apiexposureMixinFields1
-	apiexposureMixinFields4 := apiexposureMixin[4].Fields()
-	_ = apiexposureMixinFields4
-	apiexposureFields := schema.ApiExposure{}.Fields()
-	_ = apiexposureFields
-	// apiexposureDescCreatedAt is the schema descriptor for created_at field.
-	apiexposureDescCreatedAt := apiexposureMixinFields1[0].Descriptor()
-	// apiexposure.DefaultCreatedAt holds the default value on creation for the created_at field.
-	apiexposure.DefaultCreatedAt = apiexposureDescCreatedAt.Default.(func() time.Time)
-	// apiexposureDescLastModifiedAt is the schema descriptor for last_modified_at field.
-	apiexposureDescLastModifiedAt := apiexposureMixinFields1[1].Descriptor()
-	// apiexposure.DefaultLastModifiedAt holds the default value on creation for the last_modified_at field.
-	apiexposure.DefaultLastModifiedAt = apiexposureDescLastModifiedAt.Default.(func() time.Time)
-	// apiexposure.UpdateDefaultLastModifiedAt holds the default value on update for the last_modified_at field.
-	apiexposure.UpdateDefaultLastModifiedAt = apiexposureDescLastModifiedAt.UpdateDefault.(func() time.Time)
-	// apiexposureDescNamespace is the schema descriptor for namespace field.
-	apiexposureDescNamespace := apiexposureMixinFields4[0].Descriptor()
-	// apiexposure.NamespaceValidator is a validator for the "namespace" field. It is called by the builders before save.
-	apiexposure.NamespaceValidator = apiexposureDescNamespace.Validators[0].(func(string) error)
-	// apiexposureDescBasePath is the schema descriptor for base_path field.
-	apiexposureDescBasePath := apiexposureFields[0].Descriptor()
-	// apiexposure.BasePathValidator is a validator for the "base_path" field. It is called by the builders before save.
-	apiexposure.BasePathValidator = apiexposureDescBasePath.Validators[0].(func(string) error)
-	// apiexposureDescActive is the schema descriptor for active field.
-	apiexposureDescActive := apiexposureFields[2].Descriptor()
-	// apiexposure.DefaultActive holds the default value on creation for the active field.
-	apiexposure.DefaultActive = apiexposureDescActive.Default.(bool)
-	// apiexposureDescFeatures is the schema descriptor for features field.
-	apiexposureDescFeatures := apiexposureFields[3].Descriptor()
-	// apiexposure.DefaultFeatures holds the default value on creation for the features field.
-	apiexposure.DefaultFeatures = apiexposureDescFeatures.Default.([]string)
-	// apiexposureDescUpstreams is the schema descriptor for upstreams field.
-	apiexposureDescUpstreams := apiexposureFields[4].Descriptor()
-	// apiexposure.DefaultUpstreams holds the default value on creation for the upstreams field.
-	apiexposure.DefaultUpstreams = apiexposureDescUpstreams.Default.([]model.Upstream)
-	// apiexposureDescApprovalConfig is the schema descriptor for approval_config field.
-	apiexposureDescApprovalConfig := apiexposureFields[7].Descriptor()
-	// apiexposure.DefaultApprovalConfig holds the default value on creation for the approval_config field.
-	apiexposure.DefaultApprovalConfig = apiexposureDescApprovalConfig.Default.(model.ApprovalConfig)
-	apisubscriptionMixin := schema.ApiSubscription{}.Mixin()
-	apisubscription.Policy = privacy.NewPolicies(apisubscriptionMixin[0], schema.ApiSubscription{})
-	apisubscription.Hooks[0] = func(next ent.Mutator) ent.Mutator {
-		return ent.MutateFunc(func(ctx context.Context, m ent.Mutation) (ent.Value, error) {
-			if err := apisubscription.Policy.EvalMutation(ctx, m); err != nil {
-				return nil, err
-			}
-			return next.Mutate(ctx, m)
-		})
-	}
-	apisubscriptionMixinFields1 := apisubscriptionMixin[1].Fields()
-	_ = apisubscriptionMixinFields1
-	apisubscriptionMixinFields4 := apisubscriptionMixin[4].Fields()
-	_ = apisubscriptionMixinFields4
-	apisubscriptionFields := schema.ApiSubscription{}.Fields()
-	_ = apisubscriptionFields
-	// apisubscriptionDescCreatedAt is the schema descriptor for created_at field.
-	apisubscriptionDescCreatedAt := apisubscriptionMixinFields1[0].Descriptor()
-	// apisubscription.DefaultCreatedAt holds the default value on creation for the created_at field.
-	apisubscription.DefaultCreatedAt = apisubscriptionDescCreatedAt.Default.(func() time.Time)
-	// apisubscriptionDescLastModifiedAt is the schema descriptor for last_modified_at field.
-	apisubscriptionDescLastModifiedAt := apisubscriptionMixinFields1[1].Descriptor()
-	// apisubscription.DefaultLastModifiedAt holds the default value on creation for the last_modified_at field.
-	apisubscription.DefaultLastModifiedAt = apisubscriptionDescLastModifiedAt.Default.(func() time.Time)
-	// apisubscription.UpdateDefaultLastModifiedAt holds the default value on update for the last_modified_at field.
-	apisubscription.UpdateDefaultLastModifiedAt = apisubscriptionDescLastModifiedAt.UpdateDefault.(func() time.Time)
-	// apisubscriptionDescNamespace is the schema descriptor for namespace field.
-	apisubscriptionDescNamespace := apisubscriptionMixinFields4[0].Descriptor()
-	// apisubscription.NamespaceValidator is a validator for the "namespace" field. It is called by the builders before save.
-	apisubscription.NamespaceValidator = apisubscriptionDescNamespace.Validators[0].(func(string) error)
-	// apisubscriptionDescName is the schema descriptor for name field.
-	apisubscriptionDescName := apisubscriptionMixinFields4[1].Descriptor()
-	// apisubscription.NameValidator is a validator for the "name" field. It is called by the builders before save.
-	apisubscription.NameValidator = apisubscriptionDescName.Validators[0].(func(string) error)
-	// apisubscriptionDescBasePath is the schema descriptor for base_path field.
-	apisubscriptionDescBasePath := apisubscriptionFields[0].Descriptor()
-	// apisubscription.BasePathValidator is a validator for the "base_path" field. It is called by the builders before save.
-	apisubscription.BasePathValidator = apisubscriptionDescBasePath.Validators[0].(func(string) error)
 	applicationMixin := schema.Application{}.Mixin()
 	application.Policy = privacy.NewPolicies(applicationMixin[0], schema.Application{})
 	application.Hooks[0] = func(next ent.Mutator) ent.Mutator {
@@ -608,8 +608,8 @@ func init() {
 	groupDescDescription := groupFields[2].Descriptor()
 	// group.DefaultDescription holds the default value on creation for the description field.
 	group.DefaultDescription = groupDescDescription.Default.(string)
-	mcpserverMixin := schema.McpServer{}.Mixin()
-	mcpserver.Policy = privacy.NewPolicies(mcpserverMixin[0], schema.McpServer{})
+	mcpserverMixin := schema.MCPServer{}.Mixin()
+	mcpserver.Policy = privacy.NewPolicies(mcpserverMixin[0], schema.MCPServer{})
 	mcpserver.Hooks[0] = func(next ent.Mutator) ent.Mutator {
 		return ent.MutateFunc(func(ctx context.Context, m ent.Mutation) (ent.Value, error) {
 			if err := mcpserver.Policy.EvalMutation(ctx, m); err != nil {
@@ -622,7 +622,7 @@ func init() {
 	_ = mcpserverMixinFields1
 	mcpserverMixinFields3 := mcpserverMixin[3].Fields()
 	_ = mcpserverMixinFields3
-	mcpserverFields := schema.McpServer{}.Fields()
+	mcpserverFields := schema.MCPServer{}.Fields()
 	_ = mcpserverFields
 	// mcpserverDescCreatedAt is the schema descriptor for created_at field.
 	mcpserverDescCreatedAt := mcpserverMixinFields1[0].Descriptor()

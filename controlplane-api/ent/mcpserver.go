@@ -17,8 +17,8 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/team"
 )
 
-// McpServer is the model entity for the McpServer schema.
-type McpServer struct {
+// MCPServer is the model entity for the MCPServer schema.
+type MCPServer struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID int `json:"id,omitempty"`
@@ -44,19 +44,19 @@ type McpServer struct {
 	Specification string `json:"specification,omitempty"`
 	// Category holds the value of the "category" field.
 	Category string `json:"category,omitempty"`
-	// Oauth2Scopes holds the value of the "oauth2_scopes" field.
-	Oauth2Scopes []string `json:"oauth2_scopes,omitempty"`
+	// OAuth2Scopes holds the value of the "OAuth2_scopes" field.
+	OAuth2Scopes []string `json:"OAuth2_scopes,omitempty"`
 	// Active holds the value of the "active" field.
 	Active bool `json:"active,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
-	// The values are being populated by the McpServerQuery when eager-loading is set.
-	Edges            McpServerEdges `json:"edges"`
+	// The values are being populated by the MCPServerQuery when eager-loading is set.
+	Edges            MCPServerEdges `json:"edges"`
 	team_mcp_servers *int
 	selectValues     sql.SelectValues
 }
 
-// McpServerEdges holds the relations/edges for other nodes in the graph.
-type McpServerEdges struct {
+// MCPServerEdges holds the relations/edges for other nodes in the graph.
+type MCPServerEdges struct {
 	// Owner holds the value of the owner edge.
 	Owner *Team `json:"owner,omitempty"`
 	// Exposures holds the value of the exposures edge.
@@ -70,7 +70,7 @@ type McpServerEdges struct {
 
 // OwnerOrErr returns the Owner value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
-func (e McpServerEdges) OwnerOrErr() (*Team, error) {
+func (e MCPServerEdges) OwnerOrErr() (*Team, error) {
 	if e.Owner != nil {
 		return e.Owner, nil
 	} else if e.loadedTypes[0] {
@@ -81,7 +81,7 @@ func (e McpServerEdges) OwnerOrErr() (*Team, error) {
 
 // ExposuresOrErr returns the Exposures value or an error if the edge
 // was not loaded in eager-loading.
-func (e McpServerEdges) ExposuresOrErr() ([]*AgenticExposure, error) {
+func (e MCPServerEdges) ExposuresOrErr() ([]*AgenticExposure, error) {
 	if e.loadedTypes[1] {
 		return e.Exposures, nil
 	}
@@ -89,11 +89,11 @@ func (e McpServerEdges) ExposuresOrErr() ([]*AgenticExposure, error) {
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
-func (*McpServer) scanValues(columns []string) ([]any, error) {
+func (*MCPServer) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case mcpserver.FieldOauth2Scopes:
+		case mcpserver.FieldOAuth2Scopes:
 			values[i] = new([]byte)
 		case mcpserver.FieldActive:
 			values[i] = new(sql.NullBool)
@@ -113,8 +113,8 @@ func (*McpServer) scanValues(columns []string) ([]any, error) {
 }
 
 // assignValues assigns the values that were returned from sql.Rows (after scanning)
-// to the McpServer fields.
-func (_m *McpServer) assignValues(columns []string, values []any) error {
+// to the MCPServer fields.
+func (_m *MCPServer) assignValues(columns []string, values []any) error {
 	if m, n := len(values), len(columns); m < n {
 		return fmt.Errorf("mismatch number of scan values: %d != %d", m, n)
 	}
@@ -194,12 +194,12 @@ func (_m *McpServer) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.Category = value.String
 			}
-		case mcpserver.FieldOauth2Scopes:
+		case mcpserver.FieldOAuth2Scopes:
 			if value, ok := values[i].(*[]byte); !ok {
-				return fmt.Errorf("unexpected type %T for field oauth2_scopes", values[i])
+				return fmt.Errorf("unexpected type %T for field OAuth2_scopes", values[i])
 			} else if value != nil && len(*value) > 0 {
-				if err := json.Unmarshal(*value, &_m.Oauth2Scopes); err != nil {
-					return fmt.Errorf("unmarshal field oauth2_scopes: %w", err)
+				if err := json.Unmarshal(*value, &_m.OAuth2Scopes); err != nil {
+					return fmt.Errorf("unmarshal field OAuth2_scopes: %w", err)
 				}
 			}
 		case mcpserver.FieldActive:
@@ -222,44 +222,44 @@ func (_m *McpServer) assignValues(columns []string, values []any) error {
 	return nil
 }
 
-// Value returns the ent.Value that was dynamically selected and assigned to the McpServer.
+// Value returns the ent.Value that was dynamically selected and assigned to the MCPServer.
 // This includes values selected through modifiers, order, etc.
-func (_m *McpServer) Value(name string) (ent.Value, error) {
+func (_m *MCPServer) Value(name string) (ent.Value, error) {
 	return _m.selectValues.Get(name)
 }
 
-// QueryOwner queries the "owner" edge of the McpServer entity.
-func (_m *McpServer) QueryOwner() *TeamQuery {
-	return NewMcpServerClient(_m.config).QueryOwner(_m)
+// QueryOwner queries the "owner" edge of the MCPServer entity.
+func (_m *MCPServer) QueryOwner() *TeamQuery {
+	return NewMCPServerClient(_m.config).QueryOwner(_m)
 }
 
-// QueryExposures queries the "exposures" edge of the McpServer entity.
-func (_m *McpServer) QueryExposures() *AgenticExposureQuery {
-	return NewMcpServerClient(_m.config).QueryExposures(_m)
+// QueryExposures queries the "exposures" edge of the MCPServer entity.
+func (_m *MCPServer) QueryExposures() *AgenticExposureQuery {
+	return NewMCPServerClient(_m.config).QueryExposures(_m)
 }
 
-// Update returns a builder for updating this McpServer.
-// Note that you need to call McpServer.Unwrap() before calling this method if this McpServer
+// Update returns a builder for updating this MCPServer.
+// Note that you need to call MCPServer.Unwrap() before calling this method if this MCPServer
 // was returned from a transaction, and the transaction was committed or rolled back.
-func (_m *McpServer) Update() *McpServerUpdateOne {
-	return NewMcpServerClient(_m.config).UpdateOne(_m)
+func (_m *MCPServer) Update() *MCPServerUpdateOne {
+	return NewMCPServerClient(_m.config).UpdateOne(_m)
 }
 
-// Unwrap unwraps the McpServer entity that was returned from a transaction after it was closed,
+// Unwrap unwraps the MCPServer entity that was returned from a transaction after it was closed,
 // so that all future queries will be executed through the driver which created the transaction.
-func (_m *McpServer) Unwrap() *McpServer {
+func (_m *MCPServer) Unwrap() *MCPServer {
 	_tx, ok := _m.config.driver.(*txDriver)
 	if !ok {
-		panic("ent: McpServer is not a transactional entity")
+		panic("ent: MCPServer is not a transactional entity")
 	}
 	_m.config.driver = _tx.drv
 	return _m
 }
 
 // String implements the fmt.Stringer.
-func (_m *McpServer) String() string {
+func (_m *MCPServer) String() string {
 	var builder strings.Builder
-	builder.WriteString("McpServer(")
+	builder.WriteString("MCPServer(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", _m.ID))
 	builder.WriteString("created_at=")
 	builder.WriteString(_m.CreatedAt.Format(time.ANSIC))
@@ -298,8 +298,8 @@ func (_m *McpServer) String() string {
 	builder.WriteString("category=")
 	builder.WriteString(_m.Category)
 	builder.WriteString(", ")
-	builder.WriteString("oauth2_scopes=")
-	builder.WriteString(fmt.Sprintf("%v", _m.Oauth2Scopes))
+	builder.WriteString("OAuth2_scopes=")
+	builder.WriteString(fmt.Sprintf("%v", _m.OAuth2Scopes))
 	builder.WriteString(", ")
 	builder.WriteString("active=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Active))
@@ -309,7 +309,7 @@ func (_m *McpServer) String() string {
 
 // NamedExposures returns the Exposures named value or an error if the edge was not
 // loaded in eager-loading with this name.
-func (_m *McpServer) NamedExposures(name string) ([]*AgenticExposure, error) {
+func (_m *MCPServer) NamedExposures(name string) ([]*AgenticExposure, error) {
 	if _m.Edges.namedExposures == nil {
 		return nil, &NotLoadedError{edge: name}
 	}
@@ -320,7 +320,7 @@ func (_m *McpServer) NamedExposures(name string) ([]*AgenticExposure, error) {
 	return nodes, nil
 }
 
-func (_m *McpServer) appendNamedExposures(name string, edges ...*AgenticExposure) {
+func (_m *MCPServer) appendNamedExposures(name string, edges ...*AgenticExposure) {
 	if _m.Edges.namedExposures == nil {
 		_m.Edges.namedExposures = make(map[string][]*AgenticExposure)
 	}
@@ -331,5 +331,5 @@ func (_m *McpServer) appendNamedExposures(name string, edges ...*AgenticExposure
 	}
 }
 
-// McpServers is a parsable slice of McpServer.
-type McpServers []*McpServer
+// MCPServers is a parsable slice of MCPServer.
+type MCPServers []*MCPServer

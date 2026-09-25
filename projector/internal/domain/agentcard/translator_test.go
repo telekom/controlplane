@@ -73,12 +73,12 @@ var _ = Describe("AgentCard Translator", func() {
 			Expect(data.Description).To(Equal("Weather agent card"))
 			Expect(data.Specification).To(Equal("file-123"))
 			Expect(data.Category).To(Equal("g-api"))
-			Expect(data.Oauth2Scopes).To(Equal([]string{"scope-a", "scope-b"}))
+			Expect(data.OAuth2Scopes).To(Equal([]string{"scope-a", "scope-b"}))
 			Expect(data.Active).To(BeTrue())
 			Expect(data.TeamName).To(Equal("platform--narvi"))
 		})
 
-		It("should default Oauth2Scopes to an empty slice when nil", func() {
+		It("should default OAuth2Scopes to an empty slice when nil", func() {
 			obj := &agenticv1.AgentCard{
 				ObjectMeta: metav1.ObjectMeta{Name: "card-a", Namespace: "prod--platform--narvi"},
 				Spec: agenticv1.AgentCardSpec{
@@ -90,8 +90,8 @@ var _ = Describe("AgentCard Translator", func() {
 
 			data, err := t.Translate(context.Background(), obj)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(data.Oauth2Scopes).NotTo(BeNil())
-			Expect(data.Oauth2Scopes).To(BeEmpty())
+			Expect(data.OAuth2Scopes).NotTo(BeNil())
+			Expect(data.OAuth2Scopes).To(BeEmpty())
 		})
 	})
 

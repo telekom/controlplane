@@ -14,663 +14,663 @@ import (
 )
 
 // ID filters vertices based on their ID field.
-func ID(id int) predicate.Api {
-	return predicate.Api(sql.FieldEQ(FieldID, id))
+func ID(id int) predicate.API {
+	return predicate.API(sql.FieldEQ(FieldID, id))
 }
 
 // IDEQ applies the EQ predicate on the ID field.
-func IDEQ(id int) predicate.Api {
-	return predicate.Api(sql.FieldEQ(FieldID, id))
+func IDEQ(id int) predicate.API {
+	return predicate.API(sql.FieldEQ(FieldID, id))
 }
 
 // IDNEQ applies the NEQ predicate on the ID field.
-func IDNEQ(id int) predicate.Api {
-	return predicate.Api(sql.FieldNEQ(FieldID, id))
+func IDNEQ(id int) predicate.API {
+	return predicate.API(sql.FieldNEQ(FieldID, id))
 }
 
 // IDIn applies the In predicate on the ID field.
-func IDIn(ids ...int) predicate.Api {
-	return predicate.Api(sql.FieldIn(FieldID, ids...))
+func IDIn(ids ...int) predicate.API {
+	return predicate.API(sql.FieldIn(FieldID, ids...))
 }
 
 // IDNotIn applies the NotIn predicate on the ID field.
-func IDNotIn(ids ...int) predicate.Api {
-	return predicate.Api(sql.FieldNotIn(FieldID, ids...))
+func IDNotIn(ids ...int) predicate.API {
+	return predicate.API(sql.FieldNotIn(FieldID, ids...))
 }
 
 // IDGT applies the GT predicate on the ID field.
-func IDGT(id int) predicate.Api {
-	return predicate.Api(sql.FieldGT(FieldID, id))
+func IDGT(id int) predicate.API {
+	return predicate.API(sql.FieldGT(FieldID, id))
 }
 
 // IDGTE applies the GTE predicate on the ID field.
-func IDGTE(id int) predicate.Api {
-	return predicate.Api(sql.FieldGTE(FieldID, id))
+func IDGTE(id int) predicate.API {
+	return predicate.API(sql.FieldGTE(FieldID, id))
 }
 
 // IDLT applies the LT predicate on the ID field.
-func IDLT(id int) predicate.Api {
-	return predicate.Api(sql.FieldLT(FieldID, id))
+func IDLT(id int) predicate.API {
+	return predicate.API(sql.FieldLT(FieldID, id))
 }
 
 // IDLTE applies the LTE predicate on the ID field.
-func IDLTE(id int) predicate.Api {
-	return predicate.Api(sql.FieldLTE(FieldID, id))
+func IDLTE(id int) predicate.API {
+	return predicate.API(sql.FieldLTE(FieldID, id))
 }
 
 // CreatedAt applies equality check predicate on the "created_at" field. It's identical to CreatedAtEQ.
-func CreatedAt(v time.Time) predicate.Api {
-	return predicate.Api(sql.FieldEQ(FieldCreatedAt, v))
+func CreatedAt(v time.Time) predicate.API {
+	return predicate.API(sql.FieldEQ(FieldCreatedAt, v))
 }
 
 // LastModifiedAt applies equality check predicate on the "last_modified_at" field. It's identical to LastModifiedAtEQ.
-func LastModifiedAt(v time.Time) predicate.Api {
-	return predicate.Api(sql.FieldEQ(FieldLastModifiedAt, v))
+func LastModifiedAt(v time.Time) predicate.API {
+	return predicate.API(sql.FieldEQ(FieldLastModifiedAt, v))
 }
 
 // StatusMessage applies equality check predicate on the "status_message" field. It's identical to StatusMessageEQ.
-func StatusMessage(v string) predicate.Api {
-	return predicate.Api(sql.FieldEQ(FieldStatusMessage, v))
+func StatusMessage(v string) predicate.API {
+	return predicate.API(sql.FieldEQ(FieldStatusMessage, v))
 }
 
 // Namespace applies equality check predicate on the "namespace" field. It's identical to NamespaceEQ.
-func Namespace(v string) predicate.Api {
-	return predicate.Api(sql.FieldEQ(FieldNamespace, v))
+func Namespace(v string) predicate.API {
+	return predicate.API(sql.FieldEQ(FieldNamespace, v))
 }
 
 // BasePath applies equality check predicate on the "base_path" field. It's identical to BasePathEQ.
-func BasePath(v string) predicate.Api {
-	return predicate.Api(sql.FieldEQ(FieldBasePath, v))
+func BasePath(v string) predicate.API {
+	return predicate.API(sql.FieldEQ(FieldBasePath, v))
 }
 
 // Version applies equality check predicate on the "version" field. It's identical to VersionEQ.
-func Version(v string) predicate.Api {
-	return predicate.Api(sql.FieldEQ(FieldVersion, v))
+func Version(v string) predicate.API {
+	return predicate.API(sql.FieldEQ(FieldVersion, v))
 }
 
 // Category applies equality check predicate on the "category" field. It's identical to CategoryEQ.
-func Category(v string) predicate.Api {
-	return predicate.Api(sql.FieldEQ(FieldCategory, v))
+func Category(v string) predicate.API {
+	return predicate.API(sql.FieldEQ(FieldCategory, v))
 }
 
 // XVendor applies equality check predicate on the "x_vendor" field. It's identical to XVendorEQ.
-func XVendor(v bool) predicate.Api {
-	return predicate.Api(sql.FieldEQ(FieldXVendor, v))
+func XVendor(v bool) predicate.API {
+	return predicate.API(sql.FieldEQ(FieldXVendor, v))
 }
 
 // Specification applies equality check predicate on the "specification" field. It's identical to SpecificationEQ.
-func Specification(v string) predicate.Api {
-	return predicate.Api(sql.FieldEQ(FieldSpecification, v))
+func Specification(v string) predicate.API {
+	return predicate.API(sql.FieldEQ(FieldSpecification, v))
 }
 
 // Active applies equality check predicate on the "active" field. It's identical to ActiveEQ.
-func Active(v bool) predicate.Api {
-	return predicate.Api(sql.FieldEQ(FieldActive, v))
+func Active(v bool) predicate.API {
+	return predicate.API(sql.FieldEQ(FieldActive, v))
 }
 
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
-func CreatedAtEQ(v time.Time) predicate.Api {
-	return predicate.Api(sql.FieldEQ(FieldCreatedAt, v))
+func CreatedAtEQ(v time.Time) predicate.API {
+	return predicate.API(sql.FieldEQ(FieldCreatedAt, v))
 }
 
 // CreatedAtNEQ applies the NEQ predicate on the "created_at" field.
-func CreatedAtNEQ(v time.Time) predicate.Api {
-	return predicate.Api(sql.FieldNEQ(FieldCreatedAt, v))
+func CreatedAtNEQ(v time.Time) predicate.API {
+	return predicate.API(sql.FieldNEQ(FieldCreatedAt, v))
 }
 
 // CreatedAtIn applies the In predicate on the "created_at" field.
-func CreatedAtIn(vs ...time.Time) predicate.Api {
-	return predicate.Api(sql.FieldIn(FieldCreatedAt, vs...))
+func CreatedAtIn(vs ...time.Time) predicate.API {
+	return predicate.API(sql.FieldIn(FieldCreatedAt, vs...))
 }
 
 // CreatedAtNotIn applies the NotIn predicate on the "created_at" field.
-func CreatedAtNotIn(vs ...time.Time) predicate.Api {
-	return predicate.Api(sql.FieldNotIn(FieldCreatedAt, vs...))
+func CreatedAtNotIn(vs ...time.Time) predicate.API {
+	return predicate.API(sql.FieldNotIn(FieldCreatedAt, vs...))
 }
 
 // CreatedAtGT applies the GT predicate on the "created_at" field.
-func CreatedAtGT(v time.Time) predicate.Api {
-	return predicate.Api(sql.FieldGT(FieldCreatedAt, v))
+func CreatedAtGT(v time.Time) predicate.API {
+	return predicate.API(sql.FieldGT(FieldCreatedAt, v))
 }
 
 // CreatedAtGTE applies the GTE predicate on the "created_at" field.
-func CreatedAtGTE(v time.Time) predicate.Api {
-	return predicate.Api(sql.FieldGTE(FieldCreatedAt, v))
+func CreatedAtGTE(v time.Time) predicate.API {
+	return predicate.API(sql.FieldGTE(FieldCreatedAt, v))
 }
 
 // CreatedAtLT applies the LT predicate on the "created_at" field.
-func CreatedAtLT(v time.Time) predicate.Api {
-	return predicate.Api(sql.FieldLT(FieldCreatedAt, v))
+func CreatedAtLT(v time.Time) predicate.API {
+	return predicate.API(sql.FieldLT(FieldCreatedAt, v))
 }
 
 // CreatedAtLTE applies the LTE predicate on the "created_at" field.
-func CreatedAtLTE(v time.Time) predicate.Api {
-	return predicate.Api(sql.FieldLTE(FieldCreatedAt, v))
+func CreatedAtLTE(v time.Time) predicate.API {
+	return predicate.API(sql.FieldLTE(FieldCreatedAt, v))
 }
 
 // LastModifiedAtEQ applies the EQ predicate on the "last_modified_at" field.
-func LastModifiedAtEQ(v time.Time) predicate.Api {
-	return predicate.Api(sql.FieldEQ(FieldLastModifiedAt, v))
+func LastModifiedAtEQ(v time.Time) predicate.API {
+	return predicate.API(sql.FieldEQ(FieldLastModifiedAt, v))
 }
 
 // LastModifiedAtNEQ applies the NEQ predicate on the "last_modified_at" field.
-func LastModifiedAtNEQ(v time.Time) predicate.Api {
-	return predicate.Api(sql.FieldNEQ(FieldLastModifiedAt, v))
+func LastModifiedAtNEQ(v time.Time) predicate.API {
+	return predicate.API(sql.FieldNEQ(FieldLastModifiedAt, v))
 }
 
 // LastModifiedAtIn applies the In predicate on the "last_modified_at" field.
-func LastModifiedAtIn(vs ...time.Time) predicate.Api {
-	return predicate.Api(sql.FieldIn(FieldLastModifiedAt, vs...))
+func LastModifiedAtIn(vs ...time.Time) predicate.API {
+	return predicate.API(sql.FieldIn(FieldLastModifiedAt, vs...))
 }
 
 // LastModifiedAtNotIn applies the NotIn predicate on the "last_modified_at" field.
-func LastModifiedAtNotIn(vs ...time.Time) predicate.Api {
-	return predicate.Api(sql.FieldNotIn(FieldLastModifiedAt, vs...))
+func LastModifiedAtNotIn(vs ...time.Time) predicate.API {
+	return predicate.API(sql.FieldNotIn(FieldLastModifiedAt, vs...))
 }
 
 // LastModifiedAtGT applies the GT predicate on the "last_modified_at" field.
-func LastModifiedAtGT(v time.Time) predicate.Api {
-	return predicate.Api(sql.FieldGT(FieldLastModifiedAt, v))
+func LastModifiedAtGT(v time.Time) predicate.API {
+	return predicate.API(sql.FieldGT(FieldLastModifiedAt, v))
 }
 
 // LastModifiedAtGTE applies the GTE predicate on the "last_modified_at" field.
-func LastModifiedAtGTE(v time.Time) predicate.Api {
-	return predicate.Api(sql.FieldGTE(FieldLastModifiedAt, v))
+func LastModifiedAtGTE(v time.Time) predicate.API {
+	return predicate.API(sql.FieldGTE(FieldLastModifiedAt, v))
 }
 
 // LastModifiedAtLT applies the LT predicate on the "last_modified_at" field.
-func LastModifiedAtLT(v time.Time) predicate.Api {
-	return predicate.Api(sql.FieldLT(FieldLastModifiedAt, v))
+func LastModifiedAtLT(v time.Time) predicate.API {
+	return predicate.API(sql.FieldLT(FieldLastModifiedAt, v))
 }
 
 // LastModifiedAtLTE applies the LTE predicate on the "last_modified_at" field.
-func LastModifiedAtLTE(v time.Time) predicate.Api {
-	return predicate.Api(sql.FieldLTE(FieldLastModifiedAt, v))
+func LastModifiedAtLTE(v time.Time) predicate.API {
+	return predicate.API(sql.FieldLTE(FieldLastModifiedAt, v))
 }
 
 // StatusPhaseEQ applies the EQ predicate on the "status_phase" field.
-func StatusPhaseEQ(v StatusPhase) predicate.Api {
-	return predicate.Api(sql.FieldEQ(FieldStatusPhase, v))
+func StatusPhaseEQ(v StatusPhase) predicate.API {
+	return predicate.API(sql.FieldEQ(FieldStatusPhase, v))
 }
 
 // StatusPhaseNEQ applies the NEQ predicate on the "status_phase" field.
-func StatusPhaseNEQ(v StatusPhase) predicate.Api {
-	return predicate.Api(sql.FieldNEQ(FieldStatusPhase, v))
+func StatusPhaseNEQ(v StatusPhase) predicate.API {
+	return predicate.API(sql.FieldNEQ(FieldStatusPhase, v))
 }
 
 // StatusPhaseIn applies the In predicate on the "status_phase" field.
-func StatusPhaseIn(vs ...StatusPhase) predicate.Api {
-	return predicate.Api(sql.FieldIn(FieldStatusPhase, vs...))
+func StatusPhaseIn(vs ...StatusPhase) predicate.API {
+	return predicate.API(sql.FieldIn(FieldStatusPhase, vs...))
 }
 
 // StatusPhaseNotIn applies the NotIn predicate on the "status_phase" field.
-func StatusPhaseNotIn(vs ...StatusPhase) predicate.Api {
-	return predicate.Api(sql.FieldNotIn(FieldStatusPhase, vs...))
+func StatusPhaseNotIn(vs ...StatusPhase) predicate.API {
+	return predicate.API(sql.FieldNotIn(FieldStatusPhase, vs...))
 }
 
 // StatusPhaseIsNil applies the IsNil predicate on the "status_phase" field.
-func StatusPhaseIsNil() predicate.Api {
-	return predicate.Api(sql.FieldIsNull(FieldStatusPhase))
+func StatusPhaseIsNil() predicate.API {
+	return predicate.API(sql.FieldIsNull(FieldStatusPhase))
 }
 
 // StatusPhaseNotNil applies the NotNil predicate on the "status_phase" field.
-func StatusPhaseNotNil() predicate.Api {
-	return predicate.Api(sql.FieldNotNull(FieldStatusPhase))
+func StatusPhaseNotNil() predicate.API {
+	return predicate.API(sql.FieldNotNull(FieldStatusPhase))
 }
 
 // StatusMessageEQ applies the EQ predicate on the "status_message" field.
-func StatusMessageEQ(v string) predicate.Api {
-	return predicate.Api(sql.FieldEQ(FieldStatusMessage, v))
+func StatusMessageEQ(v string) predicate.API {
+	return predicate.API(sql.FieldEQ(FieldStatusMessage, v))
 }
 
 // StatusMessageNEQ applies the NEQ predicate on the "status_message" field.
-func StatusMessageNEQ(v string) predicate.Api {
-	return predicate.Api(sql.FieldNEQ(FieldStatusMessage, v))
+func StatusMessageNEQ(v string) predicate.API {
+	return predicate.API(sql.FieldNEQ(FieldStatusMessage, v))
 }
 
 // StatusMessageIn applies the In predicate on the "status_message" field.
-func StatusMessageIn(vs ...string) predicate.Api {
-	return predicate.Api(sql.FieldIn(FieldStatusMessage, vs...))
+func StatusMessageIn(vs ...string) predicate.API {
+	return predicate.API(sql.FieldIn(FieldStatusMessage, vs...))
 }
 
 // StatusMessageNotIn applies the NotIn predicate on the "status_message" field.
-func StatusMessageNotIn(vs ...string) predicate.Api {
-	return predicate.Api(sql.FieldNotIn(FieldStatusMessage, vs...))
+func StatusMessageNotIn(vs ...string) predicate.API {
+	return predicate.API(sql.FieldNotIn(FieldStatusMessage, vs...))
 }
 
 // StatusMessageGT applies the GT predicate on the "status_message" field.
-func StatusMessageGT(v string) predicate.Api {
-	return predicate.Api(sql.FieldGT(FieldStatusMessage, v))
+func StatusMessageGT(v string) predicate.API {
+	return predicate.API(sql.FieldGT(FieldStatusMessage, v))
 }
 
 // StatusMessageGTE applies the GTE predicate on the "status_message" field.
-func StatusMessageGTE(v string) predicate.Api {
-	return predicate.Api(sql.FieldGTE(FieldStatusMessage, v))
+func StatusMessageGTE(v string) predicate.API {
+	return predicate.API(sql.FieldGTE(FieldStatusMessage, v))
 }
 
 // StatusMessageLT applies the LT predicate on the "status_message" field.
-func StatusMessageLT(v string) predicate.Api {
-	return predicate.Api(sql.FieldLT(FieldStatusMessage, v))
+func StatusMessageLT(v string) predicate.API {
+	return predicate.API(sql.FieldLT(FieldStatusMessage, v))
 }
 
 // StatusMessageLTE applies the LTE predicate on the "status_message" field.
-func StatusMessageLTE(v string) predicate.Api {
-	return predicate.Api(sql.FieldLTE(FieldStatusMessage, v))
+func StatusMessageLTE(v string) predicate.API {
+	return predicate.API(sql.FieldLTE(FieldStatusMessage, v))
 }
 
 // StatusMessageContains applies the Contains predicate on the "status_message" field.
-func StatusMessageContains(v string) predicate.Api {
-	return predicate.Api(sql.FieldContains(FieldStatusMessage, v))
+func StatusMessageContains(v string) predicate.API {
+	return predicate.API(sql.FieldContains(FieldStatusMessage, v))
 }
 
 // StatusMessageHasPrefix applies the HasPrefix predicate on the "status_message" field.
-func StatusMessageHasPrefix(v string) predicate.Api {
-	return predicate.Api(sql.FieldHasPrefix(FieldStatusMessage, v))
+func StatusMessageHasPrefix(v string) predicate.API {
+	return predicate.API(sql.FieldHasPrefix(FieldStatusMessage, v))
 }
 
 // StatusMessageHasSuffix applies the HasSuffix predicate on the "status_message" field.
-func StatusMessageHasSuffix(v string) predicate.Api {
-	return predicate.Api(sql.FieldHasSuffix(FieldStatusMessage, v))
+func StatusMessageHasSuffix(v string) predicate.API {
+	return predicate.API(sql.FieldHasSuffix(FieldStatusMessage, v))
 }
 
 // StatusMessageIsNil applies the IsNil predicate on the "status_message" field.
-func StatusMessageIsNil() predicate.Api {
-	return predicate.Api(sql.FieldIsNull(FieldStatusMessage))
+func StatusMessageIsNil() predicate.API {
+	return predicate.API(sql.FieldIsNull(FieldStatusMessage))
 }
 
 // StatusMessageNotNil applies the NotNil predicate on the "status_message" field.
-func StatusMessageNotNil() predicate.Api {
-	return predicate.Api(sql.FieldNotNull(FieldStatusMessage))
+func StatusMessageNotNil() predicate.API {
+	return predicate.API(sql.FieldNotNull(FieldStatusMessage))
 }
 
 // StatusMessageEqualFold applies the EqualFold predicate on the "status_message" field.
-func StatusMessageEqualFold(v string) predicate.Api {
-	return predicate.Api(sql.FieldEqualFold(FieldStatusMessage, v))
+func StatusMessageEqualFold(v string) predicate.API {
+	return predicate.API(sql.FieldEqualFold(FieldStatusMessage, v))
 }
 
 // StatusMessageContainsFold applies the ContainsFold predicate on the "status_message" field.
-func StatusMessageContainsFold(v string) predicate.Api {
-	return predicate.Api(sql.FieldContainsFold(FieldStatusMessage, v))
+func StatusMessageContainsFold(v string) predicate.API {
+	return predicate.API(sql.FieldContainsFold(FieldStatusMessage, v))
 }
 
 // NamespaceEQ applies the EQ predicate on the "namespace" field.
-func NamespaceEQ(v string) predicate.Api {
-	return predicate.Api(sql.FieldEQ(FieldNamespace, v))
+func NamespaceEQ(v string) predicate.API {
+	return predicate.API(sql.FieldEQ(FieldNamespace, v))
 }
 
 // NamespaceNEQ applies the NEQ predicate on the "namespace" field.
-func NamespaceNEQ(v string) predicate.Api {
-	return predicate.Api(sql.FieldNEQ(FieldNamespace, v))
+func NamespaceNEQ(v string) predicate.API {
+	return predicate.API(sql.FieldNEQ(FieldNamespace, v))
 }
 
 // NamespaceIn applies the In predicate on the "namespace" field.
-func NamespaceIn(vs ...string) predicate.Api {
-	return predicate.Api(sql.FieldIn(FieldNamespace, vs...))
+func NamespaceIn(vs ...string) predicate.API {
+	return predicate.API(sql.FieldIn(FieldNamespace, vs...))
 }
 
 // NamespaceNotIn applies the NotIn predicate on the "namespace" field.
-func NamespaceNotIn(vs ...string) predicate.Api {
-	return predicate.Api(sql.FieldNotIn(FieldNamespace, vs...))
+func NamespaceNotIn(vs ...string) predicate.API {
+	return predicate.API(sql.FieldNotIn(FieldNamespace, vs...))
 }
 
 // NamespaceGT applies the GT predicate on the "namespace" field.
-func NamespaceGT(v string) predicate.Api {
-	return predicate.Api(sql.FieldGT(FieldNamespace, v))
+func NamespaceGT(v string) predicate.API {
+	return predicate.API(sql.FieldGT(FieldNamespace, v))
 }
 
 // NamespaceGTE applies the GTE predicate on the "namespace" field.
-func NamespaceGTE(v string) predicate.Api {
-	return predicate.Api(sql.FieldGTE(FieldNamespace, v))
+func NamespaceGTE(v string) predicate.API {
+	return predicate.API(sql.FieldGTE(FieldNamespace, v))
 }
 
 // NamespaceLT applies the LT predicate on the "namespace" field.
-func NamespaceLT(v string) predicate.Api {
-	return predicate.Api(sql.FieldLT(FieldNamespace, v))
+func NamespaceLT(v string) predicate.API {
+	return predicate.API(sql.FieldLT(FieldNamespace, v))
 }
 
 // NamespaceLTE applies the LTE predicate on the "namespace" field.
-func NamespaceLTE(v string) predicate.Api {
-	return predicate.Api(sql.FieldLTE(FieldNamespace, v))
+func NamespaceLTE(v string) predicate.API {
+	return predicate.API(sql.FieldLTE(FieldNamespace, v))
 }
 
 // NamespaceContains applies the Contains predicate on the "namespace" field.
-func NamespaceContains(v string) predicate.Api {
-	return predicate.Api(sql.FieldContains(FieldNamespace, v))
+func NamespaceContains(v string) predicate.API {
+	return predicate.API(sql.FieldContains(FieldNamespace, v))
 }
 
 // NamespaceHasPrefix applies the HasPrefix predicate on the "namespace" field.
-func NamespaceHasPrefix(v string) predicate.Api {
-	return predicate.Api(sql.FieldHasPrefix(FieldNamespace, v))
+func NamespaceHasPrefix(v string) predicate.API {
+	return predicate.API(sql.FieldHasPrefix(FieldNamespace, v))
 }
 
 // NamespaceHasSuffix applies the HasSuffix predicate on the "namespace" field.
-func NamespaceHasSuffix(v string) predicate.Api {
-	return predicate.Api(sql.FieldHasSuffix(FieldNamespace, v))
+func NamespaceHasSuffix(v string) predicate.API {
+	return predicate.API(sql.FieldHasSuffix(FieldNamespace, v))
 }
 
 // NamespaceEqualFold applies the EqualFold predicate on the "namespace" field.
-func NamespaceEqualFold(v string) predicate.Api {
-	return predicate.Api(sql.FieldEqualFold(FieldNamespace, v))
+func NamespaceEqualFold(v string) predicate.API {
+	return predicate.API(sql.FieldEqualFold(FieldNamespace, v))
 }
 
 // NamespaceContainsFold applies the ContainsFold predicate on the "namespace" field.
-func NamespaceContainsFold(v string) predicate.Api {
-	return predicate.Api(sql.FieldContainsFold(FieldNamespace, v))
+func NamespaceContainsFold(v string) predicate.API {
+	return predicate.API(sql.FieldContainsFold(FieldNamespace, v))
 }
 
 // BasePathEQ applies the EQ predicate on the "base_path" field.
-func BasePathEQ(v string) predicate.Api {
-	return predicate.Api(sql.FieldEQ(FieldBasePath, v))
+func BasePathEQ(v string) predicate.API {
+	return predicate.API(sql.FieldEQ(FieldBasePath, v))
 }
 
 // BasePathNEQ applies the NEQ predicate on the "base_path" field.
-func BasePathNEQ(v string) predicate.Api {
-	return predicate.Api(sql.FieldNEQ(FieldBasePath, v))
+func BasePathNEQ(v string) predicate.API {
+	return predicate.API(sql.FieldNEQ(FieldBasePath, v))
 }
 
 // BasePathIn applies the In predicate on the "base_path" field.
-func BasePathIn(vs ...string) predicate.Api {
-	return predicate.Api(sql.FieldIn(FieldBasePath, vs...))
+func BasePathIn(vs ...string) predicate.API {
+	return predicate.API(sql.FieldIn(FieldBasePath, vs...))
 }
 
 // BasePathNotIn applies the NotIn predicate on the "base_path" field.
-func BasePathNotIn(vs ...string) predicate.Api {
-	return predicate.Api(sql.FieldNotIn(FieldBasePath, vs...))
+func BasePathNotIn(vs ...string) predicate.API {
+	return predicate.API(sql.FieldNotIn(FieldBasePath, vs...))
 }
 
 // BasePathGT applies the GT predicate on the "base_path" field.
-func BasePathGT(v string) predicate.Api {
-	return predicate.Api(sql.FieldGT(FieldBasePath, v))
+func BasePathGT(v string) predicate.API {
+	return predicate.API(sql.FieldGT(FieldBasePath, v))
 }
 
 // BasePathGTE applies the GTE predicate on the "base_path" field.
-func BasePathGTE(v string) predicate.Api {
-	return predicate.Api(sql.FieldGTE(FieldBasePath, v))
+func BasePathGTE(v string) predicate.API {
+	return predicate.API(sql.FieldGTE(FieldBasePath, v))
 }
 
 // BasePathLT applies the LT predicate on the "base_path" field.
-func BasePathLT(v string) predicate.Api {
-	return predicate.Api(sql.FieldLT(FieldBasePath, v))
+func BasePathLT(v string) predicate.API {
+	return predicate.API(sql.FieldLT(FieldBasePath, v))
 }
 
 // BasePathLTE applies the LTE predicate on the "base_path" field.
-func BasePathLTE(v string) predicate.Api {
-	return predicate.Api(sql.FieldLTE(FieldBasePath, v))
+func BasePathLTE(v string) predicate.API {
+	return predicate.API(sql.FieldLTE(FieldBasePath, v))
 }
 
 // BasePathContains applies the Contains predicate on the "base_path" field.
-func BasePathContains(v string) predicate.Api {
-	return predicate.Api(sql.FieldContains(FieldBasePath, v))
+func BasePathContains(v string) predicate.API {
+	return predicate.API(sql.FieldContains(FieldBasePath, v))
 }
 
 // BasePathHasPrefix applies the HasPrefix predicate on the "base_path" field.
-func BasePathHasPrefix(v string) predicate.Api {
-	return predicate.Api(sql.FieldHasPrefix(FieldBasePath, v))
+func BasePathHasPrefix(v string) predicate.API {
+	return predicate.API(sql.FieldHasPrefix(FieldBasePath, v))
 }
 
 // BasePathHasSuffix applies the HasSuffix predicate on the "base_path" field.
-func BasePathHasSuffix(v string) predicate.Api {
-	return predicate.Api(sql.FieldHasSuffix(FieldBasePath, v))
+func BasePathHasSuffix(v string) predicate.API {
+	return predicate.API(sql.FieldHasSuffix(FieldBasePath, v))
 }
 
 // BasePathEqualFold applies the EqualFold predicate on the "base_path" field.
-func BasePathEqualFold(v string) predicate.Api {
-	return predicate.Api(sql.FieldEqualFold(FieldBasePath, v))
+func BasePathEqualFold(v string) predicate.API {
+	return predicate.API(sql.FieldEqualFold(FieldBasePath, v))
 }
 
 // BasePathContainsFold applies the ContainsFold predicate on the "base_path" field.
-func BasePathContainsFold(v string) predicate.Api {
-	return predicate.Api(sql.FieldContainsFold(FieldBasePath, v))
+func BasePathContainsFold(v string) predicate.API {
+	return predicate.API(sql.FieldContainsFold(FieldBasePath, v))
 }
 
 // VersionEQ applies the EQ predicate on the "version" field.
-func VersionEQ(v string) predicate.Api {
-	return predicate.Api(sql.FieldEQ(FieldVersion, v))
+func VersionEQ(v string) predicate.API {
+	return predicate.API(sql.FieldEQ(FieldVersion, v))
 }
 
 // VersionNEQ applies the NEQ predicate on the "version" field.
-func VersionNEQ(v string) predicate.Api {
-	return predicate.Api(sql.FieldNEQ(FieldVersion, v))
+func VersionNEQ(v string) predicate.API {
+	return predicate.API(sql.FieldNEQ(FieldVersion, v))
 }
 
 // VersionIn applies the In predicate on the "version" field.
-func VersionIn(vs ...string) predicate.Api {
-	return predicate.Api(sql.FieldIn(FieldVersion, vs...))
+func VersionIn(vs ...string) predicate.API {
+	return predicate.API(sql.FieldIn(FieldVersion, vs...))
 }
 
 // VersionNotIn applies the NotIn predicate on the "version" field.
-func VersionNotIn(vs ...string) predicate.Api {
-	return predicate.Api(sql.FieldNotIn(FieldVersion, vs...))
+func VersionNotIn(vs ...string) predicate.API {
+	return predicate.API(sql.FieldNotIn(FieldVersion, vs...))
 }
 
 // VersionGT applies the GT predicate on the "version" field.
-func VersionGT(v string) predicate.Api {
-	return predicate.Api(sql.FieldGT(FieldVersion, v))
+func VersionGT(v string) predicate.API {
+	return predicate.API(sql.FieldGT(FieldVersion, v))
 }
 
 // VersionGTE applies the GTE predicate on the "version" field.
-func VersionGTE(v string) predicate.Api {
-	return predicate.Api(sql.FieldGTE(FieldVersion, v))
+func VersionGTE(v string) predicate.API {
+	return predicate.API(sql.FieldGTE(FieldVersion, v))
 }
 
 // VersionLT applies the LT predicate on the "version" field.
-func VersionLT(v string) predicate.Api {
-	return predicate.Api(sql.FieldLT(FieldVersion, v))
+func VersionLT(v string) predicate.API {
+	return predicate.API(sql.FieldLT(FieldVersion, v))
 }
 
 // VersionLTE applies the LTE predicate on the "version" field.
-func VersionLTE(v string) predicate.Api {
-	return predicate.Api(sql.FieldLTE(FieldVersion, v))
+func VersionLTE(v string) predicate.API {
+	return predicate.API(sql.FieldLTE(FieldVersion, v))
 }
 
 // VersionContains applies the Contains predicate on the "version" field.
-func VersionContains(v string) predicate.Api {
-	return predicate.Api(sql.FieldContains(FieldVersion, v))
+func VersionContains(v string) predicate.API {
+	return predicate.API(sql.FieldContains(FieldVersion, v))
 }
 
 // VersionHasPrefix applies the HasPrefix predicate on the "version" field.
-func VersionHasPrefix(v string) predicate.Api {
-	return predicate.Api(sql.FieldHasPrefix(FieldVersion, v))
+func VersionHasPrefix(v string) predicate.API {
+	return predicate.API(sql.FieldHasPrefix(FieldVersion, v))
 }
 
 // VersionHasSuffix applies the HasSuffix predicate on the "version" field.
-func VersionHasSuffix(v string) predicate.Api {
-	return predicate.Api(sql.FieldHasSuffix(FieldVersion, v))
+func VersionHasSuffix(v string) predicate.API {
+	return predicate.API(sql.FieldHasSuffix(FieldVersion, v))
 }
 
 // VersionEqualFold applies the EqualFold predicate on the "version" field.
-func VersionEqualFold(v string) predicate.Api {
-	return predicate.Api(sql.FieldEqualFold(FieldVersion, v))
+func VersionEqualFold(v string) predicate.API {
+	return predicate.API(sql.FieldEqualFold(FieldVersion, v))
 }
 
 // VersionContainsFold applies the ContainsFold predicate on the "version" field.
-func VersionContainsFold(v string) predicate.Api {
-	return predicate.Api(sql.FieldContainsFold(FieldVersion, v))
+func VersionContainsFold(v string) predicate.API {
+	return predicate.API(sql.FieldContainsFold(FieldVersion, v))
 }
 
 // CategoryEQ applies the EQ predicate on the "category" field.
-func CategoryEQ(v string) predicate.Api {
-	return predicate.Api(sql.FieldEQ(FieldCategory, v))
+func CategoryEQ(v string) predicate.API {
+	return predicate.API(sql.FieldEQ(FieldCategory, v))
 }
 
 // CategoryNEQ applies the NEQ predicate on the "category" field.
-func CategoryNEQ(v string) predicate.Api {
-	return predicate.Api(sql.FieldNEQ(FieldCategory, v))
+func CategoryNEQ(v string) predicate.API {
+	return predicate.API(sql.FieldNEQ(FieldCategory, v))
 }
 
 // CategoryIn applies the In predicate on the "category" field.
-func CategoryIn(vs ...string) predicate.Api {
-	return predicate.Api(sql.FieldIn(FieldCategory, vs...))
+func CategoryIn(vs ...string) predicate.API {
+	return predicate.API(sql.FieldIn(FieldCategory, vs...))
 }
 
 // CategoryNotIn applies the NotIn predicate on the "category" field.
-func CategoryNotIn(vs ...string) predicate.Api {
-	return predicate.Api(sql.FieldNotIn(FieldCategory, vs...))
+func CategoryNotIn(vs ...string) predicate.API {
+	return predicate.API(sql.FieldNotIn(FieldCategory, vs...))
 }
 
 // CategoryGT applies the GT predicate on the "category" field.
-func CategoryGT(v string) predicate.Api {
-	return predicate.Api(sql.FieldGT(FieldCategory, v))
+func CategoryGT(v string) predicate.API {
+	return predicate.API(sql.FieldGT(FieldCategory, v))
 }
 
 // CategoryGTE applies the GTE predicate on the "category" field.
-func CategoryGTE(v string) predicate.Api {
-	return predicate.Api(sql.FieldGTE(FieldCategory, v))
+func CategoryGTE(v string) predicate.API {
+	return predicate.API(sql.FieldGTE(FieldCategory, v))
 }
 
 // CategoryLT applies the LT predicate on the "category" field.
-func CategoryLT(v string) predicate.Api {
-	return predicate.Api(sql.FieldLT(FieldCategory, v))
+func CategoryLT(v string) predicate.API {
+	return predicate.API(sql.FieldLT(FieldCategory, v))
 }
 
 // CategoryLTE applies the LTE predicate on the "category" field.
-func CategoryLTE(v string) predicate.Api {
-	return predicate.Api(sql.FieldLTE(FieldCategory, v))
+func CategoryLTE(v string) predicate.API {
+	return predicate.API(sql.FieldLTE(FieldCategory, v))
 }
 
 // CategoryContains applies the Contains predicate on the "category" field.
-func CategoryContains(v string) predicate.Api {
-	return predicate.Api(sql.FieldContains(FieldCategory, v))
+func CategoryContains(v string) predicate.API {
+	return predicate.API(sql.FieldContains(FieldCategory, v))
 }
 
 // CategoryHasPrefix applies the HasPrefix predicate on the "category" field.
-func CategoryHasPrefix(v string) predicate.Api {
-	return predicate.Api(sql.FieldHasPrefix(FieldCategory, v))
+func CategoryHasPrefix(v string) predicate.API {
+	return predicate.API(sql.FieldHasPrefix(FieldCategory, v))
 }
 
 // CategoryHasSuffix applies the HasSuffix predicate on the "category" field.
-func CategoryHasSuffix(v string) predicate.Api {
-	return predicate.Api(sql.FieldHasSuffix(FieldCategory, v))
+func CategoryHasSuffix(v string) predicate.API {
+	return predicate.API(sql.FieldHasSuffix(FieldCategory, v))
 }
 
 // CategoryIsNil applies the IsNil predicate on the "category" field.
-func CategoryIsNil() predicate.Api {
-	return predicate.Api(sql.FieldIsNull(FieldCategory))
+func CategoryIsNil() predicate.API {
+	return predicate.API(sql.FieldIsNull(FieldCategory))
 }
 
 // CategoryNotNil applies the NotNil predicate on the "category" field.
-func CategoryNotNil() predicate.Api {
-	return predicate.Api(sql.FieldNotNull(FieldCategory))
+func CategoryNotNil() predicate.API {
+	return predicate.API(sql.FieldNotNull(FieldCategory))
 }
 
 // CategoryEqualFold applies the EqualFold predicate on the "category" field.
-func CategoryEqualFold(v string) predicate.Api {
-	return predicate.Api(sql.FieldEqualFold(FieldCategory, v))
+func CategoryEqualFold(v string) predicate.API {
+	return predicate.API(sql.FieldEqualFold(FieldCategory, v))
 }
 
 // CategoryContainsFold applies the ContainsFold predicate on the "category" field.
-func CategoryContainsFold(v string) predicate.Api {
-	return predicate.Api(sql.FieldContainsFold(FieldCategory, v))
+func CategoryContainsFold(v string) predicate.API {
+	return predicate.API(sql.FieldContainsFold(FieldCategory, v))
 }
 
-// Oauth2ScopesIsNil applies the IsNil predicate on the "oauth2_scopes" field.
-func Oauth2ScopesIsNil() predicate.Api {
-	return predicate.Api(sql.FieldIsNull(FieldOauth2Scopes))
+// OAuth2ScopesIsNil applies the IsNil predicate on the "OAuth2_scopes" field.
+func OAuth2ScopesIsNil() predicate.API {
+	return predicate.API(sql.FieldIsNull(FieldOAuth2Scopes))
 }
 
-// Oauth2ScopesNotNil applies the NotNil predicate on the "oauth2_scopes" field.
-func Oauth2ScopesNotNil() predicate.Api {
-	return predicate.Api(sql.FieldNotNull(FieldOauth2Scopes))
+// OAuth2ScopesNotNil applies the NotNil predicate on the "OAuth2_scopes" field.
+func OAuth2ScopesNotNil() predicate.API {
+	return predicate.API(sql.FieldNotNull(FieldOAuth2Scopes))
 }
 
 // XVendorEQ applies the EQ predicate on the "x_vendor" field.
-func XVendorEQ(v bool) predicate.Api {
-	return predicate.Api(sql.FieldEQ(FieldXVendor, v))
+func XVendorEQ(v bool) predicate.API {
+	return predicate.API(sql.FieldEQ(FieldXVendor, v))
 }
 
 // XVendorNEQ applies the NEQ predicate on the "x_vendor" field.
-func XVendorNEQ(v bool) predicate.Api {
-	return predicate.Api(sql.FieldNEQ(FieldXVendor, v))
+func XVendorNEQ(v bool) predicate.API {
+	return predicate.API(sql.FieldNEQ(FieldXVendor, v))
 }
 
 // SpecificationEQ applies the EQ predicate on the "specification" field.
-func SpecificationEQ(v string) predicate.Api {
-	return predicate.Api(sql.FieldEQ(FieldSpecification, v))
+func SpecificationEQ(v string) predicate.API {
+	return predicate.API(sql.FieldEQ(FieldSpecification, v))
 }
 
 // SpecificationNEQ applies the NEQ predicate on the "specification" field.
-func SpecificationNEQ(v string) predicate.Api {
-	return predicate.Api(sql.FieldNEQ(FieldSpecification, v))
+func SpecificationNEQ(v string) predicate.API {
+	return predicate.API(sql.FieldNEQ(FieldSpecification, v))
 }
 
 // SpecificationIn applies the In predicate on the "specification" field.
-func SpecificationIn(vs ...string) predicate.Api {
-	return predicate.Api(sql.FieldIn(FieldSpecification, vs...))
+func SpecificationIn(vs ...string) predicate.API {
+	return predicate.API(sql.FieldIn(FieldSpecification, vs...))
 }
 
 // SpecificationNotIn applies the NotIn predicate on the "specification" field.
-func SpecificationNotIn(vs ...string) predicate.Api {
-	return predicate.Api(sql.FieldNotIn(FieldSpecification, vs...))
+func SpecificationNotIn(vs ...string) predicate.API {
+	return predicate.API(sql.FieldNotIn(FieldSpecification, vs...))
 }
 
 // SpecificationGT applies the GT predicate on the "specification" field.
-func SpecificationGT(v string) predicate.Api {
-	return predicate.Api(sql.FieldGT(FieldSpecification, v))
+func SpecificationGT(v string) predicate.API {
+	return predicate.API(sql.FieldGT(FieldSpecification, v))
 }
 
 // SpecificationGTE applies the GTE predicate on the "specification" field.
-func SpecificationGTE(v string) predicate.Api {
-	return predicate.Api(sql.FieldGTE(FieldSpecification, v))
+func SpecificationGTE(v string) predicate.API {
+	return predicate.API(sql.FieldGTE(FieldSpecification, v))
 }
 
 // SpecificationLT applies the LT predicate on the "specification" field.
-func SpecificationLT(v string) predicate.Api {
-	return predicate.Api(sql.FieldLT(FieldSpecification, v))
+func SpecificationLT(v string) predicate.API {
+	return predicate.API(sql.FieldLT(FieldSpecification, v))
 }
 
 // SpecificationLTE applies the LTE predicate on the "specification" field.
-func SpecificationLTE(v string) predicate.Api {
-	return predicate.Api(sql.FieldLTE(FieldSpecification, v))
+func SpecificationLTE(v string) predicate.API {
+	return predicate.API(sql.FieldLTE(FieldSpecification, v))
 }
 
 // SpecificationContains applies the Contains predicate on the "specification" field.
-func SpecificationContains(v string) predicate.Api {
-	return predicate.Api(sql.FieldContains(FieldSpecification, v))
+func SpecificationContains(v string) predicate.API {
+	return predicate.API(sql.FieldContains(FieldSpecification, v))
 }
 
 // SpecificationHasPrefix applies the HasPrefix predicate on the "specification" field.
-func SpecificationHasPrefix(v string) predicate.Api {
-	return predicate.Api(sql.FieldHasPrefix(FieldSpecification, v))
+func SpecificationHasPrefix(v string) predicate.API {
+	return predicate.API(sql.FieldHasPrefix(FieldSpecification, v))
 }
 
 // SpecificationHasSuffix applies the HasSuffix predicate on the "specification" field.
-func SpecificationHasSuffix(v string) predicate.Api {
-	return predicate.Api(sql.FieldHasSuffix(FieldSpecification, v))
+func SpecificationHasSuffix(v string) predicate.API {
+	return predicate.API(sql.FieldHasSuffix(FieldSpecification, v))
 }
 
 // SpecificationIsNil applies the IsNil predicate on the "specification" field.
-func SpecificationIsNil() predicate.Api {
-	return predicate.Api(sql.FieldIsNull(FieldSpecification))
+func SpecificationIsNil() predicate.API {
+	return predicate.API(sql.FieldIsNull(FieldSpecification))
 }
 
 // SpecificationNotNil applies the NotNil predicate on the "specification" field.
-func SpecificationNotNil() predicate.Api {
-	return predicate.Api(sql.FieldNotNull(FieldSpecification))
+func SpecificationNotNil() predicate.API {
+	return predicate.API(sql.FieldNotNull(FieldSpecification))
 }
 
 // SpecificationEqualFold applies the EqualFold predicate on the "specification" field.
-func SpecificationEqualFold(v string) predicate.Api {
-	return predicate.Api(sql.FieldEqualFold(FieldSpecification, v))
+func SpecificationEqualFold(v string) predicate.API {
+	return predicate.API(sql.FieldEqualFold(FieldSpecification, v))
 }
 
 // SpecificationContainsFold applies the ContainsFold predicate on the "specification" field.
-func SpecificationContainsFold(v string) predicate.Api {
-	return predicate.Api(sql.FieldContainsFold(FieldSpecification, v))
+func SpecificationContainsFold(v string) predicate.API {
+	return predicate.API(sql.FieldContainsFold(FieldSpecification, v))
 }
 
 // ActiveEQ applies the EQ predicate on the "active" field.
-func ActiveEQ(v bool) predicate.Api {
-	return predicate.Api(sql.FieldEQ(FieldActive, v))
+func ActiveEQ(v bool) predicate.API {
+	return predicate.API(sql.FieldEQ(FieldActive, v))
 }
 
 // ActiveNEQ applies the NEQ predicate on the "active" field.
-func ActiveNEQ(v bool) predicate.Api {
-	return predicate.Api(sql.FieldNEQ(FieldActive, v))
+func ActiveNEQ(v bool) predicate.API {
+	return predicate.API(sql.FieldNEQ(FieldActive, v))
 }
 
 // HasOwner applies the HasEdge predicate on the "owner" edge.
-func HasOwner() predicate.Api {
-	return predicate.Api(func(s *sql.Selector) {
+func HasOwner() predicate.API {
+	return predicate.API(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, OwnerTable, OwnerColumn),
@@ -680,8 +680,8 @@ func HasOwner() predicate.Api {
 }
 
 // HasOwnerWith applies the HasEdge predicate on the "owner" edge with a given conditions (other predicates).
-func HasOwnerWith(preds ...predicate.Team) predicate.Api {
-	return predicate.Api(func(s *sql.Selector) {
+func HasOwnerWith(preds ...predicate.Team) predicate.API {
+	return predicate.API(func(s *sql.Selector) {
 		step := newOwnerStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
@@ -692,8 +692,8 @@ func HasOwnerWith(preds ...predicate.Team) predicate.Api {
 }
 
 // HasExposures applies the HasEdge predicate on the "exposures" edge.
-func HasExposures() predicate.Api {
-	return predicate.Api(func(s *sql.Selector) {
+func HasExposures() predicate.API {
+	return predicate.API(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, ExposuresTable, ExposuresColumn),
@@ -703,8 +703,8 @@ func HasExposures() predicate.Api {
 }
 
 // HasExposuresWith applies the HasEdge predicate on the "exposures" edge with a given conditions (other predicates).
-func HasExposuresWith(preds ...predicate.ApiExposure) predicate.Api {
-	return predicate.Api(func(s *sql.Selector) {
+func HasExposuresWith(preds ...predicate.APIExposure) predicate.API {
+	return predicate.API(func(s *sql.Selector) {
 		step := newExposuresStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
@@ -715,16 +715,16 @@ func HasExposuresWith(preds ...predicate.ApiExposure) predicate.Api {
 }
 
 // And groups predicates with the AND operator between them.
-func And(predicates ...predicate.Api) predicate.Api {
-	return predicate.Api(sql.AndPredicates(predicates...))
+func And(predicates ...predicate.API) predicate.API {
+	return predicate.API(sql.AndPredicates(predicates...))
 }
 
 // Or groups predicates with the OR operator between them.
-func Or(predicates ...predicate.Api) predicate.Api {
-	return predicate.Api(sql.OrPredicates(predicates...))
+func Or(predicates ...predicate.API) predicate.API {
+	return predicate.API(sql.OrPredicates(predicates...))
 }
 
 // Not applies the not operator on the given predicate.
-func Not(p predicate.Api) predicate.Api {
-	return predicate.Api(sql.NotPredicates(p))
+func Not(p predicate.API) predicate.API {
+	return predicate.API(sql.NotPredicates(p))
 }

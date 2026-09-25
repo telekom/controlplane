@@ -43,18 +43,18 @@ type Client struct {
 	config
 	// Schema is the client for creating, migrating and dropping schema.
 	Schema *migrate.Schema
+	// API is the client for interacting with the API builders.
+	API *APIClient
+	// APIExposure is the client for interacting with the APIExposure builders.
+	APIExposure *APIExposureClient
+	// APISubscription is the client for interacting with the APISubscription builders.
+	APISubscription *APISubscriptionClient
 	// AgentCard is the client for interacting with the AgentCard builders.
 	AgentCard *AgentCardClient
 	// AgenticExposure is the client for interacting with the AgenticExposure builders.
 	AgenticExposure *AgenticExposureClient
 	// AgenticSubscription is the client for interacting with the AgenticSubscription builders.
 	AgenticSubscription *AgenticSubscriptionClient
-	// Api is the client for interacting with the Api builders.
-	Api *APIClient
-	// ApiExposure is the client for interacting with the ApiExposure builders.
-	ApiExposure *ApiExposureClient
-	// ApiSubscription is the client for interacting with the ApiSubscription builders.
-	ApiSubscription *ApiSubscriptionClient
 	// Application is the client for interacting with the Application builders.
 	Application *ApplicationClient
 	// Approval is the client for interacting with the Approval builders.
@@ -69,8 +69,8 @@ type Client struct {
 	EventType *EventTypeClient
 	// Group is the client for interacting with the Group builders.
 	Group *GroupClient
-	// McpServer is the client for interacting with the McpServer builders.
-	McpServer *McpServerClient
+	// MCPServer is the client for interacting with the MCPServer builders.
+	MCPServer *MCPServerClient
 	// Member is the client for interacting with the Member builders.
 	Member *MemberClient
 	// PermissionSet is the client for interacting with the PermissionSet builders.
@@ -92,12 +92,12 @@ func NewClient(opts ...Option) *Client {
 
 func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
+	c.API = NewAPIClient(c.config)
+	c.APIExposure = NewAPIExposureClient(c.config)
+	c.APISubscription = NewAPISubscriptionClient(c.config)
 	c.AgentCard = NewAgentCardClient(c.config)
 	c.AgenticExposure = NewAgenticExposureClient(c.config)
 	c.AgenticSubscription = NewAgenticSubscriptionClient(c.config)
-	c.Api = NewAPIClient(c.config)
-	c.ApiExposure = NewApiExposureClient(c.config)
-	c.ApiSubscription = NewApiSubscriptionClient(c.config)
 	c.Application = NewApplicationClient(c.config)
 	c.Approval = NewApprovalClient(c.config)
 	c.ApprovalRequest = NewApprovalRequestClient(c.config)
@@ -105,7 +105,7 @@ func (c *Client) init() {
 	c.EventSubscription = NewEventSubscriptionClient(c.config)
 	c.EventType = NewEventTypeClient(c.config)
 	c.Group = NewGroupClient(c.config)
-	c.McpServer = NewMcpServerClient(c.config)
+	c.MCPServer = NewMCPServerClient(c.config)
 	c.Member = NewMemberClient(c.config)
 	c.PermissionSet = NewPermissionSetClient(c.config)
 	c.Team = NewTeamClient(c.config)
@@ -202,12 +202,12 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	return &Tx{
 		ctx:                 ctx,
 		config:              cfg,
+		API:                 NewAPIClient(cfg),
+		APIExposure:         NewAPIExposureClient(cfg),
+		APISubscription:     NewAPISubscriptionClient(cfg),
 		AgentCard:           NewAgentCardClient(cfg),
 		AgenticExposure:     NewAgenticExposureClient(cfg),
 		AgenticSubscription: NewAgenticSubscriptionClient(cfg),
-		Api:                 NewAPIClient(cfg),
-		ApiExposure:         NewApiExposureClient(cfg),
-		ApiSubscription:     NewApiSubscriptionClient(cfg),
 		Application:         NewApplicationClient(cfg),
 		Approval:            NewApprovalClient(cfg),
 		ApprovalRequest:     NewApprovalRequestClient(cfg),
@@ -215,7 +215,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		EventSubscription:   NewEventSubscriptionClient(cfg),
 		EventType:           NewEventTypeClient(cfg),
 		Group:               NewGroupClient(cfg),
-		McpServer:           NewMcpServerClient(cfg),
+		MCPServer:           NewMCPServerClient(cfg),
 		Member:              NewMemberClient(cfg),
 		PermissionSet:       NewPermissionSetClient(cfg),
 		Team:                NewTeamClient(cfg),
@@ -239,12 +239,12 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	return &Tx{
 		ctx:                 ctx,
 		config:              cfg,
+		API:                 NewAPIClient(cfg),
+		APIExposure:         NewAPIExposureClient(cfg),
+		APISubscription:     NewAPISubscriptionClient(cfg),
 		AgentCard:           NewAgentCardClient(cfg),
 		AgenticExposure:     NewAgenticExposureClient(cfg),
 		AgenticSubscription: NewAgenticSubscriptionClient(cfg),
-		Api:                 NewAPIClient(cfg),
-		ApiExposure:         NewApiExposureClient(cfg),
-		ApiSubscription:     NewApiSubscriptionClient(cfg),
 		Application:         NewApplicationClient(cfg),
 		Approval:            NewApprovalClient(cfg),
 		ApprovalRequest:     NewApprovalRequestClient(cfg),
@@ -252,7 +252,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		EventSubscription:   NewEventSubscriptionClient(cfg),
 		EventType:           NewEventTypeClient(cfg),
 		Group:               NewGroupClient(cfg),
-		McpServer:           NewMcpServerClient(cfg),
+		MCPServer:           NewMCPServerClient(cfg),
 		Member:              NewMemberClient(cfg),
 		PermissionSet:       NewPermissionSetClient(cfg),
 		Team:                NewTeamClient(cfg),
@@ -263,7 +263,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 // Debug returns a new debug-client. It's used to get verbose logging on specific operations.
 //
 //	client.Debug().
-//		AgentCard.
+//		API.
 //		Query().
 //		Count(ctx)
 func (c *Client) Debug() *Client {
@@ -286,9 +286,9 @@ func (c *Client) Close() error {
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
-		c.AgentCard, c.AgenticExposure, c.AgenticSubscription, c.Api, c.ApiExposure,
-		c.ApiSubscription, c.Application, c.Approval, c.ApprovalRequest,
-		c.EventExposure, c.EventSubscription, c.EventType, c.Group, c.McpServer,
+		c.API, c.APIExposure, c.APISubscription, c.AgentCard, c.AgenticExposure,
+		c.AgenticSubscription, c.Application, c.Approval, c.ApprovalRequest,
+		c.EventExposure, c.EventSubscription, c.EventType, c.Group, c.MCPServer,
 		c.Member, c.PermissionSet, c.Team, c.Zone,
 	} {
 		n.Use(hooks...)
@@ -299,9 +299,9 @@ func (c *Client) Use(hooks ...Hook) {
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
-		c.AgentCard, c.AgenticExposure, c.AgenticSubscription, c.Api, c.ApiExposure,
-		c.ApiSubscription, c.Application, c.Approval, c.ApprovalRequest,
-		c.EventExposure, c.EventSubscription, c.EventType, c.Group, c.McpServer,
+		c.API, c.APIExposure, c.APISubscription, c.AgentCard, c.AgenticExposure,
+		c.AgenticSubscription, c.Application, c.Approval, c.ApprovalRequest,
+		c.EventExposure, c.EventSubscription, c.EventType, c.Group, c.MCPServer,
 		c.Member, c.PermissionSet, c.Team, c.Zone,
 	} {
 		n.Intercept(interceptors...)
@@ -311,18 +311,18 @@ func (c *Client) Intercept(interceptors ...Interceptor) {
 // Mutate implements the ent.Mutator interface.
 func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 	switch m := m.(type) {
+	case *APIMutation:
+		return c.API.mutate(ctx, m)
+	case *APIExposureMutation:
+		return c.APIExposure.mutate(ctx, m)
+	case *APISubscriptionMutation:
+		return c.APISubscription.mutate(ctx, m)
 	case *AgentCardMutation:
 		return c.AgentCard.mutate(ctx, m)
 	case *AgenticExposureMutation:
 		return c.AgenticExposure.mutate(ctx, m)
 	case *AgenticSubscriptionMutation:
 		return c.AgenticSubscription.mutate(ctx, m)
-	case *APIMutation:
-		return c.Api.mutate(ctx, m)
-	case *ApiExposureMutation:
-		return c.ApiExposure.mutate(ctx, m)
-	case *ApiSubscriptionMutation:
-		return c.ApiSubscription.mutate(ctx, m)
 	case *ApplicationMutation:
 		return c.Application.mutate(ctx, m)
 	case *ApprovalMutation:
@@ -337,8 +337,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.EventType.mutate(ctx, m)
 	case *GroupMutation:
 		return c.Group.mutate(ctx, m)
-	case *McpServerMutation:
-		return c.McpServer.mutate(ctx, m)
+	case *MCPServerMutation:
+		return c.MCPServer.mutate(ctx, m)
 	case *MemberMutation:
 		return c.Member.mutate(ctx, m)
 	case *PermissionSetMutation:
@@ -349,6 +349,568 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.Zone.mutate(ctx, m)
 	default:
 		return nil, fmt.Errorf("ent: unknown mutation type %T", m)
+	}
+}
+
+// APIClient is a client for the API schema.
+type APIClient struct {
+	config
+}
+
+// NewAPIClient returns a client for the API from the given config.
+func NewAPIClient(c config) *APIClient {
+	return &APIClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `api.Hooks(f(g(h())))`.
+func (c *APIClient) Use(hooks ...Hook) {
+	c.hooks.API = append(c.hooks.API, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `api.Intercept(f(g(h())))`.
+func (c *APIClient) Intercept(interceptors ...Interceptor) {
+	c.inters.API = append(c.inters.API, interceptors...)
+}
+
+// Create returns a builder for creating a API entity.
+func (c *APIClient) Create() *APICreate {
+	mutation := newAPIMutation(c.config, OpCreate)
+	return &APICreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of API entities.
+func (c *APIClient) CreateBulk(builders ...*APICreate) *APICreateBulk {
+	return &APICreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *APIClient) MapCreateBulk(slice any, setFunc func(*APICreate, int)) *APICreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &APICreateBulk{err: fmt.Errorf("calling to APIClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*APICreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &APICreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for API.
+func (c *APIClient) Update() *APIUpdate {
+	mutation := newAPIMutation(c.config, OpUpdate)
+	return &APIUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *APIClient) UpdateOne(_m *API) *APIUpdateOne {
+	mutation := newAPIMutation(c.config, OpUpdateOne, withAPI(_m))
+	return &APIUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *APIClient) UpdateOneID(id int) *APIUpdateOne {
+	mutation := newAPIMutation(c.config, OpUpdateOne, withAPIID(id))
+	return &APIUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for API.
+func (c *APIClient) Delete() *APIDelete {
+	mutation := newAPIMutation(c.config, OpDelete)
+	return &APIDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *APIClient) DeleteOne(_m *API) *APIDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *APIClient) DeleteOneID(id int) *APIDeleteOne {
+	builder := c.Delete().Where(api.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &APIDeleteOne{builder}
+}
+
+// Query returns a query builder for API.
+func (c *APIClient) Query() *APIQuery {
+	return &APIQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeAPI},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a API entity by its id.
+func (c *APIClient) Get(ctx context.Context, id int) (*API, error) {
+	return c.Query().Where(api.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *APIClient) GetX(ctx context.Context, id int) *API {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryOwner queries the owner edge of a API.
+func (c *APIClient) QueryOwner(_m *API) *TeamQuery {
+	query := (&TeamClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(api.Table, api.FieldID, id),
+			sqlgraph.To(team.Table, team.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, api.OwnerTable, api.OwnerColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryExposures queries the exposures edge of a API.
+func (c *APIClient) QueryExposures(_m *API) *APIExposureQuery {
+	query := (&APIExposureClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(api.Table, api.FieldID, id),
+			sqlgraph.To(apiexposure.Table, apiexposure.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, api.ExposuresTable, api.ExposuresColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *APIClient) Hooks() []Hook {
+	hooks := c.hooks.API
+	return append(hooks[:len(hooks):len(hooks)], api.Hooks[:]...)
+}
+
+// Interceptors returns the client interceptors.
+func (c *APIClient) Interceptors() []Interceptor {
+	return c.inters.API
+}
+
+func (c *APIClient) mutate(ctx context.Context, m *APIMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&APICreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&APIUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&APIUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&APIDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown API mutation op: %q", m.Op())
+	}
+}
+
+// APIExposureClient is a client for the APIExposure schema.
+type APIExposureClient struct {
+	config
+}
+
+// NewAPIExposureClient returns a client for the APIExposure from the given config.
+func NewAPIExposureClient(c config) *APIExposureClient {
+	return &APIExposureClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `apiexposure.Hooks(f(g(h())))`.
+func (c *APIExposureClient) Use(hooks ...Hook) {
+	c.hooks.APIExposure = append(c.hooks.APIExposure, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `apiexposure.Intercept(f(g(h())))`.
+func (c *APIExposureClient) Intercept(interceptors ...Interceptor) {
+	c.inters.APIExposure = append(c.inters.APIExposure, interceptors...)
+}
+
+// Create returns a builder for creating a APIExposure entity.
+func (c *APIExposureClient) Create() *APIExposureCreate {
+	mutation := newAPIExposureMutation(c.config, OpCreate)
+	return &APIExposureCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of APIExposure entities.
+func (c *APIExposureClient) CreateBulk(builders ...*APIExposureCreate) *APIExposureCreateBulk {
+	return &APIExposureCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *APIExposureClient) MapCreateBulk(slice any, setFunc func(*APIExposureCreate, int)) *APIExposureCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &APIExposureCreateBulk{err: fmt.Errorf("calling to APIExposureClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*APIExposureCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &APIExposureCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for APIExposure.
+func (c *APIExposureClient) Update() *APIExposureUpdate {
+	mutation := newAPIExposureMutation(c.config, OpUpdate)
+	return &APIExposureUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *APIExposureClient) UpdateOne(_m *APIExposure) *APIExposureUpdateOne {
+	mutation := newAPIExposureMutation(c.config, OpUpdateOne, withAPIExposure(_m))
+	return &APIExposureUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *APIExposureClient) UpdateOneID(id int) *APIExposureUpdateOne {
+	mutation := newAPIExposureMutation(c.config, OpUpdateOne, withAPIExposureID(id))
+	return &APIExposureUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for APIExposure.
+func (c *APIExposureClient) Delete() *APIExposureDelete {
+	mutation := newAPIExposureMutation(c.config, OpDelete)
+	return &APIExposureDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *APIExposureClient) DeleteOne(_m *APIExposure) *APIExposureDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *APIExposureClient) DeleteOneID(id int) *APIExposureDeleteOne {
+	builder := c.Delete().Where(apiexposure.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &APIExposureDeleteOne{builder}
+}
+
+// Query returns a query builder for APIExposure.
+func (c *APIExposureClient) Query() *APIExposureQuery {
+	return &APIExposureQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeAPIExposure},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a APIExposure entity by its id.
+func (c *APIExposureClient) Get(ctx context.Context, id int) (*APIExposure, error) {
+	return c.Query().Where(apiexposure.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *APIExposureClient) GetX(ctx context.Context, id int) *APIExposure {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryOwner queries the owner edge of a APIExposure.
+func (c *APIExposureClient) QueryOwner(_m *APIExposure) *ApplicationQuery {
+	query := (&ApplicationClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(apiexposure.Table, apiexposure.FieldID, id),
+			sqlgraph.To(application.Table, application.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, apiexposure.OwnerTable, apiexposure.OwnerColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryAPI queries the api edge of a APIExposure.
+func (c *APIExposureClient) QueryAPI(_m *APIExposure) *APIQuery {
+	query := (&APIClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(apiexposure.Table, apiexposure.FieldID, id),
+			sqlgraph.To(api.Table, api.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, apiexposure.APITable, apiexposure.APIColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QuerySubscriptions queries the subscriptions edge of a APIExposure.
+func (c *APIExposureClient) QuerySubscriptions(_m *APIExposure) *APISubscriptionQuery {
+	query := (&APISubscriptionClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(apiexposure.Table, apiexposure.FieldID, id),
+			sqlgraph.To(apisubscription.Table, apisubscription.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, apiexposure.SubscriptionsTable, apiexposure.SubscriptionsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *APIExposureClient) Hooks() []Hook {
+	hooks := c.hooks.APIExposure
+	return append(hooks[:len(hooks):len(hooks)], apiexposure.Hooks[:]...)
+}
+
+// Interceptors returns the client interceptors.
+func (c *APIExposureClient) Interceptors() []Interceptor {
+	return c.inters.APIExposure
+}
+
+func (c *APIExposureClient) mutate(ctx context.Context, m *APIExposureMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&APIExposureCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&APIExposureUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&APIExposureUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&APIExposureDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown APIExposure mutation op: %q", m.Op())
+	}
+}
+
+// APISubscriptionClient is a client for the APISubscription schema.
+type APISubscriptionClient struct {
+	config
+}
+
+// NewAPISubscriptionClient returns a client for the APISubscription from the given config.
+func NewAPISubscriptionClient(c config) *APISubscriptionClient {
+	return &APISubscriptionClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `apisubscription.Hooks(f(g(h())))`.
+func (c *APISubscriptionClient) Use(hooks ...Hook) {
+	c.hooks.APISubscription = append(c.hooks.APISubscription, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `apisubscription.Intercept(f(g(h())))`.
+func (c *APISubscriptionClient) Intercept(interceptors ...Interceptor) {
+	c.inters.APISubscription = append(c.inters.APISubscription, interceptors...)
+}
+
+// Create returns a builder for creating a APISubscription entity.
+func (c *APISubscriptionClient) Create() *APISubscriptionCreate {
+	mutation := newAPISubscriptionMutation(c.config, OpCreate)
+	return &APISubscriptionCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of APISubscription entities.
+func (c *APISubscriptionClient) CreateBulk(builders ...*APISubscriptionCreate) *APISubscriptionCreateBulk {
+	return &APISubscriptionCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *APISubscriptionClient) MapCreateBulk(slice any, setFunc func(*APISubscriptionCreate, int)) *APISubscriptionCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &APISubscriptionCreateBulk{err: fmt.Errorf("calling to APISubscriptionClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*APISubscriptionCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &APISubscriptionCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for APISubscription.
+func (c *APISubscriptionClient) Update() *APISubscriptionUpdate {
+	mutation := newAPISubscriptionMutation(c.config, OpUpdate)
+	return &APISubscriptionUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *APISubscriptionClient) UpdateOne(_m *APISubscription) *APISubscriptionUpdateOne {
+	mutation := newAPISubscriptionMutation(c.config, OpUpdateOne, withAPISubscription(_m))
+	return &APISubscriptionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *APISubscriptionClient) UpdateOneID(id int) *APISubscriptionUpdateOne {
+	mutation := newAPISubscriptionMutation(c.config, OpUpdateOne, withAPISubscriptionID(id))
+	return &APISubscriptionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for APISubscription.
+func (c *APISubscriptionClient) Delete() *APISubscriptionDelete {
+	mutation := newAPISubscriptionMutation(c.config, OpDelete)
+	return &APISubscriptionDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *APISubscriptionClient) DeleteOne(_m *APISubscription) *APISubscriptionDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *APISubscriptionClient) DeleteOneID(id int) *APISubscriptionDeleteOne {
+	builder := c.Delete().Where(apisubscription.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &APISubscriptionDeleteOne{builder}
+}
+
+// Query returns a query builder for APISubscription.
+func (c *APISubscriptionClient) Query() *APISubscriptionQuery {
+	return &APISubscriptionQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeAPISubscription},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a APISubscription entity by its id.
+func (c *APISubscriptionClient) Get(ctx context.Context, id int) (*APISubscription, error) {
+	return c.Query().Where(apisubscription.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *APISubscriptionClient) GetX(ctx context.Context, id int) *APISubscription {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryOwner queries the owner edge of a APISubscription.
+func (c *APISubscriptionClient) QueryOwner(_m *APISubscription) *ApplicationQuery {
+	query := (&ApplicationClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(apisubscription.Table, apisubscription.FieldID, id),
+			sqlgraph.To(application.Table, application.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, apisubscription.OwnerTable, apisubscription.OwnerColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryTarget queries the target edge of a APISubscription.
+func (c *APISubscriptionClient) QueryTarget(_m *APISubscription) *APIExposureQuery {
+	query := (&APIExposureClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(apisubscription.Table, apisubscription.FieldID, id),
+			sqlgraph.To(apiexposure.Table, apiexposure.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, apisubscription.TargetTable, apisubscription.TargetColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryFailoverZones queries the failover_zones edge of a APISubscription.
+func (c *APISubscriptionClient) QueryFailoverZones(_m *APISubscription) *ZoneQuery {
+	query := (&ZoneClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(apisubscription.Table, apisubscription.FieldID, id),
+			sqlgraph.To(zone.Table, zone.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, apisubscription.FailoverZonesTable, apisubscription.FailoverZonesColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryApproval queries the approval edge of a APISubscription.
+func (c *APISubscriptionClient) QueryApproval(_m *APISubscription) *ApprovalQuery {
+	query := (&ApprovalClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(apisubscription.Table, apisubscription.FieldID, id),
+			sqlgraph.To(approval.Table, approval.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, false, apisubscription.ApprovalTable, apisubscription.ApprovalColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryApprovalRequests queries the approval_requests edge of a APISubscription.
+func (c *APISubscriptionClient) QueryApprovalRequests(_m *APISubscription) *ApprovalRequestQuery {
+	query := (&ApprovalRequestClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(apisubscription.Table, apisubscription.FieldID, id),
+			sqlgraph.To(approvalrequest.Table, approvalrequest.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, apisubscription.ApprovalRequestsTable, apisubscription.ApprovalRequestsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *APISubscriptionClient) Hooks() []Hook {
+	hooks := c.hooks.APISubscription
+	return append(hooks[:len(hooks):len(hooks)], apisubscription.Hooks[:]...)
+}
+
+// Interceptors returns the client interceptors.
+func (c *APISubscriptionClient) Interceptors() []Interceptor {
+	return c.inters.APISubscription
+}
+
+func (c *APISubscriptionClient) mutate(ctx context.Context, m *APISubscriptionMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&APISubscriptionCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&APISubscriptionUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&APISubscriptionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&APISubscriptionDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown APISubscription mutation op: %q", m.Op())
 	}
 }
 
@@ -642,15 +1204,15 @@ func (c *AgenticExposureClient) QueryOwner(_m *AgenticExposure) *ApplicationQuer
 	return query
 }
 
-// QueryMcpServer queries the mcp_server edge of a AgenticExposure.
-func (c *AgenticExposureClient) QueryMcpServer(_m *AgenticExposure) *McpServerQuery {
-	query := (&McpServerClient{config: c.config}).Query()
+// QueryMCPServer queries the MCP_server edge of a AgenticExposure.
+func (c *AgenticExposureClient) QueryMCPServer(_m *AgenticExposure) *MCPServerQuery {
+	query := (&MCPServerClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(agenticexposure.Table, agenticexposure.FieldID, id),
 			sqlgraph.To(mcpserver.Table, mcpserver.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, agenticexposure.McpServerTable, agenticexposure.McpServerColumn),
+			sqlgraph.Edge(sqlgraph.M2O, true, agenticexposure.MCPServerTable, agenticexposure.MCPServerColumn),
 		)
 		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
@@ -914,568 +1476,6 @@ func (c *AgenticSubscriptionClient) mutate(ctx context.Context, m *AgenticSubscr
 	}
 }
 
-// APIClient is a client for the Api schema.
-type APIClient struct {
-	config
-}
-
-// NewAPIClient returns a client for the Api from the given config.
-func NewAPIClient(c config) *APIClient {
-	return &APIClient{config: c}
-}
-
-// Use adds a list of mutation hooks to the hooks stack.
-// A call to `Use(f, g, h)` equals to `api.Hooks(f(g(h())))`.
-func (c *APIClient) Use(hooks ...Hook) {
-	c.hooks.Api = append(c.hooks.Api, hooks...)
-}
-
-// Intercept adds a list of query interceptors to the interceptors stack.
-// A call to `Intercept(f, g, h)` equals to `api.Intercept(f(g(h())))`.
-func (c *APIClient) Intercept(interceptors ...Interceptor) {
-	c.inters.Api = append(c.inters.Api, interceptors...)
-}
-
-// Create returns a builder for creating a Api entity.
-func (c *APIClient) Create() *APICreate {
-	mutation := newAPIMutation(c.config, OpCreate)
-	return &APICreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// CreateBulk returns a builder for creating a bulk of Api entities.
-func (c *APIClient) CreateBulk(builders ...*APICreate) *APICreateBulk {
-	return &APICreateBulk{config: c.config, builders: builders}
-}
-
-// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
-// a builder and applies setFunc on it.
-func (c *APIClient) MapCreateBulk(slice any, setFunc func(*APICreate, int)) *APICreateBulk {
-	rv := reflect.ValueOf(slice)
-	if rv.Kind() != reflect.Slice {
-		return &APICreateBulk{err: fmt.Errorf("calling to APIClient.MapCreateBulk with wrong type %T, need slice", slice)}
-	}
-	builders := make([]*APICreate, rv.Len())
-	for i := 0; i < rv.Len(); i++ {
-		builders[i] = c.Create()
-		setFunc(builders[i], i)
-	}
-	return &APICreateBulk{config: c.config, builders: builders}
-}
-
-// Update returns an update builder for Api.
-func (c *APIClient) Update() *APIUpdate {
-	mutation := newAPIMutation(c.config, OpUpdate)
-	return &APIUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOne returns an update builder for the given entity.
-func (c *APIClient) UpdateOne(_m *Api) *APIUpdateOne {
-	mutation := newAPIMutation(c.config, OpUpdateOne, withApi(_m))
-	return &APIUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOneID returns an update builder for the given id.
-func (c *APIClient) UpdateOneID(id int) *APIUpdateOne {
-	mutation := newAPIMutation(c.config, OpUpdateOne, withApiID(id))
-	return &APIUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// Delete returns a delete builder for Api.
-func (c *APIClient) Delete() *APIDelete {
-	mutation := newAPIMutation(c.config, OpDelete)
-	return &APIDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// DeleteOne returns a builder for deleting the given entity.
-func (c *APIClient) DeleteOne(_m *Api) *APIDeleteOne {
-	return c.DeleteOneID(_m.ID)
-}
-
-// DeleteOneID returns a builder for deleting the given entity by its id.
-func (c *APIClient) DeleteOneID(id int) *APIDeleteOne {
-	builder := c.Delete().Where(api.ID(id))
-	builder.mutation.id = &id
-	builder.mutation.op = OpDeleteOne
-	return &APIDeleteOne{builder}
-}
-
-// Query returns a query builder for Api.
-func (c *APIClient) Query() *APIQuery {
-	return &APIQuery{
-		config: c.config,
-		ctx:    &QueryContext{Type: TypeAPI},
-		inters: c.Interceptors(),
-	}
-}
-
-// Get returns a Api entity by its id.
-func (c *APIClient) Get(ctx context.Context, id int) (*Api, error) {
-	return c.Query().Where(api.ID(id)).Only(ctx)
-}
-
-// GetX is like Get, but panics if an error occurs.
-func (c *APIClient) GetX(ctx context.Context, id int) *Api {
-	obj, err := c.Get(ctx, id)
-	if err != nil {
-		panic(err)
-	}
-	return obj
-}
-
-// QueryOwner queries the owner edge of a Api.
-func (c *APIClient) QueryOwner(_m *Api) *TeamQuery {
-	query := (&TeamClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := _m.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(api.Table, api.FieldID, id),
-			sqlgraph.To(team.Table, team.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, api.OwnerTable, api.OwnerColumn),
-		)
-		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// QueryExposures queries the exposures edge of a Api.
-func (c *APIClient) QueryExposures(_m *Api) *ApiExposureQuery {
-	query := (&ApiExposureClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := _m.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(api.Table, api.FieldID, id),
-			sqlgraph.To(apiexposure.Table, apiexposure.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, api.ExposuresTable, api.ExposuresColumn),
-		)
-		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// Hooks returns the client hooks.
-func (c *APIClient) Hooks() []Hook {
-	hooks := c.hooks.Api
-	return append(hooks[:len(hooks):len(hooks)], api.Hooks[:]...)
-}
-
-// Interceptors returns the client interceptors.
-func (c *APIClient) Interceptors() []Interceptor {
-	return c.inters.Api
-}
-
-func (c *APIClient) mutate(ctx context.Context, m *APIMutation) (Value, error) {
-	switch m.Op() {
-	case OpCreate:
-		return (&APICreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpUpdate:
-		return (&APIUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpUpdateOne:
-		return (&APIUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpDelete, OpDeleteOne:
-		return (&APIDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
-	default:
-		return nil, fmt.Errorf("ent: unknown Api mutation op: %q", m.Op())
-	}
-}
-
-// ApiExposureClient is a client for the ApiExposure schema.
-type ApiExposureClient struct {
-	config
-}
-
-// NewApiExposureClient returns a client for the ApiExposure from the given config.
-func NewApiExposureClient(c config) *ApiExposureClient {
-	return &ApiExposureClient{config: c}
-}
-
-// Use adds a list of mutation hooks to the hooks stack.
-// A call to `Use(f, g, h)` equals to `apiexposure.Hooks(f(g(h())))`.
-func (c *ApiExposureClient) Use(hooks ...Hook) {
-	c.hooks.ApiExposure = append(c.hooks.ApiExposure, hooks...)
-}
-
-// Intercept adds a list of query interceptors to the interceptors stack.
-// A call to `Intercept(f, g, h)` equals to `apiexposure.Intercept(f(g(h())))`.
-func (c *ApiExposureClient) Intercept(interceptors ...Interceptor) {
-	c.inters.ApiExposure = append(c.inters.ApiExposure, interceptors...)
-}
-
-// Create returns a builder for creating a ApiExposure entity.
-func (c *ApiExposureClient) Create() *ApiExposureCreate {
-	mutation := newApiExposureMutation(c.config, OpCreate)
-	return &ApiExposureCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// CreateBulk returns a builder for creating a bulk of ApiExposure entities.
-func (c *ApiExposureClient) CreateBulk(builders ...*ApiExposureCreate) *ApiExposureCreateBulk {
-	return &ApiExposureCreateBulk{config: c.config, builders: builders}
-}
-
-// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
-// a builder and applies setFunc on it.
-func (c *ApiExposureClient) MapCreateBulk(slice any, setFunc func(*ApiExposureCreate, int)) *ApiExposureCreateBulk {
-	rv := reflect.ValueOf(slice)
-	if rv.Kind() != reflect.Slice {
-		return &ApiExposureCreateBulk{err: fmt.Errorf("calling to ApiExposureClient.MapCreateBulk with wrong type %T, need slice", slice)}
-	}
-	builders := make([]*ApiExposureCreate, rv.Len())
-	for i := 0; i < rv.Len(); i++ {
-		builders[i] = c.Create()
-		setFunc(builders[i], i)
-	}
-	return &ApiExposureCreateBulk{config: c.config, builders: builders}
-}
-
-// Update returns an update builder for ApiExposure.
-func (c *ApiExposureClient) Update() *ApiExposureUpdate {
-	mutation := newApiExposureMutation(c.config, OpUpdate)
-	return &ApiExposureUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOne returns an update builder for the given entity.
-func (c *ApiExposureClient) UpdateOne(_m *ApiExposure) *ApiExposureUpdateOne {
-	mutation := newApiExposureMutation(c.config, OpUpdateOne, withApiExposure(_m))
-	return &ApiExposureUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOneID returns an update builder for the given id.
-func (c *ApiExposureClient) UpdateOneID(id int) *ApiExposureUpdateOne {
-	mutation := newApiExposureMutation(c.config, OpUpdateOne, withApiExposureID(id))
-	return &ApiExposureUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// Delete returns a delete builder for ApiExposure.
-func (c *ApiExposureClient) Delete() *ApiExposureDelete {
-	mutation := newApiExposureMutation(c.config, OpDelete)
-	return &ApiExposureDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// DeleteOne returns a builder for deleting the given entity.
-func (c *ApiExposureClient) DeleteOne(_m *ApiExposure) *ApiExposureDeleteOne {
-	return c.DeleteOneID(_m.ID)
-}
-
-// DeleteOneID returns a builder for deleting the given entity by its id.
-func (c *ApiExposureClient) DeleteOneID(id int) *ApiExposureDeleteOne {
-	builder := c.Delete().Where(apiexposure.ID(id))
-	builder.mutation.id = &id
-	builder.mutation.op = OpDeleteOne
-	return &ApiExposureDeleteOne{builder}
-}
-
-// Query returns a query builder for ApiExposure.
-func (c *ApiExposureClient) Query() *ApiExposureQuery {
-	return &ApiExposureQuery{
-		config: c.config,
-		ctx:    &QueryContext{Type: TypeApiExposure},
-		inters: c.Interceptors(),
-	}
-}
-
-// Get returns a ApiExposure entity by its id.
-func (c *ApiExposureClient) Get(ctx context.Context, id int) (*ApiExposure, error) {
-	return c.Query().Where(apiexposure.ID(id)).Only(ctx)
-}
-
-// GetX is like Get, but panics if an error occurs.
-func (c *ApiExposureClient) GetX(ctx context.Context, id int) *ApiExposure {
-	obj, err := c.Get(ctx, id)
-	if err != nil {
-		panic(err)
-	}
-	return obj
-}
-
-// QueryOwner queries the owner edge of a ApiExposure.
-func (c *ApiExposureClient) QueryOwner(_m *ApiExposure) *ApplicationQuery {
-	query := (&ApplicationClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := _m.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(apiexposure.Table, apiexposure.FieldID, id),
-			sqlgraph.To(application.Table, application.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, apiexposure.OwnerTable, apiexposure.OwnerColumn),
-		)
-		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// QueryAPI queries the api edge of a ApiExposure.
-func (c *ApiExposureClient) QueryAPI(_m *ApiExposure) *APIQuery {
-	query := (&APIClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := _m.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(apiexposure.Table, apiexposure.FieldID, id),
-			sqlgraph.To(api.Table, api.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, apiexposure.APITable, apiexposure.APIColumn),
-		)
-		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// QuerySubscriptions queries the subscriptions edge of a ApiExposure.
-func (c *ApiExposureClient) QuerySubscriptions(_m *ApiExposure) *ApiSubscriptionQuery {
-	query := (&ApiSubscriptionClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := _m.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(apiexposure.Table, apiexposure.FieldID, id),
-			sqlgraph.To(apisubscription.Table, apisubscription.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, true, apiexposure.SubscriptionsTable, apiexposure.SubscriptionsColumn),
-		)
-		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// Hooks returns the client hooks.
-func (c *ApiExposureClient) Hooks() []Hook {
-	hooks := c.hooks.ApiExposure
-	return append(hooks[:len(hooks):len(hooks)], apiexposure.Hooks[:]...)
-}
-
-// Interceptors returns the client interceptors.
-func (c *ApiExposureClient) Interceptors() []Interceptor {
-	return c.inters.ApiExposure
-}
-
-func (c *ApiExposureClient) mutate(ctx context.Context, m *ApiExposureMutation) (Value, error) {
-	switch m.Op() {
-	case OpCreate:
-		return (&ApiExposureCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpUpdate:
-		return (&ApiExposureUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpUpdateOne:
-		return (&ApiExposureUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpDelete, OpDeleteOne:
-		return (&ApiExposureDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
-	default:
-		return nil, fmt.Errorf("ent: unknown ApiExposure mutation op: %q", m.Op())
-	}
-}
-
-// ApiSubscriptionClient is a client for the ApiSubscription schema.
-type ApiSubscriptionClient struct {
-	config
-}
-
-// NewApiSubscriptionClient returns a client for the ApiSubscription from the given config.
-func NewApiSubscriptionClient(c config) *ApiSubscriptionClient {
-	return &ApiSubscriptionClient{config: c}
-}
-
-// Use adds a list of mutation hooks to the hooks stack.
-// A call to `Use(f, g, h)` equals to `apisubscription.Hooks(f(g(h())))`.
-func (c *ApiSubscriptionClient) Use(hooks ...Hook) {
-	c.hooks.ApiSubscription = append(c.hooks.ApiSubscription, hooks...)
-}
-
-// Intercept adds a list of query interceptors to the interceptors stack.
-// A call to `Intercept(f, g, h)` equals to `apisubscription.Intercept(f(g(h())))`.
-func (c *ApiSubscriptionClient) Intercept(interceptors ...Interceptor) {
-	c.inters.ApiSubscription = append(c.inters.ApiSubscription, interceptors...)
-}
-
-// Create returns a builder for creating a ApiSubscription entity.
-func (c *ApiSubscriptionClient) Create() *ApiSubscriptionCreate {
-	mutation := newApiSubscriptionMutation(c.config, OpCreate)
-	return &ApiSubscriptionCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// CreateBulk returns a builder for creating a bulk of ApiSubscription entities.
-func (c *ApiSubscriptionClient) CreateBulk(builders ...*ApiSubscriptionCreate) *ApiSubscriptionCreateBulk {
-	return &ApiSubscriptionCreateBulk{config: c.config, builders: builders}
-}
-
-// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
-// a builder and applies setFunc on it.
-func (c *ApiSubscriptionClient) MapCreateBulk(slice any, setFunc func(*ApiSubscriptionCreate, int)) *ApiSubscriptionCreateBulk {
-	rv := reflect.ValueOf(slice)
-	if rv.Kind() != reflect.Slice {
-		return &ApiSubscriptionCreateBulk{err: fmt.Errorf("calling to ApiSubscriptionClient.MapCreateBulk with wrong type %T, need slice", slice)}
-	}
-	builders := make([]*ApiSubscriptionCreate, rv.Len())
-	for i := 0; i < rv.Len(); i++ {
-		builders[i] = c.Create()
-		setFunc(builders[i], i)
-	}
-	return &ApiSubscriptionCreateBulk{config: c.config, builders: builders}
-}
-
-// Update returns an update builder for ApiSubscription.
-func (c *ApiSubscriptionClient) Update() *ApiSubscriptionUpdate {
-	mutation := newApiSubscriptionMutation(c.config, OpUpdate)
-	return &ApiSubscriptionUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOne returns an update builder for the given entity.
-func (c *ApiSubscriptionClient) UpdateOne(_m *ApiSubscription) *ApiSubscriptionUpdateOne {
-	mutation := newApiSubscriptionMutation(c.config, OpUpdateOne, withApiSubscription(_m))
-	return &ApiSubscriptionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOneID returns an update builder for the given id.
-func (c *ApiSubscriptionClient) UpdateOneID(id int) *ApiSubscriptionUpdateOne {
-	mutation := newApiSubscriptionMutation(c.config, OpUpdateOne, withApiSubscriptionID(id))
-	return &ApiSubscriptionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// Delete returns a delete builder for ApiSubscription.
-func (c *ApiSubscriptionClient) Delete() *ApiSubscriptionDelete {
-	mutation := newApiSubscriptionMutation(c.config, OpDelete)
-	return &ApiSubscriptionDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// DeleteOne returns a builder for deleting the given entity.
-func (c *ApiSubscriptionClient) DeleteOne(_m *ApiSubscription) *ApiSubscriptionDeleteOne {
-	return c.DeleteOneID(_m.ID)
-}
-
-// DeleteOneID returns a builder for deleting the given entity by its id.
-func (c *ApiSubscriptionClient) DeleteOneID(id int) *ApiSubscriptionDeleteOne {
-	builder := c.Delete().Where(apisubscription.ID(id))
-	builder.mutation.id = &id
-	builder.mutation.op = OpDeleteOne
-	return &ApiSubscriptionDeleteOne{builder}
-}
-
-// Query returns a query builder for ApiSubscription.
-func (c *ApiSubscriptionClient) Query() *ApiSubscriptionQuery {
-	return &ApiSubscriptionQuery{
-		config: c.config,
-		ctx:    &QueryContext{Type: TypeApiSubscription},
-		inters: c.Interceptors(),
-	}
-}
-
-// Get returns a ApiSubscription entity by its id.
-func (c *ApiSubscriptionClient) Get(ctx context.Context, id int) (*ApiSubscription, error) {
-	return c.Query().Where(apisubscription.ID(id)).Only(ctx)
-}
-
-// GetX is like Get, but panics if an error occurs.
-func (c *ApiSubscriptionClient) GetX(ctx context.Context, id int) *ApiSubscription {
-	obj, err := c.Get(ctx, id)
-	if err != nil {
-		panic(err)
-	}
-	return obj
-}
-
-// QueryOwner queries the owner edge of a ApiSubscription.
-func (c *ApiSubscriptionClient) QueryOwner(_m *ApiSubscription) *ApplicationQuery {
-	query := (&ApplicationClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := _m.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(apisubscription.Table, apisubscription.FieldID, id),
-			sqlgraph.To(application.Table, application.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, apisubscription.OwnerTable, apisubscription.OwnerColumn),
-		)
-		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// QueryTarget queries the target edge of a ApiSubscription.
-func (c *ApiSubscriptionClient) QueryTarget(_m *ApiSubscription) *ApiExposureQuery {
-	query := (&ApiExposureClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := _m.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(apisubscription.Table, apisubscription.FieldID, id),
-			sqlgraph.To(apiexposure.Table, apiexposure.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, false, apisubscription.TargetTable, apisubscription.TargetColumn),
-		)
-		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// QueryFailoverZones queries the failover_zones edge of a ApiSubscription.
-func (c *ApiSubscriptionClient) QueryFailoverZones(_m *ApiSubscription) *ZoneQuery {
-	query := (&ZoneClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := _m.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(apisubscription.Table, apisubscription.FieldID, id),
-			sqlgraph.To(zone.Table, zone.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, apisubscription.FailoverZonesTable, apisubscription.FailoverZonesColumn),
-		)
-		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// QueryApproval queries the approval edge of a ApiSubscription.
-func (c *ApiSubscriptionClient) QueryApproval(_m *ApiSubscription) *ApprovalQuery {
-	query := (&ApprovalClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := _m.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(apisubscription.Table, apisubscription.FieldID, id),
-			sqlgraph.To(approval.Table, approval.FieldID),
-			sqlgraph.Edge(sqlgraph.O2O, false, apisubscription.ApprovalTable, apisubscription.ApprovalColumn),
-		)
-		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// QueryApprovalRequests queries the approval_requests edge of a ApiSubscription.
-func (c *ApiSubscriptionClient) QueryApprovalRequests(_m *ApiSubscription) *ApprovalRequestQuery {
-	query := (&ApprovalRequestClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := _m.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(apisubscription.Table, apisubscription.FieldID, id),
-			sqlgraph.To(approvalrequest.Table, approvalrequest.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, apisubscription.ApprovalRequestsTable, apisubscription.ApprovalRequestsColumn),
-		)
-		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// Hooks returns the client hooks.
-func (c *ApiSubscriptionClient) Hooks() []Hook {
-	hooks := c.hooks.ApiSubscription
-	return append(hooks[:len(hooks):len(hooks)], apisubscription.Hooks[:]...)
-}
-
-// Interceptors returns the client interceptors.
-func (c *ApiSubscriptionClient) Interceptors() []Interceptor {
-	return c.inters.ApiSubscription
-}
-
-func (c *ApiSubscriptionClient) mutate(ctx context.Context, m *ApiSubscriptionMutation) (Value, error) {
-	switch m.Op() {
-	case OpCreate:
-		return (&ApiSubscriptionCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpUpdate:
-		return (&ApiSubscriptionUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpUpdateOne:
-		return (&ApiSubscriptionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpDelete, OpDeleteOne:
-		return (&ApiSubscriptionDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
-	default:
-		return nil, fmt.Errorf("ent: unknown ApiSubscription mutation op: %q", m.Op())
-	}
-}
-
 // ApplicationClient is a client for the Application schema.
 type ApplicationClient struct {
 	config
@@ -1616,15 +1616,15 @@ func (c *ApplicationClient) QueryOwnerTeam(_m *Application) *TeamQuery {
 	return query
 }
 
-// QueryExposedApis queries the exposed_apis edge of a Application.
-func (c *ApplicationClient) QueryExposedApis(_m *Application) *ApiExposureQuery {
-	query := (&ApiExposureClient{config: c.config}).Query()
+// QueryExposedAPIs queries the exposed_APIs edge of a Application.
+func (c *ApplicationClient) QueryExposedAPIs(_m *Application) *APIExposureQuery {
+	query := (&APIExposureClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(application.Table, application.FieldID, id),
 			sqlgraph.To(apiexposure.Table, apiexposure.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, application.ExposedApisTable, application.ExposedApisColumn),
+			sqlgraph.Edge(sqlgraph.O2M, false, application.ExposedAPIsTable, application.ExposedAPIsColumn),
 		)
 		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
@@ -1632,15 +1632,15 @@ func (c *ApplicationClient) QueryExposedApis(_m *Application) *ApiExposureQuery 
 	return query
 }
 
-// QuerySubscribedApis queries the subscribed_apis edge of a Application.
-func (c *ApplicationClient) QuerySubscribedApis(_m *Application) *ApiSubscriptionQuery {
-	query := (&ApiSubscriptionClient{config: c.config}).Query()
+// QuerySubscribedAPIs queries the subscribed_APIs edge of a Application.
+func (c *ApplicationClient) QuerySubscribedAPIs(_m *Application) *APISubscriptionQuery {
+	query := (&APISubscriptionClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(application.Table, application.FieldID, id),
 			sqlgraph.To(apisubscription.Table, apisubscription.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, application.SubscribedApisTable, application.SubscribedApisColumn),
+			sqlgraph.Edge(sqlgraph.O2M, false, application.SubscribedAPIsTable, application.SubscribedAPIsColumn),
 		)
 		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
@@ -1863,8 +1863,8 @@ func (c *ApprovalClient) GetX(ctx context.Context, id int) *Approval {
 }
 
 // QueryAPISubscription queries the api_subscription edge of a Approval.
-func (c *ApprovalClient) QueryAPISubscription(_m *Approval) *ApiSubscriptionQuery {
-	query := (&ApiSubscriptionClient{config: c.config}).Query()
+func (c *ApprovalClient) QueryAPISubscription(_m *Approval) *APISubscriptionQuery {
+	query := (&APISubscriptionClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := _m.ID
 		step := sqlgraph.NewStep(
@@ -2045,8 +2045,8 @@ func (c *ApprovalRequestClient) GetX(ctx context.Context, id int) *ApprovalReque
 }
 
 // QueryAPISubscription queries the api_subscription edge of a ApprovalRequest.
-func (c *ApprovalRequestClient) QueryAPISubscription(_m *ApprovalRequest) *ApiSubscriptionQuery {
-	query := (&ApiSubscriptionClient{config: c.config}).Query()
+func (c *ApprovalRequestClient) QueryAPISubscription(_m *ApprovalRequest) *APISubscriptionQuery {
+	query := (&APISubscriptionClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := _m.ID
 		step := sqlgraph.NewStep(
@@ -2814,107 +2814,107 @@ func (c *GroupClient) mutate(ctx context.Context, m *GroupMutation) (Value, erro
 	}
 }
 
-// McpServerClient is a client for the McpServer schema.
-type McpServerClient struct {
+// MCPServerClient is a client for the MCPServer schema.
+type MCPServerClient struct {
 	config
 }
 
-// NewMcpServerClient returns a client for the McpServer from the given config.
-func NewMcpServerClient(c config) *McpServerClient {
-	return &McpServerClient{config: c}
+// NewMCPServerClient returns a client for the MCPServer from the given config.
+func NewMCPServerClient(c config) *MCPServerClient {
+	return &MCPServerClient{config: c}
 }
 
 // Use adds a list of mutation hooks to the hooks stack.
 // A call to `Use(f, g, h)` equals to `mcpserver.Hooks(f(g(h())))`.
-func (c *McpServerClient) Use(hooks ...Hook) {
-	c.hooks.McpServer = append(c.hooks.McpServer, hooks...)
+func (c *MCPServerClient) Use(hooks ...Hook) {
+	c.hooks.MCPServer = append(c.hooks.MCPServer, hooks...)
 }
 
 // Intercept adds a list of query interceptors to the interceptors stack.
 // A call to `Intercept(f, g, h)` equals to `mcpserver.Intercept(f(g(h())))`.
-func (c *McpServerClient) Intercept(interceptors ...Interceptor) {
-	c.inters.McpServer = append(c.inters.McpServer, interceptors...)
+func (c *MCPServerClient) Intercept(interceptors ...Interceptor) {
+	c.inters.MCPServer = append(c.inters.MCPServer, interceptors...)
 }
 
-// Create returns a builder for creating a McpServer entity.
-func (c *McpServerClient) Create() *McpServerCreate {
-	mutation := newMcpServerMutation(c.config, OpCreate)
-	return &McpServerCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+// Create returns a builder for creating a MCPServer entity.
+func (c *MCPServerClient) Create() *MCPServerCreate {
+	mutation := newMCPServerMutation(c.config, OpCreate)
+	return &MCPServerCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
-// CreateBulk returns a builder for creating a bulk of McpServer entities.
-func (c *McpServerClient) CreateBulk(builders ...*McpServerCreate) *McpServerCreateBulk {
-	return &McpServerCreateBulk{config: c.config, builders: builders}
+// CreateBulk returns a builder for creating a bulk of MCPServer entities.
+func (c *MCPServerClient) CreateBulk(builders ...*MCPServerCreate) *MCPServerCreateBulk {
+	return &MCPServerCreateBulk{config: c.config, builders: builders}
 }
 
 // MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
 // a builder and applies setFunc on it.
-func (c *McpServerClient) MapCreateBulk(slice any, setFunc func(*McpServerCreate, int)) *McpServerCreateBulk {
+func (c *MCPServerClient) MapCreateBulk(slice any, setFunc func(*MCPServerCreate, int)) *MCPServerCreateBulk {
 	rv := reflect.ValueOf(slice)
 	if rv.Kind() != reflect.Slice {
-		return &McpServerCreateBulk{err: fmt.Errorf("calling to McpServerClient.MapCreateBulk with wrong type %T, need slice", slice)}
+		return &MCPServerCreateBulk{err: fmt.Errorf("calling to MCPServerClient.MapCreateBulk with wrong type %T, need slice", slice)}
 	}
-	builders := make([]*McpServerCreate, rv.Len())
+	builders := make([]*MCPServerCreate, rv.Len())
 	for i := 0; i < rv.Len(); i++ {
 		builders[i] = c.Create()
 		setFunc(builders[i], i)
 	}
-	return &McpServerCreateBulk{config: c.config, builders: builders}
+	return &MCPServerCreateBulk{config: c.config, builders: builders}
 }
 
-// Update returns an update builder for McpServer.
-func (c *McpServerClient) Update() *McpServerUpdate {
-	mutation := newMcpServerMutation(c.config, OpUpdate)
-	return &McpServerUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+// Update returns an update builder for MCPServer.
+func (c *MCPServerClient) Update() *MCPServerUpdate {
+	mutation := newMCPServerMutation(c.config, OpUpdate)
+	return &MCPServerUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
 // UpdateOne returns an update builder for the given entity.
-func (c *McpServerClient) UpdateOne(_m *McpServer) *McpServerUpdateOne {
-	mutation := newMcpServerMutation(c.config, OpUpdateOne, withMcpServer(_m))
-	return &McpServerUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+func (c *MCPServerClient) UpdateOne(_m *MCPServer) *MCPServerUpdateOne {
+	mutation := newMCPServerMutation(c.config, OpUpdateOne, withMCPServer(_m))
+	return &MCPServerUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
 // UpdateOneID returns an update builder for the given id.
-func (c *McpServerClient) UpdateOneID(id int) *McpServerUpdateOne {
-	mutation := newMcpServerMutation(c.config, OpUpdateOne, withMcpServerID(id))
-	return &McpServerUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+func (c *MCPServerClient) UpdateOneID(id int) *MCPServerUpdateOne {
+	mutation := newMCPServerMutation(c.config, OpUpdateOne, withMCPServerID(id))
+	return &MCPServerUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
-// Delete returns a delete builder for McpServer.
-func (c *McpServerClient) Delete() *McpServerDelete {
-	mutation := newMcpServerMutation(c.config, OpDelete)
-	return &McpServerDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+// Delete returns a delete builder for MCPServer.
+func (c *MCPServerClient) Delete() *MCPServerDelete {
+	mutation := newMCPServerMutation(c.config, OpDelete)
+	return &MCPServerDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
 // DeleteOne returns a builder for deleting the given entity.
-func (c *McpServerClient) DeleteOne(_m *McpServer) *McpServerDeleteOne {
+func (c *MCPServerClient) DeleteOne(_m *MCPServer) *MCPServerDeleteOne {
 	return c.DeleteOneID(_m.ID)
 }
 
 // DeleteOneID returns a builder for deleting the given entity by its id.
-func (c *McpServerClient) DeleteOneID(id int) *McpServerDeleteOne {
+func (c *MCPServerClient) DeleteOneID(id int) *MCPServerDeleteOne {
 	builder := c.Delete().Where(mcpserver.ID(id))
 	builder.mutation.id = &id
 	builder.mutation.op = OpDeleteOne
-	return &McpServerDeleteOne{builder}
+	return &MCPServerDeleteOne{builder}
 }
 
-// Query returns a query builder for McpServer.
-func (c *McpServerClient) Query() *McpServerQuery {
-	return &McpServerQuery{
+// Query returns a query builder for MCPServer.
+func (c *MCPServerClient) Query() *MCPServerQuery {
+	return &MCPServerQuery{
 		config: c.config,
-		ctx:    &QueryContext{Type: TypeMcpServer},
+		ctx:    &QueryContext{Type: TypeMCPServer},
 		inters: c.Interceptors(),
 	}
 }
 
-// Get returns a McpServer entity by its id.
-func (c *McpServerClient) Get(ctx context.Context, id int) (*McpServer, error) {
+// Get returns a MCPServer entity by its id.
+func (c *MCPServerClient) Get(ctx context.Context, id int) (*MCPServer, error) {
 	return c.Query().Where(mcpserver.ID(id)).Only(ctx)
 }
 
 // GetX is like Get, but panics if an error occurs.
-func (c *McpServerClient) GetX(ctx context.Context, id int) *McpServer {
+func (c *MCPServerClient) GetX(ctx context.Context, id int) *MCPServer {
 	obj, err := c.Get(ctx, id)
 	if err != nil {
 		panic(err)
@@ -2922,8 +2922,8 @@ func (c *McpServerClient) GetX(ctx context.Context, id int) *McpServer {
 	return obj
 }
 
-// QueryOwner queries the owner edge of a McpServer.
-func (c *McpServerClient) QueryOwner(_m *McpServer) *TeamQuery {
+// QueryOwner queries the owner edge of a MCPServer.
+func (c *MCPServerClient) QueryOwner(_m *MCPServer) *TeamQuery {
 	query := (&TeamClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := _m.ID
@@ -2938,8 +2938,8 @@ func (c *McpServerClient) QueryOwner(_m *McpServer) *TeamQuery {
 	return query
 }
 
-// QueryExposures queries the exposures edge of a McpServer.
-func (c *McpServerClient) QueryExposures(_m *McpServer) *AgenticExposureQuery {
+// QueryExposures queries the exposures edge of a MCPServer.
+func (c *MCPServerClient) QueryExposures(_m *MCPServer) *AgenticExposureQuery {
 	query := (&AgenticExposureClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := _m.ID
@@ -2955,28 +2955,28 @@ func (c *McpServerClient) QueryExposures(_m *McpServer) *AgenticExposureQuery {
 }
 
 // Hooks returns the client hooks.
-func (c *McpServerClient) Hooks() []Hook {
-	hooks := c.hooks.McpServer
+func (c *MCPServerClient) Hooks() []Hook {
+	hooks := c.hooks.MCPServer
 	return append(hooks[:len(hooks):len(hooks)], mcpserver.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
-func (c *McpServerClient) Interceptors() []Interceptor {
-	return c.inters.McpServer
+func (c *MCPServerClient) Interceptors() []Interceptor {
+	return c.inters.MCPServer
 }
 
-func (c *McpServerClient) mutate(ctx context.Context, m *McpServerMutation) (Value, error) {
+func (c *MCPServerClient) mutate(ctx context.Context, m *MCPServerMutation) (Value, error) {
 	switch m.Op() {
 	case OpCreate:
-		return (&McpServerCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+		return (&MCPServerCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
 	case OpUpdate:
-		return (&McpServerUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+		return (&MCPServerUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
 	case OpUpdateOne:
-		return (&McpServerUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+		return (&MCPServerUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
 	case OpDelete, OpDeleteOne:
-		return (&McpServerDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+		return (&MCPServerDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
-		return nil, fmt.Errorf("ent: unknown McpServer mutation op: %q", m.Op())
+		return nil, fmt.Errorf("ent: unknown MCPServer mutation op: %q", m.Op())
 	}
 }
 
@@ -3436,15 +3436,15 @@ func (c *TeamClient) QueryApplications(_m *Team) *ApplicationQuery {
 	return query
 }
 
-// QueryApis queries the apis edge of a Team.
-func (c *TeamClient) QueryApis(_m *Team) *APIQuery {
+// QueryAPIs queries the APIs edge of a Team.
+func (c *TeamClient) QueryAPIs(_m *Team) *APIQuery {
 	query := (&APIClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(team.Table, team.FieldID, id),
 			sqlgraph.To(api.Table, api.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, team.ApisTable, team.ApisColumn),
+			sqlgraph.Edge(sqlgraph.O2M, false, team.APIsTable, team.APIsColumn),
 		)
 		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
@@ -3468,15 +3468,15 @@ func (c *TeamClient) QueryEventTypes(_m *Team) *EventTypeQuery {
 	return query
 }
 
-// QueryMcpServers queries the mcp_servers edge of a Team.
-func (c *TeamClient) QueryMcpServers(_m *Team) *McpServerQuery {
-	query := (&McpServerClient{config: c.config}).Query()
+// QueryMCPServers queries the MCP_servers edge of a Team.
+func (c *TeamClient) QueryMCPServers(_m *Team) *MCPServerQuery {
+	query := (&MCPServerClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(team.Table, team.FieldID, id),
 			sqlgraph.To(mcpserver.Table, mcpserver.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, team.McpServersTable, team.McpServersColumn),
+			sqlgraph.Edge(sqlgraph.O2M, false, team.MCPServersTable, team.MCPServersColumn),
 		)
 		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
@@ -3679,15 +3679,15 @@ func (c *ZoneClient) mutate(ctx context.Context, m *ZoneMutation) (Value, error)
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		AgentCard, AgenticExposure, AgenticSubscription, Api, ApiExposure,
-		ApiSubscription, Application, Approval, ApprovalRequest, EventExposure,
-		EventSubscription, EventType, Group, McpServer, Member, PermissionSet, Team,
+		API, APIExposure, APISubscription, AgentCard, AgenticExposure,
+		AgenticSubscription, Application, Approval, ApprovalRequest, EventExposure,
+		EventSubscription, EventType, Group, MCPServer, Member, PermissionSet, Team,
 		Zone []ent.Hook
 	}
 	inters struct {
-		AgentCard, AgenticExposure, AgenticSubscription, Api, ApiExposure,
-		ApiSubscription, Application, Approval, ApprovalRequest, EventExposure,
-		EventSubscription, EventType, Group, McpServer, Member, PermissionSet, Team,
+		API, APIExposure, APISubscription, AgentCard, AgenticExposure,
+		AgenticSubscription, Application, Approval, ApprovalRequest, EventExposure,
+		EventSubscription, EventType, Group, MCPServer, Member, PermissionSet, Team,
 		Zone []ent.Interceptor
 	}
 )

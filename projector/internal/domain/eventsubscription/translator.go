@@ -62,7 +62,7 @@ func (t *Translator) Translate(_ context.Context, obj *eventv1.EventSubscription
 		Delivery:              mapDelivery(obj.Spec.Delivery),
 		Scopes:                obj.Spec.Scopes,
 		CallbackURL:           callbackURL,
-		GatewayConsumerSseUrl: obj.Status.URL,
+		GatewayConsumerSSEURL: obj.Status.URL,
 		OwnerAppName:          obj.Spec.Requestor.Name,
 		OwnerTeamName:         shared.TeamNameFromNamespace(obj.Namespace),
 		TargetEventType:       obj.Spec.EventType,
@@ -76,7 +76,7 @@ func mapDelivery(obj eventv1.Delivery) *model.EventDelivery {
 		CircuitBreakerOptOut:  obj.CircuitBreakerOptOut,
 		RetryableStatusCodes:  obj.RetryableStatusCodes,
 		RedeliveriesPerSecond: obj.RedeliveriesPerSecond,
-		EnforceGetHttpRequestMethodForHealthCheck: obj.EnforceGetHttpRequestMethodForHealthCheck,
+		EnforceGetHTTPRequestMethodForHealthCheck: obj.EnforceGetHttpRequestMethodForHealthCheck,
 	}
 
 	return delivery

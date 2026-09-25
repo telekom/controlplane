@@ -9,7 +9,7 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 )
 
-func MapCrBasicAuthToCpApi(basic *apiv1.BasicAuthCredentials) *model.BasicAuthCredentials {
+func MapCRBasicAuthToCPAPI(basic *apiv1.BasicAuthCredentials) *model.BasicAuthCredentials {
 	if basic == nil {
 		return nil
 	}
@@ -19,28 +19,28 @@ func MapCrBasicAuthToCpApi(basic *apiv1.BasicAuthCredentials) *model.BasicAuthCr
 	}
 }
 
-func MapCrOAuthToCpApi(oauth *apiv1.OAuth2ClientCredentials) *model.OAuth2ClientCredentials {
+func MapCROAuthToCPAPI(oauth *apiv1.OAuth2ClientCredentials) *model.OAuth2ClientCredentials {
 	if oauth == nil {
 		return nil
 	}
 	return &model.OAuth2ClientCredentials{
-		ClientId:     oauth.ClientId,
+		ClientID:     oauth.ClientId,
 		ClientSecret: &oauth.ClientSecret,
 		ClientKey:    &oauth.ClientKey,
 	}
 }
 
-func MapCrExternalIdpToCpApi(externalIdp *apiv1.ExternalIdentityProvider) *model.ExternalIdentityProvider {
-	if externalIdp == nil {
+func MapCRExternalIDPToCPAPI(externalIDP *apiv1.ExternalIdentityProvider) *model.ExternalIdentityProvider {
+	if externalIDP == nil {
 		return nil
 	}
-	tokenRequest := string(externalIdp.TokenRequest)
-	grantType := string(externalIdp.GrantType)
+	tokenRequest := string(externalIDP.TokenRequest)
+	grantType := string(externalIDP.GrantType)
 	return &model.ExternalIdentityProvider{
-		TokenEndpoint: externalIdp.TokenEndpoint,
+		TokenEndpoint: externalIDP.TokenEndpoint,
 		TokenRequest:  &tokenRequest,
 		GrantType:     &grantType,
-		Basic:         MapCrBasicAuthToCpApi(externalIdp.Basic),
-		Client:        MapCrOAuthToCpApi(externalIdp.Client),
+		Basic:         MapCRBasicAuthToCPAPI(externalIDP.Basic),
+		Client:        MapCROAuthToCPAPI(externalIDP.Client),
 	}
 }

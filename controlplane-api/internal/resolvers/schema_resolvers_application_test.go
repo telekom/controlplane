@@ -13,7 +13,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("Application.ExternalIds", func() {
+var _ = Describe("Application.ExternalIDs", func() {
 	var client *ent.Client
 	var s *testutil.SeedData
 
@@ -26,17 +26,17 @@ var _ = Describe("Application.ExternalIds", func() {
 		client.Close()
 	})
 
-	It("should store and return externalIds", func() {
+	It("should store and return externalIDs", func() {
 		ctx := testutil.AllowContext()
 
 		app, err := client.Application.Create().
-			SetNamespace("default").SetName("app-ext").SetClientID("cid-ext").SetExternalIds([]model.ExternalId{
+			SetNamespace("default").SetName("app-ext").SetClientID("cid-ext").SetExternalIDs([]model.ExternalID{
 			{
-				Id:     "abc",
+				ID:     "abc",
 				Scheme: "schema1",
 			},
 			{
-				Id:     "123",
+				ID:     "123",
 				Scheme: "schema2",
 			},
 		}).
@@ -45,30 +45,30 @@ var _ = Describe("Application.ExternalIds", func() {
 
 		fetched, err := client.Application.Get(ctx, app.ID)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(fetched.ExternalIds).To(ContainElements(model.ExternalId{
-			Id:     "abc",
+		Expect(fetched.ExternalIDs).To(ContainElements(model.ExternalID{
+			ID:     "abc",
 			Scheme: "schema1",
-		}, model.ExternalId{
-			Id:     "123",
+		}, model.ExternalID{
+			ID:     "123",
 			Scheme: "schema2",
 		}))
 	})
 
-	It("should default to an empty externalId list", func() {
+	It("should default to an empty externalID list", func() {
 		ctx := testutil.AllowContext()
 
 		fetched, err := client.Application.Get(ctx, s.AppAlpha.ID)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(fetched.ExternalIds).To(BeEmpty())
+		Expect(fetched.ExternalIDs).To(BeEmpty())
 	})
 
-	It("should allow a single externalId team", func() {
+	It("should allow a single externalID team", func() {
 		ctx := testutil.AllowContext()
 
 		app, err := client.Application.Create().
-			SetNamespace("default").SetName("app-ext").SetClientID("cid-ext").SetExternalIds([]model.ExternalId{
+			SetNamespace("default").SetName("app-ext").SetClientID("cid-ext").SetExternalIDs([]model.ExternalID{
 			{
-				Id:     "abc",
+				ID:     "abc",
 				Scheme: "schema1",
 			},
 		}).
@@ -77,20 +77,20 @@ var _ = Describe("Application.ExternalIds", func() {
 
 		fetched, err := client.Application.Get(ctx, app.ID)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(fetched.ExternalIds).To(HaveLen(1))
-		Expect(fetched.ExternalIds).To(ContainElements(model.ExternalId{
-			Id:     "abc",
+		Expect(fetched.ExternalIDs).To(HaveLen(1))
+		Expect(fetched.ExternalIDs).To(ContainElements(model.ExternalID{
+			ID:     "abc",
 			Scheme: "schema1",
 		}))
 	})
 
-	It("should update externalIds", func() {
+	It("should update externalIDs", func() {
 		ctx := testutil.AllowContext()
 
 		app, err := client.Application.Create().
-			SetNamespace("default").SetName("app-ext").SetClientID("cid-ext").SetExternalIds([]model.ExternalId{
+			SetNamespace("default").SetName("app-ext").SetClientID("cid-ext").SetExternalIDs([]model.ExternalID{
 			{
-				Id:     "abc",
+				ID:     "abc",
 				Scheme: "schema1",
 			},
 		}).
@@ -99,34 +99,34 @@ var _ = Describe("Application.ExternalIds", func() {
 
 		fetched, err := client.Application.Get(ctx, app.ID)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(fetched.ExternalIds).To(HaveLen(1))
-		Expect(fetched.ExternalIds).To(ContainElements(model.ExternalId{
-			Id:     "abc",
+		Expect(fetched.ExternalIDs).To(HaveLen(1))
+		Expect(fetched.ExternalIDs).To(ContainElements(model.ExternalID{
+			ID:     "abc",
 			Scheme: "schema1",
 		}))
 
-		updated, err := client.Application.UpdateOneID(app.ID).AppendExternalIds([]model.ExternalId{
+		updated, err := client.Application.UpdateOneID(app.ID).AppendExternalIDs([]model.ExternalID{
 			{
-				Id:     "123",
+				ID:     "123",
 				Scheme: "schema2",
 			},
 		}).Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(updated.ExternalIds).To(ContainElements(model.ExternalId{
-			Id:     "abc",
+		Expect(updated.ExternalIDs).To(ContainElements(model.ExternalID{
+			ID:     "abc",
 			Scheme: "schema1",
-		}, model.ExternalId{
-			Id:     "123",
+		}, model.ExternalID{
+			ID:     "123",
 			Scheme: "schema2",
 		}))
 
-		updated, err = client.Application.UpdateOneID(app.ID).ClearExternalIds().Save(ctx)
+		updated, err = client.Application.UpdateOneID(app.ID).ClearExternalIDs().Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(updated.ExternalIds).To(BeEmpty())
+		Expect(updated.ExternalIDs).To(BeEmpty())
 	})
 })
 
-var _ = Describe("Application.IpRestrictions", func() {
+var _ = Describe("Application.IPRestrictions", func() {
 	var client *ent.Client
 	var s *testutil.SeedData
 
@@ -139,12 +139,12 @@ var _ = Describe("Application.IpRestrictions", func() {
 		client.Close()
 	})
 
-	It("should store and return IpRestrictions", func() {
+	It("should store and return IPRestrictions", func() {
 		ctx := testutil.AllowContext()
 
 		app, err := client.Application.Create().
 			SetNamespace("default").SetName("app-ip").SetClientID("cid-ip").
-			SetIPRestrictions(model.IpRestrictions{
+			SetIPRestrictions(model.IPRestrictions{
 				Allow: []string{"127.0.0.1", "127.0.0.2", "127.0.0.3"},
 				Deny:  []string{"127.0.0.4", "127.0.0.5", "127.0.0.6"},
 			}).
@@ -159,21 +159,21 @@ var _ = Describe("Application.IpRestrictions", func() {
 		Expect(fetched.IPRestrictions.Deny).To(HaveLen(3))
 	})
 
-	It("should default to an empty IpRestrictions list", func() {
+	It("should default to an empty IPRestrictions list", func() {
 		ctx := testutil.AllowContext()
 
 		fetched, err := client.Application.Get(ctx, s.AppAlpha.ID)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(fetched.IPRestrictions.Allow).To(HaveLen(0))
-		Expect(fetched.IPRestrictions.Deny).To(HaveLen(0))
+		Expect(fetched.IPRestrictions.Allow).To(BeEmpty())
+		Expect(fetched.IPRestrictions.Deny).To(BeEmpty())
 	})
 
-	It("should allow a single IpRestrictions team", func() {
+	It("should allow a single IPRestrictions team", func() {
 		ctx := testutil.AllowContext()
 
 		app, err := client.Application.Create().
 			SetNamespace("default").SetName("app-ip").SetClientID("cid-ip").
-			SetIPRestrictions(model.IpRestrictions{
+			SetIPRestrictions(model.IPRestrictions{
 				Allow: []string{"127.0.0.1"},
 				Deny:  []string{"127.0.0.4"},
 			}).
@@ -188,12 +188,12 @@ var _ = Describe("Application.IpRestrictions", func() {
 		Expect(fetched.IPRestrictions.Deny).To(HaveLen(1))
 	})
 
-	It("should update IpRestrictions", func() {
+	It("should update IPRestrictions", func() {
 		ctx := testutil.AllowContext()
 
 		app, err := client.Application.Create().
 			SetNamespace("default").SetName("app-ip").SetClientID("cid-ip").
-			SetIPRestrictions(model.IpRestrictions{
+			SetIPRestrictions(model.IPRestrictions{
 				Allow: []string{"127.0.0.1"},
 				Deny:  []string{"127.0.0.4"},
 			}).
@@ -207,7 +207,7 @@ var _ = Describe("Application.IpRestrictions", func() {
 		Expect(fetched.IPRestrictions.Deny).To(ContainElements([]string{"127.0.0.4"}))
 		Expect(fetched.IPRestrictions.Deny).To(HaveLen(1))
 
-		updated, err := client.Application.UpdateOneID(app.ID).SetIPRestrictions(model.IpRestrictions{
+		updated, err := client.Application.UpdateOneID(app.ID).SetIPRestrictions(model.IPRestrictions{
 			Allow: []string{"127.0.0.1", "127.0.0.2", "127.0.0.3"},
 			Deny:  []string{"127.0.0.4", "127.0.0.5", "127.0.0.6"},
 		}).Save(ctx)

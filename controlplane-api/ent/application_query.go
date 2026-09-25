@@ -38,8 +38,8 @@ type ApplicationQuery struct {
 	predicates                  []predicate.Application
 	withZone                    *ZoneQuery
 	withOwnerTeam               *TeamQuery
-	withExposedApis             *ApiExposureQuery
-	withSubscribedApis          *ApiSubscriptionQuery
+	withExposedAPIs             *APIExposureQuery
+	withSubscribedAPIs          *APISubscriptionQuery
 	withExposedEvents           *EventExposureQuery
 	withSubscribedEvents        *EventSubscriptionQuery
 	withExposedAgentics         *AgenticExposureQuery
@@ -48,8 +48,8 @@ type ApplicationQuery struct {
 	withFKs                     bool
 	modifiers                   []func(*sql.Selector)
 	loadTotal                   []func(context.Context, []*Application) error
-	withNamedExposedApis        map[string]*ApiExposureQuery
-	withNamedSubscribedApis     map[string]*ApiSubscriptionQuery
+	withNamedExposedAPIs        map[string]*APIExposureQuery
+	withNamedSubscribedAPIs     map[string]*APISubscriptionQuery
 	withNamedExposedEvents      map[string]*EventExposureQuery
 	withNamedSubscribedEvents   map[string]*EventSubscriptionQuery
 	withNamedExposedAgentics    map[string]*AgenticExposureQuery
@@ -134,9 +134,9 @@ func (_q *ApplicationQuery) QueryOwnerTeam() *TeamQuery {
 	return query
 }
 
-// QueryExposedApis chains the current query on the "exposed_apis" edge.
-func (_q *ApplicationQuery) QueryExposedApis() *ApiExposureQuery {
-	query := (&ApiExposureClient{config: _q.config}).Query()
+// QueryExposedAPIs chains the current query on the "exposed_APIs" edge.
+func (_q *ApplicationQuery) QueryExposedAPIs() *APIExposureQuery {
+	query := (&APIExposureClient{config: _q.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := _q.prepareQuery(ctx); err != nil {
 			return nil, err
@@ -148,7 +148,7 @@ func (_q *ApplicationQuery) QueryExposedApis() *ApiExposureQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(application.Table, application.FieldID, selector),
 			sqlgraph.To(apiexposure.Table, apiexposure.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, application.ExposedApisTable, application.ExposedApisColumn),
+			sqlgraph.Edge(sqlgraph.O2M, false, application.ExposedAPIsTable, application.ExposedAPIsColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -156,9 +156,9 @@ func (_q *ApplicationQuery) QueryExposedApis() *ApiExposureQuery {
 	return query
 }
 
-// QuerySubscribedApis chains the current query on the "subscribed_apis" edge.
-func (_q *ApplicationQuery) QuerySubscribedApis() *ApiSubscriptionQuery {
-	query := (&ApiSubscriptionClient{config: _q.config}).Query()
+// QuerySubscribedAPIs chains the current query on the "subscribed_APIs" edge.
+func (_q *ApplicationQuery) QuerySubscribedAPIs() *APISubscriptionQuery {
+	query := (&APISubscriptionClient{config: _q.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := _q.prepareQuery(ctx); err != nil {
 			return nil, err
@@ -170,7 +170,7 @@ func (_q *ApplicationQuery) QuerySubscribedApis() *ApiSubscriptionQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(application.Table, application.FieldID, selector),
 			sqlgraph.To(apisubscription.Table, apisubscription.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, application.SubscribedApisTable, application.SubscribedApisColumn),
+			sqlgraph.Edge(sqlgraph.O2M, false, application.SubscribedAPIsTable, application.SubscribedAPIsColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -482,8 +482,8 @@ func (_q *ApplicationQuery) Clone() *ApplicationQuery {
 		predicates:             append([]predicate.Application{}, _q.predicates...),
 		withZone:               _q.withZone.Clone(),
 		withOwnerTeam:          _q.withOwnerTeam.Clone(),
-		withExposedApis:        _q.withExposedApis.Clone(),
-		withSubscribedApis:     _q.withSubscribedApis.Clone(),
+		withExposedAPIs:        _q.withExposedAPIs.Clone(),
+		withSubscribedAPIs:     _q.withSubscribedAPIs.Clone(),
 		withExposedEvents:      _q.withExposedEvents.Clone(),
 		withSubscribedEvents:   _q.withSubscribedEvents.Clone(),
 		withExposedAgentics:    _q.withExposedAgentics.Clone(),
@@ -517,25 +517,25 @@ func (_q *ApplicationQuery) WithOwnerTeam(opts ...func(*TeamQuery)) *Application
 	return _q
 }
 
-// WithExposedApis tells the query-builder to eager-load the nodes that are connected to
-// the "exposed_apis" edge. The optional arguments are used to configure the query builder of the edge.
-func (_q *ApplicationQuery) WithExposedApis(opts ...func(*ApiExposureQuery)) *ApplicationQuery {
-	query := (&ApiExposureClient{config: _q.config}).Query()
+// WithExposedAPIs tells the query-builder to eager-load the nodes that are connected to
+// the "exposed_APIs" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *ApplicationQuery) WithExposedAPIs(opts ...func(*APIExposureQuery)) *ApplicationQuery {
+	query := (&APIExposureClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	_q.withExposedApis = query
+	_q.withExposedAPIs = query
 	return _q
 }
 
-// WithSubscribedApis tells the query-builder to eager-load the nodes that are connected to
-// the "subscribed_apis" edge. The optional arguments are used to configure the query builder of the edge.
-func (_q *ApplicationQuery) WithSubscribedApis(opts ...func(*ApiSubscriptionQuery)) *ApplicationQuery {
-	query := (&ApiSubscriptionClient{config: _q.config}).Query()
+// WithSubscribedAPIs tells the query-builder to eager-load the nodes that are connected to
+// the "subscribed_APIs" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *ApplicationQuery) WithSubscribedAPIs(opts ...func(*APISubscriptionQuery)) *ApplicationQuery {
+	query := (&APISubscriptionClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	_q.withSubscribedApis = query
+	_q.withSubscribedAPIs = query
 	return _q
 }
 
@@ -682,8 +682,8 @@ func (_q *ApplicationQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*
 		loadedTypes = [9]bool{
 			_q.withZone != nil,
 			_q.withOwnerTeam != nil,
-			_q.withExposedApis != nil,
-			_q.withSubscribedApis != nil,
+			_q.withExposedAPIs != nil,
+			_q.withSubscribedAPIs != nil,
 			_q.withExposedEvents != nil,
 			_q.withSubscribedEvents != nil,
 			_q.withExposedAgentics != nil,
@@ -730,17 +730,17 @@ func (_q *ApplicationQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*
 			return nil, err
 		}
 	}
-	if query := _q.withExposedApis; query != nil {
-		if err := _q.loadExposedApis(ctx, query, nodes,
-			func(n *Application) { n.Edges.ExposedApis = []*ApiExposure{} },
-			func(n *Application, e *ApiExposure) { n.Edges.ExposedApis = append(n.Edges.ExposedApis, e) }); err != nil {
+	if query := _q.withExposedAPIs; query != nil {
+		if err := _q.loadExposedAPIs(ctx, query, nodes,
+			func(n *Application) { n.Edges.ExposedAPIs = []*APIExposure{} },
+			func(n *Application, e *APIExposure) { n.Edges.ExposedAPIs = append(n.Edges.ExposedAPIs, e) }); err != nil {
 			return nil, err
 		}
 	}
-	if query := _q.withSubscribedApis; query != nil {
-		if err := _q.loadSubscribedApis(ctx, query, nodes,
-			func(n *Application) { n.Edges.SubscribedApis = []*ApiSubscription{} },
-			func(n *Application, e *ApiSubscription) { n.Edges.SubscribedApis = append(n.Edges.SubscribedApis, e) }); err != nil {
+	if query := _q.withSubscribedAPIs; query != nil {
+		if err := _q.loadSubscribedAPIs(ctx, query, nodes,
+			func(n *Application) { n.Edges.SubscribedAPIs = []*APISubscription{} },
+			func(n *Application, e *APISubscription) { n.Edges.SubscribedAPIs = append(n.Edges.SubscribedAPIs, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -782,17 +782,17 @@ func (_q *ApplicationQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*
 			return nil, err
 		}
 	}
-	for name, query := range _q.withNamedExposedApis {
-		if err := _q.loadExposedApis(ctx, query, nodes,
-			func(n *Application) { n.appendNamedExposedApis(name) },
-			func(n *Application, e *ApiExposure) { n.appendNamedExposedApis(name, e) }); err != nil {
+	for name, query := range _q.withNamedExposedAPIs {
+		if err := _q.loadExposedAPIs(ctx, query, nodes,
+			func(n *Application) { n.appendNamedExposedAPIs(name) },
+			func(n *Application, e *APIExposure) { n.appendNamedExposedAPIs(name, e) }); err != nil {
 			return nil, err
 		}
 	}
-	for name, query := range _q.withNamedSubscribedApis {
-		if err := _q.loadSubscribedApis(ctx, query, nodes,
-			func(n *Application) { n.appendNamedSubscribedApis(name) },
-			func(n *Application, e *ApiSubscription) { n.appendNamedSubscribedApis(name, e) }); err != nil {
+	for name, query := range _q.withNamedSubscribedAPIs {
+		if err := _q.loadSubscribedAPIs(ctx, query, nodes,
+			func(n *Application) { n.appendNamedSubscribedAPIs(name) },
+			func(n *Application, e *APISubscription) { n.appendNamedSubscribedAPIs(name, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -896,7 +896,7 @@ func (_q *ApplicationQuery) loadOwnerTeam(ctx context.Context, query *TeamQuery,
 	}
 	return nil
 }
-func (_q *ApplicationQuery) loadExposedApis(ctx context.Context, query *ApiExposureQuery, nodes []*Application, init func(*Application), assign func(*Application, *ApiExposure)) error {
+func (_q *ApplicationQuery) loadExposedAPIs(ctx context.Context, query *APIExposureQuery, nodes []*Application, init func(*Application), assign func(*Application, *APIExposure)) error {
 	fks := make([]driver.Value, 0, len(nodes))
 	nodeids := make(map[int]*Application)
 	for i := range nodes {
@@ -907,8 +907,8 @@ func (_q *ApplicationQuery) loadExposedApis(ctx context.Context, query *ApiExpos
 		}
 	}
 	query.withFKs = true
-	query.Where(predicate.ApiExposure(func(s *sql.Selector) {
-		s.Where(sql.InValues(s.C(application.ExposedApisColumn), fks...))
+	query.Where(predicate.APIExposure(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(application.ExposedAPIsColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {
@@ -927,7 +927,7 @@ func (_q *ApplicationQuery) loadExposedApis(ctx context.Context, query *ApiExpos
 	}
 	return nil
 }
-func (_q *ApplicationQuery) loadSubscribedApis(ctx context.Context, query *ApiSubscriptionQuery, nodes []*Application, init func(*Application), assign func(*Application, *ApiSubscription)) error {
+func (_q *ApplicationQuery) loadSubscribedAPIs(ctx context.Context, query *APISubscriptionQuery, nodes []*Application, init func(*Application), assign func(*Application, *APISubscription)) error {
 	fks := make([]driver.Value, 0, len(nodes))
 	nodeids := make(map[int]*Application)
 	for i := range nodes {
@@ -938,8 +938,8 @@ func (_q *ApplicationQuery) loadSubscribedApis(ctx context.Context, query *ApiSu
 		}
 	}
 	query.withFKs = true
-	query.Where(predicate.ApiSubscription(func(s *sql.Selector) {
-		s.Where(sql.InValues(s.C(application.SubscribedApisColumn), fks...))
+	query.Where(predicate.APISubscription(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(application.SubscribedAPIsColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {
@@ -1195,31 +1195,31 @@ func (_q *ApplicationQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	return selector
 }
 
-// WithNamedExposedApis tells the query-builder to eager-load the nodes that are connected to the "exposed_apis"
+// WithNamedExposedAPIs tells the query-builder to eager-load the nodes that are connected to the "exposed_APIs"
 // edge with the given name. The optional arguments are used to configure the query builder of the edge.
-func (_q *ApplicationQuery) WithNamedExposedApis(name string, opts ...func(*ApiExposureQuery)) *ApplicationQuery {
-	query := (&ApiExposureClient{config: _q.config}).Query()
+func (_q *ApplicationQuery) WithNamedExposedAPIs(name string, opts ...func(*APIExposureQuery)) *ApplicationQuery {
+	query := (&APIExposureClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	if _q.withNamedExposedApis == nil {
-		_q.withNamedExposedApis = make(map[string]*ApiExposureQuery)
+	if _q.withNamedExposedAPIs == nil {
+		_q.withNamedExposedAPIs = make(map[string]*APIExposureQuery)
 	}
-	_q.withNamedExposedApis[name] = query
+	_q.withNamedExposedAPIs[name] = query
 	return _q
 }
 
-// WithNamedSubscribedApis tells the query-builder to eager-load the nodes that are connected to the "subscribed_apis"
+// WithNamedSubscribedAPIs tells the query-builder to eager-load the nodes that are connected to the "subscribed_APIs"
 // edge with the given name. The optional arguments are used to configure the query builder of the edge.
-func (_q *ApplicationQuery) WithNamedSubscribedApis(name string, opts ...func(*ApiSubscriptionQuery)) *ApplicationQuery {
-	query := (&ApiSubscriptionClient{config: _q.config}).Query()
+func (_q *ApplicationQuery) WithNamedSubscribedAPIs(name string, opts ...func(*APISubscriptionQuery)) *ApplicationQuery {
+	query := (&APISubscriptionClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	if _q.withNamedSubscribedApis == nil {
-		_q.withNamedSubscribedApis = make(map[string]*ApiSubscriptionQuery)
+	if _q.withNamedSubscribedAPIs == nil {
+		_q.withNamedSubscribedAPIs = make(map[string]*APISubscriptionQuery)
 	}
-	_q.withNamedSubscribedApis[name] = query
+	_q.withNamedSubscribedAPIs[name] = query
 	return _q
 }
 

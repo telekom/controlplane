@@ -176,7 +176,7 @@ var _ = Describe("ApiExposure Translator", func() {
 			Expect(data.Security.M2M.ExternalIDP.Basic.Username).To(Equal("username"))
 			Expect(data.Security.M2M.ExternalIDP.Basic.Password).To(Equal("password"))
 			Expect(data.Security.M2M.ExternalIDP.Client).NotTo(BeNil())
-			Expect(data.Security.M2M.ExternalIDP.Client.ClientId).To(Equal("id"))
+			Expect(data.Security.M2M.ExternalIDP.Client.ClientID).To(Equal("id"))
 			Expect(*data.Security.M2M.ExternalIDP.Client.ClientSecret).To(Equal("secret"))
 			Expect(*data.Security.M2M.ExternalIDP.Client.ClientKey).To(Equal("key"))
 
@@ -446,7 +446,7 @@ var _ = Describe("ApiExposure Translator", func() {
 			Expect(data.Security.M2M.ExternalIDP.Basic.Username).To(Equal("ext-user"))
 			Expect(data.Security.M2M.ExternalIDP.Basic.Password).To(Equal("ext-pass"))
 			Expect(data.Security.M2M.ExternalIDP.Client).NotTo(BeNil())
-			Expect(data.Security.M2M.ExternalIDP.Client.ClientId).To(Equal("ext-client-id"))
+			Expect(data.Security.M2M.ExternalIDP.Client.ClientID).To(Equal("ext-client-id"))
 			Expect(*data.Security.M2M.ExternalIDP.Client.ClientSecret).To(Equal("ext-client-secret"))
 			Expect(*data.Security.M2M.ExternalIDP.Client.ClientKey).To(Equal("ext-client-key"))
 		})

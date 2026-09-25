@@ -34,7 +34,7 @@ type AgenticSubscriptionData struct {
 	StatusPhase    string // "READY", "PENDING", "ERROR", "UNKNOWN"
 	StatusMessage  string
 	BasePath       string
-	GatewayUrl     string
+	GatewayURL     string
 	Security       *model.AgenticSubscriptionSecurity
 	Traffic        *model.AgenticSubscriberTraffic
 	OwnerAppName   string // resolved to owner Application FK (required)

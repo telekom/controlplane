@@ -66,7 +66,7 @@ const (
 	Table = "approvals"
 	// APISubscriptionTable is the table that holds the api_subscription relation/edge.
 	APISubscriptionTable = "approvals"
-	// APISubscriptionInverseTable is the table name for the ApiSubscription entity.
+	// APISubscriptionInverseTable is the table name for the APISubscription entity.
 	// It exists in this package in order to avoid circular dependency with the "apisubscription" package.
 	APISubscriptionInverseTable = "api_subscriptions"
 	// APISubscriptionColumn is the table column denoting the api_subscription relation/edge.
@@ -112,8 +112,8 @@ var Columns = []string{
 // ForeignKeys holds the SQL foreign-keys that are owned by the "approvals"
 // table and are not defined as standalone fields in the schema.
 var ForeignKeys = []string{
-	"agentic_subscription_approval",
 	"api_subscription_approval",
+	"agentic_subscription_approval",
 	"event_subscription_approval",
 }
 

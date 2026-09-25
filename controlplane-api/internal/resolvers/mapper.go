@@ -42,19 +42,19 @@ func mapApplicationInfo(app *ent.Application, zone *ent.Zone, team *ent.Team, gr
 	return &gqlmodel.ApplicationInfo{
 		ID:          app.ID,
 		Name:        app.Name,
-		ExternalIds: app.ExternalIds,
+		ExternalIDs: app.ExternalIDs,
 		Zone:        zone,
 		OwnerTeam:   mapTeamInfo(team, group),
 	}
 }
 
-func mapApiExposureInfo(exposure *ent.ApiExposure, app *ent.Application, zone *ent.Zone, team *ent.Team, group *ent.Group) *gqlmodel.ApiExposureInfo {
-	return &gqlmodel.ApiExposureInfo{
+func mapAPIExposureInfo(exposure *ent.APIExposure, app *ent.Application, zone *ent.Zone, team *ent.Team, group *ent.Group) *gqlmodel.APIExposureInfo {
+	return &gqlmodel.APIExposureInfo{
 		ID:         exposure.ID,
 		BasePath:   exposure.BasePath,
 		Visibility: string(exposure.Visibility),
 		Active:     exposure.Active,
-		ApiVersion: exposure.APIVersion,
+		APIVersion: exposure.APIVersion,
 		Features:   exposure.Features,
 		Traffic:    &exposure.Traffic,
 		ApprovalConfig: model.ApprovalConfig{
@@ -67,13 +67,13 @@ func mapApiExposureInfo(exposure *ent.ApiExposure, app *ent.Application, zone *e
 	}
 }
 
-func mapApiSubscriptionInfo(sub *ent.ApiSubscription, app *ent.Application, zone *ent.Zone, team *ent.Team, group *ent.Group) *gqlmodel.ApiSubscriptionInfo {
+func mapAPISubscriptionInfo(sub *ent.APISubscription, app *ent.Application, zone *ent.Zone, team *ent.Team, group *ent.Group) *gqlmodel.APISubscriptionInfo {
 	var statusPhase *string
 	if sub.StatusPhase != nil {
 		s := string(*sub.StatusPhase)
 		statusPhase = &s
 	}
-	return &gqlmodel.ApiSubscriptionInfo{
+	return &gqlmodel.APISubscriptionInfo{
 		ID:                   sub.ID,
 		BasePath:             sub.BasePath,
 		StatusPhase:          statusPhase,
@@ -182,13 +182,13 @@ func loadOwnerChain(ctx context.Context, ownerQuery interface {
 	return app, zone, team, group, nil
 }
 
-// loadApiSubscriptionInfo loads the full owner chain for an API subscription and maps it to ApiSubscriptionInfo.
-func loadApiSubscriptionInfo(ctx context.Context, sub *ent.ApiSubscription) (*gqlmodel.ApiSubscriptionInfo, error) {
+// loadAPISubscriptionInfo loads the full owner chain for an API subscription and maps it to APISubscriptionInfo.
+func loadAPISubscriptionInfo(ctx context.Context, sub *ent.APISubscription) (*gqlmodel.APISubscriptionInfo, error) {
 	app, zone, team, group, err := loadOwnerChain(ctx, sub.QueryOwner())
 	if err != nil {
 		return nil, fmt.Errorf("api subscription %d: %w", sub.ID, err)
 	}
-	return mapApiSubscriptionInfo(sub, app, zone, team, group), nil
+	return mapAPISubscriptionInfo(sub, app, zone, team, group), nil
 }
 
 // loadEventSubscriptionInfo loads the full owner chain for an event subscription and maps it to EventSubscriptionInfo.
@@ -200,13 +200,13 @@ func loadEventSubscriptionInfo(ctx context.Context, sub *ent.EventSubscription) 
 	return mapEventSubscriptionInfo(sub, app, zone, team, group), nil
 }
 
-// loadApiExposureInfo loads the full owner chain for an API exposure and maps it to ApiExposureInfo.
-func loadApiExposureInfo(ctx context.Context, exposure *ent.ApiExposure) (*gqlmodel.ApiExposureInfo, error) {
+// loadAPIExposureInfo loads the full owner chain for an API exposure and maps it to APIExposureInfo.
+func loadAPIExposureInfo(ctx context.Context, exposure *ent.APIExposure) (*gqlmodel.APIExposureInfo, error) {
 	app, zone, team, group, err := loadOwnerChain(ctx, exposure.QueryOwner())
 	if err != nil {
 		return nil, fmt.Errorf("api exposure %d: %w", exposure.ID, err)
 	}
-	return mapApiExposureInfo(exposure, app, zone, team, group), nil
+	return mapAPIExposureInfo(exposure, app, zone, team, group), nil
 }
 
 // loadEventExposureInfo loads the full owner chain for an event exposure and maps it to EventExposureInfo.

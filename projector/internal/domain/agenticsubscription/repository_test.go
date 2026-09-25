@@ -111,7 +111,7 @@ var _ = Describe("AgenticSubscription Repository", func() {
 			SetBasePath("/mcp/v1/tools").
 			SetNamespace("platform--narvi").
 			SetVisibility(entagenticexposure.VisibilityWorld).
-			SetVariant(entagenticexposure.VariantMcp).
+			SetVariant(entagenticexposure.VariantMCP).
 			SetActive(true).
 			SetUpstreams([]model.Upstream{}).
 			SetApprovalConfig(model.ApprovalConfig{Strategy: "AUTO"}).
@@ -143,11 +143,11 @@ var _ = Describe("AgenticSubscription Repository", func() {
 			StatusPhase:   "READY",
 			StatusMessage: "subscription active",
 			BasePath:      "/mcp/v1/tools",
-			GatewayUrl:    "https://ai-gateway.example.com/mcp/v1/tools",
+			GatewayURL:    "https://ai-gateway.example.com/mcp/v1/tools",
 			Security: &model.AgenticSubscriptionSecurity{
 				M2M: &model.SubscriberMachine2MachineAuthentication{
 					Client: &model.OAuth2ClientCredentials{
-						ClientId: "my-client-id",
+						ClientID: "my-client-id",
 					},
 					Scopes: []string{"read", "write"},
 				},
@@ -182,7 +182,7 @@ var _ = Describe("AgenticSubscription Repository", func() {
 			Expect(sub.GatewayURL).To(HaveValue(Equal("https://ai-gateway.example.com/mcp/v1/tools")))
 			Expect(sub.Security.M2M).NotTo(BeNil())
 			Expect(sub.Security.M2M.Client).NotTo(BeNil())
-			Expect(sub.Security.M2M.Client.ClientId).To(Equal("my-client-id"))
+			Expect(sub.Security.M2M.Client.ClientID).To(Equal("my-client-id"))
 			Expect(sub.Traffic.Failover).NotTo(BeNil())
 			Expect(sub.Traffic.Failover.Enabled).To(BeTrue())
 

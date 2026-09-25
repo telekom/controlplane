@@ -20,8 +20,8 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 )
 
-// ApiSubscription is the model entity for the ApiSubscription schema.
-type ApiSubscription struct {
+// APISubscription is the model entity for the APISubscription schema.
+type APISubscription struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID int `json:"id,omitempty"`
@@ -41,28 +41,28 @@ type ApiSubscription struct {
 	Name string `json:"name,omitempty"`
 	// BasePath holds the value of the "base_path" field.
 	BasePath string `json:"base_path,omitempty"`
-	// M2mAuthMethod holds the value of the "m2m_auth_method" field.
-	M2mAuthMethod apisubscription.M2mAuthMethod `json:"m2m_auth_method,omitempty"`
+	// M2MAuthMethod holds the value of the "M2M_auth_method" field.
+	M2MAuthMethod apisubscription.M2MAuthMethod `json:"M2M_auth_method,omitempty"`
 	// GatewayURL holds the value of the "gateway_url" field.
 	GatewayURL *string `json:"gateway_url,omitempty"`
 	// Security holds the value of the "security" field.
-	Security *model.ApiSubscriptionSecurity `json:"security,omitempty"`
+	Security *model.APISubscriptionSecurity `json:"security,omitempty"`
 	// Traffic holds the value of the "traffic" field.
-	Traffic *model.ApiSubscriptionTraffic `json:"traffic,omitempty"`
+	Traffic *model.APISubscriptionTraffic `json:"traffic,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
-	// The values are being populated by the ApiSubscriptionQuery when eager-loading is set.
-	Edges                       ApiSubscriptionEdges `json:"edges"`
+	// The values are being populated by the APISubscriptionQuery when eager-loading is set.
+	Edges                       APISubscriptionEdges `json:"edges"`
 	api_subscription_target     *int
 	application_subscribed_apis *int
 	selectValues                sql.SelectValues
 }
 
-// ApiSubscriptionEdges holds the relations/edges for other nodes in the graph.
-type ApiSubscriptionEdges struct {
+// APISubscriptionEdges holds the relations/edges for other nodes in the graph.
+type APISubscriptionEdges struct {
 	// Owner holds the value of the owner edge.
 	Owner *Application `json:"owner,omitempty"`
 	// Target holds the value of the target edge.
-	Target *ApiExposure `json:"target,omitempty"`
+	Target *APIExposure `json:"target,omitempty"`
 	// FailoverZones holds the value of the failover_zones edge.
 	FailoverZones []*Zone `json:"failover_zones,omitempty"`
 	// Approval holds the value of the approval edge.
@@ -81,7 +81,7 @@ type ApiSubscriptionEdges struct {
 
 // OwnerOrErr returns the Owner value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
-func (e ApiSubscriptionEdges) OwnerOrErr() (*Application, error) {
+func (e APISubscriptionEdges) OwnerOrErr() (*Application, error) {
 	if e.Owner != nil {
 		return e.Owner, nil
 	} else if e.loadedTypes[0] {
@@ -92,7 +92,7 @@ func (e ApiSubscriptionEdges) OwnerOrErr() (*Application, error) {
 
 // TargetOrErr returns the Target value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
-func (e ApiSubscriptionEdges) TargetOrErr() (*ApiExposure, error) {
+func (e APISubscriptionEdges) TargetOrErr() (*APIExposure, error) {
 	if e.Target != nil {
 		return e.Target, nil
 	} else if e.loadedTypes[1] {
@@ -103,7 +103,7 @@ func (e ApiSubscriptionEdges) TargetOrErr() (*ApiExposure, error) {
 
 // FailoverZonesOrErr returns the FailoverZones value or an error if the edge
 // was not loaded in eager-loading.
-func (e ApiSubscriptionEdges) FailoverZonesOrErr() ([]*Zone, error) {
+func (e APISubscriptionEdges) FailoverZonesOrErr() ([]*Zone, error) {
 	if e.loadedTypes[2] {
 		return e.FailoverZones, nil
 	}
@@ -112,7 +112,7 @@ func (e ApiSubscriptionEdges) FailoverZonesOrErr() ([]*Zone, error) {
 
 // ApprovalOrErr returns the Approval value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
-func (e ApiSubscriptionEdges) ApprovalOrErr() (*Approval, error) {
+func (e APISubscriptionEdges) ApprovalOrErr() (*Approval, error) {
 	if e.Approval != nil {
 		return e.Approval, nil
 	} else if e.loadedTypes[3] {
@@ -123,7 +123,7 @@ func (e ApiSubscriptionEdges) ApprovalOrErr() (*Approval, error) {
 
 // ApprovalRequestsOrErr returns the ApprovalRequests value or an error if the edge
 // was not loaded in eager-loading.
-func (e ApiSubscriptionEdges) ApprovalRequestsOrErr() ([]*ApprovalRequest, error) {
+func (e APISubscriptionEdges) ApprovalRequestsOrErr() ([]*ApprovalRequest, error) {
 	if e.loadedTypes[4] {
 		return e.ApprovalRequests, nil
 	}
@@ -131,7 +131,7 @@ func (e ApiSubscriptionEdges) ApprovalRequestsOrErr() ([]*ApprovalRequest, error
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
-func (*ApiSubscription) scanValues(columns []string) ([]any, error) {
+func (*APISubscription) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
@@ -139,7 +139,7 @@ func (*ApiSubscription) scanValues(columns []string) ([]any, error) {
 			values[i] = new([]byte)
 		case apisubscription.FieldID:
 			values[i] = new(sql.NullInt64)
-		case apisubscription.FieldStatusPhase, apisubscription.FieldStatusMessage, apisubscription.FieldEnvironment, apisubscription.FieldNamespace, apisubscription.FieldName, apisubscription.FieldBasePath, apisubscription.FieldM2mAuthMethod, apisubscription.FieldGatewayURL:
+		case apisubscription.FieldStatusPhase, apisubscription.FieldStatusMessage, apisubscription.FieldEnvironment, apisubscription.FieldNamespace, apisubscription.FieldName, apisubscription.FieldBasePath, apisubscription.FieldM2MAuthMethod, apisubscription.FieldGatewayURL:
 			values[i] = new(sql.NullString)
 		case apisubscription.FieldCreatedAt, apisubscription.FieldLastModifiedAt:
 			values[i] = new(sql.NullTime)
@@ -155,8 +155,8 @@ func (*ApiSubscription) scanValues(columns []string) ([]any, error) {
 }
 
 // assignValues assigns the values that were returned from sql.Rows (after scanning)
-// to the ApiSubscription fields.
-func (_m *ApiSubscription) assignValues(columns []string, values []any) error {
+// to the APISubscription fields.
+func (_m *APISubscription) assignValues(columns []string, values []any) error {
 	if m, n := len(values), len(columns); m < n {
 		return fmt.Errorf("mismatch number of scan values: %d != %d", m, n)
 	}
@@ -219,11 +219,11 @@ func (_m *ApiSubscription) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.BasePath = value.String
 			}
-		case apisubscription.FieldM2mAuthMethod:
+		case apisubscription.FieldM2MAuthMethod:
 			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field m2m_auth_method", values[i])
+				return fmt.Errorf("unexpected type %T for field M2M_auth_method", values[i])
 			} else if value.Valid {
-				_m.M2mAuthMethod = apisubscription.M2mAuthMethod(value.String)
+				_m.M2MAuthMethod = apisubscription.M2MAuthMethod(value.String)
 			}
 		case apisubscription.FieldGatewayURL:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -269,59 +269,59 @@ func (_m *ApiSubscription) assignValues(columns []string, values []any) error {
 	return nil
 }
 
-// Value returns the ent.Value that was dynamically selected and assigned to the ApiSubscription.
+// Value returns the ent.Value that was dynamically selected and assigned to the APISubscription.
 // This includes values selected through modifiers, order, etc.
-func (_m *ApiSubscription) Value(name string) (ent.Value, error) {
+func (_m *APISubscription) Value(name string) (ent.Value, error) {
 	return _m.selectValues.Get(name)
 }
 
-// QueryOwner queries the "owner" edge of the ApiSubscription entity.
-func (_m *ApiSubscription) QueryOwner() *ApplicationQuery {
-	return NewApiSubscriptionClient(_m.config).QueryOwner(_m)
+// QueryOwner queries the "owner" edge of the APISubscription entity.
+func (_m *APISubscription) QueryOwner() *ApplicationQuery {
+	return NewAPISubscriptionClient(_m.config).QueryOwner(_m)
 }
 
-// QueryTarget queries the "target" edge of the ApiSubscription entity.
-func (_m *ApiSubscription) QueryTarget() *ApiExposureQuery {
-	return NewApiSubscriptionClient(_m.config).QueryTarget(_m)
+// QueryTarget queries the "target" edge of the APISubscription entity.
+func (_m *APISubscription) QueryTarget() *APIExposureQuery {
+	return NewAPISubscriptionClient(_m.config).QueryTarget(_m)
 }
 
-// QueryFailoverZones queries the "failover_zones" edge of the ApiSubscription entity.
-func (_m *ApiSubscription) QueryFailoverZones() *ZoneQuery {
-	return NewApiSubscriptionClient(_m.config).QueryFailoverZones(_m)
+// QueryFailoverZones queries the "failover_zones" edge of the APISubscription entity.
+func (_m *APISubscription) QueryFailoverZones() *ZoneQuery {
+	return NewAPISubscriptionClient(_m.config).QueryFailoverZones(_m)
 }
 
-// QueryApproval queries the "approval" edge of the ApiSubscription entity.
-func (_m *ApiSubscription) QueryApproval() *ApprovalQuery {
-	return NewApiSubscriptionClient(_m.config).QueryApproval(_m)
+// QueryApproval queries the "approval" edge of the APISubscription entity.
+func (_m *APISubscription) QueryApproval() *ApprovalQuery {
+	return NewAPISubscriptionClient(_m.config).QueryApproval(_m)
 }
 
-// QueryApprovalRequests queries the "approval_requests" edge of the ApiSubscription entity.
-func (_m *ApiSubscription) QueryApprovalRequests() *ApprovalRequestQuery {
-	return NewApiSubscriptionClient(_m.config).QueryApprovalRequests(_m)
+// QueryApprovalRequests queries the "approval_requests" edge of the APISubscription entity.
+func (_m *APISubscription) QueryApprovalRequests() *ApprovalRequestQuery {
+	return NewAPISubscriptionClient(_m.config).QueryApprovalRequests(_m)
 }
 
-// Update returns a builder for updating this ApiSubscription.
-// Note that you need to call ApiSubscription.Unwrap() before calling this method if this ApiSubscription
+// Update returns a builder for updating this APISubscription.
+// Note that you need to call APISubscription.Unwrap() before calling this method if this APISubscription
 // was returned from a transaction, and the transaction was committed or rolled back.
-func (_m *ApiSubscription) Update() *ApiSubscriptionUpdateOne {
-	return NewApiSubscriptionClient(_m.config).UpdateOne(_m)
+func (_m *APISubscription) Update() *APISubscriptionUpdateOne {
+	return NewAPISubscriptionClient(_m.config).UpdateOne(_m)
 }
 
-// Unwrap unwraps the ApiSubscription entity that was returned from a transaction after it was closed,
+// Unwrap unwraps the APISubscription entity that was returned from a transaction after it was closed,
 // so that all future queries will be executed through the driver which created the transaction.
-func (_m *ApiSubscription) Unwrap() *ApiSubscription {
+func (_m *APISubscription) Unwrap() *APISubscription {
 	_tx, ok := _m.config.driver.(*txDriver)
 	if !ok {
-		panic("ent: ApiSubscription is not a transactional entity")
+		panic("ent: APISubscription is not a transactional entity")
 	}
 	_m.config.driver = _tx.drv
 	return _m
 }
 
 // String implements the fmt.Stringer.
-func (_m *ApiSubscription) String() string {
+func (_m *APISubscription) String() string {
 	var builder strings.Builder
-	builder.WriteString("ApiSubscription(")
+	builder.WriteString("APISubscription(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", _m.ID))
 	builder.WriteString("created_at=")
 	builder.WriteString(_m.CreatedAt.Format(time.ANSIC))
@@ -353,8 +353,8 @@ func (_m *ApiSubscription) String() string {
 	builder.WriteString("base_path=")
 	builder.WriteString(_m.BasePath)
 	builder.WriteString(", ")
-	builder.WriteString("m2m_auth_method=")
-	builder.WriteString(fmt.Sprintf("%v", _m.M2mAuthMethod))
+	builder.WriteString("M2M_auth_method=")
+	builder.WriteString(fmt.Sprintf("%v", _m.M2MAuthMethod))
 	builder.WriteString(", ")
 	if v := _m.GatewayURL; v != nil {
 		builder.WriteString("gateway_url=")
@@ -372,7 +372,7 @@ func (_m *ApiSubscription) String() string {
 
 // NamedFailoverZones returns the FailoverZones named value or an error if the edge was not
 // loaded in eager-loading with this name.
-func (_m *ApiSubscription) NamedFailoverZones(name string) ([]*Zone, error) {
+func (_m *APISubscription) NamedFailoverZones(name string) ([]*Zone, error) {
 	if _m.Edges.namedFailoverZones == nil {
 		return nil, &NotLoadedError{edge: name}
 	}
@@ -383,7 +383,7 @@ func (_m *ApiSubscription) NamedFailoverZones(name string) ([]*Zone, error) {
 	return nodes, nil
 }
 
-func (_m *ApiSubscription) appendNamedFailoverZones(name string, edges ...*Zone) {
+func (_m *APISubscription) appendNamedFailoverZones(name string, edges ...*Zone) {
 	if _m.Edges.namedFailoverZones == nil {
 		_m.Edges.namedFailoverZones = make(map[string][]*Zone)
 	}
@@ -396,7 +396,7 @@ func (_m *ApiSubscription) appendNamedFailoverZones(name string, edges ...*Zone)
 
 // NamedApprovalRequests returns the ApprovalRequests named value or an error if the edge was not
 // loaded in eager-loading with this name.
-func (_m *ApiSubscription) NamedApprovalRequests(name string) ([]*ApprovalRequest, error) {
+func (_m *APISubscription) NamedApprovalRequests(name string) ([]*ApprovalRequest, error) {
 	if _m.Edges.namedApprovalRequests == nil {
 		return nil, &NotLoadedError{edge: name}
 	}
@@ -407,7 +407,7 @@ func (_m *ApiSubscription) NamedApprovalRequests(name string) ([]*ApprovalReques
 	return nodes, nil
 }
 
-func (_m *ApiSubscription) appendNamedApprovalRequests(name string, edges ...*ApprovalRequest) {
+func (_m *APISubscription) appendNamedApprovalRequests(name string, edges ...*ApprovalRequest) {
 	if _m.Edges.namedApprovalRequests == nil {
 		_m.Edges.namedApprovalRequests = make(map[string][]*ApprovalRequest)
 	}
@@ -418,5 +418,5 @@ func (_m *ApiSubscription) appendNamedApprovalRequests(name string, edges ...*Ap
 	}
 }
 
-// ApiSubscriptions is a parsable slice of ApiSubscription.
-type ApiSubscriptions []*ApiSubscription
+// APISubscriptions is a parsable slice of APISubscription.
+type APISubscriptions []*APISubscription

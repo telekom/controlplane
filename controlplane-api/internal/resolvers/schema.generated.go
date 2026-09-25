@@ -29,20 +29,20 @@ import (
 
 // region    ************************** generated!.gotpl **************************
 
+type APIExposureInfoResolver interface {
+	Visibility(ctx context.Context, obj *model.APIExposureInfo) (apiexposure.Visibility, error)
+
+	Features(ctx context.Context, obj *model.APIExposureInfo) ([]model.APIExposureFeature, error)
+}
+type APISubscriptionInfoResolver interface {
+	StatusPhase(ctx context.Context, obj *model.APISubscriptionInfo) (*apisubscription.StatusPhase, error)
+}
 type AgenticExposureInfoResolver interface {
 	Visibility(ctx context.Context, obj *model.AgenticExposureInfo) (agenticexposure.Visibility, error)
 	Variant(ctx context.Context, obj *model.AgenticExposureInfo) (agenticexposure.Variant, error)
 }
 type AgenticSubscriptionInfoResolver interface {
 	StatusPhase(ctx context.Context, obj *model.AgenticSubscriptionInfo) (*agenticsubscription.StatusPhase, error)
-}
-type ApiExposureInfoResolver interface {
-	Visibility(ctx context.Context, obj *model.ApiExposureInfo) (apiexposure.Visibility, error)
-
-	Features(ctx context.Context, obj *model.ApiExposureInfo) ([]model.APIExposureFeature, error)
-}
-type ApiSubscriptionInfoResolver interface {
-	StatusPhase(ctx context.Context, obj *model.ApiSubscriptionInfo) (*apisubscription.StatusPhase, error)
 }
 type ApprovalConfigResolver interface {
 	Strategy(ctx context.Context, obj *model1.ApprovalConfig) (approval.Strategy, error)
@@ -67,9 +67,6 @@ type EventSubscriptionInfoResolver interface {
 	DeliveryType(ctx context.Context, obj *model.EventSubscriptionInfo) (eventsubscription.DeliveryType, error)
 	StatusPhase(ctx context.Context, obj *model.EventSubscriptionInfo) (*eventsubscription.StatusPhase, error)
 }
-type ExternalIdResolver interface {
-	Schema(ctx context.Context, obj *model1.ExternalId) (string, error)
-}
 type ExternalIdentityProviderResolver interface {
 	TokenRequest(ctx context.Context, obj *model1.ExternalIdentityProvider) (*model.TokenRequestMethod, error)
 }
@@ -91,6 +88,625 @@ type SelectionFilterResolver interface {
 // endregion ***************************** args.gotpl *****************************
 
 // region    **************************** field.gotpl *****************************
+
+func (ec *executionContext) _APICategory_name(ctx context.Context, field graphql.CollectedField, obj *model.APICategory) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_APICategory_name(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Name, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_APICategory_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("APICategory", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _APIExposureInfo_id(ctx context.Context, field graphql.CollectedField, obj *model.APIExposureInfo) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_APIExposureInfo_id(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ID, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v int) graphql.Marshaler {
+			return ec.marshalNID2int(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_APIExposureInfo_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("APIExposureInfo", field, false, false, errors.New("field of type ID does not have child fields"))
+}
+
+func (ec *executionContext) _APIExposureInfo_basePath(ctx context.Context, field graphql.CollectedField, obj *model.APIExposureInfo) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_APIExposureInfo_basePath(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.BasePath, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_APIExposureInfo_basePath(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("APIExposureInfo", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _APIExposureInfo_visibility(ctx context.Context, field graphql.CollectedField, obj *model.APIExposureInfo) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_APIExposureInfo_visibility(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return ec.Resolvers.APIExposureInfo().Visibility(ctx, obj)
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v apiexposure.Visibility) graphql.Marshaler {
+			return ec.marshalNAPIExposureVisibility2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapiexposureᚐVisibility(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_APIExposureInfo_visibility(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("APIExposureInfo", field, true, true, errors.New("field of type APIExposureVisibility does not have child fields"))
+}
+
+func (ec *executionContext) _APIExposureInfo_active(ctx context.Context, field graphql.CollectedField, obj *model.APIExposureInfo) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_APIExposureInfo_active(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Active, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *bool) graphql.Marshaler {
+			return ec.marshalOBoolean2ᚖbool(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_APIExposureInfo_active(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("APIExposureInfo", field, false, false, errors.New("field of type Boolean does not have child fields"))
+}
+
+func (ec *executionContext) _APIExposureInfo_apiVersion(ctx context.Context, field graphql.CollectedField, obj *model.APIExposureInfo) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_APIExposureInfo_apiVersion(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.APIVersion, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *string) graphql.Marshaler {
+			return ec.marshalOString2ᚖstring(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_APIExposureInfo_apiVersion(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("APIExposureInfo", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _APIExposureInfo_features(ctx context.Context, field graphql.CollectedField, obj *model.APIExposureInfo) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_APIExposureInfo_features(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return ec.Resolvers.APIExposureInfo().Features(ctx, obj)
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []model.APIExposureFeature) graphql.Marshaler {
+			return ec.marshalNAPIExposureFeature2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐAPIExposureFeatureᚄ(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_APIExposureInfo_features(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("APIExposureInfo", field, true, true, errors.New("field of type APIExposureFeature does not have child fields"))
+}
+
+func (ec *executionContext) _APIExposureInfo_approvalConfig(ctx context.Context, field graphql.CollectedField, obj *model.APIExposureInfo) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_APIExposureInfo_approvalConfig(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ApprovalConfig, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v model1.ApprovalConfig) graphql.Marshaler {
+			return ec.marshalNApprovalConfig2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐApprovalConfig(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_APIExposureInfo_approvalConfig(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "APIExposureInfo",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_ApprovalConfig(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _APIExposureInfo_traffic(ctx context.Context, field graphql.CollectedField, obj *model.APIExposureInfo) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_APIExposureInfo_traffic(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Traffic, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model1.Traffic) graphql.Marshaler {
+			return ec.marshalOTraffic2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐTraffic(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_APIExposureInfo_traffic(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "APIExposureInfo",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_Traffic(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _APIExposureInfo_ownerApplicationName(ctx context.Context, field graphql.CollectedField, obj *model.APIExposureInfo) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_APIExposureInfo_ownerApplicationName(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.OwnerApplicationName, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_APIExposureInfo_ownerApplicationName(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("APIExposureInfo", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _APIExposureInfo_ownerTeam(ctx context.Context, field graphql.CollectedField, obj *model.APIExposureInfo) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_APIExposureInfo_ownerTeam(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.OwnerTeam, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model1.TeamInfo) graphql.Marshaler {
+			return ec.marshalNTeamInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐTeamInfo(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_APIExposureInfo_ownerTeam(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "APIExposureInfo",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_TeamInfo(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _APIExposureInfo_ownerApplication(ctx context.Context, field graphql.CollectedField, obj *model.APIExposureInfo) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_APIExposureInfo_ownerApplication(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.OwnerApplication, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.ApplicationInfo) graphql.Marshaler {
+			return ec.marshalNApplicationInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐApplicationInfo(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_APIExposureInfo_ownerApplication(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "APIExposureInfo",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_ApplicationInfo(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _APIExposureSecurity_m2m(ctx context.Context, field graphql.CollectedField, obj *model1.APIExposureSecurity) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_APIExposureSecurity_m2m(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.M2M, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model1.Machine2MachineAuthentication) graphql.Marshaler {
+			return ec.marshalOMachine2MachineAuthentication2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐMachine2MachineAuthentication(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_APIExposureSecurity_m2m(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "APIExposureSecurity",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_Machine2MachineAuthentication(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _APISubscriptionInfo_id(ctx context.Context, field graphql.CollectedField, obj *model.APISubscriptionInfo) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_APISubscriptionInfo_id(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ID, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v int) graphql.Marshaler {
+			return ec.marshalNID2int(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_APISubscriptionInfo_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("APISubscriptionInfo", field, false, false, errors.New("field of type ID does not have child fields"))
+}
+
+func (ec *executionContext) _APISubscriptionInfo_basePath(ctx context.Context, field graphql.CollectedField, obj *model.APISubscriptionInfo) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_APISubscriptionInfo_basePath(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.BasePath, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_APISubscriptionInfo_basePath(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("APISubscriptionInfo", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _APISubscriptionInfo_statusPhase(ctx context.Context, field graphql.CollectedField, obj *model.APISubscriptionInfo) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_APISubscriptionInfo_statusPhase(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return ec.Resolvers.APISubscriptionInfo().StatusPhase(ctx, obj)
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *apisubscription.StatusPhase) graphql.Marshaler {
+			return ec.marshalOAPISubscriptionStatusPhase2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapisubscriptionᚐStatusPhase(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_APISubscriptionInfo_statusPhase(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("APISubscriptionInfo", field, true, true, errors.New("field of type APISubscriptionStatusPhase does not have child fields"))
+}
+
+func (ec *executionContext) _APISubscriptionInfo_statusMessage(ctx context.Context, field graphql.CollectedField, obj *model.APISubscriptionInfo) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_APISubscriptionInfo_statusMessage(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.StatusMessage, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *string) graphql.Marshaler {
+			return ec.marshalOString2ᚖstring(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_APISubscriptionInfo_statusMessage(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("APISubscriptionInfo", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _APISubscriptionInfo_ownerApplicationName(ctx context.Context, field graphql.CollectedField, obj *model.APISubscriptionInfo) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_APISubscriptionInfo_ownerApplicationName(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.OwnerApplicationName, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_APISubscriptionInfo_ownerApplicationName(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("APISubscriptionInfo", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _APISubscriptionInfo_ownerTeam(ctx context.Context, field graphql.CollectedField, obj *model.APISubscriptionInfo) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_APISubscriptionInfo_ownerTeam(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.OwnerTeam, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model1.TeamInfo) graphql.Marshaler {
+			return ec.marshalNTeamInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐTeamInfo(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_APISubscriptionInfo_ownerTeam(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "APISubscriptionInfo",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_TeamInfo(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _APISubscriptionInfo_ownerApplication(ctx context.Context, field graphql.CollectedField, obj *model.APISubscriptionInfo) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_APISubscriptionInfo_ownerApplication(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.OwnerApplication, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.ApplicationInfo) graphql.Marshaler {
+			return ec.marshalNApplicationInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐApplicationInfo(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_APISubscriptionInfo_ownerApplication(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "APISubscriptionInfo",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_ApplicationInfo(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _APISubscriptionSecurity_m2m(ctx context.Context, field graphql.CollectedField, obj *model1.APISubscriptionSecurity) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_APISubscriptionSecurity_m2m(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.M2M, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model1.SubscriberMachine2MachineAuthentication) graphql.Marshaler {
+			return ec.marshalOSubscriberMachine2MachineAuthentication2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐSubscriberMachine2MachineAuthentication(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_APISubscriptionSecurity_m2m(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "APISubscriptionSecurity",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_SubscriberMachine2MachineAuthentication(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _APISubscriptionTraffic_providerLimits(ctx context.Context, field graphql.CollectedField, obj *model1.APISubscriptionTraffic) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_APISubscriptionTraffic_providerLimits(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ProviderLimits, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model1.Limits) graphql.Marshaler {
+			return ec.marshalOLimits2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐLimits(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_APISubscriptionTraffic_providerLimits(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "APISubscriptionTraffic",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_Limits(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _APISubscriptionTraffic_subscriberLimits(ctx context.Context, field graphql.CollectedField, obj *model1.APISubscriptionTraffic) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_APISubscriptionTraffic_subscriberLimits(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.SubscriberLimits, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model1.Limits) graphql.Marshaler {
+			return ec.marshalOLimits2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐLimits(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_APISubscriptionTraffic_subscriberLimits(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "APISubscriptionTraffic",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_Limits(ctx, field)
+		},
+	}
+	return fc, nil
+}
 
 func (ec *executionContext) _AgenticExposureInfo_id(ctx context.Context, field graphql.CollectedField, obj *model.AgenticExposureInfo) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
@@ -766,625 +1382,6 @@ func (ec *executionContext) fieldContext_AgenticTransformation_request(_ context
 	return fc, nil
 }
 
-func (ec *executionContext) _ApiCategory_name(ctx context.Context, field graphql.CollectedField, obj *model.APICategory) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.fieldContext_ApiCategory_name(ctx, field)
-		},
-		func(ctx context.Context) (any, error) {
-			return obj.Name, nil
-		},
-		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
-			return ec.marshalNString2string(ctx, selections, v)
-		},
-		true,
-		true,
-	)
-}
-func (ec *executionContext) fieldContext_ApiCategory_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	return graphql.NewScalarFieldContext("ApiCategory", field, false, false, errors.New("field of type String does not have child fields"))
-}
-
-func (ec *executionContext) _ApiExposureInfo_id(ctx context.Context, field graphql.CollectedField, obj *model.ApiExposureInfo) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.fieldContext_ApiExposureInfo_id(ctx, field)
-		},
-		func(ctx context.Context) (any, error) {
-			return obj.ID, nil
-		},
-		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v int) graphql.Marshaler {
-			return ec.marshalNID2int(ctx, selections, v)
-		},
-		true,
-		true,
-	)
-}
-func (ec *executionContext) fieldContext_ApiExposureInfo_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	return graphql.NewScalarFieldContext("ApiExposureInfo", field, false, false, errors.New("field of type ID does not have child fields"))
-}
-
-func (ec *executionContext) _ApiExposureInfo_basePath(ctx context.Context, field graphql.CollectedField, obj *model.ApiExposureInfo) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.fieldContext_ApiExposureInfo_basePath(ctx, field)
-		},
-		func(ctx context.Context) (any, error) {
-			return obj.BasePath, nil
-		},
-		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
-			return ec.marshalNString2string(ctx, selections, v)
-		},
-		true,
-		true,
-	)
-}
-func (ec *executionContext) fieldContext_ApiExposureInfo_basePath(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	return graphql.NewScalarFieldContext("ApiExposureInfo", field, false, false, errors.New("field of type String does not have child fields"))
-}
-
-func (ec *executionContext) _ApiExposureInfo_visibility(ctx context.Context, field graphql.CollectedField, obj *model.ApiExposureInfo) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.fieldContext_ApiExposureInfo_visibility(ctx, field)
-		},
-		func(ctx context.Context) (any, error) {
-			return ec.Resolvers.ApiExposureInfo().Visibility(ctx, obj)
-		},
-		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v apiexposure.Visibility) graphql.Marshaler {
-			return ec.marshalNApiExposureVisibility2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapiexposureᚐVisibility(ctx, selections, v)
-		},
-		true,
-		true,
-	)
-}
-func (ec *executionContext) fieldContext_ApiExposureInfo_visibility(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	return graphql.NewScalarFieldContext("ApiExposureInfo", field, true, true, errors.New("field of type ApiExposureVisibility does not have child fields"))
-}
-
-func (ec *executionContext) _ApiExposureInfo_active(ctx context.Context, field graphql.CollectedField, obj *model.ApiExposureInfo) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.fieldContext_ApiExposureInfo_active(ctx, field)
-		},
-		func(ctx context.Context) (any, error) {
-			return obj.Active, nil
-		},
-		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v *bool) graphql.Marshaler {
-			return ec.marshalOBoolean2ᚖbool(ctx, selections, v)
-		},
-		true,
-		false,
-	)
-}
-func (ec *executionContext) fieldContext_ApiExposureInfo_active(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	return graphql.NewScalarFieldContext("ApiExposureInfo", field, false, false, errors.New("field of type Boolean does not have child fields"))
-}
-
-func (ec *executionContext) _ApiExposureInfo_apiVersion(ctx context.Context, field graphql.CollectedField, obj *model.ApiExposureInfo) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.fieldContext_ApiExposureInfo_apiVersion(ctx, field)
-		},
-		func(ctx context.Context) (any, error) {
-			return obj.ApiVersion, nil
-		},
-		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v *string) graphql.Marshaler {
-			return ec.marshalOString2ᚖstring(ctx, selections, v)
-		},
-		true,
-		false,
-	)
-}
-func (ec *executionContext) fieldContext_ApiExposureInfo_apiVersion(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	return graphql.NewScalarFieldContext("ApiExposureInfo", field, false, false, errors.New("field of type String does not have child fields"))
-}
-
-func (ec *executionContext) _ApiExposureInfo_features(ctx context.Context, field graphql.CollectedField, obj *model.ApiExposureInfo) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.fieldContext_ApiExposureInfo_features(ctx, field)
-		},
-		func(ctx context.Context) (any, error) {
-			return ec.Resolvers.ApiExposureInfo().Features(ctx, obj)
-		},
-		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v []model.APIExposureFeature) graphql.Marshaler {
-			return ec.marshalNApiExposureFeature2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐAPIExposureFeatureᚄ(ctx, selections, v)
-		},
-		true,
-		true,
-	)
-}
-func (ec *executionContext) fieldContext_ApiExposureInfo_features(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	return graphql.NewScalarFieldContext("ApiExposureInfo", field, true, true, errors.New("field of type ApiExposureFeature does not have child fields"))
-}
-
-func (ec *executionContext) _ApiExposureInfo_approvalConfig(ctx context.Context, field graphql.CollectedField, obj *model.ApiExposureInfo) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.fieldContext_ApiExposureInfo_approvalConfig(ctx, field)
-		},
-		func(ctx context.Context) (any, error) {
-			return obj.ApprovalConfig, nil
-		},
-		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v model1.ApprovalConfig) graphql.Marshaler {
-			return ec.marshalNApprovalConfig2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐApprovalConfig(ctx, selections, v)
-		},
-		true,
-		true,
-	)
-}
-func (ec *executionContext) fieldContext_ApiExposureInfo_approvalConfig(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "ApiExposureInfo",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.childFields_ApprovalConfig(ctx, field)
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _ApiExposureInfo_traffic(ctx context.Context, field graphql.CollectedField, obj *model.ApiExposureInfo) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.fieldContext_ApiExposureInfo_traffic(ctx, field)
-		},
-		func(ctx context.Context) (any, error) {
-			return obj.Traffic, nil
-		},
-		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v *model1.Traffic) graphql.Marshaler {
-			return ec.marshalOTraffic2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐTraffic(ctx, selections, v)
-		},
-		true,
-		false,
-	)
-}
-func (ec *executionContext) fieldContext_ApiExposureInfo_traffic(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "ApiExposureInfo",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.childFields_Traffic(ctx, field)
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _ApiExposureInfo_ownerApplicationName(ctx context.Context, field graphql.CollectedField, obj *model.ApiExposureInfo) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.fieldContext_ApiExposureInfo_ownerApplicationName(ctx, field)
-		},
-		func(ctx context.Context) (any, error) {
-			return obj.OwnerApplicationName, nil
-		},
-		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
-			return ec.marshalNString2string(ctx, selections, v)
-		},
-		true,
-		true,
-	)
-}
-func (ec *executionContext) fieldContext_ApiExposureInfo_ownerApplicationName(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	return graphql.NewScalarFieldContext("ApiExposureInfo", field, false, false, errors.New("field of type String does not have child fields"))
-}
-
-func (ec *executionContext) _ApiExposureInfo_ownerTeam(ctx context.Context, field graphql.CollectedField, obj *model.ApiExposureInfo) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.fieldContext_ApiExposureInfo_ownerTeam(ctx, field)
-		},
-		func(ctx context.Context) (any, error) {
-			return obj.OwnerTeam, nil
-		},
-		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v *model1.TeamInfo) graphql.Marshaler {
-			return ec.marshalNTeamInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐTeamInfo(ctx, selections, v)
-		},
-		true,
-		true,
-	)
-}
-func (ec *executionContext) fieldContext_ApiExposureInfo_ownerTeam(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "ApiExposureInfo",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.childFields_TeamInfo(ctx, field)
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _ApiExposureInfo_ownerApplication(ctx context.Context, field graphql.CollectedField, obj *model.ApiExposureInfo) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.fieldContext_ApiExposureInfo_ownerApplication(ctx, field)
-		},
-		func(ctx context.Context) (any, error) {
-			return obj.OwnerApplication, nil
-		},
-		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v *model.ApplicationInfo) graphql.Marshaler {
-			return ec.marshalNApplicationInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐApplicationInfo(ctx, selections, v)
-		},
-		true,
-		true,
-	)
-}
-func (ec *executionContext) fieldContext_ApiExposureInfo_ownerApplication(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "ApiExposureInfo",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.childFields_ApplicationInfo(ctx, field)
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _ApiExposureSecurity_m2m(ctx context.Context, field graphql.CollectedField, obj *model1.ApiExposureSecurity) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.fieldContext_ApiExposureSecurity_m2m(ctx, field)
-		},
-		func(ctx context.Context) (any, error) {
-			return obj.M2M, nil
-		},
-		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v *model1.Machine2MachineAuthentication) graphql.Marshaler {
-			return ec.marshalOMachine2MachineAuthentication2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐMachine2MachineAuthentication(ctx, selections, v)
-		},
-		true,
-		false,
-	)
-}
-func (ec *executionContext) fieldContext_ApiExposureSecurity_m2m(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "ApiExposureSecurity",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.childFields_Machine2MachineAuthentication(ctx, field)
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _ApiSubscriptionInfo_id(ctx context.Context, field graphql.CollectedField, obj *model.ApiSubscriptionInfo) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.fieldContext_ApiSubscriptionInfo_id(ctx, field)
-		},
-		func(ctx context.Context) (any, error) {
-			return obj.ID, nil
-		},
-		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v int) graphql.Marshaler {
-			return ec.marshalNID2int(ctx, selections, v)
-		},
-		true,
-		true,
-	)
-}
-func (ec *executionContext) fieldContext_ApiSubscriptionInfo_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	return graphql.NewScalarFieldContext("ApiSubscriptionInfo", field, false, false, errors.New("field of type ID does not have child fields"))
-}
-
-func (ec *executionContext) _ApiSubscriptionInfo_basePath(ctx context.Context, field graphql.CollectedField, obj *model.ApiSubscriptionInfo) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.fieldContext_ApiSubscriptionInfo_basePath(ctx, field)
-		},
-		func(ctx context.Context) (any, error) {
-			return obj.BasePath, nil
-		},
-		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
-			return ec.marshalNString2string(ctx, selections, v)
-		},
-		true,
-		true,
-	)
-}
-func (ec *executionContext) fieldContext_ApiSubscriptionInfo_basePath(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	return graphql.NewScalarFieldContext("ApiSubscriptionInfo", field, false, false, errors.New("field of type String does not have child fields"))
-}
-
-func (ec *executionContext) _ApiSubscriptionInfo_statusPhase(ctx context.Context, field graphql.CollectedField, obj *model.ApiSubscriptionInfo) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.fieldContext_ApiSubscriptionInfo_statusPhase(ctx, field)
-		},
-		func(ctx context.Context) (any, error) {
-			return ec.Resolvers.ApiSubscriptionInfo().StatusPhase(ctx, obj)
-		},
-		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v *apisubscription.StatusPhase) graphql.Marshaler {
-			return ec.marshalOApiSubscriptionStatusPhase2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapisubscriptionᚐStatusPhase(ctx, selections, v)
-		},
-		true,
-		false,
-	)
-}
-func (ec *executionContext) fieldContext_ApiSubscriptionInfo_statusPhase(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	return graphql.NewScalarFieldContext("ApiSubscriptionInfo", field, true, true, errors.New("field of type ApiSubscriptionStatusPhase does not have child fields"))
-}
-
-func (ec *executionContext) _ApiSubscriptionInfo_statusMessage(ctx context.Context, field graphql.CollectedField, obj *model.ApiSubscriptionInfo) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.fieldContext_ApiSubscriptionInfo_statusMessage(ctx, field)
-		},
-		func(ctx context.Context) (any, error) {
-			return obj.StatusMessage, nil
-		},
-		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v *string) graphql.Marshaler {
-			return ec.marshalOString2ᚖstring(ctx, selections, v)
-		},
-		true,
-		false,
-	)
-}
-func (ec *executionContext) fieldContext_ApiSubscriptionInfo_statusMessage(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	return graphql.NewScalarFieldContext("ApiSubscriptionInfo", field, false, false, errors.New("field of type String does not have child fields"))
-}
-
-func (ec *executionContext) _ApiSubscriptionInfo_ownerApplicationName(ctx context.Context, field graphql.CollectedField, obj *model.ApiSubscriptionInfo) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.fieldContext_ApiSubscriptionInfo_ownerApplicationName(ctx, field)
-		},
-		func(ctx context.Context) (any, error) {
-			return obj.OwnerApplicationName, nil
-		},
-		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
-			return ec.marshalNString2string(ctx, selections, v)
-		},
-		true,
-		true,
-	)
-}
-func (ec *executionContext) fieldContext_ApiSubscriptionInfo_ownerApplicationName(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	return graphql.NewScalarFieldContext("ApiSubscriptionInfo", field, false, false, errors.New("field of type String does not have child fields"))
-}
-
-func (ec *executionContext) _ApiSubscriptionInfo_ownerTeam(ctx context.Context, field graphql.CollectedField, obj *model.ApiSubscriptionInfo) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.fieldContext_ApiSubscriptionInfo_ownerTeam(ctx, field)
-		},
-		func(ctx context.Context) (any, error) {
-			return obj.OwnerTeam, nil
-		},
-		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v *model1.TeamInfo) graphql.Marshaler {
-			return ec.marshalNTeamInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐTeamInfo(ctx, selections, v)
-		},
-		true,
-		true,
-	)
-}
-func (ec *executionContext) fieldContext_ApiSubscriptionInfo_ownerTeam(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "ApiSubscriptionInfo",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.childFields_TeamInfo(ctx, field)
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _ApiSubscriptionInfo_ownerApplication(ctx context.Context, field graphql.CollectedField, obj *model.ApiSubscriptionInfo) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.fieldContext_ApiSubscriptionInfo_ownerApplication(ctx, field)
-		},
-		func(ctx context.Context) (any, error) {
-			return obj.OwnerApplication, nil
-		},
-		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v *model.ApplicationInfo) graphql.Marshaler {
-			return ec.marshalNApplicationInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐApplicationInfo(ctx, selections, v)
-		},
-		true,
-		true,
-	)
-}
-func (ec *executionContext) fieldContext_ApiSubscriptionInfo_ownerApplication(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "ApiSubscriptionInfo",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.childFields_ApplicationInfo(ctx, field)
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _ApiSubscriptionSecurity_m2m(ctx context.Context, field graphql.CollectedField, obj *model1.ApiSubscriptionSecurity) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.fieldContext_ApiSubscriptionSecurity_m2m(ctx, field)
-		},
-		func(ctx context.Context) (any, error) {
-			return obj.M2M, nil
-		},
-		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v *model1.SubscriberMachine2MachineAuthentication) graphql.Marshaler {
-			return ec.marshalOSubscriberMachine2MachineAuthentication2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐSubscriberMachine2MachineAuthentication(ctx, selections, v)
-		},
-		true,
-		false,
-	)
-}
-func (ec *executionContext) fieldContext_ApiSubscriptionSecurity_m2m(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "ApiSubscriptionSecurity",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.childFields_SubscriberMachine2MachineAuthentication(ctx, field)
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _ApiSubscriptionTraffic_providerLimits(ctx context.Context, field graphql.CollectedField, obj *model1.ApiSubscriptionTraffic) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.fieldContext_ApiSubscriptionTraffic_providerLimits(ctx, field)
-		},
-		func(ctx context.Context) (any, error) {
-			return obj.ProviderLimits, nil
-		},
-		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v *model1.Limits) graphql.Marshaler {
-			return ec.marshalOLimits2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐLimits(ctx, selections, v)
-		},
-		true,
-		false,
-	)
-}
-func (ec *executionContext) fieldContext_ApiSubscriptionTraffic_providerLimits(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "ApiSubscriptionTraffic",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.childFields_Limits(ctx, field)
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _ApiSubscriptionTraffic_subscriberLimits(ctx context.Context, field graphql.CollectedField, obj *model1.ApiSubscriptionTraffic) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.fieldContext_ApiSubscriptionTraffic_subscriberLimits(ctx, field)
-		},
-		func(ctx context.Context) (any, error) {
-			return obj.SubscriberLimits, nil
-		},
-		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v *model1.Limits) graphql.Marshaler {
-			return ec.marshalOLimits2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐLimits(ctx, selections, v)
-		},
-		true,
-		false,
-	)
-}
-func (ec *executionContext) fieldContext_ApiSubscriptionTraffic_subscriberLimits(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "ApiSubscriptionTraffic",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.childFields_Limits(ctx, field)
-		},
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) _ApplicationInfo_id(ctx context.Context, field graphql.CollectedField, obj *model.ApplicationInfo) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -1431,33 +1428,33 @@ func (ec *executionContext) fieldContext_ApplicationInfo_name(_ context.Context,
 	return graphql.NewScalarFieldContext("ApplicationInfo", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
-func (ec *executionContext) _ApplicationInfo_externalIds(ctx context.Context, field graphql.CollectedField, obj *model.ApplicationInfo) (ret graphql.Marshaler) {
+func (ec *executionContext) _ApplicationInfo_externalIDs(ctx context.Context, field graphql.CollectedField, obj *model.ApplicationInfo) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
 		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.fieldContext_ApplicationInfo_externalIds(ctx, field)
+			return ec.fieldContext_ApplicationInfo_externalIDs(ctx, field)
 		},
 		func(ctx context.Context) (any, error) {
-			return obj.ExternalIds, nil
+			return obj.ExternalIDs, nil
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v []model1.ExternalId) graphql.Marshaler {
-			return ec.marshalOExternalId2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐExternalIdᚄ(ctx, selections, v)
+		func(ctx context.Context, selections ast.SelectionSet, v []model1.ExternalID) graphql.Marshaler {
+			return ec.marshalOExternalID2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐExternalIDᚄ(ctx, selections, v)
 		},
 		true,
 		false,
 	)
 }
-func (ec *executionContext) fieldContext_ApplicationInfo_externalIds(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_ApplicationInfo_externalIDs(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "ApplicationInfo",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.childFields_ExternalId(ctx, field)
+			return ec.childFields_ExternalID(ctx, field)
 		},
 	}
 	return fc, nil
@@ -1941,16 +1938,16 @@ func (ec *executionContext) fieldContext_EventDelivery_redeliveriesPerSecond(_ c
 	return graphql.NewScalarFieldContext("EventDelivery", field, false, false, errors.New("field of type Int does not have child fields"))
 }
 
-func (ec *executionContext) _EventDelivery_enforceGetHttpRequestMethodForHealthCheck(ctx context.Context, field graphql.CollectedField, obj *model1.EventDelivery) (ret graphql.Marshaler) {
+func (ec *executionContext) _EventDelivery_enforceGetHTTPRequestMethodForHealthCheck(ctx context.Context, field graphql.CollectedField, obj *model1.EventDelivery) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
 		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.fieldContext_EventDelivery_enforceGetHttpRequestMethodForHealthCheck(ctx, field)
+			return ec.fieldContext_EventDelivery_enforceGetHTTPRequestMethodForHealthCheck(ctx, field)
 		},
 		func(ctx context.Context) (any, error) {
-			return obj.EnforceGetHttpRequestMethodForHealthCheck, nil
+			return obj.EnforceGetHTTPRequestMethodForHealthCheck, nil
 		},
 		nil,
 		func(ctx context.Context, selections ast.SelectionSet, v bool) graphql.Marshaler {
@@ -1960,7 +1957,7 @@ func (ec *executionContext) _EventDelivery_enforceGetHttpRequestMethodForHealthC
 		true,
 	)
 }
-func (ec *executionContext) fieldContext_EventDelivery_enforceGetHttpRequestMethodForHealthCheck(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_EventDelivery_enforceGetHTTPRequestMethodForHealthCheck(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	return graphql.NewScalarFieldContext("EventDelivery", field, false, false, errors.New("field of type Boolean does not have child fields"))
 }
 
@@ -2496,16 +2493,16 @@ func (ec *executionContext) fieldContext_EventTrigger_selectionFilter(_ context.
 	return fc, nil
 }
 
-func (ec *executionContext) _ExternalId_Id(ctx context.Context, field graphql.CollectedField, obj *model1.ExternalId) (ret graphql.Marshaler) {
+func (ec *executionContext) _ExternalID_id(ctx context.Context, field graphql.CollectedField, obj *model1.ExternalID) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
 		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.fieldContext_ExternalId_Id(ctx, field)
+			return ec.fieldContext_ExternalID_id(ctx, field)
 		},
 		func(ctx context.Context) (any, error) {
-			return obj.Id, nil
+			return obj.ID, nil
 		},
 		nil,
 		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
@@ -2515,20 +2512,20 @@ func (ec *executionContext) _ExternalId_Id(ctx context.Context, field graphql.Co
 		true,
 	)
 }
-func (ec *executionContext) fieldContext_ExternalId_Id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	return graphql.NewScalarFieldContext("ExternalId", field, false, false, errors.New("field of type String does not have child fields"))
+func (ec *executionContext) fieldContext_ExternalID_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("ExternalID", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
-func (ec *executionContext) _ExternalId_Schema(ctx context.Context, field graphql.CollectedField, obj *model1.ExternalId) (ret graphql.Marshaler) {
+func (ec *executionContext) _ExternalID_scheme(ctx context.Context, field graphql.CollectedField, obj *model1.ExternalID) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
 		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.fieldContext_ExternalId_Schema(ctx, field)
+			return ec.fieldContext_ExternalID_scheme(ctx, field)
 		},
 		func(ctx context.Context) (any, error) {
-			return ec.Resolvers.ExternalId().Schema(ctx, obj)
+			return obj.Scheme, nil
 		},
 		nil,
 		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
@@ -2538,8 +2535,8 @@ func (ec *executionContext) _ExternalId_Schema(ctx context.Context, field graphq
 		true,
 	)
 }
-func (ec *executionContext) fieldContext_ExternalId_Schema(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	return graphql.NewScalarFieldContext("ExternalId", field, true, true, errors.New("field of type String does not have child fields"))
+func (ec *executionContext) fieldContext_ExternalID_scheme(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("ExternalID", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
 func (ec *executionContext) _ExternalIdentityProvider_tokenEndpoint(ctx context.Context, field graphql.CollectedField, obj *model1.ExternalIdentityProvider) (ret graphql.Marshaler) {
@@ -2698,13 +2695,13 @@ func (ec *executionContext) fieldContext_Failover_zones(_ context.Context, field
 	return graphql.NewScalarFieldContext("Failover", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
-func (ec *executionContext) _IpRestrictions_Allow(ctx context.Context, field graphql.CollectedField, obj *model1.IpRestrictions) (ret graphql.Marshaler) {
+func (ec *executionContext) _IPRestrictions_allow(ctx context.Context, field graphql.CollectedField, obj *model1.IPRestrictions) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
 		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.fieldContext_IpRestrictions_Allow(ctx, field)
+			return ec.fieldContext_IPRestrictions_allow(ctx, field)
 		},
 		func(ctx context.Context) (any, error) {
 			return obj.Allow, nil
@@ -2717,17 +2714,17 @@ func (ec *executionContext) _IpRestrictions_Allow(ctx context.Context, field gra
 		false,
 	)
 }
-func (ec *executionContext) fieldContext_IpRestrictions_Allow(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	return graphql.NewScalarFieldContext("IpRestrictions", field, false, false, errors.New("field of type String does not have child fields"))
+func (ec *executionContext) fieldContext_IPRestrictions_allow(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("IPRestrictions", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
-func (ec *executionContext) _IpRestrictions_Deny(ctx context.Context, field graphql.CollectedField, obj *model1.IpRestrictions) (ret graphql.Marshaler) {
+func (ec *executionContext) _IPRestrictions_deny(ctx context.Context, field graphql.CollectedField, obj *model1.IPRestrictions) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
 		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.fieldContext_IpRestrictions_Deny(ctx, field)
+			return ec.fieldContext_IPRestrictions_deny(ctx, field)
 		},
 		func(ctx context.Context) (any, error) {
 			return obj.Deny, nil
@@ -2740,8 +2737,8 @@ func (ec *executionContext) _IpRestrictions_Deny(ctx context.Context, field grap
 		false,
 	)
 }
-func (ec *executionContext) fieldContext_IpRestrictions_Deny(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	return graphql.NewScalarFieldContext("IpRestrictions", field, false, false, errors.New("field of type String does not have child fields"))
+func (ec *executionContext) fieldContext_IPRestrictions_deny(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("IPRestrictions", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
 func (ec *executionContext) _Limits_second(ctx context.Context, field graphql.CollectedField, obj *model1.Limits) (ret graphql.Marshaler) {
@@ -2900,16 +2897,16 @@ func (ec *executionContext) fieldContext_Machine2MachineAuthentication_scopes(_ 
 	return graphql.NewScalarFieldContext("Machine2MachineAuthentication", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
-func (ec *executionContext) _OAuth2ClientCredentials_clientId(ctx context.Context, field graphql.CollectedField, obj *model1.OAuth2ClientCredentials) (ret graphql.Marshaler) {
+func (ec *executionContext) _OAuth2ClientCredentials_clientID(ctx context.Context, field graphql.CollectedField, obj *model1.OAuth2ClientCredentials) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
 		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.fieldContext_OAuth2ClientCredentials_clientId(ctx, field)
+			return ec.fieldContext_OAuth2ClientCredentials_clientID(ctx, field)
 		},
 		func(ctx context.Context) (any, error) {
-			return obj.ClientId, nil
+			return obj.ClientID, nil
 		},
 		nil,
 		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
@@ -2919,7 +2916,7 @@ func (ec *executionContext) _OAuth2ClientCredentials_clientId(ctx context.Contex
 		true,
 	)
 }
-func (ec *executionContext) fieldContext_OAuth2ClientCredentials_clientId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_OAuth2ClientCredentials_clientID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	return graphql.NewScalarFieldContext("OAuth2ClientCredentials", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
@@ -3899,16 +3896,16 @@ func (ec *executionContext) _SubscriptionInfo(ctx context.Context, sel ast.Selec
 			return graphql.Null
 		}
 		return ec._EventSubscriptionInfo(ctx, sel, obj)
-	case *model.ApiSubscriptionInfo:
-		if obj == nil {
-			return graphql.Null
-		}
-		return ec._ApiSubscriptionInfo(ctx, sel, obj)
 	case *model.AgenticSubscriptionInfo:
 		if obj == nil {
 			return graphql.Null
 		}
 		return ec._AgenticSubscriptionInfo(ctx, sel, obj)
+	case *model.APISubscriptionInfo:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._APISubscriptionInfo(ctx, sel, obj)
 	default:
 		if typedObj, ok := obj.(graphql.Marshaler); ok {
 			return typedObj
@@ -3921,6 +3918,418 @@ func (ec *executionContext) _SubscriptionInfo(ctx context.Context, sel ast.Selec
 // endregion ************************** interface.gotpl ***************************
 
 // region    **************************** object.gotpl ****************************
+
+var aPICategoryImplementors = []string{"APICategory"}
+
+func (ec *executionContext) _APICategory(ctx context.Context, sel ast.SelectionSet, obj *model.APICategory) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, aPICategoryImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("APICategory")
+		case "name":
+			out.Values[i] = ec._APICategory_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
+
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
+
+	return out
+}
+
+var aPIExposureInfoImplementors = []string{"APIExposureInfo"}
+
+func (ec *executionContext) _APIExposureInfo(ctx context.Context, sel ast.SelectionSet, obj *model.APIExposureInfo) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, aPIExposureInfoImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("APIExposureInfo")
+		case "id":
+			out.Values[i] = ec._APIExposureInfo_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "basePath":
+			out.Values[i] = ec._APIExposureInfo_basePath(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "visibility":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._APIExposureInfo_visibility(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.IsDeferred() {
+				deferredFieldSet.AddField(field)
+				fieldIndex := len(deferredFieldSet.Values) - 1
+				deferredFieldSet.Concurrently(fieldIndex, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, deferredFieldSet)
+				})
+
+				for _, deferrable := range field.Deferrables {
+					view, ok := deferLabelToView[deferrable.Label]
+					if !ok {
+						view = deferredFieldSet.NewView()
+						deferLabelToView[deferrable.Label] = view
+					}
+					view.AddIndices(fieldIndex)
+				}
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "active":
+			out.Values[i] = ec._APIExposureInfo_active(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "apiVersion":
+			out.Values[i] = ec._APIExposureInfo_apiVersion(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "features":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._APIExposureInfo_features(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.IsDeferred() {
+				deferredFieldSet.AddField(field)
+				fieldIndex := len(deferredFieldSet.Values) - 1
+				deferredFieldSet.Concurrently(fieldIndex, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, deferredFieldSet)
+				})
+
+				for _, deferrable := range field.Deferrables {
+					view, ok := deferLabelToView[deferrable.Label]
+					if !ok {
+						view = deferredFieldSet.NewView()
+						deferLabelToView[deferrable.Label] = view
+					}
+					view.AddIndices(fieldIndex)
+				}
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "approvalConfig":
+			out.Values[i] = ec._APIExposureInfo_approvalConfig(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "traffic":
+			out.Values[i] = ec._APIExposureInfo_traffic(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "ownerApplicationName":
+			out.Values[i] = ec._APIExposureInfo_ownerApplicationName(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "ownerTeam":
+			out.Values[i] = ec._APIExposureInfo_ownerTeam(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "ownerApplication":
+			out.Values[i] = ec._APIExposureInfo_ownerApplication(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
+
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
+
+	return out
+}
+
+var aPIExposureSecurityImplementors = []string{"APIExposureSecurity"}
+
+func (ec *executionContext) _APIExposureSecurity(ctx context.Context, sel ast.SelectionSet, obj *model1.APIExposureSecurity) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, aPIExposureSecurityImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("APIExposureSecurity")
+		case "m2m":
+			out.Values[i] = ec._APIExposureSecurity_m2m(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
+
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
+
+	return out
+}
+
+var aPISubscriptionInfoImplementors = []string{"APISubscriptionInfo", "SubscriptionInfo"}
+
+func (ec *executionContext) _APISubscriptionInfo(ctx context.Context, sel ast.SelectionSet, obj *model.APISubscriptionInfo) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, aPISubscriptionInfoImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("APISubscriptionInfo")
+		case "id":
+			out.Values[i] = ec._APISubscriptionInfo_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "basePath":
+			out.Values[i] = ec._APISubscriptionInfo_basePath(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "statusPhase":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._APISubscriptionInfo_statusPhase(ctx, field, obj)
+				if res == graphql.RequiredNull {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.IsDeferred() {
+				deferredFieldSet.AddField(field)
+				fieldIndex := len(deferredFieldSet.Values) - 1
+				deferredFieldSet.Concurrently(fieldIndex, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, deferredFieldSet)
+				})
+
+				for _, deferrable := range field.Deferrables {
+					view, ok := deferLabelToView[deferrable.Label]
+					if !ok {
+						view = deferredFieldSet.NewView()
+						deferLabelToView[deferrable.Label] = view
+					}
+					view.AddIndices(fieldIndex)
+				}
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "statusMessage":
+			out.Values[i] = ec._APISubscriptionInfo_statusMessage(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "ownerApplicationName":
+			out.Values[i] = ec._APISubscriptionInfo_ownerApplicationName(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "ownerTeam":
+			out.Values[i] = ec._APISubscriptionInfo_ownerTeam(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "ownerApplication":
+			out.Values[i] = ec._APISubscriptionInfo_ownerApplication(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
+
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
+
+	return out
+}
+
+var aPISubscriptionSecurityImplementors = []string{"APISubscriptionSecurity"}
+
+func (ec *executionContext) _APISubscriptionSecurity(ctx context.Context, sel ast.SelectionSet, obj *model1.APISubscriptionSecurity) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, aPISubscriptionSecurityImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("APISubscriptionSecurity")
+		case "m2m":
+			out.Values[i] = ec._APISubscriptionSecurity_m2m(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
+
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
+
+	return out
+}
+
+var aPISubscriptionTrafficImplementors = []string{"APISubscriptionTraffic"}
+
+func (ec *executionContext) _APISubscriptionTraffic(ctx context.Context, sel ast.SelectionSet, obj *model1.APISubscriptionTraffic) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, aPISubscriptionTrafficImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("APISubscriptionTraffic")
+		case "providerLimits":
+			out.Values[i] = ec._APISubscriptionTraffic_providerLimits(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
+		case "subscriberLimits":
+			out.Values[i] = ec._APISubscriptionTraffic_subscriberLimits(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
+
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
+
+	return out
+}
 
 var agenticExposureInfoImplementors = []string{"AgenticExposureInfo"}
 
@@ -4443,418 +4852,6 @@ func (ec *executionContext) _AgenticTransformation(ctx context.Context, sel ast.
 	return out
 }
 
-var apiCategoryImplementors = []string{"ApiCategory"}
-
-func (ec *executionContext) _ApiCategory(ctx context.Context, sel ast.SelectionSet, obj *model.APICategory) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, apiCategoryImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	deferredFieldSet := graphql.NewFieldSet(nil)
-	deferLabelToView := make(map[string]*graphql.FieldSetView)
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("ApiCategory")
-		case "name":
-			out.Values[i] = ec._ApiCategory_name(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch(ctx)
-	if out.Invalids > 0 {
-		return graphql.Null
-	}
-
-	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
-
-	ec.ProcessDeferredGroup(graphql.DeferredGroup{
-		Defers:   deferLabelToView,
-		Path:     graphql.GetPath(ctx),
-		FieldSet: deferredFieldSet,
-		Context:  ctx,
-	})
-
-	return out
-}
-
-var apiExposureInfoImplementors = []string{"ApiExposureInfo"}
-
-func (ec *executionContext) _ApiExposureInfo(ctx context.Context, sel ast.SelectionSet, obj *model.ApiExposureInfo) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, apiExposureInfoImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	deferredFieldSet := graphql.NewFieldSet(nil)
-	deferLabelToView := make(map[string]*graphql.FieldSetView)
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("ApiExposureInfo")
-		case "id":
-			out.Values[i] = ec._ApiExposureInfo_id(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
-			}
-		case "basePath":
-			out.Values[i] = ec._ApiExposureInfo_basePath(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
-			}
-		case "visibility":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._ApiExposureInfo_visibility(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
-				return res
-			}
-
-			if field.IsDeferred() {
-				deferredFieldSet.AddField(field)
-				fieldIndex := len(deferredFieldSet.Values) - 1
-				deferredFieldSet.Concurrently(fieldIndex, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, deferredFieldSet)
-				})
-
-				for _, deferrable := range field.Deferrables {
-					view, ok := deferLabelToView[deferrable.Label]
-					if !ok {
-						view = deferredFieldSet.NewView()
-						deferLabelToView[deferrable.Label] = view
-					}
-					view.AddIndices(fieldIndex)
-				}
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-		case "active":
-			out.Values[i] = ec._ApiExposureInfo_active(ctx, field, obj)
-			if out.Values[i] == graphql.RequiredNull {
-				atomic.AddUint32(&out.Invalids, 1)
-			}
-		case "apiVersion":
-			out.Values[i] = ec._ApiExposureInfo_apiVersion(ctx, field, obj)
-			if out.Values[i] == graphql.RequiredNull {
-				atomic.AddUint32(&out.Invalids, 1)
-			}
-		case "features":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._ApiExposureInfo_features(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
-				return res
-			}
-
-			if field.IsDeferred() {
-				deferredFieldSet.AddField(field)
-				fieldIndex := len(deferredFieldSet.Values) - 1
-				deferredFieldSet.Concurrently(fieldIndex, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, deferredFieldSet)
-				})
-
-				for _, deferrable := range field.Deferrables {
-					view, ok := deferLabelToView[deferrable.Label]
-					if !ok {
-						view = deferredFieldSet.NewView()
-						deferLabelToView[deferrable.Label] = view
-					}
-					view.AddIndices(fieldIndex)
-				}
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-		case "approvalConfig":
-			out.Values[i] = ec._ApiExposureInfo_approvalConfig(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
-			}
-		case "traffic":
-			out.Values[i] = ec._ApiExposureInfo_traffic(ctx, field, obj)
-			if out.Values[i] == graphql.RequiredNull {
-				atomic.AddUint32(&out.Invalids, 1)
-			}
-		case "ownerApplicationName":
-			out.Values[i] = ec._ApiExposureInfo_ownerApplicationName(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
-			}
-		case "ownerTeam":
-			out.Values[i] = ec._ApiExposureInfo_ownerTeam(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
-			}
-		case "ownerApplication":
-			out.Values[i] = ec._ApiExposureInfo_ownerApplication(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
-			}
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch(ctx)
-	if out.Invalids > 0 {
-		return graphql.Null
-	}
-
-	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
-
-	ec.ProcessDeferredGroup(graphql.DeferredGroup{
-		Defers:   deferLabelToView,
-		Path:     graphql.GetPath(ctx),
-		FieldSet: deferredFieldSet,
-		Context:  ctx,
-	})
-
-	return out
-}
-
-var apiExposureSecurityImplementors = []string{"ApiExposureSecurity"}
-
-func (ec *executionContext) _ApiExposureSecurity(ctx context.Context, sel ast.SelectionSet, obj *model1.ApiExposureSecurity) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, apiExposureSecurityImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	deferredFieldSet := graphql.NewFieldSet(nil)
-	deferLabelToView := make(map[string]*graphql.FieldSetView)
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("ApiExposureSecurity")
-		case "m2m":
-			out.Values[i] = ec._ApiExposureSecurity_m2m(ctx, field, obj)
-			if out.Values[i] == graphql.RequiredNull {
-				out.Invalids++
-			}
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch(ctx)
-	if out.Invalids > 0 {
-		return graphql.Null
-	}
-
-	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
-
-	ec.ProcessDeferredGroup(graphql.DeferredGroup{
-		Defers:   deferLabelToView,
-		Path:     graphql.GetPath(ctx),
-		FieldSet: deferredFieldSet,
-		Context:  ctx,
-	})
-
-	return out
-}
-
-var apiSubscriptionInfoImplementors = []string{"ApiSubscriptionInfo", "SubscriptionInfo"}
-
-func (ec *executionContext) _ApiSubscriptionInfo(ctx context.Context, sel ast.SelectionSet, obj *model.ApiSubscriptionInfo) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, apiSubscriptionInfoImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	deferredFieldSet := graphql.NewFieldSet(nil)
-	deferLabelToView := make(map[string]*graphql.FieldSetView)
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("ApiSubscriptionInfo")
-		case "id":
-			out.Values[i] = ec._ApiSubscriptionInfo_id(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
-			}
-		case "basePath":
-			out.Values[i] = ec._ApiSubscriptionInfo_basePath(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
-			}
-		case "statusPhase":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._ApiSubscriptionInfo_statusPhase(ctx, field, obj)
-				if res == graphql.RequiredNull {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
-				return res
-			}
-
-			if field.IsDeferred() {
-				deferredFieldSet.AddField(field)
-				fieldIndex := len(deferredFieldSet.Values) - 1
-				deferredFieldSet.Concurrently(fieldIndex, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, deferredFieldSet)
-				})
-
-				for _, deferrable := range field.Deferrables {
-					view, ok := deferLabelToView[deferrable.Label]
-					if !ok {
-						view = deferredFieldSet.NewView()
-						deferLabelToView[deferrable.Label] = view
-					}
-					view.AddIndices(fieldIndex)
-				}
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-		case "statusMessage":
-			out.Values[i] = ec._ApiSubscriptionInfo_statusMessage(ctx, field, obj)
-			if out.Values[i] == graphql.RequiredNull {
-				atomic.AddUint32(&out.Invalids, 1)
-			}
-		case "ownerApplicationName":
-			out.Values[i] = ec._ApiSubscriptionInfo_ownerApplicationName(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
-			}
-		case "ownerTeam":
-			out.Values[i] = ec._ApiSubscriptionInfo_ownerTeam(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
-			}
-		case "ownerApplication":
-			out.Values[i] = ec._ApiSubscriptionInfo_ownerApplication(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
-			}
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch(ctx)
-	if out.Invalids > 0 {
-		return graphql.Null
-	}
-
-	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
-
-	ec.ProcessDeferredGroup(graphql.DeferredGroup{
-		Defers:   deferLabelToView,
-		Path:     graphql.GetPath(ctx),
-		FieldSet: deferredFieldSet,
-		Context:  ctx,
-	})
-
-	return out
-}
-
-var apiSubscriptionSecurityImplementors = []string{"ApiSubscriptionSecurity"}
-
-func (ec *executionContext) _ApiSubscriptionSecurity(ctx context.Context, sel ast.SelectionSet, obj *model1.ApiSubscriptionSecurity) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, apiSubscriptionSecurityImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	deferredFieldSet := graphql.NewFieldSet(nil)
-	deferLabelToView := make(map[string]*graphql.FieldSetView)
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("ApiSubscriptionSecurity")
-		case "m2m":
-			out.Values[i] = ec._ApiSubscriptionSecurity_m2m(ctx, field, obj)
-			if out.Values[i] == graphql.RequiredNull {
-				out.Invalids++
-			}
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch(ctx)
-	if out.Invalids > 0 {
-		return graphql.Null
-	}
-
-	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
-
-	ec.ProcessDeferredGroup(graphql.DeferredGroup{
-		Defers:   deferLabelToView,
-		Path:     graphql.GetPath(ctx),
-		FieldSet: deferredFieldSet,
-		Context:  ctx,
-	})
-
-	return out
-}
-
-var apiSubscriptionTrafficImplementors = []string{"ApiSubscriptionTraffic"}
-
-func (ec *executionContext) _ApiSubscriptionTraffic(ctx context.Context, sel ast.SelectionSet, obj *model1.ApiSubscriptionTraffic) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, apiSubscriptionTrafficImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	deferredFieldSet := graphql.NewFieldSet(nil)
-	deferLabelToView := make(map[string]*graphql.FieldSetView)
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("ApiSubscriptionTraffic")
-		case "providerLimits":
-			out.Values[i] = ec._ApiSubscriptionTraffic_providerLimits(ctx, field, obj)
-			if out.Values[i] == graphql.RequiredNull {
-				out.Invalids++
-			}
-		case "subscriberLimits":
-			out.Values[i] = ec._ApiSubscriptionTraffic_subscriberLimits(ctx, field, obj)
-			if out.Values[i] == graphql.RequiredNull {
-				out.Invalids++
-			}
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch(ctx)
-	if out.Invalids > 0 {
-		return graphql.Null
-	}
-
-	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
-
-	ec.ProcessDeferredGroup(graphql.DeferredGroup{
-		Defers:   deferLabelToView,
-		Path:     graphql.GetPath(ctx),
-		FieldSet: deferredFieldSet,
-		Context:  ctx,
-	})
-
-	return out
-}
-
 var applicationInfoImplementors = []string{"ApplicationInfo"}
 
 func (ec *executionContext) _ApplicationInfo(ctx context.Context, sel ast.SelectionSet, obj *model.ApplicationInfo) graphql.Marshaler {
@@ -4877,8 +4874,8 @@ func (ec *executionContext) _ApplicationInfo(ctx context.Context, sel ast.Select
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "externalIds":
-			out.Values[i] = ec._ApplicationInfo_externalIds(ctx, field, obj)
+		case "externalIDs":
+			out.Values[i] = ec._ApplicationInfo_externalIDs(ctx, field, obj)
 			if out.Values[i] == graphql.RequiredNull {
 				out.Invalids++
 			}
@@ -5378,8 +5375,8 @@ func (ec *executionContext) _EventDelivery(ctx context.Context, sel ast.Selectio
 			if out.Values[i] == graphql.RequiredNull {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
-		case "enforceGetHttpRequestMethodForHealthCheck":
-			out.Values[i] = ec._EventDelivery_enforceGetHttpRequestMethodForHealthCheck(ctx, field, obj)
+		case "enforceGetHTTPRequestMethodForHealthCheck":
+			out.Values[i] = ec._EventDelivery_enforceGetHTTPRequestMethodForHealthCheck(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
@@ -5735,10 +5732,10 @@ func (ec *executionContext) _EventTrigger(ctx context.Context, sel ast.Selection
 	return out
 }
 
-var externalIdImplementors = []string{"ExternalId"}
+var externalIDImplementors = []string{"ExternalID"}
 
-func (ec *executionContext) _ExternalId(ctx context.Context, sel ast.SelectionSet, obj *model1.ExternalId) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, externalIdImplementors)
+func (ec *executionContext) _ExternalID(ctx context.Context, sel ast.SelectionSet, obj *model1.ExternalID) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, externalIDImplementors)
 
 	out := graphql.NewFieldSet(fields)
 	deferredFieldSet := graphql.NewFieldSet(nil)
@@ -5746,50 +5743,17 @@ func (ec *executionContext) _ExternalId(ctx context.Context, sel ast.SelectionSe
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
-			out.Values[i] = graphql.MarshalString("ExternalId")
-		case "Id":
-			out.Values[i] = ec._ExternalId_Id(ctx, field, obj)
+			out.Values[i] = graphql.MarshalString("ExternalID")
+		case "id":
+			out.Values[i] = ec._ExternalID_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
+				out.Invalids++
 			}
-		case "Schema":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._ExternalId_Schema(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
-				return res
+		case "scheme":
+			out.Values[i] = ec._ExternalID_scheme(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
 			}
-
-			if field.IsDeferred() {
-				deferredFieldSet.AddField(field)
-				fieldIndex := len(deferredFieldSet.Values) - 1
-				deferredFieldSet.Concurrently(fieldIndex, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, deferredFieldSet)
-				})
-
-				for _, deferrable := range field.Deferrables {
-					view, ok := deferLabelToView[deferrable.Label]
-					if !ok {
-						view = deferredFieldSet.NewView()
-						deferLabelToView[deferrable.Label] = view
-					}
-					view.AddIndices(fieldIndex)
-				}
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -5940,10 +5904,10 @@ func (ec *executionContext) _Failover(ctx context.Context, sel ast.SelectionSet,
 	return out
 }
 
-var ipRestrictionsImplementors = []string{"IpRestrictions"}
+var iPRestrictionsImplementors = []string{"IPRestrictions"}
 
-func (ec *executionContext) _IpRestrictions(ctx context.Context, sel ast.SelectionSet, obj *model1.IpRestrictions) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, ipRestrictionsImplementors)
+func (ec *executionContext) _IPRestrictions(ctx context.Context, sel ast.SelectionSet, obj *model1.IPRestrictions) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, iPRestrictionsImplementors)
 
 	out := graphql.NewFieldSet(fields)
 	deferredFieldSet := graphql.NewFieldSet(nil)
@@ -5951,14 +5915,14 @@ func (ec *executionContext) _IpRestrictions(ctx context.Context, sel ast.Selecti
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
-			out.Values[i] = graphql.MarshalString("IpRestrictions")
-		case "Allow":
-			out.Values[i] = ec._IpRestrictions_Allow(ctx, field, obj)
+			out.Values[i] = graphql.MarshalString("IPRestrictions")
+		case "allow":
+			out.Values[i] = ec._IPRestrictions_allow(ctx, field, obj)
 			if out.Values[i] == graphql.RequiredNull {
 				out.Invalids++
 			}
-		case "Deny":
-			out.Values[i] = ec._IpRestrictions_Deny(ctx, field, obj)
+		case "deny":
+			out.Values[i] = ec._IPRestrictions_deny(ctx, field, obj)
 			if out.Values[i] == graphql.RequiredNull {
 				out.Invalids++
 			}
@@ -6091,8 +6055,8 @@ func (ec *executionContext) _OAuth2ClientCredentials(ctx context.Context, sel as
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("OAuth2ClientCredentials")
-		case "clientId":
-			out.Values[i] = ec._OAuth2ClientCredentials_clientId(ctx, field, obj)
+		case "clientID":
+			out.Values[i] = ec._OAuth2ClientCredentials_clientID(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
@@ -6900,6 +6864,98 @@ func (ec *executionContext) _Upstream(ctx context.Context, sel ast.SelectionSet,
 
 // region    ***************************** type.gotpl *****************************
 
+func (ec *executionContext) marshalNAPICategory2ᚕᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐAPICategoryᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.APICategory) graphql.Marshaler {
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNAPICategory2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐAPICategory(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNAPICategory2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐAPICategory(ctx context.Context, sel ast.SelectionSet, v *model.APICategory) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._APICategory(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNAPIExposureFeature2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐAPIExposureFeature(ctx context.Context, v any) (model.APIExposureFeature, error) {
+	var res model.APIExposureFeature
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNAPIExposureFeature2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐAPIExposureFeature(ctx context.Context, sel ast.SelectionSet, v model.APIExposureFeature) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) unmarshalNAPIExposureFeature2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐAPIExposureFeatureᚄ(ctx context.Context, v any) ([]model.APIExposureFeature, error) {
+	vSlice := graphql.CoerceList(v)
+	var err error
+	res := make([]model.APIExposureFeature, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNAPIExposureFeature2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐAPIExposureFeature(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalNAPIExposureFeature2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐAPIExposureFeatureᚄ(ctx context.Context, sel ast.SelectionSet, v []model.APIExposureFeature) graphql.Marshaler {
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNAPIExposureFeature2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐAPIExposureFeature(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNAPISubscriptionInfo2ᚕᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐAPISubscriptionInfoᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.APISubscriptionInfo) graphql.Marshaler {
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNAPISubscriptionInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐAPISubscriptionInfo(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNAPISubscriptionInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐAPISubscriptionInfo(ctx context.Context, sel ast.SelectionSet, v *model.APISubscriptionInfo) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._APISubscriptionInfo(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNAgenticHeaderTransformation2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐAgenticHeaderTransformation(ctx context.Context, sel ast.SelectionSet, v model1.AgenticHeaderTransformation) graphql.Marshaler {
 	return ec._AgenticHeaderTransformation(ctx, sel, &v)
 }
@@ -6932,98 +6988,6 @@ func (ec *executionContext) marshalNAgenticSubscriptionInfo2ᚖgithubᚗcomᚋte
 		return graphql.Null
 	}
 	return ec._AgenticSubscriptionInfo(ctx, sel, v)
-}
-
-func (ec *executionContext) marshalNApiCategory2ᚕᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐAPICategoryᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.APICategory) graphql.Marshaler {
-	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
-		fc := graphql.GetFieldContext(ctx)
-		fc.Result = &v[i]
-		return ec.marshalNApiCategory2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐAPICategory(ctx, sel, v[i])
-	})
-
-	for _, e := range ret {
-		if e == graphql.Null {
-			return graphql.Null
-		}
-	}
-
-	return ret
-}
-
-func (ec *executionContext) marshalNApiCategory2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐAPICategory(ctx context.Context, sel ast.SelectionSet, v *model.APICategory) graphql.Marshaler {
-	if v == nil {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
-		}
-		return graphql.Null
-	}
-	return ec._ApiCategory(ctx, sel, v)
-}
-
-func (ec *executionContext) unmarshalNApiExposureFeature2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐAPIExposureFeature(ctx context.Context, v any) (model.APIExposureFeature, error) {
-	var res model.APIExposureFeature
-	err := res.UnmarshalGQL(v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) marshalNApiExposureFeature2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐAPIExposureFeature(ctx context.Context, sel ast.SelectionSet, v model.APIExposureFeature) graphql.Marshaler {
-	return v
-}
-
-func (ec *executionContext) unmarshalNApiExposureFeature2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐAPIExposureFeatureᚄ(ctx context.Context, v any) ([]model.APIExposureFeature, error) {
-	vSlice := graphql.CoerceList(v)
-	var err error
-	res := make([]model.APIExposureFeature, len(vSlice))
-	for i := range vSlice {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
-		res[i], err = ec.unmarshalNApiExposureFeature2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐAPIExposureFeature(ctx, vSlice[i])
-		if err != nil {
-			return nil, err
-		}
-	}
-	return res, nil
-}
-
-func (ec *executionContext) marshalNApiExposureFeature2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐAPIExposureFeatureᚄ(ctx context.Context, sel ast.SelectionSet, v []model.APIExposureFeature) graphql.Marshaler {
-	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
-		fc := graphql.GetFieldContext(ctx)
-		fc.Result = &v[i]
-		return ec.marshalNApiExposureFeature2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐAPIExposureFeature(ctx, sel, v[i])
-	})
-
-	for _, e := range ret {
-		if e == graphql.Null {
-			return graphql.Null
-		}
-	}
-
-	return ret
-}
-
-func (ec *executionContext) marshalNApiSubscriptionInfo2ᚕᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐApiSubscriptionInfoᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.ApiSubscriptionInfo) graphql.Marshaler {
-	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
-		fc := graphql.GetFieldContext(ctx)
-		fc.Result = &v[i]
-		return ec.marshalNApiSubscriptionInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐApiSubscriptionInfo(ctx, sel, v[i])
-	})
-
-	for _, e := range ret {
-		if e == graphql.Null {
-			return graphql.Null
-		}
-	}
-
-	return ret
-}
-
-func (ec *executionContext) marshalNApiSubscriptionInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐApiSubscriptionInfo(ctx context.Context, sel ast.SelectionSet, v *model.ApiSubscriptionInfo) graphql.Marshaler {
-	if v == nil {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
-		}
-		return graphql.Null
-	}
-	return ec._ApiSubscriptionInfo(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNApplicationInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐApplicationInfo(ctx context.Context, sel ast.SelectionSet, v *model.ApplicationInfo) graphql.Marshaler {
@@ -7112,8 +7076,8 @@ func (ec *executionContext) marshalNEventTrigger2githubᚗcomᚋtelekomᚋcontro
 	return ec._EventTrigger(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNExternalId2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐExternalId(ctx context.Context, sel ast.SelectionSet, v model1.ExternalId) graphql.Marshaler {
-	return ec._ExternalId(ctx, sel, &v)
+func (ec *executionContext) marshalNExternalID2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐExternalID(ctx context.Context, sel ast.SelectionSet, v model1.ExternalID) graphql.Marshaler {
+	return ec._ExternalID(ctx, sel, &v)
 }
 
 func (ec *executionContext) marshalNLimits2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐLimits(ctx context.Context, sel ast.SelectionSet, v model1.Limits) graphql.Marshaler {
@@ -7182,6 +7146,31 @@ func (ec *executionContext) marshalNUpstream2ᚕgithubᚗcomᚋtelekomᚋcontrol
 	return ret
 }
 
+func (ec *executionContext) marshalOAPIExposureInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐAPIExposureInfo(ctx context.Context, sel ast.SelectionSet, v *model.APIExposureInfo) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._APIExposureInfo(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOAPIExposureSecurity2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐAPIExposureSecurity(ctx context.Context, sel ast.SelectionSet, v model1.APIExposureSecurity) graphql.Marshaler {
+	return ec._APIExposureSecurity(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalOAPISubscriptionSecurity2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐAPISubscriptionSecurity(ctx context.Context, sel ast.SelectionSet, v *model1.APISubscriptionSecurity) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._APISubscriptionSecurity(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOAPISubscriptionTraffic2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐAPISubscriptionTraffic(ctx context.Context, sel ast.SelectionSet, v *model1.APISubscriptionTraffic) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._APISubscriptionTraffic(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalOAgenticExposureInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐAgenticExposureInfo(ctx context.Context, sel ast.SelectionSet, v *model.AgenticExposureInfo) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
@@ -7210,31 +7199,6 @@ func (ec *executionContext) marshalOAgenticSubscriptionSecurity2githubᚗcomᚋt
 
 func (ec *executionContext) marshalOAgenticTransformation2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐAgenticTransformation(ctx context.Context, sel ast.SelectionSet, v model1.AgenticTransformation) graphql.Marshaler {
 	return ec._AgenticTransformation(ctx, sel, &v)
-}
-
-func (ec *executionContext) marshalOApiExposureInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐApiExposureInfo(ctx context.Context, sel ast.SelectionSet, v *model.ApiExposureInfo) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	return ec._ApiExposureInfo(ctx, sel, v)
-}
-
-func (ec *executionContext) marshalOApiExposureSecurity2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐApiExposureSecurity(ctx context.Context, sel ast.SelectionSet, v model1.ApiExposureSecurity) graphql.Marshaler {
-	return ec._ApiExposureSecurity(ctx, sel, &v)
-}
-
-func (ec *executionContext) marshalOApiSubscriptionSecurity2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐApiSubscriptionSecurity(ctx context.Context, sel ast.SelectionSet, v *model1.ApiSubscriptionSecurity) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	return ec._ApiSubscriptionSecurity(ctx, sel, v)
-}
-
-func (ec *executionContext) marshalOApiSubscriptionTraffic2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐApiSubscriptionTraffic(ctx context.Context, sel ast.SelectionSet, v *model1.ApiSubscriptionTraffic) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	return ec._ApiSubscriptionTraffic(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalOAvailableTransition2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐAvailableTransitionᚄ(ctx context.Context, sel ast.SelectionSet, v []model1.AvailableTransition) graphql.Marshaler {
@@ -7294,14 +7258,14 @@ func (ec *executionContext) marshalOEventTrigger2ᚖgithubᚗcomᚋtelekomᚋcon
 	return ec._EventTrigger(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalOExternalId2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐExternalIdᚄ(ctx context.Context, sel ast.SelectionSet, v []model1.ExternalId) graphql.Marshaler {
+func (ec *executionContext) marshalOExternalID2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐExternalIDᚄ(ctx context.Context, sel ast.SelectionSet, v []model1.ExternalID) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
 	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
 		fc := graphql.GetFieldContext(ctx)
 		fc.Result = &v[i]
-		return ec.marshalNExternalId2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐExternalId(ctx, sel, v[i])
+		return ec.marshalNExternalID2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐExternalID(ctx, sel, v[i])
 	})
 
 	for _, e := range ret {
@@ -7327,8 +7291,8 @@ func (ec *executionContext) marshalOFailover2ᚖgithubᚗcomᚋtelekomᚋcontrol
 	return ec._Failover(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalOIpRestrictions2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐIpRestrictions(ctx context.Context, sel ast.SelectionSet, v model1.IpRestrictions) graphql.Marshaler {
-	return ec._IpRestrictions(ctx, sel, &v)
+func (ec *executionContext) marshalOIPRestrictions2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐIPRestrictions(ctx context.Context, sel ast.SelectionSet, v model1.IPRestrictions) graphql.Marshaler {
+	return ec._IPRestrictions(ctx, sel, &v)
 }
 
 func (ec *executionContext) marshalOLimits2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐLimits(ctx context.Context, sel ast.SelectionSet, v *model1.Limits) graphql.Marshaler {

@@ -23,7 +23,7 @@ type TeamInfo {
 type ApplicationInfo {
   id: ID!
   name: String!
-  externalIds: [ExternalId!]
+  externalIDs: [ExternalID!]
   "Zone the application is deployed in"
   zone: Zone!
   "Team that owns the application (reduced view)"
@@ -54,14 +54,14 @@ type RequesterInfo {
   applicationName: String
 }
 
-type ExternalId {
-  Id: String!
-  Schema: String!
+type ExternalID {
+  id: String!
+  scheme: String!
 }
 
-type IpRestrictions {
-  Allow: [String!]
-  Deny: [String!]
+type IPRestrictions {
+  allow: [String!]
+  deny: [String!]
 }
 
 type DeciderInfo {
@@ -113,7 +113,7 @@ type EventDelivery {
   circuitBreakerOptOut: Boolean!
   retryableStatusCodes: [Int!]
   redeliveriesPerSecond: Int
-  enforceGetHttpRequestMethodForHealthCheck: Boolean!
+  enforceGetHTTPRequestMethodForHealthCheck: Boolean!
 }
 
 enum PayloadType {
@@ -121,7 +121,7 @@ enum PayloadType {
   DATA_REF
 }
 
-enum ApiExposureFeature {
+enum APIExposureFeature {
   BASIC_AUTH
   CIRCUIT_BREAKER
   CUSTOM_SCOPES
@@ -145,13 +145,13 @@ enum ApprovalAction {
 # They expose only safe scalar fields and the owning team/application name.
 
 "Reduced API exposure for cross-tenant contexts (e.g., subscription target)."
-type ApiExposureInfo {
+type APIExposureInfo {
   id: ID!
   basePath: String!
-  visibility: ApiExposureVisibility!
+  visibility: APIExposureVisibility!
   active: Boolean
   apiVersion: String
-  features: [ApiExposureFeature!]!
+  features: [APIExposureFeature!]!
   approvalConfig: ApprovalConfig!
   traffic: Traffic 
   "Application name that owns this exposure"
@@ -165,8 +165,8 @@ type ApiExposureInfo {
 # Security
 
 enum TokenRequestMethod {
-  client_secret_basic
-  client_secret_post
+  CLIENT_SECRET_BASIC
+  CLIENT_SECRET_POST
 }
 
 type BasicAuthCredentials {
@@ -175,7 +175,7 @@ type BasicAuthCredentials {
 }
 
 type OAuth2ClientCredentials {
-  clientId: String!
+  clientID: String!
   clientSecret: String
   clientKey: String
 }
@@ -200,11 +200,11 @@ type SubscriberMachine2MachineAuthentication {
   scopes: [String!]
 }
 
-type ApiExposureSecurity {
+type APIExposureSecurity {
   m2m: Machine2MachineAuthentication
 }
 
-type ApiSubscriptionSecurity {
+type APISubscriptionSecurity {
   m2m: SubscriberMachine2MachineAuthentication
 }
 
@@ -287,7 +287,7 @@ type AgenticSubscriberTraffic {
   failover: AgenticSubscriberFailover
 }
 
-type ApiSubscriptionTraffic {
+type APISubscriptionTraffic {
   providerLimits: Limits
   subscriberLimits: Limits
 }
@@ -299,10 +299,10 @@ interface SubscriptionInfo {
 }
 
 "Reduced API subscription for cross-tenant contexts (e.g., exposure subscribers)."
-type ApiSubscriptionInfo implements SubscriptionInfo {
+type APISubscriptionInfo implements SubscriptionInfo {
   id: ID!
   basePath: String!
-  statusPhase: ApiSubscriptionStatusPhase
+  statusPhase: APISubscriptionStatusPhase
   statusMessage: String
   "Application name that owns this subscription"
   ownerApplicationName: String! @deprecated(reason: "Use ownerApplication.name instead.")
@@ -385,14 +385,14 @@ extend type Zone {
   tokenURL: String @goField(forceResolver: true)
 }
 
-extend type ApiSubscription {
+extend type APISubscription {
   "Target exposure (reduced view — cross-tenant boundary). Null when the target API is not yet exposed."
-  target: ApiExposureInfo @goField(forceResolver: true)
+  target: APIExposureInfo @goField(forceResolver: true)
 }
 
-extend type ApiExposure {
+extend type APIExposure {
   "Subscriptions to this exposure (reduced view — cross-tenant boundary)"
-  subscriptions: [ApiSubscriptionInfo!]! @goField(forceResolver: true)
+  subscriptions: [APISubscriptionInfo!]! @goField(forceResolver: true)
 }
 
 extend type EventSubscription {
@@ -429,27 +429,27 @@ extend type ApprovalRequest {
 
 # -- Catalogue extensions --
 
-extend type Api {
+extend type API {
   "URL to download the OpenAPI specification from the file-manager. Null if no specification is associated."
-  specificationUrl: String @goField(forceResolver: true)
+  specificationURL: String @goField(forceResolver: true)
   "The currently active exposure of this API, or null if no exposure is active."
-  activeExposure: ApiExposureInfo @goField(forceResolver: true)
+  activeExposure: APIExposureInfo @goField(forceResolver: true)
   "The team that owns this API."
   owner: TeamInfo! @goField(forceResolver: true)
 }
 
 extend type EventType {
   "URL to download the JSON schema from the file-manager. Null if no specification is associated."
-  specificationUrl: String @goField(forceResolver: true)
+  specificationURL: String @goField(forceResolver: true)
   "The currently active exposure of this event type, or null if no exposure is active."
   activeExposure: EventExposureInfo @goField(forceResolver: true)
   "The team that owns this event type."
   owner: TeamInfo! @goField(forceResolver: true)
 }
 
-extend type McpServer {
+extend type MCPServer {
   "URL to download the MCP server specification from the file-manager. Null if no specification is associated."
-  specificationUrl: String @goField(forceResolver: true)
+  specificationURL: String @goField(forceResolver: true)
   "The currently active exposure of this MCP server, or null if no exposure is active."
   activeExposure: AgenticExposureInfo @goField(forceResolver: true)
   "The team that owns this MCP server."
@@ -458,7 +458,7 @@ extend type McpServer {
 
 extend type AgentCard {
   "URL to download the agent specification from the file-manager. Null if no specification is associated."
-  specificationUrl: String @goField(forceResolver: true)
+  specificationURL: String @goField(forceResolver: true)
   "The currently active exposure of this agent, or null if no exposure is active."
   activeExposure: AgenticExposureInfo @goField(forceResolver: true)
   "The team that owns this agent."
@@ -467,14 +467,14 @@ extend type AgentCard {
 
 extend type Query {
   "Returns all distinct API categories currently in use."
-  apiCategories: [ApiCategory!]! @goField(forceResolver: true)
+  apiCategories: [APICategory!]! @goField(forceResolver: true)
 
   "Returns all groups visible to the current viewer."
   groups(where: GroupWhereInput): [Group!]! @goField(forceResolver: true)
 }
 
 "A category that APIs can be classified under."
-type ApiCategory {
+type APICategory {
   "The category identifier/name."
   name: String!
 }

@@ -270,32 +270,32 @@ func (_u *ApplicationUpdate) ClearSecretRotationMessage() *ApplicationUpdate {
 	return _u
 }
 
-// SetExternalIds sets the "external_ids" field.
-func (_u *ApplicationUpdate) SetExternalIds(v []model.ExternalId) *ApplicationUpdate {
-	_u.mutation.SetExternalIds(v)
+// SetExternalIDs sets the "external_IDs" field.
+func (_u *ApplicationUpdate) SetExternalIDs(v []model.ExternalID) *ApplicationUpdate {
+	_u.mutation.SetExternalIDs(v)
 	return _u
 }
 
-// AppendExternalIds appends value to the "external_ids" field.
-func (_u *ApplicationUpdate) AppendExternalIds(v []model.ExternalId) *ApplicationUpdate {
-	_u.mutation.AppendExternalIds(v)
+// AppendExternalIDs appends value to the "external_IDs" field.
+func (_u *ApplicationUpdate) AppendExternalIDs(v []model.ExternalID) *ApplicationUpdate {
+	_u.mutation.AppendExternalIDs(v)
 	return _u
 }
 
-// ClearExternalIds clears the value of the "external_ids" field.
-func (_u *ApplicationUpdate) ClearExternalIds() *ApplicationUpdate {
-	_u.mutation.ClearExternalIds()
+// ClearExternalIDs clears the value of the "external_IDs" field.
+func (_u *ApplicationUpdate) ClearExternalIDs() *ApplicationUpdate {
+	_u.mutation.ClearExternalIDs()
 	return _u
 }
 
 // SetIPRestrictions sets the "ip_restrictions" field.
-func (_u *ApplicationUpdate) SetIPRestrictions(v model.IpRestrictions) *ApplicationUpdate {
+func (_u *ApplicationUpdate) SetIPRestrictions(v model.IPRestrictions) *ApplicationUpdate {
 	_u.mutation.SetIPRestrictions(v)
 	return _u
 }
 
 // SetNillableIPRestrictions sets the "ip_restrictions" field if the given value is not nil.
-func (_u *ApplicationUpdate) SetNillableIPRestrictions(v *model.IpRestrictions) *ApplicationUpdate {
+func (_u *ApplicationUpdate) SetNillableIPRestrictions(v *model.IPRestrictions) *ApplicationUpdate {
 	if v != nil {
 		_u.SetIPRestrictions(*v)
 	}
@@ -350,14 +350,14 @@ func (_u *ApplicationUpdate) SetOwnerTeam(v *Team) *ApplicationUpdate {
 	return _u.SetOwnerTeamID(v.ID)
 }
 
-// AddExposedAPIIDs adds the "exposed_apis" edge to the ApiExposure entity by IDs.
+// AddExposedAPIIDs adds the "exposed_APIs" edge to the APIExposure entity by IDs.
 func (_u *ApplicationUpdate) AddExposedAPIIDs(ids ...int) *ApplicationUpdate {
 	_u.mutation.AddExposedAPIIDs(ids...)
 	return _u
 }
 
-// AddExposedApis adds the "exposed_apis" edges to the ApiExposure entity.
-func (_u *ApplicationUpdate) AddExposedApis(v ...*ApiExposure) *ApplicationUpdate {
+// AddExposedAPIs adds the "exposed_APIs" edges to the APIExposure entity.
+func (_u *ApplicationUpdate) AddExposedAPIs(v ...*APIExposure) *ApplicationUpdate {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
@@ -365,14 +365,14 @@ func (_u *ApplicationUpdate) AddExposedApis(v ...*ApiExposure) *ApplicationUpdat
 	return _u.AddExposedAPIIDs(ids...)
 }
 
-// AddSubscribedAPIIDs adds the "subscribed_apis" edge to the ApiSubscription entity by IDs.
+// AddSubscribedAPIIDs adds the "subscribed_APIs" edge to the APISubscription entity by IDs.
 func (_u *ApplicationUpdate) AddSubscribedAPIIDs(ids ...int) *ApplicationUpdate {
 	_u.mutation.AddSubscribedAPIIDs(ids...)
 	return _u
 }
 
-// AddSubscribedApis adds the "subscribed_apis" edges to the ApiSubscription entity.
-func (_u *ApplicationUpdate) AddSubscribedApis(v ...*ApiSubscription) *ApplicationUpdate {
+// AddSubscribedAPIs adds the "subscribed_APIs" edges to the APISubscription entity.
+func (_u *ApplicationUpdate) AddSubscribedAPIs(v ...*APISubscription) *ApplicationUpdate {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
@@ -476,20 +476,20 @@ func (_u *ApplicationUpdate) ClearOwnerTeam() *ApplicationUpdate {
 	return _u
 }
 
-// ClearExposedApis clears all "exposed_apis" edges to the ApiExposure entity.
-func (_u *ApplicationUpdate) ClearExposedApis() *ApplicationUpdate {
-	_u.mutation.ClearExposedApis()
+// ClearExposedAPIs clears all "exposed_APIs" edges to the APIExposure entity.
+func (_u *ApplicationUpdate) ClearExposedAPIs() *ApplicationUpdate {
+	_u.mutation.ClearExposedAPIs()
 	return _u
 }
 
-// RemoveExposedAPIIDs removes the "exposed_apis" edge to ApiExposure entities by IDs.
+// RemoveExposedAPIIDs removes the "exposed_APIs" edge to APIExposure entities by IDs.
 func (_u *ApplicationUpdate) RemoveExposedAPIIDs(ids ...int) *ApplicationUpdate {
 	_u.mutation.RemoveExposedAPIIDs(ids...)
 	return _u
 }
 
-// RemoveExposedApis removes "exposed_apis" edges to ApiExposure entities.
-func (_u *ApplicationUpdate) RemoveExposedApis(v ...*ApiExposure) *ApplicationUpdate {
+// RemoveExposedAPIs removes "exposed_APIs" edges to APIExposure entities.
+func (_u *ApplicationUpdate) RemoveExposedAPIs(v ...*APIExposure) *ApplicationUpdate {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
@@ -497,20 +497,20 @@ func (_u *ApplicationUpdate) RemoveExposedApis(v ...*ApiExposure) *ApplicationUp
 	return _u.RemoveExposedAPIIDs(ids...)
 }
 
-// ClearSubscribedApis clears all "subscribed_apis" edges to the ApiSubscription entity.
-func (_u *ApplicationUpdate) ClearSubscribedApis() *ApplicationUpdate {
-	_u.mutation.ClearSubscribedApis()
+// ClearSubscribedAPIs clears all "subscribed_APIs" edges to the APISubscription entity.
+func (_u *ApplicationUpdate) ClearSubscribedAPIs() *ApplicationUpdate {
+	_u.mutation.ClearSubscribedAPIs()
 	return _u
 }
 
-// RemoveSubscribedAPIIDs removes the "subscribed_apis" edge to ApiSubscription entities by IDs.
+// RemoveSubscribedAPIIDs removes the "subscribed_APIs" edge to APISubscription entities by IDs.
 func (_u *ApplicationUpdate) RemoveSubscribedAPIIDs(ids ...int) *ApplicationUpdate {
 	_u.mutation.RemoveSubscribedAPIIDs(ids...)
 	return _u
 }
 
-// RemoveSubscribedApis removes "subscribed_apis" edges to ApiSubscription entities.
-func (_u *ApplicationUpdate) RemoveSubscribedApis(v ...*ApiSubscription) *ApplicationUpdate {
+// RemoveSubscribedAPIs removes "subscribed_APIs" edges to APISubscription entities.
+func (_u *ApplicationUpdate) RemoveSubscribedAPIs(v ...*APISubscription) *ApplicationUpdate {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
@@ -774,16 +774,16 @@ func (_u *ApplicationUpdate) sqlSave(ctx context.Context) (_node int, err error)
 	if _u.mutation.SecretRotationMessageCleared() {
 		_spec.ClearField(application.FieldSecretRotationMessage, field.TypeString)
 	}
-	if value, ok := _u.mutation.ExternalIds(); ok {
-		_spec.SetField(application.FieldExternalIds, field.TypeJSON, value)
+	if value, ok := _u.mutation.ExternalIDs(); ok {
+		_spec.SetField(application.FieldExternalIDs, field.TypeJSON, value)
 	}
-	if value, ok := _u.mutation.AppendedExternalIds(); ok {
+	if value, ok := _u.mutation.AppendedExternalIDs(); ok {
 		_spec.AddModifier(func(u *sql.UpdateBuilder) {
-			sqljson.Append(u, application.FieldExternalIds, value)
+			sqljson.Append(u, application.FieldExternalIDs, value)
 		})
 	}
-	if _u.mutation.ExternalIdsCleared() {
-		_spec.ClearField(application.FieldExternalIds, field.TypeJSON)
+	if _u.mutation.ExternalIDsCleared() {
+		_spec.ClearField(application.FieldExternalIDs, field.TypeJSON)
 	}
 	if value, ok := _u.mutation.IPRestrictions(); ok {
 		_spec.SetField(application.FieldIPRestrictions, field.TypeJSON, value)
@@ -855,12 +855,12 @@ func (_u *ApplicationUpdate) sqlSave(ctx context.Context) (_node int, err error)
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if _u.mutation.ExposedApisCleared() {
+	if _u.mutation.ExposedAPIsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   application.ExposedApisTable,
-			Columns: []string{application.ExposedApisColumn},
+			Table:   application.ExposedAPIsTable,
+			Columns: []string{application.ExposedAPIsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(apiexposure.FieldID, field.TypeInt),
@@ -868,12 +868,12 @@ func (_u *ApplicationUpdate) sqlSave(ctx context.Context) (_node int, err error)
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := _u.mutation.RemovedExposedApisIDs(); len(nodes) > 0 && !_u.mutation.ExposedApisCleared() {
+	if nodes := _u.mutation.RemovedExposedAPIsIDs(); len(nodes) > 0 && !_u.mutation.ExposedAPIsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   application.ExposedApisTable,
-			Columns: []string{application.ExposedApisColumn},
+			Table:   application.ExposedAPIsTable,
+			Columns: []string{application.ExposedAPIsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(apiexposure.FieldID, field.TypeInt),
@@ -884,12 +884,12 @@ func (_u *ApplicationUpdate) sqlSave(ctx context.Context) (_node int, err error)
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := _u.mutation.ExposedApisIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.ExposedAPIsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   application.ExposedApisTable,
-			Columns: []string{application.ExposedApisColumn},
+			Table:   application.ExposedAPIsTable,
+			Columns: []string{application.ExposedAPIsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(apiexposure.FieldID, field.TypeInt),
@@ -900,12 +900,12 @@ func (_u *ApplicationUpdate) sqlSave(ctx context.Context) (_node int, err error)
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if _u.mutation.SubscribedApisCleared() {
+	if _u.mutation.SubscribedAPIsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   application.SubscribedApisTable,
-			Columns: []string{application.SubscribedApisColumn},
+			Table:   application.SubscribedAPIsTable,
+			Columns: []string{application.SubscribedAPIsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(apisubscription.FieldID, field.TypeInt),
@@ -913,12 +913,12 @@ func (_u *ApplicationUpdate) sqlSave(ctx context.Context) (_node int, err error)
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := _u.mutation.RemovedSubscribedApisIDs(); len(nodes) > 0 && !_u.mutation.SubscribedApisCleared() {
+	if nodes := _u.mutation.RemovedSubscribedAPIsIDs(); len(nodes) > 0 && !_u.mutation.SubscribedAPIsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   application.SubscribedApisTable,
-			Columns: []string{application.SubscribedApisColumn},
+			Table:   application.SubscribedAPIsTable,
+			Columns: []string{application.SubscribedAPIsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(apisubscription.FieldID, field.TypeInt),
@@ -929,12 +929,12 @@ func (_u *ApplicationUpdate) sqlSave(ctx context.Context) (_node int, err error)
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := _u.mutation.SubscribedApisIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.SubscribedAPIsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   application.SubscribedApisTable,
-			Columns: []string{application.SubscribedApisColumn},
+			Table:   application.SubscribedAPIsTable,
+			Columns: []string{application.SubscribedAPIsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(apisubscription.FieldID, field.TypeInt),
@@ -1402,32 +1402,32 @@ func (_u *ApplicationUpdateOne) ClearSecretRotationMessage() *ApplicationUpdateO
 	return _u
 }
 
-// SetExternalIds sets the "external_ids" field.
-func (_u *ApplicationUpdateOne) SetExternalIds(v []model.ExternalId) *ApplicationUpdateOne {
-	_u.mutation.SetExternalIds(v)
+// SetExternalIDs sets the "external_IDs" field.
+func (_u *ApplicationUpdateOne) SetExternalIDs(v []model.ExternalID) *ApplicationUpdateOne {
+	_u.mutation.SetExternalIDs(v)
 	return _u
 }
 
-// AppendExternalIds appends value to the "external_ids" field.
-func (_u *ApplicationUpdateOne) AppendExternalIds(v []model.ExternalId) *ApplicationUpdateOne {
-	_u.mutation.AppendExternalIds(v)
+// AppendExternalIDs appends value to the "external_IDs" field.
+func (_u *ApplicationUpdateOne) AppendExternalIDs(v []model.ExternalID) *ApplicationUpdateOne {
+	_u.mutation.AppendExternalIDs(v)
 	return _u
 }
 
-// ClearExternalIds clears the value of the "external_ids" field.
-func (_u *ApplicationUpdateOne) ClearExternalIds() *ApplicationUpdateOne {
-	_u.mutation.ClearExternalIds()
+// ClearExternalIDs clears the value of the "external_IDs" field.
+func (_u *ApplicationUpdateOne) ClearExternalIDs() *ApplicationUpdateOne {
+	_u.mutation.ClearExternalIDs()
 	return _u
 }
 
 // SetIPRestrictions sets the "ip_restrictions" field.
-func (_u *ApplicationUpdateOne) SetIPRestrictions(v model.IpRestrictions) *ApplicationUpdateOne {
+func (_u *ApplicationUpdateOne) SetIPRestrictions(v model.IPRestrictions) *ApplicationUpdateOne {
 	_u.mutation.SetIPRestrictions(v)
 	return _u
 }
 
 // SetNillableIPRestrictions sets the "ip_restrictions" field if the given value is not nil.
-func (_u *ApplicationUpdateOne) SetNillableIPRestrictions(v *model.IpRestrictions) *ApplicationUpdateOne {
+func (_u *ApplicationUpdateOne) SetNillableIPRestrictions(v *model.IPRestrictions) *ApplicationUpdateOne {
 	if v != nil {
 		_u.SetIPRestrictions(*v)
 	}
@@ -1482,14 +1482,14 @@ func (_u *ApplicationUpdateOne) SetOwnerTeam(v *Team) *ApplicationUpdateOne {
 	return _u.SetOwnerTeamID(v.ID)
 }
 
-// AddExposedAPIIDs adds the "exposed_apis" edge to the ApiExposure entity by IDs.
+// AddExposedAPIIDs adds the "exposed_APIs" edge to the APIExposure entity by IDs.
 func (_u *ApplicationUpdateOne) AddExposedAPIIDs(ids ...int) *ApplicationUpdateOne {
 	_u.mutation.AddExposedAPIIDs(ids...)
 	return _u
 }
 
-// AddExposedApis adds the "exposed_apis" edges to the ApiExposure entity.
-func (_u *ApplicationUpdateOne) AddExposedApis(v ...*ApiExposure) *ApplicationUpdateOne {
+// AddExposedAPIs adds the "exposed_APIs" edges to the APIExposure entity.
+func (_u *ApplicationUpdateOne) AddExposedAPIs(v ...*APIExposure) *ApplicationUpdateOne {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
@@ -1497,14 +1497,14 @@ func (_u *ApplicationUpdateOne) AddExposedApis(v ...*ApiExposure) *ApplicationUp
 	return _u.AddExposedAPIIDs(ids...)
 }
 
-// AddSubscribedAPIIDs adds the "subscribed_apis" edge to the ApiSubscription entity by IDs.
+// AddSubscribedAPIIDs adds the "subscribed_APIs" edge to the APISubscription entity by IDs.
 func (_u *ApplicationUpdateOne) AddSubscribedAPIIDs(ids ...int) *ApplicationUpdateOne {
 	_u.mutation.AddSubscribedAPIIDs(ids...)
 	return _u
 }
 
-// AddSubscribedApis adds the "subscribed_apis" edges to the ApiSubscription entity.
-func (_u *ApplicationUpdateOne) AddSubscribedApis(v ...*ApiSubscription) *ApplicationUpdateOne {
+// AddSubscribedAPIs adds the "subscribed_APIs" edges to the APISubscription entity.
+func (_u *ApplicationUpdateOne) AddSubscribedAPIs(v ...*APISubscription) *ApplicationUpdateOne {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
@@ -1608,20 +1608,20 @@ func (_u *ApplicationUpdateOne) ClearOwnerTeam() *ApplicationUpdateOne {
 	return _u
 }
 
-// ClearExposedApis clears all "exposed_apis" edges to the ApiExposure entity.
-func (_u *ApplicationUpdateOne) ClearExposedApis() *ApplicationUpdateOne {
-	_u.mutation.ClearExposedApis()
+// ClearExposedAPIs clears all "exposed_APIs" edges to the APIExposure entity.
+func (_u *ApplicationUpdateOne) ClearExposedAPIs() *ApplicationUpdateOne {
+	_u.mutation.ClearExposedAPIs()
 	return _u
 }
 
-// RemoveExposedAPIIDs removes the "exposed_apis" edge to ApiExposure entities by IDs.
+// RemoveExposedAPIIDs removes the "exposed_APIs" edge to APIExposure entities by IDs.
 func (_u *ApplicationUpdateOne) RemoveExposedAPIIDs(ids ...int) *ApplicationUpdateOne {
 	_u.mutation.RemoveExposedAPIIDs(ids...)
 	return _u
 }
 
-// RemoveExposedApis removes "exposed_apis" edges to ApiExposure entities.
-func (_u *ApplicationUpdateOne) RemoveExposedApis(v ...*ApiExposure) *ApplicationUpdateOne {
+// RemoveExposedAPIs removes "exposed_APIs" edges to APIExposure entities.
+func (_u *ApplicationUpdateOne) RemoveExposedAPIs(v ...*APIExposure) *ApplicationUpdateOne {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
@@ -1629,20 +1629,20 @@ func (_u *ApplicationUpdateOne) RemoveExposedApis(v ...*ApiExposure) *Applicatio
 	return _u.RemoveExposedAPIIDs(ids...)
 }
 
-// ClearSubscribedApis clears all "subscribed_apis" edges to the ApiSubscription entity.
-func (_u *ApplicationUpdateOne) ClearSubscribedApis() *ApplicationUpdateOne {
-	_u.mutation.ClearSubscribedApis()
+// ClearSubscribedAPIs clears all "subscribed_APIs" edges to the APISubscription entity.
+func (_u *ApplicationUpdateOne) ClearSubscribedAPIs() *ApplicationUpdateOne {
+	_u.mutation.ClearSubscribedAPIs()
 	return _u
 }
 
-// RemoveSubscribedAPIIDs removes the "subscribed_apis" edge to ApiSubscription entities by IDs.
+// RemoveSubscribedAPIIDs removes the "subscribed_APIs" edge to APISubscription entities by IDs.
 func (_u *ApplicationUpdateOne) RemoveSubscribedAPIIDs(ids ...int) *ApplicationUpdateOne {
 	_u.mutation.RemoveSubscribedAPIIDs(ids...)
 	return _u
 }
 
-// RemoveSubscribedApis removes "subscribed_apis" edges to ApiSubscription entities.
-func (_u *ApplicationUpdateOne) RemoveSubscribedApis(v ...*ApiSubscription) *ApplicationUpdateOne {
+// RemoveSubscribedAPIs removes "subscribed_APIs" edges to APISubscription entities.
+func (_u *ApplicationUpdateOne) RemoveSubscribedAPIs(v ...*APISubscription) *ApplicationUpdateOne {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
@@ -1936,16 +1936,16 @@ func (_u *ApplicationUpdateOne) sqlSave(ctx context.Context) (_node *Application
 	if _u.mutation.SecretRotationMessageCleared() {
 		_spec.ClearField(application.FieldSecretRotationMessage, field.TypeString)
 	}
-	if value, ok := _u.mutation.ExternalIds(); ok {
-		_spec.SetField(application.FieldExternalIds, field.TypeJSON, value)
+	if value, ok := _u.mutation.ExternalIDs(); ok {
+		_spec.SetField(application.FieldExternalIDs, field.TypeJSON, value)
 	}
-	if value, ok := _u.mutation.AppendedExternalIds(); ok {
+	if value, ok := _u.mutation.AppendedExternalIDs(); ok {
 		_spec.AddModifier(func(u *sql.UpdateBuilder) {
-			sqljson.Append(u, application.FieldExternalIds, value)
+			sqljson.Append(u, application.FieldExternalIDs, value)
 		})
 	}
-	if _u.mutation.ExternalIdsCleared() {
-		_spec.ClearField(application.FieldExternalIds, field.TypeJSON)
+	if _u.mutation.ExternalIDsCleared() {
+		_spec.ClearField(application.FieldExternalIDs, field.TypeJSON)
 	}
 	if value, ok := _u.mutation.IPRestrictions(); ok {
 		_spec.SetField(application.FieldIPRestrictions, field.TypeJSON, value)
@@ -2017,12 +2017,12 @@ func (_u *ApplicationUpdateOne) sqlSave(ctx context.Context) (_node *Application
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if _u.mutation.ExposedApisCleared() {
+	if _u.mutation.ExposedAPIsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   application.ExposedApisTable,
-			Columns: []string{application.ExposedApisColumn},
+			Table:   application.ExposedAPIsTable,
+			Columns: []string{application.ExposedAPIsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(apiexposure.FieldID, field.TypeInt),
@@ -2030,12 +2030,12 @@ func (_u *ApplicationUpdateOne) sqlSave(ctx context.Context) (_node *Application
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := _u.mutation.RemovedExposedApisIDs(); len(nodes) > 0 && !_u.mutation.ExposedApisCleared() {
+	if nodes := _u.mutation.RemovedExposedAPIsIDs(); len(nodes) > 0 && !_u.mutation.ExposedAPIsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   application.ExposedApisTable,
-			Columns: []string{application.ExposedApisColumn},
+			Table:   application.ExposedAPIsTable,
+			Columns: []string{application.ExposedAPIsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(apiexposure.FieldID, field.TypeInt),
@@ -2046,12 +2046,12 @@ func (_u *ApplicationUpdateOne) sqlSave(ctx context.Context) (_node *Application
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := _u.mutation.ExposedApisIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.ExposedAPIsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   application.ExposedApisTable,
-			Columns: []string{application.ExposedApisColumn},
+			Table:   application.ExposedAPIsTable,
+			Columns: []string{application.ExposedAPIsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(apiexposure.FieldID, field.TypeInt),
@@ -2062,12 +2062,12 @@ func (_u *ApplicationUpdateOne) sqlSave(ctx context.Context) (_node *Application
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if _u.mutation.SubscribedApisCleared() {
+	if _u.mutation.SubscribedAPIsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   application.SubscribedApisTable,
-			Columns: []string{application.SubscribedApisColumn},
+			Table:   application.SubscribedAPIsTable,
+			Columns: []string{application.SubscribedAPIsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(apisubscription.FieldID, field.TypeInt),
@@ -2075,12 +2075,12 @@ func (_u *ApplicationUpdateOne) sqlSave(ctx context.Context) (_node *Application
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := _u.mutation.RemovedSubscribedApisIDs(); len(nodes) > 0 && !_u.mutation.SubscribedApisCleared() {
+	if nodes := _u.mutation.RemovedSubscribedAPIsIDs(); len(nodes) > 0 && !_u.mutation.SubscribedAPIsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   application.SubscribedApisTable,
-			Columns: []string{application.SubscribedApisColumn},
+			Table:   application.SubscribedAPIsTable,
+			Columns: []string{application.SubscribedAPIsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(apisubscription.FieldID, field.TypeInt),
@@ -2091,12 +2091,12 @@ func (_u *ApplicationUpdateOne) sqlSave(ctx context.Context) (_node *Application
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := _u.mutation.SubscribedApisIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.SubscribedAPIsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   application.SubscribedApisTable,
-			Columns: []string{application.SubscribedApisColumn},
+			Table:   application.SubscribedAPIsTable,
+			Columns: []string{application.SubscribedAPIsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(apisubscription.FieldID, field.TypeInt),

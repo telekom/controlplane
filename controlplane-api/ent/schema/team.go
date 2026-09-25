@@ -37,7 +37,7 @@ func (Team) Fields() []ent.Field {
 			Annotations(entgql.OrderField("NAME")),
 		field.Text("email").
 			NotEmpty(),
-		field.Text("displayName").
+		field.Text("display_name").
 			Optional().
 			Nillable(),
 		field.Text("description").
@@ -63,11 +63,13 @@ func (Team) Edges() []ent.Edge {
 		edge.To("members", Member.Type),
 		edge.To("applications", Application.Type).
 			Annotations(entgql.RelayConnection()),
-		edge.To("apis", Api.Type).
+		edge.To("APIs", API.Type).
+			StorageKey(edge.Column("team_apis"), edge.Symbol("apis_teams_apis")).
 			Annotations(entgql.RelayConnection()),
 		edge.To("event_types", EventType.Type).
 			Annotations(entgql.RelayConnection()),
-		edge.To("mcp_servers", McpServer.Type).
+		edge.To("MCP_servers", MCPServer.Type).
+			StorageKey(edge.Symbol("mcp_servers_teams_mcp_servers")).
 			Annotations(entgql.RelayConnection()),
 		edge.To("agent_cards", AgentCard.Type).
 			Annotations(entgql.RelayConnection()),

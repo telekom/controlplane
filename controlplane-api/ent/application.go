@@ -53,10 +53,10 @@ type Application struct {
 	SecretRotationPhase application.SecretRotationPhase `json:"secret_rotation_phase,omitempty"`
 	// SecretRotationMessage holds the value of the "secret_rotation_message" field.
 	SecretRotationMessage *string `json:"secret_rotation_message,omitempty"`
-	// ExternalIds holds the value of the "external_ids" field.
-	ExternalIds []model.ExternalId `json:"external_ids,omitempty"`
+	// ExternalIDs holds the value of the "external_IDs" field.
+	ExternalIDs []model.ExternalID `json:"external_IDs,omitempty"`
 	// IPRestrictions holds the value of the "ip_restrictions" field.
-	IPRestrictions model.IpRestrictions `json:"ip_restrictions,omitempty"`
+	IPRestrictions model.IPRestrictions `json:"ip_restrictions,omitempty"`
 	// PermissionsURL holds the value of the "permissions_url" field.
 	PermissionsURL *string `json:"permissions_url,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -73,10 +73,10 @@ type ApplicationEdges struct {
 	Zone *Zone `json:"zone,omitempty"`
 	// OwnerTeam holds the value of the owner_team edge.
 	OwnerTeam *Team `json:"owner_team,omitempty"`
-	// ExposedApis holds the value of the exposed_apis edge.
-	ExposedApis []*ApiExposure `json:"exposed_apis,omitempty"`
-	// SubscribedApis holds the value of the subscribed_apis edge.
-	SubscribedApis []*ApiSubscription `json:"subscribed_apis,omitempty"`
+	// ExposedAPIs holds the value of the exposed_APIs edge.
+	ExposedAPIs []*APIExposure `json:"exposed_APIs,omitempty"`
+	// SubscribedAPIs holds the value of the subscribed_APIs edge.
+	SubscribedAPIs []*APISubscription `json:"subscribed_APIs,omitempty"`
 	// ExposedEvents holds the value of the exposed_events edge.
 	ExposedEvents []*EventExposure `json:"exposed_events,omitempty"`
 	// SubscribedEvents holds the value of the subscribed_events edge.
@@ -93,8 +93,8 @@ type ApplicationEdges struct {
 	// totalCount holds the count of the edges above.
 	totalCount [8]map[string]int
 
-	namedExposedApis        map[string][]*ApiExposure
-	namedSubscribedApis     map[string][]*ApiSubscription
+	namedExposedAPIs        map[string][]*APIExposure
+	namedSubscribedAPIs     map[string][]*APISubscription
 	namedExposedEvents      map[string][]*EventExposure
 	namedSubscribedEvents   map[string][]*EventSubscription
 	namedExposedAgentics    map[string][]*AgenticExposure
@@ -123,22 +123,22 @@ func (e ApplicationEdges) OwnerTeamOrErr() (*Team, error) {
 	return nil, &NotLoadedError{edge: "owner_team"}
 }
 
-// ExposedApisOrErr returns the ExposedApis value or an error if the edge
+// ExposedAPIsOrErr returns the ExposedAPIs value or an error if the edge
 // was not loaded in eager-loading.
-func (e ApplicationEdges) ExposedApisOrErr() ([]*ApiExposure, error) {
+func (e ApplicationEdges) ExposedAPIsOrErr() ([]*APIExposure, error) {
 	if e.loadedTypes[2] {
-		return e.ExposedApis, nil
+		return e.ExposedAPIs, nil
 	}
-	return nil, &NotLoadedError{edge: "exposed_apis"}
+	return nil, &NotLoadedError{edge: "exposed_APIs"}
 }
 
-// SubscribedApisOrErr returns the SubscribedApis value or an error if the edge
+// SubscribedAPIsOrErr returns the SubscribedAPIs value or an error if the edge
 // was not loaded in eager-loading.
-func (e ApplicationEdges) SubscribedApisOrErr() ([]*ApiSubscription, error) {
+func (e ApplicationEdges) SubscribedAPIsOrErr() ([]*APISubscription, error) {
 	if e.loadedTypes[3] {
-		return e.SubscribedApis, nil
+		return e.SubscribedAPIs, nil
 	}
-	return nil, &NotLoadedError{edge: "subscribed_apis"}
+	return nil, &NotLoadedError{edge: "subscribed_APIs"}
 }
 
 // ExposedEventsOrErr returns the ExposedEvents value or an error if the edge
@@ -193,7 +193,7 @@ func (*Application) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case application.FieldExternalIds, application.FieldIPRestrictions:
+		case application.FieldExternalIDs, application.FieldIPRestrictions:
 			values[i] = new([]byte)
 		case application.FieldID:
 			values[i] = new(sql.NullInt64)
@@ -319,12 +319,12 @@ func (_m *Application) assignValues(columns []string, values []any) error {
 				_m.SecretRotationMessage = new(string)
 				*_m.SecretRotationMessage = value.String
 			}
-		case application.FieldExternalIds:
+		case application.FieldExternalIDs:
 			if value, ok := values[i].(*[]byte); !ok {
-				return fmt.Errorf("unexpected type %T for field external_ids", values[i])
+				return fmt.Errorf("unexpected type %T for field external_IDs", values[i])
 			} else if value != nil && len(*value) > 0 {
-				if err := json.Unmarshal(*value, &_m.ExternalIds); err != nil {
-					return fmt.Errorf("unmarshal field external_ids: %w", err)
+				if err := json.Unmarshal(*value, &_m.ExternalIDs); err != nil {
+					return fmt.Errorf("unmarshal field external_IDs: %w", err)
 				}
 			}
 		case application.FieldIPRestrictions:
@@ -379,14 +379,14 @@ func (_m *Application) QueryOwnerTeam() *TeamQuery {
 	return NewApplicationClient(_m.config).QueryOwnerTeam(_m)
 }
 
-// QueryExposedApis queries the "exposed_apis" edge of the Application entity.
-func (_m *Application) QueryExposedApis() *ApiExposureQuery {
-	return NewApplicationClient(_m.config).QueryExposedApis(_m)
+// QueryExposedAPIs queries the "exposed_APIs" edge of the Application entity.
+func (_m *Application) QueryExposedAPIs() *APIExposureQuery {
+	return NewApplicationClient(_m.config).QueryExposedAPIs(_m)
 }
 
-// QuerySubscribedApis queries the "subscribed_apis" edge of the Application entity.
-func (_m *Application) QuerySubscribedApis() *ApiSubscriptionQuery {
-	return NewApplicationClient(_m.config).QuerySubscribedApis(_m)
+// QuerySubscribedAPIs queries the "subscribed_APIs" edge of the Application entity.
+func (_m *Application) QuerySubscribedAPIs() *APISubscriptionQuery {
+	return NewApplicationClient(_m.config).QuerySubscribedAPIs(_m)
 }
 
 // QueryExposedEvents queries the "exposed_events" edge of the Application entity.
@@ -497,8 +497,8 @@ func (_m *Application) String() string {
 		builder.WriteString(*v)
 	}
 	builder.WriteString(", ")
-	builder.WriteString("external_ids=")
-	builder.WriteString(fmt.Sprintf("%v", _m.ExternalIds))
+	builder.WriteString("external_IDs=")
+	builder.WriteString(fmt.Sprintf("%v", _m.ExternalIDs))
 	builder.WriteString(", ")
 	builder.WriteString("ip_restrictions=")
 	builder.WriteString(fmt.Sprintf("%v", _m.IPRestrictions))
@@ -511,51 +511,51 @@ func (_m *Application) String() string {
 	return builder.String()
 }
 
-// NamedExposedApis returns the ExposedApis named value or an error if the edge was not
+// NamedExposedAPIs returns the ExposedAPIs named value or an error if the edge was not
 // loaded in eager-loading with this name.
-func (_m *Application) NamedExposedApis(name string) ([]*ApiExposure, error) {
-	if _m.Edges.namedExposedApis == nil {
+func (_m *Application) NamedExposedAPIs(name string) ([]*APIExposure, error) {
+	if _m.Edges.namedExposedAPIs == nil {
 		return nil, &NotLoadedError{edge: name}
 	}
-	nodes, ok := _m.Edges.namedExposedApis[name]
+	nodes, ok := _m.Edges.namedExposedAPIs[name]
 	if !ok {
 		return nil, &NotLoadedError{edge: name}
 	}
 	return nodes, nil
 }
 
-func (_m *Application) appendNamedExposedApis(name string, edges ...*ApiExposure) {
-	if _m.Edges.namedExposedApis == nil {
-		_m.Edges.namedExposedApis = make(map[string][]*ApiExposure)
+func (_m *Application) appendNamedExposedAPIs(name string, edges ...*APIExposure) {
+	if _m.Edges.namedExposedAPIs == nil {
+		_m.Edges.namedExposedAPIs = make(map[string][]*APIExposure)
 	}
 	if len(edges) == 0 {
-		_m.Edges.namedExposedApis[name] = []*ApiExposure{}
+		_m.Edges.namedExposedAPIs[name] = []*APIExposure{}
 	} else {
-		_m.Edges.namedExposedApis[name] = append(_m.Edges.namedExposedApis[name], edges...)
+		_m.Edges.namedExposedAPIs[name] = append(_m.Edges.namedExposedAPIs[name], edges...)
 	}
 }
 
-// NamedSubscribedApis returns the SubscribedApis named value or an error if the edge was not
+// NamedSubscribedAPIs returns the SubscribedAPIs named value or an error if the edge was not
 // loaded in eager-loading with this name.
-func (_m *Application) NamedSubscribedApis(name string) ([]*ApiSubscription, error) {
-	if _m.Edges.namedSubscribedApis == nil {
+func (_m *Application) NamedSubscribedAPIs(name string) ([]*APISubscription, error) {
+	if _m.Edges.namedSubscribedAPIs == nil {
 		return nil, &NotLoadedError{edge: name}
 	}
-	nodes, ok := _m.Edges.namedSubscribedApis[name]
+	nodes, ok := _m.Edges.namedSubscribedAPIs[name]
 	if !ok {
 		return nil, &NotLoadedError{edge: name}
 	}
 	return nodes, nil
 }
 
-func (_m *Application) appendNamedSubscribedApis(name string, edges ...*ApiSubscription) {
-	if _m.Edges.namedSubscribedApis == nil {
-		_m.Edges.namedSubscribedApis = make(map[string][]*ApiSubscription)
+func (_m *Application) appendNamedSubscribedAPIs(name string, edges ...*APISubscription) {
+	if _m.Edges.namedSubscribedAPIs == nil {
+		_m.Edges.namedSubscribedAPIs = make(map[string][]*APISubscription)
 	}
 	if len(edges) == 0 {
-		_m.Edges.namedSubscribedApis[name] = []*ApiSubscription{}
+		_m.Edges.namedSubscribedAPIs[name] = []*APISubscription{}
 	} else {
-		_m.Edges.namedSubscribedApis[name] = append(_m.Edges.namedSubscribedApis[name], edges...)
+		_m.Edges.namedSubscribedAPIs[name] = append(_m.Edges.namedSubscribedAPIs[name], edges...)
 	}
 }
 

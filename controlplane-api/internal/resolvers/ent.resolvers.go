@@ -17,7 +17,7 @@ import (
 )
 
 // Features is the resolver for the features field.
-func (r *apiExposureResolver) Features(ctx context.Context, obj *ent.ApiExposure) ([]model.APIExposureFeature, error) {
+func (r *aPIExposureResolver) Features(ctx context.Context, obj *ent.APIExposure) ([]model.APIExposureFeature, error) {
 	result := make([]model.APIExposureFeature, len(obj.Features))
 	for i, f := range obj.Features {
 		result[i] = model.APIExposureFeature(f)
@@ -49,6 +49,33 @@ func (r *queryResolver) Nodes(ctx context.Context, ids []int) ([]ent.Noder, erro
 	return r.client.Noders(ctx, ids)
 }
 
+// Apis is the resolver for the apis field.
+func (r *queryResolver) Apis(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.APIOrder, where *ent.APIWhereInput) (*ent.APIConnection, error) {
+	return r.client.API.Query().
+		Paginate(ctx, after, first, before, last,
+			ent.WithAPIOrder(orderBy),
+			ent.WithAPIFilter(where.Filter),
+		)
+}
+
+// APIExposures is the resolver for the apiExposures field.
+func (r *queryResolver) APIExposures(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.APIExposureOrder, where *ent.APIExposureWhereInput) (*ent.APIExposureConnection, error) {
+	return r.client.APIExposure.Query().
+		Paginate(ctx, after, first, before, last,
+			ent.WithAPIExposureOrder(orderBy),
+			ent.WithAPIExposureFilter(where.Filter),
+		)
+}
+
+// APISubscriptions is the resolver for the apiSubscriptions field.
+func (r *queryResolver) APISubscriptions(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.APISubscriptionOrder, where *ent.APISubscriptionWhereInput) (*ent.APISubscriptionConnection, error) {
+	return r.client.APISubscription.Query().
+		Paginate(ctx, after, first, before, last,
+			ent.WithAPISubscriptionOrder(orderBy),
+			ent.WithAPISubscriptionFilter(where.Filter),
+		)
+}
+
 // AgentCards is the resolver for the agentCards field.
 func (r *queryResolver) AgentCards(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.AgentCardOrder, where *ent.AgentCardWhereInput) (*ent.AgentCardConnection, error) {
 	return r.client.AgentCard.Query().
@@ -73,33 +100,6 @@ func (r *queryResolver) AgenticSubscriptions(ctx context.Context, after *entgql.
 		Paginate(ctx, after, first, before, last,
 			ent.WithAgenticSubscriptionOrder(orderBy),
 			ent.WithAgenticSubscriptionFilter(where.Filter),
-		)
-}
-
-// Apis is the resolver for the apis field.
-func (r *queryResolver) Apis(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.ApiOrder, where *ent.ApiWhereInput) (*ent.ApiConnection, error) {
-	return r.client.Api.Query().
-		Paginate(ctx, after, first, before, last,
-			ent.WithApiOrder(orderBy),
-			ent.WithApiFilter(where.Filter),
-		)
-}
-
-// APIExposures is the resolver for the apiExposures field.
-func (r *queryResolver) APIExposures(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.ApiExposureOrder, where *ent.ApiExposureWhereInput) (*ent.ApiExposureConnection, error) {
-	return r.client.ApiExposure.Query().
-		Paginate(ctx, after, first, before, last,
-			ent.WithApiExposureOrder(orderBy),
-			ent.WithApiExposureFilter(where.Filter),
-		)
-}
-
-// APISubscriptions is the resolver for the apiSubscriptions field.
-func (r *queryResolver) APISubscriptions(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.ApiSubscriptionOrder, where *ent.ApiSubscriptionWhereInput) (*ent.ApiSubscriptionConnection, error) {
-	return r.client.ApiSubscription.Query().
-		Paginate(ctx, after, first, before, last,
-			ent.WithApiSubscriptionOrder(orderBy),
-			ent.WithApiSubscriptionFilter(where.Filter),
 		)
 }
 
@@ -157,12 +157,12 @@ func (r *queryResolver) EventTypes(ctx context.Context, after *entgql.Cursor[int
 		)
 }
 
-// McpServers is the resolver for the mcpServers field.
-func (r *queryResolver) McpServers(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.McpServerOrder, where *ent.McpServerWhereInput) (*ent.McpServerConnection, error) {
-	return r.client.McpServer.Query().
+// MCPServers is the resolver for the mcpServers field.
+func (r *queryResolver) MCPServers(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.MCPServerOrder, where *ent.MCPServerWhereInput) (*ent.MCPServerConnection, error) {
+	return r.client.MCPServer.Query().
 		Paginate(ctx, after, first, before, last,
-			ent.WithMcpServerOrder(orderBy),
-			ent.WithMcpServerFilter(where.Filter),
+			ent.WithMCPServerOrder(orderBy),
+			ent.WithMCPServerFilter(where.Filter),
 		)
 }
 
@@ -196,6 +196,15 @@ func (r *teamResolver) TeamToken(ctx context.Context, obj *ent.Team) (*string, e
 	return r.secrets.Resolve(ctx, obj.TeamToken, "teamToken")
 }
 
+// API returns APIResolver implementation.
+func (r *Resolver) API() APIResolver { return &aPIResolver{r} }
+
+// APIExposure returns APIExposureResolver implementation.
+func (r *Resolver) APIExposure() APIExposureResolver { return &aPIExposureResolver{r} }
+
+// APISubscription returns APISubscriptionResolver implementation.
+func (r *Resolver) APISubscription() APISubscriptionResolver { return &aPISubscriptionResolver{r} }
+
 // AgentCard returns AgentCardResolver implementation.
 func (r *Resolver) AgentCard() AgentCardResolver { return &agentCardResolver{r} }
 
@@ -206,15 +215,6 @@ func (r *Resolver) AgenticExposure() AgenticExposureResolver { return &agenticEx
 func (r *Resolver) AgenticSubscription() AgenticSubscriptionResolver {
 	return &agenticSubscriptionResolver{r}
 }
-
-// Api returns ApiResolver implementation.
-func (r *Resolver) Api() ApiResolver { return &apiResolver{r} }
-
-// ApiExposure returns ApiExposureResolver implementation.
-func (r *Resolver) ApiExposure() ApiExposureResolver { return &apiExposureResolver{r} }
-
-// ApiSubscription returns ApiSubscriptionResolver implementation.
-func (r *Resolver) ApiSubscription() ApiSubscriptionResolver { return &apiSubscriptionResolver{r} }
 
 // Application returns ApplicationResolver implementation.
 func (r *Resolver) Application() ApplicationResolver { return &applicationResolver{r} }
@@ -236,8 +236,8 @@ func (r *Resolver) EventSubscription() EventSubscriptionResolver {
 // EventType returns EventTypeResolver implementation.
 func (r *Resolver) EventType() EventTypeResolver { return &eventTypeResolver{r} }
 
-// McpServer returns McpServerResolver implementation.
-func (r *Resolver) McpServer() McpServerResolver { return &mcpServerResolver{r} }
+// MCPServer returns MCPServerResolver implementation.
+func (r *Resolver) MCPServer() MCPServerResolver { return &mCPServerResolver{r} }
 
 // Query returns QueryResolver implementation.
 func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
@@ -249,19 +249,19 @@ func (r *Resolver) Team() TeamResolver { return &teamResolver{r} }
 func (r *Resolver) Zone() ZoneResolver { return &zoneResolver{r} }
 
 type (
+	aPIResolver                 struct{ *Resolver }
+	aPIExposureResolver         struct{ *Resolver }
+	aPISubscriptionResolver     struct{ *Resolver }
 	agentCardResolver           struct{ *Resolver }
 	agenticExposureResolver     struct{ *Resolver }
 	agenticSubscriptionResolver struct{ *Resolver }
-	apiResolver                 struct{ *Resolver }
-	apiExposureResolver         struct{ *Resolver }
-	apiSubscriptionResolver     struct{ *Resolver }
 	applicationResolver         struct{ *Resolver }
 	approvalResolver            struct{ *Resolver }
 	approvalRequestResolver     struct{ *Resolver }
 	eventExposureResolver       struct{ *Resolver }
 	eventSubscriptionResolver   struct{ *Resolver }
 	eventTypeResolver           struct{ *Resolver }
-	mcpServerResolver           struct{ *Resolver }
+	mCPServerResolver           struct{ *Resolver }
 	queryResolver               struct{ *Resolver }
 	teamResolver                struct{ *Resolver }
 	zoneResolver                struct{ *Resolver }

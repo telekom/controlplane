@@ -93,12 +93,12 @@ var (
 func checkColumn(t, c string) error {
 	initCheck.Do(func() {
 		columnCheck = sql.NewColumnCheck(map[string]func(string) bool{
-			agentcard.Table:           agentcard.ValidColumn,
-			agenticexposure.Table:     agenticexposure.ValidColumn,
-			agenticsubscription.Table: agenticsubscription.ValidColumn,
 			api.Table:                 api.ValidColumn,
 			apiexposure.Table:         apiexposure.ValidColumn,
 			apisubscription.Table:     apisubscription.ValidColumn,
+			agentcard.Table:           agentcard.ValidColumn,
+			agenticexposure.Table:     agenticexposure.ValidColumn,
+			agenticsubscription.Table: agenticsubscription.ValidColumn,
 			application.Table:         application.ValidColumn,
 			approval.Table:            approval.ValidColumn,
 			approvalrequest.Table:     approvalrequest.ValidColumn,

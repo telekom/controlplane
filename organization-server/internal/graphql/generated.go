@@ -273,11 +273,11 @@ func (v *DeleteGroupDeleteGroupDeleteGroupPayloadErrorsMutationError) GetMessage
 }
 
 type DeleteGroupInput struct {
-	GroupId string `json:"groupId"`
+	GroupID string `json:"groupID"`
 }
 
-// GetGroupId returns DeleteGroupInput.GroupId, and is useful for accessing the field via an interface.
-func (v *DeleteGroupInput) GetGroupId() string { return v.GroupId }
+// GetGroupID returns DeleteGroupInput.GroupID, and is useful for accessing the field via an interface.
+func (v *DeleteGroupInput) GetGroupID() string { return v.GroupID }
 
 // DeleteGroupResponse is returned by DeleteGroup on success.
 type DeleteGroupResponse struct {
@@ -319,11 +319,11 @@ func (v *DeleteTeamDeleteTeamDeleteTeamPayloadErrorsMutationError) GetMessage() 
 }
 
 type DeleteTeamInput struct {
-	TeamId string `json:"teamId"`
+	TeamID string `json:"teamID"`
 }
 
-// GetTeamId returns DeleteTeamInput.TeamId, and is useful for accessing the field via an interface.
-func (v *DeleteTeamInput) GetTeamId() string { return v.TeamId }
+// GetTeamID returns DeleteTeamInput.TeamID, and is useful for accessing the field via an interface.
+func (v *DeleteTeamInput) GetTeamID() string { return v.TeamID }
 
 // DeleteTeamResponse is returned by DeleteTeam on success.
 type DeleteTeamResponse struct {
@@ -748,13 +748,13 @@ var AllTeamStatusPhase = []TeamStatusPhase{
 }
 
 type UpdateGroupInput struct {
-	GroupId     string  `json:"groupId"`
+	GroupID     string  `json:"groupID"`
 	DisplayName *string `json:"displayName"`
 	Description *string `json:"description"`
 }
 
-// GetGroupId returns UpdateGroupInput.GroupId, and is useful for accessing the field via an interface.
-func (v *UpdateGroupInput) GetGroupId() string { return v.GroupId }
+// GetGroupID returns UpdateGroupInput.GroupID, and is useful for accessing the field via an interface.
+func (v *UpdateGroupInput) GetGroupID() string { return v.GroupID }
 
 // GetDisplayName returns UpdateGroupInput.DisplayName, and is useful for accessing the field via an interface.
 func (v *UpdateGroupInput) GetDisplayName() *string { return v.DisplayName }
@@ -826,14 +826,14 @@ func (v *UpdateGroupUpdateGroupUpdateGroupPayloadGroup) GetDisplayName() string 
 func (v *UpdateGroupUpdateGroupUpdateGroupPayloadGroup) GetDescription() string { return v.Description }
 
 type UpdateTeamInput struct {
-	TeamId      string  `json:"teamId"`
+	TeamID      string  `json:"teamID"`
 	Email       *string `json:"email"`
 	DisplayName *string `json:"displayName"`
 	Description *string `json:"description"`
 }
 
-// GetTeamId returns UpdateTeamInput.TeamId, and is useful for accessing the field via an interface.
-func (v *UpdateTeamInput) GetTeamId() string { return v.TeamId }
+// GetTeamID returns UpdateTeamInput.TeamID, and is useful for accessing the field via an interface.
+func (v *UpdateTeamInput) GetTeamID() string { return v.TeamID }
 
 // GetEmail returns UpdateTeamInput.Email, and is useful for accessing the field via an interface.
 func (v *UpdateTeamInput) GetEmail() *string { return v.Email }
@@ -1017,11 +1017,11 @@ func (v *__ListTeamsInput) GetWhere() *graphqlinputs.TeamWhereInput { return v.W
 
 // __RotateTeamTokenInput is used internally by genqlient
 type __RotateTeamTokenInput struct {
-	TeamId string `json:"teamId"`
+	TeamID string `json:"teamID"`
 }
 
-// GetTeamId returns __RotateTeamTokenInput.TeamId, and is useful for accessing the field via an interface.
-func (v *__RotateTeamTokenInput) GetTeamId() string { return v.TeamId }
+// GetTeamID returns __RotateTeamTokenInput.TeamID, and is useful for accessing the field via an interface.
+func (v *__RotateTeamTokenInput) GetTeamID() string { return v.TeamID }
 
 // __UpdateGroupInput is used internally by genqlient
 type __UpdateGroupInput struct {
@@ -1392,8 +1392,8 @@ func ListTeams(
 
 // The mutation executed by RotateTeamToken.
 const RotateTeamToken_Operation = `
-mutation RotateTeamToken ($teamId: ID!) {
-	rotateTeamToken(teamId: $teamId) {
+mutation RotateTeamToken ($teamID: ID!) {
+	rotateTeamToken(teamID: $teamID) {
 		team {
 			id
 			teamToken
@@ -1409,13 +1409,13 @@ mutation RotateTeamToken ($teamId: ID!) {
 func RotateTeamToken(
 	ctx_ context.Context,
 	client_ graphql.Client,
-	teamId string,
+	teamID string,
 ) (data_ *RotateTeamTokenResponse, err_ error) {
 	req_ := &graphql.Request{
 		OpName: "RotateTeamToken",
 		Query:  RotateTeamToken_Operation,
 		Variables: &__RotateTeamTokenInput{
-			TeamId: teamId,
+			TeamID: teamID,
 		},
 	}
 

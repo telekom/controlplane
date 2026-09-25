@@ -15,26 +15,26 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/predicate"
 )
 
-// ApiSubscriptionDelete is the builder for deleting a ApiSubscription entity.
-type ApiSubscriptionDelete struct {
+// APISubscriptionDelete is the builder for deleting a APISubscription entity.
+type APISubscriptionDelete struct {
 	config
 	hooks    []Hook
-	mutation *ApiSubscriptionMutation
+	mutation *APISubscriptionMutation
 }
 
-// Where appends a list predicates to the ApiSubscriptionDelete builder.
-func (_d *ApiSubscriptionDelete) Where(ps ...predicate.ApiSubscription) *ApiSubscriptionDelete {
+// Where appends a list predicates to the APISubscriptionDelete builder.
+func (_d *APISubscriptionDelete) Where(ps ...predicate.APISubscription) *APISubscriptionDelete {
 	_d.mutation.Where(ps...)
 	return _d
 }
 
 // Exec executes the deletion query and returns how many vertices were deleted.
-func (_d *ApiSubscriptionDelete) Exec(ctx context.Context) (int, error) {
+func (_d *APISubscriptionDelete) Exec(ctx context.Context) (int, error) {
 	return withHooks(ctx, _d.sqlExec, _d.mutation, _d.hooks)
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (_d *ApiSubscriptionDelete) ExecX(ctx context.Context) int {
+func (_d *APISubscriptionDelete) ExecX(ctx context.Context) int {
 	n, err := _d.Exec(ctx)
 	if err != nil {
 		panic(err)
@@ -42,7 +42,7 @@ func (_d *ApiSubscriptionDelete) ExecX(ctx context.Context) int {
 	return n
 }
 
-func (_d *ApiSubscriptionDelete) sqlExec(ctx context.Context) (int, error) {
+func (_d *APISubscriptionDelete) sqlExec(ctx context.Context) (int, error) {
 	_spec := sqlgraph.NewDeleteSpec(apisubscription.Table, sqlgraph.NewFieldSpec(apisubscription.FieldID, field.TypeInt))
 	if ps := _d.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
@@ -59,19 +59,19 @@ func (_d *ApiSubscriptionDelete) sqlExec(ctx context.Context) (int, error) {
 	return affected, err
 }
 
-// ApiSubscriptionDeleteOne is the builder for deleting a single ApiSubscription entity.
-type ApiSubscriptionDeleteOne struct {
-	_d *ApiSubscriptionDelete
+// APISubscriptionDeleteOne is the builder for deleting a single APISubscription entity.
+type APISubscriptionDeleteOne struct {
+	_d *APISubscriptionDelete
 }
 
-// Where appends a list predicates to the ApiSubscriptionDelete builder.
-func (_d *ApiSubscriptionDeleteOne) Where(ps ...predicate.ApiSubscription) *ApiSubscriptionDeleteOne {
+// Where appends a list predicates to the APISubscriptionDelete builder.
+func (_d *APISubscriptionDeleteOne) Where(ps ...predicate.APISubscription) *APISubscriptionDeleteOne {
 	_d._d.mutation.Where(ps...)
 	return _d
 }
 
 // Exec executes the deletion query.
-func (_d *ApiSubscriptionDeleteOne) Exec(ctx context.Context) error {
+func (_d *APISubscriptionDeleteOne) Exec(ctx context.Context) error {
 	n, err := _d._d.Exec(ctx)
 	switch {
 	case err != nil:
@@ -84,7 +84,7 @@ func (_d *ApiSubscriptionDeleteOne) Exec(ctx context.Context) error {
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (_d *ApiSubscriptionDeleteOne) ExecX(ctx context.Context) {
+func (_d *APISubscriptionDeleteOne) ExecX(ctx context.Context) {
 	if err := _d.Exec(ctx); err != nil {
 		panic(err)
 	}

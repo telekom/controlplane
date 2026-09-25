@@ -19,22 +19,22 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/team"
 )
 
-// McpServerCreate is the builder for creating a McpServer entity.
-type McpServerCreate struct {
+// MCPServerCreate is the builder for creating a MCPServer entity.
+type MCPServerCreate struct {
 	config
-	mutation *McpServerMutation
+	mutation *MCPServerMutation
 	hooks    []Hook
 	conflict []sql.ConflictOption
 }
 
 // SetCreatedAt sets the "created_at" field.
-func (_c *McpServerCreate) SetCreatedAt(v time.Time) *McpServerCreate {
+func (_c *MCPServerCreate) SetCreatedAt(v time.Time) *MCPServerCreate {
 	_c.mutation.SetCreatedAt(v)
 	return _c
 }
 
 // SetNillableCreatedAt sets the "created_at" field if the given value is not nil.
-func (_c *McpServerCreate) SetNillableCreatedAt(v *time.Time) *McpServerCreate {
+func (_c *MCPServerCreate) SetNillableCreatedAt(v *time.Time) *MCPServerCreate {
 	if v != nil {
 		_c.SetCreatedAt(*v)
 	}
@@ -42,13 +42,13 @@ func (_c *McpServerCreate) SetNillableCreatedAt(v *time.Time) *McpServerCreate {
 }
 
 // SetLastModifiedAt sets the "last_modified_at" field.
-func (_c *McpServerCreate) SetLastModifiedAt(v time.Time) *McpServerCreate {
+func (_c *MCPServerCreate) SetLastModifiedAt(v time.Time) *MCPServerCreate {
 	_c.mutation.SetLastModifiedAt(v)
 	return _c
 }
 
 // SetNillableLastModifiedAt sets the "last_modified_at" field if the given value is not nil.
-func (_c *McpServerCreate) SetNillableLastModifiedAt(v *time.Time) *McpServerCreate {
+func (_c *MCPServerCreate) SetNillableLastModifiedAt(v *time.Time) *MCPServerCreate {
 	if v != nil {
 		_c.SetLastModifiedAt(*v)
 	}
@@ -56,13 +56,13 @@ func (_c *McpServerCreate) SetNillableLastModifiedAt(v *time.Time) *McpServerCre
 }
 
 // SetStatusPhase sets the "status_phase" field.
-func (_c *McpServerCreate) SetStatusPhase(v mcpserver.StatusPhase) *McpServerCreate {
+func (_c *MCPServerCreate) SetStatusPhase(v mcpserver.StatusPhase) *MCPServerCreate {
 	_c.mutation.SetStatusPhase(v)
 	return _c
 }
 
 // SetNillableStatusPhase sets the "status_phase" field if the given value is not nil.
-func (_c *McpServerCreate) SetNillableStatusPhase(v *mcpserver.StatusPhase) *McpServerCreate {
+func (_c *MCPServerCreate) SetNillableStatusPhase(v *mcpserver.StatusPhase) *MCPServerCreate {
 	if v != nil {
 		_c.SetStatusPhase(*v)
 	}
@@ -70,13 +70,13 @@ func (_c *McpServerCreate) SetNillableStatusPhase(v *mcpserver.StatusPhase) *Mcp
 }
 
 // SetStatusMessage sets the "status_message" field.
-func (_c *McpServerCreate) SetStatusMessage(v string) *McpServerCreate {
+func (_c *MCPServerCreate) SetStatusMessage(v string) *MCPServerCreate {
 	_c.mutation.SetStatusMessage(v)
 	return _c
 }
 
 // SetNillableStatusMessage sets the "status_message" field if the given value is not nil.
-func (_c *McpServerCreate) SetNillableStatusMessage(v *string) *McpServerCreate {
+func (_c *MCPServerCreate) SetNillableStatusMessage(v *string) *MCPServerCreate {
 	if v != nil {
 		_c.SetStatusMessage(*v)
 	}
@@ -84,37 +84,37 @@ func (_c *McpServerCreate) SetNillableStatusMessage(v *string) *McpServerCreate 
 }
 
 // SetNamespace sets the "namespace" field.
-func (_c *McpServerCreate) SetNamespace(v string) *McpServerCreate {
+func (_c *MCPServerCreate) SetNamespace(v string) *MCPServerCreate {
 	_c.mutation.SetNamespace(v)
 	return _c
 }
 
 // SetBasePath sets the "base_path" field.
-func (_c *McpServerCreate) SetBasePath(v string) *McpServerCreate {
+func (_c *MCPServerCreate) SetBasePath(v string) *MCPServerCreate {
 	_c.mutation.SetBasePath(v)
 	return _c
 }
 
 // SetVersion sets the "version" field.
-func (_c *McpServerCreate) SetVersion(v string) *McpServerCreate {
+func (_c *MCPServerCreate) SetVersion(v string) *MCPServerCreate {
 	_c.mutation.SetVersion(v)
 	return _c
 }
 
 // SetName sets the "name" field.
-func (_c *McpServerCreate) SetName(v string) *McpServerCreate {
+func (_c *MCPServerCreate) SetName(v string) *MCPServerCreate {
 	_c.mutation.SetName(v)
 	return _c
 }
 
 // SetDescription sets the "description" field.
-func (_c *McpServerCreate) SetDescription(v string) *McpServerCreate {
+func (_c *MCPServerCreate) SetDescription(v string) *MCPServerCreate {
 	_c.mutation.SetDescription(v)
 	return _c
 }
 
 // SetNillableDescription sets the "description" field if the given value is not nil.
-func (_c *McpServerCreate) SetNillableDescription(v *string) *McpServerCreate {
+func (_c *MCPServerCreate) SetNillableDescription(v *string) *MCPServerCreate {
 	if v != nil {
 		_c.SetDescription(*v)
 	}
@@ -122,13 +122,13 @@ func (_c *McpServerCreate) SetNillableDescription(v *string) *McpServerCreate {
 }
 
 // SetSpecification sets the "specification" field.
-func (_c *McpServerCreate) SetSpecification(v string) *McpServerCreate {
+func (_c *MCPServerCreate) SetSpecification(v string) *MCPServerCreate {
 	_c.mutation.SetSpecification(v)
 	return _c
 }
 
 // SetNillableSpecification sets the "specification" field if the given value is not nil.
-func (_c *McpServerCreate) SetNillableSpecification(v *string) *McpServerCreate {
+func (_c *MCPServerCreate) SetNillableSpecification(v *string) *MCPServerCreate {
 	if v != nil {
 		_c.SetSpecification(*v)
 	}
@@ -136,33 +136,33 @@ func (_c *McpServerCreate) SetNillableSpecification(v *string) *McpServerCreate 
 }
 
 // SetCategory sets the "category" field.
-func (_c *McpServerCreate) SetCategory(v string) *McpServerCreate {
+func (_c *MCPServerCreate) SetCategory(v string) *MCPServerCreate {
 	_c.mutation.SetCategory(v)
 	return _c
 }
 
 // SetNillableCategory sets the "category" field if the given value is not nil.
-func (_c *McpServerCreate) SetNillableCategory(v *string) *McpServerCreate {
+func (_c *MCPServerCreate) SetNillableCategory(v *string) *MCPServerCreate {
 	if v != nil {
 		_c.SetCategory(*v)
 	}
 	return _c
 }
 
-// SetOauth2Scopes sets the "oauth2_scopes" field.
-func (_c *McpServerCreate) SetOauth2Scopes(v []string) *McpServerCreate {
-	_c.mutation.SetOauth2Scopes(v)
+// SetOAuth2Scopes sets the "OAuth2_scopes" field.
+func (_c *MCPServerCreate) SetOAuth2Scopes(v []string) *MCPServerCreate {
+	_c.mutation.SetOAuth2Scopes(v)
 	return _c
 }
 
 // SetActive sets the "active" field.
-func (_c *McpServerCreate) SetActive(v bool) *McpServerCreate {
+func (_c *MCPServerCreate) SetActive(v bool) *MCPServerCreate {
 	_c.mutation.SetActive(v)
 	return _c
 }
 
 // SetNillableActive sets the "active" field if the given value is not nil.
-func (_c *McpServerCreate) SetNillableActive(v *bool) *McpServerCreate {
+func (_c *MCPServerCreate) SetNillableActive(v *bool) *MCPServerCreate {
 	if v != nil {
 		_c.SetActive(*v)
 	}
@@ -170,24 +170,24 @@ func (_c *McpServerCreate) SetNillableActive(v *bool) *McpServerCreate {
 }
 
 // SetOwnerID sets the "owner" edge to the Team entity by ID.
-func (_c *McpServerCreate) SetOwnerID(id int) *McpServerCreate {
+func (_c *MCPServerCreate) SetOwnerID(id int) *MCPServerCreate {
 	_c.mutation.SetOwnerID(id)
 	return _c
 }
 
 // SetOwner sets the "owner" edge to the Team entity.
-func (_c *McpServerCreate) SetOwner(v *Team) *McpServerCreate {
+func (_c *MCPServerCreate) SetOwner(v *Team) *MCPServerCreate {
 	return _c.SetOwnerID(v.ID)
 }
 
 // AddExposureIDs adds the "exposures" edge to the AgenticExposure entity by IDs.
-func (_c *McpServerCreate) AddExposureIDs(ids ...int) *McpServerCreate {
+func (_c *MCPServerCreate) AddExposureIDs(ids ...int) *MCPServerCreate {
 	_c.mutation.AddExposureIDs(ids...)
 	return _c
 }
 
 // AddExposures adds the "exposures" edges to the AgenticExposure entity.
-func (_c *McpServerCreate) AddExposures(v ...*AgenticExposure) *McpServerCreate {
+func (_c *MCPServerCreate) AddExposures(v ...*AgenticExposure) *MCPServerCreate {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
@@ -195,13 +195,13 @@ func (_c *McpServerCreate) AddExposures(v ...*AgenticExposure) *McpServerCreate 
 	return _c.AddExposureIDs(ids...)
 }
 
-// Mutation returns the McpServerMutation object of the builder.
-func (_c *McpServerCreate) Mutation() *McpServerMutation {
+// Mutation returns the MCPServerMutation object of the builder.
+func (_c *MCPServerCreate) Mutation() *MCPServerMutation {
 	return _c.mutation
 }
 
-// Save creates the McpServer in the database.
-func (_c *McpServerCreate) Save(ctx context.Context) (*McpServer, error) {
+// Save creates the MCPServer in the database.
+func (_c *MCPServerCreate) Save(ctx context.Context) (*MCPServer, error) {
 	if err := _c.defaults(); err != nil {
 		return nil, err
 	}
@@ -209,7 +209,7 @@ func (_c *McpServerCreate) Save(ctx context.Context) (*McpServer, error) {
 }
 
 // SaveX calls Save and panics if Save returns an error.
-func (_c *McpServerCreate) SaveX(ctx context.Context) *McpServer {
+func (_c *MCPServerCreate) SaveX(ctx context.Context) *MCPServer {
 	v, err := _c.Save(ctx)
 	if err != nil {
 		panic(err)
@@ -218,20 +218,20 @@ func (_c *McpServerCreate) SaveX(ctx context.Context) *McpServer {
 }
 
 // Exec executes the query.
-func (_c *McpServerCreate) Exec(ctx context.Context) error {
+func (_c *MCPServerCreate) Exec(ctx context.Context) error {
 	_, err := _c.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (_c *McpServerCreate) ExecX(ctx context.Context) {
+func (_c *MCPServerCreate) ExecX(ctx context.Context) {
 	if err := _c.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // defaults sets the default values of the builder before save.
-func (_c *McpServerCreate) defaults() error {
+func (_c *MCPServerCreate) defaults() error {
 	if _, ok := _c.mutation.CreatedAt(); !ok {
 		if mcpserver.DefaultCreatedAt == nil {
 			return fmt.Errorf("ent: uninitialized mcpserver.DefaultCreatedAt (forgotten import ent/runtime?)")
@@ -254,60 +254,60 @@ func (_c *McpServerCreate) defaults() error {
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (_c *McpServerCreate) check() error {
+func (_c *MCPServerCreate) check() error {
 	if _, ok := _c.mutation.CreatedAt(); !ok {
-		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "McpServer.created_at"`)}
+		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "MCPServer.created_at"`)}
 	}
 	if _, ok := _c.mutation.LastModifiedAt(); !ok {
-		return &ValidationError{Name: "last_modified_at", err: errors.New(`ent: missing required field "McpServer.last_modified_at"`)}
+		return &ValidationError{Name: "last_modified_at", err: errors.New(`ent: missing required field "MCPServer.last_modified_at"`)}
 	}
 	if v, ok := _c.mutation.StatusPhase(); ok {
 		if err := mcpserver.StatusPhaseValidator(v); err != nil {
-			return &ValidationError{Name: "status_phase", err: fmt.Errorf(`ent: validator failed for field "McpServer.status_phase": %w`, err)}
+			return &ValidationError{Name: "status_phase", err: fmt.Errorf(`ent: validator failed for field "MCPServer.status_phase": %w`, err)}
 		}
 	}
 	if _, ok := _c.mutation.Namespace(); !ok {
-		return &ValidationError{Name: "namespace", err: errors.New(`ent: missing required field "McpServer.namespace"`)}
+		return &ValidationError{Name: "namespace", err: errors.New(`ent: missing required field "MCPServer.namespace"`)}
 	}
 	if v, ok := _c.mutation.Namespace(); ok {
 		if err := mcpserver.NamespaceValidator(v); err != nil {
-			return &ValidationError{Name: "namespace", err: fmt.Errorf(`ent: validator failed for field "McpServer.namespace": %w`, err)}
+			return &ValidationError{Name: "namespace", err: fmt.Errorf(`ent: validator failed for field "MCPServer.namespace": %w`, err)}
 		}
 	}
 	if _, ok := _c.mutation.BasePath(); !ok {
-		return &ValidationError{Name: "base_path", err: errors.New(`ent: missing required field "McpServer.base_path"`)}
+		return &ValidationError{Name: "base_path", err: errors.New(`ent: missing required field "MCPServer.base_path"`)}
 	}
 	if v, ok := _c.mutation.BasePath(); ok {
 		if err := mcpserver.BasePathValidator(v); err != nil {
-			return &ValidationError{Name: "base_path", err: fmt.Errorf(`ent: validator failed for field "McpServer.base_path": %w`, err)}
+			return &ValidationError{Name: "base_path", err: fmt.Errorf(`ent: validator failed for field "MCPServer.base_path": %w`, err)}
 		}
 	}
 	if _, ok := _c.mutation.Version(); !ok {
-		return &ValidationError{Name: "version", err: errors.New(`ent: missing required field "McpServer.version"`)}
+		return &ValidationError{Name: "version", err: errors.New(`ent: missing required field "MCPServer.version"`)}
 	}
 	if v, ok := _c.mutation.Version(); ok {
 		if err := mcpserver.VersionValidator(v); err != nil {
-			return &ValidationError{Name: "version", err: fmt.Errorf(`ent: validator failed for field "McpServer.version": %w`, err)}
+			return &ValidationError{Name: "version", err: fmt.Errorf(`ent: validator failed for field "MCPServer.version": %w`, err)}
 		}
 	}
 	if _, ok := _c.mutation.Name(); !ok {
-		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "McpServer.name"`)}
+		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "MCPServer.name"`)}
 	}
 	if v, ok := _c.mutation.Name(); ok {
 		if err := mcpserver.NameValidator(v); err != nil {
-			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "McpServer.name": %w`, err)}
+			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "MCPServer.name": %w`, err)}
 		}
 	}
 	if _, ok := _c.mutation.Active(); !ok {
-		return &ValidationError{Name: "active", err: errors.New(`ent: missing required field "McpServer.active"`)}
+		return &ValidationError{Name: "active", err: errors.New(`ent: missing required field "MCPServer.active"`)}
 	}
 	if len(_c.mutation.OwnerIDs()) == 0 {
-		return &ValidationError{Name: "owner", err: errors.New(`ent: missing required edge "McpServer.owner"`)}
+		return &ValidationError{Name: "owner", err: errors.New(`ent: missing required edge "MCPServer.owner"`)}
 	}
 	return nil
 }
 
-func (_c *McpServerCreate) sqlSave(ctx context.Context) (*McpServer, error) {
+func (_c *MCPServerCreate) sqlSave(ctx context.Context) (*MCPServer, error) {
 	if err := _c.check(); err != nil {
 		return nil, err
 	}
@@ -325,9 +325,9 @@ func (_c *McpServerCreate) sqlSave(ctx context.Context) (*McpServer, error) {
 	return _node, nil
 }
 
-func (_c *McpServerCreate) createSpec() (*McpServer, *sqlgraph.CreateSpec) {
+func (_c *MCPServerCreate) createSpec() (*MCPServer, *sqlgraph.CreateSpec) {
 	var (
-		_node = &McpServer{config: _c.config}
+		_node = &MCPServer{config: _c.config}
 		_spec = sqlgraph.NewCreateSpec(mcpserver.Table, sqlgraph.NewFieldSpec(mcpserver.FieldID, field.TypeInt))
 	)
 	_spec.OnConflict = _c.conflict
@@ -375,9 +375,9 @@ func (_c *McpServerCreate) createSpec() (*McpServer, *sqlgraph.CreateSpec) {
 		_spec.SetField(mcpserver.FieldCategory, field.TypeString, value)
 		_node.Category = value
 	}
-	if value, ok := _c.mutation.Oauth2Scopes(); ok {
-		_spec.SetField(mcpserver.FieldOauth2Scopes, field.TypeJSON, value)
-		_node.Oauth2Scopes = value
+	if value, ok := _c.mutation.OAuth2Scopes(); ok {
+		_spec.SetField(mcpserver.FieldOAuth2Scopes, field.TypeJSON, value)
+		_node.OAuth2Scopes = value
 	}
 	if value, ok := _c.mutation.Active(); ok {
 		_spec.SetField(mcpserver.FieldActive, field.TypeBool, value)
@@ -422,7 +422,7 @@ func (_c *McpServerCreate) createSpec() (*McpServer, *sqlgraph.CreateSpec) {
 // OnConflict allows configuring the `ON CONFLICT` / `ON DUPLICATE KEY` clause
 // of the `INSERT` statement. For example:
 //
-//	client.McpServer.Create().
+//	client.MCPServer.Create().
 //		SetCreatedAt(v).
 //		OnConflict(
 //			// Update the row with the new values
@@ -431,13 +431,13 @@ func (_c *McpServerCreate) createSpec() (*McpServer, *sqlgraph.CreateSpec) {
 //		).
 //		// Override some of the fields with custom
 //		// update values.
-//		Update(func(u *ent.McpServerUpsert) {
+//		Update(func(u *ent.MCPServerUpsert) {
 //			SetCreatedAt(v+v).
 //		}).
 //		Exec(ctx)
-func (_c *McpServerCreate) OnConflict(opts ...sql.ConflictOption) *McpServerUpsertOne {
+func (_c *MCPServerCreate) OnConflict(opts ...sql.ConflictOption) *MCPServerUpsertOne {
 	_c.conflict = opts
-	return &McpServerUpsertOne{
+	return &MCPServerUpsertOne{
 		create: _c,
 	}
 }
@@ -445,205 +445,205 @@ func (_c *McpServerCreate) OnConflict(opts ...sql.ConflictOption) *McpServerUpse
 // OnConflictColumns calls `OnConflict` and configures the columns
 // as conflict target. Using this option is equivalent to using:
 //
-//	client.McpServer.Create().
+//	client.MCPServer.Create().
 //		OnConflict(sql.ConflictColumns(columns...)).
 //		Exec(ctx)
-func (_c *McpServerCreate) OnConflictColumns(columns ...string) *McpServerUpsertOne {
+func (_c *MCPServerCreate) OnConflictColumns(columns ...string) *MCPServerUpsertOne {
 	_c.conflict = append(_c.conflict, sql.ConflictColumns(columns...))
-	return &McpServerUpsertOne{
+	return &MCPServerUpsertOne{
 		create: _c,
 	}
 }
 
 type (
-	// McpServerUpsertOne is the builder for "upsert"-ing
-	//  one McpServer node.
-	McpServerUpsertOne struct {
-		create *McpServerCreate
+	// MCPServerUpsertOne is the builder for "upsert"-ing
+	//  one MCPServer node.
+	MCPServerUpsertOne struct {
+		create *MCPServerCreate
 	}
 
-	// McpServerUpsert is the "OnConflict" setter.
-	McpServerUpsert struct {
+	// MCPServerUpsert is the "OnConflict" setter.
+	MCPServerUpsert struct {
 		*sql.UpdateSet
 	}
 )
 
 // SetLastModifiedAt sets the "last_modified_at" field.
-func (u *McpServerUpsert) SetLastModifiedAt(v time.Time) *McpServerUpsert {
+func (u *MCPServerUpsert) SetLastModifiedAt(v time.Time) *MCPServerUpsert {
 	u.Set(mcpserver.FieldLastModifiedAt, v)
 	return u
 }
 
 // UpdateLastModifiedAt sets the "last_modified_at" field to the value that was provided on create.
-func (u *McpServerUpsert) UpdateLastModifiedAt() *McpServerUpsert {
+func (u *MCPServerUpsert) UpdateLastModifiedAt() *MCPServerUpsert {
 	u.SetExcluded(mcpserver.FieldLastModifiedAt)
 	return u
 }
 
 // SetStatusPhase sets the "status_phase" field.
-func (u *McpServerUpsert) SetStatusPhase(v mcpserver.StatusPhase) *McpServerUpsert {
+func (u *MCPServerUpsert) SetStatusPhase(v mcpserver.StatusPhase) *MCPServerUpsert {
 	u.Set(mcpserver.FieldStatusPhase, v)
 	return u
 }
 
 // UpdateStatusPhase sets the "status_phase" field to the value that was provided on create.
-func (u *McpServerUpsert) UpdateStatusPhase() *McpServerUpsert {
+func (u *MCPServerUpsert) UpdateStatusPhase() *MCPServerUpsert {
 	u.SetExcluded(mcpserver.FieldStatusPhase)
 	return u
 }
 
 // ClearStatusPhase clears the value of the "status_phase" field.
-func (u *McpServerUpsert) ClearStatusPhase() *McpServerUpsert {
+func (u *MCPServerUpsert) ClearStatusPhase() *MCPServerUpsert {
 	u.SetNull(mcpserver.FieldStatusPhase)
 	return u
 }
 
 // SetStatusMessage sets the "status_message" field.
-func (u *McpServerUpsert) SetStatusMessage(v string) *McpServerUpsert {
+func (u *MCPServerUpsert) SetStatusMessage(v string) *MCPServerUpsert {
 	u.Set(mcpserver.FieldStatusMessage, v)
 	return u
 }
 
 // UpdateStatusMessage sets the "status_message" field to the value that was provided on create.
-func (u *McpServerUpsert) UpdateStatusMessage() *McpServerUpsert {
+func (u *MCPServerUpsert) UpdateStatusMessage() *MCPServerUpsert {
 	u.SetExcluded(mcpserver.FieldStatusMessage)
 	return u
 }
 
 // ClearStatusMessage clears the value of the "status_message" field.
-func (u *McpServerUpsert) ClearStatusMessage() *McpServerUpsert {
+func (u *MCPServerUpsert) ClearStatusMessage() *MCPServerUpsert {
 	u.SetNull(mcpserver.FieldStatusMessage)
 	return u
 }
 
 // SetNamespace sets the "namespace" field.
-func (u *McpServerUpsert) SetNamespace(v string) *McpServerUpsert {
+func (u *MCPServerUpsert) SetNamespace(v string) *MCPServerUpsert {
 	u.Set(mcpserver.FieldNamespace, v)
 	return u
 }
 
 // UpdateNamespace sets the "namespace" field to the value that was provided on create.
-func (u *McpServerUpsert) UpdateNamespace() *McpServerUpsert {
+func (u *MCPServerUpsert) UpdateNamespace() *MCPServerUpsert {
 	u.SetExcluded(mcpserver.FieldNamespace)
 	return u
 }
 
 // SetBasePath sets the "base_path" field.
-func (u *McpServerUpsert) SetBasePath(v string) *McpServerUpsert {
+func (u *MCPServerUpsert) SetBasePath(v string) *MCPServerUpsert {
 	u.Set(mcpserver.FieldBasePath, v)
 	return u
 }
 
 // UpdateBasePath sets the "base_path" field to the value that was provided on create.
-func (u *McpServerUpsert) UpdateBasePath() *McpServerUpsert {
+func (u *MCPServerUpsert) UpdateBasePath() *MCPServerUpsert {
 	u.SetExcluded(mcpserver.FieldBasePath)
 	return u
 }
 
 // SetVersion sets the "version" field.
-func (u *McpServerUpsert) SetVersion(v string) *McpServerUpsert {
+func (u *MCPServerUpsert) SetVersion(v string) *MCPServerUpsert {
 	u.Set(mcpserver.FieldVersion, v)
 	return u
 }
 
 // UpdateVersion sets the "version" field to the value that was provided on create.
-func (u *McpServerUpsert) UpdateVersion() *McpServerUpsert {
+func (u *MCPServerUpsert) UpdateVersion() *MCPServerUpsert {
 	u.SetExcluded(mcpserver.FieldVersion)
 	return u
 }
 
 // SetName sets the "name" field.
-func (u *McpServerUpsert) SetName(v string) *McpServerUpsert {
+func (u *MCPServerUpsert) SetName(v string) *MCPServerUpsert {
 	u.Set(mcpserver.FieldName, v)
 	return u
 }
 
 // UpdateName sets the "name" field to the value that was provided on create.
-func (u *McpServerUpsert) UpdateName() *McpServerUpsert {
+func (u *MCPServerUpsert) UpdateName() *MCPServerUpsert {
 	u.SetExcluded(mcpserver.FieldName)
 	return u
 }
 
 // SetDescription sets the "description" field.
-func (u *McpServerUpsert) SetDescription(v string) *McpServerUpsert {
+func (u *MCPServerUpsert) SetDescription(v string) *MCPServerUpsert {
 	u.Set(mcpserver.FieldDescription, v)
 	return u
 }
 
 // UpdateDescription sets the "description" field to the value that was provided on create.
-func (u *McpServerUpsert) UpdateDescription() *McpServerUpsert {
+func (u *MCPServerUpsert) UpdateDescription() *MCPServerUpsert {
 	u.SetExcluded(mcpserver.FieldDescription)
 	return u
 }
 
 // ClearDescription clears the value of the "description" field.
-func (u *McpServerUpsert) ClearDescription() *McpServerUpsert {
+func (u *MCPServerUpsert) ClearDescription() *MCPServerUpsert {
 	u.SetNull(mcpserver.FieldDescription)
 	return u
 }
 
 // SetSpecification sets the "specification" field.
-func (u *McpServerUpsert) SetSpecification(v string) *McpServerUpsert {
+func (u *MCPServerUpsert) SetSpecification(v string) *MCPServerUpsert {
 	u.Set(mcpserver.FieldSpecification, v)
 	return u
 }
 
 // UpdateSpecification sets the "specification" field to the value that was provided on create.
-func (u *McpServerUpsert) UpdateSpecification() *McpServerUpsert {
+func (u *MCPServerUpsert) UpdateSpecification() *MCPServerUpsert {
 	u.SetExcluded(mcpserver.FieldSpecification)
 	return u
 }
 
 // ClearSpecification clears the value of the "specification" field.
-func (u *McpServerUpsert) ClearSpecification() *McpServerUpsert {
+func (u *MCPServerUpsert) ClearSpecification() *MCPServerUpsert {
 	u.SetNull(mcpserver.FieldSpecification)
 	return u
 }
 
 // SetCategory sets the "category" field.
-func (u *McpServerUpsert) SetCategory(v string) *McpServerUpsert {
+func (u *MCPServerUpsert) SetCategory(v string) *MCPServerUpsert {
 	u.Set(mcpserver.FieldCategory, v)
 	return u
 }
 
 // UpdateCategory sets the "category" field to the value that was provided on create.
-func (u *McpServerUpsert) UpdateCategory() *McpServerUpsert {
+func (u *MCPServerUpsert) UpdateCategory() *MCPServerUpsert {
 	u.SetExcluded(mcpserver.FieldCategory)
 	return u
 }
 
 // ClearCategory clears the value of the "category" field.
-func (u *McpServerUpsert) ClearCategory() *McpServerUpsert {
+func (u *MCPServerUpsert) ClearCategory() *MCPServerUpsert {
 	u.SetNull(mcpserver.FieldCategory)
 	return u
 }
 
-// SetOauth2Scopes sets the "oauth2_scopes" field.
-func (u *McpServerUpsert) SetOauth2Scopes(v []string) *McpServerUpsert {
-	u.Set(mcpserver.FieldOauth2Scopes, v)
+// SetOAuth2Scopes sets the "OAuth2_scopes" field.
+func (u *MCPServerUpsert) SetOAuth2Scopes(v []string) *MCPServerUpsert {
+	u.Set(mcpserver.FieldOAuth2Scopes, v)
 	return u
 }
 
-// UpdateOauth2Scopes sets the "oauth2_scopes" field to the value that was provided on create.
-func (u *McpServerUpsert) UpdateOauth2Scopes() *McpServerUpsert {
-	u.SetExcluded(mcpserver.FieldOauth2Scopes)
+// UpdateOAuth2Scopes sets the "OAuth2_scopes" field to the value that was provided on create.
+func (u *MCPServerUpsert) UpdateOAuth2Scopes() *MCPServerUpsert {
+	u.SetExcluded(mcpserver.FieldOAuth2Scopes)
 	return u
 }
 
-// ClearOauth2Scopes clears the value of the "oauth2_scopes" field.
-func (u *McpServerUpsert) ClearOauth2Scopes() *McpServerUpsert {
-	u.SetNull(mcpserver.FieldOauth2Scopes)
+// ClearOAuth2Scopes clears the value of the "OAuth2_scopes" field.
+func (u *MCPServerUpsert) ClearOAuth2Scopes() *MCPServerUpsert {
+	u.SetNull(mcpserver.FieldOAuth2Scopes)
 	return u
 }
 
 // SetActive sets the "active" field.
-func (u *McpServerUpsert) SetActive(v bool) *McpServerUpsert {
+func (u *MCPServerUpsert) SetActive(v bool) *MCPServerUpsert {
 	u.Set(mcpserver.FieldActive, v)
 	return u
 }
 
 // UpdateActive sets the "active" field to the value that was provided on create.
-func (u *McpServerUpsert) UpdateActive() *McpServerUpsert {
+func (u *MCPServerUpsert) UpdateActive() *MCPServerUpsert {
 	u.SetExcluded(mcpserver.FieldActive)
 	return u
 }
@@ -651,12 +651,12 @@ func (u *McpServerUpsert) UpdateActive() *McpServerUpsert {
 // UpdateNewValues updates the mutable fields using the new values that were set on create.
 // Using this option is equivalent to using:
 //
-//	client.McpServer.Create().
+//	client.MCPServer.Create().
 //		OnConflict(
 //			sql.ResolveWithNewValues(),
 //		).
 //		Exec(ctx)
-func (u *McpServerUpsertOne) UpdateNewValues() *McpServerUpsertOne {
+func (u *MCPServerUpsertOne) UpdateNewValues() *MCPServerUpsertOne {
 	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
 	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
 		if _, exists := u.create.mutation.CreatedAt(); exists {
@@ -669,257 +669,257 @@ func (u *McpServerUpsertOne) UpdateNewValues() *McpServerUpsertOne {
 // Ignore sets each column to itself in case of conflict.
 // Using this option is equivalent to using:
 //
-//	client.McpServer.Create().
+//	client.MCPServer.Create().
 //	    OnConflict(sql.ResolveWithIgnore()).
 //	    Exec(ctx)
-func (u *McpServerUpsertOne) Ignore() *McpServerUpsertOne {
+func (u *MCPServerUpsertOne) Ignore() *MCPServerUpsertOne {
 	u.create.conflict = append(u.create.conflict, sql.ResolveWithIgnore())
 	return u
 }
 
 // DoNothing configures the conflict_action to `DO NOTHING`.
 // Supported only by SQLite and PostgreSQL.
-func (u *McpServerUpsertOne) DoNothing() *McpServerUpsertOne {
+func (u *MCPServerUpsertOne) DoNothing() *MCPServerUpsertOne {
 	u.create.conflict = append(u.create.conflict, sql.DoNothing())
 	return u
 }
 
-// Update allows overriding fields `UPDATE` values. See the McpServerCreate.OnConflict
+// Update allows overriding fields `UPDATE` values. See the MCPServerCreate.OnConflict
 // documentation for more info.
-func (u *McpServerUpsertOne) Update(set func(*McpServerUpsert)) *McpServerUpsertOne {
+func (u *MCPServerUpsertOne) Update(set func(*MCPServerUpsert)) *MCPServerUpsertOne {
 	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(update *sql.UpdateSet) {
-		set(&McpServerUpsert{UpdateSet: update})
+		set(&MCPServerUpsert{UpdateSet: update})
 	}))
 	return u
 }
 
 // SetLastModifiedAt sets the "last_modified_at" field.
-func (u *McpServerUpsertOne) SetLastModifiedAt(v time.Time) *McpServerUpsertOne {
-	return u.Update(func(s *McpServerUpsert) {
+func (u *MCPServerUpsertOne) SetLastModifiedAt(v time.Time) *MCPServerUpsertOne {
+	return u.Update(func(s *MCPServerUpsert) {
 		s.SetLastModifiedAt(v)
 	})
 }
 
 // UpdateLastModifiedAt sets the "last_modified_at" field to the value that was provided on create.
-func (u *McpServerUpsertOne) UpdateLastModifiedAt() *McpServerUpsertOne {
-	return u.Update(func(s *McpServerUpsert) {
+func (u *MCPServerUpsertOne) UpdateLastModifiedAt() *MCPServerUpsertOne {
+	return u.Update(func(s *MCPServerUpsert) {
 		s.UpdateLastModifiedAt()
 	})
 }
 
 // SetStatusPhase sets the "status_phase" field.
-func (u *McpServerUpsertOne) SetStatusPhase(v mcpserver.StatusPhase) *McpServerUpsertOne {
-	return u.Update(func(s *McpServerUpsert) {
+func (u *MCPServerUpsertOne) SetStatusPhase(v mcpserver.StatusPhase) *MCPServerUpsertOne {
+	return u.Update(func(s *MCPServerUpsert) {
 		s.SetStatusPhase(v)
 	})
 }
 
 // UpdateStatusPhase sets the "status_phase" field to the value that was provided on create.
-func (u *McpServerUpsertOne) UpdateStatusPhase() *McpServerUpsertOne {
-	return u.Update(func(s *McpServerUpsert) {
+func (u *MCPServerUpsertOne) UpdateStatusPhase() *MCPServerUpsertOne {
+	return u.Update(func(s *MCPServerUpsert) {
 		s.UpdateStatusPhase()
 	})
 }
 
 // ClearStatusPhase clears the value of the "status_phase" field.
-func (u *McpServerUpsertOne) ClearStatusPhase() *McpServerUpsertOne {
-	return u.Update(func(s *McpServerUpsert) {
+func (u *MCPServerUpsertOne) ClearStatusPhase() *MCPServerUpsertOne {
+	return u.Update(func(s *MCPServerUpsert) {
 		s.ClearStatusPhase()
 	})
 }
 
 // SetStatusMessage sets the "status_message" field.
-func (u *McpServerUpsertOne) SetStatusMessage(v string) *McpServerUpsertOne {
-	return u.Update(func(s *McpServerUpsert) {
+func (u *MCPServerUpsertOne) SetStatusMessage(v string) *MCPServerUpsertOne {
+	return u.Update(func(s *MCPServerUpsert) {
 		s.SetStatusMessage(v)
 	})
 }
 
 // UpdateStatusMessage sets the "status_message" field to the value that was provided on create.
-func (u *McpServerUpsertOne) UpdateStatusMessage() *McpServerUpsertOne {
-	return u.Update(func(s *McpServerUpsert) {
+func (u *MCPServerUpsertOne) UpdateStatusMessage() *MCPServerUpsertOne {
+	return u.Update(func(s *MCPServerUpsert) {
 		s.UpdateStatusMessage()
 	})
 }
 
 // ClearStatusMessage clears the value of the "status_message" field.
-func (u *McpServerUpsertOne) ClearStatusMessage() *McpServerUpsertOne {
-	return u.Update(func(s *McpServerUpsert) {
+func (u *MCPServerUpsertOne) ClearStatusMessage() *MCPServerUpsertOne {
+	return u.Update(func(s *MCPServerUpsert) {
 		s.ClearStatusMessage()
 	})
 }
 
 // SetNamespace sets the "namespace" field.
-func (u *McpServerUpsertOne) SetNamespace(v string) *McpServerUpsertOne {
-	return u.Update(func(s *McpServerUpsert) {
+func (u *MCPServerUpsertOne) SetNamespace(v string) *MCPServerUpsertOne {
+	return u.Update(func(s *MCPServerUpsert) {
 		s.SetNamespace(v)
 	})
 }
 
 // UpdateNamespace sets the "namespace" field to the value that was provided on create.
-func (u *McpServerUpsertOne) UpdateNamespace() *McpServerUpsertOne {
-	return u.Update(func(s *McpServerUpsert) {
+func (u *MCPServerUpsertOne) UpdateNamespace() *MCPServerUpsertOne {
+	return u.Update(func(s *MCPServerUpsert) {
 		s.UpdateNamespace()
 	})
 }
 
 // SetBasePath sets the "base_path" field.
-func (u *McpServerUpsertOne) SetBasePath(v string) *McpServerUpsertOne {
-	return u.Update(func(s *McpServerUpsert) {
+func (u *MCPServerUpsertOne) SetBasePath(v string) *MCPServerUpsertOne {
+	return u.Update(func(s *MCPServerUpsert) {
 		s.SetBasePath(v)
 	})
 }
 
 // UpdateBasePath sets the "base_path" field to the value that was provided on create.
-func (u *McpServerUpsertOne) UpdateBasePath() *McpServerUpsertOne {
-	return u.Update(func(s *McpServerUpsert) {
+func (u *MCPServerUpsertOne) UpdateBasePath() *MCPServerUpsertOne {
+	return u.Update(func(s *MCPServerUpsert) {
 		s.UpdateBasePath()
 	})
 }
 
 // SetVersion sets the "version" field.
-func (u *McpServerUpsertOne) SetVersion(v string) *McpServerUpsertOne {
-	return u.Update(func(s *McpServerUpsert) {
+func (u *MCPServerUpsertOne) SetVersion(v string) *MCPServerUpsertOne {
+	return u.Update(func(s *MCPServerUpsert) {
 		s.SetVersion(v)
 	})
 }
 
 // UpdateVersion sets the "version" field to the value that was provided on create.
-func (u *McpServerUpsertOne) UpdateVersion() *McpServerUpsertOne {
-	return u.Update(func(s *McpServerUpsert) {
+func (u *MCPServerUpsertOne) UpdateVersion() *MCPServerUpsertOne {
+	return u.Update(func(s *MCPServerUpsert) {
 		s.UpdateVersion()
 	})
 }
 
 // SetName sets the "name" field.
-func (u *McpServerUpsertOne) SetName(v string) *McpServerUpsertOne {
-	return u.Update(func(s *McpServerUpsert) {
+func (u *MCPServerUpsertOne) SetName(v string) *MCPServerUpsertOne {
+	return u.Update(func(s *MCPServerUpsert) {
 		s.SetName(v)
 	})
 }
 
 // UpdateName sets the "name" field to the value that was provided on create.
-func (u *McpServerUpsertOne) UpdateName() *McpServerUpsertOne {
-	return u.Update(func(s *McpServerUpsert) {
+func (u *MCPServerUpsertOne) UpdateName() *MCPServerUpsertOne {
+	return u.Update(func(s *MCPServerUpsert) {
 		s.UpdateName()
 	})
 }
 
 // SetDescription sets the "description" field.
-func (u *McpServerUpsertOne) SetDescription(v string) *McpServerUpsertOne {
-	return u.Update(func(s *McpServerUpsert) {
+func (u *MCPServerUpsertOne) SetDescription(v string) *MCPServerUpsertOne {
+	return u.Update(func(s *MCPServerUpsert) {
 		s.SetDescription(v)
 	})
 }
 
 // UpdateDescription sets the "description" field to the value that was provided on create.
-func (u *McpServerUpsertOne) UpdateDescription() *McpServerUpsertOne {
-	return u.Update(func(s *McpServerUpsert) {
+func (u *MCPServerUpsertOne) UpdateDescription() *MCPServerUpsertOne {
+	return u.Update(func(s *MCPServerUpsert) {
 		s.UpdateDescription()
 	})
 }
 
 // ClearDescription clears the value of the "description" field.
-func (u *McpServerUpsertOne) ClearDescription() *McpServerUpsertOne {
-	return u.Update(func(s *McpServerUpsert) {
+func (u *MCPServerUpsertOne) ClearDescription() *MCPServerUpsertOne {
+	return u.Update(func(s *MCPServerUpsert) {
 		s.ClearDescription()
 	})
 }
 
 // SetSpecification sets the "specification" field.
-func (u *McpServerUpsertOne) SetSpecification(v string) *McpServerUpsertOne {
-	return u.Update(func(s *McpServerUpsert) {
+func (u *MCPServerUpsertOne) SetSpecification(v string) *MCPServerUpsertOne {
+	return u.Update(func(s *MCPServerUpsert) {
 		s.SetSpecification(v)
 	})
 }
 
 // UpdateSpecification sets the "specification" field to the value that was provided on create.
-func (u *McpServerUpsertOne) UpdateSpecification() *McpServerUpsertOne {
-	return u.Update(func(s *McpServerUpsert) {
+func (u *MCPServerUpsertOne) UpdateSpecification() *MCPServerUpsertOne {
+	return u.Update(func(s *MCPServerUpsert) {
 		s.UpdateSpecification()
 	})
 }
 
 // ClearSpecification clears the value of the "specification" field.
-func (u *McpServerUpsertOne) ClearSpecification() *McpServerUpsertOne {
-	return u.Update(func(s *McpServerUpsert) {
+func (u *MCPServerUpsertOne) ClearSpecification() *MCPServerUpsertOne {
+	return u.Update(func(s *MCPServerUpsert) {
 		s.ClearSpecification()
 	})
 }
 
 // SetCategory sets the "category" field.
-func (u *McpServerUpsertOne) SetCategory(v string) *McpServerUpsertOne {
-	return u.Update(func(s *McpServerUpsert) {
+func (u *MCPServerUpsertOne) SetCategory(v string) *MCPServerUpsertOne {
+	return u.Update(func(s *MCPServerUpsert) {
 		s.SetCategory(v)
 	})
 }
 
 // UpdateCategory sets the "category" field to the value that was provided on create.
-func (u *McpServerUpsertOne) UpdateCategory() *McpServerUpsertOne {
-	return u.Update(func(s *McpServerUpsert) {
+func (u *MCPServerUpsertOne) UpdateCategory() *MCPServerUpsertOne {
+	return u.Update(func(s *MCPServerUpsert) {
 		s.UpdateCategory()
 	})
 }
 
 // ClearCategory clears the value of the "category" field.
-func (u *McpServerUpsertOne) ClearCategory() *McpServerUpsertOne {
-	return u.Update(func(s *McpServerUpsert) {
+func (u *MCPServerUpsertOne) ClearCategory() *MCPServerUpsertOne {
+	return u.Update(func(s *MCPServerUpsert) {
 		s.ClearCategory()
 	})
 }
 
-// SetOauth2Scopes sets the "oauth2_scopes" field.
-func (u *McpServerUpsertOne) SetOauth2Scopes(v []string) *McpServerUpsertOne {
-	return u.Update(func(s *McpServerUpsert) {
-		s.SetOauth2Scopes(v)
+// SetOAuth2Scopes sets the "OAuth2_scopes" field.
+func (u *MCPServerUpsertOne) SetOAuth2Scopes(v []string) *MCPServerUpsertOne {
+	return u.Update(func(s *MCPServerUpsert) {
+		s.SetOAuth2Scopes(v)
 	})
 }
 
-// UpdateOauth2Scopes sets the "oauth2_scopes" field to the value that was provided on create.
-func (u *McpServerUpsertOne) UpdateOauth2Scopes() *McpServerUpsertOne {
-	return u.Update(func(s *McpServerUpsert) {
-		s.UpdateOauth2Scopes()
+// UpdateOAuth2Scopes sets the "OAuth2_scopes" field to the value that was provided on create.
+func (u *MCPServerUpsertOne) UpdateOAuth2Scopes() *MCPServerUpsertOne {
+	return u.Update(func(s *MCPServerUpsert) {
+		s.UpdateOAuth2Scopes()
 	})
 }
 
-// ClearOauth2Scopes clears the value of the "oauth2_scopes" field.
-func (u *McpServerUpsertOne) ClearOauth2Scopes() *McpServerUpsertOne {
-	return u.Update(func(s *McpServerUpsert) {
-		s.ClearOauth2Scopes()
+// ClearOAuth2Scopes clears the value of the "OAuth2_scopes" field.
+func (u *MCPServerUpsertOne) ClearOAuth2Scopes() *MCPServerUpsertOne {
+	return u.Update(func(s *MCPServerUpsert) {
+		s.ClearOAuth2Scopes()
 	})
 }
 
 // SetActive sets the "active" field.
-func (u *McpServerUpsertOne) SetActive(v bool) *McpServerUpsertOne {
-	return u.Update(func(s *McpServerUpsert) {
+func (u *MCPServerUpsertOne) SetActive(v bool) *MCPServerUpsertOne {
+	return u.Update(func(s *MCPServerUpsert) {
 		s.SetActive(v)
 	})
 }
 
 // UpdateActive sets the "active" field to the value that was provided on create.
-func (u *McpServerUpsertOne) UpdateActive() *McpServerUpsertOne {
-	return u.Update(func(s *McpServerUpsert) {
+func (u *MCPServerUpsertOne) UpdateActive() *MCPServerUpsertOne {
+	return u.Update(func(s *MCPServerUpsert) {
 		s.UpdateActive()
 	})
 }
 
 // Exec executes the query.
-func (u *McpServerUpsertOne) Exec(ctx context.Context) error {
+func (u *MCPServerUpsertOne) Exec(ctx context.Context) error {
 	if len(u.create.conflict) == 0 {
-		return errors.New("ent: missing options for McpServerCreate.OnConflict")
+		return errors.New("ent: missing options for MCPServerCreate.OnConflict")
 	}
 	return u.create.Exec(ctx)
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (u *McpServerUpsertOne) ExecX(ctx context.Context) {
+func (u *MCPServerUpsertOne) ExecX(ctx context.Context) {
 	if err := u.create.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // Exec executes the UPSERT query and returns the inserted/updated ID.
-func (u *McpServerUpsertOne) ID(ctx context.Context) (id int, err error) {
+func (u *MCPServerUpsertOne) ID(ctx context.Context) (id int, err error) {
 	node, err := u.create.Save(ctx)
 	if err != nil {
 		return id, err
@@ -928,7 +928,7 @@ func (u *McpServerUpsertOne) ID(ctx context.Context) (id int, err error) {
 }
 
 // IDX is like ID, but panics if an error occurs.
-func (u *McpServerUpsertOne) IDX(ctx context.Context) int {
+func (u *MCPServerUpsertOne) IDX(ctx context.Context) int {
 	id, err := u.ID(ctx)
 	if err != nil {
 		panic(err)
@@ -936,28 +936,28 @@ func (u *McpServerUpsertOne) IDX(ctx context.Context) int {
 	return id
 }
 
-// McpServerCreateBulk is the builder for creating many McpServer entities in bulk.
-type McpServerCreateBulk struct {
+// MCPServerCreateBulk is the builder for creating many MCPServer entities in bulk.
+type MCPServerCreateBulk struct {
 	config
 	err      error
-	builders []*McpServerCreate
+	builders []*MCPServerCreate
 	conflict []sql.ConflictOption
 }
 
-// Save creates the McpServer entities in the database.
-func (_c *McpServerCreateBulk) Save(ctx context.Context) ([]*McpServer, error) {
+// Save creates the MCPServer entities in the database.
+func (_c *MCPServerCreateBulk) Save(ctx context.Context) ([]*MCPServer, error) {
 	if _c.err != nil {
 		return nil, _c.err
 	}
 	specs := make([]*sqlgraph.CreateSpec, len(_c.builders))
-	nodes := make([]*McpServer, len(_c.builders))
+	nodes := make([]*MCPServer, len(_c.builders))
 	mutators := make([]Mutator, len(_c.builders))
 	for i := range _c.builders {
 		func(i int, root context.Context) {
 			builder := _c.builders[i]
 			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
-				mutation, ok := m.(*McpServerMutation)
+				mutation, ok := m.(*MCPServerMutation)
 				if !ok {
 					return nil, fmt.Errorf("unexpected mutation type %T", m)
 				}
@@ -1005,7 +1005,7 @@ func (_c *McpServerCreateBulk) Save(ctx context.Context) ([]*McpServer, error) {
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (_c *McpServerCreateBulk) SaveX(ctx context.Context) []*McpServer {
+func (_c *MCPServerCreateBulk) SaveX(ctx context.Context) []*MCPServer {
 	v, err := _c.Save(ctx)
 	if err != nil {
 		panic(err)
@@ -1014,13 +1014,13 @@ func (_c *McpServerCreateBulk) SaveX(ctx context.Context) []*McpServer {
 }
 
 // Exec executes the query.
-func (_c *McpServerCreateBulk) Exec(ctx context.Context) error {
+func (_c *MCPServerCreateBulk) Exec(ctx context.Context) error {
 	_, err := _c.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (_c *McpServerCreateBulk) ExecX(ctx context.Context) {
+func (_c *MCPServerCreateBulk) ExecX(ctx context.Context) {
 	if err := _c.Exec(ctx); err != nil {
 		panic(err)
 	}
@@ -1029,7 +1029,7 @@ func (_c *McpServerCreateBulk) ExecX(ctx context.Context) {
 // OnConflict allows configuring the `ON CONFLICT` / `ON DUPLICATE KEY` clause
 // of the `INSERT` statement. For example:
 //
-//	client.McpServer.CreateBulk(builders...).
+//	client.MCPServer.CreateBulk(builders...).
 //		OnConflict(
 //			// Update the row with the new values
 //			// the was proposed for insertion.
@@ -1037,13 +1037,13 @@ func (_c *McpServerCreateBulk) ExecX(ctx context.Context) {
 //		).
 //		// Override some of the fields with custom
 //		// update values.
-//		Update(func(u *ent.McpServerUpsert) {
+//		Update(func(u *ent.MCPServerUpsert) {
 //			SetCreatedAt(v+v).
 //		}).
 //		Exec(ctx)
-func (_c *McpServerCreateBulk) OnConflict(opts ...sql.ConflictOption) *McpServerUpsertBulk {
+func (_c *MCPServerCreateBulk) OnConflict(opts ...sql.ConflictOption) *MCPServerUpsertBulk {
 	_c.conflict = opts
-	return &McpServerUpsertBulk{
+	return &MCPServerUpsertBulk{
 		create: _c,
 	}
 }
@@ -1051,31 +1051,31 @@ func (_c *McpServerCreateBulk) OnConflict(opts ...sql.ConflictOption) *McpServer
 // OnConflictColumns calls `OnConflict` and configures the columns
 // as conflict target. Using this option is equivalent to using:
 //
-//	client.McpServer.Create().
+//	client.MCPServer.Create().
 //		OnConflict(sql.ConflictColumns(columns...)).
 //		Exec(ctx)
-func (_c *McpServerCreateBulk) OnConflictColumns(columns ...string) *McpServerUpsertBulk {
+func (_c *MCPServerCreateBulk) OnConflictColumns(columns ...string) *MCPServerUpsertBulk {
 	_c.conflict = append(_c.conflict, sql.ConflictColumns(columns...))
-	return &McpServerUpsertBulk{
+	return &MCPServerUpsertBulk{
 		create: _c,
 	}
 }
 
-// McpServerUpsertBulk is the builder for "upsert"-ing
-// a bulk of McpServer nodes.
-type McpServerUpsertBulk struct {
-	create *McpServerCreateBulk
+// MCPServerUpsertBulk is the builder for "upsert"-ing
+// a bulk of MCPServer nodes.
+type MCPServerUpsertBulk struct {
+	create *MCPServerCreateBulk
 }
 
 // UpdateNewValues updates the mutable fields using the new values that
 // were set on create. Using this option is equivalent to using:
 //
-//	client.McpServer.Create().
+//	client.MCPServer.Create().
 //		OnConflict(
 //			sql.ResolveWithNewValues(),
 //		).
 //		Exec(ctx)
-func (u *McpServerUpsertBulk) UpdateNewValues() *McpServerUpsertBulk {
+func (u *MCPServerUpsertBulk) UpdateNewValues() *MCPServerUpsertBulk {
 	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
 	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
 		for _, b := range u.create.builders {
@@ -1090,258 +1090,258 @@ func (u *McpServerUpsertBulk) UpdateNewValues() *McpServerUpsertBulk {
 // Ignore sets each column to itself in case of conflict.
 // Using this option is equivalent to using:
 //
-//	client.McpServer.Create().
+//	client.MCPServer.Create().
 //		OnConflict(sql.ResolveWithIgnore()).
 //		Exec(ctx)
-func (u *McpServerUpsertBulk) Ignore() *McpServerUpsertBulk {
+func (u *MCPServerUpsertBulk) Ignore() *MCPServerUpsertBulk {
 	u.create.conflict = append(u.create.conflict, sql.ResolveWithIgnore())
 	return u
 }
 
 // DoNothing configures the conflict_action to `DO NOTHING`.
 // Supported only by SQLite and PostgreSQL.
-func (u *McpServerUpsertBulk) DoNothing() *McpServerUpsertBulk {
+func (u *MCPServerUpsertBulk) DoNothing() *MCPServerUpsertBulk {
 	u.create.conflict = append(u.create.conflict, sql.DoNothing())
 	return u
 }
 
-// Update allows overriding fields `UPDATE` values. See the McpServerCreateBulk.OnConflict
+// Update allows overriding fields `UPDATE` values. See the MCPServerCreateBulk.OnConflict
 // documentation for more info.
-func (u *McpServerUpsertBulk) Update(set func(*McpServerUpsert)) *McpServerUpsertBulk {
+func (u *MCPServerUpsertBulk) Update(set func(*MCPServerUpsert)) *MCPServerUpsertBulk {
 	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(update *sql.UpdateSet) {
-		set(&McpServerUpsert{UpdateSet: update})
+		set(&MCPServerUpsert{UpdateSet: update})
 	}))
 	return u
 }
 
 // SetLastModifiedAt sets the "last_modified_at" field.
-func (u *McpServerUpsertBulk) SetLastModifiedAt(v time.Time) *McpServerUpsertBulk {
-	return u.Update(func(s *McpServerUpsert) {
+func (u *MCPServerUpsertBulk) SetLastModifiedAt(v time.Time) *MCPServerUpsertBulk {
+	return u.Update(func(s *MCPServerUpsert) {
 		s.SetLastModifiedAt(v)
 	})
 }
 
 // UpdateLastModifiedAt sets the "last_modified_at" field to the value that was provided on create.
-func (u *McpServerUpsertBulk) UpdateLastModifiedAt() *McpServerUpsertBulk {
-	return u.Update(func(s *McpServerUpsert) {
+func (u *MCPServerUpsertBulk) UpdateLastModifiedAt() *MCPServerUpsertBulk {
+	return u.Update(func(s *MCPServerUpsert) {
 		s.UpdateLastModifiedAt()
 	})
 }
 
 // SetStatusPhase sets the "status_phase" field.
-func (u *McpServerUpsertBulk) SetStatusPhase(v mcpserver.StatusPhase) *McpServerUpsertBulk {
-	return u.Update(func(s *McpServerUpsert) {
+func (u *MCPServerUpsertBulk) SetStatusPhase(v mcpserver.StatusPhase) *MCPServerUpsertBulk {
+	return u.Update(func(s *MCPServerUpsert) {
 		s.SetStatusPhase(v)
 	})
 }
 
 // UpdateStatusPhase sets the "status_phase" field to the value that was provided on create.
-func (u *McpServerUpsertBulk) UpdateStatusPhase() *McpServerUpsertBulk {
-	return u.Update(func(s *McpServerUpsert) {
+func (u *MCPServerUpsertBulk) UpdateStatusPhase() *MCPServerUpsertBulk {
+	return u.Update(func(s *MCPServerUpsert) {
 		s.UpdateStatusPhase()
 	})
 }
 
 // ClearStatusPhase clears the value of the "status_phase" field.
-func (u *McpServerUpsertBulk) ClearStatusPhase() *McpServerUpsertBulk {
-	return u.Update(func(s *McpServerUpsert) {
+func (u *MCPServerUpsertBulk) ClearStatusPhase() *MCPServerUpsertBulk {
+	return u.Update(func(s *MCPServerUpsert) {
 		s.ClearStatusPhase()
 	})
 }
 
 // SetStatusMessage sets the "status_message" field.
-func (u *McpServerUpsertBulk) SetStatusMessage(v string) *McpServerUpsertBulk {
-	return u.Update(func(s *McpServerUpsert) {
+func (u *MCPServerUpsertBulk) SetStatusMessage(v string) *MCPServerUpsertBulk {
+	return u.Update(func(s *MCPServerUpsert) {
 		s.SetStatusMessage(v)
 	})
 }
 
 // UpdateStatusMessage sets the "status_message" field to the value that was provided on create.
-func (u *McpServerUpsertBulk) UpdateStatusMessage() *McpServerUpsertBulk {
-	return u.Update(func(s *McpServerUpsert) {
+func (u *MCPServerUpsertBulk) UpdateStatusMessage() *MCPServerUpsertBulk {
+	return u.Update(func(s *MCPServerUpsert) {
 		s.UpdateStatusMessage()
 	})
 }
 
 // ClearStatusMessage clears the value of the "status_message" field.
-func (u *McpServerUpsertBulk) ClearStatusMessage() *McpServerUpsertBulk {
-	return u.Update(func(s *McpServerUpsert) {
+func (u *MCPServerUpsertBulk) ClearStatusMessage() *MCPServerUpsertBulk {
+	return u.Update(func(s *MCPServerUpsert) {
 		s.ClearStatusMessage()
 	})
 }
 
 // SetNamespace sets the "namespace" field.
-func (u *McpServerUpsertBulk) SetNamespace(v string) *McpServerUpsertBulk {
-	return u.Update(func(s *McpServerUpsert) {
+func (u *MCPServerUpsertBulk) SetNamespace(v string) *MCPServerUpsertBulk {
+	return u.Update(func(s *MCPServerUpsert) {
 		s.SetNamespace(v)
 	})
 }
 
 // UpdateNamespace sets the "namespace" field to the value that was provided on create.
-func (u *McpServerUpsertBulk) UpdateNamespace() *McpServerUpsertBulk {
-	return u.Update(func(s *McpServerUpsert) {
+func (u *MCPServerUpsertBulk) UpdateNamespace() *MCPServerUpsertBulk {
+	return u.Update(func(s *MCPServerUpsert) {
 		s.UpdateNamespace()
 	})
 }
 
 // SetBasePath sets the "base_path" field.
-func (u *McpServerUpsertBulk) SetBasePath(v string) *McpServerUpsertBulk {
-	return u.Update(func(s *McpServerUpsert) {
+func (u *MCPServerUpsertBulk) SetBasePath(v string) *MCPServerUpsertBulk {
+	return u.Update(func(s *MCPServerUpsert) {
 		s.SetBasePath(v)
 	})
 }
 
 // UpdateBasePath sets the "base_path" field to the value that was provided on create.
-func (u *McpServerUpsertBulk) UpdateBasePath() *McpServerUpsertBulk {
-	return u.Update(func(s *McpServerUpsert) {
+func (u *MCPServerUpsertBulk) UpdateBasePath() *MCPServerUpsertBulk {
+	return u.Update(func(s *MCPServerUpsert) {
 		s.UpdateBasePath()
 	})
 }
 
 // SetVersion sets the "version" field.
-func (u *McpServerUpsertBulk) SetVersion(v string) *McpServerUpsertBulk {
-	return u.Update(func(s *McpServerUpsert) {
+func (u *MCPServerUpsertBulk) SetVersion(v string) *MCPServerUpsertBulk {
+	return u.Update(func(s *MCPServerUpsert) {
 		s.SetVersion(v)
 	})
 }
 
 // UpdateVersion sets the "version" field to the value that was provided on create.
-func (u *McpServerUpsertBulk) UpdateVersion() *McpServerUpsertBulk {
-	return u.Update(func(s *McpServerUpsert) {
+func (u *MCPServerUpsertBulk) UpdateVersion() *MCPServerUpsertBulk {
+	return u.Update(func(s *MCPServerUpsert) {
 		s.UpdateVersion()
 	})
 }
 
 // SetName sets the "name" field.
-func (u *McpServerUpsertBulk) SetName(v string) *McpServerUpsertBulk {
-	return u.Update(func(s *McpServerUpsert) {
+func (u *MCPServerUpsertBulk) SetName(v string) *MCPServerUpsertBulk {
+	return u.Update(func(s *MCPServerUpsert) {
 		s.SetName(v)
 	})
 }
 
 // UpdateName sets the "name" field to the value that was provided on create.
-func (u *McpServerUpsertBulk) UpdateName() *McpServerUpsertBulk {
-	return u.Update(func(s *McpServerUpsert) {
+func (u *MCPServerUpsertBulk) UpdateName() *MCPServerUpsertBulk {
+	return u.Update(func(s *MCPServerUpsert) {
 		s.UpdateName()
 	})
 }
 
 // SetDescription sets the "description" field.
-func (u *McpServerUpsertBulk) SetDescription(v string) *McpServerUpsertBulk {
-	return u.Update(func(s *McpServerUpsert) {
+func (u *MCPServerUpsertBulk) SetDescription(v string) *MCPServerUpsertBulk {
+	return u.Update(func(s *MCPServerUpsert) {
 		s.SetDescription(v)
 	})
 }
 
 // UpdateDescription sets the "description" field to the value that was provided on create.
-func (u *McpServerUpsertBulk) UpdateDescription() *McpServerUpsertBulk {
-	return u.Update(func(s *McpServerUpsert) {
+func (u *MCPServerUpsertBulk) UpdateDescription() *MCPServerUpsertBulk {
+	return u.Update(func(s *MCPServerUpsert) {
 		s.UpdateDescription()
 	})
 }
 
 // ClearDescription clears the value of the "description" field.
-func (u *McpServerUpsertBulk) ClearDescription() *McpServerUpsertBulk {
-	return u.Update(func(s *McpServerUpsert) {
+func (u *MCPServerUpsertBulk) ClearDescription() *MCPServerUpsertBulk {
+	return u.Update(func(s *MCPServerUpsert) {
 		s.ClearDescription()
 	})
 }
 
 // SetSpecification sets the "specification" field.
-func (u *McpServerUpsertBulk) SetSpecification(v string) *McpServerUpsertBulk {
-	return u.Update(func(s *McpServerUpsert) {
+func (u *MCPServerUpsertBulk) SetSpecification(v string) *MCPServerUpsertBulk {
+	return u.Update(func(s *MCPServerUpsert) {
 		s.SetSpecification(v)
 	})
 }
 
 // UpdateSpecification sets the "specification" field to the value that was provided on create.
-func (u *McpServerUpsertBulk) UpdateSpecification() *McpServerUpsertBulk {
-	return u.Update(func(s *McpServerUpsert) {
+func (u *MCPServerUpsertBulk) UpdateSpecification() *MCPServerUpsertBulk {
+	return u.Update(func(s *MCPServerUpsert) {
 		s.UpdateSpecification()
 	})
 }
 
 // ClearSpecification clears the value of the "specification" field.
-func (u *McpServerUpsertBulk) ClearSpecification() *McpServerUpsertBulk {
-	return u.Update(func(s *McpServerUpsert) {
+func (u *MCPServerUpsertBulk) ClearSpecification() *MCPServerUpsertBulk {
+	return u.Update(func(s *MCPServerUpsert) {
 		s.ClearSpecification()
 	})
 }
 
 // SetCategory sets the "category" field.
-func (u *McpServerUpsertBulk) SetCategory(v string) *McpServerUpsertBulk {
-	return u.Update(func(s *McpServerUpsert) {
+func (u *MCPServerUpsertBulk) SetCategory(v string) *MCPServerUpsertBulk {
+	return u.Update(func(s *MCPServerUpsert) {
 		s.SetCategory(v)
 	})
 }
 
 // UpdateCategory sets the "category" field to the value that was provided on create.
-func (u *McpServerUpsertBulk) UpdateCategory() *McpServerUpsertBulk {
-	return u.Update(func(s *McpServerUpsert) {
+func (u *MCPServerUpsertBulk) UpdateCategory() *MCPServerUpsertBulk {
+	return u.Update(func(s *MCPServerUpsert) {
 		s.UpdateCategory()
 	})
 }
 
 // ClearCategory clears the value of the "category" field.
-func (u *McpServerUpsertBulk) ClearCategory() *McpServerUpsertBulk {
-	return u.Update(func(s *McpServerUpsert) {
+func (u *MCPServerUpsertBulk) ClearCategory() *MCPServerUpsertBulk {
+	return u.Update(func(s *MCPServerUpsert) {
 		s.ClearCategory()
 	})
 }
 
-// SetOauth2Scopes sets the "oauth2_scopes" field.
-func (u *McpServerUpsertBulk) SetOauth2Scopes(v []string) *McpServerUpsertBulk {
-	return u.Update(func(s *McpServerUpsert) {
-		s.SetOauth2Scopes(v)
+// SetOAuth2Scopes sets the "OAuth2_scopes" field.
+func (u *MCPServerUpsertBulk) SetOAuth2Scopes(v []string) *MCPServerUpsertBulk {
+	return u.Update(func(s *MCPServerUpsert) {
+		s.SetOAuth2Scopes(v)
 	})
 }
 
-// UpdateOauth2Scopes sets the "oauth2_scopes" field to the value that was provided on create.
-func (u *McpServerUpsertBulk) UpdateOauth2Scopes() *McpServerUpsertBulk {
-	return u.Update(func(s *McpServerUpsert) {
-		s.UpdateOauth2Scopes()
+// UpdateOAuth2Scopes sets the "OAuth2_scopes" field to the value that was provided on create.
+func (u *MCPServerUpsertBulk) UpdateOAuth2Scopes() *MCPServerUpsertBulk {
+	return u.Update(func(s *MCPServerUpsert) {
+		s.UpdateOAuth2Scopes()
 	})
 }
 
-// ClearOauth2Scopes clears the value of the "oauth2_scopes" field.
-func (u *McpServerUpsertBulk) ClearOauth2Scopes() *McpServerUpsertBulk {
-	return u.Update(func(s *McpServerUpsert) {
-		s.ClearOauth2Scopes()
+// ClearOAuth2Scopes clears the value of the "OAuth2_scopes" field.
+func (u *MCPServerUpsertBulk) ClearOAuth2Scopes() *MCPServerUpsertBulk {
+	return u.Update(func(s *MCPServerUpsert) {
+		s.ClearOAuth2Scopes()
 	})
 }
 
 // SetActive sets the "active" field.
-func (u *McpServerUpsertBulk) SetActive(v bool) *McpServerUpsertBulk {
-	return u.Update(func(s *McpServerUpsert) {
+func (u *MCPServerUpsertBulk) SetActive(v bool) *MCPServerUpsertBulk {
+	return u.Update(func(s *MCPServerUpsert) {
 		s.SetActive(v)
 	})
 }
 
 // UpdateActive sets the "active" field to the value that was provided on create.
-func (u *McpServerUpsertBulk) UpdateActive() *McpServerUpsertBulk {
-	return u.Update(func(s *McpServerUpsert) {
+func (u *MCPServerUpsertBulk) UpdateActive() *MCPServerUpsertBulk {
+	return u.Update(func(s *MCPServerUpsert) {
 		s.UpdateActive()
 	})
 }
 
 // Exec executes the query.
-func (u *McpServerUpsertBulk) Exec(ctx context.Context) error {
+func (u *MCPServerUpsertBulk) Exec(ctx context.Context) error {
 	if u.create.err != nil {
 		return u.create.err
 	}
 	for i, b := range u.create.builders {
 		if len(b.conflict) != 0 {
-			return fmt.Errorf("ent: OnConflict was set for builder %d. Set it on the McpServerCreateBulk instead", i)
+			return fmt.Errorf("ent: OnConflict was set for builder %d. Set it on the MCPServerCreateBulk instead", i)
 		}
 	}
 	if len(u.create.conflict) == 0 {
-		return errors.New("ent: missing options for McpServerCreateBulk.OnConflict")
+		return errors.New("ent: missing options for MCPServerCreateBulk.OnConflict")
 	}
 	return u.create.Exec(ctx)
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (u *McpServerUpsertBulk) ExecX(ctx context.Context) {
+func (u *MCPServerUpsertBulk) ExecX(ctx context.Context) {
 	if err := u.create.Exec(ctx); err != nil {
 		panic(err)
 	}

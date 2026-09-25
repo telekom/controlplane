@@ -93,7 +93,7 @@ func Email(v string) predicate.Team {
 	return predicate.Team(sql.FieldEQ(FieldEmail, v))
 }
 
-// DisplayName applies equality check predicate on the "displayName" field. It's identical to DisplayNameEQ.
+// DisplayName applies equality check predicate on the "display_name" field. It's identical to DisplayNameEQ.
 func DisplayName(v string) predicate.Team {
 	return predicate.Team(sql.FieldEQ(FieldDisplayName, v))
 }
@@ -563,77 +563,77 @@ func EmailContainsFold(v string) predicate.Team {
 	return predicate.Team(sql.FieldContainsFold(FieldEmail, v))
 }
 
-// DisplayNameEQ applies the EQ predicate on the "displayName" field.
+// DisplayNameEQ applies the EQ predicate on the "display_name" field.
 func DisplayNameEQ(v string) predicate.Team {
 	return predicate.Team(sql.FieldEQ(FieldDisplayName, v))
 }
 
-// DisplayNameNEQ applies the NEQ predicate on the "displayName" field.
+// DisplayNameNEQ applies the NEQ predicate on the "display_name" field.
 func DisplayNameNEQ(v string) predicate.Team {
 	return predicate.Team(sql.FieldNEQ(FieldDisplayName, v))
 }
 
-// DisplayNameIn applies the In predicate on the "displayName" field.
+// DisplayNameIn applies the In predicate on the "display_name" field.
 func DisplayNameIn(vs ...string) predicate.Team {
 	return predicate.Team(sql.FieldIn(FieldDisplayName, vs...))
 }
 
-// DisplayNameNotIn applies the NotIn predicate on the "displayName" field.
+// DisplayNameNotIn applies the NotIn predicate on the "display_name" field.
 func DisplayNameNotIn(vs ...string) predicate.Team {
 	return predicate.Team(sql.FieldNotIn(FieldDisplayName, vs...))
 }
 
-// DisplayNameGT applies the GT predicate on the "displayName" field.
+// DisplayNameGT applies the GT predicate on the "display_name" field.
 func DisplayNameGT(v string) predicate.Team {
 	return predicate.Team(sql.FieldGT(FieldDisplayName, v))
 }
 
-// DisplayNameGTE applies the GTE predicate on the "displayName" field.
+// DisplayNameGTE applies the GTE predicate on the "display_name" field.
 func DisplayNameGTE(v string) predicate.Team {
 	return predicate.Team(sql.FieldGTE(FieldDisplayName, v))
 }
 
-// DisplayNameLT applies the LT predicate on the "displayName" field.
+// DisplayNameLT applies the LT predicate on the "display_name" field.
 func DisplayNameLT(v string) predicate.Team {
 	return predicate.Team(sql.FieldLT(FieldDisplayName, v))
 }
 
-// DisplayNameLTE applies the LTE predicate on the "displayName" field.
+// DisplayNameLTE applies the LTE predicate on the "display_name" field.
 func DisplayNameLTE(v string) predicate.Team {
 	return predicate.Team(sql.FieldLTE(FieldDisplayName, v))
 }
 
-// DisplayNameContains applies the Contains predicate on the "displayName" field.
+// DisplayNameContains applies the Contains predicate on the "display_name" field.
 func DisplayNameContains(v string) predicate.Team {
 	return predicate.Team(sql.FieldContains(FieldDisplayName, v))
 }
 
-// DisplayNameHasPrefix applies the HasPrefix predicate on the "displayName" field.
+// DisplayNameHasPrefix applies the HasPrefix predicate on the "display_name" field.
 func DisplayNameHasPrefix(v string) predicate.Team {
 	return predicate.Team(sql.FieldHasPrefix(FieldDisplayName, v))
 }
 
-// DisplayNameHasSuffix applies the HasSuffix predicate on the "displayName" field.
+// DisplayNameHasSuffix applies the HasSuffix predicate on the "display_name" field.
 func DisplayNameHasSuffix(v string) predicate.Team {
 	return predicate.Team(sql.FieldHasSuffix(FieldDisplayName, v))
 }
 
-// DisplayNameIsNil applies the IsNil predicate on the "displayName" field.
+// DisplayNameIsNil applies the IsNil predicate on the "display_name" field.
 func DisplayNameIsNil() predicate.Team {
 	return predicate.Team(sql.FieldIsNull(FieldDisplayName))
 }
 
-// DisplayNameNotNil applies the NotNil predicate on the "displayName" field.
+// DisplayNameNotNil applies the NotNil predicate on the "display_name" field.
 func DisplayNameNotNil() predicate.Team {
 	return predicate.Team(sql.FieldNotNull(FieldDisplayName))
 }
 
-// DisplayNameEqualFold applies the EqualFold predicate on the "displayName" field.
+// DisplayNameEqualFold applies the EqualFold predicate on the "display_name" field.
 func DisplayNameEqualFold(v string) predicate.Team {
 	return predicate.Team(sql.FieldEqualFold(FieldDisplayName, v))
 }
 
-// DisplayNameContainsFold applies the ContainsFold predicate on the "displayName" field.
+// DisplayNameContainsFold applies the ContainsFold predicate on the "display_name" field.
 func DisplayNameContainsFold(v string) predicate.Team {
 	return predicate.Team(sql.FieldContainsFold(FieldDisplayName, v))
 }
@@ -877,21 +877,21 @@ func HasApplicationsWith(preds ...predicate.Application) predicate.Team {
 	})
 }
 
-// HasApis applies the HasEdge predicate on the "apis" edge.
-func HasApis() predicate.Team {
+// HasAPIs applies the HasEdge predicate on the "APIs" edge.
+func HasAPIs() predicate.Team {
 	return predicate.Team(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, ApisTable, ApisColumn),
+			sqlgraph.Edge(sqlgraph.O2M, false, APIsTable, APIsColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
 }
 
-// HasApisWith applies the HasEdge predicate on the "apis" edge with a given conditions (other predicates).
-func HasApisWith(preds ...predicate.Api) predicate.Team {
+// HasAPIsWith applies the HasEdge predicate on the "APIs" edge with a given conditions (other predicates).
+func HasAPIsWith(preds ...predicate.API) predicate.Team {
 	return predicate.Team(func(s *sql.Selector) {
-		step := newApisStep()
+		step := newAPIsStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)
@@ -923,21 +923,21 @@ func HasEventTypesWith(preds ...predicate.EventType) predicate.Team {
 	})
 }
 
-// HasMcpServers applies the HasEdge predicate on the "mcp_servers" edge.
-func HasMcpServers() predicate.Team {
+// HasMCPServers applies the HasEdge predicate on the "MCP_servers" edge.
+func HasMCPServers() predicate.Team {
 	return predicate.Team(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, McpServersTable, McpServersColumn),
+			sqlgraph.Edge(sqlgraph.O2M, false, MCPServersTable, MCPServersColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
 }
 
-// HasMcpServersWith applies the HasEdge predicate on the "mcp_servers" edge with a given conditions (other predicates).
-func HasMcpServersWith(preds ...predicate.McpServer) predicate.Team {
+// HasMCPServersWith applies the HasEdge predicate on the "MCP_servers" edge with a given conditions (other predicates).
+func HasMCPServersWith(preds ...predicate.MCPServer) predicate.Team {
 	return predicate.Team(func(s *sql.Selector) {
-		step := newMcpServersStep()
+		step := newMCPServersStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

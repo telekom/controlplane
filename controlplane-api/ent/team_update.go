@@ -146,13 +146,13 @@ func (_u *TeamUpdate) SetNillableEmail(v *string) *TeamUpdate {
 	return _u
 }
 
-// SetDisplayName sets the "displayName" field.
+// SetDisplayName sets the "display_name" field.
 func (_u *TeamUpdate) SetDisplayName(v string) *TeamUpdate {
 	_u.mutation.SetDisplayName(v)
 	return _u
 }
 
-// SetNillableDisplayName sets the "displayName" field if the given value is not nil.
+// SetNillableDisplayName sets the "display_name" field if the given value is not nil.
 func (_u *TeamUpdate) SetNillableDisplayName(v *string) *TeamUpdate {
 	if v != nil {
 		_u.SetDisplayName(*v)
@@ -160,7 +160,7 @@ func (_u *TeamUpdate) SetNillableDisplayName(v *string) *TeamUpdate {
 	return _u
 }
 
-// ClearDisplayName clears the value of the "displayName" field.
+// ClearDisplayName clears the value of the "display_name" field.
 func (_u *TeamUpdate) ClearDisplayName() *TeamUpdate {
 	_u.mutation.ClearDisplayName()
 	return _u
@@ -269,14 +269,14 @@ func (_u *TeamUpdate) AddApplications(v ...*Application) *TeamUpdate {
 	return _u.AddApplicationIDs(ids...)
 }
 
-// AddAPIIDs adds the "apis" edge to the Api entity by IDs.
+// AddAPIIDs adds the "APIs" edge to the API entity by IDs.
 func (_u *TeamUpdate) AddAPIIDs(ids ...int) *TeamUpdate {
 	_u.mutation.AddAPIIDs(ids...)
 	return _u
 }
 
-// AddApis adds the "apis" edges to the Api entity.
-func (_u *TeamUpdate) AddApis(v ...*Api) *TeamUpdate {
+// AddAPIs adds the "APIs" edges to the API entity.
+func (_u *TeamUpdate) AddAPIs(v ...*API) *TeamUpdate {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
@@ -299,19 +299,19 @@ func (_u *TeamUpdate) AddEventTypes(v ...*EventType) *TeamUpdate {
 	return _u.AddEventTypeIDs(ids...)
 }
 
-// AddMcpServerIDs adds the "mcp_servers" edge to the McpServer entity by IDs.
-func (_u *TeamUpdate) AddMcpServerIDs(ids ...int) *TeamUpdate {
-	_u.mutation.AddMcpServerIDs(ids...)
+// AddMCPServerIDs adds the "MCP_servers" edge to the MCPServer entity by IDs.
+func (_u *TeamUpdate) AddMCPServerIDs(ids ...int) *TeamUpdate {
+	_u.mutation.AddMCPServerIDs(ids...)
 	return _u
 }
 
-// AddMcpServers adds the "mcp_servers" edges to the McpServer entity.
-func (_u *TeamUpdate) AddMcpServers(v ...*McpServer) *TeamUpdate {
+// AddMCPServers adds the "MCP_servers" edges to the MCPServer entity.
+func (_u *TeamUpdate) AddMCPServers(v ...*MCPServer) *TeamUpdate {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
 	}
-	return _u.AddMcpServerIDs(ids...)
+	return _u.AddMCPServerIDs(ids...)
 }
 
 // AddAgentCardIDs adds the "agent_cards" edge to the AgentCard entity by IDs.
@@ -382,20 +382,20 @@ func (_u *TeamUpdate) RemoveApplications(v ...*Application) *TeamUpdate {
 	return _u.RemoveApplicationIDs(ids...)
 }
 
-// ClearApis clears all "apis" edges to the Api entity.
-func (_u *TeamUpdate) ClearApis() *TeamUpdate {
-	_u.mutation.ClearApis()
+// ClearAPIs clears all "APIs" edges to the API entity.
+func (_u *TeamUpdate) ClearAPIs() *TeamUpdate {
+	_u.mutation.ClearAPIs()
 	return _u
 }
 
-// RemoveAPIIDs removes the "apis" edge to Api entities by IDs.
+// RemoveAPIIDs removes the "APIs" edge to API entities by IDs.
 func (_u *TeamUpdate) RemoveAPIIDs(ids ...int) *TeamUpdate {
 	_u.mutation.RemoveAPIIDs(ids...)
 	return _u
 }
 
-// RemoveApis removes "apis" edges to Api entities.
-func (_u *TeamUpdate) RemoveApis(v ...*Api) *TeamUpdate {
+// RemoveAPIs removes "APIs" edges to API entities.
+func (_u *TeamUpdate) RemoveAPIs(v ...*API) *TeamUpdate {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
@@ -424,25 +424,25 @@ func (_u *TeamUpdate) RemoveEventTypes(v ...*EventType) *TeamUpdate {
 	return _u.RemoveEventTypeIDs(ids...)
 }
 
-// ClearMcpServers clears all "mcp_servers" edges to the McpServer entity.
-func (_u *TeamUpdate) ClearMcpServers() *TeamUpdate {
-	_u.mutation.ClearMcpServers()
+// ClearMCPServers clears all "MCP_servers" edges to the MCPServer entity.
+func (_u *TeamUpdate) ClearMCPServers() *TeamUpdate {
+	_u.mutation.ClearMCPServers()
 	return _u
 }
 
-// RemoveMcpServerIDs removes the "mcp_servers" edge to McpServer entities by IDs.
-func (_u *TeamUpdate) RemoveMcpServerIDs(ids ...int) *TeamUpdate {
-	_u.mutation.RemoveMcpServerIDs(ids...)
+// RemoveMCPServerIDs removes the "MCP_servers" edge to MCPServer entities by IDs.
+func (_u *TeamUpdate) RemoveMCPServerIDs(ids ...int) *TeamUpdate {
+	_u.mutation.RemoveMCPServerIDs(ids...)
 	return _u
 }
 
-// RemoveMcpServers removes "mcp_servers" edges to McpServer entities.
-func (_u *TeamUpdate) RemoveMcpServers(v ...*McpServer) *TeamUpdate {
+// RemoveMCPServers removes "MCP_servers" edges to MCPServer entities.
+func (_u *TeamUpdate) RemoveMCPServers(v ...*MCPServer) *TeamUpdate {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
 	}
-	return _u.RemoveMcpServerIDs(ids...)
+	return _u.RemoveMCPServerIDs(ids...)
 }
 
 // ClearAgentCards clears all "agent_cards" edges to the AgentCard entity.
@@ -720,12 +720,12 @@ func (_u *TeamUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if _u.mutation.ApisCleared() {
+	if _u.mutation.APIsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   team.ApisTable,
-			Columns: []string{team.ApisColumn},
+			Table:   team.APIsTable,
+			Columns: []string{team.APIsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(api.FieldID, field.TypeInt),
@@ -733,12 +733,12 @@ func (_u *TeamUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := _u.mutation.RemovedApisIDs(); len(nodes) > 0 && !_u.mutation.ApisCleared() {
+	if nodes := _u.mutation.RemovedAPIsIDs(); len(nodes) > 0 && !_u.mutation.APIsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   team.ApisTable,
-			Columns: []string{team.ApisColumn},
+			Table:   team.APIsTable,
+			Columns: []string{team.APIsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(api.FieldID, field.TypeInt),
@@ -749,12 +749,12 @@ func (_u *TeamUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := _u.mutation.ApisIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.APIsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   team.ApisTable,
-			Columns: []string{team.ApisColumn},
+			Table:   team.APIsTable,
+			Columns: []string{team.APIsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(api.FieldID, field.TypeInt),
@@ -810,12 +810,12 @@ func (_u *TeamUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if _u.mutation.McpServersCleared() {
+	if _u.mutation.MCPServersCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   team.McpServersTable,
-			Columns: []string{team.McpServersColumn},
+			Table:   team.MCPServersTable,
+			Columns: []string{team.MCPServersColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(mcpserver.FieldID, field.TypeInt),
@@ -823,12 +823,12 @@ func (_u *TeamUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := _u.mutation.RemovedMcpServersIDs(); len(nodes) > 0 && !_u.mutation.McpServersCleared() {
+	if nodes := _u.mutation.RemovedMCPServersIDs(); len(nodes) > 0 && !_u.mutation.MCPServersCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   team.McpServersTable,
-			Columns: []string{team.McpServersColumn},
+			Table:   team.MCPServersTable,
+			Columns: []string{team.MCPServersColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(mcpserver.FieldID, field.TypeInt),
@@ -839,12 +839,12 @@ func (_u *TeamUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := _u.mutation.McpServersIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.MCPServersIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   team.McpServersTable,
-			Columns: []string{team.McpServersColumn},
+			Table:   team.MCPServersTable,
+			Columns: []string{team.MCPServersColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(mcpserver.FieldID, field.TypeInt),
@@ -1028,13 +1028,13 @@ func (_u *TeamUpdateOne) SetNillableEmail(v *string) *TeamUpdateOne {
 	return _u
 }
 
-// SetDisplayName sets the "displayName" field.
+// SetDisplayName sets the "display_name" field.
 func (_u *TeamUpdateOne) SetDisplayName(v string) *TeamUpdateOne {
 	_u.mutation.SetDisplayName(v)
 	return _u
 }
 
-// SetNillableDisplayName sets the "displayName" field if the given value is not nil.
+// SetNillableDisplayName sets the "display_name" field if the given value is not nil.
 func (_u *TeamUpdateOne) SetNillableDisplayName(v *string) *TeamUpdateOne {
 	if v != nil {
 		_u.SetDisplayName(*v)
@@ -1042,7 +1042,7 @@ func (_u *TeamUpdateOne) SetNillableDisplayName(v *string) *TeamUpdateOne {
 	return _u
 }
 
-// ClearDisplayName clears the value of the "displayName" field.
+// ClearDisplayName clears the value of the "display_name" field.
 func (_u *TeamUpdateOne) ClearDisplayName() *TeamUpdateOne {
 	_u.mutation.ClearDisplayName()
 	return _u
@@ -1151,14 +1151,14 @@ func (_u *TeamUpdateOne) AddApplications(v ...*Application) *TeamUpdateOne {
 	return _u.AddApplicationIDs(ids...)
 }
 
-// AddAPIIDs adds the "apis" edge to the Api entity by IDs.
+// AddAPIIDs adds the "APIs" edge to the API entity by IDs.
 func (_u *TeamUpdateOne) AddAPIIDs(ids ...int) *TeamUpdateOne {
 	_u.mutation.AddAPIIDs(ids...)
 	return _u
 }
 
-// AddApis adds the "apis" edges to the Api entity.
-func (_u *TeamUpdateOne) AddApis(v ...*Api) *TeamUpdateOne {
+// AddAPIs adds the "APIs" edges to the API entity.
+func (_u *TeamUpdateOne) AddAPIs(v ...*API) *TeamUpdateOne {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
@@ -1181,19 +1181,19 @@ func (_u *TeamUpdateOne) AddEventTypes(v ...*EventType) *TeamUpdateOne {
 	return _u.AddEventTypeIDs(ids...)
 }
 
-// AddMcpServerIDs adds the "mcp_servers" edge to the McpServer entity by IDs.
-func (_u *TeamUpdateOne) AddMcpServerIDs(ids ...int) *TeamUpdateOne {
-	_u.mutation.AddMcpServerIDs(ids...)
+// AddMCPServerIDs adds the "MCP_servers" edge to the MCPServer entity by IDs.
+func (_u *TeamUpdateOne) AddMCPServerIDs(ids ...int) *TeamUpdateOne {
+	_u.mutation.AddMCPServerIDs(ids...)
 	return _u
 }
 
-// AddMcpServers adds the "mcp_servers" edges to the McpServer entity.
-func (_u *TeamUpdateOne) AddMcpServers(v ...*McpServer) *TeamUpdateOne {
+// AddMCPServers adds the "MCP_servers" edges to the MCPServer entity.
+func (_u *TeamUpdateOne) AddMCPServers(v ...*MCPServer) *TeamUpdateOne {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
 	}
-	return _u.AddMcpServerIDs(ids...)
+	return _u.AddMCPServerIDs(ids...)
 }
 
 // AddAgentCardIDs adds the "agent_cards" edge to the AgentCard entity by IDs.
@@ -1264,20 +1264,20 @@ func (_u *TeamUpdateOne) RemoveApplications(v ...*Application) *TeamUpdateOne {
 	return _u.RemoveApplicationIDs(ids...)
 }
 
-// ClearApis clears all "apis" edges to the Api entity.
-func (_u *TeamUpdateOne) ClearApis() *TeamUpdateOne {
-	_u.mutation.ClearApis()
+// ClearAPIs clears all "APIs" edges to the API entity.
+func (_u *TeamUpdateOne) ClearAPIs() *TeamUpdateOne {
+	_u.mutation.ClearAPIs()
 	return _u
 }
 
-// RemoveAPIIDs removes the "apis" edge to Api entities by IDs.
+// RemoveAPIIDs removes the "APIs" edge to API entities by IDs.
 func (_u *TeamUpdateOne) RemoveAPIIDs(ids ...int) *TeamUpdateOne {
 	_u.mutation.RemoveAPIIDs(ids...)
 	return _u
 }
 
-// RemoveApis removes "apis" edges to Api entities.
-func (_u *TeamUpdateOne) RemoveApis(v ...*Api) *TeamUpdateOne {
+// RemoveAPIs removes "APIs" edges to API entities.
+func (_u *TeamUpdateOne) RemoveAPIs(v ...*API) *TeamUpdateOne {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
@@ -1306,25 +1306,25 @@ func (_u *TeamUpdateOne) RemoveEventTypes(v ...*EventType) *TeamUpdateOne {
 	return _u.RemoveEventTypeIDs(ids...)
 }
 
-// ClearMcpServers clears all "mcp_servers" edges to the McpServer entity.
-func (_u *TeamUpdateOne) ClearMcpServers() *TeamUpdateOne {
-	_u.mutation.ClearMcpServers()
+// ClearMCPServers clears all "MCP_servers" edges to the MCPServer entity.
+func (_u *TeamUpdateOne) ClearMCPServers() *TeamUpdateOne {
+	_u.mutation.ClearMCPServers()
 	return _u
 }
 
-// RemoveMcpServerIDs removes the "mcp_servers" edge to McpServer entities by IDs.
-func (_u *TeamUpdateOne) RemoveMcpServerIDs(ids ...int) *TeamUpdateOne {
-	_u.mutation.RemoveMcpServerIDs(ids...)
+// RemoveMCPServerIDs removes the "MCP_servers" edge to MCPServer entities by IDs.
+func (_u *TeamUpdateOne) RemoveMCPServerIDs(ids ...int) *TeamUpdateOne {
+	_u.mutation.RemoveMCPServerIDs(ids...)
 	return _u
 }
 
-// RemoveMcpServers removes "mcp_servers" edges to McpServer entities.
-func (_u *TeamUpdateOne) RemoveMcpServers(v ...*McpServer) *TeamUpdateOne {
+// RemoveMCPServers removes "MCP_servers" edges to MCPServer entities.
+func (_u *TeamUpdateOne) RemoveMCPServers(v ...*MCPServer) *TeamUpdateOne {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
 	}
-	return _u.RemoveMcpServerIDs(ids...)
+	return _u.RemoveMCPServerIDs(ids...)
 }
 
 // ClearAgentCards clears all "agent_cards" edges to the AgentCard entity.
@@ -1632,12 +1632,12 @@ func (_u *TeamUpdateOne) sqlSave(ctx context.Context) (_node *Team, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if _u.mutation.ApisCleared() {
+	if _u.mutation.APIsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   team.ApisTable,
-			Columns: []string{team.ApisColumn},
+			Table:   team.APIsTable,
+			Columns: []string{team.APIsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(api.FieldID, field.TypeInt),
@@ -1645,12 +1645,12 @@ func (_u *TeamUpdateOne) sqlSave(ctx context.Context) (_node *Team, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := _u.mutation.RemovedApisIDs(); len(nodes) > 0 && !_u.mutation.ApisCleared() {
+	if nodes := _u.mutation.RemovedAPIsIDs(); len(nodes) > 0 && !_u.mutation.APIsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   team.ApisTable,
-			Columns: []string{team.ApisColumn},
+			Table:   team.APIsTable,
+			Columns: []string{team.APIsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(api.FieldID, field.TypeInt),
@@ -1661,12 +1661,12 @@ func (_u *TeamUpdateOne) sqlSave(ctx context.Context) (_node *Team, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := _u.mutation.ApisIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.APIsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   team.ApisTable,
-			Columns: []string{team.ApisColumn},
+			Table:   team.APIsTable,
+			Columns: []string{team.APIsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(api.FieldID, field.TypeInt),
@@ -1722,12 +1722,12 @@ func (_u *TeamUpdateOne) sqlSave(ctx context.Context) (_node *Team, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if _u.mutation.McpServersCleared() {
+	if _u.mutation.MCPServersCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   team.McpServersTable,
-			Columns: []string{team.McpServersColumn},
+			Table:   team.MCPServersTable,
+			Columns: []string{team.MCPServersColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(mcpserver.FieldID, field.TypeInt),
@@ -1735,12 +1735,12 @@ func (_u *TeamUpdateOne) sqlSave(ctx context.Context) (_node *Team, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := _u.mutation.RemovedMcpServersIDs(); len(nodes) > 0 && !_u.mutation.McpServersCleared() {
+	if nodes := _u.mutation.RemovedMCPServersIDs(); len(nodes) > 0 && !_u.mutation.MCPServersCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   team.McpServersTable,
-			Columns: []string{team.McpServersColumn},
+			Table:   team.MCPServersTable,
+			Columns: []string{team.MCPServersColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(mcpserver.FieldID, field.TypeInt),
@@ -1751,12 +1751,12 @@ func (_u *TeamUpdateOne) sqlSave(ctx context.Context) (_node *Team, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := _u.mutation.McpServersIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.MCPServersIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   team.McpServersTable,
-			Columns: []string{team.McpServersColumn},
+			Table:   team.MCPServersTable,
+			Columns: []string{team.MCPServersColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(mcpserver.FieldID, field.TypeInt),
