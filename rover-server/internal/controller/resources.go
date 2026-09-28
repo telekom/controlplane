@@ -75,6 +75,7 @@ var resourceKinds = []resourceKind{
 	{apiVersion: roverv1.GroupVersion.String(), kind: "Roadmap", pathPrefix: "/apiroadmaps"},
 	{apiVersion: roverv1.GroupVersion.String(), kind: "ApiChangelog", pathPrefix: "/apichangelogs"},
 	{apiVersion: roverv1.GroupVersion.String(), kind: "McpSpecification", pathPrefix: "/mcpspecifications"},
+	{apiVersion: roverv1.GroupVersion.String(), kind: "FileSpecification", pathPrefix: "/filespecifications"},
 }
 
 func (r *ResourcesControllerImpl) GetAll(ctx context.Context, params api.GetAllResourcesParams) (*api.ResourceListResponse, error) {
@@ -232,6 +233,8 @@ func (r *ResourcesControllerImpl) collectResourcePage(
 		return collectResourcePage(ctx, prefix, r.stores.ApiChangelogStore, rk, limit, cursor.Cursor)
 	case 5:
 		return collectResourcePage(ctx, prefix, r.stores.McpSpecificationStore, rk, limit, cursor.Cursor)
+	case 6:
+		return collectResourcePage(ctx, prefix, r.stores.FileSpecificationStore, rk, limit, cursor.Cursor)
 	default:
 		return nil, "", "", fmt.Errorf("invalid resource kind %d", cursor.Kind)
 	}

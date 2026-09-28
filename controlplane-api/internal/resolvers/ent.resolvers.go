@@ -157,6 +157,33 @@ func (r *queryResolver) EventTypes(ctx context.Context, after *entgql.Cursor[int
 		)
 }
 
+// FileExposures is the resolver for the fileExposures field.
+func (r *queryResolver) FileExposures(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.FileExposureOrder, where *ent.FileExposureWhereInput) (*ent.FileExposureConnection, error) {
+	return r.client.FileExposure.Query().
+		Paginate(ctx, after, first, before, last,
+			ent.WithFileExposureOrder(orderBy),
+			ent.WithFileExposureFilter(where.Filter),
+		)
+}
+
+// FileSubscriptions is the resolver for the fileSubscriptions field.
+func (r *queryResolver) FileSubscriptions(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.FileSubscriptionOrder, where *ent.FileSubscriptionWhereInput) (*ent.FileSubscriptionConnection, error) {
+	return r.client.FileSubscription.Query().
+		Paginate(ctx, after, first, before, last,
+			ent.WithFileSubscriptionOrder(orderBy),
+			ent.WithFileSubscriptionFilter(where.Filter),
+		)
+}
+
+// FileTypes is the resolver for the fileTypes field.
+func (r *queryResolver) FileTypes(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.FileTypeOrder, where *ent.FileTypeWhereInput) (*ent.FileTypeConnection, error) {
+	return r.client.FileType.Query().
+		Paginate(ctx, after, first, before, last,
+			ent.WithFileTypeOrder(orderBy),
+			ent.WithFileTypeFilter(where.Filter),
+		)
+}
+
 // McpServers is the resolver for the mcpServers field.
 func (r *queryResolver) McpServers(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.McpServerOrder, where *ent.McpServerWhereInput) (*ent.McpServerConnection, error) {
 	return r.client.McpServer.Query().
@@ -236,6 +263,12 @@ func (r *Resolver) EventSubscription() EventSubscriptionResolver {
 // EventType returns EventTypeResolver implementation.
 func (r *Resolver) EventType() EventTypeResolver { return &eventTypeResolver{r} }
 
+// FileExposure returns FileExposureResolver implementation.
+func (r *Resolver) FileExposure() FileExposureResolver { return &fileExposureResolver{r} }
+
+// FileSubscription returns FileSubscriptionResolver implementation.
+func (r *Resolver) FileSubscription() FileSubscriptionResolver { return &fileSubscriptionResolver{r} }
+
 // McpServer returns McpServerResolver implementation.
 func (r *Resolver) McpServer() McpServerResolver { return &mcpServerResolver{r} }
 
@@ -261,6 +294,8 @@ type (
 	eventExposureResolver       struct{ *Resolver }
 	eventSubscriptionResolver   struct{ *Resolver }
 	eventTypeResolver           struct{ *Resolver }
+	fileExposureResolver        struct{ *Resolver }
+	fileSubscriptionResolver    struct{ *Resolver }
 	mcpServerResolver           struct{ *Resolver }
 	queryResolver               struct{ *Resolver }
 	teamResolver                struct{ *Resolver }

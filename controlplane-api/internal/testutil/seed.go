@@ -33,8 +33,10 @@ type SeedData struct {
 	MemberAlpha *ent.Member
 	MemberBeta  *ent.Member
 
-	EventExposureAlpha *ent.EventExposure
-	EventSubscription  *ent.EventSubscription
+	EventExposureAlpha    *ent.EventExposure
+	EventSubscription     *ent.EventSubscription
+	FileExposureAlpha     *ent.FileExposure
+	FileSubscriptionAlpha *ent.FileSubscription
 
 	PermissionSetAlpha *ent.PermissionSet
 
@@ -125,6 +127,25 @@ func SeedStandard(client *ent.Client) *SeedData {
 		SetEventType("order.created").
 		SetOwner(s.AppBeta).
 		SetTarget(s.EventExposureAlpha).
+		Save(ctx))
+
+	// File exposure and subscription: app-beta subscribes to app-alpha's file type (cross-team)
+	s.FileExposureAlpha = must(client.FileExposure.Create().
+		SetNamespace("default").
+		SetFileType("invoice").
+		SetZoneName(s.ZoneEU.Name).
+		SetActive(true).
+		SetOwner(s.AppAlpha).
+		SetZone(s.ZoneEU).
+		Save(ctx))
+	s.FileSubscriptionAlpha = must(client.FileSubscription.Create().
+		SetNamespace("default").
+		SetName("filesub-invoice").
+		SetFileType("invoice").
+		SetZoneName(s.ZoneEU.Name).
+		SetOwner(s.AppBeta).
+		SetTarget(s.FileExposureAlpha).
+		SetZone(s.ZoneEU).
 		Save(ctx))
 
 	// Permission Set owned by app-alpha

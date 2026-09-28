@@ -60,6 +60,17 @@ rules:
   - get
   - list
   - watch
+# file domain
+- apiGroups:
+  - file.cp.ei.telekom.de
+  resources:
+  - fileexposures
+  - filesubscriptions
+  - filetypes
+  verbs:
+  - get
+  - list
+  - watch
 # approval domain
 - apiGroups:
   - approval.cp.ei.telekom.de

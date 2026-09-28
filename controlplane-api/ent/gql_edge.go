@@ -169,6 +169,48 @@ func (_m *Application) SubscribedApis(
 	return _m.QuerySubscribedApis().Paginate(ctx, after, first, before, last, opts...)
 }
 
+func (_m *Application) ExposedFileTypes(
+	ctx context.Context, after *Cursor, first *int, before *Cursor, last *int, orderBy *FileExposureOrder, where *FileExposureWhereInput,
+) (*FileExposureConnection, error) {
+	opts := []FileExposurePaginateOption{
+		WithFileExposureOrder(orderBy),
+		WithFileExposureFilter(where.Filter),
+	}
+	alias := graphql.GetFieldContext(ctx).Field.Alias
+	totalCount, hasTotalCount := _m.Edges.totalCount[3][alias]
+	if nodes, err := _m.NamedExposedFileTypes(alias); err == nil || hasTotalCount {
+		pager, err := newFileExposurePager(opts, last != nil)
+		if err != nil {
+			return nil, err
+		}
+		conn := &FileExposureConnection{Edges: []*FileExposureEdge{}, TotalCount: totalCount}
+		conn.build(nodes, pager, after, first, before, last)
+		return conn, nil
+	}
+	return _m.QueryExposedFileTypes().Paginate(ctx, after, first, before, last, opts...)
+}
+
+func (_m *Application) SubscribedFileTypes(
+	ctx context.Context, after *Cursor, first *int, before *Cursor, last *int, orderBy *FileSubscriptionOrder, where *FileSubscriptionWhereInput,
+) (*FileSubscriptionConnection, error) {
+	opts := []FileSubscriptionPaginateOption{
+		WithFileSubscriptionOrder(orderBy),
+		WithFileSubscriptionFilter(where.Filter),
+	}
+	alias := graphql.GetFieldContext(ctx).Field.Alias
+	totalCount, hasTotalCount := _m.Edges.totalCount[4][alias]
+	if nodes, err := _m.NamedSubscribedFileTypes(alias); err == nil || hasTotalCount {
+		pager, err := newFileSubscriptionPager(opts, last != nil)
+		if err != nil {
+			return nil, err
+		}
+		conn := &FileSubscriptionConnection{Edges: []*FileSubscriptionEdge{}, TotalCount: totalCount}
+		conn.build(nodes, pager, after, first, before, last)
+		return conn, nil
+	}
+	return _m.QuerySubscribedFileTypes().Paginate(ctx, after, first, before, last, opts...)
+}
+
 func (_m *Application) ExposedEvents(
 	ctx context.Context, after *Cursor, first *int, before *Cursor, last *int, orderBy *EventExposureOrder, where *EventExposureWhereInput,
 ) (*EventExposureConnection, error) {
@@ -177,7 +219,7 @@ func (_m *Application) ExposedEvents(
 		WithEventExposureFilter(where.Filter),
 	}
 	alias := graphql.GetFieldContext(ctx).Field.Alias
-	totalCount, hasTotalCount := _m.Edges.totalCount[3][alias]
+	totalCount, hasTotalCount := _m.Edges.totalCount[5][alias]
 	if nodes, err := _m.NamedExposedEvents(alias); err == nil || hasTotalCount {
 		pager, err := newEventExposurePager(opts, last != nil)
 		if err != nil {
@@ -198,7 +240,7 @@ func (_m *Application) SubscribedEvents(
 		WithEventSubscriptionFilter(where.Filter),
 	}
 	alias := graphql.GetFieldContext(ctx).Field.Alias
-	totalCount, hasTotalCount := _m.Edges.totalCount[4][alias]
+	totalCount, hasTotalCount := _m.Edges.totalCount[6][alias]
 	if nodes, err := _m.NamedSubscribedEvents(alias); err == nil || hasTotalCount {
 		pager, err := newEventSubscriptionPager(opts, last != nil)
 		if err != nil {
@@ -219,7 +261,7 @@ func (_m *Application) ExposedAgentics(
 		WithAgenticExposureFilter(where.Filter),
 	}
 	alias := graphql.GetFieldContext(ctx).Field.Alias
-	totalCount, hasTotalCount := _m.Edges.totalCount[5][alias]
+	totalCount, hasTotalCount := _m.Edges.totalCount[7][alias]
 	if nodes, err := _m.NamedExposedAgentics(alias); err == nil || hasTotalCount {
 		pager, err := newAgenticExposurePager(opts, last != nil)
 		if err != nil {
@@ -240,7 +282,7 @@ func (_m *Application) SubscribedAgentics(
 		WithAgenticSubscriptionFilter(where.Filter),
 	}
 	alias := graphql.GetFieldContext(ctx).Field.Alias
-	totalCount, hasTotalCount := _m.Edges.totalCount[6][alias]
+	totalCount, hasTotalCount := _m.Edges.totalCount[8][alias]
 	if nodes, err := _m.NamedSubscribedAgentics(alias); err == nil || hasTotalCount {
 		pager, err := newAgenticSubscriptionPager(opts, last != nil)
 		if err != nil {
@@ -294,6 +336,74 @@ func (_m *EventSubscription) Approval(ctx context.Context) (*Approval, error) {
 }
 
 func (_m *EventSubscription) ApprovalRequests(ctx context.Context) (result []*ApprovalRequest, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedApprovalRequests(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.ApprovalRequestsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryApprovalRequests().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *FileExposure) Owner(ctx context.Context) (*Application, error) {
+	result, err := _m.Edges.OwnerOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryOwner().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *FileExposure) FileTypeDef(ctx context.Context) (*FileType, error) {
+	result, err := _m.Edges.FileTypeDefOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryFileTypeDef().Only(ctx)
+	}
+	return result, MaskNotFound(err)
+}
+
+func (_m *FileExposure) Zone(ctx context.Context) (*Zone, error) {
+	result, err := _m.Edges.ZoneOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryZone().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *FileSubscription) Owner(ctx context.Context) (*Application, error) {
+	result, err := _m.Edges.OwnerOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryOwner().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *FileSubscription) FileTypeDef(ctx context.Context) (*FileType, error) {
+	result, err := _m.Edges.FileTypeDefOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryFileTypeDef().Only(ctx)
+	}
+	return result, MaskNotFound(err)
+}
+
+func (_m *FileSubscription) Zone(ctx context.Context) (*Zone, error) {
+	result, err := _m.Edges.ZoneOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryZone().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *FileSubscription) Approval(ctx context.Context) (*Approval, error) {
+	result, err := _m.Edges.ApprovalOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryApproval().Only(ctx)
+	}
+	return result, MaskNotFound(err)
+}
+
+func (_m *FileSubscription) ApprovalRequests(ctx context.Context) (result []*ApprovalRequest, err error) {
 	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
 		result, err = _m.NamedApprovalRequests(graphql.GetFieldContext(ctx).Field.Alias)
 	} else {
