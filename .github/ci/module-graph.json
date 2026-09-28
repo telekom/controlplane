@@ -158,7 +158,8 @@
   "organization-server": {
     "path": "organization-server",
     "depends_on": [
-      "common-server"
+      "common-server",
+      "controlplane-api"
     ]
   },
   "permission": {

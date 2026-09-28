@@ -8,7 +8,7 @@
 # defined directly in .github/workflows/ci.yaml. It is consumed by
 # .github/scripts/select-scope.sh to build the dynamic CI matrix, and by
 # .github/scripts/gen-module-graph.sh to know which module directories to inspect
-# for local go.mod "replace" dependencies.
+# for local go.mod "replace" dependencies and genqlient.yaml schema paths.
 #
 # Fields (all optional except name/path):
 #   name                       Display/job name (must be unique).
