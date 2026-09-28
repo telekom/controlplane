@@ -10,6 +10,7 @@ SPDX-License-Identifier: CC0-1.0
 
   - [Verification Workflow](#verification-workflow)
   - [Pre-commit Hooks](#pre-commit-hooks)
+  - [GraphQL Naming](#graphql-naming)
   - [Kubebuilder](#kubebuilder)
 
 ## Verification workflow
@@ -84,6 +85,20 @@ To run it for **all files at once**, use the following command:
 ```bash
 pre-commit run --all-files
 ```
+
+## GraphQL naming
+
+Follow the [GraphQL naming conventions](https://graphql.org/learn/naming-design/#apply-field-and-type-naming-patterns) with Go-style initialisms:
+
+- Use `camelCase` for fields, arguments, input fields, and directives.
+- Use `PascalCase` for types, interfaces, unions, and enums.
+- Keep initialisms uppercase, such as `clientID`, `gatewayURL`, and `externalIDP`.
+- Use uppercase enum values. Add underscores where they are part of the established domain value.
+- Apply the same initialisms to Ent schema types and edges, for example `APIExposure` and `exposed_APIs`.
+- Database identifiers must be lowercase `snake_case`. Ent converts plural initialisms badly, for example `APIs` to `ap_is` and `IDs` to `i_ds`. Pin such names with `entsql.Table` or `StorageKey`. Do not pin a name only to keep an old identifier.
+- The test in `controlplane-api/internal/database/schema_naming_test.go` fails on identifiers that are not lowercase `snake_case` or that contain such a split.
+
+Examples of valid enum values include `CLIENT_SECRET_BASIC`, `SEMIGRANTED`, and `TELECONTEXTMCP`.
 
 ## Kubebuilder
 

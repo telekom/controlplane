@@ -41,8 +41,8 @@ type ApplicationData struct {
 	SecretRotationMessage *string    // human-readable message (nil when DONE)
 
 	// Security
-	IpRestrictions model.IpRestrictions // optional/nillable — nil when Spec.Security.IpRestrictions is nil
+	IPRestrictions model.IPRestrictions // optional/nillable — nil when Spec.Security.IpRestrictions is nil
 
 	// ExternalIDs
-	ExternalIds []model.ExternalId // optional — empty slice when Spec.ExternalIds is nil or empty
+	ExternalIDs []model.ExternalID // optional — empty slice when Spec.ExternalIds is nil or empty
 }

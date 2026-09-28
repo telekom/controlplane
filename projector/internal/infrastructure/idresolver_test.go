@@ -200,7 +200,7 @@ var _ = Describe("IDResolver", func() {
 				Save(ctx)
 			Expect(err).NotTo(HaveOccurred())
 
-			exposure, err := client.ApiExposure.Create().
+			exposure, err := client.APIExposure.Create().
 				SetBasePath("/api/v1/orders").
 				SetNamespace("team-bp").
 				SetVisibility("WORLD").
@@ -251,7 +251,7 @@ var _ = Describe("IDResolver", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			// Inactive exposure — should NOT be found.
-			_, err = client.ApiExposure.Create().
+			_, err = client.APIExposure.Create().
 				SetBasePath("/api/v1/shared").
 				SetNamespace("team-active").
 				SetVisibility("WORLD").
@@ -275,7 +275,7 @@ var _ = Describe("IDResolver", func() {
 				Save(ctx)
 			Expect(err).NotTo(HaveOccurred())
 
-			activeExposure, err := client.ApiExposure.Create().
+			activeExposure, err := client.APIExposure.Create().
 				SetBasePath("/api/v1/shared").
 				SetNamespace("team-active-2").
 				SetVisibility("WORLD").
@@ -327,7 +327,7 @@ var _ = Describe("IDResolver", func() {
 				Save(ctx)
 			Expect(err).NotTo(HaveOccurred())
 
-			sub, err := client.ApiSubscription.Create().
+			sub, err := client.APISubscription.Create().
 				SetNamespace("prod--platform").
 				SetName("my-subscription").
 				SetBasePath("/api/v1/orders").

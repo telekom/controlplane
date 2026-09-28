@@ -19,7 +19,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("ApiSubscription.Target resolver", func() {
+var _ = Describe("APISubscription.Target resolver", func() {
 	var client *ent.Client
 	var r *resolvers.Resolver
 	var s *testutil.SeedData
@@ -37,7 +37,7 @@ var _ = Describe("ApiSubscription.Target resolver", func() {
 	DescribeTable("should return nil without an error when no target exists",
 		func(eagerLoad bool) {
 			ctx := testutil.AllowContext()
-			sub, err := client.ApiSubscription.Create().
+			sub, err := client.APISubscription.Create().
 				SetNamespace("default").
 				SetName("sub-without-target").
 				SetBasePath("/missing").
@@ -45,14 +45,14 @@ var _ = Describe("ApiSubscription.Target resolver", func() {
 				Save(ctx)
 			Expect(err).NotTo(HaveOccurred())
 
-			query := client.ApiSubscription.Query().Where(apisubscription.ID(sub.ID))
+			query := client.APISubscription.Query().Where(apisubscription.ID(sub.ID))
 			if eagerLoad {
 				query.WithTarget()
 			}
 			sub, err = query.Only(ctx)
 			Expect(err).NotTo(HaveOccurred())
 
-			target, err := r.ApiSubscription().Target(ctx, sub)
+			target, err := r.APISubscription().Target(ctx, sub)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(target).To(BeNil())
 		},
@@ -63,14 +63,14 @@ var _ = Describe("ApiSubscription.Target resolver", func() {
 	DescribeTable("should return the target exposure",
 		func(eagerLoad bool) {
 			ctx := viewer.NewContext(context.Background(), &viewer.Viewer{Teams: []string{"team-beta"}})
-			query := client.ApiSubscription.Query().Where(apisubscription.ID(s.Subscription.ID))
+			query := client.APISubscription.Query().Where(apisubscription.ID(s.Subscription.ID))
 			if eagerLoad {
 				query.WithTarget()
 			}
 			sub, err := query.Only(testutil.AllowContext())
 			Expect(err).NotTo(HaveOccurred())
 
-			target, err := r.ApiSubscription().Target(ctx, sub)
+			target, err := r.APISubscription().Target(ctx, sub)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(target).NotTo(BeNil())
 			Expect(target.ID).To(Equal(s.ExposureAlpha.ID))
@@ -84,13 +84,13 @@ var _ = Describe("ApiSubscription.Target resolver", func() {
 		ctx, cancel := context.WithCancel(testutil.AllowContext())
 		cancel()
 
-		target, err := r.ApiSubscription().Target(ctx, s.Subscription)
+		target, err := r.APISubscription().Target(ctx, s.Subscription)
 		Expect(err).To(MatchError(context.Canceled))
 		Expect(target).To(BeNil())
 	})
 })
 
-var _ = Describe("ApiSubscription Security", func() {
+var _ = Describe("APISubscription Security", func() {
 	var client *ent.Client
 	var s *testutil.SeedData
 
@@ -106,38 +106,38 @@ var _ = Describe("ApiSubscription Security", func() {
 	It("should store and return security with OAuth2 client credentials", func() {
 		ctx := testutil.AllowContext()
 
-		sec := model.ApiSubscriptionSecurity{
+		sec := model.APISubscriptionSecurity{
 			M2M: &model.SubscriberMachine2MachineAuthentication{
 				Client: &model.OAuth2ClientCredentials{
-					ClientId: "my-client-id",
+					ClientID: "my-client-id",
 				},
 				Scopes: []string{"read", "write"},
 			},
 		}
 
-		sub, err := client.ApiSubscription.Create().
+		sub, err := client.APISubscription.Create().
 			SetNamespace("default").
 			SetName("sub-oauth").
 			SetBasePath("/api/v1/users").
 			SetOwner(s.AppAlpha).
-			SetM2mAuthMethod(apisubscription.M2mAuthMethodOauth2Client).
+			SetM2MAuthMethod(apisubscription.M2MAuthMethodOAuth2Client).
 			SetSecurity(&sec).
 			Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
 
-		fetched, err := client.ApiSubscription.Get(ctx, sub.ID)
+		fetched, err := client.APISubscription.Get(ctx, sub.ID)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(fetched.M2mAuthMethod.String()).To(Equal("OAUTH2_CLIENT"))
+		Expect(fetched.M2MAuthMethod.String()).To(Equal("OAUTH2_CLIENT"))
 		Expect(fetched.Security.M2M).NotTo(BeNil())
 		Expect(fetched.Security.M2M.Client).NotTo(BeNil())
-		Expect(fetched.Security.M2M.Client.ClientId).To(Equal("my-client-id"))
+		Expect(fetched.Security.M2M.Client.ClientID).To(Equal("my-client-id"))
 		Expect(fetched.Security.M2M.Scopes).To(Equal([]string{"read", "write"}))
 	})
 
 	It("should store and return security with basic auth", func() {
 		ctx := testutil.AllowContext()
 
-		sec := model.ApiSubscriptionSecurity{
+		sec := model.APISubscriptionSecurity{
 			M2M: &model.SubscriberMachine2MachineAuthentication{
 				Basic: &model.BasicAuthCredentials{
 					Username: "test-user",
@@ -146,19 +146,19 @@ var _ = Describe("ApiSubscription Security", func() {
 			},
 		}
 
-		sub, err := client.ApiSubscription.Create().
+		sub, err := client.APISubscription.Create().
 			SetNamespace("default").
 			SetName("sub-basic").
 			SetBasePath("/api/v1/basic").
 			SetOwner(s.AppAlpha).
-			SetM2mAuthMethod(apisubscription.M2mAuthMethodBasicAuth).
+			SetM2MAuthMethod(apisubscription.M2MAuthMethodBasicAuth).
 			SetSecurity(&sec).
 			Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
 
-		fetched, err := client.ApiSubscription.Get(ctx, sub.ID)
+		fetched, err := client.APISubscription.Get(ctx, sub.ID)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(fetched.M2mAuthMethod.String()).To(Equal("BASIC_AUTH"))
+		Expect(fetched.M2MAuthMethod.String()).To(Equal("BASIC_AUTH"))
 		Expect(fetched.Security.M2M).NotTo(BeNil())
 		Expect(fetched.Security.M2M.Basic).NotTo(BeNil())
 		Expect(fetched.Security.M2M.Basic.Username).To(Equal("test-user"))
@@ -169,25 +169,25 @@ var _ = Describe("ApiSubscription Security", func() {
 	It("should store security with scopes only", func() {
 		ctx := testutil.AllowContext()
 
-		sec := model.ApiSubscriptionSecurity{
+		sec := model.APISubscriptionSecurity{
 			M2M: &model.SubscriberMachine2MachineAuthentication{
 				Scopes: []string{"admin", "superuser"},
 			},
 		}
 
-		sub, err := client.ApiSubscription.Create().
+		sub, err := client.APISubscription.Create().
 			SetNamespace("default").
 			SetName("sub-scopes").
 			SetBasePath("/api/v1/scopes-only").
 			SetOwner(s.AppAlpha).
-			SetM2mAuthMethod(apisubscription.M2mAuthMethodScopesOnly).
+			SetM2MAuthMethod(apisubscription.M2MAuthMethodScopesOnly).
 			SetSecurity(&sec).
 			Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
 
-		fetched, err := client.ApiSubscription.Get(ctx, sub.ID)
+		fetched, err := client.APISubscription.Get(ctx, sub.ID)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(fetched.M2mAuthMethod.String()).To(Equal("SCOPES_ONLY"))
+		Expect(fetched.M2MAuthMethod.String()).To(Equal("SCOPES_ONLY"))
 		Expect(fetched.Security.M2M).NotTo(BeNil())
 		Expect(fetched.Security.M2M.Scopes).To(ConsistOf("admin", "superuser"))
 		Expect(fetched.Security.M2M.Client).To(BeNil())
@@ -197,7 +197,7 @@ var _ = Describe("ApiSubscription Security", func() {
 	It("should default to empty security when not set", func() {
 		ctx := testutil.AllowContext()
 
-		sub, err := client.ApiSubscription.Create().
+		sub, err := client.APISubscription.Create().
 			SetNamespace("default").
 			SetName("sub-default").
 			SetBasePath("/api/v1/default").
@@ -205,36 +205,36 @@ var _ = Describe("ApiSubscription Security", func() {
 			Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
 
-		fetched, err := client.ApiSubscription.Get(ctx, sub.ID)
+		fetched, err := client.APISubscription.Get(ctx, sub.ID)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(fetched.M2mAuthMethod.String()).To(Equal("NONE"))
+		Expect(fetched.M2MAuthMethod.String()).To(Equal("NONE"))
 		Expect(fetched.Security).To(BeNil())
 	})
 
 	It("should update security from OAuth2 to basic auth", func() {
 		ctx := testutil.AllowContext()
 
-		oauthSec := model.ApiSubscriptionSecurity{
+		oauthSec := model.APISubscriptionSecurity{
 			M2M: &model.SubscriberMachine2MachineAuthentication{
 				Client: &model.OAuth2ClientCredentials{
-					ClientId: "cid",
+					ClientID: "cid",
 				},
 				Scopes: []string{"read"},
 			},
 		}
 
-		sub, err := client.ApiSubscription.Create().
+		sub, err := client.APISubscription.Create().
 			SetNamespace("default").
 			SetName("sub-update").
 			SetBasePath("/api/v1/update").
 			SetOwner(s.AppAlpha).
-			SetM2mAuthMethod(apisubscription.M2mAuthMethodOauth2Client).
+			SetM2MAuthMethod(apisubscription.M2MAuthMethodOAuth2Client).
 			SetSecurity(&oauthSec).
 			Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(sub.Security.M2M.Client.ClientId).To(Equal("cid"))
+		Expect(sub.Security.M2M.Client.ClientID).To(Equal("cid"))
 
-		basicSec := model.ApiSubscriptionSecurity{
+		basicSec := model.APISubscriptionSecurity{
 			M2M: &model.SubscriberMachine2MachineAuthentication{
 				Basic: &model.BasicAuthCredentials{
 					Username: "u",
@@ -244,12 +244,12 @@ var _ = Describe("ApiSubscription Security", func() {
 			},
 		}
 
-		updated, err := client.ApiSubscription.UpdateOneID(sub.ID).
-			SetM2mAuthMethod(apisubscription.M2mAuthMethodBasicAuth).
+		updated, err := client.APISubscription.UpdateOneID(sub.ID).
+			SetM2MAuthMethod(apisubscription.M2MAuthMethodBasicAuth).
 			SetSecurity(&basicSec).
 			Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(updated.M2mAuthMethod.String()).To(Equal("BASIC_AUTH"))
+		Expect(updated.M2MAuthMethod.String()).To(Equal("BASIC_AUTH"))
 		Expect(updated.Security.M2M.Basic).NotTo(BeNil())
 		Expect(updated.Security.M2M.Basic.Username).To(Equal("u"))
 		Expect(updated.Security.M2M.Client).To(BeNil())
@@ -259,36 +259,36 @@ var _ = Describe("ApiSubscription Security", func() {
 	It("should clear security on update", func() {
 		ctx := testutil.AllowContext()
 
-		sec := model.ApiSubscriptionSecurity{
+		sec := model.APISubscriptionSecurity{
 			M2M: &model.SubscriberMachine2MachineAuthentication{
 				Scopes: []string{"read", "write"},
 			},
 		}
 
-		sub, err := client.ApiSubscription.Create().
+		sub, err := client.APISubscription.Create().
 			SetNamespace("default").
 			SetName("sub-clear").
 			SetBasePath("/api/v1/clear").
 			SetOwner(s.AppAlpha).
-			SetM2mAuthMethod(apisubscription.M2mAuthMethodScopesOnly).
+			SetM2MAuthMethod(apisubscription.M2MAuthMethodScopesOnly).
 			SetSecurity(&sec).
 			Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(sub.Security.M2M.Scopes).To(Equal([]string{"read", "write"}))
 
-		updated, err := client.ApiSubscription.UpdateOneID(sub.ID).
-			SetM2mAuthMethod(apisubscription.M2mAuthMethodNone).
+		updated, err := client.APISubscription.UpdateOneID(sub.ID).
+			SetM2MAuthMethod(apisubscription.M2MAuthMethodNone).
 			ClearSecurity().
 			Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(updated.M2mAuthMethod.String()).To(Equal("NONE"))
+		Expect(updated.M2MAuthMethod.String()).To(Equal("NONE"))
 		Expect(updated.Security).To(BeNil())
 	})
 
 	It("should update security from basic auth to OAuth2", func() {
 		ctx := testutil.AllowContext()
 
-		basicSec := model.ApiSubscriptionSecurity{
+		basicSec := model.APISubscriptionSecurity{
 			M2M: &model.SubscriberMachine2MachineAuthentication{
 				Basic: &model.BasicAuthCredentials{
 					Username: "user",
@@ -298,35 +298,35 @@ var _ = Describe("ApiSubscription Security", func() {
 			},
 		}
 
-		sub, err := client.ApiSubscription.Create().
+		sub, err := client.APISubscription.Create().
 			SetNamespace("default").
 			SetName("sub-basic-to-oauth").
 			SetBasePath("/api/v1/basic-to-oauth").
 			SetOwner(s.AppAlpha).
-			SetM2mAuthMethod(apisubscription.M2mAuthMethodBasicAuth).
+			SetM2MAuthMethod(apisubscription.M2MAuthMethodBasicAuth).
 			SetSecurity(&basicSec).
 			Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(sub.Security.M2M.Basic).NotTo(BeNil())
 		Expect(sub.Security.M2M.Client).To(BeNil())
 
-		oauthSec := model.ApiSubscriptionSecurity{
+		oauthSec := model.APISubscriptionSecurity{
 			M2M: &model.SubscriberMachine2MachineAuthentication{
 				Client: &model.OAuth2ClientCredentials{
-					ClientId: "new-client",
+					ClientID: "new-client",
 				},
 				Scopes: []string{"read", "write"},
 			},
 		}
 
-		updated, err := client.ApiSubscription.UpdateOneID(sub.ID).
-			SetM2mAuthMethod(apisubscription.M2mAuthMethodOauth2Client).
+		updated, err := client.APISubscription.UpdateOneID(sub.ID).
+			SetM2MAuthMethod(apisubscription.M2MAuthMethodOAuth2Client).
 			SetSecurity(&oauthSec).
 			Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(updated.M2mAuthMethod.String()).To(Equal("OAUTH2_CLIENT"))
+		Expect(updated.M2MAuthMethod.String()).To(Equal("OAUTH2_CLIENT"))
 		Expect(updated.Security.M2M.Client).NotTo(BeNil())
-		Expect(updated.Security.M2M.Client.ClientId).To(Equal("new-client"))
+		Expect(updated.Security.M2M.Client.ClientID).To(Equal("new-client"))
 		Expect(updated.Security.M2M.Basic).To(BeNil())
 		Expect(updated.Security.M2M.Scopes).To(Equal([]string{"read", "write"}))
 	})

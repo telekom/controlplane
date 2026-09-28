@@ -80,7 +80,7 @@ var _ = Describe("ApiSubscription Translator", func() {
 			Expect(data.Security).NotTo(BeNil())
 			Expect(data.Security.M2M).NotTo(BeNil())
 			Expect(data.Security.M2M.Client).NotTo(BeNil())
-			Expect(data.Security.M2M.Client.ClientId).To(Equal("my-client-id"))
+			Expect(data.Security.M2M.Client.ClientID).To(Equal("my-client-id"))
 			Expect(*data.Security.M2M.Client.ClientSecret).To(Equal("secret"))
 			Expect(data.Security.M2M.Scopes).To(Equal([]string{"read", "write"}))
 			Expect(data.OwnerAppName).To(Equal("consumer-app"))
@@ -88,10 +88,10 @@ var _ = Describe("ApiSubscription Translator", func() {
 			Expect(data.TargetBasePath).To(Equal("/api/v1/users"))
 			Expect(data.TargetAppName).To(BeEmpty())
 			Expect(data.TargetTeamName).To(BeEmpty())
-			Expect(data.GatewayUrl).To(Equal("https://gateway.example.com/api/v1/users"))
+			Expect(data.GatewayURL).To(Equal("https://gateway.example.com/api/v1/users"))
 		})
 
-		It("should set GatewayUrl to empty when status has no gateway url", func() {
+		It("should set GatewayURL to empty when status has no gateway url", func() {
 			obj := &apiv1.ApiSubscription{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "sub-no-gw",
@@ -107,7 +107,7 @@ var _ = Describe("ApiSubscription Translator", func() {
 
 			data, err := t.Translate(context.Background(), obj)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(data.GatewayUrl).To(BeEmpty())
+			Expect(data.GatewayURL).To(BeEmpty())
 		})
 	})
 
@@ -152,7 +152,7 @@ var _ = Describe("ApiSubscription Translator", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(data.M2MAuthMethod).To(Equal("OAUTH2_CLIENT"))
 			Expect(data.Security.M2M.Client).NotTo(BeNil())
-			Expect(data.Security.M2M.Client.ClientId).To(Equal("cid"))
+			Expect(data.Security.M2M.Client.ClientID).To(Equal("cid"))
 		})
 
 		It("should return BASIC_AUTH when Basic is set", func() {
@@ -271,7 +271,7 @@ var _ = Describe("ApiSubscription Translator", func() {
 			Expect(data.Security).NotTo(BeNil())
 			Expect(data.Security.M2M).NotTo(BeNil())
 			Expect(data.Security.M2M.Client).NotTo(BeNil())
-			Expect(data.Security.M2M.Client.ClientId).To(Equal("test-client-id"))
+			Expect(data.Security.M2M.Client.ClientID).To(Equal("test-client-id"))
 			Expect(*data.Security.M2M.Client.ClientSecret).To(Equal("test-dummy-secret"))
 			Expect(data.Security.M2M.Basic).To(BeNil())
 			Expect(data.Security.M2M.Scopes).To(Equal([]string{"read", "write"}))

@@ -783,14 +783,14 @@ func CategoryContainsFold(v string) predicate.AgentCard {
 	return predicate.AgentCard(sql.FieldContainsFold(FieldCategory, v))
 }
 
-// Oauth2ScopesIsNil applies the IsNil predicate on the "oauth2_scopes" field.
-func Oauth2ScopesIsNil() predicate.AgentCard {
-	return predicate.AgentCard(sql.FieldIsNull(FieldOauth2Scopes))
+// OAuth2ScopesIsNil applies the IsNil predicate on the "OAuth2_scopes" field.
+func OAuth2ScopesIsNil() predicate.AgentCard {
+	return predicate.AgentCard(sql.FieldIsNull(FieldOAuth2Scopes))
 }
 
-// Oauth2ScopesNotNil applies the NotNil predicate on the "oauth2_scopes" field.
-func Oauth2ScopesNotNil() predicate.AgentCard {
-	return predicate.AgentCard(sql.FieldNotNull(FieldOauth2Scopes))
+// OAuth2ScopesNotNil applies the NotNil predicate on the "OAuth2_scopes" field.
+func OAuth2ScopesNotNil() predicate.AgentCard {
+	return predicate.AgentCard(sql.FieldNotNull(FieldOAuth2Scopes))
 }
 
 // ActiveEQ applies the EQ predicate on the "active" field.

@@ -151,7 +151,7 @@ var _ = Describe("Approval Repository", func() {
 			Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
 
-		_, err = client.ApiExposure.Create().
+		_, err = client.APIExposure.Create().
 			SetBasePath("/api/v1/users").
 			SetNamespace("platform--narvi").
 			SetVisibility(entapiexposure.VisibilityWorld).
@@ -161,7 +161,7 @@ var _ = Describe("Approval Repository", func() {
 			Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
 
-		sub, err := client.ApiSubscription.Create().
+		sub, err := client.APISubscription.Create().
 			SetBasePath("/api/v1/users").
 			SetNamespace("platform--narvi").
 			SetName("my-sub").

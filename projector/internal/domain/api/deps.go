@@ -6,11 +6,11 @@ package api
 
 import "context"
 
-// ApiDeps declares the FK resolution interface required by the Api repository.
+// APIDeps declares the FK resolution interface required by the Api repository.
 // Team is a required dependency — if the owner Team is missing, the upsert
 // fails with ErrDependencyMissing.
 //
 // Satisfied by *infrastructure.IDResolver at wiring time.
-type ApiDeps interface {
+type APIDeps interface {
 	FindTeamID(ctx context.Context, name string) (int, error)
 }

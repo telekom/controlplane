@@ -54,8 +54,8 @@ const (
 	FieldTransformation = "transformation"
 	// EdgeOwner holds the string denoting the owner edge name in mutations.
 	EdgeOwner = "owner"
-	// EdgeMcpServer holds the string denoting the mcp_server edge name in mutations.
-	EdgeMcpServer = "mcp_server"
+	// EdgeMCPServer holds the string denoting the mcp_server edge name in mutations.
+	EdgeMCPServer = "MCP_server"
 	// EdgeAgentCard holds the string denoting the agent_card edge name in mutations.
 	EdgeAgentCard = "agent_card"
 	// EdgeSubscriptions holds the string denoting the subscriptions edge name in mutations.
@@ -69,13 +69,13 @@ const (
 	OwnerInverseTable = "applications"
 	// OwnerColumn is the table column denoting the owner relation/edge.
 	OwnerColumn = "application_exposed_agentics"
-	// McpServerTable is the table that holds the mcp_server relation/edge.
-	McpServerTable = "agentic_exposures"
-	// McpServerInverseTable is the table name for the McpServer entity.
+	// MCPServerTable is the table that holds the MCP_server relation/edge.
+	MCPServerTable = "agentic_exposures"
+	// MCPServerInverseTable is the table name for the MCPServer entity.
 	// It exists in this package in order to avoid circular dependency with the "mcpserver" package.
-	McpServerInverseTable = "mcp_servers"
-	// McpServerColumn is the table column denoting the mcp_server relation/edge.
-	McpServerColumn = "mcp_server_exposures"
+	MCPServerInverseTable = "mcp_servers"
+	// MCPServerColumn is the table column denoting the MCP_server relation/edge.
+	MCPServerColumn = "mcp_server_exposures"
 	// AgentCardTable is the table that holds the agent_card relation/edge.
 	AgentCardTable = "agentic_exposures"
 	// AgentCardInverseTable is the table name for the AgentCard entity.
@@ -216,13 +216,13 @@ func VisibilityValidator(v Visibility) error {
 // Variant defines the type for the "variant" enum field.
 type Variant string
 
-// VariantMcp is the default value of the Variant enum.
-const DefaultVariant = VariantMcp
+// VariantMCP is the default value of the Variant enum.
+const DefaultVariant = VariantMCP
 
 // Variant values.
 const (
-	VariantMcp            Variant = "MCP"
-	VariantTelecontextMcp Variant = "TELECONTEXTMCP"
+	VariantMCP            Variant = "MCP"
+	VariantTelecontextMCP Variant = "TELECONTEXTMCP"
 	VariantAgent          Variant = "AGENT"
 )
 
@@ -233,7 +233,7 @@ func (v Variant) String() string {
 // VariantValidator is a validator for the "variant" field enum values. It is called by the builders before save.
 func VariantValidator(v Variant) error {
 	switch v {
-	case VariantMcp, VariantTelecontextMcp, VariantAgent:
+	case VariantMCP, VariantTelecontextMCP, VariantAgent:
 		return nil
 	default:
 		return fmt.Errorf("agenticexposure: invalid enum value for variant field: %q", v)
@@ -305,10 +305,10 @@ func ByOwnerField(field string, opts ...sql.OrderTermOption) OrderOption {
 	}
 }
 
-// ByMcpServerField orders the results by mcp_server field.
-func ByMcpServerField(field string, opts ...sql.OrderTermOption) OrderOption {
+// ByMCPServerField orders the results by MCP_server field.
+func ByMCPServerField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newMcpServerStep(), sql.OrderByField(field, opts...))
+		sqlgraph.OrderByNeighborTerms(s, newMCPServerStep(), sql.OrderByField(field, opts...))
 	}
 }
 
@@ -339,11 +339,11 @@ func newOwnerStep() *sqlgraph.Step {
 		sqlgraph.Edge(sqlgraph.M2O, true, OwnerTable, OwnerColumn),
 	)
 }
-func newMcpServerStep() *sqlgraph.Step {
+func newMCPServerStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(McpServerInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.M2O, true, McpServerTable, McpServerColumn),
+		sqlgraph.To(MCPServerInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, true, MCPServerTable, MCPServerColumn),
 	)
 }
 func newAgentCardStep() *sqlgraph.Step {

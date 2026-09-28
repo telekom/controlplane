@@ -15,26 +15,26 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/predicate"
 )
 
-// McpServerDelete is the builder for deleting a McpServer entity.
-type McpServerDelete struct {
+// MCPServerDelete is the builder for deleting a MCPServer entity.
+type MCPServerDelete struct {
 	config
 	hooks    []Hook
-	mutation *McpServerMutation
+	mutation *MCPServerMutation
 }
 
-// Where appends a list predicates to the McpServerDelete builder.
-func (_d *McpServerDelete) Where(ps ...predicate.McpServer) *McpServerDelete {
+// Where appends a list predicates to the MCPServerDelete builder.
+func (_d *MCPServerDelete) Where(ps ...predicate.MCPServer) *MCPServerDelete {
 	_d.mutation.Where(ps...)
 	return _d
 }
 
 // Exec executes the deletion query and returns how many vertices were deleted.
-func (_d *McpServerDelete) Exec(ctx context.Context) (int, error) {
+func (_d *MCPServerDelete) Exec(ctx context.Context) (int, error) {
 	return withHooks(ctx, _d.sqlExec, _d.mutation, _d.hooks)
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (_d *McpServerDelete) ExecX(ctx context.Context) int {
+func (_d *MCPServerDelete) ExecX(ctx context.Context) int {
 	n, err := _d.Exec(ctx)
 	if err != nil {
 		panic(err)
@@ -42,7 +42,7 @@ func (_d *McpServerDelete) ExecX(ctx context.Context) int {
 	return n
 }
 
-func (_d *McpServerDelete) sqlExec(ctx context.Context) (int, error) {
+func (_d *MCPServerDelete) sqlExec(ctx context.Context) (int, error) {
 	_spec := sqlgraph.NewDeleteSpec(mcpserver.Table, sqlgraph.NewFieldSpec(mcpserver.FieldID, field.TypeInt))
 	if ps := _d.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
@@ -59,19 +59,19 @@ func (_d *McpServerDelete) sqlExec(ctx context.Context) (int, error) {
 	return affected, err
 }
 
-// McpServerDeleteOne is the builder for deleting a single McpServer entity.
-type McpServerDeleteOne struct {
-	_d *McpServerDelete
+// MCPServerDeleteOne is the builder for deleting a single MCPServer entity.
+type MCPServerDeleteOne struct {
+	_d *MCPServerDelete
 }
 
-// Where appends a list predicates to the McpServerDelete builder.
-func (_d *McpServerDeleteOne) Where(ps ...predicate.McpServer) *McpServerDeleteOne {
+// Where appends a list predicates to the MCPServerDelete builder.
+func (_d *MCPServerDeleteOne) Where(ps ...predicate.MCPServer) *MCPServerDeleteOne {
 	_d._d.mutation.Where(ps...)
 	return _d
 }
 
 // Exec executes the deletion query.
-func (_d *McpServerDeleteOne) Exec(ctx context.Context) error {
+func (_d *MCPServerDeleteOne) Exec(ctx context.Context) error {
 	n, err := _d._d.Exec(ctx)
 	switch {
 	case err != nil:
@@ -84,7 +84,7 @@ func (_d *McpServerDeleteOne) Exec(ctx context.Context) error {
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (_d *McpServerDeleteOne) ExecX(ctx context.Context) {
+func (_d *MCPServerDeleteOne) ExecX(ctx context.Context) {
 	if err := _d.Exec(ctx); err != nil {
 		panic(err)
 	}

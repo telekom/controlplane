@@ -15,20 +15,20 @@ import (
 // Uses the shared Ginkgo suite entry point registered in security_test.go
 // (TestSecurity / RunSpecs) — only one suite bootstrap is needed per package.
 var _ = Describe("Agentic credential mappers nil-safety", func() {
-	It("MapAgenticBasicAuthToCpApi returns nil for nil input", func() {
-		Expect(util.MapAgenticBasicAuthToCpApi(nil)).To(BeNil())
+	It("MapAgenticBasicAuthToCPAPI returns nil for nil input", func() {
+		Expect(util.MapAgenticBasicAuthToCPAPI(nil)).To(BeNil())
 	})
 
-	It("MapAgenticOAuthToCpApi returns nil for nil input", func() {
-		Expect(util.MapAgenticOAuthToCpApi(nil)).To(BeNil())
+	It("MapAgenticOAuthToCPAPI returns nil for nil input", func() {
+		Expect(util.MapAgenticOAuthToCPAPI(nil)).To(BeNil())
 	})
 
-	It("MapAgenticExternalIdpToCpApi returns nil for nil input", func() {
-		Expect(util.MapAgenticExternalIdpToCpApi(nil)).To(BeNil())
+	It("MapAgenticExternalIDPToCPAPI returns nil for nil input", func() {
+		Expect(util.MapAgenticExternalIDPToCPAPI(nil)).To(BeNil())
 	})
 
-	It("MapAgenticExternalIdpToCpApi maps nil nested creds to nil without panic", func() {
-		idp := util.MapAgenticExternalIdpToCpApi(&agenticv1.ExternalIdentityProvider{
+	It("MapAgenticExternalIDPToCPAPI maps nil nested creds to nil without panic", func() {
+		idp := util.MapAgenticExternalIDPToCPAPI(&agenticv1.ExternalIdentityProvider{
 			TokenEndpoint: "https://idp/token",
 		})
 		Expect(idp).NotTo(BeNil())

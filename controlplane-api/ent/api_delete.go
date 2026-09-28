@@ -15,7 +15,7 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/predicate"
 )
 
-// APIDelete is the builder for deleting a Api entity.
+// APIDelete is the builder for deleting a API entity.
 type APIDelete struct {
 	config
 	hooks    []Hook
@@ -23,7 +23,7 @@ type APIDelete struct {
 }
 
 // Where appends a list predicates to the APIDelete builder.
-func (_d *APIDelete) Where(ps ...predicate.Api) *APIDelete {
+func (_d *APIDelete) Where(ps ...predicate.API) *APIDelete {
 	_d.mutation.Where(ps...)
 	return _d
 }
@@ -59,13 +59,13 @@ func (_d *APIDelete) sqlExec(ctx context.Context) (int, error) {
 	return affected, err
 }
 
-// APIDeleteOne is the builder for deleting a single Api entity.
+// APIDeleteOne is the builder for deleting a single API entity.
 type APIDeleteOne struct {
 	_d *APIDelete
 }
 
 // Where appends a list predicates to the APIDelete builder.
-func (_d *APIDeleteOne) Where(ps ...predicate.Api) *APIDeleteOne {
+func (_d *APIDeleteOne) Where(ps ...predicate.API) *APIDeleteOne {
 	_d._d.mutation.Where(ps...)
 	return _d
 }

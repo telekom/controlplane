@@ -14,19 +14,19 @@ import (
 type ApplicationInfo struct {
 	ID          int                   `json:"id"`
 	Name        string                `json:"name"`
-	ExternalIds []pkgmodel.ExternalId `json:"externalIds,omitempty"`
+	ExternalIDs []pkgmodel.ExternalID `json:"externalIDs,omitempty"`
 	Zone        *ent.Zone             `json:"zone"`
 	OwnerTeam   *pkgmodel.TeamInfo    `json:"ownerTeam"`
 }
 
-// ApiExposureInfo provides a reduced cross-tenant safe view of an API exposure.
+// APIExposureInfo provides a reduced cross-tenant safe view of an API exposure.
 // No navigable edges — traversal terminates here.
-type ApiExposureInfo struct {
+type APIExposureInfo struct {
 	ID                   int                     `json:"id"`
 	BasePath             string                  `json:"basePath"`
 	Visibility           string                  `json:"visibility"`
 	Active               *bool                   `json:"active,omitempty"`
-	ApiVersion           *string                 `json:"apiVersion,omitempty"`
+	APIVersion           *string                 `json:"apiVersion,omitempty"`
 	Features             []string                `json:"features"`
 	Traffic              *pkgmodel.Traffic       `json:"traffic,omitempty"`
 	ApprovalConfig       pkgmodel.ApprovalConfig `json:"approvalConfig"`
@@ -35,9 +35,9 @@ type ApiExposureInfo struct {
 	OwnerApplication     *ApplicationInfo        `json:"ownerApplication"`
 }
 
-// ApiSubscriptionInfo provides a reduced cross-tenant safe view of an API subscription.
+// APISubscriptionInfo provides a reduced cross-tenant safe view of an API subscription.
 // No navigable edges — traversal terminates here.
-type ApiSubscriptionInfo struct {
+type APISubscriptionInfo struct {
 	ID                   int                `json:"id"`
 	BasePath             string             `json:"basePath"`
 	StatusPhase          *string            `json:"statusPhase,omitempty"`
@@ -47,11 +47,11 @@ type ApiSubscriptionInfo struct {
 	OwnerApplication     *ApplicationInfo   `json:"ownerApplication"`
 }
 
-func (ApiSubscriptionInfo) IsSubscriptionInfo() {}
+func (APISubscriptionInfo) IsSubscriptionInfo() {}
 
-func (s *ApiSubscriptionInfo) GetID() int { return s.ID }
+func (s *APISubscriptionInfo) GetID() int { return s.ID }
 
-func (s *ApiSubscriptionInfo) GetOwnerApplication() *ApplicationInfo { return s.OwnerApplication }
+func (s *APISubscriptionInfo) GetOwnerApplication() *ApplicationInfo { return s.OwnerApplication }
 
 // EventSubscriptionInfo provides a reduced cross-tenant safe view of an event subscription.
 // No navigable edges — traversal terminates here.

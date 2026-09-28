@@ -56,12 +56,12 @@ func TeamFilterInterceptor() ent.Interceptor {
 			case *entgen.ApplicationQuery:
 				q.Where(application.HasOwnerTeamWith(team.NameIn(teams...)))
 
-			case *entgen.ApiExposureQuery:
+			case *entgen.APIExposureQuery:
 				q.Where(apiexposure.HasOwnerWith(
 					application.HasOwnerTeamWith(team.NameIn(teams...)),
 				))
 
-			case *entgen.ApiSubscriptionQuery:
+			case *entgen.APISubscriptionQuery:
 				q.Where(apisubscription.HasOwnerWith(
 					application.HasOwnerTeamWith(team.NameIn(teams...)),
 				))
@@ -209,7 +209,7 @@ func TeamFilterInterceptor() ent.Interceptor {
 				))
 
 			case *entgen.GroupQuery, *entgen.ZoneQuery, *entgen.APIQuery, *entgen.EventTypeQuery, *entgen.FileTypeQuery,
-				*entgen.McpServerQuery, *entgen.AgentCardQuery:
+				*entgen.MCPServerQuery, *entgen.AgentCardQuery:
 				// No team filtering for public/catalogue entities
 			default:
 				return nil, fmt.Errorf("team filter: unsupported query type %T", query)

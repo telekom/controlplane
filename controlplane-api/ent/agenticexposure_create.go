@@ -227,23 +227,23 @@ func (_c *AgenticExposureCreate) SetOwner(v *Application) *AgenticExposureCreate
 	return _c.SetOwnerID(v.ID)
 }
 
-// SetMcpServerID sets the "mcp_server" edge to the McpServer entity by ID.
-func (_c *AgenticExposureCreate) SetMcpServerID(id int) *AgenticExposureCreate {
-	_c.mutation.SetMcpServerID(id)
+// SetMCPServerID sets the "MCP_server" edge to the MCPServer entity by ID.
+func (_c *AgenticExposureCreate) SetMCPServerID(id int) *AgenticExposureCreate {
+	_c.mutation.SetMCPServerID(id)
 	return _c
 }
 
-// SetNillableMcpServerID sets the "mcp_server" edge to the McpServer entity by ID if the given value is not nil.
-func (_c *AgenticExposureCreate) SetNillableMcpServerID(id *int) *AgenticExposureCreate {
+// SetNillableMCPServerID sets the "MCP_server" edge to the MCPServer entity by ID if the given value is not nil.
+func (_c *AgenticExposureCreate) SetNillableMCPServerID(id *int) *AgenticExposureCreate {
 	if id != nil {
-		_c = _c.SetMcpServerID(*id)
+		_c = _c.SetMCPServerID(*id)
 	}
 	return _c
 }
 
-// SetMcpServer sets the "mcp_server" edge to the McpServer entity.
-func (_c *AgenticExposureCreate) SetMcpServer(v *McpServer) *AgenticExposureCreate {
-	return _c.SetMcpServerID(v.ID)
+// SetMCPServer sets the "MCP_server" edge to the MCPServer entity.
+func (_c *AgenticExposureCreate) SetMCPServer(v *MCPServer) *AgenticExposureCreate {
+	return _c.SetMCPServerID(v.ID)
 }
 
 // SetAgentCardID sets the "agent_card" edge to the AgentCard entity by ID.
@@ -512,12 +512,12 @@ func (_c *AgenticExposureCreate) createSpec() (*AgenticExposure, *sqlgraph.Creat
 		_node.application_exposed_agentics = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := _c.mutation.McpServerIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.MCPServerIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
-			Table:   agenticexposure.McpServerTable,
-			Columns: []string{agenticexposure.McpServerColumn},
+			Table:   agenticexposure.MCPServerTable,
+			Columns: []string{agenticexposure.MCPServerColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(mcpserver.FieldID, field.TypeInt),

@@ -69,14 +69,14 @@ const (
 	OwnerColumn = "application_exposed_apis"
 	// APITable is the table that holds the api relation/edge.
 	APITable = "api_exposures"
-	// APIInverseTable is the table name for the Api entity.
+	// APIInverseTable is the table name for the API entity.
 	// It exists in this package in order to avoid circular dependency with the "api" package.
 	APIInverseTable = "apis"
 	// APIColumn is the table column denoting the api relation/edge.
 	APIColumn = "api_exposures"
 	// SubscriptionsTable is the table that holds the subscriptions relation/edge.
 	SubscriptionsTable = "api_subscriptions"
-	// SubscriptionsInverseTable is the table name for the ApiSubscription entity.
+	// SubscriptionsInverseTable is the table name for the APISubscription entity.
 	// It exists in this package in order to avoid circular dependency with the "apisubscription" package.
 	SubscriptionsInverseTable = "api_subscriptions"
 	// SubscriptionsColumn is the table column denoting the subscriptions relation/edge.
@@ -205,7 +205,7 @@ func VisibilityValidator(v Visibility) error {
 	}
 }
 
-// OrderOption defines the ordering options for the ApiExposure queries.
+// OrderOption defines the ordering options for the APIExposure queries.
 type OrderOption func(*sql.Selector)
 
 // ByID orders the results by the id field.

@@ -9,10 +9,10 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 )
 
-// MapAgenticBasicAuthToCpApi converts an agentic CR's BasicAuthCredentials to
-// the shared cpapi model type. Mirrors MapCrBasicAuthToCpApi for the agentic
+// MapAgenticBasicAuthToCPAPI converts an agentic CR's BasicAuthCredentials to
+// the shared cpapi model type. Mirrors MapCRBasicAuthToCPAPI for the agentic
 // domain's (structurally identical, but nominally distinct) CRD type.
-func MapAgenticBasicAuthToCpApi(basic *agenticv1.BasicAuthCredentials) *model.BasicAuthCredentials {
+func MapAgenticBasicAuthToCPAPI(basic *agenticv1.BasicAuthCredentials) *model.BasicAuthCredentials {
 	if basic == nil {
 		return nil
 	}
@@ -22,34 +22,34 @@ func MapAgenticBasicAuthToCpApi(basic *agenticv1.BasicAuthCredentials) *model.Ba
 	}
 }
 
-// MapAgenticOAuthToCpApi converts an agentic CR's OAuth2ClientCredentials to
-// the shared cpapi model type. Mirrors MapCrOAuthToCpApi for the agentic
+// MapAgenticOAuthToCPAPI converts an agentic CR's OAuth2ClientCredentials to
+// the shared cpapi model type. Mirrors MapCROAuthToCPAPI for the agentic
 // domain's (structurally identical, but nominally distinct) CRD type.
-func MapAgenticOAuthToCpApi(oauth *agenticv1.OAuth2ClientCredentials) *model.OAuth2ClientCredentials {
+func MapAgenticOAuthToCPAPI(oauth *agenticv1.OAuth2ClientCredentials) *model.OAuth2ClientCredentials {
 	if oauth == nil {
 		return nil
 	}
 	return &model.OAuth2ClientCredentials{
-		ClientId:     oauth.ClientId,
+		ClientID:     oauth.ClientId,
 		ClientSecret: &oauth.ClientSecret,
 		ClientKey:    &oauth.ClientKey,
 	}
 }
 
-// MapAgenticExternalIdpToCpApi converts an agentic CR's ExternalIdentityProvider
-// to the shared cpapi model type. Mirrors MapCrExternalIdpToCpApi for the
+// MapAgenticExternalIDPToCPAPI converts an agentic CR's ExternalIdentityProvider
+// to the shared cpapi model type. Mirrors MapCRExternalIDPToCPAPI for the
 // agentic domain's (structurally identical, but nominally distinct) CRD type.
-func MapAgenticExternalIdpToCpApi(externalIdp *agenticv1.ExternalIdentityProvider) *model.ExternalIdentityProvider {
-	if externalIdp == nil {
+func MapAgenticExternalIDPToCPAPI(externalIDP *agenticv1.ExternalIdentityProvider) *model.ExternalIdentityProvider {
+	if externalIDP == nil {
 		return nil
 	}
-	tokenRequest := string(externalIdp.TokenRequest)
-	grantType := externalIdp.GrantType
+	tokenRequest := string(externalIDP.TokenRequest)
+	grantType := externalIDP.GrantType
 	return &model.ExternalIdentityProvider{
-		TokenEndpoint: externalIdp.TokenEndpoint,
+		TokenEndpoint: externalIDP.TokenEndpoint,
 		TokenRequest:  &tokenRequest,
 		GrantType:     &grantType,
-		Basic:         MapAgenticBasicAuthToCpApi(externalIdp.Basic),
-		Client:        MapAgenticOAuthToCpApi(externalIdp.Client),
+		Basic:         MapAgenticBasicAuthToCPAPI(externalIDP.Basic),
+		Client:        MapAgenticOAuthToCPAPI(externalIDP.Client),
 	}
 }

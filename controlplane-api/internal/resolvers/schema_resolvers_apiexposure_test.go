@@ -13,7 +13,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("ApiExposure.Security", func() {
+var _ = Describe("APIExposure.Security", func() {
 	var client *ent.Client
 	var s *testutil.SeedData
 
@@ -26,19 +26,19 @@ var _ = Describe("ApiExposure.Security", func() {
 		client.Close()
 	})
 
-	It("should store and return security on ApiExposure", func() {
+	It("should store and return security on APIExposure", func() {
 		ctx := testutil.AllowContext()
 
 		clientSecret := "test-dummy-client-secret"
 		clientKey := "test-dummy-client-key"
 		tokenRequest := "client_secret_basic"
 		grantType := "client_credentials"
-		exposure, err := client.ApiExposure.Create().
+		exposure, err := client.APIExposure.Create().
 			SetNamespace("default").
 			SetBasePath("/api/v1/secure").
 			SetOwner(s.AppAlpha).
 			SetApprovalConfig(model.ApprovalConfig{Strategy: "AUTO"}).
-			SetSecurity(model.ApiExposureSecurity{
+			SetSecurity(model.APIExposureSecurity{
 				M2M: &model.Machine2MachineAuthentication{
 					ExternalIDP: &model.ExternalIdentityProvider{
 						TokenEndpoint: "https://idp.example.com/token",
@@ -49,7 +49,7 @@ var _ = Describe("ApiExposure.Security", func() {
 							Password: "test-dummy-password",
 						},
 						Client: &model.OAuth2ClientCredentials{
-							ClientId:     "ext-client-id",
+							ClientID:     "ext-client-id",
 							ClientSecret: &clientSecret,
 							ClientKey:    &clientKey,
 						},
@@ -64,7 +64,7 @@ var _ = Describe("ApiExposure.Security", func() {
 			Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
 
-		fetched, err := client.ApiExposure.Get(ctx, exposure.ID)
+		fetched, err := client.APIExposure.Get(ctx, exposure.ID)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(fetched.Security.M2M).NotTo(BeNil())
 		Expect(fetched.Security.M2M.Basic.Username).To(Equal("test-svc-user"))
@@ -76,15 +76,15 @@ var _ = Describe("ApiExposure.Security", func() {
 		Expect(*fetched.Security.M2M.ExternalIDP.GrantType).To(Equal("client_credentials"))
 		Expect(fetched.Security.M2M.ExternalIDP.Basic.Username).To(Equal("test-ext-user"))
 		Expect(fetched.Security.M2M.ExternalIDP.Basic.Password).To(Equal("test-dummy-password"))
-		Expect(fetched.Security.M2M.ExternalIDP.Client.ClientId).To(Equal("ext-client-id"))
+		Expect(fetched.Security.M2M.ExternalIDP.Client.ClientID).To(Equal("ext-client-id"))
 		Expect(*fetched.Security.M2M.ExternalIDP.Client.ClientSecret).To(Equal("test-dummy-client-secret"))
 		Expect(*fetched.Security.M2M.ExternalIDP.Client.ClientKey).To(Equal("test-dummy-client-key"))
 	})
 
-	It("should default to empty security on ApiExposure", func() {
+	It("should default to empty security on APIExposure", func() {
 		ctx := testutil.AllowContext()
 
-		exposure, err := client.ApiExposure.Create().
+		exposure, err := client.APIExposure.Create().
 			SetNamespace("default").
 			SetBasePath("/api/v1/no-sec").
 			SetOwner(s.AppAlpha).
@@ -92,20 +92,20 @@ var _ = Describe("ApiExposure.Security", func() {
 			Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
 
-		fetched, err := client.ApiExposure.Get(ctx, exposure.ID)
+		fetched, err := client.APIExposure.Get(ctx, exposure.ID)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(fetched.Security.M2M).To(BeNil())
 	})
 
-	It("should update security on ApiExposure", func() {
+	It("should update security on APIExposure", func() {
 		ctx := testutil.AllowContext()
 
-		exposure, err := client.ApiExposure.Create().
+		exposure, err := client.APIExposure.Create().
 			SetNamespace("default").
 			SetBasePath("/api/v1/update-sec").
 			SetOwner(s.AppAlpha).
 			SetApprovalConfig(model.ApprovalConfig{Strategy: "AUTO"}).
-			SetSecurity(model.ApiExposureSecurity{
+			SetSecurity(model.APIExposureSecurity{
 				M2M: &model.Machine2MachineAuthentication{
 					Scopes: []string{"scope1"},
 				},
@@ -113,8 +113,8 @@ var _ = Describe("ApiExposure.Security", func() {
 			Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
 
-		updated, err := client.ApiExposure.UpdateOneID(exposure.ID).
-			SetSecurity(model.ApiExposureSecurity{
+		updated, err := client.APIExposure.UpdateOneID(exposure.ID).
+			SetSecurity(model.APIExposureSecurity{
 				M2M: &model.Machine2MachineAuthentication{
 					Basic: &model.BasicAuthCredentials{
 						Username: "test-new-user",
@@ -127,13 +127,13 @@ var _ = Describe("ApiExposure.Security", func() {
 		Expect(updated.Security.M2M.Basic.Username).To(Equal("test-new-user"))
 		Expect(updated.Security.M2M.Scopes).To(Equal([]string{"scope1", "scope2"}))
 
-		cleared, err := client.ApiExposure.UpdateOneID(exposure.ID).ClearSecurity().Save(ctx)
+		cleared, err := client.APIExposure.UpdateOneID(exposure.ID).ClearSecurity().Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(cleared.Security.M2M).To(BeNil())
 	})
 })
 
-var _ = Describe("ApiExposure.Traffic", func() {
+var _ = Describe("APIExposure.Traffic", func() {
 	var client *ent.Client
 	var s *testutil.SeedData
 
@@ -145,10 +145,10 @@ var _ = Describe("ApiExposure.Traffic", func() {
 	AfterEach(func() {
 		client.Close()
 	})
-	It("should store and return traffic on ApiExposure with full RateLimit", func() {
+	It("should store and return traffic on APIExposure with full RateLimit", func() {
 		ctx := testutil.AllowContext()
 
-		exposure, err := client.ApiExposure.Create().
+		exposure, err := client.APIExposure.Create().
 			SetNamespace("default").
 			SetBasePath("/api/v1/traffic").
 			SetOwner(s.AppAlpha).
@@ -189,7 +189,7 @@ var _ = Describe("ApiExposure.Traffic", func() {
 			Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
 
-		fetched, err := client.ApiExposure.Get(ctx, exposure.ID)
+		fetched, err := client.APIExposure.Get(ctx, exposure.ID)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(fetched.Traffic.RateLimit).NotTo(BeNil())
 		Expect(fetched.Traffic.RateLimit.Provider).NotTo(BeNil())
@@ -209,10 +209,10 @@ var _ = Describe("ApiExposure.Traffic", func() {
 		Expect(fetched.Traffic.Failover.Zones).To(ConsistOf("zone-a", "zone-b"))
 	})
 
-	It("should default to empty traffic on ApiExposure", func() {
+	It("should default to empty traffic on APIExposure", func() {
 		ctx := testutil.AllowContext()
 
-		exposure, err := client.ApiExposure.Create().
+		exposure, err := client.APIExposure.Create().
 			SetNamespace("default").
 			SetBasePath("/api/v1/no-traffic").
 			SetOwner(s.AppAlpha).
@@ -220,16 +220,16 @@ var _ = Describe("ApiExposure.Traffic", func() {
 			Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
 
-		fetched, err := client.ApiExposure.Get(ctx, exposure.ID)
+		fetched, err := client.APIExposure.Get(ctx, exposure.ID)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(fetched.Traffic.RateLimit).To(BeNil())
 		Expect(fetched.Traffic.Failover).To(BeNil())
 	})
 
-	It("should update traffic on ApiExposure", func() {
+	It("should update traffic on APIExposure", func() {
 		ctx := testutil.AllowContext()
 
-		exposure, err := client.ApiExposure.Create().
+		exposure, err := client.APIExposure.Create().
 			SetNamespace("default").
 			SetBasePath("/api/v1/update-traffic").
 			SetOwner(s.AppAlpha).
@@ -244,7 +244,7 @@ var _ = Describe("ApiExposure.Traffic", func() {
 			Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
 
-		updated, err := client.ApiExposure.UpdateOneID(exposure.ID).
+		updated, err := client.APIExposure.UpdateOneID(exposure.ID).
 			SetTraffic(model.Traffic{
 				RateLimit: &model.RateLimit{
 					Provider: &model.RateLimitConfig{
@@ -266,7 +266,7 @@ var _ = Describe("ApiExposure.Traffic", func() {
 		Expect(updated.Traffic.RateLimit.Provider.Options.HideClientHeaders).To(BeTrue())
 		Expect(updated.Traffic.Failover.Zones).To(ConsistOf("zone-x"))
 
-		cleared, err := client.ApiExposure.UpdateOneID(exposure.ID).ClearTraffic().Save(ctx)
+		cleared, err := client.APIExposure.UpdateOneID(exposure.ID).ClearTraffic().Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(cleared.Traffic.RateLimit).To(BeNil())
 		Expect(cleared.Traffic.Failover).To(BeNil())
@@ -275,7 +275,7 @@ var _ = Describe("ApiExposure.Traffic", func() {
 	It("should store traffic with only failover zones", func() {
 		ctx := testutil.AllowContext()
 
-		exposure, err := client.ApiExposure.Create().
+		exposure, err := client.APIExposure.Create().
 			SetNamespace("default").
 			SetBasePath("/api/v1/failover-only").
 			SetOwner(s.AppAlpha).
@@ -288,7 +288,7 @@ var _ = Describe("ApiExposure.Traffic", func() {
 			Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
 
-		fetched, err := client.ApiExposure.Get(ctx, exposure.ID)
+		fetched, err := client.APIExposure.Get(ctx, exposure.ID)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(fetched.Traffic.RateLimit).To(BeNil())
 		Expect(fetched.Traffic.Failover).NotTo(BeNil())
@@ -296,7 +296,7 @@ var _ = Describe("ApiExposure.Traffic", func() {
 	})
 })
 
-var _ = Describe("ApiExposure.Features", func() {
+var _ = Describe("APIExposure.Features", func() {
 	var client *ent.Client
 	var s *testutil.SeedData
 
@@ -309,10 +309,10 @@ var _ = Describe("ApiExposure.Features", func() {
 		client.Close()
 	})
 
-	It("should store and return features on ApiExposure", func() {
+	It("should store and return features on APIExposure", func() {
 		ctx := testutil.AllowContext()
 
-		exposure, err := client.ApiExposure.Create().
+		exposure, err := client.APIExposure.Create().
 			SetNamespace("default").
 			SetBasePath("/api/v1/features").
 			SetOwner(s.AppAlpha).
@@ -321,16 +321,16 @@ var _ = Describe("ApiExposure.Features", func() {
 			Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
 
-		fetched, err := client.ApiExposure.Get(ctx, exposure.ID)
+		fetched, err := client.APIExposure.Get(ctx, exposure.ID)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(fetched.Features).To(HaveLen(3))
 		Expect(fetched.Features).To(ConsistOf("LAST_MILE_SECURITY", "RATE_LIMIT", "LOAD_BALANCING"))
 	})
 
-	It("should default to empty features on ApiExposure", func() {
+	It("should default to empty features on APIExposure", func() {
 		ctx := testutil.AllowContext()
 
-		exposure, err := client.ApiExposure.Create().
+		exposure, err := client.APIExposure.Create().
 			SetNamespace("default").
 			SetBasePath("/api/v1/no-features").
 			SetOwner(s.AppAlpha).
@@ -338,15 +338,15 @@ var _ = Describe("ApiExposure.Features", func() {
 			Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
 
-		fetched, err := client.ApiExposure.Get(ctx, exposure.ID)
+		fetched, err := client.APIExposure.Get(ctx, exposure.ID)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(fetched.Features).To(BeEmpty())
 	})
 
-	It("should update features on ApiExposure", func() {
+	It("should update features on APIExposure", func() {
 		ctx := testutil.AllowContext()
 
-		exposure, err := client.ApiExposure.Create().
+		exposure, err := client.APIExposure.Create().
 			SetNamespace("default").
 			SetBasePath("/api/v1/update-features").
 			SetOwner(s.AppAlpha).
@@ -356,14 +356,14 @@ var _ = Describe("ApiExposure.Features", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(exposure.Features).To(Equal([]string{"LAST_MILE_SECURITY"}))
 
-		updated, err := client.ApiExposure.UpdateOneID(exposure.ID).
+		updated, err := client.APIExposure.UpdateOneID(exposure.ID).
 			SetFeatures([]string{"LAST_MILE_SECURITY", "RATE_LIMIT", "LOAD_BALANCING", "IP_RESTRICTION"}).
 			Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(updated.Features).To(HaveLen(4))
 		Expect(updated.Features).To(ConsistOf("LAST_MILE_SECURITY", "RATE_LIMIT", "LOAD_BALANCING", "IP_RESTRICTION"))
 
-		cleared, err := client.ApiExposure.UpdateOneID(exposure.ID).
+		cleared, err := client.APIExposure.UpdateOneID(exposure.ID).
 			SetFeatures([]string{}).
 			Save(ctx)
 		Expect(err).NotTo(HaveOccurred())

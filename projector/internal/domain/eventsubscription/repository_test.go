@@ -137,7 +137,7 @@ var _ = Describe("EventSubscription Repository", func() {
 					RedeliveriesPerSecond: &redeliveries,
 				},
 				Scopes:                []string{"scope-a", "scope-b"},
-				GatewayConsumerSseUrl: "https://gateway.example.com/events/sse/sub-1",
+				GatewayConsumerSSEURL: "https://gateway.example.com/events/sse/sub-1",
 				OwnerAppName:          "consumer-app",
 				OwnerTeamName:         "platform--narvi",
 				TargetEventType:       "de.telekom.eni.quickstart.v1",
@@ -175,8 +175,8 @@ var _ = Describe("EventSubscription Repository", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(owner.ID).To(Equal(appID))
 
-			Expect(sub.GatewaySseURL).NotTo(BeNil())
-			Expect(*sub.GatewaySseURL).To(Equal("https://gateway.example.com/events/sse/sub-1"))
+			Expect(sub.GatewaySSEURL).NotTo(BeNil())
+			Expect(*sub.GatewaySSEURL).To(Equal("https://gateway.example.com/events/sse/sub-1"))
 
 			// Target should be nil (no exposure found).
 			hasTarget, err := sub.QueryTarget().Exist(ctx)

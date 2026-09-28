@@ -11,7 +11,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestApiSubscription(t *testing.T) {
+func TestAPISubscription(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "ApiSubscription Suite")
 }

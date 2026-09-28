@@ -48,7 +48,7 @@ HTTP Request (POST /graphql/query)
 
 ### Data Model
 
-10 entities as ent schemas: **Team**, **Group**, **Environment**, **Zone**, **Application**, **ApiExposure**, **ApiSubscription**, **Approval**, **ApprovalRequest**, **PermissionSet**.
+10 entities as ent schemas: **Team**, **Group**, **Environment**, **Zone**, **Application**, **APIExposure**, **APISubscription**, **Approval**, **ApprovalRequest**, **PermissionSet**.
 
 Embedded types stored as JSON fields: Member, Upstream, ApprovalConfig, ApiInfo, RequesterInfo, DeciderInfo, Decision, AvailableTransition, ResourceStatus, Permission.
 
@@ -58,7 +58,7 @@ Embedded types stored as JSON fields: Member, Upstream, ApprovalConfig, ApiInfo,
 |-------------------------------|-------------------------------------------------------------|
 | Team                          | `WHERE name IN (viewer.teams)`                              |
 | Application                   | `WHERE owner_team.name IN (viewer.teams)`                   |
-| ApiExposure / ApiSubscription | Via application → owner_team edge                           |
+| APIExposure / APISubscription | Via application → owner_team edge                           |
 | PermissionSet                 | Via application → owner_team edge                           |
 | Approval / ApprovalRequest    | Visible to both subscriber's team AND exposure owner's team |
 | Group, Zone, Environment      | No filtering (public reference data)                        |

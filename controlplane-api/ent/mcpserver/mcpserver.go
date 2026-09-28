@@ -43,8 +43,8 @@ const (
 	FieldSpecification = "specification"
 	// FieldCategory holds the string denoting the category field in the database.
 	FieldCategory = "category"
-	// FieldOauth2Scopes holds the string denoting the oauth2_scopes field in the database.
-	FieldOauth2Scopes = "oauth2_scopes"
+	// FieldOAuth2Scopes holds the string denoting the oauth2_scopes field in the database.
+	FieldOAuth2Scopes = "oauth2_scopes"
 	// FieldActive holds the string denoting the active field in the database.
 	FieldActive = "active"
 	// EdgeOwner holds the string denoting the owner edge name in mutations.
@@ -83,7 +83,7 @@ var Columns = []string{
 	FieldDescription,
 	FieldSpecification,
 	FieldCategory,
-	FieldOauth2Scopes,
+	FieldOAuth2Scopes,
 	FieldActive,
 }
 
@@ -159,7 +159,7 @@ func StatusPhaseValidator(sp StatusPhase) error {
 	}
 }
 
-// OrderOption defines the ordering options for the McpServer queries.
+// OrderOption defines the ordering options for the MCPServer queries.
 type OrderOption func(*sql.Selector)
 
 // ByID orders the results by the id field.

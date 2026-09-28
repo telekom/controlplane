@@ -15,8 +15,8 @@ import (
 
 var _ = Describe("mapApplicationInfo", func() {
 	It("should map an application together with zone and owning team", func() {
-		ids := []model.ExternalId{{Id: "z-123", Scheme: "inventory"}, {Id: "a-456", Scheme: "catalog"}}
-		app := &ent.Application{ID: 3, Name: "app-alpha", ExternalIds: ids}
+		ids := []model.ExternalID{{ID: "z-123", Scheme: "inventory"}, {ID: "a-456", Scheme: "catalog"}}
+		app := &ent.Application{ID: 3, Name: "app-alpha", ExternalIDs: ids}
 		z := &ent.Zone{ID: 7, Name: "zone-eu", Visibility: zone.VisibilityEnterprise}
 		team := &ent.Team{ID: 11, Name: "team-alpha", Email: "alpha@test.dev"}
 		group := &ent.Group{ID: 13, Name: "group-a"}
@@ -25,7 +25,7 @@ var _ = Describe("mapApplicationInfo", func() {
 		Expect(info).NotTo(BeNil())
 		Expect(info.ID).To(Equal(3))
 		Expect(info.Name).To(Equal("app-alpha"))
-		Expect(info.ExternalIds).To(Equal(ids))
+		Expect(info.ExternalIDs).To(Equal(ids))
 		Expect(info.Zone).To(BeIdenticalTo(z))
 		Expect(info.OwnerTeam).NotTo(BeNil())
 		Expect(info.OwnerTeam.Name).To(Equal("team-alpha"))

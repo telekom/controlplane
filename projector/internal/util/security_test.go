@@ -20,20 +20,20 @@ func TestSecurity(t *testing.T) {
 }
 
 var _ = Describe("Credential mappers nil-safety", func() {
-	It("MapCrBasicAuthToCpApi returns nil for nil input", func() {
-		Expect(util.MapCrBasicAuthToCpApi(nil)).To(BeNil())
+	It("MapCRBasicAuthToCPAPI returns nil for nil input", func() {
+		Expect(util.MapCRBasicAuthToCPAPI(nil)).To(BeNil())
 	})
 
-	It("MapCrOAuthToCpApi returns nil for nil input", func() {
-		Expect(util.MapCrOAuthToCpApi(nil)).To(BeNil())
+	It("MapCROAuthToCPAPI returns nil for nil input", func() {
+		Expect(util.MapCROAuthToCPAPI(nil)).To(BeNil())
 	})
 
-	It("MapCrExternalIdpToCpApi returns nil for nil input", func() {
-		Expect(util.MapCrExternalIdpToCpApi(nil)).To(BeNil())
+	It("MapCRExternalIDPToCPAPI returns nil for nil input", func() {
+		Expect(util.MapCRExternalIDPToCPAPI(nil)).To(BeNil())
 	})
 
-	It("MapCrExternalIdpToCpApi maps nil nested creds to nil without panic", func() {
-		idp := util.MapCrExternalIdpToCpApi(&apiv1.ExternalIdentityProvider{
+	It("MapCRExternalIDPToCPAPI maps nil nested creds to nil without panic", func() {
+		idp := util.MapCRExternalIDPToCPAPI(&apiv1.ExternalIdentityProvider{
 			TokenEndpoint: "https://idp/token",
 		})
 		Expect(idp).NotTo(BeNil())

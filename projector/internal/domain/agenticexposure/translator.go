@@ -55,10 +55,10 @@ func (t *Translator) Translate(_ context.Context, obj *agenticv1.AgenticExposure
 		security = &model.AgenticExposureSecurity{}
 		security.M2M = &model.Machine2MachineAuthentication{}
 		if obj.Spec.Security.M2M.Basic != nil {
-			security.M2M.Basic = util.MapAgenticBasicAuthToCpApi(obj.Spec.Security.M2M.Basic)
+			security.M2M.Basic = util.MapAgenticBasicAuthToCPAPI(obj.Spec.Security.M2M.Basic)
 		}
 		if obj.Spec.Security.M2M.ExternalIDP != nil {
-			security.M2M.ExternalIDP = util.MapAgenticExternalIdpToCpApi(obj.Spec.Security.M2M.ExternalIDP)
+			security.M2M.ExternalIDP = util.MapAgenticExternalIDPToCPAPI(obj.Spec.Security.M2M.ExternalIDP)
 		}
 		if len(obj.Spec.Security.M2M.Scopes) > 0 {
 			security.M2M.Scopes = obj.Spec.Security.M2M.Scopes

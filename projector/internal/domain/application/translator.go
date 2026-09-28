@@ -85,12 +85,12 @@ func (t *Translator) Translate(_ context.Context, obj *appv1.Application) (*Appl
 		currentExpiresAt = &t
 	}
 
-	var externalIds []model.ExternalId
+	var externalIDs []model.ExternalID
 	if len(obj.Spec.ExternalIds) > 0 {
-		externalIds = []model.ExternalId{}
+		externalIDs = []model.ExternalID{}
 		for i := range obj.Spec.ExternalIds {
-			externalIds = append(externalIds, model.ExternalId{
-				Id:     obj.Spec.ExternalIds[i].Id,
+			externalIDs = append(externalIDs, model.ExternalID{
+				ID:     obj.Spec.ExternalIds[i].Id,
 				Scheme: obj.Spec.ExternalIds[i].Scheme,
 			},
 			)
@@ -130,8 +130,8 @@ func (t *Translator) Translate(_ context.Context, obj *appv1.Application) (*Appl
 		CurrentExpiresAt:      currentExpiresAt,
 		SecretRotationPhase:   rotationPhase,
 		SecretRotationMessage: rotationMessage,
-		ExternalIds:           externalIds,
-		IpRestrictions: model.IpRestrictions{
+		ExternalIDs:           externalIDs,
+		IPRestrictions: model.IPRestrictions{
 			Allow: ipRestrictionsAllow,
 			Deny:  ipRestrictionsDeny,
 		},

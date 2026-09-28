@@ -31,7 +31,7 @@ import (
 type mockAppDeps struct {
 	teamIDs          map[string]int
 	zoneIDs          map[string]int
-	permissionSetIds map[string]int
+	permissionSetIDs map[string]int
 	teamErr          error // if non-nil, FindTeamID always returns this error
 	zoneErr          error // if non-nil, FindZoneID always returns this error
 	permissionSetErr error // if non-nil, FindPermissionSetIDByApplicationOwner always returns this error
@@ -61,7 +61,7 @@ func (m *mockAppDeps) FindPermissionSetIDByApplicationOwner(_ context.Context, a
 	if m.permissionSetErr != nil {
 		return 0, m.permissionSetErr
 	}
-	if id, ok := m.permissionSetIds[appName+":"+teamName]; ok {
+	if id, ok := m.permissionSetIDs[appName+":"+teamName]; ok {
 		return id, nil
 	}
 	return 0, fmt.Errorf("permissionSet %s: %w", appName+":"+teamName, infrastructure.ErrEntityNotFound)
@@ -124,17 +124,17 @@ var _ = Describe("Application Repository", func() {
 				TeamName:            "platform--narvi",
 				ZoneName:            "caas",
 				SecretRotationPhase: "DONE",
-				ExternalIds: []model.ExternalId{
-					model.ExternalId{
-						Id:     "abc",
+				ExternalIDs: []model.ExternalID{
+					model.ExternalID{
+						ID:     "abc",
 						Scheme: "schema1",
 					},
-					model.ExternalId{
-						Id:     "123",
+					model.ExternalID{
+						ID:     "123",
 						Scheme: "schema2",
 					},
 				},
-				IpRestrictions: model.IpRestrictions{
+				IPRestrictions: model.IPRestrictions{
 					Allow: []string{"127.0.0.1", "127.0.0.2"},
 					Deny:  []string{"127.0.0.4", "127.0.0.5"},
 				},
@@ -147,13 +147,13 @@ var _ = Describe("Application Repository", func() {
 			Expect(app.ClientID).ToNot(BeNil())
 			Expect(*app.ClientID).To(Equal("client-123"))
 
-			Expect(app.ExternalIds).To(ContainElements(
-				model.ExternalId{
-					Id:     "abc",
+			Expect(app.ExternalIDs).To(ContainElements(
+				model.ExternalID{
+					ID:     "abc",
 					Scheme: "schema1",
 				},
-				model.ExternalId{
-					Id:     "123",
+				model.ExternalID{
+					ID:     "123",
 					Scheme: "schema2",
 				},
 			),
@@ -285,7 +285,7 @@ var _ = Describe("Application Repository", func() {
 			_, err := client.Zone.UpdateOneID(zoneID).SetPermissionsURL("https://perms.example.com").Save(ctx)
 			Expect(err).NotTo(HaveOccurred())
 
-			deps.permissionSetIds = map[string]int{"perm-app:platform--narvi": 42}
+			deps.permissionSetIDs = map[string]int{"perm-app:platform--narvi": 42}
 			data := &application.ApplicationData{
 				Meta:                shared.NewMetadata("prod--platform--narvi", "perm-app", nil),
 				StatusPhase:         "READY",
@@ -326,7 +326,7 @@ var _ = Describe("Application Repository", func() {
 		})
 
 		It("should not set permissionsURL when zone has no permissionsURL", func() {
-			deps.permissionSetIds = map[string]int{"no-zone-url-app:platform--narvi": 42}
+			deps.permissionSetIDs = map[string]int{"no-zone-url-app:platform--narvi": 42}
 			data := &application.ApplicationData{
 				Meta:                shared.NewMetadata("prod--platform--narvi", "no-zone-url-app", nil),
 				StatusPhase:         "READY",
@@ -348,7 +348,7 @@ var _ = Describe("Application Repository", func() {
 			_, err := client.Zone.UpdateOneID(zoneID).SetPermissionsURL("https://perms.example.com").Save(ctx)
 			Expect(err).NotTo(HaveOccurred())
 
-			deps.permissionSetIds = map[string]int{"nil-client-app:platform--narvi": 42}
+			deps.permissionSetIDs = map[string]int{"nil-client-app:platform--narvi": 42}
 			data := &application.ApplicationData{
 				Meta:                shared.NewMetadata("prod--platform--narvi", "nil-client-app", nil),
 				StatusPhase:         "READY",
@@ -370,7 +370,7 @@ var _ = Describe("Application Repository", func() {
 			_, err := client.Zone.UpdateOneID(zoneID).SetPermissionsURL("https://perms.example.com").Save(ctx)
 			Expect(err).NotTo(HaveOccurred())
 
-			deps.permissionSetIds = map[string]int{"flip-app:platform--narvi": 42}
+			deps.permissionSetIDs = map[string]int{"flip-app:platform--narvi": 42}
 			data := &application.ApplicationData{
 				Meta:                shared.NewMetadata("prod--platform--narvi", "flip-app", nil),
 				StatusPhase:         "READY",
@@ -388,7 +388,7 @@ var _ = Describe("Application Repository", func() {
 			Expect(app.PermissionsURL).NotTo(BeNil())
 
 			// Remove permissionSet and re-upsert — permissionsURL should be cleared.
-			deps.permissionSetIds = map[string]int{}
+			deps.permissionSetIDs = map[string]int{}
 			Expect(repo.Upsert(ctx, data)).To(Succeed())
 
 			app, err = client.Application.Query().Where(entapp.NameEQ("flip-app")).Only(ctx)
@@ -432,7 +432,7 @@ var _ = Describe("Application Repository", func() {
 			// Create child ApiExposure to verify cascade.
 			app, err := client.Application.Query().Where(entapp.NameEQ("del-app")).Only(ctx)
 			Expect(err).NotTo(HaveOccurred())
-			_, err = client.ApiExposure.Create().
+			_, err = client.APIExposure.Create().
 				SetBasePath("/api/v1").
 				SetNamespace("platform--narvi").
 				SetOwnerID(app.ID).
@@ -448,7 +448,7 @@ var _ = Describe("Application Repository", func() {
 			Expect(count).To(Equal(0))
 
 			// Verify child ApiExposure was cascade-deleted.
-			expCount, err := client.ApiExposure.Query().Count(ctx)
+			expCount, err := client.APIExposure.Query().Count(ctx)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(expCount).To(Equal(0))
 		})

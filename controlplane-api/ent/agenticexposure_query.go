@@ -32,7 +32,7 @@ type AgenticExposureQuery struct {
 	inters                 []Interceptor
 	predicates             []predicate.AgenticExposure
 	withOwner              *ApplicationQuery
-	withMcpServer          *McpServerQuery
+	withMCPServer          *MCPServerQuery
 	withAgentCard          *AgentCardQuery
 	withSubscriptions      *AgenticSubscriptionQuery
 	withFKs                bool
@@ -97,9 +97,9 @@ func (_q *AgenticExposureQuery) QueryOwner() *ApplicationQuery {
 	return query
 }
 
-// QueryMcpServer chains the current query on the "mcp_server" edge.
-func (_q *AgenticExposureQuery) QueryMcpServer() *McpServerQuery {
-	query := (&McpServerClient{config: _q.config}).Query()
+// QueryMCPServer chains the current query on the "MCP_server" edge.
+func (_q *AgenticExposureQuery) QueryMCPServer() *MCPServerQuery {
+	query := (&MCPServerClient{config: _q.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := _q.prepareQuery(ctx); err != nil {
 			return nil, err
@@ -111,7 +111,7 @@ func (_q *AgenticExposureQuery) QueryMcpServer() *McpServerQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(agenticexposure.Table, agenticexposure.FieldID, selector),
 			sqlgraph.To(mcpserver.Table, mcpserver.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, agenticexposure.McpServerTable, agenticexposure.McpServerColumn),
+			sqlgraph.Edge(sqlgraph.M2O, true, agenticexposure.MCPServerTable, agenticexposure.MCPServerColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -356,7 +356,7 @@ func (_q *AgenticExposureQuery) Clone() *AgenticExposureQuery {
 		inters:            append([]Interceptor{}, _q.inters...),
 		predicates:        append([]predicate.AgenticExposure{}, _q.predicates...),
 		withOwner:         _q.withOwner.Clone(),
-		withMcpServer:     _q.withMcpServer.Clone(),
+		withMCPServer:     _q.withMCPServer.Clone(),
 		withAgentCard:     _q.withAgentCard.Clone(),
 		withSubscriptions: _q.withSubscriptions.Clone(),
 		// clone intermediate query.
@@ -376,14 +376,14 @@ func (_q *AgenticExposureQuery) WithOwner(opts ...func(*ApplicationQuery)) *Agen
 	return _q
 }
 
-// WithMcpServer tells the query-builder to eager-load the nodes that are connected to
-// the "mcp_server" edge. The optional arguments are used to configure the query builder of the edge.
-func (_q *AgenticExposureQuery) WithMcpServer(opts ...func(*McpServerQuery)) *AgenticExposureQuery {
-	query := (&McpServerClient{config: _q.config}).Query()
+// WithMCPServer tells the query-builder to eager-load the nodes that are connected to
+// the "MCP_server" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *AgenticExposureQuery) WithMCPServer(opts ...func(*MCPServerQuery)) *AgenticExposureQuery {
+	query := (&MCPServerClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	_q.withMcpServer = query
+	_q.withMCPServer = query
 	return _q
 }
 
@@ -496,12 +496,12 @@ func (_q *AgenticExposureQuery) sqlAll(ctx context.Context, hooks ...queryHook) 
 		_spec       = _q.querySpec()
 		loadedTypes = [4]bool{
 			_q.withOwner != nil,
-			_q.withMcpServer != nil,
+			_q.withMCPServer != nil,
 			_q.withAgentCard != nil,
 			_q.withSubscriptions != nil,
 		}
 	)
-	if _q.withOwner != nil || _q.withMcpServer != nil || _q.withAgentCard != nil {
+	if _q.withOwner != nil || _q.withMCPServer != nil || _q.withAgentCard != nil {
 		withFKs = true
 	}
 	if withFKs {
@@ -534,9 +534,9 @@ func (_q *AgenticExposureQuery) sqlAll(ctx context.Context, hooks ...queryHook) 
 			return nil, err
 		}
 	}
-	if query := _q.withMcpServer; query != nil {
-		if err := _q.loadMcpServer(ctx, query, nodes, nil,
-			func(n *AgenticExposure, e *McpServer) { n.Edges.McpServer = e }); err != nil {
+	if query := _q.withMCPServer; query != nil {
+		if err := _q.loadMCPServer(ctx, query, nodes, nil,
+			func(n *AgenticExposure, e *MCPServer) { n.Edges.MCPServer = e }); err != nil {
 			return nil, err
 		}
 	}
@@ -602,7 +602,7 @@ func (_q *AgenticExposureQuery) loadOwner(ctx context.Context, query *Applicatio
 	}
 	return nil
 }
-func (_q *AgenticExposureQuery) loadMcpServer(ctx context.Context, query *McpServerQuery, nodes []*AgenticExposure, init func(*AgenticExposure), assign func(*AgenticExposure, *McpServer)) error {
+func (_q *AgenticExposureQuery) loadMCPServer(ctx context.Context, query *MCPServerQuery, nodes []*AgenticExposure, init func(*AgenticExposure), assign func(*AgenticExposure, *MCPServer)) error {
 	ids := make([]int, 0, len(nodes))
 	nodeids := make(map[int][]*AgenticExposure)
 	for i := range nodes {

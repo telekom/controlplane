@@ -61,9 +61,9 @@ The Projector watches resources from the following domains:
 | [Admin](./admin.mdx) | Zone | Deployment targets with gateway and IDP configuration |
 | [Organization](./organization.mdx) | Group, Team | Organizational structure and team membership |
 | [Application](./application.mdx) | Application | Applications with their identity and zone assignments |
-| [API](./api.mdx) | ApiExposure, ApiSubscription | Exposed APIs and their subscriptions |
+| [API](./api.mdx) | API, APIExposure, APISubscription | Exposed APIs and their subscriptions |
 | [Approval](./approval.mdx) | Approval, ApprovalRequest | Approval workflows and pending requests |
-| [Agentic](./agentic.mdx) | McpServer, AgentCard, McpExposure, McpSubscription | MCP servers and A2A agent cards, their exposures, and subscriptions |
+| [Agentic](./agentic.mdx) | MCPServer, AgentCard, AgenticExposure, AgenticSubscription | MCP servers and A2A agent cards, their exposures, and subscriptions |
 
 ### Processing Pipeline
 
@@ -94,7 +94,7 @@ graph LR
 
 ### Dependency Resolution
 
-Resources in the database form a hierarchy — an Application references a Team and a Zone, an ApiExposure references an Application, and so on. When the Projector processes a resource whose parent has not been synced yet, it returns a *dependency missing* error and retries after a short delay (configurable via `DEPENDENCY_DELAY`).
+Resources in the database form a hierarchy — an Application references a Team and a Zone, an APIExposure references an Application, and so on. When the Projector processes a resource whose parent has not been synced yet, it returns a *dependency missing* error and retries after a short delay (configurable via `DEPENDENCY_DELAY`).
 
 To avoid repeated database lookups for foreign keys, the Projector uses a high-performance in-memory cache (based on [Ristretto](https://github.com/dgraph-io/ristretto)) combined with request deduplication. This means concurrent reconciliations for resources with the same parent only trigger a single database query.
 
@@ -116,16 +116,18 @@ erDiagram
     Group ||--o{ Team : "contains"
     Team ||--o{ Application : "owns"
     Team ||--o{ Member : "has"
-    Team ||--o{ McpServer : "owns"
+    Team ||--o{ API : "owns"
+    Team ||--o{ MCPServer : "owns"
     Team ||--o{ AgentCard : "owns"
-    Application ||--o{ ApiExposure : "exposes"
-    Application ||--o{ ApiSubscription : "subscribes"
-    ApiExposure |o--o{ ApiSubscription : "target of"
-    ApiSubscription ||--o| Approval : "has"
-    ApiSubscription ||--o| ApprovalRequest : "has"
+    API ||--o{ APIExposure : "exposed as"
+    Application ||--o{ APIExposure : "exposes"
+    Application ||--o{ APISubscription : "subscribes"
+    APIExposure |o--o{ APISubscription : "target of"
+    APISubscription ||--o| Approval : "has"
+    APISubscription ||--o| ApprovalRequest : "has"
     Application ||--o{ AgenticExposure : "exposes"
     Application ||--o{ AgenticSubscription : "subscribes"
-    McpServer ||--o{ AgenticExposure : "exposed as"
+    MCPServer ||--o{ AgenticExposure : "exposed as"
     AgentCard ||--o{ AgenticExposure : "exposed as"
     AgenticExposure |o--o{ AgenticSubscription : "target of"
     AgenticSubscription ||--o| Approval : "has"
@@ -166,9 +168,9 @@ For approvals and approval requests, the isolation uses an **OR** rule: a resour
 
 #### Cross-Tenant Safety
 
-When navigating relationships that cross team boundaries (for example, from a subscription to the target exposure owned by another team), the API returns **reduced types** (`TeamInfo`, `ApplicationInfo`, `ApiExposureInfo`, `ApiSubscriptionInfo`, `EventExposureInfo`, `EventSubscriptionInfo`, `AgenticExposureInfo`, `AgenticSubscriptionInfo`) that expose only safe, non-sensitive fields. This prevents data leakage through graph traversal.
+When navigating relationships that cross team boundaries (for example, from a subscription to the target exposure owned by another team), the API returns **reduced types** (`TeamInfo`, `ApplicationInfo`, `APIExposureInfo`, `APISubscriptionInfo`, `EventExposureInfo`, `EventSubscriptionInfo`, `AgenticExposureInfo`, `AgenticSubscriptionInfo`) that expose only safe, non-sensitive fields. This prevents data leakage through graph traversal.
 
-`Approval.subscription` and `ApprovalRequest.subscription` return the non-null `SubscriptionInfo` interface, implemented by `ApiSubscriptionInfo`, `EventSubscriptionInfo`, and `AgenticSubscriptionInfo`. Select the common fields `id: ID!` and `ownerApplication: ApplicationInfo!` directly or through a fragment on `SubscriptionInfo`. Use concrete fragments for variant-specific fields:
+`Approval.subscription` and `ApprovalRequest.subscription` return the non-null `SubscriptionInfo` interface, implemented by `APISubscriptionInfo`, `EventSubscriptionInfo`, and `AgenticSubscriptionInfo`. Select the common fields `id: ID!` and `ownerApplication: ApplicationInfo!` directly or through a fragment on `SubscriptionInfo`. Use concrete fragments for variant-specific fields:
 
 ```graphql
 query {
@@ -178,7 +180,7 @@ query {
         subscription {
           id
           ownerApplication { id name }
-          ... on ApiSubscriptionInfo { basePath }
+          ... on APISubscriptionInfo { basePath }
           ... on EventSubscriptionInfo { eventType }
           ... on AgenticSubscriptionInfo { basePath }
         }

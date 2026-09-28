@@ -23,33 +23,33 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 )
 
-// ApiExposureUpdate is the builder for updating ApiExposure entities.
-type ApiExposureUpdate struct {
+// APIExposureUpdate is the builder for updating APIExposure entities.
+type APIExposureUpdate struct {
 	config
 	hooks    []Hook
-	mutation *ApiExposureMutation
+	mutation *APIExposureMutation
 }
 
-// Where appends a list predicates to the ApiExposureUpdate builder.
-func (_u *ApiExposureUpdate) Where(ps ...predicate.ApiExposure) *ApiExposureUpdate {
+// Where appends a list predicates to the APIExposureUpdate builder.
+func (_u *APIExposureUpdate) Where(ps ...predicate.APIExposure) *APIExposureUpdate {
 	_u.mutation.Where(ps...)
 	return _u
 }
 
 // SetLastModifiedAt sets the "last_modified_at" field.
-func (_u *ApiExposureUpdate) SetLastModifiedAt(v time.Time) *ApiExposureUpdate {
+func (_u *APIExposureUpdate) SetLastModifiedAt(v time.Time) *APIExposureUpdate {
 	_u.mutation.SetLastModifiedAt(v)
 	return _u
 }
 
 // SetStatusPhase sets the "status_phase" field.
-func (_u *ApiExposureUpdate) SetStatusPhase(v apiexposure.StatusPhase) *ApiExposureUpdate {
+func (_u *APIExposureUpdate) SetStatusPhase(v apiexposure.StatusPhase) *APIExposureUpdate {
 	_u.mutation.SetStatusPhase(v)
 	return _u
 }
 
 // SetNillableStatusPhase sets the "status_phase" field if the given value is not nil.
-func (_u *ApiExposureUpdate) SetNillableStatusPhase(v *apiexposure.StatusPhase) *ApiExposureUpdate {
+func (_u *APIExposureUpdate) SetNillableStatusPhase(v *apiexposure.StatusPhase) *APIExposureUpdate {
 	if v != nil {
 		_u.SetStatusPhase(*v)
 	}
@@ -57,19 +57,19 @@ func (_u *ApiExposureUpdate) SetNillableStatusPhase(v *apiexposure.StatusPhase) 
 }
 
 // ClearStatusPhase clears the value of the "status_phase" field.
-func (_u *ApiExposureUpdate) ClearStatusPhase() *ApiExposureUpdate {
+func (_u *APIExposureUpdate) ClearStatusPhase() *APIExposureUpdate {
 	_u.mutation.ClearStatusPhase()
 	return _u
 }
 
 // SetStatusMessage sets the "status_message" field.
-func (_u *ApiExposureUpdate) SetStatusMessage(v string) *ApiExposureUpdate {
+func (_u *APIExposureUpdate) SetStatusMessage(v string) *APIExposureUpdate {
 	_u.mutation.SetStatusMessage(v)
 	return _u
 }
 
 // SetNillableStatusMessage sets the "status_message" field if the given value is not nil.
-func (_u *ApiExposureUpdate) SetNillableStatusMessage(v *string) *ApiExposureUpdate {
+func (_u *APIExposureUpdate) SetNillableStatusMessage(v *string) *APIExposureUpdate {
 	if v != nil {
 		_u.SetStatusMessage(*v)
 	}
@@ -77,19 +77,19 @@ func (_u *ApiExposureUpdate) SetNillableStatusMessage(v *string) *ApiExposureUpd
 }
 
 // ClearStatusMessage clears the value of the "status_message" field.
-func (_u *ApiExposureUpdate) ClearStatusMessage() *ApiExposureUpdate {
+func (_u *APIExposureUpdate) ClearStatusMessage() *APIExposureUpdate {
 	_u.mutation.ClearStatusMessage()
 	return _u
 }
 
 // SetEnvironment sets the "environment" field.
-func (_u *ApiExposureUpdate) SetEnvironment(v string) *ApiExposureUpdate {
+func (_u *APIExposureUpdate) SetEnvironment(v string) *APIExposureUpdate {
 	_u.mutation.SetEnvironment(v)
 	return _u
 }
 
 // SetNillableEnvironment sets the "environment" field if the given value is not nil.
-func (_u *ApiExposureUpdate) SetNillableEnvironment(v *string) *ApiExposureUpdate {
+func (_u *APIExposureUpdate) SetNillableEnvironment(v *string) *APIExposureUpdate {
 	if v != nil {
 		_u.SetEnvironment(*v)
 	}
@@ -97,19 +97,19 @@ func (_u *ApiExposureUpdate) SetNillableEnvironment(v *string) *ApiExposureUpdat
 }
 
 // ClearEnvironment clears the value of the "environment" field.
-func (_u *ApiExposureUpdate) ClearEnvironment() *ApiExposureUpdate {
+func (_u *APIExposureUpdate) ClearEnvironment() *APIExposureUpdate {
 	_u.mutation.ClearEnvironment()
 	return _u
 }
 
 // SetNamespace sets the "namespace" field.
-func (_u *ApiExposureUpdate) SetNamespace(v string) *ApiExposureUpdate {
+func (_u *APIExposureUpdate) SetNamespace(v string) *APIExposureUpdate {
 	_u.mutation.SetNamespace(v)
 	return _u
 }
 
 // SetNillableNamespace sets the "namespace" field if the given value is not nil.
-func (_u *ApiExposureUpdate) SetNillableNamespace(v *string) *ApiExposureUpdate {
+func (_u *APIExposureUpdate) SetNillableNamespace(v *string) *APIExposureUpdate {
 	if v != nil {
 		_u.SetNamespace(*v)
 	}
@@ -117,13 +117,13 @@ func (_u *ApiExposureUpdate) SetNillableNamespace(v *string) *ApiExposureUpdate 
 }
 
 // SetBasePath sets the "base_path" field.
-func (_u *ApiExposureUpdate) SetBasePath(v string) *ApiExposureUpdate {
+func (_u *APIExposureUpdate) SetBasePath(v string) *APIExposureUpdate {
 	_u.mutation.SetBasePath(v)
 	return _u
 }
 
 // SetNillableBasePath sets the "base_path" field if the given value is not nil.
-func (_u *ApiExposureUpdate) SetNillableBasePath(v *string) *ApiExposureUpdate {
+func (_u *APIExposureUpdate) SetNillableBasePath(v *string) *APIExposureUpdate {
 	if v != nil {
 		_u.SetBasePath(*v)
 	}
@@ -131,13 +131,13 @@ func (_u *ApiExposureUpdate) SetNillableBasePath(v *string) *ApiExposureUpdate {
 }
 
 // SetVisibility sets the "visibility" field.
-func (_u *ApiExposureUpdate) SetVisibility(v apiexposure.Visibility) *ApiExposureUpdate {
+func (_u *APIExposureUpdate) SetVisibility(v apiexposure.Visibility) *APIExposureUpdate {
 	_u.mutation.SetVisibility(v)
 	return _u
 }
 
 // SetNillableVisibility sets the "visibility" field if the given value is not nil.
-func (_u *ApiExposureUpdate) SetNillableVisibility(v *apiexposure.Visibility) *ApiExposureUpdate {
+func (_u *APIExposureUpdate) SetNillableVisibility(v *apiexposure.Visibility) *APIExposureUpdate {
 	if v != nil {
 		_u.SetVisibility(*v)
 	}
@@ -145,13 +145,13 @@ func (_u *ApiExposureUpdate) SetNillableVisibility(v *apiexposure.Visibility) *A
 }
 
 // SetActive sets the "active" field.
-func (_u *ApiExposureUpdate) SetActive(v bool) *ApiExposureUpdate {
+func (_u *APIExposureUpdate) SetActive(v bool) *APIExposureUpdate {
 	_u.mutation.SetActive(v)
 	return _u
 }
 
 // SetNillableActive sets the "active" field if the given value is not nil.
-func (_u *ApiExposureUpdate) SetNillableActive(v *bool) *ApiExposureUpdate {
+func (_u *APIExposureUpdate) SetNillableActive(v *bool) *APIExposureUpdate {
 	if v != nil {
 		_u.SetActive(*v)
 	}
@@ -159,43 +159,43 @@ func (_u *ApiExposureUpdate) SetNillableActive(v *bool) *ApiExposureUpdate {
 }
 
 // ClearActive clears the value of the "active" field.
-func (_u *ApiExposureUpdate) ClearActive() *ApiExposureUpdate {
+func (_u *APIExposureUpdate) ClearActive() *APIExposureUpdate {
 	_u.mutation.ClearActive()
 	return _u
 }
 
 // SetFeatures sets the "features" field.
-func (_u *ApiExposureUpdate) SetFeatures(v []string) *ApiExposureUpdate {
+func (_u *APIExposureUpdate) SetFeatures(v []string) *APIExposureUpdate {
 	_u.mutation.SetFeatures(v)
 	return _u
 }
 
 // AppendFeatures appends value to the "features" field.
-func (_u *ApiExposureUpdate) AppendFeatures(v []string) *ApiExposureUpdate {
+func (_u *APIExposureUpdate) AppendFeatures(v []string) *APIExposureUpdate {
 	_u.mutation.AppendFeatures(v)
 	return _u
 }
 
 // SetUpstreams sets the "upstreams" field.
-func (_u *ApiExposureUpdate) SetUpstreams(v []model.Upstream) *ApiExposureUpdate {
+func (_u *APIExposureUpdate) SetUpstreams(v []model.Upstream) *APIExposureUpdate {
 	_u.mutation.SetUpstreams(v)
 	return _u
 }
 
 // AppendUpstreams appends value to the "upstreams" field.
-func (_u *ApiExposureUpdate) AppendUpstreams(v []model.Upstream) *ApiExposureUpdate {
+func (_u *APIExposureUpdate) AppendUpstreams(v []model.Upstream) *APIExposureUpdate {
 	_u.mutation.AppendUpstreams(v)
 	return _u
 }
 
 // SetSecurity sets the "security" field.
-func (_u *ApiExposureUpdate) SetSecurity(v model.ApiExposureSecurity) *ApiExposureUpdate {
+func (_u *APIExposureUpdate) SetSecurity(v model.APIExposureSecurity) *APIExposureUpdate {
 	_u.mutation.SetSecurity(v)
 	return _u
 }
 
 // SetNillableSecurity sets the "security" field if the given value is not nil.
-func (_u *ApiExposureUpdate) SetNillableSecurity(v *model.ApiExposureSecurity) *ApiExposureUpdate {
+func (_u *APIExposureUpdate) SetNillableSecurity(v *model.APIExposureSecurity) *APIExposureUpdate {
 	if v != nil {
 		_u.SetSecurity(*v)
 	}
@@ -203,19 +203,19 @@ func (_u *ApiExposureUpdate) SetNillableSecurity(v *model.ApiExposureSecurity) *
 }
 
 // ClearSecurity clears the value of the "security" field.
-func (_u *ApiExposureUpdate) ClearSecurity() *ApiExposureUpdate {
+func (_u *APIExposureUpdate) ClearSecurity() *APIExposureUpdate {
 	_u.mutation.ClearSecurity()
 	return _u
 }
 
 // SetTraffic sets the "traffic" field.
-func (_u *ApiExposureUpdate) SetTraffic(v model.Traffic) *ApiExposureUpdate {
+func (_u *APIExposureUpdate) SetTraffic(v model.Traffic) *APIExposureUpdate {
 	_u.mutation.SetTraffic(v)
 	return _u
 }
 
 // SetNillableTraffic sets the "traffic" field if the given value is not nil.
-func (_u *ApiExposureUpdate) SetNillableTraffic(v *model.Traffic) *ApiExposureUpdate {
+func (_u *APIExposureUpdate) SetNillableTraffic(v *model.Traffic) *APIExposureUpdate {
 	if v != nil {
 		_u.SetTraffic(*v)
 	}
@@ -223,19 +223,19 @@ func (_u *ApiExposureUpdate) SetNillableTraffic(v *model.Traffic) *ApiExposureUp
 }
 
 // ClearTraffic clears the value of the "traffic" field.
-func (_u *ApiExposureUpdate) ClearTraffic() *ApiExposureUpdate {
+func (_u *APIExposureUpdate) ClearTraffic() *APIExposureUpdate {
 	_u.mutation.ClearTraffic()
 	return _u
 }
 
 // SetApprovalConfig sets the "approval_config" field.
-func (_u *ApiExposureUpdate) SetApprovalConfig(v model.ApprovalConfig) *ApiExposureUpdate {
+func (_u *APIExposureUpdate) SetApprovalConfig(v model.ApprovalConfig) *APIExposureUpdate {
 	_u.mutation.SetApprovalConfig(v)
 	return _u
 }
 
 // SetNillableApprovalConfig sets the "approval_config" field if the given value is not nil.
-func (_u *ApiExposureUpdate) SetNillableApprovalConfig(v *model.ApprovalConfig) *ApiExposureUpdate {
+func (_u *APIExposureUpdate) SetNillableApprovalConfig(v *model.ApprovalConfig) *APIExposureUpdate {
 	if v != nil {
 		_u.SetApprovalConfig(*v)
 	}
@@ -243,13 +243,13 @@ func (_u *ApiExposureUpdate) SetNillableApprovalConfig(v *model.ApprovalConfig) 
 }
 
 // SetAPIVersion sets the "api_version" field.
-func (_u *ApiExposureUpdate) SetAPIVersion(v string) *ApiExposureUpdate {
+func (_u *APIExposureUpdate) SetAPIVersion(v string) *APIExposureUpdate {
 	_u.mutation.SetAPIVersion(v)
 	return _u
 }
 
 // SetNillableAPIVersion sets the "api_version" field if the given value is not nil.
-func (_u *ApiExposureUpdate) SetNillableAPIVersion(v *string) *ApiExposureUpdate {
+func (_u *APIExposureUpdate) SetNillableAPIVersion(v *string) *APIExposureUpdate {
 	if v != nil {
 		_u.SetAPIVersion(*v)
 	}
@@ -257,49 +257,49 @@ func (_u *ApiExposureUpdate) SetNillableAPIVersion(v *string) *ApiExposureUpdate
 }
 
 // ClearAPIVersion clears the value of the "api_version" field.
-func (_u *ApiExposureUpdate) ClearAPIVersion() *ApiExposureUpdate {
+func (_u *APIExposureUpdate) ClearAPIVersion() *APIExposureUpdate {
 	_u.mutation.ClearAPIVersion()
 	return _u
 }
 
 // SetOwnerID sets the "owner" edge to the Application entity by ID.
-func (_u *ApiExposureUpdate) SetOwnerID(id int) *ApiExposureUpdate {
+func (_u *APIExposureUpdate) SetOwnerID(id int) *APIExposureUpdate {
 	_u.mutation.SetOwnerID(id)
 	return _u
 }
 
 // SetOwner sets the "owner" edge to the Application entity.
-func (_u *ApiExposureUpdate) SetOwner(v *Application) *ApiExposureUpdate {
+func (_u *APIExposureUpdate) SetOwner(v *Application) *APIExposureUpdate {
 	return _u.SetOwnerID(v.ID)
 }
 
-// SetAPIID sets the "api" edge to the Api entity by ID.
-func (_u *ApiExposureUpdate) SetAPIID(id int) *ApiExposureUpdate {
+// SetAPIID sets the "api" edge to the API entity by ID.
+func (_u *APIExposureUpdate) SetAPIID(id int) *APIExposureUpdate {
 	_u.mutation.SetAPIID(id)
 	return _u
 }
 
-// SetNillableAPIID sets the "api" edge to the Api entity by ID if the given value is not nil.
-func (_u *ApiExposureUpdate) SetNillableAPIID(id *int) *ApiExposureUpdate {
+// SetNillableAPIID sets the "api" edge to the API entity by ID if the given value is not nil.
+func (_u *APIExposureUpdate) SetNillableAPIID(id *int) *APIExposureUpdate {
 	if id != nil {
 		_u = _u.SetAPIID(*id)
 	}
 	return _u
 }
 
-// SetAPI sets the "api" edge to the Api entity.
-func (_u *ApiExposureUpdate) SetAPI(v *Api) *ApiExposureUpdate {
+// SetAPI sets the "api" edge to the API entity.
+func (_u *APIExposureUpdate) SetAPI(v *API) *APIExposureUpdate {
 	return _u.SetAPIID(v.ID)
 }
 
-// AddSubscriptionIDs adds the "subscriptions" edge to the ApiSubscription entity by IDs.
-func (_u *ApiExposureUpdate) AddSubscriptionIDs(ids ...int) *ApiExposureUpdate {
+// AddSubscriptionIDs adds the "subscriptions" edge to the APISubscription entity by IDs.
+func (_u *APIExposureUpdate) AddSubscriptionIDs(ids ...int) *APIExposureUpdate {
 	_u.mutation.AddSubscriptionIDs(ids...)
 	return _u
 }
 
-// AddSubscriptions adds the "subscriptions" edges to the ApiSubscription entity.
-func (_u *ApiExposureUpdate) AddSubscriptions(v ...*ApiSubscription) *ApiExposureUpdate {
+// AddSubscriptions adds the "subscriptions" edges to the APISubscription entity.
+func (_u *APIExposureUpdate) AddSubscriptions(v ...*APISubscription) *APIExposureUpdate {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
@@ -307,37 +307,37 @@ func (_u *ApiExposureUpdate) AddSubscriptions(v ...*ApiSubscription) *ApiExposur
 	return _u.AddSubscriptionIDs(ids...)
 }
 
-// Mutation returns the ApiExposureMutation object of the builder.
-func (_u *ApiExposureUpdate) Mutation() *ApiExposureMutation {
+// Mutation returns the APIExposureMutation object of the builder.
+func (_u *APIExposureUpdate) Mutation() *APIExposureMutation {
 	return _u.mutation
 }
 
 // ClearOwner clears the "owner" edge to the Application entity.
-func (_u *ApiExposureUpdate) ClearOwner() *ApiExposureUpdate {
+func (_u *APIExposureUpdate) ClearOwner() *APIExposureUpdate {
 	_u.mutation.ClearOwner()
 	return _u
 }
 
-// ClearAPI clears the "api" edge to the Api entity.
-func (_u *ApiExposureUpdate) ClearAPI() *ApiExposureUpdate {
+// ClearAPI clears the "api" edge to the API entity.
+func (_u *APIExposureUpdate) ClearAPI() *APIExposureUpdate {
 	_u.mutation.ClearAPI()
 	return _u
 }
 
-// ClearSubscriptions clears all "subscriptions" edges to the ApiSubscription entity.
-func (_u *ApiExposureUpdate) ClearSubscriptions() *ApiExposureUpdate {
+// ClearSubscriptions clears all "subscriptions" edges to the APISubscription entity.
+func (_u *APIExposureUpdate) ClearSubscriptions() *APIExposureUpdate {
 	_u.mutation.ClearSubscriptions()
 	return _u
 }
 
-// RemoveSubscriptionIDs removes the "subscriptions" edge to ApiSubscription entities by IDs.
-func (_u *ApiExposureUpdate) RemoveSubscriptionIDs(ids ...int) *ApiExposureUpdate {
+// RemoveSubscriptionIDs removes the "subscriptions" edge to APISubscription entities by IDs.
+func (_u *APIExposureUpdate) RemoveSubscriptionIDs(ids ...int) *APIExposureUpdate {
 	_u.mutation.RemoveSubscriptionIDs(ids...)
 	return _u
 }
 
-// RemoveSubscriptions removes "subscriptions" edges to ApiSubscription entities.
-func (_u *ApiExposureUpdate) RemoveSubscriptions(v ...*ApiSubscription) *ApiExposureUpdate {
+// RemoveSubscriptions removes "subscriptions" edges to APISubscription entities.
+func (_u *APIExposureUpdate) RemoveSubscriptions(v ...*APISubscription) *APIExposureUpdate {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
@@ -346,7 +346,7 @@ func (_u *ApiExposureUpdate) RemoveSubscriptions(v ...*ApiSubscription) *ApiExpo
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
-func (_u *ApiExposureUpdate) Save(ctx context.Context) (int, error) {
+func (_u *APIExposureUpdate) Save(ctx context.Context) (int, error) {
 	if err := _u.defaults(); err != nil {
 		return 0, err
 	}
@@ -354,7 +354,7 @@ func (_u *ApiExposureUpdate) Save(ctx context.Context) (int, error) {
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (_u *ApiExposureUpdate) SaveX(ctx context.Context) int {
+func (_u *APIExposureUpdate) SaveX(ctx context.Context) int {
 	affected, err := _u.Save(ctx)
 	if err != nil {
 		panic(err)
@@ -363,20 +363,20 @@ func (_u *ApiExposureUpdate) SaveX(ctx context.Context) int {
 }
 
 // Exec executes the query.
-func (_u *ApiExposureUpdate) Exec(ctx context.Context) error {
+func (_u *APIExposureUpdate) Exec(ctx context.Context) error {
 	_, err := _u.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (_u *ApiExposureUpdate) ExecX(ctx context.Context) {
+func (_u *APIExposureUpdate) ExecX(ctx context.Context) {
 	if err := _u.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // defaults sets the default values of the builder before save.
-func (_u *ApiExposureUpdate) defaults() error {
+func (_u *APIExposureUpdate) defaults() error {
 	if _, ok := _u.mutation.LastModifiedAt(); !ok {
 		if apiexposure.UpdateDefaultLastModifiedAt == nil {
 			return fmt.Errorf("ent: uninitialized apiexposure.UpdateDefaultLastModifiedAt (forgotten import ent/runtime?)")
@@ -388,34 +388,34 @@ func (_u *ApiExposureUpdate) defaults() error {
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (_u *ApiExposureUpdate) check() error {
+func (_u *APIExposureUpdate) check() error {
 	if v, ok := _u.mutation.StatusPhase(); ok {
 		if err := apiexposure.StatusPhaseValidator(v); err != nil {
-			return &ValidationError{Name: "status_phase", err: fmt.Errorf(`ent: validator failed for field "ApiExposure.status_phase": %w`, err)}
+			return &ValidationError{Name: "status_phase", err: fmt.Errorf(`ent: validator failed for field "APIExposure.status_phase": %w`, err)}
 		}
 	}
 	if v, ok := _u.mutation.Namespace(); ok {
 		if err := apiexposure.NamespaceValidator(v); err != nil {
-			return &ValidationError{Name: "namespace", err: fmt.Errorf(`ent: validator failed for field "ApiExposure.namespace": %w`, err)}
+			return &ValidationError{Name: "namespace", err: fmt.Errorf(`ent: validator failed for field "APIExposure.namespace": %w`, err)}
 		}
 	}
 	if v, ok := _u.mutation.BasePath(); ok {
 		if err := apiexposure.BasePathValidator(v); err != nil {
-			return &ValidationError{Name: "base_path", err: fmt.Errorf(`ent: validator failed for field "ApiExposure.base_path": %w`, err)}
+			return &ValidationError{Name: "base_path", err: fmt.Errorf(`ent: validator failed for field "APIExposure.base_path": %w`, err)}
 		}
 	}
 	if v, ok := _u.mutation.Visibility(); ok {
 		if err := apiexposure.VisibilityValidator(v); err != nil {
-			return &ValidationError{Name: "visibility", err: fmt.Errorf(`ent: validator failed for field "ApiExposure.visibility": %w`, err)}
+			return &ValidationError{Name: "visibility", err: fmt.Errorf(`ent: validator failed for field "APIExposure.visibility": %w`, err)}
 		}
 	}
 	if _u.mutation.OwnerCleared() && len(_u.mutation.OwnerIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "ApiExposure.owner"`)
+		return errors.New(`ent: clearing a required unique edge "APIExposure.owner"`)
 	}
 	return nil
 }
 
-func (_u *ApiExposureUpdate) sqlSave(ctx context.Context) (_node int, err error) {
+func (_u *APIExposureUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if err := _u.check(); err != nil {
 		return _node, err
 	}
@@ -615,28 +615,28 @@ func (_u *ApiExposureUpdate) sqlSave(ctx context.Context) (_node int, err error)
 	return _node, nil
 }
 
-// ApiExposureUpdateOne is the builder for updating a single ApiExposure entity.
-type ApiExposureUpdateOne struct {
+// APIExposureUpdateOne is the builder for updating a single APIExposure entity.
+type APIExposureUpdateOne struct {
 	config
 	fields   []string
 	hooks    []Hook
-	mutation *ApiExposureMutation
+	mutation *APIExposureMutation
 }
 
 // SetLastModifiedAt sets the "last_modified_at" field.
-func (_u *ApiExposureUpdateOne) SetLastModifiedAt(v time.Time) *ApiExposureUpdateOne {
+func (_u *APIExposureUpdateOne) SetLastModifiedAt(v time.Time) *APIExposureUpdateOne {
 	_u.mutation.SetLastModifiedAt(v)
 	return _u
 }
 
 // SetStatusPhase sets the "status_phase" field.
-func (_u *ApiExposureUpdateOne) SetStatusPhase(v apiexposure.StatusPhase) *ApiExposureUpdateOne {
+func (_u *APIExposureUpdateOne) SetStatusPhase(v apiexposure.StatusPhase) *APIExposureUpdateOne {
 	_u.mutation.SetStatusPhase(v)
 	return _u
 }
 
 // SetNillableStatusPhase sets the "status_phase" field if the given value is not nil.
-func (_u *ApiExposureUpdateOne) SetNillableStatusPhase(v *apiexposure.StatusPhase) *ApiExposureUpdateOne {
+func (_u *APIExposureUpdateOne) SetNillableStatusPhase(v *apiexposure.StatusPhase) *APIExposureUpdateOne {
 	if v != nil {
 		_u.SetStatusPhase(*v)
 	}
@@ -644,19 +644,19 @@ func (_u *ApiExposureUpdateOne) SetNillableStatusPhase(v *apiexposure.StatusPhas
 }
 
 // ClearStatusPhase clears the value of the "status_phase" field.
-func (_u *ApiExposureUpdateOne) ClearStatusPhase() *ApiExposureUpdateOne {
+func (_u *APIExposureUpdateOne) ClearStatusPhase() *APIExposureUpdateOne {
 	_u.mutation.ClearStatusPhase()
 	return _u
 }
 
 // SetStatusMessage sets the "status_message" field.
-func (_u *ApiExposureUpdateOne) SetStatusMessage(v string) *ApiExposureUpdateOne {
+func (_u *APIExposureUpdateOne) SetStatusMessage(v string) *APIExposureUpdateOne {
 	_u.mutation.SetStatusMessage(v)
 	return _u
 }
 
 // SetNillableStatusMessage sets the "status_message" field if the given value is not nil.
-func (_u *ApiExposureUpdateOne) SetNillableStatusMessage(v *string) *ApiExposureUpdateOne {
+func (_u *APIExposureUpdateOne) SetNillableStatusMessage(v *string) *APIExposureUpdateOne {
 	if v != nil {
 		_u.SetStatusMessage(*v)
 	}
@@ -664,19 +664,19 @@ func (_u *ApiExposureUpdateOne) SetNillableStatusMessage(v *string) *ApiExposure
 }
 
 // ClearStatusMessage clears the value of the "status_message" field.
-func (_u *ApiExposureUpdateOne) ClearStatusMessage() *ApiExposureUpdateOne {
+func (_u *APIExposureUpdateOne) ClearStatusMessage() *APIExposureUpdateOne {
 	_u.mutation.ClearStatusMessage()
 	return _u
 }
 
 // SetEnvironment sets the "environment" field.
-func (_u *ApiExposureUpdateOne) SetEnvironment(v string) *ApiExposureUpdateOne {
+func (_u *APIExposureUpdateOne) SetEnvironment(v string) *APIExposureUpdateOne {
 	_u.mutation.SetEnvironment(v)
 	return _u
 }
 
 // SetNillableEnvironment sets the "environment" field if the given value is not nil.
-func (_u *ApiExposureUpdateOne) SetNillableEnvironment(v *string) *ApiExposureUpdateOne {
+func (_u *APIExposureUpdateOne) SetNillableEnvironment(v *string) *APIExposureUpdateOne {
 	if v != nil {
 		_u.SetEnvironment(*v)
 	}
@@ -684,19 +684,19 @@ func (_u *ApiExposureUpdateOne) SetNillableEnvironment(v *string) *ApiExposureUp
 }
 
 // ClearEnvironment clears the value of the "environment" field.
-func (_u *ApiExposureUpdateOne) ClearEnvironment() *ApiExposureUpdateOne {
+func (_u *APIExposureUpdateOne) ClearEnvironment() *APIExposureUpdateOne {
 	_u.mutation.ClearEnvironment()
 	return _u
 }
 
 // SetNamespace sets the "namespace" field.
-func (_u *ApiExposureUpdateOne) SetNamespace(v string) *ApiExposureUpdateOne {
+func (_u *APIExposureUpdateOne) SetNamespace(v string) *APIExposureUpdateOne {
 	_u.mutation.SetNamespace(v)
 	return _u
 }
 
 // SetNillableNamespace sets the "namespace" field if the given value is not nil.
-func (_u *ApiExposureUpdateOne) SetNillableNamespace(v *string) *ApiExposureUpdateOne {
+func (_u *APIExposureUpdateOne) SetNillableNamespace(v *string) *APIExposureUpdateOne {
 	if v != nil {
 		_u.SetNamespace(*v)
 	}
@@ -704,13 +704,13 @@ func (_u *ApiExposureUpdateOne) SetNillableNamespace(v *string) *ApiExposureUpda
 }
 
 // SetBasePath sets the "base_path" field.
-func (_u *ApiExposureUpdateOne) SetBasePath(v string) *ApiExposureUpdateOne {
+func (_u *APIExposureUpdateOne) SetBasePath(v string) *APIExposureUpdateOne {
 	_u.mutation.SetBasePath(v)
 	return _u
 }
 
 // SetNillableBasePath sets the "base_path" field if the given value is not nil.
-func (_u *ApiExposureUpdateOne) SetNillableBasePath(v *string) *ApiExposureUpdateOne {
+func (_u *APIExposureUpdateOne) SetNillableBasePath(v *string) *APIExposureUpdateOne {
 	if v != nil {
 		_u.SetBasePath(*v)
 	}
@@ -718,13 +718,13 @@ func (_u *ApiExposureUpdateOne) SetNillableBasePath(v *string) *ApiExposureUpdat
 }
 
 // SetVisibility sets the "visibility" field.
-func (_u *ApiExposureUpdateOne) SetVisibility(v apiexposure.Visibility) *ApiExposureUpdateOne {
+func (_u *APIExposureUpdateOne) SetVisibility(v apiexposure.Visibility) *APIExposureUpdateOne {
 	_u.mutation.SetVisibility(v)
 	return _u
 }
 
 // SetNillableVisibility sets the "visibility" field if the given value is not nil.
-func (_u *ApiExposureUpdateOne) SetNillableVisibility(v *apiexposure.Visibility) *ApiExposureUpdateOne {
+func (_u *APIExposureUpdateOne) SetNillableVisibility(v *apiexposure.Visibility) *APIExposureUpdateOne {
 	if v != nil {
 		_u.SetVisibility(*v)
 	}
@@ -732,13 +732,13 @@ func (_u *ApiExposureUpdateOne) SetNillableVisibility(v *apiexposure.Visibility)
 }
 
 // SetActive sets the "active" field.
-func (_u *ApiExposureUpdateOne) SetActive(v bool) *ApiExposureUpdateOne {
+func (_u *APIExposureUpdateOne) SetActive(v bool) *APIExposureUpdateOne {
 	_u.mutation.SetActive(v)
 	return _u
 }
 
 // SetNillableActive sets the "active" field if the given value is not nil.
-func (_u *ApiExposureUpdateOne) SetNillableActive(v *bool) *ApiExposureUpdateOne {
+func (_u *APIExposureUpdateOne) SetNillableActive(v *bool) *APIExposureUpdateOne {
 	if v != nil {
 		_u.SetActive(*v)
 	}
@@ -746,43 +746,43 @@ func (_u *ApiExposureUpdateOne) SetNillableActive(v *bool) *ApiExposureUpdateOne
 }
 
 // ClearActive clears the value of the "active" field.
-func (_u *ApiExposureUpdateOne) ClearActive() *ApiExposureUpdateOne {
+func (_u *APIExposureUpdateOne) ClearActive() *APIExposureUpdateOne {
 	_u.mutation.ClearActive()
 	return _u
 }
 
 // SetFeatures sets the "features" field.
-func (_u *ApiExposureUpdateOne) SetFeatures(v []string) *ApiExposureUpdateOne {
+func (_u *APIExposureUpdateOne) SetFeatures(v []string) *APIExposureUpdateOne {
 	_u.mutation.SetFeatures(v)
 	return _u
 }
 
 // AppendFeatures appends value to the "features" field.
-func (_u *ApiExposureUpdateOne) AppendFeatures(v []string) *ApiExposureUpdateOne {
+func (_u *APIExposureUpdateOne) AppendFeatures(v []string) *APIExposureUpdateOne {
 	_u.mutation.AppendFeatures(v)
 	return _u
 }
 
 // SetUpstreams sets the "upstreams" field.
-func (_u *ApiExposureUpdateOne) SetUpstreams(v []model.Upstream) *ApiExposureUpdateOne {
+func (_u *APIExposureUpdateOne) SetUpstreams(v []model.Upstream) *APIExposureUpdateOne {
 	_u.mutation.SetUpstreams(v)
 	return _u
 }
 
 // AppendUpstreams appends value to the "upstreams" field.
-func (_u *ApiExposureUpdateOne) AppendUpstreams(v []model.Upstream) *ApiExposureUpdateOne {
+func (_u *APIExposureUpdateOne) AppendUpstreams(v []model.Upstream) *APIExposureUpdateOne {
 	_u.mutation.AppendUpstreams(v)
 	return _u
 }
 
 // SetSecurity sets the "security" field.
-func (_u *ApiExposureUpdateOne) SetSecurity(v model.ApiExposureSecurity) *ApiExposureUpdateOne {
+func (_u *APIExposureUpdateOne) SetSecurity(v model.APIExposureSecurity) *APIExposureUpdateOne {
 	_u.mutation.SetSecurity(v)
 	return _u
 }
 
 // SetNillableSecurity sets the "security" field if the given value is not nil.
-func (_u *ApiExposureUpdateOne) SetNillableSecurity(v *model.ApiExposureSecurity) *ApiExposureUpdateOne {
+func (_u *APIExposureUpdateOne) SetNillableSecurity(v *model.APIExposureSecurity) *APIExposureUpdateOne {
 	if v != nil {
 		_u.SetSecurity(*v)
 	}
@@ -790,19 +790,19 @@ func (_u *ApiExposureUpdateOne) SetNillableSecurity(v *model.ApiExposureSecurity
 }
 
 // ClearSecurity clears the value of the "security" field.
-func (_u *ApiExposureUpdateOne) ClearSecurity() *ApiExposureUpdateOne {
+func (_u *APIExposureUpdateOne) ClearSecurity() *APIExposureUpdateOne {
 	_u.mutation.ClearSecurity()
 	return _u
 }
 
 // SetTraffic sets the "traffic" field.
-func (_u *ApiExposureUpdateOne) SetTraffic(v model.Traffic) *ApiExposureUpdateOne {
+func (_u *APIExposureUpdateOne) SetTraffic(v model.Traffic) *APIExposureUpdateOne {
 	_u.mutation.SetTraffic(v)
 	return _u
 }
 
 // SetNillableTraffic sets the "traffic" field if the given value is not nil.
-func (_u *ApiExposureUpdateOne) SetNillableTraffic(v *model.Traffic) *ApiExposureUpdateOne {
+func (_u *APIExposureUpdateOne) SetNillableTraffic(v *model.Traffic) *APIExposureUpdateOne {
 	if v != nil {
 		_u.SetTraffic(*v)
 	}
@@ -810,19 +810,19 @@ func (_u *ApiExposureUpdateOne) SetNillableTraffic(v *model.Traffic) *ApiExposur
 }
 
 // ClearTraffic clears the value of the "traffic" field.
-func (_u *ApiExposureUpdateOne) ClearTraffic() *ApiExposureUpdateOne {
+func (_u *APIExposureUpdateOne) ClearTraffic() *APIExposureUpdateOne {
 	_u.mutation.ClearTraffic()
 	return _u
 }
 
 // SetApprovalConfig sets the "approval_config" field.
-func (_u *ApiExposureUpdateOne) SetApprovalConfig(v model.ApprovalConfig) *ApiExposureUpdateOne {
+func (_u *APIExposureUpdateOne) SetApprovalConfig(v model.ApprovalConfig) *APIExposureUpdateOne {
 	_u.mutation.SetApprovalConfig(v)
 	return _u
 }
 
 // SetNillableApprovalConfig sets the "approval_config" field if the given value is not nil.
-func (_u *ApiExposureUpdateOne) SetNillableApprovalConfig(v *model.ApprovalConfig) *ApiExposureUpdateOne {
+func (_u *APIExposureUpdateOne) SetNillableApprovalConfig(v *model.ApprovalConfig) *APIExposureUpdateOne {
 	if v != nil {
 		_u.SetApprovalConfig(*v)
 	}
@@ -830,13 +830,13 @@ func (_u *ApiExposureUpdateOne) SetNillableApprovalConfig(v *model.ApprovalConfi
 }
 
 // SetAPIVersion sets the "api_version" field.
-func (_u *ApiExposureUpdateOne) SetAPIVersion(v string) *ApiExposureUpdateOne {
+func (_u *APIExposureUpdateOne) SetAPIVersion(v string) *APIExposureUpdateOne {
 	_u.mutation.SetAPIVersion(v)
 	return _u
 }
 
 // SetNillableAPIVersion sets the "api_version" field if the given value is not nil.
-func (_u *ApiExposureUpdateOne) SetNillableAPIVersion(v *string) *ApiExposureUpdateOne {
+func (_u *APIExposureUpdateOne) SetNillableAPIVersion(v *string) *APIExposureUpdateOne {
 	if v != nil {
 		_u.SetAPIVersion(*v)
 	}
@@ -844,49 +844,49 @@ func (_u *ApiExposureUpdateOne) SetNillableAPIVersion(v *string) *ApiExposureUpd
 }
 
 // ClearAPIVersion clears the value of the "api_version" field.
-func (_u *ApiExposureUpdateOne) ClearAPIVersion() *ApiExposureUpdateOne {
+func (_u *APIExposureUpdateOne) ClearAPIVersion() *APIExposureUpdateOne {
 	_u.mutation.ClearAPIVersion()
 	return _u
 }
 
 // SetOwnerID sets the "owner" edge to the Application entity by ID.
-func (_u *ApiExposureUpdateOne) SetOwnerID(id int) *ApiExposureUpdateOne {
+func (_u *APIExposureUpdateOne) SetOwnerID(id int) *APIExposureUpdateOne {
 	_u.mutation.SetOwnerID(id)
 	return _u
 }
 
 // SetOwner sets the "owner" edge to the Application entity.
-func (_u *ApiExposureUpdateOne) SetOwner(v *Application) *ApiExposureUpdateOne {
+func (_u *APIExposureUpdateOne) SetOwner(v *Application) *APIExposureUpdateOne {
 	return _u.SetOwnerID(v.ID)
 }
 
-// SetAPIID sets the "api" edge to the Api entity by ID.
-func (_u *ApiExposureUpdateOne) SetAPIID(id int) *ApiExposureUpdateOne {
+// SetAPIID sets the "api" edge to the API entity by ID.
+func (_u *APIExposureUpdateOne) SetAPIID(id int) *APIExposureUpdateOne {
 	_u.mutation.SetAPIID(id)
 	return _u
 }
 
-// SetNillableAPIID sets the "api" edge to the Api entity by ID if the given value is not nil.
-func (_u *ApiExposureUpdateOne) SetNillableAPIID(id *int) *ApiExposureUpdateOne {
+// SetNillableAPIID sets the "api" edge to the API entity by ID if the given value is not nil.
+func (_u *APIExposureUpdateOne) SetNillableAPIID(id *int) *APIExposureUpdateOne {
 	if id != nil {
 		_u = _u.SetAPIID(*id)
 	}
 	return _u
 }
 
-// SetAPI sets the "api" edge to the Api entity.
-func (_u *ApiExposureUpdateOne) SetAPI(v *Api) *ApiExposureUpdateOne {
+// SetAPI sets the "api" edge to the API entity.
+func (_u *APIExposureUpdateOne) SetAPI(v *API) *APIExposureUpdateOne {
 	return _u.SetAPIID(v.ID)
 }
 
-// AddSubscriptionIDs adds the "subscriptions" edge to the ApiSubscription entity by IDs.
-func (_u *ApiExposureUpdateOne) AddSubscriptionIDs(ids ...int) *ApiExposureUpdateOne {
+// AddSubscriptionIDs adds the "subscriptions" edge to the APISubscription entity by IDs.
+func (_u *APIExposureUpdateOne) AddSubscriptionIDs(ids ...int) *APIExposureUpdateOne {
 	_u.mutation.AddSubscriptionIDs(ids...)
 	return _u
 }
 
-// AddSubscriptions adds the "subscriptions" edges to the ApiSubscription entity.
-func (_u *ApiExposureUpdateOne) AddSubscriptions(v ...*ApiSubscription) *ApiExposureUpdateOne {
+// AddSubscriptions adds the "subscriptions" edges to the APISubscription entity.
+func (_u *APIExposureUpdateOne) AddSubscriptions(v ...*APISubscription) *APIExposureUpdateOne {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
@@ -894,37 +894,37 @@ func (_u *ApiExposureUpdateOne) AddSubscriptions(v ...*ApiSubscription) *ApiExpo
 	return _u.AddSubscriptionIDs(ids...)
 }
 
-// Mutation returns the ApiExposureMutation object of the builder.
-func (_u *ApiExposureUpdateOne) Mutation() *ApiExposureMutation {
+// Mutation returns the APIExposureMutation object of the builder.
+func (_u *APIExposureUpdateOne) Mutation() *APIExposureMutation {
 	return _u.mutation
 }
 
 // ClearOwner clears the "owner" edge to the Application entity.
-func (_u *ApiExposureUpdateOne) ClearOwner() *ApiExposureUpdateOne {
+func (_u *APIExposureUpdateOne) ClearOwner() *APIExposureUpdateOne {
 	_u.mutation.ClearOwner()
 	return _u
 }
 
-// ClearAPI clears the "api" edge to the Api entity.
-func (_u *ApiExposureUpdateOne) ClearAPI() *ApiExposureUpdateOne {
+// ClearAPI clears the "api" edge to the API entity.
+func (_u *APIExposureUpdateOne) ClearAPI() *APIExposureUpdateOne {
 	_u.mutation.ClearAPI()
 	return _u
 }
 
-// ClearSubscriptions clears all "subscriptions" edges to the ApiSubscription entity.
-func (_u *ApiExposureUpdateOne) ClearSubscriptions() *ApiExposureUpdateOne {
+// ClearSubscriptions clears all "subscriptions" edges to the APISubscription entity.
+func (_u *APIExposureUpdateOne) ClearSubscriptions() *APIExposureUpdateOne {
 	_u.mutation.ClearSubscriptions()
 	return _u
 }
 
-// RemoveSubscriptionIDs removes the "subscriptions" edge to ApiSubscription entities by IDs.
-func (_u *ApiExposureUpdateOne) RemoveSubscriptionIDs(ids ...int) *ApiExposureUpdateOne {
+// RemoveSubscriptionIDs removes the "subscriptions" edge to APISubscription entities by IDs.
+func (_u *APIExposureUpdateOne) RemoveSubscriptionIDs(ids ...int) *APIExposureUpdateOne {
 	_u.mutation.RemoveSubscriptionIDs(ids...)
 	return _u
 }
 
-// RemoveSubscriptions removes "subscriptions" edges to ApiSubscription entities.
-func (_u *ApiExposureUpdateOne) RemoveSubscriptions(v ...*ApiSubscription) *ApiExposureUpdateOne {
+// RemoveSubscriptions removes "subscriptions" edges to APISubscription entities.
+func (_u *APIExposureUpdateOne) RemoveSubscriptions(v ...*APISubscription) *APIExposureUpdateOne {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
@@ -932,21 +932,21 @@ func (_u *ApiExposureUpdateOne) RemoveSubscriptions(v ...*ApiSubscription) *ApiE
 	return _u.RemoveSubscriptionIDs(ids...)
 }
 
-// Where appends a list predicates to the ApiExposureUpdate builder.
-func (_u *ApiExposureUpdateOne) Where(ps ...predicate.ApiExposure) *ApiExposureUpdateOne {
+// Where appends a list predicates to the APIExposureUpdate builder.
+func (_u *APIExposureUpdateOne) Where(ps ...predicate.APIExposure) *APIExposureUpdateOne {
 	_u.mutation.Where(ps...)
 	return _u
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
 // The default is selecting all fields defined in the entity schema.
-func (_u *ApiExposureUpdateOne) Select(field string, fields ...string) *ApiExposureUpdateOne {
+func (_u *APIExposureUpdateOne) Select(field string, fields ...string) *APIExposureUpdateOne {
 	_u.fields = append([]string{field}, fields...)
 	return _u
 }
 
-// Save executes the query and returns the updated ApiExposure entity.
-func (_u *ApiExposureUpdateOne) Save(ctx context.Context) (*ApiExposure, error) {
+// Save executes the query and returns the updated APIExposure entity.
+func (_u *APIExposureUpdateOne) Save(ctx context.Context) (*APIExposure, error) {
 	if err := _u.defaults(); err != nil {
 		return nil, err
 	}
@@ -954,7 +954,7 @@ func (_u *ApiExposureUpdateOne) Save(ctx context.Context) (*ApiExposure, error) 
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (_u *ApiExposureUpdateOne) SaveX(ctx context.Context) *ApiExposure {
+func (_u *APIExposureUpdateOne) SaveX(ctx context.Context) *APIExposure {
 	node, err := _u.Save(ctx)
 	if err != nil {
 		panic(err)
@@ -963,20 +963,20 @@ func (_u *ApiExposureUpdateOne) SaveX(ctx context.Context) *ApiExposure {
 }
 
 // Exec executes the query on the entity.
-func (_u *ApiExposureUpdateOne) Exec(ctx context.Context) error {
+func (_u *APIExposureUpdateOne) Exec(ctx context.Context) error {
 	_, err := _u.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (_u *ApiExposureUpdateOne) ExecX(ctx context.Context) {
+func (_u *APIExposureUpdateOne) ExecX(ctx context.Context) {
 	if err := _u.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // defaults sets the default values of the builder before save.
-func (_u *ApiExposureUpdateOne) defaults() error {
+func (_u *APIExposureUpdateOne) defaults() error {
 	if _, ok := _u.mutation.LastModifiedAt(); !ok {
 		if apiexposure.UpdateDefaultLastModifiedAt == nil {
 			return fmt.Errorf("ent: uninitialized apiexposure.UpdateDefaultLastModifiedAt (forgotten import ent/runtime?)")
@@ -988,41 +988,41 @@ func (_u *ApiExposureUpdateOne) defaults() error {
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (_u *ApiExposureUpdateOne) check() error {
+func (_u *APIExposureUpdateOne) check() error {
 	if v, ok := _u.mutation.StatusPhase(); ok {
 		if err := apiexposure.StatusPhaseValidator(v); err != nil {
-			return &ValidationError{Name: "status_phase", err: fmt.Errorf(`ent: validator failed for field "ApiExposure.status_phase": %w`, err)}
+			return &ValidationError{Name: "status_phase", err: fmt.Errorf(`ent: validator failed for field "APIExposure.status_phase": %w`, err)}
 		}
 	}
 	if v, ok := _u.mutation.Namespace(); ok {
 		if err := apiexposure.NamespaceValidator(v); err != nil {
-			return &ValidationError{Name: "namespace", err: fmt.Errorf(`ent: validator failed for field "ApiExposure.namespace": %w`, err)}
+			return &ValidationError{Name: "namespace", err: fmt.Errorf(`ent: validator failed for field "APIExposure.namespace": %w`, err)}
 		}
 	}
 	if v, ok := _u.mutation.BasePath(); ok {
 		if err := apiexposure.BasePathValidator(v); err != nil {
-			return &ValidationError{Name: "base_path", err: fmt.Errorf(`ent: validator failed for field "ApiExposure.base_path": %w`, err)}
+			return &ValidationError{Name: "base_path", err: fmt.Errorf(`ent: validator failed for field "APIExposure.base_path": %w`, err)}
 		}
 	}
 	if v, ok := _u.mutation.Visibility(); ok {
 		if err := apiexposure.VisibilityValidator(v); err != nil {
-			return &ValidationError{Name: "visibility", err: fmt.Errorf(`ent: validator failed for field "ApiExposure.visibility": %w`, err)}
+			return &ValidationError{Name: "visibility", err: fmt.Errorf(`ent: validator failed for field "APIExposure.visibility": %w`, err)}
 		}
 	}
 	if _u.mutation.OwnerCleared() && len(_u.mutation.OwnerIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "ApiExposure.owner"`)
+		return errors.New(`ent: clearing a required unique edge "APIExposure.owner"`)
 	}
 	return nil
 }
 
-func (_u *ApiExposureUpdateOne) sqlSave(ctx context.Context) (_node *ApiExposure, err error) {
+func (_u *APIExposureUpdateOne) sqlSave(ctx context.Context) (_node *APIExposure, err error) {
 	if err := _u.check(); err != nil {
 		return _node, err
 	}
 	_spec := sqlgraph.NewUpdateSpec(apiexposure.Table, apiexposure.Columns, sqlgraph.NewFieldSpec(apiexposure.FieldID, field.TypeInt))
 	id, ok := _u.mutation.ID()
 	if !ok {
-		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "ApiExposure.id" for update`)}
+		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "APIExposure.id" for update`)}
 	}
 	_spec.Node.ID.Value = id
 	if fields := _u.fields; len(fields) > 0 {
@@ -1220,7 +1220,7 @@ func (_u *ApiExposureUpdateOne) sqlSave(ctx context.Context) (_node *ApiExposure
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	_node = &ApiExposure{config: _u.config}
+	_node = &APIExposure{config: _u.config}
 	_spec.Assign = _node.assignValues
 	_spec.ScanValues = _node.scanValues
 	if err = sqlgraph.UpdateNode(ctx, _u.driver, _spec); err != nil {

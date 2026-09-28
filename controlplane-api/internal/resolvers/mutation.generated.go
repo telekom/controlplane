@@ -42,14 +42,14 @@ type MutationResolver interface {
 func (ec *executionContext) field_Mutation_addTeamMember_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "teamId",
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "teamID",
 		func(ctx context.Context, v any) (int, error) {
 			return ec.unmarshalNID2int(ctx, v)
 		})
 	if err != nil {
 		return nil, err
 	}
-	args["teamId"] = arg0
+	args["teamID"] = arg0
 	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "member",
 		func(ctx context.Context, v any) (model.MemberInput, error) {
 			return ec.unmarshalNMemberInput2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐMemberInput(ctx, v)
@@ -92,14 +92,14 @@ func (ec *executionContext) field_Mutation_createTeam_args(ctx context.Context, 
 func (ec *executionContext) field_Mutation_decideApprovalRequest_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "approvalRequestId",
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "approvalRequestID",
 		func(ctx context.Context, v any) (int, error) {
 			return ec.unmarshalNID2int(ctx, v)
 		})
 	if err != nil {
 		return nil, err
 	}
-	args["approvalRequestId"] = arg0
+	args["approvalRequestID"] = arg0
 	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "input",
 		func(ctx context.Context, v any) (model.DecisionInput, error) {
 			return ec.unmarshalNDecisionInput2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐDecisionInput(ctx, v)
@@ -114,14 +114,14 @@ func (ec *executionContext) field_Mutation_decideApprovalRequest_args(ctx contex
 func (ec *executionContext) field_Mutation_decideApproval_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "approvalId",
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "approvalID",
 		func(ctx context.Context, v any) (int, error) {
 			return ec.unmarshalNID2int(ctx, v)
 		})
 	if err != nil {
 		return nil, err
 	}
-	args["approvalId"] = arg0
+	args["approvalID"] = arg0
 	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "input",
 		func(ctx context.Context, v any) (model.DecisionInput, error) {
 			return ec.unmarshalNDecisionInput2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐDecisionInput(ctx, v)
@@ -164,14 +164,14 @@ func (ec *executionContext) field_Mutation_deleteTeam_args(ctx context.Context, 
 func (ec *executionContext) field_Mutation_removeTeamMember_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "teamId",
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "teamID",
 		func(ctx context.Context, v any) (int, error) {
 			return ec.unmarshalNID2int(ctx, v)
 		})
 	if err != nil {
 		return nil, err
 	}
-	args["teamId"] = arg0
+	args["teamID"] = arg0
 	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "memberEmail",
 		func(ctx context.Context, v any) (string, error) {
 			return ec.unmarshalNString2string(ctx, v)
@@ -186,28 +186,28 @@ func (ec *executionContext) field_Mutation_removeTeamMember_args(ctx context.Con
 func (ec *executionContext) field_Mutation_rotateApplicationSecret_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "applicationId",
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "applicationID",
 		func(ctx context.Context, v any) (int, error) {
 			return ec.unmarshalNID2int(ctx, v)
 		})
 	if err != nil {
 		return nil, err
 	}
-	args["applicationId"] = arg0
+	args["applicationID"] = arg0
 	return args, nil
 }
 
 func (ec *executionContext) field_Mutation_rotateTeamToken_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "teamId",
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "teamID",
 		func(ctx context.Context, v any) (int, error) {
 			return ec.unmarshalNID2int(ctx, v)
 		})
 	if err != nil {
 		return nil, err
 	}
-	args["teamId"] = arg0
+	args["teamID"] = arg0
 	return args, nil
 }
 
@@ -907,7 +907,7 @@ func (ec *executionContext) _Mutation_addTeamMember(ctx context.Context, field g
 		},
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.Resolvers.Mutation().AddTeamMember(ctx, fc.Args["teamId"].(int), fc.Args["member"].(model.MemberInput))
+			return ec.Resolvers.Mutation().AddTeamMember(ctx, fc.Args["teamID"].(int), fc.Args["member"].(model.MemberInput))
 		},
 		nil,
 		func(ctx context.Context, selections ast.SelectionSet, v *model.AddTeamMemberPayload) graphql.Marshaler {
@@ -951,7 +951,7 @@ func (ec *executionContext) _Mutation_removeTeamMember(ctx context.Context, fiel
 		},
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.Resolvers.Mutation().RemoveTeamMember(ctx, fc.Args["teamId"].(int), fc.Args["memberEmail"].(string))
+			return ec.Resolvers.Mutation().RemoveTeamMember(ctx, fc.Args["teamID"].(int), fc.Args["memberEmail"].(string))
 		},
 		nil,
 		func(ctx context.Context, selections ast.SelectionSet, v *model.RemoveTeamMemberPayload) graphql.Marshaler {
@@ -995,7 +995,7 @@ func (ec *executionContext) _Mutation_rotateTeamToken(ctx context.Context, field
 		},
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.Resolvers.Mutation().RotateTeamToken(ctx, fc.Args["teamId"].(int))
+			return ec.Resolvers.Mutation().RotateTeamToken(ctx, fc.Args["teamID"].(int))
 		},
 		nil,
 		func(ctx context.Context, selections ast.SelectionSet, v *model.RotateTeamTokenPayload) graphql.Marshaler {
@@ -1039,7 +1039,7 @@ func (ec *executionContext) _Mutation_rotateApplicationSecret(ctx context.Contex
 		},
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.Resolvers.Mutation().RotateApplicationSecret(ctx, fc.Args["applicationId"].(int))
+			return ec.Resolvers.Mutation().RotateApplicationSecret(ctx, fc.Args["applicationID"].(int))
 		},
 		nil,
 		func(ctx context.Context, selections ast.SelectionSet, v *model.RotateApplicationSecretPayload) graphql.Marshaler {
@@ -1215,7 +1215,7 @@ func (ec *executionContext) _Mutation_decideApprovalRequest(ctx context.Context,
 		},
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.Resolvers.Mutation().DecideApprovalRequest(ctx, fc.Args["approvalRequestId"].(int), fc.Args["input"].(model.DecisionInput))
+			return ec.Resolvers.Mutation().DecideApprovalRequest(ctx, fc.Args["approvalRequestID"].(int), fc.Args["input"].(model.DecisionInput))
 		},
 		nil,
 		func(ctx context.Context, selections ast.SelectionSet, v *model.DecideApprovalRequestPayload) graphql.Marshaler {
@@ -1259,7 +1259,7 @@ func (ec *executionContext) _Mutation_decideApproval(ctx context.Context, field 
 		},
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.Resolvers.Mutation().DecideApproval(ctx, fc.Args["approvalId"].(int), fc.Args["input"].(model.DecisionInput))
+			return ec.Resolvers.Mutation().DecideApproval(ctx, fc.Args["approvalID"].(int), fc.Args["input"].(model.DecisionInput))
 		},
 		nil,
 		func(ctx context.Context, selections ast.SelectionSet, v *model.DecideApprovalPayload) graphql.Marshaler {
@@ -1949,15 +1949,15 @@ func (ec *executionContext) unmarshalInputDeleteGroupInput(ctx context.Context, 
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"groupId"}
+	fieldsInOrder := [...]string{"groupID"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
 			continue
 		}
 		switch k {
-		case "groupId":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("groupId"))
+		case "groupID":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("groupID"))
 			data, err := ec.unmarshalNID2int(ctx, v)
 			if err != nil {
 				return it, err
@@ -1979,15 +1979,15 @@ func (ec *executionContext) unmarshalInputDeleteTeamInput(ctx context.Context, o
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"teamId"}
+	fieldsInOrder := [...]string{"teamID"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
 			continue
 		}
 		switch k {
-		case "teamId":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("teamId"))
+		case "teamID":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("teamID"))
 			data, err := ec.unmarshalNID2int(ctx, v)
 			if err != nil {
 				return it, err
@@ -2046,15 +2046,15 @@ func (ec *executionContext) unmarshalInputUpdateGroupInput(ctx context.Context, 
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"groupId", "displayName", "description"}
+	fieldsInOrder := [...]string{"groupID", "displayName", "description"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
 			continue
 		}
 		switch k {
-		case "groupId":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("groupId"))
+		case "groupID":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("groupID"))
 			data, err := ec.unmarshalNID2int(ctx, v)
 			if err != nil {
 				return it, err
@@ -2090,15 +2090,15 @@ func (ec *executionContext) unmarshalInputUpdateTeamInput(ctx context.Context, o
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"teamId", "email", "displayName", "description"}
+	fieldsInOrder := [...]string{"teamID", "email", "displayName", "description"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
 			continue
 		}
 		switch k {
-		case "teamId":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("teamId"))
+		case "teamID":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("teamID"))
 			data, err := ec.unmarshalNID2int(ctx, v)
 			if err != nil {
 				return it, err

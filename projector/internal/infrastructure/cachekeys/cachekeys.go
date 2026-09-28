@@ -89,14 +89,14 @@ func EventSubscriptionMeta(namespace, name string) (entityType, lookupKey string
 // Api returns the cache key components for an Api catalogue entity.
 // Api base paths are unique per team (composite unique index on
 // base_path + owner), so both are required.
-func Api(basePath, teamName string) (entityType, lookupKey string) {
+func API(basePath, teamName string) (entityType, lookupKey string) {
 	return "api", basePath + ":" + teamName
 }
 
-// ActiveApi returns the cache key components for the cluster-wide active Api
+// ActiveAPI returns the cache key components for the cluster-wide active Api
 // for a given base path. Only one Api is active at a time per base path
 // (oldest-wins), so the team is not part of the key.
-func ActiveApi(basePath string) (entityType, lookupKey string) {
+func ActiveAPI(basePath string) (entityType, lookupKey string) {
 	return "api_active", basePath
 }
 
@@ -117,14 +117,14 @@ func ActiveEventType(eventType string) (entityType, lookupKey string) {
 // McpServer returns the cache key components for an McpServer catalogue
 // entity. Base paths are unique per team (composite unique index on
 // base_path + owner), so both are required.
-func McpServer(basePath, teamName string) (entityType, lookupKey string) {
+func MCPServer(basePath, teamName string) (entityType, lookupKey string) {
 	return "mcpserver", basePath + ":" + teamName
 }
 
-// ActiveMcpServer returns the cache key components for the cluster-wide
+// ActiveMCPServer returns the cache key components for the cluster-wide
 // active McpServer for a given base path. Only one McpServer is active at a
 // time per base path (oldest-wins), so the team is not part of the key.
-func ActiveMcpServer(basePath string) (entityType, lookupKey string) {
+func ActiveMCPServer(basePath string) (entityType, lookupKey string) {
 	return "mcpserver_active", basePath
 }
 

@@ -32,7 +32,7 @@ type EventSubscriptionData struct {
 	StatusMessage         string
 	EventType             string
 	DeliveryType          string  // "CALLBACK", "SERVER_SENT_EVENT"
-	GatewayConsumerSseUrl string  // sse url
+	GatewayConsumerSSEURL string  // sse url
 	CallbackURL           *string // set when delivery type is Callback
 	Delivery              *model.EventDelivery
 	Trigger               *model.EventTrigger

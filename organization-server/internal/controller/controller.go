@@ -131,7 +131,7 @@ func (ctrl *Controller) Update(ctx context.Context, hubName string, req *api.Hub
 	}
 
 	resp, err := gql.UpdateGroup(ctx, ctrl.cpapi, gql.UpdateGroupInput{
-		GroupId:     groupID,
+		GroupID:     groupID,
 		DisplayName: &req.DisplayName,
 		Description: &req.Description,
 	})
@@ -165,7 +165,7 @@ func (ctrl *Controller) Delete(ctx context.Context, hubName string) ([]MutationE
 	}
 
 	resp, err := gql.DeleteGroup(ctx, ctrl.cpapi, gql.DeleteGroupInput{
-		GroupId: groupID,
+		GroupID: groupID,
 	})
 	if err != nil {
 		return nil, err
@@ -284,7 +284,7 @@ func (ctrl *Controller) UpdateTeam(ctx context.Context, hubName, teamName string
 	}
 
 	resp, err := gql.UpdateTeam(ctx, ctrl.cpapi, gql.UpdateTeamInput{
-		TeamId: teamID,
+		TeamID: teamID,
 		Email:  &req.Email,
 	})
 	if err != nil {
@@ -329,7 +329,7 @@ func (ctrl *Controller) DeleteTeam(ctx context.Context, hubName, teamName string
 	}
 
 	resp, err := gql.DeleteTeam(ctx, ctrl.cpapi, gql.DeleteTeamInput{
-		TeamId: teamID,
+		TeamID: teamID,
 	})
 	if err != nil {
 		return nil, err

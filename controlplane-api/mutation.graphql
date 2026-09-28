@@ -46,14 +46,14 @@ input CreateTeamInput {
 }
 
 input UpdateTeamInput {
-  teamId: ID!
+  teamID: ID!
   email: String
   displayName: String
   description: String
 }
 
 input DeleteTeamInput {
-  teamId: ID!
+  teamID: ID!
 }
 
 type CreateTeamPayload {
@@ -101,13 +101,13 @@ input CreateGroupInput {
 }
 
 input UpdateGroupInput {
-  groupId: ID!
+  groupID: ID!
   displayName: String
   description: String
 }
 
 input DeleteGroupInput {
-  groupId: ID!
+  groupID: ID!
 }
 
 type CreateGroupPayload {
@@ -172,16 +172,16 @@ type Mutation {
   deleteTeam(input: DeleteTeamInput!): DeleteTeamPayload!
 
   "Add a member to a team. Takes effect immediately."
-  addTeamMember(teamId: ID!, member: MemberInput!): AddTeamMemberPayload!
+  addTeamMember(teamID: ID!, member: MemberInput!): AddTeamMemberPayload!
 
   "Remove a member from a team by email. Takes effect immediately."
-  removeTeamMember(teamId: ID!, memberEmail: String!): RemoveTeamMemberPayload!
+  removeTeamMember(teamID: ID!, memberEmail: String!): RemoveTeamMemberPayload!
 
   "Rotate the token for a team. Triggers async secret regeneration."
-  rotateTeamToken(teamId: ID!): RotateTeamTokenPayload!
+  rotateTeamToken(teamID: ID!): RotateTeamTokenPayload!
 
   "Rotate the client secret for an application. Triggers async secret regeneration."
-  rotateApplicationSecret(applicationId: ID!): RotateApplicationSecretPayload!
+  rotateApplicationSecret(applicationID: ID!): RotateApplicationSecretPayload!
 
   "Create a new Group in Kubernetes"
   createGroup(input: CreateGroupInput!): CreateGroupPayload!
@@ -193,8 +193,8 @@ type Mutation {
   deleteGroup(input: DeleteGroupInput!): DeleteGroupPayload!
 
   "Decide on an ApprovalRequest (approve or deny initial access)."
-  decideApprovalRequest(approvalRequestId: ID!, input: DecisionInput!): DecideApprovalRequestPayload!
+  decideApprovalRequest(approvalRequestID: ID!, input: DecisionInput!): DecideApprovalRequestPayload!
 
   "Decide on an existing Approval (suspend, resume, deny, or re-allow ongoing access)."
-  decideApproval(approvalId: ID!, input: DecisionInput!): DecideApprovalPayload!
+  decideApproval(approvalID: ID!, input: DecisionInput!): DecideApprovalPayload!
 }

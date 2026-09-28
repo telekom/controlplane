@@ -6,7 +6,7 @@
 // the projector. AgenticExposure is a Level 3 entity with a required FK
 // dependency on Application (which itself depends on Team + Zone), and two
 // mutually exclusive optional FK dependencies on McpServer/AgentCard,
-// selected by the exposure's Variant (MCP/TELECONTEXTMCP → McpServer,
+// selected by the exposure's Variant (MCP/TELECONTEXTMCP -> McpServer,
 // AGENT → AgentCard).
 package agenticexposure
 

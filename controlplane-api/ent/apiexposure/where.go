@@ -14,618 +14,618 @@ import (
 )
 
 // ID filters vertices based on their ID field.
-func ID(id int) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldEQ(FieldID, id))
+func ID(id int) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldEQ(FieldID, id))
 }
 
 // IDEQ applies the EQ predicate on the ID field.
-func IDEQ(id int) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldEQ(FieldID, id))
+func IDEQ(id int) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldEQ(FieldID, id))
 }
 
 // IDNEQ applies the NEQ predicate on the ID field.
-func IDNEQ(id int) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldNEQ(FieldID, id))
+func IDNEQ(id int) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldNEQ(FieldID, id))
 }
 
 // IDIn applies the In predicate on the ID field.
-func IDIn(ids ...int) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldIn(FieldID, ids...))
+func IDIn(ids ...int) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldIn(FieldID, ids...))
 }
 
 // IDNotIn applies the NotIn predicate on the ID field.
-func IDNotIn(ids ...int) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldNotIn(FieldID, ids...))
+func IDNotIn(ids ...int) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldNotIn(FieldID, ids...))
 }
 
 // IDGT applies the GT predicate on the ID field.
-func IDGT(id int) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldGT(FieldID, id))
+func IDGT(id int) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldGT(FieldID, id))
 }
 
 // IDGTE applies the GTE predicate on the ID field.
-func IDGTE(id int) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldGTE(FieldID, id))
+func IDGTE(id int) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldGTE(FieldID, id))
 }
 
 // IDLT applies the LT predicate on the ID field.
-func IDLT(id int) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldLT(FieldID, id))
+func IDLT(id int) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldLT(FieldID, id))
 }
 
 // IDLTE applies the LTE predicate on the ID field.
-func IDLTE(id int) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldLTE(FieldID, id))
+func IDLTE(id int) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldLTE(FieldID, id))
 }
 
 // CreatedAt applies equality check predicate on the "created_at" field. It's identical to CreatedAtEQ.
-func CreatedAt(v time.Time) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldEQ(FieldCreatedAt, v))
+func CreatedAt(v time.Time) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldEQ(FieldCreatedAt, v))
 }
 
 // LastModifiedAt applies equality check predicate on the "last_modified_at" field. It's identical to LastModifiedAtEQ.
-func LastModifiedAt(v time.Time) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldEQ(FieldLastModifiedAt, v))
+func LastModifiedAt(v time.Time) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldEQ(FieldLastModifiedAt, v))
 }
 
 // StatusMessage applies equality check predicate on the "status_message" field. It's identical to StatusMessageEQ.
-func StatusMessage(v string) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldEQ(FieldStatusMessage, v))
+func StatusMessage(v string) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldEQ(FieldStatusMessage, v))
 }
 
 // Environment applies equality check predicate on the "environment" field. It's identical to EnvironmentEQ.
-func Environment(v string) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldEQ(FieldEnvironment, v))
+func Environment(v string) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldEQ(FieldEnvironment, v))
 }
 
 // Namespace applies equality check predicate on the "namespace" field. It's identical to NamespaceEQ.
-func Namespace(v string) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldEQ(FieldNamespace, v))
+func Namespace(v string) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldEQ(FieldNamespace, v))
 }
 
 // BasePath applies equality check predicate on the "base_path" field. It's identical to BasePathEQ.
-func BasePath(v string) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldEQ(FieldBasePath, v))
+func BasePath(v string) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldEQ(FieldBasePath, v))
 }
 
 // Active applies equality check predicate on the "active" field. It's identical to ActiveEQ.
-func Active(v bool) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldEQ(FieldActive, v))
+func Active(v bool) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldEQ(FieldActive, v))
 }
 
 // APIVersion applies equality check predicate on the "api_version" field. It's identical to APIVersionEQ.
-func APIVersion(v string) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldEQ(FieldAPIVersion, v))
+func APIVersion(v string) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldEQ(FieldAPIVersion, v))
 }
 
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
-func CreatedAtEQ(v time.Time) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldEQ(FieldCreatedAt, v))
+func CreatedAtEQ(v time.Time) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldEQ(FieldCreatedAt, v))
 }
 
 // CreatedAtNEQ applies the NEQ predicate on the "created_at" field.
-func CreatedAtNEQ(v time.Time) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldNEQ(FieldCreatedAt, v))
+func CreatedAtNEQ(v time.Time) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldNEQ(FieldCreatedAt, v))
 }
 
 // CreatedAtIn applies the In predicate on the "created_at" field.
-func CreatedAtIn(vs ...time.Time) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldIn(FieldCreatedAt, vs...))
+func CreatedAtIn(vs ...time.Time) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldIn(FieldCreatedAt, vs...))
 }
 
 // CreatedAtNotIn applies the NotIn predicate on the "created_at" field.
-func CreatedAtNotIn(vs ...time.Time) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldNotIn(FieldCreatedAt, vs...))
+func CreatedAtNotIn(vs ...time.Time) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldNotIn(FieldCreatedAt, vs...))
 }
 
 // CreatedAtGT applies the GT predicate on the "created_at" field.
-func CreatedAtGT(v time.Time) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldGT(FieldCreatedAt, v))
+func CreatedAtGT(v time.Time) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldGT(FieldCreatedAt, v))
 }
 
 // CreatedAtGTE applies the GTE predicate on the "created_at" field.
-func CreatedAtGTE(v time.Time) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldGTE(FieldCreatedAt, v))
+func CreatedAtGTE(v time.Time) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldGTE(FieldCreatedAt, v))
 }
 
 // CreatedAtLT applies the LT predicate on the "created_at" field.
-func CreatedAtLT(v time.Time) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldLT(FieldCreatedAt, v))
+func CreatedAtLT(v time.Time) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldLT(FieldCreatedAt, v))
 }
 
 // CreatedAtLTE applies the LTE predicate on the "created_at" field.
-func CreatedAtLTE(v time.Time) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldLTE(FieldCreatedAt, v))
+func CreatedAtLTE(v time.Time) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldLTE(FieldCreatedAt, v))
 }
 
 // LastModifiedAtEQ applies the EQ predicate on the "last_modified_at" field.
-func LastModifiedAtEQ(v time.Time) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldEQ(FieldLastModifiedAt, v))
+func LastModifiedAtEQ(v time.Time) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldEQ(FieldLastModifiedAt, v))
 }
 
 // LastModifiedAtNEQ applies the NEQ predicate on the "last_modified_at" field.
-func LastModifiedAtNEQ(v time.Time) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldNEQ(FieldLastModifiedAt, v))
+func LastModifiedAtNEQ(v time.Time) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldNEQ(FieldLastModifiedAt, v))
 }
 
 // LastModifiedAtIn applies the In predicate on the "last_modified_at" field.
-func LastModifiedAtIn(vs ...time.Time) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldIn(FieldLastModifiedAt, vs...))
+func LastModifiedAtIn(vs ...time.Time) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldIn(FieldLastModifiedAt, vs...))
 }
 
 // LastModifiedAtNotIn applies the NotIn predicate on the "last_modified_at" field.
-func LastModifiedAtNotIn(vs ...time.Time) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldNotIn(FieldLastModifiedAt, vs...))
+func LastModifiedAtNotIn(vs ...time.Time) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldNotIn(FieldLastModifiedAt, vs...))
 }
 
 // LastModifiedAtGT applies the GT predicate on the "last_modified_at" field.
-func LastModifiedAtGT(v time.Time) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldGT(FieldLastModifiedAt, v))
+func LastModifiedAtGT(v time.Time) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldGT(FieldLastModifiedAt, v))
 }
 
 // LastModifiedAtGTE applies the GTE predicate on the "last_modified_at" field.
-func LastModifiedAtGTE(v time.Time) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldGTE(FieldLastModifiedAt, v))
+func LastModifiedAtGTE(v time.Time) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldGTE(FieldLastModifiedAt, v))
 }
 
 // LastModifiedAtLT applies the LT predicate on the "last_modified_at" field.
-func LastModifiedAtLT(v time.Time) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldLT(FieldLastModifiedAt, v))
+func LastModifiedAtLT(v time.Time) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldLT(FieldLastModifiedAt, v))
 }
 
 // LastModifiedAtLTE applies the LTE predicate on the "last_modified_at" field.
-func LastModifiedAtLTE(v time.Time) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldLTE(FieldLastModifiedAt, v))
+func LastModifiedAtLTE(v time.Time) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldLTE(FieldLastModifiedAt, v))
 }
 
 // StatusPhaseEQ applies the EQ predicate on the "status_phase" field.
-func StatusPhaseEQ(v StatusPhase) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldEQ(FieldStatusPhase, v))
+func StatusPhaseEQ(v StatusPhase) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldEQ(FieldStatusPhase, v))
 }
 
 // StatusPhaseNEQ applies the NEQ predicate on the "status_phase" field.
-func StatusPhaseNEQ(v StatusPhase) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldNEQ(FieldStatusPhase, v))
+func StatusPhaseNEQ(v StatusPhase) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldNEQ(FieldStatusPhase, v))
 }
 
 // StatusPhaseIn applies the In predicate on the "status_phase" field.
-func StatusPhaseIn(vs ...StatusPhase) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldIn(FieldStatusPhase, vs...))
+func StatusPhaseIn(vs ...StatusPhase) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldIn(FieldStatusPhase, vs...))
 }
 
 // StatusPhaseNotIn applies the NotIn predicate on the "status_phase" field.
-func StatusPhaseNotIn(vs ...StatusPhase) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldNotIn(FieldStatusPhase, vs...))
+func StatusPhaseNotIn(vs ...StatusPhase) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldNotIn(FieldStatusPhase, vs...))
 }
 
 // StatusPhaseIsNil applies the IsNil predicate on the "status_phase" field.
-func StatusPhaseIsNil() predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldIsNull(FieldStatusPhase))
+func StatusPhaseIsNil() predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldIsNull(FieldStatusPhase))
 }
 
 // StatusPhaseNotNil applies the NotNil predicate on the "status_phase" field.
-func StatusPhaseNotNil() predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldNotNull(FieldStatusPhase))
+func StatusPhaseNotNil() predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldNotNull(FieldStatusPhase))
 }
 
 // StatusMessageEQ applies the EQ predicate on the "status_message" field.
-func StatusMessageEQ(v string) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldEQ(FieldStatusMessage, v))
+func StatusMessageEQ(v string) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldEQ(FieldStatusMessage, v))
 }
 
 // StatusMessageNEQ applies the NEQ predicate on the "status_message" field.
-func StatusMessageNEQ(v string) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldNEQ(FieldStatusMessage, v))
+func StatusMessageNEQ(v string) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldNEQ(FieldStatusMessage, v))
 }
 
 // StatusMessageIn applies the In predicate on the "status_message" field.
-func StatusMessageIn(vs ...string) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldIn(FieldStatusMessage, vs...))
+func StatusMessageIn(vs ...string) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldIn(FieldStatusMessage, vs...))
 }
 
 // StatusMessageNotIn applies the NotIn predicate on the "status_message" field.
-func StatusMessageNotIn(vs ...string) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldNotIn(FieldStatusMessage, vs...))
+func StatusMessageNotIn(vs ...string) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldNotIn(FieldStatusMessage, vs...))
 }
 
 // StatusMessageGT applies the GT predicate on the "status_message" field.
-func StatusMessageGT(v string) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldGT(FieldStatusMessage, v))
+func StatusMessageGT(v string) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldGT(FieldStatusMessage, v))
 }
 
 // StatusMessageGTE applies the GTE predicate on the "status_message" field.
-func StatusMessageGTE(v string) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldGTE(FieldStatusMessage, v))
+func StatusMessageGTE(v string) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldGTE(FieldStatusMessage, v))
 }
 
 // StatusMessageLT applies the LT predicate on the "status_message" field.
-func StatusMessageLT(v string) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldLT(FieldStatusMessage, v))
+func StatusMessageLT(v string) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldLT(FieldStatusMessage, v))
 }
 
 // StatusMessageLTE applies the LTE predicate on the "status_message" field.
-func StatusMessageLTE(v string) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldLTE(FieldStatusMessage, v))
+func StatusMessageLTE(v string) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldLTE(FieldStatusMessage, v))
 }
 
 // StatusMessageContains applies the Contains predicate on the "status_message" field.
-func StatusMessageContains(v string) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldContains(FieldStatusMessage, v))
+func StatusMessageContains(v string) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldContains(FieldStatusMessage, v))
 }
 
 // StatusMessageHasPrefix applies the HasPrefix predicate on the "status_message" field.
-func StatusMessageHasPrefix(v string) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldHasPrefix(FieldStatusMessage, v))
+func StatusMessageHasPrefix(v string) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldHasPrefix(FieldStatusMessage, v))
 }
 
 // StatusMessageHasSuffix applies the HasSuffix predicate on the "status_message" field.
-func StatusMessageHasSuffix(v string) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldHasSuffix(FieldStatusMessage, v))
+func StatusMessageHasSuffix(v string) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldHasSuffix(FieldStatusMessage, v))
 }
 
 // StatusMessageIsNil applies the IsNil predicate on the "status_message" field.
-func StatusMessageIsNil() predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldIsNull(FieldStatusMessage))
+func StatusMessageIsNil() predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldIsNull(FieldStatusMessage))
 }
 
 // StatusMessageNotNil applies the NotNil predicate on the "status_message" field.
-func StatusMessageNotNil() predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldNotNull(FieldStatusMessage))
+func StatusMessageNotNil() predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldNotNull(FieldStatusMessage))
 }
 
 // StatusMessageEqualFold applies the EqualFold predicate on the "status_message" field.
-func StatusMessageEqualFold(v string) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldEqualFold(FieldStatusMessage, v))
+func StatusMessageEqualFold(v string) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldEqualFold(FieldStatusMessage, v))
 }
 
 // StatusMessageContainsFold applies the ContainsFold predicate on the "status_message" field.
-func StatusMessageContainsFold(v string) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldContainsFold(FieldStatusMessage, v))
+func StatusMessageContainsFold(v string) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldContainsFold(FieldStatusMessage, v))
 }
 
 // EnvironmentEQ applies the EQ predicate on the "environment" field.
-func EnvironmentEQ(v string) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldEQ(FieldEnvironment, v))
+func EnvironmentEQ(v string) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldEQ(FieldEnvironment, v))
 }
 
 // EnvironmentNEQ applies the NEQ predicate on the "environment" field.
-func EnvironmentNEQ(v string) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldNEQ(FieldEnvironment, v))
+func EnvironmentNEQ(v string) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldNEQ(FieldEnvironment, v))
 }
 
 // EnvironmentIn applies the In predicate on the "environment" field.
-func EnvironmentIn(vs ...string) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldIn(FieldEnvironment, vs...))
+func EnvironmentIn(vs ...string) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldIn(FieldEnvironment, vs...))
 }
 
 // EnvironmentNotIn applies the NotIn predicate on the "environment" field.
-func EnvironmentNotIn(vs ...string) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldNotIn(FieldEnvironment, vs...))
+func EnvironmentNotIn(vs ...string) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldNotIn(FieldEnvironment, vs...))
 }
 
 // EnvironmentGT applies the GT predicate on the "environment" field.
-func EnvironmentGT(v string) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldGT(FieldEnvironment, v))
+func EnvironmentGT(v string) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldGT(FieldEnvironment, v))
 }
 
 // EnvironmentGTE applies the GTE predicate on the "environment" field.
-func EnvironmentGTE(v string) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldGTE(FieldEnvironment, v))
+func EnvironmentGTE(v string) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldGTE(FieldEnvironment, v))
 }
 
 // EnvironmentLT applies the LT predicate on the "environment" field.
-func EnvironmentLT(v string) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldLT(FieldEnvironment, v))
+func EnvironmentLT(v string) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldLT(FieldEnvironment, v))
 }
 
 // EnvironmentLTE applies the LTE predicate on the "environment" field.
-func EnvironmentLTE(v string) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldLTE(FieldEnvironment, v))
+func EnvironmentLTE(v string) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldLTE(FieldEnvironment, v))
 }
 
 // EnvironmentContains applies the Contains predicate on the "environment" field.
-func EnvironmentContains(v string) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldContains(FieldEnvironment, v))
+func EnvironmentContains(v string) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldContains(FieldEnvironment, v))
 }
 
 // EnvironmentHasPrefix applies the HasPrefix predicate on the "environment" field.
-func EnvironmentHasPrefix(v string) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldHasPrefix(FieldEnvironment, v))
+func EnvironmentHasPrefix(v string) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldHasPrefix(FieldEnvironment, v))
 }
 
 // EnvironmentHasSuffix applies the HasSuffix predicate on the "environment" field.
-func EnvironmentHasSuffix(v string) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldHasSuffix(FieldEnvironment, v))
+func EnvironmentHasSuffix(v string) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldHasSuffix(FieldEnvironment, v))
 }
 
 // EnvironmentIsNil applies the IsNil predicate on the "environment" field.
-func EnvironmentIsNil() predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldIsNull(FieldEnvironment))
+func EnvironmentIsNil() predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldIsNull(FieldEnvironment))
 }
 
 // EnvironmentNotNil applies the NotNil predicate on the "environment" field.
-func EnvironmentNotNil() predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldNotNull(FieldEnvironment))
+func EnvironmentNotNil() predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldNotNull(FieldEnvironment))
 }
 
 // EnvironmentEqualFold applies the EqualFold predicate on the "environment" field.
-func EnvironmentEqualFold(v string) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldEqualFold(FieldEnvironment, v))
+func EnvironmentEqualFold(v string) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldEqualFold(FieldEnvironment, v))
 }
 
 // EnvironmentContainsFold applies the ContainsFold predicate on the "environment" field.
-func EnvironmentContainsFold(v string) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldContainsFold(FieldEnvironment, v))
+func EnvironmentContainsFold(v string) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldContainsFold(FieldEnvironment, v))
 }
 
 // NamespaceEQ applies the EQ predicate on the "namespace" field.
-func NamespaceEQ(v string) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldEQ(FieldNamespace, v))
+func NamespaceEQ(v string) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldEQ(FieldNamespace, v))
 }
 
 // NamespaceNEQ applies the NEQ predicate on the "namespace" field.
-func NamespaceNEQ(v string) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldNEQ(FieldNamespace, v))
+func NamespaceNEQ(v string) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldNEQ(FieldNamespace, v))
 }
 
 // NamespaceIn applies the In predicate on the "namespace" field.
-func NamespaceIn(vs ...string) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldIn(FieldNamespace, vs...))
+func NamespaceIn(vs ...string) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldIn(FieldNamespace, vs...))
 }
 
 // NamespaceNotIn applies the NotIn predicate on the "namespace" field.
-func NamespaceNotIn(vs ...string) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldNotIn(FieldNamespace, vs...))
+func NamespaceNotIn(vs ...string) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldNotIn(FieldNamespace, vs...))
 }
 
 // NamespaceGT applies the GT predicate on the "namespace" field.
-func NamespaceGT(v string) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldGT(FieldNamespace, v))
+func NamespaceGT(v string) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldGT(FieldNamespace, v))
 }
 
 // NamespaceGTE applies the GTE predicate on the "namespace" field.
-func NamespaceGTE(v string) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldGTE(FieldNamespace, v))
+func NamespaceGTE(v string) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldGTE(FieldNamespace, v))
 }
 
 // NamespaceLT applies the LT predicate on the "namespace" field.
-func NamespaceLT(v string) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldLT(FieldNamespace, v))
+func NamespaceLT(v string) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldLT(FieldNamespace, v))
 }
 
 // NamespaceLTE applies the LTE predicate on the "namespace" field.
-func NamespaceLTE(v string) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldLTE(FieldNamespace, v))
+func NamespaceLTE(v string) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldLTE(FieldNamespace, v))
 }
 
 // NamespaceContains applies the Contains predicate on the "namespace" field.
-func NamespaceContains(v string) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldContains(FieldNamespace, v))
+func NamespaceContains(v string) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldContains(FieldNamespace, v))
 }
 
 // NamespaceHasPrefix applies the HasPrefix predicate on the "namespace" field.
-func NamespaceHasPrefix(v string) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldHasPrefix(FieldNamespace, v))
+func NamespaceHasPrefix(v string) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldHasPrefix(FieldNamespace, v))
 }
 
 // NamespaceHasSuffix applies the HasSuffix predicate on the "namespace" field.
-func NamespaceHasSuffix(v string) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldHasSuffix(FieldNamespace, v))
+func NamespaceHasSuffix(v string) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldHasSuffix(FieldNamespace, v))
 }
 
 // NamespaceEqualFold applies the EqualFold predicate on the "namespace" field.
-func NamespaceEqualFold(v string) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldEqualFold(FieldNamespace, v))
+func NamespaceEqualFold(v string) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldEqualFold(FieldNamespace, v))
 }
 
 // NamespaceContainsFold applies the ContainsFold predicate on the "namespace" field.
-func NamespaceContainsFold(v string) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldContainsFold(FieldNamespace, v))
+func NamespaceContainsFold(v string) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldContainsFold(FieldNamespace, v))
 }
 
 // BasePathEQ applies the EQ predicate on the "base_path" field.
-func BasePathEQ(v string) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldEQ(FieldBasePath, v))
+func BasePathEQ(v string) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldEQ(FieldBasePath, v))
 }
 
 // BasePathNEQ applies the NEQ predicate on the "base_path" field.
-func BasePathNEQ(v string) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldNEQ(FieldBasePath, v))
+func BasePathNEQ(v string) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldNEQ(FieldBasePath, v))
 }
 
 // BasePathIn applies the In predicate on the "base_path" field.
-func BasePathIn(vs ...string) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldIn(FieldBasePath, vs...))
+func BasePathIn(vs ...string) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldIn(FieldBasePath, vs...))
 }
 
 // BasePathNotIn applies the NotIn predicate on the "base_path" field.
-func BasePathNotIn(vs ...string) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldNotIn(FieldBasePath, vs...))
+func BasePathNotIn(vs ...string) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldNotIn(FieldBasePath, vs...))
 }
 
 // BasePathGT applies the GT predicate on the "base_path" field.
-func BasePathGT(v string) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldGT(FieldBasePath, v))
+func BasePathGT(v string) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldGT(FieldBasePath, v))
 }
 
 // BasePathGTE applies the GTE predicate on the "base_path" field.
-func BasePathGTE(v string) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldGTE(FieldBasePath, v))
+func BasePathGTE(v string) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldGTE(FieldBasePath, v))
 }
 
 // BasePathLT applies the LT predicate on the "base_path" field.
-func BasePathLT(v string) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldLT(FieldBasePath, v))
+func BasePathLT(v string) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldLT(FieldBasePath, v))
 }
 
 // BasePathLTE applies the LTE predicate on the "base_path" field.
-func BasePathLTE(v string) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldLTE(FieldBasePath, v))
+func BasePathLTE(v string) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldLTE(FieldBasePath, v))
 }
 
 // BasePathContains applies the Contains predicate on the "base_path" field.
-func BasePathContains(v string) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldContains(FieldBasePath, v))
+func BasePathContains(v string) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldContains(FieldBasePath, v))
 }
 
 // BasePathHasPrefix applies the HasPrefix predicate on the "base_path" field.
-func BasePathHasPrefix(v string) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldHasPrefix(FieldBasePath, v))
+func BasePathHasPrefix(v string) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldHasPrefix(FieldBasePath, v))
 }
 
 // BasePathHasSuffix applies the HasSuffix predicate on the "base_path" field.
-func BasePathHasSuffix(v string) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldHasSuffix(FieldBasePath, v))
+func BasePathHasSuffix(v string) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldHasSuffix(FieldBasePath, v))
 }
 
 // BasePathEqualFold applies the EqualFold predicate on the "base_path" field.
-func BasePathEqualFold(v string) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldEqualFold(FieldBasePath, v))
+func BasePathEqualFold(v string) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldEqualFold(FieldBasePath, v))
 }
 
 // BasePathContainsFold applies the ContainsFold predicate on the "base_path" field.
-func BasePathContainsFold(v string) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldContainsFold(FieldBasePath, v))
+func BasePathContainsFold(v string) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldContainsFold(FieldBasePath, v))
 }
 
 // VisibilityEQ applies the EQ predicate on the "visibility" field.
-func VisibilityEQ(v Visibility) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldEQ(FieldVisibility, v))
+func VisibilityEQ(v Visibility) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldEQ(FieldVisibility, v))
 }
 
 // VisibilityNEQ applies the NEQ predicate on the "visibility" field.
-func VisibilityNEQ(v Visibility) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldNEQ(FieldVisibility, v))
+func VisibilityNEQ(v Visibility) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldNEQ(FieldVisibility, v))
 }
 
 // VisibilityIn applies the In predicate on the "visibility" field.
-func VisibilityIn(vs ...Visibility) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldIn(FieldVisibility, vs...))
+func VisibilityIn(vs ...Visibility) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldIn(FieldVisibility, vs...))
 }
 
 // VisibilityNotIn applies the NotIn predicate on the "visibility" field.
-func VisibilityNotIn(vs ...Visibility) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldNotIn(FieldVisibility, vs...))
+func VisibilityNotIn(vs ...Visibility) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldNotIn(FieldVisibility, vs...))
 }
 
 // ActiveEQ applies the EQ predicate on the "active" field.
-func ActiveEQ(v bool) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldEQ(FieldActive, v))
+func ActiveEQ(v bool) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldEQ(FieldActive, v))
 }
 
 // ActiveNEQ applies the NEQ predicate on the "active" field.
-func ActiveNEQ(v bool) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldNEQ(FieldActive, v))
+func ActiveNEQ(v bool) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldNEQ(FieldActive, v))
 }
 
 // ActiveIsNil applies the IsNil predicate on the "active" field.
-func ActiveIsNil() predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldIsNull(FieldActive))
+func ActiveIsNil() predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldIsNull(FieldActive))
 }
 
 // ActiveNotNil applies the NotNil predicate on the "active" field.
-func ActiveNotNil() predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldNotNull(FieldActive))
+func ActiveNotNil() predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldNotNull(FieldActive))
 }
 
 // SecurityIsNil applies the IsNil predicate on the "security" field.
-func SecurityIsNil() predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldIsNull(FieldSecurity))
+func SecurityIsNil() predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldIsNull(FieldSecurity))
 }
 
 // SecurityNotNil applies the NotNil predicate on the "security" field.
-func SecurityNotNil() predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldNotNull(FieldSecurity))
+func SecurityNotNil() predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldNotNull(FieldSecurity))
 }
 
 // TrafficIsNil applies the IsNil predicate on the "traffic" field.
-func TrafficIsNil() predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldIsNull(FieldTraffic))
+func TrafficIsNil() predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldIsNull(FieldTraffic))
 }
 
 // TrafficNotNil applies the NotNil predicate on the "traffic" field.
-func TrafficNotNil() predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldNotNull(FieldTraffic))
+func TrafficNotNil() predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldNotNull(FieldTraffic))
 }
 
 // APIVersionEQ applies the EQ predicate on the "api_version" field.
-func APIVersionEQ(v string) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldEQ(FieldAPIVersion, v))
+func APIVersionEQ(v string) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldEQ(FieldAPIVersion, v))
 }
 
 // APIVersionNEQ applies the NEQ predicate on the "api_version" field.
-func APIVersionNEQ(v string) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldNEQ(FieldAPIVersion, v))
+func APIVersionNEQ(v string) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldNEQ(FieldAPIVersion, v))
 }
 
 // APIVersionIn applies the In predicate on the "api_version" field.
-func APIVersionIn(vs ...string) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldIn(FieldAPIVersion, vs...))
+func APIVersionIn(vs ...string) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldIn(FieldAPIVersion, vs...))
 }
 
 // APIVersionNotIn applies the NotIn predicate on the "api_version" field.
-func APIVersionNotIn(vs ...string) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldNotIn(FieldAPIVersion, vs...))
+func APIVersionNotIn(vs ...string) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldNotIn(FieldAPIVersion, vs...))
 }
 
 // APIVersionGT applies the GT predicate on the "api_version" field.
-func APIVersionGT(v string) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldGT(FieldAPIVersion, v))
+func APIVersionGT(v string) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldGT(FieldAPIVersion, v))
 }
 
 // APIVersionGTE applies the GTE predicate on the "api_version" field.
-func APIVersionGTE(v string) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldGTE(FieldAPIVersion, v))
+func APIVersionGTE(v string) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldGTE(FieldAPIVersion, v))
 }
 
 // APIVersionLT applies the LT predicate on the "api_version" field.
-func APIVersionLT(v string) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldLT(FieldAPIVersion, v))
+func APIVersionLT(v string) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldLT(FieldAPIVersion, v))
 }
 
 // APIVersionLTE applies the LTE predicate on the "api_version" field.
-func APIVersionLTE(v string) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldLTE(FieldAPIVersion, v))
+func APIVersionLTE(v string) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldLTE(FieldAPIVersion, v))
 }
 
 // APIVersionContains applies the Contains predicate on the "api_version" field.
-func APIVersionContains(v string) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldContains(FieldAPIVersion, v))
+func APIVersionContains(v string) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldContains(FieldAPIVersion, v))
 }
 
 // APIVersionHasPrefix applies the HasPrefix predicate on the "api_version" field.
-func APIVersionHasPrefix(v string) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldHasPrefix(FieldAPIVersion, v))
+func APIVersionHasPrefix(v string) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldHasPrefix(FieldAPIVersion, v))
 }
 
 // APIVersionHasSuffix applies the HasSuffix predicate on the "api_version" field.
-func APIVersionHasSuffix(v string) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldHasSuffix(FieldAPIVersion, v))
+func APIVersionHasSuffix(v string) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldHasSuffix(FieldAPIVersion, v))
 }
 
 // APIVersionIsNil applies the IsNil predicate on the "api_version" field.
-func APIVersionIsNil() predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldIsNull(FieldAPIVersion))
+func APIVersionIsNil() predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldIsNull(FieldAPIVersion))
 }
 
 // APIVersionNotNil applies the NotNil predicate on the "api_version" field.
-func APIVersionNotNil() predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldNotNull(FieldAPIVersion))
+func APIVersionNotNil() predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldNotNull(FieldAPIVersion))
 }
 
 // APIVersionEqualFold applies the EqualFold predicate on the "api_version" field.
-func APIVersionEqualFold(v string) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldEqualFold(FieldAPIVersion, v))
+func APIVersionEqualFold(v string) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldEqualFold(FieldAPIVersion, v))
 }
 
 // APIVersionContainsFold applies the ContainsFold predicate on the "api_version" field.
-func APIVersionContainsFold(v string) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldContainsFold(FieldAPIVersion, v))
+func APIVersionContainsFold(v string) predicate.APIExposure {
+	return predicate.APIExposure(sql.FieldContainsFold(FieldAPIVersion, v))
 }
 
 // HasOwner applies the HasEdge predicate on the "owner" edge.
-func HasOwner() predicate.ApiExposure {
-	return predicate.ApiExposure(func(s *sql.Selector) {
+func HasOwner() predicate.APIExposure {
+	return predicate.APIExposure(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, OwnerTable, OwnerColumn),
@@ -635,8 +635,8 @@ func HasOwner() predicate.ApiExposure {
 }
 
 // HasOwnerWith applies the HasEdge predicate on the "owner" edge with a given conditions (other predicates).
-func HasOwnerWith(preds ...predicate.Application) predicate.ApiExposure {
-	return predicate.ApiExposure(func(s *sql.Selector) {
+func HasOwnerWith(preds ...predicate.Application) predicate.APIExposure {
+	return predicate.APIExposure(func(s *sql.Selector) {
 		step := newOwnerStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
@@ -647,8 +647,8 @@ func HasOwnerWith(preds ...predicate.Application) predicate.ApiExposure {
 }
 
 // HasAPI applies the HasEdge predicate on the "api" edge.
-func HasAPI() predicate.ApiExposure {
-	return predicate.ApiExposure(func(s *sql.Selector) {
+func HasAPI() predicate.APIExposure {
+	return predicate.APIExposure(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, APITable, APIColumn),
@@ -658,8 +658,8 @@ func HasAPI() predicate.ApiExposure {
 }
 
 // HasAPIWith applies the HasEdge predicate on the "api" edge with a given conditions (other predicates).
-func HasAPIWith(preds ...predicate.Api) predicate.ApiExposure {
-	return predicate.ApiExposure(func(s *sql.Selector) {
+func HasAPIWith(preds ...predicate.API) predicate.APIExposure {
+	return predicate.APIExposure(func(s *sql.Selector) {
 		step := newAPIStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
@@ -670,8 +670,8 @@ func HasAPIWith(preds ...predicate.Api) predicate.ApiExposure {
 }
 
 // HasSubscriptions applies the HasEdge predicate on the "subscriptions" edge.
-func HasSubscriptions() predicate.ApiExposure {
-	return predicate.ApiExposure(func(s *sql.Selector) {
+func HasSubscriptions() predicate.APIExposure {
+	return predicate.APIExposure(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, true, SubscriptionsTable, SubscriptionsColumn),
@@ -681,8 +681,8 @@ func HasSubscriptions() predicate.ApiExposure {
 }
 
 // HasSubscriptionsWith applies the HasEdge predicate on the "subscriptions" edge with a given conditions (other predicates).
-func HasSubscriptionsWith(preds ...predicate.ApiSubscription) predicate.ApiExposure {
-	return predicate.ApiExposure(func(s *sql.Selector) {
+func HasSubscriptionsWith(preds ...predicate.APISubscription) predicate.APIExposure {
+	return predicate.APIExposure(func(s *sql.Selector) {
 		step := newSubscriptionsStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
@@ -693,16 +693,16 @@ func HasSubscriptionsWith(preds ...predicate.ApiSubscription) predicate.ApiExpos
 }
 
 // And groups predicates with the AND operator between them.
-func And(predicates ...predicate.ApiExposure) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.AndPredicates(predicates...))
+func And(predicates ...predicate.APIExposure) predicate.APIExposure {
+	return predicate.APIExposure(sql.AndPredicates(predicates...))
 }
 
 // Or groups predicates with the OR operator between them.
-func Or(predicates ...predicate.ApiExposure) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.OrPredicates(predicates...))
+func Or(predicates ...predicate.APIExposure) predicate.APIExposure {
+	return predicate.APIExposure(sql.OrPredicates(predicates...))
 }
 
 // Not applies the not operator on the given predicate.
-func Not(p predicate.ApiExposure) predicate.ApiExposure {
-	return predicate.ApiExposure(sql.NotPredicates(p))
+func Not(p predicate.APIExposure) predicate.APIExposure {
+	return predicate.APIExposure(sql.NotPredicates(p))
 }

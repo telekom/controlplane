@@ -120,13 +120,13 @@ func (_c *TeamCreate) SetEmail(v string) *TeamCreate {
 	return _c
 }
 
-// SetDisplayName sets the "displayName" field.
+// SetDisplayName sets the "display_name" field.
 func (_c *TeamCreate) SetDisplayName(v string) *TeamCreate {
 	_c.mutation.SetDisplayName(v)
 	return _c
 }
 
-// SetNillableDisplayName sets the "displayName" field if the given value is not nil.
+// SetNillableDisplayName sets the "display_name" field if the given value is not nil.
 func (_c *TeamCreate) SetNillableDisplayName(v *string) *TeamCreate {
 	if v != nil {
 		_c.SetDisplayName(*v)
@@ -225,14 +225,14 @@ func (_c *TeamCreate) AddApplications(v ...*Application) *TeamCreate {
 	return _c.AddApplicationIDs(ids...)
 }
 
-// AddAPIIDs adds the "apis" edge to the Api entity by IDs.
+// AddAPIIDs adds the "APIs" edge to the API entity by IDs.
 func (_c *TeamCreate) AddAPIIDs(ids ...int) *TeamCreate {
 	_c.mutation.AddAPIIDs(ids...)
 	return _c
 }
 
-// AddApis adds the "apis" edges to the Api entity.
-func (_c *TeamCreate) AddApis(v ...*Api) *TeamCreate {
+// AddAPIs adds the "APIs" edges to the API entity.
+func (_c *TeamCreate) AddAPIs(v ...*API) *TeamCreate {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
@@ -255,19 +255,19 @@ func (_c *TeamCreate) AddEventTypes(v ...*EventType) *TeamCreate {
 	return _c.AddEventTypeIDs(ids...)
 }
 
-// AddMcpServerIDs adds the "mcp_servers" edge to the McpServer entity by IDs.
-func (_c *TeamCreate) AddMcpServerIDs(ids ...int) *TeamCreate {
-	_c.mutation.AddMcpServerIDs(ids...)
+// AddMCPServerIDs adds the "MCP_servers" edge to the MCPServer entity by IDs.
+func (_c *TeamCreate) AddMCPServerIDs(ids ...int) *TeamCreate {
+	_c.mutation.AddMCPServerIDs(ids...)
 	return _c
 }
 
-// AddMcpServers adds the "mcp_servers" edges to the McpServer entity.
-func (_c *TeamCreate) AddMcpServers(v ...*McpServer) *TeamCreate {
+// AddMCPServers adds the "MCP_servers" edges to the MCPServer entity.
+func (_c *TeamCreate) AddMCPServers(v ...*MCPServer) *TeamCreate {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
 	}
-	return _c.AddMcpServerIDs(ids...)
+	return _c.AddMCPServerIDs(ids...)
 }
 
 // AddAgentCardIDs adds the "agent_cards" edge to the AgentCard entity by IDs.
@@ -512,12 +512,12 @@ func (_c *TeamCreate) createSpec() (*Team, *sqlgraph.CreateSpec) {
 		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := _c.mutation.ApisIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.APIsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   team.ApisTable,
-			Columns: []string{team.ApisColumn},
+			Table:   team.APIsTable,
+			Columns: []string{team.APIsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(api.FieldID, field.TypeInt),
@@ -544,12 +544,12 @@ func (_c *TeamCreate) createSpec() (*Team, *sqlgraph.CreateSpec) {
 		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := _c.mutation.McpServersIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.MCPServersIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   team.McpServersTable,
-			Columns: []string{team.McpServersColumn},
+			Table:   team.MCPServersTable,
+			Columns: []string{team.MCPServersColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(mcpserver.FieldID, field.TypeInt),
@@ -730,19 +730,19 @@ func (u *TeamUpsert) UpdateEmail() *TeamUpsert {
 	return u
 }
 
-// SetDisplayName sets the "displayName" field.
+// SetDisplayName sets the "display_name" field.
 func (u *TeamUpsert) SetDisplayName(v string) *TeamUpsert {
 	u.Set(team.FieldDisplayName, v)
 	return u
 }
 
-// UpdateDisplayName sets the "displayName" field to the value that was provided on create.
+// UpdateDisplayName sets the "display_name" field to the value that was provided on create.
 func (u *TeamUpsert) UpdateDisplayName() *TeamUpsert {
 	u.SetExcluded(team.FieldDisplayName)
 	return u
 }
 
-// ClearDisplayName clears the value of the "displayName" field.
+// ClearDisplayName clears the value of the "display_name" field.
 func (u *TeamUpsert) ClearDisplayName() *TeamUpsert {
 	u.SetNull(team.FieldDisplayName)
 	return u
@@ -960,21 +960,21 @@ func (u *TeamUpsertOne) UpdateEmail() *TeamUpsertOne {
 	})
 }
 
-// SetDisplayName sets the "displayName" field.
+// SetDisplayName sets the "display_name" field.
 func (u *TeamUpsertOne) SetDisplayName(v string) *TeamUpsertOne {
 	return u.Update(func(s *TeamUpsert) {
 		s.SetDisplayName(v)
 	})
 }
 
-// UpdateDisplayName sets the "displayName" field to the value that was provided on create.
+// UpdateDisplayName sets the "display_name" field to the value that was provided on create.
 func (u *TeamUpsertOne) UpdateDisplayName() *TeamUpsertOne {
 	return u.Update(func(s *TeamUpsert) {
 		s.UpdateDisplayName()
 	})
 }
 
-// ClearDisplayName clears the value of the "displayName" field.
+// ClearDisplayName clears the value of the "display_name" field.
 func (u *TeamUpsertOne) ClearDisplayName() *TeamUpsertOne {
 	return u.Update(func(s *TeamUpsert) {
 		s.ClearDisplayName()
@@ -1367,21 +1367,21 @@ func (u *TeamUpsertBulk) UpdateEmail() *TeamUpsertBulk {
 	})
 }
 
-// SetDisplayName sets the "displayName" field.
+// SetDisplayName sets the "display_name" field.
 func (u *TeamUpsertBulk) SetDisplayName(v string) *TeamUpsertBulk {
 	return u.Update(func(s *TeamUpsert) {
 		s.SetDisplayName(v)
 	})
 }
 
-// UpdateDisplayName sets the "displayName" field to the value that was provided on create.
+// UpdateDisplayName sets the "display_name" field to the value that was provided on create.
 func (u *TeamUpsertBulk) UpdateDisplayName() *TeamUpsertBulk {
 	return u.Update(func(s *TeamUpsert) {
 		s.UpdateDisplayName()
 	})
 }
 
-// ClearDisplayName clears the value of the "displayName" field.
+// ClearDisplayName clears the value of the "display_name" field.
 func (u *TeamUpsertBulk) ClearDisplayName() *TeamUpsertBulk {
 	return u.Update(func(s *TeamUpsert) {
 		s.ClearDisplayName()

@@ -14,11 +14,11 @@ import (
 // Api translator and repository into the generic pipeline via TypedModule.
 //
 // Api is a Level 2 entity with a required FK dependency on Team.
-var Module = &module.TypedModule[*apiv1.Api, *ApiData, ApiKey]{
+var Module = &module.TypedModule[*apiv1.Api, *APIData, APIKey]{
 	ModuleName: "api",
 	NewObj:     func() *apiv1.Api { return &apiv1.Api{} },
 	Translator: &Translator{},
-	RepoFactory: func(deps module.ModuleDeps) runtime.Repository[ApiKey, *ApiData] {
+	RepoFactory: func(deps module.ModuleDeps) runtime.Repository[APIKey, *APIData] {
 		return NewRepository(
 			deps.EntClient,
 			deps.EdgeCache,
