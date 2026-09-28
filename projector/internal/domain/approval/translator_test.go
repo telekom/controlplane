@@ -107,6 +107,9 @@ var _ = Describe("Approval Translator", func() {
 		})
 
 		It("should not skip a valid Approval CR targeting FileSubscription", func() {
+			cconfig.SetFeatureEnabled(cconfig.FeatureFile, true)
+			defer cconfig.SetFeatureEnabled(cconfig.FeatureFile, false)
+
 			obj := &approvalv1.Approval{
 				Spec: approvalv1.ApprovalSpec{
 					Action: "subscribe",
@@ -120,6 +123,24 @@ var _ = Describe("Approval Translator", func() {
 			skip, reason := t.ShouldSkip(obj)
 			Expect(skip).To(BeFalse())
 			Expect(reason).To(BeEmpty())
+		})
+
+		It("should skip FileSubscription target when file feature is disabled", func() {
+			cconfig.SetFeatureEnabled(cconfig.FeatureFile, false)
+
+			obj := &approvalv1.Approval{
+				Spec: approvalv1.ApprovalSpec{
+					Action: "subscribe",
+					Target: ctypes.TypedObjectRef{
+						TypeMeta:  metav1.TypeMeta{Kind: "FileSubscription"},
+						ObjectRef: ctypes.ObjectRef{Name: "my-file-sub"},
+					},
+					Decider: approvalv1.Decider{TeamName: "some-team"},
+				},
+			}
+			skip, reason := t.ShouldSkip(obj)
+			Expect(skip).To(BeTrue())
+			Expect(reason).To(ContainSubstring("file_subscription feature is disabled"))
 		})
 
 		It("should skip EventSubscription target when pubsub feature is disabled", func() {
