@@ -196,21 +196,21 @@ func (_u *AgentCardUpdate) ClearCategory() *AgentCardUpdate {
 	return _u
 }
 
-// SetOauth2Scopes sets the "oauth2_scopes" field.
-func (_u *AgentCardUpdate) SetOauth2Scopes(v []string) *AgentCardUpdate {
-	_u.mutation.SetOauth2Scopes(v)
+// SetOAuth2Scopes sets the "OAuth2_scopes" field.
+func (_u *AgentCardUpdate) SetOAuth2Scopes(v []string) *AgentCardUpdate {
+	_u.mutation.SetOAuth2Scopes(v)
 	return _u
 }
 
-// AppendOauth2Scopes appends value to the "oauth2_scopes" field.
-func (_u *AgentCardUpdate) AppendOauth2Scopes(v []string) *AgentCardUpdate {
-	_u.mutation.AppendOauth2Scopes(v)
+// AppendOAuth2Scopes appends value to the "OAuth2_scopes" field.
+func (_u *AgentCardUpdate) AppendOAuth2Scopes(v []string) *AgentCardUpdate {
+	_u.mutation.AppendOAuth2Scopes(v)
 	return _u
 }
 
-// ClearOauth2Scopes clears the value of the "oauth2_scopes" field.
-func (_u *AgentCardUpdate) ClearOauth2Scopes() *AgentCardUpdate {
-	_u.mutation.ClearOauth2Scopes()
+// ClearOAuth2Scopes clears the value of the "OAuth2_scopes" field.
+func (_u *AgentCardUpdate) ClearOAuth2Scopes() *AgentCardUpdate {
+	_u.mutation.ClearOAuth2Scopes()
 	return _u
 }
 
@@ -418,16 +418,16 @@ func (_u *AgentCardUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if _u.mutation.CategoryCleared() {
 		_spec.ClearField(agentcard.FieldCategory, field.TypeString)
 	}
-	if value, ok := _u.mutation.Oauth2Scopes(); ok {
-		_spec.SetField(agentcard.FieldOauth2Scopes, field.TypeJSON, value)
+	if value, ok := _u.mutation.OAuth2Scopes(); ok {
+		_spec.SetField(agentcard.FieldOAuth2Scopes, field.TypeJSON, value)
 	}
-	if value, ok := _u.mutation.AppendedOauth2Scopes(); ok {
+	if value, ok := _u.mutation.AppendedOAuth2Scopes(); ok {
 		_spec.AddModifier(func(u *sql.UpdateBuilder) {
-			sqljson.Append(u, agentcard.FieldOauth2Scopes, value)
+			sqljson.Append(u, agentcard.FieldOAuth2Scopes, value)
 		})
 	}
-	if _u.mutation.Oauth2ScopesCleared() {
-		_spec.ClearField(agentcard.FieldOauth2Scopes, field.TypeJSON)
+	if _u.mutation.OAuth2ScopesCleared() {
+		_spec.ClearField(agentcard.FieldOAuth2Scopes, field.TypeJSON)
 	}
 	if value, ok := _u.mutation.Active(); ok {
 		_spec.SetField(agentcard.FieldActive, field.TypeBool, value)
@@ -688,21 +688,21 @@ func (_u *AgentCardUpdateOne) ClearCategory() *AgentCardUpdateOne {
 	return _u
 }
 
-// SetOauth2Scopes sets the "oauth2_scopes" field.
-func (_u *AgentCardUpdateOne) SetOauth2Scopes(v []string) *AgentCardUpdateOne {
-	_u.mutation.SetOauth2Scopes(v)
+// SetOAuth2Scopes sets the "OAuth2_scopes" field.
+func (_u *AgentCardUpdateOne) SetOAuth2Scopes(v []string) *AgentCardUpdateOne {
+	_u.mutation.SetOAuth2Scopes(v)
 	return _u
 }
 
-// AppendOauth2Scopes appends value to the "oauth2_scopes" field.
-func (_u *AgentCardUpdateOne) AppendOauth2Scopes(v []string) *AgentCardUpdateOne {
-	_u.mutation.AppendOauth2Scopes(v)
+// AppendOAuth2Scopes appends value to the "OAuth2_scopes" field.
+func (_u *AgentCardUpdateOne) AppendOAuth2Scopes(v []string) *AgentCardUpdateOne {
+	_u.mutation.AppendOAuth2Scopes(v)
 	return _u
 }
 
-// ClearOauth2Scopes clears the value of the "oauth2_scopes" field.
-func (_u *AgentCardUpdateOne) ClearOauth2Scopes() *AgentCardUpdateOne {
-	_u.mutation.ClearOauth2Scopes()
+// ClearOAuth2Scopes clears the value of the "OAuth2_scopes" field.
+func (_u *AgentCardUpdateOne) ClearOAuth2Scopes() *AgentCardUpdateOne {
+	_u.mutation.ClearOAuth2Scopes()
 	return _u
 }
 
@@ -940,16 +940,16 @@ func (_u *AgentCardUpdateOne) sqlSave(ctx context.Context) (_node *AgentCard, er
 	if _u.mutation.CategoryCleared() {
 		_spec.ClearField(agentcard.FieldCategory, field.TypeString)
 	}
-	if value, ok := _u.mutation.Oauth2Scopes(); ok {
-		_spec.SetField(agentcard.FieldOauth2Scopes, field.TypeJSON, value)
+	if value, ok := _u.mutation.OAuth2Scopes(); ok {
+		_spec.SetField(agentcard.FieldOAuth2Scopes, field.TypeJSON, value)
 	}
-	if value, ok := _u.mutation.AppendedOauth2Scopes(); ok {
+	if value, ok := _u.mutation.AppendedOAuth2Scopes(); ok {
 		_spec.AddModifier(func(u *sql.UpdateBuilder) {
-			sqljson.Append(u, agentcard.FieldOauth2Scopes, value)
+			sqljson.Append(u, agentcard.FieldOAuth2Scopes, value)
 		})
 	}
-	if _u.mutation.Oauth2ScopesCleared() {
-		_spec.ClearField(agentcard.FieldOauth2Scopes, field.TypeJSON)
+	if _u.mutation.OAuth2ScopesCleared() {
+		_spec.ClearField(agentcard.FieldOAuth2Scopes, field.TypeJSON)
 	}
 	if value, ok := _u.mutation.Active(); ok {
 		_spec.SetField(agentcard.FieldActive, field.TypeBool, value)

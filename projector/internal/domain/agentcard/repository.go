@@ -72,7 +72,7 @@ func (r *Repository) Upsert(ctx context.Context, data *AgentCardData) error {
 		SetStatusPhase(entagentcard.StatusPhase(data.StatusPhase)).
 		SetStatusMessage(data.StatusMessage).
 		SetNamespace(data.Meta.Namespace).
-		SetOauth2Scopes(data.Oauth2Scopes).
+		SetOAuth2Scopes(data.OAuth2Scopes).
 		SetOwnerID(teamID)
 
 	if data.Description != "" {

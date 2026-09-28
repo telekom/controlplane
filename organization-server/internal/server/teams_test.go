@@ -20,10 +20,10 @@ import (
 
 var _ = Describe("Team Handlers", func() {
 	var (
-		app           *fiber.App
-		adminToken    string
-		obfToken      string
-		gqlOperations []string
+		app         *fiber.App
+		adminToken  string
+		obfToken    string
+		gqlRequests []gqlRequest
 	)
 
 	readyPhase := "READY"
@@ -31,7 +31,7 @@ var _ = Describe("Team Handlers", func() {
 	now := time.Now().UTC().Truncate(time.Second)
 
 	BeforeEach(func() {
-		gqlOperations = nil
+		gqlRequests = nil
 		gqlServer := mockGraphQLServer(map[string]any{
 			"GetGroup": map[string]any{
 				"groups": []map[string]any{
@@ -152,7 +152,7 @@ var _ = Describe("Team Handlers", func() {
 					"errors": []any{},
 				},
 			},
-		}, &gqlOperations)
+		}, &gqlRequests)
 		DeferCleanup(gqlServer.Close)
 
 		roverServer := mockRoverServer(map[string]string{
@@ -232,11 +232,20 @@ var _ = Describe("Team Handlers", func() {
 
 	Describe("PUT /organization/v1/hubs/:hub/teams/:team", func() {
 		It("should update a team", func() {
+			// Arrange
 			body := `{"email":"updated@telekom.de","members":[]}`
 			req := httptest.NewRequest(http.MethodPut, "/organization/v1/hubs/eni/teams/hyperion", strings.NewReader(body))
+
+			// Act
 			resp, err := executeRequest(app, req, adminToken)
+
+			// Assert
 			Expect(err).ToNot(HaveOccurred())
 			Expect(resp.StatusCode).To(Equal(http.StatusAccepted))
+			Expect(gqlVariables(gqlRequests, "UpdateTeam")).To(HaveKeyWithValue("input", SatisfyAll(
+				HaveKeyWithValue("teamID", "10"),
+				HaveKeyWithValue("email", "updated@telekom.de"),
+			)))
 		})
 	})
 
@@ -250,21 +259,27 @@ var _ = Describe("Team Handlers", func() {
 
 	Describe("PATCH /organization/v1/hubs/:hub/teams/:team/teamToken", func() {
 		It("should rotate the team token", func() {
+			// Arrange
 			req := httptest.NewRequest(http.MethodPatch, "/organization/v1/hubs/eni/teams/hyperion/teamToken", http.NoBody)
+
+			// Act
 			resp, err := executeRequest(app, req, adminToken)
+
+			// Assert
 			Expect(err).ToNot(HaveOccurred())
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
 			body, _ := io.ReadAll(resp.Body)
 			var result map[string]any
 			Expect(json.Unmarshal(body, &result)).To(Succeed())
 			Expect(result["teamToken"]).To(Equal("new-rotated-token"))
+			Expect(gqlVariables(gqlRequests, "RotateTeamToken")).To(HaveKeyWithValue("teamID", "10"))
 		})
 
 		It("should reject token rotation for obfuscated scope", func() {
 			req := httptest.NewRequest(http.MethodPatch, "/organization/v1/hubs/eni/teams/hyperion/teamToken", http.NoBody)
 			resp, err := executeRequest(app, req, obfToken)
 			expectStatus(resp, err, http.StatusForbidden)
-			Expect(gqlOperations).NotTo(ContainElement("RotateTeamToken"))
+			Expect(gqlRequests).NotTo(ContainElement(HaveField("OperationName", "RotateTeamToken")))
 		})
 	})
 

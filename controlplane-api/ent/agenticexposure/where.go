@@ -596,21 +596,21 @@ func HasOwnerWith(preds ...predicate.Application) predicate.AgenticExposure {
 	})
 }
 
-// HasMcpServer applies the HasEdge predicate on the "mcp_server" edge.
-func HasMcpServer() predicate.AgenticExposure {
+// HasMCPServer applies the HasEdge predicate on the "MCP_server" edge.
+func HasMCPServer() predicate.AgenticExposure {
 	return predicate.AgenticExposure(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, McpServerTable, McpServerColumn),
+			sqlgraph.Edge(sqlgraph.M2O, true, MCPServerTable, MCPServerColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
 }
 
-// HasMcpServerWith applies the HasEdge predicate on the "mcp_server" edge with a given conditions (other predicates).
-func HasMcpServerWith(preds ...predicate.McpServer) predicate.AgenticExposure {
+// HasMCPServerWith applies the HasEdge predicate on the "MCP_server" edge with a given conditions (other predicates).
+func HasMCPServerWith(preds ...predicate.MCPServer) predicate.AgenticExposure {
 	return predicate.AgenticExposure(func(s *sql.Selector) {
-		step := newMcpServerStep()
+		step := newMCPServerStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

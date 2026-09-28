@@ -33,7 +33,7 @@ import (
 )
 
 var (
-	_ gqlmodel.SubscriptionInfo = (*gqlmodel.ApiSubscriptionInfo)(nil)
+	_ gqlmodel.SubscriptionInfo = (*gqlmodel.APISubscriptionInfo)(nil)
 	_ gqlmodel.SubscriptionInfo = (*gqlmodel.EventSubscriptionInfo)(nil)
 	_ gqlmodel.SubscriptionInfo = (*gqlmodel.AgenticSubscriptionInfo)(nil)
 	_ gqlmodel.SubscriptionInfo = (*gqlmodel.FileSubscriptionInfo)(nil)
@@ -43,11 +43,12 @@ var _ = Describe("SubscriptionInfo", func() {
 	It("exposes application external IDs without sensitive direct application fields", func() {
 		schema := resolvers.NewExecutableSchema(resolvers.Config{}).Schema()
 		applicationInfo := schema.Types["ApplicationInfo"]
-		field := applicationInfo.Fields.ForName("externalIds")
+		field := applicationInfo.Fields.ForName("externalIDs")
 		Expect(field).NotTo(BeNil())
-		Expect(field.Type.String()).To(Equal("[ExternalId!]"))
-		Expect(field.Type.String()).To(Equal(schema.Types["Application"].Fields.ForName("externalIds").Type.String()))
-		for _, name := range []string{"clientID", "clientSecret", "permissionSet", "exposedApis", "subscribedApis"} {
+		Expect(field.Type.String()).To(Equal("[ExternalID!]"))
+		Expect(field.Type.String()).To(Equal(schema.Types["Application"].Fields.ForName("externalIDs").Type.String()))
+		for _, name := range []string{"clientID", "clientSecret", "permissionSet", "exposedAPIs", "subscribedAPIs"} {
+			Expect(schema.Types["Application"].Fields.ForName(name)).NotTo(BeNil(), name)
 			Expect(applicationInfo.Fields.ForName(name)).To(BeNil(), name)
 		}
 	})
@@ -64,7 +65,7 @@ var _ = Describe("SubscriptionInfo", func() {
 		for _, typ := range possibleTypes {
 			implementors = append(implementors, typ.Name)
 		}
-		Expect(implementors).To(ConsistOf("ApiSubscriptionInfo", "EventSubscriptionInfo", "AgenticSubscriptionInfo", "FileSubscriptionInfo"))
+		Expect(implementors).To(ConsistOf("APISubscriptionInfo", "EventSubscriptionInfo", "AgenticSubscriptionInfo", "FileSubscriptionInfo"))
 		Expect(schema.Types).NotTo(HaveKey("OwnedSubscriptionInfo"))
 		for _, name := range []string{"Approval", "ApprovalRequest"} {
 			Expect(schema.Types[name].Fields.ForName("subscription").Type.String()).To(Equal("SubscriptionInfo!"))
@@ -115,15 +116,15 @@ var _ = Describe("SubscriptionInfo", func() {
 		})
 
 		DescribeTable("returns persisted external IDs through a reduced cross-tenant application view",
-			func(ids []model.ExternalId, expectedJSON string) {
+			func(ids []model.ExternalID, expectedJSON string) {
 				if ids != nil {
-					_, err := db.Application.UpdateOne(seed.AppBeta).SetExternalIds(ids).Save(testutil.AllowContext())
+					_, err := db.Application.UpdateOne(seed.AppBeta).SetExternalIDs(ids).Save(testutil.AllowContext())
 					Expect(err).NotTo(HaveOccurred())
 				}
 				body, err := json.Marshal(map[string]string{"query": `{
 					approvals {
 						edges { node { subscription {
-							ownerApplication { id externalIds { Id Schema } }
+							ownerApplication { id externalIDs { id scheme } }
 						} } }
 					}
 					applications { edges { node { id } } }
@@ -146,7 +147,7 @@ var _ = Describe("SubscriptionInfo", func() {
 									Subscription struct {
 										OwnerApplication struct {
 											ID          string
-											ExternalIds json.RawMessage
+											ExternalIDs json.RawMessage
 										}
 									}
 								}
@@ -164,16 +165,16 @@ var _ = Describe("SubscriptionInfo", func() {
 				for _, edge := range response.Data.Approvals.Edges {
 					owner := edge.Node.Subscription.OwnerApplication
 					Expect(owner.ID).To(Equal(strconv.Itoa(seed.AppBeta.ID)))
-					Expect(string(owner.ExternalIds)).To(MatchJSON(expectedJSON))
+					Expect(string(owner.ExternalIDs)).To(MatchJSON(expectedJSON))
 				}
 				Expect(response.Data.Applications.Edges).To(HaveLen(1))
 				Expect(response.Data.Applications.Edges[0].Node.ID).To(Equal(strconv.Itoa(seed.AppAlpha.ID)))
 			},
 			Entry("populated IDs retain their values and order",
-				[]model.ExternalId{{Id: "z-123", Scheme: "inventory"}, {Id: "a-456", Scheme: "catalog"}},
-				`[{"Id":"z-123","Schema":"inventory"},{"Id":"a-456","Schema":"catalog"}]`),
-			Entry("absent IDs serialize as null", []model.ExternalId(nil), `null`),
-			Entry("explicitly empty IDs serialize as an empty array", []model.ExternalId{}, `[]`),
+				[]model.ExternalID{{ID: "z-123", Scheme: "inventory"}, {ID: "a-456", Scheme: "catalog"}},
+				`[{"id":"z-123","scheme":"inventory"},{"id":"a-456","scheme":"catalog"}]`),
+			Entry("absent IDs serialize as null", []model.ExternalID(nil), `null`),
+			Entry("explicitly empty IDs serialize as an empty array", []model.ExternalID{}, `[]`),
 		)
 
 		DescribeTable("resolves common fields for every implementation alongside concrete fragments",
@@ -183,7 +184,7 @@ var _ = Describe("SubscriptionInfo", func() {
 						edges { node { subscription {
 							__typename
 							%s
-							... on ApiSubscriptionInfo { basePath }
+							... on APISubscriptionInfo { basePath }
 							... on EventSubscriptionInfo { eventType }
 							... on AgenticSubscriptionInfo { basePath }
 							... on FileSubscriptionInfo { fileType }
@@ -218,7 +219,7 @@ var _ = Describe("SubscriptionInfo", func() {
 				Expect(json.Unmarshal(recorder.Body.Bytes(), &response)).To(Succeed())
 				Expect(response.Errors).To(BeEmpty())
 				expected := map[string]subscription{
-					"ApiSubscriptionInfo":     {ID: strconv.Itoa(seed.Subscription.ID), BasePath: "/alpha"},
+					"APISubscriptionInfo":     {ID: strconv.Itoa(seed.Subscription.ID), BasePath: "/alpha"},
 					"EventSubscriptionInfo":   {ID: strconv.Itoa(seed.EventSubscription.ID), EventType: "order.created"},
 					"AgenticSubscriptionInfo": {ID: strconv.Itoa(seed.AgenticSubscription.ID), BasePath: "/mcp-alpha"},
 					"FileSubscriptionInfo":    {ID: strconv.Itoa(seed.FileSubscriptionAlpha.ID), FileType: "invoice"},

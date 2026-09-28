@@ -8,22 +8,22 @@ package api
 
 import "github.com/telekom/controlplane/projector/internal/domain/shared"
 
-// ApiKey is the composite identity key for Api catalogue entities.
+// APIKey is the composite identity key for Api catalogue entities.
 // Api base paths are unique per team, so both components are needed.
-type ApiKey struct {
+type APIKey struct {
 	BasePath string
 	TeamName string
 }
 
-// ApiData carries the transformed data for an Api catalogue entity.
-type ApiData struct {
+// APIData carries the transformed data for an Api catalogue entity.
+type APIData struct {
 	Meta          shared.Metadata
 	StatusPhase   string // "READY", "PENDING", "ERROR", "UNKNOWN"
 	StatusMessage string
 	BasePath      string
 	Version       string
 	Category      string
-	Oauth2Scopes  []string
+	OAuth2Scopes  []string
 	XVendor       bool
 	Specification string // file-manager file ID (optional)
 	Active        bool   // cluster-wide active singleton flag

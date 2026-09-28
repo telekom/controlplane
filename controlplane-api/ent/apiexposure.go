@@ -19,8 +19,8 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 )
 
-// ApiExposure is the model entity for the ApiExposure schema.
-type ApiExposure struct {
+// APIExposure is the model entity for the APIExposure schema.
+type APIExposure struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID int `json:"id,omitempty"`
@@ -47,7 +47,7 @@ type ApiExposure struct {
 	// Upstreams holds the value of the "upstreams" field.
 	Upstreams []model.Upstream `json:"upstreams,omitempty"`
 	// Security holds the value of the "security" field.
-	Security model.ApiExposureSecurity `json:"security,omitempty"`
+	Security model.APIExposureSecurity `json:"security,omitempty"`
 	// Traffic holds the value of the "traffic" field.
 	Traffic model.Traffic `json:"traffic,omitempty"`
 	// ApprovalConfig holds the value of the "approval_config" field.
@@ -55,33 +55,33 @@ type ApiExposure struct {
 	// APIVersion holds the value of the "api_version" field.
 	APIVersion *string `json:"api_version,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
-	// The values are being populated by the ApiExposureQuery when eager-loading is set.
-	Edges                    ApiExposureEdges `json:"edges"`
+	// The values are being populated by the APIExposureQuery when eager-loading is set.
+	Edges                    APIExposureEdges `json:"edges"`
 	api_exposures            *int
 	application_exposed_apis *int
 	selectValues             sql.SelectValues
 }
 
-// ApiExposureEdges holds the relations/edges for other nodes in the graph.
-type ApiExposureEdges struct {
+// APIExposureEdges holds the relations/edges for other nodes in the graph.
+type APIExposureEdges struct {
 	// Owner holds the value of the owner edge.
 	Owner *Application `json:"owner,omitempty"`
 	// API holds the value of the api edge.
-	API *Api `json:"api,omitempty"`
+	API *API `json:"api,omitempty"`
 	// Subscriptions holds the value of the subscriptions edge.
-	Subscriptions []*ApiSubscription `json:"subscriptions,omitempty"`
+	Subscriptions []*APISubscription `json:"subscriptions,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [3]bool
 	// totalCount holds the count of the edges above.
 	totalCount [2]map[string]int
 
-	namedSubscriptions map[string][]*ApiSubscription
+	namedSubscriptions map[string][]*APISubscription
 }
 
 // OwnerOrErr returns the Owner value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
-func (e ApiExposureEdges) OwnerOrErr() (*Application, error) {
+func (e APIExposureEdges) OwnerOrErr() (*Application, error) {
 	if e.Owner != nil {
 		return e.Owner, nil
 	} else if e.loadedTypes[0] {
@@ -92,7 +92,7 @@ func (e ApiExposureEdges) OwnerOrErr() (*Application, error) {
 
 // APIOrErr returns the API value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
-func (e ApiExposureEdges) APIOrErr() (*Api, error) {
+func (e APIExposureEdges) APIOrErr() (*API, error) {
 	if e.API != nil {
 		return e.API, nil
 	} else if e.loadedTypes[1] {
@@ -103,7 +103,7 @@ func (e ApiExposureEdges) APIOrErr() (*Api, error) {
 
 // SubscriptionsOrErr returns the Subscriptions value or an error if the edge
 // was not loaded in eager-loading.
-func (e ApiExposureEdges) SubscriptionsOrErr() ([]*ApiSubscription, error) {
+func (e APIExposureEdges) SubscriptionsOrErr() ([]*APISubscription, error) {
 	if e.loadedTypes[2] {
 		return e.Subscriptions, nil
 	}
@@ -111,7 +111,7 @@ func (e ApiExposureEdges) SubscriptionsOrErr() ([]*ApiSubscription, error) {
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
-func (*ApiExposure) scanValues(columns []string) ([]any, error) {
+func (*APIExposure) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
@@ -137,8 +137,8 @@ func (*ApiExposure) scanValues(columns []string) ([]any, error) {
 }
 
 // assignValues assigns the values that were returned from sql.Rows (after scanning)
-// to the ApiExposure fields.
-func (_m *ApiExposure) assignValues(columns []string, values []any) error {
+// to the APIExposure fields.
+func (_m *APIExposure) assignValues(columns []string, values []any) error {
 	if m, n := len(values), len(columns); m < n {
 		return fmt.Errorf("mismatch number of scan values: %d != %d", m, n)
 	}
@@ -276,49 +276,49 @@ func (_m *ApiExposure) assignValues(columns []string, values []any) error {
 	return nil
 }
 
-// Value returns the ent.Value that was dynamically selected and assigned to the ApiExposure.
+// Value returns the ent.Value that was dynamically selected and assigned to the APIExposure.
 // This includes values selected through modifiers, order, etc.
-func (_m *ApiExposure) Value(name string) (ent.Value, error) {
+func (_m *APIExposure) Value(name string) (ent.Value, error) {
 	return _m.selectValues.Get(name)
 }
 
-// QueryOwner queries the "owner" edge of the ApiExposure entity.
-func (_m *ApiExposure) QueryOwner() *ApplicationQuery {
-	return NewApiExposureClient(_m.config).QueryOwner(_m)
+// QueryOwner queries the "owner" edge of the APIExposure entity.
+func (_m *APIExposure) QueryOwner() *ApplicationQuery {
+	return NewAPIExposureClient(_m.config).QueryOwner(_m)
 }
 
-// QueryAPI queries the "api" edge of the ApiExposure entity.
-func (_m *ApiExposure) QueryAPI() *APIQuery {
-	return NewApiExposureClient(_m.config).QueryAPI(_m)
+// QueryAPI queries the "api" edge of the APIExposure entity.
+func (_m *APIExposure) QueryAPI() *APIQuery {
+	return NewAPIExposureClient(_m.config).QueryAPI(_m)
 }
 
-// QuerySubscriptions queries the "subscriptions" edge of the ApiExposure entity.
-func (_m *ApiExposure) QuerySubscriptions() *ApiSubscriptionQuery {
-	return NewApiExposureClient(_m.config).QuerySubscriptions(_m)
+// QuerySubscriptions queries the "subscriptions" edge of the APIExposure entity.
+func (_m *APIExposure) QuerySubscriptions() *APISubscriptionQuery {
+	return NewAPIExposureClient(_m.config).QuerySubscriptions(_m)
 }
 
-// Update returns a builder for updating this ApiExposure.
-// Note that you need to call ApiExposure.Unwrap() before calling this method if this ApiExposure
+// Update returns a builder for updating this APIExposure.
+// Note that you need to call APIExposure.Unwrap() before calling this method if this APIExposure
 // was returned from a transaction, and the transaction was committed or rolled back.
-func (_m *ApiExposure) Update() *ApiExposureUpdateOne {
-	return NewApiExposureClient(_m.config).UpdateOne(_m)
+func (_m *APIExposure) Update() *APIExposureUpdateOne {
+	return NewAPIExposureClient(_m.config).UpdateOne(_m)
 }
 
-// Unwrap unwraps the ApiExposure entity that was returned from a transaction after it was closed,
+// Unwrap unwraps the APIExposure entity that was returned from a transaction after it was closed,
 // so that all future queries will be executed through the driver which created the transaction.
-func (_m *ApiExposure) Unwrap() *ApiExposure {
+func (_m *APIExposure) Unwrap() *APIExposure {
 	_tx, ok := _m.config.driver.(*txDriver)
 	if !ok {
-		panic("ent: ApiExposure is not a transactional entity")
+		panic("ent: APIExposure is not a transactional entity")
 	}
 	_m.config.driver = _tx.drv
 	return _m
 }
 
 // String implements the fmt.Stringer.
-func (_m *ApiExposure) String() string {
+func (_m *APIExposure) String() string {
 	var builder strings.Builder
-	builder.WriteString("ApiExposure(")
+	builder.WriteString("APIExposure(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", _m.ID))
 	builder.WriteString("created_at=")
 	builder.WriteString(_m.CreatedAt.Format(time.ANSIC))
@@ -380,7 +380,7 @@ func (_m *ApiExposure) String() string {
 
 // NamedSubscriptions returns the Subscriptions named value or an error if the edge was not
 // loaded in eager-loading with this name.
-func (_m *ApiExposure) NamedSubscriptions(name string) ([]*ApiSubscription, error) {
+func (_m *APIExposure) NamedSubscriptions(name string) ([]*APISubscription, error) {
 	if _m.Edges.namedSubscriptions == nil {
 		return nil, &NotLoadedError{edge: name}
 	}
@@ -391,16 +391,16 @@ func (_m *ApiExposure) NamedSubscriptions(name string) ([]*ApiSubscription, erro
 	return nodes, nil
 }
 
-func (_m *ApiExposure) appendNamedSubscriptions(name string, edges ...*ApiSubscription) {
+func (_m *APIExposure) appendNamedSubscriptions(name string, edges ...*APISubscription) {
 	if _m.Edges.namedSubscriptions == nil {
-		_m.Edges.namedSubscriptions = make(map[string][]*ApiSubscription)
+		_m.Edges.namedSubscriptions = make(map[string][]*APISubscription)
 	}
 	if len(edges) == 0 {
-		_m.Edges.namedSubscriptions[name] = []*ApiSubscription{}
+		_m.Edges.namedSubscriptions[name] = []*APISubscription{}
 	} else {
 		_m.Edges.namedSubscriptions[name] = append(_m.Edges.namedSubscriptions[name], edges...)
 	}
 }
 
-// ApiExposures is a parsable slice of ApiExposure.
-type ApiExposures []*ApiExposure
+// APIExposures is a parsable slice of APIExposure.
+type APIExposures []*APIExposure

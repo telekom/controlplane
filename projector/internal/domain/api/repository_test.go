@@ -27,13 +27,13 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-// mockApiDeps implements api.ApiDeps for testing.
-type mockApiDeps struct {
+// mockAPIDeps implements api.APIDeps for testing.
+type mockAPIDeps struct {
 	teamIDs map[string]int // key: team name
 	teamErr error          // if non-nil, FindTeamID always returns this error
 }
 
-func (m *mockApiDeps) FindTeamID(_ context.Context, name string) (int, error) {
+func (m *mockAPIDeps) FindTeamID(_ context.Context, name string) (int, error) {
 	if m.teamErr != nil {
 		return 0, m.teamErr
 	}
@@ -47,7 +47,7 @@ var _ = Describe("Api Repository", func() {
 	var (
 		client *ent.Client
 		cache  *infrastructure.EdgeCache
-		deps   *mockApiDeps
+		deps   *mockAPIDeps
 		repo   *api.Repository
 		ctx    context.Context
 		teamID int
@@ -68,7 +68,7 @@ var _ = Describe("Api Repository", func() {
 		Expect(err).NotTo(HaveOccurred())
 		teamID = tm.ID
 
-		deps = &mockApiDeps{
+		deps = &mockAPIDeps{
 			teamIDs: map[string]int{"platform--narvi": teamID},
 		}
 		repo = api.NewRepository(client, cache, deps)
@@ -81,27 +81,27 @@ var _ = Describe("Api Repository", func() {
 
 	Describe("Upsert", func() {
 		It("should create an api with valid deps", func() {
-			data := &api.ApiData{
+			data := &api.APIData{
 				Meta:          shared.NewMetadata("prod--platform--narvi", "api-weather-v1", nil),
 				StatusPhase:   "READY",
 				StatusMessage: "ok",
 				BasePath:      "/api/weather/v1",
 				Version:       "1.0.0",
 				Category:      "g-api",
-				Oauth2Scopes:  []string{"scope-a"},
+				OAuth2Scopes:  []string{"scope-a"},
 				Active:        true,
 				TeamName:      "platform--narvi",
 			}
 			Expect(repo.Upsert(ctx, data)).To(Succeed())
 
-			a, err := client.Api.Query().
+			a, err := client.API.Query().
 				Where(entapi.BasePathEQ("/api/weather/v1")).
 				Only(ctx)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(a.BasePath).To(Equal("/api/weather/v1"))
 			Expect(a.Version).To(Equal("1.0.0"))
 			Expect(a.Category).To(Equal("g-api"))
-			Expect(a.Oauth2Scopes).To(Equal([]string{"scope-a"}))
+			Expect(a.OAuth2Scopes).To(Equal([]string{"scope-a"}))
 			Expect(a.Active).To(BeTrue())
 
 			owner, err := a.QueryOwner().Only(ctx)
@@ -111,7 +111,7 @@ var _ = Describe("Api Repository", func() {
 
 		It("should return ErrDependencyMissing when the owner Team is missing", func() {
 			deps.teamIDs = map[string]int{}
-			data := &api.ApiData{
+			data := &api.APIData{
 				Meta:        shared.NewMetadata("prod--platform--narvi", "api-weather-v1", nil),
 				StatusPhase: "READY",
 				BasePath:    "/api/weather/v1",
@@ -124,7 +124,7 @@ var _ = Describe("Api Repository", func() {
 		})
 
 		It("should update an existing api on conflict", func() {
-			data := &api.ApiData{
+			data := &api.APIData{
 				Meta:        shared.NewMetadata("prod--platform--narvi", "api-weather-v1", nil),
 				StatusPhase: "READY",
 				BasePath:    "/api/weather/v1",
@@ -137,11 +137,11 @@ var _ = Describe("Api Repository", func() {
 			data.Version = "2.0.0"
 			Expect(repo.Upsert(ctx, data)).To(Succeed())
 
-			count, err := client.Api.Query().Count(ctx)
+			count, err := client.API.Query().Count(ctx)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(count).To(Equal(1))
 
-			a, err := client.Api.Query().
+			a, err := client.API.Query().
 				Where(entapi.BasePathEQ("/api/weather/v1")).
 				Only(ctx)
 			Expect(err).NotTo(HaveOccurred())
@@ -149,7 +149,7 @@ var _ = Describe("Api Repository", func() {
 		})
 
 		It("should set the active-api cache entry when active", func() {
-			data := &api.ApiData{
+			data := &api.APIData{
 				Meta:        shared.NewMetadata("prod--platform--narvi", "api-weather-v1", nil),
 				StatusPhase: "READY",
 				BasePath:    "/api/weather/v1",
@@ -161,13 +161,13 @@ var _ = Describe("Api Repository", func() {
 			cache.Wait()
 
 			resolver := infrastructure.NewIDResolver(client, cache)
-			id, err := resolver.FindActiveApiID(ctx, "/api/weather/v1")
+			id, err := resolver.FindActiveAPIID(ctx, "/api/weather/v1")
 			Expect(err).NotTo(HaveOccurred())
 			Expect(id).To(BeNumerically(">", 0))
 		})
 
 		It("should clear the active-api cache entry when inactive", func() {
-			data := &api.ApiData{
+			data := &api.APIData{
 				Meta:        shared.NewMetadata("prod--platform--narvi", "api-weather-v1", nil),
 				StatusPhase: "READY",
 				BasePath:    "/api/weather/v1",
@@ -182,7 +182,7 @@ var _ = Describe("Api Repository", func() {
 			cache.Wait()
 
 			resolver := infrastructure.NewIDResolver(client, cache)
-			_, err := resolver.FindActiveApiID(ctx, "/api/weather/v1")
+			_, err := resolver.FindActiveAPIID(ctx, "/api/weather/v1")
 			Expect(errors.Is(err, infrastructure.ErrEntityNotFound)).To(BeTrue())
 		})
 
@@ -203,7 +203,7 @@ var _ = Describe("Api Repository", func() {
 
 			// ApiExposure created first, before its Api exists → stored with a
 			// NULL api FK (the create-order race).
-			exp, err := client.ApiExposure.Create().
+			exp, err := client.APIExposure.Create().
 				SetBasePath("/api/weather/v1").
 				SetNamespace("prod--platform--narvi").
 				SetActive(true).
@@ -214,7 +214,7 @@ var _ = Describe("Api Repository", func() {
 			Expect(ent.IsNotFound(err)).To(BeTrue())
 
 			// Api appears later → should adopt the orphaned exposure.
-			data := &api.ApiData{
+			data := &api.APIData{
 				Meta:        shared.NewMetadata("prod--platform--narvi", "api-weather-v1", nil),
 				StatusPhase: "READY",
 				BasePath:    "/api/weather/v1",
@@ -243,7 +243,7 @@ var _ = Describe("Api Repository", func() {
 				Save(ctx)
 			Expect(err).NotTo(HaveOccurred())
 
-			exp, err := client.ApiExposure.Create().
+			exp, err := client.APIExposure.Create().
 				SetBasePath("/api/weather/v1").
 				SetNamespace("prod--platform--narvi").
 				SetActive(true).
@@ -251,7 +251,7 @@ var _ = Describe("Api Repository", func() {
 				Save(ctx)
 			Expect(err).NotTo(HaveOccurred())
 
-			data := &api.ApiData{
+			data := &api.APIData{
 				Meta:        shared.NewMetadata("prod--platform--narvi", "api-weather-v1", nil),
 				StatusPhase: "READY",
 				BasePath:    "/api/weather/v1",
@@ -268,12 +268,12 @@ var _ = Describe("Api Repository", func() {
 
 	Describe("Delete", func() {
 		It("should be idempotent when the entity does not exist", func() {
-			key := api.ApiKey{BasePath: "/api/missing", TeamName: "platform--narvi"}
+			key := api.APIKey{BasePath: "/api/missing", TeamName: "platform--narvi"}
 			Expect(repo.Delete(ctx, key)).To(Succeed())
 		})
 
 		It("should delete an existing api by base path and team name", func() {
-			data := &api.ApiData{
+			data := &api.APIData{
 				Meta:        shared.NewMetadata("prod--platform--narvi", "api-weather-v1", nil),
 				StatusPhase: "READY",
 				BasePath:    "/api/weather/v1",
@@ -283,15 +283,15 @@ var _ = Describe("Api Repository", func() {
 			}
 			Expect(repo.Upsert(ctx, data)).To(Succeed())
 
-			key := api.ApiKey{BasePath: "/api/weather/v1", TeamName: "platform--narvi"}
+			key := api.APIKey{BasePath: "/api/weather/v1", TeamName: "platform--narvi"}
 			Expect(repo.Delete(ctx, key)).To(Succeed())
 
-			count, err := client.Api.Query().Count(ctx)
+			count, err := client.API.Query().Count(ctx)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(count).To(Equal(0))
 
 			resolver := infrastructure.NewIDResolver(client, cache)
-			_, err = resolver.FindActiveApiID(ctx, "/api/weather/v1")
+			_, err = resolver.FindActiveAPIID(ctx, "/api/weather/v1")
 			Expect(errors.Is(err, infrastructure.ErrEntityNotFound)).To(BeTrue())
 		})
 	})

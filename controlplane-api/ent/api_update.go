@@ -21,7 +21,7 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/team"
 )
 
-// APIUpdate is the builder for updating Api entities.
+// APIUpdate is the builder for updating API entities.
 type APIUpdate struct {
 	config
 	hooks    []Hook
@@ -29,7 +29,7 @@ type APIUpdate struct {
 }
 
 // Where appends a list predicates to the APIUpdate builder.
-func (_u *APIUpdate) Where(ps ...predicate.Api) *APIUpdate {
+func (_u *APIUpdate) Where(ps ...predicate.API) *APIUpdate {
 	_u.mutation.Where(ps...)
 	return _u
 }
@@ -142,21 +142,21 @@ func (_u *APIUpdate) ClearCategory() *APIUpdate {
 	return _u
 }
 
-// SetOauth2Scopes sets the "oauth2_scopes" field.
-func (_u *APIUpdate) SetOauth2Scopes(v []string) *APIUpdate {
-	_u.mutation.SetOauth2Scopes(v)
+// SetOAuth2Scopes sets the "OAuth2_scopes" field.
+func (_u *APIUpdate) SetOAuth2Scopes(v []string) *APIUpdate {
+	_u.mutation.SetOAuth2Scopes(v)
 	return _u
 }
 
-// AppendOauth2Scopes appends value to the "oauth2_scopes" field.
-func (_u *APIUpdate) AppendOauth2Scopes(v []string) *APIUpdate {
-	_u.mutation.AppendOauth2Scopes(v)
+// AppendOAuth2Scopes appends value to the "OAuth2_scopes" field.
+func (_u *APIUpdate) AppendOAuth2Scopes(v []string) *APIUpdate {
+	_u.mutation.AppendOAuth2Scopes(v)
 	return _u
 }
 
-// ClearOauth2Scopes clears the value of the "oauth2_scopes" field.
-func (_u *APIUpdate) ClearOauth2Scopes() *APIUpdate {
-	_u.mutation.ClearOauth2Scopes()
+// ClearOAuth2Scopes clears the value of the "OAuth2_scopes" field.
+func (_u *APIUpdate) ClearOAuth2Scopes() *APIUpdate {
+	_u.mutation.ClearOAuth2Scopes()
 	return _u
 }
 
@@ -219,14 +219,14 @@ func (_u *APIUpdate) SetOwner(v *Team) *APIUpdate {
 	return _u.SetOwnerID(v.ID)
 }
 
-// AddExposureIDs adds the "exposures" edge to the ApiExposure entity by IDs.
+// AddExposureIDs adds the "exposures" edge to the APIExposure entity by IDs.
 func (_u *APIUpdate) AddExposureIDs(ids ...int) *APIUpdate {
 	_u.mutation.AddExposureIDs(ids...)
 	return _u
 }
 
-// AddExposures adds the "exposures" edges to the ApiExposure entity.
-func (_u *APIUpdate) AddExposures(v ...*ApiExposure) *APIUpdate {
+// AddExposures adds the "exposures" edges to the APIExposure entity.
+func (_u *APIUpdate) AddExposures(v ...*APIExposure) *APIUpdate {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
@@ -245,20 +245,20 @@ func (_u *APIUpdate) ClearOwner() *APIUpdate {
 	return _u
 }
 
-// ClearExposures clears all "exposures" edges to the ApiExposure entity.
+// ClearExposures clears all "exposures" edges to the APIExposure entity.
 func (_u *APIUpdate) ClearExposures() *APIUpdate {
 	_u.mutation.ClearExposures()
 	return _u
 }
 
-// RemoveExposureIDs removes the "exposures" edge to ApiExposure entities by IDs.
+// RemoveExposureIDs removes the "exposures" edge to APIExposure entities by IDs.
 func (_u *APIUpdate) RemoveExposureIDs(ids ...int) *APIUpdate {
 	_u.mutation.RemoveExposureIDs(ids...)
 	return _u
 }
 
-// RemoveExposures removes "exposures" edges to ApiExposure entities.
-func (_u *APIUpdate) RemoveExposures(v ...*ApiExposure) *APIUpdate {
+// RemoveExposures removes "exposures" edges to APIExposure entities.
+func (_u *APIUpdate) RemoveExposures(v ...*APIExposure) *APIUpdate {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
@@ -312,26 +312,26 @@ func (_u *APIUpdate) defaults() error {
 func (_u *APIUpdate) check() error {
 	if v, ok := _u.mutation.StatusPhase(); ok {
 		if err := api.StatusPhaseValidator(v); err != nil {
-			return &ValidationError{Name: "status_phase", err: fmt.Errorf(`ent: validator failed for field "Api.status_phase": %w`, err)}
+			return &ValidationError{Name: "status_phase", err: fmt.Errorf(`ent: validator failed for field "API.status_phase": %w`, err)}
 		}
 	}
 	if v, ok := _u.mutation.Namespace(); ok {
 		if err := api.NamespaceValidator(v); err != nil {
-			return &ValidationError{Name: "namespace", err: fmt.Errorf(`ent: validator failed for field "Api.namespace": %w`, err)}
+			return &ValidationError{Name: "namespace", err: fmt.Errorf(`ent: validator failed for field "API.namespace": %w`, err)}
 		}
 	}
 	if v, ok := _u.mutation.BasePath(); ok {
 		if err := api.BasePathValidator(v); err != nil {
-			return &ValidationError{Name: "base_path", err: fmt.Errorf(`ent: validator failed for field "Api.base_path": %w`, err)}
+			return &ValidationError{Name: "base_path", err: fmt.Errorf(`ent: validator failed for field "API.base_path": %w`, err)}
 		}
 	}
 	if v, ok := _u.mutation.Version(); ok {
 		if err := api.VersionValidator(v); err != nil {
-			return &ValidationError{Name: "version", err: fmt.Errorf(`ent: validator failed for field "Api.version": %w`, err)}
+			return &ValidationError{Name: "version", err: fmt.Errorf(`ent: validator failed for field "API.version": %w`, err)}
 		}
 	}
 	if _u.mutation.OwnerCleared() && len(_u.mutation.OwnerIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "Api.owner"`)
+		return errors.New(`ent: clearing a required unique edge "API.owner"`)
 	}
 	return nil
 }
@@ -378,16 +378,16 @@ func (_u *APIUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if _u.mutation.CategoryCleared() {
 		_spec.ClearField(api.FieldCategory, field.TypeString)
 	}
-	if value, ok := _u.mutation.Oauth2Scopes(); ok {
-		_spec.SetField(api.FieldOauth2Scopes, field.TypeJSON, value)
+	if value, ok := _u.mutation.OAuth2Scopes(); ok {
+		_spec.SetField(api.FieldOAuth2Scopes, field.TypeJSON, value)
 	}
-	if value, ok := _u.mutation.AppendedOauth2Scopes(); ok {
+	if value, ok := _u.mutation.AppendedOAuth2Scopes(); ok {
 		_spec.AddModifier(func(u *sql.UpdateBuilder) {
-			sqljson.Append(u, api.FieldOauth2Scopes, value)
+			sqljson.Append(u, api.FieldOAuth2Scopes, value)
 		})
 	}
-	if _u.mutation.Oauth2ScopesCleared() {
-		_spec.ClearField(api.FieldOauth2Scopes, field.TypeJSON)
+	if _u.mutation.OAuth2ScopesCleared() {
+		_spec.ClearField(api.FieldOAuth2Scopes, field.TypeJSON)
 	}
 	if value, ok := _u.mutation.XVendor(); ok {
 		_spec.SetField(api.FieldXVendor, field.TypeBool, value)
@@ -487,7 +487,7 @@ func (_u *APIUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	return _node, nil
 }
 
-// APIUpdateOne is the builder for updating a single Api entity.
+// APIUpdateOne is the builder for updating a single API entity.
 type APIUpdateOne struct {
 	config
 	fields   []string
@@ -603,21 +603,21 @@ func (_u *APIUpdateOne) ClearCategory() *APIUpdateOne {
 	return _u
 }
 
-// SetOauth2Scopes sets the "oauth2_scopes" field.
-func (_u *APIUpdateOne) SetOauth2Scopes(v []string) *APIUpdateOne {
-	_u.mutation.SetOauth2Scopes(v)
+// SetOAuth2Scopes sets the "OAuth2_scopes" field.
+func (_u *APIUpdateOne) SetOAuth2Scopes(v []string) *APIUpdateOne {
+	_u.mutation.SetOAuth2Scopes(v)
 	return _u
 }
 
-// AppendOauth2Scopes appends value to the "oauth2_scopes" field.
-func (_u *APIUpdateOne) AppendOauth2Scopes(v []string) *APIUpdateOne {
-	_u.mutation.AppendOauth2Scopes(v)
+// AppendOAuth2Scopes appends value to the "OAuth2_scopes" field.
+func (_u *APIUpdateOne) AppendOAuth2Scopes(v []string) *APIUpdateOne {
+	_u.mutation.AppendOAuth2Scopes(v)
 	return _u
 }
 
-// ClearOauth2Scopes clears the value of the "oauth2_scopes" field.
-func (_u *APIUpdateOne) ClearOauth2Scopes() *APIUpdateOne {
-	_u.mutation.ClearOauth2Scopes()
+// ClearOAuth2Scopes clears the value of the "OAuth2_scopes" field.
+func (_u *APIUpdateOne) ClearOAuth2Scopes() *APIUpdateOne {
+	_u.mutation.ClearOAuth2Scopes()
 	return _u
 }
 
@@ -680,14 +680,14 @@ func (_u *APIUpdateOne) SetOwner(v *Team) *APIUpdateOne {
 	return _u.SetOwnerID(v.ID)
 }
 
-// AddExposureIDs adds the "exposures" edge to the ApiExposure entity by IDs.
+// AddExposureIDs adds the "exposures" edge to the APIExposure entity by IDs.
 func (_u *APIUpdateOne) AddExposureIDs(ids ...int) *APIUpdateOne {
 	_u.mutation.AddExposureIDs(ids...)
 	return _u
 }
 
-// AddExposures adds the "exposures" edges to the ApiExposure entity.
-func (_u *APIUpdateOne) AddExposures(v ...*ApiExposure) *APIUpdateOne {
+// AddExposures adds the "exposures" edges to the APIExposure entity.
+func (_u *APIUpdateOne) AddExposures(v ...*APIExposure) *APIUpdateOne {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
@@ -706,20 +706,20 @@ func (_u *APIUpdateOne) ClearOwner() *APIUpdateOne {
 	return _u
 }
 
-// ClearExposures clears all "exposures" edges to the ApiExposure entity.
+// ClearExposures clears all "exposures" edges to the APIExposure entity.
 func (_u *APIUpdateOne) ClearExposures() *APIUpdateOne {
 	_u.mutation.ClearExposures()
 	return _u
 }
 
-// RemoveExposureIDs removes the "exposures" edge to ApiExposure entities by IDs.
+// RemoveExposureIDs removes the "exposures" edge to APIExposure entities by IDs.
 func (_u *APIUpdateOne) RemoveExposureIDs(ids ...int) *APIUpdateOne {
 	_u.mutation.RemoveExposureIDs(ids...)
 	return _u
 }
 
-// RemoveExposures removes "exposures" edges to ApiExposure entities.
-func (_u *APIUpdateOne) RemoveExposures(v ...*ApiExposure) *APIUpdateOne {
+// RemoveExposures removes "exposures" edges to APIExposure entities.
+func (_u *APIUpdateOne) RemoveExposures(v ...*APIExposure) *APIUpdateOne {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
@@ -728,7 +728,7 @@ func (_u *APIUpdateOne) RemoveExposures(v ...*ApiExposure) *APIUpdateOne {
 }
 
 // Where appends a list predicates to the APIUpdate builder.
-func (_u *APIUpdateOne) Where(ps ...predicate.Api) *APIUpdateOne {
+func (_u *APIUpdateOne) Where(ps ...predicate.API) *APIUpdateOne {
 	_u.mutation.Where(ps...)
 	return _u
 }
@@ -740,8 +740,8 @@ func (_u *APIUpdateOne) Select(field string, fields ...string) *APIUpdateOne {
 	return _u
 }
 
-// Save executes the query and returns the updated Api entity.
-func (_u *APIUpdateOne) Save(ctx context.Context) (*Api, error) {
+// Save executes the query and returns the updated API entity.
+func (_u *APIUpdateOne) Save(ctx context.Context) (*API, error) {
 	if err := _u.defaults(); err != nil {
 		return nil, err
 	}
@@ -749,7 +749,7 @@ func (_u *APIUpdateOne) Save(ctx context.Context) (*Api, error) {
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (_u *APIUpdateOne) SaveX(ctx context.Context) *Api {
+func (_u *APIUpdateOne) SaveX(ctx context.Context) *API {
 	node, err := _u.Save(ctx)
 	if err != nil {
 		panic(err)
@@ -786,38 +786,38 @@ func (_u *APIUpdateOne) defaults() error {
 func (_u *APIUpdateOne) check() error {
 	if v, ok := _u.mutation.StatusPhase(); ok {
 		if err := api.StatusPhaseValidator(v); err != nil {
-			return &ValidationError{Name: "status_phase", err: fmt.Errorf(`ent: validator failed for field "Api.status_phase": %w`, err)}
+			return &ValidationError{Name: "status_phase", err: fmt.Errorf(`ent: validator failed for field "API.status_phase": %w`, err)}
 		}
 	}
 	if v, ok := _u.mutation.Namespace(); ok {
 		if err := api.NamespaceValidator(v); err != nil {
-			return &ValidationError{Name: "namespace", err: fmt.Errorf(`ent: validator failed for field "Api.namespace": %w`, err)}
+			return &ValidationError{Name: "namespace", err: fmt.Errorf(`ent: validator failed for field "API.namespace": %w`, err)}
 		}
 	}
 	if v, ok := _u.mutation.BasePath(); ok {
 		if err := api.BasePathValidator(v); err != nil {
-			return &ValidationError{Name: "base_path", err: fmt.Errorf(`ent: validator failed for field "Api.base_path": %w`, err)}
+			return &ValidationError{Name: "base_path", err: fmt.Errorf(`ent: validator failed for field "API.base_path": %w`, err)}
 		}
 	}
 	if v, ok := _u.mutation.Version(); ok {
 		if err := api.VersionValidator(v); err != nil {
-			return &ValidationError{Name: "version", err: fmt.Errorf(`ent: validator failed for field "Api.version": %w`, err)}
+			return &ValidationError{Name: "version", err: fmt.Errorf(`ent: validator failed for field "API.version": %w`, err)}
 		}
 	}
 	if _u.mutation.OwnerCleared() && len(_u.mutation.OwnerIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "Api.owner"`)
+		return errors.New(`ent: clearing a required unique edge "API.owner"`)
 	}
 	return nil
 }
 
-func (_u *APIUpdateOne) sqlSave(ctx context.Context) (_node *Api, err error) {
+func (_u *APIUpdateOne) sqlSave(ctx context.Context) (_node *API, err error) {
 	if err := _u.check(); err != nil {
 		return _node, err
 	}
 	_spec := sqlgraph.NewUpdateSpec(api.Table, api.Columns, sqlgraph.NewFieldSpec(api.FieldID, field.TypeInt))
 	id, ok := _u.mutation.ID()
 	if !ok {
-		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "Api.id" for update`)}
+		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "API.id" for update`)}
 	}
 	_spec.Node.ID.Value = id
 	if fields := _u.fields; len(fields) > 0 {
@@ -869,16 +869,16 @@ func (_u *APIUpdateOne) sqlSave(ctx context.Context) (_node *Api, err error) {
 	if _u.mutation.CategoryCleared() {
 		_spec.ClearField(api.FieldCategory, field.TypeString)
 	}
-	if value, ok := _u.mutation.Oauth2Scopes(); ok {
-		_spec.SetField(api.FieldOauth2Scopes, field.TypeJSON, value)
+	if value, ok := _u.mutation.OAuth2Scopes(); ok {
+		_spec.SetField(api.FieldOAuth2Scopes, field.TypeJSON, value)
 	}
-	if value, ok := _u.mutation.AppendedOauth2Scopes(); ok {
+	if value, ok := _u.mutation.AppendedOAuth2Scopes(); ok {
 		_spec.AddModifier(func(u *sql.UpdateBuilder) {
-			sqljson.Append(u, api.FieldOauth2Scopes, value)
+			sqljson.Append(u, api.FieldOAuth2Scopes, value)
 		})
 	}
-	if _u.mutation.Oauth2ScopesCleared() {
-		_spec.ClearField(api.FieldOauth2Scopes, field.TypeJSON)
+	if _u.mutation.OAuth2ScopesCleared() {
+		_spec.ClearField(api.FieldOAuth2Scopes, field.TypeJSON)
 	}
 	if value, ok := _u.mutation.XVendor(); ok {
 		_spec.SetField(api.FieldXVendor, field.TypeBool, value)
@@ -966,7 +966,7 @@ func (_u *APIUpdateOne) sqlSave(ctx context.Context) (_node *Api, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	_node = &Api{config: _u.config}
+	_node = &API{config: _u.config}
 	_spec.Assign = _node.assignValues
 	_spec.ScanValues = _node.scanValues
 	if err = sqlgraph.UpdateNode(ctx, _u.driver, _spec); err != nil {

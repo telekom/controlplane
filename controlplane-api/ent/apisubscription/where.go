@@ -14,663 +14,663 @@ import (
 )
 
 // ID filters vertices based on their ID field.
-func ID(id int) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldEQ(FieldID, id))
+func ID(id int) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldEQ(FieldID, id))
 }
 
 // IDEQ applies the EQ predicate on the ID field.
-func IDEQ(id int) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldEQ(FieldID, id))
+func IDEQ(id int) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldEQ(FieldID, id))
 }
 
 // IDNEQ applies the NEQ predicate on the ID field.
-func IDNEQ(id int) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldNEQ(FieldID, id))
+func IDNEQ(id int) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldNEQ(FieldID, id))
 }
 
 // IDIn applies the In predicate on the ID field.
-func IDIn(ids ...int) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldIn(FieldID, ids...))
+func IDIn(ids ...int) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldIn(FieldID, ids...))
 }
 
 // IDNotIn applies the NotIn predicate on the ID field.
-func IDNotIn(ids ...int) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldNotIn(FieldID, ids...))
+func IDNotIn(ids ...int) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldNotIn(FieldID, ids...))
 }
 
 // IDGT applies the GT predicate on the ID field.
-func IDGT(id int) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldGT(FieldID, id))
+func IDGT(id int) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldGT(FieldID, id))
 }
 
 // IDGTE applies the GTE predicate on the ID field.
-func IDGTE(id int) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldGTE(FieldID, id))
+func IDGTE(id int) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldGTE(FieldID, id))
 }
 
 // IDLT applies the LT predicate on the ID field.
-func IDLT(id int) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldLT(FieldID, id))
+func IDLT(id int) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldLT(FieldID, id))
 }
 
 // IDLTE applies the LTE predicate on the ID field.
-func IDLTE(id int) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldLTE(FieldID, id))
+func IDLTE(id int) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldLTE(FieldID, id))
 }
 
 // CreatedAt applies equality check predicate on the "created_at" field. It's identical to CreatedAtEQ.
-func CreatedAt(v time.Time) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldEQ(FieldCreatedAt, v))
+func CreatedAt(v time.Time) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldEQ(FieldCreatedAt, v))
 }
 
 // LastModifiedAt applies equality check predicate on the "last_modified_at" field. It's identical to LastModifiedAtEQ.
-func LastModifiedAt(v time.Time) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldEQ(FieldLastModifiedAt, v))
+func LastModifiedAt(v time.Time) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldEQ(FieldLastModifiedAt, v))
 }
 
 // StatusMessage applies equality check predicate on the "status_message" field. It's identical to StatusMessageEQ.
-func StatusMessage(v string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldEQ(FieldStatusMessage, v))
+func StatusMessage(v string) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldEQ(FieldStatusMessage, v))
 }
 
 // Environment applies equality check predicate on the "environment" field. It's identical to EnvironmentEQ.
-func Environment(v string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldEQ(FieldEnvironment, v))
+func Environment(v string) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldEQ(FieldEnvironment, v))
 }
 
 // Namespace applies equality check predicate on the "namespace" field. It's identical to NamespaceEQ.
-func Namespace(v string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldEQ(FieldNamespace, v))
+func Namespace(v string) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldEQ(FieldNamespace, v))
 }
 
 // Name applies equality check predicate on the "name" field. It's identical to NameEQ.
-func Name(v string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldEQ(FieldName, v))
+func Name(v string) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldEQ(FieldName, v))
 }
 
 // BasePath applies equality check predicate on the "base_path" field. It's identical to BasePathEQ.
-func BasePath(v string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldEQ(FieldBasePath, v))
+func BasePath(v string) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldEQ(FieldBasePath, v))
 }
 
 // GatewayURL applies equality check predicate on the "gateway_url" field. It's identical to GatewayURLEQ.
-func GatewayURL(v string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldEQ(FieldGatewayURL, v))
+func GatewayURL(v string) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldEQ(FieldGatewayURL, v))
 }
 
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
-func CreatedAtEQ(v time.Time) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldEQ(FieldCreatedAt, v))
+func CreatedAtEQ(v time.Time) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldEQ(FieldCreatedAt, v))
 }
 
 // CreatedAtNEQ applies the NEQ predicate on the "created_at" field.
-func CreatedAtNEQ(v time.Time) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldNEQ(FieldCreatedAt, v))
+func CreatedAtNEQ(v time.Time) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldNEQ(FieldCreatedAt, v))
 }
 
 // CreatedAtIn applies the In predicate on the "created_at" field.
-func CreatedAtIn(vs ...time.Time) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldIn(FieldCreatedAt, vs...))
+func CreatedAtIn(vs ...time.Time) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldIn(FieldCreatedAt, vs...))
 }
 
 // CreatedAtNotIn applies the NotIn predicate on the "created_at" field.
-func CreatedAtNotIn(vs ...time.Time) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldNotIn(FieldCreatedAt, vs...))
+func CreatedAtNotIn(vs ...time.Time) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldNotIn(FieldCreatedAt, vs...))
 }
 
 // CreatedAtGT applies the GT predicate on the "created_at" field.
-func CreatedAtGT(v time.Time) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldGT(FieldCreatedAt, v))
+func CreatedAtGT(v time.Time) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldGT(FieldCreatedAt, v))
 }
 
 // CreatedAtGTE applies the GTE predicate on the "created_at" field.
-func CreatedAtGTE(v time.Time) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldGTE(FieldCreatedAt, v))
+func CreatedAtGTE(v time.Time) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldGTE(FieldCreatedAt, v))
 }
 
 // CreatedAtLT applies the LT predicate on the "created_at" field.
-func CreatedAtLT(v time.Time) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldLT(FieldCreatedAt, v))
+func CreatedAtLT(v time.Time) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldLT(FieldCreatedAt, v))
 }
 
 // CreatedAtLTE applies the LTE predicate on the "created_at" field.
-func CreatedAtLTE(v time.Time) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldLTE(FieldCreatedAt, v))
+func CreatedAtLTE(v time.Time) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldLTE(FieldCreatedAt, v))
 }
 
 // LastModifiedAtEQ applies the EQ predicate on the "last_modified_at" field.
-func LastModifiedAtEQ(v time.Time) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldEQ(FieldLastModifiedAt, v))
+func LastModifiedAtEQ(v time.Time) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldEQ(FieldLastModifiedAt, v))
 }
 
 // LastModifiedAtNEQ applies the NEQ predicate on the "last_modified_at" field.
-func LastModifiedAtNEQ(v time.Time) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldNEQ(FieldLastModifiedAt, v))
+func LastModifiedAtNEQ(v time.Time) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldNEQ(FieldLastModifiedAt, v))
 }
 
 // LastModifiedAtIn applies the In predicate on the "last_modified_at" field.
-func LastModifiedAtIn(vs ...time.Time) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldIn(FieldLastModifiedAt, vs...))
+func LastModifiedAtIn(vs ...time.Time) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldIn(FieldLastModifiedAt, vs...))
 }
 
 // LastModifiedAtNotIn applies the NotIn predicate on the "last_modified_at" field.
-func LastModifiedAtNotIn(vs ...time.Time) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldNotIn(FieldLastModifiedAt, vs...))
+func LastModifiedAtNotIn(vs ...time.Time) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldNotIn(FieldLastModifiedAt, vs...))
 }
 
 // LastModifiedAtGT applies the GT predicate on the "last_modified_at" field.
-func LastModifiedAtGT(v time.Time) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldGT(FieldLastModifiedAt, v))
+func LastModifiedAtGT(v time.Time) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldGT(FieldLastModifiedAt, v))
 }
 
 // LastModifiedAtGTE applies the GTE predicate on the "last_modified_at" field.
-func LastModifiedAtGTE(v time.Time) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldGTE(FieldLastModifiedAt, v))
+func LastModifiedAtGTE(v time.Time) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldGTE(FieldLastModifiedAt, v))
 }
 
 // LastModifiedAtLT applies the LT predicate on the "last_modified_at" field.
-func LastModifiedAtLT(v time.Time) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldLT(FieldLastModifiedAt, v))
+func LastModifiedAtLT(v time.Time) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldLT(FieldLastModifiedAt, v))
 }
 
 // LastModifiedAtLTE applies the LTE predicate on the "last_modified_at" field.
-func LastModifiedAtLTE(v time.Time) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldLTE(FieldLastModifiedAt, v))
+func LastModifiedAtLTE(v time.Time) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldLTE(FieldLastModifiedAt, v))
 }
 
 // StatusPhaseEQ applies the EQ predicate on the "status_phase" field.
-func StatusPhaseEQ(v StatusPhase) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldEQ(FieldStatusPhase, v))
+func StatusPhaseEQ(v StatusPhase) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldEQ(FieldStatusPhase, v))
 }
 
 // StatusPhaseNEQ applies the NEQ predicate on the "status_phase" field.
-func StatusPhaseNEQ(v StatusPhase) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldNEQ(FieldStatusPhase, v))
+func StatusPhaseNEQ(v StatusPhase) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldNEQ(FieldStatusPhase, v))
 }
 
 // StatusPhaseIn applies the In predicate on the "status_phase" field.
-func StatusPhaseIn(vs ...StatusPhase) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldIn(FieldStatusPhase, vs...))
+func StatusPhaseIn(vs ...StatusPhase) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldIn(FieldStatusPhase, vs...))
 }
 
 // StatusPhaseNotIn applies the NotIn predicate on the "status_phase" field.
-func StatusPhaseNotIn(vs ...StatusPhase) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldNotIn(FieldStatusPhase, vs...))
+func StatusPhaseNotIn(vs ...StatusPhase) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldNotIn(FieldStatusPhase, vs...))
 }
 
 // StatusPhaseIsNil applies the IsNil predicate on the "status_phase" field.
-func StatusPhaseIsNil() predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldIsNull(FieldStatusPhase))
+func StatusPhaseIsNil() predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldIsNull(FieldStatusPhase))
 }
 
 // StatusPhaseNotNil applies the NotNil predicate on the "status_phase" field.
-func StatusPhaseNotNil() predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldNotNull(FieldStatusPhase))
+func StatusPhaseNotNil() predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldNotNull(FieldStatusPhase))
 }
 
 // StatusMessageEQ applies the EQ predicate on the "status_message" field.
-func StatusMessageEQ(v string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldEQ(FieldStatusMessage, v))
+func StatusMessageEQ(v string) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldEQ(FieldStatusMessage, v))
 }
 
 // StatusMessageNEQ applies the NEQ predicate on the "status_message" field.
-func StatusMessageNEQ(v string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldNEQ(FieldStatusMessage, v))
+func StatusMessageNEQ(v string) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldNEQ(FieldStatusMessage, v))
 }
 
 // StatusMessageIn applies the In predicate on the "status_message" field.
-func StatusMessageIn(vs ...string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldIn(FieldStatusMessage, vs...))
+func StatusMessageIn(vs ...string) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldIn(FieldStatusMessage, vs...))
 }
 
 // StatusMessageNotIn applies the NotIn predicate on the "status_message" field.
-func StatusMessageNotIn(vs ...string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldNotIn(FieldStatusMessage, vs...))
+func StatusMessageNotIn(vs ...string) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldNotIn(FieldStatusMessage, vs...))
 }
 
 // StatusMessageGT applies the GT predicate on the "status_message" field.
-func StatusMessageGT(v string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldGT(FieldStatusMessage, v))
+func StatusMessageGT(v string) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldGT(FieldStatusMessage, v))
 }
 
 // StatusMessageGTE applies the GTE predicate on the "status_message" field.
-func StatusMessageGTE(v string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldGTE(FieldStatusMessage, v))
+func StatusMessageGTE(v string) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldGTE(FieldStatusMessage, v))
 }
 
 // StatusMessageLT applies the LT predicate on the "status_message" field.
-func StatusMessageLT(v string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldLT(FieldStatusMessage, v))
+func StatusMessageLT(v string) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldLT(FieldStatusMessage, v))
 }
 
 // StatusMessageLTE applies the LTE predicate on the "status_message" field.
-func StatusMessageLTE(v string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldLTE(FieldStatusMessage, v))
+func StatusMessageLTE(v string) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldLTE(FieldStatusMessage, v))
 }
 
 // StatusMessageContains applies the Contains predicate on the "status_message" field.
-func StatusMessageContains(v string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldContains(FieldStatusMessage, v))
+func StatusMessageContains(v string) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldContains(FieldStatusMessage, v))
 }
 
 // StatusMessageHasPrefix applies the HasPrefix predicate on the "status_message" field.
-func StatusMessageHasPrefix(v string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldHasPrefix(FieldStatusMessage, v))
+func StatusMessageHasPrefix(v string) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldHasPrefix(FieldStatusMessage, v))
 }
 
 // StatusMessageHasSuffix applies the HasSuffix predicate on the "status_message" field.
-func StatusMessageHasSuffix(v string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldHasSuffix(FieldStatusMessage, v))
+func StatusMessageHasSuffix(v string) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldHasSuffix(FieldStatusMessage, v))
 }
 
 // StatusMessageIsNil applies the IsNil predicate on the "status_message" field.
-func StatusMessageIsNil() predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldIsNull(FieldStatusMessage))
+func StatusMessageIsNil() predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldIsNull(FieldStatusMessage))
 }
 
 // StatusMessageNotNil applies the NotNil predicate on the "status_message" field.
-func StatusMessageNotNil() predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldNotNull(FieldStatusMessage))
+func StatusMessageNotNil() predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldNotNull(FieldStatusMessage))
 }
 
 // StatusMessageEqualFold applies the EqualFold predicate on the "status_message" field.
-func StatusMessageEqualFold(v string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldEqualFold(FieldStatusMessage, v))
+func StatusMessageEqualFold(v string) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldEqualFold(FieldStatusMessage, v))
 }
 
 // StatusMessageContainsFold applies the ContainsFold predicate on the "status_message" field.
-func StatusMessageContainsFold(v string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldContainsFold(FieldStatusMessage, v))
+func StatusMessageContainsFold(v string) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldContainsFold(FieldStatusMessage, v))
 }
 
 // EnvironmentEQ applies the EQ predicate on the "environment" field.
-func EnvironmentEQ(v string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldEQ(FieldEnvironment, v))
+func EnvironmentEQ(v string) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldEQ(FieldEnvironment, v))
 }
 
 // EnvironmentNEQ applies the NEQ predicate on the "environment" field.
-func EnvironmentNEQ(v string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldNEQ(FieldEnvironment, v))
+func EnvironmentNEQ(v string) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldNEQ(FieldEnvironment, v))
 }
 
 // EnvironmentIn applies the In predicate on the "environment" field.
-func EnvironmentIn(vs ...string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldIn(FieldEnvironment, vs...))
+func EnvironmentIn(vs ...string) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldIn(FieldEnvironment, vs...))
 }
 
 // EnvironmentNotIn applies the NotIn predicate on the "environment" field.
-func EnvironmentNotIn(vs ...string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldNotIn(FieldEnvironment, vs...))
+func EnvironmentNotIn(vs ...string) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldNotIn(FieldEnvironment, vs...))
 }
 
 // EnvironmentGT applies the GT predicate on the "environment" field.
-func EnvironmentGT(v string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldGT(FieldEnvironment, v))
+func EnvironmentGT(v string) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldGT(FieldEnvironment, v))
 }
 
 // EnvironmentGTE applies the GTE predicate on the "environment" field.
-func EnvironmentGTE(v string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldGTE(FieldEnvironment, v))
+func EnvironmentGTE(v string) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldGTE(FieldEnvironment, v))
 }
 
 // EnvironmentLT applies the LT predicate on the "environment" field.
-func EnvironmentLT(v string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldLT(FieldEnvironment, v))
+func EnvironmentLT(v string) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldLT(FieldEnvironment, v))
 }
 
 // EnvironmentLTE applies the LTE predicate on the "environment" field.
-func EnvironmentLTE(v string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldLTE(FieldEnvironment, v))
+func EnvironmentLTE(v string) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldLTE(FieldEnvironment, v))
 }
 
 // EnvironmentContains applies the Contains predicate on the "environment" field.
-func EnvironmentContains(v string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldContains(FieldEnvironment, v))
+func EnvironmentContains(v string) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldContains(FieldEnvironment, v))
 }
 
 // EnvironmentHasPrefix applies the HasPrefix predicate on the "environment" field.
-func EnvironmentHasPrefix(v string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldHasPrefix(FieldEnvironment, v))
+func EnvironmentHasPrefix(v string) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldHasPrefix(FieldEnvironment, v))
 }
 
 // EnvironmentHasSuffix applies the HasSuffix predicate on the "environment" field.
-func EnvironmentHasSuffix(v string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldHasSuffix(FieldEnvironment, v))
+func EnvironmentHasSuffix(v string) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldHasSuffix(FieldEnvironment, v))
 }
 
 // EnvironmentIsNil applies the IsNil predicate on the "environment" field.
-func EnvironmentIsNil() predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldIsNull(FieldEnvironment))
+func EnvironmentIsNil() predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldIsNull(FieldEnvironment))
 }
 
 // EnvironmentNotNil applies the NotNil predicate on the "environment" field.
-func EnvironmentNotNil() predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldNotNull(FieldEnvironment))
+func EnvironmentNotNil() predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldNotNull(FieldEnvironment))
 }
 
 // EnvironmentEqualFold applies the EqualFold predicate on the "environment" field.
-func EnvironmentEqualFold(v string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldEqualFold(FieldEnvironment, v))
+func EnvironmentEqualFold(v string) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldEqualFold(FieldEnvironment, v))
 }
 
 // EnvironmentContainsFold applies the ContainsFold predicate on the "environment" field.
-func EnvironmentContainsFold(v string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldContainsFold(FieldEnvironment, v))
+func EnvironmentContainsFold(v string) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldContainsFold(FieldEnvironment, v))
 }
 
 // NamespaceEQ applies the EQ predicate on the "namespace" field.
-func NamespaceEQ(v string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldEQ(FieldNamespace, v))
+func NamespaceEQ(v string) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldEQ(FieldNamespace, v))
 }
 
 // NamespaceNEQ applies the NEQ predicate on the "namespace" field.
-func NamespaceNEQ(v string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldNEQ(FieldNamespace, v))
+func NamespaceNEQ(v string) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldNEQ(FieldNamespace, v))
 }
 
 // NamespaceIn applies the In predicate on the "namespace" field.
-func NamespaceIn(vs ...string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldIn(FieldNamespace, vs...))
+func NamespaceIn(vs ...string) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldIn(FieldNamespace, vs...))
 }
 
 // NamespaceNotIn applies the NotIn predicate on the "namespace" field.
-func NamespaceNotIn(vs ...string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldNotIn(FieldNamespace, vs...))
+func NamespaceNotIn(vs ...string) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldNotIn(FieldNamespace, vs...))
 }
 
 // NamespaceGT applies the GT predicate on the "namespace" field.
-func NamespaceGT(v string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldGT(FieldNamespace, v))
+func NamespaceGT(v string) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldGT(FieldNamespace, v))
 }
 
 // NamespaceGTE applies the GTE predicate on the "namespace" field.
-func NamespaceGTE(v string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldGTE(FieldNamespace, v))
+func NamespaceGTE(v string) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldGTE(FieldNamespace, v))
 }
 
 // NamespaceLT applies the LT predicate on the "namespace" field.
-func NamespaceLT(v string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldLT(FieldNamespace, v))
+func NamespaceLT(v string) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldLT(FieldNamespace, v))
 }
 
 // NamespaceLTE applies the LTE predicate on the "namespace" field.
-func NamespaceLTE(v string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldLTE(FieldNamespace, v))
+func NamespaceLTE(v string) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldLTE(FieldNamespace, v))
 }
 
 // NamespaceContains applies the Contains predicate on the "namespace" field.
-func NamespaceContains(v string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldContains(FieldNamespace, v))
+func NamespaceContains(v string) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldContains(FieldNamespace, v))
 }
 
 // NamespaceHasPrefix applies the HasPrefix predicate on the "namespace" field.
-func NamespaceHasPrefix(v string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldHasPrefix(FieldNamespace, v))
+func NamespaceHasPrefix(v string) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldHasPrefix(FieldNamespace, v))
 }
 
 // NamespaceHasSuffix applies the HasSuffix predicate on the "namespace" field.
-func NamespaceHasSuffix(v string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldHasSuffix(FieldNamespace, v))
+func NamespaceHasSuffix(v string) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldHasSuffix(FieldNamespace, v))
 }
 
 // NamespaceEqualFold applies the EqualFold predicate on the "namespace" field.
-func NamespaceEqualFold(v string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldEqualFold(FieldNamespace, v))
+func NamespaceEqualFold(v string) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldEqualFold(FieldNamespace, v))
 }
 
 // NamespaceContainsFold applies the ContainsFold predicate on the "namespace" field.
-func NamespaceContainsFold(v string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldContainsFold(FieldNamespace, v))
+func NamespaceContainsFold(v string) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldContainsFold(FieldNamespace, v))
 }
 
 // NameEQ applies the EQ predicate on the "name" field.
-func NameEQ(v string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldEQ(FieldName, v))
+func NameEQ(v string) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldEQ(FieldName, v))
 }
 
 // NameNEQ applies the NEQ predicate on the "name" field.
-func NameNEQ(v string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldNEQ(FieldName, v))
+func NameNEQ(v string) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldNEQ(FieldName, v))
 }
 
 // NameIn applies the In predicate on the "name" field.
-func NameIn(vs ...string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldIn(FieldName, vs...))
+func NameIn(vs ...string) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldIn(FieldName, vs...))
 }
 
 // NameNotIn applies the NotIn predicate on the "name" field.
-func NameNotIn(vs ...string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldNotIn(FieldName, vs...))
+func NameNotIn(vs ...string) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldNotIn(FieldName, vs...))
 }
 
 // NameGT applies the GT predicate on the "name" field.
-func NameGT(v string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldGT(FieldName, v))
+func NameGT(v string) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldGT(FieldName, v))
 }
 
 // NameGTE applies the GTE predicate on the "name" field.
-func NameGTE(v string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldGTE(FieldName, v))
+func NameGTE(v string) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldGTE(FieldName, v))
 }
 
 // NameLT applies the LT predicate on the "name" field.
-func NameLT(v string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldLT(FieldName, v))
+func NameLT(v string) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldLT(FieldName, v))
 }
 
 // NameLTE applies the LTE predicate on the "name" field.
-func NameLTE(v string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldLTE(FieldName, v))
+func NameLTE(v string) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldLTE(FieldName, v))
 }
 
 // NameContains applies the Contains predicate on the "name" field.
-func NameContains(v string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldContains(FieldName, v))
+func NameContains(v string) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldContains(FieldName, v))
 }
 
 // NameHasPrefix applies the HasPrefix predicate on the "name" field.
-func NameHasPrefix(v string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldHasPrefix(FieldName, v))
+func NameHasPrefix(v string) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldHasPrefix(FieldName, v))
 }
 
 // NameHasSuffix applies the HasSuffix predicate on the "name" field.
-func NameHasSuffix(v string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldHasSuffix(FieldName, v))
+func NameHasSuffix(v string) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldHasSuffix(FieldName, v))
 }
 
 // NameEqualFold applies the EqualFold predicate on the "name" field.
-func NameEqualFold(v string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldEqualFold(FieldName, v))
+func NameEqualFold(v string) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldEqualFold(FieldName, v))
 }
 
 // NameContainsFold applies the ContainsFold predicate on the "name" field.
-func NameContainsFold(v string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldContainsFold(FieldName, v))
+func NameContainsFold(v string) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldContainsFold(FieldName, v))
 }
 
 // BasePathEQ applies the EQ predicate on the "base_path" field.
-func BasePathEQ(v string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldEQ(FieldBasePath, v))
+func BasePathEQ(v string) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldEQ(FieldBasePath, v))
 }
 
 // BasePathNEQ applies the NEQ predicate on the "base_path" field.
-func BasePathNEQ(v string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldNEQ(FieldBasePath, v))
+func BasePathNEQ(v string) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldNEQ(FieldBasePath, v))
 }
 
 // BasePathIn applies the In predicate on the "base_path" field.
-func BasePathIn(vs ...string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldIn(FieldBasePath, vs...))
+func BasePathIn(vs ...string) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldIn(FieldBasePath, vs...))
 }
 
 // BasePathNotIn applies the NotIn predicate on the "base_path" field.
-func BasePathNotIn(vs ...string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldNotIn(FieldBasePath, vs...))
+func BasePathNotIn(vs ...string) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldNotIn(FieldBasePath, vs...))
 }
 
 // BasePathGT applies the GT predicate on the "base_path" field.
-func BasePathGT(v string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldGT(FieldBasePath, v))
+func BasePathGT(v string) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldGT(FieldBasePath, v))
 }
 
 // BasePathGTE applies the GTE predicate on the "base_path" field.
-func BasePathGTE(v string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldGTE(FieldBasePath, v))
+func BasePathGTE(v string) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldGTE(FieldBasePath, v))
 }
 
 // BasePathLT applies the LT predicate on the "base_path" field.
-func BasePathLT(v string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldLT(FieldBasePath, v))
+func BasePathLT(v string) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldLT(FieldBasePath, v))
 }
 
 // BasePathLTE applies the LTE predicate on the "base_path" field.
-func BasePathLTE(v string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldLTE(FieldBasePath, v))
+func BasePathLTE(v string) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldLTE(FieldBasePath, v))
 }
 
 // BasePathContains applies the Contains predicate on the "base_path" field.
-func BasePathContains(v string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldContains(FieldBasePath, v))
+func BasePathContains(v string) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldContains(FieldBasePath, v))
 }
 
 // BasePathHasPrefix applies the HasPrefix predicate on the "base_path" field.
-func BasePathHasPrefix(v string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldHasPrefix(FieldBasePath, v))
+func BasePathHasPrefix(v string) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldHasPrefix(FieldBasePath, v))
 }
 
 // BasePathHasSuffix applies the HasSuffix predicate on the "base_path" field.
-func BasePathHasSuffix(v string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldHasSuffix(FieldBasePath, v))
+func BasePathHasSuffix(v string) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldHasSuffix(FieldBasePath, v))
 }
 
 // BasePathEqualFold applies the EqualFold predicate on the "base_path" field.
-func BasePathEqualFold(v string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldEqualFold(FieldBasePath, v))
+func BasePathEqualFold(v string) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldEqualFold(FieldBasePath, v))
 }
 
 // BasePathContainsFold applies the ContainsFold predicate on the "base_path" field.
-func BasePathContainsFold(v string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldContainsFold(FieldBasePath, v))
+func BasePathContainsFold(v string) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldContainsFold(FieldBasePath, v))
 }
 
-// M2mAuthMethodEQ applies the EQ predicate on the "m2m_auth_method" field.
-func M2mAuthMethodEQ(v M2mAuthMethod) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldEQ(FieldM2mAuthMethod, v))
+// M2MAuthMethodEQ applies the EQ predicate on the "M2M_auth_method" field.
+func M2MAuthMethodEQ(v M2MAuthMethod) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldEQ(FieldM2MAuthMethod, v))
 }
 
-// M2mAuthMethodNEQ applies the NEQ predicate on the "m2m_auth_method" field.
-func M2mAuthMethodNEQ(v M2mAuthMethod) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldNEQ(FieldM2mAuthMethod, v))
+// M2MAuthMethodNEQ applies the NEQ predicate on the "M2M_auth_method" field.
+func M2MAuthMethodNEQ(v M2MAuthMethod) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldNEQ(FieldM2MAuthMethod, v))
 }
 
-// M2mAuthMethodIn applies the In predicate on the "m2m_auth_method" field.
-func M2mAuthMethodIn(vs ...M2mAuthMethod) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldIn(FieldM2mAuthMethod, vs...))
+// M2MAuthMethodIn applies the In predicate on the "M2M_auth_method" field.
+func M2MAuthMethodIn(vs ...M2MAuthMethod) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldIn(FieldM2MAuthMethod, vs...))
 }
 
-// M2mAuthMethodNotIn applies the NotIn predicate on the "m2m_auth_method" field.
-func M2mAuthMethodNotIn(vs ...M2mAuthMethod) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldNotIn(FieldM2mAuthMethod, vs...))
+// M2MAuthMethodNotIn applies the NotIn predicate on the "M2M_auth_method" field.
+func M2MAuthMethodNotIn(vs ...M2MAuthMethod) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldNotIn(FieldM2MAuthMethod, vs...))
 }
 
 // GatewayURLEQ applies the EQ predicate on the "gateway_url" field.
-func GatewayURLEQ(v string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldEQ(FieldGatewayURL, v))
+func GatewayURLEQ(v string) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldEQ(FieldGatewayURL, v))
 }
 
 // GatewayURLNEQ applies the NEQ predicate on the "gateway_url" field.
-func GatewayURLNEQ(v string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldNEQ(FieldGatewayURL, v))
+func GatewayURLNEQ(v string) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldNEQ(FieldGatewayURL, v))
 }
 
 // GatewayURLIn applies the In predicate on the "gateway_url" field.
-func GatewayURLIn(vs ...string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldIn(FieldGatewayURL, vs...))
+func GatewayURLIn(vs ...string) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldIn(FieldGatewayURL, vs...))
 }
 
 // GatewayURLNotIn applies the NotIn predicate on the "gateway_url" field.
-func GatewayURLNotIn(vs ...string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldNotIn(FieldGatewayURL, vs...))
+func GatewayURLNotIn(vs ...string) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldNotIn(FieldGatewayURL, vs...))
 }
 
 // GatewayURLGT applies the GT predicate on the "gateway_url" field.
-func GatewayURLGT(v string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldGT(FieldGatewayURL, v))
+func GatewayURLGT(v string) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldGT(FieldGatewayURL, v))
 }
 
 // GatewayURLGTE applies the GTE predicate on the "gateway_url" field.
-func GatewayURLGTE(v string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldGTE(FieldGatewayURL, v))
+func GatewayURLGTE(v string) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldGTE(FieldGatewayURL, v))
 }
 
 // GatewayURLLT applies the LT predicate on the "gateway_url" field.
-func GatewayURLLT(v string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldLT(FieldGatewayURL, v))
+func GatewayURLLT(v string) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldLT(FieldGatewayURL, v))
 }
 
 // GatewayURLLTE applies the LTE predicate on the "gateway_url" field.
-func GatewayURLLTE(v string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldLTE(FieldGatewayURL, v))
+func GatewayURLLTE(v string) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldLTE(FieldGatewayURL, v))
 }
 
 // GatewayURLContains applies the Contains predicate on the "gateway_url" field.
-func GatewayURLContains(v string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldContains(FieldGatewayURL, v))
+func GatewayURLContains(v string) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldContains(FieldGatewayURL, v))
 }
 
 // GatewayURLHasPrefix applies the HasPrefix predicate on the "gateway_url" field.
-func GatewayURLHasPrefix(v string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldHasPrefix(FieldGatewayURL, v))
+func GatewayURLHasPrefix(v string) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldHasPrefix(FieldGatewayURL, v))
 }
 
 // GatewayURLHasSuffix applies the HasSuffix predicate on the "gateway_url" field.
-func GatewayURLHasSuffix(v string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldHasSuffix(FieldGatewayURL, v))
+func GatewayURLHasSuffix(v string) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldHasSuffix(FieldGatewayURL, v))
 }
 
 // GatewayURLIsNil applies the IsNil predicate on the "gateway_url" field.
-func GatewayURLIsNil() predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldIsNull(FieldGatewayURL))
+func GatewayURLIsNil() predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldIsNull(FieldGatewayURL))
 }
 
 // GatewayURLNotNil applies the NotNil predicate on the "gateway_url" field.
-func GatewayURLNotNil() predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldNotNull(FieldGatewayURL))
+func GatewayURLNotNil() predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldNotNull(FieldGatewayURL))
 }
 
 // GatewayURLEqualFold applies the EqualFold predicate on the "gateway_url" field.
-func GatewayURLEqualFold(v string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldEqualFold(FieldGatewayURL, v))
+func GatewayURLEqualFold(v string) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldEqualFold(FieldGatewayURL, v))
 }
 
 // GatewayURLContainsFold applies the ContainsFold predicate on the "gateway_url" field.
-func GatewayURLContainsFold(v string) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldContainsFold(FieldGatewayURL, v))
+func GatewayURLContainsFold(v string) predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldContainsFold(FieldGatewayURL, v))
 }
 
 // SecurityIsNil applies the IsNil predicate on the "security" field.
-func SecurityIsNil() predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldIsNull(FieldSecurity))
+func SecurityIsNil() predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldIsNull(FieldSecurity))
 }
 
 // SecurityNotNil applies the NotNil predicate on the "security" field.
-func SecurityNotNil() predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldNotNull(FieldSecurity))
+func SecurityNotNil() predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldNotNull(FieldSecurity))
 }
 
 // TrafficIsNil applies the IsNil predicate on the "traffic" field.
-func TrafficIsNil() predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldIsNull(FieldTraffic))
+func TrafficIsNil() predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldIsNull(FieldTraffic))
 }
 
 // TrafficNotNil applies the NotNil predicate on the "traffic" field.
-func TrafficNotNil() predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.FieldNotNull(FieldTraffic))
+func TrafficNotNil() predicate.APISubscription {
+	return predicate.APISubscription(sql.FieldNotNull(FieldTraffic))
 }
 
 // HasOwner applies the HasEdge predicate on the "owner" edge.
-func HasOwner() predicate.ApiSubscription {
-	return predicate.ApiSubscription(func(s *sql.Selector) {
+func HasOwner() predicate.APISubscription {
+	return predicate.APISubscription(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, OwnerTable, OwnerColumn),
@@ -680,8 +680,8 @@ func HasOwner() predicate.ApiSubscription {
 }
 
 // HasOwnerWith applies the HasEdge predicate on the "owner" edge with a given conditions (other predicates).
-func HasOwnerWith(preds ...predicate.Application) predicate.ApiSubscription {
-	return predicate.ApiSubscription(func(s *sql.Selector) {
+func HasOwnerWith(preds ...predicate.Application) predicate.APISubscription {
+	return predicate.APISubscription(func(s *sql.Selector) {
 		step := newOwnerStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
@@ -692,8 +692,8 @@ func HasOwnerWith(preds ...predicate.Application) predicate.ApiSubscription {
 }
 
 // HasTarget applies the HasEdge predicate on the "target" edge.
-func HasTarget() predicate.ApiSubscription {
-	return predicate.ApiSubscription(func(s *sql.Selector) {
+func HasTarget() predicate.APISubscription {
+	return predicate.APISubscription(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, false, TargetTable, TargetColumn),
@@ -703,8 +703,8 @@ func HasTarget() predicate.ApiSubscription {
 }
 
 // HasTargetWith applies the HasEdge predicate on the "target" edge with a given conditions (other predicates).
-func HasTargetWith(preds ...predicate.ApiExposure) predicate.ApiSubscription {
-	return predicate.ApiSubscription(func(s *sql.Selector) {
+func HasTargetWith(preds ...predicate.APIExposure) predicate.APISubscription {
+	return predicate.APISubscription(func(s *sql.Selector) {
 		step := newTargetStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
@@ -715,8 +715,8 @@ func HasTargetWith(preds ...predicate.ApiExposure) predicate.ApiSubscription {
 }
 
 // HasFailoverZones applies the HasEdge predicate on the "failover_zones" edge.
-func HasFailoverZones() predicate.ApiSubscription {
-	return predicate.ApiSubscription(func(s *sql.Selector) {
+func HasFailoverZones() predicate.APISubscription {
+	return predicate.APISubscription(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, FailoverZonesTable, FailoverZonesColumn),
@@ -726,8 +726,8 @@ func HasFailoverZones() predicate.ApiSubscription {
 }
 
 // HasFailoverZonesWith applies the HasEdge predicate on the "failover_zones" edge with a given conditions (other predicates).
-func HasFailoverZonesWith(preds ...predicate.Zone) predicate.ApiSubscription {
-	return predicate.ApiSubscription(func(s *sql.Selector) {
+func HasFailoverZonesWith(preds ...predicate.Zone) predicate.APISubscription {
+	return predicate.APISubscription(func(s *sql.Selector) {
 		step := newFailoverZonesStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
@@ -738,8 +738,8 @@ func HasFailoverZonesWith(preds ...predicate.Zone) predicate.ApiSubscription {
 }
 
 // HasApproval applies the HasEdge predicate on the "approval" edge.
-func HasApproval() predicate.ApiSubscription {
-	return predicate.ApiSubscription(func(s *sql.Selector) {
+func HasApproval() predicate.APISubscription {
+	return predicate.APISubscription(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
 			sqlgraph.Edge(sqlgraph.O2O, false, ApprovalTable, ApprovalColumn),
@@ -749,8 +749,8 @@ func HasApproval() predicate.ApiSubscription {
 }
 
 // HasApprovalWith applies the HasEdge predicate on the "approval" edge with a given conditions (other predicates).
-func HasApprovalWith(preds ...predicate.Approval) predicate.ApiSubscription {
-	return predicate.ApiSubscription(func(s *sql.Selector) {
+func HasApprovalWith(preds ...predicate.Approval) predicate.APISubscription {
+	return predicate.APISubscription(func(s *sql.Selector) {
 		step := newApprovalStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
@@ -761,8 +761,8 @@ func HasApprovalWith(preds ...predicate.Approval) predicate.ApiSubscription {
 }
 
 // HasApprovalRequests applies the HasEdge predicate on the "approval_requests" edge.
-func HasApprovalRequests() predicate.ApiSubscription {
-	return predicate.ApiSubscription(func(s *sql.Selector) {
+func HasApprovalRequests() predicate.APISubscription {
+	return predicate.APISubscription(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, ApprovalRequestsTable, ApprovalRequestsColumn),
@@ -772,8 +772,8 @@ func HasApprovalRequests() predicate.ApiSubscription {
 }
 
 // HasApprovalRequestsWith applies the HasEdge predicate on the "approval_requests" edge with a given conditions (other predicates).
-func HasApprovalRequestsWith(preds ...predicate.ApprovalRequest) predicate.ApiSubscription {
-	return predicate.ApiSubscription(func(s *sql.Selector) {
+func HasApprovalRequestsWith(preds ...predicate.ApprovalRequest) predicate.APISubscription {
+	return predicate.APISubscription(func(s *sql.Selector) {
 		step := newApprovalRequestsStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
@@ -784,16 +784,16 @@ func HasApprovalRequestsWith(preds ...predicate.ApprovalRequest) predicate.ApiSu
 }
 
 // And groups predicates with the AND operator between them.
-func And(predicates ...predicate.ApiSubscription) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.AndPredicates(predicates...))
+func And(predicates ...predicate.APISubscription) predicate.APISubscription {
+	return predicate.APISubscription(sql.AndPredicates(predicates...))
 }
 
 // Or groups predicates with the OR operator between them.
-func Or(predicates ...predicate.ApiSubscription) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.OrPredicates(predicates...))
+func Or(predicates ...predicate.APISubscription) predicate.APISubscription {
+	return predicate.APISubscription(sql.OrPredicates(predicates...))
 }
 
 // Not applies the not operator on the given predicate.
-func Not(p predicate.ApiSubscription) predicate.ApiSubscription {
-	return predicate.ApiSubscription(sql.NotPredicates(p))
+func Not(p predicate.APISubscription) predicate.APISubscription {
+	return predicate.APISubscription(sql.NotPredicates(p))
 }

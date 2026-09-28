@@ -15,11 +15,11 @@ import (
 // TypedModule.
 //
 // McpServer is a Level 2 entity with a required FK dependency on Team.
-var Module = &module.TypedModule[*agenticv1.McpServer, *McpServerData, McpServerKey]{
+var Module = &module.TypedModule[*agenticv1.McpServer, *MCPServerData, MCPServerKey]{
 	ModuleName: "mcpserver",
 	NewObj:     func() *agenticv1.McpServer { return &agenticv1.McpServer{} },
 	Translator: &Translator{},
-	RepoFactory: func(deps module.ModuleDeps) runtime.Repository[McpServerKey, *McpServerData] {
+	RepoFactory: func(deps module.ModuleDeps) runtime.Repository[MCPServerKey, *MCPServerData] {
 		return NewRepository(
 			deps.EntClient,
 			deps.EdgeCache,

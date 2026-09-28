@@ -37,8 +37,8 @@ const (
 	FieldVersion = "version"
 	// FieldCategory holds the string denoting the category field in the database.
 	FieldCategory = "category"
-	// FieldOauth2Scopes holds the string denoting the oauth2_scopes field in the database.
-	FieldOauth2Scopes = "oauth2_scopes"
+	// FieldOAuth2Scopes holds the string denoting the oauth2_scopes field in the database.
+	FieldOAuth2Scopes = "oauth2_scopes"
 	// FieldXVendor holds the string denoting the x_vendor field in the database.
 	FieldXVendor = "x_vendor"
 	// FieldSpecification holds the string denoting the specification field in the database.
@@ -60,7 +60,7 @@ const (
 	OwnerColumn = "team_apis"
 	// ExposuresTable is the table that holds the exposures relation/edge.
 	ExposuresTable = "api_exposures"
-	// ExposuresInverseTable is the table name for the ApiExposure entity.
+	// ExposuresInverseTable is the table name for the APIExposure entity.
 	// It exists in this package in order to avoid circular dependency with the "apiexposure" package.
 	ExposuresInverseTable = "api_exposures"
 	// ExposuresColumn is the table column denoting the exposures relation/edge.
@@ -78,7 +78,7 @@ var Columns = []string{
 	FieldBasePath,
 	FieldVersion,
 	FieldCategory,
-	FieldOauth2Scopes,
+	FieldOAuth2Scopes,
 	FieldXVendor,
 	FieldSpecification,
 	FieldActive,
@@ -156,7 +156,7 @@ func StatusPhaseValidator(sp StatusPhase) error {
 	}
 }
 
-// OrderOption defines the ordering options for the Api queries.
+// OrderOption defines the ordering options for the API queries.
 type OrderOption func(*sql.Selector)
 
 // ByID orders the results by the id field.

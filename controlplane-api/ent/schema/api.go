@@ -7,6 +7,7 @@ package schema
 import (
 	"entgo.io/contrib/entgql"
 	"entgo.io/ent"
+	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/schema"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
@@ -15,12 +16,12 @@ import (
 	schemamixin "github.com/telekom/controlplane/controlplane-api/ent/schema/mixin"
 )
 
-// Api holds the schema definition for a registered API in the catalogue.
-type Api struct {
+// API holds the schema definition for a registered API in the catalogue.
+type API struct {
 	ent.Schema
 }
 
-func (Api) Mixin() []ent.Mixin {
+func (API) Mixin() []ent.Mixin {
 	return []ent.Mixin{
 		schemamixin.PrivacyMixin{},
 		schemamixin.TimestampsMixin{},
@@ -29,7 +30,7 @@ func (Api) Mixin() []ent.Mixin {
 	}
 }
 
-func (Api) Fields() []ent.Field {
+func (API) Fields() []ent.Field {
 	return []ent.Field{
 		field.Text("base_path").
 			NotEmpty(),
@@ -37,7 +38,7 @@ func (Api) Fields() []ent.Field {
 			NotEmpty(),
 		field.Text("category").
 			Optional(),
-		field.JSON("oauth2_scopes", []string{}).
+		field.JSON("OAuth2_scopes", []string{}).
 			Optional().
 			Annotations(entgql.Skip(entgql.SkipWhereInput)),
 		field.Bool("x_vendor").
@@ -50,26 +51,27 @@ func (Api) Fields() []ent.Field {
 	}
 }
 
-func (Api) Edges() []ent.Edge {
+func (API) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("owner", Team.Type).
-			Ref("apis").
+			Ref("APIs").
 			Required().
 			Unique().
 			Annotations(entgql.Skip(entgql.SkipType)),
-		edge.To("exposures", ApiExposure.Type).
+		edge.To("exposures", APIExposure.Type).
 			Annotations(entgql.Skip(entgql.SkipType)),
 	}
 }
 
-func (Api) Annotations() []schema.Annotation {
+func (API) Annotations() []schema.Annotation {
 	return []schema.Annotation{
-		entgql.QueryField(),
+		entsql.Table("apis"),
+		entgql.QueryField("apis"),
 		entgql.RelayConnection(),
 	}
 }
 
-func (Api) Indexes() []ent.Index {
+func (API) Indexes() []ent.Index {
 	return []ent.Index{
 		index.Fields("base_path").Edges("owner").Unique(),
 	}

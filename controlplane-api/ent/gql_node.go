@@ -46,6 +46,21 @@ type Noder interface {
 	IsNode()
 }
 
+var apiImplementors = []string{"API", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*API) IsNode() {}
+
+var apiexposureImplementors = []string{"APIExposure", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*APIExposure) IsNode() {}
+
+var apisubscriptionImplementors = []string{"APISubscription", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*APISubscription) IsNode() {}
+
 var agentcardImplementors = []string{"AgentCard", "Node"}
 
 // IsNode implements the Node interface check for GQLGen.
@@ -60,21 +75,6 @@ var agenticsubscriptionImplementors = []string{"AgenticSubscription", "Node"}
 
 // IsNode implements the Node interface check for GQLGen.
 func (*AgenticSubscription) IsNode() {}
-
-var apiImplementors = []string{"Api", "Node"}
-
-// IsNode implements the Node interface check for GQLGen.
-func (*Api) IsNode() {}
-
-var apiexposureImplementors = []string{"ApiExposure", "Node"}
-
-// IsNode implements the Node interface check for GQLGen.
-func (*ApiExposure) IsNode() {}
-
-var apisubscriptionImplementors = []string{"ApiSubscription", "Node"}
-
-// IsNode implements the Node interface check for GQLGen.
-func (*ApiSubscription) IsNode() {}
 
 var applicationImplementors = []string{"Application", "Node"}
 
@@ -126,10 +126,10 @@ var groupImplementors = []string{"Group", "Node"}
 // IsNode implements the Node interface check for GQLGen.
 func (*Group) IsNode() {}
 
-var mcpserverImplementors = []string{"McpServer", "Node"}
+var mcpserverImplementors = []string{"MCPServer", "Node"}
 
 // IsNode implements the Node interface check for GQLGen.
-func (*McpServer) IsNode() {}
+func (*MCPServer) IsNode() {}
 
 var memberImplementors = []string{"Member", "Node"}
 
@@ -209,6 +209,33 @@ func (c *Client) Noder(ctx context.Context, id int, opts ...NodeOption) (_ Noder
 
 func (c *Client) noder(ctx context.Context, table string, id int) (Noder, error) {
 	switch table {
+	case api.Table:
+		query := c.API.Query().
+			Where(api.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, apiImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
+	case apiexposure.Table:
+		query := c.APIExposure.Query().
+			Where(apiexposure.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, apiexposureImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
+	case apisubscription.Table:
+		query := c.APISubscription.Query().
+			Where(apisubscription.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, apisubscriptionImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
 	case agentcard.Table:
 		query := c.AgentCard.Query().
 			Where(agentcard.ID(id))
@@ -232,33 +259,6 @@ func (c *Client) noder(ctx context.Context, table string, id int) (Noder, error)
 			Where(agenticsubscription.ID(id))
 		if fc := graphql.GetFieldContext(ctx); fc != nil {
 			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, agenticsubscriptionImplementors...); err != nil {
-				return nil, err
-			}
-		}
-		return query.Only(ctx)
-	case api.Table:
-		query := c.Api.Query().
-			Where(api.ID(id))
-		if fc := graphql.GetFieldContext(ctx); fc != nil {
-			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, apiImplementors...); err != nil {
-				return nil, err
-			}
-		}
-		return query.Only(ctx)
-	case apiexposure.Table:
-		query := c.ApiExposure.Query().
-			Where(apiexposure.ID(id))
-		if fc := graphql.GetFieldContext(ctx); fc != nil {
-			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, apiexposureImplementors...); err != nil {
-				return nil, err
-			}
-		}
-		return query.Only(ctx)
-	case apisubscription.Table:
-		query := c.ApiSubscription.Query().
-			Where(apisubscription.ID(id))
-		if fc := graphql.GetFieldContext(ctx); fc != nil {
-			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, apisubscriptionImplementors...); err != nil {
 				return nil, err
 			}
 		}
@@ -354,7 +354,7 @@ func (c *Client) noder(ctx context.Context, table string, id int) (Noder, error)
 		}
 		return query.Only(ctx)
 	case mcpserver.Table:
-		query := c.McpServer.Query().
+		query := c.MCPServer.Query().
 			Where(mcpserver.ID(id))
 		if fc := graphql.GetFieldContext(ctx); fc != nil {
 			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, mcpserverImplementors...); err != nil {
@@ -471,6 +471,54 @@ func (c *Client) noders(ctx context.Context, table string, ids []int) ([]Noder, 
 		idmap[id] = append(idmap[id], &noders[i])
 	}
 	switch table {
+	case api.Table:
+		query := c.API.Query().
+			Where(api.IDIn(ids...))
+		query, err := query.CollectFields(ctx, apiImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case apiexposure.Table:
+		query := c.APIExposure.Query().
+			Where(apiexposure.IDIn(ids...))
+		query, err := query.CollectFields(ctx, apiexposureImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case apisubscription.Table:
+		query := c.APISubscription.Query().
+			Where(apisubscription.IDIn(ids...))
+		query, err := query.CollectFields(ctx, apisubscriptionImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
 	case agentcard.Table:
 		query := c.AgentCard.Query().
 			Where(agentcard.IDIn(ids...))
@@ -507,54 +555,6 @@ func (c *Client) noders(ctx context.Context, table string, ids []int) ([]Noder, 
 		query := c.AgenticSubscription.Query().
 			Where(agenticsubscription.IDIn(ids...))
 		query, err := query.CollectFields(ctx, agenticsubscriptionImplementors...)
-		if err != nil {
-			return nil, err
-		}
-		nodes, err := query.All(ctx)
-		if err != nil {
-			return nil, err
-		}
-		for _, node := range nodes {
-			for _, noder := range idmap[node.ID] {
-				*noder = node
-			}
-		}
-	case api.Table:
-		query := c.Api.Query().
-			Where(api.IDIn(ids...))
-		query, err := query.CollectFields(ctx, apiImplementors...)
-		if err != nil {
-			return nil, err
-		}
-		nodes, err := query.All(ctx)
-		if err != nil {
-			return nil, err
-		}
-		for _, node := range nodes {
-			for _, noder := range idmap[node.ID] {
-				*noder = node
-			}
-		}
-	case apiexposure.Table:
-		query := c.ApiExposure.Query().
-			Where(apiexposure.IDIn(ids...))
-		query, err := query.CollectFields(ctx, apiexposureImplementors...)
-		if err != nil {
-			return nil, err
-		}
-		nodes, err := query.All(ctx)
-		if err != nil {
-			return nil, err
-		}
-		for _, node := range nodes {
-			for _, noder := range idmap[node.ID] {
-				*noder = node
-			}
-		}
-	case apisubscription.Table:
-		query := c.ApiSubscription.Query().
-			Where(apisubscription.IDIn(ids...))
-		query, err := query.CollectFields(ctx, apisubscriptionImplementors...)
 		if err != nil {
 			return nil, err
 		}
@@ -728,7 +728,7 @@ func (c *Client) noders(ctx context.Context, table string, ids []int) ([]Noder, 
 			}
 		}
 	case mcpserver.Table:
-		query := c.McpServer.Query().
+		query := c.MCPServer.Query().
 			Where(mcpserver.IDIn(ids...))
 		query, err := query.CollectFields(ctx, mcpserverImplementors...)
 		if err != nil {

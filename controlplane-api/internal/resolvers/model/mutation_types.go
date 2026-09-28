@@ -36,7 +36,7 @@ type CreateTeamInput struct {
 
 // UpdateTeamInput is the input for updating team metadata.
 type UpdateTeamInput struct {
-	TeamID      int     `json:"teamId"`
+	TeamID      int     `json:"teamID"`
 	Email       *string `json:"email,omitempty"`
 	DisplayName *string `json:"displayName,omitempty"`
 	Description *string `json:"description,omitempty"`
@@ -44,7 +44,7 @@ type UpdateTeamInput struct {
 
 // DeleteTeamInput is the input for deleting a team.
 type DeleteTeamInput struct {
-	TeamID int `json:"teamId"`
+	TeamID int `json:"teamID"`
 }
 
 // CreateGroupInput is the input for creating a new group.
@@ -57,14 +57,14 @@ type CreateGroupInput struct {
 
 // UpdateGroupInput is the input for updating group metadata.
 type UpdateGroupInput struct {
-	GroupID     int     `json:"groupId"`
+	GroupID     int     `json:"groupID"`
 	DisplayName *string `json:"displayName,omitempty"`
 	Description *string `json:"description,omitempty"`
 }
 
 // DeleteGroupInput is the input for deleting a group.
 type DeleteGroupInput struct {
-	GroupID int `json:"groupId"`
+	GroupID int `json:"groupID"`
 }
 
 // MemberInput represents a team member in mutation inputs.

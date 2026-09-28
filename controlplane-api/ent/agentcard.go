@@ -44,8 +44,8 @@ type AgentCard struct {
 	Specification string `json:"specification,omitempty"`
 	// Category holds the value of the "category" field.
 	Category string `json:"category,omitempty"`
-	// Oauth2Scopes holds the value of the "oauth2_scopes" field.
-	Oauth2Scopes []string `json:"oauth2_scopes,omitempty"`
+	// OAuth2Scopes holds the value of the "OAuth2_scopes" field.
+	OAuth2Scopes []string `json:"OAuth2_scopes,omitempty"`
 	// Active holds the value of the "active" field.
 	Active bool `json:"active,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -93,7 +93,7 @@ func (*AgentCard) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case agentcard.FieldOauth2Scopes:
+		case agentcard.FieldOAuth2Scopes:
 			values[i] = new([]byte)
 		case agentcard.FieldActive:
 			values[i] = new(sql.NullBool)
@@ -194,12 +194,12 @@ func (_m *AgentCard) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.Category = value.String
 			}
-		case agentcard.FieldOauth2Scopes:
+		case agentcard.FieldOAuth2Scopes:
 			if value, ok := values[i].(*[]byte); !ok {
-				return fmt.Errorf("unexpected type %T for field oauth2_scopes", values[i])
+				return fmt.Errorf("unexpected type %T for field OAuth2_scopes", values[i])
 			} else if value != nil && len(*value) > 0 {
-				if err := json.Unmarshal(*value, &_m.Oauth2Scopes); err != nil {
-					return fmt.Errorf("unmarshal field oauth2_scopes: %w", err)
+				if err := json.Unmarshal(*value, &_m.OAuth2Scopes); err != nil {
+					return fmt.Errorf("unmarshal field OAuth2_scopes: %w", err)
 				}
 			}
 		case agentcard.FieldActive:
@@ -298,8 +298,8 @@ func (_m *AgentCard) String() string {
 	builder.WriteString("category=")
 	builder.WriteString(_m.Category)
 	builder.WriteString(", ")
-	builder.WriteString("oauth2_scopes=")
-	builder.WriteString(fmt.Sprintf("%v", _m.Oauth2Scopes))
+	builder.WriteString("OAuth2_scopes=")
+	builder.WriteString(fmt.Sprintf("%v", _m.OAuth2Scopes))
 	builder.WriteString(", ")
 	builder.WriteString("active=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Active))

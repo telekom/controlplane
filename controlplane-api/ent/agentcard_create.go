@@ -149,9 +149,9 @@ func (_c *AgentCardCreate) SetNillableCategory(v *string) *AgentCardCreate {
 	return _c
 }
 
-// SetOauth2Scopes sets the "oauth2_scopes" field.
-func (_c *AgentCardCreate) SetOauth2Scopes(v []string) *AgentCardCreate {
-	_c.mutation.SetOauth2Scopes(v)
+// SetOAuth2Scopes sets the "OAuth2_scopes" field.
+func (_c *AgentCardCreate) SetOAuth2Scopes(v []string) *AgentCardCreate {
+	_c.mutation.SetOAuth2Scopes(v)
 	return _c
 }
 
@@ -375,9 +375,9 @@ func (_c *AgentCardCreate) createSpec() (*AgentCard, *sqlgraph.CreateSpec) {
 		_spec.SetField(agentcard.FieldCategory, field.TypeString, value)
 		_node.Category = value
 	}
-	if value, ok := _c.mutation.Oauth2Scopes(); ok {
-		_spec.SetField(agentcard.FieldOauth2Scopes, field.TypeJSON, value)
-		_node.Oauth2Scopes = value
+	if value, ok := _c.mutation.OAuth2Scopes(); ok {
+		_spec.SetField(agentcard.FieldOAuth2Scopes, field.TypeJSON, value)
+		_node.OAuth2Scopes = value
 	}
 	if value, ok := _c.mutation.Active(); ok {
 		_spec.SetField(agentcard.FieldActive, field.TypeBool, value)
@@ -618,21 +618,21 @@ func (u *AgentCardUpsert) ClearCategory() *AgentCardUpsert {
 	return u
 }
 
-// SetOauth2Scopes sets the "oauth2_scopes" field.
-func (u *AgentCardUpsert) SetOauth2Scopes(v []string) *AgentCardUpsert {
-	u.Set(agentcard.FieldOauth2Scopes, v)
+// SetOAuth2Scopes sets the "OAuth2_scopes" field.
+func (u *AgentCardUpsert) SetOAuth2Scopes(v []string) *AgentCardUpsert {
+	u.Set(agentcard.FieldOAuth2Scopes, v)
 	return u
 }
 
-// UpdateOauth2Scopes sets the "oauth2_scopes" field to the value that was provided on create.
-func (u *AgentCardUpsert) UpdateOauth2Scopes() *AgentCardUpsert {
-	u.SetExcluded(agentcard.FieldOauth2Scopes)
+// UpdateOAuth2Scopes sets the "OAuth2_scopes" field to the value that was provided on create.
+func (u *AgentCardUpsert) UpdateOAuth2Scopes() *AgentCardUpsert {
+	u.SetExcluded(agentcard.FieldOAuth2Scopes)
 	return u
 }
 
-// ClearOauth2Scopes clears the value of the "oauth2_scopes" field.
-func (u *AgentCardUpsert) ClearOauth2Scopes() *AgentCardUpsert {
-	u.SetNull(agentcard.FieldOauth2Scopes)
+// ClearOAuth2Scopes clears the value of the "OAuth2_scopes" field.
+func (u *AgentCardUpsert) ClearOAuth2Scopes() *AgentCardUpsert {
+	u.SetNull(agentcard.FieldOAuth2Scopes)
 	return u
 }
 
@@ -868,24 +868,24 @@ func (u *AgentCardUpsertOne) ClearCategory() *AgentCardUpsertOne {
 	})
 }
 
-// SetOauth2Scopes sets the "oauth2_scopes" field.
-func (u *AgentCardUpsertOne) SetOauth2Scopes(v []string) *AgentCardUpsertOne {
+// SetOAuth2Scopes sets the "OAuth2_scopes" field.
+func (u *AgentCardUpsertOne) SetOAuth2Scopes(v []string) *AgentCardUpsertOne {
 	return u.Update(func(s *AgentCardUpsert) {
-		s.SetOauth2Scopes(v)
+		s.SetOAuth2Scopes(v)
 	})
 }
 
-// UpdateOauth2Scopes sets the "oauth2_scopes" field to the value that was provided on create.
-func (u *AgentCardUpsertOne) UpdateOauth2Scopes() *AgentCardUpsertOne {
+// UpdateOAuth2Scopes sets the "OAuth2_scopes" field to the value that was provided on create.
+func (u *AgentCardUpsertOne) UpdateOAuth2Scopes() *AgentCardUpsertOne {
 	return u.Update(func(s *AgentCardUpsert) {
-		s.UpdateOauth2Scopes()
+		s.UpdateOAuth2Scopes()
 	})
 }
 
-// ClearOauth2Scopes clears the value of the "oauth2_scopes" field.
-func (u *AgentCardUpsertOne) ClearOauth2Scopes() *AgentCardUpsertOne {
+// ClearOAuth2Scopes clears the value of the "OAuth2_scopes" field.
+func (u *AgentCardUpsertOne) ClearOAuth2Scopes() *AgentCardUpsertOne {
 	return u.Update(func(s *AgentCardUpsert) {
-		s.ClearOauth2Scopes()
+		s.ClearOAuth2Scopes()
 	})
 }
 
@@ -1289,24 +1289,24 @@ func (u *AgentCardUpsertBulk) ClearCategory() *AgentCardUpsertBulk {
 	})
 }
 
-// SetOauth2Scopes sets the "oauth2_scopes" field.
-func (u *AgentCardUpsertBulk) SetOauth2Scopes(v []string) *AgentCardUpsertBulk {
+// SetOAuth2Scopes sets the "OAuth2_scopes" field.
+func (u *AgentCardUpsertBulk) SetOAuth2Scopes(v []string) *AgentCardUpsertBulk {
 	return u.Update(func(s *AgentCardUpsert) {
-		s.SetOauth2Scopes(v)
+		s.SetOAuth2Scopes(v)
 	})
 }
 
-// UpdateOauth2Scopes sets the "oauth2_scopes" field to the value that was provided on create.
-func (u *AgentCardUpsertBulk) UpdateOauth2Scopes() *AgentCardUpsertBulk {
+// UpdateOAuth2Scopes sets the "OAuth2_scopes" field to the value that was provided on create.
+func (u *AgentCardUpsertBulk) UpdateOAuth2Scopes() *AgentCardUpsertBulk {
 	return u.Update(func(s *AgentCardUpsert) {
-		s.UpdateOauth2Scopes()
+		s.UpdateOAuth2Scopes()
 	})
 }
 
-// ClearOauth2Scopes clears the value of the "oauth2_scopes" field.
-func (u *AgentCardUpsertBulk) ClearOauth2Scopes() *AgentCardUpsertBulk {
+// ClearOAuth2Scopes clears the value of the "OAuth2_scopes" field.
+func (u *AgentCardUpsertBulk) ClearOAuth2Scopes() *AgentCardUpsertBulk {
 	return u.Update(func(s *AgentCardUpsert) {
-		s.ClearOauth2Scopes()
+		s.ClearOAuth2Scopes()
 	})
 }
 

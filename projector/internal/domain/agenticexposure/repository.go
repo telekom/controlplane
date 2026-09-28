@@ -89,7 +89,7 @@ func (r *Repository) Upsert(ctx context.Context, data *AgenticExposureData) erro
 				return fmt.Errorf("find active agent_card %q: %w", data.BasePath, findErr)
 			}
 		} else {
-			if resolvedID, findErr := r.deps.FindActiveMcpServerID(ctx, data.BasePath); findErr == nil {
+			if resolvedID, findErr := r.deps.FindActiveMCPServerID(ctx, data.BasePath); findErr == nil {
 				mcpServerID = &resolvedID
 			} else if !errors.Is(findErr, infrastructure.ErrEntityNotFound) {
 				return fmt.Errorf("find active mcp_server %q: %w", data.BasePath, findErr)
@@ -129,7 +129,7 @@ func (r *Repository) Upsert(ctx context.Context, data *AgenticExposureData) erro
 	}
 
 	if mcpServerID != nil {
-		create.SetNillableMcpServerID(mcpServerID)
+		create.SetNillableMCPServerID(mcpServerID)
 	}
 	if agentCardID != nil {
 		create.SetNillableAgentCardID(agentCardID)
@@ -154,11 +154,11 @@ func (r *Repository) Upsert(ctx context.Context, data *AgenticExposureData) erro
 	update := r.client.AgenticExposure.UpdateOneID(exposureID)
 	switch {
 	case mcpServerID != nil:
-		update = update.SetMcpServerID(*mcpServerID).ClearAgentCard()
+		update = update.SetMCPServerID(*mcpServerID).ClearAgentCard()
 	case agentCardID != nil:
-		update = update.SetAgentCardID(*agentCardID).ClearMcpServer()
+		update = update.SetAgentCardID(*agentCardID).ClearMCPServer()
 	default:
-		update = update.ClearMcpServer().ClearAgentCard()
+		update = update.ClearMCPServer().ClearAgentCard()
 	}
 	if err := update.Exec(ctx); err != nil {
 		return fmt.Errorf("update catalogue FK for agentic_exposure %d (%q, app %q, team %q): %w",

@@ -78,8 +78,8 @@ func (r *Repository) Upsert(ctx context.Context, data *APIExposureData) error {
 	// Api is active cluster-wide for a given base path (oldest-wins).
 	var apiID *int
 	if data.Active {
-		if resolvedApiID, apiErr := r.deps.FindActiveApiID(ctx, data.BasePath); apiErr == nil {
-			apiID = &resolvedApiID
+		if resolvedAPIID, apiErr := r.deps.FindActiveAPIID(ctx, data.BasePath); apiErr == nil {
+			apiID = &resolvedAPIID
 		} else if !errors.Is(apiErr, infrastructure.ErrEntityNotFound) {
 			return fmt.Errorf("find active api %q: %w", data.BasePath, apiErr)
 		}
@@ -88,7 +88,7 @@ func (r *Repository) Upsert(ctx context.Context, data *APIExposureData) error {
 	// Capture the currently-persisted rate limit so subscriber propagation can
 	// be skipped when it is unchanged (the common case for exposure reconciles).
 	var oldRateLimit *model.RateLimit
-	if existing, qErr := r.client.ApiExposure.Query().
+	if existing, qErr := r.client.APIExposure.Query().
 		Where(apiexposure.BasePathEQ(data.BasePath), apiexposure.HasOwnerWith(application.IDEQ(appID))).
 		Select(apiexposure.FieldTraffic).
 		Only(ctx); qErr == nil {
@@ -98,7 +98,7 @@ func (r *Repository) Upsert(ctx context.Context, data *APIExposureData) error {
 			data.BasePath, data.AppName, data.TeamName, qErr)
 	}
 
-	create := r.client.ApiExposure.Create().
+	create := r.client.APIExposure.Create().
 		SetBasePath(data.BasePath).
 		SetVisibility(apiexposure.Visibility(data.Visibility)).
 		SetActive(data.Active).
@@ -114,7 +114,7 @@ func (r *Repository) Upsert(ctx context.Context, data *APIExposureData) error {
 	if data.Security != nil {
 		create.SetSecurity(*data.Security)
 	} else {
-		create.SetSecurity(model.ApiExposureSecurity{})
+		create.SetSecurity(model.APIExposureSecurity{})
 	}
 
 	if data.Traffic != nil {
@@ -145,7 +145,7 @@ func (r *Repository) Upsert(ctx context.Context, data *APIExposureData) error {
 	// clause — without this, a previously-linked api_id would stay stale once
 	// the Api becomes inactive/removed (the exposure CR is re-reconciled via the
 	// Api watch, but Status.Active is untouched by that path).
-	update := r.client.ApiExposure.UpdateOneID(exposureID)
+	update := r.client.APIExposure.UpdateOneID(exposureID)
 	if apiID != nil {
 		update = update.SetAPIID(*apiID)
 	} else {
@@ -167,7 +167,7 @@ func (r *Repository) Upsert(ctx context.Context, data *APIExposureData) error {
 	// such orphaned subscriptions so their target resolves.
 	var newlyLinked int
 	if data.Active {
-		newlyLinked, err = r.client.ApiSubscription.Update().
+		newlyLinked, err = r.client.APISubscription.Update().
 			Where(
 				apisubscription.BasePathEQ(data.BasePath),
 				apisubscription.Not(apisubscription.HasTarget()),
@@ -208,7 +208,7 @@ func (r *Repository) propagateSubscriberTraffic(ctx context.Context, basePath st
 	// Default cohort applies to all targeting subscriptions; overridden
 	// subscribers are corrected by the per-override updates below.
 	defaultTraffic := shared.DefaultSubscriptionTraffic(rl)
-	baseUpdate := r.client.ApiSubscription.Update().
+	baseUpdate := r.client.APISubscription.Update().
 		Where(apisubscription.BasePathEQ(basePath), apisubscription.HasTarget())
 	if defaultTraffic == nil {
 		baseUpdate.ClearTraffic()
@@ -225,7 +225,7 @@ func (r *Repository) propagateSubscriberTraffic(ctx context.Context, basePath st
 	for i := range rl.SubscriberRateLimit.Overrides {
 		subscriberID := rl.SubscriberRateLimit.Overrides[i].Subscriber
 		val := shared.DeriveSubscriptionTraffic(rl, subscriberID)
-		update := r.client.ApiSubscription.Update().
+		update := r.client.APISubscription.Update().
 			Where(
 				apisubscription.BasePathEQ(basePath),
 				apisubscription.HasTarget(),
@@ -252,7 +252,7 @@ func (r *Repository) Delete(ctx context.Context, key APIExposureKey) error {
 		metrics.DBOperationDuration.WithLabelValues(entityType, metrics.OperationDelete).Observe(time.Since(start).Seconds())
 	}()
 
-	count, err := r.client.ApiExposure.Delete().
+	count, err := r.client.APIExposure.Delete().
 		Where(
 			apiexposure.BasePathEQ(key.BasePath),
 			apiexposure.HasOwnerWith(

@@ -16,6 +16,6 @@ import "context"
 // Satisfied by *infrastructure.IDResolver at wiring time.
 type AgenticExposureDeps interface {
 	FindApplicationID(ctx context.Context, name, teamName string) (int, error)
-	FindActiveMcpServerID(ctx context.Context, basePath string) (int, error)
+	FindActiveMCPServerID(ctx context.Context, basePath string) (int, error)
 	FindActiveAgentCardID(ctx context.Context, basePath string) (int, error)
 }

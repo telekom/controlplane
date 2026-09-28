@@ -183,7 +183,7 @@ var _ = Describe("ApprovalConfig.TrustedTeams", func() {
 			SetOwnerTeam(team).SetZone(zone).Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
 
-		exposure, err := client.ApiExposure.Create().
+		exposure, err := client.APIExposure.Create().
 			SetNamespace("default").
 			SetBasePath("/api/v1").
 			SetOwner(app).
@@ -194,7 +194,7 @@ var _ = Describe("ApprovalConfig.TrustedTeams", func() {
 			Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
 
-		fetched, err := client.ApiExposure.Get(ctx, exposure.ID)
+		fetched, err := client.APIExposure.Get(ctx, exposure.ID)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(fetched.ApprovalConfig.TrustedTeams).To(ConsistOf("team-beta", "team-gamma"))
 		Expect(fetched.ApprovalConfig.Strategy).To(Equal("FOUR_EYES"))
@@ -212,14 +212,14 @@ var _ = Describe("ApprovalConfig.TrustedTeams", func() {
 			SetOwnerTeam(team).SetZone(zone).Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
 
-		exposure, err := client.ApiExposure.Create().
+		exposure, err := client.APIExposure.Create().
 			SetNamespace("default").
 			SetBasePath("/api/v1").
 			SetOwner(app).
 			Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
 
-		fetched, err := client.ApiExposure.Get(ctx, exposure.ID)
+		fetched, err := client.APIExposure.Get(ctx, exposure.ID)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(fetched.ApprovalConfig.Strategy).To(Equal("AUTO"))
 		Expect(fetched.ApprovalConfig.TrustedTeams).To(BeEmpty())
@@ -237,7 +237,7 @@ var _ = Describe("ApprovalConfig.TrustedTeams", func() {
 			SetOwnerTeam(team).SetZone(zone).Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
 
-		exposure, err := client.ApiExposure.Create().
+		exposure, err := client.APIExposure.Create().
 			SetNamespace("default").
 			SetBasePath("/api/v1").
 			SetOwner(app).
@@ -248,7 +248,7 @@ var _ = Describe("ApprovalConfig.TrustedTeams", func() {
 			Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
 
-		fetched, err := client.ApiExposure.Get(ctx, exposure.ID)
+		fetched, err := client.APIExposure.Get(ctx, exposure.ID)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(fetched.ApprovalConfig.TrustedTeams).To(HaveLen(1))
 		Expect(fetched.ApprovalConfig.TrustedTeams).To(ContainElement("team-beta"))
@@ -266,7 +266,7 @@ var _ = Describe("ApprovalConfig.TrustedTeams", func() {
 			SetOwnerTeam(team).SetZone(zone).Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
 
-		exposure, err := client.ApiExposure.Create().
+		exposure, err := client.APIExposure.Create().
 			SetNamespace("default").
 			SetBasePath("/api/v1").
 			SetOwner(app).
@@ -277,7 +277,7 @@ var _ = Describe("ApprovalConfig.TrustedTeams", func() {
 			Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
 
-		updated, err := client.ApiExposure.UpdateOneID(exposure.ID).
+		updated, err := client.APIExposure.UpdateOneID(exposure.ID).
 			SetApprovalConfig(model.ApprovalConfig{
 				Strategy:     "FOUR_EYES",
 				TrustedTeams: []string{"team-gamma", "team-delta"},
@@ -322,6 +322,33 @@ var _ = Describe("Decision.ResultingState resolver", func() {
 	})
 })
 
+var _ = Describe("ExternalIdentityProvider.TokenRequest resolver", func() {
+	r := resolvers.NewResolver(nil, service.Services{}, nil, "")
+	basic := "client_secret_basic"
+	post := "client_secret_post"
+	unknown := "unknown"
+	basicEnum := gqlmodel.TokenRequestMethodClientSecretBasic
+	postEnum := gqlmodel.TokenRequestMethodClientSecretPost
+
+	DescribeTable("maps stored token request methods to public enum values",
+		func(storedMethod *string, expected *gqlmodel.TokenRequestMethod) {
+			// Arrange
+			provider := &model.ExternalIdentityProvider{TokenRequest: storedMethod}
+
+			// Act
+			method, err := r.ExternalIdentityProvider().TokenRequest(context.Background(), provider)
+
+			// Assert
+			Expect(err).NotTo(HaveOccurred())
+			Expect(method).To(Equal(expected))
+		},
+		Entry("client_secret_basic", &basic, &basicEnum),
+		Entry("client_secret_post", &post, &postEnum),
+		Entry("nil", nil, nil),
+		Entry("unknown", &unknown, nil),
+	)
+})
+
 var _ = Describe("Approval ExpiresAt", func() {
 	var client *ent.Client
 
@@ -362,7 +389,7 @@ var _ = Describe("Approval ExpiresAt", func() {
 			SetNamespace("default").SetName("app-alpha").SetClientID("cid-alpha").
 			SetOwnerTeam(team).SetZone(zone).Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
-		sub, err := client.ApiSubscription.Create().
+		sub, err := client.APISubscription.Create().
 			SetBasePath("/api/v1").SetNamespace("default").SetName("sub-1").
 			SetOwner(app).Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
@@ -398,7 +425,7 @@ var _ = Describe("Approval ExpiresAt", func() {
 			SetNamespace("default").SetName("app-alpha").SetClientID("cid-alpha").
 			SetOwnerTeam(team).SetZone(zone).Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
-		sub, err := client.ApiSubscription.Create().
+		sub, err := client.APISubscription.Create().
 			SetBasePath("/api/v1").SetNamespace("default").SetName("sub-1").
 			SetOwner(app).Save(ctx)
 		Expect(err).NotTo(HaveOccurred())

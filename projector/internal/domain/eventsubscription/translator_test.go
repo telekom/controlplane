@@ -103,7 +103,7 @@ var _ = Describe("EventSubscription Translator", func() {
 			Expect(data.Delivery.RetryableStatusCodes).To(Equal([]int{502, 503}))
 			Expect(data.Delivery.RedeliveriesPerSecond).ToNot(BeNil())
 			Expect(*data.Delivery.RedeliveriesPerSecond).To(Equal(10))
-			Expect(data.Delivery.EnforceGetHttpRequestMethodForHealthCheck).To(BeTrue())
+			Expect(data.Delivery.EnforceGetHTTPRequestMethodForHealthCheck).To(BeTrue())
 
 			// Trigger
 			Expect(data.Trigger).ToNot(BeNil())
@@ -117,10 +117,10 @@ var _ = Describe("EventSubscription Translator", func() {
 			// Scopes
 			Expect(data.Scopes).To(Equal([]string{"scope-a", "scope-b"}))
 
-			Expect(data.GatewayConsumerSseUrl).To(Equal("https://gateway.example.com/events/sse/subscription-1"))
+			Expect(data.GatewayConsumerSSEURL).To(Equal("https://gateway.example.com/events/sse/subscription-1"))
 		})
 
-		It("should set GatewayConsumerSseUrl to empty when status has no URL", func() {
+		It("should set GatewayConsumerSSEURL to empty when status has no URL", func() {
 			obj := &eventv1.EventSubscription{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "no-url-sub",
@@ -138,7 +138,7 @@ var _ = Describe("EventSubscription Translator", func() {
 
 			data, err := t.Translate(context.Background(), obj)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(data.GatewayConsumerSseUrl).To(BeEmpty())
+			Expect(data.GatewayConsumerSSEURL).To(BeEmpty())
 		})
 
 		It("should handle ServerSentEvent delivery with no callback", func() {
@@ -320,7 +320,7 @@ var _ = Describe("EventSubscription Translator", func() {
 			Expect(data.Delivery.CircuitBreakerOptOut).To(BeFalse())
 			Expect(data.Delivery.RetryableStatusCodes).To(BeNil())
 			Expect(data.Delivery.RedeliveriesPerSecond).To(BeNil())
-			Expect(data.Delivery.EnforceGetHttpRequestMethodForHealthCheck).To(BeFalse())
+			Expect(data.Delivery.EnforceGetHTTPRequestMethodForHealthCheck).To(BeFalse())
 			Expect(data.Delivery.EventRetentionTime).To(BeEmpty())
 		})
 	})

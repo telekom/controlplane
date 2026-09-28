@@ -24,20 +24,38 @@ import (
 	"github.com/telekom/controlplane/organization-server/internal/controller"
 	"github.com/telekom/controlplane/organization-server/internal/server"
 
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 
+// gqlRequest is a GraphQL request that mockGraphQLServer received.
+type gqlRequest struct {
+	OperationName string         `json:"operationName"`
+	Variables     map[string]any `json:"variables"`
+}
+
+// gqlVariables returns the variables of the last received request for the operation.
+// It fails the test if the operation was not received.
+func gqlVariables(requests []gqlRequest, operationName string) map[string]any {
+	for i := len(requests) - 1; i >= 0; i-- {
+		if requests[i].OperationName == operationName {
+			return requests[i].Variables
+		}
+	}
+	Fail("GraphQL operation not received: "+operationName, 1)
+	return nil
+}
+
 // mockGraphQLServer returns an httptest.Server that responds to GraphQL requests
 // with canned responses based on the operation name.
-func mockGraphQLServer(responses map[string]any, operations ...*[]string) *httptest.Server {
+// If requests is given, the server records every received request in it.
+func mockGraphQLServer(responses map[string]any, requests ...*[]gqlRequest) *httptest.Server {
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		body, _ := io.ReadAll(r.Body)
-		var req struct {
-			OperationName string `json:"operationName"`
-		}
+		var req gqlRequest
 		_ = json.Unmarshal(body, &req)
-		if len(operations) > 0 {
-			*operations[0] = append(*operations[0], req.OperationName)
+		if len(requests) > 0 {
+			*requests[0] = append(*requests[0], req)
 		}
 
 		resp, ok := responses[req.OperationName]

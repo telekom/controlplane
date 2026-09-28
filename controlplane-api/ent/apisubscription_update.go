@@ -24,33 +24,33 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 )
 
-// ApiSubscriptionUpdate is the builder for updating ApiSubscription entities.
-type ApiSubscriptionUpdate struct {
+// APISubscriptionUpdate is the builder for updating APISubscription entities.
+type APISubscriptionUpdate struct {
 	config
 	hooks    []Hook
-	mutation *ApiSubscriptionMutation
+	mutation *APISubscriptionMutation
 }
 
-// Where appends a list predicates to the ApiSubscriptionUpdate builder.
-func (_u *ApiSubscriptionUpdate) Where(ps ...predicate.ApiSubscription) *ApiSubscriptionUpdate {
+// Where appends a list predicates to the APISubscriptionUpdate builder.
+func (_u *APISubscriptionUpdate) Where(ps ...predicate.APISubscription) *APISubscriptionUpdate {
 	_u.mutation.Where(ps...)
 	return _u
 }
 
 // SetLastModifiedAt sets the "last_modified_at" field.
-func (_u *ApiSubscriptionUpdate) SetLastModifiedAt(v time.Time) *ApiSubscriptionUpdate {
+func (_u *APISubscriptionUpdate) SetLastModifiedAt(v time.Time) *APISubscriptionUpdate {
 	_u.mutation.SetLastModifiedAt(v)
 	return _u
 }
 
 // SetStatusPhase sets the "status_phase" field.
-func (_u *ApiSubscriptionUpdate) SetStatusPhase(v apisubscription.StatusPhase) *ApiSubscriptionUpdate {
+func (_u *APISubscriptionUpdate) SetStatusPhase(v apisubscription.StatusPhase) *APISubscriptionUpdate {
 	_u.mutation.SetStatusPhase(v)
 	return _u
 }
 
 // SetNillableStatusPhase sets the "status_phase" field if the given value is not nil.
-func (_u *ApiSubscriptionUpdate) SetNillableStatusPhase(v *apisubscription.StatusPhase) *ApiSubscriptionUpdate {
+func (_u *APISubscriptionUpdate) SetNillableStatusPhase(v *apisubscription.StatusPhase) *APISubscriptionUpdate {
 	if v != nil {
 		_u.SetStatusPhase(*v)
 	}
@@ -58,19 +58,19 @@ func (_u *ApiSubscriptionUpdate) SetNillableStatusPhase(v *apisubscription.Statu
 }
 
 // ClearStatusPhase clears the value of the "status_phase" field.
-func (_u *ApiSubscriptionUpdate) ClearStatusPhase() *ApiSubscriptionUpdate {
+func (_u *APISubscriptionUpdate) ClearStatusPhase() *APISubscriptionUpdate {
 	_u.mutation.ClearStatusPhase()
 	return _u
 }
 
 // SetStatusMessage sets the "status_message" field.
-func (_u *ApiSubscriptionUpdate) SetStatusMessage(v string) *ApiSubscriptionUpdate {
+func (_u *APISubscriptionUpdate) SetStatusMessage(v string) *APISubscriptionUpdate {
 	_u.mutation.SetStatusMessage(v)
 	return _u
 }
 
 // SetNillableStatusMessage sets the "status_message" field if the given value is not nil.
-func (_u *ApiSubscriptionUpdate) SetNillableStatusMessage(v *string) *ApiSubscriptionUpdate {
+func (_u *APISubscriptionUpdate) SetNillableStatusMessage(v *string) *APISubscriptionUpdate {
 	if v != nil {
 		_u.SetStatusMessage(*v)
 	}
@@ -78,19 +78,19 @@ func (_u *ApiSubscriptionUpdate) SetNillableStatusMessage(v *string) *ApiSubscri
 }
 
 // ClearStatusMessage clears the value of the "status_message" field.
-func (_u *ApiSubscriptionUpdate) ClearStatusMessage() *ApiSubscriptionUpdate {
+func (_u *APISubscriptionUpdate) ClearStatusMessage() *APISubscriptionUpdate {
 	_u.mutation.ClearStatusMessage()
 	return _u
 }
 
 // SetEnvironment sets the "environment" field.
-func (_u *ApiSubscriptionUpdate) SetEnvironment(v string) *ApiSubscriptionUpdate {
+func (_u *APISubscriptionUpdate) SetEnvironment(v string) *APISubscriptionUpdate {
 	_u.mutation.SetEnvironment(v)
 	return _u
 }
 
 // SetNillableEnvironment sets the "environment" field if the given value is not nil.
-func (_u *ApiSubscriptionUpdate) SetNillableEnvironment(v *string) *ApiSubscriptionUpdate {
+func (_u *APISubscriptionUpdate) SetNillableEnvironment(v *string) *APISubscriptionUpdate {
 	if v != nil {
 		_u.SetEnvironment(*v)
 	}
@@ -98,19 +98,19 @@ func (_u *ApiSubscriptionUpdate) SetNillableEnvironment(v *string) *ApiSubscript
 }
 
 // ClearEnvironment clears the value of the "environment" field.
-func (_u *ApiSubscriptionUpdate) ClearEnvironment() *ApiSubscriptionUpdate {
+func (_u *APISubscriptionUpdate) ClearEnvironment() *APISubscriptionUpdate {
 	_u.mutation.ClearEnvironment()
 	return _u
 }
 
 // SetNamespace sets the "namespace" field.
-func (_u *ApiSubscriptionUpdate) SetNamespace(v string) *ApiSubscriptionUpdate {
+func (_u *APISubscriptionUpdate) SetNamespace(v string) *APISubscriptionUpdate {
 	_u.mutation.SetNamespace(v)
 	return _u
 }
 
 // SetNillableNamespace sets the "namespace" field if the given value is not nil.
-func (_u *ApiSubscriptionUpdate) SetNillableNamespace(v *string) *ApiSubscriptionUpdate {
+func (_u *APISubscriptionUpdate) SetNillableNamespace(v *string) *APISubscriptionUpdate {
 	if v != nil {
 		_u.SetNamespace(*v)
 	}
@@ -118,13 +118,13 @@ func (_u *ApiSubscriptionUpdate) SetNillableNamespace(v *string) *ApiSubscriptio
 }
 
 // SetName sets the "name" field.
-func (_u *ApiSubscriptionUpdate) SetName(v string) *ApiSubscriptionUpdate {
+func (_u *APISubscriptionUpdate) SetName(v string) *APISubscriptionUpdate {
 	_u.mutation.SetName(v)
 	return _u
 }
 
 // SetNillableName sets the "name" field if the given value is not nil.
-func (_u *ApiSubscriptionUpdate) SetNillableName(v *string) *ApiSubscriptionUpdate {
+func (_u *APISubscriptionUpdate) SetNillableName(v *string) *APISubscriptionUpdate {
 	if v != nil {
 		_u.SetName(*v)
 	}
@@ -132,41 +132,41 @@ func (_u *ApiSubscriptionUpdate) SetNillableName(v *string) *ApiSubscriptionUpda
 }
 
 // SetBasePath sets the "base_path" field.
-func (_u *ApiSubscriptionUpdate) SetBasePath(v string) *ApiSubscriptionUpdate {
+func (_u *APISubscriptionUpdate) SetBasePath(v string) *APISubscriptionUpdate {
 	_u.mutation.SetBasePath(v)
 	return _u
 }
 
 // SetNillableBasePath sets the "base_path" field if the given value is not nil.
-func (_u *ApiSubscriptionUpdate) SetNillableBasePath(v *string) *ApiSubscriptionUpdate {
+func (_u *APISubscriptionUpdate) SetNillableBasePath(v *string) *APISubscriptionUpdate {
 	if v != nil {
 		_u.SetBasePath(*v)
 	}
 	return _u
 }
 
-// SetM2mAuthMethod sets the "m2m_auth_method" field.
-func (_u *ApiSubscriptionUpdate) SetM2mAuthMethod(v apisubscription.M2mAuthMethod) *ApiSubscriptionUpdate {
-	_u.mutation.SetM2mAuthMethod(v)
+// SetM2MAuthMethod sets the "M2M_auth_method" field.
+func (_u *APISubscriptionUpdate) SetM2MAuthMethod(v apisubscription.M2MAuthMethod) *APISubscriptionUpdate {
+	_u.mutation.SetM2MAuthMethod(v)
 	return _u
 }
 
-// SetNillableM2mAuthMethod sets the "m2m_auth_method" field if the given value is not nil.
-func (_u *ApiSubscriptionUpdate) SetNillableM2mAuthMethod(v *apisubscription.M2mAuthMethod) *ApiSubscriptionUpdate {
+// SetNillableM2MAuthMethod sets the "M2M_auth_method" field if the given value is not nil.
+func (_u *APISubscriptionUpdate) SetNillableM2MAuthMethod(v *apisubscription.M2MAuthMethod) *APISubscriptionUpdate {
 	if v != nil {
-		_u.SetM2mAuthMethod(*v)
+		_u.SetM2MAuthMethod(*v)
 	}
 	return _u
 }
 
 // SetGatewayURL sets the "gateway_url" field.
-func (_u *ApiSubscriptionUpdate) SetGatewayURL(v string) *ApiSubscriptionUpdate {
+func (_u *APISubscriptionUpdate) SetGatewayURL(v string) *APISubscriptionUpdate {
 	_u.mutation.SetGatewayURL(v)
 	return _u
 }
 
 // SetNillableGatewayURL sets the "gateway_url" field if the given value is not nil.
-func (_u *ApiSubscriptionUpdate) SetNillableGatewayURL(v *string) *ApiSubscriptionUpdate {
+func (_u *APISubscriptionUpdate) SetNillableGatewayURL(v *string) *APISubscriptionUpdate {
 	if v != nil {
 		_u.SetGatewayURL(*v)
 	}
@@ -174,73 +174,73 @@ func (_u *ApiSubscriptionUpdate) SetNillableGatewayURL(v *string) *ApiSubscripti
 }
 
 // ClearGatewayURL clears the value of the "gateway_url" field.
-func (_u *ApiSubscriptionUpdate) ClearGatewayURL() *ApiSubscriptionUpdate {
+func (_u *APISubscriptionUpdate) ClearGatewayURL() *APISubscriptionUpdate {
 	_u.mutation.ClearGatewayURL()
 	return _u
 }
 
 // SetSecurity sets the "security" field.
-func (_u *ApiSubscriptionUpdate) SetSecurity(v *model.ApiSubscriptionSecurity) *ApiSubscriptionUpdate {
+func (_u *APISubscriptionUpdate) SetSecurity(v *model.APISubscriptionSecurity) *APISubscriptionUpdate {
 	_u.mutation.SetSecurity(v)
 	return _u
 }
 
 // ClearSecurity clears the value of the "security" field.
-func (_u *ApiSubscriptionUpdate) ClearSecurity() *ApiSubscriptionUpdate {
+func (_u *APISubscriptionUpdate) ClearSecurity() *APISubscriptionUpdate {
 	_u.mutation.ClearSecurity()
 	return _u
 }
 
 // SetTraffic sets the "traffic" field.
-func (_u *ApiSubscriptionUpdate) SetTraffic(v *model.ApiSubscriptionTraffic) *ApiSubscriptionUpdate {
+func (_u *APISubscriptionUpdate) SetTraffic(v *model.APISubscriptionTraffic) *APISubscriptionUpdate {
 	_u.mutation.SetTraffic(v)
 	return _u
 }
 
 // ClearTraffic clears the value of the "traffic" field.
-func (_u *ApiSubscriptionUpdate) ClearTraffic() *ApiSubscriptionUpdate {
+func (_u *APISubscriptionUpdate) ClearTraffic() *APISubscriptionUpdate {
 	_u.mutation.ClearTraffic()
 	return _u
 }
 
 // SetOwnerID sets the "owner" edge to the Application entity by ID.
-func (_u *ApiSubscriptionUpdate) SetOwnerID(id int) *ApiSubscriptionUpdate {
+func (_u *APISubscriptionUpdate) SetOwnerID(id int) *APISubscriptionUpdate {
 	_u.mutation.SetOwnerID(id)
 	return _u
 }
 
 // SetOwner sets the "owner" edge to the Application entity.
-func (_u *ApiSubscriptionUpdate) SetOwner(v *Application) *ApiSubscriptionUpdate {
+func (_u *APISubscriptionUpdate) SetOwner(v *Application) *APISubscriptionUpdate {
 	return _u.SetOwnerID(v.ID)
 }
 
-// SetTargetID sets the "target" edge to the ApiExposure entity by ID.
-func (_u *ApiSubscriptionUpdate) SetTargetID(id int) *ApiSubscriptionUpdate {
+// SetTargetID sets the "target" edge to the APIExposure entity by ID.
+func (_u *APISubscriptionUpdate) SetTargetID(id int) *APISubscriptionUpdate {
 	_u.mutation.SetTargetID(id)
 	return _u
 }
 
-// SetNillableTargetID sets the "target" edge to the ApiExposure entity by ID if the given value is not nil.
-func (_u *ApiSubscriptionUpdate) SetNillableTargetID(id *int) *ApiSubscriptionUpdate {
+// SetNillableTargetID sets the "target" edge to the APIExposure entity by ID if the given value is not nil.
+func (_u *APISubscriptionUpdate) SetNillableTargetID(id *int) *APISubscriptionUpdate {
 	if id != nil {
 		_u = _u.SetTargetID(*id)
 	}
 	return _u
 }
 
-// SetTarget sets the "target" edge to the ApiExposure entity.
-func (_u *ApiSubscriptionUpdate) SetTarget(v *ApiExposure) *ApiSubscriptionUpdate {
+// SetTarget sets the "target" edge to the APIExposure entity.
+func (_u *APISubscriptionUpdate) SetTarget(v *APIExposure) *APISubscriptionUpdate {
 	return _u.SetTargetID(v.ID)
 }
 
 // AddFailoverZoneIDs adds the "failover_zones" edge to the Zone entity by IDs.
-func (_u *ApiSubscriptionUpdate) AddFailoverZoneIDs(ids ...int) *ApiSubscriptionUpdate {
+func (_u *APISubscriptionUpdate) AddFailoverZoneIDs(ids ...int) *APISubscriptionUpdate {
 	_u.mutation.AddFailoverZoneIDs(ids...)
 	return _u
 }
 
 // AddFailoverZones adds the "failover_zones" edges to the Zone entity.
-func (_u *ApiSubscriptionUpdate) AddFailoverZones(v ...*Zone) *ApiSubscriptionUpdate {
+func (_u *APISubscriptionUpdate) AddFailoverZones(v ...*Zone) *APISubscriptionUpdate {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
@@ -249,13 +249,13 @@ func (_u *ApiSubscriptionUpdate) AddFailoverZones(v ...*Zone) *ApiSubscriptionUp
 }
 
 // SetApprovalID sets the "approval" edge to the Approval entity by ID.
-func (_u *ApiSubscriptionUpdate) SetApprovalID(id int) *ApiSubscriptionUpdate {
+func (_u *APISubscriptionUpdate) SetApprovalID(id int) *APISubscriptionUpdate {
 	_u.mutation.SetApprovalID(id)
 	return _u
 }
 
 // SetNillableApprovalID sets the "approval" edge to the Approval entity by ID if the given value is not nil.
-func (_u *ApiSubscriptionUpdate) SetNillableApprovalID(id *int) *ApiSubscriptionUpdate {
+func (_u *APISubscriptionUpdate) SetNillableApprovalID(id *int) *APISubscriptionUpdate {
 	if id != nil {
 		_u = _u.SetApprovalID(*id)
 	}
@@ -263,18 +263,18 @@ func (_u *ApiSubscriptionUpdate) SetNillableApprovalID(id *int) *ApiSubscription
 }
 
 // SetApproval sets the "approval" edge to the Approval entity.
-func (_u *ApiSubscriptionUpdate) SetApproval(v *Approval) *ApiSubscriptionUpdate {
+func (_u *APISubscriptionUpdate) SetApproval(v *Approval) *APISubscriptionUpdate {
 	return _u.SetApprovalID(v.ID)
 }
 
 // AddApprovalRequestIDs adds the "approval_requests" edge to the ApprovalRequest entity by IDs.
-func (_u *ApiSubscriptionUpdate) AddApprovalRequestIDs(ids ...int) *ApiSubscriptionUpdate {
+func (_u *APISubscriptionUpdate) AddApprovalRequestIDs(ids ...int) *APISubscriptionUpdate {
 	_u.mutation.AddApprovalRequestIDs(ids...)
 	return _u
 }
 
 // AddApprovalRequests adds the "approval_requests" edges to the ApprovalRequest entity.
-func (_u *ApiSubscriptionUpdate) AddApprovalRequests(v ...*ApprovalRequest) *ApiSubscriptionUpdate {
+func (_u *APISubscriptionUpdate) AddApprovalRequests(v ...*ApprovalRequest) *APISubscriptionUpdate {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
@@ -282,37 +282,37 @@ func (_u *ApiSubscriptionUpdate) AddApprovalRequests(v ...*ApprovalRequest) *Api
 	return _u.AddApprovalRequestIDs(ids...)
 }
 
-// Mutation returns the ApiSubscriptionMutation object of the builder.
-func (_u *ApiSubscriptionUpdate) Mutation() *ApiSubscriptionMutation {
+// Mutation returns the APISubscriptionMutation object of the builder.
+func (_u *APISubscriptionUpdate) Mutation() *APISubscriptionMutation {
 	return _u.mutation
 }
 
 // ClearOwner clears the "owner" edge to the Application entity.
-func (_u *ApiSubscriptionUpdate) ClearOwner() *ApiSubscriptionUpdate {
+func (_u *APISubscriptionUpdate) ClearOwner() *APISubscriptionUpdate {
 	_u.mutation.ClearOwner()
 	return _u
 }
 
-// ClearTarget clears the "target" edge to the ApiExposure entity.
-func (_u *ApiSubscriptionUpdate) ClearTarget() *ApiSubscriptionUpdate {
+// ClearTarget clears the "target" edge to the APIExposure entity.
+func (_u *APISubscriptionUpdate) ClearTarget() *APISubscriptionUpdate {
 	_u.mutation.ClearTarget()
 	return _u
 }
 
 // ClearFailoverZones clears all "failover_zones" edges to the Zone entity.
-func (_u *ApiSubscriptionUpdate) ClearFailoverZones() *ApiSubscriptionUpdate {
+func (_u *APISubscriptionUpdate) ClearFailoverZones() *APISubscriptionUpdate {
 	_u.mutation.ClearFailoverZones()
 	return _u
 }
 
 // RemoveFailoverZoneIDs removes the "failover_zones" edge to Zone entities by IDs.
-func (_u *ApiSubscriptionUpdate) RemoveFailoverZoneIDs(ids ...int) *ApiSubscriptionUpdate {
+func (_u *APISubscriptionUpdate) RemoveFailoverZoneIDs(ids ...int) *APISubscriptionUpdate {
 	_u.mutation.RemoveFailoverZoneIDs(ids...)
 	return _u
 }
 
 // RemoveFailoverZones removes "failover_zones" edges to Zone entities.
-func (_u *ApiSubscriptionUpdate) RemoveFailoverZones(v ...*Zone) *ApiSubscriptionUpdate {
+func (_u *APISubscriptionUpdate) RemoveFailoverZones(v ...*Zone) *APISubscriptionUpdate {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
@@ -321,25 +321,25 @@ func (_u *ApiSubscriptionUpdate) RemoveFailoverZones(v ...*Zone) *ApiSubscriptio
 }
 
 // ClearApproval clears the "approval" edge to the Approval entity.
-func (_u *ApiSubscriptionUpdate) ClearApproval() *ApiSubscriptionUpdate {
+func (_u *APISubscriptionUpdate) ClearApproval() *APISubscriptionUpdate {
 	_u.mutation.ClearApproval()
 	return _u
 }
 
 // ClearApprovalRequests clears all "approval_requests" edges to the ApprovalRequest entity.
-func (_u *ApiSubscriptionUpdate) ClearApprovalRequests() *ApiSubscriptionUpdate {
+func (_u *APISubscriptionUpdate) ClearApprovalRequests() *APISubscriptionUpdate {
 	_u.mutation.ClearApprovalRequests()
 	return _u
 }
 
 // RemoveApprovalRequestIDs removes the "approval_requests" edge to ApprovalRequest entities by IDs.
-func (_u *ApiSubscriptionUpdate) RemoveApprovalRequestIDs(ids ...int) *ApiSubscriptionUpdate {
+func (_u *APISubscriptionUpdate) RemoveApprovalRequestIDs(ids ...int) *APISubscriptionUpdate {
 	_u.mutation.RemoveApprovalRequestIDs(ids...)
 	return _u
 }
 
 // RemoveApprovalRequests removes "approval_requests" edges to ApprovalRequest entities.
-func (_u *ApiSubscriptionUpdate) RemoveApprovalRequests(v ...*ApprovalRequest) *ApiSubscriptionUpdate {
+func (_u *APISubscriptionUpdate) RemoveApprovalRequests(v ...*ApprovalRequest) *APISubscriptionUpdate {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
@@ -348,7 +348,7 @@ func (_u *ApiSubscriptionUpdate) RemoveApprovalRequests(v ...*ApprovalRequest) *
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
-func (_u *ApiSubscriptionUpdate) Save(ctx context.Context) (int, error) {
+func (_u *APISubscriptionUpdate) Save(ctx context.Context) (int, error) {
 	if err := _u.defaults(); err != nil {
 		return 0, err
 	}
@@ -356,7 +356,7 @@ func (_u *ApiSubscriptionUpdate) Save(ctx context.Context) (int, error) {
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (_u *ApiSubscriptionUpdate) SaveX(ctx context.Context) int {
+func (_u *APISubscriptionUpdate) SaveX(ctx context.Context) int {
 	affected, err := _u.Save(ctx)
 	if err != nil {
 		panic(err)
@@ -365,20 +365,20 @@ func (_u *ApiSubscriptionUpdate) SaveX(ctx context.Context) int {
 }
 
 // Exec executes the query.
-func (_u *ApiSubscriptionUpdate) Exec(ctx context.Context) error {
+func (_u *APISubscriptionUpdate) Exec(ctx context.Context) error {
 	_, err := _u.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (_u *ApiSubscriptionUpdate) ExecX(ctx context.Context) {
+func (_u *APISubscriptionUpdate) ExecX(ctx context.Context) {
 	if err := _u.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // defaults sets the default values of the builder before save.
-func (_u *ApiSubscriptionUpdate) defaults() error {
+func (_u *APISubscriptionUpdate) defaults() error {
 	if _, ok := _u.mutation.LastModifiedAt(); !ok {
 		if apisubscription.UpdateDefaultLastModifiedAt == nil {
 			return fmt.Errorf("ent: uninitialized apisubscription.UpdateDefaultLastModifiedAt (forgotten import ent/runtime?)")
@@ -390,39 +390,39 @@ func (_u *ApiSubscriptionUpdate) defaults() error {
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (_u *ApiSubscriptionUpdate) check() error {
+func (_u *APISubscriptionUpdate) check() error {
 	if v, ok := _u.mutation.StatusPhase(); ok {
 		if err := apisubscription.StatusPhaseValidator(v); err != nil {
-			return &ValidationError{Name: "status_phase", err: fmt.Errorf(`ent: validator failed for field "ApiSubscription.status_phase": %w`, err)}
+			return &ValidationError{Name: "status_phase", err: fmt.Errorf(`ent: validator failed for field "APISubscription.status_phase": %w`, err)}
 		}
 	}
 	if v, ok := _u.mutation.Namespace(); ok {
 		if err := apisubscription.NamespaceValidator(v); err != nil {
-			return &ValidationError{Name: "namespace", err: fmt.Errorf(`ent: validator failed for field "ApiSubscription.namespace": %w`, err)}
+			return &ValidationError{Name: "namespace", err: fmt.Errorf(`ent: validator failed for field "APISubscription.namespace": %w`, err)}
 		}
 	}
 	if v, ok := _u.mutation.Name(); ok {
 		if err := apisubscription.NameValidator(v); err != nil {
-			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "ApiSubscription.name": %w`, err)}
+			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "APISubscription.name": %w`, err)}
 		}
 	}
 	if v, ok := _u.mutation.BasePath(); ok {
 		if err := apisubscription.BasePathValidator(v); err != nil {
-			return &ValidationError{Name: "base_path", err: fmt.Errorf(`ent: validator failed for field "ApiSubscription.base_path": %w`, err)}
+			return &ValidationError{Name: "base_path", err: fmt.Errorf(`ent: validator failed for field "APISubscription.base_path": %w`, err)}
 		}
 	}
-	if v, ok := _u.mutation.M2mAuthMethod(); ok {
-		if err := apisubscription.M2mAuthMethodValidator(v); err != nil {
-			return &ValidationError{Name: "m2m_auth_method", err: fmt.Errorf(`ent: validator failed for field "ApiSubscription.m2m_auth_method": %w`, err)}
+	if v, ok := _u.mutation.M2MAuthMethod(); ok {
+		if err := apisubscription.M2MAuthMethodValidator(v); err != nil {
+			return &ValidationError{Name: "M2M_auth_method", err: fmt.Errorf(`ent: validator failed for field "APISubscription.M2M_auth_method": %w`, err)}
 		}
 	}
 	if _u.mutation.OwnerCleared() && len(_u.mutation.OwnerIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "ApiSubscription.owner"`)
+		return errors.New(`ent: clearing a required unique edge "APISubscription.owner"`)
 	}
 	return nil
 }
 
-func (_u *ApiSubscriptionUpdate) sqlSave(ctx context.Context) (_node int, err error) {
+func (_u *APISubscriptionUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if err := _u.check(); err != nil {
 		return _node, err
 	}
@@ -464,8 +464,8 @@ func (_u *ApiSubscriptionUpdate) sqlSave(ctx context.Context) (_node int, err er
 	if value, ok := _u.mutation.BasePath(); ok {
 		_spec.SetField(apisubscription.FieldBasePath, field.TypeString, value)
 	}
-	if value, ok := _u.mutation.M2mAuthMethod(); ok {
-		_spec.SetField(apisubscription.FieldM2mAuthMethod, field.TypeEnum, value)
+	if value, ok := _u.mutation.M2MAuthMethod(); ok {
+		_spec.SetField(apisubscription.FieldM2MAuthMethod, field.TypeEnum, value)
 	}
 	if value, ok := _u.mutation.GatewayURL(); ok {
 		_spec.SetField(apisubscription.FieldGatewayURL, field.TypeString, value)
@@ -674,28 +674,28 @@ func (_u *ApiSubscriptionUpdate) sqlSave(ctx context.Context) (_node int, err er
 	return _node, nil
 }
 
-// ApiSubscriptionUpdateOne is the builder for updating a single ApiSubscription entity.
-type ApiSubscriptionUpdateOne struct {
+// APISubscriptionUpdateOne is the builder for updating a single APISubscription entity.
+type APISubscriptionUpdateOne struct {
 	config
 	fields   []string
 	hooks    []Hook
-	mutation *ApiSubscriptionMutation
+	mutation *APISubscriptionMutation
 }
 
 // SetLastModifiedAt sets the "last_modified_at" field.
-func (_u *ApiSubscriptionUpdateOne) SetLastModifiedAt(v time.Time) *ApiSubscriptionUpdateOne {
+func (_u *APISubscriptionUpdateOne) SetLastModifiedAt(v time.Time) *APISubscriptionUpdateOne {
 	_u.mutation.SetLastModifiedAt(v)
 	return _u
 }
 
 // SetStatusPhase sets the "status_phase" field.
-func (_u *ApiSubscriptionUpdateOne) SetStatusPhase(v apisubscription.StatusPhase) *ApiSubscriptionUpdateOne {
+func (_u *APISubscriptionUpdateOne) SetStatusPhase(v apisubscription.StatusPhase) *APISubscriptionUpdateOne {
 	_u.mutation.SetStatusPhase(v)
 	return _u
 }
 
 // SetNillableStatusPhase sets the "status_phase" field if the given value is not nil.
-func (_u *ApiSubscriptionUpdateOne) SetNillableStatusPhase(v *apisubscription.StatusPhase) *ApiSubscriptionUpdateOne {
+func (_u *APISubscriptionUpdateOne) SetNillableStatusPhase(v *apisubscription.StatusPhase) *APISubscriptionUpdateOne {
 	if v != nil {
 		_u.SetStatusPhase(*v)
 	}
@@ -703,19 +703,19 @@ func (_u *ApiSubscriptionUpdateOne) SetNillableStatusPhase(v *apisubscription.St
 }
 
 // ClearStatusPhase clears the value of the "status_phase" field.
-func (_u *ApiSubscriptionUpdateOne) ClearStatusPhase() *ApiSubscriptionUpdateOne {
+func (_u *APISubscriptionUpdateOne) ClearStatusPhase() *APISubscriptionUpdateOne {
 	_u.mutation.ClearStatusPhase()
 	return _u
 }
 
 // SetStatusMessage sets the "status_message" field.
-func (_u *ApiSubscriptionUpdateOne) SetStatusMessage(v string) *ApiSubscriptionUpdateOne {
+func (_u *APISubscriptionUpdateOne) SetStatusMessage(v string) *APISubscriptionUpdateOne {
 	_u.mutation.SetStatusMessage(v)
 	return _u
 }
 
 // SetNillableStatusMessage sets the "status_message" field if the given value is not nil.
-func (_u *ApiSubscriptionUpdateOne) SetNillableStatusMessage(v *string) *ApiSubscriptionUpdateOne {
+func (_u *APISubscriptionUpdateOne) SetNillableStatusMessage(v *string) *APISubscriptionUpdateOne {
 	if v != nil {
 		_u.SetStatusMessage(*v)
 	}
@@ -723,19 +723,19 @@ func (_u *ApiSubscriptionUpdateOne) SetNillableStatusMessage(v *string) *ApiSubs
 }
 
 // ClearStatusMessage clears the value of the "status_message" field.
-func (_u *ApiSubscriptionUpdateOne) ClearStatusMessage() *ApiSubscriptionUpdateOne {
+func (_u *APISubscriptionUpdateOne) ClearStatusMessage() *APISubscriptionUpdateOne {
 	_u.mutation.ClearStatusMessage()
 	return _u
 }
 
 // SetEnvironment sets the "environment" field.
-func (_u *ApiSubscriptionUpdateOne) SetEnvironment(v string) *ApiSubscriptionUpdateOne {
+func (_u *APISubscriptionUpdateOne) SetEnvironment(v string) *APISubscriptionUpdateOne {
 	_u.mutation.SetEnvironment(v)
 	return _u
 }
 
 // SetNillableEnvironment sets the "environment" field if the given value is not nil.
-func (_u *ApiSubscriptionUpdateOne) SetNillableEnvironment(v *string) *ApiSubscriptionUpdateOne {
+func (_u *APISubscriptionUpdateOne) SetNillableEnvironment(v *string) *APISubscriptionUpdateOne {
 	if v != nil {
 		_u.SetEnvironment(*v)
 	}
@@ -743,19 +743,19 @@ func (_u *ApiSubscriptionUpdateOne) SetNillableEnvironment(v *string) *ApiSubscr
 }
 
 // ClearEnvironment clears the value of the "environment" field.
-func (_u *ApiSubscriptionUpdateOne) ClearEnvironment() *ApiSubscriptionUpdateOne {
+func (_u *APISubscriptionUpdateOne) ClearEnvironment() *APISubscriptionUpdateOne {
 	_u.mutation.ClearEnvironment()
 	return _u
 }
 
 // SetNamespace sets the "namespace" field.
-func (_u *ApiSubscriptionUpdateOne) SetNamespace(v string) *ApiSubscriptionUpdateOne {
+func (_u *APISubscriptionUpdateOne) SetNamespace(v string) *APISubscriptionUpdateOne {
 	_u.mutation.SetNamespace(v)
 	return _u
 }
 
 // SetNillableNamespace sets the "namespace" field if the given value is not nil.
-func (_u *ApiSubscriptionUpdateOne) SetNillableNamespace(v *string) *ApiSubscriptionUpdateOne {
+func (_u *APISubscriptionUpdateOne) SetNillableNamespace(v *string) *APISubscriptionUpdateOne {
 	if v != nil {
 		_u.SetNamespace(*v)
 	}
@@ -763,13 +763,13 @@ func (_u *ApiSubscriptionUpdateOne) SetNillableNamespace(v *string) *ApiSubscrip
 }
 
 // SetName sets the "name" field.
-func (_u *ApiSubscriptionUpdateOne) SetName(v string) *ApiSubscriptionUpdateOne {
+func (_u *APISubscriptionUpdateOne) SetName(v string) *APISubscriptionUpdateOne {
 	_u.mutation.SetName(v)
 	return _u
 }
 
 // SetNillableName sets the "name" field if the given value is not nil.
-func (_u *ApiSubscriptionUpdateOne) SetNillableName(v *string) *ApiSubscriptionUpdateOne {
+func (_u *APISubscriptionUpdateOne) SetNillableName(v *string) *APISubscriptionUpdateOne {
 	if v != nil {
 		_u.SetName(*v)
 	}
@@ -777,41 +777,41 @@ func (_u *ApiSubscriptionUpdateOne) SetNillableName(v *string) *ApiSubscriptionU
 }
 
 // SetBasePath sets the "base_path" field.
-func (_u *ApiSubscriptionUpdateOne) SetBasePath(v string) *ApiSubscriptionUpdateOne {
+func (_u *APISubscriptionUpdateOne) SetBasePath(v string) *APISubscriptionUpdateOne {
 	_u.mutation.SetBasePath(v)
 	return _u
 }
 
 // SetNillableBasePath sets the "base_path" field if the given value is not nil.
-func (_u *ApiSubscriptionUpdateOne) SetNillableBasePath(v *string) *ApiSubscriptionUpdateOne {
+func (_u *APISubscriptionUpdateOne) SetNillableBasePath(v *string) *APISubscriptionUpdateOne {
 	if v != nil {
 		_u.SetBasePath(*v)
 	}
 	return _u
 }
 
-// SetM2mAuthMethod sets the "m2m_auth_method" field.
-func (_u *ApiSubscriptionUpdateOne) SetM2mAuthMethod(v apisubscription.M2mAuthMethod) *ApiSubscriptionUpdateOne {
-	_u.mutation.SetM2mAuthMethod(v)
+// SetM2MAuthMethod sets the "M2M_auth_method" field.
+func (_u *APISubscriptionUpdateOne) SetM2MAuthMethod(v apisubscription.M2MAuthMethod) *APISubscriptionUpdateOne {
+	_u.mutation.SetM2MAuthMethod(v)
 	return _u
 }
 
-// SetNillableM2mAuthMethod sets the "m2m_auth_method" field if the given value is not nil.
-func (_u *ApiSubscriptionUpdateOne) SetNillableM2mAuthMethod(v *apisubscription.M2mAuthMethod) *ApiSubscriptionUpdateOne {
+// SetNillableM2MAuthMethod sets the "M2M_auth_method" field if the given value is not nil.
+func (_u *APISubscriptionUpdateOne) SetNillableM2MAuthMethod(v *apisubscription.M2MAuthMethod) *APISubscriptionUpdateOne {
 	if v != nil {
-		_u.SetM2mAuthMethod(*v)
+		_u.SetM2MAuthMethod(*v)
 	}
 	return _u
 }
 
 // SetGatewayURL sets the "gateway_url" field.
-func (_u *ApiSubscriptionUpdateOne) SetGatewayURL(v string) *ApiSubscriptionUpdateOne {
+func (_u *APISubscriptionUpdateOne) SetGatewayURL(v string) *APISubscriptionUpdateOne {
 	_u.mutation.SetGatewayURL(v)
 	return _u
 }
 
 // SetNillableGatewayURL sets the "gateway_url" field if the given value is not nil.
-func (_u *ApiSubscriptionUpdateOne) SetNillableGatewayURL(v *string) *ApiSubscriptionUpdateOne {
+func (_u *APISubscriptionUpdateOne) SetNillableGatewayURL(v *string) *APISubscriptionUpdateOne {
 	if v != nil {
 		_u.SetGatewayURL(*v)
 	}
@@ -819,73 +819,73 @@ func (_u *ApiSubscriptionUpdateOne) SetNillableGatewayURL(v *string) *ApiSubscri
 }
 
 // ClearGatewayURL clears the value of the "gateway_url" field.
-func (_u *ApiSubscriptionUpdateOne) ClearGatewayURL() *ApiSubscriptionUpdateOne {
+func (_u *APISubscriptionUpdateOne) ClearGatewayURL() *APISubscriptionUpdateOne {
 	_u.mutation.ClearGatewayURL()
 	return _u
 }
 
 // SetSecurity sets the "security" field.
-func (_u *ApiSubscriptionUpdateOne) SetSecurity(v *model.ApiSubscriptionSecurity) *ApiSubscriptionUpdateOne {
+func (_u *APISubscriptionUpdateOne) SetSecurity(v *model.APISubscriptionSecurity) *APISubscriptionUpdateOne {
 	_u.mutation.SetSecurity(v)
 	return _u
 }
 
 // ClearSecurity clears the value of the "security" field.
-func (_u *ApiSubscriptionUpdateOne) ClearSecurity() *ApiSubscriptionUpdateOne {
+func (_u *APISubscriptionUpdateOne) ClearSecurity() *APISubscriptionUpdateOne {
 	_u.mutation.ClearSecurity()
 	return _u
 }
 
 // SetTraffic sets the "traffic" field.
-func (_u *ApiSubscriptionUpdateOne) SetTraffic(v *model.ApiSubscriptionTraffic) *ApiSubscriptionUpdateOne {
+func (_u *APISubscriptionUpdateOne) SetTraffic(v *model.APISubscriptionTraffic) *APISubscriptionUpdateOne {
 	_u.mutation.SetTraffic(v)
 	return _u
 }
 
 // ClearTraffic clears the value of the "traffic" field.
-func (_u *ApiSubscriptionUpdateOne) ClearTraffic() *ApiSubscriptionUpdateOne {
+func (_u *APISubscriptionUpdateOne) ClearTraffic() *APISubscriptionUpdateOne {
 	_u.mutation.ClearTraffic()
 	return _u
 }
 
 // SetOwnerID sets the "owner" edge to the Application entity by ID.
-func (_u *ApiSubscriptionUpdateOne) SetOwnerID(id int) *ApiSubscriptionUpdateOne {
+func (_u *APISubscriptionUpdateOne) SetOwnerID(id int) *APISubscriptionUpdateOne {
 	_u.mutation.SetOwnerID(id)
 	return _u
 }
 
 // SetOwner sets the "owner" edge to the Application entity.
-func (_u *ApiSubscriptionUpdateOne) SetOwner(v *Application) *ApiSubscriptionUpdateOne {
+func (_u *APISubscriptionUpdateOne) SetOwner(v *Application) *APISubscriptionUpdateOne {
 	return _u.SetOwnerID(v.ID)
 }
 
-// SetTargetID sets the "target" edge to the ApiExposure entity by ID.
-func (_u *ApiSubscriptionUpdateOne) SetTargetID(id int) *ApiSubscriptionUpdateOne {
+// SetTargetID sets the "target" edge to the APIExposure entity by ID.
+func (_u *APISubscriptionUpdateOne) SetTargetID(id int) *APISubscriptionUpdateOne {
 	_u.mutation.SetTargetID(id)
 	return _u
 }
 
-// SetNillableTargetID sets the "target" edge to the ApiExposure entity by ID if the given value is not nil.
-func (_u *ApiSubscriptionUpdateOne) SetNillableTargetID(id *int) *ApiSubscriptionUpdateOne {
+// SetNillableTargetID sets the "target" edge to the APIExposure entity by ID if the given value is not nil.
+func (_u *APISubscriptionUpdateOne) SetNillableTargetID(id *int) *APISubscriptionUpdateOne {
 	if id != nil {
 		_u = _u.SetTargetID(*id)
 	}
 	return _u
 }
 
-// SetTarget sets the "target" edge to the ApiExposure entity.
-func (_u *ApiSubscriptionUpdateOne) SetTarget(v *ApiExposure) *ApiSubscriptionUpdateOne {
+// SetTarget sets the "target" edge to the APIExposure entity.
+func (_u *APISubscriptionUpdateOne) SetTarget(v *APIExposure) *APISubscriptionUpdateOne {
 	return _u.SetTargetID(v.ID)
 }
 
 // AddFailoverZoneIDs adds the "failover_zones" edge to the Zone entity by IDs.
-func (_u *ApiSubscriptionUpdateOne) AddFailoverZoneIDs(ids ...int) *ApiSubscriptionUpdateOne {
+func (_u *APISubscriptionUpdateOne) AddFailoverZoneIDs(ids ...int) *APISubscriptionUpdateOne {
 	_u.mutation.AddFailoverZoneIDs(ids...)
 	return _u
 }
 
 // AddFailoverZones adds the "failover_zones" edges to the Zone entity.
-func (_u *ApiSubscriptionUpdateOne) AddFailoverZones(v ...*Zone) *ApiSubscriptionUpdateOne {
+func (_u *APISubscriptionUpdateOne) AddFailoverZones(v ...*Zone) *APISubscriptionUpdateOne {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
@@ -894,13 +894,13 @@ func (_u *ApiSubscriptionUpdateOne) AddFailoverZones(v ...*Zone) *ApiSubscriptio
 }
 
 // SetApprovalID sets the "approval" edge to the Approval entity by ID.
-func (_u *ApiSubscriptionUpdateOne) SetApprovalID(id int) *ApiSubscriptionUpdateOne {
+func (_u *APISubscriptionUpdateOne) SetApprovalID(id int) *APISubscriptionUpdateOne {
 	_u.mutation.SetApprovalID(id)
 	return _u
 }
 
 // SetNillableApprovalID sets the "approval" edge to the Approval entity by ID if the given value is not nil.
-func (_u *ApiSubscriptionUpdateOne) SetNillableApprovalID(id *int) *ApiSubscriptionUpdateOne {
+func (_u *APISubscriptionUpdateOne) SetNillableApprovalID(id *int) *APISubscriptionUpdateOne {
 	if id != nil {
 		_u = _u.SetApprovalID(*id)
 	}
@@ -908,18 +908,18 @@ func (_u *ApiSubscriptionUpdateOne) SetNillableApprovalID(id *int) *ApiSubscript
 }
 
 // SetApproval sets the "approval" edge to the Approval entity.
-func (_u *ApiSubscriptionUpdateOne) SetApproval(v *Approval) *ApiSubscriptionUpdateOne {
+func (_u *APISubscriptionUpdateOne) SetApproval(v *Approval) *APISubscriptionUpdateOne {
 	return _u.SetApprovalID(v.ID)
 }
 
 // AddApprovalRequestIDs adds the "approval_requests" edge to the ApprovalRequest entity by IDs.
-func (_u *ApiSubscriptionUpdateOne) AddApprovalRequestIDs(ids ...int) *ApiSubscriptionUpdateOne {
+func (_u *APISubscriptionUpdateOne) AddApprovalRequestIDs(ids ...int) *APISubscriptionUpdateOne {
 	_u.mutation.AddApprovalRequestIDs(ids...)
 	return _u
 }
 
 // AddApprovalRequests adds the "approval_requests" edges to the ApprovalRequest entity.
-func (_u *ApiSubscriptionUpdateOne) AddApprovalRequests(v ...*ApprovalRequest) *ApiSubscriptionUpdateOne {
+func (_u *APISubscriptionUpdateOne) AddApprovalRequests(v ...*ApprovalRequest) *APISubscriptionUpdateOne {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
@@ -927,37 +927,37 @@ func (_u *ApiSubscriptionUpdateOne) AddApprovalRequests(v ...*ApprovalRequest) *
 	return _u.AddApprovalRequestIDs(ids...)
 }
 
-// Mutation returns the ApiSubscriptionMutation object of the builder.
-func (_u *ApiSubscriptionUpdateOne) Mutation() *ApiSubscriptionMutation {
+// Mutation returns the APISubscriptionMutation object of the builder.
+func (_u *APISubscriptionUpdateOne) Mutation() *APISubscriptionMutation {
 	return _u.mutation
 }
 
 // ClearOwner clears the "owner" edge to the Application entity.
-func (_u *ApiSubscriptionUpdateOne) ClearOwner() *ApiSubscriptionUpdateOne {
+func (_u *APISubscriptionUpdateOne) ClearOwner() *APISubscriptionUpdateOne {
 	_u.mutation.ClearOwner()
 	return _u
 }
 
-// ClearTarget clears the "target" edge to the ApiExposure entity.
-func (_u *ApiSubscriptionUpdateOne) ClearTarget() *ApiSubscriptionUpdateOne {
+// ClearTarget clears the "target" edge to the APIExposure entity.
+func (_u *APISubscriptionUpdateOne) ClearTarget() *APISubscriptionUpdateOne {
 	_u.mutation.ClearTarget()
 	return _u
 }
 
 // ClearFailoverZones clears all "failover_zones" edges to the Zone entity.
-func (_u *ApiSubscriptionUpdateOne) ClearFailoverZones() *ApiSubscriptionUpdateOne {
+func (_u *APISubscriptionUpdateOne) ClearFailoverZones() *APISubscriptionUpdateOne {
 	_u.mutation.ClearFailoverZones()
 	return _u
 }
 
 // RemoveFailoverZoneIDs removes the "failover_zones" edge to Zone entities by IDs.
-func (_u *ApiSubscriptionUpdateOne) RemoveFailoverZoneIDs(ids ...int) *ApiSubscriptionUpdateOne {
+func (_u *APISubscriptionUpdateOne) RemoveFailoverZoneIDs(ids ...int) *APISubscriptionUpdateOne {
 	_u.mutation.RemoveFailoverZoneIDs(ids...)
 	return _u
 }
 
 // RemoveFailoverZones removes "failover_zones" edges to Zone entities.
-func (_u *ApiSubscriptionUpdateOne) RemoveFailoverZones(v ...*Zone) *ApiSubscriptionUpdateOne {
+func (_u *APISubscriptionUpdateOne) RemoveFailoverZones(v ...*Zone) *APISubscriptionUpdateOne {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
@@ -966,25 +966,25 @@ func (_u *ApiSubscriptionUpdateOne) RemoveFailoverZones(v ...*Zone) *ApiSubscrip
 }
 
 // ClearApproval clears the "approval" edge to the Approval entity.
-func (_u *ApiSubscriptionUpdateOne) ClearApproval() *ApiSubscriptionUpdateOne {
+func (_u *APISubscriptionUpdateOne) ClearApproval() *APISubscriptionUpdateOne {
 	_u.mutation.ClearApproval()
 	return _u
 }
 
 // ClearApprovalRequests clears all "approval_requests" edges to the ApprovalRequest entity.
-func (_u *ApiSubscriptionUpdateOne) ClearApprovalRequests() *ApiSubscriptionUpdateOne {
+func (_u *APISubscriptionUpdateOne) ClearApprovalRequests() *APISubscriptionUpdateOne {
 	_u.mutation.ClearApprovalRequests()
 	return _u
 }
 
 // RemoveApprovalRequestIDs removes the "approval_requests" edge to ApprovalRequest entities by IDs.
-func (_u *ApiSubscriptionUpdateOne) RemoveApprovalRequestIDs(ids ...int) *ApiSubscriptionUpdateOne {
+func (_u *APISubscriptionUpdateOne) RemoveApprovalRequestIDs(ids ...int) *APISubscriptionUpdateOne {
 	_u.mutation.RemoveApprovalRequestIDs(ids...)
 	return _u
 }
 
 // RemoveApprovalRequests removes "approval_requests" edges to ApprovalRequest entities.
-func (_u *ApiSubscriptionUpdateOne) RemoveApprovalRequests(v ...*ApprovalRequest) *ApiSubscriptionUpdateOne {
+func (_u *APISubscriptionUpdateOne) RemoveApprovalRequests(v ...*ApprovalRequest) *APISubscriptionUpdateOne {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
@@ -992,21 +992,21 @@ func (_u *ApiSubscriptionUpdateOne) RemoveApprovalRequests(v ...*ApprovalRequest
 	return _u.RemoveApprovalRequestIDs(ids...)
 }
 
-// Where appends a list predicates to the ApiSubscriptionUpdate builder.
-func (_u *ApiSubscriptionUpdateOne) Where(ps ...predicate.ApiSubscription) *ApiSubscriptionUpdateOne {
+// Where appends a list predicates to the APISubscriptionUpdate builder.
+func (_u *APISubscriptionUpdateOne) Where(ps ...predicate.APISubscription) *APISubscriptionUpdateOne {
 	_u.mutation.Where(ps...)
 	return _u
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
 // The default is selecting all fields defined in the entity schema.
-func (_u *ApiSubscriptionUpdateOne) Select(field string, fields ...string) *ApiSubscriptionUpdateOne {
+func (_u *APISubscriptionUpdateOne) Select(field string, fields ...string) *APISubscriptionUpdateOne {
 	_u.fields = append([]string{field}, fields...)
 	return _u
 }
 
-// Save executes the query and returns the updated ApiSubscription entity.
-func (_u *ApiSubscriptionUpdateOne) Save(ctx context.Context) (*ApiSubscription, error) {
+// Save executes the query and returns the updated APISubscription entity.
+func (_u *APISubscriptionUpdateOne) Save(ctx context.Context) (*APISubscription, error) {
 	if err := _u.defaults(); err != nil {
 		return nil, err
 	}
@@ -1014,7 +1014,7 @@ func (_u *ApiSubscriptionUpdateOne) Save(ctx context.Context) (*ApiSubscription,
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (_u *ApiSubscriptionUpdateOne) SaveX(ctx context.Context) *ApiSubscription {
+func (_u *APISubscriptionUpdateOne) SaveX(ctx context.Context) *APISubscription {
 	node, err := _u.Save(ctx)
 	if err != nil {
 		panic(err)
@@ -1023,20 +1023,20 @@ func (_u *ApiSubscriptionUpdateOne) SaveX(ctx context.Context) *ApiSubscription 
 }
 
 // Exec executes the query on the entity.
-func (_u *ApiSubscriptionUpdateOne) Exec(ctx context.Context) error {
+func (_u *APISubscriptionUpdateOne) Exec(ctx context.Context) error {
 	_, err := _u.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (_u *ApiSubscriptionUpdateOne) ExecX(ctx context.Context) {
+func (_u *APISubscriptionUpdateOne) ExecX(ctx context.Context) {
 	if err := _u.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // defaults sets the default values of the builder before save.
-func (_u *ApiSubscriptionUpdateOne) defaults() error {
+func (_u *APISubscriptionUpdateOne) defaults() error {
 	if _, ok := _u.mutation.LastModifiedAt(); !ok {
 		if apisubscription.UpdateDefaultLastModifiedAt == nil {
 			return fmt.Errorf("ent: uninitialized apisubscription.UpdateDefaultLastModifiedAt (forgotten import ent/runtime?)")
@@ -1048,46 +1048,46 @@ func (_u *ApiSubscriptionUpdateOne) defaults() error {
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (_u *ApiSubscriptionUpdateOne) check() error {
+func (_u *APISubscriptionUpdateOne) check() error {
 	if v, ok := _u.mutation.StatusPhase(); ok {
 		if err := apisubscription.StatusPhaseValidator(v); err != nil {
-			return &ValidationError{Name: "status_phase", err: fmt.Errorf(`ent: validator failed for field "ApiSubscription.status_phase": %w`, err)}
+			return &ValidationError{Name: "status_phase", err: fmt.Errorf(`ent: validator failed for field "APISubscription.status_phase": %w`, err)}
 		}
 	}
 	if v, ok := _u.mutation.Namespace(); ok {
 		if err := apisubscription.NamespaceValidator(v); err != nil {
-			return &ValidationError{Name: "namespace", err: fmt.Errorf(`ent: validator failed for field "ApiSubscription.namespace": %w`, err)}
+			return &ValidationError{Name: "namespace", err: fmt.Errorf(`ent: validator failed for field "APISubscription.namespace": %w`, err)}
 		}
 	}
 	if v, ok := _u.mutation.Name(); ok {
 		if err := apisubscription.NameValidator(v); err != nil {
-			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "ApiSubscription.name": %w`, err)}
+			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "APISubscription.name": %w`, err)}
 		}
 	}
 	if v, ok := _u.mutation.BasePath(); ok {
 		if err := apisubscription.BasePathValidator(v); err != nil {
-			return &ValidationError{Name: "base_path", err: fmt.Errorf(`ent: validator failed for field "ApiSubscription.base_path": %w`, err)}
+			return &ValidationError{Name: "base_path", err: fmt.Errorf(`ent: validator failed for field "APISubscription.base_path": %w`, err)}
 		}
 	}
-	if v, ok := _u.mutation.M2mAuthMethod(); ok {
-		if err := apisubscription.M2mAuthMethodValidator(v); err != nil {
-			return &ValidationError{Name: "m2m_auth_method", err: fmt.Errorf(`ent: validator failed for field "ApiSubscription.m2m_auth_method": %w`, err)}
+	if v, ok := _u.mutation.M2MAuthMethod(); ok {
+		if err := apisubscription.M2MAuthMethodValidator(v); err != nil {
+			return &ValidationError{Name: "M2M_auth_method", err: fmt.Errorf(`ent: validator failed for field "APISubscription.M2M_auth_method": %w`, err)}
 		}
 	}
 	if _u.mutation.OwnerCleared() && len(_u.mutation.OwnerIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "ApiSubscription.owner"`)
+		return errors.New(`ent: clearing a required unique edge "APISubscription.owner"`)
 	}
 	return nil
 }
 
-func (_u *ApiSubscriptionUpdateOne) sqlSave(ctx context.Context) (_node *ApiSubscription, err error) {
+func (_u *APISubscriptionUpdateOne) sqlSave(ctx context.Context) (_node *APISubscription, err error) {
 	if err := _u.check(); err != nil {
 		return _node, err
 	}
 	_spec := sqlgraph.NewUpdateSpec(apisubscription.Table, apisubscription.Columns, sqlgraph.NewFieldSpec(apisubscription.FieldID, field.TypeInt))
 	id, ok := _u.mutation.ID()
 	if !ok {
-		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "ApiSubscription.id" for update`)}
+		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "APISubscription.id" for update`)}
 	}
 	_spec.Node.ID.Value = id
 	if fields := _u.fields; len(fields) > 0 {
@@ -1139,8 +1139,8 @@ func (_u *ApiSubscriptionUpdateOne) sqlSave(ctx context.Context) (_node *ApiSubs
 	if value, ok := _u.mutation.BasePath(); ok {
 		_spec.SetField(apisubscription.FieldBasePath, field.TypeString, value)
 	}
-	if value, ok := _u.mutation.M2mAuthMethod(); ok {
-		_spec.SetField(apisubscription.FieldM2mAuthMethod, field.TypeEnum, value)
+	if value, ok := _u.mutation.M2MAuthMethod(); ok {
+		_spec.SetField(apisubscription.FieldM2MAuthMethod, field.TypeEnum, value)
 	}
 	if value, ok := _u.mutation.GatewayURL(); ok {
 		_spec.SetField(apisubscription.FieldGatewayURL, field.TypeString, value)
@@ -1337,7 +1337,7 @@ func (_u *ApiSubscriptionUpdateOne) sqlSave(ctx context.Context) (_node *ApiSubs
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	_node = &ApiSubscription{config: _u.config}
+	_node = &APISubscription{config: _u.config}
 	_spec.Assign = _node.assignValues
 	_spec.ScanValues = _node.scanValues
 	if err = sqlgraph.UpdateNode(ctx, _u.driver, _spec); err != nil {

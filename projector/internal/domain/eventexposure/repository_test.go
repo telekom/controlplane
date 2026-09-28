@@ -132,7 +132,7 @@ var _ = Describe("EventExposure Repository", func() {
 						},
 					},
 				},
-				GatewayProviderUrl: "https://publish.gateway.example.com/de.telekom.eni.quickstart.v1",
+				GatewayProviderURL: "https://publish.gateway.example.com/de.telekom.eni.quickstart.v1",
 				AppName:            "my-app",
 				TeamName:           "platform--narvi",
 			}

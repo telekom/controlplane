@@ -933,14 +933,14 @@ func SecretRotationMessageContainsFold(v string) predicate.Application {
 	return predicate.Application(sql.FieldContainsFold(FieldSecretRotationMessage, v))
 }
 
-// ExternalIdsIsNil applies the IsNil predicate on the "external_ids" field.
-func ExternalIdsIsNil() predicate.Application {
-	return predicate.Application(sql.FieldIsNull(FieldExternalIds))
+// ExternalIDsIsNil applies the IsNil predicate on the "external_IDs" field.
+func ExternalIDsIsNil() predicate.Application {
+	return predicate.Application(sql.FieldIsNull(FieldExternalIDs))
 }
 
-// ExternalIdsNotNil applies the NotNil predicate on the "external_ids" field.
-func ExternalIdsNotNil() predicate.Application {
-	return predicate.Application(sql.FieldNotNull(FieldExternalIds))
+// ExternalIDsNotNil applies the NotNil predicate on the "external_IDs" field.
+func ExternalIDsNotNil() predicate.Application {
+	return predicate.Application(sql.FieldNotNull(FieldExternalIDs))
 }
 
 // IPRestrictionsIsNil applies the IsNil predicate on the "ip_restrictions" field.
@@ -1074,21 +1074,21 @@ func HasOwnerTeamWith(preds ...predicate.Team) predicate.Application {
 	})
 }
 
-// HasExposedApis applies the HasEdge predicate on the "exposed_apis" edge.
-func HasExposedApis() predicate.Application {
+// HasExposedAPIs applies the HasEdge predicate on the "exposed_APIs" edge.
+func HasExposedAPIs() predicate.Application {
 	return predicate.Application(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, ExposedApisTable, ExposedApisColumn),
+			sqlgraph.Edge(sqlgraph.O2M, false, ExposedAPIsTable, ExposedAPIsColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
 }
 
-// HasExposedApisWith applies the HasEdge predicate on the "exposed_apis" edge with a given conditions (other predicates).
-func HasExposedApisWith(preds ...predicate.ApiExposure) predicate.Application {
+// HasExposedAPIsWith applies the HasEdge predicate on the "exposed_APIs" edge with a given conditions (other predicates).
+func HasExposedAPIsWith(preds ...predicate.APIExposure) predicate.Application {
 	return predicate.Application(func(s *sql.Selector) {
-		step := newExposedApisStep()
+		step := newExposedAPIsStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)
@@ -1097,21 +1097,21 @@ func HasExposedApisWith(preds ...predicate.ApiExposure) predicate.Application {
 	})
 }
 
-// HasSubscribedApis applies the HasEdge predicate on the "subscribed_apis" edge.
-func HasSubscribedApis() predicate.Application {
+// HasSubscribedAPIs applies the HasEdge predicate on the "subscribed_APIs" edge.
+func HasSubscribedAPIs() predicate.Application {
 	return predicate.Application(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, SubscribedApisTable, SubscribedApisColumn),
+			sqlgraph.Edge(sqlgraph.O2M, false, SubscribedAPIsTable, SubscribedAPIsColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
 }
 
-// HasSubscribedApisWith applies the HasEdge predicate on the "subscribed_apis" edge with a given conditions (other predicates).
-func HasSubscribedApisWith(preds ...predicate.ApiSubscription) predicate.Application {
+// HasSubscribedAPIsWith applies the HasEdge predicate on the "subscribed_APIs" edge with a given conditions (other predicates).
+func HasSubscribedAPIsWith(preds ...predicate.APISubscription) predicate.Application {
 	return predicate.Application(func(s *sql.Selector) {
-		step := newSubscribedApisStep()
+		step := newSubscribedAPIsStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

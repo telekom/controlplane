@@ -23,22 +23,22 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 )
 
-// ApiSubscriptionCreate is the builder for creating a ApiSubscription entity.
-type ApiSubscriptionCreate struct {
+// APISubscriptionCreate is the builder for creating a APISubscription entity.
+type APISubscriptionCreate struct {
 	config
-	mutation *ApiSubscriptionMutation
+	mutation *APISubscriptionMutation
 	hooks    []Hook
 	conflict []sql.ConflictOption
 }
 
 // SetCreatedAt sets the "created_at" field.
-func (_c *ApiSubscriptionCreate) SetCreatedAt(v time.Time) *ApiSubscriptionCreate {
+func (_c *APISubscriptionCreate) SetCreatedAt(v time.Time) *APISubscriptionCreate {
 	_c.mutation.SetCreatedAt(v)
 	return _c
 }
 
 // SetNillableCreatedAt sets the "created_at" field if the given value is not nil.
-func (_c *ApiSubscriptionCreate) SetNillableCreatedAt(v *time.Time) *ApiSubscriptionCreate {
+func (_c *APISubscriptionCreate) SetNillableCreatedAt(v *time.Time) *APISubscriptionCreate {
 	if v != nil {
 		_c.SetCreatedAt(*v)
 	}
@@ -46,13 +46,13 @@ func (_c *ApiSubscriptionCreate) SetNillableCreatedAt(v *time.Time) *ApiSubscrip
 }
 
 // SetLastModifiedAt sets the "last_modified_at" field.
-func (_c *ApiSubscriptionCreate) SetLastModifiedAt(v time.Time) *ApiSubscriptionCreate {
+func (_c *APISubscriptionCreate) SetLastModifiedAt(v time.Time) *APISubscriptionCreate {
 	_c.mutation.SetLastModifiedAt(v)
 	return _c
 }
 
 // SetNillableLastModifiedAt sets the "last_modified_at" field if the given value is not nil.
-func (_c *ApiSubscriptionCreate) SetNillableLastModifiedAt(v *time.Time) *ApiSubscriptionCreate {
+func (_c *APISubscriptionCreate) SetNillableLastModifiedAt(v *time.Time) *APISubscriptionCreate {
 	if v != nil {
 		_c.SetLastModifiedAt(*v)
 	}
@@ -60,13 +60,13 @@ func (_c *ApiSubscriptionCreate) SetNillableLastModifiedAt(v *time.Time) *ApiSub
 }
 
 // SetStatusPhase sets the "status_phase" field.
-func (_c *ApiSubscriptionCreate) SetStatusPhase(v apisubscription.StatusPhase) *ApiSubscriptionCreate {
+func (_c *APISubscriptionCreate) SetStatusPhase(v apisubscription.StatusPhase) *APISubscriptionCreate {
 	_c.mutation.SetStatusPhase(v)
 	return _c
 }
 
 // SetNillableStatusPhase sets the "status_phase" field if the given value is not nil.
-func (_c *ApiSubscriptionCreate) SetNillableStatusPhase(v *apisubscription.StatusPhase) *ApiSubscriptionCreate {
+func (_c *APISubscriptionCreate) SetNillableStatusPhase(v *apisubscription.StatusPhase) *APISubscriptionCreate {
 	if v != nil {
 		_c.SetStatusPhase(*v)
 	}
@@ -74,13 +74,13 @@ func (_c *ApiSubscriptionCreate) SetNillableStatusPhase(v *apisubscription.Statu
 }
 
 // SetStatusMessage sets the "status_message" field.
-func (_c *ApiSubscriptionCreate) SetStatusMessage(v string) *ApiSubscriptionCreate {
+func (_c *APISubscriptionCreate) SetStatusMessage(v string) *APISubscriptionCreate {
 	_c.mutation.SetStatusMessage(v)
 	return _c
 }
 
 // SetNillableStatusMessage sets the "status_message" field if the given value is not nil.
-func (_c *ApiSubscriptionCreate) SetNillableStatusMessage(v *string) *ApiSubscriptionCreate {
+func (_c *APISubscriptionCreate) SetNillableStatusMessage(v *string) *APISubscriptionCreate {
 	if v != nil {
 		_c.SetStatusMessage(*v)
 	}
@@ -88,13 +88,13 @@ func (_c *ApiSubscriptionCreate) SetNillableStatusMessage(v *string) *ApiSubscri
 }
 
 // SetEnvironment sets the "environment" field.
-func (_c *ApiSubscriptionCreate) SetEnvironment(v string) *ApiSubscriptionCreate {
+func (_c *APISubscriptionCreate) SetEnvironment(v string) *APISubscriptionCreate {
 	_c.mutation.SetEnvironment(v)
 	return _c
 }
 
 // SetNillableEnvironment sets the "environment" field if the given value is not nil.
-func (_c *ApiSubscriptionCreate) SetNillableEnvironment(v *string) *ApiSubscriptionCreate {
+func (_c *APISubscriptionCreate) SetNillableEnvironment(v *string) *APISubscriptionCreate {
 	if v != nil {
 		_c.SetEnvironment(*v)
 	}
@@ -102,45 +102,45 @@ func (_c *ApiSubscriptionCreate) SetNillableEnvironment(v *string) *ApiSubscript
 }
 
 // SetNamespace sets the "namespace" field.
-func (_c *ApiSubscriptionCreate) SetNamespace(v string) *ApiSubscriptionCreate {
+func (_c *APISubscriptionCreate) SetNamespace(v string) *APISubscriptionCreate {
 	_c.mutation.SetNamespace(v)
 	return _c
 }
 
 // SetName sets the "name" field.
-func (_c *ApiSubscriptionCreate) SetName(v string) *ApiSubscriptionCreate {
+func (_c *APISubscriptionCreate) SetName(v string) *APISubscriptionCreate {
 	_c.mutation.SetName(v)
 	return _c
 }
 
 // SetBasePath sets the "base_path" field.
-func (_c *ApiSubscriptionCreate) SetBasePath(v string) *ApiSubscriptionCreate {
+func (_c *APISubscriptionCreate) SetBasePath(v string) *APISubscriptionCreate {
 	_c.mutation.SetBasePath(v)
 	return _c
 }
 
-// SetM2mAuthMethod sets the "m2m_auth_method" field.
-func (_c *ApiSubscriptionCreate) SetM2mAuthMethod(v apisubscription.M2mAuthMethod) *ApiSubscriptionCreate {
-	_c.mutation.SetM2mAuthMethod(v)
+// SetM2MAuthMethod sets the "M2M_auth_method" field.
+func (_c *APISubscriptionCreate) SetM2MAuthMethod(v apisubscription.M2MAuthMethod) *APISubscriptionCreate {
+	_c.mutation.SetM2MAuthMethod(v)
 	return _c
 }
 
-// SetNillableM2mAuthMethod sets the "m2m_auth_method" field if the given value is not nil.
-func (_c *ApiSubscriptionCreate) SetNillableM2mAuthMethod(v *apisubscription.M2mAuthMethod) *ApiSubscriptionCreate {
+// SetNillableM2MAuthMethod sets the "M2M_auth_method" field if the given value is not nil.
+func (_c *APISubscriptionCreate) SetNillableM2MAuthMethod(v *apisubscription.M2MAuthMethod) *APISubscriptionCreate {
 	if v != nil {
-		_c.SetM2mAuthMethod(*v)
+		_c.SetM2MAuthMethod(*v)
 	}
 	return _c
 }
 
 // SetGatewayURL sets the "gateway_url" field.
-func (_c *ApiSubscriptionCreate) SetGatewayURL(v string) *ApiSubscriptionCreate {
+func (_c *APISubscriptionCreate) SetGatewayURL(v string) *APISubscriptionCreate {
 	_c.mutation.SetGatewayURL(v)
 	return _c
 }
 
 // SetNillableGatewayURL sets the "gateway_url" field if the given value is not nil.
-func (_c *ApiSubscriptionCreate) SetNillableGatewayURL(v *string) *ApiSubscriptionCreate {
+func (_c *APISubscriptionCreate) SetNillableGatewayURL(v *string) *APISubscriptionCreate {
 	if v != nil {
 		_c.SetGatewayURL(*v)
 	}
@@ -148,55 +148,55 @@ func (_c *ApiSubscriptionCreate) SetNillableGatewayURL(v *string) *ApiSubscripti
 }
 
 // SetSecurity sets the "security" field.
-func (_c *ApiSubscriptionCreate) SetSecurity(v *model.ApiSubscriptionSecurity) *ApiSubscriptionCreate {
+func (_c *APISubscriptionCreate) SetSecurity(v *model.APISubscriptionSecurity) *APISubscriptionCreate {
 	_c.mutation.SetSecurity(v)
 	return _c
 }
 
 // SetTraffic sets the "traffic" field.
-func (_c *ApiSubscriptionCreate) SetTraffic(v *model.ApiSubscriptionTraffic) *ApiSubscriptionCreate {
+func (_c *APISubscriptionCreate) SetTraffic(v *model.APISubscriptionTraffic) *APISubscriptionCreate {
 	_c.mutation.SetTraffic(v)
 	return _c
 }
 
 // SetOwnerID sets the "owner" edge to the Application entity by ID.
-func (_c *ApiSubscriptionCreate) SetOwnerID(id int) *ApiSubscriptionCreate {
+func (_c *APISubscriptionCreate) SetOwnerID(id int) *APISubscriptionCreate {
 	_c.mutation.SetOwnerID(id)
 	return _c
 }
 
 // SetOwner sets the "owner" edge to the Application entity.
-func (_c *ApiSubscriptionCreate) SetOwner(v *Application) *ApiSubscriptionCreate {
+func (_c *APISubscriptionCreate) SetOwner(v *Application) *APISubscriptionCreate {
 	return _c.SetOwnerID(v.ID)
 }
 
-// SetTargetID sets the "target" edge to the ApiExposure entity by ID.
-func (_c *ApiSubscriptionCreate) SetTargetID(id int) *ApiSubscriptionCreate {
+// SetTargetID sets the "target" edge to the APIExposure entity by ID.
+func (_c *APISubscriptionCreate) SetTargetID(id int) *APISubscriptionCreate {
 	_c.mutation.SetTargetID(id)
 	return _c
 }
 
-// SetNillableTargetID sets the "target" edge to the ApiExposure entity by ID if the given value is not nil.
-func (_c *ApiSubscriptionCreate) SetNillableTargetID(id *int) *ApiSubscriptionCreate {
+// SetNillableTargetID sets the "target" edge to the APIExposure entity by ID if the given value is not nil.
+func (_c *APISubscriptionCreate) SetNillableTargetID(id *int) *APISubscriptionCreate {
 	if id != nil {
 		_c = _c.SetTargetID(*id)
 	}
 	return _c
 }
 
-// SetTarget sets the "target" edge to the ApiExposure entity.
-func (_c *ApiSubscriptionCreate) SetTarget(v *ApiExposure) *ApiSubscriptionCreate {
+// SetTarget sets the "target" edge to the APIExposure entity.
+func (_c *APISubscriptionCreate) SetTarget(v *APIExposure) *APISubscriptionCreate {
 	return _c.SetTargetID(v.ID)
 }
 
 // AddFailoverZoneIDs adds the "failover_zones" edge to the Zone entity by IDs.
-func (_c *ApiSubscriptionCreate) AddFailoverZoneIDs(ids ...int) *ApiSubscriptionCreate {
+func (_c *APISubscriptionCreate) AddFailoverZoneIDs(ids ...int) *APISubscriptionCreate {
 	_c.mutation.AddFailoverZoneIDs(ids...)
 	return _c
 }
 
 // AddFailoverZones adds the "failover_zones" edges to the Zone entity.
-func (_c *ApiSubscriptionCreate) AddFailoverZones(v ...*Zone) *ApiSubscriptionCreate {
+func (_c *APISubscriptionCreate) AddFailoverZones(v ...*Zone) *APISubscriptionCreate {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
@@ -205,13 +205,13 @@ func (_c *ApiSubscriptionCreate) AddFailoverZones(v ...*Zone) *ApiSubscriptionCr
 }
 
 // SetApprovalID sets the "approval" edge to the Approval entity by ID.
-func (_c *ApiSubscriptionCreate) SetApprovalID(id int) *ApiSubscriptionCreate {
+func (_c *APISubscriptionCreate) SetApprovalID(id int) *APISubscriptionCreate {
 	_c.mutation.SetApprovalID(id)
 	return _c
 }
 
 // SetNillableApprovalID sets the "approval" edge to the Approval entity by ID if the given value is not nil.
-func (_c *ApiSubscriptionCreate) SetNillableApprovalID(id *int) *ApiSubscriptionCreate {
+func (_c *APISubscriptionCreate) SetNillableApprovalID(id *int) *APISubscriptionCreate {
 	if id != nil {
 		_c = _c.SetApprovalID(*id)
 	}
@@ -219,18 +219,18 @@ func (_c *ApiSubscriptionCreate) SetNillableApprovalID(id *int) *ApiSubscription
 }
 
 // SetApproval sets the "approval" edge to the Approval entity.
-func (_c *ApiSubscriptionCreate) SetApproval(v *Approval) *ApiSubscriptionCreate {
+func (_c *APISubscriptionCreate) SetApproval(v *Approval) *APISubscriptionCreate {
 	return _c.SetApprovalID(v.ID)
 }
 
 // AddApprovalRequestIDs adds the "approval_requests" edge to the ApprovalRequest entity by IDs.
-func (_c *ApiSubscriptionCreate) AddApprovalRequestIDs(ids ...int) *ApiSubscriptionCreate {
+func (_c *APISubscriptionCreate) AddApprovalRequestIDs(ids ...int) *APISubscriptionCreate {
 	_c.mutation.AddApprovalRequestIDs(ids...)
 	return _c
 }
 
 // AddApprovalRequests adds the "approval_requests" edges to the ApprovalRequest entity.
-func (_c *ApiSubscriptionCreate) AddApprovalRequests(v ...*ApprovalRequest) *ApiSubscriptionCreate {
+func (_c *APISubscriptionCreate) AddApprovalRequests(v ...*ApprovalRequest) *APISubscriptionCreate {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
@@ -238,13 +238,13 @@ func (_c *ApiSubscriptionCreate) AddApprovalRequests(v ...*ApprovalRequest) *Api
 	return _c.AddApprovalRequestIDs(ids...)
 }
 
-// Mutation returns the ApiSubscriptionMutation object of the builder.
-func (_c *ApiSubscriptionCreate) Mutation() *ApiSubscriptionMutation {
+// Mutation returns the APISubscriptionMutation object of the builder.
+func (_c *APISubscriptionCreate) Mutation() *APISubscriptionMutation {
 	return _c.mutation
 }
 
-// Save creates the ApiSubscription in the database.
-func (_c *ApiSubscriptionCreate) Save(ctx context.Context) (*ApiSubscription, error) {
+// Save creates the APISubscription in the database.
+func (_c *APISubscriptionCreate) Save(ctx context.Context) (*APISubscription, error) {
 	if err := _c.defaults(); err != nil {
 		return nil, err
 	}
@@ -252,7 +252,7 @@ func (_c *ApiSubscriptionCreate) Save(ctx context.Context) (*ApiSubscription, er
 }
 
 // SaveX calls Save and panics if Save returns an error.
-func (_c *ApiSubscriptionCreate) SaveX(ctx context.Context) *ApiSubscription {
+func (_c *APISubscriptionCreate) SaveX(ctx context.Context) *APISubscription {
 	v, err := _c.Save(ctx)
 	if err != nil {
 		panic(err)
@@ -261,20 +261,20 @@ func (_c *ApiSubscriptionCreate) SaveX(ctx context.Context) *ApiSubscription {
 }
 
 // Exec executes the query.
-func (_c *ApiSubscriptionCreate) Exec(ctx context.Context) error {
+func (_c *APISubscriptionCreate) Exec(ctx context.Context) error {
 	_, err := _c.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (_c *ApiSubscriptionCreate) ExecX(ctx context.Context) {
+func (_c *APISubscriptionCreate) ExecX(ctx context.Context) {
 	if err := _c.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // defaults sets the default values of the builder before save.
-func (_c *ApiSubscriptionCreate) defaults() error {
+func (_c *APISubscriptionCreate) defaults() error {
 	if _, ok := _c.mutation.CreatedAt(); !ok {
 		if apisubscription.DefaultCreatedAt == nil {
 			return fmt.Errorf("ent: uninitialized apisubscription.DefaultCreatedAt (forgotten import ent/runtime?)")
@@ -289,65 +289,65 @@ func (_c *ApiSubscriptionCreate) defaults() error {
 		v := apisubscription.DefaultLastModifiedAt()
 		_c.mutation.SetLastModifiedAt(v)
 	}
-	if _, ok := _c.mutation.M2mAuthMethod(); !ok {
-		v := apisubscription.DefaultM2mAuthMethod
-		_c.mutation.SetM2mAuthMethod(v)
+	if _, ok := _c.mutation.M2MAuthMethod(); !ok {
+		v := apisubscription.DefaultM2MAuthMethod
+		_c.mutation.SetM2MAuthMethod(v)
 	}
 	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (_c *ApiSubscriptionCreate) check() error {
+func (_c *APISubscriptionCreate) check() error {
 	if _, ok := _c.mutation.CreatedAt(); !ok {
-		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "ApiSubscription.created_at"`)}
+		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "APISubscription.created_at"`)}
 	}
 	if _, ok := _c.mutation.LastModifiedAt(); !ok {
-		return &ValidationError{Name: "last_modified_at", err: errors.New(`ent: missing required field "ApiSubscription.last_modified_at"`)}
+		return &ValidationError{Name: "last_modified_at", err: errors.New(`ent: missing required field "APISubscription.last_modified_at"`)}
 	}
 	if v, ok := _c.mutation.StatusPhase(); ok {
 		if err := apisubscription.StatusPhaseValidator(v); err != nil {
-			return &ValidationError{Name: "status_phase", err: fmt.Errorf(`ent: validator failed for field "ApiSubscription.status_phase": %w`, err)}
+			return &ValidationError{Name: "status_phase", err: fmt.Errorf(`ent: validator failed for field "APISubscription.status_phase": %w`, err)}
 		}
 	}
 	if _, ok := _c.mutation.Namespace(); !ok {
-		return &ValidationError{Name: "namespace", err: errors.New(`ent: missing required field "ApiSubscription.namespace"`)}
+		return &ValidationError{Name: "namespace", err: errors.New(`ent: missing required field "APISubscription.namespace"`)}
 	}
 	if v, ok := _c.mutation.Namespace(); ok {
 		if err := apisubscription.NamespaceValidator(v); err != nil {
-			return &ValidationError{Name: "namespace", err: fmt.Errorf(`ent: validator failed for field "ApiSubscription.namespace": %w`, err)}
+			return &ValidationError{Name: "namespace", err: fmt.Errorf(`ent: validator failed for field "APISubscription.namespace": %w`, err)}
 		}
 	}
 	if _, ok := _c.mutation.Name(); !ok {
-		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "ApiSubscription.name"`)}
+		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "APISubscription.name"`)}
 	}
 	if v, ok := _c.mutation.Name(); ok {
 		if err := apisubscription.NameValidator(v); err != nil {
-			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "ApiSubscription.name": %w`, err)}
+			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "APISubscription.name": %w`, err)}
 		}
 	}
 	if _, ok := _c.mutation.BasePath(); !ok {
-		return &ValidationError{Name: "base_path", err: errors.New(`ent: missing required field "ApiSubscription.base_path"`)}
+		return &ValidationError{Name: "base_path", err: errors.New(`ent: missing required field "APISubscription.base_path"`)}
 	}
 	if v, ok := _c.mutation.BasePath(); ok {
 		if err := apisubscription.BasePathValidator(v); err != nil {
-			return &ValidationError{Name: "base_path", err: fmt.Errorf(`ent: validator failed for field "ApiSubscription.base_path": %w`, err)}
+			return &ValidationError{Name: "base_path", err: fmt.Errorf(`ent: validator failed for field "APISubscription.base_path": %w`, err)}
 		}
 	}
-	if _, ok := _c.mutation.M2mAuthMethod(); !ok {
-		return &ValidationError{Name: "m2m_auth_method", err: errors.New(`ent: missing required field "ApiSubscription.m2m_auth_method"`)}
+	if _, ok := _c.mutation.M2MAuthMethod(); !ok {
+		return &ValidationError{Name: "M2M_auth_method", err: errors.New(`ent: missing required field "APISubscription.M2M_auth_method"`)}
 	}
-	if v, ok := _c.mutation.M2mAuthMethod(); ok {
-		if err := apisubscription.M2mAuthMethodValidator(v); err != nil {
-			return &ValidationError{Name: "m2m_auth_method", err: fmt.Errorf(`ent: validator failed for field "ApiSubscription.m2m_auth_method": %w`, err)}
+	if v, ok := _c.mutation.M2MAuthMethod(); ok {
+		if err := apisubscription.M2MAuthMethodValidator(v); err != nil {
+			return &ValidationError{Name: "M2M_auth_method", err: fmt.Errorf(`ent: validator failed for field "APISubscription.M2M_auth_method": %w`, err)}
 		}
 	}
 	if len(_c.mutation.OwnerIDs()) == 0 {
-		return &ValidationError{Name: "owner", err: errors.New(`ent: missing required edge "ApiSubscription.owner"`)}
+		return &ValidationError{Name: "owner", err: errors.New(`ent: missing required edge "APISubscription.owner"`)}
 	}
 	return nil
 }
 
-func (_c *ApiSubscriptionCreate) sqlSave(ctx context.Context) (*ApiSubscription, error) {
+func (_c *APISubscriptionCreate) sqlSave(ctx context.Context) (*APISubscription, error) {
 	if err := _c.check(); err != nil {
 		return nil, err
 	}
@@ -365,9 +365,9 @@ func (_c *ApiSubscriptionCreate) sqlSave(ctx context.Context) (*ApiSubscription,
 	return _node, nil
 }
 
-func (_c *ApiSubscriptionCreate) createSpec() (*ApiSubscription, *sqlgraph.CreateSpec) {
+func (_c *APISubscriptionCreate) createSpec() (*APISubscription, *sqlgraph.CreateSpec) {
 	var (
-		_node = &ApiSubscription{config: _c.config}
+		_node = &APISubscription{config: _c.config}
 		_spec = sqlgraph.NewCreateSpec(apisubscription.Table, sqlgraph.NewFieldSpec(apisubscription.FieldID, field.TypeInt))
 	)
 	_spec.OnConflict = _c.conflict
@@ -403,9 +403,9 @@ func (_c *ApiSubscriptionCreate) createSpec() (*ApiSubscription, *sqlgraph.Creat
 		_spec.SetField(apisubscription.FieldBasePath, field.TypeString, value)
 		_node.BasePath = value
 	}
-	if value, ok := _c.mutation.M2mAuthMethod(); ok {
-		_spec.SetField(apisubscription.FieldM2mAuthMethod, field.TypeEnum, value)
-		_node.M2mAuthMethod = value
+	if value, ok := _c.mutation.M2MAuthMethod(); ok {
+		_spec.SetField(apisubscription.FieldM2MAuthMethod, field.TypeEnum, value)
+		_node.M2MAuthMethod = value
 	}
 	if value, ok := _c.mutation.GatewayURL(); ok {
 		_spec.SetField(apisubscription.FieldGatewayURL, field.TypeString, value)
@@ -507,7 +507,7 @@ func (_c *ApiSubscriptionCreate) createSpec() (*ApiSubscription, *sqlgraph.Creat
 // OnConflict allows configuring the `ON CONFLICT` / `ON DUPLICATE KEY` clause
 // of the `INSERT` statement. For example:
 //
-//	client.ApiSubscription.Create().
+//	client.APISubscription.Create().
 //		SetCreatedAt(v).
 //		OnConflict(
 //			// Update the row with the new values
@@ -516,13 +516,13 @@ func (_c *ApiSubscriptionCreate) createSpec() (*ApiSubscription, *sqlgraph.Creat
 //		).
 //		// Override some of the fields with custom
 //		// update values.
-//		Update(func(u *ent.ApiSubscriptionUpsert) {
+//		Update(func(u *ent.APISubscriptionUpsert) {
 //			SetCreatedAt(v+v).
 //		}).
 //		Exec(ctx)
-func (_c *ApiSubscriptionCreate) OnConflict(opts ...sql.ConflictOption) *ApiSubscriptionUpsertOne {
+func (_c *APISubscriptionCreate) OnConflict(opts ...sql.ConflictOption) *APISubscriptionUpsertOne {
 	_c.conflict = opts
-	return &ApiSubscriptionUpsertOne{
+	return &APISubscriptionUpsertOne{
 		create: _c,
 	}
 }
@@ -530,193 +530,193 @@ func (_c *ApiSubscriptionCreate) OnConflict(opts ...sql.ConflictOption) *ApiSubs
 // OnConflictColumns calls `OnConflict` and configures the columns
 // as conflict target. Using this option is equivalent to using:
 //
-//	client.ApiSubscription.Create().
+//	client.APISubscription.Create().
 //		OnConflict(sql.ConflictColumns(columns...)).
 //		Exec(ctx)
-func (_c *ApiSubscriptionCreate) OnConflictColumns(columns ...string) *ApiSubscriptionUpsertOne {
+func (_c *APISubscriptionCreate) OnConflictColumns(columns ...string) *APISubscriptionUpsertOne {
 	_c.conflict = append(_c.conflict, sql.ConflictColumns(columns...))
-	return &ApiSubscriptionUpsertOne{
+	return &APISubscriptionUpsertOne{
 		create: _c,
 	}
 }
 
 type (
-	// ApiSubscriptionUpsertOne is the builder for "upsert"-ing
-	//  one ApiSubscription node.
-	ApiSubscriptionUpsertOne struct {
-		create *ApiSubscriptionCreate
+	// APISubscriptionUpsertOne is the builder for "upsert"-ing
+	//  one APISubscription node.
+	APISubscriptionUpsertOne struct {
+		create *APISubscriptionCreate
 	}
 
-	// ApiSubscriptionUpsert is the "OnConflict" setter.
-	ApiSubscriptionUpsert struct {
+	// APISubscriptionUpsert is the "OnConflict" setter.
+	APISubscriptionUpsert struct {
 		*sql.UpdateSet
 	}
 )
 
 // SetLastModifiedAt sets the "last_modified_at" field.
-func (u *ApiSubscriptionUpsert) SetLastModifiedAt(v time.Time) *ApiSubscriptionUpsert {
+func (u *APISubscriptionUpsert) SetLastModifiedAt(v time.Time) *APISubscriptionUpsert {
 	u.Set(apisubscription.FieldLastModifiedAt, v)
 	return u
 }
 
 // UpdateLastModifiedAt sets the "last_modified_at" field to the value that was provided on create.
-func (u *ApiSubscriptionUpsert) UpdateLastModifiedAt() *ApiSubscriptionUpsert {
+func (u *APISubscriptionUpsert) UpdateLastModifiedAt() *APISubscriptionUpsert {
 	u.SetExcluded(apisubscription.FieldLastModifiedAt)
 	return u
 }
 
 // SetStatusPhase sets the "status_phase" field.
-func (u *ApiSubscriptionUpsert) SetStatusPhase(v apisubscription.StatusPhase) *ApiSubscriptionUpsert {
+func (u *APISubscriptionUpsert) SetStatusPhase(v apisubscription.StatusPhase) *APISubscriptionUpsert {
 	u.Set(apisubscription.FieldStatusPhase, v)
 	return u
 }
 
 // UpdateStatusPhase sets the "status_phase" field to the value that was provided on create.
-func (u *ApiSubscriptionUpsert) UpdateStatusPhase() *ApiSubscriptionUpsert {
+func (u *APISubscriptionUpsert) UpdateStatusPhase() *APISubscriptionUpsert {
 	u.SetExcluded(apisubscription.FieldStatusPhase)
 	return u
 }
 
 // ClearStatusPhase clears the value of the "status_phase" field.
-func (u *ApiSubscriptionUpsert) ClearStatusPhase() *ApiSubscriptionUpsert {
+func (u *APISubscriptionUpsert) ClearStatusPhase() *APISubscriptionUpsert {
 	u.SetNull(apisubscription.FieldStatusPhase)
 	return u
 }
 
 // SetStatusMessage sets the "status_message" field.
-func (u *ApiSubscriptionUpsert) SetStatusMessage(v string) *ApiSubscriptionUpsert {
+func (u *APISubscriptionUpsert) SetStatusMessage(v string) *APISubscriptionUpsert {
 	u.Set(apisubscription.FieldStatusMessage, v)
 	return u
 }
 
 // UpdateStatusMessage sets the "status_message" field to the value that was provided on create.
-func (u *ApiSubscriptionUpsert) UpdateStatusMessage() *ApiSubscriptionUpsert {
+func (u *APISubscriptionUpsert) UpdateStatusMessage() *APISubscriptionUpsert {
 	u.SetExcluded(apisubscription.FieldStatusMessage)
 	return u
 }
 
 // ClearStatusMessage clears the value of the "status_message" field.
-func (u *ApiSubscriptionUpsert) ClearStatusMessage() *ApiSubscriptionUpsert {
+func (u *APISubscriptionUpsert) ClearStatusMessage() *APISubscriptionUpsert {
 	u.SetNull(apisubscription.FieldStatusMessage)
 	return u
 }
 
 // SetEnvironment sets the "environment" field.
-func (u *ApiSubscriptionUpsert) SetEnvironment(v string) *ApiSubscriptionUpsert {
+func (u *APISubscriptionUpsert) SetEnvironment(v string) *APISubscriptionUpsert {
 	u.Set(apisubscription.FieldEnvironment, v)
 	return u
 }
 
 // UpdateEnvironment sets the "environment" field to the value that was provided on create.
-func (u *ApiSubscriptionUpsert) UpdateEnvironment() *ApiSubscriptionUpsert {
+func (u *APISubscriptionUpsert) UpdateEnvironment() *APISubscriptionUpsert {
 	u.SetExcluded(apisubscription.FieldEnvironment)
 	return u
 }
 
 // ClearEnvironment clears the value of the "environment" field.
-func (u *ApiSubscriptionUpsert) ClearEnvironment() *ApiSubscriptionUpsert {
+func (u *APISubscriptionUpsert) ClearEnvironment() *APISubscriptionUpsert {
 	u.SetNull(apisubscription.FieldEnvironment)
 	return u
 }
 
 // SetNamespace sets the "namespace" field.
-func (u *ApiSubscriptionUpsert) SetNamespace(v string) *ApiSubscriptionUpsert {
+func (u *APISubscriptionUpsert) SetNamespace(v string) *APISubscriptionUpsert {
 	u.Set(apisubscription.FieldNamespace, v)
 	return u
 }
 
 // UpdateNamespace sets the "namespace" field to the value that was provided on create.
-func (u *ApiSubscriptionUpsert) UpdateNamespace() *ApiSubscriptionUpsert {
+func (u *APISubscriptionUpsert) UpdateNamespace() *APISubscriptionUpsert {
 	u.SetExcluded(apisubscription.FieldNamespace)
 	return u
 }
 
 // SetName sets the "name" field.
-func (u *ApiSubscriptionUpsert) SetName(v string) *ApiSubscriptionUpsert {
+func (u *APISubscriptionUpsert) SetName(v string) *APISubscriptionUpsert {
 	u.Set(apisubscription.FieldName, v)
 	return u
 }
 
 // UpdateName sets the "name" field to the value that was provided on create.
-func (u *ApiSubscriptionUpsert) UpdateName() *ApiSubscriptionUpsert {
+func (u *APISubscriptionUpsert) UpdateName() *APISubscriptionUpsert {
 	u.SetExcluded(apisubscription.FieldName)
 	return u
 }
 
 // SetBasePath sets the "base_path" field.
-func (u *ApiSubscriptionUpsert) SetBasePath(v string) *ApiSubscriptionUpsert {
+func (u *APISubscriptionUpsert) SetBasePath(v string) *APISubscriptionUpsert {
 	u.Set(apisubscription.FieldBasePath, v)
 	return u
 }
 
 // UpdateBasePath sets the "base_path" field to the value that was provided on create.
-func (u *ApiSubscriptionUpsert) UpdateBasePath() *ApiSubscriptionUpsert {
+func (u *APISubscriptionUpsert) UpdateBasePath() *APISubscriptionUpsert {
 	u.SetExcluded(apisubscription.FieldBasePath)
 	return u
 }
 
-// SetM2mAuthMethod sets the "m2m_auth_method" field.
-func (u *ApiSubscriptionUpsert) SetM2mAuthMethod(v apisubscription.M2mAuthMethod) *ApiSubscriptionUpsert {
-	u.Set(apisubscription.FieldM2mAuthMethod, v)
+// SetM2MAuthMethod sets the "M2M_auth_method" field.
+func (u *APISubscriptionUpsert) SetM2MAuthMethod(v apisubscription.M2MAuthMethod) *APISubscriptionUpsert {
+	u.Set(apisubscription.FieldM2MAuthMethod, v)
 	return u
 }
 
-// UpdateM2mAuthMethod sets the "m2m_auth_method" field to the value that was provided on create.
-func (u *ApiSubscriptionUpsert) UpdateM2mAuthMethod() *ApiSubscriptionUpsert {
-	u.SetExcluded(apisubscription.FieldM2mAuthMethod)
+// UpdateM2MAuthMethod sets the "M2M_auth_method" field to the value that was provided on create.
+func (u *APISubscriptionUpsert) UpdateM2MAuthMethod() *APISubscriptionUpsert {
+	u.SetExcluded(apisubscription.FieldM2MAuthMethod)
 	return u
 }
 
 // SetGatewayURL sets the "gateway_url" field.
-func (u *ApiSubscriptionUpsert) SetGatewayURL(v string) *ApiSubscriptionUpsert {
+func (u *APISubscriptionUpsert) SetGatewayURL(v string) *APISubscriptionUpsert {
 	u.Set(apisubscription.FieldGatewayURL, v)
 	return u
 }
 
 // UpdateGatewayURL sets the "gateway_url" field to the value that was provided on create.
-func (u *ApiSubscriptionUpsert) UpdateGatewayURL() *ApiSubscriptionUpsert {
+func (u *APISubscriptionUpsert) UpdateGatewayURL() *APISubscriptionUpsert {
 	u.SetExcluded(apisubscription.FieldGatewayURL)
 	return u
 }
 
 // ClearGatewayURL clears the value of the "gateway_url" field.
-func (u *ApiSubscriptionUpsert) ClearGatewayURL() *ApiSubscriptionUpsert {
+func (u *APISubscriptionUpsert) ClearGatewayURL() *APISubscriptionUpsert {
 	u.SetNull(apisubscription.FieldGatewayURL)
 	return u
 }
 
 // SetSecurity sets the "security" field.
-func (u *ApiSubscriptionUpsert) SetSecurity(v *model.ApiSubscriptionSecurity) *ApiSubscriptionUpsert {
+func (u *APISubscriptionUpsert) SetSecurity(v *model.APISubscriptionSecurity) *APISubscriptionUpsert {
 	u.Set(apisubscription.FieldSecurity, v)
 	return u
 }
 
 // UpdateSecurity sets the "security" field to the value that was provided on create.
-func (u *ApiSubscriptionUpsert) UpdateSecurity() *ApiSubscriptionUpsert {
+func (u *APISubscriptionUpsert) UpdateSecurity() *APISubscriptionUpsert {
 	u.SetExcluded(apisubscription.FieldSecurity)
 	return u
 }
 
 // ClearSecurity clears the value of the "security" field.
-func (u *ApiSubscriptionUpsert) ClearSecurity() *ApiSubscriptionUpsert {
+func (u *APISubscriptionUpsert) ClearSecurity() *APISubscriptionUpsert {
 	u.SetNull(apisubscription.FieldSecurity)
 	return u
 }
 
 // SetTraffic sets the "traffic" field.
-func (u *ApiSubscriptionUpsert) SetTraffic(v *model.ApiSubscriptionTraffic) *ApiSubscriptionUpsert {
+func (u *APISubscriptionUpsert) SetTraffic(v *model.APISubscriptionTraffic) *APISubscriptionUpsert {
 	u.Set(apisubscription.FieldTraffic, v)
 	return u
 }
 
 // UpdateTraffic sets the "traffic" field to the value that was provided on create.
-func (u *ApiSubscriptionUpsert) UpdateTraffic() *ApiSubscriptionUpsert {
+func (u *APISubscriptionUpsert) UpdateTraffic() *APISubscriptionUpsert {
 	u.SetExcluded(apisubscription.FieldTraffic)
 	return u
 }
 
 // ClearTraffic clears the value of the "traffic" field.
-func (u *ApiSubscriptionUpsert) ClearTraffic() *ApiSubscriptionUpsert {
+func (u *APISubscriptionUpsert) ClearTraffic() *APISubscriptionUpsert {
 	u.SetNull(apisubscription.FieldTraffic)
 	return u
 }
@@ -724,12 +724,12 @@ func (u *ApiSubscriptionUpsert) ClearTraffic() *ApiSubscriptionUpsert {
 // UpdateNewValues updates the mutable fields using the new values that were set on create.
 // Using this option is equivalent to using:
 //
-//	client.ApiSubscription.Create().
+//	client.APISubscription.Create().
 //		OnConflict(
 //			sql.ResolveWithNewValues(),
 //		).
 //		Exec(ctx)
-func (u *ApiSubscriptionUpsertOne) UpdateNewValues() *ApiSubscriptionUpsertOne {
+func (u *APISubscriptionUpsertOne) UpdateNewValues() *APISubscriptionUpsertOne {
 	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
 	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
 		if _, exists := u.create.mutation.CreatedAt(); exists {
@@ -742,243 +742,243 @@ func (u *ApiSubscriptionUpsertOne) UpdateNewValues() *ApiSubscriptionUpsertOne {
 // Ignore sets each column to itself in case of conflict.
 // Using this option is equivalent to using:
 //
-//	client.ApiSubscription.Create().
+//	client.APISubscription.Create().
 //	    OnConflict(sql.ResolveWithIgnore()).
 //	    Exec(ctx)
-func (u *ApiSubscriptionUpsertOne) Ignore() *ApiSubscriptionUpsertOne {
+func (u *APISubscriptionUpsertOne) Ignore() *APISubscriptionUpsertOne {
 	u.create.conflict = append(u.create.conflict, sql.ResolveWithIgnore())
 	return u
 }
 
 // DoNothing configures the conflict_action to `DO NOTHING`.
 // Supported only by SQLite and PostgreSQL.
-func (u *ApiSubscriptionUpsertOne) DoNothing() *ApiSubscriptionUpsertOne {
+func (u *APISubscriptionUpsertOne) DoNothing() *APISubscriptionUpsertOne {
 	u.create.conflict = append(u.create.conflict, sql.DoNothing())
 	return u
 }
 
-// Update allows overriding fields `UPDATE` values. See the ApiSubscriptionCreate.OnConflict
+// Update allows overriding fields `UPDATE` values. See the APISubscriptionCreate.OnConflict
 // documentation for more info.
-func (u *ApiSubscriptionUpsertOne) Update(set func(*ApiSubscriptionUpsert)) *ApiSubscriptionUpsertOne {
+func (u *APISubscriptionUpsertOne) Update(set func(*APISubscriptionUpsert)) *APISubscriptionUpsertOne {
 	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(update *sql.UpdateSet) {
-		set(&ApiSubscriptionUpsert{UpdateSet: update})
+		set(&APISubscriptionUpsert{UpdateSet: update})
 	}))
 	return u
 }
 
 // SetLastModifiedAt sets the "last_modified_at" field.
-func (u *ApiSubscriptionUpsertOne) SetLastModifiedAt(v time.Time) *ApiSubscriptionUpsertOne {
-	return u.Update(func(s *ApiSubscriptionUpsert) {
+func (u *APISubscriptionUpsertOne) SetLastModifiedAt(v time.Time) *APISubscriptionUpsertOne {
+	return u.Update(func(s *APISubscriptionUpsert) {
 		s.SetLastModifiedAt(v)
 	})
 }
 
 // UpdateLastModifiedAt sets the "last_modified_at" field to the value that was provided on create.
-func (u *ApiSubscriptionUpsertOne) UpdateLastModifiedAt() *ApiSubscriptionUpsertOne {
-	return u.Update(func(s *ApiSubscriptionUpsert) {
+func (u *APISubscriptionUpsertOne) UpdateLastModifiedAt() *APISubscriptionUpsertOne {
+	return u.Update(func(s *APISubscriptionUpsert) {
 		s.UpdateLastModifiedAt()
 	})
 }
 
 // SetStatusPhase sets the "status_phase" field.
-func (u *ApiSubscriptionUpsertOne) SetStatusPhase(v apisubscription.StatusPhase) *ApiSubscriptionUpsertOne {
-	return u.Update(func(s *ApiSubscriptionUpsert) {
+func (u *APISubscriptionUpsertOne) SetStatusPhase(v apisubscription.StatusPhase) *APISubscriptionUpsertOne {
+	return u.Update(func(s *APISubscriptionUpsert) {
 		s.SetStatusPhase(v)
 	})
 }
 
 // UpdateStatusPhase sets the "status_phase" field to the value that was provided on create.
-func (u *ApiSubscriptionUpsertOne) UpdateStatusPhase() *ApiSubscriptionUpsertOne {
-	return u.Update(func(s *ApiSubscriptionUpsert) {
+func (u *APISubscriptionUpsertOne) UpdateStatusPhase() *APISubscriptionUpsertOne {
+	return u.Update(func(s *APISubscriptionUpsert) {
 		s.UpdateStatusPhase()
 	})
 }
 
 // ClearStatusPhase clears the value of the "status_phase" field.
-func (u *ApiSubscriptionUpsertOne) ClearStatusPhase() *ApiSubscriptionUpsertOne {
-	return u.Update(func(s *ApiSubscriptionUpsert) {
+func (u *APISubscriptionUpsertOne) ClearStatusPhase() *APISubscriptionUpsertOne {
+	return u.Update(func(s *APISubscriptionUpsert) {
 		s.ClearStatusPhase()
 	})
 }
 
 // SetStatusMessage sets the "status_message" field.
-func (u *ApiSubscriptionUpsertOne) SetStatusMessage(v string) *ApiSubscriptionUpsertOne {
-	return u.Update(func(s *ApiSubscriptionUpsert) {
+func (u *APISubscriptionUpsertOne) SetStatusMessage(v string) *APISubscriptionUpsertOne {
+	return u.Update(func(s *APISubscriptionUpsert) {
 		s.SetStatusMessage(v)
 	})
 }
 
 // UpdateStatusMessage sets the "status_message" field to the value that was provided on create.
-func (u *ApiSubscriptionUpsertOne) UpdateStatusMessage() *ApiSubscriptionUpsertOne {
-	return u.Update(func(s *ApiSubscriptionUpsert) {
+func (u *APISubscriptionUpsertOne) UpdateStatusMessage() *APISubscriptionUpsertOne {
+	return u.Update(func(s *APISubscriptionUpsert) {
 		s.UpdateStatusMessage()
 	})
 }
 
 // ClearStatusMessage clears the value of the "status_message" field.
-func (u *ApiSubscriptionUpsertOne) ClearStatusMessage() *ApiSubscriptionUpsertOne {
-	return u.Update(func(s *ApiSubscriptionUpsert) {
+func (u *APISubscriptionUpsertOne) ClearStatusMessage() *APISubscriptionUpsertOne {
+	return u.Update(func(s *APISubscriptionUpsert) {
 		s.ClearStatusMessage()
 	})
 }
 
 // SetEnvironment sets the "environment" field.
-func (u *ApiSubscriptionUpsertOne) SetEnvironment(v string) *ApiSubscriptionUpsertOne {
-	return u.Update(func(s *ApiSubscriptionUpsert) {
+func (u *APISubscriptionUpsertOne) SetEnvironment(v string) *APISubscriptionUpsertOne {
+	return u.Update(func(s *APISubscriptionUpsert) {
 		s.SetEnvironment(v)
 	})
 }
 
 // UpdateEnvironment sets the "environment" field to the value that was provided on create.
-func (u *ApiSubscriptionUpsertOne) UpdateEnvironment() *ApiSubscriptionUpsertOne {
-	return u.Update(func(s *ApiSubscriptionUpsert) {
+func (u *APISubscriptionUpsertOne) UpdateEnvironment() *APISubscriptionUpsertOne {
+	return u.Update(func(s *APISubscriptionUpsert) {
 		s.UpdateEnvironment()
 	})
 }
 
 // ClearEnvironment clears the value of the "environment" field.
-func (u *ApiSubscriptionUpsertOne) ClearEnvironment() *ApiSubscriptionUpsertOne {
-	return u.Update(func(s *ApiSubscriptionUpsert) {
+func (u *APISubscriptionUpsertOne) ClearEnvironment() *APISubscriptionUpsertOne {
+	return u.Update(func(s *APISubscriptionUpsert) {
 		s.ClearEnvironment()
 	})
 }
 
 // SetNamespace sets the "namespace" field.
-func (u *ApiSubscriptionUpsertOne) SetNamespace(v string) *ApiSubscriptionUpsertOne {
-	return u.Update(func(s *ApiSubscriptionUpsert) {
+func (u *APISubscriptionUpsertOne) SetNamespace(v string) *APISubscriptionUpsertOne {
+	return u.Update(func(s *APISubscriptionUpsert) {
 		s.SetNamespace(v)
 	})
 }
 
 // UpdateNamespace sets the "namespace" field to the value that was provided on create.
-func (u *ApiSubscriptionUpsertOne) UpdateNamespace() *ApiSubscriptionUpsertOne {
-	return u.Update(func(s *ApiSubscriptionUpsert) {
+func (u *APISubscriptionUpsertOne) UpdateNamespace() *APISubscriptionUpsertOne {
+	return u.Update(func(s *APISubscriptionUpsert) {
 		s.UpdateNamespace()
 	})
 }
 
 // SetName sets the "name" field.
-func (u *ApiSubscriptionUpsertOne) SetName(v string) *ApiSubscriptionUpsertOne {
-	return u.Update(func(s *ApiSubscriptionUpsert) {
+func (u *APISubscriptionUpsertOne) SetName(v string) *APISubscriptionUpsertOne {
+	return u.Update(func(s *APISubscriptionUpsert) {
 		s.SetName(v)
 	})
 }
 
 // UpdateName sets the "name" field to the value that was provided on create.
-func (u *ApiSubscriptionUpsertOne) UpdateName() *ApiSubscriptionUpsertOne {
-	return u.Update(func(s *ApiSubscriptionUpsert) {
+func (u *APISubscriptionUpsertOne) UpdateName() *APISubscriptionUpsertOne {
+	return u.Update(func(s *APISubscriptionUpsert) {
 		s.UpdateName()
 	})
 }
 
 // SetBasePath sets the "base_path" field.
-func (u *ApiSubscriptionUpsertOne) SetBasePath(v string) *ApiSubscriptionUpsertOne {
-	return u.Update(func(s *ApiSubscriptionUpsert) {
+func (u *APISubscriptionUpsertOne) SetBasePath(v string) *APISubscriptionUpsertOne {
+	return u.Update(func(s *APISubscriptionUpsert) {
 		s.SetBasePath(v)
 	})
 }
 
 // UpdateBasePath sets the "base_path" field to the value that was provided on create.
-func (u *ApiSubscriptionUpsertOne) UpdateBasePath() *ApiSubscriptionUpsertOne {
-	return u.Update(func(s *ApiSubscriptionUpsert) {
+func (u *APISubscriptionUpsertOne) UpdateBasePath() *APISubscriptionUpsertOne {
+	return u.Update(func(s *APISubscriptionUpsert) {
 		s.UpdateBasePath()
 	})
 }
 
-// SetM2mAuthMethod sets the "m2m_auth_method" field.
-func (u *ApiSubscriptionUpsertOne) SetM2mAuthMethod(v apisubscription.M2mAuthMethod) *ApiSubscriptionUpsertOne {
-	return u.Update(func(s *ApiSubscriptionUpsert) {
-		s.SetM2mAuthMethod(v)
+// SetM2MAuthMethod sets the "M2M_auth_method" field.
+func (u *APISubscriptionUpsertOne) SetM2MAuthMethod(v apisubscription.M2MAuthMethod) *APISubscriptionUpsertOne {
+	return u.Update(func(s *APISubscriptionUpsert) {
+		s.SetM2MAuthMethod(v)
 	})
 }
 
-// UpdateM2mAuthMethod sets the "m2m_auth_method" field to the value that was provided on create.
-func (u *ApiSubscriptionUpsertOne) UpdateM2mAuthMethod() *ApiSubscriptionUpsertOne {
-	return u.Update(func(s *ApiSubscriptionUpsert) {
-		s.UpdateM2mAuthMethod()
+// UpdateM2MAuthMethod sets the "M2M_auth_method" field to the value that was provided on create.
+func (u *APISubscriptionUpsertOne) UpdateM2MAuthMethod() *APISubscriptionUpsertOne {
+	return u.Update(func(s *APISubscriptionUpsert) {
+		s.UpdateM2MAuthMethod()
 	})
 }
 
 // SetGatewayURL sets the "gateway_url" field.
-func (u *ApiSubscriptionUpsertOne) SetGatewayURL(v string) *ApiSubscriptionUpsertOne {
-	return u.Update(func(s *ApiSubscriptionUpsert) {
+func (u *APISubscriptionUpsertOne) SetGatewayURL(v string) *APISubscriptionUpsertOne {
+	return u.Update(func(s *APISubscriptionUpsert) {
 		s.SetGatewayURL(v)
 	})
 }
 
 // UpdateGatewayURL sets the "gateway_url" field to the value that was provided on create.
-func (u *ApiSubscriptionUpsertOne) UpdateGatewayURL() *ApiSubscriptionUpsertOne {
-	return u.Update(func(s *ApiSubscriptionUpsert) {
+func (u *APISubscriptionUpsertOne) UpdateGatewayURL() *APISubscriptionUpsertOne {
+	return u.Update(func(s *APISubscriptionUpsert) {
 		s.UpdateGatewayURL()
 	})
 }
 
 // ClearGatewayURL clears the value of the "gateway_url" field.
-func (u *ApiSubscriptionUpsertOne) ClearGatewayURL() *ApiSubscriptionUpsertOne {
-	return u.Update(func(s *ApiSubscriptionUpsert) {
+func (u *APISubscriptionUpsertOne) ClearGatewayURL() *APISubscriptionUpsertOne {
+	return u.Update(func(s *APISubscriptionUpsert) {
 		s.ClearGatewayURL()
 	})
 }
 
 // SetSecurity sets the "security" field.
-func (u *ApiSubscriptionUpsertOne) SetSecurity(v *model.ApiSubscriptionSecurity) *ApiSubscriptionUpsertOne {
-	return u.Update(func(s *ApiSubscriptionUpsert) {
+func (u *APISubscriptionUpsertOne) SetSecurity(v *model.APISubscriptionSecurity) *APISubscriptionUpsertOne {
+	return u.Update(func(s *APISubscriptionUpsert) {
 		s.SetSecurity(v)
 	})
 }
 
 // UpdateSecurity sets the "security" field to the value that was provided on create.
-func (u *ApiSubscriptionUpsertOne) UpdateSecurity() *ApiSubscriptionUpsertOne {
-	return u.Update(func(s *ApiSubscriptionUpsert) {
+func (u *APISubscriptionUpsertOne) UpdateSecurity() *APISubscriptionUpsertOne {
+	return u.Update(func(s *APISubscriptionUpsert) {
 		s.UpdateSecurity()
 	})
 }
 
 // ClearSecurity clears the value of the "security" field.
-func (u *ApiSubscriptionUpsertOne) ClearSecurity() *ApiSubscriptionUpsertOne {
-	return u.Update(func(s *ApiSubscriptionUpsert) {
+func (u *APISubscriptionUpsertOne) ClearSecurity() *APISubscriptionUpsertOne {
+	return u.Update(func(s *APISubscriptionUpsert) {
 		s.ClearSecurity()
 	})
 }
 
 // SetTraffic sets the "traffic" field.
-func (u *ApiSubscriptionUpsertOne) SetTraffic(v *model.ApiSubscriptionTraffic) *ApiSubscriptionUpsertOne {
-	return u.Update(func(s *ApiSubscriptionUpsert) {
+func (u *APISubscriptionUpsertOne) SetTraffic(v *model.APISubscriptionTraffic) *APISubscriptionUpsertOne {
+	return u.Update(func(s *APISubscriptionUpsert) {
 		s.SetTraffic(v)
 	})
 }
 
 // UpdateTraffic sets the "traffic" field to the value that was provided on create.
-func (u *ApiSubscriptionUpsertOne) UpdateTraffic() *ApiSubscriptionUpsertOne {
-	return u.Update(func(s *ApiSubscriptionUpsert) {
+func (u *APISubscriptionUpsertOne) UpdateTraffic() *APISubscriptionUpsertOne {
+	return u.Update(func(s *APISubscriptionUpsert) {
 		s.UpdateTraffic()
 	})
 }
 
 // ClearTraffic clears the value of the "traffic" field.
-func (u *ApiSubscriptionUpsertOne) ClearTraffic() *ApiSubscriptionUpsertOne {
-	return u.Update(func(s *ApiSubscriptionUpsert) {
+func (u *APISubscriptionUpsertOne) ClearTraffic() *APISubscriptionUpsertOne {
+	return u.Update(func(s *APISubscriptionUpsert) {
 		s.ClearTraffic()
 	})
 }
 
 // Exec executes the query.
-func (u *ApiSubscriptionUpsertOne) Exec(ctx context.Context) error {
+func (u *APISubscriptionUpsertOne) Exec(ctx context.Context) error {
 	if len(u.create.conflict) == 0 {
-		return errors.New("ent: missing options for ApiSubscriptionCreate.OnConflict")
+		return errors.New("ent: missing options for APISubscriptionCreate.OnConflict")
 	}
 	return u.create.Exec(ctx)
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (u *ApiSubscriptionUpsertOne) ExecX(ctx context.Context) {
+func (u *APISubscriptionUpsertOne) ExecX(ctx context.Context) {
 	if err := u.create.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // Exec executes the UPSERT query and returns the inserted/updated ID.
-func (u *ApiSubscriptionUpsertOne) ID(ctx context.Context) (id int, err error) {
+func (u *APISubscriptionUpsertOne) ID(ctx context.Context) (id int, err error) {
 	node, err := u.create.Save(ctx)
 	if err != nil {
 		return id, err
@@ -987,7 +987,7 @@ func (u *ApiSubscriptionUpsertOne) ID(ctx context.Context) (id int, err error) {
 }
 
 // IDX is like ID, but panics if an error occurs.
-func (u *ApiSubscriptionUpsertOne) IDX(ctx context.Context) int {
+func (u *APISubscriptionUpsertOne) IDX(ctx context.Context) int {
 	id, err := u.ID(ctx)
 	if err != nil {
 		panic(err)
@@ -995,28 +995,28 @@ func (u *ApiSubscriptionUpsertOne) IDX(ctx context.Context) int {
 	return id
 }
 
-// ApiSubscriptionCreateBulk is the builder for creating many ApiSubscription entities in bulk.
-type ApiSubscriptionCreateBulk struct {
+// APISubscriptionCreateBulk is the builder for creating many APISubscription entities in bulk.
+type APISubscriptionCreateBulk struct {
 	config
 	err      error
-	builders []*ApiSubscriptionCreate
+	builders []*APISubscriptionCreate
 	conflict []sql.ConflictOption
 }
 
-// Save creates the ApiSubscription entities in the database.
-func (_c *ApiSubscriptionCreateBulk) Save(ctx context.Context) ([]*ApiSubscription, error) {
+// Save creates the APISubscription entities in the database.
+func (_c *APISubscriptionCreateBulk) Save(ctx context.Context) ([]*APISubscription, error) {
 	if _c.err != nil {
 		return nil, _c.err
 	}
 	specs := make([]*sqlgraph.CreateSpec, len(_c.builders))
-	nodes := make([]*ApiSubscription, len(_c.builders))
+	nodes := make([]*APISubscription, len(_c.builders))
 	mutators := make([]Mutator, len(_c.builders))
 	for i := range _c.builders {
 		func(i int, root context.Context) {
 			builder := _c.builders[i]
 			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
-				mutation, ok := m.(*ApiSubscriptionMutation)
+				mutation, ok := m.(*APISubscriptionMutation)
 				if !ok {
 					return nil, fmt.Errorf("unexpected mutation type %T", m)
 				}
@@ -1064,7 +1064,7 @@ func (_c *ApiSubscriptionCreateBulk) Save(ctx context.Context) ([]*ApiSubscripti
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (_c *ApiSubscriptionCreateBulk) SaveX(ctx context.Context) []*ApiSubscription {
+func (_c *APISubscriptionCreateBulk) SaveX(ctx context.Context) []*APISubscription {
 	v, err := _c.Save(ctx)
 	if err != nil {
 		panic(err)
@@ -1073,13 +1073,13 @@ func (_c *ApiSubscriptionCreateBulk) SaveX(ctx context.Context) []*ApiSubscripti
 }
 
 // Exec executes the query.
-func (_c *ApiSubscriptionCreateBulk) Exec(ctx context.Context) error {
+func (_c *APISubscriptionCreateBulk) Exec(ctx context.Context) error {
 	_, err := _c.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (_c *ApiSubscriptionCreateBulk) ExecX(ctx context.Context) {
+func (_c *APISubscriptionCreateBulk) ExecX(ctx context.Context) {
 	if err := _c.Exec(ctx); err != nil {
 		panic(err)
 	}
@@ -1088,7 +1088,7 @@ func (_c *ApiSubscriptionCreateBulk) ExecX(ctx context.Context) {
 // OnConflict allows configuring the `ON CONFLICT` / `ON DUPLICATE KEY` clause
 // of the `INSERT` statement. For example:
 //
-//	client.ApiSubscription.CreateBulk(builders...).
+//	client.APISubscription.CreateBulk(builders...).
 //		OnConflict(
 //			// Update the row with the new values
 //			// the was proposed for insertion.
@@ -1096,13 +1096,13 @@ func (_c *ApiSubscriptionCreateBulk) ExecX(ctx context.Context) {
 //		).
 //		// Override some of the fields with custom
 //		// update values.
-//		Update(func(u *ent.ApiSubscriptionUpsert) {
+//		Update(func(u *ent.APISubscriptionUpsert) {
 //			SetCreatedAt(v+v).
 //		}).
 //		Exec(ctx)
-func (_c *ApiSubscriptionCreateBulk) OnConflict(opts ...sql.ConflictOption) *ApiSubscriptionUpsertBulk {
+func (_c *APISubscriptionCreateBulk) OnConflict(opts ...sql.ConflictOption) *APISubscriptionUpsertBulk {
 	_c.conflict = opts
-	return &ApiSubscriptionUpsertBulk{
+	return &APISubscriptionUpsertBulk{
 		create: _c,
 	}
 }
@@ -1110,31 +1110,31 @@ func (_c *ApiSubscriptionCreateBulk) OnConflict(opts ...sql.ConflictOption) *Api
 // OnConflictColumns calls `OnConflict` and configures the columns
 // as conflict target. Using this option is equivalent to using:
 //
-//	client.ApiSubscription.Create().
+//	client.APISubscription.Create().
 //		OnConflict(sql.ConflictColumns(columns...)).
 //		Exec(ctx)
-func (_c *ApiSubscriptionCreateBulk) OnConflictColumns(columns ...string) *ApiSubscriptionUpsertBulk {
+func (_c *APISubscriptionCreateBulk) OnConflictColumns(columns ...string) *APISubscriptionUpsertBulk {
 	_c.conflict = append(_c.conflict, sql.ConflictColumns(columns...))
-	return &ApiSubscriptionUpsertBulk{
+	return &APISubscriptionUpsertBulk{
 		create: _c,
 	}
 }
 
-// ApiSubscriptionUpsertBulk is the builder for "upsert"-ing
-// a bulk of ApiSubscription nodes.
-type ApiSubscriptionUpsertBulk struct {
-	create *ApiSubscriptionCreateBulk
+// APISubscriptionUpsertBulk is the builder for "upsert"-ing
+// a bulk of APISubscription nodes.
+type APISubscriptionUpsertBulk struct {
+	create *APISubscriptionCreateBulk
 }
 
 // UpdateNewValues updates the mutable fields using the new values that
 // were set on create. Using this option is equivalent to using:
 //
-//	client.ApiSubscription.Create().
+//	client.APISubscription.Create().
 //		OnConflict(
 //			sql.ResolveWithNewValues(),
 //		).
 //		Exec(ctx)
-func (u *ApiSubscriptionUpsertBulk) UpdateNewValues() *ApiSubscriptionUpsertBulk {
+func (u *APISubscriptionUpsertBulk) UpdateNewValues() *APISubscriptionUpsertBulk {
 	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
 	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
 		for _, b := range u.create.builders {
@@ -1149,244 +1149,244 @@ func (u *ApiSubscriptionUpsertBulk) UpdateNewValues() *ApiSubscriptionUpsertBulk
 // Ignore sets each column to itself in case of conflict.
 // Using this option is equivalent to using:
 //
-//	client.ApiSubscription.Create().
+//	client.APISubscription.Create().
 //		OnConflict(sql.ResolveWithIgnore()).
 //		Exec(ctx)
-func (u *ApiSubscriptionUpsertBulk) Ignore() *ApiSubscriptionUpsertBulk {
+func (u *APISubscriptionUpsertBulk) Ignore() *APISubscriptionUpsertBulk {
 	u.create.conflict = append(u.create.conflict, sql.ResolveWithIgnore())
 	return u
 }
 
 // DoNothing configures the conflict_action to `DO NOTHING`.
 // Supported only by SQLite and PostgreSQL.
-func (u *ApiSubscriptionUpsertBulk) DoNothing() *ApiSubscriptionUpsertBulk {
+func (u *APISubscriptionUpsertBulk) DoNothing() *APISubscriptionUpsertBulk {
 	u.create.conflict = append(u.create.conflict, sql.DoNothing())
 	return u
 }
 
-// Update allows overriding fields `UPDATE` values. See the ApiSubscriptionCreateBulk.OnConflict
+// Update allows overriding fields `UPDATE` values. See the APISubscriptionCreateBulk.OnConflict
 // documentation for more info.
-func (u *ApiSubscriptionUpsertBulk) Update(set func(*ApiSubscriptionUpsert)) *ApiSubscriptionUpsertBulk {
+func (u *APISubscriptionUpsertBulk) Update(set func(*APISubscriptionUpsert)) *APISubscriptionUpsertBulk {
 	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(update *sql.UpdateSet) {
-		set(&ApiSubscriptionUpsert{UpdateSet: update})
+		set(&APISubscriptionUpsert{UpdateSet: update})
 	}))
 	return u
 }
 
 // SetLastModifiedAt sets the "last_modified_at" field.
-func (u *ApiSubscriptionUpsertBulk) SetLastModifiedAt(v time.Time) *ApiSubscriptionUpsertBulk {
-	return u.Update(func(s *ApiSubscriptionUpsert) {
+func (u *APISubscriptionUpsertBulk) SetLastModifiedAt(v time.Time) *APISubscriptionUpsertBulk {
+	return u.Update(func(s *APISubscriptionUpsert) {
 		s.SetLastModifiedAt(v)
 	})
 }
 
 // UpdateLastModifiedAt sets the "last_modified_at" field to the value that was provided on create.
-func (u *ApiSubscriptionUpsertBulk) UpdateLastModifiedAt() *ApiSubscriptionUpsertBulk {
-	return u.Update(func(s *ApiSubscriptionUpsert) {
+func (u *APISubscriptionUpsertBulk) UpdateLastModifiedAt() *APISubscriptionUpsertBulk {
+	return u.Update(func(s *APISubscriptionUpsert) {
 		s.UpdateLastModifiedAt()
 	})
 }
 
 // SetStatusPhase sets the "status_phase" field.
-func (u *ApiSubscriptionUpsertBulk) SetStatusPhase(v apisubscription.StatusPhase) *ApiSubscriptionUpsertBulk {
-	return u.Update(func(s *ApiSubscriptionUpsert) {
+func (u *APISubscriptionUpsertBulk) SetStatusPhase(v apisubscription.StatusPhase) *APISubscriptionUpsertBulk {
+	return u.Update(func(s *APISubscriptionUpsert) {
 		s.SetStatusPhase(v)
 	})
 }
 
 // UpdateStatusPhase sets the "status_phase" field to the value that was provided on create.
-func (u *ApiSubscriptionUpsertBulk) UpdateStatusPhase() *ApiSubscriptionUpsertBulk {
-	return u.Update(func(s *ApiSubscriptionUpsert) {
+func (u *APISubscriptionUpsertBulk) UpdateStatusPhase() *APISubscriptionUpsertBulk {
+	return u.Update(func(s *APISubscriptionUpsert) {
 		s.UpdateStatusPhase()
 	})
 }
 
 // ClearStatusPhase clears the value of the "status_phase" field.
-func (u *ApiSubscriptionUpsertBulk) ClearStatusPhase() *ApiSubscriptionUpsertBulk {
-	return u.Update(func(s *ApiSubscriptionUpsert) {
+func (u *APISubscriptionUpsertBulk) ClearStatusPhase() *APISubscriptionUpsertBulk {
+	return u.Update(func(s *APISubscriptionUpsert) {
 		s.ClearStatusPhase()
 	})
 }
 
 // SetStatusMessage sets the "status_message" field.
-func (u *ApiSubscriptionUpsertBulk) SetStatusMessage(v string) *ApiSubscriptionUpsertBulk {
-	return u.Update(func(s *ApiSubscriptionUpsert) {
+func (u *APISubscriptionUpsertBulk) SetStatusMessage(v string) *APISubscriptionUpsertBulk {
+	return u.Update(func(s *APISubscriptionUpsert) {
 		s.SetStatusMessage(v)
 	})
 }
 
 // UpdateStatusMessage sets the "status_message" field to the value that was provided on create.
-func (u *ApiSubscriptionUpsertBulk) UpdateStatusMessage() *ApiSubscriptionUpsertBulk {
-	return u.Update(func(s *ApiSubscriptionUpsert) {
+func (u *APISubscriptionUpsertBulk) UpdateStatusMessage() *APISubscriptionUpsertBulk {
+	return u.Update(func(s *APISubscriptionUpsert) {
 		s.UpdateStatusMessage()
 	})
 }
 
 // ClearStatusMessage clears the value of the "status_message" field.
-func (u *ApiSubscriptionUpsertBulk) ClearStatusMessage() *ApiSubscriptionUpsertBulk {
-	return u.Update(func(s *ApiSubscriptionUpsert) {
+func (u *APISubscriptionUpsertBulk) ClearStatusMessage() *APISubscriptionUpsertBulk {
+	return u.Update(func(s *APISubscriptionUpsert) {
 		s.ClearStatusMessage()
 	})
 }
 
 // SetEnvironment sets the "environment" field.
-func (u *ApiSubscriptionUpsertBulk) SetEnvironment(v string) *ApiSubscriptionUpsertBulk {
-	return u.Update(func(s *ApiSubscriptionUpsert) {
+func (u *APISubscriptionUpsertBulk) SetEnvironment(v string) *APISubscriptionUpsertBulk {
+	return u.Update(func(s *APISubscriptionUpsert) {
 		s.SetEnvironment(v)
 	})
 }
 
 // UpdateEnvironment sets the "environment" field to the value that was provided on create.
-func (u *ApiSubscriptionUpsertBulk) UpdateEnvironment() *ApiSubscriptionUpsertBulk {
-	return u.Update(func(s *ApiSubscriptionUpsert) {
+func (u *APISubscriptionUpsertBulk) UpdateEnvironment() *APISubscriptionUpsertBulk {
+	return u.Update(func(s *APISubscriptionUpsert) {
 		s.UpdateEnvironment()
 	})
 }
 
 // ClearEnvironment clears the value of the "environment" field.
-func (u *ApiSubscriptionUpsertBulk) ClearEnvironment() *ApiSubscriptionUpsertBulk {
-	return u.Update(func(s *ApiSubscriptionUpsert) {
+func (u *APISubscriptionUpsertBulk) ClearEnvironment() *APISubscriptionUpsertBulk {
+	return u.Update(func(s *APISubscriptionUpsert) {
 		s.ClearEnvironment()
 	})
 }
 
 // SetNamespace sets the "namespace" field.
-func (u *ApiSubscriptionUpsertBulk) SetNamespace(v string) *ApiSubscriptionUpsertBulk {
-	return u.Update(func(s *ApiSubscriptionUpsert) {
+func (u *APISubscriptionUpsertBulk) SetNamespace(v string) *APISubscriptionUpsertBulk {
+	return u.Update(func(s *APISubscriptionUpsert) {
 		s.SetNamespace(v)
 	})
 }
 
 // UpdateNamespace sets the "namespace" field to the value that was provided on create.
-func (u *ApiSubscriptionUpsertBulk) UpdateNamespace() *ApiSubscriptionUpsertBulk {
-	return u.Update(func(s *ApiSubscriptionUpsert) {
+func (u *APISubscriptionUpsertBulk) UpdateNamespace() *APISubscriptionUpsertBulk {
+	return u.Update(func(s *APISubscriptionUpsert) {
 		s.UpdateNamespace()
 	})
 }
 
 // SetName sets the "name" field.
-func (u *ApiSubscriptionUpsertBulk) SetName(v string) *ApiSubscriptionUpsertBulk {
-	return u.Update(func(s *ApiSubscriptionUpsert) {
+func (u *APISubscriptionUpsertBulk) SetName(v string) *APISubscriptionUpsertBulk {
+	return u.Update(func(s *APISubscriptionUpsert) {
 		s.SetName(v)
 	})
 }
 
 // UpdateName sets the "name" field to the value that was provided on create.
-func (u *ApiSubscriptionUpsertBulk) UpdateName() *ApiSubscriptionUpsertBulk {
-	return u.Update(func(s *ApiSubscriptionUpsert) {
+func (u *APISubscriptionUpsertBulk) UpdateName() *APISubscriptionUpsertBulk {
+	return u.Update(func(s *APISubscriptionUpsert) {
 		s.UpdateName()
 	})
 }
 
 // SetBasePath sets the "base_path" field.
-func (u *ApiSubscriptionUpsertBulk) SetBasePath(v string) *ApiSubscriptionUpsertBulk {
-	return u.Update(func(s *ApiSubscriptionUpsert) {
+func (u *APISubscriptionUpsertBulk) SetBasePath(v string) *APISubscriptionUpsertBulk {
+	return u.Update(func(s *APISubscriptionUpsert) {
 		s.SetBasePath(v)
 	})
 }
 
 // UpdateBasePath sets the "base_path" field to the value that was provided on create.
-func (u *ApiSubscriptionUpsertBulk) UpdateBasePath() *ApiSubscriptionUpsertBulk {
-	return u.Update(func(s *ApiSubscriptionUpsert) {
+func (u *APISubscriptionUpsertBulk) UpdateBasePath() *APISubscriptionUpsertBulk {
+	return u.Update(func(s *APISubscriptionUpsert) {
 		s.UpdateBasePath()
 	})
 }
 
-// SetM2mAuthMethod sets the "m2m_auth_method" field.
-func (u *ApiSubscriptionUpsertBulk) SetM2mAuthMethod(v apisubscription.M2mAuthMethod) *ApiSubscriptionUpsertBulk {
-	return u.Update(func(s *ApiSubscriptionUpsert) {
-		s.SetM2mAuthMethod(v)
+// SetM2MAuthMethod sets the "M2M_auth_method" field.
+func (u *APISubscriptionUpsertBulk) SetM2MAuthMethod(v apisubscription.M2MAuthMethod) *APISubscriptionUpsertBulk {
+	return u.Update(func(s *APISubscriptionUpsert) {
+		s.SetM2MAuthMethod(v)
 	})
 }
 
-// UpdateM2mAuthMethod sets the "m2m_auth_method" field to the value that was provided on create.
-func (u *ApiSubscriptionUpsertBulk) UpdateM2mAuthMethod() *ApiSubscriptionUpsertBulk {
-	return u.Update(func(s *ApiSubscriptionUpsert) {
-		s.UpdateM2mAuthMethod()
+// UpdateM2MAuthMethod sets the "M2M_auth_method" field to the value that was provided on create.
+func (u *APISubscriptionUpsertBulk) UpdateM2MAuthMethod() *APISubscriptionUpsertBulk {
+	return u.Update(func(s *APISubscriptionUpsert) {
+		s.UpdateM2MAuthMethod()
 	})
 }
 
 // SetGatewayURL sets the "gateway_url" field.
-func (u *ApiSubscriptionUpsertBulk) SetGatewayURL(v string) *ApiSubscriptionUpsertBulk {
-	return u.Update(func(s *ApiSubscriptionUpsert) {
+func (u *APISubscriptionUpsertBulk) SetGatewayURL(v string) *APISubscriptionUpsertBulk {
+	return u.Update(func(s *APISubscriptionUpsert) {
 		s.SetGatewayURL(v)
 	})
 }
 
 // UpdateGatewayURL sets the "gateway_url" field to the value that was provided on create.
-func (u *ApiSubscriptionUpsertBulk) UpdateGatewayURL() *ApiSubscriptionUpsertBulk {
-	return u.Update(func(s *ApiSubscriptionUpsert) {
+func (u *APISubscriptionUpsertBulk) UpdateGatewayURL() *APISubscriptionUpsertBulk {
+	return u.Update(func(s *APISubscriptionUpsert) {
 		s.UpdateGatewayURL()
 	})
 }
 
 // ClearGatewayURL clears the value of the "gateway_url" field.
-func (u *ApiSubscriptionUpsertBulk) ClearGatewayURL() *ApiSubscriptionUpsertBulk {
-	return u.Update(func(s *ApiSubscriptionUpsert) {
+func (u *APISubscriptionUpsertBulk) ClearGatewayURL() *APISubscriptionUpsertBulk {
+	return u.Update(func(s *APISubscriptionUpsert) {
 		s.ClearGatewayURL()
 	})
 }
 
 // SetSecurity sets the "security" field.
-func (u *ApiSubscriptionUpsertBulk) SetSecurity(v *model.ApiSubscriptionSecurity) *ApiSubscriptionUpsertBulk {
-	return u.Update(func(s *ApiSubscriptionUpsert) {
+func (u *APISubscriptionUpsertBulk) SetSecurity(v *model.APISubscriptionSecurity) *APISubscriptionUpsertBulk {
+	return u.Update(func(s *APISubscriptionUpsert) {
 		s.SetSecurity(v)
 	})
 }
 
 // UpdateSecurity sets the "security" field to the value that was provided on create.
-func (u *ApiSubscriptionUpsertBulk) UpdateSecurity() *ApiSubscriptionUpsertBulk {
-	return u.Update(func(s *ApiSubscriptionUpsert) {
+func (u *APISubscriptionUpsertBulk) UpdateSecurity() *APISubscriptionUpsertBulk {
+	return u.Update(func(s *APISubscriptionUpsert) {
 		s.UpdateSecurity()
 	})
 }
 
 // ClearSecurity clears the value of the "security" field.
-func (u *ApiSubscriptionUpsertBulk) ClearSecurity() *ApiSubscriptionUpsertBulk {
-	return u.Update(func(s *ApiSubscriptionUpsert) {
+func (u *APISubscriptionUpsertBulk) ClearSecurity() *APISubscriptionUpsertBulk {
+	return u.Update(func(s *APISubscriptionUpsert) {
 		s.ClearSecurity()
 	})
 }
 
 // SetTraffic sets the "traffic" field.
-func (u *ApiSubscriptionUpsertBulk) SetTraffic(v *model.ApiSubscriptionTraffic) *ApiSubscriptionUpsertBulk {
-	return u.Update(func(s *ApiSubscriptionUpsert) {
+func (u *APISubscriptionUpsertBulk) SetTraffic(v *model.APISubscriptionTraffic) *APISubscriptionUpsertBulk {
+	return u.Update(func(s *APISubscriptionUpsert) {
 		s.SetTraffic(v)
 	})
 }
 
 // UpdateTraffic sets the "traffic" field to the value that was provided on create.
-func (u *ApiSubscriptionUpsertBulk) UpdateTraffic() *ApiSubscriptionUpsertBulk {
-	return u.Update(func(s *ApiSubscriptionUpsert) {
+func (u *APISubscriptionUpsertBulk) UpdateTraffic() *APISubscriptionUpsertBulk {
+	return u.Update(func(s *APISubscriptionUpsert) {
 		s.UpdateTraffic()
 	})
 }
 
 // ClearTraffic clears the value of the "traffic" field.
-func (u *ApiSubscriptionUpsertBulk) ClearTraffic() *ApiSubscriptionUpsertBulk {
-	return u.Update(func(s *ApiSubscriptionUpsert) {
+func (u *APISubscriptionUpsertBulk) ClearTraffic() *APISubscriptionUpsertBulk {
+	return u.Update(func(s *APISubscriptionUpsert) {
 		s.ClearTraffic()
 	})
 }
 
 // Exec executes the query.
-func (u *ApiSubscriptionUpsertBulk) Exec(ctx context.Context) error {
+func (u *APISubscriptionUpsertBulk) Exec(ctx context.Context) error {
 	if u.create.err != nil {
 		return u.create.err
 	}
 	for i, b := range u.create.builders {
 		if len(b.conflict) != 0 {
-			return fmt.Errorf("ent: OnConflict was set for builder %d. Set it on the ApiSubscriptionCreateBulk instead", i)
+			return fmt.Errorf("ent: OnConflict was set for builder %d. Set it on the APISubscriptionCreateBulk instead", i)
 		}
 	}
 	if len(u.create.conflict) == 0 {
-		return errors.New("ent: missing options for ApiSubscriptionCreateBulk.OnConflict")
+		return errors.New("ent: missing options for APISubscriptionCreateBulk.OnConflict")
 	}
 	return u.create.Exec(ctx)
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (u *ApiSubscriptionUpsertBulk) ExecX(ctx context.Context) {
+func (u *APISubscriptionUpsertBulk) ExecX(ctx context.Context) {
 	if err := u.create.Exec(ctx); err != nil {
 		panic(err)
 	}

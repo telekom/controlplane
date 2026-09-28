@@ -37,7 +37,7 @@ const (
 	FieldName = "name"
 	// FieldEmail holds the string denoting the email field in the database.
 	FieldEmail = "email"
-	// FieldDisplayName holds the string denoting the displayname field in the database.
+	// FieldDisplayName holds the string denoting the display_name field in the database.
 	FieldDisplayName = "display_name"
 	// FieldDescription holds the string denoting the description field in the database.
 	FieldDescription = "description"
@@ -51,12 +51,12 @@ const (
 	EdgeMembers = "members"
 	// EdgeApplications holds the string denoting the applications edge name in mutations.
 	EdgeApplications = "applications"
-	// EdgeApis holds the string denoting the apis edge name in mutations.
-	EdgeApis = "apis"
+	// EdgeAPIs holds the string denoting the apis edge name in mutations.
+	EdgeAPIs = "APIs"
 	// EdgeEventTypes holds the string denoting the event_types edge name in mutations.
 	EdgeEventTypes = "event_types"
-	// EdgeMcpServers holds the string denoting the mcp_servers edge name in mutations.
-	EdgeMcpServers = "mcp_servers"
+	// EdgeMCPServers holds the string denoting the mcp_servers edge name in mutations.
+	EdgeMCPServers = "MCP_servers"
 	// EdgeAgentCards holds the string denoting the agent_cards edge name in mutations.
 	EdgeAgentCards = "agent_cards"
 	// Table holds the table name of the team in the database.
@@ -82,13 +82,13 @@ const (
 	ApplicationsInverseTable = "applications"
 	// ApplicationsColumn is the table column denoting the applications relation/edge.
 	ApplicationsColumn = "team_applications"
-	// ApisTable is the table that holds the apis relation/edge.
-	ApisTable = "apis"
-	// ApisInverseTable is the table name for the Api entity.
+	// APIsTable is the table that holds the APIs relation/edge.
+	APIsTable = "apis"
+	// APIsInverseTable is the table name for the API entity.
 	// It exists in this package in order to avoid circular dependency with the "api" package.
-	ApisInverseTable = "apis"
-	// ApisColumn is the table column denoting the apis relation/edge.
-	ApisColumn = "team_apis"
+	APIsInverseTable = "apis"
+	// APIsColumn is the table column denoting the APIs relation/edge.
+	APIsColumn = "team_apis"
 	// EventTypesTable is the table that holds the event_types relation/edge.
 	EventTypesTable = "event_types"
 	// EventTypesInverseTable is the table name for the EventType entity.
@@ -96,13 +96,13 @@ const (
 	EventTypesInverseTable = "event_types"
 	// EventTypesColumn is the table column denoting the event_types relation/edge.
 	EventTypesColumn = "team_event_types"
-	// McpServersTable is the table that holds the mcp_servers relation/edge.
-	McpServersTable = "mcp_servers"
-	// McpServersInverseTable is the table name for the McpServer entity.
+	// MCPServersTable is the table that holds the MCP_servers relation/edge.
+	MCPServersTable = "mcp_servers"
+	// MCPServersInverseTable is the table name for the MCPServer entity.
 	// It exists in this package in order to avoid circular dependency with the "mcpserver" package.
-	McpServersInverseTable = "mcp_servers"
-	// McpServersColumn is the table column denoting the mcp_servers relation/edge.
-	McpServersColumn = "team_mcp_servers"
+	MCPServersInverseTable = "mcp_servers"
+	// MCPServersColumn is the table column denoting the MCP_servers relation/edge.
+	MCPServersColumn = "team_mcp_servers"
 	// AgentCardsTable is the table that holds the agent_cards relation/edge.
 	AgentCardsTable = "agent_cards"
 	// AgentCardsInverseTable is the table name for the AgentCard entity.
@@ -271,7 +271,7 @@ func ByEmail(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldEmail, opts...).ToFunc()
 }
 
-// ByDisplayName orders the results by the displayName field.
+// ByDisplayName orders the results by the display_name field.
 func ByDisplayName(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldDisplayName, opts...).ToFunc()
 }
@@ -326,17 +326,17 @@ func ByApplications(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	}
 }
 
-// ByApisCount orders the results by apis count.
-func ByApisCount(opts ...sql.OrderTermOption) OrderOption {
+// ByAPIsCount orders the results by APIs count.
+func ByAPIsCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborsCount(s, newApisStep(), opts...)
+		sqlgraph.OrderByNeighborsCount(s, newAPIsStep(), opts...)
 	}
 }
 
-// ByApis orders the results by apis terms.
-func ByApis(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+// ByAPIs orders the results by APIs terms.
+func ByAPIs(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newApisStep(), append([]sql.OrderTerm{term}, terms...)...)
+		sqlgraph.OrderByNeighborTerms(s, newAPIsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
 
@@ -354,17 +354,17 @@ func ByEventTypes(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	}
 }
 
-// ByMcpServersCount orders the results by mcp_servers count.
-func ByMcpServersCount(opts ...sql.OrderTermOption) OrderOption {
+// ByMCPServersCount orders the results by MCP_servers count.
+func ByMCPServersCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborsCount(s, newMcpServersStep(), opts...)
+		sqlgraph.OrderByNeighborsCount(s, newMCPServersStep(), opts...)
 	}
 }
 
-// ByMcpServers orders the results by mcp_servers terms.
-func ByMcpServers(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+// ByMCPServers orders the results by MCP_servers terms.
+func ByMCPServers(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newMcpServersStep(), append([]sql.OrderTerm{term}, terms...)...)
+		sqlgraph.OrderByNeighborTerms(s, newMCPServersStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
 
@@ -402,11 +402,11 @@ func newApplicationsStep() *sqlgraph.Step {
 		sqlgraph.Edge(sqlgraph.O2M, false, ApplicationsTable, ApplicationsColumn),
 	)
 }
-func newApisStep() *sqlgraph.Step {
+func newAPIsStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(ApisInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.O2M, false, ApisTable, ApisColumn),
+		sqlgraph.To(APIsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, APIsTable, APIsColumn),
 	)
 }
 func newEventTypesStep() *sqlgraph.Step {
@@ -416,11 +416,11 @@ func newEventTypesStep() *sqlgraph.Step {
 		sqlgraph.Edge(sqlgraph.O2M, false, EventTypesTable, EventTypesColumn),
 	)
 }
-func newMcpServersStep() *sqlgraph.Step {
+func newMCPServersStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(McpServersInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.O2M, false, McpServersTable, McpServersColumn),
+		sqlgraph.To(MCPServersInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, MCPServersTable, MCPServersColumn),
 	)
 }
 func newAgentCardsStep() *sqlgraph.Step {

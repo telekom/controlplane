@@ -16,12 +16,12 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 )
 
-// ApiExposure holds the schema definition for an exposed API.
-type ApiExposure struct {
+// APIExposure holds the schema definition for an exposed API.
+type APIExposure struct {
 	ent.Schema
 }
 
-func (ApiExposure) Mixin() []ent.Mixin {
+func (APIExposure) Mixin() []ent.Mixin {
 	return []ent.Mixin{
 		schemamixin.PrivacyMixin{},
 		schemamixin.TimestampsMixin{},
@@ -31,7 +31,7 @@ func (ApiExposure) Mixin() []ent.Mixin {
 	}
 }
 
-func (ApiExposure) Fields() []ent.Field {
+func (APIExposure) Fields() []ent.Field {
 	return []ent.Field{
 		field.Text("base_path").
 			NotEmpty(),
@@ -48,11 +48,11 @@ func (ApiExposure) Fields() []ent.Field {
 			Default(false),
 		field.JSON("features", []string{}).
 			Default([]string{}).
-			Annotations(entgql.Type("[ApiExposureFeature!]"), entgql.Skip(entgql.SkipWhereInput)),
+			Annotations(entgql.Type("[APIExposureFeature!]"), entgql.Skip(entgql.SkipWhereInput)),
 		field.JSON("upstreams", []model.Upstream{}).
 			Default([]model.Upstream{}).
 			Annotations(entgql.Skip(entgql.SkipWhereInput)),
-		field.JSON("security", model.ApiExposureSecurity{}).
+		field.JSON("security", model.APIExposureSecurity{}).
 			Optional().
 			Annotations(entgql.Skip(entgql.SkipWhereInput)),
 		field.JSON("traffic", model.Traffic{}).
@@ -67,29 +67,29 @@ func (ApiExposure) Fields() []ent.Field {
 	}
 }
 
-func (ApiExposure) Edges() []ent.Edge {
+func (APIExposure) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("owner", Application.Type).
-			Ref("exposed_apis").
+			Ref("exposed_APIs").
 			Required().
 			Unique(),
-		edge.From("api", Api.Type).
+		edge.From("api", API.Type).
 			Ref("exposures").
 			Unique(),
-		edge.From("subscriptions", ApiSubscription.Type).
+		edge.From("subscriptions", APISubscription.Type).
 			Ref("target").
 			Annotations(entgql.Skip(entgql.SkipType)),
 	}
 }
 
-func (ApiExposure) Annotations() []schema.Annotation {
+func (APIExposure) Annotations() []schema.Annotation {
 	return []schema.Annotation{
 		entgql.QueryField(),
 		entgql.RelayConnection(),
 	}
 }
 
-func (ApiExposure) Indexes() []ent.Index {
+func (APIExposure) Indexes() []ent.Index {
 	return []ent.Index{
 		index.Fields("base_path").Edges("owner").Unique(),
 	}

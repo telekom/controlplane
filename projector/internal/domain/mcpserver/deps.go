@@ -6,11 +6,11 @@ package mcpserver
 
 import "context"
 
-// McpServerDeps declares the FK resolution interface required by the
+// MCPServerDeps declares the FK resolution interface required by the
 // McpServer repository. Team is a required dependency — if the owner Team is
 // missing, the upsert fails with ErrDependencyMissing.
 //
 // Satisfied by *infrastructure.IDResolver at wiring time.
-type McpServerDeps interface {
+type MCPServerDeps interface {
 	FindTeamID(ctx context.Context, name string) (int, error)
 }

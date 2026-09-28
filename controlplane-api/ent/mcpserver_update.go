@@ -21,33 +21,33 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/team"
 )
 
-// McpServerUpdate is the builder for updating McpServer entities.
-type McpServerUpdate struct {
+// MCPServerUpdate is the builder for updating MCPServer entities.
+type MCPServerUpdate struct {
 	config
 	hooks    []Hook
-	mutation *McpServerMutation
+	mutation *MCPServerMutation
 }
 
-// Where appends a list predicates to the McpServerUpdate builder.
-func (_u *McpServerUpdate) Where(ps ...predicate.McpServer) *McpServerUpdate {
+// Where appends a list predicates to the MCPServerUpdate builder.
+func (_u *MCPServerUpdate) Where(ps ...predicate.MCPServer) *MCPServerUpdate {
 	_u.mutation.Where(ps...)
 	return _u
 }
 
 // SetLastModifiedAt sets the "last_modified_at" field.
-func (_u *McpServerUpdate) SetLastModifiedAt(v time.Time) *McpServerUpdate {
+func (_u *MCPServerUpdate) SetLastModifiedAt(v time.Time) *MCPServerUpdate {
 	_u.mutation.SetLastModifiedAt(v)
 	return _u
 }
 
 // SetStatusPhase sets the "status_phase" field.
-func (_u *McpServerUpdate) SetStatusPhase(v mcpserver.StatusPhase) *McpServerUpdate {
+func (_u *MCPServerUpdate) SetStatusPhase(v mcpserver.StatusPhase) *MCPServerUpdate {
 	_u.mutation.SetStatusPhase(v)
 	return _u
 }
 
 // SetNillableStatusPhase sets the "status_phase" field if the given value is not nil.
-func (_u *McpServerUpdate) SetNillableStatusPhase(v *mcpserver.StatusPhase) *McpServerUpdate {
+func (_u *MCPServerUpdate) SetNillableStatusPhase(v *mcpserver.StatusPhase) *MCPServerUpdate {
 	if v != nil {
 		_u.SetStatusPhase(*v)
 	}
@@ -55,19 +55,19 @@ func (_u *McpServerUpdate) SetNillableStatusPhase(v *mcpserver.StatusPhase) *Mcp
 }
 
 // ClearStatusPhase clears the value of the "status_phase" field.
-func (_u *McpServerUpdate) ClearStatusPhase() *McpServerUpdate {
+func (_u *MCPServerUpdate) ClearStatusPhase() *MCPServerUpdate {
 	_u.mutation.ClearStatusPhase()
 	return _u
 }
 
 // SetStatusMessage sets the "status_message" field.
-func (_u *McpServerUpdate) SetStatusMessage(v string) *McpServerUpdate {
+func (_u *MCPServerUpdate) SetStatusMessage(v string) *MCPServerUpdate {
 	_u.mutation.SetStatusMessage(v)
 	return _u
 }
 
 // SetNillableStatusMessage sets the "status_message" field if the given value is not nil.
-func (_u *McpServerUpdate) SetNillableStatusMessage(v *string) *McpServerUpdate {
+func (_u *MCPServerUpdate) SetNillableStatusMessage(v *string) *MCPServerUpdate {
 	if v != nil {
 		_u.SetStatusMessage(*v)
 	}
@@ -75,19 +75,19 @@ func (_u *McpServerUpdate) SetNillableStatusMessage(v *string) *McpServerUpdate 
 }
 
 // ClearStatusMessage clears the value of the "status_message" field.
-func (_u *McpServerUpdate) ClearStatusMessage() *McpServerUpdate {
+func (_u *MCPServerUpdate) ClearStatusMessage() *MCPServerUpdate {
 	_u.mutation.ClearStatusMessage()
 	return _u
 }
 
 // SetNamespace sets the "namespace" field.
-func (_u *McpServerUpdate) SetNamespace(v string) *McpServerUpdate {
+func (_u *MCPServerUpdate) SetNamespace(v string) *MCPServerUpdate {
 	_u.mutation.SetNamespace(v)
 	return _u
 }
 
 // SetNillableNamespace sets the "namespace" field if the given value is not nil.
-func (_u *McpServerUpdate) SetNillableNamespace(v *string) *McpServerUpdate {
+func (_u *MCPServerUpdate) SetNillableNamespace(v *string) *MCPServerUpdate {
 	if v != nil {
 		_u.SetNamespace(*v)
 	}
@@ -95,13 +95,13 @@ func (_u *McpServerUpdate) SetNillableNamespace(v *string) *McpServerUpdate {
 }
 
 // SetBasePath sets the "base_path" field.
-func (_u *McpServerUpdate) SetBasePath(v string) *McpServerUpdate {
+func (_u *MCPServerUpdate) SetBasePath(v string) *MCPServerUpdate {
 	_u.mutation.SetBasePath(v)
 	return _u
 }
 
 // SetNillableBasePath sets the "base_path" field if the given value is not nil.
-func (_u *McpServerUpdate) SetNillableBasePath(v *string) *McpServerUpdate {
+func (_u *MCPServerUpdate) SetNillableBasePath(v *string) *MCPServerUpdate {
 	if v != nil {
 		_u.SetBasePath(*v)
 	}
@@ -109,13 +109,13 @@ func (_u *McpServerUpdate) SetNillableBasePath(v *string) *McpServerUpdate {
 }
 
 // SetVersion sets the "version" field.
-func (_u *McpServerUpdate) SetVersion(v string) *McpServerUpdate {
+func (_u *MCPServerUpdate) SetVersion(v string) *MCPServerUpdate {
 	_u.mutation.SetVersion(v)
 	return _u
 }
 
 // SetNillableVersion sets the "version" field if the given value is not nil.
-func (_u *McpServerUpdate) SetNillableVersion(v *string) *McpServerUpdate {
+func (_u *MCPServerUpdate) SetNillableVersion(v *string) *MCPServerUpdate {
 	if v != nil {
 		_u.SetVersion(*v)
 	}
@@ -123,13 +123,13 @@ func (_u *McpServerUpdate) SetNillableVersion(v *string) *McpServerUpdate {
 }
 
 // SetName sets the "name" field.
-func (_u *McpServerUpdate) SetName(v string) *McpServerUpdate {
+func (_u *MCPServerUpdate) SetName(v string) *MCPServerUpdate {
 	_u.mutation.SetName(v)
 	return _u
 }
 
 // SetNillableName sets the "name" field if the given value is not nil.
-func (_u *McpServerUpdate) SetNillableName(v *string) *McpServerUpdate {
+func (_u *MCPServerUpdate) SetNillableName(v *string) *MCPServerUpdate {
 	if v != nil {
 		_u.SetName(*v)
 	}
@@ -137,13 +137,13 @@ func (_u *McpServerUpdate) SetNillableName(v *string) *McpServerUpdate {
 }
 
 // SetDescription sets the "description" field.
-func (_u *McpServerUpdate) SetDescription(v string) *McpServerUpdate {
+func (_u *MCPServerUpdate) SetDescription(v string) *MCPServerUpdate {
 	_u.mutation.SetDescription(v)
 	return _u
 }
 
 // SetNillableDescription sets the "description" field if the given value is not nil.
-func (_u *McpServerUpdate) SetNillableDescription(v *string) *McpServerUpdate {
+func (_u *MCPServerUpdate) SetNillableDescription(v *string) *MCPServerUpdate {
 	if v != nil {
 		_u.SetDescription(*v)
 	}
@@ -151,19 +151,19 @@ func (_u *McpServerUpdate) SetNillableDescription(v *string) *McpServerUpdate {
 }
 
 // ClearDescription clears the value of the "description" field.
-func (_u *McpServerUpdate) ClearDescription() *McpServerUpdate {
+func (_u *MCPServerUpdate) ClearDescription() *MCPServerUpdate {
 	_u.mutation.ClearDescription()
 	return _u
 }
 
 // SetSpecification sets the "specification" field.
-func (_u *McpServerUpdate) SetSpecification(v string) *McpServerUpdate {
+func (_u *MCPServerUpdate) SetSpecification(v string) *MCPServerUpdate {
 	_u.mutation.SetSpecification(v)
 	return _u
 }
 
 // SetNillableSpecification sets the "specification" field if the given value is not nil.
-func (_u *McpServerUpdate) SetNillableSpecification(v *string) *McpServerUpdate {
+func (_u *MCPServerUpdate) SetNillableSpecification(v *string) *MCPServerUpdate {
 	if v != nil {
 		_u.SetSpecification(*v)
 	}
@@ -171,19 +171,19 @@ func (_u *McpServerUpdate) SetNillableSpecification(v *string) *McpServerUpdate 
 }
 
 // ClearSpecification clears the value of the "specification" field.
-func (_u *McpServerUpdate) ClearSpecification() *McpServerUpdate {
+func (_u *MCPServerUpdate) ClearSpecification() *MCPServerUpdate {
 	_u.mutation.ClearSpecification()
 	return _u
 }
 
 // SetCategory sets the "category" field.
-func (_u *McpServerUpdate) SetCategory(v string) *McpServerUpdate {
+func (_u *MCPServerUpdate) SetCategory(v string) *MCPServerUpdate {
 	_u.mutation.SetCategory(v)
 	return _u
 }
 
 // SetNillableCategory sets the "category" field if the given value is not nil.
-func (_u *McpServerUpdate) SetNillableCategory(v *string) *McpServerUpdate {
+func (_u *MCPServerUpdate) SetNillableCategory(v *string) *MCPServerUpdate {
 	if v != nil {
 		_u.SetCategory(*v)
 	}
@@ -191,37 +191,37 @@ func (_u *McpServerUpdate) SetNillableCategory(v *string) *McpServerUpdate {
 }
 
 // ClearCategory clears the value of the "category" field.
-func (_u *McpServerUpdate) ClearCategory() *McpServerUpdate {
+func (_u *MCPServerUpdate) ClearCategory() *MCPServerUpdate {
 	_u.mutation.ClearCategory()
 	return _u
 }
 
-// SetOauth2Scopes sets the "oauth2_scopes" field.
-func (_u *McpServerUpdate) SetOauth2Scopes(v []string) *McpServerUpdate {
-	_u.mutation.SetOauth2Scopes(v)
+// SetOAuth2Scopes sets the "OAuth2_scopes" field.
+func (_u *MCPServerUpdate) SetOAuth2Scopes(v []string) *MCPServerUpdate {
+	_u.mutation.SetOAuth2Scopes(v)
 	return _u
 }
 
-// AppendOauth2Scopes appends value to the "oauth2_scopes" field.
-func (_u *McpServerUpdate) AppendOauth2Scopes(v []string) *McpServerUpdate {
-	_u.mutation.AppendOauth2Scopes(v)
+// AppendOAuth2Scopes appends value to the "OAuth2_scopes" field.
+func (_u *MCPServerUpdate) AppendOAuth2Scopes(v []string) *MCPServerUpdate {
+	_u.mutation.AppendOAuth2Scopes(v)
 	return _u
 }
 
-// ClearOauth2Scopes clears the value of the "oauth2_scopes" field.
-func (_u *McpServerUpdate) ClearOauth2Scopes() *McpServerUpdate {
-	_u.mutation.ClearOauth2Scopes()
+// ClearOAuth2Scopes clears the value of the "OAuth2_scopes" field.
+func (_u *MCPServerUpdate) ClearOAuth2Scopes() *MCPServerUpdate {
+	_u.mutation.ClearOAuth2Scopes()
 	return _u
 }
 
 // SetActive sets the "active" field.
-func (_u *McpServerUpdate) SetActive(v bool) *McpServerUpdate {
+func (_u *MCPServerUpdate) SetActive(v bool) *MCPServerUpdate {
 	_u.mutation.SetActive(v)
 	return _u
 }
 
 // SetNillableActive sets the "active" field if the given value is not nil.
-func (_u *McpServerUpdate) SetNillableActive(v *bool) *McpServerUpdate {
+func (_u *MCPServerUpdate) SetNillableActive(v *bool) *MCPServerUpdate {
 	if v != nil {
 		_u.SetActive(*v)
 	}
@@ -229,24 +229,24 @@ func (_u *McpServerUpdate) SetNillableActive(v *bool) *McpServerUpdate {
 }
 
 // SetOwnerID sets the "owner" edge to the Team entity by ID.
-func (_u *McpServerUpdate) SetOwnerID(id int) *McpServerUpdate {
+func (_u *MCPServerUpdate) SetOwnerID(id int) *MCPServerUpdate {
 	_u.mutation.SetOwnerID(id)
 	return _u
 }
 
 // SetOwner sets the "owner" edge to the Team entity.
-func (_u *McpServerUpdate) SetOwner(v *Team) *McpServerUpdate {
+func (_u *MCPServerUpdate) SetOwner(v *Team) *MCPServerUpdate {
 	return _u.SetOwnerID(v.ID)
 }
 
 // AddExposureIDs adds the "exposures" edge to the AgenticExposure entity by IDs.
-func (_u *McpServerUpdate) AddExposureIDs(ids ...int) *McpServerUpdate {
+func (_u *MCPServerUpdate) AddExposureIDs(ids ...int) *MCPServerUpdate {
 	_u.mutation.AddExposureIDs(ids...)
 	return _u
 }
 
 // AddExposures adds the "exposures" edges to the AgenticExposure entity.
-func (_u *McpServerUpdate) AddExposures(v ...*AgenticExposure) *McpServerUpdate {
+func (_u *MCPServerUpdate) AddExposures(v ...*AgenticExposure) *MCPServerUpdate {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
@@ -254,31 +254,31 @@ func (_u *McpServerUpdate) AddExposures(v ...*AgenticExposure) *McpServerUpdate 
 	return _u.AddExposureIDs(ids...)
 }
 
-// Mutation returns the McpServerMutation object of the builder.
-func (_u *McpServerUpdate) Mutation() *McpServerMutation {
+// Mutation returns the MCPServerMutation object of the builder.
+func (_u *MCPServerUpdate) Mutation() *MCPServerMutation {
 	return _u.mutation
 }
 
 // ClearOwner clears the "owner" edge to the Team entity.
-func (_u *McpServerUpdate) ClearOwner() *McpServerUpdate {
+func (_u *MCPServerUpdate) ClearOwner() *MCPServerUpdate {
 	_u.mutation.ClearOwner()
 	return _u
 }
 
 // ClearExposures clears all "exposures" edges to the AgenticExposure entity.
-func (_u *McpServerUpdate) ClearExposures() *McpServerUpdate {
+func (_u *MCPServerUpdate) ClearExposures() *MCPServerUpdate {
 	_u.mutation.ClearExposures()
 	return _u
 }
 
 // RemoveExposureIDs removes the "exposures" edge to AgenticExposure entities by IDs.
-func (_u *McpServerUpdate) RemoveExposureIDs(ids ...int) *McpServerUpdate {
+func (_u *MCPServerUpdate) RemoveExposureIDs(ids ...int) *MCPServerUpdate {
 	_u.mutation.RemoveExposureIDs(ids...)
 	return _u
 }
 
 // RemoveExposures removes "exposures" edges to AgenticExposure entities.
-func (_u *McpServerUpdate) RemoveExposures(v ...*AgenticExposure) *McpServerUpdate {
+func (_u *MCPServerUpdate) RemoveExposures(v ...*AgenticExposure) *MCPServerUpdate {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
@@ -287,7 +287,7 @@ func (_u *McpServerUpdate) RemoveExposures(v ...*AgenticExposure) *McpServerUpda
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
-func (_u *McpServerUpdate) Save(ctx context.Context) (int, error) {
+func (_u *MCPServerUpdate) Save(ctx context.Context) (int, error) {
 	if err := _u.defaults(); err != nil {
 		return 0, err
 	}
@@ -295,7 +295,7 @@ func (_u *McpServerUpdate) Save(ctx context.Context) (int, error) {
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (_u *McpServerUpdate) SaveX(ctx context.Context) int {
+func (_u *MCPServerUpdate) SaveX(ctx context.Context) int {
 	affected, err := _u.Save(ctx)
 	if err != nil {
 		panic(err)
@@ -304,20 +304,20 @@ func (_u *McpServerUpdate) SaveX(ctx context.Context) int {
 }
 
 // Exec executes the query.
-func (_u *McpServerUpdate) Exec(ctx context.Context) error {
+func (_u *MCPServerUpdate) Exec(ctx context.Context) error {
 	_, err := _u.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (_u *McpServerUpdate) ExecX(ctx context.Context) {
+func (_u *MCPServerUpdate) ExecX(ctx context.Context) {
 	if err := _u.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // defaults sets the default values of the builder before save.
-func (_u *McpServerUpdate) defaults() error {
+func (_u *MCPServerUpdate) defaults() error {
 	if _, ok := _u.mutation.LastModifiedAt(); !ok {
 		if mcpserver.UpdateDefaultLastModifiedAt == nil {
 			return fmt.Errorf("ent: uninitialized mcpserver.UpdateDefaultLastModifiedAt (forgotten import ent/runtime?)")
@@ -329,39 +329,39 @@ func (_u *McpServerUpdate) defaults() error {
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (_u *McpServerUpdate) check() error {
+func (_u *MCPServerUpdate) check() error {
 	if v, ok := _u.mutation.StatusPhase(); ok {
 		if err := mcpserver.StatusPhaseValidator(v); err != nil {
-			return &ValidationError{Name: "status_phase", err: fmt.Errorf(`ent: validator failed for field "McpServer.status_phase": %w`, err)}
+			return &ValidationError{Name: "status_phase", err: fmt.Errorf(`ent: validator failed for field "MCPServer.status_phase": %w`, err)}
 		}
 	}
 	if v, ok := _u.mutation.Namespace(); ok {
 		if err := mcpserver.NamespaceValidator(v); err != nil {
-			return &ValidationError{Name: "namespace", err: fmt.Errorf(`ent: validator failed for field "McpServer.namespace": %w`, err)}
+			return &ValidationError{Name: "namespace", err: fmt.Errorf(`ent: validator failed for field "MCPServer.namespace": %w`, err)}
 		}
 	}
 	if v, ok := _u.mutation.BasePath(); ok {
 		if err := mcpserver.BasePathValidator(v); err != nil {
-			return &ValidationError{Name: "base_path", err: fmt.Errorf(`ent: validator failed for field "McpServer.base_path": %w`, err)}
+			return &ValidationError{Name: "base_path", err: fmt.Errorf(`ent: validator failed for field "MCPServer.base_path": %w`, err)}
 		}
 	}
 	if v, ok := _u.mutation.Version(); ok {
 		if err := mcpserver.VersionValidator(v); err != nil {
-			return &ValidationError{Name: "version", err: fmt.Errorf(`ent: validator failed for field "McpServer.version": %w`, err)}
+			return &ValidationError{Name: "version", err: fmt.Errorf(`ent: validator failed for field "MCPServer.version": %w`, err)}
 		}
 	}
 	if v, ok := _u.mutation.Name(); ok {
 		if err := mcpserver.NameValidator(v); err != nil {
-			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "McpServer.name": %w`, err)}
+			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "MCPServer.name": %w`, err)}
 		}
 	}
 	if _u.mutation.OwnerCleared() && len(_u.mutation.OwnerIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "McpServer.owner"`)
+		return errors.New(`ent: clearing a required unique edge "MCPServer.owner"`)
 	}
 	return nil
 }
 
-func (_u *McpServerUpdate) sqlSave(ctx context.Context) (_node int, err error) {
+func (_u *MCPServerUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if err := _u.check(); err != nil {
 		return _node, err
 	}
@@ -418,16 +418,16 @@ func (_u *McpServerUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if _u.mutation.CategoryCleared() {
 		_spec.ClearField(mcpserver.FieldCategory, field.TypeString)
 	}
-	if value, ok := _u.mutation.Oauth2Scopes(); ok {
-		_spec.SetField(mcpserver.FieldOauth2Scopes, field.TypeJSON, value)
+	if value, ok := _u.mutation.OAuth2Scopes(); ok {
+		_spec.SetField(mcpserver.FieldOAuth2Scopes, field.TypeJSON, value)
 	}
-	if value, ok := _u.mutation.AppendedOauth2Scopes(); ok {
+	if value, ok := _u.mutation.AppendedOAuth2Scopes(); ok {
 		_spec.AddModifier(func(u *sql.UpdateBuilder) {
-			sqljson.Append(u, mcpserver.FieldOauth2Scopes, value)
+			sqljson.Append(u, mcpserver.FieldOAuth2Scopes, value)
 		})
 	}
-	if _u.mutation.Oauth2ScopesCleared() {
-		_spec.ClearField(mcpserver.FieldOauth2Scopes, field.TypeJSON)
+	if _u.mutation.OAuth2ScopesCleared() {
+		_spec.ClearField(mcpserver.FieldOAuth2Scopes, field.TypeJSON)
 	}
 	if value, ok := _u.mutation.Active(); ok {
 		_spec.SetField(mcpserver.FieldActive, field.TypeBool, value)
@@ -518,28 +518,28 @@ func (_u *McpServerUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	return _node, nil
 }
 
-// McpServerUpdateOne is the builder for updating a single McpServer entity.
-type McpServerUpdateOne struct {
+// MCPServerUpdateOne is the builder for updating a single MCPServer entity.
+type MCPServerUpdateOne struct {
 	config
 	fields   []string
 	hooks    []Hook
-	mutation *McpServerMutation
+	mutation *MCPServerMutation
 }
 
 // SetLastModifiedAt sets the "last_modified_at" field.
-func (_u *McpServerUpdateOne) SetLastModifiedAt(v time.Time) *McpServerUpdateOne {
+func (_u *MCPServerUpdateOne) SetLastModifiedAt(v time.Time) *MCPServerUpdateOne {
 	_u.mutation.SetLastModifiedAt(v)
 	return _u
 }
 
 // SetStatusPhase sets the "status_phase" field.
-func (_u *McpServerUpdateOne) SetStatusPhase(v mcpserver.StatusPhase) *McpServerUpdateOne {
+func (_u *MCPServerUpdateOne) SetStatusPhase(v mcpserver.StatusPhase) *MCPServerUpdateOne {
 	_u.mutation.SetStatusPhase(v)
 	return _u
 }
 
 // SetNillableStatusPhase sets the "status_phase" field if the given value is not nil.
-func (_u *McpServerUpdateOne) SetNillableStatusPhase(v *mcpserver.StatusPhase) *McpServerUpdateOne {
+func (_u *MCPServerUpdateOne) SetNillableStatusPhase(v *mcpserver.StatusPhase) *MCPServerUpdateOne {
 	if v != nil {
 		_u.SetStatusPhase(*v)
 	}
@@ -547,19 +547,19 @@ func (_u *McpServerUpdateOne) SetNillableStatusPhase(v *mcpserver.StatusPhase) *
 }
 
 // ClearStatusPhase clears the value of the "status_phase" field.
-func (_u *McpServerUpdateOne) ClearStatusPhase() *McpServerUpdateOne {
+func (_u *MCPServerUpdateOne) ClearStatusPhase() *MCPServerUpdateOne {
 	_u.mutation.ClearStatusPhase()
 	return _u
 }
 
 // SetStatusMessage sets the "status_message" field.
-func (_u *McpServerUpdateOne) SetStatusMessage(v string) *McpServerUpdateOne {
+func (_u *MCPServerUpdateOne) SetStatusMessage(v string) *MCPServerUpdateOne {
 	_u.mutation.SetStatusMessage(v)
 	return _u
 }
 
 // SetNillableStatusMessage sets the "status_message" field if the given value is not nil.
-func (_u *McpServerUpdateOne) SetNillableStatusMessage(v *string) *McpServerUpdateOne {
+func (_u *MCPServerUpdateOne) SetNillableStatusMessage(v *string) *MCPServerUpdateOne {
 	if v != nil {
 		_u.SetStatusMessage(*v)
 	}
@@ -567,19 +567,19 @@ func (_u *McpServerUpdateOne) SetNillableStatusMessage(v *string) *McpServerUpda
 }
 
 // ClearStatusMessage clears the value of the "status_message" field.
-func (_u *McpServerUpdateOne) ClearStatusMessage() *McpServerUpdateOne {
+func (_u *MCPServerUpdateOne) ClearStatusMessage() *MCPServerUpdateOne {
 	_u.mutation.ClearStatusMessage()
 	return _u
 }
 
 // SetNamespace sets the "namespace" field.
-func (_u *McpServerUpdateOne) SetNamespace(v string) *McpServerUpdateOne {
+func (_u *MCPServerUpdateOne) SetNamespace(v string) *MCPServerUpdateOne {
 	_u.mutation.SetNamespace(v)
 	return _u
 }
 
 // SetNillableNamespace sets the "namespace" field if the given value is not nil.
-func (_u *McpServerUpdateOne) SetNillableNamespace(v *string) *McpServerUpdateOne {
+func (_u *MCPServerUpdateOne) SetNillableNamespace(v *string) *MCPServerUpdateOne {
 	if v != nil {
 		_u.SetNamespace(*v)
 	}
@@ -587,13 +587,13 @@ func (_u *McpServerUpdateOne) SetNillableNamespace(v *string) *McpServerUpdateOn
 }
 
 // SetBasePath sets the "base_path" field.
-func (_u *McpServerUpdateOne) SetBasePath(v string) *McpServerUpdateOne {
+func (_u *MCPServerUpdateOne) SetBasePath(v string) *MCPServerUpdateOne {
 	_u.mutation.SetBasePath(v)
 	return _u
 }
 
 // SetNillableBasePath sets the "base_path" field if the given value is not nil.
-func (_u *McpServerUpdateOne) SetNillableBasePath(v *string) *McpServerUpdateOne {
+func (_u *MCPServerUpdateOne) SetNillableBasePath(v *string) *MCPServerUpdateOne {
 	if v != nil {
 		_u.SetBasePath(*v)
 	}
@@ -601,13 +601,13 @@ func (_u *McpServerUpdateOne) SetNillableBasePath(v *string) *McpServerUpdateOne
 }
 
 // SetVersion sets the "version" field.
-func (_u *McpServerUpdateOne) SetVersion(v string) *McpServerUpdateOne {
+func (_u *MCPServerUpdateOne) SetVersion(v string) *MCPServerUpdateOne {
 	_u.mutation.SetVersion(v)
 	return _u
 }
 
 // SetNillableVersion sets the "version" field if the given value is not nil.
-func (_u *McpServerUpdateOne) SetNillableVersion(v *string) *McpServerUpdateOne {
+func (_u *MCPServerUpdateOne) SetNillableVersion(v *string) *MCPServerUpdateOne {
 	if v != nil {
 		_u.SetVersion(*v)
 	}
@@ -615,13 +615,13 @@ func (_u *McpServerUpdateOne) SetNillableVersion(v *string) *McpServerUpdateOne 
 }
 
 // SetName sets the "name" field.
-func (_u *McpServerUpdateOne) SetName(v string) *McpServerUpdateOne {
+func (_u *MCPServerUpdateOne) SetName(v string) *MCPServerUpdateOne {
 	_u.mutation.SetName(v)
 	return _u
 }
 
 // SetNillableName sets the "name" field if the given value is not nil.
-func (_u *McpServerUpdateOne) SetNillableName(v *string) *McpServerUpdateOne {
+func (_u *MCPServerUpdateOne) SetNillableName(v *string) *MCPServerUpdateOne {
 	if v != nil {
 		_u.SetName(*v)
 	}
@@ -629,13 +629,13 @@ func (_u *McpServerUpdateOne) SetNillableName(v *string) *McpServerUpdateOne {
 }
 
 // SetDescription sets the "description" field.
-func (_u *McpServerUpdateOne) SetDescription(v string) *McpServerUpdateOne {
+func (_u *MCPServerUpdateOne) SetDescription(v string) *MCPServerUpdateOne {
 	_u.mutation.SetDescription(v)
 	return _u
 }
 
 // SetNillableDescription sets the "description" field if the given value is not nil.
-func (_u *McpServerUpdateOne) SetNillableDescription(v *string) *McpServerUpdateOne {
+func (_u *MCPServerUpdateOne) SetNillableDescription(v *string) *MCPServerUpdateOne {
 	if v != nil {
 		_u.SetDescription(*v)
 	}
@@ -643,19 +643,19 @@ func (_u *McpServerUpdateOne) SetNillableDescription(v *string) *McpServerUpdate
 }
 
 // ClearDescription clears the value of the "description" field.
-func (_u *McpServerUpdateOne) ClearDescription() *McpServerUpdateOne {
+func (_u *MCPServerUpdateOne) ClearDescription() *MCPServerUpdateOne {
 	_u.mutation.ClearDescription()
 	return _u
 }
 
 // SetSpecification sets the "specification" field.
-func (_u *McpServerUpdateOne) SetSpecification(v string) *McpServerUpdateOne {
+func (_u *MCPServerUpdateOne) SetSpecification(v string) *MCPServerUpdateOne {
 	_u.mutation.SetSpecification(v)
 	return _u
 }
 
 // SetNillableSpecification sets the "specification" field if the given value is not nil.
-func (_u *McpServerUpdateOne) SetNillableSpecification(v *string) *McpServerUpdateOne {
+func (_u *MCPServerUpdateOne) SetNillableSpecification(v *string) *MCPServerUpdateOne {
 	if v != nil {
 		_u.SetSpecification(*v)
 	}
@@ -663,19 +663,19 @@ func (_u *McpServerUpdateOne) SetNillableSpecification(v *string) *McpServerUpda
 }
 
 // ClearSpecification clears the value of the "specification" field.
-func (_u *McpServerUpdateOne) ClearSpecification() *McpServerUpdateOne {
+func (_u *MCPServerUpdateOne) ClearSpecification() *MCPServerUpdateOne {
 	_u.mutation.ClearSpecification()
 	return _u
 }
 
 // SetCategory sets the "category" field.
-func (_u *McpServerUpdateOne) SetCategory(v string) *McpServerUpdateOne {
+func (_u *MCPServerUpdateOne) SetCategory(v string) *MCPServerUpdateOne {
 	_u.mutation.SetCategory(v)
 	return _u
 }
 
 // SetNillableCategory sets the "category" field if the given value is not nil.
-func (_u *McpServerUpdateOne) SetNillableCategory(v *string) *McpServerUpdateOne {
+func (_u *MCPServerUpdateOne) SetNillableCategory(v *string) *MCPServerUpdateOne {
 	if v != nil {
 		_u.SetCategory(*v)
 	}
@@ -683,37 +683,37 @@ func (_u *McpServerUpdateOne) SetNillableCategory(v *string) *McpServerUpdateOne
 }
 
 // ClearCategory clears the value of the "category" field.
-func (_u *McpServerUpdateOne) ClearCategory() *McpServerUpdateOne {
+func (_u *MCPServerUpdateOne) ClearCategory() *MCPServerUpdateOne {
 	_u.mutation.ClearCategory()
 	return _u
 }
 
-// SetOauth2Scopes sets the "oauth2_scopes" field.
-func (_u *McpServerUpdateOne) SetOauth2Scopes(v []string) *McpServerUpdateOne {
-	_u.mutation.SetOauth2Scopes(v)
+// SetOAuth2Scopes sets the "OAuth2_scopes" field.
+func (_u *MCPServerUpdateOne) SetOAuth2Scopes(v []string) *MCPServerUpdateOne {
+	_u.mutation.SetOAuth2Scopes(v)
 	return _u
 }
 
-// AppendOauth2Scopes appends value to the "oauth2_scopes" field.
-func (_u *McpServerUpdateOne) AppendOauth2Scopes(v []string) *McpServerUpdateOne {
-	_u.mutation.AppendOauth2Scopes(v)
+// AppendOAuth2Scopes appends value to the "OAuth2_scopes" field.
+func (_u *MCPServerUpdateOne) AppendOAuth2Scopes(v []string) *MCPServerUpdateOne {
+	_u.mutation.AppendOAuth2Scopes(v)
 	return _u
 }
 
-// ClearOauth2Scopes clears the value of the "oauth2_scopes" field.
-func (_u *McpServerUpdateOne) ClearOauth2Scopes() *McpServerUpdateOne {
-	_u.mutation.ClearOauth2Scopes()
+// ClearOAuth2Scopes clears the value of the "OAuth2_scopes" field.
+func (_u *MCPServerUpdateOne) ClearOAuth2Scopes() *MCPServerUpdateOne {
+	_u.mutation.ClearOAuth2Scopes()
 	return _u
 }
 
 // SetActive sets the "active" field.
-func (_u *McpServerUpdateOne) SetActive(v bool) *McpServerUpdateOne {
+func (_u *MCPServerUpdateOne) SetActive(v bool) *MCPServerUpdateOne {
 	_u.mutation.SetActive(v)
 	return _u
 }
 
 // SetNillableActive sets the "active" field if the given value is not nil.
-func (_u *McpServerUpdateOne) SetNillableActive(v *bool) *McpServerUpdateOne {
+func (_u *MCPServerUpdateOne) SetNillableActive(v *bool) *MCPServerUpdateOne {
 	if v != nil {
 		_u.SetActive(*v)
 	}
@@ -721,24 +721,24 @@ func (_u *McpServerUpdateOne) SetNillableActive(v *bool) *McpServerUpdateOne {
 }
 
 // SetOwnerID sets the "owner" edge to the Team entity by ID.
-func (_u *McpServerUpdateOne) SetOwnerID(id int) *McpServerUpdateOne {
+func (_u *MCPServerUpdateOne) SetOwnerID(id int) *MCPServerUpdateOne {
 	_u.mutation.SetOwnerID(id)
 	return _u
 }
 
 // SetOwner sets the "owner" edge to the Team entity.
-func (_u *McpServerUpdateOne) SetOwner(v *Team) *McpServerUpdateOne {
+func (_u *MCPServerUpdateOne) SetOwner(v *Team) *MCPServerUpdateOne {
 	return _u.SetOwnerID(v.ID)
 }
 
 // AddExposureIDs adds the "exposures" edge to the AgenticExposure entity by IDs.
-func (_u *McpServerUpdateOne) AddExposureIDs(ids ...int) *McpServerUpdateOne {
+func (_u *MCPServerUpdateOne) AddExposureIDs(ids ...int) *MCPServerUpdateOne {
 	_u.mutation.AddExposureIDs(ids...)
 	return _u
 }
 
 // AddExposures adds the "exposures" edges to the AgenticExposure entity.
-func (_u *McpServerUpdateOne) AddExposures(v ...*AgenticExposure) *McpServerUpdateOne {
+func (_u *MCPServerUpdateOne) AddExposures(v ...*AgenticExposure) *MCPServerUpdateOne {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
@@ -746,31 +746,31 @@ func (_u *McpServerUpdateOne) AddExposures(v ...*AgenticExposure) *McpServerUpda
 	return _u.AddExposureIDs(ids...)
 }
 
-// Mutation returns the McpServerMutation object of the builder.
-func (_u *McpServerUpdateOne) Mutation() *McpServerMutation {
+// Mutation returns the MCPServerMutation object of the builder.
+func (_u *MCPServerUpdateOne) Mutation() *MCPServerMutation {
 	return _u.mutation
 }
 
 // ClearOwner clears the "owner" edge to the Team entity.
-func (_u *McpServerUpdateOne) ClearOwner() *McpServerUpdateOne {
+func (_u *MCPServerUpdateOne) ClearOwner() *MCPServerUpdateOne {
 	_u.mutation.ClearOwner()
 	return _u
 }
 
 // ClearExposures clears all "exposures" edges to the AgenticExposure entity.
-func (_u *McpServerUpdateOne) ClearExposures() *McpServerUpdateOne {
+func (_u *MCPServerUpdateOne) ClearExposures() *MCPServerUpdateOne {
 	_u.mutation.ClearExposures()
 	return _u
 }
 
 // RemoveExposureIDs removes the "exposures" edge to AgenticExposure entities by IDs.
-func (_u *McpServerUpdateOne) RemoveExposureIDs(ids ...int) *McpServerUpdateOne {
+func (_u *MCPServerUpdateOne) RemoveExposureIDs(ids ...int) *MCPServerUpdateOne {
 	_u.mutation.RemoveExposureIDs(ids...)
 	return _u
 }
 
 // RemoveExposures removes "exposures" edges to AgenticExposure entities.
-func (_u *McpServerUpdateOne) RemoveExposures(v ...*AgenticExposure) *McpServerUpdateOne {
+func (_u *MCPServerUpdateOne) RemoveExposures(v ...*AgenticExposure) *MCPServerUpdateOne {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
@@ -778,21 +778,21 @@ func (_u *McpServerUpdateOne) RemoveExposures(v ...*AgenticExposure) *McpServerU
 	return _u.RemoveExposureIDs(ids...)
 }
 
-// Where appends a list predicates to the McpServerUpdate builder.
-func (_u *McpServerUpdateOne) Where(ps ...predicate.McpServer) *McpServerUpdateOne {
+// Where appends a list predicates to the MCPServerUpdate builder.
+func (_u *MCPServerUpdateOne) Where(ps ...predicate.MCPServer) *MCPServerUpdateOne {
 	_u.mutation.Where(ps...)
 	return _u
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
 // The default is selecting all fields defined in the entity schema.
-func (_u *McpServerUpdateOne) Select(field string, fields ...string) *McpServerUpdateOne {
+func (_u *MCPServerUpdateOne) Select(field string, fields ...string) *MCPServerUpdateOne {
 	_u.fields = append([]string{field}, fields...)
 	return _u
 }
 
-// Save executes the query and returns the updated McpServer entity.
-func (_u *McpServerUpdateOne) Save(ctx context.Context) (*McpServer, error) {
+// Save executes the query and returns the updated MCPServer entity.
+func (_u *MCPServerUpdateOne) Save(ctx context.Context) (*MCPServer, error) {
 	if err := _u.defaults(); err != nil {
 		return nil, err
 	}
@@ -800,7 +800,7 @@ func (_u *McpServerUpdateOne) Save(ctx context.Context) (*McpServer, error) {
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (_u *McpServerUpdateOne) SaveX(ctx context.Context) *McpServer {
+func (_u *MCPServerUpdateOne) SaveX(ctx context.Context) *MCPServer {
 	node, err := _u.Save(ctx)
 	if err != nil {
 		panic(err)
@@ -809,20 +809,20 @@ func (_u *McpServerUpdateOne) SaveX(ctx context.Context) *McpServer {
 }
 
 // Exec executes the query on the entity.
-func (_u *McpServerUpdateOne) Exec(ctx context.Context) error {
+func (_u *MCPServerUpdateOne) Exec(ctx context.Context) error {
 	_, err := _u.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (_u *McpServerUpdateOne) ExecX(ctx context.Context) {
+func (_u *MCPServerUpdateOne) ExecX(ctx context.Context) {
 	if err := _u.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // defaults sets the default values of the builder before save.
-func (_u *McpServerUpdateOne) defaults() error {
+func (_u *MCPServerUpdateOne) defaults() error {
 	if _, ok := _u.mutation.LastModifiedAt(); !ok {
 		if mcpserver.UpdateDefaultLastModifiedAt == nil {
 			return fmt.Errorf("ent: uninitialized mcpserver.UpdateDefaultLastModifiedAt (forgotten import ent/runtime?)")
@@ -834,46 +834,46 @@ func (_u *McpServerUpdateOne) defaults() error {
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (_u *McpServerUpdateOne) check() error {
+func (_u *MCPServerUpdateOne) check() error {
 	if v, ok := _u.mutation.StatusPhase(); ok {
 		if err := mcpserver.StatusPhaseValidator(v); err != nil {
-			return &ValidationError{Name: "status_phase", err: fmt.Errorf(`ent: validator failed for field "McpServer.status_phase": %w`, err)}
+			return &ValidationError{Name: "status_phase", err: fmt.Errorf(`ent: validator failed for field "MCPServer.status_phase": %w`, err)}
 		}
 	}
 	if v, ok := _u.mutation.Namespace(); ok {
 		if err := mcpserver.NamespaceValidator(v); err != nil {
-			return &ValidationError{Name: "namespace", err: fmt.Errorf(`ent: validator failed for field "McpServer.namespace": %w`, err)}
+			return &ValidationError{Name: "namespace", err: fmt.Errorf(`ent: validator failed for field "MCPServer.namespace": %w`, err)}
 		}
 	}
 	if v, ok := _u.mutation.BasePath(); ok {
 		if err := mcpserver.BasePathValidator(v); err != nil {
-			return &ValidationError{Name: "base_path", err: fmt.Errorf(`ent: validator failed for field "McpServer.base_path": %w`, err)}
+			return &ValidationError{Name: "base_path", err: fmt.Errorf(`ent: validator failed for field "MCPServer.base_path": %w`, err)}
 		}
 	}
 	if v, ok := _u.mutation.Version(); ok {
 		if err := mcpserver.VersionValidator(v); err != nil {
-			return &ValidationError{Name: "version", err: fmt.Errorf(`ent: validator failed for field "McpServer.version": %w`, err)}
+			return &ValidationError{Name: "version", err: fmt.Errorf(`ent: validator failed for field "MCPServer.version": %w`, err)}
 		}
 	}
 	if v, ok := _u.mutation.Name(); ok {
 		if err := mcpserver.NameValidator(v); err != nil {
-			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "McpServer.name": %w`, err)}
+			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "MCPServer.name": %w`, err)}
 		}
 	}
 	if _u.mutation.OwnerCleared() && len(_u.mutation.OwnerIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "McpServer.owner"`)
+		return errors.New(`ent: clearing a required unique edge "MCPServer.owner"`)
 	}
 	return nil
 }
 
-func (_u *McpServerUpdateOne) sqlSave(ctx context.Context) (_node *McpServer, err error) {
+func (_u *MCPServerUpdateOne) sqlSave(ctx context.Context) (_node *MCPServer, err error) {
 	if err := _u.check(); err != nil {
 		return _node, err
 	}
 	_spec := sqlgraph.NewUpdateSpec(mcpserver.Table, mcpserver.Columns, sqlgraph.NewFieldSpec(mcpserver.FieldID, field.TypeInt))
 	id, ok := _u.mutation.ID()
 	if !ok {
-		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "McpServer.id" for update`)}
+		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "MCPServer.id" for update`)}
 	}
 	_spec.Node.ID.Value = id
 	if fields := _u.fields; len(fields) > 0 {
@@ -940,16 +940,16 @@ func (_u *McpServerUpdateOne) sqlSave(ctx context.Context) (_node *McpServer, er
 	if _u.mutation.CategoryCleared() {
 		_spec.ClearField(mcpserver.FieldCategory, field.TypeString)
 	}
-	if value, ok := _u.mutation.Oauth2Scopes(); ok {
-		_spec.SetField(mcpserver.FieldOauth2Scopes, field.TypeJSON, value)
+	if value, ok := _u.mutation.OAuth2Scopes(); ok {
+		_spec.SetField(mcpserver.FieldOAuth2Scopes, field.TypeJSON, value)
 	}
-	if value, ok := _u.mutation.AppendedOauth2Scopes(); ok {
+	if value, ok := _u.mutation.AppendedOAuth2Scopes(); ok {
 		_spec.AddModifier(func(u *sql.UpdateBuilder) {
-			sqljson.Append(u, mcpserver.FieldOauth2Scopes, value)
+			sqljson.Append(u, mcpserver.FieldOAuth2Scopes, value)
 		})
 	}
-	if _u.mutation.Oauth2ScopesCleared() {
-		_spec.ClearField(mcpserver.FieldOauth2Scopes, field.TypeJSON)
+	if _u.mutation.OAuth2ScopesCleared() {
+		_spec.ClearField(mcpserver.FieldOAuth2Scopes, field.TypeJSON)
 	}
 	if value, ok := _u.mutation.Active(); ok {
 		_spec.SetField(mcpserver.FieldActive, field.TypeBool, value)
@@ -1028,7 +1028,7 @@ func (_u *McpServerUpdateOne) sqlSave(ctx context.Context) (_node *McpServer, er
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	_node = &McpServer{config: _u.config}
+	_node = &MCPServer{config: _u.config}
 	_spec.Assign = _node.assignValues
 	_spec.ScanValues = _node.scanValues
 	if err = sqlgraph.UpdateNode(ctx, _u.driver, _spec); err != nil {

@@ -71,7 +71,7 @@ var _ = Describe("EventSubscription resolver", func() {
 				CircuitBreakerOptOut:  true,
 				RetryableStatusCodes:  []int{502, 503},
 				RedeliveriesPerSecond: intPtr(10),
-				EnforceGetHttpRequestMethodForHealthCheck: true,
+				EnforceGetHTTPRequestMethodForHealthCheck: true,
 			}).
 			Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
@@ -93,7 +93,7 @@ var _ = Describe("EventSubscription resolver", func() {
 		Expect(sub.Delivery.RetryableStatusCodes).To(Equal([]int{502, 503}))
 		Expect(sub.Delivery.RedeliveriesPerSecond).ToNot(BeNil())
 		Expect(*sub.Delivery.RedeliveriesPerSecond).To(Equal(10))
-		Expect(sub.Delivery.EnforceGetHttpRequestMethodForHealthCheck).To(BeTrue())
+		Expect(sub.Delivery.EnforceGetHTTPRequestMethodForHealthCheck).To(BeTrue())
 	})
 
 	It("should persist subscription with ServerSentEvent delivery and nil trigger fields", func() {

@@ -11,7 +11,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestApiExposure(t *testing.T) {
+func TestAPIExposure(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "ApiExposure Suite")
 }

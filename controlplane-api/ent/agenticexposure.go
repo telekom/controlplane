@@ -68,8 +68,8 @@ type AgenticExposure struct {
 type AgenticExposureEdges struct {
 	// Owner holds the value of the owner edge.
 	Owner *Application `json:"owner,omitempty"`
-	// McpServer holds the value of the mcp_server edge.
-	McpServer *McpServer `json:"mcp_server,omitempty"`
+	// MCPServer holds the value of the MCP_server edge.
+	MCPServer *MCPServer `json:"MCP_server,omitempty"`
 	// AgentCard holds the value of the agent_card edge.
 	AgentCard *AgentCard `json:"agent_card,omitempty"`
 	// Subscriptions holds the value of the subscriptions edge.
@@ -94,15 +94,15 @@ func (e AgenticExposureEdges) OwnerOrErr() (*Application, error) {
 	return nil, &NotLoadedError{edge: "owner"}
 }
 
-// McpServerOrErr returns the McpServer value or an error if the edge
+// MCPServerOrErr returns the MCPServer value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
-func (e AgenticExposureEdges) McpServerOrErr() (*McpServer, error) {
-	if e.McpServer != nil {
-		return e.McpServer, nil
+func (e AgenticExposureEdges) MCPServerOrErr() (*MCPServer, error) {
+	if e.MCPServer != nil {
+		return e.MCPServer, nil
 	} else if e.loadedTypes[1] {
 		return nil, &NotFoundError{label: mcpserver.Label}
 	}
-	return nil, &NotLoadedError{edge: "mcp_server"}
+	return nil, &NotLoadedError{edge: "MCP_server"}
 }
 
 // AgentCardOrErr returns the AgentCard value or an error if the edge
@@ -310,9 +310,9 @@ func (_m *AgenticExposure) QueryOwner() *ApplicationQuery {
 	return NewAgenticExposureClient(_m.config).QueryOwner(_m)
 }
 
-// QueryMcpServer queries the "mcp_server" edge of the AgenticExposure entity.
-func (_m *AgenticExposure) QueryMcpServer() *McpServerQuery {
-	return NewAgenticExposureClient(_m.config).QueryMcpServer(_m)
+// QueryMCPServer queries the "MCP_server" edge of the AgenticExposure entity.
+func (_m *AgenticExposure) QueryMCPServer() *MCPServerQuery {
+	return NewAgenticExposureClient(_m.config).QueryMCPServer(_m)
 }
 
 // QueryAgentCard queries the "agent_card" edge of the AgenticExposure entity.

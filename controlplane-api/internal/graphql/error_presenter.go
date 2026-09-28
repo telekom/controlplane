@@ -47,7 +47,7 @@ func ErrorPresenter(ctx context.Context, err error) *gqlerror.Error {
 	case apierrors.IsConflict(err), apierrors.IsAlreadyExists(err):
 		presented.Message = "conflict"
 		setGraphQLErrorCode(presented, "CONFLICT")
-	case isHttpError(err):
+	case isHTTPError(err):
 		logr.FromContextOrDiscard(ctx).Error(err, "External service error in GraphQL resolver")
 		presented.Message = "internal error while processing request"
 		setGraphQLErrorCode(presented, "INTERNAL")
@@ -67,8 +67,8 @@ func setGraphQLErrorCode(err *gqlerror.Error, code string) {
 	err.Extensions["code"] = code
 }
 
-// isHttpError returns true if the error chain contains a *client.HttpError.
-func isHttpError(err error) bool {
+// isHTTPError returns true if the error chain contains a *client.HttpError.
+func isHTTPError(err error) bool {
 	var httpErr *client.HttpError
 	return errors.As(err, &httpErr)
 }
