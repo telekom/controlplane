@@ -1,0 +1,87 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Mirrors the release images GoReleaser pushed to GHCR into the internal
+# Artifactory registry, one matrix job per module so a single failed module
+# can be retried in isolation. Only invoked (via workflow_call) by
+# release.yaml.
+name: "Release Mirror to Artifactory"
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        description: "Released version without leading 'v', e.g. 1.2.3"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  mirror:
+    name: "Mirror ${{ matrix.module }}"
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read # to pull images from GHCR
+    strategy:
+      fail-fast: false
+      matrix:
+        # Same module list as .goreleaser.yaml's `kos:` pipe, minus
+        # rover-ctl: its combined (bash/jq/yq) image is assembled and pushed
+        # to Artifactory by release-roverctl-image.yaml instead.
+        module:
+          - admin
+          - agentic
+          - api
+          - application
+          - approval
+          - common-server
+          - controlplane-api
+          - discovery-server
+          - event
+          - file-manager
+          - gateway
+          - identity
+          - notification
+          - organization
+          - organization-server
+          - permission
+          - projector
+          - pubsub
+          - rover
+          - rover-server
+          - secret-manager
+    steps:
+      - name: Mirror release images to Artifactory
+        # skopeo is pre-installed on ubuntu-latest. GoReleaser's kos pipe
+        # pushes each module image with the version tag, `latest`, and (for
+        # non-prereleases) `stable`; copy each of those tags so the exact
+        # same multi-arch manifest is available for internal deployments.
+        env:
+          VERSION: ${{ inputs.version }}
+          MODULE: ${{ matrix.module }}
+          REGISTRY_HOST: ${{ vars.REGISTRY_HOST }}
+          REGISTRY_CONTROLPLANE_REPO: ${{ vars.REGISTRY_CONTROLPLANE_REPO }}
+          GHCR_USER: ${{ github.actor }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ARTIFACTORY_USER: ${{ secrets.ARTIFACTORY_O28M_PUSH_USER }}
+          ARTIFACTORY_TOKEN: ${{ secrets.ARTIFACTORY_O28M_PUSH_TOKEN }}
+        run: |
+          tags=("latest" "v${VERSION}")
+          if [[ "${VERSION}" != *-* ]]; then
+            tags+=("stable")
+          fi
+
+          src="ghcr.io/telekom/controlplane/${MODULE}"
+          dst="${REGISTRY_HOST}/${REGISTRY_CONTROLPLANE_REPO}/${MODULE}"
+          for tag in "${tags[@]}"; do
+            echo "Mirroring ${src}:${tag} → ${dst}:${tag}"
+            skopeo copy --all \
+              --src-creds  "${GHCR_USER}:${GHCR_TOKEN}" \
+              --dest-creds "${ARTIFACTORY_USER}:${ARTIFACTORY_TOKEN}" \
+              "docker://${src}:${tag}" \
+              "docker://${dst}:${tag}"
+          done

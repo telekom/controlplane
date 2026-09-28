@@ -2,22 +2,17 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-# Cuts a new release: runs semantic-release to analyze commits since the
-# last tag, bump the version-reference files (kustomize overlay ref, Helm
-# chart version, CHANGELOG.md), commit+push that to the release branch, and
-# create+push the resulting `v*` git tag - see .releaserc.mjs for why the
-# version-bump commit is pushed to the branch (tag/branch reachability for
-# the next release run).
+# Release orchestrator - the only entry point of the release process. Same
+# pattern as ci.yaml: each stage lives in its own reusable (workflow_call
+# only) workflow and is wired together here via job `needs`.
 #
-# Intentionally does nothing else. Building/publishing images, mirroring to
-# Artifactory, and assembling the combined roverctl image all happen in
-# release-publish.yaml, triggered by the tag push below - that keeps those
-# steps independently re-runnable (via Actions' "Re-run failed jobs") without
-# re-invoking semantic-release, and keeps this workflow fast and low-risk.
+#   release ──▶ goreleaser ──┬──▶ mirror-to-artifactory (matrix, one job per module)
+#                            └──▶ roverctl-combined-image
+#   rover-ctl-base-image ───────▶ roverctl-combined-image
 #
-# The tag is pushed using a GitHub App installation token (not the default
-# GITHUB_TOKEN) specifically so that push triggers release-publish.yaml -
-# pushes made with GITHUB_TOKEN do not trigger other workflows.
+# Every stage is a separate job, so a failed stage (e.g. one module's
+# Artifactory mirroring) can be retried via "Re-run failed jobs" without
+# re-running semantic-release or any stage that already succeeded.
 name: Release
 on:
   workflow_dispatch:
@@ -26,11 +21,27 @@ permissions:
   contents: read
 
 jobs:
+  rover-ctl-base-image:
+    name: Rover-CTL Base Image
+    # Runs unconditionally as a safety net, ensuring the base image is
+    # always fresh before a release.
+    uses: ./.github/workflows/rover-ctl-base-image.yaml
+    with:
+      push: true
+    secrets: inherit
+
   release:
+    name: Semantic Release
     runs-on: ubuntu-latest
     permissions:
-      contents: write # to push the release commit/tag
+      contents: write # to push the release commit and tag
+      issues: write # to be able to comment on released issues
+      pull-requests: write # to be able to comment on released pull requests
       id-token: write # to enable use of OIDC for npm provenance
+    outputs:
+      published: ${{ steps.semantic_release.outputs.new_release_published }}
+      tag: ${{ steps.semantic_release.outputs.new_release_git_tag }}
+      version: ${{ steps.semantic_release.outputs.new_release_version }}
     steps:
       - name: 'Generate token'
         id: generate_token
@@ -47,13 +58,54 @@ jobs:
         id: semantic_release
         uses: cycjimmy/semantic-release-action@b12c8f6015dc215fe37bc154d4ad456dd3833c90 # v6.0.0
         with:
-          # @semantic-release/commit-analyzer and
-          # @semantic-release/release-notes-generator are bundled with
-          # semantic-release itself; only @semantic-release/changelog,
-          # @semantic-release/exec and @semantic-release/git need installing.
           extra_plugins: |
             @semantic-release/changelog
             @semantic-release/exec
             @semantic-release/git
         env:
           GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
+      - name: Upload release notes
+        # Written by .releaserc.mjs's publishCmd; consumed by the goreleaser
+        # job as the GitHub Release body. Stored as an artifact (rather than
+        # a job output) so it survives re-runs of downstream jobs.
+        if: steps.semantic_release.outputs.new_release_published == 'true'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: release-notes
+          path: /tmp/release-notes.md
+          if-no-files-found: error
+
+  goreleaser:
+    name: GoReleaser
+    needs: release
+    if: needs.release.outputs.published == 'true'
+    permissions:
+      contents: write # to publish the GitHub release
+      packages: write # to push module images to GHCR
+    uses: ./.github/workflows/release-goreleaser.yaml
+    with:
+      tag: ${{ needs.release.outputs.tag }}
+    secrets: inherit
+
+  mirror-to-artifactory:
+    name: Mirror to Artifactory
+    needs: [release, goreleaser]
+    permissions:
+      contents: read
+      packages: read # to pull images from GHCR
+    uses: ./.github/workflows/release-mirror.yaml
+    with:
+      version: ${{ needs.release.outputs.version }}
+    secrets: inherit
+
+  roverctl-combined-image:
+    name: Rover-CTL Combined Image
+    needs: [release, rover-ctl-base-image, goreleaser]
+    permissions:
+      contents: read
+      packages: read # to pull the plain roverctl image from GHCR
+    uses: ./.github/workflows/release-roverctl-image.yaml
+    with:
+      tag: ${{ needs.release.outputs.tag }}
+      version: ${{ needs.release.outputs.version }}
+    secrets: inherit
