@@ -410,6 +410,7 @@ type FileSFTP {
 
 type SSHPublicKeySpec {
   key: String
+  label: String
 }
 
 # -- Cross-tenant edge overrides --

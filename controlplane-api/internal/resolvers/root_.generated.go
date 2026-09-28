@@ -999,7 +999,8 @@ type ComplexityRoot struct {
 	}
 
 	SSHPublicKeySpec struct {
-		Key func(childComplexity int) int
+		Key   func(childComplexity int) int
+		Label func(childComplexity int) int
 	}
 
 	SelectionFilter struct {
@@ -5024,6 +5025,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.SSHPublicKeySpec.Key(childComplexity), true
+	case "SSHPublicKeySpec.label":
+		if e.ComplexityRoot.SSHPublicKeySpec.Label == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SSHPublicKeySpec.Label(childComplexity), true
 
 	case "SelectionFilter.attributes":
 		if e.ComplexityRoot.SelectionFilter.Attributes == nil {
@@ -12311,6 +12318,7 @@ type FileSFTP {
 
 type SSHPublicKeySpec {
   key: String
+  label: String
 }
 
 # -- Cross-tenant edge overrides --
@@ -14214,6 +14222,8 @@ func (ec *executionContext) childFields_SSHPublicKeySpec(ctx context.Context, fi
 	switch field.Name {
 	case "key":
 		return ec.fieldContext_SSHPublicKeySpec_key(ctx, field)
+	case "label":
+		return ec.fieldContext_SSHPublicKeySpec_label(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type SSHPublicKeySpec", field.Name)
 }

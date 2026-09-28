@@ -61,7 +61,8 @@ func toFileSFTP(obj *filev1.FileSFTP) *model.FileSFTP {
 	sftp := model.FileSFTP{PublicKeys: make([]model.SSHPublicKeySpec, 0)}
 	for i := range obj.PublicKeys {
 		sftp.PublicKeys = append(sftp.PublicKeys, model.SSHPublicKeySpec{
-			Key: obj.PublicKeys[i].Key,
+			Key:   obj.PublicKeys[i].Key,
+			Label: obj.PublicKeys[i].Label,
 		})
 	}
 	return &sftp

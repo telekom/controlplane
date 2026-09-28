@@ -47,7 +47,7 @@ var _ = Describe("FileExposure Translator", func() {
 						Name:      "caas",
 						Namespace: "zone-ns",
 					},
-					SFTP:       &filev1.FileSFTP{PublicKeys: []filev1.SSHPublicKeySpec{{Key: "ssh-rsa AAA"}, {Key: "ssh-rsa BBB"}}},
+					SFTP:       &filev1.FileSFTP{PublicKeys: []filev1.SSHPublicKeySpec{{Key: "ssh-rsa AAA", Label: "label value1"}, {Key: "ssh-rsa BBB", Label: "label value 2"}}},
 					Visibility: filev1.VisibilityEnterprise,
 					Approval: filev1.Approval{
 						Strategy:     filev1.ApprovalStrategyFourEyes,
@@ -75,7 +75,7 @@ var _ = Describe("FileExposure Translator", func() {
 			Expect(data.StatusMessage).To(Equal("ok"))
 			Expect(data.Meta.Environment).To(Equal("prod"))
 			Expect(data.Zone).To(Equal("caas"))
-			Expect(data.FileSFTP).To(Equal(&model.FileSFTP{PublicKeys: []model.SSHPublicKeySpec{{Key: "ssh-rsa AAA"}, {Key: "ssh-rsa BBB"}}}))
+			Expect(data.FileSFTP).To(Equal(&model.FileSFTP{PublicKeys: []model.SSHPublicKeySpec{{Key: "ssh-rsa AAA", Label: "label value1"}, {Key: "ssh-rsa BBB", Label: "label value 2"}}}))
 			Expect(data.ApprovalConfig.Strategy).To(Equal("FOUR_EYES"))
 			Expect(data.ApprovalConfig.TrustedTeams).To(Equal([]string{"team-a"}))
 			Expect(data.Active).To(BeTrue())

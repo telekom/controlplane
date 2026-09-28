@@ -10,5 +10,6 @@ type FileSFTP struct {
 }
 
 type SSHPublicKeySpec struct {
-	Key string `json:"key"`
+	Key   string `json:"key"`
+	Label string `json:"label"`
 }

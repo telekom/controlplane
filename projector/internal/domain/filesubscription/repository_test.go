@@ -137,7 +137,7 @@ var _ = Describe("FileSubscription Repository", func() {
 				StatusPhase:        "READY",
 				StatusMessage:      "ok",
 				Zone:               "caas",
-				FileSFTP:           &model.FileSFTP{PublicKeys: []model.SSHPublicKeySpec{{Key: "ssh-rsa AAA"}}},
+				FileSFTP:           &model.FileSFTP{PublicKeys: []model.SSHPublicKeySpec{{Key: "ssh-rsa AAA", Label: "label value"}}},
 				ServiceURL:         "sftp://internal.example.com",
 				ServiceExternalURL: "sftp://external.example.com",
 				OwnerAppName:       "consumer-app",
@@ -149,7 +149,7 @@ var _ = Describe("FileSubscription Repository", func() {
 			sub, err := client.FileSubscription.Query().Where(entfilesubscription.FileTypeEQ("invoice")).Only(ctx)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(sub.ZoneName).To(Equal("caas"))
-			Expect(sub.Sftp).To(Equal(&model.FileSFTP{PublicKeys: []model.SSHPublicKeySpec{{Key: "ssh-rsa AAA"}}}))
+			Expect(sub.Sftp).To(Equal(&model.FileSFTP{PublicKeys: []model.SSHPublicKeySpec{{Key: "ssh-rsa AAA", Label: "label value"}}}))
 			Expect(sub.ServiceURL).To(Equal("sftp://internal.example.com"))
 			Expect(sub.ServiceExternalURL).To(Equal("sftp://external.example.com"))
 

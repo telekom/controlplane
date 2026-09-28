@@ -40,7 +40,7 @@ var _ = Describe("FileExposure/FileSubscription.Sftp", func() {
 
 		exposure, err := client.FileExposure.UpdateOne(s.FileExposureAlpha).
 			SetSftp(&model.FileSFTP{
-				PublicKeys: []model.SSHPublicKeySpec{{Key: "ssh-ed25519 AAA"}, {Key: "ssh-ed25519 BBB"}},
+				PublicKeys: []model.SSHPublicKeySpec{{Key: "ssh-ed25519 AAA", Label: "primary"}, {Key: "ssh-ed25519 BBB", Label: "backup"}},
 			}).
 			Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
@@ -48,7 +48,7 @@ var _ = Describe("FileExposure/FileSubscription.Sftp", func() {
 		fetched, err := client.FileExposure.Get(ctx, exposure.ID)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(fetched.Sftp).NotTo(BeNil())
-		Expect(fetched.Sftp.PublicKeys).To(Equal([]model.SSHPublicKeySpec{{Key: "ssh-ed25519 AAA"}, {Key: "ssh-ed25519 BBB"}}))
+		Expect(fetched.Sftp.PublicKeys).To(Equal([]model.SSHPublicKeySpec{{Key: "ssh-ed25519 AAA", Label: "primary"}, {Key: "ssh-ed25519 BBB", Label: "backup"}}))
 	})
 
 	It("should store and return sftp public keys on FileSubscription", func() {
@@ -56,7 +56,7 @@ var _ = Describe("FileExposure/FileSubscription.Sftp", func() {
 
 		subscription, err := client.FileSubscription.UpdateOne(s.FileSubscriptionAlpha).
 			SetSftp(&model.FileSFTP{
-				PublicKeys: []model.SSHPublicKeySpec{{Key: "ssh-ed25519 CCC"}},
+				PublicKeys: []model.SSHPublicKeySpec{{Key: "ssh-ed25519 CCC", Label: "subscription key"}},
 			}).
 			Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
@@ -64,7 +64,7 @@ var _ = Describe("FileExposure/FileSubscription.Sftp", func() {
 		fetched, err := client.FileSubscription.Get(ctx, subscription.ID)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(fetched.Sftp).NotTo(BeNil())
-		Expect(fetched.Sftp.PublicKeys).To(Equal([]model.SSHPublicKeySpec{{Key: "ssh-ed25519 CCC"}}))
+		Expect(fetched.Sftp.PublicKeys).To(Equal([]model.SSHPublicKeySpec{{Key: "ssh-ed25519 CCC", Label: "subscription key"}}))
 	})
 })
 

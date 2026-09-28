@@ -50,7 +50,7 @@ var _ = Describe("FileSubscription Translator", func() {
 						Name:      "caas",
 						Namespace: "zone-ns",
 					},
-					SFTP: &filev1.FileSFTP{PublicKeys: []filev1.SSHPublicKeySpec{{Key: "ssh-ed25519 AAA"}}},
+					SFTP: &filev1.FileSFTP{PublicKeys: []filev1.SSHPublicKeySpec{{Key: "ssh-ed25519 AAA", Label: "label value"}}},
 				},
 				Status: filev1.FileSubscriptionStatus{
 					Conditions:         []metav1.Condition{{Type: "Ready", Status: metav1.ConditionTrue, Message: "ok"}},
@@ -65,7 +65,7 @@ var _ = Describe("FileSubscription Translator", func() {
 			Expect(data.OwnerAppName).To(Equal("consumer-app"))
 			Expect(data.OwnerTeamName).To(Equal("platform--narvi"))
 			Expect(data.Zone).To(Equal("caas"))
-			Expect(data.FileSFTP).To(Equal(&model.FileSFTP{PublicKeys: []model.SSHPublicKeySpec{{Key: "ssh-ed25519 AAA"}}}))
+			Expect(data.FileSFTP).To(Equal(&model.FileSFTP{PublicKeys: []model.SSHPublicKeySpec{{Key: "ssh-ed25519 AAA", Label: "label value"}}}))
 			Expect(data.ServiceURL).To(Equal("sftp://internal.example.com"))
 			Expect(data.ServiceExternalURL).To(Equal("sftp://external.example.com"))
 			Expect(data.StatusPhase).To(Equal("READY"))

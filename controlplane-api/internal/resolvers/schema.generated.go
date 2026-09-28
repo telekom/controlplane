@@ -3858,6 +3858,29 @@ func (ec *executionContext) fieldContext_SSHPublicKeySpec_key(_ context.Context,
 	return graphql.NewScalarFieldContext("SSHPublicKeySpec", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
+func (ec *executionContext) _SSHPublicKeySpec_label(ctx context.Context, field graphql.CollectedField, obj *model1.SSHPublicKeySpec) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_SSHPublicKeySpec_label(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Label, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalOString2string(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_SSHPublicKeySpec_label(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("SSHPublicKeySpec", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
 func (ec *executionContext) _SelectionFilter_attributes(ctx context.Context, field graphql.CollectedField, obj *model1.SelectionFilter) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -7259,6 +7282,11 @@ func (ec *executionContext) _SSHPublicKeySpec(ctx context.Context, sel ast.Selec
 			out.Values[i] = graphql.MarshalString("SSHPublicKeySpec")
 		case "key":
 			out.Values[i] = ec._SSHPublicKeySpec_key(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
+		case "label":
+			out.Values[i] = ec._SSHPublicKeySpec_label(ctx, field, obj)
 			if out.Values[i] == graphql.RequiredNull {
 				out.Invalids++
 			}
