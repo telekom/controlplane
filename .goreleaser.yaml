@@ -244,6 +244,9 @@ changelog:
       - "^test:"
 
 release:
+  # Lets a re-run of release-goreleaser.yaml overwrite assets a failed attempt
+  # already uploaded, instead of failing with "already_exists".
+  replace_existing_artifacts: true
   header: >-
     # 🚀 Release {{ .Version }}
   footer: >-
@@ -565,7 +568,7 @@ kos:
     # components, so it's safe to publish to public GHCR like the other
     # modules. The final bash/jq/yq-bundled image published to the internal
     # Artifactory registry is built separately (see
-    # .github/workflows/release.yaml, which layers this GHCR image's binary
+    # .github/workflows/release-roverctl-image.yaml, which layers this GHCR image's binary
     # onto the Artifactory base image via rover-ctl/Dockerfile).
     repositories:
       - ghcr.io/telekom/controlplane/rover-ctl

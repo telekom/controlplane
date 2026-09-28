@@ -17,14 +17,22 @@ name: Release
 on:
   workflow_dispatch:
 
+# Serialise release runs: a second dispatch waits instead of racing the first
+# on the release commit, tag and mutable image tags (latest/stable).
+concurrency:
+  group: release
+  cancel-in-progress: false
+
 permissions:
   contents: read
 
 jobs:
   rover-ctl-base-image:
     name: Rover-CTL Base Image
-    # Runs unconditionally as a safety net, ensuring the base image is
-    # always fresh before a release.
+    # Runs on every release run as a safety net, ensuring the base image is
+    # always fresh before a release. Restricted to main so a dispatch from
+    # another branch cannot overwrite the mutable base-image tags.
+    if: github.ref == 'refs/heads/main'
     uses: ./.github/workflows/rover-ctl-base-image.yaml
     with:
       push: true
@@ -32,6 +40,9 @@ jobs:
 
   release:
     name: Semantic Release
+    # Releases are only cut from main; all publishing jobs depend on this one
+    # and are skipped with it.
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
       contents: write # to push the release commit and tag
@@ -42,6 +53,7 @@ jobs:
       published: ${{ steps.semantic_release.outputs.new_release_published }}
       tag: ${{ steps.semantic_release.outputs.new_release_git_tag }}
       version: ${{ steps.semantic_release.outputs.new_release_version }}
+      notes: ${{ steps.semantic_release.outputs.new_release_notes }}
     steps:
       - name: 'Generate token'
         id: generate_token
@@ -64,16 +76,6 @@ jobs:
             @semantic-release/git
         env:
           GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
-      - name: Upload release notes
-        # Written by .releaserc.mjs's publishCmd; consumed by the goreleaser
-        # job as the GitHub Release body. Stored as an artifact (rather than
-        # a job output) so it survives re-runs of downstream jobs.
-        if: steps.semantic_release.outputs.new_release_published == 'true'
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: release-notes
-          path: /tmp/release-notes.md
-          if-no-files-found: error
 
   goreleaser:
     name: GoReleaser
@@ -85,7 +87,7 @@ jobs:
     uses: ./.github/workflows/release-goreleaser.yaml
     with:
       tag: ${{ needs.release.outputs.tag }}
-    secrets: inherit
+      release-notes: ${{ needs.release.outputs.notes }}
 
   mirror-to-artifactory:
     name: Mirror to Artifactory
@@ -96,7 +98,9 @@ jobs:
     uses: ./.github/workflows/release-mirror.yaml
     with:
       version: ${{ needs.release.outputs.version }}
-    secrets: inherit
+    secrets:
+      ARTIFACTORY_O28M_PUSH_USER: ${{ secrets.ARTIFACTORY_O28M_PUSH_USER }}
+      ARTIFACTORY_O28M_PUSH_TOKEN: ${{ secrets.ARTIFACTORY_O28M_PUSH_TOKEN }}
 
   roverctl-combined-image:
     name: Rover-CTL Combined Image
@@ -108,4 +112,6 @@ jobs:
     with:
       tag: ${{ needs.release.outputs.tag }}
       version: ${{ needs.release.outputs.version }}
-    secrets: inherit
+    secrets:
+      ARTIFACTORY_O28M_PUSH_USER: ${{ secrets.ARTIFACTORY_O28M_PUSH_USER }}
+      ARTIFACTORY_O28M_PUSH_TOKEN: ${{ secrets.ARTIFACTORY_O28M_PUSH_TOKEN }}

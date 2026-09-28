@@ -266,7 +266,7 @@ Builds the rover-ctl base image (containing bash/jq/yq) and optionally
 publishes it to the internal Artifactory Docker registry.
 
 **Invocation:**
-- **From Release Workflow** - Runs unconditionally before every release with
+- **From Release Workflow** - Runs on every release run (from `main`) with
    `push: true`
 - **Manual** - Via `workflow_dispatch`; `push` defaults to `false`
 
@@ -298,7 +298,8 @@ publishes it to the internal Artifactory Docker registry.
 ### 6. Release Management
 
 #### **Release Workflow** (`release.yaml`)
-**Triggers:** Manual dispatch only
+**Triggers:** Manual dispatch only, from `main` (dispatches from any other
+branch skip all jobs)
 
 Orchestrator for the release, following the same pattern as `ci.yaml`: each
 stage lives in its own reusable (`workflow_call`-only) workflow and runs as a
@@ -307,16 +308,16 @@ retried via **"Re-run failed jobs"** without re-running semantic-release or
 any stage that already succeeded.
 
 **Jobs:**
-1. **Rover-CTL Base Image** (`rover-ctl-base-image.yaml`) - runs
-   unconditionally as a freshness safety net
+1. **Rover-CTL Base Image** (`rover-ctl-base-image.yaml`) - runs on every
+   release run as a freshness safety net
 2. **Semantic Release** - generates a GitHub App token, then runs
    semantic-release:
    - Analyzes commits and determines the version bump
    - Generates changelog
    - **Executes versioning scripts** (see Unified Versioning below)
    - Commits and pushes the release files, creates and pushes the tag
-   - Uploads the release notes as the `release-notes` artifact
-   - Outputs `published`, `tag` and `version` for the jobs below
+   - Outputs `published`, `tag`, `version` and the release `notes` for the
+     jobs below (job outputs are kept when downstream jobs are re-run)
 3. **GoReleaser** (`release-goreleaser.yaml`, if a new release was published)
    - Checks out the release tag
    - Build binaries for multiple platforms
@@ -352,6 +353,21 @@ for mirroring and the combined image
 - **Image mirroring** - Synchronizes multi-arch manifests across registries for consistent deployments
 - **Automated versioning** - Unified version across all components and Helm charts
 - **Retryable stages** - each stage is a separate job; re-running failed jobs never re-runs semantic-release
+- **Serialised runs** - `concurrency: release` queues a second dispatch until the running release finishes
+
+**Re-running:** only re-run failed jobs of the **most recent** release run.
+Re-running an older run after a newer release was published moves the
+mutable `latest`/`stable` image tags back to the older version. GoReleaser
+is configured with `replace_existing_artifacts`, so a retry after a partial
+upload overwrites the assets already attached to the GitHub Release.
+
+**Recovery:** retries work for every job after **Semantic Release**. If the
+Semantic Release job itself fails *after* the tag was pushed, re-running it
+finds no new release (`published=false`) and all publishing jobs are skipped.
+In that case, delete the orphaned tag (`git push --delete origin vX.Y.Z`) and
+dispatch the Release workflow again; semantic-release recomputes the same
+version from the previous tag. Check `CHANGELOG.md` afterwards for a
+duplicated section.
 
 ---
 
@@ -489,7 +505,7 @@ Push to Main
 ### Release Flow
 ```
 Manual Trigger: Release Workflow
-├─ Rover-CTL Base Image (unconditionally)
+├─ Rover-CTL Base Image (from main only)
 ├─ Semantic Release (analyze commits, changelog, commit + tag)
 ├─ GoReleaser (build & sign artifacts, create GitHub Release)
 │  └─ Push images to GHCR

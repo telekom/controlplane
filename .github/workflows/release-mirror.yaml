@@ -15,6 +15,11 @@ on:
         description: "Released version without leading 'v', e.g. 1.2.3"
         required: true
         type: string
+    secrets:
+      ARTIFACTORY_O28M_PUSH_USER:
+        required: true
+      ARTIFACTORY_O28M_PUSH_TOKEN:
+        required: true
 
 permissions:
   contents: read
