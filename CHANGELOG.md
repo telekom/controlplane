@@ -1,3 +1,10 @@
+# [0.30.0](https://github.com/telekom/controlplane/compare/v0.29.0...v0.30.0) (2026-09-28)
+
+
+### Features
+
+* implement file support ([#440](https://github.com/telekom/controlplane/issues/440)) ([#537](https://github.com/telekom/controlplane/issues/537)) ([e480694](https://github.com/telekom/controlplane/commit/e4806942040d5ced315ddb5a03a874d05cf8dde2))
+
 # [0.29.0](https://github.com/telekom/controlplane/compare/v0.28.2...v0.29.0) (2026-09-25)
 
 
