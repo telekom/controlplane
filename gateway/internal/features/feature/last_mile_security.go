@@ -85,7 +85,7 @@ func (f *LastMileSecurityFeature) Apply(ctx context.Context, builder features.Fe
 
 		rtpPlugin.Config.Append.
 			AddHeader("remote_api_url", CreateRemoteApiUrl(route)).
-			AddHeader("api_base_path", route.Spec.Backend.Upstreams[0].Path).
+			AddHeader("api_base_path", route.Spec.Paths[0]).
 			AddHeader("access_token_forwarding", "false")
 	}
 

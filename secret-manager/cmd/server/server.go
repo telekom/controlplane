@@ -173,7 +173,7 @@ func main() {
 		Listeners: cs.Listeners{
 			Internal: &cs.Listener{Address: lc.Address, Family: family},
 		},
-		Register: func(router fiber.Router, guard fiber.Handler) {
+		Register: func(router fiber.Router, guard []fiber.Handler) {
 			apiGroup := router.Group("/api")
 			api.RegisterHandlersWithOptions(apiGroup, h, api.FiberServerOptions{})
 		},

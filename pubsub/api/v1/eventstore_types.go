@@ -15,6 +15,12 @@ import (
 // EventStore holds resolved operational values for connecting to the configuration backend,
 // including OAuth2 credentials. It is created by the EventConfig handler.
 type EventStoreSpec struct {
+	// OverwriteEnvironmentName is the environment name used for Horizon subscription operations.
+	// Event-managed stores contain the value resolved from their owning EventConfig. Empty values
+	// on legacy or standalone stores fall back to the Control Plane environment at use time.
+	// +optional
+	OverwriteEnvironmentName string `json:"overwriteEnvironmentName,omitempty"`
+
 	// Url is the base URL of the configuration backend API.
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MinLength=1

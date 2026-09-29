@@ -69,7 +69,7 @@ func CreatePublishRoute(
 
 	build := func() error {
 		route.Labels = map[string]string{
-			config.DomainLabelKey:        "event",
+			config.DomainLabelKey:        LabelValueDomain,
 			config.BuildLabelKey("zone"): zone.Name,
 			config.BuildLabelKey("type"): "publish",
 		}
@@ -138,7 +138,7 @@ func CreatePublishProxyRoute(
 
 	build := func() error {
 		route.Labels = map[string]string{
-			config.DomainLabelKey:        "event",
+			config.DomainLabelKey:        LabelValueDomain,
 			config.BuildLabelKey("zone"): sourceZone.Name,
 			config.BuildLabelKey("type"): "publish-proxy",
 		}

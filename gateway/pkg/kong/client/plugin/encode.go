@@ -5,7 +5,9 @@
 package plugin
 
 import (
+	"encoding/json"
 	"fmt"
+	"slices"
 	"strings"
 )
 
@@ -23,9 +25,20 @@ func (m *StringMap) AddKV(key, value string) {
 	m.items[key] = value
 }
 
+func splitEntry(value string) (string, string, bool) {
+	pos := strings.Index(value, ":")
+	if pos < 0 {
+		return "", "", false
+	}
+	return value[:pos], value[pos+1:], true
+}
+
 func (m *StringMap) Add(value string) {
-	parts := strings.Split(value, ":")
-	m.items[parts[0]] = parts[1]
+	key, val, ok := splitEntry(value)
+	if !ok {
+		return
+	}
+	m.items[key] = val
 }
 
 func (m *StringMap) RemoveK(key, value string) {
@@ -33,8 +46,18 @@ func (m *StringMap) RemoveK(key, value string) {
 }
 
 func (m *StringMap) Remove(value string) {
-	parts := strings.Split(value, ":")
-	delete(m.items, parts[0])
+	if m == nil {
+		return
+	}
+	if !strings.Contains(value, ":") {
+		delete(m.items, value)
+		return
+	}
+	key, _, ok := splitEntry(value)
+	if !ok {
+		return
+	}
+	delete(m.items, key)
 }
 
 func (m *StringMap) Clear() {
@@ -55,17 +78,17 @@ func (m *StringMap) Get(key string) string {
 	return ""
 }
 
-// MarshalJSON encodes the map into a format like ["key1:value1", "key2:value2"]
+// MarshalJSON encodes the map into a format like ["key1:value1", "key2:value2"].
+// Entries are sorted because Go randomizes map iteration order: an unsorted
+// array would differ on every call, which makes the Kong client see a config
+// change on every reconciliation and write when nothing changed.
 func (m *StringMap) MarshalJSON() ([]byte, error) {
-	if len(m.items) == 0 {
-		return []byte("[]"), nil
-	}
-	result := "["
+	entries := make([]string, 0, len(m.items))
 	for k, v := range m.items {
-		result += fmt.Sprintf("\"%s:%s\",", k, v)
+		entries = append(entries, k+":"+v)
 	}
-	result = result[:len(result)-1] + "]" // remove the last comma and add the closing bracket
-	return []byte(result), nil
+	slices.Sort(entries)
+	return json.Marshal(entries)
 }
 
 // UnmarshalJSON decodes a string like ["key1:value1","key2:value2"] into a map
@@ -74,16 +97,16 @@ func (m *StringMap) UnmarshalJSON(b []byte) error {
 	if m.items == nil {
 		m.items = make(map[string]string)
 	}
-	// Remove the brackets
-	b = b[1 : len(b)-1]
-	if len(b) == 0 {
-		return nil
+	var pairs []string
+	if err := json.Unmarshal(b, &pairs); err != nil {
+		return err
 	}
-	// Split the string into key-value pairs
-	pairs := strings.Split(string(b), ",")
 	for _, pair := range pairs {
-		kv := strings.Split(strings.Trim(pair, "\""), ":")
-		m.items[kv[0]] = kv[1]
+		key, value, ok := splitEntry(pair)
+		if !ok {
+			return fmt.Errorf("invalid string map entry %q", pair)
+		}
+		m.items[key] = value
 	}
 	return nil
 }

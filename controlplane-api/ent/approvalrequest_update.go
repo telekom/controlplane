@@ -15,9 +15,11 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/dialect/sql/sqljson"
 	"entgo.io/ent/schema/field"
+	"github.com/telekom/controlplane/controlplane-api/ent/agenticsubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/apisubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/approvalrequest"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventsubscription"
+	"github.com/telekom/controlplane/controlplane-api/ent/filesubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/predicate"
 	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 )
@@ -280,6 +282,25 @@ func (_u *ApprovalRequestUpdate) SetAPISubscription(v *ApiSubscription) *Approva
 	return _u.SetAPISubscriptionID(v.ID)
 }
 
+// SetFileSubscriptionID sets the "file_subscription" edge to the FileSubscription entity by ID.
+func (_u *ApprovalRequestUpdate) SetFileSubscriptionID(id int) *ApprovalRequestUpdate {
+	_u.mutation.SetFileSubscriptionID(id)
+	return _u
+}
+
+// SetNillableFileSubscriptionID sets the "file_subscription" edge to the FileSubscription entity by ID if the given value is not nil.
+func (_u *ApprovalRequestUpdate) SetNillableFileSubscriptionID(id *int) *ApprovalRequestUpdate {
+	if id != nil {
+		_u = _u.SetFileSubscriptionID(*id)
+	}
+	return _u
+}
+
+// SetFileSubscription sets the "file_subscription" edge to the FileSubscription entity.
+func (_u *ApprovalRequestUpdate) SetFileSubscription(v *FileSubscription) *ApprovalRequestUpdate {
+	return _u.SetFileSubscriptionID(v.ID)
+}
+
 // SetEventSubscriptionID sets the "event_subscription" edge to the EventSubscription entity by ID.
 func (_u *ApprovalRequestUpdate) SetEventSubscriptionID(id int) *ApprovalRequestUpdate {
 	_u.mutation.SetEventSubscriptionID(id)
@@ -299,6 +320,25 @@ func (_u *ApprovalRequestUpdate) SetEventSubscription(v *EventSubscription) *App
 	return _u.SetEventSubscriptionID(v.ID)
 }
 
+// SetAgenticSubscriptionID sets the "agentic_subscription" edge to the AgenticSubscription entity by ID.
+func (_u *ApprovalRequestUpdate) SetAgenticSubscriptionID(id int) *ApprovalRequestUpdate {
+	_u.mutation.SetAgenticSubscriptionID(id)
+	return _u
+}
+
+// SetNillableAgenticSubscriptionID sets the "agentic_subscription" edge to the AgenticSubscription entity by ID if the given value is not nil.
+func (_u *ApprovalRequestUpdate) SetNillableAgenticSubscriptionID(id *int) *ApprovalRequestUpdate {
+	if id != nil {
+		_u = _u.SetAgenticSubscriptionID(*id)
+	}
+	return _u
+}
+
+// SetAgenticSubscription sets the "agentic_subscription" edge to the AgenticSubscription entity.
+func (_u *ApprovalRequestUpdate) SetAgenticSubscription(v *AgenticSubscription) *ApprovalRequestUpdate {
+	return _u.SetAgenticSubscriptionID(v.ID)
+}
+
 // Mutation returns the ApprovalRequestMutation object of the builder.
 func (_u *ApprovalRequestUpdate) Mutation() *ApprovalRequestMutation {
 	return _u.mutation
@@ -310,9 +350,21 @@ func (_u *ApprovalRequestUpdate) ClearAPISubscription() *ApprovalRequestUpdate {
 	return _u
 }
 
+// ClearFileSubscription clears the "file_subscription" edge to the FileSubscription entity.
+func (_u *ApprovalRequestUpdate) ClearFileSubscription() *ApprovalRequestUpdate {
+	_u.mutation.ClearFileSubscription()
+	return _u
+}
+
 // ClearEventSubscription clears the "event_subscription" edge to the EventSubscription entity.
 func (_u *ApprovalRequestUpdate) ClearEventSubscription() *ApprovalRequestUpdate {
 	_u.mutation.ClearEventSubscription()
+	return _u
+}
+
+// ClearAgenticSubscription clears the "agentic_subscription" edge to the AgenticSubscription entity.
+func (_u *ApprovalRequestUpdate) ClearAgenticSubscription() *ApprovalRequestUpdate {
+	_u.mutation.ClearAgenticSubscription()
 	return _u
 }
 
@@ -514,6 +566,35 @@ func (_u *ApprovalRequestUpdate) sqlSave(ctx context.Context) (_node int, err er
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if _u.mutation.FileSubscriptionCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   approvalrequest.FileSubscriptionTable,
+			Columns: []string{approvalrequest.FileSubscriptionColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(filesubscription.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.FileSubscriptionIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   approvalrequest.FileSubscriptionTable,
+			Columns: []string{approvalrequest.FileSubscriptionColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(filesubscription.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if _u.mutation.EventSubscriptionCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -536,6 +617,35 @@ func (_u *ApprovalRequestUpdate) sqlSave(ctx context.Context) (_node int, err er
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(eventsubscription.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.AgenticSubscriptionCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   approvalrequest.AgenticSubscriptionTable,
+			Columns: []string{approvalrequest.AgenticSubscriptionColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(agenticsubscription.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.AgenticSubscriptionIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   approvalrequest.AgenticSubscriptionTable,
+			Columns: []string{approvalrequest.AgenticSubscriptionColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(agenticsubscription.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {
@@ -808,6 +918,25 @@ func (_u *ApprovalRequestUpdateOne) SetAPISubscription(v *ApiSubscription) *Appr
 	return _u.SetAPISubscriptionID(v.ID)
 }
 
+// SetFileSubscriptionID sets the "file_subscription" edge to the FileSubscription entity by ID.
+func (_u *ApprovalRequestUpdateOne) SetFileSubscriptionID(id int) *ApprovalRequestUpdateOne {
+	_u.mutation.SetFileSubscriptionID(id)
+	return _u
+}
+
+// SetNillableFileSubscriptionID sets the "file_subscription" edge to the FileSubscription entity by ID if the given value is not nil.
+func (_u *ApprovalRequestUpdateOne) SetNillableFileSubscriptionID(id *int) *ApprovalRequestUpdateOne {
+	if id != nil {
+		_u = _u.SetFileSubscriptionID(*id)
+	}
+	return _u
+}
+
+// SetFileSubscription sets the "file_subscription" edge to the FileSubscription entity.
+func (_u *ApprovalRequestUpdateOne) SetFileSubscription(v *FileSubscription) *ApprovalRequestUpdateOne {
+	return _u.SetFileSubscriptionID(v.ID)
+}
+
 // SetEventSubscriptionID sets the "event_subscription" edge to the EventSubscription entity by ID.
 func (_u *ApprovalRequestUpdateOne) SetEventSubscriptionID(id int) *ApprovalRequestUpdateOne {
 	_u.mutation.SetEventSubscriptionID(id)
@@ -827,6 +956,25 @@ func (_u *ApprovalRequestUpdateOne) SetEventSubscription(v *EventSubscription) *
 	return _u.SetEventSubscriptionID(v.ID)
 }
 
+// SetAgenticSubscriptionID sets the "agentic_subscription" edge to the AgenticSubscription entity by ID.
+func (_u *ApprovalRequestUpdateOne) SetAgenticSubscriptionID(id int) *ApprovalRequestUpdateOne {
+	_u.mutation.SetAgenticSubscriptionID(id)
+	return _u
+}
+
+// SetNillableAgenticSubscriptionID sets the "agentic_subscription" edge to the AgenticSubscription entity by ID if the given value is not nil.
+func (_u *ApprovalRequestUpdateOne) SetNillableAgenticSubscriptionID(id *int) *ApprovalRequestUpdateOne {
+	if id != nil {
+		_u = _u.SetAgenticSubscriptionID(*id)
+	}
+	return _u
+}
+
+// SetAgenticSubscription sets the "agentic_subscription" edge to the AgenticSubscription entity.
+func (_u *ApprovalRequestUpdateOne) SetAgenticSubscription(v *AgenticSubscription) *ApprovalRequestUpdateOne {
+	return _u.SetAgenticSubscriptionID(v.ID)
+}
+
 // Mutation returns the ApprovalRequestMutation object of the builder.
 func (_u *ApprovalRequestUpdateOne) Mutation() *ApprovalRequestMutation {
 	return _u.mutation
@@ -838,9 +986,21 @@ func (_u *ApprovalRequestUpdateOne) ClearAPISubscription() *ApprovalRequestUpdat
 	return _u
 }
 
+// ClearFileSubscription clears the "file_subscription" edge to the FileSubscription entity.
+func (_u *ApprovalRequestUpdateOne) ClearFileSubscription() *ApprovalRequestUpdateOne {
+	_u.mutation.ClearFileSubscription()
+	return _u
+}
+
 // ClearEventSubscription clears the "event_subscription" edge to the EventSubscription entity.
 func (_u *ApprovalRequestUpdateOne) ClearEventSubscription() *ApprovalRequestUpdateOne {
 	_u.mutation.ClearEventSubscription()
+	return _u
+}
+
+// ClearAgenticSubscription clears the "agentic_subscription" edge to the AgenticSubscription entity.
+func (_u *ApprovalRequestUpdateOne) ClearAgenticSubscription() *ApprovalRequestUpdateOne {
+	_u.mutation.ClearAgenticSubscription()
 	return _u
 }
 
@@ -1072,6 +1232,35 @@ func (_u *ApprovalRequestUpdateOne) sqlSave(ctx context.Context) (_node *Approva
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if _u.mutation.FileSubscriptionCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   approvalrequest.FileSubscriptionTable,
+			Columns: []string{approvalrequest.FileSubscriptionColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(filesubscription.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.FileSubscriptionIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   approvalrequest.FileSubscriptionTable,
+			Columns: []string{approvalrequest.FileSubscriptionColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(filesubscription.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if _u.mutation.EventSubscriptionCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -1094,6 +1283,35 @@ func (_u *ApprovalRequestUpdateOne) sqlSave(ctx context.Context) (_node *Approva
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(eventsubscription.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.AgenticSubscriptionCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   approvalrequest.AgenticSubscriptionTable,
+			Columns: []string{approvalrequest.AgenticSubscriptionColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(agenticsubscription.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.AgenticSubscriptionIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   approvalrequest.AgenticSubscriptionTable,
+			Columns: []string{approvalrequest.AgenticSubscriptionColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(agenticsubscription.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

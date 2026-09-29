@@ -25,6 +25,28 @@ const (
 // SystemDecisionName is the name used for decisions made by the system (auto-approval, expiration, etc.).
 const SystemDecisionName = "System"
 
+// MaxDecisions is the maximum number of decisions retained on an Approval or
+// ApprovalRequest. Older decisions are dropped by the mutating webhook.
+//
+// Kubebuilder markers cannot reference Go constants, so this value is duplicated
+// as `+kubebuilder:validation:MaxItems=5` on the Decisions field of both
+// ApprovalSpec and ApprovalRequestSpec. Keep the literals in sync.
+const MaxDecisions = 5
+
+// TrimDecisions returns the newest MaxDecisions entries of decisions, preserving
+// order. Decisions are stored chronologically (append order), so this keeps the
+// tail of the slice. The input is returned unchanged when it holds at most
+// MaxDecisions entries.
+//
+// The list is deliberately not sorted by Timestamp: Timestamp is optional and
+// only defaulted by the mutating webhook, so it is not a reliable ordering key.
+func TrimDecisions(decisions []Decision) []Decision {
+	if len(decisions) <= MaxDecisions {
+		return decisions
+	}
+	return decisions[len(decisions)-MaxDecisions:]
+}
+
 // AutoApprovedComment is the comment added to auto-approved ApprovalRequests.
 const AutoApprovedComment = "Auto-approved: The approval strategy does not require manual review."
 

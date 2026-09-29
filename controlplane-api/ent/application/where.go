@@ -1200,6 +1200,52 @@ func HasSubscribedApisWith(preds ...predicate.ApiSubscription) predicate.Applica
 	})
 }
 
+// HasExposedFileTypes applies the HasEdge predicate on the "exposed_file_types" edge.
+func HasExposedFileTypes() predicate.Application {
+	return predicate.Application(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, ExposedFileTypesTable, ExposedFileTypesColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasExposedFileTypesWith applies the HasEdge predicate on the "exposed_file_types" edge with a given conditions (other predicates).
+func HasExposedFileTypesWith(preds ...predicate.FileExposure) predicate.Application {
+	return predicate.Application(func(s *sql.Selector) {
+		step := newExposedFileTypesStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasSubscribedFileTypes applies the HasEdge predicate on the "subscribed_file_types" edge.
+func HasSubscribedFileTypes() predicate.Application {
+	return predicate.Application(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, SubscribedFileTypesTable, SubscribedFileTypesColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasSubscribedFileTypesWith applies the HasEdge predicate on the "subscribed_file_types" edge with a given conditions (other predicates).
+func HasSubscribedFileTypesWith(preds ...predicate.FileSubscription) predicate.Application {
+	return predicate.Application(func(s *sql.Selector) {
+		step := newSubscribedFileTypesStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // HasExposedEvents applies the HasEdge predicate on the "exposed_events" edge.
 func HasExposedEvents() predicate.Application {
 	return predicate.Application(func(s *sql.Selector) {
@@ -1238,6 +1284,52 @@ func HasSubscribedEvents() predicate.Application {
 func HasSubscribedEventsWith(preds ...predicate.EventSubscription) predicate.Application {
 	return predicate.Application(func(s *sql.Selector) {
 		step := newSubscribedEventsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasExposedAgentics applies the HasEdge predicate on the "exposed_agentics" edge.
+func HasExposedAgentics() predicate.Application {
+	return predicate.Application(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, ExposedAgenticsTable, ExposedAgenticsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasExposedAgenticsWith applies the HasEdge predicate on the "exposed_agentics" edge with a given conditions (other predicates).
+func HasExposedAgenticsWith(preds ...predicate.AgenticExposure) predicate.Application {
+	return predicate.Application(func(s *sql.Selector) {
+		step := newExposedAgenticsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasSubscribedAgentics applies the HasEdge predicate on the "subscribed_agentics" edge.
+func HasSubscribedAgentics() predicate.Application {
+	return predicate.Application(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, SubscribedAgenticsTable, SubscribedAgenticsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasSubscribedAgenticsWith applies the HasEdge predicate on the "subscribed_agentics" edge with a given conditions (other predicates).
+func HasSubscribedAgenticsWith(preds ...predicate.AgenticSubscription) predicate.Application {
+	return predicate.Application(func(s *sql.Selector) {
+		step := newSubscribedAgenticsStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

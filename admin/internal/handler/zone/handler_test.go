@@ -136,13 +136,50 @@ var _ = Describe("Zone Handler", func() {
 		Expect(k8sClient.Get(ctx, key, route)).To(Succeed())
 		Expect(route.Spec.Hostnames).To(ConsistOf("ai.example.com"))
 
-		// One identity route set per gateway; a name collision between gateways would
-		// show up as a lower count because one would overwrite the other. The fixture
-		// zone declares no managed routes, so it has no team-api realm and no other routes.
+		// Each gateway serves both the default and internal realms. The fixture
+		// declares no managed routes, so there is no team-api realm.
 		routes := &gatewayapi.RouteList{}
 		Expect(k8sClient.List(ctx, routes, client.InNamespace(zone.Status.Namespace))).To(Succeed())
-		Expect(routes.Items).To(HaveLen(2 * len(identityRouteConfigs)))
+		Expect(routes.Items).To(HaveLen(2 * 2 * len(identityRouteConfigs)))
 	})
+
+	DescribeTable("serves internal realm OIDC metadata on every gateway",
+		func(visibility adminv1.ZoneVisibility, prefix string) {
+			zone.Spec.Visibility = visibility
+			zone.Spec.Presets[0].Urls[0].BasePath = "/v1"
+			secret := "ai-secret"
+			zone.Spec.Gateways = append(zone.Spec.Gateways, adminv1.GatewayConfig{
+				Name: "ai", Admin: adminv1.GatewayAdminConfig{IdentityProviderRef: "primary", ClientSecret: &secret, Url: "https://ai.example.com/admin-api"},
+			})
+			zone.Spec.Presets = append(zone.Spec.Presets, adminv1.Preset{
+				Name: "ai", Type: adminv1.GatewayTypeAI, Default: true, GatewayRef: "ai", IdentityProviderRef: "primary",
+				Urls: []adminv1.UrlConfig{{Hostname: "ai.example.com", BasePath: "/v1"}},
+			})
+			handler := &ZoneHandler{}
+			Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
+			markSubResourcesReady(zone)
+			Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
+
+			for _, gateway := range zone.Spec.Gateways {
+				for _, cfg := range identityRouteConfigs {
+					route := &gatewayapi.Route{}
+					Expect(k8sClient.Get(ctx, client.ObjectKey{
+						Namespace: zone.Status.Namespace,
+						Name:      naming.ForGateway(zone, gateway.Name) + "--" + zone.Status.InternalIdentityRealm.Name + "--" + cfg.suffix,
+					}, route)).To(Succeed())
+					Expect(route.Spec.Paths).To(ConsistOf("/v1" + prefix + fmt.Sprintf(cfg.downstreamPathFmt, "rover")))
+					Expect(route.Spec.Backend.Upstreams).To(HaveLen(1))
+					Expect(route.Spec.Backend.Upstreams[0].Hostname).To(Equal("localhost"))
+					Expect(route.Spec.Backend.Upstreams[0].Port).To(Equal(jumperIdentityPort))
+					Expect(route.Spec.Backend.Upstreams[0].Path).To(Equal(fmt.Sprintf(cfg.upstreamPathFmt, "rover")))
+					Expect(route.Spec.PassThrough).To(BeTrue())
+					Expect(route.Labels).To(HaveKeyWithValue(config.DomainLabelKey, domainName))
+				}
+			}
+		},
+		Entry("enterprise", adminv1.ZoneVisibilityEnterprise, ""),
+		Entry("world", adminv1.ZoneVisibilityWorld, spacegatePathPrefix),
+	)
 
 	It("serves identity routes under the preset base path so LmsIssuer resolves", func() {
 		zone.Spec.Presets[0].Urls[0].BasePath = "/v1"
@@ -277,6 +314,7 @@ var _ = Describe("Zone Handler", func() {
 		Expect(errors.As(err, &blocked)).To(BeTrue())
 
 		hc.DefaultIdentityRealm = &identityapi.Realm{}
+		hc.InternalIdentityRealm = &identityapi.Realm{}
 		err = createIdentityRoutes(newTestContext(zone), hc)
 		Expect(err).To(MatchError(ContainSubstring("cannot resolve gateway")))
 		Expect(errors.As(err, &blocked)).To(BeTrue())

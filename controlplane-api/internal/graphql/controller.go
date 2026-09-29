@@ -15,7 +15,9 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/adaptor"
 	"github.com/valyala/fasthttp/fasthttpadaptor"
 
+	"github.com/telekom/controlplane/common-server/pkg/problems"
 	"github.com/telekom/controlplane/common-server/pkg/server"
+	"github.com/telekom/controlplane/common/pkg/util/emailutil"
 	"github.com/telekom/controlplane/controlplane-api/internal/viewer"
 )
 
@@ -37,7 +39,7 @@ func NewController(srv *handler.Server, enablePlayground bool) *Controller {
 // (from the listener's security family) to /query. It fits the MultiServer
 // RegisterFunc signature. The playground is registered separately and left
 // unauthenticated (see RegisterPlayground).
-func (c *Controller) RegisterRoutes(router fiber.Router, guard fiber.Handler) {
+func (c *Controller) RegisterRoutes(router fiber.Router, guard []fiber.Handler) {
 	c.RegisterPlayground(router, "/graphql")
 	gqlHandler := httpHandlerWithUserContext(c.srv)
 	group := router.Group("/graphql")
@@ -68,6 +70,11 @@ func httpHandlerWithUserContext(h http.Handler) fiber.Handler {
 		// Values may be percent-encoded (encodeURIComponent) by the UI to support
 		// non-ASCII characters in HTTP header values; decode them transparently.
 		if name, email := decodeHeader(c.Get("X-Forwarded-User-Name")), decodeHeader(c.Get("X-Forwarded-User-Email")); name != "" || email != "" {
+			if email != "" {
+				if err := emailutil.Validate(email); err != nil {
+					return server.ReturnWithError(c, problems.BadRequest("X-Forwarded-User-Email: "+err.Error()))
+				}
+			}
 			fu := viewer.ForwardedUser{Name: name, Email: email}
 			fu.IsAdmin = strings.EqualFold(c.Get("X-Forwarded-User-Is-Admin"), "true")
 			if roles := decodeHeader(c.Get("X-Forwarded-User-Roles")); roles != "" {
@@ -107,7 +114,7 @@ func (r *responseRecorder) WriteHeader(statusCode int) {
 // decodeHeader decodes a potentially percent-encoded header value.
 // If decoding fails (e.g. the value was never encoded), it returns the original value.
 func decodeHeader(value string) string {
-	if decoded, err := url.QueryUnescape(value); err == nil {
+	if decoded, err := url.PathUnescape(value); err == nil {
 		return decoded
 	}
 	return value

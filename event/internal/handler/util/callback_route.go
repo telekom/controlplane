@@ -81,7 +81,7 @@ func CreateCallbackRoute(
 
 	build := func() error {
 		route.Labels = map[string]string{
-			config.DomainLabelKey:        "event",
+			config.DomainLabelKey:        LabelValueDomain,
 			config.BuildLabelKey("zone"): zone.Name,
 			config.BuildLabelKey("type"): "callback",
 		}

@@ -132,12 +132,14 @@ spec:
                   the upstream without authentication
                 type: boolean
               paths:
+                default:
+                - /
                 description: Paths defines the paths that are accepted for this route.
                   If empty, all paths are accepted.
                 items:
                   type: string
                 maxItems: 10
-                minItems: 0
+                minItems: 1
                 type: array
                 x-kubernetes-list-type: set
               security:

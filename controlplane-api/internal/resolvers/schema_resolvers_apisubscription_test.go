@@ -5,14 +5,90 @@
 package resolvers_test
 
 import (
+	"context"
+
 	"github.com/telekom/controlplane/controlplane-api/ent"
 	"github.com/telekom/controlplane/controlplane-api/ent/apisubscription"
+	"github.com/telekom/controlplane/controlplane-api/internal/resolvers"
+	"github.com/telekom/controlplane/controlplane-api/internal/service"
 	"github.com/telekom/controlplane/controlplane-api/internal/testutil"
+	"github.com/telekom/controlplane/controlplane-api/internal/viewer"
 	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
+
+var _ = Describe("ApiSubscription.Target resolver", func() {
+	var client *ent.Client
+	var r *resolvers.Resolver
+	var s *testutil.SeedData
+
+	BeforeEach(func() {
+		client = testutil.NewTestClient(GinkgoT())
+		r = resolvers.NewResolver(client, service.Services{}, nil, "")
+		s = testutil.SeedStandard(client)
+	})
+
+	AfterEach(func() {
+		Expect(client.Close()).To(Succeed())
+	})
+
+	DescribeTable("should return nil without an error when no target exists",
+		func(eagerLoad bool) {
+			ctx := testutil.AllowContext()
+			sub, err := client.ApiSubscription.Create().
+				SetNamespace("default").
+				SetName("sub-without-target").
+				SetBasePath("/missing").
+				SetOwner(s.AppBeta).
+				Save(ctx)
+			Expect(err).NotTo(HaveOccurred())
+
+			query := client.ApiSubscription.Query().Where(apisubscription.ID(sub.ID))
+			if eagerLoad {
+				query.WithTarget()
+			}
+			sub, err = query.Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+
+			target, err := r.ApiSubscription().Target(ctx, sub)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(target).To(BeNil())
+		},
+		Entry("with lazy loading", false),
+		Entry("with eager loading", true),
+	)
+
+	DescribeTable("should return the target exposure",
+		func(eagerLoad bool) {
+			ctx := viewer.NewContext(context.Background(), &viewer.Viewer{Teams: []string{"team-beta"}})
+			query := client.ApiSubscription.Query().Where(apisubscription.ID(s.Subscription.ID))
+			if eagerLoad {
+				query.WithTarget()
+			}
+			sub, err := query.Only(testutil.AllowContext())
+			Expect(err).NotTo(HaveOccurred())
+
+			target, err := r.ApiSubscription().Target(ctx, sub)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(target).NotTo(BeNil())
+			Expect(target.ID).To(Equal(s.ExposureAlpha.ID))
+			expectOwnerApplication(target.OwnerApplication, s.AppAlpha.ID, "app-alpha", "team-alpha", "group-a")
+		},
+		Entry("with lazy loading", false),
+		Entry("with eager loading", true),
+	)
+
+	It("should propagate query errors", func() {
+		ctx, cancel := context.WithCancel(testutil.AllowContext())
+		cancel()
+
+		target, err := r.ApiSubscription().Target(ctx, s.Subscription)
+		Expect(err).To(MatchError(context.Canceled))
+		Expect(target).To(BeNil())
+	})
+})
 
 var _ = Describe("ApiSubscription Security", func() {
 	var client *ent.Client

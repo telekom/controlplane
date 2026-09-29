@@ -17,6 +17,7 @@ import (
 	"github.com/telekom/controlplane/common-server/pkg/store/secrets"
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
+	filev1 "github.com/telekom/controlplane/file/api/v1"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 	secretsapi "github.com/telekom/controlplane/secret-manager/api"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -43,6 +44,9 @@ type Stores struct {
 
 	EventSpecificationStore store.ObjectStore[*roverv1.EventSpecification]
 	EventTypeStore          store.ObjectStore[*eventv1.EventType]
+	FileSpecificationStore  store.ObjectStore[*roverv1.FileSpecification]
+	FileExposureStore       store.ObjectStore[*filev1.FileExposure]
+	FileSubscriptionStore   store.ObjectStore[*filev1.FileSubscription]
 	EventExposureStore      store.ObjectStore[*eventv1.EventExposure]
 	EventSubscriptionStore  store.ObjectStore[*eventv1.EventSubscription]
 	ZoneStore               store.ObjectStore[*adminv1.Zone]
@@ -110,11 +114,21 @@ func NewStores(ctx context.Context, cfg *rest.Config, db inmemory.DatabaseOpts, 
 		s.EventConfigStore = noop.NewStore[*eventv1.EventConfig](eventv1.GroupVersion.WithResource("eventconfigs"), eventv1.GroupVersion.WithKind("EventConfig"))
 	}
 
+	if cconfig.FeatureFile.IsEnabled() {
+		s.FileSpecificationStore = NewOrDie[*roverv1.FileSpecification](ctx, dynamicClient, roverv1.GroupVersion.WithResource("filespecifications"), roverv1.GroupVersion.WithKind("FileSpecification"), db, informer)
+		s.FileExposureStore = NewOrDie[*filev1.FileExposure](ctx, dynamicClient, filev1.GroupVersion.WithResource("fileexposures"), filev1.GroupVersion.WithKind("FileExposure"), db, informer)
+		s.FileSubscriptionStore = NewOrDie[*filev1.FileSubscription](ctx, dynamicClient, filev1.GroupVersion.WithResource("filesubscriptions"), filev1.GroupVersion.WithKind("FileSubscription"), db, informer)
+	} else {
+		s.FileSpecificationStore = noop.NewStore[*roverv1.FileSpecification](roverv1.GroupVersion.WithResource("filespecifications"), roverv1.GroupVersion.WithKind("FileSpecification"))
+		s.FileExposureStore = noop.NewStore[*filev1.FileExposure](filev1.GroupVersion.WithResource("fileexposures"), filev1.GroupVersion.WithKind("FileExposure"))
+		s.FileSubscriptionStore = noop.NewStore[*filev1.FileSubscription](filev1.GroupVersion.WithResource("filesubscriptions"), filev1.GroupVersion.WithKind("FileSubscription"))
+	}
+
 	s.ApiChangelogStore = NewOrDie[*roverv1.ApiChangelog](ctx, dynamicClient, roverv1.GroupVersion.WithResource("apichangelogs"), roverv1.GroupVersion.WithKind("ApiChangelog"), db, informer)
 
 	if cconfig.FeatureAiGateway.IsEnabled() {
-		s.AgenticExposureStore = NewOrDie[*agenticv1.AgenticExposure](ctx, dynamicClient, agenticv1.GroupVersion.WithResource("mcpexposures"), agenticv1.GroupVersion.WithKind("McpExposure"), db, informer)
-		s.AgenticSubscriptionStore = NewOrDie[*agenticv1.AgenticSubscription](ctx, dynamicClient, agenticv1.GroupVersion.WithResource("mcpsubscriptions"), agenticv1.GroupVersion.WithKind("McpSubscription"), db, informer)
+		s.AgenticExposureStore = NewOrDie[*agenticv1.AgenticExposure](ctx, dynamicClient, agenticv1.GroupVersion.WithResource("agenticexposures"), agenticv1.GroupVersion.WithKind("AgenticExposure"), db, informer)
+		s.AgenticSubscriptionStore = NewOrDie[*agenticv1.AgenticSubscription](ctx, dynamicClient, agenticv1.GroupVersion.WithResource("agenticsubscriptions"), agenticv1.GroupVersion.WithKind("AgenticSubscription"), db, informer)
 		s.McpSpecificationStore = NewOrDie[*roverv1.McpSpecification](ctx, dynamicClient, roverv1.GroupVersion.WithResource("mcpspecifications"), roverv1.GroupVersion.WithKind("McpSpecification"), db, informer)
 		s.McpServerStore = NewOrDie[*agenticv1.McpServer](ctx, dynamicClient, agenticv1.GroupVersion.WithResource("mcpservers"), agenticv1.GroupVersion.WithKind("McpServer"), db, informer)
 		s.AgentSpecificationStore = NewOrDie[*roverv1.AgentSpecification](ctx, dynamicClient, roverv1.GroupVersion.WithResource("agentspecifications"), roverv1.GroupVersion.WithKind("AgentSpecification"), db, informer)

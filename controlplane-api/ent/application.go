@@ -79,22 +79,34 @@ type ApplicationEdges struct {
 	ExposedApis []*ApiExposure `json:"exposed_apis,omitempty"`
 	// SubscribedApis holds the value of the subscribed_apis edge.
 	SubscribedApis []*ApiSubscription `json:"subscribed_apis,omitempty"`
+	// ExposedFileTypes holds the value of the exposed_file_types edge.
+	ExposedFileTypes []*FileExposure `json:"exposed_file_types,omitempty"`
+	// SubscribedFileTypes holds the value of the subscribed_file_types edge.
+	SubscribedFileTypes []*FileSubscription `json:"subscribed_file_types,omitempty"`
 	// ExposedEvents holds the value of the exposed_events edge.
 	ExposedEvents []*EventExposure `json:"exposed_events,omitempty"`
 	// SubscribedEvents holds the value of the subscribed_events edge.
 	SubscribedEvents []*EventSubscription `json:"subscribed_events,omitempty"`
+	// ExposedAgentics holds the value of the exposed_agentics edge.
+	ExposedAgentics []*AgenticExposure `json:"exposed_agentics,omitempty"`
+	// SubscribedAgentics holds the value of the subscribed_agentics edge.
+	SubscribedAgentics []*AgenticSubscription `json:"subscribed_agentics,omitempty"`
 	// PermissionSet holds the value of the permission_set edge.
 	PermissionSet *PermissionSet `json:"permission_set,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [7]bool
+	loadedTypes [11]bool
 	// totalCount holds the count of the edges above.
-	totalCount [6]map[string]int
+	totalCount [10]map[string]int
 
-	namedExposedApis      map[string][]*ApiExposure
-	namedSubscribedApis   map[string][]*ApiSubscription
-	namedExposedEvents    map[string][]*EventExposure
-	namedSubscribedEvents map[string][]*EventSubscription
+	namedExposedApis         map[string][]*ApiExposure
+	namedSubscribedApis      map[string][]*ApiSubscription
+	namedExposedFileTypes    map[string][]*FileExposure
+	namedSubscribedFileTypes map[string][]*FileSubscription
+	namedExposedEvents       map[string][]*EventExposure
+	namedSubscribedEvents    map[string][]*EventSubscription
+	namedExposedAgentics     map[string][]*AgenticExposure
+	namedSubscribedAgentics  map[string][]*AgenticSubscription
 }
 
 // ZoneOrErr returns the Zone value or an error if the edge
@@ -137,10 +149,28 @@ func (e ApplicationEdges) SubscribedApisOrErr() ([]*ApiSubscription, error) {
 	return nil, &NotLoadedError{edge: "subscribed_apis"}
 }
 
+// ExposedFileTypesOrErr returns the ExposedFileTypes value or an error if the edge
+// was not loaded in eager-loading.
+func (e ApplicationEdges) ExposedFileTypesOrErr() ([]*FileExposure, error) {
+	if e.loadedTypes[4] {
+		return e.ExposedFileTypes, nil
+	}
+	return nil, &NotLoadedError{edge: "exposed_file_types"}
+}
+
+// SubscribedFileTypesOrErr returns the SubscribedFileTypes value or an error if the edge
+// was not loaded in eager-loading.
+func (e ApplicationEdges) SubscribedFileTypesOrErr() ([]*FileSubscription, error) {
+	if e.loadedTypes[5] {
+		return e.SubscribedFileTypes, nil
+	}
+	return nil, &NotLoadedError{edge: "subscribed_file_types"}
+}
+
 // ExposedEventsOrErr returns the ExposedEvents value or an error if the edge
 // was not loaded in eager-loading.
 func (e ApplicationEdges) ExposedEventsOrErr() ([]*EventExposure, error) {
-	if e.loadedTypes[4] {
+	if e.loadedTypes[6] {
 		return e.ExposedEvents, nil
 	}
 	return nil, &NotLoadedError{edge: "exposed_events"}
@@ -149,10 +179,28 @@ func (e ApplicationEdges) ExposedEventsOrErr() ([]*EventExposure, error) {
 // SubscribedEventsOrErr returns the SubscribedEvents value or an error if the edge
 // was not loaded in eager-loading.
 func (e ApplicationEdges) SubscribedEventsOrErr() ([]*EventSubscription, error) {
-	if e.loadedTypes[5] {
+	if e.loadedTypes[7] {
 		return e.SubscribedEvents, nil
 	}
 	return nil, &NotLoadedError{edge: "subscribed_events"}
+}
+
+// ExposedAgenticsOrErr returns the ExposedAgentics value or an error if the edge
+// was not loaded in eager-loading.
+func (e ApplicationEdges) ExposedAgenticsOrErr() ([]*AgenticExposure, error) {
+	if e.loadedTypes[8] {
+		return e.ExposedAgentics, nil
+	}
+	return nil, &NotLoadedError{edge: "exposed_agentics"}
+}
+
+// SubscribedAgenticsOrErr returns the SubscribedAgentics value or an error if the edge
+// was not loaded in eager-loading.
+func (e ApplicationEdges) SubscribedAgenticsOrErr() ([]*AgenticSubscription, error) {
+	if e.loadedTypes[9] {
+		return e.SubscribedAgentics, nil
+	}
+	return nil, &NotLoadedError{edge: "subscribed_agentics"}
 }
 
 // PermissionSetOrErr returns the PermissionSet value or an error if the edge
@@ -160,7 +208,7 @@ func (e ApplicationEdges) SubscribedEventsOrErr() ([]*EventSubscription, error) 
 func (e ApplicationEdges) PermissionSetOrErr() (*PermissionSet, error) {
 	if e.PermissionSet != nil {
 		return e.PermissionSet, nil
-	} else if e.loadedTypes[6] {
+	} else if e.loadedTypes[10] {
 		return nil, &NotFoundError{label: permissionset.Label}
 	}
 	return nil, &NotLoadedError{edge: "permission_set"}
@@ -374,6 +422,16 @@ func (_m *Application) QuerySubscribedApis() *ApiSubscriptionQuery {
 	return NewApplicationClient(_m.config).QuerySubscribedApis(_m)
 }
 
+// QueryExposedFileTypes queries the "exposed_file_types" edge of the Application entity.
+func (_m *Application) QueryExposedFileTypes() *FileExposureQuery {
+	return NewApplicationClient(_m.config).QueryExposedFileTypes(_m)
+}
+
+// QuerySubscribedFileTypes queries the "subscribed_file_types" edge of the Application entity.
+func (_m *Application) QuerySubscribedFileTypes() *FileSubscriptionQuery {
+	return NewApplicationClient(_m.config).QuerySubscribedFileTypes(_m)
+}
+
 // QueryExposedEvents queries the "exposed_events" edge of the Application entity.
 func (_m *Application) QueryExposedEvents() *EventExposureQuery {
 	return NewApplicationClient(_m.config).QueryExposedEvents(_m)
@@ -382,6 +440,16 @@ func (_m *Application) QueryExposedEvents() *EventExposureQuery {
 // QuerySubscribedEvents queries the "subscribed_events" edge of the Application entity.
 func (_m *Application) QuerySubscribedEvents() *EventSubscriptionQuery {
 	return NewApplicationClient(_m.config).QuerySubscribedEvents(_m)
+}
+
+// QueryExposedAgentics queries the "exposed_agentics" edge of the Application entity.
+func (_m *Application) QueryExposedAgentics() *AgenticExposureQuery {
+	return NewApplicationClient(_m.config).QueryExposedAgentics(_m)
+}
+
+// QuerySubscribedAgentics queries the "subscribed_agentics" edge of the Application entity.
+func (_m *Application) QuerySubscribedAgentics() *AgenticSubscriptionQuery {
+	return NewApplicationClient(_m.config).QuerySubscribedAgentics(_m)
 }
 
 // QueryPermissionSet queries the "permission_set" edge of the Application entity.
@@ -539,6 +607,54 @@ func (_m *Application) appendNamedSubscribedApis(name string, edges ...*ApiSubsc
 	}
 }
 
+// NamedExposedFileTypes returns the ExposedFileTypes named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *Application) NamedExposedFileTypes(name string) ([]*FileExposure, error) {
+	if _m.Edges.namedExposedFileTypes == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedExposedFileTypes[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *Application) appendNamedExposedFileTypes(name string, edges ...*FileExposure) {
+	if _m.Edges.namedExposedFileTypes == nil {
+		_m.Edges.namedExposedFileTypes = make(map[string][]*FileExposure)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedExposedFileTypes[name] = []*FileExposure{}
+	} else {
+		_m.Edges.namedExposedFileTypes[name] = append(_m.Edges.namedExposedFileTypes[name], edges...)
+	}
+}
+
+// NamedSubscribedFileTypes returns the SubscribedFileTypes named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *Application) NamedSubscribedFileTypes(name string) ([]*FileSubscription, error) {
+	if _m.Edges.namedSubscribedFileTypes == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedSubscribedFileTypes[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *Application) appendNamedSubscribedFileTypes(name string, edges ...*FileSubscription) {
+	if _m.Edges.namedSubscribedFileTypes == nil {
+		_m.Edges.namedSubscribedFileTypes = make(map[string][]*FileSubscription)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedSubscribedFileTypes[name] = []*FileSubscription{}
+	} else {
+		_m.Edges.namedSubscribedFileTypes[name] = append(_m.Edges.namedSubscribedFileTypes[name], edges...)
+	}
+}
+
 // NamedExposedEvents returns the ExposedEvents named value or an error if the edge was not
 // loaded in eager-loading with this name.
 func (_m *Application) NamedExposedEvents(name string) ([]*EventExposure, error) {
@@ -584,6 +700,54 @@ func (_m *Application) appendNamedSubscribedEvents(name string, edges ...*EventS
 		_m.Edges.namedSubscribedEvents[name] = []*EventSubscription{}
 	} else {
 		_m.Edges.namedSubscribedEvents[name] = append(_m.Edges.namedSubscribedEvents[name], edges...)
+	}
+}
+
+// NamedExposedAgentics returns the ExposedAgentics named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *Application) NamedExposedAgentics(name string) ([]*AgenticExposure, error) {
+	if _m.Edges.namedExposedAgentics == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedExposedAgentics[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *Application) appendNamedExposedAgentics(name string, edges ...*AgenticExposure) {
+	if _m.Edges.namedExposedAgentics == nil {
+		_m.Edges.namedExposedAgentics = make(map[string][]*AgenticExposure)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedExposedAgentics[name] = []*AgenticExposure{}
+	} else {
+		_m.Edges.namedExposedAgentics[name] = append(_m.Edges.namedExposedAgentics[name], edges...)
+	}
+}
+
+// NamedSubscribedAgentics returns the SubscribedAgentics named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *Application) NamedSubscribedAgentics(name string) ([]*AgenticSubscription, error) {
+	if _m.Edges.namedSubscribedAgentics == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedSubscribedAgentics[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *Application) appendNamedSubscribedAgentics(name string, edges ...*AgenticSubscription) {
+	if _m.Edges.namedSubscribedAgentics == nil {
+		_m.Edges.namedSubscribedAgentics = make(map[string][]*AgenticSubscription)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedSubscribedAgentics[name] = []*AgenticSubscription{}
+	} else {
+		_m.Edges.namedSubscribedAgentics[name] = append(_m.Edges.namedSubscribedAgentics[name], edges...)
 	}
 }
 

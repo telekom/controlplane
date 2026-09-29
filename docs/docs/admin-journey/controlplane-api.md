@@ -287,7 +287,7 @@ kubectl port-forward svc/controlplane-api 8443:443 -n controlplane-system
 # Open https://localhost:8443/graphql in your browser
 ```
 
-The Playground sends queries to `/graphql/query`, which requires a JWT bearer token regardless of security mode. In the Playground's **Headers** tab, add:
+When enabled, the Playground page at `/graphql` is publicly accessible. The Playground sends operations to `/graphql/query`, which always requires a JWT bearer token, including for introspection. In the Playground's **Headers** tab, add:
 
 ```json
 { "Authorization": "Bearer <your-token>" }

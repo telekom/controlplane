@@ -100,6 +100,20 @@
       "secret-manager"
     ]
   },
+  "file": {
+    "path": "file",
+    "depends_on": [
+      "admin",
+      "application",
+      "approval",
+      "common",
+      "common-server",
+      "gateway",
+      "identity",
+      "secret-manager",
+      "sftp"
+    ]
+  },
   "file-manager": {
     "path": "file-manager",
     "depends_on": [
@@ -158,6 +172,7 @@
     "path": "projector",
     "depends_on": [
       "admin",
+      "agentic",
       "api",
       "application",
       "approval",
@@ -165,6 +180,7 @@
       "common-server",
       "controlplane-api",
       "event",
+      "file",
       "organization",
       "permission",
       "secret-manager"
@@ -189,6 +205,7 @@
       "common",
       "common-server",
       "event",
+      "file",
       "organization",
       "permission",
       "secret-manager"
@@ -208,6 +225,7 @@
       "common",
       "common-server",
       "event",
+      "file",
       "file-manager",
       "rover",
       "secret-manager"
@@ -216,7 +234,16 @@
   "secret-manager": {
     "path": "secret-manager",
     "depends_on": [
+      "common",
       "common-server"
+    ]
+  },
+  "sftp": {
+    "path": "sftp",
+    "depends_on": [
+      "common",
+      "common-server",
+      "secret-manager"
     ]
   },
   "tools-snapshotter": {

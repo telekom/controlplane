@@ -213,6 +213,57 @@ var _ = Describe("ApiExposure Repository", func() {
 			Expect(ent.IsNotFound(err)).To(BeTrue())
 		})
 
+		It("should clear a stale api FK once the Api is no longer resolvable", func() {
+			catalogueTeam, err := client.Team.Create().
+				SetName("platform--catalogue").
+				SetEmail("catalogue@example.com").
+				SetNamespace("platform--catalogue").
+				Save(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			catalogueApi, err := client.Api.Create().
+				SetBasePath("/api/v1/stale").
+				SetNamespace("platform--catalogue").
+				SetVersion("1.0.0").
+				SetActive(true).
+				SetOwnerID(catalogueTeam.ID).
+				Save(ctx)
+			Expect(err).NotTo(HaveOccurred())
+
+			data := &apiexposure.APIExposureData{
+				Meta:          shared.NewMetadata("prod--platform--narvi", "stale-exp", nil),
+				StatusPhase:   "READY",
+				StatusMessage: "ok",
+				BasePath:      "/api/v1/stale",
+				Visibility:    "WORLD",
+				Active:        true,
+				Features:      []string{},
+				Upstreams:     []model.Upstream{{URL: "https://backend.example.com", Weight: 100}},
+				AppName:       "my-app",
+				TeamName:      "platform--narvi",
+			}
+			deps.apiIDs = map[string]int{"/api/v1/stale": catalogueApi.ID}
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			exp, err := client.ApiExposure.Query().
+				Where(entapiexposure.BasePathEQ("/api/v1/stale")).
+				Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			linked, err := exp.QueryAPI().Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(linked.ID).To(Equal(catalogueApi.ID))
+
+			// Api becomes unresolvable (e.g. it went inactive) — re-reconcile.
+			deps.apiIDs = map[string]int{}
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			exp, err = client.ApiExposure.Query().
+				Where(entapiexposure.BasePathEQ("/api/v1/stale")).
+				Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			_, err = exp.QueryAPI().Only(ctx)
+			Expect(ent.IsNotFound(err)).To(BeTrue())
+		})
+
 		It("should persist security and rate_limit fields", func() {
 			clientSecret := "ext-client-secret"
 			clientKey := "ext-client-key"

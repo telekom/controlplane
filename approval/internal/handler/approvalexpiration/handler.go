@@ -62,7 +62,7 @@ func (h *Handler) CreateOrUpdate(ctx context.Context, ae *v1.ApprovalExpiration)
 		logger.Info("Approval has expired, transitioning to Expired state", "expiration", ae.Spec.Expiration.Time)
 		_, err := c.CreateOrUpdate(ctx, approval, func() error {
 			approval.Spec.State = v1.ApprovalStateExpired
-			approval.Spec.Decisions = append(approval.Spec.Decisions, v1.Decision{
+			approval.AppendDecision(v1.Decision{
 				Name:           v1.SystemDecisionName,
 				Comment:        fmt.Sprintf("Approval expired after reaching expiration deadline %s", ae.Spec.Expiration.Format(time.RFC3339)),
 				Timestamp:      &metav1.Time{Time: now},

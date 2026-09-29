@@ -99,6 +99,23 @@ func (r *Repository) Upsert(ctx context.Context, data *EventExposureData) error 
 			data.EventType, data.AppName, data.TeamName, upsertErr)
 	}
 
+	// Explicitly set/clear the catalogue FK. EventTypeDef is an edge, not a
+	// field, so an unresolved eventTypeDefID is not included in
+	// UpdateNewValues()'s ON CONFLICT SET clause — without this, a
+	// previously-linked event_type_def would stay stale once the EventType
+	// becomes inactive/removed (the exposure CR is re-reconciled via the
+	// EventType watch, but Status.Active is untouched by that path).
+	update := r.client.EventExposure.UpdateOneID(exposureID)
+	if eventTypeDefID != nil {
+		update = update.SetEventTypeDefID(*eventTypeDefID)
+	} else {
+		update = update.ClearEventTypeDef()
+	}
+	if err := update.Exec(ctx); err != nil {
+		return fmt.Errorf("update catalogue FK for event_exposure %d (%q, app %q, team %q): %w",
+			exposureID, data.EventType, data.AppName, data.TeamName, err)
+	}
+
 	et, lk := cachekeys.EventExposure(data.EventType, data.AppName, data.TeamName)
 	r.cache.Set(et, lk, exposureID)
 

@@ -204,6 +204,8 @@ On **every** zone reconciliation, the zone handler creates:
 
 This is not an opt-in feature and cannot be disabled — every zone gets its own `rover` realm and client.
 
+Every named gateway exposes issuer, certificate, and OpenID discovery routes for the default realm and the internal `rover` realm, plus the team-api realm when configured. These routes cover the hostnames and base paths of all presets using that gateway. World-visible zones add `/spacegate` after the preset base path.
+
 :::note Previously a manual step
 Earlier versions required administrators to create this realm and client by hand before a zone could work. This is now done for you automatically whenever the Zone is reconciled — no manual setup is needed.
 :::

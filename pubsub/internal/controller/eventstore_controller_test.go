@@ -79,5 +79,25 @@ var _ = Describe("EventStore Controller", func() {
 			// TODO(user): Add more specific assertions depending on your controller's reconciliation logic.
 			// Example: If you expect a certain status condition after reconciliation, verify it here.
 		})
+
+		It("persists, replaces, and clears the resolved Horizon environment name", func() {
+			resource := &pubsubv1.EventStore{}
+			Expect(k8sClient.Get(ctx, typeNamespacedName, resource)).To(Succeed())
+
+			resource.Spec.OverwriteEnvironmentName = "legacy-horizon"
+			Expect(k8sClient.Update(ctx, resource)).To(Succeed())
+			Expect(k8sClient.Get(ctx, typeNamespacedName, resource)).To(Succeed())
+			Expect(resource.Spec.OverwriteEnvironmentName).To(Equal("legacy-horizon"))
+
+			resource.Spec.OverwriteEnvironmentName = "replacement"
+			Expect(k8sClient.Update(ctx, resource)).To(Succeed())
+			Expect(k8sClient.Get(ctx, typeNamespacedName, resource)).To(Succeed())
+			Expect(resource.Spec.OverwriteEnvironmentName).To(Equal("replacement"))
+
+			resource.Spec.OverwriteEnvironmentName = ""
+			Expect(k8sClient.Update(ctx, resource)).To(Succeed())
+			Expect(k8sClient.Get(ctx, typeNamespacedName, resource)).To(Succeed())
+			Expect(resource.Spec.OverwriteEnvironmentName).To(BeEmpty())
+		})
 	})
 })

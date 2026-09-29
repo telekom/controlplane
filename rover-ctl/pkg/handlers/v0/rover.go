@@ -7,6 +7,7 @@ package v0
 import (
 	"context"
 	"maps"
+	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/telekom/controlplane/rover-ctl/pkg/handlers/common"
@@ -116,11 +117,16 @@ func PatchExposures(exposures []any) []map[string]any {
 		exposuresMaps[i] = exposureMap
 	}
 	for i, exposure := range exposuresMaps {
-		if _, hasExplicitType := exposure["type"]; !hasExplicitType {
+		currType, hasExplicitType := exposure["type"]
+		if hasExplicitType {
+			exposure["type"] = strings.ToLower(currType.(string))
+		} else {
 			if _, exist := exposure["basePath"]; exist {
 				exposuresMaps[i]["type"] = "api"
 			} else if _, exist := exposure["eventType"]; exist {
 				exposuresMaps[i]["type"] = "event"
+			} else if _, exist := exposure["fileType"]; exist {
+				exposuresMaps[i]["type"] = "file"
 			}
 		}
 		security, exist := exposure["security"]
@@ -145,11 +151,16 @@ func PatchSubscriptions(subscriptions []any) []map[string]any {
 		subscriptionsMaps[i] = subscriptionMap
 	}
 	for i, subscription := range subscriptionsMaps {
-		if _, hasExplicitType := subscription["type"]; !hasExplicitType {
+		currType, hasExplicitType := subscription["type"]
+		if hasExplicitType {
+			subscription["type"] = strings.ToLower(currType.(string))
+		} else {
 			if _, exist := subscription["basePath"]; exist {
 				subscriptionsMaps[i]["type"] = "api"
 			} else if _, exist := subscription["eventType"]; exist {
 				subscriptionsMaps[i]["type"] = "event"
+			} else if _, exist := subscription["fileType"]; exist {
+				subscriptionsMaps[i]["type"] = "file"
 			}
 		}
 		security, exist := subscription["security"]

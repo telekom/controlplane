@@ -186,6 +186,9 @@ func (h *EventSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *even
 	approvalBuilder.WithRequester(requester)
 	approvalBuilder.WithDecider(decider)
 	approvalBuilder.WithStrategy(approvalapi.ApprovalStrategy(exposure.Spec.Approval.Strategy))
+	approvalBuilder.WithLabels(map[string]string{
+		config.DomainLabelKey: util.LabelValueDomain,
+	})
 
 	if len(exposure.Spec.Approval.TrustedTeams) > 0 {
 		approvalBuilder.WithTrustedRequesters(exposure.Spec.Approval.TrustedTeams)

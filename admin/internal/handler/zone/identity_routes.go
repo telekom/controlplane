@@ -17,6 +17,7 @@ import (
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	ctrlerrors "github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	"github.com/telekom/controlplane/common/pkg/types"
+	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
 )
 
@@ -55,7 +56,7 @@ var identityRouteConfigs = []identityRouteConfig{
 const jumperIdentityPort int32 = 8081
 
 // createIdentityRoutes creates the OIDC identity routes (issuer, certs, discovery) for
-// the default identity realm and, if configured, the team-api identity realm.
+// the default and internal identity realms and, if configured, the team-api identity realm.
 // These passthrough routes allow external consumers to discover JWKS keys and validate
 // last-mile-security tokens. They are a per-gateway concern, so every gateway gets them.
 func createIdentityRoutes(ctx context.Context, hc *HandlingContext) error {
@@ -65,7 +66,7 @@ func createIdentityRoutes(ctx context.Context, hc *HandlingContext) error {
 		pathPrefix = spacegatePathPrefix
 	}
 
-	realms := []string{hc.DefaultIdentityRealm.Name}
+	realms := []string{hc.DefaultIdentityRealm.Name, hc.InternalIdentityRealm.Name}
 	if hc.TeamApiIdentityRealm != nil {
 		realms = append(realms, hc.TeamApiIdentityRealm.Name)
 	}
@@ -123,7 +124,7 @@ func createIdentityRoute(ctx context.Context, hc *HandlingContext, realmName str
 	c := cclient.ClientFromContextOrDie(ctx)
 
 	// Route name: gateway--<realmName>--<suffix>
-	routeName := gateway.Name + "--" + realmName + "--" + cfg.suffix
+	routeName := labelutil.NormalizeNameValue(gateway.Name + "--" + realmName + "--" + cfg.suffix)
 
 	route := &gatewayapi.Route{
 		ObjectMeta: metav1.ObjectMeta{

@@ -11,6 +11,7 @@ import (
 
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/types"
+	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -70,7 +71,6 @@ type TeamSpec struct {
 	// Members is the members of the team
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:MaxItems=50
-	// +kubebuilder:validation:XValidation:rule="self.all(e, self.filter(x, x.email.lowerAscii() == e.email.lowerAscii()).size() == 1)",message="member email addresses must be unique (case-insensitive)"
 	// +listType=map
 	// +listMapKey=email
 	// +patchStrategy=merge
@@ -166,7 +166,7 @@ func init() {
 
 // TeamResourceName returns the canonical Team CRD name: <group>--<team>.
 func TeamResourceName(group, team string) string {
-	return group + "--" + team
+	return labelutil.NormalizeNameValue(group + "--" + team)
 }
 
 // TeamNamespace returns the canonical per-team namespace: <environment>--<fullTeamName>,

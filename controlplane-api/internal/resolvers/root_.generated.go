@@ -27,6 +27,11 @@ func NewExecutableSchema(cfg Config) graphql.ExecutableSchema {
 type Config = graphql.Config[ResolverRoot, DirectiveRoot, ComplexityRoot]
 
 type ResolverRoot interface {
+	AgentCard() AgentCardResolver
+	AgenticExposure() AgenticExposureResolver
+	AgenticExposureInfo() AgenticExposureInfoResolver
+	AgenticSubscription() AgenticSubscriptionResolver
+	AgenticSubscriptionInfo() AgenticSubscriptionInfoResolver
 	Api() ApiResolver
 	ApiExposure() ApiExposureResolver
 	ApiExposureInfo() ApiExposureInfoResolver
@@ -47,6 +52,11 @@ type ResolverRoot interface {
 	EventType() EventTypeResolver
 	ExternalId() ExternalIdResolver
 	ExternalIdentityProvider() ExternalIdentityProviderResolver
+	FileExposure() FileExposureResolver
+	FileExposureInfo() FileExposureInfoResolver
+	FileSubscription() FileSubscriptionResolver
+	FileSubscriptionInfo() FileSubscriptionInfoResolver
+	McpServer() McpServerResolver
 	Mutation() MutationResolver
 	OAuth2ClientCredentials() OAuth2ClientCredentialsResolver
 	Query() QueryResolver
@@ -63,6 +73,152 @@ type ComplexityRoot struct {
 	AddTeamMemberPayload struct {
 		Errors func(childComplexity int) int
 		Team   func(childComplexity int) int
+	}
+
+	AgentCard struct {
+		Active           func(childComplexity int) int
+		ActiveExposure   func(childComplexity int) int
+		BasePath         func(childComplexity int) int
+		Category         func(childComplexity int) int
+		CreatedAt        func(childComplexity int) int
+		Description      func(childComplexity int) int
+		ID               func(childComplexity int) int
+		LastModifiedAt   func(childComplexity int) int
+		Name             func(childComplexity int) int
+		Namespace        func(childComplexity int) int
+		Oauth2Scopes     func(childComplexity int) int
+		Owner            func(childComplexity int) int
+		SpecificationURL func(childComplexity int) int
+		StatusMessage    func(childComplexity int) int
+		StatusPhase      func(childComplexity int) int
+		Version          func(childComplexity int) int
+	}
+
+	AgentCardConnection struct {
+		Edges      func(childComplexity int) int
+		PageInfo   func(childComplexity int) int
+		TotalCount func(childComplexity int) int
+	}
+
+	AgentCardEdge struct {
+		Cursor func(childComplexity int) int
+		Node   func(childComplexity int) int
+	}
+
+	AgenticExposure struct {
+		Active         func(childComplexity int) int
+		AgentCard      func(childComplexity int) int
+		ApprovalConfig func(childComplexity int) int
+		BasePath       func(childComplexity int) int
+		CreatedAt      func(childComplexity int) int
+		Environment    func(childComplexity int) int
+		ID             func(childComplexity int) int
+		LastModifiedAt func(childComplexity int) int
+		McpServer      func(childComplexity int) int
+		Namespace      func(childComplexity int) int
+		Owner          func(childComplexity int) int
+		Security       func(childComplexity int) int
+		StatusMessage  func(childComplexity int) int
+		StatusPhase    func(childComplexity int) int
+		Subscriptions  func(childComplexity int) int
+		Traffic        func(childComplexity int) int
+		Transformation func(childComplexity int) int
+		Upstreams      func(childComplexity int) int
+		Variant        func(childComplexity int) int
+		Visibility     func(childComplexity int) int
+	}
+
+	AgenticExposureConnection struct {
+		Edges      func(childComplexity int) int
+		PageInfo   func(childComplexity int) int
+		TotalCount func(childComplexity int) int
+	}
+
+	AgenticExposureEdge struct {
+		Cursor func(childComplexity int) int
+		Node   func(childComplexity int) int
+	}
+
+	AgenticExposureInfo struct {
+		Active               func(childComplexity int) int
+		ApprovalConfig       func(childComplexity int) int
+		BasePath             func(childComplexity int) int
+		ID                   func(childComplexity int) int
+		OwnerApplication     func(childComplexity int) int
+		OwnerApplicationName func(childComplexity int) int
+		OwnerTeam            func(childComplexity int) int
+		Traffic              func(childComplexity int) int
+		Variant              func(childComplexity int) int
+		Visibility           func(childComplexity int) int
+	}
+
+	AgenticExposureSecurity struct {
+		M2M func(childComplexity int) int
+	}
+
+	AgenticHeaderTransformation struct {
+		Add    func(childComplexity int) int
+		Remove func(childComplexity int) int
+	}
+
+	AgenticRequestResponseTransformation struct {
+		Headers func(childComplexity int) int
+	}
+
+	AgenticSubscriberFailover struct {
+		Enabled func(childComplexity int) int
+	}
+
+	AgenticSubscriberTraffic struct {
+		Failover func(childComplexity int) int
+	}
+
+	AgenticSubscription struct {
+		Approval         func(childComplexity int) int
+		ApprovalRequests func(childComplexity int) int
+		BasePath         func(childComplexity int) int
+		CreatedAt        func(childComplexity int) int
+		Environment      func(childComplexity int) int
+		GatewayURL       func(childComplexity int) int
+		ID               func(childComplexity int) int
+		LastModifiedAt   func(childComplexity int) int
+		Name             func(childComplexity int) int
+		Namespace        func(childComplexity int) int
+		Owner            func(childComplexity int) int
+		Security         func(childComplexity int) int
+		StatusMessage    func(childComplexity int) int
+		StatusPhase      func(childComplexity int) int
+		Target           func(childComplexity int) int
+		Traffic          func(childComplexity int) int
+	}
+
+	AgenticSubscriptionConnection struct {
+		Edges      func(childComplexity int) int
+		PageInfo   func(childComplexity int) int
+		TotalCount func(childComplexity int) int
+	}
+
+	AgenticSubscriptionEdge struct {
+		Cursor func(childComplexity int) int
+		Node   func(childComplexity int) int
+	}
+
+	AgenticSubscriptionInfo struct {
+		BasePath             func(childComplexity int) int
+		ID                   func(childComplexity int) int
+		OwnerApplication     func(childComplexity int) int
+		OwnerApplicationName func(childComplexity int) int
+		OwnerTeam            func(childComplexity int) int
+		StatusMessage        func(childComplexity int) int
+		StatusPhase          func(childComplexity int) int
+	}
+
+	AgenticSubscriptionSecurity struct {
+		M2M func(childComplexity int) int
+	}
+
+	AgenticTransformation struct {
+		Request func(childComplexity int) int
 	}
 
 	Api struct {
@@ -138,6 +294,7 @@ type ComplexityRoot struct {
 		BasePath             func(childComplexity int) int
 		Features             func(childComplexity int) int
 		ID                   func(childComplexity int) int
+		OwnerApplication     func(childComplexity int) int
 		OwnerApplicationName func(childComplexity int) int
 		OwnerTeam            func(childComplexity int) int
 		Traffic              func(childComplexity int) int
@@ -183,6 +340,7 @@ type ComplexityRoot struct {
 	ApiSubscriptionInfo struct {
 		BasePath             func(childComplexity int) int
 		ID                   func(childComplexity int) int
+		OwnerApplication     func(childComplexity int) int
 		OwnerApplicationName func(childComplexity int) int
 		OwnerTeam            func(childComplexity int) int
 		StatusMessage        func(childComplexity int) int
@@ -204,8 +362,10 @@ type ComplexityRoot struct {
 		CreatedAt             func(childComplexity int) int
 		CurrentExpiresAt      func(childComplexity int) int
 		Environment           func(childComplexity int) int
+		ExposedAgentics       func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.AgenticExposureOrder, where *ent.AgenticExposureWhereInput) int
 		ExposedApis           func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.ApiExposureOrder, where *ent.ApiExposureWhereInput) int
 		ExposedEvents         func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.EventExposureOrder, where *ent.EventExposureWhereInput) int
+		ExposedFileTypes      func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.FileExposureOrder, where *ent.FileExposureWhereInput) int
 		ExternalIds           func(childComplexity int) int
 		ID                    func(childComplexity int) int
 		IPRestrictions        func(childComplexity int) int
@@ -221,8 +381,10 @@ type ComplexityRoot struct {
 		SecretRotationPhase   func(childComplexity int) int
 		StatusMessage         func(childComplexity int) int
 		StatusPhase           func(childComplexity int) int
+		SubscribedAgentics    func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.AgenticSubscriptionOrder, where *ent.AgenticSubscriptionWhereInput) int
 		SubscribedApis        func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.ApiSubscriptionOrder, where *ent.ApiSubscriptionWhereInput) int
 		SubscribedEvents      func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.EventSubscriptionOrder, where *ent.EventSubscriptionWhereInput) int
+		SubscribedFileTypes   func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.FileSubscriptionOrder, where *ent.FileSubscriptionWhereInput) int
 		TokenURL              func(childComplexity int) int
 		Zone                  func(childComplexity int) int
 	}
@@ -236,6 +398,14 @@ type ComplexityRoot struct {
 	ApplicationEdge struct {
 		Cursor func(childComplexity int) int
 		Node   func(childComplexity int) int
+	}
+
+	ApplicationInfo struct {
+		ExternalIds func(childComplexity int) int
+		ID          func(childComplexity int) int
+		Name        func(childComplexity int) int
+		OwnerTeam   func(childComplexity int) int
+		Zone        func(childComplexity int) int
 	}
 
 	Approval struct {
@@ -410,6 +580,7 @@ type ComplexityRoot struct {
 		ApprovalConfig       func(childComplexity int) int
 		EventType            func(childComplexity int) int
 		ID                   func(childComplexity int) int
+		OwnerApplication     func(childComplexity int) int
 		OwnerApplicationName func(childComplexity int) int
 		OwnerTeam            func(childComplexity int) int
 		Visibility           func(childComplexity int) int
@@ -457,6 +628,7 @@ type ComplexityRoot struct {
 		DeliveryType         func(childComplexity int) int
 		EventType            func(childComplexity int) int
 		ID                   func(childComplexity int) int
+		OwnerApplication     func(childComplexity int) int
 		OwnerApplicationName func(childComplexity int) int
 		OwnerTeam            func(childComplexity int) int
 		StatusMessage        func(childComplexity int) int
@@ -512,6 +684,119 @@ type ComplexityRoot struct {
 		Zones func(childComplexity int) int
 	}
 
+	FileExposure struct {
+		Active         func(childComplexity int) int
+		ApprovalConfig func(childComplexity int) int
+		CreatedAt      func(childComplexity int) int
+		Environment    func(childComplexity int) int
+		FileType       func(childComplexity int) int
+		FileTypeDef    func(childComplexity int) int
+		ID             func(childComplexity int) int
+		LastModifiedAt func(childComplexity int) int
+		Namespace      func(childComplexity int) int
+		Owner          func(childComplexity int) int
+		Sftp           func(childComplexity int) int
+		StatusMessage  func(childComplexity int) int
+		StatusPhase    func(childComplexity int) int
+		Subscriptions  func(childComplexity int) int
+		Visibility     func(childComplexity int) int
+		Zone           func(childComplexity int) int
+		ZoneName       func(childComplexity int) int
+	}
+
+	FileExposureConnection struct {
+		Edges      func(childComplexity int) int
+		PageInfo   func(childComplexity int) int
+		TotalCount func(childComplexity int) int
+	}
+
+	FileExposureEdge struct {
+		Cursor func(childComplexity int) int
+		Node   func(childComplexity int) int
+	}
+
+	FileExposureInfo struct {
+		Active               func(childComplexity int) int
+		ApprovalConfig       func(childComplexity int) int
+		FileType             func(childComplexity int) int
+		ID                   func(childComplexity int) int
+		OwnerApplication     func(childComplexity int) int
+		OwnerApplicationName func(childComplexity int) int
+		OwnerTeam            func(childComplexity int) int
+		Visibility           func(childComplexity int) int
+	}
+
+	FileSFTP struct {
+		PublicKeys func(childComplexity int) int
+	}
+
+	FileSubscription struct {
+		Approval           func(childComplexity int) int
+		ApprovalRequests   func(childComplexity int) int
+		CreatedAt          func(childComplexity int) int
+		Environment        func(childComplexity int) int
+		FileType           func(childComplexity int) int
+		FileTypeDef        func(childComplexity int) int
+		ID                 func(childComplexity int) int
+		LastModifiedAt     func(childComplexity int) int
+		Name               func(childComplexity int) int
+		Namespace          func(childComplexity int) int
+		Owner              func(childComplexity int) int
+		ServiceExternalURL func(childComplexity int) int
+		ServiceURL         func(childComplexity int) int
+		Sftp               func(childComplexity int) int
+		StatusMessage      func(childComplexity int) int
+		StatusPhase        func(childComplexity int) int
+		Target             func(childComplexity int) int
+		Zone               func(childComplexity int) int
+		ZoneName           func(childComplexity int) int
+	}
+
+	FileSubscriptionConnection struct {
+		Edges      func(childComplexity int) int
+		PageInfo   func(childComplexity int) int
+		TotalCount func(childComplexity int) int
+	}
+
+	FileSubscriptionEdge struct {
+		Cursor func(childComplexity int) int
+		Node   func(childComplexity int) int
+	}
+
+	FileSubscriptionInfo struct {
+		FileType             func(childComplexity int) int
+		ID                   func(childComplexity int) int
+		OwnerApplication     func(childComplexity int) int
+		OwnerApplicationName func(childComplexity int) int
+		OwnerTeam            func(childComplexity int) int
+		StatusMessage        func(childComplexity int) int
+		StatusPhase          func(childComplexity int) int
+	}
+
+	FileType struct {
+		Active         func(childComplexity int) int
+		CreatedAt      func(childComplexity int) int
+		Description    func(childComplexity int) int
+		FileType       func(childComplexity int) int
+		ID             func(childComplexity int) int
+		LastModifiedAt func(childComplexity int) int
+		Namespace      func(childComplexity int) int
+		StatusMessage  func(childComplexity int) int
+		StatusPhase    func(childComplexity int) int
+		Variant        func(childComplexity int) int
+	}
+
+	FileTypeConnection struct {
+		Edges      func(childComplexity int) int
+		PageInfo   func(childComplexity int) int
+		TotalCount func(childComplexity int) int
+	}
+
+	FileTypeEdge struct {
+		Cursor func(childComplexity int) int
+		Node   func(childComplexity int) int
+	}
+
 	Group struct {
 		Description func(childComplexity int) int
 		DisplayName func(childComplexity int) int
@@ -537,6 +822,36 @@ type ComplexityRoot struct {
 		Basic       func(childComplexity int) int
 		ExternalIDP func(childComplexity int) int
 		Scopes      func(childComplexity int) int
+	}
+
+	McpServer struct {
+		Active           func(childComplexity int) int
+		ActiveExposure   func(childComplexity int) int
+		BasePath         func(childComplexity int) int
+		Category         func(childComplexity int) int
+		CreatedAt        func(childComplexity int) int
+		Description      func(childComplexity int) int
+		ID               func(childComplexity int) int
+		LastModifiedAt   func(childComplexity int) int
+		Name             func(childComplexity int) int
+		Namespace        func(childComplexity int) int
+		Oauth2Scopes     func(childComplexity int) int
+		Owner            func(childComplexity int) int
+		SpecificationURL func(childComplexity int) int
+		StatusMessage    func(childComplexity int) int
+		StatusPhase      func(childComplexity int) int
+		Version          func(childComplexity int) int
+	}
+
+	McpServerConnection struct {
+		Edges      func(childComplexity int) int
+		PageInfo   func(childComplexity int) int
+		TotalCount func(childComplexity int) int
+	}
+
+	McpServerEdge struct {
+		Cursor func(childComplexity int) int
+		Node   func(childComplexity int) int
 	}
 
 	Member struct {
@@ -610,22 +925,29 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
-		APICategories      func(childComplexity int) int
-		APIExposures       func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.ApiExposureOrder, where *ent.ApiExposureWhereInput) int
-		APISubscriptions   func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.ApiSubscriptionOrder, where *ent.ApiSubscriptionWhereInput) int
-		Apis               func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.ApiOrder, where *ent.ApiWhereInput) int
-		Applications       func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy []*ent.ApplicationOrder, where *ent.ApplicationWhereInput) int
-		ApprovalRequests   func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy []*ent.ApprovalRequestOrder, where *ent.ApprovalRequestWhereInput) int
-		Approvals          func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy []*ent.ApprovalOrder, where *ent.ApprovalWhereInput) int
-		EventExposures     func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.EventExposureOrder, where *ent.EventExposureWhereInput) int
-		EventSubscriptions func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.EventSubscriptionOrder, where *ent.EventSubscriptionWhereInput) int
-		EventTypes         func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.EventTypeOrder, where *ent.EventTypeWhereInput) int
-		Groups             func(childComplexity int, where *ent.GroupWhereInput) int
-		Node               func(childComplexity int, id int) int
-		Nodes              func(childComplexity int, ids []int) int
-		PermissionSets     func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.PermissionSetOrder, where *ent.PermissionSetWhereInput) int
-		Teams              func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy []*ent.TeamOrder, where *ent.TeamWhereInput) int
-		Zones              func(childComplexity int) int
+		APICategories        func(childComplexity int) int
+		APIExposures         func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.ApiExposureOrder, where *ent.ApiExposureWhereInput) int
+		APISubscriptions     func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.ApiSubscriptionOrder, where *ent.ApiSubscriptionWhereInput) int
+		AgentCards           func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.AgentCardOrder, where *ent.AgentCardWhereInput) int
+		AgenticExposures     func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.AgenticExposureOrder, where *ent.AgenticExposureWhereInput) int
+		AgenticSubscriptions func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.AgenticSubscriptionOrder, where *ent.AgenticSubscriptionWhereInput) int
+		Apis                 func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.ApiOrder, where *ent.ApiWhereInput) int
+		Applications         func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy []*ent.ApplicationOrder, where *ent.ApplicationWhereInput) int
+		ApprovalRequests     func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy []*ent.ApprovalRequestOrder, where *ent.ApprovalRequestWhereInput) int
+		Approvals            func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy []*ent.ApprovalOrder, where *ent.ApprovalWhereInput) int
+		EventExposures       func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.EventExposureOrder, where *ent.EventExposureWhereInput) int
+		EventSubscriptions   func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.EventSubscriptionOrder, where *ent.EventSubscriptionWhereInput) int
+		EventTypes           func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.EventTypeOrder, where *ent.EventTypeWhereInput) int
+		FileExposures        func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.FileExposureOrder, where *ent.FileExposureWhereInput) int
+		FileSubscriptions    func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.FileSubscriptionOrder, where *ent.FileSubscriptionWhereInput) int
+		FileTypes            func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.FileTypeOrder, where *ent.FileTypeWhereInput) int
+		Groups               func(childComplexity int, where *ent.GroupWhereInput) int
+		McpServers           func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.McpServerOrder, where *ent.McpServerWhereInput) int
+		Node                 func(childComplexity int, id int) int
+		Nodes                func(childComplexity int, ids []int) int
+		PermissionSets       func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.PermissionSetOrder, where *ent.PermissionSetWhereInput) int
+		Teams                func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy []*ent.TeamOrder, where *ent.TeamWhereInput) int
+		Zones                func(childComplexity int) int
 	}
 
 	RateLimit struct {
@@ -677,6 +999,11 @@ type ComplexityRoot struct {
 		Team     func(childComplexity int) int
 	}
 
+	SSHPublicKeySpec struct {
+		Key   func(childComplexity int) int
+		Label func(childComplexity int) int
+	}
+
 	SelectionFilter struct {
 		Attributes func(childComplexity int) int
 		Expression func(childComplexity int) int
@@ -698,6 +1025,7 @@ type ComplexityRoot struct {
 	}
 
 	Team struct {
+		AgentCards     func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.AgentCardOrder, where *ent.AgentCardWhereInput) int
 		Apis           func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.ApiOrder, where *ent.ApiWhereInput) int
 		Applications   func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy []*ent.ApplicationOrder, where *ent.ApplicationWhereInput) int
 		Category       func(childComplexity int) int
@@ -710,6 +1038,7 @@ type ComplexityRoot struct {
 		Group          func(childComplexity int) int
 		ID             func(childComplexity int) int
 		LastModifiedAt func(childComplexity int) int
+		McpServers     func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.McpServerOrder, where *ent.McpServerWhereInput) int
 		Members        func(childComplexity int) int
 		Name           func(childComplexity int) int
 		Namespace      func(childComplexity int) int
@@ -799,6 +1128,576 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.AddTeamMemberPayload.Team(childComplexity), true
+
+	case "AgentCard.active":
+		if e.ComplexityRoot.AgentCard.Active == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgentCard.Active(childComplexity), true
+	case "AgentCard.activeExposure":
+		if e.ComplexityRoot.AgentCard.ActiveExposure == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgentCard.ActiveExposure(childComplexity), true
+	case "AgentCard.basePath":
+		if e.ComplexityRoot.AgentCard.BasePath == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgentCard.BasePath(childComplexity), true
+	case "AgentCard.category":
+		if e.ComplexityRoot.AgentCard.Category == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgentCard.Category(childComplexity), true
+	case "AgentCard.createdAt":
+		if e.ComplexityRoot.AgentCard.CreatedAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgentCard.CreatedAt(childComplexity), true
+	case "AgentCard.description":
+		if e.ComplexityRoot.AgentCard.Description == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgentCard.Description(childComplexity), true
+	case "AgentCard.id":
+		if e.ComplexityRoot.AgentCard.ID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgentCard.ID(childComplexity), true
+	case "AgentCard.lastModifiedAt":
+		if e.ComplexityRoot.AgentCard.LastModifiedAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgentCard.LastModifiedAt(childComplexity), true
+	case "AgentCard.name":
+		if e.ComplexityRoot.AgentCard.Name == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgentCard.Name(childComplexity), true
+	case "AgentCard.namespace":
+		if e.ComplexityRoot.AgentCard.Namespace == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgentCard.Namespace(childComplexity), true
+	case "AgentCard.oauth2Scopes":
+		if e.ComplexityRoot.AgentCard.Oauth2Scopes == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgentCard.Oauth2Scopes(childComplexity), true
+	case "AgentCard.owner":
+		if e.ComplexityRoot.AgentCard.Owner == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgentCard.Owner(childComplexity), true
+	case "AgentCard.specificationUrl":
+		if e.ComplexityRoot.AgentCard.SpecificationURL == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgentCard.SpecificationURL(childComplexity), true
+	case "AgentCard.statusMessage":
+		if e.ComplexityRoot.AgentCard.StatusMessage == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgentCard.StatusMessage(childComplexity), true
+	case "AgentCard.statusPhase":
+		if e.ComplexityRoot.AgentCard.StatusPhase == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgentCard.StatusPhase(childComplexity), true
+	case "AgentCard.version":
+		if e.ComplexityRoot.AgentCard.Version == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgentCard.Version(childComplexity), true
+
+	case "AgentCardConnection.edges":
+		if e.ComplexityRoot.AgentCardConnection.Edges == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgentCardConnection.Edges(childComplexity), true
+	case "AgentCardConnection.pageInfo":
+		if e.ComplexityRoot.AgentCardConnection.PageInfo == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgentCardConnection.PageInfo(childComplexity), true
+	case "AgentCardConnection.totalCount":
+		if e.ComplexityRoot.AgentCardConnection.TotalCount == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgentCardConnection.TotalCount(childComplexity), true
+
+	case "AgentCardEdge.cursor":
+		if e.ComplexityRoot.AgentCardEdge.Cursor == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgentCardEdge.Cursor(childComplexity), true
+	case "AgentCardEdge.node":
+		if e.ComplexityRoot.AgentCardEdge.Node == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgentCardEdge.Node(childComplexity), true
+
+	case "AgenticExposure.active":
+		if e.ComplexityRoot.AgenticExposure.Active == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgenticExposure.Active(childComplexity), true
+	case "AgenticExposure.agentCard":
+		if e.ComplexityRoot.AgenticExposure.AgentCard == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgenticExposure.AgentCard(childComplexity), true
+	case "AgenticExposure.approvalConfig":
+		if e.ComplexityRoot.AgenticExposure.ApprovalConfig == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgenticExposure.ApprovalConfig(childComplexity), true
+	case "AgenticExposure.basePath":
+		if e.ComplexityRoot.AgenticExposure.BasePath == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgenticExposure.BasePath(childComplexity), true
+	case "AgenticExposure.createdAt":
+		if e.ComplexityRoot.AgenticExposure.CreatedAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgenticExposure.CreatedAt(childComplexity), true
+	case "AgenticExposure.environment":
+		if e.ComplexityRoot.AgenticExposure.Environment == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgenticExposure.Environment(childComplexity), true
+	case "AgenticExposure.id":
+		if e.ComplexityRoot.AgenticExposure.ID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgenticExposure.ID(childComplexity), true
+	case "AgenticExposure.lastModifiedAt":
+		if e.ComplexityRoot.AgenticExposure.LastModifiedAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgenticExposure.LastModifiedAt(childComplexity), true
+	case "AgenticExposure.mcpServer":
+		if e.ComplexityRoot.AgenticExposure.McpServer == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgenticExposure.McpServer(childComplexity), true
+	case "AgenticExposure.namespace":
+		if e.ComplexityRoot.AgenticExposure.Namespace == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgenticExposure.Namespace(childComplexity), true
+	case "AgenticExposure.owner":
+		if e.ComplexityRoot.AgenticExposure.Owner == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgenticExposure.Owner(childComplexity), true
+	case "AgenticExposure.security":
+		if e.ComplexityRoot.AgenticExposure.Security == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgenticExposure.Security(childComplexity), true
+	case "AgenticExposure.statusMessage":
+		if e.ComplexityRoot.AgenticExposure.StatusMessage == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgenticExposure.StatusMessage(childComplexity), true
+	case "AgenticExposure.statusPhase":
+		if e.ComplexityRoot.AgenticExposure.StatusPhase == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgenticExposure.StatusPhase(childComplexity), true
+	case "AgenticExposure.subscriptions":
+		if e.ComplexityRoot.AgenticExposure.Subscriptions == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgenticExposure.Subscriptions(childComplexity), true
+	case "AgenticExposure.traffic":
+		if e.ComplexityRoot.AgenticExposure.Traffic == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgenticExposure.Traffic(childComplexity), true
+	case "AgenticExposure.transformation":
+		if e.ComplexityRoot.AgenticExposure.Transformation == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgenticExposure.Transformation(childComplexity), true
+	case "AgenticExposure.upstreams":
+		if e.ComplexityRoot.AgenticExposure.Upstreams == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgenticExposure.Upstreams(childComplexity), true
+	case "AgenticExposure.variant":
+		if e.ComplexityRoot.AgenticExposure.Variant == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgenticExposure.Variant(childComplexity), true
+	case "AgenticExposure.visibility":
+		if e.ComplexityRoot.AgenticExposure.Visibility == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgenticExposure.Visibility(childComplexity), true
+
+	case "AgenticExposureConnection.edges":
+		if e.ComplexityRoot.AgenticExposureConnection.Edges == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgenticExposureConnection.Edges(childComplexity), true
+	case "AgenticExposureConnection.pageInfo":
+		if e.ComplexityRoot.AgenticExposureConnection.PageInfo == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgenticExposureConnection.PageInfo(childComplexity), true
+	case "AgenticExposureConnection.totalCount":
+		if e.ComplexityRoot.AgenticExposureConnection.TotalCount == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgenticExposureConnection.TotalCount(childComplexity), true
+
+	case "AgenticExposureEdge.cursor":
+		if e.ComplexityRoot.AgenticExposureEdge.Cursor == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgenticExposureEdge.Cursor(childComplexity), true
+	case "AgenticExposureEdge.node":
+		if e.ComplexityRoot.AgenticExposureEdge.Node == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgenticExposureEdge.Node(childComplexity), true
+
+	case "AgenticExposureInfo.active":
+		if e.ComplexityRoot.AgenticExposureInfo.Active == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgenticExposureInfo.Active(childComplexity), true
+	case "AgenticExposureInfo.approvalConfig":
+		if e.ComplexityRoot.AgenticExposureInfo.ApprovalConfig == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgenticExposureInfo.ApprovalConfig(childComplexity), true
+	case "AgenticExposureInfo.basePath":
+		if e.ComplexityRoot.AgenticExposureInfo.BasePath == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgenticExposureInfo.BasePath(childComplexity), true
+	case "AgenticExposureInfo.id":
+		if e.ComplexityRoot.AgenticExposureInfo.ID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgenticExposureInfo.ID(childComplexity), true
+	case "AgenticExposureInfo.ownerApplication":
+		if e.ComplexityRoot.AgenticExposureInfo.OwnerApplication == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgenticExposureInfo.OwnerApplication(childComplexity), true
+	case "AgenticExposureInfo.ownerApplicationName":
+		if e.ComplexityRoot.AgenticExposureInfo.OwnerApplicationName == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgenticExposureInfo.OwnerApplicationName(childComplexity), true
+	case "AgenticExposureInfo.ownerTeam":
+		if e.ComplexityRoot.AgenticExposureInfo.OwnerTeam == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgenticExposureInfo.OwnerTeam(childComplexity), true
+	case "AgenticExposureInfo.traffic":
+		if e.ComplexityRoot.AgenticExposureInfo.Traffic == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgenticExposureInfo.Traffic(childComplexity), true
+	case "AgenticExposureInfo.variant":
+		if e.ComplexityRoot.AgenticExposureInfo.Variant == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgenticExposureInfo.Variant(childComplexity), true
+	case "AgenticExposureInfo.visibility":
+		if e.ComplexityRoot.AgenticExposureInfo.Visibility == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgenticExposureInfo.Visibility(childComplexity), true
+
+	case "AgenticExposureSecurity.m2m":
+		if e.ComplexityRoot.AgenticExposureSecurity.M2M == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgenticExposureSecurity.M2M(childComplexity), true
+
+	case "AgenticHeaderTransformation.add":
+		if e.ComplexityRoot.AgenticHeaderTransformation.Add == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgenticHeaderTransformation.Add(childComplexity), true
+	case "AgenticHeaderTransformation.remove":
+		if e.ComplexityRoot.AgenticHeaderTransformation.Remove == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgenticHeaderTransformation.Remove(childComplexity), true
+
+	case "AgenticRequestResponseTransformation.headers":
+		if e.ComplexityRoot.AgenticRequestResponseTransformation.Headers == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgenticRequestResponseTransformation.Headers(childComplexity), true
+
+	case "AgenticSubscriberFailover.enabled":
+		if e.ComplexityRoot.AgenticSubscriberFailover.Enabled == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgenticSubscriberFailover.Enabled(childComplexity), true
+
+	case "AgenticSubscriberTraffic.failover":
+		if e.ComplexityRoot.AgenticSubscriberTraffic.Failover == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgenticSubscriberTraffic.Failover(childComplexity), true
+
+	case "AgenticSubscription.approval":
+		if e.ComplexityRoot.AgenticSubscription.Approval == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgenticSubscription.Approval(childComplexity), true
+	case "AgenticSubscription.approvalRequests":
+		if e.ComplexityRoot.AgenticSubscription.ApprovalRequests == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgenticSubscription.ApprovalRequests(childComplexity), true
+	case "AgenticSubscription.basePath":
+		if e.ComplexityRoot.AgenticSubscription.BasePath == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgenticSubscription.BasePath(childComplexity), true
+	case "AgenticSubscription.createdAt":
+		if e.ComplexityRoot.AgenticSubscription.CreatedAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgenticSubscription.CreatedAt(childComplexity), true
+	case "AgenticSubscription.environment":
+		if e.ComplexityRoot.AgenticSubscription.Environment == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgenticSubscription.Environment(childComplexity), true
+	case "AgenticSubscription.gatewayURL":
+		if e.ComplexityRoot.AgenticSubscription.GatewayURL == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgenticSubscription.GatewayURL(childComplexity), true
+	case "AgenticSubscription.id":
+		if e.ComplexityRoot.AgenticSubscription.ID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgenticSubscription.ID(childComplexity), true
+	case "AgenticSubscription.lastModifiedAt":
+		if e.ComplexityRoot.AgenticSubscription.LastModifiedAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgenticSubscription.LastModifiedAt(childComplexity), true
+	case "AgenticSubscription.name":
+		if e.ComplexityRoot.AgenticSubscription.Name == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgenticSubscription.Name(childComplexity), true
+	case "AgenticSubscription.namespace":
+		if e.ComplexityRoot.AgenticSubscription.Namespace == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgenticSubscription.Namespace(childComplexity), true
+	case "AgenticSubscription.owner":
+		if e.ComplexityRoot.AgenticSubscription.Owner == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgenticSubscription.Owner(childComplexity), true
+	case "AgenticSubscription.security":
+		if e.ComplexityRoot.AgenticSubscription.Security == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgenticSubscription.Security(childComplexity), true
+	case "AgenticSubscription.statusMessage":
+		if e.ComplexityRoot.AgenticSubscription.StatusMessage == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgenticSubscription.StatusMessage(childComplexity), true
+	case "AgenticSubscription.statusPhase":
+		if e.ComplexityRoot.AgenticSubscription.StatusPhase == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgenticSubscription.StatusPhase(childComplexity), true
+	case "AgenticSubscription.target":
+		if e.ComplexityRoot.AgenticSubscription.Target == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgenticSubscription.Target(childComplexity), true
+	case "AgenticSubscription.traffic":
+		if e.ComplexityRoot.AgenticSubscription.Traffic == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgenticSubscription.Traffic(childComplexity), true
+
+	case "AgenticSubscriptionConnection.edges":
+		if e.ComplexityRoot.AgenticSubscriptionConnection.Edges == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgenticSubscriptionConnection.Edges(childComplexity), true
+	case "AgenticSubscriptionConnection.pageInfo":
+		if e.ComplexityRoot.AgenticSubscriptionConnection.PageInfo == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgenticSubscriptionConnection.PageInfo(childComplexity), true
+	case "AgenticSubscriptionConnection.totalCount":
+		if e.ComplexityRoot.AgenticSubscriptionConnection.TotalCount == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgenticSubscriptionConnection.TotalCount(childComplexity), true
+
+	case "AgenticSubscriptionEdge.cursor":
+		if e.ComplexityRoot.AgenticSubscriptionEdge.Cursor == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgenticSubscriptionEdge.Cursor(childComplexity), true
+	case "AgenticSubscriptionEdge.node":
+		if e.ComplexityRoot.AgenticSubscriptionEdge.Node == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgenticSubscriptionEdge.Node(childComplexity), true
+
+	case "AgenticSubscriptionInfo.basePath":
+		if e.ComplexityRoot.AgenticSubscriptionInfo.BasePath == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgenticSubscriptionInfo.BasePath(childComplexity), true
+	case "AgenticSubscriptionInfo.id":
+		if e.ComplexityRoot.AgenticSubscriptionInfo.ID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgenticSubscriptionInfo.ID(childComplexity), true
+	case "AgenticSubscriptionInfo.ownerApplication":
+		if e.ComplexityRoot.AgenticSubscriptionInfo.OwnerApplication == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgenticSubscriptionInfo.OwnerApplication(childComplexity), true
+	case "AgenticSubscriptionInfo.ownerApplicationName":
+		if e.ComplexityRoot.AgenticSubscriptionInfo.OwnerApplicationName == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgenticSubscriptionInfo.OwnerApplicationName(childComplexity), true
+	case "AgenticSubscriptionInfo.ownerTeam":
+		if e.ComplexityRoot.AgenticSubscriptionInfo.OwnerTeam == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgenticSubscriptionInfo.OwnerTeam(childComplexity), true
+	case "AgenticSubscriptionInfo.statusMessage":
+		if e.ComplexityRoot.AgenticSubscriptionInfo.StatusMessage == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgenticSubscriptionInfo.StatusMessage(childComplexity), true
+	case "AgenticSubscriptionInfo.statusPhase":
+		if e.ComplexityRoot.AgenticSubscriptionInfo.StatusPhase == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgenticSubscriptionInfo.StatusPhase(childComplexity), true
+
+	case "AgenticSubscriptionSecurity.m2m":
+		if e.ComplexityRoot.AgenticSubscriptionSecurity.M2M == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgenticSubscriptionSecurity.M2M(childComplexity), true
+
+	case "AgenticTransformation.request":
+		if e.ComplexityRoot.AgenticTransformation.Request == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgenticTransformation.Request(childComplexity), true
 
 	case "Api.active":
 		if e.ComplexityRoot.Api.Active == nil {
@@ -1113,6 +2012,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.ApiExposureInfo.ID(childComplexity), true
+	case "ApiExposureInfo.ownerApplication":
+		if e.ComplexityRoot.ApiExposureInfo.OwnerApplication == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApiExposureInfo.OwnerApplication(childComplexity), true
 	case "ApiExposureInfo.ownerApplicationName":
 		if e.ComplexityRoot.ApiExposureInfo.OwnerApplicationName == nil {
 			break
@@ -1298,6 +2203,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.ApiSubscriptionInfo.ID(childComplexity), true
+	case "ApiSubscriptionInfo.ownerApplication":
+		if e.ComplexityRoot.ApiSubscriptionInfo.OwnerApplication == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApiSubscriptionInfo.OwnerApplication(childComplexity), true
 	case "ApiSubscriptionInfo.ownerApplicationName":
 		if e.ComplexityRoot.ApiSubscriptionInfo.OwnerApplicationName == nil {
 			break
@@ -1373,6 +2284,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Application.Environment(childComplexity), true
+	case "Application.exposedAgentics":
+		if e.ComplexityRoot.Application.ExposedAgentics == nil {
+			break
+		}
+
+		args, err := ec.field_Application_exposedAgentics_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Application.ExposedAgentics(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].(*ent.AgenticExposureOrder), args["where"].(*ent.AgenticExposureWhereInput)), true
 	case "Application.exposedApis":
 		if e.ComplexityRoot.Application.ExposedApis == nil {
 			break
@@ -1395,6 +2317,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Application.ExposedEvents(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].(*ent.EventExposureOrder), args["where"].(*ent.EventExposureWhereInput)), true
+	case "Application.exposedFileTypes":
+		if e.ComplexityRoot.Application.ExposedFileTypes == nil {
+			break
+		}
+
+		args, err := ec.field_Application_exposedFileTypes_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Application.ExposedFileTypes(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].(*ent.FileExposureOrder), args["where"].(*ent.FileExposureWhereInput)), true
 	case "Application.externalIds":
 		if e.ComplexityRoot.Application.ExternalIds == nil {
 			break
@@ -1485,6 +2418,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Application.StatusPhase(childComplexity), true
+	case "Application.subscribedAgentics":
+		if e.ComplexityRoot.Application.SubscribedAgentics == nil {
+			break
+		}
+
+		args, err := ec.field_Application_subscribedAgentics_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Application.SubscribedAgentics(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].(*ent.AgenticSubscriptionOrder), args["where"].(*ent.AgenticSubscriptionWhereInput)), true
 	case "Application.subscribedApis":
 		if e.ComplexityRoot.Application.SubscribedApis == nil {
 			break
@@ -1507,6 +2451,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Application.SubscribedEvents(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].(*ent.EventSubscriptionOrder), args["where"].(*ent.EventSubscriptionWhereInput)), true
+	case "Application.subscribedFileTypes":
+		if e.ComplexityRoot.Application.SubscribedFileTypes == nil {
+			break
+		}
+
+		args, err := ec.field_Application_subscribedFileTypes_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Application.SubscribedFileTypes(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].(*ent.FileSubscriptionOrder), args["where"].(*ent.FileSubscriptionWhereInput)), true
 	case "Application.tokenURL":
 		if e.ComplexityRoot.Application.TokenURL == nil {
 			break
@@ -1552,6 +2507,37 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.ApplicationEdge.Node(childComplexity), true
 
+	case "ApplicationInfo.externalIds":
+		if e.ComplexityRoot.ApplicationInfo.ExternalIds == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApplicationInfo.ExternalIds(childComplexity), true
+	case "ApplicationInfo.id":
+		if e.ComplexityRoot.ApplicationInfo.ID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApplicationInfo.ID(childComplexity), true
+	case "ApplicationInfo.name":
+		if e.ComplexityRoot.ApplicationInfo.Name == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApplicationInfo.Name(childComplexity), true
+	case "ApplicationInfo.ownerTeam":
+		if e.ComplexityRoot.ApplicationInfo.OwnerTeam == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApplicationInfo.OwnerTeam(childComplexity), true
+	case "ApplicationInfo.zone":
+		if e.ComplexityRoot.ApplicationInfo.Zone == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApplicationInfo.Zone(childComplexity), true
+
 	case "Approval.action":
 		if e.ComplexityRoot.Approval.Action == nil {
 			break
@@ -1594,7 +2580,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Approval.Environment(childComplexity), true
-	case "Approval.expiresat":
+	case "Approval.expiresAt":
 		if e.ComplexityRoot.Approval.ExpiresAt == nil {
 			break
 		}
@@ -2221,6 +3207,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.EventExposureInfo.ID(childComplexity), true
+	case "EventExposureInfo.ownerApplication":
+		if e.ComplexityRoot.EventExposureInfo.OwnerApplication == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventExposureInfo.OwnerApplication(childComplexity), true
 	case "EventExposureInfo.ownerApplicationName":
 		if e.ComplexityRoot.EventExposureInfo.OwnerApplicationName == nil {
 			break
@@ -2418,6 +3410,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.EventSubscriptionInfo.ID(childComplexity), true
+	case "EventSubscriptionInfo.ownerApplication":
+		if e.ComplexityRoot.EventSubscriptionInfo.OwnerApplication == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventSubscriptionInfo.OwnerApplication(childComplexity), true
 	case "EventSubscriptionInfo.ownerApplicationName":
 		if e.ComplexityRoot.EventSubscriptionInfo.OwnerApplicationName == nil {
 			break
@@ -2618,6 +3616,480 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.Failover.Zones(childComplexity), true
 
+	case "FileExposure.active":
+		if e.ComplexityRoot.FileExposure.Active == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileExposure.Active(childComplexity), true
+	case "FileExposure.approvalConfig":
+		if e.ComplexityRoot.FileExposure.ApprovalConfig == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileExposure.ApprovalConfig(childComplexity), true
+	case "FileExposure.createdAt":
+		if e.ComplexityRoot.FileExposure.CreatedAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileExposure.CreatedAt(childComplexity), true
+	case "FileExposure.environment":
+		if e.ComplexityRoot.FileExposure.Environment == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileExposure.Environment(childComplexity), true
+	case "FileExposure.fileType":
+		if e.ComplexityRoot.FileExposure.FileType == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileExposure.FileType(childComplexity), true
+	case "FileExposure.fileTypeDef":
+		if e.ComplexityRoot.FileExposure.FileTypeDef == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileExposure.FileTypeDef(childComplexity), true
+	case "FileExposure.id":
+		if e.ComplexityRoot.FileExposure.ID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileExposure.ID(childComplexity), true
+	case "FileExposure.lastModifiedAt":
+		if e.ComplexityRoot.FileExposure.LastModifiedAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileExposure.LastModifiedAt(childComplexity), true
+	case "FileExposure.namespace":
+		if e.ComplexityRoot.FileExposure.Namespace == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileExposure.Namespace(childComplexity), true
+	case "FileExposure.owner":
+		if e.ComplexityRoot.FileExposure.Owner == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileExposure.Owner(childComplexity), true
+	case "FileExposure.sftp":
+		if e.ComplexityRoot.FileExposure.Sftp == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileExposure.Sftp(childComplexity), true
+	case "FileExposure.statusMessage":
+		if e.ComplexityRoot.FileExposure.StatusMessage == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileExposure.StatusMessage(childComplexity), true
+	case "FileExposure.statusPhase":
+		if e.ComplexityRoot.FileExposure.StatusPhase == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileExposure.StatusPhase(childComplexity), true
+	case "FileExposure.subscriptions":
+		if e.ComplexityRoot.FileExposure.Subscriptions == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileExposure.Subscriptions(childComplexity), true
+	case "FileExposure.visibility":
+		if e.ComplexityRoot.FileExposure.Visibility == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileExposure.Visibility(childComplexity), true
+	case "FileExposure.zone":
+		if e.ComplexityRoot.FileExposure.Zone == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileExposure.Zone(childComplexity), true
+	case "FileExposure.zoneName":
+		if e.ComplexityRoot.FileExposure.ZoneName == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileExposure.ZoneName(childComplexity), true
+
+	case "FileExposureConnection.edges":
+		if e.ComplexityRoot.FileExposureConnection.Edges == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileExposureConnection.Edges(childComplexity), true
+	case "FileExposureConnection.pageInfo":
+		if e.ComplexityRoot.FileExposureConnection.PageInfo == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileExposureConnection.PageInfo(childComplexity), true
+	case "FileExposureConnection.totalCount":
+		if e.ComplexityRoot.FileExposureConnection.TotalCount == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileExposureConnection.TotalCount(childComplexity), true
+
+	case "FileExposureEdge.cursor":
+		if e.ComplexityRoot.FileExposureEdge.Cursor == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileExposureEdge.Cursor(childComplexity), true
+	case "FileExposureEdge.node":
+		if e.ComplexityRoot.FileExposureEdge.Node == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileExposureEdge.Node(childComplexity), true
+
+	case "FileExposureInfo.active":
+		if e.ComplexityRoot.FileExposureInfo.Active == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileExposureInfo.Active(childComplexity), true
+	case "FileExposureInfo.approvalConfig":
+		if e.ComplexityRoot.FileExposureInfo.ApprovalConfig == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileExposureInfo.ApprovalConfig(childComplexity), true
+	case "FileExposureInfo.fileType":
+		if e.ComplexityRoot.FileExposureInfo.FileType == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileExposureInfo.FileType(childComplexity), true
+	case "FileExposureInfo.id":
+		if e.ComplexityRoot.FileExposureInfo.ID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileExposureInfo.ID(childComplexity), true
+	case "FileExposureInfo.ownerApplication":
+		if e.ComplexityRoot.FileExposureInfo.OwnerApplication == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileExposureInfo.OwnerApplication(childComplexity), true
+	case "FileExposureInfo.ownerApplicationName":
+		if e.ComplexityRoot.FileExposureInfo.OwnerApplicationName == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileExposureInfo.OwnerApplicationName(childComplexity), true
+	case "FileExposureInfo.ownerTeam":
+		if e.ComplexityRoot.FileExposureInfo.OwnerTeam == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileExposureInfo.OwnerTeam(childComplexity), true
+	case "FileExposureInfo.visibility":
+		if e.ComplexityRoot.FileExposureInfo.Visibility == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileExposureInfo.Visibility(childComplexity), true
+
+	case "FileSFTP.publicKeys":
+		if e.ComplexityRoot.FileSFTP.PublicKeys == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileSFTP.PublicKeys(childComplexity), true
+
+	case "FileSubscription.approval":
+		if e.ComplexityRoot.FileSubscription.Approval == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileSubscription.Approval(childComplexity), true
+	case "FileSubscription.approvalRequests":
+		if e.ComplexityRoot.FileSubscription.ApprovalRequests == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileSubscription.ApprovalRequests(childComplexity), true
+	case "FileSubscription.createdAt":
+		if e.ComplexityRoot.FileSubscription.CreatedAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileSubscription.CreatedAt(childComplexity), true
+	case "FileSubscription.environment":
+		if e.ComplexityRoot.FileSubscription.Environment == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileSubscription.Environment(childComplexity), true
+	case "FileSubscription.fileType":
+		if e.ComplexityRoot.FileSubscription.FileType == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileSubscription.FileType(childComplexity), true
+	case "FileSubscription.fileTypeDef":
+		if e.ComplexityRoot.FileSubscription.FileTypeDef == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileSubscription.FileTypeDef(childComplexity), true
+	case "FileSubscription.id":
+		if e.ComplexityRoot.FileSubscription.ID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileSubscription.ID(childComplexity), true
+	case "FileSubscription.lastModifiedAt":
+		if e.ComplexityRoot.FileSubscription.LastModifiedAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileSubscription.LastModifiedAt(childComplexity), true
+	case "FileSubscription.name":
+		if e.ComplexityRoot.FileSubscription.Name == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileSubscription.Name(childComplexity), true
+	case "FileSubscription.namespace":
+		if e.ComplexityRoot.FileSubscription.Namespace == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileSubscription.Namespace(childComplexity), true
+	case "FileSubscription.owner":
+		if e.ComplexityRoot.FileSubscription.Owner == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileSubscription.Owner(childComplexity), true
+	case "FileSubscription.serviceExternalURL":
+		if e.ComplexityRoot.FileSubscription.ServiceExternalURL == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileSubscription.ServiceExternalURL(childComplexity), true
+	case "FileSubscription.serviceURL":
+		if e.ComplexityRoot.FileSubscription.ServiceURL == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileSubscription.ServiceURL(childComplexity), true
+	case "FileSubscription.sftp":
+		if e.ComplexityRoot.FileSubscription.Sftp == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileSubscription.Sftp(childComplexity), true
+	case "FileSubscription.statusMessage":
+		if e.ComplexityRoot.FileSubscription.StatusMessage == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileSubscription.StatusMessage(childComplexity), true
+	case "FileSubscription.statusPhase":
+		if e.ComplexityRoot.FileSubscription.StatusPhase == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileSubscription.StatusPhase(childComplexity), true
+	case "FileSubscription.target":
+		if e.ComplexityRoot.FileSubscription.Target == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileSubscription.Target(childComplexity), true
+	case "FileSubscription.zone":
+		if e.ComplexityRoot.FileSubscription.Zone == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileSubscription.Zone(childComplexity), true
+	case "FileSubscription.zoneName":
+		if e.ComplexityRoot.FileSubscription.ZoneName == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileSubscription.ZoneName(childComplexity), true
+
+	case "FileSubscriptionConnection.edges":
+		if e.ComplexityRoot.FileSubscriptionConnection.Edges == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileSubscriptionConnection.Edges(childComplexity), true
+	case "FileSubscriptionConnection.pageInfo":
+		if e.ComplexityRoot.FileSubscriptionConnection.PageInfo == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileSubscriptionConnection.PageInfo(childComplexity), true
+	case "FileSubscriptionConnection.totalCount":
+		if e.ComplexityRoot.FileSubscriptionConnection.TotalCount == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileSubscriptionConnection.TotalCount(childComplexity), true
+
+	case "FileSubscriptionEdge.cursor":
+		if e.ComplexityRoot.FileSubscriptionEdge.Cursor == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileSubscriptionEdge.Cursor(childComplexity), true
+	case "FileSubscriptionEdge.node":
+		if e.ComplexityRoot.FileSubscriptionEdge.Node == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileSubscriptionEdge.Node(childComplexity), true
+
+	case "FileSubscriptionInfo.fileType":
+		if e.ComplexityRoot.FileSubscriptionInfo.FileType == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileSubscriptionInfo.FileType(childComplexity), true
+	case "FileSubscriptionInfo.id":
+		if e.ComplexityRoot.FileSubscriptionInfo.ID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileSubscriptionInfo.ID(childComplexity), true
+	case "FileSubscriptionInfo.ownerApplication":
+		if e.ComplexityRoot.FileSubscriptionInfo.OwnerApplication == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileSubscriptionInfo.OwnerApplication(childComplexity), true
+	case "FileSubscriptionInfo.ownerApplicationName":
+		if e.ComplexityRoot.FileSubscriptionInfo.OwnerApplicationName == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileSubscriptionInfo.OwnerApplicationName(childComplexity), true
+	case "FileSubscriptionInfo.ownerTeam":
+		if e.ComplexityRoot.FileSubscriptionInfo.OwnerTeam == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileSubscriptionInfo.OwnerTeam(childComplexity), true
+	case "FileSubscriptionInfo.statusMessage":
+		if e.ComplexityRoot.FileSubscriptionInfo.StatusMessage == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileSubscriptionInfo.StatusMessage(childComplexity), true
+	case "FileSubscriptionInfo.statusPhase":
+		if e.ComplexityRoot.FileSubscriptionInfo.StatusPhase == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileSubscriptionInfo.StatusPhase(childComplexity), true
+
+	case "FileType.active":
+		if e.ComplexityRoot.FileType.Active == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileType.Active(childComplexity), true
+	case "FileType.createdAt":
+		if e.ComplexityRoot.FileType.CreatedAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileType.CreatedAt(childComplexity), true
+	case "FileType.description":
+		if e.ComplexityRoot.FileType.Description == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileType.Description(childComplexity), true
+	case "FileType.fileType":
+		if e.ComplexityRoot.FileType.FileType == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileType.FileType(childComplexity), true
+	case "FileType.id":
+		if e.ComplexityRoot.FileType.ID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileType.ID(childComplexity), true
+	case "FileType.lastModifiedAt":
+		if e.ComplexityRoot.FileType.LastModifiedAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileType.LastModifiedAt(childComplexity), true
+	case "FileType.namespace":
+		if e.ComplexityRoot.FileType.Namespace == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileType.Namespace(childComplexity), true
+	case "FileType.statusMessage":
+		if e.ComplexityRoot.FileType.StatusMessage == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileType.StatusMessage(childComplexity), true
+	case "FileType.statusPhase":
+		if e.ComplexityRoot.FileType.StatusPhase == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileType.StatusPhase(childComplexity), true
+	case "FileType.variant":
+		if e.ComplexityRoot.FileType.Variant == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileType.Variant(childComplexity), true
+
+	case "FileTypeConnection.edges":
+		if e.ComplexityRoot.FileTypeConnection.Edges == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileTypeConnection.Edges(childComplexity), true
+	case "FileTypeConnection.pageInfo":
+		if e.ComplexityRoot.FileTypeConnection.PageInfo == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileTypeConnection.PageInfo(childComplexity), true
+	case "FileTypeConnection.totalCount":
+		if e.ComplexityRoot.FileTypeConnection.TotalCount == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileTypeConnection.TotalCount(childComplexity), true
+
+	case "FileTypeEdge.cursor":
+		if e.ComplexityRoot.FileTypeEdge.Cursor == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileTypeEdge.Cursor(childComplexity), true
+	case "FileTypeEdge.node":
+		if e.ComplexityRoot.FileTypeEdge.Node == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileTypeEdge.Node(childComplexity), true
+
 	case "Group.description":
 		if e.ComplexityRoot.Group.Description == nil {
 			break
@@ -2711,6 +4183,135 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Machine2MachineAuthentication.Scopes(childComplexity), true
+
+	case "McpServer.active":
+		if e.ComplexityRoot.McpServer.Active == nil {
+			break
+		}
+
+		return e.ComplexityRoot.McpServer.Active(childComplexity), true
+	case "McpServer.activeExposure":
+		if e.ComplexityRoot.McpServer.ActiveExposure == nil {
+			break
+		}
+
+		return e.ComplexityRoot.McpServer.ActiveExposure(childComplexity), true
+	case "McpServer.basePath":
+		if e.ComplexityRoot.McpServer.BasePath == nil {
+			break
+		}
+
+		return e.ComplexityRoot.McpServer.BasePath(childComplexity), true
+	case "McpServer.category":
+		if e.ComplexityRoot.McpServer.Category == nil {
+			break
+		}
+
+		return e.ComplexityRoot.McpServer.Category(childComplexity), true
+	case "McpServer.createdAt":
+		if e.ComplexityRoot.McpServer.CreatedAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.McpServer.CreatedAt(childComplexity), true
+	case "McpServer.description":
+		if e.ComplexityRoot.McpServer.Description == nil {
+			break
+		}
+
+		return e.ComplexityRoot.McpServer.Description(childComplexity), true
+	case "McpServer.id":
+		if e.ComplexityRoot.McpServer.ID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.McpServer.ID(childComplexity), true
+	case "McpServer.lastModifiedAt":
+		if e.ComplexityRoot.McpServer.LastModifiedAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.McpServer.LastModifiedAt(childComplexity), true
+	case "McpServer.name":
+		if e.ComplexityRoot.McpServer.Name == nil {
+			break
+		}
+
+		return e.ComplexityRoot.McpServer.Name(childComplexity), true
+	case "McpServer.namespace":
+		if e.ComplexityRoot.McpServer.Namespace == nil {
+			break
+		}
+
+		return e.ComplexityRoot.McpServer.Namespace(childComplexity), true
+	case "McpServer.oauth2Scopes":
+		if e.ComplexityRoot.McpServer.Oauth2Scopes == nil {
+			break
+		}
+
+		return e.ComplexityRoot.McpServer.Oauth2Scopes(childComplexity), true
+	case "McpServer.owner":
+		if e.ComplexityRoot.McpServer.Owner == nil {
+			break
+		}
+
+		return e.ComplexityRoot.McpServer.Owner(childComplexity), true
+	case "McpServer.specificationUrl":
+		if e.ComplexityRoot.McpServer.SpecificationURL == nil {
+			break
+		}
+
+		return e.ComplexityRoot.McpServer.SpecificationURL(childComplexity), true
+	case "McpServer.statusMessage":
+		if e.ComplexityRoot.McpServer.StatusMessage == nil {
+			break
+		}
+
+		return e.ComplexityRoot.McpServer.StatusMessage(childComplexity), true
+	case "McpServer.statusPhase":
+		if e.ComplexityRoot.McpServer.StatusPhase == nil {
+			break
+		}
+
+		return e.ComplexityRoot.McpServer.StatusPhase(childComplexity), true
+	case "McpServer.version":
+		if e.ComplexityRoot.McpServer.Version == nil {
+			break
+		}
+
+		return e.ComplexityRoot.McpServer.Version(childComplexity), true
+
+	case "McpServerConnection.edges":
+		if e.ComplexityRoot.McpServerConnection.Edges == nil {
+			break
+		}
+
+		return e.ComplexityRoot.McpServerConnection.Edges(childComplexity), true
+	case "McpServerConnection.pageInfo":
+		if e.ComplexityRoot.McpServerConnection.PageInfo == nil {
+			break
+		}
+
+		return e.ComplexityRoot.McpServerConnection.PageInfo(childComplexity), true
+	case "McpServerConnection.totalCount":
+		if e.ComplexityRoot.McpServerConnection.TotalCount == nil {
+			break
+		}
+
+		return e.ComplexityRoot.McpServerConnection.TotalCount(childComplexity), true
+
+	case "McpServerEdge.cursor":
+		if e.ComplexityRoot.McpServerEdge.Cursor == nil {
+			break
+		}
+
+		return e.ComplexityRoot.McpServerEdge.Cursor(childComplexity), true
+	case "McpServerEdge.node":
+		if e.ComplexityRoot.McpServerEdge.Node == nil {
+			break
+		}
+
+		return e.ComplexityRoot.McpServerEdge.Node(childComplexity), true
 
 	case "Member.email":
 		if e.ComplexityRoot.Member.Email == nil {
@@ -3067,6 +4668,39 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.APISubscriptions(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].(*ent.ApiSubscriptionOrder), args["where"].(*ent.ApiSubscriptionWhereInput)), true
+	case "Query.agentCards":
+		if e.ComplexityRoot.Query.AgentCards == nil {
+			break
+		}
+
+		args, err := ec.field_Query_agentCards_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.AgentCards(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].(*ent.AgentCardOrder), args["where"].(*ent.AgentCardWhereInput)), true
+	case "Query.agenticExposures":
+		if e.ComplexityRoot.Query.AgenticExposures == nil {
+			break
+		}
+
+		args, err := ec.field_Query_agenticExposures_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.AgenticExposures(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].(*ent.AgenticExposureOrder), args["where"].(*ent.AgenticExposureWhereInput)), true
+	case "Query.agenticSubscriptions":
+		if e.ComplexityRoot.Query.AgenticSubscriptions == nil {
+			break
+		}
+
+		args, err := ec.field_Query_agenticSubscriptions_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.AgenticSubscriptions(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].(*ent.AgenticSubscriptionOrder), args["where"].(*ent.AgenticSubscriptionWhereInput)), true
 	case "Query.apis":
 		if e.ComplexityRoot.Query.Apis == nil {
 			break
@@ -3144,6 +4778,39 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.EventTypes(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].(*ent.EventTypeOrder), args["where"].(*ent.EventTypeWhereInput)), true
+	case "Query.fileExposures":
+		if e.ComplexityRoot.Query.FileExposures == nil {
+			break
+		}
+
+		args, err := ec.field_Query_fileExposures_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.FileExposures(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].(*ent.FileExposureOrder), args["where"].(*ent.FileExposureWhereInput)), true
+	case "Query.fileSubscriptions":
+		if e.ComplexityRoot.Query.FileSubscriptions == nil {
+			break
+		}
+
+		args, err := ec.field_Query_fileSubscriptions_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.FileSubscriptions(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].(*ent.FileSubscriptionOrder), args["where"].(*ent.FileSubscriptionWhereInput)), true
+	case "Query.fileTypes":
+		if e.ComplexityRoot.Query.FileTypes == nil {
+			break
+		}
+
+		args, err := ec.field_Query_fileTypes_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.FileTypes(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].(*ent.FileTypeOrder), args["where"].(*ent.FileTypeWhereInput)), true
 	case "Query.groups":
 		if e.ComplexityRoot.Query.Groups == nil {
 			break
@@ -3156,6 +4823,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.Query.Groups(childComplexity, args["where"].(*ent.GroupWhereInput)), true
 
+	case "Query.mcpServers":
+		if e.ComplexityRoot.Query.McpServers == nil {
+			break
+		}
+
+		args, err := ec.field_Query_mcpServers_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.McpServers(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].(*ent.McpServerOrder), args["where"].(*ent.McpServerWhereInput)), true
 	case "Query.node":
 		if e.ComplexityRoot.Query.Node == nil {
 			break
@@ -3348,6 +5026,19 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.RotateTeamTokenPayload.Team(childComplexity), true
 
+	case "SSHPublicKeySpec.key":
+		if e.ComplexityRoot.SSHPublicKeySpec.Key == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SSHPublicKeySpec.Key(childComplexity), true
+	case "SSHPublicKeySpec.label":
+		if e.ComplexityRoot.SSHPublicKeySpec.Label == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SSHPublicKeySpec.Label(childComplexity), true
+
 	case "SelectionFilter.attributes":
 		if e.ComplexityRoot.SelectionFilter.Attributes == nil {
 			break
@@ -3400,6 +5091,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.SubscriberRateLimits.Overrides(childComplexity), true
 
+	case "Team.agentCards":
+		if e.ComplexityRoot.Team.AgentCards == nil {
+			break
+		}
+
+		args, err := ec.field_Team_agentCards_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Team.AgentCards(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].(*ent.AgentCardOrder), args["where"].(*ent.AgentCardWhereInput)), true
 	case "Team.apis":
 		if e.ComplexityRoot.Team.Apis == nil {
 			break
@@ -3487,6 +5189,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Team.LastModifiedAt(childComplexity), true
+	case "Team.mcpServers":
+		if e.ComplexityRoot.Team.McpServers == nil {
+			break
+		}
+
+		args, err := ec.field_Team_mcpServers_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Team.McpServers(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].(*ent.McpServerOrder), args["where"].(*ent.McpServerWhereInput)), true
 	case "Team.members":
 		if e.ComplexityRoot.Team.Members == nil {
 			break
@@ -3720,6 +5433,12 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	opCtx := graphql.GetOperationContext(ctx)
 	ec := newExecutionContext(opCtx, e, make(chan graphql.DeferredResult))
 	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
+		ec.unmarshalInputAgentCardOrder,
+		ec.unmarshalInputAgentCardWhereInput,
+		ec.unmarshalInputAgenticExposureOrder,
+		ec.unmarshalInputAgenticExposureWhereInput,
+		ec.unmarshalInputAgenticSubscriptionOrder,
+		ec.unmarshalInputAgenticSubscriptionWhereInput,
 		ec.unmarshalInputApiExposureOrder,
 		ec.unmarshalInputApiExposureWhereInput,
 		ec.unmarshalInputApiOrder,
@@ -3743,7 +5462,15 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputEventSubscriptionWhereInput,
 		ec.unmarshalInputEventTypeOrder,
 		ec.unmarshalInputEventTypeWhereInput,
+		ec.unmarshalInputFileExposureOrder,
+		ec.unmarshalInputFileExposureWhereInput,
+		ec.unmarshalInputFileSubscriptionOrder,
+		ec.unmarshalInputFileSubscriptionWhereInput,
+		ec.unmarshalInputFileTypeOrder,
+		ec.unmarshalInputFileTypeWhereInput,
 		ec.unmarshalInputGroupWhereInput,
+		ec.unmarshalInputMcpServerOrder,
+		ec.unmarshalInputMcpServerWhereInput,
 		ec.unmarshalInputMemberInput,
 		ec.unmarshalInputMemberWhereInput,
 		ec.unmarshalInputPermissionSetOrder,
@@ -3830,6 +5557,787 @@ func newExecutionContext(
 var sources = []*ast.Source{
 	{Name: "../../ent.graphql", Input: `directive @goField(forceResolver: Boolean, name: String, omittable: Boolean) on FIELD_DEFINITION | INPUT_FIELD_DEFINITION
 directive @goModel(model: String, models: [String!], forceGenerate: Boolean) on OBJECT | INPUT_OBJECT | SCALAR | ENUM | INTERFACE | UNION
+type AgentCard implements Node {
+  id: ID!
+  createdAt: Time!
+  lastModifiedAt: Time!
+  statusPhase: AgentCardStatusPhase
+  statusMessage: String
+  namespace: String!
+  basePath: String!
+  version: String!
+  name: String!
+  description: String
+  category: String
+  oauth2Scopes: [String!]
+  active: Boolean!
+}
+"""
+A connection to a list of items.
+"""
+type AgentCardConnection {
+  """
+  A list of edges.
+  """
+  edges: [AgentCardEdge]
+  """
+  Information to aid in pagination.
+  """
+  pageInfo: PageInfo!
+  """
+  Identifies the total count of items in the connection.
+  """
+  totalCount: Int!
+}
+"""
+An edge in a connection.
+"""
+type AgentCardEdge {
+  """
+  The item at the end of the edge.
+  """
+  node: AgentCard
+  """
+  A cursor for use in pagination.
+  """
+  cursor: Cursor!
+}
+"""
+Ordering options for AgentCard connections
+"""
+input AgentCardOrder {
+  """
+  The ordering direction.
+  """
+  direction: OrderDirection! = ASC
+  """
+  The field by which to order AgentCards.
+  """
+  field: AgentCardOrderField!
+}
+"""
+Properties by which AgentCard connections can be ordered.
+"""
+enum AgentCardOrderField {
+  CREATED_AT
+  LAST_MODIFIED_AT
+}
+"""
+AgentCardStatusPhase is enum for the field status_phase
+"""
+enum AgentCardStatusPhase @goModel(model: "github.com/telekom/controlplane/controlplane-api/ent/agentcard.StatusPhase") {
+  READY
+  PENDING
+  ERROR
+  UNKNOWN
+}
+"""
+AgentCardWhereInput is used for filtering AgentCard objects.
+Input was generated by ent.
+"""
+input AgentCardWhereInput {
+  not: AgentCardWhereInput
+  and: [AgentCardWhereInput!]
+  or: [AgentCardWhereInput!]
+  """
+  id field predicates
+  """
+  id: ID
+  idNEQ: ID
+  idIn: [ID!]
+  idNotIn: [ID!]
+  idGT: ID
+  idGTE: ID
+  idLT: ID
+  idLTE: ID
+  """
+  created_at field predicates
+  """
+  createdAt: Time
+  createdAtNEQ: Time
+  createdAtIn: [Time!]
+  createdAtNotIn: [Time!]
+  createdAtGT: Time
+  createdAtGTE: Time
+  createdAtLT: Time
+  createdAtLTE: Time
+  """
+  last_modified_at field predicates
+  """
+  lastModifiedAt: Time
+  lastModifiedAtNEQ: Time
+  lastModifiedAtIn: [Time!]
+  lastModifiedAtNotIn: [Time!]
+  lastModifiedAtGT: Time
+  lastModifiedAtGTE: Time
+  lastModifiedAtLT: Time
+  lastModifiedAtLTE: Time
+  """
+  status_phase field predicates
+  """
+  statusPhase: AgentCardStatusPhase
+  statusPhaseNEQ: AgentCardStatusPhase
+  statusPhaseIn: [AgentCardStatusPhase!]
+  statusPhaseNotIn: [AgentCardStatusPhase!]
+  statusPhaseIsNil: Boolean
+  statusPhaseNotNil: Boolean
+  """
+  status_message field predicates
+  """
+  statusMessage: String
+  statusMessageNEQ: String
+  statusMessageIn: [String!]
+  statusMessageNotIn: [String!]
+  statusMessageGT: String
+  statusMessageGTE: String
+  statusMessageLT: String
+  statusMessageLTE: String
+  statusMessageContains: String
+  statusMessageHasPrefix: String
+  statusMessageHasSuffix: String
+  statusMessageIsNil: Boolean
+  statusMessageNotNil: Boolean
+  statusMessageEqualFold: String
+  statusMessageContainsFold: String
+  """
+  namespace field predicates
+  """
+  namespace: String
+  namespaceNEQ: String
+  namespaceIn: [String!]
+  namespaceNotIn: [String!]
+  namespaceGT: String
+  namespaceGTE: String
+  namespaceLT: String
+  namespaceLTE: String
+  namespaceContains: String
+  namespaceHasPrefix: String
+  namespaceHasSuffix: String
+  namespaceEqualFold: String
+  namespaceContainsFold: String
+  """
+  base_path field predicates
+  """
+  basePath: String
+  basePathNEQ: String
+  basePathIn: [String!]
+  basePathNotIn: [String!]
+  basePathGT: String
+  basePathGTE: String
+  basePathLT: String
+  basePathLTE: String
+  basePathContains: String
+  basePathHasPrefix: String
+  basePathHasSuffix: String
+  basePathEqualFold: String
+  basePathContainsFold: String
+  """
+  version field predicates
+  """
+  version: String
+  versionNEQ: String
+  versionIn: [String!]
+  versionNotIn: [String!]
+  versionGT: String
+  versionGTE: String
+  versionLT: String
+  versionLTE: String
+  versionContains: String
+  versionHasPrefix: String
+  versionHasSuffix: String
+  versionEqualFold: String
+  versionContainsFold: String
+  """
+  name field predicates
+  """
+  name: String
+  nameNEQ: String
+  nameIn: [String!]
+  nameNotIn: [String!]
+  nameGT: String
+  nameGTE: String
+  nameLT: String
+  nameLTE: String
+  nameContains: String
+  nameHasPrefix: String
+  nameHasSuffix: String
+  nameEqualFold: String
+  nameContainsFold: String
+  """
+  description field predicates
+  """
+  description: String
+  descriptionNEQ: String
+  descriptionIn: [String!]
+  descriptionNotIn: [String!]
+  descriptionGT: String
+  descriptionGTE: String
+  descriptionLT: String
+  descriptionLTE: String
+  descriptionContains: String
+  descriptionHasPrefix: String
+  descriptionHasSuffix: String
+  descriptionIsNil: Boolean
+  descriptionNotNil: Boolean
+  descriptionEqualFold: String
+  descriptionContainsFold: String
+  """
+  specification field predicates
+  """
+  specification: String
+  specificationNEQ: String
+  specificationIn: [String!]
+  specificationNotIn: [String!]
+  specificationGT: String
+  specificationGTE: String
+  specificationLT: String
+  specificationLTE: String
+  specificationContains: String
+  specificationHasPrefix: String
+  specificationHasSuffix: String
+  specificationIsNil: Boolean
+  specificationNotNil: Boolean
+  specificationEqualFold: String
+  specificationContainsFold: String
+  """
+  category field predicates
+  """
+  category: String
+  categoryNEQ: String
+  categoryIn: [String!]
+  categoryNotIn: [String!]
+  categoryGT: String
+  categoryGTE: String
+  categoryLT: String
+  categoryLTE: String
+  categoryContains: String
+  categoryHasPrefix: String
+  categoryHasSuffix: String
+  categoryIsNil: Boolean
+  categoryNotNil: Boolean
+  categoryEqualFold: String
+  categoryContainsFold: String
+  """
+  active field predicates
+  """
+  active: Boolean
+  activeNEQ: Boolean
+  """
+  owner edge predicates
+  """
+  hasOwner: Boolean
+  hasOwnerWith: [TeamWhereInput!]
+  """
+  exposures edge predicates
+  """
+  hasExposures: Boolean
+  hasExposuresWith: [AgenticExposureWhereInput!]
+}
+type AgenticExposure implements Node {
+  id: ID!
+  createdAt: Time!
+  lastModifiedAt: Time!
+  statusPhase: AgenticExposureStatusPhase
+  statusMessage: String
+  environment: String
+  namespace: String!
+  basePath: String!
+  visibility: AgenticExposureVisibility!
+  variant: AgenticExposureVariant!
+  active: Boolean
+  upstreams: [Upstream!]!
+  approvalConfig: ApprovalConfig!
+  security: AgenticExposureSecurity
+  traffic: Traffic
+  transformation: AgenticTransformation
+  owner: Application!
+  mcpServer: McpServer
+  agentCard: AgentCard
+}
+"""
+A connection to a list of items.
+"""
+type AgenticExposureConnection {
+  """
+  A list of edges.
+  """
+  edges: [AgenticExposureEdge]
+  """
+  Information to aid in pagination.
+  """
+  pageInfo: PageInfo!
+  """
+  Identifies the total count of items in the connection.
+  """
+  totalCount: Int!
+}
+"""
+An edge in a connection.
+"""
+type AgenticExposureEdge {
+  """
+  The item at the end of the edge.
+  """
+  node: AgenticExposure
+  """
+  A cursor for use in pagination.
+  """
+  cursor: Cursor!
+}
+"""
+Ordering options for AgenticExposure connections
+"""
+input AgenticExposureOrder {
+  """
+  The ordering direction.
+  """
+  direction: OrderDirection! = ASC
+  """
+  The field by which to order AgenticExposures.
+  """
+  field: AgenticExposureOrderField!
+}
+"""
+Properties by which AgenticExposure connections can be ordered.
+"""
+enum AgenticExposureOrderField {
+  CREATED_AT
+  LAST_MODIFIED_AT
+}
+"""
+AgenticExposureStatusPhase is enum for the field status_phase
+"""
+enum AgenticExposureStatusPhase @goModel(model: "github.com/telekom/controlplane/controlplane-api/ent/agenticexposure.StatusPhase") {
+  READY
+  PENDING
+  ERROR
+  UNKNOWN
+}
+"""
+AgenticExposureVariant is enum for the field variant
+"""
+enum AgenticExposureVariant @goModel(model: "github.com/telekom/controlplane/controlplane-api/ent/agenticexposure.Variant") {
+  MCP
+  TELECONTEXTMCP
+  AGENT
+}
+"""
+AgenticExposureVisibility is enum for the field visibility
+"""
+enum AgenticExposureVisibility @goModel(model: "github.com/telekom/controlplane/controlplane-api/ent/agenticexposure.Visibility") {
+  WORLD
+  ZONE
+  ENTERPRISE
+}
+"""
+AgenticExposureWhereInput is used for filtering AgenticExposure objects.
+Input was generated by ent.
+"""
+input AgenticExposureWhereInput {
+  not: AgenticExposureWhereInput
+  and: [AgenticExposureWhereInput!]
+  or: [AgenticExposureWhereInput!]
+  """
+  id field predicates
+  """
+  id: ID
+  idNEQ: ID
+  idIn: [ID!]
+  idNotIn: [ID!]
+  idGT: ID
+  idGTE: ID
+  idLT: ID
+  idLTE: ID
+  """
+  created_at field predicates
+  """
+  createdAt: Time
+  createdAtNEQ: Time
+  createdAtIn: [Time!]
+  createdAtNotIn: [Time!]
+  createdAtGT: Time
+  createdAtGTE: Time
+  createdAtLT: Time
+  createdAtLTE: Time
+  """
+  last_modified_at field predicates
+  """
+  lastModifiedAt: Time
+  lastModifiedAtNEQ: Time
+  lastModifiedAtIn: [Time!]
+  lastModifiedAtNotIn: [Time!]
+  lastModifiedAtGT: Time
+  lastModifiedAtGTE: Time
+  lastModifiedAtLT: Time
+  lastModifiedAtLTE: Time
+  """
+  status_phase field predicates
+  """
+  statusPhase: AgenticExposureStatusPhase
+  statusPhaseNEQ: AgenticExposureStatusPhase
+  statusPhaseIn: [AgenticExposureStatusPhase!]
+  statusPhaseNotIn: [AgenticExposureStatusPhase!]
+  statusPhaseIsNil: Boolean
+  statusPhaseNotNil: Boolean
+  """
+  status_message field predicates
+  """
+  statusMessage: String
+  statusMessageNEQ: String
+  statusMessageIn: [String!]
+  statusMessageNotIn: [String!]
+  statusMessageGT: String
+  statusMessageGTE: String
+  statusMessageLT: String
+  statusMessageLTE: String
+  statusMessageContains: String
+  statusMessageHasPrefix: String
+  statusMessageHasSuffix: String
+  statusMessageIsNil: Boolean
+  statusMessageNotNil: Boolean
+  statusMessageEqualFold: String
+  statusMessageContainsFold: String
+  """
+  environment field predicates
+  """
+  environment: String
+  environmentNEQ: String
+  environmentIn: [String!]
+  environmentNotIn: [String!]
+  environmentGT: String
+  environmentGTE: String
+  environmentLT: String
+  environmentLTE: String
+  environmentContains: String
+  environmentHasPrefix: String
+  environmentHasSuffix: String
+  environmentIsNil: Boolean
+  environmentNotNil: Boolean
+  environmentEqualFold: String
+  environmentContainsFold: String
+  """
+  namespace field predicates
+  """
+  namespace: String
+  namespaceNEQ: String
+  namespaceIn: [String!]
+  namespaceNotIn: [String!]
+  namespaceGT: String
+  namespaceGTE: String
+  namespaceLT: String
+  namespaceLTE: String
+  namespaceContains: String
+  namespaceHasPrefix: String
+  namespaceHasSuffix: String
+  namespaceEqualFold: String
+  namespaceContainsFold: String
+  """
+  base_path field predicates
+  """
+  basePath: String
+  basePathNEQ: String
+  basePathIn: [String!]
+  basePathNotIn: [String!]
+  basePathGT: String
+  basePathGTE: String
+  basePathLT: String
+  basePathLTE: String
+  basePathContains: String
+  basePathHasPrefix: String
+  basePathHasSuffix: String
+  basePathEqualFold: String
+  basePathContainsFold: String
+  """
+  visibility field predicates
+  """
+  visibility: AgenticExposureVisibility
+  visibilityNEQ: AgenticExposureVisibility
+  visibilityIn: [AgenticExposureVisibility!]
+  visibilityNotIn: [AgenticExposureVisibility!]
+  """
+  variant field predicates
+  """
+  variant: AgenticExposureVariant
+  variantNEQ: AgenticExposureVariant
+  variantIn: [AgenticExposureVariant!]
+  variantNotIn: [AgenticExposureVariant!]
+  """
+  active field predicates
+  """
+  active: Boolean
+  activeNEQ: Boolean
+  activeIsNil: Boolean
+  activeNotNil: Boolean
+  """
+  owner edge predicates
+  """
+  hasOwner: Boolean
+  hasOwnerWith: [ApplicationWhereInput!]
+  """
+  mcp_server edge predicates
+  """
+  hasMcpServer: Boolean
+  hasMcpServerWith: [McpServerWhereInput!]
+  """
+  agent_card edge predicates
+  """
+  hasAgentCard: Boolean
+  hasAgentCardWith: [AgentCardWhereInput!]
+  """
+  subscriptions edge predicates
+  """
+  hasSubscriptions: Boolean
+  hasSubscriptionsWith: [AgenticSubscriptionWhereInput!]
+}
+type AgenticSubscription implements Node {
+  id: ID!
+  createdAt: Time!
+  lastModifiedAt: Time!
+  statusPhase: AgenticSubscriptionStatusPhase
+  statusMessage: String
+  environment: String
+  namespace: String!
+  name: String!
+  basePath: String!
+  gatewayURL: String
+  security: AgenticSubscriptionSecurity
+  traffic: AgenticSubscriberTraffic
+  owner: Application!
+  approval: Approval
+  approvalRequests: [ApprovalRequest!]
+}
+"""
+A connection to a list of items.
+"""
+type AgenticSubscriptionConnection {
+  """
+  A list of edges.
+  """
+  edges: [AgenticSubscriptionEdge]
+  """
+  Information to aid in pagination.
+  """
+  pageInfo: PageInfo!
+  """
+  Identifies the total count of items in the connection.
+  """
+  totalCount: Int!
+}
+"""
+An edge in a connection.
+"""
+type AgenticSubscriptionEdge {
+  """
+  The item at the end of the edge.
+  """
+  node: AgenticSubscription
+  """
+  A cursor for use in pagination.
+  """
+  cursor: Cursor!
+}
+"""
+Ordering options for AgenticSubscription connections
+"""
+input AgenticSubscriptionOrder {
+  """
+  The ordering direction.
+  """
+  direction: OrderDirection! = ASC
+  """
+  The field by which to order AgenticSubscriptions.
+  """
+  field: AgenticSubscriptionOrderField!
+}
+"""
+Properties by which AgenticSubscription connections can be ordered.
+"""
+enum AgenticSubscriptionOrderField {
+  CREATED_AT
+  LAST_MODIFIED_AT
+}
+"""
+AgenticSubscriptionStatusPhase is enum for the field status_phase
+"""
+enum AgenticSubscriptionStatusPhase @goModel(model: "github.com/telekom/controlplane/controlplane-api/ent/agenticsubscription.StatusPhase") {
+  READY
+  PENDING
+  ERROR
+  UNKNOWN
+}
+"""
+AgenticSubscriptionWhereInput is used for filtering AgenticSubscription objects.
+Input was generated by ent.
+"""
+input AgenticSubscriptionWhereInput {
+  not: AgenticSubscriptionWhereInput
+  and: [AgenticSubscriptionWhereInput!]
+  or: [AgenticSubscriptionWhereInput!]
+  """
+  id field predicates
+  """
+  id: ID
+  idNEQ: ID
+  idIn: [ID!]
+  idNotIn: [ID!]
+  idGT: ID
+  idGTE: ID
+  idLT: ID
+  idLTE: ID
+  """
+  created_at field predicates
+  """
+  createdAt: Time
+  createdAtNEQ: Time
+  createdAtIn: [Time!]
+  createdAtNotIn: [Time!]
+  createdAtGT: Time
+  createdAtGTE: Time
+  createdAtLT: Time
+  createdAtLTE: Time
+  """
+  last_modified_at field predicates
+  """
+  lastModifiedAt: Time
+  lastModifiedAtNEQ: Time
+  lastModifiedAtIn: [Time!]
+  lastModifiedAtNotIn: [Time!]
+  lastModifiedAtGT: Time
+  lastModifiedAtGTE: Time
+  lastModifiedAtLT: Time
+  lastModifiedAtLTE: Time
+  """
+  status_phase field predicates
+  """
+  statusPhase: AgenticSubscriptionStatusPhase
+  statusPhaseNEQ: AgenticSubscriptionStatusPhase
+  statusPhaseIn: [AgenticSubscriptionStatusPhase!]
+  statusPhaseNotIn: [AgenticSubscriptionStatusPhase!]
+  statusPhaseIsNil: Boolean
+  statusPhaseNotNil: Boolean
+  """
+  status_message field predicates
+  """
+  statusMessage: String
+  statusMessageNEQ: String
+  statusMessageIn: [String!]
+  statusMessageNotIn: [String!]
+  statusMessageGT: String
+  statusMessageGTE: String
+  statusMessageLT: String
+  statusMessageLTE: String
+  statusMessageContains: String
+  statusMessageHasPrefix: String
+  statusMessageHasSuffix: String
+  statusMessageIsNil: Boolean
+  statusMessageNotNil: Boolean
+  statusMessageEqualFold: String
+  statusMessageContainsFold: String
+  """
+  environment field predicates
+  """
+  environment: String
+  environmentNEQ: String
+  environmentIn: [String!]
+  environmentNotIn: [String!]
+  environmentGT: String
+  environmentGTE: String
+  environmentLT: String
+  environmentLTE: String
+  environmentContains: String
+  environmentHasPrefix: String
+  environmentHasSuffix: String
+  environmentIsNil: Boolean
+  environmentNotNil: Boolean
+  environmentEqualFold: String
+  environmentContainsFold: String
+  """
+  namespace field predicates
+  """
+  namespace: String
+  namespaceNEQ: String
+  namespaceIn: [String!]
+  namespaceNotIn: [String!]
+  namespaceGT: String
+  namespaceGTE: String
+  namespaceLT: String
+  namespaceLTE: String
+  namespaceContains: String
+  namespaceHasPrefix: String
+  namespaceHasSuffix: String
+  namespaceEqualFold: String
+  namespaceContainsFold: String
+  """
+  name field predicates
+  """
+  name: String
+  nameNEQ: String
+  nameIn: [String!]
+  nameNotIn: [String!]
+  nameGT: String
+  nameGTE: String
+  nameLT: String
+  nameLTE: String
+  nameContains: String
+  nameHasPrefix: String
+  nameHasSuffix: String
+  nameEqualFold: String
+  nameContainsFold: String
+  """
+  base_path field predicates
+  """
+  basePath: String
+  basePathNEQ: String
+  basePathIn: [String!]
+  basePathNotIn: [String!]
+  basePathGT: String
+  basePathGTE: String
+  basePathLT: String
+  basePathLTE: String
+  basePathContains: String
+  basePathHasPrefix: String
+  basePathHasSuffix: String
+  basePathEqualFold: String
+  basePathContainsFold: String
+  """
+  gateway_url field predicates
+  """
+  gatewayURL: String
+  gatewayURLNEQ: String
+  gatewayURLIn: [String!]
+  gatewayURLNotIn: [String!]
+  gatewayURLGT: String
+  gatewayURLGTE: String
+  gatewayURLLT: String
+  gatewayURLLTE: String
+  gatewayURLContains: String
+  gatewayURLHasPrefix: String
+  gatewayURLHasSuffix: String
+  gatewayURLIsNil: Boolean
+  gatewayURLNotNil: Boolean
+  gatewayURLEqualFold: String
+  gatewayURLContainsFold: String
+  """
+  owner edge predicates
+  """
+  hasOwner: Boolean
+  hasOwnerWith: [ApplicationWhereInput!]
+  """
+  target edge predicates
+  """
+  hasTarget: Boolean
+  hasTargetWith: [AgenticExposureWhereInput!]
+  """
+  approval edge predicates
+  """
+  hasApproval: Boolean
+  hasApprovalWith: [ApprovalWhereInput!]
+  """
+  approval_requests edge predicates
+  """
+  hasApprovalRequests: Boolean
+  hasApprovalRequestsWith: [ApprovalRequestWhereInput!]
+}
 type Api implements Node {
   id: ID!
   createdAt: Time!
@@ -4684,6 +7192,68 @@ type Application implements Node {
     """
     where: ApiSubscriptionWhereInput
   ): ApiSubscriptionConnection!
+  exposedFileTypes(
+    """
+    Returns the elements in the list that come after the specified cursor.
+    """
+    after: Cursor
+
+    """
+    Returns the first _n_ elements from the list.
+    """
+    first: Int
+
+    """
+    Returns the elements in the list that come before the specified cursor.
+    """
+    before: Cursor
+
+    """
+    Returns the last _n_ elements from the list.
+    """
+    last: Int
+
+    """
+    Ordering options for FileExposures returned from the connection.
+    """
+    orderBy: FileExposureOrder
+
+    """
+    Filtering options for FileExposures returned from the connection.
+    """
+    where: FileExposureWhereInput
+  ): FileExposureConnection!
+  subscribedFileTypes(
+    """
+    Returns the elements in the list that come after the specified cursor.
+    """
+    after: Cursor
+
+    """
+    Returns the first _n_ elements from the list.
+    """
+    first: Int
+
+    """
+    Returns the elements in the list that come before the specified cursor.
+    """
+    before: Cursor
+
+    """
+    Returns the last _n_ elements from the list.
+    """
+    last: Int
+
+    """
+    Ordering options for FileSubscriptions returned from the connection.
+    """
+    orderBy: FileSubscriptionOrder
+
+    """
+    Filtering options for FileSubscriptions returned from the connection.
+    """
+    where: FileSubscriptionWhereInput
+  ): FileSubscriptionConnection!
   exposedEvents(
     """
     Returns the elements in the list that come after the specified cursor.
@@ -4746,6 +7316,68 @@ type Application implements Node {
     """
     where: EventSubscriptionWhereInput
   ): EventSubscriptionConnection!
+  exposedAgentics(
+    """
+    Returns the elements in the list that come after the specified cursor.
+    """
+    after: Cursor
+
+    """
+    Returns the first _n_ elements from the list.
+    """
+    first: Int
+
+    """
+    Returns the elements in the list that come before the specified cursor.
+    """
+    before: Cursor
+
+    """
+    Returns the last _n_ elements from the list.
+    """
+    last: Int
+
+    """
+    Ordering options for AgenticExposures returned from the connection.
+    """
+    orderBy: AgenticExposureOrder
+
+    """
+    Filtering options for AgenticExposures returned from the connection.
+    """
+    where: AgenticExposureWhereInput
+  ): AgenticExposureConnection!
+  subscribedAgentics(
+    """
+    Returns the elements in the list that come after the specified cursor.
+    """
+    after: Cursor
+
+    """
+    Returns the first _n_ elements from the list.
+    """
+    first: Int
+
+    """
+    Returns the elements in the list that come before the specified cursor.
+    """
+    before: Cursor
+
+    """
+    Returns the last _n_ elements from the list.
+    """
+    last: Int
+
+    """
+    Ordering options for AgenticSubscriptions returned from the connection.
+    """
+    orderBy: AgenticSubscriptionOrder
+
+    """
+    Filtering options for AgenticSubscriptions returned from the connection.
+    """
+    where: AgenticSubscriptionWhereInput
+  ): AgenticSubscriptionConnection!
   permissionSet: PermissionSet
 }
 """
@@ -5044,6 +7676,16 @@ input ApplicationWhereInput {
   hasSubscribedApis: Boolean
   hasSubscribedApisWith: [ApiSubscriptionWhereInput!]
   """
+  exposed_file_types edge predicates
+  """
+  hasExposedFileTypes: Boolean
+  hasExposedFileTypesWith: [FileExposureWhereInput!]
+  """
+  subscribed_file_types edge predicates
+  """
+  hasSubscribedFileTypes: Boolean
+  hasSubscribedFileTypesWith: [FileSubscriptionWhereInput!]
+  """
   exposed_events edge predicates
   """
   hasExposedEvents: Boolean
@@ -5053,6 +7695,16 @@ input ApplicationWhereInput {
   """
   hasSubscribedEvents: Boolean
   hasSubscribedEventsWith: [EventSubscriptionWhereInput!]
+  """
+  exposed_agentics edge predicates
+  """
+  hasExposedAgentics: Boolean
+  hasExposedAgenticsWith: [AgenticExposureWhereInput!]
+  """
+  subscribed_agentics edge predicates
+  """
+  hasSubscribedAgentics: Boolean
+  hasSubscribedAgenticsWith: [AgenticSubscriptionWhereInput!]
   """
   permission_set edge predicates
   """
@@ -5079,7 +7731,7 @@ type Approval implements Node {
   """
   requestedScopes: [String!]
   name: String!
-  expiresat: Time @goField(name: "ExpiresAt", forceResolver: false)
+  expiresAt: Time
   state: ApprovalState!
 }
 """
@@ -5400,10 +8052,20 @@ input ApprovalRequestWhereInput {
   hasAPISubscription: Boolean
   hasAPISubscriptionWith: [ApiSubscriptionWhereInput!]
   """
+  file_subscription edge predicates
+  """
+  hasFileSubscription: Boolean
+  hasFileSubscriptionWith: [FileSubscriptionWhereInput!]
+  """
   event_subscription edge predicates
   """
   hasEventSubscription: Boolean
   hasEventSubscriptionWith: [EventSubscriptionWhereInput!]
+  """
+  agentic_subscription edge predicates
+  """
+  hasAgenticSubscription: Boolean
+  hasAgenticSubscriptionWith: [AgenticSubscriptionWhereInput!]
 }
 """
 ApprovalState is enum for the field state
@@ -5591,18 +8253,18 @@ input ApprovalWhereInput {
   nameEqualFold: String
   nameContainsFold: String
   """
-  expiresAt field predicates
+  expires_at field predicates
   """
-  expiresat: Time
-  expiresatNEQ: Time
-  expiresatIn: [Time!]
-  expiresatNotIn: [Time!]
-  expiresatGT: Time
-  expiresatGTE: Time
-  expiresatLT: Time
-  expiresatLTE: Time
-  expiresatIsNil: Boolean
-  expiresatNotNil: Boolean
+  expiresAt: Time
+  expiresAtNEQ: Time
+  expiresAtIn: [Time!]
+  expiresAtNotIn: [Time!]
+  expiresAtGT: Time
+  expiresAtGTE: Time
+  expiresAtLT: Time
+  expiresAtLTE: Time
+  expiresAtIsNil: Boolean
+  expiresAtNotNil: Boolean
   """
   state field predicates
   """
@@ -5616,10 +8278,20 @@ input ApprovalWhereInput {
   hasAPISubscription: Boolean
   hasAPISubscriptionWith: [ApiSubscriptionWhereInput!]
   """
+  file_subscription edge predicates
+  """
+  hasFileSubscription: Boolean
+  hasFileSubscriptionWith: [FileSubscriptionWhereInput!]
+  """
   event_subscription edge predicates
   """
   hasEventSubscription: Boolean
   hasEventSubscriptionWith: [EventSubscriptionWhereInput!]
+  """
+  agentic_subscription edge predicates
+  """
+  hasAgenticSubscription: Boolean
+  hasAgenticSubscriptionWith: [AgenticSubscriptionWhereInput!]
 }
 """
 Define a Relay Cursor type:
@@ -6399,6 +9071,779 @@ input EventTypeWhereInput {
   hasExposures: Boolean
   hasExposuresWith: [EventExposureWhereInput!]
 }
+type FileExposure implements Node {
+  id: ID!
+  createdAt: Time!
+  lastModifiedAt: Time!
+  statusPhase: FileExposureStatusPhase
+  statusMessage: String
+  environment: String
+  namespace: String!
+  fileType: String!
+  visibility: FileExposureVisibility!
+  active: Boolean
+  zoneName: String!
+  sftp: FileSFTP
+  approvalConfig: ApprovalConfig!
+  owner: Application!
+  fileTypeDef: FileType
+  zone: Zone!
+}
+"""
+A connection to a list of items.
+"""
+type FileExposureConnection {
+  """
+  A list of edges.
+  """
+  edges: [FileExposureEdge]
+  """
+  Information to aid in pagination.
+  """
+  pageInfo: PageInfo!
+  """
+  Identifies the total count of items in the connection.
+  """
+  totalCount: Int!
+}
+"""
+An edge in a connection.
+"""
+type FileExposureEdge {
+  """
+  The item at the end of the edge.
+  """
+  node: FileExposure
+  """
+  A cursor for use in pagination.
+  """
+  cursor: Cursor!
+}
+"""
+Ordering options for FileExposure connections
+"""
+input FileExposureOrder {
+  """
+  The ordering direction.
+  """
+  direction: OrderDirection! = ASC
+  """
+  The field by which to order FileExposures.
+  """
+  field: FileExposureOrderField!
+}
+"""
+Properties by which FileExposure connections can be ordered.
+"""
+enum FileExposureOrderField {
+  CREATED_AT
+  LAST_MODIFIED_AT
+}
+"""
+FileExposureStatusPhase is enum for the field status_phase
+"""
+enum FileExposureStatusPhase @goModel(model: "github.com/telekom/controlplane/controlplane-api/ent/fileexposure.StatusPhase") {
+  READY
+  PENDING
+  ERROR
+  UNKNOWN
+}
+"""
+FileExposureVisibility is enum for the field visibility
+"""
+enum FileExposureVisibility @goModel(model: "github.com/telekom/controlplane/controlplane-api/ent/fileexposure.Visibility") {
+  WORLD
+  ZONE
+  ENTERPRISE
+}
+"""
+FileExposureWhereInput is used for filtering FileExposure objects.
+Input was generated by ent.
+"""
+input FileExposureWhereInput {
+  not: FileExposureWhereInput
+  and: [FileExposureWhereInput!]
+  or: [FileExposureWhereInput!]
+  """
+  id field predicates
+  """
+  id: ID
+  idNEQ: ID
+  idIn: [ID!]
+  idNotIn: [ID!]
+  idGT: ID
+  idGTE: ID
+  idLT: ID
+  idLTE: ID
+  """
+  created_at field predicates
+  """
+  createdAt: Time
+  createdAtNEQ: Time
+  createdAtIn: [Time!]
+  createdAtNotIn: [Time!]
+  createdAtGT: Time
+  createdAtGTE: Time
+  createdAtLT: Time
+  createdAtLTE: Time
+  """
+  last_modified_at field predicates
+  """
+  lastModifiedAt: Time
+  lastModifiedAtNEQ: Time
+  lastModifiedAtIn: [Time!]
+  lastModifiedAtNotIn: [Time!]
+  lastModifiedAtGT: Time
+  lastModifiedAtGTE: Time
+  lastModifiedAtLT: Time
+  lastModifiedAtLTE: Time
+  """
+  status_phase field predicates
+  """
+  statusPhase: FileExposureStatusPhase
+  statusPhaseNEQ: FileExposureStatusPhase
+  statusPhaseIn: [FileExposureStatusPhase!]
+  statusPhaseNotIn: [FileExposureStatusPhase!]
+  statusPhaseIsNil: Boolean
+  statusPhaseNotNil: Boolean
+  """
+  status_message field predicates
+  """
+  statusMessage: String
+  statusMessageNEQ: String
+  statusMessageIn: [String!]
+  statusMessageNotIn: [String!]
+  statusMessageGT: String
+  statusMessageGTE: String
+  statusMessageLT: String
+  statusMessageLTE: String
+  statusMessageContains: String
+  statusMessageHasPrefix: String
+  statusMessageHasSuffix: String
+  statusMessageIsNil: Boolean
+  statusMessageNotNil: Boolean
+  statusMessageEqualFold: String
+  statusMessageContainsFold: String
+  """
+  environment field predicates
+  """
+  environment: String
+  environmentNEQ: String
+  environmentIn: [String!]
+  environmentNotIn: [String!]
+  environmentGT: String
+  environmentGTE: String
+  environmentLT: String
+  environmentLTE: String
+  environmentContains: String
+  environmentHasPrefix: String
+  environmentHasSuffix: String
+  environmentIsNil: Boolean
+  environmentNotNil: Boolean
+  environmentEqualFold: String
+  environmentContainsFold: String
+  """
+  namespace field predicates
+  """
+  namespace: String
+  namespaceNEQ: String
+  namespaceIn: [String!]
+  namespaceNotIn: [String!]
+  namespaceGT: String
+  namespaceGTE: String
+  namespaceLT: String
+  namespaceLTE: String
+  namespaceContains: String
+  namespaceHasPrefix: String
+  namespaceHasSuffix: String
+  namespaceEqualFold: String
+  namespaceContainsFold: String
+  """
+  file_type field predicates
+  """
+  fileType: String
+  fileTypeNEQ: String
+  fileTypeIn: [String!]
+  fileTypeNotIn: [String!]
+  fileTypeGT: String
+  fileTypeGTE: String
+  fileTypeLT: String
+  fileTypeLTE: String
+  fileTypeContains: String
+  fileTypeHasPrefix: String
+  fileTypeHasSuffix: String
+  fileTypeEqualFold: String
+  fileTypeContainsFold: String
+  """
+  visibility field predicates
+  """
+  visibility: FileExposureVisibility
+  visibilityNEQ: FileExposureVisibility
+  visibilityIn: [FileExposureVisibility!]
+  visibilityNotIn: [FileExposureVisibility!]
+  """
+  active field predicates
+  """
+  active: Boolean
+  activeNEQ: Boolean
+  activeIsNil: Boolean
+  activeNotNil: Boolean
+  """
+  zone_name field predicates
+  """
+  zoneName: String
+  zoneNameNEQ: String
+  zoneNameIn: [String!]
+  zoneNameNotIn: [String!]
+  zoneNameGT: String
+  zoneNameGTE: String
+  zoneNameLT: String
+  zoneNameLTE: String
+  zoneNameContains: String
+  zoneNameHasPrefix: String
+  zoneNameHasSuffix: String
+  zoneNameEqualFold: String
+  zoneNameContainsFold: String
+  """
+  owner edge predicates
+  """
+  hasOwner: Boolean
+  hasOwnerWith: [ApplicationWhereInput!]
+  """
+  file_type_def edge predicates
+  """
+  hasFileTypeDef: Boolean
+  hasFileTypeDefWith: [FileTypeWhereInput!]
+  """
+  zone edge predicates
+  """
+  hasZone: Boolean
+  hasZoneWith: [ZoneWhereInput!]
+  """
+  subscriptions edge predicates
+  """
+  hasSubscriptions: Boolean
+  hasSubscriptionsWith: [FileSubscriptionWhereInput!]
+}
+type FileSubscription implements Node {
+  id: ID!
+  createdAt: Time!
+  lastModifiedAt: Time!
+  statusPhase: FileSubscriptionStatusPhase
+  statusMessage: String
+  environment: String
+  namespace: String!
+  name: String!
+  fileType: String!
+  zoneName: String!
+  serviceURL: String
+  serviceExternalURL: String
+  sftp: FileSFTP
+  owner: Application!
+  fileTypeDef: FileType
+  zone: Zone!
+  approval: Approval
+  approvalRequests: [ApprovalRequest!]
+}
+"""
+A connection to a list of items.
+"""
+type FileSubscriptionConnection {
+  """
+  A list of edges.
+  """
+  edges: [FileSubscriptionEdge]
+  """
+  Information to aid in pagination.
+  """
+  pageInfo: PageInfo!
+  """
+  Identifies the total count of items in the connection.
+  """
+  totalCount: Int!
+}
+"""
+An edge in a connection.
+"""
+type FileSubscriptionEdge {
+  """
+  The item at the end of the edge.
+  """
+  node: FileSubscription
+  """
+  A cursor for use in pagination.
+  """
+  cursor: Cursor!
+}
+"""
+Ordering options for FileSubscription connections
+"""
+input FileSubscriptionOrder {
+  """
+  The ordering direction.
+  """
+  direction: OrderDirection! = ASC
+  """
+  The field by which to order FileSubscriptions.
+  """
+  field: FileSubscriptionOrderField!
+}
+"""
+Properties by which FileSubscription connections can be ordered.
+"""
+enum FileSubscriptionOrderField {
+  CREATED_AT
+  LAST_MODIFIED_AT
+}
+"""
+FileSubscriptionStatusPhase is enum for the field status_phase
+"""
+enum FileSubscriptionStatusPhase @goModel(model: "github.com/telekom/controlplane/controlplane-api/ent/filesubscription.StatusPhase") {
+  READY
+  PENDING
+  ERROR
+  UNKNOWN
+}
+"""
+FileSubscriptionWhereInput is used for filtering FileSubscription objects.
+Input was generated by ent.
+"""
+input FileSubscriptionWhereInput {
+  not: FileSubscriptionWhereInput
+  and: [FileSubscriptionWhereInput!]
+  or: [FileSubscriptionWhereInput!]
+  """
+  id field predicates
+  """
+  id: ID
+  idNEQ: ID
+  idIn: [ID!]
+  idNotIn: [ID!]
+  idGT: ID
+  idGTE: ID
+  idLT: ID
+  idLTE: ID
+  """
+  created_at field predicates
+  """
+  createdAt: Time
+  createdAtNEQ: Time
+  createdAtIn: [Time!]
+  createdAtNotIn: [Time!]
+  createdAtGT: Time
+  createdAtGTE: Time
+  createdAtLT: Time
+  createdAtLTE: Time
+  """
+  last_modified_at field predicates
+  """
+  lastModifiedAt: Time
+  lastModifiedAtNEQ: Time
+  lastModifiedAtIn: [Time!]
+  lastModifiedAtNotIn: [Time!]
+  lastModifiedAtGT: Time
+  lastModifiedAtGTE: Time
+  lastModifiedAtLT: Time
+  lastModifiedAtLTE: Time
+  """
+  status_phase field predicates
+  """
+  statusPhase: FileSubscriptionStatusPhase
+  statusPhaseNEQ: FileSubscriptionStatusPhase
+  statusPhaseIn: [FileSubscriptionStatusPhase!]
+  statusPhaseNotIn: [FileSubscriptionStatusPhase!]
+  statusPhaseIsNil: Boolean
+  statusPhaseNotNil: Boolean
+  """
+  status_message field predicates
+  """
+  statusMessage: String
+  statusMessageNEQ: String
+  statusMessageIn: [String!]
+  statusMessageNotIn: [String!]
+  statusMessageGT: String
+  statusMessageGTE: String
+  statusMessageLT: String
+  statusMessageLTE: String
+  statusMessageContains: String
+  statusMessageHasPrefix: String
+  statusMessageHasSuffix: String
+  statusMessageIsNil: Boolean
+  statusMessageNotNil: Boolean
+  statusMessageEqualFold: String
+  statusMessageContainsFold: String
+  """
+  environment field predicates
+  """
+  environment: String
+  environmentNEQ: String
+  environmentIn: [String!]
+  environmentNotIn: [String!]
+  environmentGT: String
+  environmentGTE: String
+  environmentLT: String
+  environmentLTE: String
+  environmentContains: String
+  environmentHasPrefix: String
+  environmentHasSuffix: String
+  environmentIsNil: Boolean
+  environmentNotNil: Boolean
+  environmentEqualFold: String
+  environmentContainsFold: String
+  """
+  namespace field predicates
+  """
+  namespace: String
+  namespaceNEQ: String
+  namespaceIn: [String!]
+  namespaceNotIn: [String!]
+  namespaceGT: String
+  namespaceGTE: String
+  namespaceLT: String
+  namespaceLTE: String
+  namespaceContains: String
+  namespaceHasPrefix: String
+  namespaceHasSuffix: String
+  namespaceEqualFold: String
+  namespaceContainsFold: String
+  """
+  name field predicates
+  """
+  name: String
+  nameNEQ: String
+  nameIn: [String!]
+  nameNotIn: [String!]
+  nameGT: String
+  nameGTE: String
+  nameLT: String
+  nameLTE: String
+  nameContains: String
+  nameHasPrefix: String
+  nameHasSuffix: String
+  nameEqualFold: String
+  nameContainsFold: String
+  """
+  file_type field predicates
+  """
+  fileType: String
+  fileTypeNEQ: String
+  fileTypeIn: [String!]
+  fileTypeNotIn: [String!]
+  fileTypeGT: String
+  fileTypeGTE: String
+  fileTypeLT: String
+  fileTypeLTE: String
+  fileTypeContains: String
+  fileTypeHasPrefix: String
+  fileTypeHasSuffix: String
+  fileTypeEqualFold: String
+  fileTypeContainsFold: String
+  """
+  zone_name field predicates
+  """
+  zoneName: String
+  zoneNameNEQ: String
+  zoneNameIn: [String!]
+  zoneNameNotIn: [String!]
+  zoneNameGT: String
+  zoneNameGTE: String
+  zoneNameLT: String
+  zoneNameLTE: String
+  zoneNameContains: String
+  zoneNameHasPrefix: String
+  zoneNameHasSuffix: String
+  zoneNameEqualFold: String
+  zoneNameContainsFold: String
+  """
+  service_url field predicates
+  """
+  serviceURL: String
+  serviceURLNEQ: String
+  serviceURLIn: [String!]
+  serviceURLNotIn: [String!]
+  serviceURLGT: String
+  serviceURLGTE: String
+  serviceURLLT: String
+  serviceURLLTE: String
+  serviceURLContains: String
+  serviceURLHasPrefix: String
+  serviceURLHasSuffix: String
+  serviceURLIsNil: Boolean
+  serviceURLNotNil: Boolean
+  serviceURLEqualFold: String
+  serviceURLContainsFold: String
+  """
+  service_external_url field predicates
+  """
+  serviceExternalURL: String
+  serviceExternalURLNEQ: String
+  serviceExternalURLIn: [String!]
+  serviceExternalURLNotIn: [String!]
+  serviceExternalURLGT: String
+  serviceExternalURLGTE: String
+  serviceExternalURLLT: String
+  serviceExternalURLLTE: String
+  serviceExternalURLContains: String
+  serviceExternalURLHasPrefix: String
+  serviceExternalURLHasSuffix: String
+  serviceExternalURLIsNil: Boolean
+  serviceExternalURLNotNil: Boolean
+  serviceExternalURLEqualFold: String
+  serviceExternalURLContainsFold: String
+  """
+  owner edge predicates
+  """
+  hasOwner: Boolean
+  hasOwnerWith: [ApplicationWhereInput!]
+  """
+  file_type_def edge predicates
+  """
+  hasFileTypeDef: Boolean
+  hasFileTypeDefWith: [FileTypeWhereInput!]
+  """
+  target edge predicates
+  """
+  hasTarget: Boolean
+  hasTargetWith: [FileExposureWhereInput!]
+  """
+  zone edge predicates
+  """
+  hasZone: Boolean
+  hasZoneWith: [ZoneWhereInput!]
+  """
+  approval edge predicates
+  """
+  hasApproval: Boolean
+  hasApprovalWith: [ApprovalWhereInput!]
+  """
+  approval_requests edge predicates
+  """
+  hasApprovalRequests: Boolean
+  hasApprovalRequestsWith: [ApprovalRequestWhereInput!]
+}
+type FileType implements Node {
+  id: ID!
+  createdAt: Time!
+  lastModifiedAt: Time!
+  statusPhase: FileTypeStatusPhase
+  statusMessage: String
+  namespace: String!
+  fileType: String!
+  description: String
+  variant: String
+  active: Boolean!
+}
+"""
+A connection to a list of items.
+"""
+type FileTypeConnection {
+  """
+  A list of edges.
+  """
+  edges: [FileTypeEdge]
+  """
+  Information to aid in pagination.
+  """
+  pageInfo: PageInfo!
+  """
+  Identifies the total count of items in the connection.
+  """
+  totalCount: Int!
+}
+"""
+An edge in a connection.
+"""
+type FileTypeEdge {
+  """
+  The item at the end of the edge.
+  """
+  node: FileType
+  """
+  A cursor for use in pagination.
+  """
+  cursor: Cursor!
+}
+"""
+Ordering options for FileType connections
+"""
+input FileTypeOrder {
+  """
+  The ordering direction.
+  """
+  direction: OrderDirection! = ASC
+  """
+  The field by which to order FileTypes.
+  """
+  field: FileTypeOrderField!
+}
+"""
+Properties by which FileType connections can be ordered.
+"""
+enum FileTypeOrderField {
+  CREATED_AT
+  LAST_MODIFIED_AT
+}
+"""
+FileTypeStatusPhase is enum for the field status_phase
+"""
+enum FileTypeStatusPhase @goModel(model: "github.com/telekom/controlplane/controlplane-api/ent/filetype.StatusPhase") {
+  READY
+  PENDING
+  ERROR
+  UNKNOWN
+}
+"""
+FileTypeWhereInput is used for filtering FileType objects.
+Input was generated by ent.
+"""
+input FileTypeWhereInput {
+  not: FileTypeWhereInput
+  and: [FileTypeWhereInput!]
+  or: [FileTypeWhereInput!]
+  """
+  id field predicates
+  """
+  id: ID
+  idNEQ: ID
+  idIn: [ID!]
+  idNotIn: [ID!]
+  idGT: ID
+  idGTE: ID
+  idLT: ID
+  idLTE: ID
+  """
+  created_at field predicates
+  """
+  createdAt: Time
+  createdAtNEQ: Time
+  createdAtIn: [Time!]
+  createdAtNotIn: [Time!]
+  createdAtGT: Time
+  createdAtGTE: Time
+  createdAtLT: Time
+  createdAtLTE: Time
+  """
+  last_modified_at field predicates
+  """
+  lastModifiedAt: Time
+  lastModifiedAtNEQ: Time
+  lastModifiedAtIn: [Time!]
+  lastModifiedAtNotIn: [Time!]
+  lastModifiedAtGT: Time
+  lastModifiedAtGTE: Time
+  lastModifiedAtLT: Time
+  lastModifiedAtLTE: Time
+  """
+  status_phase field predicates
+  """
+  statusPhase: FileTypeStatusPhase
+  statusPhaseNEQ: FileTypeStatusPhase
+  statusPhaseIn: [FileTypeStatusPhase!]
+  statusPhaseNotIn: [FileTypeStatusPhase!]
+  statusPhaseIsNil: Boolean
+  statusPhaseNotNil: Boolean
+  """
+  status_message field predicates
+  """
+  statusMessage: String
+  statusMessageNEQ: String
+  statusMessageIn: [String!]
+  statusMessageNotIn: [String!]
+  statusMessageGT: String
+  statusMessageGTE: String
+  statusMessageLT: String
+  statusMessageLTE: String
+  statusMessageContains: String
+  statusMessageHasPrefix: String
+  statusMessageHasSuffix: String
+  statusMessageIsNil: Boolean
+  statusMessageNotNil: Boolean
+  statusMessageEqualFold: String
+  statusMessageContainsFold: String
+  """
+  namespace field predicates
+  """
+  namespace: String
+  namespaceNEQ: String
+  namespaceIn: [String!]
+  namespaceNotIn: [String!]
+  namespaceGT: String
+  namespaceGTE: String
+  namespaceLT: String
+  namespaceLTE: String
+  namespaceContains: String
+  namespaceHasPrefix: String
+  namespaceHasSuffix: String
+  namespaceEqualFold: String
+  namespaceContainsFold: String
+  """
+  file_type field predicates
+  """
+  fileType: String
+  fileTypeNEQ: String
+  fileTypeIn: [String!]
+  fileTypeNotIn: [String!]
+  fileTypeGT: String
+  fileTypeGTE: String
+  fileTypeLT: String
+  fileTypeLTE: String
+  fileTypeContains: String
+  fileTypeHasPrefix: String
+  fileTypeHasSuffix: String
+  fileTypeEqualFold: String
+  fileTypeContainsFold: String
+  """
+  description field predicates
+  """
+  description: String
+  descriptionNEQ: String
+  descriptionIn: [String!]
+  descriptionNotIn: [String!]
+  descriptionGT: String
+  descriptionGTE: String
+  descriptionLT: String
+  descriptionLTE: String
+  descriptionContains: String
+  descriptionHasPrefix: String
+  descriptionHasSuffix: String
+  descriptionIsNil: Boolean
+  descriptionNotNil: Boolean
+  descriptionEqualFold: String
+  descriptionContainsFold: String
+  """
+  variant field predicates
+  """
+  variant: String
+  variantNEQ: String
+  variantIn: [String!]
+  variantNotIn: [String!]
+  variantGT: String
+  variantGTE: String
+  variantLT: String
+  variantLTE: String
+  variantContains: String
+  variantHasPrefix: String
+  variantHasSuffix: String
+  variantIsNil: Boolean
+  variantNotNil: Boolean
+  variantEqualFold: String
+  variantContainsFold: String
+  """
+  active field predicates
+  """
+  active: Boolean
+  activeNEQ: Boolean
+  """
+  exposures edge predicates
+  """
+  hasExposures: Boolean
+  hasExposuresWith: [FileExposureWhereInput!]
+  """
+  subscriptions edge predicates
+  """
+  hasSubscriptions: Boolean
+  hasSubscriptionsWith: [FileSubscriptionWhereInput!]
+}
 type Group implements Node {
   id: ID!
   environment: String
@@ -6514,6 +9959,282 @@ input GroupWhereInput {
   """
   hasTeams: Boolean
   hasTeamsWith: [TeamWhereInput!]
+}
+type McpServer implements Node {
+  id: ID!
+  createdAt: Time!
+  lastModifiedAt: Time!
+  statusPhase: McpServerStatusPhase
+  statusMessage: String
+  namespace: String!
+  basePath: String!
+  version: String!
+  name: String!
+  description: String
+  category: String
+  oauth2Scopes: [String!]
+  active: Boolean!
+}
+"""
+A connection to a list of items.
+"""
+type McpServerConnection {
+  """
+  A list of edges.
+  """
+  edges: [McpServerEdge]
+  """
+  Information to aid in pagination.
+  """
+  pageInfo: PageInfo!
+  """
+  Identifies the total count of items in the connection.
+  """
+  totalCount: Int!
+}
+"""
+An edge in a connection.
+"""
+type McpServerEdge {
+  """
+  The item at the end of the edge.
+  """
+  node: McpServer
+  """
+  A cursor for use in pagination.
+  """
+  cursor: Cursor!
+}
+"""
+Ordering options for McpServer connections
+"""
+input McpServerOrder {
+  """
+  The ordering direction.
+  """
+  direction: OrderDirection! = ASC
+  """
+  The field by which to order McpServers.
+  """
+  field: McpServerOrderField!
+}
+"""
+Properties by which McpServer connections can be ordered.
+"""
+enum McpServerOrderField {
+  CREATED_AT
+  LAST_MODIFIED_AT
+}
+"""
+McpServerStatusPhase is enum for the field status_phase
+"""
+enum McpServerStatusPhase @goModel(model: "github.com/telekom/controlplane/controlplane-api/ent/mcpserver.StatusPhase") {
+  READY
+  PENDING
+  ERROR
+  UNKNOWN
+}
+"""
+McpServerWhereInput is used for filtering McpServer objects.
+Input was generated by ent.
+"""
+input McpServerWhereInput {
+  not: McpServerWhereInput
+  and: [McpServerWhereInput!]
+  or: [McpServerWhereInput!]
+  """
+  id field predicates
+  """
+  id: ID
+  idNEQ: ID
+  idIn: [ID!]
+  idNotIn: [ID!]
+  idGT: ID
+  idGTE: ID
+  idLT: ID
+  idLTE: ID
+  """
+  created_at field predicates
+  """
+  createdAt: Time
+  createdAtNEQ: Time
+  createdAtIn: [Time!]
+  createdAtNotIn: [Time!]
+  createdAtGT: Time
+  createdAtGTE: Time
+  createdAtLT: Time
+  createdAtLTE: Time
+  """
+  last_modified_at field predicates
+  """
+  lastModifiedAt: Time
+  lastModifiedAtNEQ: Time
+  lastModifiedAtIn: [Time!]
+  lastModifiedAtNotIn: [Time!]
+  lastModifiedAtGT: Time
+  lastModifiedAtGTE: Time
+  lastModifiedAtLT: Time
+  lastModifiedAtLTE: Time
+  """
+  status_phase field predicates
+  """
+  statusPhase: McpServerStatusPhase
+  statusPhaseNEQ: McpServerStatusPhase
+  statusPhaseIn: [McpServerStatusPhase!]
+  statusPhaseNotIn: [McpServerStatusPhase!]
+  statusPhaseIsNil: Boolean
+  statusPhaseNotNil: Boolean
+  """
+  status_message field predicates
+  """
+  statusMessage: String
+  statusMessageNEQ: String
+  statusMessageIn: [String!]
+  statusMessageNotIn: [String!]
+  statusMessageGT: String
+  statusMessageGTE: String
+  statusMessageLT: String
+  statusMessageLTE: String
+  statusMessageContains: String
+  statusMessageHasPrefix: String
+  statusMessageHasSuffix: String
+  statusMessageIsNil: Boolean
+  statusMessageNotNil: Boolean
+  statusMessageEqualFold: String
+  statusMessageContainsFold: String
+  """
+  namespace field predicates
+  """
+  namespace: String
+  namespaceNEQ: String
+  namespaceIn: [String!]
+  namespaceNotIn: [String!]
+  namespaceGT: String
+  namespaceGTE: String
+  namespaceLT: String
+  namespaceLTE: String
+  namespaceContains: String
+  namespaceHasPrefix: String
+  namespaceHasSuffix: String
+  namespaceEqualFold: String
+  namespaceContainsFold: String
+  """
+  base_path field predicates
+  """
+  basePath: String
+  basePathNEQ: String
+  basePathIn: [String!]
+  basePathNotIn: [String!]
+  basePathGT: String
+  basePathGTE: String
+  basePathLT: String
+  basePathLTE: String
+  basePathContains: String
+  basePathHasPrefix: String
+  basePathHasSuffix: String
+  basePathEqualFold: String
+  basePathContainsFold: String
+  """
+  version field predicates
+  """
+  version: String
+  versionNEQ: String
+  versionIn: [String!]
+  versionNotIn: [String!]
+  versionGT: String
+  versionGTE: String
+  versionLT: String
+  versionLTE: String
+  versionContains: String
+  versionHasPrefix: String
+  versionHasSuffix: String
+  versionEqualFold: String
+  versionContainsFold: String
+  """
+  name field predicates
+  """
+  name: String
+  nameNEQ: String
+  nameIn: [String!]
+  nameNotIn: [String!]
+  nameGT: String
+  nameGTE: String
+  nameLT: String
+  nameLTE: String
+  nameContains: String
+  nameHasPrefix: String
+  nameHasSuffix: String
+  nameEqualFold: String
+  nameContainsFold: String
+  """
+  description field predicates
+  """
+  description: String
+  descriptionNEQ: String
+  descriptionIn: [String!]
+  descriptionNotIn: [String!]
+  descriptionGT: String
+  descriptionGTE: String
+  descriptionLT: String
+  descriptionLTE: String
+  descriptionContains: String
+  descriptionHasPrefix: String
+  descriptionHasSuffix: String
+  descriptionIsNil: Boolean
+  descriptionNotNil: Boolean
+  descriptionEqualFold: String
+  descriptionContainsFold: String
+  """
+  specification field predicates
+  """
+  specification: String
+  specificationNEQ: String
+  specificationIn: [String!]
+  specificationNotIn: [String!]
+  specificationGT: String
+  specificationGTE: String
+  specificationLT: String
+  specificationLTE: String
+  specificationContains: String
+  specificationHasPrefix: String
+  specificationHasSuffix: String
+  specificationIsNil: Boolean
+  specificationNotNil: Boolean
+  specificationEqualFold: String
+  specificationContainsFold: String
+  """
+  category field predicates
+  """
+  category: String
+  categoryNEQ: String
+  categoryIn: [String!]
+  categoryNotIn: [String!]
+  categoryGT: String
+  categoryGTE: String
+  categoryLT: String
+  categoryLTE: String
+  categoryContains: String
+  categoryHasPrefix: String
+  categoryHasSuffix: String
+  categoryIsNil: Boolean
+  categoryNotNil: Boolean
+  categoryEqualFold: String
+  categoryContainsFold: String
+  """
+  active field predicates
+  """
+  active: Boolean
+  activeNEQ: Boolean
+  """
+  owner edge predicates
+  """
+  hasOwner: Boolean
+  hasOwnerWith: [TeamWhereInput!]
+  """
+  exposures edge predicates
+  """
+  hasExposures: Boolean
+  hasExposuresWith: [AgenticExposureWhereInput!]
 }
 type Member implements Node {
   id: ID!
@@ -6838,6 +10559,99 @@ type Query {
     """
     ids: [ID!]!
   ): [Node]!
+  agentCards(
+    """
+    Returns the elements in the list that come after the specified cursor.
+    """
+    after: Cursor
+
+    """
+    Returns the first _n_ elements from the list.
+    """
+    first: Int
+
+    """
+    Returns the elements in the list that come before the specified cursor.
+    """
+    before: Cursor
+
+    """
+    Returns the last _n_ elements from the list.
+    """
+    last: Int
+
+    """
+    Ordering options for AgentCards returned from the connection.
+    """
+    orderBy: AgentCardOrder
+
+    """
+    Filtering options for AgentCards returned from the connection.
+    """
+    where: AgentCardWhereInput
+  ): AgentCardConnection!
+  agenticExposures(
+    """
+    Returns the elements in the list that come after the specified cursor.
+    """
+    after: Cursor
+
+    """
+    Returns the first _n_ elements from the list.
+    """
+    first: Int
+
+    """
+    Returns the elements in the list that come before the specified cursor.
+    """
+    before: Cursor
+
+    """
+    Returns the last _n_ elements from the list.
+    """
+    last: Int
+
+    """
+    Ordering options for AgenticExposures returned from the connection.
+    """
+    orderBy: AgenticExposureOrder
+
+    """
+    Filtering options for AgenticExposures returned from the connection.
+    """
+    where: AgenticExposureWhereInput
+  ): AgenticExposureConnection!
+  agenticSubscriptions(
+    """
+    Returns the elements in the list that come after the specified cursor.
+    """
+    after: Cursor
+
+    """
+    Returns the first _n_ elements from the list.
+    """
+    first: Int
+
+    """
+    Returns the elements in the list that come before the specified cursor.
+    """
+    before: Cursor
+
+    """
+    Returns the last _n_ elements from the list.
+    """
+    last: Int
+
+    """
+    Ordering options for AgenticSubscriptions returned from the connection.
+    """
+    orderBy: AgenticSubscriptionOrder
+
+    """
+    Filtering options for AgenticSubscriptions returned from the connection.
+    """
+    where: AgenticSubscriptionWhereInput
+  ): AgenticSubscriptionConnection!
   apis(
     """
     Returns the elements in the list that come after the specified cursor.
@@ -7117,6 +10931,130 @@ type Query {
     """
     where: EventTypeWhereInput
   ): EventTypeConnection!
+  fileExposures(
+    """
+    Returns the elements in the list that come after the specified cursor.
+    """
+    after: Cursor
+
+    """
+    Returns the first _n_ elements from the list.
+    """
+    first: Int
+
+    """
+    Returns the elements in the list that come before the specified cursor.
+    """
+    before: Cursor
+
+    """
+    Returns the last _n_ elements from the list.
+    """
+    last: Int
+
+    """
+    Ordering options for FileExposures returned from the connection.
+    """
+    orderBy: FileExposureOrder
+
+    """
+    Filtering options for FileExposures returned from the connection.
+    """
+    where: FileExposureWhereInput
+  ): FileExposureConnection!
+  fileSubscriptions(
+    """
+    Returns the elements in the list that come after the specified cursor.
+    """
+    after: Cursor
+
+    """
+    Returns the first _n_ elements from the list.
+    """
+    first: Int
+
+    """
+    Returns the elements in the list that come before the specified cursor.
+    """
+    before: Cursor
+
+    """
+    Returns the last _n_ elements from the list.
+    """
+    last: Int
+
+    """
+    Ordering options for FileSubscriptions returned from the connection.
+    """
+    orderBy: FileSubscriptionOrder
+
+    """
+    Filtering options for FileSubscriptions returned from the connection.
+    """
+    where: FileSubscriptionWhereInput
+  ): FileSubscriptionConnection!
+  fileTypes(
+    """
+    Returns the elements in the list that come after the specified cursor.
+    """
+    after: Cursor
+
+    """
+    Returns the first _n_ elements from the list.
+    """
+    first: Int
+
+    """
+    Returns the elements in the list that come before the specified cursor.
+    """
+    before: Cursor
+
+    """
+    Returns the last _n_ elements from the list.
+    """
+    last: Int
+
+    """
+    Ordering options for FileTypes returned from the connection.
+    """
+    orderBy: FileTypeOrder
+
+    """
+    Filtering options for FileTypes returned from the connection.
+    """
+    where: FileTypeWhereInput
+  ): FileTypeConnection!
+  mcpServers(
+    """
+    Returns the elements in the list that come after the specified cursor.
+    """
+    after: Cursor
+
+    """
+    Returns the first _n_ elements from the list.
+    """
+    first: Int
+
+    """
+    Returns the elements in the list that come before the specified cursor.
+    """
+    before: Cursor
+
+    """
+    Returns the last _n_ elements from the list.
+    """
+    last: Int
+
+    """
+    Ordering options for McpServers returned from the connection.
+    """
+    orderBy: McpServerOrder
+
+    """
+    Filtering options for McpServers returned from the connection.
+    """
+    where: McpServerWhereInput
+  ): McpServerConnection!
   permissionSets(
     """
     Returns the elements in the list that come after the specified cursor.
@@ -7290,6 +11228,68 @@ type Team implements Node {
     """
     where: EventTypeWhereInput
   ): EventTypeConnection!
+  mcpServers(
+    """
+    Returns the elements in the list that come after the specified cursor.
+    """
+    after: Cursor
+
+    """
+    Returns the first _n_ elements from the list.
+    """
+    first: Int
+
+    """
+    Returns the elements in the list that come before the specified cursor.
+    """
+    before: Cursor
+
+    """
+    Returns the last _n_ elements from the list.
+    """
+    last: Int
+
+    """
+    Ordering options for McpServers returned from the connection.
+    """
+    orderBy: McpServerOrder
+
+    """
+    Filtering options for McpServers returned from the connection.
+    """
+    where: McpServerWhereInput
+  ): McpServerConnection!
+  agentCards(
+    """
+    Returns the elements in the list that come after the specified cursor.
+    """
+    after: Cursor
+
+    """
+    Returns the first _n_ elements from the list.
+    """
+    first: Int
+
+    """
+    Returns the elements in the list that come before the specified cursor.
+    """
+    before: Cursor
+
+    """
+    Returns the last _n_ elements from the list.
+    """
+    last: Int
+
+    """
+    Ordering options for AgentCards returned from the connection.
+    """
+    orderBy: AgentCardOrder
+
+    """
+    Filtering options for AgentCards returned from the connection.
+    """
+    where: AgentCardWhereInput
+  ): AgentCardConnection!
 }
 """
 TeamCategory is enum for the field category
@@ -7578,6 +11578,16 @@ input TeamWhereInput {
   """
   hasEventTypes: Boolean
   hasEventTypesWith: [EventTypeWhereInput!]
+  """
+  mcp_servers edge predicates
+  """
+  hasMcpServers: Boolean
+  hasMcpServersWith: [McpServerWhereInput!]
+  """
+  agent_cards edge predicates
+  """
+  hasAgentCards: Boolean
+  hasAgentCardsWith: [AgentCardWhereInput!]
 }
 """
 The builtin Time type
@@ -7865,13 +11875,17 @@ type RotateApplicationSecretPayload {
 # ──────────────────────────────────────────────────────────────────────────────
 
 type DecideApprovalRequestPayload {
+  "The ApprovalRequest projection read before the command. Query again to observe the resulting state."
   approvalRequest: ApprovalRequest
+  "Whether the command was accepted. This does not confirm that reconciliation and projection are complete."
   accepted: Boolean!
   errors: [MutationError!]!
 }
 
 type DecideApprovalPayload {
+  "The Approval projection read before the command. Query again to observe the resulting state."
   approval: Approval
+  "Whether the command was accepted. This does not confirm that reconciliation and projection are complete."
   accepted: Boolean!
   errors: [MutationError!]!
 }
@@ -7937,6 +11951,17 @@ type TeamInfo {
   email: String
   displayName: String
   description: String
+}
+
+"Reduced application information for cross-tenant contexts."
+type ApplicationInfo {
+  id: ID!
+  name: String!
+  externalIds: [ExternalId!]
+  "Zone the application is deployed in"
+  zone: Zone!
+  "Team that owns the application (reduced view)"
+  ownerTeam: TeamInfo!
 }
 
 type Upstream {
@@ -8064,9 +12089,11 @@ type ApiExposureInfo {
   approvalConfig: ApprovalConfig!
   traffic: Traffic 
   "Application name that owns this exposure"
-  ownerApplicationName: String!
+  ownerApplicationName: String! @deprecated(reason: "Use ownerApplication.name instead.")
   "Owning team (reduced view)"
-  ownerTeam: TeamInfo!
+  ownerTeam: TeamInfo! @deprecated(reason: "Use ownerApplication.ownerTeam instead.")
+  "Owning application (reduced view)"
+  ownerApplication: ApplicationInfo!
 }
 
 # Security
@@ -8115,6 +12142,29 @@ type ApiSubscriptionSecurity {
   m2m: SubscriberMachine2MachineAuthentication
 }
 
+type AgenticExposureSecurity {
+  m2m: Machine2MachineAuthentication
+}
+
+type AgenticSubscriptionSecurity {
+  m2m: SubscriberMachine2MachineAuthentication
+}
+
+"Header additions/removals applied to agentic requests or responses."
+type AgenticHeaderTransformation {
+  remove: [String!]
+  add: [String!]
+}
+
+"Request/response transformations applied to an AgenticExposure or AgenticSubscription."
+type AgenticRequestResponseTransformation {
+  headers: AgenticHeaderTransformation!
+}
+
+type AgenticTransformation {
+  request: AgenticRequestResponseTransformation!
+}
+
 # Traffic 
 
 type Limits {
@@ -8161,34 +12211,83 @@ type Traffic {
   rateLimit: RateLimit
 }
 
+"Opt-in failover flag for an AgenticSubscription (eligible zones are derived automatically)."
+type AgenticSubscriberFailover {
+  enabled: Boolean!
+}
+
+"Traffic config for an AgenticSubscription — unlike the exposure-side Traffic, failover is a simple opt-in flag."
+type AgenticSubscriberTraffic {
+  failover: AgenticSubscriberFailover
+}
+
 type ApiSubscriptionTraffic {
   providerLimits: Limits
   subscriberLimits: Limits
 }
 
+"Common ownership fields for reduced subscription views."
+interface SubscriptionInfo {
+  id: ID!
+  ownerApplication: ApplicationInfo!
+}
+
 "Reduced API subscription for cross-tenant contexts (e.g., exposure subscribers)."
-type ApiSubscriptionInfo {
+type ApiSubscriptionInfo implements SubscriptionInfo {
   id: ID!
   basePath: String!
   statusPhase: ApiSubscriptionStatusPhase
   statusMessage: String
   "Application name that owns this subscription"
-  ownerApplicationName: String!
+  ownerApplicationName: String! @deprecated(reason: "Use ownerApplication.name instead.")
   "Owning team (reduced view)"
-  ownerTeam: TeamInfo!
+  ownerTeam: TeamInfo! @deprecated(reason: "Use ownerApplication.ownerTeam instead.")
+  "Owning application (reduced view)"
+  ownerApplication: ApplicationInfo!
 }
 
 "Reduced event subscription for cross-tenant contexts (e.g., exposure subscribers)."
-type EventSubscriptionInfo {
+type EventSubscriptionInfo implements SubscriptionInfo {
   id: ID!
   eventType: String!
   deliveryType: EventSubscriptionDeliveryType!
   statusPhase: EventSubscriptionStatusPhase
   statusMessage: String
   "Application name that owns this subscription"
-  ownerApplicationName: String!
+  ownerApplicationName: String! @deprecated(reason: "Use ownerApplication.name instead.")
   "Owning team (reduced view)"
-  ownerTeam: TeamInfo!
+  ownerTeam: TeamInfo! @deprecated(reason: "Use ownerApplication.ownerTeam instead.")
+  "Owning application (reduced view)"
+  ownerApplication: ApplicationInfo!
+}
+
+"Reduced file subscription for cross-tenant contexts (e.g., approvals)."
+type FileSubscriptionInfo implements SubscriptionInfo {
+  id: ID!
+  fileType: String!
+  statusPhase: FileSubscriptionStatusPhase
+  statusMessage: String
+  "Application name that owns this subscription"
+  ownerApplicationName: String! @deprecated(reason: "Use ownerApplication.name instead.")
+  "Owning team (reduced view)"
+  ownerTeam: TeamInfo! @deprecated(reason: "Use ownerApplication.ownerTeam instead.")
+  "Owning application (reduced view)"
+  ownerApplication: ApplicationInfo!
+}
+
+"Reduced file exposure for cross-tenant contexts (e.g., subscription target)."
+type FileExposureInfo {
+  id: ID!
+  fileType: String!
+  visibility: FileExposureVisibility!
+  active: Boolean
+  approvalConfig: ApprovalConfig!
+  "Application name that owns this exposure"
+  ownerApplicationName: String! @deprecated(reason: "Use ownerApplication.name instead.")
+  "Owning team (reduced view)"
+  ownerTeam: TeamInfo! @deprecated(reason: "Use ownerApplication.ownerTeam instead.")
+  "Owning application (reduced view)"
+  ownerApplication: ApplicationInfo!
 }
 
 "Reduced event exposure for cross-tenant contexts (e.g., subscription target)."
@@ -8199,9 +12298,53 @@ type EventExposureInfo {
   active: Boolean
   approvalConfig: ApprovalConfig!
   "Application name that owns this exposure"
-  ownerApplicationName: String!
+  ownerApplicationName: String! @deprecated(reason: "Use ownerApplication.name instead.")
   "Owning team (reduced view)"
-  ownerTeam: TeamInfo!
+  ownerTeam: TeamInfo! @deprecated(reason: "Use ownerApplication.ownerTeam instead.")
+  "Owning application (reduced view)"
+  ownerApplication: ApplicationInfo!
+}
+
+"Reduced agentic exposure for cross-tenant contexts (e.g., subscription target)."
+type AgenticExposureInfo {
+  id: ID!
+  basePath: String!
+  visibility: AgenticExposureVisibility!
+  variant: AgenticExposureVariant!
+  active: Boolean
+  approvalConfig: ApprovalConfig!
+  traffic: Traffic
+  "Application name that owns this exposure"
+  ownerApplicationName: String! @deprecated(reason: "Use ownerApplication.name instead.")
+  "Owning team (reduced view)"
+  ownerTeam: TeamInfo! @deprecated(reason: "Use ownerApplication.ownerTeam instead.")
+  "Owning application (reduced view)"
+  ownerApplication: ApplicationInfo!
+}
+
+"Reduced agentic subscription for cross-tenant contexts (e.g., exposure subscribers)."
+type AgenticSubscriptionInfo implements SubscriptionInfo {
+  id: ID!
+  basePath: String!
+  statusPhase: AgenticSubscriptionStatusPhase
+  statusMessage: String
+  "Application name that owns this subscription"
+  ownerApplicationName: String! @deprecated(reason: "Use ownerApplication.name instead.")
+  "Owning team (reduced view)"
+  ownerTeam: TeamInfo! @deprecated(reason: "Use ownerApplication.ownerTeam instead.")
+  "Owning application (reduced view)"
+  ownerApplication: ApplicationInfo!
+}
+
+# File
+
+type FileSFTP {
+  publicKeys: [SSHPublicKeySpec!]!
+}
+
+type SSHPublicKeySpec {
+  key: String
+  label: String
 }
 
 # -- Cross-tenant edge overrides --
@@ -8236,8 +12379,25 @@ extend type EventExposure {
   subscriptions: [EventSubscriptionInfo!]! @goField(forceResolver: true)
 }
 
-"A subscription related to an approval — either an API or event subscription."
-union SubscriptionInfo = ApiSubscriptionInfo | EventSubscriptionInfo
+extend type AgenticSubscription {
+  "Target exposure (reduced view — cross-tenant boundary). Null when the target MCP server/agent is not yet exposed."
+  target: AgenticExposureInfo @goField(forceResolver: true)
+}
+
+extend type AgenticExposure {
+  "Subscriptions to this exposure (reduced view — cross-tenant boundary)"
+  subscriptions: [AgenticSubscriptionInfo!]! @goField(forceResolver: true)
+}
+
+extend type FileSubscription {
+  "Target exposure (reduced view — cross-tenant boundary). Null when the target file type is not yet exposed."
+  target: FileExposureInfo @goField(forceResolver: true)
+}
+
+extend type FileExposure {
+  "Subscriptions to this exposure (reduced view — cross-tenant boundary)"
+  subscriptions: [FileSubscriptionInfo!]! @goField(forceResolver: true)
+}
 
 extend type Approval {
   "Related subscription (reduced view — cross-tenant boundary)"
@@ -8271,6 +12431,24 @@ extend type EventType {
   owner: TeamInfo! @goField(forceResolver: true)
 }
 
+extend type McpServer {
+  "URL to download the MCP server specification from the file-manager. Null if no specification is associated."
+  specificationUrl: String @goField(forceResolver: true)
+  "The currently active exposure of this MCP server, or null if no exposure is active."
+  activeExposure: AgenticExposureInfo @goField(forceResolver: true)
+  "The team that owns this MCP server."
+  owner: TeamInfo! @goField(forceResolver: true)
+}
+
+extend type AgentCard {
+  "URL to download the agent specification from the file-manager. Null if no specification is associated."
+  specificationUrl: String @goField(forceResolver: true)
+  "The currently active exposure of this agent, or null if no exposure is active."
+  activeExposure: AgenticExposureInfo @goField(forceResolver: true)
+  "The team that owns this agent."
+  owner: TeamInfo! @goField(forceResolver: true)
+}
+
 extend type Query {
   "Returns all distinct API categories currently in use."
   apiCategories: [ApiCategory!]! @goField(forceResolver: true)
@@ -8284,7 +12462,6 @@ type ApiCategory {
   "The category identifier/name."
   name: String!
 }
-
 `, BuiltIn: false},
 }
 var parsedSchema = gqlparser.MustLoadSchema(sources...)
@@ -8301,6 +12478,298 @@ func (ec *executionContext) childFields_AddTeamMemberPayload(ctx context.Context
 		return ec.fieldContext_AddTeamMemberPayload_errors(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type AddTeamMemberPayload", field.Name)
+}
+
+func (ec *executionContext) childFields_AgentCard(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "id":
+		return ec.fieldContext_AgentCard_id(ctx, field)
+	case "createdAt":
+		return ec.fieldContext_AgentCard_createdAt(ctx, field)
+	case "lastModifiedAt":
+		return ec.fieldContext_AgentCard_lastModifiedAt(ctx, field)
+	case "statusPhase":
+		return ec.fieldContext_AgentCard_statusPhase(ctx, field)
+	case "statusMessage":
+		return ec.fieldContext_AgentCard_statusMessage(ctx, field)
+	case "namespace":
+		return ec.fieldContext_AgentCard_namespace(ctx, field)
+	case "basePath":
+		return ec.fieldContext_AgentCard_basePath(ctx, field)
+	case "version":
+		return ec.fieldContext_AgentCard_version(ctx, field)
+	case "name":
+		return ec.fieldContext_AgentCard_name(ctx, field)
+	case "description":
+		return ec.fieldContext_AgentCard_description(ctx, field)
+	case "category":
+		return ec.fieldContext_AgentCard_category(ctx, field)
+	case "oauth2Scopes":
+		return ec.fieldContext_AgentCard_oauth2Scopes(ctx, field)
+	case "active":
+		return ec.fieldContext_AgentCard_active(ctx, field)
+	case "specificationUrl":
+		return ec.fieldContext_AgentCard_specificationUrl(ctx, field)
+	case "activeExposure":
+		return ec.fieldContext_AgentCard_activeExposure(ctx, field)
+	case "owner":
+		return ec.fieldContext_AgentCard_owner(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type AgentCard", field.Name)
+}
+
+func (ec *executionContext) childFields_AgentCardConnection(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "edges":
+		return ec.fieldContext_AgentCardConnection_edges(ctx, field)
+	case "pageInfo":
+		return ec.fieldContext_AgentCardConnection_pageInfo(ctx, field)
+	case "totalCount":
+		return ec.fieldContext_AgentCardConnection_totalCount(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type AgentCardConnection", field.Name)
+}
+
+func (ec *executionContext) childFields_AgentCardEdge(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "node":
+		return ec.fieldContext_AgentCardEdge_node(ctx, field)
+	case "cursor":
+		return ec.fieldContext_AgentCardEdge_cursor(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type AgentCardEdge", field.Name)
+}
+
+func (ec *executionContext) childFields_AgenticExposure(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "id":
+		return ec.fieldContext_AgenticExposure_id(ctx, field)
+	case "createdAt":
+		return ec.fieldContext_AgenticExposure_createdAt(ctx, field)
+	case "lastModifiedAt":
+		return ec.fieldContext_AgenticExposure_lastModifiedAt(ctx, field)
+	case "statusPhase":
+		return ec.fieldContext_AgenticExposure_statusPhase(ctx, field)
+	case "statusMessage":
+		return ec.fieldContext_AgenticExposure_statusMessage(ctx, field)
+	case "environment":
+		return ec.fieldContext_AgenticExposure_environment(ctx, field)
+	case "namespace":
+		return ec.fieldContext_AgenticExposure_namespace(ctx, field)
+	case "basePath":
+		return ec.fieldContext_AgenticExposure_basePath(ctx, field)
+	case "visibility":
+		return ec.fieldContext_AgenticExposure_visibility(ctx, field)
+	case "variant":
+		return ec.fieldContext_AgenticExposure_variant(ctx, field)
+	case "active":
+		return ec.fieldContext_AgenticExposure_active(ctx, field)
+	case "upstreams":
+		return ec.fieldContext_AgenticExposure_upstreams(ctx, field)
+	case "approvalConfig":
+		return ec.fieldContext_AgenticExposure_approvalConfig(ctx, field)
+	case "security":
+		return ec.fieldContext_AgenticExposure_security(ctx, field)
+	case "traffic":
+		return ec.fieldContext_AgenticExposure_traffic(ctx, field)
+	case "transformation":
+		return ec.fieldContext_AgenticExposure_transformation(ctx, field)
+	case "owner":
+		return ec.fieldContext_AgenticExposure_owner(ctx, field)
+	case "mcpServer":
+		return ec.fieldContext_AgenticExposure_mcpServer(ctx, field)
+	case "agentCard":
+		return ec.fieldContext_AgenticExposure_agentCard(ctx, field)
+	case "subscriptions":
+		return ec.fieldContext_AgenticExposure_subscriptions(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type AgenticExposure", field.Name)
+}
+
+func (ec *executionContext) childFields_AgenticExposureConnection(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "edges":
+		return ec.fieldContext_AgenticExposureConnection_edges(ctx, field)
+	case "pageInfo":
+		return ec.fieldContext_AgenticExposureConnection_pageInfo(ctx, field)
+	case "totalCount":
+		return ec.fieldContext_AgenticExposureConnection_totalCount(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type AgenticExposureConnection", field.Name)
+}
+
+func (ec *executionContext) childFields_AgenticExposureEdge(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "node":
+		return ec.fieldContext_AgenticExposureEdge_node(ctx, field)
+	case "cursor":
+		return ec.fieldContext_AgenticExposureEdge_cursor(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type AgenticExposureEdge", field.Name)
+}
+
+func (ec *executionContext) childFields_AgenticExposureInfo(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "id":
+		return ec.fieldContext_AgenticExposureInfo_id(ctx, field)
+	case "basePath":
+		return ec.fieldContext_AgenticExposureInfo_basePath(ctx, field)
+	case "visibility":
+		return ec.fieldContext_AgenticExposureInfo_visibility(ctx, field)
+	case "variant":
+		return ec.fieldContext_AgenticExposureInfo_variant(ctx, field)
+	case "active":
+		return ec.fieldContext_AgenticExposureInfo_active(ctx, field)
+	case "approvalConfig":
+		return ec.fieldContext_AgenticExposureInfo_approvalConfig(ctx, field)
+	case "traffic":
+		return ec.fieldContext_AgenticExposureInfo_traffic(ctx, field)
+	case "ownerApplicationName":
+		return ec.fieldContext_AgenticExposureInfo_ownerApplicationName(ctx, field)
+	case "ownerTeam":
+		return ec.fieldContext_AgenticExposureInfo_ownerTeam(ctx, field)
+	case "ownerApplication":
+		return ec.fieldContext_AgenticExposureInfo_ownerApplication(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type AgenticExposureInfo", field.Name)
+}
+
+func (ec *executionContext) childFields_AgenticExposureSecurity(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "m2m":
+		return ec.fieldContext_AgenticExposureSecurity_m2m(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type AgenticExposureSecurity", field.Name)
+}
+
+func (ec *executionContext) childFields_AgenticHeaderTransformation(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "remove":
+		return ec.fieldContext_AgenticHeaderTransformation_remove(ctx, field)
+	case "add":
+		return ec.fieldContext_AgenticHeaderTransformation_add(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type AgenticHeaderTransformation", field.Name)
+}
+
+func (ec *executionContext) childFields_AgenticRequestResponseTransformation(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "headers":
+		return ec.fieldContext_AgenticRequestResponseTransformation_headers(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type AgenticRequestResponseTransformation", field.Name)
+}
+
+func (ec *executionContext) childFields_AgenticSubscriberFailover(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "enabled":
+		return ec.fieldContext_AgenticSubscriberFailover_enabled(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type AgenticSubscriberFailover", field.Name)
+}
+
+func (ec *executionContext) childFields_AgenticSubscriberTraffic(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "failover":
+		return ec.fieldContext_AgenticSubscriberTraffic_failover(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type AgenticSubscriberTraffic", field.Name)
+}
+
+func (ec *executionContext) childFields_AgenticSubscription(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "id":
+		return ec.fieldContext_AgenticSubscription_id(ctx, field)
+	case "createdAt":
+		return ec.fieldContext_AgenticSubscription_createdAt(ctx, field)
+	case "lastModifiedAt":
+		return ec.fieldContext_AgenticSubscription_lastModifiedAt(ctx, field)
+	case "statusPhase":
+		return ec.fieldContext_AgenticSubscription_statusPhase(ctx, field)
+	case "statusMessage":
+		return ec.fieldContext_AgenticSubscription_statusMessage(ctx, field)
+	case "environment":
+		return ec.fieldContext_AgenticSubscription_environment(ctx, field)
+	case "namespace":
+		return ec.fieldContext_AgenticSubscription_namespace(ctx, field)
+	case "name":
+		return ec.fieldContext_AgenticSubscription_name(ctx, field)
+	case "basePath":
+		return ec.fieldContext_AgenticSubscription_basePath(ctx, field)
+	case "gatewayURL":
+		return ec.fieldContext_AgenticSubscription_gatewayURL(ctx, field)
+	case "security":
+		return ec.fieldContext_AgenticSubscription_security(ctx, field)
+	case "traffic":
+		return ec.fieldContext_AgenticSubscription_traffic(ctx, field)
+	case "owner":
+		return ec.fieldContext_AgenticSubscription_owner(ctx, field)
+	case "approval":
+		return ec.fieldContext_AgenticSubscription_approval(ctx, field)
+	case "approvalRequests":
+		return ec.fieldContext_AgenticSubscription_approvalRequests(ctx, field)
+	case "target":
+		return ec.fieldContext_AgenticSubscription_target(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type AgenticSubscription", field.Name)
+}
+
+func (ec *executionContext) childFields_AgenticSubscriptionConnection(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "edges":
+		return ec.fieldContext_AgenticSubscriptionConnection_edges(ctx, field)
+	case "pageInfo":
+		return ec.fieldContext_AgenticSubscriptionConnection_pageInfo(ctx, field)
+	case "totalCount":
+		return ec.fieldContext_AgenticSubscriptionConnection_totalCount(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type AgenticSubscriptionConnection", field.Name)
+}
+
+func (ec *executionContext) childFields_AgenticSubscriptionEdge(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "node":
+		return ec.fieldContext_AgenticSubscriptionEdge_node(ctx, field)
+	case "cursor":
+		return ec.fieldContext_AgenticSubscriptionEdge_cursor(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type AgenticSubscriptionEdge", field.Name)
+}
+
+func (ec *executionContext) childFields_AgenticSubscriptionInfo(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "id":
+		return ec.fieldContext_AgenticSubscriptionInfo_id(ctx, field)
+	case "basePath":
+		return ec.fieldContext_AgenticSubscriptionInfo_basePath(ctx, field)
+	case "statusPhase":
+		return ec.fieldContext_AgenticSubscriptionInfo_statusPhase(ctx, field)
+	case "statusMessage":
+		return ec.fieldContext_AgenticSubscriptionInfo_statusMessage(ctx, field)
+	case "ownerApplicationName":
+		return ec.fieldContext_AgenticSubscriptionInfo_ownerApplicationName(ctx, field)
+	case "ownerTeam":
+		return ec.fieldContext_AgenticSubscriptionInfo_ownerTeam(ctx, field)
+	case "ownerApplication":
+		return ec.fieldContext_AgenticSubscriptionInfo_ownerApplication(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type AgenticSubscriptionInfo", field.Name)
+}
+
+func (ec *executionContext) childFields_AgenticSubscriptionSecurity(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "m2m":
+		return ec.fieldContext_AgenticSubscriptionSecurity_m2m(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type AgenticSubscriptionSecurity", field.Name)
+}
+
+func (ec *executionContext) childFields_AgenticTransformation(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "request":
+		return ec.fieldContext_AgenticTransformation_request(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type AgenticTransformation", field.Name)
 }
 
 func (ec *executionContext) childFields_Api(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
@@ -8457,6 +12926,8 @@ func (ec *executionContext) childFields_ApiExposureInfo(ctx context.Context, fie
 		return ec.fieldContext_ApiExposureInfo_ownerApplicationName(ctx, field)
 	case "ownerTeam":
 		return ec.fieldContext_ApiExposureInfo_ownerTeam(ctx, field)
+	case "ownerApplication":
+		return ec.fieldContext_ApiExposureInfo_ownerApplication(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type ApiExposureInfo", field.Name)
 }
@@ -8547,6 +13018,8 @@ func (ec *executionContext) childFields_ApiSubscriptionInfo(ctx context.Context,
 		return ec.fieldContext_ApiSubscriptionInfo_ownerApplicationName(ctx, field)
 	case "ownerTeam":
 		return ec.fieldContext_ApiSubscriptionInfo_ownerTeam(ctx, field)
+	case "ownerApplication":
+		return ec.fieldContext_ApiSubscriptionInfo_ownerApplication(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type ApiSubscriptionInfo", field.Name)
 }
@@ -8615,10 +13088,18 @@ func (ec *executionContext) childFields_Application(ctx context.Context, field g
 		return ec.fieldContext_Application_exposedApis(ctx, field)
 	case "subscribedApis":
 		return ec.fieldContext_Application_subscribedApis(ctx, field)
+	case "exposedFileTypes":
+		return ec.fieldContext_Application_exposedFileTypes(ctx, field)
+	case "subscribedFileTypes":
+		return ec.fieldContext_Application_subscribedFileTypes(ctx, field)
 	case "exposedEvents":
 		return ec.fieldContext_Application_exposedEvents(ctx, field)
 	case "subscribedEvents":
 		return ec.fieldContext_Application_subscribedEvents(ctx, field)
+	case "exposedAgentics":
+		return ec.fieldContext_Application_exposedAgentics(ctx, field)
+	case "subscribedAgentics":
+		return ec.fieldContext_Application_subscribedAgentics(ctx, field)
 	case "permissionSet":
 		return ec.fieldContext_Application_permissionSet(ctx, field)
 	case "ownerTeam":
@@ -8647,6 +13128,22 @@ func (ec *executionContext) childFields_ApplicationEdge(ctx context.Context, fie
 		return ec.fieldContext_ApplicationEdge_cursor(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type ApplicationEdge", field.Name)
+}
+
+func (ec *executionContext) childFields_ApplicationInfo(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "id":
+		return ec.fieldContext_ApplicationInfo_id(ctx, field)
+	case "name":
+		return ec.fieldContext_ApplicationInfo_name(ctx, field)
+	case "externalIds":
+		return ec.fieldContext_ApplicationInfo_externalIds(ctx, field)
+	case "zone":
+		return ec.fieldContext_ApplicationInfo_zone(ctx, field)
+	case "ownerTeam":
+		return ec.fieldContext_ApplicationInfo_ownerTeam(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type ApplicationInfo", field.Name)
 }
 
 func (ec *executionContext) childFields_Approval(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
@@ -8683,8 +13180,8 @@ func (ec *executionContext) childFields_Approval(ctx context.Context, field grap
 		return ec.fieldContext_Approval_requestedScopes(ctx, field)
 	case "name":
 		return ec.fieldContext_Approval_name(ctx, field)
-	case "expiresat":
-		return ec.fieldContext_Approval_expiresat(ctx, field)
+	case "expiresAt":
+		return ec.fieldContext_Approval_expiresAt(ctx, field)
 	case "state":
 		return ec.fieldContext_Approval_state(ctx, field)
 	case "subscription":
@@ -8999,6 +13496,8 @@ func (ec *executionContext) childFields_EventExposureInfo(ctx context.Context, f
 		return ec.fieldContext_EventExposureInfo_ownerApplicationName(ctx, field)
 	case "ownerTeam":
 		return ec.fieldContext_EventExposureInfo_ownerTeam(ctx, field)
+	case "ownerApplication":
+		return ec.fieldContext_EventExposureInfo_ownerApplication(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type EventExposureInfo", field.Name)
 }
@@ -9095,6 +13594,8 @@ func (ec *executionContext) childFields_EventSubscriptionInfo(ctx context.Contex
 		return ec.fieldContext_EventSubscriptionInfo_ownerApplicationName(ctx, field)
 	case "ownerTeam":
 		return ec.fieldContext_EventSubscriptionInfo_ownerTeam(ctx, field)
+	case "ownerApplication":
+		return ec.fieldContext_EventSubscriptionInfo_ownerApplication(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type EventSubscriptionInfo", field.Name)
 }
@@ -9197,6 +13698,232 @@ func (ec *executionContext) childFields_Failover(ctx context.Context, field grap
 	return nil, fmt.Errorf("no field named %q was found under type Failover", field.Name)
 }
 
+func (ec *executionContext) childFields_FileExposure(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "id":
+		return ec.fieldContext_FileExposure_id(ctx, field)
+	case "createdAt":
+		return ec.fieldContext_FileExposure_createdAt(ctx, field)
+	case "lastModifiedAt":
+		return ec.fieldContext_FileExposure_lastModifiedAt(ctx, field)
+	case "statusPhase":
+		return ec.fieldContext_FileExposure_statusPhase(ctx, field)
+	case "statusMessage":
+		return ec.fieldContext_FileExposure_statusMessage(ctx, field)
+	case "environment":
+		return ec.fieldContext_FileExposure_environment(ctx, field)
+	case "namespace":
+		return ec.fieldContext_FileExposure_namespace(ctx, field)
+	case "fileType":
+		return ec.fieldContext_FileExposure_fileType(ctx, field)
+	case "visibility":
+		return ec.fieldContext_FileExposure_visibility(ctx, field)
+	case "active":
+		return ec.fieldContext_FileExposure_active(ctx, field)
+	case "zoneName":
+		return ec.fieldContext_FileExposure_zoneName(ctx, field)
+	case "sftp":
+		return ec.fieldContext_FileExposure_sftp(ctx, field)
+	case "approvalConfig":
+		return ec.fieldContext_FileExposure_approvalConfig(ctx, field)
+	case "owner":
+		return ec.fieldContext_FileExposure_owner(ctx, field)
+	case "fileTypeDef":
+		return ec.fieldContext_FileExposure_fileTypeDef(ctx, field)
+	case "zone":
+		return ec.fieldContext_FileExposure_zone(ctx, field)
+	case "subscriptions":
+		return ec.fieldContext_FileExposure_subscriptions(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type FileExposure", field.Name)
+}
+
+func (ec *executionContext) childFields_FileExposureConnection(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "edges":
+		return ec.fieldContext_FileExposureConnection_edges(ctx, field)
+	case "pageInfo":
+		return ec.fieldContext_FileExposureConnection_pageInfo(ctx, field)
+	case "totalCount":
+		return ec.fieldContext_FileExposureConnection_totalCount(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type FileExposureConnection", field.Name)
+}
+
+func (ec *executionContext) childFields_FileExposureEdge(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "node":
+		return ec.fieldContext_FileExposureEdge_node(ctx, field)
+	case "cursor":
+		return ec.fieldContext_FileExposureEdge_cursor(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type FileExposureEdge", field.Name)
+}
+
+func (ec *executionContext) childFields_FileExposureInfo(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "id":
+		return ec.fieldContext_FileExposureInfo_id(ctx, field)
+	case "fileType":
+		return ec.fieldContext_FileExposureInfo_fileType(ctx, field)
+	case "visibility":
+		return ec.fieldContext_FileExposureInfo_visibility(ctx, field)
+	case "active":
+		return ec.fieldContext_FileExposureInfo_active(ctx, field)
+	case "approvalConfig":
+		return ec.fieldContext_FileExposureInfo_approvalConfig(ctx, field)
+	case "ownerApplicationName":
+		return ec.fieldContext_FileExposureInfo_ownerApplicationName(ctx, field)
+	case "ownerTeam":
+		return ec.fieldContext_FileExposureInfo_ownerTeam(ctx, field)
+	case "ownerApplication":
+		return ec.fieldContext_FileExposureInfo_ownerApplication(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type FileExposureInfo", field.Name)
+}
+
+func (ec *executionContext) childFields_FileSFTP(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "publicKeys":
+		return ec.fieldContext_FileSFTP_publicKeys(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type FileSFTP", field.Name)
+}
+
+func (ec *executionContext) childFields_FileSubscription(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "id":
+		return ec.fieldContext_FileSubscription_id(ctx, field)
+	case "createdAt":
+		return ec.fieldContext_FileSubscription_createdAt(ctx, field)
+	case "lastModifiedAt":
+		return ec.fieldContext_FileSubscription_lastModifiedAt(ctx, field)
+	case "statusPhase":
+		return ec.fieldContext_FileSubscription_statusPhase(ctx, field)
+	case "statusMessage":
+		return ec.fieldContext_FileSubscription_statusMessage(ctx, field)
+	case "environment":
+		return ec.fieldContext_FileSubscription_environment(ctx, field)
+	case "namespace":
+		return ec.fieldContext_FileSubscription_namespace(ctx, field)
+	case "name":
+		return ec.fieldContext_FileSubscription_name(ctx, field)
+	case "fileType":
+		return ec.fieldContext_FileSubscription_fileType(ctx, field)
+	case "zoneName":
+		return ec.fieldContext_FileSubscription_zoneName(ctx, field)
+	case "serviceURL":
+		return ec.fieldContext_FileSubscription_serviceURL(ctx, field)
+	case "serviceExternalURL":
+		return ec.fieldContext_FileSubscription_serviceExternalURL(ctx, field)
+	case "sftp":
+		return ec.fieldContext_FileSubscription_sftp(ctx, field)
+	case "owner":
+		return ec.fieldContext_FileSubscription_owner(ctx, field)
+	case "fileTypeDef":
+		return ec.fieldContext_FileSubscription_fileTypeDef(ctx, field)
+	case "zone":
+		return ec.fieldContext_FileSubscription_zone(ctx, field)
+	case "approval":
+		return ec.fieldContext_FileSubscription_approval(ctx, field)
+	case "approvalRequests":
+		return ec.fieldContext_FileSubscription_approvalRequests(ctx, field)
+	case "target":
+		return ec.fieldContext_FileSubscription_target(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type FileSubscription", field.Name)
+}
+
+func (ec *executionContext) childFields_FileSubscriptionConnection(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "edges":
+		return ec.fieldContext_FileSubscriptionConnection_edges(ctx, field)
+	case "pageInfo":
+		return ec.fieldContext_FileSubscriptionConnection_pageInfo(ctx, field)
+	case "totalCount":
+		return ec.fieldContext_FileSubscriptionConnection_totalCount(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type FileSubscriptionConnection", field.Name)
+}
+
+func (ec *executionContext) childFields_FileSubscriptionEdge(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "node":
+		return ec.fieldContext_FileSubscriptionEdge_node(ctx, field)
+	case "cursor":
+		return ec.fieldContext_FileSubscriptionEdge_cursor(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type FileSubscriptionEdge", field.Name)
+}
+
+func (ec *executionContext) childFields_FileSubscriptionInfo(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "id":
+		return ec.fieldContext_FileSubscriptionInfo_id(ctx, field)
+	case "fileType":
+		return ec.fieldContext_FileSubscriptionInfo_fileType(ctx, field)
+	case "statusPhase":
+		return ec.fieldContext_FileSubscriptionInfo_statusPhase(ctx, field)
+	case "statusMessage":
+		return ec.fieldContext_FileSubscriptionInfo_statusMessage(ctx, field)
+	case "ownerApplicationName":
+		return ec.fieldContext_FileSubscriptionInfo_ownerApplicationName(ctx, field)
+	case "ownerTeam":
+		return ec.fieldContext_FileSubscriptionInfo_ownerTeam(ctx, field)
+	case "ownerApplication":
+		return ec.fieldContext_FileSubscriptionInfo_ownerApplication(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type FileSubscriptionInfo", field.Name)
+}
+
+func (ec *executionContext) childFields_FileType(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "id":
+		return ec.fieldContext_FileType_id(ctx, field)
+	case "createdAt":
+		return ec.fieldContext_FileType_createdAt(ctx, field)
+	case "lastModifiedAt":
+		return ec.fieldContext_FileType_lastModifiedAt(ctx, field)
+	case "statusPhase":
+		return ec.fieldContext_FileType_statusPhase(ctx, field)
+	case "statusMessage":
+		return ec.fieldContext_FileType_statusMessage(ctx, field)
+	case "namespace":
+		return ec.fieldContext_FileType_namespace(ctx, field)
+	case "fileType":
+		return ec.fieldContext_FileType_fileType(ctx, field)
+	case "description":
+		return ec.fieldContext_FileType_description(ctx, field)
+	case "variant":
+		return ec.fieldContext_FileType_variant(ctx, field)
+	case "active":
+		return ec.fieldContext_FileType_active(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type FileType", field.Name)
+}
+
+func (ec *executionContext) childFields_FileTypeConnection(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "edges":
+		return ec.fieldContext_FileTypeConnection_edges(ctx, field)
+	case "pageInfo":
+		return ec.fieldContext_FileTypeConnection_pageInfo(ctx, field)
+	case "totalCount":
+		return ec.fieldContext_FileTypeConnection_totalCount(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type FileTypeConnection", field.Name)
+}
+
+func (ec *executionContext) childFields_FileTypeEdge(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "node":
+		return ec.fieldContext_FileTypeEdge_node(ctx, field)
+	case "cursor":
+		return ec.fieldContext_FileTypeEdge_cursor(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type FileTypeEdge", field.Name)
+}
+
 func (ec *executionContext) childFields_Group(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 	switch field.Name {
 	case "id":
@@ -9249,6 +13976,66 @@ func (ec *executionContext) childFields_Machine2MachineAuthentication(ctx contex
 		return ec.fieldContext_Machine2MachineAuthentication_scopes(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type Machine2MachineAuthentication", field.Name)
+}
+
+func (ec *executionContext) childFields_McpServer(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "id":
+		return ec.fieldContext_McpServer_id(ctx, field)
+	case "createdAt":
+		return ec.fieldContext_McpServer_createdAt(ctx, field)
+	case "lastModifiedAt":
+		return ec.fieldContext_McpServer_lastModifiedAt(ctx, field)
+	case "statusPhase":
+		return ec.fieldContext_McpServer_statusPhase(ctx, field)
+	case "statusMessage":
+		return ec.fieldContext_McpServer_statusMessage(ctx, field)
+	case "namespace":
+		return ec.fieldContext_McpServer_namespace(ctx, field)
+	case "basePath":
+		return ec.fieldContext_McpServer_basePath(ctx, field)
+	case "version":
+		return ec.fieldContext_McpServer_version(ctx, field)
+	case "name":
+		return ec.fieldContext_McpServer_name(ctx, field)
+	case "description":
+		return ec.fieldContext_McpServer_description(ctx, field)
+	case "category":
+		return ec.fieldContext_McpServer_category(ctx, field)
+	case "oauth2Scopes":
+		return ec.fieldContext_McpServer_oauth2Scopes(ctx, field)
+	case "active":
+		return ec.fieldContext_McpServer_active(ctx, field)
+	case "specificationUrl":
+		return ec.fieldContext_McpServer_specificationUrl(ctx, field)
+	case "activeExposure":
+		return ec.fieldContext_McpServer_activeExposure(ctx, field)
+	case "owner":
+		return ec.fieldContext_McpServer_owner(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type McpServer", field.Name)
+}
+
+func (ec *executionContext) childFields_McpServerConnection(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "edges":
+		return ec.fieldContext_McpServerConnection_edges(ctx, field)
+	case "pageInfo":
+		return ec.fieldContext_McpServerConnection_pageInfo(ctx, field)
+	case "totalCount":
+		return ec.fieldContext_McpServerConnection_totalCount(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type McpServerConnection", field.Name)
+}
+
+func (ec *executionContext) childFields_McpServerEdge(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "node":
+		return ec.fieldContext_McpServerEdge_node(ctx, field)
+	case "cursor":
+		return ec.fieldContext_McpServerEdge_cursor(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type McpServerEdge", field.Name)
 }
 
 func (ec *executionContext) childFields_Member(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
@@ -9459,6 +14246,16 @@ func (ec *executionContext) childFields_RotateTeamTokenPayload(ctx context.Conte
 	return nil, fmt.Errorf("no field named %q was found under type RotateTeamTokenPayload", field.Name)
 }
 
+func (ec *executionContext) childFields_SSHPublicKeySpec(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "key":
+		return ec.fieldContext_SSHPublicKeySpec_key(ctx, field)
+	case "label":
+		return ec.fieldContext_SSHPublicKeySpec_label(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type SSHPublicKeySpec", field.Name)
+}
+
 func (ec *executionContext) childFields_SelectionFilter(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 	switch field.Name {
 	case "attributes":
@@ -9537,6 +14334,10 @@ func (ec *executionContext) childFields_Team(ctx context.Context, field graphql.
 		return ec.fieldContext_Team_apis(ctx, field)
 	case "eventTypes":
 		return ec.fieldContext_Team_eventTypes(ctx, field)
+	case "mcpServers":
+		return ec.fieldContext_Team_mcpServers(ctx, field)
+	case "agentCards":
+		return ec.fieldContext_Team_agentCards(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type Team", field.Name)
 }

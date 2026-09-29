@@ -11,18 +11,15 @@ import (
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
 )
 
-// Family installs its auth / business-context middleware onto router via
-// router.Use(...) and returns the per-route guard to attach to each route, or
-// nil if the family guards entirely via Use (no per-route guard needed).
-type Family func(router fiber.Router) (guard fiber.Handler)
+// Family configures security middleware and returns the chain to attach to
+// guarded routes, or nil if the family guards entirely via router.Use(...).
+type Family func(router fiber.Router) []fiber.Handler
 
-// JWTFamily wraps security.ConfigureSecurity: it installs the JWT +
-// business-context middleware and returns the checkAccess handler as the
-// per-route guard. The caller assembles the full SecurityOpts (mode, issuers,
-// and the server-specific check-access templates) — see
-// JWTConfig.ToSecurityOpts.
+// JWTFamily configures JWT security. By default, authentication and business
+// context are installed globally and the returned chain checks route access.
+// When DisableGlobalGuard is set, the returned chain contains all three.
 func JWTFamily(opts security.SecurityOpts) Family {
-	return func(router fiber.Router) fiber.Handler {
+	return func(router fiber.Router) []fiber.Handler {
 		return security.ConfigureSecurity(router, opts)
 	}
 }
@@ -35,7 +32,7 @@ func JWTFamily(opts security.SecurityOpts) Family {
 // SA"): pass true only for an internal listener in a trusted in-cluster zone.
 // The issuer guard always applies regardless.
 func K8sFamily(opts K8sConfig, allowOpenAccess bool) Family {
-	return func(router fiber.Router) fiber.Handler {
+	return func(router fiber.Router) []fiber.Handler {
 		router.Use(buildK8sHandler(opts, allowOpenAccess))
 		return nil
 	}
@@ -52,7 +49,7 @@ func K8sFamily(opts K8sConfig, allowOpenAccess bool) Family {
 // may call". The issuer guard still applies — an unverifiable token is never
 // accepted.
 func K8sFamilyWithAdminContext(opts K8sConfig) Family {
-	return func(router fiber.Router) fiber.Handler {
+	return func(router fiber.Router) []fiber.Handler {
 		router.Use(buildK8sHandler(opts, true))
 		router.Use(security.NewSyntheticAdminBusinessContext())
 		return nil

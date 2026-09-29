@@ -17,6 +17,7 @@ import (
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	ctrlerrors "github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	"github.com/telekom/controlplane/common/pkg/types"
+	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
 )
 
@@ -110,7 +111,7 @@ func createManagedRoute(ctx context.Context, hc *HandlingContext, routeConfig ad
 
 	route := &gatewayapi.Route{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      gateway.Name + "--" + naming.ForGatewayRoute(routeConfig),
+			Name:      labelutil.NormalizeNameValue(gateway.Name + "--" + naming.ForGatewayRoute(routeConfig)),
 			Namespace: hc.Namespace.Name,
 		},
 	}

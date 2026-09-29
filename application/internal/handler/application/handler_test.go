@@ -836,7 +836,7 @@ var _ = Describe("ApplicationHandler - Gateway consumers", func() {
 		Expect(app.Status.Consumers).To(BeEmpty())
 	})
 
-	It("blocks before creating a Consumer whose resource name exceeds the Kubernetes limit", func() {
+	It("normalizes long Consumer names without changing client IDs", func() {
 		app.Spec.Team = strings.Repeat("t", 64)
 		app.Name = strings.Repeat("a", 128)
 		zone.Name = strings.Repeat("z", 32)
@@ -845,12 +845,17 @@ var _ = Describe("ApplicationHandler - Gateway consumers", func() {
 			Gateway: &commontypes.ObjectRef{Name: "gateway", Namespace: "zone-ns"},
 		}}
 
+		mockClient.EXPECT().CreateOrUpdate(mock.Anything, mock.AnythingOfType("*v1.Consumer"), mock.Anything).
+			Run(func(_ context.Context, obj pkgclient.Object, fn controllerutil.MutateFn) {
+				Expect(fn()).To(Succeed())
+				consumer := obj.(*gatewayv1.Consumer)
+				Expect(len(consumer.Name)).To(BeNumerically("<=", 253))
+				Expect(consumer.Spec.Name).To(Equal(MakeClientName(app)))
+			}).Return(controllerutil.OperationResultCreated, nil).Once()
 		err := CreateGatewayConsumers(ctx, zone, app, []*adminv1.GatewayConfig{{Name: zone.Status.Gateways[0].Name}})
 
-		var blockedErr ctrlerrors.BlockedError
-		Expect(errors.As(err, &blockedErr)).To(BeTrue())
-		Expect(err).To(MatchError(ContainSubstring("exceeds the Kubernetes maximum of 253 characters")))
-		Expect(app.Status.Consumers).To(BeEmpty())
+		Expect(err).NotTo(HaveOccurred())
+		Expect(app.Status.Consumers).To(HaveLen(1))
 	})
 })
 

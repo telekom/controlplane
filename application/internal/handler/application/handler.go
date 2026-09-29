@@ -436,7 +436,7 @@ func CreateIdentityClient(ctx context.Context, zone *admin.Zone, owner *applicat
 
 	c := client.ClientFromContextOrDie(ctx)
 	clientId := MakeClientName(owner)
-	resourceName := clientId + "--" + zone.Name
+	resourceName := labelutil.NormalizeNameValue(clientId + "--" + zone.Name)
 
 	// Resolve realm name from zone status (decoupled from environment name)
 	if zone.Status.IdentityRealm == nil {
@@ -459,9 +459,9 @@ func CreateIdentityClient(ctx context.Context, zone *admin.Zone, owner *applicat
 
 	mutator := func() error {
 		idpClient.Labels = map[string]string{
-			config.BuildLabelKey("application"): owner.Name,
-			config.BuildLabelKey("team"):        owner.Spec.Team,
-			config.BuildLabelKey("realm"):       realmName,
+			config.BuildLabelKey("application"): labelutil.NormalizeLabelValue(owner.Name),
+			config.BuildLabelKey("team"):        labelutil.NormalizeLabelValue(owner.Spec.Team),
+			config.BuildLabelKey("realm"):       labelutil.NormalizeLabelValue(realmName),
 			config.BuildLabelKey("zone"):        zone.Name,
 		}
 		if options.Failover {
@@ -526,10 +526,7 @@ func CreateGatewayConsumers(ctx context.Context, zone *admin.Zone, owner *applic
 			return ctrlerrors.BlockedErrorf("zone %q gateway %q has no Gateway reference", zone.Name, gatewayStatus.Name)
 		}
 
-		resourceName := clientId + "--" + zone.Name + "--" + gatewayStatus.Name
-		if len(resourceName) > labelutil.MaxNameLength {
-			return ctrlerrors.BlockedErrorf("Gateway Consumer resource name %q exceeds the Kubernetes maximum of %d characters", resourceName, labelutil.MaxNameLength)
-		}
+		resourceName := labelutil.NormalizeNameValue(clientId + "--" + zone.Name + "--" + gatewayStatus.Name)
 		gatewayRef := *gatewayStatus.Gateway
 		consumer := &gateway.Consumer{
 			ObjectMeta: metav1.ObjectMeta{
@@ -540,9 +537,9 @@ func CreateGatewayConsumers(ctx context.Context, zone *admin.Zone, owner *applic
 
 		mutator := func() error {
 			consumer.Labels = map[string]string{
-				config.BuildLabelKey("application"): owner.Name,
-				config.BuildLabelKey("team"):        owner.Spec.Team,
-				config.BuildLabelKey("gateway"):     gatewayRef.Name,
+				config.BuildLabelKey("application"): labelutil.NormalizeLabelValue(owner.Name),
+				config.BuildLabelKey("team"):        labelutil.NormalizeLabelValue(owner.Spec.Team),
+				config.BuildLabelKey("gateway"):     labelutil.NormalizeLabelValue(gatewayRef.Name),
 				config.BuildLabelKey("zone"):        zone.Name,
 			}
 			if options.Failover {

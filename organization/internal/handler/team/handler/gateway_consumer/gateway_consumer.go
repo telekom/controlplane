@@ -46,11 +46,9 @@ func (g GatewayConsumerHandler) CreateOrUpdate(ctx context.Context, owner *organ
 	}
 	gatewayRef := presetStatus.GatewayRef
 	mutate := func() error {
-		gatewayConsumerObj.Spec.Name = gatewayConsumerObj.GetName()
-
 		gatewayConsumerObj.Spec = gatewayv1.ConsumerSpec{
 			Gateway: *gatewayRef,
-			Name:    gatewayConsumerObj.GetName(),
+			Name:    makeConsumerName(owner),
 		}
 
 		gatewayConsumerObj.SetLabels(owner.GetLabels())

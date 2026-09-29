@@ -97,6 +97,16 @@ var _ = Describe("Exposure Mapper", func() {
 			snaps.MatchSnapshot(GinkgoT(), output)
 		})
 
+		It("must map a FileExposure correctly", func() {
+			input := GetFileExposure(fileExposure)
+			output := &roverv1.Exposure{}
+
+			err := mapExposure(&input, output)
+
+			Expect(err).To(BeNil())
+			snaps.MatchSnapshot(GinkgoT(), output)
+		})
+
 		It("must return an error for unknown exposure type", func() {
 			input := &api.Exposure{}
 			output := &roverv1.Exposure{}
@@ -273,7 +283,7 @@ var _ = Describe("Exposure Mapper", func() {
 				Approval: roverv1.Approval{},
 			}
 
-			mapTrustedTeams(input, output)
+			mapTrustedTeams(input.TrustedTeams, &output.Approval.TrustedTeams)
 
 			Expect(output.Approval.TrustedTeams).To(HaveLen(3))
 			// First entry: valid
@@ -351,6 +361,10 @@ var _ = Describe("Exposure Mapper", func() {
 			output := toRoverApprovalStrategy(input)
 
 			Expect(output).To(Equal(roverv1.ApprovalStrategyFourEyes))
+		})
+
+		It("must map lowercase foureyes approval strategy correctly", func() {
+			Expect(toRoverApprovalStrategy(api.Foureyes)).To(Equal(roverv1.ApprovalStrategyFourEyes))
 		})
 
 		It("must map unknown approval strategy", func() {

@@ -14,10 +14,12 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/telekom/controlplane/controlplane-api/ent/agentcard"
 	"github.com/telekom/controlplane/controlplane-api/ent/api"
 	"github.com/telekom/controlplane/controlplane-api/ent/application"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventtype"
 	"github.com/telekom/controlplane/controlplane-api/ent/group"
+	"github.com/telekom/controlplane/controlplane-api/ent/mcpserver"
 	"github.com/telekom/controlplane/controlplane-api/ent/member"
 	"github.com/telekom/controlplane/controlplane-api/ent/predicate"
 	"github.com/telekom/controlplane/controlplane-api/ent/team"
@@ -297,6 +299,36 @@ func (_u *TeamUpdate) AddEventTypes(v ...*EventType) *TeamUpdate {
 	return _u.AddEventTypeIDs(ids...)
 }
 
+// AddMcpServerIDs adds the "mcp_servers" edge to the McpServer entity by IDs.
+func (_u *TeamUpdate) AddMcpServerIDs(ids ...int) *TeamUpdate {
+	_u.mutation.AddMcpServerIDs(ids...)
+	return _u
+}
+
+// AddMcpServers adds the "mcp_servers" edges to the McpServer entity.
+func (_u *TeamUpdate) AddMcpServers(v ...*McpServer) *TeamUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddMcpServerIDs(ids...)
+}
+
+// AddAgentCardIDs adds the "agent_cards" edge to the AgentCard entity by IDs.
+func (_u *TeamUpdate) AddAgentCardIDs(ids ...int) *TeamUpdate {
+	_u.mutation.AddAgentCardIDs(ids...)
+	return _u
+}
+
+// AddAgentCards adds the "agent_cards" edges to the AgentCard entity.
+func (_u *TeamUpdate) AddAgentCards(v ...*AgentCard) *TeamUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddAgentCardIDs(ids...)
+}
+
 // Mutation returns the TeamMutation object of the builder.
 func (_u *TeamUpdate) Mutation() *TeamMutation {
 	return _u.mutation
@@ -390,6 +422,48 @@ func (_u *TeamUpdate) RemoveEventTypes(v ...*EventType) *TeamUpdate {
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveEventTypeIDs(ids...)
+}
+
+// ClearMcpServers clears all "mcp_servers" edges to the McpServer entity.
+func (_u *TeamUpdate) ClearMcpServers() *TeamUpdate {
+	_u.mutation.ClearMcpServers()
+	return _u
+}
+
+// RemoveMcpServerIDs removes the "mcp_servers" edge to McpServer entities by IDs.
+func (_u *TeamUpdate) RemoveMcpServerIDs(ids ...int) *TeamUpdate {
+	_u.mutation.RemoveMcpServerIDs(ids...)
+	return _u
+}
+
+// RemoveMcpServers removes "mcp_servers" edges to McpServer entities.
+func (_u *TeamUpdate) RemoveMcpServers(v ...*McpServer) *TeamUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveMcpServerIDs(ids...)
+}
+
+// ClearAgentCards clears all "agent_cards" edges to the AgentCard entity.
+func (_u *TeamUpdate) ClearAgentCards() *TeamUpdate {
+	_u.mutation.ClearAgentCards()
+	return _u
+}
+
+// RemoveAgentCardIDs removes the "agent_cards" edge to AgentCard entities by IDs.
+func (_u *TeamUpdate) RemoveAgentCardIDs(ids ...int) *TeamUpdate {
+	_u.mutation.RemoveAgentCardIDs(ids...)
+	return _u
+}
+
+// RemoveAgentCards removes "agent_cards" edges to AgentCard entities.
+func (_u *TeamUpdate) RemoveAgentCards(v ...*AgentCard) *TeamUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveAgentCardIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -736,6 +810,96 @@ func (_u *TeamUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if _u.mutation.McpServersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   team.McpServersTable,
+			Columns: []string{team.McpServersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(mcpserver.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedMcpServersIDs(); len(nodes) > 0 && !_u.mutation.McpServersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   team.McpServersTable,
+			Columns: []string{team.McpServersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(mcpserver.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.McpServersIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   team.McpServersTable,
+			Columns: []string{team.McpServersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(mcpserver.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.AgentCardsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   team.AgentCardsTable,
+			Columns: []string{team.AgentCardsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(agentcard.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedAgentCardsIDs(); len(nodes) > 0 && !_u.mutation.AgentCardsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   team.AgentCardsTable,
+			Columns: []string{team.AgentCardsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(agentcard.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.AgentCardsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   team.AgentCardsTable,
+			Columns: []string{team.AgentCardsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(agentcard.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{team.Label}
@@ -1017,6 +1181,36 @@ func (_u *TeamUpdateOne) AddEventTypes(v ...*EventType) *TeamUpdateOne {
 	return _u.AddEventTypeIDs(ids...)
 }
 
+// AddMcpServerIDs adds the "mcp_servers" edge to the McpServer entity by IDs.
+func (_u *TeamUpdateOne) AddMcpServerIDs(ids ...int) *TeamUpdateOne {
+	_u.mutation.AddMcpServerIDs(ids...)
+	return _u
+}
+
+// AddMcpServers adds the "mcp_servers" edges to the McpServer entity.
+func (_u *TeamUpdateOne) AddMcpServers(v ...*McpServer) *TeamUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddMcpServerIDs(ids...)
+}
+
+// AddAgentCardIDs adds the "agent_cards" edge to the AgentCard entity by IDs.
+func (_u *TeamUpdateOne) AddAgentCardIDs(ids ...int) *TeamUpdateOne {
+	_u.mutation.AddAgentCardIDs(ids...)
+	return _u
+}
+
+// AddAgentCards adds the "agent_cards" edges to the AgentCard entity.
+func (_u *TeamUpdateOne) AddAgentCards(v ...*AgentCard) *TeamUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddAgentCardIDs(ids...)
+}
+
 // Mutation returns the TeamMutation object of the builder.
 func (_u *TeamUpdateOne) Mutation() *TeamMutation {
 	return _u.mutation
@@ -1110,6 +1304,48 @@ func (_u *TeamUpdateOne) RemoveEventTypes(v ...*EventType) *TeamUpdateOne {
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveEventTypeIDs(ids...)
+}
+
+// ClearMcpServers clears all "mcp_servers" edges to the McpServer entity.
+func (_u *TeamUpdateOne) ClearMcpServers() *TeamUpdateOne {
+	_u.mutation.ClearMcpServers()
+	return _u
+}
+
+// RemoveMcpServerIDs removes the "mcp_servers" edge to McpServer entities by IDs.
+func (_u *TeamUpdateOne) RemoveMcpServerIDs(ids ...int) *TeamUpdateOne {
+	_u.mutation.RemoveMcpServerIDs(ids...)
+	return _u
+}
+
+// RemoveMcpServers removes "mcp_servers" edges to McpServer entities.
+func (_u *TeamUpdateOne) RemoveMcpServers(v ...*McpServer) *TeamUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveMcpServerIDs(ids...)
+}
+
+// ClearAgentCards clears all "agent_cards" edges to the AgentCard entity.
+func (_u *TeamUpdateOne) ClearAgentCards() *TeamUpdateOne {
+	_u.mutation.ClearAgentCards()
+	return _u
+}
+
+// RemoveAgentCardIDs removes the "agent_cards" edge to AgentCard entities by IDs.
+func (_u *TeamUpdateOne) RemoveAgentCardIDs(ids ...int) *TeamUpdateOne {
+	_u.mutation.RemoveAgentCardIDs(ids...)
+	return _u
+}
+
+// RemoveAgentCards removes "agent_cards" edges to AgentCard entities.
+func (_u *TeamUpdateOne) RemoveAgentCards(v ...*AgentCard) *TeamUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveAgentCardIDs(ids...)
 }
 
 // Where appends a list predicates to the TeamUpdate builder.
@@ -1479,6 +1715,96 @@ func (_u *TeamUpdateOne) sqlSave(ctx context.Context) (_node *Team, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(eventtype.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.McpServersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   team.McpServersTable,
+			Columns: []string{team.McpServersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(mcpserver.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedMcpServersIDs(); len(nodes) > 0 && !_u.mutation.McpServersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   team.McpServersTable,
+			Columns: []string{team.McpServersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(mcpserver.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.McpServersIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   team.McpServersTable,
+			Columns: []string{team.McpServersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(mcpserver.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.AgentCardsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   team.AgentCardsTable,
+			Columns: []string{team.AgentCardsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(agentcard.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedAgentCardsIDs(); len(nodes) > 0 && !_u.mutation.AgentCardsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   team.AgentCardsTable,
+			Columns: []string{team.AgentCardsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(agentcard.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.AgentCardsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   team.AgentCardsTable,
+			Columns: []string{team.AgentCardsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(agentcard.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

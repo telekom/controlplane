@@ -189,6 +189,11 @@ spec:
                 required:
                 - fullMesh
                 type: object
+              overwriteEnvironmentName:
+                description: |-
+                  OverwriteEnvironmentName overrides the environment name sent to Horizon.
+                  If omitted or empty, the Control Plane environment from context is used.
+                type: string
               proxy:
                 description: |-
                   Proxy configures a zone that runs no local event backend and forwards

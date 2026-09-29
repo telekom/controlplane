@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/telekom/controlplane/common/pkg/types"
+	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -26,7 +27,7 @@ func Major(v string) string {
 func MakeName(apiSpec *ApiSpecification) string {
 	basePath := strings.Trim(apiSpec.Spec.BasePath, "/")
 	name := strings.ReplaceAll(basePath, "/", "-")
-	return strings.ToLower(name)
+	return labelutil.NormalizeNameValue(name)
 }
 
 type ApiSpecificationSpec struct {
@@ -100,6 +101,8 @@ type ApiSpecificationStatus struct {
 
 // ApiSpecification is the Schema for the apispecifications API
 // +kubebuilder:pruning:PreserveUnknownFields
+// +kubebuilder:printcolumn:name="Version",type="string",JSONPath=".spec.version",description="The version of the API specification"
+// +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 type ApiSpecification struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

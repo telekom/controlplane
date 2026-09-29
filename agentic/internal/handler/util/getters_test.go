@@ -38,7 +38,8 @@ var _ = Describe("MakeAgenticRouteName", func() {
 		Entry("simple path", "/mcp/weather/v1", "ai-gateway--mcp-weather-v1"),
 		Entry("single segment", "/mcp", "ai-gateway--mcp"),
 		Entry("deep path", "/mcp/tools/search/v2", "ai-gateway--mcp-tools-search-v2"),
-		Entry("trailing slashes normalised", "/mcp/v1", "ai-gateway--mcp-v1"),
+		Entry("trailing slashes normalised", "/mcp/v1/", "ai-gateway--mcp-v1"),
+		Entry("path without leading slash", "mcp/v1", "ai-gateway--mcp-v1"),
 	)
 })
 

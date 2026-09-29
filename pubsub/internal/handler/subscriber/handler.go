@@ -30,7 +30,6 @@ type SubscriberHandler struct{}
 
 func (h *SubscriberHandler) CreateOrUpdate(ctx context.Context, obj *pubsubv1.Subscriber) error {
 	logger := log.FromContext(ctx)
-	environment := contextutil.EnvFromContextOrDie(ctx)
 
 	publisher, err := util.GetPublisher(ctx, obj.Spec.Publisher)
 	if err != nil {
@@ -41,6 +40,7 @@ func (h *SubscriberHandler) CreateOrUpdate(ctx context.Context, obj *pubsubv1.Su
 	if err != nil {
 		return errors.Wrapf(err, "failed to resolve EventStore %q from Publisher %q", publisher.Spec.EventStore.String(), obj.Spec.Publisher.String())
 	}
+	environment := effectiveEnvironmentName(ctx, eventStore)
 
 	if cconfig.FeatureFileManager.IsEnabled() && publisher.Spec.JsonSchema != "" {
 		buf := bytes.NewBuffer(nil)
@@ -81,7 +81,6 @@ func (h *SubscriberHandler) CreateOrUpdate(ctx context.Context, obj *pubsubv1.Su
 
 func (h *SubscriberHandler) Delete(ctx context.Context, obj *pubsubv1.Subscriber) error {
 	logger := log.FromContext(ctx)
-	environment := contextutil.EnvFromContextOrDie(ctx)
 	c := cclient.ClientFromContextOrDie(ctx)
 
 	publisher := &pubsubv1.Publisher{}
@@ -100,6 +99,7 @@ func (h *SubscriberHandler) Delete(ctx context.Context, obj *pubsubv1.Subscriber
 	if err != nil {
 		return errors.Wrapf(err, "failed to resolve EventStore %q from Publisher %q", publisher.Spec.EventStore.String(), obj.Spec.Publisher.String())
 	}
+	environment := effectiveEnvironmentName(ctx, eventStore)
 
 	subscriptionID := getOrGenerateSubscriptionID(obj, environment, publisher.Spec.EventType)
 	resource := BuildSubscriptionResource(obj, publisher, subscriptionID, environment)
@@ -129,6 +129,13 @@ var getConfigService = func(eventStore *pubsubv1.EventStore) service.ConfigServi
 		ClientID:     eventStore.Spec.ClientId,
 		ClientSecret: eventStore.Spec.ClientSecret,
 	})
+}
+
+func effectiveEnvironmentName(ctx context.Context, eventStore *pubsubv1.EventStore) string {
+	if eventStore.Spec.OverwriteEnvironmentName != "" {
+		return eventStore.Spec.OverwriteEnvironmentName
+	}
+	return contextutil.EnvFromContextOrDie(ctx)
 }
 
 // getOrGenerateSubscriptionID returns the subscription ID from status if available,

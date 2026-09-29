@@ -70,7 +70,7 @@ spec:
                   approved.
                 properties:
                   strategy:
-                    default: Auto
+                    default: Simple
                     description: Strategy defines the approval mode.
                     enum:
                     - Auto

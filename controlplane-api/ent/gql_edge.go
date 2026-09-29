@@ -11,6 +11,58 @@ import (
 	"github.com/99designs/gqlgen/graphql"
 )
 
+func (_m *AgenticExposure) Owner(ctx context.Context) (*Application, error) {
+	result, err := _m.Edges.OwnerOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryOwner().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *AgenticExposure) McpServer(ctx context.Context) (*McpServer, error) {
+	result, err := _m.Edges.McpServerOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryMcpServer().Only(ctx)
+	}
+	return result, MaskNotFound(err)
+}
+
+func (_m *AgenticExposure) AgentCard(ctx context.Context) (*AgentCard, error) {
+	result, err := _m.Edges.AgentCardOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryAgentCard().Only(ctx)
+	}
+	return result, MaskNotFound(err)
+}
+
+func (_m *AgenticSubscription) Owner(ctx context.Context) (*Application, error) {
+	result, err := _m.Edges.OwnerOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryOwner().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *AgenticSubscription) Approval(ctx context.Context) (*Approval, error) {
+	result, err := _m.Edges.ApprovalOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryApproval().Only(ctx)
+	}
+	return result, MaskNotFound(err)
+}
+
+func (_m *AgenticSubscription) ApprovalRequests(ctx context.Context) (result []*ApprovalRequest, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedApprovalRequests(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.ApprovalRequestsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryApprovalRequests().All(ctx)
+	}
+	return result, err
+}
+
 func (_m *ApiExposure) Owner(ctx context.Context) (*Application, error) {
 	result, err := _m.Edges.OwnerOrErr()
 	if IsNotLoaded(err) {
@@ -117,6 +169,48 @@ func (_m *Application) SubscribedApis(
 	return _m.QuerySubscribedApis().Paginate(ctx, after, first, before, last, opts...)
 }
 
+func (_m *Application) ExposedFileTypes(
+	ctx context.Context, after *Cursor, first *int, before *Cursor, last *int, orderBy *FileExposureOrder, where *FileExposureWhereInput,
+) (*FileExposureConnection, error) {
+	opts := []FileExposurePaginateOption{
+		WithFileExposureOrder(orderBy),
+		WithFileExposureFilter(where.Filter),
+	}
+	alias := graphql.GetFieldContext(ctx).Field.Alias
+	totalCount, hasTotalCount := _m.Edges.totalCount[3][alias]
+	if nodes, err := _m.NamedExposedFileTypes(alias); err == nil || hasTotalCount {
+		pager, err := newFileExposurePager(opts, last != nil)
+		if err != nil {
+			return nil, err
+		}
+		conn := &FileExposureConnection{Edges: []*FileExposureEdge{}, TotalCount: totalCount}
+		conn.build(nodes, pager, after, first, before, last)
+		return conn, nil
+	}
+	return _m.QueryExposedFileTypes().Paginate(ctx, after, first, before, last, opts...)
+}
+
+func (_m *Application) SubscribedFileTypes(
+	ctx context.Context, after *Cursor, first *int, before *Cursor, last *int, orderBy *FileSubscriptionOrder, where *FileSubscriptionWhereInput,
+) (*FileSubscriptionConnection, error) {
+	opts := []FileSubscriptionPaginateOption{
+		WithFileSubscriptionOrder(orderBy),
+		WithFileSubscriptionFilter(where.Filter),
+	}
+	alias := graphql.GetFieldContext(ctx).Field.Alias
+	totalCount, hasTotalCount := _m.Edges.totalCount[4][alias]
+	if nodes, err := _m.NamedSubscribedFileTypes(alias); err == nil || hasTotalCount {
+		pager, err := newFileSubscriptionPager(opts, last != nil)
+		if err != nil {
+			return nil, err
+		}
+		conn := &FileSubscriptionConnection{Edges: []*FileSubscriptionEdge{}, TotalCount: totalCount}
+		conn.build(nodes, pager, after, first, before, last)
+		return conn, nil
+	}
+	return _m.QuerySubscribedFileTypes().Paginate(ctx, after, first, before, last, opts...)
+}
+
 func (_m *Application) ExposedEvents(
 	ctx context.Context, after *Cursor, first *int, before *Cursor, last *int, orderBy *EventExposureOrder, where *EventExposureWhereInput,
 ) (*EventExposureConnection, error) {
@@ -125,7 +219,7 @@ func (_m *Application) ExposedEvents(
 		WithEventExposureFilter(where.Filter),
 	}
 	alias := graphql.GetFieldContext(ctx).Field.Alias
-	totalCount, hasTotalCount := _m.Edges.totalCount[3][alias]
+	totalCount, hasTotalCount := _m.Edges.totalCount[5][alias]
 	if nodes, err := _m.NamedExposedEvents(alias); err == nil || hasTotalCount {
 		pager, err := newEventExposurePager(opts, last != nil)
 		if err != nil {
@@ -146,7 +240,7 @@ func (_m *Application) SubscribedEvents(
 		WithEventSubscriptionFilter(where.Filter),
 	}
 	alias := graphql.GetFieldContext(ctx).Field.Alias
-	totalCount, hasTotalCount := _m.Edges.totalCount[4][alias]
+	totalCount, hasTotalCount := _m.Edges.totalCount[6][alias]
 	if nodes, err := _m.NamedSubscribedEvents(alias); err == nil || hasTotalCount {
 		pager, err := newEventSubscriptionPager(opts, last != nil)
 		if err != nil {
@@ -157,6 +251,48 @@ func (_m *Application) SubscribedEvents(
 		return conn, nil
 	}
 	return _m.QuerySubscribedEvents().Paginate(ctx, after, first, before, last, opts...)
+}
+
+func (_m *Application) ExposedAgentics(
+	ctx context.Context, after *Cursor, first *int, before *Cursor, last *int, orderBy *AgenticExposureOrder, where *AgenticExposureWhereInput,
+) (*AgenticExposureConnection, error) {
+	opts := []AgenticExposurePaginateOption{
+		WithAgenticExposureOrder(orderBy),
+		WithAgenticExposureFilter(where.Filter),
+	}
+	alias := graphql.GetFieldContext(ctx).Field.Alias
+	totalCount, hasTotalCount := _m.Edges.totalCount[7][alias]
+	if nodes, err := _m.NamedExposedAgentics(alias); err == nil || hasTotalCount {
+		pager, err := newAgenticExposurePager(opts, last != nil)
+		if err != nil {
+			return nil, err
+		}
+		conn := &AgenticExposureConnection{Edges: []*AgenticExposureEdge{}, TotalCount: totalCount}
+		conn.build(nodes, pager, after, first, before, last)
+		return conn, nil
+	}
+	return _m.QueryExposedAgentics().Paginate(ctx, after, first, before, last, opts...)
+}
+
+func (_m *Application) SubscribedAgentics(
+	ctx context.Context, after *Cursor, first *int, before *Cursor, last *int, orderBy *AgenticSubscriptionOrder, where *AgenticSubscriptionWhereInput,
+) (*AgenticSubscriptionConnection, error) {
+	opts := []AgenticSubscriptionPaginateOption{
+		WithAgenticSubscriptionOrder(orderBy),
+		WithAgenticSubscriptionFilter(where.Filter),
+	}
+	alias := graphql.GetFieldContext(ctx).Field.Alias
+	totalCount, hasTotalCount := _m.Edges.totalCount[8][alias]
+	if nodes, err := _m.NamedSubscribedAgentics(alias); err == nil || hasTotalCount {
+		pager, err := newAgenticSubscriptionPager(opts, last != nil)
+		if err != nil {
+			return nil, err
+		}
+		conn := &AgenticSubscriptionConnection{Edges: []*AgenticSubscriptionEdge{}, TotalCount: totalCount}
+		conn.build(nodes, pager, after, first, before, last)
+		return conn, nil
+	}
+	return _m.QuerySubscribedAgentics().Paginate(ctx, after, first, before, last, opts...)
 }
 
 func (_m *Application) PermissionSet(ctx context.Context) (*PermissionSet, error) {
@@ -200,6 +336,74 @@ func (_m *EventSubscription) Approval(ctx context.Context) (*Approval, error) {
 }
 
 func (_m *EventSubscription) ApprovalRequests(ctx context.Context) (result []*ApprovalRequest, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedApprovalRequests(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.ApprovalRequestsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryApprovalRequests().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *FileExposure) Owner(ctx context.Context) (*Application, error) {
+	result, err := _m.Edges.OwnerOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryOwner().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *FileExposure) FileTypeDef(ctx context.Context) (*FileType, error) {
+	result, err := _m.Edges.FileTypeDefOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryFileTypeDef().Only(ctx)
+	}
+	return result, MaskNotFound(err)
+}
+
+func (_m *FileExposure) Zone(ctx context.Context) (*Zone, error) {
+	result, err := _m.Edges.ZoneOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryZone().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *FileSubscription) Owner(ctx context.Context) (*Application, error) {
+	result, err := _m.Edges.OwnerOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryOwner().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *FileSubscription) FileTypeDef(ctx context.Context) (*FileType, error) {
+	result, err := _m.Edges.FileTypeDefOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryFileTypeDef().Only(ctx)
+	}
+	return result, MaskNotFound(err)
+}
+
+func (_m *FileSubscription) Zone(ctx context.Context) (*Zone, error) {
+	result, err := _m.Edges.ZoneOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryZone().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *FileSubscription) Approval(ctx context.Context) (*Approval, error) {
+	result, err := _m.Edges.ApprovalOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryApproval().Only(ctx)
+	}
+	return result, MaskNotFound(err)
+}
+
+func (_m *FileSubscription) ApprovalRequests(ctx context.Context) (result []*ApprovalRequest, err error) {
 	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
 		result, err = _m.NamedApprovalRequests(graphql.GetFieldContext(ctx).Field.Alias)
 	} else {
@@ -312,6 +516,48 @@ func (_m *Team) EventTypes(
 		return conn, nil
 	}
 	return _m.QueryEventTypes().Paginate(ctx, after, first, before, last, opts...)
+}
+
+func (_m *Team) McpServers(
+	ctx context.Context, after *Cursor, first *int, before *Cursor, last *int, orderBy *McpServerOrder, where *McpServerWhereInput,
+) (*McpServerConnection, error) {
+	opts := []McpServerPaginateOption{
+		WithMcpServerOrder(orderBy),
+		WithMcpServerFilter(where.Filter),
+	}
+	alias := graphql.GetFieldContext(ctx).Field.Alias
+	totalCount, hasTotalCount := _m.Edges.totalCount[5][alias]
+	if nodes, err := _m.NamedMcpServers(alias); err == nil || hasTotalCount {
+		pager, err := newMcpServerPager(opts, last != nil)
+		if err != nil {
+			return nil, err
+		}
+		conn := &McpServerConnection{Edges: []*McpServerEdge{}, TotalCount: totalCount}
+		conn.build(nodes, pager, after, first, before, last)
+		return conn, nil
+	}
+	return _m.QueryMcpServers().Paginate(ctx, after, first, before, last, opts...)
+}
+
+func (_m *Team) AgentCards(
+	ctx context.Context, after *Cursor, first *int, before *Cursor, last *int, orderBy *AgentCardOrder, where *AgentCardWhereInput,
+) (*AgentCardConnection, error) {
+	opts := []AgentCardPaginateOption{
+		WithAgentCardOrder(orderBy),
+		WithAgentCardFilter(where.Filter),
+	}
+	alias := graphql.GetFieldContext(ctx).Field.Alias
+	totalCount, hasTotalCount := _m.Edges.totalCount[6][alias]
+	if nodes, err := _m.NamedAgentCards(alias); err == nil || hasTotalCount {
+		pager, err := newAgentCardPager(opts, last != nil)
+		if err != nil {
+			return nil, err
+		}
+		conn := &AgentCardConnection{Edges: []*AgentCardEdge{}, TotalCount: totalCount}
+		conn.build(nodes, pager, after, first, before, last)
+		return conn, nil
+	}
+	return _m.QueryAgentCards().Paginate(ctx, after, first, before, last, opts...)
 }
 
 func (_m *Zone) Applications(ctx context.Context) (result []*Application, err error) {

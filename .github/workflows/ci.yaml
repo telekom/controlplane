@@ -246,32 +246,6 @@ jobs:
     with:
       chart_path: 'common-server/helm'
 
-  rover-ctl-base-image-changes:
-    name: Detect rover-ctl base image changes
-    runs-on: ubuntu-latest
-    outputs:
-      changed: ${{ steps.filter.outputs.rover_ctl_base }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Check for rover-ctl base image changes
-        id: filter
-        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
-        with:
-          filters: |
-            rover_ctl_base:
-              - 'rover-ctl/Dockerfile.base'
-
-  rover-ctl-base-image:
-    name: Rover-CTL Base Image
-    needs: rover-ctl-base-image-changes
-    # Only rebuilds/pushes when rover-ctl/Dockerfile.base changed in this
-    # push/PR (see rover-ctl-base-image-changes above); still runs
-    # unconditionally in release.yaml.
-    if: needs.rover-ctl-base-image-changes.outputs.changed == 'true'
-    uses: ./.github/workflows/rover-ctl-base-image.yaml
-    secrets: inherit
-
   rover_ctl_package:
     name: "Package (rover-ctl)"
     needs: collect_build_status
@@ -295,12 +269,8 @@ jobs:
 
   rover-ctl-image:
     name: Rover-CTL Combined Image (bash/jq/yq)
-    needs: [rover_ctl_package, rover-ctl-base-image]
-    # rover-ctl-base-image is conditionally skipped when Dockerfile.base
-    # didn't change - by default a skipped `needs` job would also skip this
-    # job, so explicitly allow proceeding when it was skipped, not just when
-    # it succeeded.
-    if: ${{ !cancelled() && needs.rover_ctl_package.result == 'success' && (needs.rover-ctl-base-image.result == 'success' || needs.rover-ctl-base-image.result == 'skipped') }}
+    needs: rover_ctl_package
+    if: ${{ needs.rover_ctl_package.result == 'success' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -320,33 +290,23 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Log in to Artifactory
-        # TODO: create vars.REGISTRY_HOST, vars.REGISTRY_ROVERCTL_REPO,
-        # vars.REGISTRY_ROVERCTL_BASE_REPO, and vars.ROVERCTL_BASE_IMAGE_TAG
-        # repository variables, plus the ARTIFACTORY_O28M_PUSH_USER/TOKEN
-        # secrets referenced below.
-        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
-        with:
-          registry: ${{ vars.REGISTRY_HOST }}
-          username: ${{ secrets.ARTIFACTORY_O28M_PUSH_USER }} # TODO: create this secret
-          password: ${{ secrets.ARTIFACTORY_O28M_PUSH_TOKEN }} # TODO: create this secret
-      - name: Build and push combined roverctl image
-        # Layers the plain roverctl binary (just built/pushed to GHCR by the
-        # rover_ctl_package job above, referenced by immutable digest) onto the
-        # Artifactory bash/jq/yq base image - see rover-ctl/Dockerfile.
-        #
-        # NOTE: the base image lives in a DIFFERENT Artifactory repo/path
-        # (vars.REGISTRY_ROVERCTL_BASE_REPO) than this combined image
-        # (vars.REGISTRY_ROVERCTL_REPO) - they are unrelated paths, not a
-        # shared prefix with a suffix appended.
+      - name: Build roverctl base image
         uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
         with:
           context: rover-ctl
-          push: true
-          build-args: |
-            ROVERCTL_IMAGE=${{ needs.rover_ctl_package.outputs.image_repository }}@${{ needs.rover_ctl_package.outputs.image_digest }}
-            ROVERCTL_BASE_IMAGE=${{ vars.REGISTRY_HOST }}/${{ vars.REGISTRY_ROVERCTL_BASE_REPO }}:${{ vars.ROVERCTL_BASE_IMAGE_TAG }}
-          tags: ${{ vars.REGISTRY_HOST }}/${{ vars.REGISTRY_ROVERCTL_REPO }}:${{ env.GITHUB_HEAD_REF_SLUG || 'latest' }}
+          file: rover-ctl/Dockerfile.base
+          load: true
+          tags: roverctl-base:ci
+      - name: Build combined roverctl image
+        # Use the base image built in this job so CI validates the exact base
+        # that the combined image consumes, without publishing to Artifactory.
+        shell: bash
+        run: |
+          docker build \
+            --tag roverctl-combined:ci \
+            --build-arg "ROVERCTL_IMAGE=${{ needs.rover_ctl_package.outputs.image_repository }}@${{ needs.rover_ctl_package.outputs.image_digest }}" \
+            --build-arg ROVERCTL_BASE_IMAGE=roverctl-base:ci \
+            rover-ctl
 
   ci_summary:
     name: CI Summary
@@ -357,7 +317,6 @@ jobs:
       - collect_build_status
       - package
       - common-server-helm
-      - rover-ctl-base-image
       - rover_ctl_package
       - rover-ctl-image
     if: always()
@@ -373,7 +332,6 @@ jobs:
             echo "Collect build status result: ${{ needs.collect_build_status.result }}"
             echo "Package result: ${{ needs.package.result }}"
             echo "Common Server Helm Chart result: ${{ needs.common-server-helm.result }}"
-            echo "Rover-CTL base image result: ${{ needs.rover-ctl-base-image.result }}"
             echo "Rover-CTL package result: ${{ needs.rover_ctl_package.result }}"
             echo "Rover-CTL combined image result: ${{ needs.rover-ctl-image.result }}"
           } >> "$GITHUB_STEP_SUMMARY"
@@ -390,7 +348,7 @@ jobs:
           for r in "${{ needs.build.result }}" "${{ needs.collect_build_status.result }}" "${{ needs.package.result }}"; do
             [ "$r" = "success" ] || [ "$r" = "skipped" ] || fail=true
           done
-          for r in "${{ needs.common-server-helm.result }}" "${{ needs.rover-ctl-base-image.result }}" "${{ needs.rover_ctl_package.result }}" "${{ needs.rover-ctl-image.result }}"; do
+          for r in "${{ needs.common-server-helm.result }}" "${{ needs.rover_ctl_package.result }}" "${{ needs.rover-ctl-image.result }}"; do
             [ "$r" = "success" ] || [ "$r" = "skipped" ] || fail=true
           done
 

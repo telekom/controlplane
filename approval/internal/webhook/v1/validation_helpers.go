@@ -70,5 +70,10 @@ func hasRelevantGrantedARSpecChanges(oldSpec, newSpec *approvalv1.ApprovalReques
 	if oldSpec.Strategy != newSpec.Strategy {
 		return true
 	}
-	return !apiequality.Semantic.DeepEqual(oldSpec.Decisions, newSpec.Decisions)
+	// Compare normalized lists: the defaulter trims newSpec, so an untrimmed
+	// stored object would otherwise look like a decision change forever.
+	return !apiequality.Semantic.DeepEqual(
+		approvalv1.TrimDecisions(oldSpec.Decisions),
+		approvalv1.TrimDecisions(newSpec.Decisions),
+	)
 }

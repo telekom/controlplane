@@ -34,7 +34,7 @@ var _ runtime.Translator[*approvalv1.Approval, *ApprovalData, ApprovalKey] = (*T
 
 // isSupportedTargetKind returns true if the target kind is one we can resolve.
 func isSupportedTargetKind(kind string) bool {
-	return kind == TargetKindAPISubscription || kind == TargetKindEventSubscription
+	return kind == TargetKindAPISubscription || kind == TargetKindEventSubscription || kind == TargetKindAgenticSubscription || kind == TargetKindFileSubscription
 }
 
 // ShouldSkip returns true if the Approval CR lacks the required fields for
@@ -47,10 +47,16 @@ func (t *Translator) ShouldSkip(obj *approvalv1.Approval) (bool, string) {
 		return true, "spec.action is empty"
 	}
 	if !isSupportedTargetKind(obj.Spec.Target.TypeMeta.Kind) {
-		return true, "spec.target.kind is not ApiSubscription or EventSubscription"
+		return true, "spec.target.kind is not ApiSubscription, EventSubscription, FileSubscription or AgenticSubscription"
 	}
 	if !cconfig.FeaturePubSub.IsEnabled() && obj.Spec.Target.TypeMeta.Kind == TargetKindEventSubscription {
 		return true, "pubsub feature is disabled"
+	}
+	if !cconfig.FeatureAiGateway.IsEnabled() && obj.Spec.Target.TypeMeta.Kind == TargetKindAgenticSubscription {
+		return true, "ai_gateway feature is disabled"
+	}
+	if !cconfig.FeatureFile.IsEnabled() && obj.Spec.Target.TypeMeta.Kind == TargetKindFileSubscription {
+		return true, "file_subscription feature is disabled"
 	}
 
 	if obj.Spec.Decider.TeamName == "" {
@@ -95,9 +101,9 @@ func (t *Translator) Translate(_ context.Context, obj *approvalv1.Approval) (*Ap
 		Meta:                  shared.NewMetadata(obj.Namespace, obj.Name, obj.Labels),
 		StatusPhase:           phase,
 		StatusMessage:         message,
-		State:                 mapState(string(obj.Spec.State)),
+		State:                 shared.MapApprovalState(string(obj.Spec.State)),
 		Action:                obj.Spec.Action,
-		Strategy:              mapStrategy(string(obj.Spec.Strategy)),
+		Strategy:              shared.MapApprovalStrategy(string(obj.Spec.Strategy)),
 		Requester:             mapRequester(obj.Spec.Requester),
 		Decider:               mapDecider(obj.Spec.Decider),
 		Decisions:             mapDecisions(obj.Spec.Decisions),
@@ -153,22 +159,6 @@ func (t *Translator) KeyFromDelete(req types.NamespacedName, lastKnown *approval
 	}, nil
 }
 
-// mapState converts a PascalCase CR state to the SCREAMING_SNAKE ent enum.
-func mapState(state string) string {
-	return strings.ToUpper(state)
-}
-
-// mapStrategy converts a PascalCase CR strategy to the SCREAMING_SNAKE ent
-// enum, handling the special FourEyes -> FOUR_EYES case.
-func mapStrategy(strategy string) string {
-	switch strategy {
-	case "FourEyes":
-		return "FOUR_EYES"
-	default:
-		return strings.ToUpper(strategy)
-	}
-}
-
 // mapRequester converts the CR Requester to the model RequesterInfo DTO.
 // String fields are converted to *string where the model uses pointers.
 func mapRequester(r approvalv1.Requester) model.RequesterInfo {
@@ -198,7 +188,6 @@ func mapDecider(d approvalv1.Decider) model.DeciderInfo {
 
 // mapDecisions converts a slice of CR Decision to model Decision DTOs.
 // String fields are converted to *string where the model uses pointers.
-// Timestamp and ResultingState are left nil since they do not exist on the CR.
 func mapDecisions(decisions []approvalv1.Decision) []model.Decision {
 	if len(decisions) == 0 {
 		return []model.Decision{}
@@ -213,6 +202,14 @@ func mapDecisions(decisions []approvalv1.Decision) []model.Decision {
 		}
 		if d.Comment != "" {
 			result[i].Comment = &d.Comment
+		}
+		if d.Timestamp != nil {
+			timestamp := d.Timestamp.UTC().Format(time.RFC3339)
+			result[i].Timestamp = &timestamp
+		}
+		if d.ResultingState != "" {
+			resultingState := strings.ToUpper(d.ResultingState.String())
+			result[i].ResultingState = &resultingState
 		}
 	}
 	return result
@@ -233,8 +230,8 @@ func mapAvailableTransitions(transitions approvalv1.AvailableTransitions) []mode
 			continue
 		}
 		result = append(result, model.AvailableTransition{
-			Action:  string(at.Action),
-			ToState: string(at.To),
+			Action:  strings.ToUpper(at.Action.String()),
+			ToState: strings.ToUpper(at.To.String()),
 		})
 	}
 	return result

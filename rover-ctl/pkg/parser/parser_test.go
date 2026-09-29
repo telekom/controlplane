@@ -5,6 +5,7 @@
 package parser_test
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 
@@ -12,6 +13,8 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/telekom/controlplane/rover-ctl/pkg/parser"
 	"github.com/telekom/controlplane/rover-ctl/pkg/types"
+	"golang.org/x/text/encoding/unicode"
+	"golang.org/x/text/transform"
 )
 
 var _ = Describe("Parser", func() {
@@ -79,6 +82,22 @@ var _ = Describe("Parser", func() {
 			Expect(objects[0].GetKind()).To(Equal("Rover"))
 			Expect(objects[0].GetApiVersion()).To(Equal("tcp.ei.telekom.de/v1"))
 			Expect(objects[0].GetName()).To(Equal("test-rover"))
+		})
+
+		It("should parse YAML encoded as UTF-16 with a BOM", func() {
+			encodedContent, _, err := transform.Bytes(
+				unicode.UTF16(unicode.LittleEndian, unicode.UseBOM).NewEncoder(),
+				[]byte("apiVersion: tcp.ei.telekom.de/v1\nkind: Rover\nmetadata:\n  name: utf16-rover\n"),
+			)
+			Expect(err).NotTo(HaveOccurred())
+
+			filePath := filepath.Join(GinkgoT().TempDir(), "utf16-resource.yaml")
+			Expect(os.WriteFile(filePath, encodedContent, 0o600)).To(Succeed())
+
+			Expect(objectParser.Parse(filePath)).To(Succeed())
+			objects := objectParser.Objects()
+			Expect(objects).To(HaveLen(1))
+			Expect(objects[0].GetName()).To(Equal("utf16-rover"))
 		})
 
 		It("should return an error when parsing a file with an unsupported extension", func() {
@@ -272,6 +291,32 @@ var _ = Describe("Parser", func() {
 			Expect(objects[0].GetApiVersion()).To(Equal("tcp.ei.telekom.de/v1"))
 			// The name should be derived from the servers section
 			Expect(objects[0].GetName()).To(Equal("v1"))
+		})
+
+		It("should expand anchors and merge keys", func() {
+			apiParser := parser.NewObjectParser(parser.Opts...)
+			Expect(apiParser.Parse(filepath.Join(testdataDir, "openapi-spec-with-anchors.yaml"))).To(Succeed())
+
+			objects := apiParser.Objects()
+			Expect(objects).To(HaveLen(1))
+			paths, ok := objects[0].GetContent()["paths"].(map[string]any)
+			Expect(ok).To(BeTrue())
+			responses := paths["/messages"].(map[string]any)["get"].(map[string]any)["responses"].(map[string]any)
+			Expect(responses["200"]).To(And(
+				HaveKeyWithValue("description", "A successful response"),
+				HaveKeyWithValue("content", HaveKey("application/json")),
+			))
+			Expect(responses["201"]).To(HaveKeyWithValue(
+				"content",
+				HaveKeyWithValue("application/json", HaveKeyWithValue("schema", HaveKeyWithValue("type", "object"))),
+			))
+
+			parsedJSON, err := json.Marshal(objects[0].GetContent())
+			Expect(err).NotTo(HaveOccurred())
+			// Parsers that do not resolve aliases correctly can strip * but leave the anchor name as a value.
+			// Checking the name catches that case and also catches any unexpanded * or & syntax.
+			Expect(parsedJSON).NotTo(ContainSubstring("openapi_response_defaults_anchor"))
+			Expect(parsedJSON).NotTo(ContainSubstring("openapi_message_schema_anchor"))
 		})
 
 		It("should correctly parse Swagger specs", func() {

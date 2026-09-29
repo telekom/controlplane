@@ -61,8 +61,8 @@ func HandleExposure(ctx context.Context, c client.JanitorClient, owner *rover.Ro
 		}
 		apiExposure.Labels = map[string]string{
 			apiapi.BasePathLabelKey:             labelutil.NormalizeLabelValue(exp.BasePath),
-			config.BuildLabelKey("zone"):        labelutil.NormalizeValue(zoneRef.Name),
-			config.BuildLabelKey("application"): labelutil.NormalizeValue(owner.Name),
+			config.BuildLabelKey("zone"):        labelutil.NormalizeLabelValue(zoneRef.Name),
+			config.BuildLabelKey("application"): labelutil.NormalizeLabelValue(owner.Name),
 		}
 
 		apiExposure.Spec = apiapi.ApiExposureSpec{

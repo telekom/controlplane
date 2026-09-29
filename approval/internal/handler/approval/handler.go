@@ -179,6 +179,10 @@ func deleteApprovalExpiration(ctx context.Context, c commonclient.JanitorClient,
 func handleNotifications(ctx context.Context, approval *approvalv1.Approval) error {
 	// initial notification (approvalRequest granted) is handled by the approval request handler
 
+	// Normalise first: the list is a map-typed list keyed on namespace and name,
+	// so objects persisted with duplicates must be healed before the next status write.
+	approval.Status.NotificationRefs = util.DedupRefs(approval.Status.NotificationRefs)
+
 	if (approval.Spec.State != approval.Status.LastState) && approval.Status.LastState != "" {
 		contextutil.RecorderFromContextOrDie(ctx).Eventf(approval,
 			"Normal", "Notification", "State changed from %s to %s", approval.Status.LastState, approval.Spec.State,
@@ -202,7 +206,7 @@ func handleNotifications(ctx context.Context, approval *approvalv1.Approval) err
 		if err != nil {
 			return errors.Wrapf(err, "Failed to send notification to decider %q while handling approval %+v", approval.Spec.Decider.TeamName, approval)
 		}
-		approval.Status.NotificationRefs = append(approval.Status.NotificationRefs, *notificationRef)
+		approval.Status.NotificationRefs = util.AppendUniqueRef(approval.Status.NotificationRefs, *notificationRef)
 
 		// Semigranted is an intermediate state; only deciders need to know.
 		// Do not notify the requester until the approval reaches a final state.
@@ -223,7 +227,7 @@ func handleNotifications(ctx context.Context, approval *approvalv1.Approval) err
 			if err != nil {
 				return errors.Wrapf(err, "Failed to send notification to requester %q while handling approval %+v", approval.Spec.Requester.TeamName, approval)
 			}
-			approval.Status.NotificationRefs = append(approval.Status.NotificationRefs, *notificationRef)
+			approval.Status.NotificationRefs = util.AppendUniqueRef(approval.Status.NotificationRefs, *notificationRef)
 		}
 	}
 

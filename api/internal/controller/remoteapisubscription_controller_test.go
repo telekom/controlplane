@@ -267,6 +267,7 @@ var _ = Describe("RemoteApiSubscription Controller - Provider Scenario", Ordered
 			By("Progressing the Approval resources")
 			approvalReq := ProgressApprovalRequest(apiSubscription.Status.ApprovalRequest, approvalapi.ApprovalStateGranted)
 			ProgressApproval(apiSubscription, approvalapi.ApprovalStateGranted, approvalReq)
+			CompleteSubscriptionChildren(apiSubscription)
 
 			Eventually(func(g Gomega) {
 				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(remoteApiSubscription), remoteApiSubscription)

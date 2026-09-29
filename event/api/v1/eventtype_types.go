@@ -9,6 +9,7 @@ import (
 
 	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/types"
+	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -18,7 +19,7 @@ var EventTypeLabelKey = config.BuildLabelKey("eventtype")
 // MakeEventTypeName generates a Kubernetes resource name from a dot-separated event type identifier.
 // It replaces dots with hyphens and lowercases the result (e.g. "de.telekom.eni.quickstart.v1" -> "de-telekom-eni-quickstart-v1").
 func MakeEventTypeName(eventType string) string {
-	return strings.ToLower(strings.ReplaceAll(eventType, ".", "-"))
+	return labelutil.NormalizeNameValue(strings.ReplaceAll(eventType, ".", "-"))
 }
 
 // EventTypeSpec defines the desired state of EventType.

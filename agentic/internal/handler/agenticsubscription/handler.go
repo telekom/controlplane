@@ -7,6 +7,7 @@ package agenticsubscription
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -46,23 +47,18 @@ func (h *AgenticSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *ag
 	}
 	if serverInfo == nil {
 		if caseConflict {
-			obj.SetCondition(condition.NewNotReadyCondition("CaseConflict",
+			obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonValidationFailed,
 				"Agentic server (McpServer, AgentCard) is registered but the basePath case does not match"))
 			obj.SetCondition(condition.NewBlockedCondition(
 				"Agentic server for " + obj.Spec.BasePath + " exists but with a different case. " +
 					"Please resolve the conflict by changing the BasePath of either the specification or the subscription"))
 		} else {
-			obj.SetCondition(condition.NewNotReadyCondition("ServerNotFound",
+			obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet,
 				"No active agentic server (McpServer, AgentCard) found for basePath "+obj.Spec.BasePath))
 			obj.SetCondition(condition.NewBlockedCondition(
 				"Agentic server for " + obj.Spec.BasePath + " does not exist or is not active. " +
 					"AgenticSubscription will be automatically processed when the specification is registered"))
 		}
-		return nil
-	}
-
-	// 1b. Validate subscription scopes against server's declared scopes
-	if !validateSubscriptionScopes(serverInfo, obj) {
 		return nil
 	}
 
@@ -75,8 +71,12 @@ func (h *AgenticSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *ag
 	if err != nil {
 		return errors.Wrapf(err, "failed to find active AgenticExposure for basePath %q", obj.Spec.BasePath)
 	}
+	// Validate scopes using the selected exposure's endpoint exception before readiness checks.
+	if !validateSubscriptionScopes(serverInfo, exposure, obj) {
+		return nil
+	}
 	if !exposureFound {
-		obj.SetCondition(condition.NewNotReadyCondition("AgenticExposureNotFound",
+		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet,
 			"No active AgenticExposure found for basePath "+obj.Spec.BasePath))
 		obj.SetCondition(condition.NewBlockedCondition(
 			"AgenticExposure for " + obj.Spec.BasePath + " does not exist or is not active. " +
@@ -84,7 +84,7 @@ func (h *AgenticSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *ag
 		return nil
 	}
 	if err = condition.EnsureReady(exposure); err != nil {
-		obj.SetCondition(condition.NewNotReadyCondition("AgenticExposureNotReady",
+		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet,
 			fmt.Sprintf("AgenticExposure %q is not ready", exposure.Name)))
 		obj.SetCondition(condition.NewBlockedCondition(
 			fmt.Sprintf("AgenticExposure %q is not ready. AgenticSubscription will be automatically processed when the AgenticExposure is ready", exposure.Name)))
@@ -97,7 +97,7 @@ func (h *AgenticSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *ag
 		return err
 	}
 	if !subscriberZone.Spec.FeaturesSupported(adminv1.GatewayTypeAI) {
-		obj.SetCondition(condition.NewNotReadyCondition("AiGatewayNotSupported",
+		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet,
 			"Subscriber zone "+subscriberZone.Name+" does not support the AI Gateway feature"))
 		return ctrlerrors.BlockedErrorf("subscriber zone %q does not support the AI Gateway feature", subscriberZone.Name)
 	}
@@ -105,7 +105,7 @@ func (h *AgenticSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *ag
 	// 4. Validate visibility rules
 	valid := validateVisibility(exposure, obj, subscriberZone)
 	if !valid {
-		obj.SetCondition(condition.NewNotReadyCondition("VisibilityConstraintViolation",
+		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonAccessDenied,
 			"AgenticExposure and AgenticSubscription visibility combination is not allowed"))
 		return ctrlerrors.BlockedErrorf("AgenticSubscription is blocked. Subscriptions from zone %q are not allowed due to exposure visibility constraints", obj.Spec.Zone.Name)
 	}
@@ -152,6 +152,9 @@ func (h *AgenticSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *ag
 	approvalBuilder.WithRequester(requester)
 	approvalBuilder.WithDecider(decider)
 	approvalBuilder.WithStrategy(approvalapi.ApprovalStrategy(exposure.Spec.Approval.Strategy))
+	approvalBuilder.WithLabels(map[string]string{
+		config.DomainLabelKey: util.LabelValueDomain,
+	})
 
 	if len(exposure.Spec.Approval.TrustedTeams) > 0 {
 		approvalBuilder.WithTrustedRequesters(exposure.Spec.Approval.TrustedTeams)
@@ -167,19 +170,19 @@ func (h *AgenticSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *ag
 	switch res {
 	case builder.ApprovalResultRequestDenied:
 		logger.Info("ApprovalRequest was denied")
-		obj.SetCondition(condition.NewNotReadyCondition("ApprovalRequestDenied", "ApprovalRequest has been denied"))
+		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonAccessDenied, "ApprovalRequest has been denied"))
 		obj.SetCondition(condition.NewDoneProcessingCondition("ApprovalRequest has been denied"))
 		return nil
 
 	case builder.ApprovalResultPending:
 		logger.Info("Approval is pending — waiting for approval")
-		obj.SetCondition(condition.NewNotReadyCondition("ApprovalPending", "Waiting for approval decision"))
+		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonApprovalPending, "Waiting for approval decision"))
 		obj.SetCondition(condition.NewBlockedCondition("Waiting for approval decision"))
 		return nil
 
 	case builder.ApprovalResultDenied:
 		logger.Info("Approval was denied — cleaning up ConsumeRoute")
-		obj.SetCondition(condition.NewNotReadyCondition("ApprovalDenied", "Approval has been denied"))
+		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonAccessDenied, "Approval has been denied"))
 		obj.SetCondition(condition.NewDoneProcessingCondition("Approval has been denied"))
 
 		deleted, cleanupErr := c.Cleanup(ctx, &gatewayapi.ConsumeRouteList{}, cclient.OwnedBy(obj))
@@ -193,6 +196,7 @@ func (h *AgenticSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *ag
 
 	case builder.ApprovalResultGranted:
 		logger.Info("Approval is granted — continuing with provisioning")
+		builder.ClearApprovalPendingReady(obj)
 
 	default:
 		return errors.Errorf("unknown approval-builder result %q", res)
@@ -205,6 +209,15 @@ func (h *AgenticSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *ag
 		return nil
 	}
 
+	preset, err := subscriberZone.Spec.SelectPreset(adminv1.GatewayTypeAI)
+	if err != nil {
+		return errors.Wrapf(err, "failed to select AI Gateway preset for zone %s", subscriberZone.Name)
+	}
+	obj.Status.GatewayUrl, err = url.JoinPath(preset.GetDefaultURL(), obj.Spec.BasePath)
+	if err != nil {
+		return errors.Wrapf(err, "failed to construct AI Gateway URL for zone %s", subscriberZone.Name)
+	}
+
 	consumeRoute, err := h.createConsumeRoute(ctx, obj, *routeRef, requestorApp)
 	if err != nil {
 		return errors.Wrap(err, "failed to create ConsumeRoute")
@@ -214,13 +227,13 @@ func (h *AgenticSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *ag
 
 	// 9. Set final conditions
 	if !c.AllReady() {
-		obj.SetCondition(condition.NewNotReadyCondition("ChildResourcesNotReady",
+		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonSubResourceNotReady,
 			"One or more child resources are not yet ready"))
 		obj.SetCondition(condition.NewProcessingCondition("ChildResourcesNotReady", "Waiting for child resources"))
 		return nil
 	}
 
-	obj.SetCondition(condition.NewReadyCondition("AgenticSubscriptionProvisioned",
+	obj.SetCondition(condition.NewReadyCondition(condition.ReasonProvisioned,
 		"AgenticSubscription has been provisioned"))
 	obj.SetCondition(condition.NewDoneProcessingCondition(
 		"AgenticSubscription has been provisioned"))
@@ -257,7 +270,7 @@ func resolveRouteRef(
 	if obj.Spec.Zone.Name == exposure.Spec.Zone.Name {
 		// Same zone: reference the primary route directly
 		if exposure.Status.Route == nil {
-			obj.SetCondition(condition.NewNotReadyCondition("RouteNotReady",
+			obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet,
 				"AgenticExposure does not have a Route reference yet"))
 			obj.SetCondition(condition.NewBlockedCondition("Waiting for AgenticExposure to create the route"))
 			return nil
@@ -275,7 +288,7 @@ func resolveRouteRef(
 		}
 	}
 
-	obj.SetCondition(condition.NewNotReadyCondition("ProxyRouteNotReady",
+	obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet,
 		"AgenticExposure has not created a proxy route for zone "+obj.Spec.Zone.Name+" yet"))
 	obj.SetCondition(condition.NewBlockedCondition(
 		"Waiting for AgenticExposure to create the proxy route for zone " + obj.Spec.Zone.Name))
@@ -291,7 +304,7 @@ func (h *AgenticSubscriptionHandler) createConsumeRoute(
 ) (*gatewayapi.ConsumeRoute, error) {
 	c := cclient.ClientFromContextOrDie(ctx)
 
-	consumeRouteName := routeRef.Name + "--" + labelutil.NormalizeNameValue(application.Status.ClientId)
+	consumeRouteName := labelutil.NormalizeNameValue(routeRef.Name + "--" + application.Status.ClientId)
 
 	consumeRoute := &gatewayapi.ConsumeRoute{
 		ObjectMeta: metav1.ObjectMeta{
@@ -306,7 +319,7 @@ func (h *AgenticSubscriptionHandler) createConsumeRoute(
 		}
 
 		consumeRoute.Labels = map[string]string{
-			config.DomainLabelKey:             "agentic",
+			config.DomainLabelKey:             util.LabelValueDomain,
 			agenticv1.AgenticBasePathLabelKey: labelutil.NormalizeLabelValue(obj.Spec.BasePath),
 			config.BuildLabelKey("zone"):      obj.Spec.Zone.Name,
 			config.BuildLabelKey("type"):      "mcp-subscription",
@@ -344,14 +357,17 @@ func validateVisibility(exposure *agenticv1.AgenticExposure, sub *agenticv1.Agen
 	}
 }
 
-// validateSubscriptionScopes checks that the M2M scopes in the AgenticSubscription are a valid subset of the server's scopes.
+// validateSubscriptionScopes checks M2M scope membership unless the selected exposure has a non-empty external-IDP token endpoint.
 // It sets blocking conditions on the subscription and returns false if processing should stop.
-func validateSubscriptionScopes(server *util.ServerInfo, obj *agenticv1.AgenticSubscription) bool {
+func validateSubscriptionScopes(server *util.ServerInfo, exposure *agenticv1.AgenticExposure, obj *agenticv1.AgenticSubscription) bool {
 	if !obj.HasM2M() || obj.Spec.Security.M2M.Scopes == nil {
 		return true
 	}
+	if exposure != nil && exposure.HasExternalIdp() {
+		return true
+	}
 	if len(server.Oauth2Scopes) == 0 {
-		obj.SetCondition(condition.NewNotReadyCondition("ScopesNotDefined", "Server does not define any OAuth2 scopes"))
+		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonValidationFailed, "Server does not define any OAuth2 scopes"))
 		obj.SetCondition(condition.NewBlockedCondition("Server does not define any OAuth2 scopes. AgenticSubscription will be automatically processed, if the server will be updated with scopes"))
 		return false
 	}
@@ -361,7 +377,7 @@ func validateSubscriptionScopes(server *util.ServerInfo, obj *agenticv1.AgenticS
 			strings.Join(server.Oauth2Scopes, ", "),
 			strings.Join(invalidScopes, ", "),
 		)
-		obj.SetCondition(condition.NewNotReadyCondition("InvalidScopes", "One or more scopes defined in AgenticSubscription are not defined in the server"))
+		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonValidationFailed, "One or more scopes defined in AgenticSubscription are not defined in the server"))
 		obj.SetCondition(condition.NewBlockedCondition(message))
 		return false
 	}
