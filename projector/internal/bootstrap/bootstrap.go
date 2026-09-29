@@ -95,7 +95,7 @@ func registerSchemesAndModules(scheme *runtime.Scheme, baseModules []module.Modu
 		result = append(result, eventtype.Module, eventexposure.Module, eventsubscription.Module)
 	}
 
-	if cconfig.FeatureFileManager.IsEnabled() {
+	if cconfig.FeatureFile.IsEnabled() {
 		_ = filev1.AddToScheme(scheme)
 		result = append(result, filetype.Module, fileexposure.Module, filesubscription.Module)
 	}
