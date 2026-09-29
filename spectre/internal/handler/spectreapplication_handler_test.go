@@ -469,6 +469,7 @@ var _ = Describe("SpectreApplicationHandler", func() {
 
 				Expect(capturedPublisher).ToNot(BeNil())
 				Expect(capturedPublisher.Labels[cconfig.OwnerUidLabelKey]).To(Equal(string(obj.UID)))
+				Expect(capturedPublisher.Labels[eventv1.EventTypeLabelKey]).To(Equal("de.telekom.ei.listener.pandora--my-app"))
 				Expect(capturedPublisher.Spec.EventType).To(Equal("de.telekom.ei.listener.pandora--my-app"))
 				Expect(capturedPublisher.Spec.PublisherId).To(Equal("gateway"))
 				Expect(capturedPublisher.Spec.EventStore.Name).To(Equal("eventstore-aws"))
@@ -511,6 +512,7 @@ var _ = Describe("SpectreApplicationHandler", func() {
 
 				Expect(capturedSubscriber).ToNot(BeNil())
 				Expect(capturedSubscriber.Labels[cconfig.OwnerUidLabelKey]).To(Equal(string(obj.UID)))
+				Expect(capturedSubscriber.Labels[eventv1.EventTypeLabelKey]).To(Equal("de.telekom.ei.listener.pandora--my-app"))
 				Expect(capturedSubscriber.Spec.SubscriberId).To(Equal("pandora--my-app"))
 				Expect(capturedSubscriber.Spec.Delivery.Type).To(Equal(pubsubv1.DeliveryTypeServerSentEvent))
 				Expect(capturedSubscriber.Spec.Delivery.Callback).To(BeEmpty())
