@@ -456,6 +456,8 @@ var _ = Describe("Integration: Two-Tier Reconcile Cycle", Ordered, func() {
 			Expect(publisher.Spec.EventType).To(Equal(expectedEventType))
 			Expect(publisher.Spec.PublisherId).To(Equal(util.PublisherID))
 			Expect(publisher.Spec.EventStore.Name).To(Equal("eventstore-aws"))
+			Expect(publisher.Labels).To(HaveKeyWithValue(cconfig.EnvironmentLabelKey, envName))
+			Expect(publisher.Labels).To(HaveKeyWithValue(eventv1.EventTypeLabelKey, expectedEventType))
 
 			By("Verifying Subscriber exists")
 			subscriberName := util.MakeSubscriberName(appId)
@@ -469,6 +471,9 @@ var _ = Describe("Integration: Two-Tier Reconcile Cycle", Ordered, func() {
 				g.Expect(subscriber.Spec.SubscriberId).To(Equal(appId))
 				g.Expect(subscriber.Spec.Delivery.Type).To(Equal(pubsubv1.DeliveryTypeServerSentEvent))
 			}, testTimeout, testInterval).Should(Succeed())
+
+			By("Verifying pubsub's Publisher->Subscriber mapper selects the Subscriber")
+			Expect(subscribersSelectedByPublisher(ctx, publisher)).To(ContainElement(subscriberName))
 
 			By("Verifying SSE Route exists")
 			routeList := &gatewayv1.RouteList{}
@@ -578,6 +583,8 @@ var _ = Describe("Integration: Two-Tier Reconcile Cycle", Ordered, func() {
 			}, genericPub)).To(Succeed())
 			Expect(genericPub.Spec.EventType).To(Equal(util.GenericEventType))
 			Expect(genericPub.Spec.PublisherId).To(Equal(util.PublisherID))
+			Expect(genericPub.Labels).To(HaveKeyWithValue(cconfig.EnvironmentLabelKey, envName))
+			Expect(genericPub.Labels).To(HaveKeyWithValue(eventv1.EventTypeLabelKey, util.GenericEventType))
 
 			By("Verifying RouteListener exists with correct fields")
 			rlName := util.MakeRouteListenerName(appId, testBasePath, consumerClientID, providerClientID)
@@ -623,6 +630,10 @@ var _ = Describe("Integration: Two-Tier Reconcile Cycle", Ordered, func() {
 				g.Expect(err).NotTo(HaveOccurred())
 				g.Expect(rpSub.Spec.Trigger.SelectionFilter.Attributes["kind"]).To(Equal("RESPONSE"))
 			}, testTimeout, testInterval).Should(Succeed())
+
+			By("Verifying pubsub's Publisher->Subscriber mapper selects both bridge Subscribers")
+			Expect(subscribersSelectedByPublisher(ctx, genericPub)).To(ContainElements(
+				util.MakeSubscriberName(rqSubId), util.MakeSubscriberName(rpSubId)))
 
 			By("Setting children Ready (no downstream controllers in envtest)")
 			// RouteListener
@@ -1317,4 +1328,25 @@ func grantApprovalsForListener(ctx context.Context, listenerName string, withCon
 		}
 		Expect(client.IgnoreAlreadyExists(k8sClient.Create(ctx, approval))).To(Succeed())
 	}
+}
+
+// subscribersSelectedByPublisher returns the names of the Subscribers that
+// pubsub's SubscriberReconciler.MapPublisherToSubscriber re-queues when the
+// given Publisher changes: same environment and eventtype labels, and a
+// spec.publisher reference to it. The pubsub reconciler is internal to its
+// module, so its label selector is mirrored here.
+func subscribersSelectedByPublisher(ctx context.Context, publisher *pubsubv1.Publisher) []string {
+	list := &pubsubv1.SubscriberList{}
+	Expect(directClient.List(ctx, list, client.MatchingLabels{
+		cconfig.EnvironmentLabelKey: publisher.Labels[cconfig.EnvironmentLabelKey],
+		eventv1.EventTypeLabelKey:   publisher.Labels[eventv1.EventTypeLabelKey],
+	})).To(Succeed())
+
+	var names []string
+	for i := range list.Items {
+		if list.Items[i].Spec.Publisher.Equals(publisher) {
+			names = append(names, list.Items[i].Name)
+		}
+	}
+	return names
 }

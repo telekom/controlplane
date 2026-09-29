@@ -13,6 +13,8 @@ import (
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	ctypes "github.com/telekom/controlplane/common/pkg/types"
+	"github.com/telekom/controlplane/common/pkg/util/labelutil"
+	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	pubsubv1 "github.com/telekom/controlplane/pubsub/api/v1"
 	spectrev1 "github.com/telekom/controlplane/spectre/api/v1"
 	"github.com/telekom/controlplane/spectre/internal/handler/util"
@@ -35,6 +37,7 @@ func (h *SpectreApplicationHandler) ensurePublisher(ctx context.Context, obj *sp
 			publisher.Labels = make(map[string]string)
 		}
 		publisher.Labels[cconfig.OwnerUidLabelKey] = string(obj.UID)
+		publisher.Labels[eventv1.EventTypeLabelKey] = labelutil.NormalizeLabelValue(eventType)
 		publisher.Spec = pubsubv1.PublisherSpec{
 			EventStore:  *ctypes.ObjectRefFromObject(eventStore),
 			EventType:   eventType,
@@ -60,6 +63,7 @@ func (h *SpectreApplicationHandler) ensureSubscriber(ctx context.Context, obj *s
 		return nil, errors.Wrap(err, "failed to build delivery spec")
 	}
 
+	eventType := util.BuildListenerEventType(appId)
 	subscriber := &pubsubv1.Subscriber{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      util.MakeSubscriberName(appId),
@@ -72,6 +76,7 @@ func (h *SpectreApplicationHandler) ensureSubscriber(ctx context.Context, obj *s
 			subscriber.Labels = make(map[string]string)
 		}
 		subscriber.Labels[cconfig.OwnerUidLabelKey] = string(obj.UID)
+		subscriber.Labels[eventv1.EventTypeLabelKey] = labelutil.NormalizeLabelValue(eventType)
 		subscriber.Spec = pubsubv1.SubscriberSpec{
 			Publisher:    *ctypes.ObjectRefFromObject(publisher),
 			SubscriberId: appId,
