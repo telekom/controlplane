@@ -4,13 +4,23 @@
 
 package v1
 
-// TokenRequestMethod defines the token endpoint authentication method (RFC 7591).
+// TokenRequestMethod defines the token endpoint authentication metho#d (RFC 7591).
 // +kubebuilder:validation:Enum=client_secret_basic;client_secret_post
 type TokenRequestMethod string
 
 const (
 	TokenRequestClientSecretBasic TokenRequestMethod = "client_secret_basic"
 	TokenRequestClientSecretPost  TokenRequestMethod = "client_secret_post"
+)
+
+// GrantType defines the OAuth2 grant type to use for the token request
+// +kubebuilder:validation:Enum=client_credentials;authorization_code;password
+type GrantType string
+
+const (
+	GrantTypePassword          GrantType = "password"
+	GrantTypeClientCredentials GrantType = "client_credentials"
+	GrantTypeAuthorizationCode GrantType = "authorization_code"
 )
 
 // Security defines the security configuration for the Rover
@@ -78,8 +88,7 @@ type ExternalIdentityProvider struct {
 
 	// GrantType defines the OAuth2 grant type to use for the token request
 	// +kubebuilder:validation:Optional
-	// +kubebuilder:validation:Enum=client_credentials;authorization_code;password
-	GrantType string `json:"grantType,omitempty"`
+	GrantType GrantType `json:"grantType,omitempty"`
 
 	// Basic defines basic auth credentials for the OAuth2 token request
 	Basic *BasicAuthCredentials `json:"basic,omitempty"`

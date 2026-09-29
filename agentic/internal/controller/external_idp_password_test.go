@@ -22,7 +22,7 @@ import (
 var _ = Describe("Consumer username/password with scopes", func() {
 	consumerScopes := []string{"consumer.read", "consumer.write"}
 
-	passwordExposure := func(f *scopeFixture, grantType string) *agenticv1.AgenticExposure {
+	passwordExposure := func(f *scopeFixture, grantType agenticv1.GrantType) *agenticv1.AgenticExposure {
 		idp := externalIDPFixture()
 		idp.GrantType = grantType
 		idp.Basic = &agenticv1.BasicAuthCredentials{Username: "provider-user", Password: "provider-pass"}
@@ -70,7 +70,7 @@ var _ = Describe("Consumer username/password with scopes", func() {
 		Expect(consume.Spec.Security.M2M.Client).To(BeNil())
 	})
 
-	DescribeTable("is blocked before approval without an explicit password grant", func(grantType string) {
+	DescribeTable("is blocked before approval without an explicit password grant", func(grantType agenticv1.GrantType) {
 		f := newScopeFixture()
 		f.server("McpServer", nil)
 		waitExposure(passwordExposure(f, grantType))
@@ -84,7 +84,22 @@ var _ = Describe("Consumer username/password with scopes", func() {
 		Eventually(check, timeout, interval).Should(Succeed())
 		Consistently(check, time.Second, interval).Should(Succeed())
 	},
-		Entry("client_credentials grant", "client_credentials"),
-		Entry("omitted grant type keeps its legacy meaning", ""),
+		Entry("client_credentials grant", agenticv1.GrantTypeClientCredentials),
+		Entry("omitted grant type keeps its legacy meaning", agenticv1.GrantType("")),
 	)
+
+	It("blocks Basic credentials with scopes without an external IDP", func() {
+		f := newScopeFixture()
+		f.server("McpServer", consumerScopes)
+		waitExposure(f.exposure("exposure", consumerScopes, false))
+		sub := passwordSubscription(f)
+
+		check := func(g Gomega) {
+			expectReadyReason(g, sub, condition.ReasonValidationFailed, metav1.ConditionFalse)
+			g.Expect(meta.FindStatusCondition(sub.GetConditions(), condition.ConditionTypeReady).Message).To(ContainSubstring(`grant type "password"`))
+			f.expectNoProvisioning(g)
+		}
+		Eventually(check, timeout, interval).Should(Succeed())
+		Consistently(check, time.Second, interval).Should(Succeed())
+	})
 })
