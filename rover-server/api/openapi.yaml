@@ -3735,7 +3735,7 @@ components:
           type: string
           example: Used for invoice file exchange
         specification:
-          description: Optional JSON schema describing this file type
+          description: Optional YAML schema describing this file type
           type: object
           additionalProperties: true
     FileSpecificationListResponse:

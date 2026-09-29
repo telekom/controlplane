@@ -155,12 +155,11 @@ func (f *FileSpecificationController) Update(ctx context.Context, resourceId str
 		if uploadRes != nil {
 			specOrFileId = uploadRes.FileId
 		}
-	} else if cconfig.FeatureFileManager.IsEnabled() {
+	} else {
 		// Delete the optional specification file from file-manager.
 		fileId := generateFileId(id)
-		err = file.GetFileManager().DeleteFile(ctx, fileId)
-		// File not found is acceptable — specification is optional.
-		if err != nil && !errors.Is(err, file.ErrNotFound) {
+		err = deleteOptionalSpecificationFile(ctx, file.GetFileManager(), fileId)
+		if err != nil {
 			return res, err
 		}
 	}
@@ -195,6 +194,18 @@ func (f *FileSpecificationController) GetStatus(ctx context.Context, resourceId 
 	}
 
 	return status.MapResponse(ctx, fileSpec)
+}
+
+func deleteOptionalSpecificationFile(ctx context.Context, fileManager filesapi.FileManager, fileId string) error {
+	if !cconfig.FeatureFileManager.IsEnabled() {
+		return nil
+	}
+
+	// File not found is acceptable — specification is optional.
+	if err := fileManager.DeleteFile(ctx, fileId); err != nil && !errors.Is(err, file.ErrNotFound) {
+		return err
+	}
+	return nil
 }
 
 func (f *FileSpecificationController) uploadFile(ctx context.Context, specMarshaled []byte, id mapper.ResourceIdInfo) (res *filesapi.FileUploadResponse, err error) {

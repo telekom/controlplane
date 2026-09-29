@@ -1854,3 +1854,45 @@
  "type": "InternalError"
 }
 ---
+
+[FileSpecification Controller Update FileSpecification resource should update the FileSpecification when its optional file is deleted - 1]
+{
+ "description": "used for sftp integration demo",
+ "id": "eni--hyperion--demo-invoices-v1",
+ "specification": {
+  "type": "object"
+ },
+ "status": {
+  "processingState": "done",
+  "state": "complete"
+ },
+ "type": "demo-invoices-v1",
+ "version": "1.0.0"
+}
+---
+
+[FileSpecification Controller Update FileSpecification resource should update the FileSpecification if its optional file is already missing - 1]
+{
+ "description": "used for sftp integration demo",
+ "id": "eni--hyperion--demo-invoices-v1",
+ "specification": {
+  "type": "object"
+ },
+ "status": {
+  "processingState": "done",
+  "state": "complete"
+ },
+ "type": "demo-invoices-v1",
+ "version": "1.0.0"
+}
+---
+
+[FileSpecification Controller Update FileSpecification resource should return an error if deleting the optional file during update fails - 1]
+{
+ "detail": "file-manager unavailable",
+ "instance": "",
+ "status": 500,
+ "title": "Internal Error",
+ "type": "InternalError"
+}
+---
