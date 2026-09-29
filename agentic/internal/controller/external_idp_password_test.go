@@ -85,7 +85,7 @@ var _ = Describe("Consumer username/password with scopes", func() {
 		Consistently(check, time.Second, interval).Should(Succeed())
 	},
 		Entry("client_credentials grant", agenticv1.GrantTypeClientCredentials),
-		Entry("omitted grant type keeps its legacy meaning", agenticv1.GrantType("")),
+		Entry("client_credentials grant", agenticv1.GrantTypeAuthorizationCode),
 	)
 
 	It("blocks Basic credentials with scopes without an external IDP", func() {

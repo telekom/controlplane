@@ -137,6 +137,13 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 		return nil
 	}
 
+	if violatesBasicWithScopesPolicy(apiSub, apiExposure) {
+		apiSub.SetCondition(condition.NewNotReadyCondition(condition.ReasonValidationFailed,
+			"Consumer username/password with scopes requires an external IDP grant type \"password\""))
+		apiSub.SetCondition(condition.NewBlockedCondition("Consumer username/password with scopes requires an external IDP grant type \"password\""))
+		return nil
+	}
+
 	err = requester.SetProperties(properties)
 	if err != nil {
 		return errors.Wrapf(err, "unable to set approvalRequest properties for apiSubscription: %q in namespace: %q",
@@ -502,4 +509,14 @@ func validateApiCategoryPolicy(ctx context.Context, api *apiapi.Api, application
 		apiSub.SetCondition(condition.NewBlockedCondition(msg))
 	}
 	return false
+}
+
+func violatesBasicWithScopesPolicy(obj *apiapi.ApiSubscription, exposure *apiapi.ApiExposure) bool {
+	subHasScopes := obj.HasM2M() && obj.Spec.Security.M2M.Basic != nil && len(obj.Spec.Security.M2M.Scopes) > 0
+	if !subHasScopes {
+		return false
+	}
+
+	return exposure == nil || !exposure.HasExternalIdp() ||
+		exposure.Spec.Security.M2M.ExternalIDP.GrantType != apiapi.GrantTypePassword
 }

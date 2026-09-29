@@ -81,6 +81,7 @@ var _ = Describe("Consumer username/password with scopes", func() {
 		}),
 		Entry("no external IDP", "password-no-external-idp", func(exposure *apiapi.ApiExposure) {
 			exposure.Spec.Security.M2M.ExternalIDP = nil
+			exposure.Spec.Security.M2M.Scopes = consumerScopes
 		}),
 	)
 })
