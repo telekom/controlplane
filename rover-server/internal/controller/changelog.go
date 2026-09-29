@@ -12,13 +12,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/log"
 	"github.com/telekom/controlplane/common-server/pkg/problems"
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
 	"github.com/telekom/controlplane/common-server/pkg/store"
+	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	filesapi "github.com/telekom/controlplane/file-manager/api"
 	"github.com/telekom/controlplane/rover-server/internal/api"
 	"github.com/telekom/controlplane/rover-server/internal/file"
@@ -122,15 +122,9 @@ func (c *ApiChangelogController) Get(ctx context.Context, resourceId string) (ap
 	}
 
 	// Download items from file-manager
-	reader, err := c.downloadFile(ctx, changelog.Spec.Contents)
+	items, err := c.downloadFile(ctx, changelog.Spec.Contents)
 	if err != nil {
 		return res, fmt.Errorf("failed to download changelog items from file-manager: %w", err)
-	}
-
-	var items []api.ApiChangelogItem
-	err = json.NewDecoder(reader).Decode(&items)
-	if err != nil {
-		return res, fmt.Errorf("failed to decode changelog items: %w", err)
 	}
 
 	return out.MapResponse(changelog, items), nil
@@ -152,15 +146,9 @@ func (c *ApiChangelogController) GetAll(ctx context.Context, params api.GetAllAp
 	list := make([]api.ApiChangelogResponse, 0, len(objList.Items))
 	for _, changelog := range objList.Items {
 		// Download items from file-manager
-		reader, err := c.downloadFile(ctx, changelog.Spec.Contents)
+		items, err := c.downloadFile(ctx, changelog.Spec.Contents)
 		if err != nil {
-			return nil, problems.InternalServerError("Failed to download changelog items", err.Error())
-		}
-
-		var items []api.ApiChangelogItem
-		err = json.NewDecoder(reader).Decode(&items)
-		if err != nil {
-			return nil, problems.InternalServerError("Failed to decode changelog items", err.Error())
+			return nil, err
 		}
 
 		list = append(list, out.MapResponse(changelog, items))
@@ -237,6 +225,10 @@ func (c *ApiChangelogController) GetStatus(ctx context.Context, resourceId strin
 
 // uploadFile uploads the items JSON to file-manager
 func (c *ApiChangelogController) uploadFile(ctx context.Context, itemsMarshaled []byte, id mapper.ResourceIdInfo) (*filesapi.FileUploadResponse, error) {
+	if !cconfig.FeatureFileManager.IsEnabled() {
+		return nil, nil
+	}
+
 	if len(itemsMarshaled) == 0 {
 		return nil, errors.New("items JSON has length 0")
 	}
@@ -281,13 +273,25 @@ func (c *ApiChangelogController) isHashEqual(ctx context.Context, id mapper.Reso
 }
 
 // downloadFile downloads items JSON from file-manager
-func (c *ApiChangelogController) downloadFile(ctx context.Context, fileId string) (io.Reader, error) {
+func (c *ApiChangelogController) downloadFile(ctx context.Context, fileId string) ([]api.ApiChangelogItem, error) {
+	if !cconfig.FeatureFileManager.IsEnabled() {
+		return nil, nil
+	}
+
 	var b bytes.Buffer
 	_, err := file.GetFileManager().DownloadFile(ctx, fileId, &b)
 	if err != nil {
-		return nil, err
+		return nil, problems.InternalServerError("Failed to download changelog", err.Error())
 	}
-	return &b, nil
-}
 
-// generateFileId is defined in apispecification.go and shared across controllers
+	if b.Len() == 0 {
+		return nil, nil
+	}
+
+	var items []api.ApiChangelogItem
+	err = json.NewDecoder(&b).Decode(&items)
+	if err != nil {
+		return nil, problems.InternalServerError("Failed to unmarshal changelog", err.Error())
+	}
+	return items, nil
+}

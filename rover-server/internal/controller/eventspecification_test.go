@@ -8,13 +8,16 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
 
 	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 	"github.com/stretchr/testify/mock"
 	fileApi "github.com/telekom/controlplane/file-manager/api"
+	filefake "github.com/telekom/controlplane/file-manager/api/fake"
 	"github.com/telekom/controlplane/rover-server/internal/api"
 )
 
@@ -170,6 +173,28 @@ var _ = Describe("EventSpecification Controller", func() {
 
 			responseGroup, err := ExecuteRequest(req, groupToken)
 			ExpectStatusWithBody(responseGroup, err, http.StatusAccepted, "application/json")
+		})
+
+		It("should delete the optional specification file", func() {
+			fileManager := filefake.NewMockFileManager(GinkgoT())
+			fileManager.EXPECT().DeleteFile(mock.Anything, "poc--eni--hyperion--tardis-horizon-demo-cetus-v1").Return(nil).Once()
+			err := deleteOptionalSpecificationFile(context.Background(), fileManager, "poc--eni--hyperion--tardis-horizon-demo-cetus-v1")
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("should accept an already absent optional specification file", func() {
+			fileManager := filefake.NewMockFileManager(GinkgoT())
+			fileManager.EXPECT().DeleteFile(mock.Anything, "poc--eni--hyperion--tardis-horizon-demo-cetus-v1").Return(fileApi.ErrNotFound).Once()
+			err := deleteOptionalSpecificationFile(context.Background(), fileManager, "poc--eni--hyperion--tardis-horizon-demo-cetus-v1")
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("should return errors when deleting the optional specification file fails", func() {
+			fileManager := filefake.NewMockFileManager(GinkgoT())
+			fileManager.EXPECT().DeleteFile(mock.Anything, "poc--eni--hyperion--tardis-horizon-demo-cetus-v1").Return(errors.New("file manager unavailable")).Once()
+
+			err := deleteOptionalSpecificationFile(context.Background(), fileManager, "poc--eni--hyperion--tardis-horizon-demo-cetus-v1")
+			Expect(err).To(HaveOccurred())
 		})
 
 		It("should fail to update an EventSpecification from a different team", func() {

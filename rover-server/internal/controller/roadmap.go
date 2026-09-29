@@ -10,7 +10,6 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
-	"io"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/log"
@@ -121,15 +120,9 @@ func (r *RoadmapController) Get(ctx context.Context, resourceId string) (api.Api
 	}
 
 	// Download items from file-manager
-	reader, err := r.downloadFile(ctx, roadmap.Spec.Contents)
+	items, err := r.downloadFile(ctx, roadmap.Spec.Contents)
 	if err != nil {
-		return res, errors.Wrap(err, "failed to download roadmap items from file-manager")
-	}
-
-	var items []api.ApiRoadmapItem
-	err = json.NewDecoder(reader).Decode(&items)
-	if err != nil {
-		return res, errors.Wrap(err, "failed to decode roadmap items")
+		return res, err
 	}
 
 	return out.MapResponse(roadmap, items), nil
@@ -151,15 +144,9 @@ func (r *RoadmapController) GetAll(ctx context.Context, params api.GetAllApiRoad
 	list := make([]api.ApiRoadmapResponse, 0, len(objList.Items))
 	for _, roadmap := range objList.Items {
 		// Download items from file-manager
-		reader, err := r.downloadFile(ctx, roadmap.Spec.Contents)
+		items, err := r.downloadFile(ctx, roadmap.Spec.Contents)
 		if err != nil {
-			return nil, problems.InternalServerError("Failed to download roadmap items", err.Error())
-		}
-
-		var items []api.ApiRoadmapItem
-		err = json.NewDecoder(reader).Decode(&items)
-		if err != nil {
-			return nil, problems.InternalServerError("Failed to decode roadmap items", err.Error())
+			return nil, err
 		}
 
 		list = append(list, out.MapResponse(roadmap, items))
@@ -280,13 +267,24 @@ func (r *RoadmapController) isHashEqual(ctx context.Context, id mapper.ResourceI
 }
 
 // downloadFile downloads items JSON from file-manager
-func (r *RoadmapController) downloadFile(ctx context.Context, fileId string) (io.Reader, error) {
+func (r *RoadmapController) downloadFile(ctx context.Context, fileId string) ([]api.ApiRoadmapItem, error) {
 	var b bytes.Buffer
 	_, err := file.GetFileManager().DownloadFile(ctx, fileId, &b)
 	if err != nil {
-		return nil, err
+		return nil, problems.InternalServerError("Failed to download roadmap items", err.Error())
 	}
-	return &b, nil
+
+	if b.Len() == 0 {
+		return nil, nil
+	}
+
+	items := []api.ApiRoadmapItem{}
+	err = json.NewDecoder(&b).Decode(&items)
+	if err != nil {
+		return nil, problems.InternalServerError("Failed to unmarshal roadmap items", err.Error())
+	}
+
+	return items, nil
 }
 
 // generateFileId is defined in apispecification.go and shared across controllers

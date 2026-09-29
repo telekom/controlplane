@@ -10,7 +10,6 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
-	"io"
 
 	"github.com/go-logr/logr"
 	"github.com/gofiber/fiber/v2"
@@ -92,22 +91,9 @@ func (c *McpSpecificationControllerImpl) Get(ctx context.Context, resourceId str
 		return res, err
 	}
 
-	var specContent map[string]any
-	if cconfig.FeatureFileManager.IsEnabled() {
-		reader, downloadErr := c.downloadFile(ctx, mcpSpec.Spec.Specification)
-		if downloadErr != nil {
-			return res, downloadErr
-		}
-
-		data, readErr := io.ReadAll(reader)
-		if readErr != nil {
-			return res, readErr
-		}
-		if len(data) > 0 {
-			if unmarshalErr := yaml.Unmarshal(data, &specContent); unmarshalErr != nil {
-				return res, unmarshalErr
-			}
-		}
+	specContent, err := c.downloadFile(ctx, mcpSpec.Spec.Specification)
+	if err != nil {
+		return res, err
 	}
 
 	return mcpout.MapResponse(ctx, mcpSpec, specContent, c.stores)
@@ -125,22 +111,9 @@ func (c *McpSpecificationControllerImpl) GetAll(ctx context.Context, params api.
 
 	list := make([]api.McpSpecificationResponse, 0, len(objList.Items))
 	for _, mcpSpec := range objList.Items {
-		var specContent map[string]any
-		if cconfig.FeatureFileManager.IsEnabled() {
-			reader, downloadErr := c.downloadFile(ctx, mcpSpec.Spec.Specification)
-			if downloadErr != nil {
-				return nil, problems.InternalServerError("Failed to download resource", downloadErr.Error())
-			}
-
-			data, readErr := io.ReadAll(reader)
-			if readErr != nil {
-				return nil, problems.InternalServerError("Failed to read response", readErr.Error())
-			}
-			if len(data) > 0 {
-				if unmarshalErr := yaml.Unmarshal(data, &specContent); unmarshalErr != nil {
-					return nil, problems.InternalServerError("Failed to unmarshal resource", unmarshalErr.Error())
-				}
-			}
+		specContent, downloadErr := c.downloadFile(ctx, mcpSpec.Spec.Specification)
+		if downloadErr != nil {
+			return nil, downloadErr
 		}
 
 		resp, mapErr := mcpout.MapResponse(ctx, mcpSpec, specContent, c.stores)
@@ -181,15 +154,12 @@ func (c *McpSpecificationControllerImpl) Update(ctx context.Context, resourceId 
 		return res, problems.BadRequest(fmt.Sprintf("mcp specification name %q does not match expected name %q", mcpSpec.Name, id.Name))
 	}
 
-	if cconfig.FeatureFileManager.IsEnabled() {
-		fileAPIResp, uploadErr := c.uploadFile(ctx, specMarshaled, id)
-		if uploadErr != nil {
-			return res, uploadErr
-		}
-		mcpin.MapRequest(mcpSpec, fileAPIResp, id)
-	} else {
-		mcpin.MapRequestWithoutFile(mcpSpec, id)
+	fileAPIResp, err := c.uploadFile(ctx, specMarshaled, id)
+	if err != nil {
+		return res, err
 	}
+
+	mcpin.MapRequest(mcpSpec, fileAPIResp, id)
 
 	EnsureLabelsOrDie(ctx, mcpSpec)
 
@@ -220,6 +190,10 @@ func (c *McpSpecificationControllerImpl) GetStatus(ctx context.Context, resource
 }
 
 func (c *McpSpecificationControllerImpl) uploadFile(ctx context.Context, specMarshaled []byte, id mapper.ResourceIdInfo) (*filesapi.FileUploadResponse, error) {
+	if !cconfig.FeatureFileManager.IsEnabled() {
+		return nil, nil
+	}
+
 	if len(specMarshaled) == 0 {
 		return nil, errors.New("input specification has length 0")
 	}
@@ -261,13 +235,28 @@ func (c *McpSpecificationControllerImpl) isHashEqual(ctx context.Context, id map
 	return hash, hash == mcpSpec.Spec.Hash, nil
 }
 
-func (c *McpSpecificationControllerImpl) downloadFile(ctx context.Context, fileID string) (io.Reader, error) {
+func (c *McpSpecificationControllerImpl) downloadFile(ctx context.Context, fileID string) (map[string]any, error) {
+	if !cconfig.FeatureFileManager.IsEnabled() {
+		return nil, nil
+	}
+
 	var b bytes.Buffer
 	_, err := file.GetFileManager().DownloadFile(ctx, fileID, &b)
 	if err != nil {
-		return nil, err
+		return nil, problems.InternalServerError("Failed to download mcp specification", err.Error())
 	}
-	return &b, nil
+
+	if b.Len() == 0 {
+		return nil, nil
+	}
+
+	res := map[string]any{}
+	err = yaml.NewDecoder(&b).Decode(&res)
+	if err != nil {
+		return nil, problems.InternalServerError("Failed to unmarshal mcp specification", err.Error())
+	}
+
+	return res, nil
 }
 
 func generateMcpFileID(id mapper.ResourceIdInfo) string {
