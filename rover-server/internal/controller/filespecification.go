@@ -8,7 +8,6 @@ import (
 	"bytes"
 	"context"
 
-	"github.com/goccy/go-yaml"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/log"
 	"github.com/pkg/errors"
@@ -19,6 +18,7 @@ import (
 	filesapi "github.com/telekom/controlplane/file-manager/api"
 	"github.com/telekom/controlplane/rover-server/internal/file"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
+	"gopkg.in/yaml.v3"
 
 	"github.com/telekom/controlplane/rover-server/internal/api"
 	"github.com/telekom/controlplane/rover-server/internal/mapper"
