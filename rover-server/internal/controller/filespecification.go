@@ -95,7 +95,7 @@ func (f *FileSpecificationController) Get(ctx context.Context, resourceId string
 		return res, err
 	}
 
-	specContent, err := f.downloadSpecification(ctx, fileSpec.Spec.Specification)
+	specContent, err := f.downloadFile(ctx, fileSpec.Spec.Specification)
 	if err != nil {
 		return res, err
 	}
@@ -114,9 +114,9 @@ func (f *FileSpecificationController) GetAll(ctx context.Context, params api.Get
 
 	list := make([]api.FileSpecificationResponse, 0, len(objList.Items))
 	for _, fileSpec := range objList.Items {
-		specContent, err := f.downloadSpecification(ctx, fileSpec.Spec.Specification)
+		specContent, err := f.downloadFile(ctx, fileSpec.Spec.Specification)
 		if err != nil {
-			return nil, problems.InternalServerError("Failed to download resource", err.Error())
+			return nil, err
 		}
 
 		resp, err := out.MapResponse(fileSpec, specContent)
@@ -159,13 +159,10 @@ func (f *FileSpecificationController) Update(ctx context.Context, resourceId str
 		// Delete the optional specification file from file-manager.
 		fileId := generateFileId(id)
 		err = file.GetFileManager().DeleteFile(ctx, fileId)
-		if err != nil {
-			if !errors.Is(err, file.ErrNotFound) {
-				return res, err
-			}
-			// File not found is acceptable — specification is optional.
+		// File not found is acceptable — specification is optional.
+		if err != nil && !errors.Is(err, file.ErrNotFound) {
+			return res, err
 		}
-
 	}
 
 	fileSpec, err := in.MapRequest(req, specOrFileId, id)
@@ -210,9 +207,9 @@ func (f *FileSpecificationController) uploadFile(ctx context.Context, specMarsha
 	return file.GetFileManager().UploadFile(ctx, fileId, fileContentType, bytes.NewReader(specMarshaled))
 }
 
-// downloadSpecification retrieves the optional specification file content.
+// downloadFile retrieves the optional specification file content.
 // Returns nil if no specification is stored (fileId is empty).
-func (f *FileSpecificationController) downloadSpecification(ctx context.Context, fileId string) (map[string]any, error) {
+func (f *FileSpecificationController) downloadFile(ctx context.Context, fileId string) (map[string]any, error) {
 	if !cconfig.FeatureFileManager.IsEnabled() {
 		return nil, nil
 	}
@@ -224,7 +221,7 @@ func (f *FileSpecificationController) downloadSpecification(ctx context.Context,
 	var b bytes.Buffer
 	_, err := file.GetFileManager().DownloadFile(ctx, fileId, &b)
 	if err != nil {
-		return nil, err
+		return nil, problems.InternalServerError("Failed to download file specification", err.Error())
 	}
 
 	if b.Len() == 0 {
@@ -233,7 +230,7 @@ func (f *FileSpecificationController) downloadSpecification(ctx context.Context,
 
 	var specContent map[string]any
 	if err := yaml.NewDecoder(&b).Decode(&specContent); err != nil {
-		return nil, err
+		return nil, problems.InternalServerError("Failed to unmarshal file specification", err.Error())
 	}
 	return specContent, nil
 }
