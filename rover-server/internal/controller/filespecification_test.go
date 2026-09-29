@@ -29,7 +29,7 @@ var _ = Describe("FileSpecification Controller", func() {
 			mockFileManager.EXPECT().DownloadFile(mock.Anything, "fileRandomId", mock.Anything).
 				RunAndReturn(func(_ context.Context, _ string, w io.Writer) (*fileApi.FileDownloadResponse, error) {
 					_, _ = w.Write([]byte(`{"type":"object"}`))
-					return &fileApi.FileDownloadResponse{ContentType: "application/json"}, nil
+					return &fileApi.FileDownloadResponse{ContentType: "application/yaml"}, nil
 				})
 			req := httptest.NewRequest(http.MethodGet, "/filespecifications/eni--hyperion--demo-invoices-v1", nil)
 			responseGroup, err := ExecuteRequest(req, groupToken)
@@ -63,7 +63,7 @@ var _ = Describe("FileSpecification Controller", func() {
 			mockFileManager.EXPECT().DownloadFile(mock.Anything, "fileRandomId", mock.Anything).
 				RunAndReturn(func(_ context.Context, _ string, w io.Writer) (*fileApi.FileDownloadResponse, error) {
 					_, _ = w.Write([]byte(`{"type":"object"}`))
-					return &fileApi.FileDownloadResponse{ContentType: "application/json"}, nil
+					return &fileApi.FileDownloadResponse{ContentType: "application/yaml"}, nil
 				})
 			req := httptest.NewRequest(http.MethodGet, "/filespecifications", nil)
 			responseGroup, err := ExecuteRequest(req, groupToken)
@@ -154,12 +154,12 @@ var _ = Describe("FileSpecification Controller", func() {
 				Version:       "1.0.0",
 				Specification: map[string]any{"type": "object"},
 			})
-			mockFileManager.EXPECT().UploadFile(mock.Anything, "poc--eni--hyperion--demo-invoices-v1", "application/json", mock.Anything).
-				Return(&fileApi.FileUploadResponse{FileId: "fileRandomId", ContentType: "application/json"}, nil)
+			mockFileManager.EXPECT().UploadFile(mock.Anything, "poc--eni--hyperion--demo-invoices-v1", "application/yaml", mock.Anything).
+				Return(&fileApi.FileUploadResponse{FileId: "fileRandomId", ContentType: "application/yaml"}, nil)
 			mockFileManager.EXPECT().DownloadFile(mock.Anything, "fileRandomId", mock.Anything).
 				RunAndReturn(func(_ context.Context, _ string, w io.Writer) (*fileApi.FileDownloadResponse, error) {
 					_, _ = w.Write([]byte(`{"type":"object"}`))
-					return &fileApi.FileDownloadResponse{ContentType: "application/json"}, nil
+					return &fileApi.FileDownloadResponse{ContentType: "application/yaml"}, nil
 				})
 
 			req := httptest.NewRequest(http.MethodPut, "/filespecifications/eni--hyperion--demo-invoices-v1",
@@ -189,7 +189,7 @@ var _ = Describe("FileSpecification Controller", func() {
 			})
 			Expect(err).ToNot(HaveOccurred())
 			fileManager := isolateFileManager()
-			fileManager.EXPECT().UploadFile(mock.Anything, mock.Anything, "application/json", mock.Anything).
+			fileManager.EXPECT().UploadFile(mock.Anything, mock.Anything, "application/yaml", mock.Anything).
 				Return(nil, errors.New("file-manager unavailable"))
 			req := httptest.NewRequest(http.MethodPut, "/filespecifications/eni--hyperion--demo-invoices-v1", bytes.NewReader(body))
 			responseGroup, err := ExecuteRequest(req, groupToken)

@@ -7,8 +7,8 @@ package controller
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 
+	"github.com/goccy/go-yaml"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/log"
 	"github.com/pkg/errors"
@@ -143,7 +143,7 @@ func (f *FileSpecificationController) Update(ctx context.Context, resourceId str
 
 	var specOrFileId string
 	if len(req.Specification) > 0 {
-		specMarshaled, marshalErr := json.Marshal(req.Specification)
+		specMarshaled, marshalErr := yaml.Marshal(req.Specification)
 		if marshalErr != nil {
 			return res, problems.BadRequest(marshalErr.Error())
 		}
@@ -206,7 +206,7 @@ func (f *FileSpecificationController) uploadFile(ctx context.Context, specMarsha
 	}
 
 	fileId := generateFileId(id)
-	fileContentType := "application/json"
+	fileContentType := "application/yaml"
 	return file.GetFileManager().UploadFile(ctx, fileId, fileContentType, bytes.NewReader(specMarshaled))
 }
 
@@ -232,7 +232,7 @@ func (f *FileSpecificationController) downloadSpecification(ctx context.Context,
 	}
 
 	var specContent map[string]any
-	if err := json.NewDecoder(&b).Decode(&specContent); err != nil {
+	if err := yaml.NewDecoder(&b).Decode(&specContent); err != nil {
 		return nil, err
 	}
 	return specContent, nil
