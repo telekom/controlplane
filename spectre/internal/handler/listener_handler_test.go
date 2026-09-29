@@ -1760,6 +1760,7 @@ var _ = Describe("ListenerHandler", func() {
 				Expect(err).ToNot(HaveOccurred())
 
 				Expect(capturedPub).ToNot(BeNil())
+				Expect(capturedPub.Labels[eventv1.EventTypeLabelKey]).To(Equal("de.telekom.ei.listener"))
 				Expect(capturedPub.Spec.EventType).To(Equal("de.telekom.ei.listener"))
 				Expect(capturedPub.Spec.PublisherId).To(Equal("gateway"))
 				Expect(capturedPub.Spec.EventStore.Name).To(Equal("eventstore-aws"))
@@ -1820,6 +1821,10 @@ var _ = Describe("ListenerHandler", func() {
 				rpSub := capturedSubs[1]
 				Expect(rpSub.Spec.Trigger.SelectionFilter.Attributes["kind"]).To(Equal("RESPONSE"))
 				Expect(rpSub.Labels).To(HaveKey(handler.AuthorizationFingerprintLabelKey))
+
+				// Both bridge Subscribers carry the generic Publisher's event type label.
+				Expect(rqSub.Labels[eventv1.EventTypeLabelKey]).To(Equal("de.telekom.ei.listener"))
+				Expect(rpSub.Labels[eventv1.EventTypeLabelKey]).To(Equal("de.telekom.ei.listener"))
 			})
 
 			It("should set Ready condition when all children are ready", func() {
