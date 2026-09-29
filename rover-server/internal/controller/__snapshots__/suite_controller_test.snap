@@ -1830,8 +1830,8 @@
  "detail": "file-manager unavailable",
  "instance": "",
  "status": 500,
- "title": "Internal Error",
- "type": "InternalError"
+ "title": "Failed to download file specification",
+ "type": "InternalServerError"
 }
 ---
 
