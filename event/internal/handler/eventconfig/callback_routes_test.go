@@ -30,12 +30,58 @@ import (
 )
 
 var _ = Describe("callback route issuers", func() {
+	It("sorts outbound callback route references by name", func() {
+		ctx := context.Background()
+		fc := fakeclient.NewMockJanitorClient(GinkgoT())
+		ctx = cclient.WithClient(ctx, fc)
+		obj := &eventv1.EventConfig{
+			ObjectMeta: metav1.ObjectMeta{Name: "source-config", Namespace: "default"},
+			Spec: eventv1.EventConfigSpec{
+				Zone: ctypes.ObjectRef{Name: "source", Namespace: "default"},
+				Mesh: &eventv1.MeshConfig{FullMesh: true},
+			},
+		}
+		source := readyPeerZone("source")
+		source.Status.Gateway = &ctypes.ObjectRef{Name: "source-gateway", Namespace: "default"}
+		source.Spec.Gateway.Presets = []adminv1.GatewayConfigPreset{{
+			Default: true, Urls: []adminv1.UrlConfig{{Scheme: "https", Hostname: "source.example.com", Port: 443}},
+		}}
+		peers := []eventv1.EventConfig{
+			peerEventConfig("z-config", "z-zone", nil, nil),
+			peerEventConfig("a-config", "a-zone", nil, nil),
+		}
+		fc.EXPECT().List(ctx, mock.AnythingOfType("*v1.EventConfigList")).
+			Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+				*list.(*eventv1.EventConfigList) = eventv1.EventConfigList{Items: peers}
+			}).Return(nil).Once()
+		for _, name := range []string{"z-zone", "a-zone"} {
+			zone := readyPeerZone(name)
+			zone.Status.Gateway = &ctypes.ObjectRef{Name: name + "-gateway", Namespace: "default"}
+			zone.Spec.Gateway.Presets = []adminv1.GatewayConfigPreset{{
+				Default: true, Urls: []adminv1.UrlConfig{{Scheme: "https", Hostname: name + ".example.com", Port: 443}},
+			}}
+			fc.EXPECT().Get(ctx, k8stypes.NamespacedName{Name: name, Namespace: "default"}, mock.AnythingOfType("*v1.Zone")).
+				Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
+					*out.(*adminv1.Zone) = *zone
+				}).Return(nil).Once()
+		}
+		fc.EXPECT().Scheme().Return(buildSchemeForCallbackRoutes()).Maybe()
+		fc.EXPECT().CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Route"), mock.Anything).
+			RunAndReturn(func(_ context.Context, _ client.Object, mutate controllerutil.MutateFn) (controllerutil.OperationResult, error) {
+				return controllerutil.OperationResultCreated, mutate()
+			}).Times(3)
+
+		Expect((&EventConfigHandler{}).createCallbackRoutes(ctx, obj, source, obj.Spec.Mesh, util.CallbackClientName)).To(Succeed())
+		Expect(obj.Status.ProxyCallbackRoutes).To(HaveLen(2))
+		Expect(obj.Status.ProxyCallbackRoutes[0].Name).To(Equal("callback--a-zone"))
+		Expect(obj.Status.ProxyCallbackRoutes[1].Name).To(Equal("callback--z-zone"))
+	})
+
 	It("replaces stale projected URLs when the backend or logical mesh changes", func() {
 		proxy := peerEventConfig("proxy", "exposure", &eventv1.MeshConfig{FullMesh: true}, &eventv1.ProxyBackend{TargetZone: ctypes.ObjectRef{Name: "old"}})
 		oldBackend := peerEventConfig("old", "old", &eventv1.MeshConfig{FullMesh: true}, nil)
 		oldBackend.Status.ProxyCallbackURLs = map[string]string{"exposure": "https://old/exposure", "subscriber": "https://old/subscriber"}
-		routes := map[string]*gatewayv1.Route{"subscriber": {}}
-		proxy.Status.CallbackURL, proxy.Status.ProxyCallbackURLs = projectCallbackIngress(&proxy, &oldBackend, routes)
+		proxy.Status.CallbackURL, proxy.Status.ProxyCallbackURLs = projectCallbackIngress(&proxy, &oldBackend, []string{"subscriber"})
 		Expect(proxy.Status.ProxyCallbackURLs).To(HaveKey("subscriber"))
 
 		proxy.Spec.Proxy.TargetZone.Name = "new"
@@ -43,7 +89,7 @@ var _ = Describe("callback route issuers", func() {
 		newBackend := peerEventConfig("new", "new", &eventv1.MeshConfig{ZoneNames: []string{"exposure"}}, nil)
 		newBackend.Status.CallbackURL = "https://new/primary"
 		newBackend.Status.ProxyCallbackURLs = map[string]string{"exposure": "https://new/exposure"}
-		proxy.Status.CallbackURL, proxy.Status.ProxyCallbackURLs = projectCallbackIngress(&proxy, &newBackend, map[string]*gatewayv1.Route{"new": {}})
+		proxy.Status.CallbackURL, proxy.Status.ProxyCallbackURLs = projectCallbackIngress(&proxy, &newBackend, []string{"new"})
 		Expect(proxy.Status.CallbackURL).To(Equal("https://new/exposure"))
 		Expect(proxy.Status.ProxyCallbackURLs).To(Equal(map[string]string{"new": "https://new/primary"}))
 	})
@@ -54,13 +100,7 @@ var _ = Describe("callback route issuers", func() {
 			backend := peerEventConfig("backend", "backend", backendMesh, nil)
 			backend.Status.CallbackURL = "https://backend/primary"
 			backend.Status.ProxyCallbackURLs = backendURLs
-			routes := map[string]*gatewayv1.Route{}
-			for _, zone := range []string{"backend", "subscriber", "excluded"} {
-				if proxy.SupportsZone(zone) {
-					routes[zone] = &gatewayv1.Route{}
-				}
-			}
-			url, projected := projectCallbackIngress(&proxy, &backend, routes)
+			url, projected := projectCallbackIngress(&proxy, &backend, []string{"backend", "subscriber", "excluded"})
 			Expect(url).To(Equal(primary))
 			Expect(projected).To(Equal(expected))
 		},
@@ -74,6 +114,15 @@ var _ = Describe("callback route issuers", func() {
 		Entry("backend no longer permits the proxy's zone", &eventv1.MeshConfig{ZoneNames: []string{"backend"}},
 			&eventv1.MeshConfig{ZoneNames: []string{"subscriber"}}, map[string]string{"exposure": "https://backend/stale"},
 			map[string]string{"backend": "https://backend/primary"}, ""),
+		Entry("nil mesh allows all known peers", nil, nil,
+			map[string]string{"exposure": "https://backend/exposure", "subscriber": "https://backend/subscriber"},
+			map[string]string{"backend": "https://backend/primary", "subscriber": "https://backend/subscriber"}, "https://backend/exposure"),
+		Entry("full mesh allows all known peers", &eventv1.MeshConfig{FullMesh: true}, &eventv1.MeshConfig{FullMesh: true},
+			map[string]string{"exposure": "https://backend/exposure", "subscriber": "https://backend/subscriber"},
+			map[string]string{"backend": "https://backend/primary", "subscriber": "https://backend/subscriber"}, "https://backend/exposure"),
+		Entry("explicit empty mesh excludes peers", &eventv1.MeshConfig{}, nil,
+			map[string]string{"exposure": "https://backend/exposure", "subscriber": "https://backend/subscriber"},
+			map[string]string{}, "https://backend/exposure"),
 	)
 
 	DescribeTable("authenticates eventstore at the backend ingress and gateway at the subscriber primary",
@@ -134,16 +183,17 @@ var _ = Describe("callback route issuers", func() {
 				}).Return(nil).Once()
 			}
 			fc.EXPECT().Scheme().Return(buildSchemeForCallbackRoutes()).Maybe()
+			routeCount := 2
+			if proxyExposure {
+				routeCount = 1
+			}
 			fc.EXPECT().CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Route"), mock.Anything).
 				RunAndReturn(func(_ context.Context, routeObj client.Object, mutate controllerutil.MutateFn) (controllerutil.OperationResult, error) {
 					Expect(mutate()).To(Succeed())
 					route := routeObj.(*gatewayv1.Route)
 					if route.Spec.Type == gatewayv1.RouteTypeProxy {
-						if proxyExposure {
-							Expect(route.Spec.Security.TrustedIssuers).To(Equal([]string{"https://exposure-lms"}))
-						} else {
-							Expect(route.Spec.Security.TrustedIssuers).To(Equal([]string{"https://exposure-idp"}))
-						}
+						Expect(proxyExposure).To(BeFalse())
+						Expect(route.Spec.Security.TrustedIssuers).To(Equal([]string{"https://exposure-idp"}))
 						Expect(route.Spec.Backend.Upstreams[0].Hostname).To(Equal("subscriber.example.com"))
 						Expect(route.Spec.Security.DefaultConsumers).To(ConsistOf(util.CallbackClientName))
 					} else {
@@ -151,13 +201,16 @@ var _ = Describe("callback route issuers", func() {
 						Expect(route.Spec.Security.DefaultConsumers).To(ConsistOf(util.CallbackClientName))
 					}
 					return controllerutil.OperationResultCreated, nil
-				}).Times(2)
+				}).Times(routeCount)
 
-			Expect((&EventConfigHandler{}).createCallbackRoutes(ctx, obj, exposure, obj.Spec.Mesh)).To(Succeed())
+			Expect((&EventConfigHandler{}).createCallbackRoutes(ctx, obj, exposure, obj.Spec.Mesh, util.CallbackClientName)).To(Succeed())
 			if proxyExposure {
+				Expect(obj.Status.ProxyCallbackRoutes).To(BeEmpty())
+				Expect(obj.Status.CallbackRoute).NotTo(BeNil())
 				Expect(obj.Status.CallbackURL).To(Equal("https://backend.example.com/horizon-exposure/callback/v1"))
 				Expect(obj.Status.ProxyCallbackURLs).To(HaveKeyWithValue("subscriber", "https://backend.example.com/horizon-subscriber/callback/v1"))
 			} else {
+				Expect(obj.Status.ProxyCallbackRoutes).To(HaveLen(1))
 				Expect(obj.Status.ProxyCallbackURLs).To(HaveKeyWithValue("subscriber", "https://exposure.example.com/horizon-subscriber/callback/v1"))
 			}
 		},
@@ -221,8 +274,11 @@ var _ = Describe("callback route issuers", func() {
 				*list.(*eventv1.EventConfigList) = eventv1.EventConfigList{Items: []eventv1.EventConfig{backendCfg}}
 			}).Return(nil).Once()
 		}
-		Expect((&EventConfigHandler{}).createCallbackRoutes(ctx, obj, subscriber, obj.Spec.Mesh)).To(Succeed())
+		Expect((&EventConfigHandler{}).createCallbackRoutes(ctx, obj, subscriber, obj.Spec.Mesh, util.CallbackClientName)).To(Succeed())
 		Expect(obj.Status.ProxyCallbackURLs).To(BeEmpty())
+		if proxySubscriber {
+			Expect(obj.Status.ProxyCallbackRoutes).To(BeEmpty())
+		}
 	},
 		Entry("local subscriber", false),
 		Entry("proxy subscriber", true),

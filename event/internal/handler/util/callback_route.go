@@ -34,9 +34,13 @@ func CreateProxyCallbackRoute(
 	targetZone *adminv1.Zone,
 	opts ...Option,
 ) (*gatewayapi.Route, error) {
+	options := &Options{}
+	for _, opt := range opts {
+		opt(options)
+	}
 	return buildCrossZoneProxyRoute(ctx, sourceZone, targetZone, "callback",
 		makeCallbackRouteName(targetZone.Name), makeCallbackRoutePath(targetZone.Name), false,
-		append(opts, WithCallbackConsumer())...)
+		append(opts, WithCallbackClientName(options.CallbackClientName), WithCallbackConsumer())...)
 }
 
 // CreateCallbackRoute creates a Route for sending callback events to subscribers

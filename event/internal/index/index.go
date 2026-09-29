@@ -122,4 +122,10 @@ func RegisterIndicesOrDie(ctx context.Context, mgr ctrl.Manager) {
 		ctrl.Log.Error(err, "unable to create field-indexer")
 		os.Exit(1)
 	}
+
+	err = index.SetOwnerIndex(ctx, mgr.GetFieldIndexer(), &gatewayv1.Consumer{})
+	if err != nil {
+		ctrl.Log.Error(err, "unable to create field-indexer")
+		os.Exit(1)
+	}
 }

@@ -397,8 +397,9 @@ spec:
                 - observedGeneration
                 type: object
               proxyCallbackRoutes:
-                description: ProxyCallbackRoutes references this zone's owned outbound
-                  proxy Route CRs.
+                description: |-
+                  ProxyCallbackRoutes references outbound callback Routes owned by a local
+                  backend EventConfig. Proxy EventConfigs own no outbound callback Routes.
                 items:
                   description: |-
                     ObjectRef is a reference to a Kubernetes object
@@ -424,8 +425,8 @@ spec:
                   type: string
                 description: |-
                   ProxyCallbackURLs maps remote subscriber zones to usable callback ingress URLs.
-                  For proxy zones these are projected from the local target backend's primary
-                  or forward Routes, and can differ from the owned ProxyCallbackRoutes' URLs.
+                  For proxy zones these are projected from the ready local target backend's
+                  primary or outbound Routes, despite owning no outbound callback Routes.
                 type: object
               proxyVoyagerRoutes:
                 description: ProxyVoyagerRoutes references the proxy Route CRs created
