@@ -157,7 +157,7 @@ func createIdentityRealm(ctx context.Context, hc *HandlingContext, realmName str
 
 	identityRealm := &identityapi.Realm{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      labelutil.NormalizeValue(realmName),
+			Name:      labelutil.NormalizeNameValue(realmName),
 			Namespace: labelutil.NormalizeValue(hc.Namespace.Name),
 		},
 	}

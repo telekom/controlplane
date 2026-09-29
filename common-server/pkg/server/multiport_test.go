@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"net/http/httptest"
 	"sync"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -19,6 +20,7 @@ import (
 	"github.com/telekom/controlplane/common-server/pkg/server"
 	k8s "github.com/telekom/controlplane/common-server/pkg/server/middleware/kubernetes"
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
+	securitymock "github.com/telekom/controlplane/common-server/pkg/server/middleware/security/mock"
 )
 
 var validK8s = server.K8sConfig{
@@ -115,11 +117,55 @@ var _ = Describe("FamilyFromListenerConfig", func() {
 	})
 })
 
+var _ = Describe("JWT global guard selection", func() {
+	newApp := func(disableGlobal bool) *fiber.App {
+		app := fiber.New()
+		opts := security.SecurityOpts{Mode: security.ModeMock}
+		if disableGlobal {
+			opts.DisableGlobalGuard = true
+		}
+		guard := server.JWTFamily(opts)(app)
+		app.Get("/public", func(c *fiber.Ctx) error { return c.SendStatus(http.StatusOK) })
+		app.Get("/private", server.Guarded(guard, func(c *fiber.Ctx) error {
+			_, ok := security.FromContext(c.UserContext())
+			Expect(ok).To(BeTrue())
+			return c.SendStatus(http.StatusOK)
+		})...)
+		return app
+	}
+
+	It("keeps unguarded routes authenticated by default", func() {
+		resp, err := newApp(false).Test(httptest.NewRequest(http.MethodGet, "/public", nil))
+		Expect(err).NotTo(HaveOccurred())
+		Expect(resp.StatusCode).To(Equal(http.StatusUnauthorized))
+	})
+
+	It("leaves unguarded routes public when the global guard is disabled", func() {
+		resp, err := newApp(true).Test(httptest.NewRequest(http.MethodGet, "/public", nil))
+		Expect(err).NotTo(HaveOccurred())
+		Expect(resp.StatusCode).To(Equal(http.StatusOK))
+	})
+
+	It("rejects guarded routes without a token when the global guard is disabled", func() {
+		resp, err := newApp(true).Test(httptest.NewRequest(http.MethodGet, "/private", nil))
+		Expect(err).NotTo(HaveOccurred())
+		Expect(resp.StatusCode).To(Equal(http.StatusUnauthorized))
+	})
+
+	It("applies the complete security chain to guarded routes", func() {
+		req := httptest.NewRequest(http.MethodGet, "/private", nil)
+		req.Header.Set("Authorization", "Bearer "+securitymock.NewMockAccessToken("test", "group", "team", []string{"admin:all"}))
+		resp, err := newApp(true).Test(req)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(resp.StatusCode).To(Equal(http.StatusOK))
+	})
+})
+
 var _ = Describe("MultiServer.Run with no listeners", func() {
 	It("returns an error when both listeners are nil", func() {
 		ms := &server.MultiServer{
 			AppConfig: server.NewAppConfig(),
-			Register:  func(r fiber.Router, guard fiber.Handler) {},
+			Register:  func(r fiber.Router, guard []fiber.Handler) {},
 		}
 		Expect(ms.Run(context.Background())).To(HaveOccurred())
 	})
@@ -134,7 +180,18 @@ var _ = Describe("Guarded", func() {
 
 	It("prepends a non-nil guard", func() {
 		g := func(c *fiber.Ctx) error { return nil }
-		Expect(server.Guarded(g, h)).To(HaveLen(2))
+		Expect(server.Guarded([]fiber.Handler{g}, h)).To(HaveLen(2))
+	})
+
+	It("returns independent handler chains", func() {
+		guard := make([]fiber.Handler, 1, 2)
+		guard[0] = h
+		called := 0
+		first := server.Guarded(guard, func(c *fiber.Ctx) error { called = 1; return nil })
+		server.Guarded(guard, func(c *fiber.Ctx) error { called = 2; return nil })
+
+		Expect(first[1](nil)).To(Succeed())
+		Expect(called).To(Equal(1))
 	})
 })
 
@@ -181,14 +238,14 @@ var _ = Describe("MultiServer.Run bind-failure teardown", func() {
 		defer ln.Close() //nolint:errcheck
 		busyAddr := ln.Addr().String()
 
-		fam := func(r fiber.Router) fiber.Handler { return nil }
+		fam := func(r fiber.Router) []fiber.Handler { return nil }
 		ms := &server.MultiServer{
 			AppConfig: server.NewAppConfig(),
 			Listeners: server.Listeners{
 				Internal: &server.Listener{Address: "127.0.0.1:0", Family: fam}, // ephemeral, binds ok
 				External: &server.Listener{Address: busyAddr, Family: fam},      // collides -> error
 			},
-			Register: func(r fiber.Router, guard fiber.Handler) {
+			Register: func(r fiber.Router, guard []fiber.Handler) {
 				r.Get("/x", func(c *fiber.Ctx) error { return nil })
 			},
 		}
@@ -211,7 +268,7 @@ var _ = Describe("MultiServer shared-TLS wiring", func() {
 			<-ctx.Done() // block until teardown, like a real serve
 			return nil
 		}
-		fam := func(r fiber.Router) fiber.Handler { return nil }
+		fam := func(r fiber.Router) []fiber.Handler { return nil }
 		ms := &server.MultiServer{
 			AppConfig: server.NewAppConfig(),
 			TLS:       &server.TLSConfig{CertFile: "/c", KeyFile: "/k"},
@@ -219,7 +276,7 @@ var _ = Describe("MultiServer shared-TLS wiring", func() {
 				Internal: &server.Listener{Address: ":8001", Family: fam},
 				External: &server.Listener{Address: ":8002", Family: fam},
 			},
-			Register: func(r fiber.Router, guard fiber.Handler) {},
+			Register: func(r fiber.Router, guard []fiber.Handler) {},
 		}
 		ms.SetServeTLS(seam)
 

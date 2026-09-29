@@ -24,6 +24,7 @@ import (
 	"github.com/telekom/controlplane/approval/api/v1/builder"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
+	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	"github.com/telekom/controlplane/common/pkg/handler"
 	"github.com/telekom/controlplane/common/pkg/types"
@@ -131,8 +132,8 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 		"resource_name": apiSub.Spec.ApiBasePath,
 	}
 
-	// Scopes: check if scopes exist and are a valid subset of the Api's scopes.
-	if !validateSubscriptionScopes(ctx, api, apiSub, properties) {
+	// Validate specification scopes unless the selected exposure has an external token endpoint.
+	if !validateSubscriptionScopes(ctx, api, apiExposure, apiSub, properties) {
 		return nil
 	}
 
@@ -159,6 +160,9 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 	approvalBuilder.WithRequester(requester)
 	approvalBuilder.WithDecider(decider)
 	approvalBuilder.WithStrategy(approvalapi.ApprovalStrategy(apiExposure.Spec.Approval.Strategy))
+	approvalBuilder.WithLabels(map[string]string{
+		config.DomainLabelKey: "api",
+	})
 
 	if len(apiExposure.Spec.Approval.TrustedTeams) > 0 {
 		approvalBuilder.WithTrustedRequesters(apiExposure.Spec.Approval.TrustedTeams)
@@ -269,6 +273,11 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 	}
 
 	// ---- Set Conditions ----
+	if !scopedClient.AllReady() {
+		apiSub.SetCondition(condition.NewNotReadyCondition(condition.ReasonSubResourceNotReady, "Waiting for child resources to be ready"))
+		apiSub.SetCondition(condition.NewProcessingCondition(condition.ReasonSubResourceNotReady, "Waiting for child resources"))
+		return nil
+	}
 	apiSub.SetCondition(condition.NewDoneProcessingCondition("Successfully provisioned subresources"))
 	apiSub.SetCondition(condition.NewReadyCondition(condition.ReasonProvisioned, "Successfully provisioned subresources"))
 
@@ -362,31 +371,34 @@ func (h *ApiSubscriptionHandler) Delete(ctx context.Context, apiSub *apiapi.ApiS
 	return nil
 }
 
-// validateSubscriptionScopes checks that the M2M scopes in apiSub are a valid subset of the Api's scopes.
+// validateSubscriptionScopes checks specification-scope membership unless the selected exposure
+// has a non-empty M2M external-IDP token endpoint.
 // It updates properties["scopes"] on success, sets blocking conditions on failure, and returns false if
 // processing should stop.
-func validateSubscriptionScopes(ctx context.Context, api *apiapi.Api, apiSub *apiapi.ApiSubscription, properties map[string]any) bool {
+func validateSubscriptionScopes(ctx context.Context, api *apiapi.Api, exposure *apiapi.ApiExposure, apiSub *apiapi.ApiSubscription, properties map[string]any) bool {
 	if !apiSub.HasM2M() || apiSub.Spec.Security.M2M.Scopes == nil {
 		return true
 	}
-	if len(api.Spec.Oauth2Scopes) == 0 {
-		apiSub.SetCondition(NewScopesAllowedCondition(apiSub, nil, false))
-		apiSub.SetCondition(condition.NewNotReadyCondition(condition.ReasonValidationFailed, "Api does not define any Oauth2 scopes"))
-		apiSub.SetCondition(condition.NewBlockedCondition("Api does not define any Oauth2 scopes. ApiSubscription will be automatically processed, if the API will be updated with scopes"))
-		return false
+	if !exposure.HasExternalIdp() {
+		if len(api.Spec.Oauth2Scopes) == 0 {
+			apiSub.SetCondition(NewScopesAllowedCondition(apiSub, nil, false))
+			apiSub.SetCondition(condition.NewNotReadyCondition(condition.ReasonValidationFailed, "Api does not define any Oauth2 scopes"))
+			apiSub.SetCondition(condition.NewBlockedCondition("Api does not define any Oauth2 scopes. ApiSubscription will be automatically processed, if the API will be updated with scopes"))
+			return false
+		}
+		scopesExist, invalidScopes := util.IsSubsetOfScopes(api.Spec.Oauth2Scopes, apiSub.Spec.Security.M2M.Scopes)
+		if !scopesExist {
+			message := fmt.Sprintf("Some defined scopes are not available. Available scopes: %q. Unsupported scopes: %q",
+				strings.Join(api.Spec.Oauth2Scopes, ", "),
+				strings.Join(invalidScopes, ", "),
+			)
+			apiSub.SetCondition(NewScopesAllowedCondition(apiSub, invalidScopes, false))
+			apiSub.SetCondition(condition.NewNotReadyCondition(condition.ReasonValidationFailed, "One or more scopes which are defined in ApiSubscription are not defined in the ApiSpecification"))
+			apiSub.SetCondition(condition.NewBlockedCondition(message))
+			return false
+		}
+		log.FromContext(ctx).V(1).Info("✅ Scopes are valid and exist")
 	}
-	scopesExist, invalidScopes := util.IsSubsetOfScopes(api.Spec.Oauth2Scopes, apiSub.Spec.Security.M2M.Scopes)
-	if !scopesExist {
-		message := fmt.Sprintf("Some defined scopes are not available. Available scopes: %q. Unsupported scopes: %q",
-			strings.Join(api.Spec.Oauth2Scopes, ", "),
-			strings.Join(invalidScopes, ", "),
-		)
-		apiSub.SetCondition(NewScopesAllowedCondition(apiSub, invalidScopes, false))
-		apiSub.SetCondition(condition.NewNotReadyCondition(condition.ReasonValidationFailed, "One or more scopes which are defined in ApiSubscription are not defined in the ApiSpecification"))
-		apiSub.SetCondition(condition.NewBlockedCondition(message))
-		return false
-	}
-	log.FromContext(ctx).V(1).Info("✅ Scopes are valid and exist")
 	apiSub.SetCondition(NewScopesAllowedCondition(apiSub, apiSub.Spec.Security.M2M.Scopes, true))
 	properties["scopes"] = apiSub.Spec.Security.M2M.Scopes
 	return true
@@ -400,6 +412,7 @@ func resolveRouteRef(ctx context.Context, scopedClient cclient.JanitorClient, ap
 	switch {
 	case sameZoneAsExposure:
 		if apiExposure.Status.Route == nil {
+			apiSub.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet, "Waiting for ApiExposure to create the route"))
 			apiSub.SetCondition(condition.NewBlockedCondition("Waiting for ApiExposure to create the route"))
 			return nil, nil
 		}
@@ -418,6 +431,7 @@ func resolveRouteRef(ctx context.Context, scopedClient cclient.JanitorClient, ap
 				return failoverRoute, nil
 			}
 		}
+		apiSub.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet, "Waiting for ApiExposure to create the failover route for this zone"))
 		apiSub.SetCondition(condition.NewBlockedCondition("Waiting for ApiExposure to create the failover route for this zone"))
 		return nil, nil
 
@@ -433,6 +447,7 @@ func resolveRouteRef(ctx context.Context, scopedClient cclient.JanitorClient, ap
 				return proxyRoute, nil
 			}
 		}
+		apiSub.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet, "Waiting for ApiExposure to create the proxy route for this zone"))
 		apiSub.SetCondition(condition.NewBlockedCondition("Waiting for ApiExposure to create the proxy route for this zone"))
 		return nil, nil
 	}

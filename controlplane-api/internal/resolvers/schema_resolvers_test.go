@@ -6,6 +6,10 @@ package resolvers_test
 
 import (
 	"context"
+	"os"
+	"path/filepath"
+	"regexp"
+	"runtime"
 	"time"
 
 	"github.com/telekom/controlplane/controlplane-api/ent"
@@ -327,6 +331,24 @@ var _ = Describe("Approval ExpiresAt", func() {
 
 	AfterEach(func() {
 		client.Close()
+	})
+
+	It("should expose expiresAt in the GraphQL contract", func() {
+		_, thisFile, _, ok := runtime.Caller(0)
+		Expect(ok).To(BeTrue())
+		schemaPath := filepath.Join(filepath.Dir(thisFile), "..", "..", "ent.graphql")
+
+		data, err := os.ReadFile(schemaPath)
+		Expect(err).NotTo(HaveOccurred())
+		schema := string(data)
+
+		approvalBlock := regexp.MustCompile(`(?s)type Approval implements Node \{.*?\n\}`).FindString(schema)
+		approvalWhereBlock := regexp.MustCompile(`(?s)input ApprovalWhereInput \{.*?\n\}`).FindString(schema)
+
+		Expect(approvalBlock).To(MatchRegexp(`(?m)^  expiresAt: Time$`))
+		Expect(approvalWhereBlock).To(MatchRegexp(`(?m)^  expiresAtNEQ: Time$`))
+		Expect(approvalBlock).NotTo(ContainSubstring("expiresat"))
+		Expect(approvalWhereBlock).NotTo(ContainSubstring("expiresat"))
 	})
 
 	It("should persist and retrieve ExpiresAt", func() {

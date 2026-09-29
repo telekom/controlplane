@@ -6,6 +6,7 @@ package approvalrequest_test
 
 import (
 	"context"
+	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -67,7 +68,7 @@ var _ = Describe("ApprovalRequest Translator", func() {
 			}
 			skip, reason := t.ShouldSkip(obj)
 			Expect(skip).To(BeTrue())
-			Expect(reason).To(ContainSubstring("ApiSubscription or EventSubscription"))
+			Expect(reason).To(ContainSubstring("ApiSubscription, EventSubscription, FileSubscription or AgenticSubscription"))
 		})
 
 		It("should not skip a valid ApprovalRequest CR targeting ApiSubscription", func() {
@@ -104,6 +105,44 @@ var _ = Describe("ApprovalRequest Translator", func() {
 			Expect(skip).To(BeFalse())
 			Expect(reason).To(BeEmpty())
 		})
+
+		It("should not skip a valid ApprovalRequest CR targeting FileSubscription", func() {
+			cconfig.SetFeatureEnabled(cconfig.FeatureFile, true)
+			defer cconfig.SetFeatureEnabled(cconfig.FeatureFile, false)
+
+			obj := &approvalv1.ApprovalRequest{
+				Spec: approvalv1.ApprovalRequestSpec{
+					Action: "subscribe",
+					Target: ctypes.TypedObjectRef{
+						TypeMeta:  metav1.TypeMeta{Kind: "FileSubscription"},
+						ObjectRef: ctypes.ObjectRef{Name: "my-file-sub"},
+					},
+					Decider: approvalv1.Decider{TeamName: "some-team"},
+				},
+			}
+			skip, reason := t.ShouldSkip(obj)
+			Expect(skip).To(BeFalse())
+			Expect(reason).To(BeEmpty())
+		})
+
+		It("should skip FileSubscription target when file feature is disabled", func() {
+			cconfig.SetFeatureEnabled(cconfig.FeatureFile, false)
+
+			obj := &approvalv1.ApprovalRequest{
+				Spec: approvalv1.ApprovalRequestSpec{
+					Action: "subscribe",
+					Target: ctypes.TypedObjectRef{
+						TypeMeta:  metav1.TypeMeta{Kind: "FileSubscription"},
+						ObjectRef: ctypes.ObjectRef{Name: "my-file-sub"},
+					},
+					Decider: approvalv1.Decider{TeamName: "some-team"},
+				},
+			}
+			skip, reason := t.ShouldSkip(obj)
+			Expect(skip).To(BeTrue())
+			Expect(reason).To(ContainSubstring("file_subscription feature is disabled"))
+		})
+
 		It("should skip EventSubscription target when pubsub feature is disabled", func() {
 			cconfig.SetFeatureEnabled(cconfig.FeaturePubSub, false)
 
@@ -213,6 +252,7 @@ var _ = Describe("ApprovalRequest Translator", func() {
 
 		It("should populate all fields from the CR targeting ApiSubscription", func() {
 			reason := "need access"
+			decisionTime := metav1.NewTime(time.Date(2026, 7, 15, 12, 30, 45, 0, time.UTC))
 			obj := &approvalv1.ApprovalRequest{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "apisubscription--my-sub--abc123",
@@ -245,7 +285,14 @@ var _ = Describe("ApprovalRequest Translator", func() {
 						TeamEmail: "provider@example.com",
 					},
 					Decisions: []approvalv1.Decision{
-						{Name: "Alice", Email: "alice@example.com", Comment: "approved"},
+						{
+							Name:           "Alice",
+							Email:          "alice@example.com",
+							Comment:        "approved",
+							Timestamp:      &decisionTime,
+							ResultingState: approvalv1.ApprovalStateGranted,
+						},
+						{Name: "Bob"},
 					},
 				},
 				Status: approvalv1.ApprovalRequestStatus{
@@ -280,13 +327,20 @@ var _ = Describe("ApprovalRequest Translator", func() {
 			Expect(*data.Requester.ApplicationName).To(Equal("consumer-app"))
 			Expect(data.Decider.TeamName).To(Equal("provider-team"))
 			Expect(*data.Decider.TeamEmail).To(Equal("provider@example.com"))
-			Expect(data.Decisions).To(HaveLen(1))
+			Expect(data.Decisions).To(HaveLen(2))
 			Expect(data.Decisions[0].Name).To(Equal("Alice"))
 			Expect(*data.Decisions[0].Email).To(Equal("alice@example.com"))
 			Expect(*data.Decisions[0].Comment).To(Equal("approved"))
+			Expect(*data.Decisions[0].Timestamp).To(Equal("2026-07-15T12:30:45Z"))
+			Expect(*data.Decisions[0].ResultingState).To(Equal("GRANTED"))
+			Expect(data.Decisions[1].Name).To(Equal("Bob"))
+			Expect(data.Decisions[1].Email).To(BeNil())
+			Expect(data.Decisions[1].Comment).To(BeNil())
+			Expect(data.Decisions[1].Timestamp).To(BeNil())
+			Expect(data.Decisions[1].ResultingState).To(BeNil())
 			Expect(data.AvailableTransitions).To(HaveLen(1))
-			Expect(data.AvailableTransitions[0].Action).To(Equal("Deny"))
-			Expect(data.AvailableTransitions[0].ToState).To(Equal("Rejected"))
+			Expect(data.AvailableTransitions[0].Action).To(Equal("DENY"))
+			Expect(data.AvailableTransitions[0].ToState).To(Equal("REJECTED"))
 			Expect(data.SubscriptionNamespace).To(Equal("prod--platform--narvi"))
 			Expect(data.SubscriptionName).To(Equal("my-sub"))
 		})
@@ -321,6 +375,38 @@ var _ = Describe("ApprovalRequest Translator", func() {
 			Expect(data.TargetKind).To(Equal("EventSubscription"))
 			Expect(data.SubscriptionNamespace).To(Equal("prod--platform--narvi"))
 			Expect(data.SubscriptionName).To(Equal("my-event-sub"))
+		})
+
+		It("should set TargetKind to FileSubscription when target kind is FileSubscription", func() {
+			obj := &approvalv1.ApprovalRequest{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "filesubscription--my-file-sub--abc123",
+					Namespace: "prod--platform--narvi",
+					Labels: map[string]string{
+						"cp.ei.telekom.de/environment": "prod",
+					},
+				},
+				Spec: approvalv1.ApprovalRequestSpec{
+					Action:   "subscribe",
+					Strategy: approvalv1.ApprovalStrategySimple,
+					State:    approvalv1.ApprovalStatePending,
+					Target: ctypes.TypedObjectRef{
+						TypeMeta: metav1.TypeMeta{Kind: "FileSubscription"},
+						ObjectRef: ctypes.ObjectRef{
+							Namespace: "prod--platform--narvi",
+							Name:      "my-file-sub",
+						},
+					},
+					Requester: approvalv1.Requester{TeamName: "narvi"},
+					Decider:   approvalv1.Decider{TeamName: "provider"},
+				},
+			}
+
+			data, err := t.Translate(context.Background(), obj)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(data.TargetKind).To(Equal("FileSubscription"))
+			Expect(data.SubscriptionNamespace).To(Equal("prod--platform--narvi"))
+			Expect(data.SubscriptionName).To(Equal("my-file-sub"))
 		})
 
 		It("should fall back to own namespace when target namespace is empty", func() {

@@ -7,6 +7,7 @@ package in
 import (
 	"github.com/pkg/errors"
 	"github.com/telekom/controlplane/common/pkg/config"
+	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -27,10 +28,11 @@ func MapRequest(in *api.RoverUpdateRequest, id mapper.ResourceIdInfo) (res *rove
 			APIVersion: "rover.cp.ei.telekom.de/v1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      id.Name,
+			Name:      labelutil.NormalizeNameValue(id.Name),
 			Namespace: id.Environment + "--" + id.Namespace,
 			Labels: map[string]string{
-				config.EnvironmentLabelKey: id.Environment,
+				config.EnvironmentLabelKey:          labelutil.NormalizeLabelValue(id.Environment),
+				config.BuildLabelKey("application"): labelutil.NormalizeLabelValue(id.Name),
 			},
 		},
 		Spec: roverv1.RoverSpec{},

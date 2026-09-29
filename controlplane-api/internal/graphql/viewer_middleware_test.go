@@ -6,10 +6,18 @@ package graphql_test
 
 import (
 	"context"
+	"fmt"
+	"os"
+	"time"
 
+	"entgo.io/ent/dialect"
+	"entgo.io/ent/dialect/sql"
 	"github.com/99designs/gqlgen/graphql"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/stdlib"
 
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
+	"github.com/telekom/controlplane/common/pkg/util/emailutil"
 	"github.com/telekom/controlplane/controlplane-api/ent"
 	cpgraphql "github.com/telekom/controlplane/controlplane-api/internal/graphql"
 	"github.com/telekom/controlplane/controlplane-api/internal/testutil"
@@ -23,11 +31,27 @@ var _ = Describe("ViewerFromBusinessContext", func() {
 	var client *ent.Client
 
 	BeforeEach(func() {
-		client = testutil.NewTestClient(GinkgoT())
-	})
-
-	AfterEach(func() {
-		client.Close()
+		// Opt-in PostgreSQL runs use a fresh schema per spec, like the SQLite database.
+		url := os.Getenv("CP_TEST_POSTGRES_URL")
+		if url == "" {
+			client = testutil.NewTestClient(GinkgoT())
+			DeferCleanup(func() { Expect(client.Close()).To(Succeed()) })
+			return
+		}
+		cfg, err := pgx.ParseConfig(url)
+		Expect(err).NotTo(HaveOccurred())
+		schemaName := fmt.Sprintf("pr670_viewer_%d", time.Now().UnixNano())
+		cfg.RuntimeParams["search_path"] = schemaName
+		db := stdlib.OpenDB(*cfg)
+		DeferCleanup(func() { Expect(db.Close()).To(Succeed()) })
+		_, err = db.Exec("CREATE SCHEMA " + pgx.Identifier{schemaName}.Sanitize())
+		Expect(err).NotTo(HaveOccurred())
+		DeferCleanup(func() {
+			_, dropErr := db.Exec("DROP SCHEMA " + pgx.Identifier{schemaName}.Sanitize() + " CASCADE")
+			Expect(dropErr).NotTo(HaveOccurred())
+		})
+		client = ent.NewClient(ent.Driver(sql.OpenDB(dialect.Postgres, db)))
+		Expect(client.Schema.Create(context.Background())).To(Succeed())
 	})
 
 	// captureViewer invokes the middleware and returns the Viewer that was set in the context.
@@ -144,6 +168,71 @@ var _ = Describe("ViewerFromBusinessContext", func() {
 			Expect(v.Admin).To(BeFalse(), "admin should be overridden when user email is present")
 			Expect(v.Teams).To(ConsistOf("team-alpha"))
 		})
+
+		DescribeTable("matches lowercase equivalents across teams without granting unrelated access", func(storedEmail, requestEmail string) {
+			s := testutil.SeedStandard(client)
+			seedCtx := testutil.AllowContext()
+			_, err := client.Member.UpdateOne(s.MemberAlpha).SetEmail(storedEmail).Save(seedCtx)
+			Expect(err).NotTo(HaveOccurred())
+			_, err = client.Member.Create().SetName("Alice").SetEmail(storedEmail).SetTeam(s.TeamBeta).Save(seedCtx)
+			Expect(err).NotTo(HaveOccurred())
+			unrelated, err := client.Team.Create().SetNamespace("default").SetName("team-unrelated").
+				SetEmail("unrelated@test.dev").SetGroup(s.GroupA).Save(seedCtx)
+			Expect(err).NotTo(HaveOccurred())
+			_, err = client.Member.Create().SetName("Other Alice").SetEmail("alice.other@test.dev").SetTeam(unrelated).Save(seedCtx)
+			Expect(err).NotTo(HaveOccurred())
+
+			ctx := security.ToContext(context.Background(), &security.BusinessContext{
+				ClientType: security.ClientTypeAdmin,
+			})
+			ctx = viewer.NewForwardedUserContext(ctx, viewer.ForwardedUser{
+				Email: requestEmail,
+			})
+			v := captureViewer(ctx)
+			Expect(v).NotTo(BeNil())
+			Expect(v.Teams).To(ConsistOf("team-alpha", "team-beta"))
+			Expect(v.Admin).To(BeFalse())
+			Expect(v.UserEmail).To(Equal(requestEmail))
+			stored, err := client.Member.Get(seedCtx, s.MemberAlpha.ID)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(stored.Email).To(Equal(storedEmail))
+		},
+			Entry("ASCII", "alice@test.dev", "aLICE@tEST.dEV"),
+			Entry("Unicode", "üser@bücher.dev", "ÜSER@BÜCHER.DEV"),
+		)
+
+		DescribeTable("literal email membership matching",
+			func(email, nearMatch string) {
+				s := testutil.SeedStandard(client)
+				seedCtx := testutil.AllowContext()
+				_, err := client.Member.UpdateOne(s.MemberBeta).SetEmail(nearMatch).Save(seedCtx)
+				Expect(err).NotTo(HaveOccurred())
+				ctx := security.ToContext(context.Background(), &security.BusinessContext{
+					ClientType: security.ClientTypeAdmin,
+				})
+				ctx = viewer.NewForwardedUserContext(ctx, viewer.ForwardedUser{Email: email})
+				v := captureViewer(ctx)
+				Expect(v).NotTo(BeNil())
+				Expect(v.Teams).To(BeEmpty(), "near-matches must not grant membership")
+				Expect(v.Admin).To(BeFalse())
+				Expect(v.UserEmail).To(Equal(email))
+
+				_, err = client.Member.UpdateOne(s.MemberAlpha).SetEmail(emailutil.Canonicalize(email)).Save(seedCtx)
+				Expect(err).NotTo(HaveOccurred())
+				v = captureViewer(ctx)
+				Expect(v).NotTo(BeNil())
+				Expect(v.Teams).To(ConsistOf("team-alpha"))
+				Expect(v.Admin).To(BeFalse())
+				Expect(v.UserEmail).To(Equal(email))
+			},
+			Entry("percent", "A%ICE@TEST.DEV", "alice@test.dev"),
+			Entry("underscore", "AL_CE@TEST.DEV", "alice@test.dev"),
+			Entry("backslash", `"ALI\\CE"@TEST.DEV`, "alice@test.dev"),
+			Entry("quote", "O'NEIL@TEST.DEV", "oneil@test.dev"),
+			Entry("SQL-like input", `"' OR 1=1 --"@TEST.DEV`, "alice@test.dev"),
+			Entry("no full case folding", "STRASSE@TEST.DEV", "straße@test.dev"),
+			Entry("no Unicode normalization", "U\u0308SER@TEST.DEV", "üser@test.dev"),
+		)
 
 		It("should keep admin=true when ForwardedUser has IsAdmin=true", func() {
 			testutil.SeedStandard(client)

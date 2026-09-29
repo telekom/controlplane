@@ -227,7 +227,7 @@ func WithFailoverLabel() CreateConsumeRouteOption {
 }
 
 func MakeRouteName(apiBasePath string) string {
-	return labelutil.NormalizeValue(apiBasePath)
+	return labelutil.NormalizeNameValue(apiBasePath)
 }
 
 func CreateProxyRoute(ctx context.Context, downstreamZoneRef, upstreamZoneRef types.ObjectRef, apiBasePath string, opts ...CreateRouteOption) (*gatewayapi.Route, error) {
@@ -272,7 +272,7 @@ func CreateProxyRoute(ctx context.Context, downstreamZoneRef, upstreamZoneRef ty
 	mutate := func() error {
 		proxyRoute.Labels = map[string]string{
 			apiapi.BasePathLabelKey:      labelutil.NormalizeLabelValue(apiBasePath),
-			config.BuildLabelKey("zone"): labelutil.NormalizeValue(downstreamZone.GetName()),
+			config.BuildLabelKey("zone"): labelutil.NormalizeLabelValue(downstreamZone.GetName()),
 			config.BuildLabelKey("type"): "proxy",
 		}
 		if options.OwnerUID != "" {
@@ -553,7 +553,7 @@ func CreateRealRoute(ctx context.Context, downstreamZoneRef types.ObjectRef, api
 	mutator := func() error {
 		route.Labels = map[string]string{
 			apiapi.BasePathLabelKey:      labelutil.NormalizeLabelValue(apiExposure.Spec.ApiBasePath),
-			config.BuildLabelKey("zone"): labelutil.NormalizeValue(zone.Name),
+			config.BuildLabelKey("zone"): labelutil.NormalizeLabelValue(zone.Name),
 			config.BuildLabelKey("type"): "real",
 		}
 		if apiExposure.GetUID() != "" {
@@ -629,7 +629,7 @@ func CreateConsumeRoute(ctx context.Context, apiSub *apiapi.ApiSubscription, dow
 		opt(options)
 	}
 
-	name := downstreamZoneRef.Name + "--" + apiSub.GetName()
+	name := labelutil.NormalizeNameValue(downstreamZoneRef.Name + "--" + apiSub.GetName())
 	routeConsumer := &gatewayapi.ConsumeRoute{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,

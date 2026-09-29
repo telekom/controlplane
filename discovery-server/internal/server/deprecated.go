@@ -15,7 +15,7 @@ import (
 
 // registerDeprecatedRoutes registers all deprecated write endpoints.
 // They return HTTP 410 Gone with an RFC 7807 Problem body directing users to the Rover API.
-func (s *Server) registerDeprecatedRoutes(router fiber.Router, checkAccess fiber.Handler) {
+func (s *Server) registerDeprecatedRoutes(router fiber.Router, guard []fiber.Handler) {
 	s.Log.Info("Registering deprecated write routes (return 410 Gone)")
 
 	deprecatedHandler := func(c *fiber.Ctx) error {
@@ -28,33 +28,33 @@ func (s *Server) registerDeprecatedRoutes(router fiber.Router, checkAccess fiber
 	}
 
 	// Application write endpoints
-	router.Post("/applications", checkAccess, deprecatedHandler)
-	router.Put("/applications/:applicationId", checkAccess, deprecatedHandler)
-	router.Delete("/applications/:applicationId", checkAccess, deprecatedHandler)
+	router.Post("/applications", cserver.Guarded(guard, deprecatedHandler)...)
+	router.Put("/applications/:applicationId", cserver.Guarded(guard, deprecatedHandler)...)
+	router.Delete("/applications/:applicationId", cserver.Guarded(guard, deprecatedHandler)...)
 
 	// ApiExposure write endpoints
-	router.Post("/applications/:applicationId/apiexposures", checkAccess, deprecatedHandler)
-	router.Put("/applications/:applicationId/apiexposures/:apiExposureName", checkAccess, deprecatedHandler)
-	router.Delete("/applications/:applicationId/apiexposures/:apiExposureName", checkAccess, deprecatedHandler)
+	router.Post("/applications/:applicationId/apiexposures", cserver.Guarded(guard, deprecatedHandler)...)
+	router.Put("/applications/:applicationId/apiexposures/:apiExposureName", cserver.Guarded(guard, deprecatedHandler)...)
+	router.Delete("/applications/:applicationId/apiexposures/:apiExposureName", cserver.Guarded(guard, deprecatedHandler)...)
 
 	// ApiSubscription write endpoints
-	router.Post("/applications/:applicationId/apisubscriptions", checkAccess, deprecatedHandler)
-	router.Put("/applications/:applicationId/apisubscriptions/:apiSubscriptionName", checkAccess, deprecatedHandler)
-	router.Delete("/applications/:applicationId/apisubscriptions/:apiSubscriptionName", checkAccess, deprecatedHandler)
+	router.Post("/applications/:applicationId/apisubscriptions", cserver.Guarded(guard, deprecatedHandler)...)
+	router.Put("/applications/:applicationId/apisubscriptions/:apiSubscriptionName", cserver.Guarded(guard, deprecatedHandler)...)
+	router.Delete("/applications/:applicationId/apisubscriptions/:apiSubscriptionName", cserver.Guarded(guard, deprecatedHandler)...)
 
 	// ApiSubscription approve endpoint
-	router.Post("/applications/:applicationId/apisubscriptions/:apiSubscriptionName/approve", checkAccess, deprecatedHandler)
+	router.Post("/applications/:applicationId/apisubscriptions/:apiSubscriptionName/approve", cserver.Guarded(guard, deprecatedHandler)...)
 
 	// EventType write endpoints
-	router.Post("/eventtypes", checkAccess, deprecatedHandler)
+	router.Post("/eventtypes", cserver.Guarded(guard, deprecatedHandler)...)
 
 	// EventExposure write endpoints
-	router.Post("/applications/:applicationId/eventexposures", checkAccess, deprecatedHandler)
-	router.Put("/applications/:applicationId/eventexposures/:eventExposureName", checkAccess, deprecatedHandler)
-	router.Delete("/applications/:applicationId/eventexposures/:eventExposureName", checkAccess, deprecatedHandler)
+	router.Post("/applications/:applicationId/eventexposures", cserver.Guarded(guard, deprecatedHandler)...)
+	router.Put("/applications/:applicationId/eventexposures/:eventExposureName", cserver.Guarded(guard, deprecatedHandler)...)
+	router.Delete("/applications/:applicationId/eventexposures/:eventExposureName", cserver.Guarded(guard, deprecatedHandler)...)
 
 	// EventSubscription write endpoints
-	router.Post("/applications/:applicationId/eventsubscriptions", checkAccess, deprecatedHandler)
-	router.Put("/applications/:applicationId/eventsubscriptions/:eventSubscriptionName", checkAccess, deprecatedHandler)
-	router.Delete("/applications/:applicationId/eventsubscriptions/:eventSubscriptionName", checkAccess, deprecatedHandler)
+	router.Post("/applications/:applicationId/eventsubscriptions", cserver.Guarded(guard, deprecatedHandler)...)
+	router.Put("/applications/:applicationId/eventsubscriptions/:eventSubscriptionName", cserver.Guarded(guard, deprecatedHandler)...)
+	router.Delete("/applications/:applicationId/eventsubscriptions/:eventSubscriptionName", cserver.Guarded(guard, deprecatedHandler)...)
 }

@@ -5,11 +5,16 @@
 package in
 
 import (
+	"strings"
+
 	"github.com/gkampitakis/go-snaps/snaps"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/rover-server/internal/api"
+	"github.com/telekom/controlplane/rover-server/internal/mapper"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
+	"k8s.io/apimachinery/pkg/util/validation"
 )
 
 var _ = Describe("Rover Mapper", func() {
@@ -222,6 +227,75 @@ var _ = Describe("Rover Mapper", func() {
 	})
 
 	Context("MapRequest", func() {
+		DescribeTable("normalizes names and application labels at Kubernetes length boundaries",
+			func(length int) {
+				name := strings.Repeat("a", length)
+				id := mapper.ResourceIdInfo{Name: name, Environment: "poc", Namespace: "eni--hyperion"}
+				request := &api.RoverUpdateRequest{Zone: "zone"}
+
+				output, err := MapRequest(request, id)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(validation.IsDNS1123Subdomain(output.Name)).To(BeEmpty())
+				Expect(output.Namespace).To(Equal("poc--eni--hyperion"))
+				if length <= 253 {
+					Expect(output.Name).To(Equal(name))
+				} else {
+					Expect(output.Name).NotTo(Equal(name))
+				}
+
+				label := output.Labels[config.BuildLabelKey("application")]
+				Expect(label).NotTo(BeEmpty())
+				Expect(validation.IsValidLabelValue(label)).To(BeEmpty())
+				if length <= 63 {
+					Expect(label).To(Equal(name))
+				} else {
+					Expect(label).NotTo(Equal(name))
+				}
+
+				repeated, err := MapRequest(request, id)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(repeated.ObjectMeta).To(Equal(output.ObjectMeta))
+			},
+			Entry("at the label limit", 63),
+			Entry("above the label limit", 64),
+			Entry("at the API name limit", 90),
+			Entry("at the Kubernetes name limit", 253),
+			Entry("above the Kubernetes name limit", 254),
+		)
+
+		It("normalizes name and environment characters", func() {
+			id := mapper.ResourceIdInfo{Name: "--My_Rover/Name--", Environment: "--My_Env--", Namespace: "eni--hyperion"}
+			output, err := MapRequest(&api.RoverUpdateRequest{Zone: "zone"}, id)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(output.Name).To(Equal("my-rover-name"))
+			Expect(output.Labels).To(HaveKeyWithValue(config.BuildLabelKey("application"), "my-rover-name"))
+			Expect(output.Labels).To(HaveKeyWithValue(config.EnvironmentLabelKey, "my-env"))
+		})
+
+		It("shortens an oversized environment label", func() {
+			id := mapper.ResourceIdInfo{Name: "rover", Environment: strings.Repeat("e", 64), Namespace: "eni--hyperion"}
+			output, err := MapRequest(&api.RoverUpdateRequest{Zone: "zone"}, id)
+			Expect(err).NotTo(HaveOccurred())
+			label := output.Labels[config.EnvironmentLabelKey]
+			Expect(label).NotTo(BeEmpty())
+			Expect(validation.IsValidLabelValue(label)).To(BeEmpty())
+		})
+
+		It("keeps oversized names distinct when only their middle differs", func() {
+			id := mapper.ResourceIdInfo{
+				Name:        strings.Repeat("a", 127) + "b" + strings.Repeat("z", 127),
+				Environment: "poc", Namespace: "eni--hyperion",
+			}
+			request := &api.RoverUpdateRequest{Zone: "zone"}
+			first, err := MapRequest(request, id)
+			Expect(err).NotTo(HaveOccurred())
+			id.Name = strings.Repeat("a", 127) + "c" + strings.Repeat("z", 127)
+			second, err := MapRequest(request, id)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(first.Name).NotTo(Equal(second.Name))
+			Expect(first.Labels[config.BuildLabelKey("application")]).NotTo(Equal(second.Labels[config.BuildLabelKey("application")]))
+		})
+
 		It("must map a RoverUpdateRequest to a Rover correctly", func() {
 			output, err := MapRequest(roverUpdateRequest, resourceIdInfo)
 

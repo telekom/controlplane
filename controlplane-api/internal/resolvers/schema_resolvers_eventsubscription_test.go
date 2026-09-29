@@ -128,7 +128,7 @@ var _ = Describe("EventSubscription resolver", func() {
 
 	Describe("EventSubscriptionInfo.DeliveryType resolver", func() {
 		It("should convert CALLBACK string to DeliveryType enum", func() {
-			dt, err := r.EventSubscriptionInfo().DeliveryType(context.Background(), &model.EventSubscriptionInfo{
+			dt, err := r.EventSubscriptionInfo().DeliveryType(context.Background(), &gqlmodel.EventSubscriptionInfo{
 				DeliveryType: "CALLBACK",
 			})
 			Expect(err).NotTo(HaveOccurred())
@@ -136,7 +136,7 @@ var _ = Describe("EventSubscription resolver", func() {
 		})
 
 		It("should convert SERVER_SENT_EVENT string to DeliveryType enum", func() {
-			dt, err := r.EventSubscriptionInfo().DeliveryType(context.Background(), &model.EventSubscriptionInfo{
+			dt, err := r.EventSubscriptionInfo().DeliveryType(context.Background(), &gqlmodel.EventSubscriptionInfo{
 				DeliveryType: "SERVER_SENT_EVENT",
 			})
 			Expect(err).NotTo(HaveOccurred())
@@ -147,7 +147,7 @@ var _ = Describe("EventSubscription resolver", func() {
 	Describe("EventSubscriptionInfo.StatusPhase resolver", func() {
 		It("should convert READY string to StatusPhase enum", func() {
 			phase := "READY"
-			sp, err := r.EventSubscriptionInfo().StatusPhase(context.Background(), &model.EventSubscriptionInfo{
+			sp, err := r.EventSubscriptionInfo().StatusPhase(context.Background(), &gqlmodel.EventSubscriptionInfo{
 				StatusPhase: &phase,
 			})
 			Expect(err).NotTo(HaveOccurred())
@@ -156,7 +156,7 @@ var _ = Describe("EventSubscription resolver", func() {
 		})
 
 		It("should return nil for nil StatusPhase", func() {
-			sp, err := r.EventSubscriptionInfo().StatusPhase(context.Background(), &model.EventSubscriptionInfo{
+			sp, err := r.EventSubscriptionInfo().StatusPhase(context.Background(), &gqlmodel.EventSubscriptionInfo{
 				StatusPhase: nil,
 			})
 			Expect(err).NotTo(HaveOccurred())

@@ -22,8 +22,10 @@ import (
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
+	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
 	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/event/internal/controller"
+	"github.com/telekom/controlplane/event/internal/handler/util"
 	"github.com/telekom/controlplane/event/internal/index"
 	webhookv1 "github.com/telekom/controlplane/event/internal/webhook/v1"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
@@ -150,7 +152,7 @@ func main() {
 	}
 
 	selector := labels.NewSelector()
-	requirement, err := labels.NewRequirement(config.DomainLabelKey, selection.In, []string{"event"})
+	requirement, err := labels.NewRequirement(config.DomainLabelKey, selection.In, []string{util.LabelValueDomain})
 	if err != nil {
 		setupLog.Error(err, "unable to create label requirement")
 		os.Exit(1)
@@ -170,6 +172,12 @@ func main() {
 					Label: selector,
 				},
 				&identityv1.Client{}: {
+					Label: selector,
+				},
+				&approvalv1.ApprovalRequest{}: {
+					Label: selector,
+				},
+				&approvalv1.Approval{}: {
 					Label: selector,
 				},
 			},

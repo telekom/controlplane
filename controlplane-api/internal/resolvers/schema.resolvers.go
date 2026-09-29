@@ -15,16 +15,172 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/telekom/controlplane/controlplane-api/ent"
+	"github.com/telekom/controlplane/controlplane-api/ent/agenticexposure"
+	"github.com/telekom/controlplane/controlplane-api/ent/agenticsubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/api"
 	"github.com/telekom/controlplane/controlplane-api/ent/apiexposure"
 	"github.com/telekom/controlplane/controlplane-api/ent/apisubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/approval"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventexposure"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventsubscription"
+	"github.com/telekom/controlplane/controlplane-api/ent/fileexposure"
+	"github.com/telekom/controlplane/controlplane-api/ent/filesubscription"
 	gqlmodel "github.com/telekom/controlplane/controlplane-api/internal/resolvers/model"
 	"github.com/telekom/controlplane/controlplane-api/internal/viewer"
 	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 )
+
+// SpecificationURL is the resolver for the specificationUrl field.
+func (r *agentCardResolver) SpecificationURL(ctx context.Context, obj *ent.AgentCard) (*string, error) {
+	return r.buildSpecificationURL(obj.Specification)
+}
+
+// ActiveExposure is the resolver for the activeExposure field.
+// Returns the active exposure for this agent card, or nil if none is active.
+func (r *agentCardResolver) ActiveExposure(ctx context.Context, obj *ent.AgentCard) (*gqlmodel.AgenticExposureInfo, error) {
+	// SystemContext: The exposure may belong to another tenant; privacy rules would
+	// block the cross-tenant traversal. We return a reduced Info type to limit exposure.
+	sysCtx := viewer.SystemContext(ctx)
+	exp, err := obj.QueryExposures().
+		Where(agenticexposure.Active(true)).
+		WithOwner(func(q *ent.ApplicationQuery) {
+			q.WithZone()
+			q.WithOwnerTeam(func(q *ent.TeamQuery) {
+				q.WithGroup()
+			})
+		}).
+		Only(sysCtx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("loading active exposure for agent card %d: %w", obj.ID, err)
+	}
+
+	app := exp.Edges.Owner
+	zone, zoneErr := app.Edges.ZoneOrErr()
+	if zoneErr != nil {
+		return nil, fmt.Errorf("loading zone edge for application %d: %w", app.ID, zoneErr)
+	}
+	team := app.Edges.OwnerTeam
+	group, groupErr := team.Edges.GroupOrErr()
+	if groupErr != nil {
+		if !ent.IsNotFound(groupErr) && !ent.IsNotLoaded(groupErr) {
+			return nil, fmt.Errorf("loading group edge for team %d: %w", team.ID, groupErr)
+		}
+		group = nil
+	}
+	return mapAgenticExposureInfo(exp, app, zone, team, group), nil
+}
+
+// Owner is the resolver for the owner field.
+func (r *agentCardResolver) Owner(ctx context.Context, obj *ent.AgentCard) (*model.TeamInfo, error) {
+	// SystemContext: The owning team may belong to a different tenant than the
+	// querying viewer. We return a reduced TeamInfo type to limit exposure.
+	sysCtx := viewer.SystemContext(ctx)
+	log := logr.FromContextOrDiscard(ctx)
+
+	team, err := obj.Edges.OwnerOrErr()
+	if ent.IsNotLoaded(err) {
+		team, err = obj.QueryOwner().Only(sysCtx)
+	}
+	if err != nil {
+		log.Info("Failed to resolve owner team for agent card",
+			"agentCardID", obj.ID, "namespace", obj.Namespace, "basePath", obj.BasePath, "error", err)
+		return nil, fmt.Errorf("resolving owner team for agent card %d: %w", obj.ID, err)
+	}
+
+	group, err := team.Edges.GroupOrErr()
+	if ent.IsNotLoaded(err) {
+		group, err = team.QueryGroup().Only(sysCtx)
+	}
+	if err != nil && !ent.IsNotFound(err) {
+		return nil, fmt.Errorf("loading group for team %d: %w", team.ID, err)
+	}
+	if ent.IsNotFound(err) {
+		group = nil
+	}
+
+	return mapTeamInfo(team, group), nil
+}
+
+// Subscriptions is the resolver for the subscriptions field.
+// Returns reduced AgenticSubscriptionInfo types for cross-tenant safety.
+func (r *agenticExposureResolver) Subscriptions(ctx context.Context, obj *ent.AgenticExposure) ([]*gqlmodel.AgenticSubscriptionInfo, error) {
+	// SystemContext: Subscriptions belong to other tenants; privacy rules would
+	// block the cross-tenant traversal. We return a reduced Info type to limit exposure.
+	sysCtx := viewer.SystemContext(ctx)
+	subs, err := obj.QuerySubscriptions().
+		WithOwner(func(q *ent.ApplicationQuery) {
+			q.WithZone()
+			q.WithOwnerTeam(func(q *ent.TeamQuery) {
+				q.WithGroup()
+			})
+		}).
+		All(sysCtx)
+	if err != nil {
+		return nil, fmt.Errorf("loading subscriptions for agentic exposure %d: %w", obj.ID, err)
+	}
+
+	result := make([]*gqlmodel.AgenticSubscriptionInfo, len(subs))
+	for i, sub := range subs {
+		app := sub.Edges.Owner
+		zone, zoneErr := app.Edges.ZoneOrErr()
+		if zoneErr != nil {
+			return nil, fmt.Errorf("loading zone edge for application %d: %w", app.ID, zoneErr)
+		}
+		team := app.Edges.OwnerTeam
+		group, groupErr := team.Edges.GroupOrErr()
+		if groupErr != nil {
+			if !ent.IsNotFound(groupErr) && !ent.IsNotLoaded(groupErr) {
+				return nil, fmt.Errorf("loading group edge for team %d: %w", team.ID, groupErr)
+			}
+			group = nil
+		}
+		result[i] = mapAgenticSubscriptionInfo(sub, app, zone, team, group)
+	}
+	return result, nil
+}
+
+// Visibility is the resolver for the visibility field.
+func (r *agenticExposureInfoResolver) Visibility(ctx context.Context, obj *gqlmodel.AgenticExposureInfo) (agenticexposure.Visibility, error) {
+	return agenticexposure.Visibility(obj.Visibility), nil
+}
+
+// Variant is the resolver for the variant field.
+func (r *agenticExposureInfoResolver) Variant(ctx context.Context, obj *gqlmodel.AgenticExposureInfo) (agenticexposure.Variant, error) {
+	return agenticexposure.Variant(obj.Variant), nil
+}
+
+// Target is the resolver for the target field.
+// Returns reduced AgenticExposureInfo type for cross-tenant safety.
+func (r *agenticSubscriptionResolver) Target(ctx context.Context, obj *ent.AgenticSubscription) (*gqlmodel.AgenticExposureInfo, error) {
+	// SystemContext: The target exposure belongs to another tenant; privacy rules
+	// would block this traversal. We return a reduced Info type to limit exposure.
+	sysCtx := viewer.SystemContext(ctx)
+
+	exposure, err := obj.Edges.TargetOrErr()
+	if ent.IsNotLoaded(err) {
+		exposure, err = obj.QueryTarget().Only(sysCtx)
+	}
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("loading target for agentic subscription %d: %w", obj.ID, err)
+	}
+
+	return loadAgenticExposureInfo(sysCtx, exposure)
+}
+
+// StatusPhase is the resolver for the statusPhase field.
+func (r *agenticSubscriptionInfoResolver) StatusPhase(ctx context.Context, obj *gqlmodel.AgenticSubscriptionInfo) (*agenticsubscription.StatusPhase, error) {
+	if obj.StatusPhase == nil {
+		return nil, nil
+	}
+	s := agenticsubscription.StatusPhase(*obj.StatusPhase)
+	return &s, nil
+}
 
 // SpecificationURL is the resolver for the specificationUrl field.
 func (r *apiResolver) SpecificationURL(ctx context.Context, obj *ent.Api) (*string, error) {
@@ -33,13 +189,14 @@ func (r *apiResolver) SpecificationURL(ctx context.Context, obj *ent.Api) (*stri
 
 // ActiveExposure is the resolver for the activeExposure field.
 // Returns the active exposure for this API, or nil if none is active.
-func (r *apiResolver) ActiveExposure(ctx context.Context, obj *ent.Api) (*model.ApiExposureInfo, error) {
+func (r *apiResolver) ActiveExposure(ctx context.Context, obj *ent.Api) (*gqlmodel.ApiExposureInfo, error) {
 	// SystemContext: The exposure may belong to another tenant; privacy rules would
 	// block the cross-tenant traversal. We return a reduced Info type to limit exposure.
 	sysCtx := viewer.SystemContext(ctx)
 	exp, err := obj.QueryExposures().
 		Where(apiexposure.Active(true)).
 		WithOwner(func(q *ent.ApplicationQuery) {
+			q.WithZone()
 			q.WithOwnerTeam(func(q *ent.TeamQuery) {
 				q.WithGroup()
 			})
@@ -53,6 +210,10 @@ func (r *apiResolver) ActiveExposure(ctx context.Context, obj *ent.Api) (*model.
 	}
 
 	app := exp.Edges.Owner
+	zone, zoneErr := app.Edges.ZoneOrErr()
+	if zoneErr != nil {
+		return nil, fmt.Errorf("loading zone edge for application %d: %w", app.ID, zoneErr)
+	}
 	team := app.Edges.OwnerTeam
 	group, groupErr := team.Edges.GroupOrErr()
 	if groupErr != nil {
@@ -61,7 +222,7 @@ func (r *apiResolver) ActiveExposure(ctx context.Context, obj *ent.Api) (*model.
 		}
 		group = nil
 	}
-	return mapApiExposureInfo(exp, app, team, group), nil
+	return mapApiExposureInfo(exp, app, zone, team, group), nil
 }
 
 // Owner is the resolver for the owner field.
@@ -97,12 +258,13 @@ func (r *apiResolver) Owner(ctx context.Context, obj *ent.Api) (*model.TeamInfo,
 
 // Subscriptions is the resolver for the subscriptions field.
 // Returns reduced ApiSubscriptionInfo types for cross-tenant safety.
-func (r *apiExposureResolver) Subscriptions(ctx context.Context, obj *ent.ApiExposure) ([]*model.ApiSubscriptionInfo, error) {
+func (r *apiExposureResolver) Subscriptions(ctx context.Context, obj *ent.ApiExposure) ([]*gqlmodel.ApiSubscriptionInfo, error) {
 	// SystemContext: Subscriptions belong to other tenants; privacy rules would
 	// block the cross-tenant traversal. We return a reduced Info type to limit exposure.
 	sysCtx := viewer.SystemContext(ctx)
 	subs, err := obj.QuerySubscriptions().
 		WithOwner(func(q *ent.ApplicationQuery) {
+			q.WithZone()
 			q.WithOwnerTeam(func(q *ent.TeamQuery) {
 				q.WithGroup()
 			})
@@ -112,9 +274,13 @@ func (r *apiExposureResolver) Subscriptions(ctx context.Context, obj *ent.ApiExp
 		return nil, fmt.Errorf("loading subscriptions for api exposure %d: %w", obj.ID, err)
 	}
 
-	result := make([]*model.ApiSubscriptionInfo, len(subs))
+	result := make([]*gqlmodel.ApiSubscriptionInfo, len(subs))
 	for i, sub := range subs {
 		app := sub.Edges.Owner
+		zone, zoneErr := app.Edges.ZoneOrErr()
+		if zoneErr != nil {
+			return nil, fmt.Errorf("loading zone edge for application %d: %w", app.ID, zoneErr)
+		}
 		team := app.Edges.OwnerTeam
 		group, groupErr := team.Edges.GroupOrErr()
 		if groupErr != nil {
@@ -123,18 +289,18 @@ func (r *apiExposureResolver) Subscriptions(ctx context.Context, obj *ent.ApiExp
 			}
 			group = nil
 		}
-		result[i] = mapApiSubscriptionInfo(sub, app, team, group)
+		result[i] = mapApiSubscriptionInfo(sub, app, zone, team, group)
 	}
 	return result, nil
 }
 
 // Visibility is the resolver for the visibility field.
-func (r *apiExposureInfoResolver) Visibility(ctx context.Context, obj *model.ApiExposureInfo) (apiexposure.Visibility, error) {
+func (r *apiExposureInfoResolver) Visibility(ctx context.Context, obj *gqlmodel.ApiExposureInfo) (apiexposure.Visibility, error) {
 	return apiexposure.Visibility(obj.Visibility), nil
 }
 
 // Features is the resolver for the features field.
-func (r *apiExposureInfoResolver) Features(ctx context.Context, obj *model.ApiExposureInfo) ([]gqlmodel.APIExposureFeature, error) {
+func (r *apiExposureInfoResolver) Features(ctx context.Context, obj *gqlmodel.ApiExposureInfo) ([]gqlmodel.APIExposureFeature, error) {
 	result := make([]gqlmodel.APIExposureFeature, len(obj.Features))
 	for i, f := range obj.Features {
 		result[i] = gqlmodel.APIExposureFeature(f)
@@ -144,7 +310,7 @@ func (r *apiExposureInfoResolver) Features(ctx context.Context, obj *model.ApiEx
 
 // Target is the resolver for the target field.
 // Returns reduced ApiExposureInfo type for cross-tenant safety.
-func (r *apiSubscriptionResolver) Target(ctx context.Context, obj *ent.ApiSubscription) (*model.ApiExposureInfo, error) {
+func (r *apiSubscriptionResolver) Target(ctx context.Context, obj *ent.ApiSubscription) (*gqlmodel.ApiExposureInfo, error) {
 	// SystemContext: The target exposure belongs to another tenant; privacy rules
 	// would block this traversal. We return a reduced Info type to limit exposure.
 	sysCtx := viewer.SystemContext(ctx)
@@ -154,6 +320,9 @@ func (r *apiSubscriptionResolver) Target(ctx context.Context, obj *ent.ApiSubscr
 		exposure, err = obj.QueryTarget().Only(sysCtx)
 	}
 	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, nil
+		}
 		return nil, fmt.Errorf("loading target for api subscription %d: %w", obj.ID, err)
 	}
 
@@ -161,7 +330,7 @@ func (r *apiSubscriptionResolver) Target(ctx context.Context, obj *ent.ApiSubscr
 }
 
 // StatusPhase is the resolver for the statusPhase field.
-func (r *apiSubscriptionInfoResolver) StatusPhase(ctx context.Context, obj *model.ApiSubscriptionInfo) (*apisubscription.StatusPhase, error) {
+func (r *apiSubscriptionInfoResolver) StatusPhase(ctx context.Context, obj *gqlmodel.ApiSubscriptionInfo) (*apisubscription.StatusPhase, error) {
 	if obj.StatusPhase == nil {
 		return nil, nil
 	}
@@ -197,7 +366,7 @@ func (r *applicationResolver) OwnerTeam(ctx context.Context, obj *ent.Applicatio
 }
 
 // Subscription is the resolver for the subscription field.
-// Returns the related subscription as a SubscriptionInfo union (ApiSubscriptionInfo or EventSubscriptionInfo).
+// Returns the related API, event, agentic, or file subscription as SubscriptionInfo.
 func (r *approvalResolver) Subscription(ctx context.Context, obj *ent.Approval) (gqlmodel.SubscriptionInfo, error) {
 	// SystemContext: The subscription belongs to the requesting tenant, but the
 	// traversal path (approval → subscription → owner) crosses privacy boundaries.
@@ -228,6 +397,30 @@ func (r *approvalResolver) Subscription(ctx context.Context, obj *ent.Approval) 
 		return loadEventSubscriptionInfo(sysCtx, eventSub)
 	}
 
+	// Fall back to agentic subscription.
+	agenticSub, err := obj.Edges.AgenticSubscriptionOrErr()
+	if ent.IsNotLoaded(err) {
+		agenticSub, err = obj.QueryAgenticSubscription().Only(sysCtx)
+	}
+	if err != nil && !ent.IsNotFound(err) {
+		return nil, fmt.Errorf("loading agentic subscription for approval %d: %w", obj.ID, err)
+	}
+	if agenticSub != nil {
+		return loadAgenticSubscriptionInfo(sysCtx, agenticSub)
+	}
+
+	// Fall back to file subscription.
+	fileSub, err := obj.Edges.FileSubscriptionOrErr()
+	if ent.IsNotLoaded(err) {
+		fileSub, err = obj.QueryFileSubscription().Only(sysCtx)
+	}
+	if err != nil && !ent.IsNotFound(err) {
+		return nil, fmt.Errorf("loading file subscription for approval %d: %w", obj.ID, err)
+	}
+	if fileSub != nil {
+		return loadFileSubscriptionInfo(sysCtx, fileSub)
+	}
+
 	return nil, fmt.Errorf("approval %d has no related subscription", obj.ID)
 }
 
@@ -237,7 +430,7 @@ func (r *approvalConfigResolver) Strategy(ctx context.Context, obj *model.Approv
 }
 
 // Subscription is the resolver for the subscription field.
-// Returns the related subscription as a SubscriptionInfo union (ApiSubscriptionInfo or EventSubscriptionInfo).
+// Returns the related API, event, agentic, or file subscription as SubscriptionInfo.
 func (r *approvalRequestResolver) Subscription(ctx context.Context, obj *ent.ApprovalRequest) (gqlmodel.SubscriptionInfo, error) {
 	// SystemContext: Same rationale as approvalResolver.Subscription — the traversal
 	// path crosses privacy boundaries; reduced Info types limit exposure.
@@ -268,23 +461,49 @@ func (r *approvalRequestResolver) Subscription(ctx context.Context, obj *ent.App
 		return loadEventSubscriptionInfo(sysCtx, eventSub)
 	}
 
+	// Fall back to agentic subscription.
+	agenticSub, err := obj.Edges.AgenticSubscriptionOrErr()
+	if ent.IsNotLoaded(err) {
+		agenticSub, err = obj.QueryAgenticSubscription().Only(sysCtx)
+	}
+	if err != nil && !ent.IsNotFound(err) {
+		return nil, fmt.Errorf("loading agentic subscription for approval request %d: %w", obj.ID, err)
+	}
+	if agenticSub != nil {
+		return loadAgenticSubscriptionInfo(sysCtx, agenticSub)
+	}
+
+	// Fall back to file subscription.
+	fileSub, err := obj.Edges.FileSubscriptionOrErr()
+	if ent.IsNotLoaded(err) {
+		fileSub, err = obj.QueryFileSubscription().Only(sysCtx)
+	}
+	if err != nil && !ent.IsNotFound(err) {
+		return nil, fmt.Errorf("loading file subscription for approval request %d: %w", obj.ID, err)
+	}
+	if fileSub != nil {
+		return loadFileSubscriptionInfo(sysCtx, fileSub)
+	}
+
 	return nil, fmt.Errorf("approval request %d has no related subscription", obj.ID)
 }
 
 // Approval is the resolver for the approval field.
-// Traverses ApprovalRequest → ApiSubscription/EventSubscription → Approval.
+// Traverses ApprovalRequest → subscription → Approval.
 // Returns nil if no Approval exists yet (request not decided).
 func (r *approvalRequestResolver) Approval(ctx context.Context, obj *ent.ApprovalRequest) (*ent.Approval, error) {
+	sysCtx := viewer.SystemContext(ctx)
+
 	// Try API subscription path first.
 	apiSub, err := obj.Edges.APISubscriptionOrErr()
 	if ent.IsNotLoaded(err) {
-		apiSub, err = obj.QueryAPISubscription().Only(ctx)
+		apiSub, err = obj.QueryAPISubscription().Only(sysCtx)
 	}
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, fmt.Errorf("loading api subscription for approval request %d: %w", obj.ID, err)
 	}
 	if apiSub != nil {
-		appr, err := apiSub.QueryApproval().Only(ctx)
+		appr, err := apiSub.QueryApproval().Only(sysCtx)
 		if err != nil {
 			if ent.IsNotFound(err) {
 				return nil, nil
@@ -297,21 +516,60 @@ func (r *approvalRequestResolver) Approval(ctx context.Context, obj *ent.Approva
 	// Fall back to event subscription path.
 	eventSub, err := obj.Edges.EventSubscriptionOrErr()
 	if ent.IsNotLoaded(err) {
-		eventSub, err = obj.QueryEventSubscription().Only(ctx)
+		eventSub, err = obj.QueryEventSubscription().Only(sysCtx)
 	}
-	if err != nil {
-		if ent.IsNotFound(err) {
-			return nil, nil
-		}
+	if err != nil && !ent.IsNotFound(err) {
 		return nil, fmt.Errorf("loading event subscription for approval request %d: %w", obj.ID, err)
 	}
+	if eventSub != nil {
+		appr, err := eventSub.QueryApproval().Only(sysCtx)
+		if err != nil {
+			if ent.IsNotFound(err) {
+				return nil, nil
+			}
+			return nil, fmt.Errorf("loading approval for event subscription %d: %w", eventSub.ID, err)
+		}
+		return appr, nil
+	}
 
-	appr, err := eventSub.QueryApproval().Only(ctx)
+	// Fall back to agentic subscription path.
+	agenticSub, err := obj.Edges.AgenticSubscriptionOrErr()
+	if ent.IsNotLoaded(err) {
+		agenticSub, err = obj.QueryAgenticSubscription().Only(sysCtx)
+	}
+	if err != nil && !ent.IsNotFound(err) {
+		return nil, fmt.Errorf("loading agentic subscription for approval request %d: %w", obj.ID, err)
+	}
+
+	if agenticSub != nil {
+		appr, err := agenticSub.QueryApproval().Only(sysCtx)
+		if err != nil {
+			if ent.IsNotFound(err) {
+				return nil, nil
+			}
+			return nil, fmt.Errorf("loading approval for agentic subscription %d: %w", agenticSub.ID, err)
+		}
+		return appr, nil
+	}
+
+	// Fall back to file subscription path.
+	fileSub, err := obj.Edges.FileSubscriptionOrErr()
+	if ent.IsNotLoaded(err) {
+		fileSub, err = obj.QueryFileSubscription().Only(sysCtx)
+	}
 	if err != nil {
 		if ent.IsNotFound(err) {
 			return nil, nil
 		}
-		return nil, fmt.Errorf("loading approval for event subscription %d: %w", eventSub.ID, err)
+		return nil, fmt.Errorf("loading file subscription for approval request %d: %w", obj.ID, err)
+	}
+
+	appr, err := fileSub.QueryApproval().Only(sysCtx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("loading approval for file subscription %d: %w", fileSub.ID, err)
 	}
 	return appr, nil
 }
@@ -354,12 +612,13 @@ func (r *eventDeliveryResolver) Payload(ctx context.Context, obj *model.EventDel
 
 // Subscriptions is the resolver for the subscriptions field.
 // Returns reduced EventSubscriptionInfo types for cross-tenant safety.
-func (r *eventExposureResolver) Subscriptions(ctx context.Context, obj *ent.EventExposure) ([]*model.EventSubscriptionInfo, error) {
+func (r *eventExposureResolver) Subscriptions(ctx context.Context, obj *ent.EventExposure) ([]*gqlmodel.EventSubscriptionInfo, error) {
 	// SystemContext: Subscriptions belong to other tenants; privacy rules would
 	// block the cross-tenant traversal. We return a reduced Info type to limit exposure.
 	sysCtx := viewer.SystemContext(ctx)
 	subs, err := obj.QuerySubscriptions().
 		WithOwner(func(q *ent.ApplicationQuery) {
+			q.WithZone()
 			q.WithOwnerTeam(func(q *ent.TeamQuery) {
 				q.WithGroup()
 			})
@@ -369,9 +628,13 @@ func (r *eventExposureResolver) Subscriptions(ctx context.Context, obj *ent.Even
 		return nil, fmt.Errorf("loading subscriptions for event exposure %d: %w", obj.ID, err)
 	}
 
-	result := make([]*model.EventSubscriptionInfo, len(subs))
+	result := make([]*gqlmodel.EventSubscriptionInfo, len(subs))
 	for i, sub := range subs {
 		app := sub.Edges.Owner
+		zone, zoneErr := app.Edges.ZoneOrErr()
+		if zoneErr != nil {
+			return nil, fmt.Errorf("loading zone edge for application %d: %w", app.ID, zoneErr)
+		}
 		team := app.Edges.OwnerTeam
 		group, groupErr := team.Edges.GroupOrErr()
 		if groupErr != nil {
@@ -380,19 +643,19 @@ func (r *eventExposureResolver) Subscriptions(ctx context.Context, obj *ent.Even
 			}
 			group = nil
 		}
-		result[i] = mapEventSubscriptionInfo(sub, app, team, group)
+		result[i] = mapEventSubscriptionInfo(sub, app, zone, team, group)
 	}
 	return result, nil
 }
 
 // Visibility is the resolver for the visibility field.
-func (r *eventExposureInfoResolver) Visibility(ctx context.Context, obj *model.EventExposureInfo) (eventexposure.Visibility, error) {
+func (r *eventExposureInfoResolver) Visibility(ctx context.Context, obj *gqlmodel.EventExposureInfo) (eventexposure.Visibility, error) {
 	return eventexposure.Visibility(obj.Visibility), nil
 }
 
 // Target is the resolver for the target field.
 // Returns reduced EventExposureInfo type for cross-tenant safety.
-func (r *eventSubscriptionResolver) Target(ctx context.Context, obj *ent.EventSubscription) (*model.EventExposureInfo, error) {
+func (r *eventSubscriptionResolver) Target(ctx context.Context, obj *ent.EventSubscription) (*gqlmodel.EventExposureInfo, error) {
 	// SystemContext: The target exposure belongs to another tenant; privacy rules
 	// would block this traversal. We return a reduced Info type to limit exposure.
 	sysCtx := viewer.SystemContext(ctx)
@@ -409,12 +672,12 @@ func (r *eventSubscriptionResolver) Target(ctx context.Context, obj *ent.EventSu
 }
 
 // DeliveryType is the resolver for the deliveryType field.
-func (r *eventSubscriptionInfoResolver) DeliveryType(ctx context.Context, obj *model.EventSubscriptionInfo) (eventsubscription.DeliveryType, error) {
+func (r *eventSubscriptionInfoResolver) DeliveryType(ctx context.Context, obj *gqlmodel.EventSubscriptionInfo) (eventsubscription.DeliveryType, error) {
 	return eventsubscription.DeliveryType(obj.DeliveryType), nil
 }
 
 // StatusPhase is the resolver for the statusPhase field.
-func (r *eventSubscriptionInfoResolver) StatusPhase(ctx context.Context, obj *model.EventSubscriptionInfo) (*eventsubscription.StatusPhase, error) {
+func (r *eventSubscriptionInfoResolver) StatusPhase(ctx context.Context, obj *gqlmodel.EventSubscriptionInfo) (*eventsubscription.StatusPhase, error) {
 	if obj.StatusPhase == nil {
 		return nil, nil
 	}
@@ -429,13 +692,14 @@ func (r *eventTypeResolver) SpecificationURL(ctx context.Context, obj *ent.Event
 
 // ActiveExposure is the resolver for the activeExposure field.
 // Returns the active exposure for this event type, or nil if none is active.
-func (r *eventTypeResolver) ActiveExposure(ctx context.Context, obj *ent.EventType) (*model.EventExposureInfo, error) {
+func (r *eventTypeResolver) ActiveExposure(ctx context.Context, obj *ent.EventType) (*gqlmodel.EventExposureInfo, error) {
 	// SystemContext: The exposure may belong to another tenant; privacy rules would
 	// block the cross-tenant traversal. We return a reduced Info type to limit exposure.
 	sysCtx := viewer.SystemContext(ctx)
 	exp, err := obj.QueryExposures().
 		Where(eventexposure.Active(true)).
 		WithOwner(func(q *ent.ApplicationQuery) {
+			q.WithZone()
 			q.WithOwnerTeam(func(q *ent.TeamQuery) {
 				q.WithGroup()
 			})
@@ -449,6 +713,10 @@ func (r *eventTypeResolver) ActiveExposure(ctx context.Context, obj *ent.EventTy
 	}
 
 	app := exp.Edges.Owner
+	zone, zoneErr := app.Edges.ZoneOrErr()
+	if zoneErr != nil {
+		return nil, fmt.Errorf("loading zone edge for application %d: %w", app.ID, zoneErr)
+	}
 	team := app.Edges.OwnerTeam
 	group, groupErr := team.Edges.GroupOrErr()
 	if groupErr != nil {
@@ -457,7 +725,7 @@ func (r *eventTypeResolver) ActiveExposure(ctx context.Context, obj *ent.EventTy
 		}
 		group = nil
 	}
-	return mapEventExposureInfo(exp, app, team, group), nil
+	return mapEventExposureInfo(exp, app, zone, team, group), nil
 }
 
 // Owner is the resolver for the owner field.
@@ -506,6 +774,144 @@ func (r *externalIdentityProviderResolver) TokenRequest(ctx context.Context, obj
 		return nil, nil
 	}
 	return &m, nil
+}
+
+// Subscriptions is the resolver for the subscriptions field.
+func (r *fileExposureResolver) Subscriptions(ctx context.Context, obj *ent.FileExposure) ([]*gqlmodel.FileSubscriptionInfo, error) {
+	sysCtx := viewer.SystemContext(ctx)
+	subs, err := obj.QuerySubscriptions().
+		WithOwner(func(q *ent.ApplicationQuery) {
+			q.WithZone()
+			q.WithOwnerTeam(func(q *ent.TeamQuery) {
+				q.WithGroup()
+			})
+		}).
+		All(sysCtx)
+	if err != nil {
+		return nil, fmt.Errorf("loading subscriptions for file exposure %d: %w", obj.ID, err)
+	}
+
+	result := make([]*gqlmodel.FileSubscriptionInfo, len(subs))
+	for i, sub := range subs {
+		app := sub.Edges.Owner
+		zone, zoneErr := app.Edges.ZoneOrErr()
+		if zoneErr != nil {
+			return nil, fmt.Errorf("loading zone edge for application %d: %w", app.ID, zoneErr)
+		}
+		team := app.Edges.OwnerTeam
+		group, groupErr := team.Edges.GroupOrErr()
+		if groupErr != nil {
+			if !ent.IsNotFound(groupErr) && !ent.IsNotLoaded(groupErr) {
+				return nil, fmt.Errorf("loading group edge for team %d: %w", team.ID, groupErr)
+			}
+			group = nil
+		}
+		result[i] = mapFileSubscriptionInfo(sub, app, zone, team, group)
+	}
+	return result, nil
+}
+
+// Visibility is the resolver for the visibility field.
+func (r *fileExposureInfoResolver) Visibility(ctx context.Context, obj *gqlmodel.FileExposureInfo) (fileexposure.Visibility, error) {
+	return fileexposure.Visibility(obj.Visibility), nil
+}
+
+// Target is the resolver for the target field.
+func (r *fileSubscriptionResolver) Target(ctx context.Context, obj *ent.FileSubscription) (*gqlmodel.FileExposureInfo, error) {
+	sysCtx := viewer.SystemContext(ctx)
+
+	exposure, err := obj.Edges.TargetOrErr()
+	if ent.IsNotLoaded(err) {
+		exposure, err = obj.QueryTarget().Only(sysCtx)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("loading target for file subscription %d: %w", obj.ID, err)
+	}
+
+	return loadFileExposureInfo(sysCtx, exposure)
+}
+
+// StatusPhase is the resolver for the statusPhase field.
+func (r *fileSubscriptionInfoResolver) StatusPhase(ctx context.Context, obj *gqlmodel.FileSubscriptionInfo) (*filesubscription.StatusPhase, error) {
+	if obj.StatusPhase == nil {
+		return nil, nil
+	}
+	s := filesubscription.StatusPhase(*obj.StatusPhase)
+	return &s, nil
+}
+
+// SpecificationURL is the resolver for the specificationUrl field.
+func (r *mcpServerResolver) SpecificationURL(ctx context.Context, obj *ent.McpServer) (*string, error) {
+	return r.buildSpecificationURL(obj.Specification)
+}
+
+// ActiveExposure is the resolver for the activeExposure field.
+// Returns the active exposure for this MCP server, or nil if none is active.
+func (r *mcpServerResolver) ActiveExposure(ctx context.Context, obj *ent.McpServer) (*gqlmodel.AgenticExposureInfo, error) {
+	// SystemContext: The exposure may belong to another tenant; privacy rules would
+	// block the cross-tenant traversal. We return a reduced Info type to limit exposure.
+	sysCtx := viewer.SystemContext(ctx)
+	exp, err := obj.QueryExposures().
+		Where(agenticexposure.Active(true)).
+		WithOwner(func(q *ent.ApplicationQuery) {
+			q.WithZone()
+			q.WithOwnerTeam(func(q *ent.TeamQuery) {
+				q.WithGroup()
+			})
+		}).
+		Only(sysCtx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("loading active exposure for mcp server %d: %w", obj.ID, err)
+	}
+
+	app := exp.Edges.Owner
+	zone, zoneErr := app.Edges.ZoneOrErr()
+	if zoneErr != nil {
+		return nil, fmt.Errorf("loading zone edge for application %d: %w", app.ID, zoneErr)
+	}
+	team := app.Edges.OwnerTeam
+	group, groupErr := team.Edges.GroupOrErr()
+	if groupErr != nil {
+		if !ent.IsNotFound(groupErr) && !ent.IsNotLoaded(groupErr) {
+			return nil, fmt.Errorf("loading group edge for team %d: %w", team.ID, groupErr)
+		}
+		group = nil
+	}
+	return mapAgenticExposureInfo(exp, app, zone, team, group), nil
+}
+
+// Owner is the resolver for the owner field.
+func (r *mcpServerResolver) Owner(ctx context.Context, obj *ent.McpServer) (*model.TeamInfo, error) {
+	// SystemContext: The owning team may belong to a different tenant than the
+	// querying viewer. We return a reduced TeamInfo type to limit exposure.
+	sysCtx := viewer.SystemContext(ctx)
+	log := logr.FromContextOrDiscard(ctx)
+
+	team, err := obj.Edges.OwnerOrErr()
+	if ent.IsNotLoaded(err) {
+		team, err = obj.QueryOwner().Only(sysCtx)
+	}
+	if err != nil {
+		log.Info("Failed to resolve owner team for mcp server",
+			"mcpServerID", obj.ID, "namespace", obj.Namespace, "basePath", obj.BasePath, "error", err)
+		return nil, fmt.Errorf("resolving owner team for mcp server %d: %w", obj.ID, err)
+	}
+
+	group, err := team.Edges.GroupOrErr()
+	if ent.IsNotLoaded(err) {
+		group, err = team.QueryGroup().Only(sysCtx)
+	}
+	if err != nil && !ent.IsNotFound(err) {
+		return nil, fmt.Errorf("loading group for team %d: %w", team.ID, err)
+	}
+	if ent.IsNotFound(err) {
+		group = nil
+	}
+
+	return mapTeamInfo(team, group), nil
 }
 
 // ClientSecret is the resolver for the clientSecret field.
@@ -585,6 +991,16 @@ func (r *zoneResolver) TokenURL(ctx context.Context, obj *ent.Zone) (*string, er
 	return &tokenURL, nil
 }
 
+// AgenticExposureInfo returns AgenticExposureInfoResolver implementation.
+func (r *Resolver) AgenticExposureInfo() AgenticExposureInfoResolver {
+	return &agenticExposureInfoResolver{r}
+}
+
+// AgenticSubscriptionInfo returns AgenticSubscriptionInfoResolver implementation.
+func (r *Resolver) AgenticSubscriptionInfo() AgenticSubscriptionInfoResolver {
+	return &agenticSubscriptionInfoResolver{r}
+}
+
 // ApiExposureInfo returns ApiExposureInfoResolver implementation.
 func (r *Resolver) ApiExposureInfo() ApiExposureInfoResolver { return &apiExposureInfoResolver{r} }
 
@@ -630,6 +1046,14 @@ func (r *Resolver) ExternalIdentityProvider() ExternalIdentityProviderResolver {
 	return &externalIdentityProviderResolver{r}
 }
 
+// FileExposureInfo returns FileExposureInfoResolver implementation.
+func (r *Resolver) FileExposureInfo() FileExposureInfoResolver { return &fileExposureInfoResolver{r} }
+
+// FileSubscriptionInfo returns FileSubscriptionInfoResolver implementation.
+func (r *Resolver) FileSubscriptionInfo() FileSubscriptionInfoResolver {
+	return &fileSubscriptionInfoResolver{r}
+}
+
 // OAuth2ClientCredentials returns OAuth2ClientCredentialsResolver implementation.
 func (r *Resolver) OAuth2ClientCredentials() OAuth2ClientCredentialsResolver {
 	return &oAuth2ClientCredentialsResolver{r}
@@ -642,6 +1066,8 @@ func (r *Resolver) ResponseFilter() ResponseFilterResolver { return &responseFil
 func (r *Resolver) SelectionFilter() SelectionFilterResolver { return &selectionFilterResolver{r} }
 
 type (
+	agenticExposureInfoResolver      struct{ *Resolver }
+	agenticSubscriptionInfoResolver  struct{ *Resolver }
 	apiExposureInfoResolver          struct{ *Resolver }
 	apiSubscriptionInfoResolver      struct{ *Resolver }
 	approvalConfigResolver           struct{ *Resolver }
@@ -653,6 +1079,8 @@ type (
 	eventSubscriptionInfoResolver    struct{ *Resolver }
 	externalIdResolver               struct{ *Resolver }
 	externalIdentityProviderResolver struct{ *Resolver }
+	fileExposureInfoResolver         struct{ *Resolver }
+	fileSubscriptionInfoResolver     struct{ *Resolver }
 	oAuth2ClientCredentialsResolver  struct{ *Resolver }
 	responseFilterResolver           struct{ *Resolver }
 	selectionFilterResolver          struct{ *Resolver }

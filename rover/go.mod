@@ -26,6 +26,8 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.12.1
 	github.com/telekom/controlplane/agentic/api v0.0.0-00010101000000-000000000000
+	github.com/telekom/controlplane/file/api v0.0.0-00010101000000-000000000000
+	golang.org/x/crypto v0.55.0
 	k8s.io/api v0.37.0
 	k8s.io/apimachinery v0.37.0
 	k8s.io/client-go v0.37.0
@@ -41,6 +43,7 @@ replace (
 	github.com/telekom/controlplane/common => ../common
 	github.com/telekom/controlplane/common-server => ../common-server
 	github.com/telekom/controlplane/event/api => ../event/api
+	github.com/telekom/controlplane/file/api => ../file/api
 	github.com/telekom/controlplane/organization/api => ../organization/api
 	github.com/telekom/controlplane/permission/api => ../permission/api
 	github.com/telekom/controlplane/rover/api => ./api
@@ -135,7 +138,7 @@ require (
 	gomodules.xyz/jsonpatch/v2 v2.4.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20260526163538-3dc84a4a5aaa // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260526163538-3dc84a4a5aaa // indirect
-	google.golang.org/grpc v1.83.1 // indirect
+	google.golang.org/grpc v1.83.2 // indirect
 	google.golang.org/protobuf v1.36.12-0.20260120151049-f2248ac996af // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.13.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect

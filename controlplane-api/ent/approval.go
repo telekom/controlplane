@@ -13,9 +13,11 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
+	"github.com/telekom/controlplane/controlplane-api/ent/agenticsubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/apisubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/approval"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventsubscription"
+	"github.com/telekom/controlplane/controlplane-api/ent/filesubscription"
 	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 )
 
@@ -54,27 +56,33 @@ type Approval struct {
 	RequestedScopes []string `json:"requested_scopes,omitempty"`
 	// Name holds the value of the "name" field.
 	Name string `json:"name,omitempty"`
-	// ExpiresAt holds the value of the "expiresAt" field.
-	ExpiresAt *time.Time `json:"expiresAt,omitempty"`
+	// ExpiresAt holds the value of the "expires_at" field.
+	ExpiresAt *time.Time `json:"expires_at,omitempty"`
 	// State holds the value of the "state" field.
 	State approval.State `json:"state,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the ApprovalQuery when eager-loading is set.
-	Edges                       ApprovalEdges `json:"edges"`
-	api_subscription_approval   *int
-	event_subscription_approval *int
-	selectValues                sql.SelectValues
+	Edges                         ApprovalEdges `json:"edges"`
+	agentic_subscription_approval *int
+	api_subscription_approval     *int
+	event_subscription_approval   *int
+	file_subscription_approval    *int
+	selectValues                  sql.SelectValues
 }
 
 // ApprovalEdges holds the relations/edges for other nodes in the graph.
 type ApprovalEdges struct {
 	// APISubscription holds the value of the api_subscription edge.
 	APISubscription *ApiSubscription `json:"api_subscription,omitempty"`
+	// FileSubscription holds the value of the file_subscription edge.
+	FileSubscription *FileSubscription `json:"file_subscription,omitempty"`
 	// EventSubscription holds the value of the event_subscription edge.
 	EventSubscription *EventSubscription `json:"event_subscription,omitempty"`
+	// AgenticSubscription holds the value of the agentic_subscription edge.
+	AgenticSubscription *AgenticSubscription `json:"agentic_subscription,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [2]bool
+	loadedTypes [4]bool
 }
 
 // APISubscriptionOrErr returns the APISubscription value or an error if the edge
@@ -88,15 +96,37 @@ func (e ApprovalEdges) APISubscriptionOrErr() (*ApiSubscription, error) {
 	return nil, &NotLoadedError{edge: "api_subscription"}
 }
 
+// FileSubscriptionOrErr returns the FileSubscription value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e ApprovalEdges) FileSubscriptionOrErr() (*FileSubscription, error) {
+	if e.FileSubscription != nil {
+		return e.FileSubscription, nil
+	} else if e.loadedTypes[1] {
+		return nil, &NotFoundError{label: filesubscription.Label}
+	}
+	return nil, &NotLoadedError{edge: "file_subscription"}
+}
+
 // EventSubscriptionOrErr returns the EventSubscription value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
 func (e ApprovalEdges) EventSubscriptionOrErr() (*EventSubscription, error) {
 	if e.EventSubscription != nil {
 		return e.EventSubscription, nil
-	} else if e.loadedTypes[1] {
+	} else if e.loadedTypes[2] {
 		return nil, &NotFoundError{label: eventsubscription.Label}
 	}
 	return nil, &NotLoadedError{edge: "event_subscription"}
+}
+
+// AgenticSubscriptionOrErr returns the AgenticSubscription value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e ApprovalEdges) AgenticSubscriptionOrErr() (*AgenticSubscription, error) {
+	if e.AgenticSubscription != nil {
+		return e.AgenticSubscription, nil
+	} else if e.loadedTypes[3] {
+		return nil, &NotFoundError{label: agenticsubscription.Label}
+	}
+	return nil, &NotLoadedError{edge: "agentic_subscription"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -112,9 +142,13 @@ func (*Approval) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullString)
 		case approval.FieldCreatedAt, approval.FieldLastModifiedAt, approval.FieldExpiresAt:
 			values[i] = new(sql.NullTime)
-		case approval.ForeignKeys[0]: // api_subscription_approval
+		case approval.ForeignKeys[0]: // agentic_subscription_approval
 			values[i] = new(sql.NullInt64)
-		case approval.ForeignKeys[1]: // event_subscription_approval
+		case approval.ForeignKeys[1]: // api_subscription_approval
+			values[i] = new(sql.NullInt64)
+		case approval.ForeignKeys[2]: // event_subscription_approval
+			values[i] = new(sql.NullInt64)
+		case approval.ForeignKeys[3]: // file_subscription_approval
 			values[i] = new(sql.NullInt64)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -242,7 +276,7 @@ func (_m *Approval) assignValues(columns []string, values []any) error {
 			}
 		case approval.FieldExpiresAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
-				return fmt.Errorf("unexpected type %T for field expiresAt", values[i])
+				return fmt.Errorf("unexpected type %T for field expires_at", values[i])
 			} else if value.Valid {
 				_m.ExpiresAt = new(time.Time)
 				*_m.ExpiresAt = value.Time
@@ -255,17 +289,31 @@ func (_m *Approval) assignValues(columns []string, values []any) error {
 			}
 		case approval.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for edge-field agentic_subscription_approval", value)
+			} else if value.Valid {
+				_m.agentic_subscription_approval = new(int)
+				*_m.agentic_subscription_approval = int(value.Int64)
+			}
+		case approval.ForeignKeys[1]:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for edge-field api_subscription_approval", value)
 			} else if value.Valid {
 				_m.api_subscription_approval = new(int)
 				*_m.api_subscription_approval = int(value.Int64)
 			}
-		case approval.ForeignKeys[1]:
+		case approval.ForeignKeys[2]:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for edge-field event_subscription_approval", value)
 			} else if value.Valid {
 				_m.event_subscription_approval = new(int)
 				*_m.event_subscription_approval = int(value.Int64)
+			}
+		case approval.ForeignKeys[3]:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for edge-field file_subscription_approval", value)
+			} else if value.Valid {
+				_m.file_subscription_approval = new(int)
+				*_m.file_subscription_approval = int(value.Int64)
 			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
@@ -285,9 +333,19 @@ func (_m *Approval) QueryAPISubscription() *ApiSubscriptionQuery {
 	return NewApprovalClient(_m.config).QueryAPISubscription(_m)
 }
 
+// QueryFileSubscription queries the "file_subscription" edge of the Approval entity.
+func (_m *Approval) QueryFileSubscription() *FileSubscriptionQuery {
+	return NewApprovalClient(_m.config).QueryFileSubscription(_m)
+}
+
 // QueryEventSubscription queries the "event_subscription" edge of the Approval entity.
 func (_m *Approval) QueryEventSubscription() *EventSubscriptionQuery {
 	return NewApprovalClient(_m.config).QueryEventSubscription(_m)
+}
+
+// QueryAgenticSubscription queries the "agentic_subscription" edge of the Approval entity.
+func (_m *Approval) QueryAgenticSubscription() *AgenticSubscriptionQuery {
+	return NewApprovalClient(_m.config).QueryAgenticSubscription(_m)
 }
 
 // Update returns a builder for updating this Approval.
@@ -365,7 +423,7 @@ func (_m *Approval) String() string {
 	builder.WriteString(_m.Name)
 	builder.WriteString(", ")
 	if v := _m.ExpiresAt; v != nil {
-		builder.WriteString("expiresAt=")
+		builder.WriteString("expires_at=")
 		builder.WriteString(v.Format(time.ANSIC))
 	}
 	builder.WriteString(", ")

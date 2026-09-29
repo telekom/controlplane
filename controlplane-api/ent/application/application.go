@@ -63,10 +63,18 @@ const (
 	EdgeExposedApis = "exposed_apis"
 	// EdgeSubscribedApis holds the string denoting the subscribed_apis edge name in mutations.
 	EdgeSubscribedApis = "subscribed_apis"
+	// EdgeExposedFileTypes holds the string denoting the exposed_file_types edge name in mutations.
+	EdgeExposedFileTypes = "exposed_file_types"
+	// EdgeSubscribedFileTypes holds the string denoting the subscribed_file_types edge name in mutations.
+	EdgeSubscribedFileTypes = "subscribed_file_types"
 	// EdgeExposedEvents holds the string denoting the exposed_events edge name in mutations.
 	EdgeExposedEvents = "exposed_events"
 	// EdgeSubscribedEvents holds the string denoting the subscribed_events edge name in mutations.
 	EdgeSubscribedEvents = "subscribed_events"
+	// EdgeExposedAgentics holds the string denoting the exposed_agentics edge name in mutations.
+	EdgeExposedAgentics = "exposed_agentics"
+	// EdgeSubscribedAgentics holds the string denoting the subscribed_agentics edge name in mutations.
+	EdgeSubscribedAgentics = "subscribed_agentics"
 	// EdgePermissionSet holds the string denoting the permission_set edge name in mutations.
 	EdgePermissionSet = "permission_set"
 	// Table holds the table name of the application in the database.
@@ -99,6 +107,20 @@ const (
 	SubscribedApisInverseTable = "api_subscriptions"
 	// SubscribedApisColumn is the table column denoting the subscribed_apis relation/edge.
 	SubscribedApisColumn = "application_subscribed_apis"
+	// ExposedFileTypesTable is the table that holds the exposed_file_types relation/edge.
+	ExposedFileTypesTable = "file_exposures"
+	// ExposedFileTypesInverseTable is the table name for the FileExposure entity.
+	// It exists in this package in order to avoid circular dependency with the "fileexposure" package.
+	ExposedFileTypesInverseTable = "file_exposures"
+	// ExposedFileTypesColumn is the table column denoting the exposed_file_types relation/edge.
+	ExposedFileTypesColumn = "application_exposed_file_types"
+	// SubscribedFileTypesTable is the table that holds the subscribed_file_types relation/edge.
+	SubscribedFileTypesTable = "file_subscriptions"
+	// SubscribedFileTypesInverseTable is the table name for the FileSubscription entity.
+	// It exists in this package in order to avoid circular dependency with the "filesubscription" package.
+	SubscribedFileTypesInverseTable = "file_subscriptions"
+	// SubscribedFileTypesColumn is the table column denoting the subscribed_file_types relation/edge.
+	SubscribedFileTypesColumn = "application_subscribed_file_types"
 	// ExposedEventsTable is the table that holds the exposed_events relation/edge.
 	ExposedEventsTable = "event_exposures"
 	// ExposedEventsInverseTable is the table name for the EventExposure entity.
@@ -113,6 +135,20 @@ const (
 	SubscribedEventsInverseTable = "event_subscriptions"
 	// SubscribedEventsColumn is the table column denoting the subscribed_events relation/edge.
 	SubscribedEventsColumn = "application_subscribed_events"
+	// ExposedAgenticsTable is the table that holds the exposed_agentics relation/edge.
+	ExposedAgenticsTable = "agentic_exposures"
+	// ExposedAgenticsInverseTable is the table name for the AgenticExposure entity.
+	// It exists in this package in order to avoid circular dependency with the "agenticexposure" package.
+	ExposedAgenticsInverseTable = "agentic_exposures"
+	// ExposedAgenticsColumn is the table column denoting the exposed_agentics relation/edge.
+	ExposedAgenticsColumn = "application_exposed_agentics"
+	// SubscribedAgenticsTable is the table that holds the subscribed_agentics relation/edge.
+	SubscribedAgenticsTable = "agentic_subscriptions"
+	// SubscribedAgenticsInverseTable is the table name for the AgenticSubscription entity.
+	// It exists in this package in order to avoid circular dependency with the "agenticsubscription" package.
+	SubscribedAgenticsInverseTable = "agentic_subscriptions"
+	// SubscribedAgenticsColumn is the table column denoting the subscribed_agentics relation/edge.
+	SubscribedAgenticsColumn = "application_subscribed_agentics"
 	// PermissionSetTable is the table that holds the permission_set relation/edge.
 	PermissionSetTable = "permission_sets"
 	// PermissionSetInverseTable is the table name for the PermissionSet entity.
@@ -371,6 +407,34 @@ func BySubscribedApis(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	}
 }
 
+// ByExposedFileTypesCount orders the results by exposed_file_types count.
+func ByExposedFileTypesCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newExposedFileTypesStep(), opts...)
+	}
+}
+
+// ByExposedFileTypes orders the results by exposed_file_types terms.
+func ByExposedFileTypes(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newExposedFileTypesStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// BySubscribedFileTypesCount orders the results by subscribed_file_types count.
+func BySubscribedFileTypesCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newSubscribedFileTypesStep(), opts...)
+	}
+}
+
+// BySubscribedFileTypes orders the results by subscribed_file_types terms.
+func BySubscribedFileTypes(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newSubscribedFileTypesStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
 // ByExposedEventsCount orders the results by exposed_events count.
 func ByExposedEventsCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -396,6 +460,34 @@ func BySubscribedEventsCount(opts ...sql.OrderTermOption) OrderOption {
 func BySubscribedEvents(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	return func(s *sql.Selector) {
 		sqlgraph.OrderByNeighborTerms(s, newSubscribedEventsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByExposedAgenticsCount orders the results by exposed_agentics count.
+func ByExposedAgenticsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newExposedAgenticsStep(), opts...)
+	}
+}
+
+// ByExposedAgentics orders the results by exposed_agentics terms.
+func ByExposedAgentics(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newExposedAgenticsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// BySubscribedAgenticsCount orders the results by subscribed_agentics count.
+func BySubscribedAgenticsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newSubscribedAgenticsStep(), opts...)
+	}
+}
+
+// BySubscribedAgentics orders the results by subscribed_agentics terms.
+func BySubscribedAgentics(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newSubscribedAgenticsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
 
@@ -433,6 +525,20 @@ func newSubscribedApisStep() *sqlgraph.Step {
 		sqlgraph.Edge(sqlgraph.O2M, false, SubscribedApisTable, SubscribedApisColumn),
 	)
 }
+func newExposedFileTypesStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(ExposedFileTypesInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, ExposedFileTypesTable, ExposedFileTypesColumn),
+	)
+}
+func newSubscribedFileTypesStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(SubscribedFileTypesInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, SubscribedFileTypesTable, SubscribedFileTypesColumn),
+	)
+}
 func newExposedEventsStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -445,6 +551,20 @@ func newSubscribedEventsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(SubscribedEventsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, SubscribedEventsTable, SubscribedEventsColumn),
+	)
+}
+func newExposedAgenticsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(ExposedAgenticsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, ExposedAgenticsTable, ExposedAgenticsColumn),
+	)
+}
+func newSubscribedAgenticsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(SubscribedAgenticsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, SubscribedAgenticsTable, SubscribedAgenticsColumn),
 	)
 }
 func newPermissionSetStep() *sqlgraph.Step {

@@ -52,14 +52,18 @@ const (
 	FieldRequestedScopes = "requested_scopes"
 	// FieldName holds the string denoting the name field in the database.
 	FieldName = "name"
-	// FieldExpiresAt holds the string denoting the expiresat field in the database.
+	// FieldExpiresAt holds the string denoting the expires_at field in the database.
 	FieldExpiresAt = "expires_at"
 	// FieldState holds the string denoting the state field in the database.
 	FieldState = "state"
 	// EdgeAPISubscription holds the string denoting the api_subscription edge name in mutations.
 	EdgeAPISubscription = "api_subscription"
+	// EdgeFileSubscription holds the string denoting the file_subscription edge name in mutations.
+	EdgeFileSubscription = "file_subscription"
 	// EdgeEventSubscription holds the string denoting the event_subscription edge name in mutations.
 	EdgeEventSubscription = "event_subscription"
+	// EdgeAgenticSubscription holds the string denoting the agentic_subscription edge name in mutations.
+	EdgeAgenticSubscription = "agentic_subscription"
 	// Table holds the table name of the approval in the database.
 	Table = "approvals"
 	// APISubscriptionTable is the table that holds the api_subscription relation/edge.
@@ -69,6 +73,13 @@ const (
 	APISubscriptionInverseTable = "api_subscriptions"
 	// APISubscriptionColumn is the table column denoting the api_subscription relation/edge.
 	APISubscriptionColumn = "api_subscription_approval"
+	// FileSubscriptionTable is the table that holds the file_subscription relation/edge.
+	FileSubscriptionTable = "approvals"
+	// FileSubscriptionInverseTable is the table name for the FileSubscription entity.
+	// It exists in this package in order to avoid circular dependency with the "filesubscription" package.
+	FileSubscriptionInverseTable = "file_subscriptions"
+	// FileSubscriptionColumn is the table column denoting the file_subscription relation/edge.
+	FileSubscriptionColumn = "file_subscription_approval"
 	// EventSubscriptionTable is the table that holds the event_subscription relation/edge.
 	EventSubscriptionTable = "approvals"
 	// EventSubscriptionInverseTable is the table name for the EventSubscription entity.
@@ -76,6 +87,13 @@ const (
 	EventSubscriptionInverseTable = "event_subscriptions"
 	// EventSubscriptionColumn is the table column denoting the event_subscription relation/edge.
 	EventSubscriptionColumn = "event_subscription_approval"
+	// AgenticSubscriptionTable is the table that holds the agentic_subscription relation/edge.
+	AgenticSubscriptionTable = "approvals"
+	// AgenticSubscriptionInverseTable is the table name for the AgenticSubscription entity.
+	// It exists in this package in order to avoid circular dependency with the "agenticsubscription" package.
+	AgenticSubscriptionInverseTable = "agentic_subscriptions"
+	// AgenticSubscriptionColumn is the table column denoting the agentic_subscription relation/edge.
+	AgenticSubscriptionColumn = "agentic_subscription_approval"
 )
 
 // Columns holds all SQL columns for approval fields.
@@ -103,8 +121,10 @@ var Columns = []string{
 // ForeignKeys holds the SQL foreign-keys that are owned by the "approvals"
 // table and are not defined as standalone fields in the schema.
 var ForeignKeys = []string{
+	"agentic_subscription_approval",
 	"api_subscription_approval",
 	"event_subscription_approval",
+	"file_subscription_approval",
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -288,7 +308,7 @@ func ByName(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldName, opts...).ToFunc()
 }
 
-// ByExpiresAt orders the results by the expiresAt field.
+// ByExpiresAt orders the results by the expires_at field.
 func ByExpiresAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldExpiresAt, opts...).ToFunc()
 }
@@ -305,10 +325,24 @@ func ByAPISubscriptionField(field string, opts ...sql.OrderTermOption) OrderOpti
 	}
 }
 
+// ByFileSubscriptionField orders the results by file_subscription field.
+func ByFileSubscriptionField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newFileSubscriptionStep(), sql.OrderByField(field, opts...))
+	}
+}
+
 // ByEventSubscriptionField orders the results by event_subscription field.
 func ByEventSubscriptionField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
 		sqlgraph.OrderByNeighborTerms(s, newEventSubscriptionStep(), sql.OrderByField(field, opts...))
+	}
+}
+
+// ByAgenticSubscriptionField orders the results by agentic_subscription field.
+func ByAgenticSubscriptionField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newAgenticSubscriptionStep(), sql.OrderByField(field, opts...))
 	}
 }
 func newAPISubscriptionStep() *sqlgraph.Step {
@@ -318,11 +352,25 @@ func newAPISubscriptionStep() *sqlgraph.Step {
 		sqlgraph.Edge(sqlgraph.O2O, true, APISubscriptionTable, APISubscriptionColumn),
 	)
 }
+func newFileSubscriptionStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(FileSubscriptionInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2O, true, FileSubscriptionTable, FileSubscriptionColumn),
+	)
+}
 func newEventSubscriptionStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(EventSubscriptionInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2O, true, EventSubscriptionTable, EventSubscriptionColumn),
+	)
+}
+func newAgenticSubscriptionStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(AgenticSubscriptionInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2O, true, AgenticSubscriptionTable, AgenticSubscriptionColumn),
 	)
 }
 

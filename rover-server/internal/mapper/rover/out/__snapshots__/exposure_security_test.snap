@@ -89,22 +89,3 @@ api.Oauth2{
     Username:      "",
 }
 ---
-
-[Exposure Security Mapper (Out) mapExposureSecurity must echo scopes with a symbolic claim - 1]
-api.Oauth2{
-    Claims: api.Claims{
-        Aud: api.Claim{Value:"", ValueFrom:"ProviderClientId"},
-    },
-    ClientId:      "",
-    ClientKey:     "",
-    ClientSecret:  "",
-    GrantType:     "",
-    Password:      "",
-    RefreshToken:  "",
-    Scopes:        {"read"},
-    TokenEndpoint: "",
-    TokenRequest:  "",
-    Type:          "oauth2",
-    Username:      "",
-}
----

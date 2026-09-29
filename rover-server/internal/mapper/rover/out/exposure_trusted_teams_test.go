@@ -32,7 +32,7 @@ var _ = Describe("Trusted Teams Mapper", func() {
 			}
 			output := &api.ApiExposure{}
 
-			mapTrustedTeams(input, output)
+			mapTrustedTeams(input.Approval.TrustedTeams, &output.TrustedTeams)
 
 			Expect(output.TrustedTeams).To(HaveLen(2))
 			Expect(output.TrustedTeams[0].Team).To(Equal("group1--team1"))
@@ -47,7 +47,7 @@ var _ = Describe("Trusted Teams Mapper", func() {
 			}
 			output := &api.ApiExposure{}
 
-			mapTrustedTeams(input, output)
+			mapTrustedTeams(input.Approval.TrustedTeams, &output.TrustedTeams)
 
 			Expect(output.TrustedTeams).To(HaveLen(0))
 		})
@@ -60,7 +60,7 @@ var _ = Describe("Trusted Teams Mapper", func() {
 			}
 			output := &api.ApiExposure{}
 
-			mapTrustedTeams(input, output)
+			mapTrustedTeams(input.Approval.TrustedTeams, &output.TrustedTeams)
 
 			Expect(output.TrustedTeams).To(BeNil())
 		})

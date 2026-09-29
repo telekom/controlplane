@@ -227,6 +227,57 @@ var _ = Describe("EventExposure Repository", func() {
 			Expect(ent.IsNotFound(err)).To(BeTrue())
 		})
 
+		It("should clear a stale event_type_def FK once the EventType is no longer resolvable", func() {
+			catalogueTeam, err := client.Team.Create().
+				SetName("platform--catalogue").
+				SetEmail("catalogue@example.com").
+				SetNamespace("platform--catalogue").
+				Save(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			catalogueEvtType, err := client.EventType.Create().
+				SetEventType("de.telekom.stale.v1").
+				SetNamespace("platform--catalogue").
+				SetVersion("1.0.0").
+				SetActive(true).
+				SetOwnerID(catalogueTeam.ID).
+				Save(ctx)
+			Expect(err).NotTo(HaveOccurred())
+
+			data := &eventexposure.EventExposureData{
+				Meta:           shared.NewMetadata("prod--platform--narvi", "stale-exp", nil),
+				StatusPhase:    "READY",
+				StatusMessage:  "ok",
+				EventType:      "de.telekom.stale.v1",
+				Visibility:     "WORLD",
+				Active:         true,
+				ApprovalConfig: model.ApprovalConfig{Strategy: "AUTO"},
+				Scopes:         []model.EventScope{},
+				AppName:        "my-app",
+				TeamName:       "platform--narvi",
+			}
+			deps.activeEvtTypeID = map[string]int{"de.telekom.stale.v1": catalogueEvtType.ID}
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			exp, err := client.EventExposure.Query().
+				Where(enteventexposure.EventTypeEQ("de.telekom.stale.v1")).
+				Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			linked, err := exp.QueryEventTypeDef().Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(linked.ID).To(Equal(catalogueEvtType.ID))
+
+			// EventType becomes unresolvable (e.g. it went inactive) — re-reconcile.
+			deps.activeEvtTypeID = map[string]int{}
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			exp, err = client.EventExposure.Query().
+				Where(enteventexposure.EventTypeEQ("de.telekom.stale.v1")).
+				Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			_, err = exp.QueryEventTypeDef().Only(ctx)
+			Expect(ent.IsNotFound(err)).To(BeTrue())
+		})
+
 		It("should return ErrDependencyMissing when application is missing", func() {
 			data := &eventexposure.EventExposureData{
 				Meta:           shared.NewMetadata("prod--platform--narvi", "fail-exp", nil),

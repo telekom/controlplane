@@ -1,0 +1,55 @@
+# SPDX-FileCopyrightText: 2026 Deutsche Telekom AG
+#
+# SPDX-License-Identifier: CC0-1.0
+
+basePath: /Team/Assistant
+agentCard:
+  name: Team Assistant
+  description: Answers questions about team services.
+  version: 1.2.0
+  protocolVersion: 0.3.0
+  url: https://agent.example.com/a2a
+  preferredTransport: JSONRPC
+  additionalInterfaces:
+    - url: https://agent.example.com/http
+      transport: HTTP+JSON
+  provider:
+    organization: Example Team
+    url: https://example.com
+  documentationUrl: https://example.com/docs/assistant
+  iconUrl: https://example.com/assistant.svg
+  capabilities:
+    streaming: true
+    pushNotifications: false
+    stateTransitionHistory: true
+    extensions:
+      - uri: https://example.com/extensions/context
+        description: Additional context
+        required: false
+        params:
+          format: text
+  defaultInputModes: [text/plain]
+  defaultOutputModes: [text/plain, application/json]
+  skills:
+    - id: answer
+      name: Answer questions
+      description: Answers questions about team services.
+      tags: [support]
+      examples: [Which services are available?]
+      inputModes: [text/plain]
+      outputModes: [text/plain]
+  securitySchemes:
+    bearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  security:
+    - bearer: []
+  supportsAuthenticatedExtendedCard: true
+  signatures:
+    - protected: example-protected-header
+      signature: example-signature
+      header:
+        kid: example-key
+  x-api-category: assistant
+  scopes: [assistant:read]

@@ -58,6 +58,7 @@ func RegisterHandlers() {
 	agentSpecHandler := v0.NewAgentSpecHandlerInstance()
 	roverHandler := v0.NewRoverHandlerInstance()
 	eventSpecHandler := v0.NewEventSpecHandlerInstance()
+	fileSpecHandler := v0.NewFileSpecHandlerInstance()
 	apiRoadmapHandler := v0.NewApiRoadmapHandlerInstance()
 	apiChangelogHandler := v0.NewApiChangelogHandlerInstance()
 
@@ -66,6 +67,7 @@ func RegisterHandlers() {
 	RegisterHandler(agentSpecHandler.Kind, agentSpecHandler.APIVersion, agentSpecHandler)
 	RegisterHandler(roverHandler.Kind, roverHandler.APIVersion, roverHandler)
 	RegisterHandler(eventSpecHandler.Kind, eventSpecHandler.APIVersion, eventSpecHandler)
+	RegisterHandler(fileSpecHandler.Kind, fileSpecHandler.APIVersion, fileSpecHandler)
 	RegisterHandler(apiRoadmapHandler.Kind, apiRoadmapHandler.APIVersion, apiRoadmapHandler)
 	RegisterHandler(apiChangelogHandler.Kind, apiChangelogHandler.APIVersion, apiChangelogHandler)
 }

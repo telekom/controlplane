@@ -14,6 +14,9 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
+	"github.com/telekom/controlplane/controlplane-api/ent/agentcard"
+	"github.com/telekom/controlplane/controlplane-api/ent/agenticexposure"
+	"github.com/telekom/controlplane/controlplane-api/ent/agenticsubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/api"
 	"github.com/telekom/controlplane/controlplane-api/ent/apiexposure"
 	"github.com/telekom/controlplane/controlplane-api/ent/apisubscription"
@@ -23,7 +26,11 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/eventexposure"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventsubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventtype"
+	"github.com/telekom/controlplane/controlplane-api/ent/fileexposure"
+	"github.com/telekom/controlplane/controlplane-api/ent/filesubscription"
+	"github.com/telekom/controlplane/controlplane-api/ent/filetype"
 	"github.com/telekom/controlplane/controlplane-api/ent/group"
+	"github.com/telekom/controlplane/controlplane-api/ent/mcpserver"
 	"github.com/telekom/controlplane/controlplane-api/ent/member"
 	"github.com/telekom/controlplane/controlplane-api/ent/permissionset"
 	"github.com/telekom/controlplane/controlplane-api/ent/predicate"
@@ -41,21 +48,4045 @@ const (
 	OpUpdateOne = ent.OpUpdateOne
 
 	// Node types.
-	TypeAPI               = "Api"
-	TypeApiExposure       = "ApiExposure"
-	TypeApiSubscription   = "ApiSubscription"
-	TypeApplication       = "Application"
-	TypeApproval          = "Approval"
-	TypeApprovalRequest   = "ApprovalRequest"
-	TypeEventExposure     = "EventExposure"
-	TypeEventSubscription = "EventSubscription"
-	TypeEventType         = "EventType"
-	TypeGroup             = "Group"
-	TypeMember            = "Member"
-	TypePermissionSet     = "PermissionSet"
-	TypeTeam              = "Team"
-	TypeZone              = "Zone"
+	TypeAgentCard           = "AgentCard"
+	TypeAgenticExposure     = "AgenticExposure"
+	TypeAgenticSubscription = "AgenticSubscription"
+	TypeAPI                 = "Api"
+	TypeApiExposure         = "ApiExposure"
+	TypeApiSubscription     = "ApiSubscription"
+	TypeApplication         = "Application"
+	TypeApproval            = "Approval"
+	TypeApprovalRequest     = "ApprovalRequest"
+	TypeEventExposure       = "EventExposure"
+	TypeEventSubscription   = "EventSubscription"
+	TypeEventType           = "EventType"
+	TypeFileExposure        = "FileExposure"
+	TypeFileSubscription    = "FileSubscription"
+	TypeFileType            = "FileType"
+	TypeGroup               = "Group"
+	TypeMcpServer           = "McpServer"
+	TypeMember              = "Member"
+	TypePermissionSet       = "PermissionSet"
+	TypeTeam                = "Team"
+	TypeZone                = "Zone"
 )
+
+// AgentCardMutation represents an operation that mutates the AgentCard nodes in the graph.
+type AgentCardMutation struct {
+	config
+	op                  Op
+	typ                 string
+	id                  *int
+	created_at          *time.Time
+	last_modified_at    *time.Time
+	status_phase        *agentcard.StatusPhase
+	status_message      *string
+	namespace           *string
+	base_path           *string
+	version             *string
+	name                *string
+	description         *string
+	specification       *string
+	category            *string
+	oauth2_scopes       *[]string
+	appendoauth2_scopes []string
+	active              *bool
+	clearedFields       map[string]struct{}
+	owner               *int
+	clearedowner        bool
+	exposures           map[int]struct{}
+	removedexposures    map[int]struct{}
+	clearedexposures    bool
+	done                bool
+	oldValue            func(context.Context) (*AgentCard, error)
+	predicates          []predicate.AgentCard
+}
+
+var _ ent.Mutation = (*AgentCardMutation)(nil)
+
+// agentcardOption allows management of the mutation configuration using functional options.
+type agentcardOption func(*AgentCardMutation)
+
+// newAgentCardMutation creates new mutation for the AgentCard entity.
+func newAgentCardMutation(c config, op Op, opts ...agentcardOption) *AgentCardMutation {
+	m := &AgentCardMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeAgentCard,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withAgentCardID sets the ID field of the mutation.
+func withAgentCardID(id int) agentcardOption {
+	return func(m *AgentCardMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *AgentCard
+		)
+		m.oldValue = func(ctx context.Context) (*AgentCard, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().AgentCard.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withAgentCard sets the old AgentCard of the mutation.
+func withAgentCard(node *AgentCard) agentcardOption {
+	return func(m *AgentCardMutation) {
+		m.oldValue = func(context.Context) (*AgentCard, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m AgentCardMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m AgentCardMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *AgentCardMutation) ID() (id int, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *AgentCardMutation) IDs(ctx context.Context) ([]int, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().AgentCard.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *AgentCardMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *AgentCardMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the AgentCard entity.
+// If the AgentCard object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AgentCardMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *AgentCardMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetLastModifiedAt sets the "last_modified_at" field.
+func (m *AgentCardMutation) SetLastModifiedAt(t time.Time) {
+	m.last_modified_at = &t
+}
+
+// LastModifiedAt returns the value of the "last_modified_at" field in the mutation.
+func (m *AgentCardMutation) LastModifiedAt() (r time.Time, exists bool) {
+	v := m.last_modified_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLastModifiedAt returns the old "last_modified_at" field's value of the AgentCard entity.
+// If the AgentCard object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AgentCardMutation) OldLastModifiedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLastModifiedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLastModifiedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLastModifiedAt: %w", err)
+	}
+	return oldValue.LastModifiedAt, nil
+}
+
+// ResetLastModifiedAt resets all changes to the "last_modified_at" field.
+func (m *AgentCardMutation) ResetLastModifiedAt() {
+	m.last_modified_at = nil
+}
+
+// SetStatusPhase sets the "status_phase" field.
+func (m *AgentCardMutation) SetStatusPhase(ap agentcard.StatusPhase) {
+	m.status_phase = &ap
+}
+
+// StatusPhase returns the value of the "status_phase" field in the mutation.
+func (m *AgentCardMutation) StatusPhase() (r agentcard.StatusPhase, exists bool) {
+	v := m.status_phase
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStatusPhase returns the old "status_phase" field's value of the AgentCard entity.
+// If the AgentCard object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AgentCardMutation) OldStatusPhase(ctx context.Context) (v *agentcard.StatusPhase, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStatusPhase is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStatusPhase requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStatusPhase: %w", err)
+	}
+	return oldValue.StatusPhase, nil
+}
+
+// ClearStatusPhase clears the value of the "status_phase" field.
+func (m *AgentCardMutation) ClearStatusPhase() {
+	m.status_phase = nil
+	m.clearedFields[agentcard.FieldStatusPhase] = struct{}{}
+}
+
+// StatusPhaseCleared returns if the "status_phase" field was cleared in this mutation.
+func (m *AgentCardMutation) StatusPhaseCleared() bool {
+	_, ok := m.clearedFields[agentcard.FieldStatusPhase]
+	return ok
+}
+
+// ResetStatusPhase resets all changes to the "status_phase" field.
+func (m *AgentCardMutation) ResetStatusPhase() {
+	m.status_phase = nil
+	delete(m.clearedFields, agentcard.FieldStatusPhase)
+}
+
+// SetStatusMessage sets the "status_message" field.
+func (m *AgentCardMutation) SetStatusMessage(s string) {
+	m.status_message = &s
+}
+
+// StatusMessage returns the value of the "status_message" field in the mutation.
+func (m *AgentCardMutation) StatusMessage() (r string, exists bool) {
+	v := m.status_message
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStatusMessage returns the old "status_message" field's value of the AgentCard entity.
+// If the AgentCard object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AgentCardMutation) OldStatusMessage(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStatusMessage is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStatusMessage requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStatusMessage: %w", err)
+	}
+	return oldValue.StatusMessage, nil
+}
+
+// ClearStatusMessage clears the value of the "status_message" field.
+func (m *AgentCardMutation) ClearStatusMessage() {
+	m.status_message = nil
+	m.clearedFields[agentcard.FieldStatusMessage] = struct{}{}
+}
+
+// StatusMessageCleared returns if the "status_message" field was cleared in this mutation.
+func (m *AgentCardMutation) StatusMessageCleared() bool {
+	_, ok := m.clearedFields[agentcard.FieldStatusMessage]
+	return ok
+}
+
+// ResetStatusMessage resets all changes to the "status_message" field.
+func (m *AgentCardMutation) ResetStatusMessage() {
+	m.status_message = nil
+	delete(m.clearedFields, agentcard.FieldStatusMessage)
+}
+
+// SetNamespace sets the "namespace" field.
+func (m *AgentCardMutation) SetNamespace(s string) {
+	m.namespace = &s
+}
+
+// Namespace returns the value of the "namespace" field in the mutation.
+func (m *AgentCardMutation) Namespace() (r string, exists bool) {
+	v := m.namespace
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldNamespace returns the old "namespace" field's value of the AgentCard entity.
+// If the AgentCard object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AgentCardMutation) OldNamespace(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldNamespace is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldNamespace requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldNamespace: %w", err)
+	}
+	return oldValue.Namespace, nil
+}
+
+// ResetNamespace resets all changes to the "namespace" field.
+func (m *AgentCardMutation) ResetNamespace() {
+	m.namespace = nil
+}
+
+// SetBasePath sets the "base_path" field.
+func (m *AgentCardMutation) SetBasePath(s string) {
+	m.base_path = &s
+}
+
+// BasePath returns the value of the "base_path" field in the mutation.
+func (m *AgentCardMutation) BasePath() (r string, exists bool) {
+	v := m.base_path
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldBasePath returns the old "base_path" field's value of the AgentCard entity.
+// If the AgentCard object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AgentCardMutation) OldBasePath(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldBasePath is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldBasePath requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldBasePath: %w", err)
+	}
+	return oldValue.BasePath, nil
+}
+
+// ResetBasePath resets all changes to the "base_path" field.
+func (m *AgentCardMutation) ResetBasePath() {
+	m.base_path = nil
+}
+
+// SetVersion sets the "version" field.
+func (m *AgentCardMutation) SetVersion(s string) {
+	m.version = &s
+}
+
+// Version returns the value of the "version" field in the mutation.
+func (m *AgentCardMutation) Version() (r string, exists bool) {
+	v := m.version
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldVersion returns the old "version" field's value of the AgentCard entity.
+// If the AgentCard object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AgentCardMutation) OldVersion(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldVersion is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldVersion requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldVersion: %w", err)
+	}
+	return oldValue.Version, nil
+}
+
+// ResetVersion resets all changes to the "version" field.
+func (m *AgentCardMutation) ResetVersion() {
+	m.version = nil
+}
+
+// SetName sets the "name" field.
+func (m *AgentCardMutation) SetName(s string) {
+	m.name = &s
+}
+
+// Name returns the value of the "name" field in the mutation.
+func (m *AgentCardMutation) Name() (r string, exists bool) {
+	v := m.name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldName returns the old "name" field's value of the AgentCard entity.
+// If the AgentCard object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AgentCardMutation) OldName(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldName: %w", err)
+	}
+	return oldValue.Name, nil
+}
+
+// ResetName resets all changes to the "name" field.
+func (m *AgentCardMutation) ResetName() {
+	m.name = nil
+}
+
+// SetDescription sets the "description" field.
+func (m *AgentCardMutation) SetDescription(s string) {
+	m.description = &s
+}
+
+// Description returns the value of the "description" field in the mutation.
+func (m *AgentCardMutation) Description() (r string, exists bool) {
+	v := m.description
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDescription returns the old "description" field's value of the AgentCard entity.
+// If the AgentCard object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AgentCardMutation) OldDescription(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDescription is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDescription requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDescription: %w", err)
+	}
+	return oldValue.Description, nil
+}
+
+// ClearDescription clears the value of the "description" field.
+func (m *AgentCardMutation) ClearDescription() {
+	m.description = nil
+	m.clearedFields[agentcard.FieldDescription] = struct{}{}
+}
+
+// DescriptionCleared returns if the "description" field was cleared in this mutation.
+func (m *AgentCardMutation) DescriptionCleared() bool {
+	_, ok := m.clearedFields[agentcard.FieldDescription]
+	return ok
+}
+
+// ResetDescription resets all changes to the "description" field.
+func (m *AgentCardMutation) ResetDescription() {
+	m.description = nil
+	delete(m.clearedFields, agentcard.FieldDescription)
+}
+
+// SetSpecification sets the "specification" field.
+func (m *AgentCardMutation) SetSpecification(s string) {
+	m.specification = &s
+}
+
+// Specification returns the value of the "specification" field in the mutation.
+func (m *AgentCardMutation) Specification() (r string, exists bool) {
+	v := m.specification
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSpecification returns the old "specification" field's value of the AgentCard entity.
+// If the AgentCard object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AgentCardMutation) OldSpecification(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSpecification is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSpecification requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSpecification: %w", err)
+	}
+	return oldValue.Specification, nil
+}
+
+// ClearSpecification clears the value of the "specification" field.
+func (m *AgentCardMutation) ClearSpecification() {
+	m.specification = nil
+	m.clearedFields[agentcard.FieldSpecification] = struct{}{}
+}
+
+// SpecificationCleared returns if the "specification" field was cleared in this mutation.
+func (m *AgentCardMutation) SpecificationCleared() bool {
+	_, ok := m.clearedFields[agentcard.FieldSpecification]
+	return ok
+}
+
+// ResetSpecification resets all changes to the "specification" field.
+func (m *AgentCardMutation) ResetSpecification() {
+	m.specification = nil
+	delete(m.clearedFields, agentcard.FieldSpecification)
+}
+
+// SetCategory sets the "category" field.
+func (m *AgentCardMutation) SetCategory(s string) {
+	m.category = &s
+}
+
+// Category returns the value of the "category" field in the mutation.
+func (m *AgentCardMutation) Category() (r string, exists bool) {
+	v := m.category
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCategory returns the old "category" field's value of the AgentCard entity.
+// If the AgentCard object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AgentCardMutation) OldCategory(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCategory is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCategory requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCategory: %w", err)
+	}
+	return oldValue.Category, nil
+}
+
+// ClearCategory clears the value of the "category" field.
+func (m *AgentCardMutation) ClearCategory() {
+	m.category = nil
+	m.clearedFields[agentcard.FieldCategory] = struct{}{}
+}
+
+// CategoryCleared returns if the "category" field was cleared in this mutation.
+func (m *AgentCardMutation) CategoryCleared() bool {
+	_, ok := m.clearedFields[agentcard.FieldCategory]
+	return ok
+}
+
+// ResetCategory resets all changes to the "category" field.
+func (m *AgentCardMutation) ResetCategory() {
+	m.category = nil
+	delete(m.clearedFields, agentcard.FieldCategory)
+}
+
+// SetOauth2Scopes sets the "oauth2_scopes" field.
+func (m *AgentCardMutation) SetOauth2Scopes(s []string) {
+	m.oauth2_scopes = &s
+	m.appendoauth2_scopes = nil
+}
+
+// Oauth2Scopes returns the value of the "oauth2_scopes" field in the mutation.
+func (m *AgentCardMutation) Oauth2Scopes() (r []string, exists bool) {
+	v := m.oauth2_scopes
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldOauth2Scopes returns the old "oauth2_scopes" field's value of the AgentCard entity.
+// If the AgentCard object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AgentCardMutation) OldOauth2Scopes(ctx context.Context) (v []string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldOauth2Scopes is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldOauth2Scopes requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldOauth2Scopes: %w", err)
+	}
+	return oldValue.Oauth2Scopes, nil
+}
+
+// AppendOauth2Scopes adds s to the "oauth2_scopes" field.
+func (m *AgentCardMutation) AppendOauth2Scopes(s []string) {
+	m.appendoauth2_scopes = append(m.appendoauth2_scopes, s...)
+}
+
+// AppendedOauth2Scopes returns the list of values that were appended to the "oauth2_scopes" field in this mutation.
+func (m *AgentCardMutation) AppendedOauth2Scopes() ([]string, bool) {
+	if len(m.appendoauth2_scopes) == 0 {
+		return nil, false
+	}
+	return m.appendoauth2_scopes, true
+}
+
+// ClearOauth2Scopes clears the value of the "oauth2_scopes" field.
+func (m *AgentCardMutation) ClearOauth2Scopes() {
+	m.oauth2_scopes = nil
+	m.appendoauth2_scopes = nil
+	m.clearedFields[agentcard.FieldOauth2Scopes] = struct{}{}
+}
+
+// Oauth2ScopesCleared returns if the "oauth2_scopes" field was cleared in this mutation.
+func (m *AgentCardMutation) Oauth2ScopesCleared() bool {
+	_, ok := m.clearedFields[agentcard.FieldOauth2Scopes]
+	return ok
+}
+
+// ResetOauth2Scopes resets all changes to the "oauth2_scopes" field.
+func (m *AgentCardMutation) ResetOauth2Scopes() {
+	m.oauth2_scopes = nil
+	m.appendoauth2_scopes = nil
+	delete(m.clearedFields, agentcard.FieldOauth2Scopes)
+}
+
+// SetActive sets the "active" field.
+func (m *AgentCardMutation) SetActive(b bool) {
+	m.active = &b
+}
+
+// Active returns the value of the "active" field in the mutation.
+func (m *AgentCardMutation) Active() (r bool, exists bool) {
+	v := m.active
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldActive returns the old "active" field's value of the AgentCard entity.
+// If the AgentCard object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AgentCardMutation) OldActive(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldActive is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldActive requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldActive: %w", err)
+	}
+	return oldValue.Active, nil
+}
+
+// ResetActive resets all changes to the "active" field.
+func (m *AgentCardMutation) ResetActive() {
+	m.active = nil
+}
+
+// SetOwnerID sets the "owner" edge to the Team entity by id.
+func (m *AgentCardMutation) SetOwnerID(id int) {
+	m.owner = &id
+}
+
+// ClearOwner clears the "owner" edge to the Team entity.
+func (m *AgentCardMutation) ClearOwner() {
+	m.clearedowner = true
+}
+
+// OwnerCleared reports if the "owner" edge to the Team entity was cleared.
+func (m *AgentCardMutation) OwnerCleared() bool {
+	return m.clearedowner
+}
+
+// OwnerID returns the "owner" edge ID in the mutation.
+func (m *AgentCardMutation) OwnerID() (id int, exists bool) {
+	if m.owner != nil {
+		return *m.owner, true
+	}
+	return
+}
+
+// OwnerIDs returns the "owner" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// OwnerID instead. It exists only for internal usage by the builders.
+func (m *AgentCardMutation) OwnerIDs() (ids []int) {
+	if id := m.owner; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetOwner resets all changes to the "owner" edge.
+func (m *AgentCardMutation) ResetOwner() {
+	m.owner = nil
+	m.clearedowner = false
+}
+
+// AddExposureIDs adds the "exposures" edge to the AgenticExposure entity by ids.
+func (m *AgentCardMutation) AddExposureIDs(ids ...int) {
+	if m.exposures == nil {
+		m.exposures = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.exposures[ids[i]] = struct{}{}
+	}
+}
+
+// ClearExposures clears the "exposures" edge to the AgenticExposure entity.
+func (m *AgentCardMutation) ClearExposures() {
+	m.clearedexposures = true
+}
+
+// ExposuresCleared reports if the "exposures" edge to the AgenticExposure entity was cleared.
+func (m *AgentCardMutation) ExposuresCleared() bool {
+	return m.clearedexposures
+}
+
+// RemoveExposureIDs removes the "exposures" edge to the AgenticExposure entity by IDs.
+func (m *AgentCardMutation) RemoveExposureIDs(ids ...int) {
+	if m.removedexposures == nil {
+		m.removedexposures = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.exposures, ids[i])
+		m.removedexposures[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedExposures returns the removed IDs of the "exposures" edge to the AgenticExposure entity.
+func (m *AgentCardMutation) RemovedExposuresIDs() (ids []int) {
+	for id := range m.removedexposures {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ExposuresIDs returns the "exposures" edge IDs in the mutation.
+func (m *AgentCardMutation) ExposuresIDs() (ids []int) {
+	for id := range m.exposures {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetExposures resets all changes to the "exposures" edge.
+func (m *AgentCardMutation) ResetExposures() {
+	m.exposures = nil
+	m.clearedexposures = false
+	m.removedexposures = nil
+}
+
+// Where appends a list predicates to the AgentCardMutation builder.
+func (m *AgentCardMutation) Where(ps ...predicate.AgentCard) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the AgentCardMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *AgentCardMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.AgentCard, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *AgentCardMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *AgentCardMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (AgentCard).
+func (m *AgentCardMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *AgentCardMutation) Fields() []string {
+	fields := make([]string, 0, 13)
+	if m.created_at != nil {
+		fields = append(fields, agentcard.FieldCreatedAt)
+	}
+	if m.last_modified_at != nil {
+		fields = append(fields, agentcard.FieldLastModifiedAt)
+	}
+	if m.status_phase != nil {
+		fields = append(fields, agentcard.FieldStatusPhase)
+	}
+	if m.status_message != nil {
+		fields = append(fields, agentcard.FieldStatusMessage)
+	}
+	if m.namespace != nil {
+		fields = append(fields, agentcard.FieldNamespace)
+	}
+	if m.base_path != nil {
+		fields = append(fields, agentcard.FieldBasePath)
+	}
+	if m.version != nil {
+		fields = append(fields, agentcard.FieldVersion)
+	}
+	if m.name != nil {
+		fields = append(fields, agentcard.FieldName)
+	}
+	if m.description != nil {
+		fields = append(fields, agentcard.FieldDescription)
+	}
+	if m.specification != nil {
+		fields = append(fields, agentcard.FieldSpecification)
+	}
+	if m.category != nil {
+		fields = append(fields, agentcard.FieldCategory)
+	}
+	if m.oauth2_scopes != nil {
+		fields = append(fields, agentcard.FieldOauth2Scopes)
+	}
+	if m.active != nil {
+		fields = append(fields, agentcard.FieldActive)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *AgentCardMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case agentcard.FieldCreatedAt:
+		return m.CreatedAt()
+	case agentcard.FieldLastModifiedAt:
+		return m.LastModifiedAt()
+	case agentcard.FieldStatusPhase:
+		return m.StatusPhase()
+	case agentcard.FieldStatusMessage:
+		return m.StatusMessage()
+	case agentcard.FieldNamespace:
+		return m.Namespace()
+	case agentcard.FieldBasePath:
+		return m.BasePath()
+	case agentcard.FieldVersion:
+		return m.Version()
+	case agentcard.FieldName:
+		return m.Name()
+	case agentcard.FieldDescription:
+		return m.Description()
+	case agentcard.FieldSpecification:
+		return m.Specification()
+	case agentcard.FieldCategory:
+		return m.Category()
+	case agentcard.FieldOauth2Scopes:
+		return m.Oauth2Scopes()
+	case agentcard.FieldActive:
+		return m.Active()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *AgentCardMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case agentcard.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case agentcard.FieldLastModifiedAt:
+		return m.OldLastModifiedAt(ctx)
+	case agentcard.FieldStatusPhase:
+		return m.OldStatusPhase(ctx)
+	case agentcard.FieldStatusMessage:
+		return m.OldStatusMessage(ctx)
+	case agentcard.FieldNamespace:
+		return m.OldNamespace(ctx)
+	case agentcard.FieldBasePath:
+		return m.OldBasePath(ctx)
+	case agentcard.FieldVersion:
+		return m.OldVersion(ctx)
+	case agentcard.FieldName:
+		return m.OldName(ctx)
+	case agentcard.FieldDescription:
+		return m.OldDescription(ctx)
+	case agentcard.FieldSpecification:
+		return m.OldSpecification(ctx)
+	case agentcard.FieldCategory:
+		return m.OldCategory(ctx)
+	case agentcard.FieldOauth2Scopes:
+		return m.OldOauth2Scopes(ctx)
+	case agentcard.FieldActive:
+		return m.OldActive(ctx)
+	}
+	return nil, fmt.Errorf("unknown AgentCard field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *AgentCardMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case agentcard.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case agentcard.FieldLastModifiedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLastModifiedAt(v)
+		return nil
+	case agentcard.FieldStatusPhase:
+		v, ok := value.(agentcard.StatusPhase)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStatusPhase(v)
+		return nil
+	case agentcard.FieldStatusMessage:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStatusMessage(v)
+		return nil
+	case agentcard.FieldNamespace:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetNamespace(v)
+		return nil
+	case agentcard.FieldBasePath:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetBasePath(v)
+		return nil
+	case agentcard.FieldVersion:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetVersion(v)
+		return nil
+	case agentcard.FieldName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetName(v)
+		return nil
+	case agentcard.FieldDescription:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDescription(v)
+		return nil
+	case agentcard.FieldSpecification:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSpecification(v)
+		return nil
+	case agentcard.FieldCategory:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCategory(v)
+		return nil
+	case agentcard.FieldOauth2Scopes:
+		v, ok := value.([]string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetOauth2Scopes(v)
+		return nil
+	case agentcard.FieldActive:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetActive(v)
+		return nil
+	}
+	return fmt.Errorf("unknown AgentCard field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *AgentCardMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *AgentCardMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *AgentCardMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown AgentCard numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *AgentCardMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(agentcard.FieldStatusPhase) {
+		fields = append(fields, agentcard.FieldStatusPhase)
+	}
+	if m.FieldCleared(agentcard.FieldStatusMessage) {
+		fields = append(fields, agentcard.FieldStatusMessage)
+	}
+	if m.FieldCleared(agentcard.FieldDescription) {
+		fields = append(fields, agentcard.FieldDescription)
+	}
+	if m.FieldCleared(agentcard.FieldSpecification) {
+		fields = append(fields, agentcard.FieldSpecification)
+	}
+	if m.FieldCleared(agentcard.FieldCategory) {
+		fields = append(fields, agentcard.FieldCategory)
+	}
+	if m.FieldCleared(agentcard.FieldOauth2Scopes) {
+		fields = append(fields, agentcard.FieldOauth2Scopes)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *AgentCardMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *AgentCardMutation) ClearField(name string) error {
+	switch name {
+	case agentcard.FieldStatusPhase:
+		m.ClearStatusPhase()
+		return nil
+	case agentcard.FieldStatusMessage:
+		m.ClearStatusMessage()
+		return nil
+	case agentcard.FieldDescription:
+		m.ClearDescription()
+		return nil
+	case agentcard.FieldSpecification:
+		m.ClearSpecification()
+		return nil
+	case agentcard.FieldCategory:
+		m.ClearCategory()
+		return nil
+	case agentcard.FieldOauth2Scopes:
+		m.ClearOauth2Scopes()
+		return nil
+	}
+	return fmt.Errorf("unknown AgentCard nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *AgentCardMutation) ResetField(name string) error {
+	switch name {
+	case agentcard.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case agentcard.FieldLastModifiedAt:
+		m.ResetLastModifiedAt()
+		return nil
+	case agentcard.FieldStatusPhase:
+		m.ResetStatusPhase()
+		return nil
+	case agentcard.FieldStatusMessage:
+		m.ResetStatusMessage()
+		return nil
+	case agentcard.FieldNamespace:
+		m.ResetNamespace()
+		return nil
+	case agentcard.FieldBasePath:
+		m.ResetBasePath()
+		return nil
+	case agentcard.FieldVersion:
+		m.ResetVersion()
+		return nil
+	case agentcard.FieldName:
+		m.ResetName()
+		return nil
+	case agentcard.FieldDescription:
+		m.ResetDescription()
+		return nil
+	case agentcard.FieldSpecification:
+		m.ResetSpecification()
+		return nil
+	case agentcard.FieldCategory:
+		m.ResetCategory()
+		return nil
+	case agentcard.FieldOauth2Scopes:
+		m.ResetOauth2Scopes()
+		return nil
+	case agentcard.FieldActive:
+		m.ResetActive()
+		return nil
+	}
+	return fmt.Errorf("unknown AgentCard field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *AgentCardMutation) AddedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.owner != nil {
+		edges = append(edges, agentcard.EdgeOwner)
+	}
+	if m.exposures != nil {
+		edges = append(edges, agentcard.EdgeExposures)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *AgentCardMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case agentcard.EdgeOwner:
+		if id := m.owner; id != nil {
+			return []ent.Value{*id}
+		}
+	case agentcard.EdgeExposures:
+		ids := make([]ent.Value, 0, len(m.exposures))
+		for id := range m.exposures {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *AgentCardMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.removedexposures != nil {
+		edges = append(edges, agentcard.EdgeExposures)
+	}
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *AgentCardMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case agentcard.EdgeExposures:
+		ids := make([]ent.Value, 0, len(m.removedexposures))
+		for id := range m.removedexposures {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *AgentCardMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.clearedowner {
+		edges = append(edges, agentcard.EdgeOwner)
+	}
+	if m.clearedexposures {
+		edges = append(edges, agentcard.EdgeExposures)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *AgentCardMutation) EdgeCleared(name string) bool {
+	switch name {
+	case agentcard.EdgeOwner:
+		return m.clearedowner
+	case agentcard.EdgeExposures:
+		return m.clearedexposures
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *AgentCardMutation) ClearEdge(name string) error {
+	switch name {
+	case agentcard.EdgeOwner:
+		m.ClearOwner()
+		return nil
+	}
+	return fmt.Errorf("unknown AgentCard unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *AgentCardMutation) ResetEdge(name string) error {
+	switch name {
+	case agentcard.EdgeOwner:
+		m.ResetOwner()
+		return nil
+	case agentcard.EdgeExposures:
+		m.ResetExposures()
+		return nil
+	}
+	return fmt.Errorf("unknown AgentCard edge %s", name)
+}
+
+// AgenticExposureMutation represents an operation that mutates the AgenticExposure nodes in the graph.
+type AgenticExposureMutation struct {
+	config
+	op                   Op
+	typ                  string
+	id                   *int
+	created_at           *time.Time
+	last_modified_at     *time.Time
+	status_phase         *agenticexposure.StatusPhase
+	status_message       *string
+	environment          *string
+	namespace            *string
+	base_path            *string
+	visibility           *agenticexposure.Visibility
+	variant              *agenticexposure.Variant
+	active               *bool
+	upstreams            *[]model.Upstream
+	appendupstreams      []model.Upstream
+	approval_config      *model.ApprovalConfig
+	security             *model.AgenticExposureSecurity
+	traffic              *model.Traffic
+	transformation       *model.AgenticTransformation
+	clearedFields        map[string]struct{}
+	owner                *int
+	clearedowner         bool
+	mcp_server           *int
+	clearedmcp_server    bool
+	agent_card           *int
+	clearedagent_card    bool
+	subscriptions        map[int]struct{}
+	removedsubscriptions map[int]struct{}
+	clearedsubscriptions bool
+	done                 bool
+	oldValue             func(context.Context) (*AgenticExposure, error)
+	predicates           []predicate.AgenticExposure
+}
+
+var _ ent.Mutation = (*AgenticExposureMutation)(nil)
+
+// agenticexposureOption allows management of the mutation configuration using functional options.
+type agenticexposureOption func(*AgenticExposureMutation)
+
+// newAgenticExposureMutation creates new mutation for the AgenticExposure entity.
+func newAgenticExposureMutation(c config, op Op, opts ...agenticexposureOption) *AgenticExposureMutation {
+	m := &AgenticExposureMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeAgenticExposure,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withAgenticExposureID sets the ID field of the mutation.
+func withAgenticExposureID(id int) agenticexposureOption {
+	return func(m *AgenticExposureMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *AgenticExposure
+		)
+		m.oldValue = func(ctx context.Context) (*AgenticExposure, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().AgenticExposure.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withAgenticExposure sets the old AgenticExposure of the mutation.
+func withAgenticExposure(node *AgenticExposure) agenticexposureOption {
+	return func(m *AgenticExposureMutation) {
+		m.oldValue = func(context.Context) (*AgenticExposure, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m AgenticExposureMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m AgenticExposureMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *AgenticExposureMutation) ID() (id int, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *AgenticExposureMutation) IDs(ctx context.Context) ([]int, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().AgenticExposure.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *AgenticExposureMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *AgenticExposureMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the AgenticExposure entity.
+// If the AgenticExposure object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AgenticExposureMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *AgenticExposureMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetLastModifiedAt sets the "last_modified_at" field.
+func (m *AgenticExposureMutation) SetLastModifiedAt(t time.Time) {
+	m.last_modified_at = &t
+}
+
+// LastModifiedAt returns the value of the "last_modified_at" field in the mutation.
+func (m *AgenticExposureMutation) LastModifiedAt() (r time.Time, exists bool) {
+	v := m.last_modified_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLastModifiedAt returns the old "last_modified_at" field's value of the AgenticExposure entity.
+// If the AgenticExposure object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AgenticExposureMutation) OldLastModifiedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLastModifiedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLastModifiedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLastModifiedAt: %w", err)
+	}
+	return oldValue.LastModifiedAt, nil
+}
+
+// ResetLastModifiedAt resets all changes to the "last_modified_at" field.
+func (m *AgenticExposureMutation) ResetLastModifiedAt() {
+	m.last_modified_at = nil
+}
+
+// SetStatusPhase sets the "status_phase" field.
+func (m *AgenticExposureMutation) SetStatusPhase(ap agenticexposure.StatusPhase) {
+	m.status_phase = &ap
+}
+
+// StatusPhase returns the value of the "status_phase" field in the mutation.
+func (m *AgenticExposureMutation) StatusPhase() (r agenticexposure.StatusPhase, exists bool) {
+	v := m.status_phase
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStatusPhase returns the old "status_phase" field's value of the AgenticExposure entity.
+// If the AgenticExposure object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AgenticExposureMutation) OldStatusPhase(ctx context.Context) (v *agenticexposure.StatusPhase, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStatusPhase is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStatusPhase requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStatusPhase: %w", err)
+	}
+	return oldValue.StatusPhase, nil
+}
+
+// ClearStatusPhase clears the value of the "status_phase" field.
+func (m *AgenticExposureMutation) ClearStatusPhase() {
+	m.status_phase = nil
+	m.clearedFields[agenticexposure.FieldStatusPhase] = struct{}{}
+}
+
+// StatusPhaseCleared returns if the "status_phase" field was cleared in this mutation.
+func (m *AgenticExposureMutation) StatusPhaseCleared() bool {
+	_, ok := m.clearedFields[agenticexposure.FieldStatusPhase]
+	return ok
+}
+
+// ResetStatusPhase resets all changes to the "status_phase" field.
+func (m *AgenticExposureMutation) ResetStatusPhase() {
+	m.status_phase = nil
+	delete(m.clearedFields, agenticexposure.FieldStatusPhase)
+}
+
+// SetStatusMessage sets the "status_message" field.
+func (m *AgenticExposureMutation) SetStatusMessage(s string) {
+	m.status_message = &s
+}
+
+// StatusMessage returns the value of the "status_message" field in the mutation.
+func (m *AgenticExposureMutation) StatusMessage() (r string, exists bool) {
+	v := m.status_message
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStatusMessage returns the old "status_message" field's value of the AgenticExposure entity.
+// If the AgenticExposure object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AgenticExposureMutation) OldStatusMessage(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStatusMessage is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStatusMessage requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStatusMessage: %w", err)
+	}
+	return oldValue.StatusMessage, nil
+}
+
+// ClearStatusMessage clears the value of the "status_message" field.
+func (m *AgenticExposureMutation) ClearStatusMessage() {
+	m.status_message = nil
+	m.clearedFields[agenticexposure.FieldStatusMessage] = struct{}{}
+}
+
+// StatusMessageCleared returns if the "status_message" field was cleared in this mutation.
+func (m *AgenticExposureMutation) StatusMessageCleared() bool {
+	_, ok := m.clearedFields[agenticexposure.FieldStatusMessage]
+	return ok
+}
+
+// ResetStatusMessage resets all changes to the "status_message" field.
+func (m *AgenticExposureMutation) ResetStatusMessage() {
+	m.status_message = nil
+	delete(m.clearedFields, agenticexposure.FieldStatusMessage)
+}
+
+// SetEnvironment sets the "environment" field.
+func (m *AgenticExposureMutation) SetEnvironment(s string) {
+	m.environment = &s
+}
+
+// Environment returns the value of the "environment" field in the mutation.
+func (m *AgenticExposureMutation) Environment() (r string, exists bool) {
+	v := m.environment
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEnvironment returns the old "environment" field's value of the AgenticExposure entity.
+// If the AgenticExposure object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AgenticExposureMutation) OldEnvironment(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEnvironment is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEnvironment requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEnvironment: %w", err)
+	}
+	return oldValue.Environment, nil
+}
+
+// ClearEnvironment clears the value of the "environment" field.
+func (m *AgenticExposureMutation) ClearEnvironment() {
+	m.environment = nil
+	m.clearedFields[agenticexposure.FieldEnvironment] = struct{}{}
+}
+
+// EnvironmentCleared returns if the "environment" field was cleared in this mutation.
+func (m *AgenticExposureMutation) EnvironmentCleared() bool {
+	_, ok := m.clearedFields[agenticexposure.FieldEnvironment]
+	return ok
+}
+
+// ResetEnvironment resets all changes to the "environment" field.
+func (m *AgenticExposureMutation) ResetEnvironment() {
+	m.environment = nil
+	delete(m.clearedFields, agenticexposure.FieldEnvironment)
+}
+
+// SetNamespace sets the "namespace" field.
+func (m *AgenticExposureMutation) SetNamespace(s string) {
+	m.namespace = &s
+}
+
+// Namespace returns the value of the "namespace" field in the mutation.
+func (m *AgenticExposureMutation) Namespace() (r string, exists bool) {
+	v := m.namespace
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldNamespace returns the old "namespace" field's value of the AgenticExposure entity.
+// If the AgenticExposure object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AgenticExposureMutation) OldNamespace(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldNamespace is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldNamespace requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldNamespace: %w", err)
+	}
+	return oldValue.Namespace, nil
+}
+
+// ResetNamespace resets all changes to the "namespace" field.
+func (m *AgenticExposureMutation) ResetNamespace() {
+	m.namespace = nil
+}
+
+// SetBasePath sets the "base_path" field.
+func (m *AgenticExposureMutation) SetBasePath(s string) {
+	m.base_path = &s
+}
+
+// BasePath returns the value of the "base_path" field in the mutation.
+func (m *AgenticExposureMutation) BasePath() (r string, exists bool) {
+	v := m.base_path
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldBasePath returns the old "base_path" field's value of the AgenticExposure entity.
+// If the AgenticExposure object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AgenticExposureMutation) OldBasePath(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldBasePath is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldBasePath requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldBasePath: %w", err)
+	}
+	return oldValue.BasePath, nil
+}
+
+// ResetBasePath resets all changes to the "base_path" field.
+func (m *AgenticExposureMutation) ResetBasePath() {
+	m.base_path = nil
+}
+
+// SetVisibility sets the "visibility" field.
+func (m *AgenticExposureMutation) SetVisibility(a agenticexposure.Visibility) {
+	m.visibility = &a
+}
+
+// Visibility returns the value of the "visibility" field in the mutation.
+func (m *AgenticExposureMutation) Visibility() (r agenticexposure.Visibility, exists bool) {
+	v := m.visibility
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldVisibility returns the old "visibility" field's value of the AgenticExposure entity.
+// If the AgenticExposure object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AgenticExposureMutation) OldVisibility(ctx context.Context) (v agenticexposure.Visibility, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldVisibility is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldVisibility requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldVisibility: %w", err)
+	}
+	return oldValue.Visibility, nil
+}
+
+// ResetVisibility resets all changes to the "visibility" field.
+func (m *AgenticExposureMutation) ResetVisibility() {
+	m.visibility = nil
+}
+
+// SetVariant sets the "variant" field.
+func (m *AgenticExposureMutation) SetVariant(a agenticexposure.Variant) {
+	m.variant = &a
+}
+
+// Variant returns the value of the "variant" field in the mutation.
+func (m *AgenticExposureMutation) Variant() (r agenticexposure.Variant, exists bool) {
+	v := m.variant
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldVariant returns the old "variant" field's value of the AgenticExposure entity.
+// If the AgenticExposure object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AgenticExposureMutation) OldVariant(ctx context.Context) (v agenticexposure.Variant, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldVariant is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldVariant requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldVariant: %w", err)
+	}
+	return oldValue.Variant, nil
+}
+
+// ResetVariant resets all changes to the "variant" field.
+func (m *AgenticExposureMutation) ResetVariant() {
+	m.variant = nil
+}
+
+// SetActive sets the "active" field.
+func (m *AgenticExposureMutation) SetActive(b bool) {
+	m.active = &b
+}
+
+// Active returns the value of the "active" field in the mutation.
+func (m *AgenticExposureMutation) Active() (r bool, exists bool) {
+	v := m.active
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldActive returns the old "active" field's value of the AgenticExposure entity.
+// If the AgenticExposure object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AgenticExposureMutation) OldActive(ctx context.Context) (v *bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldActive is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldActive requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldActive: %w", err)
+	}
+	return oldValue.Active, nil
+}
+
+// ClearActive clears the value of the "active" field.
+func (m *AgenticExposureMutation) ClearActive() {
+	m.active = nil
+	m.clearedFields[agenticexposure.FieldActive] = struct{}{}
+}
+
+// ActiveCleared returns if the "active" field was cleared in this mutation.
+func (m *AgenticExposureMutation) ActiveCleared() bool {
+	_, ok := m.clearedFields[agenticexposure.FieldActive]
+	return ok
+}
+
+// ResetActive resets all changes to the "active" field.
+func (m *AgenticExposureMutation) ResetActive() {
+	m.active = nil
+	delete(m.clearedFields, agenticexposure.FieldActive)
+}
+
+// SetUpstreams sets the "upstreams" field.
+func (m *AgenticExposureMutation) SetUpstreams(value []model.Upstream) {
+	m.upstreams = &value
+	m.appendupstreams = nil
+}
+
+// Upstreams returns the value of the "upstreams" field in the mutation.
+func (m *AgenticExposureMutation) Upstreams() (r []model.Upstream, exists bool) {
+	v := m.upstreams
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpstreams returns the old "upstreams" field's value of the AgenticExposure entity.
+// If the AgenticExposure object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AgenticExposureMutation) OldUpstreams(ctx context.Context) (v []model.Upstream, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpstreams is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpstreams requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpstreams: %w", err)
+	}
+	return oldValue.Upstreams, nil
+}
+
+// AppendUpstreams adds value to the "upstreams" field.
+func (m *AgenticExposureMutation) AppendUpstreams(value []model.Upstream) {
+	m.appendupstreams = append(m.appendupstreams, value...)
+}
+
+// AppendedUpstreams returns the list of values that were appended to the "upstreams" field in this mutation.
+func (m *AgenticExposureMutation) AppendedUpstreams() ([]model.Upstream, bool) {
+	if len(m.appendupstreams) == 0 {
+		return nil, false
+	}
+	return m.appendupstreams, true
+}
+
+// ResetUpstreams resets all changes to the "upstreams" field.
+func (m *AgenticExposureMutation) ResetUpstreams() {
+	m.upstreams = nil
+	m.appendupstreams = nil
+}
+
+// SetApprovalConfig sets the "approval_config" field.
+func (m *AgenticExposureMutation) SetApprovalConfig(mc model.ApprovalConfig) {
+	m.approval_config = &mc
+}
+
+// ApprovalConfig returns the value of the "approval_config" field in the mutation.
+func (m *AgenticExposureMutation) ApprovalConfig() (r model.ApprovalConfig, exists bool) {
+	v := m.approval_config
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldApprovalConfig returns the old "approval_config" field's value of the AgenticExposure entity.
+// If the AgenticExposure object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AgenticExposureMutation) OldApprovalConfig(ctx context.Context) (v model.ApprovalConfig, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldApprovalConfig is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldApprovalConfig requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldApprovalConfig: %w", err)
+	}
+	return oldValue.ApprovalConfig, nil
+}
+
+// ResetApprovalConfig resets all changes to the "approval_config" field.
+func (m *AgenticExposureMutation) ResetApprovalConfig() {
+	m.approval_config = nil
+}
+
+// SetSecurity sets the "security" field.
+func (m *AgenticExposureMutation) SetSecurity(mes model.AgenticExposureSecurity) {
+	m.security = &mes
+}
+
+// Security returns the value of the "security" field in the mutation.
+func (m *AgenticExposureMutation) Security() (r model.AgenticExposureSecurity, exists bool) {
+	v := m.security
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSecurity returns the old "security" field's value of the AgenticExposure entity.
+// If the AgenticExposure object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AgenticExposureMutation) OldSecurity(ctx context.Context) (v model.AgenticExposureSecurity, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSecurity is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSecurity requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSecurity: %w", err)
+	}
+	return oldValue.Security, nil
+}
+
+// ClearSecurity clears the value of the "security" field.
+func (m *AgenticExposureMutation) ClearSecurity() {
+	m.security = nil
+	m.clearedFields[agenticexposure.FieldSecurity] = struct{}{}
+}
+
+// SecurityCleared returns if the "security" field was cleared in this mutation.
+func (m *AgenticExposureMutation) SecurityCleared() bool {
+	_, ok := m.clearedFields[agenticexposure.FieldSecurity]
+	return ok
+}
+
+// ResetSecurity resets all changes to the "security" field.
+func (m *AgenticExposureMutation) ResetSecurity() {
+	m.security = nil
+	delete(m.clearedFields, agenticexposure.FieldSecurity)
+}
+
+// SetTraffic sets the "traffic" field.
+func (m *AgenticExposureMutation) SetTraffic(value model.Traffic) {
+	m.traffic = &value
+}
+
+// Traffic returns the value of the "traffic" field in the mutation.
+func (m *AgenticExposureMutation) Traffic() (r model.Traffic, exists bool) {
+	v := m.traffic
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTraffic returns the old "traffic" field's value of the AgenticExposure entity.
+// If the AgenticExposure object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AgenticExposureMutation) OldTraffic(ctx context.Context) (v model.Traffic, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTraffic is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTraffic requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTraffic: %w", err)
+	}
+	return oldValue.Traffic, nil
+}
+
+// ClearTraffic clears the value of the "traffic" field.
+func (m *AgenticExposureMutation) ClearTraffic() {
+	m.traffic = nil
+	m.clearedFields[agenticexposure.FieldTraffic] = struct{}{}
+}
+
+// TrafficCleared returns if the "traffic" field was cleared in this mutation.
+func (m *AgenticExposureMutation) TrafficCleared() bool {
+	_, ok := m.clearedFields[agenticexposure.FieldTraffic]
+	return ok
+}
+
+// ResetTraffic resets all changes to the "traffic" field.
+func (m *AgenticExposureMutation) ResetTraffic() {
+	m.traffic = nil
+	delete(m.clearedFields, agenticexposure.FieldTraffic)
+}
+
+// SetTransformation sets the "transformation" field.
+func (m *AgenticExposureMutation) SetTransformation(mt model.AgenticTransformation) {
+	m.transformation = &mt
+}
+
+// Transformation returns the value of the "transformation" field in the mutation.
+func (m *AgenticExposureMutation) Transformation() (r model.AgenticTransformation, exists bool) {
+	v := m.transformation
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTransformation returns the old "transformation" field's value of the AgenticExposure entity.
+// If the AgenticExposure object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AgenticExposureMutation) OldTransformation(ctx context.Context) (v model.AgenticTransformation, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTransformation is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTransformation requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTransformation: %w", err)
+	}
+	return oldValue.Transformation, nil
+}
+
+// ClearTransformation clears the value of the "transformation" field.
+func (m *AgenticExposureMutation) ClearTransformation() {
+	m.transformation = nil
+	m.clearedFields[agenticexposure.FieldTransformation] = struct{}{}
+}
+
+// TransformationCleared returns if the "transformation" field was cleared in this mutation.
+func (m *AgenticExposureMutation) TransformationCleared() bool {
+	_, ok := m.clearedFields[agenticexposure.FieldTransformation]
+	return ok
+}
+
+// ResetTransformation resets all changes to the "transformation" field.
+func (m *AgenticExposureMutation) ResetTransformation() {
+	m.transformation = nil
+	delete(m.clearedFields, agenticexposure.FieldTransformation)
+}
+
+// SetOwnerID sets the "owner" edge to the Application entity by id.
+func (m *AgenticExposureMutation) SetOwnerID(id int) {
+	m.owner = &id
+}
+
+// ClearOwner clears the "owner" edge to the Application entity.
+func (m *AgenticExposureMutation) ClearOwner() {
+	m.clearedowner = true
+}
+
+// OwnerCleared reports if the "owner" edge to the Application entity was cleared.
+func (m *AgenticExposureMutation) OwnerCleared() bool {
+	return m.clearedowner
+}
+
+// OwnerID returns the "owner" edge ID in the mutation.
+func (m *AgenticExposureMutation) OwnerID() (id int, exists bool) {
+	if m.owner != nil {
+		return *m.owner, true
+	}
+	return
+}
+
+// OwnerIDs returns the "owner" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// OwnerID instead. It exists only for internal usage by the builders.
+func (m *AgenticExposureMutation) OwnerIDs() (ids []int) {
+	if id := m.owner; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetOwner resets all changes to the "owner" edge.
+func (m *AgenticExposureMutation) ResetOwner() {
+	m.owner = nil
+	m.clearedowner = false
+}
+
+// SetMcpServerID sets the "mcp_server" edge to the McpServer entity by id.
+func (m *AgenticExposureMutation) SetMcpServerID(id int) {
+	m.mcp_server = &id
+}
+
+// ClearMcpServer clears the "mcp_server" edge to the McpServer entity.
+func (m *AgenticExposureMutation) ClearMcpServer() {
+	m.clearedmcp_server = true
+}
+
+// McpServerCleared reports if the "mcp_server" edge to the McpServer entity was cleared.
+func (m *AgenticExposureMutation) McpServerCleared() bool {
+	return m.clearedmcp_server
+}
+
+// McpServerID returns the "mcp_server" edge ID in the mutation.
+func (m *AgenticExposureMutation) McpServerID() (id int, exists bool) {
+	if m.mcp_server != nil {
+		return *m.mcp_server, true
+	}
+	return
+}
+
+// McpServerIDs returns the "mcp_server" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// McpServerID instead. It exists only for internal usage by the builders.
+func (m *AgenticExposureMutation) McpServerIDs() (ids []int) {
+	if id := m.mcp_server; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetMcpServer resets all changes to the "mcp_server" edge.
+func (m *AgenticExposureMutation) ResetMcpServer() {
+	m.mcp_server = nil
+	m.clearedmcp_server = false
+}
+
+// SetAgentCardID sets the "agent_card" edge to the AgentCard entity by id.
+func (m *AgenticExposureMutation) SetAgentCardID(id int) {
+	m.agent_card = &id
+}
+
+// ClearAgentCard clears the "agent_card" edge to the AgentCard entity.
+func (m *AgenticExposureMutation) ClearAgentCard() {
+	m.clearedagent_card = true
+}
+
+// AgentCardCleared reports if the "agent_card" edge to the AgentCard entity was cleared.
+func (m *AgenticExposureMutation) AgentCardCleared() bool {
+	return m.clearedagent_card
+}
+
+// AgentCardID returns the "agent_card" edge ID in the mutation.
+func (m *AgenticExposureMutation) AgentCardID() (id int, exists bool) {
+	if m.agent_card != nil {
+		return *m.agent_card, true
+	}
+	return
+}
+
+// AgentCardIDs returns the "agent_card" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// AgentCardID instead. It exists only for internal usage by the builders.
+func (m *AgenticExposureMutation) AgentCardIDs() (ids []int) {
+	if id := m.agent_card; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetAgentCard resets all changes to the "agent_card" edge.
+func (m *AgenticExposureMutation) ResetAgentCard() {
+	m.agent_card = nil
+	m.clearedagent_card = false
+}
+
+// AddSubscriptionIDs adds the "subscriptions" edge to the AgenticSubscription entity by ids.
+func (m *AgenticExposureMutation) AddSubscriptionIDs(ids ...int) {
+	if m.subscriptions == nil {
+		m.subscriptions = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.subscriptions[ids[i]] = struct{}{}
+	}
+}
+
+// ClearSubscriptions clears the "subscriptions" edge to the AgenticSubscription entity.
+func (m *AgenticExposureMutation) ClearSubscriptions() {
+	m.clearedsubscriptions = true
+}
+
+// SubscriptionsCleared reports if the "subscriptions" edge to the AgenticSubscription entity was cleared.
+func (m *AgenticExposureMutation) SubscriptionsCleared() bool {
+	return m.clearedsubscriptions
+}
+
+// RemoveSubscriptionIDs removes the "subscriptions" edge to the AgenticSubscription entity by IDs.
+func (m *AgenticExposureMutation) RemoveSubscriptionIDs(ids ...int) {
+	if m.removedsubscriptions == nil {
+		m.removedsubscriptions = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.subscriptions, ids[i])
+		m.removedsubscriptions[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedSubscriptions returns the removed IDs of the "subscriptions" edge to the AgenticSubscription entity.
+func (m *AgenticExposureMutation) RemovedSubscriptionsIDs() (ids []int) {
+	for id := range m.removedsubscriptions {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// SubscriptionsIDs returns the "subscriptions" edge IDs in the mutation.
+func (m *AgenticExposureMutation) SubscriptionsIDs() (ids []int) {
+	for id := range m.subscriptions {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetSubscriptions resets all changes to the "subscriptions" edge.
+func (m *AgenticExposureMutation) ResetSubscriptions() {
+	m.subscriptions = nil
+	m.clearedsubscriptions = false
+	m.removedsubscriptions = nil
+}
+
+// Where appends a list predicates to the AgenticExposureMutation builder.
+func (m *AgenticExposureMutation) Where(ps ...predicate.AgenticExposure) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the AgenticExposureMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *AgenticExposureMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.AgenticExposure, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *AgenticExposureMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *AgenticExposureMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (AgenticExposure).
+func (m *AgenticExposureMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *AgenticExposureMutation) Fields() []string {
+	fields := make([]string, 0, 15)
+	if m.created_at != nil {
+		fields = append(fields, agenticexposure.FieldCreatedAt)
+	}
+	if m.last_modified_at != nil {
+		fields = append(fields, agenticexposure.FieldLastModifiedAt)
+	}
+	if m.status_phase != nil {
+		fields = append(fields, agenticexposure.FieldStatusPhase)
+	}
+	if m.status_message != nil {
+		fields = append(fields, agenticexposure.FieldStatusMessage)
+	}
+	if m.environment != nil {
+		fields = append(fields, agenticexposure.FieldEnvironment)
+	}
+	if m.namespace != nil {
+		fields = append(fields, agenticexposure.FieldNamespace)
+	}
+	if m.base_path != nil {
+		fields = append(fields, agenticexposure.FieldBasePath)
+	}
+	if m.visibility != nil {
+		fields = append(fields, agenticexposure.FieldVisibility)
+	}
+	if m.variant != nil {
+		fields = append(fields, agenticexposure.FieldVariant)
+	}
+	if m.active != nil {
+		fields = append(fields, agenticexposure.FieldActive)
+	}
+	if m.upstreams != nil {
+		fields = append(fields, agenticexposure.FieldUpstreams)
+	}
+	if m.approval_config != nil {
+		fields = append(fields, agenticexposure.FieldApprovalConfig)
+	}
+	if m.security != nil {
+		fields = append(fields, agenticexposure.FieldSecurity)
+	}
+	if m.traffic != nil {
+		fields = append(fields, agenticexposure.FieldTraffic)
+	}
+	if m.transformation != nil {
+		fields = append(fields, agenticexposure.FieldTransformation)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *AgenticExposureMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case agenticexposure.FieldCreatedAt:
+		return m.CreatedAt()
+	case agenticexposure.FieldLastModifiedAt:
+		return m.LastModifiedAt()
+	case agenticexposure.FieldStatusPhase:
+		return m.StatusPhase()
+	case agenticexposure.FieldStatusMessage:
+		return m.StatusMessage()
+	case agenticexposure.FieldEnvironment:
+		return m.Environment()
+	case agenticexposure.FieldNamespace:
+		return m.Namespace()
+	case agenticexposure.FieldBasePath:
+		return m.BasePath()
+	case agenticexposure.FieldVisibility:
+		return m.Visibility()
+	case agenticexposure.FieldVariant:
+		return m.Variant()
+	case agenticexposure.FieldActive:
+		return m.Active()
+	case agenticexposure.FieldUpstreams:
+		return m.Upstreams()
+	case agenticexposure.FieldApprovalConfig:
+		return m.ApprovalConfig()
+	case agenticexposure.FieldSecurity:
+		return m.Security()
+	case agenticexposure.FieldTraffic:
+		return m.Traffic()
+	case agenticexposure.FieldTransformation:
+		return m.Transformation()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *AgenticExposureMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case agenticexposure.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case agenticexposure.FieldLastModifiedAt:
+		return m.OldLastModifiedAt(ctx)
+	case agenticexposure.FieldStatusPhase:
+		return m.OldStatusPhase(ctx)
+	case agenticexposure.FieldStatusMessage:
+		return m.OldStatusMessage(ctx)
+	case agenticexposure.FieldEnvironment:
+		return m.OldEnvironment(ctx)
+	case agenticexposure.FieldNamespace:
+		return m.OldNamespace(ctx)
+	case agenticexposure.FieldBasePath:
+		return m.OldBasePath(ctx)
+	case agenticexposure.FieldVisibility:
+		return m.OldVisibility(ctx)
+	case agenticexposure.FieldVariant:
+		return m.OldVariant(ctx)
+	case agenticexposure.FieldActive:
+		return m.OldActive(ctx)
+	case agenticexposure.FieldUpstreams:
+		return m.OldUpstreams(ctx)
+	case agenticexposure.FieldApprovalConfig:
+		return m.OldApprovalConfig(ctx)
+	case agenticexposure.FieldSecurity:
+		return m.OldSecurity(ctx)
+	case agenticexposure.FieldTraffic:
+		return m.OldTraffic(ctx)
+	case agenticexposure.FieldTransformation:
+		return m.OldTransformation(ctx)
+	}
+	return nil, fmt.Errorf("unknown AgenticExposure field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *AgenticExposureMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case agenticexposure.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case agenticexposure.FieldLastModifiedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLastModifiedAt(v)
+		return nil
+	case agenticexposure.FieldStatusPhase:
+		v, ok := value.(agenticexposure.StatusPhase)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStatusPhase(v)
+		return nil
+	case agenticexposure.FieldStatusMessage:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStatusMessage(v)
+		return nil
+	case agenticexposure.FieldEnvironment:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEnvironment(v)
+		return nil
+	case agenticexposure.FieldNamespace:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetNamespace(v)
+		return nil
+	case agenticexposure.FieldBasePath:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetBasePath(v)
+		return nil
+	case agenticexposure.FieldVisibility:
+		v, ok := value.(agenticexposure.Visibility)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetVisibility(v)
+		return nil
+	case agenticexposure.FieldVariant:
+		v, ok := value.(agenticexposure.Variant)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetVariant(v)
+		return nil
+	case agenticexposure.FieldActive:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetActive(v)
+		return nil
+	case agenticexposure.FieldUpstreams:
+		v, ok := value.([]model.Upstream)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpstreams(v)
+		return nil
+	case agenticexposure.FieldApprovalConfig:
+		v, ok := value.(model.ApprovalConfig)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetApprovalConfig(v)
+		return nil
+	case agenticexposure.FieldSecurity:
+		v, ok := value.(model.AgenticExposureSecurity)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSecurity(v)
+		return nil
+	case agenticexposure.FieldTraffic:
+		v, ok := value.(model.Traffic)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTraffic(v)
+		return nil
+	case agenticexposure.FieldTransformation:
+		v, ok := value.(model.AgenticTransformation)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTransformation(v)
+		return nil
+	}
+	return fmt.Errorf("unknown AgenticExposure field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *AgenticExposureMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *AgenticExposureMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *AgenticExposureMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown AgenticExposure numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *AgenticExposureMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(agenticexposure.FieldStatusPhase) {
+		fields = append(fields, agenticexposure.FieldStatusPhase)
+	}
+	if m.FieldCleared(agenticexposure.FieldStatusMessage) {
+		fields = append(fields, agenticexposure.FieldStatusMessage)
+	}
+	if m.FieldCleared(agenticexposure.FieldEnvironment) {
+		fields = append(fields, agenticexposure.FieldEnvironment)
+	}
+	if m.FieldCleared(agenticexposure.FieldActive) {
+		fields = append(fields, agenticexposure.FieldActive)
+	}
+	if m.FieldCleared(agenticexposure.FieldSecurity) {
+		fields = append(fields, agenticexposure.FieldSecurity)
+	}
+	if m.FieldCleared(agenticexposure.FieldTraffic) {
+		fields = append(fields, agenticexposure.FieldTraffic)
+	}
+	if m.FieldCleared(agenticexposure.FieldTransformation) {
+		fields = append(fields, agenticexposure.FieldTransformation)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *AgenticExposureMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *AgenticExposureMutation) ClearField(name string) error {
+	switch name {
+	case agenticexposure.FieldStatusPhase:
+		m.ClearStatusPhase()
+		return nil
+	case agenticexposure.FieldStatusMessage:
+		m.ClearStatusMessage()
+		return nil
+	case agenticexposure.FieldEnvironment:
+		m.ClearEnvironment()
+		return nil
+	case agenticexposure.FieldActive:
+		m.ClearActive()
+		return nil
+	case agenticexposure.FieldSecurity:
+		m.ClearSecurity()
+		return nil
+	case agenticexposure.FieldTraffic:
+		m.ClearTraffic()
+		return nil
+	case agenticexposure.FieldTransformation:
+		m.ClearTransformation()
+		return nil
+	}
+	return fmt.Errorf("unknown AgenticExposure nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *AgenticExposureMutation) ResetField(name string) error {
+	switch name {
+	case agenticexposure.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case agenticexposure.FieldLastModifiedAt:
+		m.ResetLastModifiedAt()
+		return nil
+	case agenticexposure.FieldStatusPhase:
+		m.ResetStatusPhase()
+		return nil
+	case agenticexposure.FieldStatusMessage:
+		m.ResetStatusMessage()
+		return nil
+	case agenticexposure.FieldEnvironment:
+		m.ResetEnvironment()
+		return nil
+	case agenticexposure.FieldNamespace:
+		m.ResetNamespace()
+		return nil
+	case agenticexposure.FieldBasePath:
+		m.ResetBasePath()
+		return nil
+	case agenticexposure.FieldVisibility:
+		m.ResetVisibility()
+		return nil
+	case agenticexposure.FieldVariant:
+		m.ResetVariant()
+		return nil
+	case agenticexposure.FieldActive:
+		m.ResetActive()
+		return nil
+	case agenticexposure.FieldUpstreams:
+		m.ResetUpstreams()
+		return nil
+	case agenticexposure.FieldApprovalConfig:
+		m.ResetApprovalConfig()
+		return nil
+	case agenticexposure.FieldSecurity:
+		m.ResetSecurity()
+		return nil
+	case agenticexposure.FieldTraffic:
+		m.ResetTraffic()
+		return nil
+	case agenticexposure.FieldTransformation:
+		m.ResetTransformation()
+		return nil
+	}
+	return fmt.Errorf("unknown AgenticExposure field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *AgenticExposureMutation) AddedEdges() []string {
+	edges := make([]string, 0, 4)
+	if m.owner != nil {
+		edges = append(edges, agenticexposure.EdgeOwner)
+	}
+	if m.mcp_server != nil {
+		edges = append(edges, agenticexposure.EdgeMcpServer)
+	}
+	if m.agent_card != nil {
+		edges = append(edges, agenticexposure.EdgeAgentCard)
+	}
+	if m.subscriptions != nil {
+		edges = append(edges, agenticexposure.EdgeSubscriptions)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *AgenticExposureMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case agenticexposure.EdgeOwner:
+		if id := m.owner; id != nil {
+			return []ent.Value{*id}
+		}
+	case agenticexposure.EdgeMcpServer:
+		if id := m.mcp_server; id != nil {
+			return []ent.Value{*id}
+		}
+	case agenticexposure.EdgeAgentCard:
+		if id := m.agent_card; id != nil {
+			return []ent.Value{*id}
+		}
+	case agenticexposure.EdgeSubscriptions:
+		ids := make([]ent.Value, 0, len(m.subscriptions))
+		for id := range m.subscriptions {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *AgenticExposureMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 4)
+	if m.removedsubscriptions != nil {
+		edges = append(edges, agenticexposure.EdgeSubscriptions)
+	}
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *AgenticExposureMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case agenticexposure.EdgeSubscriptions:
+		ids := make([]ent.Value, 0, len(m.removedsubscriptions))
+		for id := range m.removedsubscriptions {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *AgenticExposureMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 4)
+	if m.clearedowner {
+		edges = append(edges, agenticexposure.EdgeOwner)
+	}
+	if m.clearedmcp_server {
+		edges = append(edges, agenticexposure.EdgeMcpServer)
+	}
+	if m.clearedagent_card {
+		edges = append(edges, agenticexposure.EdgeAgentCard)
+	}
+	if m.clearedsubscriptions {
+		edges = append(edges, agenticexposure.EdgeSubscriptions)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *AgenticExposureMutation) EdgeCleared(name string) bool {
+	switch name {
+	case agenticexposure.EdgeOwner:
+		return m.clearedowner
+	case agenticexposure.EdgeMcpServer:
+		return m.clearedmcp_server
+	case agenticexposure.EdgeAgentCard:
+		return m.clearedagent_card
+	case agenticexposure.EdgeSubscriptions:
+		return m.clearedsubscriptions
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *AgenticExposureMutation) ClearEdge(name string) error {
+	switch name {
+	case agenticexposure.EdgeOwner:
+		m.ClearOwner()
+		return nil
+	case agenticexposure.EdgeMcpServer:
+		m.ClearMcpServer()
+		return nil
+	case agenticexposure.EdgeAgentCard:
+		m.ClearAgentCard()
+		return nil
+	}
+	return fmt.Errorf("unknown AgenticExposure unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *AgenticExposureMutation) ResetEdge(name string) error {
+	switch name {
+	case agenticexposure.EdgeOwner:
+		m.ResetOwner()
+		return nil
+	case agenticexposure.EdgeMcpServer:
+		m.ResetMcpServer()
+		return nil
+	case agenticexposure.EdgeAgentCard:
+		m.ResetAgentCard()
+		return nil
+	case agenticexposure.EdgeSubscriptions:
+		m.ResetSubscriptions()
+		return nil
+	}
+	return fmt.Errorf("unknown AgenticExposure edge %s", name)
+}
+
+// AgenticSubscriptionMutation represents an operation that mutates the AgenticSubscription nodes in the graph.
+type AgenticSubscriptionMutation struct {
+	config
+	op                       Op
+	typ                      string
+	id                       *int
+	created_at               *time.Time
+	last_modified_at         *time.Time
+	status_phase             *agenticsubscription.StatusPhase
+	status_message           *string
+	environment              *string
+	namespace                *string
+	name                     *string
+	base_path                *string
+	gateway_url              *string
+	security                 *model.AgenticSubscriptionSecurity
+	traffic                  *model.AgenticSubscriberTraffic
+	clearedFields            map[string]struct{}
+	owner                    *int
+	clearedowner             bool
+	target                   *int
+	clearedtarget            bool
+	approval                 *int
+	clearedapproval          bool
+	approval_requests        map[int]struct{}
+	removedapproval_requests map[int]struct{}
+	clearedapproval_requests bool
+	done                     bool
+	oldValue                 func(context.Context) (*AgenticSubscription, error)
+	predicates               []predicate.AgenticSubscription
+}
+
+var _ ent.Mutation = (*AgenticSubscriptionMutation)(nil)
+
+// agenticsubscriptionOption allows management of the mutation configuration using functional options.
+type agenticsubscriptionOption func(*AgenticSubscriptionMutation)
+
+// newAgenticSubscriptionMutation creates new mutation for the AgenticSubscription entity.
+func newAgenticSubscriptionMutation(c config, op Op, opts ...agenticsubscriptionOption) *AgenticSubscriptionMutation {
+	m := &AgenticSubscriptionMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeAgenticSubscription,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withAgenticSubscriptionID sets the ID field of the mutation.
+func withAgenticSubscriptionID(id int) agenticsubscriptionOption {
+	return func(m *AgenticSubscriptionMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *AgenticSubscription
+		)
+		m.oldValue = func(ctx context.Context) (*AgenticSubscription, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().AgenticSubscription.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withAgenticSubscription sets the old AgenticSubscription of the mutation.
+func withAgenticSubscription(node *AgenticSubscription) agenticsubscriptionOption {
+	return func(m *AgenticSubscriptionMutation) {
+		m.oldValue = func(context.Context) (*AgenticSubscription, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m AgenticSubscriptionMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m AgenticSubscriptionMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *AgenticSubscriptionMutation) ID() (id int, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *AgenticSubscriptionMutation) IDs(ctx context.Context) ([]int, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().AgenticSubscription.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *AgenticSubscriptionMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *AgenticSubscriptionMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the AgenticSubscription entity.
+// If the AgenticSubscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AgenticSubscriptionMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *AgenticSubscriptionMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetLastModifiedAt sets the "last_modified_at" field.
+func (m *AgenticSubscriptionMutation) SetLastModifiedAt(t time.Time) {
+	m.last_modified_at = &t
+}
+
+// LastModifiedAt returns the value of the "last_modified_at" field in the mutation.
+func (m *AgenticSubscriptionMutation) LastModifiedAt() (r time.Time, exists bool) {
+	v := m.last_modified_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLastModifiedAt returns the old "last_modified_at" field's value of the AgenticSubscription entity.
+// If the AgenticSubscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AgenticSubscriptionMutation) OldLastModifiedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLastModifiedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLastModifiedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLastModifiedAt: %w", err)
+	}
+	return oldValue.LastModifiedAt, nil
+}
+
+// ResetLastModifiedAt resets all changes to the "last_modified_at" field.
+func (m *AgenticSubscriptionMutation) ResetLastModifiedAt() {
+	m.last_modified_at = nil
+}
+
+// SetStatusPhase sets the "status_phase" field.
+func (m *AgenticSubscriptionMutation) SetStatusPhase(ap agenticsubscription.StatusPhase) {
+	m.status_phase = &ap
+}
+
+// StatusPhase returns the value of the "status_phase" field in the mutation.
+func (m *AgenticSubscriptionMutation) StatusPhase() (r agenticsubscription.StatusPhase, exists bool) {
+	v := m.status_phase
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStatusPhase returns the old "status_phase" field's value of the AgenticSubscription entity.
+// If the AgenticSubscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AgenticSubscriptionMutation) OldStatusPhase(ctx context.Context) (v *agenticsubscription.StatusPhase, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStatusPhase is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStatusPhase requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStatusPhase: %w", err)
+	}
+	return oldValue.StatusPhase, nil
+}
+
+// ClearStatusPhase clears the value of the "status_phase" field.
+func (m *AgenticSubscriptionMutation) ClearStatusPhase() {
+	m.status_phase = nil
+	m.clearedFields[agenticsubscription.FieldStatusPhase] = struct{}{}
+}
+
+// StatusPhaseCleared returns if the "status_phase" field was cleared in this mutation.
+func (m *AgenticSubscriptionMutation) StatusPhaseCleared() bool {
+	_, ok := m.clearedFields[agenticsubscription.FieldStatusPhase]
+	return ok
+}
+
+// ResetStatusPhase resets all changes to the "status_phase" field.
+func (m *AgenticSubscriptionMutation) ResetStatusPhase() {
+	m.status_phase = nil
+	delete(m.clearedFields, agenticsubscription.FieldStatusPhase)
+}
+
+// SetStatusMessage sets the "status_message" field.
+func (m *AgenticSubscriptionMutation) SetStatusMessage(s string) {
+	m.status_message = &s
+}
+
+// StatusMessage returns the value of the "status_message" field in the mutation.
+func (m *AgenticSubscriptionMutation) StatusMessage() (r string, exists bool) {
+	v := m.status_message
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStatusMessage returns the old "status_message" field's value of the AgenticSubscription entity.
+// If the AgenticSubscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AgenticSubscriptionMutation) OldStatusMessage(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStatusMessage is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStatusMessage requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStatusMessage: %w", err)
+	}
+	return oldValue.StatusMessage, nil
+}
+
+// ClearStatusMessage clears the value of the "status_message" field.
+func (m *AgenticSubscriptionMutation) ClearStatusMessage() {
+	m.status_message = nil
+	m.clearedFields[agenticsubscription.FieldStatusMessage] = struct{}{}
+}
+
+// StatusMessageCleared returns if the "status_message" field was cleared in this mutation.
+func (m *AgenticSubscriptionMutation) StatusMessageCleared() bool {
+	_, ok := m.clearedFields[agenticsubscription.FieldStatusMessage]
+	return ok
+}
+
+// ResetStatusMessage resets all changes to the "status_message" field.
+func (m *AgenticSubscriptionMutation) ResetStatusMessage() {
+	m.status_message = nil
+	delete(m.clearedFields, agenticsubscription.FieldStatusMessage)
+}
+
+// SetEnvironment sets the "environment" field.
+func (m *AgenticSubscriptionMutation) SetEnvironment(s string) {
+	m.environment = &s
+}
+
+// Environment returns the value of the "environment" field in the mutation.
+func (m *AgenticSubscriptionMutation) Environment() (r string, exists bool) {
+	v := m.environment
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEnvironment returns the old "environment" field's value of the AgenticSubscription entity.
+// If the AgenticSubscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AgenticSubscriptionMutation) OldEnvironment(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEnvironment is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEnvironment requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEnvironment: %w", err)
+	}
+	return oldValue.Environment, nil
+}
+
+// ClearEnvironment clears the value of the "environment" field.
+func (m *AgenticSubscriptionMutation) ClearEnvironment() {
+	m.environment = nil
+	m.clearedFields[agenticsubscription.FieldEnvironment] = struct{}{}
+}
+
+// EnvironmentCleared returns if the "environment" field was cleared in this mutation.
+func (m *AgenticSubscriptionMutation) EnvironmentCleared() bool {
+	_, ok := m.clearedFields[agenticsubscription.FieldEnvironment]
+	return ok
+}
+
+// ResetEnvironment resets all changes to the "environment" field.
+func (m *AgenticSubscriptionMutation) ResetEnvironment() {
+	m.environment = nil
+	delete(m.clearedFields, agenticsubscription.FieldEnvironment)
+}
+
+// SetNamespace sets the "namespace" field.
+func (m *AgenticSubscriptionMutation) SetNamespace(s string) {
+	m.namespace = &s
+}
+
+// Namespace returns the value of the "namespace" field in the mutation.
+func (m *AgenticSubscriptionMutation) Namespace() (r string, exists bool) {
+	v := m.namespace
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldNamespace returns the old "namespace" field's value of the AgenticSubscription entity.
+// If the AgenticSubscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AgenticSubscriptionMutation) OldNamespace(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldNamespace is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldNamespace requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldNamespace: %w", err)
+	}
+	return oldValue.Namespace, nil
+}
+
+// ResetNamespace resets all changes to the "namespace" field.
+func (m *AgenticSubscriptionMutation) ResetNamespace() {
+	m.namespace = nil
+}
+
+// SetName sets the "name" field.
+func (m *AgenticSubscriptionMutation) SetName(s string) {
+	m.name = &s
+}
+
+// Name returns the value of the "name" field in the mutation.
+func (m *AgenticSubscriptionMutation) Name() (r string, exists bool) {
+	v := m.name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldName returns the old "name" field's value of the AgenticSubscription entity.
+// If the AgenticSubscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AgenticSubscriptionMutation) OldName(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldName: %w", err)
+	}
+	return oldValue.Name, nil
+}
+
+// ResetName resets all changes to the "name" field.
+func (m *AgenticSubscriptionMutation) ResetName() {
+	m.name = nil
+}
+
+// SetBasePath sets the "base_path" field.
+func (m *AgenticSubscriptionMutation) SetBasePath(s string) {
+	m.base_path = &s
+}
+
+// BasePath returns the value of the "base_path" field in the mutation.
+func (m *AgenticSubscriptionMutation) BasePath() (r string, exists bool) {
+	v := m.base_path
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldBasePath returns the old "base_path" field's value of the AgenticSubscription entity.
+// If the AgenticSubscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AgenticSubscriptionMutation) OldBasePath(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldBasePath is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldBasePath requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldBasePath: %w", err)
+	}
+	return oldValue.BasePath, nil
+}
+
+// ResetBasePath resets all changes to the "base_path" field.
+func (m *AgenticSubscriptionMutation) ResetBasePath() {
+	m.base_path = nil
+}
+
+// SetGatewayURL sets the "gateway_url" field.
+func (m *AgenticSubscriptionMutation) SetGatewayURL(s string) {
+	m.gateway_url = &s
+}
+
+// GatewayURL returns the value of the "gateway_url" field in the mutation.
+func (m *AgenticSubscriptionMutation) GatewayURL() (r string, exists bool) {
+	v := m.gateway_url
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldGatewayURL returns the old "gateway_url" field's value of the AgenticSubscription entity.
+// If the AgenticSubscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AgenticSubscriptionMutation) OldGatewayURL(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldGatewayURL is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldGatewayURL requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldGatewayURL: %w", err)
+	}
+	return oldValue.GatewayURL, nil
+}
+
+// ClearGatewayURL clears the value of the "gateway_url" field.
+func (m *AgenticSubscriptionMutation) ClearGatewayURL() {
+	m.gateway_url = nil
+	m.clearedFields[agenticsubscription.FieldGatewayURL] = struct{}{}
+}
+
+// GatewayURLCleared returns if the "gateway_url" field was cleared in this mutation.
+func (m *AgenticSubscriptionMutation) GatewayURLCleared() bool {
+	_, ok := m.clearedFields[agenticsubscription.FieldGatewayURL]
+	return ok
+}
+
+// ResetGatewayURL resets all changes to the "gateway_url" field.
+func (m *AgenticSubscriptionMutation) ResetGatewayURL() {
+	m.gateway_url = nil
+	delete(m.clearedFields, agenticsubscription.FieldGatewayURL)
+}
+
+// SetSecurity sets the "security" field.
+func (m *AgenticSubscriptionMutation) SetSecurity(mss model.AgenticSubscriptionSecurity) {
+	m.security = &mss
+}
+
+// Security returns the value of the "security" field in the mutation.
+func (m *AgenticSubscriptionMutation) Security() (r model.AgenticSubscriptionSecurity, exists bool) {
+	v := m.security
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSecurity returns the old "security" field's value of the AgenticSubscription entity.
+// If the AgenticSubscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AgenticSubscriptionMutation) OldSecurity(ctx context.Context) (v model.AgenticSubscriptionSecurity, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSecurity is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSecurity requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSecurity: %w", err)
+	}
+	return oldValue.Security, nil
+}
+
+// ClearSecurity clears the value of the "security" field.
+func (m *AgenticSubscriptionMutation) ClearSecurity() {
+	m.security = nil
+	m.clearedFields[agenticsubscription.FieldSecurity] = struct{}{}
+}
+
+// SecurityCleared returns if the "security" field was cleared in this mutation.
+func (m *AgenticSubscriptionMutation) SecurityCleared() bool {
+	_, ok := m.clearedFields[agenticsubscription.FieldSecurity]
+	return ok
+}
+
+// ResetSecurity resets all changes to the "security" field.
+func (m *AgenticSubscriptionMutation) ResetSecurity() {
+	m.security = nil
+	delete(m.clearedFields, agenticsubscription.FieldSecurity)
+}
+
+// SetTraffic sets the "traffic" field.
+func (m *AgenticSubscriptionMutation) SetTraffic(mst model.AgenticSubscriberTraffic) {
+	m.traffic = &mst
+}
+
+// Traffic returns the value of the "traffic" field in the mutation.
+func (m *AgenticSubscriptionMutation) Traffic() (r model.AgenticSubscriberTraffic, exists bool) {
+	v := m.traffic
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTraffic returns the old "traffic" field's value of the AgenticSubscription entity.
+// If the AgenticSubscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AgenticSubscriptionMutation) OldTraffic(ctx context.Context) (v model.AgenticSubscriberTraffic, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTraffic is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTraffic requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTraffic: %w", err)
+	}
+	return oldValue.Traffic, nil
+}
+
+// ClearTraffic clears the value of the "traffic" field.
+func (m *AgenticSubscriptionMutation) ClearTraffic() {
+	m.traffic = nil
+	m.clearedFields[agenticsubscription.FieldTraffic] = struct{}{}
+}
+
+// TrafficCleared returns if the "traffic" field was cleared in this mutation.
+func (m *AgenticSubscriptionMutation) TrafficCleared() bool {
+	_, ok := m.clearedFields[agenticsubscription.FieldTraffic]
+	return ok
+}
+
+// ResetTraffic resets all changes to the "traffic" field.
+func (m *AgenticSubscriptionMutation) ResetTraffic() {
+	m.traffic = nil
+	delete(m.clearedFields, agenticsubscription.FieldTraffic)
+}
+
+// SetOwnerID sets the "owner" edge to the Application entity by id.
+func (m *AgenticSubscriptionMutation) SetOwnerID(id int) {
+	m.owner = &id
+}
+
+// ClearOwner clears the "owner" edge to the Application entity.
+func (m *AgenticSubscriptionMutation) ClearOwner() {
+	m.clearedowner = true
+}
+
+// OwnerCleared reports if the "owner" edge to the Application entity was cleared.
+func (m *AgenticSubscriptionMutation) OwnerCleared() bool {
+	return m.clearedowner
+}
+
+// OwnerID returns the "owner" edge ID in the mutation.
+func (m *AgenticSubscriptionMutation) OwnerID() (id int, exists bool) {
+	if m.owner != nil {
+		return *m.owner, true
+	}
+	return
+}
+
+// OwnerIDs returns the "owner" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// OwnerID instead. It exists only for internal usage by the builders.
+func (m *AgenticSubscriptionMutation) OwnerIDs() (ids []int) {
+	if id := m.owner; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetOwner resets all changes to the "owner" edge.
+func (m *AgenticSubscriptionMutation) ResetOwner() {
+	m.owner = nil
+	m.clearedowner = false
+}
+
+// SetTargetID sets the "target" edge to the AgenticExposure entity by id.
+func (m *AgenticSubscriptionMutation) SetTargetID(id int) {
+	m.target = &id
+}
+
+// ClearTarget clears the "target" edge to the AgenticExposure entity.
+func (m *AgenticSubscriptionMutation) ClearTarget() {
+	m.clearedtarget = true
+}
+
+// TargetCleared reports if the "target" edge to the AgenticExposure entity was cleared.
+func (m *AgenticSubscriptionMutation) TargetCleared() bool {
+	return m.clearedtarget
+}
+
+// TargetID returns the "target" edge ID in the mutation.
+func (m *AgenticSubscriptionMutation) TargetID() (id int, exists bool) {
+	if m.target != nil {
+		return *m.target, true
+	}
+	return
+}
+
+// TargetIDs returns the "target" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// TargetID instead. It exists only for internal usage by the builders.
+func (m *AgenticSubscriptionMutation) TargetIDs() (ids []int) {
+	if id := m.target; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetTarget resets all changes to the "target" edge.
+func (m *AgenticSubscriptionMutation) ResetTarget() {
+	m.target = nil
+	m.clearedtarget = false
+}
+
+// SetApprovalID sets the "approval" edge to the Approval entity by id.
+func (m *AgenticSubscriptionMutation) SetApprovalID(id int) {
+	m.approval = &id
+}
+
+// ClearApproval clears the "approval" edge to the Approval entity.
+func (m *AgenticSubscriptionMutation) ClearApproval() {
+	m.clearedapproval = true
+}
+
+// ApprovalCleared reports if the "approval" edge to the Approval entity was cleared.
+func (m *AgenticSubscriptionMutation) ApprovalCleared() bool {
+	return m.clearedapproval
+}
+
+// ApprovalID returns the "approval" edge ID in the mutation.
+func (m *AgenticSubscriptionMutation) ApprovalID() (id int, exists bool) {
+	if m.approval != nil {
+		return *m.approval, true
+	}
+	return
+}
+
+// ApprovalIDs returns the "approval" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// ApprovalID instead. It exists only for internal usage by the builders.
+func (m *AgenticSubscriptionMutation) ApprovalIDs() (ids []int) {
+	if id := m.approval; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetApproval resets all changes to the "approval" edge.
+func (m *AgenticSubscriptionMutation) ResetApproval() {
+	m.approval = nil
+	m.clearedapproval = false
+}
+
+// AddApprovalRequestIDs adds the "approval_requests" edge to the ApprovalRequest entity by ids.
+func (m *AgenticSubscriptionMutation) AddApprovalRequestIDs(ids ...int) {
+	if m.approval_requests == nil {
+		m.approval_requests = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.approval_requests[ids[i]] = struct{}{}
+	}
+}
+
+// ClearApprovalRequests clears the "approval_requests" edge to the ApprovalRequest entity.
+func (m *AgenticSubscriptionMutation) ClearApprovalRequests() {
+	m.clearedapproval_requests = true
+}
+
+// ApprovalRequestsCleared reports if the "approval_requests" edge to the ApprovalRequest entity was cleared.
+func (m *AgenticSubscriptionMutation) ApprovalRequestsCleared() bool {
+	return m.clearedapproval_requests
+}
+
+// RemoveApprovalRequestIDs removes the "approval_requests" edge to the ApprovalRequest entity by IDs.
+func (m *AgenticSubscriptionMutation) RemoveApprovalRequestIDs(ids ...int) {
+	if m.removedapproval_requests == nil {
+		m.removedapproval_requests = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.approval_requests, ids[i])
+		m.removedapproval_requests[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedApprovalRequests returns the removed IDs of the "approval_requests" edge to the ApprovalRequest entity.
+func (m *AgenticSubscriptionMutation) RemovedApprovalRequestsIDs() (ids []int) {
+	for id := range m.removedapproval_requests {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ApprovalRequestsIDs returns the "approval_requests" edge IDs in the mutation.
+func (m *AgenticSubscriptionMutation) ApprovalRequestsIDs() (ids []int) {
+	for id := range m.approval_requests {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetApprovalRequests resets all changes to the "approval_requests" edge.
+func (m *AgenticSubscriptionMutation) ResetApprovalRequests() {
+	m.approval_requests = nil
+	m.clearedapproval_requests = false
+	m.removedapproval_requests = nil
+}
+
+// Where appends a list predicates to the AgenticSubscriptionMutation builder.
+func (m *AgenticSubscriptionMutation) Where(ps ...predicate.AgenticSubscription) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the AgenticSubscriptionMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *AgenticSubscriptionMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.AgenticSubscription, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *AgenticSubscriptionMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *AgenticSubscriptionMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (AgenticSubscription).
+func (m *AgenticSubscriptionMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *AgenticSubscriptionMutation) Fields() []string {
+	fields := make([]string, 0, 11)
+	if m.created_at != nil {
+		fields = append(fields, agenticsubscription.FieldCreatedAt)
+	}
+	if m.last_modified_at != nil {
+		fields = append(fields, agenticsubscription.FieldLastModifiedAt)
+	}
+	if m.status_phase != nil {
+		fields = append(fields, agenticsubscription.FieldStatusPhase)
+	}
+	if m.status_message != nil {
+		fields = append(fields, agenticsubscription.FieldStatusMessage)
+	}
+	if m.environment != nil {
+		fields = append(fields, agenticsubscription.FieldEnvironment)
+	}
+	if m.namespace != nil {
+		fields = append(fields, agenticsubscription.FieldNamespace)
+	}
+	if m.name != nil {
+		fields = append(fields, agenticsubscription.FieldName)
+	}
+	if m.base_path != nil {
+		fields = append(fields, agenticsubscription.FieldBasePath)
+	}
+	if m.gateway_url != nil {
+		fields = append(fields, agenticsubscription.FieldGatewayURL)
+	}
+	if m.security != nil {
+		fields = append(fields, agenticsubscription.FieldSecurity)
+	}
+	if m.traffic != nil {
+		fields = append(fields, agenticsubscription.FieldTraffic)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *AgenticSubscriptionMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case agenticsubscription.FieldCreatedAt:
+		return m.CreatedAt()
+	case agenticsubscription.FieldLastModifiedAt:
+		return m.LastModifiedAt()
+	case agenticsubscription.FieldStatusPhase:
+		return m.StatusPhase()
+	case agenticsubscription.FieldStatusMessage:
+		return m.StatusMessage()
+	case agenticsubscription.FieldEnvironment:
+		return m.Environment()
+	case agenticsubscription.FieldNamespace:
+		return m.Namespace()
+	case agenticsubscription.FieldName:
+		return m.Name()
+	case agenticsubscription.FieldBasePath:
+		return m.BasePath()
+	case agenticsubscription.FieldGatewayURL:
+		return m.GatewayURL()
+	case agenticsubscription.FieldSecurity:
+		return m.Security()
+	case agenticsubscription.FieldTraffic:
+		return m.Traffic()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *AgenticSubscriptionMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case agenticsubscription.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case agenticsubscription.FieldLastModifiedAt:
+		return m.OldLastModifiedAt(ctx)
+	case agenticsubscription.FieldStatusPhase:
+		return m.OldStatusPhase(ctx)
+	case agenticsubscription.FieldStatusMessage:
+		return m.OldStatusMessage(ctx)
+	case agenticsubscription.FieldEnvironment:
+		return m.OldEnvironment(ctx)
+	case agenticsubscription.FieldNamespace:
+		return m.OldNamespace(ctx)
+	case agenticsubscription.FieldName:
+		return m.OldName(ctx)
+	case agenticsubscription.FieldBasePath:
+		return m.OldBasePath(ctx)
+	case agenticsubscription.FieldGatewayURL:
+		return m.OldGatewayURL(ctx)
+	case agenticsubscription.FieldSecurity:
+		return m.OldSecurity(ctx)
+	case agenticsubscription.FieldTraffic:
+		return m.OldTraffic(ctx)
+	}
+	return nil, fmt.Errorf("unknown AgenticSubscription field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *AgenticSubscriptionMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case agenticsubscription.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case agenticsubscription.FieldLastModifiedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLastModifiedAt(v)
+		return nil
+	case agenticsubscription.FieldStatusPhase:
+		v, ok := value.(agenticsubscription.StatusPhase)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStatusPhase(v)
+		return nil
+	case agenticsubscription.FieldStatusMessage:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStatusMessage(v)
+		return nil
+	case agenticsubscription.FieldEnvironment:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEnvironment(v)
+		return nil
+	case agenticsubscription.FieldNamespace:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetNamespace(v)
+		return nil
+	case agenticsubscription.FieldName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetName(v)
+		return nil
+	case agenticsubscription.FieldBasePath:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetBasePath(v)
+		return nil
+	case agenticsubscription.FieldGatewayURL:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetGatewayURL(v)
+		return nil
+	case agenticsubscription.FieldSecurity:
+		v, ok := value.(model.AgenticSubscriptionSecurity)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSecurity(v)
+		return nil
+	case agenticsubscription.FieldTraffic:
+		v, ok := value.(model.AgenticSubscriberTraffic)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTraffic(v)
+		return nil
+	}
+	return fmt.Errorf("unknown AgenticSubscription field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *AgenticSubscriptionMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *AgenticSubscriptionMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *AgenticSubscriptionMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown AgenticSubscription numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *AgenticSubscriptionMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(agenticsubscription.FieldStatusPhase) {
+		fields = append(fields, agenticsubscription.FieldStatusPhase)
+	}
+	if m.FieldCleared(agenticsubscription.FieldStatusMessage) {
+		fields = append(fields, agenticsubscription.FieldStatusMessage)
+	}
+	if m.FieldCleared(agenticsubscription.FieldEnvironment) {
+		fields = append(fields, agenticsubscription.FieldEnvironment)
+	}
+	if m.FieldCleared(agenticsubscription.FieldGatewayURL) {
+		fields = append(fields, agenticsubscription.FieldGatewayURL)
+	}
+	if m.FieldCleared(agenticsubscription.FieldSecurity) {
+		fields = append(fields, agenticsubscription.FieldSecurity)
+	}
+	if m.FieldCleared(agenticsubscription.FieldTraffic) {
+		fields = append(fields, agenticsubscription.FieldTraffic)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *AgenticSubscriptionMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *AgenticSubscriptionMutation) ClearField(name string) error {
+	switch name {
+	case agenticsubscription.FieldStatusPhase:
+		m.ClearStatusPhase()
+		return nil
+	case agenticsubscription.FieldStatusMessage:
+		m.ClearStatusMessage()
+		return nil
+	case agenticsubscription.FieldEnvironment:
+		m.ClearEnvironment()
+		return nil
+	case agenticsubscription.FieldGatewayURL:
+		m.ClearGatewayURL()
+		return nil
+	case agenticsubscription.FieldSecurity:
+		m.ClearSecurity()
+		return nil
+	case agenticsubscription.FieldTraffic:
+		m.ClearTraffic()
+		return nil
+	}
+	return fmt.Errorf("unknown AgenticSubscription nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *AgenticSubscriptionMutation) ResetField(name string) error {
+	switch name {
+	case agenticsubscription.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case agenticsubscription.FieldLastModifiedAt:
+		m.ResetLastModifiedAt()
+		return nil
+	case agenticsubscription.FieldStatusPhase:
+		m.ResetStatusPhase()
+		return nil
+	case agenticsubscription.FieldStatusMessage:
+		m.ResetStatusMessage()
+		return nil
+	case agenticsubscription.FieldEnvironment:
+		m.ResetEnvironment()
+		return nil
+	case agenticsubscription.FieldNamespace:
+		m.ResetNamespace()
+		return nil
+	case agenticsubscription.FieldName:
+		m.ResetName()
+		return nil
+	case agenticsubscription.FieldBasePath:
+		m.ResetBasePath()
+		return nil
+	case agenticsubscription.FieldGatewayURL:
+		m.ResetGatewayURL()
+		return nil
+	case agenticsubscription.FieldSecurity:
+		m.ResetSecurity()
+		return nil
+	case agenticsubscription.FieldTraffic:
+		m.ResetTraffic()
+		return nil
+	}
+	return fmt.Errorf("unknown AgenticSubscription field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *AgenticSubscriptionMutation) AddedEdges() []string {
+	edges := make([]string, 0, 4)
+	if m.owner != nil {
+		edges = append(edges, agenticsubscription.EdgeOwner)
+	}
+	if m.target != nil {
+		edges = append(edges, agenticsubscription.EdgeTarget)
+	}
+	if m.approval != nil {
+		edges = append(edges, agenticsubscription.EdgeApproval)
+	}
+	if m.approval_requests != nil {
+		edges = append(edges, agenticsubscription.EdgeApprovalRequests)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *AgenticSubscriptionMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case agenticsubscription.EdgeOwner:
+		if id := m.owner; id != nil {
+			return []ent.Value{*id}
+		}
+	case agenticsubscription.EdgeTarget:
+		if id := m.target; id != nil {
+			return []ent.Value{*id}
+		}
+	case agenticsubscription.EdgeApproval:
+		if id := m.approval; id != nil {
+			return []ent.Value{*id}
+		}
+	case agenticsubscription.EdgeApprovalRequests:
+		ids := make([]ent.Value, 0, len(m.approval_requests))
+		for id := range m.approval_requests {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *AgenticSubscriptionMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 4)
+	if m.removedapproval_requests != nil {
+		edges = append(edges, agenticsubscription.EdgeApprovalRequests)
+	}
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *AgenticSubscriptionMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case agenticsubscription.EdgeApprovalRequests:
+		ids := make([]ent.Value, 0, len(m.removedapproval_requests))
+		for id := range m.removedapproval_requests {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *AgenticSubscriptionMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 4)
+	if m.clearedowner {
+		edges = append(edges, agenticsubscription.EdgeOwner)
+	}
+	if m.clearedtarget {
+		edges = append(edges, agenticsubscription.EdgeTarget)
+	}
+	if m.clearedapproval {
+		edges = append(edges, agenticsubscription.EdgeApproval)
+	}
+	if m.clearedapproval_requests {
+		edges = append(edges, agenticsubscription.EdgeApprovalRequests)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *AgenticSubscriptionMutation) EdgeCleared(name string) bool {
+	switch name {
+	case agenticsubscription.EdgeOwner:
+		return m.clearedowner
+	case agenticsubscription.EdgeTarget:
+		return m.clearedtarget
+	case agenticsubscription.EdgeApproval:
+		return m.clearedapproval
+	case agenticsubscription.EdgeApprovalRequests:
+		return m.clearedapproval_requests
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *AgenticSubscriptionMutation) ClearEdge(name string) error {
+	switch name {
+	case agenticsubscription.EdgeOwner:
+		m.ClearOwner()
+		return nil
+	case agenticsubscription.EdgeTarget:
+		m.ClearTarget()
+		return nil
+	case agenticsubscription.EdgeApproval:
+		m.ClearApproval()
+		return nil
+	}
+	return fmt.Errorf("unknown AgenticSubscription unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *AgenticSubscriptionMutation) ResetEdge(name string) error {
+	switch name {
+	case agenticsubscription.EdgeOwner:
+		m.ResetOwner()
+		return nil
+	case agenticsubscription.EdgeTarget:
+		m.ResetTarget()
+		return nil
+	case agenticsubscription.EdgeApproval:
+		m.ResetApproval()
+		return nil
+	case agenticsubscription.EdgeApprovalRequests:
+		m.ResetApprovalRequests()
+		return nil
+	}
+	return fmt.Errorf("unknown AgenticSubscription edge %s", name)
+}
 
 // APIMutation represents an operation that mutates the Api nodes in the graph.
 type APIMutation struct {
@@ -4098,49 +8129,61 @@ func (m *ApiSubscriptionMutation) ResetEdge(name string) error {
 // ApplicationMutation represents an operation that mutates the Application nodes in the graph.
 type ApplicationMutation struct {
 	config
-	op                       Op
-	typ                      string
-	id                       *int
-	created_at               *time.Time
-	last_modified_at         *time.Time
-	status_phase             *application.StatusPhase
-	status_message           *string
-	environment              *string
-	namespace                *string
-	name                     *string
-	client_id                *string
-	client_secret            *string
-	rotated_client_secret    *string
-	rotated_expires_at       *time.Time
-	current_expires_at       *time.Time
-	secret_rotation_phase    *application.SecretRotationPhase
-	secret_rotation_message  *string
-	external_ids             *[]model.ExternalId
-	appendexternal_ids       []model.ExternalId
-	ip_restrictions          *model.IpRestrictions
-	permissions_url          *string
-	clearedFields            map[string]struct{}
-	zone                     *int
-	clearedzone              bool
-	owner_team               *int
-	clearedowner_team        bool
-	exposed_apis             map[int]struct{}
-	removedexposed_apis      map[int]struct{}
-	clearedexposed_apis      bool
-	subscribed_apis          map[int]struct{}
-	removedsubscribed_apis   map[int]struct{}
-	clearedsubscribed_apis   bool
-	exposed_events           map[int]struct{}
-	removedexposed_events    map[int]struct{}
-	clearedexposed_events    bool
-	subscribed_events        map[int]struct{}
-	removedsubscribed_events map[int]struct{}
-	clearedsubscribed_events bool
-	permission_set           *int
-	clearedpermission_set    bool
-	done                     bool
-	oldValue                 func(context.Context) (*Application, error)
-	predicates               []predicate.Application
+	op                           Op
+	typ                          string
+	id                           *int
+	created_at                   *time.Time
+	last_modified_at             *time.Time
+	status_phase                 *application.StatusPhase
+	status_message               *string
+	environment                  *string
+	namespace                    *string
+	name                         *string
+	client_id                    *string
+	client_secret                *string
+	rotated_client_secret        *string
+	rotated_expires_at           *time.Time
+	current_expires_at           *time.Time
+	secret_rotation_phase        *application.SecretRotationPhase
+	secret_rotation_message      *string
+	external_ids                 *[]model.ExternalId
+	appendexternal_ids           []model.ExternalId
+	ip_restrictions              *model.IpRestrictions
+	permissions_url              *string
+	clearedFields                map[string]struct{}
+	zone                         *int
+	clearedzone                  bool
+	owner_team                   *int
+	clearedowner_team            bool
+	exposed_apis                 map[int]struct{}
+	removedexposed_apis          map[int]struct{}
+	clearedexposed_apis          bool
+	subscribed_apis              map[int]struct{}
+	removedsubscribed_apis       map[int]struct{}
+	clearedsubscribed_apis       bool
+	exposed_file_types           map[int]struct{}
+	removedexposed_file_types    map[int]struct{}
+	clearedexposed_file_types    bool
+	subscribed_file_types        map[int]struct{}
+	removedsubscribed_file_types map[int]struct{}
+	clearedsubscribed_file_types bool
+	exposed_events               map[int]struct{}
+	removedexposed_events        map[int]struct{}
+	clearedexposed_events        bool
+	subscribed_events            map[int]struct{}
+	removedsubscribed_events     map[int]struct{}
+	clearedsubscribed_events     bool
+	exposed_agentics             map[int]struct{}
+	removedexposed_agentics      map[int]struct{}
+	clearedexposed_agentics      bool
+	subscribed_agentics          map[int]struct{}
+	removedsubscribed_agentics   map[int]struct{}
+	clearedsubscribed_agentics   bool
+	permission_set               *int
+	clearedpermission_set        bool
+	done                         bool
+	oldValue                     func(context.Context) (*Application, error)
+	predicates                   []predicate.Application
 }
 
 var _ ent.Mutation = (*ApplicationMutation)(nil)
@@ -5211,6 +9254,114 @@ func (m *ApplicationMutation) ResetSubscribedApis() {
 	m.removedsubscribed_apis = nil
 }
 
+// AddExposedFileTypeIDs adds the "exposed_file_types" edge to the FileExposure entity by ids.
+func (m *ApplicationMutation) AddExposedFileTypeIDs(ids ...int) {
+	if m.exposed_file_types == nil {
+		m.exposed_file_types = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.exposed_file_types[ids[i]] = struct{}{}
+	}
+}
+
+// ClearExposedFileTypes clears the "exposed_file_types" edge to the FileExposure entity.
+func (m *ApplicationMutation) ClearExposedFileTypes() {
+	m.clearedexposed_file_types = true
+}
+
+// ExposedFileTypesCleared reports if the "exposed_file_types" edge to the FileExposure entity was cleared.
+func (m *ApplicationMutation) ExposedFileTypesCleared() bool {
+	return m.clearedexposed_file_types
+}
+
+// RemoveExposedFileTypeIDs removes the "exposed_file_types" edge to the FileExposure entity by IDs.
+func (m *ApplicationMutation) RemoveExposedFileTypeIDs(ids ...int) {
+	if m.removedexposed_file_types == nil {
+		m.removedexposed_file_types = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.exposed_file_types, ids[i])
+		m.removedexposed_file_types[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedExposedFileTypes returns the removed IDs of the "exposed_file_types" edge to the FileExposure entity.
+func (m *ApplicationMutation) RemovedExposedFileTypesIDs() (ids []int) {
+	for id := range m.removedexposed_file_types {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ExposedFileTypesIDs returns the "exposed_file_types" edge IDs in the mutation.
+func (m *ApplicationMutation) ExposedFileTypesIDs() (ids []int) {
+	for id := range m.exposed_file_types {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetExposedFileTypes resets all changes to the "exposed_file_types" edge.
+func (m *ApplicationMutation) ResetExposedFileTypes() {
+	m.exposed_file_types = nil
+	m.clearedexposed_file_types = false
+	m.removedexposed_file_types = nil
+}
+
+// AddSubscribedFileTypeIDs adds the "subscribed_file_types" edge to the FileSubscription entity by ids.
+func (m *ApplicationMutation) AddSubscribedFileTypeIDs(ids ...int) {
+	if m.subscribed_file_types == nil {
+		m.subscribed_file_types = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.subscribed_file_types[ids[i]] = struct{}{}
+	}
+}
+
+// ClearSubscribedFileTypes clears the "subscribed_file_types" edge to the FileSubscription entity.
+func (m *ApplicationMutation) ClearSubscribedFileTypes() {
+	m.clearedsubscribed_file_types = true
+}
+
+// SubscribedFileTypesCleared reports if the "subscribed_file_types" edge to the FileSubscription entity was cleared.
+func (m *ApplicationMutation) SubscribedFileTypesCleared() bool {
+	return m.clearedsubscribed_file_types
+}
+
+// RemoveSubscribedFileTypeIDs removes the "subscribed_file_types" edge to the FileSubscription entity by IDs.
+func (m *ApplicationMutation) RemoveSubscribedFileTypeIDs(ids ...int) {
+	if m.removedsubscribed_file_types == nil {
+		m.removedsubscribed_file_types = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.subscribed_file_types, ids[i])
+		m.removedsubscribed_file_types[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedSubscribedFileTypes returns the removed IDs of the "subscribed_file_types" edge to the FileSubscription entity.
+func (m *ApplicationMutation) RemovedSubscribedFileTypesIDs() (ids []int) {
+	for id := range m.removedsubscribed_file_types {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// SubscribedFileTypesIDs returns the "subscribed_file_types" edge IDs in the mutation.
+func (m *ApplicationMutation) SubscribedFileTypesIDs() (ids []int) {
+	for id := range m.subscribed_file_types {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetSubscribedFileTypes resets all changes to the "subscribed_file_types" edge.
+func (m *ApplicationMutation) ResetSubscribedFileTypes() {
+	m.subscribed_file_types = nil
+	m.clearedsubscribed_file_types = false
+	m.removedsubscribed_file_types = nil
+}
+
 // AddExposedEventIDs adds the "exposed_events" edge to the EventExposure entity by ids.
 func (m *ApplicationMutation) AddExposedEventIDs(ids ...int) {
 	if m.exposed_events == nil {
@@ -5317,6 +9468,114 @@ func (m *ApplicationMutation) ResetSubscribedEvents() {
 	m.subscribed_events = nil
 	m.clearedsubscribed_events = false
 	m.removedsubscribed_events = nil
+}
+
+// AddExposedAgenticIDs adds the "exposed_agentics" edge to the AgenticExposure entity by ids.
+func (m *ApplicationMutation) AddExposedAgenticIDs(ids ...int) {
+	if m.exposed_agentics == nil {
+		m.exposed_agentics = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.exposed_agentics[ids[i]] = struct{}{}
+	}
+}
+
+// ClearExposedAgentics clears the "exposed_agentics" edge to the AgenticExposure entity.
+func (m *ApplicationMutation) ClearExposedAgentics() {
+	m.clearedexposed_agentics = true
+}
+
+// ExposedAgenticsCleared reports if the "exposed_agentics" edge to the AgenticExposure entity was cleared.
+func (m *ApplicationMutation) ExposedAgenticsCleared() bool {
+	return m.clearedexposed_agentics
+}
+
+// RemoveExposedAgenticIDs removes the "exposed_agentics" edge to the AgenticExposure entity by IDs.
+func (m *ApplicationMutation) RemoveExposedAgenticIDs(ids ...int) {
+	if m.removedexposed_agentics == nil {
+		m.removedexposed_agentics = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.exposed_agentics, ids[i])
+		m.removedexposed_agentics[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedExposedAgentics returns the removed IDs of the "exposed_agentics" edge to the AgenticExposure entity.
+func (m *ApplicationMutation) RemovedExposedAgenticsIDs() (ids []int) {
+	for id := range m.removedexposed_agentics {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ExposedAgenticsIDs returns the "exposed_agentics" edge IDs in the mutation.
+func (m *ApplicationMutation) ExposedAgenticsIDs() (ids []int) {
+	for id := range m.exposed_agentics {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetExposedAgentics resets all changes to the "exposed_agentics" edge.
+func (m *ApplicationMutation) ResetExposedAgentics() {
+	m.exposed_agentics = nil
+	m.clearedexposed_agentics = false
+	m.removedexposed_agentics = nil
+}
+
+// AddSubscribedAgenticIDs adds the "subscribed_agentics" edge to the AgenticSubscription entity by ids.
+func (m *ApplicationMutation) AddSubscribedAgenticIDs(ids ...int) {
+	if m.subscribed_agentics == nil {
+		m.subscribed_agentics = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.subscribed_agentics[ids[i]] = struct{}{}
+	}
+}
+
+// ClearSubscribedAgentics clears the "subscribed_agentics" edge to the AgenticSubscription entity.
+func (m *ApplicationMutation) ClearSubscribedAgentics() {
+	m.clearedsubscribed_agentics = true
+}
+
+// SubscribedAgenticsCleared reports if the "subscribed_agentics" edge to the AgenticSubscription entity was cleared.
+func (m *ApplicationMutation) SubscribedAgenticsCleared() bool {
+	return m.clearedsubscribed_agentics
+}
+
+// RemoveSubscribedAgenticIDs removes the "subscribed_agentics" edge to the AgenticSubscription entity by IDs.
+func (m *ApplicationMutation) RemoveSubscribedAgenticIDs(ids ...int) {
+	if m.removedsubscribed_agentics == nil {
+		m.removedsubscribed_agentics = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.subscribed_agentics, ids[i])
+		m.removedsubscribed_agentics[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedSubscribedAgentics returns the removed IDs of the "subscribed_agentics" edge to the AgenticSubscription entity.
+func (m *ApplicationMutation) RemovedSubscribedAgenticsIDs() (ids []int) {
+	for id := range m.removedsubscribed_agentics {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// SubscribedAgenticsIDs returns the "subscribed_agentics" edge IDs in the mutation.
+func (m *ApplicationMutation) SubscribedAgenticsIDs() (ids []int) {
+	for id := range m.subscribed_agentics {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetSubscribedAgentics resets all changes to the "subscribed_agentics" edge.
+func (m *ApplicationMutation) ResetSubscribedAgentics() {
+	m.subscribed_agentics = nil
+	m.clearedsubscribed_agentics = false
+	m.removedsubscribed_agentics = nil
 }
 
 // SetPermissionSetID sets the "permission_set" edge to the PermissionSet entity by id.
@@ -5838,7 +10097,7 @@ func (m *ApplicationMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *ApplicationMutation) AddedEdges() []string {
-	edges := make([]string, 0, 7)
+	edges := make([]string, 0, 11)
 	if m.zone != nil {
 		edges = append(edges, application.EdgeZone)
 	}
@@ -5851,11 +10110,23 @@ func (m *ApplicationMutation) AddedEdges() []string {
 	if m.subscribed_apis != nil {
 		edges = append(edges, application.EdgeSubscribedApis)
 	}
+	if m.exposed_file_types != nil {
+		edges = append(edges, application.EdgeExposedFileTypes)
+	}
+	if m.subscribed_file_types != nil {
+		edges = append(edges, application.EdgeSubscribedFileTypes)
+	}
 	if m.exposed_events != nil {
 		edges = append(edges, application.EdgeExposedEvents)
 	}
 	if m.subscribed_events != nil {
 		edges = append(edges, application.EdgeSubscribedEvents)
+	}
+	if m.exposed_agentics != nil {
+		edges = append(edges, application.EdgeExposedAgentics)
+	}
+	if m.subscribed_agentics != nil {
+		edges = append(edges, application.EdgeSubscribedAgentics)
 	}
 	if m.permission_set != nil {
 		edges = append(edges, application.EdgePermissionSet)
@@ -5887,6 +10158,18 @@ func (m *ApplicationMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case application.EdgeExposedFileTypes:
+		ids := make([]ent.Value, 0, len(m.exposed_file_types))
+		for id := range m.exposed_file_types {
+			ids = append(ids, id)
+		}
+		return ids
+	case application.EdgeSubscribedFileTypes:
+		ids := make([]ent.Value, 0, len(m.subscribed_file_types))
+		for id := range m.subscribed_file_types {
+			ids = append(ids, id)
+		}
+		return ids
 	case application.EdgeExposedEvents:
 		ids := make([]ent.Value, 0, len(m.exposed_events))
 		for id := range m.exposed_events {
@@ -5896,6 +10179,18 @@ func (m *ApplicationMutation) AddedIDs(name string) []ent.Value {
 	case application.EdgeSubscribedEvents:
 		ids := make([]ent.Value, 0, len(m.subscribed_events))
 		for id := range m.subscribed_events {
+			ids = append(ids, id)
+		}
+		return ids
+	case application.EdgeExposedAgentics:
+		ids := make([]ent.Value, 0, len(m.exposed_agentics))
+		for id := range m.exposed_agentics {
+			ids = append(ids, id)
+		}
+		return ids
+	case application.EdgeSubscribedAgentics:
+		ids := make([]ent.Value, 0, len(m.subscribed_agentics))
+		for id := range m.subscribed_agentics {
 			ids = append(ids, id)
 		}
 		return ids
@@ -5909,18 +10204,30 @@ func (m *ApplicationMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *ApplicationMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 7)
+	edges := make([]string, 0, 11)
 	if m.removedexposed_apis != nil {
 		edges = append(edges, application.EdgeExposedApis)
 	}
 	if m.removedsubscribed_apis != nil {
 		edges = append(edges, application.EdgeSubscribedApis)
 	}
+	if m.removedexposed_file_types != nil {
+		edges = append(edges, application.EdgeExposedFileTypes)
+	}
+	if m.removedsubscribed_file_types != nil {
+		edges = append(edges, application.EdgeSubscribedFileTypes)
+	}
 	if m.removedexposed_events != nil {
 		edges = append(edges, application.EdgeExposedEvents)
 	}
 	if m.removedsubscribed_events != nil {
 		edges = append(edges, application.EdgeSubscribedEvents)
+	}
+	if m.removedexposed_agentics != nil {
+		edges = append(edges, application.EdgeExposedAgentics)
+	}
+	if m.removedsubscribed_agentics != nil {
+		edges = append(edges, application.EdgeSubscribedAgentics)
 	}
 	return edges
 }
@@ -5941,6 +10248,18 @@ func (m *ApplicationMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case application.EdgeExposedFileTypes:
+		ids := make([]ent.Value, 0, len(m.removedexposed_file_types))
+		for id := range m.removedexposed_file_types {
+			ids = append(ids, id)
+		}
+		return ids
+	case application.EdgeSubscribedFileTypes:
+		ids := make([]ent.Value, 0, len(m.removedsubscribed_file_types))
+		for id := range m.removedsubscribed_file_types {
+			ids = append(ids, id)
+		}
+		return ids
 	case application.EdgeExposedEvents:
 		ids := make([]ent.Value, 0, len(m.removedexposed_events))
 		for id := range m.removedexposed_events {
@@ -5953,13 +10272,25 @@ func (m *ApplicationMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case application.EdgeExposedAgentics:
+		ids := make([]ent.Value, 0, len(m.removedexposed_agentics))
+		for id := range m.removedexposed_agentics {
+			ids = append(ids, id)
+		}
+		return ids
+	case application.EdgeSubscribedAgentics:
+		ids := make([]ent.Value, 0, len(m.removedsubscribed_agentics))
+		for id := range m.removedsubscribed_agentics {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *ApplicationMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 7)
+	edges := make([]string, 0, 11)
 	if m.clearedzone {
 		edges = append(edges, application.EdgeZone)
 	}
@@ -5972,11 +10303,23 @@ func (m *ApplicationMutation) ClearedEdges() []string {
 	if m.clearedsubscribed_apis {
 		edges = append(edges, application.EdgeSubscribedApis)
 	}
+	if m.clearedexposed_file_types {
+		edges = append(edges, application.EdgeExposedFileTypes)
+	}
+	if m.clearedsubscribed_file_types {
+		edges = append(edges, application.EdgeSubscribedFileTypes)
+	}
 	if m.clearedexposed_events {
 		edges = append(edges, application.EdgeExposedEvents)
 	}
 	if m.clearedsubscribed_events {
 		edges = append(edges, application.EdgeSubscribedEvents)
+	}
+	if m.clearedexposed_agentics {
+		edges = append(edges, application.EdgeExposedAgentics)
+	}
+	if m.clearedsubscribed_agentics {
+		edges = append(edges, application.EdgeSubscribedAgentics)
 	}
 	if m.clearedpermission_set {
 		edges = append(edges, application.EdgePermissionSet)
@@ -5996,10 +10339,18 @@ func (m *ApplicationMutation) EdgeCleared(name string) bool {
 		return m.clearedexposed_apis
 	case application.EdgeSubscribedApis:
 		return m.clearedsubscribed_apis
+	case application.EdgeExposedFileTypes:
+		return m.clearedexposed_file_types
+	case application.EdgeSubscribedFileTypes:
+		return m.clearedsubscribed_file_types
 	case application.EdgeExposedEvents:
 		return m.clearedexposed_events
 	case application.EdgeSubscribedEvents:
 		return m.clearedsubscribed_events
+	case application.EdgeExposedAgentics:
+		return m.clearedexposed_agentics
+	case application.EdgeSubscribedAgentics:
+		return m.clearedsubscribed_agentics
 	case application.EdgePermissionSet:
 		return m.clearedpermission_set
 	}
@@ -6039,11 +10390,23 @@ func (m *ApplicationMutation) ResetEdge(name string) error {
 	case application.EdgeSubscribedApis:
 		m.ResetSubscribedApis()
 		return nil
+	case application.EdgeExposedFileTypes:
+		m.ResetExposedFileTypes()
+		return nil
+	case application.EdgeSubscribedFileTypes:
+		m.ResetSubscribedFileTypes()
+		return nil
 	case application.EdgeExposedEvents:
 		m.ResetExposedEvents()
 		return nil
 	case application.EdgeSubscribedEvents:
 		m.ResetSubscribedEvents()
+		return nil
+	case application.EdgeExposedAgentics:
+		m.ResetExposedAgentics()
+		return nil
+	case application.EdgeSubscribedAgentics:
+		m.ResetSubscribedAgentics()
 		return nil
 	case application.EdgePermissionSet:
 		m.ResetPermissionSet()
@@ -6076,13 +10439,17 @@ type ApprovalMutation struct {
 	requested_scopes            *[]string
 	appendrequested_scopes      []string
 	name                        *string
-	expiresAt                   *time.Time
+	expires_at                  *time.Time
 	state                       *approval.State
 	clearedFields               map[string]struct{}
 	api_subscription            *int
 	clearedapi_subscription     bool
+	file_subscription           *int
+	clearedfile_subscription    bool
 	event_subscription          *int
 	clearedevent_subscription   bool
+	agentic_subscription        *int
+	clearedagentic_subscription bool
 	done                        bool
 	oldValue                    func(context.Context) (*Approval, error)
 	predicates                  []predicate.Approval
@@ -6838,21 +11205,21 @@ func (m *ApprovalMutation) ResetName() {
 	m.name = nil
 }
 
-// SetExpiresAt sets the "expiresAt" field.
+// SetExpiresAt sets the "expires_at" field.
 func (m *ApprovalMutation) SetExpiresAt(t time.Time) {
-	m.expiresAt = &t
+	m.expires_at = &t
 }
 
-// ExpiresAt returns the value of the "expiresAt" field in the mutation.
+// ExpiresAt returns the value of the "expires_at" field in the mutation.
 func (m *ApprovalMutation) ExpiresAt() (r time.Time, exists bool) {
-	v := m.expiresAt
+	v := m.expires_at
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldExpiresAt returns the old "expiresAt" field's value of the Approval entity.
+// OldExpiresAt returns the old "expires_at" field's value of the Approval entity.
 // If the Approval object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
 func (m *ApprovalMutation) OldExpiresAt(ctx context.Context) (v *time.Time, err error) {
@@ -6869,21 +11236,21 @@ func (m *ApprovalMutation) OldExpiresAt(ctx context.Context) (v *time.Time, err 
 	return oldValue.ExpiresAt, nil
 }
 
-// ClearExpiresAt clears the value of the "expiresAt" field.
+// ClearExpiresAt clears the value of the "expires_at" field.
 func (m *ApprovalMutation) ClearExpiresAt() {
-	m.expiresAt = nil
+	m.expires_at = nil
 	m.clearedFields[approval.FieldExpiresAt] = struct{}{}
 }
 
-// ExpiresAtCleared returns if the "expiresAt" field was cleared in this mutation.
+// ExpiresAtCleared returns if the "expires_at" field was cleared in this mutation.
 func (m *ApprovalMutation) ExpiresAtCleared() bool {
 	_, ok := m.clearedFields[approval.FieldExpiresAt]
 	return ok
 }
 
-// ResetExpiresAt resets all changes to the "expiresAt" field.
+// ResetExpiresAt resets all changes to the "expires_at" field.
 func (m *ApprovalMutation) ResetExpiresAt() {
-	m.expiresAt = nil
+	m.expires_at = nil
 	delete(m.clearedFields, approval.FieldExpiresAt)
 }
 
@@ -6962,6 +11329,45 @@ func (m *ApprovalMutation) ResetAPISubscription() {
 	m.clearedapi_subscription = false
 }
 
+// SetFileSubscriptionID sets the "file_subscription" edge to the FileSubscription entity by id.
+func (m *ApprovalMutation) SetFileSubscriptionID(id int) {
+	m.file_subscription = &id
+}
+
+// ClearFileSubscription clears the "file_subscription" edge to the FileSubscription entity.
+func (m *ApprovalMutation) ClearFileSubscription() {
+	m.clearedfile_subscription = true
+}
+
+// FileSubscriptionCleared reports if the "file_subscription" edge to the FileSubscription entity was cleared.
+func (m *ApprovalMutation) FileSubscriptionCleared() bool {
+	return m.clearedfile_subscription
+}
+
+// FileSubscriptionID returns the "file_subscription" edge ID in the mutation.
+func (m *ApprovalMutation) FileSubscriptionID() (id int, exists bool) {
+	if m.file_subscription != nil {
+		return *m.file_subscription, true
+	}
+	return
+}
+
+// FileSubscriptionIDs returns the "file_subscription" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// FileSubscriptionID instead. It exists only for internal usage by the builders.
+func (m *ApprovalMutation) FileSubscriptionIDs() (ids []int) {
+	if id := m.file_subscription; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetFileSubscription resets all changes to the "file_subscription" edge.
+func (m *ApprovalMutation) ResetFileSubscription() {
+	m.file_subscription = nil
+	m.clearedfile_subscription = false
+}
+
 // SetEventSubscriptionID sets the "event_subscription" edge to the EventSubscription entity by id.
 func (m *ApprovalMutation) SetEventSubscriptionID(id int) {
 	m.event_subscription = &id
@@ -6999,6 +11405,45 @@ func (m *ApprovalMutation) EventSubscriptionIDs() (ids []int) {
 func (m *ApprovalMutation) ResetEventSubscription() {
 	m.event_subscription = nil
 	m.clearedevent_subscription = false
+}
+
+// SetAgenticSubscriptionID sets the "agentic_subscription" edge to the AgenticSubscription entity by id.
+func (m *ApprovalMutation) SetAgenticSubscriptionID(id int) {
+	m.agentic_subscription = &id
+}
+
+// ClearAgenticSubscription clears the "agentic_subscription" edge to the AgenticSubscription entity.
+func (m *ApprovalMutation) ClearAgenticSubscription() {
+	m.clearedagentic_subscription = true
+}
+
+// AgenticSubscriptionCleared reports if the "agentic_subscription" edge to the AgenticSubscription entity was cleared.
+func (m *ApprovalMutation) AgenticSubscriptionCleared() bool {
+	return m.clearedagentic_subscription
+}
+
+// AgenticSubscriptionID returns the "agentic_subscription" edge ID in the mutation.
+func (m *ApprovalMutation) AgenticSubscriptionID() (id int, exists bool) {
+	if m.agentic_subscription != nil {
+		return *m.agentic_subscription, true
+	}
+	return
+}
+
+// AgenticSubscriptionIDs returns the "agentic_subscription" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// AgenticSubscriptionID instead. It exists only for internal usage by the builders.
+func (m *ApprovalMutation) AgenticSubscriptionIDs() (ids []int) {
+	if id := m.agentic_subscription; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetAgenticSubscription resets all changes to the "agentic_subscription" edge.
+func (m *ApprovalMutation) ResetAgenticSubscription() {
+	m.agentic_subscription = nil
+	m.clearedagentic_subscription = false
 }
 
 // Where appends a list predicates to the ApprovalMutation builder.
@@ -7081,7 +11526,7 @@ func (m *ApprovalMutation) Fields() []string {
 	if m.name != nil {
 		fields = append(fields, approval.FieldName)
 	}
-	if m.expiresAt != nil {
+	if m.expires_at != nil {
 		fields = append(fields, approval.FieldExpiresAt)
 	}
 	if m.state != nil {
@@ -7445,12 +11890,18 @@ func (m *ApprovalMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *ApprovalMutation) AddedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 4)
 	if m.api_subscription != nil {
 		edges = append(edges, approval.EdgeAPISubscription)
 	}
+	if m.file_subscription != nil {
+		edges = append(edges, approval.EdgeFileSubscription)
+	}
 	if m.event_subscription != nil {
 		edges = append(edges, approval.EdgeEventSubscription)
+	}
+	if m.agentic_subscription != nil {
+		edges = append(edges, approval.EdgeAgenticSubscription)
 	}
 	return edges
 }
@@ -7463,8 +11914,16 @@ func (m *ApprovalMutation) AddedIDs(name string) []ent.Value {
 		if id := m.api_subscription; id != nil {
 			return []ent.Value{*id}
 		}
+	case approval.EdgeFileSubscription:
+		if id := m.file_subscription; id != nil {
+			return []ent.Value{*id}
+		}
 	case approval.EdgeEventSubscription:
 		if id := m.event_subscription; id != nil {
+			return []ent.Value{*id}
+		}
+	case approval.EdgeAgenticSubscription:
+		if id := m.agentic_subscription; id != nil {
 			return []ent.Value{*id}
 		}
 	}
@@ -7473,7 +11932,7 @@ func (m *ApprovalMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *ApprovalMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 4)
 	return edges
 }
 
@@ -7485,12 +11944,18 @@ func (m *ApprovalMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *ApprovalMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 4)
 	if m.clearedapi_subscription {
 		edges = append(edges, approval.EdgeAPISubscription)
 	}
+	if m.clearedfile_subscription {
+		edges = append(edges, approval.EdgeFileSubscription)
+	}
 	if m.clearedevent_subscription {
 		edges = append(edges, approval.EdgeEventSubscription)
+	}
+	if m.clearedagentic_subscription {
+		edges = append(edges, approval.EdgeAgenticSubscription)
 	}
 	return edges
 }
@@ -7501,8 +11966,12 @@ func (m *ApprovalMutation) EdgeCleared(name string) bool {
 	switch name {
 	case approval.EdgeAPISubscription:
 		return m.clearedapi_subscription
+	case approval.EdgeFileSubscription:
+		return m.clearedfile_subscription
 	case approval.EdgeEventSubscription:
 		return m.clearedevent_subscription
+	case approval.EdgeAgenticSubscription:
+		return m.clearedagentic_subscription
 	}
 	return false
 }
@@ -7514,8 +11983,14 @@ func (m *ApprovalMutation) ClearEdge(name string) error {
 	case approval.EdgeAPISubscription:
 		m.ClearAPISubscription()
 		return nil
+	case approval.EdgeFileSubscription:
+		m.ClearFileSubscription()
+		return nil
 	case approval.EdgeEventSubscription:
 		m.ClearEventSubscription()
+		return nil
+	case approval.EdgeAgenticSubscription:
+		m.ClearAgenticSubscription()
 		return nil
 	}
 	return fmt.Errorf("unknown Approval unique edge %s", name)
@@ -7528,8 +12003,14 @@ func (m *ApprovalMutation) ResetEdge(name string) error {
 	case approval.EdgeAPISubscription:
 		m.ResetAPISubscription()
 		return nil
+	case approval.EdgeFileSubscription:
+		m.ResetFileSubscription()
+		return nil
 	case approval.EdgeEventSubscription:
 		m.ResetEventSubscription()
+		return nil
+	case approval.EdgeAgenticSubscription:
+		m.ResetAgenticSubscription()
 		return nil
 	}
 	return fmt.Errorf("unknown Approval edge %s", name)
@@ -7563,8 +12044,12 @@ type ApprovalRequestMutation struct {
 	clearedFields               map[string]struct{}
 	api_subscription            *int
 	clearedapi_subscription     bool
+	file_subscription           *int
+	clearedfile_subscription    bool
 	event_subscription          *int
 	clearedevent_subscription   bool
+	agentic_subscription        *int
+	clearedagentic_subscription bool
 	done                        bool
 	oldValue                    func(context.Context) (*ApprovalRequest, error)
 	predicates                  []predicate.ApprovalRequest
@@ -8395,6 +12880,45 @@ func (m *ApprovalRequestMutation) ResetAPISubscription() {
 	m.clearedapi_subscription = false
 }
 
+// SetFileSubscriptionID sets the "file_subscription" edge to the FileSubscription entity by id.
+func (m *ApprovalRequestMutation) SetFileSubscriptionID(id int) {
+	m.file_subscription = &id
+}
+
+// ClearFileSubscription clears the "file_subscription" edge to the FileSubscription entity.
+func (m *ApprovalRequestMutation) ClearFileSubscription() {
+	m.clearedfile_subscription = true
+}
+
+// FileSubscriptionCleared reports if the "file_subscription" edge to the FileSubscription entity was cleared.
+func (m *ApprovalRequestMutation) FileSubscriptionCleared() bool {
+	return m.clearedfile_subscription
+}
+
+// FileSubscriptionID returns the "file_subscription" edge ID in the mutation.
+func (m *ApprovalRequestMutation) FileSubscriptionID() (id int, exists bool) {
+	if m.file_subscription != nil {
+		return *m.file_subscription, true
+	}
+	return
+}
+
+// FileSubscriptionIDs returns the "file_subscription" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// FileSubscriptionID instead. It exists only for internal usage by the builders.
+func (m *ApprovalRequestMutation) FileSubscriptionIDs() (ids []int) {
+	if id := m.file_subscription; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetFileSubscription resets all changes to the "file_subscription" edge.
+func (m *ApprovalRequestMutation) ResetFileSubscription() {
+	m.file_subscription = nil
+	m.clearedfile_subscription = false
+}
+
 // SetEventSubscriptionID sets the "event_subscription" edge to the EventSubscription entity by id.
 func (m *ApprovalRequestMutation) SetEventSubscriptionID(id int) {
 	m.event_subscription = &id
@@ -8432,6 +12956,45 @@ func (m *ApprovalRequestMutation) EventSubscriptionIDs() (ids []int) {
 func (m *ApprovalRequestMutation) ResetEventSubscription() {
 	m.event_subscription = nil
 	m.clearedevent_subscription = false
+}
+
+// SetAgenticSubscriptionID sets the "agentic_subscription" edge to the AgenticSubscription entity by id.
+func (m *ApprovalRequestMutation) SetAgenticSubscriptionID(id int) {
+	m.agentic_subscription = &id
+}
+
+// ClearAgenticSubscription clears the "agentic_subscription" edge to the AgenticSubscription entity.
+func (m *ApprovalRequestMutation) ClearAgenticSubscription() {
+	m.clearedagentic_subscription = true
+}
+
+// AgenticSubscriptionCleared reports if the "agentic_subscription" edge to the AgenticSubscription entity was cleared.
+func (m *ApprovalRequestMutation) AgenticSubscriptionCleared() bool {
+	return m.clearedagentic_subscription
+}
+
+// AgenticSubscriptionID returns the "agentic_subscription" edge ID in the mutation.
+func (m *ApprovalRequestMutation) AgenticSubscriptionID() (id int, exists bool) {
+	if m.agentic_subscription != nil {
+		return *m.agentic_subscription, true
+	}
+	return
+}
+
+// AgenticSubscriptionIDs returns the "agentic_subscription" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// AgenticSubscriptionID instead. It exists only for internal usage by the builders.
+func (m *ApprovalRequestMutation) AgenticSubscriptionIDs() (ids []int) {
+	if id := m.agentic_subscription; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetAgenticSubscription resets all changes to the "agentic_subscription" edge.
+func (m *ApprovalRequestMutation) ResetAgenticSubscription() {
+	m.agentic_subscription = nil
+	m.clearedagentic_subscription = false
 }
 
 // Where appends a list predicates to the ApprovalRequestMutation builder.
@@ -8855,12 +13418,18 @@ func (m *ApprovalRequestMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *ApprovalRequestMutation) AddedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 4)
 	if m.api_subscription != nil {
 		edges = append(edges, approvalrequest.EdgeAPISubscription)
 	}
+	if m.file_subscription != nil {
+		edges = append(edges, approvalrequest.EdgeFileSubscription)
+	}
 	if m.event_subscription != nil {
 		edges = append(edges, approvalrequest.EdgeEventSubscription)
+	}
+	if m.agentic_subscription != nil {
+		edges = append(edges, approvalrequest.EdgeAgenticSubscription)
 	}
 	return edges
 }
@@ -8873,8 +13442,16 @@ func (m *ApprovalRequestMutation) AddedIDs(name string) []ent.Value {
 		if id := m.api_subscription; id != nil {
 			return []ent.Value{*id}
 		}
+	case approvalrequest.EdgeFileSubscription:
+		if id := m.file_subscription; id != nil {
+			return []ent.Value{*id}
+		}
 	case approvalrequest.EdgeEventSubscription:
 		if id := m.event_subscription; id != nil {
+			return []ent.Value{*id}
+		}
+	case approvalrequest.EdgeAgenticSubscription:
+		if id := m.agentic_subscription; id != nil {
 			return []ent.Value{*id}
 		}
 	}
@@ -8883,7 +13460,7 @@ func (m *ApprovalRequestMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *ApprovalRequestMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 4)
 	return edges
 }
 
@@ -8895,12 +13472,18 @@ func (m *ApprovalRequestMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *ApprovalRequestMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 4)
 	if m.clearedapi_subscription {
 		edges = append(edges, approvalrequest.EdgeAPISubscription)
 	}
+	if m.clearedfile_subscription {
+		edges = append(edges, approvalrequest.EdgeFileSubscription)
+	}
 	if m.clearedevent_subscription {
 		edges = append(edges, approvalrequest.EdgeEventSubscription)
+	}
+	if m.clearedagentic_subscription {
+		edges = append(edges, approvalrequest.EdgeAgenticSubscription)
 	}
 	return edges
 }
@@ -8911,8 +13494,12 @@ func (m *ApprovalRequestMutation) EdgeCleared(name string) bool {
 	switch name {
 	case approvalrequest.EdgeAPISubscription:
 		return m.clearedapi_subscription
+	case approvalrequest.EdgeFileSubscription:
+		return m.clearedfile_subscription
 	case approvalrequest.EdgeEventSubscription:
 		return m.clearedevent_subscription
+	case approvalrequest.EdgeAgenticSubscription:
+		return m.clearedagentic_subscription
 	}
 	return false
 }
@@ -8924,8 +13511,14 @@ func (m *ApprovalRequestMutation) ClearEdge(name string) error {
 	case approvalrequest.EdgeAPISubscription:
 		m.ClearAPISubscription()
 		return nil
+	case approvalrequest.EdgeFileSubscription:
+		m.ClearFileSubscription()
+		return nil
 	case approvalrequest.EdgeEventSubscription:
 		m.ClearEventSubscription()
+		return nil
+	case approvalrequest.EdgeAgenticSubscription:
+		m.ClearAgenticSubscription()
 		return nil
 	}
 	return fmt.Errorf("unknown ApprovalRequest unique edge %s", name)
@@ -8938,8 +13531,14 @@ func (m *ApprovalRequestMutation) ResetEdge(name string) error {
 	case approvalrequest.EdgeAPISubscription:
 		m.ResetAPISubscription()
 		return nil
+	case approvalrequest.EdgeFileSubscription:
+		m.ResetFileSubscription()
+		return nil
 	case approvalrequest.EdgeEventSubscription:
 		m.ResetEventSubscription()
+		return nil
+	case approvalrequest.EdgeAgenticSubscription:
+		m.ResetAgenticSubscription()
 		return nil
 	}
 	return fmt.Errorf("unknown ApprovalRequest edge %s", name)
@@ -12704,6 +17303,3732 @@ func (m *EventTypeMutation) ResetEdge(name string) error {
 	return fmt.Errorf("unknown EventType edge %s", name)
 }
 
+// FileExposureMutation represents an operation that mutates the FileExposure nodes in the graph.
+type FileExposureMutation struct {
+	config
+	op                   Op
+	typ                  string
+	id                   *int
+	created_at           *time.Time
+	last_modified_at     *time.Time
+	status_phase         *fileexposure.StatusPhase
+	status_message       *string
+	environment          *string
+	namespace            *string
+	file_type            *string
+	visibility           *fileexposure.Visibility
+	active               *bool
+	zone_name            *string
+	sftp                 **model.FileSFTP
+	approval_config      *model.ApprovalConfig
+	clearedFields        map[string]struct{}
+	owner                *int
+	clearedowner         bool
+	file_type_def        *int
+	clearedfile_type_def bool
+	zone                 *int
+	clearedzone          bool
+	subscriptions        map[int]struct{}
+	removedsubscriptions map[int]struct{}
+	clearedsubscriptions bool
+	done                 bool
+	oldValue             func(context.Context) (*FileExposure, error)
+	predicates           []predicate.FileExposure
+}
+
+var _ ent.Mutation = (*FileExposureMutation)(nil)
+
+// fileexposureOption allows management of the mutation configuration using functional options.
+type fileexposureOption func(*FileExposureMutation)
+
+// newFileExposureMutation creates new mutation for the FileExposure entity.
+func newFileExposureMutation(c config, op Op, opts ...fileexposureOption) *FileExposureMutation {
+	m := &FileExposureMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeFileExposure,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withFileExposureID sets the ID field of the mutation.
+func withFileExposureID(id int) fileexposureOption {
+	return func(m *FileExposureMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *FileExposure
+		)
+		m.oldValue = func(ctx context.Context) (*FileExposure, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().FileExposure.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withFileExposure sets the old FileExposure of the mutation.
+func withFileExposure(node *FileExposure) fileexposureOption {
+	return func(m *FileExposureMutation) {
+		m.oldValue = func(context.Context) (*FileExposure, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m FileExposureMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m FileExposureMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *FileExposureMutation) ID() (id int, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *FileExposureMutation) IDs(ctx context.Context) ([]int, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().FileExposure.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *FileExposureMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *FileExposureMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the FileExposure entity.
+// If the FileExposure object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FileExposureMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *FileExposureMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetLastModifiedAt sets the "last_modified_at" field.
+func (m *FileExposureMutation) SetLastModifiedAt(t time.Time) {
+	m.last_modified_at = &t
+}
+
+// LastModifiedAt returns the value of the "last_modified_at" field in the mutation.
+func (m *FileExposureMutation) LastModifiedAt() (r time.Time, exists bool) {
+	v := m.last_modified_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLastModifiedAt returns the old "last_modified_at" field's value of the FileExposure entity.
+// If the FileExposure object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FileExposureMutation) OldLastModifiedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLastModifiedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLastModifiedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLastModifiedAt: %w", err)
+	}
+	return oldValue.LastModifiedAt, nil
+}
+
+// ResetLastModifiedAt resets all changes to the "last_modified_at" field.
+func (m *FileExposureMutation) ResetLastModifiedAt() {
+	m.last_modified_at = nil
+}
+
+// SetStatusPhase sets the "status_phase" field.
+func (m *FileExposureMutation) SetStatusPhase(fp fileexposure.StatusPhase) {
+	m.status_phase = &fp
+}
+
+// StatusPhase returns the value of the "status_phase" field in the mutation.
+func (m *FileExposureMutation) StatusPhase() (r fileexposure.StatusPhase, exists bool) {
+	v := m.status_phase
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStatusPhase returns the old "status_phase" field's value of the FileExposure entity.
+// If the FileExposure object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FileExposureMutation) OldStatusPhase(ctx context.Context) (v *fileexposure.StatusPhase, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStatusPhase is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStatusPhase requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStatusPhase: %w", err)
+	}
+	return oldValue.StatusPhase, nil
+}
+
+// ClearStatusPhase clears the value of the "status_phase" field.
+func (m *FileExposureMutation) ClearStatusPhase() {
+	m.status_phase = nil
+	m.clearedFields[fileexposure.FieldStatusPhase] = struct{}{}
+}
+
+// StatusPhaseCleared returns if the "status_phase" field was cleared in this mutation.
+func (m *FileExposureMutation) StatusPhaseCleared() bool {
+	_, ok := m.clearedFields[fileexposure.FieldStatusPhase]
+	return ok
+}
+
+// ResetStatusPhase resets all changes to the "status_phase" field.
+func (m *FileExposureMutation) ResetStatusPhase() {
+	m.status_phase = nil
+	delete(m.clearedFields, fileexposure.FieldStatusPhase)
+}
+
+// SetStatusMessage sets the "status_message" field.
+func (m *FileExposureMutation) SetStatusMessage(s string) {
+	m.status_message = &s
+}
+
+// StatusMessage returns the value of the "status_message" field in the mutation.
+func (m *FileExposureMutation) StatusMessage() (r string, exists bool) {
+	v := m.status_message
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStatusMessage returns the old "status_message" field's value of the FileExposure entity.
+// If the FileExposure object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FileExposureMutation) OldStatusMessage(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStatusMessage is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStatusMessage requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStatusMessage: %w", err)
+	}
+	return oldValue.StatusMessage, nil
+}
+
+// ClearStatusMessage clears the value of the "status_message" field.
+func (m *FileExposureMutation) ClearStatusMessage() {
+	m.status_message = nil
+	m.clearedFields[fileexposure.FieldStatusMessage] = struct{}{}
+}
+
+// StatusMessageCleared returns if the "status_message" field was cleared in this mutation.
+func (m *FileExposureMutation) StatusMessageCleared() bool {
+	_, ok := m.clearedFields[fileexposure.FieldStatusMessage]
+	return ok
+}
+
+// ResetStatusMessage resets all changes to the "status_message" field.
+func (m *FileExposureMutation) ResetStatusMessage() {
+	m.status_message = nil
+	delete(m.clearedFields, fileexposure.FieldStatusMessage)
+}
+
+// SetEnvironment sets the "environment" field.
+func (m *FileExposureMutation) SetEnvironment(s string) {
+	m.environment = &s
+}
+
+// Environment returns the value of the "environment" field in the mutation.
+func (m *FileExposureMutation) Environment() (r string, exists bool) {
+	v := m.environment
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEnvironment returns the old "environment" field's value of the FileExposure entity.
+// If the FileExposure object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FileExposureMutation) OldEnvironment(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEnvironment is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEnvironment requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEnvironment: %w", err)
+	}
+	return oldValue.Environment, nil
+}
+
+// ClearEnvironment clears the value of the "environment" field.
+func (m *FileExposureMutation) ClearEnvironment() {
+	m.environment = nil
+	m.clearedFields[fileexposure.FieldEnvironment] = struct{}{}
+}
+
+// EnvironmentCleared returns if the "environment" field was cleared in this mutation.
+func (m *FileExposureMutation) EnvironmentCleared() bool {
+	_, ok := m.clearedFields[fileexposure.FieldEnvironment]
+	return ok
+}
+
+// ResetEnvironment resets all changes to the "environment" field.
+func (m *FileExposureMutation) ResetEnvironment() {
+	m.environment = nil
+	delete(m.clearedFields, fileexposure.FieldEnvironment)
+}
+
+// SetNamespace sets the "namespace" field.
+func (m *FileExposureMutation) SetNamespace(s string) {
+	m.namespace = &s
+}
+
+// Namespace returns the value of the "namespace" field in the mutation.
+func (m *FileExposureMutation) Namespace() (r string, exists bool) {
+	v := m.namespace
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldNamespace returns the old "namespace" field's value of the FileExposure entity.
+// If the FileExposure object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FileExposureMutation) OldNamespace(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldNamespace is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldNamespace requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldNamespace: %w", err)
+	}
+	return oldValue.Namespace, nil
+}
+
+// ResetNamespace resets all changes to the "namespace" field.
+func (m *FileExposureMutation) ResetNamespace() {
+	m.namespace = nil
+}
+
+// SetFileType sets the "file_type" field.
+func (m *FileExposureMutation) SetFileType(s string) {
+	m.file_type = &s
+}
+
+// FileType returns the value of the "file_type" field in the mutation.
+func (m *FileExposureMutation) FileType() (r string, exists bool) {
+	v := m.file_type
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldFileType returns the old "file_type" field's value of the FileExposure entity.
+// If the FileExposure object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FileExposureMutation) OldFileType(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldFileType is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldFileType requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldFileType: %w", err)
+	}
+	return oldValue.FileType, nil
+}
+
+// ResetFileType resets all changes to the "file_type" field.
+func (m *FileExposureMutation) ResetFileType() {
+	m.file_type = nil
+}
+
+// SetVisibility sets the "visibility" field.
+func (m *FileExposureMutation) SetVisibility(f fileexposure.Visibility) {
+	m.visibility = &f
+}
+
+// Visibility returns the value of the "visibility" field in the mutation.
+func (m *FileExposureMutation) Visibility() (r fileexposure.Visibility, exists bool) {
+	v := m.visibility
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldVisibility returns the old "visibility" field's value of the FileExposure entity.
+// If the FileExposure object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FileExposureMutation) OldVisibility(ctx context.Context) (v fileexposure.Visibility, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldVisibility is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldVisibility requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldVisibility: %w", err)
+	}
+	return oldValue.Visibility, nil
+}
+
+// ResetVisibility resets all changes to the "visibility" field.
+func (m *FileExposureMutation) ResetVisibility() {
+	m.visibility = nil
+}
+
+// SetActive sets the "active" field.
+func (m *FileExposureMutation) SetActive(b bool) {
+	m.active = &b
+}
+
+// Active returns the value of the "active" field in the mutation.
+func (m *FileExposureMutation) Active() (r bool, exists bool) {
+	v := m.active
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldActive returns the old "active" field's value of the FileExposure entity.
+// If the FileExposure object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FileExposureMutation) OldActive(ctx context.Context) (v *bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldActive is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldActive requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldActive: %w", err)
+	}
+	return oldValue.Active, nil
+}
+
+// ClearActive clears the value of the "active" field.
+func (m *FileExposureMutation) ClearActive() {
+	m.active = nil
+	m.clearedFields[fileexposure.FieldActive] = struct{}{}
+}
+
+// ActiveCleared returns if the "active" field was cleared in this mutation.
+func (m *FileExposureMutation) ActiveCleared() bool {
+	_, ok := m.clearedFields[fileexposure.FieldActive]
+	return ok
+}
+
+// ResetActive resets all changes to the "active" field.
+func (m *FileExposureMutation) ResetActive() {
+	m.active = nil
+	delete(m.clearedFields, fileexposure.FieldActive)
+}
+
+// SetZoneName sets the "zone_name" field.
+func (m *FileExposureMutation) SetZoneName(s string) {
+	m.zone_name = &s
+}
+
+// ZoneName returns the value of the "zone_name" field in the mutation.
+func (m *FileExposureMutation) ZoneName() (r string, exists bool) {
+	v := m.zone_name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldZoneName returns the old "zone_name" field's value of the FileExposure entity.
+// If the FileExposure object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FileExposureMutation) OldZoneName(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldZoneName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldZoneName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldZoneName: %w", err)
+	}
+	return oldValue.ZoneName, nil
+}
+
+// ResetZoneName resets all changes to the "zone_name" field.
+func (m *FileExposureMutation) ResetZoneName() {
+	m.zone_name = nil
+}
+
+// SetSftp sets the "sftp" field.
+func (m *FileExposureMutation) SetSftp(ms *model.FileSFTP) {
+	m.sftp = &ms
+}
+
+// Sftp returns the value of the "sftp" field in the mutation.
+func (m *FileExposureMutation) Sftp() (r *model.FileSFTP, exists bool) {
+	v := m.sftp
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSftp returns the old "sftp" field's value of the FileExposure entity.
+// If the FileExposure object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FileExposureMutation) OldSftp(ctx context.Context) (v *model.FileSFTP, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSftp is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSftp requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSftp: %w", err)
+	}
+	return oldValue.Sftp, nil
+}
+
+// ClearSftp clears the value of the "sftp" field.
+func (m *FileExposureMutation) ClearSftp() {
+	m.sftp = nil
+	m.clearedFields[fileexposure.FieldSftp] = struct{}{}
+}
+
+// SftpCleared returns if the "sftp" field was cleared in this mutation.
+func (m *FileExposureMutation) SftpCleared() bool {
+	_, ok := m.clearedFields[fileexposure.FieldSftp]
+	return ok
+}
+
+// ResetSftp resets all changes to the "sftp" field.
+func (m *FileExposureMutation) ResetSftp() {
+	m.sftp = nil
+	delete(m.clearedFields, fileexposure.FieldSftp)
+}
+
+// SetApprovalConfig sets the "approval_config" field.
+func (m *FileExposureMutation) SetApprovalConfig(mc model.ApprovalConfig) {
+	m.approval_config = &mc
+}
+
+// ApprovalConfig returns the value of the "approval_config" field in the mutation.
+func (m *FileExposureMutation) ApprovalConfig() (r model.ApprovalConfig, exists bool) {
+	v := m.approval_config
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldApprovalConfig returns the old "approval_config" field's value of the FileExposure entity.
+// If the FileExposure object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FileExposureMutation) OldApprovalConfig(ctx context.Context) (v model.ApprovalConfig, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldApprovalConfig is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldApprovalConfig requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldApprovalConfig: %w", err)
+	}
+	return oldValue.ApprovalConfig, nil
+}
+
+// ResetApprovalConfig resets all changes to the "approval_config" field.
+func (m *FileExposureMutation) ResetApprovalConfig() {
+	m.approval_config = nil
+}
+
+// SetOwnerID sets the "owner" edge to the Application entity by id.
+func (m *FileExposureMutation) SetOwnerID(id int) {
+	m.owner = &id
+}
+
+// ClearOwner clears the "owner" edge to the Application entity.
+func (m *FileExposureMutation) ClearOwner() {
+	m.clearedowner = true
+}
+
+// OwnerCleared reports if the "owner" edge to the Application entity was cleared.
+func (m *FileExposureMutation) OwnerCleared() bool {
+	return m.clearedowner
+}
+
+// OwnerID returns the "owner" edge ID in the mutation.
+func (m *FileExposureMutation) OwnerID() (id int, exists bool) {
+	if m.owner != nil {
+		return *m.owner, true
+	}
+	return
+}
+
+// OwnerIDs returns the "owner" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// OwnerID instead. It exists only for internal usage by the builders.
+func (m *FileExposureMutation) OwnerIDs() (ids []int) {
+	if id := m.owner; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetOwner resets all changes to the "owner" edge.
+func (m *FileExposureMutation) ResetOwner() {
+	m.owner = nil
+	m.clearedowner = false
+}
+
+// SetFileTypeDefID sets the "file_type_def" edge to the FileType entity by id.
+func (m *FileExposureMutation) SetFileTypeDefID(id int) {
+	m.file_type_def = &id
+}
+
+// ClearFileTypeDef clears the "file_type_def" edge to the FileType entity.
+func (m *FileExposureMutation) ClearFileTypeDef() {
+	m.clearedfile_type_def = true
+}
+
+// FileTypeDefCleared reports if the "file_type_def" edge to the FileType entity was cleared.
+func (m *FileExposureMutation) FileTypeDefCleared() bool {
+	return m.clearedfile_type_def
+}
+
+// FileTypeDefID returns the "file_type_def" edge ID in the mutation.
+func (m *FileExposureMutation) FileTypeDefID() (id int, exists bool) {
+	if m.file_type_def != nil {
+		return *m.file_type_def, true
+	}
+	return
+}
+
+// FileTypeDefIDs returns the "file_type_def" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// FileTypeDefID instead. It exists only for internal usage by the builders.
+func (m *FileExposureMutation) FileTypeDefIDs() (ids []int) {
+	if id := m.file_type_def; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetFileTypeDef resets all changes to the "file_type_def" edge.
+func (m *FileExposureMutation) ResetFileTypeDef() {
+	m.file_type_def = nil
+	m.clearedfile_type_def = false
+}
+
+// SetZoneID sets the "zone" edge to the Zone entity by id.
+func (m *FileExposureMutation) SetZoneID(id int) {
+	m.zone = &id
+}
+
+// ClearZone clears the "zone" edge to the Zone entity.
+func (m *FileExposureMutation) ClearZone() {
+	m.clearedzone = true
+}
+
+// ZoneCleared reports if the "zone" edge to the Zone entity was cleared.
+func (m *FileExposureMutation) ZoneCleared() bool {
+	return m.clearedzone
+}
+
+// ZoneID returns the "zone" edge ID in the mutation.
+func (m *FileExposureMutation) ZoneID() (id int, exists bool) {
+	if m.zone != nil {
+		return *m.zone, true
+	}
+	return
+}
+
+// ZoneIDs returns the "zone" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// ZoneID instead. It exists only for internal usage by the builders.
+func (m *FileExposureMutation) ZoneIDs() (ids []int) {
+	if id := m.zone; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetZone resets all changes to the "zone" edge.
+func (m *FileExposureMutation) ResetZone() {
+	m.zone = nil
+	m.clearedzone = false
+}
+
+// AddSubscriptionIDs adds the "subscriptions" edge to the FileSubscription entity by ids.
+func (m *FileExposureMutation) AddSubscriptionIDs(ids ...int) {
+	if m.subscriptions == nil {
+		m.subscriptions = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.subscriptions[ids[i]] = struct{}{}
+	}
+}
+
+// ClearSubscriptions clears the "subscriptions" edge to the FileSubscription entity.
+func (m *FileExposureMutation) ClearSubscriptions() {
+	m.clearedsubscriptions = true
+}
+
+// SubscriptionsCleared reports if the "subscriptions" edge to the FileSubscription entity was cleared.
+func (m *FileExposureMutation) SubscriptionsCleared() bool {
+	return m.clearedsubscriptions
+}
+
+// RemoveSubscriptionIDs removes the "subscriptions" edge to the FileSubscription entity by IDs.
+func (m *FileExposureMutation) RemoveSubscriptionIDs(ids ...int) {
+	if m.removedsubscriptions == nil {
+		m.removedsubscriptions = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.subscriptions, ids[i])
+		m.removedsubscriptions[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedSubscriptions returns the removed IDs of the "subscriptions" edge to the FileSubscription entity.
+func (m *FileExposureMutation) RemovedSubscriptionsIDs() (ids []int) {
+	for id := range m.removedsubscriptions {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// SubscriptionsIDs returns the "subscriptions" edge IDs in the mutation.
+func (m *FileExposureMutation) SubscriptionsIDs() (ids []int) {
+	for id := range m.subscriptions {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetSubscriptions resets all changes to the "subscriptions" edge.
+func (m *FileExposureMutation) ResetSubscriptions() {
+	m.subscriptions = nil
+	m.clearedsubscriptions = false
+	m.removedsubscriptions = nil
+}
+
+// Where appends a list predicates to the FileExposureMutation builder.
+func (m *FileExposureMutation) Where(ps ...predicate.FileExposure) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the FileExposureMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *FileExposureMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.FileExposure, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *FileExposureMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *FileExposureMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (FileExposure).
+func (m *FileExposureMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *FileExposureMutation) Fields() []string {
+	fields := make([]string, 0, 12)
+	if m.created_at != nil {
+		fields = append(fields, fileexposure.FieldCreatedAt)
+	}
+	if m.last_modified_at != nil {
+		fields = append(fields, fileexposure.FieldLastModifiedAt)
+	}
+	if m.status_phase != nil {
+		fields = append(fields, fileexposure.FieldStatusPhase)
+	}
+	if m.status_message != nil {
+		fields = append(fields, fileexposure.FieldStatusMessage)
+	}
+	if m.environment != nil {
+		fields = append(fields, fileexposure.FieldEnvironment)
+	}
+	if m.namespace != nil {
+		fields = append(fields, fileexposure.FieldNamespace)
+	}
+	if m.file_type != nil {
+		fields = append(fields, fileexposure.FieldFileType)
+	}
+	if m.visibility != nil {
+		fields = append(fields, fileexposure.FieldVisibility)
+	}
+	if m.active != nil {
+		fields = append(fields, fileexposure.FieldActive)
+	}
+	if m.zone_name != nil {
+		fields = append(fields, fileexposure.FieldZoneName)
+	}
+	if m.sftp != nil {
+		fields = append(fields, fileexposure.FieldSftp)
+	}
+	if m.approval_config != nil {
+		fields = append(fields, fileexposure.FieldApprovalConfig)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *FileExposureMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case fileexposure.FieldCreatedAt:
+		return m.CreatedAt()
+	case fileexposure.FieldLastModifiedAt:
+		return m.LastModifiedAt()
+	case fileexposure.FieldStatusPhase:
+		return m.StatusPhase()
+	case fileexposure.FieldStatusMessage:
+		return m.StatusMessage()
+	case fileexposure.FieldEnvironment:
+		return m.Environment()
+	case fileexposure.FieldNamespace:
+		return m.Namespace()
+	case fileexposure.FieldFileType:
+		return m.FileType()
+	case fileexposure.FieldVisibility:
+		return m.Visibility()
+	case fileexposure.FieldActive:
+		return m.Active()
+	case fileexposure.FieldZoneName:
+		return m.ZoneName()
+	case fileexposure.FieldSftp:
+		return m.Sftp()
+	case fileexposure.FieldApprovalConfig:
+		return m.ApprovalConfig()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *FileExposureMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case fileexposure.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case fileexposure.FieldLastModifiedAt:
+		return m.OldLastModifiedAt(ctx)
+	case fileexposure.FieldStatusPhase:
+		return m.OldStatusPhase(ctx)
+	case fileexposure.FieldStatusMessage:
+		return m.OldStatusMessage(ctx)
+	case fileexposure.FieldEnvironment:
+		return m.OldEnvironment(ctx)
+	case fileexposure.FieldNamespace:
+		return m.OldNamespace(ctx)
+	case fileexposure.FieldFileType:
+		return m.OldFileType(ctx)
+	case fileexposure.FieldVisibility:
+		return m.OldVisibility(ctx)
+	case fileexposure.FieldActive:
+		return m.OldActive(ctx)
+	case fileexposure.FieldZoneName:
+		return m.OldZoneName(ctx)
+	case fileexposure.FieldSftp:
+		return m.OldSftp(ctx)
+	case fileexposure.FieldApprovalConfig:
+		return m.OldApprovalConfig(ctx)
+	}
+	return nil, fmt.Errorf("unknown FileExposure field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *FileExposureMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case fileexposure.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case fileexposure.FieldLastModifiedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLastModifiedAt(v)
+		return nil
+	case fileexposure.FieldStatusPhase:
+		v, ok := value.(fileexposure.StatusPhase)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStatusPhase(v)
+		return nil
+	case fileexposure.FieldStatusMessage:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStatusMessage(v)
+		return nil
+	case fileexposure.FieldEnvironment:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEnvironment(v)
+		return nil
+	case fileexposure.FieldNamespace:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetNamespace(v)
+		return nil
+	case fileexposure.FieldFileType:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetFileType(v)
+		return nil
+	case fileexposure.FieldVisibility:
+		v, ok := value.(fileexposure.Visibility)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetVisibility(v)
+		return nil
+	case fileexposure.FieldActive:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetActive(v)
+		return nil
+	case fileexposure.FieldZoneName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetZoneName(v)
+		return nil
+	case fileexposure.FieldSftp:
+		v, ok := value.(*model.FileSFTP)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSftp(v)
+		return nil
+	case fileexposure.FieldApprovalConfig:
+		v, ok := value.(model.ApprovalConfig)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetApprovalConfig(v)
+		return nil
+	}
+	return fmt.Errorf("unknown FileExposure field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *FileExposureMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *FileExposureMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *FileExposureMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown FileExposure numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *FileExposureMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(fileexposure.FieldStatusPhase) {
+		fields = append(fields, fileexposure.FieldStatusPhase)
+	}
+	if m.FieldCleared(fileexposure.FieldStatusMessage) {
+		fields = append(fields, fileexposure.FieldStatusMessage)
+	}
+	if m.FieldCleared(fileexposure.FieldEnvironment) {
+		fields = append(fields, fileexposure.FieldEnvironment)
+	}
+	if m.FieldCleared(fileexposure.FieldActive) {
+		fields = append(fields, fileexposure.FieldActive)
+	}
+	if m.FieldCleared(fileexposure.FieldSftp) {
+		fields = append(fields, fileexposure.FieldSftp)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *FileExposureMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *FileExposureMutation) ClearField(name string) error {
+	switch name {
+	case fileexposure.FieldStatusPhase:
+		m.ClearStatusPhase()
+		return nil
+	case fileexposure.FieldStatusMessage:
+		m.ClearStatusMessage()
+		return nil
+	case fileexposure.FieldEnvironment:
+		m.ClearEnvironment()
+		return nil
+	case fileexposure.FieldActive:
+		m.ClearActive()
+		return nil
+	case fileexposure.FieldSftp:
+		m.ClearSftp()
+		return nil
+	}
+	return fmt.Errorf("unknown FileExposure nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *FileExposureMutation) ResetField(name string) error {
+	switch name {
+	case fileexposure.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case fileexposure.FieldLastModifiedAt:
+		m.ResetLastModifiedAt()
+		return nil
+	case fileexposure.FieldStatusPhase:
+		m.ResetStatusPhase()
+		return nil
+	case fileexposure.FieldStatusMessage:
+		m.ResetStatusMessage()
+		return nil
+	case fileexposure.FieldEnvironment:
+		m.ResetEnvironment()
+		return nil
+	case fileexposure.FieldNamespace:
+		m.ResetNamespace()
+		return nil
+	case fileexposure.FieldFileType:
+		m.ResetFileType()
+		return nil
+	case fileexposure.FieldVisibility:
+		m.ResetVisibility()
+		return nil
+	case fileexposure.FieldActive:
+		m.ResetActive()
+		return nil
+	case fileexposure.FieldZoneName:
+		m.ResetZoneName()
+		return nil
+	case fileexposure.FieldSftp:
+		m.ResetSftp()
+		return nil
+	case fileexposure.FieldApprovalConfig:
+		m.ResetApprovalConfig()
+		return nil
+	}
+	return fmt.Errorf("unknown FileExposure field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *FileExposureMutation) AddedEdges() []string {
+	edges := make([]string, 0, 4)
+	if m.owner != nil {
+		edges = append(edges, fileexposure.EdgeOwner)
+	}
+	if m.file_type_def != nil {
+		edges = append(edges, fileexposure.EdgeFileTypeDef)
+	}
+	if m.zone != nil {
+		edges = append(edges, fileexposure.EdgeZone)
+	}
+	if m.subscriptions != nil {
+		edges = append(edges, fileexposure.EdgeSubscriptions)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *FileExposureMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case fileexposure.EdgeOwner:
+		if id := m.owner; id != nil {
+			return []ent.Value{*id}
+		}
+	case fileexposure.EdgeFileTypeDef:
+		if id := m.file_type_def; id != nil {
+			return []ent.Value{*id}
+		}
+	case fileexposure.EdgeZone:
+		if id := m.zone; id != nil {
+			return []ent.Value{*id}
+		}
+	case fileexposure.EdgeSubscriptions:
+		ids := make([]ent.Value, 0, len(m.subscriptions))
+		for id := range m.subscriptions {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *FileExposureMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 4)
+	if m.removedsubscriptions != nil {
+		edges = append(edges, fileexposure.EdgeSubscriptions)
+	}
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *FileExposureMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case fileexposure.EdgeSubscriptions:
+		ids := make([]ent.Value, 0, len(m.removedsubscriptions))
+		for id := range m.removedsubscriptions {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *FileExposureMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 4)
+	if m.clearedowner {
+		edges = append(edges, fileexposure.EdgeOwner)
+	}
+	if m.clearedfile_type_def {
+		edges = append(edges, fileexposure.EdgeFileTypeDef)
+	}
+	if m.clearedzone {
+		edges = append(edges, fileexposure.EdgeZone)
+	}
+	if m.clearedsubscriptions {
+		edges = append(edges, fileexposure.EdgeSubscriptions)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *FileExposureMutation) EdgeCleared(name string) bool {
+	switch name {
+	case fileexposure.EdgeOwner:
+		return m.clearedowner
+	case fileexposure.EdgeFileTypeDef:
+		return m.clearedfile_type_def
+	case fileexposure.EdgeZone:
+		return m.clearedzone
+	case fileexposure.EdgeSubscriptions:
+		return m.clearedsubscriptions
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *FileExposureMutation) ClearEdge(name string) error {
+	switch name {
+	case fileexposure.EdgeOwner:
+		m.ClearOwner()
+		return nil
+	case fileexposure.EdgeFileTypeDef:
+		m.ClearFileTypeDef()
+		return nil
+	case fileexposure.EdgeZone:
+		m.ClearZone()
+		return nil
+	}
+	return fmt.Errorf("unknown FileExposure unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *FileExposureMutation) ResetEdge(name string) error {
+	switch name {
+	case fileexposure.EdgeOwner:
+		m.ResetOwner()
+		return nil
+	case fileexposure.EdgeFileTypeDef:
+		m.ResetFileTypeDef()
+		return nil
+	case fileexposure.EdgeZone:
+		m.ResetZone()
+		return nil
+	case fileexposure.EdgeSubscriptions:
+		m.ResetSubscriptions()
+		return nil
+	}
+	return fmt.Errorf("unknown FileExposure edge %s", name)
+}
+
+// FileSubscriptionMutation represents an operation that mutates the FileSubscription nodes in the graph.
+type FileSubscriptionMutation struct {
+	config
+	op                       Op
+	typ                      string
+	id                       *int
+	created_at               *time.Time
+	last_modified_at         *time.Time
+	status_phase             *filesubscription.StatusPhase
+	status_message           *string
+	environment              *string
+	namespace                *string
+	name                     *string
+	file_type                *string
+	zone_name                *string
+	service_url              *string
+	service_external_url     *string
+	sftp                     **model.FileSFTP
+	clearedFields            map[string]struct{}
+	owner                    *int
+	clearedowner             bool
+	file_type_def            *int
+	clearedfile_type_def     bool
+	target                   *int
+	clearedtarget            bool
+	zone                     *int
+	clearedzone              bool
+	approval                 *int
+	clearedapproval          bool
+	approval_requests        map[int]struct{}
+	removedapproval_requests map[int]struct{}
+	clearedapproval_requests bool
+	done                     bool
+	oldValue                 func(context.Context) (*FileSubscription, error)
+	predicates               []predicate.FileSubscription
+}
+
+var _ ent.Mutation = (*FileSubscriptionMutation)(nil)
+
+// filesubscriptionOption allows management of the mutation configuration using functional options.
+type filesubscriptionOption func(*FileSubscriptionMutation)
+
+// newFileSubscriptionMutation creates new mutation for the FileSubscription entity.
+func newFileSubscriptionMutation(c config, op Op, opts ...filesubscriptionOption) *FileSubscriptionMutation {
+	m := &FileSubscriptionMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeFileSubscription,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withFileSubscriptionID sets the ID field of the mutation.
+func withFileSubscriptionID(id int) filesubscriptionOption {
+	return func(m *FileSubscriptionMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *FileSubscription
+		)
+		m.oldValue = func(ctx context.Context) (*FileSubscription, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().FileSubscription.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withFileSubscription sets the old FileSubscription of the mutation.
+func withFileSubscription(node *FileSubscription) filesubscriptionOption {
+	return func(m *FileSubscriptionMutation) {
+		m.oldValue = func(context.Context) (*FileSubscription, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m FileSubscriptionMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m FileSubscriptionMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *FileSubscriptionMutation) ID() (id int, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *FileSubscriptionMutation) IDs(ctx context.Context) ([]int, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().FileSubscription.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *FileSubscriptionMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *FileSubscriptionMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the FileSubscription entity.
+// If the FileSubscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FileSubscriptionMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *FileSubscriptionMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetLastModifiedAt sets the "last_modified_at" field.
+func (m *FileSubscriptionMutation) SetLastModifiedAt(t time.Time) {
+	m.last_modified_at = &t
+}
+
+// LastModifiedAt returns the value of the "last_modified_at" field in the mutation.
+func (m *FileSubscriptionMutation) LastModifiedAt() (r time.Time, exists bool) {
+	v := m.last_modified_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLastModifiedAt returns the old "last_modified_at" field's value of the FileSubscription entity.
+// If the FileSubscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FileSubscriptionMutation) OldLastModifiedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLastModifiedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLastModifiedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLastModifiedAt: %w", err)
+	}
+	return oldValue.LastModifiedAt, nil
+}
+
+// ResetLastModifiedAt resets all changes to the "last_modified_at" field.
+func (m *FileSubscriptionMutation) ResetLastModifiedAt() {
+	m.last_modified_at = nil
+}
+
+// SetStatusPhase sets the "status_phase" field.
+func (m *FileSubscriptionMutation) SetStatusPhase(fp filesubscription.StatusPhase) {
+	m.status_phase = &fp
+}
+
+// StatusPhase returns the value of the "status_phase" field in the mutation.
+func (m *FileSubscriptionMutation) StatusPhase() (r filesubscription.StatusPhase, exists bool) {
+	v := m.status_phase
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStatusPhase returns the old "status_phase" field's value of the FileSubscription entity.
+// If the FileSubscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FileSubscriptionMutation) OldStatusPhase(ctx context.Context) (v *filesubscription.StatusPhase, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStatusPhase is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStatusPhase requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStatusPhase: %w", err)
+	}
+	return oldValue.StatusPhase, nil
+}
+
+// ClearStatusPhase clears the value of the "status_phase" field.
+func (m *FileSubscriptionMutation) ClearStatusPhase() {
+	m.status_phase = nil
+	m.clearedFields[filesubscription.FieldStatusPhase] = struct{}{}
+}
+
+// StatusPhaseCleared returns if the "status_phase" field was cleared in this mutation.
+func (m *FileSubscriptionMutation) StatusPhaseCleared() bool {
+	_, ok := m.clearedFields[filesubscription.FieldStatusPhase]
+	return ok
+}
+
+// ResetStatusPhase resets all changes to the "status_phase" field.
+func (m *FileSubscriptionMutation) ResetStatusPhase() {
+	m.status_phase = nil
+	delete(m.clearedFields, filesubscription.FieldStatusPhase)
+}
+
+// SetStatusMessage sets the "status_message" field.
+func (m *FileSubscriptionMutation) SetStatusMessage(s string) {
+	m.status_message = &s
+}
+
+// StatusMessage returns the value of the "status_message" field in the mutation.
+func (m *FileSubscriptionMutation) StatusMessage() (r string, exists bool) {
+	v := m.status_message
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStatusMessage returns the old "status_message" field's value of the FileSubscription entity.
+// If the FileSubscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FileSubscriptionMutation) OldStatusMessage(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStatusMessage is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStatusMessage requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStatusMessage: %w", err)
+	}
+	return oldValue.StatusMessage, nil
+}
+
+// ClearStatusMessage clears the value of the "status_message" field.
+func (m *FileSubscriptionMutation) ClearStatusMessage() {
+	m.status_message = nil
+	m.clearedFields[filesubscription.FieldStatusMessage] = struct{}{}
+}
+
+// StatusMessageCleared returns if the "status_message" field was cleared in this mutation.
+func (m *FileSubscriptionMutation) StatusMessageCleared() bool {
+	_, ok := m.clearedFields[filesubscription.FieldStatusMessage]
+	return ok
+}
+
+// ResetStatusMessage resets all changes to the "status_message" field.
+func (m *FileSubscriptionMutation) ResetStatusMessage() {
+	m.status_message = nil
+	delete(m.clearedFields, filesubscription.FieldStatusMessage)
+}
+
+// SetEnvironment sets the "environment" field.
+func (m *FileSubscriptionMutation) SetEnvironment(s string) {
+	m.environment = &s
+}
+
+// Environment returns the value of the "environment" field in the mutation.
+func (m *FileSubscriptionMutation) Environment() (r string, exists bool) {
+	v := m.environment
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEnvironment returns the old "environment" field's value of the FileSubscription entity.
+// If the FileSubscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FileSubscriptionMutation) OldEnvironment(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEnvironment is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEnvironment requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEnvironment: %w", err)
+	}
+	return oldValue.Environment, nil
+}
+
+// ClearEnvironment clears the value of the "environment" field.
+func (m *FileSubscriptionMutation) ClearEnvironment() {
+	m.environment = nil
+	m.clearedFields[filesubscription.FieldEnvironment] = struct{}{}
+}
+
+// EnvironmentCleared returns if the "environment" field was cleared in this mutation.
+func (m *FileSubscriptionMutation) EnvironmentCleared() bool {
+	_, ok := m.clearedFields[filesubscription.FieldEnvironment]
+	return ok
+}
+
+// ResetEnvironment resets all changes to the "environment" field.
+func (m *FileSubscriptionMutation) ResetEnvironment() {
+	m.environment = nil
+	delete(m.clearedFields, filesubscription.FieldEnvironment)
+}
+
+// SetNamespace sets the "namespace" field.
+func (m *FileSubscriptionMutation) SetNamespace(s string) {
+	m.namespace = &s
+}
+
+// Namespace returns the value of the "namespace" field in the mutation.
+func (m *FileSubscriptionMutation) Namespace() (r string, exists bool) {
+	v := m.namespace
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldNamespace returns the old "namespace" field's value of the FileSubscription entity.
+// If the FileSubscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FileSubscriptionMutation) OldNamespace(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldNamespace is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldNamespace requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldNamespace: %w", err)
+	}
+	return oldValue.Namespace, nil
+}
+
+// ResetNamespace resets all changes to the "namespace" field.
+func (m *FileSubscriptionMutation) ResetNamespace() {
+	m.namespace = nil
+}
+
+// SetName sets the "name" field.
+func (m *FileSubscriptionMutation) SetName(s string) {
+	m.name = &s
+}
+
+// Name returns the value of the "name" field in the mutation.
+func (m *FileSubscriptionMutation) Name() (r string, exists bool) {
+	v := m.name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldName returns the old "name" field's value of the FileSubscription entity.
+// If the FileSubscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FileSubscriptionMutation) OldName(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldName: %w", err)
+	}
+	return oldValue.Name, nil
+}
+
+// ResetName resets all changes to the "name" field.
+func (m *FileSubscriptionMutation) ResetName() {
+	m.name = nil
+}
+
+// SetFileType sets the "file_type" field.
+func (m *FileSubscriptionMutation) SetFileType(s string) {
+	m.file_type = &s
+}
+
+// FileType returns the value of the "file_type" field in the mutation.
+func (m *FileSubscriptionMutation) FileType() (r string, exists bool) {
+	v := m.file_type
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldFileType returns the old "file_type" field's value of the FileSubscription entity.
+// If the FileSubscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FileSubscriptionMutation) OldFileType(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldFileType is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldFileType requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldFileType: %w", err)
+	}
+	return oldValue.FileType, nil
+}
+
+// ResetFileType resets all changes to the "file_type" field.
+func (m *FileSubscriptionMutation) ResetFileType() {
+	m.file_type = nil
+}
+
+// SetZoneName sets the "zone_name" field.
+func (m *FileSubscriptionMutation) SetZoneName(s string) {
+	m.zone_name = &s
+}
+
+// ZoneName returns the value of the "zone_name" field in the mutation.
+func (m *FileSubscriptionMutation) ZoneName() (r string, exists bool) {
+	v := m.zone_name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldZoneName returns the old "zone_name" field's value of the FileSubscription entity.
+// If the FileSubscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FileSubscriptionMutation) OldZoneName(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldZoneName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldZoneName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldZoneName: %w", err)
+	}
+	return oldValue.ZoneName, nil
+}
+
+// ResetZoneName resets all changes to the "zone_name" field.
+func (m *FileSubscriptionMutation) ResetZoneName() {
+	m.zone_name = nil
+}
+
+// SetServiceURL sets the "service_url" field.
+func (m *FileSubscriptionMutation) SetServiceURL(s string) {
+	m.service_url = &s
+}
+
+// ServiceURL returns the value of the "service_url" field in the mutation.
+func (m *FileSubscriptionMutation) ServiceURL() (r string, exists bool) {
+	v := m.service_url
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldServiceURL returns the old "service_url" field's value of the FileSubscription entity.
+// If the FileSubscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FileSubscriptionMutation) OldServiceURL(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldServiceURL is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldServiceURL requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldServiceURL: %w", err)
+	}
+	return oldValue.ServiceURL, nil
+}
+
+// ClearServiceURL clears the value of the "service_url" field.
+func (m *FileSubscriptionMutation) ClearServiceURL() {
+	m.service_url = nil
+	m.clearedFields[filesubscription.FieldServiceURL] = struct{}{}
+}
+
+// ServiceURLCleared returns if the "service_url" field was cleared in this mutation.
+func (m *FileSubscriptionMutation) ServiceURLCleared() bool {
+	_, ok := m.clearedFields[filesubscription.FieldServiceURL]
+	return ok
+}
+
+// ResetServiceURL resets all changes to the "service_url" field.
+func (m *FileSubscriptionMutation) ResetServiceURL() {
+	m.service_url = nil
+	delete(m.clearedFields, filesubscription.FieldServiceURL)
+}
+
+// SetServiceExternalURL sets the "service_external_url" field.
+func (m *FileSubscriptionMutation) SetServiceExternalURL(s string) {
+	m.service_external_url = &s
+}
+
+// ServiceExternalURL returns the value of the "service_external_url" field in the mutation.
+func (m *FileSubscriptionMutation) ServiceExternalURL() (r string, exists bool) {
+	v := m.service_external_url
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldServiceExternalURL returns the old "service_external_url" field's value of the FileSubscription entity.
+// If the FileSubscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FileSubscriptionMutation) OldServiceExternalURL(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldServiceExternalURL is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldServiceExternalURL requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldServiceExternalURL: %w", err)
+	}
+	return oldValue.ServiceExternalURL, nil
+}
+
+// ClearServiceExternalURL clears the value of the "service_external_url" field.
+func (m *FileSubscriptionMutation) ClearServiceExternalURL() {
+	m.service_external_url = nil
+	m.clearedFields[filesubscription.FieldServiceExternalURL] = struct{}{}
+}
+
+// ServiceExternalURLCleared returns if the "service_external_url" field was cleared in this mutation.
+func (m *FileSubscriptionMutation) ServiceExternalURLCleared() bool {
+	_, ok := m.clearedFields[filesubscription.FieldServiceExternalURL]
+	return ok
+}
+
+// ResetServiceExternalURL resets all changes to the "service_external_url" field.
+func (m *FileSubscriptionMutation) ResetServiceExternalURL() {
+	m.service_external_url = nil
+	delete(m.clearedFields, filesubscription.FieldServiceExternalURL)
+}
+
+// SetSftp sets the "sftp" field.
+func (m *FileSubscriptionMutation) SetSftp(ms *model.FileSFTP) {
+	m.sftp = &ms
+}
+
+// Sftp returns the value of the "sftp" field in the mutation.
+func (m *FileSubscriptionMutation) Sftp() (r *model.FileSFTP, exists bool) {
+	v := m.sftp
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSftp returns the old "sftp" field's value of the FileSubscription entity.
+// If the FileSubscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FileSubscriptionMutation) OldSftp(ctx context.Context) (v *model.FileSFTP, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSftp is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSftp requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSftp: %w", err)
+	}
+	return oldValue.Sftp, nil
+}
+
+// ClearSftp clears the value of the "sftp" field.
+func (m *FileSubscriptionMutation) ClearSftp() {
+	m.sftp = nil
+	m.clearedFields[filesubscription.FieldSftp] = struct{}{}
+}
+
+// SftpCleared returns if the "sftp" field was cleared in this mutation.
+func (m *FileSubscriptionMutation) SftpCleared() bool {
+	_, ok := m.clearedFields[filesubscription.FieldSftp]
+	return ok
+}
+
+// ResetSftp resets all changes to the "sftp" field.
+func (m *FileSubscriptionMutation) ResetSftp() {
+	m.sftp = nil
+	delete(m.clearedFields, filesubscription.FieldSftp)
+}
+
+// SetOwnerID sets the "owner" edge to the Application entity by id.
+func (m *FileSubscriptionMutation) SetOwnerID(id int) {
+	m.owner = &id
+}
+
+// ClearOwner clears the "owner" edge to the Application entity.
+func (m *FileSubscriptionMutation) ClearOwner() {
+	m.clearedowner = true
+}
+
+// OwnerCleared reports if the "owner" edge to the Application entity was cleared.
+func (m *FileSubscriptionMutation) OwnerCleared() bool {
+	return m.clearedowner
+}
+
+// OwnerID returns the "owner" edge ID in the mutation.
+func (m *FileSubscriptionMutation) OwnerID() (id int, exists bool) {
+	if m.owner != nil {
+		return *m.owner, true
+	}
+	return
+}
+
+// OwnerIDs returns the "owner" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// OwnerID instead. It exists only for internal usage by the builders.
+func (m *FileSubscriptionMutation) OwnerIDs() (ids []int) {
+	if id := m.owner; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetOwner resets all changes to the "owner" edge.
+func (m *FileSubscriptionMutation) ResetOwner() {
+	m.owner = nil
+	m.clearedowner = false
+}
+
+// SetFileTypeDefID sets the "file_type_def" edge to the FileType entity by id.
+func (m *FileSubscriptionMutation) SetFileTypeDefID(id int) {
+	m.file_type_def = &id
+}
+
+// ClearFileTypeDef clears the "file_type_def" edge to the FileType entity.
+func (m *FileSubscriptionMutation) ClearFileTypeDef() {
+	m.clearedfile_type_def = true
+}
+
+// FileTypeDefCleared reports if the "file_type_def" edge to the FileType entity was cleared.
+func (m *FileSubscriptionMutation) FileTypeDefCleared() bool {
+	return m.clearedfile_type_def
+}
+
+// FileTypeDefID returns the "file_type_def" edge ID in the mutation.
+func (m *FileSubscriptionMutation) FileTypeDefID() (id int, exists bool) {
+	if m.file_type_def != nil {
+		return *m.file_type_def, true
+	}
+	return
+}
+
+// FileTypeDefIDs returns the "file_type_def" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// FileTypeDefID instead. It exists only for internal usage by the builders.
+func (m *FileSubscriptionMutation) FileTypeDefIDs() (ids []int) {
+	if id := m.file_type_def; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetFileTypeDef resets all changes to the "file_type_def" edge.
+func (m *FileSubscriptionMutation) ResetFileTypeDef() {
+	m.file_type_def = nil
+	m.clearedfile_type_def = false
+}
+
+// SetTargetID sets the "target" edge to the FileExposure entity by id.
+func (m *FileSubscriptionMutation) SetTargetID(id int) {
+	m.target = &id
+}
+
+// ClearTarget clears the "target" edge to the FileExposure entity.
+func (m *FileSubscriptionMutation) ClearTarget() {
+	m.clearedtarget = true
+}
+
+// TargetCleared reports if the "target" edge to the FileExposure entity was cleared.
+func (m *FileSubscriptionMutation) TargetCleared() bool {
+	return m.clearedtarget
+}
+
+// TargetID returns the "target" edge ID in the mutation.
+func (m *FileSubscriptionMutation) TargetID() (id int, exists bool) {
+	if m.target != nil {
+		return *m.target, true
+	}
+	return
+}
+
+// TargetIDs returns the "target" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// TargetID instead. It exists only for internal usage by the builders.
+func (m *FileSubscriptionMutation) TargetIDs() (ids []int) {
+	if id := m.target; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetTarget resets all changes to the "target" edge.
+func (m *FileSubscriptionMutation) ResetTarget() {
+	m.target = nil
+	m.clearedtarget = false
+}
+
+// SetZoneID sets the "zone" edge to the Zone entity by id.
+func (m *FileSubscriptionMutation) SetZoneID(id int) {
+	m.zone = &id
+}
+
+// ClearZone clears the "zone" edge to the Zone entity.
+func (m *FileSubscriptionMutation) ClearZone() {
+	m.clearedzone = true
+}
+
+// ZoneCleared reports if the "zone" edge to the Zone entity was cleared.
+func (m *FileSubscriptionMutation) ZoneCleared() bool {
+	return m.clearedzone
+}
+
+// ZoneID returns the "zone" edge ID in the mutation.
+func (m *FileSubscriptionMutation) ZoneID() (id int, exists bool) {
+	if m.zone != nil {
+		return *m.zone, true
+	}
+	return
+}
+
+// ZoneIDs returns the "zone" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// ZoneID instead. It exists only for internal usage by the builders.
+func (m *FileSubscriptionMutation) ZoneIDs() (ids []int) {
+	if id := m.zone; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetZone resets all changes to the "zone" edge.
+func (m *FileSubscriptionMutation) ResetZone() {
+	m.zone = nil
+	m.clearedzone = false
+}
+
+// SetApprovalID sets the "approval" edge to the Approval entity by id.
+func (m *FileSubscriptionMutation) SetApprovalID(id int) {
+	m.approval = &id
+}
+
+// ClearApproval clears the "approval" edge to the Approval entity.
+func (m *FileSubscriptionMutation) ClearApproval() {
+	m.clearedapproval = true
+}
+
+// ApprovalCleared reports if the "approval" edge to the Approval entity was cleared.
+func (m *FileSubscriptionMutation) ApprovalCleared() bool {
+	return m.clearedapproval
+}
+
+// ApprovalID returns the "approval" edge ID in the mutation.
+func (m *FileSubscriptionMutation) ApprovalID() (id int, exists bool) {
+	if m.approval != nil {
+		return *m.approval, true
+	}
+	return
+}
+
+// ApprovalIDs returns the "approval" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// ApprovalID instead. It exists only for internal usage by the builders.
+func (m *FileSubscriptionMutation) ApprovalIDs() (ids []int) {
+	if id := m.approval; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetApproval resets all changes to the "approval" edge.
+func (m *FileSubscriptionMutation) ResetApproval() {
+	m.approval = nil
+	m.clearedapproval = false
+}
+
+// AddApprovalRequestIDs adds the "approval_requests" edge to the ApprovalRequest entity by ids.
+func (m *FileSubscriptionMutation) AddApprovalRequestIDs(ids ...int) {
+	if m.approval_requests == nil {
+		m.approval_requests = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.approval_requests[ids[i]] = struct{}{}
+	}
+}
+
+// ClearApprovalRequests clears the "approval_requests" edge to the ApprovalRequest entity.
+func (m *FileSubscriptionMutation) ClearApprovalRequests() {
+	m.clearedapproval_requests = true
+}
+
+// ApprovalRequestsCleared reports if the "approval_requests" edge to the ApprovalRequest entity was cleared.
+func (m *FileSubscriptionMutation) ApprovalRequestsCleared() bool {
+	return m.clearedapproval_requests
+}
+
+// RemoveApprovalRequestIDs removes the "approval_requests" edge to the ApprovalRequest entity by IDs.
+func (m *FileSubscriptionMutation) RemoveApprovalRequestIDs(ids ...int) {
+	if m.removedapproval_requests == nil {
+		m.removedapproval_requests = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.approval_requests, ids[i])
+		m.removedapproval_requests[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedApprovalRequests returns the removed IDs of the "approval_requests" edge to the ApprovalRequest entity.
+func (m *FileSubscriptionMutation) RemovedApprovalRequestsIDs() (ids []int) {
+	for id := range m.removedapproval_requests {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ApprovalRequestsIDs returns the "approval_requests" edge IDs in the mutation.
+func (m *FileSubscriptionMutation) ApprovalRequestsIDs() (ids []int) {
+	for id := range m.approval_requests {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetApprovalRequests resets all changes to the "approval_requests" edge.
+func (m *FileSubscriptionMutation) ResetApprovalRequests() {
+	m.approval_requests = nil
+	m.clearedapproval_requests = false
+	m.removedapproval_requests = nil
+}
+
+// Where appends a list predicates to the FileSubscriptionMutation builder.
+func (m *FileSubscriptionMutation) Where(ps ...predicate.FileSubscription) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the FileSubscriptionMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *FileSubscriptionMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.FileSubscription, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *FileSubscriptionMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *FileSubscriptionMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (FileSubscription).
+func (m *FileSubscriptionMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *FileSubscriptionMutation) Fields() []string {
+	fields := make([]string, 0, 12)
+	if m.created_at != nil {
+		fields = append(fields, filesubscription.FieldCreatedAt)
+	}
+	if m.last_modified_at != nil {
+		fields = append(fields, filesubscription.FieldLastModifiedAt)
+	}
+	if m.status_phase != nil {
+		fields = append(fields, filesubscription.FieldStatusPhase)
+	}
+	if m.status_message != nil {
+		fields = append(fields, filesubscription.FieldStatusMessage)
+	}
+	if m.environment != nil {
+		fields = append(fields, filesubscription.FieldEnvironment)
+	}
+	if m.namespace != nil {
+		fields = append(fields, filesubscription.FieldNamespace)
+	}
+	if m.name != nil {
+		fields = append(fields, filesubscription.FieldName)
+	}
+	if m.file_type != nil {
+		fields = append(fields, filesubscription.FieldFileType)
+	}
+	if m.zone_name != nil {
+		fields = append(fields, filesubscription.FieldZoneName)
+	}
+	if m.service_url != nil {
+		fields = append(fields, filesubscription.FieldServiceURL)
+	}
+	if m.service_external_url != nil {
+		fields = append(fields, filesubscription.FieldServiceExternalURL)
+	}
+	if m.sftp != nil {
+		fields = append(fields, filesubscription.FieldSftp)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *FileSubscriptionMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case filesubscription.FieldCreatedAt:
+		return m.CreatedAt()
+	case filesubscription.FieldLastModifiedAt:
+		return m.LastModifiedAt()
+	case filesubscription.FieldStatusPhase:
+		return m.StatusPhase()
+	case filesubscription.FieldStatusMessage:
+		return m.StatusMessage()
+	case filesubscription.FieldEnvironment:
+		return m.Environment()
+	case filesubscription.FieldNamespace:
+		return m.Namespace()
+	case filesubscription.FieldName:
+		return m.Name()
+	case filesubscription.FieldFileType:
+		return m.FileType()
+	case filesubscription.FieldZoneName:
+		return m.ZoneName()
+	case filesubscription.FieldServiceURL:
+		return m.ServiceURL()
+	case filesubscription.FieldServiceExternalURL:
+		return m.ServiceExternalURL()
+	case filesubscription.FieldSftp:
+		return m.Sftp()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *FileSubscriptionMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case filesubscription.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case filesubscription.FieldLastModifiedAt:
+		return m.OldLastModifiedAt(ctx)
+	case filesubscription.FieldStatusPhase:
+		return m.OldStatusPhase(ctx)
+	case filesubscription.FieldStatusMessage:
+		return m.OldStatusMessage(ctx)
+	case filesubscription.FieldEnvironment:
+		return m.OldEnvironment(ctx)
+	case filesubscription.FieldNamespace:
+		return m.OldNamespace(ctx)
+	case filesubscription.FieldName:
+		return m.OldName(ctx)
+	case filesubscription.FieldFileType:
+		return m.OldFileType(ctx)
+	case filesubscription.FieldZoneName:
+		return m.OldZoneName(ctx)
+	case filesubscription.FieldServiceURL:
+		return m.OldServiceURL(ctx)
+	case filesubscription.FieldServiceExternalURL:
+		return m.OldServiceExternalURL(ctx)
+	case filesubscription.FieldSftp:
+		return m.OldSftp(ctx)
+	}
+	return nil, fmt.Errorf("unknown FileSubscription field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *FileSubscriptionMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case filesubscription.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case filesubscription.FieldLastModifiedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLastModifiedAt(v)
+		return nil
+	case filesubscription.FieldStatusPhase:
+		v, ok := value.(filesubscription.StatusPhase)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStatusPhase(v)
+		return nil
+	case filesubscription.FieldStatusMessage:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStatusMessage(v)
+		return nil
+	case filesubscription.FieldEnvironment:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEnvironment(v)
+		return nil
+	case filesubscription.FieldNamespace:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetNamespace(v)
+		return nil
+	case filesubscription.FieldName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetName(v)
+		return nil
+	case filesubscription.FieldFileType:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetFileType(v)
+		return nil
+	case filesubscription.FieldZoneName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetZoneName(v)
+		return nil
+	case filesubscription.FieldServiceURL:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetServiceURL(v)
+		return nil
+	case filesubscription.FieldServiceExternalURL:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetServiceExternalURL(v)
+		return nil
+	case filesubscription.FieldSftp:
+		v, ok := value.(*model.FileSFTP)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSftp(v)
+		return nil
+	}
+	return fmt.Errorf("unknown FileSubscription field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *FileSubscriptionMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *FileSubscriptionMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *FileSubscriptionMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown FileSubscription numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *FileSubscriptionMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(filesubscription.FieldStatusPhase) {
+		fields = append(fields, filesubscription.FieldStatusPhase)
+	}
+	if m.FieldCleared(filesubscription.FieldStatusMessage) {
+		fields = append(fields, filesubscription.FieldStatusMessage)
+	}
+	if m.FieldCleared(filesubscription.FieldEnvironment) {
+		fields = append(fields, filesubscription.FieldEnvironment)
+	}
+	if m.FieldCleared(filesubscription.FieldServiceURL) {
+		fields = append(fields, filesubscription.FieldServiceURL)
+	}
+	if m.FieldCleared(filesubscription.FieldServiceExternalURL) {
+		fields = append(fields, filesubscription.FieldServiceExternalURL)
+	}
+	if m.FieldCleared(filesubscription.FieldSftp) {
+		fields = append(fields, filesubscription.FieldSftp)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *FileSubscriptionMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *FileSubscriptionMutation) ClearField(name string) error {
+	switch name {
+	case filesubscription.FieldStatusPhase:
+		m.ClearStatusPhase()
+		return nil
+	case filesubscription.FieldStatusMessage:
+		m.ClearStatusMessage()
+		return nil
+	case filesubscription.FieldEnvironment:
+		m.ClearEnvironment()
+		return nil
+	case filesubscription.FieldServiceURL:
+		m.ClearServiceURL()
+		return nil
+	case filesubscription.FieldServiceExternalURL:
+		m.ClearServiceExternalURL()
+		return nil
+	case filesubscription.FieldSftp:
+		m.ClearSftp()
+		return nil
+	}
+	return fmt.Errorf("unknown FileSubscription nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *FileSubscriptionMutation) ResetField(name string) error {
+	switch name {
+	case filesubscription.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case filesubscription.FieldLastModifiedAt:
+		m.ResetLastModifiedAt()
+		return nil
+	case filesubscription.FieldStatusPhase:
+		m.ResetStatusPhase()
+		return nil
+	case filesubscription.FieldStatusMessage:
+		m.ResetStatusMessage()
+		return nil
+	case filesubscription.FieldEnvironment:
+		m.ResetEnvironment()
+		return nil
+	case filesubscription.FieldNamespace:
+		m.ResetNamespace()
+		return nil
+	case filesubscription.FieldName:
+		m.ResetName()
+		return nil
+	case filesubscription.FieldFileType:
+		m.ResetFileType()
+		return nil
+	case filesubscription.FieldZoneName:
+		m.ResetZoneName()
+		return nil
+	case filesubscription.FieldServiceURL:
+		m.ResetServiceURL()
+		return nil
+	case filesubscription.FieldServiceExternalURL:
+		m.ResetServiceExternalURL()
+		return nil
+	case filesubscription.FieldSftp:
+		m.ResetSftp()
+		return nil
+	}
+	return fmt.Errorf("unknown FileSubscription field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *FileSubscriptionMutation) AddedEdges() []string {
+	edges := make([]string, 0, 6)
+	if m.owner != nil {
+		edges = append(edges, filesubscription.EdgeOwner)
+	}
+	if m.file_type_def != nil {
+		edges = append(edges, filesubscription.EdgeFileTypeDef)
+	}
+	if m.target != nil {
+		edges = append(edges, filesubscription.EdgeTarget)
+	}
+	if m.zone != nil {
+		edges = append(edges, filesubscription.EdgeZone)
+	}
+	if m.approval != nil {
+		edges = append(edges, filesubscription.EdgeApproval)
+	}
+	if m.approval_requests != nil {
+		edges = append(edges, filesubscription.EdgeApprovalRequests)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *FileSubscriptionMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case filesubscription.EdgeOwner:
+		if id := m.owner; id != nil {
+			return []ent.Value{*id}
+		}
+	case filesubscription.EdgeFileTypeDef:
+		if id := m.file_type_def; id != nil {
+			return []ent.Value{*id}
+		}
+	case filesubscription.EdgeTarget:
+		if id := m.target; id != nil {
+			return []ent.Value{*id}
+		}
+	case filesubscription.EdgeZone:
+		if id := m.zone; id != nil {
+			return []ent.Value{*id}
+		}
+	case filesubscription.EdgeApproval:
+		if id := m.approval; id != nil {
+			return []ent.Value{*id}
+		}
+	case filesubscription.EdgeApprovalRequests:
+		ids := make([]ent.Value, 0, len(m.approval_requests))
+		for id := range m.approval_requests {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *FileSubscriptionMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 6)
+	if m.removedapproval_requests != nil {
+		edges = append(edges, filesubscription.EdgeApprovalRequests)
+	}
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *FileSubscriptionMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case filesubscription.EdgeApprovalRequests:
+		ids := make([]ent.Value, 0, len(m.removedapproval_requests))
+		for id := range m.removedapproval_requests {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *FileSubscriptionMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 6)
+	if m.clearedowner {
+		edges = append(edges, filesubscription.EdgeOwner)
+	}
+	if m.clearedfile_type_def {
+		edges = append(edges, filesubscription.EdgeFileTypeDef)
+	}
+	if m.clearedtarget {
+		edges = append(edges, filesubscription.EdgeTarget)
+	}
+	if m.clearedzone {
+		edges = append(edges, filesubscription.EdgeZone)
+	}
+	if m.clearedapproval {
+		edges = append(edges, filesubscription.EdgeApproval)
+	}
+	if m.clearedapproval_requests {
+		edges = append(edges, filesubscription.EdgeApprovalRequests)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *FileSubscriptionMutation) EdgeCleared(name string) bool {
+	switch name {
+	case filesubscription.EdgeOwner:
+		return m.clearedowner
+	case filesubscription.EdgeFileTypeDef:
+		return m.clearedfile_type_def
+	case filesubscription.EdgeTarget:
+		return m.clearedtarget
+	case filesubscription.EdgeZone:
+		return m.clearedzone
+	case filesubscription.EdgeApproval:
+		return m.clearedapproval
+	case filesubscription.EdgeApprovalRequests:
+		return m.clearedapproval_requests
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *FileSubscriptionMutation) ClearEdge(name string) error {
+	switch name {
+	case filesubscription.EdgeOwner:
+		m.ClearOwner()
+		return nil
+	case filesubscription.EdgeFileTypeDef:
+		m.ClearFileTypeDef()
+		return nil
+	case filesubscription.EdgeTarget:
+		m.ClearTarget()
+		return nil
+	case filesubscription.EdgeZone:
+		m.ClearZone()
+		return nil
+	case filesubscription.EdgeApproval:
+		m.ClearApproval()
+		return nil
+	}
+	return fmt.Errorf("unknown FileSubscription unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *FileSubscriptionMutation) ResetEdge(name string) error {
+	switch name {
+	case filesubscription.EdgeOwner:
+		m.ResetOwner()
+		return nil
+	case filesubscription.EdgeFileTypeDef:
+		m.ResetFileTypeDef()
+		return nil
+	case filesubscription.EdgeTarget:
+		m.ResetTarget()
+		return nil
+	case filesubscription.EdgeZone:
+		m.ResetZone()
+		return nil
+	case filesubscription.EdgeApproval:
+		m.ResetApproval()
+		return nil
+	case filesubscription.EdgeApprovalRequests:
+		m.ResetApprovalRequests()
+		return nil
+	}
+	return fmt.Errorf("unknown FileSubscription edge %s", name)
+}
+
+// FileTypeMutation represents an operation that mutates the FileType nodes in the graph.
+type FileTypeMutation struct {
+	config
+	op                   Op
+	typ                  string
+	id                   *int
+	created_at           *time.Time
+	last_modified_at     *time.Time
+	status_phase         *filetype.StatusPhase
+	status_message       *string
+	namespace            *string
+	file_type            *string
+	description          *string
+	variant              *string
+	active               *bool
+	clearedFields        map[string]struct{}
+	exposures            map[int]struct{}
+	removedexposures     map[int]struct{}
+	clearedexposures     bool
+	subscriptions        map[int]struct{}
+	removedsubscriptions map[int]struct{}
+	clearedsubscriptions bool
+	done                 bool
+	oldValue             func(context.Context) (*FileType, error)
+	predicates           []predicate.FileType
+}
+
+var _ ent.Mutation = (*FileTypeMutation)(nil)
+
+// filetypeOption allows management of the mutation configuration using functional options.
+type filetypeOption func(*FileTypeMutation)
+
+// newFileTypeMutation creates new mutation for the FileType entity.
+func newFileTypeMutation(c config, op Op, opts ...filetypeOption) *FileTypeMutation {
+	m := &FileTypeMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeFileType,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withFileTypeID sets the ID field of the mutation.
+func withFileTypeID(id int) filetypeOption {
+	return func(m *FileTypeMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *FileType
+		)
+		m.oldValue = func(ctx context.Context) (*FileType, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().FileType.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withFileType sets the old FileType of the mutation.
+func withFileType(node *FileType) filetypeOption {
+	return func(m *FileTypeMutation) {
+		m.oldValue = func(context.Context) (*FileType, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m FileTypeMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m FileTypeMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *FileTypeMutation) ID() (id int, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *FileTypeMutation) IDs(ctx context.Context) ([]int, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().FileType.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *FileTypeMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *FileTypeMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the FileType entity.
+// If the FileType object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FileTypeMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *FileTypeMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetLastModifiedAt sets the "last_modified_at" field.
+func (m *FileTypeMutation) SetLastModifiedAt(t time.Time) {
+	m.last_modified_at = &t
+}
+
+// LastModifiedAt returns the value of the "last_modified_at" field in the mutation.
+func (m *FileTypeMutation) LastModifiedAt() (r time.Time, exists bool) {
+	v := m.last_modified_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLastModifiedAt returns the old "last_modified_at" field's value of the FileType entity.
+// If the FileType object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FileTypeMutation) OldLastModifiedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLastModifiedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLastModifiedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLastModifiedAt: %w", err)
+	}
+	return oldValue.LastModifiedAt, nil
+}
+
+// ResetLastModifiedAt resets all changes to the "last_modified_at" field.
+func (m *FileTypeMutation) ResetLastModifiedAt() {
+	m.last_modified_at = nil
+}
+
+// SetStatusPhase sets the "status_phase" field.
+func (m *FileTypeMutation) SetStatusPhase(fp filetype.StatusPhase) {
+	m.status_phase = &fp
+}
+
+// StatusPhase returns the value of the "status_phase" field in the mutation.
+func (m *FileTypeMutation) StatusPhase() (r filetype.StatusPhase, exists bool) {
+	v := m.status_phase
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStatusPhase returns the old "status_phase" field's value of the FileType entity.
+// If the FileType object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FileTypeMutation) OldStatusPhase(ctx context.Context) (v *filetype.StatusPhase, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStatusPhase is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStatusPhase requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStatusPhase: %w", err)
+	}
+	return oldValue.StatusPhase, nil
+}
+
+// ClearStatusPhase clears the value of the "status_phase" field.
+func (m *FileTypeMutation) ClearStatusPhase() {
+	m.status_phase = nil
+	m.clearedFields[filetype.FieldStatusPhase] = struct{}{}
+}
+
+// StatusPhaseCleared returns if the "status_phase" field was cleared in this mutation.
+func (m *FileTypeMutation) StatusPhaseCleared() bool {
+	_, ok := m.clearedFields[filetype.FieldStatusPhase]
+	return ok
+}
+
+// ResetStatusPhase resets all changes to the "status_phase" field.
+func (m *FileTypeMutation) ResetStatusPhase() {
+	m.status_phase = nil
+	delete(m.clearedFields, filetype.FieldStatusPhase)
+}
+
+// SetStatusMessage sets the "status_message" field.
+func (m *FileTypeMutation) SetStatusMessage(s string) {
+	m.status_message = &s
+}
+
+// StatusMessage returns the value of the "status_message" field in the mutation.
+func (m *FileTypeMutation) StatusMessage() (r string, exists bool) {
+	v := m.status_message
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStatusMessage returns the old "status_message" field's value of the FileType entity.
+// If the FileType object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FileTypeMutation) OldStatusMessage(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStatusMessage is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStatusMessage requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStatusMessage: %w", err)
+	}
+	return oldValue.StatusMessage, nil
+}
+
+// ClearStatusMessage clears the value of the "status_message" field.
+func (m *FileTypeMutation) ClearStatusMessage() {
+	m.status_message = nil
+	m.clearedFields[filetype.FieldStatusMessage] = struct{}{}
+}
+
+// StatusMessageCleared returns if the "status_message" field was cleared in this mutation.
+func (m *FileTypeMutation) StatusMessageCleared() bool {
+	_, ok := m.clearedFields[filetype.FieldStatusMessage]
+	return ok
+}
+
+// ResetStatusMessage resets all changes to the "status_message" field.
+func (m *FileTypeMutation) ResetStatusMessage() {
+	m.status_message = nil
+	delete(m.clearedFields, filetype.FieldStatusMessage)
+}
+
+// SetNamespace sets the "namespace" field.
+func (m *FileTypeMutation) SetNamespace(s string) {
+	m.namespace = &s
+}
+
+// Namespace returns the value of the "namespace" field in the mutation.
+func (m *FileTypeMutation) Namespace() (r string, exists bool) {
+	v := m.namespace
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldNamespace returns the old "namespace" field's value of the FileType entity.
+// If the FileType object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FileTypeMutation) OldNamespace(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldNamespace is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldNamespace requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldNamespace: %w", err)
+	}
+	return oldValue.Namespace, nil
+}
+
+// ResetNamespace resets all changes to the "namespace" field.
+func (m *FileTypeMutation) ResetNamespace() {
+	m.namespace = nil
+}
+
+// SetFileType sets the "file_type" field.
+func (m *FileTypeMutation) SetFileType(s string) {
+	m.file_type = &s
+}
+
+// FileType returns the value of the "file_type" field in the mutation.
+func (m *FileTypeMutation) FileType() (r string, exists bool) {
+	v := m.file_type
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldFileType returns the old "file_type" field's value of the FileType entity.
+// If the FileType object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FileTypeMutation) OldFileType(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldFileType is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldFileType requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldFileType: %w", err)
+	}
+	return oldValue.FileType, nil
+}
+
+// ResetFileType resets all changes to the "file_type" field.
+func (m *FileTypeMutation) ResetFileType() {
+	m.file_type = nil
+}
+
+// SetDescription sets the "description" field.
+func (m *FileTypeMutation) SetDescription(s string) {
+	m.description = &s
+}
+
+// Description returns the value of the "description" field in the mutation.
+func (m *FileTypeMutation) Description() (r string, exists bool) {
+	v := m.description
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDescription returns the old "description" field's value of the FileType entity.
+// If the FileType object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FileTypeMutation) OldDescription(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDescription is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDescription requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDescription: %w", err)
+	}
+	return oldValue.Description, nil
+}
+
+// ClearDescription clears the value of the "description" field.
+func (m *FileTypeMutation) ClearDescription() {
+	m.description = nil
+	m.clearedFields[filetype.FieldDescription] = struct{}{}
+}
+
+// DescriptionCleared returns if the "description" field was cleared in this mutation.
+func (m *FileTypeMutation) DescriptionCleared() bool {
+	_, ok := m.clearedFields[filetype.FieldDescription]
+	return ok
+}
+
+// ResetDescription resets all changes to the "description" field.
+func (m *FileTypeMutation) ResetDescription() {
+	m.description = nil
+	delete(m.clearedFields, filetype.FieldDescription)
+}
+
+// SetVariant sets the "variant" field.
+func (m *FileTypeMutation) SetVariant(s string) {
+	m.variant = &s
+}
+
+// Variant returns the value of the "variant" field in the mutation.
+func (m *FileTypeMutation) Variant() (r string, exists bool) {
+	v := m.variant
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldVariant returns the old "variant" field's value of the FileType entity.
+// If the FileType object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FileTypeMutation) OldVariant(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldVariant is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldVariant requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldVariant: %w", err)
+	}
+	return oldValue.Variant, nil
+}
+
+// ClearVariant clears the value of the "variant" field.
+func (m *FileTypeMutation) ClearVariant() {
+	m.variant = nil
+	m.clearedFields[filetype.FieldVariant] = struct{}{}
+}
+
+// VariantCleared returns if the "variant" field was cleared in this mutation.
+func (m *FileTypeMutation) VariantCleared() bool {
+	_, ok := m.clearedFields[filetype.FieldVariant]
+	return ok
+}
+
+// ResetVariant resets all changes to the "variant" field.
+func (m *FileTypeMutation) ResetVariant() {
+	m.variant = nil
+	delete(m.clearedFields, filetype.FieldVariant)
+}
+
+// SetActive sets the "active" field.
+func (m *FileTypeMutation) SetActive(b bool) {
+	m.active = &b
+}
+
+// Active returns the value of the "active" field in the mutation.
+func (m *FileTypeMutation) Active() (r bool, exists bool) {
+	v := m.active
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldActive returns the old "active" field's value of the FileType entity.
+// If the FileType object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FileTypeMutation) OldActive(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldActive is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldActive requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldActive: %w", err)
+	}
+	return oldValue.Active, nil
+}
+
+// ResetActive resets all changes to the "active" field.
+func (m *FileTypeMutation) ResetActive() {
+	m.active = nil
+}
+
+// AddExposureIDs adds the "exposures" edge to the FileExposure entity by ids.
+func (m *FileTypeMutation) AddExposureIDs(ids ...int) {
+	if m.exposures == nil {
+		m.exposures = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.exposures[ids[i]] = struct{}{}
+	}
+}
+
+// ClearExposures clears the "exposures" edge to the FileExposure entity.
+func (m *FileTypeMutation) ClearExposures() {
+	m.clearedexposures = true
+}
+
+// ExposuresCleared reports if the "exposures" edge to the FileExposure entity was cleared.
+func (m *FileTypeMutation) ExposuresCleared() bool {
+	return m.clearedexposures
+}
+
+// RemoveExposureIDs removes the "exposures" edge to the FileExposure entity by IDs.
+func (m *FileTypeMutation) RemoveExposureIDs(ids ...int) {
+	if m.removedexposures == nil {
+		m.removedexposures = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.exposures, ids[i])
+		m.removedexposures[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedExposures returns the removed IDs of the "exposures" edge to the FileExposure entity.
+func (m *FileTypeMutation) RemovedExposuresIDs() (ids []int) {
+	for id := range m.removedexposures {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ExposuresIDs returns the "exposures" edge IDs in the mutation.
+func (m *FileTypeMutation) ExposuresIDs() (ids []int) {
+	for id := range m.exposures {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetExposures resets all changes to the "exposures" edge.
+func (m *FileTypeMutation) ResetExposures() {
+	m.exposures = nil
+	m.clearedexposures = false
+	m.removedexposures = nil
+}
+
+// AddSubscriptionIDs adds the "subscriptions" edge to the FileSubscription entity by ids.
+func (m *FileTypeMutation) AddSubscriptionIDs(ids ...int) {
+	if m.subscriptions == nil {
+		m.subscriptions = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.subscriptions[ids[i]] = struct{}{}
+	}
+}
+
+// ClearSubscriptions clears the "subscriptions" edge to the FileSubscription entity.
+func (m *FileTypeMutation) ClearSubscriptions() {
+	m.clearedsubscriptions = true
+}
+
+// SubscriptionsCleared reports if the "subscriptions" edge to the FileSubscription entity was cleared.
+func (m *FileTypeMutation) SubscriptionsCleared() bool {
+	return m.clearedsubscriptions
+}
+
+// RemoveSubscriptionIDs removes the "subscriptions" edge to the FileSubscription entity by IDs.
+func (m *FileTypeMutation) RemoveSubscriptionIDs(ids ...int) {
+	if m.removedsubscriptions == nil {
+		m.removedsubscriptions = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.subscriptions, ids[i])
+		m.removedsubscriptions[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedSubscriptions returns the removed IDs of the "subscriptions" edge to the FileSubscription entity.
+func (m *FileTypeMutation) RemovedSubscriptionsIDs() (ids []int) {
+	for id := range m.removedsubscriptions {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// SubscriptionsIDs returns the "subscriptions" edge IDs in the mutation.
+func (m *FileTypeMutation) SubscriptionsIDs() (ids []int) {
+	for id := range m.subscriptions {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetSubscriptions resets all changes to the "subscriptions" edge.
+func (m *FileTypeMutation) ResetSubscriptions() {
+	m.subscriptions = nil
+	m.clearedsubscriptions = false
+	m.removedsubscriptions = nil
+}
+
+// Where appends a list predicates to the FileTypeMutation builder.
+func (m *FileTypeMutation) Where(ps ...predicate.FileType) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the FileTypeMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *FileTypeMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.FileType, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *FileTypeMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *FileTypeMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (FileType).
+func (m *FileTypeMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *FileTypeMutation) Fields() []string {
+	fields := make([]string, 0, 9)
+	if m.created_at != nil {
+		fields = append(fields, filetype.FieldCreatedAt)
+	}
+	if m.last_modified_at != nil {
+		fields = append(fields, filetype.FieldLastModifiedAt)
+	}
+	if m.status_phase != nil {
+		fields = append(fields, filetype.FieldStatusPhase)
+	}
+	if m.status_message != nil {
+		fields = append(fields, filetype.FieldStatusMessage)
+	}
+	if m.namespace != nil {
+		fields = append(fields, filetype.FieldNamespace)
+	}
+	if m.file_type != nil {
+		fields = append(fields, filetype.FieldFileType)
+	}
+	if m.description != nil {
+		fields = append(fields, filetype.FieldDescription)
+	}
+	if m.variant != nil {
+		fields = append(fields, filetype.FieldVariant)
+	}
+	if m.active != nil {
+		fields = append(fields, filetype.FieldActive)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *FileTypeMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case filetype.FieldCreatedAt:
+		return m.CreatedAt()
+	case filetype.FieldLastModifiedAt:
+		return m.LastModifiedAt()
+	case filetype.FieldStatusPhase:
+		return m.StatusPhase()
+	case filetype.FieldStatusMessage:
+		return m.StatusMessage()
+	case filetype.FieldNamespace:
+		return m.Namespace()
+	case filetype.FieldFileType:
+		return m.FileType()
+	case filetype.FieldDescription:
+		return m.Description()
+	case filetype.FieldVariant:
+		return m.Variant()
+	case filetype.FieldActive:
+		return m.Active()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *FileTypeMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case filetype.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case filetype.FieldLastModifiedAt:
+		return m.OldLastModifiedAt(ctx)
+	case filetype.FieldStatusPhase:
+		return m.OldStatusPhase(ctx)
+	case filetype.FieldStatusMessage:
+		return m.OldStatusMessage(ctx)
+	case filetype.FieldNamespace:
+		return m.OldNamespace(ctx)
+	case filetype.FieldFileType:
+		return m.OldFileType(ctx)
+	case filetype.FieldDescription:
+		return m.OldDescription(ctx)
+	case filetype.FieldVariant:
+		return m.OldVariant(ctx)
+	case filetype.FieldActive:
+		return m.OldActive(ctx)
+	}
+	return nil, fmt.Errorf("unknown FileType field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *FileTypeMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case filetype.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case filetype.FieldLastModifiedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLastModifiedAt(v)
+		return nil
+	case filetype.FieldStatusPhase:
+		v, ok := value.(filetype.StatusPhase)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStatusPhase(v)
+		return nil
+	case filetype.FieldStatusMessage:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStatusMessage(v)
+		return nil
+	case filetype.FieldNamespace:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetNamespace(v)
+		return nil
+	case filetype.FieldFileType:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetFileType(v)
+		return nil
+	case filetype.FieldDescription:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDescription(v)
+		return nil
+	case filetype.FieldVariant:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetVariant(v)
+		return nil
+	case filetype.FieldActive:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetActive(v)
+		return nil
+	}
+	return fmt.Errorf("unknown FileType field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *FileTypeMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *FileTypeMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *FileTypeMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown FileType numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *FileTypeMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(filetype.FieldStatusPhase) {
+		fields = append(fields, filetype.FieldStatusPhase)
+	}
+	if m.FieldCleared(filetype.FieldStatusMessage) {
+		fields = append(fields, filetype.FieldStatusMessage)
+	}
+	if m.FieldCleared(filetype.FieldDescription) {
+		fields = append(fields, filetype.FieldDescription)
+	}
+	if m.FieldCleared(filetype.FieldVariant) {
+		fields = append(fields, filetype.FieldVariant)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *FileTypeMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *FileTypeMutation) ClearField(name string) error {
+	switch name {
+	case filetype.FieldStatusPhase:
+		m.ClearStatusPhase()
+		return nil
+	case filetype.FieldStatusMessage:
+		m.ClearStatusMessage()
+		return nil
+	case filetype.FieldDescription:
+		m.ClearDescription()
+		return nil
+	case filetype.FieldVariant:
+		m.ClearVariant()
+		return nil
+	}
+	return fmt.Errorf("unknown FileType nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *FileTypeMutation) ResetField(name string) error {
+	switch name {
+	case filetype.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case filetype.FieldLastModifiedAt:
+		m.ResetLastModifiedAt()
+		return nil
+	case filetype.FieldStatusPhase:
+		m.ResetStatusPhase()
+		return nil
+	case filetype.FieldStatusMessage:
+		m.ResetStatusMessage()
+		return nil
+	case filetype.FieldNamespace:
+		m.ResetNamespace()
+		return nil
+	case filetype.FieldFileType:
+		m.ResetFileType()
+		return nil
+	case filetype.FieldDescription:
+		m.ResetDescription()
+		return nil
+	case filetype.FieldVariant:
+		m.ResetVariant()
+		return nil
+	case filetype.FieldActive:
+		m.ResetActive()
+		return nil
+	}
+	return fmt.Errorf("unknown FileType field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *FileTypeMutation) AddedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.exposures != nil {
+		edges = append(edges, filetype.EdgeExposures)
+	}
+	if m.subscriptions != nil {
+		edges = append(edges, filetype.EdgeSubscriptions)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *FileTypeMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case filetype.EdgeExposures:
+		ids := make([]ent.Value, 0, len(m.exposures))
+		for id := range m.exposures {
+			ids = append(ids, id)
+		}
+		return ids
+	case filetype.EdgeSubscriptions:
+		ids := make([]ent.Value, 0, len(m.subscriptions))
+		for id := range m.subscriptions {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *FileTypeMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.removedexposures != nil {
+		edges = append(edges, filetype.EdgeExposures)
+	}
+	if m.removedsubscriptions != nil {
+		edges = append(edges, filetype.EdgeSubscriptions)
+	}
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *FileTypeMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case filetype.EdgeExposures:
+		ids := make([]ent.Value, 0, len(m.removedexposures))
+		for id := range m.removedexposures {
+			ids = append(ids, id)
+		}
+		return ids
+	case filetype.EdgeSubscriptions:
+		ids := make([]ent.Value, 0, len(m.removedsubscriptions))
+		for id := range m.removedsubscriptions {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *FileTypeMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.clearedexposures {
+		edges = append(edges, filetype.EdgeExposures)
+	}
+	if m.clearedsubscriptions {
+		edges = append(edges, filetype.EdgeSubscriptions)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *FileTypeMutation) EdgeCleared(name string) bool {
+	switch name {
+	case filetype.EdgeExposures:
+		return m.clearedexposures
+	case filetype.EdgeSubscriptions:
+		return m.clearedsubscriptions
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *FileTypeMutation) ClearEdge(name string) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown FileType unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *FileTypeMutation) ResetEdge(name string) error {
+	switch name {
+	case filetype.EdgeExposures:
+		m.ResetExposures()
+		return nil
+	case filetype.EdgeSubscriptions:
+		m.ResetSubscriptions()
+		return nil
+	}
+	return fmt.Errorf("unknown FileType edge %s", name)
+}
+
 // GroupMutation represents an operation that mutates the Group nodes in the graph.
 type GroupMutation struct {
 	config
@@ -13359,6 +21684,1266 @@ func (m *GroupMutation) ResetEdge(name string) error {
 		return nil
 	}
 	return fmt.Errorf("unknown Group edge %s", name)
+}
+
+// McpServerMutation represents an operation that mutates the McpServer nodes in the graph.
+type McpServerMutation struct {
+	config
+	op                  Op
+	typ                 string
+	id                  *int
+	created_at          *time.Time
+	last_modified_at    *time.Time
+	status_phase        *mcpserver.StatusPhase
+	status_message      *string
+	namespace           *string
+	base_path           *string
+	version             *string
+	name                *string
+	description         *string
+	specification       *string
+	category            *string
+	oauth2_scopes       *[]string
+	appendoauth2_scopes []string
+	active              *bool
+	clearedFields       map[string]struct{}
+	owner               *int
+	clearedowner        bool
+	exposures           map[int]struct{}
+	removedexposures    map[int]struct{}
+	clearedexposures    bool
+	done                bool
+	oldValue            func(context.Context) (*McpServer, error)
+	predicates          []predicate.McpServer
+}
+
+var _ ent.Mutation = (*McpServerMutation)(nil)
+
+// mcpserverOption allows management of the mutation configuration using functional options.
+type mcpserverOption func(*McpServerMutation)
+
+// newMcpServerMutation creates new mutation for the McpServer entity.
+func newMcpServerMutation(c config, op Op, opts ...mcpserverOption) *McpServerMutation {
+	m := &McpServerMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeMcpServer,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withMcpServerID sets the ID field of the mutation.
+func withMcpServerID(id int) mcpserverOption {
+	return func(m *McpServerMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *McpServer
+		)
+		m.oldValue = func(ctx context.Context) (*McpServer, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().McpServer.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withMcpServer sets the old McpServer of the mutation.
+func withMcpServer(node *McpServer) mcpserverOption {
+	return func(m *McpServerMutation) {
+		m.oldValue = func(context.Context) (*McpServer, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m McpServerMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m McpServerMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *McpServerMutation) ID() (id int, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *McpServerMutation) IDs(ctx context.Context) ([]int, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().McpServer.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *McpServerMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *McpServerMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the McpServer entity.
+// If the McpServer object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *McpServerMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *McpServerMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetLastModifiedAt sets the "last_modified_at" field.
+func (m *McpServerMutation) SetLastModifiedAt(t time.Time) {
+	m.last_modified_at = &t
+}
+
+// LastModifiedAt returns the value of the "last_modified_at" field in the mutation.
+func (m *McpServerMutation) LastModifiedAt() (r time.Time, exists bool) {
+	v := m.last_modified_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLastModifiedAt returns the old "last_modified_at" field's value of the McpServer entity.
+// If the McpServer object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *McpServerMutation) OldLastModifiedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLastModifiedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLastModifiedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLastModifiedAt: %w", err)
+	}
+	return oldValue.LastModifiedAt, nil
+}
+
+// ResetLastModifiedAt resets all changes to the "last_modified_at" field.
+func (m *McpServerMutation) ResetLastModifiedAt() {
+	m.last_modified_at = nil
+}
+
+// SetStatusPhase sets the "status_phase" field.
+func (m *McpServerMutation) SetStatusPhase(mp mcpserver.StatusPhase) {
+	m.status_phase = &mp
+}
+
+// StatusPhase returns the value of the "status_phase" field in the mutation.
+func (m *McpServerMutation) StatusPhase() (r mcpserver.StatusPhase, exists bool) {
+	v := m.status_phase
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStatusPhase returns the old "status_phase" field's value of the McpServer entity.
+// If the McpServer object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *McpServerMutation) OldStatusPhase(ctx context.Context) (v *mcpserver.StatusPhase, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStatusPhase is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStatusPhase requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStatusPhase: %w", err)
+	}
+	return oldValue.StatusPhase, nil
+}
+
+// ClearStatusPhase clears the value of the "status_phase" field.
+func (m *McpServerMutation) ClearStatusPhase() {
+	m.status_phase = nil
+	m.clearedFields[mcpserver.FieldStatusPhase] = struct{}{}
+}
+
+// StatusPhaseCleared returns if the "status_phase" field was cleared in this mutation.
+func (m *McpServerMutation) StatusPhaseCleared() bool {
+	_, ok := m.clearedFields[mcpserver.FieldStatusPhase]
+	return ok
+}
+
+// ResetStatusPhase resets all changes to the "status_phase" field.
+func (m *McpServerMutation) ResetStatusPhase() {
+	m.status_phase = nil
+	delete(m.clearedFields, mcpserver.FieldStatusPhase)
+}
+
+// SetStatusMessage sets the "status_message" field.
+func (m *McpServerMutation) SetStatusMessage(s string) {
+	m.status_message = &s
+}
+
+// StatusMessage returns the value of the "status_message" field in the mutation.
+func (m *McpServerMutation) StatusMessage() (r string, exists bool) {
+	v := m.status_message
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStatusMessage returns the old "status_message" field's value of the McpServer entity.
+// If the McpServer object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *McpServerMutation) OldStatusMessage(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStatusMessage is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStatusMessage requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStatusMessage: %w", err)
+	}
+	return oldValue.StatusMessage, nil
+}
+
+// ClearStatusMessage clears the value of the "status_message" field.
+func (m *McpServerMutation) ClearStatusMessage() {
+	m.status_message = nil
+	m.clearedFields[mcpserver.FieldStatusMessage] = struct{}{}
+}
+
+// StatusMessageCleared returns if the "status_message" field was cleared in this mutation.
+func (m *McpServerMutation) StatusMessageCleared() bool {
+	_, ok := m.clearedFields[mcpserver.FieldStatusMessage]
+	return ok
+}
+
+// ResetStatusMessage resets all changes to the "status_message" field.
+func (m *McpServerMutation) ResetStatusMessage() {
+	m.status_message = nil
+	delete(m.clearedFields, mcpserver.FieldStatusMessage)
+}
+
+// SetNamespace sets the "namespace" field.
+func (m *McpServerMutation) SetNamespace(s string) {
+	m.namespace = &s
+}
+
+// Namespace returns the value of the "namespace" field in the mutation.
+func (m *McpServerMutation) Namespace() (r string, exists bool) {
+	v := m.namespace
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldNamespace returns the old "namespace" field's value of the McpServer entity.
+// If the McpServer object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *McpServerMutation) OldNamespace(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldNamespace is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldNamespace requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldNamespace: %w", err)
+	}
+	return oldValue.Namespace, nil
+}
+
+// ResetNamespace resets all changes to the "namespace" field.
+func (m *McpServerMutation) ResetNamespace() {
+	m.namespace = nil
+}
+
+// SetBasePath sets the "base_path" field.
+func (m *McpServerMutation) SetBasePath(s string) {
+	m.base_path = &s
+}
+
+// BasePath returns the value of the "base_path" field in the mutation.
+func (m *McpServerMutation) BasePath() (r string, exists bool) {
+	v := m.base_path
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldBasePath returns the old "base_path" field's value of the McpServer entity.
+// If the McpServer object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *McpServerMutation) OldBasePath(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldBasePath is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldBasePath requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldBasePath: %w", err)
+	}
+	return oldValue.BasePath, nil
+}
+
+// ResetBasePath resets all changes to the "base_path" field.
+func (m *McpServerMutation) ResetBasePath() {
+	m.base_path = nil
+}
+
+// SetVersion sets the "version" field.
+func (m *McpServerMutation) SetVersion(s string) {
+	m.version = &s
+}
+
+// Version returns the value of the "version" field in the mutation.
+func (m *McpServerMutation) Version() (r string, exists bool) {
+	v := m.version
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldVersion returns the old "version" field's value of the McpServer entity.
+// If the McpServer object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *McpServerMutation) OldVersion(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldVersion is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldVersion requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldVersion: %w", err)
+	}
+	return oldValue.Version, nil
+}
+
+// ResetVersion resets all changes to the "version" field.
+func (m *McpServerMutation) ResetVersion() {
+	m.version = nil
+}
+
+// SetName sets the "name" field.
+func (m *McpServerMutation) SetName(s string) {
+	m.name = &s
+}
+
+// Name returns the value of the "name" field in the mutation.
+func (m *McpServerMutation) Name() (r string, exists bool) {
+	v := m.name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldName returns the old "name" field's value of the McpServer entity.
+// If the McpServer object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *McpServerMutation) OldName(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldName: %w", err)
+	}
+	return oldValue.Name, nil
+}
+
+// ResetName resets all changes to the "name" field.
+func (m *McpServerMutation) ResetName() {
+	m.name = nil
+}
+
+// SetDescription sets the "description" field.
+func (m *McpServerMutation) SetDescription(s string) {
+	m.description = &s
+}
+
+// Description returns the value of the "description" field in the mutation.
+func (m *McpServerMutation) Description() (r string, exists bool) {
+	v := m.description
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDescription returns the old "description" field's value of the McpServer entity.
+// If the McpServer object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *McpServerMutation) OldDescription(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDescription is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDescription requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDescription: %w", err)
+	}
+	return oldValue.Description, nil
+}
+
+// ClearDescription clears the value of the "description" field.
+func (m *McpServerMutation) ClearDescription() {
+	m.description = nil
+	m.clearedFields[mcpserver.FieldDescription] = struct{}{}
+}
+
+// DescriptionCleared returns if the "description" field was cleared in this mutation.
+func (m *McpServerMutation) DescriptionCleared() bool {
+	_, ok := m.clearedFields[mcpserver.FieldDescription]
+	return ok
+}
+
+// ResetDescription resets all changes to the "description" field.
+func (m *McpServerMutation) ResetDescription() {
+	m.description = nil
+	delete(m.clearedFields, mcpserver.FieldDescription)
+}
+
+// SetSpecification sets the "specification" field.
+func (m *McpServerMutation) SetSpecification(s string) {
+	m.specification = &s
+}
+
+// Specification returns the value of the "specification" field in the mutation.
+func (m *McpServerMutation) Specification() (r string, exists bool) {
+	v := m.specification
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSpecification returns the old "specification" field's value of the McpServer entity.
+// If the McpServer object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *McpServerMutation) OldSpecification(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSpecification is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSpecification requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSpecification: %w", err)
+	}
+	return oldValue.Specification, nil
+}
+
+// ClearSpecification clears the value of the "specification" field.
+func (m *McpServerMutation) ClearSpecification() {
+	m.specification = nil
+	m.clearedFields[mcpserver.FieldSpecification] = struct{}{}
+}
+
+// SpecificationCleared returns if the "specification" field was cleared in this mutation.
+func (m *McpServerMutation) SpecificationCleared() bool {
+	_, ok := m.clearedFields[mcpserver.FieldSpecification]
+	return ok
+}
+
+// ResetSpecification resets all changes to the "specification" field.
+func (m *McpServerMutation) ResetSpecification() {
+	m.specification = nil
+	delete(m.clearedFields, mcpserver.FieldSpecification)
+}
+
+// SetCategory sets the "category" field.
+func (m *McpServerMutation) SetCategory(s string) {
+	m.category = &s
+}
+
+// Category returns the value of the "category" field in the mutation.
+func (m *McpServerMutation) Category() (r string, exists bool) {
+	v := m.category
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCategory returns the old "category" field's value of the McpServer entity.
+// If the McpServer object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *McpServerMutation) OldCategory(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCategory is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCategory requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCategory: %w", err)
+	}
+	return oldValue.Category, nil
+}
+
+// ClearCategory clears the value of the "category" field.
+func (m *McpServerMutation) ClearCategory() {
+	m.category = nil
+	m.clearedFields[mcpserver.FieldCategory] = struct{}{}
+}
+
+// CategoryCleared returns if the "category" field was cleared in this mutation.
+func (m *McpServerMutation) CategoryCleared() bool {
+	_, ok := m.clearedFields[mcpserver.FieldCategory]
+	return ok
+}
+
+// ResetCategory resets all changes to the "category" field.
+func (m *McpServerMutation) ResetCategory() {
+	m.category = nil
+	delete(m.clearedFields, mcpserver.FieldCategory)
+}
+
+// SetOauth2Scopes sets the "oauth2_scopes" field.
+func (m *McpServerMutation) SetOauth2Scopes(s []string) {
+	m.oauth2_scopes = &s
+	m.appendoauth2_scopes = nil
+}
+
+// Oauth2Scopes returns the value of the "oauth2_scopes" field in the mutation.
+func (m *McpServerMutation) Oauth2Scopes() (r []string, exists bool) {
+	v := m.oauth2_scopes
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldOauth2Scopes returns the old "oauth2_scopes" field's value of the McpServer entity.
+// If the McpServer object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *McpServerMutation) OldOauth2Scopes(ctx context.Context) (v []string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldOauth2Scopes is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldOauth2Scopes requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldOauth2Scopes: %w", err)
+	}
+	return oldValue.Oauth2Scopes, nil
+}
+
+// AppendOauth2Scopes adds s to the "oauth2_scopes" field.
+func (m *McpServerMutation) AppendOauth2Scopes(s []string) {
+	m.appendoauth2_scopes = append(m.appendoauth2_scopes, s...)
+}
+
+// AppendedOauth2Scopes returns the list of values that were appended to the "oauth2_scopes" field in this mutation.
+func (m *McpServerMutation) AppendedOauth2Scopes() ([]string, bool) {
+	if len(m.appendoauth2_scopes) == 0 {
+		return nil, false
+	}
+	return m.appendoauth2_scopes, true
+}
+
+// ClearOauth2Scopes clears the value of the "oauth2_scopes" field.
+func (m *McpServerMutation) ClearOauth2Scopes() {
+	m.oauth2_scopes = nil
+	m.appendoauth2_scopes = nil
+	m.clearedFields[mcpserver.FieldOauth2Scopes] = struct{}{}
+}
+
+// Oauth2ScopesCleared returns if the "oauth2_scopes" field was cleared in this mutation.
+func (m *McpServerMutation) Oauth2ScopesCleared() bool {
+	_, ok := m.clearedFields[mcpserver.FieldOauth2Scopes]
+	return ok
+}
+
+// ResetOauth2Scopes resets all changes to the "oauth2_scopes" field.
+func (m *McpServerMutation) ResetOauth2Scopes() {
+	m.oauth2_scopes = nil
+	m.appendoauth2_scopes = nil
+	delete(m.clearedFields, mcpserver.FieldOauth2Scopes)
+}
+
+// SetActive sets the "active" field.
+func (m *McpServerMutation) SetActive(b bool) {
+	m.active = &b
+}
+
+// Active returns the value of the "active" field in the mutation.
+func (m *McpServerMutation) Active() (r bool, exists bool) {
+	v := m.active
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldActive returns the old "active" field's value of the McpServer entity.
+// If the McpServer object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *McpServerMutation) OldActive(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldActive is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldActive requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldActive: %w", err)
+	}
+	return oldValue.Active, nil
+}
+
+// ResetActive resets all changes to the "active" field.
+func (m *McpServerMutation) ResetActive() {
+	m.active = nil
+}
+
+// SetOwnerID sets the "owner" edge to the Team entity by id.
+func (m *McpServerMutation) SetOwnerID(id int) {
+	m.owner = &id
+}
+
+// ClearOwner clears the "owner" edge to the Team entity.
+func (m *McpServerMutation) ClearOwner() {
+	m.clearedowner = true
+}
+
+// OwnerCleared reports if the "owner" edge to the Team entity was cleared.
+func (m *McpServerMutation) OwnerCleared() bool {
+	return m.clearedowner
+}
+
+// OwnerID returns the "owner" edge ID in the mutation.
+func (m *McpServerMutation) OwnerID() (id int, exists bool) {
+	if m.owner != nil {
+		return *m.owner, true
+	}
+	return
+}
+
+// OwnerIDs returns the "owner" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// OwnerID instead. It exists only for internal usage by the builders.
+func (m *McpServerMutation) OwnerIDs() (ids []int) {
+	if id := m.owner; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetOwner resets all changes to the "owner" edge.
+func (m *McpServerMutation) ResetOwner() {
+	m.owner = nil
+	m.clearedowner = false
+}
+
+// AddExposureIDs adds the "exposures" edge to the AgenticExposure entity by ids.
+func (m *McpServerMutation) AddExposureIDs(ids ...int) {
+	if m.exposures == nil {
+		m.exposures = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.exposures[ids[i]] = struct{}{}
+	}
+}
+
+// ClearExposures clears the "exposures" edge to the AgenticExposure entity.
+func (m *McpServerMutation) ClearExposures() {
+	m.clearedexposures = true
+}
+
+// ExposuresCleared reports if the "exposures" edge to the AgenticExposure entity was cleared.
+func (m *McpServerMutation) ExposuresCleared() bool {
+	return m.clearedexposures
+}
+
+// RemoveExposureIDs removes the "exposures" edge to the AgenticExposure entity by IDs.
+func (m *McpServerMutation) RemoveExposureIDs(ids ...int) {
+	if m.removedexposures == nil {
+		m.removedexposures = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.exposures, ids[i])
+		m.removedexposures[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedExposures returns the removed IDs of the "exposures" edge to the AgenticExposure entity.
+func (m *McpServerMutation) RemovedExposuresIDs() (ids []int) {
+	for id := range m.removedexposures {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ExposuresIDs returns the "exposures" edge IDs in the mutation.
+func (m *McpServerMutation) ExposuresIDs() (ids []int) {
+	for id := range m.exposures {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetExposures resets all changes to the "exposures" edge.
+func (m *McpServerMutation) ResetExposures() {
+	m.exposures = nil
+	m.clearedexposures = false
+	m.removedexposures = nil
+}
+
+// Where appends a list predicates to the McpServerMutation builder.
+func (m *McpServerMutation) Where(ps ...predicate.McpServer) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the McpServerMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *McpServerMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.McpServer, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *McpServerMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *McpServerMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (McpServer).
+func (m *McpServerMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *McpServerMutation) Fields() []string {
+	fields := make([]string, 0, 13)
+	if m.created_at != nil {
+		fields = append(fields, mcpserver.FieldCreatedAt)
+	}
+	if m.last_modified_at != nil {
+		fields = append(fields, mcpserver.FieldLastModifiedAt)
+	}
+	if m.status_phase != nil {
+		fields = append(fields, mcpserver.FieldStatusPhase)
+	}
+	if m.status_message != nil {
+		fields = append(fields, mcpserver.FieldStatusMessage)
+	}
+	if m.namespace != nil {
+		fields = append(fields, mcpserver.FieldNamespace)
+	}
+	if m.base_path != nil {
+		fields = append(fields, mcpserver.FieldBasePath)
+	}
+	if m.version != nil {
+		fields = append(fields, mcpserver.FieldVersion)
+	}
+	if m.name != nil {
+		fields = append(fields, mcpserver.FieldName)
+	}
+	if m.description != nil {
+		fields = append(fields, mcpserver.FieldDescription)
+	}
+	if m.specification != nil {
+		fields = append(fields, mcpserver.FieldSpecification)
+	}
+	if m.category != nil {
+		fields = append(fields, mcpserver.FieldCategory)
+	}
+	if m.oauth2_scopes != nil {
+		fields = append(fields, mcpserver.FieldOauth2Scopes)
+	}
+	if m.active != nil {
+		fields = append(fields, mcpserver.FieldActive)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *McpServerMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case mcpserver.FieldCreatedAt:
+		return m.CreatedAt()
+	case mcpserver.FieldLastModifiedAt:
+		return m.LastModifiedAt()
+	case mcpserver.FieldStatusPhase:
+		return m.StatusPhase()
+	case mcpserver.FieldStatusMessage:
+		return m.StatusMessage()
+	case mcpserver.FieldNamespace:
+		return m.Namespace()
+	case mcpserver.FieldBasePath:
+		return m.BasePath()
+	case mcpserver.FieldVersion:
+		return m.Version()
+	case mcpserver.FieldName:
+		return m.Name()
+	case mcpserver.FieldDescription:
+		return m.Description()
+	case mcpserver.FieldSpecification:
+		return m.Specification()
+	case mcpserver.FieldCategory:
+		return m.Category()
+	case mcpserver.FieldOauth2Scopes:
+		return m.Oauth2Scopes()
+	case mcpserver.FieldActive:
+		return m.Active()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *McpServerMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case mcpserver.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case mcpserver.FieldLastModifiedAt:
+		return m.OldLastModifiedAt(ctx)
+	case mcpserver.FieldStatusPhase:
+		return m.OldStatusPhase(ctx)
+	case mcpserver.FieldStatusMessage:
+		return m.OldStatusMessage(ctx)
+	case mcpserver.FieldNamespace:
+		return m.OldNamespace(ctx)
+	case mcpserver.FieldBasePath:
+		return m.OldBasePath(ctx)
+	case mcpserver.FieldVersion:
+		return m.OldVersion(ctx)
+	case mcpserver.FieldName:
+		return m.OldName(ctx)
+	case mcpserver.FieldDescription:
+		return m.OldDescription(ctx)
+	case mcpserver.FieldSpecification:
+		return m.OldSpecification(ctx)
+	case mcpserver.FieldCategory:
+		return m.OldCategory(ctx)
+	case mcpserver.FieldOauth2Scopes:
+		return m.OldOauth2Scopes(ctx)
+	case mcpserver.FieldActive:
+		return m.OldActive(ctx)
+	}
+	return nil, fmt.Errorf("unknown McpServer field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *McpServerMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case mcpserver.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case mcpserver.FieldLastModifiedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLastModifiedAt(v)
+		return nil
+	case mcpserver.FieldStatusPhase:
+		v, ok := value.(mcpserver.StatusPhase)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStatusPhase(v)
+		return nil
+	case mcpserver.FieldStatusMessage:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStatusMessage(v)
+		return nil
+	case mcpserver.FieldNamespace:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetNamespace(v)
+		return nil
+	case mcpserver.FieldBasePath:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetBasePath(v)
+		return nil
+	case mcpserver.FieldVersion:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetVersion(v)
+		return nil
+	case mcpserver.FieldName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetName(v)
+		return nil
+	case mcpserver.FieldDescription:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDescription(v)
+		return nil
+	case mcpserver.FieldSpecification:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSpecification(v)
+		return nil
+	case mcpserver.FieldCategory:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCategory(v)
+		return nil
+	case mcpserver.FieldOauth2Scopes:
+		v, ok := value.([]string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetOauth2Scopes(v)
+		return nil
+	case mcpserver.FieldActive:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetActive(v)
+		return nil
+	}
+	return fmt.Errorf("unknown McpServer field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *McpServerMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *McpServerMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *McpServerMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown McpServer numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *McpServerMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(mcpserver.FieldStatusPhase) {
+		fields = append(fields, mcpserver.FieldStatusPhase)
+	}
+	if m.FieldCleared(mcpserver.FieldStatusMessage) {
+		fields = append(fields, mcpserver.FieldStatusMessage)
+	}
+	if m.FieldCleared(mcpserver.FieldDescription) {
+		fields = append(fields, mcpserver.FieldDescription)
+	}
+	if m.FieldCleared(mcpserver.FieldSpecification) {
+		fields = append(fields, mcpserver.FieldSpecification)
+	}
+	if m.FieldCleared(mcpserver.FieldCategory) {
+		fields = append(fields, mcpserver.FieldCategory)
+	}
+	if m.FieldCleared(mcpserver.FieldOauth2Scopes) {
+		fields = append(fields, mcpserver.FieldOauth2Scopes)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *McpServerMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *McpServerMutation) ClearField(name string) error {
+	switch name {
+	case mcpserver.FieldStatusPhase:
+		m.ClearStatusPhase()
+		return nil
+	case mcpserver.FieldStatusMessage:
+		m.ClearStatusMessage()
+		return nil
+	case mcpserver.FieldDescription:
+		m.ClearDescription()
+		return nil
+	case mcpserver.FieldSpecification:
+		m.ClearSpecification()
+		return nil
+	case mcpserver.FieldCategory:
+		m.ClearCategory()
+		return nil
+	case mcpserver.FieldOauth2Scopes:
+		m.ClearOauth2Scopes()
+		return nil
+	}
+	return fmt.Errorf("unknown McpServer nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *McpServerMutation) ResetField(name string) error {
+	switch name {
+	case mcpserver.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case mcpserver.FieldLastModifiedAt:
+		m.ResetLastModifiedAt()
+		return nil
+	case mcpserver.FieldStatusPhase:
+		m.ResetStatusPhase()
+		return nil
+	case mcpserver.FieldStatusMessage:
+		m.ResetStatusMessage()
+		return nil
+	case mcpserver.FieldNamespace:
+		m.ResetNamespace()
+		return nil
+	case mcpserver.FieldBasePath:
+		m.ResetBasePath()
+		return nil
+	case mcpserver.FieldVersion:
+		m.ResetVersion()
+		return nil
+	case mcpserver.FieldName:
+		m.ResetName()
+		return nil
+	case mcpserver.FieldDescription:
+		m.ResetDescription()
+		return nil
+	case mcpserver.FieldSpecification:
+		m.ResetSpecification()
+		return nil
+	case mcpserver.FieldCategory:
+		m.ResetCategory()
+		return nil
+	case mcpserver.FieldOauth2Scopes:
+		m.ResetOauth2Scopes()
+		return nil
+	case mcpserver.FieldActive:
+		m.ResetActive()
+		return nil
+	}
+	return fmt.Errorf("unknown McpServer field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *McpServerMutation) AddedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.owner != nil {
+		edges = append(edges, mcpserver.EdgeOwner)
+	}
+	if m.exposures != nil {
+		edges = append(edges, mcpserver.EdgeExposures)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *McpServerMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case mcpserver.EdgeOwner:
+		if id := m.owner; id != nil {
+			return []ent.Value{*id}
+		}
+	case mcpserver.EdgeExposures:
+		ids := make([]ent.Value, 0, len(m.exposures))
+		for id := range m.exposures {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *McpServerMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.removedexposures != nil {
+		edges = append(edges, mcpserver.EdgeExposures)
+	}
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *McpServerMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case mcpserver.EdgeExposures:
+		ids := make([]ent.Value, 0, len(m.removedexposures))
+		for id := range m.removedexposures {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *McpServerMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.clearedowner {
+		edges = append(edges, mcpserver.EdgeOwner)
+	}
+	if m.clearedexposures {
+		edges = append(edges, mcpserver.EdgeExposures)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *McpServerMutation) EdgeCleared(name string) bool {
+	switch name {
+	case mcpserver.EdgeOwner:
+		return m.clearedowner
+	case mcpserver.EdgeExposures:
+		return m.clearedexposures
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *McpServerMutation) ClearEdge(name string) error {
+	switch name {
+	case mcpserver.EdgeOwner:
+		m.ClearOwner()
+		return nil
+	}
+	return fmt.Errorf("unknown McpServer unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *McpServerMutation) ResetEdge(name string) error {
+	switch name {
+	case mcpserver.EdgeOwner:
+		m.ResetOwner()
+		return nil
+	case mcpserver.EdgeExposures:
+		m.ResetExposures()
+		return nil
+	}
+	return fmt.Errorf("unknown McpServer edge %s", name)
 }
 
 // MemberMutation represents an operation that mutates the Member nodes in the graph.
@@ -14730,6 +24315,12 @@ type TeamMutation struct {
 	event_types         map[int]struct{}
 	removedevent_types  map[int]struct{}
 	clearedevent_types  bool
+	mcp_servers         map[int]struct{}
+	removedmcp_servers  map[int]struct{}
+	clearedmcp_servers  bool
+	agent_cards         map[int]struct{}
+	removedagent_cards  map[int]struct{}
+	clearedagent_cards  bool
 	done                bool
 	oldValue            func(context.Context) (*Team, error)
 	predicates          []predicate.Team
@@ -15598,6 +25189,114 @@ func (m *TeamMutation) ResetEventTypes() {
 	m.removedevent_types = nil
 }
 
+// AddMcpServerIDs adds the "mcp_servers" edge to the McpServer entity by ids.
+func (m *TeamMutation) AddMcpServerIDs(ids ...int) {
+	if m.mcp_servers == nil {
+		m.mcp_servers = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.mcp_servers[ids[i]] = struct{}{}
+	}
+}
+
+// ClearMcpServers clears the "mcp_servers" edge to the McpServer entity.
+func (m *TeamMutation) ClearMcpServers() {
+	m.clearedmcp_servers = true
+}
+
+// McpServersCleared reports if the "mcp_servers" edge to the McpServer entity was cleared.
+func (m *TeamMutation) McpServersCleared() bool {
+	return m.clearedmcp_servers
+}
+
+// RemoveMcpServerIDs removes the "mcp_servers" edge to the McpServer entity by IDs.
+func (m *TeamMutation) RemoveMcpServerIDs(ids ...int) {
+	if m.removedmcp_servers == nil {
+		m.removedmcp_servers = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.mcp_servers, ids[i])
+		m.removedmcp_servers[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedMcpServers returns the removed IDs of the "mcp_servers" edge to the McpServer entity.
+func (m *TeamMutation) RemovedMcpServersIDs() (ids []int) {
+	for id := range m.removedmcp_servers {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// McpServersIDs returns the "mcp_servers" edge IDs in the mutation.
+func (m *TeamMutation) McpServersIDs() (ids []int) {
+	for id := range m.mcp_servers {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetMcpServers resets all changes to the "mcp_servers" edge.
+func (m *TeamMutation) ResetMcpServers() {
+	m.mcp_servers = nil
+	m.clearedmcp_servers = false
+	m.removedmcp_servers = nil
+}
+
+// AddAgentCardIDs adds the "agent_cards" edge to the AgentCard entity by ids.
+func (m *TeamMutation) AddAgentCardIDs(ids ...int) {
+	if m.agent_cards == nil {
+		m.agent_cards = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.agent_cards[ids[i]] = struct{}{}
+	}
+}
+
+// ClearAgentCards clears the "agent_cards" edge to the AgentCard entity.
+func (m *TeamMutation) ClearAgentCards() {
+	m.clearedagent_cards = true
+}
+
+// AgentCardsCleared reports if the "agent_cards" edge to the AgentCard entity was cleared.
+func (m *TeamMutation) AgentCardsCleared() bool {
+	return m.clearedagent_cards
+}
+
+// RemoveAgentCardIDs removes the "agent_cards" edge to the AgentCard entity by IDs.
+func (m *TeamMutation) RemoveAgentCardIDs(ids ...int) {
+	if m.removedagent_cards == nil {
+		m.removedagent_cards = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.agent_cards, ids[i])
+		m.removedagent_cards[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedAgentCards returns the removed IDs of the "agent_cards" edge to the AgentCard entity.
+func (m *TeamMutation) RemovedAgentCardsIDs() (ids []int) {
+	for id := range m.removedagent_cards {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// AgentCardsIDs returns the "agent_cards" edge IDs in the mutation.
+func (m *TeamMutation) AgentCardsIDs() (ids []int) {
+	for id := range m.agent_cards {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetAgentCards resets all changes to the "agent_cards" edge.
+func (m *TeamMutation) ResetAgentCards() {
+	m.agent_cards = nil
+	m.clearedagent_cards = false
+	m.removedagent_cards = nil
+}
+
 // Where appends a list predicates to the TeamMutation builder.
 func (m *TeamMutation) Where(ps ...predicate.Team) {
 	m.predicates = append(m.predicates, ps...)
@@ -15957,7 +25656,7 @@ func (m *TeamMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *TeamMutation) AddedEdges() []string {
-	edges := make([]string, 0, 5)
+	edges := make([]string, 0, 7)
 	if m.group != nil {
 		edges = append(edges, team.EdgeGroup)
 	}
@@ -15972,6 +25671,12 @@ func (m *TeamMutation) AddedEdges() []string {
 	}
 	if m.event_types != nil {
 		edges = append(edges, team.EdgeEventTypes)
+	}
+	if m.mcp_servers != nil {
+		edges = append(edges, team.EdgeMcpServers)
+	}
+	if m.agent_cards != nil {
+		edges = append(edges, team.EdgeAgentCards)
 	}
 	return edges
 }
@@ -16008,13 +25713,25 @@ func (m *TeamMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case team.EdgeMcpServers:
+		ids := make([]ent.Value, 0, len(m.mcp_servers))
+		for id := range m.mcp_servers {
+			ids = append(ids, id)
+		}
+		return ids
+	case team.EdgeAgentCards:
+		ids := make([]ent.Value, 0, len(m.agent_cards))
+		for id := range m.agent_cards {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *TeamMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 5)
+	edges := make([]string, 0, 7)
 	if m.removedmembers != nil {
 		edges = append(edges, team.EdgeMembers)
 	}
@@ -16026,6 +25743,12 @@ func (m *TeamMutation) RemovedEdges() []string {
 	}
 	if m.removedevent_types != nil {
 		edges = append(edges, team.EdgeEventTypes)
+	}
+	if m.removedmcp_servers != nil {
+		edges = append(edges, team.EdgeMcpServers)
+	}
+	if m.removedagent_cards != nil {
+		edges = append(edges, team.EdgeAgentCards)
 	}
 	return edges
 }
@@ -16058,13 +25781,25 @@ func (m *TeamMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case team.EdgeMcpServers:
+		ids := make([]ent.Value, 0, len(m.removedmcp_servers))
+		for id := range m.removedmcp_servers {
+			ids = append(ids, id)
+		}
+		return ids
+	case team.EdgeAgentCards:
+		ids := make([]ent.Value, 0, len(m.removedagent_cards))
+		for id := range m.removedagent_cards {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *TeamMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 5)
+	edges := make([]string, 0, 7)
 	if m.clearedgroup {
 		edges = append(edges, team.EdgeGroup)
 	}
@@ -16079,6 +25814,12 @@ func (m *TeamMutation) ClearedEdges() []string {
 	}
 	if m.clearedevent_types {
 		edges = append(edges, team.EdgeEventTypes)
+	}
+	if m.clearedmcp_servers {
+		edges = append(edges, team.EdgeMcpServers)
+	}
+	if m.clearedagent_cards {
+		edges = append(edges, team.EdgeAgentCards)
 	}
 	return edges
 }
@@ -16097,6 +25838,10 @@ func (m *TeamMutation) EdgeCleared(name string) bool {
 		return m.clearedapis
 	case team.EdgeEventTypes:
 		return m.clearedevent_types
+	case team.EdgeMcpServers:
+		return m.clearedmcp_servers
+	case team.EdgeAgentCards:
+		return m.clearedagent_cards
 	}
 	return false
 }
@@ -16130,6 +25875,12 @@ func (m *TeamMutation) ResetEdge(name string) error {
 		return nil
 	case team.EdgeEventTypes:
 		m.ResetEventTypes()
+		return nil
+	case team.EdgeMcpServers:
+		m.ResetMcpServers()
+		return nil
+	case team.EdgeAgentCards:
+		m.ResetAgentCards()
 		return nil
 	}
 	return fmt.Errorf("unknown Team edge %s", name)

@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/telekom/controlplane/common/pkg/types"
+	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -16,7 +17,7 @@ import (
 // based on the event type identifier of the EventSpecification.
 // It replaces dots with hyphens and lowercases the result.
 func MakeEventSpecificationName(eventSpec *EventSpecification) string {
-	return strings.ToLower(strings.ReplaceAll(eventSpec.Spec.Type, ".", "-"))
+	return labelutil.NormalizeNameValue(strings.ReplaceAll(eventSpec.Spec.Type, ".", "-"))
 }
 
 // EventSpecificationSpec defines the desired state of EventSpecification.

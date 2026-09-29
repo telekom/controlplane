@@ -14,9 +14,11 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/telekom/controlplane/controlplane-api/ent/agenticsubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/apisubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/approval"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventsubscription"
+	"github.com/telekom/controlplane/controlplane-api/ent/filesubscription"
 	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 )
 
@@ -166,13 +168,13 @@ func (_c *ApprovalCreate) SetName(v string) *ApprovalCreate {
 	return _c
 }
 
-// SetExpiresAt sets the "expiresAt" field.
+// SetExpiresAt sets the "expires_at" field.
 func (_c *ApprovalCreate) SetExpiresAt(v time.Time) *ApprovalCreate {
 	_c.mutation.SetExpiresAt(v)
 	return _c
 }
 
-// SetNillableExpiresAt sets the "expiresAt" field if the given value is not nil.
+// SetNillableExpiresAt sets the "expires_at" field if the given value is not nil.
 func (_c *ApprovalCreate) SetNillableExpiresAt(v *time.Time) *ApprovalCreate {
 	if v != nil {
 		_c.SetExpiresAt(*v)
@@ -213,6 +215,25 @@ func (_c *ApprovalCreate) SetAPISubscription(v *ApiSubscription) *ApprovalCreate
 	return _c.SetAPISubscriptionID(v.ID)
 }
 
+// SetFileSubscriptionID sets the "file_subscription" edge to the FileSubscription entity by ID.
+func (_c *ApprovalCreate) SetFileSubscriptionID(id int) *ApprovalCreate {
+	_c.mutation.SetFileSubscriptionID(id)
+	return _c
+}
+
+// SetNillableFileSubscriptionID sets the "file_subscription" edge to the FileSubscription entity by ID if the given value is not nil.
+func (_c *ApprovalCreate) SetNillableFileSubscriptionID(id *int) *ApprovalCreate {
+	if id != nil {
+		_c = _c.SetFileSubscriptionID(*id)
+	}
+	return _c
+}
+
+// SetFileSubscription sets the "file_subscription" edge to the FileSubscription entity.
+func (_c *ApprovalCreate) SetFileSubscription(v *FileSubscription) *ApprovalCreate {
+	return _c.SetFileSubscriptionID(v.ID)
+}
+
 // SetEventSubscriptionID sets the "event_subscription" edge to the EventSubscription entity by ID.
 func (_c *ApprovalCreate) SetEventSubscriptionID(id int) *ApprovalCreate {
 	_c.mutation.SetEventSubscriptionID(id)
@@ -230,6 +251,25 @@ func (_c *ApprovalCreate) SetNillableEventSubscriptionID(id *int) *ApprovalCreat
 // SetEventSubscription sets the "event_subscription" edge to the EventSubscription entity.
 func (_c *ApprovalCreate) SetEventSubscription(v *EventSubscription) *ApprovalCreate {
 	return _c.SetEventSubscriptionID(v.ID)
+}
+
+// SetAgenticSubscriptionID sets the "agentic_subscription" edge to the AgenticSubscription entity by ID.
+func (_c *ApprovalCreate) SetAgenticSubscriptionID(id int) *ApprovalCreate {
+	_c.mutation.SetAgenticSubscriptionID(id)
+	return _c
+}
+
+// SetNillableAgenticSubscriptionID sets the "agentic_subscription" edge to the AgenticSubscription entity by ID if the given value is not nil.
+func (_c *ApprovalCreate) SetNillableAgenticSubscriptionID(id *int) *ApprovalCreate {
+	if id != nil {
+		_c = _c.SetAgenticSubscriptionID(*id)
+	}
+	return _c
+}
+
+// SetAgenticSubscription sets the "agentic_subscription" edge to the AgenticSubscription entity.
+func (_c *ApprovalCreate) SetAgenticSubscription(v *AgenticSubscription) *ApprovalCreate {
+	return _c.SetAgenticSubscriptionID(v.ID)
 }
 
 // Mutation returns the ApprovalMutation object of the builder.
@@ -480,6 +520,23 @@ func (_c *ApprovalCreate) createSpec() (*Approval, *sqlgraph.CreateSpec) {
 		_node.api_subscription_approval = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
+	if nodes := _c.mutation.FileSubscriptionIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: true,
+			Table:   approval.FileSubscriptionTable,
+			Columns: []string{approval.FileSubscriptionColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(filesubscription.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.file_subscription_approval = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
 	if nodes := _c.mutation.EventSubscriptionIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2O,
@@ -495,6 +552,23 @@ func (_c *ApprovalCreate) createSpec() (*Approval, *sqlgraph.CreateSpec) {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_node.event_subscription_approval = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.AgenticSubscriptionIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: true,
+			Table:   approval.AgenticSubscriptionTable,
+			Columns: []string{approval.AgenticSubscriptionColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(agenticsubscription.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.agentic_subscription_approval = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
@@ -747,19 +821,19 @@ func (u *ApprovalUpsert) UpdateName() *ApprovalUpsert {
 	return u
 }
 
-// SetExpiresAt sets the "expiresAt" field.
+// SetExpiresAt sets the "expires_at" field.
 func (u *ApprovalUpsert) SetExpiresAt(v time.Time) *ApprovalUpsert {
 	u.Set(approval.FieldExpiresAt, v)
 	return u
 }
 
-// UpdateExpiresAt sets the "expiresAt" field to the value that was provided on create.
+// UpdateExpiresAt sets the "expires_at" field to the value that was provided on create.
 func (u *ApprovalUpsert) UpdateExpiresAt() *ApprovalUpsert {
 	u.SetExcluded(approval.FieldExpiresAt)
 	return u
 }
 
-// ClearExpiresAt clears the value of the "expiresAt" field.
+// ClearExpiresAt clears the value of the "expires_at" field.
 func (u *ApprovalUpsert) ClearExpiresAt() *ApprovalUpsert {
 	u.SetNull(approval.FieldExpiresAt)
 	return u
@@ -1053,21 +1127,21 @@ func (u *ApprovalUpsertOne) UpdateName() *ApprovalUpsertOne {
 	})
 }
 
-// SetExpiresAt sets the "expiresAt" field.
+// SetExpiresAt sets the "expires_at" field.
 func (u *ApprovalUpsertOne) SetExpiresAt(v time.Time) *ApprovalUpsertOne {
 	return u.Update(func(s *ApprovalUpsert) {
 		s.SetExpiresAt(v)
 	})
 }
 
-// UpdateExpiresAt sets the "expiresAt" field to the value that was provided on create.
+// UpdateExpiresAt sets the "expires_at" field to the value that was provided on create.
 func (u *ApprovalUpsertOne) UpdateExpiresAt() *ApprovalUpsertOne {
 	return u.Update(func(s *ApprovalUpsert) {
 		s.UpdateExpiresAt()
 	})
 }
 
-// ClearExpiresAt clears the value of the "expiresAt" field.
+// ClearExpiresAt clears the value of the "expires_at" field.
 func (u *ApprovalUpsertOne) ClearExpiresAt() *ApprovalUpsertOne {
 	return u.Update(func(s *ApprovalUpsert) {
 		s.ClearExpiresAt()
@@ -1530,21 +1604,21 @@ func (u *ApprovalUpsertBulk) UpdateName() *ApprovalUpsertBulk {
 	})
 }
 
-// SetExpiresAt sets the "expiresAt" field.
+// SetExpiresAt sets the "expires_at" field.
 func (u *ApprovalUpsertBulk) SetExpiresAt(v time.Time) *ApprovalUpsertBulk {
 	return u.Update(func(s *ApprovalUpsert) {
 		s.SetExpiresAt(v)
 	})
 }
 
-// UpdateExpiresAt sets the "expiresAt" field to the value that was provided on create.
+// UpdateExpiresAt sets the "expires_at" field to the value that was provided on create.
 func (u *ApprovalUpsertBulk) UpdateExpiresAt() *ApprovalUpsertBulk {
 	return u.Update(func(s *ApprovalUpsert) {
 		s.UpdateExpiresAt()
 	})
 }
 
-// ClearExpiresAt clears the value of the "expiresAt" field.
+// ClearExpiresAt clears the value of the "expires_at" field.
 func (u *ApprovalUpsertBulk) ClearExpiresAt() *ApprovalUpsertBulk {
 	return u.Update(func(s *ApprovalUpsert) {
 		s.ClearExpiresAt()

@@ -80,3 +80,13 @@ rules:
   - get
   - list
   - watch
+- apiGroups:
+  - file.cp.ei.telekom.de
+  resources:
+  - filetypes
+  - fileexposures
+  - filesubscriptions
+  verbs:
+  - get
+  - list
+  - watch

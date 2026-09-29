@@ -18,10 +18,17 @@ spec:
   scope: Namespaced
   versions:
   - additionalPrinterColumns:
+    - description: The version of the API
+      jsonPath: .spec.version
+      name: Version
+      type: string
     - description: Indicates if the API is active
       jsonPath: .status.active
       name: Active
       type: boolean
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
     name: v1
     schema:
       openAPIV3Schema:

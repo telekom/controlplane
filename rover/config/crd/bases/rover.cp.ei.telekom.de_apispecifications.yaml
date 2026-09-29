@@ -17,7 +17,15 @@ spec:
     singular: apispecification
   scope: Namespaced
   versions:
-  - name: v1
+  - additionalPrinterColumns:
+    - description: The version of the API specification
+      jsonPath: .spec.version
+      name: Version
+      type: string
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    name: v1
     schema:
       openAPIV3Schema:
         description: ApiSpecification is the Schema for the apispecifications API

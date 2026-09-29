@@ -7,6 +7,7 @@ package util
 import (
 	"strings"
 
+	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
 )
 
@@ -25,6 +26,10 @@ const (
 	// horizon is the leading path segment shared by all event route paths.
 	// Change it here to rename the prefix across every route.
 	horizon = "horizon"
+)
+
+const (
+	LabelValueDomain = "event"
 )
 
 // horizonPrefix builds the leading path segment for an event route.
@@ -54,7 +59,7 @@ func makePublishRoutePath() string {
 
 // makeSSERouteName returns the deterministic Route name for an SSE event type.
 func makeSSERouteName(eventType string) string {
-	return "sse--" + eventv1.MakeEventTypeName(eventType)
+	return labelutil.NormalizeNameValue("sse--" + eventv1.MakeEventTypeName(eventType))
 }
 
 // makeSSERoutePath returns the (zone-independent) SSE path for an event type,

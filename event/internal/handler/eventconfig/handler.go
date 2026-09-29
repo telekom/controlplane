@@ -20,6 +20,8 @@ import (
 	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	"github.com/telekom/controlplane/common/pkg/handler"
 	"github.com/telekom/controlplane/common/pkg/types"
+	"github.com/telekom/controlplane/common/pkg/util/contextutil"
+	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	"github.com/telekom/controlplane/event/internal/handler/util"
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
@@ -31,6 +33,13 @@ const tokenUrlSuffix = "/protocol/openid-connect/token"
 var _ handler.Handler[*eventv1.EventConfig] = &EventConfigHandler{}
 
 type EventConfigHandler struct{}
+
+func effectiveEnvironmentName(ctx context.Context, overwrite string) string {
+	if overwrite != "" {
+		return overwrite
+	}
+	return contextutil.EnvFromContextOrDie(ctx)
+}
 
 func (h *EventConfigHandler) CreateOrUpdate(ctx context.Context, obj *eventv1.EventConfig) error {
 	logger := log.FromContext(ctx)
@@ -243,7 +252,7 @@ func (h *EventConfigHandler) createIdentityClient(ctx context.Context, obj *even
 
 	identityClient := &identityv1.Client{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      clientCfg.ClientId,
+			Name:      labelutil.NormalizeNameValue(clientCfg.ClientId),
 			Namespace: obj.Namespace,
 		},
 	}
@@ -587,10 +596,11 @@ func (h *EventConfigHandler) createEventStore(ctx context.Context, obj *eventv1.
 		}
 
 		eventStore.Spec = pubsubv1.EventStoreSpec{
-			Url:          obj.Spec.Local.Admin.Url,
-			TokenUrl:     tokenUrl,
-			ClientId:     identityClient.Spec.ClientId,
-			ClientSecret: identityClient.Spec.ClientSecret,
+			OverwriteEnvironmentName: effectiveEnvironmentName(ctx, obj.Spec.OverwriteEnvironmentName),
+			Url:                      obj.Spec.Local.Admin.Url,
+			TokenUrl:                 tokenUrl,
+			ClientId:                 identityClient.Spec.ClientId,
+			ClientSecret:             identityClient.Spec.ClientSecret,
 		}
 		return nil
 	}
@@ -646,10 +656,11 @@ func (h *EventConfigHandler) createProxyEventStore(ctx context.Context, obj *eve
 		}
 
 		eventStore.Spec = pubsubv1.EventStoreSpec{
-			Url:          adminCfg.Url,
-			TokenUrl:     tokenUrl,
-			ClientId:     adminCfg.Client.ClientId,
-			ClientSecret: adminCfg.Client.ClientSecret,
+			OverwriteEnvironmentName: effectiveEnvironmentName(ctx, obj.Spec.OverwriteEnvironmentName),
+			Url:                      adminCfg.Url,
+			TokenUrl:                 tokenUrl,
+			ClientId:                 adminCfg.Client.ClientId,
+			ClientSecret:             adminCfg.Client.ClientSecret,
 		}
 		return nil
 	}

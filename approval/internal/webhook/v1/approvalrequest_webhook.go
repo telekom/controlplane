@@ -59,6 +59,8 @@ func (ar *ApprovalRequestCustomDefaulter) Default(_ context.Context, obj *approv
 		}
 	}
 	defaultDecisionFields(obj.Spec.Decisions, obj.Spec.State)
+	// Trim last: defaulting must run on the items that are kept.
+	obj.Spec.Decisions = approvalv1.TrimDecisions(obj.Spec.Decisions)
 	return nil
 }
 

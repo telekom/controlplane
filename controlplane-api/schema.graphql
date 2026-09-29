@@ -19,6 +19,17 @@ type TeamInfo {
   description: String
 }
 
+"Reduced application information for cross-tenant contexts."
+type ApplicationInfo {
+  id: ID!
+  name: String!
+  externalIds: [ExternalId!]
+  "Zone the application is deployed in"
+  zone: Zone!
+  "Team that owns the application (reduced view)"
+  ownerTeam: TeamInfo!
+}
+
 type Upstream {
   url: String!
   weight: Int!
@@ -144,9 +155,11 @@ type ApiExposureInfo {
   approvalConfig: ApprovalConfig!
   traffic: Traffic 
   "Application name that owns this exposure"
-  ownerApplicationName: String!
+  ownerApplicationName: String! @deprecated(reason: "Use ownerApplication.name instead.")
   "Owning team (reduced view)"
-  ownerTeam: TeamInfo!
+  ownerTeam: TeamInfo! @deprecated(reason: "Use ownerApplication.ownerTeam instead.")
+  "Owning application (reduced view)"
+  ownerApplication: ApplicationInfo!
 }
 
 # Security
@@ -195,6 +208,29 @@ type ApiSubscriptionSecurity {
   m2m: SubscriberMachine2MachineAuthentication
 }
 
+type AgenticExposureSecurity {
+  m2m: Machine2MachineAuthentication
+}
+
+type AgenticSubscriptionSecurity {
+  m2m: SubscriberMachine2MachineAuthentication
+}
+
+"Header additions/removals applied to agentic requests or responses."
+type AgenticHeaderTransformation {
+  remove: [String!]
+  add: [String!]
+}
+
+"Request/response transformations applied to an AgenticExposure or AgenticSubscription."
+type AgenticRequestResponseTransformation {
+  headers: AgenticHeaderTransformation!
+}
+
+type AgenticTransformation {
+  request: AgenticRequestResponseTransformation!
+}
+
 # Traffic 
 
 type Limits {
@@ -241,34 +277,83 @@ type Traffic {
   rateLimit: RateLimit
 }
 
+"Opt-in failover flag for an AgenticSubscription (eligible zones are derived automatically)."
+type AgenticSubscriberFailover {
+  enabled: Boolean!
+}
+
+"Traffic config for an AgenticSubscription — unlike the exposure-side Traffic, failover is a simple opt-in flag."
+type AgenticSubscriberTraffic {
+  failover: AgenticSubscriberFailover
+}
+
 type ApiSubscriptionTraffic {
   providerLimits: Limits
   subscriberLimits: Limits
 }
 
+"Common ownership fields for reduced subscription views."
+interface SubscriptionInfo {
+  id: ID!
+  ownerApplication: ApplicationInfo!
+}
+
 "Reduced API subscription for cross-tenant contexts (e.g., exposure subscribers)."
-type ApiSubscriptionInfo {
+type ApiSubscriptionInfo implements SubscriptionInfo {
   id: ID!
   basePath: String!
   statusPhase: ApiSubscriptionStatusPhase
   statusMessage: String
   "Application name that owns this subscription"
-  ownerApplicationName: String!
+  ownerApplicationName: String! @deprecated(reason: "Use ownerApplication.name instead.")
   "Owning team (reduced view)"
-  ownerTeam: TeamInfo!
+  ownerTeam: TeamInfo! @deprecated(reason: "Use ownerApplication.ownerTeam instead.")
+  "Owning application (reduced view)"
+  ownerApplication: ApplicationInfo!
 }
 
 "Reduced event subscription for cross-tenant contexts (e.g., exposure subscribers)."
-type EventSubscriptionInfo {
+type EventSubscriptionInfo implements SubscriptionInfo {
   id: ID!
   eventType: String!
   deliveryType: EventSubscriptionDeliveryType!
   statusPhase: EventSubscriptionStatusPhase
   statusMessage: String
   "Application name that owns this subscription"
-  ownerApplicationName: String!
+  ownerApplicationName: String! @deprecated(reason: "Use ownerApplication.name instead.")
   "Owning team (reduced view)"
-  ownerTeam: TeamInfo!
+  ownerTeam: TeamInfo! @deprecated(reason: "Use ownerApplication.ownerTeam instead.")
+  "Owning application (reduced view)"
+  ownerApplication: ApplicationInfo!
+}
+
+"Reduced file subscription for cross-tenant contexts (e.g., approvals)."
+type FileSubscriptionInfo implements SubscriptionInfo {
+  id: ID!
+  fileType: String!
+  statusPhase: FileSubscriptionStatusPhase
+  statusMessage: String
+  "Application name that owns this subscription"
+  ownerApplicationName: String! @deprecated(reason: "Use ownerApplication.name instead.")
+  "Owning team (reduced view)"
+  ownerTeam: TeamInfo! @deprecated(reason: "Use ownerApplication.ownerTeam instead.")
+  "Owning application (reduced view)"
+  ownerApplication: ApplicationInfo!
+}
+
+"Reduced file exposure for cross-tenant contexts (e.g., subscription target)."
+type FileExposureInfo {
+  id: ID!
+  fileType: String!
+  visibility: FileExposureVisibility!
+  active: Boolean
+  approvalConfig: ApprovalConfig!
+  "Application name that owns this exposure"
+  ownerApplicationName: String! @deprecated(reason: "Use ownerApplication.name instead.")
+  "Owning team (reduced view)"
+  ownerTeam: TeamInfo! @deprecated(reason: "Use ownerApplication.ownerTeam instead.")
+  "Owning application (reduced view)"
+  ownerApplication: ApplicationInfo!
 }
 
 "Reduced event exposure for cross-tenant contexts (e.g., subscription target)."
@@ -279,9 +364,53 @@ type EventExposureInfo {
   active: Boolean
   approvalConfig: ApprovalConfig!
   "Application name that owns this exposure"
-  ownerApplicationName: String!
+  ownerApplicationName: String! @deprecated(reason: "Use ownerApplication.name instead.")
   "Owning team (reduced view)"
-  ownerTeam: TeamInfo!
+  ownerTeam: TeamInfo! @deprecated(reason: "Use ownerApplication.ownerTeam instead.")
+  "Owning application (reduced view)"
+  ownerApplication: ApplicationInfo!
+}
+
+"Reduced agentic exposure for cross-tenant contexts (e.g., subscription target)."
+type AgenticExposureInfo {
+  id: ID!
+  basePath: String!
+  visibility: AgenticExposureVisibility!
+  variant: AgenticExposureVariant!
+  active: Boolean
+  approvalConfig: ApprovalConfig!
+  traffic: Traffic
+  "Application name that owns this exposure"
+  ownerApplicationName: String! @deprecated(reason: "Use ownerApplication.name instead.")
+  "Owning team (reduced view)"
+  ownerTeam: TeamInfo! @deprecated(reason: "Use ownerApplication.ownerTeam instead.")
+  "Owning application (reduced view)"
+  ownerApplication: ApplicationInfo!
+}
+
+"Reduced agentic subscription for cross-tenant contexts (e.g., exposure subscribers)."
+type AgenticSubscriptionInfo implements SubscriptionInfo {
+  id: ID!
+  basePath: String!
+  statusPhase: AgenticSubscriptionStatusPhase
+  statusMessage: String
+  "Application name that owns this subscription"
+  ownerApplicationName: String! @deprecated(reason: "Use ownerApplication.name instead.")
+  "Owning team (reduced view)"
+  ownerTeam: TeamInfo! @deprecated(reason: "Use ownerApplication.ownerTeam instead.")
+  "Owning application (reduced view)"
+  ownerApplication: ApplicationInfo!
+}
+
+# File
+
+type FileSFTP {
+  publicKeys: [SSHPublicKeySpec!]!
+}
+
+type SSHPublicKeySpec {
+  key: String
+  label: String
 }
 
 # -- Cross-tenant edge overrides --
@@ -316,8 +445,25 @@ extend type EventExposure {
   subscriptions: [EventSubscriptionInfo!]! @goField(forceResolver: true)
 }
 
-"A subscription related to an approval — either an API or event subscription."
-union SubscriptionInfo = ApiSubscriptionInfo | EventSubscriptionInfo
+extend type AgenticSubscription {
+  "Target exposure (reduced view — cross-tenant boundary). Null when the target MCP server/agent is not yet exposed."
+  target: AgenticExposureInfo @goField(forceResolver: true)
+}
+
+extend type AgenticExposure {
+  "Subscriptions to this exposure (reduced view — cross-tenant boundary)"
+  subscriptions: [AgenticSubscriptionInfo!]! @goField(forceResolver: true)
+}
+
+extend type FileSubscription {
+  "Target exposure (reduced view — cross-tenant boundary). Null when the target file type is not yet exposed."
+  target: FileExposureInfo @goField(forceResolver: true)
+}
+
+extend type FileExposure {
+  "Subscriptions to this exposure (reduced view — cross-tenant boundary)"
+  subscriptions: [FileSubscriptionInfo!]! @goField(forceResolver: true)
+}
 
 extend type Approval {
   "Related subscription (reduced view — cross-tenant boundary)"
@@ -351,6 +497,24 @@ extend type EventType {
   owner: TeamInfo! @goField(forceResolver: true)
 }
 
+extend type McpServer {
+  "URL to download the MCP server specification from the file-manager. Null if no specification is associated."
+  specificationUrl: String @goField(forceResolver: true)
+  "The currently active exposure of this MCP server, or null if no exposure is active."
+  activeExposure: AgenticExposureInfo @goField(forceResolver: true)
+  "The team that owns this MCP server."
+  owner: TeamInfo! @goField(forceResolver: true)
+}
+
+extend type AgentCard {
+  "URL to download the agent specification from the file-manager. Null if no specification is associated."
+  specificationUrl: String @goField(forceResolver: true)
+  "The currently active exposure of this agent, or null if no exposure is active."
+  activeExposure: AgenticExposureInfo @goField(forceResolver: true)
+  "The team that owns this agent."
+  owner: TeamInfo! @goField(forceResolver: true)
+}
+
 extend type Query {
   "Returns all distinct API categories currently in use."
   apiCategories: [ApiCategory!]! @goField(forceResolver: true)
@@ -364,4 +528,3 @@ type ApiCategory {
   "The category identifier/name."
   name: String!
 }
-

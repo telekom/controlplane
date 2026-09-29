@@ -113,6 +113,9 @@ var _ = Describe("LastMileSecurityFeature", func() {
 					route := &gatewayv1.Route{
 						Spec: gatewayv1.RouteSpec{
 							Type: gatewayv1.RouteTypePrimary,
+							Paths: []string{
+								"/test",
+							},
 							Backend: gatewayv1.Backend{
 								Upstreams: []gatewayv1.Upstream{
 									{Scheme: "https", Hostname: "api.example.com", Port: 443, Path: "/v1"},
@@ -156,7 +159,7 @@ var _ = Describe("LastMileSecurityFeature", func() {
 					// Append headers: remote_api_url, api_base_path, access_token_forwarding
 					Expect(rtpPlugin.Config.Append.Headers).ToNot(BeNil())
 					Expect(rtpPlugin.Config.Append.Headers.Get("remote_api_url")).To(Equal("https://api.example.com:443/v1"))
-					Expect(rtpPlugin.Config.Append.Headers.Get("api_base_path")).To(Equal("/v1"))
+					Expect(rtpPlugin.Config.Append.Headers.Get("api_base_path")).To(Equal("/test"))
 					Expect(rtpPlugin.Config.Append.Headers.Get("access_token_forwarding")).To(Equal("false"))
 				})
 			})

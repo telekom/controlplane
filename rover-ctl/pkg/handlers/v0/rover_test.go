@@ -205,13 +205,13 @@ var _ = Describe("Rover Handler", func() {
 				Expect(security).To(HaveKeyWithValue("type", "basicAuth"))
 			})
 
-			It("should preserve an explicit exposure type", func() {
+			It("should normalize an explicit exposure type to lowercase", func() {
 				obj := &types.UnstructuredObject{
 					Content: map[string]any{
 						"spec": map[string]any{
 							"exposures": []any{
 								map[string]any{
-									"type":     "ai",
+									"type":     "AI",
 									"basePath": "/mcp/assistant",
 								},
 							},
@@ -225,6 +225,34 @@ var _ = Describe("Rover Handler", func() {
 				exposures := obj.GetContent()["exposures"].([]map[string]any)
 				Expect(exposures).To(HaveLen(1))
 				Expect(exposures[0]).To(HaveKeyWithValue("type", "ai"))
+			})
+
+			It("should patch file exposures", func() {
+				obj := &types.UnstructuredObject{
+					Content: map[string]any{
+						"spec": map[string]any{
+							"exposures": []any{
+								map[string]any{
+									"fileType": "demo-sftp-spec-v1",
+									"variant":  "sftp",
+								},
+							},
+						},
+					},
+				}
+
+				err := v0.PatchRoverRequest(context.Background(), obj)
+
+				Expect(err).NotTo(HaveOccurred())
+
+				content := obj.GetContent()
+				Expect(content).To(HaveKey("exposures"))
+
+				exposures := content["exposures"].([]map[string]any)
+				Expect(exposures).To(HaveLen(1))
+
+				exposure := exposures[0]
+				Expect(exposure).To(HaveKeyWithValue("type", "file"))
 			})
 		})
 
@@ -307,10 +335,10 @@ var _ = Describe("Rover Handler", func() {
 				Expect(result[0]["security"]).To(HaveKeyWithValue("type", "oauth2"))
 			})
 
-			It("should preserve an explicit subscription type", func() {
+			It("should normalize an explicit subscription type to lowercase", func() {
 				subscriptions := []any{
 					map[string]any{
-						"type":     "ai",
+						"type":     "AI",
 						"basePath": "/mcp/assistant",
 					},
 				}
@@ -341,6 +369,20 @@ var _ = Describe("Rover Handler", func() {
 				Expect(result).To(HaveLen(1))
 				Expect(result[0]).To(HaveKeyWithValue("type", "event"))
 				Expect(result[0]["security"]).To(HaveKeyWithValue("type", "basicAuth"))
+			})
+
+			It("should patch file subscriptions correctly", func() {
+				subscriptions := []any{
+					map[string]any{
+						"fileType": "demo-sftp-spec-v1",
+						"variant":  "sftp",
+					},
+				}
+
+				result := v0.PatchSubscriptions(subscriptions)
+
+				Expect(result).To(HaveLen(1))
+				Expect(result[0]).To(HaveKeyWithValue("type", "file"))
 			})
 
 			It("should handle nil subscriptions", func() {

@@ -55,6 +55,10 @@ const (
 	EdgeApis = "apis"
 	// EdgeEventTypes holds the string denoting the event_types edge name in mutations.
 	EdgeEventTypes = "event_types"
+	// EdgeMcpServers holds the string denoting the mcp_servers edge name in mutations.
+	EdgeMcpServers = "mcp_servers"
+	// EdgeAgentCards holds the string denoting the agent_cards edge name in mutations.
+	EdgeAgentCards = "agent_cards"
 	// Table holds the table name of the team in the database.
 	Table = "teams"
 	// GroupTable is the table that holds the group relation/edge.
@@ -92,6 +96,20 @@ const (
 	EventTypesInverseTable = "event_types"
 	// EventTypesColumn is the table column denoting the event_types relation/edge.
 	EventTypesColumn = "team_event_types"
+	// McpServersTable is the table that holds the mcp_servers relation/edge.
+	McpServersTable = "mcp_servers"
+	// McpServersInverseTable is the table name for the McpServer entity.
+	// It exists in this package in order to avoid circular dependency with the "mcpserver" package.
+	McpServersInverseTable = "mcp_servers"
+	// McpServersColumn is the table column denoting the mcp_servers relation/edge.
+	McpServersColumn = "team_mcp_servers"
+	// AgentCardsTable is the table that holds the agent_cards relation/edge.
+	AgentCardsTable = "agent_cards"
+	// AgentCardsInverseTable is the table name for the AgentCard entity.
+	// It exists in this package in order to avoid circular dependency with the "agentcard" package.
+	AgentCardsInverseTable = "agent_cards"
+	// AgentCardsColumn is the table column denoting the agent_cards relation/edge.
+	AgentCardsColumn = "team_agent_cards"
 )
 
 // Columns holds all SQL columns for team fields.
@@ -335,6 +353,34 @@ func ByEventTypes(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newEventTypesStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// ByMcpServersCount orders the results by mcp_servers count.
+func ByMcpServersCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newMcpServersStep(), opts...)
+	}
+}
+
+// ByMcpServers orders the results by mcp_servers terms.
+func ByMcpServers(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newMcpServersStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByAgentCardsCount orders the results by agent_cards count.
+func ByAgentCardsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newAgentCardsStep(), opts...)
+	}
+}
+
+// ByAgentCards orders the results by agent_cards terms.
+func ByAgentCards(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newAgentCardsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
 func newGroupStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -368,6 +414,20 @@ func newEventTypesStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(EventTypesInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, EventTypesTable, EventTypesColumn),
+	)
+}
+func newMcpServersStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(McpServersInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, McpServersTable, McpServersColumn),
+	)
+}
+func newAgentCardsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(AgentCardsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, AgentCardsTable, AgentCardsColumn),
 	)
 }
 

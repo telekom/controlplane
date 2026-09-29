@@ -60,6 +60,17 @@ rules:
   - get
   - list
   - watch
+# file domain
+- apiGroups:
+  - file.cp.ei.telekom.de
+  resources:
+  - fileexposures
+  - filesubscriptions
+  - filetypes
+  verbs:
+  - get
+  - list
+  - watch
 # approval domain
 - apiGroups:
   - approval.cp.ei.telekom.de
@@ -75,6 +86,18 @@ rules:
   - permission.cp.ei.telekom.de
   resources:
   - permissionsets
+  verbs:
+  - get
+  - list
+  - watch
+# agentic domain
+- apiGroups:
+  - agentic.cp.ei.telekom.de
+  resources:
+  - mcpservers
+  - agentcards
+  - agenticexposures
+  - agenticsubscriptions
   verbs:
   - get
   - list

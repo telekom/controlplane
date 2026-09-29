@@ -35,7 +35,7 @@ func (Approval) Fields() []ent.Field {
 	return []ent.Field{
 		field.Text("name").
 			NotEmpty(),
-		field.Time("expiresAt").
+		field.Time("expires_at").
 			Optional().
 			Nillable(),
 		field.Enum("state").
@@ -63,7 +63,15 @@ func (Approval) Edges() []ent.Edge {
 			Ref("approval").
 			Unique().
 			Annotations(entgql.Skip(entgql.SkipType)),
+		edge.From("file_subscription", FileSubscription.Type).
+			Ref("approval").
+			Unique().
+			Annotations(entgql.Skip(entgql.SkipType)),
 		edge.From("event_subscription", EventSubscription.Type).
+			Ref("approval").
+			Unique().
+			Annotations(entgql.Skip(entgql.SkipType)),
+		edge.From("agentic_subscription", AgenticSubscription.Type).
 			Ref("approval").
 			Unique().
 			Annotations(entgql.Skip(entgql.SkipType)),

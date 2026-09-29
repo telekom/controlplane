@@ -68,7 +68,7 @@ func CreateAgenticRoute(
 
 	mutator := func() error {
 		route.Labels = map[string]string{
-			config.DomainLabelKey:             "agentic",
+			config.DomainLabelKey:             LabelValueDomain,
 			agenticv1.AgenticBasePathLabelKey: labelutil.NormalizeLabelValue(exposure.Spec.BasePath),
 			config.BuildLabelKey("zone"):      zone.Name,
 			config.BuildLabelKey("type"):      "mcp",
@@ -189,7 +189,7 @@ func CreateAgenticProxyRoute(
 
 	mutator := func() error {
 		route.Labels = map[string]string{
-			config.DomainLabelKey:             "agentic",
+			config.DomainLabelKey:             LabelValueDomain,
 			agenticv1.AgenticBasePathLabelKey: labelutil.NormalizeLabelValue(basePath),
 			config.BuildLabelKey("zone"):      subscriberZone.Name,
 			config.BuildLabelKey("type"):      "mcp-proxy",

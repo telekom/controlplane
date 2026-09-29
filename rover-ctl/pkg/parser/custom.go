@@ -4,9 +4,7 @@
 
 package parser
 
-import (
-	"github.com/telekom/controlplane/rover-ctl/pkg/types"
-)
+import "github.com/telekom/controlplane/rover-ctl/pkg/types"
 
 var Opts = []Option{
 	WithHook(HookAfterParse, func(obj types.Object) error {
@@ -28,12 +26,14 @@ var Opts = []Option{
 			return ParseMcpSpecification(obj)
 		}
 
-		_, hasSkills := obj.GetContent()["skills"]
-		_, hasCapabilities := obj.GetContent()["capabilities"]
-		if hasBasePath && (hasSkills || hasCapabilities) {
-			obj.SetProperty("kind", "AgentSpecification")
-			obj.SetProperty("apiVersion", "tcp.ei.telekom.de/v1")
-			return ParseAgentSpecification(obj)
+		if agentCard, isMap := obj.GetContent()["agentCard"].(map[string]any); hasBasePath && isMap {
+			_, hasSkills := agentCard["skills"]
+			_, hasCapabilities := agentCard["capabilities"]
+			if hasSkills || hasCapabilities {
+				obj.SetProperty("kind", "AgentSpecification")
+				obj.SetProperty("apiVersion", "tcp.ei.telekom.de/v1")
+				return ParseAgentSpecification(obj)
+			}
 		}
 
 		obj.SetProperty("name", obj.GetName())

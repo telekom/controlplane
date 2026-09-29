@@ -11,6 +11,8 @@ import (
 	"entgo.io/ent"
 
 	entgen "github.com/telekom/controlplane/controlplane-api/ent"
+	"github.com/telekom/controlplane/controlplane-api/ent/agenticexposure"
+	"github.com/telekom/controlplane/controlplane-api/ent/agenticsubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/apiexposure"
 	"github.com/telekom/controlplane/controlplane-api/ent/apisubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/application"
@@ -18,6 +20,8 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/approvalrequest"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventexposure"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventsubscription"
+	"github.com/telekom/controlplane/controlplane-api/ent/fileexposure"
+	"github.com/telekom/controlplane/controlplane-api/ent/filesubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/member"
 	"github.com/telekom/controlplane/controlplane-api/ent/permissionset"
 	"github.com/telekom/controlplane/controlplane-api/ent/privacy"
@@ -62,6 +66,16 @@ func TeamFilterInterceptor() ent.Interceptor {
 					application.HasOwnerTeamWith(team.NameIn(teams...)),
 				))
 
+			case *entgen.FileExposureQuery:
+				q.Where(fileexposure.HasOwnerWith(
+					application.HasOwnerTeamWith(team.NameIn(teams...)),
+				))
+
+			case *entgen.FileSubscriptionQuery:
+				q.Where(filesubscription.HasOwnerWith(
+					application.HasOwnerTeamWith(team.NameIn(teams...)),
+				))
+
 			case *entgen.ApprovalQuery:
 				q.Where(approval.Or(
 					approval.HasAPISubscriptionWith(
@@ -84,6 +98,30 @@ func TeamFilterInterceptor() ent.Interceptor {
 					approval.HasEventSubscriptionWith(
 						eventsubscription.HasTargetWith(
 							eventexposure.HasOwnerWith(
+								application.HasOwnerTeamWith(team.NameIn(teams...)),
+							),
+						),
+					),
+					approval.HasAgenticSubscriptionWith(
+						agenticsubscription.HasOwnerWith(
+							application.HasOwnerTeamWith(team.NameIn(teams...)),
+						),
+					),
+					approval.HasAgenticSubscriptionWith(
+						agenticsubscription.HasTargetWith(
+							agenticexposure.HasOwnerWith(
+								application.HasOwnerTeamWith(team.NameIn(teams...)),
+							),
+						),
+					),
+					approval.HasFileSubscriptionWith(
+						filesubscription.HasOwnerWith(
+							application.HasOwnerTeamWith(team.NameIn(teams...)),
+						),
+					),
+					approval.HasFileSubscriptionWith(
+						filesubscription.HasTargetWith(
+							fileexposure.HasOwnerWith(
 								application.HasOwnerTeamWith(team.NameIn(teams...)),
 							),
 						),
@@ -116,6 +154,30 @@ func TeamFilterInterceptor() ent.Interceptor {
 							),
 						),
 					),
+					approvalrequest.HasAgenticSubscriptionWith(
+						agenticsubscription.HasOwnerWith(
+							application.HasOwnerTeamWith(team.NameIn(teams...)),
+						),
+					),
+					approvalrequest.HasAgenticSubscriptionWith(
+						agenticsubscription.HasTargetWith(
+							agenticexposure.HasOwnerWith(
+								application.HasOwnerTeamWith(team.NameIn(teams...)),
+							),
+						),
+					),
+					approvalrequest.HasFileSubscriptionWith(
+						filesubscription.HasOwnerWith(
+							application.HasOwnerTeamWith(team.NameIn(teams...)),
+						),
+					),
+					approvalrequest.HasFileSubscriptionWith(
+						filesubscription.HasTargetWith(
+							fileexposure.HasOwnerWith(
+								application.HasOwnerTeamWith(team.NameIn(teams...)),
+							),
+						),
+					),
 				))
 
 			case *entgen.MemberQuery:
@@ -136,7 +198,18 @@ func TeamFilterInterceptor() ent.Interceptor {
 					application.HasOwnerTeamWith(team.NameIn(teams...)),
 				))
 
-			case *entgen.GroupQuery, *entgen.ZoneQuery, *entgen.APIQuery, *entgen.EventTypeQuery:
+			case *entgen.AgenticExposureQuery:
+				q.Where(agenticexposure.HasOwnerWith(
+					application.HasOwnerTeamWith(team.NameIn(teams...)),
+				))
+
+			case *entgen.AgenticSubscriptionQuery:
+				q.Where(agenticsubscription.HasOwnerWith(
+					application.HasOwnerTeamWith(team.NameIn(teams...)),
+				))
+
+			case *entgen.GroupQuery, *entgen.ZoneQuery, *entgen.APIQuery, *entgen.EventTypeQuery, *entgen.FileTypeQuery,
+				*entgen.McpServerQuery, *entgen.AgentCardQuery:
 				// No team filtering for public/catalogue entities
 			default:
 				return nil, fmt.Errorf("team filter: unsupported query type %T", query)

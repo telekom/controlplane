@@ -9,6 +9,9 @@ import (
 	"context"
 	"time"
 
+	"github.com/telekom/controlplane/controlplane-api/ent/agentcard"
+	"github.com/telekom/controlplane/controlplane-api/ent/agenticexposure"
+	"github.com/telekom/controlplane/controlplane-api/ent/agenticsubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/api"
 	"github.com/telekom/controlplane/controlplane-api/ent/apiexposure"
 	"github.com/telekom/controlplane/controlplane-api/ent/apisubscription"
@@ -18,7 +21,11 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/eventexposure"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventsubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventtype"
+	"github.com/telekom/controlplane/controlplane-api/ent/fileexposure"
+	"github.com/telekom/controlplane/controlplane-api/ent/filesubscription"
+	"github.com/telekom/controlplane/controlplane-api/ent/filetype"
 	"github.com/telekom/controlplane/controlplane-api/ent/group"
+	"github.com/telekom/controlplane/controlplane-api/ent/mcpserver"
 	"github.com/telekom/controlplane/controlplane-api/ent/member"
 	"github.com/telekom/controlplane/controlplane-api/ent/permissionset"
 	"github.com/telekom/controlplane/controlplane-api/ent/schema"
@@ -34,6 +41,136 @@ import (
 // (default values, validators, hooks and policies) and stitches it
 // to their package variables.
 func init() {
+	agentcardMixin := schema.AgentCard{}.Mixin()
+	agentcard.Policy = privacy.NewPolicies(agentcardMixin[0], schema.AgentCard{})
+	agentcard.Hooks[0] = func(next ent.Mutator) ent.Mutator {
+		return ent.MutateFunc(func(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+			if err := agentcard.Policy.EvalMutation(ctx, m); err != nil {
+				return nil, err
+			}
+			return next.Mutate(ctx, m)
+		})
+	}
+	agentcardMixinFields1 := agentcardMixin[1].Fields()
+	_ = agentcardMixinFields1
+	agentcardMixinFields3 := agentcardMixin[3].Fields()
+	_ = agentcardMixinFields3
+	agentcardFields := schema.AgentCard{}.Fields()
+	_ = agentcardFields
+	// agentcardDescCreatedAt is the schema descriptor for created_at field.
+	agentcardDescCreatedAt := agentcardMixinFields1[0].Descriptor()
+	// agentcard.DefaultCreatedAt holds the default value on creation for the created_at field.
+	agentcard.DefaultCreatedAt = agentcardDescCreatedAt.Default.(func() time.Time)
+	// agentcardDescLastModifiedAt is the schema descriptor for last_modified_at field.
+	agentcardDescLastModifiedAt := agentcardMixinFields1[1].Descriptor()
+	// agentcard.DefaultLastModifiedAt holds the default value on creation for the last_modified_at field.
+	agentcard.DefaultLastModifiedAt = agentcardDescLastModifiedAt.Default.(func() time.Time)
+	// agentcard.UpdateDefaultLastModifiedAt holds the default value on update for the last_modified_at field.
+	agentcard.UpdateDefaultLastModifiedAt = agentcardDescLastModifiedAt.UpdateDefault.(func() time.Time)
+	// agentcardDescNamespace is the schema descriptor for namespace field.
+	agentcardDescNamespace := agentcardMixinFields3[0].Descriptor()
+	// agentcard.NamespaceValidator is a validator for the "namespace" field. It is called by the builders before save.
+	agentcard.NamespaceValidator = agentcardDescNamespace.Validators[0].(func(string) error)
+	// agentcardDescBasePath is the schema descriptor for base_path field.
+	agentcardDescBasePath := agentcardFields[0].Descriptor()
+	// agentcard.BasePathValidator is a validator for the "base_path" field. It is called by the builders before save.
+	agentcard.BasePathValidator = agentcardDescBasePath.Validators[0].(func(string) error)
+	// agentcardDescVersion is the schema descriptor for version field.
+	agentcardDescVersion := agentcardFields[1].Descriptor()
+	// agentcard.VersionValidator is a validator for the "version" field. It is called by the builders before save.
+	agentcard.VersionValidator = agentcardDescVersion.Validators[0].(func(string) error)
+	// agentcardDescName is the schema descriptor for name field.
+	agentcardDescName := agentcardFields[2].Descriptor()
+	// agentcard.NameValidator is a validator for the "name" field. It is called by the builders before save.
+	agentcard.NameValidator = agentcardDescName.Validators[0].(func(string) error)
+	// agentcardDescActive is the schema descriptor for active field.
+	agentcardDescActive := agentcardFields[7].Descriptor()
+	// agentcard.DefaultActive holds the default value on creation for the active field.
+	agentcard.DefaultActive = agentcardDescActive.Default.(bool)
+	agenticexposureMixin := schema.AgenticExposure{}.Mixin()
+	agenticexposure.Policy = privacy.NewPolicies(agenticexposureMixin[0], schema.AgenticExposure{})
+	agenticexposure.Hooks[0] = func(next ent.Mutator) ent.Mutator {
+		return ent.MutateFunc(func(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+			if err := agenticexposure.Policy.EvalMutation(ctx, m); err != nil {
+				return nil, err
+			}
+			return next.Mutate(ctx, m)
+		})
+	}
+	agenticexposureMixinFields1 := agenticexposureMixin[1].Fields()
+	_ = agenticexposureMixinFields1
+	agenticexposureMixinFields4 := agenticexposureMixin[4].Fields()
+	_ = agenticexposureMixinFields4
+	agenticexposureFields := schema.AgenticExposure{}.Fields()
+	_ = agenticexposureFields
+	// agenticexposureDescCreatedAt is the schema descriptor for created_at field.
+	agenticexposureDescCreatedAt := agenticexposureMixinFields1[0].Descriptor()
+	// agenticexposure.DefaultCreatedAt holds the default value on creation for the created_at field.
+	agenticexposure.DefaultCreatedAt = agenticexposureDescCreatedAt.Default.(func() time.Time)
+	// agenticexposureDescLastModifiedAt is the schema descriptor for last_modified_at field.
+	agenticexposureDescLastModifiedAt := agenticexposureMixinFields1[1].Descriptor()
+	// agenticexposure.DefaultLastModifiedAt holds the default value on creation for the last_modified_at field.
+	agenticexposure.DefaultLastModifiedAt = agenticexposureDescLastModifiedAt.Default.(func() time.Time)
+	// agenticexposure.UpdateDefaultLastModifiedAt holds the default value on update for the last_modified_at field.
+	agenticexposure.UpdateDefaultLastModifiedAt = agenticexposureDescLastModifiedAt.UpdateDefault.(func() time.Time)
+	// agenticexposureDescNamespace is the schema descriptor for namespace field.
+	agenticexposureDescNamespace := agenticexposureMixinFields4[0].Descriptor()
+	// agenticexposure.NamespaceValidator is a validator for the "namespace" field. It is called by the builders before save.
+	agenticexposure.NamespaceValidator = agenticexposureDescNamespace.Validators[0].(func(string) error)
+	// agenticexposureDescBasePath is the schema descriptor for base_path field.
+	agenticexposureDescBasePath := agenticexposureFields[0].Descriptor()
+	// agenticexposure.BasePathValidator is a validator for the "base_path" field. It is called by the builders before save.
+	agenticexposure.BasePathValidator = agenticexposureDescBasePath.Validators[0].(func(string) error)
+	// agenticexposureDescActive is the schema descriptor for active field.
+	agenticexposureDescActive := agenticexposureFields[3].Descriptor()
+	// agenticexposure.DefaultActive holds the default value on creation for the active field.
+	agenticexposure.DefaultActive = agenticexposureDescActive.Default.(bool)
+	// agenticexposureDescUpstreams is the schema descriptor for upstreams field.
+	agenticexposureDescUpstreams := agenticexposureFields[4].Descriptor()
+	// agenticexposure.DefaultUpstreams holds the default value on creation for the upstreams field.
+	agenticexposure.DefaultUpstreams = agenticexposureDescUpstreams.Default.([]model.Upstream)
+	// agenticexposureDescApprovalConfig is the schema descriptor for approval_config field.
+	agenticexposureDescApprovalConfig := agenticexposureFields[5].Descriptor()
+	// agenticexposure.DefaultApprovalConfig holds the default value on creation for the approval_config field.
+	agenticexposure.DefaultApprovalConfig = agenticexposureDescApprovalConfig.Default.(model.ApprovalConfig)
+	agenticsubscriptionMixin := schema.AgenticSubscription{}.Mixin()
+	agenticsubscription.Policy = privacy.NewPolicies(agenticsubscriptionMixin[0], schema.AgenticSubscription{})
+	agenticsubscription.Hooks[0] = func(next ent.Mutator) ent.Mutator {
+		return ent.MutateFunc(func(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+			if err := agenticsubscription.Policy.EvalMutation(ctx, m); err != nil {
+				return nil, err
+			}
+			return next.Mutate(ctx, m)
+		})
+	}
+	agenticsubscriptionMixinFields1 := agenticsubscriptionMixin[1].Fields()
+	_ = agenticsubscriptionMixinFields1
+	agenticsubscriptionMixinFields4 := agenticsubscriptionMixin[4].Fields()
+	_ = agenticsubscriptionMixinFields4
+	agenticsubscriptionFields := schema.AgenticSubscription{}.Fields()
+	_ = agenticsubscriptionFields
+	// agenticsubscriptionDescCreatedAt is the schema descriptor for created_at field.
+	agenticsubscriptionDescCreatedAt := agenticsubscriptionMixinFields1[0].Descriptor()
+	// agenticsubscription.DefaultCreatedAt holds the default value on creation for the created_at field.
+	agenticsubscription.DefaultCreatedAt = agenticsubscriptionDescCreatedAt.Default.(func() time.Time)
+	// agenticsubscriptionDescLastModifiedAt is the schema descriptor for last_modified_at field.
+	agenticsubscriptionDescLastModifiedAt := agenticsubscriptionMixinFields1[1].Descriptor()
+	// agenticsubscription.DefaultLastModifiedAt holds the default value on creation for the last_modified_at field.
+	agenticsubscription.DefaultLastModifiedAt = agenticsubscriptionDescLastModifiedAt.Default.(func() time.Time)
+	// agenticsubscription.UpdateDefaultLastModifiedAt holds the default value on update for the last_modified_at field.
+	agenticsubscription.UpdateDefaultLastModifiedAt = agenticsubscriptionDescLastModifiedAt.UpdateDefault.(func() time.Time)
+	// agenticsubscriptionDescNamespace is the schema descriptor for namespace field.
+	agenticsubscriptionDescNamespace := agenticsubscriptionMixinFields4[0].Descriptor()
+	// agenticsubscription.NamespaceValidator is a validator for the "namespace" field. It is called by the builders before save.
+	agenticsubscription.NamespaceValidator = agenticsubscriptionDescNamespace.Validators[0].(func(string) error)
+	// agenticsubscriptionDescName is the schema descriptor for name field.
+	agenticsubscriptionDescName := agenticsubscriptionMixinFields4[1].Descriptor()
+	// agenticsubscription.NameValidator is a validator for the "name" field. It is called by the builders before save.
+	agenticsubscription.NameValidator = agenticsubscriptionDescName.Validators[0].(func(string) error)
+	// agenticsubscriptionDescBasePath is the schema descriptor for base_path field.
+	agenticsubscriptionDescBasePath := agenticsubscriptionFields[0].Descriptor()
+	// agenticsubscription.BasePathValidator is a validator for the "base_path" field. It is called by the builders before save.
+	agenticsubscription.BasePathValidator = agenticsubscriptionDescBasePath.Validators[0].(func(string) error)
 	apiMixin := schema.Api{}.Mixin()
 	api.Policy = privacy.NewPolicies(apiMixin[0], schema.Api{})
 	api.Hooks[0] = func(next ent.Mutator) ent.Mutator {
@@ -444,6 +581,140 @@ func init() {
 	eventtypeDescActive := eventtypeFields[4].Descriptor()
 	// eventtype.DefaultActive holds the default value on creation for the active field.
 	eventtype.DefaultActive = eventtypeDescActive.Default.(bool)
+	fileexposureMixin := schema.FileExposure{}.Mixin()
+	fileexposure.Policy = privacy.NewPolicies(fileexposureMixin[0], schema.FileExposure{})
+	fileexposure.Hooks[0] = func(next ent.Mutator) ent.Mutator {
+		return ent.MutateFunc(func(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+			if err := fileexposure.Policy.EvalMutation(ctx, m); err != nil {
+				return nil, err
+			}
+			return next.Mutate(ctx, m)
+		})
+	}
+	fileexposureMixinFields1 := fileexposureMixin[1].Fields()
+	_ = fileexposureMixinFields1
+	fileexposureMixinFields4 := fileexposureMixin[4].Fields()
+	_ = fileexposureMixinFields4
+	fileexposureFields := schema.FileExposure{}.Fields()
+	_ = fileexposureFields
+	// fileexposureDescCreatedAt is the schema descriptor for created_at field.
+	fileexposureDescCreatedAt := fileexposureMixinFields1[0].Descriptor()
+	// fileexposure.DefaultCreatedAt holds the default value on creation for the created_at field.
+	fileexposure.DefaultCreatedAt = fileexposureDescCreatedAt.Default.(func() time.Time)
+	// fileexposureDescLastModifiedAt is the schema descriptor for last_modified_at field.
+	fileexposureDescLastModifiedAt := fileexposureMixinFields1[1].Descriptor()
+	// fileexposure.DefaultLastModifiedAt holds the default value on creation for the last_modified_at field.
+	fileexposure.DefaultLastModifiedAt = fileexposureDescLastModifiedAt.Default.(func() time.Time)
+	// fileexposure.UpdateDefaultLastModifiedAt holds the default value on update for the last_modified_at field.
+	fileexposure.UpdateDefaultLastModifiedAt = fileexposureDescLastModifiedAt.UpdateDefault.(func() time.Time)
+	// fileexposureDescNamespace is the schema descriptor for namespace field.
+	fileexposureDescNamespace := fileexposureMixinFields4[0].Descriptor()
+	// fileexposure.NamespaceValidator is a validator for the "namespace" field. It is called by the builders before save.
+	fileexposure.NamespaceValidator = fileexposureDescNamespace.Validators[0].(func(string) error)
+	// fileexposureDescFileType is the schema descriptor for file_type field.
+	fileexposureDescFileType := fileexposureFields[0].Descriptor()
+	// fileexposure.FileTypeValidator is a validator for the "file_type" field. It is called by the builders before save.
+	fileexposure.FileTypeValidator = fileexposureDescFileType.Validators[0].(func(string) error)
+	// fileexposureDescActive is the schema descriptor for active field.
+	fileexposureDescActive := fileexposureFields[2].Descriptor()
+	// fileexposure.DefaultActive holds the default value on creation for the active field.
+	fileexposure.DefaultActive = fileexposureDescActive.Default.(bool)
+	// fileexposureDescZoneName is the schema descriptor for zone_name field.
+	fileexposureDescZoneName := fileexposureFields[3].Descriptor()
+	// fileexposure.ZoneNameValidator is a validator for the "zone_name" field. It is called by the builders before save.
+	fileexposure.ZoneNameValidator = fileexposureDescZoneName.Validators[0].(func(string) error)
+	// fileexposureDescSftp is the schema descriptor for sftp field.
+	fileexposureDescSftp := fileexposureFields[4].Descriptor()
+	// fileexposure.DefaultSftp holds the default value on creation for the sftp field.
+	fileexposure.DefaultSftp = fileexposureDescSftp.Default.(*model.FileSFTP)
+	// fileexposureDescApprovalConfig is the schema descriptor for approval_config field.
+	fileexposureDescApprovalConfig := fileexposureFields[5].Descriptor()
+	// fileexposure.DefaultApprovalConfig holds the default value on creation for the approval_config field.
+	fileexposure.DefaultApprovalConfig = fileexposureDescApprovalConfig.Default.(model.ApprovalConfig)
+	filesubscriptionMixin := schema.FileSubscription{}.Mixin()
+	filesubscription.Policy = privacy.NewPolicies(filesubscriptionMixin[0], schema.FileSubscription{})
+	filesubscription.Hooks[0] = func(next ent.Mutator) ent.Mutator {
+		return ent.MutateFunc(func(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+			if err := filesubscription.Policy.EvalMutation(ctx, m); err != nil {
+				return nil, err
+			}
+			return next.Mutate(ctx, m)
+		})
+	}
+	filesubscriptionMixinFields1 := filesubscriptionMixin[1].Fields()
+	_ = filesubscriptionMixinFields1
+	filesubscriptionMixinFields4 := filesubscriptionMixin[4].Fields()
+	_ = filesubscriptionMixinFields4
+	filesubscriptionFields := schema.FileSubscription{}.Fields()
+	_ = filesubscriptionFields
+	// filesubscriptionDescCreatedAt is the schema descriptor for created_at field.
+	filesubscriptionDescCreatedAt := filesubscriptionMixinFields1[0].Descriptor()
+	// filesubscription.DefaultCreatedAt holds the default value on creation for the created_at field.
+	filesubscription.DefaultCreatedAt = filesubscriptionDescCreatedAt.Default.(func() time.Time)
+	// filesubscriptionDescLastModifiedAt is the schema descriptor for last_modified_at field.
+	filesubscriptionDescLastModifiedAt := filesubscriptionMixinFields1[1].Descriptor()
+	// filesubscription.DefaultLastModifiedAt holds the default value on creation for the last_modified_at field.
+	filesubscription.DefaultLastModifiedAt = filesubscriptionDescLastModifiedAt.Default.(func() time.Time)
+	// filesubscription.UpdateDefaultLastModifiedAt holds the default value on update for the last_modified_at field.
+	filesubscription.UpdateDefaultLastModifiedAt = filesubscriptionDescLastModifiedAt.UpdateDefault.(func() time.Time)
+	// filesubscriptionDescNamespace is the schema descriptor for namespace field.
+	filesubscriptionDescNamespace := filesubscriptionMixinFields4[0].Descriptor()
+	// filesubscription.NamespaceValidator is a validator for the "namespace" field. It is called by the builders before save.
+	filesubscription.NamespaceValidator = filesubscriptionDescNamespace.Validators[0].(func(string) error)
+	// filesubscriptionDescName is the schema descriptor for name field.
+	filesubscriptionDescName := filesubscriptionMixinFields4[1].Descriptor()
+	// filesubscription.NameValidator is a validator for the "name" field. It is called by the builders before save.
+	filesubscription.NameValidator = filesubscriptionDescName.Validators[0].(func(string) error)
+	// filesubscriptionDescFileType is the schema descriptor for file_type field.
+	filesubscriptionDescFileType := filesubscriptionFields[0].Descriptor()
+	// filesubscription.FileTypeValidator is a validator for the "file_type" field. It is called by the builders before save.
+	filesubscription.FileTypeValidator = filesubscriptionDescFileType.Validators[0].(func(string) error)
+	// filesubscriptionDescZoneName is the schema descriptor for zone_name field.
+	filesubscriptionDescZoneName := filesubscriptionFields[1].Descriptor()
+	// filesubscription.ZoneNameValidator is a validator for the "zone_name" field. It is called by the builders before save.
+	filesubscription.ZoneNameValidator = filesubscriptionDescZoneName.Validators[0].(func(string) error)
+	// filesubscriptionDescSftp is the schema descriptor for sftp field.
+	filesubscriptionDescSftp := filesubscriptionFields[4].Descriptor()
+	// filesubscription.DefaultSftp holds the default value on creation for the sftp field.
+	filesubscription.DefaultSftp = filesubscriptionDescSftp.Default.(*model.FileSFTP)
+	filetypeMixin := schema.FileType{}.Mixin()
+	filetype.Policy = privacy.NewPolicies(filetypeMixin[0], schema.FileType{})
+	filetype.Hooks[0] = func(next ent.Mutator) ent.Mutator {
+		return ent.MutateFunc(func(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+			if err := filetype.Policy.EvalMutation(ctx, m); err != nil {
+				return nil, err
+			}
+			return next.Mutate(ctx, m)
+		})
+	}
+	filetypeMixinFields1 := filetypeMixin[1].Fields()
+	_ = filetypeMixinFields1
+	filetypeMixinFields3 := filetypeMixin[3].Fields()
+	_ = filetypeMixinFields3
+	filetypeFields := schema.FileType{}.Fields()
+	_ = filetypeFields
+	// filetypeDescCreatedAt is the schema descriptor for created_at field.
+	filetypeDescCreatedAt := filetypeMixinFields1[0].Descriptor()
+	// filetype.DefaultCreatedAt holds the default value on creation for the created_at field.
+	filetype.DefaultCreatedAt = filetypeDescCreatedAt.Default.(func() time.Time)
+	// filetypeDescLastModifiedAt is the schema descriptor for last_modified_at field.
+	filetypeDescLastModifiedAt := filetypeMixinFields1[1].Descriptor()
+	// filetype.DefaultLastModifiedAt holds the default value on creation for the last_modified_at field.
+	filetype.DefaultLastModifiedAt = filetypeDescLastModifiedAt.Default.(func() time.Time)
+	// filetype.UpdateDefaultLastModifiedAt holds the default value on update for the last_modified_at field.
+	filetype.UpdateDefaultLastModifiedAt = filetypeDescLastModifiedAt.UpdateDefault.(func() time.Time)
+	// filetypeDescNamespace is the schema descriptor for namespace field.
+	filetypeDescNamespace := filetypeMixinFields3[0].Descriptor()
+	// filetype.NamespaceValidator is a validator for the "namespace" field. It is called by the builders before save.
+	filetype.NamespaceValidator = filetypeDescNamespace.Validators[0].(func(string) error)
+	// filetypeDescFileType is the schema descriptor for file_type field.
+	filetypeDescFileType := filetypeFields[0].Descriptor()
+	// filetype.FileTypeValidator is a validator for the "file_type" field. It is called by the builders before save.
+	filetype.FileTypeValidator = filetypeDescFileType.Validators[0].(func(string) error)
+	// filetypeDescActive is the schema descriptor for active field.
+	filetypeDescActive := filetypeFields[3].Descriptor()
+	// filetype.DefaultActive holds the default value on creation for the active field.
+	filetype.DefaultActive = filetypeDescActive.Default.(bool)
 	groupMixin := schema.Group{}.Mixin()
 	group.Policy = privacy.NewPolicies(groupMixin[0], schema.Group{})
 	group.Hooks[0] = func(next ent.Mutator) ent.Mutator {
@@ -474,6 +745,52 @@ func init() {
 	groupDescDescription := groupFields[2].Descriptor()
 	// group.DefaultDescription holds the default value on creation for the description field.
 	group.DefaultDescription = groupDescDescription.Default.(string)
+	mcpserverMixin := schema.McpServer{}.Mixin()
+	mcpserver.Policy = privacy.NewPolicies(mcpserverMixin[0], schema.McpServer{})
+	mcpserver.Hooks[0] = func(next ent.Mutator) ent.Mutator {
+		return ent.MutateFunc(func(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+			if err := mcpserver.Policy.EvalMutation(ctx, m); err != nil {
+				return nil, err
+			}
+			return next.Mutate(ctx, m)
+		})
+	}
+	mcpserverMixinFields1 := mcpserverMixin[1].Fields()
+	_ = mcpserverMixinFields1
+	mcpserverMixinFields3 := mcpserverMixin[3].Fields()
+	_ = mcpserverMixinFields3
+	mcpserverFields := schema.McpServer{}.Fields()
+	_ = mcpserverFields
+	// mcpserverDescCreatedAt is the schema descriptor for created_at field.
+	mcpserverDescCreatedAt := mcpserverMixinFields1[0].Descriptor()
+	// mcpserver.DefaultCreatedAt holds the default value on creation for the created_at field.
+	mcpserver.DefaultCreatedAt = mcpserverDescCreatedAt.Default.(func() time.Time)
+	// mcpserverDescLastModifiedAt is the schema descriptor for last_modified_at field.
+	mcpserverDescLastModifiedAt := mcpserverMixinFields1[1].Descriptor()
+	// mcpserver.DefaultLastModifiedAt holds the default value on creation for the last_modified_at field.
+	mcpserver.DefaultLastModifiedAt = mcpserverDescLastModifiedAt.Default.(func() time.Time)
+	// mcpserver.UpdateDefaultLastModifiedAt holds the default value on update for the last_modified_at field.
+	mcpserver.UpdateDefaultLastModifiedAt = mcpserverDescLastModifiedAt.UpdateDefault.(func() time.Time)
+	// mcpserverDescNamespace is the schema descriptor for namespace field.
+	mcpserverDescNamespace := mcpserverMixinFields3[0].Descriptor()
+	// mcpserver.NamespaceValidator is a validator for the "namespace" field. It is called by the builders before save.
+	mcpserver.NamespaceValidator = mcpserverDescNamespace.Validators[0].(func(string) error)
+	// mcpserverDescBasePath is the schema descriptor for base_path field.
+	mcpserverDescBasePath := mcpserverFields[0].Descriptor()
+	// mcpserver.BasePathValidator is a validator for the "base_path" field. It is called by the builders before save.
+	mcpserver.BasePathValidator = mcpserverDescBasePath.Validators[0].(func(string) error)
+	// mcpserverDescVersion is the schema descriptor for version field.
+	mcpserverDescVersion := mcpserverFields[1].Descriptor()
+	// mcpserver.VersionValidator is a validator for the "version" field. It is called by the builders before save.
+	mcpserver.VersionValidator = mcpserverDescVersion.Validators[0].(func(string) error)
+	// mcpserverDescName is the schema descriptor for name field.
+	mcpserverDescName := mcpserverFields[2].Descriptor()
+	// mcpserver.NameValidator is a validator for the "name" field. It is called by the builders before save.
+	mcpserver.NameValidator = mcpserverDescName.Validators[0].(func(string) error)
+	// mcpserverDescActive is the schema descriptor for active field.
+	mcpserverDescActive := mcpserverFields[7].Descriptor()
+	// mcpserver.DefaultActive holds the default value on creation for the active field.
+	mcpserver.DefaultActive = mcpserverDescActive.Default.(bool)
 	memberMixin := schema.Member{}.Mixin()
 	member.Policy = privacy.NewPolicies(memberMixin[0], schema.Member{})
 	member.Hooks[0] = func(next ent.Mutator) ent.Mutator {
