@@ -783,6 +783,29 @@ func HasApprovalRequestsWith(preds ...predicate.ApprovalRequest) predicate.ApiSu
 	})
 }
 
+// HasListeners applies the HasEdge predicate on the "listeners" edge.
+func HasListeners() predicate.ApiSubscription {
+	return predicate.ApiSubscription(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, ListenersTable, ListenersColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasListenersWith applies the HasEdge predicate on the "listeners" edge with a given conditions (other predicates).
+func HasListenersWith(preds ...predicate.Listener) predicate.ApiSubscription {
+	return predicate.ApiSubscription(func(s *sql.Selector) {
+		step := newListenersStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.ApiSubscription) predicate.ApiSubscription {
 	return predicate.ApiSubscription(sql.AndPredicates(predicates...))

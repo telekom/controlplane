@@ -73,6 +73,10 @@ type ExternalIdResolver interface {
 type ExternalIdentityProviderResolver interface {
 	TokenRequest(ctx context.Context, obj *model1.ExternalIdentityProvider) (*model.TokenRequestMethod, error)
 }
+type ListenerFilterResolver interface {
+	Trigger(ctx context.Context, obj *model1.ListenerFilter) (map[string]any, error)
+	Payload(ctx context.Context, obj *model1.ListenerFilter) ([]string, error)
+}
 type OAuth2ClientCredentialsResolver interface {
 	ClientSecret(ctx context.Context, obj *model1.OAuth2ClientCredentials) (*string, error)
 	ClientKey(ctx context.Context, obj *model1.OAuth2ClientCredentials) (*string, error)
@@ -2813,6 +2817,249 @@ func (ec *executionContext) fieldContext_Limits_hour(_ context.Context, field gr
 	return graphql.NewScalarFieldContext("Limits", field, false, false, errors.New("field of type Int does not have child fields"))
 }
 
+func (ec *executionContext) _ListenerFilter_trigger(ctx context.Context, field graphql.CollectedField, obj *model1.ListenerFilter) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ListenerFilter_trigger(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return ec.Resolvers.ListenerFilter().Trigger(ctx, obj)
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v map[string]any) graphql.Marshaler {
+			return ec.marshalOMap2map(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_ListenerFilter_trigger(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("ListenerFilter", field, true, true, errors.New("field of type Map does not have child fields"))
+}
+
+func (ec *executionContext) _ListenerFilter_payload(ctx context.Context, field graphql.CollectedField, obj *model1.ListenerFilter) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ListenerFilter_payload(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return ec.Resolvers.ListenerFilter().Payload(ctx, obj)
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []string) graphql.Marshaler {
+			return ec.marshalNString2ᚕstringᚄ(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_ListenerFilter_payload(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("ListenerFilter", field, true, true, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _ListenerInfo_id(ctx context.Context, field graphql.CollectedField, obj *model.ListenerInfo) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ListenerInfo_id(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ID, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v int) graphql.Marshaler {
+			return ec.marshalNID2int(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_ListenerInfo_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("ListenerInfo", field, false, false, errors.New("field of type ID does not have child fields"))
+}
+
+func (ec *executionContext) _ListenerInfo_resourceName(ctx context.Context, field graphql.CollectedField, obj *model.ListenerInfo) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ListenerInfo_resourceName(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ResourceName, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_ListenerInfo_resourceName(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("ListenerInfo", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _ListenerInfo_approved(ctx context.Context, field graphql.CollectedField, obj *model.ListenerInfo) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ListenerInfo_approved(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Approved, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v bool) graphql.Marshaler {
+			return ec.marshalNBoolean2bool(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_ListenerInfo_approved(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("ListenerInfo", field, false, false, errors.New("field of type Boolean does not have child fields"))
+}
+
+func (ec *executionContext) _ListenerInfo_application(ctx context.Context, field graphql.CollectedField, obj *model.ListenerInfo) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ListenerInfo_application(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Application, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.ApplicationInfo) graphql.Marshaler {
+			return ec.marshalNApplicationInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐApplicationInfo(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_ListenerInfo_application(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ListenerInfo",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_ApplicationInfo(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ListenerInfo_consumer(ctx context.Context, field graphql.CollectedField, obj *model.ListenerInfo) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ListenerInfo_consumer(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Consumer, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.ApplicationInfo) graphql.Marshaler {
+			return ec.marshalNApplicationInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐApplicationInfo(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_ListenerInfo_consumer(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ListenerInfo",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_ApplicationInfo(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ListenerInfo_provider(ctx context.Context, field graphql.CollectedField, obj *model.ListenerInfo) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ListenerInfo_provider(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Provider, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.ApplicationInfo) graphql.Marshaler {
+			return ec.marshalNApplicationInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐApplicationInfo(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_ListenerInfo_provider(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ListenerInfo",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_ApplicationInfo(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ListenerInfo_ownerApplication(ctx context.Context, field graphql.CollectedField, obj *model.ListenerInfo) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ListenerInfo_ownerApplication(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.OwnerApplication, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.ApplicationInfo) graphql.Marshaler {
+			return ec.marshalNApplicationInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐApplicationInfo(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_ListenerInfo_ownerApplication(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ListenerInfo",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_ApplicationInfo(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Machine2MachineAuthentication_externalIDP(ctx context.Context, field graphql.CollectedField, obj *model1.Machine2MachineAuthentication) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -3894,6 +4141,11 @@ func (ec *executionContext) _SubscriptionInfo(ctx context.Context, sel ast.Selec
 	switch obj := (obj).(type) {
 	case nil:
 		return graphql.Null
+	case *model.ListenerInfo:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ListenerInfo(ctx, sel, obj)
 	case *model.EventSubscriptionInfo:
 		if obj == nil {
 			return graphql.Null
@@ -6031,6 +6283,183 @@ func (ec *executionContext) _Limits(ctx context.Context, sel ast.SelectionSet, o
 	return out
 }
 
+var listenerFilterImplementors = []string{"ListenerFilter"}
+
+func (ec *executionContext) _ListenerFilter(ctx context.Context, sel ast.SelectionSet, obj *model1.ListenerFilter) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, listenerFilterImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ListenerFilter")
+		case "trigger":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._ListenerFilter_trigger(ctx, field, obj)
+				if res == graphql.RequiredNull {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.IsDeferred() {
+				deferredFieldSet.AddField(field)
+				fieldIndex := len(deferredFieldSet.Values) - 1
+				deferredFieldSet.Concurrently(fieldIndex, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, deferredFieldSet)
+				})
+
+				for _, deferrable := range field.Deferrables {
+					view, ok := deferLabelToView[deferrable.Label]
+					if !ok {
+						view = deferredFieldSet.NewView()
+						deferLabelToView[deferrable.Label] = view
+					}
+					view.AddIndices(fieldIndex)
+				}
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "payload":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._ListenerFilter_payload(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.IsDeferred() {
+				deferredFieldSet.AddField(field)
+				fieldIndex := len(deferredFieldSet.Values) - 1
+				deferredFieldSet.Concurrently(fieldIndex, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, deferredFieldSet)
+				})
+
+				for _, deferrable := range field.Deferrables {
+					view, ok := deferLabelToView[deferrable.Label]
+					if !ok {
+						view = deferredFieldSet.NewView()
+						deferLabelToView[deferrable.Label] = view
+					}
+					view.AddIndices(fieldIndex)
+				}
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
+
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
+
+	return out
+}
+
+var listenerInfoImplementors = []string{"ListenerInfo", "SubscriptionInfo"}
+
+func (ec *executionContext) _ListenerInfo(ctx context.Context, sel ast.SelectionSet, obj *model.ListenerInfo) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, listenerInfoImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ListenerInfo")
+		case "id":
+			out.Values[i] = ec._ListenerInfo_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "resourceName":
+			out.Values[i] = ec._ListenerInfo_resourceName(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "approved":
+			out.Values[i] = ec._ListenerInfo_approved(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "application":
+			out.Values[i] = ec._ListenerInfo_application(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "consumer":
+			out.Values[i] = ec._ListenerInfo_consumer(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "provider":
+			out.Values[i] = ec._ListenerInfo_provider(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "ownerApplication":
+			out.Values[i] = ec._ListenerInfo_ownerApplication(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
+
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
+
+	return out
+}
+
 var machine2MachineAuthenticationImplementors = []string{"Machine2MachineAuthentication"}
 
 func (ec *executionContext) _Machine2MachineAuthentication(ctx context.Context, sel ast.SelectionSet, obj *model1.Machine2MachineAuthentication) graphql.Marshaler {
@@ -7000,6 +7429,24 @@ func (ec *executionContext) marshalNApiExposureFeature2ᚕgithubᚗcomᚋtelekom
 	return ret
 }
 
+func (ec *executionContext) marshalNApiExposureInfo2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐApiExposureInfo(ctx context.Context, sel ast.SelectionSet, v model.ApiExposureInfo) graphql.Marshaler {
+	return ec._ApiExposureInfo(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNApiExposureInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐApiExposureInfo(ctx context.Context, sel ast.SelectionSet, v *model.ApiExposureInfo) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._ApiExposureInfo(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNApiSubscriptionInfo2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐApiSubscriptionInfo(ctx context.Context, sel ast.SelectionSet, v model.ApiSubscriptionInfo) graphql.Marshaler {
+	return ec._ApiSubscriptionInfo(ctx, sel, &v)
+}
+
 func (ec *executionContext) marshalNApiSubscriptionInfo2ᚕᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐApiSubscriptionInfoᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.ApiSubscriptionInfo) graphql.Marshaler {
 	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
 		fc := graphql.GetFieldContext(ctx)
@@ -7024,6 +7471,10 @@ func (ec *executionContext) marshalNApiSubscriptionInfo2ᚖgithubᚗcomᚋteleko
 		return graphql.Null
 	}
 	return ec._ApiSubscriptionInfo(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNApplicationInfo2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐApplicationInfo(ctx context.Context, sel ast.SelectionSet, v model.ApplicationInfo) graphql.Marshaler {
+	return ec._ApplicationInfo(ctx, sel, &v)
 }
 
 func (ec *executionContext) marshalNApplicationInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐApplicationInfo(ctx context.Context, sel ast.SelectionSet, v *model.ApplicationInfo) graphql.Marshaler {
@@ -7118,6 +7569,32 @@ func (ec *executionContext) marshalNExternalId2githubᚗcomᚋtelekomᚋcontrolp
 
 func (ec *executionContext) marshalNLimits2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐLimits(ctx context.Context, sel ast.SelectionSet, v model1.Limits) graphql.Marshaler {
 	return ec._Limits(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNListenerInfo2ᚕᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐListenerInfoᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.ListenerInfo) graphql.Marshaler {
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNListenerInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐListenerInfo(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNListenerInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐListenerInfo(ctx context.Context, sel ast.SelectionSet, v *model.ListenerInfo) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._ListenerInfo(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNPayloadType2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐPayloadType(ctx context.Context, v any) (model.PayloadType, error) {
@@ -7336,6 +7813,13 @@ func (ec *executionContext) marshalOLimits2ᚖgithubᚗcomᚋtelekomᚋcontrolpl
 		return graphql.Null
 	}
 	return ec._Limits(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOListenerFilter2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐListenerFilter(ctx context.Context, sel ast.SelectionSet, v *model1.ListenerFilter) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._ListenerFilter(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalOMachine2MachineAuthentication2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐMachine2MachineAuthentication(ctx context.Context, sel ast.SelectionSet, v *model1.Machine2MachineAuthentication) graphql.Marshaler {

@@ -162,6 +162,7 @@ var (
 		{Name: "status_phase", Type: field.TypeEnum, Nullable: true, Enums: []string{"READY", "PENDING", "ERROR", "UNKNOWN"}},
 		{Name: "status_message", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "namespace", Type: field.TypeString, Size: 2147483647},
+		{Name: "name", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "base_path", Type: field.TypeString, Size: 2147483647},
 		{Name: "version", Type: field.TypeString, Size: 2147483647},
 		{Name: "category", Type: field.TypeString, Nullable: true, Size: 2147483647},
@@ -179,7 +180,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "apis_teams_apis",
-				Columns:    []*schema.Column{ApisColumns[13]},
+				Columns:    []*schema.Column{ApisColumns[14]},
 				RefColumns: []*schema.Column{TeamsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -188,7 +189,7 @@ var (
 			{
 				Name:    "api_base_path_team_apis",
 				Unique:  true,
-				Columns: []*schema.Column{ApisColumns[6], ApisColumns[13]},
+				Columns: []*schema.Column{ApisColumns[7], ApisColumns[14]},
 			},
 		},
 	}
@@ -363,6 +364,8 @@ var (
 		{Name: "agentic_subscription_approval", Type: field.TypeInt, Unique: true, Nullable: true},
 		{Name: "api_subscription_approval", Type: field.TypeInt, Unique: true, Nullable: true},
 		{Name: "event_subscription_approval", Type: field.TypeInt, Unique: true, Nullable: true},
+		{Name: "listener_provider_approval", Type: field.TypeInt, Unique: true, Nullable: true},
+		{Name: "listener_consumer_approval", Type: field.TypeInt, Unique: true, Nullable: true},
 	}
 	// ApprovalsTable holds the schema information for the "approvals" table.
 	ApprovalsTable = &schema.Table{
@@ -387,6 +390,18 @@ var (
 				Columns:    []*schema.Column{ApprovalsColumns[20]},
 				RefColumns: []*schema.Column{EventSubscriptionsColumns[0]},
 				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "approvals_listeners_provider_approval",
+				Columns:    []*schema.Column{ApprovalsColumns[21]},
+				RefColumns: []*schema.Column{ListenersColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "approvals_listeners_consumer_approval",
+				Columns:    []*schema.Column{ApprovalsColumns[22]},
+				RefColumns: []*schema.Column{ListenersColumns[0]},
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -419,6 +434,7 @@ var (
 		{Name: "agentic_subscription_approval_requests", Type: field.TypeInt, Nullable: true},
 		{Name: "api_subscription_approval_requests", Type: field.TypeInt, Nullable: true},
 		{Name: "event_subscription_approval_requests", Type: field.TypeInt, Nullable: true},
+		{Name: "listener_approval_requests", Type: field.TypeInt, Nullable: true},
 	}
 	// ApprovalRequestsTable holds the schema information for the "approval_requests" table.
 	ApprovalRequestsTable = &schema.Table{
@@ -442,6 +458,12 @@ var (
 				Symbol:     "approval_requests_event_subscriptions_approval_requests",
 				Columns:    []*schema.Column{ApprovalRequestsColumns[19]},
 				RefColumns: []*schema.Column{EventSubscriptionsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "approval_requests_listeners_approval_requests",
+				Columns:    []*schema.Column{ApprovalRequestsColumns[20]},
+				RefColumns: []*schema.Column{ListenersColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
 		},
@@ -600,6 +622,56 @@ var (
 		Name:       "groups",
 		Columns:    GroupsColumns,
 		PrimaryKey: []*schema.Column{GroupsColumns[0]},
+	}
+	// ListenersColumns holds the columns for the "listeners" table.
+	ListenersColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "last_modified_at", Type: field.TypeTime},
+		{Name: "status_phase", Type: field.TypeEnum, Nullable: true, Enums: []string{"READY", "PENDING", "ERROR", "UNKNOWN"}},
+		{Name: "status_message", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "environment", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "namespace", Type: field.TypeString, Size: 2147483647},
+		{Name: "name", Type: field.TypeString, Size: 2147483647},
+		{Name: "api_base_path", Type: field.TypeString, Size: 2147483647},
+		{Name: "request_filter", Type: field.TypeJSON, Nullable: true},
+		{Name: "response_filter", Type: field.TypeJSON, Nullable: true},
+		{Name: "api_exposure_listeners", Type: field.TypeInt},
+		{Name: "api_subscription_listeners", Type: field.TypeInt},
+		{Name: "application_listeners", Type: field.TypeInt},
+	}
+	// ListenersTable holds the schema information for the "listeners" table.
+	ListenersTable = &schema.Table{
+		Name:       "listeners",
+		Columns:    ListenersColumns,
+		PrimaryKey: []*schema.Column{ListenersColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "listeners_api_exposures_listeners",
+				Columns:    []*schema.Column{ListenersColumns[11]},
+				RefColumns: []*schema.Column{APIExposuresColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "listeners_api_subscriptions_listeners",
+				Columns:    []*schema.Column{ListenersColumns[12]},
+				RefColumns: []*schema.Column{APISubscriptionsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "listeners_applications_listeners",
+				Columns:    []*schema.Column{ListenersColumns[13]},
+				RefColumns: []*schema.Column{ApplicationsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "listener_namespace_name",
+				Unique:  true,
+				Columns: []*schema.Column{ListenersColumns[6], ListenersColumns[7]},
+			},
+		},
 	}
 	// McpServersColumns holds the columns for the "mcp_servers" table.
 	McpServersColumns = []*schema.Column{
@@ -771,6 +843,7 @@ var (
 		EventSubscriptionsTable,
 		EventTypesTable,
 		GroupsTable,
+		ListenersTable,
 		McpServersTable,
 		MembersTable,
 		PermissionSetsTable,
@@ -796,14 +869,20 @@ func init() {
 	ApprovalsTable.ForeignKeys[0].RefTable = AgenticSubscriptionsTable
 	ApprovalsTable.ForeignKeys[1].RefTable = APISubscriptionsTable
 	ApprovalsTable.ForeignKeys[2].RefTable = EventSubscriptionsTable
+	ApprovalsTable.ForeignKeys[3].RefTable = ListenersTable
+	ApprovalsTable.ForeignKeys[4].RefTable = ListenersTable
 	ApprovalRequestsTable.ForeignKeys[0].RefTable = AgenticSubscriptionsTable
 	ApprovalRequestsTable.ForeignKeys[1].RefTable = APISubscriptionsTable
 	ApprovalRequestsTable.ForeignKeys[2].RefTable = EventSubscriptionsTable
+	ApprovalRequestsTable.ForeignKeys[3].RefTable = ListenersTable
 	EventExposuresTable.ForeignKeys[0].RefTable = ApplicationsTable
 	EventExposuresTable.ForeignKeys[1].RefTable = EventTypesTable
 	EventSubscriptionsTable.ForeignKeys[0].RefTable = ApplicationsTable
 	EventSubscriptionsTable.ForeignKeys[1].RefTable = EventExposuresTable
 	EventTypesTable.ForeignKeys[0].RefTable = TeamsTable
+	ListenersTable.ForeignKeys[0].RefTable = APIExposuresTable
+	ListenersTable.ForeignKeys[1].RefTable = APISubscriptionsTable
+	ListenersTable.ForeignKeys[2].RefTable = ApplicationsTable
 	McpServersTable.ForeignKeys[0].RefTable = TeamsTable
 	MembersTable.ForeignKeys[0].RefTable = TeamsTable
 	PermissionSetsTable.ForeignKeys[0].RefTable = ApplicationsTable

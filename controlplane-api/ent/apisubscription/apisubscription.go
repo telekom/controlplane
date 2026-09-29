@@ -55,6 +55,8 @@ const (
 	EdgeApproval = "approval"
 	// EdgeApprovalRequests holds the string denoting the approval_requests edge name in mutations.
 	EdgeApprovalRequests = "approval_requests"
+	// EdgeListeners holds the string denoting the listeners edge name in mutations.
+	EdgeListeners = "listeners"
 	// Table holds the table name of the apisubscription in the database.
 	Table = "api_subscriptions"
 	// OwnerTable is the table that holds the owner relation/edge.
@@ -92,6 +94,13 @@ const (
 	ApprovalRequestsInverseTable = "approval_requests"
 	// ApprovalRequestsColumn is the table column denoting the approval_requests relation/edge.
 	ApprovalRequestsColumn = "api_subscription_approval_requests"
+	// ListenersTable is the table that holds the listeners relation/edge.
+	ListenersTable = "listeners"
+	// ListenersInverseTable is the table name for the Listener entity.
+	// It exists in this package in order to avoid circular dependency with the "listener" package.
+	ListenersInverseTable = "listeners"
+	// ListenersColumn is the table column denoting the listeners relation/edge.
+	ListenersColumn = "api_subscription_listeners"
 )
 
 // Columns holds all SQL columns for apisubscription fields.
@@ -314,6 +323,20 @@ func ByApprovalRequests(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption 
 		sqlgraph.OrderByNeighborTerms(s, newApprovalRequestsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// ByListenersCount orders the results by listeners count.
+func ByListenersCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newListenersStep(), opts...)
+	}
+}
+
+// ByListeners orders the results by listeners terms.
+func ByListeners(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newListenersStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
 func newOwnerStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -347,6 +370,13 @@ func newApprovalRequestsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(ApprovalRequestsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, ApprovalRequestsTable, ApprovalRequestsColumn),
+	)
+}
+func newListenersStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(ListenersInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, ListenersTable, ListenersColumn),
 	)
 }
 

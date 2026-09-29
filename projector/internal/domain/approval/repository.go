@@ -12,6 +12,7 @@ import (
 
 	"github.com/telekom/controlplane/controlplane-api/ent"
 	entapproval "github.com/telekom/controlplane/controlplane-api/ent/approval"
+	entlistener "github.com/telekom/controlplane/controlplane-api/ent/listener"
 	"github.com/telekom/controlplane/projector/internal/infrastructure"
 	"github.com/telekom/controlplane/projector/internal/infrastructure/cachekeys"
 	"github.com/telekom/controlplane/projector/internal/metrics"
@@ -25,7 +26,7 @@ const entityType = "approval"
 // It implements runtime.Repository[ApprovalKey, *ApprovalData].
 //
 // Approval has a required FK dependency on ApiSubscription, EventSubscription,
-// or AgenticSubscription, determined by the TargetKind field in ApprovalData.
+// AgenticSubscription, or Listener, determined by the TargetKind field in ApprovalData.
 // The FK column is an edge column, not a schema field, so ent's
 // UpdateNewValues() on conflict will NOT update it. After the initial
 // INSERT sets the FK correctly, subsequent upserts (ON CONFLICT UPDATE)
@@ -51,9 +52,26 @@ func NewRepository(client *ent.Client, cache *infrastructure.EdgeCache, deps App
 }
 
 // resolveSubscriptionID resolves the parent subscription FK based on the
-// target kind (ApiSubscription, EventSubscription, or AgenticSubscription).
+// target kind (ApiSubscription, EventSubscription, AgenticSubscription, or Listener).
 func (r *Repository) resolveSubscriptionID(ctx context.Context, data *ApprovalData) (int, error) {
 	switch data.TargetKind {
+	case TargetKindListener:
+		if data.ApprovalKey != "provider" && data.ApprovalKey != "consumer" {
+			return 0, fmt.Errorf("invalid Listener approvalKey %q", data.ApprovalKey)
+		}
+		if data.Action != "listen-"+data.ApprovalKey {
+			return 0, fmt.Errorf("invalid Listener action %q for approvalKey %q", data.Action, data.ApprovalKey)
+		}
+		id, err := r.client.Listener.Query().
+			Where(entlistener.NamespaceEQ(data.SubscriptionNamespace), entlistener.NameEQ(data.SubscriptionName)).
+			OnlyID(ctx)
+		if ent.IsNotFound(err) {
+			return 0, runtime.WrapDependencyMissing("listener", data.SubscriptionNamespace+"/"+data.SubscriptionName)
+		}
+		if err != nil {
+			return 0, fmt.Errorf("find listener %s/%s: %w", data.SubscriptionNamespace, data.SubscriptionName, err)
+		}
+		return id, nil
 	case TargetKindEventSubscription:
 		id, err := r.deps.FindEventSubscriptionByMeta(ctx, data.SubscriptionNamespace, data.SubscriptionName)
 		if err != nil {
@@ -111,8 +129,28 @@ func (r *Repository) Upsert(ctx context.Context, data *ApprovalData) error {
 	if err != nil {
 		return err
 	}
+	if data.TargetKind == TargetKindListener {
+		var query *ent.ApprovalQuery
+		if data.ApprovalKey == "consumer" {
+			query = r.client.Listener.Query().Where(entlistener.IDEQ(subID)).QueryConsumerApproval()
+		} else {
+			query = r.client.Listener.Query().Where(entlistener.IDEQ(subID)).QueryProviderApproval()
+		}
+		owner, err := query.Only(ctx)
+		if err != nil && !ent.IsNotFound(err) {
+			return fmt.Errorf("find Listener %s approval: %w", data.ApprovalKey, err)
+		}
+		if err == nil && (owner.Namespace != data.Meta.Namespace || owner.Name != data.Meta.Name) {
+			return fmt.Errorf("Listener %s/%s %s approval already belongs to %s/%s", data.SubscriptionNamespace, data.SubscriptionName, data.ApprovalKey, owner.Namespace, owner.Name)
+		}
+	}
 
-	create := r.client.Approval.Create().
+	tx, err := r.client.Tx(ctx)
+	if err != nil {
+		return fmt.Errorf("begin approval transaction: %w", err)
+	}
+
+	create := tx.Approval.Create().
 		SetNamespace(data.Meta.Namespace).
 		SetName(data.Meta.Name).
 		SetAction(data.Action).
@@ -131,6 +169,12 @@ func (r *Repository) Upsert(ctx context.Context, data *ApprovalData) error {
 
 	// Set the correct subscription FK based on target kind.
 	switch data.TargetKind {
+	case TargetKindListener:
+		if data.ApprovalKey == "consumer" {
+			create = create.SetConsumerListenerID(subID)
+		} else {
+			create = create.SetListenerID(subID)
+		}
 	case TargetKindEventSubscription:
 		create = create.SetEventSubscriptionID(subID)
 	case TargetKindAgenticSubscription:
@@ -144,6 +188,9 @@ func (r *Repository) Upsert(ctx context.Context, data *ApprovalData) error {
 		UpdateNewValues().
 		ID(ctx)
 	if upsertErr != nil {
+		if err := tx.Rollback(); err != nil {
+			return fmt.Errorf("upsert approval %s/%s: %w (rollback: %v)", data.Meta.Namespace, data.Meta.Name, upsertErr, err)
+		}
 		if infrastructure.IsFKViolation(upsertErr, "") {
 			r.evictSubscriptionCache(data)
 			return runtime.WrapDependencyMissing(dependencyKind(data.TargetKind),
@@ -159,16 +206,26 @@ func (r *Repository) Upsert(ctx context.Context, data *ApprovalData) error {
 	// ent treats it as an edge, not a field. On the initial INSERT the FK
 	// is set correctly via the edge spec, but on subsequent upserts the old
 	// value would be preserved without this.
-	update := r.client.Approval.UpdateOneID(approvalID)
+	update := tx.Approval.UpdateOneID(approvalID)
 	switch data.TargetKind {
+	case TargetKindListener:
+		update = update.ClearAPISubscription().ClearEventSubscription().ClearAgenticSubscription()
+		if data.ApprovalKey == "consumer" {
+			update = update.SetConsumerListenerID(subID).ClearListener()
+		} else {
+			update = update.SetListenerID(subID).ClearConsumerListener()
+		}
 	case TargetKindEventSubscription:
-		update = update.SetEventSubscriptionID(subID).ClearAPISubscription().ClearAgenticSubscription()
+		update = update.SetEventSubscriptionID(subID).ClearAPISubscription().ClearAgenticSubscription().ClearListener().ClearConsumerListener()
 	case TargetKindAgenticSubscription:
-		update = update.SetAgenticSubscriptionID(subID).ClearAPISubscription().ClearEventSubscription()
+		update = update.SetAgenticSubscriptionID(subID).ClearAPISubscription().ClearEventSubscription().ClearListener().ClearConsumerListener()
 	default:
-		update = update.SetAPISubscriptionID(subID).ClearEventSubscription().ClearAgenticSubscription()
+		update = update.SetAPISubscriptionID(subID).ClearEventSubscription().ClearAgenticSubscription().ClearListener().ClearConsumerListener()
 	}
 	if err := update.Exec(ctx); err != nil {
+		if rollbackErr := tx.Rollback(); rollbackErr != nil {
+			return fmt.Errorf("update approval %s/%s: %w (rollback: %v)", data.Meta.Namespace, data.Meta.Name, err, rollbackErr)
+		}
 		if infrastructure.IsFKViolation(err, "") {
 			r.evictSubscriptionCache(data)
 			return runtime.WrapDependencyMissing(dependencyKind(data.TargetKind),
@@ -176,6 +233,10 @@ func (r *Repository) Upsert(ctx context.Context, data *ApprovalData) error {
 		}
 		return fmt.Errorf("update subscription FK for approval %d (%s/%s): %w",
 			approvalID, data.Meta.Namespace, data.Meta.Name, err)
+	}
+	if err := tx.Commit(); err != nil {
+		r.evictSubscriptionCache(data)
+		return fmt.Errorf("commit approval %s/%s: %w", data.Meta.Namespace, data.Meta.Name, err)
 	}
 
 	et, lk := cachekeys.Approval(data.Meta.Namespace, data.Meta.Name)
@@ -187,6 +248,8 @@ func (r *Repository) Upsert(ctx context.Context, data *ApprovalData) error {
 // used in ErrDependencyMissing error messages.
 func dependencyKind(targetKind string) string {
 	switch targetKind {
+	case TargetKindListener:
+		return "listener"
 	case TargetKindEventSubscription:
 		return "event_subscription"
 	case TargetKindAgenticSubscription:
@@ -200,6 +263,8 @@ func dependencyKind(targetKind string) string {
 // next reconcile attempt performs a fresh DB lookup.
 func (r *Repository) evictSubscriptionCache(data *ApprovalData) {
 	switch data.TargetKind {
+	case TargetKindListener:
+		return
 	case TargetKindEventSubscription:
 		r.deps.EvictEventSubscription(data.SubscriptionNamespace, data.SubscriptionName)
 	case TargetKindAgenticSubscription:

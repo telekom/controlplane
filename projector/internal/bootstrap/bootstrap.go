@@ -23,6 +23,7 @@ import (
 	"github.com/jackc/pgx/v5/stdlib"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
@@ -38,6 +39,7 @@ import (
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	orgv1 "github.com/telekom/controlplane/organization/api/v1"
 	permissionv1 "github.com/telekom/controlplane/permission/api/v1"
+	spectrev1 "github.com/telekom/controlplane/spectre/api/v1"
 
 	"github.com/telekom/controlplane/projector/internal/config"
 	"github.com/telekom/controlplane/projector/internal/domain/agentcard"
@@ -53,6 +55,7 @@ import (
 	"github.com/telekom/controlplane/projector/internal/domain/eventsubscription"
 	"github.com/telekom/controlplane/projector/internal/domain/eventtype"
 	"github.com/telekom/controlplane/projector/internal/domain/group"
+	"github.com/telekom/controlplane/projector/internal/domain/listener"
 	"github.com/telekom/controlplane/projector/internal/domain/mcpserver"
 	"github.com/telekom/controlplane/projector/internal/domain/permissionset"
 	"github.com/telekom/controlplane/projector/internal/domain/team"
@@ -75,8 +78,6 @@ var modules = []module.Module{
 	api.Module,
 	apiexposure.Module,
 	apisubscription.Module,
-	approval.Module,
-	approvalrequest.Module,
 }
 
 // registerSchemesAndModules conditionally registers CR schemes and appends
@@ -85,6 +86,11 @@ var modules = []module.Module{
 // init() so the gating logic can be exercised directly in tests.
 func registerSchemesAndModules(scheme *runtime.Scheme, baseModules []module.Module) []module.Module {
 	result := slices.Clone(baseModules)
+	if cconfig.FeatureSpectre.IsEnabled() {
+		_ = spectrev1.AddToScheme(scheme)
+		result = append(result, listener.Module)
+	}
+	result = append(result, approval.Module, approvalrequest.Module)
 
 	if cconfig.FeaturePubSub.IsEnabled() {
 		_ = eventv1.AddToScheme(scheme)
@@ -174,6 +180,9 @@ func Run() error {
 		EdgeCache:   edgeCache,
 		IDResolver:  idResolver,
 		Config:      cfg,
+	}
+	if cconfig.FeatureSpectre.IsEnabled() {
+		deps.ParentEvents = make(chan event.GenericEvent, 1024)
 	}
 
 	// --- Controller Manager ---

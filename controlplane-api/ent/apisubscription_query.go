@@ -21,6 +21,7 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/application"
 	"github.com/telekom/controlplane/controlplane-api/ent/approval"
 	"github.com/telekom/controlplane/controlplane-api/ent/approvalrequest"
+	"github.com/telekom/controlplane/controlplane-api/ent/listener"
 	"github.com/telekom/controlplane/controlplane-api/ent/predicate"
 	"github.com/telekom/controlplane/controlplane-api/ent/zone"
 )
@@ -37,11 +38,13 @@ type ApiSubscriptionQuery struct {
 	withFailoverZones         *ZoneQuery
 	withApproval              *ApprovalQuery
 	withApprovalRequests      *ApprovalRequestQuery
+	withListeners             *ListenerQuery
 	withFKs                   bool
 	modifiers                 []func(*sql.Selector)
 	loadTotal                 []func(context.Context, []*ApiSubscription) error
 	withNamedFailoverZones    map[string]*ZoneQuery
 	withNamedApprovalRequests map[string]*ApprovalRequestQuery
+	withNamedListeners        map[string]*ListenerQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -181,6 +184,28 @@ func (_q *ApiSubscriptionQuery) QueryApprovalRequests() *ApprovalRequestQuery {
 			sqlgraph.From(apisubscription.Table, apisubscription.FieldID, selector),
 			sqlgraph.To(approvalrequest.Table, approvalrequest.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, apisubscription.ApprovalRequestsTable, apisubscription.ApprovalRequestsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryListeners chains the current query on the "listeners" edge.
+func (_q *ApiSubscriptionQuery) QueryListeners() *ListenerQuery {
+	query := (&ListenerClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(apisubscription.Table, apisubscription.FieldID, selector),
+			sqlgraph.To(listener.Table, listener.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, apisubscription.ListenersTable, apisubscription.ListenersColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -385,6 +410,7 @@ func (_q *ApiSubscriptionQuery) Clone() *ApiSubscriptionQuery {
 		withFailoverZones:    _q.withFailoverZones.Clone(),
 		withApproval:         _q.withApproval.Clone(),
 		withApprovalRequests: _q.withApprovalRequests.Clone(),
+		withListeners:        _q.withListeners.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
@@ -443,6 +469,17 @@ func (_q *ApiSubscriptionQuery) WithApprovalRequests(opts ...func(*ApprovalReque
 		opt(query)
 	}
 	_q.withApprovalRequests = query
+	return _q
+}
+
+// WithListeners tells the query-builder to eager-load the nodes that are connected to
+// the "listeners" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *ApiSubscriptionQuery) WithListeners(opts ...func(*ListenerQuery)) *ApiSubscriptionQuery {
+	query := (&ListenerClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withListeners = query
 	return _q
 }
 
@@ -531,12 +568,13 @@ func (_q *ApiSubscriptionQuery) sqlAll(ctx context.Context, hooks ...queryHook) 
 		nodes       = []*ApiSubscription{}
 		withFKs     = _q.withFKs
 		_spec       = _q.querySpec()
-		loadedTypes = [5]bool{
+		loadedTypes = [6]bool{
 			_q.withOwner != nil,
 			_q.withTarget != nil,
 			_q.withFailoverZones != nil,
 			_q.withApproval != nil,
 			_q.withApprovalRequests != nil,
+			_q.withListeners != nil,
 		}
 	)
 	if _q.withOwner != nil || _q.withTarget != nil {
@@ -600,6 +638,13 @@ func (_q *ApiSubscriptionQuery) sqlAll(ctx context.Context, hooks ...queryHook) 
 			return nil, err
 		}
 	}
+	if query := _q.withListeners; query != nil {
+		if err := _q.loadListeners(ctx, query, nodes,
+			func(n *ApiSubscription) { n.Edges.Listeners = []*Listener{} },
+			func(n *ApiSubscription, e *Listener) { n.Edges.Listeners = append(n.Edges.Listeners, e) }); err != nil {
+			return nil, err
+		}
+	}
 	for name, query := range _q.withNamedFailoverZones {
 		if err := _q.loadFailoverZones(ctx, query, nodes,
 			func(n *ApiSubscription) { n.appendNamedFailoverZones(name) },
@@ -611,6 +656,13 @@ func (_q *ApiSubscriptionQuery) sqlAll(ctx context.Context, hooks ...queryHook) 
 		if err := _q.loadApprovalRequests(ctx, query, nodes,
 			func(n *ApiSubscription) { n.appendNamedApprovalRequests(name) },
 			func(n *ApiSubscription, e *ApprovalRequest) { n.appendNamedApprovalRequests(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedListeners {
+		if err := _q.loadListeners(ctx, query, nodes,
+			func(n *ApiSubscription) { n.appendNamedListeners(name) },
+			func(n *ApiSubscription, e *Listener) { n.appendNamedListeners(name, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -776,6 +828,37 @@ func (_q *ApiSubscriptionQuery) loadApprovalRequests(ctx context.Context, query 
 	}
 	return nil
 }
+func (_q *ApiSubscriptionQuery) loadListeners(ctx context.Context, query *ListenerQuery, nodes []*ApiSubscription, init func(*ApiSubscription), assign func(*ApiSubscription, *Listener)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int]*ApiSubscription)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.Listener(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(apisubscription.ListenersColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.api_subscription_listeners
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "api_subscription_listeners" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "api_subscription_listeners" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
 
 func (_q *ApiSubscriptionQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := _q.querySpec()
@@ -886,6 +969,20 @@ func (_q *ApiSubscriptionQuery) WithNamedApprovalRequests(name string, opts ...f
 		_q.withNamedApprovalRequests = make(map[string]*ApprovalRequestQuery)
 	}
 	_q.withNamedApprovalRequests[name] = query
+	return _q
+}
+
+// WithNamedListeners tells the query-builder to eager-load the nodes that are connected to the "listeners"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *ApiSubscriptionQuery) WithNamedListeners(name string, opts ...func(*ListenerQuery)) *ApiSubscriptionQuery {
+	query := (&ListenerClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedListeners == nil {
+		_q.withNamedListeners = make(map[string]*ListenerQuery)
+	}
+	_q.withNamedListeners[name] = query
 	return _q
 }
 

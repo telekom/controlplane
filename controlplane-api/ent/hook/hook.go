@@ -168,6 +168,18 @@ func (f GroupFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.GroupMutation", m)
 }
 
+// The ListenerFunc type is an adapter to allow the use of ordinary
+// function as Listener mutator.
+type ListenerFunc func(context.Context, *ent.ListenerMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f ListenerFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.ListenerMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ListenerMutation", m)
+}
+
 // The McpServerFunc type is an adapter to allow the use of ordinary
 // function as McpServer mutator.
 type McpServerFunc func(context.Context, *ent.McpServerMutation) (ent.Value, error)

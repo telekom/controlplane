@@ -11,14 +11,17 @@ import (
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/runtime"
 
+	agenticv1 "github.com/telekom/controlplane/agentic/api/v1"
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/projector/internal/domain/agentcard"
 	"github.com/telekom/controlplane/projector/internal/domain/eventtype"
 	"github.com/telekom/controlplane/projector/internal/domain/group"
+	"github.com/telekom/controlplane/projector/internal/domain/listener"
 	"github.com/telekom/controlplane/projector/internal/domain/permissionset"
 	"github.com/telekom/controlplane/projector/internal/domain/team"
 	"github.com/telekom/controlplane/projector/internal/domain/zone"
 	"github.com/telekom/controlplane/projector/internal/module"
+	spectrev1 "github.com/telekom/controlplane/spectre/api/v1"
 )
 
 func TestBootstrap(t *testing.T) {
@@ -40,6 +43,7 @@ var _ = Describe("registerSchemesAndModules", func() {
 		originalPermission bool
 		originalPubSub     bool
 		originalAiGateway  bool
+		originalSpectre    bool
 		baseModules        []module.Module
 	)
 
@@ -47,6 +51,7 @@ var _ = Describe("registerSchemesAndModules", func() {
 		originalPermission = cconfig.FeaturePermission.IsEnabled()
 		originalPubSub = cconfig.FeaturePubSub.IsEnabled()
 		originalAiGateway = cconfig.FeatureAiGateway.IsEnabled()
+		originalSpectre = cconfig.FeatureSpectre.IsEnabled()
 		baseModules = []module.Module{zone.Module, group.Module, team.Module}
 	})
 
@@ -54,6 +59,7 @@ var _ = Describe("registerSchemesAndModules", func() {
 		cconfig.SetFeatureEnabled(cconfig.FeaturePermission, originalPermission)
 		cconfig.SetFeatureEnabled(cconfig.FeaturePubSub, originalPubSub)
 		cconfig.SetFeatureEnabled(cconfig.FeatureAiGateway, originalAiGateway)
+		cconfig.SetFeatureEnabled(cconfig.FeatureSpectre, originalSpectre)
 	})
 
 	It("should not register the permissionset module when FeaturePermission is disabled", func() {
@@ -91,13 +97,29 @@ var _ = Describe("registerSchemesAndModules", func() {
 		))
 	})
 
+	It("registers Listener and its scheme only when Spectre is enabled", func() {
+		cconfig.SetFeatureEnabled(cconfig.FeatureSpectre, false)
+		disabledScheme := runtime.NewScheme()
+		Expect(moduleNames(registerSchemesAndModules(disabledScheme, baseModules))).NotTo(ContainElement(listener.Module.Name()))
+		Expect(disabledScheme.Recognizes(spectrev1.GroupVersion.WithKind("Listener"))).To(BeFalse())
+
+		cconfig.SetFeatureEnabled(cconfig.FeatureSpectre, true)
+		enabledScheme := runtime.NewScheme()
+		names := moduleNames(registerSchemesAndModules(enabledScheme, baseModules))
+		Expect(names).To(ContainElement(listener.Module.Name()))
+		Expect(enabledScheme.Recognizes(spectrev1.GroupVersion.WithKind("Listener"))).To(BeTrue())
+		Expect(enabledScheme.Recognizes(spectrev1.GroupVersion.WithKind("SpectreApplication"))).To(BeTrue())
+	})
+
 	DescribeTable("feature flag matrix",
-		func(pubSubEnabled, permissionEnabled, aiGatewayEnabled bool) {
+		func(pubSubEnabled, permissionEnabled, aiGatewayEnabled, spectreEnabled bool) {
 			cconfig.SetFeatureEnabled(cconfig.FeaturePubSub, pubSubEnabled)
 			cconfig.SetFeatureEnabled(cconfig.FeaturePermission, permissionEnabled)
 			cconfig.SetFeatureEnabled(cconfig.FeatureAiGateway, aiGatewayEnabled)
+			cconfig.SetFeatureEnabled(cconfig.FeatureSpectre, spectreEnabled)
 
-			result := registerSchemesAndModules(runtime.NewScheme(), baseModules)
+			registeredScheme := runtime.NewScheme()
+			result := registerSchemesAndModules(registeredScheme, baseModules)
 
 			names := moduleNames(result)
 			Expect(names).To(ContainElements(zone.Module.Name(), group.Module.Name(), team.Module.Name()),
@@ -120,15 +142,30 @@ var _ = Describe("registerSchemesAndModules", func() {
 			} else {
 				Expect(names).NotTo(ContainElement(agentcard.Module.Name()))
 			}
+			for _, kind := range []string{"McpServer", "AgentCard", "AgenticExposure", "AgenticSubscription"} {
+				Expect(registeredScheme.Recognizes(agenticv1.GroupVersion.WithKind(kind))).To(Equal(aiGatewayEnabled))
+			}
+
+			if spectreEnabled {
+				Expect(names).To(ContainElement(listener.Module.Name()))
+			} else {
+				Expect(names).NotTo(ContainElement(listener.Module.Name()))
+			}
+			for _, kind := range []string{"Listener", "SpectreApplication"} {
+				Expect(registeredScheme.Recognizes(spectrev1.GroupVersion.WithKind(kind))).To(Equal(spectreEnabled))
+			}
 
 			// baseModules must not be mutated by the append inside registerSchemesAndModules.
 			Expect(baseModules).To(HaveLen(3))
 			Expect(moduleNames(baseModules)).To(Equal([]string{zone.Module.Name(), group.Module.Name(), team.Module.Name()}))
 		},
-		Entry("all disabled", false, false, false),
-		Entry("pubsub only", true, false, false),
-		Entry("permission only", false, true, false),
-		Entry("ai_gateway only", false, false, true),
-		Entry("all enabled", true, true, true),
+		Entry("all disabled", false, false, false, false),
+		Entry("pubsub only", true, false, false, false),
+		Entry("permission only", false, true, false, false),
+		Entry("ai_gateway only", false, false, true, false),
+		Entry("all except spectre", true, true, true, false),
+		Entry("spectre only", false, false, false, true),
+		Entry("ai_gateway and spectre", false, false, true, true),
+		Entry("all enabled", true, true, true, true),
 	)
 })

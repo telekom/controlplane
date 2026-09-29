@@ -85,11 +85,13 @@ type ApplicationEdges struct {
 	ExposedAgentics []*AgenticExposure `json:"exposed_agentics,omitempty"`
 	// SubscribedAgentics holds the value of the subscribed_agentics edge.
 	SubscribedAgentics []*AgenticSubscription `json:"subscribed_agentics,omitempty"`
+	// Listeners holds the value of the listeners edge.
+	Listeners []*Listener `json:"listeners,omitempty"`
 	// PermissionSet holds the value of the permission_set edge.
 	PermissionSet *PermissionSet `json:"permission_set,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [9]bool
+	loadedTypes [10]bool
 	// totalCount holds the count of the edges above.
 	totalCount [8]map[string]int
 
@@ -99,6 +101,7 @@ type ApplicationEdges struct {
 	namedSubscribedEvents   map[string][]*EventSubscription
 	namedExposedAgentics    map[string][]*AgenticExposure
 	namedSubscribedAgentics map[string][]*AgenticSubscription
+	namedListeners          map[string][]*Listener
 }
 
 // ZoneOrErr returns the Zone value or an error if the edge
@@ -177,12 +180,21 @@ func (e ApplicationEdges) SubscribedAgenticsOrErr() ([]*AgenticSubscription, err
 	return nil, &NotLoadedError{edge: "subscribed_agentics"}
 }
 
+// ListenersOrErr returns the Listeners value or an error if the edge
+// was not loaded in eager-loading.
+func (e ApplicationEdges) ListenersOrErr() ([]*Listener, error) {
+	if e.loadedTypes[8] {
+		return e.Listeners, nil
+	}
+	return nil, &NotLoadedError{edge: "listeners"}
+}
+
 // PermissionSetOrErr returns the PermissionSet value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
 func (e ApplicationEdges) PermissionSetOrErr() (*PermissionSet, error) {
 	if e.PermissionSet != nil {
 		return e.PermissionSet, nil
-	} else if e.loadedTypes[8] {
+	} else if e.loadedTypes[9] {
 		return nil, &NotFoundError{label: permissionset.Label}
 	}
 	return nil, &NotLoadedError{edge: "permission_set"}
@@ -407,6 +419,11 @@ func (_m *Application) QueryExposedAgentics() *AgenticExposureQuery {
 // QuerySubscribedAgentics queries the "subscribed_agentics" edge of the Application entity.
 func (_m *Application) QuerySubscribedAgentics() *AgenticSubscriptionQuery {
 	return NewApplicationClient(_m.config).QuerySubscribedAgentics(_m)
+}
+
+// QueryListeners queries the "listeners" edge of the Application entity.
+func (_m *Application) QueryListeners() *ListenerQuery {
+	return NewApplicationClient(_m.config).QueryListeners(_m)
 }
 
 // QueryPermissionSet queries the "permission_set" edge of the Application entity.
@@ -652,6 +669,30 @@ func (_m *Application) appendNamedSubscribedAgentics(name string, edges ...*Agen
 		_m.Edges.namedSubscribedAgentics[name] = []*AgenticSubscription{}
 	} else {
 		_m.Edges.namedSubscribedAgentics[name] = append(_m.Edges.namedSubscribedAgentics[name], edges...)
+	}
+}
+
+// NamedListeners returns the Listeners named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *Application) NamedListeners(name string) ([]*Listener, error) {
+	if _m.Edges.namedListeners == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedListeners[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *Application) appendNamedListeners(name string, edges ...*Listener) {
+	if _m.Edges.namedListeners == nil {
+		_m.Edges.namedListeners = make(map[string][]*Listener)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedListeners[name] = []*Listener{}
+	} else {
+		_m.Edges.namedListeners[name] = append(_m.Edges.namedListeners[name], edges...)
 	}
 }
 

@@ -26,6 +26,55 @@ var _ = Describe("Approval Translator", func() {
 	var t approval.Translator
 
 	Describe("ShouldSkip", func() {
+		It("gates AgenticSubscription targets independently of Spectre", func() {
+			DeferCleanup(cconfig.SetFeatureEnabled, cconfig.FeatureAiGateway, cconfig.FeatureAiGateway.IsEnabled())
+			DeferCleanup(cconfig.SetFeatureEnabled, cconfig.FeatureSpectre, cconfig.FeatureSpectre.IsEnabled())
+			obj := &approvalv1.Approval{Spec: approvalv1.ApprovalSpec{
+				Action:  "subscribe",
+				Target:  ctypes.TypedObjectRef{TypeMeta: metav1.TypeMeta{Kind: "AgenticSubscription"}, ObjectRef: ctypes.ObjectRef{Name: "my-agentic-sub"}},
+				Decider: approvalv1.Decider{TeamName: "team"},
+			}}
+			cconfig.SetFeatureEnabled(cconfig.FeatureAiGateway, false)
+			cconfig.SetFeatureEnabled(cconfig.FeatureSpectre, true)
+			skip, reason := t.ShouldSkip(obj)
+			Expect(skip).To(BeTrue())
+			Expect(reason).To(Equal("ai_gateway feature is disabled"))
+			cconfig.SetFeatureEnabled(cconfig.FeatureAiGateway, true)
+			cconfig.SetFeatureEnabled(cconfig.FeatureSpectre, false)
+			skip, reason = t.ShouldSkip(obj)
+			Expect(skip).To(BeFalse())
+			Expect(reason).To(BeEmpty())
+		})
+		It("gates Listener targets and rejects unscoped or unknown approval keys", func() {
+			obj := &approvalv1.Approval{Spec: approvalv1.ApprovalSpec{
+				Action:  "listen-provider",
+				Target:  ctypes.TypedObjectRef{TypeMeta: metav1.TypeMeta{Kind: "Listener"}, ObjectRef: ctypes.ObjectRef{Name: "my-listener"}},
+				Decider: approvalv1.Decider{TeamName: "team"},
+			}}
+			cconfig.SetFeatureEnabled(cconfig.FeatureSpectre, false)
+			skip, reason := t.ShouldSkip(obj)
+			Expect(skip).To(BeTrue())
+			Expect(reason).To(ContainSubstring("spectre feature is disabled"))
+			cconfig.SetFeatureEnabled(cconfig.FeatureSpectre, true)
+			DeferCleanup(func() { cconfig.SetFeatureEnabled(cconfig.FeatureSpectre, false) })
+			for _, key := range []string{"", "other"} {
+				obj.Spec.ApprovalKey = key
+				skip, reason = t.ShouldSkip(obj)
+				Expect(skip).To(BeTrue())
+				Expect(reason).To(ContainSubstring("approvalKey"))
+			}
+			for _, key := range []string{"provider", "consumer"} {
+				obj.Spec.ApprovalKey = key
+				obj.Spec.Action = "listen-" + key
+				skip, reason = t.ShouldSkip(obj)
+				Expect(skip).To(BeFalse())
+				Expect(reason).To(BeEmpty())
+			}
+			obj.Spec.Action = "listen-provider"
+			skip, reason = t.ShouldSkip(obj)
+			Expect(skip).To(BeTrue())
+			Expect(reason).To(ContainSubstring("action must match"))
+		})
 		It("should skip when target name is empty", func() {
 			obj := &approvalv1.Approval{
 				Spec: approvalv1.ApprovalSpec{
@@ -68,7 +117,7 @@ var _ = Describe("Approval Translator", func() {
 			}
 			skip, reason := t.ShouldSkip(obj)
 			Expect(skip).To(BeTrue())
-			Expect(reason).To(ContainSubstring("ApiSubscription, EventSubscription, or AgenticSubscription"))
+			Expect(reason).To(ContainSubstring("ApiSubscription, EventSubscription, AgenticSubscription, or Listener"))
 		})
 
 		It("should not skip a valid Approval CR targeting ApiSubscription", func() {
@@ -143,6 +192,18 @@ var _ = Describe("Approval Translator", func() {
 	})
 
 	Describe("Translate", func() {
+		It("maps a scoped Listener target and defaults its namespace", func() {
+			obj := &approvalv1.Approval{ObjectMeta: metav1.ObjectMeta{Name: "approval", Namespace: "ns"}, Spec: approvalv1.ApprovalSpec{
+				Target:      ctypes.TypedObjectRef{TypeMeta: metav1.TypeMeta{Kind: "Listener"}, ObjectRef: ctypes.ObjectRef{Name: "listener"}},
+				ApprovalKey: "consumer",
+			}}
+			data, err := t.Translate(context.Background(), obj)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(data.TargetKind).To(Equal(approval.TargetKindListener))
+			Expect(data.ApprovalKey).To(Equal("consumer"))
+			Expect(data.SubscriptionNamespace).To(Equal("ns"))
+			Expect(data.SubscriptionName).To(Equal("listener"))
+		})
 		It("should populate all fields from the CR targeting ApiSubscription", func() {
 			reason := "need access"
 			decisionTime := metav1.NewTime(time.Date(2026, 7, 15, 12, 30, 45, 0, time.UTC))

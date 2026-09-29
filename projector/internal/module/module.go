@@ -8,6 +8,11 @@
 package module
 
 import (
+	"context"
+	"fmt"
+	"reflect"
+
+	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	cc "github.com/telekom/controlplane/common/pkg/controller"
 	"github.com/telekom/controlplane/controlplane-api/ent"
 	"github.com/telekom/controlplane/projector/internal/config"
@@ -19,6 +24,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
@@ -36,11 +42,12 @@ type Module interface {
 // registration. All fields are created once in the bootstrap and shared
 // across all modules.
 type ModuleDeps struct {
-	DeleteCache *infrastructure.DeleteCache
-	EntClient   *ent.Client
-	EdgeCache   *infrastructure.EdgeCache
-	IDResolver  *infrastructure.IDResolver
-	Config      *config.Config
+	DeleteCache  *infrastructure.DeleteCache
+	EntClient    *ent.Client
+	EdgeCache    *infrastructure.EdgeCache
+	IDResolver   *infrastructure.IDResolver
+	Config       *config.Config
+	ParentEvents chan event.GenericEvent
 }
 
 // TypedModule is the generic module implementation. Type parameters are
@@ -59,6 +66,42 @@ type TypedModule[T client.Object, D any, K any] struct {
 
 	// RepoFactory creates the repository, wired with shared infrastructure.
 	RepoFactory func(deps ModuleDeps) runtime.Repository[K, D]
+	// NotifyParent publishes a completion event for resources referenced by Listener.
+	NotifyParent bool
+}
+
+type notifyingProcessor[T client.Object] struct {
+	runtime.SyncProcessor[T]
+	events chan event.GenericEvent
+}
+
+func (p notifyingProcessor[T]) notify(ctx context.Context, obj T) error {
+	if p.events == nil {
+		return nil
+	}
+	select {
+	case p.events <- event.GenericEvent{Object: obj}:
+		return nil
+	case <-ctx.Done():
+		return fmt.Errorf("notify listener after parent projection: %w", ctx.Err())
+	}
+}
+
+func (p notifyingProcessor[T]) Upsert(ctx context.Context, obj T) error {
+	if err := p.SyncProcessor.Upsert(ctx, obj); err != nil {
+		return err
+	}
+	return p.notify(ctx, obj)
+}
+
+func (p notifyingProcessor[T]) Delete(ctx context.Context, key client.ObjectKey, obj T) error {
+	if err := p.SyncProcessor.Delete(ctx, key, obj); err != nil {
+		return err
+	}
+	if !reflect.ValueOf(obj).IsNil() {
+		return p.notify(ctx, obj)
+	}
+	return nil
 }
 
 // Name returns the module name.
@@ -77,9 +120,13 @@ func (m *TypedModule[T, D, K]) Register(mgr ctrl.Manager, deps ModuleDeps) error
 
 	repo := m.RepoFactory(deps)
 	proc := runtime.NewProcessor(m.Translator, repo)
+	var processor runtime.SyncProcessor[T] = proc
+	if m.NotifyParent && cconfig.FeatureSpectre.IsEnabled() {
+		processor = notifyingProcessor[T]{SyncProcessor: proc, events: deps.ParentEvents}
+	}
 	rec := runtime.NewReadOnlyReconciler(
 		mgr.GetClient(),
-		proc,
+		processor,
 		deps.DeleteCache,
 		m.ModuleName,
 		m.NewObj,
@@ -88,7 +135,7 @@ func (m *TypedModule[T, D, K]) Register(mgr ctrl.Manager, deps ModuleDeps) error
 
 	ctrlOpts := controller.Options{
 		MaxConcurrentReconciles: cfg.ConcurrencyFor(m.ModuleName),
-		RateLimiter:             newRateLimiter(cfg),
+		RateLimiter:             NewRateLimiter(cfg),
 		ReconciliationTimeout:   cfg.ReconcileTimeout,
 	}
 
@@ -102,10 +149,10 @@ func (m *TypedModule[T, D, K]) Register(mgr ctrl.Manager, deps ModuleDeps) error
 		Complete(rec)
 }
 
-// newRateLimiter constructs a composite rate limiter from config:
+// NewRateLimiter constructs a composite rate limiter from config:
 //   - Per-item exponential backoff (for errored reconciles)
 //   - Global token bucket (for steady-state throughput)
-func newRateLimiter(cfg *config.Config) workqueue.TypedRateLimiter[reconcile.Request] {
+func NewRateLimiter(cfg *config.Config) workqueue.TypedRateLimiter[reconcile.Request] {
 	return workqueue.NewTypedMaxOfRateLimiter(
 		workqueue.NewTypedItemExponentialFailureRateLimiter[reconcile.Request](
 			cfg.RateLimiterBaseDelay,

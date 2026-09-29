@@ -48,6 +48,9 @@ type EventType func(*sql.Selector)
 // Group is the predicate function for group builders.
 type Group func(*sql.Selector)
 
+// Listener is the predicate function for listener builders.
+type Listener func(*sql.Selector)
+
 // McpServer is the predicate function for mcpserver builders.
 type McpServer func(*sql.Selector)
 

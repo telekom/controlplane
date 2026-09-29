@@ -18,6 +18,7 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/apisubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/approvalrequest"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventsubscription"
+	"github.com/telekom/controlplane/controlplane-api/ent/listener"
 	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 )
 
@@ -236,6 +237,25 @@ func (_c *ApprovalRequestCreate) SetNillableAgenticSubscriptionID(id *int) *Appr
 // SetAgenticSubscription sets the "agentic_subscription" edge to the AgenticSubscription entity.
 func (_c *ApprovalRequestCreate) SetAgenticSubscription(v *AgenticSubscription) *ApprovalRequestCreate {
 	return _c.SetAgenticSubscriptionID(v.ID)
+}
+
+// SetListenerID sets the "listener" edge to the Listener entity by ID.
+func (_c *ApprovalRequestCreate) SetListenerID(id int) *ApprovalRequestCreate {
+	_c.mutation.SetListenerID(id)
+	return _c
+}
+
+// SetNillableListenerID sets the "listener" edge to the Listener entity by ID if the given value is not nil.
+func (_c *ApprovalRequestCreate) SetNillableListenerID(id *int) *ApprovalRequestCreate {
+	if id != nil {
+		_c = _c.SetListenerID(*id)
+	}
+	return _c
+}
+
+// SetListener sets the "listener" edge to the Listener entity.
+func (_c *ApprovalRequestCreate) SetListener(v *Listener) *ApprovalRequestCreate {
+	return _c.SetListenerID(v.ID)
 }
 
 // Mutation returns the ApprovalRequestMutation object of the builder.
@@ -514,6 +534,23 @@ func (_c *ApprovalRequestCreate) createSpec() (*ApprovalRequest, *sqlgraph.Creat
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_node.agentic_subscription_approval_requests = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.ListenerIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   approvalrequest.ListenerTable,
+			Columns: []string{approvalrequest.ListenerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(listener.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.listener_approval_requests = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

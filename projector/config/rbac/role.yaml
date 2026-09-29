@@ -60,6 +60,16 @@ rules:
   - get
   - list
   - watch
+# spectre domain
+- apiGroups:
+  - spectre.cp.ei.telekom.de
+  resources:
+  - listeners
+  - spectreapplications
+  verbs:
+  - get
+  - list
+  - watch
 # approval domain
 - apiGroups:
   - approval.cp.ei.telekom.de

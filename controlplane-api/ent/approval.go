@@ -17,6 +17,7 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/apisubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/approval"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventsubscription"
+	"github.com/telekom/controlplane/controlplane-api/ent/listener"
 	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 )
 
@@ -65,6 +66,8 @@ type Approval struct {
 	agentic_subscription_approval *int
 	api_subscription_approval     *int
 	event_subscription_approval   *int
+	listener_provider_approval    *int
+	listener_consumer_approval    *int
 	selectValues                  sql.SelectValues
 }
 
@@ -76,9 +79,13 @@ type ApprovalEdges struct {
 	EventSubscription *EventSubscription `json:"event_subscription,omitempty"`
 	// AgenticSubscription holds the value of the agentic_subscription edge.
 	AgenticSubscription *AgenticSubscription `json:"agentic_subscription,omitempty"`
+	// Listener holds the value of the listener edge.
+	Listener *Listener `json:"listener,omitempty"`
+	// ConsumerListener holds the value of the consumer_listener edge.
+	ConsumerListener *Listener `json:"consumer_listener,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [3]bool
+	loadedTypes [5]bool
 }
 
 // APISubscriptionOrErr returns the APISubscription value or an error if the edge
@@ -114,6 +121,28 @@ func (e ApprovalEdges) AgenticSubscriptionOrErr() (*AgenticSubscription, error) 
 	return nil, &NotLoadedError{edge: "agentic_subscription"}
 }
 
+// ListenerOrErr returns the Listener value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e ApprovalEdges) ListenerOrErr() (*Listener, error) {
+	if e.Listener != nil {
+		return e.Listener, nil
+	} else if e.loadedTypes[3] {
+		return nil, &NotFoundError{label: listener.Label}
+	}
+	return nil, &NotLoadedError{edge: "listener"}
+}
+
+// ConsumerListenerOrErr returns the ConsumerListener value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e ApprovalEdges) ConsumerListenerOrErr() (*Listener, error) {
+	if e.ConsumerListener != nil {
+		return e.ConsumerListener, nil
+	} else if e.loadedTypes[4] {
+		return nil, &NotFoundError{label: listener.Label}
+	}
+	return nil, &NotLoadedError{edge: "consumer_listener"}
+}
+
 // scanValues returns the types for scanning values from sql.Rows.
 func (*Approval) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
@@ -132,6 +161,10 @@ func (*Approval) scanValues(columns []string) ([]any, error) {
 		case approval.ForeignKeys[1]: // api_subscription_approval
 			values[i] = new(sql.NullInt64)
 		case approval.ForeignKeys[2]: // event_subscription_approval
+			values[i] = new(sql.NullInt64)
+		case approval.ForeignKeys[3]: // listener_provider_approval
+			values[i] = new(sql.NullInt64)
+		case approval.ForeignKeys[4]: // listener_consumer_approval
 			values[i] = new(sql.NullInt64)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -291,6 +324,20 @@ func (_m *Approval) assignValues(columns []string, values []any) error {
 				_m.event_subscription_approval = new(int)
 				*_m.event_subscription_approval = int(value.Int64)
 			}
+		case approval.ForeignKeys[3]:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for edge-field listener_provider_approval", value)
+			} else if value.Valid {
+				_m.listener_provider_approval = new(int)
+				*_m.listener_provider_approval = int(value.Int64)
+			}
+		case approval.ForeignKeys[4]:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for edge-field listener_consumer_approval", value)
+			} else if value.Valid {
+				_m.listener_consumer_approval = new(int)
+				*_m.listener_consumer_approval = int(value.Int64)
+			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
 		}
@@ -317,6 +364,16 @@ func (_m *Approval) QueryEventSubscription() *EventSubscriptionQuery {
 // QueryAgenticSubscription queries the "agentic_subscription" edge of the Approval entity.
 func (_m *Approval) QueryAgenticSubscription() *AgenticSubscriptionQuery {
 	return NewApprovalClient(_m.config).QueryAgenticSubscription(_m)
+}
+
+// QueryListener queries the "listener" edge of the Approval entity.
+func (_m *Approval) QueryListener() *ListenerQuery {
+	return NewApprovalClient(_m.config).QueryListener(_m)
+}
+
+// QueryConsumerListener queries the "consumer_listener" edge of the Approval entity.
+func (_m *Approval) QueryConsumerListener() *ListenerQuery {
+	return NewApprovalClient(_m.config).QueryConsumerListener(_m)
 }
 
 // Update returns a builder for updating this Approval.

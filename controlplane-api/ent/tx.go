@@ -41,6 +41,8 @@ type Tx struct {
 	EventType *EventTypeClient
 	// Group is the client for interacting with the Group builders.
 	Group *GroupClient
+	// Listener is the client for interacting with the Listener builders.
+	Listener *ListenerClient
 	// McpServer is the client for interacting with the McpServer builders.
 	McpServer *McpServerClient
 	// Member is the client for interacting with the Member builders.
@@ -195,6 +197,7 @@ func (tx *Tx) init() {
 	tx.EventSubscription = NewEventSubscriptionClient(tx.config)
 	tx.EventType = NewEventTypeClient(tx.config)
 	tx.Group = NewGroupClient(tx.config)
+	tx.Listener = NewListenerClient(tx.config)
 	tx.McpServer = NewMcpServerClient(tx.config)
 	tx.Member = NewMemberClient(tx.config)
 	tx.PermissionSet = NewPermissionSetClient(tx.config)
