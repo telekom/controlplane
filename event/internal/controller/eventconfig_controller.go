@@ -20,7 +20,6 @@ import (
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	cc "github.com/telekom/controlplane/common/pkg/controller"
-	ctypes "github.com/telekom/controlplane/common/pkg/types"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	"github.com/telekom/controlplane/event/internal/handler/eventconfig"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
@@ -47,6 +46,7 @@ type EventConfigReconciler struct {
 // +kubebuilder:rbac:groups=admin.cp.ei.telekom.de,resources=zones,verbs=get;list;watch
 // +kubebuilder:rbac:groups=admin.cp.ei.telekom.de,resources=zones/status,verbs=get
 // +kubebuilder:rbac:groups=gateway.cp.ei.telekom.de,resources=routes,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=gateway.cp.ei.telekom.de,resources=consumers,verbs=get;list;watch;create;update;patch;delete
 
 func (r *EventConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	return r.Controller.Reconcile(ctx, req, &eventv1.EventConfig{})
@@ -61,6 +61,7 @@ func (r *EventConfigReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		For(&eventv1.EventConfig{}, builder.WithPredicates(cc.Count("eventconfig", cc.RoleFor))).
 		Owns(&pubsubv1.EventStore{}, builder.WithPredicates(cc.Count("eventconfig", cc.RoleOwns))).
 		Owns(&gatewayv1.Route{}, builder.WithPredicates(cc.Count("eventconfig", cc.RoleOwns, LabelPredicate))).
+		Owns(&gatewayv1.Consumer{}, builder.WithPredicates(cc.Count("eventconfig", cc.RoleOwns, LabelPredicate))).
 		Owns(&identityv1.Client{}, builder.WithPredicates(cc.Count("eventconfig", cc.RoleOwns, LabelPredicate))).
 		Watches(&adminv1.Zone{},
 			handler.EnqueueRequestsFromMapFunc(r.MapZoneToEventConfig),
@@ -93,7 +94,8 @@ func (r *EventConfigReconciler) MapZoneToEventConfig(ctx context.Context, obj cl
 
 	var reqs []reconcile.Request
 	for i := range list.Items {
-		if !list.Items[i].Spec.Zone.Equals(zone) {
+		if !list.Items[i].Spec.Zone.Equals(zone) &&
+			(list.Items[i].Spec.Proxy == nil || !list.Items[i].Spec.Proxy.TargetZone.Equals(zone)) {
 			continue
 		}
 		reqs = append(reqs, reconcile.Request{
@@ -120,7 +122,7 @@ func (r *EventConfigReconciler) MapEventConfigToEventConfig(ctx context.Context,
 
 	var reqs []reconcile.Request
 	for i := range list.Items {
-		if ctypes.Equals(&list.Items[i], eventConfig) {
+		if client.ObjectKeyFromObject(&list.Items[i]) == client.ObjectKeyFromObject(eventConfig) {
 			continue
 		}
 		reqs = append(reqs, reconcile.Request{
