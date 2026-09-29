@@ -15,6 +15,8 @@ import (
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	ctypes "github.com/telekom/controlplane/common/pkg/types"
+	"github.com/telekom/controlplane/common/pkg/util/labelutil"
+	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	pubsubv1 "github.com/telekom/controlplane/pubsub/api/v1"
 	spectrev1 "github.com/telekom/controlplane/spectre/api/v1"
 	"github.com/telekom/controlplane/spectre/internal/handler/util"
@@ -36,6 +38,10 @@ func (h *ListenerHandler) ensureGenericPublisher(
 	}
 
 	mutator := func() error {
+		if publisher.Labels == nil {
+			publisher.Labels = make(map[string]string)
+		}
+		publisher.Labels[eventv1.EventTypeLabelKey] = labelutil.NormalizeLabelValue(util.GenericEventType)
 		publisher.Spec = pubsubv1.PublisherSpec{
 			EventStore:  *ctypes.ObjectRefFromObject(eventStore),
 			EventType:   util.GenericEventType,
@@ -116,6 +122,7 @@ func (h *ListenerHandler) ensureBridgeSubscriber(
 		}
 		subscriber.Labels[cconfig.OwnerUidLabelKey] = string(listener.UID)
 		subscriber.Labels[AuthorizationFingerprintLabelKey] = fingerprint
+		subscriber.Labels[eventv1.EventTypeLabelKey] = labelutil.NormalizeLabelValue(util.GenericEventType)
 		subscriber.Spec = pubsubv1.SubscriberSpec{
 			Publisher:    *ctypes.ObjectRefFromObject(publisher),
 			SubscriberId: subscriberId,
