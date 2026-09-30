@@ -10,6 +10,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/telekom/controlplane/common/pkg/condition"
+	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	"github.com/telekom/controlplane/common/pkg/handler"
 	v1 "github.com/telekom/controlplane/gateway/api/v1"
 	"github.com/telekom/controlplane/gateway/internal/handler/route"
@@ -17,6 +18,8 @@ import (
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 )
+
+const basicWithScopesPolicyMessage = "Consumer username/password with scopes requires an external IDP grant type \"password\""
 
 var _ handler.Handler[*v1.ConsumeRoute] = &ConsumeRouteHandler{}
 
@@ -38,10 +41,9 @@ func (h *ConsumeRouteHandler) CreateOrUpdate(ctx context.Context, consumeRoute *
 		return nil
 	}
 	if violatesBasicWithScopesPolicy(consumeRoute, route) {
-		message := "Consumer username/password with scopes requires an external IDP grant type \"password\""
-		consumeRoute.SetCondition(condition.NewBlockedCondition(message))
-		consumeRoute.SetCondition(condition.NewNotReadyCondition(condition.ReasonValidationFailed, message))
-		return nil
+		consumeRoute.SetCondition(condition.NewBlockedCondition(basicWithScopesPolicyMessage))
+		consumeRoute.SetCondition(condition.NewNotReadyCondition(condition.ReasonValidationFailed, basicWithScopesPolicyMessage))
+		return ctrlerrors.BlockedErrorf("%s", basicWithScopesPolicyMessage)
 	}
 
 	if slices.Contains(route.Status.Consumers, consumeRoute.Spec.ConsumerName) {

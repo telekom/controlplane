@@ -6,6 +6,7 @@ package apisubscription
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -21,6 +22,7 @@ import (
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/config"
+	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	organizationapi "github.com/telekom/controlplane/organization/api/v1"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -117,6 +119,58 @@ var _ = Describe("Subscription scope validation", func() {
 })
 
 var _ = Describe("ApiSubscription Handler", func() {
+	Context("validateBasicWithScopesPolicy", func() {
+		basic := &apiv1.BasicAuthCredentials{Username: "consumer-user", Password: "consumer-pass"}
+		withBasicAndScopes := &apiv1.SubscriberSecurity{M2M: &apiv1.SubscriberMachine2MachineAuthentication{
+			Basic: basic, Scopes: []string{"consumer:read"},
+		}}
+		exposureWithGrant := func(grantType apiv1.GrantType) *apiv1.ApiExposure {
+			return &apiv1.ApiExposure{Spec: apiv1.ApiExposureSpec{Security: &apiv1.Security{
+				M2M: &apiv1.Machine2MachineAuthentication{ExternalIDP: &apiv1.ExternalIdentityProvider{
+					TokenEndpoint: "https://idp.example/token", GrantType: grantType,
+				}},
+			}}}
+		}
+
+		DescribeTable("returns a blocked error only for incompatible Basic credentials with scopes",
+			func(security *apiv1.SubscriberSecurity, exposure *apiv1.ApiExposure, blocked bool) {
+				sub := &apiv1.ApiSubscription{Spec: apiv1.ApiSubscriptionSpec{Security: security}}
+				err := validateBasicWithScopesPolicy(sub, exposure)
+				if !blocked {
+					Expect(err).NotTo(HaveOccurred())
+					return
+				}
+				blockedErr, ok := errors.AsType[ctrlerrors.BlockedError](err)
+				Expect(ok).To(BeTrue())
+				Expect(blockedErr.IsBlocked()).To(BeTrue())
+				Expect(err).To(MatchError(`Consumer username/password with scopes requires an external IDP grant type "password"`))
+			},
+			Entry("without subscription security", nil, nil, false),
+			Entry("without subscription M2M", &apiv1.SubscriberSecurity{}, nil, false),
+			Entry("with scopes only", &apiv1.SubscriberSecurity{M2M: &apiv1.SubscriberMachine2MachineAuthentication{
+				Scopes: []string{"consumer:read"},
+			}}, nil, false),
+			Entry("with Basic only", &apiv1.SubscriberSecurity{M2M: &apiv1.SubscriberMachine2MachineAuthentication{
+				Basic: basic,
+			}}, nil, false),
+			Entry("with empty scopes", &apiv1.SubscriberSecurity{M2M: &apiv1.SubscriberMachine2MachineAuthentication{
+				Basic: basic, Scopes: []string{},
+			}}, nil, false),
+			Entry("without an exposure", withBasicAndScopes, nil, true),
+			Entry("without exposure security", withBasicAndScopes, &apiv1.ApiExposure{}, true),
+			Entry("without exposure M2M", withBasicAndScopes, &apiv1.ApiExposure{Spec: apiv1.ApiExposureSpec{
+				Security: &apiv1.Security{},
+			}}, true),
+			Entry("without an external IDP", withBasicAndScopes, &apiv1.ApiExposure{Spec: apiv1.ApiExposureSpec{
+				Security: &apiv1.Security{M2M: &apiv1.Machine2MachineAuthentication{}},
+			}}, true),
+			Entry("with an omitted grant", withBasicAndScopes, exposureWithGrant(""), true),
+			Entry("with a client_credentials grant", withBasicAndScopes, exposureWithGrant(apiv1.GrantTypeClientCredentials), true),
+			Entry("with an authorization_code grant", withBasicAndScopes, exposureWithGrant(apiv1.GrantTypeAuthorizationCode), true),
+			Entry("with a password grant", withBasicAndScopes, exposureWithGrant(apiv1.GrantTypePassword), false),
+		)
+	})
+
 	Context("validateApiCategoryPolicy", func() {
 		const (
 			environment = "test"

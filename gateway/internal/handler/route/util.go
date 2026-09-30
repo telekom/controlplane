@@ -17,6 +17,8 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 )
 
+const basicWithScopesPolicyMessage = "Consumer username/password with scopes requires an external IDP grant type \"password\""
+
 func GetRouteByRef(ctx context.Context, ref types.ObjectRef) (bool, *v1.Route, error) {
 	client, _ := client.ClientFromContext(ctx)
 
@@ -48,9 +50,8 @@ func validateBasicWithScopes(route *v1.Route, consumers []v1.ConsumeRoute) error
 			continue
 		}
 		if consumer.HasM2MBasic() && len(consumer.Spec.Security.M2M.Scopes) > 0 {
-			message := "Consumer username/password with scopes requires an external IDP grant type \"password\""
-			route.SetCondition(condition.NewNotReadyCondition(condition.ReasonValidationFailed, message))
-			return ctrlerrors.BlockedErrorf("%s on route %s", message, route.Name)
+			route.SetCondition(condition.NewNotReadyCondition(condition.ReasonValidationFailed, basicWithScopesPolicyMessage))
+			return ctrlerrors.BlockedErrorf("%s on route %s", basicWithScopesPolicyMessage, route.Name)
 		}
 	}
 	return nil

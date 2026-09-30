@@ -58,7 +58,7 @@ func (b *BasicAuthFeature) IsUsed(ctx context.Context, builder features.Features
 
 		// Check if any consumer has basic auth configured
 		for _, consumer := range builder.GetAllowedConsumers() {
-			if consumer.HasM2MBasic() && !usesScopedPasswordGrant(route, consumer) {
+			if consumer.HasM2MBasic() && !usesScopedPasswordGrant(route, consumer.Spec.Security.M2M.Scopes) {
 				return true
 			}
 		}
@@ -91,14 +91,11 @@ func (b *BasicAuthFeature) Apply(ctx context.Context, builder features.FeaturesB
 	}
 
 	for _, consumer := range builder.GetAllowedConsumers() {
-		if consumer.Spec.Security == nil || usesScopedPasswordGrant(route, consumer) {
+		if !consumer.HasM2MBasic() || usesScopedPasswordGrant(route, consumer.Spec.Security.M2M.Scopes) {
 			continue
 		}
 		security := consumer.Spec.Security
 
-		if !security.HasBasicAuth() {
-			continue
-		}
 		passwordValue, err := secretManagerApi.Get(ctx, security.M2M.Basic.Password)
 		if err != nil {
 			return errors.Wrapf(err, "cannot get basic auth password for consumer %s", consumer.Spec.ConsumerName)
@@ -112,14 +109,14 @@ func (b *BasicAuthFeature) Apply(ctx context.Context, builder features.FeaturesB
 	return nil
 }
 
-func usesScopedPasswordGrant(route *v1.Route, consumer *v1.ConsumeRoute) bool {
-	if !consumer.HasM2MBasic() || len(consumer.Spec.Security.M2M.Scopes) == 0 {
+func usesScopedPasswordGrant(route *v1.Route, scopes []string) bool {
+	if len(scopes) == 0 {
 		return false
 	}
 	security := route.Spec.Security
 	if route.IsFailoverSecondary() && route.Spec.Traffic.Failover != nil {
 		security = route.Spec.Traffic.Failover.Security
 	}
-	return (route.IsPrimary() || route.IsFailoverSecondary()) && security.HasM2MExternalIDP() &&
-		security.M2M.ExternalIDP.GrantType == v1.GrantTypePassword
+	return security.HasM2MExternalIDP() && security.M2M.ExternalIDP.GrantType == v1.GrantTypePassword &&
+		(route.IsPrimary() || route.IsFailoverSecondary())
 }

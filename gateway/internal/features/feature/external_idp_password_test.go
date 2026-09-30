@@ -173,6 +173,25 @@ var _ = Describe("External IDP password grant with consumer username/password an
 	})
 
 	Describe("BasicAuthFeature", func() {
+		DescribeTable("ignores consumers without Basic credentials", func(security *gatewayv1.ConsumeRouteSecurity) {
+			consumer := passwordConsumer()
+			consumer.Spec.Security = security
+			jumperConfig := plugin.NewJumperConfig()
+			builder.EXPECT().GetRoute().Return(primaryPasswordRoute(), true)
+			builder.EXPECT().GetAllowedConsumers().Return([]*gatewayv1.ConsumeRoute{consumer})
+			builder.EXPECT().JumperConfig().Return(jumperConfig)
+
+			Expect(feature.InstanceBasicAuthFeature.IsUsed(ctx, builder)).To(BeFalse())
+			Expect(feature.InstanceBasicAuthFeature.Apply(ctx, builder)).To(Succeed())
+			Expect(jumperConfig.BasicAuth).To(BeEmpty())
+		},
+			Entry("without security", nil),
+			Entry("without M2M", &gatewayv1.ConsumeRouteSecurity{}),
+			Entry("without Basic", &gatewayv1.ConsumeRouteSecurity{
+				M2M: &gatewayv1.ConsumerMachine2MachineAuthentication{Scopes: []string{"consumer:read"}},
+			}),
+		)
+
 		DescribeTable("preserves backend Basic for existing credential shapes", func(grantType gatewayv1.GrantType) {
 			route := primaryPasswordRoute()
 			route.Spec.Security.M2M.ExternalIDP.GrantType = grantType
