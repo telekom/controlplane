@@ -242,7 +242,7 @@ var _ = Describe("callback lifecycle with persisted resources", func() {
 		zone := &adminv1.Zone{}
 		Expect(k8sClient.Get(ctx, key("backend"), zone)).To(Succeed())
 		zone.Status.Namespace = namespace
-		zone.Status.Gateway.Namespace = namespace
+		zone.Status.Presets[0].GatewayRef.Namespace = namespace
 		store(zone)
 		realm := &identityv1.Realm{ObjectMeta: metav1.ObjectMeta{Name: "callback-realm", Namespace: "default", Labels: labels}, Spec: identityv1.RealmSpec{IdentityProvider: &ctypes.ObjectRef{Name: "callback-idp", Namespace: "default"}}}
 		create(realm)
