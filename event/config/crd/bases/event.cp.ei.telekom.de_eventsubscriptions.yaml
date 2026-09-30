@@ -108,9 +108,10 @@ spec:
                   rule: 'self.type == ''Callback'' ? self.callback != "" : !has(self.callback)'
               eventType:
                 description: |-
-                  EventType is the dot-separated event type identifier (e.g. "de.telekom.eni.quickstart.v1").
+                  EventType is an event type identifier with dot or hyphen separators (e.g. "de.telekom.eni-quickstart.v1").
                   References the EventType CR via MakeEventTypeName() conversion.
                 minLength: 1
+                pattern: ^[a-z0-9]+([.-][a-z0-9]+)*$
                 type: string
               requestor:
                 description: Requestor identifies the consuming application.
@@ -220,6 +221,13 @@ spec:
           status:
             description: EventSubscriptionStatus defines the observed state of EventSubscription.
             properties:
+              activeScopes:
+                description: |-
+                  ActiveScopes is the last approved scope set successfully written to the Subscriber.
+                  It is preserved while a scope change is pending or rejected and does not imply delivery readiness.
+                items:
+                  type: string
+                type: array
               approval:
                 description: Approval references the Approval CR managing subscription
                   approval.

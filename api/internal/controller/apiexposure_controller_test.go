@@ -39,31 +39,36 @@ func CreateZone(name string) *adminapi.Zone {
 		},
 		Spec: adminapi.ZoneSpec{
 			Visibility: adminapi.ZoneVisibilityWorld,
-			Gateway: adminapi.GatewayConfig{
+			Gateways: []adminapi.GatewayConfig{{
+				Name: "default",
 				Admin: adminapi.GatewayAdminConfig{
 					Url: "http://gateway-admin.test.local:8001",
 				},
-				Presets: []adminapi.GatewayConfigPreset{
-					{
-						Name:    "default",
-						Default: true,
-						Urls: []adminapi.UrlConfig{
-							{
-								Hostname: fmt.Sprintf("my-gateway.%s", name),
-								Scheme:   "http",
-								Port:     8080,
-								BasePath: "/",
-							},
+			}},
+			Presets: []adminapi.Preset{
+				{
+					Name:                "default",
+					Type:                adminapi.GatewayTypeAPI,
+					Default:             true,
+					GatewayRef:          "default",
+					IdentityProviderRef: "default",
+					Urls: []adminapi.UrlConfig{
+						{
+							Hostname: fmt.Sprintf("my-gateway.%s.de", name),
+							Scheme:   "http",
+							Port:     8080,
+							BasePath: "/",
 						},
 					},
 				},
 			},
-			IdentityProvider: adminapi.IdentityProviderConfig{
-				Url: "http://idp.test.local:8080",
+			IdentityProviders: []adminapi.IdentityProviderConfig{{
+				Name:     "default",
+				TokenUrl: "http://idp.test.local:8080",
 				Admin: adminapi.IdentityProviderAdminConfig{
 					Url: ptr.To("http://idp-admin.test.local:8080"),
 				},
-			},
+			}},
 			Redis: &adminapi.RedisConfig{
 				Host: "redis://redis.test.local:6379",
 			},
@@ -78,11 +83,11 @@ func CreateZone(name string) *adminapi.Zone {
 		Name:      testEnvironment,
 		Namespace: testEnvironment + "--" + name,
 	}
-	zone.Status.Gateway = &types.ObjectRef{
+	zone.Status.Presets = []adminapi.PresetStatus{{Name: "default", GatewayRef: &types.ObjectRef{
 		Name:      "test-gateway",
 		Namespace: testEnvironment + "--" + name,
-	}
-	zone.Status.Links = adminapi.Links{
+	}}}
+	zone.Status.Presets[0].Links = adminapi.Links{
 		Url:       fmt.Sprintf("http://test.%s.de", name),
 		Issuer:    fmt.Sprintf("http://issuer.%s.de:8080/auth/realms/test", name),
 		LmsIssuer: fmt.Sprintf("http://lms-issuer.%s.de:8080/auth/realms/test", name),
@@ -570,7 +575,7 @@ var _ = Describe("ApiExposure Controller with failover scenario", Ordered, func(
 				err = k8sClient.Get(ctx, apiExposure.Status.Route.K8s(), realRoute)
 				g.Expect(err).ToNot(HaveOccurred())
 
-				Expect(realRoute.Spec.Hostnames).To(ContainElement("my-gateway.apiexp-failovertest"))
+				Expect(realRoute.Spec.Hostnames).To(ContainElement("my-gateway.apiexp-failovertest.de"))
 				Expect(realRoute.Spec.Paths).To(ContainElement("/apiexpctrl/failovertest/v1"))
 
 				Expect(realRoute.Spec.Backend.Upstreams[0].Hostname).To(Equal("my-provider-api"))
@@ -587,7 +592,7 @@ var _ = Describe("ApiExposure Controller with failover scenario", Ordered, func(
 				err = k8sClient.Get(ctx, apiExposure.Status.FailoverRoutes[0].K8s(), failoverRoute)
 				g.Expect(err).ToNot(HaveOccurred())
 
-				Expect(failoverRoute.Spec.Backend.Upstreams[0].Hostname).To(Equal("my-gateway.apiexp-failovertest"))
+				Expect(failoverRoute.Spec.Backend.Upstreams[0].Hostname).To(Equal("my-gateway.apiexp-failovertest.de"))
 				Expect(failoverRoute.Spec.Backend.Upstreams[0].Port).To(Equal(int32(8080)))
 				Expect(failoverRoute.Spec.Backend.Upstreams[0].Path).To(Equal("/apiexpctrl/failovertest/v1"))
 
@@ -665,7 +670,7 @@ var _ = Describe("ApiExposure Controller with failover scenario", Ordered, func(
 				err = k8sClient.Get(ctx, apiExposure.Status.Route.K8s(), realRoute)
 				g.Expect(err).ToNot(HaveOccurred())
 
-				Expect(realRoute.Spec.Hostnames).To(ContainElement("my-gateway.apiexp-failovertest"))
+				Expect(realRoute.Spec.Hostnames).To(ContainElement("my-gateway.apiexp-failovertest.de"))
 				Expect(realRoute.Spec.Paths).To(ContainElement("/apiexpctrl/failovertest/v1"))
 
 				Expect(realRoute.Spec.Backend.Upstreams[0].Hostname).To(Equal("my-provider-api"))
@@ -679,7 +684,7 @@ var _ = Describe("ApiExposure Controller with failover scenario", Ordered, func(
 				err = k8sClient.Get(ctx, apiExposure.Status.FailoverRoutes[0].K8s(), failoverRoute)
 				g.Expect(err).ToNot(HaveOccurred())
 
-				Expect(failoverRoute.Spec.Backend.Upstreams[0].Hostname).To(Equal("my-gateway.apiexp-failovertest"))
+				Expect(failoverRoute.Spec.Backend.Upstreams[0].Hostname).To(Equal("my-gateway.apiexp-failovertest.de"))
 				Expect(failoverRoute.Spec.Backend.Upstreams[0].Port).To(Equal(int32(8080)))
 				Expect(failoverRoute.Spec.Backend.Upstreams[0].Path).To(Equal("/apiexpctrl/failovertest/v1"))
 

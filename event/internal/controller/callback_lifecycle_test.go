@@ -93,15 +93,26 @@ var _ = Describe("callback lifecycle with persisted resources", func() {
 		return cfg
 	}
 	makeZone := func(name string) {
-		zone := &adminv1.Zone{ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: "default", Labels: labels}, Spec: adminv1.ZoneSpec{Visibility: adminv1.ZoneVisibilityEnterprise, IdentityProvider: adminv1.IdentityProviderConfig{Url: "https://idp.example.com"}, Gateway: adminv1.GatewayConfig{Admin: adminv1.GatewayAdminConfig{Url: "https://gateway-admin.example.com"}, Presets: []adminv1.GatewayConfigPreset{{Name: "default", Default: true, Urls: []adminv1.UrlConfig{{Scheme: "https", Hostname: name + ".example.com", Port: 443, BasePath: "/"}}}}}}}
+		idpAdminUrl := "https://idp-admin.example.com"
+		zone := &adminv1.Zone{ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: "default", Labels: labels}, Spec: adminv1.ZoneSpec{
+			Visibility:        adminv1.ZoneVisibilityEnterprise,
+			IdentityProviders: []adminv1.IdentityProviderConfig{{Name: "default", IssuerHostname: "idp.example.com", Admin: adminv1.IdentityProviderAdminConfig{Url: &idpAdminUrl}}},
+			Gateways:          []adminv1.GatewayConfig{{Name: "default", Admin: adminv1.GatewayAdminConfig{Url: "https://gateway-admin.example.com"}}},
+			Presets:           []adminv1.Preset{{Name: "event", Type: adminv1.GatewayTypeEvent, Default: true, GatewayRef: "default", IdentityProviderRef: "default", Urls: []adminv1.UrlConfig{{Scheme: "https", Hostname: name + ".example.com", Port: 443, BasePath: "/"}}}},
+		}}
 		create(zone)
 		zone.Status.Namespace = "default"
-		zone.Status.Gateway = &ctypes.ObjectRef{Name: name + "-gateway", Namespace: "default"}
 		zone.Status.IdentityRealm = &ctypes.ObjectRef{Name: "callback-realm", Namespace: "default"}
 		zone.Status.InternalIdentityRealm = &ctypes.ObjectRef{Name: "callback-realm", Namespace: "default"}
-		zone.Status.Links.Url = "https://" + name + ".example.com"
-		zone.Status.Links.Issuer = "https://" + name + "-issuer"
-		zone.Status.Links.LmsIssuer = "https://" + name + "-lms/spacegate"
+		zone.Status.Presets = []adminv1.PresetStatus{{
+			Name:       "event",
+			GatewayRef: &ctypes.ObjectRef{Name: name + "-gateway", Namespace: "default"},
+			Links: adminv1.Links{
+				Url:       "https://" + name + ".example.com",
+				Issuer:    "https://" + name + "-issuer",
+				LmsIssuer: "https://" + name + "-lms/spacegate",
+			},
+		}}
 		ready(&zone.Status.Conditions, zone.Generation)
 		store(zone)
 	}
@@ -152,7 +163,7 @@ var _ = Describe("callback lifecycle with persisted resources", func() {
 			zone := &adminv1.Zone{}
 			Expect(k8sClient.Get(ctx, key(name), zone)).To(Succeed())
 			zone.Status.Namespace = namespace
-			zone.Status.Gateway.Namespace = namespace
+			zone.Status.Presets[0].GatewayRef.Namespace = namespace
 			store(zone)
 		}
 		moveConfig := func(cfg *eventv1.EventConfig) {
@@ -231,7 +242,7 @@ var _ = Describe("callback lifecycle with persisted resources", func() {
 		zone := &adminv1.Zone{}
 		Expect(k8sClient.Get(ctx, key("backend"), zone)).To(Succeed())
 		zone.Status.Namespace = namespace
-		zone.Status.Gateway.Namespace = namespace
+		zone.Status.Presets[0].GatewayRef.Namespace = namespace
 		store(zone)
 		realm := &identityv1.Realm{ObjectMeta: metav1.ObjectMeta{Name: "callback-realm", Namespace: "default", Labels: labels}, Spec: identityv1.RealmSpec{IdentityProvider: &ctypes.ObjectRef{Name: "callback-idp", Namespace: "default"}}}
 		create(realm)
@@ -278,7 +289,7 @@ var _ = Describe("callback lifecycle with persisted resources", func() {
 		zone := &adminv1.Zone{}
 		Expect(k8sClient.Get(ctx, key("collision-zone"), zone)).To(Succeed())
 		zone.Status.Namespace = namespace
-		zone.Status.Gateway = &ctypes.ObjectRef{Name: "zone-gateway", Namespace: zone.Status.Namespace}
+		zone.Status.Presets[0].GatewayRef = &ctypes.ObjectRef{Name: "zone-gateway", Namespace: zone.Status.Namespace}
 		zone.Status.IdentityRealm = &ctypes.ObjectRef{Name: "callback-collision-realm", Namespace: "default"}
 		store(zone)
 		realm := &identityv1.Realm{ObjectMeta: metav1.ObjectMeta{Name: "callback-collision-realm", Namespace: "default", Labels: labels}, Spec: identityv1.RealmSpec{IdentityProvider: &ctypes.ObjectRef{Name: "callback-idp", Namespace: "default"}}}
@@ -294,7 +305,7 @@ var _ = Describe("callback lifecycle with persisted resources", func() {
 		create(cfg)
 		original := &gatewayv1.Consumer{
 			ObjectMeta: metav1.ObjectMeta{Name: clientId, Namespace: cfg.Namespace, Labels: map[string]string{cconfig.EnvironmentLabelKey: env, cconfig.DomainLabelKey: "event"}},
-			Spec:       gatewayv1.ConsumerSpec{Gateway: *zone.Status.Gateway, Name: "existing-name"},
+			Spec:       gatewayv1.ConsumerSpec{Gateway: *zone.Status.Presets[0].GatewayRef, Name: "existing-name"},
 		}
 		if ownership == "foreign" {
 			other := &eventv1.EventConfig{ObjectMeta: metav1.ObjectMeta{Name: "other-config", Namespace: cfg.Namespace, UID: "other-uid"}}
@@ -330,7 +341,7 @@ var _ = Describe("callback lifecycle with persisted resources", func() {
 		zone := &adminv1.Zone{}
 		Expect(k8sClient.Get(ctx, key("exposure-clean"), zone)).To(Succeed())
 		zone.Status.Namespace = "callback-cleanup"
-		zone.Status.Gateway.Namespace = "callback-cleanup"
+		zone.Status.Presets[0].GatewayRef.Namespace = "callback-cleanup"
 		store(zone)
 		Expect(k8sClient.Delete(ctx, proxy)).To(Succeed())
 		proxy.ResourceVersion = ""

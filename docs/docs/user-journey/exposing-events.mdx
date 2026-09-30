@@ -58,7 +58,7 @@ roverctl apply -f eventspec.yaml
 
 | Field | Description |
 | ----- | ----------- |
-| `type` | A globally unique identifier for the event type, using dot-separated notation (e.g., `de.telekom.orders.created.v1`). |
+| `type` | A globally unique identifier for the event type. Lowercase letters and digits form nonempty segments separated by single dots or hyphens (e.g., `de.telekom.orders-created.v1`). It must end in `.v<major>`, matching the major number in `version`. |
 | `version` | The version of the event type specification. |
 | `description` | A human-readable summary of what this event represents. |
 | `specification` | An optional inline JSON schema describing the event payload structure. |
@@ -95,7 +95,7 @@ roverctl apply -f rover.yaml
 
 | Field | Description |
 | ----- | ----------- |
-| `eventType` | The event type identifier. Must match an existing EventType resource registered in Step 1. |
+| `eventType` | The event type identifier. Uses the same lowercase letter/digit segments and dot/hyphen separators as `type`; must match an existing EventType resource registered in Step 1. |
 | `approval` | The approval strategy for subscription requests: `auto`, `simple`, or `foureyes`. See [Approvals](./approvals.mdx). |
 
 ### What Happens

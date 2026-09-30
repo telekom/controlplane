@@ -99,6 +99,10 @@ var _ = Describe("Exposure scope validation", func() {
 const (
 	testEnv      = "test-env"
 	testBasePath = "/my/api/v1"
+	realmA       = "realm-a"
+	realmB       = "realm-b"
+	realmC       = "realm-c"
+	realmF       = "realm-f"
 )
 
 func makeReadyApi() apiapi.Api {
@@ -122,9 +126,9 @@ func makeReadyApi() apiapi.Api {
 	return api
 }
 
-func makeReadyZone(name, namespace, issuer, lmsIssuer string, presets ...adminv1.GatewayConfigPreset) *adminv1.Zone {
+func makeReadyZone(name, namespace, realmName, issuer, lmsIssuer string, presets ...adminv1.Preset) *adminv1.Zone {
 	if len(presets) == 0 {
-		presets = []adminv1.GatewayConfigPreset{{
+		presets = []adminv1.Preset{{
 			Name: "default", Default: true,
 			Urls: []adminv1.UrlConfig{{
 				Hostname: name + ".gw.example.com",
@@ -133,20 +137,33 @@ func makeReadyZone(name, namespace, issuer, lmsIssuer string, presets ...adminv1
 			}},
 		}}
 	}
+	for i := range presets {
+		presets[i].GatewayRef = "standard"
+		// This suite only exercises API traffic; callers may still set a type explicitly.
+		if presets[i].Type == "" {
+			presets[i].Type = adminv1.GatewayTypeAPI
+		}
+	}
 	z := &adminv1.Zone{
 		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: namespace},
 		Spec: adminv1.ZoneSpec{
-			Gateway: adminv1.GatewayConfig{Presets: presets},
+			Gateways: []adminv1.GatewayConfig{{Name: "standard"}},
+			Presets:  presets,
 		},
 		Status: adminv1.ZoneStatus{
 			Namespace: namespace,
-			Gateway:   &ctypes.ObjectRef{Name: "gw-" + name, Namespace: namespace},
-			RealmName: testEnv,
-			Links: adminv1.Links{
+			RealmName: realmName,
+			Presets: []adminv1.PresetStatus{{Name: presets[0].Name, GatewayRef: &ctypes.ObjectRef{Name: "gw-" + name, Namespace: namespace}, Links: adminv1.Links{
 				Issuer:    issuer,
 				LmsIssuer: lmsIssuer,
-			},
+			}}},
 		},
+	}
+	for i := 1; i < len(presets); i++ {
+		z.Status.Presets = append(z.Status.Presets, adminv1.PresetStatus{
+			Name: presets[i].Name, GatewayRef: &ctypes.ObjectRef{Name: "gw-" + name, Namespace: namespace},
+			Links: adminv1.Links{Issuer: issuer, LmsIssuer: lmsIssuer},
+		})
 	}
 	meta.SetStatusCondition(&z.Status.Conditions, metav1.Condition{
 		Type: condition.ConditionTypeReady, Status: metav1.ConditionTrue, Reason: "Ready",
@@ -224,15 +241,15 @@ var _ = Describe("ApiExposureHandler", func() {
 
 	var (
 		zoneA = func() *adminv1.Zone {
-			return makeReadyZone("zone-a", "ns-a",
+			return makeReadyZone("zone-a", "ns-a", realmA,
 				"https://idp.zone-a.example.com", "https://lms.zone-a.example.com")
 		}
 		zoneB = func() *adminv1.Zone {
-			return makeReadyZone("zone-b", "ns-b",
+			return makeReadyZone("zone-b", "ns-b", realmB,
 				"https://idp.zone-b.example.com", "https://lms.zone-b.example.com")
 		}
 		zoneF = func() *adminv1.Zone {
-			return makeReadyZone("zone-f", "ns-f",
+			return makeReadyZone("zone-f", "ns-f", realmF,
 				"https://idp.zone-f.example.com", "https://lms.zone-f.example.com")
 		}
 	)
@@ -240,13 +257,13 @@ var _ = Describe("ApiExposureHandler", func() {
 	// Consumer-failover-enabled zone constructors
 	var (
 		zoneACF = func() *adminv1.Zone {
-			z := makeReadyZone("zone-a", "ns-a",
+			z := makeReadyZone("zone-a", "ns-a", realmA,
 				"https://idp.zone-a.example.com", "https://lms.zone-a.example.com",
-				adminv1.GatewayConfigPreset{
+				adminv1.Preset{
 					Name: "default", Default: true,
 					Urls: []adminv1.UrlConfig{{Hostname: "zone-a.gw.example.com", Scheme: "https", BasePath: "/"}},
 				},
-				adminv1.GatewayConfigPreset{
+				adminv1.Preset{
 					Name:     "consumer-failover",
 					Urls:     []adminv1.UrlConfig{{Hostname: "zone-a.cf.example.com", Scheme: "https", BasePath: "/cf"}},
 					Features: []adminv1.Feature{{Name: adminv1.FeatureConsumerFailover, Enabled: true}},
@@ -255,13 +272,13 @@ var _ = Describe("ApiExposureHandler", func() {
 			return enableConsumerFailover(z)
 		}
 		zoneCCF = func() *adminv1.Zone {
-			z := makeReadyZone("zone-c", "ns-c",
+			z := makeReadyZone("zone-c", "ns-c", realmC,
 				"https://idp.zone-c.example.com", "https://lms.zone-c.example.com",
-				adminv1.GatewayConfigPreset{
+				adminv1.Preset{
 					Name: "default", Default: true,
 					Urls: []adminv1.UrlConfig{{Hostname: "zone-c.gw.example.com", Scheme: "https", BasePath: "/"}},
 				},
-				adminv1.GatewayConfigPreset{
+				adminv1.Preset{
 					Name:     "consumer-failover",
 					Urls:     []adminv1.UrlConfig{{Hostname: "zone-c.cf.example.com", Scheme: "https", BasePath: "/cf"}},
 					Features: []adminv1.Feature{{Name: adminv1.FeatureConsumerFailover, Enabled: true}},
@@ -434,7 +451,7 @@ var _ = Describe("ApiExposureHandler", func() {
 				Expect(proxy.Spec.Hostnames).To(ContainElement("zone-b.gw.example.com"))
 				// Proxy route trusts the downstream (subscriber) zone's IDP issuer
 				Expect(proxy.Spec.Security.TrustedIssuers).To(ConsistOf("https://idp.zone-b.example.com"))
-				Expect(proxy.Spec.Security.RealmName).To(Equal(testEnv))
+				Expect(proxy.Spec.Security.RealmName).To(Equal(realmB))
 
 				// Real route (created second)
 				real := routes[1]
@@ -446,7 +463,7 @@ var _ = Describe("ApiExposureHandler", func() {
 				Expect(real.Spec.Hostnames).To(ContainElement("zone-a.gw.example.com"))
 				// Cross-zone subscriber → DefaultConsumers includes gateway
 				Expect(real.Spec.Security.DefaultConsumers).To(ContainElement("gateway"))
-				Expect(real.Spec.Security.RealmName).To(Equal(testEnv))
+				Expect(real.Spec.Security.RealmName).To(Equal(realmA))
 				// Real route trusts LMS issuers from all cross-zone proxy zones
 				Expect(real.Spec.Security.TrustedIssuers).To(ConsistOf("https://lms.zone-b.example.com"))
 
@@ -515,6 +532,7 @@ var _ = Describe("ApiExposureHandler", func() {
 				Expect(proxyB.Spec.Security.TrustedIssuers).To(ConsistOf(
 					"https://idp.zone-b.example.com", // downstream zone's own issuer
 				))
+				Expect(proxyB.Spec.Security.RealmName).To(Equal(realmB))
 
 				// Proxy route for zone-c (index 1)
 				proxyC := routes[1]
@@ -525,6 +543,7 @@ var _ = Describe("ApiExposureHandler", func() {
 					"https://idp.zone-a.example.com", // consumer failover from zone-a
 					"https://idp.zone-c.example.com", // downstream + consumer failover (deduped)
 				))
+				Expect(proxyC.Spec.Security.RealmName).To(Equal(realmC))
 
 				// Real route (index 2)
 				real := routes[2]
@@ -545,6 +564,7 @@ var _ = Describe("ApiExposureHandler", func() {
 				))
 				// Cross-zone subscriber → gateway in DefaultConsumers
 				Expect(real.Spec.Security.DefaultConsumers).To(ContainElement("gateway"))
+				Expect(real.Spec.Security.RealmName).To(Equal(realmA))
 
 				// Status
 				Expect(obj.Status.ProxyRoutes).To(HaveLen(2))
@@ -605,6 +625,7 @@ var _ = Describe("ApiExposureHandler", func() {
 				// Proxy route has failover traffic config pointing to zone-f
 				Expect(proxyB.Spec.Traffic.Failover).ToNot(BeNil())
 				Expect(proxyB.Spec.Traffic.Failover.TargetZoneName).To(Equal("zone-a"))
+				Expect(proxyB.Spec.Security.RealmName).To(Equal(realmB))
 
 				// Secondary route for zone-f (index 1)
 				secondary := routes[1]
@@ -613,14 +634,17 @@ var _ = Describe("ApiExposureHandler", func() {
 				Expect(secondary.Labels).To(HaveKeyWithValue("cp.ei.telekom.de/failover.secondary", "true"))
 				// Secondary route gets gateway in DefaultConsumers
 				Expect(secondary.Spec.Security.DefaultConsumers).To(ContainElement("gateway"))
+				Expect(secondary.Spec.Security.RealmName).To(Equal(realmF))
 				// Secondary route upstreams come from the exposure's upstreams
 				Expect(secondary.Spec.Traffic.Failover).ToNot(BeNil())
+				Expect(secondary.Spec.Traffic.Failover.Security.RealmName).To(Equal(realmF))
 
 				// Real route (index 2)
 				real := routes[2]
 				Expect(real.Namespace).To(Equal("ns-a"))
 				Expect(real.Spec.Type).To(Equal(gatewayapi.RouteTypePrimary))
 				Expect(real.Spec.Security.DefaultConsumers).To(ContainElement("gateway"))
+				Expect(real.Spec.Security.RealmName).To(Equal(realmA))
 				// Real route trusts LMS issuers from cross-zone proxy zones
 				Expect(real.Spec.Security.TrustedIssuers).To(ContainElement("https://lms.zone-b.example.com"))
 

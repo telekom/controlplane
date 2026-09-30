@@ -55,7 +55,7 @@ var _ = Describe("CreateVoyagerRoute", func() {
 		}
 	})
 
-	It("should return BlockedError when zone has no default preset", func() {
+	It("should return BlockedError when zone has no Event preset", func() {
 		zoneNoPreset := makeZoneNoPreset("zone-a", "zone-a-ns")
 
 		route, err := util.CreateVoyagerRoute(ctx, zoneNoPreset, eventConfig)
@@ -63,7 +63,7 @@ var _ = Describe("CreateVoyagerRoute", func() {
 		Expect(route).To(BeNil())
 		rootCause := unwrapAll(err)
 		Expect(rootCause).To(Satisfy(isBlockedError))
-		Expect(err.Error()).To(ContainSubstring("has no default preset"))
+		Expect(err.Error()).To(ContainSubstring("has no Event preset"))
 	})
 
 	It("should return BlockedError when zone has no gateway reference in status", func() {
@@ -196,7 +196,7 @@ var _ = Describe("CreateProxyVoyagerRoute", func() {
 		targetZone = makeZone("zone-b", "zone-b-ns")
 	})
 
-	It("should return BlockedError when source zone has no default preset", func() {
+	It("should return BlockedError when source zone has no Event preset", func() {
 		sourceNoPreset := makeZoneNoPreset("zone-a", "zone-a-ns")
 
 		route, err := util.CreateProxyVoyagerRoute(ctx, sourceNoPreset, targetZone)
@@ -204,7 +204,7 @@ var _ = Describe("CreateProxyVoyagerRoute", func() {
 		Expect(route).To(BeNil())
 		rootCause := unwrapAll(err)
 		Expect(rootCause).To(Satisfy(isBlockedError))
-		Expect(err.Error()).To(ContainSubstring("has no default preset"))
+		Expect(err.Error()).To(ContainSubstring("has no Event preset"))
 	})
 
 	It("should return BlockedError when source zone has no gateway reference", func() {
@@ -218,7 +218,7 @@ var _ = Describe("CreateProxyVoyagerRoute", func() {
 		Expect(err.Error()).To(ContainSubstring("has no gateway reference in status"))
 	})
 
-	It("should return BlockedError when target zone has no default preset", func() {
+	It("should return BlockedError when target zone has no Event preset", func() {
 		targetNoPreset := makeZoneNoPreset("zone-b", "zone-b-ns")
 
 		route, err := util.CreateProxyVoyagerRoute(ctx, sourceZone, targetNoPreset)
@@ -226,7 +226,7 @@ var _ = Describe("CreateProxyVoyagerRoute", func() {
 		Expect(route).To(BeNil())
 		rootCause := unwrapAll(err)
 		Expect(rootCause).To(Satisfy(isBlockedError))
-		Expect(err.Error()).To(ContainSubstring("has no default preset"))
+		Expect(err.Error()).To(ContainSubstring("has no Event preset"))
 	})
 
 	It("should create proxy voyager route successfully", func() {
@@ -305,14 +305,14 @@ var _ = Describe("CreateProxyLocalVoyagerRoute", func() {
 		targetZone = makeZone("zone-b", "zone-b-ns")
 	})
 
-	It("should return BlockedError when source zone has no default preset", func() {
+	It("should return BlockedError when source zone has no Event preset", func() {
 		sourceNoPreset := makeZoneNoPreset("zone-a", "zone-a-ns")
 
 		route, err := util.CreateProxyLocalVoyagerRoute(ctx, sourceNoPreset, targetZone)
 		Expect(err).To(HaveOccurred())
 		Expect(route).To(BeNil())
 		Expect(unwrapAll(err)).To(Satisfy(isBlockedError))
-		Expect(err.Error()).To(ContainSubstring("has no default preset"))
+		Expect(err.Error()).To(ContainSubstring("has no Event preset"))
 	})
 
 	It("should return BlockedError when source zone has no gateway reference", func() {
@@ -325,14 +325,14 @@ var _ = Describe("CreateProxyLocalVoyagerRoute", func() {
 		Expect(err.Error()).To(ContainSubstring("has no gateway reference in status"))
 	})
 
-	It("should return BlockedError when target zone has no default preset", func() {
+	It("should return BlockedError when target zone has no Event preset", func() {
 		targetNoPreset := makeZoneNoPreset("zone-b", "zone-b-ns")
 
 		route, err := util.CreateProxyLocalVoyagerRoute(ctx, sourceZone, targetNoPreset)
 		Expect(err).To(HaveOccurred())
 		Expect(route).To(BeNil())
 		Expect(unwrapAll(err)).To(Satisfy(isBlockedError))
-		Expect(err.Error()).To(ContainSubstring("has no default preset"))
+		Expect(err.Error()).To(ContainSubstring("has no Event preset"))
 	})
 
 	It("should create the own-zone proxy route with both mesh and local paths", func() {

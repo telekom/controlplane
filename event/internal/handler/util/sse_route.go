@@ -52,6 +52,10 @@ func CreateSSERoute(
 	if err != nil {
 		return nil, err
 	}
+	gatewayRef, err := gatewayRef(zone)
+	if err != nil {
+		return nil, err
+	}
 
 	// The primary SSE Route points at the zone's local Horizon backend. A proxy
 	// zone has no local backend (Spec.Local is nil); callers must resolve the
@@ -82,7 +86,7 @@ func CreateSSERoute(
 			config.BuildLabelKey("type"): "sse",
 		}
 		route.Spec = gatewayapi.RouteSpec{
-			GatewayRef: *zone.Status.Gateway,
+			GatewayRef: *gatewayRef,
 			Type:       gatewayapi.RouteTypePrimary,
 			Backend:    gatewayapi.Backend{Upstreams: []gatewayapi.Upstream{upstream}},
 			Hostnames:  hostnames,
@@ -140,6 +144,10 @@ func CreateSSEProxyRoute(
 	if err != nil {
 		return nil, err
 	}
+	subscriberGatewayRef, err := gatewayRef(subscriberZone)
+	if err != nil {
+		return nil, err
+	}
 
 	providerPreset, err := targetPreset(providerZone)
 	if err != nil {
@@ -169,7 +177,7 @@ func CreateSSEProxyRoute(
 			config.BuildLabelKey("type"): "sse-proxy",
 		}
 		route.Spec = gatewayapi.RouteSpec{
-			GatewayRef: *subscriberZone.Status.Gateway,
+			GatewayRef: *subscriberGatewayRef,
 			Type:       gatewayapi.RouteTypeProxy,
 			Backend:    gatewayapi.Backend{Upstreams: []gatewayapi.Upstream{upstream}},
 			Hostnames:  hostnames,

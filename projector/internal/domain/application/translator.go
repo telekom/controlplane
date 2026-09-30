@@ -65,6 +65,11 @@ func (t *Translator) Translate(_ context.Context, obj *appv1.Application) (*Appl
 		clientSecret = &obj.Spec.Secret
 	}
 
+	var tokenURL *string
+	if obj.Status.TokenUrl != "" {
+		tokenURL = &obj.Status.TokenUrl
+	}
+
 	// Secret rotation fields
 	rotationPhase, rotationMessage := deriveRotationState(obj)
 
@@ -122,6 +127,7 @@ func (t *Translator) Translate(_ context.Context, obj *appv1.Application) (*Appl
 		Name:          obj.Name,
 		ClientID:      clientID,
 		ClientSecret:  clientSecret,
+		TokenURL:      tokenURL,
 		TeamName:      obj.Spec.Team,
 		ZoneName:      obj.Spec.Zone.Name,
 

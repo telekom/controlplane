@@ -100,26 +100,26 @@ func testReadyZone() *adminv1.Zone {
 			Labels:    map[string]string{cconfig.EnvironmentLabelKey: testEnv},
 		},
 		Spec: adminv1.ZoneSpec{
-			Gateway: adminv1.GatewayConfig{
-				Presets: []adminv1.GatewayConfigPreset{{
-					Name:    "default",
-					Default: true,
-					Urls: []adminv1.UrlConfig{{
-						Hostname: testGatewayHost,
-						BasePath: "/",
-					}},
+			Presets: []adminv1.Preset{{
+				Name:       "default",
+				Type:       adminv1.GatewayTypeAPI,
+				GatewayRef: "standard",
+				Default:    true,
+				Urls: []adminv1.UrlConfig{{
+					Hostname: testGatewayHost,
+					BasePath: "/",
 				}},
-			},
+			}},
 		},
 		Status: adminv1.ZoneStatus{
-			Gateway: &types.ObjectRef{Name: "gw", Namespace: testEnv},
+			RealmName: "zone-realm",
 			InternalIdentityRealm: &types.ObjectRef{
 				Name:      "internal-realm",
 				Namespace: testEnv,
 			},
-			Links: adminv1.Links{
+			Presets: []adminv1.PresetStatus{{Name: "default", GatewayRef: &types.ObjectRef{Name: "gw", Namespace: testEnv}, Links: adminv1.Links{
 				InternalIssuer: testIssuerURL,
-			},
+			}}},
 		},
 	}
 	k8smeta.SetStatusCondition(&z.Status.Conditions, metav1.Condition{
@@ -481,7 +481,7 @@ var _ = Describe("ZoneServiceConfigHandler", func() {
 			obj := testZoneServiceConfig()
 			ctx, mockClient := newTestContext()
 			zoneNoPreset := testReadyZone()
-			zoneNoPreset.Spec.Gateway.Presets = nil
+			zoneNoPreset.Spec.Presets = nil
 			readyClient := testReadyClient()
 
 			mockClient.EXPECT().
@@ -496,10 +496,6 @@ var _ = Describe("ZoneServiceConfigHandler", func() {
 					*out.(*identityv1.Client) = readyClient
 				}).
 				Return(nil).Once()
-			mockClient.EXPECT().
-				CreateOrUpdate(mock.Anything, mock.AnythingOfType("*v1.Consumer"), mock.Anything).
-				Return(controllerutil.OperationResultNone, nil).Once()
-
 			err := handler.CreateOrUpdate(ctx, obj)
 
 			var blocked ctrlerrors.BlockedError

@@ -5,15 +5,39 @@
 package v1
 
 import (
+	"errors"
 	"fmt"
+	"maps"
 	"path"
 	"slices"
 	"strings"
 
-	"github.com/telekom/controlplane/common/pkg/reminder"
-	"github.com/telekom/controlplane/common/pkg/types"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/telekom/controlplane/common/pkg/reminder"
+	"github.com/telekom/controlplane/common/pkg/types"
+)
+
+// Preset resolution sentinels. Downstream callers branch on these, so the distinction
+// between "the zone offers nothing" and "the zone is broken" must stay sharp.
+var (
+	// ErrNoMatchingPreset means the request was well-formed but this zone offers no preset
+	// providing it. The zone is valid, so callers may treat it as "skip this zone". It must
+	// never wrap a malformed request or a misconfigured zone.
+	ErrNoMatchingPreset = errors.New("no matching preset")
+
+	// ErrInvalidFeatures means the request itself contains an unknown feature. Callers must
+	// not skip on it — the caller, not the zone, is at fault.
+	ErrInvalidFeatures = errors.New("invalid features")
+
+	// ErrAmbiguousPreset means several presets of one traffic type are marked default.
+	// Callers must not skip on it; surface it as a blocking error.
+	ErrAmbiguousPreset = errors.New("ambiguous preset")
+
+	// ErrNoPresetFound means no preset exists with the requested name. It belongs to lookup by
+	// name, not to selection.
+	ErrNoPresetFound = errors.New("no preset found with the specified name")
 )
 
 type ZoneVisibility string
@@ -21,11 +45,6 @@ type ZoneVisibility string
 const (
 	ZoneVisibilityWorld      ZoneVisibility = "World"
 	ZoneVisibilityEnterprise ZoneVisibility = "Enterprise"
-)
-
-var (
-	ErrNoMatchingGatewayPreset = fmt.Errorf("no matching gateway preset found for the requested features")
-	ErrNoPresetFound           = fmt.Errorf("no gateway preset found with the specified name")
 )
 
 type RedisConfig struct {
@@ -86,21 +105,23 @@ type SecretRotationConfig struct {
 }
 
 type IdentityProviderConfig struct {
+	// +kubebuilder:validation:Pattern=`^[a-z0-9]+(-?[a-z0-9]+)*$`
+	Name  string                      `json:"name"`
 	Admin IdentityProviderAdminConfig `json:"admin"`
-	// Url is the base URL of the identity provider.
-	// It is used to construct the issuer URLs for the gateway realms and to obtain tokens for the gateway admin API if TokenUrl is not set.
-	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MaxLength=253
+	// +kubebuilder:validation:Format=hostname
+	IssuerHostname string `json:"issuerHostname,omitempty"`
 	// +kubebuilder:validation:Format=uri
-	Url string `json:"url"`
-
-	// SecretRotation contains the config for rotating secrets related to the default identity provider realm of this zone.
-	// If not set, secret rotation will be disabled.
+	TokenUrl       string                `json:"tokenUrl,omitempty"`
 	SecretRotation *SecretRotationConfig `json:"secretRotation,omitempty"`
 }
 
 // GatewayAdminConfig contains the necessary information to connect to the gateway admin API for this zone.
 // Most of it can be optional if the Gateway was setup to support it, then only the URL is required.
 type GatewayAdminConfig struct {
+	// IdentityProviderRef selects the IDP used to obtain gateway-admin tokens.
+	IdentityProviderRef string `json:"identityProviderRef"`
+
 	// URL of the gateway admin API.
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:Format=uri
@@ -121,7 +142,7 @@ type UrlConfig struct {
 	// Hostname is the hostname part of the URL (e.g. "api.example.com").
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MaxLength=253
-	// +kubebuilder:validation:XValidation:rule="!format.dns1123Subdomain().validate(self).hasValue()",message="hostname must be a valid DNS-1123 subdomain"
+	// +kubebuilder:validation:Format=hostname
 	Hostname string `json:"hostname"`
 	// Port is the port number of the URL (e.g. 8000). If not set, the default port for the scheme is used (443 for https, 80 for http).
 	// +kubebuilder:validation:Optional
@@ -135,11 +156,14 @@ type UrlConfig struct {
 	Scheme string `json:"scheme,omitempty"`
 	// BasePath is the base path part of the URL which will be the prefix of all routes exposed on this URL (e.g. "/v1").
 	// It is appended to the hostname to construct the full URL (e.g. "https://api.example.com/v1").
-	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:Pattern=`^/.*$`
+	// +kubebuilder:default=/
 	BasePath string `json:"basePath"`
 	// Hidden controls whether this URL should be hidden from the Links section in the Zone status.
 	// This can be used to hide internal-only URLs that should not be exposed to API consumers.
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:default=false
 	Hidden bool `json:"hidden"`
 }
 
@@ -158,46 +182,52 @@ func (u UrlConfig) GetFullUrl() string {
 	return fmt.Sprintf("%s://%s%s", scheme, u.Hostname, u.BasePath)
 }
 
-type GatewayConfigPreset struct {
-	// Name of the preset. This is used to reference the preset in the Zone spec.
+type Preset struct {
+	// Name is the unique name of the preset within the zone.
 	// +kubebuilder:validation:Required
-	// +kubebuilder:validation:Pattern=`^[aA-zZ0-9]+(-?[aA-zZ0-9]+)*$`
+	// +kubebuilder:validation:Pattern=`^[a-z0-9]+(-?[a-z0-9]+)*$`
 	Name string `json:"name"`
-
-	// Default indicates whether this preset is the default preset for the zone.
-	// If true, this preset will be used if no other preset is explicitly selected.
-	// There must be at least one preset with Default=true in the gateway configuration, otherwise the operator will return an error.
-	// +kubebuilder:default=false
-	Default bool `json:"default"`
-
-	// Urls defines a list of URLs (hostname + base path) that should be exposed by the gateway for this zone. At least one URL is required.
+	// Type is the kind of traffic this preset routes. It selects which domain's
+	// routes use this preset; a gateway serves the union of its presets' types.
 	// +kubebuilder:validation:Required
+	Type GatewayType `json:"type"`
+	// +kubebuilder:validation:Optional
+	Default bool `json:"default,omitempty"`
+	// GatewayRef is the name of the gateway to used for this preset.
+	// It must match one of the gateways defined in the zone spec.
+	// +kubebuilder:validation:Required
+	GatewayRef string `json:"gatewayRef"`
+	// IdentityProviderRef is the name of the identity provider to used for this preset.
+	// It must match one of the identity providers defined in the zone spec.
+	// +kubebuilder:validation:Required
+	IdentityProviderRef string `json:"identityProviderRef"`
+	// TokenUrl is the token endpoint for this zone preset
+	// By default it is derived from the identity provider's issuer URL, but can be overridden here if needed.
+	// +kubebuilder:validation:Format=uri
+	// +kubebuilder:validation:Optional
+	TokenUrl string `json:"tokenUrl,omitempty"`
+	// Urls is the list of URLs (hostnames + base paths) exposed by the gateway for this preset.
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:MaxItems=5
 	Urls []UrlConfig `json:"urls"`
-
-	// Features is a list of features that are enabled on this Preset.
-	// This can be used to enable certain features on the zone when this preset is applied.
+	// Features is a list of features that are enabled or disabled for this preset.
 	// +listType=map
 	// +listMapKey=name
-	// +patchStrategy=merge
-	// +patchMergeKey=name
-	// +optional
 	Features []Feature `json:"features,omitempty"`
 }
 
 // ResolveHostnamesAndPaths derives route hostnames and paths from the preset's URL configuration.
 // Each URL contributes one hostname and one path (basePath + routePath).
-func (p *GatewayConfigPreset) ResolveHostnamesAndPaths(routePath string) (hostnames []string, paths []string) {
+func (p *Preset) ResolveHostnamesAndPaths(routePath string) (hostnames, paths []string) {
 	for _, u := range p.Urls {
 		hostnames = append(hostnames, u.Hostname)
 		paths = append(paths, path.Join(u.BasePath, routePath))
 	}
-	return
+	return hostnames, paths
 }
 
-// GetDefaultUrl returns the full URL of the first non-hidden UrlConfig in this preset, or an empty string if all UrlConfigs are hidden.
-func (p *GatewayConfigPreset) GetDefaultUrl() string {
+// GetDefaultURL returns the full URL of the first non-hidden UrlConfig in this preset, or an empty string if all UrlConfigs are hidden.
+func (p *Preset) GetDefaultURL() string {
 	for _, u := range p.Urls {
 		if !u.Hidden {
 			return u.GetFullUrl()
@@ -206,52 +236,27 @@ func (p *GatewayConfigPreset) GetDefaultUrl() string {
 	return ""
 }
 
-func (p *GatewayConfigPreset) SupportsFeatures(featureNames []FeatureName) bool {
-	for _, featureName := range featureNames {
-		hasFeatureEnabled := func(feature Feature) bool {
-			return strings.EqualFold(string(feature.Name), string(featureName)) && feature.Enabled
-		}
-		if !slices.ContainsFunc(p.Features, hasFeatureEnabled) {
-			return false
-		}
-	}
-	return true
+func (p *Preset) SupportsFeatures(featureNames []FeatureName) bool {
+	return supportsFeatures(p.Features, featureNames...)
 }
+
+// GatewayType classifies the kind of traffic a gateway serves.
+// +kubebuilder:validation:Enum=API;AI;Event
+type GatewayType string
+
+const (
+	// GatewayTypeAPI serves synchronous API traffic (exposures, subscriptions, proxy routes).
+	GatewayTypeAPI GatewayType = "API"
+	// GatewayTypeAI serves agentic traffic (MCP servers, agent cards).
+	GatewayTypeAI GatewayType = "AI"
+	// GatewayTypeEvent serves asynchronous event traffic.
+	GatewayTypeEvent GatewayType = "Event"
+)
 
 type GatewayConfig struct {
+	// +kubebuilder:validation:Pattern=`^[a-z0-9]+(-?[a-z0-9]+)*$`
+	Name  string             `json:"name"`
 	Admin GatewayAdminConfig `json:"admin"`
-	// Presets defines a list of gateway configuration presets that can be applied to this zone. At least one preset is required.
-	// This allows to define different sets of features and URLs that can be selected for the zone based on the desired features.
-	// +listType=map
-	// +listMapKey=name
-	// +patchStrategy=merge
-	// +patchMergeKey=name
-	// +kubebuilder:validation:Required
-	// +kubebuilder:validation:MinItems=1
-	// +kubebuilder:validation:MaxItems=5
-	Presets []GatewayConfigPreset `json:"presets"`
-}
-
-// GetPresetByName returns the gateway configuration preset with the specified name.
-// If no preset with the given name is found, it returns an error.
-func (g GatewayConfig) GetPresetByName(name string) (*GatewayConfigPreset, error) {
-	for _, preset := range g.Presets {
-		if preset.Name == name {
-			return &preset, nil
-		}
-	}
-	return nil, fmt.Errorf("%w: %s", ErrNoPresetFound, name)
-}
-
-// GetDefaultPreset returns the default preset for this gateway configuration.
-// If no preset is marked as default, it returns an error.
-func (g GatewayConfig) GetDefaultPreset() (*GatewayConfigPreset, error) {
-	for _, preset := range g.Presets {
-		if preset.Default {
-			return &preset, nil
-		}
-	}
-	return nil, fmt.Errorf("no default gateway preset found: %w", ErrNoPresetFound)
 }
 
 // ManagedRouteType defines the type of a managed route.
@@ -269,44 +274,6 @@ const (
 	// without any authentication or authorization.
 	ManagedRouteTypeProxy ManagedRouteType = "Proxy"
 )
-
-// AiGatewayConfig configures an optional AI Gateway for this zone.
-// When present, the zone supports MCP (Model Context Protocol) exposures
-// that are routed through a dedicated AI Gateway instance with streaming support.
-type AiGatewayConfig struct {
-	// Admin contains the admin credentials for the AI Gateway.
-	Admin GatewayAdminConfig `json:"admin"`
-	// Presets defines a list of gateway configuration presets for the AI Gateway.
-	// Same structure as the regular gateway presets, allowing feature-based preset selection.
-	// +listType=map
-	// +listMapKey=name
-	// +patchStrategy=merge
-	// +patchMergeKey=name
-	// +kubebuilder:validation:Required
-	// +kubebuilder:validation:MinItems=1
-	// +kubebuilder:validation:MaxItems=5
-	Presets []GatewayConfigPreset `json:"presets"`
-}
-
-// GetPresetByName returns the AI gateway preset with the specified name.
-func (g AiGatewayConfig) GetPresetByName(name string) (*GatewayConfigPreset, error) {
-	for _, preset := range g.Presets {
-		if preset.Name == name {
-			return &preset, nil
-		}
-	}
-	return nil, fmt.Errorf("%w: %s", ErrNoPresetFound, name)
-}
-
-// GetDefaultPreset returns the default preset for this AI gateway configuration.
-func (g AiGatewayConfig) GetDefaultPreset() (*GatewayConfigPreset, error) {
-	for _, preset := range g.Presets {
-		if preset.Default {
-			return &preset, nil
-		}
-	}
-	return nil, fmt.Errorf("no default AI gateway preset found: %w", ErrNoPresetFound)
-}
 
 type ManagedRouteConfig struct {
 	// Name is the name of the created route. It must be unique within the zone.
@@ -378,10 +345,27 @@ type ExternalIdPolicy struct {
 
 // ZoneSpec defines the desired state of Zone
 type ZoneSpec struct {
-	IdentityProvider IdentityProviderConfig `json:"identityProvider"`
-	Gateway          GatewayConfig          `json:"gateway"`
-	Redis            *RedisConfig           `json:"redis,omitempty"`
-	ManagedRoutes    *ManagedRoutesConfig   `json:"managedRoutes,omitempty"`
+	// Features configures capabilities that apply to the entire zone.
+	// +listType=map
+	// +listMapKey=name
+	Features []Feature `json:"features,omitempty"`
+	// +listType=map
+	// +listMapKey=name
+	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:MaxItems=10
+	Gateways []GatewayConfig `json:"gateways"`
+	// +listType=map
+	// +listMapKey=name
+	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:MaxItems=1
+	IdentityProviders []IdentityProviderConfig `json:"identityProviders"`
+	// +listType=map
+	// +listMapKey=name
+	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:MaxItems=10
+	Presets       []Preset             `json:"presets"`
+	Redis         *RedisConfig         `json:"redis,omitempty"`
+	ManagedRoutes *ManagedRoutesConfig `json:"managedRoutes,omitempty"`
 	// +kubebuilder:validation:Enum=World;Enterprise
 	// Visibility controls what subscriptions are allowed from and to this zone. It's also relevant for features like failover
 	Visibility ZoneVisibility `json:"visibility"`
@@ -389,12 +373,6 @@ type ZoneSpec struct {
 	// Permissions configuration for permission service integration
 	// +kubebuilder:validation:Optional
 	Permissions *PermissionsConfig `json:"permissions,omitempty"`
-
-	// AiGateway configures a dedicated AI Gateway for this zone.
-	// When present, the zone supports MCP exposures routed through a separate gateway
-	// with streaming support (buffering disabled).
-	// +kubebuilder:validation:Optional
-	AiGateway *AiGatewayConfig `json:"aiGateway,omitempty"`
 
 	// ExternalIdPolicies configures, per identifier scheme, the format and
 	// presence requirements for externalIds on Rovers and Applications bound to
@@ -406,22 +384,231 @@ type ZoneSpec struct {
 	ExternalIdPolicies []ExternalIdPolicy `json:"externalIdPolicies,omitempty"`
 }
 
+func (s *ZoneSpec) GetGateway(name string) (*GatewayConfig, error) {
+	for i := range s.Gateways {
+		if s.Gateways[i].Name == name {
+			return &s.Gateways[i], nil
+		}
+	}
+	return nil, fmt.Errorf("gateway %q not found", name)
+}
+
+func (s *ZoneSpec) GetIdentityProvider() (*IdentityProviderConfig, error) {
+	if len(s.IdentityProviders) != 1 {
+		return nil, fmt.Errorf("exactly one identity provider is required, got %d", len(s.IdentityProviders))
+	}
+	return &s.IdentityProviders[0], nil
+}
+
+func (s *ZoneSpec) GetIdentityProviderByName(name string) (*IdentityProviderConfig, error) {
+	for i := range s.IdentityProviders {
+		if s.IdentityProviders[i].Name == name {
+			return &s.IdentityProviders[i], nil
+		}
+	}
+	return nil, fmt.Errorf("identity provider %q not found", name)
+}
+
+func (s *ZoneSpec) GetPreset(name string) (*Preset, error) {
+	for i := range s.Presets {
+		if s.Presets[i].Name == name {
+			return &s.Presets[i], nil
+		}
+	}
+	return nil, fmt.Errorf("preset %q: %w", name, ErrNoPresetFound)
+}
+
+// GetDefaultPreset returns the zone's representative profile: the API type default.
+// Callers that carry no traffic type (projector, team routes, team consumers) use this
+// rather than inventing one. It is equivalent to SelectPreset(GatewayTypeAPI).
+func (s *ZoneSpec) GetDefaultPreset() (*Preset, error) {
+	return s.SelectPreset(GatewayTypeAPI)
+}
+
+func (s *ZoneSpec) validateFeatures(features []FeatureName) []string {
+	var problems []string
+	for _, feature := range features {
+		if !IsKnownFeature(feature) {
+			problems = append(problems, fmt.Sprintf("feature %q is unknown", feature))
+		}
+	}
+	return problems
+}
+
+// PresetSupportsFeatures applies preset values over the zone's feature defaults.
+func (s *ZoneSpec) PresetSupportsFeatures(preset *Preset, featureNames ...FeatureName) bool {
+	for _, name := range featureNames {
+		enabled := supportsFeatures(s.Features, name)
+		for _, feature := range preset.Features {
+			if strings.EqualFold(string(feature.Name), string(name)) {
+				enabled = feature.Enabled
+				break
+			}
+		}
+		if !enabled {
+			return false
+		}
+	}
+	return true
+}
+
+// presetsOfType returns the presets serving one traffic type, in spec order.
+func (s *ZoneSpec) presetsOfType(gatewayType GatewayType) []*Preset {
+	var presets []*Preset
+	for i := range s.Presets {
+		if s.Presets[i].Type == gatewayType {
+			presets = append(presets, &s.Presets[i])
+		}
+	}
+	return presets
+}
+
+// explainMissingFeatures reports which requested features no preset of the type enables.
+func (s *ZoneSpec) explainMissingFeatures(gatewayType GatewayType, features []FeatureName) []string {
+	candidates := s.presetsOfType(gatewayType)
+	var problems []string
+	for _, feature := range features {
+		if !slices.ContainsFunc(candidates, func(p *Preset) bool { return s.PresetSupportsFeatures(p, feature) }) {
+			problems = append(problems, fmt.Sprintf("feature %q is not enabled on any %q preset", feature, gatewayType))
+		}
+	}
+	return problems
+}
+
+// selectionScope names what was asked for, for the aggregate selection errors. The feature
+// clause is dropped when no features were requested: "feature combination []" is pure noise,
+// and the gateway type already appears in the problems it is joined with.
+func selectionScope(gatewayType GatewayType, features []FeatureName) string {
+	if len(features) == 0 {
+		return fmt.Sprintf("gateway type %q", gatewayType)
+	}
+	return fmt.Sprintf("feature combination %v for gateway type %q", features, gatewayType)
+}
+
+// SelectPreset returns the single routing profile for a traffic type and feature set.
+// An explicit default wins; without one, spec order decides.
+func (s *ZoneSpec) SelectPreset(gatewayType GatewayType, features ...FeatureName) (*Preset, error) {
+	problems := s.validateFeatures(features)
+	// A malformed request and an unavailable capability are different classes: callers use the
+	// sentinel to tell "this zone does not offer it, skip" from "this is misconfigured, block".
+	sentinel := ErrNoMatchingPreset
+	if len(problems) > 0 {
+		sentinel = ErrInvalidFeatures
+	}
+
+	candidates := s.presetsOfType(gatewayType)
+	if len(candidates) == 0 {
+		problems = append(problems, fmt.Sprintf("no preset of type %q exists", gatewayType))
+		return nil, fmt.Errorf("%w: %s: %s",
+			sentinel, selectionScope(gatewayType, features), strings.Join(problems, "; "))
+	}
+
+	var matches []*Preset
+	for _, preset := range candidates {
+		if s.PresetSupportsFeatures(preset, features...) {
+			matches = append(matches, preset)
+		}
+	}
+
+	if len(matches) == 0 {
+		missing := s.explainMissingFeatures(gatewayType, features)
+		problems = append(problems, missing...)
+		if len(missing) == 0 && len(features) > 1 {
+			// ponytail: only needed when separate presets enable parts of a requested combination.
+			problems = append(problems, "requested features are enabled on different presets, but only one preset can be used at a time")
+		}
+	}
+
+	if len(problems) > 0 {
+		return nil, fmt.Errorf("%w: %s: %s",
+			sentinel, selectionScope(gatewayType, features), strings.Join(problems, "; "))
+	}
+
+	var defaults []*Preset
+	for _, preset := range matches {
+		if preset.Default {
+			defaults = append(defaults, preset)
+		}
+	}
+	if len(defaults) > 1 {
+		return nil, fmt.Errorf("%w: %d presets of type %q are marked default; exactly one is required",
+			ErrAmbiguousPreset, len(defaults), gatewayType)
+	}
+	if len(defaults) == 1 {
+		return defaults[0], nil
+	}
+	return matches[0], nil
+}
+
+func (s *ZoneSpec) FeaturesSupported(gatewayType GatewayType, features ...FeatureName) bool {
+	_, err := s.SelectPreset(gatewayType, features...)
+	return err == nil
+}
+
+// MatchingGateways returns the distinct gateways reachable for a traffic type and
+// feature set. Selection is single-valued, but callers provision per physical gateway,
+// so the result is deduplicated and sorted for a stable status.
+func (s *ZoneSpec) MatchingGateways(gatewayType GatewayType, features ...FeatureName) ([]*GatewayConfig, error) {
+	problems := s.validateFeatures(features)
+	if len(problems) > 0 {
+		return nil, fmt.Errorf("%w: %s: %s",
+			ErrInvalidFeatures, selectionScope(gatewayType, features), strings.Join(problems, "; "))
+	}
+
+	gatewaysByName := make(map[string]*GatewayConfig)
+	candidates := s.presetsOfType(gatewayType)
+	for _, preset := range candidates {
+		if !s.PresetSupportsFeatures(preset, features...) {
+			continue
+		}
+		gateway, err := s.GetGateway(preset.GatewayRef)
+		if err != nil {
+			return nil, err
+		}
+		gatewaysByName[gateway.Name] = gateway
+	}
+	if len(gatewaysByName) == 0 {
+		problems = s.explainMissingFeatures(gatewayType, features)
+		if len(problems) == 0 {
+			if len(candidates) == 0 {
+				problems = append(problems, fmt.Sprintf("no preset of type %q exists", gatewayType))
+			} else {
+				// ponytail: only needed when separate presets enable parts of a requested combination.
+				problems = append(problems, "requested features are enabled on different presets, but only one preset can be used at a time")
+			}
+		}
+		return nil, fmt.Errorf("%w: %s: %s",
+			ErrNoMatchingPreset, selectionScope(gatewayType, features), strings.Join(problems, "; "))
+	}
+
+	gateways := slices.Collect(maps.Values(gatewaysByName))
+	slices.SortFunc(gateways, func(a, b *GatewayConfig) int { return strings.Compare(a.Name, b.Name) })
+	return gateways, nil
+}
+
 type Links struct {
-	// Url is the base URL of the default gateway of this zone
+	// Url is the base URL of the default gateway of this zone preset
 	// +kubebuilder:validation:Format=uri
 	Url string `json:"gatewayUrl"`
-	// Issuer is the expected issuer of downstream tokens for this zone
+	// Issuer is the expected issuer of downstream tokens for this zone preset
 	// +kubebuilder:validation:Format=uri
 	Issuer string `json:"gatewayIssuer"`
-	// TeamIssuer is the expected issuer of downstream tokens for Team APIs in this zone
+
+	// TokenUrl is the token endpoint for this zone preset
+	// +kubebuilder:validation:Format=uri
+	TokenUrl string `json:"tokenUrl,omitempty"`
+
+	// TeamIssuer is the expected issuer of downstream tokens for Team APIs in this zone preset
 	// +kubebuilder:validation:Format=uri
 	// +optional
 	TeamIssuer string `json:"teamApiIssuer,omitempty"`
-	// LmsIssuer is the issuer of the Last-Mile-Security tokens (upstream) for this zone
+
+	// LmsIssuer is the issuer of the Last-Mile-Security tokens (upstream) for this zone preset
 	// +kubebuilder:validation:Format=uri
 	// +optional
 	LmsIssuer string `json:"gatewayLmsIssuer"`
-	// InternalIssuer is the expected issuer of downstream tokens for internal services in this zone
+
+	// InternalIssuer is the expected issuer of downstream tokens for internal services in this zone preset
 	// +kubebuilder:validation:Format=uri
 	// +optional
 	InternalIssuer string `json:"internalIssuer,omitempty"`
@@ -432,6 +619,24 @@ type Links struct {
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:Format=uri
 	PermissionsUrl string `json:"permissionsUrl,omitempty"`
+}
+
+type GatewayStatus struct {
+	Name string `json:"name"`
+	// Types is the union of the types of the presets referencing this gateway.
+	// +listType=set
+	// +optional
+	Types       []GatewayType    `json:"types,omitempty"`
+	Gateway     *types.ObjectRef `json:"gateway,omitempty"`
+	AdminClient *types.ObjectRef `json:"adminClient,omitempty"`
+	Consumer    *types.ObjectRef `json:"consumer,omitempty"`
+}
+
+type PresetStatus struct {
+	Name                string           `json:"name"`
+	GatewayRef          *types.ObjectRef `json:"gatewayRef,omitempty"`
+	IdentityProviderRef *types.ObjectRef `json:"identityProviderRef,omitempty"`
+	Links               Links            `json:"links,omitempty"`
 }
 
 // ZoneStatus defines the observed state of Zone
@@ -448,17 +653,15 @@ type ZoneStatus struct {
 	IdentityRealm         *types.ObjectRef `json:"identityRealm,omitempty"`
 	InternalIdentityRealm *types.ObjectRef `json:"internalIdentityRealm,omitempty"`
 
-	Gateway            *types.ObjectRef `json:"gateway,omitempty"`
-	GatewayAdminClient *types.ObjectRef `json:"gatewayAdminClient,omitempty"`
-	GatewayConsumer    *types.ObjectRef `json:"gatewayConsumer,omitempty"`
-
-	// AiGateway references the AI Gateway CR created for this zone.
-	// +optional
-	AiGateway *types.ObjectRef `json:"aiGateway,omitempty"`
+	// +listType=map
+	// +listMapKey=name
+	Gateways []GatewayStatus `json:"gateways,omitempty"`
+	// +listType=map
+	// +listMapKey=name
+	Presets []PresetStatus `json:"presets,omitempty"`
 
 	TeamApiIdentityRealm *types.ObjectRef  `json:"teamApiIdentityRealm,omitempty"`
 	ManagedRoutes        []types.ObjectRef `json:"managedRoutes,omitempty"`
-	Links                Links             `json:"links,omitempty"`
 
 	// RealmName as an abstraction layer and is retrieved from Env.Spec.RealmName
 	RealmName string `json:"realmName,omitempty"`
@@ -471,6 +674,24 @@ type ZoneStatus struct {
 	// +patchMergeKey=name
 	// +optional
 	Features []Feature `json:"features,omitempty"`
+}
+
+func (s *ZoneStatus) GetGateway(name string) (*GatewayStatus, error) {
+	for i := range s.Gateways {
+		if s.Gateways[i].Name == name {
+			return &s.Gateways[i], nil
+		}
+	}
+	return nil, fmt.Errorf("gateway status %q not found", name)
+}
+
+func (s *ZoneStatus) GetPreset(name string) (*PresetStatus, error) {
+	for i := range s.Presets {
+		if s.Presets[i].Name == name {
+			return &s.Presets[i], nil
+		}
+	}
+	return nil, fmt.Errorf("preset status %q not found", name)
 }
 
 // +kubebuilder:object:root=true
@@ -495,23 +716,6 @@ func (z *Zone) GetConditions() []metav1.Condition {
 
 func (z *Zone) SetCondition(condition metav1.Condition) bool {
 	return meta.SetStatusCondition(&z.Status.Conditions, condition)
-}
-
-func SelectGatewayPreset(presets []GatewayConfigPreset, requestedFeatures ...FeatureName) (*GatewayConfigPreset, error) {
-	for _, preset := range presets {
-		if preset.SupportsFeatures(requestedFeatures) {
-			return &preset, nil
-		}
-	}
-	return nil, ErrNoMatchingGatewayPreset
-}
-
-func (z *Zone) SelectGatewayPreset(requestedFeatures ...FeatureName) (*GatewayConfigPreset, error) {
-	return SelectGatewayPreset(z.Spec.Gateway.Presets, requestedFeatures...)
-}
-
-func (z *Zone) GetDefaultGatewayPreset() (*GatewayConfigPreset, error) {
-	return z.Spec.Gateway.GetDefaultPreset()
 }
 
 // +kubebuilder:object:root=true
@@ -542,27 +746,52 @@ func init() {
 type FeatureName string
 
 const (
-	// FeatureSecretRotation indicates that secret rotation is enabled for the zone.
+	// FeatureBasicAuth indicates that Basic Authentication is available throughout the zone.
+	FeatureBasicAuth FeatureName = "BasicAuth"
+
+	// FeatureSecretRotation is a reconciled status feature indicating secret rotation is enabled.
 	FeatureSecretRotation FeatureName = "SecretRotation"
 
-	// FeatureAiGateway indicates that the AI Gateway is configured and available for this zone.
-	FeatureAiGateway FeatureName = "AiGateway"
-
-	// FeaturePermissions indicates that permission service integration is enabled for the zone.
+	// FeaturePermissions is a reconciled status feature indicating permission service integration is enabled.
 	FeaturePermissions FeatureName = "Permissions"
 
 	// FeatureConsumerFailover indicates that consumer failover is enabled for the zone.
 	// This feature is automatically enabled if the Zone has a "ConsumerFailover" gateway preset configured.
 	FeatureConsumerFailover FeatureName = "ConsumerFailover"
 
-	// FeatureRateLimiting indicates that rate limiting is enabled for the zone.
+	// FeatureRateLimiting is a reconciled status feature indicating rate limiting is enabled.
 	// The zone requires a valid Redis configuration to support rate limiting
 	FeatureRateLimiting FeatureName = "RateLimiting"
 )
 
+var explicitlyKnownFeatures = []FeatureName{
+	FeatureBasicAuth,
+	FeatureConsumerFailover,
+}
+
+func IsKnownFeature(feature FeatureName) bool {
+	for _, known := range explicitlyKnownFeatures {
+		if strings.EqualFold(string(feature), string(known)) {
+			return true
+		}
+	}
+	return false
+}
+
 type Feature struct {
 	Name    FeatureName `json:"name"`
 	Enabled bool        `json:"enabled"`
+}
+
+func supportsFeatures(configured []Feature, requested ...FeatureName) bool {
+	for _, featureName := range requested {
+		if !slices.ContainsFunc(configured, func(feature Feature) bool {
+			return strings.EqualFold(string(feature.Name), string(featureName)) && feature.Enabled
+		}) {
+			return false
+		}
+	}
+	return true
 }
 
 func (z *Zone) IsFeatureEnabled(featureName FeatureName) bool {

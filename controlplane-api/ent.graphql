@@ -544,6 +544,14 @@ type AgenticSubscription implements Node {
   environment: String
   namespace: String!
   name: String!
+  """
+  Latest scopes requested in the subscription specification.
+  """
+  requestedScopes: [String!]
+  """
+  Last approved scope set successfully written to downstream Kubernetes resources; does not imply data-plane readiness.
+  """
+  activeScopes: [String!]
   basePath: String!
   gatewayURL: String
   security: AgenticSubscriptionSecurity
@@ -1119,6 +1127,14 @@ type ApiSubscription implements Node {
   environment: String
   namespace: String!
   name: String!
+  """
+  Latest scopes requested in the subscription specification.
+  """
+  requestedScopes: [String!]
+  """
+  Last approved scope set successfully written to downstream Kubernetes resources; does not imply data-plane readiness.
+  """
+  activeScopes: [String!]
   basePath: String!
   m2mAuthMethod: ApiSubscriptionM2mAuthMethod!
   gatewayURL: String
@@ -1566,6 +1582,7 @@ type Application implements Node {
   name: String!
   clientID: String
   clientSecret: String
+  tokenURL: String
   rotatedClientSecret: String
   rotatedExpiresAt: Time
   currentExpiresAt: Time
@@ -2031,6 +2048,24 @@ input ApplicationWhereInput {
   clientIDNotNil: Boolean
   clientIDEqualFold: String
   clientIDContainsFold: String
+  """
+  token_url field predicates
+  """
+  tokenURL: String
+  tokenURLNEQ: String
+  tokenURLIn: [String!]
+  tokenURLNotIn: [String!]
+  tokenURLGT: String
+  tokenURLGTE: String
+  tokenURLLT: String
+  tokenURLLTE: String
+  tokenURLContains: String
+  tokenURLHasPrefix: String
+  tokenURLHasSuffix: String
+  tokenURLIsNil: Boolean
+  tokenURLNotNil: Boolean
+  tokenURLEqualFold: String
+  tokenURLContainsFold: String
   """
   rotated_expires_at field predicates
   """
@@ -2984,11 +3019,19 @@ type EventSubscription implements Node {
   environment: String
   namespace: String!
   name: String!
+  """
+  Latest scopes requested in the subscription specification.
+  """
+  requestedScopes: [String!]
+  """
+  Last approved scope set successfully written to downstream Kubernetes resources; does not imply data-plane readiness.
+  """
+  activeScopes: [String!]
   eventType: String!
   deliveryType: EventSubscriptionDeliveryType!
   trigger: EventTrigger
   delivery: EventDelivery!
-  scopes: [String!]
+  scopes: [String!] @deprecated(reason: "Use requestedScopes for requested scopes and activeScopes for provisioned scopes.")
   callbackURL: String
   gatewaySseURL: String
   owner: Application!

@@ -50,19 +50,20 @@ var _ = Describe("Subscription route readiness", Ordered, func() {
 			},
 			Spec: adminapi.ZoneSpec{
 				Visibility: adminapi.ZoneVisibilityWorld,
-				Gateway: adminapi.GatewayConfig{
-					Admin: adminapi.GatewayAdminConfig{Url: "http://gateway.example.com"},
-					Presets: []adminapi.GatewayConfigPreset{{
-						Name: "default", Default: true,
-						Urls: []adminapi.UrlConfig{{Hostname: "gateway.example.com", Scheme: "https", Port: 443, BasePath: "/"}},
-					}},
-				},
-				IdentityProvider: adminapi.IdentityProviderConfig{Url: "http://idp.example.com"},
+				Gateways: []adminapi.GatewayConfig{{
+					Name:  "gateway",
+					Admin: adminapi.GatewayAdminConfig{IdentityProviderRef: "primary", Url: "http://gateway.example.com"},
+				}},
+				Presets: []adminapi.Preset{{
+					Name: "default", Type: adminapi.GatewayTypeAPI, Default: true, GatewayRef: "gateway", IdentityProviderRef: "primary",
+					Urls: []adminapi.UrlConfig{{Hostname: "gateway.example.com", Scheme: "https", Port: 443, BasePath: "/"}},
+				}},
+				IdentityProviders: []adminapi.IdentityProviderConfig{{Name: "primary", IssuerHostname: "idp.example.com"}},
 			},
 		}
 		Expect(k8sClient.Create(ctx, zone)).To(Succeed())
 		zone.Status.Namespace = "subscriber-zone"
-		zone.Status.Links = adminapi.Links{Url: "https://gateway.example.com", Issuer: "https://idp.example.com", LmsIssuer: "https://lms.example.com"}
+		zone.Status.Presets = []adminapi.PresetStatus{{Name: "default", Links: adminapi.Links{Url: "https://gateway.example.com", Issuer: "https://idp.example.com", LmsIssuer: "https://lms.example.com"}}}
 		zone.SetCondition(condition.NewReadyCondition(condition.ReasonProvisioned, "Zone ready"))
 		Expect(k8sClient.Status().Update(ctx, zone)).To(Succeed())
 	})

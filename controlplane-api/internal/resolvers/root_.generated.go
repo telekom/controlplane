@@ -174,6 +174,7 @@ type ComplexityRoot struct {
 	}
 
 	AgenticSubscription struct {
+		ActiveScopes     func(childComplexity int) int
 		Approval         func(childComplexity int) int
 		ApprovalRequests func(childComplexity int) int
 		BasePath         func(childComplexity int) int
@@ -185,6 +186,7 @@ type ComplexityRoot struct {
 		Name             func(childComplexity int) int
 		Namespace        func(childComplexity int) int
 		Owner            func(childComplexity int) int
+		RequestedScopes  func(childComplexity int) int
 		Security         func(childComplexity int) int
 		StatusMessage    func(childComplexity int) int
 		StatusPhase      func(childComplexity int) int
@@ -306,6 +308,7 @@ type ComplexityRoot struct {
 	}
 
 	ApiSubscription struct {
+		ActiveScopes     func(childComplexity int) int
 		Approval         func(childComplexity int) int
 		ApprovalRequests func(childComplexity int) int
 		BasePath         func(childComplexity int) int
@@ -319,6 +322,7 @@ type ComplexityRoot struct {
 		Name             func(childComplexity int) int
 		Namespace        func(childComplexity int) int
 		Owner            func(childComplexity int) int
+		RequestedScopes  func(childComplexity int) int
 		Security         func(childComplexity int) int
 		StatusMessage    func(childComplexity int) int
 		StatusPhase      func(childComplexity int) int
@@ -385,6 +389,7 @@ type ComplexityRoot struct {
 		SubscribedApis        func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.ApiSubscriptionOrder, where *ent.ApiSubscriptionWhereInput) int
 		SubscribedEvents      func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.EventSubscriptionOrder, where *ent.EventSubscriptionWhereInput) int
 		SubscribedFileTypes   func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.FileSubscriptionOrder, where *ent.FileSubscriptionWhereInput) int
+		TokenURL              func(childComplexity int) int
 		Zone                  func(childComplexity int) int
 	}
 
@@ -591,6 +596,7 @@ type ComplexityRoot struct {
 	}
 
 	EventSubscription struct {
+		ActiveScopes     func(childComplexity int) int
 		Approval         func(childComplexity int) int
 		ApprovalRequests func(childComplexity int) int
 		CallbackURL      func(childComplexity int) int
@@ -605,6 +611,7 @@ type ComplexityRoot struct {
 		Name             func(childComplexity int) int
 		Namespace        func(childComplexity int) int
 		Owner            func(childComplexity int) int
+		RequestedScopes  func(childComplexity int) int
 		Scopes           func(childComplexity int) int
 		StatusMessage    func(childComplexity int) int
 		StatusPhase      func(childComplexity int) int
@@ -1512,6 +1519,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.AgenticSubscriberTraffic.Failover(childComplexity), true
 
+	case "AgenticSubscription.activeScopes":
+		if e.ComplexityRoot.AgenticSubscription.ActiveScopes == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgenticSubscription.ActiveScopes(childComplexity), true
 	case "AgenticSubscription.approval":
 		if e.ComplexityRoot.AgenticSubscription.Approval == nil {
 			break
@@ -1578,6 +1591,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.AgenticSubscription.Owner(childComplexity), true
+	case "AgenticSubscription.requestedScopes":
+		if e.ComplexityRoot.AgenticSubscription.RequestedScopes == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgenticSubscription.RequestedScopes(childComplexity), true
 	case "AgenticSubscription.security":
 		if e.ComplexityRoot.AgenticSubscription.Security == nil {
 			break
@@ -2049,6 +2068,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.ApiExposureSecurity.M2M(childComplexity), true
 
+	case "ApiSubscription.activeScopes":
+		if e.ComplexityRoot.ApiSubscription.ActiveScopes == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApiSubscription.ActiveScopes(childComplexity), true
 	case "ApiSubscription.approval":
 		if e.ComplexityRoot.ApiSubscription.Approval == nil {
 			break
@@ -2127,6 +2152,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.ApiSubscription.Owner(childComplexity), true
+	case "ApiSubscription.requestedScopes":
+		if e.ComplexityRoot.ApiSubscription.RequestedScopes == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApiSubscription.RequestedScopes(childComplexity), true
 	case "ApiSubscription.security":
 		if e.ComplexityRoot.ApiSubscription.Security == nil {
 			break
@@ -2461,6 +2492,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Application.SubscribedFileTypes(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].(*ent.FileSubscriptionOrder), args["where"].(*ent.FileSubscriptionWhereInput)), true
+	case "Application.tokenURL":
+		if e.ComplexityRoot.Application.TokenURL == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Application.TokenURL(childComplexity), true
 	case "Application.zone":
 		if e.ComplexityRoot.Application.Zone == nil {
 			break
@@ -3238,6 +3275,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.EventScope.Trigger(childComplexity), true
 
+	case "EventSubscription.activeScopes":
+		if e.ComplexityRoot.EventSubscription.ActiveScopes == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventSubscription.ActiveScopes(childComplexity), true
 	case "EventSubscription.approval":
 		if e.ComplexityRoot.EventSubscription.Approval == nil {
 			break
@@ -3322,6 +3365,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.EventSubscription.Owner(childComplexity), true
+	case "EventSubscription.requestedScopes":
+		if e.ComplexityRoot.EventSubscription.RequestedScopes == nil {
+			break
+		}
+
+		return e.ComplexityRoot.EventSubscription.RequestedScopes(childComplexity), true
 	case "EventSubscription.scopes":
 		if e.ComplexityRoot.EventSubscription.Scopes == nil {
 			break
@@ -6091,6 +6140,14 @@ type AgenticSubscription implements Node {
   environment: String
   namespace: String!
   name: String!
+  """
+  Latest scopes requested in the subscription specification.
+  """
+  requestedScopes: [String!]
+  """
+  Last approved scope set successfully written to downstream Kubernetes resources; does not imply data-plane readiness.
+  """
+  activeScopes: [String!]
   basePath: String!
   gatewayURL: String
   security: AgenticSubscriptionSecurity
@@ -6666,6 +6723,14 @@ type ApiSubscription implements Node {
   environment: String
   namespace: String!
   name: String!
+  """
+  Latest scopes requested in the subscription specification.
+  """
+  requestedScopes: [String!]
+  """
+  Last approved scope set successfully written to downstream Kubernetes resources; does not imply data-plane readiness.
+  """
+  activeScopes: [String!]
   basePath: String!
   m2mAuthMethod: ApiSubscriptionM2mAuthMethod!
   gatewayURL: String
@@ -7113,6 +7178,7 @@ type Application implements Node {
   name: String!
   clientID: String
   clientSecret: String
+  tokenURL: String
   rotatedClientSecret: String
   rotatedExpiresAt: Time
   currentExpiresAt: Time
@@ -7578,6 +7644,24 @@ input ApplicationWhereInput {
   clientIDNotNil: Boolean
   clientIDEqualFold: String
   clientIDContainsFold: String
+  """
+  token_url field predicates
+  """
+  tokenURL: String
+  tokenURLNEQ: String
+  tokenURLIn: [String!]
+  tokenURLNotIn: [String!]
+  tokenURLGT: String
+  tokenURLGTE: String
+  tokenURLLT: String
+  tokenURLLTE: String
+  tokenURLContains: String
+  tokenURLHasPrefix: String
+  tokenURLHasSuffix: String
+  tokenURLIsNil: Boolean
+  tokenURLNotNil: Boolean
+  tokenURLEqualFold: String
+  tokenURLContainsFold: String
   """
   rotated_expires_at field predicates
   """
@@ -8531,11 +8615,19 @@ type EventSubscription implements Node {
   environment: String
   namespace: String!
   name: String!
+  """
+  Latest scopes requested in the subscription specification.
+  """
+  requestedScopes: [String!]
+  """
+  Last approved scope set successfully written to downstream Kubernetes resources; does not imply data-plane readiness.
+  """
+  activeScopes: [String!]
   eventType: String!
   deliveryType: EventSubscriptionDeliveryType!
   trigger: EventTrigger
   delivery: EventDelivery!
-  scopes: [String!]
+  scopes: [String!] @deprecated(reason: "Use requestedScopes for requested scopes and activeScopes for provisioned scopes.")
   callbackURL: String
   gatewaySseURL: String
   owner: Application!
@@ -12105,7 +12197,7 @@ type Machine2MachineAuthentication {
 type SubscriberMachine2MachineAuthentication {
   client: OAuth2ClientCredentials
   basic: BasicAuthCredentials
-  scopes: [String!]
+  scopes: [String!] @deprecated(reason: "Use requestedScopes and activeScopes on the subscription.")
 }
 
 type ApiExposureSecurity {
@@ -12668,6 +12760,10 @@ func (ec *executionContext) childFields_AgenticSubscription(ctx context.Context,
 		return ec.fieldContext_AgenticSubscription_namespace(ctx, field)
 	case "name":
 		return ec.fieldContext_AgenticSubscription_name(ctx, field)
+	case "requestedScopes":
+		return ec.fieldContext_AgenticSubscription_requestedScopes(ctx, field)
+	case "activeScopes":
+		return ec.fieldContext_AgenticSubscription_activeScopes(ctx, field)
 	case "basePath":
 		return ec.fieldContext_AgenticSubscription_basePath(ctx, field)
 	case "gatewayURL":
@@ -12932,6 +13028,10 @@ func (ec *executionContext) childFields_ApiSubscription(ctx context.Context, fie
 		return ec.fieldContext_ApiSubscription_namespace(ctx, field)
 	case "name":
 		return ec.fieldContext_ApiSubscription_name(ctx, field)
+	case "requestedScopes":
+		return ec.fieldContext_ApiSubscription_requestedScopes(ctx, field)
+	case "activeScopes":
+		return ec.fieldContext_ApiSubscription_activeScopes(ctx, field)
 	case "basePath":
 		return ec.fieldContext_ApiSubscription_basePath(ctx, field)
 	case "m2mAuthMethod":
@@ -13038,6 +13138,8 @@ func (ec *executionContext) childFields_Application(ctx context.Context, field g
 		return ec.fieldContext_Application_clientID(ctx, field)
 	case "clientSecret":
 		return ec.fieldContext_Application_clientSecret(ctx, field)
+	case "tokenURL":
+		return ec.fieldContext_Application_tokenURL(ctx, field)
 	case "rotatedClientSecret":
 		return ec.fieldContext_Application_rotatedClientSecret(ctx, field)
 	case "rotatedExpiresAt":
@@ -13502,6 +13604,10 @@ func (ec *executionContext) childFields_EventSubscription(ctx context.Context, f
 		return ec.fieldContext_EventSubscription_namespace(ctx, field)
 	case "name":
 		return ec.fieldContext_EventSubscription_name(ctx, field)
+	case "requestedScopes":
+		return ec.fieldContext_EventSubscription_requestedScopes(ctx, field)
+	case "activeScopes":
+		return ec.fieldContext_EventSubscription_activeScopes(ctx, field)
 	case "eventType":
 		return ec.fieldContext_EventSubscription_eventType(ctx, field)
 	case "deliveryType":

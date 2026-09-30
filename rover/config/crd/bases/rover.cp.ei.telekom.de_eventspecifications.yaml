@@ -60,11 +60,11 @@ spec:
                   the optional JSON schema that describes the event payload.
                 type: string
               type:
-                description: Type is the dot-separated event type identifier (e.g.
-                  "de.telekom.eni.quickstart.v1").
+                description: Type is an event type identifier with dot or hyphen separators
+                  (e.g. "de.telekom.eni-quickstart.v1").
                 maxLength: 253
                 minLength: 1
-                pattern: ^[a-z0-9]+(\.[a-z0-9]+)*$
+                pattern: ^[a-z0-9]+([.-][a-z0-9]+)*$
                 type: string
               version:
                 description: Version of the event type specification (e.g. "1.0.0").
