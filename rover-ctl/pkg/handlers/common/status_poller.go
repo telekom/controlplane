@@ -6,7 +6,6 @@ package common
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -22,9 +21,7 @@ type StatusEvalFunc func(ctx context.Context, status types.ObjectStatus) (contin
 
 var defaultStatusEvalFunc StatusEvalFunc = func(_ context.Context, status types.ObjectStatus) (continuePolling bool, err error) {
 	switch status.GetOverallStatus() {
-	case types.OverallStatusFailed:
-		return false, fmt.Errorf("resource processing failed")
-	case types.OverallStatusComplete, types.OverallStatusDone:
+	case types.OverallStatusFailed, types.OverallStatusComplete, types.OverallStatusDone:
 		return false, nil
 	case types.OverallStatusBlocked:
 		return false, nil // system cannot progress without external action
