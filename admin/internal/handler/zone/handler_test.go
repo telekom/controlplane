@@ -136,11 +136,11 @@ var _ = Describe("Zone Handler", func() {
 		Expect(k8sClient.Get(ctx, key, route)).To(Succeed())
 		Expect(route.Spec.Hostnames).To(ConsistOf("ai.example.com"))
 
-		// Each gateway serves both the default and internal realms. The fixture
-		// declares no managed routes, so there is no team-api realm.
+		// Each gateway serves both the default and internal realms plus one
+		// zone-health route. The fixture declares no managed routes, so there is no team-api realm.
 		routes := &gatewayapi.RouteList{}
 		Expect(k8sClient.List(ctx, routes, client.InNamespace(zone.Status.Namespace))).To(Succeed())
-		Expect(routes.Items).To(HaveLen(2 * 2 * len(identityRouteConfigs)))
+		Expect(routes.Items).To(HaveLen(2 * (2*len(identityRouteConfigs) + 1)))
 	})
 
 	DescribeTable("serves internal realm OIDC metadata on every gateway",

@@ -126,6 +126,24 @@ spec:
                 x-kubernetes-validations:
                 - message: each hostname must be a valid DNS-1123 subdomain
                   rule: self.all(h, !format.dns1123Subdomain().validate(h).hasValue())
+              methods:
+                description: Methods restricts the HTTP methods that are accepted
+                  for this route. If empty, all methods are accepted.
+                items:
+                  enum:
+                  - GET
+                  - HEAD
+                  - POST
+                  - PUT
+                  - PATCH
+                  - DELETE
+                  - OPTIONS
+                  - TRACE
+                  - CONNECT
+                  type: string
+                maxItems: 9
+                type: array
+                x-kubernetes-list-type: set
               passThrough:
                 default: false
                 description: PassThrough is a flag to pass through the request to
@@ -142,6 +160,21 @@ spec:
                 minItems: 1
                 type: array
                 x-kubernetes-list-type: set
+              requestTermination:
+                description: |-
+                  RequestTermination makes the gateway answer every matching request itself with a fixed status code.
+                  The upstream is never called.
+                properties:
+                  statusCode:
+                    description: StatusCode is the HTTP status code returned by the
+                      gateway.
+                    format: int32
+                    maximum: 599
+                    minimum: 100
+                    type: integer
+                required:
+                - statusCode
+                type: object
               security:
                 description: Security is the security configuration for the route
                 properties:

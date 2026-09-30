@@ -7,6 +7,7 @@ package client_test
 import (
 	"context"
 	"net/http"
+	"slices"
 
 	"github.com/stretchr/testify/mock"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -184,7 +185,57 @@ var _ = Describe("CreateOrReplaceRoute", func() {
 		Entry("when hosts change", func(current *kong.Route) { current.Hosts = ptr([]string{"other.example"}) }),
 		Entry("when path order changes", func(current *kong.Route) { current.Paths = ptr([]string{"/v2", "/v1"}) }),
 		Entry("when request buffering changes", func(current *kong.Route) { current.RequestBuffering = ptr(false) }),
+		Entry("when methods are added", func(current *kong.Route) { current.Methods = ptr([]string{"HEAD"}) }),
 	)
+
+	Context("with methods", func() {
+		BeforeEach(func() {
+			route.Spec.Methods = []string{"HEAD", "GET", "HEAD"}
+		})
+
+		It("sends normalized methods", func() {
+			api.EXPECT().GetServiceWithResponse(mock.Anything, "test-route").Return(matchingService(), nil)
+			api.EXPECT().GetRouteWithResponse(mock.Anything, "test-route").Return(
+				&kong.GetRouteResponse{HTTPResponse: &http.Response{StatusCode: http.StatusNotFound}}, nil,
+			)
+			api.EXPECT().UpsertRouteWithResponse(mock.Anything, "test-route", mock.MatchedBy(func(body kong.CreateRouteJSONRequestBody) bool {
+				return body.Methods != nil && slices.Equal(*body.Methods, []string{"GET", "HEAD"})
+			})).Return(
+				&kong.UpsertRouteResponse{
+					HTTPResponse: &http.Response{StatusCode: http.StatusOK},
+					JSON200:      &kong.Route{Id: ptr("route-id")},
+				}, nil,
+			)
+
+			Expect(client.CreateOrReplaceRoute(ctx, route, upstream)).To(Succeed())
+		})
+
+		It("does not upsert a route when methods are reordered", func() {
+			response := matchingRoute()
+			response.JSON200.Methods = ptr([]string{"HEAD", "GET"})
+			api.EXPECT().GetServiceWithResponse(mock.Anything, "test-route").Return(matchingService(), nil)
+			api.EXPECT().GetRouteWithResponse(mock.Anything, "test-route").Return(response, nil)
+
+			Expect(client.CreateOrReplaceRoute(ctx, route, upstream)).To(Succeed())
+		})
+	})
+
+	It("omits methods when none are set", func() {
+		api.EXPECT().GetServiceWithResponse(mock.Anything, "test-route").Return(matchingService(), nil)
+		api.EXPECT().GetRouteWithResponse(mock.Anything, "test-route").Return(
+			&kong.GetRouteResponse{HTTPResponse: &http.Response{StatusCode: http.StatusNotFound}}, nil,
+		)
+		api.EXPECT().UpsertRouteWithResponse(mock.Anything, "test-route", mock.MatchedBy(func(body kong.CreateRouteJSONRequestBody) bool {
+			return body.Methods == nil
+		})).Return(
+			&kong.UpsertRouteResponse{
+				HTTPResponse: &http.Response{StatusCode: http.StatusOK},
+				JSON200:      &kong.Route{Id: ptr("route-id")},
+			}, nil,
+		)
+
+		Expect(client.CreateOrReplaceRoute(ctx, route, upstream)).To(Succeed())
+	})
 
 	It("upserts a missing route", func() {
 		api.EXPECT().GetServiceWithResponse(mock.Anything, "test-route").Return(matchingService(), nil)

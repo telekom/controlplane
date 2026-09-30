@@ -66,6 +66,7 @@ This CRD represents a physical or logical deployment target with gateway and ide
 - The `visibility` field controls subscription behavior and can be either `World` or `Enterprise`.
 - Zones can optionally define managed routes through the `managedRoutes` field. Each route has a `type`: `TeamAPI` (authenticated, no ACL) or `Proxy` (passthrough reverse proxy).
 - The Zone controller creates and manages related resources in its handlers.
+- Every gateway of a Zone gets a `<gateway>--zone-health` route: `HEAD /zone-health` on all of its preset hostnames and base paths, answered with `200` by the gateway itself.
 - All managed resources are labeled with both `cp.ei.telekom.de/environment` and `cp.ei.telekom.de/zone` labels.
 
 </details>

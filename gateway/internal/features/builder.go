@@ -52,6 +52,7 @@ type FeaturesBuilder interface {
 	JumperConfig() *plugin.JumperConfig
 	RoutingConfigs() *plugin.RoutingConfigs
 	IpRestrictionPlugin() *plugin.IpRestrictionPlugin
+	RequestTerminationPlugin() *plugin.RequestTerminationPlugin
 
 	Build(context.Context) error
 	BuildForConsumer(context.Context) error
@@ -244,6 +245,22 @@ func (b *Builder) IpRestrictionPlugin() *plugin.IpRestrictionPlugin {
 	}
 
 	return ipRestrictionPlugin
+}
+
+func (b *Builder) RequestTerminationPlugin() *plugin.RequestTerminationPlugin {
+	var requestTerminationPlugin *plugin.RequestTerminationPlugin
+
+	if p, ok := b.Plugins["request-termination"]; ok {
+		requestTerminationPlugin, ok = p.(*plugin.RequestTerminationPlugin)
+		if !ok {
+			panic("plugin is not a RequestTerminationPlugin")
+		}
+	} else {
+		requestTerminationPlugin = plugin.RequestTerminationPluginFromRoute(b.Route)
+		b.Plugins["request-termination"] = requestTerminationPlugin
+	}
+
+	return requestTerminationPlugin
 }
 
 func (b *Builder) SetUpstream(upstream client.Upstream) {

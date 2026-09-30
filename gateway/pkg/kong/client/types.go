@@ -31,6 +31,7 @@ type CustomRoute interface {
 	GetName() string
 	GetHostnames() []string
 	GetPaths() []string
+	GetMethods() []string
 	GetRequestBuffering() bool
 	GetResponseBuffering() bool
 }

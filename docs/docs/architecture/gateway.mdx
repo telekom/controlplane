@@ -14,6 +14,10 @@ The Gateway domain configures the API Gateway at runtime. It manages routes, con
 
 The Gateway operator uses a plugin-based feature system for configuring route behavior. Each feature is implemented as a separate plugin that can be enabled or disabled per route, allowing fine-grained control over how requests are processed.
 
+### Method Filter and Request Termination
+
+A `Route` can restrict the HTTP methods it matches with `spec.methods` (for example `[HEAD]`). If the list is empty, all methods match. With `spec.requestTermination.statusCode`, the gateway answers every matching request itself with that status code, through Kong's `request-termination` plugin, and never calls the upstream. The Admin operator uses both for the zone-health probe route. Removing `requestTermination` also removes the plugin.
+
 ### Audience Claim Resolution
 
 An API provider can require that every token reaching its backend carries an **audience claim** (`aud`), so the backend can confirm the token was meant for it. The provider declares this once on the API exposure, and the platform makes sure the claim is present on all traffic to that API.

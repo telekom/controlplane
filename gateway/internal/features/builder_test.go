@@ -15,6 +15,7 @@ import (
 
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	"github.com/telekom/controlplane/gateway/internal/features"
+	"github.com/telekom/controlplane/gateway/internal/features/feature"
 	featmock "github.com/telekom/controlplane/gateway/internal/features/mock"
 	"github.com/telekom/controlplane/gateway/pkg/kong/client"
 	clientmock "github.com/telekom/controlplane/gateway/pkg/kong/client/mock"
@@ -74,6 +75,43 @@ var _ = Describe("Builder", func() {
 
 				err := builder.Build(ctx)
 				Expect(err).ToNot(HaveOccurred())
+			})
+		})
+
+		Context("with request termination", func() {
+			BeforeEach(func() {
+				route.Spec.PassThrough = true
+				route.Spec.Backend.Upstreams = []gatewayv1.Upstream{{Scheme: "http", Hostname: "localhost", Port: 8081, Path: "/api/v1/zone-health"}}
+			})
+
+			newBuilder := func() features.FeaturesBuilder {
+				builder := features.NewFeatureBuilder(mockKC, route, nil, gateway)
+				builder.EnableFeature(feature.InstancePassThroughFeature)
+				builder.EnableFeature(feature.InstanceRequestTerminationFeature)
+				return builder
+			}
+
+			It("creates the request-termination plugin and keeps it during cleanup", func() {
+				route.Spec.RequestTermination = &gatewayv1.RequestTermination{StatusCode: 200}
+
+				mockKC.EXPECT().CreateOrReplaceRoute(mock.Anything, mock.Anything, mock.Anything).Return(nil)
+				mockKC.EXPECT().CreateOrReplacePlugin(mock.Anything, mock.MatchedBy(func(p client.CustomPlugin) bool {
+					return p.GetName() == "request-termination" && p.GetConfig()["status_code"] == 200
+				})).Return(nil, nil)
+				mockKC.EXPECT().CleanupPlugins(mock.Anything, mock.Anything, mock.Anything, mock.MatchedBy(func(ps []client.CustomPlugin) bool {
+					return len(ps) == 1 && ps[0].GetName() == "request-termination"
+				})).Return(nil)
+
+				Expect(newBuilder().Build(ctx)).To(Succeed())
+			})
+
+			It("does not keep a request-termination plugin when termination is removed", func() {
+				mockKC.EXPECT().CreateOrReplaceRoute(mock.Anything, mock.Anything, mock.Anything).Return(nil)
+				mockKC.EXPECT().CleanupPlugins(mock.Anything, mock.Anything, mock.Anything, mock.MatchedBy(func(ps []client.CustomPlugin) bool {
+					return len(ps) == 0
+				})).Return(nil)
+
+				Expect(newBuilder().Build(ctx)).To(Succeed())
 			})
 		})
 
