@@ -25,13 +25,13 @@ func MakeEventTypeName(eventType string) string {
 // EventTypeSpec defines the desired state of EventType.
 // +kubebuilder:validation:XValidation:rule="self.type.endsWith('.v' + self.version.split('.')[0])",message="major version in \"version\" must match the version suffix (e.g. \"vN\") in \"type\""
 type EventTypeSpec struct {
-	// Type is the dot-separated event type identifier (e.g. "de.telekom.eni.quickstart.v1").
+	// Type is an event type identifier with dot or hyphen separators (e.g. "de.telekom.eni-quickstart.v1").
 	// The last segment must be a version prefix matching the major version.
 	// Used to generate the resource name via dots-to-hyphens conversion.
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:MaxLength=253
-	// +kubebuilder:validation:Pattern=`^[a-z0-9]+(\.[a-z0-9]+)*$`
+	// +kubebuilder:validation:Pattern=`^[a-z0-9]+([.-][a-z0-9]+)*$`
 	Type string `json:"type"`
 
 	// Version of the event type specification (e.g. "1.0.0").
