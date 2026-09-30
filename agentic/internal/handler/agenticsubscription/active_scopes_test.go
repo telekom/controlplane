@@ -85,14 +85,13 @@ var _ = Describe("Agentic active scopes", Ordered, func() {
 		persist(&exposure)
 		zone := makeReadyZoneWithAiGateway("test-zone")
 		zone.Spec.Visibility = adminv1.ZoneVisibilityEnterprise
-		zone.Spec.Gateways[0].Admin.Url = "https://admin.example.com"
-		zone.Spec.Gateways[0].Admin.IdentityProviderRef = "default"
-		zone.Spec.IdentityProviders = []adminv1.IdentityProviderConfig{
-			{Name: "default", IssuerHostname: "identity.example.com"},
+		zone.Spec.Gateways[0].Admin = adminv1.GatewayAdminConfig{
+			Url: "https://admin.example.com", IdentityProviderRef: "primary",
 		}
-		for index := range zone.Spec.Presets {
-			zone.Spec.Presets[index].IdentityProviderRef = "default"
-			zone.Spec.Presets[index].Urls[0].BasePath = "/"
+		zone.Spec.IdentityProviders = []adminv1.IdentityProviderConfig{{Name: "primary", IssuerHostname: "identity.example.com"}}
+		for i := range zone.Spec.Presets {
+			zone.Spec.Presets[i].IdentityProviderRef = "primary"
+			zone.Spec.Presets[i].Urls[0].BasePath = "/"
 		}
 		zone.Status.Presets[0].Links.Url = "https://gateway.example.com"
 		zone.Status.Presets[0].Links.LmsIssuer = "https://issuer.example.com"

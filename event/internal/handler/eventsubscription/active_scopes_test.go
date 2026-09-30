@@ -74,13 +74,24 @@ var _ = Describe("Event active scopes", Ordered, func() {
 		et := makeReadyEventType(testEventType)
 		persist(&et)
 		zone := makeReadyZone("expo-zone", "default")
-		zone.Spec.Gateway.Admin.Url = "https://admin.example.com"
-		zone.Spec.Gateway.Presets = []adminv1.GatewayConfigPreset{{
-			Name: "default", Default: true,
+		zone.Spec.Gateways = []adminv1.GatewayConfig{{
+			Name: "default",
+			Admin: adminv1.GatewayAdminConfig{
+				IdentityProviderRef: "default", Url: "https://admin.example.com",
+			},
+		}}
+		zone.Spec.IdentityProviders = []adminv1.IdentityProviderConfig{{
+			Name: "default", IssuerHostname: "identity.example.com",
+		}}
+		zone.Spec.Presets = []adminv1.Preset{{
+			Name: "default", Type: adminv1.GatewayTypeEvent, Default: true,
+			GatewayRef: "default", IdentityProviderRef: "default",
 			Urls: []adminv1.UrlConfig{{Hostname: "gateway.example.com", BasePath: "/"}},
 		}}
-		zone.Spec.IdentityProvider.Url = "https://identity.example.com"
-		zone.Status.Links = adminv1.Links{Url: "https://gateway.example.com", Issuer: "https://identity.example.com", LmsIssuer: "https://identity.example.com"}
+		zone.Status.Presets = []adminv1.PresetStatus{{
+			Name:  "default",
+			Links: adminv1.Links{Url: "https://gateway.example.com", Issuer: "https://identity.example.com", LmsIssuer: "https://identity.example.com"},
+		}}
 		persist(zone)
 		exposure := makeReadyEventExposure(testEventType)
 		exposure.Spec.Approval.Strategy = eventv1.ApprovalStrategySimple
