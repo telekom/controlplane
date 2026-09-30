@@ -445,7 +445,9 @@ var _ = Describe("EventConfigHandler", func() {
 
 		It("blocks when the zone has no gateway for its callback Consumer", func() {
 			zone := makeReadyZone()
-			zone.Status.Gateway = nil
+			for i := range zone.Status.Presets {
+				zone.Status.Presets[i].GatewayRef = nil
+			}
 			mockGetZone(zone, 1)
 			mockGetRealm(makeReadyRealm(), 2)
 			mockScheme()
