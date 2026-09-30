@@ -85,13 +85,17 @@ var _ = Describe("Agentic active scopes", Ordered, func() {
 		persist(&exposure)
 		zone := makeReadyZoneWithAiGateway("test-zone")
 		zone.Spec.Visibility = adminv1.ZoneVisibilityEnterprise
-		zone.Spec.AiGateway.Admin.Url = "https://admin.example.com"
-		zone.Spec.AiGateway.Presets[0].Urls[0].BasePath = "/"
-		zone.Spec.Gateway.Admin.Url = "https://admin.example.com"
-		zone.Spec.Gateway.Presets = zone.Spec.AiGateway.Presets
-		zone.Spec.IdentityProvider.Url = "https://identity.example.com"
-		zone.Status.Links.Url = "https://gateway.example.com"
-		zone.Status.Links.LmsIssuer = "https://issuer.example.com"
+		zone.Spec.Gateways[0].Admin.Url = "https://admin.example.com"
+		zone.Spec.Gateways[0].Admin.IdentityProviderRef = "default"
+		zone.Spec.IdentityProviders = []adminv1.IdentityProviderConfig{
+			{Name: "default", IssuerHostname: "identity.example.com"},
+		}
+		for index := range zone.Spec.Presets {
+			zone.Spec.Presets[index].IdentityProviderRef = "default"
+			zone.Spec.Presets[index].Urls[0].BasePath = "/"
+		}
+		zone.Status.Presets[0].Links.Url = "https://gateway.example.com"
+		zone.Status.Presets[0].Links.LmsIssuer = "https://issuer.example.com"
 		persist(zone)
 		for _, name := range []string{"requestor-app", "provider-app"} {
 			app := makeReadyApplication(name, name, name+"@example.com", name)
