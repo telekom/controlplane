@@ -67,38 +67,18 @@ func (h *RouteHandler) CreateOrUpdate(ctx context.Context, route *gatewayv1.Rout
 		if err != nil {
 			return errors.Wrap(err, "failed to list route consumers")
 		}
-		if route.IsPrimary() || route.IsFailoverSecondary() {
-			security := route.Spec.Security
-			if route.IsFailoverSecondary() && route.Spec.Traffic.Failover != nil {
-				security = route.Spec.Traffic.Failover.Security
-			}
-			passwordGrant = usesPasswordGrant(&security)
-			providerFallback := hasProviderPasswordFallback(&security)
-			if passwordGrant && !providerFallback && route.Spec.Security.DisableAccessControl {
-				return invalidateRoute(ctx, route, builder, "Defaultless password routes require access control", false)
-			}
-			for _, consumer := range routeConsumers.Items {
-				if controller.IsBeingDeleted(&consumer) {
-					continue
-				}
-				if consumerRequiresPasswordGrant(&consumer) && !passwordGrant {
-					return invalidateRoute(ctx, route, builder, "Consumer credentials require an external IDP password grant", false)
-				}
-				if passwordGrant && !hasUsablePasswordCredentials(&consumer, providerFallback) {
-					return invalidateRoute(ctx, route, builder, "Password route has consumers without usable credentials", false)
-				}
-			}
-			if defaultConsumersLackPasswordCredentials(route, passwordGrant, providerFallback) {
-				return invalidateRoute(ctx, route, builder, "Password route has consumers without usable credentials", false)
-			}
+		passwordGrant, err = validatePasswordGrantConsumers(ctx, route, builder, routeConsumers.Items)
+		if err != nil {
+			return err
 		}
 
-		for _, consumer := range routeConsumers.Items {
-			if controller.IsBeingDeleted(&consumer) {
+		for index := range routeConsumers.Items {
+			consumer := &routeConsumers.Items[index]
+			if controller.IsBeingDeleted(consumer) {
 				log.V(1).Info("Skipping consumer that is being deleted", "consumer", consumer.Name)
 				continue
 			}
-			builder.AddAllowedConsumers(&consumer)
+			builder.AddAllowedConsumers(consumer)
 		}
 		log.Info("Found consumers", "count", len(builder.GetAllowedConsumers()), "sum", len(routeConsumers.Items))
 
