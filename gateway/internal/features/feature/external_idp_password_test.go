@@ -7,11 +7,17 @@ package feature_test
 import (
 	"context"
 
+	"github.com/stretchr/testify/mock"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/telekom/controlplane/common/pkg/types"
+	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
+	"github.com/telekom/controlplane/gateway/internal/features"
 	"github.com/telekom/controlplane/gateway/internal/features/feature"
 	featmock "github.com/telekom/controlplane/gateway/internal/features/mock"
+	kongclient "github.com/telekom/controlplane/gateway/pkg/kong/client"
+	kongmock "github.com/telekom/controlplane/gateway/pkg/kong/client/mock"
 	"github.com/telekom/controlplane/gateway/pkg/kong/client/plugin"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -75,6 +81,87 @@ var _ = Describe("External IDP password grant with consumer username/password an
 	BeforeEach(func() {
 		ctx = context.Background()
 		builder = featmock.NewMockFeaturesBuilder(GinkgoT())
+	})
+
+	It("publishes password OAuth without backend Basic after an authentication change", func() {
+		ctx = contextutil.WithEnv(ctx, "test-env")
+		route := primaryPasswordRoute()
+		route.Spec.Paths = []string{"/password/v1"}
+		route.Spec.Backend.Upstreams = []gatewayv1.Upstream{
+			{Scheme: "https", Hostname: "backend.example.com", Port: 443},
+		}
+		route.Spec.Security.TrustedIssuers = []string{"https://issuer.example.com/realms/test"}
+		passwordSecurity := route.Spec.Security
+		route.Spec.Security.M2M = &gatewayv1.Machine2MachineAuthentication{
+			Basic: &gatewayv1.BasicAuthCredentials{Username: "old-provider", Password: "old-password"},
+		}
+		consumer := passwordConsumer()
+		consumer.Spec.Route = *types.ObjectRefFromObject(route)
+		consumer.Spec.Security.M2M.Scopes = nil
+
+		var transformer *plugin.RequestTransformerPlugin
+		var acl *plugin.AclPlugin
+		kong := kongmock.NewMockKongClient(GinkgoT())
+		kong.EXPECT().CreateOrReplaceRoute(mock.Anything, mock.Anything, mock.Anything).Return(nil)
+		kong.EXPECT().CreateOrReplacePlugin(mock.Anything, mock.Anything).
+			Run(func(_ context.Context, configured kongclient.CustomPlugin) {
+				switch configured := configured.(type) {
+				case *plugin.RequestTransformerPlugin:
+					transformer = configured
+				case *plugin.AclPlugin:
+					acl = configured
+				}
+			}).Return(nil, nil)
+		kong.EXPECT().CleanupPlugins(mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
+		publish := func(consumers ...*gatewayv1.ConsumeRoute) *plugin.JumperConfig {
+			composed := features.NewFeatureBuilder(kong, route, nil, &gatewayv1.Gateway{})
+			composed.EnableFeature(feature.InstanceAccessControlFeature)
+			composed.EnableFeature(feature.InstanceExternalIDPFeature)
+			composed.EnableFeature(feature.InstanceBasicAuthFeature)
+			composed.EnableFeature(feature.InstanceCustomScopesFeature)
+			composed.EnableFeature(feature.InstanceLastMileSecurityFeature)
+			composed.AddAllowedConsumers(consumers...)
+			Expect(composed.Build(ctx)).To(Succeed())
+			Expect(transformer).NotTo(BeNil())
+			configuration, err := plugin.FromBase64[plugin.JumperConfig](transformer.Config.Append.Headers.Get(plugin.JumperConfigKey))
+			Expect(err).NotTo(HaveOccurred())
+			return configuration
+		}
+
+		By("publishing the original backend Basic configuration")
+		original := publish(consumer)
+		Expect(original.BasicAuth).To(HaveKeyWithValue(plugin.ConsumerId("password-consumer"), plugin.BasicAuthCredentials{
+			Username: "consumer-user", Password: "consumer-pass",
+		}))
+
+		By("replacing it with independent password identities and provider fallback")
+		route.Spec.Security = passwordSecurity
+		consumer.Spec.Security.M2M.Scopes = []string{"consumer:read", "consumer:write"}
+		scopesOnly := &gatewayv1.ConsumeRoute{Spec: gatewayv1.ConsumeRouteSpec{
+			Route: *types.ObjectRefFromObject(route), ConsumerName: "scopes-consumer",
+			Security: &gatewayv1.ConsumeRouteSecurity{M2M: &gatewayv1.ConsumerMachine2MachineAuthentication{
+				Scopes: []string{"consumer:read"},
+			}},
+		}}
+		fallback := &gatewayv1.ConsumeRoute{Spec: gatewayv1.ConsumeRouteSpec{
+			Route: *types.ObjectRefFromObject(route), ConsumerName: "fallback-consumer",
+		}}
+		updated := publish(consumer, scopesOnly, fallback)
+		Expect(updated.BasicAuth).To(BeEmpty())
+		Expect(updated.OAuth).To(Equal(map[plugin.ConsumerId]plugin.OauthCredentials{
+			"default": {
+				Username: "provider-user", Password: "provider-pass", GrantType: "password", Scopes: "provider:read",
+			},
+			"password-consumer": {
+				Username: "consumer-user", Password: "consumer-pass", GrantType: "password", Scopes: "consumer:read consumer:write",
+			},
+			"scopes-consumer": {
+				Username: "provider-user", Password: "provider-pass", GrantType: "password", Scopes: "consumer:read",
+			},
+		}))
+		Expect(transformer.Config.Append.Headers.Get("token_endpoint")).To(Equal("https://idp.example.com/token"))
+		Expect(acl).NotTo(BeNil())
+		Expect(acl.Config.Allow.Values()).To(ConsistOf("password-consumer", "scopes-consumer", "fallback-consumer"))
 	})
 
 	Describe("BasicAuthFeature", func() {
