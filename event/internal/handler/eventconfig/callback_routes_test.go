@@ -31,12 +31,12 @@ import (
 
 // withEventPreset gives the zone an Event preset with the given gateway, hostname
 // and links. An empty gateway name leaves the preset status without a GatewayRef.
-func withEventPreset(zone *adminv1.Zone, gateway, hostname string, links adminv1.Links) {
+func withEventPreset(zone *adminv1.Zone, gateway, hostname string, links *adminv1.Links) {
 	zone.Spec.Presets = []adminv1.Preset{{
 		Name: "event", Type: adminv1.GatewayTypeEvent, Default: true,
 		Urls: []adminv1.UrlConfig{{Scheme: "https", Hostname: hostname, Port: 443}},
 	}}
-	status := adminv1.PresetStatus{Name: "event", Links: links}
+	status := adminv1.PresetStatus{Name: "event", Links: *links}
 	if gateway != "" {
 		status.GatewayRef = &ctypes.ObjectRef{Name: gateway, Namespace: "default"}
 	}
@@ -56,7 +56,7 @@ var _ = Describe("callback route issuers", func() {
 			},
 		}
 		source := readyPeerZone("source")
-		withEventPreset(source, "source-gateway", "source.example.com", adminv1.Links{})
+		withEventPreset(source, "source-gateway", "source.example.com", &adminv1.Links{})
 		peers := []eventv1.EventConfig{
 			peerEventConfig("z-config", "z-zone", nil, nil),
 			peerEventConfig("a-config", "a-zone", nil, nil),
@@ -67,7 +67,7 @@ var _ = Describe("callback route issuers", func() {
 			}).Return(nil).Once()
 		for _, name := range []string{"z-zone", "a-zone"} {
 			zone := readyPeerZone(name)
-			withEventPreset(zone, name+"-gateway", name+".example.com", adminv1.Links{})
+			withEventPreset(zone, name+"-gateway", name+".example.com", &adminv1.Links{})
 			fc.EXPECT().Get(ctx, k8stypes.NamespacedName{Name: name, Namespace: "default"}, mock.AnythingOfType("*v1.Zone")).
 				Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
 					*out.(*adminv1.Zone) = *zone
@@ -149,9 +149,9 @@ var _ = Describe("callback route issuers", func() {
 				obj.Spec.Proxy = &eventv1.ProxyBackend{TargetZone: ctypes.ObjectRef{Name: "backend", Namespace: "default"}}
 			}
 			exposure := readyPeerZone("exposure")
-			withEventPreset(exposure, "exposure-gateway", "exposure.example.com", adminv1.Links{Issuer: "https://exposure-idp", LmsIssuer: "https://exposure-lms"})
+			withEventPreset(exposure, "exposure-gateway", "exposure.example.com", &adminv1.Links{Issuer: "https://exposure-idp", LmsIssuer: "https://exposure-lms"})
 			subscriber := readyPeerZone("subscriber")
-			withEventPreset(subscriber, "subscriber-gateway", "subscriber.example.com", adminv1.Links{Issuer: "https://subscriber-idp", LmsIssuer: "https://subscriber-lms"})
+			withEventPreset(subscriber, "subscriber-gateway", "subscriber.example.com", &adminv1.Links{Issuer: "https://subscriber-idp", LmsIssuer: "https://subscriber-lms"})
 			var subscriberProxy *eventv1.ProxyBackend
 			if proxySubscriber {
 				subscriberProxy = &eventv1.ProxyBackend{TargetZone: ctypes.ObjectRef{Name: "backend", Namespace: "default"}}
@@ -223,9 +223,9 @@ var _ = Describe("callback route issuers", func() {
 		fc := fakeclient.NewMockJanitorClient(GinkgoT())
 		ctx = cclient.WithClient(ctx, fc)
 		subscriber := readyPeerZone("subscriber")
-		withEventPreset(subscriber, "subscriber-gateway", "subscriber.example.com", adminv1.Links{Issuer: "https://subscriber-idp", LmsIssuer: "https://subscriber-lms"})
+		withEventPreset(subscriber, "subscriber-gateway", "subscriber.example.com", &adminv1.Links{Issuer: "https://subscriber-idp", LmsIssuer: "https://subscriber-lms"})
 		backend := readyPeerZone("backend")
-		withEventPreset(backend, "", "backend.example.com", adminv1.Links{Issuer: "https://backend-idp", LmsIssuer: "https://backend-lms/spacegate"})
+		withEventPreset(backend, "", "backend.example.com", &adminv1.Links{Issuer: "https://backend-idp", LmsIssuer: "https://backend-lms/spacegate"})
 		obj := &eventv1.EventConfig{
 			ObjectMeta: metav1.ObjectMeta{Name: "subscriber-config", Namespace: "default"},
 			Spec: eventv1.EventConfigSpec{
