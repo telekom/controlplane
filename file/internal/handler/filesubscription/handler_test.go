@@ -383,10 +383,10 @@ var _ = Describe("FileSubscriptionHandler", func() {
 			mockClient.EXPECT().
 				CreateOrUpdate(mock.Anything, mock.AnythingOfType("*v1.ApprovalRequest"), mock.Anything).
 				Return(controllerutil.OperationResultCreated, nil).Once()
-			// Approval builder cleans up old requests
+			// Approval builder lists owner ApprovalRequests for scoped cleanup
 			mockClient.EXPECT().
-				Cleanup(mock.Anything, mock.AnythingOfType("*v1.ApprovalRequestList"), mock.Anything).
-				Return(0, nil).Once()
+				List(mock.Anything, mock.AnythingOfType("*v1.ApprovalRequestList"), mock.Anything).
+				Return(nil).Once()
 			// Approval does not exist yet → Pending
 			mockClient.EXPECT().
 				Get(mock.Anything, mock.Anything, mock.AnythingOfType("*v1.Approval")).
@@ -434,8 +434,8 @@ var _ = Describe("FileSubscriptionHandler", func() {
 				CreateOrUpdate(mock.Anything, mock.AnythingOfType("*v1.ApprovalRequest"), mock.Anything).
 				Return(controllerutil.OperationResultNone, nil).Once()
 			mockClient.EXPECT().
-				Cleanup(mock.Anything, mock.AnythingOfType("*v1.ApprovalRequestList"), mock.Anything).
-				Return(0, nil).Once()
+				List(mock.Anything, mock.AnythingOfType("*v1.ApprovalRequestList"), mock.Anything).
+				Return(nil).Once()
 			// Approval exists and is granted
 			mockClient.EXPECT().
 				Get(mock.Anything, mock.Anything, mock.AnythingOfType("*v1.Approval")).
@@ -517,8 +517,8 @@ var _ = Describe("FileSubscriptionHandler", func() {
 				CreateOrUpdate(mock.Anything, mock.AnythingOfType("*v1.ApprovalRequest"), mock.Anything).
 				Return(controllerutil.OperationResultNone, nil).Once()
 			mockClient.EXPECT().
-				Cleanup(mock.Anything, mock.AnythingOfType("*v1.ApprovalRequestList"), mock.Anything).
-				Return(0, nil).Once()
+				List(mock.Anything, mock.AnythingOfType("*v1.ApprovalRequestList"), mock.Anything).
+				Return(nil).Once()
 			mockClient.EXPECT().
 				Get(mock.Anything, mock.Anything, mock.AnythingOfType("*v1.Approval")).
 				Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
@@ -565,8 +565,8 @@ var _ = Describe("FileSubscriptionHandler", func() {
 				CreateOrUpdate(mock.Anything, mock.AnythingOfType("*v1.ApprovalRequest"), mock.Anything).
 				Return(controllerutil.OperationResultNone, nil).Once()
 			mockClient.EXPECT().
-				Cleanup(mock.Anything, mock.AnythingOfType("*v1.ApprovalRequestList"), mock.Anything).
-				Return(0, nil).Once()
+				List(mock.Anything, mock.AnythingOfType("*v1.ApprovalRequestList"), mock.Anything).
+				Return(nil).Once()
 			mockClient.EXPECT().
 				Get(mock.Anything, mock.Anything, mock.AnythingOfType("*v1.Approval")).
 				Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
@@ -613,8 +613,8 @@ var _ = Describe("FileSubscriptionHandler", func() {
 				CreateOrUpdate(mock.Anything, mock.AnythingOfType("*v1.ApprovalRequest"), mock.Anything).
 				Return(controllerutil.OperationResultNone, nil).Once()
 			mockClient.EXPECT().
-				Cleanup(mock.Anything, mock.AnythingOfType("*v1.ApprovalRequestList"), mock.Anything).
-				Return(0, nil).Once()
+				List(mock.Anything, mock.AnythingOfType("*v1.ApprovalRequestList"), mock.Anything).
+				Return(nil).Once()
 			mockClient.EXPECT().
 				Get(mock.Anything, mock.Anything, mock.AnythingOfType("*v1.Approval")).
 				Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
