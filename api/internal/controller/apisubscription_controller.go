@@ -68,7 +68,7 @@ func (r *ApiSubscriptionReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		For(&apiapi.ApiSubscription{}, builder.WithPredicates(cc.Count("apisubscription", cc.RoleFor, predicate.ResourceVersionChangedPredicate{}))).
 		Owns(&approvalapi.ApprovalRequest{}, builder.WithPredicates(cc.Count("apisubscription", cc.RoleOwns))).
 		Owns(&approvalapi.Approval{}, builder.WithPredicates(cc.Count("apisubscription", cc.RoleOwns))).
-		Owns(&gatewayapi.ConsumeRoute{}, builder.WithPredicates(cc.Count("apisubscription", cc.RoleOwns, predicate.GenerationChangedPredicate{}))).
+		Owns(&gatewayapi.ConsumeRoute{}, builder.WithPredicates(cc.Count("apisubscription", cc.RoleOwns, predicate.ResourceVersionChangedPredicate{}))).
 		Owns(&apiapi.RemoteApiSubscription{}, builder.WithPredicates(cc.Count("apisubscription", cc.RoleOwns))).
 		Watches(&apiapi.Api{},
 			handler.EnqueueRequestsFromMapFunc(r.MapApiToApiSubscription),
@@ -84,7 +84,7 @@ func (r *ApiSubscriptionReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		).
 		Watches(&gatewayapi.Route{},
 			handler.EnqueueRequestsFromMapFunc(r.MapRouteToApiSubscription),
-			builder.WithPredicates(cc.Count("apisubscription", cc.RoleWatches, cc.DeleteOnlyPredicate{})),
+			builder.WithPredicates(cc.Count("apisubscription", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
 		).
 		Watches(&adminv1.Zone{},
 			handler.EnqueueRequestsFromMapFunc(r.MapZoneToApiSubscription),
@@ -188,7 +188,7 @@ func (r *ApiSubscriptionReconciler) MapApplicationToApiSubscription(ctx context.
 	return reqs
 }
 
-// MapRouteToApiSubscription enqueues ApiSubscriptions when a Route they reference is deleted.
+// MapRouteToApiSubscription enqueues ApiSubscriptions when a Route changes or is deleted.
 // Routes live in zone namespaces; we use basepath + environment labels to find affected subscriptions.
 //
 //nolint:dupl // controller map helpers intentionally mirror each other across exposure/subscription

@@ -22,6 +22,7 @@ require (
 	github.com/prometheus/client_golang v1.24.1
 	github.com/prometheus/common v0.70.1
 	github.com/stretchr/testify v1.12.1
+	github.com/telekom/controlplane/common v0.0.0
 	github.com/tidwall/gjson v1.19.0
 	github.com/tidwall/sjson v1.2.5
 	github.com/valyala/fasttemplate v1.2.2
@@ -34,6 +35,8 @@ require (
 )
 
 replace github.com/telekom/controlplane/common-server => ../common-server
+
+replace github.com/telekom/controlplane/common => ../common
 
 require (
 	al.essio.dev/pkg/shellescape v1.6.0 // indirect

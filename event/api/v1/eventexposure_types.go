@@ -37,7 +37,7 @@ const (
 // Approval configures how subscriptions to this event are approved.
 type Approval struct {
 	// Strategy defines the approval mode.
-	// +kubebuilder:default=Auto
+	// +kubebuilder:default=Simple
 	Strategy ApprovalStrategy `json:"strategy"`
 
 	// TrustedTeams identifies teams that are trusted for approving subscriptions.
@@ -105,7 +105,8 @@ type EventExposureStatus struct {
 	// +optional
 	Publisher *ctypes.ObjectRef `json:"publisher,omitempty"`
 
-	// CallbackURL is the URL of callback gateway in the provider zone.
+	// CallbackURL is the effective same-zone callback ingress from the provider's EventConfig.
+	// For proxy providers this URL belongs to the target backend's gateway.
 	// +optional
 	CallbackURL string `json:"callbackURL,omitempty"`
 

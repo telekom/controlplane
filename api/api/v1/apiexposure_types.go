@@ -36,7 +36,7 @@ type ApiExposureSpec struct {
 
 type Approval struct {
 	// +kubebuilder:validation:Enum=Auto;Simple;FourEyes
-	// +kubebuilder:default=Auto
+	// +kubebuilder:default=Simple
 	Strategy ApprovalStrategy `json:"strategy"`
 	// TrustedTeams identifies teams that are trusted for approving this API
 	// Per default your own team is trusted

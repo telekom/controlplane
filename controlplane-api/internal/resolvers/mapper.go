@@ -102,6 +102,39 @@ func mapEventSubscriptionInfo(sub *ent.EventSubscription, app *ent.Application, 
 	}
 }
 
+func mapFileSubscriptionInfo(sub *ent.FileSubscription, app *ent.Application, zone *ent.Zone, team *ent.Team, group *ent.Group) *gqlmodel.FileSubscriptionInfo {
+	var statusPhase *string
+	if sub.StatusPhase != nil {
+		s := string(*sub.StatusPhase)
+		statusPhase = &s
+	}
+	return &gqlmodel.FileSubscriptionInfo{
+		ID:                   sub.ID,
+		FileType:             sub.FileType,
+		StatusPhase:          statusPhase,
+		StatusMessage:        sub.StatusMessage,
+		OwnerApplicationName: app.Name,
+		OwnerTeam:            mapTeamInfo(team, group),
+		OwnerApplication:     mapApplicationInfo(app, zone, team, group),
+	}
+}
+
+func mapFileExposureInfo(exposure *ent.FileExposure, app *ent.Application, zone *ent.Zone, team *ent.Team, group *ent.Group) *gqlmodel.FileExposureInfo {
+	return &gqlmodel.FileExposureInfo{
+		ID:         exposure.ID,
+		FileType:   exposure.FileType,
+		Visibility: string(exposure.Visibility),
+		Active:     exposure.Active,
+		ApprovalConfig: model.ApprovalConfig{
+			Strategy:     exposure.ApprovalConfig.Strategy,
+			TrustedTeams: exposure.ApprovalConfig.TrustedTeams,
+		},
+		OwnerApplicationName: app.Name,
+		OwnerTeam:            mapTeamInfo(team, group),
+		OwnerApplication:     mapApplicationInfo(app, zone, team, group),
+	}
+}
+
 func mapEventExposureInfo(exposure *ent.EventExposure, app *ent.Application, zone *ent.Zone, team *ent.Team, group *ent.Group) *gqlmodel.EventExposureInfo {
 	return &gqlmodel.EventExposureInfo{
 		ID:         exposure.ID,
@@ -198,6 +231,24 @@ func loadEventSubscriptionInfo(ctx context.Context, sub *ent.EventSubscription) 
 		return nil, fmt.Errorf("event subscription %d: %w", sub.ID, err)
 	}
 	return mapEventSubscriptionInfo(sub, app, zone, team, group), nil
+}
+
+// loadFileSubscriptionInfo loads the full owner chain for a file subscription and maps it to FileSubscriptionInfo.
+func loadFileSubscriptionInfo(ctx context.Context, sub *ent.FileSubscription) (*gqlmodel.FileSubscriptionInfo, error) {
+	app, zone, team, group, err := loadOwnerChain(ctx, sub.QueryOwner())
+	if err != nil {
+		return nil, fmt.Errorf("file subscription %d: %w", sub.ID, err)
+	}
+	return mapFileSubscriptionInfo(sub, app, zone, team, group), nil
+}
+
+// loadFileExposureInfo loads the full owner chain for a file exposure and maps it to FileExposureInfo.
+func loadFileExposureInfo(ctx context.Context, exposure *ent.FileExposure) (*gqlmodel.FileExposureInfo, error) {
+	app, zone, team, group, err := loadOwnerChain(ctx, exposure.QueryOwner())
+	if err != nil {
+		return nil, fmt.Errorf("file exposure %d: %w", exposure.ID, err)
+	}
+	return mapFileExposureInfo(exposure, app, zone, team, group), nil
 }
 
 // loadApiExposureInfo loads the full owner chain for an API exposure and maps it to ApiExposureInfo.

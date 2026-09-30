@@ -381,7 +381,7 @@ var _ = Describe("AgenticSubscriptionHandler", func() {
 			readyCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady)
 			Expect(readyCond).ToNot(BeNil())
 			Expect(readyCond.Status).To(Equal(metav1.ConditionFalse))
-			Expect(readyCond.Reason).To(Equal("ServerNotFound"))
+			Expect(readyCond.Reason).To(Equal(condition.ReasonPreconditionNotMet))
 		})
 
 		It("should set Blocked when no active AgenticExposure found", func() {
@@ -396,7 +396,7 @@ var _ = Describe("AgenticSubscriptionHandler", func() {
 			readyCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady)
 			Expect(readyCond).ToNot(BeNil())
 			Expect(readyCond.Status).To(Equal(metav1.ConditionFalse))
-			Expect(readyCond.Reason).To(Equal("AgenticExposureNotFound"))
+			Expect(readyCond.Reason).To(Equal(condition.ReasonPreconditionNotMet))
 		})
 
 		It("should return BlockedError when subscriber zone does not support AI Gateway", func() {
@@ -425,6 +425,10 @@ var _ = Describe("AgenticSubscriptionHandler", func() {
 			Expect(err).To(HaveOccurred())
 			Expect(isBlockedError(err)).To(BeTrue())
 			Expect(err.Error()).To(ContainSubstring("AI Gateway feature"))
+			readyCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady)
+			Expect(readyCond).ToNot(BeNil())
+			Expect(readyCond.Status).To(Equal(metav1.ConditionFalse))
+			Expect(readyCond.Reason).To(Equal(condition.ReasonPreconditionNotMet))
 		})
 
 		It("should return BlockedError when visibility constraints are violated", func() {
@@ -445,6 +449,10 @@ var _ = Describe("AgenticSubscriptionHandler", func() {
 			Expect(err).To(HaveOccurred())
 			Expect(isBlockedError(err)).To(BeTrue())
 			Expect(err.Error()).To(ContainSubstring("visibility constraints"))
+			readyCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady)
+			Expect(readyCond).ToNot(BeNil())
+			Expect(readyCond.Status).To(Equal(metav1.ConditionFalse))
+			Expect(readyCond.Reason).To(Equal(condition.ReasonAccessDenied))
 		})
 
 		It("should return error when GetZone fails", func() {
@@ -472,7 +480,7 @@ var _ = Describe("AgenticSubscriptionHandler", func() {
 			readyCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady)
 			Expect(readyCond).ToNot(BeNil())
 			Expect(readyCond.Status).To(Equal(metav1.ConditionFalse))
-			Expect(readyCond.Reason).To(Equal("ApprovalPending"))
+			Expect(readyCond.Reason).To(Equal(condition.ReasonApprovalPending))
 		})
 
 		It("should set NotReady when approval is denied and cleanup ConsumeRoute", func() {
@@ -491,7 +499,7 @@ var _ = Describe("AgenticSubscriptionHandler", func() {
 			readyCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady)
 			Expect(readyCond).ToNot(BeNil())
 			Expect(readyCond.Status).To(Equal(metav1.ConditionFalse))
-			Expect(readyCond.Reason).To(Equal("ApprovalDenied"))
+			Expect(readyCond.Reason).To(Equal(condition.ReasonAccessDenied))
 		})
 
 		It("should create ConsumeRoute and set Ready when approval is granted", func() {
@@ -507,7 +515,7 @@ var _ = Describe("AgenticSubscriptionHandler", func() {
 			readyCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady)
 			Expect(readyCond).ToNot(BeNil())
 			Expect(readyCond.Status).To(Equal(metav1.ConditionTrue))
-			Expect(readyCond.Reason).To(Equal("AgenticSubscriptionProvisioned"))
+			Expect(readyCond.Reason).To(Equal(condition.ReasonProvisioned))
 		})
 
 		It("should return error when subscriber zone has no default AI Gateway preset", func() {
@@ -546,7 +554,7 @@ var _ = Describe("AgenticSubscriptionHandler", func() {
 			readyCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady)
 			Expect(readyCond).ToNot(BeNil())
 			Expect(readyCond.Status).To(Equal(metav1.ConditionFalse))
-			Expect(readyCond.Reason).To(Equal("ChildResourcesNotReady"))
+			Expect(readyCond.Reason).To(Equal(condition.ReasonSubResourceNotReady))
 		})
 
 		It("should return error when ConsumeRoute creation fails", func() {
@@ -560,6 +568,29 @@ var _ = Describe("AgenticSubscriptionHandler", func() {
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("failed to create ConsumeRoute"))
 			Expect(obj.Status.ActiveScopes).To(Equal([]string{"previous"}))
+		})
+
+		It("should clear pending approval readiness when approval is granted but provisioning fails", func() {
+			setupPreApprovalMocks()
+			mockApprovalBuilderPending()
+			Expect(h.CreateOrUpdate(ctx, obj)).To(Succeed())
+
+			readyCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady)
+			Expect(readyCond).ToNot(BeNil())
+			Expect(readyCond.Reason).To(Equal(condition.ReasonApprovalPending))
+
+			setupPreApprovalMocks()
+			mockApprovalBuilderGranted()
+			mockCreateOrUpdateConsumeRoute(controllerutil.OperationResultNone, fmt.Errorf("create failed"))
+
+			Expect(h.CreateOrUpdate(ctx, obj)).To(MatchError(ContainSubstring("failed to create ConsumeRoute")))
+
+			Expect(meta.IsStatusConditionTrue(obj.GetConditions(), "ApprovalGranted")).To(BeTrue())
+			readyCond = meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady)
+			Expect(readyCond).ToNot(BeNil())
+			Expect(readyCond.Status).To(Equal(metav1.ConditionFalse))
+			Expect(readyCond.Reason).To(Equal(condition.ReasonProcessing))
+			Expect(readyCond.Message).To(Equal("Approval granted, provisioning in progress"))
 		})
 
 		It("should use AGENT display type in approval reason for AGENT variant", func() {

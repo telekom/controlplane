@@ -187,14 +187,18 @@ var _ = Describe("McpServer Repository", func() {
 				TeamName:    "platform--narvi",
 			}
 			Expect(repo.Upsert(ctx, data)).To(Succeed())
+			cache.Wait()
 
 			data.Active = false
 			Expect(repo.Upsert(ctx, data)).To(Succeed())
 			cache.Wait()
+			activeCount, err := client.McpServer.Query().Where(entmcpserver.ActiveEQ(true)).Count(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(activeCount).To(BeZero())
 
 			resolver := infrastructure.NewIDResolver(client, cache)
-			_, err := resolver.FindActiveMcpServerID(ctx, "/mcp/weather/v1")
-			Expect(errors.Is(err, infrastructure.ErrEntityNotFound)).To(BeTrue())
+			_, err = resolver.FindActiveMcpServerID(ctx, "/mcp/weather/v1")
+			Expect(err).To(MatchError(infrastructure.ErrEntityNotFound))
 		})
 
 		It("should back-link orphaned AgenticExposures projected before the mcp_server", func() {

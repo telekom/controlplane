@@ -231,7 +231,7 @@ spec:
                 - Expired
                 type: string
               strategy:
-                default: Auto
+                default: Simple
                 description: Strategy defines the strategy that was used to approve
                   the request
                 enum:

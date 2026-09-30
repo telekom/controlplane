@@ -71,7 +71,8 @@ type Options struct {
 	// ExtraConsumers are additional client names appended to the route's
 	// DefaultConsumers regardless of IsProxyTarget. Callback routes use this to
 	// always trust the Horizon callback client (CallbackClientName).
-	ExtraConsumers []string
+	ExtraConsumers     []string
+	CallbackClientName string
 
 	// TrustedIssuers is the list of trusted token issuers for this route.
 	// For primary routes: includes the zone's IDP issuer + LMS issuers from proxy zones.
@@ -101,8 +102,17 @@ func WithProxyTarget(isProxyTarget bool) Option {
 // callback client (CallbackClientName) is added to its DefaultConsumers.
 func WithCallbackConsumer() Option {
 	return func(o *Options) {
-		o.ExtraConsumers = append(o.ExtraConsumers, CallbackClientName)
+		clientName := o.CallbackClientName
+		if clientName == "" {
+			clientName = CallbackClientName
+		}
+		o.ExtraConsumers = append(o.ExtraConsumers, clientName)
 	}
+}
+
+// WithCallbackClientName selects the configured callback identity for route ACLs.
+func WithCallbackClientName(name string) Option {
+	return func(o *Options) { o.CallbackClientName = name }
 }
 
 // WithTrustedIssuers sets the trusted token issuers for the route.
@@ -265,7 +275,7 @@ func buildCrossZoneProxyRoute(
 
 	build := func() error {
 		route.Labels = map[string]string{
-			config.DomainLabelKey:        "event",
+			config.DomainLabelKey:        LabelValueDomain,
 			config.BuildLabelKey("zone"): sourceZone.Name,
 			config.BuildLabelKey("type"): kind + "-proxy",
 		}

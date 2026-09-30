@@ -39,6 +39,22 @@ A matching **ConsumeRoute** is then created for each approved subscription to gr
 
 For the meaning of each route type and how they forward traffic, see [Gateway Domain: Route Types & Cross-Zone Meshing](./gateway.mdx#route-types--cross-zone-meshing).
 
+### Subscription Readiness
+
+An `ApiSubscription` reports `Ready=False / PreconditionNotMet` while the exposure
+is missing the required primary, provider-failover, or proxy route reference.
+This also clears a previously successful readiness condition.
+
+After provisioning, local and remote subscriptions check condition-bearing
+resources created or updated during reconciliation for explicit `Ready=False`
+conditions. This includes
+the primary and any subscriber-failover `ConsumeRoute`s, and, where applicable,
+the `ApprovalRequest`, `RemoteApiSubscription`, and locally created proxy Route.
+An explicit child `Ready=False` keeps the subscription at
+`Ready=False / SubResourceNotReady`. Missing or unknown Ready conditions and child
+`ObservedGeneration` are not checked. Child status changes trigger reconciliation.
+Once the check passes, the subscription reports `Ready=True / Provisioned`.
+
 ## Domain Interactions
 
 - **Rover domain** — Creates Api, ApiExposure, and ApiSubscription resources.

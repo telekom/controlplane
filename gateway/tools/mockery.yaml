@@ -6,6 +6,7 @@ with-expecter: True
 mockname: "Mock{{.InterfaceName}}"
 outpkg: "mock"
 filename: "mock_{{.InterfaceName}}.go"
+boilerplate-file: ../../hack/boilerplate.go.txt
 packages:
   github.com/telekom/controlplane/gateway/pkg/kong/client:
     # place your package-specific config here

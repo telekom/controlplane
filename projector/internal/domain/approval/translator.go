@@ -34,7 +34,7 @@ var _ runtime.Translator[*approvalv1.Approval, *ApprovalData, ApprovalKey] = (*T
 
 // isSupportedTargetKind returns true if the target kind is one we can resolve.
 func isSupportedTargetKind(kind string) bool {
-	return kind == TargetKindAPISubscription || kind == TargetKindEventSubscription || kind == TargetKindAgenticSubscription
+	return kind == TargetKindAPISubscription || kind == TargetKindEventSubscription || kind == TargetKindAgenticSubscription || kind == TargetKindFileSubscription
 }
 
 // ShouldSkip returns true if the Approval CR lacks the required fields for
@@ -47,13 +47,16 @@ func (t *Translator) ShouldSkip(obj *approvalv1.Approval) (bool, string) {
 		return true, "spec.action is empty"
 	}
 	if !isSupportedTargetKind(obj.Spec.Target.TypeMeta.Kind) {
-		return true, "spec.target.kind is not ApiSubscription, EventSubscription, or AgenticSubscription"
+		return true, "spec.target.kind is not ApiSubscription, EventSubscription, FileSubscription or AgenticSubscription"
 	}
 	if !cconfig.FeaturePubSub.IsEnabled() && obj.Spec.Target.TypeMeta.Kind == TargetKindEventSubscription {
 		return true, "pubsub feature is disabled"
 	}
 	if !cconfig.FeatureAiGateway.IsEnabled() && obj.Spec.Target.TypeMeta.Kind == TargetKindAgenticSubscription {
 		return true, "ai_gateway feature is disabled"
+	}
+	if !cconfig.FeatureFile.IsEnabled() && obj.Spec.Target.TypeMeta.Kind == TargetKindFileSubscription {
+		return true, "file_subscription feature is disabled"
 	}
 
 	if obj.Spec.Decider.TeamName == "" {
@@ -98,9 +101,9 @@ func (t *Translator) Translate(_ context.Context, obj *approvalv1.Approval) (*Ap
 		Meta:                  shared.NewMetadata(obj.Namespace, obj.Name, obj.Labels),
 		StatusPhase:           phase,
 		StatusMessage:         message,
-		State:                 mapState(string(obj.Spec.State)),
+		State:                 shared.MapApprovalState(string(obj.Spec.State)),
 		Action:                obj.Spec.Action,
-		Strategy:              mapStrategy(string(obj.Spec.Strategy)),
+		Strategy:              shared.MapApprovalStrategy(string(obj.Spec.Strategy)),
 		Requester:             mapRequester(obj.Spec.Requester),
 		Decider:               mapDecider(obj.Spec.Decider),
 		Decisions:             mapDecisions(obj.Spec.Decisions),
@@ -156,22 +159,6 @@ func (t *Translator) KeyFromDelete(req types.NamespacedName, lastKnown *approval
 	}, nil
 }
 
-// mapState converts a PascalCase CR state to the SCREAMING_SNAKE ent enum.
-func mapState(state string) string {
-	return strings.ToUpper(state)
-}
-
-// mapStrategy converts a PascalCase CR strategy to the SCREAMING_SNAKE ent
-// enum, handling the special FourEyes -> FOUR_EYES case.
-func mapStrategy(strategy string) string {
-	switch strategy {
-	case "FourEyes":
-		return "FOUR_EYES"
-	default:
-		return strings.ToUpper(strategy)
-	}
-}
-
 // mapRequester converts the CR Requester to the model RequesterInfo DTO.
 // String fields are converted to *string where the model uses pointers.
 func mapRequester(r approvalv1.Requester) model.RequesterInfo {
@@ -221,7 +208,7 @@ func mapDecisions(decisions []approvalv1.Decision) []model.Decision {
 			result[i].Timestamp = &timestamp
 		}
 		if d.ResultingState != "" {
-			resultingState := mapState(d.ResultingState.String())
+			resultingState := strings.ToUpper(d.ResultingState.String())
 			result[i].ResultingState = &resultingState
 		}
 	}
@@ -244,7 +231,7 @@ func mapAvailableTransitions(transitions approvalv1.AvailableTransitions) []mode
 		}
 		result = append(result, model.AvailableTransition{
 			Action:  strings.ToUpper(at.Action.String()),
-			ToState: mapState(at.To.String()),
+			ToState: strings.ToUpper(at.To.String()),
 		})
 	}
 	return result

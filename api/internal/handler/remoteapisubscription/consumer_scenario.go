@@ -71,7 +71,7 @@ func (h *RemoteApiSubscriptionHandler) handleConsumerScenario(ctx context.Contex
 	// Create real route
 	route := &gatewayapi.Route{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      remoteOrg.Spec.Id + "--" + labelutil.NormalizeValue(obj.Spec.ApiBasePath),
+			Name:      labelutil.NormalizeNameValue(remoteOrg.Spec.Id + "--" + labelutil.NormalizeValue(obj.Spec.ApiBasePath)),
 			Namespace: zone.Status.Namespace,
 		},
 	}
@@ -79,7 +79,7 @@ func (h *RemoteApiSubscriptionHandler) handleConsumerScenario(ctx context.Contex
 	mutator := func() error {
 		route.Labels = map[string]string{
 			apiapi.BasePathLabelKey:      labelutil.NormalizeLabelValue(obj.Spec.ApiBasePath),
-			config.BuildLabelKey("zone"): labelutil.NormalizeValue(zone.Name),
+			config.BuildLabelKey("zone"): labelutil.NormalizeLabelValue(zone.Name),
 			config.BuildLabelKey("type"): "real",
 		}
 

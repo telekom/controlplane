@@ -59,7 +59,7 @@ const (
 // Approval configures how subscriptions to this MCP server are approved.
 type Approval struct {
 	// Strategy defines the approval mode.
-	// +kubebuilder:default=Auto
+	// +kubebuilder:default=Simple
 	Strategy ApprovalStrategy `json:"strategy"`
 
 	// TrustedTeams identifies teams that are trusted for approving subscriptions.

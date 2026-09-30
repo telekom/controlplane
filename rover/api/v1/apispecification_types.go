@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/telekom/controlplane/common/pkg/types"
+	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -26,7 +27,7 @@ func Major(v string) string {
 func MakeName(apiSpec *ApiSpecification) string {
 	basePath := strings.Trim(apiSpec.Spec.BasePath, "/")
 	name := strings.ReplaceAll(basePath, "/", "-")
-	return strings.ToLower(name)
+	return labelutil.NormalizeNameValue(name)
 }
 
 type ApiSpecificationSpec struct {

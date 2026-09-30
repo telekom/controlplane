@@ -37,7 +37,7 @@ func MapRequest(basePath string, fileAPIResp *filesapi.FileUploadResponse, id ma
 	}
 
 	ns := id.Environment + "--" + id.Namespace
-	apiSpecName := labelutil.NormalizeValue(basePath)
+	apiSpecName := labelutil.NormalizeNameValue(basePath)
 	apiSpecRef := types.TypedObjectRef{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "ApiSpecification",

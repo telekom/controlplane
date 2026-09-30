@@ -391,7 +391,7 @@ var _ = Describe("Team Reconciler, Group Reconciler and Team Webhook", Ordered, 
 				team.Spec.Name = "mismatch-in-name"
 				err = k8sClient.Create(ctx, team)
 				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(ContainSubstring("admission webhook \"vteam-v1.kb.io\" denied the request: Team.organization.cp.ei.telekom.de \"group--team\" is invalid: metadata.name: Invalid value: \"group--team\": must be equal to 'spec.group--spec.name'"))
+				Expect(err.Error()).To(ContainSubstring("admission webhook \"vteam-v1.kb.io\" denied the request: Team.organization.cp.ei.telekom.de \"group--team\" is invalid: metadata.name: Invalid value: \"group--team\": must be equal to the normalized 'spec.group--spec.name'"))
 			})
 		})
 	})

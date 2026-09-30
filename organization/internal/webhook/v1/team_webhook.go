@@ -62,6 +62,10 @@ func (t TeamCustomDefaulter) Default(ctx context.Context, teamObj *organizationv
 	if err != nil {
 		return err
 	}
+	err = validator.ValidateTeamNamespace(teamObj, env)
+	if err != nil {
+		return err
+	}
 
 	zoneObj, err := mutator.GetZoneObjWithTeamInfo(ctx, t.client)
 	if err != nil {
@@ -117,8 +121,11 @@ func (v *TeamCustomValidator) validateCreateOrUpdate(ctx context.Context, teamOb
 		return nil, err
 	}
 
-	_, err = validator.ValidateAndGetEnv(teamObj)
+	env, err := validator.ValidateAndGetEnv(teamObj)
 	if err != nil {
+		return nil, err
+	}
+	if err := validator.ValidateTeamNamespace(teamObj, env); err != nil {
 		return nil, err
 	}
 

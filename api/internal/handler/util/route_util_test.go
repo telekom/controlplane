@@ -5,6 +5,10 @@
 package util
 
 import (
+	"strings"
+
+	"k8s.io/apimachinery/pkg/util/validation"
+
 	apiapi "github.com/telekom/controlplane/api/api/v1"
 	"github.com/telekom/controlplane/common/pkg/types"
 
@@ -20,6 +24,12 @@ var _ = Describe("Route Util", func() {
 	})
 
 	Describe("MakeRouteName", func() {
+		It("should bound the complete name and distinguish long base paths", func() {
+			basePath := "/" + strings.Repeat("a", 254)
+			Expect(validation.IsDNS1123Subdomain(MakeRouteName(basePath))).To(BeEmpty())
+			Expect(MakeRouteName(basePath)).NotTo(Equal(MakeRouteName(basePath + "b")))
+		})
+
 		It("should normalize the path to a valid route name", func() {
 			Expect(MakeRouteName("/my/api/v1")).To(Equal("my-api-v1"))
 		})
