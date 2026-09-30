@@ -26,7 +26,7 @@ var _ = Describe("EventConfig Controller", func() {
 	Context("When reconciling a resource", func() {
 		const resourceName = "test-resource"
 
-		ctx := context.Background()
+		testCtx := context.Background()
 
 		typeNamespacedName := types.NamespacedName{
 			Name:      resourceName,
@@ -36,7 +36,7 @@ var _ = Describe("EventConfig Controller", func() {
 
 		BeforeEach(func() {
 			By("creating the custom resource for the Kind EventConfig")
-			err := k8sClient.Get(ctx, typeNamespacedName, eventconfigObj)
+			err := k8sClient.Get(testCtx, typeNamespacedName, eventconfigObj)
 			if err != nil && errors.IsNotFound(err) {
 				resource := &eventv1.EventConfig{
 					ObjectMeta: metav1.ObjectMeta{
@@ -63,17 +63,17 @@ var _ = Describe("EventConfig Controller", func() {
 						},
 					},
 				}
-				Expect(k8sClient.Create(ctx, resource)).To(Succeed())
+				Expect(k8sClient.Create(testCtx, resource)).To(Succeed())
 			}
 		})
 
 		AfterEach(func() {
 			resource := &eventv1.EventConfig{}
-			err := k8sClient.Get(ctx, typeNamespacedName, resource)
+			err := k8sClient.Get(testCtx, typeNamespacedName, resource)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Cleanup the specific resource instance EventConfig")
-			Expect(k8sClient.Delete(ctx, resource)).To(Succeed())
+			Expect(k8sClient.Delete(testCtx, resource)).To(Succeed())
 		})
 		It("should successfully reconcile the resource", func() {
 			By("Reconciling the created resource")
@@ -85,7 +85,7 @@ var _ = Describe("EventConfig Controller", func() {
 			}
 			controllerReconciler.Controller = cc.NewController(&eventconfig.EventConfigHandler{}, k8sClient, recorder)
 
-			_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{
+			_, err := controllerReconciler.Reconcile(testCtx, reconcile.Request{
 				NamespacedName: typeNamespacedName,
 			})
 			Expect(err).NotTo(HaveOccurred())
@@ -93,21 +93,21 @@ var _ = Describe("EventConfig Controller", func() {
 
 		It("persists, replaces, and clears the optional Horizon environment overwrite", func() {
 			resource := &eventv1.EventConfig{}
-			Expect(k8sClient.Get(ctx, typeNamespacedName, resource)).To(Succeed())
+			Expect(k8sClient.Get(testCtx, typeNamespacedName, resource)).To(Succeed())
 
 			resource.Spec.OverwriteEnvironmentName = "legacy-horizon"
-			Expect(k8sClient.Update(ctx, resource)).To(Succeed())
-			Expect(k8sClient.Get(ctx, typeNamespacedName, resource)).To(Succeed())
+			Expect(k8sClient.Update(testCtx, resource)).To(Succeed())
+			Expect(k8sClient.Get(testCtx, typeNamespacedName, resource)).To(Succeed())
 			Expect(resource.Spec.OverwriteEnvironmentName).To(Equal("legacy-horizon"))
 
 			resource.Spec.OverwriteEnvironmentName = "replacement"
-			Expect(k8sClient.Update(ctx, resource)).To(Succeed())
-			Expect(k8sClient.Get(ctx, typeNamespacedName, resource)).To(Succeed())
+			Expect(k8sClient.Update(testCtx, resource)).To(Succeed())
+			Expect(k8sClient.Get(testCtx, typeNamespacedName, resource)).To(Succeed())
 			Expect(resource.Spec.OverwriteEnvironmentName).To(Equal("replacement"))
 
 			resource.Spec.OverwriteEnvironmentName = ""
-			Expect(k8sClient.Update(ctx, resource)).To(Succeed())
-			Expect(k8sClient.Get(ctx, typeNamespacedName, resource)).To(Succeed())
+			Expect(k8sClient.Update(testCtx, resource)).To(Succeed())
+			Expect(k8sClient.Get(testCtx, typeNamespacedName, resource)).To(Succeed())
 			Expect(resource.Spec.OverwriteEnvironmentName).To(BeEmpty())
 		})
 	})

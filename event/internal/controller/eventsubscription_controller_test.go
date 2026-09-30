@@ -26,7 +26,7 @@ var _ = Describe("EventSubscription Controller", func() {
 	Context("When reconciling a resource", func() {
 		const resourceName = "test-resource"
 
-		ctx := context.Background()
+		testCtx := context.Background()
 
 		typeNamespacedName := types.NamespacedName{
 			Name:      resourceName,
@@ -36,7 +36,7 @@ var _ = Describe("EventSubscription Controller", func() {
 
 		BeforeEach(func() {
 			By("creating the custom resource for the Kind EventSubscription")
-			err := k8sClient.Get(ctx, typeNamespacedName, eventsubscriptionObj)
+			err := k8sClient.Get(testCtx, typeNamespacedName, eventsubscriptionObj)
 			if err != nil && errors.IsNotFound(err) {
 				resource := &eventv1.EventSubscription{
 					ObjectMeta: metav1.ObjectMeta{
@@ -57,17 +57,17 @@ var _ = Describe("EventSubscription Controller", func() {
 						},
 					},
 				}
-				Expect(k8sClient.Create(ctx, resource)).To(Succeed())
+				Expect(k8sClient.Create(testCtx, resource)).To(Succeed())
 			}
 		})
 
 		AfterEach(func() {
 			resource := &eventv1.EventSubscription{}
-			err := k8sClient.Get(ctx, typeNamespacedName, resource)
+			err := k8sClient.Get(testCtx, typeNamespacedName, resource)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Cleanup the specific resource instance EventSubscription")
-			Expect(k8sClient.Delete(ctx, resource)).To(Succeed())
+			Expect(k8sClient.Delete(testCtx, resource)).To(Succeed())
 		})
 		It("should successfully reconcile the resource", func() {
 			By("Reconciling the created resource")
@@ -79,7 +79,7 @@ var _ = Describe("EventSubscription Controller", func() {
 			}
 			controllerReconciler.Controller = cc.NewController(&eventsubscription.EventSubscriptionHandler{}, k8sClient, recorder)
 
-			_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{
+			_, err := controllerReconciler.Reconcile(testCtx, reconcile.Request{
 				NamespacedName: typeNamespacedName,
 			})
 			Expect(err).NotTo(HaveOccurred())
