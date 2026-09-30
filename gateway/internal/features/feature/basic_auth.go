@@ -45,12 +45,20 @@ func (b *BasicAuthFeature) IsUsed(ctx context.Context, builder features.Features
 	}
 
 	// Check for failover security with basic auth
-	if HasFailoverSecurity(route) && route.Spec.Traffic.Failover.Security.HasBasicAuth() {
-		return true
+	if HasFailoverSecurity(route) {
+		if route.Spec.Traffic.Failover.Security.HasM2MExternalIDP() {
+			return false
+		}
+		if route.Spec.Traffic.Failover.Security.HasBasicAuth() {
+			return true
+		}
 	}
 
 	// For primary routes, check route security and all consumers
 	if !route.IsProxy() {
+		if route.Spec.Security.HasM2MExternalIDP() {
+			return false
+		}
 		// Check if route itself has basic auth configured
 		if HasM2M(route) && route.Spec.Security.HasBasicAuth() {
 			return true
@@ -77,6 +85,9 @@ func (b *BasicAuthFeature) Apply(ctx context.Context, builder features.FeaturesB
 	security := route.Spec.Security
 	if HasFailoverSecurity(route) {
 		security = route.Spec.Traffic.Failover.Security
+	}
+	if (route.IsPrimary() || route.IsFailoverSecondary()) && security.HasM2MExternalIDP() {
+		return nil
 	}
 
 	if security.HasBasicAuth() {

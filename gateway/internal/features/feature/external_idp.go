@@ -66,7 +66,6 @@ func (f *ExternalIDPFeature) Apply(ctx context.Context, builder features.Feature
 	if !ok {
 		return features.ErrNoRoute
 	}
-	jumperConfig := builder.JumperConfig()
 
 	// Depending on the context (primary or failover route), we need to use different security settings.
 	// If the route is a failover secondary route, we use the failover security settings
@@ -77,6 +76,10 @@ func (f *ExternalIDPFeature) Apply(ctx context.Context, builder features.Feature
 	}
 
 	rtpPlugin.Config.Append.AddHeader("token_endpoint", security.M2M.ExternalIDP.TokenEndpoint)
+	if security.M2M.ExternalIDP.GrantType == gatewayv1.GrantTypePassword {
+		return applyPasswordGrant(ctx, builder, route, &security)
+	}
+	jumperConfig := builder.JumperConfig()
 
 	// Provider
 	if security.HasM2MExternalIDP() && security.M2M.ExternalIDP.Client != nil {
@@ -106,6 +109,46 @@ func (f *ExternalIDPFeature) Apply(ctx context.Context, builder features.Feature
 		}
 	}
 
+	return nil
+}
+
+func applyPasswordGrant(ctx context.Context, builder features.FeaturesBuilder, route *gatewayv1.Route, security *gatewayv1.Security) error {
+	jumperConfig := builder.JumperConfig()
+	providerSettings := security.M2M.ExternalIDP
+	var provider *plugin.OauthCredentials
+	if providerSettings.Basic != nil {
+		entry, err := extendBasic(ctx, plugin.OauthCredentials{}, providerSettings, providerSettings.Basic, security.M2M.Scopes)
+		if err != nil {
+			return errors.Wrapf(err, "cannot get provider secret for route %s", route.Name)
+		}
+		jumperConfig.OAuth[DefaultProviderKey] = entry
+		provider = &entry
+	}
+	for _, consumer := range builder.GetAllowedConsumers() {
+		if err := applyConsumerPasswordGrant(ctx, jumperConfig, consumer, providerSettings, provider); err != nil {
+			return errors.Wrapf(err, "cannot get consumer secret for consumer %s in route %s", consumer.Spec.ConsumerName, route.Name)
+		}
+	}
+	return nil
+}
+
+func applyConsumerPasswordGrant(ctx context.Context, jumperConfig *plugin.JumperConfig, consumer *gatewayv1.ConsumeRoute, providerSettings *gatewayv1.ExternalIdentityProvider, provider *plugin.OauthCredentials) error {
+	key := plugin.ConsumerId(consumer.Spec.ConsumerName)
+	if consumer.HasM2MBasic() {
+		entry, err := extendBasic(ctx, plugin.OauthCredentials{}, providerSettings,
+			consumer.Spec.Security.M2M.Basic, consumer.Spec.Security.M2M.Scopes)
+		if err != nil {
+			return err
+		}
+		jumperConfig.OAuth[key] = entry
+		return nil
+	}
+	if provider == nil || !consumer.HasM2M() || len(consumer.Spec.Security.M2M.Scopes) == 0 {
+		return nil
+	}
+	entry := *provider
+	entry.Scopes = strings.Join(consumer.Spec.Security.M2M.Scopes, " ")
+	jumperConfig.OAuth[key] = entry
 	return nil
 }
 

@@ -38,6 +38,7 @@ func (h *RouteHandler) CreateOrUpdate(ctx context.Context, route *gatewayv1.Rout
 	}
 
 	routeConsumers := &gatewayv1.ConsumeRouteList{}
+	passwordGrant := false
 	if !route.Spec.PassThrough {
 		listOpts := []client.ListOption{}
 
@@ -66,6 +67,31 @@ func (h *RouteHandler) CreateOrUpdate(ctx context.Context, route *gatewayv1.Rout
 		if err != nil {
 			return errors.Wrap(err, "failed to list route consumers")
 		}
+		if route.IsPrimary() || route.IsFailoverSecondary() {
+			security := route.Spec.Security
+			if route.IsFailoverSecondary() && route.Spec.Traffic.Failover != nil {
+				security = route.Spec.Traffic.Failover.Security
+			}
+			passwordGrant = usesPasswordGrant(&security)
+			providerFallback := hasProviderPasswordFallback(&security)
+			if passwordGrant && !providerFallback && route.Spec.Security.DisableAccessControl {
+				return invalidateRoute(ctx, route, builder, "Defaultless password routes require access control", false)
+			}
+			for _, consumer := range routeConsumers.Items {
+				if controller.IsBeingDeleted(&consumer) {
+					continue
+				}
+				if consumerRequiresPasswordGrant(&consumer) && !passwordGrant {
+					return invalidateRoute(ctx, route, builder, "Consumer credentials require an external IDP password grant", false)
+				}
+				if passwordGrant && !hasUsablePasswordCredentials(&consumer, providerFallback) {
+					return invalidateRoute(ctx, route, builder, "Password route has consumers without usable credentials", false)
+				}
+			}
+			if defaultConsumersLackPasswordCredentials(route, passwordGrant, providerFallback) {
+				return invalidateRoute(ctx, route, builder, "Password route has consumers without usable credentials", false)
+			}
+		}
 
 		for _, consumer := range routeConsumers.Items {
 			if controller.IsBeingDeleted(&consumer) {
@@ -79,6 +105,9 @@ func (h *RouteHandler) CreateOrUpdate(ctx context.Context, route *gatewayv1.Rout
 	}
 
 	if err := builder.Build(ctx); err != nil {
+		if passwordGrant {
+			return invalidateRoute(ctx, route, builder, "Password route publication failed", true)
+		}
 		return errors.Wrap(err, "failed to build route")
 	}
 	log.V(1).Info("route properties are", "properties", route.Status.Properties)

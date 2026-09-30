@@ -327,8 +327,8 @@ var _ = Describe("RouteHandler", func() {
 					mockBuilder.EXPECT().EnableFeature(mock.Anything).Maybe()
 					mockBuilder.EXPECT().AddAllowedConsumers(mock.Anything).
 						Run(func(consumers ...*gatewayv1.ConsumeRoute) { added = append(added, consumers...) }).Maybe()
-					mockBuilder.EXPECT().GetAllowedConsumers().RunAndReturn(func() []*gatewayv1.ConsumeRoute { return added })
 					if valid {
+						mockBuilder.EXPECT().GetAllowedConsumers().RunAndReturn(func() []*gatewayv1.ConsumeRoute { return added })
 						mockBuilder.EXPECT().Build(mock.Anything).Return(nil)
 						Expect(handler.CreateOrUpdate(ctx, route)).To(Succeed())
 						Expect(route.Status.Consumers).To(ConsistOf(allowBoth))
@@ -336,6 +336,8 @@ var _ = Describe("RouteHandler", func() {
 						return
 					}
 
+					mockBuilder.EXPECT().GetKongClient().Return(mockKC)
+					mockKC.EXPECT().DeleteRoute(mock.Anything, route).Return(nil)
 					mockBuilder.EXPECT().Build(mock.Anything).Return(nil).Maybe()
 					Expect(handler.CreateOrUpdate(ctx, route)).To(HaveOccurred())
 					mockBuilder.AssertNotCalled(GinkgoT(), "Build", mock.Anything)
@@ -358,6 +360,7 @@ var _ = Describe("RouteHandler", func() {
 				func(deleteErr error) {
 					primaryIDP(gatewayv1.GrantTypePassword)(route)
 					route.Spec.Security.M2M.ExternalIDP.Basic = nil
+					// Model stale readiness to verify invalidation stamps the current generation.
 					route.Generation = 3
 					route.Status.Consumers = []string{"stale-consumer"}
 					meta.SetStatusCondition(&route.Status.Conditions, metav1.Condition{
@@ -405,6 +408,69 @@ var _ = Describe("RouteHandler", func() {
 				Entry("confirmed deletion", nil),
 				Entry("deletion fails and invalidation remains unconfirmed", fmt.Errorf("kong unavailable")),
 			)
+
+			It("invalidates an installed password route when publication fails", func() {
+				primaryIDP(gatewayv1.GrantTypePassword)(route)
+				// Use a nonzero generation to detect a missing ObservedGeneration stamp.
+				route.Generation = 3
+				route.Status.Consumers = []string{"stale-consumer"}
+				setupReadyGatewayGet()
+				setupFeatureBuilderOverrides()
+				mockClient.EXPECT().List(mock.Anything, mock.Anything, mock.Anything).Return(nil)
+				mockBuilder.EXPECT().EnableFeature(mock.Anything).Maybe()
+				mockBuilder.EXPECT().GetAllowedConsumers().Return([]*gatewayv1.ConsumeRoute{}).Maybe()
+				mockBuilder.EXPECT().Build(mock.Anything).Return(fmt.Errorf("plugin write failed"))
+				mockBuilder.EXPECT().GetKongClient().Return(mockKC)
+				mockKC.EXPECT().DeleteRoute(mock.Anything, route).Return(nil)
+
+				Expect(handler.CreateOrUpdate(ctx, route)).To(HaveOccurred())
+				Expect(route.Status.Consumers).To(BeEmpty())
+				ready := meta.FindStatusCondition(route.GetConditions(), condition.ConditionTypeReady)
+				Expect(ready).NotTo(BeNil())
+				Expect(ready.Status).To(Equal(metav1.ConditionFalse))
+				Expect(ready.ObservedGeneration).To(Equal(route.Generation))
+			})
+
+			It("rejects a defaultless password route when access control is disabled", func() {
+				primaryIDP(gatewayv1.GrantTypePassword)(route)
+				route.Spec.Security.M2M.ExternalIDP.Basic = nil
+				route.Spec.Security.DisableAccessControl = true
+				setupReadyGatewayGet()
+				setupFeatureBuilderOverrides()
+				mockClient.EXPECT().List(mock.Anything, mock.Anything, mock.Anything).Return(nil)
+				mockBuilder.EXPECT().EnableFeature(mock.Anything).Maybe()
+				mockBuilder.EXPECT().GetKongClient().Return(mockKC)
+				mockKC.EXPECT().DeleteRoute(mock.Anything, route).Return(nil)
+				mockBuilder.EXPECT().GetAllowedConsumers().Return([]*gatewayv1.ConsumeRoute{}).Maybe()
+				mockBuilder.EXPECT().Build(mock.Anything).Return(nil).Maybe()
+
+				Expect(handler.CreateOrUpdate(ctx, route)).To(HaveOccurred())
+				mockBuilder.AssertNotCalled(GinkgoT(), "Build", mock.Anything)
+				Expect(meta.IsStatusConditionFalse(route.GetConditions(), condition.ConditionTypeReady)).To(BeTrue())
+			})
+
+			It("rejects client-only consumers on password routes even with a provider fallback", func() {
+				primaryIDP(gatewayv1.GrantTypePassword)(route)
+				setupReadyGatewayGet()
+				setupFeatureBuilderOverrides()
+				mockClient.EXPECT().List(mock.Anything, mock.Anything, mock.Anything).
+					Run(func(_ context.Context, list pkgclient.ObjectList, _ ...pkgclient.ListOption) {
+						list.(*gatewayv1.ConsumeRouteList).Items = []gatewayv1.ConsumeRoute{{
+							Spec: gatewayv1.ConsumeRouteSpec{
+								Security: &gatewayv1.ConsumeRouteSecurity{M2M: &gatewayv1.ConsumerMachine2MachineAuthentication{
+									Client: &gatewayv1.OAuth2ClientCredentials{ClientId: "client", ClientSecret: "secret"},
+								}},
+							},
+						}}
+					}).Return(nil)
+				mockBuilder.EXPECT().EnableFeature(mock.Anything).Maybe()
+				mockBuilder.EXPECT().GetKongClient().Return(mockKC)
+				mockKC.EXPECT().DeleteRoute(mock.Anything, route).Return(nil)
+				mockBuilder.EXPECT().Build(mock.Anything).Return(nil).Maybe()
+
+				Expect(handler.CreateOrUpdate(ctx, route)).To(HaveOccurred())
+				mockBuilder.AssertNotCalled(GinkgoT(), "Build", mock.Anything)
+			})
 		})
 
 		Context("proxy route", func() {

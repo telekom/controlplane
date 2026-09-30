@@ -100,6 +100,43 @@ var _ = Describe("External IDP password grant with consumer username/password an
 	})
 
 	Describe("ExternalIDPFeature", func() {
+		It("copies the complete provider identity with consumer scopes", func() {
+			route := primaryPasswordRoute()
+			jumperConfig := plugin.NewJumperConfig()
+			builder.EXPECT().GetRoute().Return(route, true)
+			builder.EXPECT().RequestTransformerPlugin().Return(plugin.RequestTransformerPluginFromRoute(route))
+			builder.EXPECT().JumperConfig().Return(jumperConfig)
+			scopesOnly := &gatewayv1.ConsumeRoute{Spec: gatewayv1.ConsumeRouteSpec{
+				ConsumerName: "scopes-consumer",
+				Security: &gatewayv1.ConsumeRouteSecurity{M2M: &gatewayv1.ConsumerMachine2MachineAuthentication{
+					Scopes: []string{"consumer:read"},
+				}},
+			}}
+			builder.EXPECT().GetAllowedConsumers().Return([]*gatewayv1.ConsumeRoute{scopesOnly})
+
+			Expect(feature.InstanceExternalIDPFeature.Apply(ctx, builder)).To(Succeed())
+			defaultEntry := jumperConfig.OAuth[feature.DefaultProviderKey]
+			Expect(jumperConfig.OAuth[plugin.ConsumerId("scopes-consumer")]).To(Equal(plugin.OauthCredentials{
+				Username: defaultEntry.Username, Password: defaultEntry.Password,
+				GrantType: defaultEntry.GrantType, Scopes: "consumer:read",
+			}))
+		})
+
+		It("omits a password default when the provider has only client credentials", func() {
+			route := primaryPasswordRoute()
+			route.Spec.Security.M2M.ExternalIDP.Basic = nil
+			route.Spec.Security.M2M.ExternalIDP.Client = &gatewayv1.OAuth2ClientCredentials{ClientId: "provider", ClientSecret: "provider-secret"}
+			jumperConfig := plugin.NewJumperConfig()
+			builder.EXPECT().GetRoute().Return(route, true)
+			builder.EXPECT().RequestTransformerPlugin().Return(plugin.RequestTransformerPluginFromRoute(route))
+			builder.EXPECT().JumperConfig().Return(jumperConfig)
+			builder.EXPECT().GetAllowedConsumers().Return([]*gatewayv1.ConsumeRoute{passwordConsumer()})
+
+			Expect(feature.InstanceExternalIDPFeature.Apply(ctx, builder)).To(Succeed())
+			Expect(jumperConfig.OAuth).NotTo(HaveKey(feature.DefaultProviderKey))
+			Expect(jumperConfig.OAuth).To(HaveKey(plugin.ConsumerId("password-consumer")))
+		})
+
 		DescribeTable("publishes separate provider and consumer password-grant entries",
 			func(route *gatewayv1.Route) {
 				jumperConfig := plugin.NewJumperConfig()

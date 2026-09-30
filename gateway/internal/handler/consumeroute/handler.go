@@ -37,6 +37,12 @@ func (h *ConsumeRouteHandler) CreateOrUpdate(ctx context.Context, consumeRoute *
 		consumeRoute.SetCondition(condition.NewNotReadyCondition("RouteNotReady", "Route is not ready"))
 		return nil
 	}
+	if violatesBasicWithScopesPolicy(consumeRoute, route) {
+		message := "Consumer username/password with scopes requires an external IDP grant type \"password\""
+		consumeRoute.SetCondition(condition.NewBlockedCondition(message))
+		consumeRoute.SetCondition(condition.NewNotReadyCondition(condition.ReasonValidationFailed, message))
+		return nil
+	}
 
 	if slices.Contains(route.Status.Consumers, consumeRoute.Spec.ConsumerName) {
 		consumeRoute.SetCondition(condition.NewDoneProcessingCondition("ConsumeRoute is ready"))
@@ -47,6 +53,21 @@ func (h *ConsumeRouteHandler) CreateOrUpdate(ctx context.Context, consumeRoute *
 	consumeRoute.SetCondition(condition.NewNotReadyCondition("ConsumeRouteProcessing", "Waiting for Route to be processed"))
 
 	return nil
+}
+
+func violatesBasicWithScopesPolicy(consumeRoute *v1.ConsumeRoute, route *v1.Route) bool {
+	if !route.IsPrimary() && !route.IsFailoverSecondary() {
+		return false
+	}
+	if !consumeRoute.HasM2MBasic() || len(consumeRoute.Spec.Security.M2M.Scopes) == 0 {
+		return false
+	}
+
+	security := route.Spec.Security
+	if route.IsFailoverSecondary() && route.Spec.Traffic.Failover != nil {
+		security = route.Spec.Traffic.Failover.Security
+	}
+	return !security.HasM2MExternalIDP() || security.M2M.ExternalIDP.GrantType != v1.GrantTypePassword
 }
 
 func (h *ConsumeRouteHandler) Delete(ctx context.Context, consumeRoute *v1.ConsumeRoute) error {
