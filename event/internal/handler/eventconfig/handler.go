@@ -284,6 +284,12 @@ func (h *EventConfigHandler) createIdentityClient(ctx context.Context, obj *even
 			config.DomainLabelKey: "event",
 		}
 
+		// Event-managed internal clients use statically configured secrets.
+		if identityClient.Annotations == nil {
+			identityClient.Annotations = map[string]string{}
+		}
+		identityClient.Annotations[identityv1.DisableSecretRotationAnnotation] = "true"
+
 		identityClient.Spec = identityv1.ClientSpec{
 			Realm:        &clientCfg.Realm,
 			ClientId:     clientCfg.ClientId,
