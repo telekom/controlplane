@@ -1,0 +1,29 @@
+event/internal/handler/eventsubscription/active_scopes_test.go
+  s_0e8492737c678c::t_5dfc583b8c49fc 77-88,91-94
+agentic/internal/handler/agenticsubscription/active_scopes_test.go
+  s_f278c7f6ac3055::t_f48410ac275198 88-97
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "3b69e7390db342702e73099df6f4eae003c87797",
+  "prompts": {},
+  "sessions": {
+    "s_0e8492737c678c": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f0d9d1e3bffe6hnAYlhVmCuwsH",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_f278c7f6ac3055": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f0d9d1e76ffe9WiV2ZaV1kVB5w",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
