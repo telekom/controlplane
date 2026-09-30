@@ -53,9 +53,7 @@ func newValidZone(name, namespace string) *adminv1.Zone {
 			},
 		},
 		Spec: adminv1.ZoneSpec{
-			IdentityProvider: adminv1.IdentityProviderConfig{},
-			Gateway:          adminv1.GatewayConfig{},
-			Visibility:       adminv1.ZoneVisibilityWorld,
+			Visibility: adminv1.ZoneVisibilityWorld,
 		},
 		Status: adminv1.ZoneStatus{
 			Namespace: namespace + "--" + name,

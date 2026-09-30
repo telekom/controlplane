@@ -24,6 +24,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
+	"github.com/telekom/controlplane/common/pkg/condition"
+	common_types "github.com/telekom/controlplane/common/pkg/types"
+	identityv1 "github.com/telekom/controlplane/identity/api/v1"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	// +kubebuilder:scaffold:imports
@@ -112,6 +116,18 @@ var _ = BeforeSuite(func() {
 	}).SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 
+	err = (&readyReconciler[*identityv1.IdentityProvider]{
+		Client: k8sManager.GetClient(),
+		obj:    &identityv1.IdentityProvider{},
+	}).SetupWithManager(k8sManager)
+	Expect(err).ToNot(HaveOccurred())
+
+	err = (&readyReconciler[*identityv1.Realm]{
+		Client: k8sManager.GetClient(),
+		obj:    &identityv1.Realm{},
+	}).SetupWithManager(k8sManager)
+	Expect(err).ToNot(HaveOccurred())
+
 	go func() {
 		defer GinkgoRecover()
 		err = k8sManager.Start(ctx)
@@ -125,6 +141,32 @@ var _ = AfterSuite(func() {
 	err := testEnv.Stop()
 	Expect(err).NotTo(HaveOccurred())
 })
+
+// readyReconciler stands in for the identity operator, which is not running in
+// envtest: the zone pipeline waits for these resources to report Ready before
+// it creates the resources that reference them.
+type readyReconciler[T common_types.Object] struct {
+	client.Client
+	obj T
+}
+
+func (r *readyReconciler[T]) SetupWithManager(mgr ctrl.Manager) error {
+	return ctrl.NewControllerManagedBy(mgr).For(r.obj).Complete(r)
+}
+
+func (r *readyReconciler[T]) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	obj, ok := r.obj.DeepCopyObject().(T)
+	if !ok {
+		return ctrl.Result{}, fmt.Errorf("unexpected object type %T", r.obj)
+	}
+	if err := r.Get(ctx, req.NamespacedName, obj); err != nil {
+		return ctrl.Result{}, client.IgnoreNotFound(err)
+	}
+	if !obj.SetCondition(condition.NewReadyCondition(condition.ReasonProvisioned, "provisioned")) {
+		return ctrl.Result{}, nil
+	}
+	return ctrl.Result{}, r.Status().Update(ctx, obj)
+}
 
 func CreateNamespace(name string) {
 	ns := &corev1.Namespace{

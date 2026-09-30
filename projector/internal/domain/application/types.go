@@ -30,6 +30,7 @@ type ApplicationData struct {
 	Name          string
 	ClientID      *string // optional/nillable — nil when Status.ClientId is empty
 	ClientSecret  *string // optional/nillable — nil when Spec.Secret is empty
+	TokenURL      *string // optional/nillable — nil when Status.TokenUrl is empty
 	TeamName      string  // resolved to owner_team FK
 	ZoneName      string  // resolved to zone FK
 

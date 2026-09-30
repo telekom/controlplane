@@ -127,30 +127,37 @@ func makeReadyZoneWithAiGateway(name string) *adminv1.Zone {
 			Namespace: "default",
 		},
 		Spec: adminv1.ZoneSpec{
-			AiGateway: &adminv1.AiGatewayConfig{
-				Presets: []adminv1.GatewayConfigPreset{
-					{
-						Name:    "default",
-						Default: true,
-						Urls: []adminv1.UrlConfig{
-							{Hostname: "ai-gateway.example.com", Port: 443, Scheme: "https"},
-						},
+			Gateways: []adminv1.GatewayConfig{
+				{Name: "ai"},
+			},
+			Presets: []adminv1.Preset{
+				{
+					Name:       "default",
+					Type:       adminv1.GatewayTypeAI,
+					Default:    true,
+					GatewayRef: "ai",
+					Urls: []adminv1.UrlConfig{
+						{Hostname: "ai-gateway.example.com", Port: 443, Scheme: "https"},
+					},
+				},
+				// Every zone needs an API preset as its representative profile; agentic
+				// selection never resolves through it.
+				{
+					Name:       "api-default",
+					Type:       adminv1.GatewayTypeAPI,
+					Default:    true,
+					GatewayRef: "ai",
+					Urls: []adminv1.UrlConfig{
+						{Hostname: "ai-gateway.example.com", Port: 443, Scheme: "https"},
 					},
 				},
 			},
 		},
 		Status: adminv1.ZoneStatus{
 			Namespace: "default",
-			AiGateway: &ctypes.ObjectRef{
-				Name:      "ai-gateway",
-				Namespace: "default",
-			},
-			Links: adminv1.Links{
-				Issuer: "https://issuer.example.com/auth/realms/test",
-			},
-			Features: []adminv1.Feature{
-				{Name: adminv1.FeatureAiGateway, Enabled: true},
-			},
+			Presets: []adminv1.PresetStatus{{Name: "default", GatewayRef: &ctypes.ObjectRef{
+				Name: "ai-gateway", Namespace: "default",
+			}, Links: adminv1.Links{Issuer: "https://issuer.example.com/auth/realms/test"}}},
 		},
 	}
 	meta.SetStatusCondition(&z.Status.Conditions, metav1.Condition{
@@ -519,11 +526,11 @@ var _ = Describe("AgenticSubscriptionHandler", func() {
 			Expect(readyCond.Reason).To(Equal(condition.ReasonProvisioned))
 		})
 
-		It("should return error when subscriber zone has no default AI Gateway preset", func() {
+		It("should use the first matching AI preset when none is marked default", func() {
 			server := makeReadyMcpServer("/mcp/weather/v1")
 			exposure := makeReadyAgenticExposure("/mcp/weather/v1", "test-zone")
 			zone := makeReadyZoneWithAiGateway("test-zone")
-			zone.Spec.AiGateway.Presets[0].Default = false
+			zone.Spec.Presets[0].Default = false
 			requestorApp := makeReadyApplication("requestor-app", "requestor-team", "req@example.com", "req-client-id")
 			providerApp := makeReadyApplication("provider-app", "provider-team", "prov@example.com", "prov-client-id")
 
@@ -534,11 +541,14 @@ var _ = Describe("AgenticSubscriptionHandler", func() {
 			mockGetApplication(providerAppKey, providerApp)
 			mockScheme()
 			mockApprovalBuilderGranted()
+			mockCreateOrUpdateConsumeRoute(controllerutil.OperationResultNone, nil)
+			fakeClient.EXPECT().AllReady().Return(true).Once()
 
 			err := h.CreateOrUpdate(ctx, obj)
 
-			Expect(err).To(MatchError(ContainSubstring("failed to select AI Gateway preset")))
-			Expect(obj.Status.ConsumeRoute).To(BeNil())
+			Expect(err).NotTo(HaveOccurred())
+			Expect(obj.Status.GatewayUrl).To(Equal("https://ai-gateway.example.com:443/mcp/weather/v1"))
+			Expect(obj.Status.ConsumeRoute).NotTo(BeNil())
 		})
 
 		It("should set NotReady when AllReady returns false", func() {

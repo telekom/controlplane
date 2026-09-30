@@ -53,11 +53,7 @@ var _ = Describe("Zone Translator", func() {
 					},
 					Spec: adminv1.ZoneSpec{
 						Visibility: adminv1.ZoneVisibilityWorld,
-						Gateway: adminv1.GatewayConfig{
-							Presets: []adminv1.GatewayConfigPreset{
-								{Name: "default", Default: true, Urls: []adminv1.UrlConfig{{Hostname: "gateway.example.com"}}},
-							},
-						},
+						Presets:    []adminv1.Preset{{Name: "default", Type: adminv1.GatewayTypeAPI, Default: true, Urls: []adminv1.UrlConfig{{Hostname: "gateway.example.com"}}}},
 					},
 				},
 				&zone.ZoneData{
@@ -67,7 +63,11 @@ var _ = Describe("Zone Translator", func() {
 					Visibility: "WORLD",
 				},
 			),
-			Entry("enterprise visibility without gateway URL",
+			// Defensive: the webhook guarantees an admitted Zone has an API-typed default,
+			// so this shape only reaches the projector as a pre-validation or legacy
+			// stored object. One such entry is enough — every "no representative profile"
+			// reason lands on the same nil-URL branch.
+			Entry("zone without a representative preset projects null URLs",
 				&adminv1.Zone{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "zone-b",
@@ -78,7 +78,7 @@ var _ = Describe("Zone Translator", func() {
 					},
 					Spec: adminv1.ZoneSpec{
 						Visibility: adminv1.ZoneVisibilityEnterprise,
-						Gateway:    adminv1.GatewayConfig{},
+						Presets:    nil,
 					},
 				},
 				&zone.ZoneData{
@@ -95,11 +95,7 @@ var _ = Describe("Zone Translator", func() {
 					},
 					Spec: adminv1.ZoneSpec{
 						Visibility: adminv1.ZoneVisibilityWorld,
-						Gateway: adminv1.GatewayConfig{
-							Presets: []adminv1.GatewayConfigPreset{
-								{Name: "default", Default: true, Urls: []adminv1.UrlConfig{{Hostname: "gw.test"}}},
-							},
-						},
+						Presets:    []adminv1.Preset{{Name: "default", Type: adminv1.GatewayTypeAPI, Default: true, Urls: []adminv1.UrlConfig{{Hostname: "gw.test"}}}},
 					},
 				},
 				&zone.ZoneData{
@@ -107,29 +103,6 @@ var _ = Describe("Zone Translator", func() {
 					Name:       "zone-c",
 					GatewayURL: strPtr("https://gw.test"),
 					Visibility: "WORLD",
-				},
-			),
-			Entry("empty gateway URL is treated as nil",
-				&adminv1.Zone{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "zone-d",
-						Namespace: "admin",
-					},
-					Spec: adminv1.ZoneSpec{
-						Visibility: adminv1.ZoneVisibilityEnterprise,
-						Gateway: adminv1.GatewayConfig{
-							Presets: []adminv1.GatewayConfigPreset{
-								{Name: "non-default", Default: false, Urls: []adminv1.UrlConfig{{Hostname: "unused.test"}}},
-							},
-						},
-					},
-				},
-				&zone.ZoneData{
-					Meta:       shared.NewMetadata("admin", "zone-d", nil),
-					Name:       "zone-d",
-					GatewayURL: nil,
-					IssuerURL:  nil,
-					Visibility: "ENTERPRISE",
 				},
 			),
 			Entry("issuer URL is populated from Status.Links.Issuer",
@@ -143,24 +116,20 @@ var _ = Describe("Zone Translator", func() {
 					},
 					Spec: adminv1.ZoneSpec{
 						Visibility: adminv1.ZoneVisibilityWorld,
-						Gateway: adminv1.GatewayConfig{
-							Presets: []adminv1.GatewayConfigPreset{
-								{Name: "default", Default: true, Urls: []adminv1.UrlConfig{{Hostname: "gateway.example.com"}}},
-							},
-						},
+						Presets:    []adminv1.Preset{{Name: "default", Type: adminv1.GatewayTypeAPI, Default: true, Urls: []adminv1.UrlConfig{{Hostname: "gateway.example.com"}}}},
 					},
-					Status: adminv1.ZoneStatus{
-						Links: adminv1.Links{
-							Issuer: "https://keycloak.example.com/auth/realms/production",
-						},
-					},
+					Status: adminv1.ZoneStatus{Presets: []adminv1.PresetStatus{{Name: "default", Links: adminv1.Links{
+						Issuer:         "https://keycloak.example.com/auth/realms/production",
+						PermissionsUrl: "https://gateway.example.com/eni/chevron/v2/permission",
+					}}}},
 				},
 				&zone.ZoneData{
-					Meta:       shared.NewMetadata("admin", "zone-e", map[string]string{"cp.ei.telekom.de/environment": "production"}),
-					Name:       "zone-e",
-					GatewayURL: strPtr("https://gateway.example.com"),
-					IssuerURL:  strPtr("https://keycloak.example.com/auth/realms/production"),
-					Visibility: "WORLD",
+					Meta:           shared.NewMetadata("admin", "zone-e", map[string]string{"cp.ei.telekom.de/environment": "production"}),
+					Name:           "zone-e",
+					GatewayURL:     strPtr("https://gateway.example.com"),
+					IssuerURL:      strPtr("https://keycloak.example.com/auth/realms/production"),
+					PermissionsURL: strPtr("https://gateway.example.com/eni/chevron/v2/permission"),
+					Visibility:     "WORLD",
 				},
 			),
 			Entry("empty issuer URL is treated as nil",
@@ -171,17 +140,9 @@ var _ = Describe("Zone Translator", func() {
 					},
 					Spec: adminv1.ZoneSpec{
 						Visibility: adminv1.ZoneVisibilityWorld,
-						Gateway: adminv1.GatewayConfig{
-							Presets: []adminv1.GatewayConfigPreset{
-								{Name: "default", Default: true, Urls: []adminv1.UrlConfig{{Hostname: "gw.test"}}},
-							},
-						},
+						Presets:    []adminv1.Preset{{Name: "default", Type: adminv1.GatewayTypeAPI, Default: true, Urls: []adminv1.UrlConfig{{Hostname: "gw.test"}}}},
 					},
-					Status: adminv1.ZoneStatus{
-						Links: adminv1.Links{
-							Issuer: "",
-						},
-					},
+					Status: adminv1.ZoneStatus{Presets: []adminv1.PresetStatus{{Name: "default"}}},
 				},
 				&zone.ZoneData{
 					Meta:       shared.NewMetadata("admin", "zone-f", nil),

@@ -385,6 +385,7 @@ type ComplexityRoot struct {
 		SubscribedApis        func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.ApiSubscriptionOrder, where *ent.ApiSubscriptionWhereInput) int
 		SubscribedEvents      func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.EventSubscriptionOrder, where *ent.EventSubscriptionWhereInput) int
 		SubscribedFileTypes   func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.FileSubscriptionOrder, where *ent.FileSubscriptionWhereInput) int
+		TokenURL              func(childComplexity int) int
 		Zone                  func(childComplexity int) int
 	}
 
@@ -2461,6 +2462,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Application.SubscribedFileTypes(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].(*ent.FileSubscriptionOrder), args["where"].(*ent.FileSubscriptionWhereInput)), true
+	case "Application.tokenURL":
+		if e.ComplexityRoot.Application.TokenURL == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Application.TokenURL(childComplexity), true
 	case "Application.zone":
 		if e.ComplexityRoot.Application.Zone == nil {
 			break
@@ -7113,6 +7120,7 @@ type Application implements Node {
   name: String!
   clientID: String
   clientSecret: String
+  tokenURL: String
   rotatedClientSecret: String
   rotatedExpiresAt: Time
   currentExpiresAt: Time
@@ -7578,6 +7586,24 @@ input ApplicationWhereInput {
   clientIDNotNil: Boolean
   clientIDEqualFold: String
   clientIDContainsFold: String
+  """
+  token_url field predicates
+  """
+  tokenURL: String
+  tokenURLNEQ: String
+  tokenURLIn: [String!]
+  tokenURLNotIn: [String!]
+  tokenURLGT: String
+  tokenURLGTE: String
+  tokenURLLT: String
+  tokenURLLTE: String
+  tokenURLContains: String
+  tokenURLHasPrefix: String
+  tokenURLHasSuffix: String
+  tokenURLIsNil: Boolean
+  tokenURLNotNil: Boolean
+  tokenURLEqualFold: String
+  tokenURLContainsFold: String
   """
   rotated_expires_at field predicates
   """
@@ -13038,6 +13064,8 @@ func (ec *executionContext) childFields_Application(ctx context.Context, field g
 		return ec.fieldContext_Application_clientID(ctx, field)
 	case "clientSecret":
 		return ec.fieldContext_Application_clientSecret(ctx, field)
+	case "tokenURL":
+		return ec.fieldContext_Application_tokenURL(ctx, field)
 	case "rotatedClientSecret":
 		return ec.fieldContext_Application_rotatedClientSecret(ctx, field)
 	case "rotatedExpiresAt":

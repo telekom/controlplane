@@ -96,7 +96,7 @@ func (h *AgenticSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *ag
 	if err != nil {
 		return err
 	}
-	if !subscriberZone.IsFeatureEnabled(adminv1.FeatureAiGateway) {
+	if !subscriberZone.Spec.FeaturesSupported(adminv1.GatewayTypeAI) {
 		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet,
 			"Subscriber zone "+subscriberZone.Name+" does not support the AI Gateway feature"))
 		return ctrlerrors.BlockedErrorf("subscriber zone %q does not support the AI Gateway feature", subscriberZone.Name)
@@ -209,11 +209,11 @@ func (h *AgenticSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *ag
 		return nil
 	}
 
-	preset, err := subscriberZone.Spec.AiGateway.GetDefaultPreset()
+	preset, err := subscriberZone.Spec.SelectPreset(adminv1.GatewayTypeAI)
 	if err != nil {
 		return errors.Wrapf(err, "failed to select AI Gateway preset for zone %s", subscriberZone.Name)
 	}
-	obj.Status.GatewayUrl, err = url.JoinPath(preset.GetDefaultUrl(), obj.Spec.BasePath)
+	obj.Status.GatewayUrl, err = url.JoinPath(preset.GetDefaultURL(), obj.Spec.BasePath)
 	if err != nil {
 		return errors.Wrapf(err, "failed to construct AI Gateway URL for zone %s", subscriberZone.Name)
 	}

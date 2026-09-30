@@ -72,33 +72,31 @@ func newValidZone() *adminv1.Zone {
 			},
 		},
 		Spec: adminv1.ZoneSpec{
-			IdentityProvider: adminv1.IdentityProviderConfig{
+			IdentityProviders: []adminv1.IdentityProviderConfig{{
+				Name: "primary",
 				Admin: adminv1.IdentityProviderAdminConfig{
 					Url:      &identityAdminUrl,
 					ClientId: "admin-client",
 					UserName: "admin",
 					Password: "",
 				},
-				Url: "https://idp.example.com",
-			},
-			Gateway: adminv1.GatewayConfig{
+				TokenUrl: "https://idp.example.com/token",
+			}},
+			Gateways: []adminv1.GatewayConfig{{
+				Name: "standard",
 				Admin: adminv1.GatewayAdminConfig{
-					Url: "https://gateway.example.com/admin",
+					IdentityProviderRef: "primary",
+					Url:                 "https://gateway.example.com/admin",
 				},
-				Presets: []adminv1.GatewayConfigPreset{
-					{
-						Name:    "default",
-						Default: true,
-						Urls: []adminv1.UrlConfig{
-							{
-								Hostname: "gateway.example.com",
-								Scheme:   "https",
-								BasePath: "/",
-							},
-						},
-					},
-				},
-			},
+			}},
+			Presets: []adminv1.Preset{{
+				Name:                "default",
+				Type:                adminv1.GatewayTypeAPI,
+				Default:             true,
+				GatewayRef:          "standard",
+				IdentityProviderRef: "primary",
+				Urls:                []adminv1.UrlConfig{{Hostname: "gateway.example.com", Scheme: "https", BasePath: "/"}},
+			}},
 			Redis: &adminv1.RedisConfig{
 				Host:     "redis://redis-master:6379",
 				Port:     6379,
@@ -151,14 +149,22 @@ var _ = Describe("Zone Webhook", func() {
 		})
 
 		Context("on CREATE", func() {
+			It("supports zones without Redis", func() {
+				obj := newValidZone()
+				obj.Spec.Redis = nil
+
+				Expect(defaulter.Default(ctx, obj)).To(Succeed())
+				Expect(obj.Spec.Redis).To(BeNil())
+			})
+
 			It("should generate IDP admin password when empty", func() {
 				obj := newValidZone()
-				obj.Spec.IdentityProvider.Admin.Password = ""
+				obj.Spec.IdentityProviders[0].Admin.Password = ""
 
 				err := defaulter.Default(ctx, obj)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(obj.Spec.IdentityProvider.Admin.Password).NotTo(BeEmpty())
-				Expect(obj.Spec.IdentityProvider.Admin.Password).To(HavePrefix("trd_"))
+				Expect(obj.Spec.IdentityProviders[0].Admin.Password).NotTo(BeEmpty())
+				Expect(obj.Spec.IdentityProviders[0].Admin.Password).To(HavePrefix("trd_"))
 			})
 
 			It("should generate Redis password when empty", func() {
@@ -173,32 +179,32 @@ var _ = Describe("Zone Webhook", func() {
 
 			It("should generate gateway client secret when non-nil and empty", func() {
 				obj := newValidZone()
-				obj.Spec.Gateway.Admin.ClientSecret = ptr("")
+				obj.Spec.Gateways[0].Admin.ClientSecret = ptr("")
 
 				err := defaulter.Default(ctx, obj)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(obj.Spec.Gateway.Admin.ClientSecret).NotTo(BeNil())
-				Expect(*obj.Spec.Gateway.Admin.ClientSecret).NotTo(BeEmpty())
-				Expect(*obj.Spec.Gateway.Admin.ClientSecret).To(HavePrefix("trd_"))
+				Expect(obj.Spec.Gateways[0].Admin.ClientSecret).NotTo(BeNil())
+				Expect(*obj.Spec.Gateways[0].Admin.ClientSecret).NotTo(BeEmpty())
+				Expect(*obj.Spec.Gateways[0].Admin.ClientSecret).To(HavePrefix("trd_"))
 			})
 
 			It("should not generate gateway client secret when nil", func() {
 				obj := newValidZone()
-				obj.Spec.Gateway.Admin.ClientSecret = nil
+				obj.Spec.Gateways[0].Admin.ClientSecret = nil
 
 				err := defaulter.Default(ctx, obj)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(obj.Spec.Gateway.Admin.ClientSecret).To(BeNil())
+				Expect(obj.Spec.Gateways[0].Admin.ClientSecret).To(BeNil())
 			})
 
 			It("should rotate IDP admin password when set to 'rotate'", func() {
 				obj := newValidZone()
-				obj.Spec.IdentityProvider.Admin.Password = secretsapi.KeywordRotate
+				obj.Spec.IdentityProviders[0].Admin.Password = secretsapi.KeywordRotate
 
 				err := defaulter.Default(ctx, obj)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(obj.Spec.IdentityProvider.Admin.Password).NotTo(Equal(secretsapi.KeywordRotate))
-				Expect(obj.Spec.IdentityProvider.Admin.Password).NotTo(BeEmpty())
+				Expect(obj.Spec.IdentityProviders[0].Admin.Password).NotTo(Equal(secretsapi.KeywordRotate))
+				Expect(obj.Spec.IdentityProviders[0].Admin.Password).NotTo(BeEmpty())
 			})
 
 			It("should rotate Redis password when set to 'rotate'", func() {
@@ -213,70 +219,103 @@ var _ = Describe("Zone Webhook", func() {
 
 			It("should preserve existing non-empty secrets", func() {
 				obj := newValidZone()
-				obj.Spec.IdentityProvider.Admin.Password = "my-idp-password"
+				obj.Spec.IdentityProviders[0].Admin.Password = "my-idp-password"
 				obj.Spec.Redis.Password = "my-redis-password"
-				obj.Spec.Gateway.Admin.ClientSecret = ptr("my-gw-secret")
+				obj.Spec.Gateways[0].Admin.ClientSecret = ptr("my-gw-secret")
 
 				err := defaulter.Default(ctx, obj)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(obj.Spec.IdentityProvider.Admin.Password).To(Equal("my-idp-password"))
+				Expect(obj.Spec.IdentityProviders[0].Admin.Password).To(Equal("my-idp-password"))
 				Expect(obj.Spec.Redis.Password).To(Equal("my-redis-password"))
-				Expect(*obj.Spec.Gateway.Admin.ClientSecret).To(Equal("my-gw-secret"))
+				Expect(*obj.Spec.Gateways[0].Admin.ClientSecret).To(Equal("my-gw-secret"))
 			})
 		})
 
 		Context("on UPDATE", func() {
+			It("preserves gateway secrets by name when gateway order changes", func() {
+				oldObj := newValidZone()
+				oldObj.Spec.Gateways[0].Admin.ClientSecret = ptr("standard-secret")
+				ai := adminv1.GatewayConfig{Name: "ai", Admin: adminv1.GatewayAdminConfig{ClientSecret: ptr("ai-secret")}}
+				oldObj.Spec.Gateways = append(oldObj.Spec.Gateways, ai)
+
+				newObj := oldObj.DeepCopy()
+				newObj.Spec.Gateways = []adminv1.GatewayConfig{ai, oldObj.Spec.Gateways[0]}
+				newObj.Spec.Gateways[0].Admin.ClientSecret = nil
+				newObj.Spec.Gateways[1].Admin.ClientSecret = ptr("")
+
+				Expect(defaulter.Default(updateContextWithOldObject(ctx, oldObj), newObj)).To(Succeed())
+				Expect(*newObj.Spec.Gateways[0].Admin.ClientSecret).To(Equal("ai-secret"))
+				Expect(*newObj.Spec.Gateways[1].Admin.ClientSecret).To(Equal("standard-secret"))
+			})
+
+			It("rotates only the named gateway carrying rotate", func() {
+				oldObj := newValidZone()
+				oldObj.Spec.Gateways[0].Admin.ClientSecret = ptr("standard-secret")
+				ai := adminv1.GatewayConfig{Name: "ai", Admin: adminv1.GatewayAdminConfig{ClientSecret: ptr("ai-secret")}}
+				oldObj.Spec.Gateways = append(oldObj.Spec.Gateways, ai)
+
+				newObj := oldObj.DeepCopy()
+				newObj.Spec.Gateways = []adminv1.GatewayConfig{ai, oldObj.Spec.Gateways[0]}
+				newObj.Spec.Gateways[0].Admin.ClientSecret = ptr(secretsapi.KeywordRotate)
+				newObj.Spec.Gateways[1].Admin.ClientSecret = nil
+
+				Expect(defaulter.Default(updateContextWithOldObject(ctx, oldObj), newObj)).To(Succeed())
+				Expect(*newObj.Spec.Gateways[0].Admin.ClientSecret).NotTo(Equal("ai-secret"))
+				Expect(*newObj.Spec.Gateways[0].Admin.ClientSecret).NotTo(Equal(secretsapi.KeywordRotate))
+				Expect(*newObj.Spec.Gateways[1].Admin.ClientSecret).To(Equal("standard-secret"))
+			})
+
 			It("should preserve existing secrets when new value is empty", func() {
 				oldObj := newValidZone()
-				oldObj.Spec.IdentityProvider.Admin.Password = "old-idp-password"
+				oldObj.Spec.IdentityProviders[0].Admin.Password = "old-idp-password"
 				oldObj.Spec.Redis.Password = "old-redis-password"
-				oldObj.Spec.Gateway.Admin.ClientSecret = ptr("old-gw-secret")
+				oldObj.Spec.Gateways[0].Admin.ClientSecret = ptr("old-gw-secret")
 
 				newObj := newValidZone()
-				newObj.Spec.IdentityProvider.Admin.Password = ""
+				newObj.Spec.IdentityProviders[0].Admin.Password = ""
 				newObj.Spec.Redis.Password = ""
-				newObj.Spec.Gateway.Admin.ClientSecret = nil
+				newObj.Spec.Gateways[0].Admin.ClientSecret = nil
 
 				updateCtx := updateContextWithOldObject(ctx, oldObj)
 				err := defaulter.Default(updateCtx, newObj)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(newObj.Spec.IdentityProvider.Admin.Password).To(Equal("old-idp-password"))
+				Expect(newObj.Spec.IdentityProviders[0].Admin.Password).To(Equal("old-idp-password"))
 				Expect(newObj.Spec.Redis.Password).To(Equal("old-redis-password"))
-				Expect(newObj.Spec.Gateway.Admin.ClientSecret).NotTo(BeNil())
-				Expect(*newObj.Spec.Gateway.Admin.ClientSecret).To(Equal("old-gw-secret"))
+				Expect(newObj.Spec.Gateways[0].Admin.ClientSecret).NotTo(BeNil())
+				Expect(*newObj.Spec.Gateways[0].Admin.ClientSecret).To(Equal("old-gw-secret"))
 			})
 
 			It("should rotate secrets when set to 'rotate' even on update", func() {
 				oldObj := newValidZone()
-				oldObj.Spec.IdentityProvider.Admin.Password = "old-idp-password"
+				oldObj.Spec.IdentityProviders[0].Admin.Password = "old-idp-password"
 				oldObj.Spec.Redis.Password = "old-redis-password"
 
 				newObj := newValidZone()
-				newObj.Spec.IdentityProvider.Admin.Password = secretsapi.KeywordRotate
+				newObj.Spec.IdentityProviders[0].Admin.Password = secretsapi.KeywordRotate
 				newObj.Spec.Redis.Password = secretsapi.KeywordRotate
 
 				updateCtx := updateContextWithOldObject(ctx, oldObj)
 				err := defaulter.Default(updateCtx, newObj)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(newObj.Spec.IdentityProvider.Admin.Password).NotTo(Equal(secretsapi.KeywordRotate))
-				Expect(newObj.Spec.IdentityProvider.Admin.Password).NotTo(Equal("old-idp-password"))
+				Expect(newObj.Spec.IdentityProviders[0].Admin.Password).NotTo(Equal(secretsapi.KeywordRotate))
+				Expect(newObj.Spec.IdentityProviders[0].Admin.Password).NotTo(Equal("old-idp-password"))
 				Expect(newObj.Spec.Redis.Password).NotTo(Equal(secretsapi.KeywordRotate))
 				Expect(newObj.Spec.Redis.Password).NotTo(Equal("old-redis-password"))
 			})
 
 			It("should preserve user-provided non-empty secret on update", func() {
 				oldObj := newValidZone()
-				oldObj.Spec.IdentityProvider.Admin.Password = "old-idp-password"
+				oldObj.Spec.IdentityProviders[0].Admin.Password = "old-idp-password"
 				oldObj.Spec.Redis.Password = "old-redis-password"
 
 				newObj := newValidZone()
-				newObj.Spec.IdentityProvider.Admin.Password = "new-idp-password"
+				newObj.Spec.IdentityProviders[0].Admin.Password = "new-idp-password"
 				newObj.Spec.Redis.Password = "new-redis-password"
 
 				updateCtx := updateContextWithOldObject(ctx, oldObj)
 				err := defaulter.Default(updateCtx, newObj)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(newObj.Spec.IdentityProvider.Admin.Password).To(Equal("new-idp-password"))
+				Expect(newObj.Spec.IdentityProviders[0].Admin.Password).To(Equal("new-idp-password"))
 				Expect(newObj.Spec.Redis.Password).To(Equal("new-redis-password"))
 			})
 		})
@@ -304,23 +343,56 @@ var _ = Describe("Zone Webhook", func() {
 		})
 
 		Context("on CREATE", func() {
-			It("should skip Redis secret onboarding when Redis is omitted", func() {
+			It("onboards every named gateway and the sole identity provider", func() {
 				obj := newValidZone()
-				obj.Spec.Redis = nil
-				obj.Spec.IdentityProvider.Admin.Password = "$<existing-idp-ref>"
-				obj.Spec.Gateway.Admin.ClientSecret = ptr("$<existing-gateway-ref>")
+				obj.Spec.Gateways[0].Admin.ClientSecret = ptr("standard-secret")
+				obj.Spec.Gateways = append(obj.Spec.Gateways, adminv1.GatewayConfig{
+					Name: "ai",
+					Admin: adminv1.GatewayAdminConfig{
+						IdentityProviderRef: "primary",
+						Url:                 "https://ai-gateway.example.com/admin",
+						ClientSecret:        ptr("ai-secret"),
+					},
+				})
+				obj.Spec.IdentityProviders[0].Admin.Password = "idp-secret"
+				obj.Spec.Redis.Password = "$<existing-redis-ref>"
 
-				Expect(defaulter.Default(ctx, obj)).To(Succeed())
+				standardPath := "zones/test-zone/admin/gateways/standard/clientSecret"
+				aiPath := "zones/test-zone/admin/gateways/ai/clientSecret"
+				idpPath := "zones/test-zone/admin/identityProviders/primary/password"
+				secretManagerMock.EXPECT().
+					UpsertEnvironment(mock.Anything, "test-env", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+					Run(func(_ context.Context, _ string, opts ...secretsapi.OnboardingOption) {
+						options := &secretsapi.OnboardingOptions{}
+						for _, option := range opts {
+							option(options)
+						}
+						Expect(options.SecretValues).To(Equal(map[string]any{
+							standardPath: "standard-secret",
+							aiPath:       "ai-secret",
+							idpPath:      "idp-secret",
+						}))
+					}).
+					Return(map[string]string{
+						standardPath: "standard-secret-ref",
+						aiPath:       "ai-secret-ref",
+						idpPath:      "idp-secret-ref",
+					}, nil)
+
+				Expect(defaulter.OnboardSecrets(ctx, obj)).To(Succeed())
+				Expect(*obj.Spec.Gateways[0].Admin.ClientSecret).To(Equal("$<standard-secret-ref>"))
+				Expect(*obj.Spec.Gateways[1].Admin.ClientSecret).To(Equal("$<ai-secret-ref>"))
+				Expect(obj.Spec.IdentityProviders[0].Admin.Password).To(Equal("$<idp-secret-ref>"))
 			})
 
 			It("should onboard secrets and set secret refs when empty", func() {
 				obj := newValidZone()
-				obj.Spec.IdentityProvider.Admin.Password = ""
+				obj.Spec.IdentityProviders[0].Admin.Password = ""
 				obj.Spec.Redis.Password = ""
 
-				idpSecretPath := "zones/test-zone/admin/identityProvider/password"
+				idpSecretPath := "zones/test-zone/admin/identityProviders/primary/password"
 				redisSecretPath := "zones/test-zone/admin/redis/password"
-				gatewaySecretPath := "zones/test-zone/admin/gateway/clientSecret"
+				gatewaySecretPath := "zones/test-zone/admin/gateways/standard/clientSecret"
 
 				secretManagerMock.EXPECT().
 					UpsertEnvironment(mock.Anything, "test-env", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
@@ -332,19 +404,19 @@ var _ = Describe("Zone Webhook", func() {
 
 				err := defaulter.Default(ctx, obj)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(obj.Spec.IdentityProvider.Admin.Password).To(Equal("$<idp-secret-uuid>"))
+				Expect(obj.Spec.IdentityProviders[0].Admin.Password).To(Equal("$<idp-secret-uuid>"))
 				Expect(obj.Spec.Redis.Password).To(Equal("$<redis-secret-uuid>"))
-				Expect(obj.Spec.Gateway.Admin.ClientSecret).NotTo(BeNil())
-				Expect(*obj.Spec.Gateway.Admin.ClientSecret).To(Equal("$<gw-secret-uuid>"))
+				Expect(obj.Spec.Gateways[0].Admin.ClientSecret).NotTo(BeNil())
+				Expect(*obj.Spec.Gateways[0].Admin.ClientSecret).To(Equal("$<gw-secret-uuid>"))
 			})
 
 			It("should onboard gateway secret when provided", func() {
 				obj := newValidZone()
-				obj.Spec.IdentityProvider.Admin.Password = "$<existing-idp-ref>"
+				obj.Spec.IdentityProviders[0].Admin.Password = "$<existing-idp-ref>"
 				obj.Spec.Redis.Password = "$<existing-redis-ref>"
-				obj.Spec.Gateway.Admin.ClientSecret = ptr("my-gw-secret")
+				obj.Spec.Gateways[0].Admin.ClientSecret = ptr("my-gw-secret")
 
-				gatewaySecretPath := "zones/test-zone/admin/gateway/clientSecret"
+				gatewaySecretPath := "zones/test-zone/admin/gateways/standard/clientSecret"
 
 				secretManagerMock.EXPECT().
 					UpsertEnvironment(mock.Anything, "test-env", mock.Anything, mock.Anything).
@@ -354,17 +426,17 @@ var _ = Describe("Zone Webhook", func() {
 
 				err := defaulter.Default(ctx, obj)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(obj.Spec.Gateway.Admin.ClientSecret).NotTo(BeNil())
-				Expect(*obj.Spec.Gateway.Admin.ClientSecret).To(Equal("$<gw-secret-uuid>"))
+				Expect(obj.Spec.Gateways[0].Admin.ClientSecret).NotTo(BeNil())
+				Expect(*obj.Spec.Gateways[0].Admin.ClientSecret).To(Equal("$<gw-secret-uuid>"))
 			})
 
-			It("should skip gateway secret when nil", func() {
+			It("should onboard a generated gateway secret when nil", func() {
 				obj := newValidZone()
-				obj.Spec.IdentityProvider.Admin.Password = "$<existing-idp-ref>"
+				obj.Spec.IdentityProviders[0].Admin.Password = "$<existing-idp-ref>"
 				obj.Spec.Redis.Password = "$<existing-redis-ref>"
-				obj.Spec.Gateway.Admin.ClientSecret = nil
+				obj.Spec.Gateways[0].Admin.ClientSecret = nil
 
-				gatewaySecretPath := "zones/test-zone/admin/gateway/clientSecret"
+				gatewaySecretPath := "zones/test-zone/admin/gateways/standard/clientSecret"
 
 				secretManagerMock.EXPECT().
 					UpsertEnvironment(mock.Anything, "test-env", mock.Anything, mock.Anything).
@@ -374,18 +446,18 @@ var _ = Describe("Zone Webhook", func() {
 
 				err := defaulter.Default(ctx, obj)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(obj.Spec.Gateway.Admin.ClientSecret).NotTo(BeNil())
-				Expect(*obj.Spec.Gateway.Admin.ClientSecret).To(Equal("$<gw-secret-uuid>"))
+				Expect(obj.Spec.Gateways[0].Admin.ClientSecret).NotTo(BeNil())
+				Expect(*obj.Spec.Gateways[0].Admin.ClientSecret).To(Equal("$<gw-secret-uuid>"))
 			})
 
 			It("should upload user-provided plain secrets to secret manager", func() {
 				obj := newValidZone()
-				obj.Spec.IdentityProvider.Admin.Password = "my-custom-idp-password"
+				obj.Spec.IdentityProviders[0].Admin.Password = "my-custom-idp-password"
 				obj.Spec.Redis.Password = "my-custom-redis-password"
 
-				idpSecretPath := "zones/test-zone/admin/identityProvider/password"
+				idpSecretPath := "zones/test-zone/admin/identityProviders/primary/password"
 				redisSecretPath := "zones/test-zone/admin/redis/password"
-				gatewaySecretPath := "zones/test-zone/admin/gateway/clientSecret"
+				gatewaySecretPath := "zones/test-zone/admin/gateways/standard/clientSecret"
 
 				secretManagerMock.EXPECT().
 					UpsertEnvironment(mock.Anything, "test-env", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
@@ -397,18 +469,18 @@ var _ = Describe("Zone Webhook", func() {
 
 				err := defaulter.Default(ctx, obj)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(obj.Spec.IdentityProvider.Admin.Password).To(Equal("$<idp-custom-uuid>"))
+				Expect(obj.Spec.IdentityProviders[0].Admin.Password).To(Equal("$<idp-custom-uuid>"))
 				Expect(obj.Spec.Redis.Password).To(Equal("$<redis-custom-uuid>"))
 			})
 
 			It("should generate new secrets when set to 'rotate'", func() {
 				obj := newValidZone()
-				obj.Spec.IdentityProvider.Admin.Password = secretsapi.KeywordRotate
+				obj.Spec.IdentityProviders[0].Admin.Password = secretsapi.KeywordRotate
 				obj.Spec.Redis.Password = secretsapi.KeywordRotate
 
-				idpSecretPath := "zones/test-zone/admin/identityProvider/password"
+				idpSecretPath := "zones/test-zone/admin/identityProviders/primary/password"
 				redisSecretPath := "zones/test-zone/admin/redis/password"
-				gatewaySecretPath := "zones/test-zone/admin/gateway/clientSecret"
+				gatewaySecretPath := "zones/test-zone/admin/gateways/standard/clientSecret"
 
 				secretManagerMock.EXPECT().
 					UpsertEnvironment(mock.Anything, "test-env", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
@@ -420,7 +492,7 @@ var _ = Describe("Zone Webhook", func() {
 
 				err := defaulter.Default(ctx, obj)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(obj.Spec.IdentityProvider.Admin.Password).To(Equal("$<idp-rotated-uuid>"))
+				Expect(obj.Spec.IdentityProviders[0].Admin.Password).To(Equal("$<idp-rotated-uuid>"))
 				Expect(obj.Spec.Redis.Password).To(Equal("$<redis-rotated-uuid>"))
 			})
 		})
@@ -428,14 +500,14 @@ var _ = Describe("Zone Webhook", func() {
 		Context("on UPDATE", func() {
 			It("should preserve existing secret ref when new value is empty", func() {
 				oldObj := newValidZone()
-				oldObj.Spec.IdentityProvider.Admin.Password = "$<existing-idp-ref>"
+				oldObj.Spec.IdentityProviders[0].Admin.Password = "$<existing-idp-ref>"
 				oldObj.Spec.Redis.Password = "$<existing-redis-ref>"
 
 				newObj := newValidZone()
-				newObj.Spec.IdentityProvider.Admin.Password = ""
+				newObj.Spec.IdentityProviders[0].Admin.Password = ""
 				newObj.Spec.Redis.Password = ""
 
-				gatewaySecretPath := "zones/test-zone/admin/gateway/clientSecret"
+				gatewaySecretPath := "zones/test-zone/admin/gateways/standard/clientSecret"
 
 				// After resolving, IDP and Redis secrets become the old refs (already refs).
 				// Gateway is nil so it still needs onboarding.
@@ -448,22 +520,22 @@ var _ = Describe("Zone Webhook", func() {
 				updateCtx := updateContextWithOldObject(ctx, oldObj)
 				err := defaulter.Default(updateCtx, newObj)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(newObj.Spec.IdentityProvider.Admin.Password).To(Equal("$<existing-idp-ref>"))
+				Expect(newObj.Spec.IdentityProviders[0].Admin.Password).To(Equal("$<existing-idp-ref>"))
 				Expect(newObj.Spec.Redis.Password).To(Equal("$<existing-redis-ref>"))
 			})
 
 			It("should rotate secrets when set to 'rotate' even on update", func() {
 				oldObj := newValidZone()
-				oldObj.Spec.IdentityProvider.Admin.Password = "$<existing-idp-ref>"
+				oldObj.Spec.IdentityProviders[0].Admin.Password = "$<existing-idp-ref>"
 				oldObj.Spec.Redis.Password = "$<existing-redis-ref>"
 
 				newObj := newValidZone()
-				newObj.Spec.IdentityProvider.Admin.Password = secretsapi.KeywordRotate
+				newObj.Spec.IdentityProviders[0].Admin.Password = secretsapi.KeywordRotate
 				newObj.Spec.Redis.Password = secretsapi.KeywordRotate
 
-				idpSecretPath := "zones/test-zone/admin/identityProvider/password"
+				idpSecretPath := "zones/test-zone/admin/identityProviders/primary/password"
 				redisSecretPath := "zones/test-zone/admin/redis/password"
-				gatewaySecretPath := "zones/test-zone/admin/gateway/clientSecret"
+				gatewaySecretPath := "zones/test-zone/admin/gateways/standard/clientSecret"
 
 				secretManagerMock.EXPECT().
 					UpsertEnvironment(mock.Anything, "test-env", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
@@ -476,22 +548,22 @@ var _ = Describe("Zone Webhook", func() {
 				updateCtx := updateContextWithOldObject(ctx, oldObj)
 				err := defaulter.Default(updateCtx, newObj)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(newObj.Spec.IdentityProvider.Admin.Password).To(Equal("$<idp-rotated-uuid>"))
+				Expect(newObj.Spec.IdentityProviders[0].Admin.Password).To(Equal("$<idp-rotated-uuid>"))
 				Expect(newObj.Spec.Redis.Password).To(Equal("$<redis-rotated-uuid>"))
 			})
 
 			It("should upload user-provided plain secret on update", func() {
 				oldObj := newValidZone()
-				oldObj.Spec.IdentityProvider.Admin.Password = "$<existing-idp-ref>"
+				oldObj.Spec.IdentityProviders[0].Admin.Password = "$<existing-idp-ref>"
 				oldObj.Spec.Redis.Password = "$<existing-redis-ref>"
 
 				newObj := newValidZone()
-				newObj.Spec.IdentityProvider.Admin.Password = "new-custom-password"
+				newObj.Spec.IdentityProviders[0].Admin.Password = "new-custom-password"
 				newObj.Spec.Redis.Password = "new-custom-redis"
 
-				idpSecretPath := "zones/test-zone/admin/identityProvider/password"
+				idpSecretPath := "zones/test-zone/admin/identityProviders/primary/password"
 				redisSecretPath := "zones/test-zone/admin/redis/password"
-				gatewaySecretPath := "zones/test-zone/admin/gateway/clientSecret"
+				gatewaySecretPath := "zones/test-zone/admin/gateways/standard/clientSecret"
 
 				secretManagerMock.EXPECT().
 					UpsertEnvironment(mock.Anything, "test-env", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
@@ -504,32 +576,32 @@ var _ = Describe("Zone Webhook", func() {
 				updateCtx := updateContextWithOldObject(ctx, oldObj)
 				err := defaulter.Default(updateCtx, newObj)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(newObj.Spec.IdentityProvider.Admin.Password).To(Equal("$<idp-new-uuid>"))
+				Expect(newObj.Spec.IdentityProviders[0].Admin.Password).To(Equal("$<idp-new-uuid>"))
 				Expect(newObj.Spec.Redis.Password).To(Equal("$<redis-new-uuid>"))
 			})
 		})
 
 		It("should skip onboarding when all secrets are already refs", func() {
 			obj := newValidZone()
-			obj.Spec.IdentityProvider.Admin.Password = "$<existing-idp-ref>"
+			obj.Spec.IdentityProviders[0].Admin.Password = "$<existing-idp-ref>"
 			obj.Spec.Redis.Password = "$<existing-redis-ref>"
-			obj.Spec.Gateway.Admin.ClientSecret = ptr("$<existing-gw-ref>")
+			obj.Spec.Gateways[0].Admin.ClientSecret = ptr("$<existing-gw-ref>")
 
 			// No UpsertEnvironment call expected since all are already refs
 			err := defaulter.Default(ctx, obj)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(obj.Spec.IdentityProvider.Admin.Password).To(Equal("$<existing-idp-ref>"))
+			Expect(obj.Spec.IdentityProviders[0].Admin.Password).To(Equal("$<existing-idp-ref>"))
 			Expect(obj.Spec.Redis.Password).To(Equal("$<existing-redis-ref>"))
-			Expect(*obj.Spec.Gateway.Admin.ClientSecret).To(Equal("$<existing-gw-ref>"))
+			Expect(*obj.Spec.Gateways[0].Admin.ClientSecret).To(Equal("$<existing-gw-ref>"))
 		})
 
 		It("should onboard only non-ref secrets", func() {
 			obj := newValidZone()
-			obj.Spec.IdentityProvider.Admin.Password = "$<existing-idp-ref>"
+			obj.Spec.IdentityProviders[0].Admin.Password = "$<existing-idp-ref>"
 			obj.Spec.Redis.Password = "" // needs onboarding
 
 			redisSecretPath := "zones/test-zone/admin/redis/password"
-			gatewaySecretPath := "zones/test-zone/admin/gateway/clientSecret"
+			gatewaySecretPath := "zones/test-zone/admin/gateways/standard/clientSecret"
 
 			secretManagerMock.EXPECT().
 				UpsertEnvironment(mock.Anything, "test-env", mock.Anything, mock.Anything, mock.Anything).
@@ -540,14 +612,14 @@ var _ = Describe("Zone Webhook", func() {
 
 			err := defaulter.Default(ctx, obj)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(obj.Spec.IdentityProvider.Admin.Password).To(Equal("$<existing-idp-ref>"))
+			Expect(obj.Spec.IdentityProviders[0].Admin.Password).To(Equal("$<existing-idp-ref>"))
 			Expect(obj.Spec.Redis.Password).To(Equal("$<new-redis-secret-uuid>"))
 		})
 
 		It("should return an error when environment label is missing", func() {
 			obj := newValidZone()
 			obj.Labels = nil
-			obj.Spec.IdentityProvider.Admin.Password = ""
+			obj.Spec.IdentityProviders[0].Admin.Password = ""
 
 			err := defaulter.Default(ctx, obj)
 			Expect(err).To(HaveOccurred())
@@ -557,7 +629,7 @@ var _ = Describe("Zone Webhook", func() {
 		It("should return an error when secretManager is nil", func() {
 			nilDefaulter := ZoneCustomDefaulter{secretManager: nil}
 			obj := newValidZone()
-			obj.Spec.IdentityProvider.Admin.Password = ""
+			obj.Spec.IdentityProviders[0].Admin.Password = ""
 
 			err := nilDefaulter.Default(ctx, obj)
 			Expect(err).To(HaveOccurred())

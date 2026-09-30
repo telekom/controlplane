@@ -50,22 +50,26 @@ func newScopeFixture() *scopeFixture {
 	ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{GenerateName: "agentic-scopes-"}}
 	Expect(k8sClient.Create(ctx, ns)).To(Succeed())
 	f := &scopeFixture{namespace: ns.Name, basePath: "/mcp/" + ns.Name}
-	presets := []adminv1.GatewayConfigPreset{{Name: "default", Default: true, Urls: []adminv1.UrlConfig{{Hostname: "gateway.example.com", Scheme: "https", Port: 443, BasePath: "/"}}}}
+	presets := []adminv1.Preset{
+		{Name: "api", Type: adminv1.GatewayTypeAPI, Default: true, GatewayRef: "gateway", IdentityProviderRef: "primary", Urls: []adminv1.UrlConfig{{Hostname: "gateway.example.com", Scheme: "https", Port: 443, BasePath: "/"}}},
+		{Name: "ai", Type: adminv1.GatewayTypeAI, Default: true, GatewayRef: "gateway", IdentityProviderRef: "primary", Urls: []adminv1.UrlConfig{{Hostname: "gateway.example.com", Scheme: "https", Port: 443, BasePath: "/"}}},
+	}
 	f.zone = &adminv1.Zone{
 		ObjectMeta: f.metadata("zone"),
 		Spec: adminv1.ZoneSpec{
-			Visibility:       adminv1.ZoneVisibilityWorld,
-			IdentityProvider: adminv1.IdentityProviderConfig{Url: "https://identity.example.com"},
-			Gateway:          adminv1.GatewayConfig{Admin: adminv1.GatewayAdminConfig{Url: "https://gateway-admin.example.com"}, Presets: presets},
-			AiGateway:        &adminv1.AiGatewayConfig{Admin: adminv1.GatewayAdminConfig{Url: "https://ai-admin.example.com"}, Presets: presets},
+			Visibility:        adminv1.ZoneVisibilityWorld,
+			IdentityProviders: []adminv1.IdentityProviderConfig{{Name: "primary", IssuerHostname: "identity.example.com"}},
+			Gateways:          []adminv1.GatewayConfig{{Name: "gateway", Admin: adminv1.GatewayAdminConfig{IdentityProviderRef: "primary", Url: "https://gateway-admin.example.com"}}},
+			Presets:           presets,
 		},
 	}
 	Expect(k8sClient.Create(ctx, f.zone)).To(Succeed())
 	f.zone.Status = adminv1.ZoneStatus{
 		Namespace: ns.Name,
-		AiGateway: &ctypes.ObjectRef{Name: "gateway", Namespace: ns.Name},
-		Links:     adminv1.Links{Url: "https://gateway.example.com", Issuer: "https://identity.example.com", LmsIssuer: "https://lms.example.com"},
-		Features:  []adminv1.Feature{{Name: adminv1.FeatureAiGateway, Enabled: true}},
+		Presets: []adminv1.PresetStatus{{
+			Name: "ai", GatewayRef: &ctypes.ObjectRef{Name: "gateway", Namespace: ns.Name},
+			Links: adminv1.Links{Url: "https://gateway.example.com", Issuer: "https://identity.example.com", LmsIssuer: "https://lms.example.com"},
+		}},
 	}
 	setFixtureReady(f.zone)
 	Expect(k8sClient.Status().Update(ctx, f.zone)).To(Succeed())

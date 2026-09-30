@@ -14,6 +14,7 @@ import (
 
 	admin "github.com/telekom/controlplane/admin/api/v1"
 	application "github.com/telekom/controlplane/application/api/v1"
+	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	"github.com/telekom/controlplane/common/pkg/reminder"
 	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
@@ -86,7 +87,11 @@ func sendSecretExpiringNotifications(ctx context.Context, app *application.Appli
 		return nil
 	}
 
-	rotCfg := zone.Spec.IdentityProvider.SecretRotation
+	identityProvider, err := zone.Spec.GetIdentityProvider()
+	if err != nil {
+		return ctrlerrors.BlockedErrorf("cannot resolve identity provider for zone %q: %s", zone.Name, err)
+	}
+	rotCfg := identityProvider.SecretRotation
 	if rotCfg == nil || !rotCfg.Enabled || len(rotCfg.NotificationThresholds) == 0 {
 		log.V(1).Info("Skipping secret-expiring notifications: not configured", "application", app.Name)
 		return nil

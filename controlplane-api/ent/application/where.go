@@ -98,6 +98,11 @@ func ClientSecret(v string) predicate.Application {
 	return predicate.Application(sql.FieldEQ(FieldClientSecret, v))
 }
 
+// TokenURL applies equality check predicate on the "token_url" field. It's identical to TokenURLEQ.
+func TokenURL(v string) predicate.Application {
+	return predicate.Application(sql.FieldEQ(FieldTokenURL, v))
+}
+
 // RotatedClientSecret applies equality check predicate on the "rotated_client_secret" field. It's identical to RotatedClientSecretEQ.
 func RotatedClientSecret(v string) predicate.Application {
 	return predicate.Application(sql.FieldEQ(FieldRotatedClientSecret, v))
@@ -661,6 +666,81 @@ func ClientSecretEqualFold(v string) predicate.Application {
 // ClientSecretContainsFold applies the ContainsFold predicate on the "client_secret" field.
 func ClientSecretContainsFold(v string) predicate.Application {
 	return predicate.Application(sql.FieldContainsFold(FieldClientSecret, v))
+}
+
+// TokenURLEQ applies the EQ predicate on the "token_url" field.
+func TokenURLEQ(v string) predicate.Application {
+	return predicate.Application(sql.FieldEQ(FieldTokenURL, v))
+}
+
+// TokenURLNEQ applies the NEQ predicate on the "token_url" field.
+func TokenURLNEQ(v string) predicate.Application {
+	return predicate.Application(sql.FieldNEQ(FieldTokenURL, v))
+}
+
+// TokenURLIn applies the In predicate on the "token_url" field.
+func TokenURLIn(vs ...string) predicate.Application {
+	return predicate.Application(sql.FieldIn(FieldTokenURL, vs...))
+}
+
+// TokenURLNotIn applies the NotIn predicate on the "token_url" field.
+func TokenURLNotIn(vs ...string) predicate.Application {
+	return predicate.Application(sql.FieldNotIn(FieldTokenURL, vs...))
+}
+
+// TokenURLGT applies the GT predicate on the "token_url" field.
+func TokenURLGT(v string) predicate.Application {
+	return predicate.Application(sql.FieldGT(FieldTokenURL, v))
+}
+
+// TokenURLGTE applies the GTE predicate on the "token_url" field.
+func TokenURLGTE(v string) predicate.Application {
+	return predicate.Application(sql.FieldGTE(FieldTokenURL, v))
+}
+
+// TokenURLLT applies the LT predicate on the "token_url" field.
+func TokenURLLT(v string) predicate.Application {
+	return predicate.Application(sql.FieldLT(FieldTokenURL, v))
+}
+
+// TokenURLLTE applies the LTE predicate on the "token_url" field.
+func TokenURLLTE(v string) predicate.Application {
+	return predicate.Application(sql.FieldLTE(FieldTokenURL, v))
+}
+
+// TokenURLContains applies the Contains predicate on the "token_url" field.
+func TokenURLContains(v string) predicate.Application {
+	return predicate.Application(sql.FieldContains(FieldTokenURL, v))
+}
+
+// TokenURLHasPrefix applies the HasPrefix predicate on the "token_url" field.
+func TokenURLHasPrefix(v string) predicate.Application {
+	return predicate.Application(sql.FieldHasPrefix(FieldTokenURL, v))
+}
+
+// TokenURLHasSuffix applies the HasSuffix predicate on the "token_url" field.
+func TokenURLHasSuffix(v string) predicate.Application {
+	return predicate.Application(sql.FieldHasSuffix(FieldTokenURL, v))
+}
+
+// TokenURLIsNil applies the IsNil predicate on the "token_url" field.
+func TokenURLIsNil() predicate.Application {
+	return predicate.Application(sql.FieldIsNull(FieldTokenURL))
+}
+
+// TokenURLNotNil applies the NotNil predicate on the "token_url" field.
+func TokenURLNotNil() predicate.Application {
+	return predicate.Application(sql.FieldNotNull(FieldTokenURL))
+}
+
+// TokenURLEqualFold applies the EqualFold predicate on the "token_url" field.
+func TokenURLEqualFold(v string) predicate.Application {
+	return predicate.Application(sql.FieldEqualFold(FieldTokenURL, v))
+}
+
+// TokenURLContainsFold applies the ContainsFold predicate on the "token_url" field.
+func TokenURLContainsFold(v string) predicate.Application {
+	return predicate.Application(sql.FieldContainsFold(FieldTokenURL, v))
 }
 
 // RotatedClientSecretEQ applies the EQ predicate on the "rotated_client_secret" field.

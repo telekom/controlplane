@@ -45,6 +45,10 @@ func (Application) Fields() []ent.Field {
 			Nillable().
 			NotEmpty().
 			Annotations(entgql.Skip(entgql.SkipWhereInput)),
+		field.Text("token_url").
+			Optional().
+			Nillable().
+			NotEmpty(),
 		field.Text("rotated_client_secret").
 			Optional().
 			Nillable().

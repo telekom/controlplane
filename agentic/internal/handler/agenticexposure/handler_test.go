@@ -84,30 +84,38 @@ func makeReadyZoneWithAiGateway() *adminv1.Zone {
 			Namespace: "default",
 		},
 		Spec: adminv1.ZoneSpec{
-			AiGateway: &adminv1.AiGatewayConfig{
-				Presets: []adminv1.GatewayConfigPreset{
-					{
-						Name:    "default",
-						Default: true,
-						Urls: []adminv1.UrlConfig{
-							{Hostname: "ai-gateway.example.com", Port: 443, Scheme: "https"},
-						},
+			Gateways: []adminv1.GatewayConfig{
+				{Name: "ai"},
+			},
+			Presets: []adminv1.Preset{
+				{
+					Name:       "default",
+					Type:       adminv1.GatewayTypeAI,
+					Default:    true,
+					GatewayRef: "ai",
+					Urls: []adminv1.UrlConfig{
+						{Hostname: "ai-gateway.example.com", Port: 443, Scheme: "https"},
+					},
+				},
+				// Every zone needs an API preset as its representative profile; agentic
+				// selection never resolves through it.
+				{
+					Name:       "api-default",
+					Type:       adminv1.GatewayTypeAPI,
+					Default:    true,
+					GatewayRef: "ai",
+					Urls: []adminv1.UrlConfig{
+						{Hostname: "ai-gateway.example.com", Port: 443, Scheme: "https"},
 					},
 				},
 			},
 		},
 		Status: adminv1.ZoneStatus{
 			Namespace: "default",
-			AiGateway: &ctypes.ObjectRef{
-				Name:      "ai-gateway",
-				Namespace: "default",
-			},
-			Links: adminv1.Links{
-				Issuer: "https://issuer.example.com",
-			},
-			Features: []adminv1.Feature{
-				{Name: adminv1.FeatureAiGateway, Enabled: true},
-			},
+			RealmName: "provider-realm",
+			Presets: []adminv1.PresetStatus{{Name: "default", GatewayRef: &ctypes.ObjectRef{
+				Name: "ai-gateway", Namespace: "default",
+			}, Links: adminv1.Links{Issuer: "https://issuer.example.com"}}},
 		},
 	}
 	meta.SetStatusCondition(&z.Status.Conditions, metav1.Condition{
@@ -370,7 +378,21 @@ var _ = Describe("AgenticExposureHandler", func() {
 		})
 
 		It("should create Route and set Active=true when all is well", func() {
-			setupFullHappyPath()
+			server := makeReadyMcpServer("/mcp/weather/v1")
+			zone := makeReadyZoneWithAiGateway()
+			mockListMcpServers([]agenticv1.McpServer{server})
+			mockListAgenticExposures([]agenticv1.AgenticExposure{})
+			mockGetZone(zone)
+			mockListAgenticSubscriptions([]agenticv1.AgenticSubscription{})
+			var capturedRoute gatewayv1.Route
+			fakeClient.EXPECT().
+				CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Route"), mock.Anything).
+				Run(func(_ context.Context, route client.Object, mutate controllerutil.MutateFn) {
+					_ = mutate()
+					capturedRoute = *route.(*gatewayv1.Route)
+				}).
+				Return(controllerutil.OperationResultCreated, nil).Once()
+			mockCleanup(0, nil)
 			fakeClient.EXPECT().AllReady().Return(true).Once()
 
 			err := h.CreateOrUpdate(ctx, obj)
@@ -378,6 +400,7 @@ var _ = Describe("AgenticExposureHandler", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(obj.Status.Active).To(BeTrue())
 			Expect(obj.Status.Route).ToNot(BeNil())
+			Expect(capturedRoute.Spec.Security.RealmName).To(Equal("provider-realm"))
 
 			readyCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady)
 			Expect(readyCond).ToNot(BeNil())
@@ -513,7 +536,7 @@ var _ = Describe("AgenticExposureHandler", func() {
 
 			server := makeReadyMcpServer("/mcp/weather/v1")
 			providerZone := makeReadyZoneWithAiGateway()
-			providerZone.Status.Links.Issuer = "https://issuer.provider.example.com"
+			providerZone.Status.Presets[0].Links.Issuer = "https://issuer.provider.example.com"
 
 			mockListMcpServers([]agenticv1.McpServer{server})
 			mockListAgenticExposures([]agenticv1.AgenticExposure{})
@@ -524,8 +547,9 @@ var _ = Describe("AgenticExposureHandler", func() {
 			telecontextZone := makeReadyZoneWithAiGateway()
 			telecontextZone.Name = "telecontext-zone"
 			telecontextZone.Status.Namespace = "telecontext-zone-ns"
-			telecontextZone.Status.Links.LmsIssuer = "https://lms.telecontext.example.com"
-			telecontextZone.Status.Links.Issuer = "https://issuer.telecontext.example.com"
+			telecontextZone.Status.RealmName = "telecontext-realm"
+			telecontextZone.Status.Presets[0].Links.LmsIssuer = "https://lms.telecontext.example.com"
+			telecontextZone.Status.Presets[0].Links.Issuer = "https://issuer.telecontext.example.com"
 
 			telecontextApp := &applicationapi.Application{
 				ObjectMeta: metav1.ObjectMeta{
@@ -559,9 +583,13 @@ var _ = Describe("AgenticExposureHandler", func() {
 				Return(nil).Once()
 
 			// First CreateOrUpdate: proxy route on Telecontext zone
+			var capturedProxyRoute gatewayv1.Route
 			fakeClient.EXPECT().
 				CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Route"), mock.Anything).
-				Run(func(_ context.Context, _ client.Object, mutate controllerutil.MutateFn) { _ = mutate() }).
+				Run(func(_ context.Context, route client.Object, mutate controllerutil.MutateFn) {
+					_ = mutate()
+					capturedProxyRoute = *route.(*gatewayv1.Route)
+				}).
 				Return(controllerutil.OperationResultCreated, nil).Once()
 
 			// Second CreateOrUpdate: primary route on provider zone
@@ -582,6 +610,8 @@ var _ = Describe("AgenticExposureHandler", func() {
 			Expect(err).ToNot(HaveOccurred())
 			// Proxy route created for the Telecontext zone
 			Expect(obj.Status.ProxyRoutes).To(HaveLen(1))
+			Expect(capturedProxyRoute.Spec.Security.RealmName).To(Equal("telecontext-realm"))
+			Expect(capturedPrimaryRoute.Spec.Security.RealmName).To(Equal("provider-realm"))
 			// Telecontext zone's LMS issuer is trusted on the primary route
 			Expect(capturedPrimaryRoute.Spec.Security.TrustedIssuers).To(ContainElement("https://lms.telecontext.example.com"))
 			// Telecontext consumer is on the primary route
@@ -593,11 +623,12 @@ var _ = Describe("AgenticExposureHandler", func() {
 		It("should add cross-zone LMS issuer to TrustedIssuers on the real route (no local subs — zone issuer excluded)", func() {
 			server := makeReadyMcpServer("/mcp/weather/v1")
 			providerZone := makeReadyZoneWithAiGateway()
-			providerZone.Status.Links.Issuer = "https://issuer.provider.example.com"
+			providerZone.Status.Presets[0].Links.Issuer = "https://issuer.provider.example.com"
 
 			subscriberZone := makeReadyZoneWithAiGateway()
 			subscriberZone.Name = "subscriber-zone"
-			subscriberZone.Status.Links.LmsIssuer = "https://lms.subscriber.example.com"
+			subscriberZone.Status.RealmName = "subscriber-realm"
+			subscriberZone.Status.Presets[0].Links.LmsIssuer = "https://lms.subscriber.example.com"
 
 			approvedSub := agenticv1.AgenticSubscription{
 				ObjectMeta: metav1.ObjectMeta{Name: "sub-1", Namespace: "default"},
@@ -623,9 +654,13 @@ var _ = Describe("AgenticExposureHandler", func() {
 				}).
 				Return(nil).Once()
 
+			var capturedProxyRoute gatewayv1.Route
 			fakeClient.EXPECT().
 				CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Route"), mock.Anything).
-				Run(func(_ context.Context, _ client.Object, mutate controllerutil.MutateFn) { _ = mutate() }).
+				Run(func(_ context.Context, route client.Object, mutate controllerutil.MutateFn) {
+					_ = mutate()
+					capturedProxyRoute = *route.(*gatewayv1.Route)
+				}).
 				Return(controllerutil.OperationResultCreated, nil).Once()
 
 			var capturedRoute gatewayv1.Route
@@ -643,6 +678,8 @@ var _ = Describe("AgenticExposureHandler", func() {
 			err := h.CreateOrUpdate(ctx, obj)
 
 			Expect(err).ToNot(HaveOccurred())
+			Expect(capturedProxyRoute.Spec.Security.RealmName).To(Equal("subscriber-realm"))
+			Expect(capturedRoute.Spec.Security.RealmName).To(Equal("provider-realm"))
 			// LMS issuer from the proxy zone IS trusted
 			Expect(capturedRoute.Spec.Security.TrustedIssuers).To(ContainElement("https://lms.subscriber.example.com"))
 			// No local subs → the provider zone's own IDP issuer is NOT added

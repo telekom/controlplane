@@ -222,6 +222,14 @@ func createSFTPAPIClient(ctx context.Context, obj *filev1.ZoneServiceConfig, zon
 
 func createConsumer(ctx context.Context, obj *filev1.ZoneServiceConfig, zone *adminv1.Zone) (*gatewayapi.Consumer, error) {
 	cc := cclient.ClientFromContextOrDie(ctx)
+	preset, err := zone.Spec.SelectPreset(adminv1.GatewayTypeAPI)
+	if err != nil {
+		return nil, ctrlerrors.BlockedErrorf("cannot resolve API preset for consumer: %s", err)
+	}
+	presetStatus, err := zone.Status.GetPreset(preset.Name)
+	if err != nil || presetStatus.GatewayRef == nil {
+		return nil, ctrlerrors.BlockedErrorf("zone %q has no gateway status for preset %q", zone.Name, preset.Name)
+	}
 
 	consumerRef := util.GetChildResourceRef(obj)
 
@@ -241,14 +249,14 @@ func createConsumer(ctx context.Context, obj *filev1.ZoneServiceConfig, zone *ad
 		consumer.Labels = util.DomainLabel()
 
 		consumer.Spec = gatewayapi.ConsumerSpec{
-			Gateway: *zone.Status.Gateway,
+			Gateway: *presetStatus.GatewayRef,
 			Name:    consumerRef.Name,
 		}
 
 		return nil
 	}
 
-	_, err := cc.CreateOrUpdate(ctx, consumer, mutator)
+	_, err = cc.CreateOrUpdate(ctx, consumer, mutator)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create or update consumer %q: %w", consumer.Name, err)
 	}
@@ -267,7 +275,15 @@ func sftpAPIEndpointFromManagedRoute(route *gatewayapi.Route, zone *adminv1.Zone
 
 	endpoint := "https://" + route.Spec.Hostnames[0] + route.Spec.Paths[0]
 
-	tokenEndpoint, err := tokenEndpointFromIssuer(zone.Status.Links.InternalIssuer)
+	preset, err := zone.Spec.SelectPreset(adminv1.GatewayTypeAPI)
+	if err != nil {
+		return sftpv1.APIEndpoint{}, ctrlerrors.BlockedErrorf("cannot resolve API preset for SFTP endpoint: %s", err)
+	}
+	presetStatus, err := zone.Status.GetPreset(preset.Name)
+	if err != nil {
+		return sftpv1.APIEndpoint{}, ctrlerrors.BlockedErrorf("cannot resolve API preset status for SFTP endpoint: %s", err)
+	}
+	tokenEndpoint, err := tokenEndpointFromIssuer(presetStatus.Links.InternalIssuer)
 	if err != nil {
 		return sftpv1.APIEndpoint{}, err
 	}
@@ -295,9 +311,13 @@ func tokenEndpointFromIssuer(rawIssuer string) (string, error) {
 func createManagedRoute(ctx context.Context, zone *adminv1.Zone, obj *filev1.ZoneServiceConfig) (*gatewayapi.Route, error) {
 	cc := cclient.ClientFromContextOrDie(ctx)
 
-	preset, err := zone.Spec.Gateway.GetDefaultPreset()
+	preset, err := zone.Spec.SelectPreset(adminv1.GatewayTypeAPI)
 	if err != nil {
 		return nil, ctrlerrors.BlockedErrorf("managed routes require a default preset but none was found: %s", err)
+	}
+	presetStatus, err := zone.Status.GetPreset(preset.Name)
+	if err != nil || presetStatus.GatewayRef == nil {
+		return nil, ctrlerrors.BlockedErrorf("zone %q has no gateway status for preset %q", zone.Name, preset.Name)
 	}
 
 	routeRef := util.GetChildResourceRef(obj)
@@ -335,7 +355,7 @@ func createManagedRoute(ctx context.Context, zone *adminv1.Zone, obj *filev1.Zon
 
 		route.Spec = gatewayapi.RouteSpec{
 			Type:        gatewayapi.RouteTypePrimary,
-			GatewayRef:  *zone.Status.Gateway,
+			GatewayRef:  *presetStatus.GatewayRef,
 			Backend:     gatewayapi.Backend{Upstreams: []gatewayapi.Upstream{upstream}},
 			Hostnames:   hostnames,
 			Paths:       paths,
@@ -343,8 +363,8 @@ func createManagedRoute(ctx context.Context, zone *adminv1.Zone, obj *filev1.Zon
 			Traffic:     gatewayapi.Traffic{},
 			Security: gatewayapi.Security{
 				DisableAccessControl: false,
-				TrustedIssuers:       []string{zone.Status.Links.InternalIssuer},
-				RealmName:            zone.Status.InternalIdentityRealm.Name,
+				TrustedIssuers:       []string{presetStatus.Links.InternalIssuer},
+				RealmName:            zone.Status.RealmName,
 				DefaultConsumers:     []string{util.GetChildResourceRef(obj).Name},
 			},
 		}
