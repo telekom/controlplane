@@ -223,6 +223,51 @@ var _ = Describe("callback lifecycle with persisted resources", func() {
 		Entry("proxy zone with default client", true, "eventstore"),
 	)
 
+	It("disables secret rotation on admin and callback identity Clients and backfills existing ones", func() {
+		indexedClient := newIndexedClient()
+		namespace := "callback-rotation-optout"
+		create(&corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}})
+		makeZone("backend")
+		zone := &adminv1.Zone{}
+		Expect(k8sClient.Get(ctx, key("backend"), zone)).To(Succeed())
+		zone.Status.Namespace = namespace
+		zone.Status.Gateway.Namespace = namespace
+		store(zone)
+		realm := &identityv1.Realm{ObjectMeta: metav1.ObjectMeta{Name: "callback-realm", Namespace: "default", Labels: labels}, Spec: identityv1.RealmSpec{IdentityProvider: &ctypes.ObjectRef{Name: "callback-idp", Namespace: "default"}}}
+		create(realm)
+		realm.Status.IssuerUrl = "https://issuer.example.com"
+		store(realm)
+
+		// The admin Client pre-exists without the opt-out annotation.
+		existing := &identityv1.Client{
+			ObjectMeta: metav1.ObjectMeta{Name: "horizon-quasar", Namespace: namespace, Labels: labels, Annotations: map[string]string{"example.com/unrelated": "keep"}},
+			Spec:       identityv1.ClientSpec{Realm: &ctypes.ObjectRef{Name: "callback-realm", Namespace: "default"}, ClientId: "horizon-quasar", ClientSecret: "test-secret"},
+		}
+		create(existing)
+
+		cfg := &eventv1.EventConfig{ObjectMeta: metav1.ObjectMeta{Name: "rotation-optout", Namespace: namespace, Labels: labels}, Spec: eventv1.EventConfigSpec{
+			Zone:  ref("backend"),
+			Local: &eventv1.LocalBackend{Admin: eventv1.AdminConfig{Url: "https://admin.example.com", Client: eventv1.ClientConfig{ClientId: "horizon-quasar", ClientSecret: "test-secret", Realm: ref("callback-realm")}}, ServerSendEventUrl: "https://sse.example.com", PublishEventUrl: "https://publish.example.com"},
+			Mesh:  &eventv1.MeshConfig{Client: eventv1.ClientConfig{ClientId: "eventstore", ClientSecret: "test-secret", Realm: ref("callback-realm")}},
+		}}
+		create(cfg)
+
+		h := &eventconfig.EventConfigHandler{}
+		Expect(h.CreateOrUpdate(cclient.WithClient(contextutil.WithEnv(ctx, env), cclient.NewJanitorClient(cclient.NewScopedClient(indexedClient, env))), cfg)).To(Succeed())
+
+		admin := &identityv1.Client{}
+		Expect(k8sClient.Get(ctx, types.NamespacedName{Name: "horizon-quasar", Namespace: namespace}, admin)).To(Succeed())
+		Expect(admin.UID).To(Equal(existing.UID))
+		Expect(admin.Annotations).To(HaveKeyWithValue(identityv1.DisableSecretRotationAnnotation, "true"))
+		Expect(admin.Annotations).To(HaveKeyWithValue("example.com/unrelated", "keep"))
+		Expect(admin.SupportsSecretRotation()).To(BeFalse())
+
+		callback := &identityv1.Client{}
+		Expect(k8sClient.Get(ctx, types.NamespacedName{Name: "eventstore", Namespace: namespace}, callback)).To(Succeed())
+		Expect(callback.Annotations).To(HaveKeyWithValue(identityv1.DisableSecretRotationAnnotation, "true"))
+		Expect(callback.SupportsSecretRotation()).To(BeFalse())
+	})
+
 	DescribeTable("does not claim an existing gateway Consumer", func(clientId, ownership string) {
 		namespace := "callback-collision-" + ownership
 		if clientId == gatewayv1.GatewayConsumerName {
