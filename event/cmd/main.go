@@ -171,6 +171,9 @@ func main() {
 				&gatewayv1.Route{}: {
 					Label: selector,
 				},
+				&gatewayv1.Consumer{}: {
+					Label: selector,
+				},
 				&identityv1.Client{}: {
 					Label: selector,
 				},
