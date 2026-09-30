@@ -38,7 +38,6 @@ func (h *RouteHandler) CreateOrUpdate(ctx context.Context, route *gatewayv1.Rout
 	}
 
 	routeConsumers := &gatewayv1.ConsumeRouteList{}
-	passwordGrant := false
 	if !route.Spec.PassThrough {
 		listOpts := []client.ListOption{}
 
@@ -67,27 +66,22 @@ func (h *RouteHandler) CreateOrUpdate(ctx context.Context, route *gatewayv1.Rout
 		if err != nil {
 			return errors.Wrap(err, "failed to list route consumers")
 		}
-		passwordGrant, err = validatePasswordGrantConsumers(ctx, route, builder, routeConsumers.Items)
-		if err != nil {
+		if err := validateBasicWithScopes(route, routeConsumers.Items); err != nil {
 			return err
 		}
 
-		for index := range routeConsumers.Items {
-			consumer := &routeConsumers.Items[index]
-			if controller.IsBeingDeleted(consumer) {
+		for _, consumer := range routeConsumers.Items {
+			if controller.IsBeingDeleted(&consumer) {
 				log.V(1).Info("Skipping consumer that is being deleted", "consumer", consumer.Name)
 				continue
 			}
-			builder.AddAllowedConsumers(consumer)
+			builder.AddAllowedConsumers(&consumer)
 		}
 		log.Info("Found consumers", "count", len(builder.GetAllowedConsumers()), "sum", len(routeConsumers.Items))
 
 	}
 
 	if err := builder.Build(ctx); err != nil {
-		if passwordGrant {
-			return invalidateRoute(ctx, route, builder, "Password route publication failed", true)
-		}
 		return errors.Wrap(err, "failed to build route")
 	}
 	log.V(1).Info("route properties are", "properties", route.Status.Properties)

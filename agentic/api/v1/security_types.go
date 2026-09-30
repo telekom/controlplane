@@ -4,7 +4,7 @@
 
 package v1
 
-// TokenRequestMethod defines the token endpoint authentication metho#d (RFC 7591).
+// TokenRequestMethod defines the token endpoint authentication method (RFC 7591).
 // +kubebuilder:validation:Enum=client_secret_basic;client_secret_post
 type TokenRequestMethod string
 

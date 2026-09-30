@@ -155,16 +155,45 @@ var _ = Describe("External IDP password grant with consumer username/password an
 			"password-consumer": {
 				Username: "consumer-user", Password: "consumer-pass", GrantType: "password", Scopes: "consumer:read consumer:write",
 			},
-			"scopes-consumer": {
-				Username: "provider-user", Password: "provider-pass", GrantType: "password", Scopes: "consumer:read",
-			},
 		}))
 		Expect(transformer.Config.Append.Headers.Get("token_endpoint")).To(Equal("https://idp.example.com/token"))
 		Expect(acl).NotTo(BeNil())
 		Expect(acl.Config.Allow.Values()).To(ConsistOf("password-consumer", "scopes-consumer", "fallback-consumer"))
+
+		By("preserving a Basic-only consumer alongside the newly supported combination")
+		legacy := passwordConsumer()
+		legacy.Spec.ConsumerName = "basic-only-consumer"
+		legacy.Spec.Route = *types.ObjectRefFromObject(route)
+		legacy.Spec.Security.M2M.Scopes = nil
+		mixed := publish(consumer, legacy)
+		Expect(mixed.BasicAuth).To(Equal(map[plugin.ConsumerId]plugin.BasicAuthCredentials{
+			"basic-only-consumer": {Username: "consumer-user", Password: "consumer-pass"},
+		}))
+		Expect(mixed.OAuth[plugin.ConsumerId("password-consumer")]).To(Equal(updated.OAuth[plugin.ConsumerId("password-consumer")]))
 	})
 
 	Describe("BasicAuthFeature", func() {
+		DescribeTable("preserves backend Basic for existing credential shapes", func(grantType gatewayv1.GrantType) {
+			route := primaryPasswordRoute()
+			route.Spec.Security.M2M.ExternalIDP.GrantType = grantType
+			consumer := passwordConsumer()
+			consumer.Spec.Security.M2M.Scopes = nil
+			jumperConfig := plugin.NewJumperConfig()
+			builder.EXPECT().GetRoute().Return(route, true)
+			builder.EXPECT().GetAllowedConsumers().Return([]*gatewayv1.ConsumeRoute{consumer})
+			builder.EXPECT().JumperConfig().Return(jumperConfig)
+
+			Expect(feature.InstanceBasicAuthFeature.IsUsed(ctx, builder)).To(BeTrue())
+			Expect(feature.InstanceBasicAuthFeature.Apply(ctx, builder)).To(Succeed())
+			Expect(jumperConfig.BasicAuth).To(HaveKeyWithValue(plugin.ConsumerId(consumer.Spec.ConsumerName), plugin.BasicAuthCredentials{
+				Username: "consumer-user", Password: "consumer-pass",
+			}))
+		},
+			Entry("password without scopes", gatewayv1.GrantTypePassword),
+			Entry("client credentials", gatewayv1.GrantTypeClientCredentials),
+			Entry("authorization code", gatewayv1.GrantTypeAuthorizationCode),
+		)
+
 		DescribeTable("does not publish consumer credentials as backend Basic auth", func(route *gatewayv1.Route) {
 			builder.EXPECT().GetRoute().Return(route, true).Maybe()
 			builder.EXPECT().GetAllowedConsumers().Return([]*gatewayv1.ConsumeRoute{passwordConsumer()}).Maybe()
@@ -187,7 +216,7 @@ var _ = Describe("External IDP password grant with consumer username/password an
 	})
 
 	Describe("ExternalIDPFeature", func() {
-		It("copies the complete provider identity with consumer scopes", func() {
+		It("preserves whole-default fallback for scopes-only consumers", func() {
 			route := primaryPasswordRoute()
 			jumperConfig := plugin.NewJumperConfig()
 			builder.EXPECT().GetRoute().Return(route, true)
@@ -202,14 +231,11 @@ var _ = Describe("External IDP password grant with consumer username/password an
 			builder.EXPECT().GetAllowedConsumers().Return([]*gatewayv1.ConsumeRoute{scopesOnly})
 
 			Expect(feature.InstanceExternalIDPFeature.Apply(ctx, builder)).To(Succeed())
-			defaultEntry := jumperConfig.OAuth[feature.DefaultProviderKey]
-			Expect(jumperConfig.OAuth[plugin.ConsumerId("scopes-consumer")]).To(Equal(plugin.OauthCredentials{
-				Username: defaultEntry.Username, Password: defaultEntry.Password,
-				GrantType: defaultEntry.GrantType, Scopes: "consumer:read",
-			}))
+			Expect(jumperConfig.OAuth).NotTo(HaveKey(plugin.ConsumerId("scopes-consumer")))
+			Expect(jumperConfig.OAuth[feature.DefaultProviderKey].Scopes).To(Equal("provider:read"))
 		})
 
-		It("omits a password default when the provider has only client credentials", func() {
+		It("preserves an existing client-only provider default", func() {
 			route := primaryPasswordRoute()
 			route.Spec.Security.M2M.ExternalIDP.Basic = nil
 			route.Spec.Security.M2M.ExternalIDP.Client = &gatewayv1.OAuth2ClientCredentials{ClientId: "provider", ClientSecret: "provider-secret"}
@@ -220,7 +246,10 @@ var _ = Describe("External IDP password grant with consumer username/password an
 			builder.EXPECT().GetAllowedConsumers().Return([]*gatewayv1.ConsumeRoute{passwordConsumer()})
 
 			Expect(feature.InstanceExternalIDPFeature.Apply(ctx, builder)).To(Succeed())
-			Expect(jumperConfig.OAuth).NotTo(HaveKey(feature.DefaultProviderKey))
+			Expect(jumperConfig.OAuth).To(HaveKeyWithValue(feature.DefaultProviderKey, plugin.OauthCredentials{
+				ClientId: "provider", ClientSecret: "provider-secret", GrantType: "password",
+				TokenRequest: "header", Scopes: "provider:read",
+			}))
 			Expect(jumperConfig.OAuth).To(HaveKey(plugin.ConsumerId("password-consumer")))
 		})
 

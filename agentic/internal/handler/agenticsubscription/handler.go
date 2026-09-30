@@ -89,8 +89,7 @@ func (h *AgenticSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *ag
 				"AgenticSubscription will be automatically processed when the AgenticExposure is registered"))
 		return nil
 	}
-	exposureReady := condition.EnsureReady(exposure) == nil
-	if !exposureReady && !isExistingPasswordGrantSubscription(obj, exposure) {
+	if err = condition.EnsureReady(exposure); err != nil {
 		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet,
 			fmt.Sprintf("AgenticExposure %q is not ready", exposure.Name)))
 		obj.SetCondition(condition.NewBlockedCondition(
@@ -225,7 +224,7 @@ func (h *AgenticSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *ag
 		return errors.Wrapf(err, "failed to construct AI Gateway URL for zone %s", subscriberZone.Name)
 	}
 
-	consumeRoute, err := h.createConsumeRoute(ctx, obj, *routeRef, requestorApp, exposureReady)
+	consumeRoute, err := h.createConsumeRoute(ctx, obj, *routeRef, requestorApp)
 	if err != nil {
 		return errors.Wrap(err, "failed to create ConsumeRoute")
 	}
@@ -233,7 +232,7 @@ func (h *AgenticSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *ag
 	logger.V(1).Info("ConsumeRoute created/updated", "consumeRoute", consumeRoute.Name)
 
 	// 9. Set final conditions
-	if !exposureReady || !c.AllReady() {
+	if !c.AllReady() {
 		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonSubResourceNotReady,
 			"One or more child resources are not yet ready"))
 		obj.SetCondition(condition.NewProcessingCondition("ChildResourcesNotReady", "Waiting for child resources"))
@@ -256,16 +255,6 @@ func violatesBasicWithScopesPolicy(obj *agenticv1.AgenticSubscription, exposure 
 
 	return exposure == nil || !exposure.HasExternalIdp() ||
 		exposure.Spec.Security.M2M.ExternalIDP.GrantType != agenticv1.GrantTypePassword
-}
-
-func isExistingPasswordGrantSubscription(obj *agenticv1.AgenticSubscription, exposure *agenticv1.AgenticExposure) bool {
-	if obj.Status.ConsumeRoute == nil || !exposure.HasExternalIdp() ||
-		exposure.Spec.Security.M2M.ExternalIDP.GrantType != agenticv1.GrantTypePassword || !obj.HasM2M() {
-		return false
-	}
-	authentication := obj.Spec.Security.M2M
-	return authentication.Client == nil && authentication.Basic != nil &&
-		authentication.Basic.Username != "" && authentication.Basic.Password != ""
 }
 
 func (h *AgenticSubscriptionHandler) Delete(ctx context.Context, obj *agenticv1.AgenticSubscription) error {
@@ -328,7 +317,6 @@ func (h *AgenticSubscriptionHandler) createConsumeRoute(
 	obj *agenticv1.AgenticSubscription,
 	routeRef types.ObjectRef,
 	application *applicationv1.Application,
-	allowCreate bool,
 ) (*gatewayapi.ConsumeRoute, error) {
 	c := cclient.ClientFromContextOrDie(ctx)
 
@@ -342,14 +330,6 @@ func (h *AgenticSubscriptionHandler) createConsumeRoute(
 	}
 
 	mutator := func() error {
-		if !allowCreate {
-			if consumeRoute.UID == "" || !metav1.IsControlledBy(consumeRoute, obj) ||
-				consumeRoute.Spec.Route.K8s() != routeRef.K8s() || consumeRoute.Spec.ConsumerName != application.Status.ClientId {
-				return ctrlerrors.BlockedErrorf("credential repair requires an existing owned ConsumeRoute for the selected route and consumer")
-			}
-			consumeRoute.Spec.Security = util.MapSubscriberSecurityToGateway(obj.Spec.Security)
-			return nil
-		}
 		if err := controllerutil.SetControllerReference(obj, consumeRoute, c.Scheme()); err != nil {
 			return errors.Wrapf(err, "failed to set owner reference on ConsumeRoute %q", consumeRouteName)
 		}

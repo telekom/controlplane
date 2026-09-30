@@ -45,20 +45,12 @@ func (b *BasicAuthFeature) IsUsed(ctx context.Context, builder features.Features
 	}
 
 	// Check for failover security with basic auth
-	if HasFailoverSecurity(route) {
-		if route.Spec.Traffic.Failover.Security.HasM2MExternalIDP() {
-			return false
-		}
-		if route.Spec.Traffic.Failover.Security.HasBasicAuth() {
-			return true
-		}
+	if HasFailoverSecurity(route) && route.Spec.Traffic.Failover.Security.HasBasicAuth() {
+		return true
 	}
 
 	// For primary routes, check route security and all consumers
 	if !route.IsProxy() {
-		if route.Spec.Security.HasM2MExternalIDP() {
-			return false
-		}
 		// Check if route itself has basic auth configured
 		if HasM2M(route) && route.Spec.Security.HasBasicAuth() {
 			return true
@@ -66,7 +58,7 @@ func (b *BasicAuthFeature) IsUsed(ctx context.Context, builder features.Features
 
 		// Check if any consumer has basic auth configured
 		for _, consumer := range builder.GetAllowedConsumers() {
-			if consumer.HasM2M() && consumer.Spec.Security.HasBasicAuth() {
+			if consumer.HasM2MBasic() && !usesScopedPasswordGrant(route, consumer) {
 				return true
 			}
 		}
@@ -86,9 +78,6 @@ func (b *BasicAuthFeature) Apply(ctx context.Context, builder features.FeaturesB
 	if HasFailoverSecurity(route) {
 		security = route.Spec.Traffic.Failover.Security
 	}
-	if (route.IsPrimary() || route.IsFailoverSecondary()) && security.HasM2MExternalIDP() {
-		return nil
-	}
 
 	if security.HasBasicAuth() {
 		passwordValue, err := secretManagerApi.Get(ctx, security.M2M.Basic.Password)
@@ -102,7 +91,7 @@ func (b *BasicAuthFeature) Apply(ctx context.Context, builder features.FeaturesB
 	}
 
 	for _, consumer := range builder.GetAllowedConsumers() {
-		if consumer.Spec.Security == nil {
+		if consumer.Spec.Security == nil || usesScopedPasswordGrant(route, consumer) {
 			continue
 		}
 		security := consumer.Spec.Security
@@ -121,4 +110,16 @@ func (b *BasicAuthFeature) Apply(ctx context.Context, builder features.FeaturesB
 	}
 
 	return nil
+}
+
+func usesScopedPasswordGrant(route *v1.Route, consumer *v1.ConsumeRoute) bool {
+	if !consumer.HasM2MBasic() || len(consumer.Spec.Security.M2M.Scopes) == 0 {
+		return false
+	}
+	security := route.Spec.Security
+	if route.IsFailoverSecondary() && route.Spec.Traffic.Failover != nil {
+		security = route.Spec.Traffic.Failover.Security
+	}
+	return (route.IsPrimary() || route.IsFailoverSecondary()) && security.HasM2MExternalIDP() &&
+		security.M2M.ExternalIDP.GrantType == v1.GrantTypePassword
 }

@@ -71,71 +71,10 @@ var _ = Describe("Consumer username/password with scopes", func() {
 		Expect(consume.Spec.Security.M2M.Client).To(BeNil())
 	})
 
-	It("repairs rejected credentials while its exposure waits for the route", func() {
-		fixture := newScopeFixture()
-		fixture.server("McpServer", nil)
-		exposure := passwordExposure(fixture, agenticv1.GrantTypePassword)
-		route := waitExposure(exposure)
-		sub := fixture.subscription(consumerScopes)
-		Eventually(func(g Gomega) {
-			g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(sub), sub)).To(Succeed())
-			sub.Spec.Security.M2M.Client = &agenticv1.OAuth2ClientCredentials{ClientId: "invalid-client", ClientSecret: "invalid-secret"}
-			g.Expect(k8sClient.Update(ctx, sub)).To(Succeed())
-		}, timeout, interval).Should(Succeed())
-		grantApproval(sub, waitPending(sub))
-		consume := &gatewayv1.ConsumeRoute{}
-		Eventually(func(g Gomega) {
-			g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(sub), sub)).To(Succeed())
-			g.Expect(sub.Status.ConsumeRoute).NotTo(BeNil())
-			g.Expect(k8sClient.Get(ctx, sub.Status.ConsumeRoute.K8s(), consume)).To(Succeed())
-			g.Expect(consume.Spec.Security.M2M.Client).NotTo(BeNil())
-		}, timeout, interval).Should(Succeed())
-		originalUID := consume.UID
-		originalGeneration := consume.Generation
-
-		By("letting route rejection make the active exposure not ready")
-		Eventually(func(g Gomega) {
-			g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(route), route)).To(Succeed())
-			notReady := condition.NewNotReadyCondition(condition.ReasonValidationFailed, "Password route has consumers without usable credentials")
-			notReady.ObservedGeneration = route.Generation
-			route.SetCondition(notReady)
-			route.Status.Consumers = nil
-			g.Expect(k8sClient.Status().Update(ctx, route)).To(Succeed())
-		}, timeout, interval).Should(Succeed())
-		Eventually(func(g Gomega) {
-			expectReadyReason(g, exposure, "ChildResourcesNotReady", metav1.ConditionFalse)
-			g.Expect(exposure.Status.Active).To(BeTrue())
-		}, timeout, interval).Should(Succeed())
-
-		By("repairing the subscription before gateway readiness can recover")
-		Eventually(func(g Gomega) {
-			g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(sub), sub)).To(Succeed())
-			sub.Spec.Security.M2M.Client = nil
-			sub.Spec.Security.M2M.Basic = &agenticv1.BasicAuthCredentials{Username: "consumer-user", Password: "consumer-pass"}
-			g.Expect(k8sClient.Update(ctx, sub)).To(Succeed())
-		}, timeout, interval).Should(Succeed())
-		Eventually(func(g Gomega) {
-			g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(consume), consume)).To(Succeed())
-			g.Expect(consume.UID).To(Equal(originalUID))
-			g.Expect(consume.Generation).To(BeNumerically(">", originalGeneration))
-			g.Expect(consume.Spec.Security.M2M.Client).To(BeNil())
-			g.Expect(consume.Spec.Security.M2M.Basic).To(Equal(&gatewayv1.BasicAuthCredentials{Username: "consumer-user", Password: "consumer-pass"}))
-			g.Expect(consume.Spec.Security.M2M.Scopes).To(Equal(consumerScopes))
-		}, timeout, interval).Should(Succeed())
-		Eventually(func(g Gomega) {
-			expectReadyReason(g, sub, condition.ReasonSubResourceNotReady, metav1.ConditionFalse)
-		}, timeout, interval).Should(Succeed())
-		updateFixtureStatus(route)
-		updateFixtureStatus(consume)
-		Eventually(func(g Gomega) {
-			expectReadyReason(g, sub, condition.ReasonProvisioned, metav1.ConditionTrue)
-		}, timeout, interval).Should(Succeed())
-	})
-
 	It("does not create a password subscription while its exposure is not ready", func() {
 		fixture := newScopeFixture()
 		fixture.server("McpServer", nil)
-		exposure := passwordExposure(fixture, agenticv1.GrantTypePassword)
+		exposure := passwordExposure(fixture, "password")
 		route := waitExposure(exposure)
 		Eventually(func(g Gomega) {
 			g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(route), route)).To(Succeed())
@@ -173,7 +112,7 @@ var _ = Describe("Consumer username/password with scopes", func() {
 		Consistently(check, time.Second, interval).Should(Succeed())
 	},
 		Entry("client_credentials grant", agenticv1.GrantTypeClientCredentials),
-		Entry("client_credentials grant", agenticv1.GrantTypeAuthorizationCode),
+		Entry("authorization_code grant", agenticv1.GrantTypeAuthorizationCode),
 	)
 
 	It("blocks Basic credentials with scopes without an external IDP", func() {
