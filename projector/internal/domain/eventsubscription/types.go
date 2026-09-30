@@ -37,6 +37,8 @@ type EventSubscriptionData struct {
 	Delivery              *model.EventDelivery
 	Trigger               *model.EventTrigger
 	Scopes                []string
+	RequestedScopes       []string
+	ActiveScopes          []string
 	OwnerAppName          string // resolved to owner Application FK (required)
 	OwnerTeamName         string // used to resolve owner Application FK
 	TargetEventType       string // used to resolve optional target EventExposure FK

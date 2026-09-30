@@ -31,6 +31,28 @@ var _ = Describe("ApiSubscription Translator", func() {
 	})
 
 	Describe("Translate", func() {
+		It("should keep requested scopes separate from active scopes across pending and revoked states", func() {
+			obj := &apiv1.ApiSubscription{
+				Spec: apiv1.ApiSubscriptionSpec{Security: &apiv1.SubscriberSecurity{
+					M2M: &apiv1.SubscriberMachine2MachineAuthentication{Scopes: []string{"read", "write"}},
+				}},
+				Status: apiv1.ApiSubscriptionStatus{ActiveScopes: []string{"read"}},
+			}
+			data, err := t.Translate(context.Background(), obj)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(data.RequestedScopes).To(Equal([]string{"read", "write"}))
+			Expect(data.ActiveScopes).To(Equal([]string{"read"}))
+			Expect(data.Security.M2M.Scopes).To(Equal(data.RequestedScopes))
+			obj.Status.ActiveScopes = nil
+			data, err = t.Translate(context.Background(), obj)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(data.ActiveScopes).To(BeEmpty())
+			Expect(data.RequestedScopes).To(Equal([]string{"read", "write"}))
+			obj.Spec.Security = nil
+			data, err = t.Translate(context.Background(), obj)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(data.RequestedScopes).To(BeEmpty())
+		})
 		It("should populate all fields from the CR", func() {
 			obj := &apiv1.ApiSubscription{
 				ObjectMeta: metav1.ObjectMeta{

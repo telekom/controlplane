@@ -41,7 +41,9 @@ func (t *Translator) Translate(_ context.Context, obj *agenticv1.AgenticSubscrip
 	phase, message := shared.StatusFromConditions(obj.Status.Conditions)
 
 	var security *model.AgenticSubscriptionSecurity
+	var requestedScopes []string
 	if obj.Spec.Security != nil && obj.Spec.Security.M2M != nil {
+		requestedScopes = obj.Spec.Security.M2M.Scopes
 		security = &model.AgenticSubscriptionSecurity{}
 		security.M2M = &model.SubscriberMachine2MachineAuthentication{}
 		if obj.Spec.Security.M2M.Client != nil {
@@ -65,16 +67,18 @@ func (t *Translator) Translate(_ context.Context, obj *agenticv1.AgenticSubscrip
 	}
 
 	return &AgenticSubscriptionData{
-		Meta:           shared.NewMetadata(obj.Namespace, obj.Name, obj.Labels),
-		StatusPhase:    phase,
-		StatusMessage:  message,
-		BasePath:       obj.Spec.BasePath,
-		GatewayUrl:     obj.Status.GatewayUrl,
-		Security:       security,
-		Traffic:        traffic,
-		OwnerAppName:   obj.Spec.Requestor.Application.Name,
-		OwnerTeamName:  shared.TeamNameFromNamespace(obj.Namespace),
-		TargetBasePath: obj.Spec.BasePath,
+		Meta:            shared.NewMetadata(obj.Namespace, obj.Name, obj.Labels),
+		StatusPhase:     phase,
+		StatusMessage:   message,
+		BasePath:        obj.Spec.BasePath,
+		GatewayUrl:      obj.Status.GatewayUrl,
+		Security:        security,
+		RequestedScopes: requestedScopes,
+		ActiveScopes:    obj.Status.ActiveScopes,
+		Traffic:         traffic,
+		OwnerAppName:    obj.Spec.Requestor.Application.Name,
+		OwnerTeamName:   shared.TeamNameFromNamespace(obj.Namespace),
+		TargetBasePath:  obj.Spec.BasePath,
 	}, nil
 }
 

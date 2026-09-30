@@ -29,6 +29,7 @@ func (EventSubscription) Mixin() []ent.Mixin {
 		schemamixin.StatusMixin{},
 		schemamixin.EnvironmentMixin{},
 		schemamixin.MetadataMixin{},
+		schemamixin.SubscriptionScopesMixin{},
 	}
 }
 
@@ -51,7 +52,7 @@ func (EventSubscription) Fields() []ent.Field {
 			Annotations(entgql.Type("EventDelivery"), entgql.Skip(entgql.SkipWhereInput)),
 		field.JSON("scopes", []string{}).
 			Optional().
-			Annotations(entgql.Skip(entgql.SkipWhereInput)),
+			Annotations(entgql.Skip(entgql.SkipWhereInput), entgql.Directives(entgql.Deprecated("Use requestedScopes for requested scopes and activeScopes for provisioned scopes."))),
 		field.Text("callback_url").
 			Optional().
 			Nillable(),

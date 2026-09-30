@@ -112,6 +112,8 @@ func (r *Repository) Upsert(ctx context.Context, data *APISubscriptionData) erro
 		SetName(data.Meta.Name).
 		SetM2mAuthMethod(apisubscription.M2mAuthMethod(data.M2MAuthMethod)).
 		SetSecurity(data.Security).
+		SetRequestedScopes(data.RequestedScopes).
+		SetActiveScopes(data.ActiveScopes).
 		SetStatusPhase(apisubscription.StatusPhase(data.StatusPhase)).
 		SetStatusMessage(data.StatusMessage).
 		SetOwnerID(ownerAppID).

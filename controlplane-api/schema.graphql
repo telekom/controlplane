@@ -197,7 +197,7 @@ type Machine2MachineAuthentication {
 type SubscriberMachine2MachineAuthentication {
   client: OAuth2ClientCredentials
   basic: BasicAuthCredentials
-  scopes: [String!]
+  scopes: [String!] @deprecated(reason: "Use requestedScopes and activeScopes on the subscription.")
 }
 
 type ApiExposureSecurity {

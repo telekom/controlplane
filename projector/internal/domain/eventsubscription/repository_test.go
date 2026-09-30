@@ -109,6 +109,30 @@ var _ = Describe("EventSubscription Repository", func() {
 	})
 
 	Describe("Upsert", func() {
+		It("should persist independent scope sets and clear both on subsequent upserts", func() {
+			data := &eventsubscription.EventSubscriptionData{
+				Meta:        shared.NewMetadata("prod--platform--narvi", "scopes", nil),
+				StatusPhase: "PENDING", EventType: "de.telekom.scopes.v1", DeliveryType: "CALLBACK",
+				OwnerAppName: "consumer-app", OwnerTeamName: "platform--narvi",
+				RequestedScopes: []string{"read", "write"}, ActiveScopes: []string{"read"},
+			}
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+			sub, err := client.EventSubscription.Query().Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(sub.RequestedScopes).To(Equal(data.RequestedScopes))
+			Expect(sub.ActiveScopes).To(Equal(data.ActiveScopes))
+			data.ActiveScopes = nil
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+			sub, err = client.EventSubscription.Query().Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(sub.ActiveScopes).To(BeEmpty())
+			Expect(sub.RequestedScopes).To(Equal(data.RequestedScopes))
+			data.RequestedScopes = nil
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+			sub, err = client.EventSubscription.Query().Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(sub.RequestedScopes).To(BeEmpty())
+		})
 		It("should create an event subscription with valid deps (no target)", func() {
 			callbackURL := "https://consumer.example.com/events"
 			redeliveries := 5

@@ -39,6 +39,10 @@ type ApiSubscription struct {
 	Namespace string `json:"namespace,omitempty"`
 	// Name holds the value of the "name" field.
 	Name string `json:"name,omitempty"`
+	// Latest scopes requested in the subscription specification.
+	RequestedScopes []string `json:"requested_scopes,omitempty"`
+	// Last approved scope set successfully written to downstream Kubernetes resources; does not imply data-plane readiness.
+	ActiveScopes []string `json:"active_scopes,omitempty"`
 	// BasePath holds the value of the "base_path" field.
 	BasePath string `json:"base_path,omitempty"`
 	// M2mAuthMethod holds the value of the "m2m_auth_method" field.
@@ -135,7 +139,7 @@ func (*ApiSubscription) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case apisubscription.FieldSecurity, apisubscription.FieldTraffic:
+		case apisubscription.FieldRequestedScopes, apisubscription.FieldActiveScopes, apisubscription.FieldSecurity, apisubscription.FieldTraffic:
 			values[i] = new([]byte)
 		case apisubscription.FieldID:
 			values[i] = new(sql.NullInt64)
@@ -212,6 +216,22 @@ func (_m *ApiSubscription) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field name", values[i])
 			} else if value.Valid {
 				_m.Name = value.String
+			}
+		case apisubscription.FieldRequestedScopes:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field requested_scopes", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &_m.RequestedScopes); err != nil {
+					return fmt.Errorf("unmarshal field requested_scopes: %w", err)
+				}
+			}
+		case apisubscription.FieldActiveScopes:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field active_scopes", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &_m.ActiveScopes); err != nil {
+					return fmt.Errorf("unmarshal field active_scopes: %w", err)
+				}
 			}
 		case apisubscription.FieldBasePath:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -349,6 +369,12 @@ func (_m *ApiSubscription) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("name=")
 	builder.WriteString(_m.Name)
+	builder.WriteString(", ")
+	builder.WriteString("requested_scopes=")
+	builder.WriteString(fmt.Sprintf("%v", _m.RequestedScopes))
+	builder.WriteString(", ")
+	builder.WriteString("active_scopes=")
+	builder.WriteString(fmt.Sprintf("%v", _m.ActiveScopes))
 	builder.WriteString(", ")
 	builder.WriteString("base_path=")
 	builder.WriteString(_m.BasePath)

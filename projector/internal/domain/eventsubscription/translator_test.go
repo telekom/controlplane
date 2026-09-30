@@ -32,6 +32,22 @@ var _ = Describe("EventSubscription Translator", func() {
 	})
 
 	Describe("Translate", func() {
+		It("should keep requested scopes separate from active scopes across pending and revoked states", func() {
+			obj := &eventv1.EventSubscription{
+				Spec:   eventv1.EventSubscriptionSpec{Scopes: []string{"read", "write"}},
+				Status: eventv1.EventSubscriptionStatus{ActiveScopes: []string{"read"}},
+			}
+			data, err := t.Translate(context.Background(), obj)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(data.RequestedScopes).To(Equal([]string{"read", "write"}))
+			Expect(data.ActiveScopes).To(Equal([]string{"read"}))
+			Expect(data.Scopes).To(Equal(data.RequestedScopes))
+			obj.Status.ActiveScopes = nil
+			data, err = t.Translate(context.Background(), obj)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(data.ActiveScopes).To(BeEmpty())
+			Expect(data.RequestedScopes).To(Equal([]string{"read", "write"}))
+		})
 		It("should populate all fields from the CR with Callback delivery", func() {
 			obj := &eventv1.EventSubscription{
 				ObjectMeta: metav1.ObjectMeta{

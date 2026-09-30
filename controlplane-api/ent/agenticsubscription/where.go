@@ -488,6 +488,26 @@ func NameContainsFold(v string) predicate.AgenticSubscription {
 	return predicate.AgenticSubscription(sql.FieldContainsFold(FieldName, v))
 }
 
+// RequestedScopesIsNil applies the IsNil predicate on the "requested_scopes" field.
+func RequestedScopesIsNil() predicate.AgenticSubscription {
+	return predicate.AgenticSubscription(sql.FieldIsNull(FieldRequestedScopes))
+}
+
+// RequestedScopesNotNil applies the NotNil predicate on the "requested_scopes" field.
+func RequestedScopesNotNil() predicate.AgenticSubscription {
+	return predicate.AgenticSubscription(sql.FieldNotNull(FieldRequestedScopes))
+}
+
+// ActiveScopesIsNil applies the IsNil predicate on the "active_scopes" field.
+func ActiveScopesIsNil() predicate.AgenticSubscription {
+	return predicate.AgenticSubscription(sql.FieldIsNull(FieldActiveScopes))
+}
+
+// ActiveScopesNotNil applies the NotNil predicate on the "active_scopes" field.
+func ActiveScopesNotNil() predicate.AgenticSubscription {
+	return predicate.AgenticSubscription(sql.FieldNotNull(FieldActiveScopes))
+}
+
 // BasePathEQ applies the EQ predicate on the "base_path" field.
 func BasePathEQ(v string) predicate.AgenticSubscription {
 	return predicate.AgenticSubscription(sql.FieldEQ(FieldBasePath, v))

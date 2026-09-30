@@ -215,7 +215,13 @@ func grantApproval(sub *agenticv1.AgenticSubscription, req *approvalv1.ApprovalR
 		ApprovedRequest: ctypes.ObjectRefFromObject(req),
 	}}
 	Expect(controllerutil.SetControllerReference(sub, approval, k8sClient.Scheme())).To(Succeed())
-	Expect(k8sClient.Create(ctx, approval)).To(Succeed())
+	_, err := controllerutil.CreateOrUpdate(ctx, k8sClient, approval, func() error {
+		approval.Spec.State = approvalv1.ApprovalStateGranted
+		approval.Spec.Requester = req.Spec.Requester
+		approval.Spec.ApprovedRequest = ctypes.ObjectRefFromObject(req)
+		return nil
+	})
+	Expect(err).NotTo(HaveOccurred())
 	approval.Status.LastState = approvalv1.ApprovalStateGranted
 	setFixtureReady(approval)
 	Expect(k8sClient.Status().Update(ctx, approval)).To(Succeed())
@@ -302,6 +308,7 @@ var _ = Describe("External token endpoint scope exception", func() {
 		req := waitPending(sub)
 		grantApproval(sub, req)
 		consume := waitConsumeRoute(sub, consumerScopes)
+		Expect(sub.Status.ActiveScopes).To(Equal(consumerScopes))
 		Expect(route.OwnerReferences).To(BeEmpty())
 		Expect(consume.OwnerReferences).To(HaveLen(1))
 		Expect(consume.OwnerReferences[0].UID).To(Equal(sub.UID))
@@ -324,6 +331,21 @@ var _ = Describe("External token endpoint scope exception", func() {
 			g.Expect(route.Spec.Security.M2M.Scopes).To(Equal(providerScopes))
 		}, timeout, interval).Should(Succeed())
 		waitExposure(exp)
+		req = waitPending(sub)
+		Expect(req.UID).NotTo(Equal(requestUID))
+		var properties map[string]any
+		Expect(json.Unmarshal(req.Spec.Requester.Properties.Raw, &properties)).To(Succeed())
+		Expect(properties).To(Equal(map[string]any{
+			"basePath": f.basePath, "resource_type": "MCP", "resource_name": f.basePath,
+			"scopes": []any{"consumer.new.b", "consumer.new.a"},
+		}))
+		Consistently(func(g Gomega) {
+			g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(sub), sub)).To(Succeed())
+			g.Expect(sub.Status.ActiveScopes).To(Equal(consumeBefore.Spec.Security.M2M.Scopes))
+			g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(consume), consume)).To(Succeed())
+			g.Expect(consume.Spec.Security.M2M.Scopes).To(Equal(consumeBefore.Spec.Security.M2M.Scopes))
+		}, time.Second, interval).Should(Succeed())
+		grantApproval(sub, req)
 		consume = waitConsumeRoute(sub, consumerScopes)
 		Eventually(func(g Gomega) {
 			expectReadyReason(g, exp, "AgenticExposureProvisioned", metav1.ConditionTrue)
@@ -336,11 +358,9 @@ var _ = Describe("External token endpoint scope exception", func() {
 			g.Expect(route.OwnerReferences).To(Equal(routeBefore.OwnerReferences))
 			g.Expect(consume.OwnerReferences).To(Equal(consumeBefore.OwnerReferences))
 			g.Expect(k8sClient.Get(ctx, sub.Status.ApprovalRequest.K8s(), req)).To(Succeed())
-			g.Expect(req.UID).To(Equal(requestUID))
+			g.Expect(req.UID).NotTo(Equal(requestUID))
+			g.Expect(sub.Status.ActiveScopes).To(Equal(consumerScopes))
 		}, timeout, interval).Should(Succeed())
-		var properties map[string]any
-		Expect(json.Unmarshal(req.Spec.Requester.Properties.Raw, &properties)).To(Succeed())
-		Expect(properties).To(Equal(map[string]any{"mcpBasePath": f.basePath, "resource_type": "MCP", "resource_name": f.basePath}))
 	})
 
 	It("does not borrow an inactive competing exposure's endpoint", func() {

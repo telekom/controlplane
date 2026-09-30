@@ -13,6 +13,7 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/dialect/sql/sqljson"
 	"entgo.io/ent/schema/field"
 	"github.com/telekom/controlplane/controlplane-api/ent/apiexposure"
 	"github.com/telekom/controlplane/controlplane-api/ent/apisubscription"
@@ -128,6 +129,42 @@ func (_u *ApiSubscriptionUpdate) SetNillableName(v *string) *ApiSubscriptionUpda
 	if v != nil {
 		_u.SetName(*v)
 	}
+	return _u
+}
+
+// SetRequestedScopes sets the "requested_scopes" field.
+func (_u *ApiSubscriptionUpdate) SetRequestedScopes(v []string) *ApiSubscriptionUpdate {
+	_u.mutation.SetRequestedScopes(v)
+	return _u
+}
+
+// AppendRequestedScopes appends value to the "requested_scopes" field.
+func (_u *ApiSubscriptionUpdate) AppendRequestedScopes(v []string) *ApiSubscriptionUpdate {
+	_u.mutation.AppendRequestedScopes(v)
+	return _u
+}
+
+// ClearRequestedScopes clears the value of the "requested_scopes" field.
+func (_u *ApiSubscriptionUpdate) ClearRequestedScopes() *ApiSubscriptionUpdate {
+	_u.mutation.ClearRequestedScopes()
+	return _u
+}
+
+// SetActiveScopes sets the "active_scopes" field.
+func (_u *ApiSubscriptionUpdate) SetActiveScopes(v []string) *ApiSubscriptionUpdate {
+	_u.mutation.SetActiveScopes(v)
+	return _u
+}
+
+// AppendActiveScopes appends value to the "active_scopes" field.
+func (_u *ApiSubscriptionUpdate) AppendActiveScopes(v []string) *ApiSubscriptionUpdate {
+	_u.mutation.AppendActiveScopes(v)
+	return _u
+}
+
+// ClearActiveScopes clears the value of the "active_scopes" field.
+func (_u *ApiSubscriptionUpdate) ClearActiveScopes() *ApiSubscriptionUpdate {
+	_u.mutation.ClearActiveScopes()
 	return _u
 }
 
@@ -461,6 +498,28 @@ func (_u *ApiSubscriptionUpdate) sqlSave(ctx context.Context) (_node int, err er
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(apisubscription.FieldName, field.TypeString, value)
 	}
+	if value, ok := _u.mutation.RequestedScopes(); ok {
+		_spec.SetField(apisubscription.FieldRequestedScopes, field.TypeJSON, value)
+	}
+	if value, ok := _u.mutation.AppendedRequestedScopes(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, apisubscription.FieldRequestedScopes, value)
+		})
+	}
+	if _u.mutation.RequestedScopesCleared() {
+		_spec.ClearField(apisubscription.FieldRequestedScopes, field.TypeJSON)
+	}
+	if value, ok := _u.mutation.ActiveScopes(); ok {
+		_spec.SetField(apisubscription.FieldActiveScopes, field.TypeJSON, value)
+	}
+	if value, ok := _u.mutation.AppendedActiveScopes(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, apisubscription.FieldActiveScopes, value)
+		})
+	}
+	if _u.mutation.ActiveScopesCleared() {
+		_spec.ClearField(apisubscription.FieldActiveScopes, field.TypeJSON)
+	}
 	if value, ok := _u.mutation.BasePath(); ok {
 		_spec.SetField(apisubscription.FieldBasePath, field.TypeString, value)
 	}
@@ -773,6 +832,42 @@ func (_u *ApiSubscriptionUpdateOne) SetNillableName(v *string) *ApiSubscriptionU
 	if v != nil {
 		_u.SetName(*v)
 	}
+	return _u
+}
+
+// SetRequestedScopes sets the "requested_scopes" field.
+func (_u *ApiSubscriptionUpdateOne) SetRequestedScopes(v []string) *ApiSubscriptionUpdateOne {
+	_u.mutation.SetRequestedScopes(v)
+	return _u
+}
+
+// AppendRequestedScopes appends value to the "requested_scopes" field.
+func (_u *ApiSubscriptionUpdateOne) AppendRequestedScopes(v []string) *ApiSubscriptionUpdateOne {
+	_u.mutation.AppendRequestedScopes(v)
+	return _u
+}
+
+// ClearRequestedScopes clears the value of the "requested_scopes" field.
+func (_u *ApiSubscriptionUpdateOne) ClearRequestedScopes() *ApiSubscriptionUpdateOne {
+	_u.mutation.ClearRequestedScopes()
+	return _u
+}
+
+// SetActiveScopes sets the "active_scopes" field.
+func (_u *ApiSubscriptionUpdateOne) SetActiveScopes(v []string) *ApiSubscriptionUpdateOne {
+	_u.mutation.SetActiveScopes(v)
+	return _u
+}
+
+// AppendActiveScopes appends value to the "active_scopes" field.
+func (_u *ApiSubscriptionUpdateOne) AppendActiveScopes(v []string) *ApiSubscriptionUpdateOne {
+	_u.mutation.AppendActiveScopes(v)
+	return _u
+}
+
+// ClearActiveScopes clears the value of the "active_scopes" field.
+func (_u *ApiSubscriptionUpdateOne) ClearActiveScopes() *ApiSubscriptionUpdateOne {
+	_u.mutation.ClearActiveScopes()
 	return _u
 }
 
@@ -1135,6 +1230,28 @@ func (_u *ApiSubscriptionUpdateOne) sqlSave(ctx context.Context) (_node *ApiSubs
 	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(apisubscription.FieldName, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.RequestedScopes(); ok {
+		_spec.SetField(apisubscription.FieldRequestedScopes, field.TypeJSON, value)
+	}
+	if value, ok := _u.mutation.AppendedRequestedScopes(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, apisubscription.FieldRequestedScopes, value)
+		})
+	}
+	if _u.mutation.RequestedScopesCleared() {
+		_spec.ClearField(apisubscription.FieldRequestedScopes, field.TypeJSON)
+	}
+	if value, ok := _u.mutation.ActiveScopes(); ok {
+		_spec.SetField(apisubscription.FieldActiveScopes, field.TypeJSON, value)
+	}
+	if value, ok := _u.mutation.AppendedActiveScopes(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, apisubscription.FieldActiveScopes, value)
+		})
+	}
+	if _u.mutation.ActiveScopesCleared() {
+		_spec.ClearField(apisubscription.FieldActiveScopes, field.TypeJSON)
 	}
 	if value, ok := _u.mutation.BasePath(); ok {
 		_spec.SetField(apisubscription.FieldBasePath, field.TypeString, value)
