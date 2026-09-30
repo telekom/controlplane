@@ -14,6 +14,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
@@ -26,6 +27,7 @@ import (
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	"github.com/telekom/controlplane/event/internal/handler/eventsubscription"
+	"github.com/telekom/controlplane/event/internal/index"
 	pubsubv1 "github.com/telekom/controlplane/pubsub/api/v1"
 )
 
@@ -123,22 +125,52 @@ func (r *EventSubscriptionReconciler) MapEventConfigToEventSubscription(ctx cont
 		return nil
 	}
 
+	zone := eventConfig.Spec.Zone
+	if zone.Name == "" || zone.Namespace == "" {
+		return nil
+	}
+	env := client.MatchingLabels{cconfig.EnvironmentLabelKey: eventConfig.Labels[cconfig.EnvironmentLabelKey]}
 	list := &eventv1.EventSubscriptionList{}
-	if err := r.List(ctx, list, client.MatchingLabels{
-		cconfig.EnvironmentLabelKey:   eventConfig.Labels[cconfig.EnvironmentLabelKey],
-		cconfig.BuildLabelKey("zone"): labelutil.NormalizeLabelValue(eventConfig.Spec.Zone.Name),
-	}); err != nil {
+	if err := r.List(ctx, list, env, client.MatchingFields{index.EventSubscriptionZoneIndex: zone.String()}); err != nil {
+		log.FromContext(ctx).Error(err, "Failed to list EventSubscriptions for EventConfig", "eventConfig", client.ObjectKeyFromObject(eventConfig))
 		return nil
 	}
 
 	var reqs []reconcile.Request
+	seen := make(map[client.ObjectKey]struct{}, len(list.Items))
 	for i := range list.Items {
-		if !list.Items[i].Spec.Zone.Equals(&eventConfig.Spec.Zone) {
+		key := client.ObjectKeyFromObject(&list.Items[i])
+		seen[key] = struct{}{}
+		reqs = append(reqs, reconcile.Request{NamespacedName: key})
+	}
+
+	exposures := &eventv1.EventExposureList{}
+	if err := r.List(ctx, exposures, env, client.MatchingFields{index.EventExposureZoneIndex: zone.String()}); err != nil {
+		log.FromContext(ctx).Error(err, "Failed to list EventExposures for EventConfig", "eventConfig", client.ObjectKeyFromObject(eventConfig))
+		return reqs
+	}
+	exposedTypes := make(map[string]struct{}, len(exposures.Items))
+	for i := range exposures.Items {
+		eventType := exposures.Items[i].Spec.EventType
+		if eventType == "" {
 			continue
 		}
-		reqs = append(reqs, reconcile.Request{
-			NamespacedName: client.ObjectKeyFromObject(&list.Items[i]),
-		})
+		exposedTypes[eventType] = struct{}{}
+	}
+	for eventType := range exposedTypes {
+		callbacks := &eventv1.EventSubscriptionList{}
+		if err := r.List(ctx, callbacks, env, client.MatchingFields{index.EventSubscriptionCallbackEventTypeIndex: eventType}); err != nil {
+			log.FromContext(ctx).Error(err, "Failed to list callback EventSubscriptions for EventConfig", "eventConfig", client.ObjectKeyFromObject(eventConfig), "eventType", eventType)
+			continue
+		}
+		for i := range callbacks.Items {
+			key := client.ObjectKeyFromObject(&callbacks.Items[i])
+			if _, exists := seen[key]; exists {
+				continue
+			}
+			seen[key] = struct{}{}
+			reqs = append(reqs, reconcile.Request{NamespacedName: key})
+		}
 	}
 	return reqs
 }

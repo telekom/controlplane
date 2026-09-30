@@ -54,7 +54,7 @@ var _ = Describe("Resource pagination", func() {
 		Entry("invalid JSON", encodeJSON(`{`)),
 		Entry("unknown version", encodeJSON(`{"v":2,"k":0,"c":""}`)),
 		Entry("negative kind", encodeJSON(`{"v":1,"k":-1,"c":""}`)),
-		Entry("kind past final store", encodeJSON(`{"v":1,"k":6,"c":""}`)),
+		Entry("kind past final store", encodeJSON(`{"v":1,"k":7,"c":""}`)),
 	)
 
 	It("shares one limit across resource kinds", func() {
@@ -115,6 +115,7 @@ var _ = Describe("Resource pagination", func() {
 			listCall{kind: "Roadmap", limit: 1},
 			listCall{kind: "ApiChangelog", limit: 1},
 			listCall{kind: "McpSpecification", limit: 1},
+			listCall{kind: "FileSpecification", limit: 1},
 		)
 	})
 
@@ -127,7 +128,7 @@ var _ = Describe("Resource pagination", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(response.Items).To(HaveLen(1))
 		Expect(response.UnderscoreLinks.Next).To(BeEmpty())
-		Expect(fixture.calls).To(HaveLen(6))
+		Expect(fixture.calls).To(HaveLen(7))
 	})
 
 	It("continues at the next non-empty kind", func() {
@@ -157,7 +158,7 @@ var _ = Describe("Resource pagination", func() {
 		Expect(response.Items).To(BeEmpty())
 		Expect(response.UnderscoreLinks.Self).To(BeEmpty())
 		Expect(response.UnderscoreLinks.Next).To(BeEmpty())
-		Expect(fixture.calls).To(HaveLen(6))
+		Expect(fixture.calls).To(HaveLen(7))
 	})
 
 	It("includes MCP specifications", func() {
@@ -274,6 +275,7 @@ type resourceFixture struct {
 	roadmaps            func(store.ListOpts) (*store.ListResponse[*roverv1.Roadmap], error)
 	apiChangelogs       func(store.ListOpts) (*store.ListResponse[*roverv1.ApiChangelog], error)
 	mcpSpecifications   func(store.ListOpts) (*store.ListResponse[*roverv1.McpSpecification], error)
+	fileSpecifications  func(store.ListOpts) (*store.ListResponse[*roverv1.FileSpecification], error)
 }
 
 func newResourceFixture() *resourceFixture {
@@ -284,6 +286,7 @@ func newResourceFixture() *resourceFixture {
 		roadmaps:            page[*roverv1.Roadmap](),
 		apiChangelogs:       page[*roverv1.ApiChangelog](),
 		mcpSpecifications:   page[*roverv1.McpSpecification](),
+		fileSpecifications:  page[*roverv1.FileSpecification](),
 	}
 	stores := &roverstore.Stores{}
 	stores.RoverStore = resourceStore(f, "Rover", func(opts store.ListOpts) (*store.ListResponse[*roverv1.Rover], error) { return f.rovers(opts) })
@@ -299,6 +302,9 @@ func newResourceFixture() *resourceFixture {
 	})
 	stores.McpSpecificationStore = resourceStore(f, "McpSpecification", func(opts store.ListOpts) (*store.ListResponse[*roverv1.McpSpecification], error) {
 		return f.mcpSpecifications(opts)
+	})
+	stores.FileSpecificationStore = resourceStore(f, "FileSpecification", func(opts store.ListOpts) (*store.ListResponse[*roverv1.FileSpecification], error) {
+		return f.fileSpecifications(opts)
 	})
 	f.controller = NewResourcesController(stores)
 	return f

@@ -200,6 +200,16 @@ var _ = Describe("CreateCallbackRoute", func() {
 		Expect(route.Spec.Security.DefaultConsumers).To(ContainElement(gatewayapi.GatewayConsumerName))
 	})
 
+	It("allows a configured callback client on the primary route", func() {
+		fakeClient.EXPECT().CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Route"), mock.Anything).
+			RunAndReturn(func(_ context.Context, _ client.Object, mutate controllerutil.MutateFn) (controllerutil.OperationResult, error) {
+				return controllerutil.OperationResultCreated, mutate()
+			})
+		route, err := util.CreateCallbackRoute(ctx, zone, util.WithCallbackClientName("custom-callback"))
+		Expect(err).To(Succeed())
+		Expect(route.Spec.Security.DefaultConsumers).To(ConsistOf("custom-callback"))
+	})
+
 	It("should return error when CreateOrUpdate fails", func() {
 		fakeClient.EXPECT().
 			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Route"), mock.Anything).
@@ -308,6 +318,16 @@ var _ = Describe("CreateProxyCallbackRoute", func() {
 
 		// Verify route type is proxy
 		Expect(route.Spec.Type).To(Equal(gatewayapi.RouteTypeProxy))
+	})
+
+	It("allows a configured callback client on the proxy route", func() {
+		fakeClient.EXPECT().CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Route"), mock.Anything).
+			RunAndReturn(func(_ context.Context, _ client.Object, mutate controllerutil.MutateFn) (controllerutil.OperationResult, error) {
+				return controllerutil.OperationResultCreated, mutate()
+			})
+		route, err := util.CreateProxyCallbackRoute(ctx, sourceZone, targetZone, util.WithCallbackClientName("custom-callback"))
+		Expect(err).To(Succeed())
+		Expect(route.Spec.Security.DefaultConsumers).To(ConsistOf("custom-callback"))
 	})
 
 	It("should return error when CreateOrUpdate fails", func() {

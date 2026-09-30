@@ -202,6 +202,7 @@ var _ = Describe("External token endpoint scopes", func() {
 		Eventually(func(g Gomega) { expectScopePending(g, sub) }, scopeTimeout, interval).Should(Succeed())
 		request := ProgressApprovalRequest(sub.Status.ApprovalRequest, approvalapi.ApprovalStateGranted)
 		ProgressApproval(sub, approvalapi.ApprovalStateGranted, request)
+		CompleteSubscriptionChildren(sub)
 		Eventually(func(g Gomega) { expectScopeRoutes(g, exposure, sub) }, scopeTimeout, interval).Should(Succeed())
 	},
 		Entry("without declared scopes", "scope-no-declared", nil),
@@ -288,6 +289,7 @@ var _ = Describe("External token endpoint scopes", func() {
 		}, scopeTimeout, interval).Should(Succeed())
 		request := ProgressApprovalRequest(sub.Status.ApprovalRequest, approvalapi.ApprovalStateGranted)
 		approval := ProgressApproval(sub, approvalapi.ApprovalStateGranted, request)
+		CompleteSubscriptionChildren(sub)
 		Eventually(func(g Gomega) { expectScopeRoutes(g, exposure, sub) }, scopeTimeout, interval).Should(Succeed())
 		route := &gatewayapi.Route{}
 		Expect(k8sClient.Get(ctx, exposure.Status.Route.K8s(), route)).To(Succeed())

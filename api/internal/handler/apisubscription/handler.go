@@ -273,6 +273,11 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 	}
 
 	// ---- Set Conditions ----
+	if !scopedClient.AllReady() {
+		apiSub.SetCondition(condition.NewNotReadyCondition(condition.ReasonSubResourceNotReady, "Waiting for child resources to be ready"))
+		apiSub.SetCondition(condition.NewProcessingCondition(condition.ReasonSubResourceNotReady, "Waiting for child resources"))
+		return nil
+	}
 	apiSub.SetCondition(condition.NewDoneProcessingCondition("Successfully provisioned subresources"))
 	apiSub.SetCondition(condition.NewReadyCondition(condition.ReasonProvisioned, "Successfully provisioned subresources"))
 
@@ -407,6 +412,7 @@ func resolveRouteRef(ctx context.Context, scopedClient cclient.JanitorClient, ap
 	switch {
 	case sameZoneAsExposure:
 		if apiExposure.Status.Route == nil {
+			apiSub.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet, "Waiting for ApiExposure to create the route"))
 			apiSub.SetCondition(condition.NewBlockedCondition("Waiting for ApiExposure to create the route"))
 			return nil, nil
 		}
@@ -425,6 +431,7 @@ func resolveRouteRef(ctx context.Context, scopedClient cclient.JanitorClient, ap
 				return failoverRoute, nil
 			}
 		}
+		apiSub.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet, "Waiting for ApiExposure to create the failover route for this zone"))
 		apiSub.SetCondition(condition.NewBlockedCondition("Waiting for ApiExposure to create the failover route for this zone"))
 		return nil, nil
 
@@ -440,6 +447,7 @@ func resolveRouteRef(ctx context.Context, scopedClient cclient.JanitorClient, ap
 				return proxyRoute, nil
 			}
 		}
+		apiSub.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet, "Waiting for ApiExposure to create the proxy route for this zone"))
 		apiSub.SetCondition(condition.NewBlockedCondition("Waiting for ApiExposure to create the proxy route for this zone"))
 		return nil, nil
 	}

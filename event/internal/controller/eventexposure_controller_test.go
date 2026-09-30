@@ -5,8 +5,6 @@
 package controller
 
 import (
-	"context"
-
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -26,8 +24,6 @@ var _ = Describe("EventExposure Controller", func() {
 	Context("When reconciling a resource", func() {
 		const resourceName = "test-resource"
 
-		testCtx := context.Background()
-
 		typeNamespacedName := types.NamespacedName{
 			Name:      resourceName,
 			Namespace: "default",
@@ -36,7 +32,7 @@ var _ = Describe("EventExposure Controller", func() {
 
 		BeforeEach(func() {
 			By("creating the custom resource for the Kind EventExposure")
-			err := k8sClient.Get(testCtx, typeNamespacedName, eventexposureObj)
+			err := k8sClient.Get(ctx, typeNamespacedName, eventexposureObj)
 			if err != nil && errors.IsNotFound(err) {
 				resource := &eventv1.EventExposure{
 					ObjectMeta: metav1.ObjectMeta{
@@ -54,17 +50,17 @@ var _ = Describe("EventExposure Controller", func() {
 						},
 					},
 				}
-				Expect(k8sClient.Create(testCtx, resource)).To(Succeed())
+				Expect(k8sClient.Create(ctx, resource)).To(Succeed())
 			}
 		})
 
 		AfterEach(func() {
 			resource := &eventv1.EventExposure{}
-			err := k8sClient.Get(testCtx, typeNamespacedName, resource)
+			err := k8sClient.Get(ctx, typeNamespacedName, resource)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Cleanup the specific resource instance EventExposure")
-			Expect(k8sClient.Delete(testCtx, resource)).To(Succeed())
+			Expect(k8sClient.Delete(ctx, resource)).To(Succeed())
 		})
 		It("should successfully reconcile the resource", func() {
 			By("Reconciling the created resource")
@@ -76,7 +72,7 @@ var _ = Describe("EventExposure Controller", func() {
 			}
 			controllerReconciler.Controller = cc.NewController(&eventexposure.EventExposureHandler{}, k8sClient, recorder)
 
-			_, err := controllerReconciler.Reconcile(testCtx, reconcile.Request{
+			_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{
 				NamespacedName: typeNamespacedName,
 			})
 			Expect(err).NotTo(HaveOccurred())

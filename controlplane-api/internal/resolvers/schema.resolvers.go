@@ -23,6 +23,8 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/approval"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventexposure"
 	"github.com/telekom/controlplane/controlplane-api/ent/eventsubscription"
+	"github.com/telekom/controlplane/controlplane-api/ent/fileexposure"
+	"github.com/telekom/controlplane/controlplane-api/ent/filesubscription"
 	gqlmodel "github.com/telekom/controlplane/controlplane-api/internal/resolvers/model"
 	"github.com/telekom/controlplane/controlplane-api/internal/viewer"
 	"github.com/telekom/controlplane/controlplane-api/pkg/model"
@@ -364,7 +366,7 @@ func (r *applicationResolver) OwnerTeam(ctx context.Context, obj *ent.Applicatio
 }
 
 // Subscription is the resolver for the subscription field.
-// Returns the related API, event, or agentic subscription as SubscriptionInfo.
+// Returns the related API, event, agentic, or file subscription as SubscriptionInfo.
 func (r *approvalResolver) Subscription(ctx context.Context, obj *ent.Approval) (gqlmodel.SubscriptionInfo, error) {
 	// SystemContext: The subscription belongs to the requesting tenant, but the
 	// traversal path (approval → subscription → owner) crosses privacy boundaries.
@@ -407,6 +409,18 @@ func (r *approvalResolver) Subscription(ctx context.Context, obj *ent.Approval) 
 		return loadAgenticSubscriptionInfo(sysCtx, agenticSub)
 	}
 
+	// Fall back to file subscription.
+	fileSub, err := obj.Edges.FileSubscriptionOrErr()
+	if ent.IsNotLoaded(err) {
+		fileSub, err = obj.QueryFileSubscription().Only(sysCtx)
+	}
+	if err != nil && !ent.IsNotFound(err) {
+		return nil, fmt.Errorf("loading file subscription for approval %d: %w", obj.ID, err)
+	}
+	if fileSub != nil {
+		return loadFileSubscriptionInfo(sysCtx, fileSub)
+	}
+
 	return nil, fmt.Errorf("approval %d has no related subscription", obj.ID)
 }
 
@@ -416,7 +430,7 @@ func (r *approvalConfigResolver) Strategy(ctx context.Context, obj *model.Approv
 }
 
 // Subscription is the resolver for the subscription field.
-// Returns the related API, event, or agentic subscription as SubscriptionInfo.
+// Returns the related API, event, agentic, or file subscription as SubscriptionInfo.
 func (r *approvalRequestResolver) Subscription(ctx context.Context, obj *ent.ApprovalRequest) (gqlmodel.SubscriptionInfo, error) {
 	// SystemContext: Same rationale as approvalResolver.Subscription — the traversal
 	// path crosses privacy boundaries; reduced Info types limit exposure.
@@ -459,23 +473,37 @@ func (r *approvalRequestResolver) Subscription(ctx context.Context, obj *ent.App
 		return loadAgenticSubscriptionInfo(sysCtx, agenticSub)
 	}
 
+	// Fall back to file subscription.
+	fileSub, err := obj.Edges.FileSubscriptionOrErr()
+	if ent.IsNotLoaded(err) {
+		fileSub, err = obj.QueryFileSubscription().Only(sysCtx)
+	}
+	if err != nil && !ent.IsNotFound(err) {
+		return nil, fmt.Errorf("loading file subscription for approval request %d: %w", obj.ID, err)
+	}
+	if fileSub != nil {
+		return loadFileSubscriptionInfo(sysCtx, fileSub)
+	}
+
 	return nil, fmt.Errorf("approval request %d has no related subscription", obj.ID)
 }
 
 // Approval is the resolver for the approval field.
-// Traverses ApprovalRequest → ApiSubscription/EventSubscription → Approval.
+// Traverses ApprovalRequest → subscription → Approval.
 // Returns nil if no Approval exists yet (request not decided).
 func (r *approvalRequestResolver) Approval(ctx context.Context, obj *ent.ApprovalRequest) (*ent.Approval, error) {
+	sysCtx := viewer.SystemContext(ctx)
+
 	// Try API subscription path first.
 	apiSub, err := obj.Edges.APISubscriptionOrErr()
 	if ent.IsNotLoaded(err) {
-		apiSub, err = obj.QueryAPISubscription().Only(ctx)
+		apiSub, err = obj.QueryAPISubscription().Only(sysCtx)
 	}
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, fmt.Errorf("loading api subscription for approval request %d: %w", obj.ID, err)
 	}
 	if apiSub != nil {
-		appr, err := apiSub.QueryApproval().Only(ctx)
+		appr, err := apiSub.QueryApproval().Only(sysCtx)
 		if err != nil {
 			if ent.IsNotFound(err) {
 				return nil, nil
@@ -488,13 +516,13 @@ func (r *approvalRequestResolver) Approval(ctx context.Context, obj *ent.Approva
 	// Fall back to event subscription path.
 	eventSub, err := obj.Edges.EventSubscriptionOrErr()
 	if ent.IsNotLoaded(err) {
-		eventSub, err = obj.QueryEventSubscription().Only(ctx)
+		eventSub, err = obj.QueryEventSubscription().Only(sysCtx)
 	}
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, fmt.Errorf("loading event subscription for approval request %d: %w", obj.ID, err)
 	}
 	if eventSub != nil {
-		appr, err := eventSub.QueryApproval().Only(ctx)
+		appr, err := eventSub.QueryApproval().Only(sysCtx)
 		if err != nil {
 			if ent.IsNotFound(err) {
 				return nil, nil
@@ -507,21 +535,41 @@ func (r *approvalRequestResolver) Approval(ctx context.Context, obj *ent.Approva
 	// Fall back to agentic subscription path.
 	agenticSub, err := obj.Edges.AgenticSubscriptionOrErr()
 	if ent.IsNotLoaded(err) {
-		agenticSub, err = obj.QueryAgenticSubscription().Only(ctx)
+		agenticSub, err = obj.QueryAgenticSubscription().Only(sysCtx)
 	}
-	if err != nil {
-		if ent.IsNotFound(err) {
-			return nil, nil
-		}
+	if err != nil && !ent.IsNotFound(err) {
 		return nil, fmt.Errorf("loading agentic subscription for approval request %d: %w", obj.ID, err)
 	}
 
-	appr, err := agenticSub.QueryApproval().Only(ctx)
+	if agenticSub != nil {
+		appr, err := agenticSub.QueryApproval().Only(sysCtx)
+		if err != nil {
+			if ent.IsNotFound(err) {
+				return nil, nil
+			}
+			return nil, fmt.Errorf("loading approval for agentic subscription %d: %w", agenticSub.ID, err)
+		}
+		return appr, nil
+	}
+
+	// Fall back to file subscription path.
+	fileSub, err := obj.Edges.FileSubscriptionOrErr()
+	if ent.IsNotLoaded(err) {
+		fileSub, err = obj.QueryFileSubscription().Only(sysCtx)
+	}
 	if err != nil {
 		if ent.IsNotFound(err) {
 			return nil, nil
 		}
-		return nil, fmt.Errorf("loading approval for agentic subscription %d: %w", agenticSub.ID, err)
+		return nil, fmt.Errorf("loading file subscription for approval request %d: %w", obj.ID, err)
+	}
+
+	appr, err := fileSub.QueryApproval().Only(sysCtx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("loading approval for file subscription %d: %w", fileSub.ID, err)
 	}
 	return appr, nil
 }
@@ -726,6 +774,70 @@ func (r *externalIdentityProviderResolver) TokenRequest(ctx context.Context, obj
 		return nil, nil
 	}
 	return &m, nil
+}
+
+// Subscriptions is the resolver for the subscriptions field.
+func (r *fileExposureResolver) Subscriptions(ctx context.Context, obj *ent.FileExposure) ([]*gqlmodel.FileSubscriptionInfo, error) {
+	sysCtx := viewer.SystemContext(ctx)
+	subs, err := obj.QuerySubscriptions().
+		WithOwner(func(q *ent.ApplicationQuery) {
+			q.WithZone()
+			q.WithOwnerTeam(func(q *ent.TeamQuery) {
+				q.WithGroup()
+			})
+		}).
+		All(sysCtx)
+	if err != nil {
+		return nil, fmt.Errorf("loading subscriptions for file exposure %d: %w", obj.ID, err)
+	}
+
+	result := make([]*gqlmodel.FileSubscriptionInfo, len(subs))
+	for i, sub := range subs {
+		app := sub.Edges.Owner
+		zone, zoneErr := app.Edges.ZoneOrErr()
+		if zoneErr != nil {
+			return nil, fmt.Errorf("loading zone edge for application %d: %w", app.ID, zoneErr)
+		}
+		team := app.Edges.OwnerTeam
+		group, groupErr := team.Edges.GroupOrErr()
+		if groupErr != nil {
+			if !ent.IsNotFound(groupErr) && !ent.IsNotLoaded(groupErr) {
+				return nil, fmt.Errorf("loading group edge for team %d: %w", team.ID, groupErr)
+			}
+			group = nil
+		}
+		result[i] = mapFileSubscriptionInfo(sub, app, zone, team, group)
+	}
+	return result, nil
+}
+
+// Visibility is the resolver for the visibility field.
+func (r *fileExposureInfoResolver) Visibility(ctx context.Context, obj *gqlmodel.FileExposureInfo) (fileexposure.Visibility, error) {
+	return fileexposure.Visibility(obj.Visibility), nil
+}
+
+// Target is the resolver for the target field.
+func (r *fileSubscriptionResolver) Target(ctx context.Context, obj *ent.FileSubscription) (*gqlmodel.FileExposureInfo, error) {
+	sysCtx := viewer.SystemContext(ctx)
+
+	exposure, err := obj.Edges.TargetOrErr()
+	if ent.IsNotLoaded(err) {
+		exposure, err = obj.QueryTarget().Only(sysCtx)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("loading target for file subscription %d: %w", obj.ID, err)
+	}
+
+	return loadFileExposureInfo(sysCtx, exposure)
+}
+
+// StatusPhase is the resolver for the statusPhase field.
+func (r *fileSubscriptionInfoResolver) StatusPhase(ctx context.Context, obj *gqlmodel.FileSubscriptionInfo) (*filesubscription.StatusPhase, error) {
+	if obj.StatusPhase == nil {
+		return nil, nil
+	}
+	s := filesubscription.StatusPhase(*obj.StatusPhase)
+	return &s, nil
 }
 
 // SpecificationURL is the resolver for the specificationUrl field.
@@ -934,6 +1046,14 @@ func (r *Resolver) ExternalIdentityProvider() ExternalIdentityProviderResolver {
 	return &externalIdentityProviderResolver{r}
 }
 
+// FileExposureInfo returns FileExposureInfoResolver implementation.
+func (r *Resolver) FileExposureInfo() FileExposureInfoResolver { return &fileExposureInfoResolver{r} }
+
+// FileSubscriptionInfo returns FileSubscriptionInfoResolver implementation.
+func (r *Resolver) FileSubscriptionInfo() FileSubscriptionInfoResolver {
+	return &fileSubscriptionInfoResolver{r}
+}
+
 // OAuth2ClientCredentials returns OAuth2ClientCredentialsResolver implementation.
 func (r *Resolver) OAuth2ClientCredentials() OAuth2ClientCredentialsResolver {
 	return &oAuth2ClientCredentialsResolver{r}
@@ -959,6 +1079,8 @@ type (
 	eventSubscriptionInfoResolver    struct{ *Resolver }
 	externalIdResolver               struct{ *Resolver }
 	externalIdentityProviderResolver struct{ *Resolver }
+	fileExposureInfoResolver         struct{ *Resolver }
+	fileSubscriptionInfoResolver     struct{ *Resolver }
 	oAuth2ClientCredentialsResolver  struct{ *Resolver }
 	responseFilterResolver           struct{ *Resolver }
 	selectionFilterResolver          struct{ *Resolver }

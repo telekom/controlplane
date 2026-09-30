@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	storeLib "github.com/telekom/controlplane/common-server/pkg/store"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
+	filev1 "github.com/telekom/controlplane/file/api/v1"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
@@ -48,6 +49,18 @@ var InitOrDie = func(ctx context.Context, cfg *rest.Config) {
 			&storeLib.ListResponse[*eventv1.EventExposure]{Items: []*eventv1.EventExposure{}}, nil).Maybe()
 		eventExposureMock.EXPECT().Get(mock.Anything, mock.Anything, mock.Anything).Return(nil, nil).Maybe()
 		stores.EventExposureStore = eventExposureMock
+
+		fileExposureMock := mocks.NewMockObjectStore[*filev1.FileExposure](GinkgoT())
+		fileExposureMock.EXPECT().List(mock.Anything, mock.Anything).Return(
+			&storeLib.ListResponse[*filev1.FileExposure]{Items: []*filev1.FileExposure{}}, nil).Maybe()
+		fileExposureMock.EXPECT().Get(mock.Anything, mock.Anything, mock.Anything).Return(nil, nil).Maybe()
+		stores.FileExposureStore = fileExposureMock
+
+		fileSubscriptionMock := mocks.NewMockObjectStore[*filev1.FileSubscription](GinkgoT())
+		fileSubscriptionMock.EXPECT().List(mock.Anything, mock.Anything).Return(
+			&storeLib.ListResponse[*filev1.FileSubscription]{Items: []*filev1.FileSubscription{}}, nil).Maybe()
+		fileSubscriptionMock.EXPECT().Get(mock.Anything, mock.Anything, mock.Anything).Return(nil, nil).Maybe()
+		stores.FileSubscriptionStore = fileSubscriptionMock
 	}
 }
 

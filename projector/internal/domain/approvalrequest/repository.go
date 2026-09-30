@@ -52,7 +52,7 @@ func NewRepository(client *ent.Client, cache *infrastructure.EdgeCache, deps App
 }
 
 // resolveSubscriptionID resolves the parent subscription FK based on the
-// target kind (ApiSubscription, EventSubscription, or AgenticSubscription).
+// target kind (ApiSubscription, EventSubscription, FileSubscription or AgenticSubscription).
 func (r *Repository) resolveSubscriptionID(ctx context.Context, data *ApprovalRequestData) (int, error) {
 	switch data.TargetKind {
 	case TargetKindEventSubscription:
@@ -74,6 +74,17 @@ func (r *Repository) resolveSubscriptionID(ctx context.Context, data *ApprovalRe
 					data.SubscriptionNamespace+"/"+data.SubscriptionName)
 			}
 			return 0, fmt.Errorf("find agentic_subscription %s/%s: %w",
+				data.SubscriptionNamespace, data.SubscriptionName, err)
+		}
+		return id, nil
+	case TargetKindFileSubscription:
+		id, err := r.deps.FindFileSubscriptionByMeta(ctx, data.SubscriptionNamespace, data.SubscriptionName)
+		if err != nil {
+			if errors.Is(err, infrastructure.ErrEntityNotFound) {
+				return 0, runtime.WrapDependencyMissing("file_subscription",
+					data.SubscriptionNamespace+"/"+data.SubscriptionName)
+			}
+			return 0, fmt.Errorf("find file_subscription %s/%s: %w",
 				data.SubscriptionNamespace, data.SubscriptionName, err)
 		}
 		return id, nil
@@ -135,6 +146,8 @@ func (r *Repository) Upsert(ctx context.Context, data *ApprovalRequestData) erro
 		create = create.SetEventSubscriptionID(subID)
 	case TargetKindAgenticSubscription:
 		create = create.SetAgenticSubscriptionID(subID)
+	case TargetKindFileSubscription:
+		create = create.SetFileSubscriptionID(subID)
 	default:
 		create = create.SetAPISubscriptionID(subID)
 	}
@@ -162,11 +175,13 @@ func (r *Repository) Upsert(ctx context.Context, data *ApprovalRequestData) erro
 	update := r.client.ApprovalRequest.UpdateOneID(arID)
 	switch data.TargetKind {
 	case TargetKindEventSubscription:
-		update = update.SetEventSubscriptionID(subID).ClearAPISubscription().ClearAgenticSubscription()
+		update = update.SetEventSubscriptionID(subID).ClearAPISubscription().ClearAgenticSubscription().ClearFileSubscription()
 	case TargetKindAgenticSubscription:
-		update = update.SetAgenticSubscriptionID(subID).ClearAPISubscription().ClearEventSubscription()
+		update = update.SetAgenticSubscriptionID(subID).ClearAPISubscription().ClearEventSubscription().ClearFileSubscription()
+	case TargetKindFileSubscription:
+		update = update.SetFileSubscriptionID(subID).ClearAPISubscription().ClearEventSubscription().ClearAgenticSubscription()
 	default:
-		update = update.SetAPISubscriptionID(subID).ClearEventSubscription().ClearAgenticSubscription()
+		update = update.SetAPISubscriptionID(subID).ClearEventSubscription().ClearAgenticSubscription().ClearFileSubscription()
 	}
 	if err := update.Exec(ctx); err != nil {
 		if infrastructure.IsFKViolation(err, "") {
@@ -191,6 +206,8 @@ func dependencyKind(targetKind string) string {
 		return "event_subscription"
 	case TargetKindAgenticSubscription:
 		return "agentic_subscription"
+	case TargetKindFileSubscription:
+		return "file_subscription"
 	default:
 		return "api_subscription"
 	}
@@ -204,6 +221,8 @@ func (r *Repository) evictSubscriptionCache(data *ApprovalRequestData) {
 		r.deps.EvictEventSubscription(data.SubscriptionNamespace, data.SubscriptionName)
 	case TargetKindAgenticSubscription:
 		r.deps.EvictAgenticSubscription(data.SubscriptionNamespace, data.SubscriptionName)
+	case TargetKindFileSubscription:
+		r.deps.EvictFileSubscription(data.SubscriptionNamespace, data.SubscriptionName)
 	default:
 		r.deps.EvictAPISubscription(data.SubscriptionNamespace, data.SubscriptionName)
 	}

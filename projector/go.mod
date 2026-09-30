@@ -35,9 +35,11 @@ require (
 	github.com/telekom/controlplane/common v0.0.0
 	github.com/telekom/controlplane/controlplane-api v0.0.0
 	github.com/telekom/controlplane/event/api v0.0.0
+	github.com/telekom/controlplane/file/api v0.0.0
 	github.com/telekom/controlplane/organization/api v0.0.0
 	github.com/telekom/controlplane/permission/api v0.0.0-00010101000000-000000000000
 	k8s.io/apiextensions-apiserver v0.36.3
+	k8s.io/utils v0.0.0-20260626114624-be93311217bd
 )
 
 replace (
@@ -50,6 +52,7 @@ replace (
 	github.com/telekom/controlplane/common-server => ../common-server
 	github.com/telekom/controlplane/controlplane-api => ../controlplane-api
 	github.com/telekom/controlplane/event/api => ../event/api
+	github.com/telekom/controlplane/file/api => ../file/api
 	github.com/telekom/controlplane/organization/api => ../organization/api
 	github.com/telekom/controlplane/permission/api => ../permission/api
 	github.com/telekom/controlplane/secret-manager => ../secret-manager
@@ -148,7 +151,6 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/klog/v2 v2.140.0 // indirect
 	k8s.io/kube-openapi v0.0.0-20260721132016-d427ff9ee9ad // indirect
-	k8s.io/utils v0.0.0-20260626114624-be93311217bd // indirect
 	sigs.k8s.io/json v0.0.0-20250730193827-2d320260d730 // indirect
 	sigs.k8s.io/randfill v1.0.0 // indirect
 	sigs.k8s.io/structured-merge-diff/v6 v6.4.2 // indirect

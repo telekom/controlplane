@@ -104,13 +104,15 @@ When you apply the Rover file, the Control Plane:
 
 1. Creates an **Application** resource for your service (if it does not already exist)
 2. Creates an **EventExposure** linking your application to the EventType resource
-3. The EventExposure handler verifies that an active **EventType** exists (created in Step 1), then creates a **Publisher** in the PubSub domain and configures **Gateway Routes** for event publishing and SSE delivery
+3. Checks that your event type is registered and prepares it for publishing and subscriptions
 
 :::caution
 If the EventType does not exist (i.e., the specification was not registered in Step 1), the EventExposure will remain in a pending state until the specification is applied.
 :::
 
 The event type is now discoverable by other teams and ready to receive subscription requests.
+
+Send events to the publish URL provided for your zone (`/horizon/events/v1`; `/horizon/publish/v1` is also supported). Use the full provided URL, including any base path.
 
 ## API & Event Features
 

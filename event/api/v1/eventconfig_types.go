@@ -155,20 +155,24 @@ type EventConfigStatus struct {
 	// +optional
 	PublishURL string `json:"publishUrl,omitempty"`
 
-	// CallbackRoute references the Route CR created for the callback gateway.
+	// CallbackRoute references this zone's owned primary Route for final callback delivery.
 	// +optional
 	CallbackRoute *ctypes.ObjectRef `json:"callbackRoute,omitempty"`
 
-	// CallbackURL is the external URL of the callback gateway, used to send events to event consumers.
+	// CallbackURL is the effective callback ingress for subscribers in this zone.
+	// For a proxy zone it is the target backend's proxy callback URL to this zone,
+	// not the URL of CallbackRoute.
 	// +optional
 	CallbackURL string `json:"callbackUrl,omitempty"`
 
-	// ProxyCallbackRoutes references the Route CRs created for the proxy callback gateway.
+	// ProxyCallbackRoutes references outbound callback Routes owned by a local
+	// backend EventConfig. Proxy EventConfigs own no outbound callback Routes.
 	// +optional
 	ProxyCallbackRoutes []ctypes.ObjectRef `json:"proxyCallbackRoutes,omitempty"`
 
-	// ProxyCallbackURLs maps zone names to the external URLs of the proxy callback gateway Routes for those zones.
-	// Used to send events to event consumers in other zones.
+	// ProxyCallbackURLs maps remote subscriber zones to usable callback ingress URLs.
+	// For proxy zones these are projected from the ready local target backend's
+	// primary or outbound Routes, despite owning no outbound callback Routes.
 	// +optional
 	ProxyCallbackURLs map[string]string `json:"proxyCallbackUrls,omitempty"`
 

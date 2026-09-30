@@ -218,6 +218,7 @@ var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, f
 		})
 
 		It("should create a proxy route with failover that points to the Api-Provider failover zone", func() {
+			CompleteSubscriptionChildren(differentZoneSubscription)
 			Eventually(func(g Gomega) {
 				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(differentZoneSubscription), differentZoneSubscription)
 				g.Expect(err).ToNot(HaveOccurred())

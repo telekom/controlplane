@@ -72,11 +72,59 @@ func mapExposure(in *api.Exposure, out *roverv1.Exposure) error {
 
 		out.Agentic = mapAiExposure(aiExp)
 
+	case "file":
+		fileExp, err := in.AsFileExposure()
+		if err != nil {
+			return errors.Wrap(err, "failed to convert to FileExposure")
+		}
+
+		out.File = mapFileExposure(fileExp)
+
 	default:
 		return errors.Errorf("unknown exposure type: %s", expType)
 	}
 
 	return nil
+}
+
+func mapFileExposure(in api.FileExposure) *roverv1.FileExposure {
+	out := &roverv1.FileExposure{
+		FileType:   in.FileType,
+		Visibility: toRoverVisibility(in.Visibility),
+		SFTP: &roverv1.FileSFTP{
+			PublicKeys: mapPublicKeys(in.PublicKeys),
+		},
+		Approval: roverv1.Approval{
+			Strategy: toRoverApprovalStrategy(in.Approval),
+		},
+		Variant: mapFileVariant(in.Variant),
+	}
+
+	mapTrustedTeams(in.TrustedTeams, &out.Approval.TrustedTeams)
+
+	return out
+}
+
+func mapFileVariant(in api.FileExposureVariant) roverv1.FileVariant {
+	switch in {
+	case api.FileExposureVariantSFTP:
+		return roverv1.FileVariantSFTP
+	}
+	return roverv1.FileVariant(in)
+}
+
+func mapPublicKeys(in []api.PublicKey) []roverv1.SSHPublicKeySpec {
+	if len(in) == 0 {
+		return nil
+	}
+	out := make([]roverv1.SSHPublicKeySpec, len(in))
+	for i, key := range in {
+		out[i] = roverv1.SSHPublicKeySpec{
+			Label: key.Label,
+			Key:   key.Key,
+		}
+	}
+	return out
 }
 
 func mapApiExposure(in api.ApiExposure) *roverv1.ApiExposure {
@@ -86,7 +134,8 @@ func mapApiExposure(in api.ApiExposure) *roverv1.ApiExposure {
 	out.Approval = roverv1.Approval{
 		Strategy: toRoverApprovalStrategy(in.Approval),
 	}
-	mapTrustedTeams(in, out)
+
+	mapTrustedTeams(in.TrustedTeams, &out.Approval.TrustedTeams)
 
 	if in.Upstream != "" {
 		out.Upstreams = []roverv1.Upstream{
@@ -237,24 +286,6 @@ func mapExposureTransformation(in api.ApiExposure, out *roverv1.ApiExposure) {
 
 }
 
-func mapTrustedTeams(in api.ApiExposure, out *roverv1.ApiExposure) {
-	if in.TrustedTeams == nil {
-		return
-	}
-
-	out.Approval.TrustedTeams = make([]roverv1.TrustedTeam, len(in.TrustedTeams))
-	for i, team := range in.TrustedTeams {
-		parts := strings.Split(team.Team, "--")
-		if len(parts) != 2 {
-			continue // invalid team format, skip
-		}
-		out.Approval.TrustedTeams[i] = roverv1.TrustedTeam{
-			Group: parts[0],
-			Team:  parts[1],
-		}
-	}
-}
-
 func mapEventExposure(in api.EventExposure) *roverv1.EventExposure {
 	out := &roverv1.EventExposure{
 		EventType:  in.EventType,
@@ -264,20 +295,7 @@ func mapEventExposure(in api.EventExposure) *roverv1.EventExposure {
 		},
 	}
 
-	// Map trusted teams
-	if in.TrustedTeams != nil {
-		out.Approval.TrustedTeams = make([]roverv1.TrustedTeam, len(in.TrustedTeams))
-		for i, team := range in.TrustedTeams {
-			parts := strings.Split(team.Team, "--")
-			if len(parts) != 2 {
-				continue
-			}
-			out.Approval.TrustedTeams[i] = roverv1.TrustedTeam{
-				Group: parts[0],
-				Team:  parts[1],
-			}
-		}
-	}
+	mapTrustedTeams(in.TrustedTeams, &out.Approval.TrustedTeams)
 
 	// Map scopes
 	if in.Scopes != nil {
@@ -336,7 +354,7 @@ func mapAiExposure(in api.AiExposure) *roverv1.AgenticExposure {
 	out.Approval = roverv1.Approval{
 		Strategy: toRoverApprovalStrategy(in.Approval),
 	}
-	mapAiTrustedTeams(in, out)
+	mapTrustedTeams(in.TrustedTeams, &out.Approval.TrustedTeams)
 
 	if in.Upstream != "" {
 		out.Upstreams = []roverv1.Upstream{
@@ -363,18 +381,18 @@ func mapAiExposure(in api.AiExposure) *roverv1.AgenticExposure {
 	return out
 }
 
-func mapAiTrustedTeams(in api.AiExposure, out *roverv1.AgenticExposure) {
-	if len(in.TrustedTeams) == 0 {
+func mapTrustedTeams(in []api.TrustedTeam, out *[]roverv1.TrustedTeam) {
+	if len(in) == 0 {
 		return
 	}
 
-	out.Approval.TrustedTeams = make([]roverv1.TrustedTeam, len(in.TrustedTeams))
-	for i, team := range in.TrustedTeams {
+	*out = make([]roverv1.TrustedTeam, len(in))
+	for i, team := range in {
 		parts := strings.Split(team.Team, "--")
 		if len(parts) != 2 {
 			continue
 		}
-		out.Approval.TrustedTeams[i] = roverv1.TrustedTeam{
+		(*out)[i] = roverv1.TrustedTeam{
 			Group: parts[0],
 			Team:  parts[1],
 		}

@@ -5,8 +5,6 @@
 package controller
 
 import (
-	"context"
-
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -25,8 +23,6 @@ var _ = Describe("EventType Controller", func() {
 	Context("When reconciling a resource", func() {
 		const resourceName = "test-resource"
 
-		testCtx := context.Background()
-
 		typeNamespacedName := types.NamespacedName{
 			Name:      resourceName,
 			Namespace: "default",
@@ -35,7 +31,7 @@ var _ = Describe("EventType Controller", func() {
 
 		BeforeEach(func() {
 			By("creating the custom resource for the Kind EventType")
-			err := k8sClient.Get(testCtx, typeNamespacedName, eventtypeObj)
+			err := k8sClient.Get(ctx, typeNamespacedName, eventtypeObj)
 			if err != nil && errors.IsNotFound(err) {
 				resource := &eventv1.EventType{
 					ObjectMeta: metav1.ObjectMeta{
@@ -47,17 +43,17 @@ var _ = Describe("EventType Controller", func() {
 						Version: "1.0.0",
 					},
 				}
-				Expect(k8sClient.Create(testCtx, resource)).To(Succeed())
+				Expect(k8sClient.Create(ctx, resource)).To(Succeed())
 			}
 		})
 
 		AfterEach(func() {
 			resource := &eventv1.EventType{}
-			err := k8sClient.Get(testCtx, typeNamespacedName, resource)
+			err := k8sClient.Get(ctx, typeNamespacedName, resource)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Cleanup the specific resource instance EventType")
-			Expect(k8sClient.Delete(testCtx, resource)).To(Succeed())
+			Expect(k8sClient.Delete(ctx, resource)).To(Succeed())
 		})
 		It("should successfully reconcile the resource", func() {
 			By("Reconciling the created resource")
@@ -69,7 +65,7 @@ var _ = Describe("EventType Controller", func() {
 			}
 			controllerReconciler.Controller = cc.NewController(&eventtype.EventTypeHandler{}, k8sClient, recorder)
 
-			_, err := controllerReconciler.Reconcile(testCtx, reconcile.Request{
+			_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{
 				NamespacedName: typeNamespacedName,
 			})
 			Expect(err).NotTo(HaveOccurred())

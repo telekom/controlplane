@@ -73,6 +73,7 @@ var InitOrDie = func(ctx context.Context, cfg *rest.Config) {
 		stores.ApplicationSecretStore = stores.ApplicationStore
 		stores.ZoneStore = mocks.NewZoneStoreMock(GinkgoT())
 		stores.EventSpecificationStore = mocks.NewEventSpecificationStoreMock(GinkgoT())
+		stores.FileSpecificationStore = mocks.NewFileSpecificationStoreMock(GinkgoT())
 		stores.ApiChangelogStore = mocks.NewApiChangelogStoreMock(GinkgoT())
 		mcpSpecificationMock := mocks.NewMockObjectStore[*roverv1.McpSpecification](GinkgoT())
 		mcpSpecificationMock.EXPECT().List(mock.Anything, mock.Anything).Return(
@@ -125,6 +126,7 @@ var _ = BeforeSuite(func() {
 		Rovers:              NewRoverController(stores),
 		Roadmaps:            NewRoadmapController(stores),
 		EventSpecifications: NewEventSpecificationController(stores),
+		FileSpecifications:  NewFileSpecificationController(stores),
 		ApiChangelogs:       NewApiChangelogController(stores),
 		Resources:           NewResourcesController(stores),
 	}
@@ -189,6 +191,7 @@ func ExpectStatusOk(response *http.Response, err error, matchers ...match.JSONMa
 			"/rovers/rover-local-sub",
 			"/apispecifications/eni-distr-v1",
 			"/eventspecifications/tardis-horizon-demo-cetus-v1",
+			"/filespecifications/demo-invoices-v1",
 			"/apiroadmaps/eni-test-api",
 			"/apichangelogs/eni-test-api",
 		}
