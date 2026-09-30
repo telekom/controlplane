@@ -1,0 +1,21 @@
+event/internal/handler/eventconfig/handler.go
+  s_ebaef0b87fd5f1::t_bd707c65353159 287-292
+event/internal/controller/callback_lifecycle_test.go
+  s_ebaef0b87fd5f1::t_4834315984663d 226-270
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "405fe23925686cd216b81fb3583055accf030405",
+  "prompts": {},
+  "sessions": {
+    "s_ebaef0b87fd5f1": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f0e600aa8ffeKq0F900NxRxJIt",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
