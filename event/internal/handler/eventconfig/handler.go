@@ -78,14 +78,15 @@ func (h *EventConfigHandler) CreateOrUpdate(ctx context.Context, obj *eventv1.Ev
 	// both halves as one fail-fast chain meant a single unusable client name
 	// froze route rendering for the whole zone, so each is attempted every pass.
 
-	// The callback ACL must name the mesh client, resolved here exactly as
+	backendErr := h.reconcileEventBackend(ctx, obj, myZone, meshCfg)
+
+	// The callback ACL names the mesh client, resolved exactly as
 	// resolveAndCreateMeshClient does so the Routes do not wait on the backend.
+	// The reserved gateway name is rejected there; never render an ACL for it.
 	callbackClientId := cmp.Or(meshCfg.Client.ClientId, util.CallbackClientName)
 	if callbackClientId == gatewayv1.GatewayConsumerName {
-		return ctrlerrors.BlockedErrorf("mesh client ID %q is reserved for the zone gateway Consumer", callbackClientId)
+		return backendErr
 	}
-
-	backendErr := h.reconcileEventBackend(ctx, obj, myZone, meshCfg)
 	if backendErr != nil {
 		logger.V(0).Info("Event backend reconciliation failed; continuing with Routes",
 			"error", backendErr.Error())
@@ -93,11 +94,15 @@ func (h *EventConfigHandler) CreateOrUpdate(ctx context.Context, obj *eventv1.Ev
 
 	routeErr := h.createRoutes(ctx, obj, myZone, meshCfg, callbackClientId)
 
-	// The Route error wins when both fail. Routes are the half that must converge
-	// fastest, so their error class has to decide the requeue cadence: a Blocked
-	// backend error would otherwise mask a retryable Route failure, because
-	// ctrlerrors.HandleError tests Blocked first and stops requeueing on it.
+	// The Route error class wins when both fail. Routes are the half that must
+	// converge fastest, so their error class has to decide the requeue cadence: a
+	// Blocked backend error would otherwise mask a retryable Route failure,
+	// because ctrlerrors.HandleError tests Blocked first and stops requeueing on
+	// it. The backend message is kept so its cause stays visible.
 	if routeErr != nil {
+		if backendErr != nil {
+			return errors.Wrapf(routeErr, "event backend: %v; routes", backendErr)
+		}
 		return routeErr
 	}
 	if backendErr != nil {
