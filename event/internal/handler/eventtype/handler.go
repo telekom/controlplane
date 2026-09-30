@@ -6,7 +6,7 @@ package eventtype
 
 import (
 	"context"
-	"sort"
+	"slices"
 
 	"github.com/pkg/errors"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -40,8 +40,8 @@ func (h *EventTypeHandler) CreateOrUpdate(ctx context.Context, obj *eventv1.Even
 	}
 
 	// Sort by CreationTimestamp ascending (oldest first)
-	sort.Slice(candidates, func(i, j int) bool {
-		return candidates[i].CreationTimestamp.Before(&candidates[j].CreationTimestamp)
+	slices.SortFunc(candidates, func(a, b eventv1.EventType) int {
+		return a.CreationTimestamp.Compare(b.CreationTimestamp.Time)
 	})
 
 	// Find the first non-deleted candidate — that one is the active singleton

@@ -31,6 +31,7 @@ import (
 	ctypes "github.com/telekom/controlplane/common/pkg/types"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	"github.com/telekom/controlplane/event/internal/handler/eventsubscription"
+	"github.com/telekom/controlplane/event/internal/index"
 	pubsubv1 "github.com/telekom/controlplane/pubsub/api/v1"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -153,6 +154,8 @@ func makeReadyEventConfig(zoneName string, fullMesh bool, meshZones []string) ev
 			},
 		},
 		Status: eventv1.EventConfigStatus{
+			CallbackRoute:     &ctypes.ObjectRef{Name: zoneName + "-callback", Namespace: "default"},
+			CallbackURL:       "https://gateway.example.com/horizon-" + zoneName + "/callback/v1",
 			ProxyCallbackURLs: map[string]string{},
 		},
 	}
@@ -271,6 +274,16 @@ var _ = Describe("EventSubscriptionHandler", func() {
 				*list.(*eventv1.EventConfigList) = eventv1.EventConfigList{Items: items}
 			}).
 			Return(nil).Times(times)
+	}
+	mockEventConfigLookups := func(configs ...eventv1.EventConfig) {
+		for _, cfg := range configs {
+			fakeClient.EXPECT().List(ctx, mock.AnythingOfType("*v1.EventConfigList"), client.MatchingFields{
+				index.EventConfigZoneIndex: cfg.Spec.Zone.Name,
+			}).
+				Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+					*list.(*eventv1.EventConfigList) = eventv1.EventConfigList{Items: []eventv1.EventConfig{cfg}}
+				}).Return(nil).Once()
+		}
 	}
 
 	mockListEventConfigsError := func(err error) {
@@ -430,7 +443,7 @@ var _ = Describe("EventSubscriptionHandler", func() {
 		mockListEventExposures([]eventv1.EventExposure{exposure})
 		// Visibility validation requires Zone lookup for the subscription's zone
 		mockGetZone(obj.Spec.Zone.K8s(), makeReadyZone(obj.Spec.Zone.Name, obj.Spec.Zone.Namespace))
-		mockListEventConfigs([]eventv1.EventConfig{expoConfig}, 2) // exposure zone + subscription zone (same zone)
+		mockListEventConfigs([]eventv1.EventConfig{expoConfig}, 1)
 
 		requestorApp := makeReadyApplication("requestor-app", "requester-team", "req@example.com", "req-client-id")
 		providerApp := makeReadyApplication("provider-app", "provider-team", "prov@example.com", "prov-client-id")
@@ -569,6 +582,7 @@ var _ = Describe("EventSubscriptionHandler", func() {
 			mockListEventExposures([]eventv1.EventExposure{exposure})
 			mockGetZone(obj.Spec.Zone.K8s(), makeReadyZone(obj.Spec.Zone.Name, obj.Spec.Zone.Namespace))
 			mockListEventConfigs([]eventv1.EventConfig{expoConfig}, 1)
+			mockCleanupSubscribers(0, nil)
 
 			err := h.CreateOrUpdate(ctx, obj)
 
@@ -585,35 +599,15 @@ var _ = Describe("EventSubscriptionHandler", func() {
 			Expect(processingCond.Reason).To(Equal("Blocked"))
 		})
 
-		It("should return error when GetEventConfigForZone fails for subscription zone", func() {
-			et := makeReadyEventType(testEventType)
-			exposure := makeReadyEventExposure(testEventType)
-			obj.Spec.Zone.Name = "sub-zone"
-
-			// Exposure zone config supports sub-zone via mesh
-			expoConfig := makeReadyEventConfig("expo-zone", false, []string{"sub-zone"})
-
-			mockListEventTypes([]eventv1.EventType{et})
-			mockListEventExposures([]eventv1.EventExposure{exposure})
+		It("returns cleanup errors for explicit callback mesh denial", func() {
+			obj.Spec.Zone.Name = "other-zone"
+			expoConfig := makeReadyEventConfig("expo-zone", false, nil)
+			mockListEventTypes([]eventv1.EventType{makeReadyEventType(testEventType)})
+			mockListEventExposures([]eventv1.EventExposure{makeReadyEventExposure(testEventType)})
 			mockGetZone(obj.Spec.Zone.K8s(), makeReadyZone(obj.Spec.Zone.Name, obj.Spec.Zone.Namespace))
-
-			// First EventConfigList call (exposure zone) succeeds
-			fakeClient.EXPECT().
-				List(ctx, mock.AnythingOfType("*v1.EventConfigList"), mock.Anything).
-				Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-					*list.(*eventv1.EventConfigList) = eventv1.EventConfigList{Items: []eventv1.EventConfig{expoConfig}}
-				}).
-				Return(nil).Once()
-
-			// Second EventConfigList call (subscription zone) fails
-			fakeClient.EXPECT().
-				List(ctx, mock.AnythingOfType("*v1.EventConfigList"), mock.Anything).
-				Return(fmt.Errorf("sub-zone config list failed")).Once()
-
-			err := h.CreateOrUpdate(ctx, obj)
-
-			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("failed to get EventConfig for subscription zone"))
+			mockListEventConfigs([]eventv1.EventConfig{expoConfig}, 1)
+			mockCleanupSubscribers(0, fmt.Errorf("delete unavailable"))
+			Expect(h.CreateOrUpdate(ctx, obj)).To(MatchError(ContainSubstring("failed to cleanup callback Subscriber after exposure mesh denial")))
 		})
 
 		It("should return blocked error when cross-zone callback proxy URL is missing", func() {
@@ -624,31 +618,31 @@ var _ = Describe("EventSubscriptionHandler", func() {
 
 			expoConfig := makeReadyEventConfig("expo-zone", true, nil)
 			subConfig := makeReadyEventConfig("sub-zone", true, nil)
-			// No ProxyCallbackURLs → missing proxy URL for "expo-zone"
+			subConfig.Status.ProxyCallbackURLs["expo-zone"] = "https://wrong-direction.example.com/callback"
+			// The exposure zone has no route to sub-zone, even though the reverse route exists.
 
 			mockListEventTypes([]eventv1.EventType{et})
 			mockListEventExposures([]eventv1.EventExposure{exposure})
 			mockGetZone(obj.Spec.Zone.K8s(), makeReadyZone(obj.Spec.Zone.Name, obj.Spec.Zone.Namespace))
 
-			fakeClient.EXPECT().
-				List(ctx, mock.AnythingOfType("*v1.EventConfigList"), mock.Anything).
-				Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-					*list.(*eventv1.EventConfigList) = eventv1.EventConfigList{Items: []eventv1.EventConfig{expoConfig}}
-				}).
-				Return(nil).Once()
-
-			fakeClient.EXPECT().
-				List(ctx, mock.AnythingOfType("*v1.EventConfigList"), mock.Anything).
-				Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-					*list.(*eventv1.EventConfigList) = eventv1.EventConfigList{Items: []eventv1.EventConfig{subConfig}}
-				}).
-				Return(nil).Once()
+			mockEventConfigLookups(expoConfig, subConfig)
 
 			err := h.CreateOrUpdate(ctx, obj)
 
 			Expect(err).To(HaveOccurred())
 			Expect(isBlockedError(err)).To(BeTrue())
-			Expect(err.Error()).To(ContainSubstring("no proxy callback URL"))
+			Expect(err.Error()).To(ContainSubstring("no effective proxy callback URL"))
+		})
+
+		It("should block an empty proxy callback URL rather than provision an invalid delivery", func() {
+			obj.Spec.Zone.Name = "sub-zone"
+			expoConfig := makeReadyEventConfig("expo-zone", false, []string{"sub-zone"})
+			expoConfig.Status.ProxyCallbackURLs["sub-zone"] = ""
+			mockListEventTypes([]eventv1.EventType{makeReadyEventType(testEventType)})
+			mockListEventExposures([]eventv1.EventExposure{makeReadyEventExposure(testEventType)})
+			mockGetZone(obj.Spec.Zone.K8s(), makeReadyZone(obj.Spec.Zone.Name, obj.Spec.Zone.Namespace))
+			mockEventConfigLookups(expoConfig, makeReadyEventConfig("sub-zone", false, nil))
+			Expect(isBlockedError(h.CreateOrUpdate(ctx, obj))).To(BeTrue())
 		})
 
 		It("should update callback URL in cross-zone callback proxy scenario", func() {
@@ -657,29 +651,15 @@ var _ = Describe("EventSubscriptionHandler", func() {
 			obj.Spec.Zone.Name = "sub-zone"
 			obj.Spec.Delivery.Callback = "https://my-callback.example.com"
 
-			expoConfig := makeReadyEventConfig("expo-zone", true, nil)
-			subConfig := makeReadyEventConfig("sub-zone", true, nil)
-			subConfig.Status.ProxyCallbackURLs = map[string]string{
-				"expo-zone": "https://proxy-callback.example.com/expo-zone",
-			}
+			expoConfig := makeReadyEventConfig("expo-zone", false, []string{"sub-zone"})
+			expoConfig.Status.ProxyCallbackURLs["sub-zone"] = "https://expo-gateway.example.com/horizon-sub-zone/callback/v1"
+			// The reverse route is intentionally absent: only exposure -> subscriber is needed.
 
 			mockListEventTypes([]eventv1.EventType{et})
 			mockListEventExposures([]eventv1.EventExposure{exposure})
 			mockGetZone(obj.Spec.Zone.K8s(), makeReadyZone(obj.Spec.Zone.Name, obj.Spec.Zone.Namespace))
 
-			fakeClient.EXPECT().
-				List(ctx, mock.AnythingOfType("*v1.EventConfigList"), mock.Anything).
-				Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-					*list.(*eventv1.EventConfigList) = eventv1.EventConfigList{Items: []eventv1.EventConfig{expoConfig}}
-				}).
-				Return(nil).Once()
-
-			fakeClient.EXPECT().
-				List(ctx, mock.AnythingOfType("*v1.EventConfigList"), mock.Anything).
-				Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-					*list.(*eventv1.EventConfigList) = eventv1.EventConfigList{Items: []eventv1.EventConfig{subConfig}}
-				}).
-				Return(nil).Once()
+			mockEventConfigLookups(expoConfig, makeReadyEventConfig("sub-zone", false, nil))
 
 			requestorApp := makeReadyApplication("requestor-app", "requester-team", "req@example.com", "req-client-id")
 			providerApp := makeReadyApplication("provider-app", "provider-team", "prov@example.com", "prov-client-id")
@@ -688,7 +668,14 @@ var _ = Describe("EventSubscriptionHandler", func() {
 			mockScheme()
 
 			mockApprovalBuilderGranted()
-			mockCreateOrUpdateSubscriber(controllerutil.OperationResultCreated, nil)
+			fakeClient.EXPECT().
+				CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Subscriber"), mock.Anything).
+				RunAndReturn(func(_ context.Context, child client.Object, mutate controllerutil.MutateFn) (controllerutil.OperationResult, error) {
+					Expect(mutate()).To(Succeed())
+					Expect(child.(*pubsubv1.Subscriber).Spec.Delivery.Callback).To(Equal(
+						"https://expo-gateway.example.com/horizon-sub-zone/callback/v1?callback=https://my-callback.example.com"))
+					return controllerutil.OperationResultCreated, nil
+				}).Once()
 			fakeClient.EXPECT().AllReady().Return(true).Once()
 
 			err := h.CreateOrUpdate(ctx, obj)
@@ -696,8 +683,140 @@ var _ = Describe("EventSubscriptionHandler", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// Verify callback URL was updated
-			Expect(obj.Spec.Delivery.Callback).To(ContainSubstring("https://proxy-callback.example.com/expo-zone"))
+			Expect(obj.Spec.Delivery.Callback).To(HavePrefix("https://expo-gateway.example.com/horizon-sub-zone/callback/v1"))
 			Expect(obj.Spec.Delivery.Callback).To(ContainSubstring("callback=https://my-callback.example.com"))
+		})
+
+		DescribeTable("requires a ready subscriber-zone EventConfig and primary callback route before provisioning", func(state string) {
+			obj.Spec.Zone.Name = "subscriber"
+			exposure := makeReadyEventExposure(testEventType)
+			exposure.Spec.Zone.Name = "exposure"
+			exposureCfg := makeReadyEventConfig("exposure", false, []string{"subscriber"})
+			exposureCfg.Spec.Proxy = &eventv1.ProxyBackend{TargetZone: ctypes.ObjectRef{Name: "backend", Namespace: "default"}}
+			exposureCfg.Status.ProxyCallbackURLs["subscriber"] = "https://backend.example.com/horizon-subscriber/callback/v1"
+			subscriberCfg := makeReadyEventConfig("subscriber", false, nil)
+			switch state {
+			case "missing":
+				mockEventConfigLookups(exposureCfg)
+				fakeClient.EXPECT().List(ctx, mock.AnythingOfType("*v1.EventConfigList"), client.MatchingFields{
+					index.EventConfigZoneIndex: "subscriber",
+				}).
+					Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+						*list.(*eventv1.EventConfigList) = eventv1.EventConfigList{}
+					}).Return(nil).Once()
+			case "unready":
+				subscriberCfg.Status.Conditions = nil
+				mockEventConfigLookups(exposureCfg, subscriberCfg)
+			case "missing primary":
+				subscriberCfg.Status.CallbackRoute = nil
+				mockEventConfigLookups(exposureCfg, subscriberCfg)
+			}
+			mockListEventTypes([]eventv1.EventType{makeReadyEventType(testEventType)})
+			mockListEventExposures([]eventv1.EventExposure{exposure})
+			mockGetZone(obj.Spec.Zone.K8s(), makeReadyZone(obj.Spec.Zone.Name, obj.Spec.Zone.Namespace))
+			err := h.CreateOrUpdate(ctx, obj)
+			Expect(isBlockedError(err)).To(BeTrue(), "expected subscriber readiness to block provisioning: %v", err)
+			fakeClient.AssertNotCalled(GinkgoT(), "CreateOrUpdate", ctx, mock.AnythingOfType("*v1.Subscriber"), mock.Anything)
+		}, Entry("missing", "missing"), Entry("unready", "unready"), Entry("missing primary", "missing primary"))
+
+		It("requires subscriber EventConfig readiness for SSE without inspecting callback URLs", func() {
+			obj.Spec.Zone.Name = "subscriber"
+			obj.Spec.Delivery.Type = eventv1.DeliveryTypeServerSentEvent
+			obj.Spec.Delivery.Callback = ""
+			exposure := makeReadyEventExposure(testEventType)
+			exposure.Status.SseURLs = map[string]string{"subscriber": "https://sse.example.com/subscriber"}
+			exposureCfg := makeReadyEventConfig("expo-zone", false, []string{"subscriber"})
+			mockListEventTypes([]eventv1.EventType{makeReadyEventType(testEventType)})
+			mockListEventExposures([]eventv1.EventExposure{exposure})
+			mockGetZone(obj.Spec.Zone.K8s(), makeReadyZone(obj.Spec.Zone.Name, obj.Spec.Zone.Namespace))
+			mockEventConfigLookups(exposureCfg)
+			fakeClient.EXPECT().List(ctx, mock.AnythingOfType("*v1.EventConfigList"), client.MatchingFields{
+				index.EventConfigZoneIndex: "subscriber",
+			}).
+				Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+					*list.(*eventv1.EventConfigList) = eventv1.EventConfigList{}
+				}).Return(nil).Once()
+			Expect(isBlockedError(h.CreateOrUpdate(ctx, obj))).To(BeTrue())
+			fakeClient.AssertNotCalled(GinkgoT(), "CreateOrUpdate", ctx, mock.AnythingOfType("*v1.Subscriber"), mock.Anything)
+		})
+
+		DescribeTable("uses only the exposure's effective callback ingress before creating the Subscriber", func(exposureZone, subscriberZone, backendZone, expectedURL string) {
+			obj.Spec.Zone.Name = subscriberZone
+			exposure := makeReadyEventExposure(testEventType)
+			exposure.Spec.Zone.Name = exposureZone
+			expoConfig := makeReadyEventConfig(exposureZone, false, []string{subscriberZone})
+			expoConfig.Status.CallbackURL = "https://backend.example.com/horizon-" + exposureZone + "/callback/v1"
+			expoConfig.Status.ProxyCallbackURLs[subscriberZone] = "https://backend.example.com/horizon-" + subscriberZone + "/callback/v1"
+			configs := []eventv1.EventConfig{expoConfig}
+			if backendZone != exposureZone {
+				configs[0].Spec.Proxy = &eventv1.ProxyBackend{TargetZone: ctypes.ObjectRef{Name: backendZone, Namespace: "default"}}
+			}
+			if subscriberZone == backendZone && subscriberZone != exposureZone {
+				configs[0].Status.ProxyCallbackURLs[subscriberZone] = "https://backend.example.com/horizon-" + backendZone + "/callback/v1"
+			}
+			if subscriberZone != exposureZone {
+				subscriberCfg := makeReadyEventConfig(subscriberZone, false, nil)
+				if subscriberZone == backendZone {
+					configs = append(configs, subscriberCfg)
+				} else {
+					subscriberCfg.Status.CallbackURL = "" // Final route is local despite projected URL semantics.
+					configs = append(configs, subscriberCfg)
+				}
+			}
+			mockListEventTypes([]eventv1.EventType{makeReadyEventType(testEventType)})
+			mockListEventExposures([]eventv1.EventExposure{exposure})
+			mockGetZone(obj.Spec.Zone.K8s(), makeReadyZone(subscriberZone, "default"))
+			mockEventConfigLookups(configs...)
+			mockGetApplication(requestorAppKey, makeReadyApplication("requestor-app", "requester-team", "req@example.com", "req-client-id"))
+			mockGetApplication(providerAppKey, makeReadyApplication("provider-app", "provider-team", "prov@example.com", "prov-client-id"))
+			mockScheme()
+			mockApprovalBuilderGranted()
+			fakeClient.EXPECT().CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Subscriber"), mock.Anything).
+				RunAndReturn(func(_ context.Context, child client.Object, mutate controllerutil.MutateFn) (controllerutil.OperationResult, error) {
+					Expect(mutate()).To(Succeed())
+					Expect(child.(*pubsubv1.Subscriber).Spec.Delivery.Callback).To(Equal(expectedURL + "?callback=https://my-callback.example.com"))
+					return controllerutil.OperationResultCreated, nil
+				}).Once()
+			fakeClient.EXPECT().AllReady().Return(true).Once()
+			Expect(h.CreateOrUpdate(ctx, obj)).To(Succeed())
+		},
+			Entry("proxy exposure and subscriber: backend forwards to proxy subscriber", "dataplane2", "dataplane2", "dataplane1", "https://backend.example.com/horizon-dataplane2/callback/v1"),
+			Entry("backend is subscriber but not exposure: backend primary", "exposure", "dataplane1", "dataplane1", "https://backend.example.com/horizon-dataplane1/callback/v1"),
+			Entry("all zones distinct: backend forwards to subscriber", "exposure", "subscriber", "backend", "https://backend.example.com/horizon-subscriber/callback/v1"),
+			Entry("local exposure: local proxy callback", "dataplane1", "dataplane2", "dataplane1", "https://backend.example.com/horizon-dataplane2/callback/v1"),
+			Entry("local exposure and subscriber: local primary", "dataplane1", "dataplane1", "dataplane1", "https://backend.example.com/horizon-dataplane1/callback/v1"),
+		)
+
+		DescribeTable("blocks a missing backend forward route despite an exposure or reverse route", func(forwardURL string) {
+			obj.Spec.Zone.Name = "dataplane2"
+			exposure := makeReadyEventExposure(testEventType)
+			exposure.Spec.Zone.Name = "dataplane2"
+			expoConfig := makeReadyEventConfig("dataplane2", false, nil)
+			expoConfig.Spec.Proxy = &eventv1.ProxyBackend{TargetZone: ctypes.ObjectRef{Name: "dataplane1", Namespace: "default"}}
+			expoConfig.Status.CallbackURL = forwardURL
+			expoConfig.Status.ProxyCallbackURLs["dataplane1"] = "https://reverse.example.com/callback"
+			if forwardURL != "missing" {
+				expoConfig.Status.CallbackURL = forwardURL
+			} else {
+				expoConfig.Status.CallbackURL = ""
+			}
+			mockListEventTypes([]eventv1.EventType{makeReadyEventType(testEventType)})
+			mockListEventExposures([]eventv1.EventExposure{exposure})
+			mockGetZone(obj.Spec.Zone.K8s(), makeReadyZone(obj.Spec.Zone.Name, obj.Spec.Zone.Namespace))
+			mockEventConfigLookups(expoConfig)
+			Expect(isBlockedError(h.CreateOrUpdate(ctx, obj))).To(BeTrue())
+		}, Entry("absent", "missing"), Entry("empty", ""))
+
+		It("blocks when the effective ingress is absent despite logical mesh permission", func() {
+			obj.Spec.Zone.Name = "subscriber"
+			exposure := makeReadyEventExposure(testEventType)
+			expoConfig := makeReadyEventConfig("expo-zone", false, []string{"subscriber"})
+			expoConfig.Spec.Proxy = &eventv1.ProxyBackend{TargetZone: ctypes.ObjectRef{Name: "backend", Namespace: "default"}}
+			mockListEventTypes([]eventv1.EventType{makeReadyEventType(testEventType)})
+			mockListEventExposures([]eventv1.EventExposure{exposure})
+			mockGetZone(obj.Spec.Zone.K8s(), makeReadyZone(obj.Spec.Zone.Name, obj.Spec.Zone.Namespace))
+			mockEventConfigLookups(expoConfig, makeReadyEventConfig("subscriber", false, nil))
+			Expect(isBlockedError(h.CreateOrUpdate(ctx, obj))).To(BeTrue())
 		})
 
 		It("should not modify callback URL for SSE delivery in cross-zone scenario", func() {
@@ -709,25 +828,13 @@ var _ = Describe("EventSubscriptionHandler", func() {
 			obj.Spec.Delivery.Callback = "" // SSE has no callback
 
 			expoConfig := makeReadyEventConfig("expo-zone", true, nil)
-			subConfig := makeReadyEventConfig("sub-zone", true, nil)
-
 			mockListEventTypes([]eventv1.EventType{et})
 			mockListEventExposures([]eventv1.EventExposure{exposure})
 			mockGetZone(obj.Spec.Zone.K8s(), makeReadyZone(obj.Spec.Zone.Name, obj.Spec.Zone.Namespace))
 
-			fakeClient.EXPECT().
-				List(ctx, mock.AnythingOfType("*v1.EventConfigList"), mock.Anything).
-				Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-					*list.(*eventv1.EventConfigList) = eventv1.EventConfigList{Items: []eventv1.EventConfig{expoConfig}}
-				}).
-				Return(nil).Once()
-
-			fakeClient.EXPECT().
-				List(ctx, mock.AnythingOfType("*v1.EventConfigList"), mock.Anything).
-				Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
-					*list.(*eventv1.EventConfigList) = eventv1.EventConfigList{Items: []eventv1.EventConfig{subConfig}}
-				}).
-				Return(nil).Once()
+			subConfig := makeReadyEventConfig("sub-zone", false, nil)
+			subConfig.Status.CallbackURL = ""
+			mockEventConfigLookups(expoConfig, subConfig)
 
 			requestorApp := makeReadyApplication("requestor-app", "requester-team", "req@example.com", "req-client-id")
 			providerApp := makeReadyApplication("provider-app", "provider-team", "prov@example.com", "prov-client-id")
@@ -755,7 +862,7 @@ var _ = Describe("EventSubscriptionHandler", func() {
 			mockListEventTypes([]eventv1.EventType{et})
 			mockListEventExposures([]eventv1.EventExposure{exposure})
 			mockGetZone(obj.Spec.Zone.K8s(), makeReadyZone(obj.Spec.Zone.Name, obj.Spec.Zone.Namespace))
-			mockListEventConfigs([]eventv1.EventConfig{expoConfig}, 2) // exposure zone + subscription zone (same)
+			mockListEventConfigs([]eventv1.EventConfig{expoConfig}, 1)
 
 			err := h.CreateOrUpdate(ctx, obj)
 
@@ -780,7 +887,7 @@ var _ = Describe("EventSubscriptionHandler", func() {
 			mockListEventTypes([]eventv1.EventType{et})
 			mockListEventExposures([]eventv1.EventExposure{exposure})
 			mockGetZone(obj.Spec.Zone.K8s(), makeReadyZone(obj.Spec.Zone.Name, obj.Spec.Zone.Namespace))
-			mockListEventConfigs([]eventv1.EventConfig{expoConfig}, 2)
+			mockListEventConfigs([]eventv1.EventConfig{expoConfig}, 1)
 			mockGetApplicationError(requestorAppKey, fmt.Errorf("not found"))
 
 			err := h.CreateOrUpdate(ctx, obj)
@@ -799,7 +906,7 @@ var _ = Describe("EventSubscriptionHandler", func() {
 			mockListEventTypes([]eventv1.EventType{et})
 			mockListEventExposures([]eventv1.EventExposure{exposure})
 			mockGetZone(obj.Spec.Zone.K8s(), makeReadyZone(obj.Spec.Zone.Name, obj.Spec.Zone.Namespace))
-			mockListEventConfigs([]eventv1.EventConfig{expoConfig}, 2)
+			mockListEventConfigs([]eventv1.EventConfig{expoConfig}, 1)
 			mockGetApplication(requestorAppKey, requestorApp)
 			mockGetApplicationError(providerAppKey, fmt.Errorf("provider not found"))
 

@@ -94,6 +94,7 @@ rules:
 - apiGroups:
   - gateway.cp.ei.telekom.de
   resources:
+  - consumers
   - routes
   verbs:
   - create

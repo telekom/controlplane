@@ -14,6 +14,7 @@ import (
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/projector/internal/domain/agentcard"
 	"github.com/telekom/controlplane/projector/internal/domain/eventtype"
+	"github.com/telekom/controlplane/projector/internal/domain/filetype"
 	"github.com/telekom/controlplane/projector/internal/domain/group"
 	"github.com/telekom/controlplane/projector/internal/domain/permissionset"
 	"github.com/telekom/controlplane/projector/internal/domain/team"
@@ -39,6 +40,7 @@ var _ = Describe("registerSchemesAndModules", func() {
 	var (
 		originalPermission bool
 		originalPubSub     bool
+		originalFile       bool
 		originalAiGateway  bool
 		baseModules        []module.Module
 	)
@@ -46,6 +48,7 @@ var _ = Describe("registerSchemesAndModules", func() {
 	BeforeEach(func() {
 		originalPermission = cconfig.FeaturePermission.IsEnabled()
 		originalPubSub = cconfig.FeaturePubSub.IsEnabled()
+		originalFile = cconfig.FeatureFile.IsEnabled()
 		originalAiGateway = cconfig.FeatureAiGateway.IsEnabled()
 		baseModules = []module.Module{zone.Module, group.Module, team.Module}
 	})
@@ -53,6 +56,7 @@ var _ = Describe("registerSchemesAndModules", func() {
 	AfterEach(func() {
 		cconfig.SetFeatureEnabled(cconfig.FeaturePermission, originalPermission)
 		cconfig.SetFeatureEnabled(cconfig.FeaturePubSub, originalPubSub)
+		cconfig.SetFeatureEnabled(cconfig.FeatureFile, originalFile)
 		cconfig.SetFeatureEnabled(cconfig.FeatureAiGateway, originalAiGateway)
 	})
 
@@ -92,8 +96,9 @@ var _ = Describe("registerSchemesAndModules", func() {
 	})
 
 	DescribeTable("feature flag matrix",
-		func(pubSubEnabled, permissionEnabled, aiGatewayEnabled bool) {
+		func(pubSubEnabled, fileEnabled, permissionEnabled, aiGatewayEnabled bool) {
 			cconfig.SetFeatureEnabled(cconfig.FeaturePubSub, pubSubEnabled)
+			cconfig.SetFeatureEnabled(cconfig.FeatureFile, fileEnabled)
 			cconfig.SetFeatureEnabled(cconfig.FeaturePermission, permissionEnabled)
 			cconfig.SetFeatureEnabled(cconfig.FeatureAiGateway, aiGatewayEnabled)
 
@@ -107,6 +112,12 @@ var _ = Describe("registerSchemesAndModules", func() {
 				Expect(names).To(ContainElement(eventtype.Module.Name()))
 			} else {
 				Expect(names).NotTo(ContainElement(eventtype.Module.Name()))
+			}
+
+			if fileEnabled {
+				Expect(names).To(ContainElement(filetype.Module.Name()))
+			} else {
+				Expect(names).NotTo(ContainElement(filetype.Module.Name()))
 			}
 
 			if permissionEnabled {
@@ -125,10 +136,11 @@ var _ = Describe("registerSchemesAndModules", func() {
 			Expect(baseModules).To(HaveLen(3))
 			Expect(moduleNames(baseModules)).To(Equal([]string{zone.Module.Name(), group.Module.Name(), team.Module.Name()}))
 		},
-		Entry("all disabled", false, false, false),
-		Entry("pubsub only", true, false, false),
-		Entry("permission only", false, true, false),
-		Entry("ai_gateway only", false, false, true),
-		Entry("all enabled", true, true, true),
+		Entry("all disabled", false, false, false, false),
+		Entry("pubsub only", true, false, false, false),
+		Entry("file only", false, true, false, false),
+		Entry("permission only", false, false, true, false),
+		Entry("ai_gateway only", false, false, false, true),
+		Entry("all enabled", true, true, true, true),
 	)
 })

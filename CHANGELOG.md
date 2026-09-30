@@ -1,3 +1,11 @@
+## [0.30.1](https://github.com/telekom/controlplane/compare/v0.30.0...v0.30.1) (2026-09-29)
+
+
+### Bug Fixes
+
+* **event:** use correct callbackUrls for event-proxy-zones ([#692](https://github.com/telekom/controlplane/issues/692)) ([0958207](https://github.com/telekom/controlplane/commit/0958207cfa6cf4c65a1bcc5924fb58f7a222d2f7))
+* **projector:** gate file modules on the file feature flag ([#697](https://github.com/telekom/controlplane/issues/697)) ([c68def0](https://github.com/telekom/controlplane/commit/c68def09d5320b336424c4f3b82ce95031cf517e))
+
 # [0.30.0](https://github.com/telekom/controlplane/compare/v0.29.0...v0.30.0) (2026-09-28)
 
 

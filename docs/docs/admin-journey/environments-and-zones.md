@@ -229,7 +229,7 @@ When an `EventConfig` is reconciled, the event controller prepares core building
 Every `EventConfig` describes one of two kinds of zone, and you must set **exactly one** of them:
 
 - **Local zone** (`local:`) — a zone that runs its own event backend (Horizon). This is the common case.
-- **Proxy zone** (`proxy:`) — a zone that runs *no* event backend of its own and forwards all publish, subscribe, and configuration traffic to a target zone. See [Proxy zones](#proxy-zones) below.
+- **Proxy zone** (`proxy:`) — a zone that runs *no* event backend of its own and uses a target zone's backend. See [Proxy zones](#proxy-zones) below.
 
 ### Creating an `EventConfig` for a local zone
 
@@ -306,7 +306,7 @@ spec:
 
 ### Proxy zones
 
-Not every zone needs to run its own event backend. A **proxy zone** runs no Horizon instance of its own and instead forwards all publish, subscribe, and configuration traffic to a **target zone** — a local zone that does run a backend. Publishers and subscribers in the proxy zone talk only to gateways in their own zone, and the cross-zone hop stays invisible to them.
+Use a **proxy zone** when you want a zone to use an existing Horizon deployment in another zone rather than run its own.
 
 To configure a proxy zone, set a `proxy:` block instead of `local:` and point it at the target zone:
 
@@ -327,6 +327,8 @@ spec:
 ```
 
 The target zone must be a **local** (non-proxy) zone running Horizon. Because a proxy zone has no backend of its own, it needs no `admin` or backend URLs — those all belong to the target zone.
+
+When configuring Horizon's callback credentials, use the **target zone's EventConfig** client (`spec.mesh.client.clientId`, default `eventstore`) and its credentials, not the proxy zone's client if it differs.
 
 :::warning Mutually exclusive
 
