@@ -134,6 +134,7 @@ func init() {
 }
 
 // RoverSpec defines the desired state of Rover
+// +kubebuilder:validation:XValidation:rule="!has(self.listenerSubscription) || (has(self.listeners) && size(self.listeners) > 0)",message="listenerSubscription requires at least one entry in listeners"
 type RoverSpec struct {
 	// Zone identifies the deployment zone for this Rover resource
 	// +kubebuilder:validation:Required
