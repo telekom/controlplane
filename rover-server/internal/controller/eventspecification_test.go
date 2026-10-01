@@ -13,12 +13,13 @@ import (
 	"net/http"
 	"net/http/httptest"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"github.com/stretchr/testify/mock"
 	fileApi "github.com/telekom/controlplane/file-manager/api"
 	filefake "github.com/telekom/controlplane/file-manager/api/fake"
 	"github.com/telekom/controlplane/rover-server/internal/api"
+	"github.com/telekom/controlplane/rover-server/internal/file"
+
+	. "github.com/onsi/ginkgo/v2"
 )
 
 // TODO: fix the unit-tests. Use Once() or Twice() for mocks
@@ -27,9 +28,11 @@ var _ = Describe("EventSpecification Controller", func() {
 
 	specJson := `{"type":"object","properties":{"id":{"type":"string"}}}`
 
+	const eventSpecFileId = "01926a3e-7b2c-7d3e-8f4a-1b2c3d4e5f61"
+
 	Context("Get EventSpecification resource", func() {
 		It("should return the EventSpecification successfully", func() {
-			mockFileManager.EXPECT().DownloadFile(mock.Anything, "eventRandomId", mock.Anything).
+			mockFileManager.EXPECT().DownloadFile(mock.Anything, eventSpecFileId, mock.Anything).
 				RunAndReturn(func(_ context.Context, _ string, w io.Writer) (*fileApi.FileDownloadResponse, error) {
 
 					w.Write([]byte(specJson))
@@ -59,7 +62,7 @@ var _ = Describe("EventSpecification Controller", func() {
 
 	Context("GetAll EventSpecifications resource", func() {
 		It("should return all EventSpecifications successfully", func() {
-			mockFileManager.EXPECT().DownloadFile(mock.Anything, "eventRandomId", mock.Anything).
+			mockFileManager.EXPECT().DownloadFile(mock.Anything, eventSpecFileId, mock.Anything).
 				RunAndReturn(func(_ context.Context, _ string, w io.Writer) (*fileApi.FileDownloadResponse, error) {
 
 					w.Write([]byte(specJson))
@@ -90,14 +93,13 @@ var _ = Describe("EventSpecification Controller", func() {
 
 	Context("Delete EventSpecification resource", func() {
 		It("should delete the EventSpecification successfully", func() {
-			mockFileManager.EXPECT().DeleteFile(mock.Anything, mock.Anything).Return(nil)
+			mockFileManager.EXPECT().DeleteFile(mock.Anything, eventSpecFileId).Return(nil)
 			req := httptest.NewRequest(http.MethodDelete, "/eventspecifications/eni--hyperion--tardis-horizon-demo-cetus-v1", nil)
 			responseGroup, err := ExecuteRequest(req, groupToken)
 			ExpectStatus(responseGroup, err, http.StatusNoContent, "")
 		})
 
 		It("should fail to delete a non-existent EventSpecification", func() {
-			mockFileManager.EXPECT().DeleteFile(mock.Anything, mock.Anything).Return(nil)
 			req := httptest.NewRequest(http.MethodDelete, "/eventspecifications/eni--hyperion--blabla", nil)
 			responseGroup, err := ExecuteRequest(req, groupToken)
 			ExpectStatusWithBody(responseGroup, err, http.StatusNotFound, "application/problem+json")
@@ -161,10 +163,10 @@ var _ = Describe("EventSpecification Controller", func() {
 				},
 			})
 
-			mockFileManager.EXPECT().UploadFile(mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(
+			mockFileManager.EXPECT().UploadFile(mock.Anything, eventSpecFileId, mock.Anything, mock.Anything).Return(
 				&fileApi.FileUploadResponse{
 					FileHash:    "randomHash",
-					FileId:      "randomId",
+					FileId:      eventSpecFileId,
 					ContentType: "application/json",
 				}, nil)
 
@@ -175,26 +177,55 @@ var _ = Describe("EventSpecification Controller", func() {
 			ExpectStatusWithBody(responseGroup, err, http.StatusAccepted, "application/json")
 		})
 
-		It("should delete the optional specification file", func() {
-			fileManager := filefake.NewMockFileManager(GinkgoT())
-			fileManager.EXPECT().DeleteFile(mock.Anything, "poc--eni--hyperion--tardis-horizon-demo-cetus-v1").Return(nil).Once()
-			err := deleteOptionalSpecificationFile(context.Background(), fileManager, "poc--eni--hyperion--tardis-horizon-demo-cetus-v1")
-			Expect(err).NotTo(HaveOccurred())
-		})
+		Context("without a specification", func() {
+			var eventFileMgr *filefake.MockFileManager
+			var eventSpecification, _ = json.Marshal(api.EventSpecification{
+				Category:    "SYSTEM",
+				Description: "Horizon demo provider",
+				Type:        "tardis.horizon.demo.cetus.v1",
+				Version:     "1.0.0",
+			})
 
-		It("should accept an already absent optional specification file", func() {
-			fileManager := filefake.NewMockFileManager(GinkgoT())
-			fileManager.EXPECT().DeleteFile(mock.Anything, "poc--eni--hyperion--tardis-horizon-demo-cetus-v1").Return(fileApi.ErrNotFound).Once()
-			err := deleteOptionalSpecificationFile(context.Background(), fileManager, "poc--eni--hyperion--tardis-horizon-demo-cetus-v1")
-			Expect(err).NotTo(HaveOccurred())
-		})
+			BeforeEach(func() {
+				eventFileMgr = filefake.NewMockFileManager(GinkgoT())
+				file.GetFileManager = func() fileApi.FileManager { return eventFileMgr }
+				eventFileMgr.EXPECT().DownloadFile(mock.Anything, eventSpecFileId, mock.Anything).
+					RunAndReturn(func(_ context.Context, _ string, w io.Writer) (*fileApi.FileDownloadResponse, error) {
+						_, err := w.Write([]byte(specJson))
+						return &fileApi.FileDownloadResponse{}, err
+					}).Maybe()
+			})
 
-		It("should return errors when deleting the optional specification file fails", func() {
-			fileManager := filefake.NewMockFileManager(GinkgoT())
-			fileManager.EXPECT().DeleteFile(mock.Anything, "poc--eni--hyperion--tardis-horizon-demo-cetus-v1").Return(errors.New("file manager unavailable")).Once()
+			AfterEach(func() {
+				file.GetFileManager = func() fileApi.FileManager { return mockFileManager }
+			})
 
-			err := deleteOptionalSpecificationFile(context.Background(), fileManager, "poc--eni--hyperion--tardis-horizon-demo-cetus-v1")
-			Expect(err).To(HaveOccurred())
+			It("should delete the previously stored specification file", func() {
+				eventFileMgr.EXPECT().DeleteFile(mock.Anything, eventSpecFileId).Return(nil).Once()
+
+				req := httptest.NewRequest(http.MethodPut, "/eventspecifications/eni--hyperion--tardis-horizon-demo-cetus-v1",
+					bytes.NewReader(eventSpecification))
+				responseGroup, err := ExecuteRequest(req, groupToken)
+				ExpectStatus(responseGroup, err, http.StatusAccepted, "application/json")
+			})
+
+			It("should tolerate an already deleted specification file", func() {
+				eventFileMgr.EXPECT().DeleteFile(mock.Anything, eventSpecFileId).Return(file.ErrNotFound).Once()
+
+				req := httptest.NewRequest(http.MethodPut, "/eventspecifications/eni--hyperion--tardis-horizon-demo-cetus-v1",
+					bytes.NewReader(eventSpecification))
+				responseGroup, err := ExecuteRequest(req, groupToken)
+				ExpectStatus(responseGroup, err, http.StatusAccepted, "application/json")
+			})
+
+			It("should fail when the specification file cannot be deleted", func() {
+				eventFileMgr.EXPECT().DeleteFile(mock.Anything, eventSpecFileId).Return(errors.New("boom")).Once()
+
+				req := httptest.NewRequest(http.MethodPut, "/eventspecifications/eni--hyperion--tardis-horizon-demo-cetus-v1",
+					bytes.NewReader(eventSpecification))
+				responseGroup, err := ExecuteRequest(req, groupToken)
+				ExpectStatus(responseGroup, err, http.StatusInternalServerError, "application/problem+json")
+			})
 		})
 
 		It("should fail to update an EventSpecification from a different team", func() {

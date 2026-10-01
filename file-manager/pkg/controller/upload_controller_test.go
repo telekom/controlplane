@@ -19,6 +19,8 @@ import (
 )
 
 var _ = Describe("UploadController", func() {
+	const fileId = "01926a3e-7b2c-7d3e-8f4a-1b2c3d4e5f60"
+
 	Context("Upload controller", func() {
 		var mockedBackend *mocks.MockFileUploader
 		BeforeEach(func() {
@@ -34,19 +36,19 @@ var _ = Describe("UploadController", func() {
 			backendMetadata["X-File-Content-Type"] = "application/octet-stream"
 			backendMetadata["X-File-Checksum"] = "test-checksum"
 
-			mockedBackend.EXPECT().UploadFile(any(ctx), "poc--eni--hyperion--my-test-file", reader, backendMetadata).Return("poc--eni--hyperion--my-test-file", nil)
+			mockedBackend.EXPECT().UploadFile(any(ctx), fileId, reader, backendMetadata).Return(fileId, nil)
 
 			callMetadata := make(map[string]string)
 			callMetadata["X-File-Content-Type"] = "application/octet-stream"
 			callMetadata["X-File-Checksum"] = "test-checksum"
 
-			file, err := ctrl.UploadFile(ctx, "poc--eni--hyperion--my-test-file", reader, callMetadata)
+			file, err := ctrl.UploadFile(ctx, fileId, reader, callMetadata)
 			By("returning no error and the same fileId as supplied")
 			Expect(err).NotTo(HaveOccurred())
-			Expect(file).To(Equal("poc--eni--hyperion--my-test-file"))
+			Expect(file).To(Equal(fileId))
 		})
 
-		It("should upload file successfully - content type detection", func() {
+		It("should upload file successfully - default content type", func() {
 			ctx := context.Background()
 			ctrl := controller.NewUploadController(mockedBackend)
 
@@ -56,36 +58,28 @@ var _ = Describe("UploadController", func() {
 			backendMetadata["X-File-Content-Type"] = "application/octet-stream"
 			backendMetadata["X-File-Content-Type-Source"] = "auto-detected"
 
-			mockedBackend.EXPECT().UploadFile(any(ctx), "poc--eni--hyperion--my-test-file", reader, backendMetadata).Return("poc--eni--hyperion--my-test-file", nil)
+			mockedBackend.EXPECT().UploadFile(any(ctx), fileId, reader, backendMetadata).Return(fileId, nil)
 
 			callMetadata := make(map[string]string)
 			callMetadata["X-File-Checksum"] = "test-checksum"
 
-			file, err := ctrl.UploadFile(ctx, "poc--eni--hyperion--my-test-file", reader, callMetadata)
+			file, err := ctrl.UploadFile(ctx, fileId, reader, callMetadata)
 			By("returning no error and the same fileId as supplied")
 			Expect(err).NotTo(HaveOccurred())
-			Expect(file).To(Equal("poc--eni--hyperion--my-test-file"))
+			Expect(file).To(Equal(fileId))
 		})
 
-		It("should upload file successfully - content type detection with filename extension", func() {
+		It("should not upload file - legacy file id", func() {
 			ctx := context.Background()
 			ctrl := controller.NewUploadController(mockedBackend)
 
 			var reader io.Reader = strings.NewReader("test content")
-			backendMetadata := make(map[string]string)
-			backendMetadata["X-File-Checksum"] = "test-checksum"
-			backendMetadata["X-File-Content-Type"] = "text/plain; charset=utf-8"
-			backendMetadata["X-File-Content-Type-Source"] = "auto-detected"
 
-			mockedBackend.EXPECT().UploadFile(any(ctx), "poc--eni--hyperion--my-test-file.txt", reader, backendMetadata).Return("poc--eni--hyperion--my-test-file.txt", nil)
-
-			callMetadata := make(map[string]string)
-			callMetadata["X-File-Checksum"] = "test-checksum"
-
-			file, err := ctrl.UploadFile(ctx, "poc--eni--hyperion--my-test-file.txt", reader, callMetadata)
-			By("returning no error and the same fileId as supplied")
-			Expect(err).NotTo(HaveOccurred())
-			Expect(file).To(Equal("poc--eni--hyperion--my-test-file.txt"))
+			file, err := ctrl.UploadFile(ctx, "poc--eni--hyperion--my-test-file.txt", reader, map[string]string{})
+			By("returning an error")
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(Equal("InvalidFileId: invalid file ID 'poc--eni--hyperion--my-test-file.txt'"))
+			Expect(file).To(BeEmpty())
 		})
 
 		It("should not upload file - wrong file id", func() {
@@ -113,10 +107,10 @@ var _ = Describe("UploadController", func() {
 			callMetadata := make(map[string]string)
 			callMetadata["X-File-Checksum"] = "test-checksum"
 
-			file, err := ctrl.UploadFile(ctx, "poc--eni--hyperion--my-test-file", reader, callMetadata)
+			file, err := ctrl.UploadFile(ctx, fileId, reader, callMetadata)
 			By("returning an error")
 			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(Equal("UploadFailed: failed to upload file 'poc--eni--hyperion--my-test-file': file reader is nil"))
+			Expect(err.Error()).To(Equal("UploadFailed: failed to upload file '" + fileId + "': file reader is nil"))
 			Expect(file).To(BeEmpty())
 		})
 
@@ -130,12 +124,12 @@ var _ = Describe("UploadController", func() {
 			backendMetadata["X-File-Content-Type"] = "application/octet-stream"
 			backendMetadata["X-File-Content-Type-Source"] = "auto-detected"
 
-			mockedBackend.EXPECT().UploadFile(any(ctx), "poc--eni--hyperion--my-test-file", reader, backendMetadata).Return("", errors.New("this is a test error message"))
+			mockedBackend.EXPECT().UploadFile(any(ctx), fileId, reader, backendMetadata).Return("", errors.New("this is a test error message"))
 
 			callMetadata := make(map[string]string)
 			callMetadata["X-File-Checksum"] = "test-checksum"
 
-			file, err := ctrl.UploadFile(ctx, "poc--eni--hyperion--my-test-file", reader, callMetadata)
+			file, err := ctrl.UploadFile(ctx, fileId, reader, callMetadata)
 			By("returning an error")
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(Equal("this is a test error message"))

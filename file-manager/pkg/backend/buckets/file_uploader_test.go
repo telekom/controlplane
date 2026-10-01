@@ -27,7 +27,7 @@ func TestBucketFileUploader_UploadFile(t *testing.T) {
 	// Test case 1: Nil client validation through wrapper
 	reader := strings.NewReader("test content")
 	var r io.Reader = reader
-	_, err := uploader.UploadFile(context.Background(), "env--group--team--file.txt", r, nil)
+	_, err := uploader.UploadFile(context.Background(), "01926a3e-7b2c-7d3e-8f4a-1b2c3d4e5f60", r, nil)
 	if err == nil {
 		t.Error("Expected error when client is nil")
 	}

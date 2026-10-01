@@ -38,10 +38,11 @@ paths:
       parameters:
         - name: fileId
           in: path
-          description: Id of the file, should follow the convention <env>--<group>--<team>--<fileName>
+          description: Id of the file as a canonical lowercase UUID (UUIDv7 recommended)
           required: true
           schema:
             type: string
+            pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
         - name: X-File-Content-Type
           in: header
           description: Content type of the file (e.g., text/yaml, text/json) that will be stored as metadata
@@ -69,16 +70,17 @@ paths:
       operationId: downloadFile
       summary: Download a file
       description: >-
-        Retrieves a file from the server with the specified Id. The id should follow the convention.
+        Retrieves a file from the server with the specified Id. The id must be a UUID.
       tags:
         - downloading
       parameters:
         - name: fileId
           in: path
-          description: Id of the file, should follow the convention <env>--<group>--<team>--<fileName>
+          description: Id of the file as a canonical lowercase UUID (UUIDv7 recommended)
           required: true
           schema:
             type: string
+            pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       security:
         - bearerAuth: []
       responses:
@@ -92,16 +94,17 @@ paths:
       operationId: deleteFile
       summary: Delete a file
       description: >-
-        Deletes a file from the server with the specified Id. The id should follow the convention.
+        Deletes a file from the server with the specified Id. The id must be a UUID.
       tags:
         - deleting
       parameters:
         - name: fileId
           in: path
-          description: Id of the file, should follow the convention <env>--<group>--<team>--<fileName>
+          description: Id of the file as a canonical lowercase UUID (UUIDv7 recommended)
           required: true
           schema:
             type: string
+            pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       security:
         - bearerAuth: []
       responses:
@@ -192,5 +195,3 @@ components:
           type: string
         instance:
           type: string
-
-

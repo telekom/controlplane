@@ -35,9 +35,9 @@ var _ = Describe("DownloadController", func() {
 			headers[XFileContentType] = "application/yaml"
 			headers[XFileChecksum] = "thisIsATestChecksum"
 
-			mockedBackend.EXPECT().DownloadFile(any(ctx), "poc/eni/hyperion/my-test-file").Return(writer, headers, nil)
+			mockedBackend.EXPECT().DownloadFile(any(ctx), "01926a3e-7b2c-7d3e-8f4a-1b2c3d4e5f60").Return(writer, headers, nil)
 
-			file, m, err := ctrl.DownloadFile(ctx, "poc--eni--hyperion--my-test-file")
+			file, m, err := ctrl.DownloadFile(ctx, "01926a3e-7b2c-7d3e-8f4a-1b2c3d4e5f60")
 
 			// check contents
 			if buf, ok := (file).(*bytes.Buffer); ok {
@@ -63,14 +63,14 @@ var _ = Describe("DownloadController", func() {
 			Expect(file).To(BeNil())
 		})
 
-		It("Should not download files with wrong fileId format - wrong number of parts", func() {
+		It("Should not download files with legacy fileId format", func() {
 			ctx := context.Background()
 			ctrl := controller.NewDownloadController(mockedBackend)
 
-			file, m, err := ctrl.DownloadFile(ctx, "poc--eni--fileId")
+			file, m, err := ctrl.DownloadFile(ctx, "poc--eni--hyperion--my-test-file")
 			Expect(err).To(HaveOccurred())
 			By("returning the correct error message")
-			Expect(err.Error()).To(BeEquivalentTo("InvalidFileId: invalid file ID 'poc--eni--fileId'"))
+			Expect(err.Error()).To(BeEquivalentTo("InvalidFileId: invalid file ID 'poc--eni--hyperion--my-test-file'"))
 			Expect(m).To(BeNil())
 			Expect(file).To(BeNil())
 		})
