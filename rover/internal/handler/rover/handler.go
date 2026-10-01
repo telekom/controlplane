@@ -6,6 +6,7 @@ package rover
 
 import (
 	"context"
+	stderrors "errors"
 	"strings"
 
 	"github.com/go-logr/logr"
@@ -57,9 +58,15 @@ func (h *RoverHandler) CreateOrUpdate(ctx context.Context, roverObj *roverv1.Rov
 		return err
 	}
 
+	// A Blocked listener error is returned only after permissions and cleanup,
+	// so one unresolvable listener does not hold back the rest of the Rover.
+	var listenersErr error
 	if config.FeatureSpectre.IsEnabled() {
 		if err := spectre.HandleListeners(ctx, c, roverObj); err != nil {
-			return errors.Wrap(err, "failed to handle listeners")
+			if be, ok := stderrors.AsType[ctrlerrors.BlockedError](err); !ok || !be.IsBlocked() {
+				return errors.Wrap(err, "failed to handle listeners")
+			}
+			listenersErr = errors.Wrap(err, "failed to handle listeners")
 		}
 	}
 
@@ -70,6 +77,10 @@ func (h *RoverHandler) CreateOrUpdate(ctx context.Context, roverObj *roverv1.Rov
 	// Cleanup all objects owned by Rover
 	if _, err := c.CleanupAll(ctx, client.OwnedBy(roverObj)); err != nil {
 		return errors.Wrap(err, "failed to cleanup all")
+	}
+
+	if listenersErr != nil {
+		return listenersErr
 	}
 
 	setRoverConditions(c, roverObj)
