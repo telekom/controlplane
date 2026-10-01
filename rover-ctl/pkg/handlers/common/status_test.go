@@ -5,6 +5,8 @@
 package common_test
 
 import (
+	"encoding/json"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/telekom/controlplane/rover-ctl/pkg/handlers/common"
@@ -173,6 +175,25 @@ var _ = Describe("ObjectStatusResponse", func() {
 				status.Info = info
 				Expect(status.GetInfo()).To(Equal(info))
 			})
+		})
+	})
+
+	Describe("JSON decoding", func() {
+		It("should decode the server status payload including infos", func() {
+			data := `{"overallStatus":"failed","processingState":"failed",` +
+				`"errors":[{"cause":"Error","message":"Scopes and basic authentication cannot be used together",` +
+				`"resource":{"kind":"Rover","name":"my-rover","namespace":"ns"}}],` +
+				`"warnings":[{"cause":"W","message":"warn"}],"infos":[{"cause":"I","message":"info"}]}`
+			decoded := &common.ObjectStatusResponse{}
+			Expect(json.Unmarshal([]byte(data), decoded)).To(Succeed())
+
+			Expect(decoded.GetOverallStatus()).To(Equal(types.OverallStatusFailed))
+			Expect(decoded.GetErrors()).To(HaveLen(1))
+			Expect(decoded.GetErrors()[0].Message).To(Equal("Scopes and basic authentication cannot be used together"))
+			Expect(decoded.GetErrors()[0].Resource.Name).To(Equal("my-rover"))
+			Expect(decoded.GetWarnings()).To(HaveLen(1))
+			Expect(decoded.GetInfo()).To(HaveLen(1))
+			Expect(decoded.GetInfo()[0].Message).To(Equal("info"))
 		})
 	})
 })

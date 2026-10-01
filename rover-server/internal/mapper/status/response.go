@@ -15,6 +15,7 @@ import (
 	"github.com/telekom/controlplane/rover-server/pkg/store"
 	v1 "github.com/telekom/controlplane/rover/api/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // MapResponse maps the status of a generic resource to a ResourceStatusResponse.
@@ -112,8 +113,48 @@ func MapRoverResponse(ctx context.Context, rover *v1.Rover, stores *store.Stores
 		State:           status.State,
 		ProcessingState: status.ProcessingState,
 		OverallStatus:   finalOverall,
-		Errors:          result.Problems,
+		Errors:          append(mapRoverStateInfosToProblems(rover, status.Errors), result.Problems...),
+		Warnings:        mapRoverStateInfosToProblems(rover, status.Warnings),
+		Infos:           mapRoverStateInfosToProblems(rover, status.Infos),
 	}, nil
+}
+
+// mapRoverStateInfosToProblems converts the Rover's own diagnostics into api.Problems
+// identifying the Rover as the affected resource. Entries without a message are skipped.
+// If an entry has no cause, the reason of the Ready or Processing condition carrying the
+// same message is used.
+func mapRoverStateInfosToProblems(rover *v1.Rover, infos []api.StateInfo) []api.Problem {
+	var problems []api.Problem
+	for _, info := range infos {
+		if info.Message == "" {
+			continue
+		}
+		cause := info.Cause
+		if cause == "" {
+			cause = findConditionReasonByMessage(rover.GetConditions(), info.Message)
+		}
+		problems = append(problems, api.Problem{
+			Cause:   cause,
+			Message: info.Message,
+			Resource: api.ResourceRef{
+				ApiVersion: v1.GroupVersion.String(),
+				Kind:       "Rover",
+				Name:       rover.GetName(),
+				Namespace:  rover.GetNamespace(),
+			},
+		})
+	}
+	return problems
+}
+
+func findConditionReasonByMessage(conditions []metav1.Condition, message string) string {
+	for _, condType := range []string{condition.ConditionTypeReady, condition.ConditionTypeProcessing} {
+		cond := meta.FindStatusCondition(conditions, condType)
+		if cond != nil && cond.Message == message {
+			return cond.Reason
+		}
+	}
+	return ""
 }
 
 // MapEventSpecificationResponse maps the status of an EventSpecification resource to a ResourceStatusResponse,
