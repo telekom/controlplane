@@ -167,6 +167,16 @@ spec:
                       - password
                       - userName
                       type: object
+                    allowedOrigins:
+                      description: AllowedOrigins configures the web origins for clients
+                        in this zone's default identity realm.
+                      items:
+                        type: string
+                      type: array
+                      x-kubernetes-list-type: set
+                      x-kubernetes-validations:
+                      - message: each allowed origin must be an absolute URL or *
+                        rule: self.all(origin, origin == '*' || isURL(origin))
                     issuerHostname:
                       format: hostname
                       maxLength: 253

@@ -5,6 +5,8 @@
 package util
 
 import (
+	"slices"
+
 	"github.com/pkg/errors"
 	"k8s.io/utils/ptr"
 
@@ -35,6 +37,7 @@ const (
 )
 
 func MapToClientRepresentation(client *identityv1.Client) api.ClientRepresentation {
+	webOrigins := slices.Clone(client.Status.AllowedOrigins)
 	rep := api.ClientRepresentation{
 		ClientId:               ptr.To(client.Spec.ClientId),
 		Name:                   ptr.To(client.Spec.ClientId),
@@ -43,6 +46,7 @@ func MapToClientRepresentation(client *identityv1.Client) api.ClientRepresentati
 		ServiceAccountsEnabled: ptr.To(true),
 		StandardFlowEnabled:    ptr.To(false),
 		Secret:                 ptr.To(client.Spec.ClientSecret),
+		WebOrigins:             mapWebOrigins(webOrigins),
 		ProtocolMappers:        &[]api.ProtocolMapperRepresentation{protocolmappers.NewClientIdProtocolMapper()},
 	}
 
@@ -53,6 +57,15 @@ func MapToClientRepresentation(client *identityv1.Client) api.ClientRepresentati
 	}
 
 	return rep
+}
+
+func mapWebOrigins(origins []string) *[]string {
+	if len(origins) == 0 {
+		// we have to return pointer to an empty slice
+		// nil won't delete already configured web origins in Keycloak.
+		return &[]string{}
+	}
+	return &origins
 }
 
 // HasSecretChanged returns true when the new client representation carries a
@@ -75,8 +88,20 @@ func CompareClientRepresentation(existingClient, newClient *api.ClientRepresenta
 		ptrEqual(existingClient.ServiceAccountsEnabled, newClient.ServiceAccountsEnabled) &&
 		ptrEqual(existingClient.StandardFlowEnabled, newClient.StandardFlowEnabled) &&
 		ptrEqual(existingClient.Secret, newClient.Secret) &&
+		compareWebOrigins(existingClient.WebOrigins, newClient.WebOrigins) &&
 		containsAllProtocolMappers(existingClient.ProtocolMappers, newClient.ProtocolMappers) &&
 		compareSecretRotationAttribute(existingClient, newClient)
+}
+
+func compareWebOrigins(left, right *[]string) bool {
+	var leftOrigins, rightOrigins []string
+	if left != nil {
+		leftOrigins = *left
+	}
+	if right != nil {
+		rightOrigins = *right
+	}
+	return slices.Equal(leftOrigins, rightOrigins)
 }
 
 // compareSecretRotationAttribute returns true when both representations agree
@@ -119,6 +144,7 @@ func MergeClientRepresentation(existingClient, newClient *api.ClientRepresentati
 	existingClient.ServiceAccountsEnabled = newClient.ServiceAccountsEnabled
 	existingClient.StandardFlowEnabled = newClient.StandardFlowEnabled
 	existingClient.Secret = newClient.Secret
+	existingClient.WebOrigins = newClient.WebOrigins
 	existingClient.ProtocolMappers = MergeProtocolMappers(existingClient.ProtocolMappers, newClient.ProtocolMappers)
 
 	// Merge the secret-rotation attribute into the existing attributes map,

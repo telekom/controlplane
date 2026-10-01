@@ -161,6 +161,7 @@ var _ = Describe("Zone Controller", func() {
 			zone.Namespace = decoupledEnvName
 			zone.Labels[config.EnvironmentLabelKey] = decoupledEnvName
 			zone.Spec.ManagedRoutes = nil // simplify
+			zone.Spec.IdentityProviders[0].AllowedOrigins = []string{"https://app.example.com"}
 			Expect(k8sClient.Create(ctx, zone)).To(Succeed())
 			DeferCleanup(func() {
 				Expect(client.IgnoreNotFound(k8sClient.Delete(ctx, zone))).To(Succeed())
@@ -180,11 +181,50 @@ var _ = Describe("Zone Controller", func() {
 				g.Expect(err).NotTo(HaveOccurred(), "identity realm should be named %q", decoupledRealmName)
 				g.Expect(identityRealm.Labels[config.EnvironmentLabelKey]).To(Equal(decoupledEnvName),
 					"environment label should be the env name, not the realm name")
+				g.Expect(identityRealm.Spec.AllowedOrigins).To(Equal([]string{"https://app.example.com"}))
+				g.Expect(got.Status.RealmName).To(Equal(decoupledRealmName))
+				internalRealm := &identityv1.Realm{}
+				g.Expect(k8sClient.Get(ctx, client.ObjectKey{Namespace: expectedNs, Name: "rover"}, internalRealm)).To(Succeed())
+				g.Expect(internalRealm.Spec.AllowedOrigins).To(BeEmpty())
 
 				// Issuer URLs contain the realmName, not the environment name
 				g.Expect(got.Status.Presets[0].Links.Issuer).To(ContainSubstring("/auth/realms/" + decoupledRealmName))
 				g.Expect(got.Status.Presets[0].Links.LmsIssuer).To(ContainSubstring("/auth/realms/" + decoupledRealmName))
 			}, timeout, interval).Should(Succeed())
+
+			By("removing origins from the zone")
+			Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(zone), zone)).To(Succeed())
+			zone.Spec.IdentityProviders[0].AllowedOrigins = nil
+			Expect(k8sClient.Update(ctx, zone)).To(Succeed())
+			Eventually(func(g Gomega) {
+				identityRealm := &identityv1.Realm{}
+				g.Expect(k8sClient.Get(ctx, client.ObjectKey{Namespace: decoupledEnvName + "--zone-decoupled", Name: decoupledRealmName}, identityRealm)).To(Succeed())
+				g.Expect(identityRealm.Spec.AllowedOrigins).To(BeEmpty())
+			}, timeout, interval).Should(Succeed())
+
+			By("rejecting duplicate origins at the Zone CRD boundary")
+			duplicateZone := newZone("duplicate-origins")
+			duplicateZone.Namespace = decoupledEnvName
+			duplicateZone.Labels[config.EnvironmentLabelKey] = decoupledEnvName
+			duplicateZone.Spec.IdentityProviders[0].AllowedOrigins = []string{"https://app.example.com", "https://app.example.com"}
+			Expect(errors.IsInvalid(k8sClient.Create(ctx, duplicateZone))).To(BeTrue())
+
+			By("rejecting non-URL origins at the Zone CRD boundary")
+			invalidOriginZone := newZone("invalid-origin")
+			invalidOriginZone.Namespace = decoupledEnvName
+			invalidOriginZone.Labels[config.EnvironmentLabelKey] = decoupledEnvName
+			invalidOriginZone.Spec.IdentityProviders[0].AllowedOrigins = []string{"not-a-url"}
+			Expect(errors.IsInvalid(k8sClient.Create(ctx, invalidOriginZone))).To(BeTrue())
+
+			By("accepting absolute URLs with any scheme and the wildcard")
+			validOriginZone := newZone("valid-origin")
+			validOriginZone.Namespace = decoupledEnvName
+			validOriginZone.Labels[config.EnvironmentLabelKey] = decoupledEnvName
+			validOriginZone.Spec.IdentityProviders[0].AllowedOrigins = []string{"ftp://example.com/path", "*"}
+			Expect(k8sClient.Create(ctx, validOriginZone)).To(Succeed())
+			DeferCleanup(func() {
+				Expect(client.IgnoreNotFound(k8sClient.Delete(ctx, validOriginZone))).To(Succeed())
+			})
 		})
 	})
 

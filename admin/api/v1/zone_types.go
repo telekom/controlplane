@@ -114,6 +114,11 @@ type IdentityProviderConfig struct {
 	// +kubebuilder:validation:Format=uri
 	TokenUrl       string                `json:"tokenUrl,omitempty"`
 	SecretRotation *SecretRotationConfig `json:"secretRotation,omitempty"`
+	// AllowedOrigins configures the web origins for clients in this zone's default identity realm.
+	// +optional
+	// +listType=set
+	// +kubebuilder:validation:XValidation:rule="self.all(origin, origin == '*' || isURL(origin))",message="each allowed origin must be an absolute URL or *"
+	AllowedOrigins []string `json:"allowedOrigins,omitempty"`
 }
 
 // GatewayAdminConfig contains the necessary information to connect to the gateway admin API for this zone.
