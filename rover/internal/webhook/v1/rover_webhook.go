@@ -208,15 +208,6 @@ func (r *RoverValidator) validateListeners(ctx context.Context, valErr *cerrors.
 		}
 	}
 
-	// Validate listenerSubscription delivery constraints
-	ls := rover.Spec.ListenerSubscription
-	if ls != nil && ls.DeliveryType == "callback" && ls.Callback == "" {
-		valErr.AddRequiredError(
-			field.NewPath("spec").Child("listenerSubscription").Child("callback"),
-			"callback URL is required when deliveryType is \"callback\"",
-		)
-	}
-
 	return nil
 }
 
