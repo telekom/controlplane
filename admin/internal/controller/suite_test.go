@@ -13,6 +13,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/mock"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -27,6 +28,8 @@ import (
 	"github.com/telekom/controlplane/common/pkg/condition"
 	common_types "github.com/telekom/controlplane/common/pkg/types"
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
+	secretsapi "github.com/telekom/controlplane/secret-manager/api"
+	"github.com/telekom/controlplane/secret-manager/api/fake"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -103,6 +106,29 @@ var _ = BeforeSuite(func() {
 		Scheme: k8sManager.GetScheme(),
 	}).SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
+
+	secretManager := fake.NewMockSecretManager(GinkgoT())
+	secretManager.EXPECT().
+		Get(mock.Anything, mock.Anything).
+		Return("", secretsapi.ErrNotFound).
+		Maybe()
+	secretManager.EXPECT().
+		UpsertEnvironment(mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+		RunAndReturn(func(_ context.Context, envID string, opts ...secretsapi.OnboardingOption) (map[string]string, error) {
+			options := &secretsapi.OnboardingOptions{}
+			for _, opt := range opts {
+				opt(options)
+			}
+			available := map[string]string{}
+			for path := range options.SecretValues {
+				available[path] = envID + ":" + path
+			}
+			return available, nil
+		}).
+		Maybe()
+	originalAPI := secretsapi.API
+	secretsapi.API = func() secretsapi.SecretManager { return secretManager }
+	DeferCleanup(func() { secretsapi.API = originalAPI })
 
 	err = (&ZoneReconciler{
 		Client: k8sManager.GetClient(),

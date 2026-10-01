@@ -115,49 +115,6 @@ func createInternalIdentityRealm(ctx context.Context, hc *HandlingContext) error
 	return nil
 }
 
-func createGatewayAdminClient(ctx context.Context, hc *HandlingContext, gatewayConfig *adminv1.GatewayConfig) (*identityapi.Client, error) {
-	c := cclient.ClientFromContextOrDie(ctx)
-	clientID := naming.ForGatewayAdminClientId()
-	if gatewayConfig.Admin.ClientId != nil {
-		clientID = *gatewayConfig.Admin.ClientId
-	}
-
-	adminClient := &identityapi.Client{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      naming.ForGatewayAdminClient(hc.IdentityProvider.Name),
-			Namespace: labelutil.NormalizeValue(hc.Namespace.Name),
-		},
-	}
-
-	clientSecret := gatewayConfig.Admin.ClientSecret
-	if clientSecret == nil {
-		return nil, ctrlerrors.BlockedErrorf("gateway %q admin client secret must be provided for zone %q", gatewayConfig.Name, hc.Zone.Name)
-	}
-
-	mutator := func() error {
-		if adminClient.Labels == nil {
-			adminClient.Labels = make(map[string]string)
-		}
-		adminClient.Labels[cconfig.EnvironmentLabelKey] = hc.Environment.Name
-		adminClient.Labels[cconfig.BuildLabelKey(zoneLabelName)] = hc.Zone.Name
-		adminClient.Labels[cconfig.DomainLabelKey] = domainName
-
-		adminClient.Spec = identityapi.ClientSpec{
-			Realm:        types.ObjectRefFromObject(hc.InternalIdentityRealm),
-			ClientId:     clientID,
-			ClientSecret: *clientSecret,
-		}
-		return nil
-	}
-
-	_, err := c.CreateOrUpdate(ctx, adminClient, mutator)
-	if err != nil {
-		return nil, ctrlerrors.RetryableErrorf("failed to create or update Gateway Admin Client %s in zone %s: %s", adminClient.Name, hc.Zone.Name, err)
-	}
-
-	return adminClient, nil
-}
-
 func issuerHostname(idp *adminv1.IdentityProviderConfig) (string, error) {
 	if idp.IssuerHostname != "" {
 		return idp.IssuerHostname, nil
