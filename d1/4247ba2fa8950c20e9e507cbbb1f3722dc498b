@@ -1,0 +1,148 @@
+admin/internal/handler/zone/suite_test.go
+  s_4e6bcb29990737::t_5131ad205cd8dc 187-190,194-196
+  s_f1afb2fe939aef::t_a2d02473c3fcfd 37,197
+secret-manager/pkg/backend/kubernetes/backend.go
+  s_39e7aaac04963e::t_63dc7f496a97bd 66-68,74-75
+  s_39e7aaac04963e::t_315de01a44ae35 80,88-89
+secret-manager/api/README.md
+  s_b1f28c797d8169::t_6666ca6ad4b249 116
+  s_39e7aaac04963e::t_bae19f5104bef1 61,64
+  s_3ef94b1e2e0a9b::t_6a54d5fcf16813 24-25,27,29-30,33-36,42,62-63
+  s_39e7aaac04963e::t_048f240f78e9c7 39-41,45-60
+  s_3ef94b1e2e0a9b::t_b85d8e6e1e4194 43-44
+discovery-server/config/rbac/role.yaml
+  h_0f030e7424553c 55-63
+secret-manager/pkg/backend/kubernetes/envtest/suite_test.go
+  s_39e7aaac04963e::t_47726c1d921a28 1-45
+secret-manager/tools/mockery.api.yaml
+  s_39e7aaac04963e::t_0923d0393b802e 10
+docs/docs/architecture/admin.mdx
+  s_dffa85d2fb035a::t_f924557c60f03f 45
+  s_3ef94b1e2e0a9b::t_6a54d5fcf16813 33,44,46
+admin/internal/handler/zone/rover_test.go
+  s_4e6bcb29990737::t_8fdf053fb8c49c 12
+  s_dffa85d2fb035a::t_35f007600730ac 155-156,201-221
+  s_4e6bcb29990737::t_e1da4eca222c02 440
+  s_dffa85d2fb035a::t_a0d14a77cedb11 496-499,501-518,520,522-526,528-537,539-547,550-564,567-568,572-589,591-593,595-602
+  s_4e6bcb29990737::t_5a6e776e96bdd2 186-196
+  s_4e6bcb29990737::t_b54e72d0298aa3 170
+  s_3b97df46463f6e::t_77d766cfcda294 494-495,620
+  s_4e6bcb29990737::t_f46903a8bec52f 157-169,171-185,197-200
+  s_4e6bcb29990737::t_c991a9e140cdda 24-25
+  s_f1afb2fe939aef::t_4f6be46e0790ba 235,252,257,269,279,306,322,341-343,350,352,357-359,364,368,381,385,399,405,407,410,419-420,422,426,428-430,438-439,441,446,449,455,467,471,500,519,521,527,538,548-549,565-566,569-571,590,594,607,619
+admin/internal/controller/suite_test.go
+  s_dffa85d2fb035a::t_5c1a428f1c0018 112-113
+secret-manager/Makefile
+  s_39e7aaac04963e::t_b308b7885afc0e 5-7,20-21,30-31,34-66
+  s_39e7aaac04963e::t_55e269cbc4581c 19,22
+secret-manager/tools/mockery.secretmanager.yaml
+  s_39e7aaac04963e::t_1badb8332de15a 1-17
+secret-manager/pkg/backend/kubernetes/backend_test.go
+  s_39e7aaac04963e::t_cd3f34aa9fe3d6 17-18
+  s_39e7aaac04963e::t_7481b350cd1098 168-286
+secret-manager/api/api.go
+  s_39e7aaac04963e::t_6b406b95637455 78-86,88-90,124-131,137,141,143,145,147
+secret-manager/pkg/backend/cache/backend_test.go
+  s_39e7aaac04963e::t_faa069ba60bdd7 613-614
+docs/docs/admin-journey/environments-and-zones.md
+  s_3ef94b1e2e0a9b::t_6a54d5fcf16813 45,47-48,55,61
+secret-manager/api/fake/mock_SecretManager.go
+  s_39e7aaac04963e::t_a8a1e7100b3dad 5,231-283,285-286
+  s_39e7aaac04963e::t_ad20526cc75b0f 1
+  s_f1afb2fe939aef::t_382b52bd3e7417 284,287
+secret-manager/api/resolve_test.go
+  s_39e7aaac04963e::t_c2f9fd29084486 97,100,108,113
+  s_39e7aaac04963e::t_8daf0a99d5e3d4 1-21,28-96,98-99,101-107,109-112,114-119
+  s_39e7aaac04963e::t_8b1ea48eae635b 22-27
+secret-manager/pkg/backend/kubernetes/envtest/backend_envtest_test.go
+  s_39e7aaac04963e::t_76fe6c2186f031 1-79
+docs/docs/architecture/secret-manager.mdx
+  s_39e7aaac04963e::t_15a7348a43c370 46-47,49-52
+  s_3ef94b1e2e0a9b::t_6a54d5fcf16813 48
+admin/internal/handler/zone/rover.go
+  s_dffa85d2fb035a::t_3e63c2ddd6cc9d 162
+  s_48f4221ba8e7f4::t_d4ffe085bfbee2 76,101-102
+  s_dffa85d2fb035a::t_98ced9a54b4e53 116,122
+  s_dffa85d2fb035a::t_2c5354d28b91d0 143-147
+  s_dffa85d2fb035a::t_86e38e64e78a18 57-59
+  s_dffa85d2fb035a::t_e5caac26aa9ac1 56,61-65,67-75,77-79,81-84,87-100,103-105
+admin/internal/handler/zone/handler_test.go
+  s_f1afb2fe939aef::t_77d78c6d584447 53,112,132,163,192,214,229,250,262,279
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "d14247ba2fa8950c20e9e507cbbb1f3722dc498b",
+  "prompts": {},
+  "humans": {
+    "h_0f030e7424553c": {
+      "author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  },
+  "sessions": {
+    "s_39e7aaac04963e": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f0996f017ffe8O0VBAdYupoiMm",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": null
+    },
+    "s_3b97df46463f6e": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f0c6078a8ffe5T7W72xcnpi0Bh",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": null
+    },
+    "s_3ef94b1e2e0a9b": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f08fd3eeaffeU6otJyVkQRd7c1",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_48f4221ba8e7f4": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f0c6d3774ffeHG09XUWYb2MH0r",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": null
+    },
+    "s_4e6bcb29990737": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f091ba731ffeZGoYKTiDvMVsuk",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_b1f28c797d8169": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f0c790cc0ffegHrkFMRJe6H2kG",
+        "model": "gpt-6-astra"
+      },
+      "human_author": null
+    },
+    "s_dffa85d2fb035a": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f093cb4aeffeDOK9jNiIqUKNUf",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_f1afb2fe939aef": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f095de3a0ffe5t37ZXdsfA0Mot",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
