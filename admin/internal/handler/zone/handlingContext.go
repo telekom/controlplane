@@ -46,9 +46,10 @@ type HandlingContext struct {
 	InternalIdentityRealm *identityapi.Realm
 	TeamApiIdentityRealm  *identityapi.Realm
 	Gateways              map[string]*gatewayapi.Gateway
-	GatewayAdminClients   map[string]*identityapi.Client
-	GatewayConsumers      map[string]*gatewayapi.Consumer
-	DefaultPreset         *adminv1.Preset
+	// AdminClient is the zone's single system-managed rover client shared by every gateway.
+	AdminClient      *identityapi.Client
+	GatewayConsumers map[string]*gatewayapi.Consumer
+	DefaultPreset    *adminv1.Preset
 }
 
 // newHandlingContext fetches the Environment, creates/updates the zone Namespace,
@@ -112,14 +113,13 @@ func newHandlingContext(ctx context.Context, obj *adminv1.Zone, httpClient *http
 	}
 
 	return &HandlingContext{
-		Zone:                obj,
-		Environment:         environment,
-		Namespace:           namespace,
-		DefaultClaims:       defaultClaims,
-		HTTPClient:          httpClient,
-		Gateways:            make(map[string]*gatewayapi.Gateway),
-		GatewayAdminClients: make(map[string]*identityapi.Client),
-		GatewayConsumers:    make(map[string]*gatewayapi.Consumer),
-		DefaultPreset:       defaultPreset,
+		Zone:             obj,
+		Environment:      environment,
+		Namespace:        namespace,
+		DefaultClaims:    defaultClaims,
+		HTTPClient:       httpClient,
+		Gateways:         make(map[string]*gatewayapi.Gateway),
+		GatewayConsumers: make(map[string]*gatewayapi.Consumer),
+		DefaultPreset:    defaultPreset,
 	}, nil
 }

@@ -165,6 +165,9 @@ func reportNotReadySubResources(ctx context.Context, obj *adminv1.Zone) error {
 	return nil
 }
 
+// Delete intentionally keeps every sub-resource. In particular the rover admin Client and its
+// secret-manager entry are retained: deleting the Client would delete the backing identity
+// provider client.
 func (h *ZoneHandler) Delete(ctx context.Context, obj *adminv1.Zone) error {
 	return nil
 }
