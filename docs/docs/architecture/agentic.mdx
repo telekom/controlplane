@@ -38,6 +38,20 @@ rover-ctl apply mcpspec.yaml
              └──▶ Gateway ConsumeRoute created (access granted)
 ```
 
+## Subscription Approval Scopes
+
+An `AgenticSubscription` approval request includes the requested
+`spec.security.m2m.scopes` in its properties, following the API subscription
+approval flow. These properties determine the request identity, so changing
+the requested scopes creates a distinct approval request. The configured
+approval strategy applies to that new request, including automatic approval
+where configured.
+
+While the new request is pending or rejected, the existing `ConsumeRoute`
+remains unchanged. The controller updates its scopes once approval is granted
+for the new request. Rejecting or suspending the Approval itself removes the
+`ConsumeRoute`.
+
 ## Route Provisioning
 
 When an **McpExposure** is reconciled, the Agentic operator provisions gateway Routes on the AI Gateway:

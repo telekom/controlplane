@@ -42,16 +42,15 @@ var _ = Describe("Zone Handler", func() {
 	AfterEach(func() { Expect(client.IgnoreNotFound(k8sClient.Delete(ctx, zone))).To(Succeed()) })
 
 	It("reconciles named infrastructure and publishes sorted preset status", func() {
-		secret := "alternate-secret"
 		zone.Spec.Gateways = append(zone.Spec.Gateways, adminv1.GatewayConfig{
-			Name: "ai", Admin: adminv1.GatewayAdminConfig{IdentityProviderRef: "primary", Url: "https://ai.example.com/admin-api", ClientSecret: &secret},
+			Name: "ai", Admin: adminv1.GatewayAdminConfig{IdentityProviderRef: "primary", Url: "https://ai.example.com/admin-api"},
 		})
 		zone.Spec.Presets = append(zone.Spec.Presets,
 			adminv1.Preset{Name: "consumer-failover", Type: adminv1.GatewayTypeAPI, GatewayRef: "standard", IdentityProviderRef: "primary", TokenUrl: "https://tokens.example.com/failover", Urls: []adminv1.UrlConfig{{Hostname: "failover.example.com", BasePath: "/"}}, Features: []adminv1.Feature{{Name: adminv1.FeatureConsumerFailover, Enabled: true}}},
 			adminv1.Preset{Name: "ai", Type: adminv1.GatewayTypeAI, Default: true, GatewayRef: "ai", IdentityProviderRef: "primary", Urls: []adminv1.UrlConfig{{Hostname: "ai.example.com", BasePath: "/"}}},
 		)
 
-		handler := &ZoneHandler{}
+		handler := newTestHandler()
 		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
 		markSubResourcesReady(zone)
 		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
@@ -88,7 +87,15 @@ var _ = Describe("Zone Handler", func() {
 		))
 		Expect(clients.Items).To(HaveLen(1))
 		Expect(clients.Items[0].Name).To(Equal(naming.ForGatewayAdminClient(naming.ForIdentityProvider(zone, "primary"))))
-		Expect(clients.Items[0].Spec.ClientSecret).To(Equal(secret))
+		Expect(clients.Items[0].Spec.ClientId).To(Equal("rover"))
+		Expect(clients.Items[0].Spec.ClientSecret).NotTo(BeEmpty())
+		for i := range gateways.Items {
+			Expect(gateways.Items[i].Spec.Admin.ClientId).To(Equal("rover"))
+			Expect(gateways.Items[i].Spec.Admin.ClientSecret).To(Equal(clients.Items[0].Spec.ClientSecret))
+		}
+		for _, gw := range zone.Status.Gateways {
+			Expect(gw.AdminClient.Name).To(Equal(clients.Items[0].Name))
+		}
 
 		zone.Spec.Presets = append(zone.Spec.Presets[:1], zone.Spec.Presets[2:]...)
 		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
@@ -102,7 +109,7 @@ var _ = Describe("Zone Handler", func() {
 			Urls: []adminv1.UrlConfig{{Hostname: "ai.example.com", BasePath: "/"}},
 		})
 
-		handler := &ZoneHandler{}
+		handler := newTestHandler()
 		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
 		markSubResourcesReady(zone)
 		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
@@ -113,17 +120,16 @@ var _ = Describe("Zone Handler", func() {
 	})
 
 	It("creates identity routes on an AI-only gateway", func() {
-		secret := "ai-secret"
 		zone.Spec.Gateways = append(zone.Spec.Gateways, adminv1.GatewayConfig{
 			Name:  "ai",
-			Admin: adminv1.GatewayAdminConfig{IdentityProviderRef: "primary", ClientSecret: &secret, Url: "https://ai.example.com/admin-api"},
+			Admin: adminv1.GatewayAdminConfig{IdentityProviderRef: "primary", Url: "https://ai.example.com/admin-api"},
 		})
 		zone.Spec.Presets = append(zone.Spec.Presets, adminv1.Preset{
 			Name: "ai", Type: adminv1.GatewayTypeAI, Default: true, GatewayRef: "ai", IdentityProviderRef: "primary",
 			Urls: []adminv1.UrlConfig{{Hostname: "ai.example.com", BasePath: "/"}},
 		})
 
-		handler := &ZoneHandler{}
+		handler := newTestHandler()
 		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
 		markSubResourcesReady(zone)
 		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
@@ -147,15 +153,14 @@ var _ = Describe("Zone Handler", func() {
 		func(visibility adminv1.ZoneVisibility, prefix string) {
 			zone.Spec.Visibility = visibility
 			zone.Spec.Presets[0].Urls[0].BasePath = "/v1"
-			secret := "ai-secret"
 			zone.Spec.Gateways = append(zone.Spec.Gateways, adminv1.GatewayConfig{
-				Name: "ai", Admin: adminv1.GatewayAdminConfig{IdentityProviderRef: "primary", ClientSecret: &secret, Url: "https://ai.example.com/admin-api"},
+				Name: "ai", Admin: adminv1.GatewayAdminConfig{IdentityProviderRef: "primary", Url: "https://ai.example.com/admin-api"},
 			})
 			zone.Spec.Presets = append(zone.Spec.Presets, adminv1.Preset{
 				Name: "ai", Type: adminv1.GatewayTypeAI, Default: true, GatewayRef: "ai", IdentityProviderRef: "primary",
 				Urls: []adminv1.UrlConfig{{Hostname: "ai.example.com", BasePath: "/v1"}},
 			})
-			handler := &ZoneHandler{}
+			handler := newTestHandler()
 			Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
 			markSubResourcesReady(zone)
 			Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
@@ -184,7 +189,7 @@ var _ = Describe("Zone Handler", func() {
 	It("serves identity routes under the preset base path so LmsIssuer resolves", func() {
 		zone.Spec.Presets[0].Urls[0].BasePath = "/v1"
 
-		handler := &ZoneHandler{}
+		handler := newTestHandler()
 		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
 		markSubResourcesReady(zone)
 		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
@@ -206,7 +211,7 @@ var _ = Describe("Zone Handler", func() {
 
 	It("preserves managed route behavior on the default preset", func() {
 		zone.Spec.ManagedRoutes = &adminv1.ManagedRoutesConfig{Routes: []adminv1.ManagedRouteConfig{{Name: "proxy", Path: "/proxy", Url: "https://backend.example.com/base", Type: adminv1.ManagedRouteTypeProxy}}}
-		handler := &ZoneHandler{}
+		handler := newTestHandler()
 		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
 		markSubResourcesReady(zone)
 		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
@@ -221,7 +226,7 @@ var _ = Describe("Zone Handler", func() {
 			{Name: "team-api", Path: "/team-api", Url: "https://team.example.com", Type: adminv1.ManagedRouteTypeTeamAPI},
 			{Name: "proxy", Path: "/proxy", Url: "https://backend.example.com", Type: adminv1.ManagedRouteTypeProxy},
 		}}
-		handler := &ZoneHandler{}
+		handler := newTestHandler()
 		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
 		markSubResourcesReady(zone)
 		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
@@ -242,7 +247,7 @@ var _ = Describe("Zone Handler", func() {
 	})
 
 	It("is ready after identity resources are ready and reconciliation is unchanged", func() {
-		handler := &ZoneHandler{}
+		handler := newTestHandler()
 		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
 		Expect(meta.IsStatusConditionFalse(zone.Status.Conditions, condition.ConditionTypeReady)).To(BeTrue())
 		markSubResourcesReady(zone)
@@ -254,7 +259,7 @@ var _ = Describe("Zone Handler", func() {
 	})
 
 	It("waits for identity resources before creating gateways", func() {
-		handler := &ZoneHandler{}
+		handler := newTestHandler()
 		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
 		Expect(zone.Status.IdentityProvider).NotTo(BeNil())
 		Expect(zone.Status.IdentityRealm).NotTo(BeNil())
@@ -271,7 +276,7 @@ var _ = Describe("Zone Handler", func() {
 	})
 
 	It("keeps a provisioned zone ready and reports a degraded gateway", func() {
-		handler := &ZoneHandler{}
+		handler := newTestHandler()
 		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
 		markSubResourcesReady(zone)
 		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
@@ -291,18 +296,6 @@ var _ = Describe("Zone Handler", func() {
 			HaveField("Reason", condition.ReasonSubResourceNotReady),
 			HaveField("Message", And(ContainSubstring("Gateway"), ContainSubstring(gateway.Name), ContainSubstring("health check failed"))),
 		)))
-	})
-
-	It("returns a blocked error when a gateway admin secret is missing", func() {
-		zone.Spec.Gateways[0].Admin.ClientSecret = nil
-		hc := newTestHandlingContext(newTestContext(zone), zone)
-		hc.IdentityProvider = &identityapi.IdentityProvider{}
-		hc.InternalIdentityRealm = &identityapi.Realm{}
-
-		_, err := createGatewayAdminClient(newTestContext(zone), hc, &zone.Spec.Gateways[0])
-		var blocked ctrlerrors.BlockedError
-		Expect(err).To(HaveOccurred())
-		Expect(errors.As(err, &blocked)).To(BeTrue())
 	})
 
 	It("returns blocked errors when a preset gateway is absent from the handling context", func() {

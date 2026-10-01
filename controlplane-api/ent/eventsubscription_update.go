@@ -131,6 +131,42 @@ func (_u *EventSubscriptionUpdate) SetNillableName(v *string) *EventSubscription
 	return _u
 }
 
+// SetRequestedScopes sets the "requested_scopes" field.
+func (_u *EventSubscriptionUpdate) SetRequestedScopes(v []string) *EventSubscriptionUpdate {
+	_u.mutation.SetRequestedScopes(v)
+	return _u
+}
+
+// AppendRequestedScopes appends value to the "requested_scopes" field.
+func (_u *EventSubscriptionUpdate) AppendRequestedScopes(v []string) *EventSubscriptionUpdate {
+	_u.mutation.AppendRequestedScopes(v)
+	return _u
+}
+
+// ClearRequestedScopes clears the value of the "requested_scopes" field.
+func (_u *EventSubscriptionUpdate) ClearRequestedScopes() *EventSubscriptionUpdate {
+	_u.mutation.ClearRequestedScopes()
+	return _u
+}
+
+// SetActiveScopes sets the "active_scopes" field.
+func (_u *EventSubscriptionUpdate) SetActiveScopes(v []string) *EventSubscriptionUpdate {
+	_u.mutation.SetActiveScopes(v)
+	return _u
+}
+
+// AppendActiveScopes appends value to the "active_scopes" field.
+func (_u *EventSubscriptionUpdate) AppendActiveScopes(v []string) *EventSubscriptionUpdate {
+	_u.mutation.AppendActiveScopes(v)
+	return _u
+}
+
+// ClearActiveScopes clears the value of the "active_scopes" field.
+func (_u *EventSubscriptionUpdate) ClearActiveScopes() *EventSubscriptionUpdate {
+	_u.mutation.ClearActiveScopes()
+	return _u
+}
+
 // SetEventType sets the "event_type" field.
 func (_u *EventSubscriptionUpdate) SetEventType(v string) *EventSubscriptionUpdate {
 	_u.mutation.SetEventType(v)
@@ -465,6 +501,28 @@ func (_u *EventSubscriptionUpdate) sqlSave(ctx context.Context) (_node int, err 
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(eventsubscription.FieldName, field.TypeString, value)
 	}
+	if value, ok := _u.mutation.RequestedScopes(); ok {
+		_spec.SetField(eventsubscription.FieldRequestedScopes, field.TypeJSON, value)
+	}
+	if value, ok := _u.mutation.AppendedRequestedScopes(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, eventsubscription.FieldRequestedScopes, value)
+		})
+	}
+	if _u.mutation.RequestedScopesCleared() {
+		_spec.ClearField(eventsubscription.FieldRequestedScopes, field.TypeJSON)
+	}
+	if value, ok := _u.mutation.ActiveScopes(); ok {
+		_spec.SetField(eventsubscription.FieldActiveScopes, field.TypeJSON, value)
+	}
+	if value, ok := _u.mutation.AppendedActiveScopes(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, eventsubscription.FieldActiveScopes, value)
+		})
+	}
+	if _u.mutation.ActiveScopesCleared() {
+		_spec.ClearField(eventsubscription.FieldActiveScopes, field.TypeJSON)
+	}
 	if value, ok := _u.mutation.EventType(); ok {
 		_spec.SetField(eventsubscription.FieldEventType, field.TypeString, value)
 	}
@@ -746,6 +804,42 @@ func (_u *EventSubscriptionUpdateOne) SetNillableName(v *string) *EventSubscript
 	if v != nil {
 		_u.SetName(*v)
 	}
+	return _u
+}
+
+// SetRequestedScopes sets the "requested_scopes" field.
+func (_u *EventSubscriptionUpdateOne) SetRequestedScopes(v []string) *EventSubscriptionUpdateOne {
+	_u.mutation.SetRequestedScopes(v)
+	return _u
+}
+
+// AppendRequestedScopes appends value to the "requested_scopes" field.
+func (_u *EventSubscriptionUpdateOne) AppendRequestedScopes(v []string) *EventSubscriptionUpdateOne {
+	_u.mutation.AppendRequestedScopes(v)
+	return _u
+}
+
+// ClearRequestedScopes clears the value of the "requested_scopes" field.
+func (_u *EventSubscriptionUpdateOne) ClearRequestedScopes() *EventSubscriptionUpdateOne {
+	_u.mutation.ClearRequestedScopes()
+	return _u
+}
+
+// SetActiveScopes sets the "active_scopes" field.
+func (_u *EventSubscriptionUpdateOne) SetActiveScopes(v []string) *EventSubscriptionUpdateOne {
+	_u.mutation.SetActiveScopes(v)
+	return _u
+}
+
+// AppendActiveScopes appends value to the "active_scopes" field.
+func (_u *EventSubscriptionUpdateOne) AppendActiveScopes(v []string) *EventSubscriptionUpdateOne {
+	_u.mutation.AppendActiveScopes(v)
+	return _u
+}
+
+// ClearActiveScopes clears the value of the "active_scopes" field.
+func (_u *EventSubscriptionUpdateOne) ClearActiveScopes() *EventSubscriptionUpdateOne {
+	_u.mutation.ClearActiveScopes()
 	return _u
 }
 
@@ -1112,6 +1206,28 @@ func (_u *EventSubscriptionUpdateOne) sqlSave(ctx context.Context) (_node *Event
 	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(eventsubscription.FieldName, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.RequestedScopes(); ok {
+		_spec.SetField(eventsubscription.FieldRequestedScopes, field.TypeJSON, value)
+	}
+	if value, ok := _u.mutation.AppendedRequestedScopes(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, eventsubscription.FieldRequestedScopes, value)
+		})
+	}
+	if _u.mutation.RequestedScopesCleared() {
+		_spec.ClearField(eventsubscription.FieldRequestedScopes, field.TypeJSON)
+	}
+	if value, ok := _u.mutation.ActiveScopes(); ok {
+		_spec.SetField(eventsubscription.FieldActiveScopes, field.TypeJSON, value)
+	}
+	if value, ok := _u.mutation.AppendedActiveScopes(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, eventsubscription.FieldActiveScopes, value)
+		})
+	}
+	if _u.mutation.ActiveScopesCleared() {
+		_spec.ClearField(eventsubscription.FieldActiveScopes, field.TypeJSON)
 	}
 	if value, ok := _u.mutation.EventType(); ok {
 		_spec.SetField(eventsubscription.FieldEventType, field.TypeString, value)

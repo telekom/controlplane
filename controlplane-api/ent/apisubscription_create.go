@@ -113,6 +113,18 @@ func (_c *ApiSubscriptionCreate) SetName(v string) *ApiSubscriptionCreate {
 	return _c
 }
 
+// SetRequestedScopes sets the "requested_scopes" field.
+func (_c *ApiSubscriptionCreate) SetRequestedScopes(v []string) *ApiSubscriptionCreate {
+	_c.mutation.SetRequestedScopes(v)
+	return _c
+}
+
+// SetActiveScopes sets the "active_scopes" field.
+func (_c *ApiSubscriptionCreate) SetActiveScopes(v []string) *ApiSubscriptionCreate {
+	_c.mutation.SetActiveScopes(v)
+	return _c
+}
+
 // SetBasePath sets the "base_path" field.
 func (_c *ApiSubscriptionCreate) SetBasePath(v string) *ApiSubscriptionCreate {
 	_c.mutation.SetBasePath(v)
@@ -399,6 +411,14 @@ func (_c *ApiSubscriptionCreate) createSpec() (*ApiSubscription, *sqlgraph.Creat
 		_spec.SetField(apisubscription.FieldName, field.TypeString, value)
 		_node.Name = value
 	}
+	if value, ok := _c.mutation.RequestedScopes(); ok {
+		_spec.SetField(apisubscription.FieldRequestedScopes, field.TypeJSON, value)
+		_node.RequestedScopes = value
+	}
+	if value, ok := _c.mutation.ActiveScopes(); ok {
+		_spec.SetField(apisubscription.FieldActiveScopes, field.TypeJSON, value)
+		_node.ActiveScopes = value
+	}
 	if value, ok := _c.mutation.BasePath(); ok {
 		_spec.SetField(apisubscription.FieldBasePath, field.TypeString, value)
 		_node.BasePath = value
@@ -643,6 +663,42 @@ func (u *ApiSubscriptionUpsert) UpdateName() *ApiSubscriptionUpsert {
 	return u
 }
 
+// SetRequestedScopes sets the "requested_scopes" field.
+func (u *ApiSubscriptionUpsert) SetRequestedScopes(v []string) *ApiSubscriptionUpsert {
+	u.Set(apisubscription.FieldRequestedScopes, v)
+	return u
+}
+
+// UpdateRequestedScopes sets the "requested_scopes" field to the value that was provided on create.
+func (u *ApiSubscriptionUpsert) UpdateRequestedScopes() *ApiSubscriptionUpsert {
+	u.SetExcluded(apisubscription.FieldRequestedScopes)
+	return u
+}
+
+// ClearRequestedScopes clears the value of the "requested_scopes" field.
+func (u *ApiSubscriptionUpsert) ClearRequestedScopes() *ApiSubscriptionUpsert {
+	u.SetNull(apisubscription.FieldRequestedScopes)
+	return u
+}
+
+// SetActiveScopes sets the "active_scopes" field.
+func (u *ApiSubscriptionUpsert) SetActiveScopes(v []string) *ApiSubscriptionUpsert {
+	u.Set(apisubscription.FieldActiveScopes, v)
+	return u
+}
+
+// UpdateActiveScopes sets the "active_scopes" field to the value that was provided on create.
+func (u *ApiSubscriptionUpsert) UpdateActiveScopes() *ApiSubscriptionUpsert {
+	u.SetExcluded(apisubscription.FieldActiveScopes)
+	return u
+}
+
+// ClearActiveScopes clears the value of the "active_scopes" field.
+func (u *ApiSubscriptionUpsert) ClearActiveScopes() *ApiSubscriptionUpsert {
+	u.SetNull(apisubscription.FieldActiveScopes)
+	return u
+}
+
 // SetBasePath sets the "base_path" field.
 func (u *ApiSubscriptionUpsert) SetBasePath(v string) *ApiSubscriptionUpsert {
 	u.Set(apisubscription.FieldBasePath, v)
@@ -868,6 +924,48 @@ func (u *ApiSubscriptionUpsertOne) SetName(v string) *ApiSubscriptionUpsertOne {
 func (u *ApiSubscriptionUpsertOne) UpdateName() *ApiSubscriptionUpsertOne {
 	return u.Update(func(s *ApiSubscriptionUpsert) {
 		s.UpdateName()
+	})
+}
+
+// SetRequestedScopes sets the "requested_scopes" field.
+func (u *ApiSubscriptionUpsertOne) SetRequestedScopes(v []string) *ApiSubscriptionUpsertOne {
+	return u.Update(func(s *ApiSubscriptionUpsert) {
+		s.SetRequestedScopes(v)
+	})
+}
+
+// UpdateRequestedScopes sets the "requested_scopes" field to the value that was provided on create.
+func (u *ApiSubscriptionUpsertOne) UpdateRequestedScopes() *ApiSubscriptionUpsertOne {
+	return u.Update(func(s *ApiSubscriptionUpsert) {
+		s.UpdateRequestedScopes()
+	})
+}
+
+// ClearRequestedScopes clears the value of the "requested_scopes" field.
+func (u *ApiSubscriptionUpsertOne) ClearRequestedScopes() *ApiSubscriptionUpsertOne {
+	return u.Update(func(s *ApiSubscriptionUpsert) {
+		s.ClearRequestedScopes()
+	})
+}
+
+// SetActiveScopes sets the "active_scopes" field.
+func (u *ApiSubscriptionUpsertOne) SetActiveScopes(v []string) *ApiSubscriptionUpsertOne {
+	return u.Update(func(s *ApiSubscriptionUpsert) {
+		s.SetActiveScopes(v)
+	})
+}
+
+// UpdateActiveScopes sets the "active_scopes" field to the value that was provided on create.
+func (u *ApiSubscriptionUpsertOne) UpdateActiveScopes() *ApiSubscriptionUpsertOne {
+	return u.Update(func(s *ApiSubscriptionUpsert) {
+		s.UpdateActiveScopes()
+	})
+}
+
+// ClearActiveScopes clears the value of the "active_scopes" field.
+func (u *ApiSubscriptionUpsertOne) ClearActiveScopes() *ApiSubscriptionUpsertOne {
+	return u.Update(func(s *ApiSubscriptionUpsert) {
+		s.ClearActiveScopes()
 	})
 }
 
@@ -1275,6 +1373,48 @@ func (u *ApiSubscriptionUpsertBulk) SetName(v string) *ApiSubscriptionUpsertBulk
 func (u *ApiSubscriptionUpsertBulk) UpdateName() *ApiSubscriptionUpsertBulk {
 	return u.Update(func(s *ApiSubscriptionUpsert) {
 		s.UpdateName()
+	})
+}
+
+// SetRequestedScopes sets the "requested_scopes" field.
+func (u *ApiSubscriptionUpsertBulk) SetRequestedScopes(v []string) *ApiSubscriptionUpsertBulk {
+	return u.Update(func(s *ApiSubscriptionUpsert) {
+		s.SetRequestedScopes(v)
+	})
+}
+
+// UpdateRequestedScopes sets the "requested_scopes" field to the value that was provided on create.
+func (u *ApiSubscriptionUpsertBulk) UpdateRequestedScopes() *ApiSubscriptionUpsertBulk {
+	return u.Update(func(s *ApiSubscriptionUpsert) {
+		s.UpdateRequestedScopes()
+	})
+}
+
+// ClearRequestedScopes clears the value of the "requested_scopes" field.
+func (u *ApiSubscriptionUpsertBulk) ClearRequestedScopes() *ApiSubscriptionUpsertBulk {
+	return u.Update(func(s *ApiSubscriptionUpsert) {
+		s.ClearRequestedScopes()
+	})
+}
+
+// SetActiveScopes sets the "active_scopes" field.
+func (u *ApiSubscriptionUpsertBulk) SetActiveScopes(v []string) *ApiSubscriptionUpsertBulk {
+	return u.Update(func(s *ApiSubscriptionUpsert) {
+		s.SetActiveScopes(v)
+	})
+}
+
+// UpdateActiveScopes sets the "active_scopes" field to the value that was provided on create.
+func (u *ApiSubscriptionUpsertBulk) UpdateActiveScopes() *ApiSubscriptionUpsertBulk {
+	return u.Update(func(s *ApiSubscriptionUpsert) {
+		s.UpdateActiveScopes()
+	})
+}
+
+// ClearActiveScopes clears the value of the "active_scopes" field.
+func (u *ApiSubscriptionUpsertBulk) ClearActiveScopes() *ApiSubscriptionUpsertBulk {
+	return u.Update(func(s *ApiSubscriptionUpsert) {
+		s.ClearActiveScopes()
 	})
 }
 

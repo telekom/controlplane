@@ -36,6 +36,10 @@ const (
 	FieldNamespace = "namespace"
 	// FieldName holds the string denoting the name field in the database.
 	FieldName = "name"
+	// FieldRequestedScopes holds the string denoting the requested_scopes field in the database.
+	FieldRequestedScopes = "requested_scopes"
+	// FieldActiveScopes holds the string denoting the active_scopes field in the database.
+	FieldActiveScopes = "active_scopes"
 	// FieldEventType holds the string denoting the event_type field in the database.
 	FieldEventType = "event_type"
 	// FieldDeliveryType holds the string denoting the delivery_type field in the database.
@@ -100,6 +104,8 @@ var Columns = []string{
 	FieldEnvironment,
 	FieldNamespace,
 	FieldName,
+	FieldRequestedScopes,
+	FieldActiveScopes,
 	FieldEventType,
 	FieldDeliveryType,
 	FieldTrigger,

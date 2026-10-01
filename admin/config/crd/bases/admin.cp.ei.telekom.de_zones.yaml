@@ -111,17 +111,9 @@ spec:
                       description: |-
                         GatewayAdminConfig contains the necessary information to connect to the gateway admin API for this zone.
                         Most of it can be optional if the Gateway was setup to support it, then only the URL is required.
+                        The OAuth client used to call the admin API is system-managed: every gateway of a zone shares
+                        one "rover" client whose credentials cannot be configured here.
                       properties:
-                        clientId:
-                          description: |-
-                            ClientId of the admin client.
-                            If empty, a managed client with the default name will be used.
-                          type: string
-                        clientSecret:
-                          description: |-
-                            ClientSecret of the admin client
-                            If empty, a managed client secret will be generated.
-                          type: string
                         identityProviderRef:
                           description: IdentityProviderRef selects the IDP used to
                             obtain gateway-admin tokens.
