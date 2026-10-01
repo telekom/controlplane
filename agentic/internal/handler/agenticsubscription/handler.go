@@ -76,6 +76,12 @@ func (h *AgenticSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *ag
 	if !validateSubscriptionScopes(serverInfo, exposure, obj) {
 		return nil
 	}
+	if violatesBasicWithScopesPolicy(obj, exposure) {
+		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonValidationFailed,
+			"Consumer username/password with scopes requires an external IDP grant type \"password\""))
+		obj.SetCondition(condition.NewBlockedCondition("Consumer username/password with scopes requires an external IDP grant type \"password\""))
+		return nil
+	}
 	if !exposureFound {
 		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet,
 			"No active AgenticExposure found for basePath "+obj.Spec.BasePath))
@@ -241,6 +247,16 @@ func (h *AgenticSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *ag
 		"AgenticSubscription has been provisioned"))
 
 	return nil
+}
+
+func violatesBasicWithScopesPolicy(obj *agenticv1.AgenticSubscription, exposure *agenticv1.AgenticExposure) bool {
+	subHasScopes := obj.HasM2M() && obj.Spec.Security.M2M.Basic != nil && len(obj.Spec.Security.M2M.Scopes) > 0
+	if !subHasScopes {
+		return false
+	}
+
+	return exposure == nil || !exposure.HasExternalIdp() ||
+		exposure.Spec.Security.M2M.ExternalIDP.GrantType != agenticv1.GrantTypePassword
 }
 
 func subscriptionApprovalProperties(obj *agenticv1.AgenticSubscription, exposure *agenticv1.AgenticExposure) map[string]any {

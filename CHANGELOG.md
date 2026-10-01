@@ -1,3 +1,17 @@
+## [0.31.2](https://github.com/telekom/controlplane/compare/v0.31.1...v0.31.2) (2026-10-01)
+
+
+### Bug Fixes
+
+* allow extIDP basic auth with scopes ([#699](https://github.com/telekom/controlplane/issues/699)) ([7774813](https://github.com/telekom/controlplane/commit/77748133e607ca0661608c99a9d1e975481a71cb))
+
+## [0.31.1](https://github.com/telekom/controlplane/compare/v0.31.0...v0.31.1) (2026-10-01)
+
+
+### Bug Fixes
+
+* **admin:** rover-client is in system-control; only one client per zone possible ([#714](https://github.com/telekom/controlplane/issues/714)) ([ae54c9c](https://github.com/telekom/controlplane/commit/ae54c9c55b9df096f0bd442383e6b9eef386953e))
+
 # [0.31.0](https://github.com/telekom/controlplane/compare/v0.30.1...v0.31.0) (2026-09-30)
 
 

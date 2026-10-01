@@ -162,7 +162,7 @@ func mapM2MToAgenticM2M(m2m *rover.Machine2MachineAuthentication) *agenticv1.Mac
 		result.ExternalIDP = &agenticv1.ExternalIdentityProvider{
 			TokenEndpoint: m2m.ExternalIDP.TokenEndpoint,
 			TokenRequest:  agenticv1.TokenRequestMethod(m2m.ExternalIDP.TokenRequest),
-			GrantType:     string(m2m.ExternalIDP.GrantType),
+			GrantType:     agenticv1.GrantType(m2m.ExternalIDP.GrantType),
 		}
 		if m2m.ExternalIDP.Client != nil {
 			result.ExternalIDP.Client = &agenticv1.OAuth2ClientCredentials{
