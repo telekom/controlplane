@@ -391,6 +391,78 @@ var _ = Describe("Rover V1 Test Suite", func() {
 		})
 	})
 
+	Context("Listener Types", func() {
+		const listenerSubscriptionMessage = "callback is required for deliveryType 'callback' and must not be set otherwise; set deliveryType: callback to deliver to a callback URL"
+		const listenersRequiredMessage = "listenerSubscription requires at least one entry in listeners"
+
+		listeners := []v1.RoverListener{
+			{Consumer: "consumer-app", Provider: "provider-app", ApiBasePath: "/echo/v1"},
+		}
+
+		newListenerRover := func(name string, ls []v1.RoverListener, sub *v1.ListenerSubscription) *v1.Rover {
+			rover := new(v1.Rover)
+			rover.Name = name
+			rover.Namespace = "default"
+			rover.Spec = v1.RoverSpec{
+				Zone:                 "test-zone",
+				ClientSecret:         "topsecret",
+				Listeners:            ls,
+				ListenerSubscription: sub,
+			}
+			return rover
+		}
+
+		expectInvalid := func(rover *v1.Rover, field, message string) {
+			err := k8sClient.Create(ctx, rover)
+			Expect(err).To(HaveOccurred())
+			Expect(apierrors.IsInvalid(err)).To(BeTrue())
+			statusErr, ok := err.(apierrors.APIStatus)
+			Expect(ok).To(BeTrue())
+			Expect(statusErr.Status().Details.Causes).To(ContainElement(metav1.StatusCause{
+				Type:    metav1.CauseTypeFieldValueInvalid,
+				Message: "Invalid value: \"object\": " + message,
+				Field:   field,
+			}))
+		}
+
+		It("should reject a callback without deliveryType callback", func() {
+			rover := newListenerRover("listener-callback-sse", listeners, &v1.ListenerSubscription{
+				Callback: "https://example.com/listener",
+			})
+			expectInvalid(rover, "spec.listenerSubscription", listenerSubscriptionMessage)
+		})
+
+		It("should reject deliveryType callback without a callback", func() {
+			rover := newListenerRover("listener-callback-missing", listeners, &v1.ListenerSubscription{
+				DeliveryType: "callback",
+			})
+			expectInvalid(rover, "spec.listenerSubscription", listenerSubscriptionMessage)
+		})
+
+		It("should reject a listenerSubscription without listeners", func() {
+			rover := newListenerRover("listener-subscription-only", nil, &v1.ListenerSubscription{
+				DeliveryType: "server_sent_event",
+			})
+			expectInvalid(rover, "spec", listenersRequiredMessage)
+		})
+
+		It("should accept listeners with callback delivery", func() {
+			rover := newListenerRover("listener-callback", listeners, &v1.ListenerSubscription{
+				DeliveryType: "callback",
+				Callback:     "https://example.com/listener",
+			})
+			Expect(k8sClient.Create(ctx, rover)).To(Succeed())
+			Expect(k8sClient.Delete(ctx, rover)).To(Succeed())
+		})
+
+		It("should accept listeners with SSE delivery", func() {
+			rover := newListenerRover("listener-sse", listeners, &v1.ListenerSubscription{})
+			Expect(k8sClient.Create(ctx, rover)).To(Succeed())
+			Expect(rover.Spec.ListenerSubscription.DeliveryType).To(Equal("server_sent_event"))
+			Expect(k8sClient.Delete(ctx, rover)).To(Succeed())
+		})
+	})
+
 	Context("File Types (SFTP)", func() {
 		It("should report the exposure and subscription type as file", func() {
 			exp := v1.Exposure{File: &v1.FileExposure{FileType: "demo-sftp-spec-v1"}}
