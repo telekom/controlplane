@@ -51,6 +51,7 @@ type ListenerFilter struct {
 }
 
 // ListenerSubscription configures how listener events are delivered to the subscriber.
+// +kubebuilder:validation:XValidation:rule="self.deliveryType == 'callback' ? (has(self.callback) && self.callback != '') : !has(self.callback)",message="callback is required for deliveryType 'callback' and must not be set otherwise; set deliveryType: callback to deliver to a callback URL"
 type ListenerSubscription struct {
 	// DeliveryType defines the delivery mechanism for listener events
 	// +kubebuilder:validation:Enum=callback;server_sent_event
