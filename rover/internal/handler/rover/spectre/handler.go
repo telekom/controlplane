@@ -9,6 +9,7 @@ import (
 
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	crclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
@@ -124,9 +125,12 @@ func ensureListener(ctx context.Context, c client.JanitorClient, rover *roverv1.
 	logger.V(1).Info("Ensuring Listener", "rover", rover.Name, "listener", makeListenerName(rover.Name, rl))
 
 	// Resolve the consumer Application. If the consumer is the Rover's own
-	// Application, use the already-resolved status ref to avoid a redundant list.
+	// Application (by name or full ID), use the already-resolved status ref to
+	// avoid a redundant lookup.
+	ownKey := crclient.ObjectKey{Name: rover.Name, Namespace: rover.Namespace}
+	consumerKey, isID := applicationKeyFromID(ctx, rl.Consumer)
 	var consumerRef *types.TypedObjectRef
-	if rl.Consumer == rover.Name {
+	if rl.Consumer == rover.Name || (isID && consumerKey == ownKey) {
 		consumerRef = &types.TypedObjectRef{
 			TypeMeta: metav1.TypeMeta{Kind: "Application", APIVersion: "application.cp.ei.telekom.de/v1"},
 			ObjectRef: types.ObjectRef{
