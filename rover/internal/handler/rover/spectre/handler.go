@@ -6,8 +6,10 @@ package spectre
 
 import (
 	"context"
+	stderrors "errors"
 
 	"github.com/pkg/errors"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	crclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -31,8 +33,10 @@ func HandleListeners(ctx context.Context, c client.JanitorClient, rover *roverv1
 		return nil
 	}
 
+	// Not Blocked: a Blocked error lets the caller clean up stale children, and
+	// without the Application no Listener is recorded as desired yet.
 	if rover.Status.Application == nil {
-		return ctrlerrors.BlockedErrorf("rover status.application is not yet set")
+		return errors.New("rover status.application is not yet set")
 	}
 
 	app, err := ensureSpectreApplication(ctx, c, rover)
@@ -44,6 +48,9 @@ func HandleListeners(ctx context.Context, c client.JanitorClient, rover *roverv1
 	}
 
 	rover.Status.SpectreListeners = make([]types.ObjectRef, 0, len(rover.Spec.Listeners))
+	// A blocked entry must not stop the others, so the first Blocked error is
+	// returned only after every entry was processed.
+	var blockedErr error
 	// The Listener name is derived from consumer + apiBasePath/eventType only, so
 	// two entries yielding the same name would silently overwrite each other via
 	// CreateOrUpdate. Block instead of losing a declared listener.
@@ -51,13 +58,27 @@ func HandleListeners(ctx context.Context, c client.JanitorClient, rover *roverv1
 	for _, rl := range rover.Spec.Listeners {
 		name := makeListenerName(rover.Name, rl)
 		if _, exists := seenNames[name]; exists {
-			return ctrlerrors.BlockedErrorf("duplicate listener for consumer %q: entries that differ only by provider are not supported", rl.Consumer)
+			if blockedErr == nil {
+				blockedErr = ctrlerrors.BlockedErrorf("duplicate listener for consumer %q: entries that differ only by provider are not supported", rl.Consumer)
+			}
+			continue
 		}
 		seenNames[name] = struct{}{}
 
 		listener, err := ensureListener(ctx, c, rover, app, rl)
 		if err != nil {
-			return err
+			if be, ok := stderrors.AsType[ctrlerrors.BlockedError](err); !ok || !be.IsBlocked() {
+				return err
+			}
+			if blockedErr == nil {
+				blockedErr = err
+			}
+			if listener, err = keepExistingListener(ctx, c, rover.Namespace, name); err != nil {
+				return err
+			}
+			if listener == nil {
+				continue
+			}
 		}
 		rover.Status.SpectreListeners = append(rover.Status.SpectreListeners, types.ObjectRef{
 			Name:      listener.Name,
@@ -65,7 +86,35 @@ func HandleListeners(ctx context.Context, c client.JanitorClient, rover *roverv1
 		})
 	}
 
-	return nil
+	return blockedErr
+}
+
+// keepExistingListener keeps the Listener of a blocked entry unchanged, so that
+// the janitor does not delete it and its capture keeps running until the entry
+// resolves again. It returns nil if the Listener does not exist and never creates one.
+//
+// The Listener is found by the name derived from the entry's consumer and
+// apiBasePath, which has two known trade-offs. When only the provider changes to
+// a value that does not resolve (e.g. a typo), the name stays the same, so the
+// old Listener with its old, still existing provider is kept: capture continues
+// as before and the Rover reports Blocked. When the consumer value changes to one
+// that does not resolve (e.g. a bare name to a mistyped full ID), the new name is
+// not found, so nothing is kept and the janitor deletes the old Listener; its
+// approval is lost.
+func keepExistingListener(ctx context.Context, c client.JanitorClient, namespace, name string) (*spectrev1.Listener, error) {
+	listener := &spectrev1.Listener{}
+	if err := c.Get(ctx, crclient.ObjectKey{Name: name, Namespace: namespace}, listener); err != nil {
+		if apierrors.IsNotFound(err) {
+			return nil, nil
+		}
+		return nil, errors.Wrap(err, "failed to get Listener")
+	}
+
+	// A no-op CreateOrUpdate records the Listener as desired for the janitor.
+	if _, err := c.CreateOrUpdate(ctx, listener, client.DoNothing()); err != nil {
+		return nil, errors.Wrap(err, "failed to keep Listener")
+	}
+	return listener, nil
 }
 
 // ensureSpectreApplication creates or updates a single SpectreApplication CR owned by the Rover.
