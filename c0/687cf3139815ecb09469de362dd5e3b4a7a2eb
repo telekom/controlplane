@@ -1,0 +1,20 @@
+controlplane-api/internal/interceptor/team_filter.go
+  s_58237fcaf810cd::t_69eaacfcd382ab 50,64,84,124-125,166
+  s_58237fcaf810cd::t_a8a3175c7df5aa 51-63
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6",
+  "base_commit_sha": "c0687cf3139815ecb09469de362dd5e3b4a7a2eb",
+  "prompts": {},
+  "sessions": {
+    "s_58237fcaf810cd": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f282693a4ffe87y95VUVYlfoL0",
+        "model": "unknown"
+      },
+      "human_author": "Miká Juznik <mika.juznik@telekom.de>"
+    }
+  }
+}

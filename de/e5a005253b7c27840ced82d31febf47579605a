@@ -1,0 +1,937 @@
+controlplane-api/ent/approval/approval.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 61-62,76-82,127,328-334,355-359,361
+  s_c7c5e1e2dee89d::t_a67050f06b33ae 360
+projector/internal/domain/fileexposure/repository_test.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-375
+sftp/config/crd/kustomization.yaml
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-12
+CHANGELOG.md
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-38
+docs/docs/architecture/agentic.mdx
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 54-77
+rover/internal/controller/index.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 19,84-95
+  s_c7c5e1e2dee89d::t_ce167ea3b5768c 96
+rover-server/internal/mapper/rover/in/file_test.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-170
+controlplane-api/internal/interceptor/team_filter.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 23-24,69-78,117-128,169-180,211
+api/internal/handler/apisubscription/readiness_test.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-89
+projector/internal/domain/filetype/translator.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-67
+rover/internal/handler/rover/file/util_test.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-47
+sftp/cmd/sftp-operator/main.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-138
+rover-server/internal/mapper/filespecification/in/filespecification_test.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-36
+.goreleaser.yaml
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 220-237,276,723-761
+projector/internal/domain/shared/approval.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-27
+sftp/PROJECT
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-39
+controlplane-api/ent/filetype/filetype.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-246
+docs/docs/admin-journey/environments-and-zones.md
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 232,309,331
+  s_c7c5e1e2dee89d::t_1128dce3a65d27 332
+rover/cmd/main.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 13-18,71-74,209-217
+  s_c7c5e1e2dee89d::t_99b972b16b60a9 218
+sftp/api/go.mod
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-72
+sftp/config/samples/sftp_v1_instance.yaml
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-16
+sftp/config/default/namespace_patch.yaml
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-7
+file/.gitignore
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-35
+file/internal/handler/util/publickeys_test.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-366
+sftp/config/default/kustomization.yaml
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-44
+projector/internal/domain/approval/translator.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 37,50,58-60,104,106,211,234
+projector/internal/domain/approvalrequest/repository_test.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 41-42,91-105,176,331-403
+  s_c7c5e1e2dee89d::t_4593a435d1028a 404
+controlplane-api/ent/approval_create.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 21,218-236,523-537,539
+  s_c7c5e1e2dee89d::t_805a470e7ca15f 538
+file/config/rbac/metrics_auth_role_binding.yaml
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-16
+projector/internal/domain/fileexposure/translator_test.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-160
+agentic/internal/handler/agenticsubscription/handler.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 50,56,79,87,100,108,173,179,185,199,230,236,273,291,370,380
+projector/internal/bootstrap/bootstrap.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 39,56-58,98-100
+  s_c7c5e1e2dee89d::t_85b660780cab41 101-102
+rover-server/internal/controller/resources_pagination_test.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 57,118,131,161,278,289,306-307
+  s_c7c5e1e2dee89d::t_a3714dfc047947 308
+file/config/webhook/kustomizeconfig.yaml
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-19
+sftp/config/default/metrics_service.yaml
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-22
+file/go.mod
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-151
+file/config/rbac/metrics_auth_role.yaml
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-21
+sftp/config/rbac/user_viewer_role.yaml
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-27
+file/internal/handler/filesubscription/handler.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-231
+sftp/internal/handler/user/handler_test.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-311
+sftp/config/rbac/role_binding.yaml
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-19
+file/internal/handler/suite_test.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-17
+sftp/config/samples/sftp_v1_user.yaml
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-19
+sftp/internal/service/http_service.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-94
+docs/scripts/generate-crd-data.mjs
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 33
+controlplane-api/ent/schema/file_exposure.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-90
+sftp/docs/sftp-domain-architecture.md
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-101
+controlplane-api/ent/filesubscription.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-434
+rover/PROJECT
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 37-48
+rover-ctl/pkg/handlers/v0/filespec_test.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-63
+controlplane-api/ent/gql_node.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 32-34,109-123,320-346,666-713
+controlplane-api/ent/schema/approval_request.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 61-64
+controlplane-api/ent/mutation.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 29-31,63-65,8132-8186,9257-9364,10100,10113-10118,10161-10172,10207,10214-10219,10251-10262,10293,10306-10311,10342-10345,10393-10398,10447-10448,11332-11370,11893,11897-11899,11917-11920,11935,11947,11951-11953,11969-11970,11986-11988,12006-12008,12047-12048,12883-12921,13421,13425-13427,13445-13448,13463,13475,13479-13481,13497-13498,13514-13516,13534-13536,17306-21030
+  s_c7c5e1e2dee89d::t_de2dc9e1bc90d1 21031
+file/internal/webhook/v1/zoneserviceconfig_webhook_test.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-196
+rover-server/test/mocks/data/fileSpecification.json
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-33
+sftp/api/service/api.yaml
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-275
+controlplane-api/ent/approvalrequest/approvalrequest.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 59-60,74-80,124,318-324,345-349,351
+  s_c7c5e1e2dee89d::t_b4b54bd2234e6e 350
+install/overlays/default/kustomization.yaml
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 33,35,37,39,41,43,45,47,49,51,53,55,58,60,63,65
+event/internal/controller/eventconfig_controller.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 49,64,97-98,125
+projector/internal/domain/filesubscription/repository_test.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-278
+rover-server/test/mocks/mocks.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 26,128-134
+  s_c7c5e1e2dee89d::t_4d3db2bc138244 135-136
+rover-ctl/pkg/handlers/registry.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 61,70
+sftp/internal/controller/schema.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-18
+event/config/rbac/role.yaml
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 97
+controlplane-api/ent/application/where.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1123-1168
+controlplane-api/ent/application_query.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 26-27,37-62,187-230,528-543,594-615,756,761-762,823-838,891-904,1067-1128,1394-1420
+  s_c7c5e1e2dee89d::t_5dd70bab926e47 1421
+file/api/go.mod
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-63
+file/config/certmanager/certificate-webhook.yaml
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-24
+event/cmd/main.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 174-175
+  s_c7c5e1e2dee89d::t_087307d385787d 173
+file/internal/handler/util/labels.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-29
+rover/internal/controller/rover_controller.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 27,61-63,99-101
+  s_c7c5e1e2dee89d::t_78aa756071aafd 102-103
+projector/internal/domain/filetype/repository.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-115
+sftp/internal/controller/user_controller_test.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-145
+sftp/internal/handler/user/handler.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-142
+rover/internal/webhook/v1/rover_webhook.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 17,31,75,152-155,290,299-324,366-367,494-495,536-545,576-585,834-852,857-905
+projector/internal/domain/approvalrequest/deps.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 18-19,23,26,33,37
+sftp/internal/service/service.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-45
+rover/api/go.mod
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 13
+file/internal/handler/filesubscription/handler_suite_test.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-17
+projector/internal/domain/filesubscription/deps.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-16
+rover/internal/handler/rover/file/util.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-36
+controlplane-api/ent/application.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 80-83,96,98-107,150-167,171,180,189,198,209,416-425,596-642
+  s_c7c5e1e2dee89d::t_1433f1fbe33e43 643
+sftp/config/rbac/metrics_reader_role.yaml
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-14
+file/internal/handler/fileexposure/handler_test.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-354
+rover/api/v1/rover_types_test.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 171,393-518
+  s_c7c5e1e2dee89d::t_584a2870af7494 519
+rover-server/cmd/main.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 62
+docs/docs/reference/api.md
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 34-35,193-203
+  s_c7c5e1e2dee89d::t_7d5268f767d6e3 204-206
+file/internal/controller/fileexposure_controller_test.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-83
+controlplane-api/ent/approvalrequest.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 20,67,75-76,83,97-107,113,124,149-150,302-308,327-330
+  s_c7c5e1e2dee89d::t_c986c33d3b5212 331
+agentic/internal/controller/token_endpoint_scopes_test.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 176-178,229-240,318-323,326,354,359,365,368-369,371,390,393-395,405,410,416-420,433-437,440
+controlplane-api/ent/fileexposure/fileexposure.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-364
+controlplane-api/gqlgen.yml
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 157-162,269-276
+docs/docs/architecture/rover.mdx
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 34,39-72
+  s_c7c5e1e2dee89d::t_9442bcbc81aec6 73
+file/internal/controller/zoneserviceconfig_controller.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-86
+file/config/samples/file_v1_filetype.yaml
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-12
+rover/api/v1/filespecification_types_test.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-108
+controlplane-api/internal/testutil/seed.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 36-39,132-149
+  s_c7c5e1e2dee89d::t_e03632e3fba1b7 150
+projector/internal/domain/approval/translator_test.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 71,108-145,311-341
+  s_c7c5e1e2dee89d::t_87598c7e8db002 342
+event/internal/handler/eventsubscription/handler_test.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 34,157-158,278-287,446,585,602-606,608-610,621-622,628,634-645,654-656,662,671-678,686,690-821,835-837,865,890,909
+file/config/webhook/manifests.yaml
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-29
+rover-server/pkg/store/stores.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 20,47-49,117-124
+  s_c7c5e1e2dee89d::t_c9749e5c1c30be 125-126
+file/api/v1/fileexposure_types.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-117
+file/internal/controller/filesubscription_controller.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-132
+rover-server/test/mocks/mocks_FileSpecification.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-93
+sftp/Makefile
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-260
+sftp/config/crd/bases/sftp.cp.ei.telekom.de_users.yaml
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-148
+sftp/config/rbac/user_editor_role.yaml
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-31
+sftp/internal/controller/index.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-45
+sftp/internal/handler/instance/handler_test.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-225
+file/config/manager/manager.yaml
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-66
+sftp/config/rbac/metrics_auth_role_binding.yaml
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-16
+projector/internal/domain/filesubscription/repository.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-170
+rover-server/internal/mapper/filespecification/out/filespecification.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-30
+file/internal/handler/util/refs.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-60
+controlplane-api/ent/fileexposure_create.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-1360
+event/internal/handler/eventconfig/handler_test.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 219-227,310,419,428-465,474,492,517,542-543
+sftp/api/v1/sftpserviceconfig_types.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-101
+sftp/config/rbac/instance_viewer_role.yaml
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-27
+sftp/go.sum.license
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-3
+agentic/internal/handler/agenticsubscription/scope_validation_test.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 30,45-46,52-56,59
+docs/docs/architecture/api.mdx
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 42-57
+controlplane-api/ent/filesubscription/where.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-942
+sftp/config/manager/manager.yaml
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-66
+projector/internal/domain/approvalrequest/translator_test.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 71,108-145,380-410
+  s_c7c5e1e2dee89d::t_548686ae9298f8 411
+sftp/internal/handler/sftpserviceconfig/handler_suite_test.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-17
+api/internal/controller/apisubscription_controller.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 71,87,191
+controlplane-api/ent/approvalrequest/where.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 704-726
+controlplane-api/ent/gql_where_input.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 25-27,4146-4153,4739-4774,5042-5045,5535-5552,5754-5757,6217-6234,8249-10255
+  s_c7c5e1e2dee89d::t_f7338f6d25efda 10256
+file/internal/handler/util/publickeys.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-113
+file/internal/handler/zoneserviceconfig/handler_test.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-641
+file/config/prometheus/monitor_tls_patch.yaml
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-23
+controlplane-api/ent/fileexposure_delete.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-91
+file/config/rbac/leader_election_role_binding.yaml
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-19
+rover-server/internal/mapper/applicationinfo/out.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 19,165,241-262,273,285-287,396-421,472-535,537,539-540
+  s_c7c5e1e2dee89d::t_bca2c286f82a40 536,538,541
+file/Makefile
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-145
+api/internal/controller/apisubscription_controller_test.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 100-112,152-168,324-350,387,523,621-623,628-638
+  s_c7c5e1e2dee89d::t_0b769bff0d1a61 639
+controlplane-api/internal/resolvers/subscription_info_test.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 39,67,97-106,163,189,207,224,226
+file/config/prometheus/kustomization.yaml
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-15
+controlplane-api/ent/predicate/predicate.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 48-56
+projector/internal/domain/filesubscription/filesubscription_suite_test.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-17
+docs/docs/overview/components.md
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 101
+event/config/crd/bases/event.cp.ei.telekom.de_eventconfigs.yaml
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 275-276,293-296,400-402,427-429
+docs/scripts/generate-crd-schemas.mjs
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 40
+controlplane-api/pkg/model/file.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-15
+controlplane-api/ent.graphql
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1640-1701,2106-2115,2482-2486,2708-2712,3501,3505,3507,3509-3517,3522,3526,3539,3543,3550,3552,3558,3560,3563,3565,3570,3572,3579-3587,3590-3593,3630-3633,3655-3672,3689-3703,3705,3707-3710,3712-4573,5361-5453
+event/internal/controller/eventtype_controller_test.go
+  s_c7c5e1e2dee89d::t_c15b582b9df05f 34,46,52,56,68
+controlplane-api/ent/approvalrequest_query.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 22,34,98-119,357,377-387,495,497,502,535-540,593-618,621-622,624
+  s_c7c5e1e2dee89d::t_023b36158c745e 619-620,623
+file/internal/handler/filesubscription/handler_test.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-684
+rover/api/v1/rover_types.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 11,36-39,223-224,288-290,303-305,322-324,337-339,537-635
+  s_c7c5e1e2dee89d::t_b5d3908f2948a1 636
+rover-server/internal/mapper/rover/in/exposure.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 75-82,90-129,137-138,298,357,384-385,389-390,395
+controlplane-api/ent/filetype.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-301
+controlplane-api/ent/schema/application.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 94-97
+event/internal/handler/eventsubscription/handler.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 127-133,138-148,151,419,426,430,432-434,437-440
+file/cmd/file-operator/main.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-220
+projector/internal/domain/filetype/filetype_suite_test.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-17
+rover-server/internal/mapper/rover/out/exposure.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 55-59,66-92,102,134,189,384-385,389-391
+rover-server/internal/mapper/rover/out/file_test.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-100
+projector/internal/domain/filesubscription/translator_test.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-150
+rover/config/crd/kustomization.yaml
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 12
+file/config/rbac/role_binding.yaml
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-19
+rover-ctl/pkg/handlers/v0/rover.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 128-129,162-163
+rover-server/internal/mapper/rover/in/exposure_trusted_teams_test.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 33,50,63
+rover-server/internal/mapper/status/problems.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 75-80
+sftp/config/rbac/leader_election_role.yaml
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-44
+sftp/internal/service/service.gen.go.license
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-3
+projector/internal/infrastructure/idresolver.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 27-29,436-443,880-991
+rover/internal/handler/rover/file/exposure.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-126
+file/api/go.sum.license
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-3
+sftp/api/v1/groupversion_info.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-24
+sftp/internal/handler/instance/handler.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-104
+rover/api/v1/zz_generated.deepcopy.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 887-891,944-1101,1792-1805,1839-1853,1977-1981
+sftp/config/crd/bases/sftp.cp.ei.telekom.de_sftpserviceconfigs.yaml
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-156
+sftp/config/rbac/role.yaml
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-57
+sftp/internal/service/nop.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-54
+sftp/test/mocks/service.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-184
+file/api/v1/zz_generated.deepcopy.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-522
+sftp/api/v1/instance_types.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-84
+file/config/certmanager/kustomizeconfig.yaml
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-12
+projector/internal/domain/filesubscription/module.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-25
+file/config/default/manager_metrics_patch.yaml
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-8
+file/internal/handler/filetype/handler_test.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-156
+file/PROJECT
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-47
+projector/internal/domain/filetype/translator_test.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-96
+api/internal/handler/apisubscription/remote/handler.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 204-208
+controlplane-api/ent/gql_pagination.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 32-34,4018-4958
+  s_c7c5e1e2dee89d::t_107ebbb14e5e8b 4959
+sftp/internal/handler/instance/handler_suite_test.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-17
+sftp/internal/service/manager.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-182
+sftp/tools/service.yaml
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-9
+rover-server/go.mod
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 15,28,177
+api/internal/controller/token_endpoint_scopes_test.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 205,292
+controlplane-api/internal/resolvers/schema.resolvers.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 26-27,369,412-423,433,476-487,492,495-496,500,506,519,525,538-558,564,567,572,779-842,1049-1056,1082-1083
+projector/go.mod
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 38,42,55
+projector/internal/domain/approvalrequest/types.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 22,51,53
+rover/internal/controller/agentspecification_controller.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 5
+controlplane-api/ent/filetype/where.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-635
+controlplane-api/ent/application_update.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 25-26,385-414,553-594,1022-1111,1679-1708,1847-1888,2346-2435
+sftp/README.md
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-82
+event/internal/index/index.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 9,25-28,31-74,76-79,125-126,129-130
+  s_c7c5e1e2dee89d::t_3ba7450101fa8b 127-128
+rover-server/internal/controller/filespecification_test.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-139
+sftp/api/v1/user_types.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-86
+projector/internal/domain/fileexposure/fileexposure_suite_test.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-17
+projector/internal/domain/fileexposure/translator.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-94
+rover-server/internal/server/server.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 54-62,131,193-201
+  s_c7c5e1e2dee89d::t_f28e69764c968b 202
+sftp/config/default/deployment_patch.yaml
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-32
+file/config/default/metrics_service.yaml
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-22
+projector/internal/domain/filesubscription/translator.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-95
+file/config/rbac/metrics_reader_role.yaml
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-13
+controlplane-api/internal/resolvers/schema_resolvers_file_test.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-262
+file/internal/webhook/v1/zoneserviceconfig_webhook.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-107
+controlplane-api/ent/approval_query.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 22,34,98-119,357,377-387,495,497,502,535-540,593-618,621-622,624
+  s_c7c5e1e2dee89d::t_ca9336712e3b1a 619-620,623
+file/internal/handler/zoneserviceconfig/handler_suite_test.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-17
+projector/internal/domain/approval/repository.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 54,79-89,149-150,176,179,181-183,185,210-211,225-226
+rover/config/rbac/role.yaml
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 96-117,145,164,177
+rover/internal/handler/rover/file/subscription.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-76
+rover-ctl/pkg/handlers/v0/filespec.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-41
+controlplane-api/ent/hook/hook.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 159-194
+rover-server/config/rbac/role.yaml
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 83-92
+rover-server/internal/mapper/filespecification/in/filespecification.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-44
+rover-server/internal/mapper/rover/in/subscription_test.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 92-101
+rover-server/internal/server/filespecification_server.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-91
+docs/docs/architecture/overview.md
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 103
+sftp/api/v1/labels.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-17
+file/internal/handler/util/getters.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-148
+sftp/api/v1/zz_generated.deepcopy.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-325
+sftp/config/prometheus/kustomization.yaml
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-15
+sftp/config/prometheus/monitor.yaml
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-31
+sftp/config/prometheus/monitor_tls_patch.yaml
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-23
+sftp/internal/handler/sftpserviceconfig/handler_test.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-116
+sftp/internal/service/api_error.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-77
+api/internal/handler/apisubscription/handler.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 276-280,415,434,450
+event/internal/handler/eventconfig/handler.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 8,10,29,50-54,98-101,118,157,160,237-242,303-340,378,383-384,390-417,420-422,428,437-454,459-483
+  s_c7c5e1e2dee89d::t_d9f78e94579e2e 484-485
+file/config/crd/bases/file.cp.ei.telekom.de_zoneserviceconfigs.yaml
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-183
+file/config/rbac/leader_election_role.yaml
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-43
+file/internal/handler/fileexposure/handler.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-143
+rover/config/crd/bases/rover.cp.ei.telekom.de_rovers.yaml
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1121-1225,1766-1810,2024-2069
+rover-server/internal/mapper/rover/out/subscription_test.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 61-85,98-118
+  s_c7c5e1e2dee89d::t_d5ae5a5c3a5f16 119-120
+controlplane-api/internal/resolvers/mapper.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 105-137,236-252
+  s_c7c5e1e2dee89d::t_df2ca8064810c4 253
+docs/docs/developer-journey/local-development.md
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 157
+file/config/default/deployment_patch.yaml
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-32
+rover/internal/controller/filespecification_controller.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-57
+api/internal/controller/apisubscription_controller_failover_test.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 221
+controlplane-api/internal/resolvers/ent.resolvers.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 160-186,266-271,297-298
+event/config/crd/bases/event.cp.ei.telekom.de_eventexposures.yaml
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 233-235
+file/config/default/manager_webhook_patch.yaml
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-35
+event/api/v1/eventexposure_types.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 109-110
+file/internal/index/index.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-92
+controlplane-api/ent/filetype_create.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-1084
+controlplane-api/ent/client.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 33-35,73-78,116-118,229-231,269-271,309-311,323-325,358-363,1677-1708,1939-1954,2137-2152,2757-3350,4368-4369,4374-4375
+sftp/config/rbac/sftpserviceconfig_editor_role.yaml
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-31
+file/api/v1/shared_types.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-68
+controlplane-api/ent/filesubscription/filesubscription.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-369
+docs/docs/reference/json-schemas.md
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 74-83
+file/config/default/namespace_patch.yaml
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-7
+file/internal/handler/util/util_suite_test.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-17
+projector/internal/domain/fileexposure/types.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-38
+controlplane-api/ent/ent.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 30-32,111-113
+controlplane-api/ent/filesubscription_delete.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-91
+event/internal/controller/eventconfig_controller_test.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 16-17,28-80,84,94,121,127,131,143,151,154-155,159-160,164-165
+event/internal/controller/suite_test.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 54,58-66
+file/internal/controller/zoneserviceconfig_controller_test.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-85
+file/config/samples/file_v1_fileexposure.yaml
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-22
+rover/internal/controller/rover_controller_trusted_teams_test.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 11,65,70,72
+sftp/internal/controller/sftpserviceconfig_controller_test.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-88
+file/internal/controller/fileexposure_controller.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-116
+sftp/internal/handler/user/handler_suite_test.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-17
+docs/docs/user-journey/exposing-events.mdx
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 107,115
+  s_c7c5e1e2dee89d::t_4910e5a09fcd7a 116
+rover-server/internal/controller/resources.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 78,236-237
+sftp/config/samples/sftp_v1_sftpserviceconfig.yaml
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-17
+sftp/internal/controller/instance_controller_test.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-177
+controlplane-api/ent/gql_edge.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 172-213,222,243,264,285,350-406,411-412,414-416
+  s_c7c5e1e2dee89d::t_58b76592821eb5 407-410,413,417
+file/config/samples/file_v1_zoneserviceconfig.yaml
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-26
+rover-server/internal/mapper/rover/in/exposure_test.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 100-109,286
+file/api/v1/groupversion_info.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-24
+projector/config/rbac/role.yaml
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 63-73
+file/config/crd/bases/file.cp.ei.telekom.de_filetypes.yaml
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-165
+controlplane-api/internal/interceptor/team_filter_test.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 11-12,16,325-411
+  s_c7c5e1e2dee89d::t_eb99b6c9ae6171 412-413
+sftp/internal/controller/suite_test.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-135
+sftp/internal/handler/sftpserviceconfig/handler.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-62
+controlplane-api/ent/fileexposure.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-393
+file/config/prometheus/monitor.yaml
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-31
+file/config/default/kustomization.yaml
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-250
+sftp/config/rbac/leader_election_role_binding.yaml
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-19
+controlplane-api/ent/migrate/schema.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 366,392-397,429,455-460,603-744,929-931,958,962,968-974
+file/config/certmanager/kustomization.yaml
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-9
+rover-server/api/openapi.yaml
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 44-45,313,745,981,1061-1349,2190,2550-2590,2599,2604,2634-2642,2650,2655,2944,3360-3379,3388,3393,3430-3438,3447,3452,3724-3775,3777
+  s_c7c5e1e2dee89d::t_51e1d0508917a3 3776,3778-3782
+.github/ci/module-graph.json
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 103-116,183,208,228,241-248
+controlplane-api/ent/approval_update.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 22,305-323,373-378,595-623,967-985,1035-1040,1287-1310,1313,1315
+  s_c7c5e1e2dee89d::t_ea314f872e57c5 1311-1312,1314
+rover/internal/handler/rover/handler.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 24,31,81-84,95,138-147,159,191-200
+rover-server/internal/mapper/applicationinfo/out_test.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 23,231-327,439-528
+projector/internal/domain/approvalrequest/repository.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 55,80-90,149-150,178,180-182,184,209-210,224-225
+sftp/config/rbac/sftpserviceconfig_viewer_role.yaml
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-27
+controlplane-api/ent/fileexposure/where.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-711
+file/config/rbac/kustomization.yaml
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-13
+controlplane-api/ent/runtime/runtime.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 24-26,584-717
+file/internal/handler/filetype/handler_suite_test.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-17
+file/config/crd/kustomization.yaml
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-9
+projector/internal/domain/fileexposure/deps.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-15
+rover/go.mod
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 29-30,46
+controlplane-api/ent/filetype_query.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-749
+rover/internal/controller/suite_test.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 31,85,113-115,161
+  s_c7c5e1e2dee89d::t_7581af0c9bda24 162-167
+rover-ctl/pkg/handlers/v0/rover_test.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 229-256,374-386
+  s_c7c5e1e2dee89d::t_5b9f1bded5f49f 387
+rover-server/internal/mapper/filespecification/out/suite_filespec_out_test.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-26
+sftp/api/go.sum.license
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-3
+controlplane-api/ent/approval/where.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 759-781
+controlplane-api/ent/gql_collection.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 28-30,1272-1449,1493-1494,1496,1504-1505,1507,1582-1583,1585,1593-1594,1596,1671-1672,1674,1682-1683,1685,1760-1761,1763,1771-1772,1774,2799-3304
+  s_c7c5e1e2dee89d::t_9222ac5e5e2d42 3305
+projector/internal/domain/shared/approval_test.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-49
+docs/docs/architecture/file.mdx
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-45
+projector/internal/domain/approval/types.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 24,52,54
+rover/internal/handler/rover/application/application.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 49,128-140
+  s_c7c5e1e2dee89d::t_7cab751b9e8ef3 141
+rover-server/internal/controller/filespecification.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-147
+event/internal/controller/eventsubscription_controller_test.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 9-10,16-17,20,25,31-70,72-323,327,337,358,364,368,380
+file/config/samples/file_v1_filesubscription.yaml
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-19
+sftp/internal/controller/sftpserviceconfig_controller.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-60
+rover/internal/handler/rover/file/handlers_test.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-151
+sftp/internal/service/suite_test.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-17
+sftp/internal/service/utils.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-22
+sftp/tools/mockery.yaml
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-16
+event/internal/handler/util/shared_route.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 74-75,105-109,113-115
+  s_c7c5e1e2dee89d::t_d52db06cb33c65 116-117
+docs/docs/user-journey/subscribing-to-events.mdx
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 70-71
+projector/internal/domain/fileexposure/module.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-25
+file/internal/webhook/v1/webhook_suite_test.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-150
+file/internal/controller/filetype_controller_test.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-78
+rover/api/v1/filespecification_types.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-129
+docs/docs/architecture/event.mdx
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 31,40,42,44-45,47,49-90,98-99,101-105,107-109,111-115,122,125-129,131-133,135-140,143-168,193,196-200,202-204,206-213,216-217,224
+rover-server/internal/mapper/rover/out/exposure_trusted_teams_test.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 35,50,63
+sftp/internal/controller/instance_controller.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-93
+controlplane-api/ent/filetype_update.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-909
+rover-server/internal/mapper/rover/out/subscription.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 40-47,213-220
+  s_c7c5e1e2dee89d::t_3cd6c38f4e3898 221-222
+file/api/v1/zoneserviceconfig_types.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-104
+controlplane-api/ent/fileexposure_query.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-885
+controlplane-api/ent/approvalrequest_create.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 21,204-222,505-519,521
+  s_c7c5e1e2dee89d::t_d793ddb133b5af 520
+controlplane-api/ent/privacy/privacy.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 404-475
+projector/internal/domain/approvalrequest/translator.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 38,51,59-60
+  s_c7c5e1e2dee89d::t_26fe6776669878 61
+file/internal/controller/filesubscription_controller_test.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-80
+event/internal/controller/callback_lifecycle_test.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-512
+rover/internal/handler/rover/application/application_test.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-56
+rover-server/internal/mapper/filespecification/in/suite_filespec_in_test.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-34
+sftp/PROJECT.license
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-3
+api/internal/controller/remoteapisubscription_controller_test.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 270
+controlplane-api/internal/resolvers/model/info_types.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 75-107
+file/config/webhook/kustomization.yaml
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-10
+.github/ci/modules.yaml
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 166-179
+projector/internal/domain/approval/repository_test.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 41-42,91-105,176,335-407
+  s_c7c5e1e2dee89d::t_4009efeb472ab8 408
+projector/internal/domain/filetype/module.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-24
+projector/internal/infrastructure/cachekeys/cachekeys.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 168-199
+projector/internal/bootstrap/bootstrap_test.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 17,43,51,59,99,101,117-122,139-144
+rover-server/internal/api/server.gen.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 288-377,609-623,641,647,1324-1434,1534-1542,1893-1907,2000-2005,2102-2129,2150-2151,2251-2278,2299-2300,2489-2516,2537-2538,2638-2665,2686-2687,2706-2884
+sftp/api/v1/publickey.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-27
+file/config/webhook/service.yaml
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-20
+rover-ctl/pkg/handlers/registry_test.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 160,169,174,177
+sftp/config/crd/bases/sftp.cp.ei.telekom.de_instances.yaml
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-146
+sftp/config/rbac/service_account.yaml
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-12
+file/internal/controller/suite_test.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-104
+file/api/v1/filesubscription_types.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-108
+projector/internal/domain/filetype/repository_test.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-115
+sftp/internal/controller/user_controller.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-91
+projector/internal/domain/filetype/types.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-29
+docs/docs/architecture/sftp.mdx
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-52
+controlplane-api/ent/tx.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 42-47,203-205
+sftp/tools/tools.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-9
+controlplane-api/ent/application/application.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 66-69,110-123,410-437,528-541
+event/internal/handler/util/callback_route.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 20,23,25,27-29,37-40,43,113
+event/internal/handler/eventtype/handler.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 9,43-44
+file/api/v1/filetype_types.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-87
+file/internal/controller/filetype_controller.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-92
+controlplane-api/ent/schema/approval.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 66-69
+event/api/v1/eventconfig_types.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 158,162-164,168-169,173-175
+event/internal/controller/eventexposure_controller_test.go
+  s_c7c5e1e2dee89d::t_c15b582b9df05f 35,53,59,63,75
+projector/internal/domain/approval/deps.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 18-19,23,26,33,37
+controlplane-api/ent/filesubscription_query.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-1033
+controlplane-api/ent/filesubscription_update.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-1414
+projector/internal/domain/fileexposure/repository.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-183
+controlplane-api/ent/filesubscription_create.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-1430
+controlplane-api/ent/schema/file_subscription.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-85
+projector/internal/domain/filesubscription/types.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-40
+rover/config/crd/bases/rover.cp.ei.telekom.de_filespecifications.yaml
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-168
+agentic/internal/handler/agenticsubscription/handler_test.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 385,400,429-432,453-456,484,503,519,556,570-590
+  s_c7c5e1e2dee89d::t_03333db0cb4fa8 591-592
+controlplane-api/schema.graphql
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 330-358,405-415,458-466
+  s_c7c5e1e2dee89d::t_e3c64f593d6904 467
+file/config/rbac/role.yaml
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-147
+rover-server/internal/controller/suite_controller_test.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 76,129,194
+file/config/rbac/service_account.yaml
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-12
+controlplane-api/ent/application_create.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 24-25,306-335,692-723
+event/internal/handler/util/callback_route_test.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 203-212,323-331
+  s_c7c5e1e2dee89d::t_0531b346922f2a 332
+common/pkg/config/feature.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 52
+file/internal/handler/zoneserviceconfig/handler.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-360
+rover-server/internal/mapper/filespecification/out/filespecification_test.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-33
+controlplane-api/ent/filetype_delete.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-91
+controlplane-api/ent/fileexposure_update.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-1178
+rover-server/internal/mapper/rover/in/suite_rover_in_test.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 43-60,114-125,127
+  s_c7c5e1e2dee89d::t_ba96338dbd4cba 126
+sftp/config/rbac/instance_editor_role.yaml
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-31
+sftp/internal/service/service.gen.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-699
+file/config/crd/bases/file.cp.ei.telekom.de_fileexposures.yaml
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-275
+sftp/config/rbac/kustomization.yaml
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-19
+sftp/config/rbac/metrics_auth_role.yaml
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-22
+rover/internal/handler/filespecification/handler_test.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-124
+sftp/internal/service/service_test.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-264
+event/internal/controller/eventsubscription_controller.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 17,30,128-132,134-135,140,142-155,158-173
+file/config/manager/kustomization.yaml
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-11
+sftp/config/manager/kustomization.yaml
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-6
+sftp/api/v1/condition.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-30
+file/go.sum.license
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-3
+file/internal/controller/schema.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-30
+file/internal/handler/fileexposure/handler_suite_test.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-17
+controlplane-api/ent/approval.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 20,69,77-78,85,99-109,115,126,151-152,311-317,336-339
+  s_c7c5e1e2dee89d::t_f4b8dbdf97de13 340
+event/internal/handler/eventconfig/callback_routes_test.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-293
+file/config/crd/bases/file.cp.ei.telekom.de_filesubscriptions.yaml
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-266
+file/internal/handler/filetype/handler.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-54
+rover-server/internal/mapper/rover/in/subscription.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 94-101,110-116
+  s_c7c5e1e2dee89d::t_49b24b615e6ceb 117-118
+controlplane-api/ent/approvalrequest_update.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 22,285-303,353-358,569-597,921-939,989-994,1235-1258,1261,1263
+  s_c7c5e1e2dee89d::t_972ff6801d9d60 1259-1260,1262
+controlplane-api/ent/schema/file_type.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-66
+rover-server/internal/mapper/applicationinfo/suite_appinfo_test.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 16,52-63
+rover/internal/handler/filespecification/handler.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-73
+sftp/config/default/manager_metrics_patch.yaml
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-8
+file/internal/handler/util/refs_test.go
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-114
+sftp/go.mod
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 1-162
+common-server/helm/Chart.yaml
+  s_c7c5e1e2dee89d::t_d8222a1707f0e4 6,10
+controlplane-api/internal/resolvers/ent.generated.go
+  s_c7c5e1e2dee89d::t_8870da8ffa4fca 33-35,95-100,121-123,304-357,520-573,1236,1272-1273,1280-1281,1290,1326-1327,1334-1335,1344,1380-1381,1388-1389,1398-1412,1448-1449,1456-1457,1466,1469-1471,1476-1485,1490,1494,1530-1531,1538-1539,1548,1584-1585,1592-1593,1602-1818,5969-6056,9343,9349,9362-9363,9366,9372,9375,9378-9379,9385-9386,9389,9395,9398,9408-9409,9412,9418,9421,9424-9425,9428,9431-9432,9435,9441,9444,9447-9448,9454-9455,9458,9464,9467,9477-9478,9481,9487,9500-9501,9504,9510,9513,9523-9524,9527,9533,9536,9539-9540,9546-9547,9550,9556,9559,9562-9563,9566,9569-9570,9573,9579,9582,9586,9589,9592-9593,9596,9602,9605,9608-9609,9615-9625,9628,9634,9637,9640-9641,9644,9647-9657,9660,9666,9669,9672-9673,9679-9689,9692,9698,9701,9704-9705,9711-9721,9724,9730,9733,9736-9737,9740,9743,9745,9748,9750,9756,9762,9765,9768-9769,9775,9777,9782,9788,9794,9800-9801,9807,9809,9814,9820,9826,9839,9841,9852,9858,9871-9872,9875,9881,9887-9888,9894,9896,9901,9907,9913,9926-9927,9930,9936,9949-9950,9953,9959,9962,9965-9966,9969,9972-9973,9976,9982,9985,9988-9989,9995-9996,9999,10005,10008,10011-10012,10015,10018-10019,10022,10028,10031,10034-10035,10041-10042,10045,10051,10054,10057-10058,10061,10064-10065,10068,10074,10077,10080-10081,10087-10088,10091,10097,10100,10103-10104,10107,10110-10111,10114,10120,10123,10126-10127,10130,10133-10134,10137,10143,10146,10149-10150,10156-10157,10160,10166,10169,10172-10173,10176,10179-10180,10183,10189,10192,10195-10196,10199,10202-10203,10206,10212,10215,10218-10219,10225-10235,10238,10244,10247,10250-10251,10254,10257-10270,10276,10279,10282-10283,10289-10299,10302,10308,10311,10314-10315,10321-10331,10334,10340,10343,10346-10347,10353,10355,10357,10360,10366,10372-10436,10442-10443,10449,10451,10456,10462,10468,10481,10483,10494,10500,10513-10514,10517,10523,10529-10530,10536,10538,10543,10549,10555,10568-10569,10572,10578,10581,10584-10585,10588,10591-10592,10595,10601,10604,10607-10608,10614-10615,10618,10624,10627,10630-10631,10637-10638,10641,10647,10650,10653-10654,10657,10660-10661,10664,10670,10673,10676-10677,10680,10683-10684,10687,10693,10696,10699-10700,10706-10707,10710,10716,10719,10722-10723,10729-10730,10733,10739,10742,10745-10746,10749,10752-10753,10756,10762,10765,10768-10769,10772,10775-10776,10779,10785,10788,10791-10792,10798-10799,10802,10808,10811,10814-10815,10818,10821,10823,10825-10826,10828,10834,10840,10843,10846-10847,10853,10855,10857-10858,10860,10866,10872,10875,10878-10879,10885-10886,10889,10895,10898,10901-10902,10905,10908,10910,10912-10913,10915,10921,10927,10930,10933-10934,10940-10941,10944,10950,10953,10956-10957,10963-10964,10967,10973,10976,10979-10980,10983,10986-10987,10990,10996,10999,11002-11003,11009-11010,11013,11019,11022,11025-11026,11032-11033,11036,11042,11045,11048-11049,11055-11056,11059,11065,11068,11071-11072,11075,11078-11079,11082,11088,11091,11094-11095,11101,11103,11108,11114,11120,11133-11134,11137,11143,11156-11157,11160,11166,11179-11180,11183,11189,11195-11196,11202-11203,11206,11212,11225-11226,11229,11235,11238,11241-11242,11245,11248-11249,11252,11258,11261,11271-11272,11275,11281,11284,11294-11295,11298,11304,11307,11317-11318,11321,11327,11330,11333-11334,11340-11341,11344,11350,11353,11356-11357,11363-11364,11367,11373,11376,11379-11403,11409-11410,11413,11419,11422,11432-11433,11436,11442,11445,11448-11449,11455,11457,11460,11462,11468,11474,11477,11480-11481,11484,11487,11489,11492,11494,11500,11506,11509,11512-11513,11516,11519,11521,11523,11526,11532,11538,11541,11544-11545,11551,11553,11555,11558,11564,11570,11573,11576-11577,11583-11584,11587,11593,11596,11599-11600,11603,11606,11608,11610,11613,11619,11625,11628,11631-11632,11638-11648,11650-11662,11665,11671,11674,11677-11678,11684-11685,11688,11694,11697,11700-11701,11707-11708,11711,11717,11720,11723-11724,11730-11731,11734,11740,11743,11753,11755,11757,11766,11772,11775,11778-11779,11785-11786,11789,11795-11864,11877-11878,11881,11887,11890,11893-11894,11897,11900-11901,11904,11910,11913,11916-11917,11923-11924,11927,11933,11936,11939-11940,11946-11947,11950,11956,11959,11969-11970,11973,11979,11982,11992-11993,11996,12002,12005,12008-12009,12015-12016,12019,12025,12028,12031-12032,12038,12040,12042,12045-12128,12130-17084,17086,17089-17090,17120,17130-17131,17141,17150,17157,17164,17339,17346,17353,17360,17484-17485,17490-17492,17497-17499,17504-17506,17511-17513,17518-17520,17525-17527,17532-17534,17539-17541,17546-17548,17553-17555,17560-17563,17567-17570,17574-17576,17581-17583,17588-17590,17595-17597,17602-17604,17609-17611,17616-17618,17623-17625,17630-17632,17637-17639,17644-17646,17651-17653,17658-17660,17665-17667,17672-17674,17679-17681,17684-17688,17693-17696,17700-17703,17707-17709,17714-17716,17721-17723,17728-17730,17735-17738,17742-17745,17749-17751,17756-17758,17763-17765,17770-17773,17777-17780,17784-17787,17791-17794,17798-17801,17805-17808,17812-17815,17819-17822,17826-17828,17833-17835,17840-17842,17847-17849,17854-17856,17861-17863,17868-17870,17875-17877,17882-17884,17889-17891,17896-17898,17903-17905,17910-17912,17917-17919,17924-17926,17931-17933,17938-17941,17945-17947,17952-17955,17959-17961,17966-17969,17973,17979-17980,18010,18020-18021,18031-18072,18081,18088,18095,18270,18277,18284,18291,18611-18701,18793-18795,18799-18802,18806-18809,18813-18865,18869-18872,18876-18879,18883-18886,18890-18893,18897-18900,18904-18907,18911-18914,18918-18921,18925,18940-18941,18946-18949,18953-18955,18960-18963,18967-18969,18974-18977,18981-18984,18988-18991,18995,19001-19002,19012,19021,19028,19035,19210,19217,19224,19231,19355-19356,19361-19363,19368-19370,19375-19377,19382-19384,19389-19391,19396-19398,19403-19405,19410-19412,19417-19419,19424-19426,19431-19433,19438-19440,19445-19447,19452-19454,19459-19461,19466-19468,19473-19475,19480-19482,19487-19489,19494-19496,19501-19503,19508-19510,19515-19517,19522-19524,19529-19531,19536-19538,19543-19545,19550-19552,19557-19559,19564-19566,19571-19573,19578-19580,19585-19587,19592-19594,19599-19601,19606-19608,19613-19615,19620-19622,19627-19629,19634-19636,19641-19643,19648-19650,19655-19657,19662-19664,19669-19671,19676-19678,19683-19685,19690-19692,19697-19699,19704-19727,19732-19735,19739-19748,19753-19755,19760-19762,19767-19769,19774-19776,19781-19783,19788-19790,19795-19797,19802-19804,19809-19811,19816-19818,19823-19825,19830-19832,19837-19839,19844-19846,19851-19853,19858-19860,19865-19867,19872-19875,19879-19881,19886-19889,19893,19899-19900,19930,19940-19941,19951,19960,19967,19974,20149,20156,20163,20170,20335-20667,20671-20673,20678-20680,20685-20688,20692-20695,20699-20702,20706-20709,20713-20716,20720-20723,20727-20730,20734-20737,20741-20744,20748-20751,20755-20758,20762-20765,20769-20772,20776-20779,20783-20786,20790-20793,20797-20800,20804-20807,20811-20814,20818-20821,20825-20828,20832-20835,20839-20842,20846-20849,20853-20855,20860-20862,20867-20870,20874-20877,20881-20883,20888-20890,20895-20897,20902-20904,20909-20912,20916-20919,20923-20926,20930-20933,20937-20940,20944-20947,20951-20954,20958-20961,20965-20968,20972-20975,20979-20982,20986-20989,20993-20996,21000-21003,21007-21010,21014-21017,21021-21024,21028-21031,21035-21038,21042-21045,21049-21052,21056-21059,21063-21066,21070-21072,21077-21080,21084-21086,21091-21094,21098-21100,21105-21108,21112,21118-21119,21149,21159-21160,21190,21200-21201,21211,21220,21227,21234,21409,21416,21423,21430,21750-21751,21756-21758,21763-21765,21770-21772,21777-21779,21784-21786,21791-21793,21798-21800,21805-21807,21812-21814,21819-21821,21826-21828,21833-21835,21840-21843,21847-21850,21854-21857,21861-21864,21868-21870,21875-21877,21882-21885,21889-21892,21896-21898,21903-21905,21910-21912,21917-21919,21924-21926,21931-21934,21938-21941,21945-21948,21952-21955,21959-21961,21966-21968,21973-21975,21980-21982,21987-21989,21994-21996,22001-22003,22008-22010,22015-22017,22022-22024,22029-22031,22036-22039,22043-22046,22050-22053,22057-22060,22064-22067,22071-22074,22078-22080,22085-22088,22092-22094,22099-22102,22106-22108,22113-22116,22120-22122,22127-22130,22134,22140-22141,22151,22160,22167,22174,22349,22356,22363,22370,22494-22598,22690-22691,22696-22698,22703-22705,22710-22712,22717-22719,22724-22726,22731-22733,22738-22740,22745-22747,22752-22754,22759-22761,22766-22768,22773-22775,22780-22783,22787-22790,22794-22797,22801-22804,22808-22810,22815-22817,22822-22825,22829-22832,22836-22838,22843-22845,22850-22852,22857-22859,22864-22866,22871-22873,22878-22880,22885-22888,22892-22895,22899-22901,22906-22908,22913-22916,22920-22929,22934-22936,22941-22943,22948-22950,22955-22958,22962-22965,22969-22971,22976-22978,22983-22986,22990-22993,22997-23000,23004-23007,23011-23014,23018-23021,23025-23028,23032-23035,23039-23042,23046-23049,23053-23056,23060-23063,23067-23070,23074-23077,23081-23084,23088-23091,23095-23098,23102-23104,23109-23112,23116-23118,23123-23126,23130-23132,23137-23140,23144,23150-23151,23181,23191-23192,23202,23211,23218,23225,23400,23407,23414,23421,23741-23742,23747-23749,23754-23756,23761-23763,23768-23771,23775-23778,23782-23785,23789-23791,23796-23798,23803-23806,23810-23813,23817-23819,23824-23826,23831-23834,23838-23841,23845-23848,23852-23855,23859-23862,23866-23869,23873-23875,23880-23883,23887-23889,23894-23897,23901-23904,23908-23911,23915-23918,23922-23925,23929-23932,23936-23939,23943-23946,23950-23953,23957-23960,23964-23967,23971-23974,23978-23981,23985-23988,23992-23994,23999-24002,24006-24008,24013-24016,24020-24023,24027-24030,24034,24040-24041,24071,24081-24082,24092,24101,24108,24115,24290,24297,24304,24311,24631-24632,24637-24639,24644-24646,24651-24653,24658-24660,24665-24667,24672-24674,24679-24681,24686-24688,24693-24695,24700-24702,24707-24709,24714-24716,24721-24724,24728-24822,24826-24829,24833-24836,24840-24842,24847-24849,24854-24856,24861-24863,24868-24870,24875-24877,24882-24884,24889-24891,24896-24898,24903-24905,24910-24912,24917-24933,24938-24940,24945-24947,24952-24954,24959-24961,24966-24968,24973-24975,24980-24982,24987-24989,24994-24996,25001-25003,25008-25010,25015-25017,25022-25038,25043-25045,25050-25053,25057-25060,25064-25067,25071-25074,25078-25080,25085-25088,25092-25094,25099-25102,25106-25136,25140-25143,25147,25153-25154,25164,25173,25180,25187,25362,25369,25376,25383,25598-25599,25604-25606,25611-25613,25618-25620,25625-25627,25632-25634,25639-25641,25646-25648,25653-25655,25660-25663,25667-25670,25674-25677,25681-25684,25688-25690,25695-25697,25702-25704,25709-25711,25716-25718,25723-25725,25730-25732,25737-25739,25744-25746,25751-25753,25758-25760,25765-25767,25772-25774,25779-25781,25786-25788,25793-25795,25800-25802,25807-25809,25814-25816,25821-25823,25828-25830,25835-25837,25842-25844,25849-25851,25856-25872,25877-25879,25884-25887,25891-25894,25898-25901,25905-25908,25912-25915,25919-25922,25926-25929,25933-25936,25940-25943,25947-25950,25954-25957,25961-25964,25968-25971,25975-25978,25982-25991,25996-25999,26003-26005,26010-26013,26017-26019,26024-26027,26031,26037-26038,26068,26078-26079,26089,26098,26105,26112,26287,26294,26301,26308,26628-26629,26634-26636,26641-26643,26648-26650,26655-26657,26662-26664,26669-26671,26676-26678,26683-26685,26690-26692,26697-26699,26704-26706,26711-26713,26718,26721,26728,26735,26742,26775-26776,26781-26783,26788-26790,26795-26797,26802-26804,26809-26811,26816-26818,26823-26825,26830-26832,26837-26839,26844-26846,26851-26853,26858-26860,26865,26880-26881,26886-26889,26893-26907,26917,26927-26928,26958,26968-26969,26979,26988,26995,27002,27177,27184,27191,27198,27609-27610,27615-27617,27622-27624,27629-27631,27636-27638,27643-27645,27650-27652,27657-27659,27664-27666,27671-27673,27678-27680,27685-27687,27692-27694,27699-27702,27706-27709,27713-27716,27720-27723,27727-27729,27734-27736,27741-27806,27811-27813,27818-27820,27825-27827,27832-27834,27839-27841,27846-27848,27853-27855,27860-27862,27867-27869,27874-27876,27881-27883,27888-27890,27895-27897,27902-27904,27909-27911,27916-27918,27923-27925,27930-27932,27937-27939,27944-27946,27951-27953,27958-27960,27965-27967,27972-27974,27979-27981,27986-27988,27993-27995,28000,28015-28028,28038,28043-28056,28090-28091,28121,28131-28132,28142,28151,28158,28165,28340,28347,28354,28361,28576-28577,28582-28584,28589-28591,28596-28598,28603-28605,28610-28612,28617-28619,28624-28626,28631-28633,28638-28640,28645-28647,28652-28654,28659-28661,28666,28772-28773,28778-28780,28785-28787,28792-28794,28799-28801,28806-28808,28813-28815,28820-28822,28827-28829,28834-28836,28841-28843,28848-28850,28855-28857,28862-28864,28869-28871,28876,28891-28892,28897-28900,28904-28906,28911-28914,28918,33549-33563,34146-34482,34491-34492,34541,34543-34544,34552,34554,34559,34564,34589,34591-34592,34600,34602,34607,34632,34634-34635,34643,34645,34650,34655,34660,34665,34670,34674-34675,34679-34680,34684-34685,34689-34690,34694-34696,34699-34702,34704,34713,34742,34751,34780,34789-34790,34839,34841-34842,34850,34852,34857,34862,34887,34889-34890,34898,34900,34905,34930,34932-34933,34941,34943,34948,34953,34958,34963-34968,34973,34978,34982-34983,34987-34988,34992-35036,35040-35042,35045-35046,35050-35055,35064-35065,35093,35102,35131,35140,35190,35192-35193,35201,35203,35208,35213,35238,35240-35241,35249,35251,35256,35281,35283-35284,35292,35294,35299,35304,35309,35314,35319,35324-35329,35334,35338-35339,35343-35344,35348-35358,35367,35396-35409,35411-35430,35432-35434,35443-35444,35472,35481,35510,35519-35520,35569,35571-35572,35580,35582,35587,35592,35617,35619-35620,35628,35630,35635,35660,35662-35663,35671,35673,35678,35683,35688,35693,35698,35703,35708,35712-35714,35717-35804,35808-35809,35813-35819,35823-36052,36054-36056,36065,36094,36103-36104,36132,36141-36142,36170,36179,36208,36217-36218,36267,36269-36270,36278,36280,36285,36290,36315,36317-36318,36326,36328,36333,36358,36360-36361,36369,36371,36376,36381,36386,36391,36396,36401,36405-36406,36410-36412,36415-36418,36420-36422,36425-36427,36430-36431,36435-36436,36440-36441,36445-36447,36450-36451,36455-36460,36469,36498-36505,36507,36509-36514,36516-36517,36519,36521-36522,36524-36539,36541-36553,36555,36557-36562,36564-36565,36567,36569-36587,36589-36596,36598,36600-36605,36607-36608,36610,36612-36675,36677-36680,36682-36685,36687-36690,36692-36695,36697-36700,36702-36707,36716-36717,36745,36754-36755,36804,36806-36807,36815,36817,36822,36827,36852,36854-36855,36863,36865,36870,36895,36897-36898,36906,36908,36913,36918,36923,36928,36933,36938,36942-36943,36947-36948,36952-36954,36957-36958,36962-36963,36967-36968,36972-36985,36987-37006,37008-37010,37019-37057,37107,37109-37110,37118,37120,37125,37130,37155,37157-37158,37166,37168,37173,37198,37200-37201,37209,37211,37216,37221,37226,37231,37236,37241,37245-37246,37250-37251,37255-37256,37260-37262,37265-37266,37270-37271,37275-37276,37280-37282,37285,37294,37332-37408,37458,37460-37461,37469,37471,37476,37481,37506,37508-37509,37517,37519,37524,37549,37551-37552,37560,37562,37567,37572,37577,37582,37587,37592,37596-37597,37601-37602,37606-37607,37611,37620-37621,37649,37658,37687,37696,37746,37748-37749,37757,37759,37764,37769,37794,37796-37797,37805,37807,37812,37837,37839-37840,37848,37850,37855,37860,37865,37870,37875,37880,37884-37885,37889-37890,37894-37895,37899-37900,37904-37905,37909-37911,37923,37952,37961,37990,37999-38000,38028,38037-38038,38087,38089-38090,38098,38100,38105,38110,38135,38137-38138,38146,38148,38153,38178,38180-38181,38189,38191,38196,38201,38206,38211-38216,38221,38225-38226,38230-38231,38235-38241,38245-38247,38250-38255,38264-38265,38293,38302,38331,38340,38368-38481,38504,38506-38507,38515,38517,38522,38527,38552,38554-38555,38563,38565,38570-38744,39808-39873,41373-41517,43799-44186
+controlplane-api/internal/resolvers/root_.generated.go
+  s_c7c5e1e2dee89d::t_c1ae93c51b984b 55-58,368,387,686-798,940-942,1001-1005,2319-2329,2453-2463,3612-3613,3617-3619,3623-3625,3629-3631,3635-3637,3641-3643,3647-3649,3653-3655,3659-3661,3665-3669,3671-3673,3677-3679,3683-3685,3689-3693,3695-3697,3701-3703,3707-3709,3713,3715-3716,3720-3722,3726-3728,3732-3735,3739-3741,3745-3748,3752-3754,3758-3760,3764-3766,3770-3772,3776-3778,3782-3784,3788-3790,3794-3797,3801-3804,3808-3810,3814-3816,3820-3822,3826-3828,3832-3836,3838-3840,3844-3846,3850-3854,3856-3858,3862-3864,3868-3870,3874-3876,3880-3882,3886-3890,3892-3894,3898-3901,3904-3906,3910-3913,3916-3919,3923-3926,3929-3931,3935-3939,3942-3944,3948,3950-3951,3955-3958,3961-3963,3967-3970,3973-3975,3979-3982,3985-3987,3991,3993-3994,3998-4001,4004-4006,4010-4013,4016-4018,4022-4025,4028-4032,4034-4036,4040-4042,4046-4048,4052,4054-4055,4059-4061,4065-4067,4071,4073-4074,4078-4080,4084,4086-4087,4091-4093,4097-4099,4103-4105,4109-4111,4115-4117,4121-4123,4127-4130,4134-4136,4140-4143,4147-4149,4153-4155,4159,4161-4162,4166-4168,4172-4174,4178,4180-4181,4185-4187,4191-4193,4197-4199,4203-4206,4209-4211,4215-4218,4221-4223,4227-4230,4233-4235,4239-4242,4245-4247,4251-4254,4257-4259,4263-4266,4269-4271,4275-4279,4282-4284,4288-4291,4294-4297,4301-4345,4350-4352,4356,4361-4363,4367,4372-4374,4378,4383-4385,4389,4394-4396,4400,4405-4407,4411,4416-4418,4422,4427-4429,4433,4438-4440,4444,4449-4451,4455-4458,4460-4462,4466-4468,4471,4473-4474,4478-4480,4484-4486,4490-4493,4497-4499,4503-4505,4509,4511-4512,4516-4518,4522-4526,4528-4530,4534-4537,4541-4543,4547-4549,4553,4555-4556,4560-4562,4566-4568,4572-4574,4578-4580,4584-4586,4590-4592,4596-4598,4602,4604-4605,4609-4611,4615-4617,4621-4624,4628-4630,4634,4636-4637,4641-4643,4647-4654,4658-4661,4663-4665,4669,4674-4676,4680,4685-4687,4691,4696-4698,4702-4704,4707-4709,4713-4715,4718-4720,4724-4726,4729-4731,4735,4740-4742,4746-4748,4751-4753,4757-4764,4768,4773-4775,4779-4781,4784-4786,4790-4792,4795-4797,4801-4808,4812-4815,4817-4820,4824-4831,4835-4842,4846-4849,4851-4853,4857-4864,4868-4871,4873-4875,4879-4882,4886-4888,4892-4895,4899-4901,4905-4908,4912-4916,4918-4921,4925-4927,4931,4933-4934,4938-4940,4944-4947,4951-4955,4957-4959,4963-4965,4969-4972,4976-4980,4982-4985,4989-4991,4995-4999,5001-5004,5008-5010,5014-5016,5020-5023,5027-5029,5033-5036,5040-5042,5046-5049,5053-5055,5059-5063,5065,5067-5070,5072,5074-5076,5079-5082,5085,5087-5090,5092-5923,5925-6085,6089,6091,6094-6100,6105,6109,6122,6126,6133,6135,6141,6143,6146,6148,6153,6155,6162,6165-6168,6205-6208,6230-6247,6264-6279,6296,6298-6312,6314,6316-6317,6319,6321-6322,6324,6326-6327,6329,6331-6342,6344-6351,6353,6355,6357,6359,6361,6363,6365-6378,6382,6387,6389,6391,6393-6394,6396,6401,6405,6418,6422,6429,6431,6437,6439,6442,6444,6449,6451,6458,6460,6466,6469-6472,6509-6512,6586-6589,6598-6615,6621,6623-6624,6629,6631-6660,6664,6670,6672-6673,6675,6682,6686,6699,6703,6710,6712-6721,6727,6729,6732,6734,6739,6741,6748,6751-6754,6791-6794,6882-6888,6915-6920,6932-6975,6977-6984,6986-7050,7052-7065,7067,7069-7070,7072,7074-7088,7090,7092-7093,7095,7097-7098,7100,7102-7103,7105,7109,7113-7373,7378,7382,7395,7399,7406,7408,7414,7416,7419,7421,7424,7427,7429-7439,7446,7449-7452,7489-7492,7548,7550-7678,7680-7681,7683,7685-7702,7704,7706-7714,7716,7718,7720,7722,7724,7726-7731,7733-7739,7742,7744,7750,7752,7755,7757,7761,7765,7769-7779,7781,7786,7790,7803,7807,7814,7816,7822,7824,7827,7829,7834,7836-7845,7852-7860,7863-7866,7903-7906,7962,7964-7976,7978,7980-7983,7985,7987-7999,8001,8003-8015,8017,8019-8022,8024,8026-8027,8029,8031-8032,8034,8036-8037,8039,8041-8042,8045-8073,8076-8079,8116-8119,8141-8158,8175,8177-8189,8191,8193-8196,8198,8200-8212,8214,8216-8228,8230,8232-8248,8250,8252-8253,8255,8257-8258,8260,8262-8268,8270-8275,8279,8283-8290,8295,8299,8312,8316,8323,8325,8331,8333,8336,8338,8343,8345,8352-8360,8363-8366,8403-8406,8462,8464-8476,8478,8480-8483,8485,8487-8490,8492,8494-8508,8510,8512-8513,8515,8517-8518,8520,8522-8523,8525,8529,8534-8543,8548,8552,8563-8569,8572,8576,8583,8585,8591,8593,8596,8598,8603,8605,8612,8615-8618,8655-8658,8714,8716-8728,8730,8732-8744,8746,8748-8824,8826,8828,8830,8832,8834,8836-8841,8843,8845,8847,8849,8852,8854-8862,8865,8867-8874,8881,8884-8887,8924-8927,8965,8967-8979,8981,8983-8995,8997,8999-9013,9015,9017-9031,9033,9035-9036,9038,9040-9041,9043,9045-9046,9048,9052,9056-9057,9059-9060,9063-9064,9069,9073,9086,9090,9097,9099,9105,9107,9110,9112,9117,9119,9126,9128,9134,9137-9140,9177-9180,9236-9250,9254-9257,9266-9280,9287,9289-9295,9300,9302,9306,9311-9315,9317-9318,9325,9329,9342,9346,9353,9355,9361,9363,9366,9368,9373,9375,9382,9385-9388,9425-9428,9500-9566,9573-9577,9581-9586,9598,9602,9605,9607,9613,9617,9630,9634,9641,9643,9649,9651,9654,9656,9661,9663,9670,9673-9676,9713-9716,9746-9768,9788,9790-9804,9814-9819,10908-11000,12238-12266,12313-12323,12366-12375,13063-13066,13673-13898,14221-14230
+controlplane-api/internal/resolvers/schema.generated.go
+  s_c7c5e1e2dee89d::t_cdfb2b61b74c75 25-26,78-83,2709,2715,2718,2721-2722,2725,2728-2729,2732,2738,2741,2744-2745,2748,2751-2752,2755,2761,2764,2767-2768,2771,2774-2775,2778,2784,2787,2790-2791,2797-2798,2801,2807,2810,2813-2814,2817,2820-2830,2833,2839,2842,2845-2846,2849,2852-2853,2856,2862,2865,2868-2869,2872,2875,2877,2882,2888,2894,2897,2900-2901,2904,2907-2917,2920,2926,2929,2932-2933,2939-2949,2952,2958,2961,2964-2965,2968,2971-2972,2975,2981,2984,2987-2988,2991,2994-2995,2998,3004,3007,3010-3011,3014,3017-3018,3021,3027,3030,3033-3034,3037,3040-3041,3044,3050,3053,3056-3057,3063-3064,3067,3073,3076,3079-3080,3083,3086,3088,3093,3099,3105,3108,3111-3112,3115,3118,3120,3125,3131,3137,3140,3143-3144,3147,3150-3151,3154,3160,3163,3166-3167,3173-3588,3838-3883,4373-4377,6106-6321,6350-6351,6355-6357,6360-6362,6386,6388-6389,6397-6399,6424,6426-6427,6435-6437,6441-6446,6455,6484-6508,6530,6532-6533,6541-6581,6585-6590,6599,6628-6629,6633-6635,6638-6640,6643-6646,7271-7313,7888-7913,7936-7955,8145-8158
+file/api/go.sum
+  s_c7c5e1e2dee89d::t_c2e5aedbbb21b5 1-156
+file/go.sum
+  s_c7c5e1e2dee89d::t_78d6f5d31d6055 1-294
+rover-server/go.sum
+  s_c7c5e1e2dee89d::t_2cf0be66e404e5 353-354
+rover-server/internal/controller/__snapshots__/suite_controller_test.snap
+  s_c7c5e1e2dee89d::t_e85a5ce74ed3b2 1621-1808
+rover-server/internal/mapper/filespecification/in/__snapshots__/filespecification_test.snap
+  s_c7c5e1e2dee89d::t_d285ee18f43e20 1-25
+rover-server/internal/mapper/filespecification/out/__snapshots__/filespecification_test.snap
+  s_c7c5e1e2dee89d::t_cc6a09e7b52e99 1-17
+rover-server/internal/mapper/rover/in/__snapshots__/exposure_test.snap
+  s_c7c5e1e2dee89d::t_9d2cbdc5a1ade4 50,68,75-96
+rover-server/internal/mapper/rover/in/__snapshots__/rover_test.snap
+  s_c7c5e1e2dee89d::t_af7ae4070c0552 29,43,80,112,165,179,257,271,324,338
+rover-server/internal/mapper/rover/in/__snapshots__/subscription_test.snap
+  s_c7c5e1e2dee89d::t_882abc5a6e61cd 27,41,48-63
+rover/api/go.sum
+  s_c7c5e1e2dee89d::t_6d5184c4174d0e 151-152
+rover/go.sum
+  s_c7c5e1e2dee89d::t_ddf9afca1d1ae2 233-234
+sftp/api/go.sum
+  s_c7c5e1e2dee89d::t_9d69b292dc1fef 1-180
+sftp/go.sum
+  s_c7c5e1e2dee89d::t_07aec2aaeeaba1 1-444
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "dee5a005253b7c27840ced82d31febf47579605a",
+  "prompts": {},
+  "sessions": {
+    "s_c7c5e1e2dee89d": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f0e5a91ceffe8txQwfgcElsa5z",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

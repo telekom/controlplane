@@ -1,0 +1,51 @@
+rover-server/internal/mapper/status/response.go
+  s_a78ee439f17fa2::t_f19c18287f80ed 18,116-118,122-158
+  s_a78ee439f17fa2::t_e7e43cf594d53a 159
+rover-ctl/pkg/commands/apply/cmd_test.go
+  s_a78ee439f17fa2::t_f32e99a9eb2f32 245-248
+  s_a78ee439f17fa2::t_1f7b3df726d5bf 193-201,203-205,207-208,215,217-220,233-243,268-270
+  s_a78ee439f17fa2::t_94b126ea3495df 12
+  s_ff44a7f86da7bd::t_c0d41cbb861c9a 229-230
+  s_ff44a7f86da7bd::t_fd4e833615dce2 244,249-267
+  s_ff44a7f86da7bd::t_69a3910bd00bac 190-192,202,206,209-214,216,221-228,231-232
+rover-server/internal/mapper/status/response_test.go
+  s_a78ee439f17fa2::t_5980f485536c45 603-690
+docs/docs/architecture/rover.mdx
+  s_a78ee439f17fa2::t_0080e90110499c 29-32,34
+  s_ff44a7f86da7bd::t_3c12e4e5e0160b 33
+rover-ctl/pkg/handlers/common/status.go
+  s_ff44a7f86da7bd::t_6a118887393a61 19
+rover-ctl/pkg/handlers/common/status_poller.go
+  s_ff44a7f86da7bd::t_b4e9a3e309875c 24
+rover-ctl/pkg/handlers/common/status_test.go
+  s_a78ee439f17fa2::t_c5c2f3179cd62c 8-9,180,183-197
+  s_ff44a7f86da7bd::t_7c554e8ff646e3 181-182
+  s_a78ee439f17fa2::t_4c9cd4f4052316 198
+rover-ctl/pkg/handlers/common/status_poller_test.go
+  s_ff44a7f86da7bd::t_4d9f60c944e1aa 220-221,224,226
+  s_ff44a7f86da7bd::t_e1e1c5eb988087 199
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "62c470bc51509dd369a0827dbd0b85a38b4d2c55",
+  "prompts": {},
+  "sessions": {
+    "s_a78ee439f17fa2": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f0d893c7bffeEtdiaIN0LAOmpc",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_ff44a7f86da7bd": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f0d7a833effeIXQlV0Ez55K2I0",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
