@@ -47,7 +47,12 @@ func (h *AgenticExposureHandler) CreateOrUpdate(ctx context.Context, obj *agenti
 	}
 	obj.SetCondition(NewServerCondition(true))
 
-	// 1b. Validate exposure scopes against server's declared scopes
+	// 1b. Validate exposure credentials and scopes
+	if err = validateBasicWithScopesPolicy(obj); err != nil {
+		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonValidationFailed, err.Error()))
+		obj.SetCondition(condition.NewBlockedCondition(err.Error()))
+		return nil
+	}
 	if !validateExposureScopes(ctx, serverInfo, obj) {
 		return nil
 	}
@@ -286,6 +291,17 @@ func validateExposureScopes(_ context.Context, server *util.ServerInfo, obj *age
 		return false
 	}
 	return true
+}
+
+func validateBasicWithScopesPolicy(obj *agenticv1.AgenticExposure) error {
+	if !obj.HasExternalIdp() || len(obj.Spec.Security.M2M.Scopes) == 0 {
+		return nil
+	}
+	idp := obj.Spec.Security.M2M.ExternalIDP
+	if idp.Basic == nil || idp.GrantType == agenticv1.GrantTypePassword {
+		return nil
+	}
+	return errors.New("Provider username/password with scopes requires an external IDP grant type \"password\"")
 }
 
 // ensureTelecontextProxyRoute creates a proxy route on the Telecontext Application's zone

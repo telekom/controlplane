@@ -1,3 +1,10 @@
+## [0.31.2](https://github.com/telekom/controlplane/compare/v0.31.1...v0.31.2) (2026-10-01)
+
+
+### Bug Fixes
+
+* allow extIDP basic auth with scopes ([#699](https://github.com/telekom/controlplane/issues/699)) ([7774813](https://github.com/telekom/controlplane/commit/77748133e607ca0661608c99a9d1e975481a71cb))
+
 ## [0.31.1](https://github.com/telekom/controlplane/compare/v0.31.0...v0.31.1) (2026-10-01)
 
 

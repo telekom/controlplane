@@ -12,7 +12,7 @@
 # ROVERCTL_IMAGE must reference the just-published GHCR image for this
 # release (e.g. ghcr.io/telekom/controlplane/rover-ctl:<version>), and
 # ROVERCTL_BASE_IMAGE must reference the bash/jq/yq base image published by
-# rover-ctl-base-image.yaml (see .github/workflows/release.yaml, which sets
+# rover-ctl-base-image.yaml (see .github/workflows/release-roverctl-image.yaml, which sets
 # both build-args when building/pushing this Dockerfile).
 ARG ROVERCTL_IMAGE
 ARG ROVERCTL_BASE_IMAGE
