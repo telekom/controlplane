@@ -118,6 +118,8 @@ type IdentityProviderConfig struct {
 
 // GatewayAdminConfig contains the necessary information to connect to the gateway admin API for this zone.
 // Most of it can be optional if the Gateway was setup to support it, then only the URL is required.
+// The OAuth client used to call the admin API is system-managed: every gateway of a zone shares
+// one "rover" client whose credentials cannot be configured here.
 type GatewayAdminConfig struct {
 	// IdentityProviderRef selects the IDP used to obtain gateway-admin tokens.
 	IdentityProviderRef string `json:"identityProviderRef"`
@@ -126,15 +128,6 @@ type GatewayAdminConfig struct {
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:Format=uri
 	Url string `json:"url"`
-
-	// ClientId of the admin client.
-	// If empty, a managed client with the default name will be used.
-	// +kubebuilder:validation:Optional
-	ClientId *string `json:"clientId,omitempty"`
-	// ClientSecret of the admin client
-	// If empty, a managed client secret will be generated.
-	// +kubebuilder:validation:Optional
-	ClientSecret *string `json:"clientSecret,omitempty"`
 }
 
 // UrlConfig defines the configuration for a single URL (hostname + base path) exposed by the gateway for this zone.

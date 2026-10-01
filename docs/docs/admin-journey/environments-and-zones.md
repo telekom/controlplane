@@ -167,8 +167,7 @@ A Zone is rejected at admission unless:
 - **At most one preset per type is `default`.** Without one, list order determines the fallback.
 - **Features may be configured on the Zone or any preset.** Preset values override inherited Zone
   values.
-- **Every gateway is referenced by at least one preset.** An unreferenced gateway would still
-  provision a Gateway, an admin client and a consumer for traffic that can never reach it.
+- **Every gateway is referenced by at least one preset.**
 
 :::note
 Because a gateway's types are derived from its presets, adding a preset of a new type to an
@@ -182,7 +181,9 @@ Credential values (`clientSecret`, `password`, etc.) should not be committed to 
 
 ### Gateway Admin Access
 
-To configure routes at runtime, the Control Plane needs to authenticate against your gateway's **admin API**. The `admin` block on each gateway holds this connection:
+1. Set each gateway's admin API `url` and point `identityProviderRef` to the Zone's identity provider, as shown below.
+2. Do not set gateway admin `clientId` or `clientSecret`; both are system-managed.
+3. Apply the Zone and check its initial readiness and events as described in [Zone Readiness and Sub-Resource Events](#zone-readiness-and-sub-resource-events).
 
 ```yaml
 gateways:
@@ -190,29 +191,13 @@ gateways:
     admin:
       identityProviderRef: primary
       url: https://gateway-admin.example.com
-      # clientSecret is optional — see below
 ```
 
-You only need to provide the `url` and `identityProviderRef`. To handle authentication, the Control Plane automatically provisions a dedicated identity client (the `rover` client, described below) and generates its secret. If you want to set the client's secret yourself, provide `clientSecret`; otherwise it is generated for you.
-
-#### The `rover` realm and client
-
-On **every** zone reconciliation, the zone handler creates:
-
-- An internal identity realm named **`rover`**, dedicated to platform-internal admin clients.
-- A **`rover`** client inside that realm, used to authenticate against the gateway admin API. Its token issuer is `…/auth/realms/rover`.
-
-This is not an opt-in feature and cannot be disabled — every zone gets its own `rover` realm and client.
-
-Every named gateway exposes issuer, certificate, and OpenID discovery routes for the default realm and the internal `rover` realm, plus the team-api realm when configured. These routes cover the hostnames and base paths of all presets using that gateway. World-visible zones add `/spacegate` after the preset base path.
-
-:::note Previously a manual step
-Earlier versions required administrators to create this realm and client by hand before a zone could work. This is now done for you automatically whenever the Zone is reconciled — no manual setup is needed.
-:::
+No manual realm or client setup is needed. All gateways in a Zone share one automatically provisioned `rover` client. For its lifecycle and secret handling, see [Admin Domain](../architecture/admin.mdx#identity-realms-and-the-rover-client).
 
 ### Zone Secrets
 
-A Zone references three sensitive values: the **identity provider admin password**, the **Redis password**, and the **gateway admin client secret**. You do not have to manage these as raw values in the Zone file.
+Configure the **identity provider admin password** and, if used, the **Redis password** on the Zone. Gateway admin credentials are managed automatically and are not part of this configuration.
 
 When you apply a Zone, a defaulting webhook processes these fields:
 
