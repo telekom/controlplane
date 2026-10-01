@@ -23,6 +23,7 @@ import (
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
+	"github.com/telekom/controlplane/common/pkg/controller"
 	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	ctypes "github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
@@ -54,6 +55,16 @@ const authorizationUnknownGracePeriod = 5 * time.Minute
 // reasonAuthorizationUnavailable is the Ready reason once the grace period has
 // passed without an approval answer.
 const reasonAuthorizationUnavailable = "AuthorizationUnavailable"
+
+// applicationMissingGracePeriod is how long applied capture keeps running after
+// the consumer or provider Application is found deleted, before it is stopped
+// for an Application that is really gone. A recreated Application has a new UID,
+// which changes the authorization fingerprint, so it is approved again.
+const applicationMissingGracePeriod = authorizationUnknownGracePeriod
+
+// reasonApplicationDeleted is the Ready reason once the grace period has passed
+// with the consumer or provider Application deleted.
+const reasonApplicationDeleted = "ApplicationDeleted"
 
 func (h *ListenerHandler) now() time.Time {
 	if h.Now == nil {
@@ -142,14 +153,27 @@ func (h *ListenerHandler) CreateOrUpdate(ctx context.Context, listener *spectrev
 		return nil
 	}
 
-	// Step 1: Resolve consumer and provider Applications.
-	consumerApp, err := h.resolveApplication(ctx, &listener.Spec.Consumer)
-	if err != nil {
-		return errors.Wrap(err, "failed to resolve consumer Application")
+	// Step 1: Resolve consumer and provider Applications. A deleted one keeps
+	// applied capture for a grace period and then stops it (awaitApplication).
+	// Both are checked before either error is returned, so a not-ready consumer
+	// does not hide a deleted provider.
+	consumerApp, consumerErr := h.resolveApplication(ctx, &listener.Spec.Consumer)
+	providerApp, providerErr := h.resolveApplication(ctx, &listener.Spec.Provider)
+	consumerDeleted, consumerExists := h.applicationDeleted(ctx, &listener.Spec.Consumer, consumerApp, consumerErr)
+	providerDeleted, providerExists := h.applicationDeleted(ctx, &listener.Spec.Provider, providerApp, providerErr)
+	// Cleared even while one is not ready, so a later deletion gets a new grace period.
+	if consumerExists && providerExists {
+		listener.Status.ApplicationMissingSince = nil
 	}
-	providerApp, err := h.resolveApplication(ctx, &listener.Spec.Provider)
-	if err != nil {
-		return errors.Wrap(err, "failed to resolve provider Application")
+	switch {
+	case consumerDeleted:
+		return h.awaitApplication(ctx, listener, "consumer", &listener.Spec.Consumer)
+	case providerDeleted:
+		return h.awaitApplication(ctx, listener, "provider", &listener.Spec.Provider)
+	case consumerErr != nil:
+		return errors.Wrap(consumerErr, "failed to resolve consumer Application")
+	case providerErr != nil:
+		return errors.Wrap(providerErr, "failed to resolve provider Application")
 	}
 
 	consumerId := consumerApp.Status.ClientId
@@ -793,4 +817,68 @@ func (h *ListenerHandler) awaitApprovalAnswer(
 	listener.SetCondition(condition.NewNotReadyCondition(reasonAuthorizationUnavailable, message))
 	listener.SetCondition(condition.NewBlockedCondition(message))
 	return joinStopError(reason, stopErr, evalErr)
+}
+
+// applicationDeleted reports whether the Application at ref is deleted or being
+// deleted (deleted), or exists and is not being deleted (exists). Only a failed
+// or deleting cached read is checked, and only a live read (getLive) counts; a
+// live read error is no evidence, so both are false.
+func (h *ListenerHandler) applicationDeleted(
+	ctx context.Context,
+	ref *ctypes.TypedObjectRef,
+	cached *applicationv1.Application,
+	resolveErr error,
+) (deleted, exists bool) {
+	if resolveErr == nil && !controller.IsBeingDeleted(cached) {
+		return false, true
+	}
+	app := &applicationv1.Application{}
+	if err := h.getLive(ctx, ref.K8s(), app); err != nil {
+		return apierrors.IsNotFound(err), false
+	}
+	deleting := controller.IsBeingDeleted(app)
+	return deleting, !deleting
+}
+
+// awaitApplication handles a deleted consumer or provider (role) Application.
+// Applied capture keeps running for applicationMissingGracePeriod from the
+// first such reconcile, recorded in status.applicationMissingSince, and the
+// Listener is retried after a delay like in awaitApprovalAnswer. After it,
+// capture is stopped through the persisted drain and the Listener stays
+// blocked until the Application exists again.
+func (h *ListenerHandler) awaitApplication(
+	ctx context.Context,
+	listener *spectrev1.Listener,
+	role string,
+	ref *ctypes.TypedObjectRef,
+) error {
+	now := h.now()
+	if listener.Status.ApplicationMissingSince == nil {
+		listener.Status.ApplicationMissingSince = &metav1.Time{Time: now}
+	}
+	since := listener.Status.ApplicationMissingSince.Time
+	// Messages name the start time, not the elapsed time, so the persisted
+	// status does not change on every retry.
+	sinceText := since.UTC().Format(time.RFC3339)
+	if remaining := since.Add(applicationMissingGracePeriod).Sub(now); remaining > 0 {
+		return ctrlerrors.RetryableWithDelayErrorf(min(remaining, 30*time.Second),
+			"%s application %q is deleted since %s, applied capture is kept for %s from then",
+			role, ref.ObjectRef.String(), sinceText, applicationMissingGracePeriod)
+	}
+
+	reason := role + " application deleted"
+	stopping, stopErr := h.drainCapture(ctx, listener, reason)
+	// Only an inventory that found nothing may say no capture runs.
+	outcome := "no capture runs"
+	if stopping || stopErr != nil {
+		outcome = fmt.Sprintf("capture is stopped after %s", applicationMissingGracePeriod)
+	}
+	message := fmt.Sprintf("%s application %q is deleted since %s; %s until it exists again",
+		role, ref.ObjectRef.String(), sinceText, outcome)
+	listener.SetCondition(condition.NewNotReadyCondition(reasonApplicationDeleted, message))
+	listener.SetCondition(condition.NewBlockedCondition(message))
+	if stopErr != nil {
+		return errors.Wrapf(stopErr, "failed to stop capture after %s", reason)
+	}
+	return ctrlerrors.BlockedErrorf("%s", message)
 }

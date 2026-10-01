@@ -1682,3 +1682,289 @@ var _ = Describe("Listener approval answer unavailable (controller)", func() {
 		Expect(h.listener().Status.AppliedPlacement).ToNot(BeNil())
 	})
 })
+
+const appDeletedReason = "ApplicationDeleted"
+
+// deleteApp deletes the named Application; with a finalizer it stays in
+// deletion instead of being removed.
+func (h *plHarness) deleteApp(name string, finalizer bool) {
+	ctx := context.Background()
+	app := &applicationv1.Application{}
+	ExpectWithOffset(1, h.raw.Get(ctx, k8stypes.NamespacedName{Name: name, Namespace: plTeamNs}, app)).To(Succeed())
+	if finalizer {
+		app.Finalizers = []string{"test.cp.ei.telekom.de/finalizer"}
+		h.update(app)
+	}
+	ExpectWithOffset(1, h.raw.Delete(ctx, app)).To(Succeed())
+}
+
+// missCachedApp makes every cached read of the named Application miss, as a
+// lagging cache does. Reads through plLiveReader still find it.
+func (h *plHarness) missCachedApp(name string) {
+	h.getErr = func(key client.ObjectKey, obj client.Object) error {
+		if _, ok := obj.(*applicationv1.Application); ok && key.Name == name {
+			return apierrors.NewNotFound(applicationv1.GroupVersion.WithResource("applications").GroupResource(), name)
+		}
+		return nil
+	}
+}
+
+// plLiveReader is the handler's uncached Reader. It reads the fake client past
+// the harness getErr, so a spec can fail cached and live reads separately; err,
+// when set, fails a live Get.
+type plLiveReader struct {
+	h   *plHarness
+	err func(key client.ObjectKey, obj client.Object) error
+}
+
+func (r *plLiveReader) Get(ctx context.Context, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
+	if r.err != nil {
+		if err := r.err(key, obj); err != nil {
+			return err
+		}
+	}
+	getErr := r.h.getErr
+	r.h.getErr = nil
+	defer func() { r.h.getErr = getErr }()
+	return r.h.raw.Get(ctx, key, obj, opts...)
+}
+
+func (r *plLiveReader) List(ctx context.Context, list client.ObjectList, opts ...client.ListOption) error {
+	return r.h.raw.List(ctx, list, opts...)
+}
+
+// expectAppMissingRetry asserts that the last pass kept capture and asked for
+// a retry after exactly want.
+func expectAppMissingRetry(h *plHarness, gh *graceHandler, calls []plCall, err error, role string, want time.Duration) {
+	ExpectWithOffset(1, err).ToNot(HaveOccurred())
+	ExpectWithOffset(1, plCountVerb(calls, "Delete")).To(BeZero(), "unexpected delete in %+v", calls)
+	plExpectNoCaptureWrites(calls)
+	ExpectWithOffset(1, h.listener().Status.Draining).To(BeNil())
+
+	var rde ctrlerrors.RetryableWithDelayError
+	ExpectWithOffset(1, stderrors.As(gh.err, &rde)).To(BeTrue(), "handler returned %v", gh.err)
+	ExpectWithOffset(1, rde.RetryDelay()).To(Equal(want))
+	ExpectWithOffset(1, rde.Error()).To(ContainSubstring(role + " application"))
+}
+
+var _ = Describe("Listener consumer or provider Application deleted (controller)", func() {
+	DescribeTable("A1: keeps applied capture for 5 minutes, then stops it through the checkpointed drain",
+		func(role, app string, finalizer bool) {
+			now := graceT0
+			h, gh := newGraceHarness(newPlFixtures("c"), &now)
+			l, _ := h.provision()
+			oldFP := l.Status.AppliedPlacement.Fingerprint
+			rlRef := l.Status.RouteListener.DeepCopy()
+			Expect(l.Status.ApplicationMissingSince).To(BeNil())
+			h.deleteApp(app, finalizer)
+
+			// Inside the grace period capture stays and the start time is kept.
+			for _, step := range []struct{ elapsed, delay time.Duration }{
+				{0, 30 * time.Second},
+				{4*time.Minute + 50*time.Second, 10 * time.Second},
+			} {
+				now = graceT0.Add(step.elapsed)
+				calls, err := h.reconcile()
+				expectAppMissingRetry(h, gh, calls, err, role, step.delay)
+				l = h.listener()
+				Expect(l.Status.ApplicationMissingSince).ToNot(BeNil())
+				Expect(l.Status.ApplicationMissingSince.Time).To(BeTemporally("==", graceT0))
+				Expect(l.Status.AppliedPlacement.Fingerprint).To(Equal(oldFP))
+			}
+			Expect(h.exists(rlRef, &gatewayv1.RouteListener{})).To(BeTrue())
+
+			// t0+5m: only the checkpoint is written.
+			now = graceT0.Add(5 * time.Minute)
+			calls, err := h.reconcile()
+			Expect(err).ToNot(HaveOccurred())
+			Expect(plCountVerb(calls, "Delete")).To(BeZero())
+			plExpectNoCaptureWrites(calls)
+			l = h.listener()
+			Expect(l.Status.Draining).ToNot(BeNil())
+			Expect(l.Status.Draining.Reason).To(Equal(role + " application deleted"))
+			Expect(l.Status.Draining.OldFingerprint).To(Equal(oldFP))
+			ready := graceReady(l)
+			Expect(ready.Status).To(Equal(metav1.ConditionFalse))
+			Expect(ready.Reason).To(Equal(appDeletedReason))
+			Expect(ready.Message).To(And(ContainSubstring(role+" application"), ContainSubstring("since 2026-09-25T10:00:00Z"),
+				ContainSubstring("capture is stopped after 5m0s")))
+			Expect(plBlocked(l)).To(Equal(ready.Message))
+
+			// Later passes stop capture; the pass completing the drain reports that
+			// no capture runs any more.
+			h.drain(rlRef)
+			l = h.listener()
+			Expect(l.Status.AppliedPlacement).To(BeNil())
+			Expect(h.exists(rlRef, &gatewayv1.RouteListener{})).To(BeFalse())
+			Expect(graceReady(l).Reason).To(Equal(appDeletedReason))
+			Expect(graceReady(l).Message).To(ContainSubstring("no capture runs"))
+		},
+		Entry("consumer Application removed", "consumer", "c-app", false),
+		Entry("provider Application being deleted", "provider", "p-app", true),
+	)
+
+	It("A2: a recreated Application has a new UID, so capture is re-approved through the fingerprint drain", func() {
+		now := graceT0
+		h, gh := newGraceHarness(newPlFixtures("c"), &now)
+		l, _ := h.provision()
+		oldFP := l.Status.AppliedPlacement.Fingerprint
+		h.deleteApp("p-app", false)
+		calls, err := h.reconcile()
+		expectAppMissingRetry(h, gh, calls, err, "provider", 30*time.Second)
+
+		// t0+4m: the provider Application is recreated, with a new UID.
+		now = graceT0.Add(4 * time.Minute)
+		app := plApp("p-app", "team-p", "p")
+		app.UID = "p-app-recreated-uid"
+		app.Labels = map[string]string{cconfig.EnvironmentLabelKey: plEnv}
+		Expect(h.raw.Create(context.Background(), app)).To(Succeed())
+		calls = h.mustReconcile()
+		Expect(plCountVerb(calls, "Delete")).To(BeZero())
+		plExpectNoCaptureWrites(calls)
+		l = h.listener()
+		Expect(l.Status.ApplicationMissingSince).To(BeNil())
+		Expect(l.Status.Draining).ToNot(BeNil())
+		Expect(l.Status.Draining.Reason).To(Equal("fingerprint changed"))
+		Expect(l.Status.Draining.OldFingerprint).To(Equal(oldFP))
+		Expect(graceReady(l).Reason).ToNot(Equal(appDeletedReason))
+	})
+
+	It("A2b: an Application that reappears with the same UID leaves capture untouched and clears the start time", func() {
+		now := graceT0
+		h, gh := newGraceHarness(newPlFixtures("c"), &now)
+		l, _ := h.provision()
+		applied := l.Status.AppliedPlacement.DeepCopy()
+		// Without a Reader the live read goes through the same client, so both
+		// reads miss the provider Application for a while.
+		h.missCachedApp("p-app")
+		calls, err := h.reconcile()
+		expectAppMissingRetry(h, gh, calls, err, "provider", 30*time.Second)
+		Expect(h.listener().Status.ApplicationMissingSince).ToNot(BeNil())
+
+		// t0+4m: the same Application is found again.
+		now = graceT0.Add(4 * time.Minute)
+		h.getErr = nil
+		calls = h.mustReconcile()
+		Expect(plCountVerb(calls, "Delete")).To(BeZero())
+		plExpectNoCaptureWrites(calls)
+		l = h.listener()
+		Expect(l.Status.ApplicationMissingSince).To(BeNil())
+		Expect(l.Status.Draining).To(BeNil())
+		Expect(l.Status.AppliedPlacement).To(Equal(applied))
+		Expect(graceReady(l).Reason).ToNot(Equal(appDeletedReason))
+	})
+
+	It("A4: an Application found again but not ready clears the start time, so a later deletion gets a new grace period", func() {
+		now := graceT0
+		h, gh := newGraceHarness(newPlFixtures("c"), &now)
+		h.provision()
+		h.deleteApp("p-app", false)
+		calls, err := h.reconcile()
+		expectAppMissingRetry(h, gh, calls, err, "provider", 30*time.Second)
+
+		// t0+1m: the provider Application is recreated but not ready yet.
+		now = graceT0.Add(time.Minute)
+		app := plApp("p-app", "team-p", "p")
+		app.Labels = map[string]string{cconfig.EnvironmentLabelKey: plEnv}
+		app.Status.Conditions = []metav1.Condition{{Type: condition.ConditionTypeReady, Status: metav1.ConditionFalse, Reason: "NotReady"}}
+		Expect(h.raw.Create(context.Background(), app)).To(Succeed())
+		calls = h.mustReconcile()
+		Expect(plCountVerb(calls, "Delete")).To(BeZero())
+		l := h.listener()
+		Expect(l.Status.ApplicationMissingSince).To(BeNil())
+		Expect(plBlocked(l)).To(ContainSubstring("is not ready"))
+
+		// t0+61m: it is deleted again; the grace period starts anew.
+		now = graceT0.Add(61 * time.Minute)
+		h.deleteApp("p-app", false)
+		calls, err = h.reconcile()
+		expectAppMissingRetry(h, gh, calls, err, "provider", 30*time.Second)
+		l = h.listener()
+		Expect(l.Status.ApplicationMissingSince).ToNot(BeNil())
+		Expect(l.Status.ApplicationMissingSince.Time).To(BeTemporally("==", now))
+	})
+
+	It("A5: a not-ready consumer does not hide a deleted provider", func() {
+		now := graceT0
+		h, gh := newGraceHarness(newPlFixtures("c"), &now)
+		h.provision()
+		app := &applicationv1.Application{}
+		Expect(h.raw.Get(context.Background(), k8stypes.NamespacedName{Name: "c-app", Namespace: plTeamNs}, app)).To(Succeed())
+		app.Status.Conditions = []metav1.Condition{{Type: condition.ConditionTypeReady, Status: metav1.ConditionFalse, Reason: "NotReady"}}
+		h.update(app)
+		h.deleteApp("p-app", false)
+
+		calls, err := h.reconcile()
+		expectAppMissingRetry(h, gh, calls, err, "provider", 30*time.Second)
+		l := h.listener()
+		Expect(l.Status.ApplicationMissingSince).ToNot(BeNil())
+		Expect(l.Status.ApplicationMissingSince.Time).To(BeTemporally("==", graceT0))
+	})
+
+	It("A6: a failed live read is no evidence, so no grace period starts", func() {
+		now := graceT0
+		h, gh := newGraceHarness(newPlFixtures("c"), &now)
+		l, _ := h.provision()
+		applied := l.Status.AppliedPlacement.DeepCopy()
+		h.missCachedApp("p-app")
+		gh.Reader = &plLiveReader{h: h, err: func(key client.ObjectKey, obj client.Object) error {
+			if _, ok := obj.(*applicationv1.Application); ok && key.Name == "p-app" {
+				return apierrors.NewServiceUnavailable("application API unavailable")
+			}
+			return nil
+		}}
+
+		for _, elapsed := range []time.Duration{0, 10 * time.Minute} {
+			now = graceT0.Add(elapsed)
+			calls := h.mustReconcile()
+			Expect(gh.err).To(MatchError(ContainSubstring("failed to resolve provider Application")))
+			Expect(plCountVerb(calls, "Delete")).To(BeZero())
+			plExpectNoCaptureWrites(calls)
+			l = h.listener()
+			Expect(l.Status.ApplicationMissingSince).To(BeNil())
+			Expect(l.Status.Draining).To(BeNil())
+			Expect(l.Status.AppliedPlacement).To(Equal(applied))
+		}
+	})
+
+	It("A7: a cached miss that the live read finds is cache lag, so no grace period starts", func() {
+		now := graceT0
+		h, gh := newGraceHarness(newPlFixtures("c"), &now)
+		l, _ := h.provision()
+		applied := l.Status.AppliedPlacement.DeepCopy()
+		h.missCachedApp("p-app")
+		gh.Reader = &plLiveReader{h: h}
+
+		calls := h.mustReconcile()
+		Expect(gh.err).To(MatchError(ContainSubstring("failed to resolve provider Application")))
+		Expect(plCountVerb(calls, "Delete")).To(BeZero())
+		plExpectNoCaptureWrites(calls)
+		l = h.listener()
+		Expect(l.Status.ApplicationMissingSince).To(BeNil())
+		Expect(l.Status.Draining).To(BeNil())
+		Expect(l.Status.AppliedPlacement).To(Equal(applied))
+	})
+
+	It("A3: an Application that exists but is not ready blocks without touching capture", func() {
+		now := graceT0
+		h, _ := newGraceHarness(newPlFixtures("c"), &now)
+		l, _ := h.provision()
+		applied := l.Status.AppliedPlacement.DeepCopy()
+		app := &applicationv1.Application{}
+		Expect(h.raw.Get(context.Background(), k8stypes.NamespacedName{Name: "c-app", Namespace: plTeamNs}, app)).To(Succeed())
+		app.Status.Conditions = []metav1.Condition{{Type: condition.ConditionTypeReady, Status: metav1.ConditionFalse, Reason: "NotReady"}}
+		h.update(app)
+
+		for _, elapsed := range []time.Duration{0, 10 * time.Minute} {
+			now = graceT0.Add(elapsed)
+			calls := h.mustReconcile()
+			Expect(plCountVerb(calls, "Delete")).To(BeZero())
+			plExpectNoCaptureWrites(calls)
+			l = h.listener()
+			Expect(l.Status.ApplicationMissingSince).To(BeNil())
+			Expect(l.Status.Draining).To(BeNil())
+			Expect(l.Status.AppliedPlacement).To(Equal(applied))
+			Expect(plBlocked(l)).To(ContainSubstring("is not ready"))
+		}
+	})
+})

@@ -2265,7 +2265,8 @@ var _ = Describe("ListenerHandler", func() {
 				listener := newListener()
 				fakeClient.EXPECT().
 					Get(ctx, k8stypes.NamespacedName{Name: consumerAppName, Namespace: listenerNamespace}, mock.AnythingOfType("*v1.Application")).
-					Return(fmt.Errorf("not found")).Once()
+					Return(fmt.Errorf("not found")).Twice()
+				mockGetProviderApp(makeProviderApp())
 
 				err := h.CreateOrUpdate(ctx, listener)
 				Expect(err).To(HaveOccurred())
@@ -2769,13 +2770,17 @@ var _ = Describe("ListenerHandler", func() {
 				return f
 			}
 
-			// mockConsumerNotReady stubs the consumer Application read with C NotReady.
+			// mockConsumerNotReady stubs the consumer Application read with C
+			// NotReady, the live read that finds it not deleted, and the provider
+			// read, which is resolved before the consumer error is returned.
 			mockConsumerNotReady := func() {
 				app := makeConsumerApp()
 				meta.SetStatusCondition(&app.Status.Conditions, metav1.Condition{
 					Type: condition.ConditionTypeReady, Status: metav1.ConditionFalse, Reason: "NotReady",
 				})
 				mockGetConsumerApp(app)
+				mockGetConsumerApp(app)
+				mockGetProviderApp(makeProviderApp())
 			}
 
 			// mockExposureListFails stubs the topology up to placement with the
@@ -3516,7 +3521,8 @@ var _ = Describe("ListenerHandler", func() {
 				// Normal flow continues — consumer App fails to resolve (blocks).
 				fakeClient.EXPECT().
 					Get(ctx, k8stypes.NamespacedName{Name: consumerAppName, Namespace: listenerNamespace}, mock.AnythingOfType("*v1.Application")).
-					Return(fmt.Errorf("not found")).Once()
+					Return(fmt.Errorf("not found")).Twice()
+				mockGetProviderApp(makeProviderApp())
 
 				err := h.CreateOrUpdate(ctx, listener)
 				Expect(err).To(HaveOccurred())
@@ -3540,7 +3546,8 @@ var _ = Describe("ListenerHandler", func() {
 				// Normal flow continues — consumer App fails to resolve (blocks).
 				fakeClient.EXPECT().
 					Get(ctx, k8stypes.NamespacedName{Name: consumerAppName, Namespace: listenerNamespace}, mock.AnythingOfType("*v1.Application")).
-					Return(fmt.Errorf("not found")).Once()
+					Return(fmt.Errorf("not found")).Twice()
+				mockGetProviderApp(makeProviderApp())
 
 				err := h.CreateOrUpdate(ctx, listener)
 				Expect(err).To(HaveOccurred())
@@ -3564,7 +3571,8 @@ var _ = Describe("ListenerHandler", func() {
 				// Normal flow continues.
 				fakeClient.EXPECT().
 					Get(ctx, k8stypes.NamespacedName{Name: consumerAppName, Namespace: listenerNamespace}, mock.AnythingOfType("*v1.Application")).
-					Return(fmt.Errorf("not found")).Once()
+					Return(fmt.Errorf("not found")).Twice()
+				mockGetProviderApp(makeProviderApp())
 
 				err := h.CreateOrUpdate(ctx, listener)
 				Expect(err).To(HaveOccurred())
@@ -3771,7 +3779,8 @@ var _ = Describe("ListenerHandler", func() {
 				// Normal flow continues.
 				fakeClient.EXPECT().
 					Get(ctx, k8stypes.NamespacedName{Name: consumerAppName, Namespace: listenerNamespace}, mock.AnythingOfType("*v1.Application")).
-					Return(fmt.Errorf("not found")).Once()
+					Return(fmt.Errorf("not found")).Twice()
+				mockGetProviderApp(makeProviderApp())
 
 				err := h.CreateOrUpdate(ctx, listener)
 				Expect(err).To(HaveOccurred())
@@ -3787,7 +3796,8 @@ var _ = Describe("ListenerHandler", func() {
 				// Normal flow continues — consumer App fails to resolve (blocks).
 				fakeClient.EXPECT().
 					Get(ctx, k8stypes.NamespacedName{Name: consumerAppName, Namespace: listenerNamespace}, mock.AnythingOfType("*v1.Application")).
-					Return(fmt.Errorf("not found")).Once()
+					Return(fmt.Errorf("not found")).Twice()
+				mockGetProviderApp(makeProviderApp())
 
 				err := h.CreateOrUpdate(ctx, listener)
 				Expect(err).To(HaveOccurred())
