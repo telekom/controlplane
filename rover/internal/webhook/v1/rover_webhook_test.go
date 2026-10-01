@@ -1456,6 +1456,41 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 			warnings, err := validator.ValidateCreateOrUpdate(ctx, newRoverWithListenerCallback("ftp://callbacks.example.com/events"))
 			assertValidationFailedWith(warnings, err, "URL must start with http:// or https://")
 		})
+
+		It("should accept a full application ID as listener consumer and provider", func() {
+			cconfig.FeatureSpectre = cconfig.NewFeature("spectre", true)
+			defer func() { cconfig.FeatureSpectre = cconfig.NewFeature("spectre", false) }()
+
+			roverWithListener := newRoverWithListenerCallback("https://callback.example.com/events")
+			roverWithListener.Spec.Listeners[0].Consumer = "eni--team--app"
+			roverWithListener.Spec.Listeners[0].Provider = "eni--other--provider"
+			warnings, err := validator.ValidateCreateOrUpdate(ctx, roverWithListener)
+			Expect(warnings).To(BeNil())
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		DescribeTable("should reject a listener application ID with an empty segment",
+			func(field, id string) {
+				cconfig.FeatureSpectre = cconfig.NewFeature("spectre", true)
+				defer func() { cconfig.FeatureSpectre = cconfig.NewFeature("spectre", false) }()
+
+				roverWithListener := newRoverWithListenerCallback("https://callback.example.com/events")
+				if field == "consumer" {
+					roverWithListener.Spec.Listeners[0].Consumer = id
+				} else {
+					roverWithListener.Spec.Listeners[0].Provider = id
+				}
+				warnings, err := validator.ValidateCreateOrUpdate(ctx, roverWithListener)
+				assertValidationFailedWith(warnings, err, "must not have an empty segment")
+				Expect(err.Error()).To(ContainSubstring("spec.listeners[0]." + field))
+			},
+			Entry("consumer with an empty name", "consumer", "eni--team--"),
+			Entry("consumer with an empty group", "consumer", "--team--app"),
+			Entry("consumer with an empty team", "consumer", "eni----app"),
+			Entry("provider with an empty name", "provider", "eni--team--"),
+			Entry("provider with an empty group", "provider", "--team--app"),
+			Entry("provider with an empty team", "provider", "eni----app"),
+		)
 	})
 
 	Context("External IDs validation", func() {
