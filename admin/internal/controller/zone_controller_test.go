@@ -25,7 +25,6 @@ import (
 )
 
 func newZone(name string) *adminv1.Zone {
-	gatewayAdminSecret := "test-gateway-admin-secret"
 	identityAdminURL := "https://test-iris.de/auth/admin/realms"
 
 	return &adminv1.Zone{
@@ -51,7 +50,6 @@ func newZone(name string) *adminv1.Zone {
 			Gateways: []adminv1.GatewayConfig{{
 				Name: "standard",
 				Admin: adminv1.GatewayAdminConfig{
-					ClientSecret:        &gatewayAdminSecret,
 					Url:                 "https://test-stargate.de/admin-api",
 					IdentityProviderRef: "primary",
 				},
@@ -120,6 +118,7 @@ var _ = Describe("Zone Controller", func() {
 				g.Expect(got.Status.IdentityRealm).NotTo(BeNil())
 				g.Expect(got.Status.InternalIdentityRealm).NotTo(BeNil())
 				g.Expect(got.Status.Gateways).To(HaveLen(1))
+				g.Expect(got.Status.Gateways[0].AdminClient).NotTo(BeNil())
 				g.Expect(got.Status.TeamApiIdentityRealm).NotTo(BeNil())
 				g.Expect(got.Status.ManagedRoutes).NotTo(BeEmpty())
 
