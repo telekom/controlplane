@@ -1395,6 +1395,67 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 			warnings, err := validator.ValidateCreateOrUpdate(ctx, roverWithListener)
 			assertValidationFailedWith(warnings, err, "consumer is required")
 		})
+
+		newRoverWithListenerCallback := func(callback string) *roverv1.Rover {
+			roverWithListener := roverObj.DeepCopy()
+			roverWithListener.Spec.Listeners = []roverv1.RoverListener{
+				{
+					Consumer:    "some-other-app",
+					Provider:    "provider-app",
+					ApiBasePath: "/api/v1",
+				},
+			}
+			roverWithListener.Spec.ListenerSubscription = &roverv1.ListenerSubscription{
+				DeliveryType: "callback",
+				Callback:     callback,
+			}
+			return roverWithListener
+		}
+
+		It("should reject a listener callback pointing at a cluster-internal or local address", func() {
+			cconfig.FeatureSpectre = cconfig.NewFeature("spectre", true)
+			defer func() { cconfig.FeatureSpectre = cconfig.NewFeature("spectre", false) }()
+
+			for _, localURL := range []string{
+				"http://localhost:8080/callback",
+				"http://127.0.0.1:8080/callback",
+				"http://[::1]:8080/callback",
+				"http://0.0.0.0:8080/callback",
+				"http://169.254.169.254/latest/meta-data",
+				"http://my-svc.my-ns.svc.cluster.local:8080/callback",
+				"http://my-svc.my-ns.svc:8080/callback",
+				"http://kubernetes:8080/callback",
+				"http://localhost.:8080/callback",
+				"http://public.example.com@127.0.0.1:8080/callback",
+			} {
+				warnings, err := validator.ValidateCreateOrUpdate(ctx, newRoverWithListenerCallback(localURL))
+				assertValidationFailedWith(warnings, err, "must not point at a cluster-internal or local address")
+				Expect(err.Error()).To(ContainSubstring("spec.listenerSubscription.callback"), "expected %q to be rejected", localURL)
+			}
+		})
+
+		It("should allow a listener callback pointing at a public or private (corporate) address", func() {
+			cconfig.FeatureSpectre = cconfig.NewFeature("spectre", true)
+			defer func() { cconfig.FeatureSpectre = cconfig.NewFeature("spectre", false) }()
+
+			for _, allowedURL := range []string{
+				"https://callbacks.example.com/events",
+				"http://10.0.0.5:8080/callback",     // corporate/on-prem RFC1918 — allowed by policy
+				"http://192.168.1.10:8080/callback", // corporate/on-prem RFC1918 — allowed by policy
+			} {
+				warnings, err := validator.ValidateCreateOrUpdate(ctx, newRoverWithListenerCallback(allowedURL))
+				Expect(warnings).To(BeNil())
+				Expect(err).ToNot(HaveOccurred(), "expected %q to be allowed", allowedURL)
+			}
+		})
+
+		It("should reject a listener callback without an http(s) scheme", func() {
+			cconfig.FeatureSpectre = cconfig.NewFeature("spectre", true)
+			defer func() { cconfig.FeatureSpectre = cconfig.NewFeature("spectre", false) }()
+
+			warnings, err := validator.ValidateCreateOrUpdate(ctx, newRoverWithListenerCallback("ftp://callbacks.example.com/events"))
+			assertValidationFailedWith(warnings, err, "URL must start with http:// or https://")
+		})
 	})
 
 	Context("External IDs validation", func() {
