@@ -84,6 +84,13 @@ type ListenerStatus struct {
 	// drain. Cleared as soon as both gates answer again.
 	// +optional
 	AuthorizationUnknownSince *metav1.Time `json:"authorizationUnknownSince,omitempty"`
+	// ApplicationMissingSince is when the consumer or provider Application was
+	// first found deleted or being deleted. Applied capture keeps running for a
+	// 5-minute grace period from this time and is then stopped through the
+	// drain. A recreated Application has a new UID and is approved again.
+	// Cleared as soon as both Applications exist and are not being deleted.
+	// +optional
+	ApplicationMissingSince *metav1.Time `json:"applicationMissingSince,omitempty"`
 }
 
 // +kubebuilder:object:root=true

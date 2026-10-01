@@ -197,6 +197,15 @@ spec:
           status:
             description: ListenerStatus defines the observed state of Listener.
             properties:
+              applicationMissingSince:
+                description: |-
+                  ApplicationMissingSince is when the consumer or provider Application was
+                  first found deleted or being deleted. Applied capture keeps running for a
+                  5-minute grace period from this time and is then stopped through the
+                  drain. A recreated Application has a new UID and is approved again.
+                  Cleared as soon as both Applications exist and are not being deleted.
+                format: date-time
+                type: string
               appliedPlacement:
                 description: |-
                   AppliedListenerPlacementStatus records the durable placement state that was
