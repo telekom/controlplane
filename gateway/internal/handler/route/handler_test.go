@@ -8,6 +8,8 @@ import (
 	"context"
 	"fmt"
 
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 	"github.com/stretchr/testify/mock"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -26,9 +28,6 @@ import (
 	clientmock "github.com/telekom/controlplane/gateway/pkg/kong/client/mock"
 	"github.com/telekom/controlplane/gateway/pkg/kongutil"
 	secrets "github.com/telekom/controlplane/secret-manager/api"
-
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("RouteHandler", func() {
@@ -263,113 +262,6 @@ var _ = Describe("RouteHandler", func() {
 				err := handler.CreateOrUpdate(ctx, route)
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring("failed to build route"))
-			})
-		})
-
-		Context("consumer username/password with scopes", func() {
-			idp := func(grantType gatewayv1.GrantType) *gatewayv1.ExternalIdentityProvider {
-				return &gatewayv1.ExternalIdentityProvider{
-					TokenEndpoint: "https://idp.example.com/token",
-					TokenRequest:  gatewayv1.TokenRequestClientSecretBasic,
-					GrantType:     grantType,
-					Basic:         &gatewayv1.BasicAuthCredentials{Username: "provider-user", Password: "provider-pass"},
-				}
-			}
-			primaryIDP := func(grantType gatewayv1.GrantType) func(*gatewayv1.Route) {
-				return func(r *gatewayv1.Route) {
-					r.Spec.Security.M2M = &gatewayv1.Machine2MachineAuthentication{ExternalIDP: idp(grantType)}
-				}
-			}
-			secondaryIDP := func(grantType gatewayv1.GrantType) func(*gatewayv1.Route) {
-				return func(r *gatewayv1.Route) {
-					r.Spec.Type = gatewayv1.RouteTypeSecondary
-					r.Spec.Traffic.Failover = &gatewayv1.Failover{
-						TargetZoneName: "provider-zone",
-						Security: gatewayv1.Security{M2M: &gatewayv1.Machine2MachineAuthentication{
-							ExternalIDP: idp(grantType),
-						}},
-					}
-				}
-			}
-			allowBoth := []string{"password-consumer", "scopes-consumer"}
-
-			DescribeTable("blocks incompatible local authentication without publishing a route",
-				func(configure func(*gatewayv1.Route), valid bool) {
-					configure(route)
-					setupReadyGatewayGet()
-					setupFeatureBuilderOverrides()
-
-					consumer := func(name string, m2m *gatewayv1.ConsumerMachine2MachineAuthentication) gatewayv1.ConsumeRoute {
-						return gatewayv1.ConsumeRoute{
-							ObjectMeta: metav1.ObjectMeta{Name: "cr-" + name, Namespace: "test-ns"},
-							Spec: gatewayv1.ConsumeRouteSpec{
-								Route:        types.ObjectRef{Name: "test-route", Namespace: "test-ns"},
-								ConsumerName: name,
-								Security:     &gatewayv1.ConsumeRouteSecurity{M2M: m2m},
-							},
-						}
-					}
-					password := consumer("password-consumer", &gatewayv1.ConsumerMachine2MachineAuthentication{
-						Basic:  &gatewayv1.BasicAuthCredentials{Username: "consumer-user", Password: "consumer-pass"},
-						Scopes: []string{"consumer:read"},
-					})
-					scopesOnly := consumer("scopes-consumer", &gatewayv1.ConsumerMachine2MachineAuthentication{
-						Scopes: []string{"consumer:read"},
-					})
-					mockClient.EXPECT().List(mock.Anything, mock.Anything, mock.Anything).
-						Run(func(_ context.Context, list pkgclient.ObjectList, _ ...pkgclient.ListOption) {
-							list.(*gatewayv1.ConsumeRouteList).Items = []gatewayv1.ConsumeRoute{password, scopesOnly}
-						}).Return(nil)
-
-					var added []*gatewayv1.ConsumeRoute
-					mockBuilder.EXPECT().EnableFeature(mock.Anything).Maybe()
-					mockBuilder.EXPECT().AddAllowedConsumers(mock.Anything).
-						Run(func(consumers ...*gatewayv1.ConsumeRoute) { added = append(added, consumers...) }).Maybe()
-					if valid {
-						mockBuilder.EXPECT().GetAllowedConsumers().RunAndReturn(func() []*gatewayv1.ConsumeRoute { return added })
-						mockBuilder.EXPECT().Build(mock.Anything).Return(nil)
-						Expect(handler.CreateOrUpdate(ctx, route)).To(Succeed())
-						Expect(route.Status.Consumers).To(ConsistOf(allowBoth))
-						Expect(meta.IsStatusConditionTrue(route.GetConditions(), condition.ConditionTypeReady)).To(BeTrue())
-						return
-					}
-
-					mockBuilder.EXPECT().Build(mock.Anything).Return(nil).Maybe()
-					Expect(handler.CreateOrUpdate(ctx, route)).To(MatchError(`Consumer username/password with scopes requires an external IDP grant type "password" on route ` + route.Name))
-					mockBuilder.AssertNotCalled(GinkgoT(), "Build", mock.Anything)
-					mockKC.AssertNotCalled(GinkgoT(), "DeleteRoute", mock.Anything, mock.Anything)
-					ready := meta.FindStatusCondition(route.GetConditions(), condition.ConditionTypeReady)
-					Expect(ready).NotTo(BeNil())
-					Expect(ready.Status).To(Equal(metav1.ConditionFalse))
-					Expect(ready.Reason).To(Equal(condition.ReasonValidationFailed))
-					Expect(ready.Message).To(Equal(`Consumer username/password with scopes requires an external IDP grant type "password"`))
-				},
-				Entry("primary route with provider scopes only, it rejects consumer Basic credentials", func(r *gatewayv1.Route) {
-					r.Spec.Security.M2M = &gatewayv1.Machine2MachineAuthentication{Scopes: []string{"provider:read"}}
-				}, false),
-				Entry("primary route with a client_credentials grant", primaryIDP(gatewayv1.GrantTypeClientCredentials), false),
-				Entry("primary route with a password grant", primaryIDP(gatewayv1.GrantTypePassword), true),
-				Entry("failover-secondary route with a client_credentials grant", secondaryIDP(gatewayv1.GrantTypeClientCredentials), false),
-				Entry("failover-secondary route with a password grant", secondaryIDP(gatewayv1.GrantTypePassword), true),
-				// Proxy routes only forward; the backend mode is enforced by the primary or secondary route.
-				Entry("proxy route", func(r *gatewayv1.Route) {
-					r.Spec.Type = gatewayv1.RouteTypeProxy
-				}, true),
-			)
-
-			It("preserves the existing route failure policy for password grants", func() {
-				primaryIDP(gatewayv1.GrantTypePassword)(route)
-				route.Status.Consumers = []string{"existing-consumer"}
-				setupReadyGatewayGet()
-				setupFeatureBuilderOverrides()
-				mockClient.EXPECT().List(mock.Anything, mock.Anything, mock.Anything).Return(nil)
-				mockBuilder.EXPECT().EnableFeature(mock.Anything).Maybe()
-				mockBuilder.EXPECT().GetAllowedConsumers().Return([]*gatewayv1.ConsumeRoute{}).Maybe()
-				mockBuilder.EXPECT().Build(mock.Anything).Return(fmt.Errorf("plugin write failed"))
-
-				Expect(handler.CreateOrUpdate(ctx, route)).To(MatchError("failed to build route: plugin write failed"))
-				Expect(route.Status.Consumers).To(ConsistOf("existing-consumer"))
-				mockKC.AssertNotCalled(GinkgoT(), "DeleteRoute", mock.Anything, mock.Anything)
 			})
 		})
 

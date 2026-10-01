@@ -66,9 +66,6 @@ func (h *RouteHandler) CreateOrUpdate(ctx context.Context, route *gatewayv1.Rout
 		if err != nil {
 			return errors.Wrap(err, "failed to list route consumers")
 		}
-		if err := validateBasicWithScopes(route, routeConsumers.Items); err != nil {
-			return err
-		}
 
 		for _, consumer := range routeConsumers.Items {
 			if controller.IsBeingDeleted(&consumer) {
