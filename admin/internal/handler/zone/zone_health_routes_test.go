@@ -27,6 +27,7 @@ var _ = Describe("Zone-health routes", func() {
 	var zoneIdx int
 
 	BeforeEach(func() {
+		useSecretManager()
 		zoneIdx++
 		zone = newTestZone(fmt.Sprintf("zone-health-%d", zoneIdx))
 		Expect(k8sClient.Create(ctx, zone)).To(Succeed())
@@ -58,9 +59,8 @@ var _ = Describe("Zone-health routes", func() {
 	}
 
 	addAiGateway := func() {
-		secret := "ai-secret"
 		zone.Spec.Gateways = append(zone.Spec.Gateways, adminv1.GatewayConfig{
-			Name: "ai", Admin: adminv1.GatewayAdminConfig{IdentityProviderRef: "primary", ClientSecret: &secret, Url: "https://ai.example.com/admin-api"},
+			Name: "ai", Admin: adminv1.GatewayAdminConfig{IdentityProviderRef: "primary", Url: "https://ai.example.com/admin-api"},
 		})
 		zone.Spec.Presets = append(zone.Spec.Presets, adminv1.Preset{
 			Name: "ai", Type: adminv1.GatewayTypeAI, Default: true, GatewayRef: "ai", IdentityProviderRef: "primary",
