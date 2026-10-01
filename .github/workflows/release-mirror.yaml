@@ -47,6 +47,7 @@ jobs:
           - controlplane-api
           - discovery-server
           - event
+          - file
           - file-manager
           - gateway
           - identity
@@ -59,6 +60,7 @@ jobs:
           - rover
           - rover-server
           - secret-manager
+          - sftp
     steps:
       - name: Mirror release images to Artifactory
         # skopeo is pre-installed on ubuntu-latest. GoReleaser's kos pipe

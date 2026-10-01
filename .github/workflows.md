@@ -331,7 +331,7 @@ any stage that already succeeded.
    - Mirrors version tag (v*), `latest`, and `stable` (for non-prerelease versions)
    - Copies exact multi-arch manifests for internal deployments
    - Covers all modules except rover-ctl (handled separately below)
-   - Modules: admin, agentic, api, application, approval, common-server, controlplane-api, discovery-server, event, file-manager, gateway, identity, notification, organization, organization-server, permission, projector, pubsub, rover, rover-server, secret-manager
+   - Modules: admin, agentic, api, application, approval, common-server, controlplane-api, discovery-server, event, file, file-manager, gateway, identity, notification, organization, organization-server, permission, projector, pubsub, rover, rover-server, secret-manager, sftp
 5. **Rover-CTL Combined Image** (`release-roverctl-image.yaml`, needs
    Rover-CTL Base Image and GoReleaser)
    - Layers rover-ctl binary (from GHCR) onto bash/jq/yq base image (from Artifactory)
