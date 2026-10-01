@@ -40,6 +40,26 @@ Each approval moves through a state machine:
 | **Suspended** | A previously granted approval has been temporarily suspended. |
 | **Expired** | The approval has expired and is no longer valid. |
 
+## Requested and Active Scopes
+
+API, event, and agentic subscriptions distinguish the scopes you request from
+the scopes already provisioned:
+
+- **Requested scopes** reflect your latest subscription configuration.
+- **Active scopes** reflect the last approved set the subscription controller
+  successfully wrote to the downstream resources. Gateway or event-delivery
+  readiness is reported separately.
+
+For example, if `read` is active and you request `read` plus `write`, active
+scopes remain `read` while the change awaits approval. Rejecting that change
+keeps the previous access. After approval and successful provisioning, active
+scopes become `read` and `write`. Suspending or rejecting the Approval itself
+causes access resources to be removed and active scopes to be cleared.
+
+The ControlPlane GraphQL API exposes `requestedScopes` and `activeScopes` on
+all three subscription types. In Kubernetes, active scopes are available in
+`status.activeScopes`; requested scopes remain in the subscription spec.
+
 ## Trusted Teams
 
 API and event providers can designate certain teams as **trusted**. Subscriptions from trusted teams are approved automatically, regardless of the configured strategy. This is useful for internal services or well-known partners that do not need manual review.

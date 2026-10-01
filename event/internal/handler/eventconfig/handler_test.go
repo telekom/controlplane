@@ -113,24 +113,42 @@ func makeReadyZone() *adminv1.Zone {
 			Namespace: "default",
 		},
 		Spec: adminv1.ZoneSpec{
-			Gateway: adminv1.GatewayConfig{
-				Presets: []adminv1.GatewayConfigPreset{{
-					Name:    "default",
-					Default: true,
-					Urls: []adminv1.UrlConfig{{
-						Hostname: "gateway.example.com",
-						Port:     443,
-						Scheme:   "https",
-					}},
+			Presets: []adminv1.Preset{{
+				Name:    "event",
+				Type:    adminv1.GatewayTypeEvent,
+				Default: true,
+				Urls: []adminv1.UrlConfig{{
+					Hostname: "gateway.example.com",
+					Port:     443,
+					Scheme:   "https",
 				}},
-			},
+			}, {
+				Name:    "api",
+				Type:    adminv1.GatewayTypeAPI,
+				Default: true,
+				Urls: []adminv1.UrlConfig{{
+					Hostname: "gateway.example.com",
+					Port:     443,
+					Scheme:   "https",
+				}},
+			}},
 		},
 		Status: adminv1.ZoneStatus{
 			Namespace: "default",
-			Gateway: &ctypes.ObjectRef{
-				Name:      "gw",
-				Namespace: "default",
-			},
+			Presets: []adminv1.PresetStatus{{
+				Name:       "event",
+				GatewayRef: &ctypes.ObjectRef{Name: "gw", Namespace: "default"},
+			}, {
+				Name:       "api",
+				GatewayRef: &ctypes.ObjectRef{Name: "gw", Namespace: "default"},
+			}},
+			Gateways: []adminv1.GatewayStatus{{
+				Name: "default",
+				Gateway: &ctypes.ObjectRef{
+					Name:      "gw",
+					Namespace: "default",
+				},
+			}},
 			InternalIdentityRealm: &ctypes.ObjectRef{
 				Name:      "test-realm",
 				Namespace: "default",
@@ -212,6 +230,15 @@ var _ = Describe("EventConfigHandler", func() {
 			Run(func(_ context.Context, eventStoreObj client.Object, mutate controllerutil.MutateFn) {
 				Expect(mutate()).To(Succeed())
 				createdEventStore = eventStoreObj.(*pubsubv1.EventStore).DeepCopy()
+			}).
+			Return(result, err).Once()
+	}
+
+	mockCreateOrUpdateConsumer := func(result controllerutil.OperationResult, err error) {
+		fakeClient.EXPECT().
+			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Consumer"), mock.Anything).
+			Run(func(_ context.Context, _ client.Object, mutate controllerutil.MutateFn) {
+				Expect(mutate()).To(Succeed())
 			}).
 			Return(result, err).Once()
 	}
@@ -298,6 +325,7 @@ var _ = Describe("EventConfigHandler", func() {
 		mockGetZone(zone, 1)   // fetched once at the top of CreateOrUpdate
 		mockGetRealm(realm, 2) // admin + mesh
 		mockCreateOrUpdateClient(controllerutil.OperationResultCreated, nil, 2)
+		mockCreateOrUpdateConsumer(controllerutil.OperationResultCreated, nil)
 		mockCreateOrUpdateEventStore(controllerutil.OperationResultCreated, nil)
 		mockListEventConfigs([]eventv1.EventConfig{}, 3) // callback + voyager + publish (proxy-source lookup)
 		mockCreateOrUpdateCallbackRoute(controllerutil.OperationResultCreated, nil)
@@ -406,12 +434,53 @@ var _ = Describe("EventConfigHandler", func() {
 			mockGetRealm(realm, 2)
 			mockScheme()
 			mockCreateOrUpdateClient(controllerutil.OperationResultCreated, nil, 2)
+			mockCreateOrUpdateConsumer(controllerutil.OperationResultCreated, nil)
 			mockCreateOrUpdateEventStore(controllerutil.OperationResultNone, fmt.Errorf("eventstore error"))
 
 			err := h.CreateOrUpdate(ctx, obj)
 
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("failed to create EventStore"))
+		})
+
+		It("blocks when the zone has no gateway for its callback Consumer", func() {
+			zone := makeReadyZone()
+			for i := range zone.Status.Presets {
+				zone.Status.Presets[i].GatewayRef = nil
+			}
+			mockGetZone(zone, 1)
+			mockGetRealm(makeReadyRealm(), 2)
+			mockScheme()
+			mockCreateOrUpdateClient(controllerutil.OperationResultCreated, nil, 2)
+
+			err := h.CreateOrUpdate(ctx, obj)
+			Expect(err).To(HaveOccurred())
+			Expect(isBlockedError(err)).To(BeTrue())
+		})
+
+		It("rejects the reserved gateway mesh client ID before provisioning its identity Client", func() {
+			obj.Spec.Mesh.Client.ClientId = gatewayv1.GatewayConsumerName
+			mockGetZone(makeReadyZone(), 1)
+			mockGetRealm(makeReadyRealm(), 1)
+			mockScheme()
+			mockCreateOrUpdateClient(controllerutil.OperationResultCreated, nil, 1) // admin only
+
+			err := h.CreateOrUpdate(ctx, obj)
+			Expect(err).To(HaveOccurred())
+			Expect(isBlockedError(err)).To(BeTrue())
+			Expect(err.Error()).To(ContainSubstring("reserved"))
+		})
+
+		It("returns an error when callback Consumer creation fails", func() {
+			mockGetZone(makeReadyZone(), 1)
+			mockGetRealm(makeReadyRealm(), 2)
+			mockScheme()
+			mockCreateOrUpdateClient(controllerutil.OperationResultCreated, nil, 2)
+			mockCreateOrUpdateConsumer(controllerutil.OperationResultNone, fmt.Errorf("consumer create failed"))
+
+			err := h.CreateOrUpdate(ctx, obj)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("failed to create callback gateway Consumer"))
 		})
 
 		It("should return error when List EventConfigs fails in createCallbackRoutes", func() {
@@ -422,6 +491,7 @@ var _ = Describe("EventConfigHandler", func() {
 			mockGetRealm(realm, 2)
 			mockScheme()
 			mockCreateOrUpdateClient(controllerutil.OperationResultCreated, nil, 2)
+			mockCreateOrUpdateConsumer(controllerutil.OperationResultCreated, nil)
 			mockCreateOrUpdateEventStore(controllerutil.OperationResultCreated, nil)
 			mockListEventConfigsError(fmt.Errorf("list failed"))
 
@@ -439,6 +509,7 @@ var _ = Describe("EventConfigHandler", func() {
 			mockGetRealm(realm, 2)
 			mockScheme()
 			mockCreateOrUpdateClient(controllerutil.OperationResultCreated, nil, 2)
+			mockCreateOrUpdateConsumer(controllerutil.OperationResultCreated, nil)
 			mockCreateOrUpdateEventStore(controllerutil.OperationResultCreated, nil)
 
 			// Callback routes succeed
@@ -463,6 +534,7 @@ var _ = Describe("EventConfigHandler", func() {
 			mockGetZone(zone, 1)
 			mockGetRealm(realm, 2)
 			mockCreateOrUpdateClient(controllerutil.OperationResultCreated, nil, 2)
+			mockCreateOrUpdateConsumer(controllerutil.OperationResultCreated, nil)
 			mockCreateOrUpdateEventStore(controllerutil.OperationResultCreated, nil)
 			mockListEventConfigs([]eventv1.EventConfig{}, 3)
 			mockCreateOrUpdateCallbackRoute(controllerutil.OperationResultCreated, nil)
@@ -487,6 +559,8 @@ var _ = Describe("EventConfigHandler", func() {
 			mockGetZone(zone, 1)
 			mockGetRealm(realm, 2)
 			mockCreateOrUpdateClient(controllerutil.OperationResultCreated, nil, 2)
+			mockCreateOrUpdateConsumer(controllerutil.OperationResultCreated, nil)
+
 			mockCreateOrUpdateEventStore(controllerutil.OperationResultCreated, nil)
 			mockListEventConfigs([]eventv1.EventConfig{}, 3)
 			mockCreateOrUpdateCallbackRoute(controllerutil.OperationResultCreated, nil)

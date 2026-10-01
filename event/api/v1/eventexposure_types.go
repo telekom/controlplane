@@ -50,10 +50,11 @@ type Approval struct {
 
 // EventExposureSpec defines the desired state of EventExposure.
 type EventExposureSpec struct {
-	// EventType is the dot-separated event type identifier (e.g. "de.telekom.eni.quickstart.v1").
+	// EventType is an event type identifier with dot or hyphen separators (e.g. "de.telekom.eni-quickstart.v1").
 	// References the EventType CR via MakeEventTypeName() conversion.
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:Pattern=`^[a-z0-9]+([.-][a-z0-9]+)*$`
 	EventType string `json:"eventType"`
 
 	// Visibility defines who can see and subscribe to this event.
@@ -105,7 +106,8 @@ type EventExposureStatus struct {
 	// +optional
 	Publisher *ctypes.ObjectRef `json:"publisher,omitempty"`
 
-	// CallbackURL is the URL of callback gateway in the provider zone.
+	// CallbackURL is the effective same-zone callback ingress from the provider's EventConfig.
+	// For proxy providers this URL belongs to the target backend's gateway.
 	// +optional
 	CallbackURL string `json:"callbackURL,omitempty"`
 

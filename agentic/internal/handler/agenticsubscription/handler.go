@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"slices"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -96,7 +97,7 @@ func (h *AgenticSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *ag
 	if err != nil {
 		return err
 	}
-	if !subscriberZone.IsFeatureEnabled(adminv1.FeatureAiGateway) {
+	if !subscriberZone.Spec.FeaturesSupported(adminv1.GatewayTypeAI) {
 		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet,
 			"Subscriber zone "+subscriberZone.Name+" does not support the AI Gateway feature"))
 		return ctrlerrors.BlockedErrorf("subscriber zone %q does not support the AI Gateway feature", subscriberZone.Name)
@@ -131,11 +132,7 @@ func (h *AgenticSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *ag
 			requestorApp.Spec.Team, exposure.Spec.Variant.DisplayType(), obj.Spec.BasePath, obj.Spec.Zone.Name),
 	}
 
-	properties := map[string]any{
-		"mcpBasePath":   obj.Spec.BasePath,
-		"resource_type": exposure.Spec.Variant.DisplayType(),
-		"resource_name": obj.Spec.BasePath,
-	}
+	properties := subscriptionApprovalProperties(obj, exposure)
 	if err = requester.SetProperties(properties); err != nil {
 		return errors.Wrapf(err, "unable to set approvalRequest properties for AgenticSubscription %q", obj.Name)
 	}
@@ -192,6 +189,7 @@ func (h *AgenticSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *ag
 		if deleted > 0 {
 			logger.Info("Cleaned up ConsumeRoute resources", "deleted", deleted)
 		}
+		obj.Status.ActiveScopes = nil
 		return nil
 
 	case builder.ApprovalResultGranted:
@@ -209,11 +207,11 @@ func (h *AgenticSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *ag
 		return nil
 	}
 
-	preset, err := subscriberZone.Spec.AiGateway.GetDefaultPreset()
+	preset, err := subscriberZone.Spec.SelectPreset(adminv1.GatewayTypeAI)
 	if err != nil {
 		return errors.Wrapf(err, "failed to select AI Gateway preset for zone %s", subscriberZone.Name)
 	}
-	obj.Status.GatewayUrl, err = url.JoinPath(preset.GetDefaultUrl(), obj.Spec.BasePath)
+	obj.Status.GatewayUrl, err = url.JoinPath(preset.GetDefaultURL(), obj.Spec.BasePath)
 	if err != nil {
 		return errors.Wrapf(err, "failed to construct AI Gateway URL for zone %s", subscriberZone.Name)
 	}
@@ -223,6 +221,10 @@ func (h *AgenticSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *ag
 		return errors.Wrap(err, "failed to create ConsumeRoute")
 	}
 	obj.Status.ConsumeRoute = types.ObjectRefFromObject(consumeRoute)
+	obj.Status.ActiveScopes = nil
+	if obj.HasM2M() {
+		obj.Status.ActiveScopes = slices.Clone(obj.Spec.Security.M2M.Scopes)
+	}
 	logger.V(1).Info("ConsumeRoute created/updated", "consumeRoute", consumeRoute.Name)
 
 	// 9. Set final conditions
@@ -239,6 +241,18 @@ func (h *AgenticSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *ag
 		"AgenticSubscription has been provisioned"))
 
 	return nil
+}
+
+func subscriptionApprovalProperties(obj *agenticv1.AgenticSubscription, exposure *agenticv1.AgenticExposure) map[string]any {
+	properties := map[string]any{
+		"basePath":      obj.Spec.BasePath,
+		"resource_type": exposure.Spec.Variant.DisplayType(),
+		"resource_name": obj.Spec.BasePath,
+	}
+	if obj.HasM2M() && obj.Spec.Security.M2M.Scopes != nil {
+		properties["scopes"] = obj.Spec.Security.M2M.Scopes
+	}
+	return properties
 }
 
 func (h *AgenticSubscriptionHandler) Delete(ctx context.Context, obj *agenticv1.AgenticSubscription) error {

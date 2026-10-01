@@ -53,7 +53,7 @@ var _ = Describe("CreatePublishRoute", func() {
 		}
 	})
 
-	It("should return BlockedError when zone has no default preset", func() {
+	It("should return BlockedError when zone has no Event preset", func() {
 		zoneNoPreset := makeZoneNoPreset("zone-a", "zone-a-ns")
 
 		route, err := util.CreatePublishRoute(ctx, zoneNoPreset, eventConfig)
@@ -61,7 +61,7 @@ var _ = Describe("CreatePublishRoute", func() {
 		Expect(route).To(BeNil())
 		rootCause := unwrapAll(err)
 		Expect(rootCause).To(Satisfy(isBlockedError))
-		Expect(err.Error()).To(ContainSubstring("has no default preset"))
+		Expect(err.Error()).To(ContainSubstring("has no Event preset"))
 	})
 
 	It("should return BlockedError when zone has no gateway reference in status", func() {
@@ -202,12 +202,12 @@ var _ = Describe("CreatePublishRoute", func() {
 
 // ---------- CreatePublishProxyRoute ----------
 
-// makeTargetZone builds a target zone whose default preset uses a distinct hostname,
+// makeTargetZone builds a target zone whose Event preset uses a distinct hostname,
 // so the proxy route's upstream (target gateway) is distinguishable from the source
 // zone's downstream hostnames.
 func makeTargetZone(name, statusNs string) *adminv1.Zone {
 	zone := makeZone(name, statusNs)
-	zone.Spec.Gateway.Presets[0].Urls[0].Hostname = "target-gateway.example.com"
+	presetByName(zone, "event").Urls[0].Hostname = "target-gateway.example.com"
 	return zone
 }
 
@@ -232,7 +232,7 @@ var _ = Describe("CreatePublishProxyRoute", func() {
 		}
 	})
 
-	It("should return BlockedError when source zone has no default preset", func() {
+	It("should return BlockedError when source zone has no Event preset", func() {
 		source := makeZoneNoPreset("zone-a", "zone-a-ns")
 		target := makeTargetZone("zone-b", "zone-b-ns")
 
@@ -240,10 +240,10 @@ var _ = Describe("CreatePublishProxyRoute", func() {
 		Expect(err).To(HaveOccurred())
 		Expect(route).To(BeNil())
 		Expect(unwrapAll(err)).To(Satisfy(isBlockedError))
-		Expect(err.Error()).To(ContainSubstring("has no default preset"))
+		Expect(err.Error()).To(ContainSubstring("has no Event preset"))
 	})
 
-	It("should return BlockedError when target zone has no default preset", func() {
+	It("should return BlockedError when target zone has no Event preset", func() {
 		source := makeZone("zone-a", "zone-a-ns")
 		target := makeZoneNoPreset("zone-b", "zone-b-ns")
 
@@ -251,7 +251,7 @@ var _ = Describe("CreatePublishProxyRoute", func() {
 		Expect(err).To(HaveOccurred())
 		Expect(route).To(BeNil())
 		Expect(unwrapAll(err)).To(Satisfy(isBlockedError))
-		Expect(err.Error()).To(ContainSubstring("has no default preset"))
+		Expect(err.Error()).To(ContainSubstring("has no Event preset"))
 	})
 
 	It("should create proxy publish route pointing at the target gateway", func() {

@@ -463,6 +463,16 @@ func (_q *AgenticSubscriptionQuery) collectField(ctx context.Context, oneNode bo
 				selectedFields = append(selectedFields, agenticsubscription.FieldName)
 				fieldSeen[agenticsubscription.FieldName] = struct{}{}
 			}
+		case "requestedScopes":
+			if _, ok := fieldSeen[agenticsubscription.FieldRequestedScopes]; !ok {
+				selectedFields = append(selectedFields, agenticsubscription.FieldRequestedScopes)
+				fieldSeen[agenticsubscription.FieldRequestedScopes] = struct{}{}
+			}
+		case "activeScopes":
+			if _, ok := fieldSeen[agenticsubscription.FieldActiveScopes]; !ok {
+				selectedFields = append(selectedFields, agenticsubscription.FieldActiveScopes)
+				fieldSeen[agenticsubscription.FieldActiveScopes] = struct{}{}
+			}
 		case "basePath":
 			if _, ok := fieldSeen[agenticsubscription.FieldBasePath]; !ok {
 				selectedFields = append(selectedFields, agenticsubscription.FieldBasePath)
@@ -969,6 +979,16 @@ func (_q *ApiSubscriptionQuery) collectField(ctx context.Context, oneNode bool, 
 			if _, ok := fieldSeen[apisubscription.FieldName]; !ok {
 				selectedFields = append(selectedFields, apisubscription.FieldName)
 				fieldSeen[apisubscription.FieldName] = struct{}{}
+			}
+		case "requestedScopes":
+			if _, ok := fieldSeen[apisubscription.FieldRequestedScopes]; !ok {
+				selectedFields = append(selectedFields, apisubscription.FieldRequestedScopes)
+				fieldSeen[apisubscription.FieldRequestedScopes] = struct{}{}
+			}
+		case "activeScopes":
+			if _, ok := fieldSeen[apisubscription.FieldActiveScopes]; !ok {
+				selectedFields = append(selectedFields, apisubscription.FieldActiveScopes)
+				fieldSeen[apisubscription.FieldActiveScopes] = struct{}{}
 			}
 		case "basePath":
 			if _, ok := fieldSeen[apisubscription.FieldBasePath]; !ok {
@@ -1858,6 +1878,11 @@ func (_q *ApplicationQuery) collectField(ctx context.Context, oneNode bool, opCt
 				selectedFields = append(selectedFields, application.FieldClientSecret)
 				fieldSeen[application.FieldClientSecret] = struct{}{}
 			}
+		case "tokenURL":
+			if _, ok := fieldSeen[application.FieldTokenURL]; !ok {
+				selectedFields = append(selectedFields, application.FieldTokenURL)
+				fieldSeen[application.FieldTokenURL] = struct{}{}
+			}
 		case "rotatedClientSecret":
 			if _, ok := fieldSeen[application.FieldRotatedClientSecret]; !ok {
 				selectedFields = append(selectedFields, application.FieldRotatedClientSecret)
@@ -2568,6 +2593,16 @@ func (_q *EventSubscriptionQuery) collectField(ctx context.Context, oneNode bool
 			if _, ok := fieldSeen[eventsubscription.FieldName]; !ok {
 				selectedFields = append(selectedFields, eventsubscription.FieldName)
 				fieldSeen[eventsubscription.FieldName] = struct{}{}
+			}
+		case "requestedScopes":
+			if _, ok := fieldSeen[eventsubscription.FieldRequestedScopes]; !ok {
+				selectedFields = append(selectedFields, eventsubscription.FieldRequestedScopes)
+				fieldSeen[eventsubscription.FieldRequestedScopes] = struct{}{}
+			}
+		case "activeScopes":
+			if _, ok := fieldSeen[eventsubscription.FieldActiveScopes]; !ok {
+				selectedFields = append(selectedFields, eventsubscription.FieldActiveScopes)
+				fieldSeen[eventsubscription.FieldActiveScopes] = struct{}{}
 			}
 		case "eventType":
 			if _, ok := fieldSeen[eventsubscription.FieldEventType]; !ok {

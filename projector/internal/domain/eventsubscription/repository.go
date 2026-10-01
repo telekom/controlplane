@@ -93,6 +93,8 @@ func (r *Repository) Upsert(ctx context.Context, data *EventSubscriptionData) er
 		SetTrigger(data.Trigger).
 		SetNillableDelivery(data.Delivery).
 		SetScopes(data.Scopes).
+		SetRequestedScopes(data.RequestedScopes).
+		SetActiveScopes(data.ActiveScopes).
 		SetOwnerID(ownerAppID).
 		SetNillableTargetID(targetExposureID).
 		SetGatewaySseURL(data.GatewayConsumerSseUrl)

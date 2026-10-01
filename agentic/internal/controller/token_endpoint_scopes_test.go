@@ -50,22 +50,26 @@ func newScopeFixture() *scopeFixture {
 	ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{GenerateName: "agentic-scopes-"}}
 	Expect(k8sClient.Create(ctx, ns)).To(Succeed())
 	f := &scopeFixture{namespace: ns.Name, basePath: "/mcp/" + ns.Name}
-	presets := []adminv1.GatewayConfigPreset{{Name: "default", Default: true, Urls: []adminv1.UrlConfig{{Hostname: "gateway.example.com", Scheme: "https", Port: 443, BasePath: "/"}}}}
+	presets := []adminv1.Preset{
+		{Name: "api", Type: adminv1.GatewayTypeAPI, Default: true, GatewayRef: "gateway", IdentityProviderRef: "primary", Urls: []adminv1.UrlConfig{{Hostname: "gateway.example.com", Scheme: "https", Port: 443, BasePath: "/"}}},
+		{Name: "ai", Type: adminv1.GatewayTypeAI, Default: true, GatewayRef: "gateway", IdentityProviderRef: "primary", Urls: []adminv1.UrlConfig{{Hostname: "gateway.example.com", Scheme: "https", Port: 443, BasePath: "/"}}},
+	}
 	f.zone = &adminv1.Zone{
 		ObjectMeta: f.metadata("zone"),
 		Spec: adminv1.ZoneSpec{
-			Visibility:       adminv1.ZoneVisibilityWorld,
-			IdentityProvider: adminv1.IdentityProviderConfig{Url: "https://identity.example.com"},
-			Gateway:          adminv1.GatewayConfig{Admin: adminv1.GatewayAdminConfig{Url: "https://gateway-admin.example.com"}, Presets: presets},
-			AiGateway:        &adminv1.AiGatewayConfig{Admin: adminv1.GatewayAdminConfig{Url: "https://ai-admin.example.com"}, Presets: presets},
+			Visibility:        adminv1.ZoneVisibilityWorld,
+			IdentityProviders: []adminv1.IdentityProviderConfig{{Name: "primary", IssuerHostname: "identity.example.com"}},
+			Gateways:          []adminv1.GatewayConfig{{Name: "gateway", Admin: adminv1.GatewayAdminConfig{IdentityProviderRef: "primary", Url: "https://gateway-admin.example.com"}}},
+			Presets:           presets,
 		},
 	}
 	Expect(k8sClient.Create(ctx, f.zone)).To(Succeed())
 	f.zone.Status = adminv1.ZoneStatus{
 		Namespace: ns.Name,
-		AiGateway: &ctypes.ObjectRef{Name: "gateway", Namespace: ns.Name},
-		Links:     adminv1.Links{Url: "https://gateway.example.com", Issuer: "https://identity.example.com", LmsIssuer: "https://lms.example.com"},
-		Features:  []adminv1.Feature{{Name: adminv1.FeatureAiGateway, Enabled: true}},
+		Presets: []adminv1.PresetStatus{{
+			Name: "ai", GatewayRef: &ctypes.ObjectRef{Name: "gateway", Namespace: ns.Name},
+			Links: adminv1.Links{Url: "https://gateway.example.com", Issuer: "https://identity.example.com", LmsIssuer: "https://lms.example.com"},
+		}},
 	}
 	setFixtureReady(f.zone)
 	Expect(k8sClient.Status().Update(ctx, f.zone)).To(Succeed())
@@ -211,7 +215,13 @@ func grantApproval(sub *agenticv1.AgenticSubscription, req *approvalv1.ApprovalR
 		ApprovedRequest: ctypes.ObjectRefFromObject(req),
 	}}
 	Expect(controllerutil.SetControllerReference(sub, approval, k8sClient.Scheme())).To(Succeed())
-	Expect(k8sClient.Create(ctx, approval)).To(Succeed())
+	_, err := controllerutil.CreateOrUpdate(ctx, k8sClient, approval, func() error {
+		approval.Spec.State = approvalv1.ApprovalStateGranted
+		approval.Spec.Requester = req.Spec.Requester
+		approval.Spec.ApprovedRequest = ctypes.ObjectRefFromObject(req)
+		return nil
+	})
+	Expect(err).NotTo(HaveOccurred())
 	approval.Status.LastState = approvalv1.ApprovalStateGranted
 	setFixtureReady(approval)
 	Expect(k8sClient.Status().Update(ctx, approval)).To(Succeed())
@@ -298,6 +308,7 @@ var _ = Describe("External token endpoint scope exception", func() {
 		req := waitPending(sub)
 		grantApproval(sub, req)
 		consume := waitConsumeRoute(sub, consumerScopes)
+		Expect(sub.Status.ActiveScopes).To(Equal(consumerScopes))
 		Expect(route.OwnerReferences).To(BeEmpty())
 		Expect(consume.OwnerReferences).To(HaveLen(1))
 		Expect(consume.OwnerReferences[0].UID).To(Equal(sub.UID))
@@ -320,6 +331,21 @@ var _ = Describe("External token endpoint scope exception", func() {
 			g.Expect(route.Spec.Security.M2M.Scopes).To(Equal(providerScopes))
 		}, timeout, interval).Should(Succeed())
 		waitExposure(exp)
+		req = waitPending(sub)
+		Expect(req.UID).NotTo(Equal(requestUID))
+		var properties map[string]any
+		Expect(json.Unmarshal(req.Spec.Requester.Properties.Raw, &properties)).To(Succeed())
+		Expect(properties).To(Equal(map[string]any{
+			"basePath": f.basePath, "resource_type": "MCP", "resource_name": f.basePath,
+			"scopes": []any{"consumer.new.b", "consumer.new.a"},
+		}))
+		Consistently(func(g Gomega) {
+			g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(sub), sub)).To(Succeed())
+			g.Expect(sub.Status.ActiveScopes).To(Equal(consumeBefore.Spec.Security.M2M.Scopes))
+			g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(consume), consume)).To(Succeed())
+			g.Expect(consume.Spec.Security.M2M.Scopes).To(Equal(consumeBefore.Spec.Security.M2M.Scopes))
+		}, time.Second, interval).Should(Succeed())
+		grantApproval(sub, req)
 		consume = waitConsumeRoute(sub, consumerScopes)
 		Eventually(func(g Gomega) {
 			expectReadyReason(g, exp, "AgenticExposureProvisioned", metav1.ConditionTrue)
@@ -332,11 +358,9 @@ var _ = Describe("External token endpoint scope exception", func() {
 			g.Expect(route.OwnerReferences).To(Equal(routeBefore.OwnerReferences))
 			g.Expect(consume.OwnerReferences).To(Equal(consumeBefore.OwnerReferences))
 			g.Expect(k8sClient.Get(ctx, sub.Status.ApprovalRequest.K8s(), req)).To(Succeed())
-			g.Expect(req.UID).To(Equal(requestUID))
+			g.Expect(req.UID).NotTo(Equal(requestUID))
+			g.Expect(sub.Status.ActiveScopes).To(Equal(consumerScopes))
 		}, timeout, interval).Should(Succeed())
-		var properties map[string]any
-		Expect(json.Unmarshal(req.Spec.Requester.Properties.Raw, &properties)).To(Succeed())
-		Expect(properties).To(Equal(map[string]any{"mcpBasePath": f.basePath, "resource_type": "MCP", "resource_name": f.basePath}))
 	})
 
 	It("does not borrow an inactive competing exposure's endpoint", func() {

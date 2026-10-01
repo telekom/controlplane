@@ -58,7 +58,7 @@ roverctl apply -f eventspec.yaml
 
 | Field | Description |
 | ----- | ----------- |
-| `type` | A globally unique identifier for the event type, using dot-separated notation (e.g., `de.telekom.orders.created.v1`). |
+| `type` | A globally unique identifier for the event type. Lowercase letters and digits form nonempty segments separated by single dots or hyphens (e.g., `de.telekom.orders-created.v1`). It must end in `.v<major>`, matching the major number in `version`. |
 | `version` | The version of the event type specification. |
 | `description` | A human-readable summary of what this event represents. |
 | `specification` | An optional inline JSON schema describing the event payload structure. |
@@ -95,7 +95,7 @@ roverctl apply -f rover.yaml
 
 | Field | Description |
 | ----- | ----------- |
-| `eventType` | The event type identifier. Must match an existing EventType resource registered in Step 1. |
+| `eventType` | The event type identifier. Uses the same lowercase letter/digit segments and dot/hyphen separators as `type`; must match an existing EventType resource registered in Step 1. |
 | `approval` | The approval strategy for subscription requests: `auto`, `simple`, or `foureyes`. See [Approvals](./approvals.mdx). |
 
 ### What Happens
@@ -104,13 +104,15 @@ When you apply the Rover file, the Control Plane:
 
 1. Creates an **Application** resource for your service (if it does not already exist)
 2. Creates an **EventExposure** linking your application to the EventType resource
-3. The EventExposure handler verifies that an active **EventType** exists (created in Step 1), then creates a **Publisher** in the PubSub domain and configures **Gateway Routes** for event publishing and SSE delivery
+3. Checks that your event type is registered and prepares it for publishing and subscriptions
 
 :::caution
 If the EventType does not exist (i.e., the specification was not registered in Step 1), the EventExposure will remain in a pending state until the specification is applied.
 :::
 
 The event type is now discoverable by other teams and ready to receive subscription requests.
+
+Send events to the publish URL provided for your zone (`/horizon/events/v1`; `/horizon/publish/v1` is also supported). Use the full provided URL, including any base path.
 
 ## API & Event Features
 

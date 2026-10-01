@@ -30,14 +30,16 @@ type AgenticSubscriptionKey struct {
 // AgenticSubscriptionData carries the transformed data for an
 // AgenticSubscription entity.
 type AgenticSubscriptionData struct {
-	Meta           shared.Metadata
-	StatusPhase    string // "READY", "PENDING", "ERROR", "UNKNOWN"
-	StatusMessage  string
-	BasePath       string
-	GatewayUrl     string
-	Security       *model.AgenticSubscriptionSecurity
-	Traffic        *model.AgenticSubscriberTraffic
-	OwnerAppName   string // resolved to owner Application FK (required)
-	OwnerTeamName  string // used to resolve owner Application FK
-	TargetBasePath string // used to resolve optional target AgenticExposure FK
+	Meta            shared.Metadata
+	StatusPhase     string // "READY", "PENDING", "ERROR", "UNKNOWN"
+	StatusMessage   string
+	BasePath        string
+	GatewayUrl      string
+	Security        *model.AgenticSubscriptionSecurity
+	RequestedScopes []string
+	ActiveScopes    []string
+	Traffic         *model.AgenticSubscriberTraffic
+	OwnerAppName    string // resolved to owner Application FK (required)
+	OwnerTeamName   string // used to resolve owner Application FK
+	TargetBasePath  string // used to resolve optional target AgenticExposure FK
 }

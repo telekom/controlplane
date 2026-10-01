@@ -1,3 +1,25 @@
+# [0.31.0](https://github.com/telekom/controlplane/compare/v0.30.1...v0.31.0) (2026-09-30)
+
+
+### Bug Fixes
+
+* **event:** internal event-clients must not expire ([#702](https://github.com/telekom/controlplane/issues/702)) ([513ce57](https://github.com/telekom/controlplane/commit/513ce571f91fed1aaddf775e09b475242c2d7b70))
+* **events:** extend event-type pattern to allow dashes ([#691](https://github.com/telekom/controlplane/issues/691)) ([9d35be3](https://github.com/telekom/controlplane/commit/9d35be300018204f1414e3534d23d764cbdf14e6))
+
+
+### Features
+
+* make active and requested scopes explicitly visible; fix agentic approval properties ([#683](https://github.com/telekom/controlplane/issues/683)) ([e0b95e5](https://github.com/telekom/controlplane/commit/e0b95e5230e0acca0c949723d7f161284bb58ab9))
+* reworked zone structure; added consumer-failover tokenUrl ([#555](https://github.com/telekom/controlplane/issues/555)) ([5b8f3cc](https://github.com/telekom/controlplane/commit/5b8f3cc1bc11c64ae344a4a8a03f343e1b14b173))
+
+## [0.30.1](https://github.com/telekom/controlplane/compare/v0.30.0...v0.30.1) (2026-09-29)
+
+
+### Bug Fixes
+
+* **event:** use correct callbackUrls for event-proxy-zones ([#692](https://github.com/telekom/controlplane/issues/692)) ([0958207](https://github.com/telekom/controlplane/commit/0958207cfa6cf4c65a1bcc5924fb58f7a222d2f7))
+* **projector:** gate file modules on the file feature flag ([#697](https://github.com/telekom/controlplane/issues/697)) ([c68def0](https://github.com/telekom/controlplane/commit/c68def09d5320b336424c4f3b82ce95031cf517e))
+
 # [0.30.0](https://github.com/telekom/controlplane/compare/v0.29.0...v0.30.0) (2026-09-28)
 
 

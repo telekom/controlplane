@@ -244,7 +244,8 @@ func CreateProxyRoute(ctx context.Context, downstreamZoneRef, upstreamZoneRef ty
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get downstream preset for zone %s", downstreamZoneRef.String())
 	}
-	if downstreamZone.Status.Gateway == nil {
+	downstreamPresetStatus, err := downstreamZone.Status.GetPreset(downstreamPreset.Name)
+	if err != nil || downstreamPresetStatus.GatewayRef == nil {
 		return nil, errors.Errorf("zone %s has no gateway reference in status", downstreamZoneRef.String())
 	}
 
@@ -280,7 +281,7 @@ func CreateProxyRoute(ctx context.Context, downstreamZoneRef, upstreamZoneRef ty
 		}
 
 		// Upstream for proxy route: points at the upstream zone's gateway URL for this basepath
-		upstreamUrl, joinErr := url.JoinPath(upstreamPreset.GetDefaultUrl(), apiBasePath)
+		upstreamUrl, joinErr := url.JoinPath(upstreamPreset.GetDefaultURL(), apiBasePath)
 		if joinErr != nil {
 			return errors.Wrap(joinErr, "failed to build upstream URL for proxy route")
 		}
@@ -292,7 +293,7 @@ func CreateProxyRoute(ctx context.Context, downstreamZoneRef, upstreamZoneRef ty
 		hostnames, paths := downstreamPreset.ResolveHostnamesAndPaths(apiBasePath)
 
 		proxyRoute.Spec = gatewayapi.RouteSpec{
-			GatewayRef: *downstreamZone.Status.Gateway,
+			GatewayRef: *downstreamPresetStatus.GatewayRef,
 			Type:       gatewayapi.RouteTypeProxy,
 			Backend:    gatewayapi.Backend{Upstreams: []gatewayapi.Upstream{upstream}},
 			Traffic:    gatewayapi.Traffic{},
@@ -308,8 +309,8 @@ func CreateProxyRoute(ctx context.Context, downstreamZoneRef, upstreamZoneRef ty
 		// Set trusted issuers for consumer token validation on the proxy route.
 		// The proxy route lives in the subscriber zone and accepts consumer traffic,
 		// so it must validate tokens from the subscriber zone's IDP.
-		if downstreamZone.Status.Links.Issuer != "" {
-			proxyRoute.Spec.Security.TrustedIssuers = []string{downstreamZone.Status.Links.Issuer}
+		if downstreamPresetStatus.Links.Issuer != "" {
+			proxyRoute.Spec.Security.TrustedIssuers = []string{downstreamPresetStatus.Links.Issuer}
 		}
 		// Append any additional trusted issuers from options (e.g. consumer failover IDP issuers)
 		// and deduplicate (the downstream issuer may already be in the consumer failover list).
@@ -415,7 +416,7 @@ func addFailoverFallback(ctx context.Context, proxyRoute *gatewayapi.Route, opti
 		if err != nil {
 			return errors.Wrapf(err, "failed to get failover zone %s", failoverZone.String())
 		}
-		failoverUrl, err := url.JoinPath(failoverPreset.GetDefaultUrl(), apiBasePath)
+		failoverUrl, err := url.JoinPath(failoverPreset.GetDefaultURL(), apiBasePath)
 		if err != nil {
 			return errors.Wrapf(err, "failed to build failover URL for zone %s", failoverZone.String())
 		}
@@ -539,7 +540,8 @@ func CreateRealRoute(ctx context.Context, downstreamZoneRef types.ObjectRef, api
 	if err != nil {
 		return nil, errors.Wrap(err, fmt.Sprintf("unable to get default preset for zone %s", downstreamZoneRef.String()))
 	}
-	if zone.Status.Gateway == nil {
+	presetStatus, err := zone.Status.GetPreset(preset.Name)
+	if err != nil || presetStatus.GatewayRef == nil {
 		return nil, errors.Errorf("zone %s has no gateway reference in status", downstreamZoneRef.String())
 	}
 
@@ -572,7 +574,7 @@ func CreateRealRoute(ctx context.Context, downstreamZoneRef types.ObjectRef, api
 		hostnames, paths := preset.ResolveHostnamesAndPaths(apiExposure.Spec.ApiBasePath)
 
 		route.Spec = gatewayapi.RouteSpec{
-			GatewayRef: *zone.Status.Gateway,
+			GatewayRef: *presetStatus.GatewayRef,
 			Type:       gatewayapi.RouteTypePrimary,
 			Backend:    gatewayapi.Backend{Upstreams: gatewayUpstreams},
 			Traffic:    gatewayapi.Traffic{},

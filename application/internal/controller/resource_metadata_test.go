@@ -35,7 +35,7 @@ var _ = Describe("Generated application metadata", func() {
 			Status: adminv1.ZoneStatus{
 				Namespace:     "default",
 				IdentityRealm: &ctypes.ObjectRef{Name: strings.Repeat("r", 100), Namespace: "default"},
-				Gateway:       &ctypes.ObjectRef{Name: strings.Repeat("g", 100), Namespace: "default"},
+				Gateways:      []adminv1.GatewayStatus{{Name: "standard", Gateway: &ctypes.ObjectRef{Name: strings.Repeat("g", 100), Namespace: "default"}}},
 			},
 		}
 		scoped := cclient.NewScopedClient(k8sClient, testEnvironment)
@@ -46,9 +46,11 @@ var _ = Describe("Generated application metadata", func() {
 		idp, err := applicationhandler.CreateIdentityClient(handlerCtx, zone, owner)
 		Expect(err).NotTo(HaveOccurred())
 		DeferCleanup(func() { Expect(k8sClient.Delete(ctx, idp)).To(Succeed()) })
-		Expect(applicationhandler.CreateGatewayConsumer(handlerCtx, zone, owner)).To(Succeed())
+		gateways := []*adminv1.GatewayConfig{{Name: "standard"}}
+		Expect(applicationhandler.CreateGatewayConsumers(handlerCtx, zone, owner, gateways)).To(Succeed())
 		consumer := &gatewayv1.Consumer{}
-		Expect(k8sClient.Get(ctx, key, consumer)).To(Succeed())
+		consumerKey := client.ObjectKey{Namespace: "default", Name: labelutil.NormalizeNameValue(clientID + "--" + zone.Name + "--standard")}
+		Expect(k8sClient.Get(ctx, consumerKey, consumer)).To(Succeed())
 		DeferCleanup(func() { Expect(k8sClient.Delete(ctx, consumer)).To(Succeed()) })
 
 		persisted := &identityv1.Client{}
@@ -56,7 +58,7 @@ var _ = Describe("Generated application metadata", func() {
 		Expect(persisted.Spec.ClientId).To(Equal(clientID))
 		Expect(persisted.Spec.Realm.Name).To(Equal(zone.Status.IdentityRealm.Name))
 		Expect(consumer.Spec.Name).To(Equal(clientID))
-		Expect(consumer.Spec.Gateway).To(Equal(*zone.Status.Gateway))
+		Expect(consumer.Spec.Gateway).To(Equal(*zone.Status.Gateways[0].Gateway))
 		for _, obj := range []client.Object{persisted, consumer} {
 			Expect(obj.GetLabels()).To(HaveKeyWithValue(config.BuildLabelKey("application"), labelutil.NormalizeLabelValue(owner.Name)))
 			Expect(obj.GetLabels()).To(HaveKeyWithValue(config.BuildLabelKey("team"), labelutil.NormalizeLabelValue(owner.Spec.Team)))
@@ -76,7 +78,7 @@ var _ = Describe("Generated application metadata", func() {
 		scoped.Reset()
 		_, err = applicationhandler.CreateIdentityClient(handlerCtx, zone, owner)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(applicationhandler.CreateGatewayConsumer(handlerCtx, zone, owner)).To(Succeed())
+		Expect(applicationhandler.CreateGatewayConsumers(handlerCtx, zone, owner, gateways)).To(Succeed())
 		Expect(scoped.AnyChanged()).To(BeFalse())
 	})
 })

@@ -6,69 +6,99 @@ package zone
 
 import (
 	"context"
+	"fmt"
 	"net/url"
+	"sort"
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	ctrlerrors "github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 )
 
-// populateLinks computes all status links from the zone spec and created resources.
-func populateLinks(ctx context.Context, hc *HandlingContext) error {
-	zone := hc.Zone
-
-	defaultPreset, err := zone.Spec.Gateway.GetDefaultPreset()
-	if err != nil {
-		return ctrlerrors.BlockedErrorf("cannot resolve default gateway preset for links: %s", err)
+func populatePresetStatus(ctx context.Context, hc *HandlingContext) error {
+	statuses := make([]adminv1.PresetStatus, 0, len(hc.Zone.Spec.Presets))
+	tokenURLs := make(map[string]string, len(hc.Zone.Spec.Presets))
+	previousStatuses := make(map[string]int, len(hc.Zone.Status.Presets))
+	for i := range hc.Zone.Status.Presets {
+		previousStatuses[hc.Zone.Status.Presets[i].Name] = i
 	}
-
-	// Gateway base URL (from default preset)
-	zone.Status.Links.Url = defaultPreset.GetDefaultUrl()
-
-	// Issuer URL: <idpUrl>/auth/realms/<realmName>
-	issuer, err := url.JoinPath(zone.Spec.IdentityProvider.Url, "auth/realms/", hc.DefaultIdentityRealm.Name)
-	if err != nil {
-		return ctrlerrors.BlockedErrorf("cannot combine identityProviderBaseUrl %s with realm name %s: %s", zone.Spec.IdentityProvider.Url, hc.DefaultIdentityRealm.Name, err)
-	}
-	zone.Status.Links.Issuer = issuer
-
-	// LMS Issuer URL: <gatewayPresetUrl>/auth/realms/<identityRealmName>
-	// or for Spacegate: <gatewayPresetUrl>/spacegate/auth/realms/<identityRealmName>
-	pathPrefix := defaultPreset.GetDefaultUrl()
-	if hc.Zone.Spec.Visibility == adminv1.ZoneVisibilityWorld {
-		pathPrefix = defaultPreset.GetDefaultUrl() + spacegatePathPrefix
-	}
-	lmsIssuer, err := url.JoinPath(pathPrefix, "auth/realms/", hc.DefaultIdentityRealm.Name)
-	if err != nil {
-		return ctrlerrors.BlockedErrorf("cannot combine gateway preset URL with realm name %s: %s", hc.DefaultIdentityRealm.Name, err)
-	}
-	zone.Status.Links.LmsIssuer = lmsIssuer
-
-	internalIssuer, err := url.JoinPath(zone.Spec.IdentityProvider.Url, "auth/realms/", hc.InternalIdentityRealm.Name)
-	if err != nil {
-		return ctrlerrors.BlockedErrorf("cannot combine identityProviderBaseUrl %s with realm name %s: %s", zone.Spec.IdentityProvider.Url, hc.InternalIdentityRealm.Name, err)
-	}
-	zone.Status.Links.InternalIssuer = internalIssuer
-
-	// Permissions URL (if configured and feature enabled)
-	if cconfig.FeaturePermission.IsEnabled() && zone.Spec.Permissions != nil {
-		permissionsUrl, err := url.JoinPath(zone.Status.Links.Url, zone.Spec.Permissions.ApiBasePath)
+	for i := range hc.Zone.Spec.Presets {
+		preset := &hc.Zone.Spec.Presets[i]
+		gateway, err := hc.Zone.Spec.GetGateway(preset.GatewayRef)
 		if err != nil {
-			return ctrlerrors.BlockedErrorf("failed to build permissions URL: %s", err)
+			return ctrlerrors.BlockedErrorf("cannot resolve gateway for preset %q: %s", preset.Name, err)
 		}
-		zone.Status.Links.PermissionsUrl = permissionsUrl
-		zone.EnableFeature(adminv1.FeaturePermissions)
-	} else {
-		zone.Status.Links.PermissionsUrl = ""
-		zone.ManageFeature(adminv1.FeaturePermissions, false)
+		idp, err := hc.Zone.Spec.GetIdentityProviderByName(preset.IdentityProviderRef)
+		if err != nil {
+			return ctrlerrors.BlockedErrorf("cannot resolve identity provider for preset %q: %s", preset.Name, err)
+		}
+		gatewayStatus, err := hc.Zone.Status.GetGateway(gateway.Name)
+		if err != nil {
+			return ctrlerrors.BlockedErrorf("cannot resolve gateway status for preset %q: %s", preset.Name, err)
+		}
+		links, issuer, err := presetLinks(hc, preset, idp)
+		if err != nil {
+			return err
+		}
+		tokenURL := preset.TokenUrl
+		if tokenURL == "" {
+			tokenURL = idp.TokenUrl
+		}
+		if tokenURL == "" { //nolint:nestif // Token URL precedence is intentionally evaluated in one place.
+			tokenURL = tokenURLs[issuer]
+			if previousIndex, found := previousStatuses[preset.Name]; found {
+				previous := &hc.Zone.Status.Presets[previousIndex]
+				if tokenURL == "" && previous.Links.Issuer == issuer && validateDiscoveredTokenURL(previous.Links.TokenUrl) == nil {
+					tokenURL = previous.Links.TokenUrl
+					tokenURLs[issuer] = tokenURL
+				}
+			}
+			if tokenURL == "" {
+				tokenURL, err = discoverTokenURL(ctx, hc.HTTPClient, issuer)
+				if err != nil {
+					return ctrlerrors.RetryableErrorf("failed OIDC discovery for preset %q: %s", preset.Name, err)
+				}
+				tokenURLs[issuer] = tokenURL
+			}
+		}
+		links.TokenUrl = tokenURL
+		statuses = append(statuses, adminv1.PresetStatus{
+			Name: preset.Name, GatewayRef: gatewayStatus.Gateway, IdentityProviderRef: hc.Zone.Status.IdentityProvider, Links: links,
+		})
 	}
-
-	_, presetErr := adminv1.SelectGatewayPreset(hc.Zone.Spec.Gateway.Presets, adminv1.FeatureConsumerFailover)
-	if presetErr == nil {
-		zone.EnableFeature(adminv1.FeatureConsumerFailover)
-	} else {
-		zone.ManageFeature(adminv1.FeatureConsumerFailover, false)
-	}
-
+	sort.Slice(statuses, func(i, j int) bool { return statuses[i].Name < statuses[j].Name })
+	hc.Zone.Status.Presets = statuses
 	return nil
+}
+
+func presetLinks(hc *HandlingContext, preset *adminv1.Preset, idp *adminv1.IdentityProviderConfig) (adminv1.Links, string, error) {
+	hostname, err := issuerHostname(idp)
+	if err != nil {
+		return adminv1.Links{}, "", ctrlerrors.BlockedErrorf("cannot resolve issuer hostname for preset %q: %s", preset.Name, err)
+	}
+	issuer := fmt.Sprintf("https://%s/auth/realms/%s", hostname, hc.DefaultIdentityRealm.Name)
+	internalIssuer := fmt.Sprintf("https://%s/auth/realms/%s", hostname, hc.InternalIdentityRealm.Name)
+	baseURL := preset.GetDefaultURL()
+	lmsBase := baseURL
+	if hc.Zone.Spec.Visibility == adminv1.ZoneVisibilityWorld {
+		lmsBase += spacegatePathPrefix
+	}
+	lmsIssuer, err := url.JoinPath(lmsBase, "auth/realms", hc.DefaultIdentityRealm.Name)
+	if err != nil {
+		return adminv1.Links{}, "", ctrlerrors.BlockedErrorf("cannot build LMS issuer for preset %q: %s", preset.Name, err)
+	}
+	links := adminv1.Links{Url: baseURL, Issuer: issuer, LmsIssuer: lmsIssuer, InternalIssuer: internalIssuer}
+	if hc.TeamApiIdentityRealm != nil {
+		links.TeamIssuer = fmt.Sprintf("https://%s/auth/realms/%s", hostname, hc.TeamApiIdentityRealm.Name)
+	}
+	if cconfig.FeaturePermission.IsEnabled() && hc.Zone.Spec.Permissions != nil {
+		links.PermissionsUrl, err = url.JoinPath(baseURL, hc.Zone.Spec.Permissions.ApiBasePath)
+		if err != nil {
+			return adminv1.Links{}, "", ctrlerrors.BlockedErrorf("cannot build permissions URL for preset %q: %s", preset.Name, err)
+		}
+		hc.Zone.EnableFeature(adminv1.FeaturePermissions)
+	} else {
+		hc.Zone.ManageFeature(adminv1.FeaturePermissions, false)
+	}
+	return links, issuer, nil
 }

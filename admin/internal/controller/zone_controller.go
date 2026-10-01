@@ -22,7 +22,18 @@ import (
 	zone_handler "github.com/telekom/controlplane/admin/internal/handler/zone"
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	cc "github.com/telekom/controlplane/common/pkg/controller"
+	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
+	identityv1 "github.com/telekom/controlplane/identity/api/v1"
 )
+
+const (
+	zoneLabelName = "zone"
+	domainName    = "admin"
+)
+
+var AdminDomainPredicate = predicate.NewPredicateFuncs(func(obj client.Object) bool {
+	return obj.GetLabels()[cconfig.DomainLabelKey] == domainName
+})
 
 // ZoneReconciler reconciles a Zone object
 type ZoneReconciler struct {
@@ -64,12 +75,47 @@ func (r *ZoneReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			handler.EnqueueRequestsFromMapFunc(r.mapEnvironmentToZone),
 			builder.WithPredicates(cc.Count("zone", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
 		).
-		Owns(&corev1.Namespace{}, builder.WithPredicates(cc.Count("zone", cc.RoleOwns))).
+		Watches(&corev1.Namespace{},
+			handler.EnqueueRequestsFromMapFunc(r.mapSubResourceToZone),
+			builder.WithPredicates(cc.Count("zone", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}, AdminDomainPredicate))).
+		Watches(&identityv1.IdentityProvider{},
+			handler.EnqueueRequestsFromMapFunc(r.mapSubResourceToZone),
+			builder.WithPredicates(cc.Count("zone", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}, AdminDomainPredicate))).
+		Watches(&identityv1.Realm{},
+			handler.EnqueueRequestsFromMapFunc(r.mapSubResourceToZone),
+			builder.WithPredicates(cc.Count("zone", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}, AdminDomainPredicate))).
+		Watches(&identityv1.Client{},
+			handler.EnqueueRequestsFromMapFunc(r.mapSubResourceToZone),
+			builder.WithPredicates(cc.Count("zone", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}, AdminDomainPredicate))).
+		Watches(&gatewayv1.Gateway{},
+			handler.EnqueueRequestsFromMapFunc(r.mapSubResourceToZone),
+			builder.WithPredicates(cc.Count("zone", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}, AdminDomainPredicate))).
+		Watches(&gatewayv1.Consumer{},
+			handler.EnqueueRequestsFromMapFunc(r.mapSubResourceToZone),
+			builder.WithPredicates(cc.Count("zone", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}, AdminDomainPredicate))).
+		Watches(&gatewayv1.Route{},
+			handler.EnqueueRequestsFromMapFunc(r.mapSubResourceToZone),
+			builder.WithPredicates(cc.Count("zone", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}, AdminDomainPredicate))).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
 			RateLimiter:             cc.NewRateLimiter(),
 		}).
 		Complete(r)
+}
+
+func (r *ZoneReconciler) mapSubResourceToZone(ctx context.Context, obj client.Object) []reconcile.Request {
+	labels := obj.GetLabels()
+	zoneName := labels[cconfig.BuildLabelKey(zoneLabelName)]
+	environment := labels[cconfig.EnvironmentLabelKey]
+	if zoneName == "" || environment == "" {
+		return nil
+	}
+
+	zone := &adminv1.Zone{}
+	if err := r.Get(ctx, client.ObjectKey{Namespace: environment, Name: zoneName}, zone); err != nil {
+		return nil
+	}
+	return []reconcile.Request{{NamespacedName: client.ObjectKeyFromObject(zone)}}
 }
 
 func (r *ZoneReconciler) mapEnvironmentToZone(ctx context.Context, obj client.Object) []reconcile.Request {

@@ -199,6 +199,13 @@ spec:
           status:
             description: AgenticSubscriptionStatus defines the observed state of AgenticSubscription.
             properties:
+              activeScopes:
+                description: |-
+                  ActiveScopes is the last approved scope set successfully written to the ConsumeRoute.
+                  It is preserved while a scope change is pending or rejected and does not imply gateway readiness.
+                items:
+                  type: string
+                type: array
               approval:
                 description: Approval references the Approval CR for this subscription.
                 properties:

@@ -7,6 +7,7 @@ package zone
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"strings"
 
 	corev1 "k8s.io/api/core/v1"
@@ -37,21 +38,22 @@ type HandlingContext struct {
 
 	// Shared configuration derived once at initialization
 	DefaultClaims []identityapi.ClaimConfig
+	HTTPClient    *http.Client
 
 	// Intermediate resources — populated by steps as they execute
 	IdentityProvider      *identityapi.IdentityProvider
 	DefaultIdentityRealm  *identityapi.Realm
 	InternalIdentityRealm *identityapi.Realm
-	GatewayAdminClient    *identityapi.Client
-	Gateway               *gatewayapi.Gateway
-	GatewayConsumer       *gatewayapi.Consumer
 	TeamApiIdentityRealm  *identityapi.Realm
-	AiGateway             *gatewayapi.Gateway
+	Gateways              map[string]*gatewayapi.Gateway
+	GatewayAdminClients   map[string]*identityapi.Client
+	GatewayConsumers      map[string]*gatewayapi.Consumer
+	DefaultPreset         *adminv1.Preset
 }
 
 // newHandlingContext fetches the Environment, creates/updates the zone Namespace,
 // and builds the shared claims configuration.
-func newHandlingContext(ctx context.Context, obj *adminv1.Zone) (*HandlingContext, error) {
+func newHandlingContext(ctx context.Context, obj *adminv1.Zone, httpClient *http.Client) (*HandlingContext, error) {
 	envName := contextutil.EnvFromContextOrDie(ctx)
 	c := cclient.ClientFromContextOrDie(ctx)
 
@@ -77,6 +79,7 @@ func newHandlingContext(ctx context.Context, obj *adminv1.Zone) (*HandlingContex
 		}
 		namespace.Labels[cconfig.EnvironmentLabelKey] = environment.Name
 		namespace.Labels[cconfig.BuildLabelKey(zoneLabelName)] = obj.Name
+		namespace.Labels[cconfig.DomainLabelKey] = domainName
 		return nil
 	}
 	_, err = c.CreateOrUpdate(ctx, namespace, mutator)
@@ -86,9 +89,9 @@ func newHandlingContext(ctx context.Context, obj *adminv1.Zone) (*HandlingContex
 
 	obj.Status.Namespace = namespace.Name
 
-	defaultPreset, err := obj.Spec.Gateway.GetDefaultPreset()
+	defaultPreset, err := obj.Spec.GetDefaultPreset()
 	if err != nil {
-		return nil, ctrlerrors.BlockedErrorf("failed to get default gateway preset for zone %s: %s", obj.Name, err)
+		return nil, ctrlerrors.BlockedErrorf("failed to get default preset for zone %s: %s", obj.Name, err)
 	}
 
 	defaultClaims := []identityapi.ClaimConfig{
@@ -99,7 +102,7 @@ func newHandlingContext(ctx context.Context, obj *adminv1.Zone) (*HandlingContex
 		},
 		{
 			Name:  claimOriginStargate,
-			Value: defaultPreset.GetDefaultUrl(),
+			Value: defaultPreset.GetDefaultURL(),
 			Type:  identityapi.ClaimTypeHardcodedClaim,
 		},
 		{
@@ -109,9 +112,14 @@ func newHandlingContext(ctx context.Context, obj *adminv1.Zone) (*HandlingContex
 	}
 
 	return &HandlingContext{
-		Zone:          obj,
-		Environment:   environment,
-		Namespace:     namespace,
-		DefaultClaims: defaultClaims,
+		Zone:                obj,
+		Environment:         environment,
+		Namespace:           namespace,
+		DefaultClaims:       defaultClaims,
+		HTTPClient:          httpClient,
+		Gateways:            make(map[string]*gatewayapi.Gateway),
+		GatewayAdminClients: make(map[string]*identityapi.Client),
+		GatewayConsumers:    make(map[string]*gatewayapi.Consumer),
+		DefaultPreset:       defaultPreset,
 	}, nil
 }

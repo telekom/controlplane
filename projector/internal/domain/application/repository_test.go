@@ -121,6 +121,7 @@ var _ = Describe("Application Repository", func() {
 				StatusMessage:       "ok",
 				Name:                "my-app",
 				ClientID:            strPtr("client-123"),
+				TokenURL:            strPtr("https://identity.example.com/token"),
 				TeamName:            "platform--narvi",
 				ZoneName:            "caas",
 				SecretRotationPhase: "DONE",
@@ -146,6 +147,8 @@ var _ = Describe("Application Repository", func() {
 			Expect(app.Name).To(Equal("my-app"))
 			Expect(app.ClientID).ToNot(BeNil())
 			Expect(*app.ClientID).To(Equal("client-123"))
+			Expect(app.TokenURL).ToNot(BeNil())
+			Expect(*app.TokenURL).To(Equal("https://identity.example.com/token"))
 
 			Expect(app.ExternalIds).To(ContainElements(
 				model.ExternalId{
@@ -170,6 +173,23 @@ var _ = Describe("Application Repository", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(appZone.ID).To(Equal(zoneID))
 
+		})
+
+		It("should create an application with a nil token URL", func() {
+			data := &application.ApplicationData{
+				Meta:                shared.NewMetadata("prod--platform--narvi", "no-token-app", nil),
+				StatusPhase:         "READY",
+				Name:                "no-token-app",
+				TokenURL:            nil,
+				TeamName:            "platform--narvi",
+				ZoneName:            "caas",
+				SecretRotationPhase: "DONE",
+			}
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			app, err := client.Application.Query().Where(entapp.NameEQ("no-token-app")).Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(app.TokenURL).To(BeNil())
 		})
 
 		It("should return ErrDependencyMissing when team is missing", func() {
@@ -269,6 +289,7 @@ var _ = Describe("Application Repository", func() {
 			data.StatusPhase = "READY"
 			data.StatusMessage = "v2"
 			data.ClientID = strPtr("client-456")
+			data.TokenURL = strPtr("https://identity.example.com/updated-token")
 			Expect(repo.Upsert(ctx, data)).To(Succeed())
 
 			app, err := client.Application.Query().Where(entapp.NameEQ("upd-app")).Only(ctx)
@@ -279,6 +300,28 @@ var _ = Describe("Application Repository", func() {
 			Expect(*app.StatusMessage).To(Equal("v2"))
 			Expect(app.ClientID).ToNot(BeNil())
 			Expect(*app.ClientID).To(Equal("client-456"))
+			Expect(app.TokenURL).ToNot(BeNil())
+			Expect(*app.TokenURL).To(Equal("https://identity.example.com/updated-token"))
+		})
+
+		It("should clear the token URL on update", func() {
+			data := &application.ApplicationData{
+				Meta:                shared.NewMetadata("prod--platform--narvi", "clear-token-app", nil),
+				StatusPhase:         "READY",
+				Name:                "clear-token-app",
+				TokenURL:            strPtr("https://identity.example.com/token"),
+				TeamName:            "platform--narvi",
+				ZoneName:            "caas",
+				SecretRotationPhase: "DONE",
+			}
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			data.TokenURL = nil
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			app, err := client.Application.Query().Where(entapp.NameEQ("clear-token-app")).Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(app.TokenURL).To(BeNil())
 		})
 
 		It("should set permissionsURL when permissionSet exists and zone has permissionsURL", func() {
