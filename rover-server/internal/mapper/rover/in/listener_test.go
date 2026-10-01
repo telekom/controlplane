@@ -65,6 +65,39 @@ var _ = Describe("Listener Mapper In", func() {
 			Expect(output.Spec.Listeners[0].ResponseFilter).To(BeNil())
 			Expect(output.Spec.Listeners[0].EventFilter).To(BeNil())
 		})
+
+		It("must map request and response filters", func() {
+			input := &api.Rover{
+				Zone: "aws",
+				Listeners: []api.RoverListener{
+					{
+						Consumer:    "eni--team--consumer",
+						Provider:    "eni--team--provider",
+						ApiBasePath: "/echo/v1",
+						RequestFilter: api.ListenerFilter{
+							Trigger: map[string]string{"method": "POST"},
+							Payload: []string{"orderId"},
+						},
+						ResponseFilter: api.ListenerFilter{
+							Payload: []string{"status"},
+						},
+					},
+				},
+			}
+			output := &roverv1.Rover{}
+
+			err := MapRover(input, output)
+
+			Expect(err).ToNot(HaveOccurred())
+			Expect(output.Spec.Listeners[0].RequestFilter).To(Equal(&roverv1.ListenerFilter{
+				Trigger: map[string]string{"method": "POST"},
+				Payload: []string{"orderId"},
+			}))
+			Expect(output.Spec.Listeners[0].ResponseFilter).To(Equal(&roverv1.ListenerFilter{
+				Payload: []string{"status"},
+			}))
+			Expect(output.Spec.Listeners[0].EventFilter).To(BeNil())
+		})
 	})
 
 	Context("mapListenerSubscriptionIn", func() {

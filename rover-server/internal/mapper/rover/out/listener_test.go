@@ -43,6 +43,54 @@ var _ = Describe("Listener Mapper", func() {
 			Expect(output.Listeners[0].Provider).To(Equal("eni--team--provider"))
 			Expect(output.Listeners[0].ApiBasePath).To(Equal("/echo/v1"))
 		})
+
+		It("must map request and response filters", func() {
+			input := rover.DeepCopy()
+			input.Spec.Listeners = []roverv1.RoverListener{
+				{
+					Consumer:    "eni--team--consumer",
+					Provider:    "eni--team--provider",
+					ApiBasePath: "/echo/v1",
+					RequestFilter: &roverv1.ListenerFilter{
+						Trigger: map[string]string{"method": "POST"},
+						Payload: []string{"orderId"},
+					},
+					ResponseFilter: &roverv1.ListenerFilter{
+						Trigger: map[string]string{"status": "200"},
+					},
+				},
+			}
+			output := &api.Rover{}
+
+			err := MapRover(input, output)
+
+			Expect(err).ToNot(HaveOccurred())
+			Expect(output.Listeners[0].RequestFilter).To(Equal(api.ListenerFilter{
+				Trigger: map[string]string{"method": "POST"},
+				Payload: []string{"orderId"},
+			}))
+			Expect(output.Listeners[0].ResponseFilter).To(Equal(api.ListenerFilter{
+				Trigger: map[string]string{"status": "200"},
+			}))
+		})
+
+		It("must leave filters empty when the listener has none", func() {
+			input := rover.DeepCopy()
+			input.Spec.Listeners = []roverv1.RoverListener{
+				{
+					Consumer:    "eni--team--consumer",
+					Provider:    "eni--team--provider",
+					ApiBasePath: "/echo/v1",
+				},
+			}
+			output := &api.Rover{}
+
+			err := MapRover(input, output)
+
+			Expect(err).ToNot(HaveOccurred())
+			Expect(output.Listeners[0].RequestFilter).To(Equal(api.ListenerFilter{}))
+			Expect(output.Listeners[0].ResponseFilter).To(Equal(api.ListenerFilter{}))
+		})
 	})
 
 	Context("mapListenerSubscription", func() {
