@@ -335,8 +335,7 @@ var _ = Describe("RouteHandler", func() {
 					}
 
 					mockBuilder.EXPECT().Build(mock.Anything).Return(nil).Maybe()
-					Expect(handler.CreateOrUpdate(ctx, route)).To(MatchError(
-						`Consumer username/password with scopes requires an external IDP grant type "password" on route ` + route.Name))
+					Expect(handler.CreateOrUpdate(ctx, route)).To(MatchError(`Consumer username/password with scopes requires an external IDP grant type "password" on route ` + route.Name))
 					mockBuilder.AssertNotCalled(GinkgoT(), "Build", mock.Anything)
 					mockKC.AssertNotCalled(GinkgoT(), "DeleteRoute", mock.Anything, mock.Anything)
 					ready := meta.FindStatusCondition(route.GetConditions(), condition.ConditionTypeReady)
