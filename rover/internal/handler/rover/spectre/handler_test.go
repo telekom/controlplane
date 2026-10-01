@@ -9,6 +9,7 @@ import (
 	"fmt"
 
 	"github.com/stretchr/testify/mock"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	k8stypes "k8s.io/apimachinery/pkg/types"
@@ -78,6 +79,28 @@ func mockResolveApplication(fakeClient *fakeclient.MockJanitorClient, ctx contex
 			}
 		}).
 		Return(nil).Once()
+}
+
+// mockUnresolvedApplication stubs a List call that finds no Application, so
+// resolveApplication returns a BlockedError.
+func mockUnresolvedApplication(fakeClient *fakeclient.MockJanitorClient, ctx context.Context) {
+	fakeClient.EXPECT().
+		List(ctx, mock.AnythingOfType("*v1.ApplicationList"), mock.Anything).
+		Return(nil).Once()
+}
+
+// mockExistingListener stubs the Get for the Listener of a blocked entry. A nil
+// existing Listener makes the Get return NotFound.
+func mockExistingListener(fakeClient *fakeclient.MockJanitorClient, ctx context.Context, name string, existing *spectrev1.Listener) {
+	call := fakeClient.EXPECT().
+		Get(ctx, client.ObjectKey{Name: name, Namespace: teamNamespace}, mock.AnythingOfType("*v1.Listener"))
+	if existing == nil {
+		call.Return(apierrors.NewNotFound(spectrev1.GroupVersion.WithResource("listeners").GroupResource(), name)).Once()
+		return
+	}
+	call.Run(func(_ context.Context, _ k8stypes.NamespacedName, obj client.Object, _ ...client.GetOption) {
+		*obj.(*spectrev1.Listener) = *existing
+	}).Return(nil).Once()
 }
 
 var _ = Describe("HandleListeners", func() {
@@ -239,7 +262,7 @@ var _ = Describe("HandleListeners", func() {
 		Expect(owner.Status.SpectreListeners).To(HaveLen(2))
 	})
 
-	It("should block when two listeners differ only by provider", func() {
+	It("should block when two listeners differ only by provider and keep processing the rest", func() {
 		// The Listener name is derived from consumer + discriminator, so two
 		// entries that differ only by provider would collapse into a single CR
 		// and the second would silently overwrite the first. Surface it instead.
@@ -254,6 +277,11 @@ var _ = Describe("HandleListeners", func() {
 				Provider:    "provider2",
 				ApiBasePath: "/api/v1",
 			},
+			{
+				Consumer:    "consumer3",
+				Provider:    "provider3",
+				ApiBasePath: "/api/v3",
+			},
 		}
 
 		fakeClient.EXPECT().Scheme().Return(testScheme).Maybe()
@@ -262,23 +290,181 @@ var _ = Describe("HandleListeners", func() {
 			Run(func(_ context.Context, _ client.Object, mutate controllerutil.MutateFn) {
 				_ = mutate()
 			}).
-			Return(controllerutil.OperationResultCreated, nil).Maybe()
-		// The first listener entry passes the duplicate check and calls ensureListener,
-		// which resolves consumer and provider via List before the second entry triggers
-		// the duplicate error.
+			Return(controllerutil.OperationResultCreated, nil).Once()
 		mockResolveApplication(fakeClient, ctx, "consumer1")
 		mockResolveApplication(fakeClient, ctx, "provider1")
+		mockResolveApplication(fakeClient, ctx, "consumer3")
+		mockResolveApplication(fakeClient, ctx, "provider3")
 		fakeClient.EXPECT().
 			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Listener"), mock.AnythingOfType("controllerutil.MutateFn")).
 			Run(func(_ context.Context, _ client.Object, mutate controllerutil.MutateFn) {
 				_ = mutate()
 			}).
-			Return(controllerutil.OperationResultCreated, nil).Maybe()
+			Return(controllerutil.OperationResultCreated, nil).Times(2)
 
 		err := spectre.HandleListeners(ctx, fakeClient, owner)
 
 		Expect(err).To(HaveOccurred())
+		Expect(err).To(Satisfy(isBlockedError))
 		Expect(err.Error()).To(ContainSubstring("duplicate listener"))
+		Expect(owner.Status.SpectreListeners).To(HaveLen(2))
+		Expect(owner.Status.SpectreListeners[0].Name).To(Equal("my-app--consumer1---api-v1"))
+		Expect(owner.Status.SpectreListeners[1].Name).To(Equal("my-app--consumer3---api-v3"))
+	})
+
+	It("should create the other Listeners and return BlockedError when one entry cannot be resolved", func() {
+		owner.Spec.Listeners = []roverv1.RoverListener{
+			{
+				Consumer:    owner.Name,
+				Provider:    "does-not-exist",
+				ApiBasePath: "/missing/v1",
+			},
+			{
+				Consumer:    owner.Name,
+				Provider:    "provider",
+				ApiBasePath: "/echo/v1",
+			},
+		}
+
+		var capturedListeners []*spectrev1.Listener
+
+		fakeClient.EXPECT().Scheme().Return(testScheme).Maybe()
+		fakeClient.EXPECT().
+			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.SpectreApplication"), mock.AnythingOfType("controllerutil.MutateFn")).
+			Run(func(_ context.Context, _ client.Object, mutate controllerutil.MutateFn) {
+				_ = mutate()
+			}).
+			Return(controllerutil.OperationResultCreated, nil).Once()
+		mockUnresolvedApplication(fakeClient, ctx)
+		mockExistingListener(fakeClient, ctx, "my-app--my-app---missing-v1", nil)
+		mockResolveApplication(fakeClient, ctx, "provider")
+		fakeClient.EXPECT().
+			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Listener"), mock.AnythingOfType("controllerutil.MutateFn")).
+			Run(func(_ context.Context, obj client.Object, mutate controllerutil.MutateFn) {
+				_ = mutate()
+				capturedListeners = append(capturedListeners, obj.(*spectrev1.Listener))
+			}).
+			Return(controllerutil.OperationResultCreated, nil).Once()
+
+		err := spectre.HandleListeners(ctx, fakeClient, owner)
+
+		Expect(err).To(HaveOccurred())
+		Expect(err).To(Satisfy(isBlockedError))
+		Expect(err.Error()).To(ContainSubstring(`application "does-not-exist" not found`))
+		Expect(capturedListeners).To(HaveLen(1))
+		Expect(capturedListeners[0].Name).To(Equal("my-app--my-app---echo-v1"))
+		Expect(owner.Status.SpectreApplications).To(HaveLen(1))
+		Expect(owner.Status.SpectreListeners).To(HaveLen(1))
+		Expect(owner.Status.SpectreListeners[0].Name).To(Equal("my-app--my-app---echo-v1"))
+	})
+
+	It("should keep the existing Listener of an entry that cannot be resolved", func() {
+		owner.Spec.Listeners = []roverv1.RoverListener{
+			{
+				Consumer:    owner.Name,
+				Provider:    "does-not-exist",
+				ApiBasePath: "/echo/v1",
+			},
+		}
+		existing := &spectrev1.Listener{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "my-app--my-app---echo-v1",
+				Namespace: teamNamespace,
+				UID:       "listener-uid-1",
+			},
+			Spec: spectrev1.ListenerSpec{
+				Provider: types.TypedObjectRef{ObjectRef: types.ObjectRef{Name: "old-provider", Namespace: teamNamespace}},
+			},
+		}
+
+		var keptListener *spectrev1.Listener
+
+		fakeClient.EXPECT().Scheme().Return(testScheme).Maybe()
+		fakeClient.EXPECT().
+			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.SpectreApplication"), mock.AnythingOfType("controllerutil.MutateFn")).
+			Run(func(_ context.Context, _ client.Object, mutate controllerutil.MutateFn) {
+				_ = mutate()
+			}).
+			Return(controllerutil.OperationResultCreated, nil).Once()
+		mockUnresolvedApplication(fakeClient, ctx)
+		mockExistingListener(fakeClient, ctx, existing.Name, existing)
+		fakeClient.EXPECT().
+			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Listener"), mock.AnythingOfType("controllerutil.MutateFn")).
+			Run(func(_ context.Context, obj client.Object, mutate controllerutil.MutateFn) {
+				Expect(mutate()).To(Succeed())
+				keptListener = obj.(*spectrev1.Listener)
+			}).
+			Return(controllerutil.OperationResultNone, nil).Once()
+
+		err := spectre.HandleListeners(ctx, fakeClient, owner)
+
+		Expect(err).To(HaveOccurred())
+		Expect(err).To(Satisfy(isBlockedError))
+		Expect(keptListener).ToNot(BeNil())
+		Expect(keptListener.UID).To(Equal(existing.UID))
+		Expect(keptListener.Spec).To(Equal(existing.Spec))
+		Expect(owner.Status.SpectreListeners).To(Equal([]types.ObjectRef{{Name: existing.Name, Namespace: teamNamespace}}))
+	})
+
+	It("should return a non-blocked error when the existing Listener of a blocked entry cannot be read", func() {
+		owner.Spec.Listeners = []roverv1.RoverListener{
+			{
+				Consumer:    owner.Name,
+				Provider:    "does-not-exist",
+				ApiBasePath: "/echo/v1",
+			},
+		}
+
+		fakeClient.EXPECT().Scheme().Return(testScheme).Maybe()
+		fakeClient.EXPECT().
+			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.SpectreApplication"), mock.AnythingOfType("controllerutil.MutateFn")).
+			Run(func(_ context.Context, _ client.Object, mutate controllerutil.MutateFn) {
+				_ = mutate()
+			}).
+			Return(controllerutil.OperationResultCreated, nil).Once()
+		mockUnresolvedApplication(fakeClient, ctx)
+		fakeClient.EXPECT().
+			Get(ctx, client.ObjectKey{Name: "my-app--my-app---echo-v1", Namespace: teamNamespace}, mock.AnythingOfType("*v1.Listener")).
+			Return(fmt.Errorf("api server error")).Once()
+
+		err := spectre.HandleListeners(ctx, fakeClient, owner)
+
+		Expect(err).To(HaveOccurred())
+		Expect(err).ToNot(Satisfy(isBlockedError))
+		Expect(err.Error()).To(ContainSubstring("failed to get Listener"))
+		Expect(owner.Status.SpectreListeners).To(BeEmpty())
+	})
+
+	It("should return a non-blocked error immediately", func() {
+		owner.Spec.Listeners = []roverv1.RoverListener{
+			{
+				Consumer:    owner.Name,
+				Provider:    "provider1",
+				ApiBasePath: "/api/v1",
+			},
+			{
+				Consumer:    owner.Name,
+				Provider:    "provider2",
+				ApiBasePath: "/api/v2",
+			},
+		}
+
+		fakeClient.EXPECT().Scheme().Return(testScheme).Maybe()
+		fakeClient.EXPECT().
+			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.SpectreApplication"), mock.AnythingOfType("controllerutil.MutateFn")).
+			Run(func(_ context.Context, _ client.Object, mutate controllerutil.MutateFn) {
+				_ = mutate()
+			}).
+			Return(controllerutil.OperationResultCreated, nil).Once()
+		fakeClient.EXPECT().
+			List(ctx, mock.AnythingOfType("*v1.ApplicationList"), mock.Anything).
+			Return(fmt.Errorf("api server error")).Once()
+
+		err := spectre.HandleListeners(ctx, fakeClient, owner)
+
+		Expect(err).To(HaveOccurred())
+		Expect(err).ToNot(Satisfy(isBlockedError))
+		Expect(err.Error()).To(ContainSubstring("api server error"))
 	})
 
 	It("should set callback delivery type when listenerSubscription specifies callback", func() {
@@ -404,7 +590,7 @@ var _ = Describe("HandleListeners", func() {
 		Expect(err.Error()).To(ContainSubstring("failed to create or update Listener"))
 	})
 
-	It("should return blocked error when status.application is nil", func() {
+	It("should return a non-blocked error when status.application is nil", func() {
 		owner.Spec.Listeners = []roverv1.RoverListener{
 			{
 				Consumer:    "consumer",
@@ -417,6 +603,7 @@ var _ = Describe("HandleListeners", func() {
 		err := spectre.HandleListeners(ctx, fakeClient, owner)
 
 		Expect(err).To(HaveOccurred())
+		Expect(err).ToNot(Satisfy(isBlockedError))
 		Expect(err.Error()).To(ContainSubstring("rover status.application is not yet set"))
 	})
 })

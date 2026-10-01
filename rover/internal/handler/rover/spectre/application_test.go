@@ -60,6 +60,13 @@ func makeDeletingApplication(name, namespace string) applicationv1.Application {
 	}
 }
 
+// mockNoExistingListener lets the Get for the Listener of a blocked entry return NotFound.
+func mockNoExistingListener(fakeClient *fakeclient.MockJanitorClient, ctx context.Context) {
+	fakeClient.EXPECT().
+		Get(ctx, mock.Anything, mock.AnythingOfType("*v1.Listener")).
+		Return(apierrors.NewNotFound(spectrev1.GroupVersion.WithResource("listeners").GroupResource(), "")).Maybe()
+}
+
 // exerciseResolveApplication triggers resolveApplication through HandleListeners
 // by setting up a Rover with a single listener where the provider is the target.
 // The consumer is resolved via a separate mock; the provider resolution exercises
@@ -96,6 +103,9 @@ func exerciseResolveApplication(
 			_ = mutate()
 		}).
 		Return(controllerutil.OperationResultCreated, nil).Maybe()
+
+	// A blocked provider keeps an existing Listener; there is none here.
+	mockNoExistingListener(fakeClient, ctx)
 
 	// Provider resolution — this is the List call under test.
 	fakeClient.EXPECT().
@@ -145,6 +155,7 @@ func exerciseResolveApplicationByID(
 		}).
 		Return(controllerutil.OperationResultCreated, nil).Maybe()
 
+	mockNoExistingListener(fakeClient, ctx)
 	fakeClient.EXPECT().
 		Get(ctx, expectedKey, mock.AnythingOfType("*v1.Application")).
 		Run(func(_ context.Context, _ k8stypes.NamespacedName, obj client.Object, _ ...client.GetOption) {

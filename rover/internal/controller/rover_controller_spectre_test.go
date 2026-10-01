@@ -173,6 +173,89 @@ var _ = Describe("Rover Controller Spectre Watch", Ordered, func() {
 		})
 	})
 
+	Context("One listener cannot be resolved", func() {
+		It("should keep reconciling the other listeners and report the Rover as Blocked", func() {
+			listenerAPath := apiBasePath + "/blocked-a"
+			listenerCPath := apiBasePath + "/blocked-c"
+			getListener := func(g Gomega, name string) *spectrev1.Listener {
+				listener := &spectrev1.Listener{}
+				g.Expect(k8sClient.Get(ctx, client.ObjectKey{Name: name, Namespace: teamNamespace}, listener)).To(Succeed())
+				return listener
+			}
+			expectBlocked := func(g Gomega, rover *roverv1.Rover) {
+				readyCond := findCondition(rover.Status.Conditions, condition.ConditionTypeReady)
+				g.Expect(readyCond).NotTo(BeNil())
+				g.Expect(readyCond.Status).To(Equal(metav1.ConditionFalse))
+				processingCond := findCondition(rover.Status.Conditions, condition.ConditionTypeProcessing)
+				g.Expect(processingCond).NotTo(BeNil())
+				g.Expect(processingCond.Reason).To(Equal(condition.ReasonBlocked))
+				g.Expect(processingCond.Message).To(ContainSubstring(`application "does-not-exist" not found`))
+			}
+
+			rover := &roverv1.Rover{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      spectreRoverName,
+					Namespace: teamNamespace,
+					Labels: map[string]string{
+						config.EnvironmentLabelKey: testEnvironment,
+					},
+				},
+				Spec: roverv1.RoverSpec{
+					Zone:         testEnvironment,
+					ClientSecret: "topsecret",
+					Listeners: []roverv1.RoverListener{
+						{Consumer: spectreRoverName, Provider: providerAppName, ApiBasePath: listenerAPath},
+						{Consumer: spectreRoverName, Provider: "does-not-exist", ApiBasePath: apiBasePath + "/blocked-b"},
+						{Consumer: spectreRoverName, Provider: providerAppName, ApiBasePath: listenerCPath},
+					},
+				},
+			}
+
+			By("Creating the Rover with one unresolvable listener")
+			Expect(k8sClient.Create(ctx, rover)).To(Succeed())
+
+			By("Waiting for the resolvable Listeners and a Blocked Rover")
+			var listenerAName, listenerCName string
+			var listenerAUID string
+			Eventually(func(g Gomega) {
+				fetchedRover := &roverv1.Rover{}
+				g.Expect(k8sClient.Get(ctx, spectreTypeNamespacedName, fetchedRover)).To(Succeed())
+				g.Expect(fetchedRover.Status.SpectreListeners).To(HaveLen(2))
+				expectBlocked(g, fetchedRover)
+
+				listenerAName = fetchedRover.Status.SpectreListeners[0].Name
+				listenerCName = fetchedRover.Status.SpectreListeners[1].Name
+				listenerA := getListener(g, listenerAName)
+				g.Expect(listenerA.Spec.ApiListener.ApiBasePath).To(Equal(listenerAPath))
+				listenerAUID = string(listenerA.UID)
+				g.Expect(getListener(g, listenerCName).Spec.ApiListener.ApiBasePath).To(Equal(listenerCPath))
+			}, spectreTimeout, interval).Should(Succeed())
+
+			By("Breaking the provider of the first listener and removing the last one")
+			Eventually(func(g Gomega) {
+				fetchedRover := &roverv1.Rover{}
+				g.Expect(k8sClient.Get(ctx, spectreTypeNamespacedName, fetchedRover)).To(Succeed())
+				fetchedRover.Spec.Listeners = []roverv1.RoverListener{
+					{Consumer: spectreRoverName, Provider: "does-not-exist", ApiBasePath: listenerAPath},
+				}
+				g.Expect(k8sClient.Update(ctx, fetchedRover)).To(Succeed())
+			}, spectreTimeout, interval).Should(Succeed())
+
+			By("Verifying the existing Listener is kept and the removed one is cleaned up")
+			Eventually(func(g Gomega) {
+				fetchedRover := &roverv1.Rover{}
+				g.Expect(k8sClient.Get(ctx, spectreTypeNamespacedName, fetchedRover)).To(Succeed())
+				g.Expect(fetchedRover.Status.SpectreListeners).To(HaveLen(1))
+				g.Expect(fetchedRover.Status.SpectreListeners[0].Name).To(Equal(listenerAName))
+				expectBlocked(g, fetchedRover)
+
+				g.Expect(string(getListener(g, listenerAName).UID)).To(Equal(listenerAUID))
+				err := k8sClient.Get(ctx, client.ObjectKey{Name: listenerCName, Namespace: teamNamespace}, &spectrev1.Listener{})
+				g.Expect(errors.IsNotFound(err)).To(BeTrue())
+			}, spectreTimeout, interval).Should(Succeed())
+		})
+	})
+
 	Context("Spectre child readiness triggers Rover re-reconciliation", func() {
 		It("should re-reconcile Rover when SpectreApplication status changes", func() {
 			spec := roverv1.RoverSpec{
