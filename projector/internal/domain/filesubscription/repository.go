@@ -76,10 +76,15 @@ func (r *Repository) Upsert(ctx context.Context, data *FileSubscriptionData) err
 	}
 
 	var targetExposureID *int
+	targetMissing := false
 	if id, findErr := r.deps.FindActiveFileExposureByFileType(ctx, data.TargetFileType); findErr != nil {
 		if !errors.Is(findErr, infrastructure.ErrEntityNotFound) {
 			return fmt.Errorf("find active file_exposure %q: %w", data.TargetFileType, findErr)
 		}
+		// No active exposure — persist with NULL target, then report the
+		// missing dependency after all writes so the reconciler retries.
+		// A missing FileType catalogue entry alone does not trigger this.
+		targetMissing = true
 	} else {
 		targetExposureID = &id
 	}
@@ -136,6 +141,9 @@ func (r *Repository) Upsert(ctx context.Context, data *FileSubscriptionData) err
 
 	et, lk := cachekeys.FileSubscriptionMeta(data.Meta.Namespace, data.Meta.Name)
 	r.cache.Set(et, lk, subscriptionID)
+	if targetMissing {
+		return runtime.WrapDependencyMissing("file_exposure", data.TargetFileType)
+	}
 	return nil
 }
 

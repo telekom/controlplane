@@ -175,6 +175,39 @@ var _ = Describe("Application Repository", func() {
 
 		})
 
+		It("should move an existing application to a new zone on upsert", func() {
+			z2, err := client.Zone.Create().
+				SetName("aws").
+				SetVisibility(zone.VisibilityEnterprise).
+				Save(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			deps.zoneIDs["aws"] = z2.ID
+
+			data := &application.ApplicationData{
+				Meta:                shared.NewMetadata("prod--platform--narvi", "zone-app", nil),
+				StatusPhase:         "READY",
+				Name:                "zone-app",
+				TeamName:            "platform--narvi",
+				ZoneName:            "caas",
+				SecretRotationPhase: "DONE",
+			}
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+			original, err := client.Application.Query().Where(entapp.NameEQ("zone-app")).Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+
+			data.ZoneName = "aws"
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			apps, err := client.Application.Query().Where(entapp.NameEQ("zone-app")).All(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(apps).To(HaveLen(1))
+			Expect(apps[0].ID).To(Equal(original.ID))
+			appZone, err := apps[0].QueryZone().Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(appZone.ID).To(Equal(z2.ID))
+		})
+
 		It("should create an application with a nil token URL", func() {
 			data := &application.ApplicationData{
 				Meta:                shared.NewMetadata("prod--platform--narvi", "no-token-app", nil),
