@@ -39,6 +39,7 @@ Users define listeners in their Rover file under `spec.listeners`. The Rover ope
 Key constraints:
 
 - **Pass-through and failover listeners** are currently rejected.
+- **Circuit-breaker routes** are supported; the circuit-breaker upstream keeps the Jumper `/listener` path.
 - **SSE delivery** works in local and proxy zones. The SSE Route serves `/horizon/sse/v1/de.telekom.ei.listener.<appId>` (canonical) and the legacy alias `/spectre-sse/<appId>`; the full canonical URL is published in `SpectreApplication.status.sseUrl`. The alias does not cover legacy hostnames/TLS or hash-shortened app IDs of very long team names.
 - **Callback traffic** is Gateway-mediated via the zone's `EventConfig.Status.CallbackURL`.
 - **Shared generic Publisher** — a single Publisher per application event type may be referenced by multiple Listeners; it is not exclusively owned by any one Listener.
