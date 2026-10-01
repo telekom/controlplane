@@ -266,7 +266,7 @@ Builds the rover-ctl base image (containing bash/jq/yq) and optionally
 publishes it to the internal Artifactory Docker registry.
 
 **Invocation:**
-- **From Release Workflow** - Runs unconditionally before every release with
+- **From Release Workflow** - Runs on every release run (from `main`) with
    `push: true`
 - **Manual** - Via `workflow_dispatch`; `push` defaults to `false`
 
@@ -298,43 +298,76 @@ publishes it to the internal Artifactory Docker registry.
 ### 6. Release Management
 
 #### **Release Workflow** (`release.yaml`)
-**Triggers:** Manual dispatch only
+**Triggers:** Manual dispatch only, from `main` (dispatches from any other
+branch skip all jobs)
 
-**Sequence:**
-1. Build and push rover-ctl base image (via `rover-ctl-base-image` job)
-2. Generate GitHub App token for authentication
-3. Setup Go and caching
-4. Install tools (cosign, syft, goreleaser)
-5. Login to GHCR and Artifactory registries
-6. Run Semantic Release
-   - Analyzes commits
-   - Determines version bump
+Orchestrator for the release, following the same pattern as `ci.yaml`: each
+stage lives in its own reusable (`workflow_call`-only) workflow and runs as a
+separate job. A failed stage (e.g. one module's Artifactory mirroring) can be
+retried via **"Re-run failed jobs"** without re-running semantic-release or
+any stage that already succeeded.
+
+**Jobs:**
+1. **Rover-CTL Base Image** (`rover-ctl-base-image.yaml`) - runs on every
+   release run as a freshness safety net
+2. **Semantic Release** - generates a GitHub App token, then runs
+   semantic-release:
+   - Analyzes commits and determines the version bump
    - Generates changelog
    - **Executes versioning scripts** (see Unified Versioning below)
-   - Creates GitHub release
-7. Run GoReleaser (if new release published)
+   - Commits and pushes the release files, creates and pushes the tag
+   - Outputs `published`, `tag`, `version` and the release `notes` for the
+     jobs below (job outputs are kept when downstream jobs are re-run)
+3. **GoReleaser** (`release-goreleaser.yaml`, if a new release was published)
+   - Checks out the release tag
    - Build binaries for multiple platforms
-   - Build container images using Ko
+   - Build container images using Ko, push to GHCR
    - Sign artifacts with cosign
    - Generate SBOM with syft
-   - Publish to GitHub release
-8. **Mirror release images to Artifactory** (if new release published)
-   - Uses skopeo to copy all module images from GHCR to internal Artifactory registry
+   - Publish the GitHub release with semantic-release's release notes
+4. **Mirror to Artifactory** (`release-mirror.yaml`, needs GoReleaser)
+   - Matrix job, one entry per module, so a single module can be retried in isolation
+   - Uses skopeo to copy the module's images from GHCR to internal Artifactory registry
    - Mirrors version tag (v*), `latest`, and `stable` (for non-prerelease versions)
    - Copies exact multi-arch manifests for internal deployments
    - Covers all modules except rover-ctl (handled separately below)
-   - Modules: admin, agentic, api, application, approval, common-server, controlplane-api, discovery-server, event, file-manager, gateway, identity, notification, organization, organization-server, permission, projector, pubsub, rover, rover-server, secret-manager
-9. Build and push final rover-ctl image (if new release published)
+   - Modules: admin, agentic, api, application, approval, common-server, controlplane-api, discovery-server, event, file, file-manager, gateway, identity, notification, organization, organization-server, permission, projector, pubsub, rover, rover-server, secret-manager, sftp
+5. **Rover-CTL Combined Image** (`release-roverctl-image.yaml`, needs
+   Rover-CTL Base Image and GoReleaser)
    - Layers rover-ctl binary (from GHCR) onto bash/jq/yq base image (from Artifactory)
-   - Combines base with roverctl binary
    - Publishes to internal Artifactory registry
 
-**Permissions:** Packages (write), contents (write), issues (write), pull-requests (write), id-token (write)
+**Dependency graph:**
+```
+release ──▶ goreleaser ──┬──▶ mirror-to-artifactory (matrix, one job per module)
+                         └──▶ roverctl-combined-image
+rover-ctl-base-image ───────▶ roverctl-combined-image
+```
+
+**Permissions:** set per job - contents/issues/pull-requests/id-token (write) for
+semantic-release; contents/packages (write) for GoReleaser; packages (read)
+for mirroring and the combined image
 
 **Key Features:**
 - **Dual registry distribution** - GHCR for open-source binaries, Artifactory for GPL-bundled images
 - **Image mirroring** - Synchronizes multi-arch manifests across registries for consistent deployments
 - **Automated versioning** - Unified version across all components and Helm charts
+- **Retryable stages** - each stage is a separate job; re-running failed jobs never re-runs semantic-release
+- **Serialised runs** - `concurrency: release` queues a second dispatch until the running release finishes
+
+**Re-running:** only re-run failed jobs of the **most recent** release run.
+Re-running an older run after a newer release was published moves the
+mutable `latest`/`stable` image tags back to the older version. GoReleaser
+is configured with `replace_existing_artifacts`, so a retry after a partial
+upload overwrites the assets already attached to the GitHub Release.
+
+**Recovery:** retries work for every job after **Semantic Release**. If the
+Semantic Release job itself fails *after* the tag was pushed, re-running it
+finds no new release (`published=false`) and all publishing jobs are skipped.
+In that case, delete the orphaned tag (`git push --delete origin vX.Y.Z`) and
+dispatch the Release workflow again; semantic-release recomputes the same
+version from the previous tag. Check `CHANGELOG.md` afterwards for a
+duplicated section.
 
 ---
 
@@ -472,17 +505,17 @@ Push to Main
 ### Release Flow
 ```
 Manual Trigger: Release Workflow
-├─ Rover-CTL Base Image (unconditionally)
-├─ Semantic Release (analyze commits)
-├─ Generate Changelog
-├─ Create GitHub Release
-├─ GoReleaser (build & sign artifacts)
+├─ Rover-CTL Base Image (from main only)
+├─ Semantic Release (analyze commits, changelog, commit + tag)
+├─ GoReleaser (build & sign artifacts, create GitHub Release)
 │  └─ Push images to GHCR
-├─ Mirror release images to Artifactory
+├─ Mirror to Artifactory (matrix, one job per module)
 │  └─ Copy multi-arch manifests (v*, latest, stable)
-└─ Build & push final rover-ctl image
+└─ Rover-CTL Combined Image
    └─ Layer binary + base image → Artifactory
 ```
+Each stage is its own job backed by a reusable workflow, so failed stages
+can be retried via "Re-run failed jobs" without cutting a new release.
 
 ### Version Tag Flow
 ```
@@ -572,7 +605,8 @@ Workflows follow the principle of least privilege:
 - **Dependabot** manages dependencies monthly for both GitHub Actions and Go modules
 - **Pin commitments** are used for critical actions (security best practice)
 - **Reusable workflows** (`component-build.yaml`, `component-package-build.yaml`,
-  `helm-release.yaml`, `rover-ctl-base-image.yaml`) reduce duplication and
+  `helm-release.yaml`, `rover-ctl-base-image.yaml`, `release-goreleaser.yaml`,
+  `release-mirror.yaml`, `release-roverctl-image.yaml`) reduce duplication and
   ensure consistency across modules
 - **Per-module CI configuration** lives in `.github/ci/modules.yaml` - add a
   new module by adding one entry there, no workflow YAML changes needed
