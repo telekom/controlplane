@@ -1304,6 +1304,12 @@ spec:
                     - server_sent_event
                     type: string
                 type: object
+                x-kubernetes-validations:
+                - message: 'callback is required for deliveryType ''callback'' and
+                    must not be set otherwise; set deliveryType: callback to deliver
+                    to a callback URL'
+                  rule: 'self.deliveryType == ''callback'' ? (has(self.callback) &&
+                    self.callback != '''') : !has(self.callback)'
               listeners:
                 description: Listeners is a list of API traffic listeners
                 items:
@@ -1915,6 +1921,10 @@ spec:
             required:
             - zone
             type: object
+            x-kubernetes-validations:
+            - message: listenerSubscription requires at least one entry in listeners
+              rule: '!has(self.listenerSubscription) || (has(self.listeners) && size(self.listeners)
+                > 0)'
           status:
             description: Status contains the observed state of the Rover resource
             properties:
