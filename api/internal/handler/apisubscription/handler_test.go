@@ -6,7 +6,6 @@ package apisubscription
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strings"
 
@@ -22,7 +21,6 @@ import (
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/config"
-	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	organizationapi "github.com/telekom/controlplane/organization/api/v1"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -132,7 +130,7 @@ var _ = Describe("ApiSubscription Handler", func() {
 			}}}
 		}
 
-		DescribeTable("returns a blocked error only for incompatible Basic credentials with scopes",
+		DescribeTable("returns a validation error only for incompatible Basic credentials with scopes",
 			func(security *apiv1.SubscriberSecurity, exposure *apiv1.ApiExposure, blocked bool) {
 				sub := &apiv1.ApiSubscription{Spec: apiv1.ApiSubscriptionSpec{Security: security}}
 				err := validateBasicWithScopesPolicy(sub, exposure)
@@ -140,9 +138,6 @@ var _ = Describe("ApiSubscription Handler", func() {
 					Expect(err).NotTo(HaveOccurred())
 					return
 				}
-				blockedErr, ok := errors.AsType[ctrlerrors.BlockedError](err)
-				Expect(ok).To(BeTrue())
-				Expect(blockedErr.IsBlocked()).To(BeTrue())
 				Expect(err).To(MatchError(`Consumer username/password with scopes requires an external IDP grant type "password"`))
 			},
 			Entry("without subscription security", nil, nil, false),

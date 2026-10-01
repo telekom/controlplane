@@ -335,10 +335,15 @@ var _ = Describe("RouteHandler", func() {
 					}
 
 					mockBuilder.EXPECT().Build(mock.Anything).Return(nil).Maybe()
-					Expect(handler.CreateOrUpdate(ctx, route)).To(HaveOccurred())
+					Expect(handler.CreateOrUpdate(ctx, route)).To(MatchError(
+						`Consumer username/password with scopes requires an external IDP grant type "password" on route ` + route.Name))
 					mockBuilder.AssertNotCalled(GinkgoT(), "Build", mock.Anything)
 					mockKC.AssertNotCalled(GinkgoT(), "DeleteRoute", mock.Anything, mock.Anything)
-					Expect(meta.IsStatusConditionTrue(route.GetConditions(), condition.ConditionTypeReady)).To(BeFalse())
+					ready := meta.FindStatusCondition(route.GetConditions(), condition.ConditionTypeReady)
+					Expect(ready).NotTo(BeNil())
+					Expect(ready.Status).To(Equal(metav1.ConditionFalse))
+					Expect(ready.Reason).To(Equal(condition.ReasonValidationFailed))
+					Expect(ready.Message).To(Equal(`Consumer username/password with scopes requires an external IDP grant type "password"`))
 				},
 				Entry("primary route with provider scopes only, it rejects consumer Basic credentials", func(r *gatewayv1.Route) {
 					r.Spec.Security.M2M = &gatewayv1.Machine2MachineAuthentication{Scopes: []string{"provider:read"}}

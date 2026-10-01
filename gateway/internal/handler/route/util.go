@@ -11,7 +11,6 @@ import (
 	"github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/controller"
-	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	"github.com/telekom/controlplane/common/pkg/types"
 	v1 "github.com/telekom/controlplane/gateway/api/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -51,7 +50,7 @@ func validateBasicWithScopes(route *v1.Route, consumers []v1.ConsumeRoute) error
 		}
 		if consumer.HasM2MBasic() && len(consumer.Spec.Security.M2M.Scopes) > 0 {
 			route.SetCondition(condition.NewNotReadyCondition(condition.ReasonValidationFailed, basicWithScopesPolicyMessage))
-			return ctrlerrors.BlockedErrorf("%s on route %s", basicWithScopesPolicyMessage, route.Name)
+			return errors.Errorf("%s on route %s", basicWithScopesPolicyMessage, route.Name)
 		}
 	}
 	return nil

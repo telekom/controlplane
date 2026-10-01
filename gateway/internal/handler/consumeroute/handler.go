@@ -10,7 +10,6 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/telekom/controlplane/common/pkg/condition"
-	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	"github.com/telekom/controlplane/common/pkg/handler"
 	v1 "github.com/telekom/controlplane/gateway/api/v1"
 	"github.com/telekom/controlplane/gateway/internal/handler/route"
@@ -18,8 +17,6 @@ import (
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 )
-
-const basicWithScopesPolicyMessage = "Consumer username/password with scopes requires an external IDP grant type \"password\""
 
 var _ handler.Handler[*v1.ConsumeRoute] = &ConsumeRouteHandler{}
 
@@ -40,10 +37,10 @@ func (h *ConsumeRouteHandler) CreateOrUpdate(ctx context.Context, consumeRoute *
 		consumeRoute.SetCondition(condition.NewNotReadyCondition("RouteNotReady", "Route is not ready"))
 		return nil
 	}
-	if violatesBasicWithScopesPolicy(consumeRoute, route) {
-		consumeRoute.SetCondition(condition.NewBlockedCondition(basicWithScopesPolicyMessage))
-		consumeRoute.SetCondition(condition.NewNotReadyCondition(condition.ReasonValidationFailed, basicWithScopesPolicyMessage))
-		return ctrlerrors.BlockedErrorf("%s", basicWithScopesPolicyMessage)
+	if err = validateBasicWithScopesPolicy(consumeRoute, route); err != nil {
+		consumeRoute.SetCondition(condition.NewBlockedCondition(err.Error()))
+		consumeRoute.SetCondition(condition.NewNotReadyCondition(condition.ReasonValidationFailed, err.Error()))
+		return nil
 	}
 
 	if slices.Contains(route.Status.Consumers, consumeRoute.Spec.ConsumerName) {
@@ -57,19 +54,22 @@ func (h *ConsumeRouteHandler) CreateOrUpdate(ctx context.Context, consumeRoute *
 	return nil
 }
 
-func violatesBasicWithScopesPolicy(consumeRoute *v1.ConsumeRoute, route *v1.Route) bool {
+func validateBasicWithScopesPolicy(consumeRoute *v1.ConsumeRoute, route *v1.Route) error {
 	if !route.IsPrimary() && !route.IsFailoverSecondary() {
-		return false
+		return nil
 	}
 	if !consumeRoute.HasM2MBasic() || len(consumeRoute.Spec.Security.M2M.Scopes) == 0 {
-		return false
+		return nil
 	}
 
 	security := route.Spec.Security
 	if route.IsFailoverSecondary() && route.Spec.Traffic.Failover != nil {
 		security = route.Spec.Traffic.Failover.Security
 	}
-	return !security.HasM2MExternalIDP() || security.M2M.ExternalIDP.GrantType != v1.GrantTypePassword
+	if !security.HasM2MExternalIDP() || security.M2M.ExternalIDP.GrantType != v1.GrantTypePassword {
+		return errors.New("Consumer username/password with scopes requires an external IDP grant type \"password\"")
+	}
+	return nil
 }
 
 func (h *ConsumeRouteHandler) Delete(ctx context.Context, consumeRoute *v1.ConsumeRoute) error {

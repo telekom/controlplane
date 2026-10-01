@@ -6,7 +6,6 @@ package ConsumeRoute_test
 
 import (
 	"context"
-	"errors"
 
 	"github.com/stretchr/testify/mock"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -16,7 +15,6 @@ import (
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	fakeclient "github.com/telekom/controlplane/common/pkg/client/fake"
 	"github.com/telekom/controlplane/common/pkg/condition"
-	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	"github.com/telekom/controlplane/common/pkg/types"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	handler "github.com/telekom/controlplane/gateway/internal/handler/consumeroute"
@@ -74,6 +72,7 @@ var _ = Describe("ConsumeRouteHandler with consumer username/password and scopes
 			}
 
 			err := (&handler.ConsumeRouteHandler{}).CreateOrUpdate(ctx, consumeRoute)
+			Expect(err).NotTo(HaveOccurred())
 
 			ready := meta.FindStatusCondition(consumeRoute.GetConditions(), condition.ConditionTypeReady)
 			processing := meta.FindStatusCondition(consumeRoute.GetConditions(), condition.ConditionTypeProcessing)
@@ -81,17 +80,12 @@ var _ = Describe("ConsumeRouteHandler with consumer username/password and scopes
 			Expect(ready.Status).To(Equal(metav1.ConditionFalse))
 			Expect(processing).NotTo(BeNil())
 			if blocked {
-				blockedErr, ok := errors.AsType[ctrlerrors.BlockedError](err)
-				Expect(ok).To(BeTrue())
-				Expect(blockedErr.IsBlocked()).To(BeTrue())
-				Expect(err).To(MatchError(`Consumer username/password with scopes requires an external IDP grant type "password"`))
 				Expect(ready.Reason).To(Equal(condition.ReasonValidationFailed))
-				Expect(ready.Message).To(Equal(err.Error()))
+				Expect(ready.Message).To(Equal(`Consumer username/password with scopes requires an external IDP grant type "password"`))
 				Expect(processing.Reason).To(Equal("Blocked"))
-				Expect(processing.Message).To(Equal(err.Error()))
+				Expect(processing.Message).To(Equal(ready.Message))
 				return
 			}
-			Expect(err).NotTo(HaveOccurred())
 			Expect(ready.Reason).To(Equal("ConsumeRouteProcessing"))
 		},
 		Entry("primary route without an external IDP is blocked", func(r *gatewayv1.Route) {

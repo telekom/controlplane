@@ -141,7 +141,7 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 	if err = validateBasicWithScopesPolicy(apiSub, apiExposure); err != nil {
 		apiSub.SetCondition(condition.NewNotReadyCondition(condition.ReasonValidationFailed, err.Error()))
 		apiSub.SetCondition(condition.NewBlockedCondition(err.Error()))
-		return err
+		return nil
 	}
 
 	err = requester.SetProperties(properties)
@@ -533,7 +533,7 @@ func validateBasicWithScopesPolicy(obj *apiapi.ApiSubscription, exposure *apiapi
 
 	if exposure == nil || !exposure.HasExternalIdp() ||
 		exposure.Spec.Security.M2M.ExternalIDP.GrantType != apiapi.GrantTypePassword {
-		return ctrlerrors.BlockedErrorf("Consumer username/password with scopes requires an external IDP grant type \"password\"")
+		return errors.New("Consumer username/password with scopes requires an external IDP grant type \"password\"")
 	}
 	return nil
 }
