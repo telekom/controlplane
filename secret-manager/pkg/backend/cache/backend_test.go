@@ -610,6 +610,8 @@ var _ = Describe("Cached Backend cache", func() {
 			result2, err := cachedBackend.Get(ctx, secretId2)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(result2.Value()).To(Equal("my-value"))
+			// The cached id/value pair is returned, not the requested id.
+			Expect(result2.Id()).To(BeIdenticalTo(secretId1))
 		})
 	})
 })
