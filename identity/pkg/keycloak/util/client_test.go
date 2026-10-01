@@ -5,6 +5,7 @@
 package util
 
 import (
+	"slices"
 	"testing"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -34,6 +35,49 @@ func TestMapToClientRepresentation_SetsAttributeByDefault(t *testing.T) {
 	}
 	if v != "true" {
 		t.Fatalf("expected attribute value %q, got %v", "true", v)
+	}
+}
+
+func TestClientWebOrigins(t *testing.T) {
+	client := &identityv1.Client{
+		Spec:   identityv1.ClientSpec{ClientId: "my-app", ClientSecret: "secret"},
+		Status: identityv1.ClientStatus{AllowedOrigins: []string{"https://example.com", "*"}},
+	}
+	desired := MapToClientRepresentation(client)
+	if desired.WebOrigins == nil || !slices.Equal(*desired.WebOrigins, client.Status.AllowedOrigins) {
+		t.Fatalf("expected mapped web origins %v, got %v", client.Status.AllowedOrigins, desired.WebOrigins)
+	}
+
+	existing := MapToClientRepresentation(client)
+	existing.WebOrigins = ptr.To([]string{"*", "https://example.com"})
+	if CompareClientRepresentation(&existing, &desired) {
+		t.Fatal("reordering web origins must cause drift")
+	}
+	existing.WebOrigins = ptr.To([]string{"https://other.example.com"})
+	if CompareClientRepresentation(&existing, &desired) {
+		t.Fatal("changed web origins must cause drift")
+	}
+	merged := MergeClientRepresentation(&existing, &desired)
+	if merged.WebOrigins == nil || !slices.Equal(*merged.WebOrigins, *desired.WebOrigins) {
+		t.Fatal("web origins were not replaced")
+	}
+
+	client.Status.AllowedOrigins = []string{}
+	cleared := MapToClientRepresentation(client)
+	if cleared.WebOrigins == nil || len(*cleared.WebOrigins) != 0 {
+		t.Fatal("missing origins must map to an explicit empty list")
+	}
+	if CompareClientRepresentation(merged, &cleared) {
+		t.Fatal("removing web origins must cause drift")
+	}
+	MergeClientRepresentation(merged, &cleared)
+	if len(*merged.WebOrigins) != 0 {
+		t.Fatal("web origins were not cleared")
+	}
+	client.Status.AllowedOrigins = nil
+	empty := MapToClientRepresentation(client)
+	if empty.WebOrigins == nil || len(*empty.WebOrigins) != 0 {
+		t.Fatal("an omitted origins list must map to an explicit empty Keycloak list")
 	}
 }
 

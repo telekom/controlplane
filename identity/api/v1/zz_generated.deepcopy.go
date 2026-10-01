@@ -117,6 +117,11 @@ func (in *ClientStatus) DeepCopyInto(out *ClientStatus) {
 		in, out := &in.SecretExpiresAt, &out.SecretExpiresAt
 		*out = (*in).DeepCopy()
 	}
+	if in.AllowedOrigins != nil {
+		in, out := &in.AllowedOrigins, &out.AllowedOrigins
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
 	if in.Conditions != nil {
 		in, out := &in.Conditions, &out.Conditions
 		*out = make([]metav1.Condition, len(*in))
@@ -297,6 +302,11 @@ func (in *RealmSpec) DeepCopyInto(out *RealmSpec) {
 	if in.IdentityProvider != nil {
 		in, out := &in.IdentityProvider, &out.IdentityProvider
 		*out = (*in).DeepCopy()
+	}
+	if in.AllowedOrigins != nil {
+		in, out := &in.AllowedOrigins, &out.AllowedOrigins
+		*out = make([]string, len(*in))
+		copy(*out, *in)
 	}
 	if in.SecretRotation != nil {
 		in, out := &in.SecretRotation, &out.SecretRotation

@@ -78,6 +78,10 @@ type ClaimConfig struct {
 // RealmSpec defines the desired state of Realm
 type RealmSpec struct {
 	IdentityProvider *types.ObjectRef `json:"identityProvider"`
+	// AllowedOrigins is inherited by clients in this realm.
+	// +optional
+	// +listType=set
+	AllowedOrigins []string `json:"allowedOrigins,omitempty"`
 
 	// SecretRotation configures the Keycloak client-secret rotation policy
 	// for this realm. When set, the controller ensures a client-policy
