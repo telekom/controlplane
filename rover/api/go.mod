@@ -7,7 +7,7 @@ module github.com/telekom/controlplane/rover/api
 go 1.26.6
 
 require (
-	github.com/onsi/ginkgo/v2 v2.32.1
+	github.com/onsi/ginkgo/v2 v2.33.0
 	github.com/onsi/gomega v1.43.0
 	github.com/telekom/controlplane/common v0.0.0
 	golang.org/x/crypto v0.55.0
