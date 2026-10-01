@@ -5,51 +5,24 @@
 package identifier
 
 import (
-	"strings"
-
+	"github.com/google/uuid"
 	"github.com/pkg/errors"
 )
 
-// FileIDParts represents the individual components of a file ID
-type FileIDParts struct {
-	Env      string
-	Group    string
-	Team     string
-	FileName string
-	Raw      string // The original raw fileId
+// ParseFileID parses a fileId that must be a canonical (lowercase, hyphenated) UUID
+func ParseFileID(fileId string) (uuid.UUID, error) {
+	id, err := uuid.Parse(fileId)
+	if err != nil {
+		return uuid.Nil, errors.Wrap(err, "invalid fileId format, expected UUID")
+	}
+	// uuid.Parse also accepts urn:uuid:, braced and uppercase forms which would map to different object keys.
+	if id.String() != fileId {
+		return uuid.Nil, errors.New("invalid fileId format, expected canonical lowercase UUID")
+	}
+	return id, nil
 }
 
-// ParseFileID parses a fileId in the format "<env>--<group>--<team>--<fileName>" into its components
-// Returns the parsed parts and an error if the format is invalid
-func ParseFileID(fileId string) (*FileIDParts, error) {
-	// Split the key by --
-	parts := strings.SplitN(fileId, "--", 4)
-	if len(parts) != 4 {
-		return nil, errors.New("invalid fileId format, expected <env>--<group>--<team>--<fileName>")
-	}
-
-	// Extract the parts
-	env := parts[0]
-	group := parts[1]
-	team := parts[2]
-	fileName := parts[3]
-
-	// Validate non-empty parts
-	if env == "" || group == "" || team == "" || fileName == "" {
-		return nil, errors.New("all parts of key must be non-empty")
-	}
-
-	return &FileIDParts{
-		Env:      env,
-		Group:    group,
-		Team:     team,
-		FileName: fileName,
-		Raw:      fileId,
-	}, nil
-}
-
-// ValidateFileID validates if the fileId is in the correct format without returning the parts
-// Returns nil if valid, error if invalid
+// ValidateFileID returns nil if the fileId is a valid canonical UUID
 func ValidateFileID(fileId string) error {
 	_, err := ParseFileID(fileId)
 	return err

@@ -234,12 +234,15 @@ func (c *ApiChangelogController) uploadFile(ctx context.Context, itemsMarshaled 
 	}
 
 	// Check if hash changed (optimization: skip upload if same)
-	localHash, same, err := c.isHashEqual(ctx, id, itemsMarshaled)
+	localHash, same, existingId, err := c.isHashEqual(ctx, id, itemsMarshaled)
 	if err != nil {
 		return nil, err
 	}
 
-	fileId := generateFileId(id)
+	fileId, err := resolveFileId(existingId)
+	if err != nil {
+		return nil, err
+	}
 	fileContentType := "application/json"
 
 	resp := &filesapi.FileUploadResponse{
@@ -255,21 +258,21 @@ func (c *ApiChangelogController) uploadFile(ctx context.Context, itemsMarshaled 
 	return resp, err
 }
 
-// isHashEqual checks if the hash of the data matches the stored hash
-func (c *ApiChangelogController) isHashEqual(ctx context.Context, id mapper.ResourceIdInfo, data []byte) (string, bool, error) {
+// isHashEqual checks if the hash of the data matches the stored hash and returns the stored file ID
+func (c *ApiChangelogController) isHashEqual(ctx context.Context, id mapper.ResourceIdInfo, data []byte) (string, bool, string, error) {
 	ns := id.Environment + "--" + id.Namespace
 	changelog, err := c.Store.Get(ctx, ns, id.Name)
 	if err != nil {
 		if problems.IsNotFound(err) {
-			return "", false, nil
+			return "", false, "", nil
 		}
-		return "", false, err
+		return "", false, "", err
 	}
 
 	hasher := sha256.New()
 	hasher.Write(data)
 	hash := base64.StdEncoding.EncodeToString(hasher.Sum(nil))
-	return hash, hash == changelog.Spec.Hash, nil
+	return hash, hash == changelog.Spec.Hash, changelog.Spec.Contents, nil
 }
 
 // downloadFile downloads items JSON from file-manager
