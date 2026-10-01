@@ -4046,6 +4046,23 @@ components:
         apiBasePath:
           type: string
           description: Base path of the API to listen on
+        requestFilter:
+          $ref: '#/components/schemas/ListenerFilter'
+        responseFilter:
+          $ref: '#/components/schemas/ListenerFilter'
+    ListenerFilter:
+      type: object
+      properties:
+        trigger:
+          type: object
+          additionalProperties:
+            type: string
+          description: Key-value conditions that must match for the filter to apply
+        payload:
+          type: array
+          items:
+            type: string
+          description: Fields to include in the listener output
     ListenerSubscription:
       type: object
       properties:

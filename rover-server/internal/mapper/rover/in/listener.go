@@ -22,9 +22,21 @@ func mapListenersIn(in *api.Rover, out *roverv1.Rover) {
 
 func mapListenerIn(in *api.RoverListener) roverv1.RoverListener {
 	return roverv1.RoverListener{
-		Consumer:    in.Consumer,
-		Provider:    in.Provider,
-		ApiBasePath: in.ApiBasePath,
+		Consumer:       in.Consumer,
+		Provider:       in.Provider,
+		ApiBasePath:    in.ApiBasePath,
+		RequestFilter:  mapListenerFilterIn(in.RequestFilter),
+		ResponseFilter: mapListenerFilterIn(in.ResponseFilter),
+	}
+}
+
+func mapListenerFilterIn(in api.ListenerFilter) *roverv1.ListenerFilter {
+	if in.Trigger == nil && in.Payload == nil {
+		return nil
+	}
+	return &roverv1.ListenerFilter{
+		Trigger: in.Trigger,
+		Payload: in.Payload,
 	}
 }
 
