@@ -13,6 +13,16 @@ const (
 	TokenRequestClientSecretPost  TokenRequestMethod = "client_secret_post"
 )
 
+// GrantType defines the OAuth2 grant type to use for the token request
+// +kubebuilder:validation:Enum=client_credentials;authorization_code;password
+type GrantType string
+
+const (
+	GrantTypePassword          GrantType = "password"
+	GrantTypeClientCredentials GrantType = "client_credentials"
+	GrantTypeAuthorizationCode GrantType = "authorization_code"
+)
+
 // Security defines the security configuration for the Rover
 // Security is optional, but if provided, exactly one of m2m or h2m must be set
 type Security struct {
@@ -50,7 +60,6 @@ type Machine2MachineAuthentication struct {
 // SubscriberMachine2MachineAuthentication defines the authentication methods for machine-to-machine communication for subscribers
 // Either client, basic, or only scopes can be provided
 // +kubebuilder:validation:XValidation:rule="self == null || (has(self.client) ? (!has(self.basic)) : true)", message="Client and basic authentication cannot be used together"
-// +kubebuilder:validation:XValidation:rule="self == null || (has(self.scopes) ? (!has(self.basic)) : true)", message="Scopes and basic authentication cannot be used together"
 // +kubebuilder:validation:XValidation:rule="self == null || has(self.client) || has(self.basic) || has(self.scopes)", message="At least one of client, basic, or scopes must be provided"
 type SubscriberMachine2MachineAuthentication struct {
 	// Client defines client credentials for OAuth2
@@ -79,8 +88,7 @@ type ExternalIdentityProvider struct {
 
 	// GrantType defines the OAuth2 grant type to use for the token request
 	// +kubebuilder:validation:Optional
-	// +kubebuilder:validation:Enum=client_credentials;authorization_code;password
-	GrantType string `json:"grantType,omitempty"`
+	GrantType GrantType `json:"grantType,omitempty"`
 
 	// Basic defines basic auth credentials for the OAuth2 token request
 	Basic *BasicAuthCredentials `json:"basic,omitempty"`
