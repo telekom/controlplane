@@ -208,6 +208,10 @@ func (r *RoverValidator) validateListeners(ctx context.Context, valErr *cerrors.
 		}
 	}
 
+	if ls := rover.Spec.ListenerSubscription; ls != nil && ls.Callback != "" {
+		validateExternalURL(valErr, field.NewPath("spec").Child("listenerSubscription").Child("callback"), ls.Callback)
+	}
+
 	return nil
 }
 
