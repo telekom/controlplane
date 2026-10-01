@@ -71,18 +71,6 @@ func resolveSecretForUpdate(newSecret, oldSecret string) string {
 	return newSecret
 }
 
-// resolveOptionalSecretForUpdate handles *string pointer secrets.
-// Preserves the old value when the new pointer is nil or points to an empty string.
-func resolveOptionalSecretForUpdate(newSecret, oldSecret *string) *string {
-	if newSecret == nil && oldSecret != nil {
-		return oldSecret
-	}
-	if newSecret != nil && *newSecret == "" && oldSecret != nil {
-		return oldSecret
-	}
-	return newSecret
-}
-
 // secretValueOrGenerate returns a generated secret if the value is empty or the rotate keyword.
 // Otherwise it returns the user-provided value as-is (for upload to secret manager).
 func secretValueOrGenerate(value string) (string, error) {
@@ -93,7 +81,7 @@ func secretValueOrGenerate(value string) (string, error) {
 }
 
 // OnboardSecrets uploads zone secrets to the secret-manager and replaces clear-text values with refs.
-func (d *ZoneCustomDefaulter) OnboardSecrets(ctx context.Context, zone *adminv1.Zone) error { //nolint:gocyclo // Secret types share one atomic onboarding request.
+func (d *ZoneCustomDefaulter) OnboardSecrets(ctx context.Context, zone *adminv1.Zone) error {
 	envName, ok := controller.GetEnvironment(zone)
 	if !ok {
 		return fmt.Errorf("environment label is required")
@@ -132,25 +120,6 @@ func (d *ZoneCustomDefaulter) OnboardSecrets(ctx context.Context, zone *adminv1.
 		options = append(options, secretsapi.WithSecretValue(redisPasswordPath, secretValue))
 	}
 
-	gatewaySecretPaths := make(map[int]string)
-	for i := range zone.Spec.Gateways {
-		gateway := &zone.Spec.Gateways[i]
-		gatewayAdminClientSecret := gateway.Admin.ClientSecret
-		if gatewayAdminClientSecret != nil && secretsapi.IsRef(*gatewayAdminClientSecret) {
-			continue
-		}
-		if gatewayAdminClientSecret == nil {
-			gatewayAdminClientSecret = new(string)
-		}
-		secretValue, err := secretValueOrGenerate(*gatewayAdminClientSecret)
-		if err != nil {
-			return errors.Wrap(err, "failed to determine gateway client secret value")
-		}
-		gatewaySecretPath := fmt.Sprintf("zones/%s/admin/gateways/%s/clientSecret", zoneName, gateway.Name)
-		gatewaySecretPaths[i] = gatewaySecretPath
-		options = append(options, secretsapi.WithSecretValue(gatewaySecretPath, secretValue))
-	}
-
 	// Nothing to onboard (only merge-strategy option present)
 	if len(options) <= 1 {
 		return nil
@@ -180,20 +149,11 @@ func (d *ZoneCustomDefaulter) OnboardSecrets(ctx context.Context, zone *adminv1.
 		zonelog.Info("Onboarded Redis password for Zone", "secretId", redisPasswordPath)
 	}
 
-	for i, gatewaySecretPath := range gatewaySecretPaths {
-		ref, found := secretsapi.FindSecretId(availableSecrets, gatewaySecretPath)
-		if !found {
-			return fmt.Errorf("gateway client secret reference not found in onboarding response")
-		}
-		zone.Spec.Gateways[i].Admin.ClientSecret = &ref
-		zonelog.Info("Onboarded gateway client secret for Zone", "secretId", gatewaySecretPath)
-	}
-
 	return nil
 }
 
 // Default implements webhook.CustomDefaulter so a webhook will be registered for the Kind Zone.
-func (d *ZoneCustomDefaulter) Default(ctx context.Context, zone *adminv1.Zone) error { //nolint:gocyclo // Defaulting handles each optional secret independently.
+func (d *ZoneCustomDefaulter) Default(ctx context.Context, zone *adminv1.Zone) error {
 	if controller.IsBeingDeleted(zone) {
 		return nil
 	}
@@ -218,19 +178,6 @@ func (d *ZoneCustomDefaulter) Default(ctx context.Context, zone *adminv1.Zone) e
 		}
 		if zone.Spec.Redis != nil && oldZone.Spec.Redis != nil {
 			zone.Spec.Redis.Password = resolveSecretForUpdate(zone.Spec.Redis.Password, oldZone.Spec.Redis.Password)
-		}
-		oldGateways := make(map[string]adminv1.GatewayConfig, len(oldZone.Spec.Gateways))
-		for _, gateway := range oldZone.Spec.Gateways {
-			oldGateways[gateway.Name] = gateway
-		}
-		for i := range zone.Spec.Gateways {
-			oldGateway, found := oldGateways[zone.Spec.Gateways[i].Name]
-			if found {
-				zone.Spec.Gateways[i].Admin.ClientSecret = resolveOptionalSecretForUpdate(
-					zone.Spec.Gateways[i].Admin.ClientSecret,
-					oldGateway.Admin.ClientSecret,
-				)
-			}
 		}
 	}
 
@@ -267,21 +214,6 @@ func (d *ZoneCustomDefaulter) Default(ctx context.Context, zone *adminv1.Zone) e
 			return errors.Wrap(err, "failed to generate Redis password")
 		}
 		zone.Spec.Redis.Password = secret
-	}
-
-	for i := range zone.Spec.Gateways {
-		clientSecret := zone.Spec.Gateways[i].Admin.ClientSecret
-		if clientSecret == nil {
-			continue
-		}
-		cs := *clientSecret
-		if cs == "" || cs == secretsapi.KeywordRotate {
-			secret, err := secretsapi.GenerateSecret()
-			if err != nil {
-				return errors.Wrap(err, "failed to generate gateway client secret")
-			}
-			zone.Spec.Gateways[i].Admin.ClientSecret = &secret
-		}
 	}
 
 	return nil
