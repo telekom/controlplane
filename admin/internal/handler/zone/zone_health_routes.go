@@ -7,7 +7,6 @@ package zone
 import (
 	"context"
 	"net/http"
-	"path"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -45,10 +44,6 @@ func createZoneHealthRoutes(ctx context.Context, hc *HandlingContext) error {
 		if len(hostnames) == 0 {
 			return ctrlerrors.BlockedErrorf("gateway %q has no preset hostnames", gatewayName)
 		}
-		if len(hostnames) > maxRouteHostnames || len(basePaths) > maxRoutePaths {
-			return ctrlerrors.BlockedErrorf("gateway %q has %d hostnames and %d base paths, but a route allows at most %d and %d",
-				gatewayName, len(hostnames), len(basePaths), maxRouteHostnames, maxRoutePaths)
-		}
 		if err := createZoneHealthRoute(ctx, hc, gateway, hostnames, basePaths); err != nil {
 			return err
 		}
@@ -76,10 +71,7 @@ func createZoneHealthRoute(ctx context.Context, hc *HandlingContext, gateway *ga
 		route.Labels[cconfig.DomainLabelKey] = domainName
 		route.Labels[cconfig.OwnerUidLabelKey] = string(hc.Zone.GetUID())
 
-		paths := make([]string, 0, len(basePaths))
-		for _, basePath := range basePaths {
-			paths = append(paths, path.Join(basePath, zoneHealthPath))
-		}
+		paths := gatewayRoutePaths(basePaths, zoneHealthPath)
 
 		route.Spec = gatewayapi.RouteSpec{
 			GatewayRef: *types.ObjectRefFromObject(gateway),

@@ -125,6 +125,86 @@ var _ = Describe("Zone-health routes", func() {
 		Expect(getZoneHealthRoute("standard").Spec.Paths).To(Equal([]string{"/env1/zone-health"}))
 	})
 
+	DescribeTable("blocks invalid route cardinality before creating identity routes",
+		func(presets []adminv1.Preset, expected string) {
+			handler := &ZoneHandler{}
+			Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
+			markSubResourcesReady(zone)
+			zone.Spec.Presets = append(zone.Spec.Presets, presets...)
+
+			err := handler.CreateOrUpdate(newTestContext(zone), zone)
+			var blocked ctrlerrors.BlockedError
+			Expect(errors.As(err, &blocked)).To(BeTrue(), "expected BlockedError, got %v", err)
+			Expect(err).To(MatchError(ContainSubstring(expected)))
+
+			issuer := client.ObjectKey{
+				Namespace: zone.Status.Namespace,
+				Name:      naming.ForGateway(zone, "standard") + "--" + zone.Status.RealmName + "--issuer",
+			}
+			Expect(apierrors.IsNotFound(k8sClient.Get(ctx, issuer, &gatewayapi.Route{}))).To(BeTrue())
+			Expect(apierrors.IsNotFound(k8sClient.Get(ctx, zoneHealthKey("standard"), &gatewayapi.Route{}))).To(BeTrue())
+		},
+		Entry("too many hostnames", func() []adminv1.Preset {
+			presets := make([]adminv1.Preset, 4)
+			for i := range presets {
+				urls := make([]adminv1.UrlConfig, 5)
+				for j := range urls {
+					urls[j] = adminv1.UrlConfig{Hostname: fmt.Sprintf("host-%d-%d.example.com", i, j), BasePath: "/"}
+				}
+				presets[i] = adminv1.Preset{
+					Name: fmt.Sprintf("preset-%d", i), Type: adminv1.GatewayTypeAPI, GatewayRef: "standard",
+					IdentityProviderRef: "primary", Urls: urls,
+				}
+			}
+			return presets
+		}(), "hostnames"),
+		Entry("too many paths", func() []adminv1.Preset {
+			presets := make([]adminv1.Preset, 2)
+			for i := range presets {
+				urls := make([]adminv1.UrlConfig, 5)
+				for j := range urls {
+					urls[j] = adminv1.UrlConfig{Hostname: "test-stargate.de", BasePath: fmt.Sprintf("/path-%d-%d", i, j)}
+				}
+				presets[i] = adminv1.Preset{
+					Name: fmt.Sprintf("preset-%d", i), Type: adminv1.GatewayTypeAPI, GatewayRef: "standard",
+					IdentityProviderRef: "primary", Urls: urls,
+				}
+			}
+			return presets
+		}(), "paths"),
+	)
+
+	It("counts distinct joined paths, not raw base paths", func() {
+		zone.Spec.Presets[0].Urls = nil
+		for i := range 5 {
+			zone.Spec.Presets[0].Urls = append(zone.Spec.Presets[0].Urls,
+				adminv1.UrlConfig{Hostname: "test-stargate.de", BasePath: fmt.Sprintf("/path-%d", i)})
+		}
+		other := adminv1.Preset{
+			Name: "other", Type: adminv1.GatewayTypeAPI, GatewayRef: "standard", IdentityProviderRef: "primary",
+		}
+		for i := 5; i < 10; i++ {
+			other.Urls = append(other.Urls, adminv1.UrlConfig{
+				Hostname: "test-stargate.de", BasePath: fmt.Sprintf("/path-%d", i),
+			})
+		}
+		zone.Spec.Presets = append(zone.Spec.Presets, other, adminv1.Preset{
+			Name: "duplicate", Type: adminv1.GatewayTypeAPI, GatewayRef: "standard", IdentityProviderRef: "primary",
+			Urls: []adminv1.UrlConfig{{Hostname: "test-stargate.de", BasePath: "/path-9/"}},
+		})
+
+		reconcile()
+
+		Expect(getZoneHealthRoute("standard").Spec.Paths).To(HaveLen(maxRoutePaths))
+		Expect(getZoneHealthRoute("standard").Spec.Paths).To(ContainElement("/path-9/zone-health"))
+		issuer := &gatewayapi.Route{}
+		Expect(k8sClient.Get(ctx, client.ObjectKey{
+			Namespace: zone.Status.Namespace,
+			Name:      naming.ForGateway(zone, "standard") + "--" + zone.Status.RealmName + "--issuer",
+		}, issuer)).To(Succeed())
+		Expect(issuer.Spec.Paths).To(HaveLen(maxRoutePaths))
+	})
+
 	It("creates one route per gateway and removes it with the gateway", func() {
 		addAiGateway()
 		reconcile()
@@ -194,7 +274,7 @@ var _ = Describe("Zone-health routes", func() {
 				urls = append(urls, adminv1.UrlConfig{Hostname: "test-stargate.de", BasePath: fmt.Sprintf("/p%d", i)})
 			}
 			zone.Spec.Presets[0].Urls = urls
-			expectBlocked(createZoneHealthRoutes(newTestContext(zone), hc), "a route allows at most")
+			expectBlocked(validateGatewayRouteInputs(newTestContext(zone), hc), "a route requires 1 to")
 		})
 	})
 })

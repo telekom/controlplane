@@ -208,6 +208,8 @@ Every named gateway exposes issuer, certificate, and OpenID discovery routes for
 
 Every named gateway also exposes a **zone-health** route, `<gateway>--zone-health`, which callers in other zones probe to check that this zone is reachable. It accepts only `HEAD /zone-health` under every hostname and base path of the presets using that gateway, and the gateway itself answers with `200 OK`. No backend is called. The route is always created, whether or not managed routes or consumer failover are configured, and it has no `/spacegate` prefix.
 
+The combined presets of a gateway may define at most 20 distinct hostnames and 10 distinct route paths after joining each base path with an endpoint path. If either limit is exceeded, Zone reconciliation reports a blocked error before creating the identity or zone-health routes.
+
 ```bash
 curl -I https://<preset-hostname>/<basePath>/zone-health   # HTTP/1.1 200 OK
 curl -o /dev/null -w '%{http_code}\n' https://<preset-hostname>/<basePath>/zone-health   # not 200: GET does not match the route
