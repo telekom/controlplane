@@ -19,6 +19,7 @@ import (
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	fakeclient "github.com/telekom/controlplane/common/pkg/client/fake"
 	"github.com/telekom/controlplane/common/pkg/types"
+	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 	"github.com/telekom/controlplane/rover/internal/handler/rover/spectre"
 	spectrev1 "github.com/telekom/controlplane/spectre/api/v1"
@@ -91,6 +92,7 @@ var _ = Describe("HandleListeners", func() {
 		ctx = context.Background()
 		fakeClient = fakeclient.NewMockJanitorClient(GinkgoT())
 		ctx = cclient.WithClient(ctx, fakeClient)
+		ctx = contextutil.WithEnv(ctx, testEnvironment)
 		testScheme = newTestScheme()
 		owner = createTestOwner()
 	})
@@ -108,8 +110,8 @@ var _ = Describe("HandleListeners", func() {
 	It("should create one SpectreApplication and one Listener for a single listener entry", func() {
 		owner.Spec.Listeners = []roverv1.RoverListener{
 			{
-				Consumer:    "eni--team--consumer",
-				Provider:    "eni--team--provider",
+				Consumer:    "consumer",
+				Provider:    "provider",
 				ApiBasePath: "/echo/v1",
 				RequestFilter: &roverv1.ListenerFilter{
 					Trigger: map[string]string{"method": "GET"},
@@ -132,8 +134,8 @@ var _ = Describe("HandleListeners", func() {
 				capturedApp = obj.(*spectrev1.SpectreApplication)
 			}).
 			Return(controllerutil.OperationResultCreated, nil).Once()
-		mockResolveApplication(fakeClient, ctx, "eni--team--consumer")
-		mockResolveApplication(fakeClient, ctx, "eni--team--provider")
+		mockResolveApplication(fakeClient, ctx, "consumer")
+		mockResolveApplication(fakeClient, ctx, "provider")
 		fakeClient.EXPECT().
 			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Listener"), mock.AnythingOfType("controllerutil.MutateFn")).
 			Run(func(_ context.Context, obj client.Object, mutate controllerutil.MutateFn) {
@@ -158,11 +160,11 @@ var _ = Describe("HandleListeners", func() {
 
 		// Verify Listener
 		Expect(capturedListener).ToNot(BeNil())
-		Expect(capturedListener.Name).To(Equal("my-app--eni--team--consumer---echo-v1"))
+		Expect(capturedListener.Name).To(Equal("my-app--consumer---echo-v1"))
 		Expect(capturedListener.Namespace).To(Equal(teamNamespace))
-		Expect(capturedListener.Spec.Consumer.Name).To(Equal("eni--team--consumer"))
+		Expect(capturedListener.Spec.Consumer.Name).To(Equal("consumer"))
 		Expect(capturedListener.Spec.Consumer.Kind).To(Equal("Application"))
-		Expect(capturedListener.Spec.Provider.Name).To(Equal("eni--team--provider"))
+		Expect(capturedListener.Spec.Provider.Name).To(Equal("provider"))
 		Expect(capturedListener.Spec.Provider.Kind).To(Equal("Application"))
 		Expect(capturedListener.Spec.Application.Name).To(Equal("my-app--spectre-app"))
 		Expect(capturedListener.Spec.ApiListener).ToNot(BeNil())
@@ -177,19 +179,19 @@ var _ = Describe("HandleListeners", func() {
 		Expect(owner.Status.SpectreApplications).To(HaveLen(1))
 		Expect(owner.Status.SpectreApplications[0].Name).To(Equal("my-app--spectre-app"))
 		Expect(owner.Status.SpectreListeners).To(HaveLen(1))
-		Expect(owner.Status.SpectreListeners[0].Name).To(Equal("my-app--eni--team--consumer---echo-v1"))
+		Expect(owner.Status.SpectreListeners[0].Name).To(Equal("my-app--consumer---echo-v1"))
 	})
 
 	It("should create two Listeners for two listener entries", func() {
 		owner.Spec.Listeners = []roverv1.RoverListener{
 			{
-				Consumer:    "eni--team--consumer1",
-				Provider:    "eni--team--provider1",
+				Consumer:    "consumer1",
+				Provider:    "provider1",
 				ApiBasePath: "/api/v1",
 			},
 			{
-				Consumer:  "eni--team--consumer2",
-				Provider:  "eni--team--provider2",
+				Consumer:  "consumer2",
+				Provider:  "provider2",
 				EventType: "de.telekom.eni.test.v1",
 				EventFilter: &roverv1.ListenerFilter{
 					Payload: []string{"status"},
@@ -206,10 +208,10 @@ var _ = Describe("HandleListeners", func() {
 				_ = mutate()
 			}).
 			Return(controllerutil.OperationResultCreated, nil).Once()
-		mockResolveApplication(fakeClient, ctx, "eni--team--consumer1")
-		mockResolveApplication(fakeClient, ctx, "eni--team--provider1")
-		mockResolveApplication(fakeClient, ctx, "eni--team--consumer2")
-		mockResolveApplication(fakeClient, ctx, "eni--team--provider2")
+		mockResolveApplication(fakeClient, ctx, "consumer1")
+		mockResolveApplication(fakeClient, ctx, "provider1")
+		mockResolveApplication(fakeClient, ctx, "consumer2")
+		mockResolveApplication(fakeClient, ctx, "provider2")
 		fakeClient.EXPECT().
 			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Listener"), mock.AnythingOfType("controllerutil.MutateFn")).
 			Run(func(_ context.Context, obj client.Object, mutate controllerutil.MutateFn) {
@@ -222,12 +224,12 @@ var _ = Describe("HandleListeners", func() {
 
 		Expect(err).ToNot(HaveOccurred())
 		Expect(capturedListeners).To(HaveLen(2))
-		Expect(capturedListeners[0].Name).To(Equal("my-app--eni--team--consumer1---api-v1"))
+		Expect(capturedListeners[0].Name).To(Equal("my-app--consumer1---api-v1"))
 		Expect(capturedListeners[0].Spec.ApiListener).ToNot(BeNil())
 		Expect(capturedListeners[0].Spec.ApiListener.ApiBasePath).To(Equal("/api/v1"))
 		Expect(capturedListeners[0].Spec.EventListener).To(BeNil())
 
-		Expect(capturedListeners[1].Name).To(Equal("my-app--eni--team--consumer2--de.telekom.eni.test.v1"))
+		Expect(capturedListeners[1].Name).To(Equal("my-app--consumer2--de.telekom.eni.test.v1"))
 		Expect(capturedListeners[1].Spec.EventListener).ToNot(BeNil())
 		Expect(capturedListeners[1].Spec.EventListener.EventType).To(Equal("de.telekom.eni.test.v1"))
 		Expect(capturedListeners[1].Spec.EventListener.Filter).ToNot(BeNil())
@@ -243,13 +245,13 @@ var _ = Describe("HandleListeners", func() {
 		// and the second would silently overwrite the first. Surface it instead.
 		owner.Spec.Listeners = []roverv1.RoverListener{
 			{
-				Consumer:    "eni--team--consumer1",
-				Provider:    "eni--team--provider1",
+				Consumer:    "consumer1",
+				Provider:    "provider1",
 				ApiBasePath: "/api/v1",
 			},
 			{
-				Consumer:    "eni--team--consumer1",
-				Provider:    "eni--team--provider2",
+				Consumer:    "consumer1",
+				Provider:    "provider2",
 				ApiBasePath: "/api/v1",
 			},
 		}
@@ -264,8 +266,8 @@ var _ = Describe("HandleListeners", func() {
 		// The first listener entry passes the duplicate check and calls ensureListener,
 		// which resolves consumer and provider via List before the second entry triggers
 		// the duplicate error.
-		mockResolveApplication(fakeClient, ctx, "eni--team--consumer1")
-		mockResolveApplication(fakeClient, ctx, "eni--team--provider1")
+		mockResolveApplication(fakeClient, ctx, "consumer1")
+		mockResolveApplication(fakeClient, ctx, "provider1")
 		fakeClient.EXPECT().
 			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Listener"), mock.AnythingOfType("controllerutil.MutateFn")).
 			Run(func(_ context.Context, _ client.Object, mutate controllerutil.MutateFn) {
@@ -282,8 +284,8 @@ var _ = Describe("HandleListeners", func() {
 	It("should set callback delivery type when listenerSubscription specifies callback", func() {
 		owner.Spec.Listeners = []roverv1.RoverListener{
 			{
-				Consumer:    "eni--team--consumer",
-				Provider:    "eni--team--provider",
+				Consumer:    "consumer",
+				Provider:    "provider",
 				ApiBasePath: "/echo/v1",
 			},
 		}
@@ -302,8 +304,8 @@ var _ = Describe("HandleListeners", func() {
 				capturedApp = obj.(*spectrev1.SpectreApplication)
 			}).
 			Return(controllerutil.OperationResultCreated, nil).Once()
-		mockResolveApplication(fakeClient, ctx, "eni--team--consumer")
-		mockResolveApplication(fakeClient, ctx, "eni--team--provider")
+		mockResolveApplication(fakeClient, ctx, "consumer")
+		mockResolveApplication(fakeClient, ctx, "provider")
 		fakeClient.EXPECT().
 			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Listener"), mock.AnythingOfType("controllerutil.MutateFn")).
 			Run(func(_ context.Context, _ client.Object, mutate controllerutil.MutateFn) {
@@ -321,8 +323,8 @@ var _ = Describe("HandleListeners", func() {
 	It("should default to server_sent_event when listenerSubscription is nil", func() {
 		owner.Spec.Listeners = []roverv1.RoverListener{
 			{
-				Consumer:    "eni--team--consumer",
-				Provider:    "eni--team--provider",
+				Consumer:    "consumer",
+				Provider:    "provider",
 				ApiBasePath: "/echo/v1",
 			},
 		}
@@ -338,8 +340,8 @@ var _ = Describe("HandleListeners", func() {
 				capturedApp = obj.(*spectrev1.SpectreApplication)
 			}).
 			Return(controllerutil.OperationResultCreated, nil).Once()
-		mockResolveApplication(fakeClient, ctx, "eni--team--consumer")
-		mockResolveApplication(fakeClient, ctx, "eni--team--provider")
+		mockResolveApplication(fakeClient, ctx, "consumer")
+		mockResolveApplication(fakeClient, ctx, "provider")
 		fakeClient.EXPECT().
 			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Listener"), mock.AnythingOfType("controllerutil.MutateFn")).
 			Run(func(_ context.Context, _ client.Object, mutate controllerutil.MutateFn) {
@@ -357,8 +359,8 @@ var _ = Describe("HandleListeners", func() {
 	It("should return error when SpectreApplication creation fails", func() {
 		owner.Spec.Listeners = []roverv1.RoverListener{
 			{
-				Consumer:    "eni--team--consumer",
-				Provider:    "eni--team--provider",
+				Consumer:    "consumer",
+				Provider:    "provider",
 				ApiBasePath: "/echo/v1",
 			},
 		}
@@ -377,8 +379,8 @@ var _ = Describe("HandleListeners", func() {
 	It("should return error when Listener creation fails", func() {
 		owner.Spec.Listeners = []roverv1.RoverListener{
 			{
-				Consumer:    "eni--team--consumer",
-				Provider:    "eni--team--provider",
+				Consumer:    "consumer",
+				Provider:    "provider",
 				ApiBasePath: "/echo/v1",
 			},
 		}
@@ -390,8 +392,8 @@ var _ = Describe("HandleListeners", func() {
 				_ = mutate()
 			}).
 			Return(controllerutil.OperationResultCreated, nil).Once()
-		mockResolveApplication(fakeClient, ctx, "eni--team--consumer")
-		mockResolveApplication(fakeClient, ctx, "eni--team--provider")
+		mockResolveApplication(fakeClient, ctx, "consumer")
+		mockResolveApplication(fakeClient, ctx, "provider")
 		fakeClient.EXPECT().
 			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Listener"), mock.AnythingOfType("controllerutil.MutateFn")).
 			Return(controllerutil.OperationResultNone, fmt.Errorf("api server error")).Once()
@@ -405,8 +407,8 @@ var _ = Describe("HandleListeners", func() {
 	It("should return blocked error when status.application is nil", func() {
 		owner.Spec.Listeners = []roverv1.RoverListener{
 			{
-				Consumer:    "eni--team--consumer",
-				Provider:    "eni--team--provider",
+				Consumer:    "consumer",
+				Provider:    "provider",
 				ApiBasePath: "/echo/v1",
 			},
 		}

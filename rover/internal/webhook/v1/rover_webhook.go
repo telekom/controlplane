@@ -192,6 +192,8 @@ func (r *RoverValidator) validateListeners(ctx context.Context, valErr *cerrors.
 		if listener.Consumer == "" {
 			valErr.AddRequiredError(listenerPath.Child("consumer"), "consumer is required")
 		}
+		validateListenerApplicationID(valErr, listenerPath.Child("consumer"), listener.Consumer)
+		validateListenerApplicationID(valErr, listenerPath.Child("provider"), listener.Provider)
 
 		// apiBasePath is required (only supported mode)
 		if listener.ApiBasePath == "" {
@@ -213,6 +215,15 @@ func (r *RoverValidator) validateListeners(ctx context.Context, valErr *cerrors.
 	}
 
 	return nil
+}
+
+// validateListenerApplicationID rejects a listener consumer or provider that is
+// read as a full application ID "<group>--<team>--<name>" (two or more "--")
+// but has an empty segment.
+func validateListenerApplicationID(valErr *cerrors.ValidationError, path *field.Path, value string) {
+	if parts := strings.SplitN(value, "--", 3); len(parts) == 3 && slices.Contains(parts, "") {
+		valErr.AddInvalidError(path, value, `a value with two or more "--" is a full application ID "<group>--<team>--<name>" and must not have an empty segment; a bare application name must not contain "--"`)
+	}
 }
 
 func (r *RoverValidator) validateZone(ctx context.Context, valErr *cerrors.ValidationError, rover *roverv1.Rover, environment string) (client.ObjectKey, *adminv1.Zone, error) {

@@ -72,12 +72,12 @@ var _ = Describe("Rover Controller Spectre Watch", Ordered, func() {
 		providerApp := &applicationv1.Application{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      providerAppName,
-				Namespace: teamNamespace,
+				Namespace: providerTeamNamespace,
 				Labels: map[string]string{
 					config.EnvironmentLabelKey:          testEnvironment,
-					config.BuildLabelKey("application"): labelutil.NormalizeValue(providerAppName),
-					config.BuildLabelKey("team"):        labelutil.NormalizeValue(providerTeamName),
-					config.BuildLabelKey("zone"):        labelutil.NormalizeValue(testEnvironment),
+					config.BuildLabelKey("application"): labelutil.NormalizeLabelValue(providerAppName),
+					config.BuildLabelKey("team"):        labelutil.NormalizeLabelValue(providerTeamName),
+					config.BuildLabelKey("zone"):        labelutil.NormalizeLabelValue(testEnvironment),
 				},
 			},
 			Spec: applicationv1.ApplicationSpec{
@@ -111,7 +111,7 @@ var _ = Describe("Rover Controller Spectre Watch", Ordered, func() {
 	AfterAll(func() {
 		By("Cleanup provider Application")
 		providerApp := &applicationv1.Application{}
-		if err := k8sClient.Get(ctx, client.ObjectKey{Name: providerAppName, Namespace: teamNamespace}, providerApp); err == nil {
+		if err := k8sClient.Get(ctx, client.ObjectKey{Name: providerAppName, Namespace: providerTeamNamespace}, providerApp); err == nil {
 			Expect(k8sClient.Delete(ctx, providerApp)).To(Succeed())
 		}
 
@@ -128,6 +128,49 @@ var _ = Describe("Rover Controller Spectre Watch", Ordered, func() {
 				return errors.IsNotFound(err)
 			}, spectreTimeout, interval).Should(BeTrue())
 		}
+	})
+
+	Context("Listener provider given as full application ID", func() {
+		It("should resolve the provider in the team namespace of the ID", func() {
+			rover := &roverv1.Rover{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      spectreRoverName,
+					Namespace: teamNamespace,
+					Labels: map[string]string{
+						config.EnvironmentLabelKey: testEnvironment,
+					},
+				},
+				Spec: roverv1.RoverSpec{
+					Zone:         testEnvironment,
+					ClientSecret: "topsecret",
+					Listeners: []roverv1.RoverListener{
+						{
+							Consumer:    spectreRoverName,
+							Provider:    providerGroupName + "--" + providerTeamName + "--" + providerAppName,
+							ApiBasePath: apiBasePath + "/full-id",
+						},
+					},
+				},
+			}
+
+			By("Creating the Rover with a full-ID provider")
+			Expect(k8sClient.Create(ctx, rover)).To(Succeed())
+
+			By("Waiting for the Listener to reference the provider Application")
+			Eventually(func(g Gomega) {
+				fetchedRover := &roverv1.Rover{}
+				g.Expect(k8sClient.Get(ctx, spectreTypeNamespacedName, fetchedRover)).To(Succeed())
+				g.Expect(fetchedRover.Status.SpectreListeners).To(HaveLen(1))
+
+				listener := &spectrev1.Listener{}
+				g.Expect(k8sClient.Get(ctx, client.ObjectKey{
+					Name:      fetchedRover.Status.SpectreListeners[0].Name,
+					Namespace: fetchedRover.Status.SpectreListeners[0].Namespace,
+				}, listener)).To(Succeed())
+				g.Expect(listener.Spec.Provider.Name).To(Equal(providerAppName))
+				g.Expect(listener.Spec.Provider.Namespace).To(Equal(providerTeamNamespace))
+			}, spectreTimeout, interval).Should(Succeed())
+		})
 	})
 
 	Context("Spectre child readiness triggers Rover re-reconciliation", func() {

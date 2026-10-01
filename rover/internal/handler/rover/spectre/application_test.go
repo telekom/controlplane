@@ -9,6 +9,7 @@ import (
 	"errors"
 
 	"github.com/stretchr/testify/mock"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8stypes "k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -18,6 +19,7 @@ import (
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	fakeclient "github.com/telekom/controlplane/common/pkg/client/fake"
 	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
+	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 	"github.com/telekom/controlplane/rover/internal/handler/rover/spectre"
 	spectrev1 "github.com/telekom/controlplane/spectre/api/v1"
@@ -106,6 +108,56 @@ func exerciseResolveApplication(
 	return spectre.HandleListeners(ctx, fakeClient, owner)
 }
 
+// exerciseResolveApplicationByID triggers resolveApplication through HandleListeners
+// with the provider given as full application ID "eni--other-team--provider". It
+// stubs the Get call for the expected key and returns the captured Listener.
+func exerciseResolveApplicationByID(
+	ctx context.Context,
+	fakeClient *fakeclient.MockJanitorClient,
+	expectedKey client.ObjectKey,
+	getResult *applicationv1.Application,
+	getErr error,
+) (*spectrev1.Listener, error) {
+	testScheme := newTestScheme()
+	owner := createTestOwner()
+	owner.Spec.Listeners = []roverv1.RoverListener{
+		{
+			Consumer:    owner.Name,
+			Provider:    "eni--other-team--provider",
+			ApiBasePath: "/test/v1",
+		},
+	}
+
+	var capturedListener *spectrev1.Listener
+
+	fakeClient.EXPECT().Scheme().Return(testScheme).Maybe()
+	fakeClient.EXPECT().
+		CreateOrUpdate(ctx, mock.AnythingOfType("*v1.SpectreApplication"), mock.AnythingOfType("controllerutil.MutateFn")).
+		Run(func(_ context.Context, _ client.Object, mutate controllerutil.MutateFn) {
+			_ = mutate()
+		}).
+		Return(controllerutil.OperationResultCreated, nil).Maybe()
+	fakeClient.EXPECT().
+		CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Listener"), mock.AnythingOfType("controllerutil.MutateFn")).
+		Run(func(_ context.Context, obj client.Object, mutate controllerutil.MutateFn) {
+			_ = mutate()
+			capturedListener = obj.(*spectrev1.Listener)
+		}).
+		Return(controllerutil.OperationResultCreated, nil).Maybe()
+
+	fakeClient.EXPECT().
+		Get(ctx, expectedKey, mock.AnythingOfType("*v1.Application")).
+		Run(func(_ context.Context, _ k8stypes.NamespacedName, obj client.Object, _ ...client.GetOption) {
+			if getResult != nil {
+				*obj.(*applicationv1.Application) = *getResult
+			}
+		}).
+		Return(getErr).Once()
+
+	err := spectre.HandleListeners(ctx, fakeClient, owner)
+	return capturedListener, err
+}
+
 var _ = Describe("resolveApplication", func() {
 	var (
 		ctx        context.Context
@@ -116,11 +168,12 @@ var _ = Describe("resolveApplication", func() {
 		ctx = context.Background()
 		fakeClient = fakeclient.NewMockJanitorClient(GinkgoT())
 		ctx = cclient.WithClient(ctx, fakeClient)
+		ctx = contextutil.WithEnv(ctx, testEnvironment)
 	})
 
 	It("should resolve a provider in another team namespace", func() {
-		providerApp := makeApplicationInNs("eni--other-team--provider", "test-env--eni--other-team")
-		err := exerciseResolveApplication(ctx, fakeClient, "eni--other-team--provider",
+		providerApp := makeApplicationInNs("provider", "test-env--eni--other-team")
+		err := exerciseResolveApplication(ctx, fakeClient, "provider",
 			[]applicationv1.Application{providerApp}, nil)
 		Expect(err).ToNot(HaveOccurred())
 	})
@@ -134,7 +187,7 @@ var _ = Describe("resolveApplication", func() {
 		owner.Spec.Listeners = []roverv1.RoverListener{
 			{
 				Consumer:    owner.Name, // same as rover name
-				Provider:    "eni--team--provider",
+				Provider:    "provider",
 				ApiBasePath: "/test/v1",
 			},
 		}
@@ -149,7 +202,7 @@ var _ = Describe("resolveApplication", func() {
 			}).
 			Return(controllerutil.OperationResultCreated, nil).Once()
 		// Only the provider triggers a List call
-		mockResolveApplication(fakeClient, ctx, "eni--team--provider")
+		mockResolveApplication(fakeClient, ctx, "provider")
 		fakeClient.EXPECT().
 			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Listener"), mock.AnythingOfType("controllerutil.MutateFn")).
 			Run(func(_ context.Context, obj client.Object, mutate controllerutil.MutateFn) {
@@ -210,5 +263,90 @@ var _ = Describe("resolveApplication", func() {
 		Expect(err).To(HaveOccurred())
 		Expect(err).To(Satisfy(isBlockedError))
 		Expect(err.Error()).To(ContainSubstring("not found"))
+	})
+
+	It("should look up a bare name with two parts by label", func() {
+		app := makeApplicationInNs("team--app", teamNamespace)
+		err := exerciseResolveApplication(ctx, fakeClient, "team--app",
+			[]applicationv1.Application{app}, nil)
+		Expect(err).ToNot(HaveOccurred())
+	})
+
+	Context("with a full application ID", func() {
+		providerKey := client.ObjectKey{Name: "provider", Namespace: testEnvironment + "--eni--other-team"}
+
+		It("should get the Application from the team namespace of the ID", func() {
+			providerApp := makeApplicationInNs("provider", providerKey.Namespace)
+			listener, err := exerciseResolveApplicationByID(ctx, fakeClient,
+				providerKey, &providerApp, nil)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(listener).ToNot(BeNil())
+			Expect(listener.Spec.Provider.Name).To(Equal("provider"))
+			Expect(listener.Spec.Provider.Namespace).To(Equal(providerKey.Namespace))
+			Expect(listener.Spec.Provider.UID).To(Equal(providerApp.UID))
+		})
+
+		It("should return BlockedError when the Application does not exist in the team", func() {
+			notFound := apierrors.NewNotFound(applicationv1.GroupVersion.WithResource("applications").GroupResource(), "provider")
+			_, err := exerciseResolveApplicationByID(ctx, fakeClient,
+				providerKey, nil, notFound)
+			Expect(err).To(HaveOccurred())
+			Expect(err).To(Satisfy(isBlockedError))
+			Expect(err.Error()).To(ContainSubstring("not found in team"))
+		})
+
+		It("should return BlockedError when the Application is being deleted", func() {
+			deletingApp := makeDeletingApplication("provider", providerKey.Namespace)
+			_, err := exerciseResolveApplicationByID(ctx, fakeClient,
+				providerKey, &deletingApp, nil)
+			Expect(err).To(HaveOccurred())
+			Expect(err).To(Satisfy(isBlockedError))
+			Expect(err.Error()).To(ContainSubstring("not found in team"))
+		})
+
+		It("should return a non-blocked error when the Get fails", func() {
+			_, err := exerciseResolveApplicationByID(ctx, fakeClient,
+				providerKey, nil, errors.New("api server error"))
+			Expect(err).To(HaveOccurred())
+			Expect(err).ToNot(Satisfy(isBlockedError))
+			Expect(err.Error()).To(ContainSubstring("api server error"))
+		})
+
+		It("should use the Rover's own Application reference for its own full ID", func() {
+			testScheme := newTestScheme()
+			owner := createTestOwner()
+			owner.Spec.Listeners = []roverv1.RoverListener{
+				{
+					Consumer:    "eni--pandora--" + owner.Name,
+					Provider:    "provider",
+					ApiBasePath: "/test/v1",
+				},
+			}
+
+			var capturedListener *spectrev1.Listener
+
+			fakeClient.EXPECT().Scheme().Return(testScheme).Maybe()
+			fakeClient.EXPECT().
+				CreateOrUpdate(ctx, mock.AnythingOfType("*v1.SpectreApplication"), mock.AnythingOfType("controllerutil.MutateFn")).
+				Run(func(_ context.Context, _ client.Object, mutate controllerutil.MutateFn) {
+					_ = mutate()
+				}).
+				Return(controllerutil.OperationResultCreated, nil).Once()
+			// Only the provider is resolved; the consumer needs neither Get nor List.
+			mockResolveApplication(fakeClient, ctx, "provider")
+			fakeClient.EXPECT().
+				CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Listener"), mock.AnythingOfType("controllerutil.MutateFn")).
+				Run(func(_ context.Context, obj client.Object, mutate controllerutil.MutateFn) {
+					_ = mutate()
+					capturedListener = obj.(*spectrev1.Listener)
+				}).
+				Return(controllerutil.OperationResultCreated, nil).Once()
+
+			err := spectre.HandleListeners(ctx, fakeClient, owner)
+
+			Expect(err).ToNot(HaveOccurred())
+			Expect(capturedListener.Spec.Consumer.Name).To(Equal(owner.Name))
+			Expect(capturedListener.Spec.Consumer.Namespace).To(Equal(teamNamespace))
+		})
 	})
 })

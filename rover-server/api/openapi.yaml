@@ -4039,10 +4039,10 @@ components:
       properties:
         consumer:
           type: string
-          description: ENI of the consuming application (e.g. "eni--team--app")
+          description: Consuming application, as full ID (e.g. "eni--team--app") or bare name (e.g. "app"). A bare name must not contain "--"; use the full ID instead.
         provider:
           type: string
-          description: ENI of the providing application (e.g. "eni--other--provider")
+          description: Providing application, as full ID (e.g. "eni--other--provider") or bare name (e.g. "provider"). A bare name must not contain "--"; use the full ID instead.
         apiBasePath:
           type: string
           description: Base path of the API to listen on
