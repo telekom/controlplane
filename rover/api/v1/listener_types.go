@@ -6,13 +6,22 @@ package v1
 
 // RoverListener defines an API traffic listener that observes requests/responses
 // between a consumer and provider on a specific API path.
+// Consumer and provider accept either the full application ID "<group>--<team>--<name>"
+// or the bare application name, which must be unique across all teams. Any value with
+// two or more "--" is read as a full ID, so a bare name must not contain "--"; use the
+// full ID instead.
+// The Listener name is derived from the consumer value as written, so switching the
+// same application between bare name and full ID recreates the Listener and
+// requires a new approval.
 type RoverListener struct {
-	// Consumer is the ENI of the consuming application (e.g. "eni--team--app")
+	// Consumer is the consuming application, as full ID (e.g. "eni--team--app") or bare name (e.g. "app").
+	// A bare name must not contain "--"; use the full ID instead.
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MinLength=1
 	Consumer string `json:"consumer"`
 
-	// Provider is the ENI of the providing application (e.g. "eni--other--provider")
+	// Provider is the providing application, as full ID (e.g. "eni--other--provider") or bare name (e.g. "provider").
+	// A bare name must not contain "--"; use the full ID instead.
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MinLength=1
 	Provider string `json:"provider"`
