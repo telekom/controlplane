@@ -50,7 +50,7 @@ var _ = Describe("Zone Handler", func() {
 			adminv1.Preset{Name: "ai", Type: adminv1.GatewayTypeAI, Default: true, GatewayRef: "ai", IdentityProviderRef: "primary", Urls: []adminv1.UrlConfig{{Hostname: "ai.example.com", BasePath: "/"}}},
 		)
 
-		handler := newTestHandler()
+		handler := newTestHandler(zone)
 		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
 		markSubResourcesReady(zone)
 		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
@@ -109,7 +109,7 @@ var _ = Describe("Zone Handler", func() {
 			Urls: []adminv1.UrlConfig{{Hostname: "ai.example.com", BasePath: "/"}},
 		})
 
-		handler := newTestHandler()
+		handler := newTestHandler(zone)
 		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
 		markSubResourcesReady(zone)
 		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
@@ -129,7 +129,7 @@ var _ = Describe("Zone Handler", func() {
 			Urls: []adminv1.UrlConfig{{Hostname: "ai.example.com", BasePath: "/"}},
 		})
 
-		handler := newTestHandler()
+		handler := newTestHandler(zone)
 		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
 		markSubResourcesReady(zone)
 		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
@@ -160,7 +160,7 @@ var _ = Describe("Zone Handler", func() {
 				Name: "ai", Type: adminv1.GatewayTypeAI, Default: true, GatewayRef: "ai", IdentityProviderRef: "primary",
 				Urls: []adminv1.UrlConfig{{Hostname: "ai.example.com", BasePath: "/v1"}},
 			})
-			handler := newTestHandler()
+			handler := newTestHandler(zone)
 			Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
 			markSubResourcesReady(zone)
 			Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
@@ -189,7 +189,7 @@ var _ = Describe("Zone Handler", func() {
 	It("serves identity routes under the preset base path so LmsIssuer resolves", func() {
 		zone.Spec.Presets[0].Urls[0].BasePath = "/v1"
 
-		handler := newTestHandler()
+		handler := newTestHandler(zone)
 		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
 		markSubResourcesReady(zone)
 		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
@@ -211,7 +211,7 @@ var _ = Describe("Zone Handler", func() {
 
 	It("preserves managed route behavior on the default preset", func() {
 		zone.Spec.ManagedRoutes = &adminv1.ManagedRoutesConfig{Routes: []adminv1.ManagedRouteConfig{{Name: "proxy", Path: "/proxy", Url: "https://backend.example.com/base", Type: adminv1.ManagedRouteTypeProxy}}}
-		handler := newTestHandler()
+		handler := newTestHandler(zone)
 		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
 		markSubResourcesReady(zone)
 		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
@@ -226,7 +226,7 @@ var _ = Describe("Zone Handler", func() {
 			{Name: "team-api", Path: "/team-api", Url: "https://team.example.com", Type: adminv1.ManagedRouteTypeTeamAPI},
 			{Name: "proxy", Path: "/proxy", Url: "https://backend.example.com", Type: adminv1.ManagedRouteTypeProxy},
 		}}
-		handler := newTestHandler()
+		handler := newTestHandler(zone)
 		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
 		markSubResourcesReady(zone)
 		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
@@ -247,7 +247,7 @@ var _ = Describe("Zone Handler", func() {
 	})
 
 	It("is ready after identity resources are ready and reconciliation is unchanged", func() {
-		handler := newTestHandler()
+		handler := newTestHandler(zone)
 		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
 		Expect(meta.IsStatusConditionFalse(zone.Status.Conditions, condition.ConditionTypeReady)).To(BeTrue())
 		markSubResourcesReady(zone)
@@ -259,7 +259,7 @@ var _ = Describe("Zone Handler", func() {
 	})
 
 	It("waits for identity resources before creating gateways", func() {
-		handler := newTestHandler()
+		handler := newTestHandler(zone)
 		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
 		Expect(zone.Status.IdentityProvider).NotTo(BeNil())
 		Expect(zone.Status.IdentityRealm).NotTo(BeNil())
@@ -276,7 +276,7 @@ var _ = Describe("Zone Handler", func() {
 	})
 
 	It("keeps a provisioned zone ready and reports a degraded gateway", func() {
-		handler := newTestHandler()
+		handler := newTestHandler(zone)
 		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
 		markSubResourcesReady(zone)
 		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())

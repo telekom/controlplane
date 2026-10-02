@@ -14,6 +14,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+	"sigs.k8s.io/controller-runtime/pkg/client/interceptor"
 )
 
 func NewSecret(name, namespace string, data map[string]string) *corev1.Secret {
@@ -160,6 +162,125 @@ var _ = Describe("Kubernetes Backend", func() {
 			_, err := k8sBackend.Get(ctx, secretId)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(Equal("IncorrectState: secrets \"invalid-app\" not found"))
+		})
+	})
+
+	Context("Get Secret canonical id", func() {
+		var writes int
+
+		newWriteCountingClient := func(objs ...client.Object) client.Client {
+			writes = 0
+			count := func() { writes++ }
+			return fake.NewClientBuilder().WithObjects(objs...).WithInterceptorFuncs(interceptor.Funcs{
+				Create: func(ctx context.Context, c client.WithWatch, obj client.Object, opts ...client.CreateOption) error {
+					count()
+					return c.Create(ctx, obj, opts...)
+				},
+				Update: func(ctx context.Context, c client.WithWatch, obj client.Object, opts ...client.UpdateOption) error {
+					count()
+					return c.Update(ctx, obj, opts...)
+				},
+				Patch: func(ctx context.Context, c client.WithWatch, obj client.Object, patch client.Patch, opts ...client.PatchOption) error {
+					count()
+					return c.Patch(ctx, obj, patch, opts...)
+				},
+				Delete: func(ctx context.Context, c client.WithWatch, obj client.Object, opts ...client.DeleteOption) error {
+					count()
+					return c.Delete(ctx, obj, opts...)
+				},
+			}).Build()
+		}
+
+		DescribeTable("nested secrets use the checksum of the extracted string value",
+			func(inputChecksum string) {
+				existingSecret := NewSecret("my-app", "poc--my-team", map[string]string{
+					"externalSecrets": `{"foo":"synthetic-a","bar":{"x":1}}`,
+				})
+				k8sBackend := kubernetes.NewBackend(newWriteCountingClient(existingSecret))
+				secretId := kubernetes.New("poc", "my-team", "my-app", "externalSecrets/foo", inputChecksum)
+				originalString := secretId.String()
+
+				secret, err := k8sBackend.Get(ctx, secretId)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(secret.Value()).To(Equal("synthetic-a"))
+				Expect(secret.Id().String()).To(Equal("poc:my-team:my-app:externalSecrets/foo:" + backend.MakeChecksum("synthetic-a")))
+				Expect(secretId.String()).To(Equal(originalString))
+				Expect(writes).To(BeZero())
+			},
+			Entry("hashless input", ""),
+			Entry("stale checksum input", "stale"),
+		)
+
+		It("nested JSON object values hash the raw extracted string", func() {
+			existingSecret := NewSecret("my-app", "poc--my-team", map[string]string{
+				"externalSecrets": `{"bar":{"x":1}}`,
+			})
+			k8sBackend := kubernetes.NewBackend(newWriteCountingClient(existingSecret))
+			secretId := kubernetes.New("poc", "my-team", "my-app", "externalSecrets/bar", "")
+
+			secret, err := k8sBackend.Get(ctx, secretId)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(secret.Value()).To(Equal(`{"x":1}`))
+			Expect(secret.Id().String()).To(HaveSuffix(":" + backend.MakeChecksum(`{"x":1}`)))
+		})
+
+		It("nested checksum stays the same for unchanged and changes for changed values", func() {
+			existingSecret := NewSecret("my-app", "poc--my-team", map[string]string{
+				"externalSecrets": `{"foo":"synthetic-a"}`,
+			})
+			c := newWriteCountingClient(existingSecret)
+			k8sBackend := kubernetes.NewBackend(c)
+			secretId := kubernetes.New("poc", "my-team", "my-app", "externalSecrets/foo", "")
+
+			first, err := k8sBackend.Get(ctx, secretId)
+			Expect(err).ToNot(HaveOccurred())
+			second, err := k8sBackend.Get(ctx, secretId)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(second.Id().String()).To(Equal(first.Id().String()))
+			Expect(writes).To(BeZero())
+
+			obj := &corev1.Secret{}
+			Expect(c.Get(ctx, secretId.ObjectKey(), obj)).To(Succeed())
+			obj.Data["externalSecrets"] = []byte(`{"foo":"synthetic-b"}`)
+			Expect(c.Update(ctx, obj)).To(Succeed())
+
+			third, err := k8sBackend.Get(ctx, secretId)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(third.Id().String()).ToNot(Equal(first.Id().String()))
+			Expect(third.Id().String()).To(HaveSuffix(":" + backend.MakeChecksum("synthetic-b")))
+		})
+
+		It("top-level secrets use the object resourceVersion", func() {
+			existingSecret := NewSecret("my-app", "poc--my-team", map[string]string{
+				"clientSecret": "synthetic-a",
+			})
+			c := newWriteCountingClient(existingSecret)
+			k8sBackend := kubernetes.NewBackend(c)
+			secretId := kubernetes.New("poc", "my-team", "my-app", "clientSecret", "stale")
+
+			secret, err := k8sBackend.Get(ctx, secretId)
+			Expect(err).ToNot(HaveOccurred())
+
+			obj := &corev1.Secret{}
+			Expect(c.Get(ctx, secretId.ObjectKey(), obj)).To(Succeed())
+			Expect(obj.GetResourceVersion()).ToNot(BeEmpty())
+			Expect(secret.Id().String()).To(Equal("poc:my-team:my-app:clientSecret:" + obj.GetResourceVersion()))
+			Expect(secretId.String()).To(Equal("poc:my-team:my-app:clientSecret:stale"))
+			Expect(writes).To(BeZero())
+		})
+
+		It("keeps NotFound and IncorrectState classification", func() {
+			existingSecret := NewSecret("my-app", "poc--my-team", map[string]string{
+				"externalSecrets": `{"foo":"synthetic-a"}`,
+			})
+			k8sBackend := kubernetes.NewBackend(newWriteCountingClient(existingSecret))
+
+			_, err := k8sBackend.Get(ctx, kubernetes.New("poc", "my-team", "my-app", "externalSecrets/missing", ""))
+			Expect(backend.IsNotFoundErr(err)).To(BeTrue())
+
+			_, err = k8sBackend.Get(ctx, kubernetes.New("poc", "my-team", "other-app", "clientSecret", ""))
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(HavePrefix("IncorrectState:"))
 		})
 	})
 

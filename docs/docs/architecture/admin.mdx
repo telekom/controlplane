@@ -30,7 +30,7 @@ While it waits, the Zone reports `Ready=False` with reason `SubResourceNotReady`
 
 Each zone gets two identity realms in its identity provider:
 
-- A **default identity realm** (named after the environment) — used for normal API consumers and providers. It carries the zone's token claims (`originZone`, `originStargate`, `clientId`).
+- A **default identity realm** — named by the Environment's `spec.realmName`, falling back to its `metadata.name` when unset. It is used for normal API consumers and providers and carries the zone's token claims (`originZone`, `originStargate`, `clientId`).
 - An **internal `rover` realm** — used only for admin-config clients that the platform itself needs.
 
 Inside the internal realm, the operator creates the **`rover` client** — the OAuth2 client the Gateway operator uses to authenticate against the gateway's admin API (its issuer is `…/auth/realms/rover`).
@@ -41,7 +41,9 @@ The client is managed independently of individual gateways. Reconciliation prese
 
 With **Secret-Manager enabled**, the secret is stored at the stable environment-scoped path `zones/<zone>/admin/rover/clientSecret`. The identity Client and Gateway resources hold secret references rather than the value. If the client resource is missing, provisioning reuses the stored secret and generates a new one only when Secret-Manager confirms that no value exists. Lookup failures are retried, not treated as permission to generate replacement credentials. A secret stored before a failed client creation is reused on retry.
 
-With **Secret-Manager disabled**, credentials are kept inline on the client and gateways. Reconciliation still preserves an existing client's secret, but recreating a manually deleted client generates a new one. With Secret-Manager enabled, recreation reuses the stored value instead.
+Reused secrets retain Secret-Manager's returned reference, including its checksum. An existing Client reference is repaired only when it exactly matches the Zone's checksum-less lookup reference; the same reference is propagated to gateways without rewriting the stored secret. Failed lookups leave both unchanged. Other references are preserved, not periodically refreshed.
+
+With **Secret-Manager disabled**, credentials are kept inline on the client and gateways. Reconciliation still preserves an existing client's secret, but recreating a manually deleted client generates a new one.
 
 Zone deletion deliberately retains the client and its stored secret; deleting the Client resource would also delete the backing identity-provider client. Run the Admin operator with leader election when using multiple replicas to prevent competing provisioning attempts.
 
