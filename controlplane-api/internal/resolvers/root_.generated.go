@@ -691,23 +691,25 @@ type ComplexityRoot struct {
 	}
 
 	FileExposure struct {
-		Active         func(childComplexity int) int
-		ApprovalConfig func(childComplexity int) int
-		CreatedAt      func(childComplexity int) int
-		Environment    func(childComplexity int) int
-		FileType       func(childComplexity int) int
-		FileTypeDef    func(childComplexity int) int
-		ID             func(childComplexity int) int
-		LastModifiedAt func(childComplexity int) int
-		Namespace      func(childComplexity int) int
-		Owner          func(childComplexity int) int
-		Sftp           func(childComplexity int) int
-		StatusMessage  func(childComplexity int) int
-		StatusPhase    func(childComplexity int) int
-		Subscriptions  func(childComplexity int) int
-		Visibility     func(childComplexity int) int
-		Zone           func(childComplexity int) int
-		ZoneName       func(childComplexity int) int
+		Active             func(childComplexity int) int
+		ApprovalConfig     func(childComplexity int) int
+		CreatedAt          func(childComplexity int) int
+		Environment        func(childComplexity int) int
+		FileType           func(childComplexity int) int
+		FileTypeDef        func(childComplexity int) int
+		ID                 func(childComplexity int) int
+		LastModifiedAt     func(childComplexity int) int
+		Namespace          func(childComplexity int) int
+		Owner              func(childComplexity int) int
+		ServiceExternalURL func(childComplexity int) int
+		ServiceURL         func(childComplexity int) int
+		Sftp               func(childComplexity int) int
+		StatusMessage      func(childComplexity int) int
+		StatusPhase        func(childComplexity int) int
+		Subscriptions      func(childComplexity int) int
+		Visibility         func(childComplexity int) int
+		Zone               func(childComplexity int) int
+		ZoneName           func(childComplexity int) int
 	}
 
 	FileExposureConnection struct {
@@ -3718,6 +3720,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.FileExposure.Owner(childComplexity), true
+	case "FileExposure.serviceExternalURL":
+		if e.ComplexityRoot.FileExposure.ServiceExternalURL == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileExposure.ServiceExternalURL(childComplexity), true
+	case "FileExposure.serviceURL":
+		if e.ComplexityRoot.FileExposure.ServiceURL == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileExposure.ServiceURL(childComplexity), true
 	case "FileExposure.sftp":
 		if e.ComplexityRoot.FileExposure.Sftp == nil {
 			break
@@ -9149,6 +9163,8 @@ type FileExposure implements Node {
   visibility: FileExposureVisibility!
   active: Boolean
   zoneName: String!
+  serviceURL: String
+  serviceExternalURL: String
   sftp: FileSFTP
   approvalConfig: ApprovalConfig!
   owner: Application!
@@ -9370,6 +9386,42 @@ input FileExposureWhereInput {
   zoneNameHasSuffix: String
   zoneNameEqualFold: String
   zoneNameContainsFold: String
+  """
+  service_url field predicates
+  """
+  serviceURL: String
+  serviceURLNEQ: String
+  serviceURLIn: [String!]
+  serviceURLNotIn: [String!]
+  serviceURLGT: String
+  serviceURLGTE: String
+  serviceURLLT: String
+  serviceURLLTE: String
+  serviceURLContains: String
+  serviceURLHasPrefix: String
+  serviceURLHasSuffix: String
+  serviceURLIsNil: Boolean
+  serviceURLNotNil: Boolean
+  serviceURLEqualFold: String
+  serviceURLContainsFold: String
+  """
+  service_external_url field predicates
+  """
+  serviceExternalURL: String
+  serviceExternalURLNEQ: String
+  serviceExternalURLIn: [String!]
+  serviceExternalURLNotIn: [String!]
+  serviceExternalURLGT: String
+  serviceExternalURLGTE: String
+  serviceExternalURLLT: String
+  serviceExternalURLLTE: String
+  serviceExternalURLContains: String
+  serviceExternalURLHasPrefix: String
+  serviceExternalURLHasSuffix: String
+  serviceExternalURLIsNil: Boolean
+  serviceExternalURLNotNil: Boolean
+  serviceExternalURLEqualFold: String
+  serviceExternalURLContainsFold: String
   """
   owner edge predicates
   """
@@ -13800,6 +13852,10 @@ func (ec *executionContext) childFields_FileExposure(ctx context.Context, field 
 		return ec.fieldContext_FileExposure_active(ctx, field)
 	case "zoneName":
 		return ec.fieldContext_FileExposure_zoneName(ctx, field)
+	case "serviceURL":
+		return ec.fieldContext_FileExposure_serviceURL(ctx, field)
+	case "serviceExternalURL":
+		return ec.fieldContext_FileExposure_serviceExternalURL(ctx, field)
 	case "sftp":
 		return ec.fieldContext_FileExposure_sftp(ctx, field)
 	case "approvalConfig":

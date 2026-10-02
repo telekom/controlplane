@@ -42,6 +42,10 @@ const (
 	FieldActive = "active"
 	// FieldZoneName holds the string denoting the zone_name field in the database.
 	FieldZoneName = "zone_name"
+	// FieldServiceURL holds the string denoting the service_url field in the database.
+	FieldServiceURL = "service_url"
+	// FieldServiceExternalURL holds the string denoting the service_external_url field in the database.
+	FieldServiceExternalURL = "service_external_url"
 	// FieldSftp holds the string denoting the sftp field in the database.
 	FieldSftp = "sftp"
 	// FieldApprovalConfig holds the string denoting the approval_config field in the database.
@@ -99,6 +103,8 @@ var Columns = []string{
 	FieldVisibility,
 	FieldActive,
 	FieldZoneName,
+	FieldServiceURL,
+	FieldServiceExternalURL,
 	FieldSftp,
 	FieldApprovalConfig,
 }
@@ -262,6 +268,16 @@ func ByActive(opts ...sql.OrderTermOption) OrderOption {
 // ByZoneName orders the results by the zone_name field.
 func ByZoneName(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldZoneName, opts...).ToFunc()
+}
+
+// ByServiceURL orders the results by the service_url field.
+func ByServiceURL(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldServiceURL, opts...).ToFunc()
+}
+
+// ByServiceExternalURL orders the results by the service_external_url field.
+func ByServiceExternalURL(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldServiceExternalURL, opts...).ToFunc()
 }
 
 // ByOwnerField orders the results by owner field.

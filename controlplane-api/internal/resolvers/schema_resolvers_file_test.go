@@ -90,6 +90,8 @@ var _ = Describe("File query and relationship resolvers", func() {
 		fileExposure, err = client.FileExposure.UpdateOne(seed.FileExposureAlpha).
 			SetVisibility(fileexposure.VisibilityEnterprise).
 			SetActive(true).
+			SetServiceURL("internal.example.com:8080").
+			SetServiceExternalURL("external.example.com:8080").
 			Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
 
@@ -130,6 +132,8 @@ var _ = Describe("File query and relationship resolvers", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(connection.Edges).To(HaveLen(1))
 		Expect(connection.Edges[0].Node.ID).To(Equal(fileExposure.ID))
+		Expect(connection.Edges[0].Node.ServiceURL).To(Equal("internal.example.com:8080"))
+		Expect(connection.Edges[0].Node.ServiceExternalURL).To(Equal("external.example.com:8080"))
 	})
 
 	It("queries file subscriptions from the root", func() {

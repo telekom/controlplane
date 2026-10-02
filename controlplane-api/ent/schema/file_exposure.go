@@ -48,6 +48,10 @@ func (FileExposure) Fields() []ent.Field {
 			Default(false),
 		field.Text("zone_name").
 			NotEmpty(),
+		field.Text("service_url").
+			Optional(),
+		field.Text("service_external_url").
+			Optional(),
 		field.JSON("sftp", &model.FileSFTP{}).
 			Optional().
 			Default(&model.FileSFTP{}).

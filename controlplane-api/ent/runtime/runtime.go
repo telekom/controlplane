@@ -628,11 +628,11 @@ func init() {
 	// fileexposure.ZoneNameValidator is a validator for the "zone_name" field. It is called by the builders before save.
 	fileexposure.ZoneNameValidator = fileexposureDescZoneName.Validators[0].(func(string) error)
 	// fileexposureDescSftp is the schema descriptor for sftp field.
-	fileexposureDescSftp := fileexposureFields[4].Descriptor()
+	fileexposureDescSftp := fileexposureFields[6].Descriptor()
 	// fileexposure.DefaultSftp holds the default value on creation for the sftp field.
 	fileexposure.DefaultSftp = fileexposureDescSftp.Default.(*model.FileSFTP)
 	// fileexposureDescApprovalConfig is the schema descriptor for approval_config field.
-	fileexposureDescApprovalConfig := fileexposureFields[5].Descriptor()
+	fileexposureDescApprovalConfig := fileexposureFields[7].Descriptor()
 	// fileexposure.DefaultApprovalConfig holds the default value on creation for the approval_config field.
 	fileexposure.DefaultApprovalConfig = fileexposureDescApprovalConfig.Default.(model.ApprovalConfig)
 	filesubscriptionMixin := schema.FileSubscription{}.Mixin()
