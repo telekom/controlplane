@@ -78,8 +78,8 @@ func (h *AgenticSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *ag
 	}
 	if violatesBasicWithScopesPolicy(obj, exposure) {
 		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonValidationFailed,
-			"Consumer username/password with scopes requires an external IDP grant type \"password\""))
-		obj.SetCondition(condition.NewBlockedCondition("Consumer username/password with scopes requires an external IDP grant type \"password\""))
+			"Consumer username/password with scopes requires an external IDP grant type \"password\" from the provider"))
+		obj.SetCondition(condition.NewBlockedCondition("Consumer username/password with scopes requires an external IDP grant type \"password\" from the provider"))
 		return nil
 	}
 	if !exposureFound {
