@@ -179,7 +179,9 @@ var _ = Describe("FileSubscription Repository", func() {
 				OwnerTeamName:  "platform--narvi",
 				TargetFileType: "unknown",
 			}
-			Expect(repo.Upsert(ctx, data)).To(Succeed())
+			err := repo.Upsert(ctx, data)
+			Expect(err).To(HaveOccurred())
+			Expect(runtime.IsDependencyMissing(err)).To(BeTrue())
 
 			sub, err := client.FileSubscription.Query().Where(entfilesubscription.FileTypeEQ("unknown")).Only(ctx)
 			Expect(err).NotTo(HaveOccurred())
@@ -189,6 +191,73 @@ var _ = Describe("FileSubscription Repository", func() {
 			hasTarget, err := sub.QueryTarget().Exist(ctx)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(hasTarget).To(BeFalse())
+		})
+
+		It("should succeed when only the optional FileType catalogue entry is missing", func() {
+			delete(deps.fileTypeIDs, "invoice")
+			data := &filesubscription.FileSubscriptionData{
+				Meta:           shared.NewMetadata("prod--platform--narvi", "sub-noft", nil),
+				StatusPhase:    "READY",
+				Zone:           "caas",
+				OwnerAppName:   "consumer-app",
+				OwnerTeamName:  "platform--narvi",
+				TargetFileType: "invoice",
+			}
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			sub, err := client.FileSubscription.Query().Where(entfilesubscription.NameEQ("sub-noft")).Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			hasFT, err := sub.QueryFileTypeDef().Exist(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(hasFT).To(BeFalse())
+			target, err := sub.QueryTarget().Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(target.ID).To(Equal(exposureID))
+		})
+
+		It("should clear the target, signal retry, and relink once an active exposure resolves", func() {
+			data := &filesubscription.FileSubscriptionData{
+				Meta:           shared.NewMetadata("prod--platform--narvi", "sub-retarget", nil),
+				StatusPhase:    "READY",
+				Zone:           "caas",
+				OwnerAppName:   "consumer-app",
+				OwnerTeamName:  "platform--narvi",
+				TargetFileType: "invoice",
+			}
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			delete(deps.exposureIDs, "invoice")
+			err := repo.Upsert(ctx, data)
+			Expect(err).To(HaveOccurred())
+			Expect(runtime.IsDependencyMissing(err)).To(BeTrue())
+
+			sub, err := client.FileSubscription.Query().Where(entfilesubscription.NameEQ("sub-retarget")).Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			hasTarget, err := sub.QueryTarget().Exist(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(hasTarget).To(BeFalse())
+			cache.Wait()
+			_, found := cache.Get("filesubscription", "meta:prod--platform--narvi:sub-retarget")
+			Expect(found).To(BeTrue())
+
+			deps.exposureIDs["invoice"] = exposureID
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+			target, err := sub.QueryTarget().Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(target.ID).To(Equal(exposureID))
+		})
+
+		It("should propagate non-not-found exposure resolver errors", func() {
+			dbErr := errors.New("resolver unavailable")
+			deps.exposureErr = dbErr
+			err := repo.Upsert(ctx, &filesubscription.FileSubscriptionData{Meta: shared.NewMetadata("prod--platform--narvi", "sub-experr", nil), Zone: "caas", OwnerAppName: "consumer-app", OwnerTeamName: "platform--narvi", TargetFileType: "invoice"})
+			Expect(err).To(HaveOccurred())
+			Expect(runtime.IsDependencyMissing(err)).To(BeFalse())
+			Expect(errors.Is(err, dbErr)).To(BeTrue())
+
+			count, err := client.FileSubscription.Query().Count(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(count).To(BeZero())
 		})
 
 		It("should return dependency missing when application is missing", func() {

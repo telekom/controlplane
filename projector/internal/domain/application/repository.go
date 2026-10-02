@@ -150,6 +150,7 @@ func (r *Repository) Upsert(ctx context.Context, data *ApplicationData) error {
 			u.SetStatusMessage(data.StatusMessage)
 			u.SetEnvironment(data.Meta.Environment)
 			u.SetNamespace(data.Meta.Namespace)
+			u.Set(application.ZoneColumn, zoneID)
 			u.SetSecretRotationPhase(application.SecretRotationPhase(data.SecretRotationPhase))
 			if data.ClientID != nil {
 				u.SetClientID(*data.ClientID)

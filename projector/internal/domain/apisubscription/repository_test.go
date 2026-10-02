@@ -22,9 +22,11 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/zone"
 	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 
+	"github.com/telekom/controlplane/projector/internal/domain/apiexposure"
 	"github.com/telekom/controlplane/projector/internal/domain/apisubscription"
 	"github.com/telekom/controlplane/projector/internal/domain/shared"
 	"github.com/telekom/controlplane/projector/internal/infrastructure"
+	"github.com/telekom/controlplane/projector/internal/infrastructure/cachekeys"
 	"github.com/telekom/controlplane/projector/internal/runtime"
 )
 
@@ -33,6 +35,7 @@ type mockSubscriptionDeps struct {
 	appIDs      map[string]int // key: "appName:teamName"
 	exposureIDs map[string]int // key: basePath
 	appErr      error          // if non-nil, FindApplicationID always returns this error
+	exposureErr error          // if non-nil, FindAPIExposureByBasePath always returns this error
 }
 
 func (m *mockSubscriptionDeps) FindApplicationID(_ context.Context, name, teamName string) (int, error) {
@@ -47,6 +50,9 @@ func (m *mockSubscriptionDeps) FindApplicationID(_ context.Context, name, teamNa
 }
 
 func (m *mockSubscriptionDeps) FindAPIExposureByBasePath(_ context.Context, basePath string) (int, error) {
+	if m.exposureErr != nil {
+		return 0, m.exposureErr
+	}
 	if id, ok := m.exposureIDs[basePath]; ok {
 		return id, nil
 	}
@@ -220,15 +226,53 @@ var _ = Describe("ApiSubscription Repository", func() {
 			repo = apisubscription.NewRepository(client, cache, missingDeps)
 
 			data := baseData()
-			Expect(repo.Upsert(ctx, data)).To(Succeed())
+			err := repo.Upsert(ctx, data)
+			Expect(err).To(HaveOccurred())
+			Expect(errors.Is(err, runtime.ErrDependencyMissing)).To(BeTrue())
 
-			// Verify target FK is nil.
+			// Verify the row was persisted with a nil target FK.
 			sub, err := client.ApiSubscription.Query().
 				Where(entapisub.BasePathEQ("/api/v1/users")).
 				WithTarget().
 				Only(ctx)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(sub.Edges.Target).To(BeNil())
+			Expect(sub.Traffic).To(BeNil())
+
+			// Meta cache is still populated for the partial row.
+			cache.Wait()
+			id, found := cache.Get("apisubscription", "meta:prod--platform--narvi:my-subscription")
+			Expect(found).To(BeTrue())
+			Expect(id).To(Equal(sub.ID))
+
+			// Once the target resolves, the replay links it and succeeds.
+			repo = apisubscription.NewRepository(client, cache, deps)
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+			sub, err = client.ApiSubscription.Query().
+				Where(entapisub.BasePathEQ("/api/v1/users")).
+				WithTarget().
+				Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(sub.Edges.Target).NotTo(BeNil())
+			Expect(sub.Edges.Target.ID).To(Equal(exposureID))
+		})
+
+		It("should propagate non-ErrEntityNotFound errors from FindAPIExposureByBasePath", func() {
+			dbErr := errors.New("connection refused")
+			failDeps := &mockSubscriptionDeps{
+				appIDs:      map[string]int{"consumer-app:platform--narvi": appID},
+				exposureErr: dbErr,
+			}
+			failRepo := apisubscription.NewRepository(client, cache, failDeps)
+
+			err := failRepo.Upsert(ctx, baseData())
+			Expect(err).To(HaveOccurred())
+			Expect(runtime.IsDependencyMissing(err)).To(BeFalse())
+			Expect(errors.Is(err, dbErr)).To(BeTrue())
+
+			count, err := client.ApiSubscription.Query().Count(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(count).To(BeZero())
 		})
 
 		It("should return ErrDependencyMissing when owner application is missing", func() {
@@ -283,7 +327,8 @@ var _ = Describe("ApiSubscription Repository", func() {
 
 			data2 := baseData()
 			data2.StatusMessage = "waiting for target"
-			Expect(repo.Upsert(ctx, data2)).To(Succeed())
+			err = repo.Upsert(ctx, data2)
+			Expect(errors.Is(err, runtime.ErrDependencyMissing)).To(BeTrue())
 
 			// Verify only one subscription exists.
 			subs, err := client.ApiSubscription.Query().
@@ -647,7 +692,8 @@ var _ = Describe("ApiSubscription Repository", func() {
 			}
 			repo = apisubscription.NewRepository(client, cache, missingDeps)
 
-			Expect(repo.Upsert(ctx, baseData())).To(Succeed())
+			err := repo.Upsert(ctx, baseData())
+			Expect(errors.Is(err, runtime.ErrDependencyMissing)).To(BeTrue())
 			Expect(querySubTraffic()).To(BeNil())
 		})
 
@@ -676,6 +722,52 @@ var _ = Describe("ApiSubscription Repository", func() {
 			traffic := querySubTraffic()
 			Expect(traffic).NotTo(BeNil())
 			Expect(*traffic.SubscriberLimits).To(Equal(model.Limits{Second: 10}))
+		})
+	})
+
+	Describe("target deactivated after its active lookup was cached", func() {
+		It("reports the missing target and clears target FK and derived traffic", func() {
+			// Give the target a rate limit so the linked subscription carries
+			// derived traffic that must be cleared once the target is gone.
+			Expect(client.ApiExposure.UpdateOneID(exposureID).
+				SetTraffic(model.Traffic{RateLimit: &model.RateLimit{
+					Provider: &model.RateLimitConfig{Limits: model.Limits{Second: 10}},
+				}}).
+				Exec(ctx)).To(Succeed())
+
+			resolver := infrastructure.NewIDResolver(client, cache)
+			subRepo := apisubscription.NewRepository(client, cache, resolver)
+			expRepo := apiexposure.NewRepository(client, cache, resolver)
+
+			Expect(subRepo.Upsert(ctx, baseData())).To(Succeed())
+			cache.Wait()
+			cached, found := cache.Get(cachekeys.APIExposureByBasePath("/api/v1/users"))
+			Expect(found).To(BeTrue())
+			Expect(cached).To(Equal(exposureID))
+			sub, err := client.ApiSubscription.Query().WithTarget().Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(sub.Edges.Target).NotTo(BeNil())
+			Expect(sub.Traffic).NotTo(BeNil())
+
+			Expect(expRepo.Upsert(ctx, &apiexposure.APIExposureData{
+				Meta:           shared.NewMetadata("prod--platform--narvi", "provider-exposure", nil),
+				StatusPhase:    "READY",
+				BasePath:       "/api/v1/users",
+				Visibility:     "WORLD",
+				Active:         false,
+				Features:       []string{},
+				ApprovalConfig: model.ApprovalConfig{Strategy: "AUTO"},
+				AppName:        "provider-app",
+				TeamName:       "platform--narvi",
+			})).To(Succeed())
+			cache.Wait()
+
+			err = subRepo.Upsert(ctx, baseData())
+			Expect(errors.Is(err, runtime.ErrDependencyMissing)).To(BeTrue())
+			sub, err = client.ApiSubscription.Query().WithTarget().Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(sub.Edges.Target).To(BeNil())
+			Expect(sub.Traffic).To(BeNil())
 		})
 	})
 
