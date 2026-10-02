@@ -122,31 +122,7 @@ var _ = Describe("Integration: Two-Tier Reconcile Cycle", Ordered, func() {
 				Namespace: zoneNamespace,
 				Labels:    map[string]string{envLabelKey: envName},
 			},
-			Spec: adminv1.ZoneSpec{
-				IdentityProvider: adminv1.IdentityProviderConfig{
-					Url: "http://identity.local/auth",
-					Admin: adminv1.IdentityProviderAdminConfig{
-						ClientId: "admin-client",
-						UserName: "admin",
-						Password: "admin-pass",
-					},
-				},
-				Gateway: adminv1.GatewayConfig{
-					Admin: adminv1.GatewayAdminConfig{
-						Url: "http://gateway-admin.local",
-					},
-					Presets: []adminv1.GatewayConfigPreset{
-						{
-							Name:    "default",
-							Default: true,
-							Urls: []adminv1.UrlConfig{
-								{Hostname: "gateway.test.example.com", BasePath: "/gateway"},
-							},
-						},
-					},
-				},
-				Visibility: adminv1.ZoneVisibilityWorld,
-			},
+			Spec: testZoneSpec("gateway.test.example.com", "/gateway"),
 		}
 		Expect(k8sClient.Create(ctx, zone)).To(Succeed())
 
@@ -172,20 +148,19 @@ var _ = Describe("Integration: Two-Tier Reconcile Cycle", Ordered, func() {
 		// Set Zone status (simulates the admin controller).
 		zone.Status = adminv1.ZoneStatus{
 			Namespace: zoneStatusNs,
-			Gateway: &ctypes.ObjectRef{
-				Name:      "gateway-aws",
-				Namespace: zoneStatusNs,
-			},
 			IdentityRealm: &ctypes.ObjectRef{
 				Name:      "test-realm",
 				Namespace: zoneNamespace,
 			},
 			Conditions: readyConditions(),
-			Links: adminv1.Links{
-				Url:       "http://gateway.test.example.com",
-				Issuer:    "http://identity.local/auth/realms/test-env",
-				LmsIssuer: "http://identity.local/auth/realms/test-env-lms",
-			},
+			Presets: testPresetStatuses(
+				&ctypes.ObjectRef{Name: "gateway-aws", Namespace: zoneStatusNs},
+				adminv1.Links{
+					Url:       "http://gateway.test.example.com",
+					Issuer:    "http://identity.local/auth/realms/test-env",
+					LmsIssuer: "http://identity.local/auth/realms/test-env-lms",
+				},
+			),
 		}
 		Expect(k8sClient.Status().Update(ctx, zone)).To(Succeed())
 
@@ -1244,6 +1219,38 @@ func readyConditions() []metav1.Condition {
 			Reason:             "Ready",
 			LastTransitionTime: metav1.Now(),
 		},
+	}
+}
+
+// testZoneSpec returns a ZoneSpec with the Event preset Spectre routes SSE on plus the
+// API preset every admitted Zone must carry, both served by one gateway at host+basePath.
+func testZoneSpec(host, basePath string) adminv1.ZoneSpec {
+	preset := func(name string, gatewayType adminv1.GatewayType) adminv1.Preset {
+		return adminv1.Preset{
+			Name: name, Type: gatewayType, Default: true, GatewayRef: "default", IdentityProviderRef: "default",
+			Urls: []adminv1.UrlConfig{{Hostname: host, BasePath: basePath}},
+		}
+	}
+	return adminv1.ZoneSpec{
+		IdentityProviders: []adminv1.IdentityProviderConfig{{
+			Name:  "default",
+			Admin: adminv1.IdentityProviderAdminConfig{ClientId: "admin", UserName: "admin", Password: "pass"},
+		}},
+		Gateways: []adminv1.GatewayConfig{{
+			Name:  "default",
+			Admin: adminv1.GatewayAdminConfig{IdentityProviderRef: "default", Url: "http://gw-admin.local"},
+		}},
+		Presets:    []adminv1.Preset{preset("event", adminv1.GatewayTypeEvent), preset("api", adminv1.GatewayTypeAPI)},
+		Visibility: adminv1.ZoneVisibilityWorld,
+	}
+}
+
+// testPresetStatuses returns the status of both testZoneSpec presets, as the admin
+// controller would publish them.
+func testPresetStatuses(gatewayRef *ctypes.ObjectRef, links adminv1.Links) []adminv1.PresetStatus {
+	return []adminv1.PresetStatus{
+		{Name: "event", GatewayRef: gatewayRef, Links: links},
+		{Name: "api", GatewayRef: gatewayRef, Links: links},
 	}
 }
 

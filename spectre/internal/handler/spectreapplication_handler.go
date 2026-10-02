@@ -269,7 +269,7 @@ func ensureSSEReady(ctx context.Context, obj *spectrev1.SpectreApplication, zone
 	if subscriber.Status.SubscriptionId == "" {
 		return errors.New("SSE URL is not yet known: the Subscriber has no SubscriptionId yet")
 	}
-	return errors.Errorf("SSE URL is not yet known: zone %q default preset has no visible (non-hidden) URL", zone.Name)
+	return errors.Errorf("SSE URL is not yet known: zone %q Event preset has no visible (non-hidden) URL", zone.Name)
 }
 
 // deleteIfExists deletes the referenced object, tolerating an already-deleted one.
