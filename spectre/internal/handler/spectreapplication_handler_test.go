@@ -6,6 +6,7 @@ package handler_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/stretchr/testify/mock"
@@ -21,6 +22,7 @@ import (
 	fakeclient "github.com/telekom/controlplane/common/pkg/client/fake"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
+	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	ctypes "github.com/telekom/controlplane/common/pkg/types"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
@@ -94,6 +96,10 @@ func makeReadyApplication() *applicationv1.Application {
 	return app
 }
 
+// makeReadyZone returns a Ready zone whose Event preset (Presets[1]) is what SSE
+// routes on. The API preset every admitted Zone carries comes first in spec and status
+// and uses a different hostname and gateway, so a test asserting the Event values fails
+// if the API preset or the first preset is picked.
 func makeReadyZone() *adminv1.Zone {
 	z := &adminv1.Zone{
 		ObjectMeta: metav1.ObjectMeta{
@@ -101,23 +107,30 @@ func makeReadyZone() *adminv1.Zone {
 			Namespace: testZoneNs,
 		},
 		Spec: adminv1.ZoneSpec{
-			Gateway: adminv1.GatewayConfig{
-				Presets: []adminv1.GatewayConfigPreset{
-					{
-						Name:    "default",
-						Default: true,
-						Urls: []adminv1.UrlConfig{
-							{Hostname: "gateway.example.com", Port: 443, Scheme: "https"},
-						},
+			Presets: []adminv1.Preset{
+				{
+					Name:    "api",
+					Type:    adminv1.GatewayTypeAPI,
+					Default: true,
+					Urls: []adminv1.UrlConfig{
+						{Hostname: "api.example.com", Port: 443, Scheme: "https"},
+					},
+				},
+				{
+					Name:    "event",
+					Type:    adminv1.GatewayTypeEvent,
+					Default: true,
+					Urls: []adminv1.UrlConfig{
+						{Hostname: "gateway.example.com", Port: 443, Scheme: "https"},
 					},
 				},
 			},
 		},
 		Status: adminv1.ZoneStatus{
 			Namespace: testZoneStatusNs,
-			Gateway: &ctypes.ObjectRef{
-				Name:      "gateway-aws",
-				Namespace: testZoneStatusNs,
+			Presets: []adminv1.PresetStatus{
+				{Name: "api", GatewayRef: &ctypes.ObjectRef{Name: "gateway-api", Namespace: testZoneStatusNs}},
+				{Name: "event", GatewayRef: &ctypes.ObjectRef{Name: "gateway-aws", Namespace: testZoneStatusNs}},
 			},
 		},
 	}
@@ -612,7 +625,7 @@ var _ = Describe("SpectreApplicationHandler", func() {
 				obj := newSpectreApplication("server_sent_event")
 				app := makeReadyApplication()
 				zone := makeReadyZone()
-				zone.Spec.Gateway.Presets[0].Urls = []adminv1.UrlConfig{
+				zone.Spec.Presets[1].Urls = []adminv1.UrlConfig{
 					{Hostname: "internal.example.com", Port: 443, Scheme: "https", BasePath: "/internal", Hidden: true},
 					{Hostname: "gateway.example.com", Scheme: "https", BasePath: "/base"},
 				}
@@ -696,8 +709,8 @@ var _ = Describe("SpectreApplicationHandler", func() {
 				obj := newSpectreApplication("server_sent_event")
 				app := makeReadyApplication()
 				zone := makeReadyZone()
-				for i := range zone.Spec.Gateway.Presets[0].Urls {
-					zone.Spec.Gateway.Presets[0].Urls[i].Hidden = true
+				for i := range zone.Spec.Presets[1].Urls {
+					zone.Spec.Presets[1].Urls[i].Hidden = true
 				}
 				ec := makeReadyEventConfig()
 				es := makeEventStore()
@@ -721,7 +734,7 @@ var _ = Describe("SpectreApplicationHandler", func() {
 				readyCond := meta.FindStatusCondition(obj.Status.Conditions, condition.ConditionTypeReady)
 				Expect(readyCond).ToNot(BeNil())
 				Expect(readyCond.Status).To(Equal(metav1.ConditionFalse))
-				Expect(readyCond.Message).To(ContainSubstring(`zone "` + testZoneName + `" default preset has no visible (non-hidden) URL`))
+				Expect(readyCond.Message).To(ContainSubstring(`zone "` + testZoneName + `" Event preset has no visible (non-hidden) URL`))
 				Expect(readyCond.Message).ToNot(ContainSubstring("SubscriptionId"))
 			})
 
@@ -729,7 +742,7 @@ var _ = Describe("SpectreApplicationHandler", func() {
 				obj := newSpectreApplication("server_sent_event")
 				app := makeReadyApplication()
 				zone := makeReadyZone()
-				zone.Spec.Gateway.Presets[0].Urls = []adminv1.UrlConfig{
+				zone.Spec.Presets[1].Urls = []adminv1.UrlConfig{
 					{Hostname: "gateway.example.com", Port: 443, Scheme: "https", BasePath: "/base"},
 					{Hostname: "gateway.example.com", Port: 8443, Scheme: "https", BasePath: "/base"},
 				}
@@ -796,6 +809,76 @@ var _ = Describe("SpectreApplicationHandler", func() {
 				err := h.CreateOrUpdate(ctx, obj)
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring("has no EventStore reference"))
+			})
+
+			It("should return blocked error when SSE delivery but the zone has no Event preset", func() {
+				obj := newSpectreApplication("server_sent_event")
+				app := makeReadyApplication()
+				zone := makeReadyZone()
+				zone.Spec.Presets = zone.Spec.Presets[:1]
+				zone.Status.Presets = zone.Status.Presets[:1]
+				ec := makeReadyEventConfig()
+				es := makeEventStore()
+
+				mockGetApplication(app)
+				mockGetZone(zone)
+				mockListEventConfigs([]eventv1.EventConfig{ec})
+				mockGetEventStore(es)
+				mockCreateOrUpdatePublisher()
+				mockCreateOrUpdateSubscriber()
+
+				err := h.CreateOrUpdate(ctx, obj)
+				Expect(err).To(HaveOccurred())
+				var ctrlErr *ctrlerrors.CtrlError
+				Expect(errors.As(err, &ctrlErr)).To(BeTrue())
+				Expect(ctrlErr.IsBlocked()).To(BeTrue())
+				Expect(err.Error()).To(ContainSubstring(`zone "` + testZoneName + `" has no Event preset`))
+			})
+
+			It("should return blocked error when SSE delivery but the zone has no status for its Event preset", func() {
+				obj := newSpectreApplication("server_sent_event")
+				app := makeReadyApplication()
+				zone := makeReadyZone()
+				zone.Status.Presets = zone.Status.Presets[:1]
+				ec := makeReadyEventConfig()
+				es := makeEventStore()
+
+				mockGetApplication(app)
+				mockGetZone(zone)
+				mockListEventConfigs([]eventv1.EventConfig{ec})
+				mockGetEventStore(es)
+				mockCreateOrUpdatePublisher()
+				mockCreateOrUpdateSubscriber()
+
+				err := h.CreateOrUpdate(ctx, obj)
+				Expect(err).To(HaveOccurred())
+				var ctrlErr *ctrlerrors.CtrlError
+				Expect(errors.As(err, &ctrlErr)).To(BeTrue())
+				Expect(ctrlErr.IsBlocked()).To(BeTrue())
+				Expect(err.Error()).To(ContainSubstring(`zone "` + testZoneName + `" has no status for Event preset "event"`))
+			})
+
+			It("should return blocked error when SSE delivery but the Event preset status has no gateway reference", func() {
+				obj := newSpectreApplication("server_sent_event")
+				app := makeReadyApplication()
+				zone := makeReadyZone()
+				zone.Status.Presets[1].GatewayRef = nil
+				ec := makeReadyEventConfig()
+				es := makeEventStore()
+
+				mockGetApplication(app)
+				mockGetZone(zone)
+				mockListEventConfigs([]eventv1.EventConfig{ec})
+				mockGetEventStore(es)
+				mockCreateOrUpdatePublisher()
+				mockCreateOrUpdateSubscriber()
+
+				err := h.CreateOrUpdate(ctx, obj)
+				Expect(err).To(HaveOccurred())
+				var ctrlErr *ctrlerrors.CtrlError
+				Expect(errors.As(err, &ctrlErr)).To(BeTrue())
+				Expect(ctrlErr.IsBlocked()).To(BeTrue())
+				Expect(err.Error()).To(ContainSubstring(`zone "` + testZoneName + `" has no gateway reference in status for Event preset "event"`))
 			})
 
 			It("should return blocked error when callback delivery but EventConfig has no CallbackURL", func() {
@@ -899,14 +982,13 @@ var _ = Describe("SpectreApplicationHandler", func() {
 						Namespace: backendZoneNs,
 					},
 					Spec: adminv1.ZoneSpec{
-						Gateway: adminv1.GatewayConfig{
-							Presets: []adminv1.GatewayConfigPreset{
-								{
-									Name:    "default",
-									Default: true,
-									Urls: []adminv1.UrlConfig{
-										{Hostname: "gateway.backend.example.com", Port: 443, Scheme: "https"},
-									},
+						Presets: []adminv1.Preset{
+							{
+								Name:    "event",
+								Type:    adminv1.GatewayTypeEvent,
+								Default: true,
+								Urls: []adminv1.UrlConfig{
+									{Hostname: "gateway.backend.example.com", Port: 443, Scheme: "https"},
 								},
 							},
 						},
@@ -914,14 +996,17 @@ var _ = Describe("SpectreApplicationHandler", func() {
 					Status: adminv1.ZoneStatus{
 						Namespace: backendZoneStatusNs,
 						RealmName: "test-realm",
-						Gateway: &ctypes.ObjectRef{
-							Name:      "gateway-backend",
-							Namespace: backendZoneStatusNs,
-						},
-						Links: adminv1.Links{
-							Issuer:    backendIssuer,
-							LmsIssuer: backendLmsIssuer,
-						},
+						Presets: []adminv1.PresetStatus{{
+							Name: "event",
+							GatewayRef: &ctypes.ObjectRef{
+								Name:      "gateway-backend",
+								Namespace: backendZoneStatusNs,
+							},
+							Links: adminv1.Links{
+								Issuer:    backendIssuer,
+								LmsIssuer: backendLmsIssuer,
+							},
+						}},
 					},
 				}
 				meta.SetStatusCondition(&z.Status.Conditions, metav1.Condition{
@@ -1006,7 +1091,7 @@ var _ = Describe("SpectreApplicationHandler", func() {
 				obj := newSpectreApplication("server_sent_event")
 				app := makeReadyApplication()
 				zone := makeReadyZone()
-				zone.Status.Links = adminv1.Links{
+				zone.Status.Presets[1].Links = adminv1.Links{
 					Issuer:    appZoneIssuer,
 					LmsIssuer: appZoneLmsIssuer,
 				}
@@ -1090,6 +1175,7 @@ var _ = Describe("SpectreApplicationHandler", func() {
 				Expect(capturedProxyRoute).ToNot(BeNil())
 				Expect(capturedProxyRoute.Namespace).To(Equal(testZoneStatusNs))
 				Expect(capturedProxyRoute.Spec.Type).To(Equal(gatewayv1.RouteTypeProxy))
+				Expect(capturedProxyRoute.Spec.GatewayRef.Name).To(Equal("gateway-aws"))
 				Expect(capturedProxyRoute.Spec.Security.DisableAccessControl).To(BeTrue())
 				Expect(capturedProxyRoute.Spec.Buffering.DisableResponseBuffering).To(BeTrue())
 				Expect(capturedProxyRoute.Labels[cconfig.OwnerUidLabelKey]).To(Equal(string(obj.UID)))

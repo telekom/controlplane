@@ -80,32 +80,18 @@ var _ = Describe("Watch-Driven Integration", Ordered, func() {
 				Name: "aws", Namespace: watchNs,
 				Labels: map[string]string{envLabelKey: watchEnv},
 			},
-			Spec: adminv1.ZoneSpec{
-				IdentityProvider: adminv1.IdentityProviderConfig{
-					Url:   "http://identity.local/auth",
-					Admin: adminv1.IdentityProviderAdminConfig{ClientId: "admin", UserName: "admin", Password: "pass"},
-				},
-				Gateway: adminv1.GatewayConfig{
-					Admin: adminv1.GatewayAdminConfig{Url: "http://gw-admin.local"},
-					Presets: []adminv1.GatewayConfigPreset{{
-						Name: "default", Default: true,
-						Urls: []adminv1.UrlConfig{{Hostname: "gw.watch.example.com", BasePath: "/gateway"}},
-					}},
-				},
-				Visibility: adminv1.ZoneVisibilityWorld,
-			},
+			Spec: testZoneSpec("gw.watch.example.com", "/gateway"),
 		}
 		Expect(directClient.Create(ctx, zone)).To(Succeed())
 		zone.Status = adminv1.ZoneStatus{
 			Namespace:     watchZNs,
-			Gateway:       &ctypes.ObjectRef{Name: "gw-aws", Namespace: watchZNs},
 			IdentityRealm: &ctypes.ObjectRef{Name: "watch-realm", Namespace: watchNs},
 			Conditions:    readyConditions(),
-			Links: adminv1.Links{
+			Presets: testPresetStatuses(&ctypes.ObjectRef{Name: "gw-aws", Namespace: watchZNs}, adminv1.Links{
 				Url:       "http://gw.watch.example.com",
 				Issuer:    "http://identity.local/auth/realms/watch-env",
 				LmsIssuer: "http://identity.local/auth/realms/watch-env-lms",
-			},
+			}),
 		}
 		Expect(directClient.Status().Update(ctx, zone)).To(Succeed())
 
@@ -264,24 +250,15 @@ var _ = Describe("Watch-Driven Integration", Ordered, func() {
 					Name: "aws", Namespace: s5Ns,
 					Labels: map[string]string{envLabelKey: s5Env},
 				},
-				Spec: adminv1.ZoneSpec{
-					IdentityProvider: adminv1.IdentityProviderConfig{
-						Url: "http://id.local", Admin: adminv1.IdentityProviderAdminConfig{ClientId: "a", UserName: "a", Password: "a"},
-					},
-					Gateway: adminv1.GatewayConfig{
-						Admin: adminv1.GatewayAdminConfig{Url: "http://gw.local"},
-						Presets: []adminv1.GatewayConfigPreset{{Name: "default", Default: true,
-							Urls: []adminv1.UrlConfig{{Hostname: "gw.s5.example.com", BasePath: "/gateway"}}}},
-					},
-					Visibility: adminv1.ZoneVisibilityWorld,
-				},
+				Spec: testZoneSpec("gw.s5.example.com", "/gateway"),
 			}
 			Expect(directClient.Create(ctx, zone)).To(Succeed())
 			zone.Status = adminv1.ZoneStatus{
-				Namespace: s5ZoneNs, Gateway: &ctypes.ObjectRef{Name: "gw-aws", Namespace: s5ZoneNs},
+				Namespace:     s5ZoneNs,
 				IdentityRealm: &ctypes.ObjectRef{Name: "s5-realm", Namespace: s5Ns},
 				Conditions:    readyConditions(),
-				Links:         adminv1.Links{Url: "http://gw.s5.example.com", Issuer: "http://id.local/realms/s5", LmsIssuer: "http://id.local/realms/s5-lms"},
+				Presets: testPresetStatuses(&ctypes.ObjectRef{Name: "gw-aws", Namespace: s5ZoneNs},
+					adminv1.Links{Url: "http://gw.s5.example.com", Issuer: "http://id.local/realms/s5", LmsIssuer: "http://id.local/realms/s5-lms"}),
 			}
 			Expect(directClient.Status().Update(ctx, zone)).To(Succeed())
 
@@ -915,27 +892,15 @@ var _ = Describe("Watch-Driven Integration", Ordered, func() {
 				host := "gw." + name + ".s9.example.com"
 				zone := &adminv1.Zone{
 					ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: s9Ns, Labels: s9Labels()},
-					Spec: adminv1.ZoneSpec{
-						IdentityProvider: adminv1.IdentityProviderConfig{
-							Url: "http://id.local", Admin: adminv1.IdentityProviderAdminConfig{ClientId: "a", UserName: "a", Password: "a"},
-						},
-						Gateway: adminv1.GatewayConfig{
-							Admin: adminv1.GatewayAdminConfig{Url: "http://gw.local"},
-							Presets: []adminv1.GatewayConfigPreset{{
-								Name: "default", Default: true,
-								Urls: []adminv1.UrlConfig{{Hostname: host, BasePath: "/gateway"}},
-							}},
-						},
-						Visibility: adminv1.ZoneVisibilityWorld,
-					},
+					Spec:       testZoneSpec(host, "/gateway"),
 				}
 				Expect(directClient.Create(ctx, zone)).To(Succeed())
 				zone.Status = adminv1.ZoneStatus{
 					Namespace:     statusNs,
-					Gateway:       &ctypes.ObjectRef{Name: "gw-" + name, Namespace: statusNs},
 					IdentityRealm: &ctypes.ObjectRef{Name: "s9-realm", Namespace: s9Ns},
 					Conditions:    readyConditions(),
-					Links:         adminv1.Links{Url: "http://" + host, Issuer: "http://id.local/realms/s9", LmsIssuer: "http://id.local/realms/s9-lms"},
+					Presets: testPresetStatuses(&ctypes.ObjectRef{Name: "gw-" + name, Namespace: statusNs},
+						adminv1.Links{Url: "http://" + host, Issuer: "http://id.local/realms/s9", LmsIssuer: "http://id.local/realms/s9-lms"}),
 				}
 				Expect(directClient.Status().Update(ctx, zone)).To(Succeed())
 

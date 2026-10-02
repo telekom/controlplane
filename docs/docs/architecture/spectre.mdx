@@ -5,7 +5,7 @@ sidebar_position: 13
 # Spectre Domain
 
 :::info Optional Feature
-The Spectre domain requires an active EventConfig in the zone. It is a peer to the Event domain — both create PubSub resources, while users interact only through Rover files.
+The Spectre domain requires an active EventConfig and an `Event`-typed gateway preset in the zone (SSE Routes use the Event preset, like the Event domain; see [Traffic Types](../admin-journey/environments-and-zones.md#traffic-types)). It is a peer to the Event domain — both create PubSub resources, while users interact only through Rover files.
 :::
 
 The Spectre domain manages application listeners that bridge external API traffic into the Horizon event backbone. A listener watches a specific API path and forwards matching requests as events, enabling event-driven reactions to API calls without modifying the API provider.
