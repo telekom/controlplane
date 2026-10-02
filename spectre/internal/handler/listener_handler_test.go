@@ -194,10 +194,13 @@ func makeListenerZone() *adminv1.Zone {
 		},
 		Status: adminv1.ZoneStatus{
 			Namespace: listenerZoneStatus,
-			Gateway: &ctypes.ObjectRef{
-				Name:      "gateway-aws",
-				Namespace: listenerZoneStatus,
-			},
+			Presets: []adminv1.PresetStatus{{
+				Name: "event",
+				GatewayRef: &ctypes.ObjectRef{
+					Name:      "gateway-aws",
+					Namespace: listenerZoneStatus,
+				},
+			}},
 			IdentityRealm: &ctypes.ObjectRef{
 				Name:      testRealmName,
 				Namespace: listenerZoneNs,

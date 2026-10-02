@@ -66,7 +66,10 @@ func (h *SpectreApplicationHandler) reconcileSSERoutes(
 	// primary route needs trusted issuers from both zones so proxy-forwarded requests
 	// are accepted.
 	isProxyTarget := obj.Status.ProxyRoute != nil
-	trustedIssuers := collectSpectreSSETrustedIssuers(backendZone, zone, isProxyTarget)
+	trustedIssuers, err := collectSpectreSSETrustedIssuers(backendZone, zone, isProxyTarget)
+	if err != nil {
+		return errors.Wrap(err, "failed to create primary SSE Route")
+	}
 
 	primaryRoute, err := createSpectreSSEPrimaryRoute(ctx, obj, backendZone, backendConfig, appId, trustedIssuers, isProxyTarget)
 	if err != nil {
@@ -88,11 +91,11 @@ func (h *SpectreApplicationHandler) reconcileSSERoutes(
 // proxy-facing gateway for a proxy zone, the only gateway for a local zone. It returns
 // an empty URL while the Subscriber has no SubscriptionId or the preset has no visible URL.
 func makeSpectreSSEUrl(zone *adminv1.Zone, appId, subscriptionId string) (string, error) {
-	preset, err := zone.Spec.Gateway.GetDefaultPreset()
+	preset, err := eventPreset(zone)
 	if err != nil {
-		return "", ctrlerrors.BlockedErrorf("zone %q has no default gateway preset: %s", zone.Name, err)
+		return "", err
 	}
-	baseUrl := preset.GetDefaultUrl()
+	baseUrl := preset.GetDefaultURL()
 	if subscriptionId == "" || baseUrl == "" {
 		return "", nil
 	}
@@ -146,8 +149,9 @@ func createSpectreSSEPrimaryRoute(
 ) (*gatewayv1.Route, error) {
 	c := cclient.ClientFromContextOrDie(ctx)
 
-	if zone.Status.Gateway == nil {
-		return nil, ctrlerrors.BlockedErrorf("zone %q has no gateway reference in status", zone.Name)
+	gatewayRef, err := eventGatewayRef(zone)
+	if err != nil {
+		return nil, err
 	}
 
 	if !eventConfig.IsLocal() {
@@ -159,9 +163,9 @@ func createSpectreSSEPrimaryRoute(
 		return nil, errors.Wrapf(err, "failed to parse ServerSendEventUrl %q", eventConfig.Spec.Local.ServerSendEventUrl)
 	}
 
-	preset, err := zone.Spec.Gateway.GetDefaultPreset()
+	preset, err := eventPreset(zone)
 	if err != nil {
-		return nil, ctrlerrors.BlockedErrorf("zone %q has no default gateway preset: %s", zone.Name, err)
+		return nil, err
 	}
 
 	hostnames, paths := resolveSSEPaths(preset, appId)
@@ -183,7 +187,7 @@ func createSpectreSSEPrimaryRoute(
 			config.BuildLabelKey("app"):  labelutil.NormalizeLabelValue(appId),
 		}
 		route.Spec = gatewayv1.RouteSpec{
-			GatewayRef: *zone.Status.Gateway,
+			GatewayRef: *gatewayRef,
 			Type:       gatewayv1.RouteTypePrimary,
 			Backend:    gatewayv1.Backend{Upstreams: []gatewayv1.Upstream{upstream}},
 			Hostnames:  hostnames,
@@ -227,18 +231,24 @@ func createSpectreSSEProxyRoute(
 ) (*gatewayv1.Route, error) {
 	c := cclient.ClientFromContextOrDie(ctx)
 
-	if appZone.Status.Gateway == nil {
-		return nil, ctrlerrors.BlockedErrorf("zone %q has no gateway reference in status", appZone.Name)
+	appGatewayRef, err := eventGatewayRef(appZone)
+	if err != nil {
+		return nil, err
 	}
 
-	appPreset, err := appZone.Spec.Gateway.GetDefaultPreset()
+	appPreset, err := eventPreset(appZone)
 	if err != nil {
-		return nil, ctrlerrors.BlockedErrorf("zone %q has no default gateway preset: %s", appZone.Name, err)
+		return nil, err
 	}
 
-	backendPreset, err := backendZone.Spec.Gateway.GetDefaultPreset()
+	appPresetStatus, err := eventPresetStatus(appZone)
 	if err != nil {
-		return nil, ctrlerrors.BlockedErrorf("target zone %q has no default preset: %s", backendZone.Name, err)
+		return nil, err
+	}
+
+	backendPreset, err := eventPreset(backendZone)
+	if err != nil {
+		return nil, err
 	}
 
 	eventType := util.BuildListenerEventType(appId)
@@ -269,7 +279,7 @@ func createSpectreSSEProxyRoute(
 			config.BuildLabelKey("app"):  labelutil.NormalizeLabelValue(appId),
 		}
 		route.Spec = gatewayv1.RouteSpec{
-			GatewayRef: *appZone.Status.Gateway,
+			GatewayRef: *appGatewayRef,
 			Type:       gatewayv1.RouteTypeProxy,
 			Backend:    gatewayv1.Backend{Upstreams: []gatewayv1.Upstream{upstream}},
 			Hostnames:  hostnames,
@@ -281,8 +291,8 @@ func createSpectreSSEProxyRoute(
 				DisableResponseBuffering: true,
 			},
 		}
-		if appZone.Status.Links.Issuer != "" {
-			route.Spec.Security.TrustedIssuers = []string{appZone.Status.Links.Issuer}
+		if appPresetStatus.Links.Issuer != "" {
+			route.Spec.Security.TrustedIssuers = []string{appPresetStatus.Links.Issuer}
 		}
 		if appZone.Status.RealmName != "" {
 			route.Spec.Security.RealmName = appZone.Status.RealmName
@@ -301,20 +311,66 @@ func createSpectreSSEProxyRoute(
 // collectSpectreSSETrustedIssuers builds the trusted issuer list for the primary SSE route.
 // The backend zone's IDP issuer is always included. When the primary route is a proxy
 // target, the app zone's LMS issuer is added so mesh-forwarded requests are accepted.
-func collectSpectreSSETrustedIssuers(backendZone, appZone *adminv1.Zone, isProxyTarget bool) []string {
+func collectSpectreSSETrustedIssuers(backendZone, appZone *adminv1.Zone, isProxyTarget bool) ([]string, error) {
+	backendPresetStatus, err := eventPresetStatus(backendZone)
+	if err != nil {
+		return nil, err
+	}
 	var issuers []string
-	if backendZone.Status.Links.Issuer != "" {
-		issuers = append(issuers, backendZone.Status.Links.Issuer)
+	if backendPresetStatus.Links.Issuer != "" {
+		issuers = append(issuers, backendPresetStatus.Links.Issuer)
 	}
-	if isProxyTarget && appZone.Status.Links.LmsIssuer != "" {
-		issuers = append(issuers, appZone.Status.Links.LmsIssuer)
+	if isProxyTarget {
+		appPresetStatus, statusErr := eventPresetStatus(appZone)
+		if statusErr != nil {
+			return nil, statusErr
+		}
+		if appPresetStatus.Links.LmsIssuer != "" {
+			issuers = append(issuers, appPresetStatus.Links.LmsIssuer)
+		}
 	}
-	return issuers
+	return issuers, nil
+}
+
+// eventPreset returns the zone's Event preset. SSE is event traffic, so it never
+// uses the zone's representative (API) preset. Mirrors event's targetPreset: it does
+// not require a gateway reference, because a proxy target only contributes its URL.
+func eventPreset(zone *adminv1.Zone) (*adminv1.Preset, error) {
+	preset, err := zone.Spec.SelectPreset(adminv1.GatewayTypeEvent)
+	if err != nil {
+		return nil, ctrlerrors.BlockedErrorf("zone %q has no Event preset: %s", zone.Name, err)
+	}
+	return preset, nil
+}
+
+// eventPresetStatus returns the status of the zone's Event preset (gateway ref and links).
+func eventPresetStatus(zone *adminv1.Zone) (*adminv1.PresetStatus, error) {
+	preset, err := eventPreset(zone)
+	if err != nil {
+		return nil, err
+	}
+	status, err := zone.Status.GetPreset(preset.Name)
+	if err != nil {
+		return nil, ctrlerrors.BlockedErrorf("zone %q has no status for Event preset %q", zone.Name, preset.Name)
+	}
+	return status, nil
+}
+
+// eventGatewayRef returns the gateway that serves the zone's Event preset.
+func eventGatewayRef(zone *adminv1.Zone) (*ctypes.ObjectRef, error) {
+	status, err := eventPresetStatus(zone)
+	if err != nil {
+		return nil, err
+	}
+	if status.GatewayRef == nil {
+		return nil, ctrlerrors.BlockedErrorf("zone %q has no gateway reference in status for Event preset %q", zone.Name, status.Name)
+	}
+	return status.GatewayRef, nil
 }
 
 // gatewayUpstream builds a proxy Upstream pointing at a target preset's gateway URL
 // joined with the given path.
-func gatewayUpstream(preset *adminv1.GatewayConfigPreset, path string) (gatewayv1.Upstream, error) {
+func gatewayUpstream(preset *adminv1.Preset, path string) (gatewayv1.Upstream, error) {
 	full := preset.Urls[0].GetFullUrl()
 	if path != "" {
 		joined, err := url.JoinPath(full, path)
@@ -351,7 +407,7 @@ func makeSpectreSSELegacyPath(appId string) string {
 // paths for every preset URL. Canonical paths come first because Paths[0] drives
 // the api_base_path header. Duplicates are dropped in order because RouteSpec
 // Hostnames and Paths are sets.
-func resolveSSEPaths(preset *adminv1.GatewayConfigPreset, appId string) (hostnames, paths []string) {
+func resolveSSEPaths(preset *adminv1.Preset, appId string) (hostnames, paths []string) {
 	hostnames, canonicalPaths := preset.ResolveHostnamesAndPaths(makeSpectreSSERoutePath(util.BuildListenerEventType(appId)))
 	_, legacyPaths := preset.ResolveHostnamesAndPaths(makeSpectreSSELegacyPath(appId))
 	return dedupeOrdered(hostnames), dedupeOrdered(slices.Concat(canonicalPaths, legacyPaths))
