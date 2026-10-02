@@ -33,6 +33,14 @@ type Backend struct {
 	Upstreams []Upstream `json:"upstreams"`
 }
 
+// RequestTermination configures the gateway to answer requests directly.
+type RequestTermination struct {
+	// StatusCode is the HTTP status code returned by the gateway.
+	// +kubebuilder:validation:Minimum=100
+	// +kubebuilder:validation:Maximum=599
+	StatusCode int32 `json:"statusCode"`
+}
+
 // RouteSpec defines the desired state of Route
 type RouteSpec struct {
 	// GatewayRef is a reference to the Gateway this Route belongs to
@@ -61,6 +69,18 @@ type RouteSpec struct {
 	// +kubebuilder:validation:MaxItems=10
 	// +kubebuilder:default={/}
 	Paths []string `json:"paths,omitempty"`
+
+	// Methods restricts the HTTP methods that are accepted for this route. If empty, all methods are accepted.
+	// +listType=set
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:MaxItems=9
+	// +kubebuilder:validation:items:Enum=GET;HEAD;POST;PUT;PATCH;DELETE;OPTIONS;TRACE;CONNECT
+	Methods []string `json:"methods,omitempty"`
+
+	// RequestTermination makes the gateway answer every matching request itself with a fixed status code.
+	// The upstream is never called.
+	// +kubebuilder:validation:Optional
+	RequestTermination *RequestTermination `json:"requestTermination,omitempty"`
 
 	// PassThrough is a flag to pass through the request to the upstream without authentication
 	// +kubebuilder:default=false
@@ -166,6 +186,11 @@ func (g *Route) GetHostnames() []string {
 // GetPaths implements the CustomRoute interface for Route
 func (g *Route) GetPaths() []string {
 	return g.Spec.Paths
+}
+
+// GetMethods implements the CustomRoute interface for Route
+func (g *Route) GetMethods() []string {
+	return g.Spec.Methods
 }
 
 // GetRequestBuffering implements the CustomRoute interface for Route

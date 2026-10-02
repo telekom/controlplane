@@ -193,7 +193,31 @@ gateways:
       url: https://gateway-admin.example.com
 ```
 
-No manual realm or client setup is needed. All gateways in a Zone share one automatically provisioned `rover` client. For its lifecycle and secret handling, see [Admin Domain](../architecture/admin.mdx#identity-realms-and-the-rover-client).
+You only need to provide the `url` and `identityProviderRef`. To handle authentication, the Control Plane automatically provisions a dedicated identity client (the `rover` client, described below) and generates its secret. If you want to set the client's secret yourself, provide `clientSecret`; otherwise it is generated for you.
+
+#### The `rover` realm and client
+
+On **every** zone reconciliation, the zone handler creates:
+
+- An internal identity realm named **`rover`**, dedicated to platform-internal admin clients.
+- A **`rover`** client inside that realm, used to authenticate against the gateway admin API. Its token issuer is `…/auth/realms/rover`.
+
+This is not an opt-in feature and cannot be disabled — every zone gets its own `rover` realm and client.
+
+Every named gateway exposes issuer, certificate, and OpenID discovery routes for the default realm and the internal `rover` realm, plus the team-api realm when configured. These routes cover the hostnames and base paths of all presets using that gateway. World-visible zones add `/spacegate` after the preset base path.
+
+Every named gateway also exposes a **zone-health** route, `<gateway>--zone-health`, which callers in other zones probe to check that this zone is reachable. It accepts only `HEAD /zone-health` under every hostname and base path of the presets using that gateway, and the gateway itself answers with `200 OK`. No backend is called. The route is always created, whether or not managed routes or consumer failover are configured, and it has no `/spacegate` prefix.
+
+The combined presets of a gateway may define at most 20 distinct hostnames and 10 distinct route paths after joining each base path with an endpoint path. If either limit is exceeded, Zone reconciliation reports a blocked error before creating the identity or zone-health routes.
+
+```bash
+curl -I https://<preset-hostname>/<basePath>/zone-health   # HTTP/1.1 200 OK
+curl -o /dev/null -w '%{http_code}\n' https://<preset-hostname>/<basePath>/zone-health   # not 200: GET does not match the route
+```
+
+:::note Previously a manual step
+Earlier versions required administrators to create this realm and client by hand before a zone could work. This is now done for you automatically whenever the Zone is reconciled — no manual setup is needed.
+:::
 
 ### Zone Secrets
 

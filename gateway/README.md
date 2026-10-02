@@ -39,6 +39,7 @@ However, at the moment, the implementation is tightly coupled with the [Kong Gat
 - **Rate Limiting**: Control the rate of requests to your APIs (configured via Rover domain)
 - **Load Balancing**: Distribute incoming requests across multiple upstream instances (configured via Rover domain)
 - **JWT Authentication**: OAuth2/OIDC authentication with Keycloak integration
+- **Method Filter & Request Termination**: Restrict a route to HTTP methods (`spec.methods`) and let the gateway answer with a fixed status code (`spec.requestTermination`)
 - **...**
 
 > [!Note]
@@ -73,6 +74,7 @@ The following table lists a **subset** of features and their priorities.
 | Feature          | Priority                                   |
 |------------------|--------------------------------------------|
 | PassThrough      | 0                                          |
+| RequestTermination | 0                                        |
 | AccessControl    | 10                                         |
 | RateLimit        | 10                                         |
 | ExternalIDP      | InstanceCustomScopesFeature - 1 (98)       |
