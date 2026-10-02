@@ -46,6 +46,12 @@ type ClientStatus struct {
 	// or the Realm has no SecretRotation configuration.
 	// +optional
 	SecretExpiresAt *metav1.Time `json:"secretExpiresAt,omitempty"`
+
+	// AllowedOrigins is synchronized from the referenced realm and managed as Keycloak web origins.
+	// +optional
+	// +listType=set
+	AllowedOrigins []string `json:"allowedOrigins,omitempty"`
+
 	// +listType=map
 	// +listMapKey=type
 	// +patchStrategy=merge

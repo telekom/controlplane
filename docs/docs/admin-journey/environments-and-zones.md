@@ -86,6 +86,8 @@ spec:
   identityProviders:
     - name: primary
       issuerHostname: idp.example.com
+      allowedOrigins:
+        - https://app.example.com
       admin:
         url: https://idp.example.com/auth/admin/realms
         clientId: admin-client
@@ -106,6 +108,8 @@ spec:
     password: <your-redis-password>
     enableTLS: true
 ```
+
+`spec.identityProviders[].allowedOrigins` sets the Keycloak web origins for clients in the zone's default identity realm, whose name is recorded in `status.realmName`. Each entry must be an absolute URL with a hostname (any scheme) or `*`. The `*` value allows all origins and should only be used when that access is intended. The internal rover realm is not affected. Updating this list updates existing clients; removing it clears their configured web origins.
 
 ### Traffic Types
 

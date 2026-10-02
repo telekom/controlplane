@@ -8,6 +8,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -56,10 +57,10 @@ func (h *HandlerClient) CreateOrUpdate(ctx context.Context, client *identityv1.C
 		return err
 	}
 
-	mapToClientStatus(&realm.Status, &client.Status)
 	if err = realmHandler.ValidateRealmStatus(&realm.Status); err != nil {
 		return ctrlerrors.BlockedErrorf("Realm %q is not valid: %s", client.Spec.Realm.String(), err)
 	}
+	mapToClientStatus(&realm.Status, realm.Spec.AllowedOrigins, &client.Status)
 
 	realmClient, err := h.ServiceFactory.ServiceFor(realm.Status)
 	if err != nil {
@@ -252,10 +253,11 @@ func (h *HandlerClient) Delete(ctx context.Context, obj *identityv1.Client) erro
 	return nil
 }
 
-func mapToClientStatus(realmStatus *identityv1.RealmStatus, clientStatus *identityv1.ClientStatus) {
+func mapToClientStatus(realmStatus *identityv1.RealmStatus, allowedOrigins []string, clientStatus *identityv1.ClientStatus) {
 	if clientStatus == nil {
 		clientStatus = &identityv1.ClientStatus{}
 	}
 
 	clientStatus.IssuerUrl = realmStatus.IssuerUrl
+	clientStatus.AllowedOrigins = slices.Clone(allowedOrigins)
 }
