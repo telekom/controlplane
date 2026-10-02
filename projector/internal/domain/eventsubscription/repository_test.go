@@ -22,9 +22,11 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/zone"
 	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 
+	domaineventexposure "github.com/telekom/controlplane/projector/internal/domain/eventexposure"
 	"github.com/telekom/controlplane/projector/internal/domain/eventsubscription"
 	"github.com/telekom/controlplane/projector/internal/domain/shared"
 	"github.com/telekom/controlplane/projector/internal/infrastructure"
+	"github.com/telekom/controlplane/projector/internal/infrastructure/cachekeys"
 	"github.com/telekom/controlplane/projector/internal/runtime"
 )
 
@@ -462,6 +464,57 @@ var _ = Describe("EventSubscription Repository", func() {
 			id, found := cache.Get("eventsubscription", "meta:prod--platform--narvi:cached-sub")
 			Expect(found).To(BeTrue())
 			Expect(id).To(BeNumerically(">", 0))
+		})
+	})
+
+	Describe("target deactivated after its active lookup was cached", func() {
+		It("reports the missing target and clears the target FK", func() {
+			const eventType = "de.telekom.deactivated.v1"
+			providerApp, err := client.Application.Create().
+				SetName("provider-app").
+				SetNamespace("platform--narvi").
+				SetOwnerTeamID(client.Team.Query().OnlyIDX(ctx)).
+				SetZoneID(client.Zone.Query().OnlyIDX(ctx)).
+				Save(ctx)
+			Expect(err).NotTo(HaveOccurred())
+
+			resolver := infrastructure.NewIDResolver(client, cache)
+			subRepo := eventsubscription.NewRepository(client, cache, resolver)
+			expRepo := domaineventexposure.NewRepository(client, cache, resolver)
+			exposure := func(active bool) *domaineventexposure.EventExposureData {
+				return &domaineventexposure.EventExposureData{
+					Meta:           shared.NewMetadata("prod--platform--narvi", "provider-exposure", nil),
+					StatusPhase:    "READY",
+					EventType:      eventType,
+					Visibility:     "WORLD",
+					Active:         active,
+					ApprovalConfig: model.ApprovalConfig{Strategy: "AUTO"},
+					AppName:        providerApp.Name,
+					TeamName:       "platform--narvi",
+				}
+			}
+			data := &eventsubscription.EventSubscriptionData{
+				Meta:        shared.NewMetadata("prod--platform--narvi", "deactivated", nil),
+				StatusPhase: "READY", EventType: eventType, TargetEventType: eventType, DeliveryType: "CALLBACK",
+				OwnerAppName: "consumer-app", OwnerTeamName: "platform--narvi",
+			}
+
+			Expect(expRepo.Upsert(ctx, exposure(true))).To(Succeed())
+			Expect(subRepo.Upsert(ctx, data)).To(Succeed())
+			cache.Wait()
+			_, found := cache.Get(cachekeys.EventExposureByEventType(eventType))
+			Expect(found).To(BeTrue())
+			sub, err := client.EventSubscription.Query().WithTarget().Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(sub.Edges.Target).NotTo(BeNil())
+
+			Expect(expRepo.Upsert(ctx, exposure(false))).To(Succeed())
+			cache.Wait()
+
+			expectTargetMissing(subRepo.Upsert(ctx, data))
+			sub, err = client.EventSubscription.Query().WithTarget().Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(sub.Edges.Target).To(BeNil())
 		})
 	})
 

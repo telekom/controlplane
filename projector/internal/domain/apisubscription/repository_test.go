@@ -22,9 +22,11 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/zone"
 	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 
+	"github.com/telekom/controlplane/projector/internal/domain/apiexposure"
 	"github.com/telekom/controlplane/projector/internal/domain/apisubscription"
 	"github.com/telekom/controlplane/projector/internal/domain/shared"
 	"github.com/telekom/controlplane/projector/internal/infrastructure"
+	"github.com/telekom/controlplane/projector/internal/infrastructure/cachekeys"
 	"github.com/telekom/controlplane/projector/internal/runtime"
 )
 
@@ -720,6 +722,52 @@ var _ = Describe("ApiSubscription Repository", func() {
 			traffic := querySubTraffic()
 			Expect(traffic).NotTo(BeNil())
 			Expect(*traffic.SubscriberLimits).To(Equal(model.Limits{Second: 10}))
+		})
+	})
+
+	Describe("target deactivated after its active lookup was cached", func() {
+		It("reports the missing target and clears target FK and derived traffic", func() {
+			// Give the target a rate limit so the linked subscription carries
+			// derived traffic that must be cleared once the target is gone.
+			Expect(client.ApiExposure.UpdateOneID(exposureID).
+				SetTraffic(model.Traffic{RateLimit: &model.RateLimit{
+					Provider: &model.RateLimitConfig{Limits: model.Limits{Second: 10}},
+				}}).
+				Exec(ctx)).To(Succeed())
+
+			resolver := infrastructure.NewIDResolver(client, cache)
+			subRepo := apisubscription.NewRepository(client, cache, resolver)
+			expRepo := apiexposure.NewRepository(client, cache, resolver)
+
+			Expect(subRepo.Upsert(ctx, baseData())).To(Succeed())
+			cache.Wait()
+			cached, found := cache.Get(cachekeys.APIExposureByBasePath("/api/v1/users"))
+			Expect(found).To(BeTrue())
+			Expect(cached).To(Equal(exposureID))
+			sub, err := client.ApiSubscription.Query().WithTarget().Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(sub.Edges.Target).NotTo(BeNil())
+			Expect(sub.Traffic).NotTo(BeNil())
+
+			Expect(expRepo.Upsert(ctx, &apiexposure.APIExposureData{
+				Meta:           shared.NewMetadata("prod--platform--narvi", "provider-exposure", nil),
+				StatusPhase:    "READY",
+				BasePath:       "/api/v1/users",
+				Visibility:     "WORLD",
+				Active:         false,
+				Features:       []string{},
+				ApprovalConfig: model.ApprovalConfig{Strategy: "AUTO"},
+				AppName:        "provider-app",
+				TeamName:       "platform--narvi",
+			})).To(Succeed())
+			cache.Wait()
+
+			err = subRepo.Upsert(ctx, baseData())
+			Expect(errors.Is(err, runtime.ErrDependencyMissing)).To(BeTrue())
+			sub, err = client.ApiSubscription.Query().WithTarget().Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(sub.Edges.Target).To(BeNil())
+			Expect(sub.Traffic).To(BeNil())
 		})
 	})
 

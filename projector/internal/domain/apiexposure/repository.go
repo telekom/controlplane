@@ -140,6 +140,12 @@ func (r *Repository) Upsert(ctx context.Context, data *APIExposureData) error {
 			data.BasePath, data.AppName, data.TeamName, upsertErr)
 	}
 
+	// The active-by-base-path lookup may now point to a deactivated row or miss
+	// a newly active owner. Invalidate it (never set it: another owner may hold
+	// the active exposure) before any fallible follow-up work.
+	aet, alk := cachekeys.APIExposureByBasePath(data.BasePath)
+	r.cache.Del(aet, alk)
+
 	// Explicitly set/clear the catalogue FK. Api is an edge, not a field, so an
 	// unresolved apiID is not included in UpdateNewValues()'s ON CONFLICT SET
 	// clause — without this, a previously-linked api_id would stay stale once
@@ -265,6 +271,10 @@ func (r *Repository) Delete(ctx context.Context, key APIExposureKey) error {
 		return fmt.Errorf("delete api_exposure %q (app %q, team %q): %w",
 			key.BasePath, key.AppName, key.TeamName, err)
 	}
+	// Invalidate the active lookup even for idempotent deletes: the cached
+	// active ID may belong to a row deleted by an earlier, interrupted call.
+	aet, alk := cachekeys.APIExposureByBasePath(key.BasePath)
+	r.cache.Del(aet, alk)
 	if count > 0 {
 		et, lk := cachekeys.APIExposure(key.BasePath, key.AppName, key.TeamName)
 		r.cache.Del(et, lk)

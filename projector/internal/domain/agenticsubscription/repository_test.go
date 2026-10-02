@@ -22,9 +22,11 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/zone"
 	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 
+	"github.com/telekom/controlplane/projector/internal/domain/agenticexposure"
 	"github.com/telekom/controlplane/projector/internal/domain/agenticsubscription"
 	"github.com/telekom/controlplane/projector/internal/domain/shared"
 	"github.com/telekom/controlplane/projector/internal/infrastructure"
+	"github.com/telekom/controlplane/projector/internal/infrastructure/cachekeys"
 	"github.com/telekom/controlplane/projector/internal/runtime"
 )
 
@@ -447,6 +449,42 @@ var _ = Describe("AgenticSubscription Repository", func() {
 			metaID, metaOK := cache.Get("agenticsubscription", metaKey)
 			Expect(metaOK).To(BeTrue())
 			Expect(metaID).To(BeNumerically(">", 0))
+		})
+	})
+
+	Describe("target deactivated after its active lookup was cached", func() {
+		It("reports the missing target and clears the target FK", func() {
+			resolver := infrastructure.NewIDResolver(client, cache)
+			subRepo := agenticsubscription.NewRepository(client, cache, resolver)
+			expRepo := agenticexposure.NewRepository(client, cache, resolver)
+
+			Expect(subRepo.Upsert(ctx, baseData())).To(Succeed())
+			cache.Wait()
+			cached, found := cache.Get(cachekeys.AgenticExposureByBasePath("/mcp/v1/tools"))
+			Expect(found).To(BeTrue())
+			Expect(cached).To(Equal(exposureID))
+			sub, err := client.AgenticSubscription.Query().WithTarget().Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(sub.Edges.Target).NotTo(BeNil())
+
+			Expect(expRepo.Upsert(ctx, &agenticexposure.AgenticExposureData{
+				Meta:           shared.NewMetadata("prod--platform--narvi", "provider-exposure", nil),
+				StatusPhase:    "READY",
+				BasePath:       "/mcp/v1/tools",
+				Visibility:     "WORLD",
+				Variant:        "MCP",
+				Active:         false,
+				ApprovalConfig: model.ApprovalConfig{Strategy: "AUTO"},
+				AppName:        "provider-app",
+				TeamName:       "platform--narvi",
+			})).To(Succeed())
+			cache.Wait()
+
+			err = subRepo.Upsert(ctx, baseData())
+			Expect(errors.Is(err, runtime.ErrDependencyMissing)).To(BeTrue())
+			sub, err = client.AgenticSubscription.Query().WithTarget().Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(sub.Edges.Target).To(BeNil())
 		})
 	})
 
