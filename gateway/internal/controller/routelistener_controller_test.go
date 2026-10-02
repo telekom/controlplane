@@ -5,8 +5,6 @@
 package controller
 
 import (
-	"context"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -28,8 +26,6 @@ var _ = Describe("RouteListener Controller", func() {
 			resourceName      = "test-routelistener"
 			resourceNamespace = testEnvironment
 		)
-
-		ctx := context.Background()
 
 		typeNamespacedName := types.NamespacedName{
 			Name:      resourceName,
@@ -128,6 +124,12 @@ var _ = Describe("RouteListener Controller", func() {
 				By("Cleanup the specific resource instance RouteListener")
 				Expect(k8sClient.Delete(ctx, resource)).To(Succeed())
 			}
+			// Wait until the finalizer has run: otherwise the next BeforeEach finds this
+			// RouteListener still terminating, skips Create, and the object vanishes mid-spec.
+			Eventually(func(g Gomega) {
+				err := k8sClient.Get(ctx, typeNamespacedName, &gatewayv1.RouteListener{})
+				g.Expect(errors.IsNotFound(err)).To(BeTrue())
+			}, timeout, interval).Should(Succeed())
 		})
 
 		It("should successfully reconcile the resource", func() {
