@@ -74,6 +74,29 @@ var _ = Describe("Hub Error Paths", func() {
 			resp, err := executeRequest(app, req, adminToken)
 			expectStatus(resp, err, http.StatusConflict)
 		})
+
+		It("should return 202 with request data when the CP API returns no group", func() {
+			gqlServer := mockGraphQLServer(map[string]any{
+				"CreateGroup": map[string]any{
+					"createGroup": map[string]any{"group": nil, "accepted": true, "errors": []any{}},
+				},
+			})
+			DeferCleanup(gqlServer.Close)
+			roverServer := mockRoverServer(nil)
+			DeferCleanup(roverServer.Close)
+			app := newTestApp(gqlServer.URL, roverServer.URL)
+
+			body := `{"name":"new-hub","displayName":"New Hub","description":"desc"}`
+			req := httptest.NewRequest(http.MethodPost, "/organization/v1/hubs", strings.NewReader(body))
+			resp, err := executeRequest(app, req, adminToken)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(resp.StatusCode).To(Equal(http.StatusAccepted))
+			var result map[string]any
+			Expect(json.NewDecoder(resp.Body).Decode(&result)).To(Succeed())
+			Expect(result["name"]).To(Equal("new-hub"))
+			Expect(result["displayName"]).To(Equal("New Hub"))
+			Expect(result["description"]).To(Equal("desc"))
+		})
 	})
 
 	Describe("UpdateHub", func() {
@@ -288,6 +311,7 @@ var _ = Describe("Team Error Paths", func() {
 
 		It("should map ALREADY_EXISTS mutation errors", func() {
 			gqlServer := mockGraphQLServer(map[string]any{
+				"GetGroup": existingHubResponse(),
 				"CreateTeam": map[string]any{
 					"createTeam": map[string]any{
 						"team": nil,
@@ -311,6 +335,7 @@ var _ = Describe("Team Error Paths", func() {
 
 		It("should map BAD_REQUEST mutation errors", func() {
 			gqlServer := mockGraphQLServer(map[string]any{
+				"GetGroup": existingHubResponse(),
 				"CreateTeam": map[string]any{
 					"createTeam": map[string]any{
 						"team": nil,
@@ -330,6 +355,48 @@ var _ = Describe("Team Error Paths", func() {
 			req := httptest.NewRequest(http.MethodPost, "/organization/v1/hubs/eni/teams", strings.NewReader(body))
 			resp, err := executeRequest(app, req, adminToken)
 			expectStatus(resp, err, http.StatusBadRequest)
+		})
+
+		It("should return 404 without creating the team when hub does not exist", func() {
+			var ops []string
+			gqlServer := mockGraphQLServer(map[string]any{
+				"GetGroup": map[string]any{"groups": []any{}},
+			}, &ops)
+			DeferCleanup(gqlServer.Close)
+			roverServer := mockRoverServer(nil)
+			DeferCleanup(roverServer.Close)
+			app := newTestApp(gqlServer.URL, roverServer.URL)
+
+			body := `{"name":"newteam","email":"t@test.de","members":[]}`
+			req := httptest.NewRequest(http.MethodPost, "/organization/v1/hubs/missing/teams", strings.NewReader(body))
+			resp, err := executeRequest(app, req, adminToken)
+			expectProblem(resp, err, http.StatusNotFound, "NOT_FOUND", "Hub not found: missing")
+			Expect(ops).NotTo(ContainElement("CreateTeam"))
+		})
+
+		It("should return 202 with request data when the CP API returns no team", func() {
+			gqlServer := mockGraphQLServer(map[string]any{
+				"GetGroup": existingHubResponse(),
+				"CreateTeam": map[string]any{
+					"createTeam": map[string]any{"team": nil, "accepted": true, "errors": []any{}},
+				},
+			})
+			DeferCleanup(gqlServer.Close)
+			roverServer := mockRoverServer(nil)
+			DeferCleanup(roverServer.Close)
+			app := newTestApp(gqlServer.URL, roverServer.URL)
+
+			body := `{"name":"newteam","email":"t@test.de","members":[{"name":"Alice","email":"alice@test.de"}]}`
+			req := httptest.NewRequest(http.MethodPost, "/organization/v1/hubs/eni/teams", strings.NewReader(body))
+			resp, err := executeRequest(app, req, adminToken)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(resp.StatusCode).To(Equal(http.StatusAccepted))
+			var result map[string]any
+			Expect(json.NewDecoder(resp.Body).Decode(&result)).To(Succeed())
+			Expect(result["name"]).To(Equal("newteam"))
+			Expect(result["email"]).To(Equal("t@test.de"))
+			Expect(result["clientId"]).To(Equal("eni--newteam--team-user"))
+			Expect(result["members"]).To(HaveLen(1))
 		})
 	})
 
@@ -664,9 +731,93 @@ var _ = Describe("Team Error Paths", func() {
 		})
 	})
 
+	Describe("Async mutation payloads without returned resources", func() {
+		teamResponse := func() map[string]any {
+			return map[string]any{
+				"teams": map[string]any{
+					"edges": []map[string]any{{
+						"node": map[string]any{
+							"id": "10", "name": "eni--hyperion", "email": "h@test.de",
+							"createdAt": now.Format(time.RFC3339), "lastModifiedAt": now.Format(time.RFC3339),
+							"group": map[string]any{"name": "eni"}, "members": []any{},
+						},
+					}},
+				},
+			}
+		}
+
+		It("should return 202 for UpdateHub when the CP API returns no group", func() {
+			gqlServer := mockGraphQLServer(map[string]any{
+				"GetGroup": existingHubResponse(),
+				"UpdateGroup": map[string]any{
+					"updateGroup": map[string]any{"group": nil, "accepted": true, "errors": []any{}},
+				},
+			})
+			DeferCleanup(gqlServer.Close)
+			roverServer := mockRoverServer(nil)
+			DeferCleanup(roverServer.Close)
+			app := newTestApp(gqlServer.URL, roverServer.URL)
+
+			body := `{"displayName":"Updated","description":"updated"}`
+			req := httptest.NewRequest(http.MethodPut, "/organization/v1/hubs/eni", strings.NewReader(body))
+			resp, err := executeRequest(app, req, adminToken)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(resp.StatusCode).To(Equal(http.StatusAccepted))
+			var result map[string]any
+			Expect(json.NewDecoder(resp.Body).Decode(&result)).To(Succeed())
+			Expect(result["name"]).To(Equal("eni"))
+			Expect(result["displayName"]).To(Equal("Updated"))
+		})
+
+		It("should return 202 for UpdateTeam when the CP API returns no team", func() {
+			gqlServer := mockGraphQLServer(map[string]any{
+				"GetTeam": teamResponse(),
+				"UpdateTeam": map[string]any{
+					"updateTeam": map[string]any{"team": nil, "accepted": true, "errors": []any{}},
+				},
+			})
+			DeferCleanup(gqlServer.Close)
+			roverServer := mockRoverServer(nil)
+			DeferCleanup(roverServer.Close)
+			app := newTestApp(gqlServer.URL, roverServer.URL)
+
+			body := `{"email":"new@test.de","members":[]}`
+			req := httptest.NewRequest(http.MethodPut, "/organization/v1/hubs/eni/teams/hyperion", strings.NewReader(body))
+			resp, err := executeRequest(app, req, adminToken)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(resp.StatusCode).To(Equal(http.StatusAccepted))
+			var result map[string]any
+			Expect(json.NewDecoder(resp.Body).Decode(&result)).To(Succeed())
+			Expect(result["name"]).To(Equal("hyperion"))
+			Expect(result["email"]).To(Equal("new@test.de"))
+		})
+
+		It("should return 200 with an empty token when the accepted rotation has no team payload", func() {
+			gqlServer := mockGraphQLServer(map[string]any{
+				"GetTeam": teamResponse(),
+				"RotateTeamToken": map[string]any{
+					"rotateTeamToken": map[string]any{"team": nil, "accepted": true, "errors": []any{}},
+				},
+			})
+			DeferCleanup(gqlServer.Close)
+			roverServer := mockRoverServer(nil)
+			DeferCleanup(roverServer.Close)
+			app := newTestApp(gqlServer.URL, roverServer.URL)
+
+			req := httptest.NewRequest(http.MethodPatch, "/organization/v1/hubs/eni/teams/hyperion/teamToken", http.NoBody)
+			resp, err := executeRequest(app, req, adminToken)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(resp.StatusCode).To(Equal(http.StatusOK))
+			var result map[string]any
+			Expect(json.NewDecoder(resp.Body).Decode(&result)).To(Succeed())
+			Expect(result["teamToken"]).To(Equal(""))
+		})
+	})
+
 	Describe("Mutation error code mapping", func() {
 		It("should map unknown error codes to 500", func() {
 			gqlServer := mockGraphQLServer(map[string]any{
+				"GetGroup": existingHubResponse(),
 				"CreateTeam": map[string]any{
 					"createTeam": map[string]any{
 						"team": nil,
@@ -689,6 +840,14 @@ var _ = Describe("Team Error Paths", func() {
 		})
 	})
 })
+
+func existingHubResponse() map[string]any {
+	return map[string]any{
+		"groups": []map[string]any{{
+			"id": "1", "name": "eni", "displayName": "Eni", "description": "",
+		}},
+	}
+}
 
 func expectProblem(resp *http.Response, err error, status int, title, detail string) {
 	GinkgoHelper()
