@@ -10,6 +10,7 @@ import (
 	apiequality "k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/validation/field"
 
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
 )
@@ -52,6 +53,28 @@ func validateDistinctDeciders(decisions []approvalv1.Decision) error {
 			"FourEyes strategy requires two distinct deciders (by email)")
 	}
 	return nil
+}
+
+// validateApprovalKeyImmutability checks that a non-empty ApprovalKey is not
+// added, removed, or changed after creation. Absent and empty are equivalent
+// (legacy unscoped contract).
+func validateApprovalKeyImmutability(oldKey, newKey string) error {
+	if oldKey == newKey {
+		return nil
+	}
+	// absent↔empty is the same semantic value
+	if oldKey == "" && newKey == "" {
+		return nil
+	}
+	return apierrors.NewInvalid(
+		approvalv1.GroupVersion.WithKind("Approval").GroupKind(),
+		"",
+		field.ErrorList{field.Invalid(
+			field.NewPath("spec", "approvalKey"),
+			newKey,
+			"spec.approvalKey is immutable once set to a non-empty value",
+		)},
+	)
 }
 
 // isTerminalApprovalRequestState returns true when an ApprovalRequest has reached its final

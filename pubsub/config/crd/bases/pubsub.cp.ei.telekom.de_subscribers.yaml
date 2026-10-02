@@ -23,7 +23,8 @@ spec:
         description: |-
           Subscriber is the Schema for the subscribers API.
           It represents an event subscription registration in the configuration backend.
-          Subscriber resources are created and managed by the EventSubscription handler in the event domain.
+          Subscriber resources are created and managed by the EventSubscription handler in the event domain
+          or by the Listener handler in the spectre domain.
         properties:
           apiVersion:
             description: |-
@@ -46,7 +47,8 @@ spec:
             description: |-
               SubscriberSpec defines the desired state of Subscriber.
               Subscriber represents an event subscription registration in the configuration backend.
-              It is created by the EventSubscription handler in the event domain.
+              It is created by the EventSubscription handler in the event domain or by the
+              Listener handler in the spectre domain.
             properties:
               appliedScopes:
                 description: AppliedScopes lists the scope names that are applied

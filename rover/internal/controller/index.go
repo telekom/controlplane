@@ -18,6 +18,7 @@ import (
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	filev1 "github.com/telekom/controlplane/file/api/v1"
 	permissionv1 "github.com/telekom/controlplane/permission/api/v1"
+	spectrev1 "github.com/telekom/controlplane/spectre/api/v1"
 )
 
 func RegisterIndicesOrDie(ctx context.Context, mgr ctrl.Manager) {
@@ -91,6 +92,19 @@ func RegisterIndicesOrDie(ctx context.Context, mgr ctrl.Manager) {
 		err = index.SetOwnerIndex(ctx, mgr.GetFieldIndexer(), &filev1.FileSubscription{})
 		if err != nil {
 			ctrl.Log.Error(err, "unable to create ownerIndex for FileSubscription")
+			os.Exit(1)
+		}
+	}
+
+	if cconfig.FeatureSpectre.IsEnabled() {
+		err = index.SetOwnerIndex(ctx, mgr.GetFieldIndexer(), &spectrev1.SpectreApplication{})
+		if err != nil {
+			ctrl.Log.Error(err, "unable to create ownerIndex for SpectreApplication")
+			os.Exit(1)
+		}
+		err = index.SetOwnerIndex(ctx, mgr.GetFieldIndexer(), &spectrev1.Listener{})
+		if err != nil {
+			ctrl.Log.Error(err, "unable to create ownerIndex for Listener")
 			os.Exit(1)
 		}
 	}
