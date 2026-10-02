@@ -647,20 +647,7 @@ var _ = Describe("Listener Mapper Tests", Ordered, func() {
 					Namespace: mapNs,
 					Labels:    map[string]string{envLabelKey: mapEnv},
 				},
-				Spec: adminv1.ZoneSpec{
-					IdentityProvider: adminv1.IdentityProviderConfig{
-						Url:   "http://id.local",
-						Admin: adminv1.IdentityProviderAdminConfig{ClientId: "a", UserName: "a", Password: "a"},
-					},
-					Gateway: adminv1.GatewayConfig{
-						Admin: adminv1.GatewayAdminConfig{Url: "http://gw.local"},
-						Presets: []adminv1.GatewayConfigPreset{{
-							Name: "default", Default: true,
-							Urls: []adminv1.UrlConfig{{Hostname: "gw.test.local", BasePath: "/"}},
-						}},
-					},
-					Visibility: adminv1.ZoneVisibilityWorld,
-				},
+				Spec: testZoneSpec("gw.test.local", "/"),
 			}
 			Expect(client.IgnoreAlreadyExists(directClient.Create(ctx, zone))).To(Succeed())
 
@@ -670,11 +657,11 @@ var _ = Describe("Listener Mapper Tests", Ordered, func() {
 				g.Expect(directClient.Get(ctx, client.ObjectKeyFromObject(zone), fetched)).To(Succeed())
 				fetched.Status.IdentityRealm = &ctypes.ObjectRef{Name: "mapper-realm", Namespace: mapNs}
 				fetched.Status.Namespace = zoneNs
-				fetched.Status.Links = adminv1.Links{
+				fetched.Status.Presets = testPresetStatuses(&ctypes.ObjectRef{Name: "gw-zone-a", Namespace: zoneNs}, adminv1.Links{
 					Url:       "http://gw.test.local",
 					Issuer:    "http://id.local/realms/mapper-env",
 					LmsIssuer: "http://id.local/realms/mapper-env-lms",
-				}
+				})
 				g.Expect(directClient.Status().Update(ctx, fetched)).To(Succeed())
 			}, testTimeout, testInterval).Should(Succeed())
 
@@ -1217,20 +1204,7 @@ var _ = Describe("Listener dependency mapping (observer, applied, draining)", Or
 	It("enqueues a Listener when the Realm of A's Zone changes", func() {
 		zone := &adminv1.Zone{
 			ObjectMeta: meta("zone-obs", topoEnv),
-			Spec: adminv1.ZoneSpec{
-				IdentityProvider: adminv1.IdentityProviderConfig{
-					Url:   "http://id.local",
-					Admin: adminv1.IdentityProviderAdminConfig{ClientId: "a", UserName: "a", Password: "a"},
-				},
-				Gateway: adminv1.GatewayConfig{
-					Admin: adminv1.GatewayAdminConfig{Url: "http://gw.local"},
-					Presets: []adminv1.GatewayConfigPreset{{
-						Name: "default", Default: true,
-						Urls: []adminv1.UrlConfig{{Hostname: "gw.topo.local", BasePath: "/"}},
-					}},
-				},
-				Visibility: adminv1.ZoneVisibilityWorld,
-			},
+			Spec:       testZoneSpec("gw.topo.local", "/"),
 		}
 		Expect(client.IgnoreAlreadyExists(directClient.Create(ctx, zone))).To(Succeed())
 		Eventually(func(g Gomega) {
@@ -1238,11 +1212,11 @@ var _ = Describe("Listener dependency mapping (observer, applied, draining)", Or
 			g.Expect(directClient.Get(ctx, key("zone-obs"), fetched)).To(Succeed())
 			fetched.Status.IdentityRealm = ref("topo-realm")
 			fetched.Status.Namespace = "topo-env--zone-obs"
-			fetched.Status.Links = adminv1.Links{
+			fetched.Status.Presets = testPresetStatuses(&ctypes.ObjectRef{Name: "gw-zone-obs", Namespace: "topo-env--zone-obs"}, adminv1.Links{
 				Url:       "http://gw.topo.local",
 				Issuer:    "http://id.local/realms/topo-env",
 				LmsIssuer: "http://id.local/realms/topo-env-lms",
-			}
+			})
 			g.Expect(directClient.Status().Update(ctx, fetched)).To(Succeed())
 		}, testTimeout, testInterval).Should(Succeed())
 		Eventually(func(g Gomega) {
