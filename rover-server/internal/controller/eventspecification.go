@@ -240,7 +240,7 @@ func (e *EventSpecificationController) deleteFile(ctx context.Context, ns, name 
 	return nil
 }
 
-// downloadSpecification retrieves the optional specification file content.
+// downloadFile retrieves the optional specification file content.
 // Returns nil if no specification is stored (fileId is empty).
 func (e *EventSpecificationController) downloadFile(ctx context.Context, fileId string) (map[string]any, error) {
 	if !cconfig.FeatureFileManager.IsEnabled() {
