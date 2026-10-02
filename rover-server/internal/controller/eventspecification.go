@@ -59,19 +59,11 @@ func (e *EventSpecificationController) Delete(ctx context.Context, resourceId st
 		return err
 	}
 
-	if cconfig.FeatureFileManager.IsEnabled() {
-		// Delete the optional specification file from file-manager
-		fileId := generateFileId(id)
-		err = file.GetFileManager().DeleteFile(ctx, fileId)
-		if err != nil {
-			if !errors.Is(err, file.ErrNotFound) {
-				return err
-			}
-			// File not found is acceptable — specification is optional
-		}
+	ns := id.Environment + "--" + id.Namespace
+	if err := e.deleteFile(ctx, ns, id.Name); err != nil {
+		return err
 	}
 
-	ns := id.Environment + "--" + id.Namespace
 	err = e.Store.Delete(ctx, ns, id.Name)
 	if err != nil {
 		if problems.IsNotFound(err) {
@@ -163,12 +155,8 @@ func (e *EventSpecificationController) Update(ctx context.Context, resourceId st
 		if uploadRes != nil {
 			specOrFileId = uploadRes.FileId
 		}
-	} else {
-		// Delete the optional specification file from file-manager.
-		err = deleteOptionalSpecificationFile(ctx, file.GetFileManager(), generateFileId(id))
-		if err != nil {
-			return res, err
-		}
+	} else if err := e.deleteFile(ctx, id.Environment+"--"+id.Namespace, id.Name); err != nil {
+		return res, err
 	}
 
 	eventSpec, err := in.MapRequest(req, specOrFileId, id)
@@ -209,17 +197,44 @@ func (e *EventSpecificationController) uploadFile(ctx context.Context, specMarsh
 		return nil, nil
 	}
 
-	fileId := generateFileId(id)
+	existingId, err := e.existingFileId(ctx, id.Environment+"--"+id.Namespace, id.Name)
+	if err != nil {
+		return nil, err
+	}
+	fileId, err := resolveFileId(existingId)
+	if err != nil {
+		return nil, err
+	}
+
 	fileContentType := "application/json"
 	return file.GetFileManager().UploadFile(ctx, fileId, fileContentType, bytes.NewReader(specMarshaled))
 }
 
-func deleteOptionalSpecificationFile(ctx context.Context, fileManager filesapi.FileManager, fileId string) error {
+// existingFileId returns the stored specification file ID, or "" if the resource does not exist.
+func (e *EventSpecificationController) existingFileId(ctx context.Context, ns, name string) (string, error) {
+	eventSpec, err := e.Store.Get(ctx, ns, name)
+	if err != nil {
+		if problems.IsNotFound(err) {
+			return "", nil
+		}
+		return "", err
+	}
+	return eventSpec.Spec.Specification, nil
+}
+
+// deleteFile removes the stored specification file of the resource, if any.
+func (e *EventSpecificationController) deleteFile(ctx context.Context, ns, name string) error {
 	if !cconfig.FeatureFileManager.IsEnabled() {
 		return nil
 	}
 
-	if err := fileManager.DeleteFile(ctx, fileId); err != nil && !errors.Is(err, file.ErrNotFound) {
+	fileId, err := e.existingFileId(ctx, ns, name)
+	if err != nil || fileId == "" {
+		return err
+	}
+
+	err = file.GetFileManager().DeleteFile(ctx, fileId)
+	if err != nil && !errors.Is(err, file.ErrNotFound) {
 		return err
 	}
 	return nil

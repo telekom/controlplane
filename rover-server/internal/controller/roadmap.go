@@ -228,12 +228,15 @@ func (r *RoadmapController) uploadFile(ctx context.Context, itemsMarshaled []byt
 	}
 
 	// Check if hash changed (optimization: skip upload if same)
-	localHash, same, err := r.isHashEqual(ctx, id, itemsMarshaled)
+	localHash, same, existingId, err := r.isHashEqual(ctx, id, itemsMarshaled)
 	if err != nil {
 		return nil, err
 	}
 
-	fileId := generateFileId(id)
+	fileId, err := resolveFileId(existingId)
+	if err != nil {
+		return nil, err
+	}
 	fileContentType := "application/json"
 
 	resp := &filesapi.FileUploadResponse{
@@ -249,21 +252,21 @@ func (r *RoadmapController) uploadFile(ctx context.Context, itemsMarshaled []byt
 	return resp, err
 }
 
-// isHashEqual checks if the hash of the data matches the stored hash
-func (r *RoadmapController) isHashEqual(ctx context.Context, id mapper.ResourceIdInfo, data []byte) (string, bool, error) {
+// isHashEqual checks if the hash of the data matches the stored hash and returns the stored file ID
+func (r *RoadmapController) isHashEqual(ctx context.Context, id mapper.ResourceIdInfo, data []byte) (string, bool, string, error) {
 	ns := id.Environment + "--" + id.Namespace
 	roadmap, err := r.Store.Get(ctx, ns, id.Name)
 	if err != nil {
 		if problems.IsNotFound(err) {
-			return "", false, nil
+			return "", false, "", nil
 		}
-		return "", false, err
+		return "", false, "", err
 	}
 
 	hasher := sha256.New()
 	hasher.Write(data)
 	hash := base64.StdEncoding.EncodeToString(hasher.Sum(nil))
-	return hash, hash == roadmap.Spec.Hash, nil
+	return hash, hash == roadmap.Spec.Hash, roadmap.Spec.Contents, nil
 }
 
 // downloadFile downloads items JSON from file-manager
@@ -286,5 +289,3 @@ func (r *RoadmapController) downloadFile(ctx context.Context, fileId string) ([]
 
 	return items, nil
 }
-
-// generateFileId is defined in apispecification.go and shared across controllers

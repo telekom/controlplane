@@ -57,15 +57,20 @@ func (c *McpSpecificationControllerImpl) Delete(ctx context.Context, resourceId 
 		return err
 	}
 
+	ns := id.Environment + "--" + id.Namespace
 	if cconfig.FeatureFileManager.IsEnabled() {
-		fileID := generateMcpFileID(id)
-		err = file.GetFileManager().DeleteFile(ctx, fileID)
-		if err != nil && !errors.Is(err, file.ErrNotFound) {
-			return err
+		mcpSpec, getErr := c.Store.Get(ctx, ns, id.Name)
+		if getErr != nil && !problems.IsNotFound(getErr) {
+			return getErr
+		}
+		if getErr == nil && mcpSpec.Spec.Specification != "" {
+			err = file.GetFileManager().DeleteFile(ctx, mcpSpec.Spec.Specification)
+			if err != nil && !errors.Is(err, file.ErrNotFound) {
+				return err
+			}
 		}
 	}
 
-	ns := id.Environment + "--" + id.Namespace
 	err = c.Store.Delete(ctx, ns, id.Name)
 	if err != nil {
 		if problems.IsNotFound(err) {
@@ -198,12 +203,15 @@ func (c *McpSpecificationControllerImpl) uploadFile(ctx context.Context, specMar
 		return nil, errors.New("input specification has length 0")
 	}
 
-	localHash, same, err := c.isHashEqual(ctx, id, specMarshaled)
+	localHash, same, existingID, err := c.isHashEqual(ctx, id, specMarshaled)
 	if err != nil {
 		return nil, err
 	}
 
-	fileID := generateMcpFileID(id)
+	fileID, err := resolveFileId(existingID)
+	if err != nil {
+		return nil, err
+	}
 	fileContentType := "application/yaml"
 
 	resp := &filesapi.FileUploadResponse{
@@ -219,20 +227,20 @@ func (c *McpSpecificationControllerImpl) uploadFile(ctx context.Context, specMar
 	return resp, err
 }
 
-func (c *McpSpecificationControllerImpl) isHashEqual(ctx context.Context, id mapper.ResourceIdInfo, data []byte) (string, bool, error) {
+func (c *McpSpecificationControllerImpl) isHashEqual(ctx context.Context, id mapper.ResourceIdInfo, data []byte) (string, bool, string, error) {
 	ns := id.Environment + "--" + id.Namespace
 	mcpSpec, err := c.Store.Get(ctx, ns, id.Name)
 	if err != nil {
 		if problems.IsNotFound(err) {
-			return "", false, nil
+			return "", false, "", nil
 		}
-		return "", false, err
+		return "", false, "", err
 	}
 
 	hasher := sha256.New()
 	hasher.Write(data)
 	hash := base64.StdEncoding.EncodeToString(hasher.Sum(nil))
-	return hash, hash == mcpSpec.Spec.Hash, nil
+	return hash, hash == mcpSpec.Spec.Hash, mcpSpec.Spec.Specification, nil
 }
 
 func (c *McpSpecificationControllerImpl) downloadFile(ctx context.Context, fileID string) (map[string]any, error) {
@@ -257,8 +265,4 @@ func (c *McpSpecificationControllerImpl) downloadFile(ctx context.Context, fileI
 	}
 
 	return res, nil
-}
-
-func generateMcpFileID(id mapper.ResourceIdInfo) string {
-	return id.Environment + "--" + id.ResourceId
 }

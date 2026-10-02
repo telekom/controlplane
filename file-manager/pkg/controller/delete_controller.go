@@ -32,11 +32,5 @@ func (d deleteController) DeleteFile(ctx context.Context, fileId string) error {
 		return backend.ErrInvalidFileId(fileId)
 	}
 
-	// Convert fileId to path format
-	path, err := identifier.ConvertFileIdToPath(fileId)
-	if err != nil {
-		return backend.ErrInvalidFileId(fileId)
-	}
-
-	return d.Deleter.DeleteFile(ctx, path)
+	return d.Deleter.DeleteFile(ctx, fileId)
 }
