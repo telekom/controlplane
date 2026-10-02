@@ -792,7 +792,7 @@ var _ = Describe("Team Error Paths", func() {
 			Expect(result["email"]).To(Equal("new@test.de"))
 		})
 
-		It("should not panic for RotateToken when the CP API returns no team", func() {
+		It("should return 200 with an empty token when the accepted rotation has no team payload", func() {
 			gqlServer := mockGraphQLServer(map[string]any{
 				"GetTeam": teamResponse(),
 				"RotateTeamToken": map[string]any{
@@ -807,7 +807,10 @@ var _ = Describe("Team Error Paths", func() {
 			req := httptest.NewRequest(http.MethodPatch, "/organization/v1/hubs/eni/teams/hyperion/teamToken", http.NoBody)
 			resp, err := executeRequest(app, req, adminToken)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(resp.StatusCode).To(BeNumerically("<", http.StatusInternalServerError))
+			Expect(resp.StatusCode).To(Equal(http.StatusOK))
+			var result map[string]any
+			Expect(json.NewDecoder(resp.Body).Decode(&result)).To(Succeed())
+			Expect(result["teamToken"]).To(Equal(""))
 		})
 	})
 

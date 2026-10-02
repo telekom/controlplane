@@ -37,7 +37,7 @@ type TeamController interface {
 	Update(ctx context.Context, hubName, teamName string, req api.TeamUpdateRequest) (*api.TeamResponse, []MutationError, error)
 	Delete(ctx context.Context, hubName, teamName string) ([]MutationError, error)
 	GetStatus(ctx context.Context, hubName, teamName string) (*api.ResourceStatusResponse, error)
-	RotateToken(ctx context.Context, hubName, teamName string) (string, []MutationError, error)
+	RotateToken(ctx context.Context, hubName, teamName string) (*string, []MutationError, error)
 	GetResources(ctx context.Context, env, hubName, teamName string) ([]client.ResourceRef, error)
 }
 
@@ -382,30 +382,29 @@ func (ctrl *Controller) GetTeamStatus(ctx context.Context, hubName, teamName str
 	return &status, nil
 }
 
-func (ctrl *Controller) RotateToken(ctx context.Context, hubName, teamName string) (string, []MutationError, error) {
+func (ctrl *Controller) RotateToken(ctx context.Context, hubName, teamName string) (*string, []MutationError, error) {
 	teamID, err := ctrl.resolveTeamID(ctx, hubName, teamName)
 	if err != nil {
-		return "", nil, err
+		return nil, nil, err
 	}
 	if teamID == "" {
-		return "", nil, nil
+		return nil, nil, nil
 	}
 
 	resp, err := gql.RotateTeamToken(ctx, ctrl.cpapi, teamID)
 	if err != nil {
-		return "", nil, err
+		return nil, nil, err
 	}
 
 	if len(resp.RotateTeamToken.Errors) > 0 {
-		return "", toMutationErrors(resp.RotateTeamToken.Errors), nil
+		return nil, toMutationErrors(resp.RotateTeamToken.Errors), nil
 	}
 
-	// Rotation is asynchronous; the CP API may not return the team or its new token.
 	token := ""
 	if t := resp.RotateTeamToken.Team; t != nil && t.TeamToken != nil {
 		token = *t.TeamToken
 	}
-	return token, nil, nil
+	return &token, nil, nil
 }
 
 func (ctrl *Controller) GetResources(ctx context.Context, env, hubName, teamName string) ([]client.ResourceRef, error) {
