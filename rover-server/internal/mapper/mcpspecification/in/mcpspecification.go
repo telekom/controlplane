@@ -81,19 +81,9 @@ func MapRequest(mcpSpec *roverv1.McpSpecification, fileAPIResp *filesapi.FileUpl
 		Kind:       "McpSpecification",
 		APIVersion: "rover.cp.ei.telekom.de/v1",
 	}
-	mcpSpec.Spec.Hash = fileAPIResp.FileHash
-	mcpSpec.Spec.Specification = fileAPIResp.FileId
-	mcpSpec.Labels = map[string]string{
-		config.EnvironmentLabelKey: id.Environment,
-	}
-	mcpSpec.Namespace = id.Environment + "--" + id.Namespace
-}
-
-// MapRequestWithoutFile maps McpSpecification fields when file-manager is disabled.
-func MapRequestWithoutFile(mcpSpec *roverv1.McpSpecification, id mapper.ResourceIdInfo) {
-	mcpSpec.TypeMeta = metav1.TypeMeta{
-		Kind:       "McpSpecification",
-		APIVersion: "rover.cp.ei.telekom.de/v1",
+	if fileAPIResp != nil {
+		mcpSpec.Spec.Hash = fileAPIResp.FileHash
+		mcpSpec.Spec.Specification = fileAPIResp.FileId
 	}
 	mcpSpec.Labels = map[string]string{
 		config.EnvironmentLabelKey: id.Environment,

@@ -10,7 +10,6 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
-	"io"
 	"strings"
 
 	"github.com/go-logr/logr"
@@ -20,6 +19,7 @@ import (
 	"github.com/telekom/controlplane/common-server/pkg/problems"
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
 	"github.com/telekom/controlplane/common-server/pkg/store"
+	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	filesapi "github.com/telekom/controlplane/file-manager/api"
 	"github.com/telekom/controlplane/rover-server/internal/file"
 	"github.com/telekom/controlplane/rover-server/internal/oaslint"
@@ -106,22 +106,7 @@ func (a *ApiSpecificationController) Get(ctx context.Context, resourceId string)
 		return res, err
 	}
 
-	reader, err := a.downloadFile(ctx, apiSpec.Spec.Specification)
-	if err != nil {
-		return res, err
-	}
-
-	b, err := io.ReadAll(reader)
-	if err != nil {
-		return res, err
-	}
-
-	if len(b) == 0 || b == nil {
-		return res, errors.New("api specification response is empty")
-	}
-
-	m := make(map[string]any)
-	err = yaml.Unmarshal(b, &m)
+	m, err := a.downloadFile(ctx, apiSpec.Spec.Specification)
 	if err != nil {
 		return res, err
 	}
@@ -142,25 +127,11 @@ func (a *ApiSpecificationController) GetAll(ctx context.Context, params api.GetA
 
 	list := make([]api.ApiSpecificationResponse, 0, len(objList.Items))
 	for _, apiSpec := range objList.Items {
-		reader, err := a.downloadFile(ctx, apiSpec.Spec.Specification)
-		if err != nil {
-			return nil, problems.InternalServerError("Failed to download resource", err.Error())
+		m, downloadErr := a.downloadFile(ctx, apiSpec.Spec.Specification)
+		if downloadErr != nil {
+			return nil, downloadErr
 		}
 
-		b, err := io.ReadAll(reader)
-		if err != nil {
-			return nil, problems.InternalServerError("Failed to read response from reader", err.Error())
-		}
-
-		if len(b) == 0 || b == nil {
-			return nil, errors.New("api specification response is empty")
-		}
-
-		m := make(map[string]any)
-		err = yaml.Unmarshal(b, &m)
-		if err != nil {
-			return nil, problems.InternalServerError("Failed to marshal resource", err.Error())
-		}
 		resp, err := out.MapResponse(ctx, apiSpec, m, a.stores)
 		if err != nil {
 			return nil, problems.InternalServerError("Failed to map resource", err.Error())
@@ -349,6 +320,10 @@ func (a *ApiSpecificationController) lintSpec(ctx context.Context, apiSpec *rove
 }
 
 func (a *ApiSpecificationController) uploadFile(ctx context.Context, specMarshaled []byte, id mapper.ResourceIdInfo) (*filesapi.FileUploadResponse, error) {
+	if !cconfig.FeatureFileManager.IsEnabled() {
+		return nil, nil
+	}
+
 	if len(specMarshaled) == 0 || specMarshaled == nil {
 		return nil, errors.New("input api specification has length 0 or nil")
 	}
@@ -381,13 +356,28 @@ func computeHash(data []byte) string {
 	return base64.StdEncoding.EncodeToString(hasher.Sum(nil))
 }
 
-func (a *ApiSpecificationController) downloadFile(ctx context.Context, fileId string) (io.Reader, error) {
+func (a *ApiSpecificationController) downloadFile(ctx context.Context, fileId string) (map[string]any, error) {
+	if !cconfig.FeatureFileManager.IsEnabled() {
+		return nil, nil
+	}
+
 	var b bytes.Buffer
 	_, err := file.GetFileManager().DownloadFile(ctx, fileId, &b)
 	if err != nil {
-		return nil, err
+		return nil, problems.InternalServerError("Failed to download api specification", err.Error())
 	}
-	return &b, nil
+
+	if b.Len() == 0 {
+		return nil, errors.New("api specification response is empty")
+	}
+
+	res := map[string]any{}
+	err = yaml.NewDecoder(&b).Decode(&res)
+	if err != nil {
+		return res, problems.InternalServerError("Failed to unmarshal api specification", err.Error())
+	}
+
+	return res, nil
 }
 
 func generateFileId(id mapper.ResourceIdInfo) string {

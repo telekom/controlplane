@@ -8,7 +8,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"io"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/log"
@@ -100,7 +99,7 @@ func (e *EventSpecificationController) Get(ctx context.Context, resourceId strin
 	}
 
 	var specContent map[string]any
-	specContent, err = e.downloadSpecification(ctx, eventSpec.Spec.Specification)
+	specContent, err = e.downloadFile(ctx, eventSpec.Spec.Specification)
 	if err != nil {
 		return res, err
 	}
@@ -121,9 +120,9 @@ func (e *EventSpecificationController) GetAll(ctx context.Context, params api.Ge
 
 	list := make([]api.EventSpecificationResponse, 0, len(objList.Items))
 	for _, eventSpec := range objList.Items {
-		specContent, err := e.downloadSpecification(ctx, eventSpec.Spec.Specification)
+		specContent, err := e.downloadFile(ctx, eventSpec.Spec.Specification)
 		if err != nil {
-			return nil, problems.InternalServerError("Failed to download resource", err.Error())
+			return nil, err
 		}
 
 		resp, err := out.MapResponse(ctx, eventSpec, specContent, e.stores)
@@ -163,6 +162,12 @@ func (e *EventSpecificationController) Update(ctx context.Context, resourceId st
 		}
 		if uploadRes != nil {
 			specOrFileId = uploadRes.FileId
+		}
+	} else {
+		// Delete the optional specification file from file-manager.
+		err = deleteOptionalSpecificationFile(ctx, file.GetFileManager(), generateFileId(id))
+		if err != nil {
+			return res, err
 		}
 	}
 
@@ -209,9 +214,20 @@ func (e *EventSpecificationController) uploadFile(ctx context.Context, specMarsh
 	return file.GetFileManager().UploadFile(ctx, fileId, fileContentType, bytes.NewReader(specMarshaled))
 }
 
-// downloadSpecification retrieves the optional specification file content.
+func deleteOptionalSpecificationFile(ctx context.Context, fileManager filesapi.FileManager, fileId string) error {
+	if !cconfig.FeatureFileManager.IsEnabled() {
+		return nil
+	}
+
+	if err := fileManager.DeleteFile(ctx, fileId); err != nil && !errors.Is(err, file.ErrNotFound) {
+		return err
+	}
+	return nil
+}
+
+// downloadFile retrieves the optional specification file content.
 // Returns nil if no specification is stored (fileId is empty).
-func (e *EventSpecificationController) downloadSpecification(ctx context.Context, fileId string) (map[string]any, error) {
+func (e *EventSpecificationController) downloadFile(ctx context.Context, fileId string) (map[string]any, error) {
 	if !cconfig.FeatureFileManager.IsEnabled() {
 		return nil, nil
 	}
@@ -223,22 +239,17 @@ func (e *EventSpecificationController) downloadSpecification(ctx context.Context
 	var b bytes.Buffer
 	_, err := file.GetFileManager().DownloadFile(ctx, fileId, &b)
 	if err != nil {
-		return nil, err
+		return nil, problems.InternalServerError("Failed to download event specification", err.Error())
 	}
 
-	data, err := io.ReadAll(&b)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(data) == 0 {
+	if b.Len() == 0 {
 		return nil, nil
 	}
 
 	m := make(map[string]any)
-	err = json.Unmarshal(data, &m)
+	err = json.NewDecoder(&b).Decode(&m)
 	if err != nil {
-		return nil, err
+		return nil, problems.InternalServerError("Failed to unmarshal event specification", err.Error())
 	}
 
 	return m, nil
