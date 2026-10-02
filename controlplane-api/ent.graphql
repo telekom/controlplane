@@ -3553,6 +3553,8 @@ type FileExposure implements Node {
   visibility: FileExposureVisibility!
   active: Boolean
   zoneName: String!
+  serviceURL: String
+  serviceExternalURL: String
   sftp: FileSFTP
   approvalConfig: ApprovalConfig!
   owner: Application!
@@ -3774,6 +3776,42 @@ input FileExposureWhereInput {
   zoneNameHasSuffix: String
   zoneNameEqualFold: String
   zoneNameContainsFold: String
+  """
+  service_url field predicates
+  """
+  serviceURL: String
+  serviceURLNEQ: String
+  serviceURLIn: [String!]
+  serviceURLNotIn: [String!]
+  serviceURLGT: String
+  serviceURLGTE: String
+  serviceURLLT: String
+  serviceURLLTE: String
+  serviceURLContains: String
+  serviceURLHasPrefix: String
+  serviceURLHasSuffix: String
+  serviceURLIsNil: Boolean
+  serviceURLNotNil: Boolean
+  serviceURLEqualFold: String
+  serviceURLContainsFold: String
+  """
+  service_external_url field predicates
+  """
+  serviceExternalURL: String
+  serviceExternalURLNEQ: String
+  serviceExternalURLIn: [String!]
+  serviceExternalURLNotIn: [String!]
+  serviceExternalURLGT: String
+  serviceExternalURLGTE: String
+  serviceExternalURLLT: String
+  serviceExternalURLLTE: String
+  serviceExternalURLContains: String
+  serviceExternalURLHasPrefix: String
+  serviceExternalURLHasSuffix: String
+  serviceExternalURLIsNil: Boolean
+  serviceExternalURLNotNil: Boolean
+  serviceExternalURLEqualFold: String
+  serviceExternalURLContainsFold: String
   """
   owner edge predicates
   """

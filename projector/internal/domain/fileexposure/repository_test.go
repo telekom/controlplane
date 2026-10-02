@@ -132,17 +132,19 @@ var _ = Describe("FileExposure Repository", func() {
 	Describe("Upsert", func() {
 		It("should create file exposure and set optional file type edge", func() {
 			data := &fileexposure.FileExposureData{
-				Meta:           shared.NewMetadata("prod--platform--narvi", "exp-a", nil),
-				StatusPhase:    "READY",
-				StatusMessage:  "ok",
-				Visibility:     "ENTERPRISE",
-				Active:         true,
-				Zone:           "caas",
-				FileSFTP:       &model.FileSFTP{PublicKeys: []model.SSHPublicKeySpec{{Key: "ssh-rsa AAA", Label: "label value"}}},
-				ApprovalConfig: model.ApprovalConfig{Strategy: "AUTO", TrustedTeams: []string{"team-a"}},
-				AppName:        "provider-app",
-				TeamName:       "platform--narvi",
-				TargetFileType: "invoice",
+				Meta:               shared.NewMetadata("prod--platform--narvi", "exp-a", nil),
+				StatusPhase:        "READY",
+				StatusMessage:      "ok",
+				ServiceURL:         "sftp://internal.example.com",
+				ServiceExternalURL: "sftp://external.example.com",
+				Visibility:         "ENTERPRISE",
+				Active:             true,
+				Zone:               "caas",
+				FileSFTP:           &model.FileSFTP{PublicKeys: []model.SSHPublicKeySpec{{Key: "ssh-rsa AAA", Label: "label value"}}},
+				ApprovalConfig:     model.ApprovalConfig{Strategy: "AUTO", TrustedTeams: []string{"team-a"}},
+				AppName:            "provider-app",
+				TeamName:           "platform--narvi",
+				TargetFileType:     "invoice",
 			}
 			Expect(repo.Upsert(ctx, data)).To(Succeed())
 
@@ -152,6 +154,8 @@ var _ = Describe("FileExposure Repository", func() {
 			Expect(exp.Active).NotTo(BeNil())
 			Expect(*exp.Active).To(BeTrue())
 			Expect(exp.ZoneName).To(Equal("caas"))
+			Expect(exp.ServiceURL).To(Equal("sftp://internal.example.com"))
+			Expect(exp.ServiceExternalURL).To(Equal("sftp://external.example.com"))
 			Expect(exp.Sftp).To(Equal(&model.FileSFTP{PublicKeys: []model.SSHPublicKeySpec{{Key: "ssh-rsa AAA", Label: "label value"}}}))
 			Expect(exp.ApprovalConfig.Strategy).To(Equal("AUTO"))
 
@@ -166,6 +170,42 @@ var _ = Describe("FileExposure Repository", func() {
 			ft, err := exp.QueryFileTypeDef().Only(ctx)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(ft.ID).To(Equal(fileTypeID))
+		})
+
+		It("should update and clear service URLs on conflict", func() {
+			data := &fileexposure.FileExposureData{
+				Meta:               shared.NewMetadata("prod--platform--narvi", "exp-urls", nil),
+				StatusPhase:        "READY",
+				Visibility:         "ENTERPRISE",
+				Zone:               "caas",
+				ApprovalConfig:     model.ApprovalConfig{Strategy: "AUTO"},
+				AppName:            "provider-app",
+				TeamName:           "platform--narvi",
+				TargetFileType:     "invoice",
+				ServiceURL:         "sftp://internal.example.com",
+				ServiceExternalURL: "sftp://external.example.com",
+			}
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+			original, err := client.FileExposure.Query().Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+
+			data.ServiceURL = "sftp://updated.internal.example.com"
+			data.ServiceExternalURL = "sftp://updated.external.example.com"
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+			updated, err := client.FileExposure.Query().Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(updated.ID).To(Equal(original.ID))
+			Expect(updated.ServiceURL).To(Equal(data.ServiceURL))
+			Expect(updated.ServiceExternalURL).To(Equal(data.ServiceExternalURL))
+
+			data.ServiceURL = ""
+			data.ServiceExternalURL = ""
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+			cleared, err := client.FileExposure.Query().Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(cleared.ID).To(Equal(original.ID))
+			Expect(cleared.ServiceURL).To(BeEmpty())
+			Expect(cleared.ServiceExternalURL).To(BeEmpty())
 		})
 
 		It("should not fail when target file type is missing", func() {
@@ -183,6 +223,8 @@ var _ = Describe("FileExposure Repository", func() {
 
 			exp, err := client.FileExposure.Query().Where(entfileexposure.FileTypeEQ("unknown-filetype")).Only(ctx)
 			Expect(err).NotTo(HaveOccurred())
+			Expect(exp.ServiceURL).To(BeEmpty())
+			Expect(exp.ServiceExternalURL).To(BeEmpty())
 			hasFT, err := exp.QueryFileTypeDef().Exist(ctx)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(hasFT).To(BeFalse())

@@ -17932,6 +17932,8 @@ type FileExposureMutation struct {
 	visibility           *fileexposure.Visibility
 	active               *bool
 	zone_name            *string
+	service_url          *string
+	service_external_url *string
 	sftp                 **model.FileSFTP
 	approval_config      *model.ApprovalConfig
 	clearedFields        map[string]struct{}
@@ -18459,6 +18461,104 @@ func (m *FileExposureMutation) ResetZoneName() {
 	m.zone_name = nil
 }
 
+// SetServiceURL sets the "service_url" field.
+func (m *FileExposureMutation) SetServiceURL(s string) {
+	m.service_url = &s
+}
+
+// ServiceURL returns the value of the "service_url" field in the mutation.
+func (m *FileExposureMutation) ServiceURL() (r string, exists bool) {
+	v := m.service_url
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldServiceURL returns the old "service_url" field's value of the FileExposure entity.
+// If the FileExposure object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FileExposureMutation) OldServiceURL(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldServiceURL is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldServiceURL requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldServiceURL: %w", err)
+	}
+	return oldValue.ServiceURL, nil
+}
+
+// ClearServiceURL clears the value of the "service_url" field.
+func (m *FileExposureMutation) ClearServiceURL() {
+	m.service_url = nil
+	m.clearedFields[fileexposure.FieldServiceURL] = struct{}{}
+}
+
+// ServiceURLCleared returns if the "service_url" field was cleared in this mutation.
+func (m *FileExposureMutation) ServiceURLCleared() bool {
+	_, ok := m.clearedFields[fileexposure.FieldServiceURL]
+	return ok
+}
+
+// ResetServiceURL resets all changes to the "service_url" field.
+func (m *FileExposureMutation) ResetServiceURL() {
+	m.service_url = nil
+	delete(m.clearedFields, fileexposure.FieldServiceURL)
+}
+
+// SetServiceExternalURL sets the "service_external_url" field.
+func (m *FileExposureMutation) SetServiceExternalURL(s string) {
+	m.service_external_url = &s
+}
+
+// ServiceExternalURL returns the value of the "service_external_url" field in the mutation.
+func (m *FileExposureMutation) ServiceExternalURL() (r string, exists bool) {
+	v := m.service_external_url
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldServiceExternalURL returns the old "service_external_url" field's value of the FileExposure entity.
+// If the FileExposure object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FileExposureMutation) OldServiceExternalURL(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldServiceExternalURL is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldServiceExternalURL requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldServiceExternalURL: %w", err)
+	}
+	return oldValue.ServiceExternalURL, nil
+}
+
+// ClearServiceExternalURL clears the value of the "service_external_url" field.
+func (m *FileExposureMutation) ClearServiceExternalURL() {
+	m.service_external_url = nil
+	m.clearedFields[fileexposure.FieldServiceExternalURL] = struct{}{}
+}
+
+// ServiceExternalURLCleared returns if the "service_external_url" field was cleared in this mutation.
+func (m *FileExposureMutation) ServiceExternalURLCleared() bool {
+	_, ok := m.clearedFields[fileexposure.FieldServiceExternalURL]
+	return ok
+}
+
+// ResetServiceExternalURL resets all changes to the "service_external_url" field.
+func (m *FileExposureMutation) ResetServiceExternalURL() {
+	m.service_external_url = nil
+	delete(m.clearedFields, fileexposure.FieldServiceExternalURL)
+}
+
 // SetSftp sets the "sftp" field.
 func (m *FileExposureMutation) SetSftp(ms *model.FileSFTP) {
 	m.sftp = &ms
@@ -18749,7 +18849,7 @@ func (m *FileExposureMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *FileExposureMutation) Fields() []string {
-	fields := make([]string, 0, 12)
+	fields := make([]string, 0, 14)
 	if m.created_at != nil {
 		fields = append(fields, fileexposure.FieldCreatedAt)
 	}
@@ -18779,6 +18879,12 @@ func (m *FileExposureMutation) Fields() []string {
 	}
 	if m.zone_name != nil {
 		fields = append(fields, fileexposure.FieldZoneName)
+	}
+	if m.service_url != nil {
+		fields = append(fields, fileexposure.FieldServiceURL)
+	}
+	if m.service_external_url != nil {
+		fields = append(fields, fileexposure.FieldServiceExternalURL)
 	}
 	if m.sftp != nil {
 		fields = append(fields, fileexposure.FieldSftp)
@@ -18814,6 +18920,10 @@ func (m *FileExposureMutation) Field(name string) (ent.Value, bool) {
 		return m.Active()
 	case fileexposure.FieldZoneName:
 		return m.ZoneName()
+	case fileexposure.FieldServiceURL:
+		return m.ServiceURL()
+	case fileexposure.FieldServiceExternalURL:
+		return m.ServiceExternalURL()
 	case fileexposure.FieldSftp:
 		return m.Sftp()
 	case fileexposure.FieldApprovalConfig:
@@ -18847,6 +18957,10 @@ func (m *FileExposureMutation) OldField(ctx context.Context, name string) (ent.V
 		return m.OldActive(ctx)
 	case fileexposure.FieldZoneName:
 		return m.OldZoneName(ctx)
+	case fileexposure.FieldServiceURL:
+		return m.OldServiceURL(ctx)
+	case fileexposure.FieldServiceExternalURL:
+		return m.OldServiceExternalURL(ctx)
 	case fileexposure.FieldSftp:
 		return m.OldSftp(ctx)
 	case fileexposure.FieldApprovalConfig:
@@ -18930,6 +19044,20 @@ func (m *FileExposureMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetZoneName(v)
 		return nil
+	case fileexposure.FieldServiceURL:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetServiceURL(v)
+		return nil
+	case fileexposure.FieldServiceExternalURL:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetServiceExternalURL(v)
+		return nil
 	case fileexposure.FieldSftp:
 		v, ok := value.(*model.FileSFTP)
 		if !ok {
@@ -18986,6 +19114,12 @@ func (m *FileExposureMutation) ClearedFields() []string {
 	if m.FieldCleared(fileexposure.FieldActive) {
 		fields = append(fields, fileexposure.FieldActive)
 	}
+	if m.FieldCleared(fileexposure.FieldServiceURL) {
+		fields = append(fields, fileexposure.FieldServiceURL)
+	}
+	if m.FieldCleared(fileexposure.FieldServiceExternalURL) {
+		fields = append(fields, fileexposure.FieldServiceExternalURL)
+	}
 	if m.FieldCleared(fileexposure.FieldSftp) {
 		fields = append(fields, fileexposure.FieldSftp)
 	}
@@ -19014,6 +19148,12 @@ func (m *FileExposureMutation) ClearField(name string) error {
 		return nil
 	case fileexposure.FieldActive:
 		m.ClearActive()
+		return nil
+	case fileexposure.FieldServiceURL:
+		m.ClearServiceURL()
+		return nil
+	case fileexposure.FieldServiceExternalURL:
+		m.ClearServiceExternalURL()
 		return nil
 	case fileexposure.FieldSftp:
 		m.ClearSftp()
@@ -19055,6 +19195,12 @@ func (m *FileExposureMutation) ResetField(name string) error {
 		return nil
 	case fileexposure.FieldZoneName:
 		m.ResetZoneName()
+		return nil
+	case fileexposure.FieldServiceURL:
+		m.ResetServiceURL()
+		return nil
+	case fileexposure.FieldServiceExternalURL:
+		m.ResetServiceExternalURL()
 		return nil
 	case fileexposure.FieldSftp:
 		m.ResetSftp()

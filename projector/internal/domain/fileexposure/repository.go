@@ -85,6 +85,8 @@ func (r *Repository) Upsert(ctx context.Context, data *FileExposureData) error {
 		SetActive(data.Active).
 		SetZoneName(data.Zone).
 		SetSftp(data.FileSFTP).
+		SetServiceURL(data.ServiceURL).
+		SetServiceExternalURL(data.ServiceExternalURL).
 		SetApprovalConfig(data.ApprovalConfig).
 		SetStatusPhase(entfileexposure.StatusPhase(data.StatusPhase)).
 		SetStatusMessage(data.StatusMessage).
@@ -101,6 +103,8 @@ func (r *Repository) Upsert(ctx context.Context, data *FileExposureData) error {
 			u.SetActive(data.Active)
 			u.SetZoneName(data.Zone)
 			u.UpdateSftp()
+			u.UpdateServiceURL()
+			u.UpdateServiceExternalURL()
 			u.UpdateApprovalConfig()
 			u.SetStatusPhase(entfileexposure.StatusPhase(data.StatusPhase))
 			u.SetStatusMessage(data.StatusMessage)

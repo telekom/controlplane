@@ -60,8 +60,10 @@ var _ = Describe("FileExposure Translator", func() {
 					},
 				},
 				Status: filev1.FileExposureStatus{
-					Active:     true,
-					Conditions: []metav1.Condition{{Type: "Ready", Status: metav1.ConditionTrue, Message: "ok"}},
+					Active:             true,
+					ServiceURL:         "sftp://internal.example.com",
+					ServiceExternalURL: "sftp://external.example.com",
+					Conditions:         []metav1.Condition{{Type: "Ready", Status: metav1.ConditionTrue, Message: "ok"}},
 				},
 			}
 
@@ -75,6 +77,8 @@ var _ = Describe("FileExposure Translator", func() {
 			Expect(data.StatusMessage).To(Equal("ok"))
 			Expect(data.Meta.Environment).To(Equal("prod"))
 			Expect(data.Zone).To(Equal("caas"))
+			Expect(data.ServiceURL).To(Equal("sftp://internal.example.com"))
+			Expect(data.ServiceExternalURL).To(Equal("sftp://external.example.com"))
 			Expect(data.FileSFTP).To(Equal(&model.FileSFTP{PublicKeys: []model.SSHPublicKeySpec{{Key: "ssh-rsa AAA", Label: "label value1"}, {Key: "ssh-rsa BBB", Label: "label value 2"}}}))
 			Expect(data.ApprovalConfig.Strategy).To(Equal("FOUR_EYES"))
 			Expect(data.ApprovalConfig.TrustedTeams).To(Equal([]string{"team-a"}))
@@ -106,6 +110,8 @@ var _ = Describe("FileExposure Translator", func() {
 			Expect(data.AppName).To(Equal("provider-app"))
 			Expect(data.Active).To(BeFalse())
 			Expect(data.Visibility).To(Equal("WORLD"))
+			Expect(data.ServiceURL).To(BeEmpty())
+			Expect(data.ServiceExternalURL).To(BeEmpty())
 		})
 	})
 
