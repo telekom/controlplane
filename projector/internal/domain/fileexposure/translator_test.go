@@ -61,8 +61,8 @@ var _ = Describe("FileExposure Translator", func() {
 				},
 				Status: filev1.FileExposureStatus{
 					Active:             true,
-					ServiceURL:         "sftp://internal.example.com",
-					ServiceExternalURL: "sftp://external.example.com",
+					ServiceURL:         "internal.example.com:8080",
+					ServiceExternalURL: "external.example.com:8080",
 					Conditions:         []metav1.Condition{{Type: "Ready", Status: metav1.ConditionTrue, Message: "ok"}},
 				},
 			}
@@ -77,8 +77,8 @@ var _ = Describe("FileExposure Translator", func() {
 			Expect(data.StatusMessage).To(Equal("ok"))
 			Expect(data.Meta.Environment).To(Equal("prod"))
 			Expect(data.Zone).To(Equal("caas"))
-			Expect(data.ServiceURL).To(Equal("sftp://internal.example.com"))
-			Expect(data.ServiceExternalURL).To(Equal("sftp://external.example.com"))
+			Expect(data.ServiceURL).To(Equal("internal.example.com:8080"))
+			Expect(data.ServiceExternalURL).To(Equal("external.example.com:8080"))
 			Expect(data.FileSFTP).To(Equal(&model.FileSFTP{PublicKeys: []model.SSHPublicKeySpec{{Key: "ssh-rsa AAA", Label: "label value1"}, {Key: "ssh-rsa BBB", Label: "label value 2"}}}))
 			Expect(data.ApprovalConfig.Strategy).To(Equal("FOUR_EYES"))
 			Expect(data.ApprovalConfig.TrustedTeams).To(Equal([]string{"team-a"}))

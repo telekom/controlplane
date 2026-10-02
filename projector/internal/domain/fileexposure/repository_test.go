@@ -135,8 +135,8 @@ var _ = Describe("FileExposure Repository", func() {
 				Meta:               shared.NewMetadata("prod--platform--narvi", "exp-a", nil),
 				StatusPhase:        "READY",
 				StatusMessage:      "ok",
-				ServiceURL:         "sftp://internal.example.com",
-				ServiceExternalURL: "sftp://external.example.com",
+				ServiceURL:         "internal.example.com:8080",
+				ServiceExternalURL: "external.example.com:8080",
 				Visibility:         "ENTERPRISE",
 				Active:             true,
 				Zone:               "caas",
@@ -154,8 +154,8 @@ var _ = Describe("FileExposure Repository", func() {
 			Expect(exp.Active).NotTo(BeNil())
 			Expect(*exp.Active).To(BeTrue())
 			Expect(exp.ZoneName).To(Equal("caas"))
-			Expect(exp.ServiceURL).To(Equal("sftp://internal.example.com"))
-			Expect(exp.ServiceExternalURL).To(Equal("sftp://external.example.com"))
+			Expect(exp.ServiceURL).To(Equal("internal.example.com:8080"))
+			Expect(exp.ServiceExternalURL).To(Equal("external.example.com:8080"))
 			Expect(exp.Sftp).To(Equal(&model.FileSFTP{PublicKeys: []model.SSHPublicKeySpec{{Key: "ssh-rsa AAA", Label: "label value"}}}))
 			Expect(exp.ApprovalConfig.Strategy).To(Equal("AUTO"))
 
@@ -182,15 +182,15 @@ var _ = Describe("FileExposure Repository", func() {
 				AppName:            "provider-app",
 				TeamName:           "platform--narvi",
 				TargetFileType:     "invoice",
-				ServiceURL:         "sftp://internal.example.com",
-				ServiceExternalURL: "sftp://external.example.com",
+				ServiceURL:         "internal.example.com:8080",
+				ServiceExternalURL: "external.example.com:8080",
 			}
 			Expect(repo.Upsert(ctx, data)).To(Succeed())
 			original, err := client.FileExposure.Query().Only(ctx)
 			Expect(err).NotTo(HaveOccurred())
 
-			data.ServiceURL = "sftp://updated.internal.example.com"
-			data.ServiceExternalURL = "sftp://updated.external.example.com"
+			data.ServiceURL = "updated.internal.example.com:9090"
+			data.ServiceExternalURL = "updated.external.example.com:9090"
 			Expect(repo.Upsert(ctx, data)).To(Succeed())
 			updated, err := client.FileExposure.Query().Only(ctx)
 			Expect(err).NotTo(HaveOccurred())
