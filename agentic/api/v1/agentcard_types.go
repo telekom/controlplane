@@ -47,6 +47,12 @@ type AgentCardSpec struct {
 	// +optional
 	Specification string `json:"specification,omitempty"`
 
+	// Hash is the base64-encoded SHA-256 hash of the specification
+	// file referenced by Specification. Consumers can use it to detect content
+	// changes without downloading the file.
+	// +optional
+	Hash string `json:"hash,omitempty"`
+
 	// Category of the agent (e.g. "assistant", "tool", "other").
 	// +kubebuilder:validation:Optional
 	Category string `json:"category,omitempty"`

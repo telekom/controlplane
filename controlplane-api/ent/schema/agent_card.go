@@ -47,6 +47,10 @@ func (AgentCard) Fields() []ent.Field {
 		field.Text("specification").
 			Optional().
 			Annotations(entgql.Skip(entgql.SkipType)),
+		field.Text("hash").
+			Optional().
+			Comment("Base64-encoded SHA-256 hash of the agent card specification file. Changes when the content changes. Empty if unknown.").
+			Annotations(entgql.Skip(entgql.SkipWhereInput)),
 		field.Text("category").
 			Optional(),
 		field.JSON("oauth2_scopes", []string{}).

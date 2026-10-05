@@ -88,7 +88,7 @@ func init() {
 	// agentcard.DefaultDisplayName holds the default value on creation for the display_name field.
 	agentcard.DefaultDisplayName = agentcardDescDisplayName.Default.(string)
 	// agentcardDescActive is the schema descriptor for active field.
-	agentcardDescActive := agentcardFields[8].Descriptor()
+	agentcardDescActive := agentcardFields[9].Descriptor()
 	// agentcard.DefaultActive holds the default value on creation for the active field.
 	agentcard.DefaultActive = agentcardDescActive.Default.(bool)
 	agenticexposureMixin := schema.AgenticExposure{}.Mixin()
@@ -800,7 +800,7 @@ func init() {
 	// mcpserver.DefaultDisplayName holds the default value on creation for the display_name field.
 	mcpserver.DefaultDisplayName = mcpserverDescDisplayName.Default.(string)
 	// mcpserverDescActive is the schema descriptor for active field.
-	mcpserverDescActive := mcpserverFields[8].Descriptor()
+	mcpserverDescActive := mcpserverFields[9].Descriptor()
 	// mcpserver.DefaultActive holds the default value on creation for the active field.
 	mcpserver.DefaultActive = mcpserverDescActive.Default.(bool)
 	memberMixin := schema.Member{}.Mixin()

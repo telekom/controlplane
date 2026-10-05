@@ -2127,6 +2127,29 @@ func (ec *executionContext) fieldContext_AgentCard_description(_ context.Context
 	return graphql.NewScalarFieldContext("AgentCard", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
+func (ec *executionContext) _AgentCard_hash(ctx context.Context, field graphql.CollectedField, obj *ent.AgentCard) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_AgentCard_hash(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Hash, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalOString2string(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_AgentCard_hash(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("AgentCard", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
 func (ec *executionContext) _AgentCard_category(ctx context.Context, field graphql.CollectedField, obj *ent.AgentCard) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -11592,6 +11615,29 @@ func (ec *executionContext) _McpServer_description(ctx context.Context, field gr
 	)
 }
 func (ec *executionContext) fieldContext_McpServer_description(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("McpServer", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _McpServer_hash(ctx context.Context, field graphql.CollectedField, obj *ent.McpServer) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_McpServer_hash(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Hash, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalOString2string(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_McpServer_hash(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	return graphql.NewScalarFieldContext("McpServer", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
@@ -34452,6 +34498,11 @@ func (ec *executionContext) _AgentCard(ctx context.Context, sel ast.SelectionSet
 			if out.Values[i] == graphql.RequiredNull {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "hash":
+			out.Values[i] = ec._AgentCard_hash(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		case "category":
 			out.Values[i] = ec._AgentCard_category(ctx, field, obj)
 			if out.Values[i] == graphql.RequiredNull {
@@ -39732,6 +39783,11 @@ func (ec *executionContext) _McpServer(ctx context.Context, sel ast.SelectionSet
 			}
 		case "description":
 			out.Values[i] = ec._McpServer_description(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "hash":
+			out.Values[i] = ec._McpServer_hash(ctx, field, obj)
 			if out.Values[i] == graphql.RequiredNull {
 				atomic.AddUint32(&out.Invalids, 1)
 			}

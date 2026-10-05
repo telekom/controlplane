@@ -88,9 +88,31 @@ func (r *Repository) Upsert(ctx context.Context, data *McpServerData) error {
 		create.SetSpecification(data.Specification)
 	}
 
+	if data.Hash != "" {
+		create.SetHash(data.Hash)
+	}
+
+	// UpdateNewValues only updates the fields set above. Clear the optional
+	// fields that were removed from the resource, so that they become NULL.
+	clearRemoved := func(u *ent.McpServerUpsert) {
+		if data.Description == "" {
+			u.ClearDescription()
+		}
+		if data.Category == "" {
+			u.ClearCategory()
+		}
+		if data.Specification == "" {
+			u.ClearSpecification()
+		}
+		if data.Hash == "" {
+			u.ClearHash()
+		}
+	}
+
 	mcpServerID, upsertErr := create.
 		OnConflictColumns(entmcpserver.FieldBasePath, entmcpserver.OwnerColumn).
 		UpdateNewValues().
+		Update(clearRemoved).
 		ID(ctx)
 	if upsertErr != nil {
 		return fmt.Errorf("upsert mcp_server %q (team %q): %w",

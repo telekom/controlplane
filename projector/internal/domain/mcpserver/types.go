@@ -29,6 +29,7 @@ type McpServerData struct {
 	Category      string
 	Oauth2Scopes  []string
 	Specification string // file-manager file ID (optional)
+	Hash          string // SHA-256 hash of the specification content (optional)
 	Active        bool   // cluster-wide active singleton flag
 	TeamName      string // resolved to owner Team FK
 }

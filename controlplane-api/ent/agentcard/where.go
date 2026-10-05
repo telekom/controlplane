@@ -108,6 +108,11 @@ func Specification(v string) predicate.AgentCard {
 	return predicate.AgentCard(sql.FieldEQ(FieldSpecification, v))
 }
 
+// Hash applies equality check predicate on the "hash" field. It's identical to HashEQ.
+func Hash(v string) predicate.AgentCard {
+	return predicate.AgentCard(sql.FieldEQ(FieldHash, v))
+}
+
 // Category applies equality check predicate on the "category" field. It's identical to CategoryEQ.
 func Category(v string) predicate.AgentCard {
 	return predicate.AgentCard(sql.FieldEQ(FieldCategory, v))
@@ -776,6 +781,81 @@ func SpecificationEqualFold(v string) predicate.AgentCard {
 // SpecificationContainsFold applies the ContainsFold predicate on the "specification" field.
 func SpecificationContainsFold(v string) predicate.AgentCard {
 	return predicate.AgentCard(sql.FieldContainsFold(FieldSpecification, v))
+}
+
+// HashEQ applies the EQ predicate on the "hash" field.
+func HashEQ(v string) predicate.AgentCard {
+	return predicate.AgentCard(sql.FieldEQ(FieldHash, v))
+}
+
+// HashNEQ applies the NEQ predicate on the "hash" field.
+func HashNEQ(v string) predicate.AgentCard {
+	return predicate.AgentCard(sql.FieldNEQ(FieldHash, v))
+}
+
+// HashIn applies the In predicate on the "hash" field.
+func HashIn(vs ...string) predicate.AgentCard {
+	return predicate.AgentCard(sql.FieldIn(FieldHash, vs...))
+}
+
+// HashNotIn applies the NotIn predicate on the "hash" field.
+func HashNotIn(vs ...string) predicate.AgentCard {
+	return predicate.AgentCard(sql.FieldNotIn(FieldHash, vs...))
+}
+
+// HashGT applies the GT predicate on the "hash" field.
+func HashGT(v string) predicate.AgentCard {
+	return predicate.AgentCard(sql.FieldGT(FieldHash, v))
+}
+
+// HashGTE applies the GTE predicate on the "hash" field.
+func HashGTE(v string) predicate.AgentCard {
+	return predicate.AgentCard(sql.FieldGTE(FieldHash, v))
+}
+
+// HashLT applies the LT predicate on the "hash" field.
+func HashLT(v string) predicate.AgentCard {
+	return predicate.AgentCard(sql.FieldLT(FieldHash, v))
+}
+
+// HashLTE applies the LTE predicate on the "hash" field.
+func HashLTE(v string) predicate.AgentCard {
+	return predicate.AgentCard(sql.FieldLTE(FieldHash, v))
+}
+
+// HashContains applies the Contains predicate on the "hash" field.
+func HashContains(v string) predicate.AgentCard {
+	return predicate.AgentCard(sql.FieldContains(FieldHash, v))
+}
+
+// HashHasPrefix applies the HasPrefix predicate on the "hash" field.
+func HashHasPrefix(v string) predicate.AgentCard {
+	return predicate.AgentCard(sql.FieldHasPrefix(FieldHash, v))
+}
+
+// HashHasSuffix applies the HasSuffix predicate on the "hash" field.
+func HashHasSuffix(v string) predicate.AgentCard {
+	return predicate.AgentCard(sql.FieldHasSuffix(FieldHash, v))
+}
+
+// HashIsNil applies the IsNil predicate on the "hash" field.
+func HashIsNil() predicate.AgentCard {
+	return predicate.AgentCard(sql.FieldIsNull(FieldHash))
+}
+
+// HashNotNil applies the NotNil predicate on the "hash" field.
+func HashNotNil() predicate.AgentCard {
+	return predicate.AgentCard(sql.FieldNotNull(FieldHash))
+}
+
+// HashEqualFold applies the EqualFold predicate on the "hash" field.
+func HashEqualFold(v string) predicate.AgentCard {
+	return predicate.AgentCard(sql.FieldEqualFold(FieldHash, v))
+}
+
+// HashContainsFold applies the ContainsFold predicate on the "hash" field.
+func HashContainsFold(v string) predicate.AgentCard {
+	return predicate.AgentCard(sql.FieldContainsFold(FieldHash, v))
 }
 
 // CategoryEQ applies the EQ predicate on the "category" field.

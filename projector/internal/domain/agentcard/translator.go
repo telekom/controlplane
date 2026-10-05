@@ -46,6 +46,7 @@ func (t *Translator) Translate(_ context.Context, obj *agenticv1.AgentCard) (*Ag
 		Category:      obj.Spec.Category,
 		Oauth2Scopes:  scopes,
 		Specification: obj.Spec.Specification,
+		Hash:          obj.Spec.Hash,
 		Active:        obj.Status.Active,
 		TeamName:      shared.TeamNameFromNamespace(obj.Namespace),
 	}, nil

@@ -45,6 +45,7 @@ var _ = Describe("AgentCard Translator", func() {
 					Name:          "Weather Agent",
 					Description:   "Weather agent card",
 					Specification: "file-123",
+					Hash:          "hash-123",
 					Category:      "g-api",
 					Oauth2Scopes:  []string{"scope-a", "scope-b"},
 				},
@@ -73,6 +74,7 @@ var _ = Describe("AgentCard Translator", func() {
 			Expect(data.DisplayName).To(Equal("Weather Agent"))
 			Expect(data.Description).To(Equal("Weather agent card"))
 			Expect(data.Specification).To(Equal("file-123"))
+			Expect(data.Hash).To(Equal("hash-123"))
 			Expect(data.Category).To(Equal("g-api"))
 			Expect(data.Oauth2Scopes).To(Equal([]string{"scope-a", "scope-b"}))
 			Expect(data.Active).To(BeTrue())

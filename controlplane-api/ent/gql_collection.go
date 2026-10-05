@@ -107,6 +107,11 @@ func (_q *AgentCardQuery) collectField(ctx context.Context, oneNode bool, opCtx 
 				selectedFields = append(selectedFields, agentcard.FieldDescription)
 				fieldSeen[agentcard.FieldDescription] = struct{}{}
 			}
+		case "hash":
+			if _, ok := fieldSeen[agentcard.FieldHash]; !ok {
+				selectedFields = append(selectedFields, agentcard.FieldHash)
+				fieldSeen[agentcard.FieldHash] = struct{}{}
+			}
 		case "category":
 			if _, ok := fieldSeen[agentcard.FieldCategory]; !ok {
 				selectedFields = append(selectedFields, agentcard.FieldCategory)
@@ -3523,6 +3528,11 @@ func (_q *McpServerQuery) collectField(ctx context.Context, oneNode bool, opCtx 
 			if _, ok := fieldSeen[mcpserver.FieldDescription]; !ok {
 				selectedFields = append(selectedFields, mcpserver.FieldDescription)
 				fieldSeen[mcpserver.FieldDescription] = struct{}{}
+			}
+		case "hash":
+			if _, ok := fieldSeen[mcpserver.FieldHash]; !ok {
+				selectedFields = append(selectedFields, mcpserver.FieldHash)
+				fieldSeen[mcpserver.FieldHash] = struct{}{}
 			}
 		case "category":
 			if _, ok := fieldSeen[mcpserver.FieldCategory]; !ok {

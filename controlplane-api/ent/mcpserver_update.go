@@ -190,6 +190,26 @@ func (_u *McpServerUpdate) ClearSpecification() *McpServerUpdate {
 	return _u
 }
 
+// SetHash sets the "hash" field.
+func (_u *McpServerUpdate) SetHash(v string) *McpServerUpdate {
+	_u.mutation.SetHash(v)
+	return _u
+}
+
+// SetNillableHash sets the "hash" field if the given value is not nil.
+func (_u *McpServerUpdate) SetNillableHash(v *string) *McpServerUpdate {
+	if v != nil {
+		_u.SetHash(*v)
+	}
+	return _u
+}
+
+// ClearHash clears the value of the "hash" field.
+func (_u *McpServerUpdate) ClearHash() *McpServerUpdate {
+	_u.mutation.ClearHash()
+	return _u
+}
+
 // SetCategory sets the "category" field.
 func (_u *McpServerUpdate) SetCategory(v string) *McpServerUpdate {
 	_u.mutation.SetCategory(v)
@@ -428,6 +448,12 @@ func (_u *McpServerUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if _u.mutation.SpecificationCleared() {
 		_spec.ClearField(mcpserver.FieldSpecification, field.TypeString)
+	}
+	if value, ok := _u.mutation.Hash(); ok {
+		_spec.SetField(mcpserver.FieldHash, field.TypeString, value)
+	}
+	if _u.mutation.HashCleared() {
+		_spec.ClearField(mcpserver.FieldHash, field.TypeString)
 	}
 	if value, ok := _u.mutation.Category(); ok {
 		_spec.SetField(mcpserver.FieldCategory, field.TypeString, value)
@@ -699,6 +725,26 @@ func (_u *McpServerUpdateOne) ClearSpecification() *McpServerUpdateOne {
 	return _u
 }
 
+// SetHash sets the "hash" field.
+func (_u *McpServerUpdateOne) SetHash(v string) *McpServerUpdateOne {
+	_u.mutation.SetHash(v)
+	return _u
+}
+
+// SetNillableHash sets the "hash" field if the given value is not nil.
+func (_u *McpServerUpdateOne) SetNillableHash(v *string) *McpServerUpdateOne {
+	if v != nil {
+		_u.SetHash(*v)
+	}
+	return _u
+}
+
+// ClearHash clears the value of the "hash" field.
+func (_u *McpServerUpdateOne) ClearHash() *McpServerUpdateOne {
+	_u.mutation.ClearHash()
+	return _u
+}
+
 // SetCategory sets the "category" field.
 func (_u *McpServerUpdateOne) SetCategory(v string) *McpServerUpdateOne {
 	_u.mutation.SetCategory(v)
@@ -967,6 +1013,12 @@ func (_u *McpServerUpdateOne) sqlSave(ctx context.Context) (_node *McpServer, er
 	}
 	if _u.mutation.SpecificationCleared() {
 		_spec.ClearField(mcpserver.FieldSpecification, field.TypeString)
+	}
+	if value, ok := _u.mutation.Hash(); ok {
+		_spec.SetField(mcpserver.FieldHash, field.TypeString, value)
+	}
+	if _u.mutation.HashCleared() {
+		_spec.ClearField(mcpserver.FieldHash, field.TypeString)
 	}
 	if value, ok := _u.mutation.Category(); ok {
 		_spec.SetField(mcpserver.FieldCategory, field.TypeString, value)

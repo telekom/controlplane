@@ -83,6 +83,7 @@ type ComplexityRoot struct {
 		CreatedAt        func(childComplexity int) int
 		Description      func(childComplexity int) int
 		DisplayName      func(childComplexity int) int
+		Hash             func(childComplexity int) int
 		ID               func(childComplexity int) int
 		LastModifiedAt   func(childComplexity int) int
 		Name             func(childComplexity int) int
@@ -841,6 +842,7 @@ type ComplexityRoot struct {
 		CreatedAt        func(childComplexity int) int
 		Description      func(childComplexity int) int
 		DisplayName      func(childComplexity int) int
+		Hash             func(childComplexity int) int
 		ID               func(childComplexity int) int
 		LastModifiedAt   func(childComplexity int) int
 		Name             func(childComplexity int) int
@@ -1181,6 +1183,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.AgentCard.DisplayName(childComplexity), true
+	case "AgentCard.hash":
+		if e.ComplexityRoot.AgentCard.Hash == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgentCard.Hash(childComplexity), true
 	case "AgentCard.id":
 		if e.ComplexityRoot.AgentCard.ID == nil {
 			break
@@ -4290,6 +4298,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.McpServer.DisplayName(childComplexity), true
+	case "McpServer.hash":
+		if e.ComplexityRoot.McpServer.Hash == nil {
+			break
+		}
+
+		return e.ComplexityRoot.McpServer.Hash(childComplexity), true
 	case "McpServer.id":
 		if e.ComplexityRoot.McpServer.ID == nil {
 			break
@@ -5645,6 +5659,10 @@ type AgentCard implements Node {
   """
   displayName: String!
   description: String
+  """
+  Base64-encoded SHA-256 hash of the agent card specification file. Changes when the content changes. Empty if unknown.
+  """
+  hash: String
   category: String
   oauth2Scopes: [String!]
   """
@@ -10142,6 +10160,10 @@ type McpServer implements Node {
   """
   displayName: String!
   description: String
+  """
+  Base64-encoded SHA-256 hash of the MCP server specification file. Changes when the content changes. Empty if unknown.
+  """
+  hash: String
   category: String
   oauth2Scopes: [String!]
   """
@@ -12694,6 +12716,8 @@ func (ec *executionContext) childFields_AgentCard(ctx context.Context, field gra
 		return ec.fieldContext_AgentCard_displayName(ctx, field)
 	case "description":
 		return ec.fieldContext_AgentCard_description(ctx, field)
+	case "hash":
+		return ec.fieldContext_AgentCard_hash(ctx, field)
 	case "category":
 		return ec.fieldContext_AgentCard_category(ctx, field)
 	case "oauth2Scopes":
@@ -14210,6 +14234,8 @@ func (ec *executionContext) childFields_McpServer(ctx context.Context, field gra
 		return ec.fieldContext_McpServer_displayName(ctx, field)
 	case "description":
 		return ec.fieldContext_McpServer_description(ctx, field)
+	case "hash":
+		return ec.fieldContext_McpServer_hash(ctx, field)
 	case "category":
 		return ec.fieldContext_McpServer_category(ctx, field)
 	case "oauth2Scopes":

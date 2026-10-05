@@ -190,6 +190,26 @@ func (_u *AgentCardUpdate) ClearSpecification() *AgentCardUpdate {
 	return _u
 }
 
+// SetHash sets the "hash" field.
+func (_u *AgentCardUpdate) SetHash(v string) *AgentCardUpdate {
+	_u.mutation.SetHash(v)
+	return _u
+}
+
+// SetNillableHash sets the "hash" field if the given value is not nil.
+func (_u *AgentCardUpdate) SetNillableHash(v *string) *AgentCardUpdate {
+	if v != nil {
+		_u.SetHash(*v)
+	}
+	return _u
+}
+
+// ClearHash clears the value of the "hash" field.
+func (_u *AgentCardUpdate) ClearHash() *AgentCardUpdate {
+	_u.mutation.ClearHash()
+	return _u
+}
+
 // SetCategory sets the "category" field.
 func (_u *AgentCardUpdate) SetCategory(v string) *AgentCardUpdate {
 	_u.mutation.SetCategory(v)
@@ -428,6 +448,12 @@ func (_u *AgentCardUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if _u.mutation.SpecificationCleared() {
 		_spec.ClearField(agentcard.FieldSpecification, field.TypeString)
+	}
+	if value, ok := _u.mutation.Hash(); ok {
+		_spec.SetField(agentcard.FieldHash, field.TypeString, value)
+	}
+	if _u.mutation.HashCleared() {
+		_spec.ClearField(agentcard.FieldHash, field.TypeString)
 	}
 	if value, ok := _u.mutation.Category(); ok {
 		_spec.SetField(agentcard.FieldCategory, field.TypeString, value)
@@ -699,6 +725,26 @@ func (_u *AgentCardUpdateOne) ClearSpecification() *AgentCardUpdateOne {
 	return _u
 }
 
+// SetHash sets the "hash" field.
+func (_u *AgentCardUpdateOne) SetHash(v string) *AgentCardUpdateOne {
+	_u.mutation.SetHash(v)
+	return _u
+}
+
+// SetNillableHash sets the "hash" field if the given value is not nil.
+func (_u *AgentCardUpdateOne) SetNillableHash(v *string) *AgentCardUpdateOne {
+	if v != nil {
+		_u.SetHash(*v)
+	}
+	return _u
+}
+
+// ClearHash clears the value of the "hash" field.
+func (_u *AgentCardUpdateOne) ClearHash() *AgentCardUpdateOne {
+	_u.mutation.ClearHash()
+	return _u
+}
+
 // SetCategory sets the "category" field.
 func (_u *AgentCardUpdateOne) SetCategory(v string) *AgentCardUpdateOne {
 	_u.mutation.SetCategory(v)
@@ -967,6 +1013,12 @@ func (_u *AgentCardUpdateOne) sqlSave(ctx context.Context) (_node *AgentCard, er
 	}
 	if _u.mutation.SpecificationCleared() {
 		_spec.ClearField(agentcard.FieldSpecification, field.TypeString)
+	}
+	if value, ok := _u.mutation.Hash(); ok {
+		_spec.SetField(agentcard.FieldHash, field.TypeString, value)
+	}
+	if _u.mutation.HashCleared() {
+		_spec.ClearField(agentcard.FieldHash, field.TypeString)
 	}
 	if value, ok := _u.mutation.Category(); ok {
 		_spec.SetField(agentcard.FieldCategory, field.TypeString, value)

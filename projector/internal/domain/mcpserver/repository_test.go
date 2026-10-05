@@ -93,6 +93,8 @@ var _ = Describe("McpServer Repository", func() {
 				Description:   "Weather MCP server",
 				Category:      "g-api",
 				Oauth2Scopes:  []string{"scope-a"},
+				Specification: "file-123",
+				Hash:          "hash-123",
 				Active:        true,
 				TeamName:      "platform--narvi",
 			}
@@ -109,6 +111,8 @@ var _ = Describe("McpServer Repository", func() {
 			Expect(mcp.Description).To(Equal("Weather MCP server"))
 			Expect(mcp.Category).To(Equal("g-api"))
 			Expect(mcp.Oauth2Scopes).To(Equal([]string{"scope-a"}))
+			Expect(mcp.Specification).To(Equal("file-123"))
+			Expect(mcp.Hash).To(Equal("hash-123"))
 			Expect(mcp.Active).To(BeTrue())
 
 			owner, err := mcp.QueryOwner().Only(ctx)
@@ -147,6 +151,7 @@ var _ = Describe("McpServer Repository", func() {
 
 			data.Version = "2.0.0"
 			data.DisplayName = "Weather Server v2"
+			data.Hash = "hash-v2"
 			Expect(repo.Upsert(ctx, data)).To(Succeed())
 
 			count, err := client.McpServer.Query().Count(ctx)
@@ -160,6 +165,43 @@ var _ = Describe("McpServer Repository", func() {
 			Expect(mcp.Version).To(Equal("2.0.0"))
 			Expect(mcp.Name).To(Equal("mcp-weather-v1"))
 			Expect(mcp.DisplayName).To(Equal("Weather Server v2"))
+			Expect(mcp.Hash).To(Equal("hash-v2"))
+		})
+
+		It("should set removed optional fields to NULL on conflict", func() {
+			data := &mcpserver.McpServerData{
+				Meta:          shared.NewMetadata("prod--platform--narvi", "mcp-weather-v1", nil),
+				StatusPhase:   "READY",
+				BasePath:      "/mcp/weather/v1",
+				Version:       "1.0.0",
+				Name:          "mcp-weather-v1",
+				DisplayName:   "Weather Server",
+				Description:   "description",
+				Category:      "other",
+				Specification: "file-123",
+				Hash:          "hash-123",
+				Active:        true,
+				TeamName:      "platform--narvi",
+			}
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			data.Description = ""
+			data.Category = ""
+			data.Specification = ""
+			data.Hash = ""
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			count, err := client.McpServer.Query().
+				Where(
+					entmcpserver.BasePathEQ("/mcp/weather/v1"),
+					entmcpserver.DescriptionIsNil(),
+					entmcpserver.CategoryIsNil(),
+					entmcpserver.SpecificationIsNil(),
+					entmcpserver.HashIsNil(),
+				).
+				Count(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(count).To(Equal(1))
 		})
 
 		It("should set the active-mcp-server cache entry when active", func() {

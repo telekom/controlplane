@@ -149,6 +149,20 @@ func (_c *AgentCardCreate) SetNillableSpecification(v *string) *AgentCardCreate 
 	return _c
 }
 
+// SetHash sets the "hash" field.
+func (_c *AgentCardCreate) SetHash(v string) *AgentCardCreate {
+	_c.mutation.SetHash(v)
+	return _c
+}
+
+// SetNillableHash sets the "hash" field if the given value is not nil.
+func (_c *AgentCardCreate) SetNillableHash(v *string) *AgentCardCreate {
+	if v != nil {
+		_c.SetHash(*v)
+	}
+	return _c
+}
+
 // SetCategory sets the "category" field.
 func (_c *AgentCardCreate) SetCategory(v string) *AgentCardCreate {
 	_c.mutation.SetCategory(v)
@@ -396,6 +410,10 @@ func (_c *AgentCardCreate) createSpec() (*AgentCard, *sqlgraph.CreateSpec) {
 		_spec.SetField(agentcard.FieldSpecification, field.TypeString, value)
 		_node.Specification = value
 	}
+	if value, ok := _c.mutation.Hash(); ok {
+		_spec.SetField(agentcard.FieldHash, field.TypeString, value)
+		_node.Hash = value
+	}
 	if value, ok := _c.mutation.Category(); ok {
 		_spec.SetField(agentcard.FieldCategory, field.TypeString, value)
 		_node.Category = value
@@ -634,6 +652,24 @@ func (u *AgentCardUpsert) UpdateSpecification() *AgentCardUpsert {
 // ClearSpecification clears the value of the "specification" field.
 func (u *AgentCardUpsert) ClearSpecification() *AgentCardUpsert {
 	u.SetNull(agentcard.FieldSpecification)
+	return u
+}
+
+// SetHash sets the "hash" field.
+func (u *AgentCardUpsert) SetHash(v string) *AgentCardUpsert {
+	u.Set(agentcard.FieldHash, v)
+	return u
+}
+
+// UpdateHash sets the "hash" field to the value that was provided on create.
+func (u *AgentCardUpsert) UpdateHash() *AgentCardUpsert {
+	u.SetExcluded(agentcard.FieldHash)
+	return u
+}
+
+// ClearHash clears the value of the "hash" field.
+func (u *AgentCardUpsert) ClearHash() *AgentCardUpsert {
+	u.SetNull(agentcard.FieldHash)
 	return u
 }
 
@@ -895,6 +931,27 @@ func (u *AgentCardUpsertOne) UpdateSpecification() *AgentCardUpsertOne {
 func (u *AgentCardUpsertOne) ClearSpecification() *AgentCardUpsertOne {
 	return u.Update(func(s *AgentCardUpsert) {
 		s.ClearSpecification()
+	})
+}
+
+// SetHash sets the "hash" field.
+func (u *AgentCardUpsertOne) SetHash(v string) *AgentCardUpsertOne {
+	return u.Update(func(s *AgentCardUpsert) {
+		s.SetHash(v)
+	})
+}
+
+// UpdateHash sets the "hash" field to the value that was provided on create.
+func (u *AgentCardUpsertOne) UpdateHash() *AgentCardUpsertOne {
+	return u.Update(func(s *AgentCardUpsert) {
+		s.UpdateHash()
+	})
+}
+
+// ClearHash clears the value of the "hash" field.
+func (u *AgentCardUpsertOne) ClearHash() *AgentCardUpsertOne {
+	return u.Update(func(s *AgentCardUpsert) {
+		s.ClearHash()
 	})
 }
 
@@ -1330,6 +1387,27 @@ func (u *AgentCardUpsertBulk) UpdateSpecification() *AgentCardUpsertBulk {
 func (u *AgentCardUpsertBulk) ClearSpecification() *AgentCardUpsertBulk {
 	return u.Update(func(s *AgentCardUpsert) {
 		s.ClearSpecification()
+	})
+}
+
+// SetHash sets the "hash" field.
+func (u *AgentCardUpsertBulk) SetHash(v string) *AgentCardUpsertBulk {
+	return u.Update(func(s *AgentCardUpsert) {
+		s.SetHash(v)
+	})
+}
+
+// UpdateHash sets the "hash" field to the value that was provided on create.
+func (u *AgentCardUpsertBulk) UpdateHash() *AgentCardUpsertBulk {
+	return u.Update(func(s *AgentCardUpsert) {
+		s.UpdateHash()
+	})
+}
+
+// ClearHash clears the value of the "hash" field.
+func (u *AgentCardUpsertBulk) ClearHash() *AgentCardUpsertBulk {
+	return u.Update(func(s *AgentCardUpsert) {
+		s.ClearHash()
 	})
 }
 

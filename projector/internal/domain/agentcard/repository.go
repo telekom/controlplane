@@ -88,9 +88,31 @@ func (r *Repository) Upsert(ctx context.Context, data *AgentCardData) error {
 		create.SetSpecification(data.Specification)
 	}
 
+	if data.Hash != "" {
+		create.SetHash(data.Hash)
+	}
+
+	// UpdateNewValues only updates the fields set above. Clear the optional
+	// fields that were removed from the resource, so that they become NULL.
+	clearRemoved := func(u *ent.AgentCardUpsert) {
+		if data.Description == "" {
+			u.ClearDescription()
+		}
+		if data.Category == "" {
+			u.ClearCategory()
+		}
+		if data.Specification == "" {
+			u.ClearSpecification()
+		}
+		if data.Hash == "" {
+			u.ClearHash()
+		}
+	}
+
 	agentCardID, upsertErr := create.
 		OnConflictColumns(entagentcard.FieldBasePath, entagentcard.OwnerColumn).
 		UpdateNewValues().
+		Update(clearRemoved).
 		ID(ctx)
 	if upsertErr != nil {
 		return fmt.Errorf("upsert agent_card %q (team %q): %w",

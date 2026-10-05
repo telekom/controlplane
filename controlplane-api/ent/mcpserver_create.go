@@ -149,6 +149,20 @@ func (_c *McpServerCreate) SetNillableSpecification(v *string) *McpServerCreate 
 	return _c
 }
 
+// SetHash sets the "hash" field.
+func (_c *McpServerCreate) SetHash(v string) *McpServerCreate {
+	_c.mutation.SetHash(v)
+	return _c
+}
+
+// SetNillableHash sets the "hash" field if the given value is not nil.
+func (_c *McpServerCreate) SetNillableHash(v *string) *McpServerCreate {
+	if v != nil {
+		_c.SetHash(*v)
+	}
+	return _c
+}
+
 // SetCategory sets the "category" field.
 func (_c *McpServerCreate) SetCategory(v string) *McpServerCreate {
 	_c.mutation.SetCategory(v)
@@ -396,6 +410,10 @@ func (_c *McpServerCreate) createSpec() (*McpServer, *sqlgraph.CreateSpec) {
 		_spec.SetField(mcpserver.FieldSpecification, field.TypeString, value)
 		_node.Specification = value
 	}
+	if value, ok := _c.mutation.Hash(); ok {
+		_spec.SetField(mcpserver.FieldHash, field.TypeString, value)
+		_node.Hash = value
+	}
 	if value, ok := _c.mutation.Category(); ok {
 		_spec.SetField(mcpserver.FieldCategory, field.TypeString, value)
 		_node.Category = value
@@ -634,6 +652,24 @@ func (u *McpServerUpsert) UpdateSpecification() *McpServerUpsert {
 // ClearSpecification clears the value of the "specification" field.
 func (u *McpServerUpsert) ClearSpecification() *McpServerUpsert {
 	u.SetNull(mcpserver.FieldSpecification)
+	return u
+}
+
+// SetHash sets the "hash" field.
+func (u *McpServerUpsert) SetHash(v string) *McpServerUpsert {
+	u.Set(mcpserver.FieldHash, v)
+	return u
+}
+
+// UpdateHash sets the "hash" field to the value that was provided on create.
+func (u *McpServerUpsert) UpdateHash() *McpServerUpsert {
+	u.SetExcluded(mcpserver.FieldHash)
+	return u
+}
+
+// ClearHash clears the value of the "hash" field.
+func (u *McpServerUpsert) ClearHash() *McpServerUpsert {
+	u.SetNull(mcpserver.FieldHash)
 	return u
 }
 
@@ -895,6 +931,27 @@ func (u *McpServerUpsertOne) UpdateSpecification() *McpServerUpsertOne {
 func (u *McpServerUpsertOne) ClearSpecification() *McpServerUpsertOne {
 	return u.Update(func(s *McpServerUpsert) {
 		s.ClearSpecification()
+	})
+}
+
+// SetHash sets the "hash" field.
+func (u *McpServerUpsertOne) SetHash(v string) *McpServerUpsertOne {
+	return u.Update(func(s *McpServerUpsert) {
+		s.SetHash(v)
+	})
+}
+
+// UpdateHash sets the "hash" field to the value that was provided on create.
+func (u *McpServerUpsertOne) UpdateHash() *McpServerUpsertOne {
+	return u.Update(func(s *McpServerUpsert) {
+		s.UpdateHash()
+	})
+}
+
+// ClearHash clears the value of the "hash" field.
+func (u *McpServerUpsertOne) ClearHash() *McpServerUpsertOne {
+	return u.Update(func(s *McpServerUpsert) {
+		s.ClearHash()
 	})
 }
 
@@ -1330,6 +1387,27 @@ func (u *McpServerUpsertBulk) UpdateSpecification() *McpServerUpsertBulk {
 func (u *McpServerUpsertBulk) ClearSpecification() *McpServerUpsertBulk {
 	return u.Update(func(s *McpServerUpsert) {
 		s.ClearSpecification()
+	})
+}
+
+// SetHash sets the "hash" field.
+func (u *McpServerUpsertBulk) SetHash(v string) *McpServerUpsertBulk {
+	return u.Update(func(s *McpServerUpsert) {
+		s.SetHash(v)
+	})
+}
+
+// UpdateHash sets the "hash" field to the value that was provided on create.
+func (u *McpServerUpsertBulk) UpdateHash() *McpServerUpsertBulk {
+	return u.Update(func(s *McpServerUpsert) {
+		s.UpdateHash()
+	})
+}
+
+// ClearHash clears the value of the "hash" field.
+func (u *McpServerUpsertBulk) ClearHash() *McpServerUpsertBulk {
+	return u.Update(func(s *McpServerUpsert) {
+		s.ClearHash()
 	})
 }
 

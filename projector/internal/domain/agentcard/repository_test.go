@@ -93,6 +93,8 @@ var _ = Describe("AgentCard Repository", func() {
 				Description:   "Weather agent card",
 				Category:      "g-api",
 				Oauth2Scopes:  []string{"scope-a"},
+				Specification: "file-123",
+				Hash:          "hash-123",
 				Active:        true,
 				TeamName:      "platform--narvi",
 			}
@@ -109,6 +111,8 @@ var _ = Describe("AgentCard Repository", func() {
 			Expect(card.Description).To(Equal("Weather agent card"))
 			Expect(card.Category).To(Equal("g-api"))
 			Expect(card.Oauth2Scopes).To(Equal([]string{"scope-a"}))
+			Expect(card.Specification).To(Equal("file-123"))
+			Expect(card.Hash).To(Equal("hash-123"))
 			Expect(card.Active).To(BeTrue())
 
 			owner, err := card.QueryOwner().Only(ctx)
@@ -147,6 +151,7 @@ var _ = Describe("AgentCard Repository", func() {
 
 			data.Version = "2.0.0"
 			data.DisplayName = "Weather Agent v2"
+			data.Hash = "hash-v2"
 			Expect(repo.Upsert(ctx, data)).To(Succeed())
 
 			count, err := client.AgentCard.Query().Count(ctx)
@@ -160,6 +165,43 @@ var _ = Describe("AgentCard Repository", func() {
 			Expect(card.Version).To(Equal("2.0.0"))
 			Expect(card.Name).To(Equal("agent-weather-v1"))
 			Expect(card.DisplayName).To(Equal("Weather Agent v2"))
+			Expect(card.Hash).To(Equal("hash-v2"))
+		})
+
+		It("should set removed optional fields to NULL on conflict", func() {
+			data := &agentcard.AgentCardData{
+				Meta:          shared.NewMetadata("prod--platform--narvi", "agent-weather-v1", nil),
+				StatusPhase:   "READY",
+				BasePath:      "/agent/weather/v1",
+				Version:       "1.0.0",
+				Name:          "agent-weather-v1",
+				DisplayName:   "Weather Agent",
+				Description:   "description",
+				Category:      "other",
+				Specification: "file-123",
+				Hash:          "hash-123",
+				Active:        true,
+				TeamName:      "platform--narvi",
+			}
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			data.Description = ""
+			data.Category = ""
+			data.Specification = ""
+			data.Hash = ""
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			count, err := client.AgentCard.Query().
+				Where(
+					entagentcard.BasePathEQ("/agent/weather/v1"),
+					entagentcard.DescriptionIsNil(),
+					entagentcard.CategoryIsNil(),
+					entagentcard.SpecificationIsNil(),
+					entagentcard.HashIsNil(),
+				).
+				Count(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(count).To(Equal(1))
 		})
 
 		It("should set the active-agent-card cache entry when active", func() {

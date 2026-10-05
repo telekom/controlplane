@@ -43,6 +43,8 @@ const (
 	FieldDescription = "description"
 	// FieldSpecification holds the string denoting the specification field in the database.
 	FieldSpecification = "specification"
+	// FieldHash holds the string denoting the hash field in the database.
+	FieldHash = "hash"
 	// FieldCategory holds the string denoting the category field in the database.
 	FieldCategory = "category"
 	// FieldOauth2Scopes holds the string denoting the oauth2_scopes field in the database.
@@ -85,6 +87,7 @@ var Columns = []string{
 	FieldDisplayName,
 	FieldDescription,
 	FieldSpecification,
+	FieldHash,
 	FieldCategory,
 	FieldOauth2Scopes,
 	FieldActive,
@@ -225,6 +228,11 @@ func ByDescription(opts ...sql.OrderTermOption) OrderOption {
 // BySpecification orders the results by the specification field.
 func BySpecification(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldSpecification, opts...).ToFunc()
+}
+
+// ByHash orders the results by the hash field.
+func ByHash(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldHash, opts...).ToFunc()
 }
 
 // ByCategory orders the results by the category field.

@@ -88,6 +88,7 @@ type AgentCardMutation struct {
 	display_name        *string
 	description         *string
 	specification       *string
+	hash                *string
 	category            *string
 	oauth2_scopes       *[]string
 	appendoauth2_scopes []string
@@ -649,6 +650,55 @@ func (m *AgentCardMutation) ResetSpecification() {
 	delete(m.clearedFields, agentcard.FieldSpecification)
 }
 
+// SetHash sets the "hash" field.
+func (m *AgentCardMutation) SetHash(s string) {
+	m.hash = &s
+}
+
+// Hash returns the value of the "hash" field in the mutation.
+func (m *AgentCardMutation) Hash() (r string, exists bool) {
+	v := m.hash
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldHash returns the old "hash" field's value of the AgentCard entity.
+// If the AgentCard object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AgentCardMutation) OldHash(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldHash is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldHash requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldHash: %w", err)
+	}
+	return oldValue.Hash, nil
+}
+
+// ClearHash clears the value of the "hash" field.
+func (m *AgentCardMutation) ClearHash() {
+	m.hash = nil
+	m.clearedFields[agentcard.FieldHash] = struct{}{}
+}
+
+// HashCleared returns if the "hash" field was cleared in this mutation.
+func (m *AgentCardMutation) HashCleared() bool {
+	_, ok := m.clearedFields[agentcard.FieldHash]
+	return ok
+}
+
+// ResetHash resets all changes to the "hash" field.
+func (m *AgentCardMutation) ResetHash() {
+	m.hash = nil
+	delete(m.clearedFields, agentcard.FieldHash)
+}
+
 // SetCategory sets the "category" field.
 func (m *AgentCardMutation) SetCategory(s string) {
 	m.category = &s
@@ -926,7 +976,7 @@ func (m *AgentCardMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *AgentCardMutation) Fields() []string {
-	fields := make([]string, 0, 14)
+	fields := make([]string, 0, 15)
 	if m.created_at != nil {
 		fields = append(fields, agentcard.FieldCreatedAt)
 	}
@@ -959,6 +1009,9 @@ func (m *AgentCardMutation) Fields() []string {
 	}
 	if m.specification != nil {
 		fields = append(fields, agentcard.FieldSpecification)
+	}
+	if m.hash != nil {
+		fields = append(fields, agentcard.FieldHash)
 	}
 	if m.category != nil {
 		fields = append(fields, agentcard.FieldCategory)
@@ -999,6 +1052,8 @@ func (m *AgentCardMutation) Field(name string) (ent.Value, bool) {
 		return m.Description()
 	case agentcard.FieldSpecification:
 		return m.Specification()
+	case agentcard.FieldHash:
+		return m.Hash()
 	case agentcard.FieldCategory:
 		return m.Category()
 	case agentcard.FieldOauth2Scopes:
@@ -1036,6 +1091,8 @@ func (m *AgentCardMutation) OldField(ctx context.Context, name string) (ent.Valu
 		return m.OldDescription(ctx)
 	case agentcard.FieldSpecification:
 		return m.OldSpecification(ctx)
+	case agentcard.FieldHash:
+		return m.OldHash(ctx)
 	case agentcard.FieldCategory:
 		return m.OldCategory(ctx)
 	case agentcard.FieldOauth2Scopes:
@@ -1128,6 +1185,13 @@ func (m *AgentCardMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetSpecification(v)
 		return nil
+	case agentcard.FieldHash:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetHash(v)
+		return nil
 	case agentcard.FieldCategory:
 		v, ok := value.(string)
 		if !ok {
@@ -1191,6 +1255,9 @@ func (m *AgentCardMutation) ClearedFields() []string {
 	if m.FieldCleared(agentcard.FieldSpecification) {
 		fields = append(fields, agentcard.FieldSpecification)
 	}
+	if m.FieldCleared(agentcard.FieldHash) {
+		fields = append(fields, agentcard.FieldHash)
+	}
 	if m.FieldCleared(agentcard.FieldCategory) {
 		fields = append(fields, agentcard.FieldCategory)
 	}
@@ -1222,6 +1289,9 @@ func (m *AgentCardMutation) ClearField(name string) error {
 		return nil
 	case agentcard.FieldSpecification:
 		m.ClearSpecification()
+		return nil
+	case agentcard.FieldHash:
+		m.ClearHash()
 		return nil
 	case agentcard.FieldCategory:
 		m.ClearCategory()
@@ -1269,6 +1339,9 @@ func (m *AgentCardMutation) ResetField(name string) error {
 		return nil
 	case agentcard.FieldSpecification:
 		m.ResetSpecification()
+		return nil
+	case agentcard.FieldHash:
+		m.ResetHash()
 		return nil
 	case agentcard.FieldCategory:
 		m.ResetCategory()
@@ -22516,6 +22589,7 @@ type McpServerMutation struct {
 	display_name        *string
 	description         *string
 	specification       *string
+	hash                *string
 	category            *string
 	oauth2_scopes       *[]string
 	appendoauth2_scopes []string
@@ -23077,6 +23151,55 @@ func (m *McpServerMutation) ResetSpecification() {
 	delete(m.clearedFields, mcpserver.FieldSpecification)
 }
 
+// SetHash sets the "hash" field.
+func (m *McpServerMutation) SetHash(s string) {
+	m.hash = &s
+}
+
+// Hash returns the value of the "hash" field in the mutation.
+func (m *McpServerMutation) Hash() (r string, exists bool) {
+	v := m.hash
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldHash returns the old "hash" field's value of the McpServer entity.
+// If the McpServer object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *McpServerMutation) OldHash(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldHash is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldHash requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldHash: %w", err)
+	}
+	return oldValue.Hash, nil
+}
+
+// ClearHash clears the value of the "hash" field.
+func (m *McpServerMutation) ClearHash() {
+	m.hash = nil
+	m.clearedFields[mcpserver.FieldHash] = struct{}{}
+}
+
+// HashCleared returns if the "hash" field was cleared in this mutation.
+func (m *McpServerMutation) HashCleared() bool {
+	_, ok := m.clearedFields[mcpserver.FieldHash]
+	return ok
+}
+
+// ResetHash resets all changes to the "hash" field.
+func (m *McpServerMutation) ResetHash() {
+	m.hash = nil
+	delete(m.clearedFields, mcpserver.FieldHash)
+}
+
 // SetCategory sets the "category" field.
 func (m *McpServerMutation) SetCategory(s string) {
 	m.category = &s
@@ -23354,7 +23477,7 @@ func (m *McpServerMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *McpServerMutation) Fields() []string {
-	fields := make([]string, 0, 14)
+	fields := make([]string, 0, 15)
 	if m.created_at != nil {
 		fields = append(fields, mcpserver.FieldCreatedAt)
 	}
@@ -23387,6 +23510,9 @@ func (m *McpServerMutation) Fields() []string {
 	}
 	if m.specification != nil {
 		fields = append(fields, mcpserver.FieldSpecification)
+	}
+	if m.hash != nil {
+		fields = append(fields, mcpserver.FieldHash)
 	}
 	if m.category != nil {
 		fields = append(fields, mcpserver.FieldCategory)
@@ -23427,6 +23553,8 @@ func (m *McpServerMutation) Field(name string) (ent.Value, bool) {
 		return m.Description()
 	case mcpserver.FieldSpecification:
 		return m.Specification()
+	case mcpserver.FieldHash:
+		return m.Hash()
 	case mcpserver.FieldCategory:
 		return m.Category()
 	case mcpserver.FieldOauth2Scopes:
@@ -23464,6 +23592,8 @@ func (m *McpServerMutation) OldField(ctx context.Context, name string) (ent.Valu
 		return m.OldDescription(ctx)
 	case mcpserver.FieldSpecification:
 		return m.OldSpecification(ctx)
+	case mcpserver.FieldHash:
+		return m.OldHash(ctx)
 	case mcpserver.FieldCategory:
 		return m.OldCategory(ctx)
 	case mcpserver.FieldOauth2Scopes:
@@ -23556,6 +23686,13 @@ func (m *McpServerMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetSpecification(v)
 		return nil
+	case mcpserver.FieldHash:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetHash(v)
+		return nil
 	case mcpserver.FieldCategory:
 		v, ok := value.(string)
 		if !ok {
@@ -23619,6 +23756,9 @@ func (m *McpServerMutation) ClearedFields() []string {
 	if m.FieldCleared(mcpserver.FieldSpecification) {
 		fields = append(fields, mcpserver.FieldSpecification)
 	}
+	if m.FieldCleared(mcpserver.FieldHash) {
+		fields = append(fields, mcpserver.FieldHash)
+	}
 	if m.FieldCleared(mcpserver.FieldCategory) {
 		fields = append(fields, mcpserver.FieldCategory)
 	}
@@ -23650,6 +23790,9 @@ func (m *McpServerMutation) ClearField(name string) error {
 		return nil
 	case mcpserver.FieldSpecification:
 		m.ClearSpecification()
+		return nil
+	case mcpserver.FieldHash:
+		m.ClearHash()
 		return nil
 	case mcpserver.FieldCategory:
 		m.ClearCategory()
@@ -23697,6 +23840,9 @@ func (m *McpServerMutation) ResetField(name string) error {
 		return nil
 	case mcpserver.FieldSpecification:
 		m.ResetSpecification()
+		return nil
+	case mcpserver.FieldHash:
+		m.ResetHash()
 		return nil
 	case mcpserver.FieldCategory:
 		m.ResetCategory()

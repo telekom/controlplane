@@ -44,6 +44,8 @@ type McpServer struct {
 	Description string `json:"description,omitempty"`
 	// Specification holds the value of the "specification" field.
 	Specification string `json:"specification,omitempty"`
+	// Base64-encoded SHA-256 hash of the MCP server specification file. Changes when the content changes. Empty if unknown.
+	Hash string `json:"hash,omitempty"`
 	// Category holds the value of the "category" field.
 	Category string `json:"category,omitempty"`
 	// Oauth2Scopes holds the value of the "oauth2_scopes" field.
@@ -101,7 +103,7 @@ func (*McpServer) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullBool)
 		case mcpserver.FieldID:
 			values[i] = new(sql.NullInt64)
-		case mcpserver.FieldStatusPhase, mcpserver.FieldStatusMessage, mcpserver.FieldNamespace, mcpserver.FieldBasePath, mcpserver.FieldVersion, mcpserver.FieldName, mcpserver.FieldDisplayName, mcpserver.FieldDescription, mcpserver.FieldSpecification, mcpserver.FieldCategory:
+		case mcpserver.FieldStatusPhase, mcpserver.FieldStatusMessage, mcpserver.FieldNamespace, mcpserver.FieldBasePath, mcpserver.FieldVersion, mcpserver.FieldName, mcpserver.FieldDisplayName, mcpserver.FieldDescription, mcpserver.FieldSpecification, mcpserver.FieldHash, mcpserver.FieldCategory:
 			values[i] = new(sql.NullString)
 		case mcpserver.FieldCreatedAt, mcpserver.FieldLastModifiedAt:
 			values[i] = new(sql.NullTime)
@@ -195,6 +197,12 @@ func (_m *McpServer) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field specification", values[i])
 			} else if value.Valid {
 				_m.Specification = value.String
+			}
+		case mcpserver.FieldHash:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field hash", values[i])
+			} else if value.Valid {
+				_m.Hash = value.String
 			}
 		case mcpserver.FieldCategory:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -305,6 +313,9 @@ func (_m *McpServer) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("specification=")
 	builder.WriteString(_m.Specification)
+	builder.WriteString(", ")
+	builder.WriteString("hash=")
+	builder.WriteString(_m.Hash)
 	builder.WriteString(", ")
 	builder.WriteString("category=")
 	builder.WriteString(_m.Category)

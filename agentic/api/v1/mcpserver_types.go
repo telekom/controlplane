@@ -46,6 +46,12 @@ type McpServerSpec struct {
 	// +optional
 	Specification string `json:"specification,omitempty"`
 
+	// Hash is the base64-encoded SHA-256 hash of the specification
+	// file referenced by Specification. Consumers can use it to detect content
+	// changes without downloading the file.
+	// +optional
+	Hash string `json:"hash,omitempty"`
+
 	// Category of the MCP server (e.g. "g-api", "m-api", "other").
 	// +kubebuilder:validation:Optional
 	Category string `json:"category,omitempty"`
