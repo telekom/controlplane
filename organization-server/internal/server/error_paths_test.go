@@ -857,6 +857,7 @@ var _ = Describe("Team Error Paths", func() {
 			Expect(json.NewDecoder(resp.Body).Decode(&result)).To(Succeed())
 			Expect(result["name"]).To(Equal("hyperion"))
 			Expect(result["email"]).To(Equal("new@test.de"))
+			Expect(result["members"]).To(Equal([]any{}))
 		})
 
 		It("should return 200 with an empty token when the accepted rotation has no team payload", func() {

@@ -446,6 +446,7 @@ func pendingTeamResponse(hubName, teamName, email string) api.TeamResponse {
 		Name:     teamName,
 		Email:    email,
 		ClientId: fmt.Sprintf("%s--%s--team-user", hubName, teamName),
+		Members:  []api.TeamMember{},
 		Status:   pendingStatus(),
 	}
 }
