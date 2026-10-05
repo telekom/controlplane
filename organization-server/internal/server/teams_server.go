@@ -156,14 +156,14 @@ func (s *Server) PatchTeamToken(c *fiber.Ctx) error {
 	if err != nil {
 		return s.internalError(c, err, "Unable to rotate team token", "hub", hubName, "team", teamName)
 	}
-	if token == "" && mutErrs == nil {
-		return notFound(c, "Team not found: "+teamName)
-	}
 	if mutErrs != nil {
 		return mapMutationErrors(c, mutErrs)
 	}
+	if token == nil {
+		return notFound(c, "Team not found: "+teamName)
+	}
 
-	return c.JSON(fiber.Map{"teamToken": token})
+	return c.JSON(fiber.Map{"teamToken": *token})
 }
 
 func (s *Server) GetTeamResources(c *fiber.Ctx) error {
