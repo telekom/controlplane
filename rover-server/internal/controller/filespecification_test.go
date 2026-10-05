@@ -21,6 +21,7 @@ import (
 	filefake "github.com/telekom/controlplane/file-manager/api/fake"
 	"github.com/telekom/controlplane/rover-server/internal/api"
 	"github.com/telekom/controlplane/rover-server/internal/file"
+	"github.com/telekom/controlplane/rover-server/internal/mapper"
 )
 
 var _ = Describe("FileSpecification Controller", func() {
@@ -263,6 +264,23 @@ var _ = Describe("FileSpecification Controller", func() {
 
 			controller := &FileSpecificationController{}
 			Expect(controller.deleteFile(context.Background(), "namespace", "name")).To(Succeed())
+		})
+	})
+
+	Context("uploadFile", func() {
+		It("should return an empty response when File Manager is disabled", func() {
+			wasEnabled := cconfig.FeatureFileManager.IsEnabled()
+			cconfig.SetFeatureEnabled(cconfig.FeatureFileManager, false)
+			DeferCleanup(func() {
+				cconfig.SetFeatureEnabled(cconfig.FeatureFileManager, wasEnabled)
+			})
+
+			controller := &FileSpecificationController{}
+			response, err := controller.uploadFile(context.Background(), []byte("type: object"), mapper.ResourceIdInfo{})
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(response).NotTo(BeNil())
+			Expect(response.FileId).To(BeEmpty())
 		})
 	})
 })
