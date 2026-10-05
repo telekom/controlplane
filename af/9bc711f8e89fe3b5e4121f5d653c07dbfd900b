@@ -1,0 +1,25 @@
+event/internal/controller/eventexposure_controller_test.go
+  s_7ed2d0a941c69b::t_bb265ccad9c722 29,39,57,63,67,79
+event/internal/controller/eventtype_controller_test.go
+  s_7ed2d0a941c69b::t_bb265ccad9c722 28,38,50,56,60,72
+event/internal/controller/eventconfig_controller_test.go
+  s_7ed2d0a941c69b::t_bb265ccad9c722 29,39,66,72,76,88,96,99-100,104-105,109-110
+event/internal/controller/eventsubscription_controller_test.go
+  s_7ed2d0a941c69b::t_bb265ccad9c722 29,39,60,66,70,82
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "af9bc711f8e89fe3b5e4121f5d653c07dbfd900b",
+  "prompts": {},
+  "sessions": {
+    "s_7ed2d0a941c69b": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f0e702d86ffexqWlWYDnSwNHp4",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
