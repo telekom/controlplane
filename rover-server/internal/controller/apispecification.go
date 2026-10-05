@@ -70,16 +70,27 @@ func (a *ApiSpecificationController) Delete(ctx context.Context, resourceId stri
 		return err
 	}
 
-	fileId := generateFileId(id)
-	err = file.GetFileManager().DeleteFile(ctx, fileId)
+	ns := id.Environment + "--" + id.Namespace
+	var fileUUID string
+	apiSpecExisting, err := a.Store.Get(ctx, ns, id.Name)
 	if err != nil {
-		if errors.Is(err, file.ErrNotFound) {
-			return problems.NotFound(resourceId)
+		if !problems.IsNotFound(err) {
+			return err
 		}
-		return err
+	} else {
+		fileUUID = apiSpecExisting.Spec.Specification
 	}
 
-	ns := id.Environment + "--" + id.Namespace
+	if fileUUID != "" {
+		err = file.GetFileManager().DeleteFile(ctx, fileUUID)
+		if err != nil {
+			if errors.Is(err, file.ErrNotFound) {
+				return problems.NotFound(resourceId)
+			}
+			return err
+		}
+	}
+
 	err = a.Store.Delete(ctx, ns, id.Name)
 	if err != nil {
 		if problems.IsNotFound(err) {
@@ -190,7 +201,18 @@ func (a *ApiSpecificationController) Update(ctx context.Context, resourceId stri
 		return res, err
 	}
 
-	fileAPIResp, err := a.uploadFile(ctx, specMarshaled, id)
+	ns := id.Environment + "--" + id.Namespace
+	var fileUUID string
+	apiSpecExisting, err := a.Store.Get(ctx, ns, id.Name)
+	if err != nil {
+		if !problems.IsNotFound(err) {
+			return res, err
+		}
+	} else {
+		fileUUID = apiSpecExisting.Spec.Specification
+	}
+
+	fileAPIResp, err := a.uploadFile(ctx, specMarshaled, fileUUID)
 	if err != nil {
 		return res, err
 	}
@@ -319,7 +341,7 @@ func (a *ApiSpecificationController) lintSpec(ctx context.Context, apiSpec *rove
 	return nil
 }
 
-func (a *ApiSpecificationController) uploadFile(ctx context.Context, specMarshaled []byte, id mapper.ResourceIdInfo) (*filesapi.FileUploadResponse, error) {
+func (a *ApiSpecificationController) uploadFile(ctx context.Context, specMarshaled []byte, fileUUID string) (*filesapi.FileUploadResponse, error) {
 	if !cconfig.FeatureFileManager.IsEnabled() {
 		return nil, nil
 	}
@@ -328,7 +350,11 @@ func (a *ApiSpecificationController) uploadFile(ctx context.Context, specMarshal
 		return nil, errors.New("input api specification has length 0 or nil")
 	}
 
-	fileId := generateFileId(id)
+	fileId, err := resolveFileId(fileUUID)
+	if err != nil {
+		return nil, err
+	}
+
 	fileContentType := "application/yaml"
 
 	return file.GetFileManager().UploadFile(ctx, fileId, fileContentType, bytes.NewReader(specMarshaled))
@@ -378,9 +404,4 @@ func (a *ApiSpecificationController) downloadFile(ctx context.Context, fileId st
 	}
 
 	return res, nil
-}
-
-func generateFileId(id mapper.ResourceIdInfo) string {
-	fileId := id.Environment + "--" + id.ResourceId //<env>--<group>--<team>--<apiSpecName>
-	return fileId
 }

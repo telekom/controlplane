@@ -13,127 +13,35 @@ func TestParseFileID(t *testing.T) {
 		name    string
 		fileId  string
 		wantErr bool
-		want    *FileIDParts
 	}{
-		{
-			name:    "Valid file ID with simple filename",
-			fileId:  "dev--groupA--teamB--document.pdf",
-			wantErr: false,
-			want: &FileIDParts{
-				Env:      "dev",
-				Group:    "groupA",
-				Team:     "teamB",
-				FileName: "document.pdf",
-				Raw:      "dev--groupA--teamB--document.pdf",
-			},
-		},
-		{
-			name:    "Valid file ID with dashes in filename",
-			fileId:  "dev--groupA--teamB--my-document-with-dashes.pdf",
-			wantErr: false,
-			want: &FileIDParts{
-				Env:      "dev",
-				Group:    "groupA",
-				Team:     "teamB",
-				FileName: "my-document-with-dashes.pdf",
-				Raw:      "dev--groupA--teamB--my-document-with-dashes.pdf",
-			},
-		},
-		{
-			name:    "Valid file ID with double dash in filename",
-			fileId:  "dev--groupA--teamB--file--with--doubleDash.pdf",
-			wantErr: false,
-			want: &FileIDParts{
-				Env:      "dev",
-				Group:    "groupA",
-				Team:     "teamB",
-				FileName: "file--with--doubleDash.pdf",
-				Raw:      "dev--groupA--teamB--file--with--doubleDash.pdf",
-			},
-		},
-		{
-			name:    "Invalid file ID - missing parts",
-			fileId:  "dev--group--file.txt",
-			wantErr: true,
-			want:    nil,
-		},
-		{
-			name:    "Invalid file ID - empty string",
-			fileId:  "",
-			wantErr: true,
-			want:    nil,
-		},
+		{name: "Valid UUIDv7", fileId: "01926a3e-7b2c-7d3e-8f4a-1b2c3d4e5f60"},
+		{name: "Valid UUIDv4", fileId: "6f1c2d3e-4b5a-4c6d-8e7f-9a0b1c2d3e4f"},
+		{name: "Invalid - legacy format", fileId: "dev--groupA--teamB--document.pdf", wantErr: true},
+		{name: "Invalid - uppercase UUID", fileId: "01926A3E-7B2C-7D3E-8F4A-1B2C3D4E5F60", wantErr: true},
+		{name: "Invalid - urn form", fileId: "urn:uuid:01926a3e-7b2c-7d3e-8f4a-1b2c3d4e5f60", wantErr: true},
+		{name: "Invalid - braced form", fileId: "{01926a3e-7b2c-7d3e-8f4a-1b2c3d4e5f60}", wantErr: true},
+		{name: "Invalid - path traversal", fileId: "../01926a3e-7b2c-7d3e-8f4a-1b2c3d4e5f60", wantErr: true},
+		{name: "Invalid - empty string", fileId: "", wantErr: true},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := ParseFileID(tt.fileId)
-
-			// Check error
 			if (err != nil) != tt.wantErr {
-				t.Errorf("ParseFileID() error = %v, wantErr %v", err, tt.wantErr)
-				return
+				t.Fatalf("ParseFileID() error = %v, wantErr %v", err, tt.wantErr)
 			}
-
-			// Skip further checks if we expected an error
-			if tt.wantErr {
-				return
-			}
-
-			// Check fields
-			if got.Env != tt.want.Env {
-				t.Errorf("ParseFileID() Env = %v, want %v", got.Env, tt.want.Env)
-			}
-			if got.Group != tt.want.Group {
-				t.Errorf("ParseFileID() Group = %v, want %v", got.Group, tt.want.Group)
-			}
-			if got.Team != tt.want.Team {
-				t.Errorf("ParseFileID() Team = %v, want %v", got.Team, tt.want.Team)
-			}
-			if got.FileName != tt.want.FileName {
-				t.Errorf("ParseFileID() FileName = %v, want %v", got.FileName, tt.want.FileName)
-			}
-			if got.Raw != tt.want.Raw {
-				t.Errorf("ParseFileID() Raw = %v, want %v", got.Raw, tt.want.Raw)
+			if !tt.wantErr && got.String() != tt.fileId {
+				t.Errorf("ParseFileID() = %v, want %v", got, tt.fileId)
 			}
 		})
 	}
 }
 
 func TestValidateFileID(t *testing.T) {
-	tests := []struct {
-		name    string
-		fileId  string
-		wantErr bool
-	}{
-		{
-			name:    "Valid file ID",
-			fileId:  "dev--groupA--teamB--document.pdf",
-			wantErr: false,
-		},
-		{
-			name:    "Valid file ID with complex filename",
-			fileId:  "dev--groupA--teamB--document--with--dashes.pdf",
-			wantErr: false,
-		},
-		{
-			name:    "Invalid file ID - too few parts",
-			fileId:  "dev--group--file.txt",
-			wantErr: true,
-		},
-		{
-			name:    "Invalid file ID - empty",
-			fileId:  "",
-			wantErr: true,
-		},
+	if err := ValidateFileID("01926a3e-7b2c-7d3e-8f4a-1b2c3d4e5f60"); err != nil {
+		t.Errorf("ValidateFileID() unexpected error = %v", err)
 	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := ValidateFileID(tt.fileId)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("ValidateFileID() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
+	if err := ValidateFileID("dev--group--team--file.txt"); err == nil {
+		t.Error("ValidateFileID() expected error for legacy fileId")
 	}
 }
