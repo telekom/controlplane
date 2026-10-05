@@ -165,8 +165,8 @@ func (d *ZoneCustomDefaulter) Default(ctx context.Context, zone *adminv1.Zone) e
 	if oldZone, isUpdate := getOldZone(ctx); isUpdate {
 		oldIdentityProviders := make(map[string]adminv1.IdentityProviderConfig, len(oldZone.Spec.IdentityProviders))
 		for i := range oldZone.Spec.IdentityProviders {
-			identityProvider := oldZone.Spec.IdentityProviders[i]
-			oldIdentityProviders[identityProvider.Name] = identityProvider
+			identityProvider := &oldZone.Spec.IdentityProviders[i]
+			oldIdentityProviders[identityProvider.Name] = *identityProvider
 		}
 		for i := range zone.Spec.IdentityProviders {
 			oldIdentityProvider, found := oldIdentityProviders[zone.Spec.IdentityProviders[i].Name]
