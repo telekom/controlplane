@@ -74,6 +74,15 @@ func validateZoneFields(zone *adminv1.Zone) field.ErrorList { //nolint:gocyclo /
 	specPath := field.NewPath("spec")
 	var errs field.ErrorList
 
+	if zone.Spec.ManagedRoutes != nil {
+		for i, route := range zone.Spec.ManagedRoutes.Routes {
+			if route.Name == adminv1.ZoneHealthRouteName {
+				errs = append(errs, field.Forbidden(specPath.Child("managedRoutes", "routes").Index(i).Child("name"),
+					"zone-health is reserved for the platform health probe"))
+			}
+		}
+	}
+
 	errs = append(errs, validateUniqueNames(specPath.Child("gateways"), "gateway", func(yield func(string, int)) {
 		for i, gateway := range zone.Spec.Gateways {
 			yield(gateway.Name, i)

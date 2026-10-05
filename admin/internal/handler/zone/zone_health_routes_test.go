@@ -16,6 +16,7 @@ import (
 	"github.com/telekom/controlplane/admin/internal/handler/util/naming"
 	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
+	"github.com/telekom/controlplane/common/pkg/types"
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
 )
 
@@ -132,6 +133,33 @@ var _ = Describe("Zone-health routes", func() {
 			Namespace: zone.Status.Namespace, Name: naming.ForGateway(zone, "standard") + "--proxy",
 		}, &gatewayapi.Route{})).To(MatchError(ContainSubstring("not found")))
 	})
+
+	DescribeTable("blocks legacy managed-route collisions without overwriting the Route or status",
+		func(routeType adminv1.ManagedRouteType) {
+			Expect(reconcile()).To(Succeed())
+			existing := getRoute("standard")
+			existing.Spec.Paths = []string{"/legacy"}
+			existing.Spec.Backend.Upstreams[0].Hostname = "backend.example.com"
+			existing.Spec.Backend.Upstreams[0].Path = "/legacy"
+			Expect(k8sClient.Update(ctx, existing)).To(Succeed())
+			zone.Spec.ManagedRoutes = &adminv1.ManagedRoutesConfig{Routes: []adminv1.ManagedRouteConfig{{
+				Name: adminv1.ZoneHealthRouteName, Path: "/legacy", Url: "http://backend.example.com/legacy", Type: routeType,
+			}}}
+			zone.Status.ManagedRoutes = []types.ObjectRef{{Name: existing.Name, Namespace: existing.Namespace}}
+			beforeStatus := append([]types.ObjectRef(nil), zone.Status.ManagedRoutes...)
+			err := handler.CreateOrUpdate(newTestContext(zone), zone)
+			var blocked ctrlerrors.BlockedError
+			Expect(errors.As(err, &blocked)).To(BeTrue())
+			Expect(blocked.IsBlocked()).To(BeTrue())
+			Expect(err).To(MatchError(ContainSubstring("reserved for the platform health probe")))
+			after := getRoute("standard")
+			Expect(after.Spec).To(Equal(existing.Spec))
+			Expect(after.ResourceVersion).To(Equal(existing.ResourceVersion))
+			Expect(zone.Status.ManagedRoutes).To(Equal(beforeStatus))
+		},
+		Entry("Proxy", adminv1.ManagedRouteTypeProxy),
+		Entry("TeamAPI", adminv1.ManagedRouteTypeTeamAPI),
+	)
 
 	DescribeTable("blocks excessive inputs before creating identity routes",
 		func(hostnames bool) {
