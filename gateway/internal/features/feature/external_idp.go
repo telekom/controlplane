@@ -93,17 +93,17 @@ func (f *ExternalIDPFeature) Apply(ctx context.Context, builder features.Feature
 
 	// Consumers
 	for _, consumer := range builder.GetAllowedConsumers() {
+		grantType := security.M2M.ExternalIDP.GrantType
+		if consumer.HasM2M() && consumer.Spec.Security.M2M.GrantType != "" {
+			grantType = consumer.Spec.Security.M2M.GrantType
+		}
 		if consumer.HasM2MClient() {
-			grantType := security.M2M.ExternalIDP.GrantType
-			if consumer.Spec.Security.M2M.Client.RefreshToken != "" {
-				grantType = gatewayv1.GrantTypeRefreshToken
-			}
 			err = applyOauth(ctx, plugin.ConsumerId(consumer.Spec.ConsumerName), jumperConfig, consumer.Spec.Security.M2M.Client, security.M2M.ExternalIDP, consumer.Spec.Security.M2M.Scopes, grantType)
 			if err != nil {
 				return errors.Wrapf(err, "cannot get consumer secret for consumer %s in route %s", consumer.Spec.ConsumerName, route.Name)
 			}
 		} else if consumer.HasM2MBasic() {
-			err = applyBasic(ctx, plugin.ConsumerId(consumer.Spec.ConsumerName), jumperConfig, consumer.Spec.Security.M2M.Basic, consumer.Spec.Security.M2M.Scopes, gatewayv1.GrantTypePassword)
+			err = applyBasic(ctx, plugin.ConsumerId(consumer.Spec.ConsumerName), jumperConfig, consumer.Spec.Security.M2M.Basic, consumer.Spec.Security.M2M.Scopes, grantType)
 			if err != nil {
 				return errors.Wrapf(err, "cannot get consumer secret for consumer %s in route %s", consumer.Spec.ConsumerName, route.Name)
 			}

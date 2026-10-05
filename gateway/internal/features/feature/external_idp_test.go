@@ -479,7 +479,8 @@ var _ = Describe("ExternalIDPFeature", func() {
 											Username: "consumer-user",
 											Password: "consumer-pass",
 										},
-										Scopes: []string{"basic-scope"},
+										Scopes:    []string{"basic-scope"},
+										GrantType: gatewayv1.GrantTypePassword,
 									},
 								},
 							},
@@ -503,8 +504,8 @@ var _ = Describe("ExternalIDPFeature", func() {
 				})
 			})
 
-			Context("when consumer has a refresh token", func() {
-				It("uses the refresh_token grant regardless of the provider grant", func() {
+			Context("when consumer has a refresh token but no grant type", func() {
+				It("falls back to the provider grant type", func() {
 					route := &gatewayv1.Route{
 						ObjectMeta: metav1.ObjectMeta{Name: "test-route", Namespace: "test-ns"},
 						Spec: gatewayv1.RouteSpec{
@@ -547,9 +548,60 @@ var _ = Describe("ExternalIDPFeature", func() {
 
 					Expect(jumperConfig.OAuth[plugin.ConsumerId("consumer-refresh")]).To(Equal(plugin.OauthCredentials{
 						ClientId: "consumer-id", ClientSecret: "consumer-secret", RefreshToken: "consumer-refresh-token",
-						Scopes: "refresh-scope", TokenRequest: "header", GrantType: "refresh_token",
+						Scopes: "refresh-scope", TokenRequest: "header", GrantType: "client_credentials",
 					}))
 				})
+			})
+
+			Context("when consumer sets an explicit grant type", func() {
+				DescribeTable("uses the consumer grant type over the provider one",
+					func(m2m *gatewayv1.ConsumerMachine2MachineAuthentication, expected string) {
+						route := &gatewayv1.Route{
+							ObjectMeta: metav1.ObjectMeta{Name: "test-route", Namespace: "test-ns"},
+							Spec: gatewayv1.RouteSpec{
+								Type: gatewayv1.RouteTypePrimary,
+								Security: gatewayv1.Security{
+									M2M: &gatewayv1.Machine2MachineAuthentication{
+										ExternalIDP: &gatewayv1.ExternalIdentityProvider{
+											TokenEndpoint: "https://idp.example.com/token",
+											TokenRequest:  gatewayv1.TokenRequestClientSecretBasic,
+											GrantType:     gatewayv1.GrantTypePassword,
+										},
+									},
+								},
+							},
+						}
+						jumperConfig := plugin.NewJumperConfig()
+						consumers := []*gatewayv1.ConsumeRoute{{
+							Spec: gatewayv1.ConsumeRouteSpec{
+								ConsumerName: "explicit-consumer",
+								Security:     &gatewayv1.ConsumeRouteSecurity{M2M: m2m},
+							},
+						}}
+
+						builder.EXPECT().GetRoute().Return(route, true)
+						builder.EXPECT().RequestTransformerPlugin().Return(plugin.RequestTransformerPluginFromRoute(route))
+						builder.EXPECT().JumperConfig().Return(jumperConfig)
+						builder.EXPECT().GetAllowedConsumers().Return(consumers)
+
+						Expect(f.Apply(ctx, builder)).To(Succeed())
+						Expect(jumperConfig.OAuth[plugin.ConsumerId("explicit-consumer")].GrantType).To(Equal(expected))
+					},
+					Entry("client with refresh token", &gatewayv1.ConsumerMachine2MachineAuthentication{
+						Client: &gatewayv1.OAuth2ClientCredentials{
+							ClientId: "consumer-id", ClientSecret: "consumer-secret", RefreshToken: "consumer-refresh-token",
+						},
+						GrantType: gatewayv1.GrantTypeClientCredentials,
+					}, "client_credentials"),
+					Entry("client without refresh token", &gatewayv1.ConsumerMachine2MachineAuthentication{
+						Client:    &gatewayv1.OAuth2ClientCredentials{ClientId: "consumer-id", ClientSecret: "consumer-secret"},
+						GrantType: gatewayv1.GrantTypeClientCredentials,
+					}, "client_credentials"),
+					Entry("basic", &gatewayv1.ConsumerMachine2MachineAuthentication{
+						Basic:     &gatewayv1.BasicAuthCredentials{Username: "consumer-user", Password: "consumer-pass"},
+						GrantType: gatewayv1.GrantTypeAuthorizationCode,
+					}, "authorization_code"),
+				)
 			})
 		})
 
@@ -1014,7 +1066,8 @@ var _ = Describe("ExternalIDPFeature", func() {
 											Username: "basic-user",
 											Password: "basic-pass",
 										},
-										Scopes: []string{"scope-b"},
+										Scopes:    []string{"scope-b"},
+										GrantType: gatewayv1.GrantTypePassword,
 									},
 								},
 							},
