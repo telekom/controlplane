@@ -109,7 +109,7 @@ spec:
     enableTLS: true
 ```
 
-`spec.identityProviders[].allowedOrigins` sets the Keycloak web origins for clients in the zone's default identity realm, whose name is recorded in `status.realmName`. Each entry must be a serialized origin (`scheme://host[:port]`) or `*`; paths, user information, queries, and fragments are not allowed. Any URL scheme is accepted, and ports must be between 0 and 65535. The `*` value allows all origins and should only be used when that access is intended. The internal rover realm is not affected. Updating this list updates existing clients; removing it clears their configured web origins.
+`spec.identityProviders[].allowedOrigins` sets the Keycloak web origins for clients in the zone's default identity realm, whose name is recorded in `status.realmName`. Each entry must be a serialized origin (`scheme://host[:port]`) or `*`, where the host is a hostname, an IPv4 address, or a bracketed IPv6 address (for example `https://[2001:db8::1]:443`); paths, user information, queries, and fragments are not allowed. Any URL scheme is accepted. The `*` value allows all origins and should only be used when that access is intended. The internal rover realm is not affected. Updating this list updates existing clients; removing it clears their configured web origins.
 
 ### Traffic Types
 

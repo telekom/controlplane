@@ -220,7 +220,7 @@ var _ = Describe("Zone Controller", func() {
 				{name: "origin-fragment", origin: "https://example.com#fragment"},
 				{name: "origin-userinfo", origin: "https://user@example.com"},
 				{name: "origin-empty-port", origin: "https://example.com:"},
-				{name: "origin-port-overflow", origin: "https://example.com:65536"},
+				{name: "origin-port-too-long", origin: "https://example.com:123456"},
 			} {
 				zone := newZone(invalidOrigin.name)
 				zone.Namespace = decoupledEnvName
@@ -233,7 +233,7 @@ var _ = Describe("Zone Controller", func() {
 			validOriginZone := newZone("valid-origin")
 			validOriginZone.Namespace = decoupledEnvName
 			validOriginZone.Labels[config.EnvironmentLabelKey] = decoupledEnvName
-			validOriginZone.Spec.IdentityProviders[0].AllowedOrigins = []string{"ftp://example.com:21", "custom://service.example.com", "https://[2001:db8::1]:443", "*"}
+			validOriginZone.Spec.IdentityProviders[0].AllowedOrigins = []string{"ftp://example.com:21", "custom://service.example.com", "https://localhost:8443", "http://192.168.0.1:8080", "https://[2001:db8::1]:443", "*"}
 			Expect(k8sClient.Create(ctx, validOriginZone)).To(Succeed())
 			DeferCleanup(func() {
 				Expect(client.IgnoreNotFound(k8sClient.Delete(ctx, validOriginZone))).To(Succeed())
