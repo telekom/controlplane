@@ -1,0 +1,50 @@
+projector/internal/domain/eventsubscription/repository_test.go
+  s_22603e7b363d1f::t_4101aa81fa48ac 60-67,127,133,139,177,254-315,378,393,435,459,479,514
+projector/internal/domain/agenticsubscription/repository_test.go
+  s_22603e7b363d1f::t_a9aabf20070c13 36,51-53,233-235,237,244-271,326-327
+projector/internal/domain/agenticsubscription/repository.go
+  s_22603e7b363d1f::t_5eed48e2f5d0cc 70-71,95,101-103,168-170
+projector/internal/domain/application/repository.go
+  s_3a3e49f8f7edc0::t_d73073574373eb 153
+projector/internal/domain/eventsubscription/repository.go
+  s_22603e7b363d1f::t_49e5774eaa578f 75,81-83,127-129
+docs/docs/architecture/controlplane-api.mdx
+  s_22603e7b363d1f::t_ba3c0c344b4ebb 99-100
+projector/internal/domain/application/repository_test.go
+  s_3a3e49f8f7edc0::t_ff6ea3a786b608 178-210
+projector/internal/domain/filesubscription/repository.go
+  s_22603e7b363d1f::t_5eed48e2f5d0cc 79,84-87,144-146
+projector/internal/domain/apisubscription/repository_resolver_test.go
+  s_22603e7b363d1f::t_b8f3a3e83aa94e 1-134
+projector/internal/domain/filesubscription/repository_test.go
+  s_22603e7b363d1f::t_7c6830797e4160 182-184,196-261
+  s_22603e7b363d1f::t_9180a89a048585 262
+projector/internal/domain/apisubscription/repository_test.go
+  s_22603e7b363d1f::t_e23fd9515be37f 36,51-53,227-229,231,238-273,328-329,693-694
+projector/internal/domain/apisubscription/repository.go
+  s_22603e7b363d1f::t_578bc808811821 70-71,96,102-104,163-165
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "547a35358f76e0be8ec428f24d647fff663993b3",
+  "prompts": {},
+  "sessions": {
+    "s_22603e7b363d1f": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f0cd127a6ffeIEhqmrzpdptZv6",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_3a3e49f8f7edc0": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f0847b2f9ffexzm6JTbO0wtSnk",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
