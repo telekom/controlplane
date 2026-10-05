@@ -102,7 +102,7 @@ Route types are created by the **API domain**, not configured by hand. See [API 
 
 ## Traffic classification
 
-API and Agentic controllers set `cp.ei.telekom.de/apiexposure.variant` on gateway Routes using `default`, `mcp`, `telecontextmcp`, or `agent`.
+API and Agentic controllers set `cp.ei.telekom.de/exposure.variant` on gateway Routes using `default`, `mcp`, `telecontextmcp`, or `agent`.
 The Gateway controller converts supported values into `ei__telekom__de--apiexposure__variant---<variant>` on Kong Routes, preserving the existing exporter's format.
 Missing or unsupported values produce no classification tag.
 

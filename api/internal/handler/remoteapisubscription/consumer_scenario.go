@@ -79,9 +79,10 @@ func (h *RemoteApiSubscriptionHandler) handleConsumerScenario(ctx context.Contex
 
 	mutator := func() error {
 		route.Labels = map[string]string{
-			apiapi.BasePathLabelKey:      labelutil.NormalizeLabelValue(obj.Spec.ApiBasePath),
-			config.BuildLabelKey("zone"): labelutil.NormalizeLabelValue(zone.Name),
-			config.BuildLabelKey("type"): "real",
+			config.ExposureVariantLabelKey: config.ExposureVariantDefault,
+			apiapi.BasePathLabelKey:        labelutil.NormalizeLabelValue(obj.Spec.ApiBasePath),
+			config.BuildLabelKey("zone"):   labelutil.NormalizeLabelValue(zone.Name),
+			config.BuildLabelKey("type"):   "real",
 		}
 
 		u, parseErr := url.Parse(obj.Status.GatewayUrl)

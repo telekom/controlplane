@@ -4,11 +4,18 @@
 
 package config
 
+const (
+	ExposureVariantDefault        = "default"
+	ExposureVariantMCP            = "mcp"
+	ExposureVariantTelecontextMCP = "telecontextmcp"
+	ExposureVariantAgent          = "agent"
+)
+
 var (
 	EnvironmentLabelKey     = BuildLabelKey("environment")
 	OwnerUidLabelKey        = BuildLabelKey("owner.uid")
 	DomainLabelKey          = BuildLabelKey("domain")
-	ExposureVariantLabelKey = BuildLabelKey("apiexposure.variant")
+	ExposureVariantLabelKey = BuildLabelKey("exposure.variant")
 )
 
 func BuildLabelKey(key string) string {

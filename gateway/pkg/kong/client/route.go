@@ -14,6 +14,8 @@ import (
 	kong "github.com/telekom/controlplane/gateway/pkg/kong/api"
 )
 
+const exposureVariantTagPrefix = "ei__telekom__de--apiexposure__variant---"
+
 func (c *kongClient) CreateOrReplaceRoute(ctx context.Context, route CustomRoute, upstream Upstream) error {
 	if upstream == nil {
 		return fmt.Errorf("upstream is required")
@@ -48,8 +50,8 @@ func (c *kongClient) CreateOrReplaceRoute(ctx context.Context, route CustomRoute
 	route.SetServiceId(*service.Id)
 
 	switch variant := route.GetLabels()[config.ExposureVariantLabelKey]; variant {
-	case "default", "mcp", "telecontextmcp", "agent":
-		tags = append(tags, "ei__telekom__de--apiexposure__variant---"+variant)
+	case config.ExposureVariantDefault, config.ExposureVariantMCP, config.ExposureVariantTelecontextMCP, config.ExposureVariantAgent:
+		tags = append(tags, exposureVariantTagPrefix+variant)
 	}
 
 	routeBody := kong.CreateRouteJSONRequestBody{

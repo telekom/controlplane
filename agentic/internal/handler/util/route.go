@@ -7,7 +7,6 @@ package util
 import (
 	"context"
 	"net/url"
-	"strings"
 
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -67,7 +66,7 @@ func CreateAgenticRoute(
 
 	mutator := func() error {
 		route.Labels = map[string]string{
-			config.ExposureVariantLabelKey:    strings.ToLower(string(exposure.Spec.Variant)),
+			config.ExposureVariantLabelKey:    exposureVariantLabelValue(exposure.Spec.Variant),
 			config.DomainLabelKey:             LabelValueDomain,
 			agenticv1.AgenticBasePathLabelKey: labelutil.NormalizeLabelValue(exposure.Spec.BasePath),
 			config.BuildLabelKey("zone"):      zone.Name,
@@ -186,7 +185,7 @@ func CreateAgenticProxyRoute(
 
 	mutator := func() error {
 		route.Labels = map[string]string{
-			config.ExposureVariantLabelKey:    strings.ToLower(string(variant)),
+			config.ExposureVariantLabelKey:    exposureVariantLabelValue(variant),
 			config.DomainLabelKey:             LabelValueDomain,
 			agenticv1.AgenticBasePathLabelKey: labelutil.NormalizeLabelValue(basePath),
 			config.BuildLabelKey("zone"):      subscriberZone.Name,
@@ -225,6 +224,19 @@ func CreateAgenticProxyRoute(
 	}
 
 	return route, nil
+}
+
+func exposureVariantLabelValue(variant agenticv1.AgenticVariant) string {
+	switch variant {
+	case agenticv1.AgenticVariantMCP:
+		return config.ExposureVariantMCP
+	case agenticv1.AgenticVariantTelecontextMCP:
+		return config.ExposureVariantTelecontextMCP
+	case agenticv1.AgenticVariantAgent:
+		return config.ExposureVariantAgent
+	default:
+		return ""
+	}
 }
 
 // CleanupOldAgenticRoutes uses the JanitorClient's Cleanup() to delete stale MCP Routes
