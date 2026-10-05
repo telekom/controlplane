@@ -20,9 +20,11 @@ import (
 	_ "github.com/telekom/controlplane/controlplane-api/ent/runtime"
 	"github.com/telekom/controlplane/controlplane-api/ent/zone"
 	"github.com/telekom/controlplane/controlplane-api/pkg/model"
+	"github.com/telekom/controlplane/projector/internal/domain/fileexposure"
 	"github.com/telekom/controlplane/projector/internal/domain/filesubscription"
 	"github.com/telekom/controlplane/projector/internal/domain/shared"
 	"github.com/telekom/controlplane/projector/internal/infrastructure"
+	"github.com/telekom/controlplane/projector/internal/infrastructure/cachekeys"
 	"github.com/telekom/controlplane/projector/internal/runtime"
 )
 
@@ -312,6 +314,68 @@ var _ = Describe("FileSubscription Repository", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(sub.ServiceURL).To(Equal("sftp://internal-v2.example.com"))
 			Expect(sub.ServiceExternalURL).To(Equal("sftp://external-v2.example.com"))
+		})
+	})
+
+	Describe("target deactivated after its active lookup was cached", func() {
+		It("reports the missing target, clears the target FK, and relinks after reactivation", func() {
+			resolver := infrastructure.NewIDResolver(client, cache)
+			subRepo := filesubscription.NewRepository(client, cache, resolver)
+			expRepo := fileexposure.NewRepository(client, cache, resolver)
+			exposure := func(active bool) *fileexposure.FileExposureData {
+				return &fileexposure.FileExposureData{
+					Meta:           shared.NewMetadata("prod--platform--narvi", "provider-exposure", nil),
+					StatusPhase:    "READY",
+					Visibility:     "WORLD",
+					Active:         active,
+					Zone:           "caas",
+					ApprovalConfig: model.ApprovalConfig{Strategy: "AUTO"},
+					AppName:        "consumer-app",
+					TeamName:       "platform--narvi",
+					TargetFileType: "invoice",
+				}
+			}
+			data := &filesubscription.FileSubscriptionData{
+				Meta:           shared.NewMetadata("prod--platform--narvi", "sub-deactivated", nil),
+				StatusPhase:    "READY",
+				Zone:           "caas",
+				OwnerAppName:   "consumer-app",
+				OwnerTeamName:  "platform--narvi",
+				TargetFileType: "invoice",
+			}
+
+			Expect(subRepo.Upsert(ctx, data)).To(Succeed())
+			cache.Wait()
+			cached, found := cache.Get(cachekeys.ActiveFileExposure("invoice"))
+			Expect(found).To(BeTrue())
+			Expect(cached).To(Equal(exposureID))
+			sub, err := client.FileSubscription.Query().WithTarget().Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(sub.Edges.Target).NotTo(BeNil())
+
+			Expect(expRepo.Upsert(ctx, exposure(false))).To(Succeed())
+			cache.Wait()
+
+			err = subRepo.Upsert(ctx, data)
+			Expect(runtime.IsDependencyMissing(err)).To(BeTrue())
+			sub, err = client.FileSubscription.Query().WithTarget().Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(sub.Edges.Target).To(BeNil())
+
+			// Reactivation back-links the orphaned subscription; a replay through a
+			// resolver without the bounded negative entry keeps the link.
+			Expect(expRepo.Upsert(ctx, exposure(true))).To(Succeed())
+			cache.Wait()
+			sub, err = client.FileSubscription.Query().WithTarget().Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(sub.Edges.Target).NotTo(BeNil())
+			Expect(sub.Edges.Target.ID).To(Equal(exposureID))
+
+			fresh := infrastructure.NewIDResolver(client, cache)
+			Expect(filesubscription.NewRepository(client, cache, fresh).Upsert(ctx, data)).To(Succeed())
+			target, err := sub.QueryTarget().Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(target.ID).To(Equal(exposureID))
 		})
 	})
 

@@ -112,6 +112,12 @@ func (r *Repository) Upsert(ctx context.Context, data *FileExposureData) error {
 		return fmt.Errorf("upsert file_exposure %q (app %q, team %q): %w", data.TargetFileType, data.AppName, data.TeamName, upsertErr)
 	}
 
+	// The active-by-file-type lookup may now point to a deactivated row or miss
+	// a newly active owner. Invalidate it (never set it: another owner may hold
+	// the active exposure) before any fallible follow-up work.
+	aet, alk := cachekeys.ActiveFileExposure(data.TargetFileType)
+	r.cache.Del(aet, alk)
+
 	// Edge FKs are not part of ent upsert SET clauses; update them explicitly.
 	update := r.client.FileExposure.UpdateOneID(exposureID).SetZoneID(zoneID)
 	if fileTypeDefID != nil {
@@ -142,14 +148,6 @@ func (r *Repository) Upsert(ctx context.Context, data *FileExposureData) error {
 				data.TargetFileType, data.AppName, data.TeamName, err)
 		}
 	}
-
-	if data.Active {
-		aet, alk := cachekeys.ActiveFileExposure(data.TargetFileType)
-		r.cache.Set(aet, alk, exposureID)
-	} else {
-		aet, alk := cachekeys.ActiveFileExposure(data.TargetFileType)
-		r.cache.Del(aet, alk)
-	}
 	return nil
 }
 
@@ -173,11 +171,13 @@ func (r *Repository) Delete(ctx context.Context, key FileExposureKey) error {
 	if err != nil {
 		return fmt.Errorf("delete file_exposure %q (app %q, team %q): %w", key.FileType, key.AppName, key.TeamName, err)
 	}
+	// Invalidate the active lookup even for idempotent deletes: the cached
+	// active ID may belong to a row deleted by an earlier, interrupted call.
+	aet, alk := cachekeys.ActiveFileExposure(key.FileType)
+	r.cache.Del(aet, alk)
 	if count > 0 {
 		et, lk := cachekeys.FileExposure(key.FileType, key.AppName, key.TeamName)
 		r.cache.Del(et, lk)
-		aet, alk := cachekeys.ActiveFileExposure(key.FileType)
-		r.cache.Del(aet, alk)
 	}
 	return nil
 }
