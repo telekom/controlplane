@@ -15,6 +15,24 @@ import (
 
 var _ = Describe("Subscription Security Mapper (Out)", func() {
 	Context("mapSubscriptionSecurity", func() {
+		It("must map the subscriber grant type", func() {
+			input := &roverv1.ApiSubscription{
+				BasePath: "/test",
+				Security: &roverv1.SubscriberSecurity{M2M: &roverv1.SubscriberMachine2MachineAuthentication{
+					Client:    &roverv1.OAuth2ClientCredentials{ClientId: "client-id", ClientSecret: "client-secret", RefreshToken: "rt"},
+					GrantType: roverv1.GrantTypeRefreshToken,
+				}},
+			}
+			output := &api.ApiSubscription{}
+
+			Expect(mapSubscriptionSecurity(input, output)).To(Succeed())
+
+			oauth2, err := output.Security.AsOauth2()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(oauth2.GrantType).To(Equal(api.RefreshToken))
+			snaps.MatchSnapshot(GinkgoT(), oauth2)
+		})
+
 		It("must map BasicAuth security correctly", func() {
 			// Given
 			input := &roverv1.ApiSubscription{

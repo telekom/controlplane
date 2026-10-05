@@ -6,6 +6,7 @@ package in
 
 import (
 	"encoding/json"
+	"strings"
 
 	"github.com/pkg/errors"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
@@ -166,6 +167,9 @@ func mapSubscriptionSecurity(in api.ApiSubscription, out *roverv1.ApiSubscriptio
 		}
 
 		m2mSecurity.Scopes = oauth2.Scopes
+		if oauth2.GrantType != "" {
+			m2mSecurity.GrantType = roverv1.GrantType(strings.ToLower(string(oauth2.GrantType)))
+		}
 	}
 
 	if m2mSecurity.Basic != nil || m2mSecurity.Client != nil || m2mSecurity.Scopes != nil {
@@ -299,6 +303,9 @@ func mapAiSubscriptionSecurity(in api.AiSubscription, out *roverv1.AgenticSubscr
 		}
 
 		m2mSecurity.Scopes = oauth2.Scopes
+		if oauth2.GrantType != "" {
+			m2mSecurity.GrantType = roverv1.GrantType(strings.ToLower(string(oauth2.GrantType)))
+		}
 	}
 
 	if m2mSecurity.Basic != nil || m2mSecurity.Client != nil || m2mSecurity.Scopes != nil {

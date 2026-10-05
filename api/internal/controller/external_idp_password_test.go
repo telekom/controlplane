@@ -54,34 +54,26 @@ var _ = Describe("Consumer username/password with scopes", func() {
 		}, scopeTimeout, interval).Should(Succeed())
 	})
 
-	DescribeTable("is blocked before approval when the exposure does not use a password grant",
-		func(name string, configure func(*apiapi.ApiExposure)) {
-			// Declared scopes keep the specification-scope check out of the way for the non-external case.
-			exposure, sub := newScopeFixtures(name, consumerScopes, true)
-			configure(exposure)
-			withConsumerPassword(sub)
+	It("is blocked before approval when the exposure has no external IDP", func() {
+		// Declared scopes keep the specification-scope check out of the way.
+		exposure, sub := newScopeFixtures("password-no-external-idp", consumerScopes, true)
+		exposure.Spec.Security.M2M.ExternalIDP = nil
+		exposure.Spec.Security.M2M.Scopes = consumerScopes
+		withConsumerPassword(sub)
 
-			Expect(k8sClient.Create(ctx, exposure)).To(Succeed())
-			Eventually(func(g Gomega) { expectScopeExposureReady(g, exposure) }, scopeTimeout, interval).Should(Succeed())
-			Expect(k8sClient.Create(ctx, sub)).To(Succeed())
+		Expect(k8sClient.Create(ctx, exposure)).To(Succeed())
+		Eventually(func(g Gomega) { expectScopeExposureReady(g, exposure) }, scopeTimeout, interval).Should(Succeed())
+		Expect(k8sClient.Create(ctx, sub)).To(Succeed())
 
-			check := func(g Gomega) {
-				g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(sub), sub)).To(Succeed())
-				expectScopeCondition(g, sub.GetConditions(), condition.ConditionTypeReady, metav1.ConditionFalse, condition.ReasonValidationFailed, sub.Generation)
-				g.Expect(meta.FindStatusCondition(sub.GetConditions(), condition.ConditionTypeReady).Message).To(ContainSubstring(`grant type "password"`))
-				g.Expect(meta.FindStatusCondition(sub.GetConditions(), condition.ConditionTypeProcessing).Reason).To(Equal("Blocked"))
-				g.Expect(sub.Status.ApprovalRequest).To(BeNil())
-				g.Expect(sub.Status.ConsumeRoute).To(BeNil())
-			}
-			Eventually(check, scopeTimeout, interval).Should(Succeed())
-			Consistently(check, time.Second, interval).Should(Succeed())
-		},
-		Entry("external IDP with client_credentials grant", "password-client-credentials", func(exposure *apiapi.ApiExposure) {
-			exposure.Spec.Security.M2M.ExternalIDP.GrantType = apiapi.GrantTypeClientCredentials
-		}),
-		Entry("no external IDP", "password-no-external-idp", func(exposure *apiapi.ApiExposure) {
-			exposure.Spec.Security.M2M.ExternalIDP = nil
-			exposure.Spec.Security.M2M.Scopes = consumerScopes
-		}),
-	)
+		check := func(g Gomega) {
+			g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(sub), sub)).To(Succeed())
+			expectScopeCondition(g, sub.GetConditions(), condition.ConditionTypeReady, metav1.ConditionFalse, condition.ReasonValidationFailed, sub.Generation)
+			g.Expect(meta.FindStatusCondition(sub.GetConditions(), condition.ConditionTypeReady).Message).To(ContainSubstring("requires an external IDP"))
+			g.Expect(meta.FindStatusCondition(sub.GetConditions(), condition.ConditionTypeProcessing).Reason).To(Equal("Blocked"))
+			g.Expect(sub.Status.ApprovalRequest).To(BeNil())
+			g.Expect(sub.Status.ConsumeRoute).To(BeNil())
+		}
+		Eventually(check, scopeTimeout, interval).Should(Succeed())
+		Consistently(check, time.Second, interval).Should(Succeed())
+	})
 })

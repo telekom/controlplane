@@ -170,6 +170,9 @@ type ConsumerMachine2MachineAuthentication struct {
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:MaxItems=10
 	Scopes []string `json:"scopes,omitempty"`
+	// GrantType overrides the grant type derived from the consumer credentials for external IDP token requests
+	// +kubebuilder:validation:Optional
+	GrantType GrantType `json:"grantType,omitempty"`
 }
 
 // ExternalIdentityProvider defines configuration for using an external identity provider

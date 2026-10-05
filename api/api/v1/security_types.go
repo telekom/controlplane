@@ -109,6 +109,9 @@ type SubscriberMachine2MachineAuthentication struct {
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:MaxItems=10
 	Scopes []string `json:"scopes,omitempty"`
+	// GrantType defines the OAuth2 grant type used for the subscriber's external IDP token request
+	// +kubebuilder:validation:Optional
+	GrantType GrantType `json:"grantType,omitempty"`
 }
 
 // ExternalIdentityProvider defines configuration for using an external identity provider
