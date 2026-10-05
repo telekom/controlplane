@@ -6,6 +6,7 @@ package controller
 
 import (
 	"context"
+	"fmt"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -49,6 +50,67 @@ var _ = Describe("Controller Integration", Ordered, func() {
 			err := k8sClient.Get(ctx, client.ObjectKeyFromObject(gateway), gateway)
 			g.Expect(errors.IsNotFound(err)).To(BeTrue())
 		}, timeout, interval).Should(Succeed())
+	})
+
+	Describe("Additional route tag validation", func() {
+		newRoute := func(tags []string) *gatewayv1.Route {
+			return &gatewayv1.Route{
+				ObjectMeta: metav1.ObjectMeta{
+					GenerateName: "tag-validation-",
+					Namespace:    namespace,
+					Labels:       map[string]string{config.EnvironmentLabelKey: testEnvironment},
+				},
+				Spec: gatewayv1.RouteSpec{
+					GatewayRef:     types.ObjectRef{Name: gatewayName, Namespace: namespace},
+					Type:           gatewayv1.RouteTypePrimary,
+					AdditionalTags: tags,
+					Backend: gatewayv1.Backend{
+						Upstreams: []gatewayv1.Upstream{{Scheme: "https", Hostname: "backend.example.com", Port: 443}},
+					},
+				},
+			}
+		}
+
+		DescribeTable("accepts Kong-compatible tags unchanged", func(tags []string) {
+			route := newRoute(tags)
+			Expect(k8sClient.Create(ctx, route)).To(Succeed())
+			DeferCleanup(func() {
+				Expect(k8sClient.Delete(ctx, route)).To(Succeed())
+				Eventually(func() bool {
+					return errors.IsNotFound(k8sClient.Get(ctx, client.ObjectKeyFromObject(route), &gatewayv1.Route{}))
+				}, timeout, interval).Should(BeTrue())
+			})
+			stored := &gatewayv1.Route{}
+			Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(route), stored)).To(Succeed())
+			Expect(stored.Spec.AdditionalTags).To(ConsistOf(tags))
+		},
+			Entry("omitted", []string(nil)),
+			Entry("empty list", []string{}),
+			Entry("lowercase and hyphens", []string{"variant--default"}),
+			Entry("uppercase, spaces, Unicode, and punctuation", []string{"MCP", "Team Alpha", " ", "Grüße 世界", "key:value_~.", "back\\slash"}),
+		)
+
+		DescribeTable("rejects tags Kong does not accept", func(tag string) {
+			err := k8sClient.Create(ctx, newRoute([]string{"valid", tag}))
+			Expect(errors.IsInvalid(err)).To(BeTrue(), "expected validation error, got %v", err)
+			Expect(err.Error()).To(ContainSubstring("spec.additionalTags[1]"))
+		},
+			Entry("empty string", ""),
+			Entry("comma", "tag,value"),
+			Entry("slash", "tag/value"),
+		)
+
+		It("rejects every ASCII control character and DEL", func() {
+			for character := rune(0); character <= 127; character++ {
+				if character >= 32 && character != 127 {
+					continue
+				}
+				By(fmt.Sprintf("rejecting character U+%04X", character))
+				err := k8sClient.Create(ctx, newRoute([]string{"tag" + string(character) + "value"}))
+				Expect(errors.IsInvalid(err)).To(BeTrue(), "expected validation error, got %v", err)
+				Expect(err.Error()).To(ContainSubstring("spec.additionalTags[0]"))
+			}
+		})
 	})
 
 	Describe("Route reconciliation sends correct data to Kong", func() {

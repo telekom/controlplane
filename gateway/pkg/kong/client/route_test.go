@@ -96,6 +96,7 @@ var _ = Describe("CreateOrReplaceRoute", func() {
 		},
 		Entry("variant", []string{"variant--mcp"}, []string{"env--test", "route--test-route", "variant--mcp"}),
 		Entry("arbitrary tags unchanged", []string{"custom--value", "MCP"}, []string{"env--test", "route--test-route", "custom--value", "MCP"}),
+		Entry("spaces and Unicode unchanged", []string{"Team Alpha", "Grüße 世界", "key:value_~."}, []string{"env--test", "route--test-route", "Team Alpha", "Grüße 世界", "key:value_~."}),
 		Entry("duplicates", []string{"variant--mcp", "env--test", "variant--mcp"}, []string{"env--test", "route--test-route", "variant--mcp"}),
 		Entry("nil", nil, []string{"env--test", "route--test-route"}),
 		Entry("empty", []string{}, []string{"env--test", "route--test-route"}),

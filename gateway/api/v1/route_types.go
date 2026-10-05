@@ -81,6 +81,9 @@ type RouteSpec struct {
 	Buffering Buffering `json:"buffering,omitempty"`
 
 	// AdditionalTags are appended to the existing tags on the Kong Route.
+	// Tags must be non-empty and contain no commas, slashes, ASCII control characters, or DEL.
+	// +kubebuilder:validation:items:MinLength=1
+	// +kubebuilder:validation:items:Pattern=`^[^,/\x00-\x1F\x7F]+$`
 	AdditionalTags []string `json:"additionalTags,omitempty"`
 }
 
