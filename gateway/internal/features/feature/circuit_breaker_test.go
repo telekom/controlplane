@@ -323,4 +323,55 @@ var _ = Describe("CircuitBreakerFeature", func() {
 			})
 		})
 	})
+	Describe("lifecycle through the feature builder", func() {
+		var (
+			route          *gatewayv1.Route
+			mockKongClient *clientmock.MockKongClient
+		)
+
+		build := func() {
+			b := features.NewFeatureBuilder(mockKongClient, route, nil, &gatewayv1.Gateway{})
+			b.EnableFeature(feature.InstanceCircuitBreakerFeature)
+			Expect(b.Build(ctx)).To(Succeed())
+		}
+
+		BeforeEach(func() {
+			route = &gatewayv1.Route{
+				ObjectMeta: metav1.ObjectMeta{Name: "test-route", Namespace: "test-ns"},
+				Spec: gatewayv1.RouteSpec{
+					Type: gatewayv1.RouteTypePrimary,
+					Traffic: gatewayv1.Traffic{
+						CircuitBreaker: &gatewayv1.CircuitBreaker{Enabled: true},
+					},
+				},
+			}
+			mockKongClient = clientmock.NewMockKongClient(GinkgoT())
+			mockKongClient.EXPECT().CreateOrReplaceRoute(mock.Anything, mock.Anything, mock.Anything).Return(nil)
+			mockKongClient.EXPECT().CleanupPlugins(mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
+			mockKongClient.EXPECT().CreateOrReplaceUpstream(mock.Anything, route, mock.Anything, mock.Anything).
+				Run(func(_ context.Context, r client.CustomRoute, _ *kong.CreateUpstreamRequest, _ *kong.CreateTargetForUpstreamRequest) {
+					r.SetUpstreamId("upstream-id")
+					r.SetTargetsId("target-id")
+				}).Return(nil).Once()
+		})
+
+		DescribeTable("deletes the Kong upstream once the circuit breaker is no longer wanted",
+			func(cb *gatewayv1.CircuitBreaker) {
+				build()
+				Expect(route.GetUpstreamId()).To(Equal("upstream-id"))
+				Expect(route.GetTargetsId()).To(Equal("target-id"))
+
+				route.Spec.Traffic.CircuitBreaker = cb
+				mockKongClient.EXPECT().DeleteUpstream(mock.Anything, route).Return(nil).Once()
+				build()
+				Expect(route.Status.Properties).NotTo(HaveKey("upstreamId"))
+				Expect(route.Status.Properties).NotTo(HaveKey("targetsId"))
+
+				// nothing left to clean up on the next reconcile
+				Expect(f.IsUsed(ctx, features.NewFeatureBuilder(mockKongClient, route, nil, &gatewayv1.Gateway{}))).To(BeFalse())
+			},
+			Entry("when disabled", &gatewayv1.CircuitBreaker{Enabled: false}),
+			Entry("when removed", nil),
+		)
+	})
 })

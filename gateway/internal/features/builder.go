@@ -302,8 +302,16 @@ func (b *Builder) Build(ctx context.Context) error {
 		return errors.New("upstream is not set")
 	}
 
-	// In case a plugin was used before but is not used anymore, we need to remove it
+	// In case a plugin was used before but is not used anymore, we need to remove it.
+	// The circuit-breaker IDs survive: the next reconcile needs them to delete the Kong upstream.
+	upstreamId, targetsId := b.Route.GetUpstreamId(), b.Route.GetTargetsId()
 	b.Route.Status.Properties = map[string]string{}
+	if upstreamId != "" {
+		b.Route.SetUpstreamId(upstreamId)
+	}
+	if targetsId != "" {
+		b.Route.SetTargetsId(targetsId)
+	}
 
 	// Ensure that the Routing and JumperConfig are set last
 	// ! We must ensure that the default (empty) value is null. Otherwise, Jumper will not work properly.
