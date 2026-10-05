@@ -37,7 +37,7 @@ type TeamController interface {
 	Update(ctx context.Context, hubName, teamName string, req api.TeamUpdateRequest) (*api.TeamResponse, []MutationError, error)
 	Delete(ctx context.Context, hubName, teamName string) ([]MutationError, error)
 	GetStatus(ctx context.Context, hubName, teamName string) (*api.ResourceStatusResponse, error)
-	RotateToken(ctx context.Context, hubName, teamName string) (string, []MutationError, error)
+	RotateToken(ctx context.Context, hubName, teamName string) (*string, []MutationError, error)
 	GetResources(ctx context.Context, env, hubName, teamName string) ([]client.ResourceRef, error)
 }
 
@@ -78,17 +78,23 @@ func (ctrl *Controller) Create(ctx context.Context, env string, req *api.HubCrea
 	if len(resp.CreateGroup.Errors) > 0 {
 		return nil, toMutationErrors(resp.CreateGroup.Errors), nil
 	}
+	if resp.CreateGroup.Group == nil && !resp.CreateGroup.Accepted {
+		return nil, nil, fmt.Errorf("create hub mutation was not accepted by CP API")
+	}
 
-	g := resp.CreateGroup.Group
-	return &api.HubResponse{
-		Name:        g.Name,
-		DisplayName: g.DisplayName,
-		Description: g.Description,
-		Status: api.Status{
-			ProcessingState: "pending",
-			State:           "none",
-		},
-	}, nil, nil
+	hubResp := &api.HubResponse{
+		Name:        req.Name,
+		DisplayName: req.DisplayName,
+		Description: req.Description,
+		Status:      pendingStatus(),
+	}
+	// The CP API processes mutations asynchronously and may not return the group.
+	if g := resp.CreateGroup.Group; g != nil {
+		hubResp.Name = g.Name
+		hubResp.DisplayName = g.DisplayName
+		hubResp.Description = g.Description
+	}
+	return hubResp, nil, nil
 }
 
 func (ctrl *Controller) List(ctx context.Context) ([]api.HubResponse, error) {
@@ -142,17 +148,23 @@ func (ctrl *Controller) Update(ctx context.Context, hubName string, req *api.Hub
 	if len(resp.UpdateGroup.Errors) > 0 {
 		return nil, toMutationErrors(resp.UpdateGroup.Errors), nil
 	}
+	if resp.UpdateGroup.Group == nil && !resp.UpdateGroup.Accepted {
+		return nil, nil, fmt.Errorf("update hub mutation was not accepted by CP API")
+	}
 
-	g := resp.UpdateGroup.Group
-	return &api.HubResponse{
-		Name:        g.Name,
-		DisplayName: g.DisplayName,
-		Description: g.Description,
-		Status: api.Status{
-			ProcessingState: "pending",
-			State:           "none",
-		},
-	}, nil, nil
+	hubResp := &api.HubResponse{
+		Name:        hubName,
+		DisplayName: req.DisplayName,
+		Description: req.Description,
+		Status:      pendingStatus(),
+	}
+	// The CP API processes mutations asynchronously and may not return the group.
+	if g := resp.UpdateGroup.Group; g != nil {
+		hubResp.Name = g.Name
+		hubResp.DisplayName = g.DisplayName
+		hubResp.Description = g.Description
+	}
+	return hubResp, nil, nil
 }
 
 func (ctrl *Controller) Delete(ctx context.Context, hubName string) ([]MutationError, error) {
@@ -189,14 +201,22 @@ func (ctrl *Controller) GetStatus(_ context.Context, _ string) (*api.ResourceSta
 // --- Team operations ---
 
 func (ctrl *Controller) CreateTeam(ctx context.Context, env, hubName string, req *api.TeamCreateRequest) (*api.TeamResponse, []MutationError, error) {
-	members := make([]gql.MemberInput, 0)
-	if req.Members != nil {
-		for _, m := range req.Members {
-			members = append(members, gql.MemberInput{
-				Name:  m.Name,
-				Email: m.Email,
-			})
-		}
+	groupID, err := ctrl.resolveGroupID(ctx, hubName)
+	if err != nil {
+		return nil, nil, err
+	}
+	if groupID == "" {
+		return nil, []MutationError{{Code: "NOT_FOUND", Message: "Hub not found: " + hubName}}, nil
+	}
+
+	members := make([]gql.MemberInput, 0, len(req.Members))
+	reqMembers := make([]api.TeamMember, 0, len(req.Members))
+	for _, m := range req.Members {
+		members = append(members, gql.MemberInput{
+			Name:  m.Name,
+			Email: m.Email,
+		})
+		reqMembers = append(reqMembers, api.TeamMember{Name: m.Name, Email: m.Email})
 	}
 
 	resp, err := gql.CreateTeam(ctx, ctrl.cpapi, gql.CreateTeamInput{
@@ -213,16 +233,23 @@ func (ctrl *Controller) CreateTeam(ctx context.Context, env, hubName string, req
 	if len(resp.CreateTeam.Errors) > 0 {
 		return nil, toMutationErrors(resp.CreateTeam.Errors), nil
 	}
+	if resp.CreateTeam.Team == nil && !resp.CreateTeam.Accepted {
+		return nil, nil, fmt.Errorf("create team mutation was not accepted by CP API")
+	}
 
 	t := resp.CreateTeam.Team
+	// The CP API processes mutations asynchronously and may not return the team.
+	if t == nil {
+		pending := pendingTeamResponse(hubName, req.Name, req.Email)
+		pending.Members = reqMembers
+		return &pending, nil, nil
+	}
+
 	teamResp := api.TeamResponse{
 		Name:     t.Name,
 		Email:    t.Email,
 		ClientId: fmt.Sprintf("%s--team-user", t.Name),
-		Status: api.Status{
-			ProcessingState: "pending",
-			State:           "none",
-		},
+		Status:   pendingStatus(),
 	}
 	if t.TeamToken != nil {
 		teamResp.TeamToken = *t.TeamToken
@@ -294,16 +321,22 @@ func (ctrl *Controller) UpdateTeam(ctx context.Context, hubName, teamName string
 	if len(resp.UpdateTeam.Errors) > 0 {
 		return nil, toMutationErrors(resp.UpdateTeam.Errors), nil
 	}
+	if resp.UpdateTeam.Team == nil && !resp.UpdateTeam.Accepted {
+		return nil, nil, fmt.Errorf("update team mutation was not accepted by CP API")
+	}
 
 	t := resp.UpdateTeam.Team
+	// The CP API processes mutations asynchronously and may not return the team.
+	if t == nil {
+		pending := pendingTeamResponse(hubName, teamName, req.Email)
+		return &pending, nil, nil
+	}
+
 	teamResp := api.TeamResponse{
 		Name:     t.Name,
 		Email:    t.Email,
 		ClientId: fmt.Sprintf("%s--team-user", t.Name),
-		Status: api.Status{
-			ProcessingState: "pending",
-			State:           "none",
-		},
+		Status:   pendingStatus(),
 	}
 	if t.TeamToken != nil {
 		teamResp.TeamToken = *t.TeamToken
@@ -361,29 +394,32 @@ func (ctrl *Controller) GetTeamStatus(ctx context.Context, hubName, teamName str
 	return &status, nil
 }
 
-func (ctrl *Controller) RotateToken(ctx context.Context, hubName, teamName string) (string, []MutationError, error) {
+func (ctrl *Controller) RotateToken(ctx context.Context, hubName, teamName string) (*string, []MutationError, error) {
 	teamID, err := ctrl.resolveTeamID(ctx, hubName, teamName)
 	if err != nil {
-		return "", nil, err
+		return nil, nil, err
 	}
 	if teamID == "" {
-		return "", nil, nil
+		return nil, nil, nil
 	}
 
 	resp, err := gql.RotateTeamToken(ctx, ctrl.cpapi, teamID)
 	if err != nil {
-		return "", nil, err
+		return nil, nil, err
 	}
 
 	if len(resp.RotateTeamToken.Errors) > 0 {
-		return "", toMutationErrors(resp.RotateTeamToken.Errors), nil
+		return nil, toMutationErrors(resp.RotateTeamToken.Errors), nil
+	}
+	if resp.RotateTeamToken.Team == nil && !resp.RotateTeamToken.Accepted {
+		return nil, nil, fmt.Errorf("rotate team token mutation was not accepted by CP API")
 	}
 
 	token := ""
-	if resp.RotateTeamToken.Team.TeamToken != nil {
-		token = *resp.RotateTeamToken.Team.TeamToken
+	if t := resp.RotateTeamToken.Team; t != nil && t.TeamToken != nil {
+		token = *t.TeamToken
 	}
-	return token, nil, nil
+	return &token, nil, nil
 }
 
 func (ctrl *Controller) GetResources(ctx context.Context, env, hubName, teamName string) ([]client.ResourceRef, error) {
@@ -395,6 +431,25 @@ func (ctrl *Controller) GetResources(ctx context.Context, env, hubName, teamName
 }
 
 // --- helpers ---
+
+func pendingStatus() api.Status {
+	return api.Status{
+		ProcessingState: "pending",
+		State:           "none",
+	}
+}
+
+// pendingTeamResponse builds a team response from request data when the CP API
+// accepted the mutation without returning the team.
+func pendingTeamResponse(hubName, teamName, email string) api.TeamResponse {
+	return api.TeamResponse{
+		Name:     teamName,
+		Email:    email,
+		ClientId: fmt.Sprintf("%s--%s--team-user", hubName, teamName),
+		Members:  []api.TeamMember{},
+		Status:   pendingStatus(),
+	}
+}
 
 func (ctrl *Controller) resolveGroupID(ctx context.Context, name string) (string, error) {
 	resp, err := gql.GetGroup(ctx, ctrl.cpapi, &graphqlinputs.GroupWhereInput{
