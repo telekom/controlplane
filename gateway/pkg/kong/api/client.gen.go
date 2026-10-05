@@ -17021,7 +17021,7 @@ func (r ListTargetsForUpstreamResponse) ContentType() string {
 type CreateTargetForUpstreamResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *Target
+	JSON201      *Target
 	JSON400      *map[string]interface{}
 	JSON401      *UnauthorizedError
 }
@@ -23635,12 +23635,12 @@ func ParseCreateTargetForUpstreamResponse(rsp *http.Response) (*CreateTargetForU
 	}
 
 	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
 		var dest Target
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
-		response.JSON200 = &dest
+		response.JSON201 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
 		var dest map[string]interface{}
