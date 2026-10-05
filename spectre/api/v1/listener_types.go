@@ -61,10 +61,9 @@ type ListenerStatus struct {
 	RouteListener *ctypes.ObjectRef `json:"routeListener,omitempty"`
 	// +optional
 	EventSubscriptions []ctypes.ObjectRef `json:"eventSubscriptions,omitempty"`
-	// ProviderApproval references the Approval that gates this Listener. The
-	// provider owns the API whose traffic is captured, so its consent is the
-	// security control. Only one approval can be modelled per owner CR — see
-	// the note on ensureApprovals.
+	// ProviderApproval references the Approval of the provider gate. A Listener
+	// is gated by two keyed ApprovalRequests, one decided by the provider and
+	// one by the consumer; both must be granted. See ensureApprovals.
 	// +optional
 	ProviderApproval *ctypes.ObjectRef `json:"providerApproval,omitempty"`
 	// +optional
