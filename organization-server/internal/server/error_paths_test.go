@@ -516,6 +516,10 @@ var _ = Describe("Team Error Paths", func() {
 				switch req.OperationName {
 				case "GetTeam":
 					data = map[string]any{"teams": map[string]any{"edges": []any{}}}
+				case "GetGroup":
+					data = map[string]any{"groups": []map[string]any{{
+						"id": "1", "name": "eni", "displayName": "Eni", "description": "",
+					}}}
 				case "CreateTeam":
 					createVars, _ = req.Variables["input"].(map[string]any)
 					data = map[string]any{"createTeam": map[string]any{
@@ -541,7 +545,7 @@ var _ = Describe("Team Error Paths", func() {
 			resp, err := executeRequest(app, req, adminToken)
 			result := expectJSONStatus(resp, err, http.StatusAccepted)
 			Expect(result["name"]).To(Equal("nonexistent"))
-			Expect(ops).To(Equal([]string{"GetTeam", "CreateTeam"}))
+			Expect(ops).To(Equal([]string{"GetTeam", "GetGroup", "CreateTeam"}))
 			Expect(createVars).To(HaveKeyWithValue("group", "eni"))
 			Expect(createVars).To(HaveKeyWithValue("name", "nonexistent"))
 			Expect(createVars).To(HaveKeyWithValue("email", "new@test.de"))
@@ -552,6 +556,11 @@ var _ = Describe("Team Error Paths", func() {
 			gqlServer := mockGraphQLServer(map[string]any{
 				"GetTeam": map[string]any{
 					"teams": map[string]any{"edges": []any{}},
+				},
+				"GetGroup": map[string]any{
+					"groups": []map[string]any{{
+						"id": "1", "name": "eni", "displayName": "Eni", "description": "",
+					}},
 				},
 				"CreateTeam": map[string]any{
 					"createTeam": map[string]any{
