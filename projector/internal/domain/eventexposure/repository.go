@@ -99,6 +99,12 @@ func (r *Repository) Upsert(ctx context.Context, data *EventExposureData) error 
 			data.EventType, data.AppName, data.TeamName, upsertErr)
 	}
 
+	// The active-by-event-type lookup may now point to a deactivated row or
+	// miss a newly active owner. Invalidate it (never set it: another owner may
+	// hold the active exposure) before any fallible follow-up work.
+	aet, alk := cachekeys.EventExposureByEventType(data.EventType)
+	r.cache.Del(aet, alk)
+
 	// Explicitly set/clear the catalogue FK. EventTypeDef is an edge, not a
 	// field, so an unresolved eventTypeDefID is not included in
 	// UpdateNewValues()'s ON CONFLICT SET clause — without this, a
@@ -162,6 +168,10 @@ func (r *Repository) Delete(ctx context.Context, key EventExposureKey) error {
 		return fmt.Errorf("delete event_exposure %q (app %q, team %q): %w",
 			key.EventType, key.AppName, key.TeamName, err)
 	}
+	// Invalidate the active lookup even for idempotent deletes: the cached
+	// active ID may belong to a row deleted by an earlier, interrupted call.
+	aet, alk := cachekeys.EventExposureByEventType(key.EventType)
+	r.cache.Del(aet, alk)
 	if count > 0 {
 		et, lk := cachekeys.EventExposure(key.EventType, key.AppName, key.TeamName)
 		r.cache.Del(et, lk)
