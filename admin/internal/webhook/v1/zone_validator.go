@@ -75,13 +75,13 @@ func validateZoneFields(zone *adminv1.Zone) field.ErrorList { //nolint:gocyclo /
 	var errs field.ErrorList
 
 	errs = append(errs, validateUniqueNames(specPath.Child("gateways"), "gateway", func(yield func(string, int)) {
-		for i, gateway := range zone.Spec.Gateways {
-			yield(gateway.Name, i)
+		for i := range zone.Spec.Gateways {
+			yield(zone.Spec.Gateways[i].Name, i)
 		}
 	})...)
 	errs = append(errs, validateUniqueNames(specPath.Child("identityProviders"), "identity provider", func(yield func(string, int)) {
-		for i, identityProvider := range zone.Spec.IdentityProviders {
-			yield(identityProvider.Name, i)
+		for i := range zone.Spec.IdentityProviders {
+			yield(zone.Spec.IdentityProviders[i].Name, i)
 		}
 	})...)
 
@@ -244,12 +244,14 @@ func validateFeatures(path *field.Path, features []adminv1.Feature) field.ErrorL
 
 func validateRetainedNames(oldZone, newZone *adminv1.Zone) field.ErrorList {
 	var errs field.ErrorList
-	for _, gateway := range oldZone.Spec.Gateways {
+	for i := range oldZone.Spec.Gateways {
+		gateway := &oldZone.Spec.Gateways[i]
 		if _, err := newZone.Spec.GetGateway(gateway.Name); err != nil {
 			errs = append(errs, field.Forbidden(field.NewPath("spec", "gateways"), "existing gateway name "+strconv.Quote(gateway.Name)+" cannot be removed or renamed"))
 		}
 	}
-	for _, identityProvider := range oldZone.Spec.IdentityProviders {
+	for i := range oldZone.Spec.IdentityProviders {
+		identityProvider := &oldZone.Spec.IdentityProviders[i]
 		if _, err := newZone.Spec.GetIdentityProviderByName(identityProvider.Name); err != nil {
 			errs = append(errs, field.Forbidden(field.NewPath("spec", "identityProviders"), "existing identity provider name "+strconv.Quote(identityProvider.Name)+" cannot be removed or renamed"))
 		}
