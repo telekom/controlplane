@@ -130,7 +130,7 @@ var _ = Describe("ApiSubscription Handler", func() {
 			}}}
 		}
 
-		DescribeTable("returns a validation error only for incompatible Basic credentials with scopes",
+		DescribeTable("returns a validation error only for Basic credentials with scopes without an external IDP",
 			func(security *apiv1.SubscriberSecurity, exposure *apiv1.ApiExposure, blocked bool) {
 				sub := &apiv1.ApiSubscription{Spec: apiv1.ApiSubscriptionSpec{Security: security}}
 				err := validateBasicWithScopesPolicy(sub, exposure)
@@ -138,7 +138,7 @@ var _ = Describe("ApiSubscription Handler", func() {
 					Expect(err).NotTo(HaveOccurred())
 					return
 				}
-				Expect(err).To(MatchError(`Consumer username/password with scopes requires an external IDP grant type "password" from the provider`))
+				Expect(err).To(MatchError(`Consumer username/password with scopes requires an external IDP from the provider`))
 			},
 			Entry("without subscription security", nil, nil, false),
 			Entry("without subscription M2M", &apiv1.SubscriberSecurity{}, nil, false),
@@ -159,9 +159,8 @@ var _ = Describe("ApiSubscription Handler", func() {
 			Entry("without an external IDP", withBasicAndScopes, &apiv1.ApiExposure{Spec: apiv1.ApiExposureSpec{
 				Security: &apiv1.Security{M2M: &apiv1.Machine2MachineAuthentication{}},
 			}}, true),
-			Entry("with an omitted grant", withBasicAndScopes, exposureWithGrant(""), true),
-			Entry("with a client_credentials grant", withBasicAndScopes, exposureWithGrant(apiv1.GrantTypeClientCredentials), true),
-			Entry("with an authorization_code grant", withBasicAndScopes, exposureWithGrant(apiv1.GrantTypeAuthorizationCode), true),
+			Entry("with an omitted grant", withBasicAndScopes, exposureWithGrant(""), false),
+			Entry("with a client_credentials grant", withBasicAndScopes, exposureWithGrant(apiv1.GrantTypeClientCredentials), false),
 			Entry("with a password grant", withBasicAndScopes, exposureWithGrant(apiv1.GrantTypePassword), false),
 		)
 	})

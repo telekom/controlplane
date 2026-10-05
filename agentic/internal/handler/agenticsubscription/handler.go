@@ -78,8 +78,8 @@ func (h *AgenticSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *ag
 	}
 	if violatesBasicWithScopesPolicy(obj, exposure) {
 		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonValidationFailed,
-			"Consumer username/password with scopes requires an external IDP grant type \"password\" from the provider"))
-		obj.SetCondition(condition.NewBlockedCondition("Consumer username/password with scopes requires an external IDP grant type \"password\" from the provider"))
+			"Consumer username/password with scopes requires an external IDP from the provider"))
+		obj.SetCondition(condition.NewBlockedCondition("Consumer username/password with scopes requires an external IDP from the provider"))
 		return nil
 	}
 	if !exposureFound {
@@ -255,8 +255,7 @@ func violatesBasicWithScopesPolicy(obj *agenticv1.AgenticSubscription, exposure 
 		return false
 	}
 
-	return exposure == nil || !exposure.HasExternalIdp() ||
-		exposure.Spec.Security.M2M.ExternalIDP.GrantType != agenticv1.GrantTypePassword
+	return exposure == nil || !exposure.HasExternalIdp()
 }
 
 func subscriptionApprovalProperties(obj *agenticv1.AgenticSubscription, exposure *agenticv1.AgenticExposure) map[string]any {

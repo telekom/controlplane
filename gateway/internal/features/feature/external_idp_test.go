@@ -456,7 +456,7 @@ var _ = Describe("ExternalIDPFeature", func() {
 									ExternalIDP: &gatewayv1.ExternalIdentityProvider{
 										TokenEndpoint: "https://idp.example.com/token",
 										TokenRequest:  gatewayv1.TokenRequestClientSecretPost,
-										GrantType:     "password",
+										GrantType:     "client_credentials",
 										Client: &gatewayv1.OAuth2ClientCredentials{
 											ClientId:     "provider-id",
 											ClientSecret: "provider-secret",
@@ -500,6 +500,55 @@ var _ = Describe("ExternalIDPFeature", func() {
 					Expect(consumerOauth.Password).To(Equal("consumer-pass"))
 					Expect(consumerOauth.Scopes).To(Equal("basic-scope"))
 					Expect(consumerOauth.GrantType).To(Equal("password"))
+				})
+			})
+
+			Context("when consumer has a refresh token", func() {
+				It("uses the refresh_token grant regardless of the provider grant", func() {
+					route := &gatewayv1.Route{
+						ObjectMeta: metav1.ObjectMeta{Name: "test-route", Namespace: "test-ns"},
+						Spec: gatewayv1.RouteSpec{
+							Type: gatewayv1.RouteTypePrimary,
+							Security: gatewayv1.Security{
+								M2M: &gatewayv1.Machine2MachineAuthentication{
+									ExternalIDP: &gatewayv1.ExternalIdentityProvider{
+										TokenEndpoint: "https://idp.example.com/token",
+										TokenRequest:  gatewayv1.TokenRequestClientSecretBasic,
+										GrantType:     gatewayv1.GrantTypeClientCredentials,
+									},
+								},
+							},
+						},
+					}
+					rtpPlugin := plugin.RequestTransformerPluginFromRoute(route)
+					jumperConfig := plugin.NewJumperConfig()
+					consumers := []*gatewayv1.ConsumeRoute{{
+						Spec: gatewayv1.ConsumeRouteSpec{
+							ConsumerName: "consumer-refresh",
+							Security: &gatewayv1.ConsumeRouteSecurity{
+								M2M: &gatewayv1.ConsumerMachine2MachineAuthentication{
+									Client: &gatewayv1.OAuth2ClientCredentials{
+										ClientId:     "consumer-id",
+										ClientSecret: "consumer-secret",
+										RefreshToken: "consumer-refresh-token",
+									},
+									Scopes: []string{"refresh-scope"},
+								},
+							},
+						},
+					}}
+
+					builder.EXPECT().GetRoute().Return(route, true)
+					builder.EXPECT().RequestTransformerPlugin().Return(rtpPlugin)
+					builder.EXPECT().JumperConfig().Return(jumperConfig)
+					builder.EXPECT().GetAllowedConsumers().Return(consumers)
+
+					Expect(f.Apply(ctx, builder)).To(Succeed())
+
+					Expect(jumperConfig.OAuth[plugin.ConsumerId("consumer-refresh")]).To(Equal(plugin.OauthCredentials{
+						ClientId: "consumer-id", ClientSecret: "consumer-secret", RefreshToken: "consumer-refresh-token",
+						Scopes: "refresh-scope", TokenRequest: "header", GrantType: "refresh_token",
+					}))
 				})
 			})
 		})
@@ -992,6 +1041,7 @@ var _ = Describe("ExternalIDPFeature", func() {
 					Expect(oauthEntry.ClientId).To(Equal("oauth-id"))
 					Expect(oauthEntry.ClientSecret).To(Equal("oauth-secret"))
 					Expect(oauthEntry.Scopes).To(Equal("scope-a"))
+					Expect(oauthEntry.GrantType).To(Equal("client_credentials"))
 
 					// Basic consumer
 					basicEntry, exists := jumperConfig.OAuth[plugin.ConsumerId("basic-consumer")]
@@ -999,6 +1049,7 @@ var _ = Describe("ExternalIDPFeature", func() {
 					Expect(basicEntry.Username).To(Equal("basic-user"))
 					Expect(basicEntry.Password).To(Equal("basic-pass"))
 					Expect(basicEntry.Scopes).To(Equal("scope-b"))
+					Expect(basicEntry.GrantType).To(Equal("password"))
 
 					// No-creds consumer should not exist
 					_, exists = jumperConfig.OAuth[plugin.ConsumerId("no-creds-consumer")]
