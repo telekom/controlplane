@@ -272,9 +272,10 @@ func CreateProxyRoute(ctx context.Context, downstreamZoneRef, upstreamZoneRef ty
 
 	mutate := func() error {
 		proxyRoute.Labels = map[string]string{
-			apiapi.BasePathLabelKey:      labelutil.NormalizeLabelValue(apiBasePath),
-			config.BuildLabelKey("zone"): labelutil.NormalizeLabelValue(downstreamZone.GetName()),
-			config.BuildLabelKey("type"): "proxy",
+			config.ExposureVariantLabelKey: "default",
+			apiapi.BasePathLabelKey:        labelutil.NormalizeLabelValue(apiBasePath),
+			config.BuildLabelKey("zone"):   labelutil.NormalizeLabelValue(downstreamZone.GetName()),
+			config.BuildLabelKey("type"):   "proxy",
 		}
 		if options.OwnerUID != "" {
 			proxyRoute.Labels[config.OwnerUidLabelKey] = options.OwnerUID
@@ -554,9 +555,10 @@ func CreateRealRoute(ctx context.Context, downstreamZoneRef types.ObjectRef, api
 
 	mutator := func() error {
 		route.Labels = map[string]string{
-			apiapi.BasePathLabelKey:      labelutil.NormalizeLabelValue(apiExposure.Spec.ApiBasePath),
-			config.BuildLabelKey("zone"): labelutil.NormalizeLabelValue(zone.Name),
-			config.BuildLabelKey("type"): "real",
+			config.ExposureVariantLabelKey: "default",
+			apiapi.BasePathLabelKey:        labelutil.NormalizeLabelValue(apiExposure.Spec.ApiBasePath),
+			config.BuildLabelKey("zone"):   labelutil.NormalizeLabelValue(zone.Name),
+			config.BuildLabelKey("type"):   "real",
 		}
 		if apiExposure.GetUID() != "" {
 			route.Labels[config.OwnerUidLabelKey] = string(apiExposure.GetUID())

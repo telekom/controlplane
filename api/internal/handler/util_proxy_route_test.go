@@ -117,6 +117,7 @@ var _ = Describe("Util Tests", func() {
 
 			Expect(route.Name).To(Equal("api-test-v1"))
 			Expect(route.Namespace).To(Equal(consumerZone.Status.Namespace))
+			Expect(route.Labels).To(HaveKeyWithValue(config.ExposureVariantLabelKey, "default"))
 
 			By("Checking the Route hostnames and paths")
 			Expect(route.Spec.Hostnames).To(ContainElement("test.consumer.de"))
@@ -127,6 +128,21 @@ var _ = Describe("Util Tests", func() {
 			upstream := route.Spec.Backend.Upstreams[0]
 			Expect(upstream.Hostname).To(Equal("test.provider.de"))
 			Expect(upstream.Path).To(Equal("/api/test/v1"))
+		})
+
+		It("should restore the variant on an existing proxy route and remain idempotent", func() {
+			route, err := util.CreateProxyRoute(ctx, *types.ObjectRefFromObject(consumerZone), *types.ObjectRefFromObject(providerZone), "/api/update/v1")
+			Expect(err).NotTo(HaveOccurred())
+			delete(route.Labels, config.ExposureVariantLabelKey)
+			Expect(k8sClient.Update(ctx, route)).To(Succeed())
+
+			route, err = util.CreateProxyRoute(ctx, *types.ObjectRefFromObject(consumerZone), *types.ObjectRefFromObject(providerZone), "/api/update/v1")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(route.Labels).To(HaveKeyWithValue(config.ExposureVariantLabelKey, "default"))
+			version := route.ResourceVersion
+			route, err = util.CreateProxyRoute(ctx, *types.ObjectRefFromObject(consumerZone), *types.ObjectRefFromObject(providerZone), "/api/update/v1")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(route.ResourceVersion).To(Equal(version))
 		})
 	})
 })

@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	kong "github.com/telekom/controlplane/gateway/pkg/kong/api"
 )
@@ -45,6 +46,11 @@ func (c *kongClient) CreateOrReplaceRoute(ctx context.Context, route CustomRoute
 		return fmt.Errorf("service response ID is missing")
 	}
 	route.SetServiceId(*service.Id)
+
+	switch variant := route.GetLabels()[config.ExposureVariantLabelKey]; variant {
+	case "default", "mcp", "telecontextmcp", "agent":
+		tags = append(tags, "ei__telekom__de--apiexposure__variant---"+variant)
+	}
 
 	routeBody := kong.CreateRouteJSONRequestBody{
 		Name:                    &routeName,

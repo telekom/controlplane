@@ -5,9 +5,10 @@
 package config
 
 var (
-	EnvironmentLabelKey = BuildLabelKey("environment")
-	OwnerUidLabelKey    = BuildLabelKey("owner.uid")
-	DomainLabelKey      = BuildLabelKey("domain")
+	EnvironmentLabelKey     = BuildLabelKey("environment")
+	OwnerUidLabelKey        = BuildLabelKey("owner.uid")
+	DomainLabelKey          = BuildLabelKey("domain")
+	ExposureVariantLabelKey = BuildLabelKey("apiexposure.variant")
 )
 
 func BuildLabelKey(key string) string {

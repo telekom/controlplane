@@ -25,6 +25,7 @@ import (
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	fakeclient "github.com/telekom/controlplane/common/pkg/client/fake"
 	"github.com/telekom/controlplane/common/pkg/condition"
+	"github.com/telekom/controlplane/common/pkg/config"
 	ctypes "github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
@@ -526,6 +527,7 @@ var _ = Describe("AgenticExposureHandler", func() {
 
 			Expect(err).ToNot(HaveOccurred())
 			Expect(capturedRoute.Spec.Security.DefaultConsumers).To(ContainElement("telecontext--tcapp"))
+			Expect(capturedRoute.Labels).To(HaveKeyWithValue(config.ExposureVariantLabelKey, "telecontextmcp"))
 			Expect(obj.Status.Route).ToNot(BeNil())
 		})
 
@@ -612,6 +614,8 @@ var _ = Describe("AgenticExposureHandler", func() {
 			Expect(obj.Status.ProxyRoutes).To(HaveLen(1))
 			Expect(capturedProxyRoute.Spec.Security.RealmName).To(Equal("telecontext-realm"))
 			Expect(capturedPrimaryRoute.Spec.Security.RealmName).To(Equal("provider-realm"))
+			Expect(capturedProxyRoute.Labels).To(HaveKeyWithValue(config.ExposureVariantLabelKey, "telecontextmcp"))
+			Expect(capturedPrimaryRoute.Labels).To(HaveKeyWithValue(config.ExposureVariantLabelKey, "telecontextmcp"))
 			// Telecontext zone's LMS issuer is trusted on the primary route
 			Expect(capturedPrimaryRoute.Spec.Security.TrustedIssuers).To(ContainElement("https://lms.telecontext.example.com"))
 			// Telecontext consumer is on the primary route
@@ -620,7 +624,25 @@ var _ = Describe("AgenticExposureHandler", func() {
 			Expect(capturedPrimaryRoute.Spec.Security.DefaultConsumers).To(ContainElement("gateway"))
 		})
 
-		It("should add cross-zone LMS issuer to TrustedIssuers on the real route (no local subs — zone issuer excluded)", func() {
+		DescribeTable("should preserve the variant and cross-zone trusted issuers on provider and subscriber routes", func(variant agenticv1.AgenticVariant, expectedVariant string) {
+			obj.Spec.Variant = variant
+			ctx = contextutil.WithEnv(ctx, "test-env")
+			if variant.IsTelecontextVariant() {
+				h.Config.TelecontextApplicationID = "mcp--telecontext--tcapp"
+				telecontextApp := &applicationapi.Application{
+					ObjectMeta: metav1.ObjectMeta{Name: "tcapp", Namespace: "test-env--mcp--telecontext"},
+					Spec: applicationapi.ApplicationSpec{
+						Team: "telecontext", Zone: ctypes.ObjectRef{Name: "test-zone", Namespace: "default"}, Secret: "test-secret",
+					},
+				}
+				meta.SetStatusCondition(&telecontextApp.Status.Conditions, metav1.Condition{
+					Type: condition.ConditionTypeReady, Status: metav1.ConditionTrue, Reason: "Ready",
+				})
+				fakeClient.EXPECT().Get(ctx, k8stypes.NamespacedName{Name: "tcapp", Namespace: "test-env--mcp--telecontext"}, mock.AnythingOfType("*v1.Application")).
+					Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
+						*out.(*applicationapi.Application) = *telecontextApp
+					}).Return(nil).Once()
+			}
 			server := makeReadyMcpServer("/mcp/weather/v1")
 			providerZone := makeReadyZoneWithAiGateway()
 			providerZone.Status.Presets[0].Links.Issuer = "https://issuer.provider.example.com"
@@ -680,11 +702,19 @@ var _ = Describe("AgenticExposureHandler", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(capturedProxyRoute.Spec.Security.RealmName).To(Equal("subscriber-realm"))
 			Expect(capturedRoute.Spec.Security.RealmName).To(Equal("provider-realm"))
+			Expect(capturedProxyRoute.Labels).To(HaveKeyWithValue(config.ExposureVariantLabelKey, expectedVariant))
+			Expect(capturedRoute.Labels).To(HaveKeyWithValue(config.ExposureVariantLabelKey, expectedVariant))
+			Expect(capturedProxyRoute.Labels).To(HaveKeyWithValue(config.BuildLabelKey("type"), "mcp-proxy"))
+			Expect(capturedRoute.Labels).To(HaveKeyWithValue(config.BuildLabelKey("type"), "mcp"))
 			// LMS issuer from the proxy zone IS trusted
 			Expect(capturedRoute.Spec.Security.TrustedIssuers).To(ContainElement("https://lms.subscriber.example.com"))
 			// No local subs → the provider zone's own IDP issuer is NOT added
 			Expect(capturedRoute.Spec.Security.TrustedIssuers).NotTo(ContainElement("https://issuer.provider.example.com"))
-		})
+		},
+			Entry("MCP", agenticv1.AgenticVariantMCP, "mcp"),
+			Entry("Telecontext MCP", agenticv1.AgenticVariantTelecontextMCP, "telecontextmcp"),
+			Entry("AGENT", agenticv1.AgenticVariantAgent, "agent"),
+		)
 
 		It("should create Route for AGENT variant without triggering Telecontext logic", func() {
 			obj.Spec.Variant = agenticv1.AgenticVariantAgent
@@ -716,6 +746,7 @@ var _ = Describe("AgenticExposureHandler", func() {
 			Expect(obj.Status.Route).ToNot(BeNil())
 			// Route should have no DefaultConsumers (no Telecontext consumer)
 			Expect(capturedRoute.Spec.Security.DefaultConsumers).To(BeEmpty())
+			Expect(capturedRoute.Labels).To(HaveKeyWithValue(config.ExposureVariantLabelKey, "agent"))
 		})
 	}) // end Describe("CreateOrUpdate")
 

@@ -7,6 +7,7 @@ package util
 import (
 	"context"
 	"net/url"
+	"strings"
 
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -66,6 +67,7 @@ func CreateAgenticRoute(
 
 	mutator := func() error {
 		route.Labels = map[string]string{
+			config.ExposureVariantLabelKey:    strings.ToLower(string(exposure.Spec.Variant)),
 			config.DomainLabelKey:             LabelValueDomain,
 			agenticv1.AgenticBasePathLabelKey: labelutil.NormalizeLabelValue(exposure.Spec.BasePath),
 			config.BuildLabelKey("zone"):      zone.Name,
@@ -139,6 +141,7 @@ func CreateAgenticRoute(
 func CreateAgenticProxyRoute(
 	ctx context.Context,
 	basePath string,
+	variant agenticv1.AgenticVariant,
 	subscriberZone *adminv1.Zone,
 	providerZone *adminv1.Zone,
 ) (*gatewayapi.Route, error) {
@@ -183,6 +186,7 @@ func CreateAgenticProxyRoute(
 
 	mutator := func() error {
 		route.Labels = map[string]string{
+			config.ExposureVariantLabelKey:    strings.ToLower(string(variant)),
 			config.DomainLabelKey:             LabelValueDomain,
 			agenticv1.AgenticBasePathLabelKey: labelutil.NormalizeLabelValue(basePath),
 			config.BuildLabelKey("zone"):      subscriberZone.Name,

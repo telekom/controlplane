@@ -108,7 +108,7 @@ func (h *AgenticExposureHandler) CreateOrUpdate(ctx context.Context, obj *agenti
 			crossZoneLmsIssuers = append(crossZoneLmsIssuers, subscriberPresetStatus.Links.LmsIssuer)
 		}
 
-		proxyRoute, routeErr := util.CreateAgenticProxyRoute(ctx, obj.Spec.BasePath, subscriberZone, zone)
+		proxyRoute, routeErr := util.CreateAgenticProxyRoute(ctx, obj.Spec.BasePath, obj.Spec.Variant, subscriberZone, zone)
 		if routeErr != nil {
 			return errors.Wrapf(routeErr, "failed to create MCP proxy Route for zone %q", subscriberZoneRef.Name)
 		}
@@ -329,7 +329,7 @@ func ensureTelecontextProxyRoute(
 		return nil, "", errors.Wrapf(err, "failed to get Telecontext zone %q", info.Zone.Name)
 	}
 
-	proxyRoute, err := util.CreateAgenticProxyRoute(ctx, obj.Spec.BasePath, telecontextZone, providerZone)
+	proxyRoute, err := util.CreateAgenticProxyRoute(ctx, obj.Spec.BasePath, obj.Spec.Variant, telecontextZone, providerZone)
 	if err != nil {
 		return nil, "", errors.Wrapf(err, "failed to create MCP proxy Route for Telecontext zone %q", info.Zone.Name)
 	}
