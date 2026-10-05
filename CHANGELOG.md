@@ -1,3 +1,18 @@
+# [0.32.0](https://github.com/telekom/controlplane/compare/v0.31.2...v0.32.0) (2026-10-05)
+
+
+### Bug Fixes
+
+* add group resource in rbac ([#715](https://github.com/telekom/controlplane/issues/715)) ([373aa69](https://github.com/telekom/controlplane/commit/373aa6909add1ab970b31d2a090de577c121dec0))
+* **controlplane-api:** project URLs from file exposure status ([#719](https://github.com/telekom/controlplane/issues/719)) ([f55a7cb](https://github.com/telekom/controlplane/commit/f55a7cb8dff64ca2294e25b7f766c1a777fe7adc))
+* **organization-server:** …guard nil mutation payloads ([#716](https://github.com/telekom/controlplane/issues/716)) ([413ac18](https://github.com/telekom/controlplane/commit/413ac18a5f77bd284132c165c84ecd25df01b769))
+* **rover-server:** unified downloadFile logic ([#700](https://github.com/telekom/controlplane/issues/700)) ([6a6e9cc](https://github.com/telekom/controlplane/commit/6a6e9cc001cdbf2ac436a04e020aeee1723b3396))
+
+
+### Features
+
+* use uuid for file names in file-manager ([#701](https://github.com/telekom/controlplane/issues/701)) ([94cdcca](https://github.com/telekom/controlplane/commit/94cdccacf915f75584146a5dbf3ded6e2cf57997))
+
 ## [0.31.2](https://github.com/telekom/controlplane/compare/v0.31.1...v0.31.2) (2026-10-01)
 
 
