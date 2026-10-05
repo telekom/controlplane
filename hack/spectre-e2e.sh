@@ -2319,7 +2319,7 @@ test_cross_zone() {
 
     echo ""
     info "════════════════════════════════════════════════════════════════"
-    info "  Scenario 14: Cross-zone GetListeningZone placement"
+    info "  Scenario 14: Cross-zone capture placement"
     info "════════════════════════════════════════════════════════════════"
     echo ""
 
@@ -2510,9 +2510,10 @@ EOF
 EOF
 )"
 
-    # Route must be in the LISTENING zone (dataplane1) namespace, because
-    # ensureRouteListener calls findRouteByPath(ctx, listeningZone.Status.Namespace, apiBasePath).
-    # GetListeningZone returns dataplane1 (consumer zone with fullMesh EventConfig).
+    # Route must be in the capture zone (dataplane1) namespace, because each
+    # capture candidate is probed with findRouteByPath(ctx, zone.Status.Namespace, apiBasePath).
+    # Observer and consumer are both dataplane1, so util.CaptureCandidateZones
+    # tries dataplane1 first, then dataplane2 (provider zone).
     info "Creating Route for cross-zone provider in consumer zone namespace..."
     kc apply -f - <<EOF
 apiVersion: gateway.cp.ei.telekom.de/v1
@@ -2688,10 +2689,10 @@ EOF
     sleep 15
 
     # ── Verification ──────────────────────────────────────────────────
-    # With fullMesh EventConfig on dataplane1:
-    #   GetListeningZone(consumerZone=dp1, providerZone=dp2, consumerZone=dp1)
-    #   → dp1 EventConfig.SupportsZone("dataplane2") = true (fullMesh)
-    #   → returns dp1 as listeningZone
+    # Observer = consumer = dataplane1, provider = dataplane2:
+    #   util.CaptureCandidateZones(observer=dp1, consumer=dp1, provider=dp2) → [dp1, dp2]
+    #   → util.ResolveCaptureZone(dp1) succeeds: dp1 is also the delivery zone
+    #   → dp1 is the capture zone; delivery is always in the observer zone (dp1)
     # Therefore: RouteListener, Publisher, Subscribers all in controlplane--dataplane1
 
     info "Verifying cross-zone Listener reached Ready..."
