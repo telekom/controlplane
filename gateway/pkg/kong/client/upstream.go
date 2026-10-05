@@ -277,8 +277,7 @@ func (e targetEntity) Write(ctx context.Context, desired *kong.CreateTargetForUp
 	if err != nil {
 		return nil, fmt.Errorf("failed to write target: %w", HandleClientError(err))
 	}
-	return writeOne("target", readResult[kong.Target]{response.StatusCode(), response.Body, response.JSON200},
-		http.StatusOK, http.StatusCreated)
+	return writeOne("target", readResult[kong.Target]{response.StatusCode(), response.Body, response.JSON201}, http.StatusCreated)
 }
 
 // isLaterTarget reports whether candidate supersedes effective. Targets created
