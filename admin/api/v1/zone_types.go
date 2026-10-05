@@ -114,6 +114,13 @@ type IdentityProviderConfig struct {
 	// +kubebuilder:validation:Format=uri
 	TokenUrl       string                `json:"tokenUrl,omitempty"`
 	SecretRotation *SecretRotationConfig `json:"secretRotation,omitempty"`
+	// AllowedOrigins configures the web origins for clients in this zone's default identity realm.
+	// Origin header format: https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Origin
+	// CEL validation isn't correct and it allowed define invalid port range. This validation should be enough for most cases.
+	// +optional
+	// +listType=set
+	// +kubebuilder:validation:items:Pattern=`^(\*|[A-Za-z][A-Za-z0-9+.-]*://([A-Za-z0-9.-]+|\[[0-9A-Fa-f:.]+\])(:[0-9]{1,5})?)$`
+	AllowedOrigins []string `json:"allowedOrigins,omitempty"`
 }
 
 // GatewayAdminConfig contains the necessary information to connect to the gateway admin API for this zone.
