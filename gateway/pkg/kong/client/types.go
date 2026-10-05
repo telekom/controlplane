@@ -30,6 +30,7 @@ type CustomRoute interface {
 	GetTargetsId() string
 	GetName() string
 	GetHostnames() []string
+	GetAdditionalTags() []string
 	GetPaths() []string
 	GetRequestBuffering() bool
 	GetResponseBuffering() bool

@@ -100,6 +100,12 @@ graph LR
 Route types are created by the **API domain**, not configured by hand. See [API Domain: Route Provisioning](./api.mdx#route-provisioning) for which resource creates which route, and [Failover](../admin-journey/features/failover.md) for the operator-facing setup.
 :::
 
+## Additional route tags
+
+`Route.spec.additionalTags` is an optional list of strings. The Gateway operator merges these values unchanged with its built-in Kong Route tags. They do not apply to Kong Services.
+
+API and Agentic controllers use this field for traffic classification, with tags such as `variant--default` and `variant--mcp`.
+
 ## Domain Interactions
 
 - **Admin domain** — Zones define which gateway instance to use.

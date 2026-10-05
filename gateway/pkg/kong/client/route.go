@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"slices"
 
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	kong "github.com/telekom/controlplane/gateway/pkg/kong/api"
@@ -46,6 +47,8 @@ func (c *kongClient) CreateOrReplaceRoute(ctx context.Context, route CustomRoute
 	}
 	route.SetServiceId(*service.Id)
 
+	routeTags := slices.Concat(tags, route.GetAdditionalTags())
+
 	routeBody := kong.CreateRouteJSONRequestBody{
 		Name:                    &routeName,
 		Protocols:               valueOrZero(normalizeSet(&[]string{"http", "https"})),
@@ -55,7 +58,7 @@ func (c *kongClient) CreateOrReplaceRoute(ctx context.Context, route CustomRoute
 		RequestBuffering:        route.GetRequestBuffering(),
 		ResponseBuffering:       route.GetResponseBuffering(),
 		HttpsRedirectStatusCode: 426,
-		Tags:                    normalizeSet(&tags),
+		Tags:                    normalizeSet(&routeTags),
 	}
 
 	kongRoute, _, err := reconcile(ctx, routeEntity{client: c.client, name: routeName}, routeBody)

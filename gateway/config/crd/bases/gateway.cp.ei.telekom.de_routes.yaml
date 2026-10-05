@@ -42,6 +42,15 @@ spec:
           spec:
             description: spec defines the desired state of Route
             properties:
+              additionalTags:
+                description: |-
+                  AdditionalTags are appended to the existing tags on the Kong Route.
+                  Tags must be non-empty and contain no commas, slashes, ASCII control characters, or DEL.
+                items:
+                  minLength: 1
+                  pattern: ^[^,/\x00-\x1F\x7F]+$
+                  type: string
+                type: array
               backend:
                 description: Backend defines the backend for this route. Only one
                   of Backend or Traffic can be set.
