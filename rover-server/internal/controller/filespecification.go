@@ -201,7 +201,7 @@ func (f *FileSpecificationController) deleteFile(ctx context.Context, ns, name s
 
 func (f *FileSpecificationController) uploadFile(ctx context.Context, specMarshaled []byte, id mapper.ResourceIdInfo) (res *filesapi.FileUploadResponse, err error) {
 	if !cconfig.FeatureFileManager.IsEnabled() {
-		return nil, nil
+		return &filesapi.FileUploadResponse{}, nil
 	}
 
 	existingId, err := f.existingFileId(ctx, id.Environment+"--"+id.Namespace, id.Name)

@@ -152,9 +152,8 @@ func (e *EventSpecificationController) Update(ctx context.Context, resourceId st
 		if err != nil {
 			return res, err
 		}
-		if uploadRes != nil {
-			specOrFileId = uploadRes.FileId
-		}
+
+		specOrFileId = uploadRes.FileId
 	} else if err := e.deleteFile(ctx, id.Environment+"--"+id.Namespace, id.Name); err != nil {
 		return res, err
 	}
@@ -194,7 +193,7 @@ func (e *EventSpecificationController) GetStatus(ctx context.Context, resourceId
 
 func (e *EventSpecificationController) uploadFile(ctx context.Context, specMarshaled []byte, id mapper.ResourceIdInfo) (res *filesapi.FileUploadResponse, err error) {
 	if !cconfig.FeatureFileManager.IsEnabled() {
-		return nil, nil
+		return &filesapi.FileUploadResponse{}, nil
 	}
 
 	existingId, err := e.existingFileId(ctx, id.Environment+"--"+id.Namespace, id.Name)
