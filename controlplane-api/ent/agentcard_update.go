@@ -136,6 +136,20 @@ func (_u *AgentCardUpdate) SetNillableName(v *string) *AgentCardUpdate {
 	return _u
 }
 
+// SetDisplayName sets the "display_name" field.
+func (_u *AgentCardUpdate) SetDisplayName(v string) *AgentCardUpdate {
+	_u.mutation.SetDisplayName(v)
+	return _u
+}
+
+// SetNillableDisplayName sets the "display_name" field if the given value is not nil.
+func (_u *AgentCardUpdate) SetNillableDisplayName(v *string) *AgentCardUpdate {
+	if v != nil {
+		_u.SetDisplayName(*v)
+	}
+	return _u
+}
+
 // SetDescription sets the "description" field.
 func (_u *AgentCardUpdate) SetDescription(v string) *AgentCardUpdate {
 	_u.mutation.SetDescription(v)
@@ -400,6 +414,9 @@ func (_u *AgentCardUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(agentcard.FieldName, field.TypeString, value)
 	}
+	if value, ok := _u.mutation.DisplayName(); ok {
+		_spec.SetField(agentcard.FieldDisplayName, field.TypeString, value)
+	}
 	if value, ok := _u.mutation.Description(); ok {
 		_spec.SetField(agentcard.FieldDescription, field.TypeString, value)
 	}
@@ -624,6 +641,20 @@ func (_u *AgentCardUpdateOne) SetName(v string) *AgentCardUpdateOne {
 func (_u *AgentCardUpdateOne) SetNillableName(v *string) *AgentCardUpdateOne {
 	if v != nil {
 		_u.SetName(*v)
+	}
+	return _u
+}
+
+// SetDisplayName sets the "display_name" field.
+func (_u *AgentCardUpdateOne) SetDisplayName(v string) *AgentCardUpdateOne {
+	_u.mutation.SetDisplayName(v)
+	return _u
+}
+
+// SetNillableDisplayName sets the "display_name" field if the given value is not nil.
+func (_u *AgentCardUpdateOne) SetNillableDisplayName(v *string) *AgentCardUpdateOne {
+	if v != nil {
+		_u.SetDisplayName(*v)
 	}
 	return _u
 }
@@ -921,6 +952,9 @@ func (_u *AgentCardUpdateOne) sqlSave(ctx context.Context) (_node *AgentCard, er
 	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(agentcard.FieldName, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.DisplayName(); ok {
+		_spec.SetField(agentcard.FieldDisplayName, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.Description(); ok {
 		_spec.SetField(agentcard.FieldDescription, field.TypeString, value)

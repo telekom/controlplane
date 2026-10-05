@@ -156,6 +156,21 @@ type AgentCardWhereInput struct {
 	NameEqualFold    *string  `json:"nameEqualFold,omitempty"`
 	NameContainsFold *string  `json:"nameContainsFold,omitempty"`
 
+	// "display_name" field predicates.
+	DisplayName             *string  `json:"displayName,omitempty"`
+	DisplayNameNEQ          *string  `json:"displayNameNEQ,omitempty"`
+	DisplayNameIn           []string `json:"displayNameIn,omitempty"`
+	DisplayNameNotIn        []string `json:"displayNameNotIn,omitempty"`
+	DisplayNameGT           *string  `json:"displayNameGT,omitempty"`
+	DisplayNameGTE          *string  `json:"displayNameGTE,omitempty"`
+	DisplayNameLT           *string  `json:"displayNameLT,omitempty"`
+	DisplayNameLTE          *string  `json:"displayNameLTE,omitempty"`
+	DisplayNameContains     *string  `json:"displayNameContains,omitempty"`
+	DisplayNameHasPrefix    *string  `json:"displayNameHasPrefix,omitempty"`
+	DisplayNameHasSuffix    *string  `json:"displayNameHasSuffix,omitempty"`
+	DisplayNameEqualFold    *string  `json:"displayNameEqualFold,omitempty"`
+	DisplayNameContainsFold *string  `json:"displayNameContainsFold,omitempty"`
+
 	// "description" field predicates.
 	Description             *string  `json:"description,omitempty"`
 	DescriptionNEQ          *string  `json:"descriptionNEQ,omitempty"`
@@ -581,6 +596,45 @@ func (i *AgentCardWhereInput) P() (predicate.AgentCard, error) {
 	}
 	if i.NameContainsFold != nil {
 		predicates = append(predicates, agentcard.NameContainsFold(*i.NameContainsFold))
+	}
+	if i.DisplayName != nil {
+		predicates = append(predicates, agentcard.DisplayNameEQ(*i.DisplayName))
+	}
+	if i.DisplayNameNEQ != nil {
+		predicates = append(predicates, agentcard.DisplayNameNEQ(*i.DisplayNameNEQ))
+	}
+	if len(i.DisplayNameIn) > 0 {
+		predicates = append(predicates, agentcard.DisplayNameIn(i.DisplayNameIn...))
+	}
+	if len(i.DisplayNameNotIn) > 0 {
+		predicates = append(predicates, agentcard.DisplayNameNotIn(i.DisplayNameNotIn...))
+	}
+	if i.DisplayNameGT != nil {
+		predicates = append(predicates, agentcard.DisplayNameGT(*i.DisplayNameGT))
+	}
+	if i.DisplayNameGTE != nil {
+		predicates = append(predicates, agentcard.DisplayNameGTE(*i.DisplayNameGTE))
+	}
+	if i.DisplayNameLT != nil {
+		predicates = append(predicates, agentcard.DisplayNameLT(*i.DisplayNameLT))
+	}
+	if i.DisplayNameLTE != nil {
+		predicates = append(predicates, agentcard.DisplayNameLTE(*i.DisplayNameLTE))
+	}
+	if i.DisplayNameContains != nil {
+		predicates = append(predicates, agentcard.DisplayNameContains(*i.DisplayNameContains))
+	}
+	if i.DisplayNameHasPrefix != nil {
+		predicates = append(predicates, agentcard.DisplayNameHasPrefix(*i.DisplayNameHasPrefix))
+	}
+	if i.DisplayNameHasSuffix != nil {
+		predicates = append(predicates, agentcard.DisplayNameHasSuffix(*i.DisplayNameHasSuffix))
+	}
+	if i.DisplayNameEqualFold != nil {
+		predicates = append(predicates, agentcard.DisplayNameEqualFold(*i.DisplayNameEqualFold))
+	}
+	if i.DisplayNameContainsFold != nil {
+		predicates = append(predicates, agentcard.DisplayNameContainsFold(*i.DisplayNameContainsFold))
 	}
 	if i.Description != nil {
 		predicates = append(predicates, agentcard.DescriptionEQ(*i.Description))
@@ -10986,6 +11040,21 @@ type McpServerWhereInput struct {
 	NameEqualFold    *string  `json:"nameEqualFold,omitempty"`
 	NameContainsFold *string  `json:"nameContainsFold,omitempty"`
 
+	// "display_name" field predicates.
+	DisplayName             *string  `json:"displayName,omitempty"`
+	DisplayNameNEQ          *string  `json:"displayNameNEQ,omitempty"`
+	DisplayNameIn           []string `json:"displayNameIn,omitempty"`
+	DisplayNameNotIn        []string `json:"displayNameNotIn,omitempty"`
+	DisplayNameGT           *string  `json:"displayNameGT,omitempty"`
+	DisplayNameGTE          *string  `json:"displayNameGTE,omitempty"`
+	DisplayNameLT           *string  `json:"displayNameLT,omitempty"`
+	DisplayNameLTE          *string  `json:"displayNameLTE,omitempty"`
+	DisplayNameContains     *string  `json:"displayNameContains,omitempty"`
+	DisplayNameHasPrefix    *string  `json:"displayNameHasPrefix,omitempty"`
+	DisplayNameHasSuffix    *string  `json:"displayNameHasSuffix,omitempty"`
+	DisplayNameEqualFold    *string  `json:"displayNameEqualFold,omitempty"`
+	DisplayNameContainsFold *string  `json:"displayNameContainsFold,omitempty"`
+
 	// "description" field predicates.
 	Description             *string  `json:"description,omitempty"`
 	DescriptionNEQ          *string  `json:"descriptionNEQ,omitempty"`
@@ -11411,6 +11480,45 @@ func (i *McpServerWhereInput) P() (predicate.McpServer, error) {
 	}
 	if i.NameContainsFold != nil {
 		predicates = append(predicates, mcpserver.NameContainsFold(*i.NameContainsFold))
+	}
+	if i.DisplayName != nil {
+		predicates = append(predicates, mcpserver.DisplayNameEQ(*i.DisplayName))
+	}
+	if i.DisplayNameNEQ != nil {
+		predicates = append(predicates, mcpserver.DisplayNameNEQ(*i.DisplayNameNEQ))
+	}
+	if len(i.DisplayNameIn) > 0 {
+		predicates = append(predicates, mcpserver.DisplayNameIn(i.DisplayNameIn...))
+	}
+	if len(i.DisplayNameNotIn) > 0 {
+		predicates = append(predicates, mcpserver.DisplayNameNotIn(i.DisplayNameNotIn...))
+	}
+	if i.DisplayNameGT != nil {
+		predicates = append(predicates, mcpserver.DisplayNameGT(*i.DisplayNameGT))
+	}
+	if i.DisplayNameGTE != nil {
+		predicates = append(predicates, mcpserver.DisplayNameGTE(*i.DisplayNameGTE))
+	}
+	if i.DisplayNameLT != nil {
+		predicates = append(predicates, mcpserver.DisplayNameLT(*i.DisplayNameLT))
+	}
+	if i.DisplayNameLTE != nil {
+		predicates = append(predicates, mcpserver.DisplayNameLTE(*i.DisplayNameLTE))
+	}
+	if i.DisplayNameContains != nil {
+		predicates = append(predicates, mcpserver.DisplayNameContains(*i.DisplayNameContains))
+	}
+	if i.DisplayNameHasPrefix != nil {
+		predicates = append(predicates, mcpserver.DisplayNameHasPrefix(*i.DisplayNameHasPrefix))
+	}
+	if i.DisplayNameHasSuffix != nil {
+		predicates = append(predicates, mcpserver.DisplayNameHasSuffix(*i.DisplayNameHasSuffix))
+	}
+	if i.DisplayNameEqualFold != nil {
+		predicates = append(predicates, mcpserver.DisplayNameEqualFold(*i.DisplayNameEqualFold))
+	}
+	if i.DisplayNameContainsFold != nil {
+		predicates = append(predicates, mcpserver.DisplayNameContainsFold(*i.DisplayNameContainsFold))
 	}
 	if i.Description != nil {
 		predicates = append(predicates, mcpserver.DescriptionEQ(*i.Description))

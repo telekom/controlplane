@@ -39,8 +39,10 @@ func ParseSpecification(_ context.Context, specYAML string) (*roverv1.McpSpecifi
 		if v, ok := info["version"].(string); ok && v != "" {
 			version = v
 		}
-		if title, ok := info["title"].(string); ok && title != "" {
-			name = strings.ToLower(strings.ReplaceAll(strings.TrimSpace(title), " ", "-"))
+		if title, ok := info["title"].(string); ok {
+			if title = strings.TrimSpace(title); title != "" {
+				name = title
+			}
 		}
 		if d, ok := info["description"].(string); ok {
 			description = d

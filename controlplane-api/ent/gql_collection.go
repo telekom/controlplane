@@ -97,6 +97,11 @@ func (_q *AgentCardQuery) collectField(ctx context.Context, oneNode bool, opCtx 
 				selectedFields = append(selectedFields, agentcard.FieldName)
 				fieldSeen[agentcard.FieldName] = struct{}{}
 			}
+		case "displayName":
+			if _, ok := fieldSeen[agentcard.FieldDisplayName]; !ok {
+				selectedFields = append(selectedFields, agentcard.FieldDisplayName)
+				fieldSeen[agentcard.FieldDisplayName] = struct{}{}
+			}
 		case "description":
 			if _, ok := fieldSeen[agentcard.FieldDescription]; !ok {
 				selectedFields = append(selectedFields, agentcard.FieldDescription)
@@ -3508,6 +3513,11 @@ func (_q *McpServerQuery) collectField(ctx context.Context, oneNode bool, opCtx 
 			if _, ok := fieldSeen[mcpserver.FieldName]; !ok {
 				selectedFields = append(selectedFields, mcpserver.FieldName)
 				fieldSeen[mcpserver.FieldName] = struct{}{}
+			}
+		case "displayName":
+			if _, ok := fieldSeen[mcpserver.FieldDisplayName]; !ok {
+				selectedFields = append(selectedFields, mcpserver.FieldDisplayName)
+				fieldSeen[mcpserver.FieldDisplayName] = struct{}{}
 			}
 		case "description":
 			if _, ok := fieldSeen[mcpserver.FieldDescription]; !ok {

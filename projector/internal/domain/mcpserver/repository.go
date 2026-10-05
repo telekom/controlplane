@@ -68,6 +68,7 @@ func (r *Repository) Upsert(ctx context.Context, data *McpServerData) error {
 		SetBasePath(data.BasePath).
 		SetVersion(data.Version).
 		SetName(data.Name).
+		SetDisplayName(data.DisplayName).
 		SetActive(data.Active).
 		SetStatusPhase(entmcpserver.StatusPhase(data.StatusPhase)).
 		SetStatusMessage(data.StatusMessage).

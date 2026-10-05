@@ -136,6 +136,20 @@ func (_u *McpServerUpdate) SetNillableName(v *string) *McpServerUpdate {
 	return _u
 }
 
+// SetDisplayName sets the "display_name" field.
+func (_u *McpServerUpdate) SetDisplayName(v string) *McpServerUpdate {
+	_u.mutation.SetDisplayName(v)
+	return _u
+}
+
+// SetNillableDisplayName sets the "display_name" field if the given value is not nil.
+func (_u *McpServerUpdate) SetNillableDisplayName(v *string) *McpServerUpdate {
+	if v != nil {
+		_u.SetDisplayName(*v)
+	}
+	return _u
+}
+
 // SetDescription sets the "description" field.
 func (_u *McpServerUpdate) SetDescription(v string) *McpServerUpdate {
 	_u.mutation.SetDescription(v)
@@ -400,6 +414,9 @@ func (_u *McpServerUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(mcpserver.FieldName, field.TypeString, value)
 	}
+	if value, ok := _u.mutation.DisplayName(); ok {
+		_spec.SetField(mcpserver.FieldDisplayName, field.TypeString, value)
+	}
 	if value, ok := _u.mutation.Description(); ok {
 		_spec.SetField(mcpserver.FieldDescription, field.TypeString, value)
 	}
@@ -624,6 +641,20 @@ func (_u *McpServerUpdateOne) SetName(v string) *McpServerUpdateOne {
 func (_u *McpServerUpdateOne) SetNillableName(v *string) *McpServerUpdateOne {
 	if v != nil {
 		_u.SetName(*v)
+	}
+	return _u
+}
+
+// SetDisplayName sets the "display_name" field.
+func (_u *McpServerUpdateOne) SetDisplayName(v string) *McpServerUpdateOne {
+	_u.mutation.SetDisplayName(v)
+	return _u
+}
+
+// SetNillableDisplayName sets the "display_name" field if the given value is not nil.
+func (_u *McpServerUpdateOne) SetNillableDisplayName(v *string) *McpServerUpdateOne {
+	if v != nil {
+		_u.SetDisplayName(*v)
 	}
 	return _u
 }
@@ -921,6 +952,9 @@ func (_u *McpServerUpdateOne) sqlSave(ctx context.Context) (_node *McpServer, er
 	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(mcpserver.FieldName, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.DisplayName(); ok {
+		_spec.SetField(mcpserver.FieldDisplayName, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.Description(); ok {
 		_spec.SetField(mcpserver.FieldDescription, field.TypeString, value)

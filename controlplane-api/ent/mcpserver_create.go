@@ -107,6 +107,20 @@ func (_c *McpServerCreate) SetName(v string) *McpServerCreate {
 	return _c
 }
 
+// SetDisplayName sets the "display_name" field.
+func (_c *McpServerCreate) SetDisplayName(v string) *McpServerCreate {
+	_c.mutation.SetDisplayName(v)
+	return _c
+}
+
+// SetNillableDisplayName sets the "display_name" field if the given value is not nil.
+func (_c *McpServerCreate) SetNillableDisplayName(v *string) *McpServerCreate {
+	if v != nil {
+		_c.SetDisplayName(*v)
+	}
+	return _c
+}
+
 // SetDescription sets the "description" field.
 func (_c *McpServerCreate) SetDescription(v string) *McpServerCreate {
 	_c.mutation.SetDescription(v)
@@ -246,6 +260,10 @@ func (_c *McpServerCreate) defaults() error {
 		v := mcpserver.DefaultLastModifiedAt()
 		_c.mutation.SetLastModifiedAt(v)
 	}
+	if _, ok := _c.mutation.DisplayName(); !ok {
+		v := mcpserver.DefaultDisplayName
+		_c.mutation.SetDisplayName(v)
+	}
 	if _, ok := _c.mutation.Active(); !ok {
 		v := mcpserver.DefaultActive
 		_c.mutation.SetActive(v)
@@ -297,6 +315,9 @@ func (_c *McpServerCreate) check() error {
 		if err := mcpserver.NameValidator(v); err != nil {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "McpServer.name": %w`, err)}
 		}
+	}
+	if _, ok := _c.mutation.DisplayName(); !ok {
+		return &ValidationError{Name: "display_name", err: errors.New(`ent: missing required field "McpServer.display_name"`)}
 	}
 	if _, ok := _c.mutation.Active(); !ok {
 		return &ValidationError{Name: "active", err: errors.New(`ent: missing required field "McpServer.active"`)}
@@ -362,6 +383,10 @@ func (_c *McpServerCreate) createSpec() (*McpServer, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.Name(); ok {
 		_spec.SetField(mcpserver.FieldName, field.TypeString, value)
 		_node.Name = value
+	}
+	if value, ok := _c.mutation.DisplayName(); ok {
+		_spec.SetField(mcpserver.FieldDisplayName, field.TypeString, value)
+		_node.DisplayName = value
 	}
 	if value, ok := _c.mutation.Description(); ok {
 		_spec.SetField(mcpserver.FieldDescription, field.TypeString, value)
@@ -561,6 +586,18 @@ func (u *McpServerUpsert) SetName(v string) *McpServerUpsert {
 // UpdateName sets the "name" field to the value that was provided on create.
 func (u *McpServerUpsert) UpdateName() *McpServerUpsert {
 	u.SetExcluded(mcpserver.FieldName)
+	return u
+}
+
+// SetDisplayName sets the "display_name" field.
+func (u *McpServerUpsert) SetDisplayName(v string) *McpServerUpsert {
+	u.Set(mcpserver.FieldDisplayName, v)
+	return u
+}
+
+// UpdateDisplayName sets the "display_name" field to the value that was provided on create.
+func (u *McpServerUpsert) UpdateDisplayName() *McpServerUpsert {
+	u.SetExcluded(mcpserver.FieldDisplayName)
 	return u
 }
 
@@ -802,6 +839,20 @@ func (u *McpServerUpsertOne) SetName(v string) *McpServerUpsertOne {
 func (u *McpServerUpsertOne) UpdateName() *McpServerUpsertOne {
 	return u.Update(func(s *McpServerUpsert) {
 		s.UpdateName()
+	})
+}
+
+// SetDisplayName sets the "display_name" field.
+func (u *McpServerUpsertOne) SetDisplayName(v string) *McpServerUpsertOne {
+	return u.Update(func(s *McpServerUpsert) {
+		s.SetDisplayName(v)
+	})
+}
+
+// UpdateDisplayName sets the "display_name" field to the value that was provided on create.
+func (u *McpServerUpsertOne) UpdateDisplayName() *McpServerUpsertOne {
+	return u.Update(func(s *McpServerUpsert) {
+		s.UpdateDisplayName()
 	})
 }
 
@@ -1223,6 +1274,20 @@ func (u *McpServerUpsertBulk) SetName(v string) *McpServerUpsertBulk {
 func (u *McpServerUpsertBulk) UpdateName() *McpServerUpsertBulk {
 	return u.Update(func(s *McpServerUpsert) {
 		s.UpdateName()
+	})
+}
+
+// SetDisplayName sets the "display_name" field.
+func (u *McpServerUpsertBulk) SetDisplayName(v string) *McpServerUpsertBulk {
+	return u.Update(func(s *McpServerUpsert) {
+		s.SetDisplayName(v)
+	})
+}
+
+// UpdateDisplayName sets the "display_name" field to the value that was provided on create.
+func (u *McpServerUpsertBulk) UpdateDisplayName() *McpServerUpsertBulk {
+	return u.Update(func(s *McpServerUpsert) {
+		s.UpdateDisplayName()
 	})
 }
 

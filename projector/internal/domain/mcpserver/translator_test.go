@@ -42,7 +42,7 @@ var _ = Describe("McpServer Translator", func() {
 				Spec: agenticv1.McpServerSpec{
 					BasePath:      "/mcp/weather/v1",
 					Version:       "1.0.0",
-					Name:          "weather-server",
+					Name:          "Weather Server",
 					Description:   "Weather MCP server",
 					Specification: "file-123",
 					Category:      "g-api",
@@ -69,7 +69,8 @@ var _ = Describe("McpServer Translator", func() {
 			Expect(data.StatusPhase).To(Equal("READY"))
 			Expect(data.BasePath).To(Equal("/mcp/weather/v1"))
 			Expect(data.Version).To(Equal("1.0.0"))
-			Expect(data.Name).To(Equal("weather-server"))
+			Expect(data.Name).To(Equal("mcp-weather-v1"))
+			Expect(data.DisplayName).To(Equal("Weather Server"))
 			Expect(data.Description).To(Equal("Weather MCP server"))
 			Expect(data.Specification).To(Equal("file-123"))
 			Expect(data.Category).To(Equal("g-api"))

@@ -23,7 +23,8 @@ type McpServerData struct {
 	StatusMessage string
 	BasePath      string
 	Version       string
-	Name          string
+	Name          string // resource name (metadata.name)
+	DisplayName   string // human-readable name (spec.name)
 	Description   string
 	Category      string
 	Oauth2Scopes  []string

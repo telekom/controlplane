@@ -83,12 +83,13 @@ var _ = Describe("AgentCard Repository", func() {
 	Describe("Upsert", func() {
 		It("should create an agent_card with valid deps", func() {
 			data := &agentcard.AgentCardData{
-				Meta:          shared.NewMetadata("prod--platform--narvi", "card-weather-v1", nil),
+				Meta:          shared.NewMetadata("prod--platform--narvi", "agent-weather-v1", nil),
 				StatusPhase:   "READY",
 				StatusMessage: "ok",
 				BasePath:      "/agent/weather/v1",
 				Version:       "1.0.0",
-				Name:          "weather-agent",
+				Name:          "agent-weather-v1",
+				DisplayName:   "Weather Agent",
 				Description:   "Weather agent card",
 				Category:      "g-api",
 				Oauth2Scopes:  []string{"scope-a"},
@@ -103,7 +104,8 @@ var _ = Describe("AgentCard Repository", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(card.BasePath).To(Equal("/agent/weather/v1"))
 			Expect(card.Version).To(Equal("1.0.0"))
-			Expect(card.Name).To(Equal("weather-agent"))
+			Expect(card.Name).To(Equal("agent-weather-v1"))
+			Expect(card.DisplayName).To(Equal("Weather Agent"))
 			Expect(card.Description).To(Equal("Weather agent card"))
 			Expect(card.Category).To(Equal("g-api"))
 			Expect(card.Oauth2Scopes).To(Equal([]string{"scope-a"}))
@@ -117,11 +119,12 @@ var _ = Describe("AgentCard Repository", func() {
 		It("should return ErrDependencyMissing when the owner Team is missing", func() {
 			deps.teamIDs = map[string]int{}
 			data := &agentcard.AgentCardData{
-				Meta:        shared.NewMetadata("prod--platform--narvi", "card-weather-v1", nil),
+				Meta:        shared.NewMetadata("prod--platform--narvi", "agent-weather-v1", nil),
 				StatusPhase: "READY",
 				BasePath:    "/agent/weather/v1",
 				Version:     "1.0.0",
-				Name:        "weather-agent",
+				Name:        "agent-weather-v1",
+				DisplayName: "Weather Agent",
 				TeamName:    "platform--narvi",
 			}
 			err := repo.Upsert(ctx, data)
@@ -131,18 +134,19 @@ var _ = Describe("AgentCard Repository", func() {
 
 		It("should update an existing agent_card on conflict", func() {
 			data := &agentcard.AgentCardData{
-				Meta:        shared.NewMetadata("prod--platform--narvi", "card-weather-v1", nil),
+				Meta:        shared.NewMetadata("prod--platform--narvi", "agent-weather-v1", nil),
 				StatusPhase: "READY",
 				BasePath:    "/agent/weather/v1",
 				Version:     "1.0.0",
-				Name:        "weather-agent",
+				Name:        "agent-weather-v1",
+				DisplayName: "Weather Agent",
 				Active:      true,
 				TeamName:    "platform--narvi",
 			}
 			Expect(repo.Upsert(ctx, data)).To(Succeed())
 
 			data.Version = "2.0.0"
-			data.Name = "weather-agent-v2"
+			data.DisplayName = "Weather Agent v2"
 			Expect(repo.Upsert(ctx, data)).To(Succeed())
 
 			count, err := client.AgentCard.Query().Count(ctx)
@@ -154,16 +158,18 @@ var _ = Describe("AgentCard Repository", func() {
 				Only(ctx)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(card.Version).To(Equal("2.0.0"))
-			Expect(card.Name).To(Equal("weather-agent-v2"))
+			Expect(card.Name).To(Equal("agent-weather-v1"))
+			Expect(card.DisplayName).To(Equal("Weather Agent v2"))
 		})
 
 		It("should set the active-agent-card cache entry when active", func() {
 			data := &agentcard.AgentCardData{
-				Meta:        shared.NewMetadata("prod--platform--narvi", "card-weather-v1", nil),
+				Meta:        shared.NewMetadata("prod--platform--narvi", "agent-weather-v1", nil),
 				StatusPhase: "READY",
 				BasePath:    "/agent/weather/v1",
 				Version:     "1.0.0",
-				Name:        "weather-agent",
+				Name:        "agent-weather-v1",
+				DisplayName: "Weather Agent",
 				Active:      true,
 				TeamName:    "platform--narvi",
 			}
@@ -178,11 +184,12 @@ var _ = Describe("AgentCard Repository", func() {
 
 		It("should clear the active-agent-card cache entry when inactive", func() {
 			data := &agentcard.AgentCardData{
-				Meta:        shared.NewMetadata("prod--platform--narvi", "card-weather-v1", nil),
+				Meta:        shared.NewMetadata("prod--platform--narvi", "agent-weather-v1", nil),
 				StatusPhase: "READY",
 				BasePath:    "/agent/weather/v1",
 				Version:     "1.0.0",
-				Name:        "weather-agent",
+				Name:        "agent-weather-v1",
+				DisplayName: "Weather Agent",
 				Active:      true,
 				TeamName:    "platform--narvi",
 			}
@@ -227,11 +234,12 @@ var _ = Describe("AgentCard Repository", func() {
 
 			// AgentCard appears later → should adopt the orphaned exposure.
 			data := &agentcard.AgentCardData{
-				Meta:        shared.NewMetadata("prod--platform--narvi", "card-weather-v1", nil),
+				Meta:        shared.NewMetadata("prod--platform--narvi", "agent-weather-v1", nil),
 				StatusPhase: "READY",
 				BasePath:    "/agent/weather/v1",
 				Version:     "1.0.0",
-				Name:        "weather-agent",
+				Name:        "agent-weather-v1",
+				DisplayName: "Weather Agent",
 				Active:      true,
 				TeamName:    "platform--narvi",
 			}
@@ -266,11 +274,12 @@ var _ = Describe("AgentCard Repository", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			data := &agentcard.AgentCardData{
-				Meta:        shared.NewMetadata("prod--platform--narvi", "card-weather-v1", nil),
+				Meta:        shared.NewMetadata("prod--platform--narvi", "agent-weather-v1", nil),
 				StatusPhase: "READY",
 				BasePath:    "/agent/weather/v1",
 				Version:     "1.0.0",
-				Name:        "weather-agent",
+				Name:        "agent-weather-v1",
+				DisplayName: "Weather Agent",
 				Active:      true,
 				TeamName:    "platform--narvi",
 			}
@@ -289,11 +298,12 @@ var _ = Describe("AgentCard Repository", func() {
 
 		It("should delete an existing agent_card by base path and team name", func() {
 			data := &agentcard.AgentCardData{
-				Meta:        shared.NewMetadata("prod--platform--narvi", "card-weather-v1", nil),
+				Meta:        shared.NewMetadata("prod--platform--narvi", "agent-weather-v1", nil),
 				StatusPhase: "READY",
 				BasePath:    "/agent/weather/v1",
 				Version:     "1.0.0",
-				Name:        "weather-agent",
+				Name:        "agent-weather-v1",
+				DisplayName: "Weather Agent",
 				Active:      true,
 				TeamName:    "platform--narvi",
 			}

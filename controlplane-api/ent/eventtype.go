@@ -39,7 +39,7 @@ type EventType struct {
 	Description string `json:"description,omitempty"`
 	// Specification holds the value of the "specification" field.
 	Specification string `json:"specification,omitempty"`
-	// Active holds the value of the "active" field.
+	// Only the oldest entry for an event type is active. Entries of other teams with the same event type are inactive. Filter on active to get one entry per event type.
 	Active bool `json:"active,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the EventTypeQuery when eager-loading is set.

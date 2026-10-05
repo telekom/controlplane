@@ -146,7 +146,8 @@ All top-level queries support **cursor-based pagination** (Relay-style), **filte
 - `applications` — List applications with their zone, exposures, and subscriptions
 - `apiExposures` — List exposed APIs with visibility, upstreams, and approval configuration
 - `apiSubscriptions` — List subscriptions with their target exposure and approval state
-- `mcpServers` / `agentCards` — List registered MCP servers and A2A agent cards in the catalogue (visible to all authenticated callers, like a shared catalogue)
+- `apis` / `eventTypes` — List registered APIs and event types. Other teams can register the same base path or event type. Only the oldest entry is active; the others are inactive. Filter on `active: true` to get one entry per base path or event type.
+- `mcpServers` / `agentCards` — List registered MCP servers and A2A agent cards in the catalogue (visible to all authenticated callers, like a shared catalogue). `name` is the resource name derived from the base path (for example `mcp-weather-v1`). As for `apis`, only the oldest entry for a base path is active. Filter on `active: true` to get one entry per base path. `displayName` is the title from the specification (for example `Weather Server`), or the resource name if the specification has no title.
 - `agenticExposures` / `agenticSubscriptions` — List agentic exposures (MCP/A2A/Telecontext variants) and their subscriptions with approval state
 - `approvals` / `approvalRequests` — List approval workflows and pending requests
 - `zones` — List all available zones (no pagination, visible to all users)

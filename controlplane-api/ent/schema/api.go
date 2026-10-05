@@ -46,7 +46,9 @@ func (Api) Fields() []ent.Field {
 			Optional().
 			Annotations(entgql.Skip(entgql.SkipType)),
 		field.Bool("active").
-			Default(false),
+			Default(false).
+			Comment("Only the oldest entry for a base path is active. Entries of other teams with the same base path " +
+				"are inactive. Filter on active to get one API per base path."),
 	}
 }
 

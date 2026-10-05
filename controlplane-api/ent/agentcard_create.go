@@ -107,6 +107,20 @@ func (_c *AgentCardCreate) SetName(v string) *AgentCardCreate {
 	return _c
 }
 
+// SetDisplayName sets the "display_name" field.
+func (_c *AgentCardCreate) SetDisplayName(v string) *AgentCardCreate {
+	_c.mutation.SetDisplayName(v)
+	return _c
+}
+
+// SetNillableDisplayName sets the "display_name" field if the given value is not nil.
+func (_c *AgentCardCreate) SetNillableDisplayName(v *string) *AgentCardCreate {
+	if v != nil {
+		_c.SetDisplayName(*v)
+	}
+	return _c
+}
+
 // SetDescription sets the "description" field.
 func (_c *AgentCardCreate) SetDescription(v string) *AgentCardCreate {
 	_c.mutation.SetDescription(v)
@@ -246,6 +260,10 @@ func (_c *AgentCardCreate) defaults() error {
 		v := agentcard.DefaultLastModifiedAt()
 		_c.mutation.SetLastModifiedAt(v)
 	}
+	if _, ok := _c.mutation.DisplayName(); !ok {
+		v := agentcard.DefaultDisplayName
+		_c.mutation.SetDisplayName(v)
+	}
 	if _, ok := _c.mutation.Active(); !ok {
 		v := agentcard.DefaultActive
 		_c.mutation.SetActive(v)
@@ -297,6 +315,9 @@ func (_c *AgentCardCreate) check() error {
 		if err := agentcard.NameValidator(v); err != nil {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "AgentCard.name": %w`, err)}
 		}
+	}
+	if _, ok := _c.mutation.DisplayName(); !ok {
+		return &ValidationError{Name: "display_name", err: errors.New(`ent: missing required field "AgentCard.display_name"`)}
 	}
 	if _, ok := _c.mutation.Active(); !ok {
 		return &ValidationError{Name: "active", err: errors.New(`ent: missing required field "AgentCard.active"`)}
@@ -362,6 +383,10 @@ func (_c *AgentCardCreate) createSpec() (*AgentCard, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.Name(); ok {
 		_spec.SetField(agentcard.FieldName, field.TypeString, value)
 		_node.Name = value
+	}
+	if value, ok := _c.mutation.DisplayName(); ok {
+		_spec.SetField(agentcard.FieldDisplayName, field.TypeString, value)
+		_node.DisplayName = value
 	}
 	if value, ok := _c.mutation.Description(); ok {
 		_spec.SetField(agentcard.FieldDescription, field.TypeString, value)
@@ -561,6 +586,18 @@ func (u *AgentCardUpsert) SetName(v string) *AgentCardUpsert {
 // UpdateName sets the "name" field to the value that was provided on create.
 func (u *AgentCardUpsert) UpdateName() *AgentCardUpsert {
 	u.SetExcluded(agentcard.FieldName)
+	return u
+}
+
+// SetDisplayName sets the "display_name" field.
+func (u *AgentCardUpsert) SetDisplayName(v string) *AgentCardUpsert {
+	u.Set(agentcard.FieldDisplayName, v)
+	return u
+}
+
+// UpdateDisplayName sets the "display_name" field to the value that was provided on create.
+func (u *AgentCardUpsert) UpdateDisplayName() *AgentCardUpsert {
+	u.SetExcluded(agentcard.FieldDisplayName)
 	return u
 }
 
@@ -802,6 +839,20 @@ func (u *AgentCardUpsertOne) SetName(v string) *AgentCardUpsertOne {
 func (u *AgentCardUpsertOne) UpdateName() *AgentCardUpsertOne {
 	return u.Update(func(s *AgentCardUpsert) {
 		s.UpdateName()
+	})
+}
+
+// SetDisplayName sets the "display_name" field.
+func (u *AgentCardUpsertOne) SetDisplayName(v string) *AgentCardUpsertOne {
+	return u.Update(func(s *AgentCardUpsert) {
+		s.SetDisplayName(v)
+	})
+}
+
+// UpdateDisplayName sets the "display_name" field to the value that was provided on create.
+func (u *AgentCardUpsertOne) UpdateDisplayName() *AgentCardUpsertOne {
+	return u.Update(func(s *AgentCardUpsert) {
+		s.UpdateDisplayName()
 	})
 }
 
@@ -1223,6 +1274,20 @@ func (u *AgentCardUpsertBulk) SetName(v string) *AgentCardUpsertBulk {
 func (u *AgentCardUpsertBulk) UpdateName() *AgentCardUpsertBulk {
 	return u.Update(func(s *AgentCardUpsert) {
 		s.UpdateName()
+	})
+}
+
+// SetDisplayName sets the "display_name" field.
+func (u *AgentCardUpsertBulk) SetDisplayName(v string) *AgentCardUpsertBulk {
+	return u.Update(func(s *AgentCardUpsert) {
+		s.SetDisplayName(v)
+	})
+}
+
+// UpdateDisplayName sets the "display_name" field to the value that was provided on create.
+func (u *AgentCardUpsertBulk) UpdateDisplayName() *AgentCardUpsertBulk {
+	return u.Update(func(s *AgentCardUpsert) {
+		s.UpdateDisplayName()
 	})
 }
 

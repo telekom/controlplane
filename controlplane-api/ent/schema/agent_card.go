@@ -36,7 +36,12 @@ func (AgentCard) Fields() []ent.Field {
 		field.Text("version").
 			NotEmpty(),
 		field.Text("name").
-			NotEmpty(),
+			NotEmpty().
+			Comment("Resource name of the agent, derived from its base path."),
+		field.Text("display_name").
+			Default("").
+			Comment("Human-readable name of the agent: the title from its specification, " +
+				"or the resource name if the specification has no title."),
 		field.Text("description").
 			Optional(),
 		field.Text("specification").
@@ -48,7 +53,9 @@ func (AgentCard) Fields() []ent.Field {
 			Optional().
 			Annotations(entgql.Skip(entgql.SkipWhereInput)),
 		field.Bool("active").
-			Default(false),
+			Default(false).
+			Comment("Only the oldest entry for a base path is active. Entries of other teams with the same base path " +
+				"are inactive. Filter on active to get one agent per base path."),
 	}
 }
 

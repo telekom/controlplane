@@ -88,7 +88,8 @@ var _ = Describe("McpServer Repository", func() {
 				StatusMessage: "ok",
 				BasePath:      "/mcp/weather/v1",
 				Version:       "1.0.0",
-				Name:          "weather-server",
+				Name:          "mcp-weather-v1",
+				DisplayName:   "Weather Server",
 				Description:   "Weather MCP server",
 				Category:      "g-api",
 				Oauth2Scopes:  []string{"scope-a"},
@@ -103,7 +104,8 @@ var _ = Describe("McpServer Repository", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(mcp.BasePath).To(Equal("/mcp/weather/v1"))
 			Expect(mcp.Version).To(Equal("1.0.0"))
-			Expect(mcp.Name).To(Equal("weather-server"))
+			Expect(mcp.Name).To(Equal("mcp-weather-v1"))
+			Expect(mcp.DisplayName).To(Equal("Weather Server"))
 			Expect(mcp.Description).To(Equal("Weather MCP server"))
 			Expect(mcp.Category).To(Equal("g-api"))
 			Expect(mcp.Oauth2Scopes).To(Equal([]string{"scope-a"}))
@@ -121,7 +123,8 @@ var _ = Describe("McpServer Repository", func() {
 				StatusPhase: "READY",
 				BasePath:    "/mcp/weather/v1",
 				Version:     "1.0.0",
-				Name:        "weather-server",
+				Name:        "mcp-weather-v1",
+				DisplayName: "Weather Server",
 				TeamName:    "platform--narvi",
 			}
 			err := repo.Upsert(ctx, data)
@@ -135,14 +138,15 @@ var _ = Describe("McpServer Repository", func() {
 				StatusPhase: "READY",
 				BasePath:    "/mcp/weather/v1",
 				Version:     "1.0.0",
-				Name:        "weather-server",
+				Name:        "mcp-weather-v1",
+				DisplayName: "Weather Server",
 				Active:      true,
 				TeamName:    "platform--narvi",
 			}
 			Expect(repo.Upsert(ctx, data)).To(Succeed())
 
 			data.Version = "2.0.0"
-			data.Name = "weather-server-v2"
+			data.DisplayName = "Weather Server v2"
 			Expect(repo.Upsert(ctx, data)).To(Succeed())
 
 			count, err := client.McpServer.Query().Count(ctx)
@@ -154,7 +158,8 @@ var _ = Describe("McpServer Repository", func() {
 				Only(ctx)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(mcp.Version).To(Equal("2.0.0"))
-			Expect(mcp.Name).To(Equal("weather-server-v2"))
+			Expect(mcp.Name).To(Equal("mcp-weather-v1"))
+			Expect(mcp.DisplayName).To(Equal("Weather Server v2"))
 		})
 
 		It("should set the active-mcp-server cache entry when active", func() {
@@ -163,7 +168,8 @@ var _ = Describe("McpServer Repository", func() {
 				StatusPhase: "READY",
 				BasePath:    "/mcp/weather/v1",
 				Version:     "1.0.0",
-				Name:        "weather-server",
+				Name:        "mcp-weather-v1",
+				DisplayName: "Weather Server",
 				Active:      true,
 				TeamName:    "platform--narvi",
 			}
@@ -182,7 +188,8 @@ var _ = Describe("McpServer Repository", func() {
 				StatusPhase: "READY",
 				BasePath:    "/mcp/weather/v1",
 				Version:     "1.0.0",
-				Name:        "weather-server",
+				Name:        "mcp-weather-v1",
+				DisplayName: "Weather Server",
 				Active:      true,
 				TeamName:    "platform--narvi",
 			}
@@ -235,7 +242,8 @@ var _ = Describe("McpServer Repository", func() {
 				StatusPhase: "READY",
 				BasePath:    "/mcp/weather/v1",
 				Version:     "1.0.0",
-				Name:        "weather-server",
+				Name:        "mcp-weather-v1",
+				DisplayName: "Weather Server",
 				Active:      true,
 				TeamName:    "platform--narvi",
 			}
@@ -274,7 +282,8 @@ var _ = Describe("McpServer Repository", func() {
 				StatusPhase: "READY",
 				BasePath:    "/mcp/weather/v1",
 				Version:     "1.0.0",
-				Name:        "weather-server",
+				Name:        "mcp-weather-v1",
+				DisplayName: "Weather Server",
 				Active:      true,
 				TeamName:    "platform--narvi",
 			}
@@ -297,7 +306,8 @@ var _ = Describe("McpServer Repository", func() {
 				StatusPhase: "READY",
 				BasePath:    "/mcp/weather/v1",
 				Version:     "1.0.0",
-				Name:        "weather-server",
+				Name:        "mcp-weather-v1",
+				DisplayName: "Weather Server",
 				Active:      true,
 				TeamName:    "platform--narvi",
 			}
