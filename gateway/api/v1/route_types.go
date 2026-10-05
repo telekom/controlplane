@@ -10,6 +10,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// ZoneHealthUpstreamPath is reserved: Gateway answers these requests itself
+// with HTTP 200 and restricts the Kong route to HEAD, without calling an upstream.
+const ZoneHealthUpstreamPath = "/api/v1/zone-health"
+
 // RouteType defines the type of the route.
 // +kubebuilder:validation:Enum=primary;secondary;proxy
 type RouteType string

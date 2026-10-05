@@ -272,6 +272,11 @@ func (b *Builder) Build(ctx context.Context) error {
 		return errors.New("upstream is not set")
 	}
 
+	if b.Upstream.GetPath() == gatewayv1.ZoneHealthUpstreamPath {
+		p := plugin.RequestTerminationPluginFromRoute(b.Route)
+		b.Plugins[p.GetName()] = p
+	}
+
 	// In case a plugin was used before but is not used anymore, we need to remove it
 	b.Route.Status.Properties = map[string]string{}
 

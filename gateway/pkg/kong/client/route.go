@@ -10,6 +10,7 @@ import (
 	"net/http"
 
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
+	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	kong "github.com/telekom/controlplane/gateway/pkg/kong/api"
 )
 
@@ -56,6 +57,9 @@ func (c *kongClient) CreateOrReplaceRoute(ctx context.Context, route CustomRoute
 		ResponseBuffering:       route.GetResponseBuffering(),
 		HttpsRedirectStatusCode: 426,
 		Tags:                    normalizeSet(&tags),
+	}
+	if upstreamPath == gatewayv1.ZoneHealthUpstreamPath {
+		routeBody.Methods = &[]string{http.MethodHead}
 	}
 
 	kongRoute, _, err := reconcile(ctx, routeEntity{client: c.client, name: routeName}, routeBody)
@@ -157,6 +161,7 @@ func (e routeEntity) Project(current *kong.Route) (kong.CreateRouteJSONRequestBo
 		Protocols:               valueOrZero(normalizeSet(current.Protocols)),
 		Paths:                   current.Paths,
 		Hosts:                   normalizeSet(current.Hosts),
+		Methods:                 normalizeSet(current.Methods),
 		Service:                 service,
 		RequestBuffering:        valueOrZero(current.RequestBuffering),
 		ResponseBuffering:       valueOrZero(current.ResponseBuffering),

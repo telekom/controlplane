@@ -221,6 +221,25 @@ Zones can be configured with different visibility levels:
 - **World** — The zone is accessible from outside the platform (public-facing APIs).
 - **Enterprise** — The zone is accessible only within the organization's network.
 
+### Zone Health
+
+The Admin Operator creates one `<gateway>--zone-health` route for every gateway of every zone, including API, AI, and Event gateways. These routes are independent of managed routes and do not require DTC (`ConsumerFailover`).
+
+The probe is exposed under each preset's base path on every hostname of presets referencing the gateway, without a `/spacegate` prefix. A `HEAD` request receives HTTP 200 directly from Kong; it does not check backend health or contact an upstream.
+
+```bash
+# For a preset with no base path:
+curl -I https://<preset-hostname>/zone-health
+# For a preset with base path /env1:
+curl -I https://<preset-hostname>/env1/zone-health
+# GET must not match the health route (another overlapping route may match):
+curl -i https://<preset-hostname>/env1/zone-health
+```
+
+Gateway recognizes the reserved upstream path `/api/v1/zone-health`, configures HEAD-only matching, and attaches Kong's `request-termination` plugin with status 200. The Route uses a placeholder upstream `http://localhost:8081/api/v1/zone-health` only because Kong requires a service. No new Route or Zone CRD fields are needed; deploy the Gateway controller before the Admin controller.
+
+Hostnames and joined paths are sorted and deduplicated. Before creating identity or health routes, Admin checks the Route limits of 20 hostnames and 10 distinct joined paths per gateway route; exceeding them blocks reconciliation rather than repeatedly failing CRD validation. Removing a gateway removes its health route, while removing managed routes does not.
+
 ### Managed Routes
 
 Zones can optionally define **managed routes** — platform-managed gateway routes that are configured directly on the Zone resource rather than being created dynamically through Rover or API resources.

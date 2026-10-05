@@ -7,7 +7,6 @@ package zone
 import (
 	"context"
 	"fmt"
-	"path"
 	"slices"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -66,11 +65,6 @@ func createIdentityRoutes(ctx context.Context, hc *HandlingContext) error {
 		pathPrefix = spacegatePathPrefix
 	}
 
-	realms := []string{hc.DefaultIdentityRealm.Name, hc.InternalIdentityRealm.Name}
-	if hc.TeamApiIdentityRealm != nil {
-		realms = append(realms, hc.TeamApiIdentityRealm.Name)
-	}
-
 	for i := range hc.Zone.Spec.Gateways {
 		gatewayName := hc.Zone.Spec.Gateways[i].Name
 		gateway := hc.Gateways[gatewayName]
@@ -83,7 +77,7 @@ func createIdentityRoutes(ctx context.Context, hc *HandlingContext) error {
 		if len(hostnames) == 0 {
 			return ctrlerrors.BlockedErrorf("gateway %q has no preset hostnames", gatewayName)
 		}
-		for _, realmName := range realms {
+		for _, realmName := range identityRouteRealmNames(hc) {
 			for _, cfg := range identityRouteConfigs {
 				if err := createIdentityRoute(ctx, hc, realmName, cfg, gateway, hostnames, basePaths, pathPrefix); err != nil {
 					return err
@@ -93,6 +87,14 @@ func createIdentityRoutes(ctx context.Context, hc *HandlingContext) error {
 	}
 
 	return nil
+}
+
+func identityRouteRealmNames(hc *HandlingContext) []string {
+	realms := []string{hc.DefaultIdentityRealm.Name, hc.InternalIdentityRealm.Name}
+	if hc.TeamApiIdentityRealm != nil {
+		realms = append(realms, hc.TeamApiIdentityRealm.Name)
+	}
+	return realms
 }
 
 // gatewayHostnamesAndBasePaths returns the distinct hostnames and distinct base paths
@@ -149,10 +151,7 @@ func createIdentityRoute(ctx context.Context, hc *HandlingContext, realmName str
 		}
 		// Identity routes are served under every base path the gateway's presets use,
 		// so each preset's advertised LmsIssuer resolves.
-		paths := make([]string, 0, len(basePaths))
-		for _, basePath := range basePaths {
-			paths = append(paths, path.Join(basePath, downstreamPath))
-		}
+		paths := gatewayRoutePaths(basePaths, downstreamPath)
 
 		// Upstream: Jumper identity container on port 8081
 		upstream := gatewayapi.Upstream{
@@ -184,7 +183,7 @@ func createIdentityRoute(ctx context.Context, hc *HandlingContext, realmName str
 
 // cleanupStaleRoutes removes any routes in the zone namespace that are owned by this zone
 // but were not created or updated during the current reconciliation cycle.
-// This covers both managed routes and identity routes.
+// This covers managed, identity, and zone-health routes.
 func cleanupStaleRoutes(ctx context.Context, hc *HandlingContext) error {
 	c := cclient.ClientFromContextOrDie(ctx)
 

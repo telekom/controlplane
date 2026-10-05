@@ -105,6 +105,7 @@ Kong Gateway can be configured with various plugins in mind. Here is a list of p
 * [JWT](https://docs.konghq.com/hub/kong-inc/jwt/)
 * [Rate Limiting](https://docs.konghq.com/hub/kong-inc/rate-limiting/)
 * [Request Transformer](https://docs.konghq.com/hub/kong-inc/request-transformer/)
+* [Request Termination](https://docs.konghq.com/hub/kong-inc/request-termination/) (zone-health probes)
 * [Jumper](https://github.com/telekom/gateway-jumper)
 
 Various `Features` require different plugin configurations, which are applied by the `FeatureBuilder`.
@@ -116,6 +117,12 @@ configuration. This make handling plugins much more easier, and developers do no
 >[!NOTE]
 > If you implement new Plugins, the need to be registered in the FeatureBuilder to be able to work with as well.
 
+
+### Zone-health routes
+
+The selected upstream path `/api/v1/zone-health` is reserved for platform health probes. Admin creates passthrough routes using placeholder upstream `http://localhost:8081/api/v1/zone-health`; the Kong client restricts them to HEAD, and the builder attaches `request-termination` with `status_code: 200`. Kong requires the service, but the upstream is never called.
+
+This is an internal convention, not a generic Route API feature: no CRD schema changes are needed. Any selected upstream with that exact path gets this behavior regardless of the Route name. Other paths keep their existing behavior. Method drift is corrected, and changing away from the reserved path removes the method restriction and plugin through normal reconciliation and cleanup. Deploy the Gateway controller before Admin.
 
 ## CRDs
 All CRDs can be found here: [CRDs](./config/crd/bases/).

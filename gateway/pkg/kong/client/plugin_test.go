@@ -346,6 +346,14 @@ var _ = Describe("CleanupPlugins", func() {
 		Expect(client.CleanupPlugins(ctx, route, nil, nil)).To(Succeed())
 	})
 
+	It("deletes request termination when the reserved upstream is removed", func() {
+		expectPlugins(`{"data":[{"id":"health-plugin-id","name":"request-termination"}]}`)
+		api.EXPECT().DeletePluginWithResponse(mock.Anything, "health-plugin-id").Return(
+			&kong.DeletePluginResponse{HTTPResponse: &http.Response{StatusCode: http.StatusNoContent}}, nil,
+		).Once()
+		Expect(client.CleanupPlugins(ctx, route, nil, nil)).To(Succeed())
+	})
+
 	It("keeps a plugin the route still declares", func() {
 		expectPlugins(`{"data":[{"id":"plugin-id","name":"acl"}]}`)
 

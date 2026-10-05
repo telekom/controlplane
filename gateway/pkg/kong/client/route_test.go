@@ -172,7 +172,9 @@ var _ = Describe("CreateOrReplaceRoute", func() {
 			change(response.JSON200)
 			api.EXPECT().GetServiceWithResponse(mock.Anything, "test-route").Return(matchingService(), nil)
 			api.EXPECT().GetRouteWithResponse(mock.Anything, "test-route").Return(response, nil)
-			api.EXPECT().UpsertRouteWithResponse(mock.Anything, "test-route", mock.Anything).Return(
+			api.EXPECT().UpsertRouteWithResponse(mock.Anything, "test-route", mock.MatchedBy(func(body kong.CreateRouteJSONRequestBody) bool {
+				return body.Methods == nil
+			})).Return(
 				&kong.UpsertRouteResponse{
 					HTTPResponse: &http.Response{StatusCode: http.StatusOK},
 					JSON200:      &kong.Route{Id: ptr("route-id")},
@@ -184,6 +186,54 @@ var _ = Describe("CreateOrReplaceRoute", func() {
 		Entry("when hosts change", func(current *kong.Route) { current.Hosts = ptr([]string{"other.example"}) }),
 		Entry("when path order changes", func(current *kong.Route) { current.Paths = ptr([]string{"/v2", "/v1"}) }),
 		Entry("when request buffering changes", func(current *kong.Route) { current.RequestBuffering = ptr(false) }),
+		Entry("when a non-health route has a method restriction", func(current *kong.Route) { current.Methods = ptr([]string{http.MethodHead}) }),
+	)
+
+	DescribeTable("configures methods from the reserved upstream path",
+		func(upstreamPath string, expectedMethods *[]string) {
+			upstream = &clientpkg.CustomUpstream{Scheme: "https", Host: "upstream.example", Port: 443, Path: upstreamPath}
+			service := matchingService()
+			service.JSON200.Path = ptr(upstreamPath)
+			api.EXPECT().GetServiceWithResponse(mock.Anything, "test-route").Return(service, nil)
+			api.EXPECT().GetRouteWithResponse(mock.Anything, "test-route").Return(
+				&kong.GetRouteResponse{HTTPResponse: &http.Response{StatusCode: http.StatusNotFound}}, nil,
+			)
+			api.EXPECT().UpsertRouteWithResponse(mock.Anything, "test-route", mock.MatchedBy(func(body kong.CreateRouteJSONRequestBody) bool {
+				Expect(body.Methods).To(Equal(expectedMethods))
+				return true
+			})).Return(&kong.UpsertRouteResponse{
+				HTTPResponse: &http.Response{StatusCode: http.StatusOK},
+				JSON200:      &kong.Route{Id: ptr("route-id")},
+			}, nil)
+			Expect(client.CreateOrReplaceRoute(ctx, route, upstream)).To(Succeed())
+		},
+		Entry("HEAD for zone-health, regardless of Route name", v1.ZoneHealthUpstreamPath, ptr([]string{http.MethodHead})),
+		Entry("no restriction for ordinary routes", "/api", nil),
+		Entry("no restriction for a similar path", v1.ZoneHealthUpstreamPath+"/other", nil),
+	)
+
+	DescribeTable("reconciles zone-health method drift",
+		func(currentMethods *[]string, shouldWrite bool) {
+			upstream = &clientpkg.CustomUpstream{Scheme: "https", Host: "upstream.example", Port: 443, Path: v1.ZoneHealthUpstreamPath}
+			service := matchingService()
+			service.JSON200.Path = ptr(v1.ZoneHealthUpstreamPath)
+			current := matchingRoute()
+			current.JSON200.Methods = currentMethods
+			api.EXPECT().GetServiceWithResponse(mock.Anything, "test-route").Return(service, nil)
+			api.EXPECT().GetRouteWithResponse(mock.Anything, "test-route").Return(current, nil)
+			if shouldWrite {
+				api.EXPECT().UpsertRouteWithResponse(mock.Anything, "test-route", mock.MatchedBy(func(body kong.CreateRouteJSONRequestBody) bool {
+					return body.Methods != nil && len(*body.Methods) == 1 && (*body.Methods)[0] == http.MethodHead
+				})).Return(&kong.UpsertRouteResponse{
+					HTTPResponse: &http.Response{StatusCode: http.StatusOK},
+					JSON200:      &kong.Route{Id: ptr("route-id")},
+				}, nil)
+			}
+			Expect(client.CreateOrReplaceRoute(ctx, route, upstream)).To(Succeed())
+		},
+		Entry("writes a missing restriction", nil, true),
+		Entry("corrects extra methods", ptr([]string{http.MethodHead, http.MethodGet}), true),
+		Entry("does not write a matching restriction", ptr([]string{http.MethodHead}), false),
 	)
 
 	It("upserts a missing route", func() {
