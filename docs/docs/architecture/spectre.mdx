@@ -14,8 +14,8 @@ The Spectre domain manages application listeners that bridge external API traffi
 
 | CRD | Purpose |
 |---|---|
-| **SpectreApplication** | Groups all listeners for one application. Creates the shared generic Publisher and Approval. |
-| **Listener** | Represents a single consumer-to-provider binding for an API path. Creates a Subscriber and RouteListener. |
+| **SpectreApplication** | Groups all listeners for one application. Creates the shared generic Publisher. |
+| **Listener** | Represents a single consumer-to-provider binding for an API path. Creates a Subscriber, a RouteListener and the provider and consumer ApprovalRequests. |
 
 ## Ownership Model
 
@@ -33,7 +33,7 @@ Users do not create PubSub resources directly. EventStore ownership is unchanged
 
 - **PubSub domain** — SpectreApplication creates Publishers; Listener creates Subscribers. Both read the zone's EventStore.
 - **Gateway domain** — SpectreApplication creates the SSE Route(s) for SSE delivery. Listener creates RouteListener resources to expose listener endpoints. Reads existing Route resources for service path resolution.
-- **Approval domain** — SpectreApplication creates Approvals that capture consumer, provider, path, delivery mode, callback, and filters.
+- **Approval domain** — Each Listener creates two keyed ApprovalRequests, a provider gate and a consumer gate, that capture consumer, provider, path, delivery mode, callback, and filters. Both must be granted; a gate is auto-approved when the observer (the SpectreApplication's own Application, i.e. the listening application that requests approval) is in the same team as its decider.
 - **Event domain** — Reads EventConfig for zone configuration and the gateway callback URL.
 - **Application domain** — Reads Application resources for consumer and provider metadata.
 - **Rover domain** — Rover files with `spec.listeners` trigger creation of Listener CRs.
