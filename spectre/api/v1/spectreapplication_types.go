@@ -48,6 +48,10 @@ type SpectreApplicationStatus struct {
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
+// +kubebuilder:printcolumn:name="Ready",type="string",JSONPath=".status.conditions[?(@.type==\"Ready\")].status"
+// +kubebuilder:printcolumn:name="DeliveryType",type="string",JSONPath=".spec.deliveryType"
+// +kubebuilder:printcolumn:name="SseUrl",type="string",JSONPath=".status.sseUrl",priority=1
+// +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 
 // SpectreApplication is the Schema for the spectreapplications API.
 type SpectreApplication struct {
