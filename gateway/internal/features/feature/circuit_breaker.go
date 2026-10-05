@@ -102,11 +102,8 @@ func handleDeletion(ctx context.Context, builder features.FeaturesBuilder, route
 
 func isDeleteScenario(route *gatewayv1.Route) bool {
 	// completely removed or turned to false
-	if (route.Spec.Traffic.CircuitBreaker != nil && !route.Spec.Traffic.CircuitBreaker.Enabled) && route.GetUpstreamId() != "" {
-		return true
-	} else {
-		return false
-	}
+	cb := route.Spec.Traffic.CircuitBreaker
+	return (cb == nil || !cb.Enabled) && route.GetUpstreamId() != ""
 }
 
 func handleApply(ctx context.Context, builder features.FeaturesBuilder, route *gatewayv1.Route) error {
