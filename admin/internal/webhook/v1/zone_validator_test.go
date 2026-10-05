@@ -96,6 +96,30 @@ var _ = Describe("Zone validation", func() {
 		ctx = context.Background()
 	})
 
+	DescribeTable("reserves the health route name on create and update",
+		func(routeType adminv1.ManagedRouteType, routeName string, reserved bool) {
+			zone := validZone()
+			zone.Spec.ManagedRoutes = &adminv1.ManagedRoutesConfig{Routes: []adminv1.ManagedRouteConfig{
+				{Name: "ordinary", Path: "/ordinary", Url: "https://backend.example.com", Type: routeType},
+				{Name: routeName, Path: "/custom", Url: "https://backend.example.com", Type: routeType},
+			}}
+			_, createErr := validator.ValidateCreate(ctx, zone)
+			_, updateErr := validator.ValidateUpdate(ctx, validZone(), zone)
+			for _, err := range []error{createErr, updateErr} {
+				if reserved {
+					Expect(apierrors.IsInvalid(err)).To(BeTrue())
+					Expect(err).To(MatchError(ContainSubstring("spec.managedRoutes.routes[1].name")))
+					Expect(err).To(MatchError(ContainSubstring("reserved for the platform health probe")))
+				} else {
+					Expect(err).NotTo(HaveOccurred())
+				}
+			}
+		},
+		Entry("Proxy collision", adminv1.ManagedRouteTypeProxy, adminv1.ZoneHealthRouteName, true),
+		Entry("TeamAPI collision", adminv1.ManagedRouteTypeTeamAPI, adminv1.ZoneHealthRouteName, true),
+		Entry("similar name is allowed", adminv1.ManagedRouteTypeProxy, "zone-health-custom", false),
+	)
+
 	DescribeTable("rejects invalid preset graphs on create and update",
 		func(mutate func(*adminv1.Zone), message string) {
 			zone := validZone()

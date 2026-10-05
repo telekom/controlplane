@@ -246,6 +246,8 @@ Zones can optionally define **managed routes** — platform-managed gateway rout
 
 Each managed route has a **type** that determines its behavior:
 
+The managed-route name `zone-health` is reserved for the platform health probe. Zone admission rejects it on create and update, regardless of route type or path. Existing Zones with this name are blocked before modifying the conflicting route or managed-route status; rename the managed route before reconciliation can proceed.
+
 | Type | Behavior |
 |------|----------|
 | **TeamAPI** | Authenticated route with token validation but no per-consumer ACLs. Used for team-facing platform APIs. |

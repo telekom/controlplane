@@ -9,6 +9,7 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	ctrlerrors "github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
@@ -18,7 +19,7 @@ import (
 )
 
 const (
-	zoneHealthRouteSuffix = "zone-health"
+	zoneHealthRouteSuffix = adminv1.ZoneHealthRouteName
 	zoneHealthPath        = "/zone-health"
 )
 
