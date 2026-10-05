@@ -338,9 +338,10 @@ func MapSubscriberSecurityToGateway(security *agenticv1.SubscriberSecurity) *gat
 	gatewaySecurity := &gatewayapi.ConsumeRouteSecurity{}
 	if security.M2M != nil {
 		gatewaySecurity.M2M = &gatewayapi.ConsumerMachine2MachineAuthentication{
-			Scopes: append([]string(nil), security.M2M.Scopes...),
-			Client: mapOAuth2ClientToGateway(security.M2M.Client),
-			Basic:  mapBasicAuthToGateway(security.M2M.Basic),
+			Scopes:    append([]string(nil), security.M2M.Scopes...),
+			Client:    mapOAuth2ClientToGateway(security.M2M.Client),
+			Basic:     mapBasicAuthToGateway(security.M2M.Basic),
+			GrantType: gatewayapi.GrantType(security.M2M.GrantType),
 		}
 	}
 

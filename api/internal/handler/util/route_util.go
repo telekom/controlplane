@@ -786,7 +786,8 @@ func mapConsumerSecurity(apiSecurity *apiapi.SubscriberSecurity) *gatewayapi.Con
 
 	if apiSecurity.M2M != nil {
 		security.M2M = &gatewayapi.ConsumerMachine2MachineAuthentication{
-			Scopes: apiSecurity.M2M.Scopes,
+			Scopes:    apiSecurity.M2M.Scopes,
+			GrantType: gatewayapi.GrantType(apiSecurity.M2M.GrantType),
 		}
 		if apiSecurity.M2M.Client != nil {
 			security.M2M.Client = &gatewayapi.OAuth2ClientCredentials{

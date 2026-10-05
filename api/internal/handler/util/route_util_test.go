@@ -133,6 +133,15 @@ var _ = Describe("Route Util", func() {
 					Scopes: []string{"consumer:read", "consumer:write"},
 				}))
 			})
+
+			It("passes the consumer grant type through", func() {
+				mapped := mapConsumerSecurity(&apiapi.SubscriberSecurity{M2M: &apiapi.SubscriberMachine2MachineAuthentication{
+					Client:    &apiapi.OAuth2ClientCredentials{ClientId: "consumer-id", ClientSecret: "consumer-secret", RefreshToken: "rt"},
+					GrantType: apiapi.GrantTypeRefreshToken,
+				}})
+
+				Expect(mapped.M2M.GrantType).To(Equal(gatewayapi.GrantTypeRefreshToken))
+			})
 		})
 
 		Describe("ReturnReferenceOnly", func() {
