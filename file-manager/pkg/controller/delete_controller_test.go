@@ -46,34 +46,14 @@ var _ = Describe("DeleteController", func() {
 			Expect(err.Error()).To(ContainSubstring("NotFound"))
 		})
 
-		It("Should not delete files with wrong fileId format - complete nonsense", func() {
+		It("Should pass legacy file IDs through to the backend during migration", func() {
 			ctx := context.Background()
 			ctrl := controller.NewDeleteController(mockedBackend)
 
-			err := ctrl.DeleteFile(ctx, "obviously_wrong/id")
-			Expect(err).To(HaveOccurred())
-			By("returning the correct error message")
-			Expect(err.Error()).To(BeEquivalentTo("InvalidFileId: invalid file ID 'obviously_wrong/id'"))
-		})
-
-		It("Should not delete files with wrong fileId format - truncated UUID", func() {
-			ctx := context.Background()
-			ctrl := controller.NewDeleteController(mockedBackend)
-
-			err := ctrl.DeleteFile(ctx, "01926a3e-7b2c-7d3e-8f4a")
-			Expect(err).To(HaveOccurred())
-			By("returning the correct error message")
-			Expect(err.Error()).To(BeEquivalentTo("InvalidFileId: invalid file ID '01926a3e-7b2c-7d3e-8f4a'"))
-		})
-
-		It("Should not delete files with legacy fileId format", func() {
-			ctx := context.Background()
-			ctrl := controller.NewDeleteController(mockedBackend)
+			mockedBackend.EXPECT().DeleteFile(any(ctx), "poc/eni/hyperion/my-test-file.txt").Return(nil).Once()
 
 			err := ctrl.DeleteFile(ctx, "poc--eni--hyperion--my-test-file.txt")
-			Expect(err).To(HaveOccurred())
-			By("returning the correct error message")
-			Expect(err.Error()).To(BeEquivalentTo("InvalidFileId: invalid file ID 'poc--eni--hyperion--my-test-file.txt'"))
+			Expect(err).NotTo(HaveOccurred())
 		})
 
 		It("Should handle backend errors properly", func() {
@@ -90,15 +70,13 @@ var _ = Describe("DeleteController", func() {
 			Expect(err.Error()).To(ContainSubstring("backend error"))
 		})
 
-		It("Should reject non-canonical UUID forms", func() {
+		It("Should pass non-canonical UUID forms through while validation is deferred", func() {
 			ctx := context.Background()
 			ctrl := controller.NewDeleteController(mockedBackend)
+			fileId := "01926A3E-7B2C-7D3E-8F4A-1B2C3D4E5F60"
+			mockedBackend.EXPECT().DeleteFile(any(ctx), fileId).Return(nil).Once()
 
-			err := ctrl.DeleteFile(ctx, "01926A3E-7B2C-7D3E-8F4A-1B2C3D4E5F60")
-
-			Expect(err).To(HaveOccurred())
-			By("returning an InvalidFileId error")
-			Expect(err.Error()).To(ContainSubstring("InvalidFileId"))
+			Expect(ctrl.DeleteFile(ctx, fileId)).NotTo(HaveOccurred())
 		})
 	})
 })

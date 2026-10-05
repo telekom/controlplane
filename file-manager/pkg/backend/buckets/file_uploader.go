@@ -130,10 +130,11 @@ func (s *BucketFileUploader) UploadFile(ctx context.Context, fileId string, read
 
 	log.V(1).Info("Uploading file", "fileId", fileId, "bucket", s.config.BucketName)
 
-	if err := identifier.ValidateFileID(fileId); err != nil {
-		return "", backend.ErrInvalidFileId(fileId)
-	}
-	path := fileId
+	// TODO: backward-compatibility: uncomment it after all files were migrated to UUID
+	// if err := identifier.ValidateFileID(fileId); err != nil {
+	// 	return "", backend.ErrInvalidFileId(fileId)
+	// }
+	path := identifier.ConvertFileIdToPath(fileId)
 
 	// Prepare metadata for upload
 	userMetadata, contentType := s.prepareMetadata(ctx, metadata)

@@ -13,7 +13,6 @@ import (
 
 	"github.com/telekom/controlplane/file-manager/api/constants"
 	"github.com/telekom/controlplane/file-manager/pkg/backend"
-	"github.com/telekom/controlplane/file-manager/pkg/backend/identifier"
 )
 
 type UploadController interface {
@@ -48,9 +47,10 @@ func (u uploadController) resolveContentType(ctx context.Context, fileName strin
 }
 
 func (u uploadController) UploadFile(ctx context.Context, fileId string, reader io.Reader, metadata map[string]string) (string, error) {
-	if err := identifier.ValidateFileID(fileId); err != nil {
-		return "", backend.ErrInvalidFileId(fileId)
-	}
+	// TODO: backward-compatibility: uncomment it after all files were migrated to UUID
+	// if err := identifier.ValidateFileID(fileId); err != nil {
+	// 	return "", backend.ErrInvalidFileId(fileId)
+	// }
 
 	if reader == nil {
 		return "", backend.ErrUploadFailed(fileId, "file reader is nil")

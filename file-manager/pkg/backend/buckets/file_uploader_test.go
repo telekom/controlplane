@@ -37,16 +37,15 @@ func TestBucketFileUploader_UploadFile(t *testing.T) {
 
 	// Test case 2: Nil reader is handled by the controller, not tested here anymore
 
-	// Test case 3: Invalid fileId format
+	// Test case 3: Legacy file IDs continue through to storage during migration
 	// First make sure the config has a client to pass initial validation
 	uploader.config.Client = &minio.Client{} // Mock client
-	_, err = uploader.UploadFile(context.Background(), "invalid-file-id", r, nil)
+	_, err = uploader.UploadFile(context.Background(), "poc--eni--hyperion--file.txt", r, nil)
 	if err == nil {
-		t.Error("Expected error when fileId format is invalid")
+		t.Error("Expected the unconfigured MinIO client to reject the upload")
 	}
-	// Check if the error is an InvalidFileId error
-	if err != nil && !backend.IsInvalidFileIdErr(err) {
-		t.Errorf("Expected InvalidFileIdErr, got: %v", err)
+	if err != nil && !backend.IsUploadFailedErr(err) {
+		t.Errorf("Expected UploadFailedErr after passing legacy ID to storage, got: %v", err)
 	}
 
 	// Note: A full test with mocked client would be added in a future PR

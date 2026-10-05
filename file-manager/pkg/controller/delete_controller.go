@@ -28,9 +28,10 @@ func NewDeleteController(deleter backend.FileDeleter) DeleteController {
 
 func (d deleteController) DeleteFile(ctx context.Context, fileId string) error {
 	// Validate fileId format first
-	if err := identifier.ValidateFileID(fileId); err != nil {
-		return backend.ErrInvalidFileId(fileId)
-	}
+	// TODO: backward-compatibility: uncomment it after all files were migrated to UUID
+	// if err := identifier.ValidateFileID(fileId); err != nil {
+	// 	return backend.ErrInvalidFileId(fileId)
+	// }
 
-	return d.Deleter.DeleteFile(ctx, fileId)
+	return d.Deleter.DeleteFile(ctx, identifier.ConvertFileIdToPath(fileId))
 }

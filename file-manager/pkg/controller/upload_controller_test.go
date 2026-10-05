@@ -69,33 +69,38 @@ var _ = Describe("UploadController", func() {
 			Expect(file).To(Equal(fileId))
 		})
 
-		It("should not upload file - legacy file id", func() {
+		It("should pass legacy file IDs through to the backend during migration", func() {
 			ctx := context.Background()
 			ctrl := controller.NewUploadController(mockedBackend)
 
 			var reader io.Reader = strings.NewReader("test content")
+			legacyFileId := "poc--eni--hyperion--my-test-file.txt"
+			backendMetadata := map[string]string{
+				"X-File-Content-Type":        "application/octet-stream",
+				"X-File-Content-Type-Source": "auto-detected",
+			}
+			mockedBackend.EXPECT().UploadFile(any(ctx), legacyFileId, reader, backendMetadata).Return(legacyFileId, nil).Once()
 
-			file, err := ctrl.UploadFile(ctx, "poc--eni--hyperion--my-test-file.txt", reader, map[string]string{})
-			By("returning an error")
-			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(Equal("InvalidFileId: invalid file ID 'poc--eni--hyperion--my-test-file.txt'"))
-			Expect(file).To(BeEmpty())
+			file, err := ctrl.UploadFile(ctx, legacyFileId, reader, map[string]string{})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(file).To(Equal(legacyFileId))
 		})
 
-		It("should not upload file - wrong file id", func() {
+		It("should pass unrecognized file IDs through while validation is deferred", func() {
 			ctx := context.Background()
 			ctrl := controller.NewUploadController(mockedBackend)
 
 			var reader io.Reader = strings.NewReader("test content")
+			fileId := "i-dont-need-coffee"
+			metadata := map[string]string{
+				"X-File-Content-Type":        "application/octet-stream",
+				"X-File-Content-Type-Source": "auto-detected",
+			}
+			mockedBackend.EXPECT().UploadFile(any(ctx), fileId, reader, metadata).Return(fileId, nil).Once()
 
-			callMetadata := make(map[string]string)
-			callMetadata["X-File-Checksum"] = "test-checksum"
-
-			file, err := ctrl.UploadFile(ctx, "i-dont-need-coffee", reader, callMetadata)
-			By("returning an error")
-			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(Equal("InvalidFileId: invalid file ID 'i-dont-need-coffee'"))
-			Expect(file).To(BeEmpty())
+			file, err := ctrl.UploadFile(ctx, fileId, reader, map[string]string{})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(file).To(Equal(fileId))
 		})
 
 		It("should not upload file - nil reader", func() {
