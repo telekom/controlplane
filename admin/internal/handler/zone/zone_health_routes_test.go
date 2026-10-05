@@ -8,8 +8,6 @@ import (
 	"errors"
 	"fmt"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
@@ -18,6 +16,9 @@ import (
 	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	"github.com/telekom/controlplane/common/pkg/types"
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Zone-health routes", func() {
