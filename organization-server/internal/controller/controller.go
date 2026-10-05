@@ -24,7 +24,7 @@ type HubController interface {
 	Create(ctx context.Context, env string, req api.HubCreateRequest) (*api.HubResponse, []MutationError, error)
 	List(ctx context.Context) ([]api.HubResponse, error)
 	Get(ctx context.Context, hubName string) (*api.HubResponse, error)
-	Update(ctx context.Context, hubName string, req api.HubUpdateRequest) (*api.HubResponse, []MutationError, error)
+	Update(ctx context.Context, env, hubName string, req api.HubUpdateRequest) (*api.HubResponse, []MutationError, error)
 	Delete(ctx context.Context, hubName string) ([]MutationError, error)
 	GetStatus(ctx context.Context, hubName string) (*api.ResourceStatusResponse, error)
 }
@@ -34,7 +34,7 @@ type TeamController interface {
 	Create(ctx context.Context, env, hubName string, req api.TeamCreateRequest) (*api.TeamResponse, []MutationError, error)
 	List(ctx context.Context, hubName string) ([]api.TeamResponse, error)
 	Get(ctx context.Context, hubName, teamName string) (*api.TeamResponse, error)
-	Update(ctx context.Context, hubName, teamName string, req api.TeamUpdateRequest) (*api.TeamResponse, []MutationError, error)
+	Update(ctx context.Context, env, hubName, teamName string, req api.TeamUpdateRequest) (*api.TeamResponse, []MutationError, error)
 	Delete(ctx context.Context, hubName, teamName string) ([]MutationError, error)
 	GetStatus(ctx context.Context, hubName, teamName string) (*api.ResourceStatusResponse, error)
 	RotateToken(ctx context.Context, hubName, teamName string) (*string, []MutationError, error)
@@ -127,13 +127,19 @@ func (ctrl *Controller) Get(ctx context.Context, hubName string) (*api.HubRespon
 	return &result, nil
 }
 
-func (ctrl *Controller) Update(ctx context.Context, hubName string, req *api.HubUpdateRequest) (*api.HubResponse, []MutationError, error) {
+// Update upserts a hub: it updates an existing group or creates it when it does not exist yet.
+func (ctrl *Controller) Update(ctx context.Context, env, hubName string, req *api.HubUpdateRequest) (*api.HubResponse, []MutationError, error) {
 	groupID, err := ctrl.resolveGroupID(ctx, hubName)
 	if err != nil {
 		return nil, nil, err
 	}
 	if groupID == "" {
-		return nil, nil, nil
+		return ctrl.Create(ctx, env, &api.HubCreateRequest{
+			Name:        hubName,
+			DisplayName: req.DisplayName,
+			Description: req.Description,
+			Email:       req.Email,
+		})
 	}
 
 	resp, err := gql.UpdateGroup(ctx, ctrl.cpapi, gql.UpdateGroupInput{
@@ -301,13 +307,20 @@ func (ctrl *Controller) GetTeam(ctx context.Context, hubName, teamName string) (
 	return &result, nil
 }
 
-func (ctrl *Controller) UpdateTeam(ctx context.Context, hubName, teamName string, req *api.TeamUpdateRequest) (*api.TeamResponse, []MutationError, error) {
+// UpdateTeam upserts a team: it updates an existing team or creates it when it does not exist yet.
+func (ctrl *Controller) UpdateTeam(ctx context.Context, env, hubName, teamName string, req *api.TeamUpdateRequest) (*api.TeamResponse, []MutationError, error) {
 	teamID, err := ctrl.resolveTeamID(ctx, hubName, teamName)
 	if err != nil {
 		return nil, nil, err
 	}
 	if teamID == "" {
-		return nil, nil, nil
+		return ctrl.CreateTeam(ctx, env, hubName, &api.TeamCreateRequest{
+			Name:        teamName,
+			DisplayName: req.DisplayName,
+			Description: req.Description,
+			Email:       req.Email,
+			Members:     req.Members,
+		})
 	}
 
 	resp, err := gql.UpdateTeam(ctx, ctrl.cpapi, gql.UpdateTeamInput{

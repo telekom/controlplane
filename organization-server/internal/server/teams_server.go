@@ -99,13 +99,14 @@ func (s *Server) UpdateTeam(c *fiber.Ctx) error {
 	}
 
 	ctx := c.UserContext()
+	bCtx, ok := security.FromContext(ctx)
+	if !ok {
+		return forbidden(c)
+	}
 
-	result, mutErrs, err := s.ctrl.UpdateTeam(ctx, hubName, teamName, &req)
+	result, mutErrs, err := s.ctrl.UpdateTeam(ctx, bCtx.Environment, hubName, teamName, &req)
 	if err != nil {
 		return s.internalError(c, err, "Unable to update team", "hub", hubName, "team", teamName)
-	}
-	if result == nil && mutErrs == nil {
-		return notFound(c, "Team not found: "+teamName)
 	}
 	if mutErrs != nil {
 		return mapMutationErrors(c, mutErrs)

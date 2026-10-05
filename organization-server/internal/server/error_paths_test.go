@@ -129,10 +129,62 @@ var _ = Describe("Hub Error Paths", func() {
 			expectStatus(resp, err, http.StatusBadRequest)
 		})
 
-		It("should return 404 when hub does not exist", func() {
+		It("should create the hub when it does not exist (upsert)", func() {
+			var ops []string
+			var createVars map[string]any
+			gqlServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				body, _ := io.ReadAll(r.Body)
+				var req struct {
+					OperationName string         `json:"operationName"`
+					Variables     map[string]any `json:"variables"`
+				}
+				_ = json.Unmarshal(body, &req)
+				ops = append(ops, req.OperationName)
+
+				var data map[string]any
+				switch req.OperationName {
+				case "GetGroup":
+					data = map[string]any{"groups": []any{}}
+				case "CreateGroup":
+					createVars, _ = req.Variables["input"].(map[string]any)
+					data = map[string]any{"createGroup": map[string]any{
+						"group": map[string]any{
+							"id": "9", "name": "nonexistent", "displayName": "Updated", "description": "updated",
+						},
+						"errors": []any{},
+					}}
+				}
+				w.Header().Set("Content-Type", "application/json")
+				out, _ := json.Marshal(map[string]any{"data": data})
+				_, _ = w.Write(out)
+			}))
+			DeferCleanup(gqlServer.Close)
+			roverServer := mockRoverServer(nil)
+			DeferCleanup(roverServer.Close)
+			app := newTestApp(gqlServer.URL, roverServer.URL)
+
+			body := `{"displayName":"Updated","description":"updated"}`
+			req := httptest.NewRequest(http.MethodPut, "/organization/v1/hubs/nonexistent", strings.NewReader(body))
+			resp, err := executeRequest(app, req, adminToken)
+			result := expectJSONStatus(resp, err, http.StatusAccepted)
+			Expect(result["name"]).To(Equal("nonexistent"))
+			Expect(ops).To(Equal([]string{"GetGroup", "CreateGroup"}))
+			Expect(createVars).To(HaveKeyWithValue("name", "nonexistent"))
+			Expect(createVars).To(HaveKeyWithValue("displayName", "Updated"))
+			Expect(createVars).To(HaveKeyWithValue("description", "updated"))
+		})
+
+		It("should map mutation errors when creating a missing hub", func() {
 			gqlServer := mockGraphQLServer(map[string]any{
-				"GetGroup": map[string]any{
-					"groups": []any{},
+				"GetGroup": map[string]any{"groups": []any{}},
+				"CreateGroup": map[string]any{
+					"createGroup": map[string]any{
+						"group": nil,
+						"errors": []map[string]any{{
+							"code":    "FORBIDDEN",
+							"message": "only admins can create groups",
+						}},
+					},
 				},
 			})
 			DeferCleanup(gqlServer.Close)
@@ -143,7 +195,7 @@ var _ = Describe("Hub Error Paths", func() {
 			body := `{"displayName":"Updated","description":"updated"}`
 			req := httptest.NewRequest(http.MethodPut, "/organization/v1/hubs/nonexistent", strings.NewReader(body))
 			resp, err := executeRequest(app, req, adminToken)
-			expectStatus(resp, err, http.StatusNotFound)
+			expectStatus(resp, err, http.StatusForbidden)
 		})
 
 		It("should map FORBIDDEN mutation errors", func() {
@@ -448,10 +500,76 @@ var _ = Describe("Team Error Paths", func() {
 			expectStatus(resp, err, http.StatusBadRequest)
 		})
 
-		It("should return 404 when team not found", func() {
+		It("should create the team when it does not exist (upsert)", func() {
+			var ops []string
+			var createVars map[string]any
+			gqlServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				body, _ := io.ReadAll(r.Body)
+				var req struct {
+					OperationName string         `json:"operationName"`
+					Variables     map[string]any `json:"variables"`
+				}
+				_ = json.Unmarshal(body, &req)
+				ops = append(ops, req.OperationName)
+
+				var data map[string]any
+				switch req.OperationName {
+				case "GetTeam":
+					data = map[string]any{"teams": map[string]any{"edges": []any{}}}
+				case "GetGroup":
+					data = map[string]any{"groups": []map[string]any{{
+						"id": "1", "name": "eni", "displayName": "Eni", "description": "",
+					}}}
+				case "CreateTeam":
+					createVars, _ = req.Variables["input"].(map[string]any)
+					data = map[string]any{"createTeam": map[string]any{
+						"team": map[string]any{
+							"id": "11", "name": "nonexistent", "email": "new@test.de",
+							"createdAt": now.Format(time.RFC3339), "lastModifiedAt": now.Format(time.RFC3339),
+							"statusPhase": nil, "group": map[string]any{"name": "eni"}, "members": []any{},
+						},
+						"errors": []any{},
+					}}
+				}
+				w.Header().Set("Content-Type", "application/json")
+				out, _ := json.Marshal(map[string]any{"data": data})
+				_, _ = w.Write(out)
+			}))
+			DeferCleanup(gqlServer.Close)
+			roverServer := mockRoverServer(nil)
+			DeferCleanup(roverServer.Close)
+			app := newTestApp(gqlServer.URL, roverServer.URL)
+
+			body := `{"email":"new@test.de","members":[{"name":"Jane","email":"jane@test.de"}]}`
+			req := httptest.NewRequest(http.MethodPut, "/organization/v1/hubs/eni/teams/nonexistent", strings.NewReader(body))
+			resp, err := executeRequest(app, req, adminToken)
+			result := expectJSONStatus(resp, err, http.StatusAccepted)
+			Expect(result["name"]).To(Equal("nonexistent"))
+			Expect(ops).To(Equal([]string{"GetTeam", "GetGroup", "CreateTeam"}))
+			Expect(createVars).To(HaveKeyWithValue("group", "eni"))
+			Expect(createVars).To(HaveKeyWithValue("name", "nonexistent"))
+			Expect(createVars).To(HaveKeyWithValue("email", "new@test.de"))
+			Expect(createVars["members"]).To(HaveLen(1))
+		})
+
+		It("should map mutation errors when creating a missing team", func() {
 			gqlServer := mockGraphQLServer(map[string]any{
 				"GetTeam": map[string]any{
 					"teams": map[string]any{"edges": []any{}},
+				},
+				"GetGroup": map[string]any{
+					"groups": []map[string]any{{
+						"id": "1", "name": "eni", "displayName": "Eni", "description": "",
+					}},
+				},
+				"CreateTeam": map[string]any{
+					"createTeam": map[string]any{
+						"team": nil,
+						"errors": []map[string]any{{
+							"code":    "FORBIDDEN",
+							"message": "insufficient permissions",
+						}},
+					},
 				},
 			})
 			DeferCleanup(gqlServer.Close)
@@ -462,7 +580,7 @@ var _ = Describe("Team Error Paths", func() {
 			body := `{"email":"new@test.de","members":[]}`
 			req := httptest.NewRequest(http.MethodPut, "/organization/v1/hubs/eni/teams/nonexistent", strings.NewReader(body))
 			resp, err := executeRequest(app, req, adminToken)
-			expectStatus(resp, err, http.StatusNotFound)
+			expectStatus(resp, err, http.StatusForbidden)
 		})
 
 		It("should map PRECONDITION_FAILED mutation errors", func() {

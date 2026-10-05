@@ -87,13 +87,14 @@ func (s *Server) UpdateHub(c *fiber.Ctx) error {
 	}
 
 	ctx := c.UserContext()
+	bCtx, ok := security.FromContext(ctx)
+	if !ok {
+		return forbidden(c)
+	}
 
-	result, mutErrs, err := s.ctrl.Update(ctx, hubName, &req)
+	result, mutErrs, err := s.ctrl.Update(ctx, bCtx.Environment, hubName, &req)
 	if err != nil {
 		return s.internalError(c, err, "Unable to update hub", "hub", hubName)
-	}
-	if result == nil && mutErrs == nil {
-		return notFound(c, "Hub not found: "+hubName)
 	}
 	if mutErrs != nil {
 		return mapMutationErrors(c, mutErrs)
