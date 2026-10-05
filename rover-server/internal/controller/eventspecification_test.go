@@ -14,12 +14,15 @@ import (
 	"net/http/httptest"
 
 	"github.com/stretchr/testify/mock"
+	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	fileApi "github.com/telekom/controlplane/file-manager/api"
 	filefake "github.com/telekom/controlplane/file-manager/api/fake"
 	"github.com/telekom/controlplane/rover-server/internal/api"
 	"github.com/telekom/controlplane/rover-server/internal/file"
+	"github.com/telekom/controlplane/rover-server/internal/mapper"
 
 	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 // TODO: fix the unit-tests. Use Once() or Twice() for mocks
@@ -239,6 +242,23 @@ var _ = Describe("EventSpecification Controller", func() {
 				bytes.NewReader(eventSpecification))
 			responseGroup, err := ExecuteRequest(req, groupToken)
 			ExpectStatusWithBody(responseGroup, err, http.StatusForbidden, "application/problem+json")
+		})
+	})
+
+	Context("uploadFile", func() {
+		It("should return an empty response when File Manager is disabled", func() {
+			wasEnabled := cconfig.FeatureFileManager.IsEnabled()
+			cconfig.SetFeatureEnabled(cconfig.FeatureFileManager, false)
+			DeferCleanup(func() {
+				cconfig.SetFeatureEnabled(cconfig.FeatureFileManager, wasEnabled)
+			})
+
+			controller := &EventSpecificationController{}
+			response, err := controller.uploadFile(context.Background(), []byte(`{"type":"object"}`), mapper.ResourceIdInfo{})
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(response).NotTo(BeNil())
+			Expect(response.FileId).To(BeEmpty())
 		})
 	})
 })
