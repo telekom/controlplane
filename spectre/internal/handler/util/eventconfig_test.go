@@ -6,6 +6,7 @@ package util_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	mock "github.com/stretchr/testify/mock"
@@ -18,6 +19,7 @@ import (
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	fakeclient "github.com/telekom/controlplane/common/pkg/client/fake"
 	"github.com/telekom/controlplane/common/pkg/condition"
+	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	ctypes "github.com/telekom/controlplane/common/pkg/types"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	pubsubv1 "github.com/telekom/controlplane/pubsub/api/v1"
@@ -26,6 +28,54 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
+
+// isBlockedError checks if the error implements the BlockedError interface.
+func isBlockedError(err error) bool {
+	var be ctrlerrors.BlockedError
+	ok := errors.As(err, &be)
+	return ok && be.IsBlocked()
+}
+
+// makeZone creates a Zone with the given name.
+func makeZone(name string) *adminv1.Zone {
+	return &adminv1.Zone{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: "test-env",
+		},
+	}
+}
+
+// makeReadyEventConfig creates a ready EventConfig for the given zone.
+func makeReadyEventConfig(name, zoneName string) eventv1.EventConfig {
+	ec := eventv1.EventConfig{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: "test-env--" + zoneName,
+		},
+		Spec: eventv1.EventConfigSpec{
+			Zone: ctypes.ObjectRef{Name: zoneName, Namespace: "test-env"},
+			Local: &eventv1.LocalBackend{
+				Admin:              eventv1.AdminConfig{Url: "http://admin.local"},
+				ServerSendEventUrl: "http://sse.local",
+				PublishEventUrl:    "http://publish.local",
+			},
+		},
+		Status: eventv1.EventConfigStatus{
+			CallbackURL: "https://gateway.example.com/horizon/callback/v1",
+		},
+	}
+
+	// Set Ready condition
+	ec.Status.Conditions = []metav1.Condition{
+		{
+			Type:   condition.ConditionTypeReady,
+			Status: metav1.ConditionTrue,
+			Reason: "Provisioned",
+		},
+	}
+	return ec
+}
 
 // makeReadyEventStore creates an EventStore with a Ready condition.
 func makeReadyEventStore(name, namespace string) *pubsubv1.EventStore {
@@ -58,6 +108,86 @@ func makeReadyEventConfigWithEventStore(name, zoneName string, eventStoreRef *ct
 	ec.Status.EventStore = eventStoreRef
 	return ec
 }
+
+var _ = Describe("GetEventConfig", func() {
+	var (
+		ctx        context.Context
+		fakeClient *fakeclient.MockJanitorClient
+		zone       *adminv1.Zone
+	)
+
+	BeforeEach(func() {
+		ctx = context.Background()
+		fakeClient = fakeclient.NewMockJanitorClient(GinkgoT())
+		ctx = cclient.WithClient(ctx, fakeClient)
+		zone = makeZone("zone-a")
+	})
+
+	It("should return EventConfig when found and ready", func() {
+		ec := makeReadyEventConfig("ec-zone-a", "zone-a")
+
+		fakeClient.EXPECT().
+			List(mock.Anything, mock.Anything, mock.Anything).
+			Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+				*list.(*eventv1.EventConfigList) = eventv1.EventConfigList{Items: []eventv1.EventConfig{ec}}
+			}).
+			Return(nil).
+			Once()
+
+		result, err := util.GetEventConfig(ctx, zone)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(result).ToNot(BeNil())
+		Expect(result.Name).To(Equal("ec-zone-a"))
+	})
+
+	It("should return BlockedError when no EventConfig found", func() {
+		fakeClient.EXPECT().
+			List(mock.Anything, mock.Anything, mock.Anything).
+			Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+				*list.(*eventv1.EventConfigList) = eventv1.EventConfigList{Items: []eventv1.EventConfig{}}
+			}).
+			Return(nil).
+			Once()
+
+		result, err := util.GetEventConfig(ctx, zone)
+		Expect(err).To(HaveOccurred())
+		Expect(result).To(BeNil())
+		Expect(err).To(Satisfy(isBlockedError))
+		Expect(err.Error()).To(ContainSubstring("no EventConfig found"))
+	})
+
+	It("should return BlockedError when EventConfig is not ready", func() {
+		ec := eventv1.EventConfig{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "ec-zone-a",
+				Namespace: "test-env--zone-a",
+			},
+			Spec: eventv1.EventConfigSpec{
+				Zone: ctypes.ObjectRef{Name: "zone-a", Namespace: "test-env"},
+				Local: &eventv1.LocalBackend{
+					Admin:              eventv1.AdminConfig{Url: "http://admin.local"},
+					ServerSendEventUrl: "http://sse.local",
+					PublishEventUrl:    "http://publish.local",
+				},
+			},
+		}
+		// No Ready condition set = not ready
+
+		fakeClient.EXPECT().
+			List(mock.Anything, mock.Anything, mock.Anything).
+			Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+				*list.(*eventv1.EventConfigList) = eventv1.EventConfigList{Items: []eventv1.EventConfig{ec}}
+			}).
+			Return(nil).
+			Once()
+
+		result, err := util.GetEventConfig(ctx, zone)
+		Expect(err).To(HaveOccurred())
+		Expect(result).To(BeNil())
+		Expect(err).To(Satisfy(isBlockedError))
+		Expect(err.Error()).To(ContainSubstring("not ready"))
+	})
+})
 
 var _ = Describe("GetEventConfig (duplicate rejection)", func() {
 	var (
