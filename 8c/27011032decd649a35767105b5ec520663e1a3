@@ -1,0 +1,28 @@
+agentic/internal/handler/agenticexposure/handler_test.go
+  h_65f5d22af11f8f 717
+agentic/internal/handler/util/route.go
+  h_65f5d22af11f8f 69,188,229-241
+api/internal/controller/remoteapisubscription_controller_test.go
+  h_65f5d22af11f8f 361
+api/internal/handler/remoteapisubscription/consumer_scenario.go
+  h_65f5d22af11f8f 82-85
+api/internal/handler/util/route_util.go
+  h_65f5d22af11f8f 275,558
+common/pkg/config/labels.go
+  h_65f5d22af11f8f 7-13,18
+docs/docs/architecture/gateway.mdx
+  h_65f5d22af11f8f 105
+gateway/pkg/kong/client/route.go
+  h_65f5d22af11f8f 17-18,53-54
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6",
+  "base_commit_sha": "8c27011032decd649a35767105b5ec520663e1a3",
+  "prompts": {},
+  "humans": {
+    "h_65f5d22af11f8f": {
+      "author": "Miká Juznik <mika.juznik@telekom.de>"
+    }
+  }
+}
