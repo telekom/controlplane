@@ -86,14 +86,13 @@ var _ = Describe("FileSpecification Controller", func() {
 
 	Context("Delete FileSpecification resource", func() {
 		It("should delete the FileSpecification successfully", func() {
-			mockFileManager.EXPECT().DeleteFile(mock.Anything, mock.Anything).Return(nil)
+			mockFileManager.EXPECT().DeleteFile(mock.Anything, "fileRandomId").Return(nil)
 			req := httptest.NewRequest(http.MethodDelete, "/filespecifications/eni--hyperion--demo-invoices-v1", nil)
 			responseGroup, err := ExecuteRequest(req, groupToken)
 			ExpectStatus(responseGroup, err, http.StatusNoContent, "")
 		})
 
 		It("should fail to delete a non-existent FileSpecification", func() {
-			mockFileManager.EXPECT().DeleteFile(mock.Anything, mock.Anything).Return(nil)
 			req := httptest.NewRequest(http.MethodDelete, "/filespecifications/eni--hyperion--blabla", nil)
 			responseGroup, err := ExecuteRequest(req, groupToken)
 			ExpectStatusWithBody(responseGroup, err, http.StatusNotFound, "application/problem+json")
@@ -155,7 +154,7 @@ var _ = Describe("FileSpecification Controller", func() {
 				Version:       "1.0.0",
 				Specification: map[string]any{"type": "object"},
 			})
-			mockFileManager.EXPECT().UploadFile(mock.Anything, "poc--eni--hyperion--demo-invoices-v1", "application/yaml", mock.Anything).
+			mockFileManager.EXPECT().UploadFile(mock.Anything, "fileRandomId", "application/yaml", mock.Anything).
 				Return(&fileApi.FileUploadResponse{FileId: "fileRandomId", ContentType: "application/yaml"}, nil)
 			mockFileManager.EXPECT().DownloadFile(mock.Anything, "fileRandomId", mock.Anything).
 				RunAndReturn(func(_ context.Context, _ string, w io.Writer) (*fileApi.FileDownloadResponse, error) {
@@ -206,7 +205,7 @@ var _ = Describe("FileSpecification Controller", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			fileManager := isolateFileManager()
-			fileManager.EXPECT().DeleteFile(mock.Anything, "poc--eni--hyperion--demo-invoices-v1").Return(nil)
+			fileManager.EXPECT().DeleteFile(mock.Anything, "fileRandomId").Return(nil)
 			fileManager.EXPECT().DownloadFile(mock.Anything, "fileRandomId", mock.Anything).
 				RunAndReturn(func(_ context.Context, _ string, w io.Writer) (*fileApi.FileDownloadResponse, error) {
 					_, _ = w.Write([]byte(`type: object`))
@@ -226,7 +225,7 @@ var _ = Describe("FileSpecification Controller", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			fileManager := isolateFileManager()
-			fileManager.EXPECT().DeleteFile(mock.Anything, "poc--eni--hyperion--demo-invoices-v1").Return(file.ErrNotFound)
+			fileManager.EXPECT().DeleteFile(mock.Anything, "fileRandomId").Return(file.ErrNotFound)
 			fileManager.EXPECT().DownloadFile(mock.Anything, "fileRandomId", mock.Anything).
 				RunAndReturn(func(_ context.Context, _ string, w io.Writer) (*fileApi.FileDownloadResponse, error) {
 					_, _ = w.Write([]byte(`type: object`))
@@ -246,7 +245,7 @@ var _ = Describe("FileSpecification Controller", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			fileManager := isolateFileManager()
-			fileManager.EXPECT().DeleteFile(mock.Anything, "poc--eni--hyperion--demo-invoices-v1").Return(errors.New("file-manager unavailable"))
+			fileManager.EXPECT().DeleteFile(mock.Anything, "fileRandomId").Return(errors.New("file-manager unavailable"))
 
 			req := httptest.NewRequest(http.MethodPut, "/filespecifications/eni--hyperion--demo-invoices-v1", bytes.NewReader(body))
 			responseGroup, err := ExecuteRequest(req, groupToken)
@@ -254,7 +253,7 @@ var _ = Describe("FileSpecification Controller", func() {
 		})
 	})
 
-	Context("deleteOptionalSpecificationFile", func() {
+	Context("deleteFile", func() {
 		It("should skip deletion when File Manager is disabled", func() {
 			wasEnabled := cconfig.FeatureFileManager.IsEnabled()
 			cconfig.SetFeatureEnabled(cconfig.FeatureFileManager, false)
@@ -262,8 +261,8 @@ var _ = Describe("FileSpecification Controller", func() {
 				cconfig.SetFeatureEnabled(cconfig.FeatureFileManager, wasEnabled)
 			})
 
-			fileManager := filefake.NewMockFileManager(GinkgoT())
-			Expect(deleteOptionalSpecificationFile(context.Background(), fileManager, "optional-file")).To(Succeed())
+			controller := &FileSpecificationController{}
+			Expect(controller.deleteFile(context.Background(), "namespace", "name")).To(Succeed())
 		})
 	})
 })

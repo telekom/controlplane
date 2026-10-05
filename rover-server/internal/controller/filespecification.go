@@ -57,19 +57,11 @@ func (f *FileSpecificationController) Delete(ctx context.Context, resourceId str
 		return err
 	}
 
-	if cconfig.FeatureFileManager.IsEnabled() {
-		// Delete the optional specification file from file-manager.
-		fileId := generateFileId(id)
-		err = file.GetFileManager().DeleteFile(ctx, fileId)
-		if err != nil {
-			if !errors.Is(err, file.ErrNotFound) {
-				return err
-			}
-			// File not found is acceptable — specification is optional.
-		}
+	ns := id.Environment + "--" + id.Namespace
+	if err := f.deleteFile(ctx, ns, id.Name); err != nil {
+		return err
 	}
 
-	ns := id.Environment + "--" + id.Namespace
 	err = f.Store.Delete(ctx, ns, id.Name)
 	if err != nil {
 		if problems.IsNotFound(err) {
@@ -155,13 +147,8 @@ func (f *FileSpecificationController) Update(ctx context.Context, resourceId str
 		if uploadRes != nil {
 			specOrFileId = uploadRes.FileId
 		}
-	} else {
-		// Delete the optional specification file from file-manager.
-		fileId := generateFileId(id)
-		err = deleteOptionalSpecificationFile(ctx, file.GetFileManager(), fileId)
-		if err != nil {
-			return res, err
-		}
+	} else if err := f.deleteFile(ctx, id.Environment+"--"+id.Namespace, id.Name); err != nil {
+		return res, err
 	}
 
 	fileSpec, err := in.MapRequest(req, specOrFileId, id)
@@ -196,13 +183,18 @@ func (f *FileSpecificationController) GetStatus(ctx context.Context, resourceId 
 	return status.MapResponse(ctx, fileSpec)
 }
 
-func deleteOptionalSpecificationFile(ctx context.Context, fileManager filesapi.FileManager, fileId string) error {
+func (f *FileSpecificationController) deleteFile(ctx context.Context, ns, name string) error {
 	if !cconfig.FeatureFileManager.IsEnabled() {
 		return nil
 	}
 
-	// File not found is acceptable — specification is optional.
-	if err := fileManager.DeleteFile(ctx, fileId); err != nil && !errors.Is(err, file.ErrNotFound) {
+	fileId, err := f.existingFileId(ctx, ns, name)
+	if err != nil || fileId == "" {
+		return err
+	}
+
+	err = file.GetFileManager().DeleteFile(ctx, fileId)
+	if err != nil && !errors.Is(err, file.ErrNotFound) {
 		return err
 	}
 	return nil
@@ -213,7 +205,15 @@ func (f *FileSpecificationController) uploadFile(ctx context.Context, specMarsha
 		return nil, nil
 	}
 
-	fileId := generateFileId(id)
+	existingId, err := f.existingFileId(ctx, id.Environment+"--"+id.Namespace, id.Name)
+	if err != nil {
+		return nil, err
+	}
+	fileId, err := resolveFileId(existingId)
+	if err != nil {
+		return nil, err
+	}
+
 	fileContentType := "application/yaml"
 	return file.GetFileManager().UploadFile(ctx, fileId, fileContentType, bytes.NewReader(specMarshaled))
 }
@@ -244,4 +244,16 @@ func (f *FileSpecificationController) downloadFile(ctx context.Context, fileId s
 		return nil, problems.InternalServerError("Failed to unmarshal file specification", err.Error())
 	}
 	return specContent, nil
+}
+
+// existingFileId returns the stored specification file ID, or "" if the resource does not exist.
+func (f *FileSpecificationController) existingFileId(ctx context.Context, ns, name string) (string, error) {
+	fileSpec, err := f.Store.Get(ctx, ns, name)
+	if err != nil {
+		if problems.IsNotFound(err) {
+			return "", nil
+		}
+		return "", err
+	}
+	return fileSpec.Spec.Specification, nil
 }
