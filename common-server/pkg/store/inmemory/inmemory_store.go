@@ -11,11 +11,8 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
-	"time"
-	"unsafe"
 
 	"github.com/bytedance/sonic"
-	"github.com/cespare/xxhash/v2"
 	"github.com/dgraph-io/badger/v4"
 	"github.com/dgraph-io/badger/v4/options"
 	"github.com/go-logr/logr"
@@ -30,6 +27,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/dynamic"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -58,6 +56,8 @@ type InformerOpts struct {
 
 type DatabaseOpts struct {
 	// Filepath will store the badger database on disk at the given filepath.
+	// A non-empty Filepath selects the reduced-memory Badger profile;
+	// an empty Filepath keeps the database in memory with the default profile.
 	Filepath string
 }
 
@@ -70,9 +70,108 @@ type InmemoryObjectStore[T store.Object] struct {
 	informer        informer.Informer
 	db              *badger.DB
 	allowedSorts    []string
-	sortValueCache  sync.Map // map[string]*sync.Map, where key is the sort path and value is a map of object key to sort value
-	hashCache       sync.Map // map[string]uint64, map of object key to hash of the object, used for change detection in watches
+	sortValueCache  sync.Map
 	retryOnConflict bool
+
+	// mutationMu serializes OnUpdate and OnDelete so the database,
+	// sortValueCache and versionCache stay consistent.
+	mutationMu sync.Mutex
+	// versionCache maps keys to the Kubernetes version of the stored object.
+	// Only objects with a non-empty resourceVersion are recorded.
+	// Guarded by mutationMu.
+	versionCache map[string]cachedObjectVersion
+}
+
+// cachedObjectVersion identifies a stored object revision. The
+// resourceVersion is compared for equality only; it is opaque.
+type cachedObjectVersion struct {
+	uid             types.UID
+	resourceVersion string
+}
+
+func objectVersion(obj *unstructured.Unstructured) cachedObjectVersion {
+	return cachedObjectVersion{uid: obj.GetUID(), resourceVersion: obj.GetResourceVersion()}
+}
+
+// isStoredLocked reports whether key already holds version.
+// Versionless objects are never considered stored. Requires mutationMu.
+func (s *InmemoryObjectStore[T]) isStoredLocked(key string, version cachedObjectVersion) bool {
+	if version.resourceVersion == "" {
+		return false
+	}
+	prev, ok := s.versionCache[key]
+	return ok && prev == version
+}
+
+// isStored is isStoredLocked acquiring mutationMu.
+func (s *InmemoryObjectStore[T]) isStored(key string, version cachedObjectVersion) bool {
+	s.mutationMu.Lock()
+	defer s.mutationMu.Unlock()
+	return s.isStoredLocked(key, version)
+}
+
+const (
+	diskValueThreshold     = 4 << 10 // 4 KiB
+	inMemoryValueThreshold = 1 << 20 // 1 MiB
+)
+
+// valueThreshold returns the Badger value threshold for the storage mode.
+// On disk, values of at least this size are stored in the value log.
+// In memory, values must be strictly smaller than this size.
+func valueThreshold(inMemory bool) int64 {
+	if inMemory {
+		return inMemoryValueThreshold
+	}
+	return diskValueThreshold
+}
+
+// newBadgerOpts selects the Badger profile from the storage mode:
+// on disk the reduced-memory profile, in memory the default profile.
+func newBadgerOpts(path string) badger.Options {
+	if path == "" {
+		return newBadgerOptsInMemory()
+	}
+	return newBadgerOptsDisk(path)
+}
+
+func newBadgerOptsDisk(path string) badger.Options {
+	return badger.
+		DefaultOptions(path).
+		WithInMemory(false).
+		WithMetricsEnabled(false).
+		WithIndexCacheSize(0).
+		WithNumMemtables(2).
+		WithMemTableSize(32 << 20).     // 32 MiB
+		WithValueLogFileSize(64 << 20). // 64 MiB
+		WithBlockCacheSize(32 << 20).   // 32 MiB
+		WithBlockSize(4 << 10).         // 4 KiB
+		WithValueThreshold(valueThreshold(false)).
+		WithBloomFalsePositive(0.01).
+		WithCompression(options.Snappy)
+}
+
+func newBadgerOptsInMemory() badger.Options {
+	return badger.
+		DefaultOptions("").
+		WithInMemory(true).
+		WithMetricsEnabled(false).
+		WithIndexCacheSize(0).
+		WithNumMemtables(4).
+		WithMemTableSize(16 << 20).      // 16 MiB
+		WithValueLogFileSize(512 << 20). // 512 MiB
+		WithBlockCacheSize(64 << 20).    // 64 MiB
+		WithBlockSize(4 << 10).          // 4 KiB
+		WithValueThreshold(valueThreshold(true)).
+		WithBloomFalsePositive(0.01).
+		WithCompression(options.Snappy)
+}
+
+// isSafeDbName reports whether name is a single local path element,
+// so joining it to the root yields a direct child of the root.
+func isSafeDbName(name string) bool {
+	return filepath.IsLocal(name) &&
+		filepath.Base(name) == name &&
+		!strings.ContainsAny(name, `/`+string(os.PathSeparator))
 }
 
 func newDbOrDie(storeOpts StoreOpts, log logr.Logger) *badger.DB {
@@ -84,40 +183,26 @@ func newDbOrDie(storeOpts StoreOpts, log logr.Logger) *badger.DB {
 			strings.ToLower(storeOpts.GVR.Version),
 			strings.ToLower(storeOpts.GVR.Resource),
 		)
+		if !isSafeDbName(dbName) {
+			panic(errors.Errorf("invalid badger DB directory name %q derived from GVR %s", dbName, storeOpts.GVR.String()))
+		}
 		path = filepath.Join(storeOpts.Database.Filepath, dbName)
 
+		// The informer repopulates the store on startup; stale data from a
+		// previous run must not survive. Only the per-store directory is removed.
+		log.Info("resetting badger DB directory", "path", path)
 		if err := os.RemoveAll(path); err != nil {
-			log.Error(err, "failed to remove existing badger DB directory", "path", path)
+			panic(errors.Wrapf(err, "failed to reset badger DB directory %q", path))
 		}
 	}
 
 	log.Info("initializing badger DB",
 		"inMemory", !useFilesystem,
 		"path", path,
+		"reduceMemory", useFilesystem,
 	)
 
-	opts := badger.DefaultOptions(path).
-		WithInMemory(path == "").
-		WithMetricsEnabled(false).
-
-		// ===== Memtables (write pressure) =====
-		WithNumMemtables(4).
-		WithMemTableSize(16 << 20). // 16 MB (64 MB total)
-
-		// ===== Caches =====
-		WithIndexCacheSize(0).        // mmap handles index
-		WithBlockCacheSize(64 << 20). // HOT blocks for watches
-
-		// ===== LSM layout =====
-		WithBlockSize(8 << 10). // 8 KB blocks (matches value locality)
-		WithBloomFalsePositive(0.01).
-
-		// ===== Value log =====
-		WithValueThreshold(4 << 10).     // 4 KB
-		WithValueLogFileSize(256 << 20). // Larger files = better GC efficiency
-
-		// ===== Compression =====
-		WithCompression(options.Snappy)
+	opts := newBadgerOpts(path)
 
 	opts.Logger = NewLoggerShim(log)
 	db, err := badger.Open(opts)
@@ -150,8 +235,7 @@ func NewOrDie[T store.Object](ctx context.Context, storeOpts StoreOpts) *Inmemor
 		panic(errors.Wrap(err, "failed to start informer"))
 	}
 
-	store.log.Info("starting value log GC routine to reduce memory usage")
-	go store.startVLGC()
+	startValueLogGC(ctx, store.db, store.log)
 
 	return store
 }
@@ -416,29 +500,40 @@ func (s *InmemoryObjectStore[T]) OnCreate(ctx context.Context, obj *unstructured
 	return s.OnUpdate(ctx, obj)
 }
 
-func (s *InmemoryObjectStore[T]) OnUpdate(_ context.Context, obj *unstructured.Unstructured) error {
-	obj = obj.DeepCopy()
+func (s *InmemoryObjectStore[T]) OnUpdate(ctx context.Context, obj *unstructured.Unstructured) error {
 	key := calculateKey(obj)
+	// Kubernetes metadata is authoritative: an already stored UID and
+	// resourceVersion is skipped before copying and serializing.
+	if s.isStored(key, objectVersion(obj)) {
+		return nil
+	}
+
+	obj = obj.DeepCopy()
+	version := objectVersion(obj)
 	informer.SanitizeObject(obj)
 
 	data, err := sonic.Marshal(obj.Object)
 	if err != nil {
 		return errors.Wrap(err, "invalid object")
 	}
+	// Badger's exposed ValueThreshold is not the effective in-memory limit, and
+	// values equal to the limit would be routed to the absent value log.
+	if s.db.Opts().InMemory {
+		limit := valueThreshold(true)
+		if int64(len(data)) >= limit {
+			return errors.Errorf("object %s is too large for in-memory store: %d bytes, limit is less than %d bytes", key, len(data), limit)
+		}
+	}
 
-	hash := xxhash.Sum64(data)
-	if prev, ok := s.hashCache.Load(key); ok && prev.(uint64) == hash {
+	s.mutationMu.Lock()
+	defer s.mutationMu.Unlock()
+
+	if s.isStoredLocked(key, version) {
 		return nil
 	}
-	s.hashCache.Store(key, hash)
 
 	err = s.db.Update(func(txn *badger.Txn) error {
-		e := badger.NewEntry(
-			unsafeStringToBytes(key),
-			data,
-		)
-
-		return txn.SetEntry(e)
+		return txn.Set([]byte(key), data)
 	})
 	if err != nil {
 		return err
@@ -447,21 +542,34 @@ func (s *InmemoryObjectStore[T]) OnUpdate(_ context.Context, obj *unstructured.U
 	s.sortValueCache.Range(func(k, v any) bool {
 		sp := k.(string)
 		m := v.(*sync.Map)
-
 		value := gjson.GetBytes(data, sp)
-		if value.Exists() {
-			if s.log.V(1).Enabled() {
-				s.log.V(1).Info("cached sort value", "key", key, "sortPath", sp, "value", value.Value())
-			}
-			m.Store(key, value.Value())
+		if !value.Exists() {
+			m.Delete(key)
+			return true
 		}
+		m.Store(key, value.Value())
+		s.log.V(1).Info("cached sort value", "key", key, "sortPath", sp)
 		return true
 	})
+
+	if version.resourceVersion == "" {
+		// A versionless write replaces any versioned revision; drop its
+		// entry so a later event with the old version is written again.
+		delete(s.versionCache, key)
+		return nil
+	}
+	if s.versionCache == nil {
+		s.versionCache = make(map[string]cachedObjectVersion)
+	}
+	s.versionCache[key] = version
 	return nil
 }
 
-func (s *InmemoryObjectStore[T]) OnDelete(_ context.Context, obj *unstructured.Unstructured) error {
+func (s *InmemoryObjectStore[T]) OnDelete(ctx context.Context, obj *unstructured.Unstructured) error {
 	key := calculateKey(obj)
+
+	s.mutationMu.Lock()
+	defer s.mutationMu.Unlock()
 
 	err := s.db.Update(func(txn *badger.Txn) error {
 		return txn.Delete([]byte(key))
@@ -469,15 +577,13 @@ func (s *InmemoryObjectStore[T]) OnDelete(_ context.Context, obj *unstructured.U
 	if err != nil {
 		return err
 	}
-	s.hashCache.Delete(key)
 	s.sortValueCache.Range(func(k, v any) bool {
 		m := v.(*sync.Map)
 		m.Delete(key)
-		if s.log.V(1).Enabled() {
-			s.log.V(1).Info("deleted cached sort value", "key", key, "sortPath", k)
-		}
+		s.log.V(1).Info("deleted cached sort value", "key", key, "sortPath", k)
 		return true
 	})
+	delete(s.versionCache, key)
 	return nil
 }
 
@@ -535,28 +641,4 @@ func convertToUnstructured(obj any) (*unstructured.Unstructured, error) {
 		return nil, err
 	}
 	return &unstructured.Unstructured{Object: u}, nil
-}
-
-func (s *InmemoryObjectStore[T]) startVLGC() {
-	ticker := time.NewTicker(5 * time.Minute)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ticker.C:
-			err := s.db.RunValueLogGC(0.6)
-			if err != nil && err != badger.ErrNoRewrite {
-				s.log.Error(err, "failed to run value log GC")
-			}
-		case <-s.ctx.Done():
-			return
-		}
-	}
-}
-
-// unsafeStringToBytes converts a string to a byte slice without copying.
-// The returned slice MUST NOT be modified, as it shares memory with the original string.
-// This is safe when passing to functions that only read the bytes (e.g., badger's SetEntry copies keys internally).
-func unsafeStringToBytes(s string) []byte {
-	return unsafe.Slice(unsafe.StringData(s), len(s))
 }

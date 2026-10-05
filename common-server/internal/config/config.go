@@ -78,6 +78,7 @@ type StoreOpts struct {
 	// DisableInformerCache if true, the informer will not use a local cache and will directly forward events to the event handler.
 	DisableInformerCache bool `json:"disableInformerCache" yaml:"disableInformerCache"`
 	// DatabaseFilepath is the filepath where the badger database will be stored. If empty, the database will be in-memory only.
+	// A non-empty path selects the reduced-memory Badger profile.
 	DatabaseFilepath string `json:"databaseFilepath" yaml:"databaseFilepath"`
 }
 
