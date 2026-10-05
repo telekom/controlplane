@@ -6,6 +6,7 @@ package config
 
 import (
 	"fmt"
+	"net/url"
 
 	commonconfig "github.com/telekom/controlplane/common-server/pkg/config"
 	cserver "github.com/telekom/controlplane/common-server/pkg/server"
@@ -36,7 +37,8 @@ type GraphQLConfig struct {
 }
 
 // FileManagerConfig holds the configuration for constructing specification
-// download URLs. The BaseURL is the root URL of the file-manager service.
+// download URLs. The BaseURL is the base URL of the file-manager API, including
+// the /api prefix (for example https://file-manager.example.svc/api).
 type FileManagerConfig struct {
 	BaseURL string `mapstructure:"baseUrl"`
 }
@@ -91,7 +93,7 @@ func DefaultConfig() *ServerConfig {
 			Environment: "poc", // TODO: for now, this is fine. Needs to be refined later
 		},
 		FileManager: FileManagerConfig{
-			BaseURL: "file-manager.controlplane-system.svc",
+			BaseURL: "https://file-manager.controlplane-system.svc.cluster.local/api",
 		},
 		RoverServer: RoverServerConfig{
 			BaseURL:       "https://rover-server-service.controlplane-system.svc.cluster.local:9443",
@@ -101,13 +103,32 @@ func DefaultConfig() *ServerConfig {
 	}
 }
 
+// Validate checks that the base URL is empty or an absolute URL with a
+// scheme and a host.
+func (c FileManagerConfig) Validate() error {
+	if c.BaseURL == "" {
+		return nil
+	}
+	u, err := url.Parse(c.BaseURL)
+	if err != nil {
+		return fmt.Errorf("parsing baseUrl: %w", err)
+	}
+	if u.Scheme == "" || u.Host == "" {
+		return fmt.Errorf("baseUrl %q must be an absolute URL with scheme and host", c.BaseURL)
+	}
+	return nil
+}
+
 // GetConfigOrDie loads the server configuration from an optional YAML file,
 // overlaid with environment variables, on top of DefaultConfig, then validates
-// the listener config fail-closed.
+// the listener and file-manager config fail-closed.
 func GetConfigOrDie(filepath string) *ServerConfig {
 	cfg := commonconfig.LoadOrDie(filepath, DefaultConfig())
 	if err := cfg.Listeners.Validate(); err != nil {
 		panic(fmt.Errorf("validating listeners config: %w", err))
+	}
+	if err := cfg.FileManager.Validate(); err != nil {
+		panic(fmt.Errorf("validating fileManager config: %w", err))
 	}
 	return cfg
 }
