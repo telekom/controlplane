@@ -11,7 +11,6 @@ import (
 	"github.com/stretchr/testify/mock"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	v1 "github.com/telekom/controlplane/gateway/api/v1"
 	kong "github.com/telekom/controlplane/gateway/pkg/kong/api"
@@ -76,21 +75,18 @@ var _ = Describe("CreateOrReplaceRoute", func() {
 		api.EXPECT().GetRouteWithResponse(mock.Anything, "test-route").Return(matchingRoute(), nil)
 	}
 
-	DescribeTable("writes only the designated supported variant tag",
-		func(variant, expectedTag string) {
-			route.Labels = map[string]string{config.ExposureVariantLabelKey: variant, "arbitrary": "mcp"}
+	DescribeTable("appends additional tags only to the route",
+		func(additionalTags, expectedTags []string) {
+			route.Spec.AdditionalTags = additionalTags
+			route.Labels = map[string]string{"arbitrary": "mcp"}
 			api.EXPECT().GetServiceWithResponse(mock.Anything, "test-route").Return(matchingService(), nil)
 			api.EXPECT().GetRouteWithResponse(mock.Anything, "test-route").Return(
 				&kong.GetRouteResponse{HTTPResponse: &http.Response{StatusCode: http.StatusNotFound}}, nil,
 			)
 			api.EXPECT().UpsertRouteWithResponse(mock.Anything, "test-route", mock.Anything).
 				Run(func(_ context.Context, _ string, body kong.UpsertRouteJSONRequestBody, _ ...kong.RequestEditorFn) {
-					expected := []string{"env--test", "route--test-route"}
-					if expectedTag != "" {
-						expected = append(expected, expectedTag)
-					}
 					Expect(body.Tags).NotTo(BeNil())
-					Expect(*body.Tags).To(ConsistOf(expected))
+					Expect(*body.Tags).To(ConsistOf(expectedTags))
 				}).Return(&kong.UpsertRouteResponse{
 				HTTPResponse: &http.Response{StatusCode: http.StatusOK},
 				JSON200:      &kong.Route{Id: ptr("route-id")},
@@ -98,20 +94,18 @@ var _ = Describe("CreateOrReplaceRoute", func() {
 
 			Expect(client.CreateOrReplaceRoute(ctx, route, upstream)).To(Succeed())
 		},
-		Entry("API", "default", "ei__telekom__de--apiexposure__variant---default"),
-		Entry("MCP", "mcp", "ei__telekom__de--apiexposure__variant---mcp"),
-		Entry("Telecontext MCP", "telecontextmcp", "ei__telekom__de--apiexposure__variant---telecontextmcp"),
-		Entry("A2A", "agent", "ei__telekom__de--apiexposure__variant---agent"),
-		Entry("empty", "", ""),
-		Entry("unsupported", "other", ""),
-		Entry("not normalized", "MCP", ""),
+		Entry("variant", []string{"variant--mcp"}, []string{"env--test", "route--test-route", "variant--mcp"}),
+		Entry("arbitrary tags unchanged", []string{"custom--value", "MCP"}, []string{"env--test", "route--test-route", "custom--value", "MCP"}),
+		Entry("duplicates", []string{"variant--mcp", "env--test", "variant--mcp"}, []string{"env--test", "route--test-route", "variant--mcp"}),
+		Entry("nil", nil, []string{"env--test", "route--test-route"}),
+		Entry("empty", []string{}, []string{"env--test", "route--test-route"}),
 	)
 
-	DescribeTable("replaces old variant tags and then reconciles without writing",
-		func(labels map[string]string, expectedTags []string) {
-			route.Labels = labels
+	DescribeTable("replaces old additional tags and then reconciles without writing",
+		func(additionalTags, expectedTags []string) {
+			route.Spec.AdditionalTags = additionalTags
 			stored := matchingRoute()
-			stored.JSON200.Tags = ptr([]string{"env--test", "route--test-route", "ei__telekom__de--apiexposure__variant---mcp"})
+			stored.JSON200.Tags = ptr([]string{"env--test", "route--test-route", "variant--mcp"})
 			api.EXPECT().GetServiceWithResponse(mock.Anything, "test-route").Return(matchingService(), nil).Twice()
 			api.EXPECT().GetRouteWithResponse(mock.Anything, "test-route").Return(stored, nil).Twice()
 			api.EXPECT().UpsertRouteWithResponse(mock.Anything, "test-route", mock.Anything).
@@ -126,10 +120,20 @@ var _ = Describe("CreateOrReplaceRoute", func() {
 			Expect(client.CreateOrReplaceRoute(ctx, route, upstream)).To(Succeed())
 			Expect(client.CreateOrReplaceRoute(ctx, route, upstream)).To(Succeed())
 		},
-		Entry("changed", map[string]string{config.ExposureVariantLabelKey: "agent"}, []string{"env--test", "route--test-route", "ei__telekom__de--apiexposure__variant---agent"}),
-		Entry("missing", map[string]string{"arbitrary": "default"}, []string{"env--test", "route--test-route"}),
-		Entry("unsupported", map[string]string{config.ExposureVariantLabelKey: "other"}, []string{"env--test", "route--test-route"}),
+		Entry("changed", []string{"variant--agent"}, []string{"env--test", "route--test-route", "variant--agent"}),
+		Entry("removed", nil, []string{"env--test", "route--test-route"}),
+		Entry("cleared", []string{}, []string{"env--test", "route--test-route"}),
 	)
+
+	It("does not write when additional tags are reordered or duplicated", func() {
+		route.Spec.AdditionalTags = []string{"variant--mcp", "custom--value", "variant--mcp"}
+		stored := matchingRoute()
+		stored.JSON200.Tags = ptr([]string{"custom--value", "route--test-route", "variant--mcp", "env--test"})
+		api.EXPECT().GetServiceWithResponse(mock.Anything, "test-route").Return(matchingService(), nil)
+		api.EXPECT().GetRouteWithResponse(mock.Anything, "test-route").Return(stored, nil)
+
+		Expect(client.CreateOrReplaceRoute(ctx, route, upstream)).To(Succeed())
+	})
 
 	It("does not upsert a matching service", func() {
 		api.EXPECT().GetServiceWithResponse(mock.Anything, "test-route").Return(matchingService(), nil)

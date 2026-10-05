@@ -79,6 +79,9 @@ type RouteSpec struct {
 
 	// Buffering configures Kong request/response body buffering for this route
 	Buffering Buffering `json:"buffering,omitempty"`
+
+	// AdditionalTags are appended to the existing tags on the Kong Route.
+	AdditionalTags []string `json:"additionalTags,omitempty"`
 }
 
 // RouteStatus defines the observed state of Route.
@@ -166,6 +169,10 @@ func (g *Route) GetHostnames() []string {
 // GetPaths implements the CustomRoute interface for Route
 func (g *Route) GetPaths() []string {
 	return g.Spec.Paths
+}
+
+func (g *Route) GetAdditionalTags() []string {
+	return g.Spec.AdditionalTags
 }
 
 // GetRequestBuffering implements the CustomRoute interface for Route

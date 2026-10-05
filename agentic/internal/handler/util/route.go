@@ -66,7 +66,6 @@ func CreateAgenticRoute(
 
 	mutator := func() error {
 		route.Labels = map[string]string{
-			config.ExposureVariantLabelKey:    exposureVariantLabelValue(exposure.Spec.Variant),
 			config.DomainLabelKey:             LabelValueDomain,
 			agenticv1.AgenticBasePathLabelKey: labelutil.NormalizeLabelValue(exposure.Spec.BasePath),
 			config.BuildLabelKey("zone"):      zone.Name,
@@ -74,12 +73,13 @@ func CreateAgenticRoute(
 		}
 
 		route.Spec = gatewayapi.RouteSpec{
-			GatewayRef: *presetStatus.GatewayRef,
-			Type:       gatewayapi.RouteTypePrimary,
-			Backend:    gatewayapi.Backend{Upstreams: gatewayUpstreams},
-			Hostnames:  hostnames,
-			Paths:      paths,
-			Traffic:    MapTrafficToGateway(&exposure.Spec.Traffic),
+			AdditionalTags: exposureVariantTags(exposure.Spec.Variant),
+			GatewayRef:     *presetStatus.GatewayRef,
+			Type:           gatewayapi.RouteTypePrimary,
+			Backend:        gatewayapi.Backend{Upstreams: gatewayUpstreams},
+			Hostnames:      hostnames,
+			Paths:          paths,
+			Traffic:        MapTrafficToGateway(&exposure.Spec.Traffic),
 			// Critical: disable buffering for MCP streaming (SSE)
 			Buffering: gatewayapi.Buffering{
 				DisableRequestBuffering:  true,
@@ -185,7 +185,6 @@ func CreateAgenticProxyRoute(
 
 	mutator := func() error {
 		route.Labels = map[string]string{
-			config.ExposureVariantLabelKey:    exposureVariantLabelValue(variant),
 			config.DomainLabelKey:             LabelValueDomain,
 			agenticv1.AgenticBasePathLabelKey: labelutil.NormalizeLabelValue(basePath),
 			config.BuildLabelKey("zone"):      subscriberZone.Name,
@@ -193,11 +192,12 @@ func CreateAgenticProxyRoute(
 		}
 
 		route.Spec = gatewayapi.RouteSpec{
-			GatewayRef: *subscriberPresetStatus.GatewayRef,
-			Type:       gatewayapi.RouteTypeProxy,
-			Backend:    gatewayapi.Backend{Upstreams: []gatewayapi.Upstream{upstream}},
-			Hostnames:  hostnames,
-			Paths:      paths,
+			AdditionalTags: exposureVariantTags(variant),
+			GatewayRef:     *subscriberPresetStatus.GatewayRef,
+			Type:           gatewayapi.RouteTypeProxy,
+			Backend:        gatewayapi.Backend{Upstreams: []gatewayapi.Upstream{upstream}},
+			Hostnames:      hostnames,
+			Paths:          paths,
 			Security: gatewayapi.Security{
 				DefaultConsumers: []string{GatewayConsumerName},
 				RealmName:        subscriberZone.Status.RealmName,
@@ -226,16 +226,16 @@ func CreateAgenticProxyRoute(
 	return route, nil
 }
 
-func exposureVariantLabelValue(variant agenticv1.AgenticVariant) string {
+func exposureVariantTags(variant agenticv1.AgenticVariant) []string {
 	switch variant {
 	case agenticv1.AgenticVariantMCP:
-		return config.ExposureVariantMCP
+		return []string{config.ExposureVariantTagMCP}
 	case agenticv1.AgenticVariantTelecontextMCP:
-		return config.ExposureVariantTelecontextMCP
+		return []string{config.ExposureVariantTagTelecontextMCP}
 	case agenticv1.AgenticVariantAgent:
-		return config.ExposureVariantAgent
+		return []string{config.ExposureVariantTagAgent}
 	default:
-		return ""
+		return nil
 	}
 }
 

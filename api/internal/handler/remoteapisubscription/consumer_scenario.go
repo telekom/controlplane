@@ -79,10 +79,9 @@ func (h *RemoteApiSubscriptionHandler) handleConsumerScenario(ctx context.Contex
 
 	mutator := func() error {
 		route.Labels = map[string]string{
-			config.ExposureVariantLabelKey: config.ExposureVariantDefault,
-			apiapi.BasePathLabelKey:        labelutil.NormalizeLabelValue(obj.Spec.ApiBasePath),
-			config.BuildLabelKey("zone"):   labelutil.NormalizeLabelValue(zone.Name),
-			config.BuildLabelKey("type"):   "real",
+			apiapi.BasePathLabelKey:      labelutil.NormalizeLabelValue(obj.Spec.ApiBasePath),
+			config.BuildLabelKey("zone"): labelutil.NormalizeLabelValue(zone.Name),
+			config.BuildLabelKey("type"): "real",
 		}
 
 		u, parseErr := url.Parse(obj.Status.GatewayUrl)
@@ -95,9 +94,10 @@ func (h *RemoteApiSubscriptionHandler) handleConsumerScenario(ctx context.Contex
 		hostnames, paths := preset.ResolveHostnamesAndPaths(obj.Spec.ApiBasePath)
 
 		route.Spec = gatewayapi.RouteSpec{
-			GatewayRef: *presetStatus.GatewayRef,
-			Type:       gatewayapi.RouteTypePrimary,
-			Security:   gatewayapi.Security{RealmName: zone.Status.RealmName},
+			AdditionalTags: []string{config.ExposureVariantTagDefault},
+			GatewayRef:     *presetStatus.GatewayRef,
+			Type:           gatewayapi.RouteTypePrimary,
+			Security:       gatewayapi.Security{RealmName: zone.Status.RealmName},
 			Backend: gatewayapi.Backend{
 				Upstreams: []gatewayapi.Upstream{
 					{

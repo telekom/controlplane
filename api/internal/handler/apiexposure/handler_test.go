@@ -398,7 +398,7 @@ var _ = Describe("ApiExposureHandler", func() {
 			Run(func(_ context.Context, obj client.Object, mutate controllerutil.MutateFn) {
 				Expect(mutate()).To(Succeed())
 				r := obj.(*gatewayapi.Route)
-				Expect(r.Labels).To(HaveKeyWithValue(config.ExposureVariantLabelKey, "default"))
+				Expect(r.Spec.AdditionalTags).To(Equal([]string{"variant--default"}))
 				cp := r.DeepCopy()
 				*routes = append(*routes, cp)
 			}).

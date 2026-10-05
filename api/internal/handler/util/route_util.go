@@ -272,10 +272,9 @@ func CreateProxyRoute(ctx context.Context, downstreamZoneRef, upstreamZoneRef ty
 
 	mutate := func() error {
 		proxyRoute.Labels = map[string]string{
-			config.ExposureVariantLabelKey: config.ExposureVariantDefault,
-			apiapi.BasePathLabelKey:        labelutil.NormalizeLabelValue(apiBasePath),
-			config.BuildLabelKey("zone"):   labelutil.NormalizeLabelValue(downstreamZone.GetName()),
-			config.BuildLabelKey("type"):   "proxy",
+			apiapi.BasePathLabelKey:      labelutil.NormalizeLabelValue(apiBasePath),
+			config.BuildLabelKey("zone"): labelutil.NormalizeLabelValue(downstreamZone.GetName()),
+			config.BuildLabelKey("type"): "proxy",
 		}
 		if options.OwnerUID != "" {
 			proxyRoute.Labels[config.OwnerUidLabelKey] = options.OwnerUID
@@ -294,10 +293,11 @@ func CreateProxyRoute(ctx context.Context, downstreamZoneRef, upstreamZoneRef ty
 		hostnames, paths := downstreamPreset.ResolveHostnamesAndPaths(apiBasePath)
 
 		proxyRoute.Spec = gatewayapi.RouteSpec{
-			GatewayRef: *downstreamPresetStatus.GatewayRef,
-			Type:       gatewayapi.RouteTypeProxy,
-			Backend:    gatewayapi.Backend{Upstreams: []gatewayapi.Upstream{upstream}},
-			Traffic:    gatewayapi.Traffic{},
+			AdditionalTags: []string{config.ExposureVariantTagDefault},
+			GatewayRef:     *downstreamPresetStatus.GatewayRef,
+			Type:           gatewayapi.RouteTypeProxy,
+			Backend:        gatewayapi.Backend{Upstreams: []gatewayapi.Upstream{upstream}},
+			Traffic:        gatewayapi.Traffic{},
 		}
 		proxyRoute.Spec.Hostnames = slices.Concat(hostnames, options.AdditionalHostnames)
 		slices.Sort(proxyRoute.Spec.Hostnames)
@@ -555,10 +555,9 @@ func CreateRealRoute(ctx context.Context, downstreamZoneRef types.ObjectRef, api
 
 	mutator := func() error {
 		route.Labels = map[string]string{
-			config.ExposureVariantLabelKey: config.ExposureVariantDefault,
-			apiapi.BasePathLabelKey:        labelutil.NormalizeLabelValue(apiExposure.Spec.ApiBasePath),
-			config.BuildLabelKey("zone"):   labelutil.NormalizeLabelValue(zone.Name),
-			config.BuildLabelKey("type"):   "real",
+			apiapi.BasePathLabelKey:      labelutil.NormalizeLabelValue(apiExposure.Spec.ApiBasePath),
+			config.BuildLabelKey("zone"): labelutil.NormalizeLabelValue(zone.Name),
+			config.BuildLabelKey("type"): "real",
 		}
 		if apiExposure.GetUID() != "" {
 			route.Labels[config.OwnerUidLabelKey] = string(apiExposure.GetUID())
@@ -576,10 +575,11 @@ func CreateRealRoute(ctx context.Context, downstreamZoneRef types.ObjectRef, api
 		hostnames, paths := preset.ResolveHostnamesAndPaths(apiExposure.Spec.ApiBasePath)
 
 		route.Spec = gatewayapi.RouteSpec{
-			GatewayRef: *presetStatus.GatewayRef,
-			Type:       gatewayapi.RouteTypePrimary,
-			Backend:    gatewayapi.Backend{Upstreams: gatewayUpstreams},
-			Traffic:    gatewayapi.Traffic{},
+			AdditionalTags: []string{config.ExposureVariantTagDefault},
+			GatewayRef:     *presetStatus.GatewayRef,
+			Type:           gatewayapi.RouteTypePrimary,
+			Backend:        gatewayapi.Backend{Upstreams: gatewayUpstreams},
+			Traffic:        gatewayapi.Traffic{},
 		}
 		route.Spec.Hostnames = slices.Concat(hostnames, options.AdditionalHostnames)
 		route.Spec.Paths = slices.Concat(paths, options.AdditionalPaths)

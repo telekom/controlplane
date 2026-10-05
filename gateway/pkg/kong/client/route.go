@@ -8,13 +8,11 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"slices"
 
-	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	kong "github.com/telekom/controlplane/gateway/pkg/kong/api"
 )
-
-const exposureVariantTagPrefix = "ei__telekom__de--apiexposure__variant---"
 
 func (c *kongClient) CreateOrReplaceRoute(ctx context.Context, route CustomRoute, upstream Upstream) error {
 	if upstream == nil {
@@ -49,10 +47,7 @@ func (c *kongClient) CreateOrReplaceRoute(ctx context.Context, route CustomRoute
 	}
 	route.SetServiceId(*service.Id)
 
-	switch variant := route.GetLabels()[config.ExposureVariantLabelKey]; variant {
-	case config.ExposureVariantDefault, config.ExposureVariantMCP, config.ExposureVariantTelecontextMCP, config.ExposureVariantAgent:
-		tags = append(tags, exposureVariantTagPrefix+variant)
-	}
+	routeTags := slices.Concat(tags, route.GetAdditionalTags())
 
 	routeBody := kong.CreateRouteJSONRequestBody{
 		Name:                    &routeName,
@@ -63,7 +58,7 @@ func (c *kongClient) CreateOrReplaceRoute(ctx context.Context, route CustomRoute
 		RequestBuffering:        route.GetRequestBuffering(),
 		ResponseBuffering:       route.GetResponseBuffering(),
 		HttpsRedirectStatusCode: 426,
-		Tags:                    normalizeSet(&tags),
+		Tags:                    normalizeSet(&routeTags),
 	}
 
 	kongRoute, _, err := reconcile(ctx, routeEntity{client: c.client, name: routeName}, routeBody)

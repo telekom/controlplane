@@ -527,7 +527,7 @@ var _ = Describe("AgenticExposureHandler", func() {
 
 			Expect(err).ToNot(HaveOccurred())
 			Expect(capturedRoute.Spec.Security.DefaultConsumers).To(ContainElement("telecontext--tcapp"))
-			Expect(capturedRoute.Labels).To(HaveKeyWithValue(config.ExposureVariantLabelKey, "telecontextmcp"))
+			Expect(capturedRoute.Spec.AdditionalTags).To(Equal([]string{"variant--telecontextmcp"}))
 			Expect(obj.Status.Route).ToNot(BeNil())
 		})
 
@@ -614,8 +614,8 @@ var _ = Describe("AgenticExposureHandler", func() {
 			Expect(obj.Status.ProxyRoutes).To(HaveLen(1))
 			Expect(capturedProxyRoute.Spec.Security.RealmName).To(Equal("telecontext-realm"))
 			Expect(capturedPrimaryRoute.Spec.Security.RealmName).To(Equal("provider-realm"))
-			Expect(capturedProxyRoute.Labels).To(HaveKeyWithValue(config.ExposureVariantLabelKey, "telecontextmcp"))
-			Expect(capturedPrimaryRoute.Labels).To(HaveKeyWithValue(config.ExposureVariantLabelKey, "telecontextmcp"))
+			Expect(capturedProxyRoute.Spec.AdditionalTags).To(Equal([]string{"variant--telecontextmcp"}))
+			Expect(capturedPrimaryRoute.Spec.AdditionalTags).To(Equal([]string{"variant--telecontextmcp"}))
 			// Telecontext zone's LMS issuer is trusted on the primary route
 			Expect(capturedPrimaryRoute.Spec.Security.TrustedIssuers).To(ContainElement("https://lms.telecontext.example.com"))
 			// Telecontext consumer is on the primary route
@@ -624,7 +624,7 @@ var _ = Describe("AgenticExposureHandler", func() {
 			Expect(capturedPrimaryRoute.Spec.Security.DefaultConsumers).To(ContainElement("gateway"))
 		})
 
-		DescribeTable("should preserve the variant and cross-zone trusted issuers on provider and subscriber routes", func(variant agenticv1.AgenticVariant, expectedVariant string) {
+		DescribeTable("should preserve the variant and cross-zone trusted issuers on provider and subscriber routes", func(variant agenticv1.AgenticVariant, expectedTags []string) {
 			obj.Spec.Variant = variant
 			ctx = contextutil.WithEnv(ctx, "test-env")
 			if variant.IsTelecontextVariant() {
@@ -702,8 +702,8 @@ var _ = Describe("AgenticExposureHandler", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(capturedProxyRoute.Spec.Security.RealmName).To(Equal("subscriber-realm"))
 			Expect(capturedRoute.Spec.Security.RealmName).To(Equal("provider-realm"))
-			Expect(capturedProxyRoute.Labels).To(HaveKeyWithValue(config.ExposureVariantLabelKey, expectedVariant))
-			Expect(capturedRoute.Labels).To(HaveKeyWithValue(config.ExposureVariantLabelKey, expectedVariant))
+			Expect(capturedProxyRoute.Spec.AdditionalTags).To(Equal(expectedTags))
+			Expect(capturedRoute.Spec.AdditionalTags).To(Equal(expectedTags))
 			Expect(capturedProxyRoute.Labels).To(HaveKeyWithValue(config.BuildLabelKey("type"), "mcp-proxy"))
 			Expect(capturedRoute.Labels).To(HaveKeyWithValue(config.BuildLabelKey("type"), "mcp"))
 			// LMS issuer from the proxy zone IS trusted
@@ -711,10 +711,11 @@ var _ = Describe("AgenticExposureHandler", func() {
 			// No local subs → the provider zone's own IDP issuer is NOT added
 			Expect(capturedRoute.Spec.Security.TrustedIssuers).NotTo(ContainElement("https://issuer.provider.example.com"))
 		},
-			Entry("MCP", agenticv1.AgenticVariantMCP, "mcp"),
-			Entry("Telecontext MCP", agenticv1.AgenticVariantTelecontextMCP, "telecontextmcp"),
-			Entry("AGENT", agenticv1.AgenticVariantAgent, "agent"),
-			Entry("unsupported variant remains unclassified", agenticv1.AgenticVariant("OTHER"), ""),
+			Entry("MCP", agenticv1.AgenticVariantMCP, []string{"variant--mcp"}),
+			Entry("Telecontext MCP", agenticv1.AgenticVariantTelecontextMCP, []string{"variant--telecontextmcp"}),
+			Entry("AGENT", agenticv1.AgenticVariantAgent, []string{"variant--agent"}),
+			Entry("unsupported variant remains unclassified", agenticv1.AgenticVariant("OTHER"), []string(nil)),
+			Entry("empty variant remains unclassified", agenticv1.AgenticVariant(""), []string(nil)),
 		)
 
 		It("should create Route for AGENT variant without triggering Telecontext logic", func() {
@@ -747,7 +748,7 @@ var _ = Describe("AgenticExposureHandler", func() {
 			Expect(obj.Status.Route).ToNot(BeNil())
 			// Route should have no DefaultConsumers (no Telecontext consumer)
 			Expect(capturedRoute.Spec.Security.DefaultConsumers).To(BeEmpty())
-			Expect(capturedRoute.Labels).To(HaveKeyWithValue(config.ExposureVariantLabelKey, "agent"))
+			Expect(capturedRoute.Spec.AdditionalTags).To(Equal([]string{"variant--agent"}))
 		})
 	}) // end Describe("CreateOrUpdate")
 
