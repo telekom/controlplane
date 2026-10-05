@@ -144,9 +144,8 @@ func (f *FileSpecificationController) Update(ctx context.Context, resourceId str
 		if err != nil {
 			return res, err
 		}
-		if uploadRes != nil {
-			specOrFileId = uploadRes.FileId
-		}
+
+		specOrFileId = uploadRes.FileId
 	} else if err := f.deleteFile(ctx, id.Environment+"--"+id.Namespace, id.Name); err != nil {
 		return res, err
 	}
