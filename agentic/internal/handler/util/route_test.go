@@ -5,11 +5,11 @@
 package util
 
 import (
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-
 	agenticv1 "github.com/telekom/controlplane/agentic/api/v1"
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("MapSubscriberSecurityToGateway", func() {
