@@ -5,14 +5,20 @@
 package controller
 
 import (
+	"bytes"
 	"context"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/log"
+	"github.com/pkg/errors"
 	"github.com/telekom/controlplane/common-server/pkg/problems"
 	security "github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
 	"github.com/telekom/controlplane/common-server/pkg/store"
+	cconfig "github.com/telekom/controlplane/common/pkg/config"
+	filesapi "github.com/telekom/controlplane/file-manager/api"
+	"github.com/telekom/controlplane/rover-server/internal/file"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
+	"gopkg.in/yaml.v3"
 
 	"github.com/telekom/controlplane/rover-server/internal/api"
 	"github.com/telekom/controlplane/rover-server/internal/mapper"
@@ -52,6 +58,10 @@ func (f *FileSpecificationController) Delete(ctx context.Context, resourceId str
 	}
 
 	ns := id.Environment + "--" + id.Namespace
+	if err := f.deleteFile(ctx, ns, id.Name); err != nil {
+		return err
+	}
+
 	err = f.Store.Delete(ctx, ns, id.Name)
 	if err != nil {
 		if problems.IsNotFound(err) {
@@ -77,7 +87,11 @@ func (f *FileSpecificationController) Get(ctx context.Context, resourceId string
 		return res, err
 	}
 
-	return out.MapResponse(fileSpec)
+	specContent, err := f.downloadFile(ctx, fileSpec.Spec.Specification)
+	if err != nil {
+		return res, err
+	}
+	return out.MapResponse(fileSpec, specContent)
 }
 
 func (f *FileSpecificationController) GetAll(ctx context.Context, params api.GetAllFileSpecificationsParams) (*api.FileSpecificationListResponse, error) {
@@ -92,7 +106,12 @@ func (f *FileSpecificationController) GetAll(ctx context.Context, params api.Get
 
 	list := make([]api.FileSpecificationResponse, 0, len(objList.Items))
 	for _, fileSpec := range objList.Items {
-		resp, err := out.MapResponse(fileSpec)
+		specContent, err := f.downloadFile(ctx, fileSpec.Spec.Specification)
+		if err != nil {
+			return nil, err
+		}
+
+		resp, err := out.MapResponse(fileSpec, specContent)
 		if err != nil {
 			return nil, problems.InternalServerError("Failed to map resource", err.Error())
 		}
@@ -114,7 +133,24 @@ func (f *FileSpecificationController) Update(ctx context.Context, resourceId str
 		return res, err
 	}
 
-	fileSpec, err := in.MapRequest(req, id)
+	var specOrFileId string
+	if len(req.Specification) > 0 {
+		specMarshaled, marshalErr := yaml.Marshal(req.Specification)
+		if marshalErr != nil {
+			return res, problems.BadRequest(marshalErr.Error())
+		}
+
+		uploadRes, err := f.uploadFile(ctx, specMarshaled, id)
+		if err != nil {
+			return res, err
+		}
+
+		specOrFileId = uploadRes.FileId
+	} else if err := f.deleteFile(ctx, id.Environment+"--"+id.Namespace, id.Name); err != nil {
+		return res, err
+	}
+
+	fileSpec, err := in.MapRequest(req, specOrFileId, id)
 	if err != nil {
 		return res, problems.BadRequest(err.Error())
 	}
@@ -144,4 +180,79 @@ func (f *FileSpecificationController) GetStatus(ctx context.Context, resourceId 
 	}
 
 	return status.MapResponse(ctx, fileSpec)
+}
+
+func (f *FileSpecificationController) deleteFile(ctx context.Context, ns, name string) error {
+	if !cconfig.FeatureFileManager.IsEnabled() {
+		return nil
+	}
+
+	fileId, err := f.existingFileId(ctx, ns, name)
+	if err != nil || fileId == "" {
+		return err
+	}
+
+	err = file.GetFileManager().DeleteFile(ctx, fileId)
+	if err != nil && !errors.Is(err, file.ErrNotFound) {
+		return err
+	}
+	return nil
+}
+
+func (f *FileSpecificationController) uploadFile(ctx context.Context, specMarshaled []byte, id mapper.ResourceIdInfo) (res *filesapi.FileUploadResponse, err error) {
+	if !cconfig.FeatureFileManager.IsEnabled() {
+		return nil, nil
+	}
+
+	existingId, err := f.existingFileId(ctx, id.Environment+"--"+id.Namespace, id.Name)
+	if err != nil {
+		return nil, err
+	}
+	fileId, err := resolveFileId(existingId)
+	if err != nil {
+		return nil, err
+	}
+
+	fileContentType := "application/yaml"
+	return file.GetFileManager().UploadFile(ctx, fileId, fileContentType, bytes.NewReader(specMarshaled))
+}
+
+// downloadFile retrieves the optional specification file content.
+// Returns nil if no specification is stored (fileId is empty).
+func (f *FileSpecificationController) downloadFile(ctx context.Context, fileId string) (map[string]any, error) {
+	if !cconfig.FeatureFileManager.IsEnabled() {
+		return nil, nil
+	}
+
+	if fileId == "" {
+		return nil, nil
+	}
+
+	var b bytes.Buffer
+	_, err := file.GetFileManager().DownloadFile(ctx, fileId, &b)
+	if err != nil {
+		return nil, problems.InternalServerError("Failed to download file specification", err.Error())
+	}
+
+	if b.Len() == 0 {
+		return nil, nil
+	}
+
+	var specContent map[string]any
+	if err := yaml.NewDecoder(&b).Decode(&specContent); err != nil {
+		return nil, problems.InternalServerError("Failed to unmarshal file specification", err.Error())
+	}
+	return specContent, nil
+}
+
+// existingFileId returns the stored specification file ID, or "" if the resource does not exist.
+func (f *FileSpecificationController) existingFileId(ctx context.Context, ns, name string) (string, error) {
+	fileSpec, err := f.Store.Get(ctx, ns, name)
+	if err != nil {
+		if problems.IsNotFound(err) {
+			return "", nil
+		}
+		return "", err
+	}
+	return fileSpec.Spec.Specification, nil
 }
