@@ -53,3 +53,20 @@ api.Oauth2{
     Username:      "",
 }
 ---
+
+[Subscription Security Mapper (Out) mapSubscriptionSecurity must map the subscriber grant type - 1]
+api.Oauth2{
+    Claims:        api.Claims{},
+    ClientId:      "client-id",
+    ClientKey:     "",
+    ClientSecret:  "client-secret",
+    GrantType:     "refresh_token",
+    Password:      "",
+    RefreshToken:  "rt",
+    Scopes:        nil,
+    TokenEndpoint: "",
+    TokenRequest:  "",
+    Type:          "oauth2",
+    Username:      "",
+}
+---
