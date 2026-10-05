@@ -7,6 +7,7 @@ package features_test
 import (
 	"context"
 	"errors"
+	"net/http"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -15,6 +16,7 @@ import (
 
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	"github.com/telekom/controlplane/gateway/internal/features"
+	"github.com/telekom/controlplane/gateway/internal/features/feature"
 	featmock "github.com/telekom/controlplane/gateway/internal/features/mock"
 	"github.com/telekom/controlplane/gateway/pkg/kong/client"
 	clientmock "github.com/telekom/controlplane/gateway/pkg/kong/client/mock"
@@ -51,6 +53,56 @@ var _ = Describe("Builder", func() {
 	})
 
 	Describe("Build()", func() {
+		DescribeTable("adds termination only for the reserved upstream",
+			func(upstreamPath string, health bool) {
+				route.Spec.PassThrough = true
+				route.Spec.Backend.Upstreams = []gatewayv1.Upstream{{
+					Scheme: "http", Hostname: "localhost", Port: 8081, Path: upstreamPath,
+				}}
+				route.SetProperty("kongRequestTerminationPluginId", "existing-plugin-id")
+				builder := features.NewFeatureBuilder(mockKC, route, nil, gateway)
+				builder.EnableFeature(feature.InstancePassThroughFeature)
+				mockKC.EXPECT().CreateOrReplaceRoute(mock.Anything, route, mock.Anything).Return(nil)
+				if health {
+					mockKC.EXPECT().CreateOrReplacePlugin(mock.Anything, mock.Anything).
+						Run(func(_ context.Context, p client.CustomPlugin) {
+							Expect(p.GetName()).To(Equal("request-termination"))
+							Expect(p.GetId()).To(Equal("existing-plugin-id"))
+							Expect(p.GetRoute()).To(Equal(&route.Name))
+							Expect(p.GetConsumer()).To(BeNil())
+							Expect(p.GetConfig()).To(Equal(map[string]any{"status_code": http.StatusOK}))
+							p.SetId("updated-plugin-id")
+						}).Return(nil, nil)
+				}
+				mockKC.EXPECT().CleanupPlugins(mock.Anything, route, nil, mock.MatchedBy(func(plugins []client.CustomPlugin) bool {
+					if health {
+						Expect(plugins).To(HaveLen(1))
+						Expect(plugins[0].GetName()).To(Equal("request-termination"))
+					} else {
+						Expect(plugins).To(BeEmpty())
+					}
+					return true
+				})).Return(nil)
+				Expect(builder.Build(ctx)).To(Succeed())
+				if health {
+					Expect(route.GetProperty("kongRequestTerminationPluginId")).To(Equal("updated-plugin-id"))
+				} else {
+					Expect(route.GetProperty("kongRequestTerminationPluginId")).To(BeEmpty())
+				}
+			},
+			Entry("zone-health", gatewayv1.ZoneHealthUpstreamPath, true),
+			Entry("upstream changed away from zone-health", "/api", false),
+			Entry("similar path", gatewayv1.ZoneHealthUpstreamPath+"/other", false),
+		)
+
+		It("propagates zone-health plugin creation errors", func() {
+			builder := features.NewFeatureBuilder(mockKC, route, nil, gateway)
+			builder.SetUpstream(&client.CustomUpstream{Path: gatewayv1.ZoneHealthUpstreamPath})
+			mockKC.EXPECT().CreateOrReplaceRoute(mock.Anything, route, mock.Anything).Return(nil)
+			mockKC.EXPECT().CreateOrReplacePlugin(mock.Anything, mock.Anything).Return(nil, errors.New("Kong unavailable"))
+			Expect(builder.Build(ctx)).To(MatchError(ContainSubstring("failed to create or replace plugin request-termination: Kong unavailable")))
+		})
+
 		Context("happy path", func() {
 			It("sorts and applies features, creates route+plugins, and calls cleanup", func() {
 				mockFeature := featmock.NewMockFeature(GinkgoT())
