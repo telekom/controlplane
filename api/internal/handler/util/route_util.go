@@ -26,7 +26,8 @@ import (
 )
 
 const (
-	GatewayConsumerName = gatewayapi.GatewayConsumerName
+	GatewayConsumerName       = gatewayapi.GatewayConsumerName
+	ExposureVariantTagDefault = "variant--default"
 )
 
 const labelTrue = "true"
@@ -293,7 +294,7 @@ func CreateProxyRoute(ctx context.Context, downstreamZoneRef, upstreamZoneRef ty
 		hostnames, paths := downstreamPreset.ResolveHostnamesAndPaths(apiBasePath)
 
 		proxyRoute.Spec = gatewayapi.RouteSpec{
-			AdditionalTags: []string{config.ExposureVariantTagDefault},
+			AdditionalTags: []string{ExposureVariantTagDefault},
 			GatewayRef:     *downstreamPresetStatus.GatewayRef,
 			Type:           gatewayapi.RouteTypeProxy,
 			Backend:        gatewayapi.Backend{Upstreams: []gatewayapi.Upstream{upstream}},
@@ -575,7 +576,7 @@ func CreateRealRoute(ctx context.Context, downstreamZoneRef types.ObjectRef, api
 		hostnames, paths := preset.ResolveHostnamesAndPaths(apiExposure.Spec.ApiBasePath)
 
 		route.Spec = gatewayapi.RouteSpec{
-			AdditionalTags: []string{config.ExposureVariantTagDefault},
+			AdditionalTags: []string{ExposureVariantTagDefault},
 			GatewayRef:     *presetStatus.GatewayRef,
 			Type:           gatewayapi.RouteTypePrimary,
 			Backend:        gatewayapi.Backend{Upstreams: gatewayUpstreams},

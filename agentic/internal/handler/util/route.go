@@ -23,6 +23,8 @@ import (
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
 )
 
+const exposureVariantTagPrefix = "variant--"
+
 // CreateAgenticRoute creates the primary gateway Route for an MCP exposure.
 // The Route is created in the zone's namespace with buffering disabled for streaming.
 // Follows the same preset-based routing pattern as the API domain's CreateRealRoute.
@@ -73,7 +75,7 @@ func CreateAgenticRoute(
 		}
 
 		route.Spec = gatewayapi.RouteSpec{
-			AdditionalTags: exposureVariantTags(exposure.Spec.Variant),
+			AdditionalTags: []string{exposureVariantTagPrefix + labelutil.NormalizeNameValue(string(exposure.Spec.Variant))},
 			GatewayRef:     *presetStatus.GatewayRef,
 			Type:           gatewayapi.RouteTypePrimary,
 			Backend:        gatewayapi.Backend{Upstreams: gatewayUpstreams},
@@ -192,7 +194,7 @@ func CreateAgenticProxyRoute(
 		}
 
 		route.Spec = gatewayapi.RouteSpec{
-			AdditionalTags: exposureVariantTags(variant),
+			AdditionalTags: []string{exposureVariantTagPrefix + labelutil.NormalizeNameValue(string(variant))},
 			GatewayRef:     *subscriberPresetStatus.GatewayRef,
 			Type:           gatewayapi.RouteTypeProxy,
 			Backend:        gatewayapi.Backend{Upstreams: []gatewayapi.Upstream{upstream}},
@@ -224,19 +226,6 @@ func CreateAgenticProxyRoute(
 	}
 
 	return route, nil
-}
-
-func exposureVariantTags(variant agenticv1.AgenticVariant) []string {
-	switch variant {
-	case agenticv1.AgenticVariantMCP:
-		return []string{config.ExposureVariantTagMCP}
-	case agenticv1.AgenticVariantTelecontextMCP:
-		return []string{config.ExposureVariantTagTelecontextMCP}
-	case agenticv1.AgenticVariantAgent:
-		return []string{config.ExposureVariantTagAgent}
-	default:
-		return nil
-	}
 }
 
 // CleanupOldAgenticRoutes uses the JanitorClient's Cleanup() to delete stale MCP Routes

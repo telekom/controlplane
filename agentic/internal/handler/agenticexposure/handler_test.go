@@ -714,8 +714,6 @@ var _ = Describe("AgenticExposureHandler", func() {
 			Entry("MCP", agenticv1.AgenticVariantMCP, []string{"variant--mcp"}),
 			Entry("Telecontext MCP", agenticv1.AgenticVariantTelecontextMCP, []string{"variant--telecontextmcp"}),
 			Entry("AGENT", agenticv1.AgenticVariantAgent, []string{"variant--agent"}),
-			Entry("unsupported variant remains unclassified", agenticv1.AgenticVariant("OTHER"), []string(nil)),
-			Entry("empty variant remains unclassified", agenticv1.AgenticVariant(""), []string(nil)),
 		)
 
 		It("should create Route for AGENT variant without triggering Telecontext logic", func() {

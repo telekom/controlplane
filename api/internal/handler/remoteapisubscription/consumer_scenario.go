@@ -94,7 +94,7 @@ func (h *RemoteApiSubscriptionHandler) handleConsumerScenario(ctx context.Contex
 		hostnames, paths := preset.ResolveHostnamesAndPaths(obj.Spec.ApiBasePath)
 
 		route.Spec = gatewayapi.RouteSpec{
-			AdditionalTags: []string{config.ExposureVariantTagDefault},
+			AdditionalTags: []string{util.ExposureVariantTagDefault},
 			GatewayRef:     *presetStatus.GatewayRef,
 			Type:           gatewayapi.RouteTypePrimary,
 			Security:       gatewayapi.Security{RealmName: zone.Status.RealmName},
