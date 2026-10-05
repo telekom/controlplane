@@ -80,7 +80,6 @@ type RealmSpec struct {
 	IdentityProvider *types.ObjectRef `json:"identityProvider"`
 	// AllowedOrigins is inherited by clients in this realm.
 	// +optional
-	// +listType=set
 	AllowedOrigins []string `json:"allowedOrigins,omitempty"`
 
 	// SecretRotation configures the Keycloak client-secret rotation policy

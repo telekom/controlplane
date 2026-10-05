@@ -108,12 +108,6 @@ var _ = Describe("Client Controller", func() {
 				g.Expect(k8sClient.Get(ctx, clientRef, actual)).To(Succeed())
 				g.Expect(actual.Status.AllowedOrigins).To(BeEmpty())
 			}, timeout, interval).Should(Succeed())
-
-			By("rejecting duplicate origins at the Realm and Client CRD boundaries")
-			duplicates := []string{"https://app.example.com", "https://app.example.com"}
-			duplicateRealm := realmModel.NewRealm("duplicate-realm", testNamespace, testEnvironment, clientIdpName)
-			duplicateRealm.Spec.AllowedOrigins = duplicates
-			Expect(errors.IsInvalid(k8sClient.Create(ctx, duplicateRealm))).To(BeTrue())
 		})
 	})
 })

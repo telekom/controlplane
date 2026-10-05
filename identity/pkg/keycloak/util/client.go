@@ -96,11 +96,14 @@ func CompareClientRepresentation(existingClient, newClient *api.ClientRepresenta
 func compareWebOrigins(left, right *[]string) bool {
 	var leftOrigins, rightOrigins []string
 	if left != nil {
-		leftOrigins = *left
+		leftOrigins = slices.Clone(*left)
+		slices.Sort(leftOrigins)
 	}
 	if right != nil {
-		rightOrigins = *right
+		rightOrigins = slices.Clone(*right)
+		slices.Sort(rightOrigins)
 	}
+
 	return slices.Equal(leftOrigins, rightOrigins)
 }
 

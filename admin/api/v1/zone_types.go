@@ -117,7 +117,8 @@ type IdentityProviderConfig struct {
 	// AllowedOrigins configures the web origins for clients in this zone's default identity realm.
 	// +optional
 	// +listType=set
-	// +kubebuilder:validation:XValidation:rule="self.all(origin, origin == '*' || isURL(origin))",message="each allowed origin must be an absolute URL or *"
+	// +kubebuilder:validation:items:Pattern=`^(\*|[A-Za-z][A-Za-z0-9+.-]*://(\[[0-9A-Fa-f:.]+\]|[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?(\.[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?)*)(:(0|[1-9][0-9]{0,3}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5]))?)$`
+	// Origin header format: https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Origin
 	AllowedOrigins []string `json:"allowedOrigins,omitempty"`
 }
 

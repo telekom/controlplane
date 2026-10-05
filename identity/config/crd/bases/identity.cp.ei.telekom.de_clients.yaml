@@ -79,7 +79,6 @@ spec:
                 items:
                   type: string
                 type: array
-                x-kubernetes-list-type: set
               clientUid:
                 description: ClientUid is the unique identifier of the client in Keycloak.
                   It is immutable and assigned by Keycloak upon client creation.

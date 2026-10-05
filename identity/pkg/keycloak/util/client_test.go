@@ -50,8 +50,8 @@ func TestClientWebOrigins(t *testing.T) {
 
 	existing := MapToClientRepresentation(client)
 	existing.WebOrigins = ptr.To([]string{"*", "https://example.com"})
-	if CompareClientRepresentation(&existing, &desired) {
-		t.Fatal("reordering web origins must cause drift")
+	if !CompareClientRepresentation(&existing, &desired) {
+		t.Fatal("reordering web origins must not cause drift")
 	}
 	existing.WebOrigins = ptr.To([]string{"https://other.example.com"})
 	if CompareClientRepresentation(&existing, &desired) {

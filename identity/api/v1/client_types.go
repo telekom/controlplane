@@ -49,7 +49,6 @@ type ClientStatus struct {
 
 	// AllowedOrigins is synchronized from the referenced realm and managed as Keycloak web origins.
 	// +optional
-	// +listType=set
 	AllowedOrigins []string `json:"allowedOrigins,omitempty"`
 
 	// +listType=map

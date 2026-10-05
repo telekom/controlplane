@@ -209,18 +209,31 @@ var _ = Describe("Zone Controller", func() {
 			duplicateZone.Spec.IdentityProviders[0].AllowedOrigins = []string{"https://app.example.com", "https://app.example.com"}
 			Expect(errors.IsInvalid(k8sClient.Create(ctx, duplicateZone))).To(BeTrue())
 
-			By("rejecting non-URL origins at the Zone CRD boundary")
-			invalidOriginZone := newZone("invalid-origin")
-			invalidOriginZone.Namespace = decoupledEnvName
-			invalidOriginZone.Labels[config.EnvironmentLabelKey] = decoupledEnvName
-			invalidOriginZone.Spec.IdentityProviders[0].AllowedOrigins = []string{"not-a-url"}
-			Expect(errors.IsInvalid(k8sClient.Create(ctx, invalidOriginZone))).To(BeTrue())
+			By("rejecting non-origin URL components at the Zone CRD boundary")
+			for _, invalidOrigin := range []struct {
+				name   string
+				origin string
+			}{
+				{name: "invalid-origin", origin: "not-a-url"},
+				{name: "origin-path", origin: "https://example.com/path"},
+				{name: "origin-query", origin: "https://example.com?x=1"},
+				{name: "origin-fragment", origin: "https://example.com#fragment"},
+				{name: "origin-userinfo", origin: "https://user@example.com"},
+				{name: "origin-empty-port", origin: "https://example.com:"},
+				{name: "origin-port-overflow", origin: "https://example.com:65536"},
+			} {
+				zone := newZone(invalidOrigin.name)
+				zone.Namespace = decoupledEnvName
+				zone.Labels[config.EnvironmentLabelKey] = decoupledEnvName
+				zone.Spec.IdentityProviders[0].AllowedOrigins = []string{invalidOrigin.origin}
+				Expect(errors.IsInvalid(k8sClient.Create(ctx, zone))).To(BeTrue(), invalidOrigin.name)
+			}
 
-			By("accepting absolute URLs with any scheme and the wildcard")
+			By("accepting serialized origins with custom schemes and the wildcard")
 			validOriginZone := newZone("valid-origin")
 			validOriginZone.Namespace = decoupledEnvName
 			validOriginZone.Labels[config.EnvironmentLabelKey] = decoupledEnvName
-			validOriginZone.Spec.IdentityProviders[0].AllowedOrigins = []string{"ftp://example.com/path", "*"}
+			validOriginZone.Spec.IdentityProviders[0].AllowedOrigins = []string{"ftp://example.com:21", "custom://service.example.com", "https://[2001:db8::1]:443", "*"}
 			Expect(k8sClient.Create(ctx, validOriginZone)).To(Succeed())
 			DeferCleanup(func() {
 				Expect(client.IgnoreNotFound(k8sClient.Delete(ctx, validOriginZone))).To(Succeed())
