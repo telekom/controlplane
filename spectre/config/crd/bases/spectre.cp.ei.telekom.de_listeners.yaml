@@ -17,7 +17,20 @@ spec:
     singular: listener
   scope: Namespaced
   versions:
-  - name: v1
+  - additionalPrinterColumns:
+    - jsonPath: .status.conditions[?(@.type=="Ready")].status
+      name: Ready
+      type: string
+    - jsonPath: .spec.consumer.name
+      name: Consumer
+      type: string
+    - jsonPath: .spec.provider.name
+      name: Provider
+      type: string
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    name: v1
     schema:
       openAPIV3Schema:
         description: Listener is the Schema for the listeners API.
