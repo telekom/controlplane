@@ -78,6 +78,9 @@ func (ctrl *Controller) Create(ctx context.Context, env string, req *api.HubCrea
 	if len(resp.CreateGroup.Errors) > 0 {
 		return nil, toMutationErrors(resp.CreateGroup.Errors), nil
 	}
+	if resp.CreateGroup.Group == nil && !resp.CreateGroup.Accepted {
+		return nil, nil, fmt.Errorf("create hub mutation was not accepted by CP API")
+	}
 
 	hubResp := &api.HubResponse{
 		Name:        req.Name,
@@ -144,6 +147,9 @@ func (ctrl *Controller) Update(ctx context.Context, hubName string, req *api.Hub
 
 	if len(resp.UpdateGroup.Errors) > 0 {
 		return nil, toMutationErrors(resp.UpdateGroup.Errors), nil
+	}
+	if resp.UpdateGroup.Group == nil && !resp.UpdateGroup.Accepted {
+		return nil, nil, fmt.Errorf("update hub mutation was not accepted by CP API")
 	}
 
 	hubResp := &api.HubResponse{
@@ -226,6 +232,9 @@ func (ctrl *Controller) CreateTeam(ctx context.Context, env, hubName string, req
 
 	if len(resp.CreateTeam.Errors) > 0 {
 		return nil, toMutationErrors(resp.CreateTeam.Errors), nil
+	}
+	if resp.CreateTeam.Team == nil && !resp.CreateTeam.Accepted {
+		return nil, nil, fmt.Errorf("create team mutation was not accepted by CP API")
 	}
 
 	t := resp.CreateTeam.Team
@@ -311,6 +320,9 @@ func (ctrl *Controller) UpdateTeam(ctx context.Context, hubName, teamName string
 
 	if len(resp.UpdateTeam.Errors) > 0 {
 		return nil, toMutationErrors(resp.UpdateTeam.Errors), nil
+	}
+	if resp.UpdateTeam.Team == nil && !resp.UpdateTeam.Accepted {
+		return nil, nil, fmt.Errorf("update team mutation was not accepted by CP API")
 	}
 
 	t := resp.UpdateTeam.Team
@@ -398,6 +410,9 @@ func (ctrl *Controller) RotateToken(ctx context.Context, hubName, teamName strin
 
 	if len(resp.RotateTeamToken.Errors) > 0 {
 		return nil, toMutationErrors(resp.RotateTeamToken.Errors), nil
+	}
+	if resp.RotateTeamToken.Team == nil && !resp.RotateTeamToken.Accepted {
+		return nil, nil, fmt.Errorf("rotate team token mutation was not accepted by CP API")
 	}
 
 	token := ""

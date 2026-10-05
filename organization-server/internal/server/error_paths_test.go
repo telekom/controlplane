@@ -75,6 +75,23 @@ var _ = Describe("Hub Error Paths", func() {
 			expectStatus(resp, err, http.StatusConflict)
 		})
 
+		It("should return 500 when the CP API rejects an async mutation without a payload", func() {
+			gqlServer := mockGraphQLServer(map[string]any{
+				"CreateGroup": map[string]any{
+					"createGroup": map[string]any{"group": nil, "accepted": false, "errors": []any{}},
+				},
+			})
+			DeferCleanup(gqlServer.Close)
+			roverServer := mockRoverServer(nil)
+			DeferCleanup(roverServer.Close)
+			app := newTestApp(gqlServer.URL, roverServer.URL)
+
+			body := `{"name":"new-hub","displayName":"New Hub","description":"desc"}`
+			req := httptest.NewRequest(http.MethodPost, "/organization/v1/hubs", strings.NewReader(body))
+			resp, err := executeRequest(app, req, adminToken)
+			expectProblem(resp, err, http.StatusInternalServerError, "Internal Server Error", "Unable to create hub")
+		})
+
 		It("should return 202 with request data when the CP API returns no group", func() {
 			gqlServer := mockGraphQLServer(map[string]any{
 				"CreateGroup": map[string]any{
@@ -374,6 +391,24 @@ var _ = Describe("Team Error Paths", func() {
 			Expect(ops).NotTo(ContainElement("CreateTeam"))
 		})
 
+		It("should return 500 when the CP API rejects an async team mutation without a payload", func() {
+			gqlServer := mockGraphQLServer(map[string]any{
+				"GetGroup": existingHubResponse(),
+				"CreateTeam": map[string]any{
+					"createTeam": map[string]any{"team": nil, "accepted": false, "errors": []any{}},
+				},
+			})
+			DeferCleanup(gqlServer.Close)
+			roverServer := mockRoverServer(nil)
+			DeferCleanup(roverServer.Close)
+			app := newTestApp(gqlServer.URL, roverServer.URL)
+
+			body := `{"name":"newteam","email":"t@test.de","members":[{"name":"Alice","email":"alice@test.de"}]}`
+			req := httptest.NewRequest(http.MethodPost, "/organization/v1/hubs/eni/teams", strings.NewReader(body))
+			resp, err := executeRequest(app, req, adminToken)
+			expectProblem(resp, err, http.StatusInternalServerError, "Internal Server Error", "Unable to create team")
+		})
+
 		It("should return 202 with request data when the CP API returns no team", func() {
 			gqlServer := mockGraphQLServer(map[string]any{
 				"GetGroup": existingHubResponse(),
@@ -601,6 +636,38 @@ var _ = Describe("Team Error Paths", func() {
 			req := httptest.NewRequest(http.MethodPatch, "/organization/v1/hubs/eni/teams/nonexistent/teamToken", http.NoBody)
 			resp, err := executeRequest(app, req, adminToken)
 			expectStatus(resp, err, http.StatusNotFound)
+		})
+
+		It("should return 500 when the CP API rejects a token rotation without a payload", func() {
+			readyPhase := "READY"
+			gqlServer := mockGraphQLServer(map[string]any{
+				"GetTeam": map[string]any{
+					"teams": map[string]any{
+						"edges": []map[string]any{{
+							"node": map[string]any{
+								"id": "10", "name": "hyperion", "email": "h@test.de",
+								"createdAt": now.Format(time.RFC3339), "lastModifiedAt": now.Format(time.RFC3339),
+								"statusPhase": &readyPhase, "group": map[string]any{"name": "eni"}, "members": []any{},
+							},
+						}},
+					},
+				},
+				"RotateTeamToken": map[string]any{
+					"rotateTeamToken": map[string]any{
+						"team":     nil,
+						"accepted": false,
+						"errors":   []any{},
+					},
+				},
+			})
+			DeferCleanup(gqlServer.Close)
+			roverServer := mockRoverServer(nil)
+			DeferCleanup(roverServer.Close)
+			app := newTestApp(gqlServer.URL, roverServer.URL)
+
+			req := httptest.NewRequest(http.MethodPatch, "/organization/v1/hubs/eni/teams/hyperion/teamToken", http.NoBody)
+			resp, err := executeRequest(app, req, adminToken)
+			expectProblem(resp, err, http.StatusInternalServerError, "Internal Server Error", "Unable to rotate team token")
 		})
 
 		It("should map VALIDATION_FAILED mutation errors", func() {
