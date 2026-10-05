@@ -14,5 +14,5 @@ func ConvertFileIdToPath(fileId string) string {
 	if len(parts) != 4 || parts[0] == "" || parts[1] == "" || parts[2] == "" || parts[3] == "" {
 		return fileId
 	}
-	return strings.Join(parts[:3], "/") + "/" + parts[3]
+	return strings.Join(parts, "/")
 }
