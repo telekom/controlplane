@@ -665,6 +665,9 @@ func (r *eventSubscriptionResolver) Target(ctx context.Context, obj *ent.EventSu
 		exposure, err = obj.QueryTarget().Only(sysCtx)
 	}
 	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, nil
+		}
 		return nil, fmt.Errorf("loading target for event subscription %d: %w", obj.ID, err)
 	}
 
