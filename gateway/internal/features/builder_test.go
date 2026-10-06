@@ -64,6 +64,7 @@ var _ = Describe("Builder", func() {
 				route.SetProperty("kongRequestTerminationPluginId", "existing-plugin-id")
 				builder := features.NewFeatureBuilder(mockKC, route, nil, gateway)
 				builder.EnableFeature(feature.InstancePassThroughFeature)
+				builder.EnableFeature(feature.InstanceRequestTerminationFeature)
 				mockKC.EXPECT().CreateOrReplaceRoute(mock.Anything, route, mock.Anything).Return(nil)
 				if health {
 					mockKC.EXPECT().CreateOrReplacePlugin(mock.Anything, mock.Anything).
@@ -101,6 +102,7 @@ var _ = Describe("Builder", func() {
 			builder := features.NewFeatureBuilder(mockKC, route, nil, gateway)
 			route.Spec.Traffic.HealthProbe = true
 			builder.SetUpstream(&client.CustomUpstream{Path: "/api"})
+			builder.EnableFeature(feature.InstanceRequestTerminationFeature)
 			mockKC.EXPECT().CreateOrReplaceRoute(mock.Anything, route, mock.Anything).Return(nil)
 			mockKC.EXPECT().CreateOrReplacePlugin(mock.Anything, mock.Anything).Return(nil, errors.New("Kong unavailable"))
 			Expect(builder.Build(ctx)).To(MatchError(ContainSubstring("failed to create or replace plugin request-termination: Kong unavailable")))

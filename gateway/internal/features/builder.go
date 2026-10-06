@@ -51,6 +51,7 @@ type FeaturesBuilder interface {
 	JwtPlugin() *plugin.JwtPlugin
 	RateLimitPluginRoute() *plugin.RateLimitPlugin
 	RateLimitPluginConsumeRoute(*gatewayv1.ConsumeRoute) *plugin.RateLimitPlugin
+	RequestTerminationPlugin() *plugin.RequestTerminationPlugin
 	JumperConfig() *plugin.JumperConfig
 	RoutingConfigs() *plugin.RoutingConfigs
 	IpRestrictionPlugin() *plugin.IpRestrictionPlugin
@@ -249,6 +250,19 @@ func (b *Builder) IpRestrictionPlugin() *plugin.IpRestrictionPlugin {
 	return ipRestrictionPlugin
 }
 
+func (b *Builder) RequestTerminationPlugin() *plugin.RequestTerminationPlugin {
+	if p, ok := b.Plugins["request-termination"]; ok {
+		requestTerminationPlugin, ok := p.(*plugin.RequestTerminationPlugin)
+		if !ok {
+			panic("plugin is not a RequestTerminationPlugin")
+		}
+		return requestTerminationPlugin
+	}
+	requestTerminationPlugin := plugin.RequestTerminationPluginFromRoute(b.Route)
+	b.Plugins["request-termination"] = requestTerminationPlugin
+	return requestTerminationPlugin
+}
+
 func (b *Builder) SetUpstream(upstream client.Upstream) {
 	b.Upstream = upstream
 }
@@ -273,11 +287,6 @@ func (b *Builder) Build(ctx context.Context) error {
 
 	if b.Upstream == nil {
 		return errors.New("upstream is not set")
-	}
-
-	if b.Route.Spec.Traffic.HealthProbe {
-		p := plugin.RequestTerminationPluginFromRoute(b.Route)
-		b.Plugins[p.GetName()] = p
 	}
 
 	// In case a plugin was used before but is not used anymore, we need to remove it

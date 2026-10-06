@@ -155,6 +155,7 @@ func NewFeatureBuilder(ctx context.Context, route *gatewayv1.Route) (features.Fe
 	builder.EnableFeature(feature.InstanceBasicAuthFeature)
 	builder.EnableFeature(feature.InstanceCircuitBreakerFeature)
 	builder.EnableFeature(feature.InstanceDynamicUpstreamFeature)
+	builder.EnableFeature(feature.InstanceRequestTerminationFeature)
 
 	return builder, nil
 }
