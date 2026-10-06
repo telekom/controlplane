@@ -7,11 +7,10 @@ package feature
 import (
 	"context"
 
-	"github.com/telekom/controlplane/gateway/pkg/kong/client"
-	"github.com/telekom/controlplane/gateway/pkg/kong/client/plugin"
-
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	"github.com/telekom/controlplane/gateway/internal/features"
+	"github.com/telekom/controlplane/gateway/pkg/kong/client"
+	"github.com/telekom/controlplane/gateway/pkg/kong/client/plugin"
 )
 
 var _ features.Feature = &LoadBalancingFeature{}
@@ -91,7 +90,6 @@ func RemoveRemoteApiUrlHeaderIfNeeded(route *gatewayv1.Route, rtp *plugin.Reques
 	realRoute := !route.IsProxy()
 
 	if realRoute && lastMileSecurityIsUsed {
-
 		// Remove the remote_api_url header if it exists:
 		// This is necessary to avoid conflicts with Last Mile Security in Jumper, because Jumper will
 		// only consider LoadBalancing servers if the remote_api_url header is not set.

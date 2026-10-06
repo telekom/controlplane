@@ -275,6 +275,9 @@ const (
 	ManagedRouteTypeProxy ManagedRouteType = "Proxy"
 )
 
+// ZoneHealthRouteName is reserved for the platform probe and cannot be used by managed routes.
+const ZoneHealthRouteName = "zone-health"
+
 type ManagedRouteConfig struct {
 	// Name is the name of the created route. It must be unique within the zone.
 	// +kubebuilder:validation:Required

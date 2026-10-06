@@ -5,10 +5,10 @@
 package plugin
 
 import (
+	"github.com/emirpasic/gods/sets/hashset"
+
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	"github.com/telekom/controlplane/gateway/pkg/kong/client"
-
-	"github.com/emirpasic/gods/sets/hashset"
 )
 
 var _ client.CustomPlugin = &AclPlugin{}

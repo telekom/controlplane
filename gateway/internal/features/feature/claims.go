@@ -53,10 +53,8 @@ func (f *ClaimsFeature) IsUsed(ctx context.Context, builder features.FeaturesBui
 	}
 
 	// Check if the route has claims configured in its security configuration
-	isConfigured := false
-	if route.Spec.Security.HasM2MClaims() {
-		isConfigured = true
-	}
+	isConfigured := route.Spec.Security.HasM2MClaims()
+
 	if isFailoverSecondary && HasFailoverSecurity(route) && route.Spec.Traffic.Failover.Security.HasM2MClaims() {
 		isConfigured = true
 	}
@@ -78,7 +76,7 @@ func (f *ClaimsFeature) Apply(ctx context.Context, builder features.FeaturesBuil
 
 	// Provider exposure claims -> default bucket (applies to all consumers)
 	if security.M2M != nil && len(security.M2M.Claims) > 0 {
-		jumperConfig.Claims[plugin.ConsumerId(DefaultProviderKey)] = toPluginClaims(security.M2M.Claims)
+		jumperConfig.Claims[DefaultProviderKey] = toPluginClaims(security.M2M.Claims)
 	}
 
 	return nil

@@ -20,6 +20,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
+	"github.com/telekom/controlplane/admin/internal/routeinputs"
 )
 
 // +kubebuilder:webhook:path=/validate-admin-cp-ei-telekom-de-v1-zone,mutating=false,failurePolicy=fail,sideEffects=None,groups=admin.cp.ei.telekom.de,resources=zones,verbs=create;update,versions=v1,name=vzone-v1.kb.io,admissionReviewVersions=v1
@@ -73,6 +74,15 @@ func invalidZone(name string, errs field.ErrorList) error {
 func validateZoneFields(zone *adminv1.Zone) field.ErrorList { //nolint:gocyclo // Validation intentionally reports all independent field errors at once.
 	specPath := field.NewPath("spec")
 	var errs field.ErrorList
+
+	if zone.Spec.ManagedRoutes != nil {
+		for i, route := range zone.Spec.ManagedRoutes.Routes {
+			if route.Name == adminv1.ZoneHealthRouteName {
+				errs = append(errs, field.Forbidden(specPath.Child("managedRoutes", "routes").Index(i).Child("name"),
+					"zone-health is reserved for the platform health probe"))
+			}
+		}
+	}
 
 	errs = append(errs, validateUniqueNames(specPath.Child("gateways"), "gateway", func(yield func(string, int)) {
 		for i := range zone.Spec.Gateways {
@@ -162,6 +172,7 @@ func validateZoneFields(zone *adminv1.Zone) field.ErrorList { //nolint:gocyclo /
 
 	errs = append(errs, validatePresetTypes(zone)...)
 	errs = append(errs, validateGatewayReferences(zone)...)
+	errs = append(errs, routeinputs.Validate(&zone.Spec)...)
 
 	return errs
 }

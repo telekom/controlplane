@@ -14,6 +14,12 @@ The Gateway domain configures the API Gateway at runtime. It manages routes, con
 
 The Gateway operator uses a plugin-based feature system for configuring route behavior. Each feature is implemented as a separate plugin that can be enabled or disabled per route, allowing fine-grained control over how requests are processed.
 
+### Health Probes
+
+Admin creates a passthrough Route per gateway with `spec.traffic.healthProbe: true` and placeholder upstream `http://localhost:8081/api/v1/zone-health`. The Kong client restricts flagged routes to `HEAD`, and the builder attaches the `request-termination` plugin with status 200. The service is required by Kong, but never called. This checks gateway reachability and route configuration, not backend health.
+
+`healthProbe` is an optional boolean, false when omitted. Unflagged routes keep normal behavior even with the same upstream path. Reconciliation corrects method drift, and disabling the flag clears the restriction and cleans up the plugin. Other HTTP methods do not match the health route, although another overlapping route can match them. No separate methods field is needed. Deploy the updated Route CRD and Gateway controller before Admin.
+
 ### Audience Claim Resolution
 
 An API provider can require that every token reaching its backend carries an **audience claim** (`aud`), so the backend can confirm the token was meant for it. The provider declares this once on the API exposure, and the platform makes sure the claim is present on all traffic to that API.

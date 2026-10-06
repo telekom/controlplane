@@ -71,7 +71,9 @@ func (h *ZoneHandler) CreateOrUpdate(ctx context.Context, obj *adminv1.Zone) err
 		populateRealmName,
 		reconcileGateways,
 		reconcileInternalRoutes,
+		validateGatewayRouteInputs,
 		createIdentityRoutes,
+		createZoneHealthRoutes,
 		cleanupStaleRoutes,
 		populatePresetStatus,
 	}
