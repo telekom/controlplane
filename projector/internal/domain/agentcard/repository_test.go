@@ -19,6 +19,7 @@ import (
 	"github.com/telekom/controlplane/projector/internal/domain/agentcard"
 	"github.com/telekom/controlplane/projector/internal/domain/shared"
 	"github.com/telekom/controlplane/projector/internal/infrastructure"
+	"github.com/telekom/controlplane/projector/internal/infrastructure/cachekeys"
 	"github.com/telekom/controlplane/projector/internal/runtime"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -361,6 +362,62 @@ var _ = Describe("AgentCard Repository", func() {
 			resolver := infrastructure.NewIDResolver(client, cache)
 			_, err = resolver.FindActiveAgentCardID(ctx, "/agent/weather/v1")
 			Expect(errors.Is(err, infrastructure.ErrEntityNotFound)).To(BeTrue())
+		})
+
+		It("should delete by namespace and name when the base path is unknown", func() {
+			other, err := client.Team.Create().
+				SetName("platform--other").
+				SetEmail("other@example.com").
+				SetNamespace("platform--other").
+				Save(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			deps.teamIDs["platform--other"] = other.ID
+
+			for _, owner := range []struct {
+				teamName string
+				active   bool
+			}{{"platform--other", false}, {"platform--narvi", true}} {
+				Expect(repo.Upsert(ctx, &agentcard.AgentCardData{
+					Meta:        shared.NewMetadata("prod--"+owner.teamName, "agent-weather-v1", nil),
+					StatusPhase: "READY",
+					BasePath:    "/agent/weather/v1",
+					Version:     "1.0.0",
+					Name:        "agent-weather-v1",
+					DisplayName: "Weather Agent",
+					Active:      owner.active,
+					TeamName:    owner.teamName,
+				})).To(Succeed())
+			}
+
+			cache.Wait()
+
+			activeID, err := client.AgentCard.Query().Where(entagentcard.ActiveEQ(true)).OnlyID(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			et, lk := cachekeys.ActiveAgentCard("/agent/weather/v1")
+			cachedID, found := cache.Get(et, lk)
+			Expect(found).To(BeTrue())
+			Expect(cachedID).To(Equal(activeID))
+
+			key := agentcard.AgentCardKey{TeamName: "platform--narvi", Namespace: "prod--platform--narvi", Name: "agent-weather-v1"}
+			Expect(repo.Delete(ctx, key)).To(Succeed())
+			cache.Wait()
+
+			_, found = cache.Get(et, lk)
+			Expect(found).To(BeFalse())
+
+			remaining, err := client.AgentCard.Query().WithOwner().All(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(remaining).To(HaveLen(1))
+			Expect(remaining[0].Edges.Owner.Name).To(Equal("platform--other"))
+
+			resolver := infrastructure.NewIDResolver(client, cache)
+			_, err = resolver.FindActiveAgentCardID(ctx, "/agent/weather/v1")
+			Expect(errors.Is(err, infrastructure.ErrEntityNotFound)).To(BeTrue())
+		})
+
+		It("should be idempotent when no entity has the namespace and name", func() {
+			key := agentcard.AgentCardKey{TeamName: "platform--narvi", Namespace: "prod--platform--narvi", Name: "missing"}
+			Expect(repo.Delete(ctx, key)).To(Succeed())
 		})
 	})
 })

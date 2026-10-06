@@ -11,9 +11,13 @@ import "github.com/telekom/controlplane/projector/internal/domain/shared"
 
 // McpServerKey is the composite identity key for McpServer catalogue entities.
 // McpServer base paths are unique per team, so both components are needed.
+// Namespace and Name identify the Kubernetes resource. Delete uses them to
+// find the entity when BasePath is empty.
 type McpServerKey struct {
-	BasePath string
-	TeamName string
+	BasePath  string
+	TeamName  string
+	Namespace string
+	Name      string
 }
 
 // McpServerData carries the transformed data for an McpServer catalogue entity.

@@ -11,9 +11,13 @@ import "github.com/telekom/controlplane/projector/internal/domain/shared"
 
 // AgentCardKey is the composite identity key for AgentCard catalogue entities.
 // AgentCard base paths are unique per team, so both components are needed.
+// Namespace and Name identify the Kubernetes resource. Delete uses them to
+// find the entity when BasePath is empty.
 type AgentCardKey struct {
-	BasePath string
-	TeamName string
+	BasePath  string
+	TeamName  string
+	Namespace string
+	Name      string
 }
 
 // AgentCardData carries the transformed data for an AgentCard catalogue entity.

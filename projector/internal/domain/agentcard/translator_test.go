@@ -113,20 +113,24 @@ var _ = Describe("AgentCard Translator", func() {
 	Describe("KeyFromDelete", func() {
 		It("should use lastKnown when available", func() {
 			lastKnown := &agenticv1.AgentCard{
-				ObjectMeta: metav1.ObjectMeta{Namespace: "prod--platform--narvi"},
+				ObjectMeta: metav1.ObjectMeta{Name: "agent-weather-v1", Namespace: "prod--platform--narvi"},
 				Spec:       agenticv1.AgentCardSpec{BasePath: "/agent/weather/v1"},
 			}
 			key, err := t.KeyFromDelete(k8stypes.NamespacedName{Name: "agent-weather-v1", Namespace: "prod--platform--narvi"}, lastKnown)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(key.BasePath).To(Equal("/agent/weather/v1"))
 			Expect(key.TeamName).To(Equal("platform--narvi"))
+			Expect(key.Namespace).To(Equal("prod--platform--narvi"))
+			Expect(key.Name).To(Equal("agent-weather-v1"))
 		})
 
-		It("should fall back to req.Name when lastKnown is nil", func() {
+		It("should use the namespace and name from req when lastKnown is nil", func() {
 			key, err := t.KeyFromDelete(k8stypes.NamespacedName{Name: "agent-weather-v1", Namespace: "prod--platform--narvi"}, nil)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(key.BasePath).To(Equal("agent-weather-v1"))
+			Expect(key.BasePath).To(BeEmpty())
 			Expect(key.TeamName).To(Equal("platform--narvi"))
+			Expect(key.Namespace).To(Equal("prod--platform--narvi"))
+			Expect(key.Name).To(Equal("agent-weather-v1"))
 		})
 	})
 })

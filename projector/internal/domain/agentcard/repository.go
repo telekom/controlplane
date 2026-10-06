@@ -156,30 +156,54 @@ func (r *Repository) Upsert(ctx context.Context, data *AgentCardData) error {
 }
 
 // Delete removes an AgentCard catalogue entity from the database by base
-// path and team name. Returns nil if the entity does not exist (idempotent
-// delete).
+// path and team name. If the key has no base path, because the object was
+// not in the delete cache, Delete finds the entity by namespace and resource
+// name. Returns nil if the entity does not exist (idempotent delete).
 func (r *Repository) Delete(ctx context.Context, key AgentCardKey) error {
 	start := time.Now()
 	defer func() {
 		metrics.DBOperationDuration.WithLabelValues(entityType, metrics.OperationDelete).Observe(time.Since(start).Seconds())
 	}()
 
+	if key.BasePath != "" {
+		return r.deleteByBasePath(ctx, key.BasePath, key.TeamName)
+	}
+
+	basePaths, err := r.client.AgentCard.Query().
+		Where(
+			entagentcard.NamespaceEQ(key.Namespace),
+			entagentcard.NameEQ(key.Name),
+		).
+		Select(entagentcard.FieldBasePath).
+		Strings(ctx)
+	if err != nil {
+		return fmt.Errorf("find agent_card %s/%s: %w", key.Namespace, key.Name, err)
+	}
+	for _, basePath := range basePaths {
+		if err := r.deleteByBasePath(ctx, basePath, key.TeamName); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (r *Repository) deleteByBasePath(ctx context.Context, basePath, teamName string) error {
 	count, err := r.client.AgentCard.Delete().
 		Where(
-			entagentcard.BasePathEQ(key.BasePath),
-			entagentcard.HasOwnerWith(team.NameEQ(key.TeamName)),
+			entagentcard.BasePathEQ(basePath),
+			entagentcard.HasOwnerWith(team.NameEQ(teamName)),
 		).
 		Exec(ctx)
 	if err != nil {
 		return fmt.Errorf("delete agent_card %q (team %q): %w",
-			key.BasePath, key.TeamName, err)
+			basePath, teamName, err)
 	}
 	if count > 0 {
-		et, lk := cachekeys.AgentCard(key.BasePath, key.TeamName)
+		et, lk := cachekeys.AgentCard(basePath, teamName)
 		r.cache.Del(et, lk)
 		// Also clear the active-agent-card cache — if this was the active
 		// AgentCard, the cache entry is now stale.
-		aet, alk := cachekeys.ActiveAgentCard(key.BasePath)
+		aet, alk := cachekeys.ActiveAgentCard(basePath)
 		r.cache.Del(aet, alk)
 	}
 	return nil
