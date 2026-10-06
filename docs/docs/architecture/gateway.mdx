@@ -14,11 +14,11 @@ The Gateway domain configures the API Gateway at runtime. It manages routes, con
 
 The Gateway operator uses a plugin-based feature system for configuring route behavior. Each feature is implemented as a separate plugin that can be enabled or disabled per route, allowing fine-grained control over how requests are processed.
 
-### Zone-Health Convention
+### Health Probes
 
-Admin creates a passthrough Route per gateway with placeholder upstream `http://localhost:8081/api/v1/zone-health`. The selected upstream path `/api/v1/zone-health` is reserved: the Kong client restricts the route to `HEAD`, and the builder attaches the `request-termination` plugin with status 200. The service is required by Kong, but never called. This checks gateway reachability and route configuration, not backend health.
+Admin creates a passthrough Route per gateway with `spec.traffic.healthProbe: true` and placeholder upstream `http://localhost:8081/api/v1/zone-health`. The Kong client restricts flagged routes to `HEAD`, and the builder attaches the `request-termination` plugin with status 200. The service is required by Kong, but never called. This checks gateway reachability and route configuration, not backend health.
 
-This convention uses existing Route fields; no generic method-filter or termination fields are added to the CRD. It applies to any route whose selected upstream has that exact path, irrespective of its name. Unrelated and similar paths remain unchanged. Reconciliation corrects method drift, and changing away from the reserved path clears the restriction and cleans up the plugin. Other HTTP methods do not match the health route, although another overlapping route can match them.
+`healthProbe` is an optional boolean, false when omitted. Unflagged routes keep normal behavior even with the same upstream path. Reconciliation corrects method drift, and disabling the flag clears the restriction and cleans up the plugin. Other HTTP methods do not match the health route, although another overlapping route can match them. No separate methods field is needed. Deploy the updated Route CRD and Gateway controller before Admin.
 
 ### Audience Claim Resolution
 

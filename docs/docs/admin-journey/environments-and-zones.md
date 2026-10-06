@@ -236,9 +236,9 @@ curl -I https://<preset-hostname>/env1/zone-health
 curl -i https://<preset-hostname>/env1/zone-health
 ```
 
-Gateway recognizes the reserved upstream path `/api/v1/zone-health`, configures HEAD-only matching, and attaches Kong's `request-termination` plugin with status 200. The Route uses a placeholder upstream `http://localhost:8081/api/v1/zone-health` only because Kong requires a service. No new Route or Zone CRD fields are needed; deploy the Gateway controller before the Admin controller.
+Admin sets `spec.traffic.healthProbe: true` on the Route. Gateway configures HEAD-only matching and attaches Kong's `request-termination` plugin with status 200. When false or omitted, normal routing applies, regardless of upstream path. The Route uses a placeholder upstream `http://localhost:8081/api/v1/zone-health` only because Kong requires a service. Apply the updated Route CRD and deploy the Gateway controller before the Admin controller; the Zone CRD is unchanged.
 
-Hostnames and joined paths are sorted and deduplicated. Before creating identity or health routes, Admin checks the Route limits of 20 hostnames and 10 distinct joined paths per gateway route; exceeding them blocks reconciliation rather than repeatedly failing CRD validation. Removing a gateway removes its health route, while removing managed routes does not.
+Hostnames and joined paths are sorted and deduplicated. Zone create/update admission rejects gateways whose combined presets exceed the Route limits of 20 distinct hostnames or 10 distinct joined paths, with an error on `spec.gateways[i].name`. These limits apply per gateway, not per preset or across the whole Zone. Base paths that normalize to the same joined path count once. The controller uses the same validation before creating identity or health routes, returning a blocked error for older invalid Zones rather than repeatedly failing CRD validation. Removing a gateway removes its health route, while removing managed routes does not.
 
 ### Managed Routes
 
@@ -246,7 +246,7 @@ Zones can optionally define **managed routes** — platform-managed gateway rout
 
 Each managed route has a **type** that determines its behavior:
 
-The managed-route name `zone-health` is reserved for the platform health probe. Zone admission rejects it on create and update, regardless of route type or path. Existing Zones with this name are blocked before modifying the conflicting route or managed-route status; rename the managed route before reconciliation can proceed.
+The managed-route name `zone-health` is reserved for the platform health probe. Zone admission rejects it on create and update, regardless of route type or path. Name-collision protection relies on the validating webhook: existing Zones must not already use this name, and admission must not be bypassed.
 
 | Type | Behavior |
 |------|----------|

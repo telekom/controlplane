@@ -12,9 +12,9 @@ import (
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	"github.com/telekom/controlplane/admin/internal/handler/util/naming"
+	"github.com/telekom/controlplane/admin/internal/routeinputs"
 	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
-	"github.com/telekom/controlplane/common/pkg/types"
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -53,18 +53,19 @@ var _ = Describe("Zone-health routes", func() {
 		return route
 	}
 
-	DescribeTable("creates the reserved probe without DTC or managed routes",
+	DescribeTable("creates the health probe without DTC or managed routes",
 		func(visibility adminv1.ZoneVisibility) {
 			zone.Spec.Visibility = visibility
 			Expect(reconcile()).To(Succeed())
 			route := getRoute("standard")
 			Expect(route.Spec.Type).To(Equal(gatewayapi.RouteTypePrimary))
 			Expect(route.Spec.PassThrough).To(BeTrue())
+			Expect(route.Spec.Traffic.HealthProbe).To(BeTrue())
 			Expect(route.Spec.GatewayRef.Name).To(Equal(naming.ForGateway(zone, "standard")))
 			Expect(route.Spec.Hostnames).To(Equal([]string{"test-stargate.de"}))
 			Expect(route.Spec.Paths).To(Equal([]string{zoneHealthPath}))
 			Expect(route.Spec.Backend.Upstreams).To(Equal([]gatewayapi.Upstream{{
-				Scheme: "http", Hostname: "localhost", Port: jumperIdentityPort, Path: gatewayapi.ZoneHealthUpstreamPath,
+				Scheme: "http", Hostname: "localhost", Port: jumperIdentityPort, Path: zoneHealthUpstreamPath,
 			}}))
 			Expect(route.Spec.Security.RealmName).To(Equal(zone.Status.RealmName))
 			Expect(route.Labels).To(HaveKeyWithValue(config.OwnerUidLabelKey, string(zone.UID)))
@@ -135,38 +136,11 @@ var _ = Describe("Zone-health routes", func() {
 		}, &gatewayapi.Route{})).To(MatchError(ContainSubstring("not found")))
 	})
 
-	DescribeTable("blocks legacy managed-route collisions without overwriting the Route or status",
-		func(routeType adminv1.ManagedRouteType) {
-			Expect(reconcile()).To(Succeed())
-			existing := getRoute("standard")
-			existing.Spec.Paths = []string{"/legacy"}
-			existing.Spec.Backend.Upstreams[0].Hostname = "backend.example.com"
-			existing.Spec.Backend.Upstreams[0].Path = "/legacy"
-			Expect(k8sClient.Update(ctx, existing)).To(Succeed())
-			zone.Spec.ManagedRoutes = &adminv1.ManagedRoutesConfig{Routes: []adminv1.ManagedRouteConfig{{
-				Name: adminv1.ZoneHealthRouteName, Path: "/legacy", Url: "http://backend.example.com/legacy", Type: routeType,
-			}}}
-			zone.Status.ManagedRoutes = []types.ObjectRef{{Name: existing.Name, Namespace: existing.Namespace}}
-			beforeStatus := append([]types.ObjectRef(nil), zone.Status.ManagedRoutes...)
-			err := handler.CreateOrUpdate(newTestContext(zone), zone)
-			var blocked ctrlerrors.BlockedError
-			Expect(errors.As(err, &blocked)).To(BeTrue())
-			Expect(blocked.IsBlocked()).To(BeTrue())
-			Expect(err).To(MatchError(ContainSubstring("reserved for the platform health probe")))
-			after := getRoute("standard")
-			Expect(after.Spec).To(Equal(existing.Spec))
-			Expect(after.ResourceVersion).To(Equal(existing.ResourceVersion))
-			Expect(zone.Status.ManagedRoutes).To(Equal(beforeStatus))
-		},
-		Entry("Proxy", adminv1.ManagedRouteTypeProxy),
-		Entry("TeamAPI", adminv1.ManagedRouteTypeTeamAPI),
-	)
-
 	DescribeTable("blocks excessive inputs before creating identity routes",
 		func(hostnames bool) {
-			count := maxRoutePaths + 1
+			count := routeinputs.MaxPaths + 1
 			if hostnames {
-				count = maxRouteHostnames + 1
+				count = routeinputs.MaxHostnames + 1
 			}
 			zone.Spec.Presets = nil
 			for i := 0; i < count; i++ {
@@ -204,18 +178,18 @@ var _ = Describe("Zone-health routes", func() {
 
 	It("counts joined paths rather than raw base paths at the limit", func() {
 		zone.Spec.Presets = nil
-		for i := 0; i < maxRoutePaths; i++ {
+		for i := 0; i < routeinputs.MaxPaths; i++ {
 			zone.Spec.Presets = append(zone.Spec.Presets, adminv1.Preset{
 				Name: fmt.Sprintf("preset-%d", i), Type: adminv1.GatewayTypeAPI, Default: i == 0,
 				GatewayRef: "standard", IdentityProviderRef: "primary",
 				Urls: []adminv1.UrlConfig{
 					{Hostname: fmt.Sprintf("host%d.example.com", i), BasePath: fmt.Sprintf("/v%d", i)},
-					{Hostname: fmt.Sprintf("host%d.example.com", i+maxRoutePaths), BasePath: fmt.Sprintf("/v%d/", i)},
+					{Hostname: fmt.Sprintf("host%d.example.com", i+routeinputs.MaxPaths), BasePath: fmt.Sprintf("/v%d/", i)},
 				},
 			})
 		}
 		Expect(reconcile()).To(Succeed())
-		Expect(getRoute("standard").Spec.Paths).To(HaveLen(maxRoutePaths))
-		Expect(getRoute("standard").Spec.Hostnames).To(HaveLen(maxRouteHostnames))
+		Expect(getRoute("standard").Spec.Paths).To(HaveLen(routeinputs.MaxPaths))
+		Expect(getRoute("standard").Spec.Hostnames).To(HaveLen(routeinputs.MaxHostnames))
 	})
 })

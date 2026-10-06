@@ -10,6 +10,9 @@ import (
 	"slices"
 
 	"github.com/pkg/errors"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
+
 	cc "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/controller"
@@ -19,10 +22,8 @@ import (
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	"github.com/telekom/controlplane/gateway/internal/features"
 	"github.com/telekom/controlplane/gateway/internal/features/feature"
-	"github.com/telekom/controlplane/gateway/internal/handler/gateway"
+	gatewayhandler "github.com/telekom/controlplane/gateway/internal/handler/gateway"
 	"github.com/telekom/controlplane/gateway/pkg/kongutil"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 var _ handler.Handler[*gatewayv1.Route] = &RouteHandler{}
@@ -30,7 +31,7 @@ var _ handler.Handler[*gatewayv1.Route] = &RouteHandler{}
 type RouteHandler struct{}
 
 func (h *RouteHandler) CreateOrUpdate(ctx context.Context, route *gatewayv1.Route) error {
-	log := log.FromContext(ctx)
+	log := ctrllog.FromContext(ctx)
 	kubeClient := cc.ClientFromContextOrDie(ctx)
 	builder, err := NewFeatureBuilder(ctx, route)
 	if err != nil {
@@ -67,12 +68,13 @@ func (h *RouteHandler) CreateOrUpdate(ctx context.Context, route *gatewayv1.Rout
 			return errors.Wrap(err, "failed to list route consumers")
 		}
 
-		for _, consumer := range routeConsumers.Items {
-			if controller.IsBeingDeleted(&consumer) {
+		for i := range routeConsumers.Items {
+			consumer := &routeConsumers.Items[i]
+			if controller.IsBeingDeleted(consumer) {
 				log.V(1).Info("Skipping consumer that is being deleted", "consumer", consumer.Name)
 				continue
 			}
-			builder.AddAllowedConsumers(&consumer)
+			builder.AddAllowedConsumers(consumer)
 		}
 		log.Info("Found consumers", "count", len(builder.GetAllowedConsumers()), "sum", len(routeConsumers.Items))
 
@@ -107,8 +109,7 @@ func (h *RouteHandler) CreateOrUpdate(ctx context.Context, route *gatewayv1.Rout
 }
 
 func (h *RouteHandler) Delete(ctx context.Context, route *gatewayv1.Route) error {
-
-	_, gateway, err := gateway.GetGatewayByRef(ctx, route.Spec.GatewayRef, true)
+	_, gateway, err := gatewayhandler.GetGatewayByRef(ctx, route.Spec.GatewayRef, true)
 	if err != nil {
 		return err
 	}
@@ -127,8 +128,7 @@ func (h *RouteHandler) Delete(ctx context.Context, route *gatewayv1.Route) error
 }
 
 func NewFeatureBuilder(ctx context.Context, route *gatewayv1.Route) (features.FeaturesBuilder, error) {
-
-	ready, gateway, err := gateway.GetGatewayByRef(ctx, route.Spec.GatewayRef, true)
+	ready, gateway, err := gatewayhandler.GetGatewayByRef(ctx, route.Spec.GatewayRef, true)
 	if err != nil {
 		return nil, err
 	}

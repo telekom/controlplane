@@ -23,16 +23,6 @@ import (
 
 // reconcileInternalRoutes manages the optional managed routes for a zone.
 func reconcileInternalRoutes(ctx context.Context, hc *HandlingContext) error {
-	// Existing Zones may predate admission validation. Reject collisions before
-	// changing either the Route or the status that references it.
-	if hc.Zone.Spec.ManagedRoutes != nil {
-		for _, route := range hc.Zone.Spec.ManagedRoutes.Routes {
-			if route.Name == adminv1.ZoneHealthRouteName {
-				return ctrlerrors.BlockedErrorf("managed route name %q is reserved for the platform health probe", route.Name)
-			}
-		}
-	}
-
 	// Reset status fields related to team API routes to avoid stale data if routes are removed from spec
 	hc.Zone.Status.TeamApiIdentityRealm = nil
 	hc.Zone.Status.ManagedRoutes = nil

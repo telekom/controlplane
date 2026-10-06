@@ -10,7 +10,6 @@ import (
 	"net/http"
 
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
-	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	kong "github.com/telekom/controlplane/gateway/pkg/kong/api"
 )
 
@@ -58,7 +57,7 @@ func (c *kongClient) CreateOrReplaceRoute(ctx context.Context, route CustomRoute
 		HttpsRedirectStatusCode: 426,
 		Tags:                    normalizeSet(&tags),
 	}
-	if upstreamPath == gatewayv1.ZoneHealthUpstreamPath {
+	if route.IsHealthProbe() {
 		routeBody.Methods = &[]string{http.MethodHead}
 	}
 

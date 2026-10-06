@@ -189,8 +189,9 @@ var _ = Describe("CreateOrReplaceRoute", func() {
 		Entry("when a non-health route has a method restriction", func(current *kong.Route) { current.Methods = ptr([]string{http.MethodHead}) }),
 	)
 
-	DescribeTable("configures methods from the reserved upstream path",
-		func(upstreamPath string, expectedMethods *[]string) {
+	DescribeTable("configures methods from the healthProbe flag",
+		func(upstreamPath string, health bool, expectedMethods *[]string) {
+			route.Spec.Traffic.HealthProbe = health
 			upstream = &clientpkg.CustomUpstream{Scheme: "https", Host: "upstream.example", Port: 443, Path: upstreamPath}
 			service := matchingService()
 			service.JSON200.Path = ptr(upstreamPath)
@@ -207,16 +208,17 @@ var _ = Describe("CreateOrReplaceRoute", func() {
 			}, nil)
 			Expect(client.CreateOrReplaceRoute(ctx, route, upstream)).To(Succeed())
 		},
-		Entry("HEAD for zone-health, regardless of Route name", v1.ZoneHealthUpstreamPath, ptr([]string{http.MethodHead})),
-		Entry("no restriction for ordinary routes", "/api", nil),
-		Entry("no restriction for a similar path", v1.ZoneHealthUpstreamPath+"/other", nil),
+		Entry("HEAD for a health probe with arbitrary upstream", "/api", true, ptr([]string{http.MethodHead})),
+		Entry("no restriction for ordinary routes", "/api", false, nil),
+		Entry("no restriction for the old placeholder path", "/api/v1/zone-health", false, nil),
 	)
 
 	DescribeTable("reconciles zone-health method drift",
 		func(currentMethods *[]string, shouldWrite bool) {
-			upstream = &clientpkg.CustomUpstream{Scheme: "https", Host: "upstream.example", Port: 443, Path: v1.ZoneHealthUpstreamPath}
+			route.Spec.Traffic.HealthProbe = true
+			upstream = &clientpkg.CustomUpstream{Scheme: "https", Host: "upstream.example", Port: 443, Path: "/api"}
 			service := matchingService()
-			service.JSON200.Path = ptr(v1.ZoneHealthUpstreamPath)
+			service.JSON200.Path = ptr("/api")
 			current := matchingRoute()
 			current.JSON200.Methods = currentMethods
 			api.EXPECT().GetServiceWithResponse(mock.Anything, "test-route").Return(service, nil)

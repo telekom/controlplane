@@ -20,6 +20,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
+	"github.com/telekom/controlplane/admin/internal/routeinputs"
 )
 
 // +kubebuilder:webhook:path=/validate-admin-cp-ei-telekom-de-v1-zone,mutating=false,failurePolicy=fail,sideEffects=None,groups=admin.cp.ei.telekom.de,resources=zones,verbs=create;update,versions=v1,name=vzone-v1.kb.io,admissionReviewVersions=v1
@@ -171,6 +172,7 @@ func validateZoneFields(zone *adminv1.Zone) field.ErrorList { //nolint:gocyclo /
 
 	errs = append(errs, validatePresetTypes(zone)...)
 	errs = append(errs, validateGatewayReferences(zone)...)
+	errs = append(errs, routeinputs.Validate(&zone.Spec)...)
 
 	return errs
 }

@@ -10,14 +10,16 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 
+	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	"github.com/telekom/controlplane/gateway/pkg/kong/client"
 	"github.com/telekom/controlplane/gateway/pkg/kong/client/plugin"
 )
 
-var ErrNoRoute = errors.New("no route found in builder context")
-var ErrNoConsumer = errors.New("no consumer found in builder context")
+var (
+	ErrNoRoute    = errors.New("no route found in builder context")
+	ErrNoConsumer = errors.New("no consumer found in builder context")
+)
 
 type Feature interface {
 	// Name of the feature
@@ -116,6 +118,7 @@ func (b *Builder) GetRoute() (*gatewayv1.Route, bool) {
 	}
 	return b.Route, true
 }
+
 func (b *Builder) GetConsumer() (*gatewayv1.Consumer, bool) {
 	if b.Consumer == nil {
 		return nil, false
@@ -272,7 +275,7 @@ func (b *Builder) Build(ctx context.Context) error {
 		return errors.New("upstream is not set")
 	}
 
-	if b.Upstream.GetPath() == gatewayv1.ZoneHealthUpstreamPath {
+	if b.Route.Spec.Traffic.HealthProbe {
 		p := plugin.RequestTerminationPluginFromRoute(b.Route)
 		b.Plugins[p.GetName()] = p
 	}
@@ -347,7 +350,6 @@ func (b *Builder) BuildForConsumer(ctx context.Context) error {
 	}
 
 	return nil
-
 }
 
 // sort features based on their priority

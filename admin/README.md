@@ -66,7 +66,7 @@ This CRD represents a physical or logical deployment target with gateway and ide
 - The `visibility` field controls subscription behavior and can be either `World` or `Enterprise`.
 - Zones can optionally define managed routes through the `managedRoutes` field. Each route has a `type`: `TeamAPI` (authenticated, no ACL) or `Proxy` (passthrough reverse proxy).
 - The Zone controller creates and manages related resources in its handlers.
-- Every gateway receives an owned `<gateway>--zone-health` passthrough route on all its preset hostnames and base paths, independent of managed routes and DTC. Gateway answers HEAD probes with 200 using the reserved upstream path `/api/v1/zone-health`; no CRD schema changes are required. Shared validation blocks excessive route inputs before creating identity or health routes.
+- Every gateway receives an owned `<gateway>--zone-health` passthrough route on all its preset hostnames and base paths, independent of managed routes and DTC. Admin sets `spec.traffic.healthProbe: true` so Gateway answers HEAD probes with 200 without an upstream call. Deploy the updated Route CRD and Gateway controller before Admin; the Zone CRD is unchanged. Shared validation blocks excessive route inputs before creating identity or health routes.
 - All managed resources are labeled with both `cp.ei.telekom.de/environment` and `cp.ei.telekom.de/zone` labels.
 
 </details>

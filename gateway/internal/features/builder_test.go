@@ -9,8 +9,6 @@ import (
 	"errors"
 	"net/http"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"github.com/stretchr/testify/mock"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -21,6 +19,9 @@ import (
 	"github.com/telekom/controlplane/gateway/pkg/kong/client"
 	clientmock "github.com/telekom/controlplane/gateway/pkg/kong/client/mock"
 	"github.com/telekom/controlplane/gateway/pkg/kong/client/plugin"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Builder", func() {
@@ -53,9 +54,10 @@ var _ = Describe("Builder", func() {
 	})
 
 	Describe("Build()", func() {
-		DescribeTable("adds termination only for the reserved upstream",
+		DescribeTable("adds termination only when healthProbe is enabled",
 			func(upstreamPath string, health bool) {
 				route.Spec.PassThrough = true
+				route.Spec.Traffic.HealthProbe = health
 				route.Spec.Backend.Upstreams = []gatewayv1.Upstream{{
 					Scheme: "http", Hostname: "localhost", Port: 8081, Path: upstreamPath,
 				}}
@@ -90,14 +92,15 @@ var _ = Describe("Builder", func() {
 					Expect(route.GetProperty("kongRequestTerminationPluginId")).To(BeEmpty())
 				}
 			},
-			Entry("zone-health", gatewayv1.ZoneHealthUpstreamPath, true),
-			Entry("upstream changed away from zone-health", "/api", false),
-			Entry("similar path", gatewayv1.ZoneHealthUpstreamPath+"/other", false),
+			Entry("health probe with arbitrary upstream", "/api", true),
+			Entry("disabled probe", "/api", false),
+			Entry("ordinary route using the old placeholder path", "/api/v1/zone-health", false),
 		)
 
 		It("propagates zone-health plugin creation errors", func() {
 			builder := features.NewFeatureBuilder(mockKC, route, nil, gateway)
-			builder.SetUpstream(&client.CustomUpstream{Path: gatewayv1.ZoneHealthUpstreamPath})
+			route.Spec.Traffic.HealthProbe = true
+			builder.SetUpstream(&client.CustomUpstream{Path: "/api"})
 			mockKC.EXPECT().CreateOrReplaceRoute(mock.Anything, route, mock.Anything).Return(nil)
 			mockKC.EXPECT().CreateOrReplacePlugin(mock.Anything, mock.Anything).Return(nil, errors.New("Kong unavailable"))
 			Expect(builder.Build(ctx)).To(MatchError(ContainSubstring("failed to create or replace plugin request-termination: Kong unavailable")))
@@ -200,7 +203,7 @@ var _ = Describe("Builder", func() {
 				// so a nil route causes a panic rather than returning ErrNoRoute.
 				builder := features.NewFeatureBuilder(mockKC, nil, nil, gateway)
 				Expect(func() {
-					_ = builder.Build(ctx) //nolint:errcheck
+					_ = builder.Build(ctx)
 				}).To(Panic())
 			})
 		})
@@ -442,7 +445,7 @@ var _ = Describe("Builder", func() {
 				// before the nil check, so a nil consumer causes a panic.
 				builder := features.NewFeatureBuilder(mockKC, route, nil, gateway)
 				Expect(func() {
-					_ = builder.BuildForConsumer(ctx) //nolint:errcheck
+					_ = builder.BuildForConsumer(ctx)
 				}).To(Panic())
 			})
 		})

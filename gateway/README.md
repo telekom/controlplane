@@ -120,9 +120,9 @@ configuration. This make handling plugins much more easier, and developers do no
 
 ### Zone-health routes
 
-The selected upstream path `/api/v1/zone-health` is reserved for platform health probes. Admin creates passthrough routes using placeholder upstream `http://localhost:8081/api/v1/zone-health`; the Kong client restricts them to HEAD, and the builder attaches `request-termination` with `status_code: 200`. Kong requires the service, but the upstream is never called.
+Admin creates passthrough routes with `spec.traffic.healthProbe: true` and placeholder upstream `http://localhost:8081/api/v1/zone-health`. The Kong client restricts flagged routes to HEAD, and the builder attaches `request-termination` with `status_code: 200`. Kong requires the service, but the upstream is never called.
 
-This is an internal convention, not a generic Route API feature: no CRD schema changes are needed. Any selected upstream with that exact path gets this behavior regardless of the Route name. Other paths keep their existing behavior. Method drift is corrected, and changing away from the reserved path removes the method restriction and plugin through normal reconciliation and cleanup. Deploy the Gateway controller before Admin.
+`healthProbe` is an optional boolean, false when omitted. Unflagged routes retain normal behavior regardless of upstream path. Method drift is corrected, and disabling the flag removes the method restriction and plugin through normal reconciliation and cleanup. No separate methods field is needed. Deploy the updated Route CRD and Gateway controller before Admin; the Zone CRD is unchanged.
 
 ## CRDs
 All CRDs can be found here: [CRDs](./config/crd/bases/).

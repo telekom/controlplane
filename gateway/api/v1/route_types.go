@@ -10,10 +10,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// ZoneHealthUpstreamPath is reserved: Gateway answers these requests itself
-// with HTTP 200 and restricts the Kong route to HEAD, without calling an upstream.
-const ZoneHealthUpstreamPath = "/api/v1/zone-health"
-
 // RouteType defines the type of the route.
 // +kubebuilder:validation:Enum=primary;secondary;proxy
 type RouteType string
@@ -180,6 +176,10 @@ func (g *Route) GetRequestBuffering() bool {
 // GetResponseBuffering implements the CustomRoute interface for Route
 func (g *Route) GetResponseBuffering() bool {
 	return !g.Spec.Buffering.DisableResponseBuffering
+}
+
+func (g *Route) IsHealthProbe() bool {
+	return g.Spec.Traffic.HealthProbe
 }
 
 func (g *Route) SetRouteId(id string) {

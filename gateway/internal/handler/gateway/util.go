@@ -8,16 +8,17 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
-	"github.com/telekom/controlplane/common/pkg/client"
+	"k8s.io/apimachinery/pkg/api/meta"
+
+	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/types"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	secrets "github.com/telekom/controlplane/secret-manager/api"
-	"k8s.io/apimachinery/pkg/api/meta"
 )
 
 func GetGatewayByRef(ctx context.Context, ref types.ObjectRef, resolveSecrets bool) (bool, *gatewayv1.Gateway, error) {
-	client := client.ClientFromContextOrDie(ctx)
+	client := cclient.ClientFromContextOrDie(ctx)
 
 	gateway := &gatewayv1.Gateway{}
 	err := client.Get(ctx, ref.K8s(), gateway)

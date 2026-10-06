@@ -346,7 +346,7 @@ var _ = Describe("CleanupPlugins", func() {
 		Expect(client.CleanupPlugins(ctx, route, nil, nil)).To(Succeed())
 	})
 
-	It("deletes request termination when the reserved upstream is removed", func() {
+	It("deletes request termination when healthProbe is disabled", func() {
 		expectPlugins(`{"data":[{"id":"health-plugin-id","name":"request-termination"}]}`)
 		api.EXPECT().DeletePluginWithResponse(mock.Anything, "health-plugin-id").Return(
 			&kong.DeletePluginResponse{HTTPResponse: &http.Response{StatusCode: http.StatusNoContent}}, nil,
@@ -400,7 +400,8 @@ var _ = Describe("DeletePlugin", func() {
 			Body:         []byte(`{"data":[{"id":"plugin-id"}]}`),
 		}, nil)
 		api.EXPECT().DeletePluginWithResponse(mock.Anything, "plugin-id").Return(
-			&kong.DeletePluginResponse{HTTPResponse: &http.Response{StatusCode: http.StatusNoContent}}, nil)
+			&kong.DeletePluginResponse{HTTPResponse: &http.Response{StatusCode: http.StatusNoContent}}, nil,
+		)
 
 		Expect(client.DeletePlugin(ctx, plugin)).To(Succeed())
 	})
