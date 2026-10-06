@@ -10,14 +10,16 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 
+	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	"github.com/telekom/controlplane/gateway/pkg/kong/client"
 	"github.com/telekom/controlplane/gateway/pkg/kong/client/plugin"
 )
 
-var ErrNoRoute = errors.New("no route found in builder context")
-var ErrNoConsumer = errors.New("no consumer found in builder context")
+var (
+	ErrNoRoute    = errors.New("no route found in builder context")
+	ErrNoConsumer = errors.New("no consumer found in builder context")
+)
 
 type Feature interface {
 	// Name of the feature
@@ -49,6 +51,7 @@ type FeaturesBuilder interface {
 	JwtPlugin() *plugin.JwtPlugin
 	RateLimitPluginRoute() *plugin.RateLimitPlugin
 	RateLimitPluginConsumeRoute(*gatewayv1.ConsumeRoute) *plugin.RateLimitPlugin
+	RequestTerminationPlugin() *plugin.RequestTerminationPlugin
 	JumperConfig() *plugin.JumperConfig
 	RoutingConfigs() *plugin.RoutingConfigs
 	IpRestrictionPlugin() *plugin.IpRestrictionPlugin
@@ -116,6 +119,7 @@ func (b *Builder) GetRoute() (*gatewayv1.Route, bool) {
 	}
 	return b.Route, true
 }
+
 func (b *Builder) GetConsumer() (*gatewayv1.Consumer, bool) {
 	if b.Consumer == nil {
 		return nil, false
@@ -246,6 +250,19 @@ func (b *Builder) IpRestrictionPlugin() *plugin.IpRestrictionPlugin {
 	return ipRestrictionPlugin
 }
 
+func (b *Builder) RequestTerminationPlugin() *plugin.RequestTerminationPlugin {
+	if p, ok := b.Plugins["request-termination"]; ok {
+		requestTerminationPlugin, ok := p.(*plugin.RequestTerminationPlugin)
+		if !ok {
+			panic("plugin is not a RequestTerminationPlugin")
+		}
+		return requestTerminationPlugin
+	}
+	requestTerminationPlugin := plugin.RequestTerminationPluginFromRoute(b.Route)
+	b.Plugins["request-termination"] = requestTerminationPlugin
+	return requestTerminationPlugin
+}
+
 func (b *Builder) SetUpstream(upstream client.Upstream) {
 	b.Upstream = upstream
 }
@@ -342,7 +359,6 @@ func (b *Builder) BuildForConsumer(ctx context.Context) error {
 	}
 
 	return nil
-
 }
 
 // sort features based on their priority

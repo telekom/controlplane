@@ -81,19 +81,9 @@ func MapRequest(agentSpec *roverv1.AgentSpecification, fileAPIResp *filesapi.Fil
 		Kind:       "AgentSpecification",
 		APIVersion: "rover.cp.ei.telekom.de/v1",
 	}
-	agentSpec.Spec.Hash = fileAPIResp.FileHash
-	agentSpec.Spec.Specification = fileAPIResp.FileId
-	agentSpec.Labels = map[string]string{
-		config.EnvironmentLabelKey: id.Environment,
-	}
-	agentSpec.Namespace = id.Environment + "--" + id.Namespace
-}
-
-// MapRequestWithoutFile maps AgentSpecification fields when file-manager is disabled.
-func MapRequestWithoutFile(agentSpec *roverv1.AgentSpecification, id mapper.ResourceIdInfo) {
-	agentSpec.TypeMeta = metav1.TypeMeta{
-		Kind:       "AgentSpecification",
-		APIVersion: "rover.cp.ei.telekom.de/v1",
+	if fileAPIResp != nil {
+		agentSpec.Spec.Hash = fileAPIResp.FileHash
+		agentSpec.Spec.Specification = fileAPIResp.FileId
 	}
 	agentSpec.Labels = map[string]string{
 		config.EnvironmentLabelKey: id.Environment,

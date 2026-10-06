@@ -23,16 +23,18 @@ type FileExposureKey struct {
 
 // FileExposureData carries the transformed data for a FileExposure entity.
 type FileExposureData struct {
-	Meta           shared.Metadata
-	StatusPhase    string // "READY", "PENDING", "ERROR", "UNKNOWN"
-	StatusMessage  string
-	Variant        string // "sftp", "http", etc.
-	Visibility     string // "WORLD", "ZONE", "ENTERPRISE"
-	Active         bool
-	Zone           string
-	FileSFTP       *model.FileSFTP
-	ApprovalConfig model.ApprovalConfig
-	AppName        string // resolved to owner Application FK
-	TeamName       string // used to resolve owner Application FK
-	TargetFileType string // optional FileType catalogue FK
+	Meta               shared.Metadata
+	StatusPhase        string // "READY", "PENDING", "ERROR", "UNKNOWN"
+	StatusMessage      string
+	Variant            string // "sftp", "http", etc.
+	Visibility         string // "WORLD", "ZONE", "ENTERPRISE"
+	Active             bool
+	Zone               string
+	FileSFTP           *model.FileSFTP
+	ServiceURL         string
+	ServiceExternalURL string
+	ApprovalConfig     model.ApprovalConfig
+	AppName            string // resolved to owner Application FK
+	TeamName           string // used to resolve owner Application FK
+	TargetFileType     string // optional FileType catalogue FK
 }

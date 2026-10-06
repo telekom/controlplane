@@ -42,6 +42,11 @@ spec:
           spec:
             description: RealmSpec defines the desired state of Realm
             properties:
+              allowedOrigins:
+                description: AllowedOrigins is inherited by clients in this realm.
+                items:
+                  type: string
+                type: array
               claims:
                 description: |-
                   Claims defines claims that are added to all tokens issued for

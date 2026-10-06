@@ -7,18 +7,17 @@ package feature_test
 import (
 	"context"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	"github.com/telekom/controlplane/gateway/internal/features"
 	"github.com/telekom/controlplane/gateway/internal/features/feature"
 	featmock "github.com/telekom/controlplane/gateway/internal/features/mock"
 	"github.com/telekom/controlplane/gateway/pkg/kong/client/plugin"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("CustomScopesFeature", func() {
-
 	var (
 		ctx     context.Context
 		f       *feature.CustomScopesFeature
@@ -131,8 +130,8 @@ var _ = Describe("CustomScopesFeature", func() {
 					err := f.Apply(ctx, builder)
 					Expect(err).ToNot(HaveOccurred())
 
-					Expect(jumperConfig.OAuth).To(HaveKey(plugin.ConsumerId(feature.DefaultProviderKey)))
-					creds := jumperConfig.OAuth[plugin.ConsumerId(feature.DefaultProviderKey)]
+					Expect(jumperConfig.OAuth).To(HaveKey(feature.DefaultProviderKey))
+					creds := jumperConfig.OAuth[feature.DefaultProviderKey]
 					Expect(creds.Scopes).To(Equal("read write admin"))
 				})
 			})

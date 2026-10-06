@@ -32,7 +32,7 @@ The Rover Server serves as the primary entrypoint for all customer configuration
 ## Features
 
 - **REST API**: Provides a REST API for creating and updating Rover resources
-- **File Management**: Uploads APISpecification via [File Manager](../file-manager). Extract information for runtime configurations such as allowed scopes.
+- **File Management**: Stores API, event, and file specification payloads via [File Manager](../file-manager). API specifications provide runtime configuration such as allowed scopes; Event specifications may include a JSON Schema document, and file specifications may include a YAML schema document.
 - **Secret Manager**: Obfuscates secrets via [Secret Manager](../secret-manager) and injects key-values for later reference.
 - **Rover-CTL**: Integrated Support for [rover-ctl](../rover-ctl) CI/CD-friendly access.
 

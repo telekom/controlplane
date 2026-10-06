@@ -47,6 +47,10 @@ Zone deletion deliberately retains the client and its stored secret; deleting th
 
 Every named gateway exposes issuer, certificate, and OpenID discovery routes for the default realm and the internal `rover` realm, plus the team-api realm when configured. These routes cover the hostnames and base paths of all presets using that gateway. World-visible zones add `/spacegate` after the preset base path.
 
+Admin also creates an owned `<gateway>--zone-health` passthrough route for every gateway, independent of managed routes and DTC. It covers every preset hostname and base path without `/spacegate`. Its `spec.traffic.healthProbe: true` flag tells Gateway to answer HEAD probes with 200 without contacting an upstream. The Route CRD gains this optional boolean; the Zone CRD is unchanged. Shared preflight validation checks the 20-hostname and 10-distinct-path Route limits before creating identity or health routes. Stale-route cleanup removes health routes when their gateway is removed.
+
+Zone admission and reconciliation share aggregation, normalized path construction, and cardinality validation in `admin/internal/routeinputs`. Create/update admission rejects excessive inputs with field-specific errors; the controller retains a defensive blocked-error check for existing invalid Zones. Fixed identity and health suffixes preserve the number of distinct normalized base paths, so validation does not depend on provisioned realm names or visibility.
+
 ### Secret onboarding (defaulting webhook)
 
 A Zone **defaulting webhook** processes a zone's sensitive fields before the resource is stored — the IDP admin password and the Redis password. The gateway admin (`rover`) client secret is managed separately during Zone provisioning, as described above.

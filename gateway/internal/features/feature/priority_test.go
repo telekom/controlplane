@@ -7,15 +7,14 @@ package feature_test
 import (
 	"sort"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-
 	"github.com/telekom/controlplane/gateway/internal/features"
 	"github.com/telekom/controlplane/gateway/internal/features/feature"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Feature Priority Ordering", func() {
-
 	DescribeTable("assigns correct absolute priority values to all features",
 		func(f features.Feature, expectedPriority int) {
 			Expect(f.Priority()).To(Equal(expectedPriority))

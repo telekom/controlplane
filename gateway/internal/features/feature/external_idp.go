@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	"github.com/telekom/controlplane/gateway/internal/features"
 	"github.com/telekom/controlplane/gateway/pkg/kong/client/plugin"
@@ -110,7 +111,8 @@ func (f *ExternalIDPFeature) Apply(ctx context.Context, builder features.Feature
 }
 
 func applyOauth(ctx context.Context, key plugin.ConsumerId, jumperConfig *plugin.JumperConfig, client *gatewayv1.OAuth2ClientCredentials, providerSettings *gatewayv1.ExternalIdentityProvider, scopes []string) error {
-	oauth, err := extendOauth(ctx, jumperConfig.OAuth[key], providerSettings, client, scopes)
+	current := jumperConfig.OAuth[key]
+	oauth, err := extendOauth(ctx, &current, providerSettings, client, scopes)
 	if err != nil {
 		return err
 	}
@@ -119,7 +121,8 @@ func applyOauth(ctx context.Context, key plugin.ConsumerId, jumperConfig *plugin
 	return nil
 }
 
-func extendOauth(ctx context.Context, in plugin.OauthCredentials, providerSettings *gatewayv1.ExternalIdentityProvider, client *gatewayv1.OAuth2ClientCredentials, scopes []string) (plugin.OauthCredentials, error) {
+func extendOauth(ctx context.Context, current *plugin.OauthCredentials, providerSettings *gatewayv1.ExternalIdentityProvider, client *gatewayv1.OAuth2ClientCredentials, scopes []string) (plugin.OauthCredentials, error) {
+	in := *current
 	var err error
 
 	in.ClientId = client.ClientId
@@ -168,7 +171,8 @@ func extendOauth(ctx context.Context, in plugin.OauthCredentials, providerSettin
 }
 
 func applyBasic(ctx context.Context, key plugin.ConsumerId, jumperConfig *plugin.JumperConfig, basic *gatewayv1.BasicAuthCredentials, providerSettings *gatewayv1.ExternalIdentityProvider, scopes []string) error {
-	basicAuth, err := extendBasic(ctx, jumperConfig.OAuth[key], providerSettings, basic, scopes)
+	current := jumperConfig.OAuth[key]
+	basicAuth, err := extendBasic(ctx, &current, providerSettings, basic, scopes)
 	if err != nil {
 		return err
 	}
@@ -176,7 +180,8 @@ func applyBasic(ctx context.Context, key plugin.ConsumerId, jumperConfig *plugin
 	return nil
 }
 
-func extendBasic(ctx context.Context, in plugin.OauthCredentials, providerSettings *gatewayv1.ExternalIdentityProvider, basic *gatewayv1.BasicAuthCredentials, scopes []string) (plugin.OauthCredentials, error) {
+func extendBasic(ctx context.Context, current *plugin.OauthCredentials, providerSettings *gatewayv1.ExternalIdentityProvider, basic *gatewayv1.BasicAuthCredentials, scopes []string) (plugin.OauthCredentials, error) {
+	in := *current
 	var err error
 
 	in.Username = basic.Username

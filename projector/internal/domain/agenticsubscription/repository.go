@@ -67,7 +67,8 @@ func NewRepository(client *ent.Client, cache *infrastructure.EdgeCache, deps Age
 // Steps:
 //  1. Resolve owner Application FK (required) — ErrDependencyMissing if missing.
 //  2. Resolve target AgenticExposure FK (optional) — nil FK if missing, only
-//     non-ErrEntityNotFound errors are propagated.
+//     non-ErrEntityNotFound errors are propagated immediately. A missing
+//     target is reported as ErrDependencyMissing after all writes succeed.
 //  3. Create with ON CONFLICT (base_path, owner) + UpdateNewValues().
 //  4. If target is nil, explicitly clear the target FK via ClearTarget().
 //     This is necessary because ent's SetNillableTargetID(nil) omits the
@@ -91,12 +92,15 @@ func (r *Repository) Upsert(ctx context.Context, data *AgenticSubscriptionData) 
 	// Target exposure is optional — subscription may exist before the target
 	// MCP server/agent is exposed. If not found, store with NULL target FK.
 	var targetExposureID *int
+	targetMissing := false
 	if id, findErr := r.deps.FindAgenticExposureByBasePath(ctx, data.TargetBasePath); findErr != nil {
 		if !errors.Is(findErr, infrastructure.ErrEntityNotFound) {
 			return fmt.Errorf("find target agentic_exposure for subscription (basePath %q): %w",
 				data.TargetBasePath, findErr)
 		}
-		// Not found — leave targetExposureID as nil.
+		// Not found — persist with NULL target, then report the missing
+		// dependency after all writes so the reconciler retries.
+		targetMissing = true
 	} else {
 		targetExposureID = &id
 	}
@@ -161,6 +165,9 @@ func (r *Repository) Upsert(ctx context.Context, data *AgenticSubscriptionData) 
 	// spec.target references.
 	et, lk := cachekeys.AgenticSubscriptionMeta(data.Meta.Namespace, data.Meta.Name)
 	r.cache.Set(et, lk, subscriptionID)
+	if targetMissing {
+		return runtime.WrapDependencyMissing("agentic_exposure", data.TargetBasePath)
+	}
 	return nil
 }
 

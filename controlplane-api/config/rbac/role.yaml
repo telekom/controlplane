@@ -13,6 +13,7 @@ rules:
 - apiGroups:
   - organization.cp.ei.telekom.de
   resources:
+  - groups
   - teams
   verbs:
   - get

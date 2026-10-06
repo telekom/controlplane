@@ -358,6 +358,7 @@ var _ = Describe("RemoteApiSubscription Controller - Consumer Scenario", Ordered
 				g.Expect(remoteApiSubscription.Status.Route).ToNot(BeNil())
 				route := &gatewayapi.Route{}
 				g.Expect(k8sClient.Get(ctx, remoteApiSubscription.Status.Route.K8s(), route)).To(Succeed())
+				g.Expect(route.Spec.AdditionalTags).To(Equal([]string{"variant--default"}))
 				g.Expect(route.Spec.Security.RealmName).To(Equal("remoteapisub-test-cons-realm"))
 			}, timeout, interval).Should(Succeed())
 		})

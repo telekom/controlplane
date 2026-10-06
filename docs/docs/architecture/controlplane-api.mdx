@@ -96,6 +96,8 @@ graph LR
 
 Resources in the database form a hierarchy — an Application references a Team and a Zone, an ApiExposure references an Application, and so on. When the Projector processes a resource whose parent has not been synced yet, it returns a *dependency missing* error and retries after a short delay (configurable via `DEPENDENCY_DELAY`).
 
+Subscriptions (API, Event, Agentic and File) treat their target exposure differently: if the target cannot be resolved, the subscription is still stored without a target link, and the Projector then reports a *dependency missing* error so the subscription is retried until the target is linked. If the target stays absent or inactive for a long time, the subscription keeps retrying with that same delay.
+
 To avoid repeated database lookups for foreign keys, the Projector uses a high-performance in-memory cache (based on [Ristretto](https://github.com/dgraph-io/ristretto)) combined with request deduplication. This means concurrent reconciliations for resources with the same parent only trigger a single database query.
 
 ### Schema Migration
@@ -134,7 +136,7 @@ erDiagram
 
 Each entity carries common fields such as `id`, `createdAt`, `lastModifiedAt`, `statusPhase` (Ready, Pending, Error, or Unknown), `statusMessage`, `environment`, and `namespace`.
 
-API and agentic subscriptions can exist without a target exposure. In that case, their GraphQL `target` field returns `null` without an error.
+API, event, and agentic subscriptions can exist without a target exposure. In that case, their GraphQL `target` field returns `null` without an error.
 
 ### GraphQL Queries
 

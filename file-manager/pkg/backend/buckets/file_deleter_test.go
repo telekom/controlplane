@@ -14,7 +14,7 @@ import (
 func TestBucketFileDeleter_DeleteFile(t *testing.T) {
 	// Test case 1: Nil config
 	deleterNilConfig := NewBucketFileDeleter(nil)
-	err := deleterNilConfig.DeleteFile(context.Background(), "valid/path/to/file")
+	err := deleterNilConfig.DeleteFile(context.Background(), "01926a3e-7b2c-7d3e-8f4a-1b2c3d4e5f60")
 	if err == nil {
 		t.Error("Expected error when config is nil")
 	}
@@ -27,7 +27,7 @@ func TestBucketFileDeleter_DeleteFile(t *testing.T) {
 		Client:     nil,
 	}
 	deleterNoClient := NewBucketFileDeleter(configNoClient)
-	err = deleterNoClient.DeleteFile(context.Background(), "env/group/team/file.txt")
+	err = deleterNoClient.DeleteFile(context.Background(), "01926a3e-7b2c-7d3e-8f4a-1b2c3d4e5f60")
 	if err == nil {
 		t.Error("Expected error due to nil client, but got success")
 	}

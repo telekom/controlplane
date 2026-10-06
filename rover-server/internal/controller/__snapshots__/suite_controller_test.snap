@@ -1623,6 +1623,9 @@
 {
  "description": "used for sftp integration demo",
  "id": "eni--hyperion--demo-invoices-v1",
+ "specification": {
+  "type": "object"
+ },
  "status": {
   "processingState": "done",
   "state": "complete"
@@ -1662,6 +1665,9 @@
   {
    "description": "used for sftp integration demo",
    "id": "eni--hyperion--demo-invoices-v1",
+   "specification": {
+    "type": "object"
+   },
    "status": {
     "processingState": "done",
     "state": "complete"
@@ -1683,6 +1689,9 @@
   {
    "description": "used for sftp integration demo",
    "id": "eni--hyperion--demo-invoices-v1",
+   "specification": {
+    "type": "object"
+   },
    "status": {
     "processingState": "done",
     "state": "complete"
@@ -1704,6 +1713,9 @@
   {
    "description": "used for sftp integration demo",
    "id": "eni--hyperion--demo-invoices-v1",
+   "specification": {
+    "type": "object"
+   },
    "status": {
     "processingState": "done",
     "state": "complete"
@@ -1725,6 +1737,9 @@
   {
    "description": "used for sftp integration demo",
    "id": "eni--hyperion--demo-invoices-v1",
+   "specification": {
+    "type": "object"
+   },
    "status": {
     "processingState": "done",
     "state": "complete"
@@ -1788,6 +1803,9 @@
 {
  "description": "used for sftp integration demo",
  "id": "eni--hyperion--demo-invoices-v1",
+ "specification": {
+  "type": "object"
+ },
  "status": {
   "processingState": "done",
   "state": "complete"
@@ -1804,5 +1822,77 @@
  "status": 403,
  "title": "Access Denied",
  "type": "Forbidden"
+}
+---
+
+[FileSpecification Controller Get FileSpecification resource should return an internal error if downloading the specification fails - 1]
+{
+ "detail": "file-manager unavailable",
+ "instance": "",
+ "status": 500,
+ "title": "Failed to download file specification",
+ "type": "InternalServerError"
+}
+---
+
+[FileSpecification Controller Delete FileSpecification resource should return an error if deleting the specification file fails - 1]
+{
+ "detail": "file-manager unavailable",
+ "instance": "",
+ "status": 500,
+ "title": "Internal Error",
+ "type": "InternalError"
+}
+---
+
+[FileSpecification Controller Update FileSpecification resource should return an error if uploading the specification fails - 1]
+{
+ "detail": "file-manager unavailable",
+ "instance": "",
+ "status": 500,
+ "title": "Internal Error",
+ "type": "InternalError"
+}
+---
+
+[FileSpecification Controller Update FileSpecification resource should update the FileSpecification when its optional file is deleted - 1]
+{
+ "description": "used for sftp integration demo",
+ "id": "eni--hyperion--demo-invoices-v1",
+ "specification": {
+  "type": "object"
+ },
+ "status": {
+  "processingState": "done",
+  "state": "complete"
+ },
+ "type": "demo-invoices-v1",
+ "version": "1.0.0"
+}
+---
+
+[FileSpecification Controller Update FileSpecification resource should update the FileSpecification if its optional file is already missing - 1]
+{
+ "description": "used for sftp integration demo",
+ "id": "eni--hyperion--demo-invoices-v1",
+ "specification": {
+  "type": "object"
+ },
+ "status": {
+  "processingState": "done",
+  "state": "complete"
+ },
+ "type": "demo-invoices-v1",
+ "version": "1.0.0"
+}
+---
+
+[FileSpecification Controller Update FileSpecification resource should return an error if deleting the optional file during update fails - 1]
+{
+ "detail": "file-manager unavailable",
+ "instance": "",
+ "status": 500,
+ "title": "Internal Error",
+ "type": "InternalError"
 }
 ---

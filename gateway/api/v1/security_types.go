@@ -158,7 +158,6 @@ type Machine2MachineAuthentication struct {
 // ConsumerMachine2MachineAuthentication defines the authentication methods for machine-to-machine communication for consumers
 // Either client, basic, or only scopes can be provided
 // +kubebuilder:validation:XValidation:rule="self == null || (has(self.client) ? (!has(self.basic)) : true)", message="Client and basic authentication cannot be used together"
-// +kubebuilder:validation:XValidation:rule="self == null || (has(self.scopes) ? (!has(self.basic)) : true)", message="Scopes and basic authentication cannot be used together"
 // +kubebuilder:validation:XValidation:rule="self == null || has(self.client) || has(self.basic) || has(self.scopes)", message="At least one of client, basic, or scopes must be provided"
 type ConsumerMachine2MachineAuthentication struct {
 	// Client defines client credentials for OAuth2

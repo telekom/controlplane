@@ -23,6 +23,8 @@ import (
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
 )
 
+const exposureVariantTagPrefix = "variant--"
+
 // CreateAgenticRoute creates the primary gateway Route for an MCP exposure.
 // The Route is created in the zone's namespace with buffering disabled for streaming.
 // Follows the same preset-based routing pattern as the API domain's CreateRealRoute.
@@ -73,12 +75,13 @@ func CreateAgenticRoute(
 		}
 
 		route.Spec = gatewayapi.RouteSpec{
-			GatewayRef: *presetStatus.GatewayRef,
-			Type:       gatewayapi.RouteTypePrimary,
-			Backend:    gatewayapi.Backend{Upstreams: gatewayUpstreams},
-			Hostnames:  hostnames,
-			Paths:      paths,
-			Traffic:    MapTrafficToGateway(&exposure.Spec.Traffic),
+			AdditionalTags: []string{exposureVariantTagPrefix + labelutil.NormalizeNameValue(string(exposure.Spec.Variant))},
+			GatewayRef:     *presetStatus.GatewayRef,
+			Type:           gatewayapi.RouteTypePrimary,
+			Backend:        gatewayapi.Backend{Upstreams: gatewayUpstreams},
+			Hostnames:      hostnames,
+			Paths:          paths,
+			Traffic:        MapTrafficToGateway(&exposure.Spec.Traffic),
 			// Critical: disable buffering for MCP streaming (SSE)
 			Buffering: gatewayapi.Buffering{
 				DisableRequestBuffering:  true,
@@ -139,6 +142,7 @@ func CreateAgenticRoute(
 func CreateAgenticProxyRoute(
 	ctx context.Context,
 	basePath string,
+	variant agenticv1.AgenticVariant,
 	subscriberZone *adminv1.Zone,
 	providerZone *adminv1.Zone,
 ) (*gatewayapi.Route, error) {
@@ -190,11 +194,12 @@ func CreateAgenticProxyRoute(
 		}
 
 		route.Spec = gatewayapi.RouteSpec{
-			GatewayRef: *subscriberPresetStatus.GatewayRef,
-			Type:       gatewayapi.RouteTypeProxy,
-			Backend:    gatewayapi.Backend{Upstreams: []gatewayapi.Upstream{upstream}},
-			Hostnames:  hostnames,
-			Paths:      paths,
+			AdditionalTags: []string{exposureVariantTagPrefix + labelutil.NormalizeNameValue(string(variant))},
+			GatewayRef:     *subscriberPresetStatus.GatewayRef,
+			Type:           gatewayapi.RouteTypeProxy,
+			Backend:        gatewayapi.Backend{Upstreams: []gatewayapi.Upstream{upstream}},
+			Hostnames:      hostnames,
+			Paths:          paths,
 			Security: gatewayapi.Security{
 				DefaultConsumers: []string{GatewayConsumerName},
 				RealmName:        subscriberZone.Status.RealmName,

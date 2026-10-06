@@ -20,6 +20,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
+	"github.com/telekom/controlplane/admin/internal/routeinputs"
 )
 
 // +kubebuilder:webhook:path=/validate-admin-cp-ei-telekom-de-v1-zone,mutating=false,failurePolicy=fail,sideEffects=None,groups=admin.cp.ei.telekom.de,resources=zones,verbs=create;update,versions=v1,name=vzone-v1.kb.io,admissionReviewVersions=v1
@@ -74,14 +75,23 @@ func validateZoneFields(zone *adminv1.Zone) field.ErrorList { //nolint:gocyclo /
 	specPath := field.NewPath("spec")
 	var errs field.ErrorList
 
+	if zone.Spec.ManagedRoutes != nil {
+		for i, route := range zone.Spec.ManagedRoutes.Routes {
+			if route.Name == adminv1.ZoneHealthRouteName {
+				errs = append(errs, field.Forbidden(specPath.Child("managedRoutes", "routes").Index(i).Child("name"),
+					"zone-health is reserved for the platform health probe"))
+			}
+		}
+	}
+
 	errs = append(errs, validateUniqueNames(specPath.Child("gateways"), "gateway", func(yield func(string, int)) {
-		for i, gateway := range zone.Spec.Gateways {
-			yield(gateway.Name, i)
+		for i := range zone.Spec.Gateways {
+			yield(zone.Spec.Gateways[i].Name, i)
 		}
 	})...)
 	errs = append(errs, validateUniqueNames(specPath.Child("identityProviders"), "identity provider", func(yield func(string, int)) {
-		for i, identityProvider := range zone.Spec.IdentityProviders {
-			yield(identityProvider.Name, i)
+		for i := range zone.Spec.IdentityProviders {
+			yield(zone.Spec.IdentityProviders[i].Name, i)
 		}
 	})...)
 
@@ -162,6 +172,7 @@ func validateZoneFields(zone *adminv1.Zone) field.ErrorList { //nolint:gocyclo /
 
 	errs = append(errs, validatePresetTypes(zone)...)
 	errs = append(errs, validateGatewayReferences(zone)...)
+	errs = append(errs, routeinputs.Validate(&zone.Spec)...)
 
 	return errs
 }
@@ -244,12 +255,14 @@ func validateFeatures(path *field.Path, features []adminv1.Feature) field.ErrorL
 
 func validateRetainedNames(oldZone, newZone *adminv1.Zone) field.ErrorList {
 	var errs field.ErrorList
-	for _, gateway := range oldZone.Spec.Gateways {
+	for i := range oldZone.Spec.Gateways {
+		gateway := &oldZone.Spec.Gateways[i]
 		if _, err := newZone.Spec.GetGateway(gateway.Name); err != nil {
 			errs = append(errs, field.Forbidden(field.NewPath("spec", "gateways"), "existing gateway name "+strconv.Quote(gateway.Name)+" cannot be removed or renamed"))
 		}
 	}
-	for _, identityProvider := range oldZone.Spec.IdentityProviders {
+	for i := range oldZone.Spec.IdentityProviders {
+		identityProvider := &oldZone.Spec.IdentityProviders[i]
 		if _, err := newZone.Spec.GetIdentityProviderByName(identityProvider.Name); err != nil {
 			errs = append(errs, field.Forbidden(field.NewPath("spec", "identityProviders"), "existing identity provider name "+strconv.Quote(identityProvider.Name)+" cannot be removed or renamed"))
 		}

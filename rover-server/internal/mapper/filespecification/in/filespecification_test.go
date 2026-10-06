@@ -14,10 +14,15 @@ import (
 var _ = Describe("FileSpecification Mapper", func() {
 	Context("MapRequest", func() {
 		It("must map a FileSpecification to a CRD correctly", func() {
-			result, err := MapRequest(fileSpecification, resourceIdInfo)
+			result, err := MapRequest(fileSpecification, "", resourceIdInfo)
 			Expect(err).To(BeNil())
 			Expect(result).ToNot(BeNil())
 			snaps.MatchSnapshot(GinkgoT(), result)
+			Expect(result.Spec.Specification).To(BeEmpty())
+
+			withFileId, err := MapRequest(fileSpecification, "file-id", resourceIdInfo)
+			Expect(err).To(BeNil())
+			Expect(withFileId.Spec.Specification).To(Equal("file-id"))
 		})
 
 		It("must return an error if the derived name does not match the resource id name", func() {
@@ -27,7 +32,7 @@ var _ = Describe("FileSpecification Mapper", func() {
 				Namespace:   "eni--galatea",
 			}
 
-			result, err := MapRequest(fileSpecification, mismatchedId)
+			result, err := MapRequest(fileSpecification, "file-id", mismatchedId)
 			Expect(result).To(BeNil())
 			Expect(err).ToNot(BeNil())
 			Expect(err.Error()).To(ContainSubstring("does not match expected name"))

@@ -1,3 +1,44 @@
+# [0.33.0](https://github.com/telekom/controlplane/compare/v0.32.0...v0.33.0) (2026-10-06)
+
+
+### Bug Fixes
+
+* **admin:** use reference in for loop for big structure ([#726](https://github.com/telekom/controlplane/issues/726)) ([f943b96](https://github.com/telekom/controlplane/commit/f943b96a46c1175e5e59fdbcb686d874b8c42dff))
+* **org-api:** PUT endpoint should upsert properly for hubs and teams ([#727](https://github.com/telekom/controlplane/issues/727)) ([c664e8e](https://github.com/telekom/controlplane/commit/c664e8ea9070b4674eabd7ea06c7b401c08d144a))
+* **projector:** update zone-ref on applications; re-queue dependent subscriptions ([#717](https://github.com/telekom/controlplane/issues/717)) ([07258e4](https://github.com/telekom/controlplane/commit/07258e4901afd8bd726da3b97cf178c079818563))
+* **rover-ctl:** added alias rover-ctl; clear entrypoint so CI runners can start a shell ([#730](https://github.com/telekom/controlplane/issues/730)) ([b98cfae](https://github.com/telekom/controlplane/commit/b98cfae9df5eeed587e93a0262356d4bfa4164da))
+* **rover-server:** don't ignore nil uploadRes ([#728](https://github.com/telekom/controlplane/issues/728)) ([badd66e](https://github.com/telekom/controlplane/commit/badd66e6b70ff13356d4660b0e371dd4bbcc0ee2))
+* **rover,rover-server:** normalized api-category before applying to avoid wild-west ([#731](https://github.com/telekom/controlplane/issues/731)) ([c7e5c98](https://github.com/telekom/controlplane/commit/c7e5c98092987fd44600bbc2a782789040be25ae))
+
+
+### Features
+
+* allow configure allowed origins for clients ([#720](https://github.com/telekom/controlplane/issues/720)) ([764bdca](https://github.com/telekom/controlplane/commit/764bdca5a1068d552da2a879723885fcec76ee5e))
+* **gateway:** propagate exposure variants to Kong route tags ([#722](https://github.com/telekom/controlplane/issues/722)) ([40f2df5](https://github.com/telekom/controlplane/commit/40f2df5d9c9f1c9eb711f8132681952667ea8648))
+* **rover-server:** store specification of filespec in file-manager ([#696](https://github.com/telekom/controlplane/issues/696)) ([4288e75](https://github.com/telekom/controlplane/commit/4288e7581a0cde58ca7784357253f725bb1476d9))
+
+# [0.32.0](https://github.com/telekom/controlplane/compare/v0.31.2...v0.32.0) (2026-10-05)
+
+
+### Bug Fixes
+
+* add group resource in rbac ([#715](https://github.com/telekom/controlplane/issues/715)) ([373aa69](https://github.com/telekom/controlplane/commit/373aa6909add1ab970b31d2a090de577c121dec0))
+* **controlplane-api:** project URLs from file exposure status ([#719](https://github.com/telekom/controlplane/issues/719)) ([f55a7cb](https://github.com/telekom/controlplane/commit/f55a7cb8dff64ca2294e25b7f766c1a777fe7adc))
+* **organization-server:** …guard nil mutation payloads ([#716](https://github.com/telekom/controlplane/issues/716)) ([413ac18](https://github.com/telekom/controlplane/commit/413ac18a5f77bd284132c165c84ecd25df01b769))
+* **rover-server:** unified downloadFile logic ([#700](https://github.com/telekom/controlplane/issues/700)) ([6a6e9cc](https://github.com/telekom/controlplane/commit/6a6e9cc001cdbf2ac436a04e020aeee1723b3396))
+
+
+### Features
+
+* use uuid for file names in file-manager ([#701](https://github.com/telekom/controlplane/issues/701)) ([94cdcca](https://github.com/telekom/controlplane/commit/94cdccacf915f75584146a5dbf3ded6e2cf57997))
+
+## [0.31.2](https://github.com/telekom/controlplane/compare/v0.31.1...v0.31.2) (2026-10-01)
+
+
+### Bug Fixes
+
+* allow extIDP basic auth with scopes ([#699](https://github.com/telekom/controlplane/issues/699)) ([7774813](https://github.com/telekom/controlplane/commit/77748133e607ca0661608c99a9d1e975481a71cb))
+
 ## [0.31.1](https://github.com/telekom/controlplane/compare/v0.31.0...v0.31.1) (2026-10-01)
 
 

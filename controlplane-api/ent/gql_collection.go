@@ -2935,6 +2935,16 @@ func (_q *FileExposureQuery) collectField(ctx context.Context, oneNode bool, opC
 				selectedFields = append(selectedFields, fileexposure.FieldZoneName)
 				fieldSeen[fileexposure.FieldZoneName] = struct{}{}
 			}
+		case "serviceURL":
+			if _, ok := fieldSeen[fileexposure.FieldServiceURL]; !ok {
+				selectedFields = append(selectedFields, fileexposure.FieldServiceURL)
+				fieldSeen[fileexposure.FieldServiceURL] = struct{}{}
+			}
+		case "serviceExternalURL":
+			if _, ok := fieldSeen[fileexposure.FieldServiceExternalURL]; !ok {
+				selectedFields = append(selectedFields, fileexposure.FieldServiceExternalURL)
+				fieldSeen[fileexposure.FieldServiceExternalURL] = struct{}{}
+			}
 		case "sftp":
 			if _, ok := fieldSeen[fileexposure.FieldSftp]; !ok {
 				selectedFields = append(selectedFields, fileexposure.FieldSftp)
