@@ -596,6 +596,11 @@ spec:
                     - targetZoneName
                     - targets
                     type: object
+                  healthProbe:
+                    description: |-
+                      HealthProbe restricts matching to HEAD and returns HTTP 200 at the
+                      gateway without contacting the upstream. If omitted or false, normal routing applies.
+                    type: boolean
                   rateLimit:
                     description: RateLimit defines rate limits for different time
                       windows

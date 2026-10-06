@@ -7,6 +7,7 @@ package v1
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -95,6 +96,99 @@ var _ = Describe("Zone validation", func() {
 	BeforeEach(func() {
 		ctx = context.Background()
 	})
+
+	DescribeTable("validates aggregated gateway route limits on create and update",
+		func(hostnameCount, pathCount int, normalizedDuplicates bool, expectedError string) {
+			zone := validZone()
+			zone.Spec.Presets = nil
+			count := max(hostnameCount, pathCount)
+			for i := 0; i < count; i++ {
+				if i%2 == 0 {
+					zone.Spec.Presets = append(zone.Spec.Presets, adminv1.Preset{
+						Name: fmt.Sprintf("preset-%d", i), Type: adminv1.GatewayTypeAPI, Default: i == 0,
+						GatewayRef: "standard", IdentityProviderRef: "primary",
+					})
+				}
+				u := adminv1.UrlConfig{
+					Hostname: fmt.Sprintf("host%d.example.com", i%hostnameCount),
+					BasePath: fmt.Sprintf("/v%d", i%pathCount),
+				}
+				preset := &zone.Spec.Presets[len(zone.Spec.Presets)-1]
+				preset.Urls = append(preset.Urls, u)
+				if normalizedDuplicates {
+					u.BasePath += "/nested/.."
+					preset.Urls = append(preset.Urls, u)
+				}
+			}
+			_, createErr := validator.ValidateCreate(ctx, zone)
+			_, updateErr := validator.ValidateUpdate(ctx, validZone(), zone)
+			for _, err := range []error{createErr, updateErr} {
+				if expectedError == "" {
+					Expect(err).NotTo(HaveOccurred())
+				} else {
+					Expect(apierrors.IsInvalid(err)).To(BeTrue())
+					Expect(err).To(MatchError(ContainSubstring("spec.gateways[0].name")))
+					Expect(err).To(MatchError(ContainSubstring(expectedError)))
+				}
+			}
+		},
+		Entry("21 hostnames", 21, 1, false, "21 distinct preset hostnames"),
+		Entry("11 paths", 1, 11, false, "11 distinct joined preset paths"),
+		Entry("exact limits", 20, 10, false, ""),
+		Entry("joined duplicates at limits", 20, 10, true, ""),
+	)
+
+	It("applies route limits per gateway, not across the entire Zone", func() {
+		zone := validZone()
+		zone.Spec.Presets = nil
+		for _, gatewayName := range []string{"standard", "other"} {
+			if gatewayName == "other" {
+				zone.Spec.Gateways = append(zone.Spec.Gateways, adminv1.GatewayConfig{
+					Name: gatewayName, Admin: zone.Spec.Gateways[0].Admin,
+				})
+			}
+			for i := 0; i < 5; i++ {
+				preset := defaultPreset(fmt.Sprintf("%s-%d", gatewayName, i))
+				preset.GatewayRef = gatewayName
+				preset.Default = gatewayName == "standard" && i == 0
+				preset.Urls = nil
+				for j := 0; j < 4; j++ {
+					preset.Urls = append(preset.Urls, adminv1.UrlConfig{
+						Hostname: fmt.Sprintf("%s-%d-%d.example.com", gatewayName, i, j), BasePath: "/",
+					})
+				}
+				zone.Spec.Presets = append(zone.Spec.Presets, preset)
+			}
+		}
+		_, err := validator.ValidateCreate(ctx, zone)
+		Expect(err).NotTo(HaveOccurred())
+		_, err = validator.ValidateUpdate(ctx, validZone(), zone)
+		Expect(err).NotTo(HaveOccurred())
+	})
+
+	DescribeTable("reserves the health route name on create and update",
+		func(routeType adminv1.ManagedRouteType, routeName string, reserved bool) {
+			zone := validZone()
+			zone.Spec.ManagedRoutes = &adminv1.ManagedRoutesConfig{Routes: []adminv1.ManagedRouteConfig{
+				{Name: "ordinary", Path: "/ordinary", Url: "https://backend.example.com", Type: routeType},
+				{Name: routeName, Path: "/custom", Url: "https://backend.example.com", Type: routeType},
+			}}
+			_, createErr := validator.ValidateCreate(ctx, zone)
+			_, updateErr := validator.ValidateUpdate(ctx, validZone(), zone)
+			for _, err := range []error{createErr, updateErr} {
+				if reserved {
+					Expect(apierrors.IsInvalid(err)).To(BeTrue())
+					Expect(err).To(MatchError(ContainSubstring("spec.managedRoutes.routes[1].name")))
+					Expect(err).To(MatchError(ContainSubstring("reserved for the platform health probe")))
+				} else {
+					Expect(err).NotTo(HaveOccurred())
+				}
+			}
+		},
+		Entry("Proxy collision", adminv1.ManagedRouteTypeProxy, adminv1.ZoneHealthRouteName, true),
+		Entry("TeamAPI collision", adminv1.ManagedRouteTypeTeamAPI, adminv1.ZoneHealthRouteName, true),
+		Entry("similar name is allowed", adminv1.ManagedRouteTypeProxy, "zone-health-custom", false),
+	)
 
 	DescribeTable("rejects invalid preset graphs on create and update",
 		func(mutate func(*adminv1.Zone), message string) {

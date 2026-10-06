@@ -60,6 +60,9 @@ func (c *kongClient) CreateOrReplaceRoute(ctx context.Context, route CustomRoute
 		HttpsRedirectStatusCode: 426,
 		Tags:                    normalizeSet(&routeTags),
 	}
+	if route.IsHealthProbe() {
+		routeBody.Methods = &[]string{http.MethodHead}
+	}
 
 	kongRoute, _, err := reconcile(ctx, routeEntity{client: c.client, name: routeName}, routeBody)
 	if err != nil {
@@ -160,6 +163,7 @@ func (e routeEntity) Project(current *kong.Route) (kong.CreateRouteJSONRequestBo
 		Protocols:               valueOrZero(normalizeSet(current.Protocols)),
 		Paths:                   current.Paths,
 		Hosts:                   normalizeSet(current.Hosts),
+		Methods:                 normalizeSet(current.Methods),
 		Service:                 service,
 		RequestBuffering:        valueOrZero(current.RequestBuffering),
 		ResponseBuffering:       valueOrZero(current.ResponseBuffering),

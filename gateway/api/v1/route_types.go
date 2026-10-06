@@ -188,6 +188,10 @@ func (g *Route) GetResponseBuffering() bool {
 	return !g.Spec.Buffering.DisableResponseBuffering
 }
 
+func (g *Route) IsHealthProbe() bool {
+	return g.Spec.Traffic.HealthProbe
+}
+
 func (g *Route) SetRouteId(id string) {
 	g.SetProperty("routeId", id)
 }
