@@ -1,0 +1,18 @@
+agentic/internal/handler/util/route.go
+  h_65f5d22af11f8f 26-27,78,197
+api/internal/handler/remoteapisubscription/consumer_scenario.go
+  h_65f5d22af11f8f 97
+api/internal/handler/util/route_util.go
+  h_65f5d22af11f8f 29-30,297,579
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6",
+  "base_commit_sha": "1b361ec8490a214a87b52b3d7d2a831a7d06f799",
+  "prompts": {},
+  "humans": {
+    "h_65f5d22af11f8f": {
+      "author": "Miká Juznik <mika.juznik@telekom.de>"
+    }
+  }
+}

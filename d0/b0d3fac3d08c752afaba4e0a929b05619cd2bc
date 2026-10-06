@@ -1,0 +1,24 @@
+docs/docs/architecture/controlplane-api.mdx
+  s_cb1b0ebca22279::t_30fa9ad1363e1f 139
+controlplane-api/internal/resolvers/schema_resolvers_eventsubscription_test.go
+  s_cb1b0ebca22279::t_c502418c38bfb9 16,23-93
+  s_cb1b0ebca22279::t_cb2d781b4356ab 94
+controlplane-api/internal/resolvers/schema.resolvers.go
+  s_cb1b0ebca22279::t_b361683325a7d1 668-670
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "d0b0d3fac3d08c752afaba4e0a929b05619cd2bc",
+  "prompts": {},
+  "sessions": {
+    "s_cb1b0ebca22279": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_eee74f8d8ffemadQbC3qjhyFfJ",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

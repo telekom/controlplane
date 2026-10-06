@@ -1,0 +1,29 @@
+rover-ctl/Dockerfile
+  s_3f67d8cd2989af::t_28f831eda8129e 28-29
+  s_cd78ad19f26335::t_8c1f11dd4b4a3f 32-33
+  s_cd78ad19f26335::t_5498695678285f 34-35
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "bd37eb6f8ce9177152edc40b9621d01c77829b85",
+  "prompts": {},
+  "sessions": {
+    "s_3f67d8cd2989af": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ef3671900fferVhF7gR0AfN4On",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_cd78ad19f26335": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ef36091b9ffeveqwbyhmf9SXuk",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

@@ -1,0 +1,20 @@
+gateway/api/v1/route_types.go
+  h_65f5d22af11f8f 84-86
+gateway/config/crd/bases/gateway.cp.ei.telekom.de_routes.yaml
+  h_65f5d22af11f8f 46-48,50-51
+gateway/internal/controller/controller_test.go
+  h_65f5d22af11f8f 9,55-115
+gateway/pkg/kong/client/route_test.go
+  h_65f5d22af11f8f 99
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6",
+  "base_commit_sha": "5fff9dd67f43e04191765c5689c73fb6a9f6e986",
+  "prompts": {},
+  "humans": {
+    "h_65f5d22af11f8f": {
+      "author": "Miká Juznik <mika.juznik@telekom.de>"
+    }
+  }
+}

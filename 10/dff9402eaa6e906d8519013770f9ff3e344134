@@ -1,0 +1,55 @@
+rover/config/webhook/manifests.yaml
+  s_ff998d074d0ff0::t_d15a5547efd847 10-12
+  s_f740262e0cbc97::t_561290d6e52ad4 13-29
+rover-server/internal/controller/apispecification_categories_test.go
+  s_de45e253ab7f87::t_c3b295122e7129 28,41-43,45,47-48,52-55,57-58,63,68,71,74,76,79,101,103-104,106-107,109,115-116,120-122,125
+  s_ff998d074d0ff0::t_3768ac4a934577 22,110-113,117
+  s_ff998d074d0ff0::t_12be3c2b1b7df6 1-21,23-27,29-40,44,46,49-51,56,59-62,64-67,69-70,72-73,75,77-78,80-100,102,105,108,114,118-119,123-124,126-128
+rover/internal/webhook/v1/apispecification_defaulter_test.go
+  s_ff998d074d0ff0::t_4e6065646493f2 1-114
+rover/internal/webhook/v1/apispecification_webhook_test.go
+  s_f740262e0cbc97::t_a9457ae6cecc6b 26
+  s_f740262e0cbc97::t_b60cb55aff5011 108,143,178,213,248,275,305,332
+rover/internal/webhook/v1/webhook_suite_test.go
+  s_ff998d074d0ff0::t_3b28d6eb4ad5cc 34,78,114-116,140-141
+  s_ff998d074d0ff0::t_be1dfa633a4574 142
+rover/internal/webhook/v1/apispecification_webhook.go
+  s_ff998d074d0ff0::t_e477b882db6825 30-33,35-37,41-90
+  s_ff998d074d0ff0::t_d7eaaa40b710d0 91
+rover/internal/webhook/v1/apispecification_webhook_envtest_test.go
+  s_ff998d074d0ff0::t_d15a5547efd847 1-134
+rover-server/internal/controller/apispecification.go
+  s_de45e253ab7f87::t_e9312aae3eb1a8 253-258,264
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "10dff9402eaa6e906d8519013770f9ff3e344134",
+  "prompts": {},
+  "sessions": {
+    "s_de45e253ab7f87": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ef350905fffeDtieSr86mCPOfe",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_f740262e0cbc97": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ef34d52dfffeBZr26r5GPXE180",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_ff998d074d0ff0": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ef35879c8ffeE3k4Kuuje4vpQE",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

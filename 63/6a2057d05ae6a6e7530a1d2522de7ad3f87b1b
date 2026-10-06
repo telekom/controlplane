@@ -1,0 +1,28 @@
+projector/internal/domain/fileexposure/repository_test.go
+  s_027c9884c1a624::t_133892793867d0 11,19
+  s_027c9884c1a624::t_1798ce1e514757 29
+  s_027c9884c1a624::t_86bac2e3d4b536 347-519
+  s_027c9884c1a624::t_96293bace109a2 277-279
+projector/internal/domain/filesubscription/repository_test.go
+  s_027c9884c1a624::t_69640a11665e89 23,27
+  s_027c9884c1a624::t_dcc4d623d39fb8 320-381
+projector/internal/domain/fileexposure/repository.go
+  s_027c9884c1a624::t_99565ef34a632a 115-120
+  s_027c9884c1a624::t_d8881107e423b8 174-177
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "636a2057d05ae6a6e7530a1d2522de7ad3f87b1b",
+  "prompts": {},
+  "sessions": {
+    "s_027c9884c1a624": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ef3ba7f5effe62ir5b39rkISa8",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
