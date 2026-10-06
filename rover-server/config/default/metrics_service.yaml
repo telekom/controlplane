@@ -6,6 +6,7 @@ apiVersion: v1
 kind: Service
 metadata:
   labels:
+    metrics: "true"
     control-plane: rover-server
     app.kubernetes.io/name: rover-server
     app.kubernetes.io/managed-by: kustomize

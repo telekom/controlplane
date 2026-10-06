@@ -19,6 +19,8 @@ Each operator exposes Prometheus-compatible metrics on its metrics endpoint. Key
 - **Queue depth** — Number of resources waiting to be reconciled
 - **Resource counts** — Total number of managed resources per type
 
+Each component with a ServiceMonitor labels its monitored Service with `metrics: "true"`. This may be a dedicated metrics Service or a single Service that also serves application traffic. ServiceMonitor selectors require this label alongside the component labels, so only the intended Service is scraped. Custom Kustomize overlays must preserve the label on the monitored Service and in the ServiceMonitor selector; do not apply it to additional Services or pod selectors. Quote `"true"` in YAML because label values must be strings.
+
 ### Structured Logs
 
 All operators produce structured JSON logs. Key log fields include the resource kind, namespace, name, and reconciliation result. Use these logs to trace the lifecycle of any resource through the system.

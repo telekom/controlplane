@@ -27,5 +27,6 @@ spec:
         insecureSkipVerify: true
   selector:
     matchLabels:
+      metrics: "true"
       control-plane: controller-manager
       app.kubernetes.io/name: sftp

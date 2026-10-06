@@ -6,6 +6,7 @@ apiVersion: v1
 kind: Service
 metadata:
   labels:
+    metrics: "true"
     control-plane: controller-manager
     app.kubernetes.io/name: pubsub
     app.kubernetes.io/managed-by: kustomize

@@ -8,6 +8,7 @@ metadata:
   name: file-manager
   namespace: system
   labels:
+    metrics: "true"
     app.kubernetes.io/name: file-manager
 spec:
   ports:

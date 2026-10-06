@@ -8,6 +8,7 @@ metadata:
   name: secret-manager
   namespace: system
   labels:
+    metrics: "true"
     app.kubernetes.io/name: secret-manager
 spec:
   ports:

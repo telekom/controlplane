@@ -20,4 +20,5 @@ spec:
         insecureSkipVerify: true
   selector:
     matchLabels:
+      metrics: "true"
       app.kubernetes.io/component: manager

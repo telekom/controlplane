@@ -8,6 +8,7 @@ metadata:
   name: controlplane-api
   namespace: system
   labels:
+    metrics: "true"
     app.kubernetes.io/name: controlplane-api
     app.kubernetes.io/component: manager
 spec:

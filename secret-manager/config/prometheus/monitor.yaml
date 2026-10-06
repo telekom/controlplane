@@ -20,4 +20,5 @@ spec:
         insecureSkipVerify: true
   selector:
     matchLabels:
+      metrics: "true"
       app.kubernetes.io/name: secret-manager
