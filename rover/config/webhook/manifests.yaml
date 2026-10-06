@@ -13,6 +13,26 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
+      path: /mutate-rover-cp-ei-telekom-de-v1-apispecification
+  failurePolicy: Fail
+  name: mapispecification-v1.kb.io
+  rules:
+  - apiGroups:
+    - rover.cp.ei.telekom.de
+    apiVersions:
+    - v1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - apispecifications
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
       path: /mutate-rover-cp-ei-telekom-de-v1-rover
   failurePolicy: Fail
   name: mrover.kb.io

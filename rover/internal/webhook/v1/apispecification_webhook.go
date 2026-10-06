@@ -27,16 +27,66 @@ import (
 // SetupApiSpecificationWebhookWithManager registers the webhook for ApiSpecification in the manager.
 func SetupApiSpecificationWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr, &roverv1.ApiSpecification{}).
+		WithDefaulter(&ApiSpecificationCustomDefaulter{
+			client:            mgr.GetClient(),
+			ListApiCategories: listApiCategoriesFromContext,
+		}).
 		WithValidator(&ApiSpecificationCustomValidator{
-			client:   mgr.GetClient(),
-			FindTeam: organizationv1.FindTeamForObject,
-			ListApiCategories: func(ctx context.Context) (*apiv1.ApiCategoryList, error) {
-				janitorClient := cclient.ClientFromContextOrDie(ctx)
-				apiCategories := &apiv1.ApiCategoryList{}
-				err := janitorClient.List(ctx, apiCategories)
-				return apiCategories, err
-			},
+			client:            mgr.GetClient(),
+			FindTeam:          organizationv1.FindTeamForObject,
+			ListApiCategories: listApiCategoriesFromContext,
 		}).Complete()
+}
+
+// listApiCategoriesFromContext lists ApiCategories using the (environment-scoped) client stored in ctx.
+func listApiCategoriesFromContext(ctx context.Context) (*apiv1.ApiCategoryList, error) {
+	janitorClient := cclient.ClientFromContextOrDie(ctx)
+	apiCategories := &apiv1.ApiCategoryList{}
+	err := janitorClient.List(ctx, apiCategories)
+	return apiCategories, err
+}
+
+// +kubebuilder:webhook:path=/mutate-rover-cp-ei-telekom-de-v1-apispecification,mutating=true,failurePolicy=fail,sideEffects=None,groups=rover.cp.ei.telekom.de,resources=apispecifications,verbs=create;update,versions=v1,name=mapispecification-v1.kb.io,admissionReviewVersions=v1
+
+// ApiSpecificationCustomDefaulter replaces spec.category with the exact labelValue of the
+// active ApiCategory it matches case-insensitively.
+type ApiSpecificationCustomDefaulter struct {
+	client            client.Client
+	ListApiCategories func(ctx context.Context) (*apiv1.ApiCategoryList, error)
+}
+
+var _ admission.Defaulter[*roverv1.ApiSpecification] = &ApiSpecificationCustomDefaulter{}
+
+// Default implements admission.Defaulter. Unknown or inactive categories, a missing
+// environment label and an empty category registry leave the object unchanged so that
+// the validator can decide. Lookup failures reject the request.
+func (d *ApiSpecificationCustomDefaulter) Default(ctx context.Context, apispecification *roverv1.ApiSpecification) error {
+	if controller.IsBeingDeleted(apispecification) {
+		return nil
+	}
+
+	environment, ok := controller.GetEnvironment(apispecification)
+	if !ok {
+		return nil
+	}
+
+	ctx = cclient.WithClient(ctx, cclient.NewJanitorClient(cclient.NewScopedClient(d.client, environment)))
+
+	apiCategories, err := d.ListApiCategories(ctx)
+	if err != nil {
+		return apierrors.NewInternalError(fmt.Errorf("listing ApiCategories: %w", err))
+	}
+	if apiCategories == nil || len(apiCategories.Items) == 0 {
+		return nil
+	}
+
+	foundApiCategory, found := apiCategories.FindByLabelValue(apispecification.Spec.Category)
+	if !found || !foundApiCategory.Spec.Active {
+		return nil
+	}
+
+	apispecification.Spec.Category = foundApiCategory.Spec.LabelValue
+	return nil
 }
 
 // +kubebuilder:webhook:path=/validate-rover-cp-ei-telekom-de-v1-apispecification,mutating=false,failurePolicy=fail,sideEffects=None,groups=rover.cp.ei.telekom.de,resources=apispecifications,verbs=create;update,versions=v1,name=vapispecification-v1.kb.io,admissionReviewVersions=v1

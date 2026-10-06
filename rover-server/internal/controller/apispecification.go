@@ -250,12 +250,18 @@ func (a *ApiSpecificationController) GetStatus(ctx context.Context, resourceId s
 	return status.MapAPISpecificationResponse(ctx, apiSpec, a.stores)
 }
 
-// fetchApiCategories fetches all ApiCategories from the store. Returns nil if the store is not configured.
+// maxApiCategories is the maximum number of ApiCategories considered for validation and linting.
+// Only a single page is fetched; additional ApiCategories are ignored.
+const maxApiCategories = 200
+
+// fetchApiCategories fetches at most maxApiCategories ApiCategories from the store with a single
+// list request. Returns nil if the store is not configured, listing fails or no ApiCategories exist.
 func (a *ApiSpecificationController) fetchApiCategories(ctx context.Context) *apiv1.ApiCategoryList {
 	if a.stores.APICategoryStore == nil {
 		return nil
 	}
 	listOpts := store.NewListOpts()
+	listOpts.Limit = maxApiCategories
 	categoryList, err := a.stores.APICategoryStore.List(ctx, listOpts)
 	if err != nil {
 		logr.FromContextOrDiscard(ctx).Info("Failed to list ApiCategories", "error", err)
