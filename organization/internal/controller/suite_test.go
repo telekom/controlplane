@@ -58,6 +58,8 @@ var (
 	testEnv   *envtest.Environment
 	cfg       *rest.Config
 	k8sClient client.Client
+	// k8sCachedClient is the manager's cache-backed client, required for field-index queries.
+	k8sCachedClient client.Client
 )
 
 func TestControllers(t *testing.T) {
@@ -125,6 +127,7 @@ var _ = BeforeSuite(func() {
 
 	By("Registering all required indices")
 	index.RegisterIndicesOrDie(ctx, k8sManager)
+	k8sCachedClient = k8sManager.GetClient()
 
 	By("Setting up controllers")
 	err = (&GroupReconciler{

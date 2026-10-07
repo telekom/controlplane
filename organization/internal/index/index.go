@@ -18,6 +18,7 @@ import (
 const (
 	FieldSpecGroup         = "spec.group"
 	FieldSpecManagedRoutes = "spec.managedRoutes"
+	FieldStatusNamespace   = "status.namespace"
 )
 
 func RegisterIndicesOrDie(ctx context.Context, mgr ctrl.Manager) {
@@ -28,6 +29,15 @@ func RegisterIndicesOrDie(ctx context.Context, mgr ctrl.Manager) {
 			return nil
 		}
 		return []string{team.Spec.Group}
+	}
+
+	// Index the team by the namespace it provisions (status.namespace)
+	filterTeamStatusNamespace := func(obj client.Object) []string {
+		team, ok := obj.(*organizationv1.Team)
+		if !ok {
+			return nil
+		}
+		return []string{team.Status.Namespace}
 	}
 
 	filterZoneWithTeamRealmInfos := func(obj client.Object) []string {
@@ -49,6 +59,12 @@ func RegisterIndicesOrDie(ctx context.Context, mgr ctrl.Manager) {
 	err := mgr.GetFieldIndexer().IndexField(ctx, &organizationv1.Team{}, FieldSpecGroup, filterTeamGroup)
 	if err != nil {
 		ctrl.Log.Error(err, "unable to create fieldIndex for team", "FieldIndex", FieldSpecGroup)
+		os.Exit(1)
+	}
+
+	err = mgr.GetFieldIndexer().IndexField(ctx, &organizationv1.Team{}, FieldStatusNamespace, filterTeamStatusNamespace)
+	if err != nil {
+		ctrl.Log.Error(err, "unable to create fieldIndex for team", "FieldIndex", FieldStatusNamespace)
 		os.Exit(1)
 	}
 
