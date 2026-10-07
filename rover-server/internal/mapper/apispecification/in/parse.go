@@ -143,21 +143,21 @@ func setSecurityDefinitionsValues(apiSpecificationSpec *roverv1.ApiSpecification
 }
 
 func setSecuritySchemeValues(apiSpecificationSpec *roverv1.ApiSpecificationSpec, SecuritySchemes *orderedmap.Map[string, *v3.SecurityScheme]) {
-	if SecuritySchemes.Len() == 0 {
-		return
-	}
-
-	// iterate over the security schemes and find the first scheme with type OAuth2
 	for schemePair := SecuritySchemes.First(); schemePair != nil; schemePair = schemePair.Next() {
-		scheme := schemePair.Value()
-		if scheme.Type == "oauth2" && scheme.Flows != nil {
+		flow := clientCredentialsFlow(schemePair.Value())
+		if flow == nil {
+			continue
+		}
 
-			for scopePair := scheme.Flows.ClientCredentials.Scopes.First(); scopePair != nil; scopePair = scopePair.Next() {
-
-				//append scope to the api security authentication oauth2 scopes
-				apiSpecificationSpec.Oauth2Scopes = append(apiSpecificationSpec.Oauth2Scopes, scopePair.Key())
-			}
-
+		for scopePair := flow.Scopes.First(); scopePair != nil; scopePair = scopePair.Next() {
+			apiSpecificationSpec.Oauth2Scopes = append(apiSpecificationSpec.Oauth2Scopes, scopePair.Key())
 		}
 	}
+}
+
+func clientCredentialsFlow(scheme *v3.SecurityScheme) *v3.OAuthFlow {
+	if scheme == nil || scheme.Type != "oauth2" || scheme.Flows == nil {
+		return nil
+	}
+	return scheme.Flows.ClientCredentials
 }

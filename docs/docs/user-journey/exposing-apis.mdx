@@ -44,6 +44,8 @@ roverctl apply -f checkout-spec.yaml
 
 The ApiSpecification handler processes your specification and creates an **Api** resource. This resource stores the API's metadata — including its base path, version, and category — and makes the API discoverable in the platform. The specification content is stored in the **File Manager** for later retrieval.
 
+For OpenAPI v3, only scopes declared in OAuth2 `flows.clientCredentials` are extracted into the **ApiSpecification** and **Api** metadata. Other OAuth2 flows, such as `password`, `implicit`, and `authorizationCode`, are accepted and preserved in the stored OpenAPI document, but their scopes are not extracted. Accepting those definitions does not provision authentication for those flows. An empty client-credentials scope map contributes no scopes.
+
 ## Step 2: Expose the API in Your Rover
 
 Once the API specification is registered, you can declare the exposure in your Rover file. The `basePath` in your exposure must match the base path registered in Step 1.
