@@ -1,3 +1,10 @@
+## [0.34.1](https://github.com/telekom/controlplane/compare/v0.34.0...v0.34.1) (2026-10-07)
+
+
+### Bug Fixes
+
+* **rover-ctl:** correctly handle mixed-case apispec naming; support RESOURCE_PATH ([#735](https://github.com/telekom/controlplane/issues/735)) ([b2b0572](https://github.com/telekom/controlplane/commit/b2b057226b7cda03dfcfaefd5a696d22bd4425ca))
+
 # [0.34.0](https://github.com/telekom/controlplane/compare/v0.33.0...v0.34.0) (2026-10-07)
 
 
