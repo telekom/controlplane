@@ -190,4 +190,143 @@ servers:
 		})
 
 	})
+	Context("When parsing OpenAPI v3 OAuth2 flows", func() {
+		const header = `
+openapi: "3.0.3"
+info:
+  version: "1.0.0"
+  title: "Test API"
+  x-api-category: "test"
+  x-vendor: "true"
+servers:
+- url: "https://example.com/eni/foo/v1"
+components:
+  securitySchemes:
+`
+
+		parse := func(schemes string) *roverv1.ApiSpecification {
+			api, err := ParseSpecification(ctx, header+schemes)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(api.Spec.BasePath).To(Equal("/eni/foo/v1"))
+			Expect(api.Spec.Category).To(Equal("test"))
+			Expect(api.Spec.XVendor).To(BeTrue())
+			return api
+		}
+
+		DescribeTable("should collect scopes from a single flow",
+			func(flow, flowFields string) {
+				api := parse(`
+    oAuth2:
+      type: oauth2
+      flows:
+        ` + flow + `:
+` + flowFields + `
+          scopes:
+            write: write dummy
+            read: read dummy
+            admin: admin dummy
+`)
+				Expect(api.Spec.Oauth2Scopes).To(Equal([]string{"write", "read", "admin"}))
+			},
+			Entry("clientCredentials", "clientCredentials", "          tokenUrl: https://example.com/token"),
+			Entry("password", "password", "          tokenUrl: https://example.com/token"),
+			Entry("authorizationCode", "authorizationCode",
+				"          authorizationUrl: https://example.com/auth\n          tokenUrl: https://example.com/token"),
+			Entry("implicit", "implicit", "          authorizationUrl: https://example.com/auth"),
+		)
+
+		It("should collect scopes from an authorizationCode-only threeLegged scheme", func() {
+			api := parse(`
+    threeLegged:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://example.com/authorize
+          tokenUrl: https://example.com/token
+          scopes:
+            qod-sessions-create: Create a QoD session
+            qod-sessions-read: Read a QoD session
+`)
+			Expect(api.Spec.Oauth2Scopes).To(Equal([]string{"qod-sessions-create", "qod-sessions-read"}))
+		})
+
+		It("should collect and deduplicate scopes across mixed flows in deterministic order", func() {
+			api := parse(`
+    oAuth2:
+      type: oauth2
+      flows:
+        implicit:
+          authorizationUrl: https://example.com/auth
+          scopes:
+            implicit-scope: dummy
+            shared: dummy
+        authorizationCode:
+          authorizationUrl: https://example.com/auth
+          tokenUrl: https://example.com/token
+          scopes:
+            code-scope: dummy
+            shared: dummy
+        password:
+          tokenUrl: https://example.com/token
+          scopes:
+            password-scope: dummy
+        clientCredentials:
+          tokenUrl: https://example.com/token
+          scopes:
+            cc-scope: dummy
+            shared: dummy
+`)
+			Expect(api.Spec.Oauth2Scopes).To(Equal([]string{
+				"cc-scope", "shared", "password-scope", "code-scope", "implicit-scope",
+			}))
+		})
+
+		It("should collect and deduplicate scopes across multiple schemes and ignore non-oauth2 schemes", func() {
+			api := parse(`
+    apiKey:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    zeta:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://example.com/auth
+          tokenUrl: https://example.com/token
+          scopes:
+            write: dummy
+            read: dummy
+    alpha:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: https://example.com/token
+          scopes:
+            admin: dummy
+            write: dummy
+`)
+			// Scheme declaration order wins over flow order and alphabetical order.
+			Expect(api.Spec.Oauth2Scopes).To(Equal([]string{"write", "read", "admin"}))
+		})
+
+		It("should handle oauth2 schemes with empty scopes or without flows", func() {
+			api := parse(`
+    noFlows:
+      type: oauth2
+    emptyFlows:
+      type: oauth2
+      flows: {}
+    emptyScopes:
+      type: oauth2
+      flows:
+        password:
+          tokenUrl: https://example.com/token
+          scopes: {}
+        implicit:
+          authorizationUrl: https://example.com/auth
+`)
+			Expect(api.Spec.Oauth2Scopes).NotTo(BeNil())
+			Expect(api.Spec.Oauth2Scopes).To(BeEmpty())
+		})
+	})
 })

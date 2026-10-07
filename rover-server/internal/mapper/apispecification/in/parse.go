@@ -147,17 +147,37 @@ func setSecuritySchemeValues(apiSpecificationSpec *roverv1.ApiSpecificationSpec,
 		return
 	}
 
-	// iterate over the security schemes and find the first scheme with type OAuth2
+	// Collects the scopes of all OAuth2 flows of all OAuth2 schemes once, in order of first appearance.
+	seen := make(map[string]struct{}, len(apiSpecificationSpec.Oauth2Scopes))
+	for _, scope := range apiSpecificationSpec.Oauth2Scopes {
+		seen[scope] = struct{}{}
+	}
+
 	for schemePair := SecuritySchemes.First(); schemePair != nil; schemePair = schemePair.Next() {
 		scheme := schemePair.Value()
-		if scheme.Type == "oauth2" && scheme.Flows != nil {
+		if scheme == nil || scheme.Type != "oauth2" || scheme.Flows == nil {
+			continue
+		}
 
-			for scopePair := scheme.Flows.ClientCredentials.Scopes.First(); scopePair != nil; scopePair = scopePair.Next() {
-
-				//append scope to the api security authentication oauth2 scopes
-				apiSpecificationSpec.Oauth2Scopes = append(apiSpecificationSpec.Oauth2Scopes, scopePair.Key())
+		flows := []*v3.OAuthFlow{
+			scheme.Flows.ClientCredentials,
+			scheme.Flows.Password,
+			scheme.Flows.AuthorizationCode,
+			scheme.Flows.Implicit,
+		}
+		for _, flow := range flows {
+			if flow == nil {
+				continue
 			}
-
+			// Scopes may be nil; orderedmap.Map.First is nil-safe.
+			for scopePair := flow.Scopes.First(); scopePair != nil; scopePair = scopePair.Next() {
+				scope := scopePair.Key()
+				if _, ok := seen[scope]; ok {
+					continue
+				}
+				seen[scope] = struct{}{}
+				apiSpecificationSpec.Oauth2Scopes = append(apiSpecificationSpec.Oauth2Scopes, scope)
+			}
 		}
 	}
 }
