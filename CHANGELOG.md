@@ -1,3 +1,16 @@
+# [0.35.0](https://github.com/telekom/controlplane/compare/v0.34.1...v0.35.0) (2026-10-07)
+
+
+### Bug Fixes
+
+* **organization,rover-server:** improve watchers; make scopes nil-safe and support more flows ([#737](https://github.com/telekom/controlplane/issues/737)) ([b9ba1fa](https://github.com/telekom/controlplane/commit/b9ba1fa6a2eb737997cba131ebec7c350ae53e7a))
+* **organization:** increae limit to 200 for member size ([#736](https://github.com/telekom/controlplane/issues/736)) ([c63373b](https://github.com/telekom/controlplane/commit/c63373b9175ad051fd0f515d4b5ec71ae94f48ae))
+
+
+### Features
+
+* optimized memory-efficiency of inmemory-store ([#655](https://github.com/telekom/controlplane/issues/655)) ([a00e15d](https://github.com/telekom/controlplane/commit/a00e15d5fd640e5853376028c939219f5d604182))
+
 ## [0.34.1](https://github.com/telekom/controlplane/compare/v0.34.0...v0.34.1) (2026-10-07)
 
 
