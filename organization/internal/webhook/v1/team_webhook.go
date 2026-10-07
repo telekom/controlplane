@@ -78,7 +78,6 @@ func (t TeamCustomDefaulter) Default(ctx context.Context, teamObj *organizationv
 	for i := range teamObj.Spec.Members {
 		teamObj.Spec.Members[i].Email = emailutil.Canonicalize(teamObj.Spec.Members[i].Email)
 	}
-	mutator.SortTeamMembers(teamObj)
 	return nil
 }
 

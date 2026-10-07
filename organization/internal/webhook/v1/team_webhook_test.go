@@ -267,8 +267,8 @@ var _ = Describe("Team Webhook", func() {
 					Name:  "team-test",
 					Email: "Contact@Example.COM",
 					Members: []organizationv1.Member{
-						{Name: "Alice", Email: "alice@Example.COM"},
 						{Name: "Bob", Email: "BOB@Example.COM"},
+						{Name: "Alice", Email: "alice@Example.COM"},
 					},
 					Category: organizationv1.TeamCategoryCustomer,
 				},
@@ -290,18 +290,22 @@ var _ = Describe("Team Webhook", func() {
 				Expect(err).NotTo(HaveOccurred())
 			})
 
-		It("should normalize member emails before sorting on create and update and remain idempotent", func() {
+		It("should normalize member emails while preserving order on create and update and remain idempotent", func() {
 			Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(localTeam), localTeam)).To(Succeed())
 			Expect(localTeam.Spec.Members).To(Equal([]organizationv1.Member{
-				{Name: "Alice", Email: "alice@example.com"},
 				{Name: "Bob", Email: "bob@example.com"},
+				{Name: "Alice", Email: "alice@example.com"},
 			}))
 			Expect(localTeam.Spec.Email).To(Equal("Contact@Example.COM"))
 			normalized := localTeam.DeepCopy()
 
 			localTeam.Spec.Members = []organizationv1.Member{
-				{Name: "Bob", Email: "BOB@EXAMPLE.COM"},
 				{Name: "Alice", Email: "alice@EXAMPLE.COM"},
+				{Name: "Bob", Email: "BOB@EXAMPLE.COM"},
+			}
+			normalized.Spec.Members = []organizationv1.Member{
+				{Name: "Alice", Email: "alice@example.com"},
+				{Name: "Bob", Email: "bob@example.com"},
 			}
 			Expect(k8sClient.Update(ctx, localTeam)).To(Succeed())
 			Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(localTeam), localTeam)).To(Succeed())
@@ -435,13 +439,13 @@ var _ = Describe("Team Webhook", func() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 
-		It("lowercases Unicode before sorting on create and update", func() {
+		It("lowercases Unicode while preserving order on create and update", func() {
 			teamObj.Spec.Members = []organizationv1.Member{{Name: "Unicode", Email: "ÜSER@BÜCHER.Example"}, {Name: "ASCII", Email: "Zulu@Example.COM"}}
 			Expect(k8sClient.Create(ctx, teamObj)).To(Succeed())
 			DeferCleanup(func() { Expect(k8sClient.Delete(ctx, teamObj)).To(Succeed()) })
-			expected := []organizationv1.Member{{Name: "ASCII", Email: "zulu@example.com"}, {Name: "Unicode", Email: "üser@bücher.example"}}
+			expected := []organizationv1.Member{{Name: "Unicode", Email: "üser@bücher.example"}, {Name: "ASCII", Email: "zulu@example.com"}}
 			Expect(teamObj.Spec.Members).To(Equal(expected))
-			teamObj.Spec.Members[1].Email = "ÜSER@BÜCHER.EXAMPLE"
+			teamObj.Spec.Members[0].Email = "ÜSER@BÜCHER.EXAMPLE"
 			Expect(k8sClient.Update(ctx, teamObj)).To(Succeed())
 			Expect(teamObj.Spec.Members).To(Equal(expected))
 			Expect(teamObj.Spec.Email).To(Equal("Contact@Example.COM"))
