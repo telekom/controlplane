@@ -1,3 +1,10 @@
+## [0.35.1](https://github.com/telekom/controlplane/compare/v0.35.0...v0.35.1) (2026-10-07)
+
+
+### Bug Fixes
+
+* **application:** block secret-rotation requests of applications that do not own a client ([#739](https://github.com/telekom/controlplane/issues/739)) ([2bccc7e](https://github.com/telekom/controlplane/commit/2bccc7e34d143e1a5bc071ff423fdf44395bb304))
+
 # [0.35.0](https://github.com/telekom/controlplane/compare/v0.34.1...v0.35.0) (2026-10-07)
 
 
