@@ -26,6 +26,8 @@ When graceful secret rotation is enabled for the zone, the Application operator 
 3. Sends **notification emails** at configured thresholds before expiry and upon completion
 4. Manages reminder state to avoid duplicate notifications
 
+The Application admission webhook rejects a rotation request with a `Forbidden` error when the Application has `needsClient: false`. Applications without a client have no secret to rotate. In that case, the webhook doesn't change any secrets.
+
 See [Graceful Secret Rotation (User Guide)](../user-journey/features/secret-rotation.mdx) and [Secret Rotation (Admin Guide)](../admin-journey/features/secret-rotation.md) for details.
 
 ## Domain Interactions
