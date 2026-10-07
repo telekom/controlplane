@@ -5,6 +5,7 @@
 package config
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/spf13/viper"
@@ -13,6 +14,9 @@ import (
 const (
 	ConfigKeyServerURL = "server.url"
 	ConfigKeyTokenURL  = "token.url"
+
+	ConfigKeyResourcePath = "resource.path"
+	EnvResourcePath       = "RESOURCE_PATH"
 )
 
 // Initialize sets up viper for configuration management
@@ -25,6 +29,20 @@ func Initialize() {
 	viper.SetEnvPrefix("ROVER")
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	viper.AutomaticEnv()
+
+	// RESOURCE_PATH is intentionally unprefixed.
+	bindEnvOrDie(ConfigKeyResourcePath, EnvResourcePath)
+}
+
+// ResourcePath returns the optional base directory for relative --file paths.
+func ResourcePath() string {
+	return viper.GetString(ConfigKeyResourcePath)
+}
+
+func bindEnvOrDie(input ...string) {
+	if err := viper.BindEnv(input...); err != nil {
+		panic(fmt.Sprintf("binding env %q: %v", input, err))
+	}
 }
 
 // setDefaults sets default values for all configuration options

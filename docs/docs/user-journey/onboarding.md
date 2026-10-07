@@ -61,6 +61,13 @@ Additional configuration options:
 | Variable | Description |
 | -------- | ----------- |
 | `ROVER_TOKEN` | Your team's authentication token |
+| `RESOURCE_PATH` | Optional base directory for relative `--file`/`-f` paths. May be relative to the current directory or absolute. Absolute `--file` paths are not affected. If both `RESOURCE_PATH` and `ROVER_RESOURCE_PATH` are unset or empty, paths are resolved relative to the current directory. If `ROVER_RESOURCE_PATH` is set and nonempty, it takes priority over `RESOURCE_PATH`. |
+
+For example, if `ROVER_RESOURCE_PATH` is not set, the following applies `./resources/api.yaml`:
+
+```bash
+RESOURCE_PATH=./resources roverctl apply -f api.yaml
+```
 
 ### Verify Your Setup
 
