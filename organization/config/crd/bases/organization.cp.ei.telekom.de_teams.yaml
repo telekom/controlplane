@@ -86,7 +86,7 @@ spec:
                   - email
                   - name
                   type: object
-                maxItems: 50
+                maxItems: 200
                 minItems: 1
                 type: array
                 x-kubernetes-list-map-keys:

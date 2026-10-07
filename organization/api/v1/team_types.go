@@ -70,7 +70,7 @@ type TeamSpec struct {
 
 	// Members is the members of the team
 	// +kubebuilder:validation:MinItems=1
-	// +kubebuilder:validation:MaxItems=50
+	// +kubebuilder:validation:MaxItems=200
 	// +listType=map
 	// +listMapKey=email
 	// +patchStrategy=merge
