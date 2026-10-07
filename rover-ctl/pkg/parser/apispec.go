@@ -80,8 +80,9 @@ func GetNameFromSwaggerSpec(document libopenapi.Document) (string, error) {
 	return SanitizeName(model.Model.BasePath), nil
 }
 
+// SanitizeName derives a lowercase resource name from an API base path.
 func SanitizeName(basePath string) string {
-	return strings.Trim(strings.ReplaceAll(basePath, "/", "-"), "-")
+	return strings.ToLower(strings.Trim(strings.ReplaceAll(basePath, "/", "-"), "-"))
 }
 
 func GetPathFromURL(rawURL string) (string, error) {

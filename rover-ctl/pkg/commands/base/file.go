@@ -5,7 +5,10 @@
 package base
 
 import (
+	"path/filepath"
+
 	"github.com/pkg/errors"
+	"github.com/telekom/controlplane/rover-ctl/pkg/config"
 	"github.com/telekom/controlplane/rover-ctl/pkg/parser"
 )
 
@@ -47,13 +50,24 @@ func (c *FileCommand) ParseFiles() error {
 		}
 	}
 
-	c.Logger().V(1).Info("Parsing files", "path", c.FilePath)
+	path := resolveFilePath(c.FilePath)
+	c.Logger().V(1).Info("Parsing files", "path", path)
 
-	if err := c.Parser.Parse(c.FilePath); err != nil {
+	if err := c.Parser.Parse(path); err != nil {
 		return errors.Wrap(err, "failed to parse files")
 	}
 
 	c.Logger().V(1).Info("Successfully parsed files", "count", len(c.Parser.Objects()))
 
 	return nil
+}
+
+// resolveFilePath joins a nonempty relative path with the configured resource path if set.
+// Empty and absolute paths are returned unchanged.
+func resolveFilePath(path string) string {
+	base := config.ResourcePath()
+	if base == "" || path == "" || filepath.IsAbs(path) {
+		return path
+	}
+	return filepath.Join(base, path)
 }
