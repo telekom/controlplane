@@ -1,3 +1,16 @@
+# [0.34.0](https://github.com/telekom/controlplane/compare/v0.33.0...v0.34.0) (2026-10-07)
+
+
+### Bug Fixes
+
+* **controlplane-api:** handle missing event subscription targets ([#732](https://github.com/telekom/controlplane/issues/732)) ([981731f](https://github.com/telekom/controlplane/commit/981731f592f4fe4c2a7ffe843e13893f1fb4f241))
+* **install:** cpu-requests must be atleast 30m for rustfs ([#734](https://github.com/telekom/controlplane/issues/734)) ([9f0f4b1](https://github.com/telekom/controlplane/commit/9f0f4b1c982bf48014fc1799602bef82d2a57786))
+
+
+### Features
+
+* **admin, gateway:** add zone health route ([#733](https://github.com/telekom/controlplane/issues/733)) ([3cc6670](https://github.com/telekom/controlplane/commit/3cc66702ded9d17753bf88ecad174cce77e7d77b))
+
 # [0.33.0](https://github.com/telekom/controlplane/compare/v0.32.0...v0.33.0) (2026-10-06)
 
 
