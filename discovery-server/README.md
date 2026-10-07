@@ -202,8 +202,7 @@ Configuration is loaded via [Viper](https://github.com/spf13/viper) with environ
 | `SECURITY_DEFAULTSCOPE` | `tardis:user:read` | Default scope when none is provided |
 | `SECURITY_SCOPEPREFIX` | `tardis:` | Prefix for scope matching |
 | `SECURITY_LMS_BASEPATH` | `""` | Base URL for external License Management Service |
-| `DATABASE_FILEPATH` | `""` | BadgerDB storage path (empty = in-memory) |
-| `DATABASE_REDUCEMEMORY` | `false` | Enable BadgerDB memory reduction mode |
+| `DATABASE_FILEPATH` | `""` | BadgerDB storage path (empty = in-memory; set = on-disk with reduced-memory profile) |
 | `INFORMER_DISABLECACHE` | `true` | Disable the Kubernetes informer cache |
 
 ### Building

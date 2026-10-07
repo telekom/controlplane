@@ -24,9 +24,8 @@ type ServerConfig struct {
 
 type DatabaseConfig struct {
 	// Filepath is the on-disk store path; empty means in-memory only.
+	// A non-empty path selects the reduced-memory profile; see common-server docs.
 	Filepath string `mapstructure:"filepath"`
-	// ReduceMemory trades memory for CPU; see common-server docs.
-	ReduceMemory bool `mapstructure:"reduceMemory"`
 }
 
 type InformerConfig struct {

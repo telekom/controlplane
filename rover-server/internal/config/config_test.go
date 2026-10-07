@@ -52,7 +52,22 @@ listeners:
 		Expect(cfg.Log.Level).To(Equal("info"))
 		Expect(cfg.Log.Encoding).To(Equal("json"))
 		Expect(cfg.Database.Filepath).To(Equal(""))
-		Expect(cfg.Database.ReduceMemory).To(BeFalse())
 		Expect(cfg.Migration.Active).To(BeFalse())
+	})
+
+	It("ignores the removed database.reduceMemory key", func() {
+		path := writeTempConfig(`
+listeners:
+  external:
+    jwt:
+      trustedIssuers:
+        - https://issuer.example
+database:
+  filepath: /data/db
+  reduceMemory: true
+`)
+		cfg := config.LoadConfig(path)
+
+		Expect(cfg.Database.Filepath).To(Equal("/data/db"))
 	})
 })

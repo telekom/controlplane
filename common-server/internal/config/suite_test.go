@@ -7,6 +7,8 @@ package config_test
 import (
 	"context"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -69,6 +71,25 @@ var _ = Describe("Config Test", func() {
 			cfg, err := config.ReadConfig("config.test.yaml")
 			Expect(err).ToNot(HaveOccurred())
 			Expect(cfg).ToNot(BeNil())
+		})
+
+		It("ignores the removed store.optimizeMemoryUsage key", func() {
+			path := filepath.Join(GinkgoT().TempDir(), "config.yaml")
+			Expect(os.WriteFile(path, []byte(`
+resources:
+  - id: tests
+    group: test.group
+    version: v1
+    resource: tests
+    store:
+      databaseFilepath: /data/db
+      optimizeMemoryUsage: true
+`), 0o600)).To(Succeed())
+
+			cfg, err := config.ReadConfig(path)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(cfg.Resources).To(HaveLen(1))
+			Expect(cfg.Resources[0].Store.DatabaseFilepath).To(Equal("/data/db"))
 		})
 	})
 
