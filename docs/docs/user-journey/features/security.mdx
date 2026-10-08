@@ -120,6 +120,8 @@ exposures:
 
 #### Scope Validation and External Identity Providers
 
+API and agentic exposures and subscriptions support up to 50 M2M scopes. Rover M2M scopes are each limited to 256 characters.
+
 For API and agentic (MCP and agent) exposures and subscriptions, configured M2M scopes normally must be declared in the corresponding specification. Matching is exact and case-sensitive.
 
 When the **active exposure has a non-empty external-IDP token endpoint**, the Control Plane skips this specification check for both the exposure and its subscriptions. Scopes may then be absent from the specification, including when it declares no scopes at all. Each exposure and subscription continues to forward its own configured scopes; subscription scopes do not have to match the exposure's list.
@@ -140,7 +142,7 @@ The subscription inherits this exception from its active exposure. Subscriber cr
 
 Subscriber username/password credentials may be combined with scopes only when the selected exposure explicitly uses an external-IDP `password` grant. A different or omitted grant blocks that subscription before approval.
 
-For both API and agentic exposures, provider username/password credentials in `spec.security.m2m.externalIDP.basic` may be combined with non-empty `spec.security.m2m.scopes` only with an explicit `password` grant. 
+For both API and agentic exposures, provider username/password credentials in `spec.security.m2m.externalIDP.basic` may be combined with non-empty `spec.security.m2m.scopes` only with an explicit `password` grant.
 API approval requests still include the requested scopes. Existing readiness and approval requirements continue to apply, and the external identity provider determines whether it will grant the requested scopes.
 
 ### Audience Claims

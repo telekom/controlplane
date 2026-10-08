@@ -86,7 +86,7 @@ type Machine2MachineAuthentication struct {
 	Basic *BasicAuthCredentials `json:"basic,omitempty"`
 	// Scopes defines additional OAuth2 scopes that are added to the LMS token
 	// +kubebuilder:validation:Optional
-	// +kubebuilder:validation:MaxItems=10
+	// +kubebuilder:validation:MaxItems=50
 	// +kubebuilder:validation:items:MaxLength=256
 	Scopes []string `json:"scopes,omitempty"`
 	// Claims defines token claims that must be present in the token reaching the upstream.
@@ -108,7 +108,7 @@ type SubscriberMachine2MachineAuthentication struct {
 	Basic *BasicAuthCredentials `json:"basic,omitempty"`
 	// Scopes defines additional OAuth2 scopes that are added to the LMS token
 	// +kubebuilder:validation:Optional
-	// +kubebuilder:validation:MaxItems=10
+	// +kubebuilder:validation:MaxItems=50
 	// +kubebuilder:validation:items:MaxLength=256
 	Scopes []string `json:"scopes,omitempty"`
 }

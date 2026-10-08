@@ -304,7 +304,7 @@ spec:
                           are added to the LMS token
                         items:
                           type: string
-                        maxItems: 10
+                        maxItems: 50
                         type: array
                     type: object
                     x-kubernetes-validations:
@@ -524,7 +524,7 @@ spec:
                                   that are added to the LMS token
                                 items:
                                   type: string
-                                maxItems: 10
+                                maxItems: 50
                                 type: array
                             type: object
                             x-kubernetes-validations:
