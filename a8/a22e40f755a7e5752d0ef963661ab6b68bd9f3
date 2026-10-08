@@ -1,0 +1,65 @@
+rover-ctl/cmd/suite_test.go
+  s_2493ecab93d735::t_1cf4fe103c98fd 1-17
+rover-ctl/cmd/root_test.go
+  s_ae17b9901634f1::t_8e05694096c02e 115,121
+  s_2493ecab93d735::t_276a1e1ac8b516 1-108,122-155
+  s_2493ecab93d735::t_82e0a01ca84b4f 109-114,116-120
+rover-ctl/Makefile
+  s_2493ecab93d735::t_3c47a588c03222 27-28
+rover-ctl/pkg/config/token_errors_test.go
+  s_2493ecab93d735::t_8dac34017806bc 1-18,21-41,46-49,55-56,59-61,125-126,131-132,136-138,142-148,152-155
+  s_2493ecab93d735::t_bd1a6e0fb5480e 50-54,57-58,117,139-140,149-150
+  s_2493ecab93d735::t_d16d991df71354 19-20,42-45,62-116,118-124,127-130,133-135,141,151
+rover-ctl/pkg/config/token_test.go
+  s_2493ecab93d735::t_6e9ba75e6a2c4a 70
+  s_2493ecab93d735::t_5f723641e3e206 10
+  s_2493ecab93d735::t_fb78189ea1e6a6 77
+  s_2493ecab93d735::t_d16d991df71354 84
+rover-ctl/pkg/config/token.go
+  s_ae17b9901634f1::t_8e05694096c02e 99
+  s_2493ecab93d735::t_652e535a360829 22-23,26,29-33
+  s_2493ecab93d735::t_5d82a21b8f1d4f 201,206-230,255-264
+  s_2493ecab93d735::t_f6550f1b2dd7e8 83,88
+  s_2493ecab93d735::t_54f590385491b9 104
+  s_2493ecab93d735::t_7ae478c85587be 231-254,265
+  s_2493ecab93d735::t_57a23ce12a1df5 266
+docs/docs/user-journey/onboarding.md
+  s_2493ecab93d735::t_d16d991df71354 84
+  s_2493ecab93d735::t_ad94b81c74b20b 86-87
+  s_2493ecab93d735::t_746062d7ba7423 82-83,85
+rover-ctl/cmd/root.go
+  s_2493ecab93d735::t_bf804aa9ba3316 29,36-43
+  s_375424dba57a4d::t_8d3dadf609690d 44-45
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "a8a22e40f755a7e5752d0ef963661ab6b68bd9f3",
+  "prompts": {},
+  "sessions": {
+    "s_2493ecab93d735": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ee4822f6cffeAUktbYhD4puzn2",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_375424dba57a4d": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ee574b47affehjwoRwfany0KOd",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_ae17b9901634f1": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ee48439c0ffew4f334w1Xp4H7d",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
