@@ -1,3 +1,17 @@
+# [0.36.0](https://github.com/telekom/controlplane/compare/v0.35.1...v0.36.0) (2026-10-08)
+
+
+### Bug Fixes
+
+* **event:** sort voyager-routes to avoid status churn ([#745](https://github.com/telekom/controlplane/issues/745)) ([f8c25a2](https://github.com/telekom/controlplane/commit/f8c25a2e4c30e1c9bed0863bd60cf4d6b52c281f))
+* **rover-server:** enable profiling server ([#744](https://github.com/telekom/controlplane/issues/744)) ([8fd8289](https://github.com/telekom/controlplane/commit/8fd82892f2348e0e79edf143e70040d5f21049c0))
+* **rover-server:** populate application-info variables ([#743](https://github.com/telekom/controlplane/issues/743)) ([64ae7eb](https://github.com/telekom/controlplane/commit/64ae7eb94496ab9414ecdb183b9148ca10c3e42f))
+
+
+### Features
+
+* add resource name, display name and specification hash to MCP servers and agent cards ([#729](https://github.com/telekom/controlplane/issues/729)) ([4262fbf](https://github.com/telekom/controlplane/commit/4262fbf50474c165831886b08628b9dd9a9d53cf))
+
 ## [0.35.1](https://github.com/telekom/controlplane/compare/v0.35.0...v0.35.1) (2026-10-07)
 
 
