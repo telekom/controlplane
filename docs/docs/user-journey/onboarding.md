@@ -79,6 +79,12 @@ roverctl get-info
 
 This should return a list of your team's existing Rover resources (which will be empty if you are starting fresh).
 
+### Troubleshooting Token Errors
+
+If Rover-CTL reports that `ROVER_TOKEN` is invalid or incomplete, check that you copied the entire team token and that you are using the token for the correct environment. If the problem persists, obtain a new team token.
+
+For troubleshooting, run the command again with `--debug`. The error log then also shows which part of the token could not be decoded or validated. Token contents, credentials and URL values are never included, so the output can be shared with your platform support.
+
 ## Next Steps
 
 - [Managing Applications](./applications.mdx) — Create your first application
