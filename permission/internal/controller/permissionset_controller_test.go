@@ -281,7 +281,7 @@ var _ = Describe("PermissionSet Controller", func() {
 			}, timeout, interval).Should(Succeed())
 
 			By("Verifying external PermissionSet has namespace-prefixed name")
-			Expect(externalPS.Name).To(HavePrefix(testNamespace.Name + "-"))
+			Expect(externalPS.Name).To(HavePrefix(testNamespace.Name + "--"))
 
 			By("Verifying external PermissionSet has both environment labels")
 			Expect(externalPS.Labels).To(HaveKeyWithValue(config.EnvironmentLabelKey, testEnvironment))

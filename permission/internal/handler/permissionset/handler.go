@@ -68,7 +68,7 @@ func (h *PermissionSetHandler) CreateOrUpdate(ctx context.Context, obj *permissi
 
 	// Create external PermissionSet in the zone namespace
 	// Use namespace-prefixed name to avoid collisions from different namespaces
-	externalName := labelutil.NormalizeNameValue(obj.Namespace + "-" + obj.Name)
+	externalName := labelutil.NormalizeNameValue(obj.Namespace + "--" + obj.Name)
 	externalPS := &pcpv1.PermissionSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      externalName,

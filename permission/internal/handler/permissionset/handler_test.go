@@ -79,7 +79,7 @@ var _ = Describe("PermissionSetHandler Delete", func() {
 
 		// Create external PermissionSet manually (simulating what CreateOrUpdate does)
 		// Use same naming pattern as handler: namespace-prefixed to avoid collisions
-		externalName := labelutil.NormalizeNameValue(testNamespace.Name + "-" + psName)
+		externalName := labelutil.NormalizeNameValue(testNamespace.Name + "--" + psName)
 		externalPS = &pcpv1.PermissionSet{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      externalName,
@@ -225,7 +225,7 @@ var _ = Describe("PermissionSetHandler Delete", func() {
 		}()
 
 		// Create second external PermissionSet with namespace-prefixed name
-		externalName2 := labelutil.NormalizeNameValue(testNamespace2.Name + "-" + psName)
+		externalName2 := labelutil.NormalizeNameValue(testNamespace2.Name + "--" + psName)
 		externalPS2 := &pcpv1.PermissionSet{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      externalName2,
