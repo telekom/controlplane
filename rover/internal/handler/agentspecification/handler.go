@@ -53,6 +53,7 @@ func (h *AgentSpecificationHandler) CreateOrUpdate(ctx context.Context, spec *ro
 			Name:          spec.Spec.Name,
 			Description:   spec.Spec.Description,
 			Specification: spec.Spec.Specification,
+			Hash:          spec.Spec.Hash,
 			Category:      spec.Spec.Category,
 			Oauth2Scopes:  spec.Spec.Oauth2Scopes,
 		}

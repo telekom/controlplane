@@ -33,7 +33,7 @@ var _ = Describe("AgentCard Translator", func() {
 		It("should populate all fields from the CR", func() {
 			obj := &agenticv1.AgentCard{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "card-weather-v1",
+					Name:      "agent-weather-v1",
 					Namespace: "prod--platform--narvi",
 					Labels: map[string]string{
 						"cp.ei.telekom.de/environment": "prod",
@@ -42,9 +42,10 @@ var _ = Describe("AgentCard Translator", func() {
 				Spec: agenticv1.AgentCardSpec{
 					BasePath:      "/agent/weather/v1",
 					Version:       "1.0.0",
-					Name:          "weather-agent",
+					Name:          "Weather Agent",
 					Description:   "Weather agent card",
 					Specification: "file-123",
+					Hash:          "hash-123",
 					Category:      "g-api",
 					Oauth2Scopes:  []string{"scope-a", "scope-b"},
 				},
@@ -65,13 +66,15 @@ var _ = Describe("AgentCard Translator", func() {
 			data, err := t.Translate(context.Background(), obj)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(data.Meta.Namespace).To(Equal("prod--platform--narvi"))
-			Expect(data.Meta.Name).To(Equal("card-weather-v1"))
+			Expect(data.Meta.Name).To(Equal("agent-weather-v1"))
 			Expect(data.StatusPhase).To(Equal("READY"))
 			Expect(data.BasePath).To(Equal("/agent/weather/v1"))
 			Expect(data.Version).To(Equal("1.0.0"))
-			Expect(data.Name).To(Equal("weather-agent"))
+			Expect(data.Name).To(Equal("agent-weather-v1"))
+			Expect(data.DisplayName).To(Equal("Weather Agent"))
 			Expect(data.Description).To(Equal("Weather agent card"))
 			Expect(data.Specification).To(Equal("file-123"))
+			Expect(data.Hash).To(Equal("hash-123"))
 			Expect(data.Category).To(Equal("g-api"))
 			Expect(data.Oauth2Scopes).To(Equal([]string{"scope-a", "scope-b"}))
 			Expect(data.Active).To(BeTrue())
@@ -110,20 +113,24 @@ var _ = Describe("AgentCard Translator", func() {
 	Describe("KeyFromDelete", func() {
 		It("should use lastKnown when available", func() {
 			lastKnown := &agenticv1.AgentCard{
-				ObjectMeta: metav1.ObjectMeta{Namespace: "prod--platform--narvi"},
+				ObjectMeta: metav1.ObjectMeta{Name: "agent-weather-v1", Namespace: "prod--platform--narvi"},
 				Spec:       agenticv1.AgentCardSpec{BasePath: "/agent/weather/v1"},
 			}
-			key, err := t.KeyFromDelete(k8stypes.NamespacedName{Name: "card-weather-v1", Namespace: "prod--platform--narvi"}, lastKnown)
+			key, err := t.KeyFromDelete(k8stypes.NamespacedName{Name: "agent-weather-v1", Namespace: "prod--platform--narvi"}, lastKnown)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(key.BasePath).To(Equal("/agent/weather/v1"))
 			Expect(key.TeamName).To(Equal("platform--narvi"))
+			Expect(key.Namespace).To(Equal("prod--platform--narvi"))
+			Expect(key.Name).To(Equal("agent-weather-v1"))
 		})
 
-		It("should fall back to req.Name when lastKnown is nil", func() {
-			key, err := t.KeyFromDelete(k8stypes.NamespacedName{Name: "card-weather-v1", Namespace: "prod--platform--narvi"}, nil)
+		It("should use the namespace and name from req when lastKnown is nil", func() {
+			key, err := t.KeyFromDelete(k8stypes.NamespacedName{Name: "agent-weather-v1", Namespace: "prod--platform--narvi"}, nil)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(key.BasePath).To(Equal("card-weather-v1"))
+			Expect(key.BasePath).To(BeEmpty())
 			Expect(key.TeamName).To(Equal("platform--narvi"))
+			Expect(key.Namespace).To(Equal("prod--platform--narvi"))
+			Expect(key.Name).To(Equal("agent-weather-v1"))
 		})
 	})
 })

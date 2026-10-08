@@ -40,11 +40,13 @@ func (t *Translator) Translate(_ context.Context, obj *agenticv1.AgentCard) (*Ag
 		StatusMessage: message,
 		BasePath:      obj.Spec.BasePath,
 		Version:       obj.Spec.Version,
-		Name:          obj.Spec.Name,
+		Name:          obj.Name,
+		DisplayName:   obj.Spec.Name,
 		Description:   obj.Spec.Description,
 		Category:      obj.Spec.Category,
 		Oauth2Scopes:  scopes,
 		Specification: obj.Spec.Specification,
+		Hash:          obj.Spec.Hash,
 		Active:        obj.Status.Active,
 		TeamName:      shared.TeamNameFromNamespace(obj.Namespace),
 	}, nil
@@ -53,23 +55,29 @@ func (t *Translator) Translate(_ context.Context, obj *agenticv1.AgentCard) (*Ag
 // KeyFromObject derives the composite identity key from a live AgentCard CR.
 func (t *Translator) KeyFromObject(obj *agenticv1.AgentCard) AgentCardKey {
 	return AgentCardKey{
-		BasePath: obj.Spec.BasePath,
-		TeamName: shared.TeamNameFromNamespace(obj.Namespace),
+		BasePath:  obj.Spec.BasePath,
+		TeamName:  shared.TeamNameFromNamespace(obj.Namespace),
+		Namespace: obj.Namespace,
+		Name:      obj.Name,
 	}
 }
 
 // KeyFromDelete derives the identity key for a delete operation.
-// If lastKnown is available, uses Spec.BasePath and namespace-derived team.
-// Otherwise, falls back to req.Name as basePath and namespace-derived team.
+// If lastKnown is available, uses its Spec.BasePath, namespace and name.
+// Otherwise, the base path is unknown: the key holds only the namespace and
+// name from req, and Delete finds the entity by them.
 func (t *Translator) KeyFromDelete(req types.NamespacedName, lastKnown *agenticv1.AgentCard) (AgentCardKey, error) {
 	if lastKnown != nil {
 		return AgentCardKey{
-			BasePath: lastKnown.Spec.BasePath,
-			TeamName: shared.TeamNameFromNamespace(lastKnown.Namespace),
+			BasePath:  lastKnown.Spec.BasePath,
+			TeamName:  shared.TeamNameFromNamespace(lastKnown.Namespace),
+			Namespace: lastKnown.Namespace,
+			Name:      lastKnown.Name,
 		}, nil
 	}
 	return AgentCardKey{
-		BasePath: req.Name,
-		TeamName: shared.TeamNameFromNamespace(req.Namespace),
+		TeamName:  shared.TeamNameFromNamespace(req.Namespace),
+		Namespace: req.Namespace,
+		Name:      req.Name,
 	}, nil
 }

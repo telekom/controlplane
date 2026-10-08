@@ -37,10 +37,14 @@ const (
 	FieldVersion = "version"
 	// FieldName holds the string denoting the name field in the database.
 	FieldName = "name"
+	// FieldDisplayName holds the string denoting the display_name field in the database.
+	FieldDisplayName = "display_name"
 	// FieldDescription holds the string denoting the description field in the database.
 	FieldDescription = "description"
 	// FieldSpecification holds the string denoting the specification field in the database.
 	FieldSpecification = "specification"
+	// FieldHash holds the string denoting the hash field in the database.
+	FieldHash = "hash"
 	// FieldCategory holds the string denoting the category field in the database.
 	FieldCategory = "category"
 	// FieldOauth2Scopes holds the string denoting the oauth2_scopes field in the database.
@@ -80,8 +84,10 @@ var Columns = []string{
 	FieldBasePath,
 	FieldVersion,
 	FieldName,
+	FieldDisplayName,
 	FieldDescription,
 	FieldSpecification,
+	FieldHash,
 	FieldCategory,
 	FieldOauth2Scopes,
 	FieldActive,
@@ -130,6 +136,8 @@ var (
 	VersionValidator func(string) error
 	// NameValidator is a validator for the "name" field. It is called by the builders before save.
 	NameValidator func(string) error
+	// DefaultDisplayName holds the default value on creation for the "display_name" field.
+	DefaultDisplayName string
 	// DefaultActive holds the default value on creation for the "active" field.
 	DefaultActive bool
 )
@@ -207,6 +215,11 @@ func ByName(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldName, opts...).ToFunc()
 }
 
+// ByDisplayName orders the results by the display_name field.
+func ByDisplayName(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDisplayName, opts...).ToFunc()
+}
+
 // ByDescription orders the results by the description field.
 func ByDescription(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldDescription, opts...).ToFunc()
@@ -215,6 +228,11 @@ func ByDescription(opts ...sql.OrderTermOption) OrderOption {
 // BySpecification orders the results by the specification field.
 func BySpecification(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldSpecification, opts...).ToFunc()
+}
+
+// ByHash orders the results by the hash field.
+func ByHash(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldHash, opts...).ToFunc()
 }
 
 // ByCategory orders the results by the category field.

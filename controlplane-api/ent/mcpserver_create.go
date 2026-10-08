@@ -107,6 +107,20 @@ func (_c *McpServerCreate) SetName(v string) *McpServerCreate {
 	return _c
 }
 
+// SetDisplayName sets the "display_name" field.
+func (_c *McpServerCreate) SetDisplayName(v string) *McpServerCreate {
+	_c.mutation.SetDisplayName(v)
+	return _c
+}
+
+// SetNillableDisplayName sets the "display_name" field if the given value is not nil.
+func (_c *McpServerCreate) SetNillableDisplayName(v *string) *McpServerCreate {
+	if v != nil {
+		_c.SetDisplayName(*v)
+	}
+	return _c
+}
+
 // SetDescription sets the "description" field.
 func (_c *McpServerCreate) SetDescription(v string) *McpServerCreate {
 	_c.mutation.SetDescription(v)
@@ -131,6 +145,20 @@ func (_c *McpServerCreate) SetSpecification(v string) *McpServerCreate {
 func (_c *McpServerCreate) SetNillableSpecification(v *string) *McpServerCreate {
 	if v != nil {
 		_c.SetSpecification(*v)
+	}
+	return _c
+}
+
+// SetHash sets the "hash" field.
+func (_c *McpServerCreate) SetHash(v string) *McpServerCreate {
+	_c.mutation.SetHash(v)
+	return _c
+}
+
+// SetNillableHash sets the "hash" field if the given value is not nil.
+func (_c *McpServerCreate) SetNillableHash(v *string) *McpServerCreate {
+	if v != nil {
+		_c.SetHash(*v)
 	}
 	return _c
 }
@@ -246,6 +274,10 @@ func (_c *McpServerCreate) defaults() error {
 		v := mcpserver.DefaultLastModifiedAt()
 		_c.mutation.SetLastModifiedAt(v)
 	}
+	if _, ok := _c.mutation.DisplayName(); !ok {
+		v := mcpserver.DefaultDisplayName
+		_c.mutation.SetDisplayName(v)
+	}
 	if _, ok := _c.mutation.Active(); !ok {
 		v := mcpserver.DefaultActive
 		_c.mutation.SetActive(v)
@@ -297,6 +329,9 @@ func (_c *McpServerCreate) check() error {
 		if err := mcpserver.NameValidator(v); err != nil {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "McpServer.name": %w`, err)}
 		}
+	}
+	if _, ok := _c.mutation.DisplayName(); !ok {
+		return &ValidationError{Name: "display_name", err: errors.New(`ent: missing required field "McpServer.display_name"`)}
 	}
 	if _, ok := _c.mutation.Active(); !ok {
 		return &ValidationError{Name: "active", err: errors.New(`ent: missing required field "McpServer.active"`)}
@@ -363,6 +398,10 @@ func (_c *McpServerCreate) createSpec() (*McpServer, *sqlgraph.CreateSpec) {
 		_spec.SetField(mcpserver.FieldName, field.TypeString, value)
 		_node.Name = value
 	}
+	if value, ok := _c.mutation.DisplayName(); ok {
+		_spec.SetField(mcpserver.FieldDisplayName, field.TypeString, value)
+		_node.DisplayName = value
+	}
 	if value, ok := _c.mutation.Description(); ok {
 		_spec.SetField(mcpserver.FieldDescription, field.TypeString, value)
 		_node.Description = value
@@ -370,6 +409,10 @@ func (_c *McpServerCreate) createSpec() (*McpServer, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.Specification(); ok {
 		_spec.SetField(mcpserver.FieldSpecification, field.TypeString, value)
 		_node.Specification = value
+	}
+	if value, ok := _c.mutation.Hash(); ok {
+		_spec.SetField(mcpserver.FieldHash, field.TypeString, value)
+		_node.Hash = value
 	}
 	if value, ok := _c.mutation.Category(); ok {
 		_spec.SetField(mcpserver.FieldCategory, field.TypeString, value)
@@ -564,6 +607,18 @@ func (u *McpServerUpsert) UpdateName() *McpServerUpsert {
 	return u
 }
 
+// SetDisplayName sets the "display_name" field.
+func (u *McpServerUpsert) SetDisplayName(v string) *McpServerUpsert {
+	u.Set(mcpserver.FieldDisplayName, v)
+	return u
+}
+
+// UpdateDisplayName sets the "display_name" field to the value that was provided on create.
+func (u *McpServerUpsert) UpdateDisplayName() *McpServerUpsert {
+	u.SetExcluded(mcpserver.FieldDisplayName)
+	return u
+}
+
 // SetDescription sets the "description" field.
 func (u *McpServerUpsert) SetDescription(v string) *McpServerUpsert {
 	u.Set(mcpserver.FieldDescription, v)
@@ -597,6 +652,24 @@ func (u *McpServerUpsert) UpdateSpecification() *McpServerUpsert {
 // ClearSpecification clears the value of the "specification" field.
 func (u *McpServerUpsert) ClearSpecification() *McpServerUpsert {
 	u.SetNull(mcpserver.FieldSpecification)
+	return u
+}
+
+// SetHash sets the "hash" field.
+func (u *McpServerUpsert) SetHash(v string) *McpServerUpsert {
+	u.Set(mcpserver.FieldHash, v)
+	return u
+}
+
+// UpdateHash sets the "hash" field to the value that was provided on create.
+func (u *McpServerUpsert) UpdateHash() *McpServerUpsert {
+	u.SetExcluded(mcpserver.FieldHash)
+	return u
+}
+
+// ClearHash clears the value of the "hash" field.
+func (u *McpServerUpsert) ClearHash() *McpServerUpsert {
+	u.SetNull(mcpserver.FieldHash)
 	return u
 }
 
@@ -805,6 +878,20 @@ func (u *McpServerUpsertOne) UpdateName() *McpServerUpsertOne {
 	})
 }
 
+// SetDisplayName sets the "display_name" field.
+func (u *McpServerUpsertOne) SetDisplayName(v string) *McpServerUpsertOne {
+	return u.Update(func(s *McpServerUpsert) {
+		s.SetDisplayName(v)
+	})
+}
+
+// UpdateDisplayName sets the "display_name" field to the value that was provided on create.
+func (u *McpServerUpsertOne) UpdateDisplayName() *McpServerUpsertOne {
+	return u.Update(func(s *McpServerUpsert) {
+		s.UpdateDisplayName()
+	})
+}
+
 // SetDescription sets the "description" field.
 func (u *McpServerUpsertOne) SetDescription(v string) *McpServerUpsertOne {
 	return u.Update(func(s *McpServerUpsert) {
@@ -844,6 +931,27 @@ func (u *McpServerUpsertOne) UpdateSpecification() *McpServerUpsertOne {
 func (u *McpServerUpsertOne) ClearSpecification() *McpServerUpsertOne {
 	return u.Update(func(s *McpServerUpsert) {
 		s.ClearSpecification()
+	})
+}
+
+// SetHash sets the "hash" field.
+func (u *McpServerUpsertOne) SetHash(v string) *McpServerUpsertOne {
+	return u.Update(func(s *McpServerUpsert) {
+		s.SetHash(v)
+	})
+}
+
+// UpdateHash sets the "hash" field to the value that was provided on create.
+func (u *McpServerUpsertOne) UpdateHash() *McpServerUpsertOne {
+	return u.Update(func(s *McpServerUpsert) {
+		s.UpdateHash()
+	})
+}
+
+// ClearHash clears the value of the "hash" field.
+func (u *McpServerUpsertOne) ClearHash() *McpServerUpsertOne {
+	return u.Update(func(s *McpServerUpsert) {
+		s.ClearHash()
 	})
 }
 
@@ -1226,6 +1334,20 @@ func (u *McpServerUpsertBulk) UpdateName() *McpServerUpsertBulk {
 	})
 }
 
+// SetDisplayName sets the "display_name" field.
+func (u *McpServerUpsertBulk) SetDisplayName(v string) *McpServerUpsertBulk {
+	return u.Update(func(s *McpServerUpsert) {
+		s.SetDisplayName(v)
+	})
+}
+
+// UpdateDisplayName sets the "display_name" field to the value that was provided on create.
+func (u *McpServerUpsertBulk) UpdateDisplayName() *McpServerUpsertBulk {
+	return u.Update(func(s *McpServerUpsert) {
+		s.UpdateDisplayName()
+	})
+}
+
 // SetDescription sets the "description" field.
 func (u *McpServerUpsertBulk) SetDescription(v string) *McpServerUpsertBulk {
 	return u.Update(func(s *McpServerUpsert) {
@@ -1265,6 +1387,27 @@ func (u *McpServerUpsertBulk) UpdateSpecification() *McpServerUpsertBulk {
 func (u *McpServerUpsertBulk) ClearSpecification() *McpServerUpsertBulk {
 	return u.Update(func(s *McpServerUpsert) {
 		s.ClearSpecification()
+	})
+}
+
+// SetHash sets the "hash" field.
+func (u *McpServerUpsertBulk) SetHash(v string) *McpServerUpsertBulk {
+	return u.Update(func(s *McpServerUpsert) {
+		s.SetHash(v)
+	})
+}
+
+// UpdateHash sets the "hash" field to the value that was provided on create.
+func (u *McpServerUpsertBulk) UpdateHash() *McpServerUpsertBulk {
+	return u.Update(func(s *McpServerUpsert) {
+		s.UpdateHash()
+	})
+}
+
+// ClearHash clears the value of the "hash" field.
+func (u *McpServerUpsertBulk) ClearHash() *McpServerUpsertBulk {
+	return u.Update(func(s *McpServerUpsert) {
+		s.ClearHash()
 	})
 }
 

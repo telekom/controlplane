@@ -36,19 +36,30 @@ func (AgentCard) Fields() []ent.Field {
 		field.Text("version").
 			NotEmpty(),
 		field.Text("name").
-			NotEmpty(),
+			NotEmpty().
+			Comment("Resource name of the agent, derived from its base path."),
+		field.Text("display_name").
+			Default("").
+			Comment("Human-readable name of the agent: the title from its specification, " +
+				"or the resource name if the specification has no title."),
 		field.Text("description").
 			Optional(),
 		field.Text("specification").
 			Optional().
 			Annotations(entgql.Skip(entgql.SkipType)),
+		field.Text("hash").
+			Optional().
+			Comment("Base64-encoded SHA-256 hash of the agent card specification file. Changes when the content changes. Empty if unknown.").
+			Annotations(entgql.Skip(entgql.SkipWhereInput)),
 		field.Text("category").
 			Optional(),
 		field.JSON("oauth2_scopes", []string{}).
 			Optional().
 			Annotations(entgql.Skip(entgql.SkipWhereInput)),
 		field.Bool("active").
-			Default(false),
+			Default(false).
+			Comment("Only the oldest entry for a base path is active. Entries of other teams with the same base path " +
+				"are inactive. Filter on active to get one agent per base path."),
 	}
 }
 

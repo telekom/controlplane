@@ -136,6 +136,20 @@ func (_u *AgentCardUpdate) SetNillableName(v *string) *AgentCardUpdate {
 	return _u
 }
 
+// SetDisplayName sets the "display_name" field.
+func (_u *AgentCardUpdate) SetDisplayName(v string) *AgentCardUpdate {
+	_u.mutation.SetDisplayName(v)
+	return _u
+}
+
+// SetNillableDisplayName sets the "display_name" field if the given value is not nil.
+func (_u *AgentCardUpdate) SetNillableDisplayName(v *string) *AgentCardUpdate {
+	if v != nil {
+		_u.SetDisplayName(*v)
+	}
+	return _u
+}
+
 // SetDescription sets the "description" field.
 func (_u *AgentCardUpdate) SetDescription(v string) *AgentCardUpdate {
 	_u.mutation.SetDescription(v)
@@ -173,6 +187,26 @@ func (_u *AgentCardUpdate) SetNillableSpecification(v *string) *AgentCardUpdate 
 // ClearSpecification clears the value of the "specification" field.
 func (_u *AgentCardUpdate) ClearSpecification() *AgentCardUpdate {
 	_u.mutation.ClearSpecification()
+	return _u
+}
+
+// SetHash sets the "hash" field.
+func (_u *AgentCardUpdate) SetHash(v string) *AgentCardUpdate {
+	_u.mutation.SetHash(v)
+	return _u
+}
+
+// SetNillableHash sets the "hash" field if the given value is not nil.
+func (_u *AgentCardUpdate) SetNillableHash(v *string) *AgentCardUpdate {
+	if v != nil {
+		_u.SetHash(*v)
+	}
+	return _u
+}
+
+// ClearHash clears the value of the "hash" field.
+func (_u *AgentCardUpdate) ClearHash() *AgentCardUpdate {
+	_u.mutation.ClearHash()
 	return _u
 }
 
@@ -400,6 +434,9 @@ func (_u *AgentCardUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(agentcard.FieldName, field.TypeString, value)
 	}
+	if value, ok := _u.mutation.DisplayName(); ok {
+		_spec.SetField(agentcard.FieldDisplayName, field.TypeString, value)
+	}
 	if value, ok := _u.mutation.Description(); ok {
 		_spec.SetField(agentcard.FieldDescription, field.TypeString, value)
 	}
@@ -411,6 +448,12 @@ func (_u *AgentCardUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if _u.mutation.SpecificationCleared() {
 		_spec.ClearField(agentcard.FieldSpecification, field.TypeString)
+	}
+	if value, ok := _u.mutation.Hash(); ok {
+		_spec.SetField(agentcard.FieldHash, field.TypeString, value)
+	}
+	if _u.mutation.HashCleared() {
+		_spec.ClearField(agentcard.FieldHash, field.TypeString)
 	}
 	if value, ok := _u.mutation.Category(); ok {
 		_spec.SetField(agentcard.FieldCategory, field.TypeString, value)
@@ -628,6 +671,20 @@ func (_u *AgentCardUpdateOne) SetNillableName(v *string) *AgentCardUpdateOne {
 	return _u
 }
 
+// SetDisplayName sets the "display_name" field.
+func (_u *AgentCardUpdateOne) SetDisplayName(v string) *AgentCardUpdateOne {
+	_u.mutation.SetDisplayName(v)
+	return _u
+}
+
+// SetNillableDisplayName sets the "display_name" field if the given value is not nil.
+func (_u *AgentCardUpdateOne) SetNillableDisplayName(v *string) *AgentCardUpdateOne {
+	if v != nil {
+		_u.SetDisplayName(*v)
+	}
+	return _u
+}
+
 // SetDescription sets the "description" field.
 func (_u *AgentCardUpdateOne) SetDescription(v string) *AgentCardUpdateOne {
 	_u.mutation.SetDescription(v)
@@ -665,6 +722,26 @@ func (_u *AgentCardUpdateOne) SetNillableSpecification(v *string) *AgentCardUpda
 // ClearSpecification clears the value of the "specification" field.
 func (_u *AgentCardUpdateOne) ClearSpecification() *AgentCardUpdateOne {
 	_u.mutation.ClearSpecification()
+	return _u
+}
+
+// SetHash sets the "hash" field.
+func (_u *AgentCardUpdateOne) SetHash(v string) *AgentCardUpdateOne {
+	_u.mutation.SetHash(v)
+	return _u
+}
+
+// SetNillableHash sets the "hash" field if the given value is not nil.
+func (_u *AgentCardUpdateOne) SetNillableHash(v *string) *AgentCardUpdateOne {
+	if v != nil {
+		_u.SetHash(*v)
+	}
+	return _u
+}
+
+// ClearHash clears the value of the "hash" field.
+func (_u *AgentCardUpdateOne) ClearHash() *AgentCardUpdateOne {
+	_u.mutation.ClearHash()
 	return _u
 }
 
@@ -922,6 +999,9 @@ func (_u *AgentCardUpdateOne) sqlSave(ctx context.Context) (_node *AgentCard, er
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(agentcard.FieldName, field.TypeString, value)
 	}
+	if value, ok := _u.mutation.DisplayName(); ok {
+		_spec.SetField(agentcard.FieldDisplayName, field.TypeString, value)
+	}
 	if value, ok := _u.mutation.Description(); ok {
 		_spec.SetField(agentcard.FieldDescription, field.TypeString, value)
 	}
@@ -933,6 +1013,12 @@ func (_u *AgentCardUpdateOne) sqlSave(ctx context.Context) (_node *AgentCard, er
 	}
 	if _u.mutation.SpecificationCleared() {
 		_spec.ClearField(agentcard.FieldSpecification, field.TypeString)
+	}
+	if value, ok := _u.mutation.Hash(); ok {
+		_spec.SetField(agentcard.FieldHash, field.TypeString, value)
+	}
+	if _u.mutation.HashCleared() {
+		_spec.ClearField(agentcard.FieldHash, field.TypeString)
 	}
 	if value, ok := _u.mutation.Category(); ok {
 		_spec.SetField(agentcard.FieldCategory, field.TypeString, value)

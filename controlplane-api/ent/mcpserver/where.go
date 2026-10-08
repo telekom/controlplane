@@ -93,6 +93,11 @@ func Name(v string) predicate.McpServer {
 	return predicate.McpServer(sql.FieldEQ(FieldName, v))
 }
 
+// DisplayName applies equality check predicate on the "display_name" field. It's identical to DisplayNameEQ.
+func DisplayName(v string) predicate.McpServer {
+	return predicate.McpServer(sql.FieldEQ(FieldDisplayName, v))
+}
+
 // Description applies equality check predicate on the "description" field. It's identical to DescriptionEQ.
 func Description(v string) predicate.McpServer {
 	return predicate.McpServer(sql.FieldEQ(FieldDescription, v))
@@ -101,6 +106,11 @@ func Description(v string) predicate.McpServer {
 // Specification applies equality check predicate on the "specification" field. It's identical to SpecificationEQ.
 func Specification(v string) predicate.McpServer {
 	return predicate.McpServer(sql.FieldEQ(FieldSpecification, v))
+}
+
+// Hash applies equality check predicate on the "hash" field. It's identical to HashEQ.
+func Hash(v string) predicate.McpServer {
+	return predicate.McpServer(sql.FieldEQ(FieldHash, v))
 }
 
 // Category applies equality check predicate on the "category" field. It's identical to CategoryEQ.
@@ -558,6 +568,71 @@ func NameContainsFold(v string) predicate.McpServer {
 	return predicate.McpServer(sql.FieldContainsFold(FieldName, v))
 }
 
+// DisplayNameEQ applies the EQ predicate on the "display_name" field.
+func DisplayNameEQ(v string) predicate.McpServer {
+	return predicate.McpServer(sql.FieldEQ(FieldDisplayName, v))
+}
+
+// DisplayNameNEQ applies the NEQ predicate on the "display_name" field.
+func DisplayNameNEQ(v string) predicate.McpServer {
+	return predicate.McpServer(sql.FieldNEQ(FieldDisplayName, v))
+}
+
+// DisplayNameIn applies the In predicate on the "display_name" field.
+func DisplayNameIn(vs ...string) predicate.McpServer {
+	return predicate.McpServer(sql.FieldIn(FieldDisplayName, vs...))
+}
+
+// DisplayNameNotIn applies the NotIn predicate on the "display_name" field.
+func DisplayNameNotIn(vs ...string) predicate.McpServer {
+	return predicate.McpServer(sql.FieldNotIn(FieldDisplayName, vs...))
+}
+
+// DisplayNameGT applies the GT predicate on the "display_name" field.
+func DisplayNameGT(v string) predicate.McpServer {
+	return predicate.McpServer(sql.FieldGT(FieldDisplayName, v))
+}
+
+// DisplayNameGTE applies the GTE predicate on the "display_name" field.
+func DisplayNameGTE(v string) predicate.McpServer {
+	return predicate.McpServer(sql.FieldGTE(FieldDisplayName, v))
+}
+
+// DisplayNameLT applies the LT predicate on the "display_name" field.
+func DisplayNameLT(v string) predicate.McpServer {
+	return predicate.McpServer(sql.FieldLT(FieldDisplayName, v))
+}
+
+// DisplayNameLTE applies the LTE predicate on the "display_name" field.
+func DisplayNameLTE(v string) predicate.McpServer {
+	return predicate.McpServer(sql.FieldLTE(FieldDisplayName, v))
+}
+
+// DisplayNameContains applies the Contains predicate on the "display_name" field.
+func DisplayNameContains(v string) predicate.McpServer {
+	return predicate.McpServer(sql.FieldContains(FieldDisplayName, v))
+}
+
+// DisplayNameHasPrefix applies the HasPrefix predicate on the "display_name" field.
+func DisplayNameHasPrefix(v string) predicate.McpServer {
+	return predicate.McpServer(sql.FieldHasPrefix(FieldDisplayName, v))
+}
+
+// DisplayNameHasSuffix applies the HasSuffix predicate on the "display_name" field.
+func DisplayNameHasSuffix(v string) predicate.McpServer {
+	return predicate.McpServer(sql.FieldHasSuffix(FieldDisplayName, v))
+}
+
+// DisplayNameEqualFold applies the EqualFold predicate on the "display_name" field.
+func DisplayNameEqualFold(v string) predicate.McpServer {
+	return predicate.McpServer(sql.FieldEqualFold(FieldDisplayName, v))
+}
+
+// DisplayNameContainsFold applies the ContainsFold predicate on the "display_name" field.
+func DisplayNameContainsFold(v string) predicate.McpServer {
+	return predicate.McpServer(sql.FieldContainsFold(FieldDisplayName, v))
+}
+
 // DescriptionEQ applies the EQ predicate on the "description" field.
 func DescriptionEQ(v string) predicate.McpServer {
 	return predicate.McpServer(sql.FieldEQ(FieldDescription, v))
@@ -706,6 +781,81 @@ func SpecificationEqualFold(v string) predicate.McpServer {
 // SpecificationContainsFold applies the ContainsFold predicate on the "specification" field.
 func SpecificationContainsFold(v string) predicate.McpServer {
 	return predicate.McpServer(sql.FieldContainsFold(FieldSpecification, v))
+}
+
+// HashEQ applies the EQ predicate on the "hash" field.
+func HashEQ(v string) predicate.McpServer {
+	return predicate.McpServer(sql.FieldEQ(FieldHash, v))
+}
+
+// HashNEQ applies the NEQ predicate on the "hash" field.
+func HashNEQ(v string) predicate.McpServer {
+	return predicate.McpServer(sql.FieldNEQ(FieldHash, v))
+}
+
+// HashIn applies the In predicate on the "hash" field.
+func HashIn(vs ...string) predicate.McpServer {
+	return predicate.McpServer(sql.FieldIn(FieldHash, vs...))
+}
+
+// HashNotIn applies the NotIn predicate on the "hash" field.
+func HashNotIn(vs ...string) predicate.McpServer {
+	return predicate.McpServer(sql.FieldNotIn(FieldHash, vs...))
+}
+
+// HashGT applies the GT predicate on the "hash" field.
+func HashGT(v string) predicate.McpServer {
+	return predicate.McpServer(sql.FieldGT(FieldHash, v))
+}
+
+// HashGTE applies the GTE predicate on the "hash" field.
+func HashGTE(v string) predicate.McpServer {
+	return predicate.McpServer(sql.FieldGTE(FieldHash, v))
+}
+
+// HashLT applies the LT predicate on the "hash" field.
+func HashLT(v string) predicate.McpServer {
+	return predicate.McpServer(sql.FieldLT(FieldHash, v))
+}
+
+// HashLTE applies the LTE predicate on the "hash" field.
+func HashLTE(v string) predicate.McpServer {
+	return predicate.McpServer(sql.FieldLTE(FieldHash, v))
+}
+
+// HashContains applies the Contains predicate on the "hash" field.
+func HashContains(v string) predicate.McpServer {
+	return predicate.McpServer(sql.FieldContains(FieldHash, v))
+}
+
+// HashHasPrefix applies the HasPrefix predicate on the "hash" field.
+func HashHasPrefix(v string) predicate.McpServer {
+	return predicate.McpServer(sql.FieldHasPrefix(FieldHash, v))
+}
+
+// HashHasSuffix applies the HasSuffix predicate on the "hash" field.
+func HashHasSuffix(v string) predicate.McpServer {
+	return predicate.McpServer(sql.FieldHasSuffix(FieldHash, v))
+}
+
+// HashIsNil applies the IsNil predicate on the "hash" field.
+func HashIsNil() predicate.McpServer {
+	return predicate.McpServer(sql.FieldIsNull(FieldHash))
+}
+
+// HashNotNil applies the NotNil predicate on the "hash" field.
+func HashNotNil() predicate.McpServer {
+	return predicate.McpServer(sql.FieldNotNull(FieldHash))
+}
+
+// HashEqualFold applies the EqualFold predicate on the "hash" field.
+func HashEqualFold(v string) predicate.McpServer {
+	return predicate.McpServer(sql.FieldEqualFold(FieldHash, v))
+}
+
+// HashContainsFold applies the ContainsFold predicate on the "hash" field.
+func HashContainsFold(v string) predicate.McpServer {
+	return predicate.McpServer(sql.FieldContainsFold(FieldHash, v))
 }
 
 // CategoryEQ applies the EQ predicate on the "category" field.
