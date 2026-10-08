@@ -1,0 +1,27 @@
+identity/pkg/keycloak/factory.go
+  s_684e403dc0edda::t_d2fa750e74895f 42-48,53,62,64,72-73,76-79,83,85,89-97,114,116-119,164
+docs/docs/architecture/identity.mdx
+  s_684e403dc0edda::t_a5cd040ace6ff3 23-26
+identity/pkg/keycloak/factory_test.go
+  s_684e403dc0edda::t_b53e417078eb7e 21-23
+  s_684e403dc0edda::t_bf13a290ea1ac1 1-9,11-13,15-20,24-90,93-146,148-210,212-225
+  s_684e403dc0edda::t_726a048b549fac 10,14,91-92,147,211,226-235
+identity/pkg/keycloak/unauthorized_doer.go
+  s_684e403dc0edda::t_e16575cb402167 1-66
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "1ec1b4377be532b93d873c28370cef925985b637",
+  "prompts": {},
+  "sessions": {
+    "s_684e403dc0edda": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_eeab7d139ffe4w4iq2HzJPX6pN",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

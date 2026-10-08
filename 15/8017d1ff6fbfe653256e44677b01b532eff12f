@@ -1,0 +1,28 @@
+rover-server/internal/mapper/apispecification/in/parse_test.go
+  s_4036f2853391c8::t_d4a609d5254230 193-225,228,230-289,291-292,295-297,300-301,303-305,307,310-331
+  s_4036f2853391c8::t_ed79fac702174f 290,293-294,298-299,302,306,308-309
+  s_4036f2853391c8::t_a3b8aa03fbbf4f 226-227,229
+rover-server/internal/mapper/apispecification/in/parse.go
+  s_4036f2853391c8::t_03ea33934165d1 150-155,158-160,162-179
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "158017d1ff6fbfe653256e44677b01b532eff12f",
+  "prompts": {},
+  "humans": {
+    "h_0f030e7424553c": {
+      "author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  },
+  "sessions": {
+    "s_4036f2853391c8": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_eea3d1c44ffeO3HiwWvG2A6weD",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

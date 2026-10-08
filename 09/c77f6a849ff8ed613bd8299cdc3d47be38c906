@@ -1,0 +1,29 @@
+application/internal/webhook/v1/mutator/mutate.go
+  s_3b7a32e8ee39d7::t_4912d200028fb8 100-110
+docs/docs/architecture/application.mdx
+  s_3b7a32e8ee39d7::t_9c9b2a7e6aa198 29-30
+application/internal/webhook/v1/mutator/mutate_test.go
+  s_3b7a32e8ee39d7::t_cb5d2dbfb42351 63,93-96,126-129,156-159,192,213-237,281-284,311-314,338-341,374,388-390,399-401
+  s_3b7a32e8ee39d7::t_abf6d332647f1e 402
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "09c77f6a849ff8ed613bd8299cdc3d47be38c906",
+  "prompts": {},
+  "humans": {
+    "h_0f030e7424553c": {
+      "author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  },
+  "sessions": {
+    "s_3b7a32e8ee39d7": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_eea1c96c1ffe5u06a4uPIyscyi",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": null
+    }
+  }
+}
