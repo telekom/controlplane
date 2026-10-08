@@ -257,7 +257,36 @@
      "type": "event"
     }
    ],
-   "variables": null,
+   "variables": [
+    {
+     "name": "tardis.iris.client.id",
+     "value": "hyperion--rover-local-sub"
+    },
+    {
+     "name": "tardis.iris.client.secret",
+     "value": "abcdefghijklmnop"
+    },
+    {
+     "name": "tardis.iris.url.issuer",
+     "value": "https://iris-distcp1-dataplane1.dev.dhei.telekom.de/auth/realms/poc"
+    },
+    {
+     "name": "tardis.iris.url.token",
+     "value": "https://iris-distcp1-dataplane1.dev.dhei.telekom.de/auth/realms/poc/protocol/openid-connect/token"
+    },
+    {
+     "name": "tardis.stargate.url",
+     "value": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de/"
+    },
+    {
+     "name": "tardis.horizon.subscription.id.de.telekom.eni.quickstart.v1",
+     "value": "horizon-sub-456"
+    },
+    {
+     "name": "tardis.horizon.subscription.url.de.telekom.eni.quickstart.v1",
+     "value": "https://sse.example.com/events/horizon-sub-456"
+    }
+   ],
    "warnings": null,
    "zone": "dataplane1"
   }
@@ -339,7 +368,36 @@
      "type": "event"
     }
    ],
-   "variables": null,
+   "variables": [
+    {
+     "name": "tardis.iris.client.id",
+     "value": "hyperion--rover-local-sub"
+    },
+    {
+     "name": "tardis.iris.client.secret",
+     "value": "abcdefghijklmnop"
+    },
+    {
+     "name": "tardis.iris.url.issuer",
+     "value": "https://iris-distcp1-dataplane1.dev.dhei.telekom.de/auth/realms/poc"
+    },
+    {
+     "name": "tardis.iris.url.token",
+     "value": "https://iris-distcp1-dataplane1.dev.dhei.telekom.de/auth/realms/poc/protocol/openid-connect/token"
+    },
+    {
+     "name": "tardis.stargate.url",
+     "value": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de/"
+    },
+    {
+     "name": "tardis.horizon.subscription.id.de.telekom.eni.quickstart.v1",
+     "value": "horizon-sub-456"
+    },
+    {
+     "name": "tardis.horizon.subscription.url.de.telekom.eni.quickstart.v1",
+     "value": "https://sse.example.com/events/horizon-sub-456"
+    }
+   ],
    "warnings": null,
    "zone": "dataplane1"
   }
@@ -411,7 +469,36 @@
      "type": "event"
     }
    ],
-   "variables": null,
+   "variables": [
+    {
+     "name": "tardis.iris.client.id",
+     "value": "hyperion--rover-local-sub"
+    },
+    {
+     "name": "tardis.iris.client.secret",
+     "value": "abcdefghijklmnop"
+    },
+    {
+     "name": "tardis.iris.url.issuer",
+     "value": "https://iris-distcp1-dataplane1.dev.dhei.telekom.de/auth/realms/poc"
+    },
+    {
+     "name": "tardis.iris.url.token",
+     "value": "https://iris-distcp1-dataplane1.dev.dhei.telekom.de/auth/realms/poc/protocol/openid-connect/token"
+    },
+    {
+     "name": "tardis.stargate.url",
+     "value": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de/"
+    },
+    {
+     "name": "tardis.horizon.subscription.id.de.telekom.eni.quickstart.v1",
+     "value": "horizon-sub-456"
+    },
+    {
+     "name": "tardis.horizon.subscription.url.de.telekom.eni.quickstart.v1",
+     "value": "https://sse.example.com/events/horizon-sub-456"
+    }
+   ],
    "warnings": null,
    "zone": "dataplane1"
   }

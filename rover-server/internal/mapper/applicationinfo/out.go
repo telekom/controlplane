@@ -8,6 +8,7 @@ import (
 	"context"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
@@ -80,25 +81,46 @@ func MapApplicationInfo(ctx context.Context, rover *roverv1.Rover, stores *store
 	}
 	scalars := mapper.RoverExternalIdsToScalars(rover.Spec.ExternalIds)
 	appInfo := &api.ApplicationInfo{
-		Name:  rover.Name,
-		Zone:  rover.Spec.Zone,
-		Psiid: scalars.Psiid,
+		Name:      rover.Name,
+		Zone:      rover.Spec.Zone,
+		Psiid:     scalars.Psiid,
+		Variables: []api.Data{},
 	}
 
 	if err := FillApplicationInfo(ctx, rover, appInfo, stores); err != nil {
 		return nil, errors.Wrap(err, "failed to fill application info")
 	}
+	fillApplicationVariables(appInfo)
 	if err := FillSubscriptionInfo(ctx, rover, appInfo, stores); err != nil {
 		return nil, errors.Wrap(err, "failed to fill subscription info")
 	}
 	if err := FillExposureInfo(ctx, rover, appInfo, stores); err != nil {
 		return nil, errors.Wrap(err, "failed to fill exposure info")
 	}
+	appendVariable(appInfo, "tardis.horizon.event.url", appInfo.StargatePublishEventUrl)
 	if err := FillChevronInfo(ctx, rover, appInfo, stores); err != nil {
 		return nil, errors.Wrap(err, "failed to fill chevron info")
 	}
 
 	return appInfo, nil
+}
+
+func appendVariable(appInfo *api.ApplicationInfo, name, value string) {
+	if value == "" {
+		return
+	}
+	appInfo.Variables = append(appInfo.Variables, api.Data{Name: name, Value: value})
+}
+
+func fillApplicationVariables(appInfo *api.ApplicationInfo) {
+	appendVariable(appInfo, "tardis.iris.client.id", appInfo.IrisClientId)
+	appendVariable(appInfo, "tardis.iris.client.secret", appInfo.SecretInfo.ClientSecret)
+	if !appInfo.SecretInfo.CurrentExpiresAt.IsZero() {
+		appendVariable(appInfo, "tardis.iris.client.secret.expiration", appInfo.SecretInfo.CurrentExpiresAt.UTC().Format(time.RFC3339))
+	}
+	appendVariable(appInfo, "tardis.iris.url.issuer", appInfo.IrisIssuerUrl)
+	appendVariable(appInfo, "tardis.iris.url.token", appInfo.IrisTokenEndpointUrl)
+	appendVariable(appInfo, "tardis.stargate.url", appInfo.StargateUrl)
 }
 
 func FillApplicationInfo(ctx context.Context, rover *roverv1.Rover, appInfo *api.ApplicationInfo, stores *store.Stores) error {
@@ -148,7 +170,7 @@ func FillApplicationInfo(ctx context.Context, rover *roverv1.Rover, appInfo *api
 	appInfo.StargateIssuerUrl = presetStatus.Links.LmsIssuer
 	appInfo.StargateUrl = preset.GetDefaultURL()
 	appInfo.IrisTokenEndpointUrl = app.Status.TokenUrl
-	if appInfo.IrisTokenEndpointUrl == "" {
+	if appInfo.IrisTokenEndpointUrl == "" && appInfo.IrisIssuerUrl != "" {
 		appInfo.IrisTokenEndpointUrl = appInfo.IrisIssuerUrl + IrisTokenEndpointSuffix
 	}
 
@@ -198,6 +220,7 @@ func FillSubscriptionInfo(ctx context.Context, rover *roverv1.Rover, appInfo *ap
 		}
 
 		appInfo.Subscriptions = append(appInfo.Subscriptions, subInfo)
+		appendVariable(appInfo, "tardis.stargate.url.api"+strings.ReplaceAll(apiSub.Spec.ApiBasePath, "/", "."), apiSub.Status.GatewayUrl)
 	}
 
 	// Map event subscriptions
@@ -222,7 +245,10 @@ func FillSubscriptionInfo(ctx context.Context, rover *roverv1.Rover, appInfo *ap
 		}
 
 		appInfo.Subscriptions = append(appInfo.Subscriptions, subInfo)
-
+		appendVariable(appInfo, "tardis.horizon.subscription.id."+eventSub.Spec.EventType, eventSub.Status.SubscriptionId)
+		if eventSub.Spec.Delivery.Type == eventv1.DeliveryTypeServerSentEvent {
+			appendVariable(appInfo, "tardis.horizon.subscription.url."+eventSub.Spec.EventType, eventSub.Status.URL)
+		}
 	}
 
 	// Map AI subscriptions
@@ -247,6 +273,7 @@ func FillSubscriptionInfo(ctx context.Context, rover *roverv1.Rover, appInfo *ap
 		}
 
 		appInfo.Subscriptions = append(appInfo.Subscriptions, subInfo)
+		appendVariable(appInfo, "tardis.stargate.url.api"+strings.ReplaceAll(agenticSub.Spec.BasePath, "/", "."), agenticSub.Status.GatewayUrl)
 	}
 
 	// Map file subscriptions
@@ -593,15 +620,8 @@ func FillChevronInfo(ctx context.Context, rover *roverv1.Rover, appInfo *api.App
 		appInfo.ChevronUrl = chevronURL.String()
 		appInfo.ChevronApplication = appInfo.IrisClientId
 
-		// Add variables
-		appInfo.Variables = append(appInfo.Variables, api.Data{
-			Name:  "tardis.chevron.url",
-			Value: appInfo.ChevronUrl,
-		})
-		appInfo.Variables = append(appInfo.Variables, api.Data{
-			Name:  "tardis.chevron.application",
-			Value: appInfo.ChevronApplication,
-		})
+		appendVariable(appInfo, "tardis.chevron.url", appInfo.ChevronUrl)
+		appendVariable(appInfo, "tardis.chevron.application", appInfo.ChevronApplication)
 
 		// Copy permission rules to external authorization format
 		appInfo.Authorization = make([]api.AuthorizationInfo, 0, len(rover.Spec.Permissions))
