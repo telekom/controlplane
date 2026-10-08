@@ -6,6 +6,7 @@ package permissionset
 
 import (
 	"context"
+	"strings"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -47,7 +48,7 @@ var _ = Describe("PermissionSetHandler Delete", func() {
 		// Create test namespaces
 		testNamespace = &corev1.Namespace{
 			ObjectMeta: metav1.ObjectMeta{
-				GenerateName: "test-",
+				GenerateName: testEnvironment + "--test-group--test-team-",
 			},
 		}
 		Expect(k8sClient.Create(ctx, testNamespace)).To(Succeed())
@@ -79,7 +80,7 @@ var _ = Describe("PermissionSetHandler Delete", func() {
 
 		// Create external PermissionSet manually (simulating what CreateOrUpdate does)
 		// Use same naming pattern as handler: namespace-prefixed to avoid collisions
-		externalName := labelutil.NormalizeNameValue(testNamespace.Name + "-" + psName)
+		externalName := labelutil.NormalizeNameValue(strings.TrimPrefix(testNamespace.Name, testEnvironment+"--") + "--" + psName)
 		externalPS = &pcpv1.PermissionSet{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      externalName,
@@ -195,7 +196,7 @@ var _ = Describe("PermissionSetHandler Delete", func() {
 		// Create second namespace
 		testNamespace2 := &corev1.Namespace{
 			ObjectMeta: metav1.ObjectMeta{
-				GenerateName: "test2-",
+				GenerateName: testEnvironment + "--test-group-2--test-team-",
 			},
 		}
 		Expect(k8sClient.Create(ctx, testNamespace2)).To(Succeed())
@@ -225,7 +226,7 @@ var _ = Describe("PermissionSetHandler Delete", func() {
 		}()
 
 		// Create second external PermissionSet with namespace-prefixed name
-		externalName2 := labelutil.NormalizeNameValue(testNamespace2.Name + "-" + psName)
+		externalName2 := labelutil.NormalizeNameValue(strings.TrimPrefix(testNamespace2.Name, testEnvironment+"--") + "--" + psName)
 		externalPS2 := &pcpv1.PermissionSet{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      externalName2,
@@ -268,7 +269,7 @@ var _ = Describe("PermissionSetHandler Delete", func() {
 		Expect(externalPS.Name).NotTo(Equal(externalPS2.Name), "external PermissionSet names should be unique to avoid collision")
 
 		// Verify names contain namespace prefix for traceability
-		Expect(externalPS.Name).To(ContainSubstring(testNamespace.Name))
-		Expect(externalPS2.Name).To(ContainSubstring(testNamespace2.Name))
+		Expect(externalPS.Name).To(ContainSubstring(strings.TrimPrefix(testNamespace.Name, testEnvironment+"--")))
+		Expect(externalPS2.Name).To(ContainSubstring(strings.TrimPrefix(testNamespace2.Name, testEnvironment+"--")))
 	})
 })

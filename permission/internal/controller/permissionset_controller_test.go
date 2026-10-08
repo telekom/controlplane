@@ -121,7 +121,7 @@ var _ = Describe("PermissionSet Controller", func() {
 			// Create test namespace for internal PermissionSet
 			testNamespace = &corev1.Namespace{
 				ObjectMeta: metav1.ObjectMeta{
-					GenerateName: "test-",
+					Name: testEnvironment + "--test-group--test-team",
 				},
 			}
 			Expect(k8sClient.Create(ctx, testNamespace)).To(Succeed())
@@ -281,7 +281,7 @@ var _ = Describe("PermissionSet Controller", func() {
 			}, timeout, interval).Should(Succeed())
 
 			By("Verifying external PermissionSet has namespace-prefixed name")
-			Expect(externalPS.Name).To(HavePrefix(testNamespace.Name + "-"))
+			Expect(externalPS.Name).To(Equal("test-group--test-team--" + permissionSet.Name))
 
 			By("Verifying external PermissionSet has both environment labels")
 			Expect(externalPS.Labels).To(HaveKeyWithValue(config.EnvironmentLabelKey, testEnvironment))

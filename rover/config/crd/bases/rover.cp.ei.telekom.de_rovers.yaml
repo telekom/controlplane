@@ -1307,7 +1307,7 @@ spec:
                         flat format)
                       items:
                         type: string
-                      maxItems: 50
+                      maxItems: 75
                       minItems: 1
                       type: array
                     entries:
@@ -1322,7 +1322,7 @@ spec:
                               role-resource combination
                             items:
                               type: string
-                            maxItems: 50
+                            maxItems: 75
                             minItems: 1
                             type: array
                           resource:
@@ -1336,7 +1336,7 @@ spec:
                         required:
                         - actions
                         type: object
-                      maxItems: 50
+                      maxItems: 75
                       minItems: 1
                       type: array
                     resource:
