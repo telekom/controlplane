@@ -73,6 +73,28 @@ roverctl get-info
 
 The output will show the status of each subscription, including whether it is pending approval, granted, or rejected. See the [Rover-CTL CLI Reference](../reference/roverctl/) for more commands and options.
 
+Each application's `variables` array provides resolved connection values using the legacy variable names:
+
+| Variable | Value |
+| ------- | ----- |
+| `tardis.iris.client.id` | Application client ID |
+| `tardis.iris.client.secret` | Current client secret |
+| `tardis.iris.client.secret.expiration` | Current secret expiration in UTC RFC 3339 format, when available |
+| `tardis.iris.url.issuer` | Identity-provider issuer URL |
+| `tardis.iris.url.token` | Resolved token endpoint URL |
+| `tardis.stargate.url` | Resolved gateway URL, including the selected consumer-failover preset |
+| `tardis.stargate.url.api.<basePath>` | Resolved API or agentic subscription endpoint; `/` in the base path becomes `.`, preserving case |
+| `tardis.horizon.subscription.id.<eventType>` | Event subscription identifier, when available |
+| `tardis.horizon.subscription.url.<eventType>` | Server-sent-event subscription URL, when available |
+| `tardis.horizon.event.url` | Publish URL supplied by an event exposure, when available |
+| `tardis.chevron.url`, `tardis.chevron.application` | Permission-query URL and application identifier, when configured |
+
+Variables with unavailable values are omitted rather than represented by `null` or `<missing>`. The array is empty (`[]`) when no values are available. Legacy Cloudwalker and Raccoon variables are not generated from unsupported or unconfigured endpoints.
+
+:::caution
+The variables include the application's client secret. Treat `get-info` output as sensitive and do not write it to public logs or commit it to source control.
+:::
+
 ## Next Steps
 
 - [Subscribing to Events](./subscribing-to-events.mdx) — Subscribe to events published by other teams
