@@ -7,6 +7,8 @@ package main
 import (
 	"context"
 	"flag"
+	"net/http"
+	_ "net/http/pprof"
 
 	"github.com/go-logr/logr"
 	cserver "github.com/telekom/controlplane/common-server/pkg/server"
@@ -107,6 +109,14 @@ func main() {
 		},
 		Register: s.RegisterRoutes,
 	}
+
+	// TODO: hotfix, this should be part of common-server
+	go func() {
+		locErr := http.ListenAndServe(":6060", nil)
+		if locErr != nil {
+			log.Log.Error(locErr, "pprof server exited with error")
+		}
+	}()
 
 	if err := ms.Run(rootCtx); err != nil {
 		log.Log.Error(err, "server exited with error")
