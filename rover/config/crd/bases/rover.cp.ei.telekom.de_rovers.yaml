@@ -282,7 +282,7 @@ spec:
                                   items:
                                     maxLength: 256
                                     type: string
-                                  maxItems: 10
+                                  maxItems: 50
                                   type: array
                               type: object
                               x-kubernetes-validations:
@@ -736,7 +736,7 @@ spec:
                                   items:
                                     maxLength: 256
                                     type: string
-                                  maxItems: 10
+                                  maxItems: 50
                                   type: array
                               type: object
                               x-kubernetes-validations:
@@ -1441,7 +1441,7 @@ spec:
                                   items:
                                     maxLength: 256
                                     type: string
-                                  maxItems: 10
+                                  maxItems: 50
                                   type: array
                               type: object
                               x-kubernetes-validations:
@@ -1582,7 +1582,7 @@ spec:
                                   items:
                                     maxLength: 256
                                     type: string
-                                  maxItems: 10
+                                  maxItems: 50
                                   type: array
                               type: object
                               x-kubernetes-validations:

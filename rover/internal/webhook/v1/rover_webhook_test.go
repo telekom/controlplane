@@ -102,6 +102,35 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 		})
 	})
 
+	Context("Subscriber scope limits", func() {
+		DescribeTable("should enforce the CRD scope limit", func(scopeCount int, valid bool) {
+			roverObj.Name = fmt.Sprintf("scope-limit-%d", scopeCount)
+			scopes := make([]string, scopeCount)
+			for index := range scopes {
+				scopes[index] = fmt.Sprintf("scope-%d", index)
+			}
+			roverObj.Spec.Subscriptions = []roverv1.Subscription{{
+				Api: &roverv1.ApiSubscription{
+					BasePath: "/scope-limit",
+					Security: &roverv1.SubscriberSecurity{
+						M2M: &roverv1.SubscriberMachine2MachineAuthentication{Scopes: scopes},
+					},
+				},
+			}}
+
+			err := k8sClient.Create(ctx, roverObj, client.DryRunAll)
+			if valid {
+				Expect(err).NotTo(HaveOccurred())
+				return
+			}
+			assertValidationFailedWith(nil, err, "must have at most 50 items")
+		},
+			Entry("accepts the reported 34 scopes", 34, true),
+			Entry("accepts 50 scopes", 50, true),
+			Entry("rejects 51 scopes", 51, false),
+		)
+	})
+
 	Context("RoverValidator", func() {
 		Context("ValidateCreate", func() {
 			It("should call ValidateCreateOrUpdate", func() {
