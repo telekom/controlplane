@@ -329,4 +329,75 @@ components:
 			Expect(api.Spec.Oauth2Scopes).To(BeEmpty())
 		})
 	})
+
+	Context("server url path extraction", func() {
+		specWithURL := func(u string) string {
+			return "openapi: 3.0.3\ninfo:\n  title: t\n  version: \"1\"\nservers:\n  - url: '" + u + "'\n  - url: https://other/ignored\npaths: {}\n"
+		}
+
+		DescribeTable("should use the path of the first server",
+			func(u, expected string) {
+				api, err := ParseSpecification(ctx, specWithURL(u))
+				Expect(err).NotTo(HaveOccurred())
+				Expect(api.Spec.BasePath).To(Equal(expected))
+			},
+			Entry("templated authority without declarations", "https://{host}:{port}/eni/api/v1?x=1#f", "/eni/api/v1"),
+			Entry("protocol-relative", "//{host}/eni/api/v1", "/eni/api/v1"),
+			Entry("root-relative", "/eni/api/v1", "/eni/api/v1"),
+			Entry("percent-encodings unchanged", "https://h/eni/my%20api%2Fx%7bv%7D", "/eni/my%20api%2Fx%7bv%7D"),
+			Entry("reserved path chars", "https://h/a:b@c!$&()*+,;=-._~", "/a:b@c!$&()*+,;=-._~"),
+			Entry("repeated slashes and dot segments", "https://h//eni/./api/../V1/", "//eni/./api/../V1/"),
+			Entry("scheme without authority", "https:/eni/api/v1?x=1", "/eni/api/v1"),
+			Entry("colon after first slash is path", "/eni/a://b", "/eni/a://b"),
+		)
+
+		It("should keep percent-encodings in the BasePath and name", func() {
+			api, err := ParseSpecification(ctx, specWithURL("https://{host}/eni/My%20Api"))
+			Expect(err).NotTo(HaveOccurred())
+			Expect(api.Spec.BasePath).To(Equal("/eni/My%20Api"))
+			Expect(roverv1.MakeName(api)).To(Equal("eni-my%20api"))
+		})
+
+		DescribeTable("should reject invalid server url paths",
+			func(u string) {
+				_, err := ParseSpecification(ctx, specWithURL(u))
+				Expect(err).To(HaveOccurred())
+				Expect(problems.IsValidationError(err)).To(BeTrue())
+			},
+			Entry("variable in path", "https://{host}/eni/{version}"),
+			Entry("missing path", "https://{host}:{port}"),
+			Entry("whole url variable", "{endpoint}"),
+			Entry("whitespace", "https://h/eni/my api"),
+			Entry("malformed escape", "https://h/eni/%zz"),
+		)
+	})
+
+	DescribeTable("getPathFromURL",
+		func(rawURL, expected string) {
+			Expect(getPathFromURL(rawURL)).To(Equal(expected))
+		},
+		Entry("templated authority", "https://{host}:{port}/eni/api/v1?x=1#f", "/eni/api/v1"),
+		Entry("percent-encodings unchanged", "/a%20b%2f%7B", "/a%20b%2f%7B"),
+		Entry("reserved path chars", "/a:b@c!$&'()*+,;=-._~", "/a:b@c!$&'()*+,;=-._~"),
+		Entry("repeated slashes and dot segments", "//h//a/./b/../C/", "//a/./b/../C/"),
+		Entry("scheme without authority", "https:/eni/api/v1?x=1", "/eni/api/v1"),
+		Entry("colon after first slash is path", "/eni/a://b", "/eni/a://b"),
+		Entry("templated scheme", "{scheme}://{host}/eni/api", "/eni/api"),
+	)
+
+	DescribeTable("getPathFromURL errors",
+		func(rawURL, msg string) {
+			_, err := getPathFromURL(rawURL)
+			Expect(err).To(MatchError(ContainSubstring(msg)))
+		},
+		Entry("variable in path", "https://h/eni/{version}", "must not contain variables"),
+		Entry("space", "/eni/my api", "invalid character"),
+		Entry("tab", "/eni/\tapi", "invalid character"),
+		Entry("control char", "/eni/\x01api", "invalid character"),
+		Entry("non-ascii", "/eni/äpi", "invalid character"),
+		Entry("backslash", "/eni\\api", "invalid character"),
+		Entry("quote", "/eni/\"api", "invalid character"),
+		Entry("bad hex escape", "/eni/%zz", "malformed percent-encoding"),
+		Entry("truncated escape", "/eni/%2", "malformed percent-encoding"),
+	)
 })

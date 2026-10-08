@@ -6,7 +6,6 @@ package in
 
 import (
 	"context"
-	"net/url"
 	"strings"
 
 	"github.com/pb33f/libopenapi"
@@ -75,7 +74,7 @@ func ParseSpecification(ctx context.Context, spec string) (*roverv1.ApiSpecifica
 		path, err := getPathFromURL(model.Model.Servers[0].URL)
 		if err != nil {
 			return nil, problems.ValidationErrors(map[string]string{
-				"servers[0].url": "invalid url format",
+				"servers[0].url": err.Error(),
 			})
 		} else if path == "" {
 			return nil, problems.ValidationErrors(map[string]string{
@@ -101,12 +100,53 @@ func ParseSpecification(ctx context.Context, spec string) (*roverv1.ApiSpecifica
 }
 
 func getPathFromURL(rawURL string) (string, error) {
-	u, err := url.Parse(rawURL)
-	if err != nil {
-		return "", errors.Wrap(err, "failed to parse url")
+	path := rawURL
+	if i := strings.IndexAny(path, "?#"); i >= 0 {
+		path = path[:i]
 	}
+	// Skip scheme and authority; they may contain undeclared templates like {host}.
+	// A colon before the first slash ends the scheme (RFC 3986 forbids it in a relative path's first segment).
+	if i := strings.IndexAny(path, ":/"); i > 0 && path[i] == ':' {
+		path = path[i+1:]
+	}
+	if strings.HasPrefix(path, "//") {
+		i := strings.Index(path[2:], "/")
+		if i < 0 {
+			return "", nil
+		}
+		path = path[2+i:]
+	}
+	if strings.ContainsAny(path, "{}") {
+		return "", errors.Errorf("server url path %q must not contain variables", path)
+	}
+	if err := validateURLPath(path); err != nil {
+		return "", errors.Wrapf(err, "invalid server url path %q", path)
+	}
+	return path, nil
+}
 
-	return u.Path, nil
+// validateURLPath checks RFC 3986 path syntax: "/" and pchar
+// (unreserved, sub-delims, ":", "@" and well-formed percent-encodings).
+func validateURLPath(path string) error {
+	for i := 0; i < len(path); i++ {
+		c := path[i]
+		switch {
+		case 'a' <= c && c <= 'z', 'A' <= c && c <= 'Z', '0' <= c && c <= '9':
+		case strings.IndexByte("/-._~!$&'()*+,;=:@", c) >= 0:
+		case c == '%':
+			if i+2 >= len(path) || !isHex(path[i+1]) || !isHex(path[i+2]) {
+				return errors.Errorf("malformed percent-encoding at position %d", i)
+			}
+			i += 2
+		default:
+			return errors.Errorf("invalid character %q at position %d", c, i)
+		}
+	}
+	return nil
+}
+
+func isHex(c byte) bool {
+	return '0' <= c && c <= '9' || 'a' <= c && c <= 'f' || 'A' <= c && c <= 'F'
 }
 
 func setExtensionValues(apiSpecificationSpec *roverv1.ApiSpecificationSpec, extensionMap *orderedmap.Map[string, *yaml.Node]) {
