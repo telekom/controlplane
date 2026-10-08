@@ -17,6 +17,7 @@ import (
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/config"
+	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	"github.com/telekom/controlplane/common/pkg/handler"
 	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
@@ -71,8 +72,7 @@ func (h *PermissionSetHandler) CreateOrUpdate(ctx context.Context, obj *permissi
 	// Exclude the environment prefix while retaining the group and team identity.
 	namespacePrefix := environment + "--"
 	if !strings.HasPrefix(obj.Namespace, namespacePrefix) {
-		obj.SetCondition(condition.NewNotReadyCondition("InvalidNamespace", "PermissionSet namespace does not start with the environment"))
-		return errors.Errorf("PermissionSet namespace %q must start with %q", obj.Namespace, namespacePrefix)
+		return ctrlerrors.BlockedErrorf("PermissionSet namespace %q must start with %q", obj.Namespace, namespacePrefix)
 	}
 	externalName := labelutil.NormalizeNameValue(strings.TrimPrefix(obj.Namespace, namespacePrefix) + "--" + obj.Name)
 	externalPS := &pcpv1.PermissionSet{

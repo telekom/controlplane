@@ -31,13 +31,13 @@ type Permission struct {
 	// Actions lists the allowed actions (used only in flat format)
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:MinItems=1
-	// +kubebuilder:validation:MaxItems=50
+	// +kubebuilder:validation:MaxItems=75
 	Actions []string `json:"actions,omitempty"`
 
 	// Entries lists role-resource-action tuples (used in resource-oriented and role-oriented formats)
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:MinItems=1
-	// +kubebuilder:validation:MaxItems=50
+	// +kubebuilder:validation:MaxItems=75
 	Entries []PermissionEntry `json:"entries,omitempty"`
 }
 
@@ -54,6 +54,6 @@ type PermissionEntry struct {
 	// Actions lists the allowed actions for this role-resource combination
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MinItems=1
-	// +kubebuilder:validation:MaxItems=50
+	// +kubebuilder:validation:MaxItems=75
 	Actions []string `json:"actions"`
 }
