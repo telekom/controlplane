@@ -6,6 +6,7 @@ package permissionset
 
 import (
 	"context"
+	"strings"
 
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -67,8 +68,13 @@ func (h *PermissionSetHandler) CreateOrUpdate(ctx context.Context, obj *permissi
 	}
 
 	// Create external PermissionSet in the zone namespace
-	// Use namespace-prefixed name to avoid collisions from different namespaces
-	externalName := labelutil.NormalizeNameValue(obj.Namespace + "--" + obj.Name)
+	// Exclude the environment prefix while retaining the group and team identity.
+	namespacePrefix := environment + "--"
+	if !strings.HasPrefix(obj.Namespace, namespacePrefix) {
+		obj.SetCondition(condition.NewNotReadyCondition("InvalidNamespace", "PermissionSet namespace does not start with the environment"))
+		return errors.Errorf("PermissionSet namespace %q must start with %q", obj.Namespace, namespacePrefix)
+	}
+	externalName := labelutil.NormalizeNameValue(strings.TrimPrefix(obj.Namespace, namespacePrefix) + "--" + obj.Name)
 	externalPS := &pcpv1.PermissionSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      externalName,
