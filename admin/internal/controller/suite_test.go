@@ -109,8 +109,8 @@ var _ = BeforeSuite(func() {
 
 	secretManager := fake.NewMockSecretManager(GinkgoT())
 	secretManager.EXPECT().
-		Get(mock.Anything, mock.Anything).
-		Return("", secretsapi.ErrNotFound).
+		Resolve(mock.Anything, mock.Anything).
+		Return(secretsapi.ResolvedSecret{}, secretsapi.ErrNotFound).
 		Maybe()
 	secretManager.EXPECT().
 		UpsertEnvironment(mock.Anything, mock.Anything, mock.Anything, mock.Anything).
