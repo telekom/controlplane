@@ -7,6 +7,7 @@ package spectre
 import (
 	"context"
 	stderrors "errors"
+	"fmt"
 
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -51,21 +52,38 @@ func HandleListeners(ctx context.Context, c client.JanitorClient, rover *roverv1
 	// A blocked entry must not stop the others, so the first Blocked error is
 	// returned only after every entry was processed.
 	var blockedErr error
-	// The Listener name is derived from consumer + apiBasePath/eventType only, so
-	// two entries yielding the same name would silently overwrite each other via
-	// CreateOrUpdate. Block instead of losing a declared listener.
-	seenNames := make(map[string]struct{}, len(rover.Spec.Listeners))
+	// The Listener name is derived from consumer + provider + apiBasePath/eventType
+	// as written and normalised, so two entries yielding the same name would
+	// silently overwrite each other via CreateOrUpdate. Block instead of losing a
+	// declared listener.
+	seenNames := make(map[string]roverv1.RoverListener, len(rover.Spec.Listeners))
+	// Entries that write the same consumer or provider in two ways (bare name and
+	// full ID) get different Listener names but would capture the same traffic,
+	// so their Listeners would fight over the same RouteListener in Spectre.
+	seenResolved := make(map[resolvedListener]roverv1.RoverListener, len(rover.Spec.Listeners))
 	for _, rl := range rover.Spec.Listeners {
 		name := makeListenerName(rover.Name, rl)
-		if _, exists := seenNames[name]; exists {
+		if first, exists := seenNames[name]; exists {
 			if blockedErr == nil {
-				blockedErr = ctrlerrors.BlockedErrorf("duplicate listener for consumer %q: entries that differ only by provider are not supported", rl.Consumer)
+				blockedErr = ctrlerrors.BlockedErrorf("listener entries %s and %s map to the same Listener name %q: each listener may be declared only once",
+					describeListener(&first), describeListener(&rl), name)
 			}
 			continue
 		}
-		seenNames[name] = struct{}{}
+		seenNames[name] = rl
 
-		listener, err := ensureListener(ctx, c, rover, app, rl)
+		var listener *spectrev1.Listener
+		consumerRef, providerRef, err := resolveListenerApplications(ctx, c, rover, &rl)
+		if err == nil {
+			key := resolvedListener{consumer: consumerRef.K8s(), provider: providerRef.K8s(), target: listenerTarget(&rl)}
+			if first, exists := seenResolved[key]; exists {
+				err = ctrlerrors.BlockedErrorf("listener entries %s and %s resolve to the same consumer and provider applications on %q: each listener may be declared only once",
+					describeListener(&first), describeListener(&rl), key.target)
+			} else {
+				seenResolved[key] = rl
+				listener, err = ensureListener(ctx, c, rover, app, name, rl, consumerRef, providerRef)
+			}
+		}
 		if err != nil {
 			if be, ok := stderrors.AsType[ctrlerrors.BlockedError](err); !ok || !be.IsBlocked() {
 				return err
@@ -93,14 +111,11 @@ func HandleListeners(ctx context.Context, c client.JanitorClient, rover *roverv1
 // the janitor does not delete it and its capture keeps running until the entry
 // resolves again. It returns nil if the Listener does not exist and never creates one.
 //
-// The Listener is found by the name derived from the entry's consumer and
-// apiBasePath, which has two known trade-offs. When only the provider changes to
-// a value that does not resolve (e.g. a typo), the name stays the same, so the
-// old Listener with its old, still existing provider is kept: capture continues
-// as before and the Rover reports Blocked. When the consumer value changes to one
-// that does not resolve (e.g. a bare name to a mistyped full ID), the new name is
-// not found, so nothing is kept and the janitor deletes the old Listener; its
-// approval is lost.
+// The Listener is found by the name derived from the entry's consumer, provider
+// and apiBasePath/eventType. When the consumer or provider value changes to one
+// that does not resolve (e.g. a typo, or a bare name to a mistyped full ID), the
+// new name is not found, so nothing is kept and the janitor deletes the old
+// Listener; its approval is lost.
 func keepExistingListener(ctx context.Context, c client.JanitorClient, namespace, name string) (*spectrev1.Listener, error) {
 	listener := &spectrev1.Listener{}
 	if err := c.Get(ctx, crclient.ObjectKey{Name: name, Namespace: namespace}, listener); err != nil {
@@ -168,11 +183,15 @@ func ensureSpectreApplication(ctx context.Context, c client.JanitorClient, rover
 	return app, nil
 }
 
-// ensureListener creates or updates a single Listener CR owned by the Rover.
-func ensureListener(ctx context.Context, c client.JanitorClient, rover *roverv1.Rover, app *spectrev1.SpectreApplication, rl roverv1.RoverListener) (*spectrev1.Listener, error) {
-	logger := log.FromContext(ctx)
-	logger.V(1).Info("Ensuring Listener", "rover", rover.Name, "listener", makeListenerName(rover.Name, rl))
+// resolvedListener identifies what an entry captures once its consumer and
+// provider are resolved to Applications.
+type resolvedListener struct {
+	consumer, provider crclient.ObjectKey
+	target             string
+}
 
+// resolveListenerApplications resolves the consumer and provider Applications of an entry.
+func resolveListenerApplications(ctx context.Context, c client.JanitorClient, rover *roverv1.Rover, rl *roverv1.RoverListener) (*types.TypedObjectRef, *types.TypedObjectRef, error) {
 	// Resolve the consumer Application. If the consumer is the Rover's own
 	// Application (by name or full ID), use the already-resolved status ref to
 	// avoid a redundant lookup.
@@ -191,7 +210,7 @@ func ensureListener(ctx context.Context, c client.JanitorClient, rover *roverv1.
 	} else {
 		consumerApp, err := resolveApplication(ctx, c, rl.Consumer)
 		if err != nil {
-			return nil, errors.Wrapf(err, "resolving consumer application %q", rl.Consumer)
+			return nil, nil, errors.Wrapf(err, "resolving consumer application %q", rl.Consumer)
 		}
 		consumerRef = types.TypedObjectRefFromObject(consumerApp, c.Scheme())
 	}
@@ -199,13 +218,19 @@ func ensureListener(ctx context.Context, c client.JanitorClient, rover *roverv1.
 	// Provider always needs resolution — it belongs to another team.
 	providerApp, err := resolveApplication(ctx, c, rl.Provider)
 	if err != nil {
-		return nil, errors.Wrapf(err, "resolving provider application %q", rl.Provider)
+		return nil, nil, errors.Wrapf(err, "resolving provider application %q", rl.Provider)
 	}
-	providerRef := types.TypedObjectRefFromObject(providerApp, c.Scheme())
+	return consumerRef, types.TypedObjectRefFromObject(providerApp, c.Scheme()), nil
+}
+
+// ensureListener creates or updates a single Listener CR owned by the Rover.
+func ensureListener(ctx context.Context, c client.JanitorClient, rover *roverv1.Rover, app *spectrev1.SpectreApplication, name string, rl roverv1.RoverListener, consumerRef, providerRef *types.TypedObjectRef) (*spectrev1.Listener, error) {
+	logger := log.FromContext(ctx)
+	logger.V(1).Info("Ensuring Listener", "rover", rover.Name, "listener", name)
 
 	listener := &spectrev1.Listener{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      makeListenerName(rover.Name, rl),
+			Name:      name,
 			Namespace: rover.Namespace,
 		},
 	}
@@ -244,8 +269,7 @@ func ensureListener(ctx context.Context, c client.JanitorClient, rover *roverv1.
 		return nil
 	}
 
-	_, err = c.CreateOrUpdate(ctx, listener, mutator)
-	if err != nil {
+	if _, err := c.CreateOrUpdate(ctx, listener, mutator); err != nil {
 		return nil, errors.Wrap(err, "failed to create or update Listener")
 	}
 
@@ -270,11 +294,18 @@ func makeSpectreAppName(roverName string) string {
 
 // makeListenerName generates a deterministic name for a Listener based on content identity.
 func makeListenerName(roverName string, rl roverv1.RoverListener) string {
-	var key string
+	return labelutil.NormalizeNameValue(roverName + "--" + rl.Consumer + "--" + rl.Provider + "--" + listenerTarget(&rl))
+}
+
+// listenerTarget returns what the entry listens on: its apiBasePath, or its eventType if none is set.
+func listenerTarget(rl *roverv1.RoverListener) string {
 	if rl.ApiBasePath != "" {
-		key = rl.Consumer + "--" + rl.ApiBasePath
-	} else {
-		key = rl.Consumer + "--" + rl.EventType
+		return rl.ApiBasePath
 	}
-	return labelutil.NormalizeNameValue(roverName + "--" + key)
+	return rl.EventType
+}
+
+// describeListener names an entry by its values as written, for error messages.
+func describeListener(rl *roverv1.RoverListener) string {
+	return fmt.Sprintf("(consumer %q, provider %q, %q)", rl.Consumer, rl.Provider, listenerTarget(rl))
 }
