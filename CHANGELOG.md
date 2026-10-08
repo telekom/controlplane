@@ -1,3 +1,13 @@
+## [0.36.1](https://github.com/telekom/controlplane/compare/v0.36.0...v0.36.1) (2026-10-08)
+
+
+### Bug Fixes
+
+* **api:** remove api-category check on subscription ([#749](https://github.com/telekom/controlplane/issues/749)) ([8e46d58](https://github.com/telekom/controlplane/commit/8e46d58ce90a34da4bd702bcdd3a3dcc25e9c655))
+* **permissions:** fix type in naming and set it correctly to -- ([#746](https://github.com/telekom/controlplane/issues/746)) ([e6788e8](https://github.com/telekom/controlplane/commit/e6788e8946299baca863a38263be0c1cfc93eeb1))
+* rise maxItems for scopes to 50 ([#750](https://github.com/telekom/controlplane/issues/750)) ([5393b70](https://github.com/telekom/controlplane/commit/5393b70f9a2365856710ad602fcba4419ac87544))
+* **rover-ctl:** correctly apply default api-version to resource cmd ([#748](https://github.com/telekom/controlplane/issues/748)) ([4e159b8](https://github.com/telekom/controlplane/commit/4e159b88b41cd7f1f993cf5f59b40711c715732b))
+
 # [0.36.0](https://github.com/telekom/controlplane/compare/v0.35.1...v0.36.0) (2026-10-08)
 
 
