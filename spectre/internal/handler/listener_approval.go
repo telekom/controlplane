@@ -298,10 +298,11 @@ func (h *ListenerHandler) setAggregateConditions(ctx context.Context, listener *
 			fmt.Sprintf("ApprovalRequest has been denied (%s gate)", gate)))
 
 	case outcomePending:
-		logger.Info("Approval pending")
-		listener.SetCondition(condition.NewNotReadyCondition(condition.ReasonApprovalPending,
-			"Waiting for approval decision"))
-		listener.SetCondition(condition.NewBlockedCondition("Waiting for approval decision"))
+		gate := gateNames(result, func(g *gateResult) bool { return g.outcome == outcomePending })
+		logger.Info("Approval pending", "gate", gate)
+		message := fmt.Sprintf("Waiting for approval decision (%s gate)", gate)
+		listener.SetCondition(condition.NewNotReadyCondition(condition.ReasonApprovalPending, message))
+		listener.SetCondition(condition.NewBlockedCondition(message))
 
 	case outcomeError, outcomeUnknown:
 		logger.Info("Approval evaluation error or unknown", "outcome", result.outcome.String())

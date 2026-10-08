@@ -78,6 +78,12 @@ func GetAllRoverProblems(ctx context.Context, rover *v1.Rover, stores *roverStor
 	if hasRefs(rover.Status.FileSubscriptions) {
 		checkers = append(checkers, NewSubResourceChecker(stores.FileSubscriptionStore))
 	}
+	if hasRefs(rover.Status.SpectreApplications) {
+		checkers = append(checkers, NewSubResourceChecker(stores.SpectreApplicationStore))
+	}
+	if hasRefs(rover.Status.SpectreListeners) {
+		checkers = append(checkers, NewSubResourceChecker(stores.SpectreListenerStore))
+	}
 
 	return runCheckers(ctx, rover, checkers)
 }

@@ -227,13 +227,18 @@
       "agentic",
       "api",
       "application",
+      "approval",
       "common",
       "common-server",
       "event",
       "file",
       "file-manager",
+      "gateway",
+      "identity",
+      "pubsub",
       "rover",
-      "secret-manager"
+      "secret-manager",
+      "spectre"
     ]
   },
   "secret-manager": {
