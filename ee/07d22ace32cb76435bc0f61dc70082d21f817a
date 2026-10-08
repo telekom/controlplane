@@ -1,0 +1,23 @@
+rover-ctl/pkg/commands/resource/cmd_test.go
+  s_137fa862e3202b::t_44f943370febd7 107-137
+rover-ctl/docs/roverctl_resource_get.md
+  s_137fa862e3202b::t_c6fc023aafd534 16
+rover-ctl/pkg/commands/resource/cmd.go
+  s_137fa862e3202b::t_c6fc023aafd534 77
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "ee07d22ace32cb76435bc0f61dc70082d21f817a",
+  "prompts": {},
+  "sessions": {
+    "s_137fa862e3202b": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ee4fe2b07ffe2GCh8aw2vkcXFQ",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
