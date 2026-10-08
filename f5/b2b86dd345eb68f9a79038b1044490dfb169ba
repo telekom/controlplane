@@ -1,0 +1,49 @@
+rover-server/internal/mapper/apispecification/in/parse.go
+  s_156c31e855e145::t_80d871feae956c 139
+  s_156c31e855e145::t_268e66601c53d8 103-107,111,114-116,118-121
+  s_156c31e855e145::t_41e5b0cfca7187 77
+  s_156c31e855e145::t_9046cb55f923ca 108-110,112-113,117
+  s_26a5b32f0a4b8c::t_2f268d08a0dd32 122-123,125-138,140-146,148-149
+rover-server/internal/mapper/apispecification/in/parse_test.go
+  s_156c31e855e145::t_1e2b7ac027e931 347,349,354-360,370-371,374-382,386-402
+  s_156c31e855e145::t_e3a324567a7e00 383-385
+  s_156c31e855e145::t_ac1619a6d3c259 348
+  s_156c31e855e145::t_600c0b514c8c3f 350-351
+  s_156c31e855e145::t_80a3d467b1ce4c 332-346,352-353,361-369,372-373
+docs/docs/user-journey/exposing-apis.mdx
+  s_156c31e855e145::t_577edc7e01b399 41
+  s_26a5b32f0a4b8c::t_154e7369d6cb13 37-40,42
+rover-ctl/pkg/parser/apispec_test.go
+  s_156c31e855e145::t_80a3d467b1ce4c 52-62,69-77,85,98-108
+  s_156c31e855e145::t_cf5c930d7a7e6d 78-84,86-97
+  s_156c31e855e145::t_227cff367a67ae 66-68
+  s_26a5b32f0a4b8c::t_974dd223137ca1 63-65
+rover-ctl/pkg/parser/apispec.go
+  s_156c31e855e145::t_268e66601c53d8 88-92,96,99-101,103-106
+  s_156c31e855e145::t_f9401c942ee9e6 93-95,97-98,102
+  s_156c31e855e145::t_3adf7ddd705ea3 107-108,110-131,133-134
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "f5b2b86dd345eb68f9a79038b1044490dfb169ba",
+  "prompts": {},
+  "sessions": {
+    "s_156c31e855e145": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ee48c2628ffecxI5wEwd90REEI",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_26a5b32f0a4b8c": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ee48c8d53ffehz9vydKKy7935o",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
