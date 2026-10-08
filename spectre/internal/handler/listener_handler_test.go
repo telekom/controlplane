@@ -1521,6 +1521,10 @@ var _ = Describe("ListenerHandler", func() {
 				procCond := meta.FindStatusCondition(listener.Status.Conditions, condition.ConditionTypeProcessing)
 				Expect(procCond).ToNot(BeNil())
 				Expect(procCond.Reason).To(Equal(condition.ReasonBlocked))
+				readyCond := meta.FindStatusCondition(listener.Status.Conditions, condition.ConditionTypeReady)
+				Expect(readyCond).ToNot(BeNil())
+				Expect(readyCond.Reason).To(Equal(condition.ReasonApprovalPending))
+				Expect(readyCond.Message).To(Equal("Waiting for approval decision (provider and consumer gate)"))
 
 				Expect(listener.Status.RouteListener).To(BeNil())
 				Expect(listener.Status.EventSubscriptions).To(BeEmpty())
@@ -2303,6 +2307,9 @@ var _ = Describe("ListenerHandler", func() {
 				procCond := meta.FindStatusCondition(listener.Status.Conditions, condition.ConditionTypeProcessing)
 				Expect(procCond).ToNot(BeNil())
 				Expect(procCond.Reason).To(Equal(condition.ReasonBlocked))
+				readyCond := meta.FindStatusCondition(listener.Status.Conditions, condition.ConditionTypeReady)
+				Expect(readyCond).ToNot(BeNil())
+				Expect(readyCond.Message).To(Equal("Waiting for approval decision (consumer gate)"))
 
 				Expect(listener.Status.RouteListener).To(BeNil())
 				Expect(listener.Status.EventSubscriptions).To(BeEmpty())

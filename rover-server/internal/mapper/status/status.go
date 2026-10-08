@@ -23,6 +23,7 @@ var processingReasons = map[string]bool{
 	condition.ReasonSubResourceNotReady: true, // "SubResourceNotReady"
 	condition.ReasonProvisioning:        true, // "Provisioning"
 	condition.ReasonProcessing:          true, // "Processing" (legacy/transitional)
+	"Deleting":                          true, // Spectre Listener draining its capture before deletion
 }
 
 // blockedReasons lists Ready condition reasons that indicate the resource is blocked
