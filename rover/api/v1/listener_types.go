@@ -10,9 +10,9 @@ package v1
 // or the bare application name, which must be unique across all teams. Any value with
 // two or more "--" is read as a full ID, so a bare name must not contain "--"; use the
 // full ID instead.
-// The Listener name is derived from the consumer value as written, so switching the
-// same application between bare name and full ID recreates the Listener and
-// requires a new approval.
+// The Listener name is derived from the consumer and provider values as written, so
+// changing either value, including switching the same application between bare name
+// and full ID, recreates the Listener and requires a new approval.
 type RoverListener struct {
 	// Consumer is the consuming application, as full ID (e.g. "eni--team--app") or bare name (e.g. "app").
 	// A bare name must not contain "--"; use the full ID instead.
