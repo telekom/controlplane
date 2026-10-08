@@ -46,8 +46,8 @@ var _ = Describe("ApplicationInfo variables", func() {
 		}))
 	})
 
-	It("omits absent and placeholder values without a zero expiration", func() {
-		info := &api.ApplicationInfo{Variables: []api.Data{}, IrisClientId: "<missing>"}
+	It("omits absent values without a zero expiration", func() {
+		info := &api.ApplicationInfo{Variables: []api.Data{}}
 		fillApplicationVariables(info)
 		Expect(info.Variables).To(BeEmpty())
 		raw, err := json.Marshal(info)
@@ -55,16 +55,14 @@ var _ = Describe("ApplicationInfo variables", func() {
 		Expect(string(raw)).To(ContainSubstring(`"variables":[]`))
 	})
 
-	It("returns an empty variables array when no resolved values are available", func() {
+	It("returns an empty variables array for empty application and zone status values", func() {
 		appStore := mocks.NewMockObjectStore[*applicationv1.Application](GinkgoT())
-		appStore.EXPECT().Get(mock.Anything, mock.Anything, mock.Anything).Return(&applicationv1.Application{
-			Status: applicationv1.ApplicationStatus{TokenUrl: "<missing>"},
-		}, nil).Once()
+		appStore.EXPECT().Get(mock.Anything, mock.Anything, mock.Anything).Return(&applicationv1.Application{}, nil).Once()
 		zoneStore := mocks.NewMockObjectStore[*adminv1.Zone](GinkgoT())
 		zoneStore.EXPECT().Get(mock.Anything, mock.Anything, mock.Anything).Return(&adminv1.Zone{
 			Spec: adminv1.ZoneSpec{Presets: []adminv1.Preset{{Name: "default", Type: adminv1.GatewayTypeAPI, Default: true}}},
 			Status: adminv1.ZoneStatus{Presets: []adminv1.PresetStatus{{
-				Name: "default", Links: adminv1.Links{Issuer: "<missing>"},
+				Name: "default",
 			}}},
 		}, nil).Once()
 		resource := &roverv1.Rover{Status: roverv1.RoverStatus{Application: rover.Status.Application}}
@@ -74,6 +72,7 @@ var _ = Describe("ApplicationInfo variables", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(info.Variables).NotTo(BeNil())
 		Expect(info.Variables).To(BeEmpty())
+		Expect(info.IrisTokenEndpointUrl).To(BeEmpty())
 		raw, err := json.Marshal(info)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(string(raw)).To(ContainSubstring(`"variables":[]`))
@@ -144,7 +143,6 @@ var _ = Describe("ApplicationInfo variables", func() {
 		))
 		for _, variable := range info.Variables {
 			Expect(variable.Value).NotTo(BeEmpty())
-			Expect(variable.Value).NotTo(Equal("<missing>"))
 		}
 	})
 })

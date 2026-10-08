@@ -106,7 +106,7 @@ func MapApplicationInfo(ctx context.Context, rover *roverv1.Rover, stores *store
 }
 
 func appendVariable(appInfo *api.ApplicationInfo, name, value string) {
-	if value == "" || value == "<missing>" {
+	if value == "" {
 		return
 	}
 	appInfo.Variables = append(appInfo.Variables, api.Data{Name: name, Value: value})
@@ -170,7 +170,7 @@ func FillApplicationInfo(ctx context.Context, rover *roverv1.Rover, appInfo *api
 	appInfo.StargateIssuerUrl = presetStatus.Links.LmsIssuer
 	appInfo.StargateUrl = preset.GetDefaultURL()
 	appInfo.IrisTokenEndpointUrl = app.Status.TokenUrl
-	if appInfo.IrisTokenEndpointUrl == "" {
+	if appInfo.IrisTokenEndpointUrl == "" && appInfo.IrisIssuerUrl != "" {
 		appInfo.IrisTokenEndpointUrl = appInfo.IrisIssuerUrl + IrisTokenEndpointSuffix
 	}
 

@@ -89,7 +89,7 @@ Each application's `variables` array provides resolved connection values using t
 | `tardis.horizon.event.url` | Publish URL supplied by an event exposure, when available |
 | `tardis.chevron.url`, `tardis.chevron.application` | Permission-query URL and application identifier, when configured |
 
-Variables with unavailable values are omitted rather than represented by `null` or `<missing>`. The array is empty (`[]`) when no values are available. Legacy Cloudwalker and Raccoon variables are not generated from unsupported or unconfigured endpoints.
+Variables whose source values are empty are omitted. The array is empty (`[]`) when no values are available; the Go implementation does not initialize fields with legacy placeholders. Legacy Cloudwalker and Raccoon variables are not generated from unsupported or unconfigured endpoints.
 
 :::caution
 The variables include the application's client secret. Treat `get-info` output as sensitive and do not write it to public logs or commit it to source control.
