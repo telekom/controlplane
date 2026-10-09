@@ -213,7 +213,9 @@
   },
   "rover-ctl": {
     "path": "rover-ctl",
-    "depends_on": []
+    "depends_on": [
+      "common"
+    ]
   },
   "rover-server": {
     "path": "rover-server",
