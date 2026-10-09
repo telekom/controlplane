@@ -34,6 +34,12 @@ paths:
           description: Successful response
 ```
 
+#### How the base path is determined
+
+For OpenAPI 3.x, the base path is the path of the **first** entry in `servers`; other entries are ignored. For Swagger 2.0, it is the `basePath` field.
+
+Only the path of the server URL is used. Scheme, host, port, query and fragment are ignored, so [server variables](https://spec.openapis.org/oas/v3.0.3#server-variable-object) in the host or port (for example `https://{host}:{port}/eni/api/v1`) are allowed and need no declaration. Server variables in the **path** (for example `/eni/{version}`) are not supported and the specification is rejected. The path is used exactly as written and must be a valid URI path: letters, digits, `/`, `-._~!$&'()*+,;=:@` and well-formed percent-encodings such as `%20`, which stay encoded. Whitespace, braces and other characters are rejected. Existing platform restrictions on base paths and the derived resource name still apply, so a valid URI path is not necessarily accepted. The uploaded specification is stored unchanged.
+
 Apply the specification:
 
 ```bash

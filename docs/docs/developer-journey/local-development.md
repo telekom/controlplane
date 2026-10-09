@@ -35,6 +35,8 @@ Backend services that are not Kubernetes operators:
 
 `rover-ctl/` — command-line interface for interacting with the Control Plane.
 
+`rover-ctl` depends on `common/` through a local `replace` directive (`github.com/telekom/controlplane/common => ../common`), like the other modules. Build it from a full repository checkout so the sibling `common/` directory is present; release builds (goreleaser and ko) already do this. Remote installation with `go install github.com/telekom/controlplane/rover-ctl@<version>` is not supported for versions containing this local replacement: version-suffixed `go install` rejects it. Use a release binary or build from a checkout instead.
+
 ### Libraries
 
 | Directory | Purpose |

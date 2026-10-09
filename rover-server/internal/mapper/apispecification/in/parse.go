@@ -6,7 +6,6 @@ package in
 
 import (
 	"context"
-	"net/url"
 	"strings"
 
 	"github.com/pb33f/libopenapi"
@@ -18,6 +17,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/telekom/controlplane/common-server/pkg/problems"
+	"github.com/telekom/controlplane/common/pkg/util/openapiutil"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 
 	"go.yaml.in/yaml/v4"
@@ -72,10 +72,10 @@ func ParseSpecification(ctx context.Context, spec string) (*roverv1.ApiSpecifica
 			})
 		}
 
-		path, err := getPathFromURL(model.Model.Servers[0].URL)
+		path, err := openapiutil.PathFromURL(model.Model.Servers[0].URL)
 		if err != nil {
 			return nil, problems.ValidationErrors(map[string]string{
-				"servers[0].url": "invalid url format",
+				"servers[0].url": err.Error(),
 			})
 		} else if path == "" {
 			return nil, problems.ValidationErrors(map[string]string{
@@ -98,15 +98,6 @@ func ParseSpecification(ctx context.Context, spec string) (*roverv1.ApiSpecifica
 	}
 
 	return nil, problems.BadRequest("only OpenAPI v2 and v3 are supported")
-}
-
-func getPathFromURL(rawURL string) (string, error) {
-	u, err := url.Parse(rawURL)
-	if err != nil {
-		return "", errors.Wrap(err, "failed to parse url")
-	}
-
-	return u.Path, nil
 }
 
 func setExtensionValues(apiSpecificationSpec *roverv1.ApiSpecificationSpec, extensionMap *orderedmap.Map[string, *yaml.Node]) {
