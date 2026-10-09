@@ -50,6 +50,7 @@ var _ = Describe("Token configuration errors", func() {
 		// Configure through env vars like a customer would; viper.Set("token")
 		// would shadow the nested "token.url" key.
 		viper.Reset()
+		GinkgoT().Setenv("ROVER_TOKEN", "")
 		GinkgoT().Setenv("ROVER_SERVER_URL", "")
 		GinkgoT().Setenv("ROVER_TOKEN_URL", "")
 		config.Initialize()

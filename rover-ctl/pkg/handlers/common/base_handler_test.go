@@ -159,8 +159,9 @@ var _ = Describe("BaseHandler", func() {
 				apiErr, ok := common.AsApiError(err)
 				Expect(ok).To(BeTrue())
 				Expect(apiErr).NotTo(BeNil())
-				// The error message comes from the mock response we defined above
-				Expect(apiErr.Title).To(Equal("Validation failed"))
+				// Remote problem content is not propagated, only the status and allowlisted type
+				Expect(apiErr.Type).To(Equal("ValidationError"))
+				Expect(apiErr.Title).To(Equal("Bad Request"))
 			})
 		})
 
@@ -445,7 +446,7 @@ var _ = Describe("BaseHandler", func() {
 				apiErr, ok := common.AsApiError(err)
 				Expect(ok).To(BeTrue())
 				Expect(apiErr).NotTo(BeNil())
-				Expect(apiErr.Title).To(Equal("Delete failed"))
+				Expect(apiErr.Title).To(Equal("Bad Request"))
 			})
 		})
 	})

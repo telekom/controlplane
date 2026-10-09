@@ -83,7 +83,11 @@ This should return a list of your team's existing Rover resources (which will be
 
 If Rover-CTL reports that `ROVER_TOKEN` is invalid or incomplete, check that you copied the entire team token and that you are using the token for the correct environment. If the problem persists, obtain a new team token.
 
-For troubleshooting, run the command again with `--debug`. The error log then also shows which part of the token could not be decoded or validated. Token contents, credentials and URL values are never included, so the output can be shared with your platform support.
+For troubleshooting, run the command again with `--debug`. For token errors, the error log then also shows which part of the token could not be decoded or validated, for example a missing field or an invalid URL. These token diagnostics do not include the token contents, credentials or URL values.
+
+Request failures are reported by HTTP method, resource type, a failure category (such as authentication, timeout or connection) and the HTTP status code. Request payloads, request URLs and error details returned by the server are not included.
+
+Review any output before sharing it: other parts of the output, such as the result of `roverctl get-secret`, intentionally contain credentials.
 
 ## Next Steps
 

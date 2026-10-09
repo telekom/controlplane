@@ -5,10 +5,13 @@
 package v0_test
 
 import (
+	"bytes"
 	"context"
+	"errors"
 	"io"
 	"net/http"
 	"strings"
+	"testing/iotest"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -599,6 +602,30 @@ var _ = Describe("Rover Handler", func() {
 		})
 	})
 
+	Describe("GetSecretRotationStatus", func() {
+		It("should not expose undecodable response content", func() {
+			readErr := errors.New("SYNTHETIC-SECRET-MARKER-read-error")
+			mockClient.EXPECT().Do(mock.AnythingOfType("*http.Request")).Return(&http.Response{
+				StatusCode: http.StatusOK,
+				Body:       io.NopCloser(iotest.ErrReader(readErr)),
+				Header:     make(http.Header),
+			}, nil)
+
+			handler := v0.NewRoverHandlerInstance()
+			handler.Setup(testCtx)
+
+			_, err := handler.GetSecretRotationStatus(testCtx, "my-rover")
+
+			var decodeErr *common.ResponseDecodeError
+			Expect(errors.As(err, &decodeErr)).To(BeTrue())
+			Expect(errors.Is(err, readErr)).To(BeTrue())
+			var out bytes.Buffer
+			common.PrintTextTo(err, &out)
+			common.PrintJsonTo(err, &out)
+			Expect(out.String() + err.Error()).NotTo(ContainSubstring("SYNTHETIC-SECRET-MARKER"))
+		})
+	})
+
 	Describe("ResetSecret", func() {
 		It("should send a reset secret request and return converged status", func() {
 			callCount := 0
@@ -669,7 +696,8 @@ var _ = Describe("Rover Handler", func() {
 			Expect(err).To(HaveOccurred())
 			apiErr, ok := common.AsApiError(err)
 			Expect(ok).To(BeTrue())
-			Expect(apiErr.Title).To(Equal("Reset Failed"))
+			Expect(apiErr.Title).To(Equal("Bad Request"))
+			Expect(apiErr.Detail).NotTo(ContainSubstring("Invalid rover name"))
 
 			// Verify mock expectations
 			mockClient.AssertExpectations(GinkgoT())
