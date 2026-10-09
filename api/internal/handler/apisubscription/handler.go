@@ -468,14 +468,18 @@ func resolveRouteRef(ctx context.Context, scopedClient cclient.JanitorClient, ap
 }
 
 func validateBasicWithScopesPolicy(obj *apiapi.ApiSubscription, exposure *apiapi.ApiExposure) error {
-	subHasScopes := obj.HasM2M() && obj.Spec.Security.M2M.Basic != nil && len(obj.Spec.Security.M2M.Scopes) > 0
-	if !subHasScopes {
+	if !obj.HasM2M() || obj.Spec.Security.M2M.Basic == nil {
+		return nil
+	}
+	security := obj.Spec.Security.M2M
+	requiresPasswordGrant := security.Client != nil || len(security.Scopes) > 0
+	if !requiresPasswordGrant {
 		return nil
 	}
 
 	if exposure == nil || !exposure.HasExternalIdp() ||
 		exposure.Spec.Security.M2M.ExternalIDP.GrantType != apiapi.GrantTypePassword {
-		return errors.New("Consumer username/password with scopes requires an external IDP grant type \"password\"")
+		return errors.New("Consumer username/password combined with client credentials or scopes requires an external IDP grant type \"password\"")
 	}
 	return nil
 }

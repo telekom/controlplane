@@ -66,4 +66,30 @@ var _ = Describe("Subscription scope validation", func() {
 			Expect(validateSubscriptionScopes(&util.ServerInfo{}, nil, obj)).To(BeTrue())
 		}
 	})
+
+	var _ = Describe("Basic credentials with scopes or client credentials", func() {
+		exposureWithGrant := func(grant agenticv1.GrantType) *agenticv1.AgenticExposure {
+			return &agenticv1.AgenticExposure{Spec: agenticv1.AgenticExposureSpec{
+				Security: &agenticv1.Security{M2M: &agenticv1.Machine2MachineAuthentication{
+					ExternalIDP: &agenticv1.ExternalIdentityProvider{
+						TokenEndpoint: "https://idp.example/token",
+						GrantType:     grant,
+					},
+				}},
+			}}
+		}
+
+		It("requires a password grant for client and Basic credentials even without scopes", func() {
+			obj := &agenticv1.AgenticSubscription{Spec: agenticv1.AgenticSubscriptionSpec{
+				Security: &agenticv1.SubscriberSecurity{M2M: &agenticv1.SubscriberMachine2MachineAuthentication{
+					Client: &agenticv1.OAuth2ClientCredentials{ClientId: "consumer", ClientSecret: "secret"},
+					Basic:  &agenticv1.BasicAuthCredentials{Username: "user", Password: "password"},
+				}},
+			}}
+
+			Expect(violatesBasicWithScopesPolicy(obj, nil)).To(BeTrue())
+			Expect(violatesBasicWithScopesPolicy(obj, exposureWithGrant(agenticv1.GrantTypeClientCredentials))).To(BeTrue())
+			Expect(violatesBasicWithScopesPolicy(obj, exposureWithGrant(agenticv1.GrantTypePassword))).To(BeFalse())
+		})
+	})
 })

@@ -133,6 +133,20 @@ var _ = Describe("Route Util", func() {
 					Scopes: []string{"consumer:read", "consumer:write"},
 				}))
 			})
+
+			It("maps consumer client and username/password credentials together", func() {
+				mapped := mapConsumerSecurity(&apiapi.SubscriberSecurity{M2M: &apiapi.SubscriberMachine2MachineAuthentication{
+					Client: &apiapi.OAuth2ClientCredentials{ClientId: "consumer", ClientSecret: "secret"},
+					Basic:  &apiapi.BasicAuthCredentials{Username: "user", Password: "password"},
+					Scopes: []string{"consumer:read"},
+				}})
+
+				Expect(mapped.M2M).To(Equal(&gatewayapi.ConsumerMachine2MachineAuthentication{
+					Client: &gatewayapi.OAuth2ClientCredentials{ClientId: "consumer", ClientSecret: "secret"},
+					Basic:  &gatewayapi.BasicAuthCredentials{Username: "user", Password: "password"},
+					Scopes: []string{"consumer:read"},
+				}))
+			})
 		})
 
 		Describe("ReturnReferenceOnly", func() {

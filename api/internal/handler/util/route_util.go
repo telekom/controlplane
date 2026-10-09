@@ -798,7 +798,8 @@ func mapConsumerSecurity(apiSecurity *apiapi.SubscriberSecurity) *gatewayapi.Con
 				ClientKey:    apiSecurity.M2M.Client.ClientKey,
 				RefreshToken: apiSecurity.M2M.Client.RefreshToken,
 			}
-		} else if apiSecurity.M2M.Basic != nil {
+		}
+		if apiSecurity.M2M.Basic != nil {
 			security.M2M.Basic = &gatewayapi.BasicAuthCredentials{
 				Username: apiSecurity.M2M.Basic.Username,
 				Password: apiSecurity.M2M.Basic.Password,
