@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/url"
 	"slices"
@@ -20,6 +21,7 @@ import (
 	"github.com/telekom/controlplane/rover-ctl/pkg/config"
 	"github.com/telekom/controlplane/rover-ctl/pkg/log"
 	"github.com/telekom/controlplane/rover-ctl/pkg/types"
+	"golang.org/x/oauth2"
 )
 
 type HandlerHookStage string
@@ -223,8 +225,8 @@ func (h *BaseHandler) Get(ctx context.Context, name string) (any, error) {
 
 	// Parse response
 	var result map[string]any
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return nil, errors.Wrap(err, "failed to parse response")
+	if err := DecodeResponse(h.Resource, resp.Body, &result); err != nil {
+		return nil, err
 	}
 
 	return result, nil
@@ -275,8 +277,8 @@ func (h *BaseHandler) ListWithCursor(ctx context.Context, cursor string) (*ListR
 
 	// Parse response
 	var response ListResponse
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		return nil, errors.Wrap(err, "failed to parse response")
+	if err := DecodeResponse(h.Resource, resp.Body, &response); err != nil {
+		return nil, err
 	}
 
 	return &response, nil
@@ -305,9 +307,9 @@ func (h *BaseHandler) Status(ctx context.Context, name string) (types.ObjectStat
 
 	// Parse response
 	var status ObjectStatusResponse
-	err = json.NewDecoder(resp.Body).Decode(&status)
+	err = DecodeResponse(h.Resource, resp.Body, &status)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to parse status response")
+		return nil, err
 	}
 
 	h.logger.V(1).Info("Status response", "status", status)
@@ -359,8 +361,8 @@ func (h *BaseHandler) execInfoRequest(ctx context.Context, url string) (any, err
 
 	// Parse response
 	var info map[string]any
-	if err := json.NewDecoder(resp.Body).Decode(&info); err != nil {
-		return nil, errors.Wrap(err, "failed to parse response")
+	if err := DecodeResponse(h.Resource, resp.Body, &info); err != nil {
+		return nil, err
 	}
 
 	return info, nil
@@ -400,16 +402,12 @@ func (h *BaseHandler) SendRequest(ctx context.Context, obj types.Object, method,
 			return nil, errors.Wrap(err, "failed to encode request body")
 		}
 		body = buf
-
-		if viper.GetBool("debug") {
-			h.logger.V(1).Info("Request details", "method", method, "url", url, "body", buf.String())
-		}
 	}
 
 	// Create the HTTP request
 	req, err := http.NewRequestWithContext(ctx, method, url, body)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to create request")
+		return nil, &RequestError{Method: method, Resource: h.Resource, Category: RequestErrorInvalid, err: err}
 	}
 
 	// Set content type for requests with body
@@ -422,10 +420,10 @@ func (h *BaseHandler) SendRequest(ctx context.Context, obj types.Object, method,
 	// Send the request
 	resp, err := h.httpClient.Do(req)
 	if err != nil {
-		return nil, errors.Wrap(err, "request failed")
+		return nil, newRequestError(method, h.Resource, err)
 	}
 
-	h.logger.V(1).Info("Received response", "status", resp.Status)
+	h.logger.V(1).Info("Received response", "statusCode", resp.StatusCode)
 
 	if err := h.RunHooks(PostRequestHook, ctx, obj); err != nil {
 		return nil, err
@@ -458,22 +456,55 @@ func CheckResponseCode(resp *http.Response, expectedCodes ...int) error {
 	if slices.Contains(expectedCodes, resp.StatusCode) {
 		return nil
 	}
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return errors.Wrapf(err, "failed to read response body: %s", resp.Status)
-	}
+	return newResponseError(resp)
+}
 
-	apiErr := &ApiError{}
-	err = json.Unmarshal(body, apiErr)
-	if err != nil || apiErr.Title == "" {
-		return &ApiError{
-			Type:     "UnknownError",
-			Status:   resp.StatusCode,
-			Title:    "Unexpected Response",
-			Detail:   string(body),
-			Instance: fmt.Sprintf("%s/%s", resp.Request.Method, resp.Request.URL),
+// newResponseError converts an unexpected response into an ApiError.
+// Title, detail, instance and fields of the remote problem may echo request
+// content or secrets, so only the HTTP status code and an allowlisted
+// problem type are kept.
+func newResponseError(resp *http.Response) *ApiError {
+	errType := "UnknownError"
+	remote := &ApiError{}
+	body, err := io.ReadAll(resp.Body)
+	if err == nil && json.Unmarshal(body, remote) == nil && remote.Title != "" {
+		errType = "ApiError"
+		if remote.Type == "ValidationError" {
+			errType = remote.Type
 		}
 	}
 
-	return apiErr
+	title := http.StatusText(resp.StatusCode)
+	if title == "" {
+		title = "Unexpected Response"
+	}
+
+	return &ApiError{
+		Type:   errType,
+		Status: resp.StatusCode,
+		Title:  title,
+		Detail: fmt.Sprintf("The server responded with HTTP status %d. Response details are omitted.", resp.StatusCode),
+	}
+}
+
+// newRequestError classifies a failed request into a fixed category.
+// The original error is kept for errors.Is/errors.As only, as its message may
+// contain the request URL or the token endpoint's response.
+func newRequestError(method, resource string, err error) *RequestError {
+	reqErr := &RequestError{Method: method, Resource: resource, Category: RequestErrorConnection, err: err}
+
+	var retrieveErr *oauth2.RetrieveError
+	var netErr net.Error
+	switch {
+	case errors.As(err, &retrieveErr):
+		reqErr.Category = RequestErrorAuthentication
+		if retrieveErr.Response != nil {
+			reqErr.StatusCode = retrieveErr.Response.StatusCode
+		}
+	case errors.Is(err, context.Canceled):
+		reqErr.Category = RequestErrorCanceled
+	case errors.Is(err, context.DeadlineExceeded), errors.As(err, &netErr) && netErr.Timeout():
+		reqErr.Category = RequestErrorTimeout
+	}
+	return reqErr
 }

@@ -19,12 +19,17 @@ import (
 )
 
 var (
-	ErrInvalidTokenFormat = errors.New("invalid token format")
-	ErrMalformedBase64    = errors.New("failed to decode base64 token")
+	ErrInvalidTokenFormat = errors.New(invalidTokenMessage)
+	ErrMalformedBase64    = errors.New(invalidTokenMessage)
 	ErrTokenNotSet        = errors.New("token is not set in configuration")
 	ErrTokenParseFailed   = errors.New("failed to parse token")
-	ErrTokenValidation    = errors.New("token validation failed")
+	ErrTokenValidation    = errors.New(invalidTokenMessage)
 )
+
+// invalidTokenMessage is the only customer-facing message for unusable tokens.
+// It must not reveal internal configuration, token fields or supplied values.
+const invalidTokenMessage = "ROVER_TOKEN is invalid or incomplete. Please check that you copied the entire team token " +
+	"and are using the correct token for your environment."
 
 // Global validator instance
 var validate = validator.New()
@@ -75,12 +80,12 @@ func ParseToken(tokenStr string) (*Token, error) {
 
 	value, err := base64.StdEncoding.DecodeString(b64Value)
 	if err != nil {
-		return nil, ErrMalformedBase64
+		return nil, errors.Wrap(ErrMalformedBase64, describeBase64Error(err))
 	}
 
 	err = json.Unmarshal(value, &token)
 	if err != nil {
-		return nil, ErrInvalidTokenFormat
+		return nil, errors.Wrap(ErrInvalidTokenFormat, describeJSONError(err))
 	}
 
 	token.Prefix = prefix
@@ -91,12 +96,12 @@ func ParseToken(tokenStr string) (*Token, error) {
 	if overwriteServerURL != "" {
 		serverURL, err = url.Parse(overwriteServerURL)
 		if err != nil {
-			return nil, errors.Wrap(ErrTokenValidation, "cannot find server-URL")
+			return nil, errors.Wrap(ErrTokenValidation, "invalid server URL override: "+describeURLError(err))
 		}
 	} else {
 		serverURL, err = url.Parse(token.ServerUrl)
 		if err != nil {
-			return nil, errors.Wrap(ErrTokenValidation, "invalid server URL in token")
+			return nil, errors.Wrap(ErrTokenValidation, "invalid server URL in token: "+describeURLError(err))
 		}
 	}
 	ensureCorrectBasePath(serverURL, viper.GetString("server.baseUrl"))
@@ -193,9 +198,70 @@ func (t *Token) fillPrefixInfo() {
 
 func (t *Token) Validate() error {
 	if err := validate.Struct(t); err != nil {
-		return errors.Wrap(err, ErrTokenValidation.Error())
+		return errors.Wrap(ErrTokenValidation, describeValidationError(err))
 	}
 	return nil
+}
+
+// The describe* helpers build debug details for wrapping the customer-facing
+// sentinels. errors.Cause still yields the sentinel, so normal output stays
+// friendly. They only report positions, field names and rules, never
+// supplied values, which may contain credentials.
+
+func describeBase64Error(err error) string {
+	var corrupt base64.CorruptInputError
+	if errors.As(err, &corrupt) {
+		return fmt.Sprintf("decoding token: illegal base64 data at input byte %d", int64(corrupt))
+	}
+	return "decoding token: invalid base64 data"
+}
+
+func describeJSONError(err error) string {
+	var syntaxErr *json.SyntaxError
+	if errors.As(err, &syntaxErr) {
+		return fmt.Sprintf("parsing token JSON: syntax error at offset %d", syntaxErr.Offset)
+	}
+	var typeErr *json.UnmarshalTypeError
+	if errors.As(err, &typeErr) {
+		return fmt.Sprintf("parsing token JSON: field %q must be of type %s", typeErr.Field, typeErr.Type)
+	}
+	return "parsing token JSON: invalid JSON"
+}
+
+// describeURLError classifies url.Parse failures. The parser's messages quote
+// the supplied URL or parts of it, so only a fixed category is returned.
+func describeURLError(err error) string {
+	var escapeErr url.EscapeError
+	if errors.As(err, &escapeErr) {
+		return "invalid URL escape"
+	}
+	var hostErr url.InvalidHostError
+	if errors.As(err, &hostErr) {
+		return "invalid host"
+	}
+	var urlErr *url.Error
+	if errors.As(err, &urlErr) && urlErr.Err != nil {
+		reason := urlErr.Err.Error()
+		switch {
+		case strings.HasPrefix(reason, "invalid port"):
+			return "invalid port"
+		case strings.HasPrefix(reason, "missing protocol scheme"):
+			return "missing protocol scheme"
+		}
+	}
+	return "malformed URL"
+}
+
+func describeValidationError(err error) string {
+	var fieldErrs validator.ValidationErrors
+	if !errors.As(err, &fieldErrs) {
+		return "validating token: unexpected validation failure"
+	}
+	failures := make([]string, 0, len(fieldErrs))
+	for _, fe := range fieldErrs {
+		failures = append(failures, fmt.Sprintf("%s failed rule %q", fe.Namespace(), fe.Tag()))
+	}
+	return "validating token: " + strings.Join(failures, ", ")
 }
 
 func (t *Token) Encode() (string, error) {
