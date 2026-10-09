@@ -50,39 +50,11 @@ var _ = Describe("ApiSpecification Parsing", func() {
 		Expect(servers[0]).To(HaveKeyWithValue("url", "https://Example.com/ENI/MyApi/V1"))
 	})
 
-	DescribeTable("GetPathFromURL",
-		func(rawURL, expected string) {
-			Expect(parser.GetPathFromURL(rawURL)).To(Equal(expected))
-		},
-		Entry("absolute", "https://example.com/eni/api/v1", "/eni/api/v1"),
-		Entry("templated authority without declarations", "https://{host}:{port}/eni/api/v1?x=1#f", "/eni/api/v1"),
-		Entry("protocol-relative", "//{host}/eni/api/v1", "/eni/api/v1"),
-		Entry("root-relative", "/eni/api/v1", "/eni/api/v1"),
-		Entry("relative", "eni/api/v1", "eni/api/v1"),
-		Entry("missing path", "https://{host}", ""),
-		Entry("percent-encodings unchanged", "https://h/eni/my%20api%2Fx%7bv%7D", "/eni/my%20api%2Fx%7bv%7D"),
-		Entry("reserved path chars", "https://h/a:b@c!$&'()*+,;=-._~", "/a:b@c!$&'()*+,;=-._~"),
-		Entry("repeated slashes and dot segments", "https://h//eni/./api/../V1/", "//eni/./api/../V1/"),
-		Entry("scheme without authority", "https:/eni/api/v1?x=1", "/eni/api/v1"),
-		Entry("colon after first slash is path", "/eni/a://b", "/eni/a://b"),
-		Entry("templated scheme", "{scheme}://{host}/eni/api", "/eni/api"),
-	)
-
-	DescribeTable("GetPathFromURL errors",
-		func(rawURL, msg string) {
-			_, err := parser.GetPathFromURL(rawURL)
-			Expect(err).To(MatchError(ContainSubstring(msg)))
-		},
-		Entry("variable in path", "https://{host}/eni/{version}", "must not contain variables"),
-		Entry("whole url variable", "{endpoint}", "must not contain variables"),
-		Entry("space", "https://h/eni/my api", "invalid character"),
-		Entry("tab", "/eni/\tapi", "invalid character"),
-		Entry("control char", "/eni/\x01api", "invalid character"),
-		Entry("non-ascii", "/eni/äpi", "invalid character"),
-		Entry("backslash", "/eni\\api", "invalid character"),
-		Entry("bad hex escape", "https://h/eni/%zz", "malformed percent-encoding"),
-		Entry("truncated escape", "/eni/%2", "malformed percent-encoding"),
-	)
+	It("GetPathFromURL forwards to the shared implementation", func() {
+		Expect(parser.GetPathFromURL("https://{host}/eni/api/v1?x=1")).To(Equal("/eni/api/v1"))
+		_, err := parser.GetPathFromURL("https://h/eni/{version}")
+		Expect(err).To(MatchError(ContainSubstring("must not contain variables")))
+	})
 
 	It("should keep percent-encodings in the derived name", func() {
 		obj := &types.UnstructuredObject{Content: map[string]any{
