@@ -67,7 +67,7 @@ var _ = Describe("Subscription scope validation", func() {
 		}
 	})
 
-	var _ = Describe("Basic credentials with scopes or client credentials", func() {
+	_ = Describe("Basic credentials with scopes or client credentials", func() {
 		exposureWithGrant := func(grant agenticv1.GrantType) *agenticv1.AgenticExposure {
 			return &agenticv1.AgenticExposure{Spec: agenticv1.AgenticExposureSpec{
 				Security: &agenticv1.Security{M2M: &agenticv1.Machine2MachineAuthentication{
