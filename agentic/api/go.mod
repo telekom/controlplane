@@ -4,7 +4,7 @@
 
 module github.com/telekom/controlplane/agentic/api
 
-go 1.26.6
+go 1.26.9
 
 require (
 	github.com/onsi/ginkgo/v2 v2.32.1

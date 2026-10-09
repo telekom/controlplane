@@ -69,7 +69,7 @@ Admin viewers bypass all filtering.
 
 ### Prerequisites
 
-- Go 1.25+
+- Go 1.26.9+
 - PostgreSQL (for running the server; not needed for build/generate)
 
 ### Build

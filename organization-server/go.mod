@@ -4,7 +4,7 @@
 
 module github.com/telekom/controlplane/organization-server
 
-go 1.26.6
+go 1.26.9
 
 require (
 	github.com/Khan/genqlient v0.8.1
