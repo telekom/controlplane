@@ -28,11 +28,13 @@ const exposureVariantTagPrefix = "variant--"
 // CreateAgenticRoute creates the primary gateway Route for an MCP exposure.
 // The Route is created in the zone's namespace with buffering disabled for streaming.
 // Follows the same preset-based routing pattern as the API domain's CreateRealRoute.
+// hasLocalCallers is true if consumers in the exposure zone call the Route directly.
+// telecontextConsumer is set only if Telecontext is in the exposure zone.
 func CreateAgenticRoute(
 	ctx context.Context,
 	exposure *agenticv1.AgenticExposure,
 	zone *adminv1.Zone,
-	hasLocalSubs bool,
+	hasLocalCallers bool,
 	isTargetOfProxy bool,
 	telecontextConsumer string,
 	crossZoneLmsIssuers []string,
@@ -98,10 +100,10 @@ func CreateAgenticRoute(
 		route.Spec.Security.RealmName = zone.Status.RealmName
 
 		// Set trusted issuers: only add the exposure zone's own IDP issuer when
-		// there are local subscribers (direct callers). Cross-zone proxy gateways
+		// there are local callers. Cross-zone proxy gateways
 		// are trusted via their LMS issuers instead.
 		var trustedIssuers []string
-		if hasLocalSubs && presetStatus.Links.Issuer != "" {
+		if hasLocalCallers && presetStatus.Links.Issuer != "" {
 			trustedIssuers = append(trustedIssuers, presetStatus.Links.Issuer)
 		}
 		trustedIssuers = append(trustedIssuers, crossZoneLmsIssuers...)
@@ -136,26 +138,28 @@ func CreateAgenticRoute(
 }
 
 // CreateAgenticProxyRoute creates a cross-zone proxy Route for MCP delivery.
-// The Route is created in the subscriber zone's namespace and points upstream
-// to the provider zone's AI Gateway.
+// The Route is created in the namespace of the proxy zone (a subscriber zone or the
+// Telecontext zone) and points upstream to the provider zone's AI Gateway.
 // Follows the same preset-based routing pattern as the API domain's CreateProxyRoute.
+// extraConsumers get access to the Route in addition to the gateway mesh client.
 func CreateAgenticProxyRoute(
 	ctx context.Context,
 	basePath string,
 	variant agenticv1.AgenticVariant,
-	subscriberZone *adminv1.Zone,
+	proxyZone *adminv1.Zone,
 	providerZone *adminv1.Zone,
+	extraConsumers ...string,
 ) (*gatewayapi.Route, error) {
 	c := cclient.ClientFromContextOrDie(ctx)
 
-	// 1. Resolve subscriber zone's AI Gateway preset (for downstream hostnames/paths)
-	subscriberPreset, err := subscriberZone.Spec.SelectPreset(adminv1.GatewayTypeAI)
+	// 1. Resolve proxy zone's AI Gateway preset (for downstream hostnames/paths)
+	proxyPreset, err := proxyZone.Spec.SelectPreset(adminv1.GatewayTypeAI)
 	if err != nil {
-		return nil, ctrlerrors.BlockedErrorf("subscriber zone %q has no AI Gateway preset: %v", subscriberZone.Name, err)
+		return nil, ctrlerrors.BlockedErrorf("proxy zone %q has no AI Gateway preset: %v", proxyZone.Name, err)
 	}
-	subscriberPresetStatus, err := subscriberZone.Status.GetPreset(subscriberPreset.Name)
-	if err != nil || subscriberPresetStatus.GatewayRef == nil {
-		return nil, ctrlerrors.BlockedErrorf("subscriber zone %q has no AI Gateway configured", subscriberZone.Name)
+	proxyPresetStatus, err := proxyZone.Status.GetPreset(proxyPreset.Name)
+	if err != nil || proxyPresetStatus.GatewayRef == nil {
+		return nil, ctrlerrors.BlockedErrorf("proxy zone %q has no AI Gateway configured", proxyZone.Name)
 	}
 
 	// 2. Resolve provider zone's AI Gateway preset (for upstream URL)
@@ -174,14 +178,14 @@ func CreateAgenticProxyRoute(
 		return nil, errors.Wrap(err, "failed to create upstream for proxy route")
 	}
 
-	// 4. Build downstream hostnames/paths from subscriber preset
-	hostnames, paths := subscriberPreset.ResolveHostnamesAndPaths(basePath)
+	// 4. Build downstream hostnames/paths from proxy preset
+	hostnames, paths := proxyPreset.ResolveHostnamesAndPaths(basePath)
 
-	// 5. Create or update the proxy Route in the subscriber zone's namespace
+	// 5. Create or update the proxy Route in the proxy zone's namespace
 	route := &gatewayapi.Route{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      MakeAgenticRouteName(basePath),
-			Namespace: subscriberZone.Status.Namespace,
+			Namespace: proxyZone.Status.Namespace,
 		},
 	}
 
@@ -189,20 +193,20 @@ func CreateAgenticProxyRoute(
 		route.Labels = map[string]string{
 			config.DomainLabelKey:             LabelValueDomain,
 			agenticv1.AgenticBasePathLabelKey: labelutil.NormalizeLabelValue(basePath),
-			config.BuildLabelKey("zone"):      subscriberZone.Name,
+			config.BuildLabelKey("zone"):      proxyZone.Name,
 			config.BuildLabelKey("type"):      "mcp-proxy",
 		}
 
 		route.Spec = gatewayapi.RouteSpec{
 			AdditionalTags: []string{exposureVariantTagPrefix + labelutil.NormalizeNameValue(string(variant))},
-			GatewayRef:     *subscriberPresetStatus.GatewayRef,
+			GatewayRef:     *proxyPresetStatus.GatewayRef,
 			Type:           gatewayapi.RouteTypeProxy,
 			Backend:        gatewayapi.Backend{Upstreams: []gatewayapi.Upstream{upstream}},
 			Hostnames:      hostnames,
 			Paths:          paths,
 			Security: gatewayapi.Security{
-				DefaultConsumers: []string{GatewayConsumerName},
-				RealmName:        subscriberZone.Status.RealmName,
+				DefaultConsumers: append([]string{GatewayConsumerName}, extraConsumers...),
+				RealmName:        proxyZone.Status.RealmName,
 			},
 			Traffic: gatewayapi.Traffic{},
 			// Critical: disable buffering for MCP streaming
@@ -212,9 +216,9 @@ func CreateAgenticProxyRoute(
 			},
 		}
 
-		// Set trusted issuers from subscriber zone's IDP for consumer token validation
-		if subscriberPresetStatus.Links.Issuer != "" {
-			route.Spec.Security.TrustedIssuers = []string{subscriberPresetStatus.Links.Issuer}
+		// Set trusted issuers from proxy zone's IDP for consumer token validation
+		if proxyPresetStatus.Links.Issuer != "" {
+			route.Spec.Security.TrustedIssuers = []string{proxyPresetStatus.Links.Issuer}
 		}
 
 		return nil
