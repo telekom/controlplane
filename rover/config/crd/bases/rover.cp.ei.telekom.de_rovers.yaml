@@ -1286,6 +1286,118 @@ spec:
                     - message: All items must be valid IP addresses or CIDR notations
                       rule: self.all(x, isCIDR(x) || isIP(x))
                 type: object
+              listenerSubscription:
+                description: ListenerSubscription configures how listener events are
+                  delivered
+                properties:
+                  callback:
+                    description: Callback is the URL where listener events are delivered
+                      when deliveryType is "callback"
+                    format: uri
+                    type: string
+                  deliveryType:
+                    default: server_sent_event
+                    description: DeliveryType defines the delivery mechanism for listener
+                      events
+                    enum:
+                    - callback
+                    - server_sent_event
+                    type: string
+                type: object
+                x-kubernetes-validations:
+                - message: 'callback is required for deliveryType ''callback'' and
+                    must not be set otherwise; set deliveryType: callback to deliver
+                    to a callback URL'
+                  rule: 'self.deliveryType == ''callback'' ? (has(self.callback) &&
+                    self.callback != '''') : !has(self.callback)'
+              listeners:
+                description: Listeners is a list of API traffic listeners
+                items:
+                  description: |-
+                    RoverListener defines an API traffic listener that observes requests/responses
+                    between a consumer and provider on a specific API path.
+                    Consumer and provider accept either the full application ID "<group>--<team>--<name>"
+                    or the bare application name, which must be unique across all teams. Any value with
+                    two or more "--" is read as a full ID, so a bare name must not contain "--"; use the
+                    full ID instead.
+                    The Listener name is derived from the consumer and provider values as written, so
+                    changing either value, including switching the same application between bare name
+                    and full ID, recreates the Listener and requires a new approval.
+                  properties:
+                    apiBasePath:
+                      description: ApiBasePath is the base path of the API to listen
+                        on
+                      pattern: ^/.*$
+                      type: string
+                    consumer:
+                      description: |-
+                        Consumer is the consuming application, as full ID (e.g. "eni--team--app") or bare name (e.g. "app").
+                        A bare name must not contain "--"; use the full ID instead.
+                      minLength: 1
+                      type: string
+                    eventFilter:
+                      description: EventFilter defines filtering for event traffic
+                      properties:
+                        payload:
+                          description: Payload defines the list of fields to include
+                            in the listener output
+                          items:
+                            type: string
+                          type: array
+                        trigger:
+                          additionalProperties:
+                            type: string
+                          description: Trigger defines key-value conditions that must
+                            match for the filter to activate
+                          type: object
+                      type: object
+                    eventType:
+                      description: EventType is the event type to listen on (alternative
+                        to ApiBasePath)
+                      type: string
+                    provider:
+                      description: |-
+                        Provider is the providing application, as full ID (e.g. "eni--other--provider") or bare name (e.g. "provider").
+                        A bare name must not contain "--"; use the full ID instead.
+                      minLength: 1
+                      type: string
+                    requestFilter:
+                      description: RequestFilter defines filtering for request traffic
+                      properties:
+                        payload:
+                          description: Payload defines the list of fields to include
+                            in the listener output
+                          items:
+                            type: string
+                          type: array
+                        trigger:
+                          additionalProperties:
+                            type: string
+                          description: Trigger defines key-value conditions that must
+                            match for the filter to activate
+                          type: object
+                      type: object
+                    responseFilter:
+                      description: ResponseFilter defines filtering for response traffic
+                      properties:
+                        payload:
+                          description: Payload defines the list of fields to include
+                            in the listener output
+                          items:
+                            type: string
+                          type: array
+                        trigger:
+                          additionalProperties:
+                            type: string
+                          description: Trigger defines key-value conditions that must
+                            match for the filter to activate
+                          type: object
+                      type: object
+                  required:
+                  - consumer
+                  - provider
+                  type: object
+                type: array
               permissions:
                 description: Permissions defines role-based access control permissions
                   for this application
@@ -1818,6 +1930,10 @@ spec:
             required:
             - zone
             type: object
+            x-kubernetes-validations:
+            - message: listenerSubscription requires at least one entry in listeners
+              rule: '!has(self.listenerSubscription) || (has(self.listeners) && size(self.listeners)
+                > 0)'
           status:
             description: Status contains the observed state of the Rover resource
             properties:
@@ -2087,6 +2203,52 @@ spec:
               permissionSets:
                 description: PermissionSets are references to PermissionSet resources
                   created by this Rover
+                items:
+                  description: |-
+                    ObjectRef is a reference to a Kubernetes object
+                    It is similar to types.NamespacedName but has the required json tags for serialization
+                  properties:
+                    name:
+                      type: string
+                    namespace:
+                      type: string
+                    uid:
+                      description: |-
+                        UID is a type that holds unique ID values, including UUIDs.  Because we
+                        don't ONLY use UUIDs, this is an alias to string.  Being a type captures
+                        intent and helps make sure that UIDs and names do not get conflated.
+                      type: string
+                  required:
+                  - name
+                  - namespace
+                  type: object
+                type: array
+              spectreApplications:
+                description: SpectreApplications are references to SpectreApplication
+                  CRs created by this Rover
+                items:
+                  description: |-
+                    ObjectRef is a reference to a Kubernetes object
+                    It is similar to types.NamespacedName but has the required json tags for serialization
+                  properties:
+                    name:
+                      type: string
+                    namespace:
+                      type: string
+                    uid:
+                      description: |-
+                        UID is a type that holds unique ID values, including UUIDs.  Because we
+                        don't ONLY use UUIDs, this is an alias to string.  Being a type captures
+                        intent and helps make sure that UIDs and names do not get conflated.
+                      type: string
+                  required:
+                  - name
+                  - namespace
+                  type: object
+                type: array
+              spectreListeners:
+                description: SpectreListeners are references to Listener CRs created
+                  by this Rover
                 items:
                   description: |-
                     ObjectRef is a reference to a Kubernetes object

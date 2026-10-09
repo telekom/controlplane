@@ -90,3 +90,12 @@ rules:
   - get
   - list
   - watch
+- apiGroups:
+  - spectre.cp.ei.telekom.de
+  resources:
+  - listeners
+  - spectreapplications
+  verbs:
+  - get
+  - list
+  - watch

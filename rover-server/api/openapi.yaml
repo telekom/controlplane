@@ -3070,6 +3070,12 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/AuthorizationInfo'
+        listeners:
+          type: array
+          items:
+            $ref: '#/components/schemas/RoverListener'
+        listenerSubscription:
+          $ref: '#/components/schemas/ListenerSubscription'
         failoverEnabled:
           type: boolean
           description: Configures the DTC failover for consumers
@@ -4028,3 +4034,50 @@ components:
           type: array
           items:
             type: string
+    RoverListener:
+      type: object
+      required:
+        - consumer
+        - provider
+        - apiBasePath
+      properties:
+        consumer:
+          type: string
+          description: Consuming application, as full ID (e.g. "eni--team--app") or bare name (e.g. "app"). A bare name must not contain "--"; use the full ID instead.
+        provider:
+          type: string
+          description: Providing application, as full ID (e.g. "eni--other--provider") or bare name (e.g. "provider"). A bare name must not contain "--"; use the full ID instead.
+        apiBasePath:
+          type: string
+          description: Base path of the API to listen on
+        requestFilter:
+          $ref: '#/components/schemas/ListenerFilter'
+        responseFilter:
+          $ref: '#/components/schemas/ListenerFilter'
+    ListenerFilter:
+      type: object
+      properties:
+        trigger:
+          type: object
+          additionalProperties:
+            type: string
+          description: Key-value conditions that must match for the filter to apply
+        payload:
+          type: array
+          items:
+            type: string
+          description: Fields to include in the listener output
+    ListenerSubscription:
+      type: object
+      properties:
+        deliveryType:
+          type: string
+          enum:
+            - callback
+            - server_sent_event
+          default: server_sent_event
+          description: Delivery mechanism for listener events
+        callback:
+          type: string
+          format: uri
+          description: URL where listener events are delivered when deliveryType is "callback"

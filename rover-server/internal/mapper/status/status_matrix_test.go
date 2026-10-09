@@ -135,6 +135,14 @@ var _ = Describe("fillStateInfo matrix", func() {
 			int64(0),
 			api.None, api.ProcessingStateProcessing, api.OverallStatusProcessing,
 		),
+		Entry("Ready=False/Deleting (Spectre drain) → Processing",
+			[]conditionInput{
+				{typeProcessing, metav1.ConditionFalse, condition.ReasonDone, "", 0},
+				{typeReady, metav1.ConditionFalse, "Deleting", "Draining capture before deletion (phase Stopping)", 0},
+			},
+			int64(0),
+			api.None, api.ProcessingStateProcessing, api.OverallStatusProcessing,
+		),
 
 		// ──────────────────────────────────────────────────────────────
 		// 4. Ready=False with blocked reasons
