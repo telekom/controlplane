@@ -772,7 +772,7 @@ var _ = Describe("Remote Organisation Flow", Ordered, func() {
 				g.Expect(ready).NotTo(BeNil())
 				g.Expect(ready.Status).To(Equal(metav1.ConditionFalse))
 				g.Expect(ready.Reason).To(Equal(condition.ReasonValidationFailed))
-				g.Expect(ready.Message).To(ContainSubstring("Remote API subscriptions support scopes only"))
+				g.Expect(ready.Message).To(ContainSubstring("remote API subscriptions support scopes only"))
 				g.Expect(apiSubscription.Status.RemoteApiSubscription).To(BeNil())
 				g.Expect(apiSubscription.Status.Route).To(BeNil())
 				g.Expect(apiSubscription.Status.ConsumeRoute).To(BeNil())
