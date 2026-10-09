@@ -44,6 +44,7 @@ var _ = Describe("Consumer username/password with scopes", func() {
 			BasePath: f.basePath, Zone: *ctypes.ObjectRefFromObject(f.zone),
 			Requestor: agenticv1.Requestor{Application: *ctypes.ObjectRefFromObject(f.consumer)},
 			Security: &agenticv1.SubscriberSecurity{M2M: &agenticv1.SubscriberMachine2MachineAuthentication{
+				Client: &agenticv1.OAuth2ClientCredentials{ClientId: "consumer-client", ClientSecret: "consumer-secret"},
 				Basic:  &agenticv1.BasicAuthCredentials{Username: "consumer-user", Password: "consumer-pass"},
 				Scopes: consumerScopes,
 			}},
@@ -68,7 +69,9 @@ var _ = Describe("Consumer username/password with scopes", func() {
 
 		consume := waitConsumeRoute(sub, consumerScopes)
 		Expect(consume.Spec.Security.M2M.Basic).To(Equal(&gatewayv1.BasicAuthCredentials{Username: "consumer-user", Password: "consumer-pass"}))
-		Expect(consume.Spec.Security.M2M.Client).To(BeNil())
+		Expect(consume.Spec.Security.M2M.Client).To(Equal(&gatewayv1.OAuth2ClientCredentials{
+			ClientId: "consumer-client", ClientSecret: "consumer-secret",
+		}))
 	})
 
 	It("does not create a password subscription while its exposure is not ready", func() {

@@ -59,7 +59,7 @@ func (b *BasicAuthFeature) IsUsed(ctx context.Context, builder features.Features
 
 		// Check if any consumer has basic auth configured
 		for _, consumer := range builder.GetAllowedConsumers() {
-			if consumer.HasM2MBasic() && !usesScopedPasswordGrant(route, consumer.Spec.Security.M2M.Scopes) {
+			if consumer.HasM2MBasic() && !usesPasswordGrantCredentials(route, consumer) {
 				return true
 			}
 		}
@@ -92,7 +92,7 @@ func (b *BasicAuthFeature) Apply(ctx context.Context, builder features.FeaturesB
 	}
 
 	for _, consumer := range builder.GetAllowedConsumers() {
-		if !consumer.HasM2MBasic() || usesScopedPasswordGrant(route, consumer.Spec.Security.M2M.Scopes) {
+		if !consumer.HasM2MBasic() || usesPasswordGrantCredentials(route, consumer) {
 			continue
 		}
 		security := consumer.Spec.Security
@@ -110,10 +110,15 @@ func (b *BasicAuthFeature) Apply(ctx context.Context, builder features.FeaturesB
 	return nil
 }
 
-func usesScopedPasswordGrant(route *v1.Route, scopes []string) bool {
-	if len(scopes) == 0 {
+func usesPasswordGrantCredentials(route *v1.Route, consumer *v1.ConsumeRoute) bool {
+	if !consumer.HasM2M() || !consumer.HasM2MBasic() {
 		return false
 	}
+	credentials := consumer.Spec.Security.M2M
+	if len(credentials.Scopes) == 0 && credentials.Client == nil {
+		return false
+	}
+
 	security := route.Spec.Security
 	if route.IsFailoverSecondary() && route.Spec.Traffic.Failover != nil {
 		security = route.Spec.Traffic.Failover.Security

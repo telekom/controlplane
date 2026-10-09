@@ -318,7 +318,8 @@ func CreateProxyRoute(ctx context.Context, downstreamZoneRef, upstreamZoneRef ty
 		// and deduplicate (the downstream issuer may already be in the consumer failover list).
 		if len(options.TrustedIssuers) > 0 {
 			proxyRoute.Spec.Security.TrustedIssuers = append(
-				proxyRoute.Spec.Security.TrustedIssuers, options.TrustedIssuers...)
+				proxyRoute.Spec.Security.TrustedIssuers, options.TrustedIssuers...,
+			)
 			slices.Sort(proxyRoute.Spec.Security.TrustedIssuers)
 			proxyRoute.Spec.Security.TrustedIssuers = slices.Compact(proxyRoute.Spec.Security.TrustedIssuers)
 		}
@@ -798,7 +799,8 @@ func mapConsumerSecurity(apiSecurity *apiapi.SubscriberSecurity) *gatewayapi.Con
 				ClientKey:    apiSecurity.M2M.Client.ClientKey,
 				RefreshToken: apiSecurity.M2M.Client.RefreshToken,
 			}
-		} else if apiSecurity.M2M.Basic != nil {
+		}
+		if apiSecurity.M2M.Basic != nil {
 			security.M2M.Basic = &gatewayapi.BasicAuthCredentials{
 				Username: apiSecurity.M2M.Basic.Username,
 				Password: apiSecurity.M2M.Basic.Password,

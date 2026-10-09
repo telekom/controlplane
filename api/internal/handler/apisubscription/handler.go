@@ -42,8 +42,7 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 
 	// Remote ApiSubscription handling
 	if remote.IsRemoteApiSubscription(apiSub) {
-		logger.Info("ApiSubscription is remote")
-		return remote.HandleRemoteApiSubscription(ctx, apiSub)
+		return handleRemoteApiSubscription(ctx, apiSub)
 	}
 
 	// Local ApiSubscription handling
@@ -84,7 +83,8 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 		apiSub.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet,
 			fmt.Sprintf("ApiExposure %q is not ready", apiExposure.Name)))
 		apiSub.SetCondition(condition.NewBlockedCondition(
-			fmt.Sprintf("ApiExposure %q is not ready. ApiSubscription will be automatically processed when the ApiExposure is ready", apiExposure.Name)))
+			fmt.Sprintf("ApiExposure %q is not ready. ApiSubscription will be automatically processed when the ApiExposure is ready", apiExposure.Name),
+		))
 		return nil
 	}
 
@@ -468,14 +468,58 @@ func resolveRouteRef(ctx context.Context, scopedClient cclient.JanitorClient, ap
 }
 
 func validateBasicWithScopesPolicy(obj *apiapi.ApiSubscription, exposure *apiapi.ApiExposure) error {
-	subHasScopes := obj.HasM2M() && obj.Spec.Security.M2M.Basic != nil && len(obj.Spec.Security.M2M.Scopes) > 0
-	if !subHasScopes {
+	if !obj.HasM2M() || obj.Spec.Security.M2M.Basic == nil {
+		return nil
+	}
+	security := obj.Spec.Security.M2M
+	requiresPasswordGrant := security.Client != nil || len(security.Scopes) > 0
+	if !requiresPasswordGrant {
 		return nil
 	}
 
 	if exposure == nil || !exposure.HasExternalIdp() ||
 		exposure.Spec.Security.M2M.ExternalIDP.GrantType != apiapi.GrantTypePassword {
-		return errors.New("Consumer username/password with scopes requires an external IDP grant type \"password\"")
+		return errors.New("Consumer username/password combined with client credentials or scopes requires an external IDP grant type \"password\"")
 	}
+	return nil
+}
+
+func validateRemoteSubscriptionSecurity(obj *apiapi.ApiSubscription) error {
+	if !obj.HasM2M() {
+		return nil
+	}
+	security := obj.Spec.Security.M2M
+	if security.Client != nil || security.Basic != nil {
+		return stderrors.New("remote API subscriptions support scopes only; client credentials and username/password are not supported")
+	}
+	return nil
+}
+
+func handleRemoteApiSubscription(ctx context.Context, apiSub *apiapi.ApiSubscription) error {
+	validationErr := validateRemoteSubscriptionSecurity(apiSub)
+	if validationErr == nil {
+		log.FromContext(ctx).Info("ApiSubscription is remote")
+		return remote.HandleRemoteApiSubscription(ctx, apiSub)
+	}
+
+	scopedClient := cclient.ClientFromContextOrDie(ctx)
+	scopedClient.AddKnownTypeToState(&apiapi.RemoteApiSubscription{})
+	scopedClient.AddKnownTypeToState(&gatewayapi.ConsumeRoute{})
+	if _, err := scopedClient.CleanupAll(ctx, cclient.OwnedBy(apiSub)); err != nil {
+		return errors.Wrap(err, "failed to clean up unsupported remote subscription resources")
+	}
+	if _, err := scopedClient.Cleanup(ctx, &gatewayapi.RouteList{}, cclient.OwnedByLabel(apiSub)); err != nil {
+		return errors.Wrap(err, "failed to clean up unsupported remote subscription routes")
+	}
+
+	apiSub.Status.RemoteApiSubscription = nil
+	apiSub.Status.Route = nil
+	apiSub.Status.ConsumeRoute = nil
+	apiSub.Status.ActiveScopes = nil
+	apiSub.Status.GatewayUrl = ""
+	apiSub.Status.IdpIssuer = ""
+	apiSub.SetCondition(condition.NewNotReadyCondition(condition.ReasonValidationFailed, validationErr.Error()))
+	apiSub.SetCondition(condition.NewBlockedCondition(validationErr.Error()))
+	log.FromContext(ctx).Info("Remote API subscription has unsupported subscriber credentials")
 	return nil
 }

@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -626,6 +627,7 @@ var _ = Describe("Remote Organisation Flow", Ordered, func() {
 			By("Initializing the ApiSubscription")
 			apiSubscription = NewApiSubscription(apiBasePath, remoteZoneName, appName)
 			apiSubscription.Spec.Organization = remoteOrgId
+			apiSubscription.Spec.Security.M2M.Client = nil
 
 			By("Creating the RemoteApiSubscription")
 			remoteApiSubscription = &apiapi.RemoteApiSubscription{}
@@ -744,6 +746,49 @@ var _ = Describe("Remote Organisation Flow", Ordered, func() {
 				route := &gatewayapi.Route{}
 				g.Expect(k8sClient.Get(ctx, apiSubscription.Status.Route.K8s(), route)).To(Succeed())
 				g.Expect(route.Spec.Security.RealmName).To(Equal("consumer-zone-realm"))
+			}, timeout, interval).Should(Succeed())
+		})
+
+		It("should block unsupported credentials and clean up previously provisioned resources", func() {
+			Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(apiSubscription), apiSubscription)).To(Succeed())
+			remoteSubscriptionRef := apiSubscription.Status.RemoteApiSubscription
+			consumeRouteRef := apiSubscription.Status.ConsumeRoute
+			proxyRouteRef := apiSubscription.Status.Route
+			Expect(remoteSubscriptionRef).NotTo(BeNil())
+			Expect(consumeRouteRef).NotTo(BeNil())
+			Expect(proxyRouteRef).NotTo(BeNil())
+
+			apiSubscription.Spec.Security.M2M.Client = &apiapi.OAuth2ClientCredentials{
+				ClientId: "consumer-client", ClientSecret: "consumer-secret",
+			}
+			apiSubscription.Spec.Security.M2M.Basic = &apiapi.BasicAuthCredentials{
+				Username: "consumer-user", Password: "consumer-password",
+			}
+			Expect(k8sClient.Update(ctx, apiSubscription)).To(Succeed())
+
+			Eventually(func(g Gomega) {
+				g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(apiSubscription), apiSubscription)).To(Succeed())
+				ready := meta.FindStatusCondition(apiSubscription.GetConditions(), condition.ConditionTypeReady)
+				g.Expect(ready).NotTo(BeNil())
+				g.Expect(ready.Status).To(Equal(metav1.ConditionFalse))
+				g.Expect(ready.Reason).To(Equal(condition.ReasonValidationFailed))
+				g.Expect(ready.Message).To(ContainSubstring("remote API subscriptions support scopes only"))
+				g.Expect(apiSubscription.Status.RemoteApiSubscription).To(BeNil())
+				g.Expect(apiSubscription.Status.Route).To(BeNil())
+				g.Expect(apiSubscription.Status.ConsumeRoute).To(BeNil())
+
+				remoteSubscription := &apiapi.RemoteApiSubscription{}
+				g.Expect(k8sClient.Get(ctx, remoteSubscriptionRef.K8s(), remoteSubscription)).To(
+					WithTransform(apierrors.IsNotFound, BeTrue()),
+				)
+				consumeRoute := &gatewayapi.ConsumeRoute{}
+				g.Expect(k8sClient.Get(ctx, consumeRouteRef.K8s(), consumeRoute)).To(
+					WithTransform(apierrors.IsNotFound, BeTrue()),
+				)
+				proxyRoute := &gatewayapi.Route{}
+				g.Expect(k8sClient.Get(ctx, proxyRouteRef.K8s(), proxyRoute)).To(
+					WithTransform(apierrors.IsNotFound, BeTrue()),
+				)
 			}, timeout, interval).Should(Succeed())
 		})
 	})

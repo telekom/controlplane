@@ -156,7 +156,8 @@ func (h *AgenticExposureHandler) CreateOrUpdate(ctx context.Context, obj *agenti
 	obj.SetCondition(condition.NewReadyCondition("AgenticExposureProvisioned",
 		"AgenticExposure has been provisioned"))
 	obj.SetCondition(condition.NewDoneProcessingCondition(
-		"AgenticExposure has been provisioned"))
+		"AgenticExposure has been provisioned",
+	))
 
 	return nil
 }
@@ -235,7 +236,8 @@ func handleServerNotFound(ctx context.Context, obj *agenticv1.AgenticExposure) e
 		"No active agentic server (McpServer, AgentCard) found for basePath "+obj.Spec.BasePath))
 	obj.SetCondition(condition.NewBlockedCondition(
 		"Agentic server for " + obj.Spec.BasePath + " does not exist or is not active. " +
-			"AgenticExposure will be automatically processed when the specification is registered"))
+			"AgenticExposure will be automatically processed when the specification is registered",
+	))
 	return nil
 }
 
@@ -250,7 +252,8 @@ func handleServerNotFoundCleanup(ctx context.Context, obj *agenticv1.AgenticExpo
 		"Agentic server (McpServer, AgentCard) is registered but the basePath case does not match"))
 	obj.SetCondition(condition.NewBlockedCondition(
 		"Agentic server for " + obj.Spec.BasePath + " exists but with a different case. " +
-			"Please resolve the conflict by changing the BasePath of either the specification or the exposure"))
+			"Please resolve the conflict by changing the BasePath of either the specification or the exposure",
+	))
 	return nil
 }
 

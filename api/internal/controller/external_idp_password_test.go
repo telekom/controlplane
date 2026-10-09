@@ -24,7 +24,9 @@ var _ = Describe("Consumer username/password with scopes", func() {
 	consumerScopes := []string{"consumer:read", "consumer:write"}
 
 	withConsumerPassword := func(sub *apiapi.ApiSubscription) {
-		sub.Spec.Security.M2M.Client = nil
+		sub.Spec.Security.M2M.Client = &apiapi.OAuth2ClientCredentials{
+			ClientId: "consumer-client", ClientSecret: "consumer-secret",
+		}
 		sub.Spec.Security.M2M.Basic = &apiapi.BasicAuthCredentials{Username: "consumer-user", Password: "consumer-pass"}
 		sub.Spec.Security.M2M.Scopes = consumerScopes
 	}
@@ -50,7 +52,9 @@ var _ = Describe("Consumer username/password with scopes", func() {
 			consume := &gatewayapi.ConsumeRoute{}
 			g.Expect(k8sClient.Get(ctx, sub.Status.ConsumeRoute.K8s(), consume)).To(Succeed())
 			g.Expect(consume.Spec.Security.M2M.Basic).To(Equal(&gatewayapi.BasicAuthCredentials{Username: "consumer-user", Password: "consumer-pass"}))
-			g.Expect(consume.Spec.Security.M2M.Client).To(BeNil())
+			g.Expect(consume.Spec.Security.M2M.Client).To(Equal(&gatewayapi.OAuth2ClientCredentials{
+				ClientId: "consumer-client", ClientSecret: "consumer-secret",
+			}))
 		}, scopeTimeout, interval).Should(Succeed())
 	})
 
