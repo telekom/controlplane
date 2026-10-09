@@ -318,7 +318,8 @@ func CreateProxyRoute(ctx context.Context, downstreamZoneRef, upstreamZoneRef ty
 		// and deduplicate (the downstream issuer may already be in the consumer failover list).
 		if len(options.TrustedIssuers) > 0 {
 			proxyRoute.Spec.Security.TrustedIssuers = append(
-				proxyRoute.Spec.Security.TrustedIssuers, options.TrustedIssuers...)
+				proxyRoute.Spec.Security.TrustedIssuers, options.TrustedIssuers...,
+			)
 			slices.Sort(proxyRoute.Spec.Security.TrustedIssuers)
 			proxyRoute.Spec.Security.TrustedIssuers = slices.Compact(proxyRoute.Spec.Security.TrustedIssuers)
 		}

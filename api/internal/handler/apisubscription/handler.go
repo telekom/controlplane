@@ -42,29 +42,7 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 
 	// Remote ApiSubscription handling
 	if remote.IsRemoteApiSubscription(apiSub) {
-		if err := validateRemoteSubscriptionSecurity(apiSub); err != nil {
-			scopedClient.AddKnownTypeToState(&apiapi.RemoteApiSubscription{})
-			scopedClient.AddKnownTypeToState(&gatewayapi.ConsumeRoute{})
-			if _, cleanupErr := scopedClient.CleanupAll(ctx, cclient.OwnedBy(apiSub)); cleanupErr != nil {
-				return errors.Wrap(cleanupErr, "failed to clean up unsupported remote subscription resources")
-			}
-			if _, cleanupErr := scopedClient.Cleanup(ctx, &gatewayapi.RouteList{}, cclient.OwnedByLabel(apiSub)); cleanupErr != nil {
-				return errors.Wrap(cleanupErr, "failed to clean up unsupported remote subscription routes")
-			}
-
-			apiSub.Status.RemoteApiSubscription = nil
-			apiSub.Status.Route = nil
-			apiSub.Status.ConsumeRoute = nil
-			apiSub.Status.ActiveScopes = nil
-			apiSub.Status.GatewayUrl = ""
-			apiSub.Status.IdpIssuer = ""
-			apiSub.SetCondition(condition.NewNotReadyCondition(condition.ReasonValidationFailed, err.Error()))
-			apiSub.SetCondition(condition.NewBlockedCondition(err.Error()))
-			logger.Info("Remote API subscription has unsupported subscriber credentials")
-			return nil
-		}
-		logger.Info("ApiSubscription is remote")
-		return remote.HandleRemoteApiSubscription(ctx, apiSub)
+		return handleRemoteApiSubscription(ctx, apiSub)
 	}
 
 	// Local ApiSubscription handling
@@ -105,7 +83,8 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 		apiSub.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet,
 			fmt.Sprintf("ApiExposure %q is not ready", apiExposure.Name)))
 		apiSub.SetCondition(condition.NewBlockedCondition(
-			fmt.Sprintf("ApiExposure %q is not ready. ApiSubscription will be automatically processed when the ApiExposure is ready", apiExposure.Name)))
+			fmt.Sprintf("ApiExposure %q is not ready. ApiSubscription will be automatically processed when the ApiExposure is ready", apiExposure.Name),
+		))
 		return nil
 	}
 
@@ -511,7 +490,36 @@ func validateRemoteSubscriptionSecurity(obj *apiapi.ApiSubscription) error {
 	}
 	security := obj.Spec.Security.M2M
 	if security.Client != nil || security.Basic != nil {
-		return stderrors.New("Remote API subscriptions support scopes only; client credentials and username/password are not supported")
+		return stderrors.New("remote API subscriptions support scopes only; client credentials and username/password are not supported")
 	}
+	return nil
+}
+
+func handleRemoteApiSubscription(ctx context.Context, apiSub *apiapi.ApiSubscription) error {
+	validationErr := validateRemoteSubscriptionSecurity(apiSub)
+	if validationErr == nil {
+		log.FromContext(ctx).Info("ApiSubscription is remote")
+		return remote.HandleRemoteApiSubscription(ctx, apiSub)
+	}
+
+	scopedClient := cclient.ClientFromContextOrDie(ctx)
+	scopedClient.AddKnownTypeToState(&apiapi.RemoteApiSubscription{})
+	scopedClient.AddKnownTypeToState(&gatewayapi.ConsumeRoute{})
+	if _, err := scopedClient.CleanupAll(ctx, cclient.OwnedBy(apiSub)); err != nil {
+		return errors.Wrap(err, "failed to clean up unsupported remote subscription resources")
+	}
+	if _, err := scopedClient.Cleanup(ctx, &gatewayapi.RouteList{}, cclient.OwnedByLabel(apiSub)); err != nil {
+		return errors.Wrap(err, "failed to clean up unsupported remote subscription routes")
+	}
+
+	apiSub.Status.RemoteApiSubscription = nil
+	apiSub.Status.Route = nil
+	apiSub.Status.ConsumeRoute = nil
+	apiSub.Status.ActiveScopes = nil
+	apiSub.Status.GatewayUrl = ""
+	apiSub.Status.IdpIssuer = ""
+	apiSub.SetCondition(condition.NewNotReadyCondition(condition.ReasonValidationFailed, validationErr.Error()))
+	apiSub.SetCondition(condition.NewBlockedCondition(validationErr.Error()))
+	log.FromContext(ctx).Info("Remote API subscription has unsupported subscriber credentials")
 	return nil
 }

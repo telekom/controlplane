@@ -194,7 +194,7 @@ var _ = Describe("ApiSubscription Handler", func() {
 					Security: &apiv1.SubscriberSecurity{M2M: security},
 				}}
 				Expect(validateRemoteSubscriptionSecurity(sub)).To(MatchError(
-					"Remote API subscriptions support scopes only; client credentials and username/password are not supported",
+					"remote API subscriptions support scopes only; client credentials and username/password are not supported",
 				))
 			}
 		})
