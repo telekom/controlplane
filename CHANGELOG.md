@@ -1,3 +1,15 @@
+# [0.37.0](https://github.com/telekom/controlplane/compare/v0.36.1...v0.37.0) (2026-10-09)
+
+
+### Bug Fixes
+
+* **rover-ctl:** improve token errors with sanitized debug diagnostics ([#752](https://github.com/telekom/controlplane/issues/752)) ([1c3678f](https://github.com/telekom/controlplane/commit/1c3678fecf285ad6865e4e90c03a1b67cf14794b))
+
+
+### Features
+
+* **rover:** support templated server authorities in OpenAPI ([#751](https://github.com/telekom/controlplane/issues/751)) ([ed31f62](https://github.com/telekom/controlplane/commit/ed31f62000f7131992363d8ff37e31a2730b8f22))
+
 ## [0.36.1](https://github.com/telekom/controlplane/compare/v0.36.0...v0.36.1) (2026-10-08)
 
 
