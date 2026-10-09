@@ -23,7 +23,7 @@ The snapshotter tool provides the following key capabilities:
 
 ### Prerequisites
 
-- Go 1.21 or later
+- Go 1.26.9 or later
 - Access credentials for gateway admin API
 
 ### Build from Source

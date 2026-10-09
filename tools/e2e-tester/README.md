@@ -36,7 +36,7 @@ The tool executes [rover-ctl](../../rover-ctl/README.md) commands, captures thei
 
 ### Prerequisites
 
-- Go 1.21 or later
+- Go 1.26.9 or later
 - Access to rover-ctl binary
 - Access credentials for test environments
 - (Optional) Access to snapshotter binary or service for system state verification
