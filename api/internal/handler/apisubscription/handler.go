@@ -42,6 +42,27 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 
 	// Remote ApiSubscription handling
 	if remote.IsRemoteApiSubscription(apiSub) {
+		if err := validateRemoteSubscriptionSecurity(apiSub); err != nil {
+			scopedClient.AddKnownTypeToState(&apiapi.RemoteApiSubscription{})
+			scopedClient.AddKnownTypeToState(&gatewayapi.ConsumeRoute{})
+			if _, cleanupErr := scopedClient.CleanupAll(ctx, cclient.OwnedBy(apiSub)); cleanupErr != nil {
+				return errors.Wrap(cleanupErr, "failed to clean up unsupported remote subscription resources")
+			}
+			if _, cleanupErr := scopedClient.Cleanup(ctx, &gatewayapi.RouteList{}, cclient.OwnedByLabel(apiSub)); cleanupErr != nil {
+				return errors.Wrap(cleanupErr, "failed to clean up unsupported remote subscription routes")
+			}
+
+			apiSub.Status.RemoteApiSubscription = nil
+			apiSub.Status.Route = nil
+			apiSub.Status.ConsumeRoute = nil
+			apiSub.Status.ActiveScopes = nil
+			apiSub.Status.GatewayUrl = ""
+			apiSub.Status.IdpIssuer = ""
+			apiSub.SetCondition(condition.NewNotReadyCondition(condition.ReasonValidationFailed, err.Error()))
+			apiSub.SetCondition(condition.NewBlockedCondition(err.Error()))
+			logger.Info("Remote API subscription has unsupported subscriber credentials")
+			return nil
+		}
 		logger.Info("ApiSubscription is remote")
 		return remote.HandleRemoteApiSubscription(ctx, apiSub)
 	}
@@ -480,6 +501,17 @@ func validateBasicWithScopesPolicy(obj *apiapi.ApiSubscription, exposure *apiapi
 	if exposure == nil || !exposure.HasExternalIdp() ||
 		exposure.Spec.Security.M2M.ExternalIDP.GrantType != apiapi.GrantTypePassword {
 		return errors.New("Consumer username/password combined with client credentials or scopes requires an external IDP grant type \"password\"")
+	}
+	return nil
+}
+
+func validateRemoteSubscriptionSecurity(obj *apiapi.ApiSubscription) error {
+	if !obj.HasM2M() {
+		return nil
+	}
+	security := obj.Spec.Security.M2M
+	if security.Client != nil || security.Basic != nil {
+		return stderrors.New("Remote API subscriptions support scopes only; client credentials and username/password are not supported")
 	}
 	return nil
 }

@@ -166,4 +166,37 @@ var _ = Describe("ApiSubscription Handler", func() {
 			}}, exposureWithGrant(apiv1.GrantTypeClientCredentials), true),
 		)
 	})
+
+	Context("validateRemoteSubscriptionSecurity", func() {
+		It("allows subscriptions without credentials and scope-only subscriptions", func() {
+			for _, sub := range []*apiv1.ApiSubscription{
+				{},
+				{Spec: apiv1.ApiSubscriptionSpec{Security: &apiv1.SubscriberSecurity{}}},
+				{Spec: apiv1.ApiSubscriptionSpec{Security: &apiv1.SubscriberSecurity{M2M: &apiv1.SubscriberMachine2MachineAuthentication{
+					Scopes: []string{"orders.read"},
+				}}}},
+			} {
+				Expect(validateRemoteSubscriptionSecurity(sub)).To(Succeed())
+			}
+		})
+
+		It("rejects client credentials or username/password credentials", func() {
+			for _, security := range []*apiv1.SubscriberMachine2MachineAuthentication{
+				{Client: &apiv1.OAuth2ClientCredentials{ClientId: "consumer", ClientSecret: "secret"}},
+				{Basic: &apiv1.BasicAuthCredentials{Username: "user", Password: "password"}},
+				{
+					Client: &apiv1.OAuth2ClientCredentials{ClientId: "consumer", ClientSecret: "secret"},
+					Basic:  &apiv1.BasicAuthCredentials{Username: "user", Password: "password"},
+					Scopes: []string{"orders.read"},
+				},
+			} {
+				sub := &apiv1.ApiSubscription{Spec: apiv1.ApiSubscriptionSpec{
+					Security: &apiv1.SubscriberSecurity{M2M: security},
+				}}
+				Expect(validateRemoteSubscriptionSecurity(sub)).To(MatchError(
+					"Remote API subscriptions support scopes only; client credentials and username/password are not supported",
+				))
+			}
+		})
+	})
 })

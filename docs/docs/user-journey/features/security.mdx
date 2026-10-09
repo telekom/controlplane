@@ -142,6 +142,8 @@ The subscription inherits this exception from its active exposure. Subscriber cr
 
 Subscriber username/password credentials may be combined with scopes only when the selected exposure explicitly uses an external-IDP `password` grant. They may also be combined with client credentials for that grant, with or without scopes. A different or omitted grant blocks that subscription before approval.
 
+Cross-organization API subscriptions currently support scopes only. Client credentials and username/password credentials are not propagated by the remote-subscription flow and are blocked.
+
 For both API and agentic exposures, provider username/password credentials in `spec.security.m2m.externalIDP.basic` may be combined with non-empty `spec.security.m2m.scopes` only with an explicit `password` grant.
 API approval requests still include the requested scopes. Existing readiness and approval requirements continue to apply, and the external identity provider determines whether it will grant the requested scopes.
 
