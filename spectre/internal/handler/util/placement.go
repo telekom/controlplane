@@ -59,11 +59,16 @@ type CandidateRejection struct {
 	Reason string
 }
 
-// NoCaptureCandidateError reports that no candidate zone supports capture. It is
-// a BlockedError: the Listener waits until the topology changes.
+// NoCaptureCandidateError reports that no candidate zone supports capture, or
+// that the first zone supporting capture cannot deliver to the observer (A)
+// zone (DeliveryPath set). It is a BlockedError: the Listener waits until the
+// topology changes.
 type NoCaptureCandidateError struct {
 	ApiBasePath string
 	Rejections  []CandidateRejection
+	// DeliveryPath, when set, is why the zone that supports capture cannot
+	// deliver to A. Rejections then lists the zones skipped before it.
+	DeliveryPath *DeliveryPathError
 }
 
 func (e *NoCaptureCandidateError) Error() string {
@@ -71,46 +76,59 @@ func (e *NoCaptureCandidateError) Error() string {
 	for _, r := range e.Rejections {
 		parts = append(parts, fmt.Sprintf("zone %q: %s", r.Zone, r.Reason))
 	}
-	return fmt.Sprintf("no supported capture zone for path %q: %s", e.ApiBasePath, strings.Join(parts, "; "))
+	if e.DeliveryPath == nil {
+		return fmt.Sprintf("no supported capture zone for path %q: %s", e.ApiBasePath, strings.Join(parts, "; "))
+	}
+	msg := fmt.Sprintf("capture zone %q for path %q cannot deliver to observer zone %q: %s; "+
+		"capture is not moved to another zone because Listeners with the same consumer, provider and path capture in one zone",
+		e.DeliveryPath.CaptureZone, e.ApiBasePath, e.DeliveryPath.DeliveryZone, e.DeliveryPath.Reason)
+	if len(parts) > 0 {
+		msg += " (skipped " + strings.Join(parts, "; ") + ")"
+	}
+	return msg
+}
+
+// Unwrap returns the DeliveryPathError, if any.
+func (e *NoCaptureCandidateError) Unwrap() error {
+	if e.DeliveryPath == nil {
+		return nil
+	}
+	return e.DeliveryPath
 }
 
 // IsBlocked implements ctrlerrors.BlockedError.
 func (e *NoCaptureCandidateError) IsBlocked() bool { return true }
 
-// CaptureCandidateZones returns the capture candidates in evaluation order:
-// the observer (A) zone when it can be on the consumer (C) to provider (P)
-// traffic path, then C's zone, then P's zone, deduplicated by zone identity.
-//
-// Gateway traffic from C to P only transits C's zone and P's zone, so A's zone
-// is a candidate only when it is one of them. Any other A zone is rejected
-// without being probed: a Route there serves other subscribers.
-func CaptureCandidateZones(observerZone, consumerZone, providerZone *adminv1.Zone) ([]*adminv1.Zone, []CandidateRejection) {
-	var rejections []CandidateRejection
-	ordered := make([]*adminv1.Zone, 0, 3)
-	if SameZone(observerZone, consumerZone) || SameZone(observerZone, providerZone) {
-		ordered = append(ordered, observerZone)
-	} else {
-		rejections = append(rejections, CandidateRejection{
-			Zone:   observerZone.Name,
-			Reason: "observer zone is neither the consumer nor the provider zone and is not on the consumer→provider traffic path",
-		})
-	}
-	ordered = append(ordered, consumerZone, providerZone)
+// DeliveryPathError reports that a capture zone cannot deliver to the
+// observer (A) zone: the capture EventConfig's mesh excludes A's zone, it has
+// no ProxyCallbackURLs entry for A's zone, or, when capture is in A's zone, the
+// delivery EventConfig has no CallbackURL. It is a BlockedError and ends
+// candidate evaluation: capture is never moved to another zone to reach A.
+type DeliveryPathError struct {
+	CaptureZone  string
+	DeliveryZone string
+	Reason       string
+}
 
-	candidates := make([]*adminv1.Zone, 0, len(ordered))
-	for _, z := range ordered {
-		dup := false
-		for _, c := range candidates {
-			if SameZone(c, z) {
-				dup = true
-				break
-			}
-		}
-		if !dup {
-			candidates = append(candidates, z)
-		}
+func (e *DeliveryPathError) Error() string { return e.Reason }
+
+// IsBlocked implements ctrlerrors.BlockedError.
+func (e *DeliveryPathError) IsBlocked() bool { return true }
+
+// CaptureCandidateZones returns the capture candidates in evaluation order:
+// the consumer (C) zone, then the provider (P) zone, deduplicated by zone
+// identity. Gateway traffic from C to P only transits these two zones.
+//
+// The order never depends on the observer (A). Listeners that share C, P and
+// path must capture in the same zone: the Jumpers of two capture zones would
+// both capture the same request, and since the bridge trigger carries no zone,
+// each Listener's bridge would accept both captures and deliver every event
+// twice.
+func CaptureCandidateZones(consumerZone, providerZone *adminv1.Zone) []*adminv1.Zone {
+	if SameZone(consumerZone, providerZone) {
+		return []*adminv1.Zone{consumerZone}
 	}
-	return candidates, rejections
+	return []*adminv1.Zone{consumerZone, providerZone}
 }
 
 // DeliveryPlacement is the observer (A) zone's event infrastructure. Delivery
@@ -158,8 +176,9 @@ func CallbackOriginZone(captureZone *adminv1.Zone, captureEC *eventv1.EventConfi
 
 // ResolveCaptureZone resolves capture in captureZone for delivery d. It returns
 // the placement on success, a non-empty reason when the zone is definitively
-// unsuitable (no EventConfig, mesh excludes the delivery zone, no callback path
-// to A), or an error for transient or ambiguous state (read errors, NotReady
+// unsuitable for capture (no EventConfig), a *DeliveryPathError when the zone
+// cannot deliver to A (mesh excludes the delivery zone, no callback path to A),
+// or another error for transient or ambiguous state (read errors, NotReady
 // EventConfig or EventStore, duplicate EventConfigs). Callers may try another
 // candidate only for a reason, never for an error.
 func ResolveCaptureZone(
@@ -189,8 +208,8 @@ func ResolveCaptureZone(
 	}
 
 	if !ec.SupportsZone(d.Zone.Name) {
-		return nil, fmt.Sprintf("EventConfig %q of zone %q does not mesh with delivery zone %q",
-			ec.Name, captureZone.Name, d.Zone.Name), nil
+		return nil, "", &DeliveryPathError{CaptureZone: captureZone.Name, DeliveryZone: d.Zone.Name, Reason: fmt.Sprintf("EventConfig %q of zone %q does not mesh with delivery zone %q",
+			ec.Name, captureZone.Name, d.Zone.Name)}
 	}
 
 	origin, err := CallbackOriginZone(captureZone, ec)
@@ -201,13 +220,13 @@ func ResolveCaptureZone(
 	if SameZone(origin, d.Zone) {
 		base = d.EventConfig.Status.CallbackURL
 		if base == "" {
-			return nil, fmt.Sprintf("delivery EventConfig %q has no CallbackURL in status", d.EventConfig.Name), nil
+			return nil, "", &DeliveryPathError{CaptureZone: captureZone.Name, DeliveryZone: d.Zone.Name, Reason: fmt.Sprintf("delivery EventConfig %q has no CallbackURL in status", d.EventConfig.Name)}
 		}
 	} else {
 		base = ec.Status.ProxyCallbackURLs[d.Zone.Name]
 		if base == "" {
-			return nil, fmt.Sprintf("capture EventConfig %q has no ProxyCallbackURLs entry for delivery zone %q",
-				ec.Name, d.Zone.Name), nil
+			return nil, "", &DeliveryPathError{CaptureZone: captureZone.Name, DeliveryZone: d.Zone.Name, Reason: fmt.Sprintf("capture EventConfig %q has no ProxyCallbackURLs entry for delivery zone %q",
+				ec.Name, d.Zone.Name)}
 		}
 	}
 

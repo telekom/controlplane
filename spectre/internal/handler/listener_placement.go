@@ -51,9 +51,10 @@ func onConsumerPath(zone, consumerZone *adminv1.Zone, b *ProviderBinding) bool {
 
 // evaluateCaptureCandidate checks one capture candidate zone. It returns the
 // placement and binding on success, a reason when the zone is definitively
-// unsuitable, or an error when the zone cannot be judged (read errors, NotReady
-// dependencies, unverifiable provider identity). Only a reason permits trying
-// the next candidate.
+// unsuitable for capture, a definitive *util.DeliveryPathError when the zone
+// supports capture but cannot deliver to A, or another error when the zone
+// cannot be judged (read errors, NotReady dependencies, unverifiable provider
+// identity). Only a reason permits trying the next candidate.
 func (h *ListenerHandler) evaluateCaptureCandidate(
 	ctx context.Context,
 	zone, consumerZone *adminv1.Zone,
@@ -111,10 +112,11 @@ func (h *ListenerHandler) evaluateCaptureCandidate(
 }
 
 // resolveListenerPlacement resolves delivery in A's zone, then evaluates the
-// capture candidates in order (A's zone when on the C→P path, C's zone, P's
-// zone). Only definitive unsuitability moves on to the next candidate; any
-// error stops evaluation so capture is never relocated because of it. When no
-// candidate works it returns a *util.NoCaptureCandidateError naming each zone.
+// capture candidates in order (C's zone, P's zone). Only definitive
+// unsuitability for capture moves on to the next candidate; any error stops
+// evaluation so capture is never relocated because of it. When no candidate
+// works, or a candidate cannot deliver to A, it returns a
+// *util.NoCaptureCandidateError naming each zone tried.
 func (h *ListenerHandler) resolveListenerPlacement(
 	ctx context.Context,
 	observerZone, consumerZone, providerZone *adminv1.Zone,
@@ -133,9 +135,13 @@ func (h *ListenerHandler) resolveListenerPlacement(
 		}
 	}
 
-	candidates, rejections := util.CaptureCandidateZones(observerZone, consumerZone, providerZone)
-	for _, zone := range candidates {
+	var rejections []util.CandidateRejection
+	for _, zone := range util.CaptureCandidateZones(consumerZone, providerZone) {
 		lp, binding, reason, err := h.evaluateCaptureCandidate(ctx, zone, consumerZone, providerApp, apiBasePath, d)
+		var noPath *util.DeliveryPathError
+		if errors.As(err, &noPath) {
+			return nil, nil, &util.NoCaptureCandidateError{ApiBasePath: apiBasePath, Rejections: rejections, DeliveryPath: noPath}
+		}
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "capture candidate zone %q", zone.Name)
 		}
@@ -149,16 +155,18 @@ func (h *ListenerHandler) resolveListenerPlacement(
 }
 
 // handlePlacementError stops capture that can no longer be placed and returns
-// the error to report. When no candidate supports capture, or the provider
-// binding is definitively invalidated, capture is drained (checkpoint first),
-// including untracked children of a partial provisioning. Other errors,
-// including read errors, leave capture untouched: a transient failure must not
-// stop or move it.
+// the error to report. When no candidate supports capture, the capture zone
+// cannot deliver to A, or the provider binding is definitively invalidated,
+// capture is drained (checkpoint first), including untracked children of a
+// partial provisioning. Other errors, including read errors, leave capture
+// untouched: a transient failure must not stop or move it.
 func (h *ListenerHandler) handlePlacementError(ctx context.Context, listener *spectrev1.Listener, err error) error {
 	var noCandidate *util.NoCaptureCandidateError
 	var bindingErr *providerBindingError
 	reason, notStarted := "", err
 	switch {
+	case errors.As(err, &noCandidate) && noCandidate.DeliveryPath != nil:
+		reason = "capture zone cannot deliver to observer"
 	case errors.As(err, &noCandidate):
 		reason = "no supported capture placement"
 	case errors.As(err, &bindingErr):

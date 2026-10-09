@@ -651,19 +651,89 @@ var _ = Describe("Listener capture placement (controller)", func() {
 		Expect(rl.Spec.Zone).To(Equal(plZoneRef("c")))
 	})
 
-	It("H2: A at P's zone with C elsewhere prefers A's zone", func() {
+	It("H2: A at P's zone with C elsewhere captures in C's zone and delivers at A through C's proxy callback for A", func() {
 		f := newPlFixtures("p")
 		h := newPlHarness(f)
 		l, calls := h.provision()
 
-		plExpectPlacement(l, "p", "p", "p", f.ecs["p"].Status.CallbackURL)
-		Expect(plCount(calls, "Get", "Route", plZoneNs("c"))).To(BeZero())
+		plExpectPlacement(l, "c", "p", "c", f.ecs["c"].Status.ProxyCallbackURLs["p"])
+		Expect(plCount(calls, "Get", "Route", plZoneNs("p"))).To(BeZero())
 		rl := &gatewayv1.RouteListener{}
 		Expect(h.exists(l.Status.RouteListener, rl)).To(BeTrue())
-		Expect(rl.Spec.Route).To(Equal(plRouteRef("p")))
+		Expect(rl.Spec.Route).To(Equal(plRouteRef("c")))
+		Expect(l.Status.AppliedPlacement.DeliveryEventStore.Name).To(Equal("es-p"))
+		Expect(l.Status.AppliedPlacement.CaptureEventStore.Name).To(Equal("es-c"))
 	})
 
-	It("H3: A off-path in a third zone captures per order and delivers at A through C's proxy callback for A", func() {
+	It("H2b: coexisting Listeners with the same C, P and path, A in C's zone and in P's zone, both capture in C's zone", func() {
+		f := newPlFixtures("c")
+		h := newPlHarness(f)
+		l1, _ := h.provision()
+
+		// A second observer in P's zone with its own SpectreApplication and a
+		// Listener for the same consumer, provider and path.
+		const second = "pl-listener-a-in-p"
+		env := func() map[string]string { return map[string]string{cconfig.EnvironmentLabelKey: plEnv} }
+		a2 := plApp("a2-app", "team-a2", "p")
+		a2.Labels = env()
+		sa2 := f.sa.DeepCopy()
+		sa2.ObjectMeta = metav1.ObjectMeta{Name: "pl-sa2", Namespace: plTeamNs, UID: "pl-sa2-uid", Labels: env()}
+		sa2.Spec.Application = plAppRef("a2-app")
+		sa2.Status.Id = "team-a2--a2-app"
+		l2 := f.listener.DeepCopy()
+		l2.ObjectMeta = metav1.ObjectMeta{Name: second, Namespace: plTeamNs, UID: "pl-listener-a-in-p-uid", Labels: env()}
+		l2.Spec.Application = ctypes.ObjectRef{Name: "pl-sa2", Namespace: plTeamNs}
+		for _, o := range []client.Object{a2, sa2, l2} {
+			Expect(h.raw.Create(context.Background(), o)).To(Succeed())
+		}
+		for range 2 {
+			_, err := h.reconcileNamed(second)
+			Expect(err).ToNot(HaveOccurred())
+		}
+		h.grantNamed(second)
+		_, err := h.reconcileNamed(second)
+		Expect(err).ToNot(HaveOccurred())
+		l2 = h.listenerNamed(second)
+		Expect(l2.Status.AppliedPlacement).ToNot(BeNil(), "not provisioned: %v", l2.Status.Conditions)
+		plExpectPlacement(l2, "c", "p", "c", f.ecs["c"].Status.ProxyCallbackURLs["p"])
+
+		for _, l := range []*spectrev1.Listener{l1, l2} {
+			Expect(l.Status.RouteListener.Namespace).To(Equal(plZoneNs("c")))
+			subs := h.ownedSubscribers(l)
+			Expect(subs).To(HaveLen(2))
+			for i := range subs {
+				Expect(subs[i].Namespace).To(Equal(plZoneNs("c")))
+			}
+		}
+		rls := &gatewayv1.RouteListenerList{}
+		Expect(h.raw.List(context.Background(), rls, client.InNamespace(plZoneNs("p")))).To(Succeed())
+		Expect(rls.Items).To(BeEmpty())
+		subsInP := &pubsubv1.SubscriberList{}
+		Expect(h.raw.List(context.Background(), subsInP, client.InNamespace(plZoneNs("p")))).To(Succeed())
+		Expect(subsInP.Items).To(BeEmpty())
+
+		// Draining the second Listener leaves the first one's Publisher and
+		// capture in C's zone alone.
+		ec := &eventv1.EventConfig{}
+		Expect(h.raw.Get(context.Background(), client.ObjectKeyFromObject(f.ecs["c"]), ec)).To(Succeed())
+		delete(ec.Status.ProxyCallbackURLs, "p")
+		h.update(ec)
+		_, err = h.reconcileNamed(second)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(h.listenerNamed(second).Status.Draining).ToNot(BeNil())
+		for pass := 0; h.listenerNamed(second).Status.Draining != nil; pass++ {
+			Expect(pass).To(BeNumerically("<", 10), "drain did not complete")
+			calls, err := h.reconcileNamed(second)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(plCount(calls, "Delete", "Publisher", "")).To(BeZero())
+		}
+		Expect(h.ownedSubscribers(l2)).To(BeEmpty())
+		Expect(h.publisherExists("c")).To(BeTrue())
+		Expect(h.exists(l1.Status.RouteListener, &gatewayv1.RouteListener{})).To(BeTrue())
+		Expect(h.ownedSubscribers(l1)).To(HaveLen(2))
+	})
+
+	It("H3: A in a third zone captures in C's zone and delivers at A through C's proxy callback for A", func() {
 		f := newPlFixtures("a3")
 		f.routes["a3"] = plRoute("a3") // proxy route serving another subscriber in a3
 		f.exposure.Status.ProxyRoutes = append(f.exposure.Status.ProxyRoutes, plRouteRef("a3"))
@@ -806,7 +876,7 @@ var _ = Describe("Listener capture placement (controller)", func() {
 
 		all := h.startup()
 		msg := plBlocked(h.listener())
-		for _, s := range []string{`zone "a3"`, `zone "c"`, "no Route", `zone "p"`, "pass-through"} {
+		for _, s := range []string{`zone "c"`, "no Route", `zone "p"`, "pass-through"} {
 			Expect(msg).To(ContainSubstring(s))
 		}
 		for _, kind := range []string{"ApprovalRequest", "RouteListener", "Subscriber", "Publisher"} {
@@ -934,24 +1004,82 @@ var _ = Describe("Listener capture placement (controller)", func() {
 		Expect(l.Status.AppliedPlacement.DeliveryEventStore.Namespace).To(Equal(plZoneNs("a3")))
 	})
 
-	It("H11: a capture EventConfig without an entry for A makes that candidate unsuitable without substitution", func() {
+	It("H11: a capture EventConfig without an entry for A blocks without relocating capture to P's zone", func() {
 		f := newPlFixtures("a3")
 		f.ecs["c"].Status.ProxyCallbackURLs = map[string]string{"p": "https://c.gw.example/proxy/p"}
 		h := newPlHarness(f)
-		l, _ := h.provision()
 
-		plExpectPlacement(l, "p", "a3", "p", "https://p.gw.example/proxy/a3")
+		all := h.startup()
+		msg := plBlocked(h.listener())
+		Expect(msg).To(ContainSubstring(`capture zone "c" for path "` + plPath + `" cannot deliver to observer zone "a3": ` +
+			`capture EventConfig "ec-c" has no ProxyCallbackURLs entry for delivery zone "a3"`))
+		Expect(msg).To(ContainSubstring("capture is not moved to another zone"))
+		Expect(msg).ToNot(ContainSubstring(`zone "p"`))
+		Expect(plCount(all, "Get", "Route", plZoneNs("p"))).To(BeZero())
+		Expect(plCount(all, "Create", "ApprovalRequest", "")).To(BeZero())
 	})
 
-	It("H11b: no capture ProxyCallbackURLs entry for A blocks naming every candidate", func() {
-		f := newPlFixtures("a3")
-		f.ecs["c"].Status.ProxyCallbackURLs = nil
-		f.ecs["p"].Status.ProxyCallbackURLs = map[string]string{"c": "https://p.gw.example/proxy/c"}
+	It("H11b: a capture mesh excluding A's zone blocks without relocating capture to P's zone", func() {
+		f := newPlFixtures("p")
+		f.ecs["c"].Spec.Mesh = &eventv1.MeshConfig{FullMesh: false, ZoneNames: []string{"a3"}}
 		h := newPlHarness(f)
-		h.startup()
+
+		all := h.startup()
 		msg := plBlocked(h.listener())
-		Expect(msg).To(ContainSubstring(`zone "c": capture EventConfig "ec-c" has no ProxyCallbackURLs entry for delivery zone "a3"`))
-		Expect(msg).To(ContainSubstring(`zone "p": capture EventConfig "ec-p" has no ProxyCallbackURLs entry for delivery zone "a3"`))
+		Expect(msg).To(ContainSubstring(`capture zone "c" for path "` + plPath + `" cannot deliver to observer zone "p": ` +
+			`EventConfig "ec-c" of zone "c" does not mesh with delivery zone "p"`))
+		Expect(msg).ToNot(ContainSubstring("skipped"))
+		Expect(plCount(all, "Get", "Route", plZoneNs("p"))).To(BeZero())
+		Expect(plCount(all, "Create", "ApprovalRequest", "")).To(BeZero())
+	})
+
+	It("H11c: applied capture that can no longer reach A drains in place and resumes unchanged once it can", func() {
+		f := newPlFixtures("a3")
+		h := newPlHarness(f)
+		l, _ := h.provision()
+		plExpectPlacement(l, "c", "a3", "c", f.ecs["c"].Status.ProxyCallbackURLs["a3"])
+		oldFP := l.Status.AppliedPlacement.Fingerprint
+		rlRef := l.Status.RouteListener.DeepCopy()
+		subRefs := append([]ctypes.ObjectRef(nil), l.Status.EventSubscriptions...)
+
+		ec := &eventv1.EventConfig{}
+		Expect(h.raw.Get(context.Background(), client.ObjectKeyFromObject(f.ecs["c"]), ec)).To(Succeed())
+		entry := ec.Status.ProxyCallbackURLs["a3"]
+		delete(ec.Status.ProxyCallbackURLs, "a3")
+		h.update(ec)
+
+		// Checkpoint only.
+		calls := h.mustReconcile()
+		l = h.listener()
+		Expect(l.Status.Draining).ToNot(BeNil())
+		Expect(l.Status.Draining.Reason).To(Equal("capture zone cannot deliver to observer"))
+		Expect(plCountVerb(calls, "Delete")).To(BeZero())
+		Expect(plBlocked(l)).To(ContainSubstring(`capture zone "c" for path "` + plPath + `" cannot deliver to observer zone "a3"`))
+
+		// RouteListener before Subscribers, nothing created (drain asserts both).
+		calls = append(calls, h.drain(rlRef)...)
+		Expect(h.exists(rlRef, &gatewayv1.RouteListener{})).To(BeFalse())
+		for i := range subRefs {
+			Expect(h.exists(&subRefs[i], &pubsubv1.Subscriber{})).To(BeFalse())
+		}
+		for _, c := range calls {
+			if c.ns == plZoneNs("p") {
+				Expect(c.verb).ToNot(BeElementOf("Create", "Get"), "%s %s %s/%s", c.verb, c.kind, c.ns, c.name)
+			}
+		}
+		Expect(h.listener().Status.AppliedPlacement).To(BeNil())
+
+		fresh := &eventv1.EventConfig{}
+		Expect(h.raw.Get(context.Background(), client.ObjectKeyFromObject(ec), fresh)).To(Succeed())
+		fresh.Status.ProxyCallbackURLs["a3"] = entry
+		h.update(fresh)
+
+		calls = h.mustReconcile()
+		l = h.listener()
+		plExpectPlacement(l, "c", "a3", "c", entry)
+		Expect(l.Status.AppliedPlacement.Fingerprint).To(Equal(oldFP))
+		Expect(plCount(calls, "Create", "ApprovalRequest", "")).To(BeZero())
+		Expect(h.exists(l.Status.RouteListener, &gatewayv1.RouteListener{})).To(BeTrue())
 	})
 
 	It("H12: an unverifiable provider binding blocks without trying later candidates", func() {

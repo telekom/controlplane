@@ -225,10 +225,10 @@ func (h *ListenerHandler) CreateOrUpdate(ctx context.Context, listener *spectrev
 	}
 
 	// Step 4: Resolve placement before creating approvals. Delivery is always
-	// A's zone; capture is the first supported zone on the C→P path (A's zone
-	// when on it, then C's, then P's). Unsupported Routes (missing, pass-through,
+	// A's zone; capture is the first supported zone on the C→P path (C's, then
+	// P's), independent of A. Unsupported Routes (missing, pass-through,
 	// failover, not bound to P) are skipped per candidate; when none remains,
-	// applied capture is drained.
+	// or the chosen zone cannot deliver to A, applied capture is drained.
 	lp, binding, err := h.resolveListenerPlacement(ctx, observerZone, consumerZone, providerZone, providerApp, apiBasePath)
 	if err != nil {
 		return h.handlePlacementError(ctx, listener, err)

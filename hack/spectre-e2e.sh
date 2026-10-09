@@ -2512,8 +2512,8 @@ EOF
 
     # Route must be in the capture zone (dataplane1) namespace, because each
     # capture candidate is probed with findRouteByPath(ctx, zone.Status.Namespace, apiBasePath).
-    # Observer and consumer are both dataplane1, so util.CaptureCandidateZones
-    # tries dataplane1 first, then dataplane2 (provider zone).
+    # util.CaptureCandidateZones tries the consumer zone (dataplane1) first,
+    # then dataplane2 (provider zone).
     info "Creating Route for cross-zone provider in consumer zone namespace..."
     kc apply -f - <<EOF
 apiVersion: gateway.cp.ei.telekom.de/v1
@@ -2690,7 +2690,7 @@ EOF
 
     # ── Verification ──────────────────────────────────────────────────
     # Observer = consumer = dataplane1, provider = dataplane2:
-    #   util.CaptureCandidateZones(observer=dp1, consumer=dp1, provider=dp2) → [dp1, dp2]
+    #   util.CaptureCandidateZones(consumer=dp1, provider=dp2) → [dp1, dp2]
     #   → util.ResolveCaptureZone(dp1) succeeds: dp1 is also the delivery zone
     #   → dp1 is the capture zone; delivery is always in the observer zone (dp1)
     # Therefore: RouteListener, Publisher, Subscribers all in controlplane--dataplane1

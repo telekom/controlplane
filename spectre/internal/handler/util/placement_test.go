@@ -121,42 +121,21 @@ var _ = Describe("CaptureCandidateZones", func() {
 		return out
 	}
 
-	It("orders A, C, P and dedups by name and namespace", func() {
+	It("orders C, P and dedups by name and namespace", func() {
 		c, p := makeZone("c"), makeZone("p")
-
-		got, rejections := util.CaptureCandidateZones(makeZone("c"), c, p)
-		Expect(names(got)).To(Equal([]string{"c", "p"}))
-		Expect(rejections).To(BeEmpty())
-
-		got, rejections = util.CaptureCandidateZones(makeZone("p"), c, p)
-		Expect(names(got)).To(Equal([]string{"p", "c"}))
-		Expect(rejections).To(BeEmpty())
+		Expect(names(util.CaptureCandidateZones(c, p))).To(Equal([]string{"c", "p"}))
 
 		z := makeZone("z")
-		got, rejections = util.CaptureCandidateZones(z, makeZone("z"), makeZone("z"))
+		got := util.CaptureCandidateZones(z, makeZone("z"))
 		Expect(got).To(HaveLen(1))
 		Expect(got[0]).To(BeIdenticalTo(z))
-		Expect(rejections).To(BeEmpty())
-	})
-
-	It("rejects an observer zone that is neither C nor P", func() {
-		got, rejections := util.CaptureCandidateZones(makeZone("a3"), makeZone("c"), makeZone("p"))
-		Expect(names(got)).To(Equal([]string{"c", "p"}))
-		Expect(rejections).To(HaveLen(1))
-		Expect(rejections[0].Zone).To(Equal("a3"))
-		Expect(rejections[0].Reason).To(ContainSubstring("not on the consumer→provider traffic path"))
 	})
 
 	It("treats the same name in another namespace as distinct", func() {
-		got, rejections := util.CaptureCandidateZones(zoneIn("c", "other-env"), makeZone("c"), makeZone("p"))
+		got := util.CaptureCandidateZones(makeZone("c"), zoneIn("c", "other-env"))
 		Expect(got).To(HaveLen(2))
 		Expect(got[0].Namespace).To(Equal("test-env"))
-		Expect(names(got)).To(Equal([]string{"c", "p"}))
-		Expect(rejections).To(HaveLen(1))
-		Expect(rejections[0].Zone).To(Equal("c"))
-
-		got, _ = util.CaptureCandidateZones(makeZone("c"), makeZone("c"), zoneIn("c", "other-env"))
-		Expect(got).To(HaveLen(2))
+		Expect(got[1].Namespace).To(Equal("other-env"))
 	})
 })
 
@@ -212,6 +191,15 @@ var _ = Describe("ResolveDelivery", func() {
 	})
 })
 
+// deliveryPathReason returns the reason of a *util.DeliveryPathError, which
+// must be blocked.
+func deliveryPathReason(err error) string {
+	var noPath *util.DeliveryPathError
+	ExpectWithOffset(1, errors.As(err, &noPath)).To(BeTrue(), "want *util.DeliveryPathError, got %v", err)
+	ExpectWithOffset(1, err).To(Satisfy(isBlockedError))
+	return noPath.Reason
+}
+
 var _ = Describe("ResolveCaptureZone", func() {
 	var (
 		pc    *placementClient
@@ -250,16 +238,16 @@ var _ = Describe("ResolveCaptureZone", func() {
 		Expect(lp.CallbackBaseURL).To(Equal("https://c.example.com/callback"))
 	})
 
-	It("treats a same-zone EventConfig without CallbackURL as unsuitable", func() {
+	It("reports a same-zone EventConfig without CallbackURL as a delivery path error", func() {
 		es := storeFor("c")
 		ec := eventConfigFor("c", es)
 		ec.Status.CallbackURL = ""
 		ec.Status.ProxyCallbackURLs = map[string]string{"c": "https://c.example.com/proxy/c"}
 
 		lp, reason, err := util.ResolveCaptureZone(pc.context(), makeZone("c"), route, delivery("c", ec, es))
-		Expect(err).ToNot(HaveOccurred())
 		Expect(lp).To(BeNil())
-		Expect(reason).To(ContainSubstring("CallbackURL"))
+		Expect(reason).To(BeEmpty())
+		Expect(deliveryPathReason(err)).To(ContainSubstring("CallbackURL"))
 	})
 
 	It("uses the capture EventConfig's ProxyCallbackURLs entry for the delivery zone for a cross-zone local capture", func() {
@@ -355,7 +343,7 @@ var _ = Describe("ResolveCaptureZone", func() {
 		Expect(err.Error()).To(ContainSubstring("EventStore"))
 	})
 
-	It("treats a capture mesh excluding the delivery zone as unsuitable", func() {
+	It("reports a capture mesh excluding the delivery zone as a delivery path error", func() {
 		captureES := storeFor("c")
 		captureEC := eventConfigFor("c", captureES)
 		captureEC.Spec.Mesh = &eventv1.MeshConfig{FullMesh: false, ZoneNames: []string{"p"}}
@@ -366,12 +354,16 @@ var _ = Describe("ResolveCaptureZone", func() {
 
 		lp, reason, err := util.ResolveCaptureZone(pc.context(captureEC, captureES), makeZone("c"), route,
 			delivery("a", deliveryEC, deliveryES))
-		Expect(err).ToNot(HaveOccurred())
 		Expect(lp).To(BeNil())
-		Expect(reason).To(ContainSubstring("does not mesh with delivery zone"))
+		Expect(reason).To(BeEmpty())
+		Expect(deliveryPathReason(err)).To(ContainSubstring("does not mesh with delivery zone"))
+		var noPath *util.DeliveryPathError
+		Expect(errors.As(err, &noPath)).To(BeTrue())
+		Expect(noPath.CaptureZone).To(Equal("c"))
+		Expect(noPath.DeliveryZone).To(Equal("a"))
 	})
 
-	It("treats nil capture ProxyCallbackURLs as unsuitable even when A has an entry for the capture zone", func() {
+	It("reports nil capture ProxyCallbackURLs as a delivery path error even when A has an entry for the capture zone", func() {
 		captureES := storeFor("c")
 		deliveryES := storeFor("a")
 		deliveryEC := eventConfigFor("a", deliveryES)
@@ -379,12 +371,12 @@ var _ = Describe("ResolveCaptureZone", func() {
 
 		lp, reason, err := util.ResolveCaptureZone(pc.context(eventConfigFor("c", captureES), captureES), makeZone("c"), route,
 			delivery("a", deliveryEC, deliveryES))
-		Expect(err).ToNot(HaveOccurred())
 		Expect(lp).To(BeNil())
-		Expect(reason).To(Equal(`capture EventConfig "ec-c" has no ProxyCallbackURLs entry for delivery zone "a"`))
+		Expect(reason).To(BeEmpty())
+		Expect(deliveryPathReason(err)).To(Equal(`capture EventConfig "ec-c" has no ProxyCallbackURLs entry for delivery zone "a"`))
 	})
 
-	It("treats a missing or empty ProxyCallbackURLs key as unsuitable and never substitutes another", func() {
+	It("reports a missing or empty ProxyCallbackURLs key as a delivery path error and never substitutes another", func() {
 		captureES := storeFor("c")
 		captureEC := eventConfigFor("c", captureES)
 		captureEC.Status.ProxyCallbackURLs = map[string]string{
@@ -397,17 +389,17 @@ var _ = Describe("ResolveCaptureZone", func() {
 
 		lp, reason, err := util.ResolveCaptureZone(pc.context(captureEC, captureES), makeZone("c"), route,
 			delivery("a", deliveryEC, deliveryES))
-		Expect(err).ToNot(HaveOccurred())
 		Expect(lp).To(BeNil())
-		Expect(reason).To(Equal(`capture EventConfig "ec-c" has no ProxyCallbackURLs entry for delivery zone "a"`))
+		Expect(reason).To(BeEmpty())
+		Expect(deliveryPathReason(err)).To(Equal(`capture EventConfig "ec-c" has no ProxyCallbackURLs entry for delivery zone "a"`))
 
 		emptyEC := eventConfigFor("c", captureES)
 		emptyEC.Status.ProxyCallbackURLs = map[string]string{"a": "", "p": "https://c.example.com/proxy/p"}
 		lp, reason, err = util.ResolveCaptureZone(pc.context(emptyEC, captureES), makeZone("c"), route,
 			delivery("a", deliveryEC, deliveryES))
-		Expect(err).ToNot(HaveOccurred())
 		Expect(lp).To(BeNil())
-		Expect(reason).To(Equal(`capture EventConfig "ec-c" has no ProxyCallbackURLs entry for delivery zone "a"`))
+		Expect(reason).To(BeEmpty())
+		Expect(deliveryPathReason(err)).To(Equal(`capture EventConfig "ec-c" has no ProxyCallbackURLs entry for delivery zone "a"`))
 	})
 
 	It("keys a proxy-backed capture by the proxy zone and uses its own EventStore", func() {
@@ -557,11 +549,11 @@ var _ = Describe("ResolveCaptureZone callback Route chain", func() {
 			Expect(lp.CallbackOriginZone.Name).To(Equal(capture))
 			Expect(chainGateways(routes, lp.CallbackBaseURL)).To(Equal(want))
 		},
-		Entry("A off-path, capture in C's zone", "a", "c", []string{"c", "a"}),
-		Entry("A off-path, capture in P's zone", "a", "p", []string{"p", "a"}),
+		Entry("A in a third zone, capture in C's zone", "a", "c", []string{"c", "a"}),
+		Entry("A in a third zone, capture in P's zone", "a", "p", []string{"p", "a"}),
 		Entry("A in P's zone, capture in C's zone", "p", "c", []string{"c", "p"}),
 		Entry("A in C's zone, capture in P's zone", "c", "p", []string{"p", "c"}),
-		Entry("A off-path, proxy-backed capture zone", "a", "x", []string{"x", "a"}),
+		Entry("A in a third zone, proxy-backed capture zone", "a", "x", []string{"x", "a"}),
 		Entry("A in the capture zone", "c", "c", []string{"c"}),
 	)
 })
@@ -586,19 +578,37 @@ var _ = Describe("NoCaptureCandidateError", func() {
 		var err error = &util.NoCaptureCandidateError{
 			ApiBasePath: "/api/v1",
 			Rejections: []util.CandidateRejection{
-				{Zone: "a3", Reason: "off path"},
 				{Zone: "c", Reason: "no Route"},
 				{Zone: "p", Reason: "pass-through"},
 			},
 		}
 		Expect(err.Error()).To(Equal(`no supported capture zone for path "/api/v1": ` +
-			`zone "a3": off path; zone "c": no Route; zone "p": pass-through`))
+			`zone "c": no Route; zone "p": pass-through`))
 		Expect(err).To(Satisfy(isBlockedError))
+		var noPath *util.DeliveryPathError
+		Expect(errors.As(err, &noPath)).To(BeFalse())
 
 		wrapped := pkgerrors.Wrap(err, "outer")
 		var target *util.NoCaptureCandidateError
 		Expect(errors.As(wrapped, &target)).To(BeTrue())
-		Expect(target.Rejections).To(HaveLen(3))
+		Expect(target.Rejections).To(HaveLen(2))
 		Expect(wrapped).To(Satisfy(isBlockedError))
+	})
+
+	It("says the capture zone cannot deliver to the observer zone and exposes the DeliveryPathError", func() {
+		noPath := &util.DeliveryPathError{CaptureZone: "p", DeliveryZone: "a", Reason: "mesh excludes a"}
+		var err error = &util.NoCaptureCandidateError{
+			ApiBasePath:  "/api/v1",
+			Rejections:   []util.CandidateRejection{{Zone: "c", Reason: "no Route"}},
+			DeliveryPath: noPath,
+		}
+		Expect(err.Error()).To(Equal(`capture zone "p" for path "/api/v1" cannot deliver to observer zone "a": mesh excludes a; ` +
+			`capture is not moved to another zone because Listeners with the same consumer, provider and path capture in one zone ` +
+			`(skipped zone "c": no Route)`))
+		Expect(err).To(Satisfy(isBlockedError))
+
+		var target *util.DeliveryPathError
+		Expect(errors.As(pkgerrors.Wrap(err, "outer"), &target)).To(BeTrue())
+		Expect(target).To(BeIdenticalTo(noPath))
 	})
 })
