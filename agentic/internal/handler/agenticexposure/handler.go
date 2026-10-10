@@ -7,6 +7,7 @@ package agenticexposure
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -16,11 +17,13 @@ import (
 	agenticv1 "github.com/telekom/controlplane/agentic/api/v1"
 	agenticconfig "github.com/telekom/controlplane/agentic/internal/config"
 	"github.com/telekom/controlplane/agentic/internal/handler/util"
+	applicationapi "github.com/telekom/controlplane/application/api/v1"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	"github.com/telekom/controlplane/common/pkg/handler"
 	ctypes "github.com/telekom/controlplane/common/pkg/types"
+	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 )
 
 var _ handler.Handler[*agenticv1.AgenticExposure] = &AgenticExposureHandler{}
@@ -79,56 +82,76 @@ func (h *AgenticExposureHandler) CreateOrUpdate(ctx context.Context, obj *agenti
 		return ctrlerrors.BlockedErrorf("zone %q does not support the AI Gateway feature", zone.Name)
 	}
 
-	// 5. Handle cross-zone proxy routes
+	// 5. Resolve the Telecontext Application before the status is reset
+	var telecontextApp *applicationapi.Application
+	if obj.Spec.Variant.IsTelecontextVariant() {
+		if telecontextApp, err = h.getTelecontextApplication(ctx); err != nil {
+			return errors.Wrap(err, "failed to resolve Telecontext Application")
+		}
+	}
+
 	obj.Status.Route = nil
 	obj.Status.ProxyRoutes = nil
 
+	// 6. Handle cross-zone proxy routes for subscriber zones and the Telecontext zone
 	crossZones, hasLocalSubs, err := util.FindCrossZoneAgenticSubscriptionZones(ctx, obj.Spec.BasePath, obj.Spec.Zone.Name)
 	if err != nil {
 		return errors.Wrap(err, "failed to find cross-zone MCP subscriptions")
 	}
 
+	proxyZones := slices.Clone(crossZones)
+	if obj.Spec.Variant.IsTelecontextVariant() && telecontextApp.Spec.Zone.Name != obj.Spec.Zone.Name &&
+		!slices.ContainsFunc(proxyZones, func(z ctypes.ObjectRef) bool { return z.Name == telecontextApp.Spec.Zone.Name }) {
+		proxyZones = append(proxyZones, telecontextApp.Spec.Zone)
+		// Keep the order stable, like FindCrossZoneAgenticSubscriptionZones, so the status does not change
+		slices.SortFunc(proxyZones, func(a, b ctypes.ObjectRef) int {
+			return strings.Compare(a.String(), b.String())
+		})
+	}
+
 	var crossZoneLmsIssuers []string
-	for _, subscriberZoneRef := range crossZones {
-		subscriberZone, zoneErr := util.GetZone(ctx, subscriberZoneRef.K8s())
+	for _, proxyZoneRef := range proxyZones {
+		proxyZone, zoneErr := util.GetZone(ctx, proxyZoneRef.K8s())
 		if zoneErr != nil {
-			return errors.Wrapf(zoneErr, "failed to get subscriber zone %q", subscriberZoneRef.Name)
+			return errors.Wrapf(zoneErr, "failed to get proxy zone %q", proxyZoneRef.Name)
 		}
 
 		// Collect LMS issuer so the real route trusts traffic forwarded by this proxy gateway
-		subscriberPreset, presetErr := subscriberZone.Spec.SelectPreset(adminv1.GatewayTypeAI)
+		proxyPreset, presetErr := proxyZone.Spec.SelectPreset(adminv1.GatewayTypeAI)
 		if presetErr != nil {
-			return ctrlerrors.BlockedErrorf("subscriber zone %q has no AI Gateway preset: %v", subscriberZone.Name, presetErr)
+			return ctrlerrors.BlockedErrorf("proxy zone %q has no AI Gateway preset: %v", proxyZone.Name, presetErr)
 		}
-		subscriberPresetStatus, presetErr := subscriberZone.Status.GetPreset(subscriberPreset.Name)
+		proxyPresetStatus, presetErr := proxyZone.Status.GetPreset(proxyPreset.Name)
 		if presetErr != nil {
-			return ctrlerrors.BlockedErrorf("subscriber zone %q has no AI Gateway preset status: %v", subscriberZone.Name, presetErr)
+			return ctrlerrors.BlockedErrorf("proxy zone %q has no AI Gateway preset status: %v", proxyZone.Name, presetErr)
 		}
-		if subscriberPresetStatus.Links.LmsIssuer != "" {
-			crossZoneLmsIssuers = append(crossZoneLmsIssuers, subscriberPresetStatus.Links.LmsIssuer)
+		if proxyPresetStatus.Links.LmsIssuer != "" {
+			crossZoneLmsIssuers = append(crossZoneLmsIssuers, proxyPresetStatus.Links.LmsIssuer)
 		}
 
-		proxyRoute, routeErr := util.CreateAgenticProxyRoute(ctx, obj.Spec.BasePath, obj.Spec.Variant, subscriberZone, zone)
+		// Telecontext calls the proxy route in its own zone
+		var extraConsumers []string
+		if obj.Spec.Variant.IsTelecontextVariant() && telecontextApp.Spec.Zone.Name == proxyZoneRef.Name {
+			extraConsumers = append(extraConsumers, telecontextApp.Status.ClientId)
+		}
+
+		proxyRoute, routeErr := util.CreateAgenticProxyRoute(ctx, obj.Spec.BasePath, obj.Spec.Variant, proxyZone, zone,
+			extraConsumers...)
 		if routeErr != nil {
-			return errors.Wrapf(routeErr, "failed to create MCP proxy Route for zone %q", subscriberZoneRef.Name)
+			return errors.Wrapf(routeErr, "failed to create MCP proxy Route for zone %q", proxyZoneRef.Name)
 		}
 		obj.Status.ProxyRoutes = append(obj.Status.ProxyRoutes, *ctypes.ObjectRefFromObject(proxyRoute))
-		logger.V(1).Info("MCP proxy Route created/updated", "zone", subscriberZoneRef.Name, "route", proxyRoute.Name)
-	}
-
-	// 6. Resolve Telecontext Application for auto-access (TeleMCP variant)
-	telecontextInfo, crossZoneLmsIssuers, err := h.resolveTelecontext(ctx, obj, crossZones, crossZoneLmsIssuers, zone)
-	if err != nil {
-		return err
+		logger.V(1).Info("MCP proxy Route created/updated", "zone", proxyZoneRef.Name, "route", proxyRoute.Name)
 	}
 
 	// 7. Create primary MCP route
 	isProxyTarget := len(obj.Status.ProxyRoutes) > 0
 	telecontextConsumer := ""
-	if telecontextInfo != nil {
-		telecontextConsumer = telecontextInfo.ConsumerName
+	if obj.Spec.Variant.IsTelecontextVariant() && telecontextApp.Spec.Zone.Name == obj.Spec.Zone.Name {
+		telecontextConsumer = telecontextApp.Status.ClientId
 	}
-	route, err := util.CreateAgenticRoute(ctx, obj, zone, hasLocalSubs, isProxyTarget, telecontextConsumer, crossZoneLmsIssuers)
+	hasLocalCallers := hasLocalSubs || telecontextConsumer != ""
+	route, err := util.CreateAgenticRoute(ctx, obj, zone, hasLocalCallers, isProxyTarget, telecontextConsumer, crossZoneLmsIssuers)
 	if err != nil {
 		return errors.Wrap(err, "failed to create MCP Route")
 	}
@@ -159,45 +182,6 @@ func (h *AgenticExposureHandler) CreateOrUpdate(ctx context.Context, obj *agenti
 		"AgenticExposure has been provisioned"))
 
 	return nil
-}
-
-// resolveTelecontext handles the TELECONTEXTMCP variant: resolves the Telecontext Application,
-// creates a proxy route on the Telecontext zone if needed, and returns the resolved info.
-func (h *AgenticExposureHandler) resolveTelecontext(
-	ctx context.Context,
-	obj *agenticv1.AgenticExposure,
-	crossZones []ctypes.ObjectRef,
-	crossZoneLmsIssuers []string,
-	providerZone *adminv1.Zone,
-) (*util.TelecontextInfo, []string, error) {
-	if !obj.Spec.Variant.IsTelecontextVariant() {
-		return nil, crossZoneLmsIssuers, nil
-	}
-
-	logger := log.FromContext(ctx)
-
-	if h.Config.TelecontextApplicationID == "" {
-		return nil, nil, errors.New("TELECONTEXTMCP variant requires telecontext application ID to be configured")
-	}
-
-	info, err := util.ResolveTelecontextApplication(ctx, h.Config)
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "failed to resolve Telecontext Application")
-	}
-
-	proxyRef, lmsIssuer, proxyErr := ensureTelecontextProxyRoute(ctx, obj, info, crossZones, providerZone)
-	if proxyErr != nil {
-		return nil, nil, proxyErr
-	}
-	if proxyRef != nil {
-		obj.Status.ProxyRoutes = append(obj.Status.ProxyRoutes, *proxyRef)
-		logger.V(1).Info("MCP proxy Route created/updated for Telecontext zone", "zone", info.Zone.Name)
-	}
-	if lmsIssuer != "" {
-		crossZoneLmsIssuers = append(crossZoneLmsIssuers, lmsIssuer)
-	}
-
-	return info, crossZoneLmsIssuers, nil
 }
 
 // checkCompetingExposures verifies that no other active AgenticExposure exists for the same basePath.
@@ -304,45 +288,27 @@ func validateBasicWithScopesPolicy(obj *agenticv1.AgenticExposure) error {
 	return errors.New("Provider username/password with scopes requires an external IDP grant type \"password\"")
 }
 
-// ensureTelecontextProxyRoute creates a proxy route on the Telecontext Application's zone
-// if it differs from the exposure zone and is not already covered by subscription-based cross zones.
-// Returns the proxy route ObjectRef (nil if not needed), the LMS issuer to trust, and any error.
-func ensureTelecontextProxyRoute(
-	ctx context.Context,
-	obj *agenticv1.AgenticExposure,
-	info *util.TelecontextInfo,
-	crossZones []ctypes.ObjectRef,
-	providerZone *adminv1.Zone,
-) (*ctypes.ObjectRef, string, error) {
-	if info.Zone.Name == obj.Spec.Zone.Name {
-		return nil, "", nil
+// getTelecontextApplication returns the configured Telecontext Application.
+// The Application must be ready and have a client ID, which is its gateway consumer name.
+func (h *AgenticExposureHandler) getTelecontextApplication(ctx context.Context) (*applicationapi.Application, error) {
+	group, team, appName, err := h.Config.ParseTelecontextApplicationID()
+	if err != nil {
+		return nil, err
 	}
 
-	for _, z := range crossZones {
-		if z.Name == info.Zone.Name {
-			return nil, "", nil
-		}
+	ref := ctypes.ObjectRef{
+		Name:      appName,
+		Namespace: contextutil.EnvFromContextOrDie(ctx) + "--" + group + "--" + team,
+	}
+	application, err := util.GetApplication(ctx, ref)
+	if err != nil {
+		return nil, err
+	}
+	if application.Status.ClientId == "" {
+		return nil, ctrlerrors.BlockedErrorf("application %q has no client ID", ref.String())
 	}
 
-	telecontextZone, err := util.GetZone(ctx, info.Zone.K8s())
-	if err != nil {
-		return nil, "", errors.Wrapf(err, "failed to get Telecontext zone %q", info.Zone.Name)
-	}
-
-	proxyRoute, err := util.CreateAgenticProxyRoute(ctx, obj.Spec.BasePath, obj.Spec.Variant, telecontextZone, providerZone)
-	if err != nil {
-		return nil, "", errors.Wrapf(err, "failed to create MCP proxy Route for Telecontext zone %q", info.Zone.Name)
-	}
-
-	preset, err := telecontextZone.Spec.SelectPreset(adminv1.GatewayTypeAI)
-	if err != nil {
-		return nil, "", ctrlerrors.BlockedErrorf("Telecontext zone %q has no AI Gateway preset: %v", info.Zone.Name, err)
-	}
-	presetStatus, err := telecontextZone.Status.GetPreset(preset.Name)
-	if err != nil {
-		return nil, "", ctrlerrors.BlockedErrorf("Telecontext zone %q has no AI Gateway preset status: %v", info.Zone.Name, err)
-	}
-	return ctypes.ObjectRefFromObject(proxyRoute), presetStatus.Links.LmsIssuer, nil
+	return application, nil
 }
 
 func (h *AgenticExposureHandler) Delete(ctx context.Context, obj *agenticv1.AgenticExposure) error {

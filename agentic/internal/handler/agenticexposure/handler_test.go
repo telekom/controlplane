@@ -467,7 +467,6 @@ var _ = Describe("AgenticExposureHandler", func() {
 			mockListMcpServers([]agenticv1.McpServer{server})
 			mockListAgenticExposures([]agenticv1.AgenticExposure{})
 			mockGetZone(zone)
-			mockListAgenticSubscriptions([]agenticv1.AgenticSubscription{})
 
 			err := h.CreateOrUpdate(ctx, obj)
 
@@ -495,10 +494,11 @@ var _ = Describe("AgenticExposureHandler", func() {
 					Namespace: "test-env--mcp--telecontext",
 				},
 				Spec: applicationapi.ApplicationSpec{
-					Team:   "telecontext",
+					Team:   "mcp--telecontext",
 					Zone:   ctypes.ObjectRef{Name: "test-zone", Namespace: "test-env"},
 					Secret: "test-secret",
 				},
+				Status: applicationapi.ApplicationStatus{ClientId: "mcp--telecontext--tcapp"},
 			}
 			meta.SetStatusCondition(&telecontextApp.Status.Conditions, metav1.Condition{
 				Type: condition.ConditionTypeReady, Status: metav1.ConditionTrue, Reason: "Ready",
@@ -526,9 +526,83 @@ var _ = Describe("AgenticExposureHandler", func() {
 			err := h.CreateOrUpdate(ctx, obj)
 
 			Expect(err).ToNot(HaveOccurred())
-			Expect(capturedRoute.Spec.Security.DefaultConsumers).To(ContainElement("telecontext--tcapp"))
+			Expect(capturedRoute.Spec.Security.DefaultConsumers).To(ConsistOf("mcp--telecontext--tcapp"))
+			// Telecontext calls the route directly, so the zone's own issuer is trusted
+			Expect(capturedRoute.Spec.Security.TrustedIssuers).To(ConsistOf("https://issuer.example.com"))
 			Expect(capturedRoute.Spec.AdditionalTags).To(Equal([]string{"variant--telecontextmcp"}))
 			Expect(obj.Status.Route).ToNot(BeNil())
+		})
+
+		It("should be blocked when the Telecontext Application has no client ID", func() {
+			obj.Spec.Variant = agenticv1.AgenticVariantTelecontextMCP
+			h.Config.TelecontextApplicationID = "mcp--telecontext--tcapp"
+			ctx = contextutil.WithEnv(ctx, "test-env")
+			previousRoute := &ctypes.ObjectRef{Name: "ai-gateway--mcp-weather-v1", Namespace: "default"}
+			previousProxyRoutes := []ctypes.ObjectRef{{Name: "ai-gateway--mcp-weather-v1", Namespace: "subscriber-zone-ns"}}
+			obj.Status.Route = previousRoute
+			obj.Status.ProxyRoutes = previousProxyRoutes
+
+			server := makeReadyMcpServer("/mcp/weather/v1")
+			zone := makeReadyZoneWithAiGateway()
+
+			mockListMcpServers([]agenticv1.McpServer{server})
+			mockListAgenticExposures([]agenticv1.AgenticExposure{})
+			mockGetZone(zone)
+
+			telecontextApp := &applicationapi.Application{
+				ObjectMeta: metav1.ObjectMeta{Name: "tcapp", Namespace: "test-env--mcp--telecontext"},
+				Spec: applicationapi.ApplicationSpec{
+					Team: "mcp--telecontext", Zone: ctypes.ObjectRef{Name: "test-zone", Namespace: "test-env"}, Secret: "test-secret",
+				},
+			}
+			meta.SetStatusCondition(&telecontextApp.Status.Conditions, metav1.Condition{
+				Type: condition.ConditionTypeReady, Status: metav1.ConditionTrue, Reason: "Ready",
+			})
+			fakeClient.EXPECT().
+				Get(ctx, k8stypes.NamespacedName{Name: "tcapp", Namespace: "test-env--mcp--telecontext"},
+					mock.AnythingOfType("*v1.Application")).
+				Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
+					*out.(*applicationapi.Application) = *telecontextApp
+				}).
+				Return(nil).Once()
+
+			err := h.CreateOrUpdate(ctx, obj)
+
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("has no client ID"))
+			// The routes of the previous reconcile stay in the status
+			Expect(obj.Status.Route).To(Equal(previousRoute))
+			Expect(obj.Status.ProxyRoutes).To(Equal(previousProxyRoutes))
+		})
+
+		It("should be blocked when the Telecontext Application does not exist", func() {
+			obj.Spec.Variant = agenticv1.AgenticVariantTelecontextMCP
+			h.Config.TelecontextApplicationID = "mcp--telecontext--tcapp"
+			ctx = contextutil.WithEnv(ctx, "test-env")
+			previousRoute := &ctypes.ObjectRef{Name: "ai-gateway--mcp-weather-v1", Namespace: "default"}
+			previousProxyRoutes := []ctypes.ObjectRef{{Name: "ai-gateway--mcp-weather-v1", Namespace: "subscriber-zone-ns"}}
+			obj.Status.Route = previousRoute
+			obj.Status.ProxyRoutes = previousProxyRoutes
+
+			server := makeReadyMcpServer("/mcp/weather/v1")
+			zone := makeReadyZoneWithAiGateway()
+
+			mockListMcpServers([]agenticv1.McpServer{server})
+			mockListAgenticExposures([]agenticv1.AgenticExposure{})
+			mockGetZone(zone)
+			fakeClient.EXPECT().
+				Get(ctx, k8stypes.NamespacedName{Name: "tcapp", Namespace: "test-env--mcp--telecontext"},
+					mock.AnythingOfType("*v1.Application")).
+				Return(apierrors.NewNotFound(schema.GroupResource{Group: "application.cp.ei.telekom.de", Resource: "applications"}, "tcapp")).
+				Once()
+
+			err := h.CreateOrUpdate(ctx, obj)
+
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("not found"))
+			// The routes of the previous reconcile stay in the status
+			Expect(obj.Status.Route).To(Equal(previousRoute))
+			Expect(obj.Status.ProxyRoutes).To(Equal(previousProxyRoutes))
 		})
 
 		It("should create proxy route on Telecontext zone when it differs from exposure zone", func() {
@@ -559,10 +633,11 @@ var _ = Describe("AgenticExposureHandler", func() {
 					Namespace: "test-env--mcp--telecontext",
 				},
 				Spec: applicationapi.ApplicationSpec{
-					Team:   "telecontext",
+					Team:   "mcp--telecontext",
 					Zone:   ctypes.ObjectRef{Name: "telecontext-zone", Namespace: "test-env"},
 					Secret: "test-secret",
 				},
+				Status: applicationapi.ApplicationStatus{ClientId: "mcp--telecontext--tcapp"},
 			}
 			meta.SetStatusCondition(&telecontextApp.Status.Conditions, metav1.Condition{
 				Type: condition.ConditionTypeReady, Status: metav1.ConditionTrue, Reason: "Ready",
@@ -618,10 +693,173 @@ var _ = Describe("AgenticExposureHandler", func() {
 			Expect(capturedPrimaryRoute.Spec.AdditionalTags).To(Equal([]string{"variant--telecontextmcp"}))
 			// Telecontext zone's LMS issuer is trusted on the primary route
 			Expect(capturedPrimaryRoute.Spec.Security.TrustedIssuers).To(ContainElement("https://lms.telecontext.example.com"))
-			// Telecontext consumer is on the primary route
-			Expect(capturedPrimaryRoute.Spec.Security.DefaultConsumers).To(ContainElement("telecontext--tcapp"))
-			// isProxyTarget should be true → gateway mesh-client also added
-			Expect(capturedPrimaryRoute.Spec.Security.DefaultConsumers).To(ContainElement("gateway"))
+			// Telecontext calls the proxy route in its own zone with a token of that zone
+			Expect(capturedProxyRoute.Spec.Security.DefaultConsumers).To(ConsistOf("gateway", "mcp--telecontext--tcapp"))
+			Expect(capturedProxyRoute.Spec.Security.TrustedIssuers).To(ConsistOf("https://issuer.telecontext.example.com"))
+			// The primary route only sees the gateway mesh client
+			Expect(capturedPrimaryRoute.Spec.Security.DefaultConsumers).To(ConsistOf("gateway"))
+			Expect(capturedPrimaryRoute.Spec.Security.TrustedIssuers).NotTo(ContainElement("https://issuer.provider.example.com"))
+		})
+
+		It("should add the Telecontext consumer only to the proxy route in its own zone when another zone subscribes", func() {
+			obj.Spec.Variant = agenticv1.AgenticVariantTelecontextMCP
+			h.Config.TelecontextApplicationID = "mcp--telecontext--tcapp"
+			ctx = contextutil.WithEnv(ctx, "test-env")
+
+			server := makeReadyMcpServer("/mcp/weather/v1")
+			providerZone := makeReadyZoneWithAiGateway()
+
+			subscriberZone := makeReadyZoneWithAiGateway()
+			subscriberZone.Name = "subscriber-zone"
+			subscriberZone.Status.Namespace = "subscriber-zone-ns"
+			subscriberZone.Status.Presets[0].Links.LmsIssuer = "https://lms.subscriber.example.com"
+
+			telecontextZone := makeReadyZoneWithAiGateway()
+			telecontextZone.Name = "telecontext-zone"
+			telecontextZone.Status.Namespace = "telecontext-zone-ns"
+			telecontextZone.Status.Presets[0].Links.LmsIssuer = "https://lms.telecontext.example.com"
+
+			telecontextApp := &applicationapi.Application{
+				ObjectMeta: metav1.ObjectMeta{Name: "tcapp", Namespace: "test-env--mcp--telecontext"},
+				Spec: applicationapi.ApplicationSpec{
+					Team: "mcp--telecontext", Zone: ctypes.ObjectRef{Name: "telecontext-zone", Namespace: "default"}, Secret: "test-secret",
+				},
+				Status: applicationapi.ApplicationStatus{ClientId: "mcp--telecontext--tcapp"},
+			}
+			meta.SetStatusCondition(&telecontextApp.Status.Conditions, metav1.Condition{
+				Type: condition.ConditionTypeReady, Status: metav1.ConditionTrue, Reason: "Ready",
+			})
+
+			approvedSub := agenticv1.AgenticSubscription{
+				ObjectMeta: metav1.ObjectMeta{Name: "sub-1", Namespace: "default"},
+				Spec: agenticv1.AgenticSubscriptionSpec{
+					BasePath: "/mcp/weather/v1",
+					Zone:     ctypes.ObjectRef{Name: "subscriber-zone", Namespace: "default"},
+				},
+			}
+			meta.SetStatusCondition(&approvedSub.Status.Conditions, metav1.Condition{
+				Type: "ApprovalGranted", Status: metav1.ConditionTrue, Reason: "Approved",
+			})
+
+			mockListMcpServers([]agenticv1.McpServer{server})
+			mockListAgenticExposures([]agenticv1.AgenticExposure{})
+			mockGetZone(providerZone)
+			mockListAgenticSubscriptions([]agenticv1.AgenticSubscription{approvedSub})
+			fakeClient.EXPECT().
+				Get(ctx, k8stypes.NamespacedName{Name: "tcapp", Namespace: "test-env--mcp--telecontext"},
+					mock.AnythingOfType("*v1.Application")).
+				Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
+					*out.(*applicationapi.Application) = *telecontextApp
+				}).
+				Return(nil).Once()
+			for _, z := range []*adminv1.Zone{subscriberZone, telecontextZone} {
+				fakeClient.EXPECT().
+					Get(ctx, k8stypes.NamespacedName{Name: z.Name, Namespace: "default"}, mock.AnythingOfType("*v1.Zone")).
+					Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
+						*out.(*adminv1.Zone) = *z
+					}).
+					Return(nil).Once()
+			}
+
+			routes := map[string]gatewayv1.Route{}
+			fakeClient.EXPECT().
+				CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Route"), mock.Anything).
+				Run(func(_ context.Context, route client.Object, mutate controllerutil.MutateFn) {
+					_ = mutate()
+					routes[route.GetNamespace()] = *route.(*gatewayv1.Route)
+				}).
+				Return(controllerutil.OperationResultCreated, nil).Times(3)
+			mockCleanup(0, nil)
+			fakeClient.EXPECT().AllReady().Return(true).Once()
+
+			err := h.CreateOrUpdate(ctx, obj)
+
+			Expect(err).ToNot(HaveOccurred())
+			Expect(obj.Status.ProxyRoutes).To(HaveLen(2))
+			Expect(routes).To(HaveLen(3))
+			Expect(routes["subscriber-zone-ns"].Spec.Security.DefaultConsumers).To(ConsistOf("gateway"))
+			Expect(routes["telecontext-zone-ns"].Spec.Security.DefaultConsumers).To(ConsistOf("gateway", "mcp--telecontext--tcapp"))
+			Expect(routes["default"].Spec.Security.DefaultConsumers).To(ConsistOf("gateway"))
+			// The primary route trusts the LMS issuer of each proxy zone once
+			Expect(routes["default"].Spec.Security.TrustedIssuers).To(ConsistOf(
+				"https://lms.subscriber.example.com", "https://lms.telecontext.example.com"))
+		})
+
+		It("should add the Telecontext consumer to the primary route when Telecontext is local and another zone subscribes", func() {
+			obj.Spec.Variant = agenticv1.AgenticVariantTelecontextMCP
+			h.Config.TelecontextApplicationID = "mcp--telecontext--tcapp"
+			ctx = contextutil.WithEnv(ctx, "test-env")
+
+			server := makeReadyMcpServer("/mcp/weather/v1")
+			providerZone := makeReadyZoneWithAiGateway()
+
+			subscriberZone := makeReadyZoneWithAiGateway()
+			subscriberZone.Name = "subscriber-zone"
+			subscriberZone.Status.Namespace = "subscriber-zone-ns"
+			subscriberZone.Status.Presets[0].Links.LmsIssuer = "https://lms.subscriber.example.com"
+
+			// Telecontext is in the exposure zone
+			telecontextApp := &applicationapi.Application{
+				ObjectMeta: metav1.ObjectMeta{Name: "tcapp", Namespace: "test-env--mcp--telecontext"},
+				Spec: applicationapi.ApplicationSpec{
+					Team: "mcp--telecontext", Zone: ctypes.ObjectRef{Name: "test-zone", Namespace: "default"}, Secret: "test-secret",
+				},
+				Status: applicationapi.ApplicationStatus{ClientId: "mcp--telecontext--tcapp"},
+			}
+			meta.SetStatusCondition(&telecontextApp.Status.Conditions, metav1.Condition{
+				Type: condition.ConditionTypeReady, Status: metav1.ConditionTrue, Reason: "Ready",
+			})
+
+			approvedSub := agenticv1.AgenticSubscription{
+				ObjectMeta: metav1.ObjectMeta{Name: "sub-1", Namespace: "default"},
+				Spec: agenticv1.AgenticSubscriptionSpec{
+					BasePath: "/mcp/weather/v1",
+					Zone:     ctypes.ObjectRef{Name: "subscriber-zone", Namespace: "default"},
+				},
+			}
+			meta.SetStatusCondition(&approvedSub.Status.Conditions, metav1.Condition{
+				Type: "ApprovalGranted", Status: metav1.ConditionTrue, Reason: "Approved",
+			})
+
+			mockListMcpServers([]agenticv1.McpServer{server})
+			mockListAgenticExposures([]agenticv1.AgenticExposure{})
+			mockGetZone(providerZone)
+			mockListAgenticSubscriptions([]agenticv1.AgenticSubscription{approvedSub})
+			fakeClient.EXPECT().
+				Get(ctx, k8stypes.NamespacedName{Name: "tcapp", Namespace: "test-env--mcp--telecontext"},
+					mock.AnythingOfType("*v1.Application")).
+				Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
+					*out.(*applicationapi.Application) = *telecontextApp
+				}).
+				Return(nil).Once()
+			fakeClient.EXPECT().
+				Get(ctx, k8stypes.NamespacedName{Name: "subscriber-zone", Namespace: "default"}, mock.AnythingOfType("*v1.Zone")).
+				Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
+					*out.(*adminv1.Zone) = *subscriberZone
+				}).
+				Return(nil).Once()
+
+			routes := map[string]gatewayv1.Route{}
+			fakeClient.EXPECT().
+				CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Route"), mock.Anything).
+				Run(func(_ context.Context, route client.Object, mutate controllerutil.MutateFn) {
+					_ = mutate()
+					routes[route.GetNamespace()] = *route.(*gatewayv1.Route)
+				}).
+				Return(controllerutil.OperationResultCreated, nil).Times(2)
+			mockCleanup(0, nil)
+			fakeClient.EXPECT().AllReady().Return(true).Once()
+
+			err := h.CreateOrUpdate(ctx, obj)
+
+			Expect(err).ToNot(HaveOccurred())
+			Expect(obj.Status.ProxyRoutes).To(HaveLen(1))
+			Expect(routes).To(HaveLen(2))
+			Expect(routes["subscriber-zone-ns"].Spec.Security.DefaultConsumers).To(ConsistOf("gateway"))
+			// The primary route serves the proxy gateway and Telecontext directly
+			Expect(routes["default"].Spec.Security.DefaultConsumers).To(ConsistOf("gateway", "mcp--telecontext--tcapp"))
+			Expect(routes["default"].Spec.Security.TrustedIssuers).To(ConsistOf(
+				"https://issuer.example.com", "https://lms.subscriber.example.com"))
 		})
 
 		DescribeTable("should preserve the variant and cross-zone trusted issuers on provider and subscriber routes", func(variant agenticv1.AgenticVariant, expectedTags []string) {
@@ -629,11 +867,13 @@ var _ = Describe("AgenticExposureHandler", func() {
 			ctx = contextutil.WithEnv(ctx, "test-env")
 			if variant.IsTelecontextVariant() {
 				h.Config.TelecontextApplicationID = "mcp--telecontext--tcapp"
+				// Telecontext is in the subscriber zone, so the subscription's proxy route serves it too
 				telecontextApp := &applicationapi.Application{
 					ObjectMeta: metav1.ObjectMeta{Name: "tcapp", Namespace: "test-env--mcp--telecontext"},
 					Spec: applicationapi.ApplicationSpec{
-						Team: "telecontext", Zone: ctypes.ObjectRef{Name: "test-zone", Namespace: "default"}, Secret: "test-secret",
+						Team: "mcp--telecontext", Zone: ctypes.ObjectRef{Name: "subscriber-zone", Namespace: "default"}, Secret: "test-secret",
 					},
+					Status: applicationapi.ApplicationStatus{ClientId: "mcp--telecontext--tcapp"},
 				}
 				meta.SetStatusCondition(&telecontextApp.Status.Conditions, metav1.Condition{
 					Type: condition.ConditionTypeReady, Status: metav1.ConditionTrue, Reason: "Ready",
@@ -710,6 +950,14 @@ var _ = Describe("AgenticExposureHandler", func() {
 			Expect(capturedRoute.Spec.Security.TrustedIssuers).To(ContainElement("https://lms.subscriber.example.com"))
 			// No local subs → the provider zone's own IDP issuer is NOT added
 			Expect(capturedRoute.Spec.Security.TrustedIssuers).NotTo(ContainElement("https://issuer.provider.example.com"))
+			Expect(capturedRoute.Spec.Security.DefaultConsumers).To(ConsistOf("gateway"))
+			// One proxy route per zone, also when Telecontext is in the subscriber zone
+			Expect(obj.Status.ProxyRoutes).To(HaveLen(1))
+			if variant.IsTelecontextVariant() {
+				Expect(capturedProxyRoute.Spec.Security.DefaultConsumers).To(ConsistOf("gateway", "mcp--telecontext--tcapp"))
+			} else {
+				Expect(capturedProxyRoute.Spec.Security.DefaultConsumers).To(ConsistOf("gateway"))
+			}
 		},
 			Entry("MCP", agenticv1.AgenticVariantMCP, []string{"variant--mcp"}),
 			Entry("Telecontext MCP", agenticv1.AgenticVariantTelecontextMCP, []string{"variant--telecontextmcp"}),
