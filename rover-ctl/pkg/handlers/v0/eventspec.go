@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"github.com/telekom/controlplane/rover-ctl/pkg/config"
 	"github.com/telekom/controlplane/rover-ctl/pkg/handlers/common"
 	"github.com/telekom/controlplane/rover-ctl/pkg/types"
 )
@@ -86,29 +87,62 @@ func resolveJsonSchemaReference(jsonSchema map[string]any, baseDir string) (map[
 			return nil, errors.New("invalid $ref value in JSON schema")
 		}
 		if refPath, ok := strings.CutPrefix(refStr, "file://"); ok {
-			// Resolve relative paths against the resource file's directory
-			if baseDir != "" && !filepath.IsAbs(refPath) {
-				refPath = filepath.Join(baseDir, refPath)
-			}
-			stat, err := os.Stat(refPath)
-			if err != nil {
-				return nil, errors.Wrap(err, "failed to access JSON schema file")
-			}
-			if stat.IsDir() {
-				return nil, errors.New("JSON schema reference points to a directory, expected a file")
-			}
-			data, err := os.ReadFile(refPath)
-			if err != nil {
-				return nil, errors.Wrap(err, "failed to read JSON schema file")
-			}
-			var schemaMap map[string]any
-			if err := json.Unmarshal(data, &schemaMap); err != nil {
-				return nil, errors.Wrap(err, "failed to parse JSON schema from file")
-			}
-			return schemaMap, nil
+			return loadJsonSchemaFile(refPath, baseDir)
 		}
-
 	}
 	return jsonSchema, nil
 
+}
+
+// loadJsonSchemaFile loads a file:// reference. Relative paths are resolved against
+// baseDir first. Only if that file does not exist, the resource-path location (resource.path,
+// or the current working directory if unset) is tried.
+func loadJsonSchemaFile(refPath, baseDir string) (map[string]any, error) {
+	if filepath.IsAbs(refPath) {
+		return readJsonSchemaFile(refPath)
+	}
+
+	primary := refPath
+	if baseDir != "" {
+		primary = filepath.Join(baseDir, refPath)
+	}
+	schema, err := readJsonSchemaFile(primary)
+	if err == nil || !errors.Is(err, os.ErrNotExist) {
+		return schema, err
+	}
+
+	fallback := refPath
+	if resourcePath := config.ResourcePath(); resourcePath != "" {
+		fallback = filepath.Join(resourcePath, refPath)
+	}
+	if filepath.Clean(fallback) == filepath.Clean(primary) {
+		return nil, err
+	}
+	schema, fallbackErr := readJsonSchemaFile(fallback)
+	if fallbackErr == nil {
+		return schema, nil
+	}
+	if errors.Is(fallbackErr, os.ErrNotExist) {
+		return nil, errors.Wrapf(err, "JSON schema file %q not found (tried %q and fallback location %q)", refPath, primary, fallback)
+	}
+	return nil, errors.Wrapf(fallbackErr, "failed to load JSON schema file from fallback location %q", fallback)
+}
+
+func readJsonSchemaFile(path string) (map[string]any, error) {
+	stat, err := os.Stat(path)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to access JSON schema file")
+	}
+	if stat.IsDir() {
+		return nil, errors.New("JSON schema reference points to a directory, expected a file")
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to read JSON schema file")
+	}
+	var schemaMap map[string]any
+	if err := json.Unmarshal(data, &schemaMap); err != nil {
+		return nil, errors.Wrap(err, "failed to parse JSON schema from file")
+	}
+	return schemaMap, nil
 }
