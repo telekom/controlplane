@@ -1,0 +1,47 @@
+tools/snapshotter/pkg/source/source_suite_test.go
+  s_9c2e582c4885d5::t_b60889a8b6bccd 1-17
+tools/snapshotter/pkg/source/kong_client_test.go
+  s_9c2e582c4885d5::t_b60889a8b6bccd 1-11,14-18,20-23,122-214
+  s_9c2e582c4885d5::t_714b109fe4da2f 12-13,19,24-121
+tools/snapshotter/go.mod
+  s_79fab348c05769::t_3e8f56b963a57b 16-17,22,25,40,50,52-53,69,83,85,88
+tools/snapshotter/pkg/source/kong.go
+  s_9c2e582c4885d5::t_b60889a8b6bccd 42
+tools/snapshotter/config/example.yaml
+  s_9c2e582c4885d5::t_714b109fe4da2f 26-27
+tools/snapshotter/README.md
+  s_9c2e582c4885d5::t_714b109fe4da2f 108
+  s_9c2e582c4885d5::t_b60889a8b6bccd 81,107,328
+tools/snapshotter/pkg/source/kong_client.go
+  s_9c2e582c4885d5::t_b60889a8b6bccd 1-8,10-28,37,39-57
+  s_9c2e582c4885d5::t_714b109fe4da2f 9,29-36,38
+tools/snapshotter/pkg/config/config.go
+  s_9c2e582c4885d5::t_b60889a8b6bccd 30,35,40,45
+  s_9c2e582c4885d5::t_714b109fe4da2f 16-27
+tools/snapshotter/go.sum
+  s_79fab348c05769::t_ab53107bd580a2 21-22,25-26,53-54,64-65,72-73
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "4e9657179a3e9f8877540dba8f921e16c7aa5587",
+  "prompts": {},
+  "sessions": {
+    "s_79fab348c05769": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ecf077d15ffetuFApucANDJPB2",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_9c2e582c4885d5": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ed0bf0bd8ffenGD3tNn5VyeQ9C",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
