@@ -13,7 +13,6 @@ import (
 
 	"github.com/pkg/errors"
 	kong "github.com/telekom/controlplane/gateway/pkg/kong/api"
-	"github.com/telekom/controlplane/gateway/pkg/kongutil"
 	"github.com/telekom/controlplane/tools/snapshotter/pkg/config"
 	"github.com/telekom/controlplane/tools/snapshotter/pkg/snapshot"
 	"github.com/telekom/controlplane/tools/snapshotter/pkg/util"
@@ -40,7 +39,7 @@ func NewKongSource(kongClient kong.ClientWithResponsesInterface) (source *KongSo
 }
 
 func NewKongSourceFromConfig(cfg config.SourceConfig, tags []string) (source Source, err error) {
-	kongClient, err := kongutil.NewClientFor(cfg)
+	kongClient, err := NewKongClient(cfg)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create kong client from config")
 	}

@@ -78,7 +78,7 @@ sources:
     environment: production                   # Environment identifier
     zone: aws                                 # Zone/region identifier
     url: https://gateway.example.com/admin    # Gateway admin API URL
-    tokenUrl: https://auth.example.com/token  # Authentication token URL
+    tokenUrl: https://auth.example.com/realms/example  # OAuth issuer URL
     clientId: client-id                       # OAuth client ID
     clientSecret: client-secret               # OAuth client secret
     scopes: [optional-scope1, optional-scope2]# Optional OAuth scopes
@@ -104,7 +104,8 @@ Each source under `sources` represents a gateway instance to snapshot from:
 - `environment`: Environment identifier (e.g., "production", "staging")
 - `zone`: Zone or region identifier (e.g., "aws", "azure")
 - `url`: Gateway admin API URL
-- `tokenUrl`: OAuth token URL for authentication
+- `tokenUrl`: OAuth issuer URL (`/protocol/openid-connect/token` is appended to obtain the token endpoint)
+- `insecureSkipTLSVerify` (optional, default `false`): Set to `true` to skip TLS certificate and hostname verification for both the Kong Admin API and OAuth token endpoint. This exposes credentials and traffic to interception; use only in trusted test environments. Prefer installing the private CA in the system trust store.
 - `clientId`: OAuth client ID
 - `clientSecret`: OAuth client secret
 - `scopes` (optional): OAuth scopes for authentication

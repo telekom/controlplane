@@ -24,3 +24,4 @@ sources:
     tokenUrl: https://idp.com/auth/realms/rover
     clientId: rover
     clientSecret: topsecret
+    insecureSkipTLSVerify: false # Unsafe when enabled; test environments only.

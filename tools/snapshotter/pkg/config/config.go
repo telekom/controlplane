@@ -13,34 +13,36 @@ import (
 )
 
 type SourceConfig struct {
-	Environment  string                         `mapstructure:"environment" validate:"required"`
-	Zone         string                         `mapstructure:"zone" validate:"required"`
-	Url          string                         `mapstructure:"url" validate:"required,url"`
-	TokenUrl     string                         `mapstructure:"tokenUrl" validate:"required,url"`
-	ClientId     string                         `mapstructure:"clientId" validate:"required"`
-	ClientSecret string                         `mapstructure:"clientSecret" validate:"required"`
-	Scopes       []string                       `mapstructure:"scopes"`
-	Tags         []string                       `mapstructure:"tags"`
-	Obfuscators  []obfuscator.ObfuscationTarget `mapstructure:"obfuscators"`
-	Decoders     []decoder.DecoderTarget        `mapstructure:"decoders"`
+	// InsecureSkipTLSVerify disables certificate and hostname verification for this source's API and token endpoint.
+	InsecureSkipTLSVerify bool                           `mapstructure:"insecureSkipTLSVerify"`
+	Environment           string                         `mapstructure:"environment" validate:"required"`
+	Zone                  string                         `mapstructure:"zone" validate:"required"`
+	Url                   string                         `mapstructure:"url" validate:"required,url"`
+	TokenUrl              string                         `mapstructure:"tokenUrl" validate:"required,url"`
+	ClientId              string                         `mapstructure:"clientId" validate:"required"`
+	ClientSecret          string                         `mapstructure:"clientSecret" validate:"required"`
+	Scopes                []string                       `mapstructure:"scopes"`
+	Tags                  []string                       `mapstructure:"tags"`
+	Obfuscators           []obfuscator.ObfuscationTarget `mapstructure:"obfuscators"`
+	Decoders              []decoder.DecoderTarget        `mapstructure:"decoders"`
 }
 
-// AdminClientId implements kongutil.GatewayAdminConfig.
+// AdminClientId returns the OAuth client ID.
 func (s SourceConfig) AdminClientId() string {
 	return s.ClientId
 }
 
-// AdminClientSecret implements kongutil.GatewayAdminConfig.
+// AdminClientSecret returns the OAuth client secret.
 func (s SourceConfig) AdminClientSecret() string {
 	return s.ClientSecret
 }
 
-// AdminIssuer implements kongutil.GatewayAdminConfig.
+// AdminIssuer returns the issuer URL used to derive the token endpoint.
 func (s SourceConfig) AdminIssuer() string {
 	return s.TokenUrl
 }
 
-// AdminUrl implements kongutil.GatewayAdminConfig.
+// AdminUrl returns the Kong Admin API base URL.
 func (s SourceConfig) AdminUrl() string {
 	return s.Url
 }
