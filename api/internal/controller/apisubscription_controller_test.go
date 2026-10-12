@@ -749,7 +749,7 @@ var _ = Describe("Remote Organisation Flow", Ordered, func() {
 			}, timeout, interval).Should(Succeed())
 		})
 
-		It("should block unsupported credentials and clean up previously provisioned resources", func() {
+		It("should block unsupported credentials and clean up owned resources without deleting a shared proxy route", func() {
 			Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(apiSubscription), apiSubscription)).To(Succeed())
 			remoteSubscriptionRef := apiSubscription.Status.RemoteApiSubscription
 			consumeRouteRef := apiSubscription.Status.ConsumeRoute
@@ -758,13 +758,21 @@ var _ = Describe("Remote Organisation Flow", Ordered, func() {
 			Expect(consumeRouteRef).NotTo(BeNil())
 			Expect(proxyRouteRef).NotTo(BeNil())
 
-			apiSubscription.Spec.Security.M2M.Client = &apiapi.OAuth2ClientCredentials{
-				ClientId: "consumer-client", ClientSecret: "consumer-secret",
-			}
-			apiSubscription.Spec.Security.M2M.Basic = &apiapi.BasicAuthCredentials{
-				Username: "consumer-user", Password: "consumer-password",
-			}
-			Expect(k8sClient.Update(ctx, apiSubscription)).To(Succeed())
+			proxyRoute := &gatewayapi.Route{}
+			Expect(k8sClient.Get(ctx, proxyRouteRef.K8s(), proxyRoute)).To(Succeed())
+			proxyRouteUID := proxyRoute.UID
+
+			By("Adding unsupported credentials to only one subscription")
+			Eventually(func(g Gomega) {
+				g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(apiSubscription), apiSubscription)).To(Succeed())
+				apiSubscription.Spec.Security.M2M.Client = &apiapi.OAuth2ClientCredentials{
+					ClientId: "consumer-client", ClientSecret: "consumer-secret",
+				}
+				apiSubscription.Spec.Security.M2M.Basic = &apiapi.BasicAuthCredentials{
+					Username: "consumer-user", Password: "consumer-password",
+				}
+				g.Expect(k8sClient.Update(ctx, apiSubscription)).To(Succeed())
+			}, timeout, interval).Should(Succeed())
 
 			Eventually(func(g Gomega) {
 				g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(apiSubscription), apiSubscription)).To(Succeed())
@@ -786,9 +794,8 @@ var _ = Describe("Remote Organisation Flow", Ordered, func() {
 					WithTransform(apierrors.IsNotFound, BeTrue()),
 				)
 				proxyRoute := &gatewayapi.Route{}
-				g.Expect(k8sClient.Get(ctx, proxyRouteRef.K8s(), proxyRoute)).To(
-					WithTransform(apierrors.IsNotFound, BeTrue()),
-				)
+				g.Expect(k8sClient.Get(ctx, proxyRouteRef.K8s(), proxyRoute)).To(Succeed())
+				g.Expect(proxyRoute.UID).To(Equal(proxyRouteUID))
 			}, timeout, interval).Should(Succeed())
 		})
 	})

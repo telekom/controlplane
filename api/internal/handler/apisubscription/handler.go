@@ -508,10 +508,6 @@ func handleRemoteApiSubscription(ctx context.Context, apiSub *apiapi.ApiSubscrip
 	if _, err := scopedClient.CleanupAll(ctx, cclient.OwnedBy(apiSub)); err != nil {
 		return errors.Wrap(err, "failed to clean up unsupported remote subscription resources")
 	}
-	if _, err := scopedClient.Cleanup(ctx, &gatewayapi.RouteList{}, cclient.OwnedByLabel(apiSub)); err != nil {
-		return errors.Wrap(err, "failed to clean up unsupported remote subscription routes")
-	}
-
 	apiSub.Status.RemoteApiSubscription = nil
 	apiSub.Status.Route = nil
 	apiSub.Status.ConsumeRoute = nil
