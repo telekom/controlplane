@@ -1,0 +1,17 @@
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "ce0eac08f2138cb9a12232417cae515eecc0eec4",
+  "prompts": {},
+  "sessions": {
+    "s_dd6bd4091247bb": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ed0e0bc5affe5wfAGi4DeIYBlq",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": null
+    }
+  }
+}

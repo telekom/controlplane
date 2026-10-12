@@ -1,0 +1,69 @@
+rover-ctl/pkg/handlers/common/error.go
+  s_04aaef23122348::t_de67954280f5f4 36-42,44-72
+  s_04aaef23122348::t_724502171ff506 43
+  s_04aaef23122348::t_8a1d4d39c70773 73-100
+docs/docs/user-journey/onboarding.md
+  s_04aaef23122348::t_de67954280f5f4 86-90
+rover-ctl/pkg/handlers/v0/rover_test.go
+  s_04aaef23122348::t_de67954280f5f4 699-700
+  s_04aaef23122348::t_31a89f30a06dbe 8,10,14
+  s_04aaef23122348::t_6643a6ec2014d5 605-628
+rover-ctl/pkg/handlers/sorter.go
+  s_04aaef23122348::t_de67954280f5f4 28
+rover-ctl/pkg/handlers/v0/secret.go
+  s_04aaef23122348::t_fdeb02f46b19fe 64-65
+rover-ctl/pkg/config/token_errors_test.go
+  s_04aaef23122348::t_de67954280f5f4 53
+rover-ctl/pkg/handlers/common/request_safety_test.go
+  s_04aaef23122348::t_2591ab6b578b51 57-58,60
+  s_04aaef23122348::t_593b649ddd7669 149-154,156-158,160-164,166-173,177-178,180,183-187,191-232
+  s_371776842b603b::t_5f5ad9f77abf43 159,165
+  s_04aaef23122348::t_037ecfbe2d9ae7 34-38
+  s_04aaef23122348::t_43862f0769db12 134-135,137-142,144,146
+  s_371776842b603b::t_e5eab3b2c3b902 179,181-182,188-190
+  s_04aaef23122348::t_de67954280f5f4 1-14,16-20,25-28,32-33,39-56,59,61-90,92-95,97-118,120-132,147-148,233-313
+  s_371776842b603b::t_7c669fb839f9e4 145,174
+  s_371776842b603b::t_79300b30db93a5 119
+  s_04aaef23122348::t_2824f06bca3fe0 21-24,29-31
+  s_04aaef23122348::t_8f2fc255d43664 155
+  s_04aaef23122348::t_a08ff668fb1df9 133,136,143
+  s_04aaef23122348::t_9eddcb1535f032 15
+  s_04aaef23122348::t_a171bd30f7734d 91,96
+  s_371776842b603b::t_e959fdc0470991 175-176
+rover-ctl/pkg/handlers/sorter_test.go
+  s_04aaef23122348::t_de67954280f5f4 8-10,14,147-167
+  s_04aaef23122348::t_7e22d5760b9d60 168
+rover-ctl/pkg/handlers/common/base_handler.go
+  s_04aaef23122348::t_cac9640d03e6d0 229,281,310,312,365
+  s_04aaef23122348::t_8e5652f467a31d 410
+  s_04aaef23122348::t_de67954280f5f4 13,24,423,426,459-468,470-473,477-509
+  s_04aaef23122348::t_38f6c7a040c57f 228
+  s_04aaef23122348::t_ce590c902fbc70 280
+  s_04aaef23122348::t_553ac9589de83b 364
+rover-ctl/pkg/handlers/common/base_handler_test.go
+  s_04aaef23122348::t_de67954280f5f4 162-164,449
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "58a68286edd73c58638fbbf62d8e0448b24c1d1b",
+  "prompts": {},
+  "sessions": {
+    "s_04aaef23122348": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ee44db422ffedpclDfaLmkEyl9",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_371776842b603b": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ee09fed56ffeCIhNrEJDw1Yocu",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
