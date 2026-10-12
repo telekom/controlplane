@@ -93,6 +93,8 @@ and does not check child `ObservedGeneration`.
 
 When subscribers exist in a different zone than the exposure, the operator creates a proxy Route in the subscriber's zone. That proxy gateway stamps a **Last-Mile-Security (LMS) token** when forwarding traffic to the provider zone. The primary route therefore adds the subscriber zone's `LmsIssuer` to its `TrustedIssuers` so that forwarded requests are accepted.
 
+Forwarded requests arrive at the primary route as the gateway mesh client (`gateway` consumer), so the primary route allows this consumer as soon as at least one proxy route exists. The proxy routes themselves do not allow the `gateway` consumer: they are the source of the mesh hop, not its target. Subscribers access their zone's proxy route through their `ConsumeRoute`.
+
 The primary route's `TrustedIssuers` are composed as follows:
 
 - **Exposure zone's IDP issuer** — only when there are local callers: at least one local (same-zone) subscriber, or the Telecontext Application in the exposure zone (`TELECONTEXTMCP` only)
@@ -118,7 +120,7 @@ Used for MCP servers that should be accessible by the **Telecontext platform con
    - **Telecontext in the exposure zone:** the primary route. The primary route then also trusts the exposure zone's own IDP issuer, even without local subscribers.
 3. **Trusts the Telecontext zone's LMS issuer** on the primary route if the Telecontext Application is in another zone, so mesh-forwarded traffic from the Telecontext zone is accepted
 
-Subscribers in other zones keep their own proxy routes, which only allow the `gateway` consumer. If the Telecontext zone is also a subscriber zone, the operator creates a single proxy route for that zone.
+Subscribers in other zones keep their own proxy routes, which only allow the subscribers' `ConsumeRoute` consumers. If the Telecontext zone is also a subscriber zone, the operator creates a single proxy route for that zone.
 
 If the Telecontext Application does not exist, is not ready, or has no client ID, the exposure is blocked. The operator does not change the existing routes and keeps them in the exposure status, so subscriptions keep their route reference. The exposure controller does not watch Applications, so a Telecontext Application that becomes ready later is picked up at the next periodic reconcile.
 
@@ -135,7 +137,6 @@ McpExposure (variant: TELECONTEXTMCP)
     ├──▶ AI Gateway Route (proxy, one per subscriber zone + Telecontext zone — if different)
     │        ├──▶ upstream = exposure zone's AI Gateway
     │        └──▶ spec.security.defaultConsumers:
-    │                 - gateway                   (always)
     │                 - mcp--telecontext--tcapp   (only on the proxy route in the Telecontext zone)
     │
     └──▶ AI Gateway Route (primary, on exposure zone)
