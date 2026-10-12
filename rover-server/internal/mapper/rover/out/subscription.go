@@ -105,7 +105,7 @@ func mapAiSubscription(in *roverv1.AgenticSubscription) (api.AiSubscription, err
 
 	if in.Security != nil && in.Security.M2M != nil {
 		m2m := in.Security.M2M
-		if m2m.Basic != nil {
+		if m2m.Basic != nil && m2m.Client == nil && len(m2m.Scopes) == 0 {
 			basicAuth := api.BasicAuth{
 				Username: m2m.Basic.Username,
 				Password: m2m.Basic.Password,
@@ -121,6 +121,10 @@ func mapAiSubscription(in *roverv1.AgenticSubscription) (api.AiSubscription, err
 				oauth2.ClientId = m2m.Client.ClientId
 				oauth2.ClientSecret = m2m.Client.ClientSecret
 				oauth2.ClientKey = m2m.Client.ClientKey
+			}
+			if m2m.Basic != nil {
+				oauth2.Username = m2m.Basic.Username
+				oauth2.Password = m2m.Basic.Password
 			}
 			if len(m2m.Scopes) > 0 {
 				oauth2.Scopes = m2m.Scopes
@@ -180,7 +184,7 @@ func mapSubscriptionSecurity(in *roverv1.ApiSubscription, out *api.ApiSubscripti
 	}
 
 	m2m := in.Security.M2M
-	if m2m.Basic != nil {
+	if m2m.Basic != nil && m2m.Client == nil && len(m2m.Scopes) == 0 {
 		basicAuth := api.BasicAuth{
 			Username: m2m.Basic.Username,
 			Password: m2m.Basic.Password,
@@ -196,6 +200,11 @@ func mapSubscriptionSecurity(in *roverv1.ApiSubscription, out *api.ApiSubscripti
 		oauth2.ClientSecret = m2m.Client.ClientSecret
 		oauth2.ClientKey = m2m.Client.ClientKey
 		oauth2.RefreshToken = m2m.Client.RefreshToken
+	}
+
+	if m2m.Basic != nil {
+		oauth2.Username = m2m.Basic.Username
+		oauth2.Password = m2m.Basic.Password
 	}
 
 	if len(m2m.Scopes) > 0 {
