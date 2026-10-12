@@ -132,6 +132,7 @@ func newPlFixtures(observerZone string) *plFixtures {
 			Status: adminv1.ZoneStatus{
 				Namespace:     plZoneNs(z),
 				IdentityRealm: &ctypes.ObjectRef{Name: "realm-" + z, Namespace: plEnv},
+				RealmName:     "default",
 				Conditions:    plReady(),
 			},
 		}
@@ -141,8 +142,11 @@ func newPlFixtures(observerZone string) *plFixtures {
 		}
 		f.stores[z] = &pubsubv1.EventStore{
 			ObjectMeta: metav1.ObjectMeta{Name: "es-" + z, Namespace: plZoneNs(z)},
-			Spec:       pubsubv1.EventStoreSpec{Url: "http://" + z + ".admin", TokenUrl: "http://" + z + ".token", ClientId: "id", ClientSecret: "secret"},
-			Status:     pubsubv1.EventStoreStatus{Conditions: plReady()},
+			Spec: pubsubv1.EventStoreSpec{
+				OverwriteEnvironmentName: "default",
+				Url:                      "http://" + z + ".admin", TokenUrl: "http://" + z + ".token", ClientId: "id", ClientSecret: "secret",
+			},
+			Status: pubsubv1.EventStoreStatus{Conditions: plReady()},
 		}
 		proxies := map[string]string{}
 		for _, other := range plZones {
@@ -1200,11 +1204,187 @@ var _ = Describe("Listener capture placement (controller)", func() {
 		ready := meta.FindStatusCondition(l.Status.Conditions, condition.ConditionTypeReady)
 		Expect(ready).ToNot(BeNil())
 		Expect(ready.Status).To(Equal(metav1.ConditionFalse))
-		Expect(ready.Message).To(ContainSubstring("delivery EventConfig for observer zone"))
+		Expect(ready.Message).To(ContainSubstring("failed to resolve delivery for observer zone"))
 		Expect(plCount(all, "Get", "Route", "")).To(BeZero())
 		Expect(plCount(all, "Create", "ApprovalRequest", "")).To(BeZero())
 	})
 })
+
+var _ = Describe("Listener event environment (controller)", func() {
+	It("E1: a capture EventStore subscribing with another environment than the capture realm blocks without relocating capture to P's zone", func() {
+		f := newPlFixtures("a3")
+		f.stores["c"].Spec.OverwriteEnvironmentName = "spectre-test"
+		h := newPlHarness(f)
+
+		all := h.startup()
+		Expect(plBlocked(h.listener())).To(Equal(`capture zone "c" publishes events with environment "default" (identity realm of the zone) ` +
+			`but its EventStore "es-c" subscribes with environment "spectre-test" (overwriteEnvironmentName); Galaxy would drop every event; ` +
+			`platform config: set EventConfig "ec-c" spec.overwriteEnvironmentName or Environment "pl-env" spec.realmName so they match`))
+		Expect(plCount(all, "Get", "Route", plZoneNs("p"))).To(BeZero())
+		Expect(plCount(all, "Create", "ApprovalRequest", "")).To(BeZero())
+		plExpectNoCaptureWrites(all)
+	})
+
+	It("E2: an observer EventStore subscribing with another environment than the observer realm blocks", func() {
+		f := newPlFixtures("a3")
+		f.stores["a3"].Spec.OverwriteEnvironmentName = "spectre-test"
+		h := newPlHarness(f)
+
+		all := h.startup()
+		Expect(plBlocked(h.listener())).To(Equal(`observer zone "a3" publishes events with environment "default" (identity realm of the zone) ` +
+			`but its EventStore "es-a3" subscribes with environment "spectre-test" (overwriteEnvironmentName); Galaxy would drop every event; ` +
+			`platform config: set EventConfig "ec-a3" spec.overwriteEnvironmentName or Environment "pl-env" spec.realmName so they match`))
+		Expect(plCount(all, "Get", "Route", "")).To(BeZero())
+		Expect(plCount(all, "Create", "ApprovalRequest", "")).To(BeZero())
+		plExpectNoCaptureWrites(all)
+	})
+
+	DescribeTable("E3: an environment mismatch after provisioning drains in place and resumes unchanged once it is fixed",
+		func(breakEnv, fixEnv func(h *plHarness, f *plFixtures), want string) {
+			f := newPlFixtures("a3")
+			h := newPlHarness(f)
+			l, _ := h.provision()
+			oldFP := l.Status.AppliedPlacement.Fingerprint
+			rlRef := l.Status.RouteListener.DeepCopy()
+
+			breakEnv(h, f)
+			calls := h.mustReconcile()
+			l = h.listener()
+			Expect(l.Status.Draining).ToNot(BeNil())
+			Expect(l.Status.Draining.Reason).To(Equal("event environment mismatch"))
+			Expect(plCountVerb(calls, "Delete")).To(BeZero())
+			Expect(plBlocked(l)).To(ContainSubstring(want))
+			ready := meta.FindStatusCondition(l.Status.Conditions, condition.ConditionTypeReady)
+			Expect(ready).ToNot(BeNil())
+			Expect(ready.Status).To(Equal(metav1.ConditionFalse))
+			Expect(ready.Message).To(ContainSubstring(want))
+
+			h.drain(rlRef)
+			Expect(h.exists(rlRef, &gatewayv1.RouteListener{})).To(BeFalse())
+			Expect(h.listener().Status.AppliedPlacement).To(BeNil())
+
+			fixEnv(h, f)
+			calls = h.mustReconcile()
+			l = h.listener()
+			plExpectPlacement(l, "c", "a3", "c", f.ecs["c"].Status.ProxyCallbackURLs["a3"])
+			Expect(l.Status.AppliedPlacement.Fingerprint).To(Equal(oldFP))
+			Expect(plCount(calls, "Create", "ApprovalRequest", "")).To(BeZero())
+		},
+		Entry("capture EventStore",
+			func(h *plHarness, f *plFixtures) { h.setOverwrite("c", "spectre-test") },
+			func(h *plHarness, f *plFixtures) { h.setOverwrite("c", "default") },
+			`capture zone "c" publishes events with environment "default"`),
+		Entry("observer EventStore",
+			func(h *plHarness, f *plFixtures) { h.setOverwrite("a3", "spectre-test") },
+			func(h *plHarness, f *plFixtures) { h.setOverwrite("a3", "default") },
+			`observer zone "a3" publishes events with environment "default"`),
+	)
+
+	It("E4: matching environments from the Control Plane environment fallback provision with the same fingerprint", func() {
+		ref := newPlFixtures("a3")
+		refL, _ := newPlHarness(ref).provision()
+
+		f := newPlFixtures("a3")
+		for _, z := range plZones {
+			f.stores[z].Spec.OverwriteEnvironmentName = ""
+			f.zones[z].Status.RealmName = plEnv
+			f.realms[z].Status.IssuerUrl = "https://iris." + z + ".example/auth/realms/" + plEnv
+		}
+		h := newPlHarness(f)
+		l, _ := h.provision()
+		plExpectPlacement(l, "c", "a3", "c", f.ecs["c"].Status.ProxyCallbackURLs["a3"])
+		Expect(l.Status.AppliedPlacement.Fingerprint).To(Equal(refL.Status.AppliedPlacement.Fingerprint))
+
+		calls := h.mustReconcile()
+		Expect(h.listener().Status.Draining).To(BeNil())
+		plExpectNoCaptureWrites(calls)
+	})
+
+	DescribeTable("E6: a realm other than \"default\" with an EventStore subscribing with \"default\" warns without blocking or draining",
+		func(alias func(f *plFixtures), want string) {
+			ref := newPlFixtures("a3")
+			refL, _ := newPlHarness(ref).provision()
+
+			f := newPlFixtures("a3")
+			alias(f)
+			h := newPlHarness(f)
+			rec := record.NewFakeRecorder(1000)
+			h.ctrl = cc.NewController(&handler.ListenerHandler{}, h.raw, rec)
+			l, _ := h.provision()
+			plExpectPlacement(l, "c", "a3", "c", f.ecs["c"].Status.ProxyCallbackURLs["a3"])
+			Expect(l.Status.AppliedPlacement.Fingerprint).To(Equal(refL.Status.AppliedPlacement.Fingerprint))
+
+			calls := h.mustReconcile()
+			l = h.listener()
+			Expect(l.Status.Draining).To(BeNil())
+			plExpectNoCaptureWrites(calls)
+			processing := meta.FindStatusCondition(l.Status.Conditions, condition.ConditionTypeProcessing)
+			Expect(processing).ToNot(BeNil())
+			Expect(processing.Reason).ToNot(Equal(condition.ReasonBlocked))
+
+			var warnings []string
+			for len(rec.Events) > 0 {
+				if e := <-rec.Events; strings.HasPrefix(e, "Warning EnvironmentAliasAssumed ") {
+					warnings = append(warnings, e)
+				}
+			}
+			Expect(warnings).ToNot(BeEmpty())
+			Expect(warnings).To(HaveEach("Warning EnvironmentAliasAssumed " + want))
+		},
+		Entry("capture zone realm",
+			func(f *plFixtures) {
+				f.realms["c"].Status.IssuerUrl = "https://iris.c.example/auth/realms/spectre-test"
+			},
+			`capture zone "c" publishes events with environment "spectre-test" (identity realm of the zone) `+
+				`but its EventStore "es-c" subscribes with environment "default"; events are delivered only if the Horizon `+
+				`defaultEnvironment of Starlight and Galaxy is "spectre-test"`),
+		Entry("observer zone realm",
+			func(f *plFixtures) { f.zones["a3"].Status.RealmName = "spectre-test" },
+			`observer zone "a3" publishes events with environment "spectre-test" (identity realm of the zone) `+
+				`but its EventStore "es-a3" subscribes with environment "default"; events are delivered only if the Horizon `+
+				`defaultEnvironment of Starlight and Galaxy is "spectre-test"`),
+	)
+
+	DescribeTable("E5: realm status that is missing after provisioning blocks without draining",
+		func(unset func(h *plHarness), want string) {
+			f := newPlFixtures("a3")
+			h := newPlHarness(f)
+			l, _ := h.provision()
+			applied := l.Status.AppliedPlacement.DeepCopy()
+
+			unset(h)
+			calls := h.mustReconcile()
+			l = h.listener()
+			Expect(plBlocked(l)).To(ContainSubstring(want))
+			Expect(l.Status.Draining).To(BeNil())
+			Expect(l.Status.AppliedPlacement).To(Equal(applied))
+			plExpectNoCaptureWrites(calls)
+		},
+		Entry("observer zone without RealmName", func(h *plHarness) { h.setRealmName("a3", "") }, `zone "a3" has no RealmName in status`),
+		Entry("capture Realm without IssuerUrl", func(h *plHarness) {
+			realm := &identityv1.Realm{}
+			Expect(h.raw.Get(context.Background(), k8stypes.NamespacedName{Name: "realm-c", Namespace: plEnv}, realm)).To(Succeed())
+			realm.Status.IssuerUrl = ""
+			h.update(realm)
+		}, `identity Realm "realm-c" has no IssuerUrl in status`),
+	)
+})
+
+// setOverwrite sets the persisted overwriteEnvironmentName of zone's EventStore.
+func (h *plHarness) setOverwrite(zone, env string) {
+	es := &pubsubv1.EventStore{}
+	ExpectWithOffset(1, h.raw.Get(context.Background(), k8stypes.NamespacedName{Name: "es-" + zone, Namespace: plZoneNs(zone)}, es)).To(Succeed())
+	es.Spec.OverwriteEnvironmentName = env
+	h.update(es)
+}
+
+// setRealmName sets the persisted Status.RealmName of zone.
+func (h *plHarness) setRealmName(zone, realmName string) {
+	z := &adminv1.Zone{}
+	ExpectWithOffset(1, h.raw.Get(context.Background(), k8stypes.NamespacedName{Name: zone, Namespace: plEnv}, z)).To(Succeed())
+	z.Status.RealmName = realmName
+	h.update(z)
+}
 
 var _ = Describe("Listener capture stop (controller)", func() {
 	It("S1: a rejected never-provisioned Listener leaves the generic Publisher in its consumer zone alone", func() {
@@ -1416,8 +1596,13 @@ var _ = Describe("Listener capture stop (controller)", func() {
 
 	It("S6: a Blocked Listener never deletes the Publisher a granted Listener just created in the same zone", func() {
 		f := newPlFixtures("c")
-		f.realms["c"].Status.IssuerUrl = "" // L2 stops after creating the Publisher
 		h := newPlHarness(f)
+		h.createErr = func(obj client.Object) error { // L2 stops after creating the Publisher
+			if _, ok := obj.(*gatewayv1.RouteListener); ok {
+				return ctrlerrors.BlockedErrorf("RouteListener create blocked")
+			}
+			return nil
+		}
 
 		const blocked = "pl-listener-unrouted"
 		l1 := f.listener.DeepCopy()
@@ -1429,12 +1614,12 @@ var _ = Describe("Listener capture stop (controller)", func() {
 		Expect(h.raw.Create(context.Background(), l1)).To(Succeed())
 
 		// L2 is granted and creates the generic Publisher, then blocks on the
-		// Realm before any RouteListener or Subscriber exists.
+		// RouteListener before any RouteListener or Subscriber exists.
 		h.startup()
 		h.grant()
 		calls := h.mustReconcile()
 		Expect(plCount(calls, "Create", "Publisher", plZoneNs("c"))).To(Equal(1))
-		Expect(plBlocked(h.listener())).To(ContainSubstring("has no IssuerUrl"))
+		Expect(plBlocked(h.listener())).To(ContainSubstring("RouteListener create blocked"))
 		Expect(h.publisherExists("c")).To(BeTrue())
 
 		for i := range 4 {
@@ -1449,7 +1634,7 @@ var _ = Describe("Listener capture stop (controller)", func() {
 
 			calls = h.mustReconcile()
 			Expect(plCount(calls, "Delete", "Publisher", "")).To(BeZero())
-			Expect(plBlocked(h.listener())).To(ContainSubstring("has no IssuerUrl"))
+			Expect(plBlocked(h.listener())).To(ContainSubstring("RouteListener create blocked"))
 			Expect(h.publisherExists("c")).To(BeTrue())
 		}
 	})

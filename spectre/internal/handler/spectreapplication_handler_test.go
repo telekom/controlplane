@@ -8,6 +8,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/stretchr/testify/mock"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -15,6 +16,8 @@ import (
 	k8stypes "k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
@@ -24,11 +27,13 @@ import (
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	ctypes "github.com/telekom/controlplane/common/pkg/types"
+	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	pubsubv1 "github.com/telekom/controlplane/pubsub/api/v1"
 	spectrev1 "github.com/telekom/controlplane/spectre/api/v1"
 	"github.com/telekom/controlplane/spectre/internal/handler"
+	"github.com/telekom/controlplane/spectre/internal/handler/util"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -128,6 +133,7 @@ func makeReadyZone() *adminv1.Zone {
 		},
 		Status: adminv1.ZoneStatus{
 			Namespace: testZoneStatusNs,
+			RealmName: "default",
 			Presets: []adminv1.PresetStatus{
 				{Name: "api", GatewayRef: &ctypes.ObjectRef{Name: "gateway-api", Namespace: testZoneStatusNs}},
 				{Name: "event", GatewayRef: &ctypes.ObjectRef{Name: "gateway-aws", Namespace: testZoneStatusNs}},
@@ -179,10 +185,11 @@ func makeEventStore() *pubsubv1.EventStore {
 			Namespace: testZoneStatusNs,
 		},
 		Spec: pubsubv1.EventStoreSpec{
-			Url:          "http://admin.local",
-			TokenUrl:     "http://token.local",
-			ClientId:     "client-id",
-			ClientSecret: "client-secret",
+			OverwriteEnvironmentName: "default",
+			Url:                      "http://admin.local",
+			TokenUrl:                 "http://token.local",
+			ClientId:                 "client-id",
+			ClientSecret:             "client-secret",
 		},
 	}
 	meta.SetStatusCondition(&es.Status.Conditions, metav1.Condition{
@@ -881,6 +888,63 @@ var _ = Describe("SpectreApplicationHandler", func() {
 				Expect(err.Error()).To(ContainSubstring(`zone "` + testZoneName + `" has no gateway reference in status for Event preset "event"`))
 			})
 
+			DescribeTable("should return blocked error without provisioning when the zone realm cannot reach the EventStore's subscriptions",
+				func(realmName, overwrite, want string, mismatch bool) {
+					ctx = contextutil.WithEnv(ctx, "env")
+					obj := newSpectreApplication("server_sent_event")
+					zone := makeReadyZone()
+					zone.Status.RealmName = realmName
+					es := makeEventStore()
+					es.Spec.OverwriteEnvironmentName = overwrite
+
+					mockGetApplication(makeReadyApplication())
+					mockGetZone(zone)
+					mockListEventConfigs([]eventv1.EventConfig{makeReadyEventConfig()})
+					mockGetEventStore(es)
+
+					err := h.CreateOrUpdate(ctx, obj)
+					Expect(err).To(MatchError(`failed to resolve EventConfig and EventStore of zone "` + testZoneName + `": ` + want))
+					var ctrlErr ctrlerrors.BlockedError
+					Expect(errors.As(err, &ctrlErr)).To(BeTrue())
+					Expect(ctrlErr.IsBlocked()).To(BeTrue())
+					var mismatchErr *util.EnvironmentMismatchError
+					Expect(errors.As(err, &mismatchErr)).To(Equal(mismatch))
+					Expect(obj.Status.Publisher).To(BeNil())
+					Expect(obj.Status.Subscriber).To(BeNil())
+				},
+				Entry("environment mismatch", "default", "spectre-test",
+					`observer zone "`+testZoneName+`" publishes events with environment "default" (identity realm of the zone) `+
+						`but its EventStore "eventstore-aws" subscribes with environment "spectre-test" (overwriteEnvironmentName); Galaxy would drop every event; `+
+						`platform config: set EventConfig "ec-aws" spec.overwriteEnvironmentName or Environment "env" spec.realmName so they match`, true),
+				Entry("no RealmName yet", "", "default", `zone "`+testZoneName+`" has no RealmName in status`, false),
+			)
+
+			It("should provision and log a warning when the zone realm differs from an EventStore subscribing with \"default\"", func() {
+				logs := &strings.Builder{}
+				ctx = log.IntoContext(ctx, zap.New(zap.WriteTo(logs)))
+				obj := newSpectreApplication("callback")
+				zone := makeReadyZone()
+				zone.Status.RealmName = "spectre-test"
+
+				mockGetApplication(makeReadyApplication())
+				mockGetZone(zone)
+				mockListEventConfigs([]eventv1.EventConfig{makeReadyEventConfig()})
+				mockGetEventStore(makeEventStore())
+				mockCreateOrUpdatePublisher()
+				mockCreateOrUpdateSubscriber()
+				mockCleanup()
+				fakeClient.EXPECT().AnyChanged().Return(true).Once()
+
+				Expect(h.CreateOrUpdate(ctx, obj)).To(Succeed())
+				Expect(obj.Status.Publisher).ToNot(BeNil())
+				Expect(obj.Status.Subscriber).ToNot(BeNil())
+				Expect(strings.Split(logs.String(), "\n")).To(ContainElement(SatisfyAll(
+					ContainSubstring(`"msg":"Event environment relies on a Horizon defaultEnvironment alias"`),
+					ContainSubstring(`"publishEnvironment":"spectre-test"`),
+					ContainSubstring(`"subscribeEnvironment":"default"`),
+				)))
+			})
+
 			It("should return blocked error when callback delivery but EventConfig has no CallbackURL", func() {
 				obj := newSpectreApplication("callback")
 				app := makeReadyApplication()
@@ -1054,10 +1118,11 @@ var _ = Describe("SpectreApplicationHandler", func() {
 						Namespace: backendZoneStatusNs,
 					},
 					Spec: pubsubv1.EventStoreSpec{
-						Url:          "http://admin.backend.local",
-						TokenUrl:     "http://token.backend.local",
-						ClientId:     "client-id-backend",
-						ClientSecret: "client-secret-backend",
+						OverwriteEnvironmentName: "default",
+						Url:                      "http://admin.backend.local",
+						TokenUrl:                 "http://token.backend.local",
+						ClientId:                 "client-id-backend",
+						ClientSecret:             "client-secret-backend",
 					},
 				}
 				meta.SetStatusCondition(&es.Status.Conditions, metav1.Condition{
@@ -1100,6 +1165,7 @@ var _ = Describe("SpectreApplicationHandler", func() {
 				backendZone := makeBackendZone()
 				backendEC := makeBackendEventConfig()
 				backendES := makeBackendEventStore()
+				backendES.Spec.OverwriteEnvironmentName = zone.Status.RealmName
 
 				mockGetApplication(app)
 				mockGetZone(zone)

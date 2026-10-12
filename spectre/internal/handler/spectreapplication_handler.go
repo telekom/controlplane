@@ -40,21 +40,19 @@ func (h *SpectreApplicationHandler) CreateOrUpdate(ctx context.Context, obj *spe
 	obj.Status.Id = appId
 	logger.Info("Resolved Application", "appId", appId)
 
-	// Step 2: Resolve Zone -> get EventConfig + find EventStore.
+	// Step 2: Resolve Zone -> get EventConfig + find EventStore, the delivery
+	// infrastructure every Listener of this application delivers through.
 	zone, err := h.resolveZone(ctx, application)
 	if err != nil {
 		return errors.Wrap(err, "failed to resolve zone")
 	}
 
-	eventConfig, err := util.GetEventConfig(ctx, zone)
+	delivery, err := util.ResolveDelivery(ctx, zone)
 	if err != nil {
-		return errors.Wrap(err, "failed to get EventConfig")
+		return errors.Wrapf(err, "failed to resolve EventConfig and EventStore of zone %q", zone.Name)
 	}
-
-	eventStore, err := util.ResolveEventStore(ctx, eventConfig)
-	if err != nil {
-		return errors.Wrap(err, "failed to resolve EventStore")
-	}
+	eventConfig, eventStore := delivery.EventConfig, delivery.EventStore
+	warnEnvironmentAliases(ctx, obj, delivery.EnvironmentAlias)
 
 	// Step 2.5: Validate CallbackURL when callback delivery is configured.
 	gatewayCallbackURL := eventConfig.Status.CallbackURL
