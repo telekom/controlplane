@@ -1,3 +1,15 @@
+# [0.39.0](https://github.com/telekom/controlplane/compare/v0.38.0...v0.39.0) (2026-10-12)
+
+
+### Bug Fixes
+
+* **agentic:** do not allow gateway mesh client on MCP proxy routes ([#762](https://github.com/telekom/controlplane/issues/762)) ([2a98fee](https://github.com/telekom/controlplane/commit/2a98feeae1a4408562b5838cd5eed3c99de1b7ab))
+
+
+### Features
+
+* **rover-ctl:** support relative json-schema resolution to file and resource_path ([#763](https://github.com/telekom/controlplane/issues/763)) ([7dc411d](https://github.com/telekom/controlplane/commit/7dc411d6347631300accfabd4ae4fd030d9f1eb4))
+
 # [0.38.0](https://github.com/telekom/controlplane/compare/v0.37.1...v0.38.0) (2026-10-12)
 
 
