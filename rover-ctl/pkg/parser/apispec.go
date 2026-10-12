@@ -6,12 +6,12 @@ package parser
 
 import (
 	"encoding/json"
-	"net/url"
 	"strings"
 
 	"github.com/pb33f/libopenapi"
 	"github.com/pb33f/libopenapi/datamodel"
 	"github.com/pkg/errors"
+	"github.com/telekom/controlplane/common/pkg/util/openapiutil"
 	"github.com/telekom/controlplane/rover-ctl/pkg/types"
 )
 
@@ -59,7 +59,7 @@ func GetNameFromOpenapiSpec(document libopenapi.Document) (string, error) {
 	if len(model.Model.Servers) == 0 {
 		return "", errors.New("there are no servers in the spec")
 	}
-	path, err := GetPathFromURL(model.Model.Servers[0].URL)
+	path, err := openapiutil.PathFromURL(model.Model.Servers[0].URL)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to make name from url")
 	}
@@ -85,11 +85,9 @@ func SanitizeName(basePath string) string {
 	return strings.ToLower(strings.Trim(strings.ReplaceAll(basePath, "/", "-"), "-"))
 }
 
+// GetPathFromURL extracts the path of an OpenAPI server URL.
+//
+// Deprecated: use openapiutil.PathFromURL from github.com/telekom/controlplane/common/pkg/util/openapiutil.
 func GetPathFromURL(rawURL string) (string, error) {
-	u, err := url.Parse(rawURL)
-	if err != nil {
-		return "", errors.Wrap(err, "failed to parse url")
-	}
-
-	return u.Path, nil
+	return openapiutil.PathFromURL(rawURL)
 }

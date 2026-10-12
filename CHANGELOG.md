@@ -1,3 +1,48 @@
+# [0.39.0](https://github.com/telekom/controlplane/compare/v0.38.0...v0.39.0) (2026-10-12)
+
+
+### Bug Fixes
+
+* **agentic:** do not allow gateway mesh client on MCP proxy routes ([#762](https://github.com/telekom/controlplane/issues/762)) ([2a98fee](https://github.com/telekom/controlplane/commit/2a98feeae1a4408562b5838cd5eed3c99de1b7ab))
+
+
+### Features
+
+* **rover-ctl:** support relative json-schema resolution to file and resource_path ([#763](https://github.com/telekom/controlplane/issues/763)) ([7dc411d](https://github.com/telekom/controlplane/commit/7dc411d6347631300accfabd4ae4fd030d9f1eb4))
+
+# [0.38.0](https://github.com/telekom/controlplane/compare/v0.37.1...v0.38.0) (2026-10-12)
+
+
+### Bug Fixes
+
+* **agentic:** give the Telecontext consumer access to MCP routes ([#755](https://github.com/telekom/controlplane/issues/755)) ([0ad0604](https://github.com/telekom/controlplane/commit/0ad06048c135491f72750e295ecae34236fc766b))
+* **rover-ctl:** support apiVersion: rover.ei.telekom.de/v1 ([#760](https://github.com/telekom/controlplane/issues/760)) ([ce0eac0](https://github.com/telekom/controlplane/commit/ce0eac08f2138cb9a12232417cae515eecc0eec4))
+
+
+### Features
+
+* **controlplane-api:** add clientId field to applicationinfo ([#759](https://github.com/telekom/controlplane/issues/759)) ([8c9b98e](https://github.com/telekom/controlplane/commit/8c9b98ea9bb7a96bb5553ae4fb158822fe65b583))
+* **rover-ctl,rover-server:** improve error-handling ([#761](https://github.com/telekom/controlplane/issues/761)) ([ed8ad3a](https://github.com/telekom/controlplane/commit/ed8ad3a0b8ddd1374b0a9f980ebc62e899624858))
+
+## [0.37.1](https://github.com/telekom/controlplane/compare/v0.37.0...v0.37.1) (2026-10-12)
+
+
+### Bug Fixes
+
+* increase max items for scopes to 100 ([#758](https://github.com/telekom/controlplane/issues/758)) ([5c36de4](https://github.com/telekom/controlplane/commit/5c36de47014fc930ba1b40fe3a068c6186a74ac9))
+
+# [0.37.0](https://github.com/telekom/controlplane/compare/v0.36.1...v0.37.0) (2026-10-09)
+
+
+### Bug Fixes
+
+* **rover-ctl:** improve token errors with sanitized debug diagnostics ([#752](https://github.com/telekom/controlplane/issues/752)) ([1c3678f](https://github.com/telekom/controlplane/commit/1c3678fecf285ad6865e4e90c03a1b67cf14794b))
+
+
+### Features
+
+* **rover:** support templated server authorities in OpenAPI ([#751](https://github.com/telekom/controlplane/issues/751)) ([ed31f62](https://github.com/telekom/controlplane/commit/ed31f62000f7131992363d8ff37e31a2730b8f22))
+
 ## [0.36.1](https://github.com/telekom/controlplane/compare/v0.36.0...v0.36.1) (2026-10-08)
 
 

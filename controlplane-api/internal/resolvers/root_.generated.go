@@ -407,6 +407,7 @@ type ComplexityRoot struct {
 	}
 
 	ApplicationInfo struct {
+		ClientID    func(childComplexity int) int
 		ExternalIds func(childComplexity int) int
 		ID          func(childComplexity int) int
 		Name        func(childComplexity int) int
@@ -2555,6 +2556,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.ApplicationEdge.Node(childComplexity), true
 
+	case "ApplicationInfo.clientId":
+		if e.ComplexityRoot.ApplicationInfo.ClientID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApplicationInfo.ClientID(childComplexity), true
 	case "ApplicationInfo.externalIds":
 		if e.ComplexityRoot.ApplicationInfo.ExternalIds == nil {
 			break
@@ -12169,6 +12176,8 @@ type TeamInfo {
 type ApplicationInfo {
   id: ID!
   name: String!
+  "Identity client ID of the application. A public identifier, not a secret; null until provisioned."
+  clientId: String
   externalIds: [ExternalId!]
   "Zone the application is deployed in"
   zone: Zone!
@@ -13360,6 +13369,8 @@ func (ec *executionContext) childFields_ApplicationInfo(ctx context.Context, fie
 		return ec.fieldContext_ApplicationInfo_id(ctx, field)
 	case "name":
 		return ec.fieldContext_ApplicationInfo_name(ctx, field)
+	case "clientId":
+		return ec.fieldContext_ApplicationInfo_clientId(ctx, field)
 	case "externalIds":
 		return ec.fieldContext_ApplicationInfo_externalIds(ctx, field)
 	case "zone":

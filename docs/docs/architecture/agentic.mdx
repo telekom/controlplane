@@ -59,7 +59,7 @@ When an **McpExposure** is reconciled, the Agentic operator provisions gateway R
 | Route created | When | Location |
 |---|---|---|
 | **Primary** route | Always — one per exposure | Provider's zone namespace |
-| **Proxy** route | For each zone with an approved cross-zone subscription | Subscriber's zone namespace, upstream = provider zone's AI Gateway |
+| **Proxy** route | For each zone with an approved cross-zone subscription, and for the Telecontext Application's zone ([`TELECONTEXTMCP`](#telecontextmcp) only) | Proxy zone namespace, upstream = provider zone's AI Gateway |
 
 After approval, an `AgenticSubscription` publishes the path-specific AI Gateway
 URL in its status. The Projector persists this value and exposes it as
@@ -93,10 +93,12 @@ and does not check child `ObservedGeneration`.
 
 When subscribers exist in a different zone than the exposure, the operator creates a proxy Route in the subscriber's zone. That proxy gateway stamps a **Last-Mile-Security (LMS) token** when forwarding traffic to the provider zone. The primary route therefore adds the subscriber zone's `LmsIssuer` to its `TrustedIssuers` so that forwarded requests are accepted.
 
+Forwarded requests arrive at the primary route as the gateway mesh client (`gateway` consumer), so the primary route allows this consumer as soon as at least one proxy route exists. The proxy routes themselves do not allow the `gateway` consumer: they are the source of the mesh hop, not its target. Subscribers access their zone's proxy route through their `ConsumeRoute`.
+
 The primary route's `TrustedIssuers` are composed as follows:
 
-- **Exposure zone's IDP issuer** — only when at least one local (same-zone) subscriber exists, for direct consumer access
-- **LMS issuers from each cross-zone proxy gateway** — for mesh-forwarded traffic from subscriber zones
+- **Exposure zone's IDP issuer** — only when there are local callers: at least one local (same-zone) subscriber, or the Telecontext Application in the exposure zone (`TELECONTEXTMCP` only)
+- **LMS issuers from each cross-zone proxy gateway** — for mesh-forwarded traffic from proxy zones (subscriber zones and the Telecontext zone)
 
 ## Variants
 
@@ -112,10 +114,15 @@ Used for MCP servers that should be accessible by the **Telecontext platform con
 
 **How it works:** When `spec.variant: TELECONTEXTMCP` is set on an McpExposure, the operator resolves the Telecontext Application using a platform-level configuration (`AGENTIC_TELECONTEXT_APPLICATION_ID`, format: `group--team--appName`). From this, the operator:
 
-1. **Looks up the Application CR** to discover its zone and derives the consumer name (`team--appName`)
-2. **Adds the consumer** to the AI Gateway Route's `spec.security.defaultConsumers`, giving the Telecontext application pre-authorized access without a ConsumeRoute or approval flow
-3. **Creates a proxy route** on the Telecontext Application's zone if it differs from the exposure zone, ensuring cross-zone reachability even when no regular subscribers exist on that zone
-4. **Trusts the Telecontext zone's LMS issuer** on the primary route, so mesh-forwarded traffic from the Telecontext zone is accepted
+1. **Looks up the Application CR** to discover its zone and uses its `status.clientId` (`group--team--appName`) as the consumer name. This is the name of the Application's gateway consumer and its ACL group, and the same value that subscriptions use for their ConsumeRoutes.
+2. **Adds the consumer** to `spec.security.defaultConsumers` of the Route that the Telecontext Application calls directly, giving it pre-authorized access without a ConsumeRoute or approval flow:
+   - **Telecontext in another zone:** the proxy route in the Telecontext zone. The operator creates this proxy route even if no regular subscribers exist in that zone. The primary route does not get the consumer, because mesh-forwarded traffic arrives there as the `gateway` consumer.
+   - **Telecontext in the exposure zone:** the primary route. The primary route then also trusts the exposure zone's own IDP issuer, even without local subscribers.
+3. **Trusts the Telecontext zone's LMS issuer** on the primary route if the Telecontext Application is in another zone, so mesh-forwarded traffic from the Telecontext zone is accepted
+
+Subscribers in other zones keep their own proxy routes, which only allow the subscribers' `ConsumeRoute` consumers. If the Telecontext zone is also a subscriber zone, the operator creates a single proxy route for that zone.
+
+If the Telecontext Application does not exist, is not ready, or has no client ID, the exposure is blocked. The operator does not change the existing routes and keeps them in the exposure status, so subscriptions keep their route reference. The exposure controller does not watch Applications, so a Telecontext Application that becomes ready later is picked up at the next periodic reconcile.
 
 This mirrors how the legacy Java controlplane handled Telecontext integration: iterating all zones and creating proxy routes where the Telecontext Application is located, plus granting access via a dedicated RoutePermission (now replaced by the `DefaultConsumers` mechanism).
 
@@ -125,15 +132,20 @@ This mirrors how the legacy Java controlplane handled Telecontext integration: i
 McpExposure (variant: TELECONTEXTMCP)
     │
     ├──▶ Resolve Application (from AGENTIC_TELECONTEXT_APPLICATION_ID)
-    │        └──▶ Get zone + derive consumer name
+    │        └──▶ Get zone + status.clientId (e.g. mcp--telecontext--tcapp)
     │
-    ├──▶ AI Gateway Route (primary, on exposure zone)
+    ├──▶ AI Gateway Route (proxy, one per subscriber zone + Telecontext zone — if different)
+    │        ├──▶ upstream = exposure zone's AI Gateway
     │        └──▶ spec.security.defaultConsumers:
-    │                 - gateway              (cross-zone proxy access)
-    │                 - telecontext--tcapp   (Telecontext platform consumer)
+    │                 - mcp--telecontext--tcapp   (only on the proxy route in the Telecontext zone)
     │
-    └──▶ AI Gateway Route (proxy, on Telecontext zone — if different)
-             └──▶ upstream = exposure zone's AI Gateway
+    └──▶ AI Gateway Route (primary, on exposure zone)
+             ├──▶ spec.security.defaultConsumers:
+             │        - gateway                   (if any proxy route exists)
+             │        - mcp--telecontext--tcapp   (only if Telecontext is in the exposure zone)
+             └──▶ spec.security.trustedIssuers:
+                      - exposure zone's IDP issuer   (if local subscribers exist or Telecontext is in the exposure zone)
+                      - LMS issuer of each proxy zone
 ```
 
 The `AGENTIC_TELECONTEXT_APPLICATION_ID` value is injected at operator startup via environment variable and must be configured for environments that support the `TELECONTEXTMCP` variant.
