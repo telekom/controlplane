@@ -20,6 +20,7 @@ import (
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	ctypes "github.com/telekom/controlplane/common/pkg/types"
+	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	pubsubv1 "github.com/telekom/controlplane/pubsub/api/v1"
@@ -164,7 +165,7 @@ var _ = Describe("ResolveDelivery", func() {
 		d, err := util.ResolveDelivery(ctx, makeZone("a"))
 		Expect(d).To(BeNil())
 		Expect(err).To(Satisfy(isBlockedError))
-		Expect(err.Error()).To(ContainSubstring("delivery EventConfig"))
+		Expect(err).To(MatchError(`no EventConfig found for zone "a"`))
 	})
 
 	It("blocks when A's EventConfig is NotReady", func() {
@@ -177,6 +178,32 @@ var _ = Describe("ResolveDelivery", func() {
 		Expect(d).To(BeNil())
 		Expect(err).To(Satisfy(isBlockedError))
 		Expect(err.Error()).To(ContainSubstring("not ready"))
+	})
+
+	It("blocks with an EnvironmentMismatchError when A's realm differs from A's EventStore environment", func() {
+		es := storeFor("a")
+		es.Spec.OverwriteEnvironmentName = "spectre-test"
+		ctx := pc.context(eventConfigFor("a", es), es)
+
+		d, err := util.ResolveDelivery(contextutil.WithEnv(ctx, placementEnv), makeZone("a"))
+		Expect(d).To(BeNil())
+		var mismatch *util.EnvironmentMismatchError
+		Expect(errors.As(err, &mismatch)).To(BeTrue())
+		Expect(mismatch.EventConfig).To(Equal("ec-a"))
+		Expect(mismatch.Environment).To(Equal(placementEnv))
+	})
+
+	It("resolves with an EnvironmentAlias when A's EventStore subscribes with \"default\" and A's realm differs", func() {
+		es := storeFor("a")
+		ctx := pc.context(eventConfigFor("a", es), es)
+		a := makeZone("a")
+		a.Status.RealmName = "spectre-test"
+
+		d, err := util.ResolveDelivery(ctx, a)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(d.EnvironmentAlias).To(Equal(&util.EnvironmentAlias{
+			Role: "observer", Zone: "a", PublishEnvironment: "spectre-test", EventStore: "es-a",
+		}))
 	})
 
 	It("blocks when A's EventConfig has no EventStore reference", func() {
@@ -610,5 +637,101 @@ var _ = Describe("NoCaptureCandidateError", func() {
 		var target *util.DeliveryPathError
 		Expect(errors.As(pkgerrors.Wrap(err, "outer"), &target)).To(BeTrue())
 		Expect(target).To(BeIdenticalTo(noPath))
+	})
+})
+
+var _ = Describe("Event environment checks", func() {
+	envCtx := contextutil.WithEnv(context.Background(), "cp-env")
+	ec := &eventv1.EventConfig{ObjectMeta: metav1.ObjectMeta{Name: "ec-c", Namespace: "env--c"}}
+	store := func(overwrite string) *pubsubv1.EventStore {
+		return &pubsubv1.EventStore{
+			ObjectMeta: metav1.ObjectMeta{Name: "es-c", Namespace: "env--c"},
+			Spec:       pubsubv1.EventStoreSpec{OverwriteEnvironmentName: overwrite},
+		}
+	}
+	zone := func(realmName string) *adminv1.Zone {
+		return &adminv1.Zone{
+			ObjectMeta: metav1.ObjectMeta{Name: "c", Namespace: "env"},
+			Status:     adminv1.ZoneStatus{RealmName: realmName},
+		}
+	}
+	const issuer = "https://iris.example/auth/realms/"
+
+	It("accepts a capture issuer realm equal to the EventStore's overwriteEnvironmentName", func() {
+		alias, err := util.CheckCaptureEnvironment(envCtx, zone("default"), issuer+"default", ec, store("default"))
+		Expect(err).ToNot(HaveOccurred())
+		Expect(alias).To(BeNil())
+	})
+
+	It("takes the capture realm after the last realms/ of the issuer, as the Jumper does", func() {
+		alias, err := util.CheckCaptureEnvironment(envCtx, zone(""), "https://realms/x/auth/realms/cp-env", ec, store(""))
+		Expect(err).ToNot(HaveOccurred())
+		Expect(alias).To(BeNil())
+	})
+
+	It("falls back to the Control Plane environment when the EventStore has no overwriteEnvironmentName", func() {
+		alias, err := util.CheckCaptureEnvironment(envCtx, zone(""), issuer+"cp-env", ec, store(""))
+		Expect(err).ToNot(HaveOccurred())
+		Expect(alias).To(BeNil())
+
+		_, err = util.CheckCaptureEnvironment(envCtx, zone(""), issuer+"default", ec, store(""))
+		Expect(err).To(MatchError(`capture zone "c" publishes events with environment "default" (identity realm of the zone) ` +
+			`but its EventStore "es-c" subscribes with environment "cp-env" (Control Plane environment); Galaxy would drop every event; ` +
+			`platform config: set EventConfig "ec-c" spec.overwriteEnvironmentName or Environment "cp-env" spec.realmName so they match`))
+	})
+
+	It("reports a capture mismatch naming both values, their sources and the platform config as a blocked EnvironmentMismatchError", func() {
+		alias, err := util.CheckCaptureEnvironment(envCtx, zone("default"), issuer+"default", ec, store("spectre-test"))
+		Expect(alias).To(BeNil())
+		Expect(err).To(MatchError(`capture zone "c" publishes events with environment "default" (identity realm of the zone) ` +
+			`but its EventStore "es-c" subscribes with environment "spectre-test" (overwriteEnvironmentName); Galaxy would drop every event; ` +
+			`platform config: set EventConfig "ec-c" spec.overwriteEnvironmentName or Environment "cp-env" spec.realmName so they match`))
+		Expect(err).To(Satisfy(isBlockedError))
+		var mismatch *util.EnvironmentMismatchError
+		Expect(errors.As(pkgerrors.Wrap(err, "outer"), &mismatch)).To(BeTrue())
+	})
+
+	DescribeTable("returns an EnvironmentAlias instead of an error when the EventStore subscribes with \"default\" and the realm differs",
+		func(check func() (*util.EnvironmentAlias, error), want string) {
+			alias, err := check()
+			Expect(err).ToNot(HaveOccurred())
+			Expect(alias).ToNot(BeNil())
+			Expect(alias.String()).To(Equal(want))
+		},
+		Entry("capture", func() (*util.EnvironmentAlias, error) {
+			return util.CheckCaptureEnvironment(envCtx, zone("default"), issuer+"spectre-test", ec, store("default"))
+		}, `capture zone "c" publishes events with environment "spectre-test" (identity realm of the zone) `+
+			`but its EventStore "es-c" subscribes with environment "default"; events are delivered only if the Horizon `+
+			`defaultEnvironment of Starlight and Galaxy is "spectre-test"`),
+		Entry("observer", func() (*util.EnvironmentAlias, error) {
+			return util.CheckDeliveryEnvironment(envCtx, zone("spectre-test"), ec, store("default"))
+		}, `observer zone "c" publishes events with environment "spectre-test" (identity realm of the zone) `+
+			`but its EventStore "es-c" subscribes with environment "default"; events are delivered only if the Horizon `+
+			`defaultEnvironment of Starlight and Galaxy is "spectre-test"`),
+	)
+
+	It("accepts an observer zone RealmName equal to the EventStore environment", func() {
+		for _, c := range []struct{ realm, overwrite string }{{"default", "default"}, {"cp-env", ""}} {
+			alias, err := util.CheckDeliveryEnvironment(envCtx, zone(c.realm), ec, store(c.overwrite))
+			Expect(err).ToNot(HaveOccurred())
+			Expect(alias).To(BeNil())
+		}
+	})
+
+	It("reports an observer mismatch naming the realm, the EventStore environment and the platform config", func() {
+		_, err := util.CheckDeliveryEnvironment(envCtx, zone("default"), ec, store("spectre-test"))
+		Expect(err).To(MatchError(`observer zone "c" publishes events with environment "default" (identity realm of the zone) ` +
+			`but its EventStore "es-c" subscribes with environment "spectre-test" (overwriteEnvironmentName); Galaxy would drop every event; ` +
+			`platform config: set EventConfig "ec-c" spec.overwriteEnvironmentName or Environment "cp-env" spec.realmName so they match`))
+		var mismatch *util.EnvironmentMismatchError
+		Expect(errors.As(err, &mismatch)).To(BeTrue())
+	})
+
+	It("blocks without a mismatch while the observer zone has no RealmName yet", func() {
+		_, err := util.CheckDeliveryEnvironment(envCtx, zone(""), ec, store("default"))
+		Expect(err).To(MatchError(`zone "c" has no RealmName in status`))
+		Expect(err).To(Satisfy(isBlockedError))
+		var mismatch *util.EnvironmentMismatchError
+		Expect(errors.As(err, &mismatch)).To(BeFalse())
 	})
 })

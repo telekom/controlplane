@@ -152,6 +152,7 @@ var _ = Describe("Integration: Two-Tier Reconcile Cycle", Ordered, func() {
 				Name:      "test-realm",
 				Namespace: zoneNamespace,
 			},
+			RealmName:  "test",
 			Conditions: readyConditions(),
 			Presets: testPresetStatuses(
 				&ctypes.ObjectRef{Name: "gateway-aws", Namespace: zoneStatusNs},
@@ -201,10 +202,11 @@ var _ = Describe("Integration: Two-Tier Reconcile Cycle", Ordered, func() {
 				Labels:    map[string]string{envLabelKey: envName},
 			},
 			Spec: pubsubv1.EventStoreSpec{
-				Url:          "http://admin.local",
-				TokenUrl:     "http://token.local",
-				ClientId:     "client-id",
-				ClientSecret: "client-secret",
+				OverwriteEnvironmentName: "test",
+				Url:                      "http://admin.local",
+				TokenUrl:                 "http://token.local",
+				ClientId:                 "client-id",
+				ClientSecret:             "client-secret",
 			},
 		}
 		Expect(k8sClient.Create(ctx, eventStore)).To(Succeed())

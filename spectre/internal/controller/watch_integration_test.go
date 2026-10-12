@@ -86,6 +86,7 @@ var _ = Describe("Watch-Driven Integration", Ordered, func() {
 		zone.Status = adminv1.ZoneStatus{
 			Namespace:     watchZNs,
 			IdentityRealm: &ctypes.ObjectRef{Name: "watch-realm", Namespace: watchNs},
+			RealmName:     "watch",
 			Conditions:    readyConditions(),
 			Presets: testPresetStatuses(&ctypes.ObjectRef{Name: "gw-aws", Namespace: watchZNs}, adminv1.Links{
 				Url:       "http://gw.watch.example.com",
@@ -141,6 +142,7 @@ var _ = Describe("Watch-Driven Integration", Ordered, func() {
 			Spec: pubsubv1.EventStoreSpec{
 				Url: "http://admin.local", TokenUrl: "http://token.local",
 				ClientId: "cid", ClientSecret: "csec",
+				OverwriteEnvironmentName: "watch",
 			},
 		}
 		Expect(directClient.Create(ctx, es)).To(Succeed())
@@ -256,6 +258,7 @@ var _ = Describe("Watch-Driven Integration", Ordered, func() {
 			zone.Status = adminv1.ZoneStatus{
 				Namespace:     s5ZoneNs,
 				IdentityRealm: &ctypes.ObjectRef{Name: "s5-realm", Namespace: s5Ns},
+				RealmName:     "s5",
 				Conditions:    readyConditions(),
 				Presets: testPresetStatuses(&ctypes.ObjectRef{Name: "gw-aws", Namespace: s5ZoneNs},
 					adminv1.Links{Url: "http://gw.s5.example.com", Issuer: "http://id.local/realms/s5", LmsIssuer: "http://id.local/realms/s5-lms"}),
@@ -349,6 +352,7 @@ var _ = Describe("Watch-Driven Integration", Ordered, func() {
 				Spec: pubsubv1.EventStoreSpec{
 					Url: "http://admin.local", TokenUrl: "http://token.local",
 					ClientId: "cid", ClientSecret: "csec",
+					OverwriteEnvironmentName: "s5",
 				},
 			}
 			Expect(directClient.Create(ctx, es)).To(Succeed())
@@ -898,6 +902,7 @@ var _ = Describe("Watch-Driven Integration", Ordered, func() {
 				zone.Status = adminv1.ZoneStatus{
 					Namespace:     statusNs,
 					IdentityRealm: &ctypes.ObjectRef{Name: "s9-realm", Namespace: s9Ns},
+					RealmName:     "s9",
 					Conditions:    readyConditions(),
 					Presets: testPresetStatuses(&ctypes.ObjectRef{Name: "gw-" + name, Namespace: statusNs},
 						adminv1.Links{Url: "http://" + host, Issuer: "http://id.local/realms/s9", LmsIssuer: "http://id.local/realms/s9-lms"}),
@@ -926,6 +931,7 @@ var _ = Describe("Watch-Driven Integration", Ordered, func() {
 					Spec: pubsubv1.EventStoreSpec{
 						Url: "http://admin.local", TokenUrl: "http://token.local",
 						ClientId: "cid", ClientSecret: "csec",
+						OverwriteEnvironmentName: "s9",
 					},
 				}
 				Expect(directClient.Create(ctx, es)).To(Succeed())
