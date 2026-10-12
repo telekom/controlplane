@@ -1,3 +1,17 @@
+# [0.38.0](https://github.com/telekom/controlplane/compare/v0.37.1...v0.38.0) (2026-10-12)
+
+
+### Bug Fixes
+
+* **agentic:** give the Telecontext consumer access to MCP routes ([#755](https://github.com/telekom/controlplane/issues/755)) ([0ad0604](https://github.com/telekom/controlplane/commit/0ad06048c135491f72750e295ecae34236fc766b))
+* **rover-ctl:** support apiVersion: rover.ei.telekom.de/v1 ([#760](https://github.com/telekom/controlplane/issues/760)) ([ce0eac0](https://github.com/telekom/controlplane/commit/ce0eac08f2138cb9a12232417cae515eecc0eec4))
+
+
+### Features
+
+* **controlplane-api:** add clientId field to applicationinfo ([#759](https://github.com/telekom/controlplane/issues/759)) ([8c9b98e](https://github.com/telekom/controlplane/commit/8c9b98ea9bb7a96bb5553ae4fb158822fe65b583))
+* **rover-ctl,rover-server:** improve error-handling ([#761](https://github.com/telekom/controlplane/issues/761)) ([ed8ad3a](https://github.com/telekom/controlplane/commit/ed8ad3a0b8ddd1374b0a9f980ebc62e899624858))
+
 ## [0.37.1](https://github.com/telekom/controlplane/compare/v0.37.0...v0.37.1) (2026-10-12)
 
 
