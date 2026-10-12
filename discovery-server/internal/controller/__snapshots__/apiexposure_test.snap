@@ -386,9 +386,8 @@
    "gatewayUrl": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de/eni/distr/v1",
    "name": "eni-distr-v1",
    "security": {
-    "clientSecret": "**********",
     "password": "**********",
-    "type": "oauth2",
+    "type": "basicAuth",
     "username": "subscriber-user"
    },
    "status": "<Any value>",

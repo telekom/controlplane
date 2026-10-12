@@ -239,6 +239,25 @@ func TestMapSecurity(t *testing.T) {
 			},
 		},
 		{
+			name: "basic auth with obfuscated client secret",
+			setup: func(in *apiv1.ApiSubscription) {
+				in.Spec.Security = &apiv1.SubscriberSecurity{M2M: &apiv1.SubscriberMachine2MachineAuthentication{
+					Client: &apiv1.OAuth2ClientCredentials{ClientSecret: "**********"},
+					Basic:  &apiv1.BasicAuthCredentials{Username: "u", Password: "**********"},
+				}}
+			},
+			assert: func(t *testing.T, out api.ApiSubscriptionResponse) {
+				t.Helper()
+				got, err := out.Security.AsBasicAuth()
+				if err != nil {
+					t.Fatalf("expected basic auth for obfuscated client secret, got err: %v", err)
+				}
+				if got.Username != "u" || got.Password != "**********" {
+					t.Fatalf("unexpected basic auth mapping: %#v", got)
+				}
+			},
+		},
+		{
 			name: "oauth2 client",
 			setup: func(in *apiv1.ApiSubscription) {
 				in.Spec.Security = &apiv1.SubscriberSecurity{M2M: &apiv1.SubscriberMachine2MachineAuthentication{Client: &apiv1.OAuth2ClientCredentials{ClientId: "cid", ClientSecret: "sec"}, Scopes: []string{"s1"}}}
