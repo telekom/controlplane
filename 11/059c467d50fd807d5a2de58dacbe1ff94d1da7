@@ -1,0 +1,36 @@
+rover-ctl/pkg/handlers/v0/eventspec_test.go
+  s_0d8ceb007b1155::t_4aa2176115ec60 440
+  s_aec828ea09c274::t_011f3c9834cec0 10,16-17,334-439,441
+  s_0d8ceb007b1155::t_c77ac03bf9ecf2 332
+  s_aec828ea09c274::t_c5b29223dea974 442-443
+docs/docs/user-journey/exposing-events.mdx
+  s_aec828ea09c274::t_711760412b2a59 64-75
+  s_0d8ceb007b1155::t_974f43ba66f88d 76
+rover-ctl/pkg/handlers/v0/eventspec.go
+  s_aec828ea09c274::t_1ce1e5583dc69f 15,90,96-97,99-148
+  s_0d8ceb007b1155::t_b49a200781900f 98
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "11059c467d50fd807d5a2de58dacbe1ff94d1da7",
+  "prompts": {},
+  "sessions": {
+    "s_0d8ceb007b1155": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ecfe79d02ffeZeZ8b12J86C6Ab",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": null
+    },
+    "s_aec828ea09c274": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ecff2d73cffeBWvNwWuywnVObE",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": null
+    }
+  }
+}
