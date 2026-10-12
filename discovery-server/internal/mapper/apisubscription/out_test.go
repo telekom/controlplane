@@ -270,6 +270,29 @@ func TestMapSecurity(t *testing.T) {
 				}
 			},
 		},
+		{
+			name: "password grant credentials",
+			setup: func(in *apiv1.ApiSubscription) {
+				in.Spec.Security = &apiv1.SubscriberSecurity{M2M: &apiv1.SubscriberMachine2MachineAuthentication{
+					Client: &apiv1.OAuth2ClientCredentials{ClientId: "cid", ClientSecret: "sec"},
+					Basic:  &apiv1.BasicAuthCredentials{Username: "user", Password: "pass"},
+					Scopes: []string{"read", "write"},
+				}}
+			},
+			assert: func(t *testing.T, out api.ApiSubscriptionResponse) {
+				t.Helper()
+				got, err := out.Security.AsOAuth2()
+				if err != nil {
+					t.Fatalf("expected oauth2, got err: %v", err)
+				}
+				if got.ClientId != "cid" || got.ClientSecret != "sec" || got.Username != "user" || got.Password != "pass" {
+					t.Fatalf("unexpected password-grant credentials mapping: %#v", got)
+				}
+				if len(got.Scopes) != 2 || got.Scopes[0] != "read" || got.Scopes[1] != "write" {
+					t.Fatalf("unexpected password-grant scopes mapping: %#v", got.Scopes)
+				}
+			},
+		},
 	}
 
 	for _, tt := range tests {
