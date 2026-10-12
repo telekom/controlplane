@@ -47,7 +47,11 @@ var _ = Describe("SubscriptionInfo", func() {
 		Expect(field).NotTo(BeNil())
 		Expect(field.Type.String()).To(Equal("[ExternalId!]"))
 		Expect(field.Type.String()).To(Equal(schema.Types["Application"].Fields.ForName("externalIds").Type.String()))
-		for _, name := range []string{"clientID", "clientSecret", "permissionSet", "exposedApis", "subscribedApis"} {
+		// clientId is an identifier, intentionally exposed on the reduced view; secrets and edges are not.
+		clientID := applicationInfo.Fields.ForName("clientId")
+		Expect(clientID).NotTo(BeNil())
+		Expect(clientID.Type.String()).To(Equal("String"))
+		for _, name := range []string{"clientSecret", "permissionSet", "exposedApis", "subscribedApis"} {
 			Expect(applicationInfo.Fields.ForName(name)).To(BeNil(), name)
 		}
 	})
@@ -174,6 +178,55 @@ var _ = Describe("SubscriptionInfo", func() {
 				`[{"Id":"z-123","Schema":"inventory"},{"Id":"a-456","Schema":"catalog"}]`),
 			Entry("absent IDs serialize as null", []model.ExternalId(nil), `null`),
 			Entry("explicitly empty IDs serialize as an empty array", []model.ExternalId{}, `[]`),
+		)
+
+		DescribeTable("returns the client ID through a reduced cross-tenant application view",
+			func(clear bool, expectedJSON string) {
+				if clear {
+					_, err := db.Application.UpdateOne(seed.AppBeta).ClearClientID().Save(testutil.AllowContext())
+					Expect(err).NotTo(HaveOccurred())
+				}
+				body, err := json.Marshal(map[string]string{"query": `{
+					approvals { edges { node { subscription { ownerApplication { id clientId } } } } }
+				}`})
+				Expect(err).NotTo(HaveOccurred())
+				req := httptest.NewRequest(http.MethodPost, "/graphql", bytes.NewReader(body))
+				req.Header.Set("Content-Type", "application/json")
+				req = req.WithContext(viewer.NewContext(context.Background(), &viewer.Viewer{
+					Teams: []string{seed.TeamAlpha.Name},
+				}))
+				recorder := httptest.NewRecorder()
+				server.ServeHTTP(recorder, req)
+				Expect(recorder.Code).To(Equal(http.StatusOK), recorder.Body.String())
+
+				var response struct {
+					Data struct {
+						Approvals struct {
+							Edges []struct {
+								Node struct {
+									Subscription struct {
+										OwnerApplication struct {
+											ID       string
+											ClientID json.RawMessage `json:"clientId"`
+										}
+									}
+								}
+							}
+						}
+					}
+					Errors gqlerror.List
+				}
+				Expect(json.Unmarshal(recorder.Body.Bytes(), &response)).To(Succeed())
+				Expect(response.Errors).To(BeEmpty())
+				Expect(response.Data.Approvals.Edges).To(HaveLen(4))
+				for _, edge := range response.Data.Approvals.Edges {
+					owner := edge.Node.Subscription.OwnerApplication
+					Expect(owner.ID).To(Equal(strconv.Itoa(seed.AppBeta.ID)))
+					Expect(string(owner.ClientID)).To(MatchJSON(expectedJSON))
+				}
+			},
+			Entry("populated client ID is returned", false, `"client-beta"`),
+			Entry("absent client ID serializes as null", true, `null`),
 		)
 
 		DescribeTable("resolves common fields for every implementation alongside concrete fragments",

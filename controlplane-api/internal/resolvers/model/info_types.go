@@ -14,6 +14,7 @@ import (
 type ApplicationInfo struct {
 	ID          int                   `json:"id"`
 	Name        string                `json:"name"`
+	ClientID    *string               `json:"clientId,omitempty"`
 	ExternalIds []pkgmodel.ExternalId `json:"externalIds,omitempty"`
 	Zone        *ent.Zone             `json:"zone"`
 	OwnerTeam   *pkgmodel.TeamInfo    `json:"ownerTeam"`
