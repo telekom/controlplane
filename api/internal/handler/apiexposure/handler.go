@@ -593,7 +593,7 @@ func validateApiCategoryPolicy(ctx context.Context, api *apiapi.Api, application
 	blockedErr, isBlocked := stderrors.AsType[ctrlerrors.BlockedError](err)
 	retryableErr, isRetryable := stderrors.AsType[ctrlerrors.RetryableError](err)
 	switch {
-	case isBlocked:
+	case isBlocked && blockedErr.IsBlocked():
 		log.FromContext(ctx).V(1).Info("ApiCategory policy validation blocked", "reason", blockedErr.Error())
 		apiExp.SetCondition(condition.NewNotReadyCondition(util.ApiCategoryPolicyResolutionFailedReason, msg))
 		apiExp.SetCondition(condition.NewBlockedCondition(msg))
