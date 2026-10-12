@@ -6,8 +6,10 @@ package apisubscription
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 
+	"github.com/onsi/gomega"
 	"github.com/stretchr/testify/mock"
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
@@ -248,13 +250,19 @@ func TestMapSecurity(t *testing.T) {
 			},
 			assert: func(t *testing.T, out api.ApiSubscriptionResponse) {
 				t.Helper()
+				g := gomega.NewWithT(t)
+				discriminator, err := out.Security.Discriminator()
+				g.Expect(err).NotTo(gomega.HaveOccurred())
+				g.Expect(discriminator).To(gomega.Equal("basicAuth"))
+
 				got, err := out.Security.AsBasicAuth()
-				if err != nil {
-					t.Fatalf("expected basic auth for obfuscated client secret, got err: %v", err)
-				}
-				if got.Username != "u" || got.Password != "**********" {
-					t.Fatalf("unexpected basic auth mapping: %#v", got)
-				}
+				g.Expect(err).NotTo(gomega.HaveOccurred())
+				g.Expect(got.Username).To(gomega.Equal("u"))
+				g.Expect(got.Password).To(gomega.Equal("**********"))
+
+				payload, err := json.Marshal(out.Security)
+				g.Expect(err).NotTo(gomega.HaveOccurred())
+				g.Expect(payload).To(gomega.MatchJSON(`{"type":"basicAuth","username":"u","password":"**********"}`))
 			},
 		},
 		{
