@@ -1,0 +1,22 @@
+rover-ctl/pkg/handlers/v0/eventspec_test.go
+  s_4faa833bf7dd9c::t_6eec27b1ca794a 414-448,450-454,464
+  s_4faa833bf7dd9c::t_023aa1b46c133b 449
+rover-ctl/pkg/handlers/v0/eventspec.go
+  s_4faa833bf7dd9c::t_023aa1b46c133b 111
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "23fef76ea83feb3d238c051cb55d01e56273f4fb",
+  "prompts": {},
+  "sessions": {
+    "s_4faa833bf7dd9c": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ed00a4e6cffemfx9UgPKV0ktF6",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
