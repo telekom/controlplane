@@ -1,0 +1,21 @@
+tools/snapshotter/go.mod
+  s_3122285f85d252::t_9630abde9a014d 42,91
+tools/snapshotter/go.sum
+  s_3122285f85d252::t_0b6562484b200e 36-37,236-237
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "d3526d84c99969a7860aedff847cbed61d30aeb8",
+  "prompts": {},
+  "sessions": {
+    "s_3122285f85d252": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ecf2b5413ffe7O1nZH2JWUbwIh",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
