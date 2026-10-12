@@ -228,11 +228,14 @@ func (h *ListenerHandler) CreateOrUpdate(ctx context.Context, listener *spectrev
 	// A's zone; capture is the first supported zone on the C→P path (C's, then
 	// P's), independent of A. Unsupported Routes (missing, pass-through,
 	// failover, not bound to P) are skipped per candidate; when none remains,
-	// or the chosen zone cannot deliver to A, applied capture is drained.
+	// the chosen zone cannot deliver to A, or a zone publishes events with
+	// another environment than its EventStore subscribes with, applied capture
+	// is drained.
 	lp, binding, err := h.resolveListenerPlacement(ctx, observerZone, consumerZone, providerZone, providerApp, apiBasePath)
 	if err != nil {
 		return h.handlePlacementError(ctx, listener, err)
 	}
+	warnEnvironmentAliases(ctx, listener, lp.EnvironmentAliases...)
 
 	// Compute the canonical authorization intent and fingerprint.
 	placement := PlacementIntent{

@@ -205,6 +205,7 @@ func makeListenerZone() *adminv1.Zone {
 				Name:      testRealmName,
 				Namespace: listenerZoneNs,
 			},
+			RealmName: "test",
 		},
 	}
 	meta.SetStatusCondition(&z.Status.Conditions, metav1.Condition{
@@ -252,10 +253,11 @@ func makeListenerEventStore() *pubsubv1.EventStore {
 			Namespace: listenerZoneStatus,
 		},
 		Spec: pubsubv1.EventStoreSpec{
-			Url:          "http://admin.local",
-			TokenUrl:     "http://token.local",
-			ClientId:     "client-id",
-			ClientSecret: "client-secret",
+			OverwriteEnvironmentName: "test",
+			Url:                      "http://admin.local",
+			TokenUrl:                 "http://token.local",
+			ClientId:                 "client-id",
+			ClientSecret:             "client-secret",
 		},
 	}
 	meta.SetStatusCondition(&es.Status.Conditions, metav1.Condition{
@@ -330,15 +332,6 @@ var _ = Describe("ListenerHandler", func() {
 			Return(nil).Once()
 	}
 
-	mockGetZone := func() {
-		fakeClient.EXPECT().
-			Get(ctx, k8stypes.NamespacedName{Name: listenerZoneName, Namespace: listenerZoneNs}, mock.AnythingOfType("*v1.Zone")).
-			Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
-				*out.(*adminv1.Zone) = *makeListenerZone()
-			}).
-			Return(nil)
-	}
-
 	mockGetRealm := func() {
 		fakeClient.EXPECT().
 			Get(ctx, k8stypes.NamespacedName{Name: testRealmName, Namespace: listenerZoneNs}, mock.AnythingOfType("*v1.Realm")).
@@ -353,7 +346,17 @@ var _ = Describe("ListenerHandler", func() {
 					},
 				}
 			}).
+			Return(nil).Maybe()
+	}
+
+	mockGetZone := func() {
+		fakeClient.EXPECT().
+			Get(ctx, k8stypes.NamespacedName{Name: listenerZoneName, Namespace: listenerZoneNs}, mock.AnythingOfType("*v1.Zone")).
+			Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
+				*out.(*adminv1.Zone) = *makeListenerZone()
+			}).
 			Return(nil)
+		mockGetRealm()
 	}
 
 	mockListEventConfigs := func(items []eventv1.EventConfig) {
@@ -732,7 +735,6 @@ var _ = Describe("ListenerHandler", func() {
 		mockNoStaleChildren()
 		mockApprovalGranted()
 		mockCreateOrUpdatePublisher()
-		mockGetRealm()
 		mockCreateOrUpdateRouteListener()
 		mockCreateOrUpdateSubscriber()
 		mockJanitorCleanup()
@@ -1483,7 +1485,6 @@ var _ = Describe("ListenerHandler", func() {
 				mockNoStaleChildren()
 				mockApprovalGranted()
 				mockCreateOrUpdatePublisher()
-				mockGetRealm()
 				mockCreateOrUpdateRouteListener()
 				mockCreateOrUpdateSubscriber()
 				mockJanitorCleanup()
@@ -1698,7 +1699,6 @@ var _ = Describe("ListenerHandler", func() {
 				mockNoStaleChildren()
 				mockApprovalGranted()
 				mockCreateOrUpdatePublisher()
-				mockGetRealm()
 
 				// Capture RouteListener
 				var capturedRL *gatewayv1.RouteListener
@@ -1755,7 +1755,6 @@ var _ = Describe("ListenerHandler", func() {
 					}).
 					Return(controllerutil.OperationResultCreated, nil).Once()
 
-				mockGetRealm()
 				mockCreateOrUpdateRouteListener()
 				mockCreateOrUpdateSubscriber()
 				mockJanitorCleanup()
@@ -1786,7 +1785,6 @@ var _ = Describe("ListenerHandler", func() {
 				mockNoStaleChildren()
 				mockApprovalGranted()
 				mockCreateOrUpdatePublisher()
-				mockGetRealm()
 				mockCreateOrUpdateRouteListener()
 
 				var capturedSubs []*pubsubv1.Subscriber
@@ -1942,7 +1940,6 @@ var _ = Describe("ListenerHandler", func() {
 				mockApprovalGrantedGate("consumer")
 
 				mockCreateOrUpdatePublisher()
-				mockGetRealm()
 				mockCreateOrUpdateRouteListener()
 				mockCreateOrUpdateSubscriber()
 				mockJanitorCleanup()
@@ -2080,7 +2077,6 @@ var _ = Describe("ListenerHandler", func() {
 				mockNoStaleChildren()
 				mockApprovalGranted()
 				mockCreateOrUpdatePublisher()
-				mockGetRealm()
 				mockCreateOrUpdateRouteListener()
 
 				var capturedSubs []*pubsubv1.Subscriber
@@ -3173,7 +3169,6 @@ var _ = Describe("ListenerHandler", func() {
 				// Both gates auto-granted because requester team == decider team.
 				mockApprovalGranted()
 				mockCreateOrUpdatePublisher()
-				mockGetRealm()
 				mockCreateOrUpdateRouteListener()
 				mockCreateOrUpdateSubscriber()
 				mockJanitorCleanup()
@@ -3224,7 +3219,6 @@ var _ = Describe("ListenerHandler", func() {
 				mockOwnedLists(rls, subs)
 				mockApprovalGranted()
 				mockCreateOrUpdatePublisher()
-				mockGetRealm()
 				mockCreateOrUpdateRouteListener()
 				mockCreateOrUpdateSubscriber()
 				mockJanitorCleanup()

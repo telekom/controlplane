@@ -9,12 +9,14 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
+	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
+	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	spectrev1 "github.com/telekom/controlplane/spectre/api/v1"
 	"github.com/telekom/controlplane/spectre/internal/handler/util"
 )
@@ -116,7 +118,11 @@ func (h *ListenerHandler) evaluateCaptureCandidate(
 // unsuitability for capture moves on to the next candidate; any error stops
 // evaluation so capture is never relocated because of it. When no candidate
 // works, or a candidate cannot deliver to A, it returns a
-// *util.NoCaptureCandidateError naming each zone tried.
+// *util.NoCaptureCandidateError naming each zone tried. When A's zone or the
+// chosen capture zone publishes events with another environment than its
+// EventStore subscribes with, it returns a *util.EnvironmentMismatchError;
+// capture is not moved to P's zone, so the misconfiguration stays visible. The
+// "default" exemption only adds an EnvironmentAlias to the placement.
 func (h *ListenerHandler) resolveListenerPlacement(
 	ctx context.Context,
 	observerZone, consumerZone, providerZone *adminv1.Zone,
@@ -127,7 +133,7 @@ func (h *ListenerHandler) resolveListenerPlacement(
 
 	d, err := util.ResolveDelivery(ctx, observerZone)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, errors.Wrap(err, "placement: failed to resolve delivery for observer zone")
 	}
 	if d.EventConfig.IsProxy() {
 		if _, _, err := resolveSSEBackendZone(ctx, observerZone, d.EventConfig); err != nil {
@@ -146,6 +152,9 @@ func (h *ListenerHandler) resolveListenerPlacement(
 			return nil, nil, errors.Wrapf(err, "capture candidate zone %q", zone.Name)
 		}
 		if reason == "" {
+			if err := h.checkCaptureEnvironment(ctx, lp); err != nil {
+				return nil, nil, err
+			}
 			return lp, binding, nil
 		}
 		logger.V(1).Info("Skipping capture candidate zone", "zone", zone.Name, "reason", reason)
@@ -154,21 +163,60 @@ func (h *ListenerHandler) resolveListenerPlacement(
 	return nil, nil, &util.NoCaptureCandidateError{ApiBasePath: apiBasePath, Rejections: rejections}
 }
 
+// checkCaptureEnvironment compares the environment the capture zone's Jumper
+// publishes bridge events with, taken from the same gateway client issuer the
+// RouteListener carries, with the capture EventStore's, and adds an
+// EnvironmentAlias to lp for the "default" exemption. A missing Realm or
+// IssuerUrl is wrapped and returned: it is transient and must not drain capture.
+func (h *ListenerHandler) checkCaptureEnvironment(ctx context.Context, lp *util.ListenerPlacement) error {
+	_, issuer, err := h.resolveGatewayCredentials(ctx, lp.CaptureZone)
+	if err != nil {
+		return errors.Wrapf(err, "capture candidate zone %q", lp.CaptureZone.Name)
+	}
+	alias, err := util.CheckCaptureEnvironment(ctx, lp.CaptureZone, issuer, lp.CaptureEventConfig, lp.CaptureEventStore)
+	if alias != nil {
+		lp.EnvironmentAliases = append(lp.EnvironmentAliases, alias)
+	}
+	return err
+}
+
+// warnEnvironmentAliases reports each EnvironmentAlias on obj as a Warning
+// event, or logs it when the context carries no recorder.
+func warnEnvironmentAliases(ctx context.Context, obj runtime.Object, aliases ...*util.EnvironmentAlias) {
+	recorder, hasRecorder := contextutil.RecoderFromContext(ctx)
+	for _, a := range aliases {
+		if a == nil {
+			continue
+		}
+		if hasRecorder {
+			recorder.Event(obj, "Warning", "EnvironmentAliasAssumed", a.String())
+			continue
+		}
+		log.FromContext(ctx).Info("Event environment relies on a Horizon defaultEnvironment alias",
+			"role", a.Role, "zone", a.Zone, "eventStore", a.EventStore,
+			"publishEnvironment", a.PublishEnvironment, "subscribeEnvironment", "default")
+	}
+}
+
 // handlePlacementError stops capture that can no longer be placed and returns
 // the error to report. When no candidate supports capture, the capture zone
-// cannot deliver to A, or the provider binding is definitively invalidated,
-// capture is drained (checkpoint first), including untracked children of a
-// partial provisioning. Other errors, including read errors, leave capture
-// untouched: a transient failure must not stop or move it.
+// cannot deliver to A, a zone publishes events with another environment than
+// its EventStore subscribes with, or the provider binding is definitively
+// invalidated, capture is drained (checkpoint first), including untracked
+// children of a partial provisioning. Other errors, including read errors,
+// leave capture untouched: a transient failure must not stop or move it.
 func (h *ListenerHandler) handlePlacementError(ctx context.Context, listener *spectrev1.Listener, err error) error {
 	var noCandidate *util.NoCaptureCandidateError
 	var bindingErr *providerBindingError
+	var envMismatch *util.EnvironmentMismatchError
 	reason, notStarted := "", err
 	switch {
 	case errors.As(err, &noCandidate) && noCandidate.DeliveryPath != nil:
 		reason = "capture zone cannot deliver to observer"
 	case errors.As(err, &noCandidate):
 		reason = "no supported capture placement"
+	case errors.As(err, &envMismatch):
+		reason = "event environment mismatch"
 	case errors.As(err, &bindingErr):
 		reason, notStarted = "provider binding invalidated", errors.Wrap(err, "provider binding check failed")
 	default:

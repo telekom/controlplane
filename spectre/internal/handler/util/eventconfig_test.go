@@ -43,6 +43,7 @@ func makeZone(name string) *adminv1.Zone {
 			Name:      name,
 			Namespace: "test-env",
 		},
+		Status: adminv1.ZoneStatus{RealmName: "default"},
 	}
 }
 
@@ -85,10 +86,11 @@ func makeReadyEventStore(name, namespace string) *pubsubv1.EventStore {
 			Namespace: namespace,
 		},
 		Spec: pubsubv1.EventStoreSpec{
-			Url:          "http://admin.local",
-			TokenUrl:     "http://token.local",
-			ClientId:     "client-id",
-			ClientSecret: "client-secret",
+			OverwriteEnvironmentName: "default",
+			Url:                      "http://admin.local",
+			TokenUrl:                 "http://token.local",
+			ClientId:                 "client-id",
+			ClientSecret:             "client-secret",
 		},
 		Status: pubsubv1.EventStoreStatus{
 			Conditions: []metav1.Condition{

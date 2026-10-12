@@ -14,6 +14,7 @@ import (
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
+	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	pubsubv1 "github.com/telekom/controlplane/pubsub/api/v1"
@@ -39,6 +40,11 @@ type ListenerPlacement struct {
 	// BridgeNamespace is the Kubernetes namespace where bridge Subscribers and
 	// the shared generic Publisher live. Derived from CaptureEventStore.Namespace.
 	BridgeNamespace string
+
+	// EnvironmentAliases are the warnings of the delivery and capture
+	// environment checks for the "default" exemption. They are not part of the
+	// placement intent.
+	EnvironmentAliases []*EnvironmentAlias
 
 	// CallbackBaseURL is the external gateway URL used for event delivery
 	// callbacks: the delivery EventConfig's Status.CallbackURL when the origin is
@@ -115,6 +121,139 @@ func (e *DeliveryPathError) Error() string { return e.Reason }
 // IsBlocked implements ctrlerrors.BlockedError.
 func (e *DeliveryPathError) IsBlocked() bool { return true }
 
+// Event environments in Horizon. A zone's Jumper publishes to PUBLISH_EVENT_URL
+// with ENVIRONMENT_PLACEHOLDER replaced by the zone's identity realm (pathEnv)
+// and a token of that realm (gateway-jumper SpectreService.publishEvent,
+// SpectreRoutingFilter). Starlight requires the token realm to equal
+// alias(pathEnv) (pubsub-horizon-starlight PublisherService.checkRealm), and
+// Galaxy delivers only to Subscribers whose spec.environment equals
+// alias(pathEnv) (pubsub-horizon-galaxy SubscriberCache.java:55-58), logging
+// nothing but INFO "No recipients found for event" otherwise. alias maps
+// Horizon's defaultEnvironment to "default" and keeps every other value.
+//
+// The checks below compare the realm with the EventStore environment and
+// assume no alias. The Control Plane cannot see Horizon's defaultEnvironment,
+// so an EventStore environment of "default" with another realm is only
+// reported as an EnvironmentAlias: it works when defaultEnvironment is that
+// realm. Equal values can still be dropped when Galaxy's defaultEnvironment is
+// that environment (controlplane-config db8f177), or rejected by Starlight when
+// its realm pattern ^https://[\w-.]+/auth/realms/(\w+)$ does not match the
+// issuer (TokenServiceImpl.java:21,58-66); the checks do not detect that.
+
+// EnvironmentMismatchError reports that a zone publishes events with another
+// environment than its EventStore registers their subscriptions with, so
+// Galaxy would drop every event while every condition stays Ready. It is a
+// BlockedError: the Listener waits until the platform configuration changes.
+type EnvironmentMismatchError struct {
+	// Role is "capture" (bridge events, Jumper hop 1) or "observer" (per-app
+	// events re-published at /autoevent, Jumper hop 2).
+	Role                 string
+	Zone                 string
+	PublishEnvironment   string
+	EventStore           string
+	SubscribeEnvironment string
+	SubscribeSource      string
+	// EventConfig and Environment name the platform settings that decide the
+	// two values: EventConfig spec.overwriteEnvironmentName (copied into the
+	// EventStore) and Environment spec.realmName.
+	EventConfig string
+	Environment string
+}
+
+func (e *EnvironmentMismatchError) Error() string {
+	return fmt.Sprintf("%s zone %q publishes events with environment %q (identity realm of the zone) "+
+		"but its EventStore %q subscribes with environment %q (%s); Galaxy would drop every event; "+
+		"platform config: set EventConfig %q spec.overwriteEnvironmentName or Environment %q spec.realmName so they match",
+		e.Role, e.Zone, e.PublishEnvironment, e.EventStore, e.SubscribeEnvironment, e.SubscribeSource, e.EventConfig, e.Environment)
+}
+
+// IsBlocked implements ctrlerrors.BlockedError.
+func (e *EnvironmentMismatchError) IsBlocked() bool { return true }
+
+// EnvironmentAlias reports a zone that publishes events with its realm while
+// its EventStore subscribes with "default". Galaxy delivers them only when
+// Horizon's defaultEnvironment is that realm, which the Control Plane cannot
+// verify; it is a warning, never a block.
+type EnvironmentAlias struct {
+	Role               string
+	Zone               string
+	PublishEnvironment string
+	EventStore         string
+}
+
+func (a *EnvironmentAlias) String() string {
+	return fmt.Sprintf("%s zone %q publishes events with environment %q (identity realm of the zone) "+
+		"but its EventStore %q subscribes with environment %q; events are delivered only if the Horizon "+
+		"defaultEnvironment of Starlight and Galaxy is %q",
+		a.Role, a.Zone, a.PublishEnvironment, a.EventStore, defaultEnvironment, a.PublishEnvironment)
+}
+
+// defaultEnvironment is the environment Horizon's defaultEnvironment alias maps to.
+const defaultEnvironment = "default"
+
+// subscriptionEnvironment returns the environment the pubsub domain registers
+// es's subscriptions with, and its source. It mirrors effectiveEnvironmentName
+// in pubsub/internal/handler/subscriber/handler.go, which is internal to the
+// pubsub module.
+func subscriptionEnvironment(ctx context.Context, es *pubsubv1.EventStore) (env, source string) {
+	if es.Spec.OverwriteEnvironmentName != "" {
+		return es.Spec.OverwriteEnvironmentName, "overwriteEnvironmentName"
+	}
+	return contextutil.EnvFromContextOrDie(ctx), "Control Plane environment"
+}
+
+func checkEventEnvironment(
+	ctx context.Context, role string, zone *adminv1.Zone, env string, ec *eventv1.EventConfig, es *pubsubv1.EventStore,
+) (*EnvironmentAlias, error) {
+	subEnv, subSource := subscriptionEnvironment(ctx, es)
+	switch {
+	case env == subEnv:
+		return nil, nil
+	case subEnv == defaultEnvironment:
+		return &EnvironmentAlias{Role: role, Zone: zone.Name, PublishEnvironment: env, EventStore: es.Name}, nil
+	}
+	return nil, &EnvironmentMismatchError{
+		Role: role, Zone: zone.Name, PublishEnvironment: env, EventStore: es.Name,
+		SubscribeEnvironment: subEnv, SubscribeSource: subSource,
+		EventConfig: ec.Name, Environment: contextutil.EnvFromContextOrDie(ctx),
+	}
+}
+
+// CheckCaptureEnvironment compares the environment the capture zone's Jumper
+// publishes bridge events with against es, the capture EventStore holding the
+// bridge Subscribers, with ec the zone's EventConfig that owns es. The Jumper
+// takes the environment from the RouteListener gateway client issuer
+// (gatewayIssuer): the text after its last "realms/" (gateway-jumper
+// SpectreService.determineEnvironment). It returns an *EnvironmentMismatchError
+// or, for the "default" exemption, an *EnvironmentAlias.
+func CheckCaptureEnvironment(
+	ctx context.Context, captureZone *adminv1.Zone, gatewayIssuer string, ec *eventv1.EventConfig, es *pubsubv1.EventStore,
+) (*EnvironmentAlias, error) {
+	env := gatewayIssuer
+	if i := strings.LastIndex(gatewayIssuer, "realms/"); i >= 0 {
+		env = gatewayIssuer[i+len("realms/"):]
+	}
+	return checkEventEnvironment(ctx, "capture", captureZone, env, ec, es)
+}
+
+// CheckDeliveryEnvironment compares the environment the observer zone's Jumper
+// re-publishes per-app events with at /autoevent against es, the observer
+// EventStore holding the SpectreApplication Subscriber, with ec the zone's
+// EventConfig that owns es. The Jumper takes the environment from the LMS
+// token issuer realm (gateway-jumper SpectreRoutingFilter), which is the realm
+// of the zone's callback Route: Zone.Status.RealmName, as the event domain sets
+// it. It returns an *EnvironmentMismatchError or, for the "default" exemption,
+// an *EnvironmentAlias. A zone without RealmName is not reconciled yet; that
+// returns a plain BlockedError.
+func CheckDeliveryEnvironment(
+	ctx context.Context, observerZone *adminv1.Zone, ec *eventv1.EventConfig, es *pubsubv1.EventStore,
+) (*EnvironmentAlias, error) {
+	if observerZone.Status.RealmName == "" {
+		return nil, ctrlerrors.BlockedErrorf("zone %q has no RealmName in status", observerZone.Name)
+	}
+	return checkEventEnvironment(ctx, "observer", observerZone, observerZone.Status.RealmName, ec, es)
+}
+
 // CaptureCandidateZones returns the capture candidates in evaluation order:
 // the consumer (C) zone, then the provider (P) zone, deduplicated by zone
 // identity. Gateway traffic from C to P only transits these two zones.
@@ -137,20 +276,30 @@ type DeliveryPlacement struct {
 	Zone        *adminv1.Zone
 	EventConfig *eventv1.EventConfig
 	EventStore  *pubsubv1.EventStore
+	// EnvironmentAlias, when set, is the warning CheckDeliveryEnvironment
+	// returned for the "default" exemption.
+	EnvironmentAlias *EnvironmentAlias
 }
 
-// ResolveDelivery resolves A's EventConfig and EventStore. Any failure blocks
-// the Listener; there is no fallback to the consumer or provider zone.
+// ResolveDelivery resolves A's EventConfig and EventStore and checks that A's
+// zone re-publishes per-app events with the environment the EventStore
+// subscribes with (CheckDeliveryEnvironment). Errors are returned unwrapped so
+// each caller names its own context. Any failure blocks the Listener; there is
+// no fallback to the consumer or provider zone.
 func ResolveDelivery(ctx context.Context, observerZone *adminv1.Zone) (*DeliveryPlacement, error) {
 	ec, err := GetEventConfig(ctx, observerZone)
 	if err != nil {
-		return nil, errors.Wrap(err, "placement: failed to get delivery EventConfig for observer zone")
+		return nil, err
 	}
 	es, err := ResolveEventStore(ctx, ec)
 	if err != nil {
-		return nil, errors.Wrap(err, "placement: failed to resolve delivery EventStore for observer zone")
+		return nil, err
 	}
-	return &DeliveryPlacement{Zone: observerZone, EventConfig: ec, EventStore: es}, nil
+	alias, err := CheckDeliveryEnvironment(ctx, observerZone, ec, es)
+	if err != nil {
+		return nil, err
+	}
+	return &DeliveryPlacement{Zone: observerZone, EventConfig: ec, EventStore: es, EnvironmentAlias: alias}, nil
 }
 
 // CallbackOriginZone returns the zone whose EventConfig advertises the bridge
@@ -241,5 +390,14 @@ func ResolveCaptureZone(
 		DeliveryEventStore:  d.EventStore,
 		BridgeNamespace:     es.Namespace,
 		CallbackBaseURL:     base,
+		EnvironmentAliases:  appendAlias(nil, d.EnvironmentAlias),
 	}, "", nil
+}
+
+// appendAlias appends a to aliases unless it is nil.
+func appendAlias(aliases []*EnvironmentAlias, a *EnvironmentAlias) []*EnvironmentAlias {
+	if a == nil {
+		return aliases
+	}
+	return append(aliases, a)
 }
