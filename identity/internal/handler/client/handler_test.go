@@ -1158,6 +1158,27 @@ var _ = Describe("HandlerClient", func() {
 			Expect(err).ToNot(HaveOccurred())
 		})
 
+		It("should return the error when realm secret resolution fails with a retryable error", func() {
+			cl := newValidClient()
+			mockRealmGet(mockK8s, newValidRealm())
+
+			secretErr := ctrlerrors.RetryableErrorf("secret manager unavailable")
+			overrideSecretsGet(func(_ context.Context, _ string) (string, error) {
+				return "", secretErr
+			})
+
+			factory := keycloak.ServiceFactoryFunc(func(_ identityv1.RealmStatus) (keycloak.KeycloakService, error) {
+				Fail("Keycloak service must not be requested when realm lookup fails")
+				return nil, nil
+			})
+
+			handler := NewHandlerClient(factory)
+			err := handler.Delete(ctx, cl)
+
+			Expect(err).To(HaveOccurred())
+			Expect(errors.Is(err, secretErr)).To(BeTrue())
+		})
+
 		It("should return an error when the client factory fails", func() {
 			cl := newValidClient()
 			realm := newValidRealm()
