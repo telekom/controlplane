@@ -460,18 +460,18 @@ func CheckResponseCode(resp *http.Response, expectedCodes ...int) error {
 }
 
 // newResponseError converts an unexpected response into an ApiError.
-// Title, detail, instance and fields of the remote problem may echo request
-// content or secrets, so only the HTTP status code and an allowlisted
-// problem type are kept.
+// A structured problem (RFC 9457) returned by the server is passed through so
+// that its details reach the user. Any other body is omitted, as it may be
+// arbitrary text or HTML.
 func newResponseError(resp *http.Response) *ApiError {
-	errType := "UnknownError"
 	remote := &ApiError{}
 	body, err := io.ReadAll(resp.Body)
 	if err == nil && json.Unmarshal(body, remote) == nil && remote.Title != "" {
-		errType = "ApiError"
-		if remote.Type == "ValidationError" {
-			errType = remote.Type
+		if remote.Type == "" {
+			remote.Type = "ApiError"
 		}
+		remote.Status = resp.StatusCode
+		return remote
 	}
 
 	title := http.StatusText(resp.StatusCode)
@@ -480,7 +480,7 @@ func newResponseError(resp *http.Response) *ApiError {
 	}
 
 	return &ApiError{
-		Type:   errType,
+		Type:   "UnknownError",
 		Status: resp.StatusCode,
 		Title:  title,
 		Detail: fmt.Sprintf("The server responded with HTTP status %d. Response details are omitted.", resp.StatusCode),
