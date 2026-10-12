@@ -20,6 +20,10 @@ When a Realm is configured with a `secretRotation` policy, the Identity domain p
 
 Individual clients can opt out via the `identity.cp.ei.telekom.de/disable-secret-rotation: "true"` annotation.
 
+### Keycloak Admin Session Recovery
+
+The operator caches one authenticated Keycloak admin client per connection. If the Keycloak Admin API answers `401 Unauthorized`, that client is retired and removed from the cache, and the reconciliation fails with a retryable error. The request is not replayed. The next reconciliation (with normal backoff) creates a new client and logs in again. A `403 Forbidden` stays a blocked error, and login failures at the token endpoint keep their existing handling.
+
 ## Domain Interactions
 
 - **Admin domain** — Zones define which identity provider to use.
