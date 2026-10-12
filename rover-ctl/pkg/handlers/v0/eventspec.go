@@ -108,7 +108,7 @@ func loadJsonSchemaFile(refPath, baseDir string) (map[string]any, error) {
 	}
 	schema, err := readJsonSchemaFile(primary)
 	if err == nil || !errors.Is(err, os.ErrNotExist) {
-		return schema, err
+		return schema, errors.Wrapf(err, "failed to load JSON schema file from primary location %q", primary)
 	}
 
 	fallback := refPath

@@ -411,6 +411,47 @@ var _ = Describe("EventSpec Handler", func() {
 			err := v0.PatchEventSpecificationRequest(context.Background(), newObj("file://s.json"))
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("failed to parse JSON schema from file"))
+			Expect(err.Error()).To(ContainSubstring(filepath.Join(resourceDir, "s.json")))
+		})
+
+		It("accepts trailing whitespace", func() {
+			writeSchema(resourceDir, "s.json", "{\"title\":\"primary\"}\n \t\n")
+			obj := newObj("file://s.json")
+			Expect(v0.PatchEventSpecificationRequest(context.Background(), obj)).To(Succeed())
+			Expect(specOf(obj)["title"]).To(Equal("primary"))
+		})
+
+		DescribeTable("rejects invalid schema content without falling back",
+			func(content string) {
+				viper.Set(config.ConfigKeyResourcePath, fallbackDir)
+				writeSchema(resourceDir, "s.json", content)
+				writeSchema(fallbackDir, "s.json", `{"title":"fallback"}`)
+				err := v0.PatchEventSpecificationRequest(context.Background(), newObj("file://s.json"))
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("failed to parse JSON schema from file"))
+				Expect(err.Error()).To(ContainSubstring(filepath.Join(resourceDir, "s.json")))
+			},
+			Entry("second JSON object", `{"a":1}{"b":2}`),
+			Entry("trailing scalar", `{"a":1} null`),
+			Entry("trailing garbage", `{"a":1} garbage`),
+			Entry("trailing delimiter", `{"a":1}]`),
+			Entry("empty file", ""),
+		)
+
+		It("preserves not-exist errors when both locations are identical", func() {
+			viper.Set(config.ConfigKeyResourcePath, resourceDir)
+			err := v0.PatchEventSpecificationRequest(context.Background(), newObj("file://missing.json"))
+			Expect(err).To(HaveOccurred())
+			Expect(errors.Is(err, os.ErrNotExist)).To(BeTrue())
+			Expect(err.Error()).To(ContainSubstring(filepath.Join(resourceDir, "missing.json")))
+		})
+
+		It("rejects malformed absolute references", func() {
+			writeSchema(resourceDir, "s.json", `{not json`)
+			path := filepath.Join(resourceDir, "s.json")
+			err := v0.PatchEventSpecificationRequest(context.Background(), newObj("file://"+path))
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("failed to parse JSON schema from file"))
 		})
 
 		It("does not fall back when the primary target is a directory", func() {
@@ -420,6 +461,7 @@ var _ = Describe("EventSpec Handler", func() {
 			err := v0.PatchEventSpecificationRequest(context.Background(), newObj("file://s.json"))
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("directory, expected a file"))
+			Expect(err.Error()).To(ContainSubstring(filepath.Join(resourceDir, "s.json")))
 		})
 
 		It("reports fallback errors other than not-exist", func() {
