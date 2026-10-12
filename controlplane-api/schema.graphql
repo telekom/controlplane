@@ -23,6 +23,8 @@ type TeamInfo {
 type ApplicationInfo {
   id: ID!
   name: String!
+  "Identity client ID of the application. A public identifier, not a secret; null until provisioned."
+  clientId: String
   externalIds: [ExternalId!]
   "Zone the application is deployed in"
   zone: Zone!

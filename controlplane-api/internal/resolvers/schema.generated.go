@@ -1439,6 +1439,29 @@ func (ec *executionContext) fieldContext_ApplicationInfo_name(_ context.Context,
 	return graphql.NewScalarFieldContext("ApplicationInfo", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
+func (ec *executionContext) _ApplicationInfo_clientId(ctx context.Context, field graphql.CollectedField, obj *model.ApplicationInfo) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ApplicationInfo_clientId(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ClientID, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *string) graphql.Marshaler {
+			return ec.marshalOString2ᚖstring(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_ApplicationInfo_clientId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("ApplicationInfo", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
 func (ec *executionContext) _ApplicationInfo_externalIds(ctx context.Context, field graphql.CollectedField, obj *model.ApplicationInfo) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -5356,6 +5379,11 @@ func (ec *executionContext) _ApplicationInfo(ctx context.Context, sel ast.Select
 		case "name":
 			out.Values[i] = ec._ApplicationInfo_name(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "clientId":
+			out.Values[i] = ec._ApplicationInfo_clientId(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
 				out.Invalids++
 			}
 		case "externalIds":

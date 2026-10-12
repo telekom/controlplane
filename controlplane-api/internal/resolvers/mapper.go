@@ -42,6 +42,7 @@ func mapApplicationInfo(app *ent.Application, zone *ent.Zone, team *ent.Team, gr
 	return &gqlmodel.ApplicationInfo{
 		ID:          app.ID,
 		Name:        app.Name,
+		ClientID:    app.ClientID,
 		ExternalIds: app.ExternalIds,
 		Zone:        zone,
 		OwnerTeam:   mapTeamInfo(team, group),
