@@ -76,6 +76,12 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 		return nil
 	}
 
+	if err = validateBasicWithScopesPolicy(apiSub, apiExposure); err != nil {
+		apiSub.SetCondition(condition.NewNotReadyCondition(condition.ReasonValidationFailed, err.Error()))
+		apiSub.SetCondition(condition.NewBlockedCondition(err.Error()))
+		return cleanupSubscriptionConsumeRoutes(ctx, apiSub)
+	}
+
 	// FindActiveAPIExposure selects by Status.Active only and may return a not-ready exposure.
 	// Fail closed here so we don't provision consume routes against a blocked exposure whose
 	// status routes may be stale from a prior reconcile.
@@ -128,13 +134,7 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 
 	// Validate specification scopes unless the selected exposure has an external token endpoint.
 	if !validateSubscriptionScopes(ctx, api, apiExposure, apiSub, properties) {
-		return nil
-	}
-
-	if err = validateBasicWithScopesPolicy(apiSub, apiExposure); err != nil {
-		apiSub.SetCondition(condition.NewNotReadyCondition(condition.ReasonValidationFailed, err.Error()))
-		apiSub.SetCondition(condition.NewBlockedCondition(err.Error()))
-		return nil
+		return cleanupSubscriptionConsumeRoutes(ctx, apiSub)
 	}
 
 	err = requester.SetProperties(properties)
@@ -190,14 +190,7 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 		apiSub.SetCondition(condition.NewNotReadyCondition(condition.ReasonAccessDenied, "Approval has been denied"))
 		apiSub.SetCondition(condition.NewDoneProcessingCondition("Approval has been denied"))
 
-		deleted, cleanupErr := scopedClient.Cleanup(ctx, &gatewayapi.ConsumeRouteList{}, cclient.OwnedBy(apiSub))
-		if cleanupErr != nil {
-			return errors.Wrapf(cleanupErr, "Unable to cleanup consume routes for ApiSubscription:  %q in namespace: %q",
-				apiSub.Name, apiSub.Namespace)
-		}
-		logger.Info("🧹 Approval was denied. Cleaning up ConsumeRoutes of ApiSubscription", "deleted", deleted)
-		apiSub.Status.ActiveScopes = nil
-		return nil
+		return cleanupSubscriptionConsumeRoutes(ctx, apiSub)
 	case builder.ApprovalResultGranted:
 		logger.Info("👌 Approval is granted and will continue with processing")
 		builder.ClearApprovalPendingReady(apiSub)
@@ -465,6 +458,21 @@ func resolveRouteRef(ctx context.Context, scopedClient cclient.JanitorClient, ap
 		apiSub.SetCondition(condition.NewBlockedCondition("Waiting for ApiExposure to create the proxy route for this zone"))
 		return nil, nil
 	}
+}
+
+func cleanupSubscriptionConsumeRoutes(ctx context.Context, obj *apiapi.ApiSubscription) error {
+	c := cclient.ClientFromContextOrDie(ctx)
+	deleted, err := c.Cleanup(ctx, &gatewayapi.ConsumeRouteList{}, cclient.OwnedBy(obj))
+	if err != nil {
+		return errors.Wrapf(err, "failed to clean up ConsumeRoutes for ApiSubscription %q", obj.Name)
+	}
+	if deleted > 0 {
+		log.FromContext(ctx).Info("Cleaned up subscription ConsumeRoutes", "deleted", deleted)
+	}
+	obj.Status.ConsumeRoute = nil
+	obj.Status.FailoverConsumeRoutes = nil
+	obj.Status.ActiveScopes = nil
+	return nil
 }
 
 func validateBasicWithScopesPolicy(obj *apiapi.ApiSubscription, exposure *apiapi.ApiExposure) error {

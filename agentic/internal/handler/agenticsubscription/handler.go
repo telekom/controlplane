@@ -76,13 +76,13 @@ func (h *AgenticSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *ag
 	}
 	// Validate scopes using the selected exposure's endpoint exception before readiness checks.
 	if !validateSubscriptionScopes(serverInfo, exposure, obj) {
-		return nil
+		return h.Delete(ctx, obj)
 	}
 	if violatesBasicWithScopesPolicy(obj, exposure) {
 		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonValidationFailed,
 			"Consumer username/password combined with client credentials or scopes requires an external IDP grant type \"password\""))
 		obj.SetCondition(condition.NewBlockedCondition("Consumer username/password combined with client credentials or scopes requires an external IDP grant type \"password\""))
-		return nil
+		return h.Delete(ctx, obj)
 	}
 	if !exposureFound {
 		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet,
@@ -192,15 +192,7 @@ func (h *AgenticSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *ag
 		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonAccessDenied, "Approval has been denied"))
 		obj.SetCondition(condition.NewDoneProcessingCondition("Approval has been denied"))
 
-		deleted, cleanupErr := c.Cleanup(ctx, &gatewayapi.ConsumeRouteList{}, cclient.OwnedBy(obj))
-		if cleanupErr != nil {
-			return errors.Wrapf(cleanupErr, "unable to cleanup ConsumeRoute for AgenticSubscription %q", obj.Name)
-		}
-		if deleted > 0 {
-			logger.Info("Cleaned up ConsumeRoute resources", "deleted", deleted)
-		}
-		obj.Status.ActiveScopes = nil
-		return nil
+		return h.Delete(ctx, obj)
 
 	case builder.ApprovalResultGranted:
 		logger.Info("Approval is granted — continuing with provisioning")
@@ -290,7 +282,8 @@ func (h *AgenticSubscriptionHandler) Delete(ctx context.Context, obj *agenticv1.
 	if deleted > 0 {
 		logger.Info("Cleaned up ConsumeRoute resources", "deleted", deleted)
 	}
-
+	obj.Status.ConsumeRoute = nil
+	obj.Status.ActiveScopes = nil
 	return nil
 }
 
