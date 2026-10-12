@@ -1,3 +1,10 @@
+## [0.37.1](https://github.com/telekom/controlplane/compare/v0.37.0...v0.37.1) (2026-10-12)
+
+
+### Bug Fixes
+
+* increase max items for scopes to 100 ([#758](https://github.com/telekom/controlplane/issues/758)) ([5c36de4](https://github.com/telekom/controlplane/commit/5c36de47014fc930ba1b40fe3a068c6186a74ac9))
+
 # [0.37.0](https://github.com/telekom/controlplane/compare/v0.36.1...v0.37.0) (2026-10-09)
 
 
