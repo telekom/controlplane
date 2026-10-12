@@ -696,8 +696,8 @@ var _ = Describe("Rover Handler", func() {
 			Expect(err).To(HaveOccurred())
 			apiErr, ok := common.AsApiError(err)
 			Expect(ok).To(BeTrue())
-			Expect(apiErr.Title).To(Equal("Bad Request"))
-			Expect(apiErr.Detail).NotTo(ContainSubstring("Invalid rover name"))
+			Expect(apiErr.Title).To(Equal("Reset Failed"))
+			Expect(apiErr.Detail).To(Equal("Invalid rover name"))
 
 			// Verify mock expectations
 			mockClient.AssertExpectations(GinkgoT())

@@ -159,9 +159,9 @@ var _ = Describe("BaseHandler", func() {
 				apiErr, ok := common.AsApiError(err)
 				Expect(ok).To(BeTrue())
 				Expect(apiErr).NotTo(BeNil())
-				// Remote problem content is not propagated, only the status and allowlisted type
 				Expect(apiErr.Type).To(Equal("ValidationError"))
-				Expect(apiErr.Title).To(Equal("Bad Request"))
+				Expect(apiErr.Detail).To(Equal("Field 'spec' is required"))
+				Expect(apiErr.Fields).To(ConsistOf(common.FieldError{Field: "spec", Detail: "Field is required"}))
 			})
 		})
 
@@ -446,7 +446,8 @@ var _ = Describe("BaseHandler", func() {
 				apiErr, ok := common.AsApiError(err)
 				Expect(ok).To(BeTrue())
 				Expect(apiErr).NotTo(BeNil())
-				Expect(apiErr.Title).To(Equal("Bad Request"))
+				Expect(apiErr.Title).To(Equal("Delete failed"))
+				Expect(apiErr.Detail).To(Equal("Resource is in use"))
 			})
 		})
 	})

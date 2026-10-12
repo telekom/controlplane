@@ -7,11 +7,13 @@ package problems_test
 import (
 	"encoding/json"
 	"errors"
+	"strings"
 	"testing"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/telekom/controlplane/common-server/pkg/problems"
+	"k8s.io/apimachinery/pkg/util/validation/field"
 )
 
 func TestProblems(t *testing.T) {
@@ -130,4 +132,31 @@ var _ = Describe("Problems", func() {
 			Expect(problem.Code()).To(Equal(500))
 		})
 	})
+
+	Context("Details", func() {
+		It("should return the full field paths and messages", func() {
+			path := "spec.exposures[0]." + strings.Repeat("a", 1000)
+			message := field.Invalid(field.NewPath("spec"), "https://api.example.com/v1", "must use an allowed host").ErrorBody()
+			problemType, fields := problems.Details(problems.ValidationErrors(map[string]string{path: message}))
+			Expect(problemType).To(Equal("ValidationError"))
+			Expect(fields).To(ConsistOf(problems.Field{Field: path, Detail: message}))
+		})
+
+		It("should return no fields for problems without fields", func() {
+			problemType, fields := problems.Details(problems.BadRequest("x"))
+			Expect(problemType).To(Equal("BadRequest"))
+			Expect(fields).To(BeNil())
+		})
+
+		It("should return zero values for foreign Problem implementations", func() {
+			problemType, fields := problems.Details(foreignProblem{})
+			Expect(problemType).To(BeEmpty())
+			Expect(fields).To(BeNil())
+		})
+	})
 })
+
+type foreignProblem struct{}
+
+func (foreignProblem) Error() string { return "foreign" }
+func (foreignProblem) Code() int     { return 418 }

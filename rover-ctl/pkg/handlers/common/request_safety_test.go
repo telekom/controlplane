@@ -278,8 +278,42 @@ var _ = Describe("Request failure diagnostics", func() {
 		}, common.RequestErrorTimeout, context.DeadlineExceeded),
 	)
 
-	DescribeTable("omits remote error content",
-		func(status int, body, expectedType, expectedTitle string) {
+	DescribeTable("shows structured server problems",
+		func(status int, body string, expected common.ApiError, expectedText ...string) {
+			apiHandler = func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/problem+json")
+				w.WriteHeader(status)
+				fmt.Fprint(w, body)
+			}
+
+			err := newHandler().Apply(tokenCtx(), secretObject())
+
+			apiErr, ok := common.AsApiError(err)
+			Expect(ok).To(BeTrue())
+			Expect(*apiErr).To(Equal(expected))
+			Expect(common.IsValidationError(err)).To(Equal(expected.Type == "ValidationError"))
+			out := render(err)
+			for _, text := range expectedText {
+				Expect(out).To(ContainSubstring(text))
+			}
+			Expect(out).ToNot(ContainSubstring(secretMarker))
+		},
+		Entry("missing ApiCategory", http.StatusBadRequest,
+			`{"type":"BadRequest","status":400,"title":"Bad Request","detail":"ApiCategory \"Test\" not found","instance":"/apispecifications/x"}`,
+			common.ApiError{Type: "BadRequest", Status: 400, Title: "Bad Request", Detail: `ApiCategory "Test" not found`, Instance: "/apispecifications/x"},
+			`ApiCategory \"Test\" not found`, `ApiCategory "Test" not found`),
+		Entry("validation problem with fields", http.StatusBadRequest,
+			`{"type":"ValidationError","status":400,"title":"Validation failed","detail":"invalid spec","fields":[{"field":"spec.name","detail":"required"}]}`,
+			common.ApiError{Type: "ValidationError", Status: 400, Title: "Validation failed", Detail: "invalid spec", Fields: []common.FieldError{{Field: "spec.name", Detail: "required"}}},
+			"invalid spec", "spec.name", "required"),
+		Entry("problem without type uses response status", http.StatusConflict,
+			`{"title":"Conflict","status":500,"detail":"already exists"}`,
+			common.ApiError{Type: "ApiError", Status: 409, Title: "Conflict", Detail: "already exists"},
+			"already exists"),
+	)
+
+	DescribeTable("omits unstructured response bodies",
+		func(status int, body, expectedTitle string) {
 			apiHandler = func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(status)
 				fmt.Fprint(w, body)
@@ -289,25 +323,15 @@ var _ = Describe("Request failure diagnostics", func() {
 
 			apiErr, ok := common.AsApiError(err)
 			Expect(ok).To(BeTrue())
-			Expect(apiErr.Type).To(Equal(expectedType))
+			Expect(apiErr.Type).To(Equal("UnknownError"))
 			Expect(apiErr.Status).To(Equal(status))
 			Expect(apiErr.Title).To(Equal(expectedTitle))
 			Expect(apiErr.Detail).To(Equal(fmt.Sprintf("The server responded with HTTP status %d. Response details are omitted.", status)))
-			Expect(apiErr.Instance).To(BeEmpty())
-			Expect(apiErr.Fields).To(BeEmpty())
-			Expect(common.IsValidationError(err)).To(Equal(expectedType == "ValidationError"))
 			Expect(render(err)).ToNot(ContainSubstring(secretMarker))
 		},
-		Entry("validation problem", http.StatusBadRequest,
-			`{"type":"ValidationError","status":400,"title":"`+secretMarker+`-title","detail":"`+secretMarker+`-detail",`+
-				`"instance":"/x?`+secretMarker+`","fields":[{"field":"`+secretMarker+`-field","detail":"`+secretMarker+`-field-detail"}]}`,
-			"ValidationError", "Bad Request"),
-		Entry("other problem type", http.StatusConflict,
-			`{"type":"`+secretMarker+`-type","status":409,"title":"`+secretMarker+`-title","detail":"`+secretMarker+`"}`,
-			"ApiError", "Conflict"),
-		Entry("non-problem body", http.StatusInternalServerError, secretMarker+"-raw-body",
-			"UnknownError", "Internal Server Error"),
-		Entry("unknown status code", 599, secretMarker+"-raw-body",
-			"UnknownError", "Unexpected Response"),
+		Entry("non-problem body", http.StatusInternalServerError, secretMarker+"-raw-body", "Internal Server Error"),
+		Entry("html body", http.StatusBadGateway, "<html>"+secretMarker+"</html>", "Bad Gateway"),
+		Entry("json without title", http.StatusBadRequest, `{"detail":"`+secretMarker+`"}`, "Bad Request"),
+		Entry("unknown status code", 599, secretMarker+"-raw-body", "Unexpected Response"),
 	)
 })

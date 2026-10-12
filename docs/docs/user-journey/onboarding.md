@@ -85,7 +85,9 @@ If Rover-CTL reports that `ROVER_TOKEN` is invalid or incomplete, check that you
 
 For troubleshooting, run the command again with `--debug`. For token errors, the error log then also shows which part of the token could not be decoded or validated, for example a missing field or an invalid URL. These token diagnostics do not include the token contents, credentials or URL values.
 
-Request failures are reported by HTTP method, resource type, a failure category (such as authentication, timeout or connection) and the HTTP status code. Request payloads, request URLs and error details returned by the server are not included.
+Request failures are reported by HTTP method, resource type, a failure category (such as authentication, timeout or connection) and the HTTP status code. Rover-CTL does not add request payloads or credentials to these error messages, and messages for connection-level failures do not include request URLs. With `--debug`, request URLs may be logged.
+
+If the server returns a structured error (problem details), its fields, including type, title, detail, instance and field errors, are shown as returned, for example `ApiCategory "Test" not found`. These fields may contain request-specific information. Other server responses, such as HTML or plain-text bodies, are omitted.
 
 Review any output before sharing it: other parts of the output, such as the result of `roverctl get-secret`, intentionally contain credentials.
 
