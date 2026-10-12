@@ -694,7 +694,7 @@ var _ = Describe("AgenticExposureHandler", func() {
 			// Telecontext zone's LMS issuer is trusted on the primary route
 			Expect(capturedPrimaryRoute.Spec.Security.TrustedIssuers).To(ContainElement("https://lms.telecontext.example.com"))
 			// Telecontext calls the proxy route in its own zone with a token of that zone
-			Expect(capturedProxyRoute.Spec.Security.DefaultConsumers).To(ConsistOf("gateway", "mcp--telecontext--tcapp"))
+			Expect(capturedProxyRoute.Spec.Security.DefaultConsumers).To(ConsistOf("mcp--telecontext--tcapp"))
 			Expect(capturedProxyRoute.Spec.Security.TrustedIssuers).To(ConsistOf("https://issuer.telecontext.example.com"))
 			// The primary route only sees the gateway mesh client
 			Expect(capturedPrimaryRoute.Spec.Security.DefaultConsumers).To(ConsistOf("gateway"))
@@ -777,8 +777,9 @@ var _ = Describe("AgenticExposureHandler", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(obj.Status.ProxyRoutes).To(HaveLen(2))
 			Expect(routes).To(HaveLen(3))
-			Expect(routes["subscriber-zone-ns"].Spec.Security.DefaultConsumers).To(ConsistOf("gateway"))
-			Expect(routes["telecontext-zone-ns"].Spec.Security.DefaultConsumers).To(ConsistOf("gateway", "mcp--telecontext--tcapp"))
+			// Subscribers access proxy routes via ConsumeRoutes; the gateway mesh client is only trusted on the primary
+			Expect(routes["subscriber-zone-ns"].Spec.Security.DefaultConsumers).To(BeEmpty())
+			Expect(routes["telecontext-zone-ns"].Spec.Security.DefaultConsumers).To(ConsistOf("mcp--telecontext--tcapp"))
 			Expect(routes["default"].Spec.Security.DefaultConsumers).To(ConsistOf("gateway"))
 			// The primary route trusts the LMS issuer of each proxy zone once
 			Expect(routes["default"].Spec.Security.TrustedIssuers).To(ConsistOf(
@@ -855,7 +856,7 @@ var _ = Describe("AgenticExposureHandler", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(obj.Status.ProxyRoutes).To(HaveLen(1))
 			Expect(routes).To(HaveLen(2))
-			Expect(routes["subscriber-zone-ns"].Spec.Security.DefaultConsumers).To(ConsistOf("gateway"))
+			Expect(routes["subscriber-zone-ns"].Spec.Security.DefaultConsumers).To(BeEmpty())
 			// The primary route serves the proxy gateway and Telecontext directly
 			Expect(routes["default"].Spec.Security.DefaultConsumers).To(ConsistOf("gateway", "mcp--telecontext--tcapp"))
 			Expect(routes["default"].Spec.Security.TrustedIssuers).To(ConsistOf(
@@ -954,9 +955,9 @@ var _ = Describe("AgenticExposureHandler", func() {
 			// One proxy route per zone, also when Telecontext is in the subscriber zone
 			Expect(obj.Status.ProxyRoutes).To(HaveLen(1))
 			if variant.IsTelecontextVariant() {
-				Expect(capturedProxyRoute.Spec.Security.DefaultConsumers).To(ConsistOf("gateway", "mcp--telecontext--tcapp"))
+				Expect(capturedProxyRoute.Spec.Security.DefaultConsumers).To(ConsistOf("mcp--telecontext--tcapp"))
 			} else {
-				Expect(capturedProxyRoute.Spec.Security.DefaultConsumers).To(ConsistOf("gateway"))
+				Expect(capturedProxyRoute.Spec.Security.DefaultConsumers).To(BeEmpty())
 			}
 		},
 			Entry("MCP", agenticv1.AgenticVariantMCP, []string{"variant--mcp"}),

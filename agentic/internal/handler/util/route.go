@@ -7,6 +7,7 @@ package util
 import (
 	"context"
 	"net/url"
+	"slices"
 
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -141,7 +142,10 @@ func CreateAgenticRoute(
 // The Route is created in the namespace of the proxy zone (a subscriber zone or the
 // Telecontext zone) and points upstream to the provider zone's AI Gateway.
 // Follows the same preset-based routing pattern as the API domain's CreateProxyRoute.
-// extraConsumers get access to the Route in addition to the gateway mesh client.
+// Subscribers gain access via their ConsumeRoutes; extraConsumers (e.g. the Telecontext
+// consumer) are added as DefaultConsumers. The gateway mesh client is NOT added here: it is
+// the identity used for the hop from this Route to the primary Route, so only the primary
+// Route needs to trust it.
 func CreateAgenticProxyRoute(
 	ctx context.Context,
 	basePath string,
@@ -205,7 +209,7 @@ func CreateAgenticProxyRoute(
 			Hostnames:      hostnames,
 			Paths:          paths,
 			Security: gatewayapi.Security{
-				DefaultConsumers: append([]string{GatewayConsumerName}, extraConsumers...),
+				DefaultConsumers: slices.Clone(extraConsumers),
 				RealmName:        proxyZone.Status.RealmName,
 			},
 			Traffic: gatewayapi.Traffic{},
