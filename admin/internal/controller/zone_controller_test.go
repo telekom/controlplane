@@ -295,11 +295,19 @@ var _ = Describe("Zone Controller", func() {
 				Expect(k8sClient.List(ctx, tc.list, client.InNamespace(zone.Status.Namespace))).To(Succeed())
 				items := tc.list.GetItems()
 				Expect(items).NotTo(BeEmpty())
-				child := items[0]
-				child.SetCondition(condition.NewNotReadyCondition("SelfHealing", "waiting for self-healing"))
-				Expect(k8sClient.Status().Update(ctx, child)).To(Succeed())
+				name := items[0].GetName()
 
+				// Children with a running controller in this suite (IdentityProvider, Realm) heal
+				// themselves; the Zone reads children authoritatively and may observe the healed
+				// state. Re-apply the degradation until the Zone has reported it once.
 				Eventually(func(g Gomega) {
+					child, ok := items[0].DeepCopyObject().(types.Object)
+					g.Expect(ok).To(BeTrue())
+					g.Expect(k8sClient.Get(ctx, client.ObjectKey{Namespace: zone.Status.Namespace, Name: name}, child)).To(Succeed())
+					if !meta.IsStatusConditionFalse(child.GetConditions(), condition.ConditionTypeReady) {
+						child.SetCondition(condition.NewNotReadyCondition("SelfHealing", "waiting for self-healing"))
+						g.Expect(client.IgnoreNotFound(k8sClient.Status().Update(ctx, child))).To(Succeed())
+					}
 					events := &corev1.EventList{}
 					g.Expect(k8sClient.List(ctx, events, client.InNamespace(zone.Namespace))).To(Succeed())
 					g.Expect(events.Items).To(ContainElement(SatisfyAll(

@@ -2,11 +2,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-//nolint:dupl // Controllers intentionally mirror each other.
 package controller
 
 import (
 	"context"
+	"errors"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
@@ -51,11 +51,10 @@ func (r *ClientReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 func (r *ClientReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Recorder = mgr.GetEventRecorderFor("client-controller")
 
-	factory := r.ClientFactory
-	if factory == nil {
-		factory = keycloak.NewServiceFactory()
+	if r.ClientFactory == nil {
+		return errors.New("client controller requires the shared keycloak ServiceFactory")
 	}
-	r.Controller = cc.NewController(clientHandler.NewHandlerClient(factory), r.Client, r.Recorder)
+	r.Controller = cc.NewController(clientHandler.NewHandlerClient(r.ClientFactory), r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&identityv1.Client{}, builder.WithPredicates(cc.Count("client", cc.RoleFor))).
@@ -99,11 +98,5 @@ func (r *ClientReconciler) mapRealmObjToIdentityClient(ctx context.Context, obj 
 		return nil
 	}
 
-	requests := make([]reconcile.Request, 0, len(list.Items))
-	for i := range list.Items {
-		item := &list.Items[i]
-		requests = append(requests, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(item)})
-	}
-
-	return requests
+	return requestsFor(itemPtrs(list.Items))
 }

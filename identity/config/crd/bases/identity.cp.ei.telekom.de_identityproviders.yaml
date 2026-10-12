@@ -50,6 +50,32 @@ spec:
                 type: string
               adminUserName:
                 type: string
+              tls:
+                description: TLS selects a CA bundle ConfigMap in the IdentityProvider
+                  namespace for admin and token requests.
+                properties:
+                  caBundleConfigMapRef:
+                    description: CABundleConfigMapRef selects the PEM CA bundle that
+                      is added to the system roots.
+                    properties:
+                      key:
+                        description: Key of the PEM CA bundle in the ConfigMap's data.
+                        maxLength: 253
+                        minLength: 1
+                        pattern: ^[-._a-zA-Z0-9]+$
+                        type: string
+                      name:
+                        description: Name of the ConfigMap in the referencing object's
+                          namespace.
+                        maxLength: 253
+                        minLength: 1
+                        pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+                        type: string
+                    required:
+                    - key
+                    - name
+                    type: object
+                type: object
             required:
             - adminClientId
             - adminPassword

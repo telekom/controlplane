@@ -59,7 +59,8 @@ func VerifyIdentityProvider(ctx context.Context, gomega Gomega, namespacedName c
 	gomega.Expect(idpResource.Status.AdminUrl).To(Equal(idpToVerify.Spec.AdminUrl))
 	gomega.Expect(idpResource.Status.AdminTokenUrl).NotTo(BeEmpty())
 	gomega.Expect(idpResource.Status.AdminConsoleUrl).NotTo(BeEmpty())
-	gomega.Expect(idpResource.Status.Conditions).To(HaveLen(2))
+	gomega.Expect(idpResource.Status.Conditions).To(HaveLen(3))
+	gomega.Expect(meta.IsStatusConditionTrue(idpResource.Status.Conditions, identityv1.TrustReadyConditionType)).To(BeTrue())
 	gomega.Expect(meta.IsStatusConditionTrue(idpResource.Status.Conditions, condition.ConditionTypeProcessing)).To(BeFalse())
 	gomega.Expect(meta.IsStatusConditionTrue(idpResource.Status.Conditions, condition.ConditionTypeReady)).To(BeTrue())
 }

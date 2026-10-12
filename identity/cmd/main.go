@@ -20,12 +20,16 @@ import (
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
+	commonclient "github.com/telekom/controlplane/common-server/pkg/client"
+	"github.com/telekom/controlplane/common/pkg/providerca"
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
 	"github.com/telekom/controlplane/identity/internal/controller"
+	"github.com/telekom/controlplane/identity/pkg/keycloak"
 	secretmetrics "github.com/telekom/controlplane/secret-manager/api/metrics"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
+	cclient "github.com/telekom/controlplane/common/pkg/client"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	// +kubebuilder:scaffold:imports
 )
@@ -118,7 +122,9 @@ func main() {
 		WebhookServer:          webhookServer,
 		HealthProbeBindAddress: probeAddr,
 		LeaderElection:         enableLeaderElection,
-		LeaderElectionID:       "f09b7a29.cp.ei.telekom.de",
+		// Only provider CA sources/copies enter the ConfigMap cache; this is not an RBAC boundary.
+		Cache:            cclient.ProviderCACacheOptions(nil),
+		LeaderElectionID: "f09b7a29.cp.ei.telekom.de",
 		// LeaderElectionReleaseOnCancel defines if the leader should step down voluntarily
 		// when the Manager ends. This requires the binary to immediately end when the
 		// Manager is stopped, otherwise, this setting is unsafe. Setting this significantly
@@ -139,23 +145,38 @@ func main() {
 	ctx := ctrl.SetupSignalHandler()
 	controller.RegisterIndexesOrDie(ctx, mgr)
 
+	// One CA cache serves status validation and client acquisition. It reads through the
+	// manager's informer cache, which holds only provider-ca labeled ConfigMaps. The shared
+	// Keycloak client cache is closed with the manager, cancelling token refresh.
+	caCache := providerca.NewCache(mgr.GetClient(), commonclient.ParseProviderCABundle)
+	keycloakClients := keycloak.NewClientCache(caCache)
+	if err = mgr.Add(keycloakClients); err != nil {
+		setupLog.Error(err, "unable to register keycloak client cache")
+		os.Exit(1)
+	}
+	keycloakFactory := keycloak.NewServiceFactory(keycloakClients)
+
 	if err = (&controller.IdentityProviderReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
+		CA:     caCache,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "IdentityProvider")
 		os.Exit(1)
 	}
 	if err = (&controller.ClientReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
+		Client:        mgr.GetClient(),
+		Scheme:        mgr.GetScheme(),
+		ClientFactory: keycloakFactory,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Client")
 		os.Exit(1)
 	}
 	if err = (&controller.RealmReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
+		Client:        mgr.GetClient(),
+		Scheme:        mgr.GetScheme(),
+		ClientFactory: keycloakFactory,
+		CA:            caCache,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Realm")
 		os.Exit(1)

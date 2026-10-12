@@ -95,6 +95,20 @@ ArgoCD will clone the repository at the specified tag, render the Kustomize over
 
 To upgrade to a new release, update the `targetRevision` in your ArgoCD Application to the new tag (for example `v0.19.0`). ArgoCD will detect the change and sync the updated manifests.
 
+#### Enabling private provider CAs
+
+Provider CA references (see [Private Provider CAs](./environments-and-zones.md#private-provider-cas)) need this order:
+
+1. Apply the CRDs and RBAC (clusterwide ConfigMap `get`/`list`/`watch` for all three operators; `create`/`update`/`patch` for Admin; Gateway and Identity lose their leader-election ConfigMap rules and use Leases).
+2. Deploy the Gateway and Identity operators, then the Admin operator.
+3. Label each source ConfigMap with `cp.ei.telekom.de/provider-ca: "true"`.
+4. Set the `tls.caBundleConfigMapRef` references on the Zone last. All sources of a Zone are combined into one bundle trusted by every gateway and identity provider of that Zone.
+5. Before completing the rollout, check `TrustSourcesReady` on the Zone, `TrustReady` on Gateways, IdentityProviders and Realms, and that Realm status carries the expected connection.
+
+Older operator versions ignore the references and may overwrite provider specs or Realm connection status. To roll back, first remove the references once the endpoints work with system trust; keep the CRDs and the CA bundles. Otherwise roll forward.
+
+Identity provider endpoint changes are applied without migration: Realms and Clients are recreated at the new endpoint and resources at the old endpoint are left in place.
+
 ## Optional capability components {#optional-capabilities}
 
 Eventing and Permission are not included in the default overlay. Add either component to a [custom downstream overlay](#creating-a-custom-overlay) when needed:

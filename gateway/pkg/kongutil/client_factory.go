@@ -6,138 +6,21 @@ package kongutil
 
 import (
 	"context"
-	"crypto/sha256"
-	"fmt"
-	"net/http"
-	"net/url"
-	"sync"
-	"time"
 
-	"github.com/pkg/errors"
-	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/clientcredentials"
-
-	metrics "github.com/telekom/controlplane/common-server/pkg/client/metrics"
-	kong "github.com/telekom/controlplane/gateway/pkg/kong/api"
+	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	"github.com/telekom/controlplane/gateway/pkg/kong/client"
 )
 
-type GatewayAdminConfig interface {
-	AdminUrl() string
-	AdminClientId() string
-	AdminClientSecret() string
-	AdminIssuer() string
+// ClientFactory returns Kong clients for a Gateway.
+// The Gateway argument identifies the owner (namespace, name, UID); its connection values
+// are not authoritative.
+type ClientFactory interface {
+	ClientFor(ctx context.Context, gw *gatewayv1.Gateway) (client.KongClient, error)
 }
 
-type gatewayAdminConfig struct {
-	url          string
-	clientId     string
-	clientSecret string
-	issuer       string
-}
+// ClientFactoryFunc adapts a function to ClientFactory.
+type ClientFactoryFunc func(ctx context.Context, gw *gatewayv1.Gateway) (client.KongClient, error)
 
-func (g *gatewayAdminConfig) AdminUrl() string {
-	return g.url
-}
-
-func (g *gatewayAdminConfig) AdminClientId() string {
-	return g.clientId
-}
-
-func (g *gatewayAdminConfig) AdminClientSecret() string {
-	return g.clientSecret
-}
-
-func (g *gatewayAdminConfig) AdminIssuer() string {
-	return g.issuer
-}
-
-func NewGatewayConfig(rawUrl, clientId, clientSecret, issuer string) GatewayAdminConfig {
-	return &gatewayAdminConfig{
-		url:          rawUrl,
-		clientId:     clientId,
-		clientSecret: clientSecret,
-		issuer:       issuer,
-	}
-}
-
-var (
-	rootCtx      = context.Background()
-	tokenUrlPath = "/protocol/openid-connect/token"
-
-	clientCache      = make(map[string]client.KongClient)
-	urlToKey         = make(map[string]string) // AdminUrl -> current cache key for stale eviction
-	clientCacheMutex sync.Mutex
-)
-
-// cacheKey produces a SHA-256 hex digest of all connection parameters.
-// When any parameter (including the secret) changes, the key changes,
-// causing an automatic cache miss and fresh client creation.
-func cacheKey(gwCfg GatewayAdminConfig) string {
-	key := fmt.Sprintf("%s\x00%s\x00%s\x00%s",
-		gwCfg.AdminUrl(), gwCfg.AdminClientId(),
-		gwCfg.AdminClientSecret(), gwCfg.AdminIssuer())
-	return fmt.Sprintf("%x", sha256.Sum256([]byte(key)))
-}
-
-var GetClientFor = func(gwCfg GatewayAdminConfig) (client.KongClient, error) {
-	clientCacheMutex.Lock()
-	defer clientCacheMutex.Unlock()
-
-	key := cacheKey(gwCfg)
-
-	if c, ok := clientCache[key]; ok {
-		return c, nil
-	}
-
-	apiClient, err := NewClientFor(gwCfg)
-	if err != nil {
-		return nil, err
-	}
-	c := client.NewKongClient(apiClient)
-
-	// Evict stale entry for the same URL (previous credentials).
-	adminUrl := gwCfg.AdminUrl()
-	if oldKey, ok := urlToKey[adminUrl]; ok && oldKey != key {
-		delete(clientCache, oldKey)
-	}
-	urlToKey[adminUrl] = key
-	clientCache[key] = c
-
-	return c, nil
-}
-
-var NewClientFor = func(gwCfg GatewayAdminConfig) (kong.ClientWithResponsesInterface, error) {
-	baseClient := &http.Client{
-		Transport: &http.Transport{
-			MaxIdleConnsPerHost: 100,
-		},
-		Timeout: 10 * time.Second,
-	}
-
-	tokenCfg := clientcredentials.Config{
-		ClientID:     gwCfg.AdminClientId(),
-		ClientSecret: gwCfg.AdminClientSecret(),
-		TokenURL:     gwCfg.AdminIssuer() + tokenUrlPath,
-	}
-
-	ctx := context.WithValue(rootCtx, oauth2.HTTPClient, baseClient)
-
-	url, err := url.Parse(gwCfg.AdminUrl())
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to parse gateway URL")
-	}
-
-	httpClient := tokenCfg.Client(ctx)
-	metricsClient := metrics.WithMetrics(httpClient,
-		metrics.WithClientName("gateway"),
-		metrics.WithReplacePatterns(`([^\/]+--[^\/]+--[^\/]+)`, `([^\/]+--[^\/]+)`, metrics.ReplacePatternUID),
-	)
-
-	apiClient, err := kong.NewClientWithResponses(url.String(), kong.WithHTTPClient(metricsClient))
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to create kong client")
-	}
-
-	return apiClient, nil
+func (f ClientFactoryFunc) ClientFor(ctx context.Context, gw *gatewayv1.Gateway) (client.KongClient, error) {
+	return f(ctx, gw)
 }

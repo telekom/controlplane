@@ -15,31 +15,28 @@ import (
 	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	common "github.com/telekom/controlplane/common/pkg/types"
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
-	secrets "github.com/telekom/controlplane/secret-manager/api"
 )
 
-func GetRealmByName(ctx context.Context, realmRef *common.ObjectRef, resolveSecret bool) (bool, *identityv1.Realm, error) {
-	clientFromContext := client.ClientFromContextOrDie(ctx)
-
+// GetRealm reads the Realm without checking readiness. Its persisted connection snapshot
+// may be used for cleanup while the Realm is not Ready.
+func GetRealm(ctx context.Context, realmRef *common.ObjectRef) (*identityv1.Realm, error) {
 	realm := &identityv1.Realm{}
-	err := clientFromContext.Get(ctx, realmRef.K8s(), realm)
+	if err := client.ClientFromContextOrDie(ctx).Get(ctx, realmRef.K8s(), realm); err != nil {
+		return nil, errors.Wrapf(err, "failed to get realm %s", realmRef.String())
+	}
+	return realm, nil
+}
+
+// GetRealmByName reads the Realm and requires it to be Ready.
+func GetRealmByName(ctx context.Context, realmRef *common.ObjectRef) (*identityv1.Realm, error) {
+	realm, err := GetRealm(ctx, realmRef)
 	if err != nil {
-		return false, nil, errors.Wrapf(err, "failed to get realm %s", realmRef.String())
+		return nil, err
 	}
-
 	if readyErr := condition.EnsureReady(realm); readyErr != nil {
-		return false, nil, ctrlerrors.BlockedErrorf("realm %q is not ready", realmRef.String())
+		return nil, ctrlerrors.BlockedErrorf("realm %q is not ready", realmRef.String())
 	}
-
-	if resolveSecret {
-		realm.Status.AdminPassword, err = secrets.Get(ctx, realm.Status.AdminPassword)
-		if err != nil {
-			return false, nil, errors.Wrap(err, "failed to retrieve password from secret manager")
-		}
-
-	}
-
-	return true, realm, nil
+	return realm, nil
 }
 
 func ValidateRealmStatus(realmStatus *identityv1.RealmStatus) error {

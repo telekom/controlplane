@@ -166,35 +166,44 @@ var _ = Describe("Preset OIDC status", func() {
 		Expect(hc.Zone.Status.Presets).To(HaveEach(HaveField("Links.TokenUrl", "https://tokens.example.com/token")))
 	})
 
-	It("reuses a safe status token URL only for the matching issuer", func() {
+	It("never reuses a previously published token URL and rediscovers on every reconciliation", func() {
 		hc := newContext(&http.Client{Transport: failingRoundTripper{}})
-		hc.Zone.Status.Presets = []adminv1.PresetStatus{{
+		previous := []adminv1.PresetStatus{{
 			Name: "default", Links: adminv1.Links{Issuer: "https://issuer.example.com/auth/realms/default", TokenUrl: "https://tokens.example.com/token"},
 		}}
+		hc.Zone.Status.Presets = previous
 
-		Expect(populatePresetStatus(context.Background(), hc)).To(Succeed())
-		Expect(hc.Zone.Status.Presets).To(HaveEach(HaveField("Links.TokenUrl", "https://tokens.example.com/token")))
-
-		hc = newContext(&http.Client{Transport: failingRoundTripper{}})
-		hc.Zone.Status.Presets = []adminv1.PresetStatus{{
-			Name: "default", Links: adminv1.Links{Issuer: "https://other.example.com/auth/realms/", TokenUrl: "https://tokens.example.com/token"},
-		}}
 		Expect(populatePresetStatus(context.Background(), hc)).To(HaveOccurred())
-
-		hc = newContext(&http.Client{Transport: failingRoundTripper{}})
-		hc.Zone.Status.Presets = []adminv1.PresetStatus{{
-			Name: "removed", Links: adminv1.Links{Issuer: "https://issuer.example.com/auth/realms/default", TokenUrl: "https://tokens.example.com/token"},
-		}}
-		Expect(populatePresetStatus(context.Background(), hc)).To(HaveOccurred())
+		Expect(hc.Zone.Status.Presets).To(Equal(previous), "a failed discovery publishes nothing new")
 	})
 
-	It("does not reuse an invalid status token URL", func() {
-		hc := newContext(&http.Client{Transport: failingRoundTripper{}})
+	It("calls discovery again after a failed attempt", func() {
+		requests := 0
+		fail := true
+		server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			requests++
+			if fail {
+				w.WriteHeader(http.StatusServiceUnavailable)
+				return
+			}
+			_, err := fmt.Fprint(w, `{"issuer":"https://issuer.example.com/auth/realms/default","token_endpoint":"https://tokens.example.com/new"}`)
+			Expect(err).NotTo(HaveOccurred())
+		}))
+		defer server.Close()
+		hc := newContext(server.Client())
+		hc.HTTPClient.Transport = rewriteHostTransport{base: hc.HTTPClient.Transport, target: server.URL}
 		hc.Zone.Status.Presets = []adminv1.PresetStatus{{
-			Name: "default", Links: adminv1.Links{Issuer: "https://issuer.example.com/auth/realms/default", TokenUrl: "https://tokens.example.com/token?secret=value"},
+			Name: "default", Links: adminv1.Links{Issuer: "https://issuer.example.com/auth/realms/default", TokenUrl: "https://tokens.example.com/old"},
 		}}
 
 		Expect(populatePresetStatus(context.Background(), hc)).To(HaveOccurred())
+		Expect(requests).To(Equal(1))
+		fail = false
+		Expect(populatePresetStatus(context.Background(), hc)).To(Succeed())
+		Expect(requests).To(Equal(2))
+		Expect(hc.Zone.Status.Presets).To(HaveEach(HaveField("Links.TokenUrl", "https://tokens.example.com/new")))
+		Expect(populatePresetStatus(context.Background(), hc)).To(Succeed())
+		Expect(requests).To(Equal(3), "successful metadata is not cached across reconciliations either")
 	})
 })
 

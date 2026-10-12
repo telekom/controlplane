@@ -17,11 +17,9 @@ import (
 
 func populatePresetStatus(ctx context.Context, hc *HandlingContext) error {
 	statuses := make([]adminv1.PresetStatus, 0, len(hc.Zone.Spec.Presets))
+	// Discovered metadata is never reused across reconciliations: it is bound to the trust used
+	// for discovery, so every reconciliation rediscovers through the current effective trust.
 	tokenURLs := make(map[string]string, len(hc.Zone.Spec.Presets))
-	previousStatuses := make(map[string]int, len(hc.Zone.Status.Presets))
-	for i := range hc.Zone.Status.Presets {
-		previousStatuses[hc.Zone.Status.Presets[i].Name] = i
-	}
 	for i := range hc.Zone.Spec.Presets {
 		preset := &hc.Zone.Spec.Presets[i]
 		gateway, err := hc.Zone.Spec.GetGateway(preset.GatewayRef)
@@ -44,15 +42,8 @@ func populatePresetStatus(ctx context.Context, hc *HandlingContext) error {
 		if tokenURL == "" {
 			tokenURL = idp.TokenUrl
 		}
-		if tokenURL == "" { //nolint:nestif // Token URL precedence is intentionally evaluated in one place.
+		if tokenURL == "" {
 			tokenURL = tokenURLs[issuer]
-			if previousIndex, found := previousStatuses[preset.Name]; found {
-				previous := &hc.Zone.Status.Presets[previousIndex]
-				if tokenURL == "" && previous.Links.Issuer == issuer && validateDiscoveredTokenURL(previous.Links.TokenUrl) == nil {
-					tokenURL = previous.Links.TokenUrl
-					tokenURLs[issuer] = tokenURL
-				}
-			}
 			if tokenURL == "" {
 				tokenURL, err = discoverTokenURL(ctx, hc.HTTPClient, issuer)
 				if err != nil {

@@ -199,6 +199,151 @@ gateways:
 
 No manual realm or client setup is needed. All gateways in a Zone share one automatically provisioned `rover` client. For its lifecycle and secret handling, see [Admin Domain](../architecture/admin.mdx#identity-realms-and-the-rover-client).
 
+### Private Provider CAs
+
+Each Zone gateway and identity provider entry accepts an optional `tls` block naming a CA source ConfigMap in the
+**Zone namespace**. Admin combines the certificates of **all** sources of the Zone into one Zone CA bundle, and every
+gateway and identity provider of the Zone trusts that bundle in addition to the system roots, including entries
+without a `tls` block of their own. The Zone is the trust boundary: a CA added for one provider is trusted by all
+providers of the Zone, but never by another Zone. Name and key are
+both required; only `data[key]` is read. Omitting `tls` (or its reference) means system trust. There is no inline
+PEM, namespace field or insecure option.
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  namespace: production # Zone namespace
+  name: private-provider-ca
+  labels:
+    cp.ei.telekom.de/provider-ca: "true" # required
+data:
+  ca.crt: |
+    -----BEGIN CERTIFICATE-----
+    ...public CA certificate...
+    -----END CERTIFICATE-----
+---
+# Zone spec excerpt
+identityProviders:
+  - name: primary
+    tls:
+      caBundleConfigMapRef:
+        name: private-provider-ca
+        key: ca.crt
+gateways:
+  - name: standard
+    admin:
+      identityProviderRef: primary
+      url: https://gateway-admin.example.com
+    tls:
+      caBundleConfigMapRef:
+        name: private-provider-ca
+        key: ca.crt
+```
+
+Each source and the combined bundle must contain only PEM `CERTIFICATE` blocks (at most 256 KiB and 64 distinct
+certificates; the limits apply to the union too). Once the Zone has any source, every provider endpoint must use
+HTTPS: the IDP admin API, admin tokens, OIDC discovery, the Kong admin API and the gateway's OAuth issuer all use the
+Zone bundle. Omitting all references means system trust for every provider.
+
+When a token link needs OIDC discovery, Admin queries the issuer on each eligible reconciliation using the Zone
+bundle. Presets sharing an issuer reuse that result only within the same reconciliation, not from a previous
+one. An explicit preset `TokenUrl` takes precedence over the identity provider's `TokenUrl`; discovery is used only
+when neither is set. A reconciliation that fails to prepare the identity provider publishes no new discovery metadata.
+
+**Setup requirement:** add the `cp.ei.telekom.de/provider-ca: "true"` label **before** you set the reference, and keep
+it during rotation and same-name recreation. Sources without the exact label are rejected even if the PEM is valid.
+The label only puts the ConfigMap into the operators' caches; it is not an authorization boundary.
+
+#### The Zone CA bundle
+
+Admin does not hand the sources to the providers. It validates every source, merges their certificates into one
+deduplicated bundle in a fixed order and writes it into the generated `<environment>--<zone>` namespace before any
+provider references it. The bundle has a stable name per Zone, `provider-ca-<first 40 hex characters of the origin
+hash>`, with the fixed key `ca.crt`, and carries:
+
+| Metadata | Value |
+| --- | --- |
+| label `cp.ei.telekom.de/provider-ca` | `"true"` |
+| labels `cp.ei.telekom.de/environment`, `cp.ei.telekom.de/zone`, `cp.ei.telekom.de/domain` | Environment, Zone name, `admin` |
+| annotation `admin.cp.ei.telekom.de/zone-uid` | UID of the Zone |
+| annotations `admin.cp.ei.telekom.de/provider-ca-origin-zone-namespace`, `-zone-name` | the origin tuple |
+| annotation `admin.cp.ei.telekom.de/provider-ca-origin-hash` | full SHA-256 of the length-prefixed tuple `(zone UID, zone namespace, zone name)` |
+
+The bundle names no single source. Copies of a single source written by earlier versions of this feature also carry
+`-configmap` and `-key` annotations (part of their hash); they stay valid for references that still use them and are
+not deleted. Bundles have no owner references or finalizers and are never deleted automatically. Admin only writes a
+bundle whose existing metadata matches this origin; it never adopts a colliding object.
+
+The Gateway and Identity operators enforce the same provenance whenever they resolve a reference: a
+referenced ConfigMap whose name matches `provider-ca-<40 hex>` or which carries any of the origin annotations is
+treated as an Admin-managed bundle or copy and needs the complete, hash-consistent origin, a matching Zone label, an
+Environment label, no owner references and the key `ca.crt`. Partial or spoofed metadata blocks the provider
+instead of falling back to system trust. Other labeled ConfigMaps referenced directly by manually authored
+Gateways or IdentityProviders remain ordinary local sources and need only the label.
+
+#### Trust caching in Gateway and Identity
+
+Gateway and Identity read CA ConfigMaps through their informer cache, which only holds ConfigMaps labeled
+`cp.ei.telekom.de/provider-ca: "true"`; a referenced ConfigMap without the label is reported as not found. They cache
+each resolved CA reference for one minute and each failed resolution for five seconds. Status conditions and
+provider connections use the same cache. Changes to a referenced ConfigMap, including a removed
+label or deletion, do not trigger a reconciliation of Gateways, Routes, Consumers, IdentityProviders, Realms or
+Clients. They take effect on the next reconciliation of each resource after its cached trust has expired: when the
+resource or one of its dependencies changes, or at the periodic requeue (by default every 30 to 51 minutes). If a
+refresh fails after the cached trust expired, reconciliation fails and retries; the operators never fall back to
+older trust or system trust. A bundle rotation therefore reaches all providers of the Zone eventually, not within
+a fixed time. The durable bundle Admin keeps is separate from this cache. Admin also reads sources and the bundle
+through its label-filtered informer cache (without the one-minute CA cache), so it sees source changes once its
+informer has observed them; an unlabeled source is reported as not found.
+
+#### Status and failure behavior
+
+The Zone condition `TrustSourcesReady` reports whether the requested sources are synchronized (not whether the
+remote endpoint is reachable). Gateways, IdentityProviders and Realms report `TrustReady` for the trust they resolve.
+
+| Situation | Behavior |
+| --- | --- |
+| Any requested source missing, invalid, forbidden or unlabeled, the combined bundle exceeds the limits, or a provider configuration is rejected | Admin writes no bundle and changes no provider in this reconciliation; `TrustSourcesReady=False` with reason `SourceInvalid` and the Zone is blocked. The existing bundle and published providers stay as they are. Once the source is repaired, the next reconciliation publishes the desired configuration. |
+| Bundle cannot be written or does not validate | No provider is changed; `TrustSourcesReady=False` with reason `CopyInvalid`. |
+| Invalid identity provider or gateway configuration | No provider is changed by the IdentityProvider failure; a failing gateway is not updated. The Zone is blocked. |
+| Valid source update, added or removed reference | The bundle is replaced by the new union for every provider of the Zone; consumers pick up the new trust on their next reconciliation after their cached trust expires. |
+| Last reference removed | All providers switch to system trust; the bundle is retained. |
+| Bundle deleted while the Zone is live | Admin recreates it from valid sources. Consumers block while it is missing. |
+| Bundle lost its `cp.ei.telekom.de/provider-ca: "true"` label | The bundle disappears from the operators' caches. Admin reports `TrustSourcesReady=False` with reason `CopyInvalid` and a message asking to restore the label, and retries; it does not overwrite or adopt the object. Restore the label manually (`kubectl label configmap <bundle> cp.ei.telekom.de/provider-ca=true -n <zone namespace>`); the next reconciliation recovers. |
+
+#### Endpoint moves and Realm connections
+
+Each Realm records the connection it currently uses in its status and uses it for cleanup. Changing the identity
+provider admin URL or `issuerHostname` of a Zone is published like any other change: the IdentityProvider, the
+dependent Gateway issuer and managed-route trusted issuers are updated, and Realms and Clients follow on their next
+reconciliation. This is not a managed migration. Realms and Clients are created at the new endpoint; resources at the
+old endpoint are left in place and must be removed manually. To move without leftovers, create a replacement
+Zone/provider, move dependents, clean up the old resources and then retire them.
+
+#### Rotation
+
+Rotate by updating the source in place with old and new CAs together, switch the server certificates, then remove
+the old CA. An accepted change of any source of a Zone changes trust for **every** provider and recorded Realm
+connection of that Zone. A Zone change that Admin rejects (for example an invalid source) does not change the bundle.
+
+#### Zone deletion and the retained bundle
+
+Deleting a Zone keeps the generated namespace, providers, Realm connection status and the CA bundle so that later cleanup can
+still connect. Admin stops synchronizing sources once deletion starts. Afterwards the bundle is authoritative; the
+original sources may be deleted. To rotate trust after deletion, back up the bundle and replace `data.ca.crt` directly
+with validated PEM (keep the label and all origin annotations unchanged); consumers pick up the change on their next
+reconciliation after their cached trust expires. Remove remote business resources first, then providers, bundles and the namespace. Deleting a bundle early can
+prevent remote cleanup.
+
+#### Permissions
+
+The Admin, Gateway and Identity operators only cache ConfigMaps carrying the provider-ca label, but they keep
+clusterwide ConfigMap `get`, `list` and `watch` permission for all ConfigMaps; authoritative reads bypass the cache.
+Admin may additionally `create`, `update` and `patch` (never `delete`) ConfigMaps for bundles. Gateway and Identity
+use Leases for leader election and have no ConfigMap write permission. Restrict who may edit sources, bundles and
+provider resources: they control provider trust.
+
 ### Zone Secrets
 
 Configure the **identity provider admin password** and, if used, the **Redis password** on the Zone. Gateway admin credentials are managed automatically and are not part of this configuration.

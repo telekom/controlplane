@@ -11,6 +11,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/go-logr/logr"
+	"github.com/go-logr/logr/funcr"
 	"github.com/prometheus/client_golang/prometheus/testutil"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -187,6 +189,21 @@ var _ = Describe("Controller", func() {
 
 			Expect(k8sClient.Get(ctx, req.NamespacedName, obj)).To(Succeed())
 			Expect(controllerutil.ContainsFinalizer(obj, config.FinalizerName)).To(BeTrue())
+		})
+
+		It("does not log the full resource on success", func() {
+			var lines []string
+			logger := funcr.New(func(prefix, args string) { lines = append(lines, args) }, funcr.Options{Verbosity: 1})
+			controller := NewController(nopHandler, k8sClient, &recorder)
+
+			_, err := controller.Reconcile(logr.NewContext(ctx, logger), req, &test.TestResource{})
+			Expect(err).ToNot(HaveOccurred())
+			Expect(lines).To(ContainElement(ContainSubstring(`"msg"="Created or updated"`)))
+			for _, l := range lines {
+				Expect(l).ToNot(ContainSubstring(`"resource"`))
+				Expect(l).ToNot(ContainSubstring("managedFields"))
+				Expect(l).ToNot(ContainSubstring(`"spec"`))
+			}
 		})
 
 		It("should set the correct conditions when there is no error", func() {

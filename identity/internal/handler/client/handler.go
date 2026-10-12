@@ -6,7 +6,6 @@ package client
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"slices"
 	"time"
@@ -49,7 +48,7 @@ func (h *HandlerClient) CreateOrUpdate(ctx context.Context, client *identityv1.C
 		return fmt.Errorf("failed to get client secret from secret-manager: %w", err)
 	}
 
-	_, realm, err := realmHandler.GetRealmByName(ctx, client.Spec.Realm, true)
+	realm, err := realmHandler.GetRealmByName(ctx, client.Spec.Realm)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			return ctrlerrors.BlockedErrorf("Realm %q not found", client.Spec.Realm.String())
@@ -62,7 +61,7 @@ func (h *HandlerClient) CreateOrUpdate(ctx context.Context, client *identityv1.C
 	}
 	mapToClientStatus(&realm.Status, realm.Spec.AllowedOrigins, &client.Status)
 
-	realmClient, err := h.ServiceFactory.ServiceFor(realm.Status)
+	realmClient, err := h.ServiceFactory.ServiceFor(ctx, realm)
 	if err != nil {
 		return fmt.Errorf("failed to get keycloak client: %w", err)
 	}
@@ -216,31 +215,29 @@ func clearRotationStatus(logger logr.Logger, client *identityv1.Client) {
 
 func (h *HandlerClient) Delete(ctx context.Context, obj *identityv1.Client) error {
 	logger := log.FromContext(ctx)
-	logger.Info("ClientHandler Delete", "client", obj)
+	logger.Info("Deleting Keycloak client", "realm", obj.Spec.Realm.String(), "clientId", obj.Spec.ClientId)
 
-	ready, realm, err := realmHandler.GetRealmByName(ctx, obj.Spec.Realm, true)
+	realm, err := realmHandler.GetRealm(ctx, obj.Spec.Realm)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
+			// Known limitation: without the Realm there is no cleanup connection.
 			logger.Info("Realm not found, skipping Keycloak client deletion", "realm", obj.Spec.Realm.String())
-			return nil
-		}
-		// If the realm exists but is not ready (BlockedError), skip deletion
-		// rather than blocking the finalizer — the Keycloak client will be
-		// orphaned but the CR can be cleaned up.
-		var be ctrlerrors.BlockedError
-		if errors.As(err, &be) {
-			logger.Info("Realm not ready, skipping Keycloak client deletion", "realm", obj.Spec.Realm.String())
 			return nil
 		}
 		return err
 	}
 
-	if realm == nil || !ready {
-		logger.Info("Realm not ready, skipping Keycloak client deletion", "realm", obj.Spec.Realm.String())
+	// A not-ready Realm's persisted connection snapshot is still usable for cleanup.
+	switch identityv1.ClassifyRealmSnapshot(&realm.Status) {
+	case identityv1.RealmSnapshotEmpty:
+		// The Realm never recorded a connection, so no Keycloak client was created through it.
+		logger.Info("Realm has no recorded connection, skipping Keycloak client deletion", "realm", obj.Spec.Realm.String())
 		return nil
+	case identityv1.RealmSnapshotPartial:
+		return ctrlerrors.BlockedErrorf("realm %q has a partial connection snapshot and requires operator repair", obj.Spec.Realm.String())
 	}
 
-	svc, err := h.ServiceFactory.ServiceFor(realm.Status)
+	svc, err := h.ServiceFactory.ServiceFor(ctx, realm)
 	if err != nil {
 		return fmt.Errorf("failed to get keycloak client: %w", err)
 	}

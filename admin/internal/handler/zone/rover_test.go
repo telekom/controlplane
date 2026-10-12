@@ -162,8 +162,14 @@ func uniqueZone(prefix string, env ...string) *adminv1.Zone {
 }
 
 var _ = Describe("Zone rover admin client", func() {
-	var sm *memorySecretManager
-	h := &ZoneHandler{}
+	var (
+		sm *memorySecretManager
+		h  *ZoneHandler
+	)
+
+	BeforeEach(func() {
+		h = NewZoneHandler(k8sClient, k8sClient)
+	})
 
 	It("constructs a checksum-less environment secret reference", func() {
 		Expect(environmentSecretRef("env-1", roverSecretManagerPath("zone-a"))).
@@ -396,6 +402,7 @@ var _ = Describe("Zone rover admin client", func() {
 					defer wg.Done()
 					testCtx := newTestContext(local)
 					hc := newTestHandlingContext(testCtx, local)
+					Expect(prepareIdentityProvider(testCtx, hc)).To(Succeed())
 					Expect(createIdentityProvider(testCtx, hc)).To(Succeed())
 					Expect(createInternalIdentityRealm(testCtx, hc)).To(Succeed())
 					// Optimistic-concurrency conflicts are acceptable; secret changes are not.

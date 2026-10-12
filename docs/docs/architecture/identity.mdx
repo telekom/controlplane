@@ -20,6 +20,48 @@ When a Realm is configured with a `secretRotation` policy, the Identity domain p
 
 Individual clients can opt out via the `identity.cp.ei.telekom.de/disable-secret-rotation: "true"` annotation.
 
+## Provider CA trust and Realm connection status
+
+A Realm follows its IdentityProvider and records its endpoints, credential inputs and CA reference in status.
+Secret references remain references; their values are resolved when connecting to Keycloak.
+
+```mermaid
+flowchart TD
+    Cached["Cached Realm<br/>and IdentityProvider"] --> Prepare["Derive connection<br/>and validate trust"]
+    Prepare --> Realm["Update Realm<br/>in memory"]
+    Realm --> Client["Get cached service"]
+    CA["Shared CA cache"] --> Prepare
+    CA --> Client
+    Client --> Remote["Reconcile Keycloak"]
+    Remote -->|success or error| Status["Update status"]
+    Prepare -->|error| Status
+    Client -->|error| Status
+```
+
+- **Connection lifecycle:** the factory uses the current Realm, without rereading it. Status persistence follows normal
+  reconciliation, including failures; there is no early status commit or frozen target.
+- **Client reuse:** one service per Realm is replaced when its endpoints, resolved credentials, Realm UID or CA
+  fingerprint change. Each reconciliation acquires its service; replacement closes idle connections while in-flight
+  requests finish. Token refresh lives as long as the manager, not the originating reconciliation.
+- **Trust:** IdentityProvider `spec.tls` references a same-namespace ConfigMap labeled `cp.ei.telekom.de/provider-ca: "true"`.
+  Trust checks and service acquisition share the CA cache, including bundle-origin validation: successes last one minute,
+  failures five seconds. A failed refresh blocks reconciliation rather than reusing expired trust or falling back to
+  system trust. Custom trust requires HTTPS.
+- **Convergence:** Kubernetes reads are informer-cached. IdentityProvider changes enqueue Realms, and Realm changes enqueue
+  Clients. CA changes wait for a later reconciliation after cache expiry; rotation is not immediate.
+- **Deletion:** Realms and Clients use the Realm's recorded connection, without a live IdentityProvider or a ready Realm.
+  No recorded connection means no remote cleanup; incomplete status or failed trust blocks cleanup. Retain the CA bundle
+  until cleanup finishes.
+
+:::caution Endpoint moves are not migrations
+Old remote resources are left in place. A crash after a remote request but before status persistence can also leave
+resources unrecorded. Client lookup checks the stored UID against `spec.clientId`; changing that ID selects or creates
+another client, without renaming or deleting the old one.
+:::
+
+See [Private Provider CAs](../admin-journey/environments-and-zones.md#private-provider-cas) for rotation and cleanup,
+and [Endpoint moves](../admin-journey/environments-and-zones.md#endpoint-moves-and-realm-connections) for migration guidance.
+
 ## Domain Interactions
 
 - **Admin domain** — Zones define which identity provider to use.

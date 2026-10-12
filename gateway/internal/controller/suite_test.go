@@ -10,13 +10,17 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"sync/atomic"
 	"testing"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/stretchr/testify/mock"
+	ptls "github.com/telekom/controlplane/common-server/pkg/client"
+	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/config"
+	"github.com/telekom/controlplane/common/pkg/providerca"
 	testmock "github.com/telekom/controlplane/common/pkg/test/mock"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	kongclient "github.com/telekom/controlplane/gateway/pkg/kong/client"
@@ -28,6 +32,7 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -53,7 +58,19 @@ var (
 	cancel context.CancelFunc
 
 	mockKongClient *kongmock.MockKongClient
+	trustFactory   *kongutil.Factory
+	apiReader      client.Reader
+	managerCache   cache.Cache
+
+	// trustClockOffset shifts the CA cache clock so tests can expire cached trust.
+	trustClockOffset atomic.Int64
 )
+
+// expireTrust expires all cached CA resolutions; call it before changing trust inputs
+// that tests expect controllers to observe.
+func expireTrust() {
+	trustClockOffset.Add(int64(2 * time.Minute))
+}
 
 func TestControllers(t *testing.T) {
 	RegisterFailHandler(Fail)
@@ -92,6 +109,8 @@ var _ = BeforeSuite(func() {
 		Metrics: server.Options{
 			BindAddress: "0",
 		},
+		// Same ConfigMap label filter as cmd/main.go.
+		Cache: cclient.ProviderCACacheOptions(nil),
 	})
 	Expect(err).ToNot(HaveOccurred())
 
@@ -102,11 +121,21 @@ var _ = BeforeSuite(func() {
 	mockKongClient = kongmock.NewMockKongClient(GinkgoT())
 	setupKongMockExpectations()
 
-	// Override kongutil.GetClientFor to always return our mock
-	originalGetClientFor := kongutil.GetClientFor
-	kongutil.GetClientFor = func(_ kongutil.GatewayAdminConfig) (kongclient.KongClient, error) {
+	// Real trust resolution through the manager's informer cache, as in cmd/main.go; Kong
+	// calls go to the mock.
+	caCache := providerca.NewCache(k8sManager.GetClient(), ptls.ParseProviderCABundle,
+		providerca.WithClock(func() time.Time { return time.Now().Add(time.Duration(trustClockOffset.Load())) }))
+	kongClients := kongutil.NewClientCache(caCache)
+	Expect(k8sManager.Add(kongClients)).To(Succeed())
+	trustFactory = kongutil.NewFactory(caCache, kongClients, nil)
+	kongFactory := kongutil.ClientFactoryFunc(func(ctx context.Context, gw *gatewayv1.Gateway) (kongclient.KongClient, error) {
+		if validateErr := trustFactory.Validate(ctx, gw); validateErr != nil {
+			return nil, validateErr
+		}
 		return mockKongClient, nil
-	}
+	})
+	apiReader = k8sManager.GetAPIReader()
+	managerCache = k8sManager.GetCache()
 
 	// Override secrets.Get to be an identity function (no real secret resolution needed)
 	originalSecretsGet := secretsapi.Get
@@ -119,20 +148,23 @@ var _ = BeforeSuite(func() {
 		Client:   k8sManager.GetClient(),
 		Scheme:   k8sManager.GetScheme(),
 		Recorder: &testmock.EventRecorder{},
+		Trust:    trustFactory,
 	}).SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 
 	err = (&RouteReconciler{
-		Client:   k8sManager.GetClient(),
-		Scheme:   k8sManager.GetScheme(),
-		Recorder: &testmock.EventRecorder{},
+		Client:        k8sManager.GetClient(),
+		Scheme:        k8sManager.GetScheme(),
+		Recorder:      &testmock.EventRecorder{},
+		ClientFactory: kongFactory,
 	}).SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 
 	err = (&ConsumerReconciler{
-		Client:   k8sManager.GetClient(),
-		Scheme:   k8sManager.GetScheme(),
-		Recorder: &testmock.EventRecorder{},
+		Client:        k8sManager.GetClient(),
+		Scheme:        k8sManager.GetScheme(),
+		Recorder:      &testmock.EventRecorder{},
+		ClientFactory: kongFactory,
 	}).SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 
@@ -152,7 +184,6 @@ var _ = BeforeSuite(func() {
 
 	// Restore original functions after suite completes
 	DeferCleanup(func() {
-		kongutil.GetClientFor = originalGetClientFor
 		secretsapi.Get = originalSecretsGet
 	})
 })

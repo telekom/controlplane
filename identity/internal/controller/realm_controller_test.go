@@ -23,8 +23,6 @@ import (
 
 var _ = Describe("Realm Controller", func() {
 	Context("When reconciling a resource", func() {
-		ctx := context.Background()
-
 		// IDP related
 		realmIdpName := "keycloak-test-realm"
 		realmIdpRef := client.ObjectKey{
@@ -81,7 +79,8 @@ func VerifyRealm(ctx context.Context, gomega Gomega, namespacedName client.Objec
 	gomega.Expect(err).NotTo(HaveOccurred())
 
 	gomega.Expect(realmResource.Spec).To(Equal(realmToVerify.Spec))
-	gomega.Expect(realmResource.Status.Conditions).To(HaveLen(2))
+	gomega.Expect(realmResource.Status.Conditions).To(HaveLen(3))
+	gomega.Expect(meta.IsStatusConditionTrue(realmResource.Status.Conditions, identityv1.TrustReadyConditionType)).To(BeTrue())
 	gomega.Expect(realmResource.Status.IssuerUrl).To(Equal(expectedRealmStatus.IssuerUrl))
 	gomega.Expect(realmResource.Status.AdminClientId).To(Equal(expectedRealmStatus.AdminClientId))
 	gomega.Expect(realmResource.Status.AdminUserName).To(Equal(expectedRealmStatus.AdminUserName))

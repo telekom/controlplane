@@ -121,6 +121,11 @@ type IdentityProviderConfig struct {
 	// +listType=set
 	// +kubebuilder:validation:items:Pattern=`^(\*|[A-Za-z][A-Za-z0-9+.-]*://([A-Za-z0-9.-]+|\[[0-9A-Fa-f:.]+\])(:[0-9]{1,5})?)$`
 	AllowedOrigins []string `json:"allowedOrigins,omitempty"`
+	// TLS selects a CA source ConfigMap in the Zone namespace. The certificates of all sources of the
+	// Zone are combined into one Zone CA bundle trusted, in addition to system roots, by every
+	// Gateway and IdentityProvider of the Zone.
+	// +optional
+	TLS *types.ProviderTLS `json:"tls,omitempty"`
 }
 
 // GatewayAdminConfig contains the necessary information to connect to the gateway admin API for this zone.
@@ -257,6 +262,11 @@ type GatewayConfig struct {
 	// +kubebuilder:validation:Pattern=`^[a-z0-9]+(-?[a-z0-9]+)*$`
 	Name  string             `json:"name"`
 	Admin GatewayAdminConfig `json:"admin"`
+	// TLS selects a CA source ConfigMap in the Zone namespace. The certificates of all sources of the
+	// Zone are combined into one Zone CA bundle trusted, in addition to system roots, by every
+	// Gateway and IdentityProvider of the Zone.
+	// +optional
+	TLS *types.ProviderTLS `json:"tls,omitempty"`
 }
 
 // ManagedRouteType defines the type of a managed route.

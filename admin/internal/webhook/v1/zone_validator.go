@@ -21,6 +21,7 @@ import (
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	"github.com/telekom/controlplane/admin/internal/routeinputs"
+	ctypes "github.com/telekom/controlplane/common/pkg/types"
 )
 
 // +kubebuilder:webhook:path=/validate-admin-cp-ei-telekom-de-v1-zone,mutating=false,failurePolicy=fail,sideEffects=None,groups=admin.cp.ei.telekom.de,resources=zones,verbs=create;update,versions=v1,name=vzone-v1.kb.io,admissionReviewVersions=v1
@@ -152,6 +153,7 @@ func validateZoneFields(zone *adminv1.Zone) field.ErrorList { //nolint:gocyclo /
 			errs = append(errs, field.Invalid(gatewayPath.Child("admin", "identityProviderRef"), gateway.Admin.IdentityProviderRef, "must reference the sole identity provider "+strconv.Quote(soleIdentityProviderName)))
 		}
 		errs = append(errs, validateHTTPSURL(gatewayPath.Child("admin", "url"), gateway.Admin.Url)...)
+		errs = append(errs, validateProviderTLS(gatewayPath.Child("tls"), gateway.TLS)...)
 	}
 
 	for i := range zone.Spec.IdentityProviders {
@@ -160,6 +162,7 @@ func validateZoneFields(zone *adminv1.Zone) field.ErrorList { //nolint:gocyclo /
 		if identityProvider.Admin.Url != nil {
 			errs = append(errs, validateHTTPSURL(idpPath.Child("admin", "url"), *identityProvider.Admin.Url)...)
 		}
+		errs = append(errs, validateProviderTLS(idpPath.Child("tls"), identityProvider.TLS)...)
 		if identityProvider.TokenUrl != "" {
 			errs = append(errs, validateTokenURL(idpPath.Child("tokenUrl"), identityProvider.TokenUrl)...)
 		}
@@ -175,6 +178,18 @@ func validateZoneFields(zone *adminv1.Zone) field.ErrorList { //nolint:gocyclo /
 	errs = append(errs, routeinputs.Validate(&zone.Spec)...)
 
 	return errs
+}
+
+// validateProviderTLS validates the Kubernetes syntax of an optional CA bundle reference.
+func validateProviderTLS(path *field.Path, tls *ctypes.ProviderTLS) field.ErrorList {
+	ref := tls.Ref()
+	if ref == nil {
+		return nil
+	}
+	if err := ref.Validate(); err != nil {
+		return field.ErrorList{field.Invalid(path.Child("caBundleConfigMapRef"), ref, err.Error())}
+	}
+	return nil
 }
 
 // validatePresetTypes rejects multiple defaults for one traffic type.

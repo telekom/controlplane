@@ -16,6 +16,9 @@ type IdentityProviderSpec struct {
 	AdminClientId string `json:"adminClientId"`
 	AdminUserName string `json:"adminUserName"`
 	AdminPassword string `json:"adminPassword"`
+	// TLS selects a CA bundle ConfigMap in the IdentityProvider namespace for admin and token requests.
+	// +optional
+	TLS *types.ProviderTLS `json:"tls,omitempty"`
 }
 
 // IdentityProviderStatus defines the observed state of IdentityProvider

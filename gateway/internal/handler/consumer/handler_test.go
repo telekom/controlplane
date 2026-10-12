@@ -17,11 +17,13 @@ import (
 	cc "github.com/telekom/controlplane/common/pkg/client"
 	fakeclient "github.com/telekom/controlplane/common/pkg/client/fake"
 	"github.com/telekom/controlplane/common/pkg/condition"
+	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	"github.com/telekom/controlplane/common/pkg/types"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	"github.com/telekom/controlplane/gateway/internal/features"
 	featmock "github.com/telekom/controlplane/gateway/internal/features/mock"
 	consumerhandler "github.com/telekom/controlplane/gateway/internal/handler/consumer"
+	gatewayhandler "github.com/telekom/controlplane/gateway/internal/handler/gateway"
 	kongclient "github.com/telekom/controlplane/gateway/pkg/kong/client"
 	clientmock "github.com/telekom/controlplane/gateway/pkg/kong/client/mock"
 	"github.com/telekom/controlplane/gateway/pkg/kongutil"
@@ -42,7 +44,9 @@ var _ = Describe("ConsumerHandler", func() {
 	)
 
 	BeforeEach(func() {
-		handler = &consumerhandler.ConsumerHandler{}
+		handler = &consumerhandler.ConsumerHandler{Factory: kongutil.ClientFactoryFunc(func(_ context.Context, _ *gatewayv1.Gateway) (kongclient.KongClient, error) {
+			return mockKC, nil
+		})}
 		mockClient = fakeclient.NewMockJanitorClient(GinkgoT())
 		mockKC = clientmock.NewMockKongClient(GinkgoT())
 		mockBuilder = featmock.NewMockFeaturesBuilder(GinkgoT())
@@ -72,12 +76,6 @@ var _ = Describe("ConsumerHandler", func() {
 	})
 
 	setupFeatureBuilderOverrides := func() {
-		originalGetClientFor := kongutil.GetClientFor
-		DeferCleanup(func() { kongutil.GetClientFor = originalGetClientFor })
-		kongutil.GetClientFor = func(_ kongutil.GatewayAdminConfig) (kongclient.KongClient, error) {
-			return mockKC, nil
-		}
-
 		originalNewFeatureBuilder := features.NewFeatureBuilder
 		DeferCleanup(func() { features.NewFeatureBuilder = originalNewFeatureBuilder })
 		features.NewFeatureBuilder = func(_ kongclient.KongClient, _ *gatewayv1.Route, _ *gatewayv1.Consumer, _ *gatewayv1.Gateway) features.FeaturesBuilder {
@@ -136,12 +134,6 @@ var _ = Describe("ConsumerHandler", func() {
 				setupNotReadyGatewayGet()
 
 				// Don't override features.NewFeatureBuilder - let the real one see the not-ready gateway
-				originalGetClientFor := kongutil.GetClientFor
-				DeferCleanup(func() { kongutil.GetClientFor = originalGetClientFor })
-				kongutil.GetClientFor = func(_ kongutil.GatewayAdminConfig) (kongclient.KongClient, error) {
-					return mockKC, nil
-				}
-
 				err := handler.CreateOrUpdate(ctx, consumer)
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring("failed to create feature builder"))
@@ -175,12 +167,6 @@ var _ = Describe("ConsumerHandler", func() {
 			It("deletes consumer via kong client", func() {
 				setupReadyGatewayGet()
 
-				originalGetClientFor := kongutil.GetClientFor
-				DeferCleanup(func() { kongutil.GetClientFor = originalGetClientFor })
-				kongutil.GetClientFor = func(_ kongutil.GatewayAdminConfig) (kongclient.KongClient, error) {
-					return mockKC, nil
-				}
-
 				mockKC.EXPECT().DeleteConsumer(mock.Anything, consumer).Return(nil)
 
 				err := handler.Delete(ctx, consumer)
@@ -201,12 +187,6 @@ var _ = Describe("ConsumerHandler", func() {
 			It("returns error when DeleteConsumer fails", func() {
 				setupReadyGatewayGet()
 
-				originalGetClientFor := kongutil.GetClientFor
-				DeferCleanup(func() { kongutil.GetClientFor = originalGetClientFor })
-				kongutil.GetClientFor = func(_ kongutil.GatewayAdminConfig) (kongclient.KongClient, error) {
-					return mockKC, nil
-				}
-
 				mockKC.EXPECT().DeleteConsumer(mock.Anything, consumer).Return(fmt.Errorf("kong delete error"))
 
 				err := handler.Delete(ctx, consumer)
@@ -214,18 +194,45 @@ var _ = Describe("ConsumerHandler", func() {
 				Expect(err.Error()).To(ContainSubstring("failed to create or update consumer"))
 			})
 
-			It("returns error when GetClientFor fails", func() {
+			It("returns error when the factory fails", func() {
 				setupReadyGatewayGet()
 
-				originalGetClientFor := kongutil.GetClientFor
-				DeferCleanup(func() { kongutil.GetClientFor = originalGetClientFor })
-				kongutil.GetClientFor = func(_ kongutil.GatewayAdminConfig) (kongclient.KongClient, error) {
+				handler.Factory = kongutil.ClientFactoryFunc(func(_ context.Context, _ *gatewayv1.Gateway) (kongclient.KongClient, error) {
 					return nil, fmt.Errorf("failed to create kong client")
-				}
+				})
 
 				err := handler.Delete(ctx, consumer)
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring("failed to get kong client"))
+			})
+
+			It("deletes through the injected factory when the gateway is not ready", func() {
+				setupNotReadyGatewayGet()
+				var got *gatewayv1.Gateway
+				handler.Factory = kongutil.ClientFactoryFunc(func(_ context.Context, gw *gatewayv1.Gateway) (kongclient.KongClient, error) {
+					got = gw
+					return mockKC, nil
+				})
+				mockKC.EXPECT().DeleteConsumer(mock.Anything, consumer).Return(nil)
+
+				Expect(handler.Delete(ctx, consumer)).To(Succeed())
+				Expect(got).NotTo(BeNil())
+				Expect(got.Name).To(Equal("test-gateway"))
+				Expect(meta.IsStatusConditionTrue(consumer.GetConditions(), gatewayhandler.ConditionTypeTrustReady)).To(BeTrue())
+			})
+
+			It("keeps the finalizer and reports TrustReady=False on trust errors", func() {
+				setupReadyGatewayGet()
+				handler.Factory = kongutil.ClientFactoryFunc(func(_ context.Context, _ *gatewayv1.Gateway) (kongclient.KongClient, error) {
+					return nil, kongutil.NewTrustError("ConfigMapNotFound", ctrlerrors.BlockedErrorf("missing CA"))
+				})
+
+				err := handler.Delete(ctx, consumer)
+				Expect(err).To(HaveOccurred())
+				cond := meta.FindStatusCondition(consumer.GetConditions(), gatewayhandler.ConditionTypeTrustReady)
+				Expect(cond).NotTo(BeNil())
+				Expect(cond.Status).To(Equal(metav1.ConditionFalse))
+				Expect(cond.Reason).To(Equal("ConfigMapNotFound"))
 			})
 		})
 	})

@@ -62,6 +62,37 @@ Either way, you can leave a secret field empty to have one generated for you, or
 
 See [Secret Manager Domain](./secret-manager.mdx) for how references are stored and resolved, and [Admin Journey: Environments & Zones](../admin-journey/environments-and-zones.md#zone-secrets) for the operator-facing guide.
 
+### Provider CA trust
+
+The **Zone is the trust and rotation boundary**: Admin combines its referenced CA ConfigMaps into one bundle shared
+by every Gateway and IdentityProvider in the generated namespace. With no references, providers use system trust.
+
+```mermaid
+flowchart TD
+    Sources["Zone CA sources"] --> Cache["Informer cache"]
+    Cache --> Validate["Validate inputs"]
+    Validate --> Copy["Write CA bundle"]
+    Copy --> Check["Validate result"]
+    Check --> Publish["Publish providers"]
+    Validate -->|invalid| Stop["Stop reconciliation"]
+    Copy -->|write fails| Stop
+    Check -->|invalid| Stop
+```
+
+- **Validation first:** invalid sources, bundle limits or provider endpoints prevent both the bundle write and provider
+  publication. A failed write or write-response check prevents publication. Custom trust requires HTTPS endpoints.
+- **Cached reads:** sources, bundle copies, Zone liveness and children all come from informer caches. ConfigMaps require
+  `cp.ei.telekom.de/provider-ca: "true"`; unlabeled objects appear missing. Conflicts are retried, but recent changes or
+  deletion may not yet be visible. Source and bundle events enqueue affected Zones.
+- **Durable trust:** Admin, Gateway and Identity check bundle origin metadata. Bundles survive source removal and Zone
+  deletion so later cleanup can still connect; never remove them before remote cleanup finishes.
+- **Discovery:** OIDC discovery uses the Zone bundle and rejects redirects. Explicit token links take precedence;
+  discovery results are reused only within the current reconciliation.
+
+Publication and downstream reconciliation converge eventually; endpoint changes do **not** migrate or clean up old
+remote resources. See [Private Provider CAs](../admin-journey/environments-and-zones.md#private-provider-cas) for
+configuration, rotation, failure recovery and deletion order.
+
 ## Domain Interactions
 
 - **Gateway domain** — Zones define which gateway instance is used. The Gateway operator reads the zone's gateway configuration (presets, URLs, features) when provisioning routes. Managed routes (TeamAPI and Proxy) are created directly by the zone handler.

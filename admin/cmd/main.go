@@ -33,6 +33,7 @@ import (
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
+	cclient "github.com/telekom/controlplane/common/pkg/client"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	// +kubebuilder:scaffold:imports
 )
@@ -156,13 +157,11 @@ func main() {
 		HealthProbeBindAddress: probeAddr,
 		LeaderElection:         enableLeaderElection,
 		LeaderElectionID:       "58816de6.cp.ei.telekom.de",
-		Cache: cache.Options{
-			ByObject: map[client.Object]cache.ByObject{
-				&identityv1.Client{}:  {Label: selector},
-				&gatewayv1.Consumer{}: {Label: selector},
-				&gatewayv1.Route{}:    {Label: selector},
-			},
-		},
+		Cache: cclient.ProviderCACacheOptions(map[client.Object]cache.ByObject{
+			&identityv1.Client{}:  {Label: selector},
+			&gatewayv1.Consumer{}: {Label: selector},
+			&gatewayv1.Route{}:    {Label: selector},
+		}),
 		// LeaderElectionReleaseOnCancel defines if the leader should step down voluntarily
 		// when the Manager ends. This requires the binary to immediately end when the
 		// Manager is stopped, otherwise, this setting is unsafe. Setting this significantly

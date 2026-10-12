@@ -22,6 +22,10 @@ type AdminConfig struct {
 	ClientSecret string `json:"clientSecret"`
 	IssuerUrl    string `json:"issuerUrl"`
 	Url          string `json:"url"`
+	// TLS selects a CA bundle ConfigMap in the Gateway namespace trusted, in addition to system
+	// roots, for both Kong admin API and OAuth token requests. Both URLs must then be https.
+	// +optional
+	TLS *types.ProviderTLS `json:"tls,omitempty"`
 }
 
 // GatewaySpec defines the desired state of Gateway

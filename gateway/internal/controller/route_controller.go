@@ -6,6 +6,7 @@ package controller
 
 import (
 	"context"
+	"errors"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
@@ -21,6 +22,7 @@ import (
 	cc "github.com/telekom/controlplane/common/pkg/controller"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	routehandler "github.com/telekom/controlplane/gateway/internal/handler/route"
+	"github.com/telekom/controlplane/gateway/pkg/kongutil"
 )
 
 // RouteReconciler reconciles a Route object
@@ -28,6 +30,9 @@ type RouteReconciler struct {
 	client.Client
 	Scheme   *runtime.Scheme
 	Recorder record.EventRecorder
+
+	// ClientFactory acquires Kong clients; it is required.
+	ClientFactory kongutil.ClientFactory
 
 	cc.Controller[*gatewayv1.Route]
 }
@@ -43,8 +48,13 @@ func (r *RouteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *RouteReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	if r.ClientFactory == nil {
+		return errors.New("setting up route controller: kong client factory is required")
+	}
 	r.Recorder = mgr.GetEventRecorderFor("route-controller")
-	r.Controller = cc.NewController(&routehandler.RouteHandler{}, r.Client, r.Recorder)
+	r.Controller = cc.NewController(&routehandler.RouteHandler{Factory: r.ClientFactory}, r.Client, r.Recorder)
+
+	fanout := &gatewayFanout{client: r.Client}
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&gatewayv1.Route{}, builder.WithPredicates(cc.Count("route", cc.RoleFor,
@@ -52,6 +62,10 @@ func (r *RouteReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Watches(&gatewayv1.ConsumeRoute{},
 			handler.EnqueueRequestsFromMapFunc(r.mapConsumeRouteToRoute),
 			builder.WithPredicates(cc.Count("route", cc.RoleWatches, predicate.GenerationChangedPredicate{}, cc.SkipInitialListPredicate{}))).
+		// Gateway changes enqueue active and terminating dependents.
+		Watches(&gatewayv1.Gateway{},
+			handler.EnqueueRequestsFromMapFunc(fanout.MapGatewayToRoutes),
+			builder.WithPredicates(gatewayChanged)).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
 			RateLimiter:             cc.NewRateLimiter(),

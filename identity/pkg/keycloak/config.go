@@ -4,7 +4,11 @@
 
 package keycloak
 
-import "strings"
+import (
+	"strings"
+
+	"github.com/telekom/controlplane/identity/api/endpoint"
+)
 
 // AdminURL example: 		"https://iris-distcp1-dataplane1.dev.dhei.telekom.de/auth/admin/realms/"
 // AdminConsoleURL example: "https://iris-distcp1-dataplane1.dev.dhei.telekom.de/auth/admin/master/console/#/"
@@ -13,8 +17,8 @@ import "strings"
 //			"https://iris-distcp1-dataplane1.dev.dhei.telekom.de/auth/realms/master/protocol/openid-connect/token"
 
 const (
-	MasterRealm           = "master"
-	TokenEndpointSuffix   = "/protocol/openid-connect/token"
+	MasterRealm           = endpoint.MasterRealm
+	TokenEndpointSuffix   = endpoint.TokenEndpointSuffix
 	ConsoleEndpointSuffix = "/console/#/" // + realm name to directly open the realm in the console
 )
 
@@ -26,14 +30,12 @@ func DetermineAdminConsoleUrlFrom(adminUrl, realmName string) string {
 	return adminUrl[:i] + "/" + MasterRealm + ConsoleEndpointSuffix + realmName
 }
 
+// DetermineIssuerUrlFrom forwards to endpoint.IssuerURL.
 func DetermineIssuerUrlFrom(adminUrl, realmName string) string {
-	i := strings.Index(adminUrl, "/admin")
-	if i == -1 {
-		return adminUrl + "realms/" + realmName
-	}
-	return adminUrl[:i] + "/realms/" + realmName
+	return endpoint.IssuerURL(adminUrl, realmName)
 }
 
+// DetermineAdminTokenUrlFrom forwards to endpoint.TokenURL.
 func DetermineAdminTokenUrlFrom(adminUrl, realmName string) string {
-	return DetermineIssuerUrlFrom(adminUrl, realmName) + TokenEndpointSuffix
+	return endpoint.TokenURL(adminUrl, realmName)
 }

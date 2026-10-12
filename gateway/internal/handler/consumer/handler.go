@@ -21,10 +21,13 @@ import (
 
 var _ handler.Handler[*gatewayv1.Consumer] = &ConsumerHandler{}
 
-type ConsumerHandler struct{}
+type ConsumerHandler struct {
+	// Factory acquires Kong clients; it is required.
+	Factory kongutil.ClientFactory
+}
 
 func (h *ConsumerHandler) CreateOrUpdate(ctx context.Context, consumer *gatewayv1.Consumer) error {
-	builder, err := NewFeatureBuilder(ctx, consumer)
+	builder, err := NewFeatureBuilder(ctx, h.Factory, consumer)
 	if err != nil {
 		return errors.Wrap(err, "failed to create feature builder")
 	}
@@ -45,7 +48,8 @@ func (h *ConsumerHandler) Delete(ctx context.Context, consumer *gatewayv1.Consum
 		return err
 	}
 
-	kc, err := kongutil.GetClientFor(gateway)
+	kc, err := h.Factory.ClientFor(ctx, gateway)
+	gatewayhandler.SetTrustCondition(consumer, err)
 	if err != nil {
 		return errors.Wrap(err, "failed to get kong client")
 	}
@@ -58,7 +62,8 @@ func (h *ConsumerHandler) Delete(ctx context.Context, consumer *gatewayv1.Consum
 	return nil
 }
 
-func NewFeatureBuilder(ctx context.Context, consumer *gatewayv1.Consumer) (features.FeaturesBuilder, error) {
+// NewFeatureBuilder acquires the Kong client from factory.
+func NewFeatureBuilder(ctx context.Context, factory kongutil.ClientFactory, consumer *gatewayv1.Consumer) (features.FeaturesBuilder, error) {
 	ready, gateway, err := gatewayhandler.GetGatewayByRef(ctx, consumer.Spec.Gateway, true)
 	if err != nil {
 		return nil, err
@@ -67,7 +72,8 @@ func NewFeatureBuilder(ctx context.Context, consumer *gatewayv1.Consumer) (featu
 		return nil, ctrlerrors.BlockedErrorf("gateway %s is not ready", consumer.Spec.Gateway.Name)
 	}
 
-	kc, err := kongutil.GetClientFor(gateway)
+	kc, err := factory.ClientFor(ctx, gateway)
+	gatewayhandler.SetTrustCondition(consumer, err)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get kong client")
 	}

@@ -2,11 +2,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-//nolint:dupl // Controllers intentionally mirror each other.
 package controller
 
 import (
 	"context"
+	"errors"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
@@ -33,11 +33,14 @@ type RealmReconciler struct {
 	Scheme        *runtime.Scheme
 	Recorder      record.EventRecorder
 	ClientFactory keycloak.ServiceFactory
+	// CA is the shared CA cache that also serves client acquisition.
+	CA keycloak.CAResolver
 
 	cc.Controller[*identityv1.Realm]
 }
 
 // +kubebuilder:rbac:groups=core,resources=events,verbs=create;patch
+// +kubebuilder:rbac:groups=core,resources=configmaps,verbs=get;list;watch
 // +kubebuilder:rbac:groups=identity.cp.ei.telekom.de,resources=realms,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=identity.cp.ei.telekom.de,resources=realms/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=identity.cp.ei.telekom.de,resources=realms/finalizers,verbs=update
@@ -51,11 +54,10 @@ func (r *RealmReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 func (r *RealmReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Recorder = mgr.GetEventRecorderFor("realm-controller")
 
-	factory := r.ClientFactory
-	if factory == nil {
-		factory = keycloak.NewServiceFactory()
+	if r.ClientFactory == nil || r.CA == nil {
+		return errors.New("realm controller requires the shared keycloak ServiceFactory and CA cache")
 	}
-	r.Controller = cc.NewController(realmHandler.NewHandlerRealm(factory), r.Client, r.Recorder)
+	r.Controller = cc.NewController(realmHandler.NewHandlerRealm(r.ClientFactory, r.CA), r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&identityv1.Realm{}, builder.WithPredicates(cc.Count("realm", cc.RoleFor))).
@@ -99,11 +101,5 @@ func (r *RealmReconciler) mapIdpObjToRealm(ctx context.Context, obj client.Objec
 		return nil
 	}
 
-	requests := make([]reconcile.Request, 0, len(list.Items))
-	for i := range list.Items {
-		item := &list.Items[i]
-		requests = append(requests, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(item)})
-	}
-
-	return requests
+	return requestsFor(itemPtrs(list.Items))
 }

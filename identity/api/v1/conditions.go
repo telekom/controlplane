@@ -71,3 +71,34 @@ func NewSecretRotationCompletedCondition() metav1.Condition {
 		LastTransitionTime: metav1.Now(),
 	}
 }
+
+const (
+	// TrustReadyConditionType reports whether the configured provider trust resolved.
+	TrustReadyConditionType = "TrustReady"
+	// TrustReasonResolved means the configured CA bundle (or system trust) is usable.
+	TrustReasonResolved = "Resolved"
+	// TrustReasonInvalid means the configured CA bundle could not be used.
+	TrustReasonInvalid = "Invalid"
+)
+
+// NewTrustReadyCondition returns TrustReady=True.
+func NewTrustReadyCondition(message string) metav1.Condition {
+	return metav1.Condition{
+		Type:               TrustReadyConditionType,
+		Status:             metav1.ConditionTrue,
+		Reason:             TrustReasonResolved,
+		Message:            message,
+		LastTransitionTime: metav1.Now(),
+	}
+}
+
+// NewTrustNotReadyCondition returns TrustReady=False with a sanitized message.
+func NewTrustNotReadyCondition(message string) metav1.Condition {
+	return metav1.Condition{
+		Type:               TrustReadyConditionType,
+		Status:             metav1.ConditionFalse,
+		Reason:             TrustReasonInvalid,
+		Message:            message,
+		LastTransitionTime: metav1.Now(),
+	}
+}

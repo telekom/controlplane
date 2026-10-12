@@ -17,6 +17,8 @@ import (
 	secrets "github.com/telekom/controlplane/secret-manager/api"
 )
 
+// GetGatewayByRef returns the Gateway and whether it is ready. A not-ready Gateway is
+// returned without resolved secrets.
 func GetGatewayByRef(ctx context.Context, ref types.ObjectRef, resolveSecrets bool) (bool, *gatewayv1.Gateway, error) {
 	client := cclient.ClientFromContextOrDie(ctx)
 
@@ -25,8 +27,10 @@ func GetGatewayByRef(ctx context.Context, ref types.ObjectRef, resolveSecrets bo
 	if err != nil {
 		return false, nil, errors.Wrapf(err, "failed to get gateway %s", ref.String())
 	}
-	if !meta.IsStatusConditionTrue(gateway.GetConditions(), condition.ConditionTypeReady) {
-		return false, nil, nil
+	ready := meta.IsStatusConditionTrue(gateway.GetConditions(), condition.ConditionTypeReady)
+	if !ready {
+		// Deletion needs the Gateway even when it is not ready.
+		return false, gateway, nil
 	}
 
 	if resolveSecrets {

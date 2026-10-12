@@ -50,11 +50,30 @@ type HandlingContext struct {
 	AdminClient      *identityapi.Client
 	GatewayConsumers map[string]*gatewayapi.Consumer
 	DefaultPreset    *adminv1.Preset
+
+	// Handler provides the uncached reader and raw writer for trust handling.
+	Handler *ZoneHandler
+	// Trust is the prepared Zone CA bundle used by every provider; nil for system trust.
+	Trust *trustSource
+	// IDP is the IdentityProvider configuration validated before the Zone CA bundle is written.
+	IDP *preparedIdentityProvider
+}
+
+// getExisting reads the published child through the cache. Subsequent writes use optimistic
+// locking and retry on conflicts or AlreadyExists while the cache catches up.
+func (hc *HandlingContext) getExisting(ctx context.Context, obj client.Object) (bool, error) {
+	if err := hc.Handler.Reader.Get(ctx, client.ObjectKeyFromObject(obj), obj); err != nil {
+		if apierrors.IsNotFound(err) {
+			return false, nil
+		}
+		return false, ctrlerrors.RetryableErrorf("reading %s: %s", client.ObjectKeyFromObject(obj), err)
+	}
+	return true, nil
 }
 
 // newHandlingContext fetches the Environment, creates/updates the zone Namespace,
 // and builds the shared claims configuration.
-func newHandlingContext(ctx context.Context, obj *adminv1.Zone, httpClient *http.Client) (*HandlingContext, error) {
+func newHandlingContext(ctx context.Context, h *ZoneHandler, obj *adminv1.Zone) (*HandlingContext, error) {
 	envName := contextutil.EnvFromContextOrDie(ctx)
 	c := cclient.ClientFromContextOrDie(ctx)
 
@@ -117,7 +136,8 @@ func newHandlingContext(ctx context.Context, obj *adminv1.Zone, httpClient *http
 		Environment:      environment,
 		Namespace:        namespace,
 		DefaultClaims:    defaultClaims,
-		HTTPClient:       httpClient,
+		HTTPClient:       h.httpClient(),
+		Handler:          h,
 		Gateways:         make(map[string]*gatewayapi.Gateway),
 		GatewayConsumers: make(map[string]*gatewayapi.Consumer),
 		DefaultPreset:    defaultPreset,

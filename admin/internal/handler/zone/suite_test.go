@@ -187,10 +187,10 @@ func newTestContextWithClient(zone *adminv1.Zone, c client.Client) context.Conte
 }
 
 // newTestHandler installs a fresh in-memory secret-manager for the current spec and
-// returns a ZoneHandler.
+// returns a ZoneHandler reading and writing through the envtest client.
 func newTestHandler() *ZoneHandler {
 	useSecretManager()
-	return &ZoneHandler{}
+	return NewZoneHandler(k8sClient, k8sClient)
 }
 
 // useSecretManager installs a fresh in-memory secret-manager as the global secret-manager
@@ -306,7 +306,7 @@ func (m *memorySecretManager) DeleteApplication(context.Context, string, string,
 // newTestHandlingContext creates a HandlingContext by running the constructor
 // (which creates the namespace and fetches the environment).
 func newTestHandlingContext(testCtx context.Context, zone *adminv1.Zone) *HandlingContext {
-	hc, err := newHandlingContext(testCtx, zone, (&ZoneHandler{}).httpClient())
+	hc, err := newHandlingContext(testCtx, NewZoneHandler(k8sClient, k8sClient), zone)
 	Expect(err).NotTo(HaveOccurred())
 	return hc
 }

@@ -5,6 +5,7 @@
 package main
 
 import (
+	"context"
 	"crypto/tls"
 	"flag"
 	"os"
@@ -24,8 +25,13 @@ import (
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
+	ptls "github.com/telekom/controlplane/common-server/pkg/client"
+	cclient "github.com/telekom/controlplane/common/pkg/client"
+	"github.com/telekom/controlplane/common/pkg/providerca"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	"github.com/telekom/controlplane/gateway/internal/controller"
+	"github.com/telekom/controlplane/gateway/pkg/kongutil"
+	secretsapi "github.com/telekom/controlplane/secret-manager/api"
 	secretmetrics "github.com/telekom/controlplane/secret-manager/api/metrics"
 	// +kubebuilder:scaffold:imports
 )
@@ -118,7 +124,9 @@ func main() {
 		WebhookServer:          webhookServer,
 		HealthProbeBindAddress: probeAddr,
 		LeaderElection:         enableLeaderElection,
-		LeaderElectionID:       "c2be5fef.cp.ei.telekom.de",
+		// Only provider CA sources/copies enter the ConfigMap cache; this is not an RBAC boundary.
+		Cache:            cclient.ProviderCACacheOptions(nil),
+		LeaderElectionID: "c2be5fef.cp.ei.telekom.de",
 		// LeaderElectionReleaseOnCancel defines if the leader should step down voluntarily
 		// when the Manager ends. This requires the binary to immediately end when the
 		// Manager is stopped, otherwise, this setting is unsafe. Setting this significantly
@@ -139,16 +147,31 @@ func main() {
 	rootCtx := ctrl.SetupSignalHandler()
 	controller.RegisterIndecesOrDie(rootCtx, mgr)
 
+	// One CA cache, read through the manager's informer cache (provider-ca labeled ConfigMaps
+	// only), serves status validation and client acquisition. The shared client cache is
+	// closed with the manager.
+	caCache := providerca.NewCache(mgr.GetClient(), ptls.ParseProviderCABundle)
+	kongClients := kongutil.NewClientCache(caCache)
+	if err = mgr.Add(kongClients); err != nil {
+		setupLog.Error(err, "unable to add kong client cache")
+		os.Exit(1)
+	}
+	kongFactory := kongutil.NewFactory(caCache, kongClients, func(ctx context.Context, ref string) (string, error) {
+		return secretsapi.Get(ctx, ref)
+	})
+
 	if err = (&controller.GatewayReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
+		Trust:  kongFactory,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Gateway")
 		os.Exit(1)
 	}
 	if err = (&controller.RouteReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
+		Client:        mgr.GetClient(),
+		Scheme:        mgr.GetScheme(),
+		ClientFactory: kongFactory,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Route")
 		os.Exit(1)
@@ -161,8 +184,9 @@ func main() {
 		os.Exit(1)
 	}
 	if err = (&controller.ConsumerReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
+		Client:        mgr.GetClient(),
+		Scheme:        mgr.GetScheme(),
+		ClientFactory: kongFactory,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Consumer")
 		os.Exit(1)

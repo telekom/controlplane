@@ -25,8 +25,6 @@ var _ = Describe("RemoteOrganization Controller", func() {
 	Context("When reconciling a resource", func() {
 		const resourceName = "test-resource"
 
-		ctx := context.Background()
-
 		typeNamespacedName := client.ObjectKey{
 			Name:      resourceName,
 			Namespace: testNamespace,

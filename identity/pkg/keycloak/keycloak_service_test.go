@@ -389,6 +389,48 @@ var _ = Describe("KeycloakService", func() {
 				Expect(err).ToNot(HaveOccurred())
 			})
 
+			It("should not update another client found by a stale UID and create its own client", func() {
+				client := newIdentityClientWithUID("my-app", "secret", "uuid-123")
+				mockClient.EXPECT().GetRealmClientsIdWithResponse(mock.Anything, "realm1", "uuid-123").
+					Return(&api.GetRealmClientsIdResponse{
+						HTTPResponse: httpResp(200),
+						JSON2XX:      &api.ClientRepresentation{Id: ptr.To("uuid-123"), ClientId: ptr.To("other-app")},
+					}, nil)
+				mockClient.EXPECT().GetRealmClientsWithResponse(mock.Anything, "realm1", mock.Anything).
+					Return(&api.GetRealmClientsResponse{
+						HTTPResponse: httpResp(200),
+						JSON2XX:      &[]api.ClientRepresentation{},
+					}, nil)
+				mockClient.EXPECT().PostRealmClientsWithResponse(mock.Anything, "realm1", mock.Anything).
+					Return(&api.PostRealmClientsResponse{
+						HTTPResponse: httpRespWithLocation(201, "https://kc/clients/new-uid"),
+					}, nil)
+
+				err := svc.CreateOrReplaceClient(ctx, "realm1", client, keycloak.ClientUpdateOptions{})
+				Expect(err).ToNot(HaveOccurred())
+				Expect(client.Status.ClientUid).To(Equal("new-uid"))
+			})
+
+			It("should update the client matching its clientId when the stale UID belongs to another client", func() {
+				client := newIdentityClientWithUID("my-app", "secret", "uuid-123")
+				mockClient.EXPECT().GetRealmClientsIdWithResponse(mock.Anything, "realm1", "uuid-123").
+					Return(&api.GetRealmClientsIdResponse{
+						HTTPResponse: httpResp(200),
+						JSON2XX:      &api.ClientRepresentation{Id: ptr.To("uuid-123"), ClientId: ptr.To("other-app")},
+					}, nil)
+				mockClient.EXPECT().GetRealmClientsWithResponse(mock.Anything, "realm1", mock.Anything).
+					Return(&api.GetRealmClientsResponse{
+						HTTPResponse: httpResp(200),
+						JSON2XX:      &[]api.ClientRepresentation{{Id: ptr.To("uuid-mine"), ClientId: ptr.To("my-app"), Secret: ptr.To("old")}},
+					}, nil)
+				mockClient.EXPECT().PutRealmClientsIdWithResponse(mock.Anything, "realm1", "uuid-mine", mock.Anything).
+					Return(&api.PutRealmClientsIdResponse{HTTPResponse: httpResp(204)}, nil)
+
+				err := svc.CreateOrReplaceClient(ctx, "realm1", client, keycloak.ClientUpdateOptions{})
+				Expect(err).ToNot(HaveOccurred())
+				Expect(client.Status.ClientUid).To(Equal("uuid-mine"))
+			})
+
 			It("should fall back to clientId search when UID returns 404", func() {
 				client := newIdentityClientWithUID("my-app", "secret", "stale-uid")
 				mockClient.EXPECT().GetRealmClientsIdWithResponse(mock.Anything, "realm1", "stale-uid").
@@ -571,6 +613,40 @@ var _ = Describe("KeycloakService", func() {
 
 			err := svc.DeleteClient(ctx, "realm1", client)
 			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("should not delete another client found by a stale UID", func() {
+			client := newIdentityClientWithUID("my-app", "secret", "uuid-123")
+			mockClient.EXPECT().GetRealmClientsIdWithResponse(mock.Anything, "realm1", "uuid-123").
+				Return(&api.GetRealmClientsIdResponse{
+					HTTPResponse: httpResp(200),
+					JSON2XX:      &api.ClientRepresentation{Id: ptr.To("uuid-123"), ClientId: ptr.To("other-app")},
+				}, nil)
+			mockClient.EXPECT().GetRealmClientsWithResponse(mock.Anything, "realm1", mock.Anything).
+				Return(&api.GetRealmClientsResponse{
+					HTTPResponse: httpResp(200),
+					JSON2XX:      &[]api.ClientRepresentation{},
+				}, nil)
+
+			Expect(svc.DeleteClient(ctx, "realm1", client)).To(Succeed())
+		})
+
+		It("should delete the client matching its clientId when the stale UID belongs to another client", func() {
+			client := newIdentityClientWithUID("my-app", "secret", "uuid-123")
+			mockClient.EXPECT().GetRealmClientsIdWithResponse(mock.Anything, "realm1", "uuid-123").
+				Return(&api.GetRealmClientsIdResponse{
+					HTTPResponse: httpResp(200),
+					JSON2XX:      &api.ClientRepresentation{Id: ptr.To("uuid-123"), ClientId: ptr.To("other-app")},
+				}, nil)
+			mockClient.EXPECT().GetRealmClientsWithResponse(mock.Anything, "realm1", mock.Anything).
+				Return(&api.GetRealmClientsResponse{
+					HTTPResponse: httpResp(200),
+					JSON2XX:      &[]api.ClientRepresentation{{Id: ptr.To("uuid-mine"), ClientId: ptr.To("my-app")}},
+				}, nil)
+			mockClient.EXPECT().DeleteRealmClientsIdWithResponse(mock.Anything, "realm1", "uuid-mine").
+				Return(&api.DeleteRealmClientsIdResponse{HTTPResponse: httpResp(204)}, nil)
+
+			Expect(svc.DeleteClient(ctx, "realm1", client)).To(Succeed())
 		})
 
 		It("should return error when getClient fails", func() {

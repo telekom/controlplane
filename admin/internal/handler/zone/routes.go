@@ -149,22 +149,13 @@ func createManagedRoute(ctx context.Context, hc *HandlingContext, routeConfig ad
 		}
 
 		if !passThrough {
-			// Derive trusted issuer from the identity provider URL and team API identity realm
-			idp, idpErr := hc.Zone.Spec.GetIdentityProviderByName(preset.IdentityProviderRef)
-			if idpErr != nil {
-				return ctrlerrors.BlockedErrorf("cannot resolve identity provider for route %s: %s", routeConfig.Name, idpErr)
-			}
-			hostname, hostnameErr := issuerHostname(idp)
-			if hostnameErr != nil {
-				return ctrlerrors.BlockedErrorf("cannot resolve trusted issuer hostname for route %s: %s", routeConfig.Name, hostnameErr)
-			}
-			trustedIssuer, issuerErr := url.JoinPath("https://"+hostname, "auth/realms/", hc.TeamApiIdentityRealm.Name)
+			trustedIssuers, issuerErr := managedRouteTrustedIssuers(hc, routeConfig.Name, preset)
 			if issuerErr != nil {
-				return ctrlerrors.BlockedErrorf("cannot build trusted issuer URL for route %s: %s", routeConfig.Name, issuerErr)
+				return issuerErr
 			}
 			route.Spec.Security = gatewayapi.Security{
 				DisableAccessControl: true,
-				TrustedIssuers:       []string{trustedIssuer},
+				TrustedIssuers:       slices.Clone(trustedIssuers),
 			}
 		}
 		route.Spec.Security.RealmName = hc.Zone.Status.RealmName
@@ -177,4 +168,22 @@ func createManagedRoute(ctx context.Context, hc *HandlingContext, routeConfig ad
 		return nil, ctrlerrors.RetryableErrorf("failed to create or update Gateway route %s in zone %s: %s", route.GetName(), hc.Zone.Name, err)
 	}
 	return route, nil
+}
+
+// managedRouteTrustedIssuers derives the trusted issuer of an authenticated managed route from the
+// identity provider issuer.
+func managedRouteTrustedIssuers(hc *HandlingContext, routeName string, preset *adminv1.Preset) ([]string, error) {
+	idp, err := hc.Zone.Spec.GetIdentityProviderByName(preset.IdentityProviderRef)
+	if err != nil {
+		return nil, ctrlerrors.BlockedErrorf("cannot resolve identity provider for route %s: %s", routeName, err)
+	}
+	hostname, err := issuerHostname(idp)
+	if err != nil {
+		return nil, ctrlerrors.BlockedErrorf("cannot resolve trusted issuer hostname for route %s: %s", routeName, err)
+	}
+	trustedIssuer, err := url.JoinPath("https://"+hostname, "auth/realms/", hc.TeamApiIdentityRealm.Name)
+	if err != nil {
+		return nil, ctrlerrors.BlockedErrorf("cannot build trusted issuer URL for route %s: %s", routeName, err)
+	}
+	return []string{trustedIssuer}, nil
 }

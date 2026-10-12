@@ -14,6 +14,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
+	ctypes "github.com/telekom/controlplane/common/pkg/types"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -570,5 +571,26 @@ var _ = Describe("Zone validation", func() {
 		Expect(err).To(HaveOccurred())
 		Expect(err.Error()).To(ContainSubstring("admin.url"))
 		Expect(err.Error()).NotTo(ContainSubstring("issuerHostname"))
+	})
+})
+
+var _ = Describe("validateProviderTLS", func() {
+	It("accepts omitted and valid references", func() {
+		Expect(validateProviderTLS(field.NewPath("tls"), nil)).To(BeEmpty())
+		Expect(validateProviderTLS(field.NewPath("tls"), &ctypes.ProviderTLS{})).To(BeEmpty())
+		Expect(validateProviderTLS(field.NewPath("tls"), &ctypes.ProviderTLS{
+			CABundleConfigMapRef: &ctypes.CABundleConfigMapRef{Name: "provider-ca", Key: "ca.crt"},
+		})).To(BeEmpty())
+	})
+
+	It("rejects invalid names and keys", func() {
+		errs := validateProviderTLS(field.NewPath("tls"), &ctypes.ProviderTLS{
+			CABundleConfigMapRef: &ctypes.CABundleConfigMapRef{Name: "Invalid_Name", Key: "ca.crt"},
+		})
+		Expect(errs).To(HaveLen(1))
+		Expect(errs[0].Field).To(Equal("tls.caBundleConfigMapRef"))
+		Expect(validateProviderTLS(field.NewPath("tls"), &ctypes.ProviderTLS{
+			CABundleConfigMapRef: &ctypes.CABundleConfigMapRef{Name: "ok", Key: "bad/key"},
+		})).To(HaveLen(1))
 	})
 })

@@ -146,10 +146,14 @@ func (k *keycloakService) getClient(ctx context.Context, realmName string, clien
 			return nil, fmt.Errorf("unexpected error when fetching client by UID: %w", err)
 		}
 		if clientRes.StatusCode() == http.StatusOK && clientRes.JSON2XX != nil {
-			log.V(1).Info("client found by uuid", "clientId", clientId, "status", clientRes.StatusCode())
-			return clientRes.JSON2XX, nil
+			// A stored UID can belong to a different logical client after an endpoint move.
+			if found := clientRes.JSON2XX.ClientId; found != nil && *found == clientId {
+				log.V(1).Info("client found by uuid", "clientId", clientId, "status", clientRes.StatusCode())
+				return clientRes.JSON2XX, nil
+			}
+			log.V(0).Info("Stored client UID does not match clientId, looking up by clientId", "clientId", clientId, "clientUid", clientUid)
 		}
-		// UID lookup returned 404 or unexpected status — fall through to clientId search
+		// Missing or mismatched UID results fall through to clientId search.
 	}
 
 	noSearch := false

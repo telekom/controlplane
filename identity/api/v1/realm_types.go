@@ -108,6 +108,9 @@ type RealmStatus struct {
 	AdminPassword string `json:"adminPassword"`
 	AdminUrl      string `json:"adminUrl"`
 	AdminTokenUrl string `json:"adminTokenUrl"`
+	// TLS is the persisted trust reference of the cleanup connection snapshot.
+	// +optional
+	TLS *types.ProviderTLS `json:"tls,omitempty"`
 	// +listType=map
 	// +listMapKey=type
 	// +patchStrategy=merge

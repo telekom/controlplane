@@ -10,6 +10,7 @@ import (
 
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
 )
@@ -57,4 +58,20 @@ func RegisterIndexesOrDie(ctx context.Context, mgr ctrl.Manager) {
 		ctrl.Log.Error(err, "unable to create fieldIndex for Client", "FieldIndex", IndexFieldSpecRealm)
 		os.Exit(1)
 	}
+}
+
+func requestsFor[T client.Object](items []T) []reconcile.Request {
+	reqs := make([]reconcile.Request, 0, len(items))
+	for _, item := range items {
+		reqs = append(reqs, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(item)})
+	}
+	return reqs
+}
+
+func itemPtrs[T any](items []T) []*T {
+	out := make([]*T, len(items))
+	for i := range items {
+		out[i] = &items[i]
+	}
+	return out
 }

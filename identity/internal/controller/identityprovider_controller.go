@@ -6,6 +6,7 @@ package controller
 
 import (
 	"context"
+	"errors"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
@@ -18,6 +19,7 @@ import (
 	cc "github.com/telekom/controlplane/common/pkg/controller"
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
 	identityproviderHandler "github.com/telekom/controlplane/identity/internal/handler/identityprovider"
+	"github.com/telekom/controlplane/identity/pkg/keycloak"
 )
 
 // IdentityProviderReconciler reconciles a IdentityProvider object
@@ -25,11 +27,14 @@ type IdentityProviderReconciler struct {
 	client.Client
 	Scheme   *runtime.Scheme
 	Recorder record.EventRecorder
+	// CA is the shared CA cache that also serves client acquisition.
+	CA keycloak.CAResolver
 
 	cc.Controller[*identityv1.IdentityProvider]
 }
 
 // +kubebuilder:rbac:groups=core,resources=events,verbs=create;patch
+// +kubebuilder:rbac:groups=core,resources=configmaps,verbs=get;list;watch
 // +kubebuilder:rbac:groups=identity.cp.ei.telekom.de,resources=identityproviders,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=identity.cp.ei.telekom.de,resources=identityproviders/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=identity.cp.ei.telekom.de,resources=identityproviders/finalizers,verbs=update
@@ -41,9 +46,10 @@ func (r *IdentityProviderReconciler) Reconcile(ctx context.Context, req ctrl.Req
 // SetupWithManager sets up the controller with the Manager.
 func (r *IdentityProviderReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Recorder = mgr.GetEventRecorderFor("identityprovider-controller")
-	r.Controller = cc.NewController(&identityproviderHandler.HandlerIdentityProvider{}, r.Client, r.Recorder)
-
-	// TODO CreateOrUpdate realms in keycloak
+	if r.CA == nil {
+		return errors.New("identity provider controller requires the shared CA cache")
+	}
+	r.Controller = cc.NewController(&identityproviderHandler.HandlerIdentityProvider{CA: r.CA}, r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&identityv1.IdentityProvider{}, builder.WithPredicates(cc.Count("identityprovider", cc.RoleFor))).

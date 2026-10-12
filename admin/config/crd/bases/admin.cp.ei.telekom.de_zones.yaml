@@ -129,6 +129,35 @@ spec:
                     name:
                       pattern: ^[a-z0-9]+(-?[a-z0-9]+)*$
                       type: string
+                    tls:
+                      description: |-
+                        TLS selects a CA source ConfigMap in the Zone namespace. The certificates of all sources of the
+                        Zone are combined into one Zone CA bundle trusted, in addition to system roots, by every
+                        Gateway and IdentityProvider of the Zone.
+                      properties:
+                        caBundleConfigMapRef:
+                          description: CABundleConfigMapRef selects the PEM CA bundle
+                            that is added to the system roots.
+                          properties:
+                            key:
+                              description: Key of the PEM CA bundle in the ConfigMap's
+                                data.
+                              maxLength: 253
+                              minLength: 1
+                              pattern: ^[-._a-zA-Z0-9]+$
+                              type: string
+                            name:
+                              description: Name of the ConfigMap in the referencing
+                                object's namespace.
+                              maxLength: 253
+                              minLength: 1
+                              pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+                              type: string
+                          required:
+                          - key
+                          - name
+                          type: object
+                      type: object
                   required:
                   - admin
                   - name
@@ -236,6 +265,35 @@ spec:
                       - expirationPeriod
                       - gracePeriod
                       - notificationThresholds
+                      type: object
+                    tls:
+                      description: |-
+                        TLS selects a CA source ConfigMap in the Zone namespace. The certificates of all sources of the
+                        Zone are combined into one Zone CA bundle trusted, in addition to system roots, by every
+                        Gateway and IdentityProvider of the Zone.
+                      properties:
+                        caBundleConfigMapRef:
+                          description: CABundleConfigMapRef selects the PEM CA bundle
+                            that is added to the system roots.
+                          properties:
+                            key:
+                              description: Key of the PEM CA bundle in the ConfigMap's
+                                data.
+                              maxLength: 253
+                              minLength: 1
+                              pattern: ^[-._a-zA-Z0-9]+$
+                              type: string
+                            name:
+                              description: Name of the ConfigMap in the referencing
+                                object's namespace.
+                              maxLength: 253
+                              minLength: 1
+                              pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+                              type: string
+                          required:
+                          - key
+                          - name
+                          type: object
                       type: object
                     tokenUrl:
                       format: uri

@@ -15,9 +15,11 @@ import (
 
 	"github.com/stretchr/testify/mock"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
@@ -25,6 +27,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
+	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	common_types "github.com/telekom/controlplane/common/pkg/types"
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
@@ -40,10 +43,12 @@ import (
 // http://onsi.github.io/ginkgo/ to learn more about Ginkgo.
 
 const (
-	timeout         = 10 * time.Second
-	interval        = 250 * time.Millisecond
-	testNamespace   = "default"
-	testEnvironment = "test"
+	timeout  = 10 * time.Second
+	interval = 250 * time.Millisecond
+	// selfHealingDelay is how long the stand-in operator leaves a degraded child not ready.
+	selfHealingDelay = 3 * time.Second
+	testNamespace    = "default"
+	testEnvironment  = "test"
 )
 
 var (
@@ -52,6 +57,8 @@ var (
 	testEnv   *envtest.Environment
 	ctx       context.Context
 	cancel    context.CancelFunc
+
+	k8sManager ctrl.Manager
 )
 
 func TestControllers(t *testing.T) {
@@ -93,8 +100,14 @@ var _ = BeforeSuite(func() {
 	By("Creating the environment namespace")
 	CreateNamespace(testEnvironment)
 
-	k8sManager, err := ctrl.NewManager(cfg, ctrl.Options{
+	k8sManager, err = ctrl.NewManager(cfg, ctrl.Options{
 		Scheme: scheme.Scheme,
+		Cache:  cclient.ProviderCACacheOptions(nil),
+		// Tests assert individual Zone events. The default correlator drops events of an object
+		// after a burst of 25, which many retried reconciliations in envtest can exceed.
+		EventBroadcaster: record.NewBroadcasterWithCorrelatorOptions(record.CorrelatorOptions{
+			BurstSize: 10000, QPS: 1000,
+		}),
 		Metrics: server.Options{
 			BindAddress: "0",
 		},
@@ -187,6 +200,12 @@ func (r *readyReconciler[T]) Reconcile(ctx context.Context, req ctrl.Request) (c
 	}
 	if err := r.Get(ctx, req.NamespacedName, obj); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
+	}
+	// Tests degrade children with reason SelfHealing and assert the Zone reports it. Heal only after
+	// a grace period so the assertion does not race the stand-in operator.
+	if ready := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady); ready != nil &&
+		ready.Reason == "SelfHealing" && time.Since(ready.LastTransitionTime.Time) < selfHealingDelay {
+		return ctrl.Result{RequeueAfter: selfHealingDelay}, nil
 	}
 	if !obj.SetCondition(condition.NewReadyCondition(condition.ReasonProvisioned, "provisioned")) {
 		return ctrl.Result{}, nil

@@ -6,6 +6,7 @@ package controller
 
 import (
 	"context"
+	"fmt"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -46,6 +47,7 @@ type ZoneReconciler struct {
 
 // +kubebuilder:rbac:groups=core,resources=events,verbs=create;patch
 // +kubebuilder:rbac:groups=core,resources=namespaces,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=core,resources=configmaps,verbs=get;list;watch;create;update;patch
 
 // +kubebuilder:rbac:groups=admin.cp.ei.telekom.de,resources=zones,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=admin.cp.ei.telekom.de,resources=zones/status,verbs=get;update;patch
@@ -67,7 +69,11 @@ func (r *ZoneReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 // SetupWithManager sets up the controller with the Manager.
 func (r *ZoneReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Recorder = mgr.GetEventRecorderFor("zone-controller")
-	r.Controller = cc.NewController(&zone_handler.ZoneHandler{}, r.Client, r.Recorder)
+	r.Controller = cc.NewController(zone_handler.NewZoneHandler(mgr.GetClient(), mgr.GetClient()), r.Client, r.Recorder)
+
+	if err := mgr.GetFieldIndexer().IndexField(context.Background(), &adminv1.Zone{}, ProviderCASourceIndex, indexZoneProviderCASources); err != nil {
+		return fmt.Errorf("indexing zone provider CA sources: %w", err)
+	}
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&adminv1.Zone{}, builder.WithPredicates(cc.Count("zone", cc.RoleFor))).
@@ -96,6 +102,11 @@ func (r *ZoneReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Watches(&gatewayv1.Route{},
 			handler.EnqueueRequestsFromMapFunc(r.mapSubResourceToZone),
 			builder.WithPredicates(cc.Count("zone", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}, AdminDomainPredicate))).
+		// The ConfigMap cache only contains objects labeled provider-ca=true. Removing the label
+		// arrives as a delete event, which is mapped like any other change.
+		Watches(&corev1.ConfigMap{},
+			handler.EnqueueRequestsFromMapFunc(r.mapConfigMapToZones),
+			builder.WithPredicates(cc.Count("zone", cc.RoleWatches, ProviderCAConfigMapPredicate))).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
 			RateLimiter:             cc.NewRateLimiter(),

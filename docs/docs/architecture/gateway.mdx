@@ -112,6 +112,38 @@ Route types are created by the **API domain**, not configured by hand. See [API 
 
 API and Agentic controllers use this field for traffic classification, with tags such as `variant--default` and `variant--mcp`.
 
+## Provider CA trust
+
+A Gateway's `spec.admin.tls` can reference a CA ConfigMap in its namespace, adding trust to system roots for both
+the Kong admin API and OAuth issuer. Custom trust requires HTTPS for both URLs.
+
+```mermaid
+flowchart TD
+    Config["Cached Gateway"] --> Client["Kong client cache"]
+    Secret["Resolved credentials"] --> Client
+    Maps["Cached CA ConfigMaps"] --> CA["Shared CA cache"]
+    CA --> Ready["TrustReady check"]
+    CA --> Client
+    Client --> Transport["Shared TLS transport"]
+    Transport --> Token["OAuth token endpoint"]
+    Transport --> API["Kong admin API"]
+```
+
+- **Trust checks:** ConfigMaps require `cp.ei.telekom.de/provider-ca: "true"`; unlabeled objects appear missing.
+  Admin-managed bundles also require valid origin metadata. The CA cache reuses successes for one minute and failures
+  for five seconds. Failed refreshes block reconciliation, never falling back to expired trust or system trust.
+- **Client reuse:** one client per Gateway is replaced when its endpoints, resolved credentials, Gateway UID or CA
+  fingerprint change. Each reconciliation acquires its client; replacement closes idle connections without interrupting
+  in-flight requests.
+- **Transport safety:** token and API requests share trust and reject redirects; only API requests carry the access
+  token. Token refresh uses the manager's lifetime, not the originating reconciliation's context.
+- **Convergence:** Kubernetes reads are informer-cached. Gateway events enqueue affected Routes and Consumers, including
+  terminating ones. CA changes do not enqueue them or bypass cache expiry; trust changes take effect on a later
+  periodic or event-driven reconciliation.
+
+See [Admin: Provider CA trust](./admin.mdx#provider-ca-trust) for bundle publication and
+[Private Provider CAs](../admin-journey/environments-and-zones.md#private-provider-cas) for configuration and rotation.
+
 ## Domain Interactions
 
 - **Admin domain** — Zones define which gateway instance to use.

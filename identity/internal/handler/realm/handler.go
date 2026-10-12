@@ -17,18 +17,19 @@ import (
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
 	"github.com/telekom/controlplane/identity/internal/handler/identityprovider"
 	"github.com/telekom/controlplane/identity/pkg/keycloak"
-	secrets "github.com/telekom/controlplane/secret-manager/api"
 )
 
 var _ handler.Handler[*identityv1.Realm] = &HandlerRealm{}
 
 type HandlerRealm struct {
 	ServiceFactory keycloak.ServiceFactory
+	// CA is the shared CA cache that also serves client acquisition.
+	CA keycloak.CAResolver
 }
 
-// NewHandlerRealm creates a HandlerRealm with the given ClientFactory.
-func NewHandlerRealm(factory keycloak.ServiceFactory) *HandlerRealm {
-	return &HandlerRealm{ServiceFactory: factory}
+// NewHandlerRealm creates a HandlerRealm.
+func NewHandlerRealm(factory keycloak.ServiceFactory, ca keycloak.CAResolver) *HandlerRealm {
+	return &HandlerRealm{ServiceFactory: factory, CA: ca}
 }
 
 func (h *HandlerRealm) CreateOrUpdate(ctx context.Context, realm *identityv1.Realm) error {
@@ -40,32 +41,30 @@ func (h *HandlerRealm) CreateOrUpdate(ctx context.Context, realm *identityv1.Rea
 	identityProvider, err := identityprovider.GetIdentityProviderByName(ctx, realm.Spec.IdentityProvider)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
-			return ctrlerrors.BlockedErrorf("IdentityProvider %q not found", realm.Spec.IdentityProvider.String())
+			err = ctrlerrors.BlockedErrorf("IdentityProvider %q not found", realm.Spec.IdentityProvider.String())
 		}
+		h.reportCommittedTrust(ctx, realm, err)
 		return err
 	}
-
-	realm.Status.IssuerUrl = keycloak.DetermineIssuerUrlFrom(identityProvider.Spec.AdminUrl, realm.Name)
-	realm.Status.AdminClientId = identityProvider.Spec.AdminClientId
-	realm.Status.AdminUserName = identityProvider.Spec.AdminUserName
-	realm.Status.AdminPassword = identityProvider.Spec.AdminPassword
-	realm.Status.AdminUrl = identityProvider.Status.AdminUrl
-	realm.Status.AdminTokenUrl = identityProvider.Status.AdminTokenUrl
-
-	err = ValidateRealmStatus(&realm.Status)
-	if err != nil {
-		return ctrlerrors.BlockedErrorf("IdentityProvider %q is not valid: %s", realm.Spec.IdentityProvider.String(), err)
+	if staleErr := requireCurrentIdp(realm, identityProvider); staleErr != nil {
+		h.reportCommittedTrust(ctx, realm, staleErr)
+		return staleErr
 	}
 
-	// Create a copy of the realmStatus so that we NEVER modify the original status
-	// and accidentally write the secrets back to the cluster
-	replacedRealmStatus := realm.Status.DeepCopy()
-	replacedRealmStatus.AdminPassword, err = secrets.Get(ctx, realm.Status.AdminPassword)
+	candidate, err := stageSnapshot(realm, identityProvider)
 	if err != nil {
-		return fmt.Errorf("failed to retrieve password from secret manager: %w", err)
+		return err
 	}
+	if trustErr := keycloak.ValidateProviderCA(ctx, h.CA, realm.Namespace, candidate.TLS.Ref()); trustErr != nil {
+		realm.SetCondition(identityv1.NewTrustNotReadyCondition(trustErr.Error()))
+		return trustErr
+	}
+	realm.SetCondition(identityv1.NewTrustReadyCondition("Provider trust resolved"))
 
-	realmClient, err := h.ServiceFactory.ServiceFor(*replacedRealmStatus)
+	// A changed target is not migrated: resources at a previous target are left in place.
+	applySnapshot(&realm.Status, candidate)
+
+	realmClient, err := h.ServiceFactory.ServiceFor(ctx, realm)
 	if err != nil {
 		return fmt.Errorf("failed to get keycloak client: %w", err)
 	}
@@ -103,22 +102,43 @@ func (h *HandlerRealm) CreateOrUpdate(ctx context.Context, realm *identityv1.Rea
 	return nil
 }
 
+// reportCommittedTrust sets TrustReady when no new candidate can be staged. A committed
+// snapshot reports the resolution of its persisted trust; otherwise trust is not resolved
+// and TrustReady is set False so a previous True never remains stale.
+func (h *HandlerRealm) reportCommittedTrust(ctx context.Context, realm *identityv1.Realm, cause error) {
+	switch identityv1.ClassifyRealmSnapshot(&realm.Status) {
+	case identityv1.RealmSnapshotComplete:
+		if err := keycloak.RequireSnapshotHTTPS(&realm.Status); err != nil {
+			realm.SetCondition(identityv1.NewTrustNotReadyCondition(err.Error()))
+			return
+		}
+		if err := keycloak.ValidateProviderCA(ctx, h.CA, realm.Namespace, realm.Status.TLS.Ref()); err != nil {
+			realm.SetCondition(identityv1.NewTrustNotReadyCondition(err.Error()))
+			return
+		}
+		realm.SetCondition(identityv1.NewTrustReadyCondition("Committed provider trust resolved"))
+	case identityv1.RealmSnapshotPartial:
+		realm.SetCondition(identityv1.NewTrustNotReadyCondition(
+			fmt.Sprintf("realm %s has a partial connection snapshot and requires operator repair", realm.Name)))
+	default:
+		realm.SetCondition(identityv1.NewTrustNotReadyCondition(
+			fmt.Sprintf("provider trust not resolved: %s", cause)))
+	}
+}
+
 func (h *HandlerRealm) Delete(ctx context.Context, realm *identityv1.Realm) error {
 	logger := log.FromContext(ctx)
 	logger.Info("RealmHandler Delete", "realm", realm.Name, "namespace", realm.Namespace)
 
-	adminPassword, err := secrets.Get(ctx, realm.Status.AdminPassword)
-	if err != nil {
-		return fmt.Errorf("failed to retrieve password from secret manager: %w", err)
+	switch identityv1.ClassifyRealmSnapshot(&realm.Status) {
+	case identityv1.RealmSnapshotEmpty:
+		logger.Info("Realm has no recorded connection, nothing to clean up")
+		return nil
+	case identityv1.RealmSnapshotPartial:
+		return ctrlerrors.BlockedErrorf("realm %s has a partial connection snapshot and requires operator repair", realm.Name)
 	}
 
-	// Use a copy of the status with the resolved password so we never
-	// overwrite the original realm.Status.AdminPassword (which may be
-	// a secret-manager reference) with plaintext.
-	resolvedStatus := *realm.Status.DeepCopy()
-	resolvedStatus.AdminPassword = adminPassword
-
-	realmClient, err := h.ServiceFactory.ServiceFor(resolvedStatus)
+	realmClient, err := h.ServiceFactory.ServiceFor(ctx, realm)
 	if err != nil {
 		return fmt.Errorf("failed to get keycloak client: %w", err)
 	}

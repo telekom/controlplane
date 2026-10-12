@@ -28,12 +28,15 @@ import (
 
 var _ handler.Handler[*gatewayv1.Route] = &RouteHandler{}
 
-type RouteHandler struct{}
+type RouteHandler struct {
+	// Factory acquires Kong clients; it is required.
+	Factory kongutil.ClientFactory
+}
 
 func (h *RouteHandler) CreateOrUpdate(ctx context.Context, route *gatewayv1.Route) error {
 	log := ctrllog.FromContext(ctx)
 	kubeClient := cc.ClientFromContextOrDie(ctx)
-	builder, err := NewFeatureBuilder(ctx, route)
+	builder, err := NewFeatureBuilder(ctx, h.Factory, route)
 	if err != nil {
 		return errors.Wrap(err, "failed to create feature builder")
 	}
@@ -114,7 +117,8 @@ func (h *RouteHandler) Delete(ctx context.Context, route *gatewayv1.Route) error
 		return err
 	}
 
-	kc, err := kongutil.GetClientFor(gateway)
+	kc, err := h.Factory.ClientFor(ctx, gateway)
+	gatewayhandler.SetTrustCondition(route, err)
 	if err != nil {
 		return errors.Wrap(err, "failed to get kong client")
 	}
@@ -127,7 +131,8 @@ func (h *RouteHandler) Delete(ctx context.Context, route *gatewayv1.Route) error
 	return nil
 }
 
-func NewFeatureBuilder(ctx context.Context, route *gatewayv1.Route) (features.FeaturesBuilder, error) {
+// NewFeatureBuilder acquires the Kong client from factory.
+func NewFeatureBuilder(ctx context.Context, factory kongutil.ClientFactory, route *gatewayv1.Route) (features.FeaturesBuilder, error) {
 	ready, gateway, err := gatewayhandler.GetGatewayByRef(ctx, route.Spec.GatewayRef, true)
 	if err != nil {
 		return nil, err
@@ -136,7 +141,8 @@ func NewFeatureBuilder(ctx context.Context, route *gatewayv1.Route) (features.Fe
 		return nil, ctrlerrors.BlockedErrorf("gateway %q is not ready", route.Spec.GatewayRef.Name)
 	}
 
-	kc, err := kongutil.GetClientFor(gateway)
+	kc, err := factory.ClientFor(ctx, gateway)
+	gatewayhandler.SetTrustCondition(route, err)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get kong client")
 	}

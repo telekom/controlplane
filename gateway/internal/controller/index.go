@@ -51,6 +51,11 @@ func RegisterIndecesOrDie(ctx context.Context, mgr ctrl.Manager) {
 		os.Exit(1)
 	}
 
+	if err = registerGatewayDependentIndices(ctx, mgr); err != nil {
+		ctrl.Log.Error(err, "unable to create gateway dependent field indices")
+		os.Exit(1)
+	}
+
 	err = index.SetOwnerIndex(ctx, mgr.GetFieldIndexer(), &gatewayv1.Route{})
 	if err != nil {
 		ctrl.Log.Error(err, "unable to create field-indexer")

@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -22,6 +23,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
+	commonclient "github.com/telekom/controlplane/common-server/pkg/client"
+	cclient "github.com/telekom/controlplane/common/pkg/client"
+	"github.com/telekom/controlplane/common/pkg/providerca"
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
 	"github.com/telekom/controlplane/identity/pkg/keycloak"
 	"github.com/telekom/controlplane/identity/test/utils"
@@ -48,7 +52,23 @@ var (
 	testEnv   *envtest.Environment
 	ctx       context.Context
 	cancel    context.CancelFunc
+
+	sharedFactory *keycloak.Factory
+	caCache       keycloak.CAResolver
+	k8sManager    ctrl.Manager
+	realmRec      *RealmReconciler
+	clientRec     *ClientReconciler
+	idpRec        *IdentityProviderReconciler
+
+	// trustClockOffset shifts the CA cache clock so tests can expire cached trust.
+	trustClockOffset atomic.Int64
 )
+
+// expireTrust expires all cached CA resolutions; call it before changing trust inputs
+// that tests expect controllers to observe.
+func expireTrust() {
+	trustClockOffset.Add(int64(2 * time.Minute))
+}
 
 func TestControllers(t *testing.T) {
 	RegisterFailHandler(Fail)
@@ -90,8 +110,9 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 	Expect(k8sClient).NotTo(BeNil())
 
-	k8sManager, err := ctrl.NewManager(cfg, ctrl.Options{
+	k8sManager, err = ctrl.NewManager(cfg, ctrl.Options{
 		Scheme: scheme.Scheme,
+		Cache:  cclient.ProviderCACacheOptions(nil),
 		Metrics: server.Options{
 			BindAddress: "0",
 		},
@@ -101,33 +122,47 @@ var _ = BeforeSuite(func() {
 	RegisterIndexesOrDie(ctx, k8sManager)
 
 	By("Setting up the required mocks")
-	mockFactory := keycloak.ServiceFactoryFunc(func(realmStatus identityv1.RealmStatus) (keycloak.KeycloakService, error) {
-		if mockKeycloak {
-			mockClient := utils.NewKeycloakClientMock(GinkgoT())
-			utils.ConfigureKeycloakClientMock(mockClient)
-			return keycloak.NewKeycloakService(mockClient), nil
-		}
-		return keycloak.NewKeycloakServiceFor(&realmStatus)
-	})
+	// Wired like cmd/main.go: trust resolves through the manager's informer cache; only the
+	// remote Keycloak API is mocked.
+	caCache = providerca.NewCache(k8sManager.GetClient(), commonclient.ParseProviderCABundle, providerca.WithClock(func() time.Time {
+		return time.Now().Add(time.Duration(trustClockOffset.Load()))
+	}))
+	clients := keycloak.NewClientCache(caCache)
+	Expect(k8sManager.Add(clients)).To(Succeed())
+	sharedFactory = keycloak.NewServiceFactory(clients,
+		keycloak.WithServiceBuilder(func(_, _ context.Context, _ *keycloak.Connection) (keycloak.KeycloakService, func(), error) {
+			if mockKeycloak {
+				mockClient := utils.NewKeycloakClientMock(GinkgoT())
+				utils.ConfigureKeycloakClientMock(mockClient)
+				return keycloak.NewKeycloakService(mockClient), func() {}, nil
+			}
+			return nil, nil, fmt.Errorf("real keycloak is not available in tests")
+		}))
+	mockFactory := sharedFactory
 
-	err = (&ClientReconciler{
+	clientRec = &ClientReconciler{
 		Client:        k8sManager.GetClient(),
 		Scheme:        k8sManager.GetScheme(),
 		ClientFactory: mockFactory,
-	}).SetupWithManager(k8sManager)
+	}
+	err = clientRec.SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 
-	err = (&IdentityProviderReconciler{
+	idpRec = &IdentityProviderReconciler{
 		Client: k8sManager.GetClient(),
 		Scheme: k8sManager.GetScheme(),
-	}).SetupWithManager(k8sManager)
+		CA:     caCache,
+	}
+	err = idpRec.SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 
-	err = (&RealmReconciler{
+	realmRec = &RealmReconciler{
 		Client:        k8sManager.GetClient(),
 		Scheme:        k8sManager.GetScheme(),
 		ClientFactory: mockFactory,
-	}).SetupWithManager(k8sManager)
+		CA:            caCache,
+	}
+	err = realmRec.SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 
 	go func() {

@@ -11,6 +11,7 @@ import (
 	"slices"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	"github.com/telekom/controlplane/admin/internal/handler/util/naming"
@@ -23,10 +24,11 @@ import (
 	identityapi "github.com/telekom/controlplane/identity/api/v1"
 )
 
-// createIdentityProvider creates the IdentityProvider resource for the zone.
-func createIdentityProvider(ctx context.Context, hc *HandlingContext) error {
-	c := cclient.ClientFromContextOrDie(ctx)
-
+// prepareIdentityProvider stages the IdentityProvider configuration against the published provider
+// without writing anything. It runs before the Zone CA bundle is
+// written, so a rejected configuration changes neither the bundle nor the published provider.
+func prepareIdentityProvider(ctx context.Context, hc *HandlingContext) error {
+	hc.IDP = nil
 	idp, err := hc.Zone.Spec.GetIdentityProvider()
 	if err != nil {
 		return ctrlerrors.BlockedErrorf("cannot resolve identity provider for zone %q: %s", hc.Zone.Name, err)
@@ -38,32 +40,84 @@ func createIdentityProvider(ctx context.Context, hc *HandlingContext) error {
 		},
 	}
 
+	adminURL := ""
+	if idp.Admin.Url != nil {
+		adminURL = *idp.Admin.Url
+	} else if idp.IssuerHostname != "" {
+		adminURL = urls.ForIdentityProviderAdminUrl("https://" + idp.IssuerHostname)
+	}
+
+	existing, err := hc.getExisting(ctx, identityProvider)
+	if err != nil {
+		return err
+	}
+	var staged *identityapi.IdentityProvider
+	if existing {
+		if provErr := checkChildProvenance(hc, identityProvider); provErr != nil {
+			return provErr
+		}
+		staged = identityProvider
+	}
+
+	prepared, err := newPreparedIdentityProvider(hc, idp, adminURL, staged)
+	if err != nil {
+		return err
+	}
+	hc.IDP = prepared
+	return nil
+}
+
+// createIdentityProvider publishes the IdentityProvider prepared by prepareIdentityProvider.
+func createIdentityProvider(ctx context.Context, hc *HandlingContext) error {
+	c := cclient.ClientFromContextOrDie(ctx)
+	prepared := hc.IDP
+	if prepared == nil {
+		return ctrlerrors.BlockedErrorf("identity provider of zone %q is not prepared", hc.Zone.Name)
+	}
+	idp := prepared.Config
+	var staged client.Object
+	if prepared.Staged != nil {
+		staged = prepared.Staged
+	}
+	identityProvider := &identityapi.IdentityProvider{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      naming.ForIdentityProvider(hc.Zone, idp.Name),
+			Namespace: labelutil.NormalizeValue(hc.Namespace.Name),
+		},
+	}
+	if liveErr := hc.Handler.requireLive(ctx, hc.Zone); liveErr != nil {
+		return liveErr
+	}
+	var guardErr error
 	mutator := func() error {
+		guardErr = stagedGuard(identityProvider, staged)
+		if guardErr != nil {
+			return guardErr
+		}
 		if identityProvider.Labels == nil {
 			identityProvider.Labels = make(map[string]string)
 		}
 		identityProvider.Labels[cconfig.EnvironmentLabelKey] = hc.Environment.Name
 		identityProvider.Labels[cconfig.BuildLabelKey(zoneLabelName)] = hc.Zone.Name
 		identityProvider.Labels[cconfig.DomainLabelKey] = domainName
-
-		adminURL := ""
-		if idp.Admin.Url != nil {
-			adminURL = *idp.Admin.Url
-		} else if idp.IssuerHostname != "" {
-			adminURL = urls.ForIdentityProviderAdminUrl("https://" + idp.IssuerHostname)
-		}
+		setZoneUID(hc, identityProvider)
+		identityProvider.Annotations[AnnotationDiscoveryIssuer] = prepared.DiscoveryIssuer
 
 		identityProvider.Spec = identityapi.IdentityProviderSpec{
-			AdminUrl:      adminURL,
+			AdminUrl:      prepared.AdminURL,
 			AdminPassword: idp.Admin.Password,
 			AdminClientId: idp.Admin.ClientId,
 			AdminUserName: idp.Admin.UserName,
+			TLS:           providerTLS(hc.Trust),
 		}
 
 		return nil
 	}
 
-	_, err = c.CreateOrUpdate(ctx, identityProvider, mutator)
+	_, err := c.CreateOrUpdate(ctx, identityProvider, mutator)
+	if guardErr != nil {
+		return guardErr
+	}
 	if err != nil {
 		return ctrlerrors.RetryableErrorf("failed to create or update IdentityProvider %s in zone %s: %s", identityProvider.Name, hc.Zone.Name, err)
 	}
@@ -71,6 +125,13 @@ func createIdentityProvider(ctx context.Context, hc *HandlingContext) error {
 	hc.IdentityProvider = identityProvider
 	hc.Zone.Status.IdentityProvider = types.ObjectRefFromObject(identityProvider)
 	return nil
+}
+
+func providerTLS(ts *trustSource) *types.ProviderTLS {
+	if ts == nil {
+		return nil
+	}
+	return &types.ProviderTLS{CABundleConfigMapRef: ts.PublishedRef()}
 }
 
 // createDefaultIdentityRealm creates the default identity realm for the zone.
@@ -149,7 +210,15 @@ func createIdentityRealm(ctx context.Context, hc *HandlingContext, realmName str
 		},
 	}
 
+	var provenanceErr error
 	mutator := func() error {
+		if identityRealm.ResourceVersion != "" {
+			provenanceErr = checkChildProvenance(hc, identityRealm)
+			if provenanceErr != nil {
+				return provenanceErr
+			}
+		}
+		setZoneUID(hc, identityRealm)
 		if identityRealm.Labels == nil {
 			identityRealm.Labels = make(map[string]string)
 		}
@@ -181,6 +250,9 @@ func createIdentityRealm(ctx context.Context, hc *HandlingContext, realmName str
 	}
 
 	_, err := c.CreateOrUpdate(ctx, identityRealm, mutator)
+	if provenanceErr != nil {
+		return nil, provenanceErr
+	}
 	if err != nil {
 		return nil, ctrlerrors.RetryableErrorf("failed to create or update Identity Realm %s in zone %s: %s", identityRealm.Name, hc.Zone.Name, err)
 	}
