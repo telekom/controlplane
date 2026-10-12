@@ -123,11 +123,11 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 				Expect(err).NotTo(HaveOccurred())
 				return
 			}
-			assertValidationFailedWith(nil, err, "must have at most 50 items")
+			assertValidationFailedWith(nil, err, "must have at most 100 items")
 		},
 			Entry("accepts the reported 34 scopes", 34, true),
-			Entry("accepts 50 scopes", 50, true),
-			Entry("rejects 51 scopes", 51, false),
+			Entry("accepts 100 scopes", 100, true),
+			Entry("rejects 101 scopes", 101, false),
 		)
 	})
 
