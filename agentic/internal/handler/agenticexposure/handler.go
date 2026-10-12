@@ -99,14 +99,23 @@ func (h *AgenticExposureHandler) CreateOrUpdate(ctx context.Context, obj *agenti
 		return errors.Wrap(err, "failed to find cross-zone MCP subscriptions")
 	}
 
+	// Telecontext calls the proxy route in its own zone, so that zone needs a proxy route even without
+	// subscriptions. It is skipped if Telecontext is in the exposure zone (it calls the primary route)
+	// or if a subscription in the same zone has already added it.
 	proxyZones := slices.Clone(crossZones)
-	if obj.Spec.Variant.IsTelecontextVariant() && telecontextApp.Spec.Zone.Name != obj.Spec.Zone.Name &&
-		!slices.ContainsFunc(proxyZones, func(z ctypes.ObjectRef) bool { return z.Name == telecontextApp.Spec.Zone.Name }) {
-		proxyZones = append(proxyZones, telecontextApp.Spec.Zone)
-		// Keep the order stable, like FindCrossZoneAgenticSubscriptionZones, so the status does not change
-		slices.SortFunc(proxyZones, func(a, b ctypes.ObjectRef) int {
-			return strings.Compare(a.String(), b.String())
+	if obj.Spec.Variant.IsTelecontextVariant() {
+		telecontextZone := telecontextApp.Spec.Zone
+		telecontextInExposureZone := telecontextZone.Name == obj.Spec.Zone.Name
+		telecontextZoneAlreadyInProxyZones := slices.ContainsFunc(proxyZones, func(z ctypes.ObjectRef) bool {
+			return z.Name == telecontextZone.Name
 		})
+		if !telecontextInExposureZone && !telecontextZoneAlreadyInProxyZones {
+			proxyZones = append(proxyZones, telecontextZone)
+			// Keep the order stable, like FindCrossZoneAgenticSubscriptionZones, so the status does not change
+			slices.SortFunc(proxyZones, func(a, b ctypes.ObjectRef) int {
+				return strings.Compare(a.String(), b.String())
+			})
+		}
 	}
 
 	var crossZoneLmsIssuers []string
