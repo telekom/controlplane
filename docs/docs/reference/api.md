@@ -32,7 +32,8 @@ Most users do not create these resources directly. Instead, they write a single 
 | [PubSub](#pubsub) | `pubsub.cp.ei.telekom.de/v1` | 3 |
 | [Rover](#rover) | `rover.cp.ei.telekom.de/v1` | 3 |
 | [SFTP](#sftp) | `sftp.cp.ei.telekom.de/v1` | 3 |
-| | **Total** | **37** |
+| [Spectre](#spectre) | `spectre.cp.ei.telekom.de/v1` | 2 |
+| | **Total** | **39** |
 
 ---
 
@@ -201,6 +202,19 @@ SFTP service provisioning and SSH public key synchronization.
 | **SFTPServiceConfig** | Configures zone-specific SFTP Tardis API access and OAuth2 client credentials. |
 | **Instance** | Represents an SFTP service instance and provisions a corresponding SFTP service user through the configured SFTPServiceConfig. |
 | **User** | Declares SSH public keys for an SFTP user and attaches them to an Instance. |
+
+---
+
+### Spectre
+
+**API Group:** `spectre.cp.ei.telekom.de/v1` · [Architecture →](../architecture/spectre.mdx)
+
+Listeners that forward API traffic between a consumer and a provider as events.
+
+| Kind | Description |
+| ---- | ----------- |
+| **SpectreApplication** | Groups all listeners of one application and creates its shared Publisher and, for SSE delivery, its SSE Routes. |
+| **Listener** | A consumer-to-provider binding for one API path, created by the Rover controller from `spec.listeners`. |
 
 ---
 

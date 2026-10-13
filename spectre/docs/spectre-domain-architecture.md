@@ -47,6 +47,7 @@ flowchart TB
     %% ── Approval Domain ────────────────────────────────────
     subgraph approval["Approval Domain"]
         direction TB
+        ApprovalRequest["ApprovalRequest"]:::approvalCls
         Approval["Approval"]:::approvalCls
     end
 
@@ -64,7 +65,6 @@ flowchart TB
 
     %% ── SpectreApplication interactions ────────────────────
     SpectreApp -- "creates / owns" --> Publisher
-    SpectreApp -- "creates / owns" --> Approval
     SpectreApp -- "creates / owns" --> Route
     SpectreApp -. "reads" .-> EventStore
     SpectreApp -. "reads" .-> EventConfig
@@ -73,6 +73,10 @@ flowchart TB
     %% ── Listener interactions ──────────────────────────────
     Listener -- "creates / owns" --> Subscriber
     Listener -- "creates / owns" --> RouteListener
+    Listener -- "creates / owns" --> ApprovalRequest
+    Listener -. "reads" .-> Approval
+    Listener -. "reads" .-> EventConfig
+    Listener -. "reads" .-> EventStore
     Listener -. "reads" .-> Route
     Listener -. "reads" .-> Publisher
 ```
@@ -95,7 +99,6 @@ Reconciles `SpectreApplication` resources. One SpectreApplication groups all Lis
 | **PubSub** | `Publisher` | creates/owns | Registers a shared generic Publisher for the application's listener event type |
 | **PubSub** | `EventStore` | reads | Resolves the zone's EventStore for backend connection details |
 | **Gateway** | `Route` | creates/owns | SSE delivery only: a primary SSE Route in the backend zone, plus a proxy SSE Route in the app zone when that zone is a proxy zone |
-| **Approval** | `Approval` | creates/owns | Creates an Approval capturing consumer, provider, path, listener app, directions, delivery mode, callback, and filters |
 | **Event** | `EventConfig` | reads | Reads `CallbackURL` and zone configuration |
 | **Application** | `Application` | reads | Resolves consumer and provider application metadata |
 
@@ -111,6 +114,10 @@ Reconciles `Listener` resources. Each Listener represents one consumer-to-provid
 | **Gateway** | `RouteListener` | creates/owns | Creates a RouteListener that exposes the listener endpoint on the API Gateway |
 | **Gateway** | `Route` | reads | Resolves the existing API Route to extract the service path for the RouteListener |
 | **PubSub** | `Publisher` | reads | Verifies the parent SpectreApplication's Publisher is ready |
+| **PubSub** | `EventStore` | reads | Resolves the capture and delivery zones' EventStores and their environment |
+| **Event** | `EventConfig` | reads | Resolves capture and delivery placement: mesh, `status.callbackUrl`, `status.proxyCallbackUrls` |
+| **Approval** | `ApprovalRequest` | creates/owns | Two keyed gates, one decided by the provider and one by the consumer, capturing consumer, provider, path, delivery mode, callback, and filters |
+| **Approval** | `Approval` | reads | Reads the decision of each gate; both must be granted. The Approval domain creates it with the Listener as owner |
 
 ## Ownership Model
 
@@ -132,6 +139,7 @@ Spectre creates child resources (Publishers, Subscribers, RouteListeners) in the
 
 - **Deletion order**: Subscriber -> Publisher -> EventStore. A Publisher is retained until all referencing Subscribers have finalized.
 - **Pass-through and failover listeners** are rejected at reconciliation time.
+- **Placement**: capture runs in the consumer zone, else the provider zone; delivery always runs in the observer zone. The result is recorded in `status.appliedPlacement`. When placement fails for good, the Listener is Blocked and its capture is drained; the reason is in `status.draining.reason`.
 - **Circuit-breaker routes** are supported; the circuit-breaker upstream keeps the Jumper `/listener` path.
 - **SSE delivery** works in local and proxy zones. Each SSE Route serves the canonical path `/horizon/sse/v1/de.telekom.ei.listener.<appId>` first (it drives `api_base_path`) and the legacy alias `/spectre-sse/<appId>`, both to the same upstream and subscription. `status.sseUrl` holds the canonical URL on the app zone's gateway including the subscription ID; the SpectreApplication is Ready only once it is set and every SSE Route is Ready. The alias does not cover legacy hostnames/TLS or hash-shortened app IDs of very long team names. Paths match by prefix, so a request for an app without its own Route can land on the Route of an app whose ID is a prefix of it; Pulsar then answers 404 because it enforces the subscriber identity.
 - **Callback traffic** is Gateway-mediated: the Subscriber's callback URL is constructed from `EventConfig.Status.CallbackURL`, routing through the Gateway's callback route.
@@ -142,12 +150,16 @@ Spectre uses the `de.telekom.ei.listener*` prefix for its internal event types. 
 
 ## Registered Schemes
 
-The Spectre operator registers API types from **5 domains** (including itself):
+The Spectre operator registers API types from **9 domains** (including itself):
 
 | Domain | API Group | Resources Used |
 |---|---|---|
 | **Spectre** | `spectre.cp.ei.telekom.de` | SpectreApplication, Listener |
 | **PubSub** | `pubsub.cp.ei.telekom.de` | EventStore, Publisher, Subscriber |
 | **Gateway** | `gateway.cp.ei.telekom.de` | RouteListener, Route |
-| **Approval** | `approval.cp.ei.telekom.de` | Approval |
+| **Approval** | `approval.cp.ei.telekom.de` | ApprovalRequest, Approval |
 | **Event** | `event.cp.ei.telekom.de` | EventConfig |
+| **Application** | `application.cp.ei.telekom.de` | Application |
+| **Admin** | `admin.cp.ei.telekom.de` | Zone |
+| **Identity** | `identity.cp.ei.telekom.de` | Realm |
+| **API** | `api.cp.ei.telekom.de` | ApiExposure |
