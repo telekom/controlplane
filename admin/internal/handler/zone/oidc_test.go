@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -116,6 +117,95 @@ var _ = Describe("OIDC discovery", func() {
 		}
 		_, err = discoverTokenURL(context.Background(), server.Client(), issuer)
 		Expect(err).To(HaveOccurred())
+	})
+})
+
+var _ = Describe("OIDC discovery TLS verification", func() {
+	var server *httptest.Server
+
+	BeforeEach(func() {
+		server = httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			_, err := fmt.Fprintf(w, `{"issuer":%q,"token_endpoint":"https://tokens.example.com/token"}`, server.URL)
+			Expect(err).NotTo(HaveOccurred())
+		}))
+		DeferCleanup(server.Close)
+
+		previous, wasSet := os.LookupEnv(EnvSkipTlsVerify)
+		DeferCleanup(func() {
+			if wasSet {
+				Expect(os.Setenv(EnvSkipTlsVerify, previous)).To(Succeed())
+				return
+			}
+			Expect(os.Unsetenv(EnvSkipTlsVerify)).To(Succeed())
+		})
+	})
+
+	It("rejects an untrusted certificate when SKIP_TLS_VERIFY is unset", func() {
+		Expect(os.Unsetenv(EnvSkipTlsVerify)).To(Succeed())
+		client := (&ZoneHandler{}).httpClient()
+		Expect(client.Transport).To(BeNil())
+
+		_, err := discoverTokenURL(context.Background(), client, server.URL)
+		Expect(err).To(MatchError(ContainSubstring("certificate")))
+	})
+
+	DescribeTable("keeps verification for values other than true",
+		func(value string) {
+			Expect(os.Setenv(EnvSkipTlsVerify, value)).To(Succeed())
+			client := (&ZoneHandler{}).httpClient()
+			Expect(client.Transport).To(BeNil())
+
+			_, err := discoverTokenURL(context.Background(), client, server.URL)
+			Expect(err).To(MatchError(ContainSubstring("certificate")))
+		},
+		Entry("false", "false"),
+		Entry("empty", ""),
+		Entry("invalid", "yes"),
+		Entry("numeric", "1"),
+	)
+
+	DescribeTable("accepts an untrusted certificate when SKIP_TLS_VERIFY is true",
+		func(value string) {
+			Expect(os.Setenv(EnvSkipTlsVerify, value)).To(Succeed())
+
+			tokenURL, err := discoverTokenURL(context.Background(), (&ZoneHandler{}).httpClient(), server.URL)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(tokenURL).To(Equal("https://tokens.example.com/token"))
+		},
+		Entry("lowercase", "true"),
+		Entry("mixed case with whitespace", " TRUE "),
+	)
+
+	It("does not modify the default transport", func() {
+		Expect(os.Setenv(EnvSkipTlsVerify, "true")).To(Succeed())
+		_ = (&ZoneHandler{}).httpClient()
+
+		defaultTransport := http.DefaultTransport.(*http.Transport)
+		Expect(defaultTransport.TLSClientConfig == nil || !defaultTransport.TLSClientConfig.InsecureSkipVerify).To(BeTrue())
+	})
+
+	DescribeTable("NewZoneHandler builds the discovery client once from SKIP_TLS_VERIFY",
+		func(value string, accepts bool) {
+			Expect(os.Setenv(EnvSkipTlsVerify, value)).To(Succeed())
+			h := NewZoneHandler()
+			Expect(h.HTTPClient).NotTo(BeNil())
+			Expect(h.httpClient()).To(BeIdenticalTo(h.HTTPClient))
+
+			_, err := discoverTokenURL(context.Background(), h.httpClient(), server.URL)
+			if accepts {
+				Expect(err).NotTo(HaveOccurred())
+				return
+			}
+			Expect(err).To(MatchError(ContainSubstring("certificate")))
+		},
+		Entry("true", "true", true),
+		Entry("false", "false", false),
+	)
+
+	It("keeps an injected HTTP client", func() {
+		Expect(os.Setenv(EnvSkipTlsVerify, "true")).To(Succeed())
+		injected := &http.Client{}
+		Expect((&ZoneHandler{HTTPClient: injected}).httpClient()).To(BeIdenticalTo(injected))
 	})
 })
 

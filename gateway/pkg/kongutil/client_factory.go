@@ -7,9 +7,12 @@ package kongutil
 import (
 	"context"
 	"crypto/sha256"
+	"crypto/tls"
 	"fmt"
 	"net/http"
 	"net/url"
+	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -107,12 +110,25 @@ var GetClientFor = func(gwCfg GatewayAdminConfig) (client.KongClient, error) {
 	return c, nil
 }
 
+// EnvSkipTlsVerify is the environment variable that disables TLS
+// certificate and hostname verification for Kong Admin API and OAuth
+// token requests. Only the value "true" (case-insensitive) enables it.
+const EnvSkipTlsVerify = "SKIP_TLS_VERIFY"
+
+func skipTlsVerify() bool {
+	return strings.EqualFold(strings.TrimSpace(os.Getenv(EnvSkipTlsVerify)), "true")
+}
+
 var NewClientFor = func(gwCfg GatewayAdminConfig) (kong.ClientWithResponsesInterface, error) {
+	transport := &http.Transport{
+		MaxIdleConnsPerHost: 100,
+	}
+	if skipTlsVerify() {
+		transport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true} //nolint:gosec // explicit opt-in via SKIP_TLS_VERIFY
+	}
 	baseClient := &http.Client{
-		Transport: &http.Transport{
-			MaxIdleConnsPerHost: 100,
-		},
-		Timeout: 10 * time.Second,
+		Transport: transport,
+		Timeout:   10 * time.Second,
 	}
 
 	tokenCfg := clientcredentials.Config{

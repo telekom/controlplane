@@ -221,6 +221,27 @@ var _ = Describe("Zone Handler", func() {
 		Expect(route.Spec.Hostnames).To(Equal([]string{"test-stargate.de"}))
 	})
 
+	It("deduplicates managed route paths and hostnames shared by preset URLs", func() {
+		zone.Spec.Presets[0].Urls = []adminv1.UrlConfig{
+			{Hostname: "irix.example.com", BasePath: "/"},
+			{Hostname: "irix-internal.example.com", BasePath: "/"},
+			{Hostname: "irix.example.com", BasePath: "/v2"},
+		}
+		zone.Spec.ManagedRoutes = &adminv1.ManagedRoutesConfig{Routes: []adminv1.ManagedRouteConfig{
+			{Name: "irix", Path: "/auth/realms/default", Url: "https://iris.example.com/auth/realms/default", Type: adminv1.ManagedRouteTypeProxy},
+		}}
+
+		handler := newTestHandler()
+		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
+		markSubResourcesReady(zone)
+		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
+
+		route := &gatewayapi.Route{}
+		Expect(k8sClient.Get(ctx, client.ObjectKey{Namespace: zone.Status.Namespace, Name: naming.ForGateway(zone, "standard") + "--irix"}, route)).To(Succeed())
+		Expect(route.Spec.Hostnames).To(Equal([]string{"irix.example.com", "irix-internal.example.com"}))
+		Expect(route.Spec.Paths).To(Equal([]string{"/auth/realms/default", "/v2/auth/realms/default"}))
+	})
+
 	It("uses the owning zone realm for every route", func() {
 		zone.Spec.ManagedRoutes = &adminv1.ManagedRoutesConfig{Routes: []adminv1.ManagedRouteConfig{
 			{Name: "team-api", Path: "/team-api", Url: "https://team.example.com", Type: adminv1.ManagedRouteTypeTeamAPI},

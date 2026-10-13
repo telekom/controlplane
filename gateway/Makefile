@@ -63,9 +63,9 @@ vet: ## Run go vet against code.
 	go vet ./...
 
 # Packages to test and measure coverage for
-TEST_PACKAGES = ./internal/... ./pkg/kong/client/...
+TEST_PACKAGES = ./internal/... ./pkg/kong/client/... ./pkg/kongutil/...
 # Coverage scope: exclude generated mocks (internal/features/mock, pkg/kong/client/mock)
-COVER_PACKAGES = ./internal/controller/...,./internal/features,./internal/features/feature,./internal/features/feature/config,./internal/handler/...,./pkg/kong/client,./pkg/kong/client/plugin
+COVER_PACKAGES = ./internal/controller/...,./internal/features,./internal/features/feature,./internal/features/feature/config,./internal/handler/...,./pkg/kong/client,./pkg/kong/client/plugin,./pkg/kongutil
 
 .PHONY: test
 test: manifests generate fmt vet envtest ## Run tests.
