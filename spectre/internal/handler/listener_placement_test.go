@@ -157,7 +157,8 @@ func newPlFixtures(observerZone string) *plFixtures {
 		f.ecs[z] = &eventv1.EventConfig{
 			ObjectMeta: metav1.ObjectMeta{Name: "ec-" + z, Namespace: plZoneNs(z)},
 			Spec: eventv1.EventConfigSpec{
-				Zone: plZoneRef(z),
+				Zone:                     plZoneRef(z),
+				OverwriteEnvironmentName: "default",
 				Local: &eventv1.LocalBackend{
 					Admin:              eventv1.AdminConfig{Url: "http://" + z + ".admin"},
 					ServerSendEventUrl: "https://" + z + ".sse.internal/sse",
@@ -1213,13 +1214,17 @@ var _ = Describe("Listener capture placement (controller)", func() {
 var _ = Describe("Listener event environment (controller)", func() {
 	It("E1: a capture EventStore subscribing with another environment than the capture realm blocks without relocating capture to P's zone", func() {
 		f := newPlFixtures("a3")
+		f.ecs["c"].Spec.OverwriteEnvironmentName = "spectre-test"
 		f.stores["c"].Spec.OverwriteEnvironmentName = "spectre-test"
 		h := newPlHarness(f)
 
 		all := h.startup()
-		Expect(plBlocked(h.listener())).To(Equal(`capture zone "c" publishes events with environment "default" (identity realm of the zone) ` +
-			`but its EventStore "es-c" subscribes with environment "spectre-test" (overwriteEnvironmentName); Galaxy would drop every event; ` +
-			`platform config: set EventConfig "ec-c" spec.overwriteEnvironmentName or Environment "pl-env" spec.realmName so they match`))
+		want := `capture zone "c" publishes events with environment "default" (identity realm of the zone: Environment spec.realmName, else the Environment name) ` +
+			`but its EventStore "pl-env--c/es-c" subscribes with environment "spectre-test" (EventConfig spec.overwriteEnvironmentName); Galaxy would drop every event; ` +
+			`set EventConfig "pl-env--c/ec-c" spec.overwriteEnvironmentName or Environment "pl-env/pl-env" spec.realmName to match`
+		l := h.listener()
+		Expect(plBlocked(l)).To(Equal(want))
+		Expect(meta.FindStatusCondition(l.Status.Conditions, condition.ConditionTypeReady).Message).To(Equal(want))
 		Expect(plCount(all, "Get", "Route", plZoneNs("p"))).To(BeZero())
 		Expect(plCount(all, "Create", "ApprovalRequest", "")).To(BeZero())
 		plExpectNoCaptureWrites(all)
@@ -1227,13 +1232,18 @@ var _ = Describe("Listener event environment (controller)", func() {
 
 	It("E2: an observer EventStore subscribing with another environment than the observer realm blocks", func() {
 		f := newPlFixtures("a3")
-		f.stores["a3"].Spec.OverwriteEnvironmentName = "spectre-test"
+		f.ecs["a3"].Spec.OverwriteEnvironmentName = ""
+		f.stores["a3"].Spec.OverwriteEnvironmentName = plEnv
 		h := newPlHarness(f)
 
 		all := h.startup()
-		Expect(plBlocked(h.listener())).To(Equal(`observer zone "a3" publishes events with environment "default" (identity realm of the zone) ` +
-			`but its EventStore "es-a3" subscribes with environment "spectre-test" (overwriteEnvironmentName); Galaxy would drop every event; ` +
-			`platform config: set EventConfig "ec-a3" spec.overwriteEnvironmentName or Environment "pl-env" spec.realmName so they match`))
+		want := `observer zone "a3" publishes events with environment "default" (identity realm of the zone: Environment spec.realmName, else the Environment name) ` +
+			`but its EventStore "pl-env--a3/es-a3" subscribes with environment "pl-env" (Control Plane environment name, copied by the event operator); ` +
+			`Galaxy would drop every event; ` +
+			`set EventConfig "pl-env--a3/ec-a3" spec.overwriteEnvironmentName or Environment "pl-env/pl-env" spec.realmName to match`
+		l := h.listener()
+		Expect(plBlocked(l)).To(Equal(want))
+		Expect(meta.FindStatusCondition(l.Status.Conditions, condition.ConditionTypeReady).Message).To(Equal(want))
 		Expect(plCount(all, "Get", "Route", "")).To(BeZero())
 		Expect(plCount(all, "Create", "ApprovalRequest", "")).To(BeZero())
 		plExpectNoCaptureWrites(all)
@@ -1253,11 +1263,11 @@ var _ = Describe("Listener event environment (controller)", func() {
 			Expect(l.Status.Draining).ToNot(BeNil())
 			Expect(l.Status.Draining.Reason).To(Equal("event environment mismatch"))
 			Expect(plCountVerb(calls, "Delete")).To(BeZero())
-			Expect(plBlocked(l)).To(ContainSubstring(want))
+			Expect(plBlocked(l)).To(Equal(want))
 			ready := meta.FindStatusCondition(l.Status.Conditions, condition.ConditionTypeReady)
 			Expect(ready).ToNot(BeNil())
 			Expect(ready.Status).To(Equal(metav1.ConditionFalse))
-			Expect(ready.Message).To(ContainSubstring(want))
+			Expect(ready.Message).To(Equal(want))
 
 			h.drain(rlRef)
 			Expect(h.exists(rlRef, &gatewayv1.RouteListener{})).To(BeFalse())
@@ -1273,11 +1283,17 @@ var _ = Describe("Listener event environment (controller)", func() {
 		Entry("capture EventStore",
 			func(h *plHarness, f *plFixtures) { h.setOverwrite("c", "spectre-test") },
 			func(h *plHarness, f *plFixtures) { h.setOverwrite("c", "default") },
-			`capture zone "c" publishes events with environment "default"`),
+			`capture zone "c" publishes events with environment "default" (identity realm of the zone: Environment spec.realmName, else the Environment name) `+
+				`but its EventStore "pl-env--c/es-c" subscribes with environment "spectre-test" `+
+				`(EventStore not yet updated by the event operator, EventConfig resolves to "default"); Galaxy would drop every event; `+
+				`set EventConfig "pl-env--c/ec-c" spec.overwriteEnvironmentName or Environment "pl-env/pl-env" spec.realmName to match`),
 		Entry("observer EventStore",
 			func(h *plHarness, f *plFixtures) { h.setOverwrite("a3", "spectre-test") },
 			func(h *plHarness, f *plFixtures) { h.setOverwrite("a3", "default") },
-			`observer zone "a3" publishes events with environment "default"`),
+			`observer zone "a3" publishes events with environment "default" (identity realm of the zone: Environment spec.realmName, else the Environment name) `+
+				`but its EventStore "pl-env--a3/es-a3" subscribes with environment "spectre-test" `+
+				`(EventStore not yet updated by the event operator, EventConfig resolves to "default"); Galaxy would drop every event; `+
+				`set EventConfig "pl-env--a3/ec-a3" spec.overwriteEnvironmentName or Environment "pl-env/pl-env" spec.realmName to match`),
 	)
 
 	It("E4: matching environments from the Control Plane environment fallback provision with the same fingerprint", func() {
@@ -1286,6 +1302,7 @@ var _ = Describe("Listener event environment (controller)", func() {
 
 		f := newPlFixtures("a3")
 		for _, z := range plZones {
+			f.ecs[z].Spec.OverwriteEnvironmentName = ""
 			f.stores[z].Spec.OverwriteEnvironmentName = ""
 			f.zones[z].Status.RealmName = plEnv
 			f.realms[z].Status.IssuerUrl = "https://iris." + z + ".example/auth/realms/" + plEnv
@@ -1335,13 +1352,15 @@ var _ = Describe("Listener event environment (controller)", func() {
 			func(f *plFixtures) {
 				f.realms["c"].Status.IssuerUrl = "https://iris.c.example/auth/realms/spectre-test"
 			},
-			`capture zone "c" publishes events with environment "spectre-test" (identity realm of the zone) `+
-				`but its EventStore "es-c" subscribes with environment "default"; events are delivered only if the Horizon `+
+			`capture zone "c" publishes events with environment "spectre-test" (identity realm of the zone: Environment spec.realmName, else the Environment name) `+
+				`but its EventStore "pl-env--c/es-c" subscribes with environment "default" (EventConfig spec.overwriteEnvironmentName); `+
+				`events are delivered only if the Horizon `+
 				`defaultEnvironment of Starlight and Galaxy is "spectre-test"`),
 		Entry("observer zone realm",
 			func(f *plFixtures) { f.zones["a3"].Status.RealmName = "spectre-test" },
-			`observer zone "a3" publishes events with environment "spectre-test" (identity realm of the zone) `+
-				`but its EventStore "es-a3" subscribes with environment "default"; events are delivered only if the Horizon `+
+			`observer zone "a3" publishes events with environment "spectre-test" (identity realm of the zone: Environment spec.realmName, else the Environment name) `+
+				`but its EventStore "pl-env--a3/es-a3" subscribes with environment "default" (EventConfig spec.overwriteEnvironmentName); `+
+				`events are delivered only if the Horizon `+
 				`defaultEnvironment of Starlight and Galaxy is "spectre-test"`),
 	)
 
