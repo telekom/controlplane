@@ -41,7 +41,8 @@ require (
 	github.com/oapi-codegen/runtime v1.7.0
 	github.com/onsi/ginkgo/v2 v2.32.1
 	github.com/onsi/gomega v1.43.0
-	github.com/pb33f/libopenapi v0.38.7
+	github.com/pb33f/go-yaml v0.1.1
+	github.com/pb33f/libopenapi v0.41.6
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.12.1
 	github.com/telekom/controlplane/agentic/api v0.0.0-00010101000000-000000000000
@@ -49,7 +50,6 @@ require (
 	github.com/telekom/controlplane/file-manager v0.0.0-00010101000000-000000000000
 	github.com/telekom/controlplane/secret-manager v0.0.0
 	go.uber.org/zap v1.28.0
-	go.yaml.in/yaml/v4 v4.0.0-rc.6
 	golang.org/x/text v0.42.0
 	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/apiextensions-apiserver v0.36.3
@@ -134,8 +134,8 @@ require (
 	github.com/oapi-codegen/oapi-codegen/v2 v2.6.1-0.20260425061340-097bc33cf46c // indirect
 	github.com/oasdiff/yaml v0.1.1 // indirect
 	github.com/oasdiff/yaml3 v0.0.14 // indirect
-	github.com/pb33f/jsonpath v0.8.2 // indirect
-	github.com/pb33f/ordered-map/v2 v2.3.1 // indirect
+	github.com/pb33f/jsonpath v0.8.4 // indirect
+	github.com/pb33f/ordered-map/v2 v2.3.2 // indirect
 	github.com/pelletier/go-toml/v2 v2.3.1 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/prometheus/client_golang v1.24.1 // indirect
