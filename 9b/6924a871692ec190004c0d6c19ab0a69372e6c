@@ -1,0 +1,96 @@
+gateway/pkg/kongutil/client_factory.go
+  s_e11bbaeb605c4d::t_fc5b73e6df5846 10,14-15
+  s_e11bbaeb605c4d::t_d360dfc5ce3119 113-115,117-121,123-126,128,130-131
+  s_37451ea516dd7f::t_a2651c066f8b01 116,127
+gateway/Makefile
+  s_e11bbaeb605c4d::t_ff3633b62f1ede 66,68
+docs/docs/admin-journey/installation.md
+  s_37451ea516dd7f::t_51d35f2dccbe54 142,144-148,159,162,165-169
+  s_67e97538645a19::t_06ccbd4091a5cb 156
+  s_e11bbaeb605c4d::t_0c445190b5603f 172
+  s_e11bbaeb605c4d::t_de77bd640fde8e 141,143,149-155,157-158,160-161,163,170-171,173-174
+  s_37451ea516dd7f::t_4ada406a898ed0 140,164
+identity/pkg/keycloak/factory_tls_test.go
+  s_e11bbaeb605c4d::t_7d606204d6371f 17-19
+  s_e11bbaeb605c4d::t_759555c6becea4 1-16,20-54,56-59,64,67-75,77-87,97,99
+  s_37451ea516dd7f::t_a2651c066f8b01 66,76
+  s_1bf86e9a19cd19::t_d5dd4c1f55c471 55,60-63,65,88-96,98,100-105
+admin/internal/handler/zone/handler_test.go
+  s_67e97538645a19::t_310e40f925d311 224-244
+identity/pkg/keycloak/factory.go
+  s_37451ea516dd7f::t_a2651c066f8b01 99
+  s_e11bbaeb605c4d::t_f11b86720a0be6 12-13
+  s_e11bbaeb605c4d::t_68a6d646dbfe2d 124-125
+  s_37451ea516dd7f::t_c95368134ba8ba 96-98,100-104
+gateway/pkg/kongutil/client_factory_test.go
+  s_e11bbaeb605c4d::t_22b298867c0f81 1-16,20-56,58-61,66,69-74,76-85,95,97,101
+  s_e11bbaeb605c4d::t_df56ef521631b8 17-19
+  s_37451ea516dd7f::t_a2651c066f8b01 68,75
+  s_1bf86e9a19cd19::t_71a566b1b663c9 57,62-65,67,86-94,96,98-100,102-103
+admin/internal/handler/zone/handler.go
+  s_67e97538645a19::t_a09b32e9028d38 54,56-58,60-64,69-78,84-85
+  s_67e97538645a19::t_c9ffd24527e764 9,13-14
+  s_67e97538645a19::t_35f94973c0780d 79-82
+  s_37451ea516dd7f::t_a2651c066f8b01 51,59,83
+  s_37451ea516dd7f::t_4444c7c905aada 50,52-53,55
+admin/api/v1/zone_types.go
+  s_67e97538645a19::t_48375b2d433724 224-230
+  s_67e97538645a19::t_9c155403e0ffbe 220-221
+gateway/pkg/kongutil/suite_test.go
+  s_e11bbaeb605c4d::t_fcaed361508f2b 1-17
+admin/internal/handler/zone/oidc_test.go
+  s_37451ea516dd7f::t_a2651c066f8b01 143,167,187
+  s_67e97538645a19::t_ece2e248e6f008 123-142,144-166,168-185,189,197-200,203-211
+  s_67e97538645a19::t_79b48c834cc299 13
+  s_37451ea516dd7f::t_440574f17d1ee3 186,188,190-196,201-202
+admin/internal/controller/zone_controller.go
+  s_711cb9fa7873b6::t_5db6d010cc7ab2 70
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "9b6924a871692ec190004c0d6c19ab0a69372e6c",
+  "prompts": {},
+  "sessions": {
+    "s_1bf86e9a19cd19": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ecb1a0dd7ffeJse8AKukcob507",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_37451ea516dd7f": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ecb5115e6ffefeE3MoilelJ9nq",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_67e97538645a19": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ecb7cf59dffejMtSDnaA5t0Ujx",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_711cb9fa7873b6": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ecb6d2f90ffevbay7M54Tb5T9Z",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_e11bbaeb605c4d": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ecb95268bffeJCp1TTuwyUOfDi",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
