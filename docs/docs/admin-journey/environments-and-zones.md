@@ -66,6 +66,10 @@ The Admin operator records a Warning event on the Zone for each managed sub-reso
 kubectl describe zone <name> -n <environment>
 ```
 
+During OIDC discovery for a preset's token URL, the Admin operator also records a Warning event with reason `OIDCIssuerMismatch` on the Zone if the advertised issuer differs from the configured issuer or is missing. The event names the preset and both issuer values. A trailing slash alone does not count as a mismatch.
+
+This warning does not block reconciliation: the configured issuer is retained and the discovered token endpoint is used if it passes validation. No issuer comparison is performed when an existing token URL is reused from the Zone status.
+
 ### Creating a Zone
 
 A Zone references the gateways and identity provider to use, along with optional Redis configuration and visibility settings:

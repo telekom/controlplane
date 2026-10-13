@@ -10,9 +10,12 @@ import (
 	"net/url"
 	"sort"
 
+	corev1 "k8s.io/api/core/v1"
+
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	ctrlerrors "github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
+	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 )
 
 func populatePresetStatus(ctx context.Context, hc *HandlingContext) error {
@@ -54,9 +57,14 @@ func populatePresetStatus(ctx context.Context, hc *HandlingContext) error {
 				}
 			}
 			if tokenURL == "" {
-				tokenURL, err = discoverTokenURL(ctx, hc.HTTPClient, issuer)
+				var advertisedIssuer string
+				tokenURL, advertisedIssuer, err = discoverTokenURL(ctx, hc.HTTPClient, issuer)
 				if err != nil {
 					return ctrlerrors.RetryableErrorf("failed OIDC discovery for preset %q: %s", preset.Name, err)
+				}
+				if !issuersEqual(advertisedIssuer, issuer) {
+					contextutil.RecorderFromContextOrDie(ctx).Eventf(hc.Zone, corev1.EventTypeWarning, ReasonOIDCIssuerMismatch,
+						"OIDC discovery for preset %q advertised issuer %q, configured issuer is %q", preset.Name, advertisedIssuer, issuer)
 				}
 				tokenURLs[issuer] = tokenURL
 			}

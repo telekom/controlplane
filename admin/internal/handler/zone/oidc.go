@@ -22,39 +22,43 @@ type oidcMetadata struct {
 
 const maxOIDCMetadataSize = 1 << 20
 
-func discoverTokenURL(ctx context.Context, client *http.Client, issuerURL string) (tokenURL string, err error) {
+// ReasonOIDCIssuerMismatch is the Zone event reason for a discovered issuer that differs from the configured one.
+const ReasonOIDCIssuerMismatch = "OIDCIssuerMismatch"
+
+// discoverTokenURL returns the validated token endpoint and the issuer advertised in the OIDC metadata.
+func discoverTokenURL(ctx context.Context, client *http.Client, issuerURL string) (tokenURL, advertisedIssuer string, err error) {
 	if client == nil {
-		return "", fmt.Errorf("OIDC discovery HTTP client is nil")
+		return "", "", fmt.Errorf("OIDC discovery HTTP client is nil")
 	}
 	discoveryURL := strings.TrimSuffix(issuerURL, "/") + "/.well-known/openid-configuration"
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, discoveryURL, http.NoBody)
 	if err != nil {
-		return "", fmt.Errorf("creating OIDC discovery request: %w", err)
+		return "", "", fmt.Errorf("creating OIDC discovery request: %w", err)
 	}
 	resp, err := client.Do(req)
 	if err != nil {
-		return "", fmt.Errorf("requesting OIDC metadata: %w", err)
+		return "", "", fmt.Errorf("requesting OIDC metadata: %w", err)
 	}
 	defer func() { err = errors.Join(err, resp.Body.Close()) }()
 	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
-		return "", fmt.Errorf("OIDC discovery returned HTTP %d", resp.StatusCode)
+		return "", "", fmt.Errorf("OIDC discovery returned HTTP %d", resp.StatusCode)
 	}
 
 	body, err := io.ReadAll(io.LimitReader(resp.Body, maxOIDCMetadataSize+1))
 	if err != nil {
-		return "", fmt.Errorf("reading OIDC metadata: %w", err)
+		return "", "", fmt.Errorf("reading OIDC metadata: %w", err)
 	}
 	if len(body) > maxOIDCMetadataSize {
-		return "", fmt.Errorf("OIDC metadata exceeds %d bytes", maxOIDCMetadataSize)
+		return "", "", fmt.Errorf("OIDC metadata exceeds %d bytes", maxOIDCMetadataSize)
 	}
 	var metadata oidcMetadata
 	if err := json.Unmarshal(body, &metadata); err != nil {
-		return "", fmt.Errorf("decoding OIDC metadata: %w", err)
+		return "", "", fmt.Errorf("decoding OIDC metadata: %w", err)
 	}
 	if err := validateDiscoveredTokenURL(metadata.TokenEndpoint); err != nil {
-		return "", err
+		return "", "", err
 	}
-	return metadata.TokenEndpoint, nil
+	return metadata.TokenEndpoint, metadata.Issuer, nil
 }
 
 func validateDiscoveredTokenURL(rawURL string) error {
@@ -66,4 +70,8 @@ func validateDiscoveredTokenURL(rawURL string) error {
 		return fmt.Errorf("OIDC token endpoint must not contain a query")
 	}
 	return nil
+}
+
+func issuersEqual(a, b string) bool {
+	return strings.TrimSuffix(a, "/") == strings.TrimSuffix(b, "/")
 }
