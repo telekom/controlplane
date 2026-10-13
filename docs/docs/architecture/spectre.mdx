@@ -1,5 +1,5 @@
 ---
-sidebar_position: 13
+sidebar_position: 15
 ---
 
 # Spectre Domain
@@ -37,6 +37,30 @@ Users do not create PubSub resources directly. EventStore ownership is unchanged
 - **Event domain** — Reads EventConfig for zone configuration and the gateway callback URL.
 - **Application domain** — Reads Application resources for consumer and provider metadata.
 - **Rover domain** — Rover files with `spec.listeners` trigger creation of Listener CRs.
+
+## Listener Placement
+
+Each Listener involves three zones: the consumer zone (C), the provider zone (P) and the observer zone (A), the zone of the listening application.
+
+- **Capture zone** — Spectre tries C's zone first, then P's zone. The first zone with a usable Route on the C→P path wins. A zone is skipped when it has no Route for the path, the Route is pass-through or failover, the Route serves another consumer zone, or the zone has no EventConfig. A's zone is never a candidate, so Listeners with the same C, P and path capture in the same zone.
+- **Delivery zone** — always A's zone. When the capture zone (or, for a proxy capture zone, its target zone) is A's zone, delivery uses A's EventConfig `status.callbackUrl`. Otherwise it uses the capture zone's EventConfig `status.proxyCallbackUrls[<A's zone>]`.
+
+The result is recorded in `Listener.status.appliedPlacement` (`captureZone`, `deliveryZone`, `callbackBaseURL`).
+
+## Blocked Listeners
+
+When placement fails for good, the Listener is Blocked and its applied capture is drained. The reason is recorded in `status.draining.reason`.
+
+| Reason | Cause | Fix |
+|---|---|---|
+| `no supported capture placement` | Neither C's nor P's zone can capture (see [Listener Placement](#listener-placement)). | Expose the API on a supported Route in C's or P's zone, or create the zone's EventConfig. |
+| `capture zone cannot deliver to observer` | The capture zone's EventConfig does not mesh with A's zone, or the callback URL for A's zone is missing. Capture does not fall back to P's zone. | Add A's zone to the capture zone's mesh, and check the EventConfig status. |
+| `event environment mismatch` | The realm of the capture or observer zone differs from the environment of its EventStore. The realm is the Environment `spec.realmName`, else the Environment name. The EventStore environment is the EventConfig `spec.overwriteEnvironmentName`, else the Control Plane environment name. | Set `spec.overwriteEnvironmentName` or `spec.realmName` so both values match. |
+| `provider binding invalidated` | The capture Route is no longer owned by an active ApiExposure of the declared provider Application. | Check the provider's ApiExposure and its Route. |
+
+An environment mismatch in the observer zone also blocks the SpectreApplication.
+
+An EventStore environment of `default` with another realm does not block. It raises a Warning event `EnvironmentAliasAssumed`; events are delivered only if Horizon's `defaultEnvironment` is that realm.
 
 ## Current Limitations
 

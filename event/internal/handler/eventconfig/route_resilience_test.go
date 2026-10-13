@@ -70,8 +70,7 @@ var _ = Describe("EventConfigHandler route resilience", func() {
 	})
 
 	It("still renders Routes when the identity Client cannot be created", func() {
-		// The failure that wedged the spectre-test vCluster: an identity Client
-		// name already owned by another domain.
+		// Regression: an identity Client name already owned by another domain.
 		fakeClient.EXPECT().
 			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Client"), mock.Anything).
 			Run(func(_ context.Context, _ client.Object, mutate controllerutil.MutateFn) {
