@@ -981,6 +981,7 @@ var _ = Describe("ApiExposure Handler", func() {
 				Build()
 			ctx := cclient.WithClient(context.Background(), cclient.NewJanitorClient(cclient.NewScopedClient(fakeClient, environment)))
 			apiExp := &apiapi.ApiExposure{}
+			apiExp.SetCondition(condition.NewBlockedCondition("previously blocked"))
 
 			Expect(validateApiCategoryPolicy(ctx, baseAPI, baseApp, apiExp)).To(BeFalse())
 
@@ -988,7 +989,9 @@ var _ = Describe("ApiExposure Handler", func() {
 			Expect(notReady).NotTo(BeNil())
 			Expect(notReady.Reason).To(Equal(util.ApiCategoryPolicyResolutionFailedReason))
 			processing := meta.FindStatusCondition(apiExp.GetConditions(), condition.ConditionTypeProcessing)
-			Expect(processing == nil || processing.Reason != condition.ReasonBlocked).To(BeTrue(), "retryable error must not set Blocked condition")
+			Expect(processing).NotTo(BeNil())
+			Expect(processing.Status).To(Equal(metav1.ConditionTrue))
+			Expect(processing.Reason).To(Equal(condition.ReasonProcessing), "retryable error must replace an existing Blocked condition")
 		})
 	})
 })
