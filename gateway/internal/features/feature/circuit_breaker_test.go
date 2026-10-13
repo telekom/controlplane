@@ -356,11 +356,12 @@ var _ = Describe("CircuitBreakerFeature", func() {
 		})
 
 		DescribeTable("deletes the Kong upstream once the circuit breaker is no longer wanted",
-			func(cb *gatewayv1.CircuitBreaker) {
+			func(routeType gatewayv1.RouteType, cb *gatewayv1.CircuitBreaker) {
 				build()
 				Expect(route.GetUpstreamId()).To(Equal("upstream-id"))
 				Expect(route.GetTargetsId()).To(Equal("target-id"))
 
+				route.Spec.Type = routeType
 				route.Spec.Traffic.CircuitBreaker = cb
 				mockKongClient.EXPECT().DeleteUpstream(mock.Anything, route).Return(nil).Once()
 				build()
@@ -370,8 +371,11 @@ var _ = Describe("CircuitBreakerFeature", func() {
 				// nothing left to clean up on the next reconcile
 				Expect(f.IsUsed(ctx, features.NewFeatureBuilder(mockKongClient, route, nil, &gatewayv1.Gateway{}))).To(BeFalse())
 			},
-			Entry("when disabled", &gatewayv1.CircuitBreaker{Enabled: false}),
-			Entry("when removed", nil),
+			Entry("when disabled", gatewayv1.RouteTypePrimary, &gatewayv1.CircuitBreaker{Enabled: false}),
+			Entry("when removed", gatewayv1.RouteTypePrimary, nil),
+			Entry("when the route becomes a proxy", gatewayv1.RouteTypeProxy, nil),
+			Entry("when the route becomes a failover secondary", gatewayv1.RouteTypeSecondary, nil),
+			Entry("when the route becomes a proxy with the circuit breaker still enabled", gatewayv1.RouteTypeProxy, &gatewayv1.CircuitBreaker{Enabled: true}),
 		)
 	})
 })
