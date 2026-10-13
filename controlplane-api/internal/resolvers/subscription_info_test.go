@@ -75,6 +75,15 @@ var _ = Describe("SubscriptionInfo", func() {
 		}
 	})
 
+	It("exposes reduced file service URLs as nullable fields", func() {
+		schema := resolvers.NewExecutableSchema(resolvers.Config{}).Schema()
+		for _, typeName := range []string{"FileSubscriptionInfo", "FileExposureInfo"} {
+			for _, fieldName := range []string{"serviceUrl", "serviceExternalUrl"} {
+				Expect(schema.Types[typeName].Fields.ForName(fieldName).Type.String()).To(Equal("String"))
+			}
+		}
+	})
+
 	Describe("GraphQL execution", func() {
 		var (
 			db     *ent.Client
@@ -88,7 +97,12 @@ var _ = Describe("SubscriptionInfo", func() {
 			db.Intercept(interceptor.TeamFilterInterceptor())
 			seed = testutil.SeedStandard(db)
 			ctx := testutil.AllowContext()
-			_, err := db.Approval.Create().
+			_, err := db.FileSubscription.UpdateOne(seed.FileSubscriptionAlpha).
+				SetServiceURL("subscription.internal.example.com:8080").
+				SetServiceExternalURL("subscription.external.example.com:8080").
+				Save(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			_, err = db.Approval.Create().
 				SetNamespace("prod").SetName("event-approval").SetAction("ALLOW").
 				SetRequester(seed.Approval.Requester).SetDecider(seed.Approval.Decider).
 				SetDeciderTeamName("team-alpha").SetEventSubscription(seed.EventSubscription).Save(ctx)
@@ -239,7 +253,7 @@ var _ = Describe("SubscriptionInfo", func() {
 							... on ApiSubscriptionInfo { basePath }
 							... on EventSubscriptionInfo { eventType }
 							... on AgenticSubscriptionInfo { basePath }
-							... on FileSubscriptionInfo { fileType }
+							... on FileSubscriptionInfo { fileType serviceUrl serviceExternalUrl }
 						} } }
 					}
 				} %s`, field, selection, fragment)
@@ -253,12 +267,14 @@ var _ = Describe("SubscriptionInfo", func() {
 				Expect(recorder.Code).To(Equal(http.StatusOK), recorder.Body.String())
 
 				type subscription struct {
-					Typename         string `json:"__typename"`
-					ID               string
-					BasePath         string
-					EventType        string
-					FileType         string
-					OwnerApplication struct{ ID, Name string }
+					Typename           string `json:"__typename"`
+					ID                 string
+					BasePath           string
+					EventType          string
+					FileType           string
+					ServiceURL         string
+					ServiceExternalURL string
+					OwnerApplication   struct{ ID, Name string }
 				}
 				var response struct {
 					Data map[string]struct {
@@ -274,7 +290,12 @@ var _ = Describe("SubscriptionInfo", func() {
 					"ApiSubscriptionInfo":     {ID: strconv.Itoa(seed.Subscription.ID), BasePath: "/alpha"},
 					"EventSubscriptionInfo":   {ID: strconv.Itoa(seed.EventSubscription.ID), EventType: "order.created"},
 					"AgenticSubscriptionInfo": {ID: strconv.Itoa(seed.AgenticSubscription.ID), BasePath: "/mcp-alpha"},
-					"FileSubscriptionInfo":    {ID: strconv.Itoa(seed.FileSubscriptionAlpha.ID), FileType: "invoice"},
+					"FileSubscriptionInfo": {
+						ID:                 strconv.Itoa(seed.FileSubscriptionAlpha.ID),
+						FileType:           "invoice",
+						ServiceURL:         "subscription.internal.example.com:8080",
+						ServiceExternalURL: "subscription.external.example.com:8080",
+					},
 				}
 				Expect(response.Data[field].Edges).To(HaveLen(4))
 				for _, edge := range response.Data[field].Edges {

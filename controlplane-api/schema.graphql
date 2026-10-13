@@ -101,7 +101,7 @@ enum ResponseFilterMode {
 
 type ResponseFilter {
   paths: [String]!
-  mode: ResponseFilterMode 
+  mode: ResponseFilterMode
 }
 
 type SelectionFilter {
@@ -155,7 +155,7 @@ type ApiExposureInfo {
   apiVersion: String
   features: [ApiExposureFeature!]!
   approvalConfig: ApprovalConfig!
-  traffic: Traffic 
+  traffic: Traffic
   "Application name that owns this exposure"
   ownerApplicationName: String! @deprecated(reason: "Use ownerApplication.name instead.")
   "Owning team (reduced view)"
@@ -233,7 +233,7 @@ type AgenticTransformation {
   request: AgenticRequestResponseTransformation!
 }
 
-# Traffic 
+# Traffic
 
 type Limits {
   second: Int
@@ -333,6 +333,8 @@ type EventSubscriptionInfo implements SubscriptionInfo {
 type FileSubscriptionInfo implements SubscriptionInfo {
   id: ID!
   fileType: String!
+  serviceUrl: String
+  serviceExternalUrl: String
   statusPhase: FileSubscriptionStatusPhase
   statusMessage: String
   "Application name that owns this subscription"
@@ -348,6 +350,8 @@ type FileExposureInfo {
   id: ID!
   fileType: String!
   visibility: FileExposureVisibility!
+  serviceUrl: String
+  serviceExternalUrl: String
   active: Boolean
   approvalConfig: ApprovalConfig!
   "Application name that owns this exposure"
