@@ -220,6 +220,48 @@ var _ = Describe("Request failure diagnostics", func() {
 		}, `{"a":1e`+numericMarker+`}`),
 	)
 
+	DescribeTable("forwards the shallowInfo query parameter only when requested",
+		func(shallow bool, call func(h *common.BaseHandler, ctx context.Context) error, expectedPath, expectedQuery string) {
+			var path, query string
+			apiHandler = func(w http.ResponseWriter, r *http.Request) {
+				path, query = r.URL.Path, r.URL.RawQuery
+				w.Header().Set("Content-Type", "application/json")
+				fmt.Fprint(w, `{}`)
+			}
+			h := newHandler()
+			h.SupportsInfo = true
+			ctx := tokenCtx()
+			if shallow {
+				ctx = common.WithShallowInfo(ctx)
+			}
+			Expect(common.IsShallowInfo(ctx)).To(Equal(shallow))
+
+			Expect(call(h, ctx)).To(Succeed())
+			Expect(path).To(Equal(expectedPath))
+			Expect(query).To(Equal(expectedQuery))
+		},
+		Entry("info", false, func(h *common.BaseHandler, ctx context.Context) error {
+			_, err := h.Info(ctx, "app")
+			return err
+		}, "/resources/my-group--my-team--app/info", ""),
+		Entry("shallow info", true, func(h *common.BaseHandler, ctx context.Context) error {
+			_, err := h.Info(ctx, "app")
+			return err
+		}, "/resources/my-group--my-team--app/info", "shallowInfo=true"),
+		Entry("info many", false, func(h *common.BaseHandler, ctx context.Context) error {
+			_, err := h.InfoMany(ctx, nil)
+			return err
+		}, "/resources/info", ""),
+		Entry("shallow info many", true, func(h *common.BaseHandler, ctx context.Context) error {
+			_, err := h.InfoMany(ctx, nil)
+			return err
+		}, "/resources/info", "shallowInfo=true"),
+		Entry("shallow info many with names", true, func(h *common.BaseHandler, ctx context.Context) error {
+			_, err := h.InfoMany(ctx, []string{"a", "b"})
+			return err
+		}, "/resources/info", "names=a&names=b&shallowInfo=true"),
+	)
+
 	It("reports body read failures without the reader error", func() {
 		readErr := errors.New(secretMarker + "-read-error")
 		var decoded map[string]any

@@ -18,6 +18,7 @@ import (
 	getinfo "github.com/telekom/controlplane/rover-ctl/pkg/commands/get-info"
 	"github.com/telekom/controlplane/rover-ctl/pkg/config"
 	"github.com/telekom/controlplane/rover-ctl/pkg/handlers"
+	"github.com/telekom/controlplane/rover-ctl/pkg/handlers/common"
 	"github.com/telekom/controlplane/rover-ctl/pkg/log"
 	"github.com/telekom/controlplane/rover-ctl/test/mocks"
 )
@@ -115,6 +116,11 @@ spec:
 			// Verify flags exist
 			nameFlag := cmd.Flags().Lookup("name")
 			Expect(nameFlag).NotTo(BeNil())
+			Expect(nameFlag.Shorthand).To(Equal("n"))
+
+			appFlag := cmd.Flags().Lookup("application")
+			Expect(appFlag).NotTo(BeNil())
+			Expect(appFlag.Shorthand).To(Equal("a"))
 
 			fileFlag := cmd.Flags().Lookup("file")
 			Expect(fileFlag).NotTo(BeNil())
@@ -257,6 +263,60 @@ spec:
 				// Verify mock expectations
 				mockHandler.AssertExpectations(GinkgoT())
 			})
+		})
+	})
+	Describe("flag compatibility", func() {
+		infoResponse := map[string]any{"name": "test-rover", "status": "Running"}
+
+		DescribeTable("accepts every application selector alias",
+			func(args ...string) {
+				mockHandler.EXPECT().Info(mock.MatchedBy(func(ctx context.Context) bool {
+					return !common.IsShallowInfo(ctx)
+				}), "test-rover").Return(infoResponse, nil).Once()
+
+				cmd.SetArgs(args)
+				Expect(cmd.Execute()).To(Succeed())
+				Expect(stdout.String()).To(ContainSubstring("test-rover"))
+			},
+			Entry("-a", "-a", "test-rover"),
+			Entry("--application", "--application", "test-rover"),
+			Entry("-n", "-n", "test-rover"),
+			Entry("--name", "--name", "test-rover"),
+		)
+
+		DescribeTable("rejects conflicting or empty selectors without calling the server",
+			func(expectedErr string, args ...string) {
+				cmd.SetArgs(args)
+				err := cmd.Execute()
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring(expectedErr))
+			},
+			Entry("-a and -n", "none of the others can be", "-a", "x", "-n", "y"),
+			Entry("-a and -f", "none of the others can be", "-a", "x", "-f", "file.yaml"),
+			Entry("empty -a", "must not be empty", "-a", ""),
+			Entry("blank --name", "must not be empty", "--name", " "),
+		)
+
+		It("requests shallow info for a single application", func() {
+			mockHandler.EXPECT().Info(mock.MatchedBy(common.IsShallowInfo), "test-rover").Return(infoResponse, nil).Once()
+
+			cmd.SetArgs([]string{"-a", "test-rover", "--shallow"})
+			Expect(cmd.Execute()).To(Succeed())
+			Expect(stdout.String()).To(ContainSubstring("test-rover"))
+		})
+
+		It("requests shallow info for applications from a file", func() {
+			mockHandler.EXPECT().Info(mock.MatchedBy(common.IsShallowInfo), "test-rover").Return(infoResponse, nil).Once()
+
+			cmd.SetArgs([]string{"-f", yamlFile, "-s"})
+			Expect(cmd.Execute()).To(Succeed())
+		})
+
+		It("requests shallow info for all applications", func() {
+			mockHandler.EXPECT().InfoMany(mock.MatchedBy(common.IsShallowInfo), []string(nil)).Return(map[string]any{"applications": []any{}}, nil).Once()
+
+			cmd.SetArgs([]string{"--shallow"})
+			Expect(cmd.Execute()).To(Succeed())
 		})
 	})
 })

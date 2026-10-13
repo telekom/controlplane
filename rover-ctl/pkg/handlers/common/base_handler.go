@@ -206,6 +206,24 @@ func (h *BaseHandler) Delete(ctx context.Context, obj types.Object) error {
 	return nil
 }
 
+// DeleteByName removes the resource with the given name from the server.
+// Unlike Delete, it sends no request body, so it does not require a full resource definition.
+func (h *BaseHandler) DeleteByName(ctx context.Context, name string) error {
+	if name == "" {
+		return errors.New("name cannot be empty")
+	}
+	token := h.Setup(ctx)
+	url := h.GetRequestUrl(token.Group, token.Team, name)
+
+	resp, err := h.SendRequest(ctx, NoBody, http.MethodDelete, url)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	return CheckResponseCode(resp, http.StatusOK, http.StatusNoContent, http.StatusNotFound)
+}
+
 // Get implements the generic Get operation using REST API
 func (h *BaseHandler) Get(ctx context.Context, name string) (any, error) {
 	token := h.Setup(ctx)
@@ -317,14 +335,33 @@ func (h *BaseHandler) Status(ctx context.Context, name string) (types.ObjectStat
 	return &status, nil
 }
 
+const shallowInfoParam = "shallowInfo"
+
+type shallowInfoKey struct{}
+
+// WithShallowInfo returns a context that makes Info and InfoMany request only the
+// information about the application itself, omitting sub-resources.
+func WithShallowInfo(ctx context.Context) context.Context {
+	return context.WithValue(ctx, shallowInfoKey{}, true)
+}
+
+// IsShallowInfo reports whether shallow info was requested via WithShallowInfo.
+func IsShallowInfo(ctx context.Context) bool {
+	shallow, _ := ctx.Value(shallowInfoKey{}).(bool)
+	return shallow
+}
+
 func (h *BaseHandler) Info(ctx context.Context, name string) (any, error) {
 	if !h.SupportsInfo {
 		return nil, errors.Errorf("info operation is not supported for %s", h.Resource)
 	}
 	token := h.Setup(ctx)
-	url := h.GetRequestUrl(token.Group, token.Team, name, "info")
+	reqUrl := h.GetRequestUrl(token.Group, token.Team, name, "info")
+	if IsShallowInfo(ctx) {
+		reqUrl += "?" + url.Values{shallowInfoParam: []string{"true"}}.Encode()
+	}
 
-	return h.execInfoRequest(ctx, url)
+	return h.execInfoRequest(ctx, reqUrl)
 }
 
 func (h *BaseHandler) InfoMany(ctx context.Context, names []string) (any, error) {
@@ -333,11 +370,14 @@ func (h *BaseHandler) InfoMany(ctx context.Context, names []string) (any, error)
 	}
 	token := h.Setup(ctx)
 	reqUrl := h.GetRequestUrl(token.Group, token.Team, "", "info")
-	if len(names) > 0 {
-		params := url.Values{}
-		for _, name := range names {
-			params.Add("names", name)
-		}
+	params := url.Values{}
+	for _, name := range names {
+		params.Add("names", name)
+	}
+	if IsShallowInfo(ctx) {
+		params.Set(shallowInfoParam, "true")
+	}
+	if len(params) > 0 {
 		reqUrl += "?" + params.Encode()
 	}
 

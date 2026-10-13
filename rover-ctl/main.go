@@ -30,6 +30,7 @@ func main() {
 	rootCmd := cmd.NewRootCommand()
 	rootCmd.SetOut(os.Stdout)
 	rootCmd.SetErr(os.Stderr)
+	rootCmd.SetArgs(cmd.NormalizeLegacyArgs(rootCmd, os.Args[1:]))
 
 	if err := rootCmd.Execute(); err != nil {
 		cmd.ErrorHandler(err, viper.GetBool("debug"))
