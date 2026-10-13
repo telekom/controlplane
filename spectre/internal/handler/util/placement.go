@@ -137,9 +137,9 @@ func (e *DeliveryPathError) IsBlocked() bool { return true }
 // so an EventStore environment of "default" with another realm is only
 // reported as an EnvironmentAlias: it works when defaultEnvironment is that
 // realm. Equal values can still be dropped when Galaxy's defaultEnvironment is
-// that environment (controlplane-config db8f177), or rejected by Starlight when
-// its realm pattern ^https://[\w-.]+/auth/realms/(\w+)$ does not match the
-// issuer (TokenServiceImpl.java:21,58-66); the checks do not detect that.
+// that environment, or rejected by Starlight when its realm pattern
+// ^https://[\w-.]+/auth/realms/(\w+)$ does not match the issuer
+// (TokenServiceImpl.java:21,58-66); the checks do not detect that.
 
 // EnvironmentMismatchError reports that a zone publishes events with another
 // environment than its EventStore registers their subscriptions with, so
