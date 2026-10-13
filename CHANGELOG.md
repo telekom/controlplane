@@ -1,3 +1,10 @@
+## [0.40.1](https://github.com/telekom/controlplane/compare/v0.40.0...v0.40.1) (2026-10-13)
+
+
+### Bug Fixes
+
+* **admin,gateway:** passThrough now preserves the host ([#767](https://github.com/telekom/controlplane/issues/767)) ([e5b8d7b](https://github.com/telekom/controlplane/commit/e5b8d7bdd55a9a86a37db7a22760fecac3faecb1))
+
 # [0.40.0](https://github.com/telekom/controlplane/compare/v0.39.0...v0.40.0) (2026-10-13)
 
 
