@@ -192,6 +192,12 @@ func (g *Route) IsHealthProbe() bool {
 	return g.Spec.Traffic.HealthProbe
 }
 
+// IsPassThrough implements the CustomRoute interface for Route.
+// It reports whether the route is a passthrough route.
+func (g *Route) IsPassThrough() bool {
+	return g.Spec.PassThrough
+}
+
 func (g *Route) SetRouteId(id string) {
 	g.SetProperty("routeId", id)
 }
