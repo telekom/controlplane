@@ -9,6 +9,8 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"net/url"
+	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -91,6 +93,15 @@ func cacheKey(s *identityv1.RealmStatus) string {
 	return fmt.Sprintf("%x", h.Sum(nil))
 }
 
+// EnvSkipTlsVerify is the environment variable that disables TLS
+// certificate and hostname verification for Keycloak token and admin
+// requests. Only the value "true" (case-insensitive) enables it.
+const EnvSkipTlsVerify = "SKIP_TLS_VERIFY"
+
+func skipTlsVerify() bool {
+	return strings.EqualFold(strings.TrimSpace(os.Getenv(EnvSkipTlsVerify)), "true")
+}
+
 // NewKeycloakServiceFor builds the full HTTP client stack and wraps
 // it in a KeycloakService.
 func NewKeycloakServiceFor(status *identityv1.RealmStatus) (KeycloakService, error) {
@@ -110,7 +121,8 @@ func NewKeycloakServiceFor(status *identityv1.RealmStatus) (KeycloakService, err
 
 	// 1. Base HTTP client with TLS + timeout.
 	baseClient := commonclient.NewBaseHttpClient(
-		commonclient.WithClientTimeout(10 * time.Second),
+		commonclient.WithClientTimeout(10*time.Second),
+		commonclient.WithSkipTlsVerify(skipTlsVerify()),
 	)
 
 	// 2. OAuth2 token via Resource Owner Password Credentials.

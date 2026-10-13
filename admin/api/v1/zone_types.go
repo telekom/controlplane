@@ -217,11 +217,17 @@ type Preset struct {
 }
 
 // ResolveHostnamesAndPaths derives route hostnames and paths from the preset's URL configuration.
-// Each URL contributes one hostname and one path (basePath + routePath).
+// Each URL contributes its hostname and its path (basePath + routePath).
+// Duplicates are dropped; first-occurrence order is kept.
 func (p *Preset) ResolveHostnamesAndPaths(routePath string) (hostnames, paths []string) {
 	for _, u := range p.Urls {
-		hostnames = append(hostnames, u.Hostname)
-		paths = append(paths, path.Join(u.BasePath, routePath))
+		if !slices.Contains(hostnames, u.Hostname) {
+			hostnames = append(hostnames, u.Hostname)
+		}
+		joined := path.Join(u.BasePath, routePath)
+		if !slices.Contains(paths, joined) {
+			paths = append(paths, joined)
+		}
 	}
 	return hostnames, paths
 }
