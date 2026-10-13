@@ -14,6 +14,7 @@ import (
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
+	ctypes "github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
@@ -147,9 +148,10 @@ func (e *DeliveryPathError) IsBlocked() bool { return true }
 type EnvironmentMismatchError struct {
 	// Role is "capture" (bridge events, Jumper hop 1) or "observer" (per-app
 	// events re-published at /autoevent, Jumper hop 2).
-	Role                 string
-	Zone                 string
-	PublishEnvironment   string
+	Role               string
+	Zone               string
+	PublishEnvironment string
+	// EventStore, EventConfig and Environment are namespace/name references.
 	EventStore           string
 	SubscribeEnvironment string
 	SubscribeSource      string
@@ -161,10 +163,10 @@ type EnvironmentMismatchError struct {
 }
 
 func (e *EnvironmentMismatchError) Error() string {
-	return fmt.Sprintf("%s zone %q publishes events with environment %q (identity realm of the zone) "+
-		"but its EventStore %q subscribes with environment %q (%s); Galaxy would drop every event; "+
-		"platform config: set EventConfig %q spec.overwriteEnvironmentName or Environment %q spec.realmName so they match",
-		e.Role, e.Zone, e.PublishEnvironment, e.EventStore, e.SubscribeEnvironment, e.SubscribeSource, e.EventConfig, e.Environment)
+	return describeEnvironments(e.Role, e.Zone, e.PublishEnvironment, e.EventStore, e.SubscribeEnvironment, e.SubscribeSource) +
+		fmt.Sprintf("; Galaxy would drop every event; "+
+			"set EventConfig %q spec.overwriteEnvironmentName or Environment %q spec.realmName to match",
+			e.EventConfig, e.Environment)
 }
 
 // IsBlocked implements ctrlerrors.BlockedError.
@@ -178,44 +180,83 @@ type EnvironmentAlias struct {
 	Role               string
 	Zone               string
 	PublishEnvironment string
-	EventStore         string
+	// EventStore is a namespace/name reference.
+	EventStore      string
+	SubscribeSource string
 }
 
 func (a *EnvironmentAlias) String() string {
-	return fmt.Sprintf("%s zone %q publishes events with environment %q (identity realm of the zone) "+
-		"but its EventStore %q subscribes with environment %q; events are delivered only if the Horizon "+
-		"defaultEnvironment of Starlight and Galaxy is %q",
-		a.Role, a.Zone, a.PublishEnvironment, a.EventStore, defaultEnvironment, a.PublishEnvironment)
+	return describeEnvironments(a.Role, a.Zone, a.PublishEnvironment, a.EventStore, defaultEnvironment, a.SubscribeSource) +
+		fmt.Sprintf("; events are delivered only if the Horizon defaultEnvironment of Starlight and Galaxy is %q",
+			a.PublishEnvironment)
+}
+
+// describeEnvironments states the environment a zone publishes events with and
+// the one its EventStore subscribes with, each with its source.
+func describeEnvironments(role, zone, publishEnv, eventStore, subscribeEnv, subscribeSource string) string {
+	return fmt.Sprintf("%s zone %q publishes events with environment %q (%s) "+
+		"but its EventStore %q subscribes with environment %q (%s)",
+		role, zone, publishEnv, publishSource, eventStore, subscribeEnv, subscribeSource)
 }
 
 // defaultEnvironment is the environment Horizon's defaultEnvironment alias maps to.
 const defaultEnvironment = "default"
 
+// publishSource names where the publish environment comes from. Both the zone's
+// Status.RealmName (admin populateRealmName) and the name of its default
+// identity Realm, whose issuer the RouteListener carries (admin
+// naming.ForDefaultIdentityRealm), are Environment.GetRealmName().
+const publishSource = "identity realm of the zone: Environment spec.realmName, else the Environment name"
+
 // subscriptionEnvironment returns the environment the pubsub domain registers
-// es's subscriptions with, and its source. It mirrors effectiveEnvironmentName
-// in pubsub/internal/handler/subscriber/handler.go, which is internal to the
+// es's subscriptions with. It mirrors effectiveEnvironmentName in
+// pubsub/internal/handler/subscriber/handler.go, which is internal to the
 // pubsub module.
-func subscriptionEnvironment(ctx context.Context, es *pubsubv1.EventStore) (env, source string) {
+func subscriptionEnvironment(ctx context.Context, es *pubsubv1.EventStore) string {
 	if es.Spec.OverwriteEnvironmentName != "" {
-		return es.Spec.OverwriteEnvironmentName, "overwriteEnvironmentName"
+		return es.Spec.OverwriteEnvironmentName
 	}
-	return contextutil.EnvFromContextOrDie(ctx), "Control Plane environment"
+	return contextutil.EnvFromContextOrDie(ctx)
+}
+
+// subscriptionSource names where subEnv, the EventStore environment, comes
+// from. The event operator copies EventConfig spec.overwriteEnvironmentName
+// into the EventStore, or the Control Plane environment name when it is unset
+// (effectiveEnvironmentName in event/internal/handler/eventconfig/handler.go).
+// Until it has done so after an EventConfig change, subEnv differs from the
+// value the EventConfig resolves to; EventConfig readiness does not cover that.
+func subscriptionSource(ctx context.Context, ec *eventv1.EventConfig, subEnv string) string {
+	want, source := ec.Spec.OverwriteEnvironmentName, "EventConfig spec.overwriteEnvironmentName"
+	if want == "" {
+		want, source = contextutil.EnvFromContextOrDie(ctx), "Control Plane environment name, copied by the event operator"
+	}
+	if subEnv != want {
+		return fmt.Sprintf("EventStore not yet updated by the event operator, EventConfig resolves to %q", want)
+	}
+	return source
 }
 
 func checkEventEnvironment(
 	ctx context.Context, role string, zone *adminv1.Zone, env string, ec *eventv1.EventConfig, es *pubsubv1.EventStore,
 ) (*EnvironmentAlias, error) {
-	subEnv, subSource := subscriptionEnvironment(ctx, es)
+	subEnv := subscriptionEnvironment(ctx, es)
+	esRef := ctypes.ObjectRefFromObject(es).String()
 	switch {
 	case env == subEnv:
 		return nil, nil
 	case subEnv == defaultEnvironment:
-		return &EnvironmentAlias{Role: role, Zone: zone.Name, PublishEnvironment: env, EventStore: es.Name}, nil
+		return &EnvironmentAlias{
+			Role: role, Zone: zone.Name, PublishEnvironment: env, EventStore: esRef,
+			SubscribeSource: subscriptionSource(ctx, ec, subEnv),
+		}, nil
 	}
+	cpEnv := contextutil.EnvFromContextOrDie(ctx)
 	return nil, &EnvironmentMismatchError{
-		Role: role, Zone: zone.Name, PublishEnvironment: env, EventStore: es.Name,
-		SubscribeEnvironment: subEnv, SubscribeSource: subSource,
-		EventConfig: ec.Name, Environment: contextutil.EnvFromContextOrDie(ctx),
+		Role: role, Zone: zone.Name, PublishEnvironment: env, EventStore: esRef,
+		SubscribeEnvironment: subEnv, SubscribeSource: subscriptionSource(ctx, ec, subEnv),
+		EventConfig: ctypes.ObjectRefFromObject(ec).String(),
+		// The Environment lives in the namespace of its own name.
+		Environment: cpEnv + "/" + cpEnv,
 	}
 }
 
@@ -284,8 +325,10 @@ type DeliveryPlacement struct {
 // ResolveDelivery resolves A's EventConfig and EventStore and checks that A's
 // zone re-publishes per-app events with the environment the EventStore
 // subscribes with (CheckDeliveryEnvironment). Errors are returned unwrapped so
-// each caller names its own context. Any failure blocks the Listener; there is
-// no fallback to the consumer or provider zone.
+// each caller names its own context; callers return an
+// *EnvironmentMismatchError as is, since it names its role and zone. Any
+// failure blocks the Listener; there is no fallback to the consumer or
+// provider zone.
 func ResolveDelivery(ctx context.Context, observerZone *adminv1.Zone) (*DeliveryPlacement, error) {
 	ec, err := GetEventConfig(ctx, observerZone)
 	if err != nil {

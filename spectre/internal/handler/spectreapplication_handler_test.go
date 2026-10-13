@@ -894,16 +894,18 @@ var _ = Describe("SpectreApplicationHandler", func() {
 					obj := newSpectreApplication("server_sent_event")
 					zone := makeReadyZone()
 					zone.Status.RealmName = realmName
+					ec := makeReadyEventConfig()
+					ec.Spec.OverwriteEnvironmentName = overwrite
 					es := makeEventStore()
 					es.Spec.OverwriteEnvironmentName = overwrite
 
 					mockGetApplication(makeReadyApplication())
 					mockGetZone(zone)
-					mockListEventConfigs([]eventv1.EventConfig{makeReadyEventConfig()})
+					mockListEventConfigs([]eventv1.EventConfig{ec})
 					mockGetEventStore(es)
 
 					err := h.CreateOrUpdate(ctx, obj)
-					Expect(err).To(MatchError(`failed to resolve EventConfig and EventStore of zone "` + testZoneName + `": ` + want))
+					Expect(err).To(MatchError(want))
 					var ctrlErr ctrlerrors.BlockedError
 					Expect(errors.As(err, &ctrlErr)).To(BeTrue())
 					Expect(ctrlErr.IsBlocked()).To(BeTrue())
@@ -913,10 +915,12 @@ var _ = Describe("SpectreApplicationHandler", func() {
 					Expect(obj.Status.Subscriber).To(BeNil())
 				},
 				Entry("environment mismatch", "default", "spectre-test",
-					`observer zone "`+testZoneName+`" publishes events with environment "default" (identity realm of the zone) `+
-						`but its EventStore "eventstore-aws" subscribes with environment "spectre-test" (overwriteEnvironmentName); Galaxy would drop every event; `+
-						`platform config: set EventConfig "ec-aws" spec.overwriteEnvironmentName or Environment "env" spec.realmName so they match`, true),
-				Entry("no RealmName yet", "", "default", `zone "`+testZoneName+`" has no RealmName in status`, false),
+					`observer zone "`+testZoneName+`" publishes events with environment "default" (identity realm of the zone: Environment spec.realmName, else the Environment name) `+
+						`but its EventStore "`+testZoneStatusNs+`/eventstore-aws" subscribes with environment "spectre-test" (EventConfig spec.overwriteEnvironmentName); `+
+						`Galaxy would drop every event; `+
+						`set EventConfig "`+testZoneStatusNs+`/ec-aws" spec.overwriteEnvironmentName or Environment "env/env" spec.realmName to match`, true),
+				Entry("no RealmName yet", "", "default",
+					`failed to resolve EventConfig and EventStore of zone "`+testZoneName+`": zone "`+testZoneName+`" has no RealmName in status`, false),
 			)
 
 			It("should provision and log a warning when the zone realm differs from an EventStore subscribing with \"default\"", func() {
@@ -925,10 +929,12 @@ var _ = Describe("SpectreApplicationHandler", func() {
 				obj := newSpectreApplication("callback")
 				zone := makeReadyZone()
 				zone.Status.RealmName = "spectre-test"
+				ec := makeReadyEventConfig()
+				ec.Spec.OverwriteEnvironmentName = "default"
 
 				mockGetApplication(makeReadyApplication())
 				mockGetZone(zone)
-				mockListEventConfigs([]eventv1.EventConfig{makeReadyEventConfig()})
+				mockListEventConfigs([]eventv1.EventConfig{ec})
 				mockGetEventStore(makeEventStore())
 				mockCreateOrUpdatePublisher()
 				mockCreateOrUpdateSubscriber()

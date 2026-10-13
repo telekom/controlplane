@@ -132,6 +132,10 @@ func (h *ListenerHandler) resolveListenerPlacement(
 	logger := log.FromContext(ctx)
 
 	d, err := util.ResolveDelivery(ctx, observerZone)
+	var envMismatch *util.EnvironmentMismatchError
+	if errors.As(err, &envMismatch) {
+		return nil, nil, err
+	}
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "placement: failed to resolve delivery for observer zone")
 	}
