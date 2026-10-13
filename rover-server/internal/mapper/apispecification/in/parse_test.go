@@ -6,6 +6,7 @@ package in
 
 import (
 	"context"
+	"fmt"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -56,7 +57,7 @@ components:
           scopes:
             read: read dummy
             write: write dummy
-            admin: admin dummy	
+            admin: admin dummy
 `
 
 	specV3_0_without_basepath := `
@@ -80,7 +81,7 @@ components:
           scopes:
             read: read dummy
             write: write dummy
-            admin: admin dummy	
+            admin: admin dummy
 `
 
 	specV3_1 := `
@@ -113,7 +114,7 @@ info:
   version: "1.0.0"
   title: "Test API"
 servers:
-- url: "https://example.com/eni/foo/v1"	
+- url: "https://example.com/eni/foo/v1"
 `
 
 	Context("When parsing a specification", func() {
@@ -190,6 +191,114 @@ servers:
 		})
 
 	})
+	Context("libopenapi YAML backend compatibility", func() {
+		DescribeTable("should preserve scalar extension values",
+			func(version, category, vendor, expectedCategory string, expectedVendor bool) {
+				spec := fmt.Sprintf(`
+%s
+info:
+  title: Test API
+  version: "1.0.0"
+  x-api-category: %s
+  x-vendor: %s
+basePath: /eni/foo/v1
+servers:
+  - url: https://example.com/eni/foo/v1
+paths: {}
+`, version, category, vendor)
+				api, err := ParseSpecification(ctx, spec)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(api).NotTo(BeNil())
+				Expect(api.Name).To(Equal("eni-foo-v1"))
+				Expect(api.Spec.BasePath).To(Equal("/eni/foo/v1"))
+				Expect(api.Spec.Version).To(Equal("1.0.0"))
+				Expect(api.Spec.Category).To(Equal(expectedCategory))
+				Expect(api.Spec.XVendor).To(Equal(expectedVendor))
+				Expect(api.Spec.Oauth2Scopes).To(BeEmpty())
+			},
+			Entry("v2 plain scalars", `swagger: "2.0"`, "test", "true", "test", true),
+			Entry("v2 quoted scalars", `swagger: "2.0"`, `'test: category'`, `'true'`, "test: category", true),
+			Entry("v3 plain scalars", `openapi: "3.0.3"`, "test", "true", "test", true),
+			Entry("v3 quoted scalars", `openapi: "3.0.3"`, `'test: category'`, `'true'`, "test: category", true),
+			Entry("v3 false boolean", `openapi: "3.1.0"`, "test", "false", "test", false),
+		)
+
+		It("should resolve YAML aliases and preserve scope declaration order", func() {
+			api, err := ParseSpecification(ctx, `
+openapi: "3.1.0"
+info:
+  title: Test API
+  version: &version "1.0.0"
+  x-api-category: >-
+    test
+    category
+  x-vendor: true
+servers:
+  - url: https://example.com/eni/foo/v1
+paths: {}
+components:
+  securitySchemes:
+    first:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: https://example.com/token
+          scopes: &scopes
+            write: Write access
+            read: Read access
+    second:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://example.com/authorize
+          tokenUrl: https://example.com/token
+          scopes: *scopes
+x-api-version: *version
+`)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(api).NotTo(BeNil())
+			Expect(api.Spec.Version).To(Equal("1.0.0"))
+			Expect(api.Spec.Category).To(Equal("test category"))
+			Expect(api.Spec.XVendor).To(BeTrue())
+			Expect(api.Spec.Oauth2Scopes).To(Equal([]string{"write", "read"}))
+		})
+
+		DescribeTable("should parse JSON metadata and OAuth2 scopes",
+			func(spec string) {
+				api, err := ParseSpecification(ctx, spec)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(api).NotTo(BeNil())
+				Expect(api.Name).To(Equal("eni-foo-v1"))
+				Expect(api.Spec.BasePath).To(Equal("/eni/foo/v1"))
+				Expect(api.Spec.Version).To(Equal("1.0.0"))
+				Expect(api.Spec.Category).To(Equal("test"))
+				Expect(api.Spec.XVendor).To(BeTrue())
+				Expect(api.Spec.Oauth2Scopes).To(Equal([]string{"write", "read"}))
+			},
+			Entry("v2", `{
+  "swagger": "2.0",
+  "info": {"title": "Test API", "version": "1.0.0", "x-api-category": "test", "x-vendor": true},
+  "basePath": "/eni/foo/v1",
+  "paths": {},
+  "securityDefinitions": {
+    "oauth2": {"type": "oauth2", "flow": "application", "tokenUrl": "https://example.com/token",
+      "scopes": {"write": "Write access", "read": "Read access"}}
+  }
+}`),
+			Entry("v3", `{
+  "openapi": "3.1.0",
+  "info": {"title": "Test API", "version": "1.0.0", "x-api-category": "test", "x-vendor": true},
+  "servers": [{"url": "https://example.com/eni/foo/v1"}],
+  "paths": {},
+  "components": {"securitySchemes": {
+    "oauth2": {"type": "oauth2", "flows": {"clientCredentials": {
+      "tokenUrl": "https://example.com/token", "scopes": {"write": "Write access", "read": "Read access"}
+    }}}
+  }}
+}`),
+		)
+	})
+
 	Context("When parsing OpenAPI v3 OAuth2 flows", func() {
 		const header = `
 openapi: "3.0.3"

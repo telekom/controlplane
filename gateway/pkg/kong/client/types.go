@@ -35,6 +35,7 @@ type CustomRoute interface {
 	GetRequestBuffering() bool
 	GetResponseBuffering() bool
 	IsHealthProbe() bool
+	IsPassThrough() bool
 }
 
 type CustomConsumer interface {
