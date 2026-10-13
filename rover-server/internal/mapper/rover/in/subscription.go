@@ -167,7 +167,7 @@ func mapSubscriptionSecurity(in api.ApiSubscription, out *roverv1.ApiSubscriptio
 		}
 
 		m2mSecurity.Scopes = oauth2.Scopes
-		m2mSecurity.GrantType = grantTypeAPIToCRD(string(oauth2.GrantType))
+		m2mSecurity.GrantType = roverv1.GrantType(strings.ToLower(string(oauth2.GrantType)))
 	}
 
 	if m2mSecurity.Basic != nil || m2mSecurity.Client != nil || m2mSecurity.Scopes != nil {
