@@ -48,6 +48,10 @@ func (h *SpectreApplicationHandler) CreateOrUpdate(ctx context.Context, obj *spe
 	}
 
 	delivery, err := util.ResolveDelivery(ctx, zone)
+	var envMismatch *util.EnvironmentMismatchError
+	if errors.As(err, &envMismatch) {
+		return err
+	}
 	if err != nil {
 		return errors.Wrapf(err, "failed to resolve EventConfig and EventStore of zone %q", zone.Name)
 	}
