@@ -167,6 +167,7 @@ func mapSubscriptionSecurity(in api.ApiSubscription, out *roverv1.ApiSubscriptio
 		}
 
 		m2mSecurity.Scopes = oauth2.Scopes
+		// for subscriber it is optional, and no default value should be set
 		m2mSecurity.GrantType = roverv1.GrantType(strings.ToLower(string(oauth2.GrantType)))
 	}
 
