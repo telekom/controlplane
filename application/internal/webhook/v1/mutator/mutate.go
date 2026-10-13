@@ -97,6 +97,17 @@ func MutateSecret(ctx context.Context, env string, app *applicationv1.Applicatio
 	// treated as a rotation request, while Create is the initial secret creation.
 	isRotation := strings.EqualFold(app.Spec.Secret, secret.KeywordRotate) && req.Operation != admissionv1.Create
 
+	// Guard: deny rotation if the application has no identity client
+	if isRotation && !app.Spec.NeedsClient {
+		eventRecorder.Eventf(app, nil, "Warning", "SecretRotationBlocked", "BlockRotation", "application does not need a client (spec.needsClient=false), blocking secret rotation request")
+
+		return errors.NewForbidden(
+			schema.GroupResource{Group: "application.cp.ei.telekom.de", Resource: "applications"},
+			app.GetName(),
+			fmt.Errorf("secret rotation is not supported because the application has no client (spec.needsClient is false)"),
+		)
+	}
+
 	// Guard: deny rotation if one is already in progress
 	if isRotation && isRotationInProgress(app) {
 		eventRecorder.Eventf(app, nil, "Warning", "SecretRotationBlocked", "BlockRotation", "a secret rotation is already in progress, blocking new rotation request")

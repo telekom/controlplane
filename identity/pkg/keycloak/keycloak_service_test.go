@@ -17,6 +17,7 @@ import (
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
 	"github.com/telekom/controlplane/identity/pkg/api"
 	"github.com/telekom/controlplane/identity/pkg/keycloak"
+	"github.com/telekom/controlplane/identity/pkg/keycloak/util"
 	"github.com/telekom/controlplane/identity/test/mocks/keycloakclient"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -103,6 +104,17 @@ var _ = Describe("KeycloakService", func() {
 				Expect(client.Status.ClientUid).To(Equal("new-uid"))
 			})
 
+			It("should send web origins when creating a client", func() {
+				client := newIdentityClient("my-app", "secret")
+				client.Status.AllowedOrigins = []string{"https://example.com"}
+				mockClient.EXPECT().PostRealmClientsWithResponse(mock.Anything, "realm1", mock.MatchedBy(func(body api.ClientRepresentation) bool {
+					return body.WebOrigins != nil && len(*body.WebOrigins) == 1 && (*body.WebOrigins)[0] == "https://example.com"
+				})).Return(&api.PostRealmClientsResponse{
+					HTTPResponse: httpRespWithLocation(201, "https://kc/admin/realms/realm1/clients/new-uid"),
+				}, nil)
+				Expect(svc.CreateOrReplaceClient(ctx, "realm1", client, keycloak.ClientUpdateOptions{})).To(Succeed())
+			})
+
 			It("should return error when POST fails with network error", func() {
 				client := newIdentityClient("my-app", "secret")
 				mockClient.EXPECT().PostRealmClientsWithResponse(mock.Anything, "realm1", mock.Anything).
@@ -137,6 +149,33 @@ var _ = Describe("KeycloakService", func() {
 		})
 
 		Context("when client exists (update path)", func() {
+			It("should update web origins without rotating the secret", func() {
+				client := newIdentityClient("my-app", "secret")
+				client.Status.AllowedOrigins = []string{"https://example.com"}
+				existing := util.MapToClientRepresentation(client)
+				existing.Id = ptr.To("existing-uid")
+				existing.WebOrigins = ptr.To([]string{"https://old.example.com"})
+				mockClient.EXPECT().GetRealmClientsWithResponse(mock.Anything, "realm1", mock.Anything).
+					Return(&api.GetRealmClientsResponse{HTTPResponse: httpResp(200), JSON2XX: &[]api.ClientRepresentation{existing}}, nil)
+				mockClient.EXPECT().PutRealmClientsIdWithResponse(mock.Anything, "realm1", "existing-uid", mock.MatchedBy(func(body api.ClientRepresentation) bool {
+					return body.WebOrigins != nil && len(*body.WebOrigins) == 1 && (*body.WebOrigins)[0] == "https://example.com"
+				})).Return(&api.PutRealmClientsIdResponse{HTTPResponse: httpResp(204)}, nil)
+				Expect(svc.CreateOrReplaceClient(ctx, "realm1", client, keycloak.ClientUpdateOptions{SupportsGracefulRotation: true})).To(Succeed())
+			})
+
+			It("should clear web origins after they are removed", func() {
+				client := newIdentityClient("my-app", "secret")
+				client.Status.AllowedOrigins = []string{}
+				existing := util.MapToClientRepresentation(client)
+				existing.Id = ptr.To("existing-uid")
+				existing.WebOrigins = ptr.To([]string{"https://old.example.com"})
+				mockClient.EXPECT().GetRealmClientsWithResponse(mock.Anything, "realm1", mock.Anything).
+					Return(&api.GetRealmClientsResponse{HTTPResponse: httpResp(200), JSON2XX: &[]api.ClientRepresentation{existing}}, nil)
+				mockClient.EXPECT().PutRealmClientsIdWithResponse(mock.Anything, "realm1", "existing-uid", mock.MatchedBy(func(body api.ClientRepresentation) bool {
+					return body.WebOrigins != nil && *body.WebOrigins != nil && len(*body.WebOrigins) == 0
+				})).Return(&api.PutRealmClientsIdResponse{HTTPResponse: httpResp(204)}, nil)
+				Expect(svc.CreateOrReplaceClient(ctx, "realm1", client, keycloak.ClientUpdateOptions{})).To(Succeed())
+			})
 			It("should update existing client and set UID in status", func() {
 				client := newIdentityClient("my-app", "new-secret")
 				existing := api.ClientRepresentation{

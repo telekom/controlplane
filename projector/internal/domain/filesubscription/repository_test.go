@@ -20,9 +20,11 @@ import (
 	_ "github.com/telekom/controlplane/controlplane-api/ent/runtime"
 	"github.com/telekom/controlplane/controlplane-api/ent/zone"
 	"github.com/telekom/controlplane/controlplane-api/pkg/model"
+	"github.com/telekom/controlplane/projector/internal/domain/fileexposure"
 	"github.com/telekom/controlplane/projector/internal/domain/filesubscription"
 	"github.com/telekom/controlplane/projector/internal/domain/shared"
 	"github.com/telekom/controlplane/projector/internal/infrastructure"
+	"github.com/telekom/controlplane/projector/internal/infrastructure/cachekeys"
 	"github.com/telekom/controlplane/projector/internal/runtime"
 )
 
@@ -179,7 +181,9 @@ var _ = Describe("FileSubscription Repository", func() {
 				OwnerTeamName:  "platform--narvi",
 				TargetFileType: "unknown",
 			}
-			Expect(repo.Upsert(ctx, data)).To(Succeed())
+			err := repo.Upsert(ctx, data)
+			Expect(err).To(HaveOccurred())
+			Expect(runtime.IsDependencyMissing(err)).To(BeTrue())
 
 			sub, err := client.FileSubscription.Query().Where(entfilesubscription.FileTypeEQ("unknown")).Only(ctx)
 			Expect(err).NotTo(HaveOccurred())
@@ -189,6 +193,73 @@ var _ = Describe("FileSubscription Repository", func() {
 			hasTarget, err := sub.QueryTarget().Exist(ctx)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(hasTarget).To(BeFalse())
+		})
+
+		It("should succeed when only the optional FileType catalogue entry is missing", func() {
+			delete(deps.fileTypeIDs, "invoice")
+			data := &filesubscription.FileSubscriptionData{
+				Meta:           shared.NewMetadata("prod--platform--narvi", "sub-noft", nil),
+				StatusPhase:    "READY",
+				Zone:           "caas",
+				OwnerAppName:   "consumer-app",
+				OwnerTeamName:  "platform--narvi",
+				TargetFileType: "invoice",
+			}
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			sub, err := client.FileSubscription.Query().Where(entfilesubscription.NameEQ("sub-noft")).Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			hasFT, err := sub.QueryFileTypeDef().Exist(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(hasFT).To(BeFalse())
+			target, err := sub.QueryTarget().Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(target.ID).To(Equal(exposureID))
+		})
+
+		It("should clear the target, signal retry, and relink once an active exposure resolves", func() {
+			data := &filesubscription.FileSubscriptionData{
+				Meta:           shared.NewMetadata("prod--platform--narvi", "sub-retarget", nil),
+				StatusPhase:    "READY",
+				Zone:           "caas",
+				OwnerAppName:   "consumer-app",
+				OwnerTeamName:  "platform--narvi",
+				TargetFileType: "invoice",
+			}
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			delete(deps.exposureIDs, "invoice")
+			err := repo.Upsert(ctx, data)
+			Expect(err).To(HaveOccurred())
+			Expect(runtime.IsDependencyMissing(err)).To(BeTrue())
+
+			sub, err := client.FileSubscription.Query().Where(entfilesubscription.NameEQ("sub-retarget")).Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			hasTarget, err := sub.QueryTarget().Exist(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(hasTarget).To(BeFalse())
+			cache.Wait()
+			_, found := cache.Get("filesubscription", "meta:prod--platform--narvi:sub-retarget")
+			Expect(found).To(BeTrue())
+
+			deps.exposureIDs["invoice"] = exposureID
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+			target, err := sub.QueryTarget().Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(target.ID).To(Equal(exposureID))
+		})
+
+		It("should propagate non-not-found exposure resolver errors", func() {
+			dbErr := errors.New("resolver unavailable")
+			deps.exposureErr = dbErr
+			err := repo.Upsert(ctx, &filesubscription.FileSubscriptionData{Meta: shared.NewMetadata("prod--platform--narvi", "sub-experr", nil), Zone: "caas", OwnerAppName: "consumer-app", OwnerTeamName: "platform--narvi", TargetFileType: "invoice"})
+			Expect(err).To(HaveOccurred())
+			Expect(runtime.IsDependencyMissing(err)).To(BeFalse())
+			Expect(errors.Is(err, dbErr)).To(BeTrue())
+
+			count, err := client.FileSubscription.Query().Count(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(count).To(BeZero())
 		})
 
 		It("should return dependency missing when application is missing", func() {
@@ -243,6 +314,68 @@ var _ = Describe("FileSubscription Repository", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(sub.ServiceURL).To(Equal("sftp://internal-v2.example.com"))
 			Expect(sub.ServiceExternalURL).To(Equal("sftp://external-v2.example.com"))
+		})
+	})
+
+	Describe("target deactivated after its active lookup was cached", func() {
+		It("reports the missing target, clears the target FK, and relinks after reactivation", func() {
+			resolver := infrastructure.NewIDResolver(client, cache)
+			subRepo := filesubscription.NewRepository(client, cache, resolver)
+			expRepo := fileexposure.NewRepository(client, cache, resolver)
+			exposure := func(active bool) *fileexposure.FileExposureData {
+				return &fileexposure.FileExposureData{
+					Meta:           shared.NewMetadata("prod--platform--narvi", "provider-exposure", nil),
+					StatusPhase:    "READY",
+					Visibility:     "WORLD",
+					Active:         active,
+					Zone:           "caas",
+					ApprovalConfig: model.ApprovalConfig{Strategy: "AUTO"},
+					AppName:        "consumer-app",
+					TeamName:       "platform--narvi",
+					TargetFileType: "invoice",
+				}
+			}
+			data := &filesubscription.FileSubscriptionData{
+				Meta:           shared.NewMetadata("prod--platform--narvi", "sub-deactivated", nil),
+				StatusPhase:    "READY",
+				Zone:           "caas",
+				OwnerAppName:   "consumer-app",
+				OwnerTeamName:  "platform--narvi",
+				TargetFileType: "invoice",
+			}
+
+			Expect(subRepo.Upsert(ctx, data)).To(Succeed())
+			cache.Wait()
+			cached, found := cache.Get(cachekeys.ActiveFileExposure("invoice"))
+			Expect(found).To(BeTrue())
+			Expect(cached).To(Equal(exposureID))
+			sub, err := client.FileSubscription.Query().WithTarget().Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(sub.Edges.Target).NotTo(BeNil())
+
+			Expect(expRepo.Upsert(ctx, exposure(false))).To(Succeed())
+			cache.Wait()
+
+			err = subRepo.Upsert(ctx, data)
+			Expect(runtime.IsDependencyMissing(err)).To(BeTrue())
+			sub, err = client.FileSubscription.Query().WithTarget().Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(sub.Edges.Target).To(BeNil())
+
+			// Reactivation back-links the orphaned subscription; a replay through a
+			// resolver without the bounded negative entry keeps the link.
+			Expect(expRepo.Upsert(ctx, exposure(true))).To(Succeed())
+			cache.Wait()
+			sub, err = client.FileSubscription.Query().WithTarget().Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(sub.Edges.Target).NotTo(BeNil())
+			Expect(sub.Edges.Target.ID).To(Equal(exposureID))
+
+			fresh := infrastructure.NewIDResolver(client, cache)
+			Expect(filesubscription.NewRepository(client, cache, fresh).Upsert(ctx, data)).To(Succeed())
+			target, err := sub.QueryTarget().Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(target.ID).To(Equal(exposureID))
 		})
 	})
 

@@ -26,18 +26,21 @@ import (
 func ErrorHandler(err error, verbose bool) {
 	logger := log.L().WithName("error-handler")
 	if err != nil {
-		errCause := errors.Cause(err)
-		if verbose {
-			// log entire stack trace
-			logger.Error(err, "An error occurred")
-		} else {
-			// only log the error message of the root cause
-			logger.Error(nil, "An error occurred", "error", errCause.Error())
-		}
+		logError(logger, err, verbose)
 		os.Exit(1)
 	} else {
 		logger.Info("Command executed successfully")
 	}
+}
+
+// logError logs the full error chain in verbose (--debug) mode and only the
+// customer-facing root cause otherwise.
+func logError(logger logr.Logger, err error, verbose bool) {
+	if verbose {
+		logger.Error(err, "An error occurred")
+		return
+	}
+	logger.Error(nil, "An error occurred", "error", errors.Cause(err).Error())
 }
 
 // NewRootCommand creates the root command for rover-ctl

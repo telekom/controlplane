@@ -86,7 +86,7 @@ type Machine2MachineAuthentication struct {
 	Basic *BasicAuthCredentials `json:"basic,omitempty"`
 	// Scopes defines additional OAuth2 scopes that are added to the LMS token
 	// +kubebuilder:validation:Optional
-	// +kubebuilder:validation:MaxItems=10
+	// +kubebuilder:validation:MaxItems=100
 	Scopes []string `json:"scopes,omitempty"`
 	// Claims defines token claims that must be present in the token reaching the upstream.
 	// Only valid on the platform-managed LMS token.
@@ -107,7 +107,7 @@ type SubscriberMachine2MachineAuthentication struct {
 	Basic *BasicAuthCredentials `json:"basic,omitempty"`
 	// Scopes defines additional OAuth2 scopes that are added to the LMS token
 	// +kubebuilder:validation:Optional
-	// +kubebuilder:validation:MaxItems=10
+	// +kubebuilder:validation:MaxItems=100
 	Scopes []string `json:"scopes,omitempty"`
 	// GrantType defines the OAuth2 grant type used for the subscriber's external IDP token request
 	// +kubebuilder:validation:Optional

@@ -83,6 +83,7 @@ query GetTeam($where: TeamWhereInput) {
 
 mutation CreateGroup($input: CreateGroupInput!) {
   createGroup(input: $input) {
+    accepted
     group {
       id
       name
@@ -98,6 +99,7 @@ mutation CreateGroup($input: CreateGroupInput!) {
 
 mutation UpdateGroup($input: UpdateGroupInput!) {
   updateGroup(input: $input) {
+    accepted
     group {
       id
       name
@@ -125,6 +127,7 @@ mutation DeleteGroup($input: DeleteGroupInput!) {
 
 mutation CreateTeam($input: CreateTeamInput!) {
   createTeam(input: $input) {
+    accepted
     team {
       id
       createdAt
@@ -151,6 +154,7 @@ mutation CreateTeam($input: CreateTeamInput!) {
 
 mutation UpdateTeam($input: UpdateTeamInput!) {
   updateTeam(input: $input) {
+    accepted
     team {
       id
       createdAt
@@ -187,6 +191,7 @@ mutation DeleteTeam($input: DeleteTeamInput!) {
 
 mutation RotateTeamToken($teamId: ID!) {
   rotateTeamToken(teamId: $teamId) {
+    accepted
     team {
       id
       teamToken

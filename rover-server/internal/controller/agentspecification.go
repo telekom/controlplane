@@ -57,15 +57,20 @@ func (c *AgentSpecificationControllerImpl) Delete(ctx context.Context, resourceI
 		return err
 	}
 
+	ns := id.Environment + "--" + id.Namespace
 	if cconfig.FeatureFileManager.IsEnabled() {
-		fileID := generateAgentFileID(id)
-		err = file.GetFileManager().DeleteFile(ctx, fileID)
-		if err != nil && !errors.Is(err, file.ErrNotFound) {
-			return err
+		agentSpec, getErr := c.Store.Get(ctx, ns, id.Name)
+		if getErr != nil && !problems.IsNotFound(getErr) {
+			return getErr
+		}
+		if getErr == nil && agentSpec.Spec.Specification != "" {
+			err = file.GetFileManager().DeleteFile(ctx, agentSpec.Spec.Specification)
+			if err != nil && !errors.Is(err, file.ErrNotFound) {
+				return err
+			}
 		}
 	}
 
-	ns := id.Environment + "--" + id.Namespace
 	err = c.Store.Delete(ctx, ns, id.Name)
 	if err != nil {
 		if problems.IsNotFound(err) {
@@ -197,12 +202,15 @@ func (c *AgentSpecificationControllerImpl) uploadFile(ctx context.Context, specM
 		return nil, errors.New("input specification has length 0")
 	}
 
-	localHash, same, err := c.isHashEqual(ctx, id, specMarshaled)
+	localHash, same, existingID, err := c.isHashEqual(ctx, id, specMarshaled)
 	if err != nil {
 		return nil, err
 	}
 
-	fileID := generateAgentFileID(id)
+	fileID, err := resolveFileId(existingID)
+	if err != nil {
+		return nil, err
+	}
 	fileContentType := "application/yaml"
 
 	resp := &filesapi.FileUploadResponse{
@@ -218,20 +226,20 @@ func (c *AgentSpecificationControllerImpl) uploadFile(ctx context.Context, specM
 	return resp, err
 }
 
-func (c *AgentSpecificationControllerImpl) isHashEqual(ctx context.Context, id mapper.ResourceIdInfo, data []byte) (string, bool, error) {
+func (c *AgentSpecificationControllerImpl) isHashEqual(ctx context.Context, id mapper.ResourceIdInfo, data []byte) (string, bool, string, error) {
 	ns := id.Environment + "--" + id.Namespace
 	agentSpec, err := c.Store.Get(ctx, ns, id.Name)
 	if err != nil {
 		if problems.IsNotFound(err) {
-			return "", false, nil
+			return "", false, "", nil
 		}
-		return "", false, err
+		return "", false, "", err
 	}
 
 	hasher := sha256.New()
 	hasher.Write(data)
 	hash := base64.StdEncoding.EncodeToString(hasher.Sum(nil))
-	return hash, hash == agentSpec.Spec.Hash, nil
+	return hash, hash == agentSpec.Spec.Hash, agentSpec.Spec.Specification, nil
 }
 
 func (c *AgentSpecificationControllerImpl) downloadFile(ctx context.Context, fileID string) (map[string]any, error) {
@@ -256,8 +264,4 @@ func (c *AgentSpecificationControllerImpl) downloadFile(ctx context.Context, fil
 	}
 
 	return res, nil
-}
-
-func generateAgentFileID(id mapper.ResourceIdInfo) string {
-	return id.Environment + "--" + id.ResourceId
 }

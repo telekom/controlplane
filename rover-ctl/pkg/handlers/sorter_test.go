@@ -5,9 +5,13 @@
 package handlers_test
 
 import (
+	"strings"
+
+	"github.com/go-logr/logr/funcr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/telekom/controlplane/rover-ctl/pkg/handlers"
+	"github.com/telekom/controlplane/rover-ctl/pkg/log"
 	"github.com/telekom/controlplane/rover-ctl/pkg/types"
 	"github.com/telekom/controlplane/rover-ctl/test/mocks"
 )
@@ -139,6 +143,28 @@ var _ = Describe("Sorter", func() {
 
 				// Verify objNoHandler is still in the result
 				Expect(sorted).To(ContainElement(objNoHandler))
+			})
+
+			It("should not log object content", func() {
+				var logs strings.Builder
+				previousLogger := log.L()
+				log.SetGlobalLogger(funcr.New(func(prefix, args string) {
+					logs.WriteString(prefix + " " + args + "\n")
+				}, funcr.Options{Verbosity: 1}))
+				DeferCleanup(log.SetGlobalLogger, previousLogger)
+
+				objNoHandler := &types.UnstructuredObject{
+					Content: map[string]any{
+						"apiVersion": "v1",
+						"kind":       "UnregisteredKind",
+						"spec":       map[string]any{"password": "SYNTHETIC-SECRET-MARKER"},
+					},
+				}
+
+				handlers.Sort([]types.Object{obj1, objNoHandler})
+
+				Expect(logs.String()).To(ContainSubstring("Handler not found for sorting"))
+				Expect(logs.String()).NotTo(ContainSubstring("SYNTHETIC-SECRET-MARKER"))
 			})
 		})
 	})

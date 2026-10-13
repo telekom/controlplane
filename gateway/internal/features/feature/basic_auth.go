@@ -8,6 +8,7 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
+
 	v1 "github.com/telekom/controlplane/gateway/api/v1"
 	"github.com/telekom/controlplane/gateway/internal/features"
 	"github.com/telekom/controlplane/gateway/pkg/kong/client/plugin"
@@ -84,7 +85,7 @@ func (b *BasicAuthFeature) Apply(ctx context.Context, builder features.FeaturesB
 		if err != nil {
 			return errors.Wrapf(err, "cannot get basic auth password for route %s", route.GetName())
 		}
-		jumperConfig.BasicAuth[plugin.ConsumerId(DefaultProviderKey)] = plugin.BasicAuthCredentials{
+		jumperConfig.BasicAuth[DefaultProviderKey] = plugin.BasicAuthCredentials{
 			Username: security.M2M.Basic.Username,
 			Password: passwordValue,
 		}

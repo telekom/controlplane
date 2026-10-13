@@ -146,7 +146,7 @@ spec:
                           are added to the LMS token
                         items:
                           type: string
-                        maxItems: 10
+                        maxItems: 100
                         type: array
                     type: object
                     x-kubernetes-validations:

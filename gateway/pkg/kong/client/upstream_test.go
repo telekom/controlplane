@@ -153,7 +153,8 @@ var _ = Describe("CreateOrReplaceUpstream", func() {
 		}
 		expectMatchingUpstream(response)
 		api.EXPECT().ListTargetsForUpstreamWithResponse(mock.Anything, "test-route", mock.Anything).Return(
-			targetsResponse([]kong.Target{matchingTarget(1)}, nil), nil)
+			targetsResponse([]kong.Target{matchingTarget(1)}, nil), nil,
+		)
 
 		Expect(client.CreateOrReplaceUpstream(ctx, route, &upstream, &target)).To(Succeed())
 		Expect(route.GetUpstreamId()).To(Equal("upstream-id"))
@@ -164,9 +165,11 @@ var _ = Describe("CreateOrReplaceUpstream", func() {
 		response.JSON200.Healthchecks.Active.Healthy.HttpStatuses = ptr([]int{200})
 		expectMatchingUpstream(response)
 		api.EXPECT().UpsertUpstreamWithResponse(mock.Anything, "test-route", mock.Anything).Return(
-			&kong.UpsertUpstreamResponse{HTTPResponse: &http.Response{StatusCode: http.StatusOK}, JSON200: &kong.Upstream{Id: &upstreamID}}, nil)
+			&kong.UpsertUpstreamResponse{HTTPResponse: &http.Response{StatusCode: http.StatusOK}, JSON200: &kong.Upstream{Id: &upstreamID}}, nil,
+		)
 		api.EXPECT().ListTargetsForUpstreamWithResponse(mock.Anything, "test-route", mock.Anything).Return(
-			targetsResponse([]kong.Target{matchingTarget(1)}, nil), nil)
+			targetsResponse([]kong.Target{matchingTarget(1)}, nil), nil,
+		)
 
 		Expect(client.CreateOrReplaceUpstream(ctx, route, &upstream, &target)).To(Succeed())
 	})
@@ -174,9 +177,11 @@ var _ = Describe("CreateOrReplaceUpstream", func() {
 	It("upserts a missing upstream", func() {
 		expectMatchingUpstream(&kong.GetUpstreamResponse{HTTPResponse: &http.Response{StatusCode: http.StatusNotFound}})
 		api.EXPECT().UpsertUpstreamWithResponse(mock.Anything, "test-route", mock.Anything).Return(
-			&kong.UpsertUpstreamResponse{HTTPResponse: &http.Response{StatusCode: http.StatusOK}, JSON200: &kong.Upstream{Id: &upstreamID}}, nil)
+			&kong.UpsertUpstreamResponse{HTTPResponse: &http.Response{StatusCode: http.StatusOK}, JSON200: &kong.Upstream{Id: &upstreamID}}, nil,
+		)
 		api.EXPECT().ListTargetsForUpstreamWithResponse(mock.Anything, "test-route", mock.Anything).Return(
-			targetsResponse([]kong.Target{matchingTarget(1)}, nil), nil)
+			targetsResponse([]kong.Target{matchingTarget(1)}, nil), nil,
+		)
 
 		Expect(client.CreateOrReplaceUpstream(ctx, route, &upstream, &target)).To(Succeed())
 	})
@@ -199,9 +204,11 @@ var _ = Describe("CreateOrReplaceUpstream", func() {
 		latest := matchingTarget(2)
 		latest.Weight = ptr(50)
 		api.EXPECT().ListTargetsForUpstreamWithResponse(mock.Anything, "test-route", mock.Anything).Return(
-			targetsResponse([]kong.Target{latest, old}, nil), nil)
+			targetsResponse([]kong.Target{latest, old}, nil), nil,
+		)
 		api.EXPECT().CreateTargetForUpstreamWithResponse(mock.Anything, "test-route", mock.Anything).Return(
-			&kong.CreateTargetForUpstreamResponse{HTTPResponse: &http.Response{StatusCode: http.StatusCreated}, JSON200: &kong.Target{Id: &targetID}}, nil)
+			&kong.CreateTargetForUpstreamResponse{HTTPResponse: &http.Response{StatusCode: http.StatusCreated}, JSON200: &kong.Target{Id: &targetID}}, nil,
+		)
 
 		Expect(client.CreateOrReplaceUpstream(ctx, route, &upstream, &target)).To(Succeed())
 	})
@@ -212,7 +219,8 @@ var _ = Describe("CreateOrReplaceUpstream", func() {
 		other.Target = ptr("other:8080")
 		api.EXPECT().ListTargetsForUpstreamWithResponse(mock.Anything, "test-route", mock.Anything).Return(targetsResponse([]kong.Target{other}, nil), nil)
 		api.EXPECT().CreateTargetForUpstreamWithResponse(mock.Anything, "test-route", mock.Anything).Return(
-			&kong.CreateTargetForUpstreamResponse{HTTPResponse: &http.Response{StatusCode: http.StatusCreated}, JSON200: &kong.Target{Id: &targetID}}, nil)
+			&kong.CreateTargetForUpstreamResponse{HTTPResponse: &http.Response{StatusCode: http.StatusCreated}, JSON200: &kong.Target{Id: &targetID}}, nil,
+		)
 
 		Expect(client.CreateOrReplaceUpstream(ctx, route, &upstream, &target)).To(Succeed())
 	})
@@ -233,7 +241,8 @@ var _ = Describe("CreateOrReplaceUpstream", func() {
 				listed = []kong.Target{higherID, lowerID}
 			}
 			api.EXPECT().ListTargetsForUpstreamWithResponse(mock.Anything, "test-route", mock.Anything).Return(
-				targetsResponse(listed, nil), nil)
+				targetsResponse(listed, nil), nil,
+			)
 
 			Expect(client.CreateOrReplaceUpstream(ctx, route, &upstream, &target)).To(Succeed())
 			Expect(route.GetTargetsId()).To(Equal("target-b"))
@@ -250,7 +259,8 @@ var _ = Describe("CreateOrReplaceUpstream", func() {
 		second := matchingTarget(1)
 		second.CreatedAt = nil
 		api.EXPECT().ListTargetsForUpstreamWithResponse(mock.Anything, "test-route", mock.Anything).Return(
-			targetsResponse([]kong.Target{first, second}, nil), nil)
+			targetsResponse([]kong.Target{first, second}, nil), nil,
+		)
 
 		Expect(client.CreateOrReplaceUpstream(ctx, route, &upstream, &target)).To(Succeed())
 		Expect(route.GetTargetsId()).To(Equal("target-id"))
@@ -263,7 +273,8 @@ var _ = Describe("CreateOrReplaceUpstream", func() {
 		withoutTimestamp.CreatedAt = nil
 		withoutTimestamp.Weight = ptr(50)
 		api.EXPECT().ListTargetsForUpstreamWithResponse(mock.Anything, "test-route", mock.Anything).Return(
-			targetsResponse([]kong.Target{withTimestamp, withoutTimestamp}, nil), nil)
+			targetsResponse([]kong.Target{withTimestamp, withoutTimestamp}, nil), nil,
+		)
 
 		Expect(client.CreateOrReplaceUpstream(ctx, route, &upstream, &target)).To(Succeed())
 		Expect(route.GetTargetsId()).To(Equal("target-id"))
@@ -300,7 +311,8 @@ var _ = Describe("CreateOrReplaceUpstream", func() {
 		before := reconcileCount("target", "error")
 		expectMatchingUpstream(matchingUpstream())
 		api.EXPECT().ListTargetsForUpstreamWithResponse(mock.Anything, "test-route", mock.Anything).Return(
-			&kong.ListTargetsForUpstreamResponse{HTTPResponse: &http.Response{StatusCode: http.StatusOK}}, nil)
+			&kong.ListTargetsForUpstreamResponse{HTTPResponse: &http.Response{StatusCode: http.StatusOK}}, nil,
+		)
 		Expect(client.CreateOrReplaceUpstream(ctx, route, &upstream, &target)).To(MatchError(ContainSubstring("target list response body is missing")))
 		after := reconcileCount("target", "error")
 		Expect(after).To(Equal(before + 1))
@@ -309,7 +321,8 @@ var _ = Describe("CreateOrReplaceUpstream", func() {
 	It("rejects a successful target list without data", func() {
 		expectMatchingUpstream(matchingUpstream())
 		api.EXPECT().ListTargetsForUpstreamWithResponse(mock.Anything, "test-route", mock.Anything).Return(
-			&kong.ListTargetsForUpstreamResponse{HTTPResponse: &http.Response{StatusCode: http.StatusOK}, JSON200: &kong.ListTargetsForUpstream200Response{}}, nil)
+			&kong.ListTargetsForUpstreamResponse{HTTPResponse: &http.Response{StatusCode: http.StatusOK}, JSON200: &kong.ListTargetsForUpstream200Response{}}, nil,
+		)
 		Expect(client.CreateOrReplaceUpstream(ctx, route, &upstream, &target)).To(MatchError(ContainSubstring("target list response data is missing")))
 	})
 
@@ -317,7 +330,8 @@ var _ = Describe("CreateOrReplaceUpstream", func() {
 		expectMatchingUpstream(matchingUpstream())
 		api.EXPECT().ListTargetsForUpstreamWithResponse(mock.Anything, "test-route", mock.Anything).Return(targetsResponse(nil, nil), nil)
 		api.EXPECT().CreateTargetForUpstreamWithResponse(mock.Anything, "test-route", mock.Anything).Return(
-			&kong.CreateTargetForUpstreamResponse{HTTPResponse: &http.Response{StatusCode: http.StatusCreated}, JSON200: &kong.Target{}}, nil)
+			&kong.CreateTargetForUpstreamResponse{HTTPResponse: &http.Response{StatusCode: http.StatusCreated}, JSON200: &kong.Target{}}, nil,
+		)
 		Expect(client.CreateOrReplaceUpstream(ctx, route, &upstream, &target)).To(MatchError(ContainSubstring("target response ID is missing")))
 	})
 
@@ -327,9 +341,11 @@ var _ = Describe("CreateOrReplaceUpstream", func() {
 			change(response.JSON200)
 			expectMatchingUpstream(response)
 			api.EXPECT().UpsertUpstreamWithResponse(mock.Anything, "test-route", mock.Anything).Return(
-				&kong.UpsertUpstreamResponse{HTTPResponse: &http.Response{StatusCode: http.StatusOK}, JSON200: &kong.Upstream{Id: &upstreamID}}, nil).Once()
+				&kong.UpsertUpstreamResponse{HTTPResponse: &http.Response{StatusCode: http.StatusOK}, JSON200: &kong.Upstream{Id: &upstreamID}}, nil,
+			).Once()
 			api.EXPECT().ListTargetsForUpstreamWithResponse(mock.Anything, "test-route", mock.Anything).Return(
-				targetsResponse([]kong.Target{matchingTarget(1)}, nil), nil)
+				targetsResponse([]kong.Target{matchingTarget(1)}, nil), nil,
+			)
 
 			Expect(client.CreateOrReplaceUpstream(ctx, route, &upstream, &target)).To(Succeed())
 		},
@@ -342,9 +358,11 @@ var _ = Describe("CreateOrReplaceUpstream", func() {
 		retagged := matchingTarget(1)
 		retagged.Tags = ptr([]string{"env--test"})
 		api.EXPECT().ListTargetsForUpstreamWithResponse(mock.Anything, "test-route", mock.Anything).Return(
-			targetsResponse([]kong.Target{retagged}, nil), nil)
+			targetsResponse([]kong.Target{retagged}, nil), nil,
+		)
 		api.EXPECT().CreateTargetForUpstreamWithResponse(mock.Anything, "test-route", mock.Anything).Return(
-			&kong.CreateTargetForUpstreamResponse{HTTPResponse: &http.Response{StatusCode: http.StatusCreated}, JSON200: &kong.Target{Id: &targetID}}, nil).Once()
+			&kong.CreateTargetForUpstreamResponse{HTTPResponse: &http.Response{StatusCode: http.StatusCreated}, JSON200: &kong.Target{Id: &targetID}}, nil,
+		).Once()
 
 		Expect(client.CreateOrReplaceUpstream(ctx, route, &upstream, &target)).To(Succeed())
 	})
@@ -373,7 +391,8 @@ var _ = Describe("CreateOrReplaceUpstream", func() {
 		func(response *kong.CreateTargetForUpstreamResponse, writeErr error, message string) {
 			expectMatchingUpstream(matchingUpstream())
 			api.EXPECT().ListTargetsForUpstreamWithResponse(mock.Anything, "test-route", mock.Anything).Return(
-				targetsResponse(nil, nil), nil)
+				targetsResponse(nil, nil), nil,
+			)
 			api.EXPECT().CreateTargetForUpstreamWithResponse(mock.Anything, "test-route", mock.Anything).Return(response, writeErr)
 
 			Expect(client.CreateOrReplaceUpstream(ctx, route, &upstream, &target)).To(MatchError(ContainSubstring(message)))
@@ -395,9 +414,11 @@ var _ = Describe("CreateOrReplaceUpstream", func() {
 			&kong.ListTargetsForUpstreamResponse{
 				HTTPResponse: &http.Response{StatusCode: http.StatusInternalServerError},
 				Body:         []byte(`{"message":"failure to get a peer from the ring-balancer"}`),
-			}, nil)
+			}, nil,
+		)
 
 		Expect(client.CreateOrReplaceUpstream(ctx, route, &upstream, &target)).To(
-			MatchError(ContainSubstring("failed to list upstream targets")))
+			MatchError(ContainSubstring("failed to list upstream targets")),
+		)
 	})
 })

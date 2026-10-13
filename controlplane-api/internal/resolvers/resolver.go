@@ -6,6 +6,7 @@ package resolvers
 
 import (
 	"fmt"
+	"net/url"
 
 	"github.com/99designs/gqlgen/graphql"
 
@@ -40,12 +41,18 @@ func NewSchema(client *ent.Client, services service.Services, secretResolver *se
 	})
 }
 
-// buildSpecificationURL constructs a download URL for a file-manager file ID.
+// buildSpecificationURL constructs the file-manager download URL
+// (<baseURL>/v1/files/<fileId>) for a file ID. The base URL is the base URL of
+// the file-manager API, including the /api prefix. The file ID is a UUID; it is
+// path-escaped.
 // Returns nil if the specification is empty or the file-manager base URL is not configured.
 func (r *Resolver) buildSpecificationURL(specification string) (*string, error) {
 	if specification == "" || r.fileManagerBaseURL == "" {
 		return nil, nil
 	}
-	url := fmt.Sprintf("%s/files/%s", r.fileManagerBaseURL, specification)
-	return &url, nil
+	specURL, err := url.JoinPath(r.fileManagerBaseURL, "v1", "files", url.PathEscape(specification))
+	if err != nil {
+		return nil, fmt.Errorf("building specification url: %w", err)
+	}
+	return &specURL, nil
 }

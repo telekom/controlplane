@@ -4,3 +4,4 @@
 
 discovery-server/internal/api/server.gen.go:generic-api-key:1587
 rover-server/internal/api/server.gen.go:generic-api-key:2308
+rover-server/internal/controller/apispecification_test.go:generic-api-key:35

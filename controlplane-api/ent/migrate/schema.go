@@ -22,8 +22,10 @@ var (
 		{Name: "base_path", Type: field.TypeString, Size: 2147483647},
 		{Name: "version", Type: field.TypeString, Size: 2147483647},
 		{Name: "name", Type: field.TypeString, Size: 2147483647},
+		{Name: "display_name", Type: field.TypeString, Size: 2147483647, Default: ""},
 		{Name: "description", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "specification", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "hash", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "category", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "oauth2_scopes", Type: field.TypeJSON, Nullable: true},
 		{Name: "active", Type: field.TypeBool, Default: false},
@@ -37,7 +39,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "agent_cards_teams_agent_cards",
-				Columns:    []*schema.Column{AgentCardsColumns[14]},
+				Columns:    []*schema.Column{AgentCardsColumns[16]},
 				RefColumns: []*schema.Column{TeamsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -46,7 +48,7 @@ var (
 			{
 				Name:    "agentcard_base_path_team_agent_cards",
 				Unique:  true,
-				Columns: []*schema.Column{AgentCardsColumns[6], AgentCardsColumns[14]},
+				Columns: []*schema.Column{AgentCardsColumns[6], AgentCardsColumns[16]},
 			},
 		},
 	}
@@ -777,8 +779,10 @@ var (
 		{Name: "base_path", Type: field.TypeString, Size: 2147483647},
 		{Name: "version", Type: field.TypeString, Size: 2147483647},
 		{Name: "name", Type: field.TypeString, Size: 2147483647},
+		{Name: "display_name", Type: field.TypeString, Size: 2147483647, Default: ""},
 		{Name: "description", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "specification", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "hash", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "category", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "oauth2_scopes", Type: field.TypeJSON, Nullable: true},
 		{Name: "active", Type: field.TypeBool, Default: false},
@@ -792,7 +796,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "mcp_servers_teams_mcp_servers",
-				Columns:    []*schema.Column{McpServersColumns[14]},
+				Columns:    []*schema.Column{McpServersColumns[16]},
 				RefColumns: []*schema.Column{TeamsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -801,7 +805,7 @@ var (
 			{
 				Name:    "mcpserver_base_path_team_mcp_servers",
 				Unique:  true,
-				Columns: []*schema.Column{McpServersColumns[6], McpServersColumns[14]},
+				Columns: []*schema.Column{McpServersColumns[6], McpServersColumns[16]},
 			},
 		},
 	}

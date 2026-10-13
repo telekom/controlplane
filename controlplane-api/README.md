@@ -69,7 +69,7 @@ Admin viewers bypass all filtering.
 
 ### Prerequisites
 
-- Go 1.25+
+- Go 1.26.9+
 - PostgreSQL (for running the server; not needed for build/generate)
 
 ### Build
@@ -154,3 +154,4 @@ The following fields can be configured:
 | `graphql.playgroundEnabled` | `true`                                                                             | Enable GraphQL Playground at `/graphql/` |
 | `security.enabled`          | `false`                                                                            | Enable JWT authentication                |
 | `log.level`                 | `info`                                                                             | Log level (debug, info, warn, error)     |
+| `fileManager.baseUrl`       | `https://file-manager.controlplane-system.svc.cluster.local/api`                   | Base URL of the file-manager API, including `/api`. Used to build `specificationUrl` (`<baseUrl>/v1/files/<fileId>`). Empty disables `specificationUrl`. |

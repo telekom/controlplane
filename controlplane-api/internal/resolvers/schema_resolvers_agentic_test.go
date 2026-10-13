@@ -157,23 +157,40 @@ var _ = Describe("McpServer resolvers", func() {
 		Expect(team.GroupName).To(Equal("group-a"))
 	})
 
-	It("should build the specification url", func() {
-		ctx := testutil.AllowContext()
-		withSpec, err := client.McpServer.Create().
-			SetNamespace("default").
-			SetBasePath("/mcp-spec").
-			SetVersion("1.0.0").
-			SetName("mcp-spec").
-			SetSpecification("file-id-123").
-			SetOwner(s.TeamAlpha).
-			Save(ctx)
-		Expect(err).NotTo(HaveOccurred())
+	DescribeTable("should build the specification url",
+		func(baseURL, specification, expected string) {
+			ctx := testutil.AllowContext()
+			rURL := resolvers.NewResolver(client, service.Services{}, nil, baseURL)
+			withSpec, err := client.McpServer.Create().
+				SetNamespace("default").
+				SetBasePath("/mcp-spec").
+				SetVersion("1.0.0").
+				SetName("mcp-spec").
+				SetSpecification(specification).
+				SetOwner(s.TeamAlpha).
+				Save(ctx)
+			Expect(err).NotTo(HaveOccurred())
 
-		url, err := r.McpServer().SpecificationURL(ctx, withSpec)
-		Expect(err).NotTo(HaveOccurred())
-		Expect(url).NotTo(BeNil())
-		Expect(*url).To(Equal("https://files.example.com/files/file-id-123"))
-	})
+			url, err := rURL.McpServer().SpecificationURL(ctx, withSpec)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(url).NotTo(BeNil())
+			Expect(*url).To(Equal(expected))
+		},
+		Entry("plain base url", "https://files.example.com/api", "file-id-123",
+			"https://files.example.com/api/v1/files/file-id-123"),
+		Entry("base url with a trailing slash", "https://files.example.com/api/", "file-id-123",
+			"https://files.example.com/api/v1/files/file-id-123"),
+		Entry("base url with a path prefix", "https://files.example.com/prefix/api/", "file-id-123",
+			"https://files.example.com/prefix/api/v1/files/file-id-123"),
+		Entry("file id with a query character", "https://files.example.com/api", "a?x=1",
+			"https://files.example.com/api/v1/files/a%3Fx=1"),
+		Entry("file id with a percent sign", "https://files.example.com/api", "a%",
+			"https://files.example.com/api/v1/files/a%25"),
+		Entry("file id with a slash", "https://files.example.com/api", "a/b",
+			"https://files.example.com/api/v1/files/a%2Fb"),
+		Entry("file id with dot segments", "https://files.example.com/api", "../../x",
+			"https://files.example.com/api/v1/files/..%2F..%2Fx"),
+	)
 
 	It("should return nil specification url when specification is empty", func() {
 		ctx := testutil.AllowContext()

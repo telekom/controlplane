@@ -79,6 +79,12 @@ type RouteSpec struct {
 
 	// Buffering configures Kong request/response body buffering for this route
 	Buffering Buffering `json:"buffering,omitempty"`
+
+	// AdditionalTags are appended to the existing tags on the Kong Route.
+	// Tags must be non-empty and contain no commas, slashes, ASCII control characters, or DEL.
+	// +kubebuilder:validation:items:MinLength=1
+	// +kubebuilder:validation:items:Pattern=`^[^,/\x00-\x1F\x7F]+$`
+	AdditionalTags []string `json:"additionalTags,omitempty"`
 }
 
 // RouteStatus defines the observed state of Route.
@@ -168,6 +174,10 @@ func (g *Route) GetPaths() []string {
 	return g.Spec.Paths
 }
 
+func (g *Route) GetAdditionalTags() []string {
+	return g.Spec.AdditionalTags
+}
+
 // GetRequestBuffering implements the CustomRoute interface for Route
 func (g *Route) GetRequestBuffering() bool {
 	return !g.Spec.Buffering.DisableRequestBuffering
@@ -176,6 +186,10 @@ func (g *Route) GetRequestBuffering() bool {
 // GetResponseBuffering implements the CustomRoute interface for Route
 func (g *Route) GetResponseBuffering() bool {
 	return !g.Spec.Buffering.DisableResponseBuffering
+}
+
+func (g *Route) IsHealthProbe() bool {
+	return g.Spec.Traffic.HealthProbe
 }
 
 func (g *Route) SetRouteId(id string) {

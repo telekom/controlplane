@@ -6,7 +6,6 @@ package in
 
 import (
 	"context"
-	"net/url"
 	"strings"
 
 	"github.com/pb33f/libopenapi"
@@ -18,6 +17,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/telekom/controlplane/common-server/pkg/problems"
+	"github.com/telekom/controlplane/common/pkg/util/openapiutil"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 
 	"go.yaml.in/yaml/v4"
@@ -72,10 +72,10 @@ func ParseSpecification(ctx context.Context, spec string) (*roverv1.ApiSpecifica
 			})
 		}
 
-		path, err := getPathFromURL(model.Model.Servers[0].URL)
+		path, err := openapiutil.PathFromURL(model.Model.Servers[0].URL)
 		if err != nil {
 			return nil, problems.ValidationErrors(map[string]string{
-				"servers[0].url": "invalid url format",
+				"servers[0].url": err.Error(),
 			})
 		} else if path == "" {
 			return nil, problems.ValidationErrors(map[string]string{
@@ -98,15 +98,6 @@ func ParseSpecification(ctx context.Context, spec string) (*roverv1.ApiSpecifica
 	}
 
 	return nil, problems.BadRequest("only OpenAPI v2 and v3 are supported")
-}
-
-func getPathFromURL(rawURL string) (string, error) {
-	u, err := url.Parse(rawURL)
-	if err != nil {
-		return "", errors.Wrap(err, "failed to parse url")
-	}
-
-	return u.Path, nil
 }
 
 func setExtensionValues(apiSpecificationSpec *roverv1.ApiSpecificationSpec, extensionMap *orderedmap.Map[string, *yaml.Node]) {
@@ -147,17 +138,37 @@ func setSecuritySchemeValues(apiSpecificationSpec *roverv1.ApiSpecificationSpec,
 		return
 	}
 
-	// iterate over the security schemes and find the first scheme with type OAuth2
+	// Collects the scopes of all OAuth2 flows of all OAuth2 schemes once, in order of first appearance.
+	seen := make(map[string]struct{}, len(apiSpecificationSpec.Oauth2Scopes))
+	for _, scope := range apiSpecificationSpec.Oauth2Scopes {
+		seen[scope] = struct{}{}
+	}
+
 	for schemePair := SecuritySchemes.First(); schemePair != nil; schemePair = schemePair.Next() {
 		scheme := schemePair.Value()
-		if scheme.Type == "oauth2" && scheme.Flows != nil {
+		if scheme == nil || scheme.Type != "oauth2" || scheme.Flows == nil {
+			continue
+		}
 
-			for scopePair := scheme.Flows.ClientCredentials.Scopes.First(); scopePair != nil; scopePair = scopePair.Next() {
-
-				//append scope to the api security authentication oauth2 scopes
-				apiSpecificationSpec.Oauth2Scopes = append(apiSpecificationSpec.Oauth2Scopes, scopePair.Key())
+		flows := []*v3.OAuthFlow{
+			scheme.Flows.ClientCredentials,
+			scheme.Flows.Password,
+			scheme.Flows.AuthorizationCode,
+			scheme.Flows.Implicit,
+		}
+		for _, flow := range flows {
+			if flow == nil {
+				continue
 			}
-
+			// Scopes may be nil; orderedmap.Map.First is nil-safe.
+			for scopePair := flow.Scopes.First(); scopePair != nil; scopePair = scopePair.Next() {
+				scope := scopePair.Key()
+				if _, ok := seen[scope]; ok {
+					continue
+				}
+				seen[scope] = struct{}{}
+				apiSpecificationSpec.Oauth2Scopes = append(apiSpecificationSpec.Oauth2Scopes, scope)
+			}
 		}
 	}
 }

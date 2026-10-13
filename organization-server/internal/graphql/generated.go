@@ -16,9 +16,13 @@ import (
 
 // CreateGroupCreateGroupCreateGroupPayload includes the requested fields of the GraphQL type CreateGroupPayload.
 type CreateGroupCreateGroupCreateGroupPayload struct {
-	Group  *CreateGroupCreateGroupCreateGroupPayloadGroup                `json:"group"`
-	Errors []CreateGroupCreateGroupCreateGroupPayloadErrorsMutationError `json:"errors"`
+	Accepted bool                                                          `json:"accepted"`
+	Group    *CreateGroupCreateGroupCreateGroupPayloadGroup                `json:"group"`
+	Errors   []CreateGroupCreateGroupCreateGroupPayloadErrorsMutationError `json:"errors"`
 }
+
+// GetAccepted returns CreateGroupCreateGroupCreateGroupPayload.Accepted, and is useful for accessing the field via an interface.
+func (v *CreateGroupCreateGroupCreateGroupPayload) GetAccepted() bool { return v.Accepted }
 
 // GetGroup returns CreateGroupCreateGroupCreateGroupPayload.Group, and is useful for accessing the field via an interface.
 func (v *CreateGroupCreateGroupCreateGroupPayload) GetGroup() *CreateGroupCreateGroupCreateGroupPayloadGroup {
@@ -98,9 +102,13 @@ func (v *CreateGroupResponse) GetCreateGroup() CreateGroupCreateGroupCreateGroup
 
 // CreateTeamCreateTeamCreateTeamPayload includes the requested fields of the GraphQL type CreateTeamPayload.
 type CreateTeamCreateTeamCreateTeamPayload struct {
-	Team   *CreateTeamCreateTeamCreateTeamPayloadTeam                 `json:"team"`
-	Errors []CreateTeamCreateTeamCreateTeamPayloadErrorsMutationError `json:"errors"`
+	Accepted bool                                                       `json:"accepted"`
+	Team     *CreateTeamCreateTeamCreateTeamPayloadTeam                 `json:"team"`
+	Errors   []CreateTeamCreateTeamCreateTeamPayloadErrorsMutationError `json:"errors"`
 }
+
+// GetAccepted returns CreateTeamCreateTeamCreateTeamPayload.Accepted, and is useful for accessing the field via an interface.
+func (v *CreateTeamCreateTeamCreateTeamPayload) GetAccepted() bool { return v.Accepted }
 
 // GetTeam returns CreateTeamCreateTeamCreateTeamPayload.Team, and is useful for accessing the field via an interface.
 func (v *CreateTeamCreateTeamCreateTeamPayload) GetTeam() *CreateTeamCreateTeamCreateTeamPayloadTeam {
@@ -686,9 +694,13 @@ func (v *RotateTeamTokenResponse) GetRotateTeamToken() RotateTeamTokenRotateTeam
 
 // RotateTeamTokenRotateTeamTokenRotateTeamTokenPayload includes the requested fields of the GraphQL type RotateTeamTokenPayload.
 type RotateTeamTokenRotateTeamTokenRotateTeamTokenPayload struct {
-	Team   *RotateTeamTokenRotateTeamTokenRotateTeamTokenPayloadTeam                 `json:"team"`
-	Errors []RotateTeamTokenRotateTeamTokenRotateTeamTokenPayloadErrorsMutationError `json:"errors"`
+	Accepted bool                                                                      `json:"accepted"`
+	Team     *RotateTeamTokenRotateTeamTokenRotateTeamTokenPayloadTeam                 `json:"team"`
+	Errors   []RotateTeamTokenRotateTeamTokenRotateTeamTokenPayloadErrorsMutationError `json:"errors"`
 }
+
+// GetAccepted returns RotateTeamTokenRotateTeamTokenRotateTeamTokenPayload.Accepted, and is useful for accessing the field via an interface.
+func (v *RotateTeamTokenRotateTeamTokenRotateTeamTokenPayload) GetAccepted() bool { return v.Accepted }
 
 // GetTeam returns RotateTeamTokenRotateTeamTokenRotateTeamTokenPayload.Team, and is useful for accessing the field via an interface.
 func (v *RotateTeamTokenRotateTeamTokenRotateTeamTokenPayload) GetTeam() *RotateTeamTokenRotateTeamTokenRotateTeamTokenPayloadTeam {
@@ -775,9 +787,13 @@ func (v *UpdateGroupResponse) GetUpdateGroup() UpdateGroupUpdateGroupUpdateGroup
 
 // UpdateGroupUpdateGroupUpdateGroupPayload includes the requested fields of the GraphQL type UpdateGroupPayload.
 type UpdateGroupUpdateGroupUpdateGroupPayload struct {
-	Group  *UpdateGroupUpdateGroupUpdateGroupPayloadGroup                `json:"group"`
-	Errors []UpdateGroupUpdateGroupUpdateGroupPayloadErrorsMutationError `json:"errors"`
+	Accepted bool                                                          `json:"accepted"`
+	Group    *UpdateGroupUpdateGroupUpdateGroupPayloadGroup                `json:"group"`
+	Errors   []UpdateGroupUpdateGroupUpdateGroupPayloadErrorsMutationError `json:"errors"`
 }
+
+// GetAccepted returns UpdateGroupUpdateGroupUpdateGroupPayload.Accepted, and is useful for accessing the field via an interface.
+func (v *UpdateGroupUpdateGroupUpdateGroupPayload) GetAccepted() bool { return v.Accepted }
 
 // GetGroup returns UpdateGroupUpdateGroupUpdateGroupPayload.Group, and is useful for accessing the field via an interface.
 func (v *UpdateGroupUpdateGroupUpdateGroupPayload) GetGroup() *UpdateGroupUpdateGroupUpdateGroupPayloadGroup {
@@ -857,9 +873,13 @@ func (v *UpdateTeamResponse) GetUpdateTeam() UpdateTeamUpdateTeamUpdateTeamPaylo
 
 // UpdateTeamUpdateTeamUpdateTeamPayload includes the requested fields of the GraphQL type UpdateTeamPayload.
 type UpdateTeamUpdateTeamUpdateTeamPayload struct {
-	Team   *UpdateTeamUpdateTeamUpdateTeamPayloadTeam                 `json:"team"`
-	Errors []UpdateTeamUpdateTeamUpdateTeamPayloadErrorsMutationError `json:"errors"`
+	Accepted bool                                                       `json:"accepted"`
+	Team     *UpdateTeamUpdateTeamUpdateTeamPayloadTeam                 `json:"team"`
+	Errors   []UpdateTeamUpdateTeamUpdateTeamPayloadErrorsMutationError `json:"errors"`
 }
+
+// GetAccepted returns UpdateTeamUpdateTeamUpdateTeamPayload.Accepted, and is useful for accessing the field via an interface.
+func (v *UpdateTeamUpdateTeamUpdateTeamPayload) GetAccepted() bool { return v.Accepted }
 
 // GetTeam returns UpdateTeamUpdateTeamUpdateTeamPayload.Team, and is useful for accessing the field via an interface.
 func (v *UpdateTeamUpdateTeamUpdateTeamPayload) GetTeam() *UpdateTeamUpdateTeamUpdateTeamPayloadTeam {
@@ -1043,6 +1063,7 @@ func (v *__UpdateTeamInput) GetInput() UpdateTeamInput { return v.Input }
 const CreateGroup_Operation = `
 mutation CreateGroup ($input: CreateGroupInput!) {
 	createGroup(input: $input) {
+		accepted
 		group {
 			id
 			name
@@ -1086,6 +1107,7 @@ func CreateGroup(
 const CreateTeam_Operation = `
 mutation CreateTeam ($input: CreateTeamInput!) {
 	createTeam(input: $input) {
+		accepted
 		team {
 			id
 			createdAt
@@ -1394,6 +1416,7 @@ func ListTeams(
 const RotateTeamToken_Operation = `
 mutation RotateTeamToken ($teamId: ID!) {
 	rotateTeamToken(teamId: $teamId) {
+		accepted
 		team {
 			id
 			teamToken
@@ -1435,6 +1458,7 @@ func RotateTeamToken(
 const UpdateGroup_Operation = `
 mutation UpdateGroup ($input: UpdateGroupInput!) {
 	updateGroup(input: $input) {
+		accepted
 		group {
 			id
 			name
@@ -1478,6 +1502,7 @@ func UpdateGroup(
 const UpdateTeam_Operation = `
 mutation UpdateTeam ($input: UpdateTeamInput!) {
 	updateTeam(input: $input) {
+		accepted
 		team {
 			id
 			createdAt

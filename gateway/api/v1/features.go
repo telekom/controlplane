@@ -16,6 +16,7 @@ const (
 	FeatureTypeIpRestriction        FeatureType = "IpRestriction"
 	FeatureTypeCircuitBreaker       FeatureType = "CircuitBreaker"
 	FeatureTypeDynamicUpstream      FeatureType = "DynamicUpstream"
+	FeatureTypeRequestTermination   FeatureType = "RequestTermination"
 )
 
 // Dependent Features

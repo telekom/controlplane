@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"slices"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -80,6 +81,7 @@ func createDefaultIdentityRealm(ctx context.Context, hc *HandlingContext) error 
 	}
 	opts := createIdentityRealmOptions{
 		Claims:         hc.DefaultClaims,
+		AllowedOrigins: slices.Clone(idp.AllowedOrigins),
 		SecretRotation: idp.SecretRotation,
 	}
 	realm, err := createIdentityRealm(ctx, hc, naming.ForDefaultIdentityRealm(hc.Environment), opts)
@@ -132,6 +134,7 @@ func issuerHostname(idp *adminv1.IdentityProviderConfig) (string, error) {
 // createIdentityRealmOptions configures the creation of an identity realm.
 type createIdentityRealmOptions struct {
 	Claims         []identityapi.ClaimConfig
+	AllowedOrigins []string
 	SecretRotation *adminv1.SecretRotationConfig
 }
 
@@ -159,7 +162,8 @@ func createIdentityRealm(ctx context.Context, hc *HandlingContext, realmName str
 				Name:      hc.IdentityProvider.Name,
 				Namespace: hc.IdentityProvider.Namespace,
 			},
-			Claims: opts.Claims,
+			Claims:         opts.Claims,
+			AllowedOrigins: opts.AllowedOrigins,
 		}
 
 		secretRotationConfig := opts.SecretRotation

@@ -82,6 +82,8 @@ type ComplexityRoot struct {
 		Category         func(childComplexity int) int
 		CreatedAt        func(childComplexity int) int
 		Description      func(childComplexity int) int
+		DisplayName      func(childComplexity int) int
+		Hash             func(childComplexity int) int
 		ID               func(childComplexity int) int
 		LastModifiedAt   func(childComplexity int) int
 		Name             func(childComplexity int) int
@@ -405,6 +407,7 @@ type ComplexityRoot struct {
 	}
 
 	ApplicationInfo struct {
+		ClientID    func(childComplexity int) int
 		ExternalIds func(childComplexity int) int
 		ID          func(childComplexity int) int
 		Name        func(childComplexity int) int
@@ -839,6 +842,8 @@ type ComplexityRoot struct {
 		Category         func(childComplexity int) int
 		CreatedAt        func(childComplexity int) int
 		Description      func(childComplexity int) int
+		DisplayName      func(childComplexity int) int
+		Hash             func(childComplexity int) int
 		ID               func(childComplexity int) int
 		LastModifiedAt   func(childComplexity int) int
 		Name             func(childComplexity int) int
@@ -1173,6 +1178,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.AgentCard.Description(childComplexity), true
+	case "AgentCard.displayName":
+		if e.ComplexityRoot.AgentCard.DisplayName == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgentCard.DisplayName(childComplexity), true
+	case "AgentCard.hash":
+		if e.ComplexityRoot.AgentCard.Hash == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgentCard.Hash(childComplexity), true
 	case "AgentCard.id":
 		if e.ComplexityRoot.AgentCard.ID == nil {
 			break
@@ -2539,6 +2556,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.ApplicationEdge.Node(childComplexity), true
 
+	case "ApplicationInfo.clientId":
+		if e.ComplexityRoot.ApplicationInfo.ClientID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApplicationInfo.ClientID(childComplexity), true
 	case "ApplicationInfo.externalIds":
 		if e.ComplexityRoot.ApplicationInfo.ExternalIds == nil {
 			break
@@ -4276,6 +4299,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.McpServer.Description(childComplexity), true
+	case "McpServer.displayName":
+		if e.ComplexityRoot.McpServer.DisplayName == nil {
+			break
+		}
+
+		return e.ComplexityRoot.McpServer.DisplayName(childComplexity), true
+	case "McpServer.hash":
+		if e.ComplexityRoot.McpServer.Hash == nil {
+			break
+		}
+
+		return e.ComplexityRoot.McpServer.Hash(childComplexity), true
 	case "McpServer.id":
 		if e.ComplexityRoot.McpServer.ID == nil {
 			break
@@ -5622,10 +5657,24 @@ type AgentCard implements Node {
   namespace: String!
   basePath: String!
   version: String!
+  """
+  Resource name of the agent, derived from its base path.
+  """
   name: String!
+  """
+  Human-readable name of the agent: the title from its specification, or the resource name if the specification has no title.
+  """
+  displayName: String!
   description: String
+  """
+  Base64-encoded SHA-256 hash of the agent card specification file. Changes when the content changes. Empty if unknown.
+  """
+  hash: String
   category: String
   oauth2Scopes: [String!]
+  """
+  Only the oldest entry for a base path is active. Entries of other teams with the same base path are inactive. Filter on active to get one agent per base path.
+  """
   active: Boolean!
 }
 """
@@ -5819,6 +5868,22 @@ input AgentCardWhereInput {
   nameHasSuffix: String
   nameEqualFold: String
   nameContainsFold: String
+  """
+  display_name field predicates
+  """
+  displayName: String
+  displayNameNEQ: String
+  displayNameIn: [String!]
+  displayNameNotIn: [String!]
+  displayNameGT: String
+  displayNameGTE: String
+  displayNameLT: String
+  displayNameLTE: String
+  displayNameContains: String
+  displayNameHasPrefix: String
+  displayNameHasSuffix: String
+  displayNameEqualFold: String
+  displayNameContainsFold: String
   """
   description field predicates
   """
@@ -6414,6 +6479,9 @@ type Api implements Node {
   category: String
   oauth2Scopes: [String!]
   xVendor: Boolean!
+  """
+  Only the oldest entry for a base path is active. Entries of other teams with the same base path are inactive. Filter on active to get one API per base path.
+  """
   active: Boolean!
 }
 """
@@ -8922,6 +8990,9 @@ type EventType implements Node {
   eventType: String!
   version: String!
   description: String
+  """
+  Only the oldest entry for an event type is active. Entries of other teams with the same event type are inactive. Filter on active to get one entry per event type.
+  """
   active: Boolean!
 }
 """
@@ -10087,10 +10158,24 @@ type McpServer implements Node {
   namespace: String!
   basePath: String!
   version: String!
+  """
+  Resource name of the MCP server, derived from its base path.
+  """
   name: String!
+  """
+  Human-readable name of the MCP server: the title from its specification, or the resource name if the specification has no title.
+  """
+  displayName: String!
   description: String
+  """
+  Base64-encoded SHA-256 hash of the MCP server specification file. Changes when the content changes. Empty if unknown.
+  """
+  hash: String
   category: String
   oauth2Scopes: [String!]
+  """
+  Only the oldest entry for a base path is active. Entries of other teams with the same base path are inactive. Filter on active to get one MCP server per base path.
+  """
   active: Boolean!
 }
 """
@@ -10284,6 +10369,22 @@ input McpServerWhereInput {
   nameHasSuffix: String
   nameEqualFold: String
   nameContainsFold: String
+  """
+  display_name field predicates
+  """
+  displayName: String
+  displayNameNEQ: String
+  displayNameIn: [String!]
+  displayNameNotIn: [String!]
+  displayNameGT: String
+  displayNameGTE: String
+  displayNameLT: String
+  displayNameLTE: String
+  displayNameContains: String
+  displayNameHasPrefix: String
+  displayNameHasSuffix: String
+  displayNameEqualFold: String
+  displayNameContainsFold: String
   """
   description field predicates
   """
@@ -12075,6 +12176,8 @@ type TeamInfo {
 type ApplicationInfo {
   id: ID!
   name: String!
+  "Identity client ID of the application. A public identifier, not a secret; null until provisioned."
+  clientId: String
   externalIds: [ExternalId!]
   "Zone the application is deployed in"
   zone: Zone!
@@ -12618,8 +12721,12 @@ func (ec *executionContext) childFields_AgentCard(ctx context.Context, field gra
 		return ec.fieldContext_AgentCard_version(ctx, field)
 	case "name":
 		return ec.fieldContext_AgentCard_name(ctx, field)
+	case "displayName":
+		return ec.fieldContext_AgentCard_displayName(ctx, field)
 	case "description":
 		return ec.fieldContext_AgentCard_description(ctx, field)
+	case "hash":
+		return ec.fieldContext_AgentCard_hash(ctx, field)
 	case "category":
 		return ec.fieldContext_AgentCard_category(ctx, field)
 	case "oauth2Scopes":
@@ -13262,6 +13369,8 @@ func (ec *executionContext) childFields_ApplicationInfo(ctx context.Context, fie
 		return ec.fieldContext_ApplicationInfo_id(ctx, field)
 	case "name":
 		return ec.fieldContext_ApplicationInfo_name(ctx, field)
+	case "clientId":
+		return ec.fieldContext_ApplicationInfo_clientId(ctx, field)
 	case "externalIds":
 		return ec.fieldContext_ApplicationInfo_externalIds(ctx, field)
 	case "zone":
@@ -14132,8 +14241,12 @@ func (ec *executionContext) childFields_McpServer(ctx context.Context, field gra
 		return ec.fieldContext_McpServer_version(ctx, field)
 	case "name":
 		return ec.fieldContext_McpServer_name(ctx, field)
+	case "displayName":
+		return ec.fieldContext_McpServer_displayName(ctx, field)
 	case "description":
 		return ec.fieldContext_McpServer_description(ctx, field)
+	case "hash":
+		return ec.fieldContext_McpServer_hash(ctx, field)
 	case "category":
 		return ec.fieldContext_McpServer_category(ctx, field)
 	case "oauth2Scopes":

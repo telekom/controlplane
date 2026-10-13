@@ -159,8 +159,9 @@ var _ = Describe("BaseHandler", func() {
 				apiErr, ok := common.AsApiError(err)
 				Expect(ok).To(BeTrue())
 				Expect(apiErr).NotTo(BeNil())
-				// The error message comes from the mock response we defined above
-				Expect(apiErr.Title).To(Equal("Validation failed"))
+				Expect(apiErr.Type).To(Equal("ValidationError"))
+				Expect(apiErr.Detail).To(Equal("Field 'spec' is required"))
+				Expect(apiErr.Fields).To(ConsistOf(common.FieldError{Field: "spec", Detail: "Field is required"}))
 			})
 		})
 
@@ -446,6 +447,7 @@ var _ = Describe("BaseHandler", func() {
 				Expect(ok).To(BeTrue())
 				Expect(apiErr).NotTo(BeNil())
 				Expect(apiErr.Title).To(Equal("Delete failed"))
+				Expect(apiErr.Detail).To(Equal("Resource is in use"))
 			})
 		})
 	})

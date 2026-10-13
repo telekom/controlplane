@@ -61,7 +61,19 @@ roverctl apply -f eventspec.yaml
 | `type` | A globally unique identifier for the event type. Lowercase letters and digits form nonempty segments separated by single dots or hyphens (e.g., `de.telekom.orders-created.v1`). It must end in `.v<major>`, matching the major number in `version`. |
 | `version` | The version of the event type specification. |
 | `description` | A human-readable summary of what this event represents. |
-| `specification` | An optional inline JSON schema describing the event payload structure. |
+| `specification` | An optional JSON schema describing the event payload structure, either inline or as a file reference (see below). |
+
+### Referencing a Schema File
+
+Instead of inlining the schema, `specification` can reference a local JSON file:
+
+```yaml
+spec:
+  specification:
+    $ref: file://schemas/order-created.json
+```
+
+Relative paths can be resolved against two supported locations. `roverctl` first checks the directory of the resource file that contains the EventSpecification. Only if no file exists there, it checks the path relative to the configured resource path (`RESOURCE_PATH` / `ROVER_RESOURCE_PATH`), or relative to the current working directory when no resource path is set. The second location is only checked when the file is missing in the first. If the file exists but cannot be read or parsed, or the path is a directory, `roverctl` reports that error. Absolute paths (e.g. `file:///abs/path/schema.json`) are used as-is.
 
 ### What Happens
 

@@ -32,9 +32,13 @@ var _ = Describe("SecurityConfig", func() {
 			Expect(cfg.Listeners.External.JWT.Mode).To(Equal(security.ModeJWT))
 		})
 
-		It("has no internal listener (external-only)", func() {
+		It("defaults to an internal k8s listener for in-cluster callers", func() {
 			cfg := config.DefaultConfig()
-			Expect(cfg.Listeners.Internal).To(BeNil())
+			Expect(cfg.Listeners.Internal).NotTo(BeNil())
+			Expect(cfg.Listeners.Internal.Address).To(Equal(":9443"))
+			Expect(cfg.Listeners.Internal.JWT).To(BeNil())
+			Expect(cfg.Listeners.Internal.K8s).NotTo(BeNil())
+			Expect(cfg.Listeners.Internal.K8s.Audience).To(Equal("controlplane-api"))
 		})
 
 		It("defaults TLS to the standard cert/key paths", func() {
@@ -50,6 +54,31 @@ var _ = Describe("SecurityConfig", func() {
 			Expect(cfg.RoverServer.TokenFilePath).To(Equal("/var/run/secrets/rover/token"))
 			Expect(cfg.RoverServer.CaFilePath).To(Equal("/var/run/secrets/trust-bundle/trust-bundle.pem"))
 		})
+	})
+
+	Describe("FileManagerConfig", func() {
+		It("defaults to the in-cluster file-manager API", func() {
+			cfg := config.DefaultConfig()
+			Expect(cfg.FileManager.BaseURL).To(Equal("https://file-manager.controlplane-system.svc.cluster.local/api"))
+			Expect(cfg.FileManager.Validate()).To(Succeed())
+		})
+
+		DescribeTable("Validate",
+			func(baseURL string, valid bool) {
+				err := config.FileManagerConfig{BaseURL: baseURL}.Validate()
+				if valid {
+					Expect(err).NotTo(HaveOccurred())
+				} else {
+					Expect(err).To(HaveOccurred())
+				}
+			},
+			Entry("empty", "", true),
+			Entry("absolute https url", "https://files.example.com/api", true),
+			Entry("absolute url with path prefix", "https://files.example.com/prefix/api/", true),
+			Entry("missing scheme", "file-manager.example.svc", false),
+			Entry("missing host", "https://", false),
+			Entry("unparsable", "https://files example.com/%zz", false),
+		)
 	})
 
 	Describe("GetConfigOrDie", func() {

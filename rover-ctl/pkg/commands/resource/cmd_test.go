@@ -104,6 +104,37 @@ var _ = Describe("Resource Command", func() {
 		})
 	})
 
+	DescribeTable("using the default API version",
+		func(subcommand string) {
+			handlers.RegisterHandler("TestKind", "tcp.ei.telekom.de/v1", mockHandler)
+			resourceObj := &types.UnstructuredObject{
+				Content: map[string]any{
+					"apiVersion": "tcp.ei.telekom.de/v1",
+					"kind":       "TestKind",
+					"metadata": map[string]any{
+						"name": "test-resource",
+					},
+				},
+			}
+
+			args := []string{subcommand, "--kind", "TestKind"}
+			switch subcommand {
+			case "get":
+				args = append(args, "--name", "test-resource")
+				mockHandler.EXPECT().Get(mock.AnythingOfType("*context.valueCtx"), "test-resource").Return(resourceObj, nil).Once()
+			case "list":
+				mockHandler.EXPECT().List(mock.AnythingOfType("*context.valueCtx")).Return([]any{resourceObj}, nil).Once()
+			}
+
+			cmd.SetArgs(args)
+			Expect(cmd.Execute()).To(Succeed())
+			Expect(stdout.String()).To(ContainSubstring("test-resource"))
+			Expect(stdout.String()).To(ContainSubstring("tcp.ei.telekom.de/v1"))
+		},
+		Entry("get without --api-version", "get"),
+		Entry("list without --api-version", "list"),
+	)
+
 	Describe("Get Command", func() {
 
 		Context("when getting a resource", func() {

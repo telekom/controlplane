@@ -74,9 +74,8 @@ func (c *Command) newGetCommand() *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&c.Options.Kind, "kind", "", "Resource kind")
-	cmd.Flags().StringVar(&c.Options.ApiVersion, "api-version", "", "API version")
+	cmd.Flags().StringVar(&c.Options.ApiVersion, "api-version", defaultApiVersion, "API version")
 	cmd.MarkFlagRequired("kind")
-	cmd.MarkFlagRequired("api-version")
 
 	cmd.Flags().StringVar(&c.Options.Name, "name", "", "Name of the resource to get")
 	cmd.MarkFlagRequired("name")
@@ -105,7 +104,6 @@ func (c *Command) newListCommand() *cobra.Command {
 	cmd.Flags().StringVar(&c.Options.Kind, "kind", "", "Resource kind")
 	cmd.Flags().StringVar(&c.Options.ApiVersion, "api-version", defaultApiVersion, "API version")
 	cmd.MarkFlagRequired("kind")
-	cmd.MarkFlagRequired("api-version")
 
 	return cmd
 }

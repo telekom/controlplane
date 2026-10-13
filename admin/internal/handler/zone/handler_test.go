@@ -146,7 +146,7 @@ var _ = Describe("Zone Handler", func() {
 		// declares no managed routes, so there is no team-api realm.
 		routes := &gatewayapi.RouteList{}
 		Expect(k8sClient.List(ctx, routes, client.InNamespace(zone.Status.Namespace))).To(Succeed())
-		Expect(routes.Items).To(HaveLen(2 * 2 * len(identityRouteConfigs)))
+		Expect(routes.Items).To(HaveLen(2*2*len(identityRouteConfigs) + 2))
 	})
 
 	DescribeTable("serves internal realm OIDC metadata on every gateway",
