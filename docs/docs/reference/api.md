@@ -10,7 +10,7 @@ This page provides a complete reference of all Custom Resource Definitions (CRDs
 
 The Control Plane models its configuration as **Kubernetes Custom Resources**. Each resource represents a specific concept — an API, a subscription, a gateway route, and so on. Operators watch these resources and reconcile the desired state with the actual infrastructure.
 
-All CRDs share the base domain **`cp.ei.telekom.de`**, use API version **`v1`**, and are **namespace-scoped**.
+All CRDs use API version **`v1`** and are **namespace-scoped**. All API groups use the base domain **`cp.ei.telekom.de`**, except the external `PermissionSet` in `pcp.ei.telekom.de`.
 
 :::tip Rover is the primary entry point
 Most users do not create these resources directly. Instead, they write a single **Rover** file that declaratively describes their application's API and event posture. The Rover operator then creates and manages the underlying resources automatically. See the [Rover domain](../architecture/rover.mdx) for details.
@@ -21,19 +21,22 @@ Most users do not create these resources directly. Instead, they write a single 
 | Domain | API Group | CRDs |
 | ------ | --------- | :--: |
 | [Admin](#admin) | `admin.cp.ei.telekom.de/v1` | 3 |
+| [Agentic](#agentic) | `agentic.cp.ei.telekom.de/v1` | 4 |
 | [API](#api) | `api.cp.ei.telekom.de/v1` | 5 |
 | [Application](#application) | `application.cp.ei.telekom.de/v1` | 1 |
-| [Approval](#approval) | `approval.cp.ei.telekom.de/v1` | 2 |
+| [Approval](#approval) | `approval.cp.ei.telekom.de/v1` | 3 |
 | [Event](#event) | `event.cp.ei.telekom.de/v1` | 4 |
+| [File](#file) | `file.cp.ei.telekom.de/v1` | 4 |
 | [Gateway](#gateway) | `gateway.cp.ei.telekom.de/v1` | 5 |
 | [Identity](#identity) | `identity.cp.ei.telekom.de/v1` | 3 |
 | [Notification](#notification) | `notification.cp.ei.telekom.de/v1` | 3 |
 | [Organization](#organization) | `organization.cp.ei.telekom.de/v1` | 2 |
+| [Permission](#permission) | `permission.cp.ei.telekom.de/v1`, `pcp.ei.telekom.de/v1` | 2 |
 | [PubSub](#pubsub) | `pubsub.cp.ei.telekom.de/v1` | 3 |
-| [Rover](#rover) | `rover.cp.ei.telekom.de/v1` | 3 |
+| [Rover](#rover) | `rover.cp.ei.telekom.de/v1` | 8 |
 | [SFTP](#sftp) | `sftp.cp.ei.telekom.de/v1` | 3 |
 | [Spectre](#spectre) | `spectre.cp.ei.telekom.de/v1` | 2 |
-| | **Total** | **39** |
+| | **Total** | **55** |
 
 ---
 
@@ -48,6 +51,21 @@ Platform-wide settings such as environments, zones, and federation.
 | **Environment** | Represents a deployment environment — the top-level organizational unit. |
 | **Zone** | Configures a deployment zone with identity provider, gateway, and connection settings. Controls visibility (World/Enterprise) and circuit breaker settings. |
 | **RemoteOrganization** | Represents a federated remote organization for cross-organization API subscription flows. *(Planned feature — not yet fully supported.)* |
+
+---
+
+### Agentic
+
+**API Group:** `agentic.cp.ei.telekom.de/v1` · [Architecture →](../architecture/agentic.mdx)
+
+MCP server and A2A agent registration, exposure, and subscription.
+
+| Kind | Description |
+| ---- | ----------- |
+| **McpServer** | A registered MCP server definition that AgenticExposure and AgenticSubscription point to. |
+| **AgentCard** | A registered A2A agent definition that AgenticExposure and AgenticSubscription point to when the variant is `AGENT`. |
+| **AgenticExposure** | Declares that an application exposes an MCP server, making it available for subscription via the AI Gateway. |
+| **AgenticSubscription** | A request by an application to consume an MCP server exposed via AgenticExposure, with approval and access control. |
 
 ---
 
@@ -89,6 +107,7 @@ Access request approvals with multiple strategies.
 | ---- | ----------- |
 | **Approval** | Manages the approval lifecycle for access requests, supporting Auto, Simple, and FourEyes strategies. |
 | **ApprovalRequest** | A specific versioned approval request linked to an Approval, tracking individual decisions. |
+| **ApprovalExpiration** | Tracks the expiration time of a parent Approval and the reminder notifications sent before it expires. Created by the Approval controller. |
 
 ---
 
@@ -107,6 +126,21 @@ Asynchronous event publishing and subscription.
 
 ---
 
+### File
+
+**API Group:** `file.cp.ei.telekom.de/v1` · [Architecture →](../architecture/file.mdx)
+
+File-type exposure and subscription, delivered through SFTP.
+
+| Kind | Description |
+| ---- | ----------- |
+| **FileType** | A registered file type with an optional description, created by the Rover controller from a FileSpecification. |
+| **FileExposure** | Declares that an application provides a file type in a zone, with SFTP access, visibility, and approval settings. |
+| **FileSubscription** | Declares that an application consumes a file type, with consumer-side SFTP access. |
+| **ZoneServiceConfig** | Per-zone SFTP API and service endpoint configuration. Must use the same name and namespace as the admin Zone it configures. |
+
+---
+
 ### Gateway
 
 **API Group:** `gateway.cp.ei.telekom.de/v1` · [Architecture →](../architecture/gateway.mdx)
@@ -119,6 +153,7 @@ API gateway instances, routes, and consumer management.
 | **Route** | Defines a gateway route with upstreams, downstreams, traffic management, and security settings. |
 | **ConsumeRoute** | Binds a consumer to a gateway route with optional security and rate limit configuration. |
 | **Consumer** | Represents a gateway consumer identity with optional IP restrictions. |
+| **RouteListener** | Lets a consumer application listen to traffic on a provider's Route in a zone. Created by the Spectre Listener controller. |
 
 ---
 
@@ -163,6 +198,19 @@ Organizational structure — groups and teams.
 
 ---
 
+### Permission
+
+**API Group:** `permission.cp.ei.telekom.de/v1`, `pcp.ei.telekom.de/v1`
+
+Application permissions for an external permission service. Optional install component.
+
+| Kind | Description |
+| ---- | ----------- |
+| **PermissionSet** (`permission.cp.ei.telekom.de`) | The internal permission configuration of an application, created by the Rover controller. |
+| **PermissionSet** (`pcp.ei.telekom.de`) | The external copy consumed by the permission service: a list of role-resource-action tuples. Created by the Permission operator; has no status. |
+
+---
+
 ### PubSub
 
 **API Group:** `pubsub.cp.ei.telekom.de/v1` · [Architecture →](../architecture/pubsub.mdx)
@@ -188,6 +236,11 @@ The primary user-facing interface for declarative application configuration.
 | **Rover** | The primary user-facing resource — defines an application's complete API and event posture declaratively. |
 | **ApiSpecification** | Stores an uploaded OpenAPI specification and creates the corresponding Api resource. |
 | **EventSpecification** | Stores event type metadata and creates the corresponding EventType resource. |
+| **FileSpecification** | Stores file type metadata and creates the corresponding file-domain FileType resource. |
+| **McpSpecification** | Stores an uploaded MCP server specification and creates the corresponding McpServer resource. |
+| **AgentSpecification** | Stores an uploaded A2A agent specification and creates the corresponding AgentCard resource. |
+| **ApiChangelog** | References the changelog of an ApiSpecification. Named after the base path without its major version. |
+| **Roadmap** | References the roadmap of an ApiSpecification or EventSpecification. Named after the base path without its major version. |
 
 ---
 
