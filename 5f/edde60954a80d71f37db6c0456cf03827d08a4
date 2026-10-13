@@ -1,0 +1,124 @@
+rover-ctl/pkg/commands/get-info/cmd_test.go
+  s_f6beae2581dedb::t_c2c1ab025fc217 21,119-123,268-320
+  s_f6beae2581dedb::t_5ea41c0be7fad8 321
+rover-ctl/docs/roverctl_get-info.md
+  s_f6beae2581dedb::t_5266db600d50f9 17-22,39
+rover-ctl/pkg/handlers/common/base_handler.go
+  s_71ea4e6cbd4a4c::t_f146ab23b86c21 209-226,346,352,362,376,379
+  s_f6beae2581dedb::t_2477b5ad09e3e1 338-345,347-351,353,359-361,364,373-375,377-378,380
+rover-ctl/pkg/handlers/common/request_safety_test.go
+  s_f6beae2581dedb::t_ef4606bf5a2f57 223-264
+rover-ctl/pkg/commands/resource/cmd.go
+  s_71ea4e6cbd4a4c::t_f146ab23b86c21 243-267
+  s_f6beae2581dedb::t_3624ff256f5f0d 41-49,59,63-65,71-121
+  s_f6beae2581dedb::t_59e27d2e0c7283 8-10,16-17,122-170,174-179,186,195-218,225-227,231-242,268-276
+rover-ctl/docs/roverctl_resource_delete.md
+  s_f6beae2581dedb::t_5266db600d50f9 1-37
+rover-ctl/docs/roverctl.md
+  s_d7ddfaa52b8d1f::t_61be549419d0de 31
+rover-ctl/docs/roverctl_delete.md
+  s_d7ddfaa52b8d1f::t_61be549419d0de 35
+rover-ctl/cmd/args_test.go
+  s_f6beae2581dedb::t_ffdfd7d7a92be2 232-236
+  s_f6beae2581dedb::t_b64fde3ab599cd 1-121,123-152,158,160,166,172,174,191-193,195,199-204,206-207,210-212,219,239,246,254,257,265,268,276,279,290-291,297
+  s_f6beae2581dedb::t_0614c0c8d08c8a 122,153-157,159,161-165,167-171,173,175-190,194,196-198,205,208-209,213-218,220-231,237-238,240-245,247-253,255-256,258-264,266-267,269-275,277-278,280-289,292-296,298-301
+rover-ctl/pkg/handlers/interface.go
+  s_71ea4e6cbd4a4c::t_f146ab23b86c21 46-52
+rover-ctl/docs/roverctl_reset-secret.md
+  s_f6beae2581dedb::t_5266db600d50f9 10,38
+  s_d7ddfaa52b8d1f::t_61be549419d0de 9
+docs/docs/user-journey/features/secret-rotation.mdx
+  s_f6beae2581dedb::t_3f43a1c87f2801 60,63-65,67
+  s_3482ca115acf39::t_911789016f009b 66,68
+rover-ctl/docs/roverctl_apply.md
+  s_d7ddfaa52b8d1f::t_61be549419d0de 35
+rover-ctl/docs/roverctl_resource.md
+  s_f6beae2581dedb::t_5266db600d50f9 17-19,24,26,28-29,47,51
+  s_d7ddfaa52b8d1f::t_141fe4c8b61c1d 7-16,25,27,30-31
+rover-ctl/pkg/commands/resource/cmd_test.go
+  s_f6beae2581dedb::t_3624ff256f5f0d 296-305,322,336,339,350
+  s_f6beae2581dedb::t_9e347cb2d89464 21,97-98,285-295,306-321,323-335,337-338,340-344,346-348,351-357,359-361,363-364,394-423,425,427,429-431
+  s_f6beae2581dedb::t_996d63bc5a50a9 10,345,349,358,362,365-393,435-451
+  s_f6beae2581dedb::t_ef8d47ec60488a 424,426,428,432,452
+rover-ctl/docs/roverctl_resource_get.md
+  s_f6beae2581dedb::t_5266db600d50f9 19,37
+rover-ctl/docs/roverctl_get-secret.md
+  s_d7ddfaa52b8d1f::t_61be549419d0de 36
+rover-ctl/docs/roverctl_rotate-secret.md
+  s_d7ddfaa52b8d1f::t_61be549419d0de 36
+rover-ctl/docs/roverctl_resource_list.md
+  s_d7ddfaa52b8d1f::t_61be549419d0de 36
+rover-ctl/cmd/root.go
+  s_27caa24a2409be::t_260d40a9a76747 10,15,126-229
+rover-ctl/main.go
+  s_27caa24a2409be::t_f01f5a9d349cd1 33
+rover-ctl/pkg/commands/get-info/cmd.go
+  s_47035526aa153d::t_43e6f81b0bbd7f 8-9,15,44-46,48,58-65,98-101
+rover-ctl/pkg/commands/reset-secret/cmd.go
+  s_3482ca115acf39::t_040a50aa38dae6 20-22,38,57
+rover-ctl/pkg/commands/reset-secret/cmd_test.go
+  s_3482ca115acf39::t_b73ef4e194e598 158-198
+rover-ctl/pkg/commands/rotate-secret/cmd_test.go
+  s_47035526aa153d::t_76446f7e430051 140-180
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "5fedde60954a80d71f37db6c0456cf03827d08a4",
+  "prompts": {},
+  "humans": {
+    "h_0f030e7424553c": {
+      "author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  },
+  "sessions": {
+    "s_27caa24a2409be": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_eca72beaeffejks2PiJponn6A9",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_3482ca115acf39": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_eca4fb87cffeFyup0jo3ylBS58",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_47035526aa153d": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_eca64395effex5LPaduf5p1Xch",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_71ea4e6cbd4a4c": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_eca4e29a7ffeDehjPAV18juQSW",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_d7ddfaa52b8d1f": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_eca40eff5ffeqS8CVQTQ1hfMI3",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_f6beae2581dedb": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_eca6d7ae9ffeKl84aYQplb3O8b",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
