@@ -20,7 +20,7 @@ import (
 	"github.com/telekom/controlplane/common/pkg/util/openapiutil"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 
-	"go.yaml.in/yaml/v4"
+	yaml "github.com/pb33f/go-yaml"
 )
 
 func ParseSpecification(ctx context.Context, spec string) (*roverv1.ApiSpecification, error) {
