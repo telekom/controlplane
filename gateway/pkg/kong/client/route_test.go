@@ -6,6 +6,8 @@ package client_test
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/stretchr/testify/mock"
@@ -248,6 +250,59 @@ var _ = Describe("CreateOrReplaceRoute", func() {
 		Entry("when path order changes", func(current *kong.Route) { current.Paths = ptr([]string{"/v2", "/v1"}) }),
 		Entry("when request buffering changes", func(current *kong.Route) { current.RequestBuffering = ptr(false) }),
 		Entry("when a non-health route has a method restriction", func(current *kong.Route) { current.Methods = ptr([]string{http.MethodHead}) }),
+	)
+
+	DescribeTable("creates a route with preserve_host derived from passThrough",
+		func(passThrough bool) {
+			route.Spec.PassThrough = passThrough
+			api.EXPECT().GetServiceWithResponse(mock.Anything, "test-route").Return(matchingService(), nil)
+			api.EXPECT().GetRouteWithResponse(mock.Anything, "test-route").Return(
+				&kong.GetRouteResponse{HTTPResponse: &http.Response{StatusCode: http.StatusNotFound}}, nil,
+			)
+			api.EXPECT().UpsertRouteWithResponse(mock.Anything, "test-route", mock.Anything).
+				Run(func(_ context.Context, _ string, body kong.UpsertRouteJSONRequestBody, _ ...kong.RequestEditorFn) {
+					Expect(body.PreserveHost).To(Equal(passThrough))
+					raw, err := json.Marshal(body)
+					Expect(err).NotTo(HaveOccurred())
+					Expect(string(raw)).To(ContainSubstring(fmt.Sprintf(`"preserve_host":%t`, passThrough)))
+				}).Return(&kong.UpsertRouteResponse{
+				HTTPResponse: &http.Response{StatusCode: http.StatusOK},
+				JSON200:      &kong.Route{Id: ptr("route-id")},
+			}, nil).Once()
+
+			Expect(client.CreateOrReplaceRoute(ctx, route, upstream)).To(Succeed())
+		},
+		Entry("passThrough true", true),
+		Entry("passThrough false", false),
+	)
+
+	DescribeTable("reconciles preserve_host drift",
+		func(passThrough bool, current *bool, expectWrite bool) {
+			route.Spec.PassThrough = passThrough
+			stored := matchingRoute()
+			stored.JSON200.PreserveHost = current
+			api.EXPECT().GetServiceWithResponse(mock.Anything, "test-route").Return(matchingService(), nil).Twice()
+			api.EXPECT().GetRouteWithResponse(mock.Anything, "test-route").Return(stored, nil).Twice()
+			if expectWrite {
+				api.EXPECT().UpsertRouteWithResponse(mock.Anything, "test-route", mock.Anything).
+					Run(func(_ context.Context, _ string, body kong.UpsertRouteJSONRequestBody, _ ...kong.RequestEditorFn) {
+						Expect(body.PreserveHost).To(Equal(passThrough))
+						stored.JSON200.PreserveHost = ptr(body.PreserveHost)
+					}).Return(&kong.UpsertRouteResponse{
+					HTTPResponse: &http.Response{StatusCode: http.StatusOK},
+					JSON200:      &kong.Route{Id: ptr("route-id")},
+				}, nil).Once()
+			}
+
+			Expect(client.CreateOrReplaceRoute(ctx, route, upstream)).To(Succeed())
+			Expect(client.CreateOrReplaceRoute(ctx, route, upstream)).To(Succeed())
+		},
+		Entry("enables when current is nil", true, nil, true),
+		Entry("enables when current is false", true, ptr(false), true),
+		Entry("no-op when current is true", true, ptr(true), false),
+		Entry("disables when current is true", false, ptr(true), true),
+		Entry("no-op when current is nil", false, nil, false),
+		Entry("no-op when current is false", false, ptr(false), false),
 	)
 
 	DescribeTable("configures methods from the healthProbe flag",

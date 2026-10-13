@@ -51,9 +51,6 @@ func discoverTokenURL(ctx context.Context, client *http.Client, issuerURL string
 	if err := json.Unmarshal(body, &metadata); err != nil {
 		return "", fmt.Errorf("decoding OIDC metadata: %w", err)
 	}
-	if strings.TrimSuffix(metadata.Issuer, "/") != strings.TrimSuffix(issuerURL, "/") {
-		return "", fmt.Errorf("OIDC issuer mismatch: got %q, want %q", metadata.Issuer, issuerURL)
-	}
 	if err := validateDiscoveredTokenURL(metadata.TokenEndpoint); err != nil {
 		return "", err
 	}

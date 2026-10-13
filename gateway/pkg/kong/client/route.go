@@ -57,6 +57,7 @@ func (c *kongClient) CreateOrReplaceRoute(ctx context.Context, route CustomRoute
 		Service:                 &kong.CreateRouteRequestService{Id: service.Id},
 		RequestBuffering:        route.GetRequestBuffering(),
 		ResponseBuffering:       route.GetResponseBuffering(),
+		PreserveHost:            route.IsPassThrough(),
 		HttpsRedirectStatusCode: 426,
 		Tags:                    normalizeSet(&routeTags),
 	}
@@ -167,6 +168,7 @@ func (e routeEntity) Project(current *kong.Route) (kong.CreateRouteJSONRequestBo
 		Service:                 service,
 		RequestBuffering:        valueOrZero(current.RequestBuffering),
 		ResponseBuffering:       valueOrZero(current.ResponseBuffering),
+		PreserveHost:            valueOrZero(current.PreserveHost),
 		HttpsRedirectStatusCode: kong.CreateRouteRequestHttpsRedirectStatusCode(valueOrZero(current.HttpsRedirectStatusCode)),
 		Tags:                    normalizeSet(current.Tags),
 	}, nil

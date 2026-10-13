@@ -91,33 +91,48 @@ var _ = Describe("OIDC discovery", func() {
 		Expect(err).To(MatchError(ContainSubstring("query")))
 	})
 
-	It("rejects issuer mismatch, non-2xx responses, and insecure token endpoints", func() {
-		var issuer string
-		status := http.StatusOK
-		body := func() string {
-			return fmt.Sprintf(`{"issuer":%q,"token_endpoint":"https://tokens.example.com/token"}`, issuer)
-		}
-		server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(status); _, _ = w.Write([]byte(body())) }))
+	DescribeTable("does not compare the advertised issuer with the configured issuer",
+		func(metadata string) {
+			server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { _, _ = w.Write([]byte(metadata)) }))
+			defer server.Close()
+
+			tokenURL, err := discoverTokenURL(context.Background(), server.Client(), server.URL)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(tokenURL).To(Equal("https://tokens.example.com/token"))
+		},
+		Entry("mismatched issuer", `{"issuer":"https://wrong.example.com","token_endpoint":"https://tokens.example.com/token"}`),
+		Entry("empty issuer", `{"issuer":"","token_endpoint":"https://tokens.example.com/token"}`),
+		Entry("absent issuer", `{"token_endpoint":"https://tokens.example.com/token"}`),
+	)
+
+	It("rejects non-2xx responses", func() {
+		server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			w.WriteHeader(http.StatusBadGateway)
+			_, _ = fmt.Fprintf(w, `{"token_endpoint":"https://tokens.example.com/token"}`)
+		}))
 		defer server.Close()
-		issuer = server.URL
 
-		body = func() string {
-			return `{"issuer":"https://wrong.example.com","token_endpoint":"https://tokens.example.com/token"}`
-		}
-		_, err := discoverTokenURL(context.Background(), server.Client(), issuer)
-		Expect(err).To(HaveOccurred())
-
-		status = http.StatusBadGateway
-		_, err = discoverTokenURL(context.Background(), server.Client(), issuer)
-		Expect(err).To(HaveOccurred())
-
-		status = http.StatusOK
-		body = func() string {
-			return fmt.Sprintf(`{"issuer":%q,"token_endpoint":"http://tokens.example.com/token"}`, issuer)
-		}
-		_, err = discoverTokenURL(context.Background(), server.Client(), issuer)
-		Expect(err).To(HaveOccurred())
+		_, err := discoverTokenURL(context.Background(), server.Client(), server.URL)
+		Expect(err).To(MatchError(ContainSubstring("HTTP 502")))
 	})
+
+	DescribeTable("rejects unsafe token endpoints regardless of the advertised issuer",
+		func(issuer string) {
+			var server *httptest.Server
+			server = httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				if issuer == "" {
+					issuer = server.URL
+				}
+				_, _ = fmt.Fprintf(w, `{"issuer":%q,"token_endpoint":"http://tokens.example.com/token"}`, issuer)
+			}))
+			defer server.Close()
+
+			_, err := discoverTokenURL(context.Background(), server.Client(), server.URL)
+			Expect(err).To(MatchError(ContainSubstring("absolute HTTPS URL")))
+		},
+		Entry("matching issuer", ""),
+		Entry("mismatched issuer", "https://wrong.example.com"),
+	)
 })
 
 var _ = Describe("OIDC discovery TLS verification", func() {
@@ -254,6 +269,23 @@ var _ = Describe("Preset OIDC status", func() {
 		Expect(populatePresetStatus(context.Background(), hc)).To(Succeed())
 		Expect(requests).To(Equal(1))
 		Expect(hc.Zone.Status.Presets).To(HaveEach(HaveField("Links.TokenUrl", "https://tokens.example.com/token")))
+	})
+
+	It("accepts an advertised issuer that differs from the configured issuer", func() {
+		server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			_, err := fmt.Fprint(w, `{"issuer":"https://kong.example.com/auth/realms/default","token_endpoint":"https://kong.example.com/auth/realms/default/protocol/openid-connect/token"}`)
+			Expect(err).NotTo(HaveOccurred())
+		}))
+		defer server.Close()
+		hc := newContext(server.Client())
+		hc.Zone.Spec.IdentityProviders[0].IssuerHostname = "keycloak.intra.example.com"
+		hc.HTTPClient.Transport = rewriteHostTransport{base: hc.HTTPClient.Transport, target: server.URL}
+
+		Expect(populatePresetStatus(context.Background(), hc)).To(Succeed())
+		preset := hc.Zone.Status.Presets[0]
+		Expect(preset.Name).To(Equal("default"))
+		Expect(preset.Links.Issuer).To(Equal("https://keycloak.intra.example.com/auth/realms/default"))
+		Expect(preset.Links.TokenUrl).To(Equal("https://kong.example.com/auth/realms/default/protocol/openid-connect/token"))
 	})
 
 	It("reuses a safe status token URL only for the matching issuer", func() {
