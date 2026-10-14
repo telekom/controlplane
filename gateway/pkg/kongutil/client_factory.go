@@ -131,10 +131,15 @@ var NewClientFor = func(gwCfg GatewayAdminConfig) (kong.ClientWithResponsesInter
 		Timeout:   10 * time.Second,
 	}
 
+	tokenUrl, err := url.JoinPath(gwCfg.AdminIssuer(), tokenUrlPath)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to construct token URL")
+	}
+
 	tokenCfg := clientcredentials.Config{
 		ClientID:     gwCfg.AdminClientId(),
 		ClientSecret: gwCfg.AdminClientSecret(),
-		TokenURL:     gwCfg.AdminIssuer() + tokenUrlPath,
+		TokenURL:     tokenUrl,
 	}
 
 	ctx := context.WithValue(rootCtx, oauth2.HTTPClient, baseClient)
