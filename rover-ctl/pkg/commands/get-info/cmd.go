@@ -5,11 +5,14 @@
 package getinfo
 
 import (
+	"strings"
+
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/telekom/controlplane/rover-ctl/pkg/commands/base"
 	"github.com/telekom/controlplane/rover-ctl/pkg/handlers"
+	"github.com/telekom/controlplane/rover-ctl/pkg/handlers/common"
 	"github.com/telekom/controlplane/rover-ctl/pkg/parser"
 	"github.com/telekom/controlplane/rover-ctl/pkg/util"
 )
@@ -38,10 +41,11 @@ If no name or file is provided, information about all resources of the specified
 		FileCommand: baseCmd,
 	}
 
-	cmd.Cmd.Flags().StringVarP(&cmd.Name, "name", "n", "", "Name of the resource to get information about")
-	cmd.Cmd.MarkFlagsMutuallyExclusive("name", "file")
+	cmd.Cmd.Flags().StringVarP(&cmd.Name, "name", "n", "", "Name of the application to get information about")
+	cmd.Cmd.Flags().StringVarP(&cmd.Name, "application", "a", "", "Name of the application to get information about (alias for --name)")
+	cmd.Cmd.MarkFlagsMutuallyExclusive("name", "application", "file")
 
-	cmd.Cmd.Flags().BoolVarP(&cmd.Shallow, "shallow", "s", false, "Get only basic information without details")
+	cmd.Cmd.Flags().BoolVarP(&cmd.Shallow, "shallow", "s", false, "Get only information about the application itself without sub-resources")
 
 	cmd.Cmd.RunE = cmd.Run
 
@@ -50,6 +54,14 @@ If no name or file is provided, information about all resources of the specified
 
 func (c *Command) Run(cmd *cobra.Command, args []string) error {
 	c.Logger().V(1).Info("Starting get-info command", "name", c.Name, "file", c.FilePath, "shallow", c.Shallow)
+
+	if c.nameFlagChanged() && strings.TrimSpace(c.Name) == "" {
+		return errors.New("application name must not be empty")
+	}
+
+	if c.Shallow {
+		cmd.SetContext(common.WithShallowInfo(cmd.Context()))
+	}
 
 	if c.Name != "" {
 		return c.getInfoFor(c.Name)
@@ -81,6 +93,10 @@ func (c *Command) Run(cmd *cobra.Command, args []string) error {
 
 	c.Logger().V(1).Info("Completed get-info command")
 	return nil
+}
+
+func (c *Command) nameFlagChanged() bool {
+	return c.Cmd.Flags().Changed("name") || c.Cmd.Flags().Changed("application")
 }
 
 func (c *Command) getInfoMany() error {
