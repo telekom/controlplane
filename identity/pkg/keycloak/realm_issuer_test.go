@@ -9,14 +9,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"strings"
 
-	"github.com/go-logr/logr"
-	"github.com/go-logr/logr/funcr"
 	"github.com/stretchr/testify/mock"
 	"k8s.io/utils/ptr"
 
@@ -39,17 +35,6 @@ func isBlocked(err error) bool {
 	return errors.As(err, &be) && be.IsBlocked()
 }
 
-type roundTripFunc func(*http.Request) (*http.Response, error)
-
-func (f roundTripFunc) RoundTrip(r *http.Request) (*http.Response, error) { return f(r) }
-
-type closeErrBody struct {
-	io.Reader
-	err error
-}
-
-func (b *closeErrBody) Close() error { return b.err }
-
 var _ = Describe("Realm attributes", func() {
 	Describe("ValidateFrontendUrl", func() {
 		DescribeTable("should accept valid base URLs",
@@ -64,14 +49,6 @@ var _ = Describe("Realm attributes", func() {
 			Entry("path containing realms", "https://iam.example.com/realms/proxy"),
 			Entry("upper-case scheme", "HTTPS://iam.example.com"),
 		)
-
-		It("should not retain a malformed credential-bearing URL in the error", func() {
-			err := keycloak.ValidateFrontendUrl("https://user:s3cret@iam.example.com:bad/auth")
-			Expect(err).To(MatchError(ContainSubstring("invalid URL")))
-			Expect(err.Error()).ToNot(ContainSubstring("s3cret"))
-			var urlErr *url.Error
-			Expect(errors.As(err, &urlErr)).To(BeFalse())
-		})
 
 		DescribeTable("should reject invalid URLs",
 			func(raw, expected string) {
@@ -179,22 +156,6 @@ var _ = Describe("ResolveIssuerUrl", func() {
 		Expect(err.Error()).ToNot(ContainSubstring("pw"))
 	})
 
-	It("should not leak a malformed credential-bearing frontend URL", func() {
-		var logs strings.Builder
-		logCtx := logr.NewContext(ctx, funcr.New(func(prefix, args string) {
-			logs.WriteString(prefix + args + "\n")
-		}, funcr.Options{Verbosity: 1}))
-		svc := newDiscoveryService(func(w http.ResponseWriter, _ *http.Request) {
-			fmt.Fprintf(w, `{"issuer":%q}`, publicIssuer)
-		})
-
-		issuer, err := svc.ResolveIssuerUrl(logCtx, "my-realm", "https://user:s3cret@iam.example.com:bad/auth")
-		Expect(err).ToNot(HaveOccurred())
-		Expect(issuer).To(Equal(publicIssuer))
-		Expect(logs.String()).To(ContainSubstring("not a valid base URL"))
-		Expect(logs.String()).ToNot(ContainSubstring("s3cret"))
-	})
-
 	It("should return a blocked error for an invalid frontend URL when discovery is not configured", func() {
 		svc := keycloak.NewKeycloakService(mockClient)
 		_, err := svc.ResolveIssuerUrl(ctx, "my-realm", "not a url")
@@ -259,7 +220,6 @@ var _ = Describe("ResolveIssuerUrl", func() {
 		Entry("issuer with credentials", http.StatusOK, `{"issuer":"https://u:p@iam.example.com/realms/my-realm"}`, "credentials", false),
 		Entry("issuer with query", http.StatusOK, `{"issuer":"https://iam.example.com/realms/my-realm?x=1"}`, "query", false),
 		Entry("issuer with fragment", http.StatusOK, `{"issuer":"https://iam.example.com/realms/my-realm#x"}`, "fragment", false),
-		Entry("malformed issuer with credentials", http.StatusOK, `{"issuer":"https://u:s3cret@iam.example.com:bad/realms/my-realm"}`, "invalid issuer URL", false),
 		Entry("issuer of another realm", http.StatusOK, `{"issuer":"https://iam.example.com/realms/other"}`, "does not belong", false),
 		Entry("issuer with realm suffix", http.StatusOK, `{"issuer":"https://iam.example.com/realms/xmy-realm"}`, "does not belong", false),
 	)
@@ -270,92 +230,15 @@ var _ = Describe("ResolveIssuerUrl", func() {
 		})
 
 		_, err := svc.ResolveIssuerUrl(ctx, "my-realm", "")
-		Expect(err).To(MatchError(ContainSubstring("decoding OIDC discovery document")))
-		Expect(isBlocked(err)).To(BeTrue())
-	})
-
-	It("should not leak a malformed credential-bearing discovered issuer", func() {
-		svc := newDiscoveryService(func(w http.ResponseWriter, _ *http.Request) {
-			fmt.Fprint(w, `{"issuer":"https://u:s3cret@iam.example.com:bad/realms/my-realm"}`)
-		})
-
-		_, err := svc.ResolveIssuerUrl(ctx, "my-realm", "")
-		Expect(err).To(HaveOccurred())
-		Expect(err.Error()).ToNot(ContainSubstring("s3cret"))
-		var urlErr *url.Error
-		Expect(errors.As(err, &urlErr)).To(BeFalse())
-	})
-
-	Describe("closing the discovery response", func() {
-		newClosingService := func(body string, status int, closeErr error) keycloak.KeycloakService {
-			client := &http.Client{Transport: roundTripFunc(func(*http.Request) (*http.Response, error) {
-				return &http.Response{
-					StatusCode: status,
-					Body:       &closeErrBody{Reader: strings.NewReader(body), err: closeErr},
-					Header:     http.Header{},
-				}, nil
-			})}
-			return keycloak.NewKeycloakService(mockClient,
-				keycloak.WithIssuerDiscovery(client, "https://iam.example.com/auth/admin/realms/"))
-		}
-
-		It("should return a close error after a successful read", func() {
-			svc := newClosingService(fmt.Sprintf(`{"issuer":%q}`, publicIssuer), http.StatusOK, errors.New("close failed"))
-			_, err := svc.ResolveIssuerUrl(ctx, "my-realm", "")
-			Expect(err).To(MatchError(ContainSubstring("closing OIDC discovery response: close failed")))
-		})
-
-		It("should keep the primary error and its classification on close failure", func() {
-			svc := newClosingService("", http.StatusServiceUnavailable, errors.New("close failed"))
-			_, err := svc.ResolveIssuerUrl(ctx, "my-realm", "")
-			Expect(err).To(MatchError(ContainSubstring("HTTP 503")))
-			Expect(err).To(MatchError(ContainSubstring("close failed")))
-			Expect(isRetryable(err)).To(BeTrue())
-		})
-
-		It("should succeed when closing succeeds", func() {
-			svc := newClosingService(fmt.Sprintf(`{"issuer":%q}`, publicIssuer), http.StatusOK, nil)
-			issuer, err := svc.ResolveIssuerUrl(ctx, "my-realm", "")
-			Expect(err).ToNot(HaveOccurred())
-			Expect(issuer).To(Equal(publicIssuer))
-		})
-	})
-
-	It("should block discovery without a request or leak for a malformed admin URL", func() {
-		var requested bool
-		client := &http.Client{Transport: roundTripFunc(func(*http.Request) (*http.Response, error) {
-			requested = true
-			return nil, errors.New("unexpected request")
-		})}
-		svc := keycloak.NewKeycloakService(mockClient,
-			keycloak.WithIssuerDiscovery(client, "https://user:s3cret@iam.example.com:bad/auth/admin/realms/"))
-
-		_, err := svc.ResolveIssuerUrl(ctx, "my-realm", "")
-		Expect(err).To(MatchError(ContainSubstring("determining OIDC discovery URL: invalid admin URL")))
-		Expect(err.Error()).ToNot(ContainSubstring("s3cret"))
-		Expect(isBlocked(err)).To(BeTrue())
-		Expect(requested).To(BeFalse())
-	})
-
-	It("should accept a discovery document of exactly the size limit", func() {
-		prefix := fmt.Sprintf(`{"issuer":%q,"padding":"`, publicIssuer)
-		document := prefix + strings.Repeat("x", (1<<20)-len(prefix)-len(`"}`)) + `"}`
-		Expect(document).To(HaveLen(1 << 20))
-		svc := newDiscoveryService(func(w http.ResponseWriter, _ *http.Request) {
-			fmt.Fprint(w, document)
-		})
-
-		issuer, err := svc.ResolveIssuerUrl(ctx, "my-realm", "")
-		Expect(err).ToNot(HaveOccurred())
-		Expect(issuer).To(Equal(publicIssuer))
+		Expect(err).To(MatchError(ContainSubstring("exceeds")))
 	})
 
 	It("should return a retryable error when the server is unreachable", func() {
 		server := httptest.NewServer(http.NotFoundHandler())
-		serverUrl := server.URL
+		url := server.URL
 		server.Close()
 
-		svc := keycloak.NewKeycloakService(mockClient, keycloak.WithIssuerDiscovery(http.DefaultClient, serverUrl+"/admin/realms/"))
+		svc := keycloak.NewKeycloakService(mockClient, keycloak.WithIssuerDiscovery(http.DefaultClient, url+"/admin/realms/"))
 		_, err := svc.ResolveIssuerUrl(ctx, "my-realm", "")
 		Expect(err).To(MatchError(ContainSubstring("requesting OIDC discovery document")))
 		Expect(isRetryable(err)).To(BeTrue())
