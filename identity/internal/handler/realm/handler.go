@@ -37,6 +37,10 @@ func (h *HandlerRealm) CreateOrUpdate(ctx context.Context, realm *identityv1.Rea
 		return fmt.Errorf("realm is nil")
 	}
 
+	if err := keycloak.ValidateRealmAttributes(realm.Spec.Attributes); err != nil {
+		return ctrlerrors.BlockedErrorf("invalid realm attributes: %s", err)
+	}
+
 	identityProvider, err := identityprovider.GetIdentityProviderByName(ctx, realm.Spec.IdentityProvider)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
@@ -45,14 +49,13 @@ func (h *HandlerRealm) CreateOrUpdate(ctx context.Context, realm *identityv1.Rea
 		return err
 	}
 
-	realm.Status.IssuerUrl = keycloak.DetermineIssuerUrlFrom(identityProvider.Spec.AdminUrl, realm.Name)
 	realm.Status.AdminClientId = identityProvider.Spec.AdminClientId
 	realm.Status.AdminUserName = identityProvider.Spec.AdminUserName
 	realm.Status.AdminPassword = identityProvider.Spec.AdminPassword
 	realm.Status.AdminUrl = identityProvider.Status.AdminUrl
 	realm.Status.AdminTokenUrl = identityProvider.Status.AdminTokenUrl
 
-	err = ValidateRealmStatus(&realm.Status)
+	err = ValidateRealmManagementStatus(&realm.Status)
 	if err != nil {
 		return ctrlerrors.BlockedErrorf("IdentityProvider %q is not valid: %s", realm.Spec.IdentityProvider.String(), err)
 	}
@@ -70,10 +73,24 @@ func (h *HandlerRealm) CreateOrUpdate(ctx context.Context, realm *identityv1.Rea
 		return fmt.Errorf("failed to get keycloak client: %w", err)
 	}
 
-	err = realmClient.CreateOrReplaceRealm(ctx, realm)
+	syncResult, err := realmClient.CreateOrReplaceRealm(ctx, realm)
 	if err != nil {
 		return fmt.Errorf("failed to create or update realm: %w", err)
 	}
+	// Record ownership right away: the status is also written when a later
+	// step fails, so removed keys can still be cleaned up next time.
+	realm.Status.ManagedAttributes = syncResult.ManagedAttributes
+
+	issuerUrl, err := realmClient.ResolveIssuerUrl(ctx, realm.Name, syncResult.FrontendUrl)
+	if err != nil {
+		// Never keep an issuer that could not be confirmed.
+		realm.Status.IssuerUrl = ""
+		return fmt.Errorf("failed to resolve issuer URL: %w", err)
+	}
+	if issuerUrl != realm.Status.IssuerUrl {
+		logger.Info("resolved realm issuer", "issuerUrl", issuerUrl)
+	}
+	realm.Status.IssuerUrl = issuerUrl
 
 	// If secret rotation is configured, ensure the Keycloak realm has the
 	// corresponding client-policy profile + policy. Otherwise, remove any

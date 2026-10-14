@@ -31,6 +31,10 @@ COVER_PACKAGES = ./cmd/...,./pkg/...
 test: fmt vet ## Run tests.
 	gotestsum --format pkgname --jsonfile gotest.log -- $(TEST_PACKAGES) -ginkgo.junit-report=ginkgo-junit.xml -coverprofile cover.out --coverpkg $(COVER_PACKAGES) -mod=readonly -race
 
+.PHONY: docs
+docs: ## Generate Cobra CLI Markdown docs into docs/.
+	go run ./tools/gen_doc.go
+
 .PHONY: install
 install: build ## Install roverctl binary.
 	install -D -m 0755 bin/roverctl $(DESTDIR)/usr/local/bin/roverctl

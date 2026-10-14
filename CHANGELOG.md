@@ -1,3 +1,24 @@
+## [0.41.1](https://github.com/telekom/controlplane/compare/v0.41.0...v0.41.1) (2026-10-14)
+
+
+### Bug Fixes
+
+* **admin:** omit frontend-url for internal realms ([#775](https://github.com/telekom/controlplane/issues/775)) ([19b107c](https://github.com/telekom/controlplane/commit/19b107cd39e924e1eb8361b0ad6f137497c23784))
+
+# [0.41.0](https://github.com/telekom/controlplane/compare/v0.40.1...v0.41.0) (2026-10-14)
+
+
+### Bug Fixes
+
+* **common-server:** use default scope when token scopes lack matching prefix ([#773](https://github.com/telekom/controlplane/issues/773)) ([84b84fe](https://github.com/telekom/controlplane/commit/84b84fee1b5f428b93c18edc0bb644ac0aaeed4a))
+* expose service urls for file exp and sub ([#770](https://github.com/telekom/controlplane/issues/770)) ([d150a4d](https://github.com/telekom/controlplane/commit/d150a4d0ccce13f273b713d55404c1c85ebb516b))
+
+
+### Features
+
+* **admin,identity:** configure frontendUrl attribute on keycloak realm on world visible zones ([#769](https://github.com/telekom/controlplane/issues/769)) ([3b16cb2](https://github.com/telekom/controlplane/commit/3b16cb2be3114f4e437a4b993ae490b6642bbc02))
+* **rover-ctl:** added deprecated commands to be backward compatible ([#768](https://github.com/telekom/controlplane/issues/768)) ([8928a12](https://github.com/telekom/controlplane/commit/8928a1296c34c29509e319f4fb1e21420f187005))
+
 ## [0.40.1](https://github.com/telekom/controlplane/compare/v0.40.0...v0.40.1) (2026-10-13)
 
 

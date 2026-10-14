@@ -138,6 +138,8 @@ Each entity carries common fields such as `id`, `createdAt`, `lastModifiedAt`, `
 
 API, event, and agentic subscriptions can exist without a target exposure. In that case, their GraphQL `target` field returns `null` without an error.
 
+File subscription and exposure details are returned through the reduced `FileSubscriptionInfo` and `FileExposureInfo` views. Their `serviceUrl` and `serviceExternalUrl` fields are nullable: GraphQL returns `null` when the corresponding URL is unset on the file subscription or exposure.
+
 ### GraphQL Queries
 
 All top-level queries support **cursor-based pagination** (Relay-style), **filtering**, and **ordering**:

@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"slices"
 
+	"github.com/go-logr/logr"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
@@ -83,6 +84,7 @@ func createDefaultIdentityRealm(ctx context.Context, hc *HandlingContext) error 
 		Claims:         hc.DefaultClaims,
 		AllowedOrigins: slices.Clone(idp.AllowedOrigins),
 		SecretRotation: idp.SecretRotation,
+		SetFrontendURL: true,
 	}
 	realm, err := createIdentityRealm(ctx, hc, naming.ForDefaultIdentityRealm(hc.Environment), opts)
 	if err != nil {
@@ -105,7 +107,8 @@ func createDefaultIdentityRealm(ctx context.Context, hc *HandlingContext) error 
 func createInternalIdentityRealm(ctx context.Context, hc *HandlingContext) error {
 	opts := createIdentityRealmOptions{
 		Claims:         hc.DefaultClaims,
-		SecretRotation: nil, // Internal realm MUST not have secret rotation enabled
+		SecretRotation: nil,   // Internal realm MUST not have secret rotation enabled
+		SetFrontendURL: false, // Internal (rover) realm MUST not have a frontendUrl
 	}
 	realm, err := createIdentityRealm(ctx, hc, naming.ForInternalIdentityRealm(), opts)
 	if err != nil {
@@ -131,11 +134,20 @@ func issuerHostname(idp *adminv1.IdentityProviderConfig) (string, error) {
 	return u.Hostname(), nil
 }
 
+// realmFrontendURL returns the Keycloak frontend (base) URL for the issuer
+// hostname, e.g. "https://iam.example.com/auth".
+func realmFrontendURL(hostname string) string {
+	return (&url.URL{Scheme: "https", Host: hostname, Path: "/auth"}).String()
+}
+
 // createIdentityRealmOptions configures the creation of an identity realm.
 type createIdentityRealmOptions struct {
 	Claims         []identityapi.ClaimConfig
 	AllowedOrigins []string
 	SecretRotation *adminv1.SecretRotationConfig
+	// SetFrontendURL sets the realm frontendUrl attribute for world-visible zones.
+	// It must be false for the internal (rover) realm.
+	SetFrontendURL bool
 }
 
 // createIdentityRealm is a shared helper that creates an identity realm with the given name and options.
@@ -147,6 +159,19 @@ func createIdentityRealm(ctx context.Context, hc *HandlingContext, realmName str
 			Name:      labelutil.NormalizeNameValue(realmName),
 			Namespace: labelutil.NormalizeValue(hc.Namespace.Name),
 		},
+	}
+
+	frontendURL := ""
+	idp, err := hc.Zone.Spec.GetIdentityProvider()
+	if err != nil {
+		return nil, ctrlerrors.BlockedErrorf("cannot resolve identity provider for zone %q: %s", hc.Zone.Name, err)
+	}
+	if opts.SetFrontendURL {
+		if hostname, hostErr := issuerHostname(idp); hostErr == nil {
+			frontendURL = realmFrontendURL(hostname)
+		} else {
+			logr.FromContextOrDiscard(ctx).Info("Cannot resolve issuer hostname, realm frontendUrl is not set", "realm", identityRealm.Name, "reason", hostErr.Error())
+		}
 	}
 
 	mutator := func() error {
@@ -166,6 +191,12 @@ func createIdentityRealm(ctx context.Context, hc *HandlingContext, realmName str
 			AllowedOrigins: opts.AllowedOrigins,
 		}
 
+		if opts.SetFrontendURL && hc.Zone.Spec.Visibility == adminv1.ZoneVisibilityWorld {
+			identityRealm.Spec.Attributes = map[string]string{
+				"frontendUrl": frontendURL,
+			}
+		}
+
 		secretRotationConfig := opts.SecretRotation
 		if secretRotationConfig != nil && secretRotationConfig.Enabled {
 			identityRealm.Spec.SecretRotation = &identityapi.SecretRotationConfig{
@@ -180,7 +211,7 @@ func createIdentityRealm(ctx context.Context, hc *HandlingContext, realmName str
 		return nil
 	}
 
-	_, err := c.CreateOrUpdate(ctx, identityRealm, mutator)
+	_, err = c.CreateOrUpdate(ctx, identityRealm, mutator)
 	if err != nil {
 		return nil, ctrlerrors.RetryableErrorf("failed to create or update Identity Realm %s in zone %s: %s", identityRealm.Name, hc.Zone.Name, err)
 	}

@@ -155,6 +155,7 @@ func NewKeycloakServiceFor(status *identityv1.RealmStatus) (KeycloakService, err
 		return nil, fmt.Errorf("failed to create keycloak admin client: %w", err)
 	}
 
-	// 5. Domain service.
-	return NewKeycloakService(apiClient), nil
+	// 5. Domain service. Issuer discovery uses the unauthenticated base
+	// client so the admin token is never sent to the discovery endpoint.
+	return NewKeycloakService(apiClient, WithIssuerDiscovery(baseClient, status.AdminUrl)), nil
 }

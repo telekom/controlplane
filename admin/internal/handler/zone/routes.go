@@ -53,6 +53,7 @@ func reconcileTeamApiIdentityRealm(ctx context.Context, hc *HandlingContext) err
 	opts := createIdentityRealmOptions{
 		Claims:         hc.DefaultClaims,
 		SecretRotation: nil, // TeamAPIs do not support rotation
+		SetFrontendURL: true,
 	}
 	teamApiIdentityRealm, err := createIdentityRealm(ctx, hc, naming.ForTeamApiIdentityRealm(hc.Environment), opts)
 	if err != nil {

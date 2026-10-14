@@ -4,7 +4,11 @@
 
 package keycloak
 
-import "strings"
+import (
+	"fmt"
+	"net/url"
+	"strings"
+)
 
 // AdminURL example: 		"https://iris-distcp1-dataplane1.dev.dhei.telekom.de/auth/admin/realms/"
 // AdminConsoleURL example: "https://iris-distcp1-dataplane1.dev.dhei.telekom.de/auth/admin/master/console/#/"
@@ -26,14 +30,32 @@ func DetermineAdminConsoleUrlFrom(adminUrl, realmName string) string {
 	return adminUrl[:i] + "/" + MasterRealm + ConsoleEndpointSuffix + realmName
 }
 
-func DetermineIssuerUrlFrom(adminUrl, realmName string) string {
-	i := strings.Index(adminUrl, "/admin")
-	if i == -1 {
-		return adminUrl + "realms/" + realmName
+// DetermineIssuerUrlFrom returns "<base>/realms/<realmName>", where base is
+// the admin URL up to its first "admin" path segment (or the whole path if
+// there is none). Scheme, host and context path are preserved; query and
+// fragment are dropped. realmName is appended as is, so callers must escape it.
+// The returned error does not contain the admin URL, which may hold credentials.
+func DetermineIssuerUrlFrom(adminUrl, realmName string) (string, error) {
+	u, err := parseUrl(adminUrl)
+	if err != nil {
+		return "", fmt.Errorf("invalid admin URL: %w", err)
 	}
-	return adminUrl[:i] + "/realms/" + realmName
+	segments := strings.Split(u.EscapedPath(), "/")
+	for i, segment := range segments {
+		if segment == "admin" {
+			segments = segments[:i]
+			break
+		}
+	}
+	basePath := strings.TrimRight(strings.Join(segments, "/"), "/")
+	base := url.URL{Scheme: u.Scheme, User: u.User, Host: u.Host}
+	return base.String() + basePath + "/realms/" + realmName, nil
 }
 
-func DetermineAdminTokenUrlFrom(adminUrl, realmName string) string {
-	return DetermineIssuerUrlFrom(adminUrl, realmName) + TokenEndpointSuffix
+func DetermineAdminTokenUrlFrom(adminUrl, realmName string) (string, error) {
+	issuerUrl, err := DetermineIssuerUrlFrom(adminUrl, realmName)
+	if err != nil {
+		return "", err
+	}
+	return issuerUrl + TokenEndpointSuffix, nil
 }
