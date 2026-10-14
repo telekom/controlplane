@@ -1,0 +1,42 @@
+event/internal/handler/eventconfig/handler.go
+  s_a176cbfc941f3f::t_5f1d718124bdc9 850-854
+  h_0f030e7424553c 10,218,222-225
+admin/internal/handler/zone/identity.go
+  s_ad2dddc74c0314::t_eb080fe419de28 127,133
+  s_ad2dddc74c0314::t_9ec4752330a38e 12
+.gitignore
+  h_0f030e7424553c 16
+docs/docs/architecture/admin.mdx
+  s_ad2dddc74c0314::t_15ee2d0ac5327a 36
+admin/internal/handler/zone/oidc_test.go
+  s_ad2dddc74c0314::t_832cddbd045d56 276-289
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "bf4e0dd6be62ef08db3c9dbad7d648672079d4fa",
+  "prompts": {},
+  "humans": {
+    "h_0f030e7424553c": {
+      "author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  },
+  "sessions": {
+    "s_a176cbfc941f3f": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ec544e027ffey3LMEcuexDSL55",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_ad2dddc74c0314": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ec519ba30ffevetdsTAwPxrK5w",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
