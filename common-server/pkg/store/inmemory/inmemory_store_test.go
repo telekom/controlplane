@@ -9,11 +9,13 @@ import (
 	"fmt"
 	"math/rand/v2"
 	"net/http"
+	"sync"
 
 	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
+	"github.com/telekom/controlplane/common-server/internal/informer"
 	"github.com/telekom/controlplane/common-server/pkg/problems"
 	"github.com/telekom/controlplane/common-server/pkg/store"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -57,6 +59,25 @@ func NewUnstructured(name string) *unstructured.Unstructured {
 	})
 	u.SetResourceVersion("476170914")
 	return u
+}
+
+// trackingInformer records the objects reported with Track.
+type trackingInformer struct {
+	informer.Informer
+	lock    sync.Mutex
+	tracked []string
+}
+
+func (t *trackingInformer) Track(obj *unstructured.Unstructured) {
+	t.lock.Lock()
+	defer t.lock.Unlock()
+	t.tracked = append(t.tracked, obj.GetNamespace()+"/"+obj.GetName())
+}
+
+func (t *trackingInformer) Tracked() []string {
+	t.lock.Lock()
+	defer t.lock.Unlock()
+	return t.tracked
 }
 
 var _ = Describe("Inmemory ObjectStore", func() {
@@ -408,6 +429,24 @@ var _ = Describe("Inmemory ObjectStore", func() {
 			result, err := objStore.Get(ctx, obj.GetNamespace(), obj.GetName())
 			Expect(err).ToNot(HaveOccurred())
 			Expect(result.GetResourceVersion()).To(Equal("476170999")) // updated resource version
+		})
+	})
+
+	Context("Write tracking", func() {
+		fakeClient := fake.NewSimpleDynamicClient(scheme, NewUnstructured("foo"))
+		objStore := NewOrDie[*unstructured.Unstructured](ctx, StoreOpts{
+			Client: fakeClient,
+			GVR:    gvr,
+			GVK:    gvk,
+		})
+		tracker := &trackingInformer{Informer: objStore.informer}
+		objStore.informer = tracker
+
+		It("should report created and replaced objects to the informer", func() {
+			Expect(objStore.CreateOrReplace(ctx, NewUnstructured("written"))).To(Succeed())
+			Expect(objStore.CreateOrReplace(ctx, NewUnstructured("written"))).To(Succeed())
+
+			Expect(tracker.Tracked()).To(Equal([]string{"default/written", "default/written"}))
 		})
 	})
 })
