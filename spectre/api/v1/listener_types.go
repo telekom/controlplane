@@ -15,7 +15,13 @@ import (
 // +kubebuilder:validation:XValidation:rule="has(self.apiListener)",message="apiListener is required"
 // +kubebuilder:validation:XValidation:rule="!has(self.eventListener)",message="eventListener is not yet supported"
 type ListenerSpec struct {
+	// Consumer references the consumer's Application (application.cp.ei.telekom.de/v1),
+	// resolved by Rover from the listener entry's consumer.
+	// +kubebuilder:validation:XValidation:rule="has(self.kind) && self.kind == 'Application'",message="consumer must reference an Application"
 	Consumer ctypes.TypedObjectRef `json:"consumer"`
+	// Provider references the provider's Application (application.cp.ei.telekom.de/v1),
+	// resolved by Rover from the listener entry's provider.
+	// +kubebuilder:validation:XValidation:rule="has(self.kind) && self.kind == 'Application'",message="provider must reference an Application"
 	Provider ctypes.TypedObjectRef `json:"provider"`
 	// Application references the owning SpectreApplication (set by the rover producer).
 	Application ctypes.ObjectRef `json:"application"`
