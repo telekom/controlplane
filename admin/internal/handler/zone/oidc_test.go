@@ -273,6 +273,20 @@ var _ = Describe("Preset OIDC status", func() {
 		)))
 	})
 
+	DescribeTable("trims a trailing slash from the internal issuer without mutating the realm status",
+		func(rawIssuer string) {
+			hc := newContext(nil)
+			hc.InternalIdentityRealm.Status.IssuerUrl = rawIssuer
+
+			issuer, err := internalIssuerURL(hc)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(issuer).To(Equal("https://irix.example.com/auth/realms/internal"))
+			Expect(hc.InternalIdentityRealm.Status.IssuerUrl).To(Equal(rawIssuer))
+		},
+		Entry("with trailing slash", "https://irix.example.com/auth/realms/internal/"),
+		Entry("without trailing slash", "https://irix.example.com/auth/realms/internal"),
+	)
+
 	It("returns a retryable error while the internal realm issuer is unresolved", func() {
 		hc := newContext(nil)
 		hc.InternalIdentityRealm.Status.IssuerUrl = ""
