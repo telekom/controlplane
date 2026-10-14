@@ -67,6 +67,7 @@ An EventStore environment of `default` with another realm does not block. It rai
 ## Current Limitations
 
 - **Pass-through and failover listeners** are rejected.
+- **Event listeners** are not supported yet. rover-server rejects a listener with `eventType` with a 400 problem, for example `listeners[0].eventType: event listeners are not supported yet`. Every listener needs an `apiBasePath`.
 - **Circuit-breaker routes** are supported; the circuit-breaker upstream keeps the Jumper `/listener` path.
 - **SSE delivery** is served on `/horizon/sse/v1/de.telekom.ei.listener.<appId>` and the legacy alias `/spectre-sse/<appId>`, in local and proxy zones. The canonical URL is in `SpectreApplication.status.sseUrl`. The observer gets its token with its Application's identity client; every Rover with listeners gets one. Legacy hostnames/TLS and hash-shortened app IDs of very long team names are not covered by the alias.
 - **Callback traffic** is Gateway-mediated via `EventConfig.Status.CallbackURL`.
