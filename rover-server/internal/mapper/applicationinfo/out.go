@@ -19,7 +19,9 @@ import (
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	filev1 "github.com/telekom/controlplane/file/api/v1"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
+	spectrev1 "github.com/telekom/controlplane/spectre/api/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/telekom/controlplane/rover-server/internal/api"
@@ -96,6 +98,9 @@ func MapApplicationInfo(ctx context.Context, rover *roverv1.Rover, stores *store
 	}
 	if err := FillExposureInfo(ctx, rover, appInfo, stores); err != nil {
 		return nil, errors.Wrap(err, "failed to fill exposure info")
+	}
+	if err := FillListenerInfo(ctx, rover, appInfo, stores); err != nil {
+		return nil, errors.Wrap(err, "failed to fill listener info")
 	}
 	appendVariable(appInfo, "tardis.horizon.event.url", appInfo.StargatePublishEventUrl)
 	if err := FillChevronInfo(ctx, rover, appInfo, stores); err != nil {
@@ -425,6 +430,82 @@ func fillAiExposures(ctx context.Context, rover *roverv1.Rover, appInfo *api.App
 		appInfo.Exposures = append(appInfo.Exposures, expInfo)
 	}
 	return nil
+}
+
+// FillListenerInfo fetches the SpectreApplication and each Listener referenced by
+// the Rover status, validates their readiness, and maps the listener delivery
+// and the listeners into appInfo.
+func FillListenerInfo(ctx context.Context, rover *roverv1.Rover, appInfo *api.ApplicationInfo, stores *store.Stores) error {
+	if rover == nil {
+		return errors.New("input rover is nil")
+	}
+	if appInfo == nil {
+		return errors.New("input applicationInfo is nil")
+	}
+
+	for _, ref := range rover.Status.SpectreApplications {
+		spectreApp, err := stores.SpectreApplicationStore.Get(ctx, ref.Namespace, ref.Name)
+		if err != nil {
+			_, gvk := stores.SpectreApplicationStore.Info()
+			WriteStatusWithRef(ResourceRefFromGVK(gvk, ref.Namespace, ref.Name), appInfo, err)
+			continue
+		}
+
+		if err := condition.EnsureReady(spectreApp); err != nil {
+			WriteStatus(spectreApp, appInfo, err)
+		}
+
+		appInfo.ListenerSubscription = api.ListenerSubscriptionInfo{
+			DeliveryType: api.ListenerSubscriptionInfoDeliveryType(spectreApp.Spec.DeliveryType),
+			Callback:     spectreApp.Spec.Callback,
+			SseUrl:       spectreApp.Status.SseUrl,
+		}
+	}
+
+	appInfo.Listeners = make([]api.RoverListener, 0, len(rover.Status.SpectreListeners))
+	for _, ref := range rover.Status.SpectreListeners {
+		listener, err := stores.SpectreListenerStore.Get(ctx, ref.Namespace, ref.Name)
+		if err != nil {
+			_, gvk := stores.SpectreListenerStore.Info()
+			WriteStatusWithRef(ResourceRefFromGVK(gvk, ref.Namespace, ref.Name), appInfo, err)
+			continue
+		}
+
+		if err := condition.EnsureReady(listener); err != nil {
+			WriteStatus(listener, appInfo, err)
+		}
+
+		appInfo.Listeners = append(appInfo.Listeners, mapListenerInfo(listener))
+	}
+
+	return nil
+}
+
+// mapListenerInfo maps a Spectre Listener to the API's RoverListener, with the
+// consumer and provider as full application IDs.
+func mapListenerInfo(in *spectrev1.Listener) api.RoverListener {
+	info := api.RoverListener{
+		Consumer: applicationID(in.Spec.Consumer.ObjectRef),
+		Provider: applicationID(in.Spec.Provider.ObjectRef),
+	}
+	if in.Spec.ApiListener != nil {
+		info.ApiBasePath = in.Spec.ApiListener.ApiBasePath
+		info.RequestFilter = mapListenerFilterInfo(in.Spec.ApiListener.RequestFilter)
+		info.ResponseFilter = mapListenerFilterInfo(in.Spec.ApiListener.ResponseFilter)
+	}
+	return info
+}
+
+// applicationID returns the full application ID "<group>--<team>--<name>" of an Application reference.
+func applicationID(ref types.ObjectRef) string {
+	return mapper.MakeResourceId(&metav1.PartialObjectMetadata{ObjectMeta: metav1.ObjectMeta{Name: ref.Name, Namespace: ref.Namespace}})
+}
+
+func mapListenerFilterInfo(in *spectrev1.ListenerFilter) api.ListenerFilter {
+	if in == nil {
+		return api.ListenerFilter{}
+	}
+	return api.ListenerFilter{Trigger: in.Trigger, Payload: in.Payload}
 }
 
 func toApiVisibility(visibility string) api.Visibility {
