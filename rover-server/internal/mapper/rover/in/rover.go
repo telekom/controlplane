@@ -80,7 +80,9 @@ func MapRover(in *api.Rover, out *roverv1.Rover) error {
 		return err
 	}
 
-	mapListenersIn(in, out)
+	if err := mapListenersIn(in, out); err != nil {
+		return err
+	}
 	mapListenerSubscriptionIn(in, out)
 
 	out.Spec.Zone = in.Zone

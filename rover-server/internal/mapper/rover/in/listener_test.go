@@ -7,6 +7,7 @@ package in
 import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/telekom/controlplane/common-server/pkg/problems"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 
 	"github.com/telekom/controlplane/rover-server/internal/api"
@@ -98,6 +99,23 @@ var _ = Describe("Listener Mapper In", func() {
 			}))
 			Expect(output.Spec.Listeners[0].EventFilter).To(BeNil())
 		})
+	})
+
+	Context("validateListener", func() {
+		DescribeTable("rejects listener fields that cannot be provisioned",
+			func(listener api.RoverListener, detail string) {
+				input := &api.Rover{Zone: "aws", Listeners: []api.RoverListener{listener}}
+
+				err := MapRover(input, &roverv1.Rover{})
+
+				Expect(problems.IsValidationError(err)).To(BeTrue())
+				Expect(err.Error()).To(ContainSubstring(detail))
+			},
+			Entry("eventType", api.RoverListener{Consumer: "c", Provider: "p", ApiBasePath: "/echo/v1", EventType: "de.telekom.test.v1"},
+				"listeners[0].eventType: event listeners are not supported yet"),
+			Entry("missing apiBasePath", api.RoverListener{Consumer: "c", Provider: "p"},
+				"listeners[0].apiBasePath: must be set"),
+		)
 	})
 
 	Context("mapListenerSubscriptionIn", func() {

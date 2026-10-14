@@ -5,19 +5,38 @@
 package in
 
 import (
+	"fmt"
+
+	"github.com/telekom/controlplane/common-server/pkg/problems"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 
 	"github.com/telekom/controlplane/rover-server/internal/api"
 )
 
-func mapListenersIn(in *api.Rover, out *roverv1.Rover) {
+func mapListenersIn(in *api.Rover, out *roverv1.Rover) error {
 	if len(in.Listeners) == 0 {
-		return
+		return nil
 	}
 	out.Spec.Listeners = make([]roverv1.RoverListener, len(in.Listeners))
 	for i := range in.Listeners {
+		if err := validateListener(i, &in.Listeners[i]); err != nil {
+			return err
+		}
 		out.Spec.Listeners[i] = mapListenerIn(&in.Listeners[i])
 	}
+	return nil
+}
+
+// validateListener rejects listener fields that would otherwise be dropped,
+// because only API listeners can be provisioned.
+func validateListener(i int, in *api.RoverListener) error {
+	if in.EventType != "" {
+		return problems.ValidationError(fmt.Sprintf("listeners[%d].eventType", i), "event listeners are not supported yet")
+	}
+	if in.ApiBasePath == "" {
+		return problems.ValidationError(fmt.Sprintf("listeners[%d].apiBasePath", i), "must be set")
+	}
+	return nil
 }
 
 func mapListenerIn(in *api.RoverListener) roverv1.RoverListener {

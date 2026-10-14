@@ -4046,7 +4046,6 @@ components:
       required:
         - consumer
         - provider
-        - apiBasePath
       properties:
         consumer:
           type: string
@@ -4056,7 +4055,11 @@ components:
           description: Providing application, as full ID (e.g. "eni--other--provider") or bare name (e.g. "provider"). A bare name must not contain "--"; use the full ID instead.
         apiBasePath:
           type: string
-          description: Base path of the API to listen on
+          description: Base path of the API to listen on. Required.
+        eventType:
+          type: string
+          writeOnly: true
+          description: Event type to listen on. Event listeners are not supported yet; a request that sets it is rejected.
         requestFilter:
           $ref: '#/components/schemas/ListenerFilter'
         responseFilter:
