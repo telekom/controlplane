@@ -57,7 +57,7 @@ func DefaultConfig() *ServerConfig {
 					JWT: &security.JWTConfig{
 						Mode:           security.ModeJWT,
 						TrustedIssuers: []string{},
-						DefaultScope:   "tardis:user:read",
+						DefaultScope:   "tardis:team:read",
 						ScopePrefix:    "tardis:",
 					},
 				},

@@ -377,7 +377,7 @@ var _ = Describe("Rover Controller", Ordered, func() {
 							BasePath: BasePath,
 							Security: &roverv1.SubscriberSecurity{
 								M2M: &roverv1.SubscriberMachine2MachineAuthentication{
-									Scopes: []string{"tardis:user:read"},
+									Scopes: []string{"tardis:team:read"},
 								},
 							},
 						},
@@ -407,7 +407,7 @@ var _ = Describe("Rover Controller", Ordered, func() {
 				}, apiSubscription)
 
 				g.Expect(err).NotTo(HaveOccurred())
-				g.Expect(apiSubscription.Spec.Security.M2M.Scopes[0]).To(Equal("tardis:user:read"))
+				g.Expect(apiSubscription.Spec.Security.M2M.Scopes[0]).To(Equal("tardis:team:read"))
 			}, timeout, interval).Should(Succeed())
 		})
 	})
