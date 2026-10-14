@@ -27,6 +27,7 @@ var _ = DescribeTable("DetermineClientType",
 	Entry("group", "tardis:group:read", security.ClientTypeGroup),
 	Entry("legacy hub", "tardis:hub:read", security.ClientTypeGroup),
 	Entry("team", "tardis:team:all", security.ClientTypeTeam),
+	Entry("user alias", "tardis:user:read", security.ClientTypeTeam),
 	Entry("admin", "tardis:admin:obfuscated", security.ClientTypeAdmin),
 )
 
