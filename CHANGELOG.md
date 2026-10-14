@@ -1,3 +1,10 @@
+## [0.41.1](https://github.com/telekom/controlplane/compare/v0.41.0...v0.41.1) (2026-10-14)
+
+
+### Bug Fixes
+
+* **admin:** omit frontend-url for internal realms ([#775](https://github.com/telekom/controlplane/issues/775)) ([19b107c](https://github.com/telekom/controlplane/commit/19b107cd39e924e1eb8361b0ad6f137497c23784))
+
 # [0.41.0](https://github.com/telekom/controlplane/compare/v0.40.1...v0.41.0) (2026-10-14)
 
 
