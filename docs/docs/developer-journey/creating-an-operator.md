@@ -147,7 +147,7 @@ The Common library provides specialized error types that control how the framewo
 
 | Error Type | Behavior |
 |------------|----------|
-| **BlockedError** | The resource cannot proceed because of an unmet dependency. Sets a Blocked condition on the resource and requeues at the normal interval. |
+| **BlockedError** | The resource cannot proceed because of an unmet dependency. Sets the Processing and Ready conditions to `False` with reason `Blocked`, unless the handler set its own Ready reason, and requeues at the normal interval. |
 | **RetryableError** | A temporary failure occurred (e.g., a transient network error). The resource is requeued quickly, approximately 1 second by default. |
 | **RetryableWithDelayError** | A temporary failure with a custom retry delay. Lets you control exactly how long to wait before the next attempt. |
 
@@ -160,6 +160,8 @@ handler.RetryableWithDelayErrorf(5*time.Second, "rate limited, retrying in 5s")
 ```
 
 Any other error returned from a handler is treated as an unexpected failure. The framework logs it and requeues using the default error interval.
+
+On any error except a conflict, the framework sets the Ready condition to `False`. A BlockedError sets reason `Blocked` with the current error message. Any other error sets reason `Error`; if Ready is already `False` with reason `Error`, its message is kept, so errors whose text changes on every attempt do not rewrite the status. A Ready condition with reason `Blocked` or `Error` is replaced, also when the handler set it itself. Any other Ready reason set by the handler, such as `AccessDenied`, is kept.
 
 ## Condition System
 

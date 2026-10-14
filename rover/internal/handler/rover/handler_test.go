@@ -8,12 +8,9 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
-	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/telekom/controlplane/common-server/pkg/client"
-	"github.com/telekom/controlplane/common/pkg/condition"
-	"github.com/telekom/controlplane/common/pkg/test/testutil"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 	"github.com/telekom/controlplane/rover/internal/handler/rover"
@@ -80,8 +77,7 @@ var _ = Describe("Rover Handler", func() {
 			Expect(err).To(HaveOccurred())
 			rootCause := errors.Cause(err)
 			Expect(rootCause).To(Equal(httpErr))
-
-			testutil.ExpectConditionToBeFalse(NewGomegaWithT(GinkgoT()), meta.FindStatusCondition(roverObj.GetConditions(), condition.ConditionTypeReady), condition.ReasonError)
+			Expect(err.Error()).To(HavePrefix("failed to delete application from secret manager: "))
 		})
 	})
 })

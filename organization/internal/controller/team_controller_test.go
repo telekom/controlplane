@@ -678,7 +678,7 @@ var _ = Describe("Team Controller", Ordered, func() {
 				err = k8sClient.Create(ctx, team)
 				Expect(err).NotTo(HaveOccurred())
 
-				By("Checking if ErrorOccurred in team processing")
+				By("Checking if team processing is blocked")
 				Eventually(func(g Gomega) {
 					By("Getting the latest version of team object")
 					err := k8sClient.Get(ctx, client.ObjectKeyFromObject(team), team)
@@ -688,7 +688,7 @@ var _ = Describe("Team Controller", Ordered, func() {
 					readyCondition := meta.FindStatusCondition(team.GetConditions(), condition.ConditionTypeReady)
 					g.Expect(readyCondition).NotTo(BeNil())
 					g.Expect(readyCondition.Status).To(Equal(metav1.ConditionFalse))
-					g.Expect(readyCondition.Reason).To(Equal(condition.ReasonError))
+					g.Expect(readyCondition.Reason).To(Equal(condition.ReasonBlocked))
 					g.Expect(readyCondition.Message).To(ContainSubstring("no zone with managed routes found"))
 
 					By("Checking the team namespace in status")
