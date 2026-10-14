@@ -4064,6 +4064,11 @@ components:
           $ref: '#/components/schemas/ListenerFilter'
         responseFilter:
           $ref: '#/components/schemas/ListenerFilter'
+        eventFilter:
+          allOf:
+            - $ref: '#/components/schemas/ListenerFilter'
+          writeOnly: true
+          description: Filter for event traffic. Event listeners are not supported yet; a request that sets it is rejected.
     ListenerFilter:
       type: object
       properties:
