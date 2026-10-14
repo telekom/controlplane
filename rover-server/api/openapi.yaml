@@ -2707,6 +2707,13 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/SubscriptionInfo'
+        listeners:
+          type: array
+          items:
+            $ref: '#/components/schemas/RoverListener'
+          description: Listeners of this application, with consumer and provider as full application IDs
+        listenerSubscription:
+          $ref: '#/components/schemas/ListenerSubscriptionInfo'
         variables:
           type: array
           items:
@@ -4081,3 +4088,11 @@ components:
           type: string
           format: uri
           description: URL where listener events are delivered when deliveryType is "callback"
+    ListenerSubscriptionInfo:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/ListenerSubscription'
+        - properties:
+            sseUrl:
+              type: string
+              description: SSE endpoint for listener events when deliveryType is "server_sent_event"
