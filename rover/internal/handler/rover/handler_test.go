@@ -12,17 +12,14 @@ import (
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/mock"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"github.com/telekom/controlplane/common-server/pkg/client"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	fakeclient "github.com/telekom/controlplane/common/pkg/client/fake"
-	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
-	"github.com/telekom/controlplane/common/pkg/test/testutil"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 	"github.com/telekom/controlplane/rover/internal/handler/rover"
@@ -90,8 +87,7 @@ var _ = Describe("Rover Handler", func() {
 			Expect(err).To(HaveOccurred())
 			rootCause := errors.Cause(err)
 			Expect(rootCause).To(Equal(httpErr))
-
-			testutil.ExpectConditionToBeFalse(NewGomegaWithT(GinkgoT()), meta.FindStatusCondition(roverObj.GetConditions(), condition.ConditionTypeReady), condition.ReasonError)
+			Expect(err.Error()).To(HavePrefix("failed to delete application from secret manager: "))
 		})
 	})
 })
