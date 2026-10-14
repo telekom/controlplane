@@ -14,7 +14,7 @@ roverctl resource delete --kind KIND --name NAME
 
 Deprecated: the selector flags `--list`, `--get` and `--delete` on this command are
 still supported for backward compatibility, but print a deprecation notice to
-stderr. Use the matching subcommand instead. The legacy single-dash form
+stderr. They will be removed in June 2027. Use the matching subcommand instead. The legacy single-dash form
 `-name=NAME` is accepted as an alias for `--name=NAME`.
 
 ```
@@ -25,12 +25,12 @@ roverctl resource [flags]
 
 ```
       --api-version string   API version (default "tcp.ei.telekom.de/v1")
-      --delete               Deprecated: use "roverctl resource delete" instead
+      --delete               Deprecated: will be removed in June 2027, use "roverctl resource delete" instead
       --fail-fast            Stop processing on the first error encountered
-      --get                  Deprecated: use "roverctl resource get" instead
+      --get                  Deprecated: will be removed in June 2027, use "roverctl resource get" instead
   -h, --help                 help for resource
       --kind string          Resource kind
-      --list                 Deprecated: use "roverctl resource list" instead
+      --list                 Deprecated: will be removed in June 2027, use "roverctl resource list" instead
   -n, --name string          Name of the resource (required with --get and --delete, ignored with --list)
 ```
 

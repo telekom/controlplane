@@ -6,7 +6,7 @@ Reset a secret
 
 Reset a secret for an application and wait until the new secret has converged.
 
-Deprecated: use "rotate-secret" instead.
+Deprecated: will be removed in June 2027, use "rotate-secret" instead.
 
 ```
 roverctl reset-secret [flags]

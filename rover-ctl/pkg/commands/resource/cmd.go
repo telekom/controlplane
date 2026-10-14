@@ -50,7 +50,7 @@ roverctl resource delete --kind KIND --name NAME
 
 Deprecated: the selector flags `+"`--list`, `--get` and `--delete`"+` on this command are
 still supported for backward compatibility, but print a deprecation notice to
-stderr. Use the matching subcommand instead. The legacy single-dash form
+stderr. They will be removed in June 2027. Use the matching subcommand instead. The legacy single-dash form
 `+"`-name=NAME`"+` is accepted as an alias for `+"`--name=NAME`"+`.`,
 	)
 
@@ -85,9 +85,9 @@ func (c *Command) setupLegacyFlags() {
 	flags.StringVar(&c.Options.Kind, "kind", "", "Resource kind")
 	flags.StringVar(&c.Options.ApiVersion, "api-version", defaultApiVersion, "API version")
 	flags.StringVarP(&c.Options.Name, "name", "n", "", "Name of the resource (required with --get and --delete, ignored with --list)")
-	flags.Bool(selectorList, false, `Deprecated: use "roverctl resource list" instead`)
-	flags.Bool(selectorGet, false, `Deprecated: use "roverctl resource get" instead`)
-	flags.Bool(selectorDelete, false, `Deprecated: use "roverctl resource delete" instead`)
+	flags.Bool(selectorList, false, `Deprecated: will be removed in June 2027, use "roverctl resource list" instead`)
+	flags.Bool(selectorGet, false, `Deprecated: will be removed in June 2027, use "roverctl resource get" instead`)
+	flags.Bool(selectorDelete, false, `Deprecated: will be removed in June 2027, use "roverctl resource delete" instead`)
 }
 
 const (
@@ -122,7 +122,7 @@ func (c *Command) runLegacy(cmd *cobra.Command, args []string) error {
 
 	selector := selected[0]
 	// Printed to stderr only, so JSON/YAML output on stdout stays parseable.
-	fmt.Fprintf(cmd.ErrOrStderr(), "Flag \"--%s\" is deprecated, use \"roverctl resource %s\" instead.\n", selector, selector)
+	fmt.Fprintf(cmd.ErrOrStderr(), "Flag \"--%s\" is deprecated and will be removed in June 2027, use \"roverctl resource %s\" instead.\n", selector, selector)
 
 	if err := c.Options.validate(selector != selectorList); err != nil {
 		return err

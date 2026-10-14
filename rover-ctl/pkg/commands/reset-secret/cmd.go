@@ -18,7 +18,7 @@ import (
 )
 
 // DeprecationMessage is printed to stderr whenever reset-secret is used.
-const DeprecationMessage = `Command "reset-secret" is deprecated, use "rotate-secret" instead.`
+const DeprecationMessage = `Command "reset-secret" is deprecated and will be removed in June 2027, use "rotate-secret" instead.`
 
 type ResetSecretHandler interface {
 	handlers.ResourceHandler
@@ -35,7 +35,7 @@ func NewCommand() *cobra.Command {
 	baseCmd := base.NewCommand(
 		"reset-secret",
 		"Reset a secret",
-		"Reset a secret for an application and wait until the new secret has converged.\n\nDeprecated: use \"rotate-secret\" instead.",
+		"Reset a secret for an application and wait until the new secret has converged.\n\nDeprecated: will be removed in June 2027, use \"rotate-secret\" instead.",
 	)
 	cmd := &Command{
 		BaseCommand: baseCmd,

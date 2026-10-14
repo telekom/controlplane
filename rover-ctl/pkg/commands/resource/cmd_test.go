@@ -300,7 +300,7 @@ var _ = Describe("Resource Command", func() {
 				Expect(stderr.String()).NotTo(ContainSubstring("deprecated"))
 				return
 			}
-			Expect(stderr.String()).To(ContainSubstring(`Flag "--` + subcommand + `" is deprecated, use "roverctl resource ` + subcommand + `" instead.`))
+			Expect(stderr.String()).To(ContainSubstring(`Flag "--` + subcommand + `" is deprecated and will be removed in June 2027, use "roverctl resource ` + subcommand + `" instead.`))
 		}
 
 		BeforeEach(func() {
