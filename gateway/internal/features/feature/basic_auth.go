@@ -131,8 +131,8 @@ func usesPasswordGrantCredentials(route *v1.Route, consumer *v1.ConsumeRoute) bo
 	grantType := security.M2M.ExternalIDP.GrantType
 
 	// If consumer has set it, overwrite it
-	if m2m.GrantType != "" {
-		grantType = m2m.GrantType
+	if credentials.GrantType != "" {
+		grantType = credentials.GrantType
 	}
 	return grantType == v1.GrantTypePassword
 }
