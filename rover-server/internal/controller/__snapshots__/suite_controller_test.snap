@@ -1225,56 +1225,7 @@
  "_links": {
   "next": "",
   "self": "http://example.com/eventspecifications?cursor="
- },
- "items": [
-  {
-   "description": "Horizon demo provider",
-   "id": "eni--hyperion--tardis-horizon-demo-cetus-v1",
-   "specification": {
-    "properties": {
-     "id": {
-      "type": "string"
-     }
-    },
-    "type": "object"
-   },
-   "status": {
-    "processingState": "done",
-    "state": "complete"
-   },
-   "type": "tardis.horizon.demo.cetus.v1",
-   "version": "1.0.0"
-  }
- ]
-}
----
-
-[EventSpecification Controller GetAll EventSpecifications resource should return an empty list if no EventSpecifications exist - 2]
-{
- "_links": {
-  "next": "",
-  "self": "http://example.com/eventspecifications?cursor="
- },
- "items": [
-  {
-   "description": "Horizon demo provider",
-   "id": "eni--hyperion--tardis-horizon-demo-cetus-v1",
-   "specification": {
-    "properties": {
-     "id": {
-      "type": "string"
-     }
-    },
-    "type": "object"
-   },
-   "status": {
-    "processingState": "done",
-    "state": "complete"
-   },
-   "type": "tardis.horizon.demo.cetus.v1",
-   "version": "1.0.0"
-  }
- ]
+ }
 }
 ---
 
@@ -1795,46 +1746,7 @@
  "_links": {
   "next": "",
   "self": "http://example.com/filespecifications?cursor="
- },
- "items": [
-  {
-   "description": "used for sftp integration demo",
-   "id": "eni--hyperion--demo-invoices-v1",
-   "specification": {
-    "type": "object"
-   },
-   "status": {
-    "processingState": "done",
-    "state": "complete"
-   },
-   "type": "demo-invoices-v1",
-   "version": "1.0.0"
-  }
- ]
-}
----
-    "type": "demo-invoices-v1",
-[FileSpecification Controller GetAll FileSpecifications resource should return an empty list if no FileSpecifications exist - 2]
-{
- "_links": {
-  "next": "",
-  "self": "http://example.com/filespecifications?cursor="
- },
- "items": [
-  {
-   "description": "used for sftp integration demo",
-   "id": "eni--hyperion--demo-invoices-v1",
-   "specification": {
-    "type": "object"
-   },
-   "status": {
-    "processingState": "done",
-    "state": "complete"
-   },
-   "type": "demo-invoices-v1",
-   "version": "1.0.0"
-  }
- ]
+ }
 }
 ---
     "type": "demo-invoices-v1",
