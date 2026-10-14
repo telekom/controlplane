@@ -734,6 +734,8 @@ type ComplexityRoot struct {
 		OwnerApplication     func(childComplexity int) int
 		OwnerApplicationName func(childComplexity int) int
 		OwnerTeam            func(childComplexity int) int
+		ServiceExternalURL   func(childComplexity int) int
+		ServiceURL           func(childComplexity int) int
 		Visibility           func(childComplexity int) int
 	}
 
@@ -780,6 +782,8 @@ type ComplexityRoot struct {
 		OwnerApplication     func(childComplexity int) int
 		OwnerApplicationName func(childComplexity int) int
 		OwnerTeam            func(childComplexity int) int
+		ServiceExternalURL   func(childComplexity int) int
+		ServiceURL           func(childComplexity int) int
 		StatusMessage        func(childComplexity int) int
 		StatusPhase          func(childComplexity int) int
 	}
@@ -3872,6 +3876,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.FileExposureInfo.OwnerTeam(childComplexity), true
+	case "FileExposureInfo.serviceExternalUrl":
+		if e.ComplexityRoot.FileExposureInfo.ServiceExternalURL == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileExposureInfo.ServiceExternalURL(childComplexity), true
+	case "FileExposureInfo.serviceUrl":
+		if e.ComplexityRoot.FileExposureInfo.ServiceURL == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileExposureInfo.ServiceURL(childComplexity), true
 	case "FileExposureInfo.visibility":
 		if e.ComplexityRoot.FileExposureInfo.Visibility == nil {
 			break
@@ -4063,6 +4079,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.FileSubscriptionInfo.OwnerTeam(childComplexity), true
+	case "FileSubscriptionInfo.serviceExternalUrl":
+		if e.ComplexityRoot.FileSubscriptionInfo.ServiceExternalURL == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileSubscriptionInfo.ServiceExternalURL(childComplexity), true
+	case "FileSubscriptionInfo.serviceUrl":
+		if e.ComplexityRoot.FileSubscriptionInfo.ServiceURL == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FileSubscriptionInfo.ServiceURL(childComplexity), true
 	case "FileSubscriptionInfo.statusMessage":
 		if e.ComplexityRoot.FileSubscriptionInfo.StatusMessage == nil {
 			break
@@ -12254,7 +12282,7 @@ enum ResponseFilterMode {
 
 type ResponseFilter {
   paths: [String]!
-  mode: ResponseFilterMode 
+  mode: ResponseFilterMode
 }
 
 type SelectionFilter {
@@ -12308,7 +12336,7 @@ type ApiExposureInfo {
   apiVersion: String
   features: [ApiExposureFeature!]!
   approvalConfig: ApprovalConfig!
-  traffic: Traffic 
+  traffic: Traffic
   "Application name that owns this exposure"
   ownerApplicationName: String! @deprecated(reason: "Use ownerApplication.name instead.")
   "Owning team (reduced view)"
@@ -12386,7 +12414,7 @@ type AgenticTransformation {
   request: AgenticRequestResponseTransformation!
 }
 
-# Traffic 
+# Traffic
 
 type Limits {
   second: Int
@@ -12486,6 +12514,8 @@ type EventSubscriptionInfo implements SubscriptionInfo {
 type FileSubscriptionInfo implements SubscriptionInfo {
   id: ID!
   fileType: String!
+  serviceUrl: String
+  serviceExternalUrl: String
   statusPhase: FileSubscriptionStatusPhase
   statusMessage: String
   "Application name that owns this subscription"
@@ -12501,6 +12531,8 @@ type FileExposureInfo {
   id: ID!
   fileType: String!
   visibility: FileExposureVisibility!
+  serviceUrl: String
+  serviceExternalUrl: String
   active: Boolean
   approvalConfig: ApprovalConfig!
   "Application name that owns this exposure"
@@ -14011,6 +14043,10 @@ func (ec *executionContext) childFields_FileExposureInfo(ctx context.Context, fi
 		return ec.fieldContext_FileExposureInfo_fileType(ctx, field)
 	case "visibility":
 		return ec.fieldContext_FileExposureInfo_visibility(ctx, field)
+	case "serviceUrl":
+		return ec.fieldContext_FileExposureInfo_serviceUrl(ctx, field)
+	case "serviceExternalUrl":
+		return ec.fieldContext_FileExposureInfo_serviceExternalUrl(ctx, field)
 	case "active":
 		return ec.fieldContext_FileExposureInfo_active(ctx, field)
 	case "approvalConfig":
@@ -14105,6 +14141,10 @@ func (ec *executionContext) childFields_FileSubscriptionInfo(ctx context.Context
 		return ec.fieldContext_FileSubscriptionInfo_id(ctx, field)
 	case "fileType":
 		return ec.fieldContext_FileSubscriptionInfo_fileType(ctx, field)
+	case "serviceUrl":
+		return ec.fieldContext_FileSubscriptionInfo_serviceUrl(ctx, field)
+	case "serviceExternalUrl":
+		return ec.fieldContext_FileSubscriptionInfo_serviceExternalUrl(ctx, field)
 	case "statusPhase":
 		return ec.fieldContext_FileSubscriptionInfo_statusPhase(ctx, field)
 	case "statusMessage":
