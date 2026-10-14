@@ -1,0 +1,60 @@
+identity/pkg/keycloak/config_test.go
+  s_2056d63df85218::t_5af144d8f23884 11-12
+  s_2056d63df85218::t_4757e919a55e8f 1-7,13-19,23-37,41,56
+  s_2056d63df85218::t_09bbcb9e00a2f3 8-10,20-22,38-40,42-55
+identity/pkg/keycloak/config.go
+  s_2056d63df85218::t_013a231893e30e 52,55-60
+  s_2056d63df85218::t_dfb7e311e1b00e 37-39,41
+  s_2056d63df85218::t_720b063b782ac6 7,9-11,33-36,40,43-51
+  s_2056d63df85218::t_b25474cb00b074 8
+identity/internal/handler/identityprovider/handler.go
+  s_2056d63df85218::t_42b7966a67f211 30-34,36
+  s_2056d63df85218::t_94b6149e32905b 14
+identity/internal/handler/identityprovider/handler_test.go
+  s_2056d63df85218::t_09bbcb9e00a2f3 9,14,32-47,69
+identity/pkg/keycloak/realm_issuer_test.go
+  s_adac57ec120c44::t_5c4658fe08c5b3 341-343
+  s_2056d63df85218::t_8b224d3940e29c 15,68-75,355,358
+  s_2056d63df85218::t_1cf599c7126c5b 12,18-19,42-52,182-197,262,275-321
+  s_adac57ec120c44::t_b0a53ed22cfa61 273-274
+  s_2056d63df85218::t_8f0ab50dabdca4 322-340,344-350
+identity/pkg/keycloak/realm_issuer.go
+  s_adac57ec120c44::t_1e68a1825a153b 177-178,183-184
+  s_2056d63df85218::t_720b063b782ac6 68,70,75-84,107-109,111-112,138-140,148,153-155,167-169,171-172,174-175
+  s_2056d63df85218::t_66f56d7d28ba8a 130-135,141-147,149
+  s_9421b218acf40d::t_676482ea224e48 179
+identity/internal/handler/realm/handler_test.go
+  s_2056d63df85218::t_09bbcb9e00a2f3 551-553
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "2a4d30acdb66dc7cdde0474017423ad3de3f0764",
+  "prompts": {},
+  "sessions": {
+    "s_2056d63df85218": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ec6a3d74effebQrK9mRNAZFEkj",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_9421b218acf40d": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ec67f3b2bffeXtZLi8P6QFEYLN",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_adac57ec120c44": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ec67185a8ffeFbcHBOI9cORWoX",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

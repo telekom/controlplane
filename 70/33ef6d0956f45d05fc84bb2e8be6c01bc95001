@@ -1,0 +1,27 @@
+rover-ctl/docs/roverctl_reset-secret.md
+  s_e3592bb588fe4a::t_92b6b1c29044fc 9
+rover-ctl/pkg/commands/reset-secret/cmd.go
+  s_e3592bb588fe4a::t_92b6b1c29044fc 21,38
+rover-ctl/pkg/commands/resource/cmd.go
+  s_e3592bb588fe4a::t_92b6b1c29044fc 53,88-90,125
+rover-ctl/docs/roverctl_resource.md
+  s_e3592bb588fe4a::t_92b6b1c29044fc 17,28,30,33
+rover-ctl/pkg/commands/resource/cmd_test.go
+  s_e3592bb588fe4a::t_92b6b1c29044fc 303
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "7033ef6d0956f45d05fc84bb2e8be6c01bc95001",
+  "prompts": {},
+  "sessions": {
+    "s_e3592bb588fe4a": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ec66581fcffeHamOSv7Vuau10u",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

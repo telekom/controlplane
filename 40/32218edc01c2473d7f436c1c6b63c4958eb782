@@ -1,0 +1,41 @@
+docs/docs/architecture/gateway.mdx
+  s_3bd8ba5d2767c8::t_a294b0235c9df0 17-20
+admin/internal/handler/zone/oidc_test.go
+  s_f5a7a3419a4dac::t_ac96f09abec84d 274-290
+  s_f5a7a3419a4dac::t_7dff3b5970eb27 94-97,99-106,108-113,115-116,118-135
+gateway/api/v1/route_types.go
+  s_3bd8ba5d2767c8::t_17b900bf85d99b 195-197
+  s_3bd8ba5d2767c8::t_416a10aeadd25c 198-200
+gateway/pkg/kong/client/types.go
+  s_3bd8ba5d2767c8::t_17b900bf85d99b 38
+gateway/pkg/kong/client/route.go
+  s_3bd8ba5d2767c8::t_81dbb91fe8ec34 171
+  s_3bd8ba5d2767c8::t_17b900bf85d99b 60
+gateway/pkg/kong/client/route_test.go
+  s_3bd8ba5d2767c8::t_4b11cf5e8cb9c5 9-10
+  s_3bd8ba5d2767c8::t_7036138dd1476b 255-307
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "4032218edc01c2473d7f436c1c6b63c4958eb782",
+  "prompts": {},
+  "sessions": {
+    "s_3bd8ba5d2767c8": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_eca948480fferFd5FyYdebdiWZ",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_f5a7a3419a4dac": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_eca9cdefbffexeTO0IOSmAIseu",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
