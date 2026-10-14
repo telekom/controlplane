@@ -277,13 +277,35 @@ func HandleError(ctx context.Context, err error, obj common_types.Object, record
 	return result, retryErr
 }
 
-// EnsureNotReadyOnError sets the Ready condition to false on the object if the error is not nil
-// and the Ready condition is not already set to false.
+// EnsureNotReadyOnError sets the Ready condition to false on the object if the error is not nil.
+//
+// A blocked error sets the reason Blocked, matching the Processing condition set by HandleError,
+// and always carries the current message. Any other error sets the reason Error; if Ready is
+// already False with reason Error, its message is kept, so errors whose text changes on every
+// attempt do not cause a status write each time. Either kind replaces a Ready=False with reason
+// Error or Blocked. A Ready=False with any other reason was set by the handler and is kept.
+// Conflict errors are ignored, as in HandleError.
+//
+// The return value reports whether the condition changed; it is best-effort and callers
+// persist the status regardless.
 func EnsureNotReadyOnError(_ context.Context, _ client.Client, obj common_types.Object, err error) bool {
-	if err != nil && !meta.IsStatusConditionFalse(obj.GetConditions(), condition.ConditionTypeReady) {
-		return obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonError, err.Error()))
+	if err == nil || apierrors.IsConflict(err) {
+		return false
 	}
-	return false
+	ready := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady)
+	notReady := ready != nil && ready.Status == metav1.ConditionFalse
+	if notReady && ready.Reason != condition.ReasonError && ready.Reason != condition.ReasonBlocked {
+		return false
+	}
+
+	var be ctrlerrors.BlockedError
+	if errors.As(err, &be) && be.IsBlocked() {
+		return obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonBlocked, err.Error()))
+	}
+	if notReady && ready.Reason == condition.ReasonError {
+		return false
+	}
+	return obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonError, err.Error()))
 }
 
 // StampObservedGeneration sets ObservedGeneration on all conditions to match
