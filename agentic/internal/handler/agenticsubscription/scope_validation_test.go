@@ -79,7 +79,7 @@ var _ = Describe("Subscription scope validation", func() {
 			}}
 		}
 
-		It("requires a password grant for client and Basic credentials even without scopes", func() {
+		It("requires an external IDP for client and Basic credentials even without scopes", func() {
 			obj := &agenticv1.AgenticSubscription{Spec: agenticv1.AgenticSubscriptionSpec{
 				Security: &agenticv1.SubscriberSecurity{M2M: &agenticv1.SubscriberMachine2MachineAuthentication{
 					Client: &agenticv1.OAuth2ClientCredentials{ClientId: "consumer", ClientSecret: "secret"},
@@ -88,8 +88,20 @@ var _ = Describe("Subscription scope validation", func() {
 			}}
 
 			Expect(violatesBasicWithScopesPolicy(obj, nil)).To(BeTrue())
-			Expect(violatesBasicWithScopesPolicy(obj, exposureWithGrant(agenticv1.GrantTypeClientCredentials))).To(BeTrue())
-			Expect(violatesBasicWithScopesPolicy(obj, exposureWithGrant(agenticv1.GrantTypePassword))).To(BeFalse())
+			Expect(violatesBasicWithScopesPolicy(obj, &agenticv1.AgenticExposure{})).To(BeTrue())
+		})
+
+		It("accepts any external IDP grant type because the consumer may override it", func() {
+			obj := &agenticv1.AgenticSubscription{Spec: agenticv1.AgenticSubscriptionSpec{
+				Security: &agenticv1.SubscriberSecurity{M2M: &agenticv1.SubscriberMachine2MachineAuthentication{
+					Basic:  &agenticv1.BasicAuthCredentials{Username: "user", Password: "password"},
+					Scopes: []string{"read"},
+				}},
+			}}
+
+			for _, grant := range []agenticv1.GrantType{"", agenticv1.GrantTypeClientCredentials, agenticv1.GrantTypeAuthorizationCode, agenticv1.GrantTypePassword} {
+				Expect(violatesBasicWithScopesPolicy(obj, exposureWithGrant(grant))).To(BeFalse(), "grant type %q", grant)
+			}
 		})
 	})
 })

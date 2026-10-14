@@ -101,18 +101,20 @@ var _ = Describe("Consumer username/password with scopes", func() {
 		Consistently(check, time.Second, interval).Should(Succeed())
 	})
 
-	DescribeTable("revokes existing access when the exposure grant changes", func(scopes []string) {
+	DescribeTable("revokes existing access when the exposure drops its external IDP", func(scopes []string) {
 		f := newScopeFixture()
-		f.server("McpServer", nil)
+		f.server("McpServer", consumerScopes)
 		exp := passwordExposure(f, agenticv1.GrantTypePassword)
 		route := waitExposure(exp)
 		sub := passwordSubscription(f, scopes)
 		grantApproval(sub, waitPending(sub))
 		consume := waitConsumeRoute(sub, scopes)
 
+		var idp *agenticv1.ExternalIdentityProvider
 		Eventually(func(g Gomega) {
 			g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(exp), exp)).To(Succeed())
-			exp.Spec.Security.M2M.ExternalIDP.GrantType = agenticv1.GrantTypeClientCredentials
+			idp = exp.Spec.Security.M2M.ExternalIDP
+			exp.Spec.Security.M2M = &agenticv1.Machine2MachineAuthentication{Scopes: consumerScopes}
 			g.Expect(k8sClient.Update(ctx, exp)).To(Succeed())
 		}, timeout, interval).Should(Succeed())
 		check := func(g Gomega) {
@@ -127,7 +129,7 @@ var _ = Describe("Consumer username/password with scopes", func() {
 
 		Eventually(func(g Gomega) {
 			g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(exp), exp)).To(Succeed())
-			exp.Spec.Security.M2M.ExternalIDP.GrantType = agenticv1.GrantTypePassword
+			exp.Spec.Security.M2M = &agenticv1.Machine2MachineAuthentication{ExternalIDP: idp}
 			g.Expect(k8sClient.Update(ctx, exp)).To(Succeed())
 		}, timeout, interval).Should(Succeed())
 		waitExposure(exp)
@@ -137,22 +139,29 @@ var _ = Describe("Consumer username/password with scopes", func() {
 		Entry("combined credentials with scopes", consumerScopes),
 	)
 
-	DescribeTable("is blocked before approval without an explicit password grant", func(grantType agenticv1.GrantType) {
-		f := newScopeFixture()
-		f.server("McpServer", nil)
-		waitExposure(passwordExposure(f, grantType))
-		sub := passwordSubscription(f, consumerScopes)
+	DescribeTable("is provisioned for any exposure grant type and forwards the consumer grant type",
+		func(exposureGrant, consumerGrant agenticv1.GrantType) {
+			f := newScopeFixture()
+			f.server("McpServer", nil)
+			waitExposure(passwordExposure(f, exposureGrant))
+			sub := &agenticv1.AgenticSubscription{ObjectMeta: f.metadata("subscription"), Spec: agenticv1.AgenticSubscriptionSpec{
+				BasePath: f.basePath, Zone: *ctypes.ObjectRefFromObject(f.zone),
+				Requestor: agenticv1.Requestor{Application: *ctypes.ObjectRefFromObject(f.consumer)},
+				Security: &agenticv1.SubscriberSecurity{M2M: &agenticv1.SubscriberMachine2MachineAuthentication{
+					Basic:     &agenticv1.BasicAuthCredentials{Username: "consumer-user", Password: "consumer-pass"},
+					Scopes:    consumerScopes,
+					GrantType: consumerGrant,
+				}},
+			}}
+			Expect(k8sClient.Create(ctx, sub)).To(Succeed())
+			grantApproval(sub, waitPending(sub))
 
-		check := func(g Gomega) {
-			expectReadyReason(g, sub, condition.ReasonValidationFailed, metav1.ConditionFalse)
-			g.Expect(meta.FindStatusCondition(sub.GetConditions(), condition.ConditionTypeReady).Message).To(ContainSubstring(`grant type "password"`))
-			f.expectNoProvisioning(g)
-		}
-		Eventually(check, timeout, interval).Should(Succeed())
-		Consistently(check, time.Second, interval).Should(Succeed())
-	},
-		Entry("client_credentials grant", agenticv1.GrantTypeClientCredentials),
-		Entry("authorization_code grant", agenticv1.GrantTypeAuthorizationCode),
+			consume := waitConsumeRoute(sub, consumerScopes)
+			Expect(consume.Spec.Security.M2M.Basic).To(Equal(&gatewayv1.BasicAuthCredentials{Username: "consumer-user", Password: "consumer-pass"}))
+			Expect(consume.Spec.Security.M2M.GrantType).To(Equal(gatewayv1.GrantType(consumerGrant)))
+		},
+		Entry("client_credentials exposure grant overridden by consumer password grant", agenticv1.GrantTypeClientCredentials, agenticv1.GrantTypePassword),
+		Entry("authorization_code exposure grant without consumer override", agenticv1.GrantTypeAuthorizationCode, agenticv1.GrantType("")),
 	)
 
 	It("blocks Basic credentials with scopes without an external IDP", func() {

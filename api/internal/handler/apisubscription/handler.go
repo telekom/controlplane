@@ -485,9 +485,8 @@ func validateBasicWithScopesPolicy(obj *apiapi.ApiSubscription, exposure *apiapi
 		return nil
 	}
 
-	if exposure == nil || !exposure.HasExternalIdp() ||
-		exposure.Spec.Security.M2M.ExternalIDP.GrantType != apiapi.GrantTypePassword {
-		return errors.New("Consumer username/password combined with client credentials or scopes requires an external IDP grant type \"password\"")
+	if exposure == nil || !exposure.HasExternalIdp() {
+		return errors.New("Consumer username/password combined with client credentials or scopes requires an external IDP from the provider")
 	}
 	return nil
 }

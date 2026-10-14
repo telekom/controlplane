@@ -130,7 +130,7 @@ var _ = Describe("ApiSubscription Handler", func() {
 					Expect(err).NotTo(HaveOccurred())
 					return
 				}
-				Expect(err).To(MatchError(`Consumer username/password combined with client credentials or scopes requires an external IDP grant type "password"`))
+				Expect(err).To(MatchError(`Consumer username/password combined with client credentials or scopes requires an external IDP from the provider`))
 			},
 			Entry("without subscription security", nil, nil, false),
 			Entry("without subscription M2M", &apiv1.SubscriberSecurity{}, nil, false),
@@ -143,7 +143,7 @@ var _ = Describe("ApiSubscription Handler", func() {
 			Entry("with empty scopes", &apiv1.SubscriberSecurity{M2M: &apiv1.SubscriberMachine2MachineAuthentication{
 				Basic: basic, Scopes: []string{},
 			}}, nil, false),
-			Entry("client and Basic without scopes require a password grant", &apiv1.SubscriberSecurity{M2M: &apiv1.SubscriberMachine2MachineAuthentication{
+			Entry("client and Basic without scopes require an external IDP", &apiv1.SubscriberSecurity{M2M: &apiv1.SubscriberMachine2MachineAuthentication{
 				Client: &apiv1.OAuth2ClientCredentials{ClientId: "consumer", ClientSecret: "secret"}, Basic: basic,
 			}}, nil, true),
 			Entry("without an exposure", withBasicAndScopes, nil, true),
@@ -156,13 +156,14 @@ var _ = Describe("ApiSubscription Handler", func() {
 			}}, true),
 			Entry("with an omitted grant", withBasicAndScopes, exposureWithGrant(""), false),
 			Entry("with a client_credentials grant", withBasicAndScopes, exposureWithGrant(apiv1.GrantTypeClientCredentials), false),
+			Entry("with an authorization_code grant", withBasicAndScopes, exposureWithGrant(apiv1.GrantTypeAuthorizationCode), false),
 			Entry("with a password grant", withBasicAndScopes, exposureWithGrant(apiv1.GrantTypePassword), false),
 			Entry("client and Basic with a password grant", &apiv1.SubscriberSecurity{M2M: &apiv1.SubscriberMachine2MachineAuthentication{
 				Client: &apiv1.OAuth2ClientCredentials{ClientId: "consumer", ClientSecret: "secret"}, Basic: basic,
 			}}, exposureWithGrant(apiv1.GrantTypePassword), false),
 			Entry("client and Basic with a client credentials grant", &apiv1.SubscriberSecurity{M2M: &apiv1.SubscriberMachine2MachineAuthentication{
 				Client: &apiv1.OAuth2ClientCredentials{ClientId: "consumer", ClientSecret: "secret"}, Basic: basic,
-			}}, exposureWithGrant(apiv1.GrantTypeClientCredentials), true),
+			}}, exposureWithGrant(apiv1.GrantTypeClientCredentials), false),
 		)
 	})
 
