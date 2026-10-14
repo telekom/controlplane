@@ -76,6 +76,23 @@ func MapAPISpecificationResponse(ctx context.Context, apiSpec *v1.ApiSpecificati
 	}, nil
 }
 
+// ResolveRoverStatus combines the Rover's own conditions with the result of its
+// sub-resources into the Rover's status and OverallStatus. A stale sub-resource
+// keeps a Complete Rover processing, and a Rover waiting only on blocked or
+// failed sub-resources takes their state.
+func ResolveRoverStatus(rover *v1.Rover, result ProblemsResult) (api.Status, api.OverallStatus) {
+	status := MapStatus(rover.GetConditions(), rover.GetGeneration())
+
+	if status.State == api.Complete && status.ProcessingState == api.ProcessingStateDone && result.HasStale {
+		status.ProcessingState = api.ProcessingStateProcessing
+	}
+
+	reconcileWithSubResources(rover.GetConditions(), &status, result)
+
+	parentOverall := CalculateOverallStatus(status.State, status.ProcessingState)
+	return status, CompareAndReturn(parentOverall, result.WorstOverallStatus)
+}
+
 // MapRoverResponse maps the status of a Rover resource to a ResourceStatusResponse,
 // including problems from sub-resources when the Rover itself is not complete.
 // When the Rover is Complete/Done but any sub-resource has stale conditions,
@@ -84,27 +101,19 @@ func MapRoverResponse(ctx context.Context, rover *v1.Rover, stores *store.Stores
 	if rover == nil {
 		return api.ResourceStatusResponse{}, errors.New("input rover is nil")
 	}
-	status := MapStatus(rover.GetConditions(), rover.GetGeneration())
 
 	result, err := GetAllRoverProblems(ctx, rover, stores)
 	if err != nil {
 		return api.ResourceStatusResponse{}, err
 	}
 
-	if status.State == api.Complete && status.ProcessingState == api.ProcessingStateDone && result.HasStale {
-		status.ProcessingState = api.ProcessingStateProcessing
-	}
-
-	reconcileWithSubResources(rover.GetConditions(), &status, result)
+	status, finalOverall := ResolveRoverStatus(rover, result)
 
 	processing := meta.FindStatusCondition(rover.GetConditions(), condition.ConditionTypeProcessing)
 	var processedAtTime time.Time
 	if processing != nil {
 		processedAtTime = processing.LastTransitionTime.Time.UTC()
 	}
-
-	parentOverall := CalculateOverallStatus(status.State, status.ProcessingState)
-	finalOverall := CompareAndReturn(parentOverall, result.WorstOverallStatus)
 
 	return api.ResourceStatusResponse{
 		CreatedAt:       rover.GetCreationTimestamp().Time.UTC(),

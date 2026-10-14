@@ -38,6 +38,8 @@ Users do not create PubSub resources directly. EventStore ownership is unchanged
 - **Application domain** — Reads Application resources for consumer and provider metadata.
 - **Rover domain** — Rover files with `spec.listeners` trigger creation of Listener CRs.
 
+`roverctl get-info` evaluates Listeners and the SpectreApplication like the Rover status endpoint does, so a Rover reports `blocked` while a Listener waits for approval.
+
 ## Listener Placement
 
 Each Listener involves three zones: the consumer zone (C), the provider zone (P) and the observer zone (A), the zone of the listening application.

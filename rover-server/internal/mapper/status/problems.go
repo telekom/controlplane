@@ -201,23 +201,29 @@ func getAllProblemsInSubResource[T SubResource](ctx context.Context, owner types
 		Problems: make([]api.Problem, 0),
 	}
 	for _, res := range subResources {
-		subOverall := GetOverallStatus(res.GetConditions())
-		result.WorstOverallStatus = CompareAndReturn(result.WorstOverallStatus, subOverall)
-
-		if subOverall == api.OverallStatusProcessing || subOverall == api.OverallStatusPending {
-			result.HasActiveSubResources = true
-		}
-
-		processingCond := meta.FindStatusCondition(res.GetConditions(), condition.ConditionTypeProcessing)
-		if !result.HasStale && isStale(processingCond, res.GetGeneration()) {
-			result.HasStale = true
-		}
-
-		if notReady := getNotReadyCondition(res.GetConditions()); notReady != nil {
-			result.Problems = append(result.Problems, mapNotReadyConditionToProblem(notReady, res))
-		}
+		result.Add(res)
 	}
 	return result, nil
+}
+
+// Add folds one sub-resource into the result: its OverallStatus, whether it is
+// still active or stale, and a Problem if it is not ready.
+func (r *ProblemsResult) Add(res types.Object) {
+	subOverall := GetOverallStatus(res.GetConditions())
+	r.WorstOverallStatus = CompareAndReturn(r.WorstOverallStatus, subOverall)
+
+	if subOverall == api.OverallStatusProcessing || subOverall == api.OverallStatusPending {
+		r.HasActiveSubResources = true
+	}
+
+	processingCond := meta.FindStatusCondition(res.GetConditions(), condition.ConditionTypeProcessing)
+	if !r.HasStale && isStale(processingCond, res.GetGeneration()) {
+		r.HasStale = true
+	}
+
+	if notReady := getNotReadyCondition(res.GetConditions()); notReady != nil {
+		r.Problems = append(r.Problems, mapNotReadyConditionToProblem(notReady, res))
+	}
 }
 
 // getAllSubResources lists all sub-resources owned by owner via ownerReference UID filtering.
