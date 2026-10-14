@@ -247,6 +247,10 @@ func (c *AgentSpecificationControllerImpl) downloadFile(ctx context.Context, fil
 		return nil, nil
 	}
 
+	if fileID == "" {
+		return nil, nil
+	}
+
 	var b bytes.Buffer
 	_, err := file.GetFileManager().DownloadFile(ctx, fileID, &b)
 	if err != nil {

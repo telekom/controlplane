@@ -92,12 +92,14 @@ var InitOrDie = func(ctx context.Context, cfg *rest.Config) {
 			&cstore.ListResponse[*eventv1.EventConfig]{Items: []*eventv1.EventConfig{}}, nil).Maybe()
 		stores.EventConfigStore = eventConfigMock
 	}
+}
 
+var _ = BeforeEach(func() {
 	mockFileManager = filefake.NewMockFileManager(GinkgoT())
 	file.GetFileManager = func() api.FileManager {
 		return mockFileManager
 	}
-}
+})
 
 var _ = BeforeSuite(func() {
 	ctx, cancel = context.WithCancel(context.TODO())

@@ -12,11 +12,23 @@ import (
 	"net/http"
 	"net/http/httptest"
 
-	. "github.com/onsi/ginkgo/v2"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/mock"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/telekom/controlplane/common-server/pkg/problems"
+	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
+	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	fileApi "github.com/telekom/controlplane/file-manager/api"
+	filefake "github.com/telekom/controlplane/file-manager/api/fake"
 	"github.com/telekom/controlplane/rover-server/internal/api"
+	"github.com/telekom/controlplane/rover-server/internal/file"
+	"github.com/telekom/controlplane/rover-server/pkg/store"
+	"github.com/telekom/controlplane/rover-server/test/mocks"
+	roverv1 "github.com/telekom/controlplane/rover/api/v1"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 // TODO: fix the unit-tests. Use Once() or Twice() for mocks
@@ -102,7 +114,6 @@ servers:
 		})
 
 		It("should fail to delete a non-existent ApiSpecification", func() {
-			mockFileManager.EXPECT().DeleteFile(mock.Anything, mock.Anything).Return(errors.Errorf("resource not found"))
 			req := httptest.NewRequest(http.MethodDelete, "/apispecifications/eni--hyperion--blabla", nil)
 			responseGroup, err := ExecuteRequest(req, groupToken)
 			ExpectStatusWithBody(responseGroup, err, http.StatusNotFound, "application/problem+json")
@@ -213,4 +224,118 @@ servers:
 		})
 	})
 
+})
+
+var _ = Describe("ApiSpecification Controller file-manager handling", func() {
+	const (
+		resourceId = "eni--hyperion--eni-distr-v1"
+		namespace  = "poc--eni--hyperion"
+		name       = "eni-distr-v1"
+		fileId     = "01926a3e-7b2c-7d3e-8f4a-1b2c3d4e5f60"
+	)
+
+	var (
+		apiCtx   context.Context
+		apiStore *mocks.MockObjectStore[*roverv1.ApiSpecification]
+		apiFiles *filefake.MockFileManager
+		ctrl     *ApiSpecificationController
+	)
+
+	specMap := map[string]any{
+		"openapi": "3.0.0",
+		"info": map[string]any{
+			"title":          "Rover API",
+			"version":        "1.0.0",
+			"x-api-category": "other",
+		},
+		"servers": []any{
+			map[string]any{"url": "http://rover-api.com/eni/distr/v1"},
+		},
+	}
+
+	BeforeEach(func() {
+		apiCtx = security.ToContext(context.Background(), &security.BusinessContext{
+			Environment: "poc", Group: "eni", Team: "hyperion",
+		})
+		apiStore = mocks.NewMockObjectStore[*roverv1.ApiSpecification](GinkgoT())
+		apiFiles = filefake.NewMockFileManager(GinkgoT())
+		file.GetFileManager = func() fileApi.FileManager { return apiFiles }
+		ctrl = NewApiSpecificationController(&store.Stores{APISpecificationStore: apiStore}, nil)
+	})
+
+	AfterEach(func() {
+		file.GetFileManager = func() fileApi.FileManager { return mockFileManager }
+		cconfig.SetFeatureEnabled(cconfig.FeatureFileManager, true)
+	})
+
+	Context("file-manager disabled", func() {
+		BeforeEach(func() {
+			cconfig.SetFeatureEnabled(cconfig.FeatureFileManager, false)
+		})
+
+		It("should create the ApiSpecification without calling the file-manager", func() {
+			var stored *roverv1.ApiSpecification
+			apiStore.EXPECT().Get(mock.Anything, namespace, name).Return(nil, problems.NotFound(name)).Twice()
+			apiStore.EXPECT().CreateOrReplace(mock.Anything, mock.Anything).
+				RunAndReturn(func(_ context.Context, obj *roverv1.ApiSpecification) error {
+					stored = obj
+					return nil
+				}).Once()
+			apiStore.EXPECT().Get(mock.Anything, namespace, name).
+				RunAndReturn(func(context.Context, string, string) (*roverv1.ApiSpecification, error) { return stored, nil }).Once()
+
+			res, err := ctrl.Update(apiCtx, resourceId, api.ApiSpecification{Specification: specMap})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(res.Id).To(Equal(resourceId))
+			Expect(res.Specification).To(BeEmpty())
+
+			Expect(stored.Name).To(Equal(name))
+			Expect(stored.Namespace).To(Equal(namespace))
+			Expect(stored.Spec.BasePath).To(Equal("/eni/distr/v1"))
+			Expect(stored.Spec.Version).To(Equal("1.0.0"))
+			Expect(stored.Spec.Category).To(Equal("other"))
+			Expect(stored.Spec.Specification).To(BeEmpty())
+			Expect(stored.Spec.Hash).To(BeEmpty())
+		})
+
+		It("should delete the ApiSpecification without calling the file-manager", func() {
+			apiStore.EXPECT().Delete(mock.Anything, namespace, name).Return(nil).Once()
+
+			Expect(ctrl.Delete(apiCtx, resourceId)).To(Succeed())
+		})
+	})
+
+	Context("file-manager enabled", func() {
+		It("should skip the download for an ApiSpecification created while the file-manager was disabled", func() {
+			apiStore.EXPECT().Get(mock.Anything, namespace, name).Return(&roverv1.ApiSpecification{
+				ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: namespace},
+			}, nil).Once()
+
+			res, err := ctrl.Get(apiCtx, resourceId)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(res.Specification).To(BeEmpty())
+		})
+
+		It("should delete the ApiSpecification when the stored file is already missing", func() {
+			apiStore.EXPECT().Get(mock.Anything, namespace, name).Return(&roverv1.ApiSpecification{
+				ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: namespace},
+				Spec:       roverv1.ApiSpecificationSpec{Specification: fileId},
+			}, nil).Once()
+			apiFiles.EXPECT().DeleteFile(mock.Anything, fileId).Return(file.ErrNotFound).Once()
+			apiStore.EXPECT().Delete(mock.Anything, namespace, name).Return(nil).Once()
+
+			Expect(ctrl.Delete(apiCtx, resourceId)).To(Succeed())
+		})
+
+		It("should keep the ApiSpecification when deleting the stored file fails", func() {
+			apiStore.EXPECT().Get(mock.Anything, namespace, name).Return(&roverv1.ApiSpecification{
+				ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: namespace},
+				Spec:       roverv1.ApiSpecificationSpec{Specification: fileId},
+			}, nil).Once()
+			apiFiles.EXPECT().DeleteFile(mock.Anything, fileId).Return(errors.New("file-manager unavailable")).Once()
+
+			Expect(ctrl.Delete(apiCtx, resourceId)).To(MatchError("file-manager unavailable"))
+			apiStore.AssertNotCalled(GinkgoT(), "Delete", mock.Anything, namespace, name)
+		})
+	})
 })

@@ -175,6 +175,16 @@ var _ = Describe("McpSpecification Controller", func() {
 			Expect(err).To(MatchError("Failed to download mcp specification: boom"))
 		})
 
+		It("should skip the download when no file is stored", func() {
+			stored := existing("")
+			stored.Spec.Specification = ""
+			mcpStore.EXPECT().Get(mock.Anything, namespace, name).Return(stored, nil).Once()
+
+			res, err := ctrl.Get(mcpCtx, resourceId)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(res.Specification).To(BeEmpty())
+		})
+
 		It("should skip the download when the feature is disabled", func() {
 			cconfig.SetFeatureEnabled(cconfig.FeatureFileManager, false)
 			mcpStore.EXPECT().Get(mock.Anything, namespace, name).Return(existing(""), nil).Once()
