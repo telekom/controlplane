@@ -18,6 +18,7 @@ import (
 	"github.com/telekom/controlplane/common/pkg/types"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	"github.com/telekom/controlplane/rover-server/internal/api"
+	"github.com/telekom/controlplane/rover-server/internal/mapper/status"
 	"github.com/telekom/controlplane/rover-server/pkg/store"
 	"github.com/telekom/controlplane/rover-server/test/mocks"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
@@ -107,7 +108,7 @@ var _ = Describe("ApplicationInfo variables", func() {
 				EventSubscriptions:   []types.ObjectRef{{Namespace: "test", Name: "event"}},
 			}}
 			info := &api.ApplicationInfo{Variables: []api.Data{}}
-			Expect(FillSubscriptionInfo(ctx, resource, info, localStores)).To(Succeed())
+			Expect(FillSubscriptionInfo(ctx, resource, info, localStores, &status.ProblemsResult{})).To(Succeed())
 			Expect(info.Variables).To(Equal(expected))
 		},
 		Entry("resolved gateway includes the complete path and preserves case",

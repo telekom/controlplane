@@ -63,7 +63,15 @@ func WriteStatus(obj types.Object, appInfo *api.ApplicationInfo, err error) {
 		Message:  err.Error(),
 		Cause:    cause,
 	})
-	appInfo.Status = status.CompareAndReturn(appInfo.Status, status.GetOverallStatus(obj.GetConditions()))
+}
+
+// recordChild folds a fetched sub-resource into children, from which the overall
+// status is resolved, and records it in appInfo.Errors if it is not ready.
+func recordChild(obj types.Object, appInfo *api.ApplicationInfo, children *status.ProblemsResult) {
+	children.Add(obj)
+	if err := condition.EnsureReady(obj); err != nil {
+		WriteStatus(obj, appInfo, err)
+	}
 }
 
 // WriteStatusWithRef records an error for a resource using an explicit ResourceRef.
@@ -86,21 +94,28 @@ func MapApplicationInfo(ctx context.Context, rover *roverv1.Rover, stores *store
 		Psiid:     scalars.Psiid,
 		Variables: []api.Data{},
 	}
+	// Every sub-resource referenced in the Rover status is folded in, as the
+	// status endpoint does, without listing them a second time. Unlike the status
+	// endpoint, owned sub-resources that are no longer referenced (e.g. a removed
+	// Listener still draining before deletion) are not seen.
+	children := &status.ProblemsResult{}
 
-	if err := FillApplicationInfo(ctx, rover, appInfo, stores); err != nil {
+	if err := FillApplicationInfo(ctx, rover, appInfo, stores, children); err != nil {
 		return nil, errors.Wrap(err, "failed to fill application info")
 	}
 	fillApplicationVariables(appInfo)
-	if err := FillSubscriptionInfo(ctx, rover, appInfo, stores); err != nil {
+	if err := FillSubscriptionInfo(ctx, rover, appInfo, stores, children); err != nil {
 		return nil, errors.Wrap(err, "failed to fill subscription info")
 	}
-	if err := FillExposureInfo(ctx, rover, appInfo, stores); err != nil {
+	if err := FillExposureInfo(ctx, rover, appInfo, stores, children); err != nil {
 		return nil, errors.Wrap(err, "failed to fill exposure info")
 	}
 	appendVariable(appInfo, "tardis.horizon.event.url", appInfo.StargatePublishEventUrl)
 	if err := FillChevronInfo(ctx, rover, appInfo, stores); err != nil {
 		return nil, errors.Wrap(err, "failed to fill chevron info")
 	}
+
+	_, appInfo.Status = status.ResolveRoverStatus(rover, *children)
 
 	return appInfo, nil
 }
@@ -123,7 +138,7 @@ func fillApplicationVariables(appInfo *api.ApplicationInfo) {
 	appendVariable(appInfo, "tardis.stargate.url", appInfo.StargateUrl)
 }
 
-func FillApplicationInfo(ctx context.Context, rover *roverv1.Rover, appInfo *api.ApplicationInfo, stores *store.Stores) error {
+func FillApplicationInfo(ctx context.Context, rover *roverv1.Rover, appInfo *api.ApplicationInfo, stores *store.Stores, children *status.ProblemsResult) error {
 	if rover == nil || rover.Status.Application == nil {
 		return errors.New("rover resource is not processed and does not contain an application")
 	}
@@ -144,6 +159,8 @@ func FillApplicationInfo(ctx context.Context, rover *roverv1.Rover, appInfo *api
 		WriteStatusWithRef(ResourceRefFromGVK(gvk, rover.Labels[config.EnvironmentLabelKey], rover.Spec.Zone), appInfo, err)
 		return errors.Wrap(err, "failed to get zone")
 	}
+
+	recordChild(app, appInfo, children)
 
 	appInfo.IrisClientId = app.Status.ClientId
 	appInfo.IrisClientSecret = app.Status.ClientSecret
@@ -183,11 +200,10 @@ func FillApplicationInfo(ctx context.Context, rover *roverv1.Rover, appInfo *api
 		}
 	}
 
-	appInfo.Status = status.GetOverallStatus(rover.Status.Conditions)
 	return nil
 }
 
-func FillSubscriptionInfo(ctx context.Context, rover *roverv1.Rover, appInfo *api.ApplicationInfo, stores *store.Stores) error {
+func FillSubscriptionInfo(ctx context.Context, rover *roverv1.Rover, appInfo *api.ApplicationInfo, stores *store.Stores, children *status.ProblemsResult) error {
 	if rover == nil {
 		return errors.New("input rover is nil")
 	}
@@ -207,9 +223,7 @@ func FillSubscriptionInfo(ctx context.Context, rover *roverv1.Rover, appInfo *ap
 			continue
 		}
 
-		if err := condition.EnsureReady(apiSub); err != nil {
-			WriteStatus(apiSub, appInfo, err)
-		}
+		recordChild(apiSub, appInfo, children)
 
 		subInfo := api.SubscriptionInfo{}
 		apiSubInfo := api.ApiSubscriptionInfo{
@@ -232,9 +246,7 @@ func FillSubscriptionInfo(ctx context.Context, rover *roverv1.Rover, appInfo *ap
 			continue
 		}
 
-		if err := condition.EnsureReady(eventSub); err != nil {
-			WriteStatus(eventSub, appInfo, err)
-		}
+		recordChild(eventSub, appInfo, children)
 
 		subInfo := api.SubscriptionInfo{}
 		eventSubInfo := mapEventSubscriptionInfo(eventSub)
@@ -260,9 +272,7 @@ func FillSubscriptionInfo(ctx context.Context, rover *roverv1.Rover, appInfo *ap
 			continue
 		}
 
-		if err := condition.EnsureReady(agenticSub); err != nil {
-			WriteStatus(agenticSub, appInfo, err)
-		}
+		recordChild(agenticSub, appInfo, children)
 
 		subInfo := api.SubscriptionInfo{}
 		aiSubInfo := api.AiSubscriptionInfo{
@@ -285,9 +295,7 @@ func FillSubscriptionInfo(ctx context.Context, rover *roverv1.Rover, appInfo *ap
 			continue
 		}
 
-		if err := condition.EnsureReady(fileSub); err != nil {
-			WriteStatus(fileSub, appInfo, err)
-		}
+		recordChild(fileSub, appInfo, children)
 
 		subInfo := api.SubscriptionInfo{}
 		fileSubInfo := mapFileSubscriptionInfo(fileSub)
@@ -300,7 +308,7 @@ func FillSubscriptionInfo(ctx context.Context, rover *roverv1.Rover, appInfo *ap
 
 	return nil
 }
-func FillExposureInfo(ctx context.Context, rover *roverv1.Rover, appInfo *api.ApplicationInfo, stores *store.Stores) error {
+func FillExposureInfo(ctx context.Context, rover *roverv1.Rover, appInfo *api.ApplicationInfo, stores *store.Stores, children *status.ProblemsResult) error {
 	if rover == nil {
 		return errors.New("input rover is nil")
 	}
@@ -311,16 +319,16 @@ func FillExposureInfo(ctx context.Context, rover *roverv1.Rover, appInfo *api.Ap
 	totalExps := len(rover.Status.ApiExposures) + len(rover.Status.EventExposures) + len(rover.Status.AgenticExposures) + len(rover.Status.FileExposures)
 	appInfo.Exposures = make([]api.ExposureInfo, 0, totalExps)
 
-	if err := fillAPIExposures(ctx, rover, appInfo, stores); err != nil {
+	if err := fillAPIExposures(ctx, rover, appInfo, stores, children); err != nil {
 		return err
 	}
-	if err := fillEventExposures(ctx, rover, appInfo, stores); err != nil {
+	if err := fillEventExposures(ctx, rover, appInfo, stores, children); err != nil {
 		return err
 	}
-	if err := fillAiExposures(ctx, rover, appInfo, stores); err != nil {
+	if err := fillAiExposures(ctx, rover, appInfo, stores, children); err != nil {
 		return err
 	}
-	if err := fillFileExposures(ctx, rover, appInfo, stores); err != nil {
+	if err := fillFileExposures(ctx, rover, appInfo, stores, children); err != nil {
 		return err
 	}
 
@@ -329,7 +337,7 @@ func FillExposureInfo(ctx context.Context, rover *roverv1.Rover, appInfo *api.Ap
 
 // fillAPIExposures fetches each API exposure referenced by the Rover status,
 // validates its readiness, and appends it to appInfo.Exposures.
-func fillAPIExposures(ctx context.Context, rover *roverv1.Rover, appInfo *api.ApplicationInfo, stores *store.Stores) error {
+func fillAPIExposures(ctx context.Context, rover *roverv1.Rover, appInfo *api.ApplicationInfo, stores *store.Stores, children *status.ProblemsResult) error {
 	for _, exp := range rover.Status.ApiExposures {
 		apiExp, err := stores.APIExposureStore.Get(ctx, exp.Namespace, exp.Name)
 		if err != nil {
@@ -338,9 +346,7 @@ func fillAPIExposures(ctx context.Context, rover *roverv1.Rover, appInfo *api.Ap
 			continue
 		}
 
-		if err := condition.EnsureReady(apiExp); err != nil {
-			WriteStatus(apiExp, appInfo, err)
-		}
+		recordChild(apiExp, appInfo, children)
 
 		expInfo := api.ExposureInfo{}
 		apiExpInfo := api.ApiExposureInfo{
@@ -360,7 +366,7 @@ func fillAPIExposures(ctx context.Context, rover *roverv1.Rover, appInfo *api.Ap
 
 // fillEventExposures fetches each event exposure referenced by the Rover status,
 // validates its readiness, and appends it to appInfo.Exposures.
-func fillEventExposures(ctx context.Context, rover *roverv1.Rover, appInfo *api.ApplicationInfo, stores *store.Stores) error {
+func fillEventExposures(ctx context.Context, rover *roverv1.Rover, appInfo *api.ApplicationInfo, stores *store.Stores, children *status.ProblemsResult) error {
 	for _, exp := range rover.Status.EventExposures {
 		eventExp, err := stores.EventExposureStore.Get(ctx, exp.Namespace, exp.Name)
 		if err != nil {
@@ -369,9 +375,7 @@ func fillEventExposures(ctx context.Context, rover *roverv1.Rover, appInfo *api.
 			continue
 		}
 
-		if err := condition.EnsureReady(eventExp); err != nil {
-			WriteStatus(eventExp, appInfo, err)
-		}
+		recordChild(eventExp, appInfo, children)
 
 		// All event exposures in a zone share the same publish URL.
 		if appInfo.StargatePublishEventUrl == "" && eventExp.Status.PublishURL != "" {
@@ -391,7 +395,7 @@ func fillEventExposures(ctx context.Context, rover *roverv1.Rover, appInfo *api.
 
 // fillAiExposures fetches each AI/MCP exposure referenced by the Rover status,
 // validates its readiness, and appends it to appInfo.Exposures.
-func fillAiExposures(ctx context.Context, rover *roverv1.Rover, appInfo *api.ApplicationInfo, stores *store.Stores) error {
+func fillAiExposures(ctx context.Context, rover *roverv1.Rover, appInfo *api.ApplicationInfo, stores *store.Stores, children *status.ProblemsResult) error {
 	for _, exp := range rover.Status.AgenticExposures {
 		agenticExp, err := stores.AgenticExposureStore.Get(ctx, exp.Namespace, exp.Name)
 		if err != nil {
@@ -400,9 +404,7 @@ func fillAiExposures(ctx context.Context, rover *roverv1.Rover, appInfo *api.App
 			continue
 		}
 
-		if err := condition.EnsureReady(agenticExp); err != nil {
-			WriteStatus(agenticExp, appInfo, err)
-		}
+		recordChild(agenticExp, appInfo, children)
 
 		expInfo := api.ExposureInfo{}
 		aiExpInfo := api.AiExposureInfo{
@@ -433,7 +435,7 @@ func toApiApprovalStrategy(strategy string) api.ApprovalStrategy {
 
 // fillFileExposures fetches each file exposure referenced by the Rover status,
 // validates its readiness, and appends it to appInfo.Exposures.
-func fillFileExposures(ctx context.Context, rover *roverv1.Rover, appInfo *api.ApplicationInfo, stores *store.Stores) error {
+func fillFileExposures(ctx context.Context, rover *roverv1.Rover, appInfo *api.ApplicationInfo, stores *store.Stores, children *status.ProblemsResult) error {
 	for _, exp := range rover.Status.FileExposures {
 		fileExp, err := stores.FileExposureStore.Get(ctx, exp.Namespace, exp.Name)
 		if err != nil {
@@ -442,9 +444,7 @@ func fillFileExposures(ctx context.Context, rover *roverv1.Rover, appInfo *api.A
 			continue
 		}
 
-		if err := condition.EnsureReady(fileExp); err != nil {
-			WriteStatus(fileExp, appInfo, err)
-		}
+		recordChild(fileExp, appInfo, children)
 
 		expInfo := api.ExposureInfo{}
 		fileExpInfo := mapFileExposureInfo(fileExp)
