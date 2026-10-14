@@ -38,15 +38,20 @@ func NewCommand() *cobra.Command {
 	baseCmd := base.NewCommand(
 		"resource",
 		"Manage resources",
+		// Markdown-friendly: "~~~" fences avoid backticks inside the raw string;
+		// inline code spans are concatenated.
 		`Get, list or delete resources on the server using the subcommands:
-  roverctl resource list --kind <kind>
-  roverctl resource get --kind <kind> --name <name>
-  roverctl resource delete --kind <kind> --name <name>
 
-Deprecated: the selector flags --list, --get and --delete on this command are
+~~~
+roverctl resource list --kind KIND
+roverctl resource get --kind KIND --name NAME
+roverctl resource delete --kind KIND --name NAME
+~~~
+
+Deprecated: the selector flags `+"`--list`, `--get` and `--delete`"+` on this command are
 still supported for backward compatibility, but print a deprecation notice to
 stderr. Use the matching subcommand instead. The legacy single-dash form
--name=<name> is accepted as an alias for --name=<name>.`,
+`+"`-name=NAME`"+` is accepted as an alias for `+"`--name=NAME`"+`.`,
 	)
 
 	resOpts := &ResourceCommandOptions{}
