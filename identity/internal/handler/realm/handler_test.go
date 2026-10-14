@@ -548,7 +548,9 @@ var _ = Describe("HandlerRealm", func() {
 
 			By("using the discovered issuer rather than the management URL")
 			Expect(realm.Status.IssuerUrl).To(Equal("https://public.example.com/realms/test-realm"))
-			Expect(realm.Status.IssuerUrl).ToNot(Equal(keycloak.DetermineIssuerUrlFrom(idp.Spec.AdminUrl, realm.Name)))
+			managementIssuer, err := keycloak.DetermineIssuerUrlFrom(idp.Spec.AdminUrl, realm.Name)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(realm.Status.IssuerUrl).ToNot(Equal(managementIssuer))
 		})
 
 		It("should store sorted managed attributes and the issuer from the effective frontendUrl", func() {

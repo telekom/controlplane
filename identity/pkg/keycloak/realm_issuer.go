@@ -65,11 +65,21 @@ func parseBaseUrl(raw string) (*url.URL, error) {
 	if strings.TrimSpace(raw) != raw {
 		return nil, fmt.Errorf("URL must not contain surrounding whitespace")
 	}
-	u, err := url.Parse(raw)
+	u, err := parseUrl(raw)
 	if err != nil {
-		return nil, fmt.Errorf("invalid URL: %w", err)
+		return nil, err
 	}
 	return u, validateBaseUrl(u, raw)
+}
+
+// parseUrl parses raw without returning the input-bearing *url.Error, as the
+// input may contain credentials.
+func parseUrl(raw string) (*url.URL, error) {
+	u, err := url.Parse(raw)
+	if err != nil {
+		return nil, errors.New("invalid URL: malformed URL syntax")
+	}
+	return u, nil
 }
 
 func validateBaseUrl(u *url.URL, raw string) error {
@@ -94,12 +104,12 @@ func validateBaseUrl(u *url.URL, raw string) error {
 // validateDiscoveredIssuer checks that the issuer advertised by Keycloak is a
 // safe absolute http(s) URL ending with "/realms/<realm>".
 func validateDiscoveredIssuer(issuer, realmName string) error {
-	u, err := url.Parse(issuer)
-	if err != nil {
-		return fmt.Errorf("invalid issuer URL: %w", err)
+	u, parseErr := parseUrl(issuer)
+	if parseErr != nil {
+		return fmt.Errorf("invalid issuer URL: %w", parseErr)
 	}
-	if err := validateBaseUrl(u, issuer); err != nil {
-		return fmt.Errorf("invalid issuer URL: %w", err)
+	if validateErr := validateBaseUrl(u, issuer); validateErr != nil {
+		return fmt.Errorf("invalid issuer URL: %w", validateErr)
 	}
 	if !strings.HasSuffix(strings.TrimSuffix(u.Path, "/"), "/realms/"+realmName) {
 		return fmt.Errorf("issuer URL does not belong to realm %q", realmName)
@@ -117,20 +127,32 @@ type issuerDiscovery struct {
 // discoveryUrl returns the discovery document URL of a realm, reached via the
 // management (admin) URL. This only selects the transport address; the
 // issuer itself is read from the document.
-func (d *issuerDiscovery) discoveryUrl(realmName string) string {
-	return DetermineIssuerUrlFrom(d.adminUrl, url.PathEscape(realmName)) + oidcDiscoverySuffix
+func (d *issuerDiscovery) discoveryUrl(realmName string) (string, error) {
+	issuerUrl, err := DetermineIssuerUrlFrom(d.adminUrl, url.PathEscape(realmName))
+	if err != nil {
+		return "", err
+	}
+	return issuerUrl + oidcDiscoverySuffix, nil
 }
 
-func (d *issuerDiscovery) discoverIssuer(ctx context.Context, realmName string) (issuer string, err error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, d.discoveryUrl(realmName), http.NoBody)
-	if err != nil {
-		return "", blockedErrorf("creating OIDC discovery request: %s", err)
+// discoverIssuer reads the issuer from the realm's OIDC discovery document.
+// A failure to close the response body is joined into the returned error.
+func (d *issuerDiscovery) discoverIssuer(ctx context.Context, realmName string) (_ string, err error) {
+	discoveryUrl, urlErr := d.discoveryUrl(realmName)
+	if urlErr != nil {
+		return "", blockedErrorf("determining OIDC discovery URL: %s", urlErr)
+	}
+	// The request error is not included as it contains the URL, which may
+	// hold credentials.
+	req, reqErr := http.NewRequestWithContext(ctx, http.MethodGet, discoveryUrl, http.NoBody)
+	if reqErr != nil {
+		return "", blockedErrorf("creating OIDC discovery request: invalid discovery URL")
 	}
 	req.Header.Set("Accept", "application/json")
 
-	resp, err := d.httpClient.Do(req)
-	if err != nil {
-		return "", retryableErrorf("requesting OIDC discovery document: %s", err)
+	resp, doErr := d.httpClient.Do(req)
+	if doErr != nil {
+		return "", retryableErrorf("requesting OIDC discovery document: %s", doErr)
 	}
 	defer func() {
 		if closeErr := resp.Body.Close(); closeErr != nil {
@@ -142,22 +164,24 @@ func (d *issuerDiscovery) discoverIssuer(ctx context.Context, realmName string) 
 		return "", retryableErrorf("OIDC discovery returned HTTP %d", resp.StatusCode)
 	}
 
-	body, err := io.ReadAll(io.LimitReader(resp.Body, maxDiscoveryBodySize+1))
-	if err != nil {
-		return "", retryableErrorf("reading OIDC discovery document: %s", err)
+	issuer, decodeErr := decodeDiscoveredIssuer(resp.Body)
+	if decodeErr != nil {
+		return "", decodeErr
 	}
-	if len(body) > maxDiscoveryBodySize {
-		return "", blockedErrorf("OIDC discovery document exceeds %d bytes", maxDiscoveryBodySize)
+	if validateErr := validateDiscoveredIssuer(issuer, realmName); validateErr != nil {
+		return "", blockedErrorf("OIDC discovery document: %s", validateErr)
 	}
+	return issuer, nil
+}
 
+// decodeDiscoveredIssuer decodes the first JSON value from at most
+// maxDiscoveryBodySize bytes of the body and returns its "issuer" field.
+func decodeDiscoveredIssuer(body io.Reader) (string, error) {
 	var metadata struct {
 		Issuer string `json:"issuer"`
 	}
-	if err := json.Unmarshal(body, &metadata); err != nil {
-		return "", blockedErrorf("decoding OIDC discovery document: %s", err)
-	}
-	if err := validateDiscoveredIssuer(metadata.Issuer, realmName); err != nil {
-		return "", blockedErrorf("OIDC discovery document: %s", err)
+	if decodeErr := json.NewDecoder(io.LimitReader(body, maxDiscoveryBodySize)).Decode(&metadata); decodeErr != nil {
+		return "", blockedErrorf("decoding OIDC discovery document: %s", decodeErr)
 	}
 	return metadata.Issuer, nil
 }
