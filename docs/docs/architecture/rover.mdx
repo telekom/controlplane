@@ -26,6 +26,10 @@ The Rover Server accepts resource names between 2 and 90 characters. Names longe
 
 The server also normalizes the environment, team, and group labels to lowercase, replaces spaces, underscores, and slashes with hyphens, trims leading and trailing hyphens, and shortens values exceeding the label-value limit.
 
+### Application Info Status
+
+The `status` of `roverctl get-info` is evaluated like the Rover status endpoint. It includes the Application and every sub-resource referenced in the Rover status, and reports `processing` or `pending` while the Rover or a sub-resource has a spec change that is not yet processed. A sub-resource that cannot be read is listed in `errors` and does not fail the request. Unlike the status endpoint, get-info does not see removed sub-resources that are still being deleted, such as a Listener draining its capture.
+
 ## Domain Interactions
 
 - **Application domain** — Creates Application resources.

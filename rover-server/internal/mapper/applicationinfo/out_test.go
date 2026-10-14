@@ -26,6 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/telekom/controlplane/rover-server/internal/api"
+	"github.com/telekom/controlplane/rover-server/internal/mapper/status"
 	"github.com/telekom/controlplane/rover-server/pkg/store"
 	"github.com/telekom/controlplane/rover-server/test/mocks"
 )
@@ -44,7 +45,7 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 	Context("FillExposureInfo", func() {
 		It("must fill exposure info correctly", func() {
 			var applicationInfo = &api.ApplicationInfo{}
-			err := FillExposureInfo(ctx, rover, applicationInfo, stores)
+			err := FillExposureInfo(ctx, rover, applicationInfo, stores, &status.ProblemsResult{})
 
 			Expect(err).To(BeNil())
 
@@ -53,14 +54,14 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 
 		It("must return an error if the input rover is nil", func() {
 			var applicationInfo = &api.ApplicationInfo{}
-			err := FillExposureInfo(ctx, nil, applicationInfo, stores)
+			err := FillExposureInfo(ctx, nil, applicationInfo, stores, &status.ProblemsResult{})
 
 			Expect(err).ToNot(BeNil())
 			Expect(err.Error()).To(ContainSubstring("input rover is nil"))
 		})
 
 		It("must return an error if the input application info is nil", func() {
-			err := FillExposureInfo(ctx, rover, nil, stores)
+			err := FillExposureInfo(ctx, rover, nil, stores, &status.ProblemsResult{})
 
 			Expect(err).ToNot(BeNil())
 			Expect(err.Error()).To(ContainSubstring("input applicationInfo is nil"))
@@ -87,7 +88,7 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 			}}
 			applicationInfo := &api.ApplicationInfo{}
 
-			Expect(fillAiExposures(ctx, roverWithAiExposure, applicationInfo, localStores)).To(Succeed())
+			Expect(fillAiExposures(ctx, roverWithAiExposure, applicationInfo, localStores, &status.ProblemsResult{})).To(Succeed())
 			Expect(applicationInfo.Exposures).To(HaveLen(1))
 			mapped, err := applicationInfo.Exposures[0].AsAiExposureInfo()
 			Expect(err).NotTo(HaveOccurred())
@@ -122,7 +123,7 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 			roverWithExp.Status.EventExposures = nil
 
 			appInfo := &api.ApplicationInfo{}
-			err := FillExposureInfo(ctx, roverWithExp, appInfo, errStores)
+			err := FillExposureInfo(ctx, roverWithExp, appInfo, errStores, &status.ProblemsResult{})
 
 			Expect(err).To(BeNil())
 			Expect(appInfo.Errors).To(HaveLen(1))
@@ -192,7 +193,7 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 			}
 
 			appInfo := &api.ApplicationInfo{}
-			err := FillExposureInfo(secCtx, roverWithEventExp, appInfo, localStores)
+			err := FillExposureInfo(secCtx, roverWithEventExp, appInfo, localStores, &status.ProblemsResult{})
 
 			Expect(err).To(BeNil())
 			Expect(appInfo.Exposures).To(HaveLen(1))
@@ -226,7 +227,7 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 			}
 
 			appInfo := &api.ApplicationInfo{}
-			err := FillExposureInfo(ctx, roverWithEventExp, appInfo, localStores)
+			err := FillExposureInfo(ctx, roverWithEventExp, appInfo, localStores, &status.ProblemsResult{})
 
 			Expect(err).To(BeNil())
 			Expect(appInfo.Errors).To(HaveLen(1))
@@ -277,7 +278,7 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 			}
 
 			appInfo := &api.ApplicationInfo{}
-			err := FillExposureInfo(ctx, roverWithFileExp, appInfo, localStores)
+			err := FillExposureInfo(ctx, roverWithFileExp, appInfo, localStores, &status.ProblemsResult{})
 
 			Expect(err).To(BeNil())
 			Expect(appInfo.Exposures).To(HaveLen(1))
@@ -323,7 +324,7 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 			}
 
 			appInfo := &api.ApplicationInfo{}
-			err := FillExposureInfo(ctx, roverWithFileExp, appInfo, localStores)
+			err := FillExposureInfo(ctx, roverWithFileExp, appInfo, localStores, &status.ProblemsResult{})
 
 			Expect(err).To(BeNil())
 			Expect(appInfo.Errors).To(HaveLen(1))
@@ -334,7 +335,7 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 	Context("FillSubscriptionInfo", func() {
 		It("must fill subscription info correctly", func() {
 			var applicationInfo = &api.ApplicationInfo{}
-			err := FillSubscriptionInfo(ctx, rover, applicationInfo, stores)
+			err := FillSubscriptionInfo(ctx, rover, applicationInfo, stores, &status.ProblemsResult{})
 
 			Expect(err).To(BeNil())
 
@@ -343,7 +344,7 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 
 		It("must populate HorizonSubscriptionId and HorizonSubscriptionUrl for event subscriptions", func() {
 			var applicationInfo = &api.ApplicationInfo{}
-			err := FillSubscriptionInfo(ctx, rover, applicationInfo, stores)
+			err := FillSubscriptionInfo(ctx, rover, applicationInfo, stores, &status.ProblemsResult{})
 
 			Expect(err).To(BeNil())
 
@@ -359,14 +360,14 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 
 		It("must return an error if the input rover is nil", func() {
 			var applicationInfo = &api.ApplicationInfo{}
-			err := FillSubscriptionInfo(ctx, nil, applicationInfo, stores)
+			err := FillSubscriptionInfo(ctx, nil, applicationInfo, stores, &status.ProblemsResult{})
 
 			Expect(err).ToNot(BeNil())
 			Expect(err.Error()).To(ContainSubstring("input rover is nil"))
 		})
 
 		It("must return an error if the input application info is nil", func() {
-			err := FillSubscriptionInfo(ctx, rover, nil, stores)
+			err := FillSubscriptionInfo(ctx, rover, nil, stores, &status.ProblemsResult{})
 
 			Expect(err).ToNot(BeNil())
 			Expect(err.Error()).To(ContainSubstring("input applicationInfo is nil"))
@@ -400,7 +401,7 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 			roverWithSub.Status.EventSubscriptions = nil
 
 			appInfo := &api.ApplicationInfo{}
-			err := FillSubscriptionInfo(ctx, roverWithSub, appInfo, localStores)
+			err := FillSubscriptionInfo(ctx, roverWithSub, appInfo, localStores, &status.ProblemsResult{})
 
 			Expect(err).To(BeNil())
 			Expect(appInfo.Errors).To(HaveLen(1))
@@ -434,7 +435,7 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 			}
 
 			appInfo := &api.ApplicationInfo{}
-			err := FillSubscriptionInfo(ctx, roverWithSub, appInfo, localStores)
+			err := FillSubscriptionInfo(ctx, roverWithSub, appInfo, localStores, &status.ProblemsResult{})
 
 			Expect(err).To(BeNil())
 			Expect(appInfo.Errors).To(HaveLen(1))
@@ -481,7 +482,7 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 			}
 
 			appInfo := &api.ApplicationInfo{}
-			err := FillSubscriptionInfo(ctx, roverWithFileSub, appInfo, localStores)
+			err := FillSubscriptionInfo(ctx, roverWithFileSub, appInfo, localStores, &status.ProblemsResult{})
 
 			Expect(err).To(BeNil())
 			Expect(appInfo.Subscriptions).To(HaveLen(1))
@@ -524,7 +525,7 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 			}
 
 			appInfo := &api.ApplicationInfo{}
-			err := FillSubscriptionInfo(ctx, roverWithSub, appInfo, localStores)
+			err := FillSubscriptionInfo(ctx, roverWithSub, appInfo, localStores, &status.ProblemsResult{})
 
 			Expect(err).To(BeNil())
 			Expect(appInfo.Errors).To(HaveLen(1))
@@ -535,7 +536,7 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 	Context("FillApplicationInfo", func() {
 		It("must fill application info correctly", func() {
 			var applicationInfo = &api.ApplicationInfo{}
-			err := FillApplicationInfo(ctx, rover, applicationInfo, stores)
+			err := FillApplicationInfo(ctx, rover, applicationInfo, stores, &status.ProblemsResult{})
 
 			Expect(err).To(BeNil())
 
@@ -562,7 +563,7 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 				localStores.ZoneStore = zoneMock
 
 				appInfo := &api.ApplicationInfo{}
-				err := FillApplicationInfo(ctx, rover, appInfo, localStores)
+				err := FillApplicationInfo(ctx, rover, appInfo, localStores, &status.ProblemsResult{})
 
 				Expect(err).To(BeNil())
 				Expect(appInfo.IrisTokenEndpointUrl).To(Equal(expected))
@@ -608,7 +609,7 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 			}}}
 
 			appInfo := &api.ApplicationInfo{}
-			err := FillApplicationInfo(ctx, roverWithFailover, appInfo, localStores)
+			err := FillApplicationInfo(ctx, roverWithFailover, appInfo, localStores, &status.ProblemsResult{})
 
 			Expect(err).To(BeNil())
 			Expect(appInfo.StargateUrl).To(Equal("https://failover.example.com"))
@@ -617,14 +618,14 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 
 		It("must return an error if the input rover is nil", func() {
 			var applicationInfo = &api.ApplicationInfo{}
-			err := FillApplicationInfo(ctx, nil, applicationInfo, stores)
+			err := FillApplicationInfo(ctx, nil, applicationInfo, stores, &status.ProblemsResult{})
 
 			Expect(err).ToNot(BeNil())
 			Expect(err.Error()).To(ContainSubstring("rover resource is not processed and does not contain an application"))
 		})
 
 		It("must return an error if the input application info is nil", func() {
-			err := FillApplicationInfo(ctx, rover, nil, stores)
+			err := FillApplicationInfo(ctx, rover, nil, stores, &status.ProblemsResult{})
 
 			Expect(err).ToNot(BeNil())
 			Expect(err.Error()).To(ContainSubstring("input applicationInfo is nil"))
@@ -648,7 +649,7 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 			localStores.ApplicationSecretStore = appMock
 
 			appInfo := &api.ApplicationInfo{}
-			err := FillApplicationInfo(ctx, rover, appInfo, localStores)
+			err := FillApplicationInfo(ctx, rover, appInfo, localStores, &status.ProblemsResult{})
 
 			Expect(err).ToNot(BeNil())
 			Expect(err.Error()).To(ContainSubstring("failed to get application"))
@@ -680,7 +681,7 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 			localStores.ZoneStore = zoneMock
 
 			appInfo := &api.ApplicationInfo{}
-			err := FillApplicationInfo(ctx, rover, appInfo, localStores)
+			err := FillApplicationInfo(ctx, rover, appInfo, localStores, &status.ProblemsResult{})
 
 			Expect(err).ToNot(BeNil())
 			Expect(err.Error()).To(ContainSubstring("failed to get zone"))
