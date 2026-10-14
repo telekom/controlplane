@@ -84,6 +84,7 @@ func createDefaultIdentityRealm(ctx context.Context, hc *HandlingContext) error 
 		Claims:         hc.DefaultClaims,
 		AllowedOrigins: slices.Clone(idp.AllowedOrigins),
 		SecretRotation: idp.SecretRotation,
+		SetFrontendURL: true,
 	}
 	realm, err := createIdentityRealm(ctx, hc, naming.ForDefaultIdentityRealm(hc.Environment), opts)
 	if err != nil {
@@ -106,7 +107,8 @@ func createDefaultIdentityRealm(ctx context.Context, hc *HandlingContext) error 
 func createInternalIdentityRealm(ctx context.Context, hc *HandlingContext) error {
 	opts := createIdentityRealmOptions{
 		Claims:         hc.DefaultClaims,
-		SecretRotation: nil, // Internal realm MUST not have secret rotation enabled
+		SecretRotation: nil,   // Internal realm MUST not have secret rotation enabled
+		SetFrontendURL: false, // Internal (rover) realm MUST not have a frontendUrl
 	}
 	realm, err := createIdentityRealm(ctx, hc, naming.ForInternalIdentityRealm(), opts)
 	if err != nil {
@@ -143,6 +145,9 @@ type createIdentityRealmOptions struct {
 	Claims         []identityapi.ClaimConfig
 	AllowedOrigins []string
 	SecretRotation *adminv1.SecretRotationConfig
+	// SetFrontendURL sets the realm frontendUrl attribute for world-visible zones.
+	// It must be false for the internal (rover) realm.
+	SetFrontendURL bool
 }
 
 // createIdentityRealm is a shared helper that creates an identity realm with the given name and options.
@@ -161,10 +166,12 @@ func createIdentityRealm(ctx context.Context, hc *HandlingContext, realmName str
 	if err != nil {
 		return nil, ctrlerrors.BlockedErrorf("cannot resolve identity provider for zone %q: %s", hc.Zone.Name, err)
 	}
-	if hostname, hostErr := issuerHostname(idp); hostErr == nil {
-		frontendURL = realmFrontendURL(hostname)
-	} else {
-		logr.FromContextOrDiscard(ctx).Info("Cannot resolve issuer hostname, realm frontendUrl is not set", "realm", identityRealm.Name, "reason", hostErr.Error())
+	if opts.SetFrontendURL {
+		if hostname, hostErr := issuerHostname(idp); hostErr == nil {
+			frontendURL = realmFrontendURL(hostname)
+		} else {
+			logr.FromContextOrDiscard(ctx).Info("Cannot resolve issuer hostname, realm frontendUrl is not set", "realm", identityRealm.Name, "reason", hostErr.Error())
+		}
 	}
 
 	mutator := func() error {
@@ -184,7 +191,7 @@ func createIdentityRealm(ctx context.Context, hc *HandlingContext, realmName str
 			AllowedOrigins: opts.AllowedOrigins,
 		}
 
-		if hc.Zone.Spec.Visibility == adminv1.ZoneVisibilityWorld {
+		if opts.SetFrontendURL && hc.Zone.Spec.Visibility == adminv1.ZoneVisibilityWorld {
 			identityRealm.Spec.Attributes = map[string]string{
 				"frontendUrl": frontendURL,
 			}

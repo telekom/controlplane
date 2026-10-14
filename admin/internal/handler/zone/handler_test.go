@@ -286,11 +286,19 @@ var _ = Describe("Zone Handler", func() {
 		Expect(zone.Status.IdentityRealm).NotTo(BeNil())
 		Expect(zone.Status.InternalIdentityRealm).NotTo(BeNil())
 
-		for _, ref := range []*ctypes.ObjectRef{zone.Status.IdentityRealm, zone.Status.InternalIdentityRealm} {
-			realm := &identityapi.Realm{}
-			Expect(k8sClient.Get(ctx, ref.K8s(), realm)).To(Succeed())
-			Expect(realm.Spec.Attributes).To(Equal(map[string]string{"frontendUrl": "https://test-iris.de/auth"}), realm.Name)
-		}
+		realm := &identityapi.Realm{}
+		Expect(k8sClient.Get(ctx, zone.Status.IdentityRealm.K8s(), realm)).To(Succeed())
+		Expect(realm.Spec.Attributes).To(Equal(map[string]string{"frontendUrl": "https://test-iris.de/auth"}), realm.Name)
+	})
+
+	It("does not set the realm frontendUrl on the internal (rover) realm", func() {
+		handler := newTestHandler()
+		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
+		Expect(zone.Status.InternalIdentityRealm).NotTo(BeNil())
+
+		realm := &identityapi.Realm{}
+		Expect(k8sClient.Get(ctx, zone.Status.InternalIdentityRealm.K8s(), realm)).To(Succeed())
+		Expect(realm.Spec.Attributes).To(BeEmpty(), realm.Name)
 	})
 
 	It("overwrites modified realm attributes with the frontendUrl on world zones", func() {
@@ -328,11 +336,9 @@ var _ = Describe("Zone Handler", func() {
 		zone.Spec.IdentityProviders[0].IssuerHostname = "iam.example.com"
 		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
 
-		for _, ref := range []*ctypes.ObjectRef{zone.Status.IdentityRealm, zone.Status.InternalIdentityRealm} {
-			realm := &identityapi.Realm{}
-			Expect(k8sClient.Get(ctx, ref.K8s(), realm)).To(Succeed())
-			Expect(realm.Spec.Attributes).To(HaveKeyWithValue("frontendUrl", "https://iam.example.com/auth"), realm.Name)
-		}
+		realm := &identityapi.Realm{}
+		Expect(k8sClient.Get(ctx, zone.Status.IdentityRealm.K8s(), realm)).To(Succeed())
+		Expect(realm.Spec.Attributes).To(HaveKeyWithValue("frontendUrl", "https://iam.example.com/auth"), realm.Name)
 	})
 
 	It("waits for identity resources before creating gateways", func() {
