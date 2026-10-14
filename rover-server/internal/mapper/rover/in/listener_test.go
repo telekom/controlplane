@@ -113,6 +113,8 @@ var _ = Describe("Listener Mapper In", func() {
 			},
 			Entry("eventType", api.RoverListener{Consumer: "c", Provider: "p", ApiBasePath: "/echo/v1", EventType: "de.telekom.test.v1"},
 				"listeners[0].eventType: event listeners are not supported yet"),
+			Entry("eventFilter", api.RoverListener{Consumer: "c", Provider: "p", ApiBasePath: "/echo/v1", EventFilter: api.ListenerFilter{Payload: []string{"orderId"}}},
+				"listeners[0].eventFilter: event listeners are not supported yet"),
 			Entry("missing apiBasePath", api.RoverListener{Consumer: "c", Provider: "p"},
 				"listeners[0].apiBasePath: must be set"),
 		)

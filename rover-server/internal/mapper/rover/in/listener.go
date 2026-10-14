@@ -33,6 +33,9 @@ func validateListener(i int, in *api.RoverListener) error {
 	if in.EventType != "" {
 		return problems.ValidationError(fmt.Sprintf("listeners[%d].eventType", i), "event listeners are not supported yet")
 	}
+	if in.EventFilter.Trigger != nil || in.EventFilter.Payload != nil {
+		return problems.ValidationError(fmt.Sprintf("listeners[%d].eventFilter", i), "event listeners are not supported yet")
+	}
 	if in.ApiBasePath == "" {
 		return problems.ValidationError(fmt.Sprintf("listeners[%d].apiBasePath", i), "must be set")
 	}
