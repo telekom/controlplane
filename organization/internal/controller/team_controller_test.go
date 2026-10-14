@@ -317,16 +317,16 @@ var _ = Describe("Team Controller", Ordered, func() {
 				}, timeout, interval).Should(Succeed())
 
 				By("Updating team members to trigger member change notification")
-				err = k8sClient.Get(ctx, client.ObjectKeyFromObject(team), team)
-				Expect(err).NotTo(HaveOccurred())
-
-				originalMemberChangeRef := team.Status.NotificationsRef["team-members-changed"]
-				team.Spec.Members = append(team.Spec.Members, organizationv1.Member{
-					Name:  "new-member",
-					Email: "newmember@example.com",
-				})
-				err = k8sClient.Update(ctx, team)
-				Expect(err).NotTo(HaveOccurred())
+				var originalMemberChangeRef *types.ObjectRef
+				Eventually(func(g Gomega) {
+					g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(team), team)).To(Succeed())
+					originalMemberChangeRef = team.Status.NotificationsRef["team-members-changed"]
+					team.Spec.Members = append(team.Spec.Members, organizationv1.Member{
+						Name:  "new-member",
+						Email: "newmember@example.com",
+					})
+					g.Expect(k8sClient.Update(ctx, team)).To(Succeed())
+				}, timeout, interval).Should(Succeed())
 
 				Eventually(func(g Gomega) {
 					By("Getting the updated team")
