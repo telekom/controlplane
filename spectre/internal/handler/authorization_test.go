@@ -28,9 +28,11 @@ func baseListener() *spectrev1.Listener {
 		},
 		Spec: spectrev1.ListenerSpec{
 			Consumer: ctypes.TypedObjectRef{
+				TypeMeta:  metav1.TypeMeta{Kind: "Application", APIVersion: "application.cp.ei.telekom.de/v1"},
 				ObjectRef: ctypes.ObjectRef{Name: "consumer-app", Namespace: "team-ns"},
 			},
 			Provider: ctypes.TypedObjectRef{
+				TypeMeta:  metav1.TypeMeta{Kind: "Application", APIVersion: "application.cp.ei.telekom.de/v1"},
 				ObjectRef: ctypes.ObjectRef{Name: "provider-app", Namespace: "team-ns"},
 			},
 			Application: ctypes.ObjectRef{Name: "sa-consumer-app", Namespace: "team-ns"},
