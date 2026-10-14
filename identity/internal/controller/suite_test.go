@@ -7,9 +7,12 @@ package controller
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 	"time"
 
@@ -48,7 +51,28 @@ var (
 	testEnv   *envtest.Environment
 	ctx       context.Context
 	cancel    context.CancelFunc
+
+	// discoveryServer serves OIDC discovery documents that advertise
+	// publicIssuerBase, which differs from the server's own address.
+	discoveryServer *httptest.Server
 )
+
+const publicIssuerBase = "https://iris-distcp1-dataplane1.dev.dhei.telekom.de/auth/realms/"
+
+func newDiscoveryServer() *httptest.Server {
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		realmName, ok := strings.CutPrefix(r.URL.Path, "/auth/realms/")
+		realmName, found := strings.CutSuffix(realmName, "/.well-known/openid-configuration")
+		if !ok || !found || r.Header.Get("Authorization") != "" {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		if _, err := fmt.Fprintf(w, `{"issuer":%q}`, publicIssuerBase+realmName); err != nil {
+			GinkgoWriter.Printf("writing discovery response: %v\n", err)
+		}
+	}))
+}
 
 func TestControllers(t *testing.T) {
 	RegisterFailHandler(Fail)
@@ -101,11 +125,13 @@ var _ = BeforeSuite(func() {
 	RegisterIndexesOrDie(ctx, k8sManager)
 
 	By("Setting up the required mocks")
+	discoveryServer = newDiscoveryServer()
 	mockFactory := keycloak.ServiceFactoryFunc(func(realmStatus identityv1.RealmStatus) (keycloak.KeycloakService, error) {
 		if mockKeycloak {
 			mockClient := utils.NewKeycloakClientMock(GinkgoT())
 			utils.ConfigureKeycloakClientMock(mockClient)
-			return keycloak.NewKeycloakService(mockClient), nil
+			return keycloak.NewKeycloakService(mockClient,
+				keycloak.WithIssuerDiscovery(discoveryServer.Client(), discoveryServer.URL+"/auth/admin/realms/")), nil
 		}
 		return keycloak.NewKeycloakServiceFor(&realmStatus)
 	})
@@ -140,6 +166,7 @@ var _ = BeforeSuite(func() {
 var _ = AfterSuite(func() {
 	By("tearing down the test environment")
 	cancel()
+	discoveryServer.Close()
 	err := testEnv.Stop()
 	Expect(err).NotTo(HaveOccurred())
 })

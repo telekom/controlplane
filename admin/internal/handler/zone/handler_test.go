@@ -20,6 +20,7 @@ import (
 	config "github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	"github.com/telekom/controlplane/common/pkg/test/mock"
+	ctypes "github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
 	identityapi "github.com/telekom/controlplane/identity/api/v1"
@@ -279,6 +280,61 @@ var _ = Describe("Zone Handler", func() {
 		Expect(zone.Status.Namespace).To(Equal(strings.ToLower(testEnvironment + "--" + zone.Name)))
 	})
 
+	It("sets the realm frontendUrl from the issuer hostname on zone realms", func() {
+		handler := newTestHandler()
+		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
+		Expect(zone.Status.IdentityRealm).NotTo(BeNil())
+		Expect(zone.Status.InternalIdentityRealm).NotTo(BeNil())
+
+		for _, ref := range []*ctypes.ObjectRef{zone.Status.IdentityRealm, zone.Status.InternalIdentityRealm} {
+			realm := &identityapi.Realm{}
+			Expect(k8sClient.Get(ctx, ref.K8s(), realm)).To(Succeed())
+			Expect(realm.Spec.Attributes).To(Equal(map[string]string{"frontendUrl": "https://test-iris.de/auth"}), realm.Name)
+		}
+	})
+
+	It("overwrites modified realm attributes with the frontendUrl on world zones", func() {
+		handler := newTestHandler()
+		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
+
+		realm := &identityapi.Realm{}
+		Expect(k8sClient.Get(ctx, zone.Status.IdentityRealm.K8s(), realm)).To(Succeed())
+		realm.Spec.Attributes = map[string]string{"frontendUrl": "not a url", "custom": "value"}
+		Expect(k8sClient.Update(ctx, realm)).To(Succeed())
+
+		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
+
+		Expect(k8sClient.Get(ctx, zone.Status.IdentityRealm.K8s(), realm)).To(Succeed())
+		Expect(realm.Spec.Attributes).To(Equal(map[string]string{"frontendUrl": "https://test-iris.de/auth"}))
+		Expect(realm.Spec.IdentityProvider).NotTo(BeNil())
+	})
+
+	It("does not set realm attributes on enterprise zones", func() {
+		zone.Spec.Visibility = adminv1.ZoneVisibilityEnterprise
+		handler := newTestHandler()
+		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
+
+		for _, ref := range []*ctypes.ObjectRef{zone.Status.IdentityRealm, zone.Status.InternalIdentityRealm} {
+			realm := &identityapi.Realm{}
+			Expect(k8sClient.Get(ctx, ref.K8s(), realm)).To(Succeed())
+			Expect(realm.Spec.Attributes).To(BeEmpty(), realm.Name)
+		}
+	})
+
+	It("updates the realm frontendUrl when the issuer hostname changes", func() {
+		handler := newTestHandler()
+		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
+
+		zone.Spec.IdentityProviders[0].IssuerHostname = "iam.example.com"
+		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
+
+		for _, ref := range []*ctypes.ObjectRef{zone.Status.IdentityRealm, zone.Status.InternalIdentityRealm} {
+			realm := &identityapi.Realm{}
+			Expect(k8sClient.Get(ctx, ref.K8s(), realm)).To(Succeed())
+			Expect(realm.Spec.Attributes).To(HaveKeyWithValue("frontendUrl", "https://iam.example.com/auth"), realm.Name)
+		}
+	})
+
 	It("waits for identity resources before creating gateways", func() {
 		handler := newTestHandler()
 		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
@@ -348,4 +404,9 @@ var _ = Describe("Zone Handler", func() {
 		Entry("admin URL fallback", adminv1.IdentityProviderConfig{Name: "primary", Admin: adminv1.IdentityProviderAdminConfig{Url: ptr.To("https://admin.example.com/auth")}}, "admin.example.com", true),
 		Entry("missing values", adminv1.IdentityProviderConfig{Name: "primary"}, "", false),
 	)
+
+	It("builds the realm frontend URL from the issuer hostname", func() {
+		Expect(realmFrontendURL("iam.example.com")).To(Equal("https://iam.example.com/auth"))
+		Expect(realmFrontendURL("iam.example.com:8443")).To(Equal("https://iam.example.com:8443/auth"))
+	})
 })

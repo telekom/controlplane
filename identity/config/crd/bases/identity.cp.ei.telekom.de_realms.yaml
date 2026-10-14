@@ -47,6 +47,27 @@ spec:
                 items:
                   type: string
                 type: array
+              attributes:
+                additionalProperties:
+                  type: string
+                description: |-
+                  Attributes are Keycloak realm attributes managed by the controller.
+                  Keys and values are passed to Keycloak unchanged. Attributes that were
+                  never listed here (e.g. configured manually in Keycloak) are preserved.
+                  Removing a key from this map removes it from the Keycloak realm, but
+                  only if the controller applied it before (see status.managedAttributes).
+
+                  The key "frontendUrl" sets the realm frontend URL, an absolute http(s)
+                  base URL (e.g. "https://iam.example.com/auth"). It is not validated on
+                  admission. If it is a valid base URL, the realm issuer is
+                  "<frontendUrl>/realms/<realm>"; otherwise the issuer is read from
+                  Keycloak's OIDC discovery document.
+
+                  Do not store credentials or other secrets in attributes.
+                type: object
+                x-kubernetes-validations:
+                - message: attribute keys must not be empty
+                  rule: self.all(k, size(k) > 0)
               claims:
                 description: |-
                   Claims defines claims that are added to all tokens issued for
@@ -220,6 +241,15 @@ spec:
                 x-kubernetes-list-type: map
               issuerUrl:
                 type: string
+              managedAttributes:
+                description: |-
+                  ManagedAttributes is the sorted list of realm attribute keys that the
+                  controller has applied to Keycloak. Keys in this list that are no
+                  longer present in spec.attributes are removed from Keycloak.
+                items:
+                  type: string
+                type: array
+                x-kubernetes-list-type: set
             required:
             - adminClientId
             - adminPassword

@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"slices"
 
+	"github.com/go-logr/logr"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
@@ -131,6 +132,12 @@ func issuerHostname(idp *adminv1.IdentityProviderConfig) (string, error) {
 	return u.Hostname(), nil
 }
 
+// realmFrontendURL returns the Keycloak frontend (base) URL for the issuer
+// hostname, e.g. "https://iam.example.com/auth".
+func realmFrontendURL(hostname string) string {
+	return (&url.URL{Scheme: "https", Host: hostname, Path: "/auth"}).String()
+}
+
 // createIdentityRealmOptions configures the creation of an identity realm.
 type createIdentityRealmOptions struct {
 	Claims         []identityapi.ClaimConfig
@@ -147,6 +154,17 @@ func createIdentityRealm(ctx context.Context, hc *HandlingContext, realmName str
 			Name:      labelutil.NormalizeNameValue(realmName),
 			Namespace: labelutil.NormalizeValue(hc.Namespace.Name),
 		},
+	}
+
+	frontendURL := ""
+	idp, err := hc.Zone.Spec.GetIdentityProvider()
+	if err != nil {
+		return nil, ctrlerrors.BlockedErrorf("cannot resolve identity provider for zone %q: %s", hc.Zone.Name, err)
+	}
+	if hostname, hostErr := issuerHostname(idp); hostErr == nil {
+		frontendURL = realmFrontendURL(hostname)
+	} else {
+		logr.FromContextOrDiscard(ctx).Info("Cannot resolve issuer hostname, realm frontendUrl is not set", "realm", identityRealm.Name, "reason", hostErr.Error())
 	}
 
 	mutator := func() error {
@@ -166,6 +184,12 @@ func createIdentityRealm(ctx context.Context, hc *HandlingContext, realmName str
 			AllowedOrigins: opts.AllowedOrigins,
 		}
 
+		if hc.Zone.Spec.Visibility == adminv1.ZoneVisibilityWorld {
+			identityRealm.Spec.Attributes = map[string]string{
+				"frontendUrl": frontendURL,
+			}
+		}
+
 		secretRotationConfig := opts.SecretRotation
 		if secretRotationConfig != nil && secretRotationConfig.Enabled {
 			identityRealm.Spec.SecretRotation = &identityapi.SecretRotationConfig{
@@ -180,7 +204,7 @@ func createIdentityRealm(ctx context.Context, hc *HandlingContext, realmName str
 		return nil
 	}
 
-	_, err := c.CreateOrUpdate(ctx, identityRealm, mutator)
+	_, err = c.CreateOrUpdate(ctx, identityRealm, mutator)
 	if err != nil {
 		return nil, ctrlerrors.RetryableErrorf("failed to create or update Identity Realm %s in zone %s: %s", identityRealm.Name, hc.Zone.Name, err)
 	}
