@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/mock"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
@@ -52,6 +53,8 @@ func overrideSecretsGet(fn func(ctx context.Context, secretRef string) (string, 
 	secrets.Get = fn
 	DeferCleanup(func() { secrets.Get = original })
 }
+
+const testIssuerUrl = "https://iam.example.com/auth/realms/test-realm"
 
 func newValidIdP() *identityv1.IdentityProvider {
 	idp := &identityv1.IdentityProvider{
@@ -237,7 +240,7 @@ var _ = Describe("HandlerRealm", func() {
 			mockSvc := keycloakservice.NewMockKeycloakService(GinkgoT())
 			mockSvc.EXPECT().
 				CreateOrReplaceRealm(mock.Anything, mock.Anything).
-				Return(fmt.Errorf("keycloak 503: service unavailable"))
+				Return(nil, fmt.Errorf("keycloak 503: service unavailable"))
 
 			factory := keycloak.ServiceFactoryFunc(func(_ identityv1.RealmStatus) (keycloak.KeycloakService, error) {
 				return mockSvc, nil
@@ -269,7 +272,10 @@ var _ = Describe("HandlerRealm", func() {
 			mockSvc := keycloakservice.NewMockKeycloakService(GinkgoT())
 			mockSvc.EXPECT().
 				CreateOrReplaceRealm(mock.Anything, mock.Anything).
-				Return(nil)
+				Return(&keycloak.RealmSyncResult{}, nil)
+			mockSvc.EXPECT().
+				ResolveIssuerUrl(mock.Anything, "test-realm", "").
+				Return(testIssuerUrl, nil)
 			mockSvc.EXPECT().
 				DeleteSecretRotationPolicy(mock.Anything, "test-realm").
 				Return(nil)
@@ -299,7 +305,7 @@ var _ = Describe("HandlerRealm", func() {
 			Expect(readyFound).To(BeTrue(), "realm should have Ready=True condition after successful CreateOrUpdate")
 
 			By("verifying realm status fields are populated from the IdentityProvider")
-			Expect(realm.Status.IssuerUrl).To(Equal(keycloak.DetermineIssuerUrlFrom(idp.Spec.AdminUrl, realm.Name)))
+			Expect(realm.Status.IssuerUrl).To(Equal(testIssuerUrl))
 			Expect(realm.Status.AdminClientId).To(Equal(idp.Spec.AdminClientId))
 			Expect(realm.Status.AdminUserName).To(Equal(idp.Spec.AdminUserName))
 			Expect(realm.Status.AdminPassword).To(Equal(idp.Spec.AdminPassword))
@@ -325,7 +331,10 @@ var _ = Describe("HandlerRealm", func() {
 			mockSvc := keycloakservice.NewMockKeycloakService(GinkgoT())
 			mockSvc.EXPECT().
 				CreateOrReplaceRealm(mock.Anything, mock.Anything).
-				Return(nil)
+				Return(&keycloak.RealmSyncResult{}, nil)
+			mockSvc.EXPECT().
+				ResolveIssuerUrl(mock.Anything, "test-realm", "").
+				Return(testIssuerUrl, nil)
 			mockSvc.EXPECT().
 				DeleteSecretRotationPolicy(mock.Anything, "test-realm").
 				Return(nil)
@@ -368,7 +377,10 @@ var _ = Describe("HandlerRealm", func() {
 			mockSvc := keycloakservice.NewMockKeycloakService(GinkgoT())
 			mockSvc.EXPECT().
 				CreateOrReplaceRealm(mock.Anything, mock.Anything).
-				Return(nil)
+				Return(&keycloak.RealmSyncResult{}, nil)
+			mockSvc.EXPECT().
+				ResolveIssuerUrl(mock.Anything, "test-realm", "").
+				Return(testIssuerUrl, nil)
 			mockSvc.EXPECT().
 				ConfigureSecretRotationPolicy(mock.Anything, "test-realm", realm.Spec.SecretRotation).
 				Return(nil)
@@ -418,7 +430,10 @@ var _ = Describe("HandlerRealm", func() {
 			mockSvc := keycloakservice.NewMockKeycloakService(GinkgoT())
 			mockSvc.EXPECT().
 				CreateOrReplaceRealm(mock.Anything, mock.Anything).
-				Return(nil)
+				Return(&keycloak.RealmSyncResult{}, nil)
+			mockSvc.EXPECT().
+				ResolveIssuerUrl(mock.Anything, "test-realm", "").
+				Return(testIssuerUrl, nil)
 			mockSvc.EXPECT().
 				ConfigureSecretRotationPolicy(mock.Anything, "test-realm", realm.Spec.SecretRotation).
 				Return(fmt.Errorf("keycloak 403: forbidden"))
@@ -453,7 +468,10 @@ var _ = Describe("HandlerRealm", func() {
 			mockSvc := keycloakservice.NewMockKeycloakService(GinkgoT())
 			mockSvc.EXPECT().
 				CreateOrReplaceRealm(mock.Anything, mock.Anything).
-				Return(nil)
+				Return(&keycloak.RealmSyncResult{}, nil)
+			mockSvc.EXPECT().
+				ResolveIssuerUrl(mock.Anything, "test-realm", "").
+				Return(testIssuerUrl, nil)
 			mockSvc.EXPECT().
 				DeleteSecretRotationPolicy(mock.Anything, "test-realm").
 				Return(fmt.Errorf("keycloak 500: internal server error"))
@@ -468,6 +486,143 @@ var _ = Describe("HandlerRealm", func() {
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("failed to delete secret rotation policy"))
 			Expect(err.Error()).To(ContainSubstring("keycloak 500"))
+		})
+	})
+
+	Context("CreateOrUpdate with attributes", func() {
+		var idp *identityv1.IdentityProvider
+
+		expectIdP := func() {
+			mockK8s.EXPECT().
+				Get(mock.Anything, types.NamespacedName{Namespace: "default", Name: "test-idp"}, mock.AnythingOfType("*v1.IdentityProvider"), mock.Anything).
+				Run(func(_ context.Context, _ types.NamespacedName, obj pkgclient.Object, _ ...pkgclient.GetOption) {
+					*obj.(*identityv1.IdentityProvider) = *idp
+				}).
+				Return(nil)
+			overrideSecretsGet(func(_ context.Context, _ string) (string, error) {
+				return "resolved-password", nil
+			})
+		}
+
+		handlerFor := func(svc keycloak.KeycloakService) *HandlerRealm {
+			return NewHandlerRealm(keycloak.ServiceFactoryFunc(func(_ identityv1.RealmStatus) (keycloak.KeycloakService, error) {
+				return svc, nil
+			}))
+		}
+
+		BeforeEach(func() {
+			idp = newValidIdP()
+		})
+
+		It("should sync an invalid frontendUrl and resolve the issuer via Keycloak", func() {
+			realm := newValidRealm()
+			realm.Spec.Attributes = map[string]string{"frontendUrl": "not a url"}
+			expectIdP()
+
+			mockSvc := keycloakservice.NewMockKeycloakService(GinkgoT())
+			mockSvc.EXPECT().CreateOrReplaceRealm(mock.Anything, realm).
+				Return(&keycloak.RealmSyncResult{ManagedAttributes: []string{"frontendUrl"}, FrontendUrl: "not a url"}, nil)
+			mockSvc.EXPECT().ResolveIssuerUrl(mock.Anything, "test-realm", "not a url").
+				Return("https://public.example.com/realms/test-realm", nil)
+			mockSvc.EXPECT().DeleteSecretRotationPolicy(mock.Anything, "test-realm").Return(nil)
+			mockSvc.EXPECT().ConfigureClientScopes(mock.Anything, "test-realm", mock.Anything).Return(nil)
+
+			Expect(handlerFor(mockSvc).CreateOrUpdate(ctx, realm)).To(Succeed())
+			Expect(realm.Status.IssuerUrl).To(Equal("https://public.example.com/realms/test-realm"))
+		})
+
+		It("should not require a previous issuer URL to sync", func() {
+			realm := newValidRealm()
+			realm.Status.IssuerUrl = ""
+			expectIdP()
+
+			mockSvc := keycloakservice.NewMockKeycloakService(GinkgoT())
+			mockSvc.EXPECT().CreateOrReplaceRealm(mock.Anything, realm).
+				Return(&keycloak.RealmSyncResult{}, nil)
+			mockSvc.EXPECT().ResolveIssuerUrl(mock.Anything, "test-realm", "").
+				Return("https://public.example.com/realms/test-realm", nil)
+			mockSvc.EXPECT().DeleteSecretRotationPolicy(mock.Anything, "test-realm").Return(nil)
+			mockSvc.EXPECT().ConfigureClientScopes(mock.Anything, "test-realm", mock.Anything).Return(nil)
+
+			Expect(handlerFor(mockSvc).CreateOrUpdate(ctx, realm)).To(Succeed())
+
+			By("using the discovered issuer rather than the management URL")
+			Expect(realm.Status.IssuerUrl).To(Equal("https://public.example.com/realms/test-realm"))
+			managementIssuer, err := keycloak.DetermineIssuerUrlFrom(idp.Spec.AdminUrl, realm.Name)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(realm.Status.IssuerUrl).ToNot(Equal(managementIssuer))
+		})
+
+		It("should store sorted managed attributes and the issuer from the effective frontendUrl", func() {
+			realm := newValidRealm()
+			realm.Spec.Attributes = map[string]string{"frontendUrl": "https://iam.example.com/auth", "a": "1"}
+			expectIdP()
+
+			mockSvc := keycloakservice.NewMockKeycloakService(GinkgoT())
+			mockSvc.EXPECT().CreateOrReplaceRealm(mock.Anything, realm).
+				Return(&keycloak.RealmSyncResult{
+					ManagedAttributes: []string{"a", "frontendUrl"},
+					FrontendUrl:       "https://iam.example.com/auth",
+				}, nil)
+			mockSvc.EXPECT().ResolveIssuerUrl(mock.Anything, "test-realm", "https://iam.example.com/auth").
+				Return(testIssuerUrl, nil)
+			mockSvc.EXPECT().DeleteSecretRotationPolicy(mock.Anything, "test-realm").Return(nil)
+			mockSvc.EXPECT().ConfigureClientScopes(mock.Anything, "test-realm", mock.Anything).Return(nil)
+
+			Expect(handlerFor(mockSvc).CreateOrUpdate(ctx, realm)).To(Succeed())
+			Expect(realm.Status.ManagedAttributes).To(Equal([]string{"a", "frontendUrl"}))
+			Expect(realm.Status.IssuerUrl).To(Equal(testIssuerUrl))
+		})
+
+		It("should clear the issuer and keep attribute ownership when issuer resolution fails", func() {
+			realm := newValidRealm()
+			realm.Spec.Attributes = map[string]string{"a": "1"}
+			realm.Status.IssuerUrl = "https://keycloak.example.com/auth/realms/test-realm"
+			expectIdP()
+
+			mockSvc := keycloakservice.NewMockKeycloakService(GinkgoT())
+			mockSvc.EXPECT().CreateOrReplaceRealm(mock.Anything, realm).
+				Return(&keycloak.RealmSyncResult{ManagedAttributes: []string{"a"}}, nil)
+			mockSvc.EXPECT().ResolveIssuerUrl(mock.Anything, "test-realm", "").
+				Return("", ctrlerrors.RetryableErrorf("connection refused"))
+
+			err := handlerFor(mockSvc).CreateOrUpdate(ctx, realm)
+
+			Expect(err).To(MatchError(ContainSubstring("failed to resolve issuer URL")))
+			var re ctrlerrors.RetryableError
+			Expect(errors.As(err, &re)).To(BeTrue())
+			Expect(realm.Status.IssuerUrl).To(BeEmpty())
+			Expect(realm.Status.ManagedAttributes).To(Equal([]string{"a"}))
+			Expect(meta.IsStatusConditionTrue(realm.Status.Conditions, condition.ConditionTypeReady)).To(BeFalse())
+		})
+
+		It("should keep attribute ownership when a later step fails", func() {
+			realm := newValidRealm()
+			expectIdP()
+
+			mockSvc := keycloakservice.NewMockKeycloakService(GinkgoT())
+			mockSvc.EXPECT().CreateOrReplaceRealm(mock.Anything, realm).
+				Return(&keycloak.RealmSyncResult{ManagedAttributes: []string{"a"}}, nil)
+			mockSvc.EXPECT().ResolveIssuerUrl(mock.Anything, "test-realm", "").Return(testIssuerUrl, nil)
+			mockSvc.EXPECT().DeleteSecretRotationPolicy(mock.Anything, "test-realm").Return(nil)
+			mockSvc.EXPECT().ConfigureClientScopes(mock.Anything, "test-realm", mock.Anything).
+				Return(fmt.Errorf("scope failure"))
+
+			Expect(handlerFor(mockSvc).CreateOrUpdate(ctx, realm)).ToNot(Succeed())
+			Expect(realm.Status.ManagedAttributes).To(Equal([]string{"a"}))
+		})
+
+		It("should keep previous ownership when the realm sync fails", func() {
+			realm := newValidRealm()
+			realm.Status.ManagedAttributes = []string{"old"}
+			expectIdP()
+
+			mockSvc := keycloakservice.NewMockKeycloakService(GinkgoT())
+			mockSvc.EXPECT().CreateOrReplaceRealm(mock.Anything, realm).
+				Return(nil, fmt.Errorf("keycloak 500"))
+
+			Expect(handlerFor(mockSvc).CreateOrUpdate(ctx, realm)).ToNot(Succeed())
+			Expect(realm.Status.ManagedAttributes).To(Equal([]string{"old"}))
 		})
 	})
 

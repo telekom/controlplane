@@ -115,6 +115,13 @@ spec:
 
 `spec.identityProviders[].allowedOrigins` sets the Keycloak web origins for clients in the zone's default identity realm, whose name is recorded in `status.realmName`. Each entry must be a serialized origin (`scheme://host[:port]`) or `*`, where the host is a hostname, an IPv4 address, or a bracketed IPv6 address (for example `https://[2001:db8::1]:443`); paths, user information, queries, and fragments are not allowed. Any URL scheme is accepted. The `*` value allows all origins and should only be used when that access is intended. The internal rover realm is not affected. Updating this list updates existing clients; removing it clears their configured web origins.
 
+The Zone manages all attributes (`spec.attributes`) of its Realms (default and internal realm). Attributes set directly on these Realm resources are overwritten on the next reconciliation.
+
+- **World zones:** the Realms get exactly one attribute, `frontendUrl`, set to `https://<issuerHostname>/auth`. The hostname is the identity provider's `issuerHostname`, or the host of its `admin.url` if no `issuerHostname` is set. If no hostname can be resolved, `frontendUrl` is set to an empty value, which means no frontend URL is configured.
+- **Enterprise zones:** the Realms have no attributes.
+
+See [Realm Attributes](../architecture/identity.mdx#realm-attributes).
+
 ### Traffic Types
 
 Every entry in `spec.presets` declares which kind of traffic it routes through its required `type`:

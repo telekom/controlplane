@@ -484,7 +484,7 @@ var _ = Describe("KeycloakService", func() {
 			mockClient.EXPECT().PostWithResponse(mock.Anything, mock.Anything).
 				Return(&api.PostResponse{HTTPResponse: httpResp(201)}, nil)
 
-			err := svc.CreateOrReplaceRealm(ctx, realm)
+			_, err := svc.CreateOrReplaceRealm(ctx, realm)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
@@ -498,7 +498,7 @@ var _ = Describe("KeycloakService", func() {
 			mockClient.EXPECT().PutRealmWithResponse(mock.Anything, "my-realm", mock.Anything).
 				Return(&api.PutRealmResponse{HTTPResponse: httpResp(204)}, nil)
 
-			err := svc.CreateOrReplaceRealm(ctx, realm)
+			_, err := svc.CreateOrReplaceRealm(ctx, realm)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
@@ -510,7 +510,7 @@ var _ = Describe("KeycloakService", func() {
 					JSON2XX:      &api.RealmRepresentation{Realm: ptr.To("my-realm"), Enabled: ptr.To(true)},
 				}, nil)
 
-			err := svc.CreateOrReplaceRealm(ctx, realm)
+			_, err := svc.CreateOrReplaceRealm(ctx, realm)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
@@ -518,7 +518,7 @@ var _ = Describe("KeycloakService", func() {
 			func(setup func(), expectedSubstring string) {
 				setup()
 				realm := newRealm("my-realm")
-				err := svc.CreateOrReplaceRealm(ctx, realm)
+				_, err := svc.CreateOrReplaceRealm(ctx, realm)
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring(expectedSubstring))
 			},

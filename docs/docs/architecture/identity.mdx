@@ -20,6 +20,47 @@ When a Realm is configured with a `secretRotation` policy, the Identity domain p
 
 Individual clients can opt out via the `identity.cp.ei.telekom.de/disable-secret-rotation: "true"` annotation.
 
+### Realm Attributes
+
+`spec.attributes` sets Keycloak realm attributes. Keys and values are passed to Keycloak as strings:
+
+```yaml
+apiVersion: identity.cp.ei.telekom.de/v1
+kind: Realm
+metadata:
+  name: default
+spec:
+  identityProvider:
+    name: my-idp
+    namespace: my-env--my-zone
+  attributes:
+    frontendUrl: https://iam.example.com/auth
+    displayName: Default realm
+```
+
+The controller only manages keys that it has applied itself. They are recorded in `status.managedAttributes`:
+
+- Attributes that were never listed in `spec.attributes`, for example attributes set manually in Keycloak, are left unchanged. This also applies to existing realms after an upgrade.
+- Removing a key from `spec.attributes` removes the attribute from Keycloak, but only if it is listed in `status.managedAttributes`. Setting a value to `""` keeps the attribute with an empty value.
+- If the status cannot be written after Keycloak was updated (for example after a conflict), the ownership of newly added keys is lost. Such keys then stay in Keycloak when they are later removed from the spec and have to be removed manually.
+
+Keys must not be empty. Do not store credentials or other secrets in attributes: they are stored in plain text in the Realm resource and in Keycloak.
+
+#### Frontend URL and Issuer
+
+The `frontendUrl` attribute is the public **base URL** of Keycloak, not the issuer. Use an absolute `http` or `https` URL with a host and without credentials, query or fragment, for example `https://iam.example.com/auth`. A context path such as `/auth` is allowed and a trailing slash is ignored. An empty value means the frontend URL is not set. The value is not validated: it is passed to Keycloak as configured, and a misconfigured value is the responsibility of whoever set it.
+
+`status.issuerUrl` is determined after every successful realm sync:
+
+1. If the realm has a valid `frontendUrl` (set by the spec or manually in Keycloak), the issuer is `<frontendUrl>/realms/<realm>`, for example `https://iam.example.com/auth/realms/default`.
+2. Otherwise (no or an invalid `frontendUrl`), the issuer is read from the realm's OIDC discovery document (`/.well-known/openid-configuration`). The document is fetched through the identity provider's admin URL, without admin credentials, using the same TLS settings as the admin API. The admin URL itself is never used as the issuer. The discovered issuer must be an `http(s)` URL without credentials, query or fragment ending with `/realms/<realm>`; otherwise the Realm is blocked.
+
+If the issuer cannot be determined, for example because the discovery request fails, the controller clears `status.issuerUrl`, marks the Realm as not ready and retries. Clients of the realm are not provisioned until a confirmed issuer is available.
+
+:::caution
+Without a `frontendUrl`, Keycloak derives the issuer from the request it receives (depending on its hostname configuration). The issuer discovered through the internal admin URL may then differ from the issuer seen by external clients. Set `frontendUrl`, or configure a fixed Keycloak hostname, to get a stable public issuer.
+:::
+
 ## Domain Interactions
 
 - **Admin domain** — Zones define which identity provider to use.
