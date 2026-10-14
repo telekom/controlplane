@@ -75,7 +75,7 @@ Validation rules enforced by the Rover webhook:
 - `variant: sftp` is optional.
 - At least one public key is required; both the key `label` and `key` value must be unique per `fileType`.
 
-Because file transfer happens directly over SFTP, a Rover that only exposes/subscribes to file types yields a **logical** Application (`needsClient` and `needsConsumer` are `false`). If the same Rover also has an API or event subscription, a client is still required.
+Because file transfer happens directly over SFTP, a Rover that only exposes/subscribes to file types yields a **logical** Application (`needsClient` and `needsConsumer` are `false`). If the same Rover also has an API or event subscription, an event exposure, or any listener, a client is still required. A listener needs the client to get a token for its SSE stream. Callback delivery keeps the client too, so switching between delivery types never removes the application's credentials.
 
 ## Related Pages
 
