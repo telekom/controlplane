@@ -181,11 +181,10 @@ func (c *ApiChangelogController) Delete(ctx context.Context, resourceId string) 
 	}
 
 	// Delete file from file-manager using the Contents field
-	err = file.GetFileManager().DeleteFile(ctx, changelog.Spec.Contents)
-	if err != nil {
-		if errors.Is(err, file.ErrNotFound) {
-			// File not found is OK, continue to delete CRD
-		} else {
+	if cconfig.FeatureFileManager.IsEnabled() && changelog.Spec.Contents != "" {
+		err = file.GetFileManager().DeleteFile(ctx, changelog.Spec.Contents)
+		// File not found is OK, continue to delete CRD
+		if err != nil && !errors.Is(err, file.ErrNotFound) {
 			return err
 		}
 	}
@@ -226,7 +225,7 @@ func (c *ApiChangelogController) GetStatus(ctx context.Context, resourceId strin
 // uploadFile uploads the items JSON to file-manager
 func (c *ApiChangelogController) uploadFile(ctx context.Context, itemsMarshaled []byte, id mapper.ResourceIdInfo) (*filesapi.FileUploadResponse, error) {
 	if !cconfig.FeatureFileManager.IsEnabled() {
-		return nil, nil
+		return nil, problems.BadRequest("ApiChangelog requires the file manager, which is disabled in this environment")
 	}
 
 	if len(itemsMarshaled) == 0 {
@@ -278,6 +277,10 @@ func (c *ApiChangelogController) isHashEqual(ctx context.Context, id mapper.Reso
 // downloadFile downloads items JSON from file-manager
 func (c *ApiChangelogController) downloadFile(ctx context.Context, fileId string) ([]api.ApiChangelogItem, error) {
 	if !cconfig.FeatureFileManager.IsEnabled() {
+		return nil, nil
+	}
+
+	if fileId == "" {
 		return nil, nil
 	}
 

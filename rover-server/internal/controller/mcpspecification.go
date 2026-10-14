@@ -248,6 +248,10 @@ func (c *McpSpecificationControllerImpl) downloadFile(ctx context.Context, fileI
 		return nil, nil
 	}
 
+	if fileID == "" {
+		return nil, nil
+	}
+
 	var b bytes.Buffer
 	_, err := file.GetFileManager().DownloadFile(ctx, fileID, &b)
 	if err != nil {

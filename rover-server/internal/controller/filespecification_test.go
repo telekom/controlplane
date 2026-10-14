@@ -77,11 +77,8 @@ var _ = Describe("FileSpecification Controller", func() {
 
 		It("should return an empty list if no FileSpecifications exist", func() {
 			req := httptest.NewRequest(http.MethodGet, "/filespecifications", nil)
-			responseGroup, err := ExecuteRequest(req, groupToken)
+			responseGroup, err := ExecuteRequest(req, teamNoResources)
 			ExpectStatusWithBody(responseGroup, err, http.StatusOK, "application/json")
-
-			responseTeam, err := ExecuteRequest(req, teamToken)
-			ExpectStatusWithBody(responseTeam, err, http.StatusOK, "application/json")
 		})
 	})
 
