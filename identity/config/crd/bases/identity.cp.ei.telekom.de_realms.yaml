@@ -239,6 +239,65 @@ spec:
                 x-kubernetes-list-map-keys:
                 - type
                 x-kubernetes-list-type: map
+              connection:
+                description: |-
+                  Connection identifies the IdentityProvider and CA bundle the admin connection
+                  fields above were derived from. Absent for realms reconciled before it was introduced.
+                properties:
+                  identityProvider:
+                    description: IdentityProvider identifies the IdentityProvider
+                      including its UID.
+                    properties:
+                      name:
+                        type: string
+                      namespace:
+                        type: string
+                      uid:
+                        description: |-
+                          UID is a type that holds unique ID values, including UUIDs.  Because we
+                          don't ONLY use UUIDs, this is an alias to string.  Being a type captures
+                          intent and helps make sure that UIDs and names do not get conflated.
+                        type: string
+                    required:
+                    - name
+                    - namespace
+                    type: object
+                  tls:
+                    description: TLS references the CA bundle trusted for the connection.
+                      Absent means system roots only.
+                    properties:
+                      configMapRef:
+                        description: ConfigMapRef references the PEM encoded CA certificates.
+                        properties:
+                          key:
+                            description: Key in the ConfigMap data containing PEM
+                              encoded CA certificates.
+                            maxLength: 253
+                            minLength: 1
+                            pattern: ^[-._a-zA-Z0-9]+$
+                            type: string
+                          name:
+                            description: Name of the ConfigMap.
+                            maxLength: 253
+                            minLength: 1
+                            pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+                            type: string
+                        required:
+                        - key
+                        - name
+                        type: object
+                      namespace:
+                        description: Namespace of the referenced ConfigMap, the namespace
+                          of the IdentityProvider.
+                        minLength: 1
+                        type: string
+                    required:
+                    - configMapRef
+                    - namespace
+                    type: object
+                required:
+                - identityProvider
+                type: object
               issuerUrl:
                 type: string
               managedAttributes:

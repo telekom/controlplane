@@ -21,13 +21,17 @@ import (
 
 var _ handler.Handler[*gatewayv1.Consumer] = &ConsumerHandler{}
 
-type ConsumerHandler struct{}
+type ConsumerHandler struct {
+	// KongClients provides leased Kong clients for Gateways.
+	KongClients *kongutil.ClientFactory
+}
 
 func (h *ConsumerHandler) CreateOrUpdate(ctx context.Context, consumer *gatewayv1.Consumer) error {
-	builder, err := NewFeatureBuilder(ctx, consumer)
+	builder, release, err := h.newFeatureBuilder(ctx, consumer)
 	if err != nil {
 		return errors.Wrap(err, "failed to create feature builder")
 	}
+	defer release()
 
 	if err := builder.BuildForConsumer(ctx); err != nil {
 		return errors.Wrap(err, "failed to build consumer")
@@ -45,10 +49,11 @@ func (h *ConsumerHandler) Delete(ctx context.Context, consumer *gatewayv1.Consum
 		return err
 	}
 
-	kc, err := kongutil.GetClientFor(gateway)
+	kc, release, err := kongutil.GetClientFor(ctx, h.KongClients, gateway)
 	if err != nil {
 		return errors.Wrap(err, "failed to get kong client")
 	}
+	defer release()
 
 	err = kc.DeleteConsumer(ctx, consumer)
 	if err != nil {
@@ -58,22 +63,24 @@ func (h *ConsumerHandler) Delete(ctx context.Context, consumer *gatewayv1.Consum
 	return nil
 }
 
-func NewFeatureBuilder(ctx context.Context, consumer *gatewayv1.Consumer) (features.FeaturesBuilder, error) {
+// newFeatureBuilder returns a builder using a leased Kong client and the
+// function releasing the lease.
+func (h *ConsumerHandler) newFeatureBuilder(ctx context.Context, consumer *gatewayv1.Consumer) (features.FeaturesBuilder, func(), error) {
 	ready, gateway, err := gatewayhandler.GetGatewayByRef(ctx, consumer.Spec.Gateway, true)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if !ready {
-		return nil, ctrlerrors.BlockedErrorf("gateway %s is not ready", consumer.Spec.Gateway.Name)
+		return nil, nil, ctrlerrors.BlockedErrorf("gateway %s is not ready", consumer.Spec.Gateway.Name)
 	}
 
-	kc, err := kongutil.GetClientFor(gateway)
+	kc, release, err := kongutil.GetClientFor(ctx, h.KongClients, gateway)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get kong client")
+		return nil, nil, errors.Wrap(err, "failed to get kong client")
 	}
 
 	builder := features.NewFeatureBuilder(kc, nil, consumer, gateway)
 	builder.EnableFeature(feature.InstanceIpRestrictionFeature)
 
-	return builder, nil
+	return builder, release, nil
 }

@@ -6,16 +6,13 @@ package zone
 
 import (
 	"context"
-	"crypto/tls"
 	"errors"
 	"fmt"
 	"net/http"
-	"os"
-	"strings"
-	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
@@ -44,57 +41,32 @@ var _ handler.Handler[*adminv1.Zone] = &ZoneHandler{}
 
 // ZoneHandler implements the Handler interface for Zone resources.
 type ZoneHandler struct {
+	// Client is the manager client. It is required.
+	Client client.Client
+	// HTTPClient overrides the OIDC discovery client.
 	HTTPClient *http.Client
 }
 
-// NewZoneHandler returns a ZoneHandler whose OIDC discovery client is built
-// once from SKIP_TLS_VERIFY and reused for every reconciliation.
-func NewZoneHandler() *ZoneHandler {
-	return &ZoneHandler{HTTPClient: newDiscoveryHTTPClient(skipTlsVerify())}
-}
-
-// EnvSkipTlsVerify is the environment variable that disables TLS
-// certificate and hostname verification for OIDC discovery requests.
-// Only the value "true" (case-insensitive) enables it.
-const EnvSkipTlsVerify = "SKIP_TLS_VERIFY"
-
-func skipTlsVerify() bool {
-	return strings.EqualFold(strings.TrimSpace(os.Getenv(EnvSkipTlsVerify)), "true")
-}
-
-func (h *ZoneHandler) httpClient() *http.Client {
-	if h.HTTPClient != nil {
-		return h.HTTPClient
+func (h *ZoneHandler) clientOrDie() client.Client {
+	if h.Client == nil {
+		panic("ZoneHandler.Client must be set")
 	}
-	return newDiscoveryHTTPClient(skipTlsVerify())
-}
-
-// newDiscoveryHTTPClient returns the HTTP client used for OIDC discovery.
-// Without skipVerify it uses the default transport.
-func newDiscoveryHTTPClient(skipVerify bool) *http.Client {
-	c := &http.Client{Timeout: 10 * time.Second}
-	if !skipVerify {
-		return c
-	}
-	transport := &http.Transport{Proxy: http.ProxyFromEnvironment}
-	if defaultTransport, ok := http.DefaultTransport.(*http.Transport); ok {
-		transport = defaultTransport.Clone()
-	}
-	transport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true} //nolint:gosec // explicit opt-in via SKIP_TLS_VERIFY
-	c.Transport = transport
-	return c
+	return h.Client
 }
 
 func (h *ZoneHandler) CreateOrUpdate(ctx context.Context, obj *adminv1.Zone) error {
+	kubeClient := h.clientOrDie()
 	c := cclient.ClientFromContextOrDie(ctx)
 	cclient.EnableFeature(c, cclient.CollectSubResources)
 
-	hc, err := newHandlingContext(ctx, obj, h.httpClient())
+	hc, err := newHandlingContext(ctx, obj, h.HTTPClient, kubeClient)
 	if err != nil {
 		return err
 	}
 
 	steps := []Step{
+		// Validates all CA sources before any child connection config is written.
+		resolveCABundle,
 		createIdentityProvider,
 		createDefaultIdentityRealm,
 		createInternalIdentityRealm,
@@ -110,6 +82,7 @@ func (h *ZoneHandler) CreateOrUpdate(ctx context.Context, obj *adminv1.Zone) err
 		createZoneHealthRoutes,
 		cleanupStaleRoutes,
 		populatePresetStatus,
+		retireCABundle,
 	}
 
 	for _, step := range steps {

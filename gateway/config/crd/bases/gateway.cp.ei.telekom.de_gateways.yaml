@@ -78,6 +78,34 @@ spec:
                 - password
                 - port
                 type: object
+              tls:
+                description: |-
+                  TLS configures additional CA certificates trusted for the admin API and token endpoint.
+                  The referenced ConfigMap must be in the namespace of the Gateway.
+                properties:
+                  configMapRef:
+                    description: ConfigMapRef references the PEM encoded CA certificates.
+                    properties:
+                      key:
+                        description: Key in the ConfigMap data containing PEM encoded
+                          CA certificates.
+                        maxLength: 253
+                        minLength: 1
+                        pattern: ^[-._a-zA-Z0-9]+$
+                        type: string
+                      name:
+                        description: Name of the ConfigMap.
+                        maxLength: 253
+                        minLength: 1
+                        pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+                        type: string
+                    required:
+                    - key
+                    - name
+                    type: object
+                required:
+                - configMapRef
+                type: object
             required:
             - admin
             type: object

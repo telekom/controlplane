@@ -14,6 +14,7 @@ import (
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	"github.com/telekom/controlplane/common/pkg/handler"
+	"github.com/telekom/controlplane/common/pkg/types"
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
 	"github.com/telekom/controlplane/identity/internal/handler/identityprovider"
 	"github.com/telekom/controlplane/identity/pkg/keycloak"
@@ -54,6 +55,7 @@ func (h *HandlerRealm) CreateOrUpdate(ctx context.Context, realm *identityv1.Rea
 	realm.Status.AdminPassword = identityProvider.Spec.AdminPassword
 	realm.Status.AdminUrl = identityProvider.Status.AdminUrl
 	realm.Status.AdminTokenUrl = identityProvider.Status.AdminTokenUrl
+	realm.Status.Connection = connectionOf(identityProvider)
 
 	err = ValidateRealmManagementStatus(&realm.Status)
 	if err != nil {
@@ -68,10 +70,11 @@ func (h *HandlerRealm) CreateOrUpdate(ctx context.Context, realm *identityv1.Rea
 		return fmt.Errorf("failed to retrieve password from secret manager: %w", err)
 	}
 
-	realmClient, err := h.ServiceFactory.ServiceFor(*replacedRealmStatus)
+	realmClient, release, err := h.ServiceFactory.ServiceFor(ctx, realm, *replacedRealmStatus)
 	if err != nil {
 		return fmt.Errorf("failed to get keycloak client: %w", err)
 	}
+	defer release()
 
 	syncResult, err := realmClient.CreateOrReplaceRealm(ctx, realm)
 	if err != nil {
@@ -135,10 +138,11 @@ func (h *HandlerRealm) Delete(ctx context.Context, realm *identityv1.Realm) erro
 	resolvedStatus := *realm.Status.DeepCopy()
 	resolvedStatus.AdminPassword = adminPassword
 
-	realmClient, err := h.ServiceFactory.ServiceFor(resolvedStatus)
+	realmClient, release, err := h.ServiceFactory.ServiceFor(ctx, realm, resolvedStatus)
 	if err != nil {
 		return fmt.Errorf("failed to get keycloak client: %w", err)
 	}
+	defer release()
 
 	err = realmClient.DeleteRealm(ctx, realm.Name)
 	if err != nil {
@@ -146,4 +150,16 @@ func (h *HandlerRealm) Delete(ctx context.Context, realm *identityv1.Realm) erro
 	}
 
 	return nil
+}
+
+// connectionOf describes the admin connection derived from idp.
+func connectionOf(idp *identityv1.IdentityProvider) *identityv1.RealmConnection {
+	conn := &identityv1.RealmConnection{IdentityProvider: *types.ObjectRefFromObject(idp)}
+	if idp.Spec.TLS != nil {
+		conn.TLS = &identityv1.RealmConnectionTLS{
+			Namespace:    idp.Namespace,
+			ConfigMapRef: idp.Spec.TLS.ConfigMapRef,
+		}
+	}
+	return conn
 }

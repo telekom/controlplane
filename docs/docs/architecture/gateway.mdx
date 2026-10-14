@@ -10,6 +10,14 @@ The Gateway domain configures the API Gateway at runtime. It manages routes, con
 
 <CRDReference domain="gateway" />
 
+## Admin Connection Trust
+
+`Gateway.spec.tls.configMapRef` optionally references CA certificates in a ConfigMap in the Gateway's namespace. The Route and Consumer handlers use these certificates, in addition to system roots, for both the Kong admin API and OAuth token requests. This does not configure upstream TLS or change Gateway readiness into a connectivity check.
+
+One injected client factory is shared by both controllers. Acquisitions validate the cached ConfigMap value before looking up a client, are isolated by Gateway identity and connection version, and return a lease released after the operation, including deletion. Invalid or missing trust blocks the Route or Consumer; a previously cached client is not a fallback.
+
+See [standalone examples](../admin-journey/environments-and-zones.md#standalone-gateway-and-identityprovider) and [Outbound TLS Clients](./outbound-tls-clients.md) for rotation, error semantics, and factory lifecycle.
+
 ## Feature Architecture
 
 The Gateway operator uses a plugin-based feature system for configuring route behavior. Each feature is implemented as a separate plugin that can be enabled or disabled per route, allowing fine-grained control over how requests are processed.

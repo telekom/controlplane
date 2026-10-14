@@ -6,6 +6,7 @@ package controller
 
 import (
 	"context"
+	"errors"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
@@ -19,6 +20,7 @@ import (
 	cc "github.com/telekom/controlplane/common/pkg/controller"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	consumer_handler "github.com/telekom/controlplane/gateway/internal/handler/consumer"
+	"github.com/telekom/controlplane/gateway/pkg/kongutil"
 )
 
 // ConsumerReconciler reconciles a Consumer object
@@ -26,11 +28,14 @@ type ConsumerReconciler struct {
 	client.Client
 	Scheme   *runtime.Scheme
 	Recorder record.EventRecorder
+	// KongClients is the operator wide Kong client factory.
+	KongClients *kongutil.ClientFactory
 
 	cc.Controller[*gatewayv1.Consumer]
 }
 
 // +kubebuilder:rbac:groups=core,resources=events,verbs=create;patch
+// +kubebuilder:rbac:groups=core,resources=configmaps,verbs=get;list;watch
 // +kubebuilder:rbac:groups=gateway.cp.ei.telekom.de,resources=consumers,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=gateway.cp.ei.telekom.de,resources=consumers/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=gateway.cp.ei.telekom.de,resources=consumers/finalizers,verbs=update
@@ -41,8 +46,11 @@ func (r *ConsumerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *ConsumerReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	if r.KongClients == nil {
+		return errors.New("kong client factory is required")
+	}
 	r.Recorder = mgr.GetEventRecorderFor("consumer-controller")
-	r.Controller = cc.NewController(&consumer_handler.ConsumerHandler{}, r.Client, r.Recorder)
+	r.Controller = cc.NewController(&consumer_handler.ConsumerHandler{KongClients: r.KongClients}, r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&gatewayv1.Consumer{}, builder.WithPredicates(cc.Count("consumer", cc.RoleFor,
