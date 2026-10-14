@@ -34,5 +34,6 @@ func ConfigureEventSubscriptionStoreMock(testing ginkgo.FullGinkgoTInterface, mo
 	).Return(
 		&store.ListResponse[*eventv1.EventSubscription]{
 			Items: []*eventv1.EventSubscription{eventSubscription},
-		}, nil).Maybe()
+		}, nil,
+	).Maybe()
 }

@@ -34,5 +34,6 @@ func ConfigureAPISubscriptionStoreMock(testing ginkgo.FullGinkgoTInterface, mock
 	).Return(
 		&store.ListResponse[*apiv1.ApiSubscription]{
 			Items: []*apiv1.ApiSubscription{apiSubscription},
-		}, nil).Maybe()
+		}, nil,
+	).Maybe()
 }

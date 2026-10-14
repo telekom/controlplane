@@ -6,8 +6,10 @@ package apisubscription
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 
+	"github.com/onsi/gomega"
 	"github.com/stretchr/testify/mock"
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
@@ -239,6 +241,31 @@ func TestMapSecurity(t *testing.T) {
 			},
 		},
 		{
+			name: "basic auth with obfuscated client secret",
+			setup: func(in *apiv1.ApiSubscription) {
+				in.Spec.Security = &apiv1.SubscriberSecurity{M2M: &apiv1.SubscriberMachine2MachineAuthentication{
+					Client: &apiv1.OAuth2ClientCredentials{ClientSecret: "**********"},
+					Basic:  &apiv1.BasicAuthCredentials{Username: "u", Password: "**********"},
+				}}
+			},
+			assert: func(t *testing.T, out api.ApiSubscriptionResponse) {
+				t.Helper()
+				g := gomega.NewWithT(t)
+				discriminator, err := out.Security.Discriminator()
+				g.Expect(err).NotTo(gomega.HaveOccurred())
+				g.Expect(discriminator).To(gomega.Equal("basicAuth"))
+
+				got, err := out.Security.AsBasicAuth()
+				g.Expect(err).NotTo(gomega.HaveOccurred())
+				g.Expect(got.Username).To(gomega.Equal("u"))
+				g.Expect(got.Password).To(gomega.Equal("**********"))
+
+				payload, err := json.Marshal(out.Security)
+				g.Expect(err).NotTo(gomega.HaveOccurred())
+				g.Expect(payload).To(gomega.MatchJSON(`{"type":"basicAuth","username":"u","password":"**********"}`))
+			},
+		},
+		{
 			name: "oauth2 client",
 			setup: func(in *apiv1.ApiSubscription) {
 				in.Spec.Security = &apiv1.SubscriberSecurity{M2M: &apiv1.SubscriberMachine2MachineAuthentication{Client: &apiv1.OAuth2ClientCredentials{ClientId: "cid", ClientSecret: "sec"}, Scopes: []string{"s1"}}}
@@ -267,6 +294,29 @@ func TestMapSecurity(t *testing.T) {
 				}
 				if len(got.Scopes) != 2 {
 					t.Fatalf("unexpected scopes mapping: %#v", got.Scopes)
+				}
+			},
+		},
+		{
+			name: "password grant credentials",
+			setup: func(in *apiv1.ApiSubscription) {
+				in.Spec.Security = &apiv1.SubscriberSecurity{M2M: &apiv1.SubscriberMachine2MachineAuthentication{
+					Client: &apiv1.OAuth2ClientCredentials{ClientId: "cid", ClientSecret: "sec"},
+					Basic:  &apiv1.BasicAuthCredentials{Username: "user", Password: "pass"},
+					Scopes: []string{"read", "write"},
+				}}
+			},
+			assert: func(t *testing.T, out api.ApiSubscriptionResponse) {
+				t.Helper()
+				got, err := out.Security.AsOAuth2()
+				if err != nil {
+					t.Fatalf("expected oauth2, got err: %v", err)
+				}
+				if got.ClientId != "cid" || got.ClientSecret != "sec" || got.Username != "user" || got.Password != "pass" {
+					t.Fatalf("unexpected password-grant credentials mapping: %#v", got)
+				}
+				if len(got.Scopes) != 2 || got.Scopes[0] != "read" || got.Scopes[1] != "write" {
+					t.Fatalf("unexpected password-grant scopes mapping: %#v", got.Scopes)
 				}
 			},
 		},

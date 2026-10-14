@@ -387,7 +387,8 @@ var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, f
 
 				// Verify that consume routes are created for each failover route
 				g.Expect(len(multiFailoverSubscription.Status.FailoverConsumeRoutes)).To(
-					BeNumerically(">=", 2))
+					BeNumerically(">=", 2),
+				)
 
 				// Verify each consume route references a failover route and has correct consumer
 				for _, consumeRef := range multiFailoverSubscription.Status.FailoverConsumeRoutes {

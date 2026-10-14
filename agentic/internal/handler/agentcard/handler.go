@@ -43,7 +43,8 @@ func (h *AgentCardHandler) CreateOrUpdate(ctx context.Context, obj *agenticv1.Ag
 		obj.SetCondition(condition.NewNotReadyCondition("AgentCardNotFound",
 			"AgentCard was not found among candidates for its basePath; check labels"))
 		obj.SetCondition(condition.NewBlockedCondition(
-			fmt.Sprintf("AgentCard could not be matched to basePath %q candidates", obj.Spec.BasePath)))
+			fmt.Sprintf("AgentCard could not be matched to basePath %q candidates", obj.Spec.BasePath),
+		))
 		logger.Info("AgentCard not found among candidates, marking not ready")
 		return nil
 	}

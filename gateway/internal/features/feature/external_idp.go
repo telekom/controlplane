@@ -103,8 +103,9 @@ func (f *ExternalIDPFeature) Apply(ctx context.Context, builder features.Feature
 			if err != nil {
 				return errors.Wrapf(err, "cannot get consumer secret for consumer %s in route %s", consumer.Spec.ConsumerName, route.Name)
 			}
-		} else if consumer.HasM2MBasic() {
-			err = applyBasic(ctx, plugin.ConsumerId(consumer.Spec.ConsumerName), jumperConfig, consumer.Spec.Security.M2M.Basic, consumer.Spec.Security.M2M.Scopes, grantType)
+		}
+		if consumer.HasM2MBasic() {
+			err = applyBasic(ctx, plugin.ConsumerId(consumer.Spec.ConsumerName), jumperConfig, consumer.Spec.Security.M2M.Basic, security.M2M.ExternalIDP, consumer.Spec.Security.M2M.Scopes)
 			if err != nil {
 				return errors.Wrapf(err, "cannot get consumer secret for consumer %s in route %s", consumer.Spec.ConsumerName, route.Name)
 			}

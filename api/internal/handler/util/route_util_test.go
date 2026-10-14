@@ -134,6 +134,20 @@ var _ = Describe("Route Util", func() {
 				}))
 			})
 
+			It("maps consumer client and username/password credentials together", func() {
+				mapped := mapConsumerSecurity(&apiapi.SubscriberSecurity{M2M: &apiapi.SubscriberMachine2MachineAuthentication{
+					Client: &apiapi.OAuth2ClientCredentials{ClientId: "consumer", ClientSecret: "secret"},
+					Basic:  &apiapi.BasicAuthCredentials{Username: "user", Password: "password"},
+					Scopes: []string{"consumer:read"},
+				}})
+
+				Expect(mapped.M2M).To(Equal(&gatewayapi.ConsumerMachine2MachineAuthentication{
+					Client: &gatewayapi.OAuth2ClientCredentials{ClientId: "consumer", ClientSecret: "secret"},
+					Basic:  &gatewayapi.BasicAuthCredentials{Username: "user", Password: "password"},
+					Scopes: []string{"consumer:read"},
+				}))
+			})
+
 			DescribeTable("passes the consumer grant type through", func(grantType apiapi.GrantType, expected gatewayapi.GrantType) {
 				mapped := mapConsumerSecurity(&apiapi.SubscriberSecurity{M2M: &apiapi.SubscriberMachine2MachineAuthentication{
 					Client:    &apiapi.OAuth2ClientCredentials{ClientId: "consumer-id", ClientSecret: "consumer-secret", RefreshToken: "rt"},

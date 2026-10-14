@@ -34,5 +34,6 @@ func ConfigureApplicationStoreMock(testing ginkgo.FullGinkgoTInterface, mockedSt
 	).Return(
 		&store.ListResponse[*applicationv1.Application]{
 			Items: []*applicationv1.Application{application},
-		}, nil).Maybe()
+		}, nil,
+	).Maybe()
 }
