@@ -11,12 +11,15 @@ import (
 	"sync/atomic"
 	"time"
 
+	pkgerrors "github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus/testutil"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/interceptor"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -24,6 +27,7 @@ import (
 
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/config"
+	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	"github.com/telekom/controlplane/common/pkg/handler"
 	"github.com/telekom/controlplane/common/pkg/test"
 	"github.com/telekom/controlplane/common/pkg/test/mock"
@@ -42,6 +46,69 @@ var _ = Describe("recordStatusUpdate", func() {
 
 		Expect(testutil.ToFloat64(statusUpdatesTotal.WithLabelValues("skipped", "unknown"))).To(Equal(before + 1))
 	})
+})
+
+var _ = Describe("EnsureNotReadyOnError", func() {
+	DescribeTable("sets the Ready condition",
+		func(existing *metav1.Condition, err error, expected metav1.Condition) {
+			obj := test.NewObject("fake", "default")
+			if existing != nil {
+				obj.SetCondition(*existing)
+			}
+
+			EnsureNotReadyOnError(ctx, nil, obj, err)
+
+			ready := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady)
+			Expect(ready).NotTo(BeNil())
+			Expect(ready.Status).To(Equal(expected.Status))
+			Expect(ready.Reason).To(Equal(expected.Reason))
+			Expect(ready.Message).To(Equal(expected.Message))
+		},
+		Entry("uses reason Error for a generic error",
+			nil, errors.New("boom"),
+			condition.NewNotReadyCondition(condition.ReasonError, "boom")),
+		Entry("replaces Ready=True for a generic error",
+			ptr.To(condition.NewReadyCondition(condition.ReasonProvisioned, "ready")), errors.New("boom"),
+			condition.NewNotReadyCondition(condition.ReasonError, "boom")),
+		Entry("replaces Ready=Unknown for a generic error",
+			ptr.To(condition.SetToUnknown(condition.ReadyCondition)), errors.New("boom"),
+			condition.NewNotReadyCondition(condition.ReasonError, "boom")),
+		Entry("does not rewrite Ready=False/Error for a second generic error with a different message",
+			ptr.To(condition.NewNotReadyCondition(condition.ReasonError, "dial tcp 10.0.0.1:41234: connection refused")),
+			errors.New("dial tcp 10.0.0.1:52817: connection refused"),
+			condition.NewNotReadyCondition(condition.ReasonError, "dial tcp 10.0.0.1:41234: connection refused")),
+		Entry("replaces a Ready=False/Blocked left by an earlier blocked error for a generic error",
+			ptr.To(condition.NewNotReadyCondition(condition.ReasonBlocked, "route missing")), errors.New("boom"),
+			condition.NewNotReadyCondition(condition.ReasonError, "boom")),
+		Entry("keeps a Ready=False with a handler-specific reason for a generic error",
+			ptr.To(condition.NewNotReadyCondition(condition.ReasonAccessDenied, "visibility not allowed")), errors.New("boom"),
+			condition.NewNotReadyCondition(condition.ReasonAccessDenied, "visibility not allowed")),
+		Entry("ignores a conflict error",
+			ptr.To(condition.NewReadyCondition(condition.ReasonProvisioned, "ready")),
+			apierrors.NewConflict(schema.GroupResource{Resource: "testresources"}, "fake", errors.New("modified")),
+			condition.NewReadyCondition(condition.ReasonProvisioned, "ready")),
+		Entry("uses reason Blocked for a blocked error",
+			nil, ctrlerrors.BlockedErrorf("route missing"),
+			condition.NewNotReadyCondition(condition.ReasonBlocked, "route missing")),
+		Entry("uses reason Blocked for a blocked error wrapped with fmt.Errorf",
+			nil, fmt.Errorf("reconciling: %w", ctrlerrors.BlockedErrorf("route missing")),
+			condition.NewNotReadyCondition(condition.ReasonBlocked, "reconciling: route missing")),
+		Entry("uses reason Blocked for a blocked error wrapped with pkg/errors",
+			nil, pkgerrors.Wrap(ctrlerrors.BlockedErrorf("route missing"), "reconciling"),
+			condition.NewNotReadyCondition(condition.ReasonBlocked, "reconciling: route missing")),
+		Entry("replaces Ready=Unknown for a blocked error",
+			ptr.To(condition.SetToUnknown(condition.ReadyCondition)), ctrlerrors.BlockedErrorf("route missing"),
+			condition.NewNotReadyCondition(condition.ReasonBlocked, "route missing")),
+		Entry("replaces a Ready=False/Error left by an earlier error for a blocked error",
+			ptr.To(condition.NewNotReadyCondition(condition.ReasonError, "transient")), ctrlerrors.BlockedErrorf("route missing"),
+			condition.NewNotReadyCondition(condition.ReasonBlocked, "route missing")),
+		Entry("replaces a Ready=False/Blocked left by an earlier blocked error for a blocked error",
+			ptr.To(condition.NewNotReadyCondition(condition.ReasonBlocked, "application id not resolved")), ctrlerrors.BlockedErrorf("route missing"),
+			condition.NewNotReadyCondition(condition.ReasonBlocked, "route missing")),
+		Entry("keeps a Ready=False with a handler-specific reason for a blocked error",
+			ptr.To(condition.NewNotReadyCondition(condition.ReasonAccessDenied, "visibility not allowed")), ctrlerrors.BlockedErrorf("blocked"),
+			condition.NewNotReadyCondition(condition.ReasonAccessDenied, "visibility not allowed")),
+	)
 })
 
 var _ = Describe("StampObservedGeneration", func() {

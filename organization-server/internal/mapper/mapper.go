@@ -101,10 +101,14 @@ func mapStatusPhase(phase *gql.TeamStatusPhase, message *string) api.Status {
 			State:           "complete",
 		}
 	case "PENDING":
-		return api.Status{
+		s := api.Status{
 			ProcessingState: "pending",
 			State:           "none",
 		}
+		if message != nil && *message != "" {
+			s.Warnings = []api.StateInfo{{Message: *message}}
+		}
+		return s
 	case "ERROR":
 		s := api.Status{
 			ProcessingState: "failed",
@@ -145,6 +149,9 @@ func TeamStatusToResourceStatus(phase *gql.TeamStatusPhase, message *string, cre
 		resp.State = api.StateNone
 		resp.ProcessingState = api.ProcessingStatePending
 		resp.OverallStatus = "pending"
+		if message != nil && *message != "" {
+			resp.Warnings = []api.Problem{{Message: *message}}
+		}
 	case "ERROR":
 		resp.State = api.StateBlocked
 		resp.ProcessingState = api.ProcessingStateFailed

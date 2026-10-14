@@ -172,6 +172,7 @@ func TestMapStatusPhase(t *testing.T) {
 		wantProc     string
 		wantState    string
 		wantErrCount int
+		wantWarnings []string
 	}{
 		{
 			name:     "nil phase",
@@ -186,6 +187,20 @@ func TestMapStatusPhase(t *testing.T) {
 		{
 			name:     "PENDING",
 			phase:    ptr(gql.TeamStatusPhasePending),
+			wantProc: "pending", wantState: "none",
+		},
+		{
+			name:         "PENDING with message",
+			phase:        ptr(gql.TeamStatusPhasePending),
+			message:      ptr("no zone with managed routes found"),
+			wantProc:     "pending",
+			wantState:    "none",
+			wantWarnings: []string{"no zone with managed routes found"},
+		},
+		{
+			name:     "PENDING with empty message",
+			phase:    ptr(gql.TeamStatusPhasePending),
+			message:  ptr(""),
 			wantProc: "pending", wantState: "none",
 		},
 		{
@@ -226,6 +241,14 @@ func TestMapStatusPhase(t *testing.T) {
 			if len(s.Errors) != tt.wantErrCount {
 				t.Errorf("errors: want %d, got %d", tt.wantErrCount, len(s.Errors))
 			}
+			if len(s.Warnings) != len(tt.wantWarnings) {
+				t.Fatalf("warnings: want %v, got %v", tt.wantWarnings, s.Warnings)
+			}
+			for i, w := range tt.wantWarnings {
+				if s.Warnings[i].Message != w {
+					t.Errorf("warnings[%d]: want %q, got %q", i, w, s.Warnings[i].Message)
+				}
+			}
 		})
 	}
 }
@@ -241,6 +264,7 @@ func TestTeamStatusToResourceStatus(t *testing.T) {
 		wantProc  string
 		wantState string
 		wantErr   int
+		wantWarn  []string
 	}{
 		{
 			name: "nil phase", phase: nil,
@@ -253,6 +277,15 @@ func TestTeamStatusToResourceStatus(t *testing.T) {
 		{
 			name: "PENDING", phase: ptr(gql.TeamStatusPhasePending),
 			wantProc: "pending", wantState: "none",
+		},
+		{
+			name: "PENDING with message", phase: ptr(gql.TeamStatusPhasePending),
+			message: ptr("no zone with managed routes found"), wantProc: "pending", wantState: "none",
+			wantWarn: []string{"no zone with managed routes found"},
+		},
+		{
+			name: "PENDING empty message", phase: ptr(gql.TeamStatusPhasePending),
+			message: ptr(""), wantProc: "pending", wantState: "none",
 		},
 		{
 			name: "ERROR with message", phase: ptr(gql.TeamStatusPhaseError),
@@ -279,6 +312,14 @@ func TestTeamStatusToResourceStatus(t *testing.T) {
 			}
 			if len(r.Errors) != tt.wantErr {
 				t.Errorf("errors: want %d, got %d", tt.wantErr, len(r.Errors))
+			}
+			if len(r.Warnings) != len(tt.wantWarn) {
+				t.Fatalf("warnings: want %v, got %v", tt.wantWarn, r.Warnings)
+			}
+			for i, w := range tt.wantWarn {
+				if r.Warnings[i].Message != w {
+					t.Errorf("warnings[%d]: want %q, got %q", i, w, r.Warnings[i].Message)
+				}
 			}
 			if !r.CreatedAt.Equal(now) {
 				t.Errorf("createdAt: want %v, got %v", now, r.CreatedAt)
