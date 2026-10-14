@@ -247,10 +247,41 @@ var _ = Describe("Preset OIDC status", func() {
 		}
 		return &HandlingContext{
 			Zone: zone, HTTPClient: client,
-			DefaultIdentityRealm:  &identityapi.Realm{ObjectMeta: metav1.ObjectMeta{Name: "default"}},
-			InternalIdentityRealm: &identityapi.Realm{ObjectMeta: metav1.ObjectMeta{Name: "internal"}},
+			DefaultIdentityRealm: &identityapi.Realm{ObjectMeta: metav1.ObjectMeta{Name: "default"}},
+			InternalIdentityRealm: &identityapi.Realm{
+				ObjectMeta: metav1.ObjectMeta{Name: "internal"},
+				Status:     identityapi.RealmStatus{IssuerUrl: "https://irix.example.com/auth/realms/internal"},
+			},
 		}
 	}
+
+	It("uses the resolved internal realm issuer and keeps the public issuer", func() {
+		hc := newContext(nil)
+		hc.Zone.Spec.Visibility = adminv1.ZoneVisibilityWorld
+		server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			_, err := fmt.Fprint(w, `{"issuer":"https://issuer.example.com/auth/realms/default","token_endpoint":"https://issuer.example.com/token"}`)
+			Expect(err).NotTo(HaveOccurred())
+		}))
+		defer server.Close()
+		hc.HTTPClient = server.Client()
+		hc.HTTPClient.Transport = rewriteHostTransport{base: hc.HTTPClient.Transport, target: server.URL}
+
+		Expect(populatePresetStatus(context.Background(), hc)).To(Succeed())
+		Expect(hc.Zone.Status.Presets).To(HaveEach(And(
+			HaveField("Links.Issuer", "https://issuer.example.com/auth/realms/default"),
+			HaveField("Links.InternalIssuer", "https://irix.example.com/auth/realms/internal"),
+		)))
+	})
+
+	It("returns a retryable error while the internal realm issuer is unresolved", func() {
+		hc := newContext(nil)
+		hc.InternalIdentityRealm.Status.IssuerUrl = ""
+		err := populatePresetStatus(context.Background(), hc)
+		var retryable ctrlerrors.RetryableError
+		Expect(errors.As(err, &retryable)).To(BeTrue())
+		Expect(err).To(MatchError(ContainSubstring("no resolved issuer URL")))
+		Expect(hc.Zone.Status.Presets).To(BeEmpty())
+	})
 
 	It("bubbles network failures as retryable", func() {
 		hc := newContext(&http.Client{Transport: failingRoundTripper{}})

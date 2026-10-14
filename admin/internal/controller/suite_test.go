@@ -151,6 +151,13 @@ var _ = BeforeSuite(func() {
 	err = (&readyReconciler[*identityv1.Realm]{
 		Client: k8sManager.GetClient(),
 		obj:    &identityv1.Realm{},
+		resolve: func(realm *identityv1.Realm) bool {
+			if realm.Status.IssuerUrl != "" {
+				return false
+			}
+			realm.Status.IssuerUrl = "https://issuer.example.com/auth/realms/" + realm.Name
+			return true
+		},
 	}).SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 
@@ -174,6 +181,9 @@ var _ = AfterSuite(func() {
 type readyReconciler[T common_types.Object] struct {
 	client.Client
 	obj T
+	// resolve optionally fills in operator-provided status fields and reports
+	// whether it changed the object.
+	resolve func(T) bool
 }
 
 func (r *readyReconciler[T]) SetupWithManager(mgr ctrl.Manager) error {
@@ -188,7 +198,8 @@ func (r *readyReconciler[T]) Reconcile(ctx context.Context, req ctrl.Request) (c
 	if err := r.Get(ctx, req.NamespacedName, obj); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
-	if !obj.SetCondition(condition.NewReadyCondition(condition.ReasonProvisioned, "provisioned")) {
+	changed := r.resolve != nil && r.resolve(obj)
+	if !obj.SetCondition(condition.NewReadyCondition(condition.ReasonProvisioned, "provisioned")) && !changed {
 		return ctrl.Result{}, nil
 	}
 	return ctrl.Result{}, r.Status().Update(ctx, obj)

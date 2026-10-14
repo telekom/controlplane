@@ -85,7 +85,10 @@ func presetLinks(hc *HandlingContext, preset *adminv1.Preset, idp *adminv1.Ident
 		return adminv1.Links{}, "", ctrlerrors.BlockedErrorf("cannot resolve issuer hostname for preset %q: %s", preset.Name, err)
 	}
 	issuer := fmt.Sprintf("https://%s/auth/realms/%s", hostname, hc.DefaultIdentityRealm.Name)
-	internalIssuer := fmt.Sprintf("https://%s/auth/realms/%s", hostname, hc.InternalIdentityRealm.Name)
+	internalIssuer, err := internalIssuerURL(hc)
+	if err != nil {
+		return adminv1.Links{}, "", err
+	}
 	baseURL := preset.GetDefaultURL()
 	lmsBase := baseURL
 	if hc.Zone.Spec.Visibility == adminv1.ZoneVisibilityWorld {

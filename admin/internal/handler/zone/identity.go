@@ -120,6 +120,17 @@ func createInternalIdentityRealm(ctx context.Context, hc *HandlingContext) error
 	return nil
 }
 
+// internalIssuerURL returns the issuer URL the identity operator resolved for the
+// internal (rover) realm. Admin consumers must use it instead of deriving one
+// from the public issuer hostname, as the rover realm may live on another host.
+func internalIssuerURL(hc *HandlingContext) (string, error) {
+	issuer := hc.InternalIdentityRealm.Status.IssuerUrl
+	if issuer == "" {
+		return "", ctrlerrors.RetryableErrorf("internal identity realm %q has no resolved issuer URL yet", hc.InternalIdentityRealm.Name)
+	}
+	return issuer, nil
+}
+
 func issuerHostname(idp *adminv1.IdentityProviderConfig) (string, error) {
 	if idp.IssuerHostname != "" {
 		return idp.IssuerHostname, nil
