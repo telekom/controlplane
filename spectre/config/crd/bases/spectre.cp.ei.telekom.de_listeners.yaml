@@ -109,8 +109,8 @@ spec:
                 type: object
               consumer:
                 description: |-
-                  TypedObjectRef is a reference to a Kubernetes object with type information
-                  It is similar to ObjectRef but includes the Kind and APIVersion
+                  Consumer references the consumer's Application (application.cp.ei.telekom.de/v1),
+                  resolved by Rover from the listener entry's consumer.
                 properties:
                   apiVersion:
                     description: |-
@@ -141,6 +141,9 @@ spec:
                 - name
                 - namespace
                 type: object
+                x-kubernetes-validations:
+                - message: consumer must reference an Application
+                  rule: has(self.kind) && self.kind == 'Application'
               eventListener:
                 description: EventListener configures a listener that subscribes to
                   events.
@@ -165,8 +168,8 @@ spec:
                 type: object
               provider:
                 description: |-
-                  TypedObjectRef is a reference to a Kubernetes object with type information
-                  It is similar to ObjectRef but includes the Kind and APIVersion
+                  Provider references the provider's Application (application.cp.ei.telekom.de/v1),
+                  resolved by Rover from the listener entry's provider.
                 properties:
                   apiVersion:
                     description: |-
@@ -197,6 +200,9 @@ spec:
                 - name
                 - namespace
                 type: object
+                x-kubernetes-validations:
+                - message: provider must reference an Application
+                  rule: has(self.kind) && self.kind == 'Application'
             required:
             - application
             - consumer

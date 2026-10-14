@@ -608,7 +608,10 @@ var _ = Describe("HandleListeners", func() {
 				UID:       "listener-uid-1",
 			},
 			Spec: spectrev1.ListenerSpec{
-				Provider: types.TypedObjectRef{ObjectRef: types.ObjectRef{Name: "does-not-exist", Namespace: teamNamespace}},
+				Provider: types.TypedObjectRef{
+					TypeMeta:  metav1.TypeMeta{Kind: "Application", APIVersion: "application.cp.ei.telekom.de/v1"},
+					ObjectRef: types.ObjectRef{Name: "does-not-exist", Namespace: teamNamespace},
+				},
 			},
 		}
 
