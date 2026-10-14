@@ -597,8 +597,9 @@ var _ = Describe("ExternalIDPFeature", func() {
 						Client:    &gatewayv1.OAuth2ClientCredentials{ClientId: "consumer-id", ClientSecret: "consumer-secret"},
 						GrantType: gatewayv1.GrantTypeClientCredentials,
 					}, "client_credentials"),
-					Entry("basic", &gatewayv1.ConsumerMachine2MachineAuthentication{
+					Entry("basic with client credentials", &gatewayv1.ConsumerMachine2MachineAuthentication{
 						Basic:     &gatewayv1.BasicAuthCredentials{Username: "consumer-user", Password: "consumer-pass"},
+						Client:    &gatewayv1.OAuth2ClientCredentials{ClientId: "consumer-id", ClientSecret: "consumer-secret"},
 						GrantType: gatewayv1.GrantTypeAuthorizationCode,
 					}, "authorization_code"),
 				)

@@ -199,9 +199,10 @@ spec:
                         - tokenEndpoint
                         type: object
                         x-kubernetes-validations:
-                        - message: Only one of basic or client credentials can be
-                            provided (XOR relationship)
-                          rule: self == null || !has(self.basic) || !has(self.client)
+                        - message: Username/password credentials require grant type
+                            "password"
+                          rule: self == null || !has(self.basic) || (has(self.grantType)
+                            && self.grantType == 'password')
                       scopes:
                         description: Scopes defines additional OAuth2 scopes that
                           are added to the LMS token

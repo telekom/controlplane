@@ -27,7 +27,9 @@ var _ = Describe("Consumer username/password with scopes", func() {
 	passwordExposure := func(f *scopeFixture, grantType agenticv1.GrantType) *agenticv1.AgenticExposure {
 		idp := externalIDPFixture()
 		idp.GrantType = grantType
-		idp.Basic = &agenticv1.BasicAuthCredentials{Username: "provider-user", Password: "provider-pass"}
+		if grantType == agenticv1.GrantTypePassword {
+			idp.Basic = &agenticv1.BasicAuthCredentials{Username: "provider-user", Password: "provider-pass"}
+		}
 		exp := &agenticv1.AgenticExposure{ObjectMeta: f.metadata("exposure"), Spec: agenticv1.AgenticExposureSpec{
 			BasePath: f.basePath, Variant: agenticv1.AgenticVariantMCP,
 			Upstreams:  []agenticv1.Upstream{{Url: "https://upstream.example.com/mcp", Weight: 100}},
@@ -162,6 +164,29 @@ var _ = Describe("Consumer username/password with scopes", func() {
 		},
 		Entry("client_credentials exposure grant overridden by consumer password grant", agenticv1.GrantTypeClientCredentials, agenticv1.GrantTypePassword),
 		Entry("authorization_code exposure grant without consumer override", agenticv1.GrantTypeAuthorizationCode, agenticv1.GrantType("")),
+	)
+
+	DescribeTable("rejects provider username/password without the password grant",
+		func(grantType agenticv1.GrantType) {
+			f := newScopeFixture()
+			idp := externalIDPFixture()
+			idp.GrantType = grantType
+			idp.Basic = &agenticv1.BasicAuthCredentials{Username: "provider-user", Password: "provider-pass"}
+			exp := &agenticv1.AgenticExposure{ObjectMeta: f.metadata("exposure"), Spec: agenticv1.AgenticExposureSpec{
+				BasePath: f.basePath, Variant: agenticv1.AgenticVariantMCP,
+				Upstreams:  []agenticv1.Upstream{{Url: "https://upstream.example.com/mcp", Weight: 100}},
+				Visibility: agenticv1.VisibilityEnterprise,
+				Approval:   agenticv1.Approval{Strategy: agenticv1.ApprovalStrategySimple},
+				Zone:       *ctypes.ObjectRefFromObject(f.zone), Provider: *ctypes.ObjectRefFromObject(f.provider),
+				Security: &agenticv1.Security{M2M: &agenticv1.Machine2MachineAuthentication{ExternalIDP: idp}},
+			}}
+
+			err := k8sClient.Create(ctx, exp)
+			Expect(apierrors.IsInvalid(err)).To(BeTrue())
+			Expect(err.Error()).To(ContainSubstring(`Username/password credentials require grant type "password"`))
+		},
+		Entry("client_credentials grant", agenticv1.GrantTypeClientCredentials),
+		Entry("omitted grant", agenticv1.GrantType("")),
 	)
 
 	It("blocks Basic credentials with scopes without an external IDP", func() {

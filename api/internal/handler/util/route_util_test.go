@@ -119,6 +119,24 @@ var _ = Describe("Route Util", func() {
 					Basic:         &gatewayapi.BasicAuthCredentials{Username: "provider-user", Password: "provider-pass"},
 				}))
 			})
+
+			It("maps provider client and username/password credentials together for the password grant", func() {
+				mapped := mapExternalIDP(&apiapi.ExternalIdentityProvider{
+					TokenEndpoint: "https://idp.example/token",
+					TokenRequest:  apiapi.TokenRequestClientSecretBasic,
+					GrantType:     apiapi.GrantTypePassword,
+					Client:        &apiapi.OAuth2ClientCredentials{ClientId: "provider-client", ClientSecret: "provider-secret"},
+					Basic:         &apiapi.BasicAuthCredentials{Username: "provider-user", Password: "provider-pass"},
+				})
+
+				Expect(mapped).To(Equal(&gatewayapi.ExternalIdentityProvider{
+					TokenEndpoint: "https://idp.example/token",
+					TokenRequest:  gatewayapi.TokenRequestClientSecretBasic,
+					GrantType:     gatewayapi.GrantTypePassword,
+					Client:        &gatewayapi.OAuth2ClientCredentials{ClientId: "provider-client", ClientSecret: "provider-secret"},
+					Basic:         &gatewayapi.BasicAuthCredentials{Username: "provider-user", Password: "provider-pass"},
+				}))
+			})
 		})
 
 		Describe("mapConsumerSecurity", func() {

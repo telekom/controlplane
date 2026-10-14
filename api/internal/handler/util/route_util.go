@@ -769,7 +769,8 @@ func mapExternalIDP(externalIDP *apiapi.ExternalIdentityProvider) *gatewayapi.Ex
 			Username: externalIDP.Basic.Username,
 			Password: externalIDP.Basic.Password,
 		}
-	} else if externalIDP.Client != nil {
+	}
+	if externalIDP.Client != nil {
 		idp.Client = &gatewayapi.OAuth2ClientCredentials{
 			ClientId:     externalIDP.Client.ClientId,
 			ClientSecret: externalIDP.Client.ClientSecret,

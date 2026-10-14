@@ -140,13 +140,19 @@ spec:
 
 The subscription inherits this exception from its active exposure. Subscriber credentials or a token endpoint configured elsewhere do not enable it. Removing the exposure's external-IDP configuration restores normal scope checking; an empty endpoint does not qualify for the exception.
 
-Subscriber username/password credentials may be combined with scopes only when the selected exposure explicitly uses an external-IDP `password` grant. They may also be combined with client credentials for that grant, with or without scopes. A different or omitted grant blocks that subscription before approval.
+Subscriber username/password credentials may be combined with scopes or client credentials only when the selected exposure uses an external IDP; otherwise the subscription is blocked before approval. The subscription can set its own `grantType`; if it doesn't, the exposure's grant type applies. The gateway only uses subscriber credentials that can build a token request for this effective grant type: `password` needs username/password, `refresh_token` needs client credentials with a refresh token, and other grant types need client credentials. Client credentials are also sent with the `password` grant to authenticate the client.
 
-If an existing API or agentic subscription becomes invalid after its exposure grant or scope policy changes, its ConsumeRoutes are removed and its active scopes are cleared. This revokes gateway access without deleting shared Routes. Restoring a valid configuration allows the subscription to be provisioned again, subject to approval.
+| Subscriber credentials | Effective grant | Result |
+|---|---|---|
+| Username/password only, no `grantType` | any | Sent to the backend as HTTP Basic authentication |
+| Credentials that match the effective grant | any | Used for the external-IDP token request; username/password only with the `password` grant |
+| Scopes, or credentials that don't match the effective grant | any | The token is requested with the exposure's credentials, its grant type and the subscriber's scopes |
+
+If an existing API or agentic subscription becomes invalid after its exposure's external IDP or scope policy changes, its ConsumeRoutes are removed and its active scopes are cleared. This revokes gateway access without deleting shared Routes. Restoring a valid configuration allows the subscription to be provisioned again, subject to approval.
 
 Cross-organization API subscriptions currently support scopes only. Client credentials and username/password credentials are not propagated by the remote-subscription flow and are blocked. Blocking an existing subscription removes its subscription-owned resources but preserves shared proxy routes used by other subscriptions.
 
-For both API and agentic exposures, provider username/password credentials in `spec.security.m2m.externalIDP.basic` may be combined with non-empty `spec.security.m2m.scopes` only with an explicit `password` grant.
+Provider username/password credentials in `spec.security.m2m.externalIDP` require the `password` grant; otherwise the exposure is rejected. They may be combined with provider client credentials, which then authenticate the client in the password grant.
 API approval requests still include the requested scopes. Existing readiness and approval requirements continue to apply, and the external identity provider determines whether it will grant the requested scopes.
 
 ### Audience Claims

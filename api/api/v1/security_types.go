@@ -114,7 +114,8 @@ type SubscriberMachine2MachineAuthentication struct {
 }
 
 // ExternalIdentityProvider defines configuration for using an external identity provider
-// +kubebuilder:validation:XValidation:rule="self == null || !has(self.basic) || !has(self.client)", message="Only one of basic or client credentials can be provided (XOR relationship)"
+// Username/password are only sent with the password grant; they may be combined with client credentials for client authentication.
+// +kubebuilder:validation:XValidation:rule="self == null || !has(self.basic) || (has(self.grantType) && self.grantType == 'password')", message="Username/password credentials require grant type \"password\""
 type ExternalIdentityProvider struct {
 	// TokenEndpoint is the URL for the OAuth2 token endpoint
 	// +kubebuilder:validation:Required

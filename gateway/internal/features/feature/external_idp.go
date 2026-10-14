@@ -80,38 +80,81 @@ func (f *ExternalIDPFeature) Apply(ctx context.Context, builder features.Feature
 	rtpPlugin.Config.Append.AddHeader("token_endpoint", security.M2M.ExternalIDP.TokenEndpoint)
 
 	// Provider
-	if security.HasM2MExternalIDP() && security.M2M.ExternalIDP.Client != nil {
-		err = applyOauth(ctx, DefaultProviderKey, jumperConfig, security.M2M.ExternalIDP.Client, security.M2M.ExternalIDP, security.M2M.Scopes, security.M2M.ExternalIDP.GrantType)
-		if err != nil {
-			return errors.Wrapf(err, "cannot get provider secret for route %s", route.Name)
-		}
-	} else if security.HasM2MExternalIDP() && security.M2M.ExternalIDP.Basic != nil {
-		err = applyBasic(ctx, DefaultProviderKey, jumperConfig, security.M2M.ExternalIDP.Basic, security.M2M.Scopes, security.M2M.ExternalIDP.GrantType)
-		if err != nil {
+	idp := security.M2M.ExternalIDP
+	if ok, err := hasCredentialsForGrant(idp.Client, idp.Basic, idp.GrantType); err != nil {
+		errors.Wrapf(err, "cannot identify grantType for %s", route.Name)
+	} else if ok {
+		if err = applyCredentials(ctx, DefaultProviderKey, jumperConfig, idp, idp.Client, idp.Basic, security.M2M.Scopes, idp.GrantType); err != nil {
 			return errors.Wrapf(err, "cannot get provider secret for route %s", route.Name)
 		}
 	}
 
 	// Consumers
 	for _, consumer := range builder.GetAllowedConsumers() {
-		grantType := security.M2M.ExternalIDP.GrantType
-		if consumer.HasM2M() && consumer.Spec.Security.M2M.GrantType != "" {
-			grantType = consumer.Spec.Security.M2M.GrantType
-		}
-		if consumer.HasM2MClient() {
-			err = applyOauth(ctx, plugin.ConsumerId(consumer.Spec.ConsumerName), jumperConfig, consumer.Spec.Security.M2M.Client, security.M2M.ExternalIDP, consumer.Spec.Security.M2M.Scopes, grantType)
-			if err != nil {
-				return errors.Wrapf(err, "cannot get consumer secret for consumer %s in route %s", consumer.Spec.ConsumerName, route.Name)
-			}
-		}
-		if consumer.HasM2MBasic() {
-			err = applyBasic(ctx, plugin.ConsumerId(consumer.Spec.ConsumerName), jumperConfig, consumer.Spec.Security.M2M.Basic, consumer.Spec.Security.M2M.Scopes, grantType)
-			if err != nil {
-				return errors.Wrapf(err, "cannot get consumer secret for consumer %s in route %s", consumer.Spec.ConsumerName, route.Name)
-			}
+		if err = applyConsumer(ctx, jumperConfig, consumer, idp); err != nil {
+			return errors.Wrapf(err, "cannot get consumer secret for consumer %s in route %s", consumer.Spec.ConsumerName, route.Name)
 		}
 	}
 
+	return nil
+}
+
+// hasCredentialsForGrant reports whether the credentials can build a token request for the grant type.
+// Jumper sends every configured credential together with the grant type and does not check if they match.
+func hasCredentialsForGrant(client *gatewayv1.OAuth2ClientCredentials, basic *gatewayv1.BasicAuthCredentials, grantType gatewayv1.GrantType) (bool, error) {
+	switch grantType {
+	case gatewayv1.GrantTypePassword:
+		return basic != nil, nil
+	case gatewayv1.GrantTypeRefreshToken:
+		return client != nil && client.RefreshToken != "", nil
+	case gatewayv1.GrantTypeAuthorizationCode, gatewayv1.GrantTypeClientCredentials:
+		return client != nil, nil
+	default:
+		return false, fmt.Errorf("unknown grantType: %s", grantType)
+	}
+}
+
+// applyCredentials publishes the credentials used for the grant type. Username/password are only used with the
+// password grant, client credentials authenticate the client for every grant type.
+func applyCredentials(ctx context.Context, key plugin.ConsumerId, jumperConfig *plugin.JumperConfig, providerSettings *gatewayv1.ExternalIdentityProvider, client *gatewayv1.OAuth2ClientCredentials, basic *gatewayv1.BasicAuthCredentials, scopes []string, grantType gatewayv1.GrantType) error {
+	if client != nil {
+		if err := applyOauth(ctx, key, jumperConfig, client, providerSettings, scopes, grantType); err != nil {
+			return err
+		}
+	}
+	if grantType == gatewayv1.GrantTypePassword {
+		return applyBasic(ctx, key, jumperConfig, basic, scopes, grantType)
+	}
+	return nil
+}
+
+func applyConsumer(ctx context.Context, jumperConfig *plugin.JumperConfig, consumer *gatewayv1.ConsumeRoute, providerSettings *gatewayv1.ExternalIdentityProvider) error {
+	// Backend Basic credentials are handled by the BasicAuthFeature.
+	if !consumer.HasM2M() || usesBackendBasicAuth(consumer) {
+		return nil
+	}
+	key := plugin.ConsumerId(consumer.Spec.ConsumerName)
+	consumerM2M := consumer.Spec.Security.M2M
+	grantType := providerSettings.GrantType
+	if consumerM2M.GrantType != "" {
+		grantType = consumerM2M.GrantType
+	}
+
+	if ok, err := hasCredentialsForGrant(consumerM2M.Client, consumerM2M.Basic, grantType); err != nil {
+		return err
+	} else if ok {
+		return applyCredentials(ctx, key, jumperConfig, providerSettings, consumerM2M.Client, consumerM2M.Basic, consumerM2M.Scopes, grantType)
+	}
+
+	// Without own credentials for the grant type, the consumer requests its scopes with the provider credentials.
+	// Jumper completes a scopes-only entry from the provider default, so it needs one and a grant type.
+	_, hasProviderDefault := jumperConfig.OAuth[DefaultProviderKey]
+	if hasProviderDefault && len(consumerM2M.Scopes) > 0 {
+		jumperConfig.OAuth[key] = plugin.OauthCredentials{
+			Scopes:    strings.Join(consumerM2M.Scopes, " "),
+			GrantType: string(providerSettings.GrantType),
+		}
+	}
 	return nil
 }
 
