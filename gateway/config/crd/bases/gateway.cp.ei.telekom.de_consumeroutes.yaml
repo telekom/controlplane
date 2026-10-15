@@ -130,6 +130,14 @@ spec:
                           type: string
                         maxItems: 100
                         type: array
+                      tokenRequest:
+                        description: TokenRequest overrides the external IDP token
+                          endpoint authentication method for the consumer client credentials
+                          (RFC 7591)
+                        enum:
+                        - client_secret_basic
+                        - client_secret_post
+                        type: string
                     type: object
                     x-kubernetes-validations:
                     - message: At least one of client, basic, or scopes must be provided

@@ -172,6 +172,9 @@ type ConsumerMachine2MachineAuthentication struct {
 	// GrantType overrides the grant type derived from the consumer credentials for external IDP token requests
 	// +kubebuilder:validation:Optional
 	GrantType GrantType `json:"grantType,omitempty"`
+	// TokenRequest overrides the external IDP token endpoint authentication method for the consumer client credentials (RFC 7591)
+	// +kubebuilder:validation:Optional
+	TokenRequest TokenRequestMethod `json:"tokenRequest,omitempty"`
 }
 
 // ExternalIdentityProvider defines configuration for using an external identity provider

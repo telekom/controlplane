@@ -111,6 +111,9 @@ type SubscriberMachine2MachineAuthentication struct {
 	// GrantType defines the OAuth2 grant type used for the subscriber's external IDP token request
 	// +kubebuilder:validation:Optional
 	GrantType GrantType `json:"grantType,omitempty"`
+	// TokenRequest configures the token endpoint authentication method (RFC 7591)
+	// +kubebuilder:validation:Optional
+	TokenRequest TokenRequestMethod `json:"tokenRequest,omitempty"`
 }
 
 // ExternalIdentityProvider defines configuration for using an external identity provider
