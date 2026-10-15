@@ -129,8 +129,6 @@ func DeleteRealm(ctx context.Context, namespacedName client.ObjectKey) {
 var _ = Describe("Realm attribute validation", func() {
 	newRealmWithAttributes := func(name string, attributes map[string]string) *identityv1.Realm {
 		realm := realmModel.NewRealm(name, testNamespace, testEnvironment, "some-idp")
-		// Without environment label the controller does not add a finalizer.
-		realm.Labels = nil
 		realm.Spec.Attributes = attributes
 		return realm
 	}
@@ -148,11 +146,7 @@ var _ = Describe("Realm attribute validation", func() {
 	DescribeTable("should accept attributes, including a malformed frontendUrl",
 		func(attributes map[string]string) {
 			realm := newRealmWithAttributes("valid-attributes", attributes)
-			Expect(k8sClient.Create(ctx, realm)).To(Succeed())
-			Expect(k8sClient.Delete(ctx, realm)).To(Succeed())
-			Eventually(func() bool {
-				return errors.IsNotFound(k8sClient.Get(ctx, client.ObjectKeyFromObject(realm), &identityv1.Realm{}))
-			}, timeout, interval).Should(BeTrue())
+			Expect(k8sClient.Create(ctx, realm, client.DryRunAll)).To(Succeed())
 		},
 		Entry("generic attribute", map[string]string{"displayName": "My Realm"}),
 		Entry("empty frontendUrl", map[string]string{"frontendUrl": ""}),

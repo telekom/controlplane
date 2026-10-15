@@ -103,6 +103,13 @@ var _ = Describe("Team Webhook", func() {
 
 		zone = freshZone
 
+		By("Waiting for the webhook cache to see the Zone status")
+		Eventually(func(g Gomega) {
+			cachedZone := &adminv1.Zone{}
+			g.Expect(mgrClient.Get(ctx, client.ObjectKeyFromObject(zone), cachedZone)).To(Succeed())
+			g.Expect(cachedZone.ResourceVersion).To(Equal(zone.ResourceVersion))
+		}, timeout, interval).Should(Succeed())
+
 		secretManagerMock = fake.NewMockSecretManager(GinkgoT())
 		secret.GetSecretManager = func() api.SecretManager {
 			return secretManagerMock
