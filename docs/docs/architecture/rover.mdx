@@ -28,7 +28,7 @@ The server also normalizes the environment, team, and group labels to lowercase,
 
 ### Application Info Status
 
-The `status` of `roverctl get-info` is the overall status of the Rover status endpoint. It includes every sub-resource owned by the Rover, also removed ones that are still being deleted, such as a Listener draining its capture, and reports `processing` or `pending` while the Rover or a sub-resource has a spec change that is not yet processed. A referenced sub-resource that cannot be read is listed in `errors` and does not fail the request.
+The `status` of `roverctl get-info` is the overall status of the Rover status endpoint. It includes every sub-resource owned by the Rover, also removed ones that are still being deleted, such as a Listener draining its capture, and reports `processing` or `pending` while the Rover or a sub-resource has a spec change that is not yet processed. A referenced sub-resource that cannot be read is listed in `errors` and does not fail the request. When the Rover itself is blocked or failed for a reason no sub-resource reports, for example a listener whose consumer application does not exist, both the status endpoint and get-info list it in `errors` as a problem of kind `Rover`. In get-info, this entry has the same shape as a problem from the status endpoint: `cause` is the condition reason and `message` is the condition message.
 
 ## Domain Interactions
 

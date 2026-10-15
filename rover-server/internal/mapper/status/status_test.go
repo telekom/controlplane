@@ -966,6 +966,178 @@ var _ = Describe("MapRoverStatus with Spectre children", func() {
 	})
 })
 
+var _ = Describe("MapRoverResponse with the Rover's own problem", func() {
+	const consumerMessage = `resolving consumer application "unknown-app": application "unknown-app" not found`
+
+	roverWith := func(ready metav1.Condition, listeners []types.ObjectRef) *v1.Rover {
+		processing := metav1.Condition{Type: condition.ConditionTypeProcessing, Status: metav1.ConditionFalse, Reason: condition.ReasonBlocked, Message: ready.Message, ObservedGeneration: 1}
+		if ready.Reason == condition.ReasonSubResourceNotReady {
+			processing.Status, processing.Reason = metav1.ConditionTrue, condition.ReasonSubResourceNotReady
+		}
+		ready.Type, ready.Status, ready.ObservedGeneration = condition.ConditionTypeReady, metav1.ConditionFalse, 1
+		return &v1.Rover{
+			ObjectMeta: metav1.ObjectMeta{Name: "r-own", Namespace: "ns", UID: "uid-own", Generation: 1},
+			Status: v1.RoverStatus{
+				SpectreApplications: []types.ObjectRef{{Name: "r-own--spectre-app", Namespace: "ns"}},
+				SpectreListeners:    listeners,
+				Conditions:          []metav1.Condition{processing, ready},
+			},
+		}
+	}
+
+	readySpectreApp := &spectrev1.SpectreApplication{
+		TypeMeta:   metav1.TypeMeta{APIVersion: "spectre.cp.ei.telekom.de/v1", Kind: "SpectreApplication"},
+		ObjectMeta: metav1.ObjectMeta{Name: "r-own--spectre-app", Namespace: "ns"},
+		Status: spectrev1.SpectreApplicationStatus{Conditions: []metav1.Condition{
+			{Type: condition.ConditionTypeProcessing, Status: metav1.ConditionFalse, Reason: condition.ReasonDone},
+			{Type: condition.ConditionTypeReady, Status: metav1.ConditionTrue, Reason: condition.ReasonProvisioned},
+		}},
+	}
+
+	pendingListener := &spectrev1.Listener{
+		TypeMeta:   metav1.TypeMeta{APIVersion: "spectre.cp.ei.telekom.de/v1", Kind: "Listener"},
+		ObjectMeta: metav1.ObjectMeta{Name: "r-own--consumer--provider---orders-v1", Namespace: "ns"},
+		Status: spectrev1.ListenerStatus{Conditions: []metav1.Condition{
+			{Type: condition.ConditionTypeProcessing, Status: metav1.ConditionFalse, Reason: condition.ReasonBlocked, Message: "Waiting for approval decision (provider gate)"},
+			{Type: condition.ConditionTypeReady, Status: metav1.ConditionFalse, Reason: condition.ReasonApprovalPending, Message: "Waiting for approval decision (provider gate)"},
+		}},
+	}
+
+	storesWith := func(listeners ...*spectrev1.Listener) *store.Stores {
+		appMock := new(MockObjectStore[*spectrev1.SpectreApplication])
+		appMock.On("List", mock.Anything, mock.Anything).Return(
+			&commonStore.ListResponse[*spectrev1.SpectreApplication]{Items: []*spectrev1.SpectreApplication{readySpectreApp}}, nil)
+		listenerMock := new(MockObjectStore[*spectrev1.Listener])
+		listenerMock.On("List", mock.Anything, mock.Anything).Return(
+			&commonStore.ListResponse[*spectrev1.Listener]{Items: listeners}, nil)
+		return &store.Stores{SpectreApplicationStore: appMock, SpectreListenerStore: listenerMock}
+	}
+
+	roverProblem := func(reason, message string) api.Problem {
+		return api.Problem{
+			Cause:   reason,
+			Details: "Condition: Ready, Status: False, Message: " + message,
+			Message: message,
+			Resource: api.ResourceRef{
+				ApiVersion: "rover.cp.ei.telekom.de/v1",
+				Kind:       "Rover",
+				Name:       "r-own",
+				Namespace:  "ns",
+			},
+		}
+	}
+
+	It("reports an unresolvable listener consumer next to the problems of the sub-resources", func() {
+		r := roverWith(metav1.Condition{Reason: condition.ReasonBlocked, Message: consumerMessage},
+			[]types.ObjectRef{{Name: pendingListener.Name, Namespace: "ns"}})
+
+		response, err := MapRoverResponse(ctx, r, storesWith(pendingListener))
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(response.OverallStatus).To(Equal(api.OverallStatusBlocked))
+		Expect(response.Errors).To(HaveLen(2))
+		Expect(response.Errors).To(ContainElement(HaveField("Resource.Kind", "Listener")))
+		Expect(response.Errors).To(ContainElement(roverProblem(condition.ReasonBlocked, consumerMessage)))
+	})
+
+	It("reports a blocked Rover whose sub-resources are all ready", func() {
+		r := roverWith(metav1.Condition{Reason: condition.ReasonBlocked, Message: consumerMessage}, nil)
+
+		response, err := MapRoverResponse(ctx, r, storesWith())
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(response.OverallStatus).To(Equal(api.OverallStatusBlocked))
+		Expect(response.Errors).To(Equal([]api.Problem{roverProblem(condition.ReasonBlocked, consumerMessage)}))
+	})
+
+	It("reports a failed Rover", func() {
+		r := roverWith(metav1.Condition{Reason: condition.ReasonError, Message: "failed to handle permission"}, nil)
+
+		response, err := MapRoverResponse(ctx, r, storesWith())
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(response.Errors).To(Equal([]api.Problem{roverProblem(condition.ReasonError, "failed to handle permission")}))
+	})
+
+	It("reports a Rover blocked only by its Processing condition", func() {
+		r := roverWith(metav1.Condition{Reason: condition.ReasonBlocked, Message: consumerMessage}, nil)
+		r.Status.Conditions = r.Status.Conditions[:1] // Processing only
+
+		response, err := MapRoverResponse(ctx, r, storesWith())
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(response.OverallStatus).To(Equal(api.OverallStatusBlocked))
+		Expect(response.Errors).To(ConsistOf(SatisfyAll(
+			HaveField("Resource.Kind", "Rover"),
+			HaveField("Cause", condition.ReasonBlocked),
+			HaveField("Message", consumerMessage),
+		)))
+	})
+
+	It("reports a Rover whose Ready is Unknown by its blocked Processing condition", func() {
+		r := roverWith(metav1.Condition{Reason: condition.ReasonBlocked, Message: "Environment label is missing"}, nil)
+		r.Status.Conditions[1].Status, r.Status.Conditions[1].Reason, r.Status.Conditions[1].Message = metav1.ConditionUnknown, "Unknown", ""
+
+		response, err := MapRoverResponse(ctx, r, storesWith())
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(response.OverallStatus).To(Equal(api.OverallStatusBlocked))
+		Expect(response.Errors).To(ConsistOf(SatisfyAll(
+			HaveField("Resource.Kind", "Rover"),
+			HaveField("Cause", condition.ReasonBlocked),
+			HaveField("Message", "Environment label is missing"),
+		)))
+	})
+
+	It("does not report a Rover whose conditions are stale", func() {
+		r := roverWith(metav1.Condition{Reason: condition.ReasonBlocked, Message: consumerMessage}, nil)
+		r.Generation = 2
+
+		response, err := MapRoverResponse(ctx, r, storesWith())
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(response.Errors).To(BeEmpty())
+		Expect(RoverProblem(r, ProblemsResult{})).To(BeNil())
+	})
+
+	It("does not let a shorter sub-resource message hide the Rover's cause", func() {
+		notFoundListener := pendingListener.DeepCopy()
+		notFoundListener.Status.Conditions[0].Message = "not found"
+		notFoundListener.Status.Conditions[1].Message = "not found"
+		const ordersMessage = `resolving provider application "orders": application "orders" not found`
+		r := roverWith(metav1.Condition{Reason: condition.ReasonBlocked, Message: ordersMessage},
+			[]types.ObjectRef{{Name: notFoundListener.Name, Namespace: "ns"}})
+
+		response, err := MapRoverResponse(ctx, r, storesWith(notFoundListener))
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(response.Errors).To(HaveLen(2))
+		Expect(response.Errors).To(ContainElement(roverProblem(condition.ReasonBlocked, ordersMessage)))
+	})
+
+	It("does not report a Rover waiting on its sub-resources", func() {
+		r := roverWith(metav1.Condition{Reason: condition.ReasonSubResourceNotReady, Message: "At least one sub-resource is being processed"},
+			[]types.ObjectRef{{Name: pendingListener.Name, Namespace: "ns"}})
+
+		response, err := MapRoverResponse(ctx, r, storesWith(pendingListener))
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(response.Errors).To(HaveLen(1))
+		Expect(response.Errors[0].Resource.Kind).To(Equal("Listener"))
+	})
+
+	It("does not repeat a message a sub-resource problem already reports", func() {
+		r := roverWith(metav1.Condition{Reason: condition.ReasonBlocked, Message: "listener: Waiting for approval decision (provider gate)"},
+			[]types.ObjectRef{{Name: pendingListener.Name, Namespace: "ns"}})
+
+		response, err := MapRoverResponse(ctx, r, storesWith(pendingListener))
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(response.Errors).To(HaveLen(1))
+		Expect(response.Errors[0].Resource.Kind).To(Equal("Listener"))
+	})
+})
+
 var _ = Describe("MapMcpSpecificationStatus", func() {
 	It("returns Complete/Done when conditions are complete and no sub-resource is stale", func() {
 		mcpSpec := &v1.McpSpecification{
