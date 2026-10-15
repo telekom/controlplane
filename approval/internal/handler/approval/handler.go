@@ -40,7 +40,7 @@ func (h *ApprovalHandler) CreateOrUpdate(ctx context.Context, approval *approval
 	err := handleNotifications(ctx, approval)
 	if err != nil {
 		// todo - decide if we want to fail here, or a failed notification is acceptable
-		return errors.Wrapf(err, "Failed to send notification about approval %+v", approval)
+		return errors.Wrapf(err, "Failed to send notification about approval %q in namespace %q", approval.Name, approval.Namespace)
 	}
 
 	fsm := ApprovalStrategyFSM[approval.Spec.Strategy]
@@ -204,7 +204,7 @@ func handleNotifications(ctx context.Context, approval *approvalv1.Approval) err
 			Action:                 approval.Spec.Action,
 		})
 		if err != nil {
-			return errors.Wrapf(err, "Failed to send notification to decider %q while handling approval %+v", approval.Spec.Decider.TeamName, approval)
+			return errors.Wrapf(err, "Failed to send notification to decider %q while handling approval %q", approval.Spec.Decider.TeamName, approval.Name)
 		}
 		approval.Status.NotificationRefs = util.AppendUniqueRef(approval.Status.NotificationRefs, *notificationRef)
 
@@ -225,7 +225,7 @@ func handleNotifications(ctx context.Context, approval *approvalv1.Approval) err
 				Action:                 approval.Spec.Action,
 			})
 			if err != nil {
-				return errors.Wrapf(err, "Failed to send notification to requester %q while handling approval %+v", approval.Spec.Requester.TeamName, approval)
+				return errors.Wrapf(err, "Failed to send notification to requester %q while handling approval %q", approval.Spec.Requester.TeamName, approval.Name)
 			}
 			approval.Status.NotificationRefs = util.AppendUniqueRef(approval.Status.NotificationRefs, *notificationRef)
 		}

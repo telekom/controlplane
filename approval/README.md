@@ -68,7 +68,9 @@ The Approval Workflow describes the process of creating, updating and managing A
 
 1. **Request Creation**: A user (requester) creates any `Subscription` resource, such as `ApiSubscriptions`. 
 The operator of the corresponding domain has to create an `ApprovalRequest` and updates it on any changes.
-The `Subscription` needs to be blocked until the `Approval` is granted.
+The `Subscription` is blocked while a decider must act on the `ApprovalRequest`.
+Once the `ApprovalRequest` is granted (always the case for `Auto`), the `Subscription` is processing until the approval controller issues the `Approval`.
+If no `Approval` is issued within 5 minutes of the grant, the `Subscription` is blocked with a message that points at the approval controller.
 
 2. **ApprovalRequest**: 
 The `ApprovalRequest` is created and contains information about the request, including the requester, the requested API, and the approval strategy.

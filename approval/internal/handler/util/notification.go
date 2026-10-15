@@ -7,7 +7,6 @@ package util
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -87,7 +86,7 @@ func extractDecider(decider *approvalv1.Decider) (map[string]any, error) {
 
 	groupName, teamName, err := splitTeamName(decider.TeamName)
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf("Failed to parse decider teamName %+v", decider))
+		return nil, errors.Wrap(err, "Failed to parse decider teamName")
 	}
 
 	deciderPropertiesMap[TemplatePlaceholderDeciderTeam] = teamName
@@ -119,7 +118,7 @@ func extractRequester(requester *approvalv1.Requester) (map[string]any, error) {
 	// team and group
 	groupName, teamName, err := splitTeamName(requester.TeamName)
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf("Failed to parse requester teamName %+v", requester))
+		return nil, errors.Wrap(err, "Failed to parse requester teamName")
 	}
 	requesterPropertiesMap[TemplatePlaceholderRequesterGroup] = groupName
 	requesterPropertiesMap[TemplatePlaceholderRequesterTeam] = teamName
