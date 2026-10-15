@@ -62,7 +62,7 @@ func (h *FileSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *filev
 
 	obj.Status.FileTypeRef = types.ObjectRefFromObject(fileType)
 
-	res, err := h.ensureApproval(ctx, obj, activeExposure)
+	approvalBuilder, res, err := h.ensureApproval(ctx, obj, activeExposure)
 	if err != nil {
 		return err
 	}
@@ -74,8 +74,7 @@ func (h *FileSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *filev
 		return nil
 	case builder.ApprovalResultPending:
 		logger.Info("Approval is pending — waiting for approval")
-		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonApprovalPending, "Waiting for approval decision"))
-		obj.SetCondition(condition.NewBlockedCondition("Waiting for approval decision"))
+		builder.SetPendingConditions(ctx, obj, approvalBuilder, "Waiting for approval decision")
 		return nil
 	case builder.ApprovalResultDenied:
 		logger.Info("Approval was denied - deleting subscriber SFTP User")
@@ -124,7 +123,7 @@ func (h *FileSubscriptionHandler) Delete(ctx context.Context, obj *filev1.FileSu
 	return h.deleteSubscriberUser(ctx, obj)
 }
 
-func (h *FileSubscriptionHandler) ensureApproval(ctx context.Context, obj *filev1.FileSubscription, activeExposure *filev1.FileExposure) (builder.ApprovalResult, error) {
+func (h *FileSubscriptionHandler) ensureApproval(ctx context.Context, obj *filev1.FileSubscription, activeExposure *filev1.FileExposure) (builder.ApprovalBuilder, builder.ApprovalResult, error) {
 	c := cclient.ClientFromContextOrDie(ctx)
 
 	if obj.Spec.Requestor.Kind != "Application" {
@@ -132,16 +131,16 @@ func (h *FileSubscriptionHandler) ensureApproval(ctx context.Context, obj *filev
 			"Only requestors of kind 'Application' are supported"))
 		obj.SetCondition(condition.NewBlockedCondition(
 			"FileSubscription with requestor kind " + obj.Spec.Requestor.Kind + " is not supported"))
-		return builder.ApprovalResultNone, nil
+		return nil, builder.ApprovalResultNone, nil
 	}
 	requestorApp, err := util.GetApplication(ctx, obj.Spec.Requestor.ObjectRef)
 	if err != nil {
-		return builder.ApprovalResultNone, err
+		return nil, builder.ApprovalResultNone, err
 	}
 
 	providerApp, err := util.GetApplication(ctx, activeExposure.Spec.Provider.ObjectRef)
 	if err != nil {
-		return builder.ApprovalResultNone, fmt.Errorf("unable to get application from FileExposure provider %q while handling FileSubscription %q: %w",
+		return nil, builder.ApprovalResultNone, fmt.Errorf("unable to get application from FileExposure provider %q while handling FileSubscription %q: %w",
 			activeExposure.Spec.Provider.Name, obj.Name, err)
 	}
 
@@ -161,7 +160,7 @@ func (h *FileSubscriptionHandler) ensureApproval(ctx context.Context, obj *filev
 
 	err = requester.SetProperties(properties)
 	if err != nil {
-		return builder.ApprovalResultNone, fmt.Errorf("unable to set approvalRequest properties for FileSubscription %q in namespace %q: %w",
+		return nil, builder.ApprovalResultNone, fmt.Errorf("unable to set approvalRequest properties for FileSubscription %q in namespace %q: %w",
 			obj.Name, obj.Namespace, err)
 	}
 
@@ -182,12 +181,12 @@ func (h *FileSubscriptionHandler) ensureApproval(ctx context.Context, obj *filev
 
 	res, err := approvalBuilder.Build(ctx)
 	if err != nil {
-		return builder.ApprovalResultNone, err
+		return nil, builder.ApprovalResultNone, err
 	}
 	obj.Status.ApprovalRequest = types.ObjectRefFromObject(approvalBuilder.GetApprovalRequest())
 	obj.Status.Approval = types.ObjectRefFromObject(approvalBuilder.GetApproval())
 
-	return res, nil
+	return approvalBuilder, res, nil
 }
 
 func (h *FileSubscriptionHandler) syncSubscriberUser(ctx context.Context, obj *filev1.FileSubscription, fileType *filev1.FileType, activeExposure *filev1.FileExposure) error {
