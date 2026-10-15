@@ -82,7 +82,7 @@ func (f *ExternalIDPFeature) Apply(ctx context.Context, builder features.Feature
 	// Provider
 	idp := security.M2M.ExternalIDP
 	if ok, err := hasCredentialsForGrant(idp.Client, idp.Basic, idp.GrantType); err != nil {
-		errors.Wrapf(err, "cannot identify grantType for %s", route.Name)
+		return errors.Wrapf(err, "cannot identify grantType for %s", route.Name)
 	} else if ok {
 		if err = applyCredentials(ctx, DefaultProviderKey, jumperConfig, idp, idp.Client, idp.Basic, security.M2M.Scopes, idp.GrantType); err != nil {
 			return errors.Wrapf(err, "cannot get provider secret for route %s", route.Name)
