@@ -479,8 +479,7 @@ func validateBasicWithScopesPolicy(obj *apiapi.ApiSubscription, exposure *apiapi
 	if !obj.HasM2M() || obj.Spec.Security.M2M.Basic == nil {
 		return nil
 	}
-	security := obj.Spec.Security.M2M
-	requiresPasswordGrant := security.Client != nil || len(security.Scopes) > 0
+	requiresPasswordGrant := obj.Spec.Security.M2M.Client != nil || len(obj.Spec.Security.M2M.Scopes) > 0
 	if !requiresPasswordGrant {
 		return nil
 	}

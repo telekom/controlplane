@@ -164,6 +164,19 @@ var _ = Describe("ApiSubscription Handler", func() {
 			Entry("client and Basic with a client credentials grant", &apiv1.SubscriberSecurity{M2M: &apiv1.SubscriberMachine2MachineAuthentication{
 				Client: &apiv1.OAuth2ClientCredentials{ClientId: "consumer", ClientSecret: "secret"}, Basic: basic,
 			}}, exposureWithGrant(apiv1.GrantTypeClientCredentials), false),
+			// The gateway never treats Basic credentials with a grant type as backend Basic auth,
+			// so without an external IDP they would be silently dropped.
+			Entry("Basic with a grant type without an exposure", &apiv1.SubscriberSecurity{M2M: &apiv1.SubscriberMachine2MachineAuthentication{
+				Basic: basic, GrantType: apiv1.GrantTypePassword,
+			}}, nil, true),
+			Entry("Basic with a grant type without an external IDP", &apiv1.SubscriberSecurity{M2M: &apiv1.SubscriberMachine2MachineAuthentication{
+				Basic: basic, GrantType: apiv1.GrantTypePassword,
+			}}, &apiv1.ApiExposure{Spec: apiv1.ApiExposureSpec{
+				Security: &apiv1.Security{M2M: &apiv1.Machine2MachineAuthentication{}},
+			}}, true),
+			Entry("Basic with a grant type and an external IDP", &apiv1.SubscriberSecurity{M2M: &apiv1.SubscriberMachine2MachineAuthentication{
+				Basic: basic, GrantType: apiv1.GrantTypePassword,
+			}}, exposureWithGrant(apiv1.GrantTypeClientCredentials), false),
 		)
 	})
 
