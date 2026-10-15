@@ -400,6 +400,55 @@ var _ = Describe("FileSubscriptionHandler", func() {
 			Expect(ready.Reason).To(Equal("ApprovalPending"))
 		})
 
+		It("reports processing when the request is granted but the Approval is not issued yet", func() {
+			sub := testSubscription()
+			ctx, mockClient := newTestContext()
+			testScheme := buildScheme()
+
+			exposure := testFileExposure()
+
+			mockClient.EXPECT().
+				List(mock.Anything, mock.AnythingOfType("*v1.FileTypeList"), mock.Anything).
+				Run(func(_ context.Context, out client.ObjectList, _ ...client.ListOption) {
+					out.(*filev1.FileTypeList).Items = []filev1.FileType{*testFileType()}
+				}).
+				Return(nil).Once()
+			mockClient.EXPECT().
+				Get(mock.Anything, k8stypes.NamespacedName{Name: testExposureName, Namespace: testNamespace}, mock.AnythingOfType("*v1.FileExposure")).
+				Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
+					*out.(*filev1.FileExposure) = *exposure
+				}).
+				Return(nil).Once()
+			mockRequestorAndProviderApps(mockClient)
+			// Scheme is needed by the approval builder's setWithHash()
+			mockClient.EXPECT().Scheme().Return(testScheme).Maybe()
+			// Approval builder creates the ApprovalRequest
+			mockClient.EXPECT().
+				CreateOrUpdate(mock.Anything, mock.AnythingOfType("*v1.ApprovalRequest"), mock.Anything).
+				Run(func(_ context.Context, obj client.Object, _ controllerutil.MutateFn) {
+					obj.(*approvalv1.ApprovalRequest).Spec.State = approvalv1.ApprovalStateGranted
+				}).
+				Return(controllerutil.OperationResultCreated, nil).Once()
+			// Approval builder lists owner ApprovalRequests for scoped cleanup
+			mockClient.EXPECT().
+				List(mock.Anything, mock.AnythingOfType("*v1.ApprovalRequestList"), mock.Anything).
+				Return(nil).Once()
+			// Approval does not exist yet → Pending
+			mockClient.EXPECT().
+				Get(mock.Anything, mock.Anything, mock.AnythingOfType("*v1.Approval")).
+				Return(apierrors.NewNotFound(schema.GroupResource{Group: approvalv1.GroupVersion.Group, Resource: "approvals"}, "any")).
+				Once()
+			err := handler.CreateOrUpdate(ctx, sub)
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(k8smeta.IsStatusConditionFalse(sub.Status.Conditions, condition.ConditionTypeReady)).To(BeTrue())
+			ready := k8smeta.FindStatusCondition(sub.Status.Conditions, condition.ConditionTypeReady)
+			Expect(ready.Reason).To(Equal(condition.ReasonProcessing))
+			processing := k8smeta.FindStatusCondition(sub.Status.Conditions, condition.ConditionTypeProcessing)
+			Expect(processing.Status).To(Equal(metav1.ConditionTrue))
+			Expect(processing.Reason).To(Equal(condition.ReasonProcessing))
+		})
+
 		It("provisions subscriber User when approval is granted", func() {
 			sub := testSubscription()
 			ctx, mockClient := newTestContext()

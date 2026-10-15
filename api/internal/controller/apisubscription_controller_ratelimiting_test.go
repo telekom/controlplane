@@ -13,7 +13,6 @@ import (
 	"github.com/telekom/controlplane/api/internal/handler/util"
 	applicationapi "github.com/telekom/controlplane/application/api/v1"
 	approvalapi "github.com/telekom/controlplane/approval/api/v1"
-	approvalbuilder "github.com/telekom/controlplane/approval/api/v1/builder"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/test/testutil"
@@ -138,7 +137,7 @@ func createAndApproveSubscription(apiBasePath, zoneName, appName string, zoneRef
 	Eventually(func(g Gomega) {
 		getErr := k8sClient.Get(ctx, client.ObjectKeyFromObject(subscription), subscription)
 		g.Expect(getErr).ToNot(HaveOccurred())
-		testutil.ExpectConditionToBeFalse(g, meta.FindStatusCondition(subscription.GetConditions(), condition.ConditionTypeReady), approvalbuilder.ReasonApprovalPending)
+		testutil.ExpectConditionToBeFalse(g, meta.FindStatusCondition(subscription.GetConditions(), condition.ConditionTypeReady), condition.ReasonProcessing)
 
 		g.Expect(subscription.Status.ApprovalRequest).ToNot(BeNil())
 	}, timeout, interval).Should(Succeed())
