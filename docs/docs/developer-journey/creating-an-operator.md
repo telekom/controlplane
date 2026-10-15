@@ -65,8 +65,8 @@ Everything else — watching resources, managing finalizers, updating conditions
 
 The generic `Controller` wraps your handler and manages the full reconciliation lifecycle. When a resource changes, the controller:
 
-1. Adds a finalizer to the resource (if not present)
-2. Detects the virtual environment from the resource's labels
+1. Detects the virtual environment from the resource's labels
+2. Adds a finalizer to the resource (if not present and the environment label is set)
 3. Injects a `ScopedClient` into the context so your handler can use it
 4. Calls `CreateOrUpdate` or `Delete` on your handler depending on the resource state
 5. Updates the status conditions based on the handler's return value
@@ -189,6 +189,8 @@ The framework updates these conditions automatically based on the handler's retu
 Every resource in the Control Plane must carry a `cp.ei.telekom.de/environment` label that identifies the virtual environment it belongs to. The `ScopedClient` enforces this automatically — it reads the environment from the parent resource's labels and applies it to all child resources.
 
 If a resource is missing this label, the controller sets it to **Blocked** status and does not proceed with reconciliation. This prevents resources from being reconciled outside of a defined environment context.
+
+The controller does not add a finalizer to a resource without this label, so the resource can be deleted right away. Deletion cleanup needs the environment, so a resource that is deleted without the label but still has the finalizer stays **Blocked** until the label is re-added; the controller then calls `Delete` on your handler as usual. This also applies to resources that got the finalizer while unlabelled from older versions. For these, either re-add the label or have an admin remove the finalizer once by hand.
 
 For more details on how virtual environments work, see the [Architecture Overview](../architecture/overview.md#virtual-environments).
 
