@@ -222,7 +222,7 @@ var _ = Describe("NoCacheInformer", func() {
 				inf := start(informer.DefaultNoCacheInformerOptions())
 
 				Eventually(inf.Ready, timeout, interval).Should(BeTrue())
-				Expect(eventHandler.Events()).To(ContainElements(HaveEvent("create", "a"), HaveEvent("create", "b")))
+				Eventually(eventHandler.Events, timeout, interval).Should(ContainElements(HaveEvent("create", "a"), HaveEvent("create", "b")))
 			})
 
 			It("should emit DELETED when a relist is retried after its second page failed", func() {
@@ -253,6 +253,48 @@ var _ = Describe("NoCacheInformer", func() {
 
 				Eventually(eventHandler.Events, timeout, interval).Should(ContainElement(HaveEvent("delete", "b")))
 				Expect(eventHandler.Events()).NotTo(ContainElement(HaveEvent("delete", "a")))
+			})
+
+			It("should emit DELETED on relist for tracked objects that are no longer listed", func() {
+				current, _ := fakeWatches(mockClient)
+				pagedLists(mockClient, func(string) ([]string, string, error) {
+					return []string{"kept"}, "", nil
+				})
+
+				inf := start(informer.DefaultNoCacheInformerOptions())
+				Eventually(inf.Ready, timeout, interval).Should(BeTrue())
+				Eventually(current.Load, timeout, interval).ShouldNot(BeNil())
+
+				// Written by the event handler itself, then deleted while the
+				// watch does not deliver it.
+				inf.Track(NewUnstructured("written"))
+				current.Load().Error(&metav1.Status{Code: 410, Reason: metav1.StatusReasonExpired})
+
+				Eventually(eventHandler.Events, timeout, interval).Should(ContainElement(HaveEvent("delete", "written")))
+				Expect(eventHandler.Events()).NotTo(ContainElement(HaveEvent("delete", "kept")))
+			})
+
+			It("should leave objects tracked during a list to the next relist", func() {
+				current, watchCalls := fakeWatches(mockClient)
+				var inf atomic.Pointer[informer.NoCacheInformer]
+				var listCalls atomic.Int32
+				pagedLists(mockClient, func(string) ([]string, string, error) {
+					if listCalls.Add(1) == 2 {
+						// Created after the list snapshot.
+						inf.Load().Track(NewUnstructured("racing"))
+					}
+					return []string{"kept"}, "", nil
+				})
+
+				inf.Store(start(informer.DefaultNoCacheInformerOptions()))
+				Eventually(watchCalls.Load, timeout, interval).Should(BeEquivalentTo(1))
+
+				current.Load().Error(&metav1.Status{Code: 410, Reason: metav1.StatusReasonExpired})
+				Eventually(watchCalls.Load, timeout, interval).Should(BeEquivalentTo(2))
+				Consistently(eventHandler.Events, 200*time.Millisecond, 20*time.Millisecond).ShouldNot(ContainElement(HaveEvent("delete", "racing")))
+
+				current.Load().Error(&metav1.Status{Code: 410, Reason: metav1.StatusReasonExpired})
+				Eventually(eventHandler.Events, timeout, interval).Should(ContainElement(HaveEvent("delete", "racing")))
 			})
 
 			It("should relist after a watch event was dropped and repair it", func() {
