@@ -352,6 +352,22 @@ func TestMapSecurity(t *testing.T) {
 				g.Expect(payload).To(gomega.MatchJSON(`{"type":"oauth2","clientId":"cid","clientSecret":"sec","grantType":"client_credentials"}`))
 			},
 		},
+		{
+			name: "client credentials with a token request method",
+			setup: func(in *apiv1.ApiSubscription) {
+				in.Spec.Security = &apiv1.SubscriberSecurity{M2M: &apiv1.SubscriberMachine2MachineAuthentication{
+					Client:       &apiv1.OAuth2ClientCredentials{ClientId: "cid", ClientSecret: "sec"},
+					TokenRequest: apiv1.TokenRequestClientSecretPost,
+				}}
+			},
+			assert: func(t *testing.T, out api.ApiSubscriptionResponse) {
+				t.Helper()
+				g := gomega.NewWithT(t)
+				payload, err := json.Marshal(out.Security)
+				g.Expect(err).NotTo(gomega.HaveOccurred())
+				g.Expect(payload).To(gomega.MatchJSON(`{"type":"oauth2","clientId":"cid","clientSecret":"sec","tokenRequest":"body"}`))
+			},
+		},
 	}
 
 	for _, tt := range tests {

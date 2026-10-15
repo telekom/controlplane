@@ -72,6 +72,9 @@ func mapSecurity(in *apiv1.ApiSubscription, out *api.ApiSubscriptionResponse) {
 		oauth2.Scopes = m2m.Scopes
 	}
 	oauth2.GrantType = string(m2m.GrantType)
+	if m2m.TokenRequest != "" {
+		oauth2.TokenRequest = mapper.TokenRequestCRDToAPI(m2m.TokenRequest)
+	}
 
 	if hasClientCredentials || m2m.Basic != nil || len(m2m.Scopes) > 0 {
 		out.Security = api.SubscriberSecurity{}
