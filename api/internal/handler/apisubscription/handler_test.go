@@ -130,7 +130,7 @@ var _ = Describe("ApiSubscription Handler", func() {
 					Expect(err).NotTo(HaveOccurred())
 					return
 				}
-				Expect(err).To(MatchError(`Consumer username/password combined with client credentials or scopes requires an external IDP from the provider`))
+				Expect(err).To(MatchError(`Consumer username/password combined with client credentials, scopes or a grant type requires an external IDP from the provider`))
 			},
 			Entry("without subscription security", nil, nil, false),
 			Entry("without subscription M2M", &apiv1.SubscriberSecurity{}, nil, false),

@@ -157,12 +157,12 @@ var _ = Describe("Consumer username/password with scopes", func() {
 			"password-no-override", apiapi.GrantTypeAuthorizationCode, apiapi.GrantType("")),
 	)
 
-	It("is blocked before approval when the exposure has no external IDP", func() {
+	DescribeTable("is blocked before approval when the exposure has no external IDP", func(name string, security func(*apiapi.ApiSubscription)) {
 		// Declared scopes keep the specification-scope check out of the way.
-		exposure, sub := newScopeFixtures("password-no-external-idp", consumerScopes, true)
+		exposure, sub := newScopeFixtures(name, consumerScopes, true)
 		exposure.Spec.Security.M2M.ExternalIDP = nil
 		exposure.Spec.Security.M2M.Scopes = consumerScopes
-		withConsumerPassword(sub)
+		security(sub)
 
 		Expect(k8sClient.Create(ctx, exposure)).To(Succeed())
 		Eventually(func(g Gomega) { expectScopeExposureReady(g, exposure) }, scopeTimeout, interval).Should(Succeed())
@@ -178,5 +178,14 @@ var _ = Describe("Consumer username/password with scopes", func() {
 		}
 		Eventually(check, scopeTimeout, interval).Should(Succeed())
 		Consistently(check, time.Second, interval).Should(Succeed())
-	})
+	},
+		Entry("combined credentials with scopes", "password-no-external-idp", withConsumerPassword),
+		// The gateway never forwards username/password with a grant type as backend Basic auth.
+		Entry("username/password with a grant type only", "password-grant-no-external-idp", func(sub *apiapi.ApiSubscription) {
+			sub.Spec.Security.M2M = &apiapi.SubscriberMachine2MachineAuthentication{
+				Basic:     &apiapi.BasicAuthCredentials{Username: "consumer-user", Password: "consumer-pass"},
+				GrantType: apiapi.GrantTypePassword,
+			}
+		}),
+	)
 })

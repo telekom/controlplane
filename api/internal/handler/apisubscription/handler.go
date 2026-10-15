@@ -479,13 +479,15 @@ func validateBasicWithScopesPolicy(obj *apiapi.ApiSubscription, exposure *apiapi
 	if !obj.HasM2M() || obj.Spec.Security.M2M.Basic == nil {
 		return nil
 	}
-	requiresPasswordGrant := obj.Spec.Security.M2M.Client != nil || len(obj.Spec.Security.M2M.Scopes) > 0
-	if !requiresPasswordGrant {
+	// Username/password with client credentials, scopes or a grant type are meant for the external IDP;
+	// the gateway never forwards them as backend Basic auth.
+	requiresExternalIDP := obj.Spec.Security.M2M.Client != nil || len(obj.Spec.Security.M2M.Scopes) > 0 || obj.Spec.Security.M2M.GrantType != ""
+	if !requiresExternalIDP {
 		return nil
 	}
 
 	if exposure == nil || !exposure.HasExternalIdp() {
-		return errors.New("Consumer username/password combined with client credentials or scopes requires an external IDP from the provider")
+		return errors.New("Consumer username/password combined with client credentials, scopes or a grant type requires an external IDP from the provider")
 	}
 	return nil
 }

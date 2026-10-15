@@ -80,8 +80,8 @@ func (h *AgenticSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *ag
 	}
 	if violatesBasicWithScopesPolicy(obj, exposure) {
 		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonValidationFailed,
-			"Consumer username/password combined with client credentials or scopes requires an external IDP from the provider"))
-		obj.SetCondition(condition.NewBlockedCondition("Consumer username/password combined with client credentials or scopes requires an external IDP from the provider"))
+			"Consumer username/password combined with client credentials, scopes or a grant type requires an external IDP from the provider"))
+		obj.SetCondition(condition.NewBlockedCondition("Consumer username/password combined with client credentials, scopes or a grant type requires an external IDP from the provider"))
 		return h.Delete(ctx, obj)
 	}
 	if !exposureFound {
@@ -250,8 +250,10 @@ func violatesBasicWithScopesPolicy(obj *agenticv1.AgenticSubscription, exposure 
 	if !obj.HasM2M() || obj.Spec.Security.M2M.Basic == nil {
 		return false
 	}
-	security := obj.Spec.Security.M2M
-	if security.Client == nil && len(security.Scopes) == 0 {
+	// Username/password with client credentials, scopes or a grant type are meant for the external IDP;
+	// the gateway never forwards them as backend Basic auth.
+	requiresExternalIDP := obj.Spec.Security.M2M.Client != nil || len(obj.Spec.Security.M2M.Scopes) > 0 || obj.Spec.Security.M2M.GrantType != ""
+	if !requiresExternalIDP {
 		return false
 	}
 

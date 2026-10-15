@@ -91,6 +91,21 @@ var _ = Describe("Subscription scope validation", func() {
 			Expect(violatesBasicWithScopesPolicy(obj, &agenticv1.AgenticExposure{})).To(BeTrue())
 		})
 
+		// The gateway never treats Basic credentials with a grant type as backend Basic auth,
+		// so without an external IDP they would be silently dropped.
+		It("requires an external IDP for Basic credentials with a grant type", func() {
+			obj := &agenticv1.AgenticSubscription{Spec: agenticv1.AgenticSubscriptionSpec{
+				Security: &agenticv1.SubscriberSecurity{M2M: &agenticv1.SubscriberMachine2MachineAuthentication{
+					Basic:     &agenticv1.BasicAuthCredentials{Username: "user", Password: "password"},
+					GrantType: agenticv1.GrantTypePassword,
+				}},
+			}}
+
+			Expect(violatesBasicWithScopesPolicy(obj, nil)).To(BeTrue())
+			Expect(violatesBasicWithScopesPolicy(obj, &agenticv1.AgenticExposure{})).To(BeTrue())
+			Expect(violatesBasicWithScopesPolicy(obj, exposureWithGrant(agenticv1.GrantTypeClientCredentials))).To(BeFalse())
+		})
+
 		It("accepts any external IDP grant type because the consumer may override it", func() {
 			obj := &agenticv1.AgenticSubscription{Spec: agenticv1.AgenticSubscriptionSpec{
 				Security: &agenticv1.SubscriberSecurity{M2M: &agenticv1.SubscriberMachine2MachineAuthentication{

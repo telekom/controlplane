@@ -189,11 +189,16 @@ var _ = Describe("Consumer username/password with scopes", func() {
 		Entry("omitted grant", agenticv1.GrantType("")),
 	)
 
-	It("blocks Basic credentials with scopes without an external IDP", func() {
+	DescribeTable("blocks consumer username/password without an external IDP", func(security *agenticv1.SubscriberMachine2MachineAuthentication) {
 		f := newScopeFixture()
 		f.server("McpServer", consumerScopes)
 		waitExposure(f.exposure("exposure", consumerScopes, false))
-		sub := passwordSubscription(f, consumerScopes)
+		sub := &agenticv1.AgenticSubscription{ObjectMeta: f.metadata("subscription"), Spec: agenticv1.AgenticSubscriptionSpec{
+			BasePath: f.basePath, Zone: *ctypes.ObjectRefFromObject(f.zone),
+			Requestor: agenticv1.Requestor{Application: *ctypes.ObjectRefFromObject(f.consumer)},
+			Security:  &agenticv1.SubscriberSecurity{M2M: security},
+		}}
+		Expect(k8sClient.Create(ctx, sub)).To(Succeed())
 
 		check := func(g Gomega) {
 			expectReadyReason(g, sub, condition.ReasonValidationFailed, metav1.ConditionFalse)
@@ -202,5 +207,16 @@ var _ = Describe("Consumer username/password with scopes", func() {
 		}
 		Eventually(check, timeout, interval).Should(Succeed())
 		Consistently(check, time.Second, interval).Should(Succeed())
-	})
+	},
+		Entry("combined credentials with scopes", &agenticv1.SubscriberMachine2MachineAuthentication{
+			Client: &agenticv1.OAuth2ClientCredentials{ClientId: "consumer-client", ClientSecret: "consumer-secret"},
+			Basic:  &agenticv1.BasicAuthCredentials{Username: "consumer-user", Password: "consumer-pass"},
+			Scopes: consumerScopes,
+		}),
+		// The gateway never forwards username/password with a grant type as backend Basic auth.
+		Entry("username/password with a grant type only", &agenticv1.SubscriberMachine2MachineAuthentication{
+			Basic:     &agenticv1.BasicAuthCredentials{Username: "consumer-user", Password: "consumer-pass"},
+			GrantType: agenticv1.GrantTypePassword,
+		}),
+	)
 })
