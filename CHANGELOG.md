@@ -1,3 +1,11 @@
+## [0.41.2](https://github.com/telekom/controlplane/compare/v0.41.1...v0.41.2) (2026-10-15)
+
+
+### Bug Fixes
+
+* **admin:** use resolved rover issuer for internal endpoints ([#779](https://github.com/telekom/controlplane/issues/779)) ([e56f13c](https://github.com/telekom/controlplane/commit/e56f13ca81588755e19a026c61d4ffe41bf6394f))
+* **security:** accept user scope alias and use canonical team scopes ([#778](https://github.com/telekom/controlplane/issues/778)) ([8e184d4](https://github.com/telekom/controlplane/commit/8e184d455a769938ff4bb859b6b24bafa74f8afb))
+
 ## [0.41.1](https://github.com/telekom/controlplane/compare/v0.41.0...v0.41.1) (2026-10-14)
 
 
