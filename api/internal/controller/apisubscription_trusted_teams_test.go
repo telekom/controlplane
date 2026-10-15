@@ -51,7 +51,13 @@ func verifyApprovalStrategy(subscription *apiapi.ApiSubscription, expectedStrate
 		// Get the latest subscription status
 		err := k8sClient.Get(ctx, client.ObjectKeyFromObject(subscription), subscription)
 		g.Expect(err).ToNot(HaveOccurred())
-		testutil.ExpectConditionToBeFalse(g, meta.FindStatusCondition(subscription.GetConditions(), condition.ConditionTypeReady), approvalbuilder.ReasonApprovalPending)
+		// No approval controller runs here: an Auto request is granted but its
+		// Approval is never issued, so the subscription stays processing.
+		expectedReason := approvalbuilder.ReasonApprovalPending
+		if expectedStrategy == approvalapi.ApprovalStrategyAuto {
+			expectedReason = condition.ReasonProcessing
+		}
+		testutil.ExpectConditionToBeFalse(g, meta.FindStatusCondition(subscription.GetConditions(), condition.ConditionTypeReady), expectedReason)
 
 		g.Expect(subscription.Status.ApprovalRequest).ToNot(BeNil())
 

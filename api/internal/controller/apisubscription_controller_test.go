@@ -18,7 +18,6 @@ import (
 	apiapi "github.com/telekom/controlplane/api/api/v1"
 	applicationapi "github.com/telekom/controlplane/application/api/v1"
 	approvalapi "github.com/telekom/controlplane/approval/api/v1"
-	approvalbuilder "github.com/telekom/controlplane/approval/api/v1/builder"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/test/testutil"
@@ -253,7 +252,7 @@ var _ = Describe("ApiSubscription Controller", Ordered, func() {
 				g.Expect(err).ToNot(HaveOccurred())
 
 				By("Checking the conditions")
-				testutil.ExpectConditionToBeFalse(g, meta.FindStatusCondition(apiSubscription.GetConditions(), condition.ConditionTypeProcessing), "Blocked")
+				testutil.ExpectConditionToBeTrue(g, meta.FindStatusCondition(apiSubscription.GetConditions(), condition.ConditionTypeProcessing), condition.ReasonProcessing)
 			}, timeout, interval).Should(Succeed())
 		})
 
@@ -262,7 +261,7 @@ var _ = Describe("ApiSubscription Controller", Ordered, func() {
 			Eventually(func(g Gomega) {
 				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(apiSubscription), apiSubscription)
 				g.Expect(err).ToNot(HaveOccurred())
-				testutil.ExpectConditionToMatch(g, meta.FindStatusCondition(apiSubscription.Status.Conditions, condition.ConditionTypeReady), approvalbuilder.ReasonApprovalPending, false)
+				testutil.ExpectConditionToMatch(g, meta.FindStatusCondition(apiSubscription.Status.Conditions, condition.ConditionTypeReady), condition.ReasonProcessing, false)
 
 				g.Expect(apiSubscription.Status.ApprovalRequest).ToNot(BeNil())
 				approvalRequestRef := apiSubscription.Status.ApprovalRequest
@@ -275,7 +274,7 @@ var _ = Describe("ApiSubscription Controller", Ordered, func() {
 				readyCondition := meta.FindStatusCondition(apiSubscription.Status.Conditions, condition.ConditionTypeReady)
 				g.Expect(readyCondition).ToNot(BeNil())
 				g.Expect(readyCondition.Status).To(Equal(metav1.ConditionFalse))
-				g.Expect(readyCondition.Reason).To(Equal(approvalbuilder.ReasonApprovalPending))
+				g.Expect(readyCondition.Reason).To(Equal(condition.ReasonProcessing))
 				var propertiesMap map[string]interface{}
 				err = json.Unmarshal(approvalRequest.Spec.Requester.Properties.Raw, &propertiesMap)
 				g.Expect(err).ToNot(HaveOccurred())
@@ -421,7 +420,7 @@ var _ = Describe("ApiSubscription Controller", Ordered, func() {
 				readyCondition := meta.FindStatusCondition(meshingApiSubscription.Status.Conditions, condition.ConditionTypeReady)
 				g.Expect(readyCondition).ToNot(BeNil())
 				g.Expect(readyCondition.Status).To(Equal(metav1.ConditionFalse))
-				g.Expect(readyCondition.Reason).To(Equal(approvalbuilder.ReasonApprovalPending))
+				g.Expect(readyCondition.Reason).To(Equal(condition.ReasonProcessing))
 			}, timeout, interval).Should(Succeed())
 
 			By("Progressing the Approval resources")
@@ -490,7 +489,7 @@ var _ = Describe("ApiSubscription Controller", Ordered, func() {
 				readyCondition := meta.FindStatusCondition(secondApiSubscription.Status.Conditions, condition.ConditionTypeReady)
 				g.Expect(readyCondition).ToNot(BeNil())
 				g.Expect(readyCondition.Status).To(Equal(metav1.ConditionFalse))
-				g.Expect(readyCondition.Reason).To(Equal(approvalbuilder.ReasonApprovalPending))
+				g.Expect(readyCondition.Reason).To(Equal(condition.ReasonProcessing))
 			}, timeout, interval).Should(Succeed())
 
 			By("Progressing the Approval resources")
@@ -551,12 +550,12 @@ var _ = Describe("ApiSubscription Controller", Ordered, func() {
 				err := k8sClient.Create(ctx, apiSubscription)
 				Expect(err).ToNot(HaveOccurred())
 
-				By("Checking if the resource the approval is pending")
+				By("Checking if the resource waits for the Approval")
 				Eventually(func(g Gomega) {
 					getErr := k8sClient.Get(ctx, client.ObjectKeyFromObject(apiSubscription), apiSubscription)
 					g.Expect(getErr).ToNot(HaveOccurred())
-					By("checking that the resource is in the BLOCKED state")
-					testutil.ExpectConditionToBeFalse(g, meta.FindStatusCondition(apiSubscription.Status.Conditions, condition.ConditionTypeProcessing), "Blocked")
+					By("checking that the resource is in the PROCESSING state")
+					testutil.ExpectConditionToBeTrue(g, meta.FindStatusCondition(apiSubscription.Status.Conditions, condition.ConditionTypeProcessing), condition.ReasonProcessing)
 				}, timeout, interval).Should(Succeed())
 
 				By("Progressing the Approval resources")
