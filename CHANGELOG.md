@@ -1,3 +1,10 @@
+## [0.41.3](https://github.com/telekom/controlplane/compare/v0.41.2...v0.41.3) (2026-10-15)
+
+
+### Bug Fixes
+
+* **rover:** validate EventSpecification version suffix ([#790](https://github.com/telekom/controlplane/issues/790)) ([58b5ab7](https://github.com/telekom/controlplane/commit/58b5ab7c70590cdc343888d4980a71dcfdd588ae))
+
 ## [0.41.2](https://github.com/telekom/controlplane/compare/v0.41.1...v0.41.2) (2026-10-15)
 
 
