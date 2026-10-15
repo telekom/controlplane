@@ -48,7 +48,8 @@ func mapSecurity(in *apiv1.ApiSubscription, out *api.ApiSubscriptionResponse) {
 	m2m := in.Spec.Security.M2M
 	hasClientCredentials := m2m.Client != nil && m2m.Client.ClientId != ""
 
-	if m2m.Basic != nil && !hasClientCredentials && len(m2m.Scopes) == 0 {
+	// Mirrors the gateway rule: username/password with a grant type belong to the external IDP token request.
+	if m2m.Basic != nil && !hasClientCredentials && len(m2m.Scopes) == 0 && m2m.GrantType == "" {
 		basicAuth := api.BasicAuth{
 			Username: m2m.Basic.Username,
 			Password: m2m.Basic.Password,
@@ -70,6 +71,7 @@ func mapSecurity(in *apiv1.ApiSubscription, out *api.ApiSubscriptionResponse) {
 	if len(m2m.Scopes) > 0 {
 		oauth2.Scopes = m2m.Scopes
 	}
+	oauth2.GrantType = string(m2m.GrantType)
 
 	if hasClientCredentials || m2m.Basic != nil || len(m2m.Scopes) > 0 {
 		out.Security = api.SubscriberSecurity{}

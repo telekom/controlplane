@@ -105,7 +105,7 @@ func mapAiSubscription(in *roverv1.AgenticSubscription) (api.AiSubscription, err
 
 	if in.Security != nil && in.Security.M2M != nil {
 		m2m := in.Security.M2M
-		if m2m.Basic != nil && m2m.Client == nil && len(m2m.Scopes) == 0 {
+		if usesBackendBasicAuth(m2m) {
 			basicAuth := api.BasicAuth{
 				Username: m2m.Basic.Username,
 				Password: m2m.Basic.Password,
@@ -187,7 +187,7 @@ func mapSubscriptionSecurity(in *roverv1.ApiSubscription, out *api.ApiSubscripti
 	}
 
 	m2m := in.Security.M2M
-	if m2m.Basic != nil && m2m.Client == nil && len(m2m.Scopes) == 0 {
+	if usesBackendBasicAuth(m2m) {
 		basicAuth := api.BasicAuth{
 			Username: m2m.Basic.Username,
 			Password: m2m.Basic.Password,
@@ -224,6 +224,12 @@ func mapSubscriptionSecurity(in *roverv1.ApiSubscription, out *api.ApiSubscripti
 	}
 
 	return nil
+}
+
+// usesBackendBasicAuth mirrors the gateway rule: username/password are backend Basic auth only without
+// client credentials, scopes or a grant type; otherwise they belong to the external IDP token request.
+func usesBackendBasicAuth(m2m *roverv1.SubscriberMachine2MachineAuthentication) bool {
+	return m2m.Basic != nil && m2m.Client == nil && len(m2m.Scopes) == 0 && m2m.GrantType == ""
 }
 
 func mapFileSubscription(in *roverv1.FileSubscription) (api.FileSubscription, error) {
