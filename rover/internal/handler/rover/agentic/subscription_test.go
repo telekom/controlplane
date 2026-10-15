@@ -30,4 +30,19 @@ var _ = Describe("mapSubscriberSecurityToAgenticSecurity", func() {
 		Entry("refresh_token without validation", rover.GrantTypeRefreshToken, agenticv1.GrantType("refresh_token")),
 		Entry("unrecognized without validation", rover.GrantType("unrecognized"), agenticv1.GrantType("unrecognized")),
 	)
+
+	DescribeTable("passes the consumer token request method through", func(tokenRequest rover.TokenRequestMethod, expected agenticv1.TokenRequestMethod) {
+		mapped := mapSubscriberSecurityToAgenticSecurity(&rover.SubscriberSecurity{M2M: &rover.SubscriberMachine2MachineAuthentication{
+			Client:       &rover.OAuth2ClientCredentials{ClientId: "consumer-id", ClientSecret: "consumer-secret"},
+			TokenRequest: tokenRequest,
+		}})
+
+		Expect(mapped).NotTo(BeNil())
+		Expect(mapped.M2M).NotTo(BeNil())
+		Expect(mapped.M2M.TokenRequest).To(Equal(expected))
+	},
+		Entry("empty without defaulting", rover.TokenRequestMethod(""), agenticv1.TokenRequestMethod("")),
+		Entry("client_secret_basic", rover.TokenRequestClientSecretBasic, agenticv1.TokenRequestClientSecretBasic),
+		Entry("client_secret_post", rover.TokenRequestClientSecretPost, agenticv1.TokenRequestClientSecretPost),
+	)
 })

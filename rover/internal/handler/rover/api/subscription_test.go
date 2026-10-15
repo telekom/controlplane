@@ -32,4 +32,19 @@ var _ = Describe("mapSubscriberSecurityToApiSecurity", func() {
 		// bypasses API-server validation and checks pass-through behavior only.
 		Entry("unrecognized without validation", rover.GrantType("unrecognized"), apiapi.GrantType("unrecognized")),
 	)
+
+	DescribeTable("passes the consumer token request method through", func(tokenRequest rover.TokenRequestMethod, expected apiapi.TokenRequestMethod) {
+		mapped := mapSubscriberSecurityToApiSecurity(&rover.SubscriberSecurity{M2M: &rover.SubscriberMachine2MachineAuthentication{
+			Client:       &rover.OAuth2ClientCredentials{ClientId: "consumer-id", ClientSecret: "consumer-secret"},
+			TokenRequest: tokenRequest,
+		}})
+
+		Expect(mapped).NotTo(BeNil())
+		Expect(mapped.M2M).NotTo(BeNil())
+		Expect(mapped.M2M.TokenRequest).To(Equal(expected))
+	},
+		Entry("empty without defaulting", rover.TokenRequestMethod(""), apiapi.TokenRequestMethod("")),
+		Entry("client_secret_basic", rover.TokenRequestClientSecretBasic, apiapi.TokenRequestClientSecretBasic),
+		Entry("client_secret_post", rover.TokenRequestClientSecretPost, apiapi.TokenRequestClientSecretPost),
+	)
 })
