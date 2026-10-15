@@ -17,6 +17,16 @@ import (
 	secretManagerApi "github.com/telekom/controlplane/secret-manager/api"
 )
 
+// idpContext holds the credentials and token request settings of the provider or a consumer
+// that are used to build one Jumper OAuth entry.
+type idpContext struct {
+	client       *gatewayv1.OAuth2ClientCredentials
+	basic        *gatewayv1.BasicAuthCredentials
+	scopes       []string
+	grantType    gatewayv1.GrantType
+	tokenRequest gatewayv1.TokenRequestMethod
+}
+
 var _ features.Feature = &ExternalIDPFeature{}
 
 // defaultKey for provider (exposure) config.
@@ -81,10 +91,13 @@ func (f *ExternalIDPFeature) Apply(ctx context.Context, builder features.Feature
 
 	// Provider
 	idp := security.M2M.ExternalIDP
-	if ok, err := hasCredentialsForGrant(idp.Client, idp.Basic, idp.GrantType); err != nil {
+	provider := newProviderIdpContext(idp, security.M2M.Scopes)
+	hasProviderCredentials, err := hasCredentialsForGrant(provider)
+	if err != nil {
 		return errors.Wrapf(err, "cannot identify grantType for %s", route.Name)
-	} else if ok {
-		if err = applyCredentials(ctx, DefaultProviderKey, jumperConfig, idp, idp.Client, idp.Basic, security.M2M.Scopes, idp.GrantType); err != nil {
+	}
+	if hasProviderCredentials {
+		if err = applyCredentials(ctx, DefaultProviderKey, jumperConfig, provider); err != nil {
 			return errors.Wrapf(err, "cannot get provider secret for route %s", route.Name)
 		}
 	}
@@ -99,31 +112,60 @@ func (f *ExternalIDPFeature) Apply(ctx context.Context, builder features.Feature
 	return nil
 }
 
+func newProviderIdpContext(idp *gatewayv1.ExternalIdentityProvider, scopes []string) idpContext {
+	return idpContext{
+		client:       idp.Client,
+		basic:        idp.Basic,
+		scopes:       scopes,
+		grantType:    idp.GrantType,
+		tokenRequest: idp.TokenRequest,
+	}
+}
+
+// newConsumerIdpContext uses the consumer credentials and scopes. The grant type and token request method
+// fall back to the provider settings unless the consumer overrides them.
+func newConsumerIdpContext(m2m *gatewayv1.ConsumerMachine2MachineAuthentication, idp *gatewayv1.ExternalIdentityProvider) idpContext {
+	idpCtx := idpContext{
+		client:       m2m.Client,
+		basic:        m2m.Basic,
+		scopes:       m2m.Scopes,
+		grantType:    idp.GrantType,
+		tokenRequest: idp.TokenRequest,
+	}
+	if m2m.GrantType != "" {
+		idpCtx.grantType = m2m.GrantType
+	}
+	if m2m.TokenRequest != "" {
+		idpCtx.tokenRequest = m2m.TokenRequest
+	}
+	return idpCtx
+}
+
 // hasCredentialsForGrant reports whether the credentials can build a token request for the grant type.
 // Jumper sends every configured credential together with the grant type and does not check if they match.
-func hasCredentialsForGrant(client *gatewayv1.OAuth2ClientCredentials, basic *gatewayv1.BasicAuthCredentials, grantType gatewayv1.GrantType) (bool, error) {
-	switch grantType {
+func hasCredentialsForGrant(idpCtx idpContext) (bool, error) {
+	switch idpCtx.grantType {
 	case gatewayv1.GrantTypePassword:
-		return basic != nil, nil
+		return idpCtx.basic != nil, nil
 	case gatewayv1.GrantTypeRefreshToken:
-		return client != nil && client.RefreshToken != "", nil
+		return idpCtx.client != nil && idpCtx.client.RefreshToken != "", nil
 	case gatewayv1.GrantTypeAuthorizationCode, gatewayv1.GrantTypeClientCredentials:
-		return client != nil, nil
+		return idpCtx.client != nil, nil
 	default:
-		return false, fmt.Errorf("unknown grantType: %s", grantType)
+		return false, fmt.Errorf("unknown grantType: %s", idpCtx.grantType)
 	}
 }
 
 // applyCredentials publishes the credentials used for the grant type. Username/password are only used with the
 // password grant, client credentials authenticate the client for every grant type.
-func applyCredentials(ctx context.Context, key plugin.ConsumerId, jumperConfig *plugin.JumperConfig, providerSettings *gatewayv1.ExternalIdentityProvider, client *gatewayv1.OAuth2ClientCredentials, basic *gatewayv1.BasicAuthCredentials, scopes []string, grantType gatewayv1.GrantType) error {
-	if client != nil {
-		if err := applyOauth(ctx, key, jumperConfig, client, providerSettings, scopes, grantType); err != nil {
+func applyCredentials(ctx context.Context, key plugin.ConsumerId, jumperConfig *plugin.JumperConfig, idpCtx idpContext) error {
+	if idpCtx.client != nil {
+		if err := applyOauth(ctx, key, jumperConfig, idpCtx); err != nil {
 			return err
 		}
 	}
-	if grantType == gatewayv1.GrantTypePassword {
-		return applyBasic(ctx, key, jumperConfig, basic, scopes, grantType)
+	if idpCtx.grantType == gatewayv1.GrantTypePassword {
+		return applyBasic(ctx, key, jumperConfig, idpCtx)
 	}
 	return nil
 }
@@ -135,15 +177,12 @@ func applyConsumer(ctx context.Context, jumperConfig *plugin.JumperConfig, consu
 	}
 	key := plugin.ConsumerId(consumer.Spec.ConsumerName)
 	consumerM2M := consumer.Spec.Security.M2M
-	grantType := providerSettings.GrantType
-	if consumerM2M.GrantType != "" {
-		grantType = consumerM2M.GrantType
-	}
+	idpCtx := newConsumerIdpContext(consumerM2M, providerSettings)
 
-	if ok, err := hasCredentialsForGrant(consumerM2M.Client, consumerM2M.Basic, grantType); err != nil {
+	if ok, err := hasCredentialsForGrant(idpCtx); err != nil {
 		return err
 	} else if ok {
-		return applyCredentials(ctx, key, jumperConfig, providerSettings, consumerM2M.Client, consumerM2M.Basic, consumerM2M.Scopes, grantType)
+		return applyCredentials(ctx, key, jumperConfig, idpCtx)
 	}
 
 	// Without own credentials for the grant type, the consumer requests its scopes with the provider credentials.
@@ -158,9 +197,9 @@ func applyConsumer(ctx context.Context, jumperConfig *plugin.JumperConfig, consu
 	return nil
 }
 
-func applyOauth(ctx context.Context, key plugin.ConsumerId, jumperConfig *plugin.JumperConfig, client *gatewayv1.OAuth2ClientCredentials, providerSettings *gatewayv1.ExternalIdentityProvider, scopes []string, grantType gatewayv1.GrantType) error {
+func applyOauth(ctx context.Context, key plugin.ConsumerId, jumperConfig *plugin.JumperConfig, idpCtx idpContext) error {
 	current := jumperConfig.OAuth[key]
-	oauth, err := extendOauth(ctx, &current, providerSettings, client, scopes, grantType)
+	oauth, err := extendOauth(ctx, &current, idpCtx)
 	if err != nil {
 		return err
 	}
@@ -169,10 +208,11 @@ func applyOauth(ctx context.Context, key plugin.ConsumerId, jumperConfig *plugin
 	return nil
 }
 
-func extendOauth(ctx context.Context, current *plugin.OauthCredentials, providerSettings *gatewayv1.ExternalIdentityProvider, client *gatewayv1.OAuth2ClientCredentials, scopes []string, grantType gatewayv1.GrantType) (plugin.OauthCredentials, error) {
+func extendOauth(ctx context.Context, current *plugin.OauthCredentials, idpCtx idpContext) (plugin.OauthCredentials, error) {
 	in := *current
 	var err error
 
+	client := idpCtx.client
 	in.ClientId = client.ClientId
 	secret := client.ClientSecret
 	clientKey := client.ClientKey
@@ -204,23 +244,23 @@ func extendOauth(ctx context.Context, current *plugin.OauthCredentials, provider
 		in.RefreshToken = refreshToken
 	}
 
-	if len(scopes) > 0 {
-		in.Scopes = strings.Join(scopes, " ")
+	if len(idpCtx.scopes) > 0 {
+		in.Scopes = strings.Join(idpCtx.scopes, " ")
 	}
 
-	tokenRequest, err := tokenRequestToJumper(providerSettings.TokenRequest)
+	tokenRequest, err := tokenRequestToJumper(idpCtx.tokenRequest)
 	if err != nil {
 		return in, err
 	}
 	in.TokenRequest = tokenRequest
-	in.GrantType = string(grantType)
+	in.GrantType = string(idpCtx.grantType)
 
 	return in, nil
 }
 
-func applyBasic(ctx context.Context, key plugin.ConsumerId, jumperConfig *plugin.JumperConfig, basic *gatewayv1.BasicAuthCredentials, scopes []string, grantType gatewayv1.GrantType) error {
+func applyBasic(ctx context.Context, key plugin.ConsumerId, jumperConfig *plugin.JumperConfig, idpCtx idpContext) error {
 	current := jumperConfig.OAuth[key]
-	basicAuth, err := extendBasic(ctx, &current, basic, scopes, grantType)
+	basicAuth, err := extendBasic(ctx, &current, idpCtx)
 	if err != nil {
 		return err
 	}
@@ -228,12 +268,12 @@ func applyBasic(ctx context.Context, key plugin.ConsumerId, jumperConfig *plugin
 	return nil
 }
 
-func extendBasic(ctx context.Context, current *plugin.OauthCredentials, basic *gatewayv1.BasicAuthCredentials, scopes []string, grantType gatewayv1.GrantType) (plugin.OauthCredentials, error) {
+func extendBasic(ctx context.Context, current *plugin.OauthCredentials, idpCtx idpContext) (plugin.OauthCredentials, error) {
 	in := *current
 	var err error
 
-	in.Username = basic.Username
-	password := basic.Password
+	in.Username = idpCtx.basic.Username
+	password := idpCtx.basic.Password
 	if password != "" {
 		password, err = secretManagerApi.Get(ctx, password)
 		if err != nil {
@@ -241,12 +281,12 @@ func extendBasic(ctx context.Context, current *plugin.OauthCredentials, basic *g
 		}
 	}
 
-	if len(scopes) > 0 {
-		in.Scopes = strings.Join(scopes, " ")
+	if len(idpCtx.scopes) > 0 {
+		in.Scopes = strings.Join(idpCtx.scopes, " ")
 	}
 
 	in.Password = password
-	in.GrantType = string(grantType)
+	in.GrantType = string(idpCtx.grantType)
 
 	return in, nil
 }

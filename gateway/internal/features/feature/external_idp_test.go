@@ -604,6 +604,102 @@ var _ = Describe("ExternalIDPFeature", func() {
 					}, "authorization_code"),
 				)
 			})
+
+			Context("when consumer sets a token request method", func() {
+				DescribeTable("uses the consumer token request method for its own client credentials only",
+					func(providerMethod, consumerMethod gatewayv1.TokenRequestMethod, expectedConsumer, expectedProvider string) {
+						route := &gatewayv1.Route{
+							ObjectMeta: metav1.ObjectMeta{Name: "test-route", Namespace: "test-ns"},
+							Spec: gatewayv1.RouteSpec{
+								Type: gatewayv1.RouteTypePrimary,
+								Security: gatewayv1.Security{
+									M2M: &gatewayv1.Machine2MachineAuthentication{
+										ExternalIDP: &gatewayv1.ExternalIdentityProvider{
+											TokenEndpoint: "https://idp.example.com/token",
+											TokenRequest:  providerMethod,
+											GrantType:     gatewayv1.GrantTypeClientCredentials,
+											Client:        &gatewayv1.OAuth2ClientCredentials{ClientId: "provider-id", ClientSecret: "provider-secret"},
+										},
+										Scopes: []string{"provider-scope"},
+									},
+								},
+							},
+						}
+						jumperConfig := plugin.NewJumperConfig()
+						consumers := []*gatewayv1.ConsumeRoute{{
+							Spec: gatewayv1.ConsumeRouteSpec{
+								ConsumerName: "token-request-consumer",
+								Security: &gatewayv1.ConsumeRouteSecurity{M2M: &gatewayv1.ConsumerMachine2MachineAuthentication{
+									Client:       &gatewayv1.OAuth2ClientCredentials{ClientId: "consumer-id", ClientSecret: "consumer-secret"},
+									Scopes:       []string{"consumer-scope"},
+									TokenRequest: consumerMethod,
+								}},
+							},
+						}}
+
+						builder.EXPECT().GetRoute().Return(route, true)
+						builder.EXPECT().RequestTransformerPlugin().Return(plugin.RequestTransformerPluginFromRoute(route))
+						builder.EXPECT().JumperConfig().Return(jumperConfig)
+						builder.EXPECT().GetAllowedConsumers().Return(consumers)
+
+						Expect(f.Apply(ctx, builder)).To(Succeed())
+						Expect(jumperConfig.OAuth[plugin.ConsumerId("token-request-consumer")]).To(Equal(plugin.OauthCredentials{
+							ClientId: "consumer-id", ClientSecret: "consumer-secret", Scopes: "consumer-scope",
+							TokenRequest: expectedConsumer, GrantType: "client_credentials",
+						}))
+						Expect(jumperConfig.OAuth[feature.DefaultProviderKey].TokenRequest).To(Equal(expectedProvider))
+					},
+					Entry("client_secret_post overrides a client_secret_basic exposure",
+						gatewayv1.TokenRequestClientSecretBasic, gatewayv1.TokenRequestClientSecretPost, "body", "header"),
+					Entry("client_secret_basic overrides a client_secret_post exposure",
+						gatewayv1.TokenRequestClientSecretPost, gatewayv1.TokenRequestClientSecretBasic, "header", "body"),
+					Entry("omitted inherits the exposure method",
+						gatewayv1.TokenRequestClientSecretBasic, gatewayv1.TokenRequestMethod(""), "header", "header"),
+				)
+
+				It("does not apply the consumer token request method to the provider credentials fallback", func() {
+					route := &gatewayv1.Route{
+						ObjectMeta: metav1.ObjectMeta{Name: "test-route", Namespace: "test-ns"},
+						Spec: gatewayv1.RouteSpec{
+							Type: gatewayv1.RouteTypePrimary,
+							Security: gatewayv1.Security{
+								M2M: &gatewayv1.Machine2MachineAuthentication{
+									ExternalIDP: &gatewayv1.ExternalIdentityProvider{
+										TokenEndpoint: "https://idp.example.com/token",
+										TokenRequest:  gatewayv1.TokenRequestClientSecretBasic,
+										GrantType:     gatewayv1.GrantTypeClientCredentials,
+										Client:        &gatewayv1.OAuth2ClientCredentials{ClientId: "provider-id", ClientSecret: "provider-secret"},
+									},
+								},
+							},
+						},
+					}
+					jumperConfig := plugin.NewJumperConfig()
+					consumers := []*gatewayv1.ConsumeRoute{{
+						Spec: gatewayv1.ConsumeRouteSpec{
+							ConsumerName: "scopes-consumer",
+							Security: &gatewayv1.ConsumeRouteSecurity{M2M: &gatewayv1.ConsumerMachine2MachineAuthentication{
+								Scopes:       []string{"consumer-scope"},
+								TokenRequest: gatewayv1.TokenRequestClientSecretPost,
+							}},
+						},
+					}}
+
+					builder.EXPECT().GetRoute().Return(route, true)
+					builder.EXPECT().RequestTransformerPlugin().Return(plugin.RequestTransformerPluginFromRoute(route))
+					builder.EXPECT().JumperConfig().Return(jumperConfig)
+					builder.EXPECT().GetAllowedConsumers().Return(consumers)
+
+					Expect(f.Apply(ctx, builder)).To(Succeed())
+					// Scope-only entry: Jumper replaces it with the provider default plus the consumer scopes, so the
+					// token request uses the provider credentials and tokenRequest. A consumer tokenRequest is not set
+					// here, it would never take effect.
+					Expect(jumperConfig.OAuth[plugin.ConsumerId("scopes-consumer")]).To(Equal(plugin.OauthCredentials{
+						Scopes: "consumer-scope", GrantType: "client_credentials",
+					}))
+					Expect(jumperConfig.OAuth[feature.DefaultProviderKey].TokenRequest).To(Equal("header"))
+				})
+			})
 		})
 
 		Context("error handling", func() {
