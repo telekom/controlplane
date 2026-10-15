@@ -56,6 +56,8 @@ gateway/pkg/kongutil/client_factory.go
   s_06f08dd936c24c::t_f90aec26b41669 145,147
   s_06f08dd936c24c::t_984ba037b9e7b2 132,134,136-142,144,146,160,167,169
   s_6f1cb21b66765b::t_efddd0baa16de5 12,14,133,135,170,189,207,210
+  s_fd3ca74e33584e::t_f33e53e89243e6 83-86,94,98,148-150,198,200,202
+  s_105efffe5c95b8::t_8e47609211f513 87
 identity/internal/handler/realm/suite_test.go
   s_06f08dd936c24c::t_cdf29cbe858d85 8-9,14-16,19-21
   s_06f08dd936c24c::t_e6550fc5131063 22-23
@@ -293,6 +295,14 @@ identity/internal/controller/realm_controller_test.go
       },
       "human_author": "Ron Gummich <ron.gummich@telekom.de>"
     },
+    "s_105efffe5c95b8": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ec0c8986effeZAZ8TYtWXMOCYA",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
     "s_1bf86e9a19cd19": {
       "agent_id": {
         "tool": "opencode",
@@ -361,6 +371,14 @@ identity/internal/controller/realm_controller_test.go
       "agent_id": {
         "tool": "opencode",
         "id": "ses_ecb23b97affevK6NfWg7hJDcQC",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_fd3ca74e33584e": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ec0c80f27ffePwA7y4Hux3IWL0",
         "model": "gpt-6-astra"
       },
       "human_author": "Ron Gummich <ron.gummich@telekom.de>"
