@@ -40,8 +40,10 @@ var _ = Describe("Application Translator", func() {
 					Labels:    map[string]string{"cp.ei.telekom.de/environment": "prod"},
 				},
 				Spec: appv1.ApplicationSpec{
-					Team: "platform--narvi",
-					Zone: commontypes.ObjectRef{Name: "caas"},
+					Team:        "platform--narvi",
+					Zone:        commontypes.ObjectRef{Name: "caas"},
+					NeedsClient: true,
+					Secret:      "client-secret-ref",
 					ExternalIds: []appv1.ExternalId{
 						appv1.ExternalId{
 							Id:     "abc",
@@ -80,6 +82,8 @@ var _ = Describe("Application Translator", func() {
 			Expect(data.StatusMessage).To(Equal("all good"))
 			Expect(data.ClientID).ToNot(BeNil())
 			Expect(*data.ClientID).To(Equal("client-123"))
+			Expect(data.ClientSecret).ToNot(BeNil())
+			Expect(*data.ClientSecret).To(Equal("client-secret-ref"))
 			Expect(data.Meta.Environment).To(Equal("prod"))
 
 			Expect(data.ExternalIds).To(HaveLen(2))
@@ -109,6 +113,22 @@ var _ = Describe("Application Translator", func() {
 			data, err := t.Translate(context.Background(), obj)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(data.ClientID).To(BeNil())
+		})
+
+		It("should set ClientSecret to nil when the application does not need a client", func() {
+			obj := &appv1.Application{
+				Spec: appv1.ApplicationSpec{
+					Team:        "platform--narvi",
+					Zone:        commontypes.ObjectRef{Name: "caas"},
+					NeedsClient: false,
+					Secret:      "NOT_NEEDED",
+				},
+				Status: appv1.ApplicationStatus{ClientSecret: "NOT_NEEDED"},
+			}
+
+			data, err := t.Translate(context.Background(), obj)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(data.ClientSecret).To(BeNil())
 		})
 
 		It("should populate TokenURL from Status.TokenUrl", func() {
