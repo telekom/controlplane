@@ -57,7 +57,7 @@ Uses `logr` backed by Zap. Get the logger from context: `logr.FromContextOrDisca
 
 ## Reconciliation Flow
 
-Standard controller flow: fetch -> first setup (finalizer, init conditions) -> validate environment -> handle deletion or reconcile -> update status.
+Standard controller flow: fetch -> first setup (finalizer only with environment label, init conditions) -> validate environment -> handle deletion or reconcile -> update status.
 
 - Set conditions **before** the status update, not after.
 - Stamp `ObservedGeneration` on all conditions.
