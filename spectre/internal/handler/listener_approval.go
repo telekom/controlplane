@@ -7,9 +7,12 @@ package handler
 import (
 	"context"
 	"fmt"
+	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
@@ -18,6 +21,7 @@ import (
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	ctypes "github.com/telekom/controlplane/common/pkg/types"
+	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	spectrev1 "github.com/telekom/controlplane/spectre/api/v1"
 )
 
@@ -60,6 +64,9 @@ type gateResult struct {
 	approval        *ctypes.ObjectRef
 	approvalRequest *ctypes.ObjectRef
 	err             error
+	// grantedRequest is the ApprovalRequest of a pending gate when it is already
+	// granted (always the case for Auto) while its Approval is not issued yet.
+	grantedRequest *approvalapi.ApprovalRequest
 }
 
 // dualApprovalResult carries the aggregate outcome of both gates.
@@ -209,6 +216,9 @@ func (h *ListenerHandler) buildScopedGate(
 		result.outcome = outcomeGranted
 	case builder.ApprovalResultPending:
 		result.outcome = outcomePending
+		if ar := ab.GetApprovalRequest(); ar.Spec.State == approvalapi.ApprovalStateGranted {
+			result.grantedRequest = ar
+		}
 	case builder.ApprovalResultDenied:
 		result.outcome = outcomeDenied
 	case builder.ApprovalResultRequestDenied:
@@ -271,9 +281,10 @@ func (h *ListenerHandler) setAggregateConditions(ctx context.Context, listener *
 		builder.ClearApprovalPendingReady(listener)
 		// The builder clears only its own ApprovalPending reason, and the
 		// controller never overwrites a Ready that is already False, so a
-		// grace-period stop would outlive the answer when provisioning fails.
+		// grace-period stop or a wait for an issued Approval would outlive the
+		// answer when provisioning fails.
 		if ready := meta.FindStatusCondition(listener.Status.Conditions, condition.ConditionTypeReady); ready != nil &&
-			ready.Reason == reasonAuthorizationUnavailable {
+			(ready.Reason == reasonAuthorizationUnavailable || ready.Reason == condition.ReasonProcessing) {
 			listener.SetCondition(condition.NewNotReadyCondition(condition.ReasonProcessing, "Approval granted, provisioning in progress"))
 			listener.SetCondition(condition.NewProcessingCondition(condition.ReasonProcessing, "Approval granted, provisioning in progress"))
 		}
@@ -298,7 +309,13 @@ func (h *ListenerHandler) setAggregateConditions(ctx context.Context, listener *
 			fmt.Sprintf("ApprovalRequest has been denied (%s gate)", gate)))
 
 	case outcomePending:
-		gate := gateNames(result, func(g *gateResult) bool { return g.outcome == outcomePending })
+		// Only a gate whose ApprovalRequest still waits for a decider blocks; a
+		// granted request is turned into its Approval by the approval controller.
+		gate := gateNames(result, func(g *gateResult) bool { return g.outcome == outcomePending && g.grantedRequest == nil })
+		if gate == "" {
+			h.awaitIssuedApprovals(ctx, listener, result)
+			return
+		}
 		logger.Info("Approval pending", "gate", gate)
 		message := fmt.Sprintf("Waiting for approval decision (%s gate)", gate)
 		listener.SetCondition(condition.NewNotReadyCondition(condition.ReasonApprovalPending, message))
@@ -309,6 +326,73 @@ func (h *ListenerHandler) setAggregateConditions(ctx context.Context, listener *
 		// Conditions are not set for errors — the caller returns the error
 		// and the controller framework handles requeue.
 	}
+}
+
+// awaitIssuedApprovals sets the conditions of a Listener whose pending gates all
+// have a granted ApprovalRequest. It is processing while the approval controller
+// issues the Approvals, and is retried before authorizationUnknownGracePeriod
+// ends. Once a request has been granted for longer than that without an
+// Approval, the Listener is blocked.
+func (h *ListenerHandler) awaitIssuedApprovals(ctx context.Context, listener *spectrev1.Listener, result *dualApprovalResult) {
+	logger := log.FromContext(ctx)
+	now := h.now()
+	remaining := authorizationUnknownGracePeriod
+	var overdue []string
+	for _, g := range []struct {
+		name string
+		gate *gateResult
+	}{{"provider", result.provider}, {"consumer", result.consumer}} {
+		if g.gate == nil || g.gate.grantedRequest == nil {
+			continue
+		}
+		ar := g.gate.grantedRequest
+		left := grantedSince(ar, now).Add(authorizationUnknownGracePeriod).Sub(now)
+		if left > 0 {
+			remaining = min(remaining, left)
+			continue
+		}
+		// The message names the bound, not the elapsed time, so the persisted
+		// status does not change on every reconcile.
+		message := fmt.Sprintf("ApprovalRequest %s for the %s gate was granted more than %s ago, but no Approval was issued; check the approval controller",
+			ar.Name, g.name, authorizationUnknownGracePeriod)
+		if ready := meta.FindStatusCondition(ar.Status.Conditions, condition.ConditionTypeReady); ready != nil &&
+			ready.Status == metav1.ConditionFalse && ready.ObservedGeneration == ar.Generation && ready.Message != "" {
+			message += ": " + ready.Message
+		}
+		overdue = append(overdue, message)
+	}
+
+	if len(overdue) > 0 {
+		message := strings.Join(overdue, "; ")
+		logger.Info("Granted ApprovalRequest without an issued Approval", "message", message)
+		listener.SetCondition(condition.NewNotReadyCondition(condition.ReasonBlocked, message))
+		listener.SetCondition(condition.NewBlockedCondition(message))
+		return
+	}
+
+	gate := gateNames(result, func(g *gateResult) bool { return g.grantedRequest != nil })
+	logger.Info("ApprovalRequest granted, waiting for the Approval", "gate", gate)
+	message := fmt.Sprintf("ApprovalRequest granted, waiting for the approval controller to issue the Approval (%s gate)", gate)
+	listener.SetCondition(condition.NewNotReadyCondition(condition.ReasonProcessing, message))
+	listener.SetCondition(condition.NewProcessingCondition(condition.ReasonProcessing, message))
+	contextutil.SetRequeueAfter(ctx, min(remaining, 30*time.Second))
+}
+
+// grantedSince returns when ar was granted: the time of its latest granting
+// decision, else its creation time, else now when neither is known.
+func grantedSince(ar *approvalapi.ApprovalRequest, now time.Time) time.Time {
+	for i := len(ar.Spec.Decisions) - 1; i >= 0; i-- {
+		if d := ar.Spec.Decisions[i]; d.ResultingState == approvalapi.ApprovalStateGranted {
+			if d.Timestamp != nil {
+				return d.Timestamp.Time
+			}
+			break
+		}
+	}
+	if !ar.CreationTimestamp.IsZero() {
+		return ar.CreationTimestamp.Time
+	}
+	return now
 }
 
 // requestDeniedGates names the gate(s) whose current ApprovalRequest was rejected.
