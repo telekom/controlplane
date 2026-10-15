@@ -7,6 +7,7 @@ package eventconfig
 import (
 	"cmp"
 	"context"
+	"net/url"
 	"slices"
 
 	"github.com/pkg/errors"
@@ -214,9 +215,13 @@ func (h *EventConfigHandler) resolveAndCreateAdminClient(ctx context.Context, ob
 		return nil, "", errors.Wrapf(err, "failed to get identity Realm %q", clientCfg.Realm.String())
 	}
 
-	tokenUrl := realm.Status.IssuerUrl + tokenUrlSuffix
-	if tokenUrl == "" {
+	if realm.Status.IssuerUrl == "" {
 		return nil, "", ctrlerrors.BlockedErrorf("identity Realm %s has no issuerUrl yet", realm.Name)
+	}
+
+	tokenUrl, joinErr := url.JoinPath(realm.Status.IssuerUrl, tokenUrlSuffix)
+	if joinErr != nil {
+		return nil, "", ctrlerrors.BlockedErrorf("failed to construct token URL for identity Realm %s: %v", realm.Name, joinErr)
 	}
 
 	identityClient, err := h.createIdentityClient(ctx, obj, &clientCfg)
@@ -842,7 +847,11 @@ func (h *EventConfigHandler) resolveAdminTokenUrl(ctx context.Context, clientCfg
 		return "", ctrlerrors.BlockedErrorf("identity Realm %s has no issuerUrl yet", realm.Name)
 	}
 
-	return realm.Status.IssuerUrl + tokenUrlSuffix, nil
+	tokenUrl, err := url.JoinPath(realm.Status.IssuerUrl, tokenUrlSuffix)
+	if err != nil {
+		return "", ctrlerrors.BlockedErrorf("failed to construct token URL for identity Realm %s: %v", realm.Name, err)
+	}
+	return tokenUrl, nil
 }
 
 // createProxyPublishRoute creates the publish Route for a proxy zone as a proxy Route
