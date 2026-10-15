@@ -12,14 +12,18 @@ import (
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/mock"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"github.com/telekom/controlplane/common-server/pkg/client"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	fakeclient "github.com/telekom/controlplane/common/pkg/client/fake"
+	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/config"
+	"github.com/telekom/controlplane/common/pkg/controller"
 	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
+	"github.com/telekom/controlplane/common/pkg/test/testutil"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 	"github.com/telekom/controlplane/rover/internal/handler/rover"
@@ -74,8 +78,9 @@ var _ = Describe("Rover Handler", func() {
 		})
 
 		It("should handle errors from Secret Manager", func() {
-			By("Create Rover Object")
+			By("Create Rover Object with a sub-resource still being processed")
 			roverObj := createRoverObject()
+			roverObj.SetCondition(condition.NewNotReadyCondition(condition.ReasonSubResourceNotReady, "At least one sub-resource is being processed"))
 
 			By("Setting up the mock expectations")
 			httpErr := client.BlockedErrorf("bad request error (400): some error")
@@ -88,6 +93,31 @@ var _ = Describe("Rover Handler", func() {
 			rootCause := errors.Cause(err)
 			Expect(rootCause).To(Equal(httpErr))
 			Expect(err.Error()).To(HavePrefix("failed to delete application from secret manager: "))
+			testutil.ExpectConditionToBeFalse(NewGomegaWithT(GinkgoT()), meta.FindStatusCondition(roverObj.GetConditions(), condition.ConditionTypeReady), condition.ReasonError)
+
+			By("Applying the framework error handling")
+			controller.EnsureNotReadyOnError(ctx, nil, roverObj, err)
+			testutil.ExpectConditionToBeFalse(NewGomegaWithT(GinkgoT()), meta.FindStatusCondition(roverObj.GetConditions(), condition.ConditionTypeReady), condition.ReasonBlocked)
+		})
+
+		It("should report a non-blocked Secret Manager error as Error", func() {
+			By("Create Rover Object with a sub-resource still being processed")
+			roverObj := createRoverObject()
+			roverObj.SetCondition(condition.NewNotReadyCondition(condition.ReasonSubResourceNotReady, "At least one sub-resource is being processed"))
+
+			By("Setting up the mock expectations")
+			secretManagerMock.EXPECT().DeleteApplication(ctx, testEnvironment, teamId, roverObj.GetName()).
+				Return(errors.New("connection refused"))
+
+			By("Call Delete on Rover Handler")
+			err := roverHandler.Delete(ctx, roverObj)
+			Expect(err).To(HaveOccurred())
+
+			By("Applying the framework error handling")
+			controller.EnsureNotReadyOnError(ctx, nil, roverObj, err)
+			ready := meta.FindStatusCondition(roverObj.GetConditions(), condition.ConditionTypeReady)
+			testutil.ExpectConditionToBeFalse(NewGomegaWithT(GinkgoT()), ready, condition.ReasonError)
+			Expect(ready.Message).To(Equal("Failed to delete application from secret manager"))
 		})
 	})
 })
