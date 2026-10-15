@@ -2070,7 +2070,12 @@ var _ = Describe("Listener approval answer unavailable (controller)", func() {
 			if ref == l.Status.ProviderApprovalRequest {
 				providerReq = ar.Name
 				ar.Status.Conditions = []metav1.Condition{{Type: condition.ConditionTypeReady, Status: metav1.ConditionFalse,
-					Reason: "Error", Message: "approval store unavailable", ObservedGeneration: ar.Generation, LastTransitionTime: metav1.Now()}}
+					Reason: condition.ReasonError, Message: "approval store unavailable " + strings.Repeat("x", 300),
+					ObservedGeneration: ar.Generation, LastTransitionTime: metav1.Now()}}
+			} else {
+				// A decider's earlier answer, kept and re-stamped with the current generation.
+				ar.Status.Conditions = []metav1.Condition{{Type: condition.ConditionTypeReady, Status: metav1.ConditionFalse,
+					Reason: "Pending", Message: "Request is pending", ObservedGeneration: ar.Generation, LastTransitionTime: metav1.Now()}}
 			}
 			h.update(ar)
 		}
@@ -2090,10 +2095,12 @@ var _ = Describe("Listener approval answer unavailable (controller)", func() {
 		ready := graceReady(l)
 		Expect(ready.Status).To(Equal(metav1.ConditionFalse))
 		Expect(ready.Reason).To(Equal(condition.ReasonBlocked))
+		providerError := "approval store unavailable " + strings.Repeat("x", 300)
 		Expect(ready.Message).To(HavePrefix(fmt.Sprintf(
-			"ApprovalRequest %s for the provider gate was granted more than 5m0s ago, but no Approval was issued; check the approval controller: approval store unavailable; ",
-			providerReq)))
-		Expect(ready.Message).To(ContainSubstring("for the consumer gate was granted more than 5m0s ago"))
+			"ApprovalRequest %s for the provider gate was granted more than 5m0s ago, but no Approval was issued; check the approval controller: %s…; ",
+			providerReq, providerError[:255])))
+		Expect(ready.Message).To(HaveSuffix("for the consumer gate was granted more than 5m0s ago, but no Approval was issued; check the approval controller"))
+		Expect(ready.Message).ToNot(ContainSubstring("Request is pending"))
 		processing := meta.FindStatusCondition(l.Status.Conditions, condition.ConditionTypeProcessing)
 		Expect(processing).ToNot(BeNil())
 		Expect(processing.Reason).To(Equal(condition.ReasonBlocked))

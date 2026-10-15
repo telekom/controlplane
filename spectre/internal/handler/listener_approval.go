@@ -355,9 +355,13 @@ func (h *ListenerHandler) awaitIssuedApprovals(ctx context.Context, listener *sp
 		// status does not change on every reconcile.
 		message := fmt.Sprintf("ApprovalRequest %s for the %s gate was granted more than %s ago, but no Approval was issued; check the approval controller",
 			ar.Name, g.name, authorizationUnknownGracePeriod)
+		// Only an approval controller error is appended: a decider's earlier
+		// Ready=False (e.g. pending) is kept and re-stamped with the current
+		// generation, so it would describe a state the request has left.
 		if ready := meta.FindStatusCondition(ar.Status.Conditions, condition.ConditionTypeReady); ready != nil &&
-			ready.Status == metav1.ConditionFalse && ready.ObservedGeneration == ar.Generation && ready.Message != "" {
-			message += ": " + ready.Message
+			ready.Status == metav1.ConditionFalse && ready.Reason == condition.ReasonError &&
+			ready.ObservedGeneration == ar.Generation && ready.Message != "" {
+			message += ": " + truncate(ready.Message, maxAppendedErrorLength)
 		}
 		overdue = append(overdue, message)
 	}
@@ -376,6 +380,19 @@ func (h *ListenerHandler) awaitIssuedApprovals(ctx context.Context, listener *sp
 	listener.SetCondition(condition.NewNotReadyCondition(condition.ReasonProcessing, message))
 	listener.SetCondition(condition.NewProcessingCondition(condition.ReasonProcessing, message))
 	contextutil.SetRequeueAfter(ctx, min(remaining, 30*time.Second))
+}
+
+// maxAppendedErrorLength bounds the approval controller error appended to the
+// granted-gate message, which can contain a whole object dump.
+const maxAppendedErrorLength = 256
+
+// truncate cuts s to at most n runes, marking a cut with an ellipsis.
+func truncate(s string, n int) string {
+	r := []rune(s)
+	if len(r) <= n {
+		return s
+	}
+	return string(r[:n-1]) + "…"
 }
 
 // grantedSince returns when ar was granted: the time of its latest granting
