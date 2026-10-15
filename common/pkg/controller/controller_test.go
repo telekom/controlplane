@@ -399,6 +399,179 @@ var _ = Describe("Controller", func() {
 		})
 	})
 
+	Context("Missing environment label", func() {
+		const (
+			blockedMessage  = "Environment label is missing"
+			deletingMessage = "Environment label is missing; re-add it to finish deletion"
+		)
+
+		var (
+			deleteCalls     atomic.Int32
+			readyOnCreation = handler.NewCustomHandler(
+				func(_ context.Context, obj *test.TestResource) error {
+					obj.SetCondition(condition.NewReadyCondition(condition.ReasonProvisioned, "Provisioned"))
+					return nil
+				},
+				func(context.Context, *test.TestResource) error {
+					deleteCalls.Add(1)
+					return nil
+				},
+			)
+		)
+
+		labelled := map[string]string{config.EnvironmentLabelKey: environment}
+
+		newObject := func(objName string, labels map[string]string) reconcile.Request {
+			obj := templ.DeepCopy()
+			obj.SetName(objName)
+			obj.SetNamespace("no-manager")
+			obj.SetLabels(labels)
+			Expect(k8sClient.Create(ctx, obj)).To(Succeed())
+			return reconcile.Request{NamespacedName: client.ObjectKeyFromObject(obj)}
+		}
+
+		reconcileUntilStable := func(c Controller[*test.TestResource], req reconcile.Request) {
+			for range 3 {
+				_, err := c.Reconcile(ctx, req, &test.TestResource{})
+				Expect(err).ToNot(HaveOccurred())
+			}
+		}
+
+		reconcileOnce := func(c Controller[*test.TestResource], req reconcile.Request) *test.TestResource {
+			reconciled := &test.TestResource{}
+			_, err := c.Reconcile(ctx, req, reconciled)
+			Expect(err).ToNot(HaveOccurred())
+			return reconciled
+		}
+
+		get := func(req reconcile.Request) *test.TestResource {
+			obj := &test.TestResource{}
+			Expect(k8sClient.Get(ctx, req.NamespacedName, obj)).To(Succeed())
+			return obj
+		}
+
+		setLabels := func(req reconcile.Request, labels map[string]string) {
+			obj := get(req)
+			obj.SetLabels(labels)
+			Expect(k8sClient.Update(ctx, obj)).To(Succeed())
+		}
+
+		deleteObject := func(req reconcile.Request) {
+			Expect(k8sClient.Delete(ctx, get(req))).To(Succeed())
+		}
+
+		expectGone := func(req reconcile.Request) {
+			err := k8sClient.Get(ctx, req.NamespacedName, &test.TestResource{})
+			Expect(apierrors.IsNotFound(err)).To(BeTrue(), "expected object to be deleted, got %v", err)
+		}
+
+		expectBlockedOnDelete := func(req reconcile.Request) {
+			obj := get(req)
+			Expect(obj.GetDeletionTimestamp()).ToNot(BeNil())
+			Expect(obj.GetFinalizers()).To(ContainElement(config.FinalizerName))
+			blocked := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeProcessing)
+			Expect(blocked).ToNot(BeNil())
+			Expect(blocked.Reason).To(Equal(condition.ReasonBlocked))
+			Expect(blocked.Message).To(Equal(deletingMessage))
+		}
+
+		BeforeEach(func() {
+			deleteCalls.Store(0)
+		})
+
+		It("does not add a finalizer, blocks the object and allows deleting it", func() {
+			controller := NewController(readyOnCreation, k8sClient, &mock.EventRecorder{})
+			req := newObject("no-env-blocked", nil)
+
+			res, err := controller.Reconcile(ctx, req, &test.TestResource{})
+			Expect(err).ToNot(HaveOccurred())
+			Expect(res).To(Equal(reconcile.Result{}))
+
+			obj := get(req)
+			Expect(obj.GetFinalizers()).ToNot(ContainElement(config.FinalizerName))
+			blocked := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeProcessing)
+			Expect(blocked).ToNot(BeNil())
+			Expect(blocked.Status).To(Equal(metav1.ConditionFalse))
+			Expect(blocked.Reason).To(Equal(condition.ReasonBlocked))
+			Expect(blocked.Message).To(Equal(blockedMessage))
+
+			Expect(k8sClient.Delete(ctx, obj)).To(Succeed())
+			expectGone(req)
+			Expect(deleteCalls.Load()).To(BeZero())
+		})
+
+		It("keeps a handled object blocked when the label was removed before delete", func() {
+			recorder := &mock.EventRecorder{}
+			controller := NewController(readyOnCreation, k8sClient, recorder)
+			req := newObject("env-removed", labelled)
+			reconcileUntilStable(controller, req)
+
+			setLabels(req, nil)
+			reconcileUntilStable(controller, req)
+			deleteObject(req)
+			reconciled := reconcileOnce(controller, req)
+
+			expectBlockedOnDelete(req)
+			Expect(deleteCalls.Load()).To(BeZero())
+			Expect(recorder.GetEvent(reconciled, "Warning")).To(ContainElement(SatisfyAll(
+				HaveField("Reason", "Processing"),
+				HaveField("Message", deletingMessage),
+			)))
+
+			setLabels(req, labelled)
+			reconcileOnce(controller, req)
+
+			expectGone(req)
+			Expect(deleteCalls.Load()).To(Equal(int32(1)))
+		})
+
+		It("keeps a handled object blocked when the label is removed while terminating", func() {
+			controller := NewController(readyOnCreation, k8sClient, &mock.EventRecorder{})
+			req := newObject("env-removed-terminating", labelled)
+			reconcileUntilStable(controller, req)
+
+			deleteObject(req)
+			setLabels(req, nil)
+			reconcileOnce(controller, req)
+
+			expectBlockedOnDelete(req)
+			Expect(deleteCalls.Load()).To(BeZero())
+
+			setLabels(req, labelled)
+			reconcileOnce(controller, req)
+			expectGone(req)
+			Expect(deleteCalls.Load()).To(Equal(int32(1)))
+		})
+
+		It("treats an empty environment label as present", func() {
+			controller := NewController(readyOnCreation, k8sClient, &mock.EventRecorder{})
+			req := newObject("env-empty", map[string]string{config.EnvironmentLabelKey: ""})
+			reconcileUntilStable(controller, req)
+			Expect(get(req).GetFinalizers()).To(ContainElement(config.FinalizerName))
+
+			deleteObject(req)
+			reconcileOnce(controller, req)
+
+			expectGone(req)
+			Expect(deleteCalls.Load()).To(Equal(int32(1)))
+		})
+
+		It("keeps adding the finalizer and running the handler for labelled objects", func() {
+			recorder := &mock.EventRecorder{}
+			controller := NewController(readyOnCreation, k8sClient, recorder)
+			req := newObject("env-labelled", labelled)
+			reconcileUntilStable(controller, req)
+			Expect(get(req).GetFinalizers()).To(ContainElement(config.FinalizerName))
+
+			deleteObject(req)
+			reconciled := reconcileOnce(controller, req)
+
+			expectGone(req)
+			Expect(deleteCalls.Load()).To(Equal(int32(1)))
+			Expect(recorder.GetEvent(reconciled, "Warning")).To(BeEmpty())
+		})
+	})
+
 	Context("Reconciler", func() {
 		timeout := 2 * time.Second
 		interval := 200 * time.Millisecond

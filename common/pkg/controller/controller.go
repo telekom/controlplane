@@ -88,9 +88,15 @@ func (c *ControllerImpl[T]) Reconcile(ctx context.Context, req reconcile.Request
 
 	env, ok := GetEnvironment(object)
 	if !ok {
-		logger.V(0).Info("Environment label is missing")
-		c.Event(ctx, object, "Warning", "Processing", "Environment label is missing")
-		if object.SetCondition(condition.NewBlockedCondition("Environment label is missing")) {
+		// Deletion cleanup needs the environment, so a deleted object that still
+		// has the finalizer stays Blocked until the label is re-added.
+		message := "Environment label is missing"
+		if IsBeingDeleted(object) {
+			message = "Environment label is missing; re-add it to finish deletion"
+		}
+		logger.V(0).Info("Environment label is missing", "beingDeleted", IsBeingDeleted(object))
+		c.Event(ctx, object, "Warning", "Processing", message)
+		if object.SetCondition(condition.NewBlockedCondition(message)) {
 			StampObservedGeneration(object)
 			if updateErr := c.Client.Status().Update(ctx, object); updateErr != nil {
 				return HandleError(ctx, updateErr, object, c.Recorder)
@@ -242,8 +248,13 @@ func GetEnvironment(object metav1.Object) (string, bool) {
 	return e, ok
 }
 
+// FirstSetup adds the finalizer and initializes the conditions. The finalizer is
+// only added to objects with an environment label, because deletion cleanup
+// needs the environment. Without the finalizer, such objects can be deleted
+// right away.
 func FirstSetup(ctx context.Context, c client.Client, object common_types.Object) (bool, error) {
-	if !controllerutil.ContainsFinalizer(object, config.FinalizerName) {
+	_, hasEnvironment := GetEnvironment(object)
+	if hasEnvironment && !controllerutil.ContainsFinalizer(object, config.FinalizerName) {
 		controllerutil.AddFinalizer(object, config.FinalizerName)
 		if err := c.Update(ctx, object); err != nil {
 			return false, err
