@@ -2013,6 +2013,97 @@ var _ = Describe("Listener approval answer unavailable (controller)", func() {
 		Expect(h.publisherExists("c")).To(BeTrue())
 		Expect(h.listener().Status.AppliedPlacement).ToNot(BeNil())
 	})
+
+	It("keeps Auto gates processing until their Approvals are issued, and the grant replaces that Ready also when provisioning then fails", func() {
+		f := newPlFixtures("c")
+		for _, app := range f.apps {
+			app.Spec.Team = "team-a" // A==C==P: both gates are Auto
+		}
+		h := newPlHarness(f)
+		h.startup()
+		l := h.listener()
+		ready := graceReady(l)
+		Expect(ready.Status).To(Equal(metav1.ConditionFalse))
+		Expect(ready.Reason).To(Equal(condition.ReasonProcessing))
+		Expect(ready.Message).To(Equal("ApprovalRequest granted, waiting for the approval controller to issue the Approval (provider and consumer gate)"))
+		processing := meta.FindStatusCondition(l.Status.Conditions, condition.ConditionTypeProcessing)
+		Expect(processing).ToNot(BeNil())
+		Expect(processing.Status).To(Equal(metav1.ConditionTrue))
+		Expect(l.Status.AppliedPlacement).To(BeNil())
+
+		h.grant()
+		h.createErr = func(obj client.Object) error {
+			if _, ok := obj.(*pubsubv1.Publisher); ok {
+				return apierrors.NewServiceUnavailable("publisher create failed")
+			}
+			return nil
+		}
+		_, err := h.reconcile()
+		Expect(err).To(MatchError(ContainSubstring("publisher create failed")))
+		ready = graceReady(h.listener())
+		Expect(ready.Reason).To(Equal(condition.ReasonProcessing))
+		Expect(ready.Message).To(Equal("Approval granted, provisioning in progress"))
+
+		h.createErr = nil
+		h.mustReconcile()
+		Expect(h.listener().Status.AppliedPlacement).ToNot(BeNil())
+	})
+
+	It("blocks Auto gates whose Approvals are not issued within the grace period, and retries in time before it", func() {
+		now := graceT0
+		f := newPlFixtures("c")
+		for _, app := range f.apps {
+			app.Spec.Team = "team-a" // A==C==P: both gates are Auto
+		}
+		h, _ := newGraceHarness(f, &now)
+		h.startup()
+
+		// Both requests were granted at graceT0; the provider request reports why
+		// the approval controller could not issue its Approval.
+		l := h.listener()
+		var providerReq string
+		for _, ref := range []*ctypes.ObjectRef{l.Status.ProviderApprovalRequest, l.Status.ConsumerApprovalRequest} {
+			ar := &approvalv1.ApprovalRequest{}
+			Expect(h.raw.Get(context.Background(), ref.K8s(), ar)).To(Succeed())
+			Expect(ar.Spec.Decisions).ToNot(BeEmpty())
+			ar.Spec.Decisions[len(ar.Spec.Decisions)-1].Timestamp = &metav1.Time{Time: graceT0}
+			if ref == l.Status.ProviderApprovalRequest {
+				providerReq = ar.Name
+				ar.Status.Conditions = []metav1.Condition{{Type: condition.ConditionTypeReady, Status: metav1.ConditionFalse,
+					Reason: "Error", Message: "approval store unavailable", ObservedGeneration: ar.Generation, LastTransitionTime: metav1.Now()}}
+			}
+			h.update(ar)
+		}
+
+		h.mustReconcile()
+		Expect(graceReady(h.listener()).Reason).To(Equal(condition.ReasonProcessing))
+		Expect(h.result.RequeueAfter).To(Equal(30 * time.Second))
+
+		now = graceT0.Add(4*time.Minute + 50*time.Second)
+		h.mustReconcile()
+		Expect(graceReady(h.listener()).Reason).To(Equal(condition.ReasonProcessing))
+		Expect(h.result.RequeueAfter).To(Equal(10 * time.Second))
+
+		now = graceT0.Add(5*time.Minute + time.Second)
+		h.mustReconcile()
+		l = h.listener()
+		ready := graceReady(l)
+		Expect(ready.Status).To(Equal(metav1.ConditionFalse))
+		Expect(ready.Reason).To(Equal(condition.ReasonBlocked))
+		Expect(ready.Message).To(HavePrefix(fmt.Sprintf(
+			"ApprovalRequest %s for the provider gate was granted more than 5m0s ago, but no Approval was issued; check the approval controller: approval store unavailable; ",
+			providerReq)))
+		Expect(ready.Message).To(ContainSubstring("for the consumer gate was granted more than 5m0s ago"))
+		processing := meta.FindStatusCondition(l.Status.Conditions, condition.ConditionTypeProcessing)
+		Expect(processing).ToNot(BeNil())
+		Expect(processing.Reason).To(Equal(condition.ReasonBlocked))
+		Expect(l.Status.AppliedPlacement).To(BeNil())
+
+		// Issuing the Approvals provisions the Listener.
+		h.grant()
+		h.mustReconcile()
+		Expect(h.listener().Status.AppliedPlacement).ToNot(BeNil())
+	})
 })
 
 const appDeletedReason = "ApplicationDeleted"

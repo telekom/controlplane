@@ -38,7 +38,7 @@ Users do not create PubSub resources directly. EventStore ownership is unchanged
 - **Application domain** — Reads Application resources for consumer and provider metadata.
 - **Rover domain** — Rover files with `spec.listeners` trigger creation of Listener CRs.
 
-`roverctl get-info` lists the Listeners (consumer and provider as full application IDs) and `listenerSubscription` with the delivery type, callback and `sseUrl`. It evaluates the Listeners and the SpectreApplication referenced in the Rover status like the Rover status endpoint does, so a Rover reports `blocked` while a Listener waits for approval. A removed Listener that is still draining appears only in the status endpoint.
+`roverctl get-info` lists the Listeners (consumer and provider as full application IDs) and `listenerSubscription` with the delivery type, callback and `sseUrl`. It evaluates the Listeners and the SpectreApplication referenced in the Rover status like the Rover status endpoint does, so a Rover reports `blocked` while a Listener waits for an approval decision. A gate whose ApprovalRequest is already granted (always the case for an auto-approved gate) keeps the Listener `processing` until the approval controller issues its Approval. If no Approval is issued within 5 minutes of the grant, the Listener is `blocked` with a message naming the ApprovalRequest, so that the approval controller can be checked. A removed Listener that is still draining appears only in the status endpoint.
 
 ## Listener Placement
 
