@@ -32,6 +32,7 @@ import (
 // It flushes events directly to the event handler, which is useful for resources
 // that are too large to store efficiently in memory. It only keeps the
 // namespace/name of every known object (O(N) memory) to emit DELETED on relist.
+// Objects the event handler writes itself are known once reported with Track.
 type NoCacheInformer struct {
 	ctx             context.Context
 	gvr             schema.GroupVersionResource
@@ -55,14 +56,18 @@ type NoCacheInformer struct {
 
 	mutex sync.Mutex // Protects access to shared fields and serializes watcher (re)starts
 
-	// knownKeys holds the keys of all objects passed to the event handler and
-	// not yet deleted, so a relist can emit DELETED for objects that are gone.
-	knownKeys map[types.NamespacedName]struct{}
+	// knownKeys maps the keys of all objects passed to the event handler or
+	// reported with Track and not yet deleted to the trackSeq of their last
+	// tracking, so a relist can emit DELETED for objects that are gone.
+	// A relist only considers keys tracked before it began.
+	knownKeys map[types.NamespacedName]uint64
+	// trackSeq counts the trackKey calls that add or refresh a key.
+	trackSeq uint64
 	// nextDropRelist is the earliest time of the next relist after a dropped event.
 	nextDropRelist time.Time
 	// dropRelistPending is set while a relist after a dropped event is scheduled.
 	dropRelistPending atomic.Bool
-	stateMutex        sync.Mutex // Protects knownKeys, resourceVersion and nextDropRelist
+	stateMutex        sync.Mutex // Protects knownKeys, trackSeq, resourceVersion and nextDropRelist
 }
 
 // Triggers of a watcher (re)start, used in logs.
@@ -148,7 +153,7 @@ func NewNoCacheWithOptions(ctx context.Context, gvr schema.GroupVersionResource,
 		resourceVersion: "0",
 		retryBackoff:    defaultRetryBackoff,
 		enqueueTimeout:  defaultEnqueueTimeout,
-		knownKeys:       make(map[types.NamespacedName]struct{}),
+		knownKeys:       make(map[types.NamespacedName]uint64),
 	}
 }
 
@@ -222,6 +227,9 @@ func (i *NoCacheInformer) list(ctx context.Context) error {
 	i.log.Info("Listing resources", "timeout", timeout.String())
 	start := time.Now()
 	listed := make(map[types.NamespacedName]struct{})
+	// Objects tracked from now on may have been created after the list
+	// snapshot, so their absence from the list does not mean they are gone.
+	listStart := i.currentTrackSeq()
 
 	for {
 		if ctx.Err() != nil {
@@ -266,14 +274,14 @@ func (i *NoCacheInformer) list(ctx context.Context) error {
 		}
 	}
 
-	for _, key := range i.unlistedKeys(listed) {
+	for _, key := range i.unlistedKeys(listed, listStart) {
 		obj := &unstructured.Unstructured{}
 		obj.SetNamespace(key.Namespace)
 		obj.SetName(key.Name)
 		if err := i.send(ctx, event{typ: "DELETED", obj: obj}); err != nil {
 			return err
 		}
-		i.trackKey(watch.Deleted, key)
+		i.untrackKey(key, listStart)
 	}
 
 	// Only a complete list yields a resource version to watch from, so a
@@ -574,7 +582,14 @@ func objectKey(obj *unstructured.Unstructured) types.NamespacedName {
 	return types.NamespacedName{Namespace: obj.GetNamespace(), Name: obj.GetName()}
 }
 
-// trackKey records an object passed to the event handler.
+// Track records obj as known, so a relist emits DELETED for it once it is
+// gone. The event handler must call it for objects it writes itself, as the
+// watch may miss their deletion.
+func (i *NoCacheInformer) Track(obj *unstructured.Unstructured) {
+	i.trackKey(watch.Added, objectKey(obj))
+}
+
+// trackKey records an object passed to the event handler or reported with Track.
 func (i *NoCacheInformer) trackKey(typ watch.EventType, key types.NamespacedName) {
 	i.stateMutex.Lock()
 	defer i.stateMutex.Unlock()
@@ -582,16 +597,34 @@ func (i *NoCacheInformer) trackKey(typ watch.EventType, key types.NamespacedName
 		delete(i.knownKeys, key)
 		return
 	}
-	i.knownKeys[key] = struct{}{}
+	i.trackSeq++
+	i.knownKeys[key] = i.trackSeq
 }
 
-// unlistedKeys returns all known keys missing from listed.
-func (i *NoCacheInformer) unlistedKeys(listed map[types.NamespacedName]struct{}) []types.NamespacedName {
+// untrackKey forgets key unless it was tracked after seq, as an object
+// reported with Track meanwhile may still exist.
+func (i *NoCacheInformer) untrackKey(key types.NamespacedName, seq uint64) {
+	i.stateMutex.Lock()
+	defer i.stateMutex.Unlock()
+	if tracked, ok := i.knownKeys[key]; ok && tracked <= seq {
+		delete(i.knownKeys, key)
+	}
+}
+
+func (i *NoCacheInformer) currentTrackSeq() uint64 {
+	i.stateMutex.Lock()
+	defer i.stateMutex.Unlock()
+	return i.trackSeq
+}
+
+// unlistedKeys returns all keys last tracked at or before seq that are
+// missing from listed.
+func (i *NoCacheInformer) unlistedKeys(listed map[types.NamespacedName]struct{}, seq uint64) []types.NamespacedName {
 	i.stateMutex.Lock()
 	defer i.stateMutex.Unlock()
 	var gone []types.NamespacedName
-	for key := range i.knownKeys {
-		if _, ok := listed[key]; !ok {
+	for key, tracked := range i.knownKeys {
+		if _, ok := listed[key]; !ok && tracked <= seq {
 			gone = append(gone, key)
 		}
 	}

@@ -129,9 +129,9 @@ func fakeWatches(client *dynamic.FakeDynamicClient) (*atomic.Pointer[watch.FakeW
 	var current atomic.Pointer[watch.FakeWatcher]
 	var calls atomic.Int32
 	client.PrependWatchReactor("*", func(k8stesting.Action) (bool, watch.Interface, error) {
-		calls.Add(1)
 		w := watch.NewFake()
 		current.Store(w)
+		calls.Add(1)
 		return true, w, nil
 	})
 	return &current, &calls
