@@ -67,6 +67,9 @@ This tool allows you to apply, delete, and manage resources in the Rover Control
 	rootCmd.PersistentFlags().String("log-format", viper.GetString("log.format"), "Log format (json or console)")
 	viper.BindPFlag("log.format", rootCmd.PersistentFlags().Lookup("log-format"))
 
+	rootCmd.PersistentFlags().Duration("poll-delay", viper.GetDuration("poll.delay"), "Wait before polling the status after applying a resource (for example 3s, 0 to disable)")
+	viper.BindPFlag("poll.delay", rootCmd.PersistentFlags().Lookup("poll-delay"))
+
 	// Add output format flag
 	rootCmd.PersistentFlags().String("format", viper.GetString("output.format"), "Output format (yaml|json)")
 	viper.BindPFlag("output.format", rootCmd.PersistentFlags().Lookup("format"))

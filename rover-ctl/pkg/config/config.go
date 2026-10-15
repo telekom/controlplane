@@ -65,4 +65,5 @@ func setDefaults() {
 	viper.SetDefault("timeout.status", "30s")         // ROVER_TIMEOUT_STATUS
 	viper.SetDefault("timeout.secretRotation", "30s") // ROVER_TIMEOUT_SECRET_ROTATION
 	viper.SetDefault("poll.interval", "1s")           // ROVER_POLL_INTERVAL
+	viper.SetDefault("poll.delay", "3s")              // ROVER_POLL_DELAY
 }

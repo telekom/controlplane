@@ -39,22 +39,46 @@ type StatusPoller struct {
 	timeout  time.Duration
 	interval time.Duration
 	evalFunc StatusEvalFunc
+	// initialDelay is an active wait before the first poll. It is not part of the timeout.
+	initialDelay time.Duration
 }
 
-func NewStatusPoller(handler StatusHandler, evalFunc StatusEvalFunc, timeout, interval time.Duration) *StatusPoller {
+// StatusPollerOption configures optional behavior of a StatusPoller.
+type StatusPollerOption func(*StatusPoller)
+
+// WithInitialDelay makes the poller wait for the given duration before it starts polling.
+func WithInitialDelay(delay time.Duration) StatusPollerOption {
+	return func(p *StatusPoller) {
+		p.initialDelay = delay
+	}
+}
+
+func NewStatusPoller(handler StatusHandler, evalFunc StatusEvalFunc, timeout, interval time.Duration, opts ...StatusPollerOption) *StatusPoller {
 	if evalFunc == nil {
 		evalFunc = defaultStatusEvalFunc
 	}
-	return &StatusPoller{
+	p := &StatusPoller{
 		logger:   log.L().WithName("status-poller"),
 		handler:  handler,
 		evalFunc: evalFunc,
 		timeout:  timeout,
 		interval: interval,
 	}
+	for _, opt := range opts {
+		opt(p)
+	}
+	return p
 }
 
 func (p *StatusPoller) Start(ctx context.Context, name string) (types.ObjectStatus, error) {
+	if p.initialDelay > 0 {
+		p.logger.V(1).Info("Waiting before polling", "delay", p.initialDelay.String())
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case <-time.After(p.initialDelay):
+		}
+	}
 
 	ctx, cancel := context.WithTimeout(ctx, p.timeout)
 	defer cancel()
