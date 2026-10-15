@@ -30,4 +30,19 @@ var _ = Describe("MapSubscriberSecurityToGateway", func() {
 		Entry("authorization_code", agenticv1.GrantTypeAuthorizationCode, gatewayapi.GrantTypeAuthorizationCode),
 		Entry("unrecognized without validation", agenticv1.GrantType("unrecognized"), gatewayapi.GrantType("unrecognized")),
 	)
+
+	DescribeTable("passes the consumer token request method through", func(tokenRequest agenticv1.TokenRequestMethod, expected gatewayapi.TokenRequestMethod) {
+		mapped := MapSubscriberSecurityToGateway(&agenticv1.SubscriberSecurity{M2M: &agenticv1.SubscriberMachine2MachineAuthentication{
+			Client:       &agenticv1.OAuth2ClientCredentials{ClientId: "consumer-id", ClientSecret: "consumer-secret"},
+			TokenRequest: tokenRequest,
+		}})
+
+		Expect(mapped).NotTo(BeNil())
+		Expect(mapped.M2M).NotTo(BeNil())
+		Expect(mapped.M2M.TokenRequest).To(Equal(expected))
+	},
+		Entry("empty without defaulting", agenticv1.TokenRequestMethod(""), gatewayapi.TokenRequestMethod("")),
+		Entry("client_secret_basic", agenticv1.TokenRequestClientSecretBasic, gatewayapi.TokenRequestClientSecretBasic),
+		Entry("client_secret_post", agenticv1.TokenRequestClientSecretPost, gatewayapi.TokenRequestClientSecretPost),
+	)
 })

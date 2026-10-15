@@ -129,11 +129,12 @@ var _ = Describe("Consumer username/password with scopes", func() {
 	)
 
 	DescribeTable("is provisioned for any exposure grant type and forwards the consumer grant type",
-		func(name string, exposureGrant, consumerGrant apiapi.GrantType) {
+		func(name string, exposureGrant, consumerGrant apiapi.GrantType, consumerTokenRequest apiapi.TokenRequestMethod) {
 			exposure, sub := newScopeFixtures(name, nil, true)
 			exposure.Spec.Security.M2M.ExternalIDP.GrantType = exposureGrant
 			withConsumerPassword(sub)
 			sub.Spec.Security.M2M.GrantType = consumerGrant
+			sub.Spec.Security.M2M.TokenRequest = consumerTokenRequest
 
 			Expect(k8sClient.Create(ctx, exposure)).To(Succeed())
 			Eventually(func(g Gomega) { expectScopeExposureReady(g, exposure) }, scopeTimeout, interval).Should(Succeed())
@@ -153,12 +154,15 @@ var _ = Describe("Consumer username/password with scopes", func() {
 				}))
 				g.Expect(consume.Spec.Security.M2M.Scopes).To(Equal(consumerScopes))
 				g.Expect(consume.Spec.Security.M2M.GrantType).To(Equal(gatewayapi.GrantType(consumerGrant)))
+				g.Expect(consume.Spec.Security.M2M.TokenRequest).To(Equal(gatewayapi.TokenRequestMethod(consumerTokenRequest)))
 			}, scopeTimeout, interval).Should(Succeed())
 		},
 		Entry("client_credentials exposure grant overridden by consumer password grant",
-			"password-override", apiapi.GrantTypeClientCredentials, apiapi.GrantTypePassword),
+			"password-override", apiapi.GrantTypeClientCredentials, apiapi.GrantTypePassword, apiapi.TokenRequestMethod("")),
 		Entry("authorization_code exposure grant without consumer override",
-			"password-no-override", apiapi.GrantTypeAuthorizationCode, apiapi.GrantType("")),
+			"password-no-override", apiapi.GrantTypeAuthorizationCode, apiapi.GrantType(""), apiapi.TokenRequestMethod("")),
+		Entry("consumer token request method overrides the exposure method",
+			"password-token-request", apiapi.GrantTypeClientCredentials, apiapi.GrantTypePassword, apiapi.TokenRequestClientSecretPost),
 	)
 
 	DescribeTable("is blocked before approval when the exposure has no external IDP", func(name string, security func(*apiapi.ApiSubscription)) {

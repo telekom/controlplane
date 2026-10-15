@@ -183,6 +183,21 @@ var _ = Describe("Route Util", func() {
 				Entry("refresh_token", apiapi.GrantTypeRefreshToken, gatewayapi.GrantTypeRefreshToken),
 				Entry("unrecognized without validation", apiapi.GrantType("unrecognized"), gatewayapi.GrantType("unrecognized")),
 			)
+
+			DescribeTable("passes the consumer token request method through", func(tokenRequest apiapi.TokenRequestMethod, expected gatewayapi.TokenRequestMethod) {
+				mapped := mapConsumerSecurity(&apiapi.SubscriberSecurity{M2M: &apiapi.SubscriberMachine2MachineAuthentication{
+					Client:       &apiapi.OAuth2ClientCredentials{ClientId: "consumer-id", ClientSecret: "consumer-secret"},
+					TokenRequest: tokenRequest,
+				}})
+
+				Expect(mapped).NotTo(BeNil())
+				Expect(mapped.M2M).NotTo(BeNil())
+				Expect(mapped.M2M.TokenRequest).To(Equal(expected))
+			},
+				Entry("empty without defaulting", apiapi.TokenRequestMethod(""), gatewayapi.TokenRequestMethod("")),
+				Entry("client_secret_basic", apiapi.TokenRequestClientSecretBasic, gatewayapi.TokenRequestClientSecretBasic),
+				Entry("client_secret_post", apiapi.TokenRequestClientSecretPost, gatewayapi.TokenRequestClientSecretPost),
+			)
 		})
 
 		Describe("ReturnReferenceOnly", func() {
