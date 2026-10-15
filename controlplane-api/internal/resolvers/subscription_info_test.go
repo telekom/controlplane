@@ -47,7 +47,11 @@ var _ = Describe("SubscriptionInfo", func() {
 		Expect(field).NotTo(BeNil())
 		Expect(field.Type.String()).To(Equal("[ExternalId!]"))
 		Expect(field.Type.String()).To(Equal(schema.Types["Application"].Fields.ForName("externalIds").Type.String()))
-		for _, name := range []string{"clientID", "clientSecret", "permissionSet", "exposedApis", "subscribedApis"} {
+		// clientId is an identifier, intentionally exposed on the reduced view; secrets and edges are not.
+		clientID := applicationInfo.Fields.ForName("clientId")
+		Expect(clientID).NotTo(BeNil())
+		Expect(clientID.Type.String()).To(Equal("String"))
+		for _, name := range []string{"clientSecret", "permissionSet", "exposedApis", "subscribedApis"} {
 			Expect(applicationInfo.Fields.ForName(name)).To(BeNil(), name)
 		}
 	})
@@ -71,6 +75,15 @@ var _ = Describe("SubscriptionInfo", func() {
 		}
 	})
 
+	It("exposes reduced file service URLs as nullable fields", func() {
+		schema := resolvers.NewExecutableSchema(resolvers.Config{}).Schema()
+		for _, typeName := range []string{"FileSubscriptionInfo", "FileExposureInfo"} {
+			for _, fieldName := range []string{"serviceUrl", "serviceExternalUrl"} {
+				Expect(schema.Types[typeName].Fields.ForName(fieldName).Type.String()).To(Equal("String"))
+			}
+		}
+	})
+
 	Describe("GraphQL execution", func() {
 		var (
 			db     *ent.Client
@@ -84,7 +97,12 @@ var _ = Describe("SubscriptionInfo", func() {
 			db.Intercept(interceptor.TeamFilterInterceptor())
 			seed = testutil.SeedStandard(db)
 			ctx := testutil.AllowContext()
-			_, err := db.Approval.Create().
+			_, err := db.FileSubscription.UpdateOne(seed.FileSubscriptionAlpha).
+				SetServiceURL("subscription.internal.example.com:8080").
+				SetServiceExternalURL("subscription.external.example.com:8080").
+				Save(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			_, err = db.Approval.Create().
 				SetNamespace("prod").SetName("event-approval").SetAction("ALLOW").
 				SetRequester(seed.Approval.Requester).SetDecider(seed.Approval.Decider).
 				SetDeciderTeamName("team-alpha").SetEventSubscription(seed.EventSubscription).Save(ctx)
@@ -176,6 +194,55 @@ var _ = Describe("SubscriptionInfo", func() {
 			Entry("explicitly empty IDs serialize as an empty array", []model.ExternalId{}, `[]`),
 		)
 
+		DescribeTable("returns the client ID through a reduced cross-tenant application view",
+			func(clear bool, expectedJSON string) {
+				if clear {
+					_, err := db.Application.UpdateOne(seed.AppBeta).ClearClientID().Save(testutil.AllowContext())
+					Expect(err).NotTo(HaveOccurred())
+				}
+				body, err := json.Marshal(map[string]string{"query": `{
+					approvals { edges { node { subscription { ownerApplication { id clientId } } } } }
+				}`})
+				Expect(err).NotTo(HaveOccurred())
+				req := httptest.NewRequest(http.MethodPost, "/graphql", bytes.NewReader(body))
+				req.Header.Set("Content-Type", "application/json")
+				req = req.WithContext(viewer.NewContext(context.Background(), &viewer.Viewer{
+					Teams: []string{seed.TeamAlpha.Name},
+				}))
+				recorder := httptest.NewRecorder()
+				server.ServeHTTP(recorder, req)
+				Expect(recorder.Code).To(Equal(http.StatusOK), recorder.Body.String())
+
+				var response struct {
+					Data struct {
+						Approvals struct {
+							Edges []struct {
+								Node struct {
+									Subscription struct {
+										OwnerApplication struct {
+											ID       string
+											ClientID json.RawMessage `json:"clientId"`
+										}
+									}
+								}
+							}
+						}
+					}
+					Errors gqlerror.List
+				}
+				Expect(json.Unmarshal(recorder.Body.Bytes(), &response)).To(Succeed())
+				Expect(response.Errors).To(BeEmpty())
+				Expect(response.Data.Approvals.Edges).To(HaveLen(4))
+				for _, edge := range response.Data.Approvals.Edges {
+					owner := edge.Node.Subscription.OwnerApplication
+					Expect(owner.ID).To(Equal(strconv.Itoa(seed.AppBeta.ID)))
+					Expect(string(owner.ClientID)).To(MatchJSON(expectedJSON))
+				}
+			},
+			Entry("populated client ID is returned", false, `"client-beta"`),
+			Entry("absent client ID serializes as null", true, `null`),
+		)
+
 		DescribeTable("resolves common fields for every implementation alongside concrete fragments",
 			func(field, selection, fragment string) {
 				query := fmt.Sprintf(`{
@@ -186,7 +253,7 @@ var _ = Describe("SubscriptionInfo", func() {
 							... on ApiSubscriptionInfo { basePath }
 							... on EventSubscriptionInfo { eventType }
 							... on AgenticSubscriptionInfo { basePath }
-							... on FileSubscriptionInfo { fileType }
+							... on FileSubscriptionInfo { fileType serviceUrl serviceExternalUrl }
 						} } }
 					}
 				} %s`, field, selection, fragment)
@@ -200,12 +267,14 @@ var _ = Describe("SubscriptionInfo", func() {
 				Expect(recorder.Code).To(Equal(http.StatusOK), recorder.Body.String())
 
 				type subscription struct {
-					Typename         string `json:"__typename"`
-					ID               string
-					BasePath         string
-					EventType        string
-					FileType         string
-					OwnerApplication struct{ ID, Name string }
+					Typename           string `json:"__typename"`
+					ID                 string
+					BasePath           string
+					EventType          string
+					FileType           string
+					ServiceURL         string
+					ServiceExternalURL string
+					OwnerApplication   struct{ ID, Name string }
 				}
 				var response struct {
 					Data map[string]struct {
@@ -221,7 +290,12 @@ var _ = Describe("SubscriptionInfo", func() {
 					"ApiSubscriptionInfo":     {ID: strconv.Itoa(seed.Subscription.ID), BasePath: "/alpha"},
 					"EventSubscriptionInfo":   {ID: strconv.Itoa(seed.EventSubscription.ID), EventType: "order.created"},
 					"AgenticSubscriptionInfo": {ID: strconv.Itoa(seed.AgenticSubscription.ID), BasePath: "/mcp-alpha"},
-					"FileSubscriptionInfo":    {ID: strconv.Itoa(seed.FileSubscriptionAlpha.ID), FileType: "invoice"},
+					"FileSubscriptionInfo": {
+						ID:                 strconv.Itoa(seed.FileSubscriptionAlpha.ID),
+						FileType:           "invoice",
+						ServiceURL:         "subscription.internal.example.com:8080",
+						ServiceExternalURL: "subscription.external.example.com:8080",
+					},
 				}
 				Expect(response.Data[field].Edges).To(HaveLen(4))
 				for _, edge := range response.Data[field].Edges {

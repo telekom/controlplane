@@ -97,7 +97,7 @@ func TestCheckAccess(t *testing.T) {
 				},
 				{
 					Method:         "GET",
-					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"team:obfuscated"}),
+					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"tardis:team:obfuscated"}),
 					ResourcePath:   env + "--group--team",
 					ExpectedStatus: 200,
 					ExpectedBody:   "prefix:test--group--team/, group:group, team:team",
@@ -105,7 +105,7 @@ func TestCheckAccess(t *testing.T) {
 				},
 				{
 					Method:         "GET",
-					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"team:read"}),
+					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"tardis:team:read"}),
 					ResourcePath:   env + "--othergroup",
 					ExpectedStatus: 403,
 					ExpectedBody:   "Access to requested resource not allowed",
@@ -113,7 +113,7 @@ func TestCheckAccess(t *testing.T) {
 				},
 				{
 					Method:         "GET",
-					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"team:read"}),
+					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"tardis:team:read"}),
 					ResourcePath:   env + "--group2",
 					ExpectedStatus: 403,
 					ExpectedBody:   "Access to requested resource not allowed",
@@ -121,7 +121,7 @@ func TestCheckAccess(t *testing.T) {
 				},
 				{
 					Method:         "GET",
-					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"team:read"}),
+					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"tardis:team:read"}),
 					ResourcePath:   env + "--group--teamplayer",
 					ExpectedStatus: 403,
 					ExpectedBody:   "Access to requested resource not allowed",
@@ -129,7 +129,7 @@ func TestCheckAccess(t *testing.T) {
 				},
 				{
 					Method:         "GET",
-					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"team:read"}),
+					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"tardis:team:read"}),
 					ResourcePath:   env + "--group--te",
 					ExpectedStatus: 403,
 					ExpectedBody:   "Access to requested resource not allowed",
@@ -137,7 +137,7 @@ func TestCheckAccess(t *testing.T) {
 				},
 				{
 					Method:         "GET",
-					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"team:read"}),
+					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"tardis:team:read"}),
 					ResourcePath:   env + "--group--foo",
 					ExpectedStatus: 403,
 					ExpectedBody:   "Access to requested resource not allowed",
@@ -146,7 +146,7 @@ func TestCheckAccess(t *testing.T) {
 				// Group Scope
 				{
 					Method:         "GET",
-					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"group:read"}),
+					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"tardis:group:read"}),
 					ResourcePath:   env + "--group--foo",
 					ExpectedStatus: 200,
 					ExpectedBody:   "prefix:test--group--, group:group, team:team",
@@ -154,7 +154,7 @@ func TestCheckAccess(t *testing.T) {
 				},
 				{
 					Method:         "GET",
-					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"group:read"}),
+					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"tardis:group:read"}),
 					ResourcePath:   env + "--group2--team",
 					ExpectedStatus: 403,
 					ExpectedBody:   "Access to requested resource not allowed",
@@ -162,7 +162,7 @@ func TestCheckAccess(t *testing.T) {
 				},
 				{
 					Method:         "GET",
-					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"group:read"}),
+					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"tardis:group:read"}),
 					ResourcePath:   env + "--gr--team",
 					ExpectedStatus: 403,
 					ExpectedBody:   "Access to requested resource not allowed",
@@ -170,7 +170,7 @@ func TestCheckAccess(t *testing.T) {
 				},
 				{
 					Method:         "GET",
-					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"group:read"}),
+					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"tardis:group:read"}),
 					ResourcePath:   env + "--foo--bar",
 					ExpectedStatus: 403,
 					ExpectedBody:   "Access to requested resource not allowed",
@@ -178,7 +178,7 @@ func TestCheckAccess(t *testing.T) {
 				},
 				{
 					Method:         "GET",
-					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"group:read"}),
+					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"tardis:group:read"}),
 					ResourcePath:   env + "--othergroup",
 					ExpectedStatus: 403,
 					ExpectedBody:   "Access to requested resource not allowed",
@@ -186,7 +186,7 @@ func TestCheckAccess(t *testing.T) {
 				},
 				{
 					Method:         "GET",
-					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"group:read"}),
+					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"tardis:group:read"}),
 					ResourcePath:   env + "--group2",
 					ExpectedStatus: 403,
 					ExpectedBody:   "Access to requested resource not allowed",
@@ -195,7 +195,7 @@ func TestCheckAccess(t *testing.T) {
 				// Admin Scope
 				{
 					Method:         "GET",
-					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"admin:read"}),
+					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"tardis:admin:read"}),
 					ResourcePath:   env + "--othergroup",
 					ExpectedStatus: 200,
 					ExpectedBody:   "prefix:test--, group:group, team:team",
@@ -203,7 +203,7 @@ func TestCheckAccess(t *testing.T) {
 				},
 				{
 					Method:         "POST",
-					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"admin:all"}),
+					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"tardis:admin:all"}),
 					ResourcePath:   env + "--othergroup",
 					ExpectedStatus: 200,
 					ExpectedBody:   "prefix:test--, group:group, team:team",
@@ -211,7 +211,7 @@ func TestCheckAccess(t *testing.T) {
 				},
 				{
 					Method:         "POST",
-					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"admin:read"}),
+					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"tardis:admin:read"}),
 					ResourcePath:   env + "--othergroup",
 					ExpectedStatus: 403,
 					ExpectedBody:   "Access to requested resource not allowed",
@@ -230,7 +230,7 @@ func TestCheckAccess(t *testing.T) {
 				},
 				{
 					Method:         "GET",
-					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"group:read"}),
+					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"tardis:group:read"}),
 					ResourcePath:   "",
 					ExpectedStatus: 200,
 					ExpectedBody:   "prefix:test--group--, group:group, team:team",
@@ -238,7 +238,7 @@ func TestCheckAccess(t *testing.T) {
 				},
 				{
 					Method:         "GET",
-					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"admin:read"}),
+					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"tardis:admin:read"}),
 					ResourcePath:   "",
 					ExpectedStatus: 200,
 					ExpectedBody:   "prefix:test--, group:group, team:team",
@@ -246,7 +246,7 @@ func TestCheckAccess(t *testing.T) {
 				},
 				{
 					Method:         "POST",
-					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"team:read"}),
+					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"tardis:team:read"}),
 					ResourcePath:   "",
 					ExpectedStatus: 403,
 					ExpectedBody:   "Access to requested resource not allowed",
@@ -254,7 +254,7 @@ func TestCheckAccess(t *testing.T) {
 				},
 				{
 					Method:         "POST",
-					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"team:all"}),
+					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"tardis:team:all"}),
 					ResourcePath:   "",
 					ExpectedStatus: 200,
 					ExpectedBody:   "prefix:test--group--team/, group:group, team:team",
@@ -311,7 +311,7 @@ func TestCheckAccess(t *testing.T) {
 				},
 				{
 					Method:         "GET",
-					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"team:obfuscated"}),
+					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"tardis:team:obfuscated"}),
 					ResourcePath:   env + "/group--team",
 					ExpectedStatus: 200,
 					ExpectedBody:   "prefix:test/group--team/, group:group, team:team",
@@ -319,7 +319,7 @@ func TestCheckAccess(t *testing.T) {
 				},
 				{
 					Method:         "GET",
-					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"team:obfuscated"}),
+					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"tardis:team:obfuscated"}),
 					ResourcePath:   env + "/group--teamplayer",
 					ExpectedStatus: 403,
 					ExpectedBody:   "Access to requested resource not allowed",
@@ -327,7 +327,7 @@ func TestCheckAccess(t *testing.T) {
 				},
 				{
 					Method:         "GET",
-					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"team:obfuscated"}),
+					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"tardis:team:obfuscated"}),
 					ResourcePath:   env + "/group--te",
 					ExpectedStatus: 403,
 					ExpectedBody:   "Access to requested resource not allowed",
@@ -335,7 +335,7 @@ func TestCheckAccess(t *testing.T) {
 				},
 				{
 					Method:         "GET",
-					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"team:obfuscated"}),
+					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"tardis:team:obfuscated"}),
 					ResourcePath:   env + "/group--foo",
 					ExpectedStatus: 403,
 					ExpectedBody:   "Access to requested resource not allowed",
@@ -343,7 +343,7 @@ func TestCheckAccess(t *testing.T) {
 				},
 				{
 					Method:         "GET",
-					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"team:read"}),
+					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"tardis:team:read"}),
 					ResourcePath:   env + "/othergroup",
 					ExpectedStatus: 403,
 					ExpectedBody:   "Access to requested resource not allowed",
@@ -351,7 +351,7 @@ func TestCheckAccess(t *testing.T) {
 				},
 				{
 					Method:         "GET",
-					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"team:read"}),
+					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"tardis:team:read"}),
 					ResourcePath:   env + "/othergroup--team",
 					ExpectedStatus: 403,
 					ExpectedBody:   "Access to requested resource not allowed",
@@ -360,7 +360,7 @@ func TestCheckAccess(t *testing.T) {
 				// Group Scope
 				{
 					Method:         "GET",
-					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"group:read"}),
+					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"tardis:group:read"}),
 					ResourcePath:   env + "/group--foo",
 					ExpectedStatus: 200,
 					ExpectedBody:   "prefix:test/group--, group:group, team:team",
@@ -368,7 +368,7 @@ func TestCheckAccess(t *testing.T) {
 				},
 				{
 					Method:         "GET",
-					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"group:read"}),
+					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"tardis:group:read"}),
 					ResourcePath:   env + "/othergroup--team",
 					ExpectedStatus: 403,
 					ExpectedBody:   "Access to requested resource not allowed",
@@ -376,7 +376,7 @@ func TestCheckAccess(t *testing.T) {
 				},
 				{
 					Method:         "GET",
-					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"group:read"}),
+					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"tardis:group:read"}),
 					ResourcePath:   env + "/othergroup",
 					ExpectedStatus: 403,
 					ExpectedBody:   "Access to requested resource not allowed",
@@ -384,7 +384,7 @@ func TestCheckAccess(t *testing.T) {
 				},
 				{
 					Method:         "GET",
-					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"group:read"}),
+					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"tardis:group:read"}),
 					ResourcePath:   env + "/gr--team",
 					ExpectedStatus: 403,
 					ExpectedBody:   "Access to requested resource not allowed",
@@ -392,7 +392,7 @@ func TestCheckAccess(t *testing.T) {
 				},
 				{
 					Method:         "GET",
-					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"group:read"}),
+					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"tardis:group:read"}),
 					ResourcePath:   env + "/group2--team",
 					ExpectedStatus: 403,
 					ExpectedBody:   "Access to requested resource not allowed",
@@ -401,7 +401,7 @@ func TestCheckAccess(t *testing.T) {
 				// Admin Scope
 				{
 					Method:         "GET",
-					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"admin:read"}),
+					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"tardis:admin:read"}),
 					ResourcePath:   env + "/othergroup",
 					ExpectedStatus: 200,
 					ExpectedBody:   "prefix:test/, group:group, team:team",
@@ -409,7 +409,7 @@ func TestCheckAccess(t *testing.T) {
 				},
 				{
 					Method:         "POST",
-					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"admin:all"}),
+					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"tardis:admin:all"}),
 					ResourcePath:   env + "/othergroup",
 					ExpectedStatus: 200,
 					ExpectedBody:   "prefix:test/, group:group, team:team",
@@ -417,7 +417,7 @@ func TestCheckAccess(t *testing.T) {
 				},
 				{
 					Method:         "POST",
-					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"admin:read"}),
+					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"tardis:admin:read"}),
 					ResourcePath:   env + "/othergroup",
 					ExpectedStatus: 403,
 					ExpectedBody:   "Access to requested resource not allowed",
@@ -436,7 +436,7 @@ func TestCheckAccess(t *testing.T) {
 				},
 				{
 					Method:         "GET",
-					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"group:read"}),
+					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"tardis:group:read"}),
 					ResourcePath:   "",
 					ExpectedStatus: 200,
 					ExpectedBody:   "prefix:test/group--, group:group, team:team",
@@ -444,7 +444,7 @@ func TestCheckAccess(t *testing.T) {
 				},
 				{
 					Method:         "GET",
-					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"admin:read"}),
+					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"tardis:admin:read"}),
 					ResourcePath:   "",
 					ExpectedStatus: 200,
 					ExpectedBody:   "prefix:test/, group:group, team:team",
@@ -452,7 +452,7 @@ func TestCheckAccess(t *testing.T) {
 				},
 				{
 					Method:         "POST",
-					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"team:read"}),
+					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"tardis:team:read"}),
 					ResourcePath:   "",
 					ExpectedStatus: 403,
 					ExpectedBody:   "Access to requested resource not allowed",
@@ -460,7 +460,7 @@ func TestCheckAccess(t *testing.T) {
 				},
 				{
 					Method:         "POST",
-					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"team:all"}),
+					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"tardis:team:all"}),
 					ResourcePath:   "",
 					ExpectedStatus: 200,
 					ExpectedBody:   "prefix:test/group--team/, group:group, team:team",
@@ -520,7 +520,7 @@ func TestCheckAccess(t *testing.T) {
 				},
 				{
 					Method:         "GET",
-					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"team:read"}),
+					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"tardis:team:read"}),
 					ResourcePath:   env + "/group",
 					ExpectedStatus: 403,
 					ExpectedBody:   "Access to requested resource not allowed",
@@ -529,7 +529,7 @@ func TestCheckAccess(t *testing.T) {
 				// Group Scope
 				{
 					Method:         "GET",
-					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"group:read"}),
+					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"tardis:group:read"}),
 					ResourcePath:   env + "/group",
 					ExpectedStatus: 200,
 					ExpectedBody:   "prefix:test/group, group:group, team:team",
@@ -537,7 +537,7 @@ func TestCheckAccess(t *testing.T) {
 				},
 				{
 					Method:         "GET",
-					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"group:read"}),
+					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"tardis:group:read"}),
 					ResourcePath:   env + "/group2",
 					ExpectedStatus: 403,
 					ExpectedBody:   "Access to requested resource not allowed",
@@ -545,7 +545,7 @@ func TestCheckAccess(t *testing.T) {
 				},
 				{
 					Method:         "GET",
-					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"group:read"}),
+					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"tardis:group:read"}),
 					ResourcePath:   env + "/gr",
 					ExpectedStatus: 403,
 					ExpectedBody:   "Access to requested resource not allowed",
@@ -553,7 +553,7 @@ func TestCheckAccess(t *testing.T) {
 				},
 				{
 					Method:         "GET",
-					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"group:read"}),
+					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"tardis:group:read"}),
 					ResourcePath:   env + "/foo",
 					ExpectedStatus: 403,
 					ExpectedBody:   "Access to requested resource not allowed",
@@ -562,7 +562,7 @@ func TestCheckAccess(t *testing.T) {
 				// Admin Scope
 				{
 					Method:         "GET",
-					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"admin:read"}),
+					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"tardis:admin:read"}),
 					ResourcePath:   env + "/othergroup",
 					ExpectedStatus: 200,
 					ExpectedBody:   "prefix:test/, group:group, team:team",
@@ -570,7 +570,7 @@ func TestCheckAccess(t *testing.T) {
 				},
 				{
 					Method:         "POST",
-					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"admin:all"}),
+					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"tardis:admin:all"}),
 					ResourcePath:   env + "/othergroup",
 					ExpectedStatus: 200,
 					ExpectedBody:   "prefix:test/, group:group, team:team",
@@ -578,7 +578,7 @@ func TestCheckAccess(t *testing.T) {
 				},
 				{
 					Method:         "POST",
-					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"admin:read"}),
+					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"tardis:admin:read"}),
 					ResourcePath:   env + "/othergroup",
 					ExpectedStatus: 403,
 					ExpectedBody:   "Access to requested resource not allowed",
@@ -597,7 +597,7 @@ func TestCheckAccess(t *testing.T) {
 				},
 				{
 					Method:         "GET",
-					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"group:read"}),
+					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"tardis:group:read"}),
 					ResourcePath:   "",
 					ExpectedStatus: 200,
 					ExpectedBody:   "prefix:test/group, group:group, team:team",
@@ -605,7 +605,7 @@ func TestCheckAccess(t *testing.T) {
 				},
 				{
 					Method:         "GET",
-					AccessToken:    mock.NewMockAccessToken("test", "group", "", []string{"group:read"}),
+					AccessToken:    mock.NewMockAccessToken("test", "group", "", []string{"tardis:group:read"}),
 					ResourcePath:   "",
 					ExpectedStatus: 403,
 					ExpectedBody:   "Invalid authorization context",
@@ -613,7 +613,7 @@ func TestCheckAccess(t *testing.T) {
 				},
 				{
 					Method:         "GET",
-					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"admin:read"}),
+					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"tardis:admin:read"}),
 					ResourcePath:   "",
 					ExpectedStatus: 200,
 					ExpectedBody:   "prefix:test/, group:group, team:team",
@@ -621,7 +621,7 @@ func TestCheckAccess(t *testing.T) {
 				},
 				{
 					Method:         "POST",
-					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"team:read"}),
+					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"tardis:team:read"}),
 					ResourcePath:   "",
 					ExpectedStatus: 403,
 					ExpectedBody:   "Access to requested resource not allowed",
@@ -629,7 +629,7 @@ func TestCheckAccess(t *testing.T) {
 				},
 				{
 					Method:         "POST",
-					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"team:all"}),
+					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"tardis:team:all"}),
 					ResourcePath:   "",
 					ExpectedStatus: 403,
 					ExpectedBody:   "Access to requested resource not allowed",
@@ -637,7 +637,7 @@ func TestCheckAccess(t *testing.T) {
 				},
 				{
 					Method:         "POST",
-					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"group:all"}),
+					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"tardis:group:all"}),
 					ResourcePath:   "",
 					ExpectedStatus: 200,
 					ExpectedBody:   "prefix:test/group, group:group, team:team",
@@ -686,7 +686,7 @@ func TestCheckAccess(t *testing.T) {
 				},
 				{
 					Method:         "GET",
-					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"team:obfuscated"}),
+					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"tardis:team:obfuscated"}),
 					ResourcePath:   "group--team--rover-id",
 					ExpectedStatus: 200,
 					ExpectedBody:   "prefix:test--group--team/, group:group, team:team",
@@ -694,7 +694,7 @@ func TestCheckAccess(t *testing.T) {
 				},
 				{
 					Method:         "GET",
-					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"team:read"}),
+					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"tardis:team:read"}),
 					ResourcePath:   "othergroup--rover-id",
 					ExpectedStatus: 403,
 					ExpectedBody:   "Access to requested resource not allowed",
@@ -702,7 +702,7 @@ func TestCheckAccess(t *testing.T) {
 				},
 				{
 					Method:         "GET",
-					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"team:read"}),
+					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"tardis:team:read"}),
 					ResourcePath:   "group2--rover-id",
 					ExpectedStatus: 403,
 					ExpectedBody:   "Access to requested resource not allowed",
@@ -710,7 +710,7 @@ func TestCheckAccess(t *testing.T) {
 				},
 				{
 					Method:         "GET",
-					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"team:read"}),
+					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"tardis:team:read"}),
 					ResourcePath:   "group--teamplayer--resourceId",
 					ExpectedStatus: 403,
 					ExpectedBody:   "Access to requested resource not allowed",
@@ -718,7 +718,7 @@ func TestCheckAccess(t *testing.T) {
 				},
 				{
 					Method:         "GET",
-					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"team:read"}),
+					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"tardis:team:read"}),
 					ResourcePath:   "group--te--resourceId",
 					ExpectedStatus: 403,
 					ExpectedBody:   "Access to requested resource not allowed",
@@ -726,7 +726,7 @@ func TestCheckAccess(t *testing.T) {
 				},
 				{
 					Method:         "GET",
-					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"team:read"}),
+					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"tardis:team:read"}),
 					ResourcePath:   "group--foo--resourceId",
 					ExpectedStatus: 403,
 					ExpectedBody:   "Access to requested resource not allowed",
@@ -735,7 +735,7 @@ func TestCheckAccess(t *testing.T) {
 				// Group Scope
 				{
 					Method:         "GET",
-					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"group:read"}),
+					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"tardis:group:read"}),
 					ResourcePath:   "group--foo--resourceId",
 					ExpectedStatus: 200,
 					ExpectedBody:   "prefix:test--group--, group:group, team:team",
@@ -743,7 +743,7 @@ func TestCheckAccess(t *testing.T) {
 				},
 				{
 					Method:         "GET",
-					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"group:read"}),
+					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"tardis:group:read"}),
 					ResourcePath:   "group2--team--resourceId",
 					ExpectedStatus: 403,
 					ExpectedBody:   "Access to requested resource not allowed",
@@ -751,7 +751,7 @@ func TestCheckAccess(t *testing.T) {
 				},
 				{
 					Method:         "GET",
-					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"group:read"}),
+					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"tardis:group:read"}),
 					ResourcePath:   "gr--team--resourceId",
 					ExpectedStatus: 403,
 					ExpectedBody:   "Access to requested resource not allowed",
@@ -759,7 +759,7 @@ func TestCheckAccess(t *testing.T) {
 				},
 				{
 					Method:         "GET",
-					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"group:read"}),
+					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"tardis:group:read"}),
 					ResourcePath:   "foo--bar--resourceId",
 					ExpectedStatus: 403,
 					ExpectedBody:   "Access to requested resource not allowed",
@@ -767,7 +767,7 @@ func TestCheckAccess(t *testing.T) {
 				},
 				{
 					Method:         "GET",
-					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"group:read"}),
+					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"tardis:group:read"}),
 					ResourcePath:   "foo--resourceId",
 					ExpectedStatus: 403,
 					ExpectedBody:   "Access to requested resource not allowed",
@@ -775,7 +775,7 @@ func TestCheckAccess(t *testing.T) {
 				},
 				{
 					Method:         "GET",
-					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"group:read"}),
+					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"tardis:group:read"}),
 					ResourcePath:   "group2--resourceId",
 					ExpectedStatus: 403,
 					ExpectedBody:   "Access to requested resource not allowed",
@@ -784,7 +784,7 @@ func TestCheckAccess(t *testing.T) {
 				// Admin Scope
 				{
 					Method:         "GET",
-					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"admin:read"}),
+					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"tardis:admin:read"}),
 					ResourcePath:   "group--team--resourceId",
 					ExpectedStatus: 200,
 					ExpectedBody:   "prefix:test--, group:group, team:team",
@@ -792,7 +792,7 @@ func TestCheckAccess(t *testing.T) {
 				},
 				{
 					Method:         "POST",
-					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"admin:all"}),
+					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"tardis:admin:all"}),
 					ResourcePath:   "group--team--resourceId",
 					ExpectedStatus: 200,
 					ExpectedBody:   "prefix:test--, group:group, team:team",
@@ -800,7 +800,7 @@ func TestCheckAccess(t *testing.T) {
 				},
 				{
 					Method:         "POST",
-					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"admin:read"}),
+					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"tardis:admin:read"}),
 					ResourcePath:   "foo--team--resourceId",
 					ExpectedStatus: 403,
 					ExpectedBody:   "Access to requested resource not allowed",
@@ -819,7 +819,7 @@ func TestCheckAccess(t *testing.T) {
 				},
 				{
 					Method:         "GET",
-					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"group:read"}),
+					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"tardis:group:read"}),
 					ResourcePath:   "",
 					ExpectedStatus: 200,
 					ExpectedBody:   "prefix:test--group--, group:group, team:team",
@@ -827,7 +827,7 @@ func TestCheckAccess(t *testing.T) {
 				},
 				{
 					Method:         "GET",
-					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"admin:read"}),
+					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"tardis:admin:read"}),
 					ResourcePath:   "",
 					ExpectedStatus: 200,
 					ExpectedBody:   "prefix:test--, group:group, team:team",
@@ -835,7 +835,7 @@ func TestCheckAccess(t *testing.T) {
 				},
 				{
 					Method:         "POST",
-					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"team:read"}),
+					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"tardis:team:read"}),
 					ResourcePath:   "",
 					ExpectedStatus: 403,
 					ExpectedBody:   "Access to requested resource not allowed",
@@ -843,7 +843,7 @@ func TestCheckAccess(t *testing.T) {
 				},
 				{
 					Method:         "POST",
-					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"team:all"}),
+					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"tardis:team:all"}),
 					ResourcePath:   "",
 					ExpectedStatus: 200,
 					ExpectedBody:   "prefix:test--group--team/, group:group, team:team",
@@ -900,7 +900,7 @@ func TestCheckAccess(t *testing.T) {
 				},
 				{
 					Method:         "GET",
-					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"team:obfuscated"}),
+					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"tardis:team:obfuscated"}),
 					ResourcePath:   env + "/group--team",
 					ExpectedStatus: 200,
 					ExpectedBody:   "prefix:test/group--team/, group:group, team:team",
@@ -908,7 +908,7 @@ func TestCheckAccess(t *testing.T) {
 				},
 				{
 					Method:         "GET",
-					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"team:obfuscated"}),
+					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"tardis:team:obfuscated"}),
 					ResourcePath:   env + "/group--teamplayer",
 					ExpectedStatus: 403,
 					ExpectedBody:   "Access to requested resource not allowed",
@@ -916,7 +916,7 @@ func TestCheckAccess(t *testing.T) {
 				},
 				{
 					Method:         "GET",
-					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"team:obfuscated"}),
+					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"tardis:team:obfuscated"}),
 					ResourcePath:   env + "/group--te",
 					ExpectedStatus: 403,
 					ExpectedBody:   "Access to requested resource not allowed",
@@ -924,7 +924,7 @@ func TestCheckAccess(t *testing.T) {
 				},
 				{
 					Method:         "GET",
-					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"team:obfuscated"}),
+					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"tardis:team:obfuscated"}),
 					ResourcePath:   env + "/group--foo",
 					ExpectedStatus: 403,
 					ExpectedBody:   "Access to requested resource not allowed",
@@ -932,7 +932,7 @@ func TestCheckAccess(t *testing.T) {
 				},
 				{
 					Method:         "GET",
-					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"team:read"}),
+					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"tardis:team:read"}),
 					ResourcePath:   env + "/othergroup",
 					ExpectedStatus: 403,
 					ExpectedBody:   "Access to requested resource not allowed",
@@ -940,7 +940,7 @@ func TestCheckAccess(t *testing.T) {
 				},
 				{
 					Method:         "GET",
-					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"team:read"}),
+					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"tardis:team:read"}),
 					ResourcePath:   env + "/othergroup--team",
 					ExpectedStatus: 403,
 					ExpectedBody:   "Access to requested resource not allowed",
@@ -949,7 +949,7 @@ func TestCheckAccess(t *testing.T) {
 				// Group Scope
 				{
 					Method:         "GET",
-					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"group:read"}),
+					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"tardis:group:read"}),
 					ResourcePath:   env + "/group--foo",
 					ExpectedStatus: 200,
 					ExpectedBody:   "prefix:test/group--foo, group:group, team:team",
@@ -957,7 +957,7 @@ func TestCheckAccess(t *testing.T) {
 				},
 				{
 					Method:         "GET",
-					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"group:read"}),
+					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"tardis:group:read"}),
 					ResourcePath:   env + "/group",
 					ExpectedStatus: 200,
 					ExpectedBody:   "prefix:test/group, group:group, team:team",
@@ -965,7 +965,7 @@ func TestCheckAccess(t *testing.T) {
 				},
 				{
 					Method:         "GET",
-					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"group:read"}),
+					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"tardis:group:read"}),
 					ResourcePath:   env + "/grouper",
 					ExpectedStatus: 403,
 					ExpectedBody:   "Access to requested resource not allowed",
@@ -973,7 +973,7 @@ func TestCheckAccess(t *testing.T) {
 				},
 				{
 					Method:         "GET",
-					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"group:read"}),
+					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"tardis:group:read"}),
 					ResourcePath:   env + "/othergroup--team",
 					ExpectedStatus: 403,
 					ExpectedBody:   "Access to requested resource not allowed",
@@ -981,7 +981,7 @@ func TestCheckAccess(t *testing.T) {
 				},
 				{
 					Method:         "GET",
-					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"group:read"}),
+					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"tardis:group:read"}),
 					ResourcePath:   env + "/othergroup",
 					ExpectedStatus: 403,
 					ExpectedBody:   "Access to requested resource not allowed",
@@ -989,7 +989,7 @@ func TestCheckAccess(t *testing.T) {
 				},
 				{
 					Method:         "GET",
-					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"group:read"}),
+					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"tardis:group:read"}),
 					ResourcePath:   env + "/gr--team",
 					ExpectedStatus: 403,
 					ExpectedBody:   "Access to requested resource not allowed",
@@ -997,7 +997,7 @@ func TestCheckAccess(t *testing.T) {
 				},
 				{
 					Method:         "GET",
-					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"group:read"}),
+					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"tardis:group:read"}),
 					ResourcePath:   env + "/group2--team",
 					ExpectedStatus: 403,
 					ExpectedBody:   "Access to requested resource not allowed",
@@ -1006,7 +1006,7 @@ func TestCheckAccess(t *testing.T) {
 				// Admin Scope
 				{
 					Method:         "GET",
-					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"admin:read"}),
+					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"tardis:admin:read"}),
 					ResourcePath:   env + "/othergroup",
 					ExpectedStatus: 200,
 					ExpectedBody:   "prefix:test/, group:group, team:team",
@@ -1014,7 +1014,7 @@ func TestCheckAccess(t *testing.T) {
 				},
 				{
 					Method:         "POST",
-					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"admin:all"}),
+					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"tardis:admin:all"}),
 					ResourcePath:   env + "/othergroup",
 					ExpectedStatus: 200,
 					ExpectedBody:   "prefix:test/, group:group, team:team",
@@ -1022,7 +1022,7 @@ func TestCheckAccess(t *testing.T) {
 				},
 				{
 					Method:         "POST",
-					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"admin:read"}),
+					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"tardis:admin:read"}),
 					ResourcePath:   env + "/othergroup",
 					ExpectedStatus: 403,
 					ExpectedBody:   "Access to requested resource not allowed",
@@ -1041,7 +1041,7 @@ func TestCheckAccess(t *testing.T) {
 				},
 				{
 					Method:         "GET",
-					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"group:read"}),
+					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"tardis:group:read"}),
 					ResourcePath:   "",
 					ExpectedStatus: 200,
 					ExpectedBody:   "prefix:test/group, group:group, team:team",
@@ -1049,7 +1049,7 @@ func TestCheckAccess(t *testing.T) {
 				},
 				{
 					Method:         "GET",
-					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"admin:read"}),
+					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"tardis:admin:read"}),
 					ResourcePath:   "",
 					ExpectedStatus: 200,
 					ExpectedBody:   "prefix:test/, group:group, team:team",
@@ -1057,7 +1057,7 @@ func TestCheckAccess(t *testing.T) {
 				},
 				{
 					Method:         "POST",
-					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"team:read"}),
+					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"tardis:team:read"}),
 					ResourcePath:   "",
 					ExpectedStatus: 403,
 					ExpectedBody:   "Access to requested resource not allowed",
@@ -1065,7 +1065,7 @@ func TestCheckAccess(t *testing.T) {
 				},
 				{
 					Method:         "POST",
-					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"team:all"}),
+					AccessToken:    mock.NewMockAccessToken("test", "group", "team", []string{"tardis:team:all"}),
 					ResourcePath:   "",
 					ExpectedStatus: 200,
 					ExpectedBody:   "prefix:test/group--team/, group:group, team:team",
@@ -1086,7 +1086,7 @@ func TestCheckAccess(t *testing.T) {
 			}(app)
 
 			app.Use(mock.NewJWTMock())
-			app.Use(NewBusinessCtxMiddlewareWithOpts(WithScopePrefix(""), WithDefaultScope("team:read")))
+			app.Use(NewBusinessCtxMiddlewareWithOpts(WithScopePrefix("tardis:"), WithDefaultScope("tardis:team:read")))
 			checkAccess := NewCheckAccessMiddlewareWithOpts(WithTemplates(testEnvironments[i].Templates))
 
 			app.All("/testauth/"+testEnvironments[i].PathParameters, checkAccess, handlerMock)
@@ -1157,7 +1157,7 @@ func TestCheckAccessOpts(t *testing.T) {
 		}}
 
 	app.Use(mock.NewJWTMock())
-	app.Use(NewBusinessCtxMiddlewareWithOpts(WithScopePrefix(""), WithDefaultScope("team:read")))
+	app.Use(NewBusinessCtxMiddlewareWithOpts(WithScopePrefix("tardis:"), WithDefaultScope("tardis:team:read")))
 	checkAccess := NewCheckAccessMiddlewareWithOpts(
 		WithPathParamKey("customPathParam"),
 		WithTemplates(templates),
@@ -1247,7 +1247,7 @@ func BenchmarkCheckAccess(b *testing.B) {
 	app := fiber.New()
 
 	app.Use(mock.NewJWTMock())
-	app.Use(NewBusinessCtxMiddlewareWithOpts(WithScopePrefix(""), WithDefaultScope("team:read")))
+	app.Use(NewBusinessCtxMiddlewareWithOpts(WithScopePrefix("tardis:"), WithDefaultScope("tardis:team:read")))
 	checkAccess := NewCheckAccessMiddlewareWithOpts()
 
 	app.All("/testauth/:namespace/:name", checkAccess, handlerMock)

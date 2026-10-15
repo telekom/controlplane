@@ -86,7 +86,7 @@ var _ = Describe("Config", func() {
 			s.RegisterController(controller, server.ControllerOpts{Security: security.SecurityOpts{Mode: security.ModeMock}})
 
 			req := httptest.NewRequest("GET", "/config", nil)
-			req.Header.Set("Authorization", "Bearer "+securitymock.NewMockAccessToken("test", "group", "team", []string{"admin:all"}))
+			req.Header.Set("Authorization", "Bearer "+securitymock.NewMockAccessToken("test", "group", "team", []string{"tardis:admin:all"}))
 			res, err := s.App.Test(req)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(res).NotTo(BeNil())

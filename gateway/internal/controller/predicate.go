@@ -7,11 +7,12 @@ package controller
 import (
 	"slices"
 
-	"github.com/telekom/controlplane/common/pkg/condition"
-	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
+
+	"github.com/telekom/controlplane/common/pkg/condition"
+	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 )
 
 // RouteRelevantForConsumeRoutePredicate admits a Route update to the

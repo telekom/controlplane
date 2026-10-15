@@ -22,16 +22,16 @@ Upload a file to the File Manager with a specific file ID:
 
 ```bash
 # Upload a file with file ID and file path
-go run cmd/client/client.go --id poc--eni--team--my-file.txt --file path/to/local/file.txt
+go run cmd/client/client.go --id 01926a3e-7b2c-7d3e-8f4a-1b2c3d4e5f60 --file path/to/local/file.txt
 
 # Upload with authentication token
-go run cmd/client/client.go --url https://localhost:8443/api --token $TOKEN --id poc--eni--team--my-file.txt --file path/to/local/file.txt
+go run cmd/client/client.go --url https://localhost:8443/api --token $TOKEN --id 01926a3e-7b2c-7d3e-8f4a-1b2c3d4e5f60 --file path/to/local/file.txt
 
 # Upload without checksum validation
-go run cmd/client/client.go --id poc--eni--team--my-file.txt --file path/to/local/file.txt --no-checksum
+go run cmd/client/client.go --id 01926a3e-7b2c-7d3e-8f4a-1b2c3d4e5f60 --file path/to/local/file.txt --no-checksum
 ```
 
-**Note**: The file ID must follow the format `<env>--<group>--<team>--<filename>` (e.g., `poc--eni--hyperion--config.yaml`).
+**Note**: The file ID must be a canonical lowercase UUID (e.g., `01926a3e-7b2c-7d3e-8f4a-1b2c3d4e5f60`). UUIDv7 is recommended.
 
 ### Download a File
 
@@ -39,13 +39,13 @@ Download a file from the File Manager using its file ID:
 
 ```bash
 # Download to stdout
-go run cmd/client/client.go --id poc--eni--team--my-file.txt
+go run cmd/client/client.go --id 01926a3e-7b2c-7d3e-8f4a-1b2c3d4e5f60
 
 # Download to a specific file
-go run cmd/client/client.go --id poc--eni--team--my-file.txt --output path/to/save/file.txt
+go run cmd/client/client.go --id 01926a3e-7b2c-7d3e-8f4a-1b2c3d4e5f60 --output path/to/save/file.txt
 
 # Download with authentication token
-go run cmd/client/client.go --url https://localhost:8443/api --token $TOKEN --id poc--eni--team--my-file.txt --output downloaded-file.txt
+go run cmd/client/client.go --url https://localhost:8443/api --token $TOKEN --id 01926a3e-7b2c-7d3e-8f4a-1b2c3d4e5f60 --output downloaded-file.txt
 ```
 
 ### Delete a File
@@ -54,10 +54,10 @@ Delete a file from the File Manager:
 
 ```bash
 # Delete a file by its ID
-go run cmd/client/client.go --id poc--eni--team--my-file.txt --delete
+go run cmd/client/client.go --id 01926a3e-7b2c-7d3e-8f4a-1b2c3d4e5f60 --delete
 
 # Delete with authentication token
-go run cmd/client/client.go --url https://localhost:8443/api --token $TOKEN --id poc--eni--team--my-file.txt --delete
+go run cmd/client/client.go --url https://localhost:8443/api --token $TOKEN --id 01926a3e-7b2c-7d3e-8f4a-1b2c3d4e5f60 --delete
 ```
 
 **Note**: If the file doesn't exist (404), the operation is treated as successful since the desired state (file not existing) is achieved.
@@ -71,7 +71,7 @@ If the File Manager service is running locally (`http://localhost:8443/api`), yo
 go run cmd/server/server.go --disable-tls
 
 # Then, run the client against the local service (upload example)
-go run cmd/client/client.go --id poc--eni--team--my-file.txt --file path/to/file.txt
+go run cmd/client/client.go --id 01926a3e-7b2c-7d3e-8f4a-1b2c3d4e5f60 --file path/to/file.txt
 ```
 
 This assumes that the service has been started without TLS and is accessible at `http://localhost:8443/api`.
@@ -92,13 +92,13 @@ export SERVICE_ACCOUNT="rover-controller-manager"
 export TOKEN=$(kubectl create token -n $NAMESPACE $SERVICE_ACCOUNT --duration 10m)
 
 # Upload a file
-go run cmd/client/client.go --url https://localhost:8443/api --token $TOKEN --id poc--eni--team--my-file.txt --file path/to/file.txt
+go run cmd/client/client.go --url https://localhost:8443/api --token $TOKEN --id 01926a3e-7b2c-7d3e-8f4a-1b2c3d4e5f60 --file path/to/file.txt
 
 # Download a file
-go run cmd/client/client.go --url https://localhost:8443/api --token $TOKEN --id poc--eni--team--my-file.txt --output downloaded-file.txt
+go run cmd/client/client.go --url https://localhost:8443/api --token $TOKEN --id 01926a3e-7b2c-7d3e-8f4a-1b2c3d4e5f60 --output downloaded-file.txt
 
 # Delete a file
-go run cmd/client/client.go --url https://localhost:8443/api --token $TOKEN --id poc--eni--team--my-file.txt --delete
+go run cmd/client/client.go --url https://localhost:8443/api --token $TOKEN --id 01926a3e-7b2c-7d3e-8f4a-1b2c3d4e5f60 --delete
 ```
 
 ## Available Flags
@@ -108,7 +108,7 @@ go run cmd/client/client.go --url https://localhost:8443/api --token $TOKEN --id
 | `--url`         | API URL (default: `http://localhost:8443/api` or in-cluster service) | No         |
 | `--token`       | API access token                                                     | No         |
 | `--token-file`  | Path to file containing API access token                             | No         |
-| `--id`          | File ID in format `<env>--<group>--<team>--<filename>`               | Yes        |
+| `--id`          | File ID as a canonical lowercase UUID (UUIDv7 recommended)           | Yes        |
 | `--file`        | Local file path (for upload)                                         | For upload |
 | `--output`      | Output file path (for download, defaults to stdout)                  | No         |
 | `--delete`      | Delete the file with the specified ID                                | For delete |

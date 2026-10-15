@@ -8,7 +8,8 @@
   "spec": {
     "type": "demo-invoices-v1",
     "version": "1.0.0",
-    "description": "used for sftp integration demo"
+    "description": "used for sftp integration demo",
+    "specification": "fileRandomId"
   },
   "status": {
     "fileType": {

@@ -6,7 +6,6 @@ package zone
 
 import (
 	"context"
-	"fmt"
 	"slices"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -23,18 +22,19 @@ import (
 )
 
 func reconcileGateways(ctx context.Context, hc *HandlingContext) error {
+	adminClient, err := ensureRoverClient(ctx, hc)
+	if err != nil {
+		return err
+	}
+	hc.AdminClient = adminClient
+
 	hc.Zone.Status.Gateways = nil
 	for i := range hc.Zone.Spec.Gateways {
 		config := &hc.Zone.Spec.Gateways[i]
-		idp, err := hc.Zone.Spec.GetIdentityProviderByName(config.Admin.IdentityProviderRef)
-		if err != nil {
+		if _, err := hc.Zone.Spec.GetIdentityProviderByName(config.Admin.IdentityProviderRef); err != nil {
 			return ctrlerrors.BlockedErrorf("cannot resolve admin identity provider for gateway %q: %s", config.Name, err)
 		}
-		adminClient, err := createGatewayAdminClient(ctx, hc, config)
-		if err != nil {
-			return err
-		}
-		gateway, err := createGateway(ctx, hc, config, idp, adminClient)
+		gateway, err := createGateway(ctx, hc, config, adminClient)
 		if err != nil {
 			return err
 		}
@@ -42,7 +42,6 @@ func reconcileGateways(ctx context.Context, hc *HandlingContext) error {
 		if err != nil {
 			return err
 		}
-		hc.GatewayAdminClients[config.Name] = adminClient
 		hc.Gateways[config.Name] = gateway
 		hc.GatewayConsumers[config.Name] = consumer
 		hc.Zone.Status.Gateways = append(hc.Zone.Status.Gateways, adminapi.GatewayStatus{
@@ -53,7 +52,7 @@ func reconcileGateways(ctx context.Context, hc *HandlingContext) error {
 	return nil
 }
 
-func createGateway(ctx context.Context, hc *HandlingContext, config *adminapi.GatewayConfig, idp *adminapi.IdentityProviderConfig, adminClient *identityapi.Client) (*gatewayapi.Gateway, error) {
+func createGateway(ctx context.Context, hc *HandlingContext, config *adminapi.GatewayConfig, adminClient *identityapi.Client) (*gatewayapi.Gateway, error) {
 	c := cclient.ClientFromContextOrDie(ctx)
 
 	gateway := &gatewayapi.Gateway{
@@ -63,6 +62,11 @@ func createGateway(ctx context.Context, hc *HandlingContext, config *adminapi.Ga
 		},
 	}
 
+	issuerURL, err := internalIssuerURL(hc)
+	if err != nil {
+		return nil, err
+	}
+
 	mutator := func() error {
 		if gateway.Labels == nil {
 			gateway.Labels = make(map[string]string)
@@ -70,12 +74,6 @@ func createGateway(ctx context.Context, hc *HandlingContext, config *adminapi.Ga
 		gateway.Labels[cconfig.EnvironmentLabelKey] = hc.Environment.Name
 		gateway.Labels[cconfig.BuildLabelKey(zoneLabelName)] = hc.Zone.Name
 		gateway.Labels[cconfig.DomainLabelKey] = domainName
-
-		hostname, err := issuerHostname(idp)
-		if err != nil {
-			return err
-		}
-		issuerURL := fmt.Sprintf("https://%s/auth/realms/%s", hostname, hc.InternalIdentityRealm.Name)
 
 		gateway.Spec = gatewayapi.GatewaySpec{
 			Admin: gatewayapi.AdminConfig{
@@ -102,7 +100,7 @@ func createGateway(ctx context.Context, hc *HandlingContext, config *adminapi.Ga
 		return nil
 	}
 
-	_, err := c.CreateOrUpdate(ctx, gateway, mutator)
+	_, err = c.CreateOrUpdate(ctx, gateway, mutator)
 	if err != nil {
 		return nil, ctrlerrors.RetryableErrorf("failed to create or update Gateway %s in zone %s: %s", gateway.Name, hc.Zone.Name, err)
 	}

@@ -86,3 +86,24 @@ var _ = Describe("ValidateRealmStatus", func() {
 		Expect(err).ToNot(HaveOccurred())
 	})
 })
+
+var _ = Describe("ValidateRealmManagementStatus", func() {
+	It("should return an error when status is nil", func() {
+		Expect(ValidateRealmManagementStatus(nil)).To(MatchError("realmStatus is nil"))
+	})
+
+	It("should not require the issuer URL", func() {
+		err := ValidateRealmManagementStatus(&identityv1.RealmStatus{
+			AdminClientId: "admin-client-id",
+			AdminUserName: "admin-username",
+			AdminPassword: "admin-password",
+			AdminUrl:      "https://admin.example.com",
+			AdminTokenUrl: "https://admin.example.com/token",
+		})
+		Expect(err).ToNot(HaveOccurred())
+	})
+
+	It("should still require the admin fields", func() {
+		Expect(ValidateRealmManagementStatus(&identityv1.RealmStatus{})).To(MatchError("realmStatus.AdminClientId is empty"))
+	})
+})

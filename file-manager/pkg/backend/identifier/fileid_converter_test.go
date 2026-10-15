@@ -1,110 +1,49 @@
-// Copyright 2025 Deutsche Telekom IT GmbH
+// Copyright 2026 Deutsche Telekom IT GmbH
 //
 // SPDX-License-Identifier: Apache-2.0
 
 package identifier
 
-import (
-	"testing"
-)
+import "testing"
 
 func TestConvertFileIdToPath(t *testing.T) {
 	tests := []struct {
-		name     string
-		fileId   string
-		expected string
-		wantErr  bool
+		name string
+		id   string
+		want string
 	}{
 		{
-			name:     "Simple valid fileId",
-			fileId:   "dev--group1--team1--file.txt",
-			expected: "dev/group1/team1/file.txt",
-			wantErr:  false,
+			name: "UUID stays as a bare key",
+			id:   "01926a3e-7b2c-7d3e-8f4a-1b2c3d4e5f60",
+			want: "01926a3e-7b2c-7d3e-8f4a-1b2c3d4e5f60",
 		},
 		{
-			name:     "Complex filename with dashes",
-			fileId:   "dev--group1--team1--file--with--dashes.txt",
-			expected: "dev/group1/team1/file--with--dashes.txt",
-			wantErr:  false,
+			name: "legacy ID maps its resource prefix to folders",
+			id:   "poc--eni--hyperion--my-test-file.txt",
+			want: "poc/eni/hyperion/my-test-file.txt",
 		},
 		{
-			name:     "Invalid fileId format",
-			fileId:   "invalid-format",
-			expected: "",
-			wantErr:  true,
+			name: "legacy filename double dashes remain unchanged",
+			id:   "poc--eni--hyperion--file--revision.txt",
+			want: "poc/eni/hyperion/file--revision.txt",
+		},
+		{
+			name: "unrecognized IDs pass through",
+			id:   "invalid-id",
+			want: "invalid-id",
+		},
+		{
+			name: "malformed legacy ID passes through",
+			id:   "poc----hyperion--file.txt",
+			want: "poc----hyperion--file.txt",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := ConvertFileIdToPath(tt.fileId)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("ConvertFileIdToPath() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if got != tt.expected {
-				t.Errorf("ConvertFileIdToPath() = %v, want %v", got, tt.expected)
+			if got := ConvertFileIdToPath(tt.id); got != tt.want {
+				t.Errorf("ConvertFileIdToPath(%q) = %q, want %q", tt.id, got, tt.want)
 			}
 		})
-	}
-}
-
-func TestConvertPathToFileId(t *testing.T) {
-	tests := []struct {
-		name     string
-		path     string
-		expected string
-		wantErr  bool
-	}{
-		{
-			name:     "Simple valid path",
-			path:     "dev/group1/team1/file.txt",
-			expected: "dev--group1--team1--file.txt",
-			wantErr:  false,
-		},
-		{
-			name:     "Path with subdirectories in filename part",
-			path:     "dev/group1/team1/subdir/file.txt",
-			expected: "dev--group1--team1--subdir/file.txt",
-			wantErr:  false,
-		},
-		{
-			name:     "Invalid  path format",
-			path:     "invalid/format",
-			expected: "",
-			wantErr:  true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := ConvertPathToFileId(tt.path)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("ConvertPathToFileId() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if got != tt.expected {
-				t.Errorf("ConvertPathToFileId() = %v, want %v", got, tt.expected)
-			}
-		})
-	}
-}
-
-func TestRoundTrip(t *testing.T) {
-	// Test that converting from fileId to s3Path and back gives the original fileId
-	fileId := "dev--group1--team1--complex--file--name.txt"
-
-	s3Path, err := ConvertFileIdToPath(fileId)
-	if err != nil {
-		t.Fatalf("Failed to convert fileId to s3Path: %v", err)
-	}
-
-	roundTripFileId, err := ConvertPathToFileId(s3Path)
-	if err != nil {
-		t.Fatalf("Failed to convert s3Path back to fileId: %v", err)
-	}
-
-	if fileId != roundTripFileId {
-		t.Errorf("Round trip conversion failed. Original: %s, Result: %s", fileId, roundTripFileId)
 	}
 }

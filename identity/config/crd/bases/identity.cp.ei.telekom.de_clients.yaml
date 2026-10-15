@@ -73,6 +73,12 @@ spec:
           status:
             description: ClientStatus defines the observed state of Client
             properties:
+              allowedOrigins:
+                description: AllowedOrigins is synchronized from the referenced realm
+                  and managed as Keycloak web origins.
+                items:
+                  type: string
+                type: array
               clientUid:
                 description: ClientUid is the unique identifier of the client in Keycloak.
                   It is immutable and assigned by Keycloak upon client creation.

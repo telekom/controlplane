@@ -1,0 +1,35 @@
+// Copyright 2026 Deutsche Telekom IT GmbH
+//
+// SPDX-License-Identifier: Apache-2.0
+
+package in_test
+
+import (
+	"context"
+
+	"github.com/telekom/controlplane/rover-server/internal/mapper/mcpspecification/in"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+)
+
+var _ = Describe("ParseSpecification", func() {
+	DescribeTable("should set spec.name",
+		func(specYAML, expected string) {
+			spec, err := in.ParseSpecification(context.Background(), specYAML)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(spec.Name).To(Equal("eni-weather-v1"))
+			Expect(spec.Spec.Name).To(Equal(expected))
+		},
+		Entry("to the title, unchanged",
+			"basePath: /eni/weather/v1\ninfo:\n  title: Weather Server\n", "Weather Server"),
+		Entry("to the title without surrounding whitespace",
+			"basePath: /eni/weather/v1\ninfo:\n  title: \"  Weather Server \"\n", "Weather Server"),
+		Entry("to the resource name when there is no title",
+			"basePath: /eni/weather/v1\ninfo:\n  version: 1.0.0\n", "eni-weather-v1"),
+		Entry("to the resource name when the title is blank",
+			"basePath: /eni/weather/v1\ninfo:\n  title: \"  \"\n", "eni-weather-v1"),
+		Entry("to the resource name when there is no info",
+			"basePath: /eni/weather/v1\n", "eni-weather-v1"),
+	)
+})

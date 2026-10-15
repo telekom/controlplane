@@ -37,6 +37,42 @@ import (
 	. "github.com/onsi/gomega"
 )
 
+var _ = Describe("validateBasicWithScopesPolicy", func() {
+	DescribeTable("requires a password grant for provider username/password with scopes",
+		func(grant apiapi.GrantType, scopes []string, basic, allowed bool) {
+			idp := &apiapi.ExternalIdentityProvider{TokenEndpoint: "https://idp.example/token", GrantType: grant}
+			if basic {
+				idp.Basic = &apiapi.BasicAuthCredentials{Username: "provider-user", Password: "provider-password"}
+			} else {
+				idp.Client = &apiapi.OAuth2ClientCredentials{ClientId: "provider-client", ClientSecret: "provider-secret"}
+			}
+			exposure := &apiapi.ApiExposure{Spec: apiapi.ApiExposureSpec{Security: &apiapi.Security{
+				M2M: &apiapi.Machine2MachineAuthentication{ExternalIDP: idp, Scopes: scopes},
+			}}}
+			err := validateBasicWithScopesPolicy(exposure)
+			if allowed {
+				Expect(err).NotTo(HaveOccurred())
+				return
+			}
+			Expect(err).To(MatchError(`Provider username/password with scopes requires an external IDP grant type "password"`))
+		},
+		Entry("password grant", apiapi.GrantTypePassword, []string{"default.read"}, true, true),
+		Entry("client_credentials grant", apiapi.GrantTypeClientCredentials, []string{"default.read"}, true, false),
+		Entry("authorization_code grant", apiapi.GrantTypeAuthorizationCode, []string{"default.read"}, true, false),
+		Entry("refresh_token grant", apiapi.GrantTypeRefreshToken, []string{"default.read"}, true, false),
+		Entry("omitted grant", apiapi.GrantType(""), []string{"default.read"}, true, false),
+		Entry("without scopes", apiapi.GrantTypeClientCredentials, nil, true, true),
+		Entry("empty scopes", apiapi.GrantTypeClientCredentials, []string{}, true, true),
+		Entry("client credentials with scopes", apiapi.GrantTypeClientCredentials, []string{"default.read"}, false, true),
+	)
+
+	It("accepts exposures without an external IDP", func() {
+		for _, security := range []*apiapi.Security{nil, {}, {M2M: &apiapi.Machine2MachineAuthentication{Scopes: []string{"read"}}}} {
+			Expect(validateBasicWithScopesPolicy(&apiapi.ApiExposure{Spec: apiapi.ApiExposureSpec{Security: security}})).To(Succeed())
+		}
+	})
+})
+
 var _ = Describe("Exposure scope validation", func() {
 	endpoint := &apiapi.ExternalIdentityProvider{TokenEndpoint: "https://idp.example/token"}
 	emptyEndpoint := &apiapi.ExternalIdentityProvider{}
@@ -362,6 +398,7 @@ var _ = Describe("ApiExposureHandler", func() {
 			Run(func(_ context.Context, obj client.Object, mutate controllerutil.MutateFn) {
 				Expect(mutate()).To(Succeed())
 				r := obj.(*gatewayapi.Route)
+				Expect(r.Spec.AdditionalTags).To(Equal([]string{"variant--default"}))
 				cp := r.DeepCopy()
 				*routes = append(*routes, cp)
 			}).

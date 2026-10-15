@@ -9,13 +9,13 @@ import (
 	"slices"
 
 	"github.com/pkg/errors"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
+
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/handler"
 	v1 "github.com/telekom/controlplane/gateway/api/v1"
-	"github.com/telekom/controlplane/gateway/internal/handler/route"
-	"sigs.k8s.io/controller-runtime/pkg/log"
-
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	routehandler "github.com/telekom/controlplane/gateway/internal/handler/route"
 )
 
 var _ handler.Handler[*v1.ConsumeRoute] = &ConsumeRouteHandler{}
@@ -23,7 +23,7 @@ var _ handler.Handler[*v1.ConsumeRoute] = &ConsumeRouteHandler{}
 type ConsumeRouteHandler struct{}
 
 func (h *ConsumeRouteHandler) CreateOrUpdate(ctx context.Context, consumeRoute *v1.ConsumeRoute) error {
-	ready, route, err := route.GetRouteByRef(ctx, consumeRoute.Spec.Route)
+	ready, route, err := routehandler.GetRouteByRef(ctx, consumeRoute.Spec.Route)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			consumeRoute.SetCondition(condition.NewBlockedCondition("Route not found"))
@@ -50,7 +50,7 @@ func (h *ConsumeRouteHandler) CreateOrUpdate(ctx context.Context, consumeRoute *
 }
 
 func (h *ConsumeRouteHandler) Delete(ctx context.Context, consumeRoute *v1.ConsumeRoute) error {
-	log := log.FromContext(ctx)
+	log := ctrllog.FromContext(ctx)
 	log.Info("Handing deletion of ConsumeRoute resource", "consumeRoute", consumeRoute)
 
 	return nil

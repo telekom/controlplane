@@ -157,27 +157,25 @@ var _ = Describe("Registry", func() {
 
 	Describe("RegisterHandlers", func() {
 		Context("when registering the default set of handlers", func() {
-			It("should register ApiSpec, Rover, and FileSpecification handlers", func() {
+			It("should register Rover resources with both API versions", func() {
 				// Register default handlers
 				handlers.RegisterHandlers()
 
-				// Verify ApiSpecification handler is registered
-				apiSpecHandler, apiSpecErr := handlers.GetHandler("ApiSpecification", "tcp.ei.telekom.de/v1")
+				for _, kind := range []string{"ApiSpecification", "Rover"} {
+					handler, err := handlers.GetHandler(kind, "tcp.ei.telekom.de/v1")
+					Expect(err).NotTo(HaveOccurred())
+					Expect(handler).NotTo(BeNil())
+				}
 
-				// Verify Rover handler is registered
-				roverHandler, roverErr := handlers.GetHandler("Rover", "tcp.ei.telekom.de/v1")
-				fileSpecHandler, fileSpecErr := handlers.GetHandler("FileSpecification", "tcp.ei.telekom.de/v1")
+				for _, kind := range []string{"ApiRoadmap", "ApiChangelog", "FileSpecification"} {
+					legacyHandler, legacyErr := handlers.GetHandler(kind, "tcp.ei.telekom.de/v1")
+					roverHandler, roverErr := handlers.GetHandler(kind, "rover.ei.telekom.de/v1")
 
-				// Verify both handlers are registered
-				Expect(apiSpecErr).NotTo(HaveOccurred())
-				Expect(roverErr).NotTo(HaveOccurred())
-				Expect(fileSpecErr).NotTo(HaveOccurred())
-				Expect(apiSpecHandler).NotTo(BeNil())
-				Expect(roverHandler).NotTo(BeNil())
-				Expect(fileSpecHandler).NotTo(BeNil())
-
-				// Verify they have different priorities (specific values not important)
-				Expect(apiSpecHandler.Priority()).NotTo(Equal(roverHandler.Priority()))
+					Expect(legacyErr).NotTo(HaveOccurred())
+					Expect(roverErr).NotTo(HaveOccurred())
+					Expect(legacyHandler).NotTo(BeNil())
+					Expect(roverHandler).To(Equal(legacyHandler))
+				}
 			})
 		})
 	})

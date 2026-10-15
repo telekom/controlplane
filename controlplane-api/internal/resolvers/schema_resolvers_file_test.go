@@ -22,6 +22,10 @@ import (
 	. "github.com/onsi/gomega"
 )
 
+func stringPointer(value string) *string {
+	return &value
+}
+
 var _ = Describe("FileExposure/FileSubscription.Sftp", func() {
 	var client *ent.Client
 	var s *testutil.SeedData
@@ -90,11 +94,15 @@ var _ = Describe("File query and relationship resolvers", func() {
 		fileExposure, err = client.FileExposure.UpdateOne(seed.FileExposureAlpha).
 			SetVisibility(fileexposure.VisibilityEnterprise).
 			SetActive(true).
+			SetServiceURL("internal.example.com:8080").
+			SetServiceExternalURL("external.example.com:8080").
 			Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
 
 		fileSubscription, err = client.FileSubscription.UpdateOne(seed.FileSubscriptionAlpha).
 			SetStatusPhase(filesubscription.StatusPhaseReady).
+			SetServiceURL("subscription.internal.example.com:8080").
+			SetServiceExternalURL("subscription.external.example.com:8080").
 			Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
 
@@ -130,6 +138,8 @@ var _ = Describe("File query and relationship resolvers", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(connection.Edges).To(HaveLen(1))
 		Expect(connection.Edges[0].Node.ID).To(Equal(fileExposure.ID))
+		Expect(connection.Edges[0].Node.ServiceURL).To(Equal("internal.example.com:8080"))
+		Expect(connection.Edges[0].Node.ServiceExternalURL).To(Equal("external.example.com:8080"))
 	})
 
 	It("queries file subscriptions from the root", func() {
@@ -179,6 +189,8 @@ var _ = Describe("File query and relationship resolvers", func() {
 		fileInfo, ok := info.(*gqlmodel.FileSubscriptionInfo)
 		Expect(ok).To(BeTrue(), "expected FileSubscriptionInfo implementation")
 		Expect(fileInfo.FileType).To(Equal("invoice"))
+		Expect(fileInfo.ServiceURL).To(Equal(stringPointer("subscription.internal.example.com:8080")))
+		Expect(fileInfo.ServiceExternalURL).To(Equal(stringPointer("subscription.external.example.com:8080")))
 		Expect(fileInfo.OwnerApplicationName).To(Equal(seed.AppBeta.Name))
 		Expect(fileInfo.OwnerTeam.Name).To(Equal(seed.TeamBeta.Name))
 		expectOwnerApplication(fileInfo.OwnerApplication, seed.AppBeta.ID, "app-beta", "team-beta", "group-b")
@@ -193,6 +205,8 @@ var _ = Describe("File query and relationship resolvers", func() {
 		Expect(ok).To(BeTrue(), "expected FileSubscriptionInfo implementation")
 		Expect(fileInfo.ID).To(Equal(fileSubscription.ID))
 		Expect(fileInfo.FileType).To(Equal("invoice"))
+		Expect(fileInfo.ServiceURL).To(Equal(stringPointer("subscription.internal.example.com:8080")))
+		Expect(fileInfo.ServiceExternalURL).To(Equal(stringPointer("subscription.external.example.com:8080")))
 		Expect(fileInfo.OwnerApplicationName).To(Equal(seed.AppBeta.Name))
 		Expect(fileInfo.OwnerTeam.Name).To(Equal(seed.TeamBeta.Name))
 		expectOwnerApplication(fileInfo.OwnerApplication, seed.AppBeta.ID, "app-beta", "team-beta", "group-b")
@@ -225,6 +239,8 @@ var _ = Describe("File query and relationship resolvers", func() {
 		Expect(infos).To(HaveLen(1))
 		Expect(infos[0].ID).To(Equal(fileSubscription.ID))
 		Expect(infos[0].FileType).To(Equal("invoice"))
+		Expect(infos[0].ServiceURL).To(Equal(stringPointer("subscription.internal.example.com:8080")))
+		Expect(infos[0].ServiceExternalURL).To(Equal(stringPointer("subscription.external.example.com:8080")))
 		Expect(infos[0].OwnerApplicationName).To(Equal(seed.AppBeta.Name))
 		Expect(infos[0].OwnerTeam.Name).To(Equal(seed.TeamBeta.Name))
 		expectOwnerApplication(infos[0].OwnerApplication, seed.AppBeta.ID, "app-beta", "team-beta", "group-b")
@@ -251,6 +267,8 @@ var _ = Describe("File query and relationship resolvers", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(info.ID).To(Equal(fileExposure.ID))
 		Expect(info.FileType).To(Equal("invoice"))
+		Expect(info.ServiceURL).To(Equal(stringPointer("internal.example.com:8080")))
+		Expect(info.ServiceExternalURL).To(Equal(stringPointer("external.example.com:8080")))
 		Expect(info.OwnerApplicationName).To(Equal(seed.AppAlpha.Name))
 		Expect(info.OwnerTeam.Name).To(Equal(seed.TeamAlpha.Name))
 		expectOwnerApplication(info.OwnerApplication, seed.AppAlpha.ID, "app-alpha", "team-alpha", "group-a")
@@ -258,5 +276,33 @@ var _ = Describe("File query and relationship resolvers", func() {
 		visibility, err := resolver.FileExposureInfo().Visibility(context.Background(), info)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(visibility).To(Equal(fileexposure.VisibilityEnterprise))
+	})
+
+	It("returns nil URLs in reduced info when service URLs are absent", func() {
+		ctx := testutil.AllowContext()
+		_, err := client.FileSubscription.UpdateOne(fileSubscription).
+			ClearServiceURL().
+			ClearServiceExternalURL().
+			Save(ctx)
+		Expect(err).NotTo(HaveOccurred())
+		_, err = client.FileExposure.UpdateOne(fileExposure).
+			ClearServiceURL().
+			ClearServiceExternalURL().
+			Save(ctx)
+		Expect(err).NotTo(HaveOccurred())
+
+		info, err := resolver.Approval().Subscription(ctx, fileApproval)
+		Expect(err).NotTo(HaveOccurred())
+		fileSubscriptionInfo, ok := info.(*gqlmodel.FileSubscriptionInfo)
+		Expect(ok).To(BeTrue(), "expected FileSubscriptionInfo implementation")
+		Expect(fileSubscriptionInfo.ServiceURL).To(BeNil())
+		Expect(fileSubscriptionInfo.ServiceExternalURL).To(BeNil())
+
+		updatedSubscription, err := client.FileSubscription.Get(ctx, fileSubscription.ID)
+		Expect(err).NotTo(HaveOccurred())
+		exposureInfo, err := resolver.FileSubscription().Target(ctx, updatedSubscription)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(exposureInfo.ServiceURL).To(BeNil())
+		Expect(exposureInfo.ServiceExternalURL).To(BeNil())
 	})
 })

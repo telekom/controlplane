@@ -125,3 +125,38 @@ func DeleteRealm(ctx context.Context, namespacedName client.ObjectKey) {
 
 	Expect(k8sClient.Delete(ctx, realmResource)).To(Succeed())
 }
+
+var _ = Describe("Realm attribute validation", func() {
+	newRealmWithAttributes := func(name string, attributes map[string]string) *identityv1.Realm {
+		realm := realmModel.NewRealm(name, testNamespace, testEnvironment, "some-idp")
+		realm.Spec.Attributes = attributes
+		return realm
+	}
+
+	DescribeTable("should reject invalid attributes",
+		func(attributes map[string]string, expectedMessage string) {
+			err := k8sClient.Create(ctx, newRealmWithAttributes("invalid-attributes", attributes))
+			Expect(err).To(HaveOccurred())
+			Expect(errors.IsInvalid(err)).To(BeTrue(), "expected an invalid error, got %v", err)
+			Expect(err.Error()).To(ContainSubstring(expectedMessage))
+		},
+		Entry("empty key", map[string]string{"": "value"}, "attribute keys must not be empty"),
+	)
+
+	DescribeTable("should accept attributes, including a malformed frontendUrl",
+		func(attributes map[string]string) {
+			realm := newRealmWithAttributes("valid-attributes", attributes)
+			Expect(k8sClient.Create(ctx, realm, client.DryRunAll)).To(Succeed())
+		},
+		Entry("generic attribute", map[string]string{"displayName": "My Realm"}),
+		Entry("empty frontendUrl", map[string]string{"frontendUrl": ""}),
+		Entry("frontendUrl with context path", map[string]string{"frontendUrl": "https://iam.example.com/auth"}),
+		Entry("frontendUrl with trailing slash and port", map[string]string{"frontendUrl": "http://iam.example.com:8080/auth/"}),
+		Entry("frontendUrl containing realms in path", map[string]string{"frontendUrl": "https://iam.example.com/realms-proxy"}),
+		Entry("malformed frontendUrl with fragment", map[string]string{"frontendUrl": "https://iam.example.com/auth#x"}),
+		Entry("malformed frontendUrl with query", map[string]string{"frontendUrl": "https://iam.example.com/auth?x=1"}),
+		Entry("malformed frontendUrl with credentials", map[string]string{"frontendUrl": "https://user:pw@iam.example.com"}),
+		Entry("malformed frontendUrl with unsupported scheme", map[string]string{"frontendUrl": "ftp://iam.example.com"}),
+		Entry("malformed frontendUrl without scheme", map[string]string{"frontendUrl": "iam.example.com/auth"}),
+	)
+})

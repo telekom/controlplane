@@ -40,6 +40,7 @@ func newAgentSpecification(basePath string) *roverv1.AgentSpecification {
 			Name:          "Test Agent",
 			Description:   "A test agent card",
 			Specification: "file-id-123",
+			Hash:          "spec-hash-123",
 			Category:      "other",
 			Oauth2Scopes:  []string{"read", "write"},
 		},
@@ -86,6 +87,7 @@ var _ = Describe("AgentSpecificationHandler", func() {
 					Expect(card.Spec.Name).To(Equal("Test Agent"))
 					Expect(card.Spec.Description).To(Equal("A test agent card"))
 					Expect(card.Spec.Specification).To(Equal("file-id-123"))
+					Expect(card.Spec.Hash).To(Equal("spec-hash-123"))
 					Expect(card.Spec.Category).To(Equal("other"))
 					Expect(card.Spec.Oauth2Scopes).To(Equal([]string{"read", "write"}))
 					Expect(card.Labels).To(HaveKeyWithValue(

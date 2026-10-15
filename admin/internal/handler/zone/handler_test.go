@@ -20,6 +20,7 @@ import (
 	config "github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	"github.com/telekom/controlplane/common/pkg/test/mock"
+	ctypes "github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
 	identityapi "github.com/telekom/controlplane/identity/api/v1"
@@ -42,16 +43,15 @@ var _ = Describe("Zone Handler", func() {
 	AfterEach(func() { Expect(client.IgnoreNotFound(k8sClient.Delete(ctx, zone))).To(Succeed()) })
 
 	It("reconciles named infrastructure and publishes sorted preset status", func() {
-		secret := "alternate-secret"
 		zone.Spec.Gateways = append(zone.Spec.Gateways, adminv1.GatewayConfig{
-			Name: "ai", Admin: adminv1.GatewayAdminConfig{IdentityProviderRef: "primary", Url: "https://ai.example.com/admin-api", ClientSecret: &secret},
+			Name: "ai", Admin: adminv1.GatewayAdminConfig{IdentityProviderRef: "primary", Url: "https://ai.example.com/admin-api"},
 		})
 		zone.Spec.Presets = append(zone.Spec.Presets,
 			adminv1.Preset{Name: "consumer-failover", Type: adminv1.GatewayTypeAPI, GatewayRef: "standard", IdentityProviderRef: "primary", TokenUrl: "https://tokens.example.com/failover", Urls: []adminv1.UrlConfig{{Hostname: "failover.example.com", BasePath: "/"}}, Features: []adminv1.Feature{{Name: adminv1.FeatureConsumerFailover, Enabled: true}}},
 			adminv1.Preset{Name: "ai", Type: adminv1.GatewayTypeAI, Default: true, GatewayRef: "ai", IdentityProviderRef: "primary", Urls: []adminv1.UrlConfig{{Hostname: "ai.example.com", BasePath: "/"}}},
 		)
 
-		handler := &ZoneHandler{}
+		handler := newTestHandler()
 		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
 		markSubResourcesReady(zone)
 		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
@@ -88,7 +88,15 @@ var _ = Describe("Zone Handler", func() {
 		))
 		Expect(clients.Items).To(HaveLen(1))
 		Expect(clients.Items[0].Name).To(Equal(naming.ForGatewayAdminClient(naming.ForIdentityProvider(zone, "primary"))))
-		Expect(clients.Items[0].Spec.ClientSecret).To(Equal(secret))
+		Expect(clients.Items[0].Spec.ClientId).To(Equal("rover"))
+		Expect(clients.Items[0].Spec.ClientSecret).NotTo(BeEmpty())
+		for i := range gateways.Items {
+			Expect(gateways.Items[i].Spec.Admin.ClientId).To(Equal("rover"))
+			Expect(gateways.Items[i].Spec.Admin.ClientSecret).To(Equal(clients.Items[0].Spec.ClientSecret))
+		}
+		for _, gw := range zone.Status.Gateways {
+			Expect(gw.AdminClient.Name).To(Equal(clients.Items[0].Name))
+		}
 
 		zone.Spec.Presets = append(zone.Spec.Presets[:1], zone.Spec.Presets[2:]...)
 		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
@@ -102,7 +110,7 @@ var _ = Describe("Zone Handler", func() {
 			Urls: []adminv1.UrlConfig{{Hostname: "ai.example.com", BasePath: "/"}},
 		})
 
-		handler := &ZoneHandler{}
+		handler := newTestHandler()
 		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
 		markSubResourcesReady(zone)
 		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
@@ -113,17 +121,16 @@ var _ = Describe("Zone Handler", func() {
 	})
 
 	It("creates identity routes on an AI-only gateway", func() {
-		secret := "ai-secret"
 		zone.Spec.Gateways = append(zone.Spec.Gateways, adminv1.GatewayConfig{
 			Name:  "ai",
-			Admin: adminv1.GatewayAdminConfig{IdentityProviderRef: "primary", ClientSecret: &secret, Url: "https://ai.example.com/admin-api"},
+			Admin: adminv1.GatewayAdminConfig{IdentityProviderRef: "primary", Url: "https://ai.example.com/admin-api"},
 		})
 		zone.Spec.Presets = append(zone.Spec.Presets, adminv1.Preset{
 			Name: "ai", Type: adminv1.GatewayTypeAI, Default: true, GatewayRef: "ai", IdentityProviderRef: "primary",
 			Urls: []adminv1.UrlConfig{{Hostname: "ai.example.com", BasePath: "/"}},
 		})
 
-		handler := &ZoneHandler{}
+		handler := newTestHandler()
 		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
 		markSubResourcesReady(zone)
 		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
@@ -140,22 +147,21 @@ var _ = Describe("Zone Handler", func() {
 		// declares no managed routes, so there is no team-api realm.
 		routes := &gatewayapi.RouteList{}
 		Expect(k8sClient.List(ctx, routes, client.InNamespace(zone.Status.Namespace))).To(Succeed())
-		Expect(routes.Items).To(HaveLen(2 * 2 * len(identityRouteConfigs)))
+		Expect(routes.Items).To(HaveLen(2*2*len(identityRouteConfigs) + 2))
 	})
 
 	DescribeTable("serves internal realm OIDC metadata on every gateway",
 		func(visibility adminv1.ZoneVisibility, prefix string) {
 			zone.Spec.Visibility = visibility
 			zone.Spec.Presets[0].Urls[0].BasePath = "/v1"
-			secret := "ai-secret"
 			zone.Spec.Gateways = append(zone.Spec.Gateways, adminv1.GatewayConfig{
-				Name: "ai", Admin: adminv1.GatewayAdminConfig{IdentityProviderRef: "primary", ClientSecret: &secret, Url: "https://ai.example.com/admin-api"},
+				Name: "ai", Admin: adminv1.GatewayAdminConfig{IdentityProviderRef: "primary", Url: "https://ai.example.com/admin-api"},
 			})
 			zone.Spec.Presets = append(zone.Spec.Presets, adminv1.Preset{
 				Name: "ai", Type: adminv1.GatewayTypeAI, Default: true, GatewayRef: "ai", IdentityProviderRef: "primary",
 				Urls: []adminv1.UrlConfig{{Hostname: "ai.example.com", BasePath: "/v1"}},
 			})
-			handler := &ZoneHandler{}
+			handler := newTestHandler()
 			Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
 			markSubResourcesReady(zone)
 			Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
@@ -181,10 +187,31 @@ var _ = Describe("Zone Handler", func() {
 		Entry("world", adminv1.ZoneVisibilityWorld, spacegatePathPrefix),
 	)
 
+	It("uses the resolved internal realm issuer for gateway admin and presets in world zones", func() {
+		zone.Spec.Visibility = adminv1.ZoneVisibilityWorld
+		handler := newTestHandler()
+		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
+		markSubResourcesReady(zone)
+		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
+
+		internalIssuer := "https://" + testInternalIssuerHost + "/auth/realms/" + zone.Status.InternalIdentityRealm.Name
+		Expect(zone.Status.Gateways).NotTo(BeEmpty())
+		for _, status := range zone.Status.Gateways {
+			gateway := &gatewayapi.Gateway{}
+			Expect(k8sClient.Get(ctx, status.Gateway.K8s(), gateway)).To(Succeed())
+			Expect(gateway.Spec.Admin.IssuerUrl).To(Equal(internalIssuer))
+		}
+		Expect(zone.Status.Presets).NotTo(BeEmpty())
+		for _, preset := range zone.Status.Presets {
+			Expect(preset.Links.Issuer).To(Equal("https://test-iris.de/auth/realms/" + zone.Status.IdentityRealm.Name))
+			Expect(preset.Links.InternalIssuer).To(Equal(internalIssuer))
+		}
+	})
+
 	It("serves identity routes under the preset base path so LmsIssuer resolves", func() {
 		zone.Spec.Presets[0].Urls[0].BasePath = "/v1"
 
-		handler := &ZoneHandler{}
+		handler := newTestHandler()
 		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
 		markSubResourcesReady(zone)
 		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
@@ -206,7 +233,7 @@ var _ = Describe("Zone Handler", func() {
 
 	It("preserves managed route behavior on the default preset", func() {
 		zone.Spec.ManagedRoutes = &adminv1.ManagedRoutesConfig{Routes: []adminv1.ManagedRouteConfig{{Name: "proxy", Path: "/proxy", Url: "https://backend.example.com/base", Type: adminv1.ManagedRouteTypeProxy}}}
-		handler := &ZoneHandler{}
+		handler := newTestHandler()
 		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
 		markSubResourcesReady(zone)
 		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
@@ -216,12 +243,33 @@ var _ = Describe("Zone Handler", func() {
 		Expect(route.Spec.Hostnames).To(Equal([]string{"test-stargate.de"}))
 	})
 
+	It("deduplicates managed route paths and hostnames shared by preset URLs", func() {
+		zone.Spec.Presets[0].Urls = []adminv1.UrlConfig{
+			{Hostname: "irix.example.com", BasePath: "/"},
+			{Hostname: "irix-internal.example.com", BasePath: "/"},
+			{Hostname: "irix.example.com", BasePath: "/v2"},
+		}
+		zone.Spec.ManagedRoutes = &adminv1.ManagedRoutesConfig{Routes: []adminv1.ManagedRouteConfig{
+			{Name: "irix", Path: "/auth/realms/default", Url: "https://iris.example.com/auth/realms/default", Type: adminv1.ManagedRouteTypeProxy},
+		}}
+
+		handler := newTestHandler()
+		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
+		markSubResourcesReady(zone)
+		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
+
+		route := &gatewayapi.Route{}
+		Expect(k8sClient.Get(ctx, client.ObjectKey{Namespace: zone.Status.Namespace, Name: naming.ForGateway(zone, "standard") + "--irix"}, route)).To(Succeed())
+		Expect(route.Spec.Hostnames).To(Equal([]string{"irix.example.com", "irix-internal.example.com"}))
+		Expect(route.Spec.Paths).To(Equal([]string{"/auth/realms/default", "/v2/auth/realms/default"}))
+	})
+
 	It("uses the owning zone realm for every route", func() {
 		zone.Spec.ManagedRoutes = &adminv1.ManagedRoutesConfig{Routes: []adminv1.ManagedRouteConfig{
 			{Name: "team-api", Path: "/team-api", Url: "https://team.example.com", Type: adminv1.ManagedRouteTypeTeamAPI},
 			{Name: "proxy", Path: "/proxy", Url: "https://backend.example.com", Type: adminv1.ManagedRouteTypeProxy},
 		}}
-		handler := &ZoneHandler{}
+		handler := newTestHandler()
 		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
 		markSubResourcesReady(zone)
 		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
@@ -242,7 +290,7 @@ var _ = Describe("Zone Handler", func() {
 	})
 
 	It("is ready after identity resources are ready and reconciliation is unchanged", func() {
-		handler := &ZoneHandler{}
+		handler := newTestHandler()
 		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
 		Expect(meta.IsStatusConditionFalse(zone.Status.Conditions, condition.ConditionTypeReady)).To(BeTrue())
 		markSubResourcesReady(zone)
@@ -253,8 +301,69 @@ var _ = Describe("Zone Handler", func() {
 		Expect(zone.Status.Namespace).To(Equal(strings.ToLower(testEnvironment + "--" + zone.Name)))
 	})
 
+	It("sets the realm frontendUrl from the issuer hostname on zone realms", func() {
+		handler := newTestHandler()
+		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
+		Expect(zone.Status.IdentityRealm).NotTo(BeNil())
+		Expect(zone.Status.InternalIdentityRealm).NotTo(BeNil())
+
+		realm := &identityapi.Realm{}
+		Expect(k8sClient.Get(ctx, zone.Status.IdentityRealm.K8s(), realm)).To(Succeed())
+		Expect(realm.Spec.Attributes).To(Equal(map[string]string{"frontendUrl": "https://test-iris.de/auth"}), realm.Name)
+	})
+
+	It("does not set the realm frontendUrl on the internal (rover) realm", func() {
+		handler := newTestHandler()
+		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
+		Expect(zone.Status.InternalIdentityRealm).NotTo(BeNil())
+
+		realm := &identityapi.Realm{}
+		Expect(k8sClient.Get(ctx, zone.Status.InternalIdentityRealm.K8s(), realm)).To(Succeed())
+		Expect(realm.Spec.Attributes).To(BeEmpty(), realm.Name)
+	})
+
+	It("overwrites modified realm attributes with the frontendUrl on world zones", func() {
+		handler := newTestHandler()
+		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
+
+		realm := &identityapi.Realm{}
+		Expect(k8sClient.Get(ctx, zone.Status.IdentityRealm.K8s(), realm)).To(Succeed())
+		realm.Spec.Attributes = map[string]string{"frontendUrl": "not a url", "custom": "value"}
+		Expect(k8sClient.Update(ctx, realm)).To(Succeed())
+
+		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
+
+		Expect(k8sClient.Get(ctx, zone.Status.IdentityRealm.K8s(), realm)).To(Succeed())
+		Expect(realm.Spec.Attributes).To(Equal(map[string]string{"frontendUrl": "https://test-iris.de/auth"}))
+		Expect(realm.Spec.IdentityProvider).NotTo(BeNil())
+	})
+
+	It("does not set realm attributes on enterprise zones", func() {
+		zone.Spec.Visibility = adminv1.ZoneVisibilityEnterprise
+		handler := newTestHandler()
+		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
+
+		for _, ref := range []*ctypes.ObjectRef{zone.Status.IdentityRealm, zone.Status.InternalIdentityRealm} {
+			realm := &identityapi.Realm{}
+			Expect(k8sClient.Get(ctx, ref.K8s(), realm)).To(Succeed())
+			Expect(realm.Spec.Attributes).To(BeEmpty(), realm.Name)
+		}
+	})
+
+	It("updates the realm frontendUrl when the issuer hostname changes", func() {
+		handler := newTestHandler()
+		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
+
+		zone.Spec.IdentityProviders[0].IssuerHostname = "iam.example.com"
+		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
+
+		realm := &identityapi.Realm{}
+		Expect(k8sClient.Get(ctx, zone.Status.IdentityRealm.K8s(), realm)).To(Succeed())
+		Expect(realm.Spec.Attributes).To(HaveKeyWithValue("frontendUrl", "https://iam.example.com/auth"), realm.Name)
+	})
+
 	It("waits for identity resources before creating gateways", func() {
-		handler := &ZoneHandler{}
+		handler := newTestHandler()
 		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
 		Expect(zone.Status.IdentityProvider).NotTo(BeNil())
 		Expect(zone.Status.IdentityRealm).NotTo(BeNil())
@@ -271,7 +380,7 @@ var _ = Describe("Zone Handler", func() {
 	})
 
 	It("keeps a provisioned zone ready and reports a degraded gateway", func() {
-		handler := &ZoneHandler{}
+		handler := newTestHandler()
 		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
 		markSubResourcesReady(zone)
 		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
@@ -291,18 +400,6 @@ var _ = Describe("Zone Handler", func() {
 			HaveField("Reason", condition.ReasonSubResourceNotReady),
 			HaveField("Message", And(ContainSubstring("Gateway"), ContainSubstring(gateway.Name), ContainSubstring("health check failed"))),
 		)))
-	})
-
-	It("returns a blocked error when a gateway admin secret is missing", func() {
-		zone.Spec.Gateways[0].Admin.ClientSecret = nil
-		hc := newTestHandlingContext(newTestContext(zone), zone)
-		hc.IdentityProvider = &identityapi.IdentityProvider{}
-		hc.InternalIdentityRealm = &identityapi.Realm{}
-
-		_, err := createGatewayAdminClient(newTestContext(zone), hc, &zone.Spec.Gateways[0])
-		var blocked ctrlerrors.BlockedError
-		Expect(err).To(HaveOccurred())
-		Expect(errors.As(err, &blocked)).To(BeTrue())
 	})
 
 	It("returns blocked errors when a preset gateway is absent from the handling context", func() {
@@ -334,4 +431,9 @@ var _ = Describe("Zone Handler", func() {
 		Entry("admin URL fallback", adminv1.IdentityProviderConfig{Name: "primary", Admin: adminv1.IdentityProviderAdminConfig{Url: ptr.To("https://admin.example.com/auth")}}, "admin.example.com", true),
 		Entry("missing values", adminv1.IdentityProviderConfig{Name: "primary"}, "", false),
 	)
+
+	It("builds the realm frontend URL from the issuer hostname", func() {
+		Expect(realmFrontendURL("iam.example.com")).To(Equal("https://iam.example.com/auth"))
+		Expect(realmFrontendURL("iam.example.com:8443")).To(Equal("https://iam.example.com:8443/auth"))
+	})
 })

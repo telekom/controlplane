@@ -78,6 +78,9 @@ type ClaimConfig struct {
 // RealmSpec defines the desired state of Realm
 type RealmSpec struct {
 	IdentityProvider *types.ObjectRef `json:"identityProvider"`
+	// AllowedOrigins is inherited by clients in this realm.
+	// +optional
+	AllowedOrigins []string `json:"allowedOrigins,omitempty"`
 
 	// SecretRotation configures the Keycloak client-secret rotation policy
 	// for this realm. When set, the controller ensures a client-policy
@@ -95,6 +98,23 @@ type RealmSpec struct {
 	// +listType=map
 	// +listMapKey=name
 	Claims []ClaimConfig `json:"claims,omitempty"`
+
+	// Attributes are Keycloak realm attributes managed by the controller.
+	// Keys and values are passed to Keycloak unchanged. Attributes that were
+	// never listed here (e.g. configured manually in Keycloak) are preserved.
+	// Removing a key from this map removes it from the Keycloak realm, but
+	// only if the controller applied it before (see status.managedAttributes).
+	//
+	// The key "frontendUrl" sets the realm frontend URL, an absolute http(s)
+	// base URL (e.g. "https://iam.example.com/auth"). It is not validated on
+	// admission. If it is a valid base URL, the realm issuer is
+	// "<frontendUrl>/realms/<realm>"; otherwise the issuer is read from
+	// Keycloak's OIDC discovery document.
+	//
+	// Do not store credentials or other secrets in attributes.
+	// +optional
+	// +kubebuilder:validation:XValidation:rule="self.all(k, size(k) > 0)",message="attribute keys must not be empty"
+	Attributes map[string]string `json:"attributes,omitempty"`
 }
 
 // RealmStatus defines the observed state of Realm
@@ -105,6 +125,13 @@ type RealmStatus struct {
 	AdminPassword string `json:"adminPassword"`
 	AdminUrl      string `json:"adminUrl"`
 	AdminTokenUrl string `json:"adminTokenUrl"`
+
+	// ManagedAttributes is the sorted list of realm attribute keys that the
+	// controller has applied to Keycloak. Keys in this list that are no
+	// longer present in spec.attributes are removed from Keycloak.
+	// +optional
+	// +listType=set
+	ManagedAttributes []string `json:"managedAttributes,omitempty"`
 	// +listType=map
 	// +listMapKey=type
 	// +patchStrategy=merge

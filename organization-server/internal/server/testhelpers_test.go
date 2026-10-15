@@ -119,11 +119,20 @@ func executeRequest(app *fiber.App, req *http.Request, token string) (*http.Resp
 
 // expectJSON asserts 200 OK with JSON body and returns the parsed body.
 func expectJSON(resp *http.Response, err error) map[string]any {
-	ExpectWithOffset(1, err).ToNot(HaveOccurred())
-	ExpectWithOffset(1, resp.StatusCode).To(Equal(http.StatusOK))
+	return expectJSONStatusWithOffset(2, resp, err, http.StatusOK)
+}
+
+// expectJSONStatus asserts the given status code with JSON body and returns the parsed body.
+func expectJSONStatus(resp *http.Response, err error, code int) map[string]any {
+	return expectJSONStatusWithOffset(2, resp, err, code)
+}
+
+func expectJSONStatusWithOffset(offset int, resp *http.Response, err error, code int) map[string]any {
+	ExpectWithOffset(offset, err).ToNot(HaveOccurred())
+	ExpectWithOffset(offset, resp.StatusCode).To(Equal(code))
 	body, _ := io.ReadAll(resp.Body)
 	var result map[string]any
-	ExpectWithOffset(1, json.Unmarshal(body, &result)).To(Succeed())
+	ExpectWithOffset(offset, json.Unmarshal(body, &result)).To(Succeed())
 	return result
 }
 

@@ -41,7 +41,9 @@ func (EventType) Fields() []ent.Field {
 			Optional().
 			Annotations(entgql.Skip(entgql.SkipType)),
 		field.Bool("active").
-			Default(false),
+			Default(false).
+			Comment("Only the oldest entry for an event type is active. Entries of other teams with the same event type " +
+				"are inactive. Filter on active to get one entry per event type."),
 	}
 }
 

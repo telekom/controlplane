@@ -13,6 +13,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/mock"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -27,6 +28,8 @@ import (
 	"github.com/telekom/controlplane/common/pkg/condition"
 	common_types "github.com/telekom/controlplane/common/pkg/types"
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
+	secretsapi "github.com/telekom/controlplane/secret-manager/api"
+	"github.com/telekom/controlplane/secret-manager/api/fake"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -104,6 +107,29 @@ var _ = BeforeSuite(func() {
 	}).SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 
+	secretManager := fake.NewMockSecretManager(GinkgoT())
+	secretManager.EXPECT().
+		Get(mock.Anything, mock.Anything).
+		Return("", secretsapi.ErrNotFound).
+		Maybe()
+	secretManager.EXPECT().
+		UpsertEnvironment(mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+		RunAndReturn(func(_ context.Context, envID string, opts ...secretsapi.OnboardingOption) (map[string]string, error) {
+			options := &secretsapi.OnboardingOptions{}
+			for _, opt := range opts {
+				opt(options)
+			}
+			available := map[string]string{}
+			for path := range options.SecretValues {
+				available[path] = envID + ":" + path
+			}
+			return available, nil
+		}).
+		Maybe()
+	originalAPI := secretsapi.API
+	secretsapi.API = func() secretsapi.SecretManager { return secretManager }
+	DeferCleanup(func() { secretsapi.API = originalAPI })
+
 	err = (&ZoneReconciler{
 		Client: k8sManager.GetClient(),
 		Scheme: k8sManager.GetScheme(),
@@ -125,6 +151,13 @@ var _ = BeforeSuite(func() {
 	err = (&readyReconciler[*identityv1.Realm]{
 		Client: k8sManager.GetClient(),
 		obj:    &identityv1.Realm{},
+		resolve: func(realm *identityv1.Realm) bool {
+			if realm.Status.IssuerUrl != "" {
+				return false
+			}
+			realm.Status.IssuerUrl = "https://issuer.example.com/auth/realms/" + realm.Name
+			return true
+		},
 	}).SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 
@@ -148,6 +181,9 @@ var _ = AfterSuite(func() {
 type readyReconciler[T common_types.Object] struct {
 	client.Client
 	obj T
+	// resolve optionally fills in operator-provided status fields and reports
+	// whether it changed the object.
+	resolve func(T) bool
 }
 
 func (r *readyReconciler[T]) SetupWithManager(mgr ctrl.Manager) error {
@@ -162,7 +198,8 @@ func (r *readyReconciler[T]) Reconcile(ctx context.Context, req ctrl.Request) (c
 	if err := r.Get(ctx, req.NamespacedName, obj); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
-	if !obj.SetCondition(condition.NewReadyCondition(condition.ReasonProvisioned, "provisioned")) {
+	changed := r.resolve != nil && r.resolve(obj)
+	if !obj.SetCondition(condition.NewReadyCondition(condition.ReasonProvisioned, "provisioned")) && !changed {
 		return ctrl.Result{}, nil
 	}
 	return ctrl.Result{}, r.Status().Update(ctx, obj)

@@ -174,21 +174,33 @@ func (_c *MockKeycloakService_CreateOrReplaceClient_Call) RunAndReturn(run func(
 }
 
 // CreateOrReplaceRealm provides a mock function with given fields: ctx, realm
-func (_m *MockKeycloakService) CreateOrReplaceRealm(ctx context.Context, realm *v1.Realm) error {
+func (_m *MockKeycloakService) CreateOrReplaceRealm(ctx context.Context, realm *v1.Realm) (*keycloak.RealmSyncResult, error) {
 	ret := _m.Called(ctx, realm)
 
 	if len(ret) == 0 {
 		panic("no return value specified for CreateOrReplaceRealm")
 	}
 
-	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, *v1.Realm) error); ok {
+	var r0 *keycloak.RealmSyncResult
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, *v1.Realm) (*keycloak.RealmSyncResult, error)); ok {
+		return rf(ctx, realm)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, *v1.Realm) *keycloak.RealmSyncResult); ok {
 		r0 = rf(ctx, realm)
 	} else {
-		r0 = ret.Error(0)
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*keycloak.RealmSyncResult)
+		}
 	}
 
-	return r0
+	if rf, ok := ret.Get(1).(func(context.Context, *v1.Realm) error); ok {
+		r1 = rf(ctx, realm)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
 }
 
 // MockKeycloakService_CreateOrReplaceRealm_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CreateOrReplaceRealm'
@@ -210,12 +222,12 @@ func (_c *MockKeycloakService_CreateOrReplaceRealm_Call) Run(run func(ctx contex
 	return _c
 }
 
-func (_c *MockKeycloakService_CreateOrReplaceRealm_Call) Return(_a0 error) *MockKeycloakService_CreateOrReplaceRealm_Call {
-	_c.Call.Return(_a0)
+func (_c *MockKeycloakService_CreateOrReplaceRealm_Call) Return(_a0 *keycloak.RealmSyncResult, _a1 error) *MockKeycloakService_CreateOrReplaceRealm_Call {
+	_c.Call.Return(_a0, _a1)
 	return _c
 }
 
-func (_c *MockKeycloakService_CreateOrReplaceRealm_Call) RunAndReturn(run func(context.Context, *v1.Realm) error) *MockKeycloakService_CreateOrReplaceRealm_Call {
+func (_c *MockKeycloakService_CreateOrReplaceRealm_Call) RunAndReturn(run func(context.Context, *v1.Realm) (*keycloak.RealmSyncResult, error)) *MockKeycloakService_CreateOrReplaceRealm_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -418,6 +430,64 @@ func (_c *MockKeycloakService_GetClientSecretRotationInfo_Call) Return(_a0 *keyc
 }
 
 func (_c *MockKeycloakService_GetClientSecretRotationInfo_Call) RunAndReturn(run func(context.Context, string, *v1.Client) (*keycloak.ClientSecretRotationInfo, error)) *MockKeycloakService_GetClientSecretRotationInfo_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// ResolveIssuerUrl provides a mock function with given fields: ctx, realmName, frontendUrl
+func (_m *MockKeycloakService) ResolveIssuerUrl(ctx context.Context, realmName string, frontendUrl string) (string, error) {
+	ret := _m.Called(ctx, realmName, frontendUrl)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ResolveIssuerUrl")
+	}
+
+	var r0 string
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) (string, error)); ok {
+		return rf(ctx, realmName, frontendUrl)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) string); ok {
+		r0 = rf(ctx, realmName, frontendUrl)
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
+		r1 = rf(ctx, realmName, frontendUrl)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockKeycloakService_ResolveIssuerUrl_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ResolveIssuerUrl'
+type MockKeycloakService_ResolveIssuerUrl_Call struct {
+	*mock.Call
+}
+
+// ResolveIssuerUrl is a helper method to define mock.On call
+//   - ctx context.Context
+//   - realmName string
+//   - frontendUrl string
+func (_e *MockKeycloakService_Expecter) ResolveIssuerUrl(ctx interface{}, realmName interface{}, frontendUrl interface{}) *MockKeycloakService_ResolveIssuerUrl_Call {
+	return &MockKeycloakService_ResolveIssuerUrl_Call{Call: _e.mock.On("ResolveIssuerUrl", ctx, realmName, frontendUrl)}
+}
+
+func (_c *MockKeycloakService_ResolveIssuerUrl_Call) Run(run func(ctx context.Context, realmName string, frontendUrl string)) *MockKeycloakService_ResolveIssuerUrl_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(string), args[2].(string))
+	})
+	return _c
+}
+
+func (_c *MockKeycloakService_ResolveIssuerUrl_Call) Return(_a0 string, _a1 error) *MockKeycloakService_ResolveIssuerUrl_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockKeycloakService_ResolveIssuerUrl_Call) RunAndReturn(run func(context.Context, string, string) (string, error)) *MockKeycloakService_ResolveIssuerUrl_Call {
 	_c.Call.Return(run)
 	return _c
 }

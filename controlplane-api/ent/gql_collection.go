@@ -97,10 +97,20 @@ func (_q *AgentCardQuery) collectField(ctx context.Context, oneNode bool, opCtx 
 				selectedFields = append(selectedFields, agentcard.FieldName)
 				fieldSeen[agentcard.FieldName] = struct{}{}
 			}
+		case "displayName":
+			if _, ok := fieldSeen[agentcard.FieldDisplayName]; !ok {
+				selectedFields = append(selectedFields, agentcard.FieldDisplayName)
+				fieldSeen[agentcard.FieldDisplayName] = struct{}{}
+			}
 		case "description":
 			if _, ok := fieldSeen[agentcard.FieldDescription]; !ok {
 				selectedFields = append(selectedFields, agentcard.FieldDescription)
 				fieldSeen[agentcard.FieldDescription] = struct{}{}
+			}
+		case "hash":
+			if _, ok := fieldSeen[agentcard.FieldHash]; !ok {
+				selectedFields = append(selectedFields, agentcard.FieldHash)
+				fieldSeen[agentcard.FieldHash] = struct{}{}
 			}
 		case "category":
 			if _, ok := fieldSeen[agentcard.FieldCategory]; !ok {
@@ -2935,6 +2945,16 @@ func (_q *FileExposureQuery) collectField(ctx context.Context, oneNode bool, opC
 				selectedFields = append(selectedFields, fileexposure.FieldZoneName)
 				fieldSeen[fileexposure.FieldZoneName] = struct{}{}
 			}
+		case "serviceURL":
+			if _, ok := fieldSeen[fileexposure.FieldServiceURL]; !ok {
+				selectedFields = append(selectedFields, fileexposure.FieldServiceURL)
+				fieldSeen[fileexposure.FieldServiceURL] = struct{}{}
+			}
+		case "serviceExternalURL":
+			if _, ok := fieldSeen[fileexposure.FieldServiceExternalURL]; !ok {
+				selectedFields = append(selectedFields, fileexposure.FieldServiceExternalURL)
+				fieldSeen[fileexposure.FieldServiceExternalURL] = struct{}{}
+			}
 		case "sftp":
 			if _, ok := fieldSeen[fileexposure.FieldSftp]; !ok {
 				selectedFields = append(selectedFields, fileexposure.FieldSftp)
@@ -3499,10 +3519,20 @@ func (_q *McpServerQuery) collectField(ctx context.Context, oneNode bool, opCtx 
 				selectedFields = append(selectedFields, mcpserver.FieldName)
 				fieldSeen[mcpserver.FieldName] = struct{}{}
 			}
+		case "displayName":
+			if _, ok := fieldSeen[mcpserver.FieldDisplayName]; !ok {
+				selectedFields = append(selectedFields, mcpserver.FieldDisplayName)
+				fieldSeen[mcpserver.FieldDisplayName] = struct{}{}
+			}
 		case "description":
 			if _, ok := fieldSeen[mcpserver.FieldDescription]; !ok {
 				selectedFields = append(selectedFields, mcpserver.FieldDescription)
 				fieldSeen[mcpserver.FieldDescription] = struct{}{}
+			}
+		case "hash":
+			if _, ok := fieldSeen[mcpserver.FieldHash]; !ok {
+				selectedFields = append(selectedFields, mcpserver.FieldHash)
+				fieldSeen[mcpserver.FieldHash] = struct{}{}
 			}
 		case "category":
 			if _, ok := fieldSeen[mcpserver.FieldCategory]; !ok {

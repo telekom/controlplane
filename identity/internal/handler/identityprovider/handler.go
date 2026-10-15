@@ -11,6 +11,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/telekom/controlplane/common/pkg/condition"
+	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	"github.com/telekom/controlplane/common/pkg/handler"
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
 	"github.com/telekom/controlplane/identity/pkg/keycloak"
@@ -26,8 +27,13 @@ func (h *HandlerIdentityProvider) CreateOrUpdate(ctx context.Context, idp *ident
 		return fmt.Errorf("IdentityProvider is nil")
 	}
 
+	adminTokenUrl, err := keycloak.DetermineAdminTokenUrlFrom(idp.Spec.AdminUrl, keycloak.MasterRealm)
+	if err != nil {
+		return ctrlerrors.BlockedErrorf("determining admin token URL: %s", err)
+	}
+
 	idp.Status.AdminUrl = idp.Spec.AdminUrl
-	idp.Status.AdminTokenUrl = keycloak.DetermineAdminTokenUrlFrom(idp.Spec.AdminUrl, keycloak.MasterRealm)
+	idp.Status.AdminTokenUrl = adminTokenUrl
 	idp.Status.AdminConsoleUrl = keycloak.DetermineAdminConsoleUrlFrom(idp.Spec.AdminUrl, keycloak.MasterRealm)
 
 	idp.SetCondition(condition.NewDoneProcessingCondition("Created IdentityProvider"))

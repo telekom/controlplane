@@ -6,7 +6,6 @@ package v0
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
 	"time"
 
@@ -62,8 +61,8 @@ func (h *RoverHandler) GetSecretRotationStatus(ctx context.Context, name string)
 	}
 
 	var response SecretRotationStatusResponse
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		return nil, errors.Wrap(err, "failed to parse secret rotation status response")
+	if err := common.DecodeResponse(h.Resource, resp.Body, &response); err != nil {
+		return nil, err
 	}
 
 	return &response, nil

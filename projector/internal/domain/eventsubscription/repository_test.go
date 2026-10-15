@@ -22,9 +22,11 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/zone"
 	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 
+	domaineventexposure "github.com/telekom/controlplane/projector/internal/domain/eventexposure"
 	"github.com/telekom/controlplane/projector/internal/domain/eventsubscription"
 	"github.com/telekom/controlplane/projector/internal/domain/shared"
 	"github.com/telekom/controlplane/projector/internal/infrastructure"
+	"github.com/telekom/controlplane/projector/internal/infrastructure/cachekeys"
 	"github.com/telekom/controlplane/projector/internal/runtime"
 )
 
@@ -55,6 +57,14 @@ func (m *mockSubscriptionDeps) FindEventExposureByEventType(_ context.Context, e
 		return id, nil
 	}
 	return 0, fmt.Errorf("event_exposure %q: %w", eventType, infrastructure.ErrEntityNotFound)
+}
+
+// expectTargetMissing asserts that an upsert persisted with an unresolved
+// target and signalled ErrDependencyMissing so the reconciler retries.
+func expectTargetMissing(err error) {
+	GinkgoHelper()
+	Expect(err).To(HaveOccurred())
+	Expect(errors.Is(err, runtime.ErrDependencyMissing)).To(BeTrue())
 }
 
 var _ = Describe("EventSubscription Repository", func() {
@@ -116,19 +126,19 @@ var _ = Describe("EventSubscription Repository", func() {
 				OwnerAppName: "consumer-app", OwnerTeamName: "platform--narvi",
 				RequestedScopes: []string{"read", "write"}, ActiveScopes: []string{"read"},
 			}
-			Expect(repo.Upsert(ctx, data)).To(Succeed())
+			expectTargetMissing(repo.Upsert(ctx, data))
 			sub, err := client.EventSubscription.Query().Only(ctx)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(sub.RequestedScopes).To(Equal(data.RequestedScopes))
 			Expect(sub.ActiveScopes).To(Equal(data.ActiveScopes))
 			data.ActiveScopes = nil
-			Expect(repo.Upsert(ctx, data)).To(Succeed())
+			expectTargetMissing(repo.Upsert(ctx, data))
 			sub, err = client.EventSubscription.Query().Only(ctx)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(sub.ActiveScopes).To(BeEmpty())
 			Expect(sub.RequestedScopes).To(Equal(data.RequestedScopes))
 			data.RequestedScopes = nil
-			Expect(repo.Upsert(ctx, data)).To(Succeed())
+			expectTargetMissing(repo.Upsert(ctx, data))
 			sub, err = client.EventSubscription.Query().Only(ctx)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(sub.RequestedScopes).To(BeEmpty())
@@ -166,7 +176,7 @@ var _ = Describe("EventSubscription Repository", func() {
 				OwnerTeamName:         "platform--narvi",
 				TargetEventType:       "de.telekom.eni.quickstart.v1",
 			}
-			Expect(repo.Upsert(ctx, data)).To(Succeed())
+			expectTargetMissing(repo.Upsert(ctx, data))
 
 			sub, err := client.EventSubscription.Query().
 				Where(enteventsubscription.EventTypeEQ("de.telekom.eni.quickstart.v1")).
@@ -243,6 +253,68 @@ var _ = Describe("EventSubscription Repository", func() {
 			Expect(errors.Is(err, dbErr)).To(BeTrue())
 		})
 
+		It("should propagate non-ErrEntityNotFound errors from FindEventExposureByEventType", func() {
+			dbErr := errors.New("connection refused")
+			failDeps := &mockSubscriptionDeps{
+				appIDs:      map[string]int{"consumer-app:platform--narvi": appID},
+				exposureErr: dbErr,
+			}
+			failRepo := eventsubscription.NewRepository(client, cache, failDeps)
+
+			data := &eventsubscription.EventSubscriptionData{
+				Meta:            shared.NewMetadata("prod--platform--narvi", "fail-target", nil),
+				StatusPhase:     "UNKNOWN",
+				EventType:       "de.telekom.fail.v1",
+				DeliveryType:    "CALLBACK",
+				OwnerAppName:    "consumer-app",
+				OwnerTeamName:   "platform--narvi",
+				TargetEventType: "de.telekom.fail.v1",
+			}
+			err := failRepo.Upsert(ctx, data)
+			Expect(err).To(HaveOccurred())
+			Expect(runtime.IsDependencyMissing(err)).To(BeFalse())
+			Expect(errors.Is(err, dbErr)).To(BeTrue())
+
+			count, err := client.EventSubscription.Query().Count(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(count).To(BeZero())
+		})
+
+		It("should persist with NULL target, signal retry, and link once the target resolves", func() {
+			data := &eventsubscription.EventSubscriptionData{
+				Meta:            shared.NewMetadata("prod--platform--narvi", "late-sub", nil),
+				StatusPhase:     "READY",
+				EventType:       "de.telekom.late.v1",
+				DeliveryType:    "CALLBACK",
+				OwnerAppName:    "consumer-app",
+				OwnerTeamName:   "platform--narvi",
+				TargetEventType: "de.telekom.late.v1",
+			}
+			expectTargetMissing(repo.Upsert(ctx, data))
+
+			sub, err := client.EventSubscription.Query().Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			hasTarget, err := sub.QueryTarget().Exist(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(hasTarget).To(BeFalse())
+
+			exposure, err := client.EventExposure.Create().
+				SetEventType("de.telekom.late.v1").
+				SetVisibility(eventexposure.VisibilityEnterprise).
+				SetNamespace("prod--platform--narvi").
+				SetEventScopes([]model.EventScope{}).
+				SetApprovalConfig(model.ApprovalConfig{Strategy: "NONE"}).
+				SetOwnerID(appID).
+				Save(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			deps.exposureIDs["de.telekom.late.v1"] = exposure.ID
+
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+			target, err := sub.QueryTarget().Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(target.ID).To(Equal(exposure.ID))
+		})
+
 		It("should link target FK when event exposure exists", func() {
 			// Create an EventExposure to serve as target.
 			exposure, err := client.EventExposure.Create().
@@ -305,7 +377,7 @@ var _ = Describe("EventSubscription Repository", func() {
 				OwnerTeamName:   "platform--narvi",
 				TargetEventType: "de.telekom.update.v1",
 			}
-			Expect(repo.Upsert(ctx, data)).To(Succeed())
+			expectTargetMissing(repo.Upsert(ctx, data))
 
 			// Update with new values including trigger and delivery.
 			newCallbackURL := "https://example.com/v2"
@@ -320,7 +392,7 @@ var _ = Describe("EventSubscription Repository", func() {
 				EventRetentionTime:   "P30D",
 				CircuitBreakerOptOut: true,
 			}
-			Expect(repo.Upsert(ctx, data)).To(Succeed())
+			expectTargetMissing(repo.Upsert(ctx, data))
 
 			sub, err := client.EventSubscription.Query().
 				Where(enteventsubscription.EventTypeEQ("de.telekom.update.v1")).
@@ -362,7 +434,7 @@ var _ = Describe("EventSubscription Repository", func() {
 				OwnerTeamName:   "platform--narvi",
 				TargetEventType: "de.telekom.sse.v1",
 			}
-			Expect(repo.Upsert(ctx, data)).To(Succeed())
+			expectTargetMissing(repo.Upsert(ctx, data))
 
 			sub, err := client.EventSubscription.Query().
 				Where(enteventsubscription.EventTypeEQ("de.telekom.sse.v1")).
@@ -386,12 +458,63 @@ var _ = Describe("EventSubscription Repository", func() {
 				OwnerTeamName:   "platform--narvi",
 				TargetEventType: "de.telekom.cached.v1",
 			}
-			Expect(repo.Upsert(ctx, data)).To(Succeed())
+			expectTargetMissing(repo.Upsert(ctx, data))
 			cache.Wait()
 
 			id, found := cache.Get("eventsubscription", "meta:prod--platform--narvi:cached-sub")
 			Expect(found).To(BeTrue())
 			Expect(id).To(BeNumerically(">", 0))
+		})
+	})
+
+	Describe("target deactivated after its active lookup was cached", func() {
+		It("reports the missing target and clears the target FK", func() {
+			const eventType = "de.telekom.deactivated.v1"
+			providerApp, err := client.Application.Create().
+				SetName("provider-app").
+				SetNamespace("platform--narvi").
+				SetOwnerTeamID(client.Team.Query().OnlyIDX(ctx)).
+				SetZoneID(client.Zone.Query().OnlyIDX(ctx)).
+				Save(ctx)
+			Expect(err).NotTo(HaveOccurred())
+
+			resolver := infrastructure.NewIDResolver(client, cache)
+			subRepo := eventsubscription.NewRepository(client, cache, resolver)
+			expRepo := domaineventexposure.NewRepository(client, cache, resolver)
+			exposure := func(active bool) *domaineventexposure.EventExposureData {
+				return &domaineventexposure.EventExposureData{
+					Meta:           shared.NewMetadata("prod--platform--narvi", "provider-exposure", nil),
+					StatusPhase:    "READY",
+					EventType:      eventType,
+					Visibility:     "WORLD",
+					Active:         active,
+					ApprovalConfig: model.ApprovalConfig{Strategy: "AUTO"},
+					AppName:        providerApp.Name,
+					TeamName:       "platform--narvi",
+				}
+			}
+			data := &eventsubscription.EventSubscriptionData{
+				Meta:        shared.NewMetadata("prod--platform--narvi", "deactivated", nil),
+				StatusPhase: "READY", EventType: eventType, TargetEventType: eventType, DeliveryType: "CALLBACK",
+				OwnerAppName: "consumer-app", OwnerTeamName: "platform--narvi",
+			}
+
+			Expect(expRepo.Upsert(ctx, exposure(true))).To(Succeed())
+			Expect(subRepo.Upsert(ctx, data)).To(Succeed())
+			cache.Wait()
+			_, found := cache.Get(cachekeys.EventExposureByEventType(eventType))
+			Expect(found).To(BeTrue())
+			sub, err := client.EventSubscription.Query().WithTarget().Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(sub.Edges.Target).NotTo(BeNil())
+
+			Expect(expRepo.Upsert(ctx, exposure(false))).To(Succeed())
+			cache.Wait()
+
+			expectTargetMissing(subRepo.Upsert(ctx, data))
+			sub, err = client.EventSubscription.Query().WithTarget().Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(sub.Edges.Target).To(BeNil())
 		})
 	})
 
@@ -406,7 +529,7 @@ var _ = Describe("EventSubscription Repository", func() {
 				OwnerTeamName:   "platform--narvi",
 				TargetEventType: "de.telekom.delete.v1",
 			}
-			Expect(repo.Upsert(ctx, data)).To(Succeed())
+			expectTargetMissing(repo.Upsert(ctx, data))
 
 			key := eventsubscription.EventSubscriptionKey{
 				EventType:     "de.telekom.delete.v1",
@@ -441,7 +564,7 @@ var _ = Describe("EventSubscription Repository", func() {
 				OwnerTeamName:   "platform--narvi",
 				TargetEventType: "de.telekom.evict.v1",
 			}
-			Expect(repo.Upsert(ctx, data)).To(Succeed())
+			expectTargetMissing(repo.Upsert(ctx, data))
 			cache.Wait()
 
 			_, found := cache.Get("eventsubscription", "meta:prod--platform--narvi:evict-sub")

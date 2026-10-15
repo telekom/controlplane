@@ -40,16 +40,16 @@ The server also normalizes the environment, team, and group labels to lowercase,
 
 Rover can configure an external SFTP file-transfer service without changing the customer-facing Rover file:
 
-- A `FileSpecification` defines a `spec.type` (e.g. `dds-rc1-provider-file`), its `spec.version`, and a description. Its metadata name must be the normalized type (lowercase, dots replaced by hyphens).
+- A `FileSpecification` defines a `spec.type` (e.g. `dds-rc1-provider-file`), its `spec.version`, and a description. It can also include an optional YANL schema in `spec.specification`; Rover Server stores that document in File Manager and returns it through the FileSpecification API. Its metadata name must be the normalized type (lowercase, dots replaced by hyphens).
 - Apply FileSpecifications through Rover-CTL like other Rover resources; Rover Server persists the resource and the Rover controller creates the matching file-domain `FileType`.
 - A `fileType` **exposure** (producer) or **subscription** (consumer) with `variant: sftp` and one or more `publicKeys` registers those SSH keys on the matching SFTP user.
 
 ### apiVersion
 
-`FileSpecification` is the only kind that uses the `rover.cp.ei.telekom.de/v1` API version.
+`ApiRoadmap`, `ApiChangelog`, and `FileSpecification` accept both `tcp.ei.telekom.de/v1` and `rover.ei.telekom.de/v1` API versions. Existing manifests using `tcp.ei.telekom.de/v1` remain supported.
 
 ```yaml
-apiVersion: rover.cp.ei.telekom.de/v1
+apiVersion: rover.ei.telekom.de/v1
 kind: FileSpecification
 metadata:
   name: invoice-monthly
@@ -57,10 +57,15 @@ spec:
   type: invoice.monthly
   version: 1.0.0
   description: Monthly invoice exports
+  specification:
+    type: object
+    properties:
+      invoiceId:
+        type: string
 ```
 
 :::warning
-Rover-CTL resolves handlers by the `apiVersion`/`kind` pair. A file with an unknown combination is skipped silently — `apply` logs `Handler not found. Ignoring...` and still exits with code `0`. Using `tcp.ei.telekom.de/v1` for a `FileSpecification` therefore creates no resource and reports no error.
+Rover-CTL resolves handlers by the `apiVersion`/`kind` pair. A file with an unknown combination is skipped silently — `apply` logs `Handler not found. Ignoring...` and still exits with code `0`.
 :::
 
 Validation rules enforced by the Rover webhook:

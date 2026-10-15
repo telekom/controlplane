@@ -39,6 +39,8 @@ var _ = Describe("ApiChangelog Controller", func() {
 
 	changelogItemsJSON, _ := json.Marshal(changelogItems)
 
+	const changelogFileId = "01926a3e-7b2c-7d3e-8f4a-1b2c3d4e5f62"
+
 	var changelogFileMgr *filefake.MockFileManager
 
 	BeforeEach(func() {
@@ -56,7 +58,7 @@ var _ = Describe("ApiChangelog Controller", func() {
 
 	Context("Get ApiChangelog resource", func() {
 		It("should return the ApiChangelog successfully", func() {
-			changelogFileMgr.EXPECT().DownloadFile(mock.Anything, "poc--eni--hyperion--eni-test-api", mock.Anything).
+			changelogFileMgr.EXPECT().DownloadFile(mock.Anything, changelogFileId, mock.Anything).
 				RunAndReturn(func(_ context.Context, _ string, w io.Writer) (*fileApi.FileDownloadResponse, error) {
 					w.Write(changelogItemsJSON)
 					return &fileApi.FileDownloadResponse{
@@ -85,7 +87,7 @@ var _ = Describe("ApiChangelog Controller", func() {
 
 	Context("GetAll ApiChangelogs resource", func() {
 		It("should return all ApiChangelogs successfully", func() {
-			changelogFileMgr.EXPECT().DownloadFile(mock.Anything, "poc--eni--hyperion--eni-test-api", mock.Anything).
+			changelogFileMgr.EXPECT().DownloadFile(mock.Anything, changelogFileId, mock.Anything).
 				RunAndReturn(func(_ context.Context, _ string, w io.Writer) (*fileApi.FileDownloadResponse, error) {
 					w.Write(changelogItemsJSON)
 					return &fileApi.FileDownloadResponse{
@@ -128,9 +130,9 @@ var _ = Describe("ApiChangelog Controller", func() {
 
 	Context("Update ApiChangelog resource", func() {
 		It("should update the ApiChangelog successfully", func() {
-			changelogFileMgr.EXPECT().UploadFile(mock.Anything, "poc--eni--hyperion--eni-test-api", "application/json", mock.Anything).
+			changelogFileMgr.EXPECT().UploadFile(mock.Anything, changelogFileId, "application/json", mock.Anything).
 				Return(&fileApi.FileUploadResponse{
-					FileId:      "poc--eni--hyperion--eni-test-api",
+					FileId:      changelogFileId,
 					FileHash:    "updatedHash",
 					ContentType: "application/json",
 				}, nil).Once()
@@ -207,7 +209,7 @@ var _ = Describe("ApiChangelog Controller", func() {
 
 	Context("Delete ApiChangelog resource", func() {
 		It("should delete the ApiChangelog successfully", func() {
-			changelogFileMgr.EXPECT().DeleteFile(mock.Anything, "poc--eni--hyperion--eni-test-api").Return(nil).Once()
+			changelogFileMgr.EXPECT().DeleteFile(mock.Anything, changelogFileId).Return(nil).Once()
 
 			req := httptest.NewRequest(http.MethodDelete, "/apichangelogs/eni--hyperion--eni-test-api", nil)
 			responseGroup, err := ExecuteRequest(req, groupToken)

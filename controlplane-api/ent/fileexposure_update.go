@@ -178,6 +178,46 @@ func (_u *FileExposureUpdate) SetNillableZoneName(v *string) *FileExposureUpdate
 	return _u
 }
 
+// SetServiceURL sets the "service_url" field.
+func (_u *FileExposureUpdate) SetServiceURL(v string) *FileExposureUpdate {
+	_u.mutation.SetServiceURL(v)
+	return _u
+}
+
+// SetNillableServiceURL sets the "service_url" field if the given value is not nil.
+func (_u *FileExposureUpdate) SetNillableServiceURL(v *string) *FileExposureUpdate {
+	if v != nil {
+		_u.SetServiceURL(*v)
+	}
+	return _u
+}
+
+// ClearServiceURL clears the value of the "service_url" field.
+func (_u *FileExposureUpdate) ClearServiceURL() *FileExposureUpdate {
+	_u.mutation.ClearServiceURL()
+	return _u
+}
+
+// SetServiceExternalURL sets the "service_external_url" field.
+func (_u *FileExposureUpdate) SetServiceExternalURL(v string) *FileExposureUpdate {
+	_u.mutation.SetServiceExternalURL(v)
+	return _u
+}
+
+// SetNillableServiceExternalURL sets the "service_external_url" field if the given value is not nil.
+func (_u *FileExposureUpdate) SetNillableServiceExternalURL(v *string) *FileExposureUpdate {
+	if v != nil {
+		_u.SetServiceExternalURL(*v)
+	}
+	return _u
+}
+
+// ClearServiceExternalURL clears the value of the "service_external_url" field.
+func (_u *FileExposureUpdate) ClearServiceExternalURL() *FileExposureUpdate {
+	_u.mutation.ClearServiceExternalURL()
+	return _u
+}
+
 // SetSftp sets the "sftp" field.
 func (_u *FileExposureUpdate) SetSftp(v *model.FileSFTP) *FileExposureUpdate {
 	_u.mutation.SetSftp(v)
@@ -432,6 +472,18 @@ func (_u *FileExposureUpdate) sqlSave(ctx context.Context) (_node int, err error
 	}
 	if value, ok := _u.mutation.ZoneName(); ok {
 		_spec.SetField(fileexposure.FieldZoneName, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.ServiceURL(); ok {
+		_spec.SetField(fileexposure.FieldServiceURL, field.TypeString, value)
+	}
+	if _u.mutation.ServiceURLCleared() {
+		_spec.ClearField(fileexposure.FieldServiceURL, field.TypeString)
+	}
+	if value, ok := _u.mutation.ServiceExternalURL(); ok {
+		_spec.SetField(fileexposure.FieldServiceExternalURL, field.TypeString, value)
+	}
+	if _u.mutation.ServiceExternalURLCleared() {
+		_spec.ClearField(fileexposure.FieldServiceExternalURL, field.TypeString)
 	}
 	if value, ok := _u.mutation.Sftp(); ok {
 		_spec.SetField(fileexposure.FieldSftp, field.TypeJSON, value)
@@ -736,6 +788,46 @@ func (_u *FileExposureUpdateOne) SetNillableZoneName(v *string) *FileExposureUpd
 	return _u
 }
 
+// SetServiceURL sets the "service_url" field.
+func (_u *FileExposureUpdateOne) SetServiceURL(v string) *FileExposureUpdateOne {
+	_u.mutation.SetServiceURL(v)
+	return _u
+}
+
+// SetNillableServiceURL sets the "service_url" field if the given value is not nil.
+func (_u *FileExposureUpdateOne) SetNillableServiceURL(v *string) *FileExposureUpdateOne {
+	if v != nil {
+		_u.SetServiceURL(*v)
+	}
+	return _u
+}
+
+// ClearServiceURL clears the value of the "service_url" field.
+func (_u *FileExposureUpdateOne) ClearServiceURL() *FileExposureUpdateOne {
+	_u.mutation.ClearServiceURL()
+	return _u
+}
+
+// SetServiceExternalURL sets the "service_external_url" field.
+func (_u *FileExposureUpdateOne) SetServiceExternalURL(v string) *FileExposureUpdateOne {
+	_u.mutation.SetServiceExternalURL(v)
+	return _u
+}
+
+// SetNillableServiceExternalURL sets the "service_external_url" field if the given value is not nil.
+func (_u *FileExposureUpdateOne) SetNillableServiceExternalURL(v *string) *FileExposureUpdateOne {
+	if v != nil {
+		_u.SetServiceExternalURL(*v)
+	}
+	return _u
+}
+
+// ClearServiceExternalURL clears the value of the "service_external_url" field.
+func (_u *FileExposureUpdateOne) ClearServiceExternalURL() *FileExposureUpdateOne {
+	_u.mutation.ClearServiceExternalURL()
+	return _u
+}
+
 // SetSftp sets the "sftp" field.
 func (_u *FileExposureUpdateOne) SetSftp(v *model.FileSFTP) *FileExposureUpdateOne {
 	_u.mutation.SetSftp(v)
@@ -1020,6 +1112,18 @@ func (_u *FileExposureUpdateOne) sqlSave(ctx context.Context) (_node *FileExposu
 	}
 	if value, ok := _u.mutation.ZoneName(); ok {
 		_spec.SetField(fileexposure.FieldZoneName, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.ServiceURL(); ok {
+		_spec.SetField(fileexposure.FieldServiceURL, field.TypeString, value)
+	}
+	if _u.mutation.ServiceURLCleared() {
+		_spec.ClearField(fileexposure.FieldServiceURL, field.TypeString)
+	}
+	if value, ok := _u.mutation.ServiceExternalURL(); ok {
+		_spec.SetField(fileexposure.FieldServiceExternalURL, field.TypeString, value)
+	}
+	if _u.mutation.ServiceExternalURLCleared() {
+		_spec.ClearField(fileexposure.FieldServiceExternalURL, field.TypeString)
 	}
 	if value, ok := _u.mutation.Sftp(); ok {
 		_spec.SetField(fileexposure.FieldSftp, field.TypeJSON, value)

@@ -15,6 +15,7 @@ import (
 
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/telekom/controlplane/controlplane-api/ent"
+	"github.com/telekom/controlplane/controlplane-api/ent/application"
 	"github.com/telekom/controlplane/controlplane-api/ent/enttest"
 	enteventexposure "github.com/telekom/controlplane/controlplane-api/ent/eventexposure"
 	_ "github.com/telekom/controlplane/controlplane-api/ent/runtime"
@@ -24,6 +25,7 @@ import (
 	"github.com/telekom/controlplane/projector/internal/domain/eventexposure"
 	"github.com/telekom/controlplane/projector/internal/domain/shared"
 	"github.com/telekom/controlplane/projector/internal/infrastructure"
+	"github.com/telekom/controlplane/projector/internal/infrastructure/cachekeys"
 	"github.com/telekom/controlplane/projector/internal/runtime"
 )
 
@@ -421,6 +423,154 @@ var _ = Describe("EventExposure Repository", func() {
 			Expect(exp.EventScopes[0].Trigger.SelectionFilter.Expression).To(Equal(`{"op":"eq","path":"$.type","value":"order.created"}`))
 		})
 
+	})
+
+	Describe("active event-type lookup cache invalidation", func() {
+		const ident = "de.telekom.active.lookup.v1"
+		var resolver *infrastructure.IDResolver
+
+		exposure := func(appName string, active bool) *eventexposure.EventExposureData {
+			return &eventexposure.EventExposureData{
+				Meta:           shared.NewMetadata("prod--platform--narvi", "exp-"+appName, nil),
+				StatusPhase:    "READY",
+				EventType:      ident,
+				Visibility:     "ENTERPRISE",
+				Active:         active,
+				ApprovalConfig: model.ApprovalConfig{Strategy: "AUTO"},
+				AppName:        appName,
+				TeamName:       "platform--narvi",
+			}
+		}
+		key := eventexposure.EventExposureKey{EventType: ident, AppName: "my-app", TeamName: "platform--narvi"}
+
+		// primeActive resolves the active exposure through the real resolver and
+		// proves the resolved ID is now served from the edge cache.
+		primeActive := func() int {
+			id, err := resolver.FindEventExposureByEventType(ctx, ident)
+			Expect(err).NotTo(HaveOccurred())
+			cache.Wait()
+			cached, found := cache.Get(cachekeys.EventExposureByEventType(ident))
+			Expect(found).To(BeTrue())
+			Expect(cached).To(Equal(id))
+			return id
+		}
+
+		BeforeEach(func() {
+			resolver = infrastructure.NewIDResolver(client, cache)
+			Expect(repo.Upsert(ctx, exposure("my-app", true))).To(Succeed())
+		})
+
+		It("stops resolving an exposure once it is deactivated", func() {
+			primeActive()
+			Expect(repo.Upsert(ctx, exposure("my-app", false))).To(Succeed())
+			cache.Wait()
+
+			_, err := resolver.FindEventExposureByEventType(ctx, ident)
+			Expect(errors.Is(err, infrastructure.ErrEntityNotFound)).To(BeTrue())
+		})
+
+		It("stops resolving an exposure once it is deleted, also on idempotent re-delete", func() {
+			primeActive()
+			Expect(repo.Delete(ctx, key)).To(Succeed())
+			cache.Wait()
+			_, err := resolver.FindEventExposureByEventType(ctx, ident)
+			Expect(errors.Is(err, infrastructure.ErrEntityNotFound)).To(BeTrue())
+
+			// A stale active entry left behind must be evicted by a count=0 delete.
+			et, lk := cachekeys.EventExposureByEventType(ident)
+			cache.Set(et, lk, 4242)
+			cache.Wait()
+			Expect(repo.Delete(ctx, key)).To(Succeed())
+			cache.Wait()
+			_, found := cache.Get(et, lk)
+			Expect(found).To(BeFalse())
+		})
+
+		It("resolves the newly active owner instead of the stale inactive one", func() {
+			other, err := client.Application.Create().
+				SetName("other-app").
+				SetNamespace("platform--narvi").
+				SetOwnerTeamID(client.Team.Query().OnlyIDX(ctx)).
+				SetZoneID(client.Zone.Query().OnlyIDX(ctx)).
+				Save(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			deps.appIDs["other-app:platform--narvi"] = other.ID
+
+			oldID := primeActive()
+			Expect(repo.Upsert(ctx, exposure("my-app", false))).To(Succeed())
+			Expect(repo.Upsert(ctx, exposure("other-app", true))).To(Succeed())
+			cache.Wait()
+
+			id, err := resolver.FindEventExposureByEventType(ctx, ident)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(id).NotTo(Equal(oldID))
+			Expect(id).To(Equal(client.EventExposure.Query().
+				Where(enteventexposure.HasOwnerWith(application.IDEQ(other.ID))).OnlyIDX(ctx)))
+		})
+
+		// failOn makes every ENT mutation of the given operation fail
+		// deterministically, simulating a DB error at that write.
+		failOn := func(op ent.Op) error {
+			injected := errors.New("injected db failure")
+			client.EventExposure.Use(func(next ent.Mutator) ent.Mutator {
+				return ent.MutateFunc(func(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+					if m.Op().Is(op) {
+						return nil, injected
+					}
+					return next.Mutate(ctx, m)
+				})
+			})
+			return injected
+		}
+
+		It("keeps the cached active lookup when the primary upsert fails", func() {
+			id := primeActive()
+			injected := failOn(ent.OpCreate)
+
+			Expect(errors.Is(repo.Upsert(ctx, exposure("my-app", false)), injected)).To(BeTrue())
+			cache.Wait()
+			cached, found := cache.Get(cachekeys.EventExposureByEventType(ident))
+			Expect(found).To(BeTrue())
+			Expect(cached).To(Equal(id))
+		})
+
+		It("evicts the active lookup when a write after the primary upsert fails", func() {
+			primeActive()
+			// The catalogue FK update (UpdateOne) runs after the primary upsert.
+			injected := failOn(ent.OpUpdateOne)
+
+			Expect(errors.Is(repo.Upsert(ctx, exposure("my-app", false)), injected)).To(BeTrue())
+			cache.Wait()
+			Expect(client.EventExposure.Query().Where(enteventexposure.ActiveEQ(false)).CountX(ctx)).To(Equal(1))
+			_, err := resolver.FindEventExposureByEventType(ctx, ident)
+			Expect(errors.Is(err, infrastructure.ErrEntityNotFound)).To(BeTrue())
+		})
+
+		It("keeps the cached active lookup when the delete fails", func() {
+			id := primeActive()
+			injected := failOn(ent.OpDelete)
+
+			Expect(errors.Is(repo.Delete(ctx, key), injected)).To(BeTrue())
+			cache.Wait()
+			cached, found := cache.Get(cachekeys.EventExposureByEventType(ident))
+			Expect(found).To(BeTrue())
+			Expect(cached).To(Equal(id))
+		})
+
+		It("resolves a reactivated exposure once no negative entry applies", func() {
+			id := primeActive()
+			Expect(repo.Upsert(ctx, exposure("my-app", false))).To(Succeed())
+			cache.Wait()
+			_, err := resolver.FindEventExposureByEventType(ctx, ident)
+			Expect(errors.Is(err, infrastructure.ErrEntityNotFound)).To(BeTrue())
+
+			Expect(repo.Upsert(ctx, exposure("my-app", true))).To(Succeed())
+			cache.Wait()
+			// The original resolver keeps its bounded negative entry; a fresh
+			// resolver sharing the edge cache reads the reactivated row.
+			fresh := infrastructure.NewIDResolver(client, cache)
+			Expect(fresh.FindEventExposureByEventType(ctx, ident)).To(Equal(id))
+		})
 	})
 
 	Describe("Delete", func() {

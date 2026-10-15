@@ -24,12 +24,16 @@ build: fmt vet ## Run go build against code.
 	go build -ldflags="-X 'main.version=$(VERSION)' -X 'main.buildTime=$(BUILD_TIME)' -X 'main.gitCommit=$(GIT_COMMIT)' -X 'main.goVersion=$(shell go version)'" -trimpath -mod=readonly -o bin/roverctl main.go
 
 # Packages to test and measure coverage for
-TEST_PACKAGES = ./pkg/...
-COVER_PACKAGES = ./pkg/...
+TEST_PACKAGES = ./cmd/... ./pkg/...
+COVER_PACKAGES = ./cmd/...,./pkg/...
 
 .PHONY: test
 test: fmt vet ## Run tests.
 	gotestsum --format pkgname --jsonfile gotest.log -- $(TEST_PACKAGES) -ginkgo.junit-report=ginkgo-junit.xml -coverprofile cover.out --coverpkg $(COVER_PACKAGES) -mod=readonly -race
+
+.PHONY: docs
+docs: ## Generate Cobra CLI Markdown docs into docs/.
+	go run ./tools/gen_doc.go
 
 .PHONY: install
 install: build ## Install roverctl binary.

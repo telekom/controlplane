@@ -23,7 +23,7 @@ import (
 
 var _ = Describe("ApiSpecification Webhook", func() {
 	Context("Validating", func() {
-		ctx := context.Background()
+		validateCtx := context.Background()
 		environment := "test"
 
 		NewApiSpecificationValidatorMock := func(teamGroup, teamName string) *ApiSpecificationCustomValidator {
@@ -105,7 +105,7 @@ var _ = Describe("ApiSpecification Webhook", func() {
 			validator := NewApiSpecificationValidatorMock("my-group", "my-team")
 
 			By("validating the ApiSpecification")
-			warnings, err := validator.ValidateCreate(ctx, apispecification)
+			warnings, err := validator.ValidateCreate(validateCtx, apispecification)
 
 			By("expecting an error about the missing environment label")
 			Expect(err).To(HaveOccurred())
@@ -140,7 +140,7 @@ var _ = Describe("ApiSpecification Webhook", func() {
 			validator := NewApiSpecificationValidatorMock("my-group", "my-team")
 
 			By("validating the ApiSpecification")
-			warnings, err := validator.ValidateCreate(ctx, apispecification)
+			warnings, err := validator.ValidateCreate(validateCtx, apispecification)
 
 			By("expecting an error about the non-existing ApiCategory")
 			Expect(err).To(HaveOccurred())
@@ -175,7 +175,7 @@ var _ = Describe("ApiSpecification Webhook", func() {
 			validator := NewApiSpecificationValidatorMock("my-group", "my-team")
 
 			By("validating the ApiSpecification")
-			warnings, err := validator.ValidateCreate(ctx, apispecification)
+			warnings, err := validator.ValidateCreate(validateCtx, apispecification)
 
 			By("expecting an error about the missing group prefix in the basePath")
 			Expect(err).To(HaveOccurred())
@@ -210,7 +210,7 @@ var _ = Describe("ApiSpecification Webhook", func() {
 			validator := NewApiSpecificationValidatorMock("my-group", "my-team")
 
 			By("validating the ApiSpecification")
-			warnings, err := validator.ValidateCreate(ctx, apispecification)
+			warnings, err := validator.ValidateCreate(validateCtx, apispecification)
 
 			By("expecting an error about the inactive ApiCategory")
 			Expect(err).To(HaveOccurred())
@@ -245,7 +245,7 @@ var _ = Describe("ApiSpecification Webhook", func() {
 			validator := NewApiSpecificationValidatorMock("my-group", "my-team")
 
 			By("validating the ApiSpecification")
-			warnings, err := validator.ValidateCreate(ctx, apispecification)
+			warnings, err := validator.ValidateCreate(validateCtx, apispecification)
 
 			By("expecting no error")
 			Expect(err).NotTo(HaveOccurred())
@@ -272,7 +272,7 @@ var _ = Describe("ApiSpecification Webhook", func() {
 			validator := NewApiSpecificationValidatorMock("my-group", "my-team")
 
 			By("validating the ApiSpecification")
-			warnings, err := validator.ValidateCreate(ctx, apispecification)
+			warnings, err := validator.ValidateCreate(validateCtx, apispecification)
 
 			By("expecting no error")
 			Expect(err).NotTo(HaveOccurred())
@@ -302,7 +302,7 @@ var _ = Describe("ApiSpecification Webhook", func() {
 			}
 
 			By("validating the ApiSpecification")
-			warnings, err := validator.ValidateCreate(ctx, apispecification)
+			warnings, err := validator.ValidateCreate(validateCtx, apispecification)
 
 			By("expecting no error")
 			Expect(err).NotTo(HaveOccurred())
@@ -329,7 +329,7 @@ var _ = Describe("ApiSpecification Webhook", func() {
 			validator := NewApiSpecificationValidatorMock("my-group", "my-team")
 
 			By("validating the ApiSpecification")
-			warnings, err := validator.ValidateCreate(ctx, apispecification)
+			warnings, err := validator.ValidateCreate(validateCtx, apispecification)
 
 			By("expecting an error about the not allowed ApiCategory")
 			Expect(err).To(HaveOccurred())

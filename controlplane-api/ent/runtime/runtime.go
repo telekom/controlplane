@@ -83,8 +83,12 @@ func init() {
 	agentcardDescName := agentcardFields[2].Descriptor()
 	// agentcard.NameValidator is a validator for the "name" field. It is called by the builders before save.
 	agentcard.NameValidator = agentcardDescName.Validators[0].(func(string) error)
+	// agentcardDescDisplayName is the schema descriptor for display_name field.
+	agentcardDescDisplayName := agentcardFields[3].Descriptor()
+	// agentcard.DefaultDisplayName holds the default value on creation for the display_name field.
+	agentcard.DefaultDisplayName = agentcardDescDisplayName.Default.(string)
 	// agentcardDescActive is the schema descriptor for active field.
-	agentcardDescActive := agentcardFields[7].Descriptor()
+	agentcardDescActive := agentcardFields[9].Descriptor()
 	// agentcard.DefaultActive holds the default value on creation for the active field.
 	agentcard.DefaultActive = agentcardDescActive.Default.(bool)
 	agenticexposureMixin := schema.AgenticExposure{}.Mixin()
@@ -628,11 +632,11 @@ func init() {
 	// fileexposure.ZoneNameValidator is a validator for the "zone_name" field. It is called by the builders before save.
 	fileexposure.ZoneNameValidator = fileexposureDescZoneName.Validators[0].(func(string) error)
 	// fileexposureDescSftp is the schema descriptor for sftp field.
-	fileexposureDescSftp := fileexposureFields[4].Descriptor()
+	fileexposureDescSftp := fileexposureFields[6].Descriptor()
 	// fileexposure.DefaultSftp holds the default value on creation for the sftp field.
 	fileexposure.DefaultSftp = fileexposureDescSftp.Default.(*model.FileSFTP)
 	// fileexposureDescApprovalConfig is the schema descriptor for approval_config field.
-	fileexposureDescApprovalConfig := fileexposureFields[5].Descriptor()
+	fileexposureDescApprovalConfig := fileexposureFields[7].Descriptor()
 	// fileexposure.DefaultApprovalConfig holds the default value on creation for the approval_config field.
 	fileexposure.DefaultApprovalConfig = fileexposureDescApprovalConfig.Default.(model.ApprovalConfig)
 	filesubscriptionMixin := schema.FileSubscription{}.Mixin()
@@ -791,8 +795,12 @@ func init() {
 	mcpserverDescName := mcpserverFields[2].Descriptor()
 	// mcpserver.NameValidator is a validator for the "name" field. It is called by the builders before save.
 	mcpserver.NameValidator = mcpserverDescName.Validators[0].(func(string) error)
+	// mcpserverDescDisplayName is the schema descriptor for display_name field.
+	mcpserverDescDisplayName := mcpserverFields[3].Descriptor()
+	// mcpserver.DefaultDisplayName holds the default value on creation for the display_name field.
+	mcpserver.DefaultDisplayName = mcpserverDescDisplayName.Default.(string)
 	// mcpserverDescActive is the schema descriptor for active field.
-	mcpserverDescActive := mcpserverFields[7].Descriptor()
+	mcpserverDescActive := mcpserverFields[9].Descriptor()
 	// mcpserver.DefaultActive holds the default value on creation for the active field.
 	mcpserver.DefaultActive = mcpserverDescActive.Default.(bool)
 	memberMixin := schema.Member{}.Mixin()

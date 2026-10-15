@@ -154,7 +154,7 @@ var _ = Describe("JWT global guard selection", func() {
 
 	It("applies the complete security chain to guarded routes", func() {
 		req := httptest.NewRequest(http.MethodGet, "/private", nil)
-		req.Header.Set("Authorization", "Bearer "+securitymock.NewMockAccessToken("test", "group", "team", []string{"admin:all"}))
+		req.Header.Set("Authorization", "Bearer "+securitymock.NewMockAccessToken("test", "group", "team", []string{"tardis:admin:all"}))
 		resp, err := newApp(true).Test(req)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(resp.StatusCode).To(Equal(http.StatusOK))

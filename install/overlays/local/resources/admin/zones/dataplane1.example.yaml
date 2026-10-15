@@ -26,7 +26,6 @@ spec:
       admin:
         identityProviderRef: primary
         url: https://my-gateway-admin.example.com/admin-api
-        clientId: gateway-admin
   presets:
     - name: default
       type: API
