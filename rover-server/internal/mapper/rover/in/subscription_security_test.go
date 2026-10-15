@@ -34,6 +34,30 @@ var _ = Describe("Subscription Security Mapper", func() {
 			Entry("lowercase", api.RefreshToken, roverv1.GrantTypeRefreshToken),
 		)
 
+		DescribeTable("maps the subscriber token request method without a default",
+			func(tokenRequest api.Oauth2TokenRequest, expected roverv1.TokenRequestMethod) {
+				input := api.ApiSubscription{BasePath: "/test"}
+				input.Security = api.Security{}
+				Expect(input.Security.FromOauth2(api.Oauth2{
+					ClientId: "client-id", ClientSecret: "client-secret", TokenRequest: tokenRequest,
+				})).To(Succeed())
+
+				output := &roverv1.ApiSubscription{}
+				mapSubscriptionSecurity(input, output)
+				Expect(output.Security.M2M.TokenRequest).To(Equal(expected))
+
+				aiInput := api.AiSubscription{BasePath: "/test", Security: input.Security}
+				aiOutput := &roverv1.AgenticSubscription{}
+				mapAiSubscriptionSecurity(aiInput, aiOutput)
+				Expect(aiOutput.Security.M2M.TokenRequest).To(Equal(expected))
+			},
+			Entry("omitted", api.Oauth2TokenRequest(""), roverv1.TokenRequestMethod("")),
+			Entry("uppercase BODY", api.Oauth2TokenRequestBODY, roverv1.TokenRequestClientSecretPost),
+			Entry("lowercase body", api.Oauth2TokenRequestBody, roverv1.TokenRequestClientSecretPost),
+			Entry("uppercase HEADER", api.Oauth2TokenRequestHEADER, roverv1.TokenRequestClientSecretBasic),
+			Entry("lowercase header", api.Oauth2TokenRequestHeader, roverv1.TokenRequestClientSecretBasic),
+		)
+
 		It("must map BasicAuth security correctly", func() {
 			// Given
 			input := api.ApiSubscription{

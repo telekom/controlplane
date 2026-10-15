@@ -132,6 +132,9 @@ func mapAiSubscription(in *roverv1.AgenticSubscription) (api.AiSubscription, err
 			if m2m.GrantType != "" {
 				oauth2.GrantType = api.GrantType(m2m.GrantType)
 			}
+			if m2m.TokenRequest != "" {
+				oauth2.TokenRequest = tokenRequestCRDToAPI(m2m.TokenRequest)
+			}
 
 			if !reflect.ValueOf(oauth2).IsZero() {
 				out.Security = api.Security{}
@@ -216,6 +219,10 @@ func mapSubscriptionSecurity(in *roverv1.ApiSubscription, out *api.ApiSubscripti
 
 	if m2m.GrantType != "" {
 		oauth2.GrantType = api.GrantType(m2m.GrantType)
+	}
+
+	if m2m.TokenRequest != "" {
+		oauth2.TokenRequest = tokenRequestCRDToAPI(m2m.TokenRequest)
 	}
 
 	if !reflect.ValueOf(oauth2).IsZero() {

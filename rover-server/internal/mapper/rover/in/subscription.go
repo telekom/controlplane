@@ -169,6 +169,7 @@ func mapSubscriptionSecurity(in api.ApiSubscription, out *roverv1.ApiSubscriptio
 		m2mSecurity.Scopes = oauth2.Scopes
 		// for subscriber it is optional, and no default value should be set
 		m2mSecurity.GrantType = roverv1.GrantType(strings.ToLower(string(oauth2.GrantType)))
+		m2mSecurity.TokenRequest = subscriberTokenRequestAPIToCRD(oauth2.TokenRequest)
 	}
 
 	if m2mSecurity.Basic != nil || m2mSecurity.Client != nil || m2mSecurity.Scopes != nil {
@@ -305,6 +306,7 @@ func mapAiSubscriptionSecurity(in api.AiSubscription, out *roverv1.AgenticSubscr
 		if oauth2.GrantType != "" {
 			m2mSecurity.GrantType = roverv1.GrantType(strings.ToLower(string(oauth2.GrantType)))
 		}
+		m2mSecurity.TokenRequest = subscriberTokenRequestAPIToCRD(oauth2.TokenRequest)
 	}
 
 	if m2mSecurity.Basic != nil || m2mSecurity.Client != nil || m2mSecurity.Scopes != nil {
@@ -312,4 +314,13 @@ func mapAiSubscriptionSecurity(in api.AiSubscription, out *roverv1.AgenticSubscr
 			M2M: m2mSecurity,
 		}
 	}
+}
+
+// subscriberTokenRequestAPIToCRD maps the subscriber tokenRequest without a default,
+// so that an omitted value keeps the token request method of the exposure.
+func subscriberTokenRequestAPIToCRD(value api.Oauth2TokenRequest) roverv1.TokenRequestMethod {
+	if value == "" {
+		return ""
+	}
+	return tokenRequestAPIToCRD(string(value))
 }

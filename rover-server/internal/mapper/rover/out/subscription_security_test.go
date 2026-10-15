@@ -233,6 +233,30 @@ var _ = Describe("Subscription Security Mapper (Out)", func() {
 		})
 	})
 
+	DescribeTable("maps the subscriber token request method",
+		func(tokenRequest roverv1.TokenRequestMethod, expected api.Oauth2TokenRequest) {
+			security := &roverv1.SubscriberSecurity{M2M: &roverv1.SubscriberMachine2MachineAuthentication{
+				Client:       &roverv1.OAuth2ClientCredentials{ClientId: "client-id", ClientSecret: "client-secret"},
+				TokenRequest: tokenRequest,
+			}}
+
+			apiOut := &api.ApiSubscription{}
+			Expect(mapSubscriptionSecurity(&roverv1.ApiSubscription{Security: security}, apiOut)).To(Succeed())
+			apiOauth2, err := apiOut.Security.AsOauth2()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(apiOauth2.TokenRequest).To(Equal(expected))
+
+			aiOut, err := mapAiSubscription(&roverv1.AgenticSubscription{Security: security})
+			Expect(err).NotTo(HaveOccurred())
+			aiOauth2, err := aiOut.Security.AsOauth2()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(aiOauth2.TokenRequest).To(Equal(expected))
+		},
+		Entry("omitted", roverv1.TokenRequestMethod(""), api.Oauth2TokenRequest("")),
+		Entry("client_secret_basic", roverv1.TokenRequestClientSecretBasic, api.Oauth2TokenRequestHeader),
+		Entry("client_secret_post", roverv1.TokenRequestClientSecretPost, api.Oauth2TokenRequestBody),
+	)
+
 	Context("mapAiSubscription", func() {
 		It("must keep username/password with a grant type as oauth2", func() {
 			input := &roverv1.AgenticSubscription{
@@ -313,6 +337,17 @@ var _ = Describe("Subscription Security Mapper (Out)", func() {
 			Basic:     &roverv1.BasicAuthCredentials{Username: "testuser", Password: "testpass"},
 			Scopes:    []string{"read", "write"},
 			GrantType: roverv1.GrantTypePassword,
+		}}),
+		Entry("client credentials with a client_secret_post token request", &roverv1.SubscriberSecurity{M2M: &roverv1.SubscriberMachine2MachineAuthentication{
+			Client:       &roverv1.OAuth2ClientCredentials{ClientId: "client-id", ClientSecret: "client-secret"},
+			Scopes:       []string{"read"},
+			TokenRequest: roverv1.TokenRequestClientSecretPost,
+		}}),
+		Entry("client and username/password with a client_secret_basic token request", &roverv1.SubscriberSecurity{M2M: &roverv1.SubscriberMachine2MachineAuthentication{
+			Client:       &roverv1.OAuth2ClientCredentials{ClientId: "client-id", ClientSecret: "client-secret"},
+			Basic:        &roverv1.BasicAuthCredentials{Username: "testuser", Password: "testpass"},
+			GrantType:    roverv1.GrantTypePassword,
+			TokenRequest: roverv1.TokenRequestClientSecretBasic,
 		}}),
 	)
 })
