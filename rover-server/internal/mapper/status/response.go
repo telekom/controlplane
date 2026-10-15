@@ -115,13 +115,18 @@ func MapRoverResponse(ctx context.Context, rover *v1.Rover, stores *store.Stores
 		processedAtTime = processing.LastTransitionTime.Time.UTC()
 	}
 
+	problems := result.Problems
+	if p := RoverProblem(rover, result); p != nil {
+		problems = append(problems, *p)
+	}
+
 	return api.ResourceStatusResponse{
 		CreatedAt:       rover.GetCreationTimestamp().Time.UTC(),
 		ProcessedAt:     processedAtTime,
 		State:           status.State,
 		ProcessingState: status.ProcessingState,
 		OverallStatus:   finalOverall,
-		Errors:          result.Problems,
+		Errors:          problems,
 	}, nil
 }
 

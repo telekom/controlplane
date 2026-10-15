@@ -121,6 +121,9 @@ func MapApplicationInfo(ctx context.Context, rover *roverv1.Rover, stores *store
 	}
 
 	_, appInfo.Status = status.ResolveRoverStatus(rover, *children)
+	if p := status.RoverProblem(rover, *children); p != nil {
+		appInfo.Errors = append(appInfo.Errors, *p)
+	}
 
 	return appInfo, nil
 }
