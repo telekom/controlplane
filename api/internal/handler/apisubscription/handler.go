@@ -93,11 +93,15 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 		return nil
 	}
 
-	// validate if basepathes of the api and apiexposure are really equal
-	if api.Spec.BasePath != apiSub.Spec.ApiBasePath {
-		// This should never happen as both Api and ApiExposure are looked up by the same basepath
-		return errors.Wrapf(err, "Subscriptions basePath: %s does not match the APIs basepath: %s",
-			apiSub.Spec.ApiBasePath, api.Spec.BasePath)
+	// The Api and ApiExposure are looked up by the normalized basePath label, so the requested basePath can
+	// differ from the exposed one (e.g. by case). Compare against the ApiExposure, as its basePath is the
+	// case-sensitive gateway route path. A case mismatch between Api and ApiExposure is a provider-side
+	// inconsistency that the ApiExposure handler reports; it is not handled here.
+	if apiExposure.Spec.ApiBasePath != apiSub.Spec.ApiBasePath {
+		msg := fmt.Sprintf("ApiSubscription basePath %q does not match the exposed basePath %q. Use the exact basePath of the API",
+			apiSub.Spec.ApiBasePath, apiExposure.Spec.ApiBasePath)
+		apiSub.SetCondition(condition.NewNotReadyCondition(condition.ReasonValidationFailed, msg))
+		return ctrlerrors.BlockedErrorf("%s", msg)
 	}
 
 	// 3. Validate ApiExposure visibility for ApiSubscription zone
