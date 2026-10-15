@@ -470,6 +470,29 @@ var _ = Describe("ListenerHandler", func() {
 			Return(errors.NewNotFound(schema.GroupResource{Group: "approval.cp.ei.telekom.de", Resource: "approvals"}, "")).Once()
 	}
 
+	// mockApprovalHumanGrantedGate sets up a Simple gate whose ApprovalRequest a
+	// decider has already granted while the approval controller has not issued
+	// its Approval yet.
+	mockApprovalHumanGrantedGate := func() {
+		fakeClient.EXPECT().
+			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.ApprovalRequest"), mock.Anything).
+			Run(func(_ context.Context, obj client.Object, mutate controllerutil.MutateFn) {
+				req := obj.(*approvalv1.ApprovalRequest)
+				req.Spec.State = approvalv1.ApprovalStateGranted // the decider's answer on the server
+				_ = mutate()
+				Expect(req.Spec.Strategy).To(Equal(approvalv1.ApprovalStrategySimple))
+			}).
+			Return(controllerutil.OperationResultUpdated, nil).Once()
+
+		fakeClient.EXPECT().
+			List(ctx, mock.AnythingOfType("*v1.ApprovalRequestList"), mock.Anything).
+			Return(nil).Once()
+
+		fakeClient.EXPECT().
+			Get(ctx, mock.AnythingOfType("types.NamespacedName"), mock.AnythingOfType("*v1.Approval")).
+			Return(errors.NewNotFound(schema.GroupResource{Group: "approval.cp.ei.telekom.de", Resource: "approvals"}, "")).Once()
+	}
+
 	// mockApprovalPending sets up both gates as pending.
 	mockApprovalPending := func() {
 		mockApprovalPendingGate() // provider gate
@@ -1525,7 +1548,8 @@ var _ = Describe("ListenerHandler", func() {
 				readyCond := meta.FindStatusCondition(listener.Status.Conditions, condition.ConditionTypeReady)
 				Expect(readyCond).ToNot(BeNil())
 				Expect(readyCond.Reason).To(Equal(condition.ReasonApprovalPending))
-				Expect(readyCond.Message).To(Equal("Waiting for approval decision (provider and consumer gate)"))
+				// The consumer gate is Auto (A==C) and has no decision left to wait for.
+				Expect(readyCond.Message).To(Equal("Waiting for approval decision (provider gate)"))
 
 				Expect(listener.Status.RouteListener).To(BeNil())
 				Expect(listener.Status.EventSubscriptions).To(BeEmpty())
@@ -2282,8 +2306,10 @@ var _ = Describe("ListenerHandler", func() {
 		// side effects (cleanup, conditions, provisioning) for each aggregate
 		// outcome. The pure-function tests live in listener_approval_test.go.
 
-		Context("dual-gate: provider Granted + consumer Pending", func() {
-			It("should NOT provision and set Blocked condition", func() {
+		// A==C makes the consumer gate Auto: its ApprovalRequest is granted at
+		// once and only the Approval the approval controller issues is missing.
+		Context("dual-gate: provider Granted + consumer Auto gate without its Approval yet", func() {
+			It("should NOT provision and report processing, not blocked", func() {
 				listener := newListener()
 				mockGetConsumerApp(makeConsumerApp())
 				mockGetProviderApp(makeProviderApp())
@@ -2302,10 +2328,79 @@ var _ = Describe("ListenerHandler", func() {
 
 				procCond := meta.FindStatusCondition(listener.Status.Conditions, condition.ConditionTypeProcessing)
 				Expect(procCond).ToNot(BeNil())
+				Expect(procCond.Status).To(Equal(metav1.ConditionTrue))
+				Expect(procCond.Reason).To(Equal(condition.ReasonProcessing))
+				readyCond := meta.FindStatusCondition(listener.Status.Conditions, condition.ConditionTypeReady)
+				Expect(readyCond).ToNot(BeNil())
+				Expect(readyCond.Status).To(Equal(metav1.ConditionFalse))
+				Expect(readyCond.Reason).To(Equal(condition.ReasonProcessing))
+				Expect(readyCond.Message).To(Equal("ApprovalRequest granted, waiting for the approval controller to issue the Approval (consumer gate)"))
+
+				Expect(listener.Status.RouteListener).To(BeNil())
+				Expect(listener.Status.EventSubscriptions).To(BeEmpty())
+			})
+		})
+
+		// A!=P makes the provider gate Simple; its request was granted by the
+		// provider team before the approval controller issued the Approval.
+		Context("dual-gate: provider gate granted by a decider without its Approval yet + consumer Granted", func() {
+			It("should NOT provision and report processing, not blocked", func() {
+				listener := newListener()
+				mockGetConsumerApp(makeConsumerApp())
+				mockGetProviderApp(makeProviderApp())
+				mockGetSpectreApp(makeSpectreAppPtr())
+				mockGetObserverApp(makeConsumerApp()) // A==C: observer resolves to consumer
+				mockGetZone()
+				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
+				mockGetEventStore(makeListenerEventStore())
+				mockListRoutes()
+				mockNoStaleChildren()
+				mockApprovalHumanGrantedGate()
+				mockApprovalGrantedGate("consumer")
+
+				err := h.CreateOrUpdate(ctx, listener)
+				Expect(err).ToNot(HaveOccurred())
+
+				procCond := meta.FindStatusCondition(listener.Status.Conditions, condition.ConditionTypeProcessing)
+				Expect(procCond).ToNot(BeNil())
+				Expect(procCond.Reason).To(Equal(condition.ReasonProcessing))
+				readyCond := meta.FindStatusCondition(listener.Status.Conditions, condition.ConditionTypeReady)
+				Expect(readyCond).ToNot(BeNil())
+				Expect(readyCond.Reason).To(Equal(condition.ReasonProcessing))
+				Expect(readyCond.Message).To(Equal("ApprovalRequest granted, waiting for the approval controller to issue the Approval (provider gate)"))
+
+				Expect(listener.Status.RouteListener).To(BeNil())
+				Expect(listener.Status.EventSubscriptions).To(BeEmpty())
+			})
+		})
+
+		// A!=P makes the provider gate Simple: its ApprovalRequest waits for the
+		// provider team to decide.
+		Context("dual-gate: provider gate waiting for a decision + consumer Granted", func() {
+			It("should NOT provision and set Blocked condition", func() {
+				listener := newListener()
+				mockGetConsumerApp(makeConsumerApp())
+				mockGetProviderApp(makeProviderApp())
+				mockGetSpectreApp(makeSpectreAppPtr())
+				mockGetObserverApp(makeConsumerApp()) // A==C: observer resolves to consumer
+				mockGetZone()
+				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
+				mockGetEventStore(makeListenerEventStore())
+				mockListRoutes()
+				mockNoStaleChildren()
+				mockApprovalPendingGate()
+				mockApprovalGrantedGate("consumer")
+
+				err := h.CreateOrUpdate(ctx, listener)
+				Expect(err).ToNot(HaveOccurred())
+
+				procCond := meta.FindStatusCondition(listener.Status.Conditions, condition.ConditionTypeProcessing)
+				Expect(procCond).ToNot(BeNil())
 				Expect(procCond.Reason).To(Equal(condition.ReasonBlocked))
 				readyCond := meta.FindStatusCondition(listener.Status.Conditions, condition.ConditionTypeReady)
 				Expect(readyCond).ToNot(BeNil())
-				Expect(readyCond.Message).To(Equal("Waiting for approval decision (consumer gate)"))
+				Expect(readyCond.Reason).To(Equal(condition.ReasonApprovalPending))
+				Expect(readyCond.Message).To(Equal("Waiting for approval decision (provider gate)"))
 
 				Expect(listener.Status.RouteListener).To(BeNil())
 				Expect(listener.Status.EventSubscriptions).To(BeEmpty())
@@ -3066,33 +3161,6 @@ var _ = Describe("ListenerHandler", func() {
 		// --- Brief section 5: No capture from partial authorization ---
 
 		Context("dual-gate: no provisioning from partial authorization", func() {
-			It("should NOT create RouteListener or Subscribers when only provider is Granted", func() {
-				listener := newListener()
-				mockGetConsumerApp(makeConsumerApp())
-				mockGetProviderApp(makeProviderApp())
-				mockGetSpectreApp(makeSpectreAppPtr())
-				mockGetObserverApp(makeConsumerApp()) // A==C: observer resolves to consumer
-				mockGetZone()
-				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
-				mockGetEventStore(makeListenerEventStore())
-				mockListRoutes()
-				mockNoStaleChildren()
-				mockApprovalGrantedGate("provider")
-				mockApprovalPendingGate() // consumer pending
-
-				err := h.CreateOrUpdate(ctx, listener)
-				Expect(err).ToNot(HaveOccurred())
-
-				// No downstream resources created.
-				Expect(listener.Status.RouteListener).To(BeNil())
-				Expect(listener.Status.EventSubscriptions).To(BeEmpty())
-
-				// Blocked condition set.
-				procCond := meta.FindStatusCondition(listener.Status.Conditions, condition.ConditionTypeProcessing)
-				Expect(procCond).ToNot(BeNil())
-				Expect(procCond.Reason).To(Equal(condition.ReasonBlocked))
-			})
-
 			It("should NOT create RouteListener or Subscribers when only consumer is Granted", func() {
 				listener := newListener()
 				mockGetConsumerApp(makeConsumerApp())
@@ -3313,7 +3381,7 @@ var _ = Describe("ListenerHandler", func() {
 		})
 
 		Context("dual-gate: different provider team blocks provisioning", func() {
-			It("should block when provider gate is granted but consumer gate is pending", func() {
+			It("should block when the provider gate waits for a decision and the consumer gate is granted", func() {
 				listener := newListener()
 				// Consumer team matches observer — A==C in this test case.
 				consumerApp := makeConsumerApp()
@@ -3332,17 +3400,23 @@ var _ = Describe("ListenerHandler", func() {
 				mockGetEventStore(makeListenerEventStore())
 				mockListRoutes()
 				mockNoStaleChildren()
-				// Provider gate: granted (first in dual-gate order).
-				mockApprovalGrantedGate("provider")
-				// Consumer gate: pending (second in dual-gate order).
+				// Provider gate: Simple, waiting for the provider team (first in dual-gate order).
 				mockApprovalPendingGate()
+				// Consumer gate: granted (second in dual-gate order).
+				mockApprovalGrantedGate("consumer")
 
 				err := h.CreateOrUpdate(ctx, listener)
 				Expect(err).ToNot(HaveOccurred())
 
+				Expect(listener.Status.RouteListener).To(BeNil())
+				Expect(listener.Status.EventSubscriptions).To(BeEmpty())
 				procCond := meta.FindStatusCondition(listener.Status.Conditions, condition.ConditionTypeProcessing)
 				Expect(procCond).ToNot(BeNil())
 				Expect(procCond.Reason).To(Equal(condition.ReasonBlocked))
+				readyCond := meta.FindStatusCondition(listener.Status.Conditions, condition.ConditionTypeReady)
+				Expect(readyCond).ToNot(BeNil())
+				Expect(readyCond.Reason).To(Equal(condition.ReasonApprovalPending))
+				Expect(readyCond.Message).To(Equal("Waiting for approval decision (provider gate)"))
 			})
 		})
 
