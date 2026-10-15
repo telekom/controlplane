@@ -289,6 +289,30 @@ var _ = Describe("Rover V1 Test Suite", func() {
 			Entry("refresh_token grant", v1.GrantTypeRefreshToken, nil, false),
 		)
 
+		It("should accept a subscriber with client and username/password credentials for the password grant", func() {
+			rover := new(v1.Rover)
+			rover.Name = "subscriber-credentials-rover"
+			rover.Namespace = "default"
+			rover.Spec = v1.RoverSpec{
+				Zone:         "test-zone",
+				ClientSecret: "topsecret",
+				Subscriptions: []v1.Subscription{{
+					Api: &v1.ApiSubscription{
+						BasePath: "/api",
+						Security: &v1.SubscriberSecurity{M2M: &v1.SubscriberMachine2MachineAuthentication{
+							Client:    &v1.OAuth2ClientCredentials{ClientId: "client-id", ClientSecret: "client-secret"},
+							Basic:     &v1.BasicAuthCredentials{Username: "user", Password: "pass"},
+							Scopes:    []string{"scope1", "scope2"},
+							GrantType: v1.GrantTypePassword,
+						}},
+					},
+				}},
+			}
+
+			Expect(k8sClient.Create(ctx, rover)).To(Succeed())
+			Expect(k8sClient.Delete(ctx, rover)).To(Succeed())
+		})
+
 		It("should reject a Rover with oauth2 clientSecret and clientKey configured", func() {
 			rover := new(v1.Rover)
 			rover.Name = "invalid-rover"

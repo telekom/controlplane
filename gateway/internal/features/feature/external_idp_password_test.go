@@ -308,6 +308,31 @@ var _ = Describe("External IDP password grant with consumer username/password an
 				ClientId: "consumer-client", ClientSecret: "consumer-secret", Username: "consumer-user", Password: "consumer-pass",
 				TokenRequest: "header", GrantType: "password",
 			}),
+		Entry("client and username/password with an explicit password grant override an inherited client_credentials grant", gatewayv1.GrantTypeClientCredentials,
+			func(m2m *gatewayv1.ConsumerMachine2MachineAuthentication) {
+				m2m.Client = &gatewayv1.OAuth2ClientCredentials{ClientId: "consumer-client", ClientSecret: "consumer-secret"}
+				m2m.Scopes = []string{"consumer:read"}
+				m2m.GrantType = gatewayv1.GrantTypePassword
+			},
+			nil,
+			&plugin.OauthCredentials{
+				ClientId: "consumer-client", ClientSecret: "consumer-secret", Username: "consumer-user", Password: "consumer-pass",
+				Scopes: "consumer:read", TokenRequest: "header", GrantType: "password",
+			}),
+		Entry("client credentials with a refresh token and an explicit refresh_token grant override an inherited client_credentials grant", gatewayv1.GrantTypeClientCredentials,
+			func(m2m *gatewayv1.ConsumerMachine2MachineAuthentication) {
+				m2m.Basic = nil
+				m2m.Client = &gatewayv1.OAuth2ClientCredentials{
+					ClientId: "consumer-client", ClientSecret: "consumer-secret", RefreshToken: "consumer-refresh-token",
+				}
+				m2m.Scopes = []string{"consumer:read"}
+				m2m.GrantType = gatewayv1.GrantTypeRefreshToken
+			},
+			nil,
+			&plugin.OauthCredentials{
+				ClientId: "consumer-client", ClientSecret: "consumer-secret", RefreshToken: "consumer-refresh-token",
+				Scopes: "consumer:read", TokenRequest: "header", GrantType: "refresh_token",
+			}),
 	)
 
 	Describe("BasicAuthFeature", func() {

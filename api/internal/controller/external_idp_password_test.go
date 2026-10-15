@@ -148,6 +148,10 @@ var _ = Describe("Consumer username/password with scopes", func() {
 				consume := &gatewayapi.ConsumeRoute{}
 				g.Expect(k8sClient.Get(ctx, sub.Status.ConsumeRoute.K8s(), consume)).To(Succeed())
 				g.Expect(consume.Spec.Security.M2M.Basic).To(Equal(&gatewayapi.BasicAuthCredentials{Username: "consumer-user", Password: "consumer-pass"}))
+				g.Expect(consume.Spec.Security.M2M.Client).To(Equal(&gatewayapi.OAuth2ClientCredentials{
+					ClientId: "consumer-client", ClientSecret: "consumer-secret",
+				}))
+				g.Expect(consume.Spec.Security.M2M.Scopes).To(Equal(consumerScopes))
 				g.Expect(consume.Spec.Security.M2M.GrantType).To(Equal(gatewayapi.GrantType(consumerGrant)))
 			}, scopeTimeout, interval).Should(Succeed())
 		},

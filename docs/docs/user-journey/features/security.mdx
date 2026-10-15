@@ -140,7 +140,7 @@ spec:
 
 The subscription inherits this exception from its active exposure. Subscriber credentials or a token endpoint configured elsewhere do not enable it. Removing the exposure's external-IDP configuration restores normal scope checking; an empty endpoint does not qualify for the exception.
 
-Subscriber username/password credentials may be combined with scopes or client credentials only when the selected exposure uses an external IDP; otherwise the subscription is blocked before approval. The subscription can set its own `grantType`; if it doesn't, the exposure's grant type applies. The gateway only uses subscriber credentials that can build a token request for this effective grant type: `password` needs username/password, `refresh_token` needs client credentials with a refresh token, and other grant types need client credentials. Client credentials are also sent with the `password` grant to authenticate the client.
+Subscriber username/password credentials may be combined with scopes, client credentials or a `grantType` only when the selected exposure uses an external IDP; otherwise the subscription is blocked before approval. The subscription can set its own `grantType`; if it doesn't, the exposure's grant type applies. The gateway only uses subscriber credentials that can build a token request for this effective grant type: `password` needs username/password, `refresh_token` needs client credentials with a refresh token, and other grant types need client credentials. Client credentials are also sent with the `password` grant to authenticate the client.
 
 | Subscriber credentials | Effective grant | Result |
 |---|---|---|
