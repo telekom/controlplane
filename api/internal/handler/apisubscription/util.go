@@ -39,7 +39,7 @@ func ApiMustExist(ctx context.Context, apiSub *apiapi.ApiSubscription) (*apiapi.
 		deleted, err := scopedClient.Cleanup(ctx, &gatewayapi.ConsumeRouteList{}, cclient.OwnedBy(apiSub))
 		if err != nil {
 			return nil, errors.Wrapf(err,
-				"Unable to cleanup consumeroutes for Apisubscription:  %s in namespace: %s", apiSub.GetName(), apiSub.GetNamespace())
+				"Unable to cleanup consumeroutes for Apisubscription: %s in namespace: %s", apiSub.GetName(), apiSub.GetNamespace())
 		}
 		logger.Info("🧹 No active API found. Cleaning up Consumer of ApiSubscription", "basePath", apiSub.Spec.ApiBasePath, "deleted", deleted)
 		apiSub.Status.ActiveScopes = nil
@@ -68,7 +68,7 @@ func ApiExposureMustExist(ctx context.Context, apiSub *apiapi.ApiSubscription) (
 		deleted, err := scopedClient.Cleanup(ctx, &gatewayapi.ConsumeRouteList{}, cclient.OwnedBy(apiSub))
 		if err != nil {
 			return nil, errors.Wrapf(err,
-				"Unable to cleanup consumeroutes for Apisubscription:  %s in namespace: %s", apiSub.GetName(), apiSub.GetNamespace())
+				"Unable to cleanup consumeroutes for Apisubscription: %s in namespace: %s", apiSub.GetName(), apiSub.GetNamespace())
 		}
 		logger.Info("🧹 No active API-Exposure found. Cleaning up Consumer of ApiSubscription", "basePath", apiSub.Spec.ApiBasePath, "deleted", deleted)
 		apiSub.Status.ActiveScopes = nil
