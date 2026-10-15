@@ -175,6 +175,9 @@ var _ = Describe("MapApplicationInfo status", func() {
 		Entry("Application blocked",
 			fixture{rover: waiting, roverGen: 1, application: blocked},
 			api.OverallStatusBlocked),
+		Entry("Rover blocked with ready sub-resources",
+			fixture{rover: blocked, roverGen: 1, application: ready, listener: ready},
+			api.OverallStatusBlocked),
 		Entry("API subscription approval pending",
 			fixture{rover: waiting, roverGen: 1, application: ready, apiSub: pending, apiSubGen: 1},
 			api.OverallStatusBlocked),
@@ -199,6 +202,43 @@ var _ = Describe("MapApplicationInfo status", func() {
 		Entry("complete Rover whose spec changed since it was last processed",
 			fixture{rover: ready, roverGen: 2, application: ready},
 			api.OverallStatusPending),
+	)
+
+	DescribeTable("reports the Rover's own problem like the status endpoint",
+		func(f fixture, expectRoverProblem bool) {
+			r, s := build(f)
+
+			appInfo, err := MapApplicationInfo(ctx, r, s)
+			Expect(err).NotTo(HaveOccurred())
+			statusResponse, err := status.MapRoverResponse(ctx, r, s)
+			Expect(err).NotTo(HaveOccurred())
+
+			isRover := HaveField("Resource.Kind", "Rover")
+			roverProblems := func(problems []api.Problem) []api.Problem {
+				var out []api.Problem
+				for _, p := range problems {
+					if p.Resource.Kind == "Rover" {
+						out = append(out, p)
+					}
+				}
+				return out
+			}
+			Expect(roverProblems(appInfo.Errors)).To(Equal(roverProblems(statusResponse.Errors)))
+			if expectRoverProblem {
+				Expect(appInfo.Errors).To(ContainElement(SatisfyAll(isRover,
+					HaveField("Resource.Name", "observer"), HaveField("Cause", condition.ReasonBlocked), HaveField("Message", condition.ReasonBlocked))))
+			} else {
+				Expect(appInfo.Errors).NotTo(ContainElement(isRover))
+			}
+		},
+		Entry("Rover blocked with ready sub-resources",
+			fixture{rover: blocked, roverGen: 1, application: ready, listener: ready}, true),
+		Entry("Rover blocked next to a listener waiting for approval",
+			fixture{rover: blocked, roverGen: 1, application: ready, listener: pending}, true),
+		Entry("Rover waiting on a listener waiting for approval",
+			fixture{rover: waiting, roverGen: 1, application: ready, listener: pending}, false),
+		Entry("complete Rover",
+			fixture{rover: ready, roverGen: 1, application: ready, listener: ready}, false),
 	)
 
 	It("records a failed sub-resource lookup and continues with the rest", func() {

@@ -7,6 +7,7 @@ package status
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	commonStore "github.com/telekom/controlplane/common-server/pkg/store"
 	"github.com/telekom/controlplane/common/pkg/condition"
@@ -156,6 +157,45 @@ func GetAllAgentSpecificationProblems(ctx context.Context, agentSpec *v1.AgentSp
 	}
 
 	return runCheckers(ctx, agentSpec, checkers)
+}
+
+// RoverProblem returns a Problem for the Rover itself when its own Ready
+// condition (or, when Ready is missing or Unknown, its Processing condition)
+// reports it blocked or failed, e.g. a listener whose consumer application
+// cannot be resolved. It returns nil while the Rover is ready or processing,
+// for stale conditions, and when the message is, or ends with, the message of
+// a sub-resource problem that is not just processing.
+func RoverProblem(rover *v1.Rover, result ProblemsResult) *api.Problem {
+	ready := meta.FindStatusCondition(rover.GetConditions(), condition.ConditionTypeReady)
+	var cond *metav1.Condition
+	switch {
+	case ready != nil && ready.Status == metav1.ConditionFalse:
+		if processingReasons[ready.Reason] {
+			return nil
+		}
+		cond = ready
+	case ready == nil || ready.Status == metav1.ConditionUnknown:
+		processing := meta.FindStatusCondition(rover.GetConditions(), condition.ConditionTypeProcessing)
+		if processing != nil && processing.Status == metav1.ConditionFalse && processing.Reason != condition.ReasonDone {
+			cond = processing
+		}
+	}
+	if cond == nil || cond.Message == "" || isStale(cond, rover.GetGeneration()) {
+		return nil
+	}
+	for _, p := range result.Problems {
+		if p.Message == "" || processingReasons[p.Cause] {
+			continue
+		}
+		if cond.Message == p.Message || strings.HasSuffix(cond.Message, ": "+p.Message) {
+			return nil
+		}
+	}
+
+	problem := mapNotReadyConditionToProblem(cond, rover)
+	problem.Resource.ApiVersion = v1.GroupVersion.String()
+	problem.Resource.Kind = "Rover"
+	return &problem
 }
 
 // --- Internal helpers ---
