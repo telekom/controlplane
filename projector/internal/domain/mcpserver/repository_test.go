@@ -19,6 +19,7 @@ import (
 	"github.com/telekom/controlplane/projector/internal/domain/mcpserver"
 	"github.com/telekom/controlplane/projector/internal/domain/shared"
 	"github.com/telekom/controlplane/projector/internal/infrastructure"
+	"github.com/telekom/controlplane/projector/internal/infrastructure/cachekeys"
 	"github.com/telekom/controlplane/projector/internal/runtime"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -88,10 +89,13 @@ var _ = Describe("McpServer Repository", func() {
 				StatusMessage: "ok",
 				BasePath:      "/mcp/weather/v1",
 				Version:       "1.0.0",
-				Name:          "weather-server",
+				Name:          "mcp-weather-v1",
+				DisplayName:   "Weather Server",
 				Description:   "Weather MCP server",
 				Category:      "g-api",
 				Oauth2Scopes:  []string{"scope-a"},
+				Specification: "file-123",
+				Hash:          "hash-123",
 				Active:        true,
 				TeamName:      "platform--narvi",
 			}
@@ -103,10 +107,13 @@ var _ = Describe("McpServer Repository", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(mcp.BasePath).To(Equal("/mcp/weather/v1"))
 			Expect(mcp.Version).To(Equal("1.0.0"))
-			Expect(mcp.Name).To(Equal("weather-server"))
+			Expect(mcp.Name).To(Equal("mcp-weather-v1"))
+			Expect(mcp.DisplayName).To(Equal("Weather Server"))
 			Expect(mcp.Description).To(Equal("Weather MCP server"))
 			Expect(mcp.Category).To(Equal("g-api"))
 			Expect(mcp.Oauth2Scopes).To(Equal([]string{"scope-a"}))
+			Expect(mcp.Specification).To(Equal("file-123"))
+			Expect(mcp.Hash).To(Equal("hash-123"))
 			Expect(mcp.Active).To(BeTrue())
 
 			owner, err := mcp.QueryOwner().Only(ctx)
@@ -121,7 +128,8 @@ var _ = Describe("McpServer Repository", func() {
 				StatusPhase: "READY",
 				BasePath:    "/mcp/weather/v1",
 				Version:     "1.0.0",
-				Name:        "weather-server",
+				Name:        "mcp-weather-v1",
+				DisplayName: "Weather Server",
 				TeamName:    "platform--narvi",
 			}
 			err := repo.Upsert(ctx, data)
@@ -135,14 +143,16 @@ var _ = Describe("McpServer Repository", func() {
 				StatusPhase: "READY",
 				BasePath:    "/mcp/weather/v1",
 				Version:     "1.0.0",
-				Name:        "weather-server",
+				Name:        "mcp-weather-v1",
+				DisplayName: "Weather Server",
 				Active:      true,
 				TeamName:    "platform--narvi",
 			}
 			Expect(repo.Upsert(ctx, data)).To(Succeed())
 
 			data.Version = "2.0.0"
-			data.Name = "weather-server-v2"
+			data.DisplayName = "Weather Server v2"
+			data.Hash = "hash-v2"
 			Expect(repo.Upsert(ctx, data)).To(Succeed())
 
 			count, err := client.McpServer.Query().Count(ctx)
@@ -154,7 +164,45 @@ var _ = Describe("McpServer Repository", func() {
 				Only(ctx)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(mcp.Version).To(Equal("2.0.0"))
-			Expect(mcp.Name).To(Equal("weather-server-v2"))
+			Expect(mcp.Name).To(Equal("mcp-weather-v1"))
+			Expect(mcp.DisplayName).To(Equal("Weather Server v2"))
+			Expect(mcp.Hash).To(Equal("hash-v2"))
+		})
+
+		It("should set removed optional fields to NULL on conflict", func() {
+			data := &mcpserver.McpServerData{
+				Meta:          shared.NewMetadata("prod--platform--narvi", "mcp-weather-v1", nil),
+				StatusPhase:   "READY",
+				BasePath:      "/mcp/weather/v1",
+				Version:       "1.0.0",
+				Name:          "mcp-weather-v1",
+				DisplayName:   "Weather Server",
+				Description:   "description",
+				Category:      "other",
+				Specification: "file-123",
+				Hash:          "hash-123",
+				Active:        true,
+				TeamName:      "platform--narvi",
+			}
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			data.Description = ""
+			data.Category = ""
+			data.Specification = ""
+			data.Hash = ""
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			count, err := client.McpServer.Query().
+				Where(
+					entmcpserver.BasePathEQ("/mcp/weather/v1"),
+					entmcpserver.DescriptionIsNil(),
+					entmcpserver.CategoryIsNil(),
+					entmcpserver.SpecificationIsNil(),
+					entmcpserver.HashIsNil(),
+				).
+				Count(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(count).To(Equal(1))
 		})
 
 		It("should set the active-mcp-server cache entry when active", func() {
@@ -163,7 +211,8 @@ var _ = Describe("McpServer Repository", func() {
 				StatusPhase: "READY",
 				BasePath:    "/mcp/weather/v1",
 				Version:     "1.0.0",
-				Name:        "weather-server",
+				Name:        "mcp-weather-v1",
+				DisplayName: "Weather Server",
 				Active:      true,
 				TeamName:    "platform--narvi",
 			}
@@ -182,7 +231,8 @@ var _ = Describe("McpServer Repository", func() {
 				StatusPhase: "READY",
 				BasePath:    "/mcp/weather/v1",
 				Version:     "1.0.0",
-				Name:        "weather-server",
+				Name:        "mcp-weather-v1",
+				DisplayName: "Weather Server",
 				Active:      true,
 				TeamName:    "platform--narvi",
 			}
@@ -235,7 +285,8 @@ var _ = Describe("McpServer Repository", func() {
 				StatusPhase: "READY",
 				BasePath:    "/mcp/weather/v1",
 				Version:     "1.0.0",
-				Name:        "weather-server",
+				Name:        "mcp-weather-v1",
+				DisplayName: "Weather Server",
 				Active:      true,
 				TeamName:    "platform--narvi",
 			}
@@ -274,7 +325,8 @@ var _ = Describe("McpServer Repository", func() {
 				StatusPhase: "READY",
 				BasePath:    "/mcp/weather/v1",
 				Version:     "1.0.0",
-				Name:        "weather-server",
+				Name:        "mcp-weather-v1",
+				DisplayName: "Weather Server",
 				Active:      true,
 				TeamName:    "platform--narvi",
 			}
@@ -297,7 +349,8 @@ var _ = Describe("McpServer Repository", func() {
 				StatusPhase: "READY",
 				BasePath:    "/mcp/weather/v1",
 				Version:     "1.0.0",
-				Name:        "weather-server",
+				Name:        "mcp-weather-v1",
+				DisplayName: "Weather Server",
 				Active:      true,
 				TeamName:    "platform--narvi",
 			}
@@ -313,6 +366,62 @@ var _ = Describe("McpServer Repository", func() {
 			resolver := infrastructure.NewIDResolver(client, cache)
 			_, err = resolver.FindActiveMcpServerID(ctx, "/mcp/weather/v1")
 			Expect(errors.Is(err, infrastructure.ErrEntityNotFound)).To(BeTrue())
+		})
+
+		It("should delete by namespace and name when the base path is unknown", func() {
+			other, err := client.Team.Create().
+				SetName("platform--other").
+				SetEmail("other@example.com").
+				SetNamespace("platform--other").
+				Save(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			deps.teamIDs["platform--other"] = other.ID
+
+			for _, owner := range []struct {
+				teamName string
+				active   bool
+			}{{"platform--other", false}, {"platform--narvi", true}} {
+				Expect(repo.Upsert(ctx, &mcpserver.McpServerData{
+					Meta:        shared.NewMetadata("prod--"+owner.teamName, "mcp-weather-v1", nil),
+					StatusPhase: "READY",
+					BasePath:    "/mcp/weather/v1",
+					Version:     "1.0.0",
+					Name:        "mcp-weather-v1",
+					DisplayName: "Weather Server",
+					Active:      owner.active,
+					TeamName:    owner.teamName,
+				})).To(Succeed())
+			}
+
+			cache.Wait()
+
+			activeID, err := client.McpServer.Query().Where(entmcpserver.ActiveEQ(true)).OnlyID(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			et, lk := cachekeys.ActiveMcpServer("/mcp/weather/v1")
+			cachedID, found := cache.Get(et, lk)
+			Expect(found).To(BeTrue())
+			Expect(cachedID).To(Equal(activeID))
+
+			key := mcpserver.McpServerKey{TeamName: "platform--narvi", Namespace: "prod--platform--narvi", Name: "mcp-weather-v1"}
+			Expect(repo.Delete(ctx, key)).To(Succeed())
+			cache.Wait()
+
+			_, found = cache.Get(et, lk)
+			Expect(found).To(BeFalse())
+
+			remaining, err := client.McpServer.Query().WithOwner().All(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(remaining).To(HaveLen(1))
+			Expect(remaining[0].Edges.Owner.Name).To(Equal("platform--other"))
+
+			resolver := infrastructure.NewIDResolver(client, cache)
+			_, err = resolver.FindActiveMcpServerID(ctx, "/mcp/weather/v1")
+			Expect(errors.Is(err, infrastructure.ErrEntityNotFound)).To(BeTrue())
+		})
+
+		It("should be idempotent when no entity has the namespace and name", func() {
+			key := mcpserver.McpServerKey{TeamName: "platform--narvi", Namespace: "prod--platform--narvi", Name: "missing"}
+			Expect(repo.Delete(ctx, key)).To(Succeed())
 		})
 	})
 })

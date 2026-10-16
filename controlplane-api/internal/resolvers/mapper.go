@@ -32,6 +32,13 @@ func mapTeamInfo(team *ent.Team, group *ent.Group) *model.TeamInfo {
 	}
 }
 
+func optionalString(value string) *string {
+	if value == "" {
+		return nil
+	}
+	return &value
+}
+
 // mapApplicationInfo maps an ent Application together with its zone and owning
 // team/group to the reduced cross-tenant safe ApplicationInfo view.
 // Zone is a fully public type, so it is returned as-is.
@@ -42,6 +49,7 @@ func mapApplicationInfo(app *ent.Application, zone *ent.Zone, team *ent.Team, gr
 	return &gqlmodel.ApplicationInfo{
 		ID:          app.ID,
 		Name:        app.Name,
+		ClientID:    app.ClientID,
 		ExternalIds: app.ExternalIds,
 		Zone:        zone,
 		OwnerTeam:   mapTeamInfo(team, group),
@@ -111,6 +119,8 @@ func mapFileSubscriptionInfo(sub *ent.FileSubscription, app *ent.Application, zo
 	return &gqlmodel.FileSubscriptionInfo{
 		ID:                   sub.ID,
 		FileType:             sub.FileType,
+		ServiceURL:           optionalString(sub.ServiceURL),
+		ServiceExternalURL:   optionalString(sub.ServiceExternalURL),
 		StatusPhase:          statusPhase,
 		StatusMessage:        sub.StatusMessage,
 		OwnerApplicationName: app.Name,
@@ -121,10 +131,12 @@ func mapFileSubscriptionInfo(sub *ent.FileSubscription, app *ent.Application, zo
 
 func mapFileExposureInfo(exposure *ent.FileExposure, app *ent.Application, zone *ent.Zone, team *ent.Team, group *ent.Group) *gqlmodel.FileExposureInfo {
 	return &gqlmodel.FileExposureInfo{
-		ID:         exposure.ID,
-		FileType:   exposure.FileType,
-		Visibility: string(exposure.Visibility),
-		Active:     exposure.Active,
+		ID:                 exposure.ID,
+		FileType:           exposure.FileType,
+		Visibility:         string(exposure.Visibility),
+		ServiceURL:         optionalString(exposure.ServiceURL),
+		ServiceExternalURL: optionalString(exposure.ServiceExternalURL),
+		Active:             exposure.Active,
 		ApprovalConfig: model.ApprovalConfig{
 			Strategy:     exposure.ApprovalConfig.Strategy,
 			TrustedTeams: exposure.ApprovalConfig.TrustedTeams,

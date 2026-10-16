@@ -98,6 +98,16 @@ func ZoneName(v string) predicate.FileExposure {
 	return predicate.FileExposure(sql.FieldEQ(FieldZoneName, v))
 }
 
+// ServiceURL applies equality check predicate on the "service_url" field. It's identical to ServiceURLEQ.
+func ServiceURL(v string) predicate.FileExposure {
+	return predicate.FileExposure(sql.FieldEQ(FieldServiceURL, v))
+}
+
+// ServiceExternalURL applies equality check predicate on the "service_external_url" field. It's identical to ServiceExternalURLEQ.
+func ServiceExternalURL(v string) predicate.FileExposure {
+	return predicate.FileExposure(sql.FieldEQ(FieldServiceExternalURL, v))
+}
+
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
 func CreatedAtEQ(v time.Time) predicate.FileExposure {
 	return predicate.FileExposure(sql.FieldEQ(FieldCreatedAt, v))
@@ -591,6 +601,156 @@ func ZoneNameEqualFold(v string) predicate.FileExposure {
 // ZoneNameContainsFold applies the ContainsFold predicate on the "zone_name" field.
 func ZoneNameContainsFold(v string) predicate.FileExposure {
 	return predicate.FileExposure(sql.FieldContainsFold(FieldZoneName, v))
+}
+
+// ServiceURLEQ applies the EQ predicate on the "service_url" field.
+func ServiceURLEQ(v string) predicate.FileExposure {
+	return predicate.FileExposure(sql.FieldEQ(FieldServiceURL, v))
+}
+
+// ServiceURLNEQ applies the NEQ predicate on the "service_url" field.
+func ServiceURLNEQ(v string) predicate.FileExposure {
+	return predicate.FileExposure(sql.FieldNEQ(FieldServiceURL, v))
+}
+
+// ServiceURLIn applies the In predicate on the "service_url" field.
+func ServiceURLIn(vs ...string) predicate.FileExposure {
+	return predicate.FileExposure(sql.FieldIn(FieldServiceURL, vs...))
+}
+
+// ServiceURLNotIn applies the NotIn predicate on the "service_url" field.
+func ServiceURLNotIn(vs ...string) predicate.FileExposure {
+	return predicate.FileExposure(sql.FieldNotIn(FieldServiceURL, vs...))
+}
+
+// ServiceURLGT applies the GT predicate on the "service_url" field.
+func ServiceURLGT(v string) predicate.FileExposure {
+	return predicate.FileExposure(sql.FieldGT(FieldServiceURL, v))
+}
+
+// ServiceURLGTE applies the GTE predicate on the "service_url" field.
+func ServiceURLGTE(v string) predicate.FileExposure {
+	return predicate.FileExposure(sql.FieldGTE(FieldServiceURL, v))
+}
+
+// ServiceURLLT applies the LT predicate on the "service_url" field.
+func ServiceURLLT(v string) predicate.FileExposure {
+	return predicate.FileExposure(sql.FieldLT(FieldServiceURL, v))
+}
+
+// ServiceURLLTE applies the LTE predicate on the "service_url" field.
+func ServiceURLLTE(v string) predicate.FileExposure {
+	return predicate.FileExposure(sql.FieldLTE(FieldServiceURL, v))
+}
+
+// ServiceURLContains applies the Contains predicate on the "service_url" field.
+func ServiceURLContains(v string) predicate.FileExposure {
+	return predicate.FileExposure(sql.FieldContains(FieldServiceURL, v))
+}
+
+// ServiceURLHasPrefix applies the HasPrefix predicate on the "service_url" field.
+func ServiceURLHasPrefix(v string) predicate.FileExposure {
+	return predicate.FileExposure(sql.FieldHasPrefix(FieldServiceURL, v))
+}
+
+// ServiceURLHasSuffix applies the HasSuffix predicate on the "service_url" field.
+func ServiceURLHasSuffix(v string) predicate.FileExposure {
+	return predicate.FileExposure(sql.FieldHasSuffix(FieldServiceURL, v))
+}
+
+// ServiceURLIsNil applies the IsNil predicate on the "service_url" field.
+func ServiceURLIsNil() predicate.FileExposure {
+	return predicate.FileExposure(sql.FieldIsNull(FieldServiceURL))
+}
+
+// ServiceURLNotNil applies the NotNil predicate on the "service_url" field.
+func ServiceURLNotNil() predicate.FileExposure {
+	return predicate.FileExposure(sql.FieldNotNull(FieldServiceURL))
+}
+
+// ServiceURLEqualFold applies the EqualFold predicate on the "service_url" field.
+func ServiceURLEqualFold(v string) predicate.FileExposure {
+	return predicate.FileExposure(sql.FieldEqualFold(FieldServiceURL, v))
+}
+
+// ServiceURLContainsFold applies the ContainsFold predicate on the "service_url" field.
+func ServiceURLContainsFold(v string) predicate.FileExposure {
+	return predicate.FileExposure(sql.FieldContainsFold(FieldServiceURL, v))
+}
+
+// ServiceExternalURLEQ applies the EQ predicate on the "service_external_url" field.
+func ServiceExternalURLEQ(v string) predicate.FileExposure {
+	return predicate.FileExposure(sql.FieldEQ(FieldServiceExternalURL, v))
+}
+
+// ServiceExternalURLNEQ applies the NEQ predicate on the "service_external_url" field.
+func ServiceExternalURLNEQ(v string) predicate.FileExposure {
+	return predicate.FileExposure(sql.FieldNEQ(FieldServiceExternalURL, v))
+}
+
+// ServiceExternalURLIn applies the In predicate on the "service_external_url" field.
+func ServiceExternalURLIn(vs ...string) predicate.FileExposure {
+	return predicate.FileExposure(sql.FieldIn(FieldServiceExternalURL, vs...))
+}
+
+// ServiceExternalURLNotIn applies the NotIn predicate on the "service_external_url" field.
+func ServiceExternalURLNotIn(vs ...string) predicate.FileExposure {
+	return predicate.FileExposure(sql.FieldNotIn(FieldServiceExternalURL, vs...))
+}
+
+// ServiceExternalURLGT applies the GT predicate on the "service_external_url" field.
+func ServiceExternalURLGT(v string) predicate.FileExposure {
+	return predicate.FileExposure(sql.FieldGT(FieldServiceExternalURL, v))
+}
+
+// ServiceExternalURLGTE applies the GTE predicate on the "service_external_url" field.
+func ServiceExternalURLGTE(v string) predicate.FileExposure {
+	return predicate.FileExposure(sql.FieldGTE(FieldServiceExternalURL, v))
+}
+
+// ServiceExternalURLLT applies the LT predicate on the "service_external_url" field.
+func ServiceExternalURLLT(v string) predicate.FileExposure {
+	return predicate.FileExposure(sql.FieldLT(FieldServiceExternalURL, v))
+}
+
+// ServiceExternalURLLTE applies the LTE predicate on the "service_external_url" field.
+func ServiceExternalURLLTE(v string) predicate.FileExposure {
+	return predicate.FileExposure(sql.FieldLTE(FieldServiceExternalURL, v))
+}
+
+// ServiceExternalURLContains applies the Contains predicate on the "service_external_url" field.
+func ServiceExternalURLContains(v string) predicate.FileExposure {
+	return predicate.FileExposure(sql.FieldContains(FieldServiceExternalURL, v))
+}
+
+// ServiceExternalURLHasPrefix applies the HasPrefix predicate on the "service_external_url" field.
+func ServiceExternalURLHasPrefix(v string) predicate.FileExposure {
+	return predicate.FileExposure(sql.FieldHasPrefix(FieldServiceExternalURL, v))
+}
+
+// ServiceExternalURLHasSuffix applies the HasSuffix predicate on the "service_external_url" field.
+func ServiceExternalURLHasSuffix(v string) predicate.FileExposure {
+	return predicate.FileExposure(sql.FieldHasSuffix(FieldServiceExternalURL, v))
+}
+
+// ServiceExternalURLIsNil applies the IsNil predicate on the "service_external_url" field.
+func ServiceExternalURLIsNil() predicate.FileExposure {
+	return predicate.FileExposure(sql.FieldIsNull(FieldServiceExternalURL))
+}
+
+// ServiceExternalURLNotNil applies the NotNil predicate on the "service_external_url" field.
+func ServiceExternalURLNotNil() predicate.FileExposure {
+	return predicate.FileExposure(sql.FieldNotNull(FieldServiceExternalURL))
+}
+
+// ServiceExternalURLEqualFold applies the EqualFold predicate on the "service_external_url" field.
+func ServiceExternalURLEqualFold(v string) predicate.FileExposure {
+	return predicate.FileExposure(sql.FieldEqualFold(FieldServiceExternalURL, v))
+}
+
+// ServiceExternalURLContainsFold applies the ContainsFold predicate on the "service_external_url" field.
+func ServiceExternalURLContainsFold(v string) predicate.FileExposure {
+	return predicate.FileExposure(sql.FieldContainsFold(FieldServiceExternalURL, v))
 }
 
 // SftpIsNil applies the IsNil predicate on the "sftp" field.

@@ -26,7 +26,8 @@ import (
 )
 
 const (
-	GatewayConsumerName = gatewayapi.GatewayConsumerName
+	GatewayConsumerName       = gatewayapi.GatewayConsumerName
+	ExposureVariantTagDefault = "variant--default"
 )
 
 const labelTrue = "true"
@@ -293,10 +294,11 @@ func CreateProxyRoute(ctx context.Context, downstreamZoneRef, upstreamZoneRef ty
 		hostnames, paths := downstreamPreset.ResolveHostnamesAndPaths(apiBasePath)
 
 		proxyRoute.Spec = gatewayapi.RouteSpec{
-			GatewayRef: *downstreamPresetStatus.GatewayRef,
-			Type:       gatewayapi.RouteTypeProxy,
-			Backend:    gatewayapi.Backend{Upstreams: []gatewayapi.Upstream{upstream}},
-			Traffic:    gatewayapi.Traffic{},
+			AdditionalTags: []string{ExposureVariantTagDefault},
+			GatewayRef:     *downstreamPresetStatus.GatewayRef,
+			Type:           gatewayapi.RouteTypeProxy,
+			Backend:        gatewayapi.Backend{Upstreams: []gatewayapi.Upstream{upstream}},
+			Traffic:        gatewayapi.Traffic{},
 		}
 		proxyRoute.Spec.Hostnames = slices.Concat(hostnames, options.AdditionalHostnames)
 		slices.Sort(proxyRoute.Spec.Hostnames)
@@ -574,10 +576,11 @@ func CreateRealRoute(ctx context.Context, downstreamZoneRef types.ObjectRef, api
 		hostnames, paths := preset.ResolveHostnamesAndPaths(apiExposure.Spec.ApiBasePath)
 
 		route.Spec = gatewayapi.RouteSpec{
-			GatewayRef: *presetStatus.GatewayRef,
-			Type:       gatewayapi.RouteTypePrimary,
-			Backend:    gatewayapi.Backend{Upstreams: gatewayUpstreams},
-			Traffic:    gatewayapi.Traffic{},
+			AdditionalTags: []string{ExposureVariantTagDefault},
+			GatewayRef:     *presetStatus.GatewayRef,
+			Type:           gatewayapi.RouteTypePrimary,
+			Backend:        gatewayapi.Backend{Upstreams: gatewayUpstreams},
+			Traffic:        gatewayapi.Traffic{},
 		}
 		route.Spec.Hostnames = slices.Concat(hostnames, options.AdditionalHostnames)
 		route.Spec.Paths = slices.Concat(paths, options.AdditionalPaths)

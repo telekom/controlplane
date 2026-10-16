@@ -14,6 +14,7 @@ import (
 type ApplicationInfo struct {
 	ID          int                   `json:"id"`
 	Name        string                `json:"name"`
+	ClientID    *string               `json:"clientId,omitempty"`
 	ExternalIds []pkgmodel.ExternalId `json:"externalIds,omitempty"`
 	Zone        *ent.Zone             `json:"zone"`
 	OwnerTeam   *pkgmodel.TeamInfo    `json:"ownerTeam"`
@@ -77,6 +78,8 @@ func (s *EventSubscriptionInfo) GetOwnerApplication() *ApplicationInfo { return 
 type FileSubscriptionInfo struct {
 	ID                   int                `json:"id"`
 	FileType             string             `json:"fileType"`
+	ServiceURL           *string            `json:"serviceUrl,omitempty"`
+	ServiceExternalURL   *string            `json:"serviceExternalUrl,omitempty"`
 	StatusPhase          *string            `json:"statusPhase,omitempty"`
 	StatusMessage        *string            `json:"statusMessage,omitempty"`
 	OwnerApplicationName string             `json:"ownerApplicationName"`
@@ -98,6 +101,8 @@ type FileExposureInfo struct {
 	ID                   int                     `json:"id"`
 	FileType             string                  `json:"fileType"`
 	Visibility           string                  `json:"visibility"`
+	ServiceURL           *string                 `json:"serviceUrl,omitempty"`
+	ServiceExternalURL   *string                 `json:"serviceExternalUrl,omitempty"`
 	Active               *bool                   `json:"active,omitempty"`
 	ApprovalConfig       pkgmodel.ApprovalConfig `json:"approvalConfig"`
 	OwnerApplicationName string                  `json:"ownerApplicationName"`

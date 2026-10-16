@@ -7,6 +7,8 @@ package main
 import (
 	"context"
 	"flag"
+	"net/http"
+	_ "net/http/pprof"
 
 	"github.com/go-logr/logr"
 	cserver "github.com/telekom/controlplane/common-server/pkg/server"
@@ -39,7 +41,7 @@ func main() {
 	rootCtx := logr.NewContext(context.Background(), log.Log)
 
 	stores := store.NewStores(rootCtx, kconfig.GetConfigOrDie(),
-		inmemory.DatabaseOpts{Filepath: cfg.Database.Filepath, ReduceMemory: cfg.Database.ReduceMemory},
+		inmemory.DatabaseOpts{Filepath: cfg.Database.Filepath},
 		inmemory.InformerOpts{DisableCache: cfg.Informer.DisableCache},
 	)
 
@@ -107,6 +109,14 @@ func main() {
 		},
 		Register: s.RegisterRoutes,
 	}
+
+	// TODO: hotfix, this should be part of common-server
+	go func() {
+		locErr := http.ListenAndServe(":6060", nil)
+		if locErr != nil {
+			log.Log.Error(locErr, "pprof server exited with error")
+		}
+	}()
 
 	if err := ms.Run(rootCtx); err != nil {
 		log.Log.Error(err, "server exited with error")

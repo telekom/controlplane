@@ -7,7 +7,6 @@ package resetsecret
 import (
 	"context"
 	"fmt"
-	"os"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -17,6 +16,9 @@ import (
 	v0 "github.com/telekom/controlplane/rover-ctl/pkg/handlers/v0"
 	"github.com/telekom/controlplane/rover-ctl/pkg/util"
 )
+
+// DeprecationMessage is printed to stderr whenever reset-secret is used.
+const DeprecationMessage = `Command "reset-secret" is deprecated and will be removed in June 2027, use "rotate-secret" instead.`
 
 type ResetSecretHandler interface {
 	handlers.ResourceHandler
@@ -33,7 +35,7 @@ func NewCommand() *cobra.Command {
 	baseCmd := base.NewCommand(
 		"reset-secret",
 		"Reset a secret",
-		"Reset a secret for an application and wait until the new secret has converged.",
+		"Reset a secret for an application and wait until the new secret has converged.\n\nDeprecated: will be removed in June 2027, use \"rotate-secret\" instead.",
 	)
 	cmd := &Command{
 		BaseCommand: baseCmd,
@@ -52,7 +54,7 @@ func NewCommand() *cobra.Command {
 func (c *Command) Run(cmd *cobra.Command, args []string) error {
 	// We cannot use the built-in deprecation mechanism of cobra, because it would print the message to stdout
 	// potentially breaking pipes.
-	fmt.Fprintln(os.Stderr, "Command \"reset-secret\" is deprecated, use \"rotate-secret\" instead.")
+	fmt.Fprintln(cmd.ErrOrStderr(), DeprecationMessage)
 
 	handler, err := handlers.GetHandler("Rover", "tcp.ei.telekom.de/v1")
 	if err != nil {

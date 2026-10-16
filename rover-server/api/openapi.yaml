@@ -3739,6 +3739,10 @@ components:
           description: A short description for this file type
           type: string
           example: Used for invoice file exchange
+        specification:
+          description: Optional YAML schema describing this file type
+          type: object
+          additionalProperties: true
     FileSpecificationListResponse:
       type: object
       properties:

@@ -13,15 +13,20 @@ import (
 var _ = Describe("FileSpecificationResponse Mapper", func() {
 	Context("MapResponse", func() {
 		It("must map a FileSpecification CRD to a FileSpecificationResponse correctly", func() {
-			output, err := MapResponse(fileSpecification)
+			output, err := MapResponse(fileSpecification, nil)
 
 			Expect(err).To(BeNil())
 			Expect(output).ToNot(BeNil())
 			snaps.MatchJSON(GinkgoT(), output)
+
+			specContent := map[string]any{"type": "object"}
+			withSpecification, err := MapResponse(fileSpecification, specContent)
+			Expect(err).To(BeNil())
+			Expect(withSpecification.Specification).To(Equal(specContent))
 		})
 
 		It("must return an error if the input FileSpecification CRD is nil", func() {
-			output, err := MapResponse(nil)
+			output, err := MapResponse(nil, nil)
 
 			Expect(output).ToNot(BeNil())
 			snaps.MatchSnapshot(GinkgoT(), output)

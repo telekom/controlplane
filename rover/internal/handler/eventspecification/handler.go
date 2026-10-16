@@ -63,11 +63,14 @@ func (h *EventSpecificationHandler) CreateOrUpdate(ctx context.Context, eventSpe
 		return errors.Wrap(err, "failed to create or update EventType")
 	}
 
-	if c.AnyChanged() {
+	switch {
+	case c.AnyChanged():
 		eventSpec.SetCondition(condition.NewProcessingCondition(condition.ReasonProvisioning, "EventType updated"))
 		eventSpec.SetCondition(condition.NewNotReadyCondition(condition.ReasonProvisioning, "EventType is not ready"))
-
-	} else {
+	case !c.AllReady():
+		eventSpec.SetCondition(condition.NewDoneProcessingCondition("EventType created"))
+		eventSpec.SetCondition(condition.NewNotReadyCondition(condition.ReasonSubResourceNotReady, "EventType is not ready"))
+	default:
 		eventSpec.SetCondition(condition.NewDoneProcessingCondition("EventType created"))
 		eventSpec.SetCondition(condition.NewReadyCondition(condition.ReasonProvisioned, "EventType is ready"))
 	}

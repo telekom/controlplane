@@ -8,6 +8,7 @@ import (
 	"context"
 	"strings"
 
+	"github.com/google/uuid"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
@@ -77,5 +78,22 @@ var _ = Describe("EnsureLabelsOrDie", func() {
 		Expect(func() {
 			EnsureLabelsOrDie(context.Background(), &roverv1.Rover{})
 		}).To(PanicWith("security context not found"))
+	})
+})
+
+var _ = Describe("resolveFileId", func() {
+	It("should reuse an existing file ID", func() {
+		id, err := resolveFileId("01926a3e-7b2c-7d3e-8f4a-1b2c3d4e5f60")
+		Expect(err).NotTo(HaveOccurred())
+		Expect(id).To(Equal("01926a3e-7b2c-7d3e-8f4a-1b2c3d4e5f60"))
+	})
+
+	It("should generate a new UUIDv7 when no file ID exists", func() {
+		id, err := resolveFileId("")
+		Expect(err).NotTo(HaveOccurred())
+
+		parsed, err := uuid.Parse(id)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(parsed.Version()).To(Equal(uuid.Version(7)))
 	})
 })

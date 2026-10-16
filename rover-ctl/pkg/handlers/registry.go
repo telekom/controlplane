@@ -21,6 +21,8 @@ var (
 	ErrNoHandlerFound = errors.New("no handler found for the specified resource")
 )
 
+const roverAPIVersion = "rover.ei.telekom.de/v1"
+
 // RegisterHandler registers a handler for a specific resource kind and API version
 func RegisterHandler(kind, apiVersion string, handler ResourceHandler) {
 	mutex.Lock()
@@ -70,4 +72,8 @@ func RegisterHandlers() {
 	RegisterHandler(fileSpecHandler.Kind, fileSpecHandler.APIVersion, fileSpecHandler)
 	RegisterHandler(apiRoadmapHandler.Kind, apiRoadmapHandler.APIVersion, apiRoadmapHandler)
 	RegisterHandler(apiChangelogHandler.Kind, apiChangelogHandler.APIVersion, apiChangelogHandler)
+	// roverAPIVersion is required for backward compatibility
+	RegisterHandler(fileSpecHandler.Kind, roverAPIVersion, fileSpecHandler)
+	RegisterHandler(apiRoadmapHandler.Kind, roverAPIVersion, apiRoadmapHandler)
+	RegisterHandler(apiChangelogHandler.Kind, roverAPIVersion, apiChangelogHandler)
 }

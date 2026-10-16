@@ -13,14 +13,12 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	adminapi "github.com/telekom/controlplane/admin/api/v1"
 	apiapi "github.com/telekom/controlplane/api/api/v1"
 	"github.com/telekom/controlplane/api/internal/handler/apisubscription/remote"
 	"github.com/telekom/controlplane/api/internal/handler/util"
-	applicationapi "github.com/telekom/controlplane/application/api/v1"
 	approvalapi "github.com/telekom/controlplane/approval/api/v1"
 	"github.com/telekom/controlplane/approval/api/v1/builder"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
@@ -30,7 +28,6 @@ import (
 	"github.com/telekom/controlplane/common/pkg/handler"
 	"github.com/telekom/controlplane/common/pkg/types"
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
-	organizationapi "github.com/telekom/controlplane/organization/api/v1"
 )
 
 var _ handler.Handler[*apiapi.ApiSubscription] = (*ApiSubscriptionHandler)(nil)
@@ -115,10 +112,6 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 		return err
 	}
 
-	if !validateApiCategoryPolicy(ctx, api, apiSubApplication, apiSub) {
-		return nil
-	}
-
 	// 5. Manage Approval process
 
 	requester := &approvalapi.Requester{
@@ -135,6 +128,12 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 
 	// Validate specification scopes unless the selected exposure has an external token endpoint.
 	if !validateSubscriptionScopes(ctx, api, apiExposure, apiSub, properties) {
+		return nil
+	}
+
+	if err = validateBasicWithScopesPolicy(apiSub, apiExposure); err != nil {
+		apiSub.SetCondition(condition.NewNotReadyCondition(condition.ReasonValidationFailed, err.Error()))
+		apiSub.SetCondition(condition.NewBlockedCondition(err.Error()))
 		return nil
 	}
 
@@ -468,53 +467,15 @@ func resolveRouteRef(ctx context.Context, scopedClient cclient.JanitorClient, ap
 	}
 }
 
-func validateApiCategoryPolicy(ctx context.Context, api *apiapi.Api, application *applicationapi.Application, apiSub *apiapi.ApiSubscription) bool {
-	team, err := organizationapi.FindTeamForObject(ctx, application)
-	if err != nil {
-		if apierrors.IsNotFound(err) {
-			// Defensive fallback: team-not-found should not happen in normal lifecycle,
-			// because team deletion removes the namespace and with it ApiSubscriptions.
-			log.FromContext(ctx).V(1).Info("Skipping ApiCategory policy validation because team was not found")
-			return true
-		}
-		msg := util.BuildApiCategoryPolicyResolutionMessage(api.Spec.Category, err)
-		apiSub.SetCondition(condition.NewNotReadyCondition(util.ApiCategoryPolicyResolutionFailedReason, msg))
-		apiSub.SetCondition(condition.NewBlockedCondition(msg))
-		return false
+func validateBasicWithScopesPolicy(obj *apiapi.ApiSubscription, exposure *apiapi.ApiExposure) error {
+	subHasScopes := obj.HasM2M() && obj.Spec.Security.M2M.Basic != nil && len(obj.Spec.Security.M2M.Scopes) > 0
+	if !subHasScopes {
+		return nil
 	}
 
-	apiCategory, err := util.ResolveActiveApiCategoryForApi(ctx, api)
-	if err == nil {
-		teamCategory := string(team.Spec.Category)
-		if !apiCategory.IsAllowedForTeamCategory(teamCategory) {
-			msg := util.BuildApiCategorySubscriptionDeniedMessage(teamCategory, apiCategory.Spec.LabelValue)
-			apiSub.SetCondition(condition.NewNotReadyCondition(util.ApiCategoryTeamCategoryNotAllowedReason, msg))
-			apiSub.SetCondition(condition.NewBlockedCondition(msg))
-			return false
-		}
-		return true
+	if exposure == nil || !exposure.HasExternalIdp() ||
+		exposure.Spec.Security.M2M.ExternalIDP.GrantType != apiapi.GrantTypePassword {
+		return errors.New("Consumer username/password with scopes requires an external IDP grant type \"password\"")
 	}
-
-	if apierrors.IsNotFound(err) {
-		log.FromContext(ctx).V(1).Info("Skipping ApiCategory policy validation because no ApiCategories exist")
-		return true
-	}
-
-	msg := util.BuildApiCategoryPolicyResolutionMessage(api.Spec.Category, err)
-	blockedErr, isBlocked := stderrors.AsType[ctrlerrors.BlockedError](err)
-	retryableErr, isRetryable := stderrors.AsType[ctrlerrors.RetryableError](err)
-	switch {
-	case isBlocked:
-		log.FromContext(ctx).V(1).Info("ApiCategory policy validation blocked", "reason", blockedErr.Error())
-		apiSub.SetCondition(condition.NewNotReadyCondition(util.ApiCategoryPolicyResolutionFailedReason, msg))
-		apiSub.SetCondition(condition.NewBlockedCondition(msg))
-	case isRetryable:
-		log.FromContext(ctx).V(1).Info("ApiCategory policy validation retryable", "reason", retryableErr.Error())
-		apiSub.SetCondition(condition.NewNotReadyCondition(util.ApiCategoryPolicyResolutionFailedReason, msg))
-	default:
-		log.FromContext(ctx).V(1).Info("ApiCategory policy validation failed", "reason", err.Error())
-		apiSub.SetCondition(condition.NewNotReadyCondition(util.ApiCategoryPolicyResolutionFailedReason, msg))
-		apiSub.SetCondition(condition.NewBlockedCondition(msg))
-	}
-	return false
+	return nil
 }

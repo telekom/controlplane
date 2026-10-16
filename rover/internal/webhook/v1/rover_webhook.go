@@ -234,7 +234,7 @@ func (r *RoverValidator) validateExternalIDs(valErr *cerrors.ValidationError, ro
 func (r *RoverValidator) validatePermissionEntries(valErr *cerrors.ValidationError, rover *roverv1.Rover) {
 	// This validation is done here in the webhook rather than via CEL in the CRD because CEL rules with
 	// .all() iteration over the entries array would exceed the Kubernetes validation cost budget by
-	// over 40x (even with MaxItems=50). Webhook validation has no such budget constraints.
+	// over 40x (even with MaxItems=75). Webhook validation has no such budget constraints.
 	//
 	// The validation ensures that permission entries will normalize into valid PermissionSet specs where
 	// both role and resource are required fields:

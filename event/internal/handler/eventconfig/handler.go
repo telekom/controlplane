@@ -7,6 +7,7 @@ package eventconfig
 import (
 	"cmp"
 	"context"
+	"net/url"
 	"slices"
 
 	"github.com/pkg/errors"
@@ -214,9 +215,13 @@ func (h *EventConfigHandler) resolveAndCreateAdminClient(ctx context.Context, ob
 		return nil, "", errors.Wrapf(err, "failed to get identity Realm %q", clientCfg.Realm.String())
 	}
 
-	tokenUrl := realm.Status.IssuerUrl + tokenUrlSuffix
-	if tokenUrl == "" {
+	if realm.Status.IssuerUrl == "" {
 		return nil, "", ctrlerrors.BlockedErrorf("identity Realm %s has no issuerUrl yet", realm.Name)
+	}
+
+	tokenUrl, joinErr := url.JoinPath(realm.Status.IssuerUrl, tokenUrlSuffix)
+	if joinErr != nil {
+		return nil, "", ctrlerrors.BlockedErrorf("failed to construct token URL for identity Realm %s: %v", realm.Name, joinErr)
 	}
 
 	identityClient, err := h.createIdentityClient(ctx, obj, &clientCfg)
@@ -608,13 +613,7 @@ func (h *EventConfigHandler) createVoyagerRoutes(ctx context.Context, obj *event
 		return errors.Wrap(err, "failed to create voyager proxy Routes")
 	}
 	logger.V(1).Info("Created proxy voyager Routes", "count", len(routes))
-	obj.Status.ProxyVoyagerRoutes = make([]types.ObjectRef, 0, len(routes))
-	obj.Status.ProxyVoyagerURLs = make(map[string]string, len(routes))
-
-	for zoneName, route := range routes {
-		obj.Status.ProxyVoyagerRoutes = append(obj.Status.ProxyVoyagerRoutes, *types.ObjectRefFromObject(route))
-		obj.Status.ProxyVoyagerURLs[zoneName] = util.RouteDownstreamURL(route)
-	}
+	setProxyVoyagerStatus(obj, routes)
 
 	// Primary voyager route trust includes this zone's IDP issuer plus the LMS issuers of
 	// the inbound peers (proxy and non-proxy) that mesh with this zone. isProxyTarget is
@@ -711,14 +710,23 @@ func (h *EventConfigHandler) createProxyVoyagerRoutes(ctx context.Context, obj *
 	if err != nil {
 		return errors.Wrap(err, "failed to create voyager proxy Routes")
 	}
+	setProxyVoyagerStatus(obj, routes)
+
+	return nil
+}
+
+// setProxyVoyagerStatus records the outbound Voyager Routes. Routes come from a map,
+// so the references are sorted by name to avoid status churn.
+func setProxyVoyagerStatus(obj *eventv1.EventConfig, routes map[string]*gatewayv1.Route) {
 	obj.Status.ProxyVoyagerRoutes = make([]types.ObjectRef, 0, len(routes))
 	obj.Status.ProxyVoyagerURLs = make(map[string]string, len(routes))
 	for zoneName, route := range routes {
 		obj.Status.ProxyVoyagerRoutes = append(obj.Status.ProxyVoyagerRoutes, *types.ObjectRefFromObject(route))
 		obj.Status.ProxyVoyagerURLs[zoneName] = util.RouteDownstreamURL(route)
 	}
-
-	return nil
+	slices.SortFunc(obj.Status.ProxyVoyagerRoutes, func(a, b types.ObjectRef) int {
+		return cmp.Compare(a.Name, b.Name)
+	})
 }
 
 // createEventStore creates a pubsub.EventStore with resolved configuration backend connection details.
@@ -839,7 +847,11 @@ func (h *EventConfigHandler) resolveAdminTokenUrl(ctx context.Context, clientCfg
 		return "", ctrlerrors.BlockedErrorf("identity Realm %s has no issuerUrl yet", realm.Name)
 	}
 
-	return realm.Status.IssuerUrl + tokenUrlSuffix, nil
+	tokenUrl, err := url.JoinPath(realm.Status.IssuerUrl, tokenUrlSuffix)
+	if err != nil {
+		return "", ctrlerrors.BlockedErrorf("failed to construct token URL for identity Realm %s: %v", realm.Name, err)
+	}
+	return tokenUrl, nil
 }
 
 // createProxyPublishRoute creates the publish Route for a proxy zone as a proxy Route

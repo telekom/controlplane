@@ -36,17 +36,21 @@ type McpServer struct {
 	BasePath string `json:"base_path,omitempty"`
 	// Version holds the value of the "version" field.
 	Version string `json:"version,omitempty"`
-	// Name holds the value of the "name" field.
+	// Resource name of the MCP server, derived from its base path.
 	Name string `json:"name,omitempty"`
+	// Human-readable name of the MCP server: the title from its specification, or the resource name if the specification has no title.
+	DisplayName string `json:"display_name,omitempty"`
 	// Description holds the value of the "description" field.
 	Description string `json:"description,omitempty"`
 	// Specification holds the value of the "specification" field.
 	Specification string `json:"specification,omitempty"`
+	// Base64-encoded SHA-256 hash of the MCP server specification file. Changes when the content changes. Empty if unknown.
+	Hash string `json:"hash,omitempty"`
 	// Category holds the value of the "category" field.
 	Category string `json:"category,omitempty"`
 	// Oauth2Scopes holds the value of the "oauth2_scopes" field.
 	Oauth2Scopes []string `json:"oauth2_scopes,omitempty"`
-	// Active holds the value of the "active" field.
+	// Only the oldest entry for a base path is active. Entries of other teams with the same base path are inactive. Filter on active to get one MCP server per base path.
 	Active bool `json:"active,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the McpServerQuery when eager-loading is set.
@@ -99,7 +103,7 @@ func (*McpServer) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullBool)
 		case mcpserver.FieldID:
 			values[i] = new(sql.NullInt64)
-		case mcpserver.FieldStatusPhase, mcpserver.FieldStatusMessage, mcpserver.FieldNamespace, mcpserver.FieldBasePath, mcpserver.FieldVersion, mcpserver.FieldName, mcpserver.FieldDescription, mcpserver.FieldSpecification, mcpserver.FieldCategory:
+		case mcpserver.FieldStatusPhase, mcpserver.FieldStatusMessage, mcpserver.FieldNamespace, mcpserver.FieldBasePath, mcpserver.FieldVersion, mcpserver.FieldName, mcpserver.FieldDisplayName, mcpserver.FieldDescription, mcpserver.FieldSpecification, mcpserver.FieldHash, mcpserver.FieldCategory:
 			values[i] = new(sql.NullString)
 		case mcpserver.FieldCreatedAt, mcpserver.FieldLastModifiedAt:
 			values[i] = new(sql.NullTime)
@@ -176,6 +180,12 @@ func (_m *McpServer) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.Name = value.String
 			}
+		case mcpserver.FieldDisplayName:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field display_name", values[i])
+			} else if value.Valid {
+				_m.DisplayName = value.String
+			}
 		case mcpserver.FieldDescription:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field description", values[i])
@@ -187,6 +197,12 @@ func (_m *McpServer) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field specification", values[i])
 			} else if value.Valid {
 				_m.Specification = value.String
+			}
+		case mcpserver.FieldHash:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field hash", values[i])
+			} else if value.Valid {
+				_m.Hash = value.String
 			}
 		case mcpserver.FieldCategory:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -289,11 +305,17 @@ func (_m *McpServer) String() string {
 	builder.WriteString("name=")
 	builder.WriteString(_m.Name)
 	builder.WriteString(", ")
+	builder.WriteString("display_name=")
+	builder.WriteString(_m.DisplayName)
+	builder.WriteString(", ")
 	builder.WriteString("description=")
 	builder.WriteString(_m.Description)
 	builder.WriteString(", ")
 	builder.WriteString("specification=")
 	builder.WriteString(_m.Specification)
+	builder.WriteString(", ")
+	builder.WriteString("hash=")
+	builder.WriteString(_m.Hash)
 	builder.WriteString(", ")
 	builder.WriteString("category=")
 	builder.WriteString(_m.Category)

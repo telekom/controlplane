@@ -6,9 +6,12 @@ package zone
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"net/http"
+	"os"
+	"strings"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
@@ -44,11 +47,42 @@ type ZoneHandler struct {
 	HTTPClient *http.Client
 }
 
+// NewZoneHandler returns a ZoneHandler whose OIDC discovery client is built
+// once from SKIP_TLS_VERIFY and reused for every reconciliation.
+func NewZoneHandler() *ZoneHandler {
+	return &ZoneHandler{HTTPClient: newDiscoveryHTTPClient(skipTlsVerify())}
+}
+
+// EnvSkipTlsVerify is the environment variable that disables TLS
+// certificate and hostname verification for OIDC discovery requests.
+// Only the value "true" (case-insensitive) enables it.
+const EnvSkipTlsVerify = "SKIP_TLS_VERIFY"
+
+func skipTlsVerify() bool {
+	return strings.EqualFold(strings.TrimSpace(os.Getenv(EnvSkipTlsVerify)), "true")
+}
+
 func (h *ZoneHandler) httpClient() *http.Client {
 	if h.HTTPClient != nil {
 		return h.HTTPClient
 	}
-	return &http.Client{Timeout: 10 * time.Second}
+	return newDiscoveryHTTPClient(skipTlsVerify())
+}
+
+// newDiscoveryHTTPClient returns the HTTP client used for OIDC discovery.
+// Without skipVerify it uses the default transport.
+func newDiscoveryHTTPClient(skipVerify bool) *http.Client {
+	c := &http.Client{Timeout: 10 * time.Second}
+	if !skipVerify {
+		return c
+	}
+	transport := &http.Transport{Proxy: http.ProxyFromEnvironment}
+	if defaultTransport, ok := http.DefaultTransport.(*http.Transport); ok {
+		transport = defaultTransport.Clone()
+	}
+	transport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true} //nolint:gosec // explicit opt-in via SKIP_TLS_VERIFY
+	c.Transport = transport
+	return c
 }
 
 func (h *ZoneHandler) CreateOrUpdate(ctx context.Context, obj *adminv1.Zone) error {
@@ -71,7 +105,9 @@ func (h *ZoneHandler) CreateOrUpdate(ctx context.Context, obj *adminv1.Zone) err
 		populateRealmName,
 		reconcileGateways,
 		reconcileInternalRoutes,
+		validateGatewayRouteInputs,
 		createIdentityRoutes,
+		createZoneHealthRoutes,
 		cleanupStaleRoutes,
 		populatePresetStatus,
 	}

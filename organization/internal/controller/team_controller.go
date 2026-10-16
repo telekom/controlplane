@@ -83,9 +83,14 @@ func (r *TeamReconciler) mapGroupToTeam(ctx context.Context, obj client.Object) 
 		return nil
 	}
 
+	// Teams resolve their Group in the namespace named after their environment label,
+	// so only Teams of that environment refer to this Group.
 	listOptsForTeams := []client.ListOption{
 		client.MatchingFields{
 			index.FieldSpecGroup: groupObj.Name,
+		},
+		client.MatchingLabels{
+			cconfig.EnvironmentLabelKey: groupObj.Namespace,
 		},
 	}
 
@@ -116,6 +121,9 @@ func (r *TeamReconciler) mapNotificationChannelToTeam(ctx context.Context, obj c
 	listOptsForTeams := []client.ListOption{
 		client.MatchingLabels{
 			cconfig.EnvironmentLabelKey: notificationChannel.Labels[cconfig.EnvironmentLabelKey],
+		},
+		client.MatchingFields{
+			index.FieldStatusNamespace: notificationChannel.GetNamespace(),
 		},
 	}
 

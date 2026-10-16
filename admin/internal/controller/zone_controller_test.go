@@ -161,6 +161,7 @@ var _ = Describe("Zone Controller", func() {
 			zone.Namespace = decoupledEnvName
 			zone.Labels[config.EnvironmentLabelKey] = decoupledEnvName
 			zone.Spec.ManagedRoutes = nil // simplify
+			zone.Spec.IdentityProviders[0].AllowedOrigins = []string{"https://app.example.com"}
 			Expect(k8sClient.Create(ctx, zone)).To(Succeed())
 			DeferCleanup(func() {
 				Expect(client.IgnoreNotFound(k8sClient.Delete(ctx, zone))).To(Succeed())
@@ -180,11 +181,63 @@ var _ = Describe("Zone Controller", func() {
 				g.Expect(err).NotTo(HaveOccurred(), "identity realm should be named %q", decoupledRealmName)
 				g.Expect(identityRealm.Labels[config.EnvironmentLabelKey]).To(Equal(decoupledEnvName),
 					"environment label should be the env name, not the realm name")
+				g.Expect(identityRealm.Spec.AllowedOrigins).To(Equal([]string{"https://app.example.com"}))
+				g.Expect(got.Status.RealmName).To(Equal(decoupledRealmName))
+				internalRealm := &identityv1.Realm{}
+				g.Expect(k8sClient.Get(ctx, client.ObjectKey{Namespace: expectedNs, Name: "rover"}, internalRealm)).To(Succeed())
+				g.Expect(internalRealm.Spec.AllowedOrigins).To(BeEmpty())
 
 				// Issuer URLs contain the realmName, not the environment name
 				g.Expect(got.Status.Presets[0].Links.Issuer).To(ContainSubstring("/auth/realms/" + decoupledRealmName))
 				g.Expect(got.Status.Presets[0].Links.LmsIssuer).To(ContainSubstring("/auth/realms/" + decoupledRealmName))
 			}, timeout, interval).Should(Succeed())
+
+			By("removing origins from the zone")
+			Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(zone), zone)).To(Succeed())
+			zone.Spec.IdentityProviders[0].AllowedOrigins = nil
+			Expect(k8sClient.Update(ctx, zone)).To(Succeed())
+			Eventually(func(g Gomega) {
+				identityRealm := &identityv1.Realm{}
+				g.Expect(k8sClient.Get(ctx, client.ObjectKey{Namespace: decoupledEnvName + "--zone-decoupled", Name: decoupledRealmName}, identityRealm)).To(Succeed())
+				g.Expect(identityRealm.Spec.AllowedOrigins).To(BeEmpty())
+			}, timeout, interval).Should(Succeed())
+
+			By("rejecting duplicate origins at the Zone CRD boundary")
+			duplicateZone := newZone("duplicate-origins")
+			duplicateZone.Namespace = decoupledEnvName
+			duplicateZone.Labels[config.EnvironmentLabelKey] = decoupledEnvName
+			duplicateZone.Spec.IdentityProviders[0].AllowedOrigins = []string{"https://app.example.com", "https://app.example.com"}
+			Expect(errors.IsInvalid(k8sClient.Create(ctx, duplicateZone))).To(BeTrue())
+
+			By("rejecting non-origin URL components at the Zone CRD boundary")
+			for _, invalidOrigin := range []struct {
+				name   string
+				origin string
+			}{
+				{name: "invalid-origin", origin: "not-a-url"},
+				{name: "origin-path", origin: "https://example.com/path"},
+				{name: "origin-query", origin: "https://example.com?x=1"},
+				{name: "origin-fragment", origin: "https://example.com#fragment"},
+				{name: "origin-userinfo", origin: "https://user@example.com"},
+				{name: "origin-empty-port", origin: "https://example.com:"},
+				{name: "origin-port-too-long", origin: "https://example.com:123456"},
+			} {
+				zone := newZone(invalidOrigin.name)
+				zone.Namespace = decoupledEnvName
+				zone.Labels[config.EnvironmentLabelKey] = decoupledEnvName
+				zone.Spec.IdentityProviders[0].AllowedOrigins = []string{invalidOrigin.origin}
+				Expect(errors.IsInvalid(k8sClient.Create(ctx, zone))).To(BeTrue(), invalidOrigin.name)
+			}
+
+			By("accepting serialized origins with custom schemes and the wildcard")
+			validOriginZone := newZone("valid-origin")
+			validOriginZone.Namespace = decoupledEnvName
+			validOriginZone.Labels[config.EnvironmentLabelKey] = decoupledEnvName
+			validOriginZone.Spec.IdentityProviders[0].AllowedOrigins = []string{"ftp://example.com:21", "custom://service.example.com", "https://localhost:8443", "http://192.168.0.1:8080", "https://[2001:db8::1]:443", "*"}
+			Expect(k8sClient.Create(ctx, validOriginZone)).To(Succeed())
+			DeferCleanup(func() {
+				Expect(client.IgnoreNotFound(k8sClient.Delete(ctx, validOriginZone))).To(Succeed())
+			})
 		})
 	})
 

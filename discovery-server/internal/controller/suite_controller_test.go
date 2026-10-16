@@ -141,7 +141,7 @@ var _ = BeforeSuite(func() {
 		Mode: security.ModeMock,
 		Log:  log.Log,
 		BusinessContextOpts: []security.Option[*security.BusinessContextOpts]{
-			security.WithDefaultScope("tardis:user:read"),
+			security.WithDefaultScope("tardis:team:read"),
 			security.WithScopePrefix("tardis:"),
 			security.WithLog(log.Log),
 		},

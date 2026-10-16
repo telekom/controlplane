@@ -17,6 +17,8 @@ import (
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/util"
 )
 
+const scopePrefixDefault = "tardis:"
+
 var invalidCtx = problems.Forbidden("Invalid Context", "Invalid authorization context")
 var invalidCtxField = func(field string) problems.Problem {
 	return problems.Forbidden("Invalid Context", fmt.Sprintf("Missing field '%s'", field))
@@ -89,13 +91,18 @@ Example of the JWT token structure:
 func NewBusinessCtxMiddlewareWithOpts(opts ...Option[*BusinessContextOpts]) fiber.Handler {
 	mwOpts := BusinessContextOpts{
 		Log:            logr.Discard(),
-		ScopePrefix:    "",
+		ScopePrefix:    scopePrefixDefault,
 		DefaultScope:   "",
 		ValuesDecoders: defaultValuesDecoders,
 	}
 
 	for _, o := range opts {
 		o(&mwOpts)
+	}
+
+	// Apply the default after options, which may pass an empty prefix from configuration.
+	if mwOpts.ScopePrefix == "" {
+		mwOpts.ScopePrefix = scopePrefixDefault
 	}
 
 	return NewBusinessCtxMiddleware(mwOpts)
@@ -133,6 +140,10 @@ func NewBusinessCtxMiddleware(mwOpts BusinessContextOpts) fiber.Handler {
 		var scopes []string
 		if scopesClaim, pErr := DecodeValue(mwOpts.ValuesDecoders, claims, "scope"); pErr == nil {
 			scopes = strings.Split(scopesClaim, " ")
+			// Only check presence here; the resolvers below validate and filter scopes.
+			if mwOpts.DefaultScope != "" && !hasScopePrefix(scopes, scopePrefix) {
+				scopes = defaultScopes
+			}
 
 		} else if mwOpts.DefaultScope != "" {
 			scopes = defaultScopes
@@ -172,6 +183,20 @@ func NewBusinessCtxMiddleware(mwOpts BusinessContextOpts) fiber.Handler {
 
 		return c.Next()
 	}
+}
+
+// hasScopePrefix reports whether any scope's first colon-separated segment
+// equals prefix. An empty prefix matches any non-empty scope list.
+func hasScopePrefix(scopes []string, prefix string) bool {
+	if prefix == "" {
+		return len(scopes) > 0
+	}
+	for _, scope := range scopes {
+		if first, _, _ := strings.Cut(scope, ":"); first == prefix {
+			return true
+		}
+	}
+	return false
 }
 
 // ClientType represents the type of the client
@@ -242,9 +267,9 @@ func DetermineClientType(scopes []string, prefix string) (ClientType, error) {
 			continue
 		}
 		switch parts[len(parts)-2] {
-		case string(ClientTypeTeam):
+		case string(ClientTypeTeam), "user": // Deprecated alias for already granted subscriptions.
 			return ClientTypeTeam, nil
-		case string(ClientTypeGroup), "hub": // Deprecated alias for already-issued tokens.
+		case string(ClientTypeGroup), "hub": // Deprecated alias for already granted subscriptions.
 			return ClientTypeGroup, nil
 		case string(ClientTypeAdmin):
 			return ClientTypeAdmin, nil

@@ -1439,6 +1439,29 @@ func (ec *executionContext) fieldContext_ApplicationInfo_name(_ context.Context,
 	return graphql.NewScalarFieldContext("ApplicationInfo", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
+func (ec *executionContext) _ApplicationInfo_clientId(ctx context.Context, field graphql.CollectedField, obj *model.ApplicationInfo) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ApplicationInfo_clientId(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ClientID, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *string) graphql.Marshaler {
+			return ec.marshalOString2ᚖstring(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_ApplicationInfo_clientId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("ApplicationInfo", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
 func (ec *executionContext) _ApplicationInfo_externalIds(ctx context.Context, field graphql.CollectedField, obj *model.ApplicationInfo) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -2775,6 +2798,52 @@ func (ec *executionContext) fieldContext_FileExposureInfo_visibility(_ context.C
 	return graphql.NewScalarFieldContext("FileExposureInfo", field, true, true, errors.New("field of type FileExposureVisibility does not have child fields"))
 }
 
+func (ec *executionContext) _FileExposureInfo_serviceUrl(ctx context.Context, field graphql.CollectedField, obj *model.FileExposureInfo) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_FileExposureInfo_serviceUrl(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ServiceURL, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *string) graphql.Marshaler {
+			return ec.marshalOString2ᚖstring(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_FileExposureInfo_serviceUrl(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("FileExposureInfo", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _FileExposureInfo_serviceExternalUrl(ctx context.Context, field graphql.CollectedField, obj *model.FileExposureInfo) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_FileExposureInfo_serviceExternalUrl(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ServiceExternalURL, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *string) graphql.Marshaler {
+			return ec.marshalOString2ᚖstring(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_FileExposureInfo_serviceExternalUrl(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("FileExposureInfo", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
 func (ec *executionContext) _FileExposureInfo_active(ctx context.Context, field graphql.CollectedField, obj *model.FileExposureInfo) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -2992,6 +3061,52 @@ func (ec *executionContext) _FileSubscriptionInfo_fileType(ctx context.Context, 
 	)
 }
 func (ec *executionContext) fieldContext_FileSubscriptionInfo_fileType(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("FileSubscriptionInfo", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _FileSubscriptionInfo_serviceUrl(ctx context.Context, field graphql.CollectedField, obj *model.FileSubscriptionInfo) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_FileSubscriptionInfo_serviceUrl(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ServiceURL, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *string) graphql.Marshaler {
+			return ec.marshalOString2ᚖstring(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_FileSubscriptionInfo_serviceUrl(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("FileSubscriptionInfo", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _FileSubscriptionInfo_serviceExternalUrl(ctx context.Context, field graphql.CollectedField, obj *model.FileSubscriptionInfo) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_FileSubscriptionInfo_serviceExternalUrl(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ServiceExternalURL, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *string) graphql.Marshaler {
+			return ec.marshalOString2ᚖstring(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_FileSubscriptionInfo_serviceExternalUrl(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	return graphql.NewScalarFieldContext("FileSubscriptionInfo", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
@@ -5358,6 +5473,11 @@ func (ec *executionContext) _ApplicationInfo(ctx context.Context, sel ast.Select
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "clientId":
+			out.Values[i] = ec._ApplicationInfo_clientId(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
 		case "externalIds":
 			out.Values[i] = ec._ApplicationInfo_externalIds(ctx, field, obj)
 			if out.Values[i] == graphql.RequiredNull {
@@ -6481,6 +6601,16 @@ func (ec *executionContext) _FileExposureInfo(ctx context.Context, sel ast.Selec
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "serviceUrl":
+			out.Values[i] = ec._FileExposureInfo_serviceUrl(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "serviceExternalUrl":
+			out.Values[i] = ec._FileExposureInfo_serviceExternalUrl(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		case "active":
 			out.Values[i] = ec._FileExposureInfo_active(ctx, field, obj)
 			if out.Values[i] == graphql.RequiredNull {
@@ -6585,6 +6715,16 @@ func (ec *executionContext) _FileSubscriptionInfo(ctx context.Context, sel ast.S
 		case "fileType":
 			out.Values[i] = ec._FileSubscriptionInfo_fileType(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "serviceUrl":
+			out.Values[i] = ec._FileSubscriptionInfo_serviceUrl(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "serviceExternalUrl":
+			out.Values[i] = ec._FileSubscriptionInfo_serviceExternalUrl(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "statusPhase":

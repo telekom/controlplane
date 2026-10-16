@@ -8,6 +8,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"time"
 
 	"github.com/stretchr/testify/mock"
@@ -108,6 +109,33 @@ var _ = Describe("HandlerClient", func() {
 	})
 
 	Context("CreateOrUpdate", func() {
+		DescribeTable("synchronizes origins from the realm before provisioning",
+			func(current, configured []string) {
+				cl := newValidClient()
+				cl.Annotations = map[string]string{identityv1.DisableSecretRotationAnnotation: "true"}
+				cl.Status.AllowedOrigins = current
+				realm := newValidRealm()
+				realm.Spec.AllowedOrigins = configured
+				overrideSecretsGet(func(_ context.Context, _ string) (string, error) {
+					return "resolved-secret", nil
+				})
+				mockRealmGet(mockK8s, realm)
+				mockSvc := keycloakservice.NewMockKeycloakService(GinkgoT())
+				mockSvc.EXPECT().CreateOrReplaceClient(mock.Anything, realm.Name, mock.MatchedBy(func(actual *identityv1.Client) bool {
+					return slices.Equal(actual.Status.AllowedOrigins, realm.Spec.AllowedOrigins) && actual.Spec.ClientSecret == "resolved-secret"
+				}), mock.Anything).Return(nil)
+				factory := keycloak.ServiceFactoryFunc(func(_ identityv1.RealmStatus) (keycloak.KeycloakService, error) {
+					return mockSvc, nil
+				})
+				Expect(NewHandlerClient(factory).CreateOrUpdate(ctx, cl)).To(Succeed())
+				Expect(slices.Equal(cl.Status.AllowedOrigins, realm.Spec.AllowedOrigins)).To(BeTrue())
+				Expect(cl.Spec.ClientSecret).To(Equal("$<client-secret>"))
+			},
+			Entry("adds origins", nil, []string{"https://example.com"}),
+			Entry("clears origins", []string{"https://example.com"}, nil),
+			Entry("propagates reordering", []string{"*", "https://example.com"}, []string{"https://example.com", "*"}),
+		)
+
 		It("should return an error when the client is nil", func() {
 			handler := NewHandlerClient(keycloak.NewServiceFactory())
 			err := handler.CreateOrUpdate(context.Background(), nil)
@@ -1191,14 +1219,16 @@ var _ = Describe("HandlerClient", func() {
 	})
 
 	Context("mapToClientStatus", func() {
-		It("should set IssuerUrl from realm status", func() {
+		It("should set IssuerUrl and AllowedOrigins from the realm", func() {
 			realmStatus := &identityv1.RealmStatus{
 				IssuerUrl: "https://issuer.example.com",
 			}
+			allowedOrigins := []string{"https://app.example.com"}
 			var clientStatus identityv1.ClientStatus
-			mapToClientStatus(realmStatus, &clientStatus)
+			mapToClientStatus(realmStatus, allowedOrigins, &clientStatus)
 
 			Expect(clientStatus.IssuerUrl).To(Equal("https://issuer.example.com"))
+			Expect(clientStatus.AllowedOrigins).To(Equal(allowedOrigins))
 		})
 	})
 })

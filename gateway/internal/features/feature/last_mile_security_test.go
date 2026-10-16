@@ -7,8 +7,6 @@ package feature_test
 import (
 	"context"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"github.com/stretchr/testify/mock"
 
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
@@ -18,10 +16,12 @@ import (
 	featmock "github.com/telekom/controlplane/gateway/internal/features/mock"
 	"github.com/telekom/controlplane/gateway/pkg/kong/client"
 	"github.com/telekom/controlplane/gateway/pkg/kong/client/plugin"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("LastMileSecurityFeature", func() {
-
 	var (
 		ctx     context.Context
 		f       *feature.LastMileSecurityFeature
@@ -150,7 +150,8 @@ var _ = Describe("LastMileSecurityFeature", func() {
 					Expect(rtpPlugin.Config.Replace.Headers.Get("environment")).To(Equal("test-env"))
 					Expect(rtpPlugin.Config.Replace.Headers.Get("realm")).To(Equal("test-realm"))
 					Expect(rtpPlugin.Config.Replace.Headers.Get("Authorization")).To(
-						Equal("$(headers['consumer-token'] or headers['Authorization'])"))
+						Equal("$(headers['consumer-token'] or headers['Authorization'])"),
+					)
 
 					// Remove headers: consumer-token
 					Expect(rtpPlugin.Config.Remove.Headers).ToNot(BeNil())

@@ -36,6 +36,11 @@ func (t Upstream) GetPath() string {
 }
 
 type Traffic struct {
+	// HealthProbe restricts matching to HEAD and returns HTTP 200 at the
+	// gateway without contacting the upstream. If omitted or false, normal routing applies.
+	// +kubebuilder:validation:Optional
+	HealthProbe bool `json:"healthProbe,omitempty"`
+
 	Failover  *Failover  `json:"failover,omitempty"`
 	RateLimit *RateLimit `json:"rateLimit,omitempty"`
 

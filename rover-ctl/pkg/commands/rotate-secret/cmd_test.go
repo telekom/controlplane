@@ -137,4 +137,45 @@ var _ = Describe("Rotate-Secret Command", func() {
 			})
 		})
 	})
+	Describe("flag compatibility", func() {
+		BeforeEach(func() {
+			handlers.ResetRegistryForTest()
+			handlers.RegisterHandler("Rover", "tcp.ei.telekom.de/v1", mockResetHandler)
+			mockResetHandler.On("Priority").Return(100).Maybe()
+		})
+
+		DescribeTable("accepts every application selector alias",
+			func(args ...string) {
+				mockResetHandler.EXPECT().ResetSecret(mock.AnythingOfType("*context.valueCtx"), "test-app").Return(&v0.SecretRotationStatusResponse{
+					ClientId:        "new-client-id",
+					ClientSecret:    "new-client-secret",
+					ProcessingState: "done",
+					OverallStatus:   "complete",
+				}, nil).Once()
+
+				cmd.SetArgs(args)
+				Expect(cmd.Execute()).To(Succeed())
+				Expect(stdout.String()).To(ContainSubstring("new-client-secret"))
+				Expect(stdout.String()).NotTo(ContainSubstring("deprecated"))
+				Expect(stderr.String()).NotTo(ContainSubstring("deprecated"))
+			},
+			Entry("-a", "-a", "test-app"),
+			Entry("--application", "--application", "test-app"),
+			Entry("--application=", "--application=test-app"),
+			Entry("-n", "-n", "test-app"),
+			Entry("--name", "--name", "test-app"),
+		)
+
+		DescribeTable("rejects invalid selector combinations without calling the server",
+			func(expectedErr string, args ...string) {
+				cmd.SetArgs(args)
+				err := cmd.Execute()
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring(expectedErr))
+				Expect(stderr.String()).NotTo(ContainSubstring("deprecated"))
+			},
+			Entry("both -a and -n", "none of the others can be", "-a", "app-1", "-n", "app-2"),
+			Entry("neither -a nor -n", "at least one of the flags"),
+		)
+	})
 })

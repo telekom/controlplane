@@ -33,7 +33,7 @@ Each zone gets two identity realms in its identity provider:
 - A **default identity realm** (named after the environment) — used for normal API consumers and providers. It carries the zone's token claims (`originZone`, `originStargate`, `clientId`).
 - An **internal `rover` realm** — used only for admin-config clients that the platform itself needs.
 
-Inside the internal realm, the operator creates the **`rover` client** — the OAuth2 client the Gateway operator uses to authenticate against the gateway's admin API (its issuer is `…/auth/realms/rover`).
+Inside the internal realm, the operator creates the **`rover` client** — the OAuth2 client the Gateway operator uses to authenticate against the gateway's admin API (its issuer is `…/auth/realms/rover`). The Gateway's `spec.admin.issuerUrl` and each preset's `links.internalIssuer` use the internal realm's resolved `status.issuerUrl` (with any trailing `/` trimmed), so they point at the rover host even when the default realm is published on a different public host; until that issuer is resolved, the Zone reconciliation is retried.
 
 The Admin operator manages exactly one `rover` client per Zone, shared by all of its gateways, including those serving AI traffic. Each Zone must use its own backing identity provider; clients are not shared across Zones. Provisioning is automatic and cannot be disabled. Administrators configure gateway admin endpoints and their identity provider association, but cannot override the gateway admin client ID or secret through the Zone.
 
@@ -46,6 +46,10 @@ With **Secret-Manager disabled**, credentials are kept inline on the client and 
 Zone deletion deliberately retains the client and its stored secret; deleting the Client resource would also delete the backing identity-provider client. Run the Admin operator with leader election when using multiple replicas to prevent competing provisioning attempts.
 
 Every named gateway exposes issuer, certificate, and OpenID discovery routes for the default realm and the internal `rover` realm, plus the team-api realm when configured. These routes cover the hostnames and base paths of all presets using that gateway. World-visible zones add `/spacegate` after the preset base path.
+
+Admin also creates an owned `<gateway>--zone-health` passthrough route for every gateway, independent of managed routes and DTC. It covers every preset hostname and base path without `/spacegate`. Its `spec.traffic.healthProbe: true` flag tells Gateway to answer HEAD probes with 200 without contacting an upstream. The Route CRD gains this optional boolean; the Zone CRD is unchanged. Shared preflight validation checks the 20-hostname and 10-distinct-path Route limits before creating identity or health routes. Stale-route cleanup removes health routes when their gateway is removed.
+
+Zone admission and reconciliation share aggregation, normalized path construction, and cardinality validation in `admin/internal/routeinputs`. Create/update admission rejects excessive inputs with field-specific errors; the controller retains a defensive blocked-error check for existing invalid Zones. Fixed identity and health suffixes preserve the number of distinct normalized base paths, so validation does not depend on provisioned realm names or visibility.
 
 ### Secret onboarding (defaulting webhook)
 

@@ -43,6 +43,13 @@ type ResourceHandler interface {
 	InfoMany(ctx context.Context, names []string) (any, error)
 }
 
+// NameDeleter is implemented by handlers that can delete a resource by its name alone,
+// without a full resource definition.
+type NameDeleter interface {
+	// DeleteByName removes the resource with the given name from the server
+	DeleteByName(ctx context.Context, name string) error
+}
+
 type Waiter interface {
 	// WaitForReady waits for a resource to be ready
 	WaitForReady(ctx context.Context, name string) (types.ObjectStatus, error)

@@ -107,20 +107,6 @@ func (s *BucketFileUploader) validateUploadedMetadata(ctx context.Context, path 
 	return s.wrapper.ValidateObjectMetadata(ctx, path, requestContentType, requestChecksum, uploadedCRC64)
 }
 
-// convertFileIdToPath converts a fileId to a path and logs the result
-func (s *BucketFileUploader) convertFileIdToPath(ctx context.Context, fileId string) (string, error) {
-	log := logr.FromContextOrDiscard(ctx)
-
-	// Convert fileId to path format
-	path, err := identifier.ConvertFileIdToPath(fileId)
-	if err != nil {
-		return "", backend.ErrInvalidFileId(fileId)
-	}
-
-	log.V(1).Info("Using path", "path", path)
-	return path, nil
-}
-
 // initializeUpload validates the client and updates credentials
 func (s *BucketFileUploader) initializeUpload(ctx context.Context) error {
 	// Validate client initialization
@@ -132,7 +118,7 @@ func (s *BucketFileUploader) initializeUpload(ctx context.Context) error {
 }
 
 // UploadFile uploads a file to bucket and returns the file ID
-// The fileId should follow the convention <env>--<group>--<team>--<fileName>
+// The fileId must be a canonical UUID
 // Metadata already includes X-File-Content-Type and X-File-Checksum headers
 func (s *BucketFileUploader) UploadFile(ctx context.Context, fileId string, reader io.Reader, metadata map[string]string) (string, error) {
 	log := logr.FromContextOrDiscard(ctx)
@@ -144,11 +130,11 @@ func (s *BucketFileUploader) UploadFile(ctx context.Context, fileId string, read
 
 	log.V(1).Info("Uploading file", "fileId", fileId, "bucket", s.config.BucketName)
 
-	// Convert fileId to path
-	path, err := s.convertFileIdToPath(ctx, fileId)
-	if err != nil {
-		return "", err
-	}
+	// TODO: backward-compatibility: uncomment it after all files were migrated to UUID
+	// if err := identifier.ValidateFileID(fileId); err != nil {
+	// 	return "", backend.ErrInvalidFileId(fileId)
+	// }
+	path := identifier.ConvertFileIdToPath(fileId)
 
 	// Prepare metadata for upload
 	userMetadata, contentType := s.prepareMetadata(ctx, metadata)

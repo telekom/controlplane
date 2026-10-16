@@ -104,6 +104,12 @@ security:
       matchType: prefix
 ```
 
+#### Scope Resolution
+
+The client type and access type are resolved from the space-separated `scope` claim. `scopePrefix` defaults to `tardis:` when omitted or empty; a non-empty value overrides this default. Only scopes whose first colon-separated segment equals the effective prefix (without its trailing colon) are used (e.g. `tardis:admin:all`, but not `openid` or `tardis-other:admin:all`). The client type and access type are then each taken from the first of these scopes that provides a valid value: client type `team`, `group`, `admin` (or the deprecated alias `hub`), and access type `read`, `obfuscated`, `all`. If a prefixed scope is present but no valid value can be resolved, the request is denied with `403`; the default scope is not used in that case.
+
+If the claim is missing, empty, or contains no scope with the effective prefix, `defaultScope` is used instead and must itself resolve; otherwise the request is denied with `403`. Without a `defaultScope`, such requests are denied with `403`.
+
 #### Configuration
 
 Templates are configured per client type (scope) (e.g., `team`, `group`, `admin`) and consist of the following components:
@@ -235,5 +241,3 @@ The store can also be sorted, see [sortable](./pkg/store/inmemory/sorted_store.g
 - The server duplicates all resource in memory. This can lead to high memory usage if there are many resources. 
   (1) it uses a kubernetes informer to watch for changes in the resources and (2) it stores all resources in a badger database.
   However, it is possible to store the badger database on disk, see [StoreOpts](./pkg/store/inmemory/inmemory_store.go#L47) for more information. In the future, this could be improved by using only the badger database and not the informer or replacing the badger-database with an external database.
-
-

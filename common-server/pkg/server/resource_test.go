@@ -40,9 +40,9 @@ var permissiveCheckAccessOpts = []security.Option[*security.CheckAccessOpts]{
 	}),
 }
 
-// adminBearerToken is a mock JWT carrying an admin:all scope so requests pass the
+// adminBearerToken is a mock JWT carrying a tardis:admin:all scope so requests pass the
 // security middleware's checkAccess step when combined with permissiveAdminTemplates.
-var adminBearerToken = "Bearer " + securitymock.NewMockAccessToken("test", "group", "team", []string{"admin:all"})
+var adminBearerToken = "Bearer " + securitymock.NewMockAccessToken("test", "group", "team", []string{"tardis:admin:all"})
 
 var _ = Describe("ResourceController", func() {
 	var (

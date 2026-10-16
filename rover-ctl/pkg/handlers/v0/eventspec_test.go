@@ -7,11 +7,14 @@ package v0_test
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/spf13/viper"
+	"github.com/telekom/controlplane/rover-ctl/pkg/config"
 	v0 "github.com/telekom/controlplane/rover-ctl/pkg/handlers/v0"
 	"github.com/telekom/controlplane/rover-ctl/pkg/types"
 )
@@ -323,6 +326,160 @@ var _ = Describe("EventSpec Handler", func() {
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring("directory, expected a file"))
 			})
+		})
+	})
+
+	Describe("file:// $ref resource-path fallback", func() {
+		var resourceDir, fallbackDir string
+
+		newObj := func(ref string) *types.UnstructuredObject {
+			obj := &types.UnstructuredObject{
+				Content: map[string]any{
+					"spec": map[string]any{"specification": map[string]any{"$ref": ref}},
+				},
+			}
+			obj.SetProperty("filename", filepath.Join(resourceDir, "eventspec.yaml"))
+			return obj
+		}
+		writeSchema := func(dir, name, content string) {
+			Expect(os.MkdirAll(filepath.Dir(filepath.Join(dir, name)), 0o755)).To(Succeed())
+			Expect(os.WriteFile(filepath.Join(dir, name), []byte(content), 0o644)).To(Succeed())
+		}
+		specOf := func(obj *types.UnstructuredObject) map[string]any {
+			return obj.GetContent()["specification"].(map[string]any)
+		}
+
+		BeforeEach(func() {
+			resourceDir = GinkgoT().TempDir()
+			fallbackDir = GinkgoT().TempDir()
+			DeferCleanup(viper.Set, config.ConfigKeyResourcePath, "")
+		})
+
+		It("falls back to an absolute resource.path", func() {
+			viper.Set(config.ConfigKeyResourcePath, fallbackDir)
+			writeSchema(fallbackDir, "schemas/s.json", `{"title":"fallback"}`)
+			obj := newObj("file://schemas/s.json")
+			Expect(v0.PatchEventSpecificationRequest(context.Background(), obj)).To(Succeed())
+			Expect(specOf(obj)["title"]).To(Equal("fallback"))
+		})
+
+		It("falls back to a resource.path relative to the cwd", func() {
+			wd, err := os.Getwd()
+			Expect(err).NotTo(HaveOccurred())
+			DeferCleanup(os.Chdir, wd)
+			Expect(os.Chdir(fallbackDir)).To(Succeed())
+			viper.Set(config.ConfigKeyResourcePath, "rel")
+			writeSchema(fallbackDir, "rel/s.json", `{"title":"relative"}`)
+			obj := newObj("file://s.json")
+			Expect(v0.PatchEventSpecificationRequest(context.Background(), obj)).To(Succeed())
+			Expect(specOf(obj)["title"]).To(Equal("relative"))
+		})
+
+		It("falls back to the cwd when resource.path is unset", func() {
+			wd, err := os.Getwd()
+			Expect(err).NotTo(HaveOccurred())
+			DeferCleanup(os.Chdir, wd)
+			Expect(os.Chdir(fallbackDir)).To(Succeed())
+			writeSchema(fallbackDir, "s.json", `{"title":"cwd"}`)
+			obj := newObj("file://s.json")
+			Expect(v0.PatchEventSpecificationRequest(context.Background(), obj)).To(Succeed())
+			Expect(specOf(obj)["title"]).To(Equal("cwd"))
+		})
+
+		It("prefers the resource file directory", func() {
+			viper.Set(config.ConfigKeyResourcePath, fallbackDir)
+			writeSchema(resourceDir, "s.json", `{"title":"primary"}`)
+			writeSchema(fallbackDir, "s.json", `{"title":"fallback"}`)
+			obj := newObj("file://s.json")
+			Expect(v0.PatchEventSpecificationRequest(context.Background(), obj)).To(Succeed())
+			Expect(specOf(obj)["title"]).To(Equal("primary"))
+		})
+
+		It("reports both locations when neither exists", func() {
+			viper.Set(config.ConfigKeyResourcePath, fallbackDir)
+			err := v0.PatchEventSpecificationRequest(context.Background(), newObj("file://missing.json"))
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring(filepath.Join(resourceDir, "missing.json")))
+			Expect(err.Error()).To(ContainSubstring(filepath.Join(fallbackDir, "missing.json")))
+			Expect(errors.Is(err, os.ErrNotExist)).To(BeTrue())
+		})
+
+		It("does not fall back when the primary file is malformed", func() {
+			viper.Set(config.ConfigKeyResourcePath, fallbackDir)
+			writeSchema(resourceDir, "s.json", `{not json`)
+			writeSchema(fallbackDir, "s.json", `{"title":"fallback"}`)
+			err := v0.PatchEventSpecificationRequest(context.Background(), newObj("file://s.json"))
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("failed to parse JSON schema from file"))
+			Expect(err.Error()).To(ContainSubstring(filepath.Join(resourceDir, "s.json")))
+		})
+
+		It("accepts trailing whitespace", func() {
+			writeSchema(resourceDir, "s.json", "{\"title\":\"primary\"}\n \t\n")
+			obj := newObj("file://s.json")
+			Expect(v0.PatchEventSpecificationRequest(context.Background(), obj)).To(Succeed())
+			Expect(specOf(obj)["title"]).To(Equal("primary"))
+		})
+
+		DescribeTable("rejects invalid schema content without falling back",
+			func(content string) {
+				viper.Set(config.ConfigKeyResourcePath, fallbackDir)
+				writeSchema(resourceDir, "s.json", content)
+				writeSchema(fallbackDir, "s.json", `{"title":"fallback"}`)
+				err := v0.PatchEventSpecificationRequest(context.Background(), newObj("file://s.json"))
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("failed to parse JSON schema from file"))
+				Expect(err.Error()).To(ContainSubstring(filepath.Join(resourceDir, "s.json")))
+			},
+			Entry("second JSON object", `{"a":1}{"b":2}`),
+			Entry("trailing scalar", `{"a":1} null`),
+			Entry("trailing garbage", `{"a":1} garbage`),
+			Entry("trailing delimiter", `{"a":1}]`),
+			Entry("empty file", ""),
+		)
+
+		It("preserves not-exist errors when both locations are identical", func() {
+			viper.Set(config.ConfigKeyResourcePath, resourceDir)
+			err := v0.PatchEventSpecificationRequest(context.Background(), newObj("file://missing.json"))
+			Expect(err).To(HaveOccurred())
+			Expect(errors.Is(err, os.ErrNotExist)).To(BeTrue())
+			Expect(err.Error()).To(ContainSubstring(filepath.Join(resourceDir, "missing.json")))
+		})
+
+		It("rejects malformed absolute references", func() {
+			writeSchema(resourceDir, "s.json", `{not json`)
+			path := filepath.Join(resourceDir, "s.json")
+			err := v0.PatchEventSpecificationRequest(context.Background(), newObj("file://"+path))
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("failed to parse JSON schema from file"))
+		})
+
+		It("does not fall back when the primary target is a directory", func() {
+			viper.Set(config.ConfigKeyResourcePath, fallbackDir)
+			Expect(os.Mkdir(filepath.Join(resourceDir, "s.json"), 0o755)).To(Succeed())
+			writeSchema(fallbackDir, "s.json", `{"title":"fallback"}`)
+			err := v0.PatchEventSpecificationRequest(context.Background(), newObj("file://s.json"))
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("directory, expected a file"))
+			Expect(err.Error()).To(ContainSubstring(filepath.Join(resourceDir, "s.json")))
+		})
+
+		It("reports fallback errors other than not-exist", func() {
+			viper.Set(config.ConfigKeyResourcePath, fallbackDir)
+			writeSchema(fallbackDir, "s.json", `{not json`)
+			err := v0.PatchEventSpecificationRequest(context.Background(), newObj("file://s.json"))
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("fallback location"))
+			Expect(err.Error()).To(ContainSubstring("failed to parse JSON schema from file"))
+		})
+
+		It("does not apply the fallback to absolute refs", func() {
+			viper.Set(config.ConfigKeyResourcePath, fallbackDir)
+			writeSchema(fallbackDir, "s.json", `{"title":"fallback"}`)
+			err := v0.PatchEventSpecificationRequest(context.Background(), newObj("file://"+filepath.Join(resourceDir, "s.json")))
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("failed to access JSON schema file"))
+			Expect(err.Error()).NotTo(ContainSubstring("fallback location"))
 		})
 	})
 

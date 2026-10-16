@@ -60,6 +60,7 @@ func TestMutateSecret(t *testing.T) {
 		mockFindSecretId      func(map[string]string, string) (string, bool)
 		expectedError         bool
 		expectedForbidden     bool
+		expectedMessage       string
 		expectedNewSecret     bool
 		expectedRotatedSecret string
 	}{
@@ -89,9 +90,10 @@ func TestMutateSecret(t *testing.T) {
 			app: &applicationv1.Application{
 				ObjectMeta: metav1.ObjectMeta{Generation: 2},
 				Spec: applicationv1.ApplicationSpec{
-					Team:   "my-team",
-					Secret: "rotate",
-					Zone:   zoneRef,
+					Team:        "my-team",
+					Secret:      "rotate",
+					Zone:        zoneRef,
+					NeedsClient: true,
 				},
 				Status: applicationv1.ApplicationStatus{
 					ClientSecret: "$<old-ref>",
@@ -121,9 +123,10 @@ func TestMutateSecret(t *testing.T) {
 			name: "Rotate keyword without graceful rotation does not store rotated secret",
 			app: &applicationv1.Application{
 				Spec: applicationv1.ApplicationSpec{
-					Team:   "my-team",
-					Secret: "rotate",
-					Zone:   zoneRef,
+					Team:        "my-team",
+					Secret:      "rotate",
+					Zone:        zoneRef,
+					NeedsClient: true,
 				},
 				Status: applicationv1.ApplicationStatus{
 					ClientSecret: "$<old-ref>",
@@ -150,9 +153,10 @@ func TestMutateSecret(t *testing.T) {
 			app: &applicationv1.Application{
 				ObjectMeta: metav1.ObjectMeta{Generation: 2},
 				Spec: applicationv1.ApplicationSpec{
-					Team:   "my-team",
-					Secret: "rotate",
-					Zone:   zoneRef,
+					Team:        "my-team",
+					Secret:      "rotate",
+					Zone:        zoneRef,
+					NeedsClient: true,
 				},
 				Status: applicationv1.ApplicationStatus{
 					ClientSecret: "",
@@ -185,6 +189,7 @@ func TestMutateSecret(t *testing.T) {
 					Secret:        "rotate",
 					RotatedSecret: "$<existing-rotated-ref>",
 					Zone:          zoneRef,
+					NeedsClient:   true,
 				},
 				Status: applicationv1.ApplicationStatus{
 					Conditions: []metav1.Condition{
@@ -204,6 +209,31 @@ func TestMutateSecret(t *testing.T) {
 			},
 			expectedError:     true,
 			expectedForbidden: true,
+		},
+		{
+			name: "Rotate denied when application does not need a client",
+			app: &applicationv1.Application{
+				ObjectMeta: metav1.ObjectMeta{Generation: 2},
+				Spec: applicationv1.ApplicationSpec{
+					Team:        "my-team",
+					Secret:      "rotate",
+					Zone:        zoneRef,
+					NeedsClient: false,
+				},
+				Status: applicationv1.ApplicationStatus{
+					ClientSecret: "$<old-ref>",
+				},
+			},
+			env:       "dev",
+			reader:    newReader(zoneWithRotation.DeepCopy()),
+			operation: admissionv1.Update,
+			mock: func(t *testing.T) api.SecretManager {
+				// strict mock without expectations: any secret-manager call fails the test
+				return fake.NewMockSecretManager(t)
+			},
+			expectedError:     true,
+			expectedForbidden: true,
+			expectedMessage:   "spec.needsClient is false",
 		},
 		{
 			name: "Custom secret value is passed through",
@@ -248,9 +278,10 @@ func TestMutateSecret(t *testing.T) {
 			app: &applicationv1.Application{
 				ObjectMeta: metav1.ObjectMeta{Generation: 2},
 				Spec: applicationv1.ApplicationSpec{
-					Team:   "my-team",
-					Secret: "rotate",
-					Zone:   zoneRef,
+					Team:        "my-team",
+					Secret:      "rotate",
+					Zone:        zoneRef,
+					NeedsClient: true,
 				},
 				Status: applicationv1.ApplicationStatus{
 					ClientSecret: "$<old-ref>",
@@ -277,9 +308,10 @@ func TestMutateSecret(t *testing.T) {
 			app: &applicationv1.Application{
 				ObjectMeta: metav1.ObjectMeta{Generation: 2},
 				Spec: applicationv1.ApplicationSpec{
-					Team:   "my-team",
-					Secret: "rotate",
-					Zone:   zoneRef,
+					Team:        "my-team",
+					Secret:      "rotate",
+					Zone:        zoneRef,
+					NeedsClient: true,
 				},
 				Status: applicationv1.ApplicationStatus{
 					ClientSecret: "$<old-ref>",
@@ -303,9 +335,10 @@ func TestMutateSecret(t *testing.T) {
 			app: &applicationv1.Application{
 				ObjectMeta: metav1.ObjectMeta{Generation: 2},
 				Spec: applicationv1.ApplicationSpec{
-					Team:   "my-team",
-					Secret: "rotate",
-					Zone:   zoneRef,
+					Team:        "my-team",
+					Secret:      "rotate",
+					Zone:        zoneRef,
+					NeedsClient: true,
 				},
 				Status: applicationv1.ApplicationStatus{
 					ClientSecret: "$<old-ref>",
@@ -338,6 +371,7 @@ func TestMutateSecret(t *testing.T) {
 			})
 
 			previousSecret := tt.app.Spec.Secret
+			previousRotatedSecret := tt.app.Spec.RotatedSecret
 			sm := tt.mock(t)
 			secret.GetSecretManager = func() api.SecretManager { return sm }
 			if tt.mockFindSecretId != nil {
@@ -351,6 +385,9 @@ func TestMutateSecret(t *testing.T) {
 				if tt.expectedForbidden {
 					Expect(err.Error()).To(ContainSubstring("forbidden"))
 				}
+				if tt.expectedMessage != "" {
+					Expect(err.Error()).To(ContainSubstring(tt.expectedMessage))
+				}
 			} else {
 				Expect(err).NotTo(HaveOccurred())
 			}
@@ -358,6 +395,10 @@ func TestMutateSecret(t *testing.T) {
 				Expect(tt.app.Spec.Secret).NotTo(Equal(previousSecret))
 			} else if !tt.expectedError {
 				Expect(tt.app.Spec.Secret).To(Equal(previousSecret))
+			}
+			if tt.expectedForbidden {
+				Expect(tt.app.Spec.Secret).To(Equal(previousSecret))
+				Expect(tt.app.Spec.RotatedSecret).To(Equal(previousRotatedSecret))
 			}
 			if tt.expectedRotatedSecret != "" {
 				Expect(tt.app.Spec.RotatedSecret).To(Equal(tt.expectedRotatedSecret))

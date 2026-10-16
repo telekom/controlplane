@@ -11,10 +11,9 @@ import (
 
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
+	"github.com/telekom/controlplane/gateway/internal/features"
 	"github.com/telekom/controlplane/gateway/pkg/kong/client"
 	"github.com/telekom/controlplane/gateway/pkg/kong/client/plugin"
-
-	"github.com/telekom/controlplane/gateway/internal/features"
 )
 
 var _ features.Feature = &LastMileSecurityFeature{}
@@ -99,7 +98,7 @@ func CreateRemoteApiUrl(route *gatewayv1.Route) string {
 	if upstream.Port != 0 {
 		result = result + ":" + strconv.Itoa(int(upstream.Port))
 	}
-	result = result + upstream.Path
+	result += upstream.Path
 
 	result = strings.ReplaceAll(result, "//", "/")
 

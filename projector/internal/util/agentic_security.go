@@ -44,7 +44,7 @@ func MapAgenticExternalIdpToCpApi(externalIdp *agenticv1.ExternalIdentityProvide
 		return nil
 	}
 	tokenRequest := string(externalIdp.TokenRequest)
-	grantType := externalIdp.GrantType
+	grantType := string(externalIdp.GrantType)
 	return &model.ExternalIdentityProvider{
 		TokenEndpoint: externalIdp.TokenEndpoint,
 		TokenRequest:  &tokenRequest,

@@ -144,6 +144,12 @@ func (r *Repository) Upsert(ctx context.Context, data *AgenticExposureData) erro
 			data.BasePath, data.AppName, data.TeamName, upsertErr)
 	}
 
+	// The active-by-base-path lookup may now point to a deactivated row or
+	// miss a newly active owner. Invalidate it (never set it: another owner may
+	// hold the active exposure) before any fallible follow-up work.
+	aet, alk := cachekeys.AgenticExposureByBasePath(data.BasePath)
+	r.cache.Del(aet, alk)
+
 	// Explicitly update the catalogue FKs. Like the edge-based subscription FK
 	// in the Approval repository, McpServer/AgentCard are edges, not fields, so
 	// they are not included in UpdateNewValues() ON CONFLICT SET clauses. On
@@ -211,6 +217,10 @@ func (r *Repository) Delete(ctx context.Context, key AgenticExposureKey) error {
 		return fmt.Errorf("delete agentic_exposure %q (app %q, team %q): %w",
 			key.BasePath, key.AppName, key.TeamName, err)
 	}
+	// Invalidate the active lookup even for idempotent deletes: the cached
+	// active ID may belong to a row deleted by an earlier, interrupted call.
+	aet, alk := cachekeys.AgenticExposureByBasePath(key.BasePath)
+	r.cache.Del(aet, alk)
 	if count > 0 {
 		et, lk := cachekeys.AgenticExposure(key.BasePath, key.AppName, key.TeamName)
 		r.cache.Del(et, lk)

@@ -19,6 +19,41 @@ import (
 	. "github.com/onsi/gomega"
 )
 
+var _ = Describe("validateBasicWithScopesPolicy", func() {
+	DescribeTable("requires a password grant for provider username/password with scopes",
+		func(grant agenticv1.GrantType, scopes []string, basic, allowed bool) {
+			idp := &agenticv1.ExternalIdentityProvider{TokenEndpoint: "https://idp.example/token", GrantType: grant}
+			if basic {
+				idp.Basic = &agenticv1.BasicAuthCredentials{Username: "provider-user", Password: "provider-password"}
+			} else {
+				idp.Client = &agenticv1.OAuth2ClientCredentials{ClientId: "provider-client", ClientSecret: "provider-secret"}
+			}
+			exposure := &agenticv1.AgenticExposure{Spec: agenticv1.AgenticExposureSpec{Security: &agenticv1.Security{
+				M2M: &agenticv1.Machine2MachineAuthentication{ExternalIDP: idp, Scopes: scopes},
+			}}}
+			err := validateBasicWithScopesPolicy(exposure)
+			if allowed {
+				Expect(err).NotTo(HaveOccurred())
+				return
+			}
+			Expect(err).To(MatchError(`Provider username/password with scopes requires an external IDP grant type "password"`))
+		},
+		Entry("password grant", agenticv1.GrantTypePassword, []string{"default.read"}, true, true),
+		Entry("client_credentials grant", agenticv1.GrantTypeClientCredentials, []string{"default.read"}, true, false),
+		Entry("authorization_code grant", agenticv1.GrantTypeAuthorizationCode, []string{"default.read"}, true, false),
+		Entry("omitted grant", agenticv1.GrantType(""), []string{"default.read"}, true, false),
+		Entry("without scopes", agenticv1.GrantTypeClientCredentials, nil, true, true),
+		Entry("empty scopes", agenticv1.GrantTypeClientCredentials, []string{}, true, true),
+		Entry("client credentials with scopes", agenticv1.GrantTypeClientCredentials, []string{"default.read"}, false, true),
+	)
+
+	It("accepts exposures without an external IDP", func() {
+		for _, security := range []*agenticv1.Security{nil, {}, {M2M: &agenticv1.Machine2MachineAuthentication{Scopes: []string{"read"}}}} {
+			Expect(validateBasicWithScopesPolicy(&agenticv1.AgenticExposure{Spec: agenticv1.AgenticExposureSpec{Security: security}})).To(Succeed())
+		}
+	})
+})
+
 var _ = Describe("Exposure scope validation", func() {
 	DescribeTable("preserves specification checks except with a token endpoint",
 		func(idp *agenticv1.ExternalIdentityProvider, declared, requested []string, accepted bool, reason string) {

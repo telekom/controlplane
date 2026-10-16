@@ -31,7 +31,7 @@ The main goal of this is to store larger amounts of data (for example Open Api S
 
 The general upload flow is as follows:
 1. Any domain can access the FM to store a file, if configured to do so by calling the upload endpoint.
-2. In the request, the domain will send a reference **fileId**, which is a unique identifier for the file, the file contents, along with some metadata like the file content type and checksum. If the file content type is not specified, it will be assumed by the file manager and a flag will be added in the metadata that the content type was detected.
+2. In the request, the domain will send a reference **fileId**, which is a unique identifier for the file in canonical UUID format (UUIDv7 recommended), the file contents, along with some metadata like the file content type and checksum. If the file content type is not specified, the default content type is used and a flag will be added in the metadata that the content type was auto-detected.
 3. The file manager will then store the file in the configured backend with some metadata like the files content type and checksum.
 4. The file manager will return the fileId to the calling domain.
 5. The domain operators will then use this reference (fileId) in their Custom-Resources (CRs) instead of the actual file's content.
@@ -52,7 +52,7 @@ The general download flow is as follows:
 The general delete flow is as follows:
 1. Any domain can access the FM to delete a file, if configured to do so by calling the delete endpoint.
 2. In the request, the domain will send a reference **fileId**, which is a unique identifier for the file to be deleted.
-3. The file manager will validate the fileId format and convert it to the appropriate path format.
+3. The file manager will validate that the fileId is a canonical UUID, which is also used as the object key.
 4. The file manager will then delete the file from the configured backend.
 5. The file manager will return a success response (HTTP 204 No Content) to the calling domain.
 6. The file manager will return a not found response (HTTP 404 Not found) if the file does not exist. If applicable, the operation can still be treated as successful since the desired state (file not existing) is achieved.

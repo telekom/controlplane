@@ -7,18 +7,17 @@ package feature_test
 import (
 	"context"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	"github.com/telekom/controlplane/gateway/internal/features"
 	"github.com/telekom/controlplane/gateway/internal/features/feature"
 	featmock "github.com/telekom/controlplane/gateway/internal/features/mock"
 	"github.com/telekom/controlplane/gateway/pkg/kong/client/plugin"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("ClaimsFeature", func() {
-
 	var (
 		ctx     context.Context
 		f       *feature.ClaimsFeature
@@ -206,7 +205,7 @@ var _ = Describe("ClaimsFeature", func() {
 			builder.EXPECT().GetRoute().Return(route, true)
 
 			Expect(f.Apply(ctx, builder)).To(Succeed())
-			def := jumperConfig.Claims[plugin.ConsumerId(feature.DefaultProviderKey)]
+			def := jumperConfig.Claims[feature.DefaultProviderKey]
 			Expect(def).To(HaveLen(1))
 			Expect(def[0].Value).To(Equal("failover-aud"))
 		})
@@ -232,7 +231,7 @@ var _ = Describe("ClaimsFeature", func() {
 			builder.EXPECT().GetRoute().Return(route, true)
 
 			Expect(f.Apply(ctx, builder)).To(Succeed())
-			def := jumperConfig.Claims[plugin.ConsumerId(feature.DefaultProviderKey)]
+			def := jumperConfig.Claims[feature.DefaultProviderKey]
 			Expect(def).To(HaveLen(1))
 			Expect(def[0].Value).To(Equal("failover-aud"))
 		})
@@ -265,7 +264,7 @@ var _ = Describe("ClaimsFeature", func() {
 			builder.EXPECT().GetRoute().Return(route, true)
 
 			Expect(f.Apply(ctx, builder)).To(Succeed())
-			def := jumperConfig.Claims[plugin.ConsumerId(feature.DefaultProviderKey)]
+			def := jumperConfig.Claims[feature.DefaultProviderKey]
 			Expect(def).To(HaveLen(1))
 			Expect(def[0].Value).To(Equal("spec-aud"))
 		})
@@ -292,7 +291,7 @@ var _ = Describe("ClaimsFeature", func() {
 
 			Expect(f.Apply(ctx, builder)).To(Succeed())
 
-			def := jumperConfig.Claims[plugin.ConsumerId(feature.DefaultProviderKey)]
+			def := jumperConfig.Claims[feature.DefaultProviderKey]
 			Expect(def).To(HaveLen(1))
 			Expect(def[0].Key).To(Equal("aud"))
 			Expect(def[0].Value).To(Equal("eni--foo--api-provider-rover"))
@@ -319,7 +318,7 @@ var _ = Describe("ClaimsFeature", func() {
 
 			Expect(f.Apply(ctx, builder)).To(Succeed())
 
-			def := jumperConfig.Claims[plugin.ConsumerId(feature.DefaultProviderKey)]
+			def := jumperConfig.Claims[feature.DefaultProviderKey]
 			Expect(def).To(HaveLen(1))
 			Expect(def[0].Value).To(BeEmpty())
 			Expect(def[0].ValueFrom).To(Equal("ConsumerClientId"))
@@ -338,7 +337,7 @@ var _ = Describe("ClaimsFeature", func() {
 
 		It("applies claims even when OAuth is populated by scopes (platform-managed token)", func() {
 			jumperConfig := plugin.NewJumperConfig()
-			jumperConfig.OAuth[plugin.ConsumerId(feature.DefaultProviderKey)] = plugin.OauthCredentials{Scopes: "scope-a"}
+			jumperConfig.OAuth[feature.DefaultProviderKey] = plugin.OauthCredentials{Scopes: "scope-a"}
 			route := &gatewayv1.Route{
 				Spec: gatewayv1.RouteSpec{
 					Type: gatewayv1.RouteTypePrimary,
@@ -354,7 +353,7 @@ var _ = Describe("ClaimsFeature", func() {
 			builder.EXPECT().GetRoute().Return(route, true)
 
 			Expect(f.Apply(ctx, builder)).To(Succeed())
-			Expect(jumperConfig.Claims).To(HaveKey(plugin.ConsumerId(feature.DefaultProviderKey)))
+			Expect(jumperConfig.Claims).To(HaveKey(feature.DefaultProviderKey))
 		})
 
 		It("returns ErrNoRoute when no route in builder", func() {

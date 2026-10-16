@@ -72,11 +72,15 @@ func (r *Repository) Upsert(ctx context.Context, data *EventSubscriptionData) er
 	// Target exposure is optional — subscription may exist before the target
 	// event is exposed.
 	var targetExposureID *int
+	targetMissing := false
 	if id, findErr := r.deps.FindEventExposureByEventType(ctx, data.TargetEventType); findErr != nil {
 		if !errors.Is(findErr, infrastructure.ErrEntityNotFound) {
 			return fmt.Errorf("find target event_exposure for subscription (eventType %q): %w",
 				data.TargetEventType, findErr)
 		}
+		// Not found — persist with NULL target, then report the missing
+		// dependency after all writes so the reconciler retries.
+		targetMissing = true
 	} else {
 		targetExposureID = &id
 	}
@@ -120,6 +124,9 @@ func (r *Repository) Upsert(ctx context.Context, data *EventSubscriptionData) er
 
 	et, lk := cachekeys.EventSubscriptionMeta(data.Meta.Namespace, data.Meta.Name)
 	r.cache.Set(et, lk, subscriptionID)
+	if targetMissing {
+		return runtime.WrapDependencyMissing("event_exposure", data.TargetEventType)
+	}
 	return nil
 }
 

@@ -311,6 +311,10 @@ func newTestHandlingContext(testCtx context.Context, zone *adminv1.Zone) *Handli
 	return hc
 }
 
+// testInternalIssuerHost is the host the identity operator resolves for the
+// internal (rover) realm; it deliberately differs from the public issuer host.
+const testInternalIssuerHost = "irix.example.com"
+
 // markSubResourcesReady stands in for the identity operator: it marks the
 // resources the pipeline barrier waits for as provisioned.
 func markSubResourcesReady(zone *adminv1.Zone) {
@@ -322,11 +326,16 @@ func markSubResourcesReady(zone *adminv1.Zone) {
 	idp.SetCondition(condition.NewReadyCondition(condition.ReasonProvisioned, "IdentityProvider is ready"))
 	Expect(k8sClient.Status().Update(ctx, idp)).To(Succeed())
 
-	for _, ref := range []*types.ObjectRef{zone.Status.IdentityRealm, zone.Status.InternalIdentityRealm} {
+	issuerHosts := map[*types.ObjectRef]string{
+		zone.Status.IdentityRealm:         "test-iris.de",
+		zone.Status.InternalIdentityRealm: testInternalIssuerHost,
+	}
+	for ref, host := range issuerHosts {
 		Expect(ref).NotTo(BeNil())
 		realm := &identityv1.Realm{}
 		Expect(k8sClient.Get(ctx, ref.K8s(), realm)).To(Succeed())
 		realm.SetCondition(condition.NewReadyCondition(condition.ReasonProvisioned, "Realm is ready"))
+		realm.Status.IssuerUrl = "https://" + host + "/auth/realms/" + realm.Name
 		Expect(k8sClient.Status().Update(ctx, realm)).To(Succeed())
 	}
 }

@@ -5,13 +5,15 @@
 package controller
 
 import (
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-	"github.com/telekom/controlplane/common/pkg/condition"
-	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/event"
+
+	"github.com/telekom/controlplane/common/pkg/condition"
+	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 func readyRoute(ready bool, consumers ...string) *gatewayv1.Route {

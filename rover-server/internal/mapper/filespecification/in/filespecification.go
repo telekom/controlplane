@@ -15,8 +15,9 @@ import (
 )
 
 // MapRequest maps an API FileSpecification request to the CRD representation.
-// It sets the TypeMeta, name (derived from the file type), namespace, and labels.
-func MapRequest(req api.FileSpecification, id mapper.ResourceIdInfo) (*roverv1.FileSpecification, error) {
+// It sets the TypeMeta, name (derived from the file type), namespace, labels,
+// and the file-manager reference for the optional specification payload.
+func MapRequest(req api.FileSpecification, specOrFileId string, id mapper.ResourceIdInfo) (*roverv1.FileSpecification, error) {
 	fileSpec := &roverv1.FileSpecification{}
 
 	fileSpec.TypeMeta = metav1.TypeMeta{
@@ -27,6 +28,7 @@ func MapRequest(req api.FileSpecification, id mapper.ResourceIdInfo) (*roverv1.F
 	fileSpec.Spec.Type = req.Type
 	fileSpec.Spec.Version = req.Version
 	fileSpec.Spec.Description = req.Description
+	fileSpec.Spec.Specification = specOrFileId
 
 	// Derive the resource name from the file type (dots → hyphens)
 	fileSpec.Name = roverv1.MakeFileTypeName(req.Type)
