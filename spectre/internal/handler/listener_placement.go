@@ -31,6 +31,16 @@ type providerBindingError struct{ err error }
 func (e *providerBindingError) Error() string { return e.err.Error() }
 func (e *providerBindingError) Unwrap() error { return e.err }
 
+// basePathMismatchError reports that a Listener's apiBasePath resolves to the
+// provider's Route but is not spelled like the exposure's basePath. It stops
+// candidate evaluation and drains applied capture.
+type basePathMismatchError struct{ msg string }
+
+func (e *basePathMismatchError) Error() string { return e.msg }
+
+// IsBlocked implements ctrlerrors.BlockedError.
+func (e *basePathMismatchError) IsBlocked() bool { return true }
+
 // onConsumerPath reports whether a provider-bound Route in zone carries C's
 // traffic to P. In C's zone, C calls the Route the exposure assigned to that
 // zone (real or proxy). Outside C's zone only the exposure's primary route
@@ -93,6 +103,16 @@ func (h *ListenerHandler) evaluateCaptureCandidate(
 			return nil, nil, "", &providerBindingError{err: err}
 		}
 		return nil, nil, "", errors.Wrap(err, "failed to verify provider binding")
+	}
+	// The Route is found by its normalized name, so a path that differs only in
+	// case, separators or leading/trailing slashes resolves to it. The
+	// RouteListener issue and the bridge filter carry the Listener's path, and
+	// the gateway accepts one listener entry per consumer on a Route, so capture
+	// is only provisioned for the exposure's exact path.
+	if apiBasePath != binding.ApiBasePath {
+		return nil, nil, "", &basePathMismatchError{msg: fmt.Sprintf(
+			"Listener apiBasePath %q does not match the exposed basePath %q. Use the exact basePath of the API",
+			apiBasePath, binding.ApiBasePath)}
 	}
 	if !onConsumerPath(zone, consumerZone, binding) {
 		return nil, nil, fmt.Sprintf("Route %q is referenced by ApiExposure %q for another subscriber zone, not on the consumer→provider path",
@@ -205,14 +225,16 @@ func warnEnvironmentAliases(ctx context.Context, obj runtime.Object, aliases ...
 // handlePlacementError stops capture that can no longer be placed and returns
 // the error to report. When no candidate supports capture, the capture zone
 // cannot deliver to A, a zone publishes events with another environment than
-// its EventStore subscribes with, or the provider binding is definitively
-// invalidated, capture is drained (checkpoint first), including untracked
-// children of a partial provisioning. Other errors, including read errors,
-// leave capture untouched: a transient failure must not stop or move it.
+// its EventStore subscribes with, the apiBasePath is not spelled like the
+// exposure's, or the provider binding is definitively invalidated, capture is
+// drained (checkpoint first), including untracked children of a partial
+// provisioning. Other errors, including read errors, leave capture untouched:
+// a transient failure must not stop or move it.
 func (h *ListenerHandler) handlePlacementError(ctx context.Context, listener *spectrev1.Listener, err error) error {
 	var noCandidate *util.NoCaptureCandidateError
 	var bindingErr *providerBindingError
 	var envMismatch *util.EnvironmentMismatchError
+	var pathMismatch *basePathMismatchError
 	reason, notStarted := "", err
 	switch {
 	case errors.As(err, &noCandidate) && noCandidate.DeliveryPath != nil:
@@ -221,6 +243,8 @@ func (h *ListenerHandler) handlePlacementError(ctx context.Context, listener *sp
 		reason = "no supported capture placement"
 	case errors.As(err, &envMismatch):
 		reason = "event environment mismatch"
+	case errors.As(err, &pathMismatch):
+		reason = "apiBasePath mismatch"
 	case errors.As(err, &bindingErr):
 		reason, notStarted = "provider binding invalidated", errors.Wrap(err, "provider binding check failed")
 	default:

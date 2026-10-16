@@ -34,6 +34,9 @@ type ProviderBinding struct {
 	ApiExposureNamespace string
 	ApiExposureUID       string
 	ApplicationName      string
+	// ApiBasePath is the exposure's spec.apiBasePath, the case-sensitive path
+	// the gateway serves.
+	ApiBasePath string
 
 	// IsPrimaryRoute reports whether the Route is the exposure's status.route
 	// (the real route in the exposure zone) rather than one of its proxy routes.
@@ -147,6 +150,7 @@ func (h *ListenerHandler) verifyProviderBinding(
 		ApiExposureNamespace: exposure.Namespace,
 		ApiExposureUID:       string(exposure.UID),
 		ApplicationName:      appName,
+		ApiBasePath:          exposure.Spec.ApiBasePath,
 		IsPrimaryRoute:       isPrimaryRoute(route, exposure),
 		ProxyRoutes:          slices.Clone(exposure.Status.ProxyRoutes),
 	}, nil

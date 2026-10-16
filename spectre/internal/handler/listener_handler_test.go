@@ -619,6 +619,7 @@ var _ = Describe("ListenerHandler", func() {
 									cconfig.BuildLabelKey("application"): providerAppName,
 								},
 							},
+							Spec: apiv1.ApiExposureSpec{ApiBasePath: testApiBasePath},
 							Status: apiv1.ApiExposureStatus{
 								Active: true,
 								Route:  &ctypes.ObjectRef{Name: routeName, Namespace: listenerZoneStatus},
