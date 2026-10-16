@@ -146,10 +146,6 @@ func (in *ListenerDrainStatus) DeepCopyInto(out *ListenerDrainStatus) {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
 	}
-	if in.SourcePublisher != nil {
-		in, out := &in.SourcePublisher, &out.SourcePublisher
-		*out = (*in).DeepCopy()
-	}
 	if in.SourceEventStore != nil {
 		in, out := &in.SourceEventStore, &out.SourceEventStore
 		*out = (*in).DeepCopy()

@@ -27,7 +27,6 @@ import (
 const (
 	DrainPhaseStopping            = "Stopping"
 	DrainPhaseDrainingSubscribers = "DrainingSubscribers"
-	DrainPhaseCleaningPublisher   = "CleaningPublisher"
 	DrainPhaseComplete            = "Complete"
 )
 
@@ -164,43 +163,13 @@ func recordDrain(
 	slices.SortFunc(oldSubs, compareRefs)
 	drain.OldSubscribers = oldSubs
 
-	// Snapshot source publisher and event store from applied placement. Without
-	// one (partial provisioning) the owned bridges name their Publisher.
-	if ap := listener.Status.AppliedPlacement; ap != nil {
-		if ap.Publisher != nil {
-			drain.SourcePublisher = ap.Publisher.DeepCopy()
-		}
-		if ap.CaptureEventStore != nil {
-			drain.SourceEventStore = ap.CaptureEventStore.DeepCopy()
-		}
-	}
-	if drain.SourcePublisher == nil {
-		drain.SourcePublisher = agreedPublisher(owned.subscribers)
+	// Snapshot the source event store from applied placement.
+	if ap := listener.Status.AppliedPlacement; ap != nil && ap.CaptureEventStore != nil {
+		drain.SourceEventStore = ap.CaptureEventStore.DeepCopy()
 	}
 
 	listener.Status.Draining = drain
 	log.FromContext(ctx).Info("Started drain", "reason", reason, "oldFingerprint", oldFingerprint)
-}
-
-// agreedPublisher returns the Publisher every Subscriber references, or nil
-// when there is none or they disagree. CleaningPublisher still covers every old
-// Subscriber namespace.
-func agreedPublisher(subs []pubsubv1.Subscriber) *ctypes.ObjectRef {
-	var ref *ctypes.ObjectRef
-	for i := range subs {
-		p := &subs[i].Spec.Publisher
-		if p.Name == "" || p.Namespace == "" {
-			return nil
-		}
-		if ref != nil && (ref.Namespace != p.Namespace || ref.Name != p.Name) {
-			return nil
-		}
-		ref = p
-	}
-	if ref == nil {
-		return nil
-	}
-	return ref.DeepCopy()
 }
 
 // continueDrain advances the drain state machine. It performs deletions with
@@ -243,24 +212,9 @@ func (h *ListenerHandler) continueDrain(
 		if !allGone {
 			return false, nil // Requeue to verify finalization
 		}
-		// Clear status refs that matched drained subscribers.
+		// Clear status refs that matched drained subscribers. The shared
+		// generic Publisher is kept.
 		listener.Status.EventSubscriptions = nil
-		drain.Phase = DrainPhaseCleaningPublisher
-		logger.Info("Drain: all old Subscribers gone, advancing to CleaningPublisher")
-		return false, nil // Persist phase advancement
-
-	case DrainPhaseCleaningPublisher:
-		// Clean up the generic Publisher in every old source namespace once no
-		// other Subscriber references it. Advance only when every one succeeded.
-		var errs error
-		for _, ns := range drainPublisherNamespaces(drain) {
-			if err := h.cleanupGenericPublisherIfOrphaned(ctx, ns); err != nil {
-				errs = stderrors.Join(errs, errors.Wrapf(err, "failed to cleanup Publisher in namespace %q during drain", ns))
-			}
-		}
-		if errs != nil {
-			return false, errs
-		}
 		logger.Info("Drain complete")
 		listener.Status.Draining = nil
 		return true, nil
@@ -301,22 +255,6 @@ func compareRefs(a, b ctypes.ObjectRef) int {
 		cmp.Compare(a.Name, b.Name),
 		cmp.Compare(a.UID, b.UID),
 	)
-}
-
-// drainPublisherNamespaces returns the sorted namespaces that may hold the old
-// generation's generic Publisher: the recorded source Publisher's and every old
-// bridge Subscriber's, since bridges are co-located with their Publisher.
-func drainPublisherNamespaces(drain *spectrev1.ListenerDrainStatus) []string {
-	var nss []string
-	if drain.SourcePublisher != nil {
-		nss = append(nss, drain.SourcePublisher.Namespace)
-	}
-	for i := range drain.OldSubscribers {
-		nss = append(nss, drain.OldSubscribers[i].Namespace)
-	}
-	nss = slices.DeleteFunc(nss, func(ns string) bool { return ns == "" })
-	slices.Sort(nss)
-	return slices.Compact(nss)
 }
 
 // deleteRecorded requests deletion of each recorded instance that still exists

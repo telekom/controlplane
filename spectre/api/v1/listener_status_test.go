@@ -56,7 +56,6 @@ func TestListenerDrainStatusRoundTrip(t *testing.T) {
 			*sampleRef("old-rl"), *sampleRef("orphan-rl"),
 		},
 		OldSubscribers:   []ctypes.ObjectRef{*sampleRef("sub1"), *sampleRef("sub2")},
-		SourcePublisher:  sampleRef("src-pub"),
 		SourceEventStore: sampleRef("src-es"),
 		SubscriptionIDs:  []string{"id-1", "id-2"},
 	}
@@ -148,7 +147,7 @@ func TestOptionalFieldsOmittedFromJSON(t *testing.T) {
 }
 
 func TestPhaseEnumValuesSerialization(t *testing.T) {
-	drainPhases := []string{"Stopping", "DrainingSubscribers", "CleaningPublisher", "Complete"}
+	drainPhases := []string{"Stopping", "DrainingSubscribers", "Complete"}
 	for _, phase := range drainPhases {
 		d := ListenerDrainStatus{Phase: phase}
 		data, err := json.Marshal(d)

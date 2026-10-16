@@ -34,9 +34,9 @@ type AppliedListenerPlacementStatus struct {
 
 // ListenerDrainStatus tracks the progress of tearing down an old placement.
 // The controller walks through the phases in order: stop new traffic, drain
-// subscribers, clean up the publisher, then mark complete.
+// subscribers, then mark complete.
 type ListenerDrainStatus struct {
-	// +kubebuilder:validation:Enum=Stopping;DrainingSubscribers;CleaningPublisher;Complete
+	// +kubebuilder:validation:Enum=Stopping;DrainingSubscribers;Complete
 	Phase string `json:"phase"`
 	// +optional
 	Reason string `json:"reason,omitempty"`
@@ -48,8 +48,6 @@ type ListenerDrainStatus struct {
 	OldRouteListeners []ctypes.ObjectRef `json:"oldRouteListeners,omitempty"`
 	// +optional
 	OldSubscribers []ctypes.ObjectRef `json:"oldSubscribers,omitempty"`
-	// +optional
-	SourcePublisher *ctypes.ObjectRef `json:"sourcePublisher,omitempty"`
 	// +optional
 	SourceEventStore *ctypes.ObjectRef `json:"sourceEventStore,omitempty"`
 	// +optional

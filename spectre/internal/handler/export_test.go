@@ -47,7 +47,6 @@ func (h *ListenerHandler) ContinueDrain(
 const (
 	ExportDrainPhaseStopping            = DrainPhaseStopping
 	ExportDrainPhaseDrainingSubscribers = DrainPhaseDrainingSubscribers
-	ExportDrainPhaseCleaningPublisher   = DrainPhaseCleaningPublisher
 	ExportDrainPhaseComplete            = DrainPhaseComplete
 )
 
