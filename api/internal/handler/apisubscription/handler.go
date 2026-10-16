@@ -487,7 +487,7 @@ func validateBasicWithScopesPolicy(obj *apiapi.ApiSubscription, exposure *apiapi
 	}
 
 	if exposure == nil || !exposure.HasExternalIdp() {
-		return errors.New("Consumer username/password combined with client credentials, scopes or a grant type requires an external IDP from the provider")
+		return ctrlerrors.BlockedErrorf("Consumer username/password combined with client credentials, scopes or a grant type requires an external IDP from the provider")
 	}
 	return nil
 }
