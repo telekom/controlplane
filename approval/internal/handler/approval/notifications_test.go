@@ -8,8 +8,12 @@ import (
 	"context"
 	"testing"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/tools/record"
+
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
 	ctypes "github.com/telekom/controlplane/common/pkg/types"
+	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -19,6 +23,26 @@ func TestApprovalHandler(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "Approval Handler Suite")
 }
+
+var _ = Describe("CreateOrUpdate", func() {
+	It("names the Approval instead of dumping it when a notification fails", func() {
+		approval := &approvalv1.Approval{
+			ObjectMeta: metav1.ObjectMeta{Name: "appr", Namespace: "ns", ManagedFields: []metav1.ManagedFieldsEntry{{Manager: "dump-marker"}}},
+			Spec: approvalv1.ApprovalSpec{
+				State:     approvalv1.ApprovalStateSuspended,
+				Requester: approvalv1.Requester{TeamName: "no-group", ApplicationRef: &ctypes.TypedObjectRef{}},
+				Decider:   approvalv1.Decider{TeamName: "no-group", ApplicationRef: &ctypes.TypedObjectRef{}},
+			},
+			Status: approvalv1.ApprovalStatus{LastState: approvalv1.ApprovalStateGranted},
+		}
+		ctx := contextutil.WithEnv(contextutil.WithRecorder(context.Background(), record.NewFakeRecorder(10)), "test")
+
+		err := NewHandler(nil).CreateOrUpdate(ctx, approval)
+
+		Expect(err).To(MatchError(ContainSubstring(`approval "appr" in namespace "ns"`)))
+		Expect(err.Error()).ToNot(ContainSubstring("dump-marker"))
+	})
+})
 
 var _ = Describe("handleNotifications", func() {
 	refA := ctypes.ObjectRef{Namespace: "ns", Name: "a"}

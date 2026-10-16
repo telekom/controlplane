@@ -89,7 +89,7 @@ The following condition types are supported ([pkg/condition/condition.go](pkg/co
 
 The common module includes a robust error handling system through the `ctrlerrors` package, which provides specialized error types for different reconciliation scenarios:
 
-- **BlockedError**: Indicates that a resource is blocked from further processing until some external condition is resolved. When a controller encounters a `BlockedError`, it updates the resource's status with a "Blocked" condition and doesn't requeue the resource for reconciliation.
+- **BlockedError**: Indicates that a resource is blocked from further processing until some external condition is resolved. When a controller encounters a `BlockedError`, it sets the Processing and Ready conditions to `False` with reason `Blocked` and requeues the resource at the normal interval with jitter.
 
 - **RetryableError**: Signals a temporary issue that should be retried. When encountered, the controller will requeue the resource with a jittered backoff delay.
 

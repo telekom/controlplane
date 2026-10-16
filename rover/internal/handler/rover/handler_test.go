@@ -13,6 +13,7 @@ import (
 
 	"github.com/telekom/controlplane/common-server/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
+	"github.com/telekom/controlplane/common/pkg/controller"
 	"github.com/telekom/controlplane/common/pkg/test/testutil"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
@@ -67,8 +68,9 @@ var _ = Describe("Rover Handler", func() {
 		})
 
 		It("should handle errors from Secret Manager", func() {
-			By("Create Rover Object")
+			By("Create Rover Object with a sub-resource still being processed")
 			roverObj := createRoverObject()
+			roverObj.SetCondition(condition.NewNotReadyCondition(condition.ReasonSubResourceNotReady, "At least one sub-resource is being processed"))
 
 			By("Setting up the mock expectations")
 			httpErr := client.BlockedErrorf("bad request error (400): some error")
@@ -80,8 +82,32 @@ var _ = Describe("Rover Handler", func() {
 			Expect(err).To(HaveOccurred())
 			rootCause := errors.Cause(err)
 			Expect(rootCause).To(Equal(httpErr))
-
+			Expect(err.Error()).To(HavePrefix("failed to delete application from secret manager: "))
 			testutil.ExpectConditionToBeFalse(NewGomegaWithT(GinkgoT()), meta.FindStatusCondition(roverObj.GetConditions(), condition.ConditionTypeReady), condition.ReasonError)
+
+			By("Applying the framework error handling")
+			controller.EnsureNotReadyOnError(ctx, nil, roverObj, err)
+			testutil.ExpectConditionToBeFalse(NewGomegaWithT(GinkgoT()), meta.FindStatusCondition(roverObj.GetConditions(), condition.ConditionTypeReady), condition.ReasonBlocked)
+		})
+
+		It("should report a non-blocked Secret Manager error as Error", func() {
+			By("Create Rover Object with a sub-resource still being processed")
+			roverObj := createRoverObject()
+			roverObj.SetCondition(condition.NewNotReadyCondition(condition.ReasonSubResourceNotReady, "At least one sub-resource is being processed"))
+
+			By("Setting up the mock expectations")
+			secretManagerMock.EXPECT().DeleteApplication(ctx, testEnvironment, teamId, roverObj.GetName()).
+				Return(errors.New("connection refused"))
+
+			By("Call Delete on Rover Handler")
+			err := roverHandler.Delete(ctx, roverObj)
+			Expect(err).To(HaveOccurred())
+
+			By("Applying the framework error handling")
+			controller.EnsureNotReadyOnError(ctx, nil, roverObj, err)
+			ready := meta.FindStatusCondition(roverObj.GetConditions(), condition.ConditionTypeReady)
+			testutil.ExpectConditionToBeFalse(NewGomegaWithT(GinkgoT()), ready, condition.ReasonError)
+			Expect(ready.Message).To(Equal("Failed to delete application from secret manager"))
 		})
 	})
 })
