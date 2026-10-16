@@ -17,6 +17,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	cclient "github.com/telekom/controlplane/common/pkg/client"
+	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	ctypes "github.com/telekom/controlplane/common/pkg/types"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	pubsubv1 "github.com/telekom/controlplane/pubsub/api/v1"
@@ -188,7 +189,7 @@ func (h *ListenerHandler) continueDrain(
 	case DrainPhaseStopping:
 		// Delete every old RouteListener, then verify all are gone before any
 		// Subscriber is touched.
-		allGone, err := h.deleteRecorded(ctx, drain.OldRouteListeners,
+		allGone, err := h.deleteRecorded(ctx, listener, drain.OldRouteListeners,
 			func() client.Object { return &gatewayv1.RouteListener{} })
 		if err != nil {
 			return false, errors.Wrap(err, "failed to delete old RouteListeners")
@@ -204,7 +205,7 @@ func (h *ListenerHandler) continueDrain(
 
 	case DrainPhaseDrainingSubscribers:
 		// Delete each old Subscriber, then verify all are gone.
-		allGone, err := h.deleteRecorded(ctx, drain.OldSubscribers,
+		allGone, err := h.deleteRecorded(ctx, listener, drain.OldSubscribers,
 			func() client.Object { return &pubsubv1.Subscriber{} })
 		if err != nil {
 			return false, errors.Wrap(err, "failed to delete old Subscribers")
@@ -259,10 +260,12 @@ func compareRefs(a, b ctypes.ObjectRef) int {
 
 // deleteRecorded requests deletion of each recorded instance that still exists
 // and reports whether all of them are gone. Each check reads live (getLive):
-// NotFound or a different live UID counts as gone, and the same-name
-// replacement is never deleted. Every ref is attempted; read and delete errors
-// are joined and returned.
-func (h *ListenerHandler) deleteRecorded(ctx context.Context, refs []ctypes.ObjectRef, newObj func() client.Object) (bool, error) {
+// NotFound, a different live UID, or an owner label naming another Listener
+// counts as gone, so neither a same-name replacement nor a child another
+// Listener has taken over is deleted. A child without an owner label is still
+// drained. Every ref is attempted; read and delete errors are joined and
+// returned.
+func (h *ListenerHandler) deleteRecorded(ctx context.Context, listener *spectrev1.Listener, refs []ctypes.ObjectRef, newObj func() client.Object) (bool, error) {
 	c := cclient.ClientFromContextOrDie(ctx)
 	logger := log.FromContext(ctx)
 
@@ -282,6 +285,11 @@ func (h *ListenerHandler) deleteRecorded(ctx context.Context, refs []ctypes.Obje
 		// and someone recreated the name.
 		if ref.UID != "" && obj.GetUID() != ref.UID {
 			logger.Info("Recorded drain instance replaced, treating as gone", "ref", ref.String())
+			continue
+		}
+		// A Listener with the same child names (a rename) took it over in place.
+		if owner, ok := obj.GetLabels()[cconfig.OwnerUidLabelKey]; ok && owner != string(listener.UID) {
+			logger.Info("Recorded drain instance taken over by another Listener, treating as gone", "ref", ref.String())
 			continue
 		}
 		allGone = false

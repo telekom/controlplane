@@ -1908,6 +1908,71 @@ var _ = Describe("Listener rename (controller)", func() {
 		Expect(h.raw.Get(context.Background(), plPublisherKey("c"), pub)).To(Succeed())
 		Expect(pub.DeletionTimestamp).To(BeNil())
 	})
+
+	It("R2: a renamed successor that takes over the same-named children while the old Listener drains keeps them, and stays Ready", func() {
+		ctx := context.Background()
+		f := newPlFixtures("c")
+		h := newPlHarness(f)
+		old, _ := h.provision()
+
+		const renamed = "pl-listener-renamed"
+		next := f.listener.DeepCopy()
+		next.ObjectMeta = metav1.ObjectMeta{
+			Name: renamed, Namespace: plTeamNs, UID: "pl-listener-renamed-uid",
+			Labels: map[string]string{cconfig.EnvironmentLabelKey: plEnv},
+		}
+		Expect(h.raw.Create(ctx, next)).To(Succeed())
+		Expect(h.raw.Delete(ctx, old)).To(Succeed())
+		for range 2 {
+			_, err := h.reconcileNamed(renamed)
+			Expect(err).ToNot(HaveOccurred())
+		}
+
+		// The old Listener records its drain before the successor is granted.
+		_, err := h.reconcile()
+		Expect(err).ToNot(HaveOccurred())
+		d := h.listener().Status.Draining
+		Expect(d).ToNot(BeNil())
+		Expect(d.OldRouteListeners).To(ConsistOf(*old.Status.RouteListener))
+		Expect(d.OldSubscribers).To(ConsistOf(old.Status.EventSubscriptions))
+
+		// The successor provisions and takes the same-named children over in place.
+		h.grantNamed(renamed)
+		_, err = h.reconcileNamed(renamed)
+		Expect(err).ToNot(HaveOccurred())
+		l := h.listenerNamed(renamed)
+		Expect(l.Status.AppliedPlacement).ToNot(BeNil(), "not provisioned: %v", l.Status.Conditions)
+		Expect(l.Status.RouteListener.UID).To(Equal(old.Status.RouteListener.UID))
+		Expect(h.ownedSubscribers(l)).To(HaveLen(2))
+
+		// The old Listener finishes its drain without deleting what the successor owns.
+		for pass := 0; ; pass++ {
+			Expect(pass).To(BeNumerically("<", 10), "old Listener was not released")
+			var calls []plCall
+			calls, err = h.reconcile()
+			Expect(err).ToNot(HaveOccurred())
+			Expect(plCount(calls, "Delete", "RouteListener", "")).To(BeZero())
+			Expect(plCount(calls, "Delete", "Subscriber", "")).To(BeZero())
+			err = h.raw.Get(ctx, client.ObjectKeyFromObject(old), &spectrev1.Listener{})
+			if apierrors.IsNotFound(err) {
+				break
+			}
+			Expect(err).ToNot(HaveOccurred())
+		}
+
+		Expect(h.exists(l.Status.RouteListener, &gatewayv1.RouteListener{})).To(BeTrue())
+		for i := range l.Status.EventSubscriptions {
+			Expect(h.exists(&l.Status.EventSubscriptions[i], &pubsubv1.Subscriber{})).To(BeTrue())
+		}
+		for range 2 {
+			h.simulateChildControllers()
+			_, err = h.reconcileNamed(renamed)
+			Expect(err).ToNot(HaveOccurred())
+		}
+		ready := meta.FindStatusCondition(h.listenerNamed(renamed).Status.Conditions, condition.ConditionTypeReady)
+		Expect(ready).ToNot(BeNil())
+		Expect(ready.Status).To(Equal(metav1.ConditionTrue), ready.Message)
+	})
 })
 
 // graceHandler records the error the Listener handler returns to the common
