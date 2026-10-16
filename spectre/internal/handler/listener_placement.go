@@ -255,10 +255,10 @@ func (h *ListenerHandler) handlePlacementError(ctx context.Context, listener *sp
 	if drainErr != nil {
 		return errors.Wrapf(drainErr, "failed to start drain (%s)", reason)
 	}
+	listener.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet, err.Error()))
+	listener.SetCondition(condition.NewBlockedCondition(err.Error()))
 	if !started {
 		return notStarted
 	}
-	listener.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet, err.Error()))
-	listener.SetCondition(condition.NewBlockedCondition(err.Error()))
 	return nil // persist drain checkpoint
 }
