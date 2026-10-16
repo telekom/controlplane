@@ -6105,7 +6105,7 @@ paths:
       requestBody:
         $ref: '#/components/requestBodies/target-request'
       responses:
-        "200":
+        "201":
           content:
             application/json:
               examples:

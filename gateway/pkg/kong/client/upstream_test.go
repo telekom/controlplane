@@ -8,6 +8,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"net/http/httptest"
 
 	"github.com/stretchr/testify/mock"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -207,7 +208,7 @@ var _ = Describe("CreateOrReplaceUpstream", func() {
 			targetsResponse([]kong.Target{latest, old}, nil), nil,
 		)
 		api.EXPECT().CreateTargetForUpstreamWithResponse(mock.Anything, "test-route", mock.Anything).Return(
-			&kong.CreateTargetForUpstreamResponse{HTTPResponse: &http.Response{StatusCode: http.StatusCreated}, JSON200: &kong.Target{Id: &targetID}}, nil,
+			&kong.CreateTargetForUpstreamResponse{HTTPResponse: &http.Response{StatusCode: http.StatusCreated}, JSON201: &kong.Target{Id: &targetID}}, nil,
 		)
 
 		Expect(client.CreateOrReplaceUpstream(ctx, route, &upstream, &target)).To(Succeed())
@@ -219,7 +220,7 @@ var _ = Describe("CreateOrReplaceUpstream", func() {
 		other.Target = ptr("other:8080")
 		api.EXPECT().ListTargetsForUpstreamWithResponse(mock.Anything, "test-route", mock.Anything).Return(targetsResponse([]kong.Target{other}, nil), nil)
 		api.EXPECT().CreateTargetForUpstreamWithResponse(mock.Anything, "test-route", mock.Anything).Return(
-			&kong.CreateTargetForUpstreamResponse{HTTPResponse: &http.Response{StatusCode: http.StatusCreated}, JSON200: &kong.Target{Id: &targetID}}, nil,
+			&kong.CreateTargetForUpstreamResponse{HTTPResponse: &http.Response{StatusCode: http.StatusCreated}, JSON201: &kong.Target{Id: &targetID}}, nil,
 		)
 
 		Expect(client.CreateOrReplaceUpstream(ctx, route, &upstream, &target)).To(Succeed())
@@ -330,9 +331,34 @@ var _ = Describe("CreateOrReplaceUpstream", func() {
 		expectMatchingUpstream(matchingUpstream())
 		api.EXPECT().ListTargetsForUpstreamWithResponse(mock.Anything, "test-route", mock.Anything).Return(targetsResponse(nil, nil), nil)
 		api.EXPECT().CreateTargetForUpstreamWithResponse(mock.Anything, "test-route", mock.Anything).Return(
-			&kong.CreateTargetForUpstreamResponse{HTTPResponse: &http.Response{StatusCode: http.StatusCreated}, JSON200: &kong.Target{}}, nil,
+			&kong.CreateTargetForUpstreamResponse{HTTPResponse: &http.Response{StatusCode: http.StatusCreated}, JSON201: &kong.Target{}}, nil,
 		)
 		Expect(client.CreateOrReplaceUpstream(ctx, route, &upstream, &target)).To(MatchError(ContainSubstring("target response ID is missing")))
+	})
+
+	It("reads the body of a target Kong created with 201", func() {
+		kongAdmin := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			switch r.Method + " " + r.URL.Path {
+			case "GET /upstreams/test-route":
+				w.WriteHeader(http.StatusNotFound)
+			case "PUT /upstreams/test-route":
+				_, _ = w.Write([]byte(`{"id":"upstream-id","name":"test-route"}`))
+			case "GET /upstreams/test-route/targets":
+				_, _ = w.Write([]byte(`{"data":[]}`))
+			case "POST /upstreams/test-route/targets":
+				w.WriteHeader(http.StatusCreated)
+				_, _ = w.Write([]byte(`{"id":"target-id","target":"localhost:8080","weight":100}`))
+			default:
+				w.WriteHeader(http.StatusTeapot)
+			}
+		}))
+		DeferCleanup(kongAdmin.Close)
+		adminApi, err := kong.NewClientWithResponses(kongAdmin.URL)
+		Expect(err).NotTo(HaveOccurred())
+
+		Expect(clientpkg.NewKongClient(adminApi).CreateOrReplaceUpstream(ctx, route, &upstream, &target)).To(Succeed())
+		Expect(route.GetTargetsId()).To(Equal("target-id"))
 	})
 
 	DescribeTable("does not suppress a changed upstream field",
@@ -361,7 +387,7 @@ var _ = Describe("CreateOrReplaceUpstream", func() {
 			targetsResponse([]kong.Target{retagged}, nil), nil,
 		)
 		api.EXPECT().CreateTargetForUpstreamWithResponse(mock.Anything, "test-route", mock.Anything).Return(
-			&kong.CreateTargetForUpstreamResponse{HTTPResponse: &http.Response{StatusCode: http.StatusCreated}, JSON200: &kong.Target{Id: &targetID}}, nil,
+			&kong.CreateTargetForUpstreamResponse{HTTPResponse: &http.Response{StatusCode: http.StatusCreated}, JSON201: &kong.Target{Id: &targetID}}, nil,
 		).Once()
 
 		Expect(client.CreateOrReplaceUpstream(ctx, route, &upstream, &target)).To(Succeed())
