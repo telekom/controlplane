@@ -39,6 +39,7 @@ Users define listeners in their Rover file under `spec.listeners`. The Rover ope
 Key constraints:
 
 - **Pass-through and failover listeners** are currently rejected.
+- **`apiBasePath` must be the exact basePath of the API**, including case. A Listener whose path differs, for example by a trailing slash, is Blocked and its capture drained.
 - **Event environments must match.** A Listener is Blocked, and its capture drained, when the realm of the capture or observer zone differs from its EventStore's environment (EventConfig `spec.overwriteEnvironmentName`, else the Control Plane environment). Fix it in `EventConfig.spec.overwriteEnvironmentName` or `Environment.spec.realmName`. The SpectreApplication is Blocked by the observer zone check. An EventStore environment of `default` with another realm only raises an `EnvironmentAliasAssumed` Warning event.
 - **Capture placement** — capture runs in the consumer zone, else the provider zone; delivery always runs in the observer (listening application) zone. When the capture zone cannot deliver to the observer zone, the Listener is Blocked with `capture zone cannot deliver to observer`; capture does not fall back to the provider zone.
 - **Circuit-breaker routes** are supported; the circuit-breaker upstream keeps the Jumper `/listener` path.

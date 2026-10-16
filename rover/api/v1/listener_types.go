@@ -26,7 +26,8 @@ type RoverListener struct {
 	// +kubebuilder:validation:MinLength=1
 	Provider string `json:"provider"`
 
-	// ApiBasePath is the base path of the API to listen on
+	// ApiBasePath is the base path of the API to listen on.
+	// Must be identical to the exposed API basePath, including case.
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:Pattern=`^/.*$`
 	ApiBasePath string `json:"apiBasePath,omitempty"`

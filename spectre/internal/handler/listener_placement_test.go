@@ -1211,6 +1211,150 @@ var _ = Describe("Listener capture placement (controller)", func() {
 	})
 })
 
+// plPathMismatch is the Blocked message for a Listener apiBasePath that is not
+// spelled like the exposure's basePath plPath.
+func plPathMismatch(path string) string {
+	return fmt.Sprintf("Listener apiBasePath %q does not match the exposed basePath %q. Use the exact basePath of the API", path, plPath)
+}
+
+// plRouteListeners lists the RouteListeners in every namespace.
+func (h *plHarness) plRouteListeners() []gatewayv1.RouteListener {
+	rls := &gatewayv1.RouteListenerList{}
+	ExpectWithOffset(1, h.raw.List(context.Background(), rls)).To(Succeed())
+	return rls.Items
+}
+
+var _ = Describe("Listener apiBasePath spelling (controller)", func() {
+	DescribeTable("P1: a Listener apiBasePath spelled differently from the exposure blocks without requesting approval or capturing",
+		func(path string) {
+			f := newPlFixtures("c")
+			f.listener.Spec.ApiListener.ApiBasePath = path
+			h := newPlHarness(f)
+			all := h.startup()
+			all = append(all, h.mustReconcile()...)
+
+			l := h.listener()
+			Expect(plBlocked(l)).To(ContainSubstring(plPathMismatch(path)))
+			ready := meta.FindStatusCondition(l.Status.Conditions, condition.ConditionTypeReady)
+			Expect(ready).ToNot(BeNil())
+			Expect(ready.Status).To(Equal(metav1.ConditionFalse))
+			Expect(l.Status.ProviderApprovalRequest).To(BeNil())
+			Expect(l.Status.RouteListener).To(BeNil())
+			Expect(plCount(all, "Create", "ApprovalRequest", "")).To(BeZero())
+			Expect(plCount(all, "Get", "Route", plZoneNs("p"))).To(BeZero())
+			plExpectNoCaptureWrites(all)
+			Expect(h.plRouteListeners()).To(BeEmpty())
+		},
+		Entry("trailing slash", plPath+"/"),
+		Entry("different case", "/API/v1/orders"),
+	)
+
+	It("P2: of two Listeners on the same consumer and Route, the exact path captures and the trailing-slash one blocks", func() {
+		f := newPlFixtures("c")
+		h := newPlHarness(f)
+		l1, _ := h.provision()
+		rl1 := &gatewayv1.RouteListener{}
+		Expect(h.exists(l1.Status.RouteListener, rl1)).To(BeTrue())
+		rl1.Status.Conditions = plReady()
+		h.update(rl1)
+		for _, sub := range h.ownedSubscribers(l1) {
+			sub.Status.Conditions = plReady()
+			h.update(&sub)
+		}
+		h.mustReconcile()
+		expectReady := func() {
+			ready := meta.FindStatusCondition(h.listener().Status.Conditions, condition.ConditionTypeReady)
+			ExpectWithOffset(1, ready).ToNot(BeNil())
+			ExpectWithOffset(1, ready.Status).To(Equal(metav1.ConditionTrue), ready.Message)
+		}
+		expectReady()
+
+		// A second observer with its own SpectreApplication listens on the same
+		// consumer and provider with a trailing slash.
+		const second = "pl-listener-trailing-slash"
+		env := func() map[string]string { return map[string]string{cconfig.EnvironmentLabelKey: plEnv} }
+		a2 := plApp("a2-app", "team-a2", "c")
+		a2.Labels = env()
+		sa2 := f.sa.DeepCopy()
+		sa2.ObjectMeta = metav1.ObjectMeta{Name: "pl-sa2", Namespace: plTeamNs, UID: "pl-sa2-uid", Labels: env()}
+		sa2.Spec.Application = plAppRef("a2-app")
+		sa2.Status.Id = "team-a2--a2-app"
+		l2 := f.listener.DeepCopy()
+		l2.ObjectMeta = metav1.ObjectMeta{Name: second, Namespace: plTeamNs, UID: "pl-listener-trailing-slash-uid", Labels: env()}
+		l2.Spec.Application = ctypes.ObjectRef{Name: "pl-sa2", Namespace: plTeamNs}
+		l2.Spec.ApiListener = &spectrev1.ApiListener{ApiBasePath: plPath + "/"}
+		for _, o := range []client.Object{a2, sa2, l2} {
+			Expect(h.raw.Create(context.Background(), o)).To(Succeed())
+		}
+		for range 3 {
+			calls, err := h.reconcileNamed(second)
+			Expect(err).ToNot(HaveOccurred())
+			plExpectNoCaptureWrites(calls)
+			Expect(plCount(calls, "Create", "ApprovalRequest", "")).To(BeZero())
+		}
+		l2 = h.listenerNamed(second)
+		Expect(plBlocked(l2)).To(ContainSubstring(plPathMismatch(plPath + "/")))
+		Expect(l2.Status.AppliedPlacement).To(BeNil())
+		Expect(l2.Status.RouteListener).To(BeNil())
+
+		// The Route keeps a single RouteListener, carrying the exposure's path,
+		// so the gateway sees no conflicting listener entries for the consumer.
+		h.mustReconcile()
+		rls := h.plRouteListeners()
+		Expect(rls).To(HaveLen(1))
+		Expect(rls[0].Name).To(Equal(l1.Status.RouteListener.Name))
+		Expect(rls[0].Spec.Route).To(Equal(plRouteRef("c")))
+		Expect(rls[0].Spec.Issue).To(Equal(plPath))
+		Expect(h.listener().Status.AppliedPlacement).ToNot(BeNil())
+		expectReady()
+	})
+
+	It("P3: an applied Listener whose apiBasePath is edited to another spelling checkpoints, drains, and resumes unchanged once it is exact again", func() {
+		f := newPlFixtures("c")
+		h := newPlHarness(f)
+		l, _ := h.provision()
+		oldFP := l.Status.AppliedPlacement.Fingerprint
+		rl := l.Status.RouteListener.DeepCopy()
+		subRefs := append([]ctypes.ObjectRef(nil), l.Status.EventSubscriptions...)
+
+		const path = "/API/v1/orders"
+		l.Spec.ApiListener.ApiBasePath = path
+		h.update(l)
+
+		// Checkpoint only; no later candidate is evaluated.
+		calls := h.mustReconcile()
+		l = h.listener()
+		Expect(l.Status.Draining).ToNot(BeNil())
+		Expect(l.Status.Draining.Reason).To(Equal("apiBasePath mismatch"))
+		Expect(l.Status.Draining.OldFingerprint).To(Equal(oldFP))
+		Expect(plCountVerb(calls, "Delete")).To(BeZero())
+		Expect(plCountVerb(calls, "Create")).To(BeZero())
+		Expect(plCount(calls, "Get", "Route", plZoneNs("p"))).To(BeZero())
+		Expect(plBlocked(l)).To(ContainSubstring(plPathMismatch(path)))
+
+		h.drain(rl)
+		Expect(apierrors.IsNotFound(h.raw.Get(context.Background(), rl.K8s(), &gatewayv1.RouteListener{}))).To(BeTrue())
+		for i := range subRefs {
+			Expect(apierrors.IsNotFound(h.raw.Get(context.Background(), subRefs[i].K8s(), &pubsubv1.Subscriber{}))).To(BeTrue())
+		}
+		Expect(h.listener().Status.AppliedPlacement).To(BeNil())
+		Expect(plBlocked(h.listener())).To(ContainSubstring(plPathMismatch(path)))
+		h.expectSteadyStop()
+
+		l = h.listener()
+		l.Spec.ApiListener.ApiBasePath = plPath
+		h.update(l)
+		calls = h.mustReconcile()
+		l = h.listener()
+		plExpectPlacement(l, "c", "c", "c", f.ecs["c"].Status.CallbackURL)
+		Expect(l.Status.AppliedPlacement.Fingerprint).To(Equal(oldFP))
+		Expect(plCount(calls, "Create", "ApprovalRequest", "")).To(BeZero())
+		rls := h.plRouteListeners()
+		Expect(rls).To(HaveLen(1))
+		Expect(rls[0].Spec.Issue).To(Equal(plPath))
+	})
+})
+
 var _ = Describe("Listener event environment (controller)", func() {
 	It("E1: a capture EventStore subscribing with another environment than the capture realm blocks without relocating capture to P's zone", func() {
 		f := newPlFixtures("a3")
