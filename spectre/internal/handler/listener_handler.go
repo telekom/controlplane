@@ -104,8 +104,8 @@ func (h *ListenerHandler) CreateOrUpdate(ctx context.Context, listener *spectrev
 
 	// Step 0: Resume persisted drain using saved refs — no topology needed.
 	// The drain checkpoint stores everything continueDrain needs (old child refs,
-	// UIDs, publisher namespace). Running it before any topology resolution
-	// ensures progress even when Applications/Zones/Routes are not ready.
+	// UIDs). Running it before any topology resolution ensures progress even
+	// when Applications/Zones/Routes are not ready.
 	if listener.Status.Draining != nil {
 		complete, err := h.continueDrain(ctx, listener)
 		if err != nil {
@@ -439,10 +439,9 @@ func (h *ListenerHandler) CreateOrUpdate(ctx context.Context, listener *spectrev
 }
 
 // Delete stops capture through the same persisted drain as CreateOrUpdate:
-// checkpoint, RouteListeners, Subscribers, then the Publisher in every old
-// namespace. The common controller removes the finalizer only when Delete
-// returns nil and writes status only when it returns an error, so every pass
-// that must be persisted returns errDrainPending.
+// checkpoint, RouteListeners, then Subscribers. The common controller removes
+// the finalizer only when Delete returns nil and writes status only when it
+// returns an error, so every pass that must be persisted returns errDrainPending.
 func (h *ListenerHandler) Delete(ctx context.Context, listener *spectrev1.Listener) error {
 	if listener.Status.Draining != nil {
 		complete, err := h.continueDrain(ctx, listener)

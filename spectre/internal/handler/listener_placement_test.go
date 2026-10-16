@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"net/url"
 	"reflect"
+	"slices"
 	"strings"
 	"time"
 
@@ -943,15 +944,10 @@ var _ = Describe("Listener capture placement (controller)", func() {
 			Expect(apierrors.IsNotFound(err)).To(BeTrue())
 		}
 
-		h.mustReconcile()
-		Expect(h.listener().Status.Draining.Phase).To(Equal(handler.ExportDrainPhaseCleaningPublisher))
-
-		// CleaningPublisher removes the orphaned generic Publisher exactly once.
-		Expect(h.publisherExists("c")).To(BeTrue())
+		// The Subscribers are gone: the drain completes and keeps the generic Publisher.
 		calls = h.mustReconcile()
-		Expect(plCount(calls, "Delete", "Publisher", plZoneNs("c"))).To(Equal(1))
-		Expect(plCount(calls, "Delete", "Publisher", "")).To(Equal(1))
-		Expect(h.publisherExists("c")).To(BeFalse())
+		Expect(plCountVerb(calls, "Delete")).To(BeZero())
+		Expect(h.publisherExists("c")).To(BeTrue())
 		l = h.listener()
 		Expect(l.Status.Draining).To(BeNil())
 		Expect(l.Status.AppliedPlacement).To(BeNil())
@@ -1571,7 +1567,7 @@ var _ = Describe("Listener capture stop (controller)", func() {
 		}
 	})
 
-	DescribeTable("S2: a denial after partial provisioning checkpoints, then drains the RouteListener, the Subscriber and the Publisher",
+	DescribeTable("S2: a denial after partial provisioning checkpoints, then drains the RouteListener and the Subscriber and keeps the Publisher",
 		func(stop func(h *plHarness), reason string) {
 			f := newPlFixtures("c")
 			h := newPlHarness(f)
@@ -1587,8 +1583,6 @@ var _ = Describe("Listener capture stop (controller)", func() {
 			Expect(l.Status.Draining.Reason).To(Equal(reason))
 			Expect(l.Status.Draining.OldRouteListeners).To(ConsistOf(*rl))
 			Expect(l.Status.Draining.OldSubscribers).To(ConsistOf(*rq))
-			Expect(l.Status.Draining.SourcePublisher).ToNot(BeNil())
-			Expect(l.Status.Draining.SourcePublisher.Namespace).To(Equal(plZoneNs("c")))
 			Expect(plCountVerb(calls, "Delete")).To(BeZero())
 			Expect(plCountVerb(calls, "Create")).To(BeZero())
 
@@ -1605,11 +1599,10 @@ var _ = Describe("Listener capture stop (controller)", func() {
 
 			calls = h.drain(rl)
 			Expect(plCount(calls, "Delete", "Subscriber", "")).To(Equal(1))
-			Expect(plCount(calls, "Delete", "Publisher", plZoneNs("c"))).To(Equal(1))
-			Expect(plCount(calls, "Delete", "Publisher", "")).To(Equal(1))
+			Expect(plCount(calls, "Delete", "Publisher", "")).To(BeZero())
 			Expect(h.exists(rl, &gatewayv1.RouteListener{})).To(BeFalse())
 			Expect(h.exists(rq, &pubsubv1.Subscriber{})).To(BeFalse())
-			Expect(h.publisherExists("c")).To(BeFalse())
+			Expect(h.publisherExists("c")).To(BeTrue())
 
 			h.expectSteadyStop()
 		},
@@ -1619,7 +1612,7 @@ var _ = Describe("Listener capture stop (controller)", func() {
 			"early restriction (provider gate)"),
 	)
 
-	It("S3: no remaining candidate after partial provisioning drains P's zone and leaves C's Publisher alone", func() {
+	It("S3: no remaining candidate after partial provisioning drains P's zone and keeps the Publishers in both zones", func() {
 		f := newPlFixtures("c")
 		f.routes["c"].Spec.PassThrough = true // capture lands in P's zone
 		h := newPlHarness(f)
@@ -1639,18 +1632,15 @@ var _ = Describe("Listener capture stop (controller)", func() {
 		l := h.listener()
 		Expect(l.Status.Draining).ToNot(BeNil())
 		Expect(l.Status.Draining.Reason).To(Equal("no supported capture placement"))
-		Expect(l.Status.Draining.SourcePublisher).ToNot(BeNil())
-		Expect(l.Status.Draining.SourcePublisher.Namespace).To(Equal(plZoneNs("p")))
 		Expect(plCountVerb(calls, "Delete")).To(BeZero())
 		Expect(plBlocked(l)).To(ContainSubstring("pass-through"))
 
 		calls = h.drain(rl)
 		Expect(plCount(calls, "Delete", "RouteListener", "")).To(Equal(1))
 		Expect(plCount(calls, "Delete", "Subscriber", "")).To(Equal(1))
-		Expect(plCount(calls, "Delete", "Publisher", plZoneNs("p"))).To(Equal(1))
-		Expect(plCount(calls, "Delete", "Publisher", plZoneNs("c"))).To(BeZero())
+		Expect(plCount(calls, "Delete", "Publisher", "")).To(BeZero())
 		Expect(h.exists(rq, &pubsubv1.Subscriber{})).To(BeFalse())
-		Expect(h.publisherExists("p")).To(BeFalse())
+		Expect(h.publisherExists("p")).To(BeTrue())
 		Expect(h.publisherExists("c")).To(BeTrue())
 		Expect(plBlocked(h.listener())).To(ContainSubstring("pass-through"))
 
@@ -1800,6 +1790,123 @@ var _ = Describe("Listener capture stop (controller)", func() {
 			Expect(plBlocked(h.listener())).To(ContainSubstring("RouteListener create blocked"))
 			Expect(h.publisherExists("c")).To(BeTrue())
 		}
+	})
+})
+
+const plPubsubFinalizer = "pubsub.cp.ei.telekom.de/finalizer"
+
+// simulateChildControllers runs one pass of the pubsub and gateway controllers
+// over the fake API server: a terminating Publisher is released only once no
+// Subscriber references it and is not ready meanwhile, a Subscriber is ready
+// only while its Publisher is ready and not terminating, and every
+// RouteListener is ready.
+func (h *plHarness) simulateChildControllers() {
+	ctx := context.Background()
+	subs := &pubsubv1.SubscriberList{}
+	ExpectWithOffset(1, h.raw.List(ctx, subs)).To(Succeed())
+	pubs := &pubsubv1.PublisherList{}
+	ExpectWithOffset(1, h.raw.List(ctx, pubs)).To(Succeed())
+	for i := range pubs.Items {
+		pub := &pubs.Items[i]
+		referenced := slices.ContainsFunc(subs.Items, func(s pubsubv1.Subscriber) bool {
+			return s.Spec.Publisher.Namespace == pub.Namespace && s.Spec.Publisher.Name == pub.Name
+		})
+		switch {
+		case pub.DeletionTimestamp != nil && !referenced:
+			pub.Finalizers = nil
+		case pub.DeletionTimestamp != nil:
+			pub.Status.Conditions = []metav1.Condition{{Type: condition.ConditionTypeReady, Status: metav1.ConditionFalse, Reason: "Deleting"}}
+		default:
+			pub.Status.Conditions = plReady()
+		}
+		h.update(pub)
+	}
+	for i := range subs.Items {
+		sub := &subs.Items[i]
+		pub := &pubsubv1.Publisher{}
+		err := h.raw.Get(ctx, sub.Spec.Publisher.K8s(), pub)
+		if err == nil && pub.DeletionTimestamp == nil && meta.IsStatusConditionTrue(pub.Status.Conditions, condition.ConditionTypeReady) {
+			sub.Status.Conditions = plReady()
+		} else {
+			sub.Status.Conditions = []metav1.Condition{{Type: condition.ConditionTypeReady, Status: metav1.ConditionFalse, Reason: condition.ReasonBlocked}}
+		}
+		h.update(sub)
+	}
+	rls := h.plRouteListeners()
+	for i := range rls {
+		rls[i].Status.Conditions = plReady()
+		h.update(&rls[i])
+	}
+}
+
+// plSubscriberNames returns the names of the Subscribers owned by l.
+func (h *plHarness) plSubscriberNames(l *spectrev1.Listener) []string {
+	subs := h.ownedSubscribers(l)
+	names := make([]string, 0, len(subs))
+	for i := range subs {
+		names = append(names, subs[i].Name)
+	}
+	return names
+}
+
+var _ = Describe("Listener rename (controller)", func() {
+	It("R1: the last bridged Listener in a zone drains to completion before its renamed successor provisions the same bridge Subscribers; the Publisher is kept and the successor becomes Ready", func() {
+		f := newPlFixtures("c")
+		h := newPlHarness(f)
+		old, _ := h.provision()
+		// The pubsub controller holds the Publisher until no Subscriber references it.
+		pub := &pubsubv1.Publisher{}
+		Expect(h.raw.Get(context.Background(), plPublisherKey("c"), pub)).To(Succeed())
+		pub.Finalizers = []string{plPubsubFinalizer}
+		h.update(pub)
+		oldSubNames := h.plSubscriberNames(old)
+
+		// The rename deletes the old Listener and creates the new one, with the
+		// same consumer, provider, observer and API, in the same pass.
+		const renamed = "pl-listener-renamed"
+		next := f.listener.DeepCopy()
+		next.ObjectMeta = metav1.ObjectMeta{
+			Name: renamed, Namespace: plTeamNs, UID: "pl-listener-renamed-uid",
+			Labels: map[string]string{cconfig.EnvironmentLabelKey: plEnv},
+		}
+		Expect(h.raw.Create(context.Background(), next)).To(Succeed())
+		Expect(h.raw.Delete(context.Background(), old)).To(Succeed())
+		for range 2 {
+			_, err := h.reconcileNamed(renamed)
+			Expect(err).ToNot(HaveOccurred())
+		}
+
+		// The old Listener drains to completion. The pubsub controller has not
+		// processed anything yet when the successor provisions.
+		for pass := 0; ; pass++ {
+			Expect(pass).To(BeNumerically("<", 10), "old Listener was not released")
+			calls, err := h.reconcile()
+			Expect(err).ToNot(HaveOccurred())
+			Expect(plCount(calls, "Delete", "Publisher", "")).To(BeZero())
+			err = h.raw.Get(context.Background(), client.ObjectKeyFromObject(old), &spectrev1.Listener{})
+			if apierrors.IsNotFound(err) {
+				break
+			}
+			Expect(err).ToNot(HaveOccurred())
+		}
+
+		h.grantNamed(renamed)
+		_, err := h.reconcileNamed(renamed)
+		Expect(err).ToNot(HaveOccurred())
+		l := h.listenerNamed(renamed)
+		Expect(l.Status.AppliedPlacement).ToNot(BeNil(), "not provisioned: %v", l.Status.Conditions)
+		Expect(h.plSubscriberNames(l)).To(ConsistOf(oldSubNames))
+
+		for range 2 {
+			h.simulateChildControllers()
+			_, err = h.reconcileNamed(renamed)
+			Expect(err).ToNot(HaveOccurred())
+		}
+		ready := meta.FindStatusCondition(h.listenerNamed(renamed).Status.Conditions, condition.ConditionTypeReady)
+		Expect(ready).ToNot(BeNil())
+		Expect(ready.Status).To(Equal(metav1.ConditionTrue), ready.Message)
+		Expect(h.raw.Get(context.Background(), plPublisherKey("c"), pub)).To(Succeed())
+		Expect(pub.DeletionTimestamp).To(BeNil())
 	})
 })
 
@@ -1972,8 +2079,8 @@ var _ = Describe("Listener approval answer unavailable (controller)", func() {
 		Expect(ready.Message).To(And(ContainSubstring("provider gate"), ContainSubstring("since 2026-09-25T10:00:00Z"),
 			ContainSubstring("capture is stopped after 5m0s without an answer")))
 
-		// Later passes delete the RouteListener, then the Subscribers, then the
-		// orphaned Publisher; every child Delete carries UID+RV preconditions.
+		// Later passes delete the RouteListener, then the Subscribers, and keep
+		// the Publisher; every child Delete carries UID+RV preconditions.
 		rlGone, subsGone := false, false
 		for pass := 0; h.listener().Status.Draining != nil; pass++ {
 			Expect(pass).To(BeNumerically("<", 10), "drain did not complete")
@@ -1987,7 +2094,7 @@ var _ = Describe("Listener approval answer unavailable (controller)", func() {
 					Expect(rlGone).To(BeTrue(), "Subscriber %s deleted before the RouteListener was gone", c.name)
 					Expect(c.precond).To(BeTrue())
 				case c.kind == "Publisher":
-					Expect(subsGone).To(BeTrue(), "Publisher deleted before the Subscribers were gone")
+					Fail("the generic Publisher was deleted")
 				default:
 					Expect(c.precond).To(BeTrue())
 				}
@@ -2001,7 +2108,7 @@ var _ = Describe("Listener approval answer unavailable (controller)", func() {
 		}
 		Expect(rlGone).To(BeTrue())
 		Expect(subsGone).To(BeTrue())
-		Expect(h.publisherExists("c")).To(BeFalse())
+		Expect(h.publisherExists("c")).To(BeTrue())
 		l = h.listener()
 		Expect(l.Status.AppliedPlacement).To(BeNil())
 		Expect(l.Status.AuthorizationUnknownSince.Time).To(BeTemporally("==", graceT0))
@@ -2126,21 +2233,21 @@ var _ = Describe("Listener approval answer unavailable (controller)", func() {
 			Expect(pass).To(BeNumerically("<", 10), "drain did not complete")
 			_, _ = h.reconcile() // the pass completing the drain still has no answer
 		}
-		Expect(h.publisherExists("c")).To(BeFalse())
+		Expect(h.publisherExists("c")).To(BeTrue())
 		Expect(graceReady(h.listener()).Reason).To(Equal(graceReason))
 
-		// Both gates answer and grant again, but the generic Publisher cannot be
+		// Both gates answer and grant again, but the RouteListener cannot be
 		// created, so the controller keeps the handler's Ready as it is.
 		h.getErr = nil
 		h.createErr = func(obj client.Object) error {
-			if _, ok := obj.(*pubsubv1.Publisher); ok {
-				return apierrors.NewServiceUnavailable("publisher create failed")
+			if _, ok := obj.(*gatewayv1.RouteListener); ok {
+				return apierrors.NewServiceUnavailable("routelistener create failed")
 			}
 			return nil
 		}
 		calls, err := h.reconcile()
-		Expect(err).To(MatchError(ContainSubstring("publisher create failed")))
-		Expect(plCount(calls, "Create", "Publisher", "")).To(Equal(1))
+		Expect(err).To(MatchError(ContainSubstring("routelistener create failed")))
+		Expect(plCount(calls, "Create", "RouteListener", "")).To(Equal(1))
 		l = h.listener()
 		Expect(l.Status.AuthorizationUnknownSince).To(BeNil())
 		ready := graceReady(l)

@@ -45,7 +45,7 @@ Key constraints:
 - **Circuit-breaker routes** are supported; the circuit-breaker upstream keeps the Jumper `/listener` path.
 - **SSE delivery** works in local and proxy zones. The SSE Route serves `/horizon/sse/v1/de.telekom.ei.listener.<appId>` (canonical) and the legacy alias `/spectre-sse/<appId>`; the full canonical URL is published in `SpectreApplication.status.sseUrl`. The alias does not cover legacy hostnames/TLS or hash-shortened app IDs of very long team names.
 - **Callback traffic** is Gateway-mediated via the zone's `EventConfig.Status.CallbackURL`.
-- **Shared generic Publisher** — a single Publisher per application event type may be referenced by multiple Listeners; it is not exclusively owned by any one Listener.
+- **Shared listener Publisher** — the bridge Subscribers of all Listeners in a zone share one Publisher for event type `de.telekom.ei.listener`. It is created on first use and kept, also after the last Listener in the zone is gone.
 
 ## References
 
