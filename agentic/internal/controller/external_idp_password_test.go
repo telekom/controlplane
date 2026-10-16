@@ -7,6 +7,7 @@ package controller
 import (
 	"time"
 
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -39,13 +40,14 @@ var _ = Describe("Consumer username/password with scopes", func() {
 		return exp
 	}
 
-	passwordSubscription := func(f *scopeFixture) *agenticv1.AgenticSubscription {
+	passwordSubscription := func(f *scopeFixture, scopes []string) *agenticv1.AgenticSubscription {
 		sub := &agenticv1.AgenticSubscription{ObjectMeta: f.metadata("subscription"), Spec: agenticv1.AgenticSubscriptionSpec{
 			BasePath: f.basePath, Zone: *ctypes.ObjectRefFromObject(f.zone),
 			Requestor: agenticv1.Requestor{Application: *ctypes.ObjectRefFromObject(f.consumer)},
 			Security: &agenticv1.SubscriberSecurity{M2M: &agenticv1.SubscriberMachine2MachineAuthentication{
+				Client: &agenticv1.OAuth2ClientCredentials{ClientId: "consumer-client", ClientSecret: "consumer-secret"},
 				Basic:  &agenticv1.BasicAuthCredentials{Username: "consumer-user", Password: "consumer-pass"},
-				Scopes: consumerScopes,
+				Scopes: scopes,
 			}},
 		}}
 		Expect(k8sClient.Create(ctx, sub)).To(Succeed())
@@ -63,12 +65,14 @@ var _ = Describe("Consumer username/password with scopes", func() {
 			GrantType:     gatewayv1.GrantTypePassword,
 			Basic:         &gatewayv1.BasicAuthCredentials{Username: "provider-user", Password: "provider-pass"},
 		}))
-		sub := passwordSubscription(f)
+		sub := passwordSubscription(f, consumerScopes)
 		grantApproval(sub, waitPending(sub))
 
 		consume := waitConsumeRoute(sub, consumerScopes)
 		Expect(consume.Spec.Security.M2M.Basic).To(Equal(&gatewayv1.BasicAuthCredentials{Username: "consumer-user", Password: "consumer-pass"}))
-		Expect(consume.Spec.Security.M2M.Client).To(BeNil())
+		Expect(consume.Spec.Security.M2M.Client).To(Equal(&gatewayv1.OAuth2ClientCredentials{
+			ClientId: "consumer-client", ClientSecret: "consumer-secret",
+		}))
 	})
 
 	It("does not create a password subscription while its exposure is not ready", func() {
@@ -86,7 +90,7 @@ var _ = Describe("Consumer username/password with scopes", func() {
 		Eventually(func(g Gomega) {
 			expectReadyReason(g, exposure, "ChildResourcesNotReady", metav1.ConditionFalse)
 		}, timeout, interval).Should(Succeed())
-		sub := passwordSubscription(fixture)
+		sub := passwordSubscription(fixture, consumerScopes)
 		check := func(g Gomega) {
 			expectReadyReason(g, sub, condition.ReasonPreconditionNotMet, metav1.ConditionFalse)
 			g.Expect(sub.Status.ConsumeRoute).To(BeNil())
@@ -97,11 +101,47 @@ var _ = Describe("Consumer username/password with scopes", func() {
 		Consistently(check, time.Second, interval).Should(Succeed())
 	})
 
+	DescribeTable("revokes existing access when the exposure grant changes", func(scopes []string) {
+		f := newScopeFixture()
+		f.server("McpServer", nil)
+		exp := passwordExposure(f, agenticv1.GrantTypePassword)
+		route := waitExposure(exp)
+		sub := passwordSubscription(f, scopes)
+		grantApproval(sub, waitPending(sub))
+		consume := waitConsumeRoute(sub, scopes)
+
+		Eventually(func(g Gomega) {
+			g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(exp), exp)).To(Succeed())
+			exp.Spec.Security.M2M.ExternalIDP.GrantType = agenticv1.GrantTypeClientCredentials
+			g.Expect(k8sClient.Update(ctx, exp)).To(Succeed())
+		}, timeout, interval).Should(Succeed())
+		check := func(g Gomega) {
+			expectReadyReason(g, sub, condition.ReasonValidationFailed, metav1.ConditionFalse)
+			g.Expect(sub.Status.ConsumeRoute).To(BeNil())
+			g.Expect(sub.Status.ActiveScopes).To(BeEmpty())
+			g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(consume), &gatewayv1.ConsumeRoute{})).To(WithTransform(apierrors.IsNotFound, BeTrue()))
+			g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(route), &gatewayv1.Route{})).To(Succeed())
+		}
+		Eventually(check, timeout, interval).Should(Succeed())
+		Consistently(check, time.Second, interval).Should(Succeed())
+
+		Eventually(func(g Gomega) {
+			g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(exp), exp)).To(Succeed())
+			exp.Spec.Security.M2M.ExternalIDP.GrantType = agenticv1.GrantTypePassword
+			g.Expect(k8sClient.Update(ctx, exp)).To(Succeed())
+		}, timeout, interval).Should(Succeed())
+		waitExposure(exp)
+		waitConsumeRoute(sub, scopes)
+	},
+		Entry("combined credentials without scopes", []string(nil)),
+		Entry("combined credentials with scopes", consumerScopes),
+	)
+
 	DescribeTable("is blocked before approval without an explicit password grant", func(grantType agenticv1.GrantType) {
 		f := newScopeFixture()
 		f.server("McpServer", nil)
 		waitExposure(passwordExposure(f, grantType))
-		sub := passwordSubscription(f)
+		sub := passwordSubscription(f, consumerScopes)
 
 		check := func(g Gomega) {
 			expectReadyReason(g, sub, condition.ReasonValidationFailed, metav1.ConditionFalse)
@@ -119,7 +159,7 @@ var _ = Describe("Consumer username/password with scopes", func() {
 		f := newScopeFixture()
 		f.server("McpServer", consumerScopes)
 		waitExposure(f.exposure("exposure", consumerScopes, false))
-		sub := passwordSubscription(f)
+		sub := passwordSubscription(f, consumerScopes)
 
 		check := func(g Gomega) {
 			expectReadyReason(g, sub, condition.ReasonValidationFailed, metav1.ConditionFalse)

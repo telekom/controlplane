@@ -7,13 +7,16 @@ package controller
 import (
 	"time"
 
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	apiapi "github.com/telekom/controlplane/api/api/v1"
 	approvalapi "github.com/telekom/controlplane/approval/api/v1"
 	"github.com/telekom/controlplane/common/pkg/condition"
+	"github.com/telekom/controlplane/common/pkg/types"
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -24,7 +27,9 @@ var _ = Describe("Consumer username/password with scopes", func() {
 	consumerScopes := []string{"consumer:read", "consumer:write"}
 
 	withConsumerPassword := func(sub *apiapi.ApiSubscription) {
-		sub.Spec.Security.M2M.Client = nil
+		sub.Spec.Security.M2M.Client = &apiapi.OAuth2ClientCredentials{
+			ClientId: "consumer-client", ClientSecret: "consumer-secret",
+		}
 		sub.Spec.Security.M2M.Basic = &apiapi.BasicAuthCredentials{Username: "consumer-user", Password: "consumer-pass"}
 		sub.Spec.Security.M2M.Scopes = consumerScopes
 	}
@@ -50,9 +55,75 @@ var _ = Describe("Consumer username/password with scopes", func() {
 			consume := &gatewayapi.ConsumeRoute{}
 			g.Expect(k8sClient.Get(ctx, sub.Status.ConsumeRoute.K8s(), consume)).To(Succeed())
 			g.Expect(consume.Spec.Security.M2M.Basic).To(Equal(&gatewayapi.BasicAuthCredentials{Username: "consumer-user", Password: "consumer-pass"}))
-			g.Expect(consume.Spec.Security.M2M.Client).To(BeNil())
+			g.Expect(consume.Spec.Security.M2M.Client).To(Equal(&gatewayapi.OAuth2ClientCredentials{
+				ClientId: "consumer-client", ClientSecret: "consumer-secret",
+			}))
 		}, scopeTimeout, interval).Should(Succeed())
 	})
+
+	DescribeTable("revokes existing access when the exposure grant changes", func(name string, scopes []string) {
+		exposure, sub := newScopeFixtures(name, nil, true)
+		exposure.Spec.Security.M2M.ExternalIDP.GrantType = apiapi.GrantTypePassword
+		withConsumerPassword(sub)
+		sub.Spec.Security.M2M.Scopes = scopes
+		Expect(k8sClient.Create(ctx, exposure)).To(Succeed())
+		Eventually(func(g Gomega) { expectScopeExposureReady(g, exposure) }, scopeTimeout, interval).Should(Succeed())
+		Expect(k8sClient.Create(ctx, sub)).To(Succeed())
+		Eventually(func(g Gomega) {
+			g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(sub), sub)).To(Succeed())
+			g.Expect(sub.Status.ApprovalRequest).NotTo(BeNil())
+		}, scopeTimeout, interval).Should(Succeed())
+		request := ProgressApprovalRequest(sub.Status.ApprovalRequest, approvalapi.ApprovalStateGranted)
+		ProgressApproval(sub, approvalapi.ApprovalStateGranted, request)
+		CompleteSubscriptionChildren(sub)
+		Eventually(func(g Gomega) {
+			g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(sub), sub)).To(Succeed())
+			expectScopeCondition(g, sub.GetConditions(), condition.ConditionTypeReady, metav1.ConditionTrue, condition.ReasonProvisioned, sub.Generation)
+		}, scopeTimeout, interval).Should(Succeed())
+		consumeRef := *sub.Status.ConsumeRoute
+		routeRef := *sub.Status.Route
+		failover := &gatewayapi.ConsumeRoute{}
+		Expect(k8sClient.Get(ctx, consumeRef.K8s(), failover)).To(Succeed())
+		failover.ObjectMeta = metav1.ObjectMeta{Name: failover.Name + "-failover", Namespace: failover.Namespace, Labels: failover.Labels}
+		Expect(controllerutil.SetControllerReference(sub, failover, k8sClient.Scheme())).To(Succeed())
+		Expect(k8sClient.Create(ctx, failover)).To(Succeed())
+
+		By("Changing only the exposure grant")
+		Eventually(func(g Gomega) {
+			g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(exposure), exposure)).To(Succeed())
+			exposure.Spec.Security.M2M.ExternalIDP.GrantType = apiapi.GrantTypeClientCredentials
+			g.Expect(k8sClient.Update(ctx, exposure)).To(Succeed())
+		}, scopeTimeout, interval).Should(Succeed())
+		check := func(g Gomega) {
+			g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(sub), sub)).To(Succeed())
+			expectScopeCondition(g, sub.GetConditions(), condition.ConditionTypeReady, metav1.ConditionFalse, condition.ReasonValidationFailed, sub.Generation)
+			g.Expect(sub.Status.ConsumeRoute).To(BeNil())
+			g.Expect(sub.Status.FailoverConsumeRoutes).To(BeEmpty())
+			g.Expect(sub.Status.ActiveScopes).To(BeEmpty())
+			for _, ref := range []types.ObjectRef{consumeRef, *types.ObjectRefFromObject(failover)} {
+				g.Expect(k8sClient.Get(ctx, ref.K8s(), &gatewayapi.ConsumeRoute{})).To(WithTransform(apierrors.IsNotFound, BeTrue()))
+			}
+			g.Expect(k8sClient.Get(ctx, routeRef.K8s(), &gatewayapi.Route{})).To(Succeed())
+		}
+		Eventually(check, scopeTimeout, interval).Should(Succeed())
+		Consistently(check, time.Second, interval).Should(Succeed())
+
+		By("Restoring the password grant")
+		Eventually(func(g Gomega) {
+			g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(exposure), exposure)).To(Succeed())
+			exposure.Spec.Security.M2M.ExternalIDP.GrantType = apiapi.GrantTypePassword
+			g.Expect(k8sClient.Update(ctx, exposure)).To(Succeed())
+		}, scopeTimeout, interval).Should(Succeed())
+		CompleteSubscriptionChildren(sub)
+		Eventually(func(g Gomega) {
+			g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(sub), sub)).To(Succeed())
+			expectScopeCondition(g, sub.GetConditions(), condition.ConditionTypeReady, metav1.ConditionTrue, condition.ReasonProvisioned, sub.Generation)
+			g.Expect(sub.Status.ConsumeRoute).NotTo(BeNil())
+		}, scopeTimeout, interval).Should(Succeed())
+	},
+		Entry("combined credentials without scopes", "password-revoke-no-scopes", nil),
+		Entry("combined credentials with scopes", "password-revoke-scopes", consumerScopes),
+	)
 
 	DescribeTable("is blocked before approval when the exposure does not use a password grant",
 		func(name string, configure func(*apiapi.ApiExposure)) {

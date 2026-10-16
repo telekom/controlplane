@@ -42,8 +42,7 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 
 	// Remote ApiSubscription handling
 	if remote.IsRemoteApiSubscription(apiSub) {
-		logger.Info("ApiSubscription is remote")
-		return remote.HandleRemoteApiSubscription(ctx, apiSub)
+		return handleRemoteApiSubscription(ctx, apiSub)
 	}
 
 	// Local ApiSubscription handling
@@ -77,6 +76,12 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 		return nil
 	}
 
+	if err = validateBasicWithScopesPolicy(apiSub, apiExposure); err != nil {
+		apiSub.SetCondition(condition.NewNotReadyCondition(condition.ReasonValidationFailed, err.Error()))
+		apiSub.SetCondition(condition.NewBlockedCondition(err.Error()))
+		return cleanupSubscriptionConsumeRoutes(ctx, apiSub)
+	}
+
 	// FindActiveAPIExposure selects by Status.Active only and may return a not-ready exposure.
 	// Fail closed here so we don't provision consume routes against a blocked exposure whose
 	// status routes may be stale from a prior reconcile.
@@ -84,7 +89,8 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 		apiSub.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet,
 			fmt.Sprintf("ApiExposure %q is not ready", apiExposure.Name)))
 		apiSub.SetCondition(condition.NewBlockedCondition(
-			fmt.Sprintf("ApiExposure %q is not ready. ApiSubscription will be automatically processed when the ApiExposure is ready", apiExposure.Name)))
+			fmt.Sprintf("ApiExposure %q is not ready. ApiSubscription will be automatically processed when the ApiExposure is ready", apiExposure.Name),
+		))
 		return nil
 	}
 
@@ -128,13 +134,7 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 
 	// Validate specification scopes unless the selected exposure has an external token endpoint.
 	if !validateSubscriptionScopes(ctx, api, apiExposure, apiSub, properties) {
-		return nil
-	}
-
-	if err = validateBasicWithScopesPolicy(apiSub, apiExposure); err != nil {
-		apiSub.SetCondition(condition.NewNotReadyCondition(condition.ReasonValidationFailed, err.Error()))
-		apiSub.SetCondition(condition.NewBlockedCondition(err.Error()))
-		return nil
+		return cleanupSubscriptionConsumeRoutes(ctx, apiSub)
 	}
 
 	err = requester.SetProperties(properties)
@@ -190,14 +190,7 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 		apiSub.SetCondition(condition.NewNotReadyCondition(condition.ReasonAccessDenied, "Approval has been denied"))
 		apiSub.SetCondition(condition.NewDoneProcessingCondition("Approval has been denied"))
 
-		deleted, cleanupErr := scopedClient.Cleanup(ctx, &gatewayapi.ConsumeRouteList{}, cclient.OwnedBy(apiSub))
-		if cleanupErr != nil {
-			return errors.Wrapf(cleanupErr, "Unable to cleanup consume routes for ApiSubscription:  %q in namespace: %q",
-				apiSub.Name, apiSub.Namespace)
-		}
-		logger.Info("🧹 Approval was denied. Cleaning up ConsumeRoutes of ApiSubscription", "deleted", deleted)
-		apiSub.Status.ActiveScopes = nil
-		return nil
+		return cleanupSubscriptionConsumeRoutes(ctx, apiSub)
 	case builder.ApprovalResultGranted:
 		logger.Info("👌 Approval is granted and will continue with processing")
 		builder.ClearApprovalPendingReady(apiSub)
@@ -467,15 +460,70 @@ func resolveRouteRef(ctx context.Context, scopedClient cclient.JanitorClient, ap
 	}
 }
 
+func cleanupSubscriptionConsumeRoutes(ctx context.Context, obj *apiapi.ApiSubscription) error {
+	c := cclient.ClientFromContextOrDie(ctx)
+	deleted, err := c.Cleanup(ctx, &gatewayapi.ConsumeRouteList{}, cclient.OwnedBy(obj))
+	if err != nil {
+		return errors.Wrapf(err, "failed to clean up ConsumeRoutes for ApiSubscription %q", obj.Name)
+	}
+	if deleted > 0 {
+		log.FromContext(ctx).Info("Cleaned up subscription ConsumeRoutes", "deleted", deleted)
+	}
+	obj.Status.ConsumeRoute = nil
+	obj.Status.FailoverConsumeRoutes = nil
+	obj.Status.ActiveScopes = nil
+	return nil
+}
+
 func validateBasicWithScopesPolicy(obj *apiapi.ApiSubscription, exposure *apiapi.ApiExposure) error {
-	subHasScopes := obj.HasM2M() && obj.Spec.Security.M2M.Basic != nil && len(obj.Spec.Security.M2M.Scopes) > 0
-	if !subHasScopes {
+	if !obj.HasM2M() || obj.Spec.Security.M2M.Basic == nil {
+		return nil
+	}
+	security := obj.Spec.Security.M2M
+	requiresPasswordGrant := security.Client != nil || len(security.Scopes) > 0
+	if !requiresPasswordGrant {
 		return nil
 	}
 
 	if exposure == nil || !exposure.HasExternalIdp() ||
 		exposure.Spec.Security.M2M.ExternalIDP.GrantType != apiapi.GrantTypePassword {
-		return errors.New("Consumer username/password with scopes requires an external IDP grant type \"password\"")
+		return errors.New("Consumer username/password combined with client credentials or scopes requires an external IDP grant type \"password\"")
 	}
+	return nil
+}
+
+func validateRemoteSubscriptionSecurity(obj *apiapi.ApiSubscription) error {
+	if !obj.HasM2M() {
+		return nil
+	}
+	security := obj.Spec.Security.M2M
+	if security.Client != nil || security.Basic != nil {
+		return stderrors.New("remote API subscriptions support scopes only; client credentials and username/password are not supported")
+	}
+	return nil
+}
+
+func handleRemoteApiSubscription(ctx context.Context, apiSub *apiapi.ApiSubscription) error {
+	validationErr := validateRemoteSubscriptionSecurity(apiSub)
+	if validationErr == nil {
+		log.FromContext(ctx).Info("ApiSubscription is remote")
+		return remote.HandleRemoteApiSubscription(ctx, apiSub)
+	}
+
+	scopedClient := cclient.ClientFromContextOrDie(ctx)
+	scopedClient.AddKnownTypeToState(&apiapi.RemoteApiSubscription{})
+	scopedClient.AddKnownTypeToState(&gatewayapi.ConsumeRoute{})
+	if _, err := scopedClient.CleanupAll(ctx, cclient.OwnedBy(apiSub)); err != nil {
+		return errors.Wrap(err, "failed to clean up unsupported remote subscription resources")
+	}
+	apiSub.Status.RemoteApiSubscription = nil
+	apiSub.Status.Route = nil
+	apiSub.Status.ConsumeRoute = nil
+	apiSub.Status.ActiveScopes = nil
+	apiSub.Status.GatewayUrl = ""
+	apiSub.Status.IdpIssuer = ""
+	apiSub.SetCondition(condition.NewNotReadyCondition(condition.ReasonValidationFailed, validationErr.Error()))
+	apiSub.SetCondition(condition.NewBlockedCondition(validationErr.Error()))
+	log.FromContext(ctx).Info("Remote API subscription has unsupported subscriber credentials")
 	return nil
 }

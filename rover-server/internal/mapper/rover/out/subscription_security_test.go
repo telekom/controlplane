@@ -161,5 +161,66 @@ var _ = Describe("Subscription Security Mapper (Out)", func() {
 			Expect(oauth2.Scopes).To(ContainElements("read", "write"))
 			snaps.MatchSnapshot(GinkgoT(), oauth2)
 		})
+
+		It("must map combined password-grant credentials correctly", func() {
+			input := &roverv1.ApiSubscription{
+				Security: &roverv1.SubscriberSecurity{
+					M2M: &roverv1.SubscriberMachine2MachineAuthentication{
+						Client: &roverv1.OAuth2ClientCredentials{
+							ClientId:     "client-id",
+							ClientSecret: "client-secret",
+						},
+						Basic: &roverv1.BasicAuthCredentials{
+							Username: "testuser",
+							Password: "testpass",
+						},
+						Scopes: []string{"read", "write"},
+					},
+				},
+			}
+
+			output := &api.ApiSubscription{}
+			err := mapSubscriptionSecurity(input, output)
+
+			Expect(err).ToNot(HaveOccurred())
+			oauth2, err := output.Security.AsOauth2()
+			Expect(err).ToNot(HaveOccurred())
+			Expect(oauth2.ClientId).To(Equal("client-id"))
+			Expect(oauth2.ClientSecret).To(Equal("client-secret"))
+			Expect(oauth2.Username).To(Equal("testuser"))
+			Expect(oauth2.Password).To(Equal("testpass"))
+			Expect(oauth2.Scopes).To(ContainElements("read", "write"))
+		})
+	})
+
+	Context("mapAiSubscription", func() {
+		It("must map combined password-grant credentials correctly", func() {
+			input := &roverv1.AgenticSubscription{
+				Security: &roverv1.SubscriberSecurity{
+					M2M: &roverv1.SubscriberMachine2MachineAuthentication{
+						Client: &roverv1.OAuth2ClientCredentials{
+							ClientId:     "client-id",
+							ClientSecret: "client-secret",
+						},
+						Basic: &roverv1.BasicAuthCredentials{
+							Username: "testuser",
+							Password: "testpass",
+						},
+						Scopes: []string{"read", "write"},
+					},
+				},
+			}
+
+			output, err := mapAiSubscription(input)
+
+			Expect(err).ToNot(HaveOccurred())
+			oauth2, err := output.Security.AsOauth2()
+			Expect(err).ToNot(HaveOccurred())
+			Expect(oauth2.ClientId).To(Equal("client-id"))
+			Expect(oauth2.ClientSecret).To(Equal("client-secret"))
+			Expect(oauth2.Username).To(Equal("testuser"))
+			Expect(oauth2.Password).To(Equal("testpass"))
+			Expect(oauth2.Scopes).To(ContainElements("read", "write"))
+		})
 	})
 })

@@ -46,8 +46,9 @@ func mapSecurity(in *apiv1.ApiSubscription, out *api.ApiSubscriptionResponse) {
 	}
 
 	m2m := in.Spec.Security.M2M
+	hasClientCredentials := m2m.Client != nil && m2m.Client.ClientId != ""
 
-	if m2m.Basic != nil {
+	if m2m.Basic != nil && !hasClientCredentials && len(m2m.Scopes) == 0 {
 		basicAuth := api.BasicAuth{
 			Username: m2m.Basic.Username,
 			Password: m2m.Basic.Password,
@@ -57,26 +58,20 @@ func mapSecurity(in *apiv1.ApiSubscription, out *api.ApiSubscriptionResponse) {
 		return
 	}
 
-	if m2m.Client != nil {
-		oauth2 := api.OAuth2{
-			ClientId:     m2m.Client.ClientId,
-			ClientSecret: m2m.Client.ClientSecret,
-		}
-
-		if len(m2m.Scopes) > 0 {
-			oauth2.Scopes = m2m.Scopes
-		}
-
-		out.Security = api.SubscriberSecurity{}
-		out.Security.FromOAuth2(oauth2) //nolint:errcheck,gosec // union setter only fails on JSON marshal of simple struct
-		return
+	oauth2 := api.OAuth2{}
+	if hasClientCredentials {
+		oauth2.ClientId = m2m.Client.ClientId
+		oauth2.ClientSecret = m2m.Client.ClientSecret
+	}
+	if m2m.Basic != nil {
+		oauth2.Username = m2m.Basic.Username
+		oauth2.Password = m2m.Basic.Password
+	}
+	if len(m2m.Scopes) > 0 {
+		oauth2.Scopes = m2m.Scopes
 	}
 
-	// Scopes only.
-	if len(m2m.Scopes) > 0 {
-		oauth2 := api.OAuth2{
-			Scopes: m2m.Scopes,
-		}
+	if hasClientCredentials || m2m.Basic != nil || len(m2m.Scopes) > 0 {
 		out.Security = api.SubscriberSecurity{}
 		out.Security.FromOAuth2(oauth2) //nolint:errcheck,gosec // union setter only fails on JSON marshal of simple struct
 	}

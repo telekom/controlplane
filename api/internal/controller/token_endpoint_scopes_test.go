@@ -10,6 +10,7 @@ import (
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -296,7 +297,6 @@ var _ = Describe("External token endpoint scopes", func() {
 		consume := &gatewayapi.ConsumeRoute{}
 		Expect(k8sClient.Get(ctx, sub.Status.ConsumeRoute.K8s(), consume)).To(Succeed())
 		settleScopeResources(exposure, sub, request, approval, route, consume)
-		consumeUID := consume.UID
 
 		By("removing only the exposure IDP configuration after approval and child activity settles")
 		exposure.Spec.Security.M2M.ExternalIDP = nil
@@ -305,9 +305,11 @@ var _ = Describe("External token endpoint scopes", func() {
 			expectScopeExposureReady(g, exposure)
 			expectScopeBlocked(g, sub)
 			g.Expect(sub.Generation).To(Equal(generation))
-			g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(consume), consume)).To(Succeed())
-			g.Expect(consume.UID).To(Equal(consumeUID))
-			g.Expect(consume.Spec.Security.M2M.Scopes).To(Equal(sub.Spec.Security.M2M.Scopes))
+			g.Expect(sub.Status.ConsumeRoute).To(BeNil())
+			g.Expect(sub.Status.FailoverConsumeRoutes).To(BeEmpty())
+			g.Expect(sub.Status.ActiveScopes).To(BeEmpty())
+			g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(consume), consume)).To(WithTransform(apierrors.IsNotFound, BeTrue()))
+			g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(route), route)).To(Succeed())
 		}, scopeTimeout, interval).Should(Succeed())
 	})
 })

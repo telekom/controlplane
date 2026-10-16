@@ -19,6 +19,7 @@ import (
 	kongclient "github.com/telekom/controlplane/gateway/pkg/kong/client"
 	kongmock "github.com/telekom/controlplane/gateway/pkg/kong/client/mock"
 	"github.com/telekom/controlplane/gateway/pkg/kong/client/plugin"
+	secretManagerApi "github.com/telekom/controlplane/secret-manager/api"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -213,6 +214,23 @@ var _ = Describe("External IDP password grant with consumer username/password an
 			Entry("authorization code", gatewayv1.GrantTypeAuthorizationCode),
 		)
 
+		It("does not publish dual password-grant credentials as backend Basic without scopes", func() {
+			route := primaryPasswordRoute()
+			consumer := passwordConsumer()
+			consumer.Spec.Security.M2M.Scopes = nil
+			consumer.Spec.Security.M2M.Client = &gatewayv1.OAuth2ClientCredentials{
+				ClientId: "consumer-client", ClientSecret: "consumer-secret",
+			}
+			jumperConfig := plugin.NewJumperConfig()
+			builder.EXPECT().GetRoute().Return(route, true)
+			builder.EXPECT().GetAllowedConsumers().Return([]*gatewayv1.ConsumeRoute{consumer})
+			builder.EXPECT().JumperConfig().Return(jumperConfig)
+
+			Expect(feature.InstanceBasicAuthFeature.IsUsed(ctx, builder)).To(BeFalse())
+			Expect(feature.InstanceBasicAuthFeature.Apply(ctx, builder)).To(Succeed())
+			Expect(jumperConfig.BasicAuth).To(BeEmpty())
+		})
+
 		DescribeTable("does not publish consumer credentials as backend Basic auth", func(route *gatewayv1.Route) {
 			builder.EXPECT().GetRoute().Return(route, true).Maybe()
 			builder.EXPECT().GetAllowedConsumers().Return([]*gatewayv1.ConsumeRoute{passwordConsumer()}).Maybe()
@@ -294,5 +312,30 @@ var _ = Describe("External IDP password grant with consumer username/password an
 			Entry("primary route", primaryPasswordRoute()),
 			Entry("failover-secondary route", secondaryPasswordRoute()),
 		)
+
+		It("forwards client credentials and username/password together to Jumper", func() {
+			originalGet := secretManagerApi.Get
+			defer func() { secretManagerApi.Get = originalGet }()
+			secretManagerApi.Get = func(_ context.Context, ref string) (string, error) {
+				return "resolved-" + ref, nil
+			}
+
+			consumer := passwordConsumer()
+			consumer.Spec.Security.M2M.Client = &gatewayv1.OAuth2ClientCredentials{
+				ClientId: "consumer-client", ClientSecret: "consumer-secret",
+			}
+			jumperConfig := plugin.NewJumperConfig()
+			builder.EXPECT().GetRoute().Return(primaryPasswordRoute(), true)
+			builder.EXPECT().RequestTransformerPlugin().Return(plugin.RequestTransformerPluginFromRoute(primaryPasswordRoute()))
+			builder.EXPECT().JumperConfig().Return(jumperConfig)
+			builder.EXPECT().GetAllowedConsumers().Return([]*gatewayv1.ConsumeRoute{consumer})
+
+			Expect(feature.InstanceExternalIDPFeature.Apply(ctx, builder)).To(Succeed())
+			Expect(jumperConfig.OAuth[plugin.ConsumerId(consumer.Spec.ConsumerName)]).To(Equal(plugin.OauthCredentials{
+				ClientId: "consumer-client", ClientSecret: "resolved-consumer-secret",
+				Username: "consumer-user", Password: "resolved-consumer-pass",
+				Scopes: "consumer:read consumer:write", GrantType: "password", TokenRequest: "header",
+			}))
+		})
 	})
 })

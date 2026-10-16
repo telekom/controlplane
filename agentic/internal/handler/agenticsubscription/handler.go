@@ -52,13 +52,15 @@ func (h *AgenticSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *ag
 				"Agentic server (McpServer, AgentCard) is registered but the basePath case does not match"))
 			obj.SetCondition(condition.NewBlockedCondition(
 				"Agentic server for " + obj.Spec.BasePath + " exists but with a different case. " +
-					"Please resolve the conflict by changing the BasePath of either the specification or the subscription"))
+					"Please resolve the conflict by changing the BasePath of either the specification or the subscription",
+			))
 		} else {
 			obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet,
 				"No active agentic server (McpServer, AgentCard) found for basePath "+obj.Spec.BasePath))
 			obj.SetCondition(condition.NewBlockedCondition(
 				"Agentic server for " + obj.Spec.BasePath + " does not exist or is not active. " +
-					"AgenticSubscription will be automatically processed when the specification is registered"))
+					"AgenticSubscription will be automatically processed when the specification is registered",
+			))
 		}
 		return nil
 	}
@@ -74,27 +76,29 @@ func (h *AgenticSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *ag
 	}
 	// Validate scopes using the selected exposure's endpoint exception before readiness checks.
 	if !validateSubscriptionScopes(serverInfo, exposure, obj) {
-		return nil
+		return h.Delete(ctx, obj)
 	}
 	if violatesBasicWithScopesPolicy(obj, exposure) {
 		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonValidationFailed,
-			"Consumer username/password with scopes requires an external IDP grant type \"password\""))
-		obj.SetCondition(condition.NewBlockedCondition("Consumer username/password with scopes requires an external IDP grant type \"password\""))
-		return nil
+			"Consumer username/password combined with client credentials or scopes requires an external IDP grant type \"password\""))
+		obj.SetCondition(condition.NewBlockedCondition("Consumer username/password combined with client credentials or scopes requires an external IDP grant type \"password\""))
+		return h.Delete(ctx, obj)
 	}
 	if !exposureFound {
 		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet,
 			"No active AgenticExposure found for basePath "+obj.Spec.BasePath))
 		obj.SetCondition(condition.NewBlockedCondition(
 			"AgenticExposure for " + obj.Spec.BasePath + " does not exist or is not active. " +
-				"AgenticSubscription will be automatically processed when the AgenticExposure is registered"))
+				"AgenticSubscription will be automatically processed when the AgenticExposure is registered",
+		))
 		return nil
 	}
 	if err = condition.EnsureReady(exposure); err != nil {
 		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet,
 			fmt.Sprintf("AgenticExposure %q is not ready", exposure.Name)))
 		obj.SetCondition(condition.NewBlockedCondition(
-			fmt.Sprintf("AgenticExposure %q is not ready. AgenticSubscription will be automatically processed when the AgenticExposure is ready", exposure.Name)))
+			fmt.Sprintf("AgenticExposure %q is not ready. AgenticSubscription will be automatically processed when the AgenticExposure is ready", exposure.Name),
+		))
 		return nil
 	}
 
@@ -188,15 +192,7 @@ func (h *AgenticSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *ag
 		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonAccessDenied, "Approval has been denied"))
 		obj.SetCondition(condition.NewDoneProcessingCondition("Approval has been denied"))
 
-		deleted, cleanupErr := c.Cleanup(ctx, &gatewayapi.ConsumeRouteList{}, cclient.OwnedBy(obj))
-		if cleanupErr != nil {
-			return errors.Wrapf(cleanupErr, "unable to cleanup ConsumeRoute for AgenticSubscription %q", obj.Name)
-		}
-		if deleted > 0 {
-			logger.Info("Cleaned up ConsumeRoute resources", "deleted", deleted)
-		}
-		obj.Status.ActiveScopes = nil
-		return nil
+		return h.Delete(ctx, obj)
 
 	case builder.ApprovalResultGranted:
 		logger.Info("Approval is granted — continuing with provisioning")
@@ -244,14 +240,18 @@ func (h *AgenticSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *ag
 	obj.SetCondition(condition.NewReadyCondition(condition.ReasonProvisioned,
 		"AgenticSubscription has been provisioned"))
 	obj.SetCondition(condition.NewDoneProcessingCondition(
-		"AgenticSubscription has been provisioned"))
+		"AgenticSubscription has been provisioned",
+	))
 
 	return nil
 }
 
 func violatesBasicWithScopesPolicy(obj *agenticv1.AgenticSubscription, exposure *agenticv1.AgenticExposure) bool {
-	subHasScopes := obj.HasM2M() && obj.Spec.Security.M2M.Basic != nil && len(obj.Spec.Security.M2M.Scopes) > 0
-	if !subHasScopes {
+	if !obj.HasM2M() || obj.Spec.Security.M2M.Basic == nil {
+		return false
+	}
+	security := obj.Spec.Security.M2M
+	if security.Client == nil && len(security.Scopes) == 0 {
 		return false
 	}
 
@@ -282,7 +282,8 @@ func (h *AgenticSubscriptionHandler) Delete(ctx context.Context, obj *agenticv1.
 	if deleted > 0 {
 		logger.Info("Cleaned up ConsumeRoute resources", "deleted", deleted)
 	}
-
+	obj.Status.ConsumeRoute = nil
+	obj.Status.ActiveScopes = nil
 	return nil
 }
 
@@ -321,7 +322,8 @@ func resolveRouteRef(
 	obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet,
 		"AgenticExposure has not created a proxy route for zone "+obj.Spec.Zone.Name+" yet"))
 	obj.SetCondition(condition.NewBlockedCondition(
-		"Waiting for AgenticExposure to create the proxy route for zone " + obj.Spec.Zone.Name))
+		"Waiting for AgenticExposure to create the proxy route for zone " + obj.Spec.Zone.Name,
+	))
 	return nil
 }
 

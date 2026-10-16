@@ -10,6 +10,7 @@ import (
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -463,8 +464,10 @@ var _ = Describe("External token endpoint scope exception", func() {
 			expectReadyReason(g, exp, "AgenticExposureProvisioned", metav1.ConditionTrue)
 			expectReadyReason(g, sub, condition.ReasonValidationFailed, metav1.ConditionFalse)
 			g.Expect(sub.Generation).To(Equal(subGeneration))
-			g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(consume), consume)).To(Succeed())
-			g.Expect(consume.Spec.Security.M2M.Scopes).To(Equal(consumerScopes))
+			g.Expect(sub.Status.ConsumeRoute).To(BeNil())
+			g.Expect(sub.Status.ActiveScopes).To(BeEmpty())
+			g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(consume), consume)).To(WithTransform(apierrors.IsNotFound, BeTrue()))
+			g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(route), route)).To(Succeed())
 		}, timeout, interval).Should(Succeed())
 	})
 })

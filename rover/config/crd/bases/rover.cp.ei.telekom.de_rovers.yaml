@@ -1445,10 +1445,6 @@ spec:
                                   type: array
                               type: object
                               x-kubernetes-validations:
-                              - message: Client and basic authentication cannot be
-                                  used together
-                                rule: 'self == null || (has(self.client) ? (!has(self.basic))
-                                  : true)'
                               - message: At least one of client, basic, or scopes
                                   must be provided
                                 rule: self == null || has(self.client) || has(self.basic)
@@ -1586,10 +1582,6 @@ spec:
                                   type: array
                               type: object
                               x-kubernetes-validations:
-                              - message: Client and basic authentication cannot be
-                                  used together
-                                rule: 'self == null || (has(self.client) ? (!has(self.basic))
-                                  : true)'
                               - message: At least one of client, basic, or scopes
                                   must be provided
                                 rule: self == null || has(self.client) || has(self.basic)

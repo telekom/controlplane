@@ -183,5 +183,35 @@ var _ = Describe("Subscription Security Mapper", func() {
 			Expect(output.Security.M2M.Scopes).To(ContainElements("read", "write"))
 			snaps.MatchSnapshot(GinkgoT(), output.Security)
 		})
+
+		It("must map password-grant credentials with client authentication and scopes", func() {
+			input := api.ApiSubscription{
+				BasePath: "/orders/v1",
+			}
+			oauth2 := api.Oauth2{
+				ClientId:     "test-client",
+				ClientSecret: "test-client-secret",
+				Username:     "test-user",
+				Password:     "test-user-password",
+				Scopes:       []string{"orders.read", "orders.write"},
+			}
+			input.Security = api.Security{}
+			Expect(input.Security.FromOauth2(oauth2)).To(Succeed())
+
+			output := &roverv1.ApiSubscription{}
+			mapSubscriptionSecurity(input, output)
+
+			Expect(output.Security).NotTo(BeNil())
+			Expect(output.Security.M2M).NotTo(BeNil())
+			Expect(output.Security.M2M.Client).To(Equal(&roverv1.OAuth2ClientCredentials{
+				ClientId:     "test-client",
+				ClientSecret: "test-client-secret",
+			}))
+			Expect(output.Security.M2M.Basic).To(Equal(&roverv1.BasicAuthCredentials{
+				Username: "test-user",
+				Password: "test-user-password",
+			}))
+			Expect(output.Security.M2M.Scopes).To(Equal([]string{"orders.read", "orders.write"}))
+		})
 	})
 })

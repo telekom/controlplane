@@ -43,7 +43,8 @@ func (h *McpServerHandler) CreateOrUpdate(ctx context.Context, obj *agenticv1.Mc
 		obj.SetCondition(condition.NewNotReadyCondition("McpServerNotFound",
 			"McpServer was not found among candidates for its basePath; check labels"))
 		obj.SetCondition(condition.NewBlockedCondition(
-			fmt.Sprintf("McpServer could not be matched to basePath %q candidates", obj.Spec.BasePath)))
+			fmt.Sprintf("McpServer could not be matched to basePath %q candidates", obj.Spec.BasePath),
+		))
 		logger.Info("McpServer not found among candidates, marking not ready")
 		return nil
 	}
