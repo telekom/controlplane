@@ -1139,3 +1139,69 @@ var _ = DescribeTable("CompareAndReturn",
 	Entry("Processing takes precedence over Done", api.OverallStatusDone, api.OverallStatusProcessing, api.OverallStatusProcessing),
 	Entry("Complete takes precedence over unknown", api.OverallStatus("unknown"), api.OverallStatusComplete, api.OverallStatusComplete),
 )
+
+var _ = Describe("MapRoverStatus with agentic children", func() {
+	newAgenticRover := func(subs, exps []types.ObjectRef) *v1.Rover {
+		return &v1.Rover{
+			ObjectMeta: metav1.ObjectMeta{Name: "r-agentic", Namespace: "ns", UID: "uid-agentic", Generation: 1},
+			Status: v1.RoverStatus{
+				AgenticSubscriptions: subs,
+				AgenticExposures:     exps,
+				Conditions: []metav1.Condition{
+					{Type: condition.ConditionTypeProcessing, Status: metav1.ConditionTrue, Reason: condition.ReasonSubResourceNotReady, ObservedGeneration: 1},
+					{Type: condition.ConditionTypeReady, Status: metav1.ConditionFalse, Reason: condition.ReasonSubResourceNotReady, ObservedGeneration: 1},
+				},
+			},
+		}
+	}
+
+	pendingSub := &agenticv1.AgenticSubscription{
+		TypeMeta:   metav1.TypeMeta{APIVersion: "agentic.cp.ei.telekom.de/v1", Kind: "AgenticSubscription"},
+		ObjectMeta: metav1.ObjectMeta{Name: "weather-v1", Namespace: "ns"},
+		Status: agenticv1.AgenticSubscriptionStatus{
+			Conditions: []metav1.Condition{
+				{Type: condition.ConditionTypeProcessing, Status: metav1.ConditionFalse, Reason: condition.ReasonBlocked, Message: "Approval has not been approved"},
+				{Type: condition.ConditionTypeReady, Status: metav1.ConditionFalse, Reason: condition.ReasonApprovalPending, Message: "Approval has not been approved"},
+			},
+		},
+	}
+
+	readyExp := &agenticv1.AgenticExposure{
+		TypeMeta:   metav1.TypeMeta{APIVersion: "agentic.cp.ei.telekom.de/v1", Kind: "AgenticExposure"},
+		ObjectMeta: metav1.ObjectMeta{Name: "weather-v1", Namespace: "ns"},
+		Status: agenticv1.AgenticExposureStatus{
+			Conditions: []metav1.Condition{
+				{Type: condition.ConditionTypeProcessing, Status: metav1.ConditionFalse, Reason: condition.ReasonDone},
+				{Type: condition.ConditionTypeReady, Status: metav1.ConditionTrue, Reason: condition.ReasonProvisioned},
+			},
+		},
+	}
+
+	It("reports an AgenticSubscription waiting for approval as Blocked", func() {
+		r := newAgenticRover(
+			[]types.ObjectRef{{Name: pendingSub.Name, Namespace: "ns"}},
+			[]types.ObjectRef{{Name: readyExp.Name, Namespace: "ns"}},
+		)
+
+		subMock := new(MockObjectStore[*agenticv1.AgenticSubscription])
+		subMock.On("List", mock.Anything, mock.Anything).Return(
+			&commonStore.ListResponse[*agenticv1.AgenticSubscription]{Items: []*agenticv1.AgenticSubscription{pendingSub}}, nil).Once()
+		expMock := new(MockObjectStore[*agenticv1.AgenticExposure])
+		expMock.On("List", mock.Anything, mock.Anything).Return(
+			&commonStore.ListResponse[*agenticv1.AgenticExposure]{Items: []*agenticv1.AgenticExposure{readyExp}}, nil).Once()
+
+		s := &store.Stores{AgenticSubscriptionStore: subMock, AgenticExposureStore: expMock}
+
+		status, err := MapRoverStatus(ctx, r, s)
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(status.State).To(Equal(api.Blocked))
+		Expect(status.ProcessingState).To(Equal(api.ProcessingStateDone))
+		Expect(status.Errors).To(ContainElement(api.StateInfo{
+			Message: "Approval has not been approved",
+			Cause:   condition.ReasonApprovalPending,
+		}))
+		subMock.AssertExpectations(GinkgoT())
+		expMock.AssertExpectations(GinkgoT())
+	})
+})
