@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/mock"
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
+	agenticv1 "github.com/telekom/controlplane/agentic/api/v1"
 	apiv1 "github.com/telekom/controlplane/api/api/v1"
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	storeLib "github.com/telekom/controlplane/common-server/pkg/store"
@@ -73,6 +74,7 @@ var _ = Describe("MapApplicationInfo status", func() {
 		apiSub      []metav1.Condition
 		apiSubGen   int64
 		eventSub    []metav1.Condition
+		agenticSub  []metav1.Condition
 		listener    []metav1.Condition
 		// spectreApp defaults to ready when the fixture has a listener.
 		spectreApp []metav1.Condition
@@ -119,6 +121,16 @@ var _ = Describe("MapApplicationInfo status", func() {
 			eventSub.TypeMeta, eventSub.ObjectMeta = meta("EventSubscription", "test-v1", 1)
 			r.Status.EventSubscriptions = []types.ObjectRef{{Name: eventSub.Name, Namespace: namespace}}
 			s.EventSubscriptionStore = childStore(eventSub)
+		}
+
+		if f.agenticSub != nil {
+			agenticSub := &agenticv1.AgenticSubscription{
+				Spec:   agenticv1.AgenticSubscriptionSpec{BasePath: "/mcp/weather/v1"},
+				Status: agenticv1.AgenticSubscriptionStatus{Conditions: f.agenticSub},
+			}
+			agenticSub.TypeMeta, agenticSub.ObjectMeta = meta("AgenticSubscription", "weather-v1", 1)
+			r.Status.AgenticSubscriptions = []types.ObjectRef{{Name: agenticSub.Name, Namespace: namespace}}
+			s.AgenticSubscriptionStore = childStore(agenticSub)
 		}
 
 		if f.listener != nil {
@@ -168,6 +180,9 @@ var _ = Describe("MapApplicationInfo status", func() {
 			api.OverallStatusBlocked),
 		Entry("event subscription approval pending",
 			fixture{rover: waiting, roverGen: 1, application: ready, eventSub: pending},
+			api.OverallStatusBlocked),
+		Entry("agentic subscription approval pending",
+			fixture{rover: waiting, roverGen: 1, application: ready, agenticSub: pending},
 			api.OverallStatusBlocked),
 		// A sub-resource still processing keeps the Rover's state processing, but
 		// the overall status takes the worst sub-resource.
