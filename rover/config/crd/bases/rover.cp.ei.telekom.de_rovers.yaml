@@ -1325,8 +1325,9 @@ spec:
                     and full ID, recreates the Listener and requires a new approval.
                   properties:
                     apiBasePath:
-                      description: ApiBasePath is the base path of the API to listen
-                        on
+                      description: |-
+                        ApiBasePath is the base path of the API to listen on.
+                        Must be identical to the exposed API basePath, including case.
                       pattern: ^/.*$
                       type: string
                     consumer:

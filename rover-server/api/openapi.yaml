@@ -4055,7 +4055,7 @@ components:
           description: Providing application, as full ID (e.g. "eni--other--provider") or bare name (e.g. "provider"). A bare name must not contain "--"; use the full ID instead.
         apiBasePath:
           type: string
-          description: Base path of the API to listen on. Required.
+          description: Base path of the API to listen on. Required. Must be identical to the exposed API basePath, including case.
         eventType:
           type: string
           writeOnly: true
