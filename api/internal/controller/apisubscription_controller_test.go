@@ -7,8 +7,8 @@ package controller
 import (
 	"encoding/json"
 	"fmt"
+	"time"
 
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -749,7 +749,7 @@ var _ = Describe("Remote Organisation Flow", Ordered, func() {
 			}, timeout, interval).Should(Succeed())
 		})
 
-		It("should block unsupported credentials and clean up owned resources without deleting a shared proxy route", func() {
+		It("should block unsupported credentials without changing accepted resources", func() {
 			Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(apiSubscription), apiSubscription)).To(Succeed())
 			remoteSubscriptionRef := apiSubscription.Status.RemoteApiSubscription
 			consumeRouteRef := apiSubscription.Status.ConsumeRoute
@@ -761,6 +761,11 @@ var _ = Describe("Remote Organisation Flow", Ordered, func() {
 			proxyRoute := &gatewayapi.Route{}
 			Expect(k8sClient.Get(ctx, proxyRouteRef.K8s(), proxyRoute)).To(Succeed())
 			proxyRouteUID := proxyRoute.UID
+			acceptedRemote := &apiapi.RemoteApiSubscription{}
+			Expect(k8sClient.Get(ctx, remoteSubscriptionRef.K8s(), acceptedRemote)).To(Succeed())
+			acceptedConsume := &gatewayapi.ConsumeRoute{}
+			Expect(k8sClient.Get(ctx, consumeRouteRef.K8s(), acceptedConsume)).To(Succeed())
+			acceptedScopes := apiSubscription.Status.ActiveScopes
 
 			By("Adding unsupported credentials to only one subscription")
 			Eventually(func(g Gomega) {
@@ -774,29 +779,33 @@ var _ = Describe("Remote Organisation Flow", Ordered, func() {
 				g.Expect(k8sClient.Update(ctx, apiSubscription)).To(Succeed())
 			}, timeout, interval).Should(Succeed())
 
-			Eventually(func(g Gomega) {
+			check := func(g Gomega) {
 				g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(apiSubscription), apiSubscription)).To(Succeed())
 				ready := meta.FindStatusCondition(apiSubscription.GetConditions(), condition.ConditionTypeReady)
 				g.Expect(ready).NotTo(BeNil())
 				g.Expect(ready.Status).To(Equal(metav1.ConditionFalse))
 				g.Expect(ready.Reason).To(Equal(condition.ReasonValidationFailed))
 				g.Expect(ready.Message).To(ContainSubstring("remote API subscriptions support scopes only"))
-				g.Expect(apiSubscription.Status.RemoteApiSubscription).To(BeNil())
-				g.Expect(apiSubscription.Status.Route).To(BeNil())
-				g.Expect(apiSubscription.Status.ConsumeRoute).To(BeNil())
+				g.Expect(meta.FindStatusCondition(apiSubscription.GetConditions(), condition.ConditionTypeProcessing).Reason).To(Equal("Blocked"))
+				g.Expect(apiSubscription.Status.RemoteApiSubscription).To(Equal(remoteSubscriptionRef))
+				g.Expect(apiSubscription.Status.Route).To(Equal(proxyRouteRef))
+				g.Expect(apiSubscription.Status.ConsumeRoute).To(Equal(consumeRouteRef))
+				g.Expect(apiSubscription.Status.ActiveScopes).To(Equal(acceptedScopes))
 
 				remoteSubscription := &apiapi.RemoteApiSubscription{}
-				g.Expect(k8sClient.Get(ctx, remoteSubscriptionRef.K8s(), remoteSubscription)).To(
-					WithTransform(apierrors.IsNotFound, BeTrue()),
-				)
+				g.Expect(k8sClient.Get(ctx, remoteSubscriptionRef.K8s(), remoteSubscription)).To(Succeed())
+				g.Expect(remoteSubscription.UID).To(Equal(acceptedRemote.UID))
+				g.Expect(remoteSubscription.Spec).To(Equal(acceptedRemote.Spec))
 				consumeRoute := &gatewayapi.ConsumeRoute{}
-				g.Expect(k8sClient.Get(ctx, consumeRouteRef.K8s(), consumeRoute)).To(
-					WithTransform(apierrors.IsNotFound, BeTrue()),
-				)
+				g.Expect(k8sClient.Get(ctx, consumeRouteRef.K8s(), consumeRoute)).To(Succeed())
+				g.Expect(consumeRoute.UID).To(Equal(acceptedConsume.UID))
+				g.Expect(consumeRoute.Spec).To(Equal(acceptedConsume.Spec))
 				proxyRoute := &gatewayapi.Route{}
 				g.Expect(k8sClient.Get(ctx, proxyRouteRef.K8s(), proxyRoute)).To(Succeed())
 				g.Expect(proxyRoute.UID).To(Equal(proxyRouteUID))
-			}, timeout, interval).Should(Succeed())
+			}
+			Eventually(check, timeout, interval).Should(Succeed())
+			Consistently(check, time.Second, interval).Should(Succeed())
 		})
 	})
 })

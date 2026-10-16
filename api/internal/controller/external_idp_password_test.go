@@ -7,7 +7,6 @@ package controller
 import (
 	"time"
 
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -16,7 +15,6 @@ import (
 	apiapi "github.com/telekom/controlplane/api/api/v1"
 	approvalapi "github.com/telekom/controlplane/approval/api/v1"
 	"github.com/telekom/controlplane/common/pkg/condition"
-	"github.com/telekom/controlplane/common/pkg/types"
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -61,7 +59,7 @@ var _ = Describe("Consumer username/password with scopes", func() {
 		}, scopeTimeout, interval).Should(Succeed())
 	})
 
-	DescribeTable("revokes existing access when the exposure drops its external IDP", func(name string, scopes []string) {
+	DescribeTable("blocks changes and preserves existing access when the exposure drops its external IDP", func(name string, scopes []string) {
 		// Declared scopes keep the specification-scope check out of the way once the external IDP is removed.
 		exposure, sub := newScopeFixtures(name, consumerScopes, true)
 		exposure.Spec.Security.M2M.ExternalIDP.GrantType = apiapi.GrantTypePassword
@@ -85,6 +83,9 @@ var _ = Describe("Consumer username/password with scopes", func() {
 		routeRef := *sub.Status.Route
 		failover := &gatewayapi.ConsumeRoute{}
 		Expect(k8sClient.Get(ctx, consumeRef.K8s(), failover)).To(Succeed())
+		acceptedConsume := failover.DeepCopy()
+		acceptedScopes := sub.Status.ActiveScopes
+		acceptedFailoverRefs := sub.Status.FailoverConsumeRoutes
 		failover.ObjectMeta = metav1.ObjectMeta{Name: failover.Name + "-failover", Namespace: failover.Namespace, Labels: failover.Labels}
 		Expect(controllerutil.SetControllerReference(sub, failover, k8sClient.Scheme())).To(Succeed())
 		Expect(k8sClient.Create(ctx, failover)).To(Succeed())
@@ -100,11 +101,15 @@ var _ = Describe("Consumer username/password with scopes", func() {
 		check := func(g Gomega) {
 			g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(sub), sub)).To(Succeed())
 			expectScopeCondition(g, sub.GetConditions(), condition.ConditionTypeReady, metav1.ConditionFalse, condition.ReasonValidationFailed, sub.Generation)
-			g.Expect(sub.Status.ConsumeRoute).To(BeNil())
-			g.Expect(sub.Status.FailoverConsumeRoutes).To(BeEmpty())
-			g.Expect(sub.Status.ActiveScopes).To(BeEmpty())
-			for _, ref := range []types.ObjectRef{consumeRef, *types.ObjectRefFromObject(failover)} {
-				g.Expect(k8sClient.Get(ctx, ref.K8s(), &gatewayapi.ConsumeRoute{})).To(WithTransform(apierrors.IsNotFound, BeTrue()))
+			g.Expect(meta.FindStatusCondition(sub.GetConditions(), condition.ConditionTypeProcessing).Reason).To(Equal("Blocked"))
+			g.Expect(sub.Status.ConsumeRoute).To(Equal(&consumeRef))
+			g.Expect(sub.Status.FailoverConsumeRoutes).To(Equal(acceptedFailoverRefs))
+			g.Expect(sub.Status.ActiveScopes).To(Equal(acceptedScopes))
+			for _, accepted := range []*gatewayapi.ConsumeRoute{acceptedConsume, failover} {
+				current := &gatewayapi.ConsumeRoute{}
+				g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(accepted), current)).To(Succeed())
+				g.Expect(current.UID).To(Equal(accepted.UID))
+				g.Expect(current.Spec).To(Equal(accepted.Spec))
 			}
 			g.Expect(k8sClient.Get(ctx, routeRef.K8s(), &gatewayapi.Route{})).To(Succeed())
 		}
@@ -121,7 +126,10 @@ var _ = Describe("Consumer username/password with scopes", func() {
 		Eventually(func(g Gomega) {
 			g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(sub), sub)).To(Succeed())
 			expectScopeCondition(g, sub.GetConditions(), condition.ConditionTypeReady, metav1.ConditionTrue, condition.ReasonProvisioned, sub.Generation)
-			g.Expect(sub.Status.ConsumeRoute).NotTo(BeNil())
+			g.Expect(sub.Status.ConsumeRoute).To(Equal(&consumeRef))
+			current := &gatewayapi.ConsumeRoute{}
+			g.Expect(k8sClient.Get(ctx, consumeRef.K8s(), current)).To(Succeed())
+			g.Expect(current.UID).To(Equal(acceptedConsume.UID))
 		}, scopeTimeout, interval).Should(Succeed())
 	},
 		Entry("combined credentials without scopes", "password-revoke-no-scopes", nil),

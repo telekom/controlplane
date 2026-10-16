@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"time"
 
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
@@ -19,8 +19,11 @@ import (
 
 	apiapi "github.com/telekom/controlplane/api/api/v1"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
+	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/controller/index"
+	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
+	"github.com/telekom/controlplane/common/pkg/test/mock"
 	"github.com/telekom/controlplane/common/pkg/types"
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
 
@@ -28,8 +31,8 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("Remote subscription cleanup", func() {
-	It("preserves a shared proxy route and another subscription's resources", func() {
+var _ = Describe("Remote subscription validation", func() {
+	It("blocks and warns while preserving accepted resources and status", func() {
 		ctx, cancel := context.WithCancel(context.Background())
 		DeferCleanup(cancel)
 		testEnv := &envtest.Environment{
@@ -108,6 +111,9 @@ var _ = Describe("Remote subscription cleanup", func() {
 			sub.Status.Route = &routeRef
 			sub.Status.RemoteApiSubscription = types.ObjectRefFromObject(request)
 			sub.Status.ConsumeRoute = types.ObjectRefFromObject(consumeRoute)
+			sub.Status.ActiveScopes = []string{"read"}
+			sub.Status.GatewayUrl = "https://gateway.example.com/shared/v1"
+			sub.Status.IdpIssuer = "https://idp.example.com"
 			Expect(apiClient.Status().Update(ctx, sub)).To(Succeed())
 			subscriptions = append(subscriptions, sub)
 			requests = append(requests, request)
@@ -139,17 +145,29 @@ var _ = Describe("Remote subscription cleanup", func() {
 
 		subscriptions[0].Spec.Security.M2M.Client = &apiapi.OAuth2ClientCredentials{ClientId: "client", ClientSecret: "secret"}
 		Expect(apiClient.Update(ctx, subscriptions[0])).To(Succeed())
+		accepted := subscriptions[0].DeepCopy()
 		handlerCtx := cclient.WithClient(ctx, cclient.NewJanitorClient(cclient.NewScopedClient(cachedClient, "test")))
-		Expect(handleRemoteApiSubscription(handlerCtx, subscriptions[0])).To(Succeed())
-		Expect(subscriptions[0].Status.Route).To(BeNil())
-		Expect(subscriptions[0].Status.RemoteApiSubscription).To(BeNil())
-		Expect(subscriptions[0].Status.ConsumeRoute).To(BeNil())
-		Expect(apiClient.Get(ctx, client.ObjectKeyFromObject(requests[0]), &apiapi.RemoteApiSubscription{})).To(
-			WithTransform(apierrors.IsNotFound, BeTrue()),
-		)
-		Expect(apiClient.Get(ctx, client.ObjectKeyFromObject(consumeRoutes[0]), &gatewayapi.ConsumeRoute{})).To(
-			WithTransform(apierrors.IsNotFound, BeTrue()),
-		)
+		err = handleRemoteApiSubscription(handlerCtx, subscriptions[0])
+		Expect(err).To(BeAssignableToTypeOf(ctrlerrors.BlockedErrorf("")))
+		recorder := &mock.EventRecorder{}
+		updated, result, retryErr := ctrlerrors.HandleError(handlerCtx, subscriptions[0], err, recorder)
+		Expect(updated).To(BeTrue())
+		Expect(retryErr).NotTo(HaveOccurred())
+		Expect(result.RequeueAfter).To(BeNumerically(">", 0))
+		Expect(recorder.GetEvent(subscriptions[0], "Warning")).To(ConsistOf(mock.RecordedEvent{
+			Object: subscriptions[0], EventType: "Warning", Reason: "Blocked", Message: err.Error(),
+		}))
+		Expect(meta.FindStatusCondition(subscriptions[0].GetConditions(), condition.ConditionTypeReady).Reason).To(Equal(condition.ReasonValidationFailed))
+		accepted.Status.Conditions = subscriptions[0].Status.Conditions
+		Expect(subscriptions[0].Status).To(Equal(accepted.Status))
+		remainingRequest := &apiapi.RemoteApiSubscription{}
+		Expect(apiClient.Get(ctx, client.ObjectKeyFromObject(requests[0]), remainingRequest)).To(Succeed())
+		Expect(remainingRequest.UID).To(Equal(requests[0].UID))
+		Expect(remainingRequest.Spec).To(Equal(requests[0].Spec))
+		acceptedConsumeRoute := &gatewayapi.ConsumeRoute{}
+		Expect(apiClient.Get(ctx, client.ObjectKeyFromObject(consumeRoutes[0]), acceptedConsumeRoute)).To(Succeed())
+		Expect(acceptedConsumeRoute.UID).To(Equal(consumeRoutes[0].UID))
+		Expect(acceptedConsumeRoute.Spec).To(Equal(consumeRoutes[0].Spec))
 		remainingRoute := &gatewayapi.Route{}
 		Expect(apiClient.Get(ctx, routeRef.K8s(), remainingRoute)).To(Succeed())
 		Expect(remainingRoute.UID).To(Equal(proxyRoute.UID))

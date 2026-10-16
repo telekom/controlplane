@@ -14,6 +14,7 @@ import (
 
 	apiv1 "github.com/telekom/controlplane/api/api/v1"
 	"github.com/telekom/controlplane/common/pkg/condition"
+	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -34,7 +35,12 @@ var _ = Describe("Subscription scope validation", func() {
 		}}}
 		original := sub.DeepCopy().Spec
 		properties := map[string]any{"resource_type": "API", "basePath": "/scope/test"}
-		Expect(validateSubscriptionScopes(context.Background(), api, exposure, sub, properties)).To(Equal(allowed))
+		err := validateSubscriptionScopes(context.Background(), api, exposure, sub, properties)
+		if allowed {
+			Expect(err).NotTo(HaveOccurred())
+		} else {
+			Expect(err).To(BeAssignableToTypeOf(ctrlerrors.BlockedErrorf("")))
+		}
 		Expect(sub.Spec).To(Equal(original))
 		Expect(properties).To(HaveKeyWithValue("resource_type", "API"))
 		Expect(properties).To(HaveKeyWithValue("basePath", "/scope/test"))
@@ -90,9 +96,9 @@ var _ = Describe("Subscription scope validation", func() {
 			M2M: &apiv1.SubscriberMachine2MachineAuthentication{Scopes: requested},
 		}}}
 		properties := map[string]any{"resource_type": "API"}
-		Expect(validateSubscriptionScopes(context.Background(), api, exposure, sub, properties)).To(BeFalse())
+		Expect(validateSubscriptionScopes(context.Background(), api, exposure, sub, properties)).To(HaveOccurred())
 		exposure.Spec.Security = &apiv1.Security{M2M: &apiv1.Machine2MachineAuthentication{ExternalIDP: endpoint}}
-		Expect(validateSubscriptionScopes(context.Background(), api, exposure, sub, properties)).To(BeTrue())
+		Expect(validateSubscriptionScopes(context.Background(), api, exposure, sub, properties)).To(Succeed())
 		Expect(meta.FindStatusCondition(sub.GetConditions(), "ScopesAllowed").Status).To(Equal(metav1.ConditionTrue))
 		Expect(properties).To(Equal(map[string]any{"resource_type": "API", "scopes": requested}))
 	})
@@ -101,7 +107,7 @@ var _ = Describe("Subscription scope validation", func() {
 		for _, security := range []*apiv1.SubscriberSecurity{nil, {}} {
 			sub := &apiv1.ApiSubscription{Spec: apiv1.ApiSubscriptionSpec{Security: security}}
 			properties := map[string]any{"resource_type": "API"}
-			Expect(validateSubscriptionScopes(context.Background(), &apiv1.Api{}, &apiv1.ApiExposure{}, sub, properties)).To(BeTrue())
+			Expect(validateSubscriptionScopes(context.Background(), &apiv1.Api{}, &apiv1.ApiExposure{}, sub, properties)).To(Succeed())
 			Expect(sub.GetConditions()).To(BeEmpty())
 			Expect(properties).To(Equal(map[string]any{"resource_type": "API"}))
 		}
@@ -131,6 +137,7 @@ var _ = Describe("ApiSubscription Handler", func() {
 					return
 				}
 				Expect(err).To(MatchError(`Consumer username/password combined with client credentials, scopes or a grant type requires an external IDP from the provider`))
+				Expect(err).To(BeAssignableToTypeOf(ctrlerrors.BlockedErrorf("")))
 			},
 			Entry("without subscription security", nil, nil, false),
 			Entry("without subscription M2M", &apiv1.SubscriberSecurity{}, nil, false),
@@ -206,9 +213,11 @@ var _ = Describe("ApiSubscription Handler", func() {
 				sub := &apiv1.ApiSubscription{Spec: apiv1.ApiSubscriptionSpec{
 					Security: &apiv1.SubscriberSecurity{M2M: security},
 				}}
-				Expect(validateRemoteSubscriptionSecurity(sub)).To(MatchError(
+				err := validateRemoteSubscriptionSecurity(sub)
+				Expect(err).To(MatchError(
 					"remote API subscriptions support scopes only; client credentials and username/password are not supported",
 				))
+				Expect(err).To(BeAssignableToTypeOf(ctrlerrors.BlockedErrorf("")))
 			}
 		})
 	})

@@ -13,6 +13,7 @@ import (
 	agenticv1 "github.com/telekom/controlplane/agentic/api/v1"
 	"github.com/telekom/controlplane/agentic/internal/handler/util"
 	"github.com/telekom/controlplane/common/pkg/condition"
+	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -34,7 +35,12 @@ var _ = Describe("Subscription scope validation", func() {
 			server := &util.ServerInfo{Oauth2Scopes: declared}
 			before, serverBefore := slices.Clone(requested), slices.Clone(declared)
 			exposureBefore := exp.DeepCopy()
-			Expect(validateSubscriptionScopes(server, exp, obj)).To(Equal(accepted))
+			err := validateSubscriptionScopes(server, exp, obj)
+			if accepted {
+				Expect(err).NotTo(HaveOccurred())
+			} else {
+				Expect(err).To(BeAssignableToTypeOf(ctrlerrors.BlockedErrorf("")))
+			}
 			Expect(obj.Spec.Security.M2M.Scopes).To(Equal(before))
 			Expect(server.Oauth2Scopes).To(Equal(serverBefore))
 			Expect(exp).To(Equal(exposureBefore))
@@ -63,7 +69,7 @@ var _ = Describe("Subscription scope validation", func() {
 	It("accepts absent security or M2M", func() {
 		for _, security := range []*agenticv1.SubscriberSecurity{nil, {}} {
 			obj := &agenticv1.AgenticSubscription{Spec: agenticv1.AgenticSubscriptionSpec{Security: security}}
-			Expect(validateSubscriptionScopes(&util.ServerInfo{}, nil, obj)).To(BeTrue())
+			Expect(validateSubscriptionScopes(&util.ServerInfo{}, nil, obj)).To(Succeed())
 		}
 	})
 

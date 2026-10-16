@@ -75,14 +75,13 @@ func (h *AgenticSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *ag
 		return errors.Wrapf(err, "failed to find active AgenticExposure for basePath %q", obj.Spec.BasePath)
 	}
 	// Validate scopes using the selected exposure's endpoint exception before readiness checks.
-	if !validateSubscriptionScopes(serverInfo, exposure, obj) {
-		return h.Delete(ctx, obj)
+	if scopeErr := validateSubscriptionScopes(serverInfo, exposure, obj); scopeErr != nil {
+		return scopeErr
 	}
 	if violatesBasicWithScopesPolicy(obj, exposure) {
 		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonValidationFailed,
 			"Consumer username/password combined with client credentials, scopes or a grant type requires an external IDP from the provider"))
-		obj.SetCondition(condition.NewBlockedCondition("Consumer username/password combined with client credentials, scopes or a grant type requires an external IDP from the provider"))
-		return h.Delete(ctx, obj)
+		return ctrlerrors.BlockedErrorf("Consumer username/password combined with client credentials, scopes or a grant type requires an external IDP from the provider")
 	}
 	if !exposureFound {
 		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet,
@@ -391,18 +390,18 @@ func validateVisibility(exposure *agenticv1.AgenticExposure, sub *agenticv1.Agen
 }
 
 // validateSubscriptionScopes checks M2M scope membership unless the selected exposure has a non-empty external-IDP token endpoint.
-// It sets blocking conditions on the subscription and returns false if processing should stop.
-func validateSubscriptionScopes(server *util.ServerInfo, exposure *agenticv1.AgenticExposure, obj *agenticv1.AgenticSubscription) bool {
+// It sets validation conditions on the subscription and returns a blocked error on failure.
+func validateSubscriptionScopes(server *util.ServerInfo, exposure *agenticv1.AgenticExposure, obj *agenticv1.AgenticSubscription) error {
 	if !obj.HasM2M() || obj.Spec.Security.M2M.Scopes == nil {
-		return true
+		return nil
 	}
 	if exposure != nil && exposure.HasExternalIdp() {
-		return true
+		return nil
 	}
 	if len(server.Oauth2Scopes) == 0 {
 		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonValidationFailed, "Server does not define any OAuth2 scopes"))
 		obj.SetCondition(condition.NewBlockedCondition("Server does not define any OAuth2 scopes. AgenticSubscription will be automatically processed, if the server will be updated with scopes"))
-		return false
+		return ctrlerrors.BlockedErrorf("Server does not define any OAuth2 scopes. AgenticSubscription will be automatically processed, if the server will be updated with scopes")
 	}
 	scopesExist, invalidScopes := util.IsSubsetOfScopes(server.Oauth2Scopes, obj.Spec.Security.M2M.Scopes)
 	if !scopesExist {
@@ -412,7 +411,7 @@ func validateSubscriptionScopes(server *util.ServerInfo, exposure *agenticv1.Age
 		)
 		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonValidationFailed, "One or more scopes defined in AgenticSubscription are not defined in the server"))
 		obj.SetCondition(condition.NewBlockedCondition(message))
-		return false
+		return ctrlerrors.BlockedErrorf("%s", message)
 	}
-	return true
+	return nil
 }

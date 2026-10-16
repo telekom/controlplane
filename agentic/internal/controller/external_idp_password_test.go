@@ -103,7 +103,7 @@ var _ = Describe("Consumer username/password with scopes", func() {
 		Consistently(check, time.Second, interval).Should(Succeed())
 	})
 
-	DescribeTable("revokes existing access when the exposure drops its external IDP", func(scopes []string) {
+	DescribeTable("blocks changes and preserves existing access when the exposure drops its external IDP", func(scopes []string) {
 		f := newScopeFixture()
 		f.server("McpServer", consumerScopes)
 		exp := passwordExposure(f, agenticv1.GrantTypePassword)
@@ -111,6 +111,9 @@ var _ = Describe("Consumer username/password with scopes", func() {
 		sub := passwordSubscription(f, scopes)
 		grantApproval(sub, waitPending(sub))
 		consume := waitConsumeRoute(sub, scopes)
+		acceptedConsume := consume.DeepCopy()
+		acceptedRef := sub.Status.ConsumeRoute.DeepCopy()
+		acceptedScopes := sub.Status.ActiveScopes
 
 		var idp *agenticv1.ExternalIdentityProvider
 		Eventually(func(g Gomega) {
@@ -121,9 +124,12 @@ var _ = Describe("Consumer username/password with scopes", func() {
 		}, timeout, interval).Should(Succeed())
 		check := func(g Gomega) {
 			expectReadyReason(g, sub, condition.ReasonValidationFailed, metav1.ConditionFalse)
-			g.Expect(sub.Status.ConsumeRoute).To(BeNil())
-			g.Expect(sub.Status.ActiveScopes).To(BeEmpty())
-			g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(consume), &gatewayv1.ConsumeRoute{})).To(WithTransform(apierrors.IsNotFound, BeTrue()))
+			g.Expect(meta.FindStatusCondition(sub.GetConditions(), condition.ConditionTypeProcessing).Reason).To(Equal("Blocked"))
+			g.Expect(sub.Status.ConsumeRoute).To(Equal(acceptedRef))
+			g.Expect(sub.Status.ActiveScopes).To(Equal(acceptedScopes))
+			g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(consume), consume)).To(Succeed())
+			g.Expect(consume.UID).To(Equal(acceptedConsume.UID))
+			g.Expect(consume.Spec).To(Equal(acceptedConsume.Spec))
 			g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(route), &gatewayv1.Route{})).To(Succeed())
 		}
 		Eventually(check, timeout, interval).Should(Succeed())
@@ -135,7 +141,7 @@ var _ = Describe("Consumer username/password with scopes", func() {
 			g.Expect(k8sClient.Update(ctx, exp)).To(Succeed())
 		}, timeout, interval).Should(Succeed())
 		waitExposure(exp)
-		waitConsumeRoute(sub, scopes)
+		Expect(waitConsumeRoute(sub, scopes).UID).To(Equal(acceptedConsume.UID))
 	},
 		Entry("combined credentials without scopes", []string(nil)),
 		Entry("combined credentials with scopes", consumerScopes),

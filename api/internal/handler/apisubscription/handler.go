@@ -78,8 +78,7 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 
 	if err = validateBasicWithScopesPolicy(apiSub, apiExposure); err != nil {
 		apiSub.SetCondition(condition.NewNotReadyCondition(condition.ReasonValidationFailed, err.Error()))
-		apiSub.SetCondition(condition.NewBlockedCondition(err.Error()))
-		return cleanupSubscriptionConsumeRoutes(ctx, apiSub)
+		return err
 	}
 
 	// FindActiveAPIExposure selects by Status.Active only and may return a not-ready exposure.
@@ -133,8 +132,8 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 	}
 
 	// Validate specification scopes unless the selected exposure has an external token endpoint.
-	if !validateSubscriptionScopes(ctx, api, apiExposure, apiSub, properties) {
-		return cleanupSubscriptionConsumeRoutes(ctx, apiSub)
+	if scopeErr := validateSubscriptionScopes(ctx, api, apiExposure, apiSub, properties); scopeErr != nil {
+		return scopeErr
 	}
 
 	err = requester.SetProperties(properties)
@@ -380,18 +379,17 @@ func (h *ApiSubscriptionHandler) Delete(ctx context.Context, apiSub *apiapi.ApiS
 
 // validateSubscriptionScopes checks specification-scope membership unless the selected exposure
 // has a non-empty M2M external-IDP token endpoint.
-// It updates properties["scopes"] on success, sets blocking conditions on failure, and returns false if
-// processing should stop.
-func validateSubscriptionScopes(ctx context.Context, api *apiapi.Api, exposure *apiapi.ApiExposure, apiSub *apiapi.ApiSubscription, properties map[string]any) bool {
+// It updates properties["scopes"] on success and returns a blocked error on failure.
+func validateSubscriptionScopes(ctx context.Context, api *apiapi.Api, exposure *apiapi.ApiExposure, apiSub *apiapi.ApiSubscription, properties map[string]any) error {
 	if !apiSub.HasM2M() || apiSub.Spec.Security.M2M.Scopes == nil {
-		return true
+		return nil
 	}
 	if !exposure.HasExternalIdp() {
 		if len(api.Spec.Oauth2Scopes) == 0 {
 			apiSub.SetCondition(NewScopesAllowedCondition(apiSub, nil, false))
 			apiSub.SetCondition(condition.NewNotReadyCondition(condition.ReasonValidationFailed, "Api does not define any Oauth2 scopes"))
 			apiSub.SetCondition(condition.NewBlockedCondition("Api does not define any Oauth2 scopes. ApiSubscription will be automatically processed, if the API will be updated with scopes"))
-			return false
+			return ctrlerrors.BlockedErrorf("Api does not define any Oauth2 scopes. ApiSubscription will be automatically processed, if the API will be updated with scopes")
 		}
 		scopesExist, invalidScopes := util.IsSubsetOfScopes(api.Spec.Oauth2Scopes, apiSub.Spec.Security.M2M.Scopes)
 		if !scopesExist {
@@ -402,13 +400,13 @@ func validateSubscriptionScopes(ctx context.Context, api *apiapi.Api, exposure *
 			apiSub.SetCondition(NewScopesAllowedCondition(apiSub, invalidScopes, false))
 			apiSub.SetCondition(condition.NewNotReadyCondition(condition.ReasonValidationFailed, "One or more scopes which are defined in ApiSubscription are not defined in the ApiSpecification"))
 			apiSub.SetCondition(condition.NewBlockedCondition(message))
-			return false
+			return ctrlerrors.BlockedErrorf("%s", message)
 		}
 		log.FromContext(ctx).V(1).Info("✅ Scopes are valid and exist")
 	}
 	apiSub.SetCondition(NewScopesAllowedCondition(apiSub, apiSub.Spec.Security.M2M.Scopes, true))
 	properties["scopes"] = apiSub.Spec.Security.M2M.Scopes
-	return true
+	return nil
 }
 
 // resolveRouteRef determines which route the ApiSubscription should reference based on zone relationships.
@@ -487,7 +485,7 @@ func validateBasicWithScopesPolicy(obj *apiapi.ApiSubscription, exposure *apiapi
 	}
 
 	if exposure == nil || !exposure.HasExternalIdp() {
-		return errors.New("Consumer username/password combined with client credentials, scopes or a grant type requires an external IDP from the provider")
+		return ctrlerrors.BlockedErrorf("Consumer username/password combined with client credentials, scopes or a grant type requires an external IDP from the provider")
 	}
 	return nil
 }
@@ -498,7 +496,7 @@ func validateRemoteSubscriptionSecurity(obj *apiapi.ApiSubscription) error {
 	}
 	security := obj.Spec.Security.M2M
 	if security.Client != nil || security.Basic != nil {
-		return stderrors.New("remote API subscriptions support scopes only; client credentials and username/password are not supported")
+		return ctrlerrors.BlockedErrorf("remote API subscriptions support scopes only; client credentials and username/password are not supported")
 	}
 	return nil
 }
@@ -510,20 +508,6 @@ func handleRemoteApiSubscription(ctx context.Context, apiSub *apiapi.ApiSubscrip
 		return remote.HandleRemoteApiSubscription(ctx, apiSub)
 	}
 
-	scopedClient := cclient.ClientFromContextOrDie(ctx)
-	scopedClient.AddKnownTypeToState(&apiapi.RemoteApiSubscription{})
-	scopedClient.AddKnownTypeToState(&gatewayapi.ConsumeRoute{})
-	if _, err := scopedClient.CleanupAll(ctx, cclient.OwnedBy(apiSub)); err != nil {
-		return errors.Wrap(err, "failed to clean up unsupported remote subscription resources")
-	}
-	apiSub.Status.RemoteApiSubscription = nil
-	apiSub.Status.Route = nil
-	apiSub.Status.ConsumeRoute = nil
-	apiSub.Status.ActiveScopes = nil
-	apiSub.Status.GatewayUrl = ""
-	apiSub.Status.IdpIssuer = ""
 	apiSub.SetCondition(condition.NewNotReadyCondition(condition.ReasonValidationFailed, validationErr.Error()))
-	apiSub.SetCondition(condition.NewBlockedCondition(validationErr.Error()))
-	log.FromContext(ctx).Info("Remote API subscription has unsupported subscriber credentials")
-	return nil
+	return validationErr
 }
