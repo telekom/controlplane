@@ -129,6 +129,35 @@ spec:
                     name:
                       pattern: ^[a-z0-9]+(-?[a-z0-9]+)*$
                       type: string
+                    tls:
+                      description: |-
+                        TLS configures additional CA certificates trusted when connecting to this gateway.
+                        The referenced ConfigMap must be in the namespace of the Zone.
+                      properties:
+                        configMapRef:
+                          description: ConfigMapRef references the PEM encoded CA
+                            certificates.
+                          properties:
+                            key:
+                              description: Key in the ConfigMap data containing PEM
+                                encoded CA certificates.
+                              maxLength: 253
+                              minLength: 1
+                              pattern: ^[-._a-zA-Z0-9]+$
+                              type: string
+                            name:
+                              description: Name of the ConfigMap.
+                              maxLength: 253
+                              minLength: 1
+                              pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+                              type: string
+                          required:
+                          - key
+                          - name
+                          type: object
+                      required:
+                      - configMapRef
+                      type: object
                   required:
                   - admin
                   - name
@@ -236,6 +265,35 @@ spec:
                       - expirationPeriod
                       - gracePeriod
                       - notificationThresholds
+                      type: object
+                    tls:
+                      description: |-
+                        TLS configures additional CA certificates trusted when connecting to this identity provider.
+                        The referenced ConfigMap must be in the namespace of the Zone.
+                      properties:
+                        configMapRef:
+                          description: ConfigMapRef references the PEM encoded CA
+                            certificates.
+                          properties:
+                            key:
+                              description: Key in the ConfigMap data containing PEM
+                                encoded CA certificates.
+                              maxLength: 253
+                              minLength: 1
+                              pattern: ^[-._a-zA-Z0-9]+$
+                              type: string
+                            name:
+                              description: Name of the ConfigMap.
+                              maxLength: 253
+                              minLength: 1
+                              pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+                              type: string
+                          required:
+                          - key
+                          - name
+                          type: object
+                      required:
+                      - configMapRef
                       type: object
                     tokenUrl:
                       format: uri

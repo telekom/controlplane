@@ -6,6 +6,7 @@ package zone
 
 import (
 	"context"
+	"encoding/pem"
 	"errors"
 	"fmt"
 	"net/http"
@@ -150,82 +151,51 @@ var _ = Describe("OIDC discovery TLS verification", func() {
 		}))
 		DeferCleanup(server.Close)
 
-		previous, wasSet := os.LookupEnv(EnvSkipTlsVerify)
+		previous, wasSet := os.LookupEnv("SKIP_TLS_VERIFY")
 		DeferCleanup(func() {
 			if wasSet {
-				Expect(os.Setenv(EnvSkipTlsVerify, previous)).To(Succeed())
+				Expect(os.Setenv("SKIP_TLS_VERIFY", previous)).To(Succeed())
 				return
 			}
-			Expect(os.Unsetenv(EnvSkipTlsVerify)).To(Succeed())
+			Expect(os.Unsetenv("SKIP_TLS_VERIFY")).To(Succeed())
 		})
 	})
 
-	It("rejects an untrusted certificate when SKIP_TLS_VERIFY is unset", func() {
-		Expect(os.Unsetenv(EnvSkipTlsVerify)).To(Succeed())
-		client := (&ZoneHandler{}).httpClient()
-		Expect(client.Transport).To(BeNil())
-
-		_, _, err := discoverTokenURL(context.Background(), client, server.URL)
+	It("rejects an untrusted certificate without a custom CA", func() {
+		Expect(os.Unsetenv("SKIP_TLS_VERIFY")).To(Succeed())
+		_, _, err := discoverPresetTokenURL(context.Background(), &HandlingContext{}, server.URL)
 		Expect(err).To(MatchError(ContainSubstring("certificate")))
 	})
 
-	DescribeTable("keeps verification for values other than true",
+	DescribeTable("enforces verification regardless of the legacy bypass environment variable",
 		func(value string) {
-			Expect(os.Setenv(EnvSkipTlsVerify, value)).To(Succeed())
-			client := (&ZoneHandler{}).httpClient()
-			Expect(client.Transport).To(BeNil())
-
-			_, _, err := discoverTokenURL(context.Background(), client, server.URL)
+			Expect(os.Setenv("SKIP_TLS_VERIFY", value)).To(Succeed())
+			_, _, err := discoverPresetTokenURL(context.Background(), &HandlingContext{}, server.URL)
 			Expect(err).To(MatchError(ContainSubstring("certificate")))
 		},
+		Entry("true", "true"),
+		Entry("mixed case with whitespace", " TRUE "),
 		Entry("false", "false"),
 		Entry("empty", ""),
 		Entry("invalid", "yes"),
 		Entry("numeric", "1"),
 	)
 
-	DescribeTable("accepts an untrusted certificate when SKIP_TLS_VERIFY is true",
-		func(value string) {
-			Expect(os.Setenv(EnvSkipTlsVerify, value)).To(Succeed())
-
-			tokenURL, _, err := discoverTokenURL(context.Background(), (&ZoneHandler{}).httpClient(), server.URL)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(tokenURL).To(Equal("https://tokens.example.com/token"))
-		},
-		Entry("lowercase", "true"),
-		Entry("mixed case with whitespace", " TRUE "),
-	)
-
 	It("does not modify the default transport", func() {
-		Expect(os.Setenv(EnvSkipTlsVerify, "true")).To(Succeed())
-		_ = (&ZoneHandler{}).httpClient()
+		_, release, err := discoveryClient(context.Background(), &HandlingContext{}, server.URL)
+		Expect(err).NotTo(HaveOccurred())
+		defer release()
 
 		defaultTransport := http.DefaultTransport.(*http.Transport)
 		Expect(defaultTransport.TLSClientConfig == nil || !defaultTransport.TLSClientConfig.InsecureSkipVerify).To(BeTrue())
 	})
 
-	DescribeTable("NewZoneHandler builds the discovery client once from SKIP_TLS_VERIFY",
-		func(value string, accepts bool) {
-			Expect(os.Setenv(EnvSkipTlsVerify, value)).To(Succeed())
-			h := NewZoneHandler()
-			Expect(h.HTTPClient).NotTo(BeNil())
-			Expect(h.httpClient()).To(BeIdenticalTo(h.HTTPClient))
-
-			_, _, err := discoverTokenURL(context.Background(), h.httpClient(), server.URL)
-			if accepts {
-				Expect(err).NotTo(HaveOccurred())
-				return
-			}
-			Expect(err).To(MatchError(ContainSubstring("certificate")))
-		},
-		Entry("true", "true", true),
-		Entry("false", "false", false),
-	)
-
 	It("keeps an injected HTTP client", func() {
-		Expect(os.Setenv(EnvSkipTlsVerify, "true")).To(Succeed())
 		injected := &http.Client{}
-		Expect((&ZoneHandler{HTTPClient: injected}).httpClient()).To(BeIdenticalTo(injected))
+		doer, release, err := discoveryClient(context.Background(), &HandlingContext{HTTPClient: injected}, server.URL)
+		Expect(err).NotTo(HaveOccurred())
+		defer release()
+		Expect(doer).To(BeIdenticalTo(injected))
 	})
 })
 
@@ -406,6 +376,29 @@ var _ = Describe("Preset OIDC status", func() {
 			Name: "removed", Links: adminv1.Links{Issuer: "https://issuer.example.com/auth/realms/default", TokenUrl: "https://tokens.example.com/token"},
 		}}
 		Expect(populatePresetStatus(context.Background(), hc)).To(HaveOccurred())
+	})
+
+	It("trusts the zone CA bundle for discovery without an HTTP client override", func() {
+		var issuer string
+		server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			_, err := fmt.Fprintf(w, `{"issuer":%q,"token_endpoint":"https://tokens.example.com/token"}`, issuer)
+			Expect(err).NotTo(HaveOccurred())
+		}))
+		defer server.Close()
+		host := strings.TrimPrefix(server.URL, "https://")
+		issuer = "https://" + host + "/auth/realms/default"
+
+		hc := newContext(nil)
+		hc.Zone.Spec.IdentityProviders[0].IssuerHostname = host
+
+		By("failing verification with system roots only")
+		err := populatePresetStatus(context.Background(), hc)
+		Expect(err).To(MatchError(ContainSubstring("certificate")))
+
+		By("succeeding with the zone CA bundle")
+		hc.CABundle = pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: server.Certificate().Raw})
+		Expect(populatePresetStatus(context.Background(), hc)).To(Succeed())
+		Expect(hc.Zone.Status.Presets).To(HaveEach(HaveField("Links.TokenUrl", "https://tokens.example.com/token")))
 	})
 
 	It("does not reuse an invalid status token URL", func() {

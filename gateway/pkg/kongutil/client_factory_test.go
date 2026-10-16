@@ -1,103 +1,323 @@
-// Copyright 2025 Deutsche Telekom IT GmbH
+// Copyright 2026 Deutsche Telekom IT GmbH
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package kongutil_test
+package kongutil
 
 import (
 	"context"
+	"errors"
 	"net/http"
-	"net/http/httptest"
-	"os"
-	"strings"
-	"sync/atomic"
+	"time"
 
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	k8stypes "k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/rand"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/telekom/controlplane/common-server/pkg/client/tlsclient"
+	"github.com/telekom/controlplane/common/pkg/cabundle"
+	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
+	"github.com/telekom/controlplane/common/pkg/types"
+	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	kong "github.com/telekom/controlplane/gateway/pkg/kong/api"
-	"github.com/telekom/controlplane/gateway/pkg/kongutil"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("NewClientFor TLS verification", func() {
+// failingReader fails every read with a transient error.
+type failingReader struct{ client.Reader }
+
+func (failingReader) Get(context.Context, client.ObjectKey, client.Object, ...client.GetOption) error {
+	return errors.New("connection refused")
+}
+
+func doGet(c *tlsclient.Client) (int, error) {
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, c.APIURL()+"/routes", http.NoBody)
+	Expect(err).NotTo(HaveOccurred())
+	resp, err := c.Doer().Do(req)
+	if err != nil {
+		return 0, err
+	}
+	_ = resp.Body.Close()
+	return resp.StatusCode, nil
+}
+
+func isBlocked(err error) bool {
+	var be ctrlerrors.BlockedError
+	return errors.As(err, &be) && be.IsBlocked()
+}
+
+var _ = Describe("ClientFactory", func() {
 	var (
-		server    *httptest.Server
-		tokenHits atomic.Int32
-		adminHits atomic.Int32
-		gwCfg     kongutil.GatewayAdminConfig
+		ctx       context.Context
+		namespace string
+		factory   *ClientFactory
+		tokens    *tokenServer
+		api       *apiHandler
+		tokenSrv  string
+		apiSrv    string
+		tokenCA   *testCA
+		apiCA     *testCA
 	)
 
-	BeforeEach(func() {
-		tokenHits.Store(0)
-		adminHits.Store(0)
-		server = httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if strings.HasSuffix(r.URL.Path, "/token") {
-				tokenHits.Add(1)
-				w.Header().Set("Content-Type", "application/json")
-				_, _ = w.Write([]byte(`{"access_token":"tok","token_type":"Bearer","expires_in":300}`))
-				return
-			}
-			adminHits.Add(1)
-			w.Header().Set("Content-Type", "application/json")
-			_, _ = w.Write([]byte(`{"data":[]}`))
-		}))
-		DeferCleanup(server.Close)
-		gwCfg = kongutil.NewGatewayConfig(server.URL+"/admin-api", "client", "secret", server.URL+"/realms/master")
-	})
-
-	listServices := func() error {
-		c, err := kongutil.NewClientFor(gwCfg)
-		Expect(err).NotTo(HaveOccurred())
-		_, err = c.ListServiceWithResponse(context.Background(), &kong.ListServiceParams{})
-		return err
+	newGateway := func(name string, uid k8stypes.UID, ref *types.ConfigMapKeyRef) *gatewayv1.Gateway {
+		gw := &gatewayv1.Gateway{
+			ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: namespace, UID: uid},
+			Spec: gatewayv1.GatewaySpec{
+				Admin: gatewayv1.AdminConfig{
+					Url:          apiSrv,
+					ClientId:     "client",
+					ClientSecret: "secret",
+					IssuerUrl:    tokenSrv + "/realms/test",
+				},
+			},
+		}
+		if ref != nil {
+			gw.Spec.TLS = &types.TLSConfig{ConfigMapRef: *ref}
+		}
+		return gw
 	}
 
-	DescribeTable("rejects an untrusted certificate unless explicitly enabled",
-		func(value string, set bool) {
-			setOrUnsetEnv(kongutil.EnvSkipTlsVerify, value, set)
-			err := listServices()
-			Expect(err).To(MatchError(ContainSubstring("certificate")))
-			Expect(tokenHits.Load()).To(BeZero())
-			Expect(adminHits.Load()).To(BeZero())
-		},
-		Entry("when unset", "", false),
-		Entry("when false", "false", true),
-		Entry("when not a true value", "yes", true),
-	)
+	writeBundle := func(name, data string) {
+		cm := &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: namespace}}
+		err := k8sClient.Get(ctx, client.ObjectKeyFromObject(cm), cm)
+		cm.Data = map[string]string{"ca.pem": data}
+		if err == nil {
+			Expect(k8sClient.Update(ctx, cm)).To(Succeed())
+			return
+		}
+		Expect(k8sClient.Create(ctx, cm)).To(Succeed())
+	}
 
-	It("permits token and admin requests when SKIP_TLS_VERIFY=true", func() {
-		GinkgoT().Setenv(kongutil.EnvSkipTlsVerify, "true")
-		Expect(listServices()).To(Succeed())
-		Expect(tokenHits.Load()).To(Equal(int32(1)))
-		Expect(adminHits.Load()).To(Equal(int32(1)))
+	BeforeEach(func() {
+		ctx = context.Background()
+		namespace = "kongutil-" + rand.String(6)
+		Expect(k8sClient.Create(ctx, &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}})).To(Succeed())
+
+		tokenCA = newTestCA("token-ca")
+		apiCA = newTestCA("api-ca")
+		tokens = &tokenServer{}
+		api = &apiHandler{}
+		tokenSrv = startTLSServer(tokenCA, tokens).URL
+		apiSrv = startTLSServer(apiCA, api).URL
+
+		var err error
+		factory, err = NewClientFactory(context.Background(), k8sClient)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(factory.NeedLeaderElection()).To(BeFalse())
+		startCtx, cancel := context.WithCancel(context.Background())
+		done := make(chan struct{})
+		go func() {
+			defer GinkgoRecover()
+			defer close(done)
+			Expect(factory.Start(startCtx)).To(Succeed())
+		}()
+		DeferCleanup(func() {
+			cancel()
+			Eventually(done).WithTimeout(5 * time.Second).WithPolling(10 * time.Millisecond).Should(BeClosed())
+		})
 	})
 
-	It("does not affect the default HTTP client when SKIP_TLS_VERIFY=true", func() {
-		GinkgoT().Setenv(kongutil.EnvSkipTlsVerify, "true")
-		Expect(listServices()).To(Succeed())
+	It("uses the union CA bundle for token and API requests", func() {
+		union, err := cabundle.Canonicalize(tokenCA.pem, apiCA.pem)
+		Expect(err).NotTo(HaveOccurred())
+		writeBundle("bundle", string(union))
 
-		resp, err := http.Get(server.URL + "/admin-api") //nolint:noctx // test-only request
-		if resp != nil {
-			_ = resp.Body.Close()
-		}
+		gw := newGateway("gw", "uid-1", &types.ConfigMapKeyRef{Name: "bundle", Key: "ca.pem"})
+		lease, err := factory.acquire(ctx, gw)
+		Expect(err).NotTo(HaveOccurred())
+		defer lease.Release()
+
+		status, err := doGet(lease.Client())
+		Expect(err).NotTo(HaveOccurred())
+		Expect(status).To(Equal(http.StatusOK))
+		Expect(api.last()).To(Equal("Bearer kong-token"))
+		Expect(tokens.lastPath()).To(Equal("/realms/test" + tokenUrlPath))
+	})
+
+	It("fails TLS verification if only one of the CAs is trusted", func() {
+		writeBundle("api-only", string(apiCA.pem))
+
+		gw := newGateway("gw", "uid-1", &types.ConfigMapKeyRef{Name: "api-only", Key: "ca.pem"})
+		lease, err := factory.acquire(ctx, gw)
+		Expect(err).NotTo(HaveOccurred())
+		defer lease.Release()
+
+		_, err = doGet(lease.Client())
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(ContainSubstring("certificate"))
+		Expect(tokens.calls.Load()).To(BeZero())
+	})
+
+	It("uses system roots only without a TLS reference", func() {
+		lease, err := factory.acquire(ctx, newGateway("gw", "uid-1", nil))
+		Expect(err).NotTo(HaveOccurred())
+		defer lease.Release()
+
+		_, err = doGet(lease.Client())
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(ContainSubstring("certificate"))
+	})
+
+	It("enforces token and API verification even with the legacy bypass environment variable", func() {
+		GinkgoT().Setenv("SKIP_TLS_VERIFY", "true")
+		gw := newGateway("gw", "uid-1", nil)
+		lease, err := factory.acquire(ctx, gw)
+		Expect(err).NotTo(HaveOccurred())
+		defer lease.Release()
+		_, err = doGet(lease.Client())
 		Expect(err).To(MatchError(ContainSubstring("certificate")))
+		Expect(tokens.calls.Load()).To(BeZero())
+
+		writeBundle("token-only", string(tokenCA.pem))
+		gw.Spec.TLS = &types.TLSConfig{ConfigMapRef: types.ConfigMapKeyRef{Name: "token-only", Key: "ca.pem"}}
+		trustedToken, err := factory.acquire(ctx, gw)
+		Expect(err).NotTo(HaveOccurred())
+		defer trustedToken.Release()
+		_, err = doGet(trustedToken.Client())
+		Expect(err).To(MatchError(ContainSubstring("certificate")))
+		Expect(tokens.calls.Load()).To(BeNumerically(">", 0))
+		Expect(api.last()).To(BeEmpty())
+	})
+
+	It("re-validates the CA bundle before serving a cached client", func() {
+		union, err := cabundle.Canonicalize(tokenCA.pem, apiCA.pem)
+		Expect(err).NotTo(HaveOccurred())
+		writeBundle("bundle", string(union))
+		gw := newGateway("gw", "uid-1", &types.ConfigMapKeyRef{Name: "bundle", Key: "ca.pem"})
+
+		kc, release, err := factory.ClientFor(ctx, gw)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(kc).NotTo(BeNil())
+		release()
+		release()
+
+		By("making the source invalid")
+		writeBundle("bundle", "not a certificate")
+		_, _, err = factory.ClientFor(ctx, gw)
+		Expect(err).To(HaveOccurred())
+		Expect(isBlocked(err)).To(BeTrue(), "invalid source must block: %v", err)
+
+		By("deleting the source")
+		Expect(k8sClient.Delete(ctx, &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: "bundle", Namespace: namespace}})).To(Succeed())
+		_, _, err = factory.ClientFor(ctx, gw)
+		Expect(isBlocked(err)).To(BeTrue(), "missing source must block: %v", err)
+	})
+
+	It("blocks if the referenced key is missing", func() {
+		writeBundle("bundle", string(apiCA.pem))
+		gw := newGateway("gw", "uid-1", &types.ConfigMapKeyRef{Name: "bundle", Key: "other"})
+		_, _, err := factory.ClientFor(ctx, gw)
+		Expect(isBlocked(err)).To(BeTrue())
+	})
+
+	It("does not block on transient read errors", func() {
+		f, err := NewClientFactory(context.Background(), failingReader{})
+		Expect(err).NotTo(HaveOccurred())
+		DeferCleanup(f.clients.Close)
+
+		gw := newGateway("gw", "uid-1", &types.ConfigMapKeyRef{Name: "bundle", Key: "ca.pem"})
+		_, _, err = f.ClientFor(ctx, gw)
+		Expect(err).To(HaveOccurred())
+		Expect(isBlocked(err)).To(BeFalse())
+		Expect(err.Error()).To(ContainSubstring("connection refused"))
+	})
+
+	It("fails if a CA reference is configured but no reader is available", func() {
+		f, err := NewClientFactory(context.Background(), nil)
+		Expect(err).NotTo(HaveOccurred())
+		DeferCleanup(f.clients.Close)
+
+		gw := newGateway("gw", "uid-1", &types.ConfigMapKeyRef{Name: "bundle", Key: "ca.pem"})
+		_, _, err = f.ClientFor(ctx, gw)
+		Expect(err).To(MatchError(ContainSubstring("no resolver is configured")))
+	})
+
+	It("isolates clients per Gateway and shares them for the same Gateway", func() {
+		gwA := newGateway("gw-a", "uid-a", nil)
+		gwB := newGateway("gw-b", "uid-b", nil)
+
+		leaseA1, err := factory.acquire(ctx, gwA)
+		Expect(err).NotTo(HaveOccurred())
+		defer leaseA1.Release()
+		leaseA2, err := factory.acquire(ctx, gwA)
+		Expect(err).NotTo(HaveOccurred())
+		defer leaseA2.Release()
+		leaseB, err := factory.acquire(ctx, gwB)
+		Expect(err).NotTo(HaveOccurred())
+		defer leaseB.Release()
+
+		Expect(leaseA1.Client()).To(BeIdenticalTo(leaseA2.Client()))
+		Expect(leaseB.Client()).NotTo(BeIdenticalTo(leaseA1.Client()))
+
+		By("changing the credentials")
+		gwA.Spec.Admin.ClientSecret = "rotated"
+		leaseA3, err := factory.acquire(ctx, gwA)
+		Expect(err).NotTo(HaveOccurred())
+		defer leaseA3.Release()
+		Expect(leaseA3.Client()).NotTo(BeIdenticalTo(leaseA1.Client()))
+	})
+
+	It("rejects a nil Gateway and a missing factory", func() {
+		_, _, err := factory.ClientFor(ctx, nil)
+		Expect(err).To(MatchError(ContainSubstring("gateway is required")))
+
+		_, _, err = GetClientFor(ctx, nil, newGateway("gw", "uid-1", nil))
+		Expect(err).To(MatchError(ContainSubstring("not configured")))
+	})
+
+	It("delegates GetClientFor to the factory", func() {
+		kc, release, err := GetClientFor(ctx, factory, newGateway("gw", "uid-1", nil))
+		Expect(err).NotTo(HaveOccurred())
+		Expect(kc).NotTo(BeNil())
+		release()
 	})
 })
 
-// setOrUnsetEnv sets or explicitly unsets key for the current spec and
-// restores the previous value afterwards.
-func setOrUnsetEnv(key, value string, set bool) {
-	previous, wasSet := os.LookupEnv(key)
-	DeferCleanup(func() {
-		if wasSet {
-			Expect(os.Setenv(key, previous)).To(Succeed())
-			return
-		}
-		Expect(os.Unsetenv(key)).To(Succeed())
+var _ = Describe("NewStandaloneClient", func() {
+	var (
+		tokens *tokenServer
+		api    *apiHandler
+		cfg    GatewayAdminConfig
+	)
+
+	BeforeEach(func() {
+		ca := newTestCA("untrusted")
+		tokens = &tokenServer{}
+		api = &apiHandler{}
+		tokenSrv := startTLSServer(ca, tokens).URL
+		apiSrv := startTLSServer(ca, api).URL
+		cfg = NewGatewayConfig(apiSrv, "client", "secret", tokenSrv+"/realms/test")
 	})
-	if set {
-		Expect(os.Setenv(key, value)).To(Succeed())
-		return
-	}
-	Expect(os.Unsetenv(key)).To(Succeed())
-}
+
+	It("verifies TLS by default", func() {
+		c, closeFn, err := NewStandaloneClient(context.Background(), cfg, false)
+		Expect(err).NotTo(HaveOccurred())
+		defer closeFn()
+
+		_, err = c.ListRouteWithResponse(context.Background(), &kong.ListRouteParams{})
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(ContainSubstring("certificate"))
+		Expect(tokens.calls.Load()).To(BeZero())
+	})
+
+	It("skips TLS verification for token and API on explicit opt-in", func() {
+		c, closeFn, err := NewStandaloneClient(context.Background(), cfg, true)
+		Expect(err).NotTo(HaveOccurred())
+		defer closeFn()
+
+		_, err = c.ListRouteWithResponse(context.Background(), &kong.ListRouteParams{})
+		Expect(err).NotTo(HaveOccurred())
+		Expect(tokens.calls.Load()).To(BeNumerically(">", 0))
+		Expect(tokens.lastPath()).To(Equal("/realms/test" + tokenUrlPath))
+		Expect(api.last()).To(Equal("Bearer kong-token"))
+	})
+
+	It("rejects invalid URLs", func() {
+		_, _, err := NewStandaloneClient(context.Background(), NewGatewayConfig("not-a-url", "c", "s", "also-not"), false)
+		Expect(err).To(HaveOccurred())
+	})
+})

@@ -60,6 +60,7 @@ func createIdentityProvider(ctx context.Context, hc *HandlingContext) error {
 			AdminPassword: idp.Admin.Password,
 			AdminClientId: idp.Admin.ClientId,
 			AdminUserName: idp.Admin.UserName,
+			TLS:           hc.managedTLS(),
 		}
 
 		return nil

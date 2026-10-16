@@ -78,7 +78,8 @@ sources:
     environment: production                   # Environment identifier
     zone: aws                                 # Zone/region identifier
     url: https://gateway.example.com/admin    # Gateway admin API URL
-    tokenUrl: https://auth.example.com/token  # Authentication token URL
+    tokenUrl: https://auth.example.com/auth/realms/rover # Issuer base (see below)
+    insecureSkipVerify: false                 # Default: verify token and API TLS
     clientId: client-id                       # OAuth client ID
     clientSecret: client-secret               # OAuth client secret
     scopes: [optional-scope1, optional-scope2]# Optional OAuth scopes
@@ -104,13 +105,34 @@ Each source under `sources` represents a gateway instance to snapshot from:
 - `environment`: Environment identifier (e.g., "production", "staging")
 - `zone`: Zone or region identifier (e.g., "aws", "azure")
 - `url`: Gateway admin API URL
-- `tokenUrl`: OAuth token URL for authentication
+- `tokenUrl`: Issuer base URL for authentication. Despite the field name, the Kong client appends `/protocol/openid-connect/token`; supply the base without that suffix or a trailing slash.
 - `clientId`: OAuth client ID
 - `clientSecret`: OAuth client secret
 - `scopes` (optional): OAuth scopes for authentication
 - `tags` (optional): Tags for filtering gateway resources
 - `obfuscators` (optional): Source-specific obfuscators
 - `decoders` (optional): Source-specific decoders
+- `insecureSkipVerify` (optional): Defaults to `false`. Explicitly setting `true` disables TLS certificate-chain and hostname verification for **both the authentication token endpoint and the gateway admin API** for this source.
+
+#### TLS verification and test-only opt-out
+
+Leave `insecureSkipVerify` omitted or `false` for normal use. HTTPS endpoints must present certificates trusted by the snapshotter process's system trust store and valid for their hostnames. For private CAs, configure that trust store rather than disabling verification.
+
+Only for an isolated test environment with disposable credentials, opt out explicitly on the source:
+
+```yaml
+sources:
+  local-test:
+    environment: test
+    zone: local
+    url: https://gateway.test.example.com/admin
+    tokenUrl: https://idp.test.example.com/auth/realms/rover
+    clientId: snapshotter-test
+    clientSecret: <disposable-test-secret>
+    insecureSkipVerify: true # TEST ONLY: affects both token and API requests
+```
+
+**Risk:** With verification disabled, an attacker can impersonate either server, steal client credentials or access tokens, and read or alter admin API traffic and snapshots. Encryption alone no longer authenticates the server. Do not use this option in production or with real credentials. Remove it or set it back to `false` after testing. This option is specific to the snapshotter; it is not available on Zone, Gateway, or IdentityProvider resources.
 
 #### Decoders
 

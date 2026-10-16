@@ -7,6 +7,7 @@ package controller
 
 import (
 	"context"
+	"errors"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
@@ -38,6 +39,7 @@ type ClientReconciler struct {
 }
 
 // +kubebuilder:rbac:groups=core,resources=events,verbs=create;patch
+// +kubebuilder:rbac:groups=core,resources=configmaps,verbs=get;list;watch
 // +kubebuilder:rbac:groups=identity.cp.ei.telekom.de,resources=clients,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=identity.cp.ei.telekom.de,resources=clients/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=identity.cp.ei.telekom.de,resources=clients/finalizers,verbs=update
@@ -49,13 +51,11 @@ func (r *ClientReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *ClientReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	r.Recorder = mgr.GetEventRecorderFor("client-controller")
-
-	factory := r.ClientFactory
-	if factory == nil {
-		factory = keycloak.NewServiceFactory()
+	if r.ClientFactory == nil {
+		return errors.New("keycloak service factory is required")
 	}
-	r.Controller = cc.NewController(clientHandler.NewHandlerClient(factory), r.Client, r.Recorder)
+	r.Recorder = mgr.GetEventRecorderFor("client-controller")
+	r.Controller = cc.NewController(clientHandler.NewHandlerClient(r.ClientFactory), r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&identityv1.Client{}, builder.WithPredicates(cc.Count("client", cc.RoleFor))).

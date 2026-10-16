@@ -121,6 +121,10 @@ type IdentityProviderConfig struct {
 	// +listType=set
 	// +kubebuilder:validation:items:Pattern=`^(\*|[A-Za-z][A-Za-z0-9+.-]*://([A-Za-z0-9.-]+|\[[0-9A-Fa-f:.]+\])(:[0-9]{1,5})?)$`
 	AllowedOrigins []string `json:"allowedOrigins,omitempty"`
+	// TLS configures additional CA certificates trusted when connecting to this identity provider.
+	// The referenced ConfigMap must be in the namespace of the Zone.
+	// +optional
+	TLS *types.TLSConfig `json:"tls,omitempty"`
 }
 
 // GatewayAdminConfig contains the necessary information to connect to the gateway admin API for this zone.
@@ -263,6 +267,10 @@ type GatewayConfig struct {
 	// +kubebuilder:validation:Pattern=`^[a-z0-9]+(-?[a-z0-9]+)*$`
 	Name  string             `json:"name"`
 	Admin GatewayAdminConfig `json:"admin"`
+	// TLS configures additional CA certificates trusted when connecting to this gateway.
+	// The referenced ConfigMap must be in the namespace of the Zone.
+	// +optional
+	TLS *types.TLSConfig `json:"tls,omitempty"`
 }
 
 // ManagedRouteType defines the type of a managed route.
@@ -400,6 +408,29 @@ func (s *ZoneSpec) GetGateway(name string) (*GatewayConfig, error) {
 		}
 	}
 	return nil, fmt.Errorf("gateway %q not found", name)
+}
+
+// CARefs returns the sorted, deduplicated CA ConfigMap references of all gateways
+// and identity providers. The references are local to the namespace of the Zone.
+func (s *ZoneSpec) CARefs() []types.ConfigMapKeyRef {
+	var refs []types.ConfigMapKeyRef
+	for i := range s.Gateways {
+		if s.Gateways[i].TLS != nil {
+			refs = append(refs, s.Gateways[i].TLS.ConfigMapRef)
+		}
+	}
+	for i := range s.IdentityProviders {
+		if s.IdentityProviders[i].TLS != nil {
+			refs = append(refs, s.IdentityProviders[i].TLS.ConfigMapRef)
+		}
+	}
+	slices.SortFunc(refs, func(a, b types.ConfigMapKeyRef) int {
+		if c := strings.Compare(a.Name, b.Name); c != 0 {
+			return c
+		}
+		return strings.Compare(a.Key, b.Key)
+	})
+	return slices.Compact(refs)
 }
 
 func (s *ZoneSpec) GetIdentityProvider() (*IdentityProviderConfig, error) {
