@@ -14,6 +14,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 
 	"github.com/stretchr/testify/mock"
+	agenticv1 "github.com/telekom/controlplane/agentic/api/v1"
 	storeLib "github.com/telekom/controlplane/common-server/pkg/store"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	"github.com/telekom/controlplane/rover-server/pkg/store"
@@ -55,6 +56,16 @@ var InitOrDie = func(ctx context.Context, cfg *rest.Config) {
 		eventTypeMock.EXPECT().List(mock.Anything, mock.Anything).Return(
 			&storeLib.ListResponse[*eventv1.EventType]{Items: []*eventv1.EventType{}}, nil).Maybe()
 		stores.EventTypeStore = eventTypeMock
+
+		agenticExposureMock := mocks.NewMockObjectStore[*agenticv1.AgenticExposure](GinkgoT())
+		agenticExposureMock.EXPECT().List(mock.Anything, mock.Anything).Return(
+			&storeLib.ListResponse[*agenticv1.AgenticExposure]{Items: []*agenticv1.AgenticExposure{}}, nil).Maybe()
+		stores.AgenticExposureStore = agenticExposureMock
+
+		agenticSubscriptionMock := mocks.NewMockObjectStore[*agenticv1.AgenticSubscription](GinkgoT())
+		agenticSubscriptionMock.EXPECT().List(mock.Anything, mock.Anything).Return(
+			&storeLib.ListResponse[*agenticv1.AgenticSubscription]{Items: []*agenticv1.AgenticSubscription{}}, nil).Maybe()
+		stores.AgenticSubscriptionStore = agenticSubscriptionMock
 	}
 }
 
