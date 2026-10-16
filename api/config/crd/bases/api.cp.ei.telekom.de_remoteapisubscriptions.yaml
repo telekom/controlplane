@@ -76,7 +76,9 @@ spec:
                     description: M2M defines machine-to-machine authentication configuration
                     properties:
                       basic:
-                        description: Basic defines basic authentication configuration
+                        description: |-
+                          Basic defines basic authentication credentials, sent to the backend via HTTP Basic auth.
+                          If combined with client, scopes or grantType, they are used for the password grant of the provider's external IDP instead.
                         properties:
                           password:
                             description: Password for basic authentication
@@ -122,8 +124,9 @@ spec:
                             be provided
                           rule: self == null || has(self.clientSecret) || has(self.clientKey)
                       grantType:
-                        description: GrantType defines the OAuth2 grant type used
-                          for the subscriber's external IDP token request
+                        description: |-
+                          GrantType overrides the OAuth2 grant type of the provider's external IDP (defaults to the provider's grant type).
+                          Requires the provider to configure an external IDP.
                         enum:
                         - client_credentials
                         - authorization_code
@@ -138,8 +141,9 @@ spec:
                         maxItems: 100
                         type: array
                       tokenRequest:
-                        description: TokenRequest configures the token endpoint authentication
-                          method (RFC 7591)
+                        description: |-
+                          TokenRequest overrides the token endpoint authentication method (RFC 7591) of the provider's external IDP (defaults to the provider's method).
+                          Requires the provider to configure an external IDP.
                         enum:
                         - client_secret_basic
                         - client_secret_post

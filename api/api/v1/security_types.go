@@ -101,17 +101,20 @@ type SubscriberMachine2MachineAuthentication struct {
 	// Client defines client credentials for OAuth2
 	// +kubebuilder:validation:Optional
 	Client *OAuth2ClientCredentials `json:"client,omitempty"`
-	// Basic defines basic authentication configuration
+	// Basic defines basic authentication credentials, sent to the backend via HTTP Basic auth.
+	// If combined with client, scopes or grantType, they are used for the password grant of the provider's external IDP instead.
 	// +kubebuilder:validation:Optional
 	Basic *BasicAuthCredentials `json:"basic,omitempty"`
 	// Scopes defines additional OAuth2 scopes that are added to the LMS token
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:MaxItems=100
 	Scopes []string `json:"scopes,omitempty"`
-	// GrantType defines the OAuth2 grant type used for the subscriber's external IDP token request
+	// GrantType overrides the OAuth2 grant type of the provider's external IDP (defaults to the provider's grant type).
+	// Requires the provider to configure an external IDP.
 	// +kubebuilder:validation:Optional
 	GrantType GrantType `json:"grantType,omitempty"`
-	// TokenRequest configures the token endpoint authentication method (RFC 7591)
+	// TokenRequest overrides the token endpoint authentication method (RFC 7591) of the provider's external IDP (defaults to the provider's method).
+	// Requires the provider to configure an external IDP.
 	// +kubebuilder:validation:Optional
 	TokenRequest TokenRequestMethod `json:"tokenRequest,omitempty"`
 }
