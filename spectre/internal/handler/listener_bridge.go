@@ -8,9 +8,7 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
@@ -23,7 +21,9 @@ import (
 )
 
 // ensureGenericPublisher creates or reuses the shared generic Publisher for all Spectre listeners.
-// It is NOT owner-referenced since it is shared across Listener CRs.
+// It is NOT owner-referenced since it is shared across Listener CRs, and it is
+// never deleted: a draining Listener cannot know whether another Listener is
+// about to subscribe to it, and a deleted Publisher blocks those Subscribers.
 func (h *ListenerHandler) ensureGenericPublisher(
 	ctx context.Context,
 	eventStore *pubsubv1.EventStore,
@@ -142,51 +142,4 @@ func (h *ListenerHandler) ensureBridgeSubscriber(
 	}
 
 	return subscriber, nil
-}
-
-// cleanupGenericPublisherIfOrphaned deletes the shared generic Publisher once no
-// Subscriber in the zone namespace references it.
-//
-// Instead of counting global Listeners (which misses cross-zone and leaves stale
-// Publishers), this lists Subscribers in the actual zone namespace and checks
-// whether any still reference the generic Publisher. Terminating Subscribers
-// (with finalizers) are counted too — their finalizers still require the
-// Publisher.
-func (h *ListenerHandler) cleanupGenericPublisherIfOrphaned(
-	ctx context.Context,
-	zoneNamespace string,
-) error {
-	c := cclient.ClientFromContextOrDie(ctx)
-
-	publisherName := util.MakePublisherName(util.GenericEventType)
-	publisherRef := ctypes.ObjectRef{
-		Name:      publisherName,
-		Namespace: zoneNamespace,
-	}
-
-	subList := &pubsubv1.SubscriberList{}
-	if err := c.List(ctx, subList, client.InNamespace(zoneNamespace)); err != nil {
-		return errors.Wrap(err, "failed to list Subscribers for publisher cleanup")
-	}
-
-	for i := range subList.Items {
-		sub := &subList.Items[i]
-		if sub.Spec.Publisher.Name == publisherRef.Name && sub.Spec.Publisher.Namespace == publisherRef.Namespace {
-			// A Subscriber still references this Publisher (including terminating ones).
-			return nil
-		}
-	}
-
-	publisher := &pubsubv1.Publisher{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      publisherName,
-			Namespace: zoneNamespace,
-		},
-	}
-
-	if err := c.Delete(ctx, publisher); err != nil && !apierrors.IsNotFound(err) {
-		return errors.Wrapf(err, "failed to delete orphaned generic Publisher %q", publisherName)
-	}
-
-	return nil
 }

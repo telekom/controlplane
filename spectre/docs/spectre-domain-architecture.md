@@ -138,6 +138,7 @@ Spectre creates child resources (Publishers, Subscribers, RouteListeners) in the
 ## Lifecycle Contracts
 
 - **Deletion order**: Subscriber -> Publisher -> EventStore. A Publisher is retained until all referencing Subscribers have finalized.
+- **Listener Publisher**: the bridge Subscribers of all Listeners in a zone share one Publisher for `de.telekom.ei.listener`. It is created on first use and kept, also after the last Listener in the zone is gone.
 - **Pass-through and failover listeners** are rejected at reconciliation time.
 - **Placement**: capture runs in the consumer zone, else the provider zone; delivery always runs in the observer zone. The result is recorded in `status.appliedPlacement`. When placement fails for good, the Listener is Blocked and its capture is drained; the reason is in `status.draining.reason`.
 - **Circuit-breaker routes** are supported; the circuit-breaker upstream keeps the Jumper `/listener` path.

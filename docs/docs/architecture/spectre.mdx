@@ -77,6 +77,8 @@ An EventStore environment of `default` with another realm does not block. It rai
 
 Spectre uses the `de.telekom.ei.listener*` namespace for its internal event types, constructed automatically from the application ID. These names cannot be claimed by ordinary EventType admission.
 
+The bridge Subscribers of all Listeners in a zone share one Publisher for `de.telekom.ei.listener`. It is created on first use and kept, also after the last Listener in the zone is gone.
+
 ## Related Pages
 
 - [Architecture: Event Domain](./event.mdx)
