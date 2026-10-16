@@ -1,3 +1,10 @@
+## [0.41.4](https://github.com/telekom/controlplane/compare/v0.41.3...v0.41.4) (2026-10-16)
+
+
+### Bug Fixes
+
+* **rover-server:** check agentic sub-resource statuses ([#791](https://github.com/telekom/controlplane/issues/791)) ([0396839](https://github.com/telekom/controlplane/commit/039683992e76545c51d29cb678d64f9372680ed5))
+
 ## [0.41.3](https://github.com/telekom/controlplane/compare/v0.41.2...v0.41.3) (2026-10-15)
 
 
