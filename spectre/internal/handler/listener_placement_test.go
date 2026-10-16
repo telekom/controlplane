@@ -1349,6 +1349,36 @@ var _ = Describe("Listener apiBasePath spelling (controller)", func() {
 		Expect(rls).To(HaveLen(1))
 		Expect(rls[0].Spec.Issue).To(Equal(plPath))
 	})
+
+	It("P4: a drained Listener edited to another mismatching spelling reports the new path in Ready", func() {
+		f := newPlFixtures("c")
+		h := newPlHarness(f)
+		l, _ := h.provision()
+		rl := l.Status.RouteListener.DeepCopy()
+
+		trailing := plPath + "/"
+		l.Spec.ApiListener.ApiBasePath = trailing
+		h.update(l)
+		h.mustReconcile()
+		h.drain(rl)
+		Expect(h.listener().Status.AppliedPlacement).To(BeNil())
+
+		const upper = "/API/v1/orders"
+		l = h.listener()
+		l.Spec.ApiListener.ApiBasePath = upper
+		h.update(l)
+		calls := h.mustReconcile()
+		plExpectNoCaptureWrites(calls)
+
+		l = h.listener()
+		Expect(plBlocked(l)).To(ContainSubstring(plPathMismatch(upper)))
+		ready := meta.FindStatusCondition(l.Status.Conditions, condition.ConditionTypeReady)
+		Expect(ready).ToNot(BeNil())
+		Expect(ready.Status).To(Equal(metav1.ConditionFalse))
+		Expect(ready.ObservedGeneration).To(Equal(l.Generation))
+		Expect(ready.Message).To(ContainSubstring(plPathMismatch(upper)))
+		Expect(ready.Message).ToNot(ContainSubstring(fmt.Sprintf("%q", trailing)))
+	})
 })
 
 var _ = Describe("Listener event environment (controller)", func() {
