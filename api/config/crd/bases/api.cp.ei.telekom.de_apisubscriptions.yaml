@@ -132,6 +132,15 @@ spec:
                         - message: At least one of clientSecret or clientKey must
                             be provided
                           rule: self == null || has(self.clientSecret) || has(self.clientKey)
+                      grantType:
+                        description: GrantType defines the OAuth2 grant type used
+                          for the subscriber's external IDP token request
+                        enum:
+                        - client_credentials
+                        - authorization_code
+                        - password
+                        - refresh_token
+                        type: string
                       scopes:
                         description: Scopes defines additional OAuth2 scopes that
                           are added to the LMS token

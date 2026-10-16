@@ -223,6 +223,21 @@ var _ = Describe("External IDP password grant with consumer username/password an
 			Entry("on a failover-secondary route", secondaryPasswordRoute()),
 		)
 
+		DescribeTable("follows the consumer grant type over the provider one",
+			func(providerGrant, consumerGrant gatewayv1.GrantType, backendBasic bool) {
+				route := primaryPasswordRoute()
+				route.Spec.Security.M2M.ExternalIDP.GrantType = providerGrant
+				consumer := passwordConsumer()
+				consumer.Spec.Security.M2M.GrantType = consumerGrant
+				builder.EXPECT().GetRoute().Return(route, true)
+				builder.EXPECT().GetAllowedConsumers().Return([]*gatewayv1.ConsumeRoute{consumer})
+
+				Expect(feature.InstanceBasicAuthFeature.IsUsed(ctx, builder)).To(Equal(backendBasic))
+			},
+			Entry("password consumer on a client_credentials provider", gatewayv1.GrantTypeClientCredentials, gatewayv1.GrantTypePassword, false),
+			Entry("client_credentials consumer on a password provider", gatewayv1.GrantTypePassword, gatewayv1.GrantTypeClientCredentials, true),
+		)
+
 		It("adds no BasicAuth entry even when applied to a primary route", func() {
 			jumperConfig := plugin.NewJumperConfig()
 			builder.EXPECT().GetRoute().Return(primaryPasswordRoute(), true)

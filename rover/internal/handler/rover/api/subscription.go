@@ -96,9 +96,10 @@ func mapSubscriberSecurityToApiSecurity(roverSecurity *rover.SubscriberSecurity)
 
 	if roverSecurity.M2M != nil {
 		security.M2M = &apiapi.SubscriberMachine2MachineAuthentication{
-			Client: toApiClient(roverSecurity.M2M.Client),
-			Basic:  toApiBasic(roverSecurity.M2M.Basic),
-			Scopes: roverSecurity.M2M.Scopes,
+			Client:    toApiClient(roverSecurity.M2M.Client),
+			Basic:     toApiBasic(roverSecurity.M2M.Basic),
+			Scopes:    roverSecurity.M2M.Scopes,
+			GrantType: apiapi.GrantType(roverSecurity.M2M.GrantType),
 		}
 	}
 

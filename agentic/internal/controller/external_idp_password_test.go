@@ -97,24 +97,6 @@ var _ = Describe("Consumer username/password with scopes", func() {
 		Consistently(check, time.Second, interval).Should(Succeed())
 	})
 
-	DescribeTable("is blocked before approval without an explicit password grant", func(grantType agenticv1.GrantType) {
-		f := newScopeFixture()
-		f.server("McpServer", nil)
-		waitExposure(passwordExposure(f, grantType))
-		sub := passwordSubscription(f)
-
-		check := func(g Gomega) {
-			expectReadyReason(g, sub, condition.ReasonValidationFailed, metav1.ConditionFalse)
-			g.Expect(meta.FindStatusCondition(sub.GetConditions(), condition.ConditionTypeReady).Message).To(ContainSubstring(`grant type "password"`))
-			f.expectNoProvisioning(g)
-		}
-		Eventually(check, timeout, interval).Should(Succeed())
-		Consistently(check, time.Second, interval).Should(Succeed())
-	},
-		Entry("client_credentials grant", agenticv1.GrantTypeClientCredentials),
-		Entry("authorization_code grant", agenticv1.GrantTypeAuthorizationCode),
-	)
-
 	It("blocks Basic credentials with scopes without an external IDP", func() {
 		f := newScopeFixture()
 		f.server("McpServer", consumerScopes)
@@ -123,7 +105,7 @@ var _ = Describe("Consumer username/password with scopes", func() {
 
 		check := func(g Gomega) {
 			expectReadyReason(g, sub, condition.ReasonValidationFailed, metav1.ConditionFalse)
-			g.Expect(meta.FindStatusCondition(sub.GetConditions(), condition.ConditionTypeReady).Message).To(ContainSubstring(`grant type "password"`))
+			g.Expect(meta.FindStatusCondition(sub.GetConditions(), condition.ConditionTypeReady).Message).To(ContainSubstring("requires an external IDP"))
 			f.expectNoProvisioning(g)
 		}
 		Eventually(check, timeout, interval).Should(Succeed())

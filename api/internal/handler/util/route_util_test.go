@@ -133,6 +133,24 @@ var _ = Describe("Route Util", func() {
 					Scopes: []string{"consumer:read", "consumer:write"},
 				}))
 			})
+
+			DescribeTable("passes the consumer grant type through", func(grantType apiapi.GrantType, expected gatewayapi.GrantType) {
+				mapped := mapConsumerSecurity(&apiapi.SubscriberSecurity{M2M: &apiapi.SubscriberMachine2MachineAuthentication{
+					Client:    &apiapi.OAuth2ClientCredentials{ClientId: "consumer-id", ClientSecret: "consumer-secret", RefreshToken: "rt"},
+					GrantType: grantType,
+				}})
+
+				Expect(mapped).NotTo(BeNil())
+				Expect(mapped.M2M).NotTo(BeNil())
+				Expect(mapped.M2M.GrantType).To(Equal(expected))
+			},
+				Entry("empty without defaulting", apiapi.GrantType(""), gatewayapi.GrantType("")),
+				Entry("password", apiapi.GrantTypePassword, gatewayapi.GrantTypePassword),
+				Entry("client_credentials", apiapi.GrantTypeClientCredentials, gatewayapi.GrantTypeClientCredentials),
+				Entry("authorization_code", apiapi.GrantTypeAuthorizationCode, gatewayapi.GrantTypeAuthorizationCode),
+				Entry("refresh_token", apiapi.GrantTypeRefreshToken, gatewayapi.GrantTypeRefreshToken),
+				Entry("unrecognized without validation", apiapi.GrantType("unrecognized"), gatewayapi.GrantType("unrecognized")),
+			)
 		})
 
 		Describe("ReturnReferenceOnly", func() {
