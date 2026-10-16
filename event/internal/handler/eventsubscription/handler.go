@@ -227,8 +227,7 @@ func (h *EventSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *even
 
 	case builder.ApprovalResultPending:
 		logger.Info("Approval is pending — waiting for approval")
-		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonApprovalPending, "Waiting for approval decision"))
-		obj.SetCondition(condition.NewBlockedCondition("Waiting for approval decision"))
+		builder.SetPendingConditions(ctx, obj, approvalBuilder, "Waiting for approval decision")
 		return nil
 
 	case builder.ApprovalResultDenied:

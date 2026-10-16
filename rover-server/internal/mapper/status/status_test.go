@@ -18,6 +18,7 @@ import (
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	"github.com/telekom/controlplane/rover-server/pkg/store"
 	v1 "github.com/telekom/controlplane/rover/api/v1"
+	spectrev1 "github.com/telekom/controlplane/spectre/api/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/telekom/controlplane/rover-server/internal/api"
@@ -827,6 +828,316 @@ var _ = Describe("MapRoverStatus additional paths", func() {
 	})
 })
 
+var _ = Describe("MapRoverStatus with Spectre children", func() {
+	newSpectreRover := func(apps, listeners []types.ObjectRef) *v1.Rover {
+		return &v1.Rover{
+			ObjectMeta: metav1.ObjectMeta{Name: "r-spectre", Namespace: "ns", UID: "uid-spectre", Generation: 2},
+			Status: v1.RoverStatus{
+				SpectreApplications: apps,
+				SpectreListeners:    listeners,
+				Conditions: []metav1.Condition{
+					{Type: condition.ConditionTypeProcessing, Status: metav1.ConditionTrue, Reason: condition.ReasonSubResourceNotReady, ObservedGeneration: 2},
+					{Type: condition.ConditionTypeReady, Status: metav1.ConditionFalse, Reason: condition.ReasonSubResourceNotReady, ObservedGeneration: 2},
+				},
+			},
+		}
+	}
+
+	readySpectreApp := &spectrev1.SpectreApplication{
+		TypeMeta:   metav1.TypeMeta{APIVersion: "spectre.cp.ei.telekom.de/v1", Kind: "SpectreApplication"},
+		ObjectMeta: metav1.ObjectMeta{Name: "r-spectre--spectre-app", Namespace: "ns"},
+		Status: spectrev1.SpectreApplicationStatus{
+			Conditions: []metav1.Condition{
+				{Type: condition.ConditionTypeProcessing, Status: metav1.ConditionFalse, Reason: condition.ReasonDone},
+				{Type: condition.ConditionTypeReady, Status: metav1.ConditionTrue, Reason: condition.ReasonProvisioned},
+			},
+		},
+	}
+
+	pendingListener := &spectrev1.Listener{
+		TypeMeta:   metav1.TypeMeta{APIVersion: "spectre.cp.ei.telekom.de/v1", Kind: "Listener"},
+		ObjectMeta: metav1.ObjectMeta{Name: "r-spectre--consumer--provider---orders-v1", Namespace: "ns"},
+		Status: spectrev1.ListenerStatus{
+			Conditions: []metav1.Condition{
+				{Type: condition.ConditionTypeProcessing, Status: metav1.ConditionFalse, Reason: condition.ReasonBlocked, Message: "Waiting for approval decision (consumer gate)"},
+				{Type: condition.ConditionTypeReady, Status: metav1.ConditionFalse, Reason: condition.ReasonApprovalPending, Message: "Waiting for approval decision (consumer gate)"},
+			},
+		},
+	}
+
+	It("reports a Listener waiting for approval as Blocked with the pending gate", func() {
+		r := newSpectreRover(
+			[]types.ObjectRef{{Name: "r-spectre--spectre-app", Namespace: "ns"}},
+			[]types.ObjectRef{{Name: pendingListener.Name, Namespace: "ns"}},
+		)
+
+		appMock := new(MockObjectStore[*spectrev1.SpectreApplication])
+		appMock.On("List", mock.Anything, mock.Anything).Return(
+			&commonStore.ListResponse[*spectrev1.SpectreApplication]{Items: []*spectrev1.SpectreApplication{readySpectreApp}}, nil).Once()
+		listenerMock := new(MockObjectStore[*spectrev1.Listener])
+		listenerMock.On("List", mock.Anything, mock.Anything).Return(
+			&commonStore.ListResponse[*spectrev1.Listener]{Items: []*spectrev1.Listener{pendingListener}}, nil).Once()
+
+		s := &store.Stores{SpectreApplicationStore: appMock, SpectreListenerStore: listenerMock}
+
+		status, err := MapRoverStatus(ctx, r, s)
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(status.State).To(Equal(api.Blocked))
+		Expect(status.ProcessingState).To(Equal(api.ProcessingStateDone))
+		Expect(status.Errors).To(ContainElement(api.StateInfo{
+			Message: "Waiting for approval decision (consumer gate)",
+			Cause:   condition.ReasonApprovalPending,
+		}))
+		appMock.AssertExpectations(GinkgoT())
+		listenerMock.AssertExpectations(GinkgoT())
+	})
+
+	It("returns the Listener problem with its resource reference", func() {
+		r := newSpectreRover(nil, []types.ObjectRef{{Name: pendingListener.Name, Namespace: "ns"}})
+
+		listenerMock := new(MockObjectStore[*spectrev1.Listener])
+		listenerMock.On("List", mock.Anything, mock.Anything).Return(
+			&commonStore.ListResponse[*spectrev1.Listener]{Items: []*spectrev1.Listener{pendingListener}}, nil).Once()
+
+		result, err := GetAllRoverProblems(ctx, r, &store.Stores{SpectreListenerStore: listenerMock})
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(result.WorstOverallStatus).To(Equal(api.OverallStatusBlocked))
+		Expect(result.Problems).To(Equal([]api.Problem{{
+			Cause:   condition.ReasonApprovalPending,
+			Details: "Condition: Ready, Status: False, Message: Waiting for approval decision (consumer gate)",
+			Message: "Waiting for approval decision (consumer gate)",
+			Resource: api.ResourceRef{
+				ApiVersion: "spectre.cp.ei.telekom.de/v1",
+				Kind:       "Listener",
+				Name:       pendingListener.Name,
+				Namespace:  "ns",
+			},
+		}}))
+		listenerMock.AssertExpectations(GinkgoT())
+	})
+
+	It("skips the Spectre stores when the Rover has no Spectre children", func() {
+		r := newSpectreRover(nil, nil)
+
+		// Nil stores would panic if queried.
+		result, err := GetAllRoverProblems(ctx, r, &store.Stores{})
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(result.Problems).To(BeEmpty())
+	})
+
+	It("reports a Listener draining before deletion as Processing, not Blocked", func() {
+		drainingListener := &spectrev1.Listener{
+			TypeMeta:   metav1.TypeMeta{APIVersion: "spectre.cp.ei.telekom.de/v1", Kind: "Listener"},
+			ObjectMeta: metav1.ObjectMeta{Name: "r-spectre--consumer--provider---old-v1", Namespace: "ns"},
+			Status: spectrev1.ListenerStatus{
+				Conditions: []metav1.Condition{
+					{Type: condition.ConditionTypeProcessing, Status: metav1.ConditionFalse, Reason: condition.ReasonDone},
+					{Type: condition.ConditionTypeReady, Status: metav1.ConditionFalse, Reason: "Deleting", Message: "Draining capture before deletion (phase Stopping)"},
+				},
+			},
+		}
+		r := newSpectreRover(nil, []types.ObjectRef{{Name: drainingListener.Name, Namespace: "ns"}})
+
+		listenerMock := new(MockObjectStore[*spectrev1.Listener])
+		listenerMock.On("List", mock.Anything, mock.Anything).Return(
+			&commonStore.ListResponse[*spectrev1.Listener]{Items: []*spectrev1.Listener{drainingListener}}, nil).Once()
+
+		status, err := MapRoverStatus(ctx, r, &store.Stores{SpectreListenerStore: listenerMock})
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(status.State).To(Equal(api.None))
+		Expect(status.ProcessingState).To(Equal(api.ProcessingStateProcessing))
+		listenerMock.AssertExpectations(GinkgoT())
+	})
+
+	It("returns the error when listing Listeners fails", func() {
+		r := newSpectreRover(nil, []types.ObjectRef{{Name: pendingListener.Name, Namespace: "ns"}})
+
+		listenerMock := new(MockObjectStore[*spectrev1.Listener])
+		listenerMock.On("List", mock.Anything, mock.Anything).Return(
+			(*commonStore.ListResponse[*spectrev1.Listener])(nil), fmt.Errorf("listener list error"))
+
+		_, err := MapRoverStatus(ctx, r, &store.Stores{SpectreListenerStore: listenerMock})
+
+		Expect(err).To(MatchError(ContainSubstring("listener list error")))
+	})
+})
+
+var _ = Describe("MapRoverResponse with the Rover's own problem", func() {
+	const consumerMessage = `resolving consumer application "unknown-app": application "unknown-app" not found`
+
+	roverWith := func(ready metav1.Condition, listeners []types.ObjectRef) *v1.Rover {
+		processing := metav1.Condition{Type: condition.ConditionTypeProcessing, Status: metav1.ConditionFalse, Reason: condition.ReasonBlocked, Message: ready.Message, ObservedGeneration: 1}
+		if ready.Reason == condition.ReasonSubResourceNotReady {
+			processing.Status, processing.Reason = metav1.ConditionTrue, condition.ReasonSubResourceNotReady
+		}
+		ready.Type, ready.Status, ready.ObservedGeneration = condition.ConditionTypeReady, metav1.ConditionFalse, 1
+		return &v1.Rover{
+			ObjectMeta: metav1.ObjectMeta{Name: "r-own", Namespace: "ns", UID: "uid-own", Generation: 1},
+			Status: v1.RoverStatus{
+				SpectreApplications: []types.ObjectRef{{Name: "r-own--spectre-app", Namespace: "ns"}},
+				SpectreListeners:    listeners,
+				Conditions:          []metav1.Condition{processing, ready},
+			},
+		}
+	}
+
+	readySpectreApp := &spectrev1.SpectreApplication{
+		TypeMeta:   metav1.TypeMeta{APIVersion: "spectre.cp.ei.telekom.de/v1", Kind: "SpectreApplication"},
+		ObjectMeta: metav1.ObjectMeta{Name: "r-own--spectre-app", Namespace: "ns"},
+		Status: spectrev1.SpectreApplicationStatus{Conditions: []metav1.Condition{
+			{Type: condition.ConditionTypeProcessing, Status: metav1.ConditionFalse, Reason: condition.ReasonDone},
+			{Type: condition.ConditionTypeReady, Status: metav1.ConditionTrue, Reason: condition.ReasonProvisioned},
+		}},
+	}
+
+	pendingListener := &spectrev1.Listener{
+		TypeMeta:   metav1.TypeMeta{APIVersion: "spectre.cp.ei.telekom.de/v1", Kind: "Listener"},
+		ObjectMeta: metav1.ObjectMeta{Name: "r-own--consumer--provider---orders-v1", Namespace: "ns"},
+		Status: spectrev1.ListenerStatus{Conditions: []metav1.Condition{
+			{Type: condition.ConditionTypeProcessing, Status: metav1.ConditionFalse, Reason: condition.ReasonBlocked, Message: "Waiting for approval decision (provider gate)"},
+			{Type: condition.ConditionTypeReady, Status: metav1.ConditionFalse, Reason: condition.ReasonApprovalPending, Message: "Waiting for approval decision (provider gate)"},
+		}},
+	}
+
+	storesWith := func(listeners ...*spectrev1.Listener) *store.Stores {
+		appMock := new(MockObjectStore[*spectrev1.SpectreApplication])
+		appMock.On("List", mock.Anything, mock.Anything).Return(
+			&commonStore.ListResponse[*spectrev1.SpectreApplication]{Items: []*spectrev1.SpectreApplication{readySpectreApp}}, nil)
+		listenerMock := new(MockObjectStore[*spectrev1.Listener])
+		listenerMock.On("List", mock.Anything, mock.Anything).Return(
+			&commonStore.ListResponse[*spectrev1.Listener]{Items: listeners}, nil)
+		return &store.Stores{SpectreApplicationStore: appMock, SpectreListenerStore: listenerMock}
+	}
+
+	roverProblem := func(reason, message string) api.Problem {
+		return api.Problem{
+			Cause:   reason,
+			Details: "Condition: Ready, Status: False, Message: " + message,
+			Message: message,
+			Resource: api.ResourceRef{
+				ApiVersion: "rover.cp.ei.telekom.de/v1",
+				Kind:       "Rover",
+				Name:       "r-own",
+				Namespace:  "ns",
+			},
+		}
+	}
+
+	It("reports an unresolvable listener consumer next to the problems of the sub-resources", func() {
+		r := roverWith(metav1.Condition{Reason: condition.ReasonBlocked, Message: consumerMessage},
+			[]types.ObjectRef{{Name: pendingListener.Name, Namespace: "ns"}})
+
+		response, err := MapRoverResponse(ctx, r, storesWith(pendingListener))
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(response.OverallStatus).To(Equal(api.OverallStatusBlocked))
+		Expect(response.Errors).To(HaveLen(2))
+		Expect(response.Errors).To(ContainElement(HaveField("Resource.Kind", "Listener")))
+		Expect(response.Errors).To(ContainElement(roverProblem(condition.ReasonBlocked, consumerMessage)))
+	})
+
+	It("reports a blocked Rover whose sub-resources are all ready", func() {
+		r := roverWith(metav1.Condition{Reason: condition.ReasonBlocked, Message: consumerMessage}, nil)
+
+		response, err := MapRoverResponse(ctx, r, storesWith())
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(response.OverallStatus).To(Equal(api.OverallStatusBlocked))
+		Expect(response.Errors).To(Equal([]api.Problem{roverProblem(condition.ReasonBlocked, consumerMessage)}))
+	})
+
+	It("reports a failed Rover", func() {
+		r := roverWith(metav1.Condition{Reason: condition.ReasonError, Message: "failed to handle permission"}, nil)
+
+		response, err := MapRoverResponse(ctx, r, storesWith())
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(response.Errors).To(Equal([]api.Problem{roverProblem(condition.ReasonError, "failed to handle permission")}))
+	})
+
+	It("reports a Rover blocked only by its Processing condition", func() {
+		r := roverWith(metav1.Condition{Reason: condition.ReasonBlocked, Message: consumerMessage}, nil)
+		r.Status.Conditions = r.Status.Conditions[:1] // Processing only
+
+		response, err := MapRoverResponse(ctx, r, storesWith())
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(response.OverallStatus).To(Equal(api.OverallStatusBlocked))
+		Expect(response.Errors).To(ConsistOf(SatisfyAll(
+			HaveField("Resource.Kind", "Rover"),
+			HaveField("Cause", condition.ReasonBlocked),
+			HaveField("Message", consumerMessage),
+		)))
+	})
+
+	It("reports a Rover whose Ready is Unknown by its blocked Processing condition", func() {
+		r := roverWith(metav1.Condition{Reason: condition.ReasonBlocked, Message: "Environment label is missing"}, nil)
+		r.Status.Conditions[1].Status, r.Status.Conditions[1].Reason, r.Status.Conditions[1].Message = metav1.ConditionUnknown, "Unknown", ""
+
+		response, err := MapRoverResponse(ctx, r, storesWith())
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(response.OverallStatus).To(Equal(api.OverallStatusBlocked))
+		Expect(response.Errors).To(ConsistOf(SatisfyAll(
+			HaveField("Resource.Kind", "Rover"),
+			HaveField("Cause", condition.ReasonBlocked),
+			HaveField("Message", "Environment label is missing"),
+		)))
+	})
+
+	It("does not report a Rover whose conditions are stale", func() {
+		r := roverWith(metav1.Condition{Reason: condition.ReasonBlocked, Message: consumerMessage}, nil)
+		r.Generation = 2
+
+		response, err := MapRoverResponse(ctx, r, storesWith())
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(response.Errors).To(BeEmpty())
+		Expect(RoverProblem(r, ProblemsResult{})).To(BeNil())
+	})
+
+	It("does not let a shorter sub-resource message hide the Rover's cause", func() {
+		notFoundListener := pendingListener.DeepCopy()
+		notFoundListener.Status.Conditions[0].Message = "not found"
+		notFoundListener.Status.Conditions[1].Message = "not found"
+		const ordersMessage = `resolving provider application "orders": application "orders" not found`
+		r := roverWith(metav1.Condition{Reason: condition.ReasonBlocked, Message: ordersMessage},
+			[]types.ObjectRef{{Name: notFoundListener.Name, Namespace: "ns"}})
+
+		response, err := MapRoverResponse(ctx, r, storesWith(notFoundListener))
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(response.Errors).To(HaveLen(2))
+		Expect(response.Errors).To(ContainElement(roverProblem(condition.ReasonBlocked, ordersMessage)))
+	})
+
+	It("does not report a Rover waiting on its sub-resources", func() {
+		r := roverWith(metav1.Condition{Reason: condition.ReasonSubResourceNotReady, Message: "At least one sub-resource is being processed"},
+			[]types.ObjectRef{{Name: pendingListener.Name, Namespace: "ns"}})
+
+		response, err := MapRoverResponse(ctx, r, storesWith(pendingListener))
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(response.Errors).To(HaveLen(1))
+		Expect(response.Errors[0].Resource.Kind).To(Equal("Listener"))
+	})
+
+	It("does not repeat a message a sub-resource problem already reports", func() {
+		r := roverWith(metav1.Condition{Reason: condition.ReasonBlocked, Message: "listener: Waiting for approval decision (provider gate)"},
+			[]types.ObjectRef{{Name: pendingListener.Name, Namespace: "ns"}})
+
+		response, err := MapRoverResponse(ctx, r, storesWith(pendingListener))
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(response.Errors).To(HaveLen(1))
+		Expect(response.Errors[0].Resource.Kind).To(Equal("Listener"))
+	})
+})
+
 var _ = Describe("MapMcpSpecificationStatus", func() {
 	It("returns Complete/Done when conditions are complete and no sub-resource is stale", func() {
 		mcpSpec := &v1.McpSpecification{
@@ -997,3 +1308,69 @@ var _ = DescribeTable("CompareAndReturn",
 	Entry("Processing takes precedence over Done", api.OverallStatusDone, api.OverallStatusProcessing, api.OverallStatusProcessing),
 	Entry("Complete takes precedence over unknown", api.OverallStatus("unknown"), api.OverallStatusComplete, api.OverallStatusComplete),
 )
+
+var _ = Describe("MapRoverStatus with agentic children", func() {
+	newAgenticRover := func(subs, exps []types.ObjectRef) *v1.Rover {
+		return &v1.Rover{
+			ObjectMeta: metav1.ObjectMeta{Name: "r-agentic", Namespace: "ns", UID: "uid-agentic", Generation: 1},
+			Status: v1.RoverStatus{
+				AgenticSubscriptions: subs,
+				AgenticExposures:     exps,
+				Conditions: []metav1.Condition{
+					{Type: condition.ConditionTypeProcessing, Status: metav1.ConditionTrue, Reason: condition.ReasonSubResourceNotReady, ObservedGeneration: 1},
+					{Type: condition.ConditionTypeReady, Status: metav1.ConditionFalse, Reason: condition.ReasonSubResourceNotReady, ObservedGeneration: 1},
+				},
+			},
+		}
+	}
+
+	pendingSub := &agenticv1.AgenticSubscription{
+		TypeMeta:   metav1.TypeMeta{APIVersion: "agentic.cp.ei.telekom.de/v1", Kind: "AgenticSubscription"},
+		ObjectMeta: metav1.ObjectMeta{Name: "weather-v1", Namespace: "ns"},
+		Status: agenticv1.AgenticSubscriptionStatus{
+			Conditions: []metav1.Condition{
+				{Type: condition.ConditionTypeProcessing, Status: metav1.ConditionFalse, Reason: condition.ReasonBlocked, Message: "Approval has not been approved"},
+				{Type: condition.ConditionTypeReady, Status: metav1.ConditionFalse, Reason: condition.ReasonApprovalPending, Message: "Approval has not been approved"},
+			},
+		},
+	}
+
+	readyExp := &agenticv1.AgenticExposure{
+		TypeMeta:   metav1.TypeMeta{APIVersion: "agentic.cp.ei.telekom.de/v1", Kind: "AgenticExposure"},
+		ObjectMeta: metav1.ObjectMeta{Name: "weather-v1", Namespace: "ns"},
+		Status: agenticv1.AgenticExposureStatus{
+			Conditions: []metav1.Condition{
+				{Type: condition.ConditionTypeProcessing, Status: metav1.ConditionFalse, Reason: condition.ReasonDone},
+				{Type: condition.ConditionTypeReady, Status: metav1.ConditionTrue, Reason: condition.ReasonProvisioned},
+			},
+		},
+	}
+
+	It("reports an AgenticSubscription waiting for approval as Blocked", func() {
+		r := newAgenticRover(
+			[]types.ObjectRef{{Name: pendingSub.Name, Namespace: "ns"}},
+			[]types.ObjectRef{{Name: readyExp.Name, Namespace: "ns"}},
+		)
+
+		subMock := new(MockObjectStore[*agenticv1.AgenticSubscription])
+		subMock.On("List", mock.Anything, mock.Anything).Return(
+			&commonStore.ListResponse[*agenticv1.AgenticSubscription]{Items: []*agenticv1.AgenticSubscription{pendingSub}}, nil).Once()
+		expMock := new(MockObjectStore[*agenticv1.AgenticExposure])
+		expMock.On("List", mock.Anything, mock.Anything).Return(
+			&commonStore.ListResponse[*agenticv1.AgenticExposure]{Items: []*agenticv1.AgenticExposure{readyExp}}, nil).Once()
+
+		s := &store.Stores{AgenticSubscriptionStore: subMock, AgenticExposureStore: expMock}
+
+		status, err := MapRoverStatus(ctx, r, s)
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(status.State).To(Equal(api.Blocked))
+		Expect(status.ProcessingState).To(Equal(api.ProcessingStateDone))
+		Expect(status.Errors).To(ContainElement(api.StateInfo{
+			Message: "Approval has not been approved",
+			Cause:   condition.ReasonApprovalPending,
+		}))
+		subMock.AssertExpectations(GinkgoT())
+		expMock.AssertExpectations(GinkgoT())
+	})
+})

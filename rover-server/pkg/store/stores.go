@@ -20,6 +20,7 @@ import (
 	filev1 "github.com/telekom/controlplane/file/api/v1"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 	secretsapi "github.com/telekom/controlplane/secret-manager/api"
+	spectrev1 "github.com/telekom/controlplane/spectre/api/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/rest"
@@ -60,6 +61,9 @@ type Stores struct {
 	AgentCardStore           store.ObjectStore[*agenticv1.AgentCard]
 
 	ApiChangelogStore store.ObjectStore[*roverv1.ApiChangelog]
+
+	SpectreApplicationStore store.ObjectStore[*spectrev1.SpectreApplication]
+	SpectreListenerStore    store.ObjectStore[*spectrev1.Listener]
 }
 
 var secretsForKinds = map[string][]string{
@@ -140,6 +144,14 @@ func NewStores(ctx context.Context, cfg *rest.Config, db inmemory.DatabaseOpts, 
 		s.McpServerStore = noop.NewStore[*agenticv1.McpServer](agenticv1.GroupVersion.WithResource("mcpservers"), agenticv1.GroupVersion.WithKind("McpServer"))
 		s.AgentSpecificationStore = noop.NewStore[*roverv1.AgentSpecification](roverv1.GroupVersion.WithResource("agentspecifications"), roverv1.GroupVersion.WithKind("AgentSpecification"))
 		s.AgentCardStore = noop.NewStore[*agenticv1.AgentCard](agenticv1.GroupVersion.WithResource("agentcards"), agenticv1.GroupVersion.WithKind("AgentCard"))
+	}
+
+	if cconfig.FeatureSpectre.IsEnabled() {
+		s.SpectreApplicationStore = NewOrDie[*spectrev1.SpectreApplication](ctx, dynamicClient, spectrev1.GroupVersion.WithResource("spectreapplications"), spectrev1.GroupVersion.WithKind("SpectreApplication"), db, informer)
+		s.SpectreListenerStore = NewOrDie[*spectrev1.Listener](ctx, dynamicClient, spectrev1.GroupVersion.WithResource("listeners"), spectrev1.GroupVersion.WithKind("Listener"), db, informer)
+	} else {
+		s.SpectreApplicationStore = noop.NewStore[*spectrev1.SpectreApplication](spectrev1.GroupVersion.WithResource("spectreapplications"), spectrev1.GroupVersion.WithKind("SpectreApplication"))
+		s.SpectreListenerStore = noop.NewStore[*spectrev1.Listener](spectrev1.GroupVersion.WithResource("listeners"), spectrev1.GroupVersion.WithKind("Listener"))
 	}
 
 	s.ZoneStore = NewOrDie[*adminv1.Zone](ctx, dynamicClient, adminv1.GroupVersion.WithResource("zones"), adminv1.GroupVersion.WithKind("Zone"), db, informer)

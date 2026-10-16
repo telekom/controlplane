@@ -116,14 +116,15 @@ func (h *Handler) sendReminder(ctx context.Context, ae *v1.ApprovalExpiration, a
 
 	notificationData := util.ReminderNotificationData{
 		NotificationData: util.NotificationData{
-			Owner:     ae,
-			StateNew:  string(approval.Spec.State),
-			StateOld:  string(approval.Spec.State),
-			Target:    &approval.Spec.Target,
-			Requester: &approval.Spec.Requester,
-			Decider:   &approval.Spec.Decider,
-			Scenario:  util.NotificationScenarioUpdated,
-			Action:    approval.Spec.Action,
+			Owner:       ae,
+			StateNew:    string(approval.Spec.State),
+			StateOld:    string(approval.Spec.State),
+			Target:      &approval.Spec.Target,
+			Requester:   &approval.Spec.Requester,
+			Decider:     &approval.Spec.Decider,
+			Scenario:    util.NotificationScenarioUpdated,
+			Action:      approval.Spec.Action,
+			ApprovalKey: approval.Spec.ApprovalKey,
 		},
 		ExpirationDate: ae.Spec.Expiration.Format(time.RFC3339),
 		DaysRemaining:  fmt.Sprintf("%d", daysRemaining),

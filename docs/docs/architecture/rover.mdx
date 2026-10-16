@@ -26,12 +26,17 @@ The Rover Server accepts resource names between 2 and 90 characters. Names longe
 
 The server also normalizes the environment, team, and group labels to lowercase, replaces spaces, underscores, and slashes with hyphens, trims leading and trailing hyphens, and shortens values exceeding the label-value limit.
 
+### Application Info Status
+
+The `status` of `roverctl get-info` is evaluated like the Rover status endpoint. It includes the Application and every sub-resource referenced in the Rover status, and reports `processing` or `pending` while the Rover or a sub-resource has a spec change that is not yet processed. A sub-resource that cannot be read is listed in `errors` and does not fail the request. When the Rover itself is blocked or failed for a reason no sub-resource reports, for example a listener whose consumer application does not exist, both the status endpoint and get-info list it in `errors` as a problem of kind `Rover`. In get-info, this entry has the same shape as a problem from the status endpoint: `cause` is the condition reason and `message` is the condition message. Unlike the status endpoint, get-info does not see removed sub-resources that are still being deleted, such as a Listener draining its capture.
+
 ## Domain Interactions
 
 - **Application domain** — Creates Application resources.
 - **API domain** — Creates Api, ApiExposure, and ApiSubscription resources.
 - **Event domain** — Creates EventExposure and EventSubscription resources.
 - **File domain (SFTP)** — Creates the SFTP user (shared space) from a `FileSpecification` and registers producer/consumer SSH public keys for `fileType` exposures and subscriptions. Gated behind the `file` feature flag.
+- **Spectre domain** — `spec.listeners` entries create Listener CRs, which the Spectre operator reconciles into PubSub Subscribers, RouteListeners, and Approvals.
 - **Gateway domain** — Configures traffic management settings.
 - **Identity domain** — Configures authentication settings.
 - **Approval domain** — Integrates approval requirements for exposures.
@@ -74,7 +79,7 @@ Validation rules enforced by the Rover webhook:
 - `variant: sftp` is optional.
 - At least one public key is required; both the key `label` and `key` value must be unique per `fileType`.
 
-Because file transfer happens directly over SFTP, a Rover that only exposes/subscribes to file types yields a **logical** Application (`needsClient` and `needsConsumer` are `false`). If the same Rover also has an API or event subscription, a client is still required.
+Because file transfer happens directly over SFTP, a Rover that only exposes/subscribes to file types yields a **logical** Application (`needsClient` and `needsConsumer` are `false`). If the same Rover also has an API or event subscription, an event exposure, or any listener, a client is still required. A listener needs the client to get a token for its SSE stream. Callback delivery keeps the client too, so switching between delivery types never removes the application's credentials.
 
 ## Related Pages
 

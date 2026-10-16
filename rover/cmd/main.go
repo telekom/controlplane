@@ -41,6 +41,7 @@ import (
 	webhookv1 "github.com/telekom/controlplane/rover/internal/webhook/v1"
 	secretsapi "github.com/telekom/controlplane/secret-manager/api"
 	secretmetrics "github.com/telekom/controlplane/secret-manager/api/metrics"
+	spectrev1 "github.com/telekom/controlplane/spectre/api/v1"
 )
 
 var (
@@ -66,6 +67,9 @@ func init() {
 	}
 	if cconfig.FeatureAiGateway.IsEnabled() {
 		utilruntime.Must(agenticv1.AddToScheme(scheme))
+	}
+	if cconfig.FeatureSpectre.IsEnabled() {
+		utilruntime.Must(spectrev1.AddToScheme(scheme))
 	}
 	// +kubebuilder:scaffold:scheme
 	if cconfig.FeatureFile.IsEnabled() {
@@ -296,3 +300,5 @@ func setupWebhooks(mgr ctrl.Manager) error {
 
 	return nil
 }
+
+// rebuild

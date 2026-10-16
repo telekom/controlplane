@@ -132,14 +132,19 @@ var _ = Describe("RouteHandler", func() {
 				// Mock builder expectations
 				mockBuilder.EXPECT().EnableFeature(mock.Anything).Maybe()
 				mockBuilder.EXPECT().AddAllowedConsumers(mock.Anything).Maybe()
+				mockBuilder.EXPECT().AddRouteListeners(mock.Anything).Maybe()
 				mockBuilder.EXPECT().Build(mock.Anything).Return(nil)
 				mockBuilder.EXPECT().GetAllowedConsumers().Return([]*gatewayv1.ConsumeRoute{})
 
-				// Mock List to return empty consumers
+				// Mock List to return empty consumers, then empty route listeners
 				mockClient.EXPECT().List(mock.Anything, mock.Anything, mock.Anything).
 					Run(func(_ context.Context, list pkgclient.ObjectList, _ ...pkgclient.ListOption) {
-						crList := list.(*gatewayv1.ConsumeRouteList)
-						crList.Items = []gatewayv1.ConsumeRoute{}
+						switch l := list.(type) {
+						case *gatewayv1.ConsumeRouteList:
+							l.Items = []gatewayv1.ConsumeRoute{}
+						case *gatewayv1.RouteListenerList:
+							l.Items = []gatewayv1.RouteListener{}
+						}
 					}).Return(nil)
 
 				err := handler.CreateOrUpdate(ctx, route)
@@ -154,6 +159,7 @@ var _ = Describe("RouteHandler", func() {
 				setupFeatureBuilderOverrides()
 
 				mockBuilder.EXPECT().EnableFeature(mock.Anything).Maybe()
+				mockBuilder.EXPECT().AddRouteListeners(mock.Anything).Maybe()
 				mockBuilder.EXPECT().Build(mock.Anything).Return(nil)
 
 				// Return consumers from List
@@ -174,8 +180,12 @@ var _ = Describe("RouteHandler", func() {
 
 				mockClient.EXPECT().List(mock.Anything, mock.Anything, mock.Anything).
 					Run(func(_ context.Context, list pkgclient.ObjectList, _ ...pkgclient.ListOption) {
-						crList := list.(*gatewayv1.ConsumeRouteList)
-						crList.Items = []gatewayv1.ConsumeRoute{consumer1, consumer2}
+						switch l := list.(type) {
+						case *gatewayv1.ConsumeRouteList:
+							l.Items = []gatewayv1.ConsumeRoute{consumer1, consumer2}
+						case *gatewayv1.RouteListenerList:
+							l.Items = []gatewayv1.RouteListener{}
+						}
 					}).Return(nil)
 
 				mockBuilder.EXPECT().AddAllowedConsumers(mock.Anything).Maybe()
@@ -195,7 +205,7 @@ var _ = Describe("RouteHandler", func() {
 		})
 
 		Context("passthrough route", func() {
-			It("skips consumer listing and still calls builder.Build", func() {
+			It("skips consumer listing and route listener listing and still calls builder.Build", func() {
 				route.Spec.PassThrough = true
 
 				setupReadyGatewayGet()
@@ -205,13 +215,50 @@ var _ = Describe("RouteHandler", func() {
 				mockBuilder.EXPECT().Build(mock.Anything).Return(nil)
 				mockBuilder.EXPECT().GetAllowedConsumers().Return([]*gatewayv1.ConsumeRoute{})
 
-				// List should NOT be called for passthrough routes
+				// No List calls expected: both consumer listing and RouteListener listing
+				// are inside the !PassThrough block.
+
 				err := handler.CreateOrUpdate(ctx, route)
 				Expect(err).NotTo(HaveOccurred())
 
 				Expect(meta.IsStatusConditionTrue(route.GetConditions(), condition.ConditionTypeReady)).To(BeTrue())
-				// Verify List was not called
-				mockClient.AssertNotCalled(GinkgoT(), "List", mock.Anything, mock.Anything, mock.Anything)
+			})
+		})
+
+		Context("failover route", func() {
+			It("does not list RouteListeners for the feature builder", func() {
+				route.Spec.Traffic.Failover = &gatewayv1.Failover{
+					TargetZoneName: "other-zone",
+					Targets: []gatewayv1.FailoverTarget{
+						{ZoneName: "other-zone", Upstream: gatewayv1.Upstream{
+							Scheme: "https", Hostname: "failover.example.com", Port: 443, Path: "/api",
+						}},
+					},
+				}
+
+				setupReadyGatewayGet()
+				setupFeatureBuilderOverrides()
+
+				mockBuilder.EXPECT().EnableFeature(mock.Anything).Maybe()
+				mockBuilder.EXPECT().AddAllowedConsumers(mock.Anything).Maybe()
+				mockBuilder.EXPECT().Build(mock.Anything).Return(nil)
+				mockBuilder.EXPECT().GetAllowedConsumers().Return([]*gatewayv1.ConsumeRoute{})
+
+				// Only ConsumeRouteList should be listed — no RouteListenerList.
+				mockClient.EXPECT().List(mock.Anything, mock.Anything, mock.Anything).
+					Run(func(_ context.Context, list pkgclient.ObjectList, _ ...pkgclient.ListOption) {
+						switch l := list.(type) {
+						case *gatewayv1.ConsumeRouteList:
+							l.Items = []gatewayv1.ConsumeRoute{}
+						default:
+							Fail("unexpected List call for failover route — RouteListenerList should be skipped")
+						}
+					}).Return(nil)
+
+				err := handler.CreateOrUpdate(ctx, route)
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(meta.IsStatusConditionTrue(route.GetConditions(), condition.ConditionTypeReady)).To(BeTrue())
 			})
 		})
 
@@ -251,13 +298,18 @@ var _ = Describe("RouteHandler", func() {
 
 				mockBuilder.EXPECT().EnableFeature(mock.Anything).Maybe()
 				mockBuilder.EXPECT().AddAllowedConsumers(mock.Anything).Maybe()
+				mockBuilder.EXPECT().AddRouteListeners(mock.Anything).Maybe()
 				mockBuilder.EXPECT().Build(mock.Anything).Return(fmt.Errorf("build failed"))
 				mockBuilder.EXPECT().GetAllowedConsumers().Return([]*gatewayv1.ConsumeRoute{}).Maybe()
 
 				mockClient.EXPECT().List(mock.Anything, mock.Anything, mock.Anything).
 					Run(func(_ context.Context, list pkgclient.ObjectList, _ ...pkgclient.ListOption) {
-						crList := list.(*gatewayv1.ConsumeRouteList)
-						crList.Items = []gatewayv1.ConsumeRoute{}
+						switch l := list.(type) {
+						case *gatewayv1.ConsumeRouteList:
+							l.Items = []gatewayv1.ConsumeRoute{}
+						case *gatewayv1.RouteListenerList:
+							l.Items = []gatewayv1.RouteListener{}
+						}
 					}).Return(nil)
 
 				err := handler.CreateOrUpdate(ctx, route)
@@ -274,16 +326,21 @@ var _ = Describe("RouteHandler", func() {
 				setupFeatureBuilderOverrides()
 
 				mockBuilder.EXPECT().EnableFeature(mock.Anything).Maybe()
+				mockBuilder.EXPECT().AddRouteListeners(mock.Anything).Maybe()
 				mockBuilder.EXPECT().Build(mock.Anything).Return(nil)
 				mockBuilder.EXPECT().GetAllowedConsumers().Return([]*gatewayv1.ConsumeRoute{})
 
 				// Capture the list options to verify the field selector
 				mockClient.EXPECT().List(mock.Anything, mock.Anything, mock.Anything).
 					Run(func(_ context.Context, list pkgclient.ObjectList, opts ...pkgclient.ListOption) {
-						crList := list.(*gatewayv1.ConsumeRouteList)
-						crList.Items = []gatewayv1.ConsumeRoute{}
-						// Verify the correct field selector is used for proxy routes
-						Expect(opts).To(HaveLen(1))
+						switch l := list.(type) {
+						case *gatewayv1.ConsumeRouteList:
+							l.Items = []gatewayv1.ConsumeRoute{}
+							// Verify the correct field selector is used for proxy routes
+							Expect(opts).To(HaveLen(1))
+						case *gatewayv1.RouteListenerList:
+							l.Items = []gatewayv1.RouteListener{}
+						}
 					}).Return(nil)
 
 				err := handler.CreateOrUpdate(ctx, route)

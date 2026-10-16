@@ -1,0 +1,86 @@
+---
+sidebar_position: 15
+---
+
+# Spectre Domain
+
+:::info Optional Feature
+The Spectre domain requires an active EventConfig and an `Event`-typed gateway preset in the zone (SSE Routes use the Event preset, like the Event domain; see [Traffic Types](../admin-journey/environments-and-zones.md#traffic-types)). It is a peer to the Event domain — both create PubSub resources, while users interact only through Rover files.
+:::
+
+The Spectre domain manages application listeners that bridge external API traffic into the Horizon event backbone. A listener watches a specific API path and forwards matching requests as events, enabling event-driven reactions to API calls without modifying the API provider.
+
+## Custom Resources
+
+| CRD | Purpose |
+|---|---|
+| **SpectreApplication** | Groups all listeners for one application. Creates the shared generic Publisher. |
+| **Listener** | Represents a single consumer-to-provider binding for an API path. Creates a Subscriber, a RouteListener and the provider and consumer ApprovalRequests. |
+
+## Ownership Model
+
+Event and Spectre are **peer business-logic domains**. PubSub is a shared Horizon runtime adapter — not exclusively managed by either domain.
+
+| PubSub Resource | Created by |
+|---|---|
+| EventStore | Event domain (EventConfig) |
+| Publisher | Event domain (EventExposure) **and** Spectre domain (SpectreApplication) |
+| Subscriber | Event domain (EventSubscription) **and** Spectre domain (Listener) |
+
+Users do not create PubSub resources directly. EventStore ownership is unchanged — Spectre only reads it.
+
+## Domain Interactions
+
+- **PubSub domain** — SpectreApplication creates Publishers; Listener creates Subscribers. Both read the zone's EventStore.
+- **Gateway domain** — SpectreApplication creates the SSE Route(s) for SSE delivery. Listener creates RouteListener resources to expose listener endpoints. Reads existing Route resources for service path resolution.
+- **Approval domain** — Each Listener creates two keyed ApprovalRequests, a provider gate and a consumer gate, that capture consumer, provider, path, delivery mode, callback, and filters. Both must be granted; a gate is auto-approved when the observer (the SpectreApplication's own Application, i.e. the listening application that requests approval) is in the same team as its decider.
+- **Event domain** — Reads EventConfig for zone configuration and the gateway callback URL.
+- **Application domain** — Reads Application resources for consumer and provider metadata.
+- **Rover domain** — Rover files with `spec.listeners` trigger creation of Listener CRs.
+
+`roverctl get-info` lists the Listeners (consumer and provider as full application IDs) and `listenerSubscription` with the delivery type, callback and `sseUrl`. It evaluates the Listeners and the SpectreApplication referenced in the Rover status like the Rover status endpoint does, so a Rover reports `blocked` while a Listener waits for an approval decision. A gate whose ApprovalRequest is already granted (always the case for an auto-approved gate) keeps the Listener `processing` until the approval controller issues its Approval. If no Approval is issued within 5 minutes of the grant, the Listener is `blocked` with a message naming the ApprovalRequest, so that the approval controller can be checked. A removed Listener that is still draining appears only in the status endpoint.
+
+## Listener Placement
+
+Each Listener involves three zones: the consumer zone (C), the provider zone (P) and the observer zone (A), the zone of the listening application.
+
+- **Capture zone** — Spectre tries C's zone first, then P's zone. The first zone with a usable Route on the C→P path wins. A zone is skipped when it has no Route for the path, the Route is pass-through or failover, the Route serves another consumer zone, or the zone has no EventConfig. A's zone is never a candidate, so Listeners with the same C, P and path capture in the same zone.
+- **Delivery zone** — always A's zone. When the capture zone (or, for a proxy capture zone, its target zone) is A's zone, delivery uses A's EventConfig `status.callbackUrl`. Otherwise it uses the capture zone's EventConfig `status.proxyCallbackUrls[<A's zone>]`.
+
+The result is recorded in `Listener.status.appliedPlacement` (`captureZone`, `deliveryZone`, `callbackBaseURL`).
+
+## Blocked Listeners
+
+When placement fails for good, the Listener is Blocked and its applied capture is drained. The reason is recorded in `status.draining.reason`.
+
+| Reason | Cause | Fix |
+|---|---|---|
+| `no supported capture placement` | Neither C's nor P's zone can capture (see [Listener Placement](#listener-placement)). | Expose the API on a supported Route in C's or P's zone, or create the zone's EventConfig. |
+| `capture zone cannot deliver to observer` | The capture zone's EventConfig does not mesh with A's zone, or the callback URL for A's zone is missing. Capture does not fall back to P's zone. | Add A's zone to the capture zone's mesh, and check the EventConfig status. |
+| `event environment mismatch` | The realm of the capture or observer zone differs from the environment of its EventStore. The realm is the Environment `spec.realmName`, else the Environment name. The EventStore environment is the EventConfig `spec.overwriteEnvironmentName`, else the Control Plane environment name. | Set `spec.overwriteEnvironmentName` or `spec.realmName` so both values match. |
+| `apiBasePath mismatch` | The Listener's `apiBasePath` differs from the exposed API basePath, for example by case or a trailing slash. The message names the exact basePath. | Use the exact basePath of the API, including case. |
+| `provider binding invalidated` | The capture Route is no longer owned by an active ApiExposure of the declared provider Application. | Check the provider's ApiExposure and its Route. |
+
+An environment mismatch in the observer zone also blocks the SpectreApplication.
+
+An EventStore environment of `default` with another realm does not block. It raises a Warning event `EnvironmentAliasAssumed`; events are delivered only if Horizon's `defaultEnvironment` is that realm.
+
+## Current Limitations
+
+- **Pass-through and failover listeners** are rejected.
+- **Event listeners** are not supported yet. rover-server rejects a listener with `eventType` or `eventFilter` with a 400 problem, for example `listeners[0].eventType: event listeners are not supported yet`. Every listener needs an `apiBasePath`.
+- **Circuit-breaker routes** are supported; the circuit-breaker upstream keeps the Jumper `/listener` path.
+- **SSE delivery** is served on `/horizon/sse/v1/de.telekom.ei.listener.<appId>` and the legacy alias `/spectre-sse/<appId>`, in local and proxy zones. The canonical URL is in `SpectreApplication.status.sseUrl`. The observer gets its token with its Application's identity client; every Rover with listeners gets one. Legacy hostnames/TLS and hash-shortened app IDs of very long team names are not covered by the alias.
+- **Callback traffic** is Gateway-mediated via `EventConfig.Status.CallbackURL`.
+
+## Internal Event Types
+
+Spectre uses the `de.telekom.ei.listener*` namespace for its internal event types, constructed automatically from the application ID. These names cannot be claimed by ordinary EventType admission.
+
+The bridge Subscribers of all Listeners in a zone share one Publisher for `de.telekom.ei.listener`. It is created on first use and kept, also after the last Listener in the zone is gone.
+
+## Related Pages
+
+- [Architecture: Event Domain](./event.mdx)
+- [Architecture: PubSub Domain](./pubsub.mdx)
+- [Architecture: Gateway Domain](./gateway.mdx)
