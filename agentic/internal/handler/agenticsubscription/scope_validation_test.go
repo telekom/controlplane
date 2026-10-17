@@ -13,6 +13,7 @@ import (
 	agenticv1 "github.com/telekom/controlplane/agentic/api/v1"
 	"github.com/telekom/controlplane/agentic/internal/handler/util"
 	"github.com/telekom/controlplane/common/pkg/condition"
+	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -34,7 +35,12 @@ var _ = Describe("Subscription scope validation", func() {
 			server := &util.ServerInfo{Oauth2Scopes: declared}
 			before, serverBefore := slices.Clone(requested), slices.Clone(declared)
 			exposureBefore := exp.DeepCopy()
-			Expect(validateSubscriptionScopes(server, exp, obj)).To(Equal(accepted))
+			err := validateSubscriptionScopes(server, exp, obj)
+			if accepted {
+				Expect(err).NotTo(HaveOccurred())
+			} else {
+				Expect(err).To(BeAssignableToTypeOf(ctrlerrors.BlockedErrorf("")))
+			}
 			Expect(obj.Spec.Security.M2M.Scopes).To(Equal(before))
 			Expect(server.Oauth2Scopes).To(Equal(serverBefore))
 			Expect(exp).To(Equal(exposureBefore))
@@ -63,7 +69,60 @@ var _ = Describe("Subscription scope validation", func() {
 	It("accepts absent security or M2M", func() {
 		for _, security := range []*agenticv1.SubscriberSecurity{nil, {}} {
 			obj := &agenticv1.AgenticSubscription{Spec: agenticv1.AgenticSubscriptionSpec{Security: security}}
-			Expect(validateSubscriptionScopes(&util.ServerInfo{}, nil, obj)).To(BeTrue())
+			Expect(validateSubscriptionScopes(&util.ServerInfo{}, nil, obj)).To(Succeed())
 		}
+	})
+
+	_ = Describe("Basic credentials with scopes or client credentials", func() {
+		exposureWithGrant := func(grant agenticv1.GrantType) *agenticv1.AgenticExposure {
+			return &agenticv1.AgenticExposure{Spec: agenticv1.AgenticExposureSpec{
+				Security: &agenticv1.Security{M2M: &agenticv1.Machine2MachineAuthentication{
+					ExternalIDP: &agenticv1.ExternalIdentityProvider{
+						TokenEndpoint: "https://idp.example/token",
+						GrantType:     grant,
+					},
+				}},
+			}}
+		}
+
+		It("requires an external IDP for client and Basic credentials even without scopes", func() {
+			obj := &agenticv1.AgenticSubscription{Spec: agenticv1.AgenticSubscriptionSpec{
+				Security: &agenticv1.SubscriberSecurity{M2M: &agenticv1.SubscriberMachine2MachineAuthentication{
+					Client: &agenticv1.OAuth2ClientCredentials{ClientId: "consumer", ClientSecret: "secret"},
+					Basic:  &agenticv1.BasicAuthCredentials{Username: "user", Password: "password"},
+				}},
+			}}
+
+			Expect(violatesBasicWithScopesPolicy(obj, nil)).To(BeTrue())
+			Expect(violatesBasicWithScopesPolicy(obj, &agenticv1.AgenticExposure{})).To(BeTrue())
+		})
+
+		// The gateway never treats Basic credentials with a grant type as backend Basic auth,
+		// so without an external IDP they would be silently dropped.
+		It("requires an external IDP for Basic credentials with a grant type", func() {
+			obj := &agenticv1.AgenticSubscription{Spec: agenticv1.AgenticSubscriptionSpec{
+				Security: &agenticv1.SubscriberSecurity{M2M: &agenticv1.SubscriberMachine2MachineAuthentication{
+					Basic:     &agenticv1.BasicAuthCredentials{Username: "user", Password: "password"},
+					GrantType: agenticv1.GrantTypePassword,
+				}},
+			}}
+
+			Expect(violatesBasicWithScopesPolicy(obj, nil)).To(BeTrue())
+			Expect(violatesBasicWithScopesPolicy(obj, &agenticv1.AgenticExposure{})).To(BeTrue())
+			Expect(violatesBasicWithScopesPolicy(obj, exposureWithGrant(agenticv1.GrantTypeClientCredentials))).To(BeFalse())
+		})
+
+		It("accepts any external IDP grant type because the consumer may override it", func() {
+			obj := &agenticv1.AgenticSubscription{Spec: agenticv1.AgenticSubscriptionSpec{
+				Security: &agenticv1.SubscriberSecurity{M2M: &agenticv1.SubscriberMachine2MachineAuthentication{
+					Basic:  &agenticv1.BasicAuthCredentials{Username: "user", Password: "password"},
+					Scopes: []string{"read"},
+				}},
+			}}
+
+			for _, grant := range []agenticv1.GrantType{"", agenticv1.GrantTypeClientCredentials, agenticv1.GrantTypeAuthorizationCode, agenticv1.GrantTypePassword} {
+				Expect(violatesBasicWithScopesPolicy(obj, exposureWithGrant(grant))).To(BeFalse(), "grant type %q", grant)
+			}
+		})
 	})
 })

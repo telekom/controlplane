@@ -52,13 +52,15 @@ func (h *AgenticSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *ag
 				"Agentic server (McpServer, AgentCard) is registered but the basePath case does not match"))
 			obj.SetCondition(condition.NewBlockedCondition(
 				"Agentic server for " + obj.Spec.BasePath + " exists but with a different case. " +
-					"Please resolve the conflict by changing the BasePath of either the specification or the subscription"))
+					"Please resolve the conflict by changing the BasePath of either the specification or the subscription",
+			))
 		} else {
 			obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet,
 				"No active agentic server (McpServer, AgentCard) found for basePath "+obj.Spec.BasePath))
 			obj.SetCondition(condition.NewBlockedCondition(
 				"Agentic server for " + obj.Spec.BasePath + " does not exist or is not active. " +
-					"AgenticSubscription will be automatically processed when the specification is registered"))
+					"AgenticSubscription will be automatically processed when the specification is registered",
+			))
 		}
 		return nil
 	}
@@ -73,28 +75,29 @@ func (h *AgenticSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *ag
 		return errors.Wrapf(err, "failed to find active AgenticExposure for basePath %q", obj.Spec.BasePath)
 	}
 	// Validate scopes using the selected exposure's endpoint exception before readiness checks.
-	if !validateSubscriptionScopes(serverInfo, exposure, obj) {
-		return nil
+	if scopeErr := validateSubscriptionScopes(serverInfo, exposure, obj); scopeErr != nil {
+		return scopeErr
 	}
 	if violatesBasicWithScopesPolicy(obj, exposure) {
 		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonValidationFailed,
-			"Consumer username/password with scopes requires an external IDP grant type \"password\""))
-		obj.SetCondition(condition.NewBlockedCondition("Consumer username/password with scopes requires an external IDP grant type \"password\""))
-		return nil
+			"Consumer username/password combined with client credentials, scopes or a grant type requires an external IDP from the provider"))
+		return ctrlerrors.BlockedErrorf("Consumer username/password combined with client credentials, scopes or a grant type requires an external IDP from the provider")
 	}
 	if !exposureFound {
 		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet,
 			"No active AgenticExposure found for basePath "+obj.Spec.BasePath))
 		obj.SetCondition(condition.NewBlockedCondition(
 			"AgenticExposure for " + obj.Spec.BasePath + " does not exist or is not active. " +
-				"AgenticSubscription will be automatically processed when the AgenticExposure is registered"))
+				"AgenticSubscription will be automatically processed when the AgenticExposure is registered",
+		))
 		return nil
 	}
 	if err = condition.EnsureReady(exposure); err != nil {
 		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet,
 			fmt.Sprintf("AgenticExposure %q is not ready", exposure.Name)))
 		obj.SetCondition(condition.NewBlockedCondition(
-			fmt.Sprintf("AgenticExposure %q is not ready. AgenticSubscription will be automatically processed when the AgenticExposure is ready", exposure.Name)))
+			fmt.Sprintf("AgenticExposure %q is not ready. AgenticSubscription will be automatically processed when the AgenticExposure is ready", exposure.Name),
+		))
 		return nil
 	}
 
@@ -188,15 +191,7 @@ func (h *AgenticSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *ag
 		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonAccessDenied, "Approval has been denied"))
 		obj.SetCondition(condition.NewDoneProcessingCondition("Approval has been denied"))
 
-		deleted, cleanupErr := c.Cleanup(ctx, &gatewayapi.ConsumeRouteList{}, cclient.OwnedBy(obj))
-		if cleanupErr != nil {
-			return errors.Wrapf(cleanupErr, "unable to cleanup ConsumeRoute for AgenticSubscription %q", obj.Name)
-		}
-		if deleted > 0 {
-			logger.Info("Cleaned up ConsumeRoute resources", "deleted", deleted)
-		}
-		obj.Status.ActiveScopes = nil
-		return nil
+		return h.Delete(ctx, obj)
 
 	case builder.ApprovalResultGranted:
 		logger.Info("Approval is granted — continuing with provisioning")
@@ -244,19 +239,24 @@ func (h *AgenticSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *ag
 	obj.SetCondition(condition.NewReadyCondition(condition.ReasonProvisioned,
 		"AgenticSubscription has been provisioned"))
 	obj.SetCondition(condition.NewDoneProcessingCondition(
-		"AgenticSubscription has been provisioned"))
+		"AgenticSubscription has been provisioned",
+	))
 
 	return nil
 }
 
 func violatesBasicWithScopesPolicy(obj *agenticv1.AgenticSubscription, exposure *agenticv1.AgenticExposure) bool {
-	subHasScopes := obj.HasM2M() && obj.Spec.Security.M2M.Basic != nil && len(obj.Spec.Security.M2M.Scopes) > 0
-	if !subHasScopes {
+	if !obj.HasM2M() || obj.Spec.Security.M2M.Basic == nil {
+		return false
+	}
+	// Username/password with client credentials, scopes or a grant type are meant for the external IDP;
+	// the gateway never forwards them as backend Basic auth.
+	requiresExternalIDP := obj.Spec.Security.M2M.Client != nil || len(obj.Spec.Security.M2M.Scopes) > 0 || obj.Spec.Security.M2M.GrantType != ""
+	if !requiresExternalIDP {
 		return false
 	}
 
-	return exposure == nil || !exposure.HasExternalIdp() ||
-		exposure.Spec.Security.M2M.ExternalIDP.GrantType != agenticv1.GrantTypePassword
+	return exposure == nil || !exposure.HasExternalIdp()
 }
 
 func subscriptionApprovalProperties(obj *agenticv1.AgenticSubscription, exposure *agenticv1.AgenticExposure) map[string]any {
@@ -282,7 +282,8 @@ func (h *AgenticSubscriptionHandler) Delete(ctx context.Context, obj *agenticv1.
 	if deleted > 0 {
 		logger.Info("Cleaned up ConsumeRoute resources", "deleted", deleted)
 	}
-
+	obj.Status.ConsumeRoute = nil
+	obj.Status.ActiveScopes = nil
 	return nil
 }
 
@@ -321,7 +322,8 @@ func resolveRouteRef(
 	obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet,
 		"AgenticExposure has not created a proxy route for zone "+obj.Spec.Zone.Name+" yet"))
 	obj.SetCondition(condition.NewBlockedCondition(
-		"Waiting for AgenticExposure to create the proxy route for zone " + obj.Spec.Zone.Name))
+		"Waiting for AgenticExposure to create the proxy route for zone " + obj.Spec.Zone.Name,
+	))
 	return nil
 }
 
@@ -388,18 +390,18 @@ func validateVisibility(exposure *agenticv1.AgenticExposure, sub *agenticv1.Agen
 }
 
 // validateSubscriptionScopes checks M2M scope membership unless the selected exposure has a non-empty external-IDP token endpoint.
-// It sets blocking conditions on the subscription and returns false if processing should stop.
-func validateSubscriptionScopes(server *util.ServerInfo, exposure *agenticv1.AgenticExposure, obj *agenticv1.AgenticSubscription) bool {
+// It sets validation conditions on the subscription and returns a blocked error on failure.
+func validateSubscriptionScopes(server *util.ServerInfo, exposure *agenticv1.AgenticExposure, obj *agenticv1.AgenticSubscription) error {
 	if !obj.HasM2M() || obj.Spec.Security.M2M.Scopes == nil {
-		return true
+		return nil
 	}
 	if exposure != nil && exposure.HasExternalIdp() {
-		return true
+		return nil
 	}
 	if len(server.Oauth2Scopes) == 0 {
 		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonValidationFailed, "Server does not define any OAuth2 scopes"))
 		obj.SetCondition(condition.NewBlockedCondition("Server does not define any OAuth2 scopes. AgenticSubscription will be automatically processed, if the server will be updated with scopes"))
-		return false
+		return ctrlerrors.BlockedErrorf("Server does not define any OAuth2 scopes. AgenticSubscription will be automatically processed, if the server will be updated with scopes")
 	}
 	scopesExist, invalidScopes := util.IsSubsetOfScopes(server.Oauth2Scopes, obj.Spec.Security.M2M.Scopes)
 	if !scopesExist {
@@ -409,7 +411,7 @@ func validateSubscriptionScopes(server *util.ServerInfo, exposure *agenticv1.Age
 		)
 		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonValidationFailed, "One or more scopes defined in AgenticSubscription are not defined in the server"))
 		obj.SetCondition(condition.NewBlockedCondition(message))
-		return false
+		return ctrlerrors.BlockedErrorf("%s", message)
 	}
-	return true
+	return nil
 }

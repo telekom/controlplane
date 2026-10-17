@@ -273,9 +273,10 @@ spec:
                                   - tokenRequest
                                   type: object
                                   x-kubernetes-validations:
-                                  - message: Only one of basic or client credentials
-                                      can be provided (XOR relationship)
-                                    rule: self == null || !has(self.basic) || !has(self.client)
+                                  - message: Username/password credentials require
+                                      grant type "password"
+                                    rule: self == null || !has(self.basic) || (has(self.grantType)
+                                      && self.grantType == 'password')
                                 scopes:
                                   description: Scopes defines additional OAuth2 scopes
                                     that are added to the LMS token
@@ -727,9 +728,10 @@ spec:
                                   - tokenRequest
                                   type: object
                                   x-kubernetes-validations:
-                                  - message: Only one of basic or client credentials
-                                      can be provided (XOR relationship)
-                                    rule: self == null || !has(self.basic) || !has(self.client)
+                                  - message: Username/password credentials require
+                                      grant type "password"
+                                    rule: self == null || !has(self.basic) || (has(self.grantType)
+                                      && self.grantType == 'password')
                                 scopes:
                                   description: Scopes defines additional OAuth2 scopes
                                     that are added to the LMS token
@@ -1384,8 +1386,9 @@ spec:
                                 configuration
                               properties:
                                 basic:
-                                  description: Basic defines basic authentication
-                                    configuration
+                                  description: |-
+                                    Basic defines basic authentication credentials, sent to the backend via HTTP Basic auth.
+                                    If combined with client, scopes or grantType, they are used for the password grant of the provider's external IDP instead.
                                   properties:
                                     password:
                                       description: Password for basic authentication
@@ -1435,6 +1438,16 @@ spec:
                                       must be provided
                                     rule: self == null || has(self.clientSecret) ||
                                       has(self.clientKey)
+                                grantType:
+                                  description: |-
+                                    GrantType overrides the OAuth2 grant type of the provider's external IDP (defaults to the provider's grant type).
+                                    Requires the provider to configure an external IDP.
+                                  enum:
+                                  - client_credentials
+                                  - authorization_code
+                                  - password
+                                  - refresh_token
+                                  type: string
                                 scopes:
                                   description: Scopes defines additional OAuth2 scopes
                                     that are added to the LMS token
@@ -1443,12 +1456,16 @@ spec:
                                     type: string
                                   maxItems: 100
                                   type: array
+                                tokenRequest:
+                                  description: |-
+                                    TokenRequest overrides the token endpoint authentication method (RFC 7591) of the provider's external IDP (defaults to the provider's method).
+                                    Requires the provider to configure an external IDP.
+                                  enum:
+                                  - client_secret_basic
+                                  - client_secret_post
+                                  type: string
                               type: object
                               x-kubernetes-validations:
-                              - message: Client and basic authentication cannot be
-                                  used together
-                                rule: 'self == null || (has(self.client) ? (!has(self.basic))
-                                  : true)'
                               - message: At least one of client, basic, or scopes
                                   must be provided
                                 rule: self == null || has(self.client) || has(self.basic)
@@ -1525,8 +1542,9 @@ spec:
                                 configuration
                               properties:
                                 basic:
-                                  description: Basic defines basic authentication
-                                    configuration
+                                  description: |-
+                                    Basic defines basic authentication credentials, sent to the backend via HTTP Basic auth.
+                                    If combined with client, scopes or grantType, they are used for the password grant of the provider's external IDP instead.
                                   properties:
                                     password:
                                       description: Password for basic authentication
@@ -1576,6 +1594,16 @@ spec:
                                       must be provided
                                     rule: self == null || has(self.clientSecret) ||
                                       has(self.clientKey)
+                                grantType:
+                                  description: |-
+                                    GrantType overrides the OAuth2 grant type of the provider's external IDP (defaults to the provider's grant type).
+                                    Requires the provider to configure an external IDP.
+                                  enum:
+                                  - client_credentials
+                                  - authorization_code
+                                  - password
+                                  - refresh_token
+                                  type: string
                                 scopes:
                                   description: Scopes defines additional OAuth2 scopes
                                     that are added to the LMS token
@@ -1584,12 +1612,16 @@ spec:
                                     type: string
                                   maxItems: 100
                                   type: array
+                                tokenRequest:
+                                  description: |-
+                                    TokenRequest overrides the token endpoint authentication method (RFC 7591) of the provider's external IDP (defaults to the provider's method).
+                                    Requires the provider to configure an external IDP.
+                                  enum:
+                                  - client_secret_basic
+                                  - client_secret_post
+                                  type: string
                               type: object
                               x-kubernetes-validations:
-                              - message: Client and basic authentication cannot be
-                                  used together
-                                rule: 'self == null || (has(self.client) ? (!has(self.basic))
-                                  : true)'
                               - message: At least one of client, basic, or scopes
                                   must be provided
                                 rule: self == null || has(self.client) || has(self.basic)

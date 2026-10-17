@@ -34,5 +34,6 @@ func ConfigureEventExposureStoreMock(testing ginkgo.FullGinkgoTInterface, mocked
 	).Return(
 		&store.ListResponse[*eventv1.EventExposure]{
 			Items: []*eventv1.EventExposure{eventExposure},
-		}, nil).Maybe()
+		}, nil,
+	).Maybe()
 }

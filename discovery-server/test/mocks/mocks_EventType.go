@@ -34,5 +34,6 @@ func ConfigureEventTypeStoreMock(testing ginkgo.FullGinkgoTInterface, mockedStor
 	).Return(
 		&store.ListResponse[*eventv1.EventType]{
 			Items: []*eventv1.EventType{eventType},
-		}, nil).Maybe()
+		}, nil,
+	).Maybe()
 }

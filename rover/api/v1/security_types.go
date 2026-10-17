@@ -96,14 +96,14 @@ type Machine2MachineAuthentication struct {
 }
 
 // SubscriberMachine2MachineAuthentication defines the authentication methods for machine-to-machine communication for subscribers
-// Either client, basic, or only scopes can be provided
-// +kubebuilder:validation:XValidation:rule="self == null || (has(self.client) ? (!has(self.basic)) : true)", message="Client and basic authentication cannot be used together"
+// Client and basic may be combined for an external IDP password grant.
 // +kubebuilder:validation:XValidation:rule="self == null || has(self.client) || has(self.basic) || has(self.scopes)", message="At least one of client, basic, or scopes must be provided"
 type SubscriberMachine2MachineAuthentication struct {
 	// Client defines client credentials for OAuth2
 	// +kubebuilder:validation:Optional
 	Client *OAuth2ClientCredentials `json:"client,omitempty"`
-	// Basic defines basic authentication configuration
+	// Basic defines basic authentication credentials, sent to the backend via HTTP Basic auth.
+	// If combined with client, scopes or grantType, they are used for the password grant of the provider's external IDP instead.
 	// +kubebuilder:validation:Optional
 	Basic *BasicAuthCredentials `json:"basic,omitempty"`
 	// Scopes defines additional OAuth2 scopes that are added to the LMS token
@@ -111,10 +111,19 @@ type SubscriberMachine2MachineAuthentication struct {
 	// +kubebuilder:validation:MaxItems=100
 	// +kubebuilder:validation:items:MaxLength=256
 	Scopes []string `json:"scopes,omitempty"`
+	// GrantType overrides the OAuth2 grant type of the provider's external IDP (defaults to the provider's grant type).
+	// Requires the provider to configure an external IDP.
+	// +kubebuilder:validation:Optional
+	GrantType GrantType `json:"grantType,omitempty"`
+	// TokenRequest overrides the token endpoint authentication method (RFC 7591) of the provider's external IDP (defaults to the provider's method).
+	// Requires the provider to configure an external IDP.
+	// +kubebuilder:validation:Optional
+	TokenRequest TokenRequestMethod `json:"tokenRequest,omitempty"`
 }
 
 // ExternalIdentityProvider defines configuration for using an external identity provider
-// +kubebuilder:validation:XValidation:rule="self == null || !has(self.basic) || !has(self.client)", message="Only one of basic or client credentials can be provided (XOR relationship)"
+// Username/password are only sent with the password grant; they may be combined with client credentials for client authentication.
+// +kubebuilder:validation:XValidation:rule="self == null || !has(self.basic) || (has(self.grantType) && self.grantType == 'password')", message="Username/password credentials require grant type \"password\""
 type ExternalIdentityProvider struct {
 	// TokenEndpoint is the URL for the OAuth2 token endpoint
 	// +kubebuilder:validation:Required
