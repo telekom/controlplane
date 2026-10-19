@@ -127,9 +127,8 @@ func (a *Approval) AppendDecision(d Decision) {
 // decisions keep it: the latest decision not resulting in Expired results in
 // Suspended.
 //
-// This relies on every state change recording a decision, as the control plane
-// API does. A state edited without a decision (for example by hand) can be read
-// wrongly; the result then errs on the side of denying access.
+// The expiration handler records the state before the expiry as a decision, so
+// the decisions still show it after the approval controller overwrote LastState.
 func (a *Approval) IsExpiredAfterSuspension() bool {
 	if a.Spec.State != ApprovalStateExpired {
 		return false
@@ -140,6 +139,27 @@ func (a *Approval) IsExpiredAfterSuspension() bool {
 	for i := len(a.Spec.Decisions) - 1; i >= 0; i-- {
 		if state := a.Spec.Decisions[i].ResultingState; state != ApprovalStateExpired {
 			return state == ApprovalStateSuspended
+		}
+	}
+	return false
+}
+
+// IsExpiredAfterGrant reports whether the Approval expired while it was
+// granted, so access stays granted. Like IsExpiredAfterSuspension, it reads
+// Status.LastState until the approval controller reconciles the expiry, and
+// the decisions after that: the latest decision not resulting in Expired
+// results in Granted. Check IsExpiredAfterSuspension first, as both can hold
+// while Status.LastState and the decisions disagree.
+func (a *Approval) IsExpiredAfterGrant() bool {
+	if a.Spec.State != ApprovalStateExpired {
+		return false
+	}
+	if a.Status.LastState == ApprovalStateGranted {
+		return true
+	}
+	for i := len(a.Spec.Decisions) - 1; i >= 0; i-- {
+		if state := a.Spec.Decisions[i].ResultingState; state != ApprovalStateExpired {
+			return state == ApprovalStateGranted
 		}
 	}
 	return false

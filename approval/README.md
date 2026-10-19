@@ -149,7 +149,7 @@ The `Approval` resource can be in one of the following states:
 - **Rejected**: The request has been rejected. This state indicates that a decider has denied access.
 - **Suspended**: The request has been suspended. This state indicates that the request is temporarily on hold and cannot be processed until further notice.
 - **SemiGranted**: The request has been approved by one decider in the `FourEyes` strategy, but requires a second approval from another decider to be fully granted.
-- **Expired**: The request has expired past its validity period.
+- **Expired**: The request has expired past its validity period. An `Approval` that was granted before it expired still grants access; one that was suspended before it expired denies access. The state before the expiry is read from `status.lastState` until the approval controller has reconciled the expiry, then from the recorded decisions. The expiration handler records that state as a decision when it sets `Expired`.
 
 Take a look at the following diagrams for illustration, taken from [`internal/fsm` (link)](internal/fsm). 
 

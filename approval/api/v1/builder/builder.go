@@ -410,7 +410,7 @@ func (b *approvalBuilder) Build(ctx context.Context) (finalResult ApprovalResult
 	}
 
 	// transition from Granted to Expired -> treat as Granted
-	isGrantedAndExpired := b.Approval.Spec.State == v1.ApprovalStateExpired && b.Approval.Status.LastState == v1.ApprovalStateGranted
+	isGrantedAndExpired := b.Approval.IsExpiredAfterGrant()
 
 	// Priority 4: Approval is granted
 	if b.Approval.Spec.State == v1.ApprovalStateGranted {
