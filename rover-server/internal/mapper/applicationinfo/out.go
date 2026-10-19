@@ -183,7 +183,11 @@ func FillApplicationInfo(ctx context.Context, rover *roverv1.Rover, appInfo *api
 		}
 	}
 
-	appInfo.Status = status.GetOverallStatus(rover.Status.Conditions)
+	roverStatus, err := status.MapRoverResponse(ctx, rover, stores)
+	if err != nil {
+		return errors.Wrap(err, "failed to map rover status")
+	}
+	appInfo.Status = roverStatus.OverallStatus
 	return nil
 }
 

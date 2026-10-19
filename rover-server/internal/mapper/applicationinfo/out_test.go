@@ -18,6 +18,8 @@ import (
 	apiv1 "github.com/telekom/controlplane/api/api/v1"
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
+	commonStore "github.com/telekom/controlplane/common-server/pkg/store"
+	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/types"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	filev1 "github.com/telekom/controlplane/file/api/v1"
@@ -26,6 +28,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/telekom/controlplane/rover-server/internal/api"
+	statusmapper "github.com/telekom/controlplane/rover-server/internal/mapper/status"
 	"github.com/telekom/controlplane/rover-server/pkg/store"
 	"github.com/telekom/controlplane/rover-server/test/mocks"
 )
@@ -544,7 +547,8 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 
 		DescribeTable("must map the token endpoint",
 			func(tokenURL, expected string) {
-				localStores := &store.Stores{}
+				localStoreCopy := *stores
+				localStores := &localStoreCopy
 				app := &applicationv1.Application{Status: applicationv1.ApplicationStatus{TokenUrl: tokenURL}}
 				appMock := mocks.NewMockObjectStore[*applicationv1.Application](GinkgoT())
 				appMock.EXPECT().Get(mock.Anything, mock.Anything, mock.Anything).Return(app, nil).Maybe()
@@ -576,7 +580,8 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 		)
 
 		It("must map the failover gateway and token endpoint together", func() {
-			localStores := &store.Stores{}
+			localStoreCopy := *stores
+			localStores := &localStoreCopy
 			app := &applicationv1.Application{Status: applicationv1.ApplicationStatus{
 				TokenUrl: "https://failover-idp.example.com/token",
 			}}
@@ -688,6 +693,59 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 	})
 
 	Context("MapApplicationInfo", func() {
+		It("must propagate child status lookup errors", func() {
+			localStoreCopy := *stores
+			subStore := mocks.NewMockObjectStore[*apiv1.ApiSubscription](GinkgoT())
+			subStore.EXPECT().List(mock.Anything, mock.Anything).Return(nil, fmt.Errorf("status lookup failed")).Once()
+			localStoreCopy.APISubscriptionStore = subStore
+
+			info, err := MapApplicationInfo(ctx, rover, &localStoreCopy)
+
+			Expect(info).To(BeNil())
+			Expect(err).To(MatchError(ContainSubstring("failed to map rover status: status lookup failed")))
+		})
+
+		DescribeTable("must agree with the status endpoint when a subscription is blocked",
+			func(activeConditions []metav1.Condition, expected api.OverallStatus) {
+				localStoreCopy := *stores
+				blocked := &apiv1.ApiSubscription{
+					Status: apiv1.ApiSubscriptionStatus{Conditions: []metav1.Condition{{
+						Type: condition.ConditionTypeReady, Status: metav1.ConditionFalse,
+						Reason: condition.ReasonApprovalPending, Message: "Approval required",
+					}}},
+				}
+				children := []*apiv1.ApiSubscription{blocked}
+				if activeConditions != nil {
+					children = append(children, &apiv1.ApiSubscription{
+						Status: apiv1.ApiSubscriptionStatus{Conditions: activeConditions},
+					})
+				}
+				subStore := mocks.NewMockObjectStore[*apiv1.ApiSubscription](GinkgoT())
+				subStore.EXPECT().Get(mock.Anything, mock.Anything, mock.Anything).Return(blocked, nil).Maybe()
+				subStore.EXPECT().List(mock.Anything, mock.Anything).Return(
+					&commonStore.ListResponse[*apiv1.ApiSubscription]{Items: children}, nil).Maybe()
+				localStoreCopy.APISubscriptionStore = subStore
+
+				waitingRover := rover.DeepCopy()
+				waitingRover.Status.Conditions = []metav1.Condition{{
+					Type: condition.ConditionTypeReady, Status: metav1.ConditionFalse,
+					Reason: condition.ReasonSubResourceNotReady,
+				}}
+				info, err := MapApplicationInfo(ctx, waitingRover, &localStoreCopy)
+				Expect(err).NotTo(HaveOccurred())
+				response, err := statusmapper.MapRoverResponse(ctx, waitingRover, &localStoreCopy)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(info.Status).To(Equal(expected))
+				Expect(info.Status).To(Equal(response.OverallStatus))
+			},
+			Entry("only blocked work remains", nil, api.OverallStatusBlocked),
+			Entry("another child is processing", []metav1.Condition{{
+				Type: condition.ConditionTypeReady, Status: metav1.ConditionFalse,
+				Reason: condition.ReasonProvisioning,
+			}}, api.OverallStatusProcessing),
+			Entry("another child has no conditions yet", []metav1.Condition{}, api.OverallStatusProcessing),
+		)
+
 		It("must map application info correctly", func() {
 			output, err := MapApplicationInfo(ctx, rover, stores)
 
