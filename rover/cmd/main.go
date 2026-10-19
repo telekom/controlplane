@@ -300,5 +300,3 @@ func setupWebhooks(mgr ctrl.Manager) error {
 
 	return nil
 }
-
-// rebuild
