@@ -344,6 +344,96 @@ var _ = Describe("Rover Controller Spectre Watch", Ordered, func() {
 		})
 	})
 
+	Context("Referenced Application appears after the Rover", func() {
+		It("should reconcile the Blocked Rover as soon as the Application is created", func() {
+			lateProvider := providerAppName + "-late"
+			lateConsumer := "consumer-app-late"
+			lateConsumerID := providerGroupName + "--" + providerTeamName + "--" + lateConsumer
+			newApp := func(name string) *applicationv1.Application {
+				return &applicationv1.Application{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      name,
+						Namespace: providerTeamNamespace,
+						Labels: map[string]string{
+							config.EnvironmentLabelKey:          testEnvironment,
+							config.BuildLabelKey("application"): labelutil.NormalizeLabelValue(name),
+							config.BuildLabelKey("team"):        labelutil.NormalizeLabelValue(providerTeamName),
+							config.BuildLabelKey("zone"):        labelutil.NormalizeLabelValue(testEnvironment),
+						},
+					},
+					Spec: applicationv1.ApplicationSpec{
+						Team:      providerTeamName,
+						TeamEmail: "provider@mail.de",
+						Secret:    "provider-secret",
+					},
+				}
+			}
+			getRover := func(g Gomega) *roverv1.Rover {
+				fetchedRover := &roverv1.Rover{}
+				g.Expect(k8sClient.Get(ctx, spectreTypeNamespacedName, fetchedRover)).To(Succeed())
+				return fetchedRover
+			}
+			expectBlockedOn := func(g Gomega, rover *roverv1.Rover, unresolved string) {
+				processingCond := findCondition(rover.Status.Conditions, condition.ConditionTypeProcessing)
+				g.Expect(processingCond).NotTo(BeNil())
+				g.Expect(processingCond.Reason).To(Equal(condition.ReasonBlocked))
+				g.Expect(processingCond.Message).To(ContainSubstring(unresolved))
+			}
+
+			rover := &roverv1.Rover{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      spectreRoverName,
+					Namespace: teamNamespace,
+					Labels: map[string]string{
+						config.EnvironmentLabelKey: testEnvironment,
+					},
+				},
+				Spec: roverv1.RoverSpec{
+					Zone:         testEnvironment,
+					ClientSecret: "topsecret",
+					Listeners: []roverv1.RoverListener{
+						{Consumer: spectreRoverName, Provider: lateProvider, ApiBasePath: apiBasePath + "/late-provider"},
+						{Consumer: lateConsumerID, Provider: providerAppName, ApiBasePath: apiBasePath + "/late-consumer"},
+					},
+				},
+			}
+
+			By("Creating the Rover before the Applications it references")
+			Expect(k8sClient.Create(ctx, rover)).To(Succeed())
+			Eventually(func(g Gomega) {
+				fetchedRover := getRover(g)
+				g.Expect(fetchedRover.Status.SpectreListeners).To(BeEmpty())
+				expectBlockedOn(g, fetchedRover, fmt.Sprintf("application %q not found", lateProvider))
+			}, spectreTimeout, interval).Should(Succeed())
+
+			By("Creating the provider Application referenced by bare name")
+			lateProviderApp := newApp(lateProvider)
+			Expect(k8sClient.Create(ctx, lateProviderApp)).To(Succeed())
+			DeferCleanup(func() {
+				_ = k8sClient.Delete(ctx, lateProviderApp)
+			})
+			Eventually(func(g Gomega) {
+				fetchedRover := getRover(g)
+				g.Expect(fetchedRover.Status.SpectreListeners).To(HaveLen(1))
+				expectBlockedOn(g, fetchedRover, fmt.Sprintf("application %q not found", lateConsumer))
+			}, spectreTimeout, interval).Should(Succeed())
+
+			By("Creating the consumer Application referenced by full ID")
+			lateConsumerApp := newApp(lateConsumer)
+			Expect(k8sClient.Create(ctx, lateConsumerApp)).To(Succeed())
+			DeferCleanup(func() {
+				_ = k8sClient.Delete(ctx, lateConsumerApp)
+			})
+			Eventually(func(g Gomega) {
+				fetchedRover := getRover(g)
+				g.Expect(fetchedRover.Status.SpectreListeners).To(HaveLen(2))
+				processingCond := findCondition(fetchedRover.Status.Conditions, condition.ConditionTypeProcessing)
+				g.Expect(processingCond).NotTo(BeNil())
+				g.Expect(processingCond.Reason).NotTo(Equal(condition.ReasonBlocked))
+			}, spectreTimeout, interval).Should(Succeed())
+		})
+	})
+
 	Context("Spectre child readiness triggers Rover re-reconciliation", func() {
 		It("should re-reconcile Rover when SpectreApplication status changes", func() {
 			spec := roverv1.RoverSpec{

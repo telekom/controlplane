@@ -34,6 +34,15 @@ func applicationKeyFromID(ctx context.Context, ref string) (key crclient.ObjectK
 	}, true
 }
 
+// ApplicationName returns the name of the Application a listener consumer or
+// provider value refers to: the last part of a full application ID, or the value itself.
+func ApplicationName(ref string) string {
+	if parts := strings.SplitN(ref, "--", 3); len(parts) == 3 {
+		return parts[2]
+	}
+	return ref
+}
+
 // resolveApplication finds the Application referenced by ref within the current environment.
 // A full application ID "<group>--<team>--<name>" is looked up in that team's namespace;
 // any other value is treated as a bare name that must be unique across all teams.

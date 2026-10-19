@@ -107,7 +107,11 @@ func (r *RoverReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 	if cconfig.FeatureSpectre.IsEnabled() {
 		b = b.Owns(&spectrev1.SpectreApplication{}, owns).
-			Owns(&spectrev1.Listener{}, owns)
+			Owns(&spectrev1.Listener{}, owns).
+			Watches(&application.Application{},
+				handler.EnqueueRequestsFromMapFunc(r.MapApplicationToListenerRovers),
+				builder.WithPredicates(cc.Count("rover", cc.RoleWatches, predicate.GenerationChangedPredicate{})),
+			)
 	}
 
 	b = b.Watches(&organizationv1.Team{},
@@ -135,6 +139,31 @@ func (r *RoverReconciler) MapTeamToRovers(ctx context.Context, obj client.Object
 	roverList := &rover.RoverList{}
 	if err := r.List(ctx, roverList, client.InNamespace(team.Status.Namespace)); err != nil {
 		logger.Error(err, "Failed to list Rovers", "namespace", team.Status.Namespace)
+		return nil
+	}
+
+	reqs := make([]reconcile.Request, 0, len(roverList.Items))
+	for i := range roverList.Items {
+		reqs = append(reqs, reconcile.Request{
+			NamespacedName: client.ObjectKeyFromObject(&roverList.Items[i]),
+		})
+	}
+
+	return reqs
+}
+
+// MapApplicationToListenerRovers maps an Application to the Rovers whose listeners
+// reference it as consumer or provider, so that a listener blocked on a missing
+// or ambiguous Application is reconciled as soon as that Application changes.
+func (r *RoverReconciler) MapApplicationToListenerRovers(ctx context.Context, obj client.Object) []reconcile.Request {
+	logger := log.FromContext(ctx)
+
+	roverList := &rover.RoverList{}
+	if err := r.List(ctx, roverList,
+		client.MatchingFields{ListenerApplicationIndexKey: obj.GetName()},
+		client.MatchingLabels{cconfig.EnvironmentLabelKey: obj.GetLabels()[cconfig.EnvironmentLabelKey]},
+	); err != nil {
+		logger.Error(err, "Failed to list Rovers for Application", "application", client.ObjectKeyFromObject(obj))
 		return nil
 	}
 
