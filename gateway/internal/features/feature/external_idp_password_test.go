@@ -175,6 +175,55 @@ var _ = Describe("External IDP password grant with consumer username/password an
 		Expect(mixed.OAuth).NotTo(HaveKey(plugin.ConsumerId("basic-only-consumer")))
 	})
 
+	// Mirrors the regression test ExternalIdpGrantTypePasswordTest.providerSetsCredentials:
+	// the provider configures username/password and scopes for the password grant, the consumer has no credentials.
+	It("requests the token with the provider password-grant credentials for a consumer without credentials", func() {
+		originalGet := secretManagerApi.Get
+		defer func() { secretManagerApi.Get = originalGet }()
+		secretManagerApi.Get = func(_ context.Context, ref string) (string, error) { return ref, nil }
+
+		ctx = contextutil.WithEnv(ctx, "test-env")
+		route := primaryPasswordRoute()
+		route.Spec.Paths = []string{"/providerpassword/v1"}
+		route.Spec.Backend.Upstreams = []gatewayv1.Upstream{{Scheme: "https", Hostname: "backend.example.com", Port: 443}}
+		route.Spec.Security.TrustedIssuers = []string{"https://issuer.example.com/realms/test"}
+		route.Spec.Security.M2M.Scopes = []string{"provider:scope1", "provider:scope2"}
+		consumer := &gatewayv1.ConsumeRoute{Spec: gatewayv1.ConsumeRouteSpec{
+			Route: *types.ObjectRefFromObject(route), ConsumerName: "consumer-without-credentials",
+		}}
+
+		var transformer *plugin.RequestTransformerPlugin
+		kong := kongmock.NewMockKongClient(GinkgoT())
+		kong.EXPECT().CreateOrReplaceRoute(mock.Anything, mock.Anything, mock.Anything).Return(nil)
+		kong.EXPECT().CreateOrReplacePlugin(mock.Anything, mock.Anything).
+			Run(func(_ context.Context, configured kongclient.CustomPlugin) {
+				if configured, ok := configured.(*plugin.RequestTransformerPlugin); ok {
+					transformer = configured
+				}
+			}).Return(nil, nil)
+		kong.EXPECT().CleanupPlugins(mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
+		composed := features.NewFeatureBuilder(kong, route, nil, &gatewayv1.Gateway{})
+		composed.EnableFeature(feature.InstanceAccessControlFeature)
+		composed.EnableFeature(feature.InstanceExternalIDPFeature)
+		composed.EnableFeature(feature.InstanceBasicAuthFeature)
+		composed.EnableFeature(feature.InstanceCustomScopesFeature)
+		composed.EnableFeature(feature.InstanceLastMileSecurityFeature)
+		composed.AddAllowedConsumers(consumer)
+		Expect(composed.Build(ctx)).To(Succeed())
+		Expect(transformer).NotTo(BeNil())
+		jumperConfig, err := plugin.FromBase64[plugin.JumperConfig](transformer.Config.Append.Headers.Get(plugin.JumperConfigKey))
+		Expect(err).NotTo(HaveOccurred())
+
+		Expect(transformer.Config.Append.Headers.Get("token_endpoint")).To(Equal("https://idp.example.com/token"))
+		Expect(jumperConfig.BasicAuth).To(BeEmpty(), "provider username/password belong to the external IDP, not to backend Basic auth")
+		Expect(jumperConfig.OAuth).To(Equal(map[plugin.ConsumerId]plugin.OauthCredentials{
+			feature.DefaultProviderKey: {
+				Username: "provider-user", Password: "provider-pass",
+				Scopes: "provider:scope1 provider:scope2", GrantType: "password",
+			},
+		}))
+	})
+
 	DescribeTable("publishes exactly one authentication method per consumer",
 		func(providerGrant gatewayv1.GrantType, configure func(*gatewayv1.ConsumerMachine2MachineAuthentication),
 			expectedBasic map[plugin.ConsumerId]plugin.BasicAuthCredentials, expectedConsumerOAuth *plugin.OauthCredentials,
