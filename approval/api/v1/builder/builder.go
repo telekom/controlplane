@@ -360,7 +360,7 @@ func (b *approvalBuilder) Build(ctx context.Context) (finalResult ApprovalResult
 
 		isDenied := b.Approval.Spec.State == v1.ApprovalStateRejected || b.Approval.Spec.State == v1.ApprovalStateSuspended
 		// transition from Suspended to Expired -> treat as denied
-		isDeniedAndExpired := b.Approval.Spec.State == v1.ApprovalStateExpired && b.Approval.Status.LastState == v1.ApprovalStateSuspended
+		isDeniedAndExpired := b.Approval.IsExpiredAfterSuspension()
 
 		if isDenied {
 			log.V(1).Info("Approval is rejected or suspended and must not be provisioned")

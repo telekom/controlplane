@@ -125,7 +125,8 @@ func (h *ListenerHandler) CreateOrUpdate(ctx context.Context, listener *spectrev
 	// Step 0.5: Early restriction check — detect a conclusive revocation, or a
 	// rejected current request while capture is applied, from persisted status
 	// refs without requiring Application/Route readiness, and drain even if
-	// topology is broken. A read error does not mask a denial found by another read.
+	// topology is broken. A revocation with no capture to drain falls through to
+	// the normal flow. A read error does not mask a denial found by another read.
 	approvalGate, requestGate, earlyErr := h.checkEarlyRestriction(ctx, listener)
 	if earlyErr != nil {
 		// Not returned: a denial found by another read still stops capture below.
@@ -134,18 +135,28 @@ func (h *ListenerHandler) CreateOrUpdate(ctx context.Context, listener *spectrev
 		logger.Error(earlyErr, "Early restriction check could not read every gate; an unreadable gate cannot stop capture",
 			"appliedCapture", hasAppliedCapture(listener))
 	}
+	// revokedGate names the gate the live read found revoked when there was no
+	// capture to drain and the normal flow continues.
+	revokedGate := ""
 	switch {
 	case approvalGate != "":
 		logger.Info("Early restriction detected, initiating cleanup", "gate", approvalGate)
-		if err := h.handleDenialCleanup(ctx, listener,
+		started, err := h.handleDenialCleanup(ctx, listener,
 			fmt.Sprintf("early restriction (%s gate)", approvalGate),
-			fmt.Sprintf("Approval has been revoked (%s gate, early restriction)", approvalGate)); err != nil {
+			fmt.Sprintf("Approval has been revoked (%s gate, early restriction)", approvalGate))
+		if err != nil {
 			return errors.Wrap(err, "failed cleanup after early restriction")
 		}
-		return nil
+		if started {
+			return nil
+		}
+		// No capture is applied, tracked or found: the normal flow reports the
+		// denial and requests approval for a changed intent, whose grant by a
+		// person lifts the revocation.
+		revokedGate = approvalGate
 	case requestGate != "":
 		logger.Info("Rejected ApprovalRequest with applied capture, initiating cleanup", "gate", requestGate)
-		if err := h.handleDenialCleanup(ctx, listener,
+		if _, err := h.handleDenialCleanup(ctx, listener,
 			fmt.Sprintf("approval request rejected (%s gate, early restriction)", requestGate),
 			fmt.Sprintf("ApprovalRequest has been denied (%s gate, early restriction)", requestGate)); err != nil {
 			return errors.Wrap(err, "failed cleanup after early restriction")
@@ -296,6 +307,12 @@ func (h *ListenerHandler) CreateOrUpdate(ctx context.Context, listener *spectrev
 	// answer starts a fresh one.
 	switch dual.outcome {
 	case outcomeGranted:
+		// The gates are read from the cache. When the live read above found a
+		// gate revoked, a Granted answer is a cache that has not seen the
+		// revocation yet; a real lift makes the live Approval Granted too.
+		if revokedGate != "" {
+			return ctrlerrors.RetryableErrorf("Approval of the %s gate is revoked, but the cache still reports it granted", revokedGate)
+		}
 		listener.Status.AuthorizationUnknownSince = nil
 		// Continue to provisioning below.
 
@@ -310,7 +327,8 @@ func (h *ListenerHandler) CreateOrUpdate(ctx context.Context, listener *spectrev
 		// The shared builder contract (RequestDenied = children untouched) is
 		// unchanged for other domains. setAggregateConditions already set
 		// Ready=False/AccessDenied naming the gate(s). The early check (step 0.5)
-		// acts on a rejected request only while capture is applied; once the drain
+		// acts on a rejected request only while capture is applied, and on a
+		// revoked Approval only while it finds capture to drain; once the drain
 		// has cleared it, an intent change (new request name) reaches ensureApprovals.
 		reason := "approval denied"
 		if dual.outcome == outcomeRequestDenied {
@@ -689,8 +707,7 @@ func (h *ListenerHandler) checkEarlyRestriction(
 			return gate.key, "", firstErr
 		}
 		// Expired-from-Suspended = also denied.
-		if approval.Spec.State == approvalapi.ApprovalStateExpired &&
-			approval.Status.LastState == approvalapi.ApprovalStateSuspended {
+		if approval.IsExpiredAfterSuspension() {
 			return gate.key, "", firstErr
 		}
 	}
@@ -728,22 +745,27 @@ func hasAppliedCapture(listener *spectrev1.Listener) bool {
 		len(listener.Status.EventSubscriptions) > 0
 }
 
-// handleDenialCleanup stops capture through the persisted drain and sets
-// AccessDenied conditions with message when the early check detects a
-// conclusive revocation or a rejected current request.
+// handleDenialCleanup stops capture through the persisted drain when the early
+// check detects a conclusive revocation or a rejected current request, and
+// reports whether a drain is active. Only then it sets AccessDenied conditions
+// with message; with nothing to drain the caller decides.
 func (h *ListenerHandler) handleDenialCleanup(
 	ctx context.Context,
 	listener *spectrev1.Listener,
 	reason string,
 	message string,
-) error {
-	if _, err := h.drainCapture(ctx, listener, reason); err != nil {
-		return errors.Wrap(err, "failed to start drain during denial cleanup")
+) (bool, error) {
+	started, err := h.drainCapture(ctx, listener, reason)
+	if err != nil {
+		return false, errors.Wrap(err, "failed to start drain during denial cleanup")
+	}
+	if !started {
+		return false, nil
 	}
 
 	listener.SetCondition(condition.NewNotReadyCondition(condition.ReasonAccessDenied, message))
 	listener.SetCondition(condition.NewDoneProcessingCondition(message))
-	return nil
+	return true, nil
 }
 
 // stopCaptureAfter stops capture through the persisted drain after an approval

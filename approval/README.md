@@ -90,6 +90,7 @@ configurations in the handler of the `Subscription` resource.
 
 6. **Changing Approval anytime**: The decider can also change the access by updating the `Approval` resource anytime. The approval can be paused, granted and rejected.
 By listing/watching the `Approval` resource, the `Subscription` resource can be updated to reflect those changes.
+For a keyed (scoped) `Approval`, a revocation (rejected, suspended, or expired after a suspension) is lifted only when a person fully grants another `ApprovalRequest` of the same gate after the revocation, as recorded by the decision timestamps. An automatic grant keeps the revocation. If a scoped `Approval` is deleted after it was issued, the `ApprovalRequest` it was issued for does not recreate it from an automatic grant; a new `ApprovalRequest` of the gate (for example, after an intent change) does. The control plane API lets teams only decide on an `Approval`; deleting one needs Kubernetes access to `Approval` resources.
 
 ### Approval Strategies
 There are three approval strategies supported by the `Approval` resource:

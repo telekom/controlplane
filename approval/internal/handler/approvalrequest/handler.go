@@ -6,8 +6,10 @@ package approvalrequest
 
 import (
 	"context"
+	stderrors "errors"
 	"fmt"
 	"maps"
+	"slices"
 
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -209,6 +211,19 @@ func (h *ApprovalRequestHandler) handleGranted(ctx context.Context, approvalReq 
 			}
 		}
 
+		// A scoped Approval this request was already bound to was deleted; an
+		// automatic grant must not recreate it, as that would undo a revocation.
+		if isKeyed && approvalObj.UID == "" && source.Spec.Strategy == approvalv1.ApprovalStrategyAuto &&
+			approvalReq.Status.Approval.UID != "" {
+			return errScopedApprovalDeleted
+		}
+
+		// A lifted revocation keeps the decisions that led to it.
+		decisions := source.Spec.Decisions
+		if isKeyed && isScopedApprovalRevoked(approvalObj) {
+			decisions = approvalv1.TrimDecisions(append(slices.Clone(approvalObj.Spec.Decisions), source.Spec.Decisions...))
+		}
+
 		// Set controller owner reference only when creating (no existing refs).
 		if len(approvalObj.GetOwnerReferences()) == 0 {
 			setControllerReferenceForRef(approvalObj, &source.Spec.Target)
@@ -222,7 +237,7 @@ func (h *ApprovalRequestHandler) handleGranted(ctx context.Context, approvalReq 
 			Decider:   source.Spec.Decider,
 			Target:    source.Spec.Target,
 			Action:    source.Spec.Action,
-			Decisions: source.Spec.Decisions,
+			Decisions: decisions,
 
 			ApprovedRequest: types.ObjectRefFromObject(source),
 			ApprovalKey:     source.Spec.ApprovalKey,
@@ -242,6 +257,13 @@ func (h *ApprovalRequestHandler) handleGranted(ctx context.Context, approvalReq 
 	}
 
 	_, err = c.CreateOrUpdate(ctx, approvalObj, mutate)
+	if stderrors.Is(err, errScopedApprovalDeleted) {
+		approvalReq.SetCondition(approval_condition.NewApprovedCondition())
+		approvalReq.SetCondition(condition.NewDoneProcessingCondition("Request has been approved automatically, but its approval was deleted"))
+		approvalReq.SetCondition(condition.NewNotReadyCondition(builder.ReasonApprovalRevoked,
+			"Request has been approved automatically, but its approval was deleted after it was issued and is not recreated"))
+		return nil
+	}
 	if err != nil {
 		return errors.Wrap(err, "failed to create or update approval")
 	}
@@ -249,6 +271,12 @@ func (h *ApprovalRequestHandler) handleGranted(ctx context.Context, approvalReq 
 	approvalReq.Status.Approval = *types.ObjectRefFromObject(approvalObj)
 
 	approvalReq.SetCondition(approval_condition.NewApprovedCondition())
+	if isKeyed && isScopedApprovalRevoked(approvalObj) {
+		approvalReq.SetCondition(condition.NewDoneProcessingCondition("Request has been approved, but the approval stays revoked"))
+		approvalReq.SetCondition(condition.NewNotReadyCondition(builder.ReasonApprovalRevoked,
+			"Request has been approved, but the approval stays revoked; the decider must grant the approval again"))
+		return nil
+	}
 	approvalReq.SetCondition(condition.NewDoneProcessingCondition("Request has been approved"))
 	approvalReq.SetCondition(
 		condition.NewReadyCondition("Granted", "Request has been approved and approval is granted"))
@@ -273,12 +301,9 @@ func (h *ApprovalRequestHandler) resolveScopedGrantSource(ctx context.Context, a
 			return nil, false, fmt.Errorf("scoped approval %s: target identity mismatch", approvalObj.Name)
 		}
 
-		// Preserve active revocations: do not overwrite Rejected/Suspended with a new grant.
-		isRevoked := approvalObj.Spec.State == approvalv1.ApprovalStateRejected ||
-			approvalObj.Spec.State == approvalv1.ApprovalStateSuspended
-		isExpiredFromSuspended := approvalObj.Spec.State == approvalv1.ApprovalStateExpired &&
-			approvalObj.Status.LastState == approvalv1.ApprovalStateSuspended
-		if isRevoked || isExpiredFromSuspended {
+		// Preserve active revocations: do not overwrite Rejected/Suspended with a new
+		// grant, unless a person granted a newer request.
+		if isScopedApprovalRevoked(approvalObj) && !liftsScopedRevocation(approvalObj, approvalReq) {
 			logger.Info("Scoped approval is revoked; preserving revocation",
 				"state", approvalObj.Spec.State)
 			return nil, true, nil
@@ -308,6 +333,75 @@ func (h *ApprovalRequestHandler) resolveScopedGrantSource(ctx context.Context, a
 	}
 
 	return source, false, nil
+}
+
+// isScopedApprovalRevoked reports whether a scoped Approval is revoked: Rejected,
+// Suspended, or Expired after a suspension.
+func isScopedApprovalRevoked(approvalObj *approvalv1.Approval) bool {
+	switch approvalObj.Spec.State {
+	case approvalv1.ApprovalStateRejected, approvalv1.ApprovalStateSuspended:
+		return true
+	case approvalv1.ApprovalStateExpired:
+		return approvalObj.IsExpiredAfterSuspension()
+	default:
+		return false
+	}
+}
+
+// errScopedApprovalDeleted marks an automatic grant whose scoped Approval was
+// deleted after this request had been bound to it.
+var errScopedApprovalDeleted = stderrors.New("scoped approval was deleted after it was issued")
+
+// liftsScopedRevocation reports whether approvalReq replaces the revocation of a
+// scoped Approval: only a request other than the one the Approval was granted for,
+// fully granted by a person after the revocation. Both times come from decision
+// timestamps; when either is unknown the revocation is kept. A timestamp is set
+// by its writer (the control plane API uses server time) or, when empty,
+// defaulted by the mutating webhook, so other writers can supply any value. An
+// automatic grant keeps the revocation, and so does a FourEyes request that is
+// only Semigranted, as it never reaches the grant path.
+func liftsScopedRevocation(approvalObj *approvalv1.Approval, approvalReq *approvalv1.ApprovalRequest) bool {
+	if approvalReq.Spec.Strategy == approvalv1.ApprovalStrategyAuto || approvalReq.Spec.State != approvalv1.ApprovalStateGranted {
+		return false
+	}
+	if bound := approvalObj.Spec.ApprovedRequest; bound != nil && bound.UID == approvalReq.UID {
+		return false
+	}
+	grantedAt := latestGrantTime(approvalReq.Spec.Decisions)
+	revokedAt := revocationTime(approvalObj)
+	return grantedAt != nil && revokedAt != nil && grantedAt.After(revokedAt.Time)
+}
+
+// latestGrantTime returns the timestamp of the latest decision resulting in
+// Granted, or nil when there is none or it has no timestamp.
+func latestGrantTime(decisions []approvalv1.Decision) *metav1.Time {
+	for i := len(decisions) - 1; i >= 0; i-- {
+		if decisions[i].ResultingState == approvalv1.ApprovalStateGranted {
+			return decisions[i].Timestamp
+		}
+	}
+	return nil
+}
+
+// revocationTime returns when a revoked scoped Approval was revoked: the
+// timestamp of its last decision, when that decision is the revocation, i.e. it
+// results in the current state, or in Suspended followed only by expiry. It
+// returns nil when the state was changed without a decision, as an older
+// revocation decision would then date a newer revocation.
+func revocationTime(approvalObj *approvalv1.Approval) *metav1.Time {
+	decisions := approvalObj.Spec.Decisions
+	i := len(decisions) - 1
+	revokedState := approvalObj.Spec.State
+	if revokedState == approvalv1.ApprovalStateExpired {
+		for i >= 0 && decisions[i].ResultingState == approvalv1.ApprovalStateExpired {
+			i--
+		}
+		revokedState = approvalv1.ApprovalStateSuspended
+	}
+	if i < 0 || decisions[i].ResultingState != revokedState {
+		return nil
+	}
+	return decisions[i].Timestamp
 }
 
 // checkLegacyGrantSource applies the unscoped idempotency check and verifies the

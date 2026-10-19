@@ -121,6 +121,30 @@ func (a *Approval) AppendDecision(d Decision) {
 	a.Spec.Decisions = TrimDecisions(append(a.Spec.Decisions, d))
 }
 
+// IsExpiredAfterSuspension reports whether the Approval expired while it was
+// suspended, so it stays denied. Status.LastState shows this only until the
+// approval controller reconciles the expiry, as it follows Spec.State; the
+// decisions keep it: the latest decision not resulting in Expired results in
+// Suspended.
+//
+// This relies on every state change recording a decision, as the control plane
+// API does. A state edited without a decision (for example by hand) can be read
+// wrongly; the result then errs on the side of denying access.
+func (a *Approval) IsExpiredAfterSuspension() bool {
+	if a.Spec.State != ApprovalStateExpired {
+		return false
+	}
+	if a.Status.LastState == ApprovalStateSuspended {
+		return true
+	}
+	for i := len(a.Spec.Decisions) - 1; i >= 0; i-- {
+		if state := a.Spec.Decisions[i].ResultingState; state != ApprovalStateExpired {
+			return state == ApprovalStateSuspended
+		}
+	}
+	return false
+}
+
 var _ types.Object = &Approval{}
 
 func ApprovalName(ownerKind, ownerName string) string {

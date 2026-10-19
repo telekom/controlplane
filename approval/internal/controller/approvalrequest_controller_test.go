@@ -7,6 +7,7 @@ package controller
 import (
 	"time"
 
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -946,6 +947,378 @@ var _ = Describe("ApprovalRequest Controller", func() {
 				g.Expect(a.Spec.Decisions).To(HaveLen(1))
 				g.Expect(a.Spec.Decisions[0].Comment).To(Equal("Access revoked"))
 				g.Expect(a.OwnerReferences).To(BeEmpty())
+
+				ready := meta.FindStatusCondition(ar.Status.Conditions, condition.ConditionTypeReady)
+				g.Expect(ready).NotTo(BeNil())
+				g.Expect(ready.Status).To(Equal(metav1.ConditionFalse))
+				g.Expect(ready.Reason).To(Equal("Revoked"))
+				g.Expect(ready.Message).To(ContainSubstring("approval stays revoked"))
+			}, timeout, interval).Should(Succeed())
+		})
+
+		It("lifts a revoked scoped Approval when a person grants a newer request", func() {
+			By("Creating a source resource")
+			src := test.NewObject("scoped-lift-src", testNamespace)
+			src.SetLabels(map[string]string{
+				config.EnvironmentLabelKey: testEnvironment,
+			})
+			Expect(k8sClient.Create(ctx, src)).To(Succeed())
+			DeferCleanup(func() { _ = k8sClient.Delete(ctx, src) })
+
+			target := *ctypes.TypedObjectRefFromObject(src, k8sClient.Scheme())
+			approvalName, err := approvalv1.ScopedApprovalName(target, "lift-key")
+			Expect(err).NotTo(HaveOccurred())
+			approvalKey := client.ObjectKey{Name: approvalName, Namespace: testNamespace}
+
+			By("Granting the first request by a person")
+			ar1 := newScopedRequest(src, "scoped-lift-a", &target, "lift-key", &requester, &decider,
+				approvalv1.ApprovalStrategySimple, approvalv1.ApprovalStateGranted,
+				approvalv1.Decision{Name: "Alice", Email: "alice@decider.com", ResultingState: approvalv1.ApprovalStateGranted})
+			Expect(k8sClient.Create(ctx, ar1)).To(Succeed())
+			Eventually(func(g Gomega) {
+				a := &approvalv1.Approval{}
+				g.Expect(k8sClient.Get(ctx, approvalKey, a)).To(Succeed())
+				g.Expect(a.Spec.State).To(Equal(approvalv1.ApprovalStateGranted))
+				g.Expect(a.Spec.ApprovedRequest).NotTo(BeNil())
+				g.Expect(a.Spec.ApprovedRequest.UID).To(Equal(ar1.UID))
+			}, timeout, interval).Should(Succeed())
+
+			By("Revoking the Approval")
+			revokeApproval(approvalKey)
+
+			By("Keeping the revocation for the request it was granted for")
+			Eventually(func(g Gomega) {
+				g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(ar1), ar1)).To(Succeed())
+				ready := meta.FindStatusCondition(ar1.Status.Conditions, condition.ConditionTypeReady)
+				g.Expect(ready).NotTo(BeNil())
+				g.Expect(ready.Reason).To(Equal("Revoked"))
+			}, timeout, interval).Should(Succeed())
+
+			By("Replacing the first request with a newer one, as an intent change does")
+			deleteRequest(ar1)
+			ar2 := newScopedRequest(src, "scoped-lift-b", &target, "lift-key", &requester, &decider,
+				approvalv1.ApprovalStrategySimple, approvalv1.ApprovalStatePending)
+			Expect(k8sClient.Create(ctx, ar2)).To(Succeed())
+
+			By("Keeping the revocation while the newer request is only Pending")
+			Consistently(func(g Gomega) {
+				a := &approvalv1.Approval{}
+				g.Expect(k8sClient.Get(ctx, approvalKey, a)).To(Succeed())
+				g.Expect(a.Spec.State).To(Equal(approvalv1.ApprovalStateRejected))
+			}, time.Second, interval).Should(Succeed())
+
+			By("Granting the newer request by a person, after the revocation")
+			grantedAt := metav1.Now()
+			Eventually(func(g Gomega) {
+				g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(ar2), ar2)).To(Succeed())
+				ar2.Spec.State = approvalv1.ApprovalStateGranted
+				ar2.AppendDecision(approvalv1.Decision{Name: "Bob", Email: "bob@decider.com", Timestamp: &grantedAt, ResultingState: approvalv1.ApprovalStateGranted})
+				g.Expect(k8sClient.Update(ctx, ar2)).To(Succeed())
+			}, timeout, interval).Should(Succeed())
+
+			By("Verifying the Approval is granted, bound to the newer request, and keeps the revocation decision")
+			Eventually(func(g Gomega) {
+				a := &approvalv1.Approval{}
+				g.Expect(k8sClient.Get(ctx, approvalKey, a)).To(Succeed())
+				g.Expect(a.Spec.State).To(Equal(approvalv1.ApprovalStateGranted))
+				g.Expect(a.Spec.ApprovedRequest).NotTo(BeNil())
+				g.Expect(a.Spec.ApprovedRequest.UID).To(Equal(ar2.UID))
+				g.Expect(a.Spec.Decisions).To(ContainElement(SatisfyAll(
+					HaveField("Comment", "Access revoked"), HaveField("ResultingState", approvalv1.ApprovalStateRejected))))
+				g.Expect(a.Spec.Decisions).To(ContainElement(SatisfyAll(
+					HaveField("Name", "Bob"), HaveField("ResultingState", approvalv1.ApprovalStateGranted))))
+
+				g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(ar2), ar2)).To(Succeed())
+				g.Expect(meta.IsStatusConditionTrue(ar2.Status.Conditions, condition.ConditionTypeReady)).To(BeTrue())
+			}, timeout, interval).Should(Succeed())
+		})
+
+		It("keeps a revoked scoped Approval when the newer request was granted before the revocation", func() {
+			By("Creating a source resource")
+			src := test.NewObject("scoped-stale-src", testNamespace)
+			src.SetLabels(map[string]string{
+				config.EnvironmentLabelKey: testEnvironment,
+			})
+			Expect(k8sClient.Create(ctx, src)).To(Succeed())
+			DeferCleanup(func() { _ = k8sClient.Delete(ctx, src) })
+
+			target := *ctypes.TypedObjectRefFromObject(src, k8sClient.Scheme())
+			approvalName, err := approvalv1.ScopedApprovalName(target, "stale-key")
+			Expect(err).NotTo(HaveOccurred())
+			approvalKey := client.ObjectKey{Name: approvalName, Namespace: testNamespace}
+
+			By("Granting the first request by a person")
+			ar1 := newScopedRequest(src, "scoped-stale-a", &target, "stale-key", &requester, &decider,
+				approvalv1.ApprovalStrategySimple, approvalv1.ApprovalStateGranted,
+				approvalv1.Decision{Name: "Alice", Email: "alice@decider.com", ResultingState: approvalv1.ApprovalStateGranted})
+			Expect(k8sClient.Create(ctx, ar1)).To(Succeed())
+			Eventually(func(g Gomega) {
+				a := &approvalv1.Approval{}
+				g.Expect(k8sClient.Get(ctx, approvalKey, a)).To(Succeed())
+				g.Expect(a.Spec.ApprovedRequest).NotTo(BeNil())
+				g.Expect(a.Spec.ApprovedRequest.UID).To(Equal(ar1.UID))
+			}, timeout, interval).Should(Succeed())
+
+			By("Revoking the Approval and replacing the request with one granted an hour before the revocation")
+			revokeApproval(approvalKey)
+			deleteRequest(ar1)
+			grantedBefore := metav1.NewTime(time.Now().Add(-time.Hour))
+			ar2 := newScopedRequest(src, "scoped-stale-b", &target, "stale-key", &requester, &decider,
+				approvalv1.ApprovalStrategySimple, approvalv1.ApprovalStateGranted,
+				approvalv1.Decision{Name: "Bob", Email: "bob@decider.com", Timestamp: &grantedBefore, ResultingState: approvalv1.ApprovalStateGranted})
+			Expect(k8sClient.Create(ctx, ar2)).To(Succeed())
+
+			By("Keeping the revocation and reporting it on the newer request")
+			Eventually(func(g Gomega) {
+				g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(ar2), ar2)).To(Succeed())
+				ready := meta.FindStatusCondition(ar2.Status.Conditions, condition.ConditionTypeReady)
+				g.Expect(ready).NotTo(BeNil())
+				g.Expect(ready.Reason).To(Equal("Revoked"))
+			}, timeout, interval).Should(Succeed())
+			Consistently(func(g Gomega) {
+				a := &approvalv1.Approval{}
+				g.Expect(k8sClient.Get(ctx, approvalKey, a)).To(Succeed())
+				g.Expect(a.Spec.State).To(Equal(approvalv1.ApprovalStateRejected))
+				g.Expect(a.Spec.ApprovedRequest.UID).To(Equal(ar1.UID))
+			}, time.Second, interval).Should(Succeed())
+		})
+
+		It("does not recreate a deleted revoked scoped Approval from an automatic grant", func() {
+			By("Creating a source resource")
+			src := test.NewObject("scoped-deleted-src", testNamespace)
+			src.SetLabels(map[string]string{
+				config.EnvironmentLabelKey: testEnvironment,
+			})
+			Expect(k8sClient.Create(ctx, src)).To(Succeed())
+			DeferCleanup(func() { _ = k8sClient.Delete(ctx, src) })
+
+			target := *ctypes.TypedObjectRefFromObject(src, k8sClient.Scheme())
+			approvalName, err := approvalv1.ScopedApprovalName(target, "deleted-key")
+			Expect(err).NotTo(HaveOccurred())
+			approvalKey := client.ObjectKey{Name: approvalName, Namespace: testNamespace}
+
+			By("Auto-granting a request, which creates the Approval the first time")
+			ar := newScopedRequest(src, "scoped-deleted-a", &target, "deleted-key", &requester, &decider,
+				approvalv1.ApprovalStrategyAuto, approvalv1.ApprovalStateGranted,
+				approvalv1.Decision{Name: approvalv1.SystemDecisionName, Comment: approvalv1.AutoApprovedComment, ResultingState: approvalv1.ApprovalStateGranted})
+			Expect(k8sClient.Create(ctx, ar)).To(Succeed())
+			Eventually(func(g Gomega) {
+				a := &approvalv1.Approval{}
+				g.Expect(k8sClient.Get(ctx, approvalKey, a)).To(Succeed())
+				g.Expect(a.Spec.State).To(Equal(approvalv1.ApprovalStateGranted))
+				g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(ar), ar)).To(Succeed())
+				g.Expect(ar.Status.Approval.UID).To(Equal(a.UID))
+			}, timeout, interval).Should(Succeed())
+
+			By("Revoking the Approval, then deleting it")
+			revokeApproval(approvalKey)
+			Eventually(func(g Gomega) {
+				g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(ar), ar)).To(Succeed())
+				ready := meta.FindStatusCondition(ar.Status.Conditions, condition.ConditionTypeReady)
+				g.Expect(ready).NotTo(BeNil())
+				g.Expect(ready.Reason).To(Equal("Revoked"))
+			}, timeout, interval).Should(Succeed())
+			deleteApproval(approvalKey)
+
+			By("Touching the request, so it is reconciled without the Approval")
+			Eventually(func(g Gomega) {
+				g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(ar), ar)).To(Succeed())
+				ar.Annotations = map[string]string{"test.cp.ei.telekom.de/touch": "1"}
+				g.Expect(k8sClient.Update(ctx, ar)).To(Succeed())
+			}, timeout, interval).Should(Succeed())
+
+			By("Verifying the Approval is not recreated")
+			Consistently(func(g Gomega) {
+				err := k8sClient.Get(ctx, approvalKey, &approvalv1.Approval{})
+				g.Expect(err).To(HaveOccurred())
+			}, 2*time.Second, interval).Should(Succeed())
+			Eventually(func(g Gomega) {
+				g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(ar), ar)).To(Succeed())
+				ready := meta.FindStatusCondition(ar.Status.Conditions, condition.ConditionTypeReady)
+				g.Expect(ready).NotTo(BeNil())
+				g.Expect(ready.Status).To(Equal(metav1.ConditionFalse))
+				g.Expect(ready.Message).To(ContainSubstring("deleted"))
+			}, timeout, interval).Should(Succeed())
+		})
+
+		It("recreates a deleted scoped Approval for a new automatic request", func() {
+			// Only the request the Approval was issued for does not recreate it; a
+			// request for a new intent has never been bound and creates it again.
+			// Deleting an Approval needs operator or admin rights.
+			gate := newScopedGate("scoped-recreated-src", "recreated-key")
+			ar1 := newScopedRequest(gate.src, "scoped-recreated-a", &gate.target, gate.approvalKey, &requester, &decider,
+				approvalv1.ApprovalStrategyAuto, approvalv1.ApprovalStateGranted, autoGrant())
+			Expect(k8sClient.Create(ctx, ar1)).To(Succeed())
+			expectGrantedFor(gate.key, ar1)
+
+			By("Revoking and deleting the Approval, then replacing the request")
+			revokeApproval(gate.key)
+			deleteApproval(gate.key)
+			deleteRequest(ar1)
+			ar2 := newScopedRequest(gate.src, "scoped-recreated-b", &gate.target, gate.approvalKey, &requester, &decider,
+				approvalv1.ApprovalStrategyAuto, approvalv1.ApprovalStateGranted, autoGrant())
+			Expect(k8sClient.Create(ctx, ar2)).To(Succeed())
+
+			By("Verifying the new request creates a granted Approval")
+			expectGrantedFor(gate.key, ar2)
+		})
+
+		It("keeps an Approval that expired while suspended revoked once the expiry is reconciled", func() {
+			gate := newScopedGate("scoped-expired-src", "expired-key")
+			ar1 := newScopedRequest(gate.src, "scoped-expired-a", &gate.target, gate.approvalKey, &requester, &decider,
+				approvalv1.ApprovalStrategyAuto, approvalv1.ApprovalStateGranted, autoGrant())
+			Expect(k8sClient.Create(ctx, ar1)).To(Succeed())
+			expectGrantedFor(gate.key, ar1)
+
+			By("Suspending the Approval, then expiring it as the expiration controller does")
+			suspendedAt := metav1.NewTime(time.Now().Add(-time.Minute))
+			setScopedApprovalState(gate.key, approvalv1.ApprovalStateSuspended,
+				&approvalv1.Decision{Name: "Alice", Email: "alice@decider.com", Comment: "suspended", Timestamp: &suspendedAt, ResultingState: approvalv1.ApprovalStateSuspended})
+			expectLastState(gate.key, approvalv1.ApprovalStateSuspended)
+			expiredAt := metav1.NewTime(time.Now().Add(-30 * time.Second))
+			setScopedApprovalState(gate.key, approvalv1.ApprovalStateExpired,
+				&approvalv1.Decision{Name: approvalv1.SystemDecisionName, Comment: "expired", Timestamp: &expiredAt, ResultingState: approvalv1.ApprovalStateExpired})
+			// The approval controller has reconciled the expiry: LastState no longer
+			// shows the suspension.
+			expectLastState(gate.key, approvalv1.ApprovalStateExpired)
+
+			By("Replacing the request with a new automatic one")
+			deleteRequest(ar1)
+			ar2 := newScopedRequest(gate.src, "scoped-expired-b", &gate.target, gate.approvalKey, &requester, &decider,
+				approvalv1.ApprovalStrategyAuto, approvalv1.ApprovalStateGranted, autoGrant())
+			Expect(k8sClient.Create(ctx, ar2)).To(Succeed())
+
+			By("Keeping the expired Approval and reporting the revocation on the new request")
+			Eventually(func(g Gomega) {
+				g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(ar2), ar2)).To(Succeed())
+				ready := meta.FindStatusCondition(ar2.Status.Conditions, condition.ConditionTypeReady)
+				g.Expect(ready).NotTo(BeNil())
+				g.Expect(ready.Reason).To(Equal("Revoked"))
+			}, timeout, interval).Should(Succeed())
+			Consistently(func(g Gomega) {
+				a := &approvalv1.Approval{}
+				g.Expect(k8sClient.Get(ctx, gate.key, a)).To(Succeed())
+				g.Expect(a.Spec.State).To(Equal(approvalv1.ApprovalStateExpired))
+				g.Expect(a.Spec.ApprovedRequest.UID).To(Equal(ar1.UID))
+			}, 2*time.Second, interval).Should(Succeed())
+		})
+
+		It("keeps a revocation made without a decision when an older grant arrives", func() {
+			gate := newScopedGate("scoped-decisionless-src", "decisionless-key")
+			grantedAt := metav1.NewTime(time.Now().Add(-3 * time.Hour))
+			ar1 := newScopedRequest(gate.src, "scoped-decisionless-a", &gate.target, gate.approvalKey, &requester, &decider,
+				approvalv1.ApprovalStrategySimple, approvalv1.ApprovalStateGranted,
+				approvalv1.Decision{Name: "Alice", Email: "alice@decider.com", Timestamp: &grantedAt, ResultingState: approvalv1.ApprovalStateGranted})
+			Expect(k8sClient.Create(ctx, ar1)).To(Succeed())
+			expectGrantedFor(gate.key, ar1)
+
+			By("Revoking two hours ago and lifting it with a person's grant ninety minutes ago")
+			firstRevokedAt := metav1.NewTime(time.Now().Add(-2 * time.Hour))
+			setScopedApprovalState(gate.key, approvalv1.ApprovalStateRejected,
+				&approvalv1.Decision{Name: "Alice", Email: "alice@decider.com", Comment: "first revocation", Timestamp: &firstRevokedAt, ResultingState: approvalv1.ApprovalStateRejected})
+			deleteRequest(ar1)
+			liftedAt := metav1.NewTime(time.Now().Add(-90 * time.Minute))
+			ar2 := newScopedRequest(gate.src, "scoped-decisionless-b", &gate.target, gate.approvalKey, &requester, &decider,
+				approvalv1.ApprovalStrategySimple, approvalv1.ApprovalStateGranted,
+				approvalv1.Decision{Name: "Bob", Email: "bob@decider.com", Timestamp: &liftedAt, ResultingState: approvalv1.ApprovalStateGranted})
+			Expect(k8sClient.Create(ctx, ar2)).To(Succeed())
+			expectGrantedFor(gate.key, ar2)
+
+			By("Suspending the Approval now without recording a decision")
+			setScopedApprovalState(gate.key, approvalv1.ApprovalStateSuspended, nil)
+			deleteRequest(ar2)
+
+			By("Creating a request granted an hour ago, after the first revocation but before the suspension")
+			staleAt := metav1.NewTime(time.Now().Add(-time.Hour))
+			ar3 := newScopedRequest(gate.src, "scoped-decisionless-c", &gate.target, gate.approvalKey, &requester, &decider,
+				approvalv1.ApprovalStrategySimple, approvalv1.ApprovalStateGranted,
+				approvalv1.Decision{Name: "Carol", Email: "carol@decider.com", Timestamp: &staleAt, ResultingState: approvalv1.ApprovalStateGranted})
+			Expect(k8sClient.Create(ctx, ar3)).To(Succeed())
+
+			By("Keeping the suspension")
+			Eventually(func(g Gomega) {
+				g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(ar3), ar3)).To(Succeed())
+				ready := meta.FindStatusCondition(ar3.Status.Conditions, condition.ConditionTypeReady)
+				g.Expect(ready).NotTo(BeNil())
+				g.Expect(ready.Reason).To(Equal("Revoked"))
+			}, timeout, interval).Should(Succeed())
+			Consistently(func(g Gomega) {
+				a := &approvalv1.Approval{}
+				g.Expect(k8sClient.Get(ctx, gate.key, a)).To(Succeed())
+				g.Expect(a.Spec.State).To(Equal(approvalv1.ApprovalStateSuspended))
+				g.Expect(a.Spec.ApprovedRequest.UID).To(Equal(ar2.UID))
+			}, 2*time.Second, interval).Should(Succeed())
+		})
+
+		It("binds a re-granted scoped Approval to the current request without waiting for the requeue", func() {
+			By("Creating a source resource")
+			src := test.NewObject("scoped-regrant-src", testNamespace)
+			src.SetLabels(map[string]string{
+				config.EnvironmentLabelKey: testEnvironment,
+			})
+			Expect(k8sClient.Create(ctx, src)).To(Succeed())
+			DeferCleanup(func() { _ = k8sClient.Delete(ctx, src) })
+
+			target := *ctypes.TypedObjectRefFromObject(src, k8sClient.Scheme())
+			approvalName, err := approvalv1.ScopedApprovalName(target, "regrant-key")
+			Expect(err).NotTo(HaveOccurred())
+			approvalKey := client.ObjectKey{Name: approvalName, Namespace: testNamespace}
+			autoDecision := approvalv1.Decision{
+				Name:           approvalv1.SystemDecisionName,
+				Comment:        approvalv1.AutoApprovedComment,
+				ResultingState: approvalv1.ApprovalStateGranted,
+			}
+
+			By("Auto-granting the first request")
+			ar1 := newScopedRequest(src, "scoped-regrant-a", &target, "regrant-key", &requester, &decider,
+				approvalv1.ApprovalStrategyAuto, approvalv1.ApprovalStateGranted, autoDecision)
+			Expect(k8sClient.Create(ctx, ar1)).To(Succeed())
+			Eventually(func(g Gomega) {
+				a := &approvalv1.Approval{}
+				g.Expect(k8sClient.Get(ctx, approvalKey, a)).To(Succeed())
+				g.Expect(a.Spec.ApprovedRequest).NotTo(BeNil())
+				g.Expect(a.Spec.ApprovedRequest.UID).To(Equal(ar1.UID))
+			}, timeout, interval).Should(Succeed())
+
+			By("Revoking the Approval and auto-granting a newer request")
+			revokeApproval(approvalKey)
+			deleteRequest(ar1)
+			ar2 := newScopedRequest(src, "scoped-regrant-b", &target, "regrant-key", &requester, &decider,
+				approvalv1.ApprovalStrategyAuto, approvalv1.ApprovalStateGranted, autoDecision)
+			Expect(k8sClient.Create(ctx, ar2)).To(Succeed())
+
+			By("Keeping the revocation and reporting it on the newer request")
+			Eventually(func(g Gomega) {
+				g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(ar2), ar2)).To(Succeed())
+				ready := meta.FindStatusCondition(ar2.Status.Conditions, condition.ConditionTypeReady)
+				g.Expect(ready).NotTo(BeNil())
+				g.Expect(ready.Reason).To(Equal("Revoked"))
+
+				a := &approvalv1.Approval{}
+				g.Expect(k8sClient.Get(ctx, approvalKey, a)).To(Succeed())
+				g.Expect(a.Spec.State).To(Equal(approvalv1.ApprovalStateRejected))
+				g.Expect(a.Spec.ApprovedRequest.UID).To(Equal(ar1.UID))
+			}, timeout, interval).Should(Succeed())
+
+			By("Granting the Approval again")
+			Eventually(func(g Gomega) {
+				a := &approvalv1.Approval{}
+				g.Expect(k8sClient.Get(ctx, approvalKey, a)).To(Succeed())
+				a.Spec.State = approvalv1.ApprovalStateGranted
+				a.AppendDecision(approvalv1.Decision{Name: "Alice", Email: "alice@decider.com", ResultingState: approvalv1.ApprovalStateGranted})
+				g.Expect(k8sClient.Update(ctx, a)).To(Succeed())
+			}, timeout, interval).Should(Succeed())
+
+			By("Verifying the Approval is bound to the newer request within seconds")
+			Eventually(func(g Gomega) {
+				a := &approvalv1.Approval{}
+				g.Expect(k8sClient.Get(ctx, approvalKey, a)).To(Succeed())
+				g.Expect(a.Spec.State).To(Equal(approvalv1.ApprovalStateGranted))
+				g.Expect(a.Spec.ApprovedRequest).NotTo(BeNil())
+				g.Expect(a.Spec.ApprovedRequest.UID).To(Equal(ar2.UID))
+
+				g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(ar2), ar2)).To(Succeed())
+				g.Expect(meta.IsStatusConditionTrue(ar2.Status.Conditions, condition.ConditionTypeReady)).To(BeTrue())
 			}, timeout, interval).Should(Succeed())
 		})
 	})
@@ -1481,3 +1854,127 @@ var _ = Describe("ApprovalRequest Controller", func() {
 		})
 	})
 })
+
+// newScopedRequest returns a keyed ApprovalRequest for target in the given state.
+func newScopedRequest(src *test.TestResource, hash string, target *ctypes.TypedObjectRef, key string,
+	requester *approvalv1.Requester, decider *approvalv1.Decider,
+	strategy approvalv1.ApprovalStrategy, state approvalv1.ApprovalState, decisions ...approvalv1.Decision,
+) *approvalv1.ApprovalRequest {
+	ar := approvalv1.NewApprovalRequest(src, hash)
+	ar.SetLabels(map[string]string{
+		config.EnvironmentLabelKey: testEnvironment,
+	})
+	ar.Spec = approvalv1.ApprovalRequestSpec{
+		Target:      *target,
+		Requester:   *requester,
+		Decider:     *decider,
+		Strategy:    strategy,
+		State:       state,
+		Action:      "subscribe",
+		ApprovalKey: key,
+		Decisions:   decisions,
+	}
+	return ar
+}
+
+// revokeApproval rejects the Approval at key, as its decider does. This envtest
+// runs no webhook, so the decision carries the timestamp the mutating webhook
+// would set; it is a minute in the past because timestamps have second
+// precision, so a grant made now is strictly later.
+func revokeApproval(key client.ObjectKey) {
+	revokedAt := metav1.NewTime(time.Now().Add(-time.Minute))
+	Eventually(func(g Gomega) {
+		a := &approvalv1.Approval{}
+		g.Expect(k8sClient.Get(ctx, key, a)).To(Succeed())
+		a.Spec.State = approvalv1.ApprovalStateRejected
+		a.AppendDecision(approvalv1.Decision{Name: "Alice", Email: "alice@decider.com", Comment: "Access revoked", Timestamp: &revokedAt, ResultingState: approvalv1.ApprovalStateRejected})
+		g.Expect(k8sClient.Update(ctx, a)).To(Succeed())
+	}, timeout, interval).Should(Succeed())
+}
+
+// deleteRequest deletes ar and waits until it is gone.
+func deleteRequest(ar *approvalv1.ApprovalRequest) {
+	Expect(k8sClient.Delete(ctx, ar)).To(Succeed())
+	Eventually(func(g Gomega) {
+		err := k8sClient.Get(ctx, client.ObjectKeyFromObject(ar), &approvalv1.ApprovalRequest{})
+		g.Expect(err).To(HaveOccurred())
+	}, timeout, interval).Should(Succeed())
+}
+
+// scopedGate is a source resource and the scoped Approval of one of its gates.
+type scopedGate struct {
+	src         *test.TestResource
+	target      ctypes.TypedObjectRef
+	approvalKey string
+	key         client.ObjectKey
+}
+
+// newScopedGate creates the source resource name and returns its gate key.
+func newScopedGate(name, approvalKey string) scopedGate {
+	src := test.NewObject(name, testNamespace)
+	src.SetLabels(map[string]string{
+		config.EnvironmentLabelKey: testEnvironment,
+	})
+	Expect(k8sClient.Create(ctx, src)).To(Succeed())
+	DeferCleanup(func() { _ = k8sClient.Delete(ctx, src) })
+
+	target := *ctypes.TypedObjectRefFromObject(src, k8sClient.Scheme())
+	approvalName, err := approvalv1.ScopedApprovalName(target, approvalKey)
+	Expect(err).NotTo(HaveOccurred())
+	return scopedGate{src: src, target: target, approvalKey: approvalKey, key: client.ObjectKey{Name: approvalName, Namespace: testNamespace}}
+}
+
+// autoGrant is the decision an automatic grant records.
+func autoGrant() approvalv1.Decision {
+	return approvalv1.Decision{
+		Name:           approvalv1.SystemDecisionName,
+		Comment:        approvalv1.AutoApprovedComment,
+		ResultingState: approvalv1.ApprovalStateGranted,
+	}
+}
+
+// expectGrantedFor waits until the Approval at key is Granted and bound to ar.
+func expectGrantedFor(key client.ObjectKey, ar *approvalv1.ApprovalRequest) {
+	Eventually(func(g Gomega) {
+		a := &approvalv1.Approval{}
+		g.Expect(k8sClient.Get(ctx, key, a)).To(Succeed())
+		g.Expect(a.Spec.State).To(Equal(approvalv1.ApprovalStateGranted))
+		g.Expect(a.Spec.ApprovedRequest).NotTo(BeNil())
+		g.Expect(a.Spec.ApprovedRequest.UID).To(Equal(ar.UID))
+	}, timeout, interval).Should(Succeed())
+}
+
+// expectLastState waits until the approval controller has reconciled the
+// Approval at key in state.
+func expectLastState(key client.ObjectKey, state approvalv1.ApprovalState) {
+	Eventually(func(g Gomega) {
+		a := &approvalv1.Approval{}
+		g.Expect(k8sClient.Get(ctx, key, a)).To(Succeed())
+		g.Expect(a.Status.LastState).To(Equal(state))
+	}, timeout, interval).Should(Succeed())
+}
+
+// setScopedApprovalState sets the Approval at key to state, recording decision
+// when it is not nil.
+func setScopedApprovalState(key client.ObjectKey, state approvalv1.ApprovalState, decision *approvalv1.Decision) {
+	Eventually(func(g Gomega) {
+		a := &approvalv1.Approval{}
+		g.Expect(k8sClient.Get(ctx, key, a)).To(Succeed())
+		a.Spec.State = state
+		if decision != nil {
+			a.AppendDecision(*decision)
+		}
+		g.Expect(k8sClient.Update(ctx, a)).To(Succeed())
+	}, timeout, interval).Should(Succeed())
+}
+
+// deleteApproval deletes the Approval at key and waits until it is gone; the
+// approval controller's finalizer delays the removal.
+func deleteApproval(key client.ObjectKey) {
+	Expect(k8sClient.Delete(ctx, &approvalv1.Approval{
+		ObjectMeta: metav1.ObjectMeta{Name: key.Name, Namespace: key.Namespace},
+	})).To(Succeed())
+	Eventually(func() bool {
+		return apierrors.IsNotFound(k8sClient.Get(ctx, key, &approvalv1.Approval{}))
+	}, timeout, interval).Should(BeTrue())
+}

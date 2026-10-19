@@ -1085,6 +1085,158 @@ var _ = Describe("Integration: Two-Tier Reconcile Cycle", Ordered, func() {
 			}, testTimeout, testInterval).Should(Succeed())
 		})
 	})
+
+	Describe("Listener reconcile when a revoked gate is granted again for a new intent", func() {
+		It("should resume capture once a person grants the new provider request and its Approval is bound to it", func() {
+			const revokedListenerName = "revoked-listener"
+
+			// Only the manager's Listener controller reconciles this Listener, so
+			// every step below has to be picked up through its watches.
+			watchOnly := reconcile.Func(func(context.Context, reconcile.Request) (reconcile.Result, error) {
+				return reconcile.Result{}, nil
+			})
+			nn, rlKey, subKeys := provisionCrossTeamListener(ctx, watchOnly, revokedListenerName, "revoked")
+			providerApprovalKey := func(g Gomega, ar *approvalv1.ApprovalRequest) types.NamespacedName {
+				name, err := approvalv1.ScopedApprovalName(ar.Spec.Target, ar.Spec.ApprovalKey)
+				g.Expect(err).NotTo(HaveOccurred())
+				return types.NamespacedName{Name: name, Namespace: ar.Namespace}
+			}
+
+			By("Revoking the provider gate's Approval")
+			var oldProviderRequest string
+			Eventually(func(g Gomega) {
+				ar := ownedApprovalRequest(ctx, g, revokedListenerName, "provider")
+				oldProviderRequest = ar.Name
+				approval := &approvalv1.Approval{}
+				g.Expect(directClient.Get(ctx, providerApprovalKey(g, ar), approval)).To(Succeed())
+				approval.Spec.State = approvalv1.ApprovalStateRejected
+				approval.AppendDecision(approvalv1.Decision{Name: "Provider", Comment: "Access revoked", ResultingState: approvalv1.ApprovalStateRejected})
+				g.Expect(directClient.Update(ctx, approval)).To(Succeed())
+			}, testTimeout, testInterval).Should(Succeed())
+			Eventually(func(g Gomega) {
+				g.Expect(apierrors.IsNotFound(directClient.Get(ctx, rlKey, &gatewayv1.RouteListener{}))).
+					To(BeTrue(), "RouteListener should be drained")
+				current := &spectrev1.Listener{}
+				g.Expect(directClient.Get(ctx, nn, current)).To(Succeed())
+				ready := meta.FindStatusCondition(current.Status.Conditions, condition.ConditionTypeReady)
+				g.Expect(ready).NotTo(BeNil())
+				g.Expect(ready.Reason).To(Equal(condition.ReasonAccessDenied))
+			}, testTimeout, testInterval).Should(Succeed())
+
+			By("Editing the request filter, which requests approval for a new intent")
+			Eventually(func(g Gomega) {
+				current := &spectrev1.Listener{}
+				g.Expect(directClient.Get(ctx, nn, current)).To(Succeed())
+				current.Spec.ApiListener.RequestFilter = &spectrev1.ListenerFilter{Trigger: map[string]string{"key": "val"}}
+				g.Expect(directClient.Update(ctx, current)).To(Succeed())
+			}, testTimeout, testInterval).Should(Succeed())
+
+			By("Granting the new provider request as a person")
+			Eventually(func(g Gomega) {
+				ar := ownedApprovalRequest(ctx, g, revokedListenerName, "provider")
+				g.Expect(ar.Name).NotTo(Equal(oldProviderRequest))
+				g.Expect(ar.Spec.State).To(Equal(approvalv1.ApprovalStatePending))
+				ar.Spec.State = approvalv1.ApprovalStateGranted
+				ar.AppendDecision(approvalv1.Decision{Name: "Provider", Email: "provider@test.com", ResultingState: approvalv1.ApprovalStateGranted})
+				g.Expect(directClient.Update(ctx, ar)).To(Succeed())
+			}, testTimeout, testInterval).Should(Succeed())
+
+			By("Binding each gate's Approval to its granted request, as the approval controller does")
+			// The approval controller is internal to its module and does not run in
+			// this envtest, so the test writes what it does: the person's grant of the
+			// newer provider request lifts the revocation, and the consumer gate is
+			// auto-granted for the new intent. The decider does not re-grant the
+			// revoked Approval.
+			Eventually(func(g Gomega) {
+				for _, key := range []string{"provider", "consumer"} {
+					ar := ownedApprovalRequest(ctx, g, revokedListenerName, key)
+					g.Expect(ar.Spec.State).To(Equal(approvalv1.ApprovalStateGranted))
+					approval := &approvalv1.Approval{}
+					g.Expect(directClient.Get(ctx, providerApprovalKey(g, ar), approval)).To(Succeed())
+					approval.Spec.State = approvalv1.ApprovalStateGranted
+					approval.Spec.Decisions = ar.Spec.Decisions
+					approval.Spec.ApprovedRequest = &ctypes.ObjectRef{Name: ar.Name, Namespace: ar.Namespace, UID: ar.UID}
+					g.Expect(directClient.Update(ctx, approval)).To(Succeed())
+				}
+			}, testTimeout, testInterval).Should(Succeed())
+
+			By("Verifying capture resumes")
+			Eventually(func(g Gomega) {
+				g.Expect(directClient.Get(ctx, rlKey, &gatewayv1.RouteListener{})).To(Succeed())
+				for _, key := range subKeys {
+					g.Expect(directClient.Get(ctx, key, &pubsubv1.Subscriber{})).To(Succeed())
+				}
+				current := &spectrev1.Listener{}
+				g.Expect(directClient.Get(ctx, nn, current)).To(Succeed())
+				ready := meta.FindStatusCondition(current.Status.Conditions, condition.ConditionTypeReady)
+				g.Expect(ready).NotTo(BeNil())
+				g.Expect(ready.Reason).NotTo(Equal(condition.ReasonAccessDenied))
+				g.Expect(current.Status.AppliedPlacement).NotTo(BeNil())
+			}, testTimeout, testInterval).Should(Succeed())
+		})
+
+		It("should keep capture stopped when only an automatic approval follows a revocation", func() {
+			const autoRevokedListenerName = "auto-revoked-listener"
+
+			watchOnly := reconcile.Func(func(context.Context, reconcile.Request) (reconcile.Result, error) {
+				return reconcile.Result{}, nil
+			})
+			nn, rlKey, subKeys := provisionCrossTeamListener(ctx, watchOnly, autoRevokedListenerName, "auto-revoked")
+
+			By("Revoking the consumer gate's Approval, which is auto-approved for the same team")
+			var oldConsumerRequest string
+			Eventually(func(g Gomega) {
+				ar := ownedApprovalRequest(ctx, g, autoRevokedListenerName, "consumer")
+				g.Expect(ar.Spec.Strategy).To(Equal(approvalv1.ApprovalStrategyAuto))
+				oldConsumerRequest = ar.Name
+				name, err := approvalv1.ScopedApprovalName(ar.Spec.Target, ar.Spec.ApprovalKey)
+				g.Expect(err).NotTo(HaveOccurred())
+				approval := &approvalv1.Approval{}
+				g.Expect(directClient.Get(ctx, types.NamespacedName{Name: name, Namespace: ar.Namespace}, approval)).To(Succeed())
+				approval.Spec.State = approvalv1.ApprovalStateRejected
+				approval.AppendDecision(approvalv1.Decision{Name: "Consumer", Comment: "Access revoked", ResultingState: approvalv1.ApprovalStateRejected})
+				g.Expect(directClient.Update(ctx, approval)).To(Succeed())
+			}, testTimeout, testInterval).Should(Succeed())
+			Eventually(func(g Gomega) {
+				g.Expect(apierrors.IsNotFound(directClient.Get(ctx, rlKey, &gatewayv1.RouteListener{}))).
+					To(BeTrue(), "RouteListener should be drained")
+				current := &spectrev1.Listener{}
+				g.Expect(directClient.Get(ctx, nn, current)).To(Succeed())
+				g.Expect(current.Status.Draining).To(BeNil())
+			}, testTimeout, testInterval).Should(Succeed())
+
+			By("Editing the request filter, which auto-grants a new consumer request")
+			Eventually(func(g Gomega) {
+				current := &spectrev1.Listener{}
+				g.Expect(directClient.Get(ctx, nn, current)).To(Succeed())
+				current.Spec.ApiListener.RequestFilter = &spectrev1.ListenerFilter{Trigger: map[string]string{"key": "val"}}
+				g.Expect(directClient.Update(ctx, current)).To(Succeed())
+			}, testTimeout, testInterval).Should(Succeed())
+			Eventually(func(g Gomega) {
+				ar := ownedApprovalRequest(ctx, g, autoRevokedListenerName, "consumer")
+				g.Expect(ar.Name).NotTo(Equal(oldConsumerRequest))
+				g.Expect(ar.Spec.State).To(Equal(approvalv1.ApprovalStateGranted))
+			}, testTimeout, testInterval).Should(Succeed())
+
+			By("Keeping capture stopped while the Approval stays revoked")
+			// The approval controller does not run in this envtest. Under its rules
+			// an automatic grant does not lift a revocation, so it leaves the
+			// Rejected Approval as it is; the test therefore does not touch it.
+			Consistently(func(g Gomega) {
+				g.Expect(apierrors.IsNotFound(directClient.Get(ctx, rlKey, &gatewayv1.RouteListener{}))).
+					To(BeTrue(), "RouteListener must stay drained")
+				for _, key := range subKeys {
+					g.Expect(apierrors.IsNotFound(directClient.Get(ctx, key, &pubsubv1.Subscriber{}))).
+						To(BeTrue(), "bridge Subscriber %q must stay drained", key.Name)
+				}
+				current := &spectrev1.Listener{}
+				g.Expect(directClient.Get(ctx, nn, current)).To(Succeed())
+				ready := meta.FindStatusCondition(current.Status.Conditions, condition.ConditionTypeReady)
+				g.Expect(ready).NotTo(BeNil())
+				g.Expect(ready.Reason).To(Equal(condition.ReasonAccessDenied))
+			}, 3*time.Second, testInterval).Should(Succeed())
+		})
+	})
 })
 
 // provisionCrossTeamListener creates an ApiExposure with its primary Route on
