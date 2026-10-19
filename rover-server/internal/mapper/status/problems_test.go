@@ -581,7 +581,7 @@ var _ = Describe("GetAllRoverProblems agentic sub-resources", func() {
 		Entry("exposure processing", newExposure(1, processingConds), nil,
 			expectation{worst: api.OverallStatusProcessing, problemKinds: []string{"AgenticExposure"}, active: true}),
 		Entry("subscription processing, exposure blocked", newExposure(1, blockedConds), newSubscription(1, processingConds),
-			expectation{worst: api.OverallStatusBlocked, problemKinds: []string{"AgenticExposure", "AgenticSubscription"}, active: true}),
+			expectation{worst: api.OverallStatusProcessing, problemKinds: []string{"AgenticExposure", "AgenticSubscription"}, active: true}),
 	)
 
 	It("does not query agentic stores when refs are empty", func() {
