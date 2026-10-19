@@ -64,7 +64,7 @@ func (h *ListenerHandler) HandleDenialCleanup(
 	ctx context.Context,
 	listener *spectrev1.Listener,
 	gateKey string,
-) error {
+) (bool, error) {
 	return h.handleDenialCleanup(ctx, listener,
 		fmt.Sprintf("early restriction (%s gate)", gateKey),
 		fmt.Sprintf("Approval has been revoked (%s gate, early restriction)", gateKey))

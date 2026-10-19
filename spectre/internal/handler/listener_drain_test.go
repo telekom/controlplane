@@ -20,6 +20,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	crfake "sigs.k8s.io/controller-runtime/pkg/client/fake"
 
+	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	fakeclient "github.com/telekom/controlplane/common/pkg/client/fake"
@@ -328,8 +329,9 @@ var _ = Describe("Listener Drain", func() {
 			// The owner-label inventory finds no untracked children either.
 			mockDrainLists(nil, nil)
 
-			err := h.HandleDenialCleanup(ctx, listener, "provider")
+			started, err := h.HandleDenialCleanup(ctx, listener, "provider")
 			Expect(err).ToNot(HaveOccurred())
+			Expect(started).To(BeFalse())
 			// No child and no Publisher is deleted.
 			fakeClient.AssertNumberOfCalls(GinkgoT(), "Delete", 0)
 
@@ -365,8 +367,9 @@ var _ = Describe("Listener Drain", func() {
 				}).
 				Return(nil).Once()
 
-			err := h.HandleDenialCleanup(ctx, listener, "provider")
+			started, err := h.HandleDenialCleanup(ctx, listener, "provider")
 			Expect(err).ToNot(HaveOccurred())
+			Expect(started).To(BeTrue())
 
 			// Drain should have started because children exist.
 			Expect(listener.Status.Draining).ToNot(BeNil(),
@@ -382,8 +385,9 @@ var _ = Describe("Listener Drain", func() {
 			}
 
 			mockDrainLists(nil, nil)
-			err := h.HandleDenialCleanup(ctx, listener, "provider")
+			started, err := h.HandleDenialCleanup(ctx, listener, "provider")
 			Expect(err).ToNot(HaveOccurred())
+			Expect(started).To(BeFalse())
 			Expect(listener.Status.AppliedPlacement).To(BeNil())
 			Expect(listener.Status.Draining).To(BeNil())
 
@@ -392,8 +396,9 @@ var _ = Describe("Listener Drain", func() {
 			// cycle is broken: previously the code would restart a drain on every
 			// reconcile.
 			mockDrainLists(nil, nil)
-			err = h.HandleDenialCleanup(ctx, listener, "provider")
+			started, err = h.HandleDenialCleanup(ctx, listener, "provider")
 			Expect(err).ToNot(HaveOccurred())
+			Expect(started).To(BeFalse())
 			Expect(listener.Status.AppliedPlacement).To(BeNil(),
 				"After clearing, repeated calls should not re-create AppliedPlacement")
 			Expect(listener.Status.Draining).To(BeNil(),
@@ -889,16 +894,25 @@ var _ = Describe("Listener Drain", func() {
 				// R6: the Subscriber is gone, so the drain completes and keeps the
 				// Publisher. The same reconcile re-reads the still-Rejected Approval,
 				// which clears the drained applied placement instead of starting
-				// another drain.
+				// another drain. With nothing left to drain the normal flow runs;
+				// here it stops at the consumer Application.
 				listener = persistListener(listener)
 				expectGone(subKind, listenerZoneStatus, "sub-rq")
 				expectApprovalRejected()
 				mockDrainLists(nil, nil) // drainCapture inventory: nothing left
-				Expect(h.CreateOrUpdate(ctx, listener)).To(Succeed())
+				fakeClient.EXPECT().
+					Get(ctx, k8stypes.NamespacedName{Name: consumerAppName, Namespace: listenerNamespace}, mock.AnythingOfType("*v1.Application")).
+					Return(stderrors.New("not found")).Twice()
+				fakeClient.EXPECT().
+					Get(ctx, k8stypes.NamespacedName{Name: providerAppName, Namespace: listenerNamespace}, mock.AnythingOfType("*v1.Application")).
+					Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
+						*out.(*applicationv1.Application) = *makeProviderApp()
+					}).
+					Return(nil).Once()
+				Expect(h.CreateOrUpdate(ctx, listener)).To(MatchError(ContainSubstring("consumer Application")))
 				Expect(listener.Status.Draining).To(BeNil())
 				Expect(listener.Status.EventSubscriptions).To(BeEmpty())
 				Expect(listener.Status.AppliedPlacement).To(BeNil())
-				expectAccessDenied(listener)
 				// rl-a once, rl-b twice, sub-rq once.
 				expectPassDone(4)
 			})

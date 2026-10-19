@@ -34,6 +34,11 @@ const (
 	ReasonApprovalRequestDenied = "ApprovalRequestDenied"
 )
 
+// ReasonApprovalRevoked is the Ready reason the approval controller sets on a
+// granted scoped ApprovalRequest whose Approval it does not issue, because the
+// Approval stays revoked or was deleted after it was issued.
+const ReasonApprovalRevoked = "Revoked"
+
 // ConditionTypeForKey returns the condition type for the given approval key.
 // An empty key returns the canonical unscoped type; a non-empty key appends
 // "-<key>" so that two gates on the same owner use distinct condition types.

@@ -1530,8 +1530,9 @@ var _ = Describe("ListenerHandler", func() {
 
 			// drainDenied drives the persisted checkpoint to completion (R2-R5).
 			// The last reconcile completes the drain and keeps the Publisher, then
-			// the early check now sees the Rejected provider Approval and clears the
-			// drained placement without starting another drain.
+			// the early check sees the Rejected provider Approval and clears the
+			// drained placement without starting another drain. With nothing left
+			// to drain, the dual-gate build reports the still-Rejected Approvals.
 			drainDenied := func(f *rejectionFixture, l *spectrev1.Listener) {
 				l = driveDrainToSubscriberDeletes(l, f.rl, f.subs)
 
@@ -1542,7 +1543,11 @@ var _ = Describe("ListenerHandler", func() {
 						out.(*approvalv1.Approval).Spec.State = approvalv1.ApprovalStateRejected
 					}).
 					Return(nil).Once()
-				mockOwnedLists(nil, nil) // drainCapture inventory: nothing left
+				mockOwnedLists(nil, nil) // early drainCapture inventory: nothing left
+				mockResolveTopology()
+				mockOwnedLists(nil, nil) // stale-child check
+				mockApprovalDenied()
+				mockOwnedLists(nil, nil) // drainCapture inventory after the dual-gate build
 				start := len(fakeClient.Calls)
 				l, err := reconcile(l)
 				Expect(err).ToNot(HaveOccurred())
@@ -3430,6 +3435,7 @@ var _ = Describe("ListenerHandler", func() {
 		Context("early restriction: consumer Approval is Suspended", func() {
 			It("should cleanup via early restriction on Suspended state", func() {
 				listener := newListener()
+				listener.Status.AppliedPlacement = &spectrev1.AppliedListenerPlacementStatus{Fingerprint: "fp-applied"}
 				listener.Status.ConsumerApproval = &ctypes.ObjectRef{
 					Name: "listener--test-listener--consumer", Namespace: listenerNamespace,
 				}
@@ -3444,8 +3450,8 @@ var _ = Describe("ListenerHandler", func() {
 					}).
 					Return(nil).Once()
 
-				// handleDenialCleanup: the owner-label inventory finds nothing to
-				// drain, so no Publisher is touched.
+				// handleDenialCleanup: the owner-label inventory finds no child, so
+				// the checkpoint records only the applied fingerprint.
 				mockOwnedLists(nil, nil)
 
 				start := len(fakeClient.Calls)
@@ -3455,7 +3461,8 @@ var _ = Describe("ListenerHandler", func() {
 				readyCond := meta.FindStatusCondition(listener.Status.Conditions, condition.ConditionTypeReady)
 				Expect(readyCond).ToNot(BeNil())
 				Expect(readyCond.Reason).To(Equal(condition.ReasonAccessDenied))
-				Expect(listener.Status.Draining).To(BeNil())
+				Expect(listener.Status.Draining).ToNot(BeNil())
+				Expect(listener.Status.Draining.Reason).To(Equal("early restriction (consumer gate)"))
 				Expect(countCalls(start, "Delete", nil)).To(BeZero())
 				Expect(readyCond.Message).To(ContainSubstring("consumer"))
 			})
@@ -3697,6 +3704,7 @@ var _ = Describe("ListenerHandler", func() {
 		Context("early restriction: Expired-from-Suspended triggers cleanup", func() {
 			It("should trigger cleanup on Expired state with LastState=Suspended", func() {
 				listener := newListener()
+				listener.Status.AppliedPlacement = &spectrev1.AppliedListenerPlacementStatus{Fingerprint: "fp-applied"}
 				listener.Status.ProviderApproval = &ctypes.ObjectRef{
 					Name: "listener--test-listener--provider", Namespace: listenerNamespace,
 				}
@@ -3712,8 +3720,8 @@ var _ = Describe("ListenerHandler", func() {
 					}).
 					Return(nil).Once()
 
-				// handleDenialCleanup: the owner-label inventory finds nothing to
-				// drain, so no Publisher is touched.
+				// handleDenialCleanup: the owner-label inventory finds no child, so
+				// the checkpoint records only the applied fingerprint.
 				mockOwnedLists(nil, nil)
 
 				start := len(fakeClient.Calls)
@@ -3723,8 +3731,100 @@ var _ = Describe("ListenerHandler", func() {
 				readyCond := meta.FindStatusCondition(listener.Status.Conditions, condition.ConditionTypeReady)
 				Expect(readyCond).ToNot(BeNil())
 				Expect(readyCond.Reason).To(Equal(condition.ReasonAccessDenied))
-				Expect(listener.Status.Draining).To(BeNil())
+				Expect(listener.Status.Draining).ToNot(BeNil())
+				Expect(listener.Status.Draining.Reason).To(Equal("early restriction (provider gate)"))
 				Expect(countCalls(start, "Delete", nil)).To(BeZero())
+			})
+		})
+
+		Context("early restriction: Approval is Rejected with nothing applied or found", func() {
+			It("should continue to the normal flow, which requests approval for a changed intent", func() {
+				listener := newListener()
+				listener.Status.ProviderApproval = &ctypes.ObjectRef{
+					Name: "listener--test-listener--provider", Namespace: listenerNamespace,
+				}
+
+				fakeClient.EXPECT().
+					Get(ctx, k8stypes.NamespacedName{Name: "listener--test-listener--provider", Namespace: listenerNamespace},
+						mock.AnythingOfType("*v1.Approval")).
+					Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
+						out.(*approvalv1.Approval).Spec.State = approvalv1.ApprovalStateRejected
+					}).
+					Return(nil).Once()
+				mockOwnedLists(nil, nil) // drainCapture inventory: nothing to drain
+
+				// Normal flow continues — consumer App fails to resolve (blocks).
+				fakeClient.EXPECT().
+					Get(ctx, k8stypes.NamespacedName{Name: consumerAppName, Namespace: listenerNamespace}, mock.AnythingOfType("*v1.Application")).
+					Return(fmt.Errorf("not found")).Twice()
+				mockGetProviderApp(makeProviderApp())
+
+				err := h.CreateOrUpdate(ctx, listener)
+				Expect(err).To(MatchError(ContainSubstring("consumer Application")))
+				Expect(listener.Status.Draining).To(BeNil())
+			})
+
+			It("should not provision while the cached gates still report the revoked Approval granted", func() {
+				listener := newListener()
+				listener.Status.ProviderApproval = &ctypes.ObjectRef{
+					Name: "listener--test-listener--provider", Namespace: listenerNamespace,
+				}
+
+				// The live read sees the revocation; nothing is there to drain.
+				fakeClient.EXPECT().
+					Get(ctx, k8stypes.NamespacedName{Name: "listener--test-listener--provider", Namespace: listenerNamespace},
+						mock.AnythingOfType("*v1.Approval")).
+					Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
+						out.(*approvalv1.Approval).Spec.State = approvalv1.ApprovalStateRejected
+					}).
+					Return(nil).Once()
+				mockOwnedLists(nil, nil) // drainCapture inventory: nothing to drain
+
+				// The dual-gate build reads the cache, which has not seen it yet.
+				mockGetZone()
+				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
+				mockResolveTopology()
+				mockNoStaleChildren()
+				mockApprovalGranted()
+
+				start := len(fakeClient.Calls)
+				err := h.CreateOrUpdate(ctx, listener)
+				Expect(err).To(MatchError(ContainSubstring("Approval of the provider gate is revoked, but the cache still reports it granted")))
+				expectNoCaptureCreates(start)
+				Expect(listener.Status.AppliedPlacement).To(BeNil())
+			})
+
+			It("should drain capture children found by owner label whose status refs were lost", func() {
+				listener := newListener()
+				listener.Status.ProviderApproval = &ctypes.ObjectRef{
+					Name: "listener--test-listener--provider", Namespace: listenerNamespace,
+				}
+				orphanRL := gatewayv1.RouteListener{ObjectMeta: metav1.ObjectMeta{Name: "orphan-rl", Namespace: listenerZoneStatus, UID: "orphan-rl-uid"}}
+				orphanSub := pubsubv1.Subscriber{ObjectMeta: metav1.ObjectMeta{Name: "orphan-sub", Namespace: listenerZoneStatus, UID: "orphan-sub-uid"}}
+
+				fakeClient.EXPECT().
+					Get(ctx, k8stypes.NamespacedName{Name: "listener--test-listener--provider", Namespace: listenerNamespace},
+						mock.AnythingOfType("*v1.Approval")).
+					Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
+						out.(*approvalv1.Approval).Spec.State = approvalv1.ApprovalStateRejected
+					}).
+					Return(nil).Once()
+				mockOwnedLists([]gatewayv1.RouteListener{orphanRL}, []pubsubv1.Subscriber{orphanSub})
+
+				start := len(fakeClient.Calls)
+				err := h.CreateOrUpdate(ctx, listener)
+				Expect(err).ToNot(HaveOccurred())
+
+				d := listener.Status.Draining
+				Expect(d).ToNot(BeNil())
+				Expect(d.Reason).To(Equal("early restriction (provider gate)"))
+				Expect(d.OldRouteListeners).To(Equal([]ctypes.ObjectRef{*ctypes.ObjectRefFromObject(&orphanRL)}))
+				Expect(d.OldSubscribers).To(Equal([]ctypes.ObjectRef{*ctypes.ObjectRefFromObject(&orphanSub)}))
+				Expect(countCalls(start, "Get", &applicationv1.Application{})).To(BeZero())
+				Expect(countCalls(start, "Delete", nil)).To(BeZero())
+				ready := meta.FindStatusCondition(listener.Status.Conditions, condition.ConditionTypeReady)
+				Expect(ready).ToNot(BeNil())
+				Expect(ready.Reason).To(Equal(condition.ReasonAccessDenied))
 			})
 		})
 

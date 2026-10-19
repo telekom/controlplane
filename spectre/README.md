@@ -25,7 +25,7 @@ The Spectre domain translates `SpectreApplication` and `Listener` custom resourc
 
 - **PubSub resources** — Publishers and Subscribers that register listener event flows in the Horizon runtime.
 - **Gateway resources** — RouteListeners that expose listener endpoints on the API Gateway.
-- **Approval resources** — two keyed ApprovalRequests per Listener, one decided by the provider and one by the consumer; both must be granted before the listener is activated. A gate is auto-approved when the observer (the SpectreApplication's own Application, i.e. the listening application that requests approval) is in the same team as its decider.
+- **Approval resources** — two keyed ApprovalRequests per Listener, one decided by the provider and one by the consumer; both must be granted before the listener is activated. A gate is auto-approved when the observer (the SpectreApplication's own Application, i.e. the listening application that requests approval) is in the same team as its decider. When a gate's Approval is revoked, a person's grant of the new request for a changed Listener, made after the revocation, lifts it; an automatic approval does not, so the decider has to grant the Approval again.
 
 Spectre operates as a peer to the Event domain: both create PubSub resources (Publishers and Subscribers), while EventConfig remains the sole creator of EventStores.
 

@@ -355,13 +355,20 @@ func (h *ListenerHandler) awaitIssuedApprovals(ctx context.Context, listener *sp
 		// status does not change on every reconcile.
 		message := fmt.Sprintf("ApprovalRequest %s for the %s gate was granted more than %s ago, but no Approval was issued; check the approval controller",
 			ar.Name, g.name, authorizationUnknownGracePeriod)
-		// Only an approval controller error is appended: a decider's earlier
-		// Ready=False (e.g. pending) is kept and re-stamped with the current
-		// generation, so it would describe a state the request has left.
+		// Only the approval controller's own answers are used: a decider's
+		// earlier Ready=False (e.g. pending) is kept and re-stamped with the
+		// current generation, so it would describe a state the request has left.
 		if ready := meta.FindStatusCondition(ar.Status.Conditions, condition.ConditionTypeReady); ready != nil &&
-			ready.Status == metav1.ConditionFalse && ready.Reason == condition.ReasonError &&
-			ready.ObservedGeneration == ar.Generation && ready.Message != "" {
-			message += ": " + truncate(ready.Message, maxAppendedErrorLength)
+			ready.Status == metav1.ConditionFalse && ready.ObservedGeneration == ar.Generation && ready.Message != "" {
+			switch ready.Reason {
+			case condition.ReasonError:
+				message += ": " + truncate(ready.Message, maxAppendedErrorLength)
+			case builder.ReasonApprovalRevoked:
+				// An automatic grant does not lift a revocation, nor recreate an
+				// Approval deleted after it was issued.
+				message = fmt.Sprintf("ApprovalRequest %s for the %s gate was granted, but the approval controller does not issue its Approval: %s",
+					ar.Name, g.name, truncate(ready.Message, maxAppendedErrorLength))
+			}
 		}
 		overdue = append(overdue, message)
 	}

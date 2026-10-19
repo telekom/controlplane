@@ -2395,6 +2395,37 @@ var _ = Describe("Listener approval answer unavailable (controller)", func() {
 		Expect(h.listener().Status.AppliedPlacement).ToNot(BeNil())
 	})
 
+	It("names a revoked or deleted Approval of an Auto gate instead of the approval controller", func() {
+		now := graceT0
+		f := newPlFixtures("c")
+		for _, app := range f.apps {
+			app.Spec.Team = "team-a" // A==C==P: both gates are Auto
+		}
+		h, _ := newGraceHarness(f, &now)
+		h.startup()
+
+		const revokedMessage = "Request has been approved automatically, but its approval was deleted after it was issued and is not recreated"
+		l := h.listener()
+		ar := &approvalv1.ApprovalRequest{}
+		Expect(h.raw.Get(context.Background(), l.Status.ConsumerApprovalRequest.K8s(), ar)).To(Succeed())
+		Expect(ar.Spec.Decisions).ToNot(BeEmpty())
+		ar.Spec.Decisions[len(ar.Spec.Decisions)-1].Timestamp = &metav1.Time{Time: graceT0}
+		ar.Status.Conditions = []metav1.Condition{{
+			Type: condition.ConditionTypeReady, Status: metav1.ConditionFalse,
+			Reason: builder.ReasonApprovalRevoked, Message: revokedMessage,
+			ObservedGeneration: ar.Generation, LastTransitionTime: metav1.Now(),
+		}}
+		h.update(ar)
+
+		now = graceT0.Add(5*time.Minute + time.Second)
+		h.mustReconcile()
+		ready := graceReady(h.listener())
+		Expect(ready.Reason).To(Equal(condition.ReasonBlocked))
+		Expect(ready.Message).To(ContainSubstring(fmt.Sprintf(
+			"ApprovalRequest %s for the consumer gate was granted, but the approval controller does not issue its Approval: %s", ar.Name, revokedMessage)))
+		Expect(ready.Message).ToNot(ContainSubstring("for the consumer gate was granted more than"))
+	})
+
 	It("blocks Auto gates whose Approvals are not issued within the grace period, and retries in time before it", func() {
 		now := graceT0
 		f := newPlFixtures("c")
