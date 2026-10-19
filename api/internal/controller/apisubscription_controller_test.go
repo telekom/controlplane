@@ -18,6 +18,7 @@ import (
 	apiapi "github.com/telekom/controlplane/api/api/v1"
 	applicationapi "github.com/telekom/controlplane/application/api/v1"
 	approvalapi "github.com/telekom/controlplane/approval/api/v1"
+	approvalbuilder "github.com/telekom/controlplane/approval/api/v1/builder"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/test/testutil"
@@ -994,5 +995,81 @@ var _ = Describe("ApiSubscription basePath validation", Ordered, func() {
 				g.Expect(condition.IsReady(apiSubscription)).To(BeTrue())
 			}, timeout, interval).Should(Succeed())
 		})
+	})
+})
+
+var _ = Describe("ApiSubscription with an expired Approval", Ordered, func() {
+	basePath := "/apisubexpiry/test/v1"
+	zoneName := "apisub-expiry"
+	apiExpAppName := "expiry-app-exp"
+	apiSubAppName := "expiry-app-sub"
+
+	var apiExpApplication *applicationapi.Application
+	var apiSubApplication *applicationapi.Application
+	var api *apiapi.Api
+	var apiExposure *apiapi.ApiExposure
+	var apiSubscription *apiapi.ApiSubscription
+
+	BeforeAll(func() {
+		CreateZone(zoneName)
+		apiExpApplication = CreateApplication(apiExpAppName)
+		apiSubApplication = CreateApplication(apiSubAppName)
+		api = NewApi(basePath)
+		Expect(k8sClient.Create(ctx, api)).To(Succeed())
+		apiExposure = NewApiExposure(basePath, zoneName, apiExpAppName)
+		Expect(k8sClient.Create(ctx, apiExposure)).To(Succeed())
+	})
+
+	AfterAll(func() {
+		Expect(k8sClient.Delete(ctx, apiSubscription)).To(Succeed())
+		Expect(k8sClient.Delete(ctx, apiExposure)).To(Succeed())
+		Expect(k8sClient.Delete(ctx, api)).To(Succeed())
+		Expect(k8sClient.Delete(ctx, apiSubApplication)).To(Succeed())
+		Expect(k8sClient.Delete(ctx, apiExpApplication)).To(Succeed())
+	})
+
+	It("should stay ready and keep its ConsumeRoute after the expiry of a granted Approval", func() {
+		apiSubscription = NewApiSubscription(basePath, zoneName, apiSubAppName)
+		Expect(k8sClient.Create(ctx, apiSubscription)).To(Succeed())
+		Eventually(func(g Gomega) {
+			g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(apiSubscription), apiSubscription)).To(Succeed())
+			g.Expect(apiSubscription.Status.ApprovalRequest).ToNot(BeNil())
+		}, timeout, interval).Should(Succeed())
+		approvalReq := ProgressApprovalRequest(apiSubscription.Status.ApprovalRequest, approvalapi.ApprovalStateGranted)
+		approval := ProgressApproval(apiSubscription, approvalapi.ApprovalStateGranted, approvalReq)
+		CompleteSubscriptionChildren(apiSubscription)
+		Eventually(func(g Gomega) {
+			g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(apiSubscription), apiSubscription)).To(Succeed())
+			g.Expect(condition.IsReady(apiSubscription)).To(BeTrue())
+		}, timeout, interval).Should(Succeed())
+		consumeRouteRef := apiSubscription.Status.ConsumeRoute
+
+		By("expiring the Approval as the approval controller leaves it: LastState follows the state")
+		// LastState is written first, so the only state the ApiSubscription sees
+		// with an expired spec is the one after the approval controller reconciled.
+		Eventually(func(g Gomega) {
+			g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(approval), approval)).To(Succeed())
+			approval.Status.LastState = approvalapi.ApprovalStateExpired
+			g.Expect(k8sClient.Status().Update(ctx, approval)).To(Succeed())
+			approval.Spec.State = approvalapi.ApprovalStateExpired
+			approval.Spec.Decisions = []approvalapi.Decision{
+				{Name: "Alice Approver", ResultingState: approvalapi.ApprovalStateGranted},
+				{Name: "System", ResultingState: approvalapi.ApprovalStateExpired},
+			}
+			g.Expect(k8sClient.Update(ctx, approval)).To(Succeed())
+		}, timeout, interval).Should(Succeed())
+
+		Eventually(func(g Gomega) {
+			g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(apiSubscription), apiSubscription)).To(Succeed())
+			granted := meta.FindStatusCondition(apiSubscription.GetConditions(), approvalbuilder.ConditionTypeApprovalGranted)
+			g.Expect(granted).ToNot(BeNil())
+			g.Expect(granted.Status).To(Equal(metav1.ConditionTrue))
+			g.Expect(granted.Message).To(Equal("Approval has expired but was previously granted"))
+		}, timeout, interval).Should(Succeed())
+		Consistently(func(g Gomega) {
+			g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(apiSubscription), apiSubscription)).To(Succeed())
+			g.Expect(condition.IsReady(apiSubscription)).To(BeTrue())
+			g.Expect(k8sClient.Get(ctx, consumeRouteRef.K8s(), &gatewayapi.ConsumeRoute{})).To(Succeed())
+		}, timeout, interval).Should(Succeed())
 	})
 })

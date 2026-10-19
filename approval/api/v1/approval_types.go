@@ -111,6 +111,50 @@ func (a *Approval) AppendDecision(d Decision) {
 	a.Spec.Decisions = TrimDecisions(append(a.Spec.Decisions, d))
 }
 
+// IsExpiredAfterSuspension reports whether the Approval expired while it was
+// suspended, so it stays denied. Status.LastState shows this only until the
+// approval controller reconciles the expiry, as it follows Spec.State; the
+// decisions keep it: the latest decision not resulting in Expired results in
+// Suspended.
+//
+// The expiration handler records the state before the expiry as a decision, so
+// the decisions still show it after the approval controller overwrote LastState.
+func (a *Approval) IsExpiredAfterSuspension() bool {
+	if a.Spec.State != ApprovalStateExpired {
+		return false
+	}
+	if a.Status.LastState == ApprovalStateSuspended {
+		return true
+	}
+	for i := len(a.Spec.Decisions) - 1; i >= 0; i-- {
+		if state := a.Spec.Decisions[i].ResultingState; state != ApprovalStateExpired {
+			return state == ApprovalStateSuspended
+		}
+	}
+	return false
+}
+
+// IsExpiredAfterGrant reports whether the Approval expired while it was
+// granted, so access stays granted. Like IsExpiredAfterSuspension, it reads
+// Status.LastState until the approval controller reconciles the expiry, and
+// the decisions after that: the latest decision not resulting in Expired
+// results in Granted. Check IsExpiredAfterSuspension first, as both can hold
+// while Status.LastState and the decisions disagree.
+func (a *Approval) IsExpiredAfterGrant() bool {
+	if a.Spec.State != ApprovalStateExpired {
+		return false
+	}
+	if a.Status.LastState == ApprovalStateGranted {
+		return true
+	}
+	for i := len(a.Spec.Decisions) - 1; i >= 0; i-- {
+		if state := a.Spec.Decisions[i].ResultingState; state != ApprovalStateExpired {
+			return state == ApprovalStateGranted
+		}
+	}
+	return false
+}
+
 var _ types.Object = &Approval{}
 
 func ApprovalName(ownerKind, ownerName string) string {
