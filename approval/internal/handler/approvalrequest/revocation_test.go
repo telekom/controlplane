@@ -49,6 +49,17 @@ var _ = Describe("liftsScopedRevocation", func() {
 		return approvalv1.Decision{Name: "Bob", ResultingState: approvalv1.ApprovalStateGranted, Timestamp: at}
 	}
 	rejected := revoked(approvalv1.ApprovalStateRejected, approvalv1.ApprovalStateRejected, &revokedAt)
+	// expiredAfterSilentSuspension is an Approval suspended without a decision,
+	// then expired: the expiration handler recorded the suspension at the expiry.
+	expiredAfterSilentSuspension := &approvalv1.Approval{}
+	expiredAfterSilentSuspension.Spec.State = approvalv1.ApprovalStateExpired
+	expiredAfterSilentSuspension.Status.LastState = approvalv1.ApprovalStateExpired
+	expiredAfterSilentSuspension.Spec.ApprovedRequest = &ctypes.ObjectRef{Name: "old", Namespace: "default", UID: "old-uid"}
+	expiredAfterSilentSuspension.Spec.Decisions = []approvalv1.Decision{
+		{Name: "Alice", ResultingState: approvalv1.ApprovalStateGranted, Timestamp: &before},
+		{Name: approvalv1.SystemDecisionName, ResultingState: approvalv1.ApprovalStateSuspended, Timestamp: &revokedAt},
+		{Name: approvalv1.SystemDecisionName, ResultingState: approvalv1.ApprovalStateExpired, Timestamp: &revokedAt},
+	}
 
 	DescribeTable("decides whether a request replaces a revocation",
 		func(approval *approvalv1.Approval, ar *approvalv1.ApprovalRequest, lifts bool) {
@@ -63,6 +74,12 @@ var _ = Describe("liftsScopedRevocation", func() {
 		Entry("Expired after a suspension, newer request granted by a person after the suspension",
 			revoked(approvalv1.ApprovalStateExpired, approvalv1.ApprovalStateSuspended, &revokedAt, expiry),
 			request("new-uid", approvalv1.ApprovalStrategySimple, approvalv1.ApprovalStateGranted, grantAt(&after)), true),
+		Entry("Expired after a suspension without a decision, newer request granted by a person after the expiry",
+			expiredAfterSilentSuspension,
+			request("new-uid", approvalv1.ApprovalStrategySimple, approvalv1.ApprovalStateGranted, grantAt(&after)), true),
+		Entry("Expired after a suspension without a decision, grant made before the expiry",
+			expiredAfterSilentSuspension,
+			request("new-uid", approvalv1.ApprovalStrategySimple, approvalv1.ApprovalStateGranted, grantAt(&before)), false),
 		Entry("FourEyes request fully granted after the revocation", rejected,
 			request("new-uid", approvalv1.ApprovalStrategyFourEyes, approvalv1.ApprovalStateGranted,
 				approvalv1.Decision{Name: "Bob", ResultingState: approvalv1.ApprovalStateSemigranted, Timestamp: &after},

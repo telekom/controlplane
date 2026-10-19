@@ -1203,6 +1203,45 @@ var _ = Describe("ApprovalRequest Controller", func() {
 			}, 2*time.Second, interval).Should(Succeed())
 		})
 
+		It("keeps an Approval that expired after a suspension without a decision revoked", func() {
+			gate := newScopedGate("scoped-silent-expired-src", "silent-expired-key")
+			ar1 := newScopedRequest(gate.src, "scoped-silent-expired-a", &gate.target, gate.approvalKey, &requester, &decider,
+				approvalv1.ApprovalStrategyAuto, approvalv1.ApprovalStateGranted, autoGrant())
+			Expect(k8sClient.Create(ctx, ar1)).To(Succeed())
+			expectGrantedFor(gate.key, ar1)
+
+			By("Suspending the Approval without a decision, then letting the expiration controller expire it")
+			setScopedApprovalState(gate.key, approvalv1.ApprovalStateSuspended, nil)
+			expectLastState(gate.key, approvalv1.ApprovalStateSuspended)
+			Eventually(func(g Gomega) {
+				expiration := &approvalv1.ApprovalExpiration{}
+				g.Expect(k8sClient.Get(ctx, gate.key, expiration)).To(Succeed())
+				expiration.Spec.Expiration = metav1.NewTime(time.Now().Add(-time.Minute))
+				g.Expect(k8sClient.Update(ctx, expiration)).To(Succeed())
+			}, timeout, interval).Should(Succeed())
+			expectLastState(gate.key, approvalv1.ApprovalStateExpired)
+
+			By("Replacing the request with a new automatic one")
+			deleteRequest(ar1)
+			ar2 := newScopedRequest(gate.src, "scoped-silent-expired-b", &gate.target, gate.approvalKey, &requester, &decider,
+				approvalv1.ApprovalStrategyAuto, approvalv1.ApprovalStateGranted, autoGrant())
+			Expect(k8sClient.Create(ctx, ar2)).To(Succeed())
+
+			By("Keeping the expired Approval and reporting the revocation on the new request")
+			Eventually(func(g Gomega) {
+				g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(ar2), ar2)).To(Succeed())
+				ready := meta.FindStatusCondition(ar2.Status.Conditions, condition.ConditionTypeReady)
+				g.Expect(ready).NotTo(BeNil())
+				g.Expect(ready.Reason).To(Equal("Revoked"))
+			}, timeout, interval).Should(Succeed())
+			Consistently(func(g Gomega) {
+				a := &approvalv1.Approval{}
+				g.Expect(k8sClient.Get(ctx, gate.key, a)).To(Succeed())
+				g.Expect(a.Spec.State).To(Equal(approvalv1.ApprovalStateExpired))
+				g.Expect(a.Spec.ApprovedRequest.UID).To(Equal(ar1.UID))
+			}, 2*time.Second, interval).Should(Succeed())
+		})
+
 		It("keeps a revocation made without a decision when an older grant arrives", func() {
 			gate := newScopedGate("scoped-decisionless-src", "decisionless-key")
 			grantedAt := metav1.NewTime(time.Now().Add(-3 * time.Hour))
