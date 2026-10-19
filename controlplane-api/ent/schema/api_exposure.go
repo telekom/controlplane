@@ -92,5 +92,7 @@ func (ApiExposure) Annotations() []schema.Annotation {
 func (ApiExposure) Indexes() []ent.Index {
 	return []ent.Index{
 		index.Fields("base_path").Edges("owner").Unique(),
+		// FK lookup for application -> exposures traversals.
+		index.Edges("owner"),
 	}
 }

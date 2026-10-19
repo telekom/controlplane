@@ -105,6 +105,11 @@ var (
 				Unique:  true,
 				Columns: []*schema.Column{AgenticExposuresColumns[7], AgenticExposuresColumns[17]},
 			},
+			{
+				Name:    "agenticexposure_application_exposed_agentics",
+				Unique:  false,
+				Columns: []*schema.Column{AgenticExposuresColumns[17]},
+			},
 		},
 	}
 	// AgenticSubscriptionsColumns holds the columns for the "agentic_subscriptions" table.
@@ -155,6 +160,16 @@ var (
 				Name:    "agenticsubscription_base_path_application_subscribed_agentics",
 				Unique:  true,
 				Columns: []*schema.Column{AgenticSubscriptionsColumns[10], AgenticSubscriptionsColumns[15]},
+			},
+			{
+				Name:    "agenticsubscription_application_subscribed_agentics",
+				Unique:  false,
+				Columns: []*schema.Column{AgenticSubscriptionsColumns[15]},
+			},
+			{
+				Name:    "agenticsubscription_agentic_subscription_target",
+				Unique:  false,
+				Columns: []*schema.Column{AgenticSubscriptionsColumns[14]},
 			},
 		},
 	}
@@ -242,6 +257,11 @@ var (
 				Unique:  true,
 				Columns: []*schema.Column{APIExposuresColumns[7], APIExposuresColumns[17]},
 			},
+			{
+				Name:    "apiexposure_application_exposed_apis",
+				Unique:  false,
+				Columns: []*schema.Column{APIExposuresColumns[17]},
+			},
 		},
 	}
 	// APISubscriptionsColumns holds the columns for the "api_subscriptions" table.
@@ -294,6 +314,16 @@ var (
 				Unique:  true,
 				Columns: []*schema.Column{APISubscriptionsColumns[10], APISubscriptionsColumns[16]},
 			},
+			{
+				Name:    "apisubscription_application_subscribed_apis",
+				Unique:  false,
+				Columns: []*schema.Column{APISubscriptionsColumns[16]},
+			},
+			{
+				Name:    "apisubscription_api_subscription_target",
+				Unique:  false,
+				Columns: []*schema.Column{APISubscriptionsColumns[15]},
+			},
 		},
 	}
 	// ApplicationsColumns holds the columns for the "applications" table.
@@ -344,6 +374,11 @@ var (
 				Name:    "application_name_team_applications",
 				Unique:  true,
 				Columns: []*schema.Column{ApplicationsColumns[7], ApplicationsColumns[19]},
+			},
+			{
+				Name:    "application_team_applications",
+				Unique:  false,
+				Columns: []*schema.Column{ApplicationsColumns[19]},
 			},
 		},
 	}
@@ -472,6 +507,26 @@ var (
 				Unique:  true,
 				Columns: []*schema.Column{ApprovalRequestsColumns[6], ApprovalRequestsColumns[15]},
 			},
+			{
+				Name:    "approvalrequest_api_subscription_approval_requests",
+				Unique:  false,
+				Columns: []*schema.Column{ApprovalRequestsColumns[18]},
+			},
+			{
+				Name:    "approvalrequest_event_subscription_approval_requests",
+				Unique:  false,
+				Columns: []*schema.Column{ApprovalRequestsColumns[19]},
+			},
+			{
+				Name:    "approvalrequest_agentic_subscription_approval_requests",
+				Unique:  false,
+				Columns: []*schema.Column{ApprovalRequestsColumns[17]},
+			},
+			{
+				Name:    "approvalrequest_file_subscription_approval_requests",
+				Unique:  false,
+				Columns: []*schema.Column{ApprovalRequestsColumns[20]},
+			},
 		},
 	}
 	// EventExposuresColumns holds the columns for the "event_exposures" table.
@@ -516,6 +571,11 @@ var (
 				Name:    "eventexposure_event_type_application_exposed_events",
 				Unique:  true,
 				Columns: []*schema.Column{EventExposuresColumns[7], EventExposuresColumns[13]},
+			},
+			{
+				Name:    "eventexposure_application_exposed_events",
+				Unique:  false,
+				Columns: []*schema.Column{EventExposuresColumns[13]},
 			},
 		},
 	}
@@ -570,6 +630,16 @@ var (
 				Name:    "eventsubscription_event_type_application_subscribed_events",
 				Unique:  true,
 				Columns: []*schema.Column{EventSubscriptionsColumns[10], EventSubscriptionsColumns[17]},
+			},
+			{
+				Name:    "eventsubscription_application_subscribed_events",
+				Unique:  false,
+				Columns: []*schema.Column{EventSubscriptionsColumns[17]},
+			},
+			{
+				Name:    "eventsubscription_event_subscription_target",
+				Unique:  false,
+				Columns: []*schema.Column{EventSubscriptionsColumns[18]},
 			},
 		},
 	}
@@ -661,6 +731,11 @@ var (
 				Unique:  true,
 				Columns: []*schema.Column{FileExposuresColumns[7], FileExposuresColumns[15]},
 			},
+			{
+				Name:    "fileexposure_application_exposed_file_types",
+				Unique:  false,
+				Columns: []*schema.Column{FileExposuresColumns[15]},
+			},
 		},
 	}
 	// FileSubscriptionsColumns holds the columns for the "file_subscriptions" table.
@@ -724,6 +799,16 @@ var (
 				Name:    "filesubscription_file_type_application_subscribed_file_types",
 				Unique:  true,
 				Columns: []*schema.Column{FileSubscriptionsColumns[8], FileSubscriptionsColumns[13]},
+			},
+			{
+				Name:    "filesubscription_application_subscribed_file_types",
+				Unique:  false,
+				Columns: []*schema.Column{FileSubscriptionsColumns[13]},
+			},
+			{
+				Name:    "filesubscription_file_subscription_target",
+				Unique:  false,
+				Columns: []*schema.Column{FileSubscriptionsColumns[14]},
 			},
 		},
 	}
@@ -841,6 +926,11 @@ var (
 				Unique:  false,
 				Columns: []*schema.Column{MembersColumns[3]},
 			},
+			{
+				Name:    "member_team_members",
+				Unique:  false,
+				Columns: []*schema.Column{MembersColumns[4]},
+			},
 		},
 	}
 	// PermissionSetsColumns holds the columns for the "permission_sets" table.
@@ -897,6 +987,13 @@ var (
 				Columns:    []*schema.Column{TeamsColumns[13]},
 				RefColumns: []*schema.Column{GroupsColumns[0]},
 				OnDelete:   schema.SetNull,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "team_group_teams",
+				Unique:  false,
+				Columns: []*schema.Column{TeamsColumns[13]},
 			},
 		},
 	}

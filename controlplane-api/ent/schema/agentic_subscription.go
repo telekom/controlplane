@@ -76,5 +76,8 @@ func (AgenticSubscription) Annotations() []schema.Annotation {
 func (AgenticSubscription) Indexes() []ent.Index {
 	return []ent.Index{
 		index.Fields("base_path").Edges("owner").Unique(),
+		// FK lookups for application -> subscriptions and exposure -> subscriptions traversals.
+		index.Edges("owner"),
+		index.Edges("target"),
 	}
 }

@@ -90,5 +90,7 @@ func (FileExposure) Annotations() []schema.Annotation {
 func (FileExposure) Indexes() []ent.Index {
 	return []ent.Index{
 		index.Fields("file_type").Edges("owner").Unique(),
+		// FK lookup for application -> exposures traversals.
+		index.Edges("owner"),
 	}
 }

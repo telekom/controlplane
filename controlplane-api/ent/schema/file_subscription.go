@@ -81,5 +81,8 @@ func (FileSubscription) Annotations() []schema.Annotation {
 func (FileSubscription) Indexes() []ent.Index {
 	return []ent.Index{
 		index.Fields("file_type").Edges("owner").Unique(),
+		// FK lookups for application -> subscriptions and exposure -> subscriptions traversals.
+		index.Edges("owner"),
+		index.Edges("target"),
 	}
 }

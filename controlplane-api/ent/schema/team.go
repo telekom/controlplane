@@ -10,6 +10,7 @@ import (
 	"entgo.io/ent/schema"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
+	"entgo.io/ent/schema/index"
 
 	schemamixin "github.com/telekom/controlplane/controlplane-api/ent/schema/mixin"
 )
@@ -71,6 +72,13 @@ func (Team) Edges() []ent.Edge {
 			Annotations(entgql.RelayConnection()),
 		edge.To("agent_cards", AgentCard.Type).
 			Annotations(entgql.RelayConnection()),
+	}
+}
+
+func (Team) Indexes() []ent.Index {
+	return []ent.Index{
+		// FK lookup: resolve teams of a group (viewer middleware for group clients).
+		index.Edges("group"),
 	}
 }
 
