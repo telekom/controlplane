@@ -1,0 +1,117 @@
+organization/config/crd/bases/organization.cp.ei.telekom.de_groups.yaml
+  s_edcb8aacc27ef2::t_2be5245e4be465 47
+organization-server/internal/server/team_members_regression_test.go
+  s_065ae5fbd824e6::t_ed83c91132352a 16
+  s_065ae5fbd824e6::t_9da00849a0fb81 83-89,91-94
+  s_065ae5fbd824e6::t_f6aa73d32c6c1e 98,154
+  s_065ae5fbd824e6::t_f038cfc4dd97d8 1-7,9-14,20-24,26-61,79-82,90,197
+  s_088104ad649309::t_8a0455135ffcd5 64-66,131,198-199
+  s_065ae5fbd824e6::t_285d82748dedae 8,15,17-19,25,62-63,67-78,95
+  s_065ae5fbd824e6::t_a272192fc18c6b 175-196
+  s_065ae5fbd824e6::t_3f658cc57b1000 96-97,99-130,132-153,155-174
+organization-server/api/openapi.yaml
+  s_f8c77a672618d1::t_45a068d6f3b796 80-81
+  s_f8c77a672618d1::t_52a3177e6d89c6 1066-1067,1076-1098,1101-1105,1117-1118,1121-1124
+  s_088104ad649309::t_ab7498159aedb0 1203-1208,1214,1217,1220-1221,1224-1227,1230-1235
+  s_065ae5fbd824e6::t_f6aa73d32c6c1e 1202
+organization-server/internal/controller/controller.go
+  s_065ae5fbd824e6::t_71547cee03e5e9 336
+  s_f8c77a672618d1::t_52a3177e6d89c6 71,87,146,162
+  s_088104ad649309::t_2e9822393d58ba 208,210-217,227-228,244-247,252-257,316-321,324-325,331-335,337-340,355-360,365-370,475-505
+  s_088104ad649309::t_393ad1860f7ba6 209,218,229,322
+controlplane-api/internal/service/team_members_envtest_test.go
+  s_065ae5fbd824e6::t_f6aa73d32c6c1e 86,89,96-99
+  s_f8c77a672618d1::t_52a3177e6d89c6 232,291-373
+  s_088104ad649309::t_df72e7d5eb1ae8 11,13,109-231
+  s_065ae5fbd824e6::t_d024f55e308f3a 20,48-85,87-88,90-95,100-108
+  s_a18675621f1c35::t_cf9a7ab334012b 233
+controlplane-api/internal/resolvers/model/mutation_types.go
+  s_065ae5fbd824e6::t_805eb9cf766d40 37,39-43
+organization-server/internal/server/hub_metadata_upsert_test.go
+  s_f8c77a672618d1::t_52a3177e6d89c6 1-96
+organization-server/internal/graphql/operations.graphql
+  s_088104ad649309::t_a4a2a24686f259 44-45,70-71,142-143,171-172
+organization-server/internal/graphql/generated.go
+  s_065ae5fbd824e6::t_e457e1936ab924 882,897-899,902
+  s_088104ad649309::t_a4a2a24686f259 145-146,177-182,446-447,480-489,619-620,653-661,953-954,985-990,1163-1164,1333-1334,1424-1425,1564-1565
+  s_065ae5fbd824e6::t_dd0a32e442b6cf 881
+  s_edcb8aacc27ef2::t_eb56cee63948b6 662
+controlplane-api/internal/service/services_k8s.go
+  s_f8c77a672618d1::t_52a3177e6d89c6 366
+  s_065ae5fbd824e6::t_e85d7bfebda31d 127
+  s_065ae5fbd824e6::t_805eb9cf766d40 126,128
+  s_a18675621f1c35::t_a024bd8468e57c 12,63-71,73-78,80,107-113,129,698-735
+organization-server/internal/server/error_paths_test.go
+  s_088104ad649309::t_30556569f98023 580
+organization/api/v1/group_types.go
+  s_f8c77a672618d1::t_52a3177e6d89c6 27-29
+organization-server/internal/mapper/mapper.go
+  s_088104ad649309::t_f9bb81644f35c8 49-55,77-83,92-96
+  s_088104ad649309::t_9cdb2c1df31a94 97-98
+organization-server/internal/api/server.gen.go
+  s_088104ad649309::t_ab7498159aedb0 389,391-398
+  s_edcb8aacc27ef2::t_ca6678c237c1f3 496-545,548-568
+  s_edcb8aacc27ef2::t_41fd096f8f7de6 160-165,168-179,194,196-203,546-547
+controlplane-api/mutation.graphql
+  s_065ae5fbd824e6::t_805eb9cf766d40 54,170
+  s_065ae5fbd824e6::t_f6aa73d32c6c1e 53
+controlplane-api/internal/resolvers/team_members_input_test.go
+  s_065ae5fbd824e6::t_9da00849a0fb81 11
+  s_065ae5fbd824e6::t_a272192fc18c6b 1-10,12-31
+organization-server/internal/server/team_metadata_upsert_test.go
+  s_088104ad649309::t_393ad1860f7ba6 18
+  s_088104ad649309::t_94ce6fa8367817 1-17,19-173,175-179,189,194-221
+  s_088104ad649309::t_a0b18b9ad21595 174,180-188,190-193
+controlplane-api/internal/resolvers/mutation.generated.go
+  s_edcb8aacc27ef2::t_62df1d09ee9846 2093,2128-2134,3133-3149
+controlplane-api/internal/resolvers/root_.generated.go
+  s_edcb8aacc27ef2::t_a98278b3263d66 12033-12034,12150
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "8fadfb965139ffb35a03c6b1ff8ab334d8f8e17d",
+  "prompts": {},
+  "sessions": {
+    "s_065ae5fbd824e6": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_eabab5000ffeolMaF8at7aJE3f",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_088104ad649309": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_eab78ccbfffeeT9JZzNRH4k6bw",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_a18675621f1c35": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_eab6ec375ffebzIJREJEhfI9JU",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_edcb8aacc27ef2": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_eab59d187ffeiveSpxDOFmN4At",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_f8c77a672618d1": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_eababafccffe6BRC1lPFVnm5Qk",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
