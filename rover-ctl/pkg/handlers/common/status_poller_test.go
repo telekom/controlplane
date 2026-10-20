@@ -196,7 +196,7 @@ var _ = Describe("StatusPoller", func() {
 				handler.AssertExpectations(GinkgoT())
 			})
 
-			It("should return an error when overall status is failed", func() {
+			It("should stop polling and return the failed status without an error", func() {
 				// Create a poller with nil eval function (will use default)
 				defaultPoller := common.NewStatusPoller(handler, nil, timeout, interval)
 
@@ -217,13 +217,13 @@ var _ = Describe("StatusPoller", func() {
 				// Start polling
 				result, err := defaultPoller.Start(testCtx, "test-resource")
 
-				// Verify that an error is returned for failed state
-				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(ContainSubstring("resource processing failed"))
+				// A failed status is a terminal outcome, not a polling error
+				Expect(err).NotTo(HaveOccurred())
 				Expect(result).To(Equal(failedStatus))
 
-				// Verify the mock was called as expected
+				// Verify polling stopped after the failed status
 				handler.AssertExpectations(GinkgoT())
+				handler.AssertNumberOfCalls(GinkgoT(), "Status", 2)
 			})
 
 			It("should stop polling when overall status is blocked", func() {

@@ -26,6 +26,12 @@ The Rover Server accepts resource names between 2 and 90 characters. Names longe
 
 The server also normalizes the environment, team, and group labels to lowercase, replaces spaces, underscores, and slashes with hyphens, trims leading and trailing hyphens, and shortens values exceeding the label-value limit.
 
+### Status and Diagnostics
+
+`GET /rovers/{resourceId}/status` returns HTTP 200 with the aggregated status of the Rover and its sub-resources, even when processing failed. The `errors`, `warnings`, and `infos` lists include the Rover's own diagnostics (for example, a rejected sub-resource reported on the Rover's `Ready` condition), identified by the Rover resource, followed by the diagnostics of its sub-resources.
+
+When `roverctl apply` sees a terminal `failed` status, it stops polling, prints these diagnostics, and exits with a non-zero code, just like for a `blocked` final status. The command fails because processing failed, not because the status request failed, so no HTTP error is reported. Real HTTP errors from the server are still shown as before.
+
 ## Domain Interactions
 
 - **Application domain** — Creates Application resources.
