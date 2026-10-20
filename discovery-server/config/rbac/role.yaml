@@ -52,3 +52,12 @@ rules:
   - get
   - list
   - watch
+- apiGroups:
+  - approval.cp.ei.telekom.de
+  resources:
+  - approvalrequests
+  - approvals
+  verbs:
+  - get
+  - list
+  - watch
