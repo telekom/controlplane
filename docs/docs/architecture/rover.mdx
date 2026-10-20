@@ -26,10 +26,6 @@ The Rover Server accepts resource names between 2 and 90 characters. Names longe
 
 The server also normalizes the environment, team, and group labels to lowercase, replaces spaces, underscores, and slashes with hyphens, trims leading and trailing hyphens, and shortens values exceeding the label-value limit.
 
-### Resource Status
-
-Application info (returned by `roverctl get-info`) uses the status endpoint's child-aware Rover status calculation. When the Rover is waiting for children, a blocked child does not end processing while another child is processing or pending. If no child is progressing and the remaining work is blocked, both report `blocked`.
-
 ## Domain Interactions
 
 - **Application domain** — Creates Application resources.
