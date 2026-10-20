@@ -64,12 +64,11 @@ func New(cpapi graphql.Client, rover *client.RoverClient) *Controller {
 // --- Hub operations ---
 
 func (ctrl *Controller) Create(ctx context.Context, env string, req *api.HubCreateRequest) (*api.HubResponse, []MutationError, error) {
-	desc := req.Description
 	resp, err := gql.CreateGroup(ctx, ctrl.cpapi, gql.CreateGroupInput{
 		Environment: env,
 		Name:        req.Name,
 		DisplayName: req.DisplayName,
-		Description: &desc,
+		Description: req.Description,
 	})
 	if err != nil {
 		return nil, nil, err
@@ -85,7 +84,7 @@ func (ctrl *Controller) Create(ctx context.Context, env string, req *api.HubCrea
 	hubResp := &api.HubResponse{
 		Name:        req.Name,
 		DisplayName: req.DisplayName,
-		Description: req.Description,
+		Description: deref(req.Description),
 		Status:      pendingStatus(),
 	}
 	// The CP API processes mutations asynchronously and may not return the group.
@@ -138,14 +137,13 @@ func (ctrl *Controller) Update(ctx context.Context, env, hubName string, req *ap
 			Name:        hubName,
 			DisplayName: req.DisplayName,
 			Description: req.Description,
-			Email:       req.Email,
 		})
 	}
 
 	resp, err := gql.UpdateGroup(ctx, ctrl.cpapi, gql.UpdateGroupInput{
 		GroupId:     groupID,
 		DisplayName: &req.DisplayName,
-		Description: &req.Description,
+		Description: req.Description,
 	})
 	if err != nil {
 		return nil, nil, err
@@ -161,7 +159,7 @@ func (ctrl *Controller) Update(ctx context.Context, env, hubName string, req *ap
 	hubResp := &api.HubResponse{
 		Name:        hubName,
 		DisplayName: req.DisplayName,
-		Description: req.Description,
+		Description: deref(req.Description),
 		Status:      pendingStatus(),
 	}
 	// The CP API processes mutations asynchronously and may not return the group.
@@ -207,6 +205,16 @@ func (ctrl *Controller) GetStatus(_ context.Context, _ string) (*api.ResourceSta
 // --- Team operations ---
 
 func (ctrl *Controller) CreateTeam(ctx context.Context, env, hubName string, req *api.TeamCreateRequest) (*api.TeamResponse, []MutationError, error) {
+	return ctrl.createTeam(ctx, env, hubName, &gql.CreateTeamInput{
+		Name:        req.Name,
+		Email:       req.Email,
+		Members:     toMemberInputs(req.Members),
+		DisplayName: nonEmpty(req.DisplayName),
+		Description: req.Description,
+	})
+}
+
+func (ctrl *Controller) createTeam(ctx context.Context, env, hubName string, input *gql.CreateTeamInput) (*api.TeamResponse, []MutationError, error) {
 	groupID, err := ctrl.resolveGroupID(ctx, hubName)
 	if err != nil {
 		return nil, nil, err
@@ -215,23 +223,9 @@ func (ctrl *Controller) CreateTeam(ctx context.Context, env, hubName string, req
 		return nil, []MutationError{{Code: "NOT_FOUND", Message: "Hub not found: " + hubName}}, nil
 	}
 
-	members := make([]gql.MemberInput, 0, len(req.Members))
-	reqMembers := make([]api.TeamMember, 0, len(req.Members))
-	for _, m := range req.Members {
-		members = append(members, gql.MemberInput{
-			Name:  m.Name,
-			Email: m.Email,
-		})
-		reqMembers = append(reqMembers, api.TeamMember{Name: m.Name, Email: m.Email})
-	}
-
-	resp, err := gql.CreateTeam(ctx, ctrl.cpapi, gql.CreateTeamInput{
-		Environment: env,
-		Group:       hubName,
-		Name:        req.Name,
-		Email:       req.Email,
-		Members:     members,
-	})
+	input.Environment = env
+	input.Group = hubName
+	resp, err := gql.CreateTeam(ctx, ctrl.cpapi, *input)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -246,16 +240,20 @@ func (ctrl *Controller) CreateTeam(ctx context.Context, env, hubName string, req
 	t := resp.CreateTeam.Team
 	// The CP API processes mutations asynchronously and may not return the team.
 	if t == nil {
-		pending := pendingTeamResponse(hubName, req.Name, req.Email)
-		pending.Members = reqMembers
+		pending := pendingTeamResponse(hubName, input.Name, input.Email)
+		pending.DisplayName = deref(input.DisplayName)
+		pending.Description = deref(input.Description)
+		pending.Members = fromMemberInputs(input.Members)
 		return &pending, nil, nil
 	}
 
 	teamResp := api.TeamResponse{
-		Name:     t.Name,
-		Email:    t.Email,
-		ClientId: fmt.Sprintf("%s--team-user", t.Name),
-		Status:   pendingStatus(),
+		Name:        t.Name,
+		DisplayName: deref(t.DisplayName),
+		Description: deref(t.Description),
+		Email:       t.Email,
+		ClientId:    fmt.Sprintf("%s--team-user", t.Name),
+		Status:      pendingStatus(),
 	}
 	if t.TeamToken != nil {
 		teamResp.TeamToken = *t.TeamToken
@@ -314,19 +312,31 @@ func (ctrl *Controller) UpdateTeam(ctx context.Context, env, hubName, teamName s
 		return nil, nil, err
 	}
 	if teamID == "" {
-		return ctrl.CreateTeam(ctx, env, hubName, &api.TeamCreateRequest{
+		if req.Email == nil || *req.Email == "" || req.Members == nil || len(*req.Members) == 0 {
+			return nil, []MutationError{{
+				Code:    "VALIDATION_FAILED",
+				Message: "Team " + teamName + " does not exist: email and at least one member are required to create it",
+			}}, nil
+		}
+		return ctrl.createTeam(ctx, env, hubName, &gql.CreateTeamInput{
 			Name:        teamName,
+			Email:       *req.Email,
+			Members:     toMemberInputs(*req.Members),
 			DisplayName: req.DisplayName,
 			Description: req.Description,
-			Email:       req.Email,
-			Members:     req.Members,
 		})
 	}
 
-	resp, err := gql.UpdateTeam(ctx, ctrl.cpapi, gql.UpdateTeamInput{
-		TeamId: teamID,
-		Email:  &req.Email,
-	})
+	input := gql.UpdateTeamInput{
+		TeamId:      teamID,
+		Email:       req.Email,
+		DisplayName: req.DisplayName,
+		Description: req.Description,
+	}
+	if req.Members != nil {
+		input.Members = toMemberInputs(*req.Members)
+	}
+	resp, err := gql.UpdateTeam(ctx, ctrl.cpapi, input)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -341,15 +351,22 @@ func (ctrl *Controller) UpdateTeam(ctx context.Context, env, hubName, teamName s
 	t := resp.UpdateTeam.Team
 	// The CP API processes mutations asynchronously and may not return the team.
 	if t == nil {
-		pending := pendingTeamResponse(hubName, teamName, req.Email)
+		pending := pendingTeamResponse(hubName, teamName, deref(req.Email))
+		pending.DisplayName = deref(req.DisplayName)
+		pending.Description = deref(req.Description)
+		if req.Members != nil {
+			pending.Members = append(pending.Members, *req.Members...)
+		}
 		return &pending, nil, nil
 	}
 
 	teamResp := api.TeamResponse{
-		Name:     t.Name,
-		Email:    t.Email,
-		ClientId: fmt.Sprintf("%s--team-user", t.Name),
-		Status:   pendingStatus(),
+		Name:        t.Name,
+		DisplayName: deref(t.DisplayName),
+		Description: deref(t.Description),
+		Email:       t.Email,
+		ClientId:    fmt.Sprintf("%s--team-user", t.Name),
+		Status:      pendingStatus(),
 	}
 	if t.TeamToken != nil {
 		teamResp.TeamToken = *t.TeamToken
@@ -454,6 +471,37 @@ func pendingStatus() api.Status {
 
 // pendingTeamResponse builds a team response from request data when the CP API
 // accepted the mutation without returning the team.
+// toMemberInputs returns a non-nil list so an explicit empty list stays distinguishable from omission.
+func toMemberInputs(members []api.TeamMember) []gql.MemberInput {
+	inputs := make([]gql.MemberInput, 0, len(members))
+	for _, m := range members {
+		inputs = append(inputs, gql.MemberInput{Name: m.Name, Email: m.Email})
+	}
+	return inputs
+}
+
+func fromMemberInputs(inputs []gql.MemberInput) []api.TeamMember {
+	members := make([]api.TeamMember, 0, len(inputs))
+	for _, m := range inputs {
+		members = append(members, api.TeamMember{Name: m.Name, Email: m.Email})
+	}
+	return members
+}
+
+func nonEmpty(s string) *string {
+	if s == "" {
+		return nil
+	}
+	return &s
+}
+
+func deref(s *string) string {
+	if s == nil {
+		return ""
+	}
+	return *s
+}
+
 func pendingTeamResponse(hubName, teamName, email string) api.TeamResponse {
 	return api.TeamResponse{
 		Name:     teamName,

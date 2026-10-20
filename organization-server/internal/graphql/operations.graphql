@@ -41,6 +41,8 @@ query ListTeams($where: TeamWhereInput) {
         statusPhase
         statusMessage
         name
+        displayName: displayname
+        description
         email
         teamToken
         group {
@@ -65,6 +67,8 @@ query GetTeam($where: TeamWhereInput) {
         statusPhase
         statusMessage
         name
+        displayName: displayname
+        description
         email
         teamToken
         group {
@@ -135,6 +139,8 @@ mutation CreateTeam($input: CreateTeamInput!) {
       statusPhase
       statusMessage
       name
+      displayName: displayname
+      description
       email
       teamToken
       group {
@@ -162,6 +168,8 @@ mutation UpdateTeam($input: UpdateTeamInput!) {
       statusPhase
       statusMessage
       name
+      displayName: displayname
+      description
       email
       teamToken
       group {

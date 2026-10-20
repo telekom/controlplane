@@ -577,7 +577,7 @@ var _ = Describe("Team Error Paths", func() {
 			DeferCleanup(roverServer.Close)
 			app := newTestApp(gqlServer.URL, roverServer.URL)
 
-			body := `{"email":"new@test.de","members":[]}`
+			body := `{"email":"new@test.de","members":[{"name":"New","email":"new@test.de"}]}`
 			req := httptest.NewRequest(http.MethodPut, "/organization/v1/hubs/eni/teams/nonexistent", strings.NewReader(body))
 			resp, err := executeRequest(app, req, adminToken)
 			expectStatus(resp, err, http.StatusForbidden)

@@ -2090,7 +2090,7 @@ func (ec *executionContext) unmarshalInputUpdateTeamInput(ctx context.Context, o
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"teamId", "email", "displayName", "description"}
+	fieldsInOrder := [...]string{"teamId", "email", "displayName", "description", "members"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -2125,6 +2125,13 @@ func (ec *executionContext) unmarshalInputUpdateTeamInput(ctx context.Context, o
 				return it, err
 			}
 			it.Description = data
+		case "members":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("members"))
+			data, err := ec.unmarshalOMemberInput2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐMemberInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Members = data
 		}
 	}
 	return it, nil
@@ -3121,6 +3128,23 @@ func (ec *executionContext) marshalNUpdateTeamPayload2ᚖgithubᚗcomᚋtelekom�
 		return graphql.Null
 	}
 	return ec._UpdateTeamPayload(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOMemberInput2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐMemberInputᚄ(ctx context.Context, v any) ([]model.MemberInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	vSlice := graphql.CoerceList(v)
+	var err error
+	res := make([]model.MemberInput, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNMemberInput2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐMemberInput(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
 }
 
 // endregion ***************************** type.gotpl *****************************

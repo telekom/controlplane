@@ -24,8 +24,9 @@ type GroupSpec struct {
 	DisplayName string `json:"displayName"`
 
 	// Description is the description of the group
-	// +kubebuilder:validation:MinLength=1
-	Description string `json:"description"`
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:MaxLength=256
+	Description string `json:"description,omitempty"`
 }
 
 // GroupStatus defines the observed state of Group.
